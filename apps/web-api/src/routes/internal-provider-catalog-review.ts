@@ -328,6 +328,7 @@ internalProviderCatalogReviewRouter.post("/provider-catalog/candidates/:runId/mo
 	if (result.error) {
 		if (result.error.message.includes("provider_catalog_probe_required")) return c.json({ error: "probe_required" }, 409, PRIVATE_NO_STORE_HEADERS);
 		if (result.error.message.includes("provider_catalog_pricing_required")) return c.json({ error: "pricing_required" }, 409, PRIVATE_NO_STORE_HEADERS);
+		if (result.error.message.includes("provider_catalog_conditional_pricing_requires_review")) return c.json({ error: "conditional_pricing_requires_review" }, 409, PRIVATE_NO_STORE_HEADERS);
 		if (result.error.message.includes("provider_catalog_adapter_required")) return c.json({ error: "adapter_required" }, 409, PRIVATE_NO_STORE_HEADERS);
 		if (result.error.message.includes("provider_catalog_credentials_required")) return c.json({ error: "credentials_required" }, 409, PRIVATE_NO_STORE_HEADERS);
 		if (result.error.message.includes("provider_catalog_endpoint_required")) return c.json({ error: "endpoint_required" }, 409, PRIVATE_NO_STORE_HEADERS);

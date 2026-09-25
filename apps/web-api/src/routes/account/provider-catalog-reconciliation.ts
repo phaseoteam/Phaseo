@@ -4,7 +4,7 @@ type CatalogModel = {
 	availability: "ready" | "not_ready" | "degraded" | "deprecated" | "retired";
 	availableFrom: string | null; deprecatedAt: string | null; shutdownAt: string | null;
 	capabilities: Array<{ id: string; parameters: string[] }>;
-	pricing: Array<{ meterKey: string; modality: string; direction: string | null; unit: string; unitQuantity: number; priceNanos: number; displayLabel: string; displayUnit: string }>;
+	pricing: Array<{ meterKey: string; modality: string; direction: string | null; unit: string; unitQuantity: number; priceNanos: number; displayLabel: string; displayUnit: string; conditions: Array<{ path: string; op: "eq" | "in" | "gt" | "gte" | "lt" | "lte"; value: string | number | boolean | Array<string | number> }> }>;
 };
 
 export async function stageApprovedProviderRoute(client: any, runId: string, providerSlug: string, model: CatalogModel, canonicalModelSlug: string) {

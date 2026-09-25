@@ -12,6 +12,12 @@ export type ProviderCatalogIssue = {
 	message: string;
 };
 
+export type ProviderCatalogPriceCondition = {
+	path: string;
+	op: "eq" | "in" | "gt" | "gte" | "lt" | "lte";
+	value: string | number | boolean | Array<string | number>;
+};
+
 export type ProviderCatalogModelPreview = {
 	id: string;
 	name: string;
@@ -25,7 +31,7 @@ export type ProviderCatalogModelPreview = {
 	availableFrom: string | null;
 	deprecatedAt: string | null;
 	shutdownAt: string | null;
-	pricing: Array<{ meterKey: string; modality: string; direction: string | null; unit: string; unitQuantity: number; priceNanos: number; displayLabel: string; displayUnit: string }>;
+	pricing: Array<{ meterKey: string; modality: string; direction: string | null; unit: string; unitQuantity: number; priceNanos: number; displayLabel: string; displayUnit: string; conditions: ProviderCatalogPriceCondition[] }>;
 	capabilities: Array<{
 		id: string;
 		parameters: string[];
@@ -36,6 +42,7 @@ export const providerCatalogJsonSchema = {
 	$schema: "https://json-schema.org/draft/2020-12/schema",
 	$id: "https://phaseo.app/schemas/provider-catalog.v1.json",
 	title: "Phaseo provider catalog",
+	description: "Serve this Phaseo-specific JSON document from any public HTTPS URL, including URLs with query parameters. Conditional prices are retained for review and cannot be promoted automatically into routing.",
 	type: "object",
 	required: ["data"],
 	additionalProperties: false,
@@ -51,7 +58,29 @@ export const providerCatalogJsonSchema = {
 				provider_model_slug: { type: "string", maxLength: MAX_STRING_LENGTH }, input_modalities: { type: "array", maxItems: 32, items: { type: "string" } }, output_modalities: { type: "array", maxItems: 32, items: { type: "string" } },
 				context_length: { type: ["integer", "null"], minimum: 1 }, max_output_tokens: { type: ["integer", "null"], minimum: 1 },
 				availability: { enum: ["ready", "not_ready", "degraded", "deprecated", "retired"] }, available_from: { type: ["string", "null"], format: "date-time", description: "RFC 3339 timestamp with an explicit timezone offset." }, deprecated_at: { type: ["string", "null"], format: "date-time" }, shutdown_at: { type: ["string", "null"], format: "date-time" },
-				pricing: { type: "array", items: { type: "object", additionalProperties: false, required: ["meter_key", "modality", "unit", "unit_quantity", "price_nanos", "display_label", "display_unit"], properties: { meter_key: { type: "string" }, modality: { type: "string" }, direction: { type: "string" }, unit: { type: "string" }, unit_quantity: { type: "number", exclusiveMinimum: 0 }, price_nanos: { type: "number", minimum: 0 }, display_label: { type: "string" }, display_unit: { type: "string" } } } },
+				pricing: {
+					type: "array",
+					items: {
+						type: "object", additionalProperties: false,
+						required: ["meter_key", "modality", "unit", "unit_quantity", "price_nanos", "display_label", "display_unit"],
+						properties: {
+							meter_key: { type: "string" }, modality: { type: "string" }, direction: { type: "string" }, unit: { type: "string" },
+							unit_quantity: { type: "number", exclusiveMinimum: 0 }, price_nanos: { type: "number", minimum: 0 },
+							display_label: { type: "string" }, display_unit: { type: "string" },
+							conditions: {
+								type: "array", maxItems: 8,
+								items: {
+									type: "object", additionalProperties: false, required: ["path", "op", "value"],
+									properties: {
+										path: { type: "string", pattern: "^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)?$" },
+										op: { enum: ["eq", "in", "gt", "gte", "lt", "lte"] },
+										value: { oneOf: [{ type: "string" }, { type: "number" }, { type: "boolean" }, { type: "array", minItems: 1, maxItems: 16, items: { oneOf: [{ type: "string" }, { type: "number" }] } }] },
+									},
+								},
+							},
+						},
+					},
+				},
 				capabilities: { type: "array", minItems: 1, items: { $ref: "#/$defs/capability" } },
 			},
 		},
@@ -78,9 +107,10 @@ export async function validateProviderCatalogPricingMeters(client: any, preview:
 		const seen = new Set<string>();
 		for (const [priceIndex, price] of model.pricing.entries()) {
 			const path = `data[${modelIndex}].pricing[${priceIndex}].meter_key`;
-			if (seen.has(price.meterKey)) issues.push({ path, message: `Duplicate pricing meter: ${price.meterKey}.` });
+			const identity = JSON.stringify([price.meterKey, price.conditions]);
+			if (seen.has(identity)) issues.push({ path, message: `Duplicate pricing meter: ${price.meterKey}.` });
 			else if (!allowed.has(price.meterKey)) issues.push({ path, message: `Unknown pricing meter: ${price.meterKey}.` });
-			seen.add(price.meterKey);
+			seen.add(identity);
 		}
 	}
 	return { ...preview, valid: preview.valid && issues.length === 0, issues: issues.slice(0, 100) };
@@ -117,6 +147,34 @@ function stringList(value: unknown): string[] {
 function positiveInteger(value: unknown): number | null {
 	const number = typeof value === "number" ? value : Number(value);
 	return Number.isInteger(number) && number > 0 ? number : null;
+}
+
+function priceConditions(value: unknown, path: string, issues: ProviderCatalogIssue[]): ProviderCatalogPriceCondition[] | null {
+	if (value === undefined) return [];
+	if (!Array.isArray(value) || value.length > 8) {
+		issues.push({ path, message: "Expected up to eight pricing conditions." });
+		return null;
+	}
+	const conditions: ProviderCatalogPriceCondition[] = [];
+	for (const [index, raw] of value.entries()) {
+		const condition = asRecord(raw);
+		const conditionPath = `${path}[${index}]`;
+		if (!condition || Object.keys(condition).some((key) => !["path", "op", "value"].includes(key)) || typeof condition.path !== "string" || !/^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)?$/.test(condition.path)) {
+			issues.push({ path: conditionPath, message: "Condition needs a valid path, operator, and value." });
+			return null;
+		}
+		const op = condition.op;
+		const item = condition.value;
+		const scalar = typeof item === "string" || typeof item === "boolean" || (typeof item === "number" && Number.isFinite(item));
+		const list = Array.isArray(item) && item.length > 0 && item.length <= 16 && item.every((entry) => typeof entry === "string" || (typeof entry === "number" && Number.isFinite(entry)));
+		const valid = op === "eq" ? scalar : op === "in" ? list : ["gt", "gte", "lt", "lte"].includes(String(op)) && typeof item === "number" && Number.isFinite(item);
+		if (!valid) {
+			issues.push({ path: conditionPath, message: "Use a scalar for eq, a non-empty list for in, or a number for range comparisons." });
+			return null;
+		}
+		conditions.push({ path: condition.path, op: op as ProviderCatalogPriceCondition["op"], value: item as ProviderCatalogPriceCondition["value"] });
+	}
+	return conditions;
 }
 
 const RFC3339_EXPLICIT_TIMEZONE = /(?:Z|[+-]\d{2}:\d{2})$/i;
@@ -269,13 +327,15 @@ export function normalizeProviderCatalog(payload: unknown): ProviderCatalogPrevi
 		if (issues.some((issue) => issue.path.startsWith(`data[${index}].`) && issue.message.includes("timestamp"))) continue;
 		const pricing = Array.isArray(model.pricing) ? model.pricing.flatMap((rawPrice, priceIndex) => {
 			const price = asRecord(rawPrice);
-			const allowed = ["meter_key", "modality", "direction", "unit", "unit_quantity", "price_nanos", "display_label", "display_unit"];
+			const allowed = ["meter_key", "modality", "direction", "unit", "unit_quantity", "price_nanos", "display_label", "display_unit", "conditions"];
 			if (!price || Object.keys(price).some((key) => !allowed.includes(key))) { issues.push({ path: `data[${index}].pricing[${priceIndex}]`, message: "Invalid pricing meter." }); return []; }
 			const unitQuantity = Number(price.unit_quantity);
 			const priceNanos = Number(price.price_nanos);
 			const meterKey = stringValue(price.meter_key).toLowerCase();
 			if (!/^[a-z0-9][a-z0-9._:-]*$/.test(meterKey) || !Number.isFinite(unitQuantity) || unitQuantity <= 0 || !Number.isFinite(priceNanos) || priceNanos < 0 || !["modality", "unit", "display_label", "display_unit"].every((key) => typeof price[key] === "string" && String(price[key]).trim())) { issues.push({ path: `data[${index}].pricing[${priceIndex}]`, message: "Pricing meter fields are invalid." }); return []; }
-			return [{ meterKey, modality: stringValue(price.modality), direction: stringValue(price.direction) || null, unit: stringValue(price.unit), unitQuantity, priceNanos, displayLabel: stringValue(price.display_label), displayUnit: stringValue(price.display_unit) }];
+			const conditions = priceConditions(price.conditions, `data[${index}].pricing[${priceIndex}].conditions`, issues);
+			if (!conditions) return [];
+			return [{ meterKey, modality: stringValue(price.modality), direction: stringValue(price.direction) || null, unit: stringValue(price.unit), unitQuantity, priceNanos, displayLabel: stringValue(price.display_label), displayUnit: stringValue(price.display_unit), conditions }];
 		}) : [];
 		if (model.pricing !== undefined && !Array.isArray(model.pricing)) { issues.push({ path: `data[${index}].pricing`, message: "Expected an array of pricing meters." }); continue; }
 		models.push({

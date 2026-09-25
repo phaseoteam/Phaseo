@@ -45,7 +45,7 @@ export type ProviderCatalogPreview = {
 		availableFrom: string | null;
 		deprecatedAt: string | null;
 		shutdownAt: string | null;
-		pricing: Array<{ meterKey: string; modality: string; direction: string | null; unit: string; unitQuantity: number; priceNanos: number; displayLabel: string; displayUnit: string }>;
+		pricing: Array<{ meterKey: string; modality: string; direction: string | null; unit: string; unitQuantity: number; priceNanos: number; displayLabel: string; displayUnit: string; conditions: Array<{ path: string; op: "eq" | "in" | "gt" | "gte" | "lt" | "lte"; value: string | number | boolean | Array<string | number> }> }>;
 		capabilities: Array<{ id: string; parameters: string[] }>;
 	}>;
 };
@@ -64,7 +64,7 @@ export type ProviderManagedCatalogModel = {
 	deprecated_at: string | null;
 	shutdown_at: string | null;
 	capabilities: Array<{ id: string; parameters: string[] }>;
-	pricing: Array<{ meter_key: string; modality: string; direction: string | null; unit: string; unit_quantity: number; price_nanos: number; display_label: string; display_unit: string }>;
+	pricing: Array<{ meter_key: string; modality: string; direction: string | null; unit: string; unit_quantity: number; price_nanos: number; display_label: string; display_unit: string; conditions?: Array<{ path: string; op: "eq" | "in" | "gt" | "gte" | "lt" | "lte"; value: string | number | boolean | Array<string | number> }> }>;
 };
 
 export type ProviderManagedCatalog = {
