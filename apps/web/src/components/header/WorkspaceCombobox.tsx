@@ -20,7 +20,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 
 const PAGE_SIZE = 50;
-const WORKSPACE_ROW_HEIGHT = 40;
+const WORKSPACE_ROW_HEIGHT = 28;
 const WORKSPACE_ROW_GAP = 4;
 const WORKSPACE_LIST_PADDING = 16;
 const WORKSPACE_SEARCH_HEADER_SPACE = 32;
@@ -192,6 +192,7 @@ export function WorkspaceCombobox({
 						viewportClassName="overscroll-y-contain"
 						viewportProps={{ onScroll: handleListScroll }}
 						keepScrollbarMounted
+						scrollBarClassName="mr-1 data-[orientation=vertical]:w-2"
 					>
 						<CommandList className="max-h-none scroll-py-1 overflow-visible p-0">
 							{isSearching ? (
@@ -213,7 +214,7 @@ export function WorkspaceCombobox({
 							{(!isSearching || (!isDebouncing && !isLoading && !isSearchingError)) && listedWorkspaces.length > 0 ? (
 								<CommandGroup
 									heading={isSearching ? "Search results" : undefined}
-									className="flex flex-col gap-1 p-2 [&_[cmdk-group-items]]:flex [&_[cmdk-group-items]]:flex-col [&_[cmdk-group-items]]:gap-1"
+									className="flex flex-col gap-1 p-2 pr-4 [&_[cmdk-group-items]]:flex [&_[cmdk-group-items]]:flex-col [&_[cmdk-group-items]]:gap-1"
 								>
 									{listedWorkspaces.map((workspace) => {
 										const isActive = workspace.id === activeWorkspaceId;
@@ -222,7 +223,7 @@ export function WorkspaceCombobox({
 												key={workspace.id}
 												value={`${workspace.name} ${workspace.id}`}
 												data-checked={isActive}
-												className="min-h-10 w-full cursor-pointer rounded-md px-3 py-2"
+												className="min-h-7 w-full cursor-pointer rounded-md px-2 py-1"
 												onSelect={() => void selectWorkspace(workspace)}
 											>
 												<span className="min-w-0 flex-1 truncate">{workspace.name}</span>
