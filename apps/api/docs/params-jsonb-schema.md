@@ -86,7 +86,8 @@ or:
 - `stream` may include trusted transport policy: `supported`, `bufferedParity`,
   and `preferStreamingForBufferedRequests`. All must be boolean `true` before
   a buffered request is internally upgraded to streaming. Mere presence of
-  `stream` does not establish parity. See [streaming attempt policy](streaming-attempt-policy.md).
+  `stream` does not establish parity. Without all three declarations, buffered
+  requests retain the provider's native non-streaming transport.
 
 - `stop` - Stop sequences
 - `logprobs` - Token probabilities
