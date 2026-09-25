@@ -198,7 +198,7 @@ export function normalizeProviderCatalog(payload: unknown): ProviderCatalogPrevi
 	const body = asRecord(payload);
 	if (!body || Object.keys(body).some((key) => key !== "data")) issues.push({ path: "$", message: "Catalog must be an object containing only the data array." });
 	if (entries.length === 0) {
-		issues.push({ path: "data", message: "Expected a non-empty array in data, models, or the response body." });
+		issues.push({ path: "data", message: "Expected a non-empty data array of models." });
 		return { valid: false, modelCount: 0, models: [], allModels: [], issues, truncated: false };
 	}
 	if (entries.length > MAX_MODELS) {
