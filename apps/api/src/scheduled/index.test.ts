@@ -17,6 +17,9 @@ const enqueueModelDeprecationNotificationsMock = vi.fn();
 const runAccountDeletionPurgeJobMock = vi.fn();
 const pruneExpiredGatewayIoLogsMock = vi.fn();
 const publishConfiguredPublicCatalogMock = vi.fn();
+const drainWorkspacePublicationsMock = vi.fn();
+vi.mock("@/core/workspace-publication-outbox", () => ({ drainWorkspacePublications: (...args: unknown[]) => drainWorkspacePublicationsMock(...args) }));
+vi.mock("@/core/workspace-publication", () => ({ publishWorkspaceMutationNow: vi.fn() }));
 vi.mock("./public-catalog", () => ({
 	publishConfiguredPublicCatalog: (...args: unknown[]) => publishConfiguredPublicCatalogMock(...args),
 }));
@@ -96,6 +99,7 @@ function scheduledEventAt(iso: string): ScheduledController {
 
 describe("handleScheduledEvent", () => {
 	beforeEach(() => {
+		drainWorkspacePublicationsMock.mockReset().mockResolvedValue({ claimed: 0 });
 		publishConfiguredPublicCatalogMock.mockReset().mockResolvedValue({ targets: 1, published: 1, failed: 0, skipped: 0 });
 		clearRuntimeMock.mockReset();
 		configureRuntimeMock.mockReset();
@@ -147,6 +151,16 @@ describe("handleScheduledEvent", () => {
 		});
 		pruneExpiredDataContributionsMock.mockResolvedValue({ deleted: 0, failed: 0 });
 		runPaymentMethodExpiryNotificationJobMock.mockResolvedValue({ checked: 0, enqueued: 0, failed: 0 });
+	});
+
+	it("only drains workspace publications on explicitly enabled five-minute ticks", async () => {
+		await handleScheduledEvent(scheduledEventAt("2026-06-10T00:05:00.000Z"), {} as any);
+		expect(drainWorkspacePublicationsMock).not.toHaveBeenCalled();
+		const env = { GATEWAY_WORKSPACE_PUBLICATION_DRAIN_ENABLED: "true" } as any;
+		await handleScheduledEvent(scheduledEventAt("2026-06-10T00:06:00.000Z"), env);
+		expect(drainWorkspacePublicationsMock).not.toHaveBeenCalled();
+		await handleScheduledEvent(scheduledEventAt("2026-06-10T00:10:00.000Z"), env);
+		expect(drainWorkspacePublicationsMock).toHaveBeenCalledTimes(1);
 	});
 
 	it("runs async webhook retries on five-minute core job ticks by default", async () => {

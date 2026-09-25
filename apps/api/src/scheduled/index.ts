@@ -29,6 +29,8 @@ import { drainGatewayOtlpOutbox } from "@/observability/otlp-export";
 import { runAccountDeletionPurgeJob } from "@/pipeline/privacy/account-deletion";
 import { pruneExpiredGatewayIoLogs } from "@/pipeline/audit/io-retention-expiry";
 import { publishConfiguredPublicCatalog } from "./public-catalog";
+import { drainWorkspacePublications } from "@/core/workspace-publication-outbox";
+import { publishWorkspaceMutationNow } from "@/core/workspace-publication";
 
 const MODEL_DISCOVERY_TICKS_PER_DAY = Array.from({ length: 24 }, (_value, hour) =>
 	60 / getModelDiscoveryStepMinutesUtc(hour),
@@ -484,6 +486,16 @@ async function handleGatewayIoRetentionExpiryScheduledEvent(
 }
 
 export async function handleScheduledEvent(event: ScheduledController, env: GatewayBindings): Promise<void> {
+    // Disabled until the forward migration is applied. Enable draining only on
+    // the primary scheduler, retaining the existing five-minute maintenance tick.
+    if (env.GATEWAY_WORKSPACE_PUBLICATION_DRAIN_ENABLED === "true" && isCoreJobsTick(event)) {
+        configureRuntime(env);
+        try {
+            const summary = await drainWorkspacePublications(publishWorkspaceMutationNow);
+            if (summary.claimed) console.log("workspace_publication_drain_completed", summary);
+        } catch { console.error("workspace_publication_drain_failed"); }
+        finally { clearRuntime(); }
+    }
 	// Run before maintenance jobs so their duration cannot delay publication.
 	// Only the primary deployment configures targets; regional Workers consume KV.
 	if (env.GATEWAY_CONTEXT_BUNDLE_ENABLED === "true" && env.GATEWAY_PUBLIC_CATALOG_TARGETS && getScheduledMinuteUtc(event) % 2 === 0) {
