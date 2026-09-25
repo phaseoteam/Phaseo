@@ -127,6 +127,7 @@ function buildSupabaseMock(
                             provider_slug: row.provider_id,
                             model_slug: row.api_model_id ?? row.model_id,
                             provider_model_slug: row.provider_model_slug,
+                            metadata: row.metadata ?? {},
                             is_stealth: row.is_stealth ?? false,
                             routing_enabled: row.is_active_gateway,
                             status: row.routing_status,

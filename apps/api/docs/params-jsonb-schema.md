@@ -83,6 +83,11 @@ or:
 
 ### Advanced
 
+- `stream` may include trusted transport policy: `supported`, `bufferedParity`,
+  and `preferStreamingForBufferedRequests`. All must be boolean `true` before
+  a buffered request is internally upgraded to streaming. Mere presence of
+  `stream` does not establish parity. See [streaming attempt policy](streaming-attempt-policy.md).
+
 - `stop` - Stop sequences
 - `logprobs` - Token probabilities
 - `top_logprobs` - Number of top logprobs
