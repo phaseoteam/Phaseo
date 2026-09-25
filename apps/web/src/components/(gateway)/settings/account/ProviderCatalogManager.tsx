@@ -86,7 +86,12 @@ function newPrice(direction: "input" | "output" | null): Price {
 }
 
 function moneyLabel(price: Price): string {
-	return price.direction === "input" ? "Input" : price.direction === "output" ? "Output" : price.display_label || "Custom meter";
+	const label = price.direction === "input" ? "Input" : price.direction === "output" ? "Output" : price.display_label || "Custom meter";
+	return price.conditions?.length ? `${label} (${conditionLabel(price)})` : label;
+}
+
+function conditionLabel(price: Price): string {
+	return (price.conditions ?? []).map((condition) => `${condition.path} ${condition.op} ${Array.isArray(condition.value) ? condition.value.join(", ") : String(condition.value)}`).join("; ");
 }
 
 function Field({ label, htmlFor, children, className = "" }: { label: string; htmlFor: string; children: React.ReactNode; className?: string }) {

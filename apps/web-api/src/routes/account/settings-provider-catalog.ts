@@ -99,6 +99,7 @@ function pricingDocument(value: unknown): Record<string, unknown>[] {
 			price_nanos: price.price_nanos ?? price.priceNanos,
 			display_label: price.display_label ?? price.displayLabel,
 			display_unit: price.display_unit ?? price.displayUnit,
+			...(price.conditions !== undefined ? { conditions: price.conditions } : {}),
 		}];
 	});
 }

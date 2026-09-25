@@ -54,9 +54,18 @@ describe("provider catalog onboarding", () => {
 		expect(validateCatalogUrl("http://acme.example/models.json").ok).toBe(false);
 		expect(validateCatalogUrl("https://localhost/models.json").ok).toBe(false);
 		expect(validateCatalogUrl("https://acme.example/models.json")).toEqual({
-		ok: true,
-		url: "https://acme.example/models.json",
+			ok: true,
+			url: "https://acme.example/models.json",
+		});
 	});
+
+	it("preserves a format query when fetching a catalog", async () => {
+		const url = "https://acme.example/models?format=phaseo";
+		expect(validateCatalogUrl(url)).toEqual({ ok: true, url });
+		await fetchAndValidateProviderCatalog(url, async (requestedUrl) => {
+			expect(requestedUrl).toBe(url);
+			return new Response(JSON.stringify({ data: [{ id: "acme/atlas-1", capabilities: ["text.generate"] }] }), { headers: { "content-type": "application/json" } });
+		});
 	});
 
 	it("fetches and hashes a valid JSON catalog", async () => {
@@ -105,7 +114,24 @@ describe("provider catalog onboarding", () => {
 
 	it("normalizes billable pricing meters for staged routes", () => {
 		const model = normalizeProviderCatalog({ data: [{ id: "acme/atlas-1", capabilities: ["text.generate"], pricing: [{ meter_key: "input_tokens", modality: "text", direction: "input", unit: "token", unit_quantity: 1_000_000, price_nanos: 250_000_000, display_label: "Input tokens", display_unit: "1M tokens" }] }] }).models[0];
-		expect(model.pricing).toEqual([{ meterKey: "input_tokens", modality: "text", direction: "input", unit: "token", unitQuantity: 1_000_000, priceNanos: 250_000_000, displayLabel: "Input tokens", displayUnit: "1M tokens" }]);
+		expect(model.pricing).toEqual([{ meterKey: "input_tokens", modality: "text", direction: "input", unit: "token", unitQuantity: 1_000_000, priceNanos: 250_000_000, displayLabel: "Input tokens", displayUnit: "1M tokens", conditions: [] }]);
+	});
+
+	it("preserves distinct conditional pricing tiers and rejects malformed conditions", async () => {
+		const price = { meter_key: "output_tokens", modality: "text", direction: "output", unit: "token", unit_quantity: 1_000_000, price_nanos: 100_000_000, display_label: "Output", display_unit: "1M tokens" };
+		const preview = normalizeProviderCatalog({ data: [{ id: "acme/atlas-1", capabilities: ["text.generate"], pricing: [
+			{ ...price, conditions: [{ path: "usage.output_tokens", op: "lte", value: 100_000 }] },
+			{ ...price, price_nanos: 200_000_000, conditions: [{ path: "usage.output_tokens", op: "gt", value: 100_000 }] },
+		] }] });
+		const client = { from: () => ({ select: () => ({ in: () => ({ neq: async () => ({ data: [{ meter_key: "output_tokens" }], error: null }) }) }) }) };
+		expect((await validateProviderCatalogPricingMeters(client, preview)).valid).toBe(true);
+		expect(preview.models[0].pricing.map((item) => item.conditions)).toEqual([
+			[{ path: "usage.output_tokens", op: "lte", value: 100_000 }],
+			[{ path: "usage.output_tokens", op: "gt", value: 100_000 }],
+		]);
+		const invalid = normalizeProviderCatalog({ data: [{ id: "acme/atlas-1", capabilities: ["text.generate"], pricing: [{ ...price, conditions: [{ path: "usage.output_tokens", op: "in", value: 100 }] }] }] });
+		expect(invalid.valid).toBe(false);
+		expect(invalid.issues[0].path).toBe("data[0].pricing[0].conditions[0]");
 	});
 
 	it("rejects negative prices and non-positive price quantities", () => {
