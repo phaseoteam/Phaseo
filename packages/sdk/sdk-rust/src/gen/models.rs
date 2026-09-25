@@ -2599,6 +2599,7 @@ pub struct ResponsesResponse {
 	pub currency: Option<String>,
 	pub finish_reason: Option<Option<String>>,
 	pub id: Option<String>,
+	pub incomplete_details: Option<Option<HashMap<String, String>>>,
 	pub meta: Option<HashMap<String, String>>,
 	pub model: Option<String>,
 	pub nativeResponseId: Option<Option<String>>,

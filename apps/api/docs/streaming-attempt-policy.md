@@ -59,6 +59,14 @@ bridge. Five cross-path regression cases compare terminal status, reasons and
 usage, including ordinary completion, tools and failure; the 79 affected tests
 pass. The live contract assertion was not relaxed.
 
+A subsequent live repeat found the final enrichment path also reconstructed the
+terminal without its reason. Shared completion mapping now feeds all three paths
+(encoder, enrichment and Chat-to-Responses bridge). Six cross-path regressions
+include enriched payloads and preservation of authoritative native details; 94
+affected tests pass. Both three-request failed runs were independently confirmed
+zero-cost with revoked test keys. OpenAPI and all nine generated SDKs now expose
+the existing optional incomplete-details field.
+
 ## Remaining rollout gates
 
 Pre-commit stream fallback, executable cancellation with exact-usage recovery,

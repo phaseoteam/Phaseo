@@ -2617,6 +2617,7 @@ public final class Models {
 		public String currency;
 		public String finish_reason;
 		public String id;
+		public Object incomplete_details;
 		public Object meta;
 		public String model;
 		public String nativeResponseId;

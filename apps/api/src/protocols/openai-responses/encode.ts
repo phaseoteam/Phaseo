@@ -6,6 +6,7 @@
 // Transforms IR -> OpenAI Responses Response
 
 import type { IRChatResponse, IRUsage, IRContentPart } from "@core/ir";
+import { deriveResponsesCompletion } from "./completion";
 
 /**
  * OpenAI Responses response type
@@ -196,13 +197,7 @@ export function encodeOpenAIResponsesResponse(
 		}
 	}
 
-	const mainChoice = ir.choices[0];
-	let status: "completed" | "failed" | "incomplete" = "completed";
-	if (mainChoice?.finishReason === "error") {
-		status = "failed";
-	} else if (mainChoice?.finishReason === "length" || mainChoice?.finishReason === "content_filter") {
-		status = "incomplete";
-	}
+	const completion = deriveResponsesCompletion(ir.choices[0]?.finishReason);
 
 	return {
 		id: requestId ?? ir.id, // Gateway request ID as primary
@@ -212,10 +207,8 @@ export function encodeOpenAIResponsesResponse(
 		model: ir.model,
 		output: outputItems,
 		usage: encodeUsage(ir.usage),
-		status,
-		...(status === "incomplete" ? { incomplete_details: {
-			reason: mainChoice?.finishReason === "length" ? "max_output_tokens" as const : "content_filter" as const,
-		} } : {}),
+		status: completion.status,
+		...(completion.incompleteDetails ? { incomplete_details: completion.incompleteDetails } : {}),
 		...(ir.citations ? { citations: ir.citations } : {}),
 		...(ir.searchResults ? { search_results: ir.searchResults } : {}),
 		...(ir.images ? { images: ir.images } : {}),

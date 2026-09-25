@@ -3751,6 +3751,8 @@ module Phaseo
     #   @return [String, nil]
     # @!attribute [rw] id
     #   @return [String, nil]
+    # @!attribute [rw] incomplete_details
+    #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] meta
     #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] model
@@ -3779,7 +3781,7 @@ module Phaseo
     #   @return [String, nil]
     # @!attribute [rw] usage
     #   @return [Hash{String => Object}, nil]
-    ResponsesResponse = Struct.new(:content, :cost_cents, :cost_nanos, :created, :currency, :finish_reason, :id, :meta, :model, :nativeResponseId, :object, :output, :output_items, :pricing_lines, :provider, :provider_id, :role, :status, :stop_reason, :type, :usage, keyword_init: true)
+    ResponsesResponse = Struct.new(:content, :cost_cents, :cost_nanos, :created, :currency, :finish_reason, :id, :incomplete_details, :meta, :model, :nativeResponseId, :object, :output, :output_items, :pricing_lines, :provider, :provider_id, :role, :status, :stop_reason, :type, :usage, keyword_init: true)
     # @!attribute [rw] parameters
     #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] type
