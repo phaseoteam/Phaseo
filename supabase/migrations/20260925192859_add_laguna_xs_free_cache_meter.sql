@@ -10,7 +10,7 @@ select
   jsonb_build_object(
     'note', 'Free preview',
     'source', 'migration',
-    'source_key', '20260921075536_add_laguna_xs_free_cache_meter',
+    'source_key', '20260925192859_add_laguna_xs_free_cache_meter',
     'priority', 100,
     'time_windows', '[]'::jsonb,
     'billing_timestamp_basis', 'request_start'

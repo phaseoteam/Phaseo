@@ -4,7 +4,7 @@ import test from 'node:test';
 import { PGlite } from '@electric-sql/pglite';
 
 const migration = await readFile(new URL(
-  '../migrations/20260921075536_add_laguna_xs_free_cache_meter.sql', import.meta.url,
+  '../migrations/20260925192859_add_laguna_xs_free_cache_meter.sql', import.meta.url,
 ), 'utf8');
 
 test('adds only the missing active XS free meter and is safe to replay', async () => {
