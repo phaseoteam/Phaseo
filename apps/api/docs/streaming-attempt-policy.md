@@ -67,6 +67,30 @@ affected tests pass. Both three-request failed runs were independently confirmed
 zero-cost with revoked test keys. OpenAPI and all nine generated SDKs now expose
 the existing optional incomplete-details field.
 
+## Verified staging result
+
+Source `9b518bafe`, original staging Worker version
+`c34fc0b5-1e50-4f86-9d05-aaf1b13f9147`: twelve free Poolside XS/S probes pass
+across Chat, Responses and Messages, streaming and nonstreaming. The same live
+assertions now accept correctly explained token-limit terminals. Audit records
+verify zero charges; disposable key `b5d43b7b-2f02-4fc1-ad4f-e63b0487c72b` was
+revoked. Routing milliseconds in LHR: 508, 5, 89, 4, 5, 5, 60, 30, 24, 4, 12, 6.
+These are routing measurements, not total generation time or a global SLO.
+
+Final validation: all 617 source files / 4,893 tests; TypeScript; scoped lint;
+native Workers fixtures; local workspace SQL tests; all nine SDK test suites;
+TypeScript/Python package builds; SDK core-contract/version checks; full SDK
+generation; OpenAPI lint (zero errors, 26 existing warnings); staging dry-run.
+The live smoke tests in ordinary SDK suites remain credential-gated; the only
+authorized live provider exercise here is the isolated free Poolside harness.
+
+Package-consumer checks also pass for offline ESM/CommonJS SDK installation,
+the Agent SDK, AI SDK compatibility v5/v6/v7 and the v7 quickstart. Missing
+worktree-only dependency links were restored using frozen-lockfile installs;
+no dependency manifests or lockfiles changed. The legacy
+`docs:openapi:check` command is absent from this checkout; OpenAPI lint and full
+generation were used instead.
+
 ## Remaining rollout gates
 
 Pre-commit stream fallback, executable cancellation with exact-usage recovery,
