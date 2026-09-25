@@ -4,6 +4,7 @@ import Image from "next/image";
 import dynamic from "next/dynamic";
 import { createPortal } from "react-dom";
 import { usePathname } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import {
 	Boxes,
 	Check,
@@ -14,6 +15,7 @@ import {
 	MessageSquareMore,
 	MoreHorizontal,
 	Pencil,
+	RefreshCw,
 	Search,
 	X,
 	type LucideIcon,
@@ -42,6 +44,11 @@ import {
 } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import { refreshActionDockPageDataAction } from "@/app/(dashboard)/internal/cache/actions";
+import {
+	matchesActionDockPageQueryKey,
+	resolveActionDockPageRefresh,
+} from "@/lib/cache/actionDockPageRefresh";
 import { cn } from "@/lib/utils";
 import {
 hideActionDockForSession,
@@ -65,6 +72,7 @@ type DockAction = {
 	icon: LucideIcon;
 	onSelect?: () => void;
 	keepOpen?: boolean;
+	disabled?: boolean;
 };
 
 type ActionGroup = { label: string; actions: DockAction[] };
@@ -230,6 +238,7 @@ async function copyText(value: string, label: string) {
 
 export function PhaseoActionDock({ userId, userRole, providerMode = false }: ActionDockProps) {
 	const pathname = usePathname() ?? "/";
+	const queryClient = useQueryClient();
 	const mounted = useSyncExternalStore(
 		subscribeToHydration,
 		getClientSnapshot,
@@ -248,6 +257,7 @@ export function PhaseoActionDock({ userId, userRole, providerMode = false }: Act
 	const [query, setQuery] = useState("");
 	const [dragPoint, setDragPoint] = useState<DragPoint | null>(null);
 	const [feedbackOpen, setFeedbackOpen] = useState(false);
+	const [isRefreshingPageData, setIsRefreshingPageData] = useState(false);
 	const dragStartRef = useRef<DragStart | null>(null);
 	const suppressNextClickRef = useRef(false);
 	const dockRef = useRef<HTMLDivElement>(null);
@@ -290,6 +300,10 @@ export function PhaseoActionDock({ userId, userRole, providerMode = false }: Act
 			: null;
 	}, [pathname]);
 	const isPhaseoAdmin = userRole?.toLocaleLowerCase() === "admin";
+	const pageRefreshTarget = useMemo(
+		() => resolveActionDockPageRefresh(pathname),
+		[pathname],
+	);
 	const dockLabel = providerMode
 		? "Open provider action dock"
 		: isPhaseoAdmin
@@ -314,6 +328,28 @@ export function PhaseoActionDock({ userId, userRole, providerMode = false }: Act
 		setOpen(false);
 		setView("actions");
 	}, [confirmProviderCatalogDiscard, view]);
+	const refreshPageData = useCallback(async () => {
+		setIsRefreshingPageData(true);
+		try {
+			const result = await refreshActionDockPageDataAction(pathname);
+			if (pageRefreshTarget) {
+				await queryClient.invalidateQueries({
+					predicate: ({ queryKey }) => matchesActionDockPageQueryKey(queryKey, pageRefreshTarget),
+				});
+			}
+			if (result.ok) {
+				toast.success("Page data refreshed", { description: result.message });
+			} else {
+				toast.error("Page data refresh incomplete", { description: result.message });
+			}
+		} catch (error) {
+			toast.error("Could not refresh page data", {
+				description: error instanceof Error ? error.message : "Please try again.",
+			});
+		} finally {
+			setIsRefreshingPageData(false);
+		}
+	}, [pageRefreshTarget, pathname, queryClient]);
 
 	const pageActions = useMemo<DockAction[]>(() => {
 		const actions: DockAction[] = [];
@@ -369,6 +405,14 @@ export function PhaseoActionDock({ userId, userRole, providerMode = false }: Act
 					onSelect: () => setView("model-search"),
 					keepOpen: true,
 				},
+				...(pageRefreshTarget ? [{
+					id: "refresh-page-data",
+					label: isRefreshingPageData ? "Refreshing page data…" : "Refresh page data",
+					icon: RefreshCw,
+					onSelect: () => void refreshPageData(),
+					keepOpen: true,
+					disabled: isRefreshingPageData,
+				}] : []),
 			],
 		}] : []),
 		...(providerMode ? [{
@@ -381,7 +425,7 @@ export function PhaseoActionDock({ userId, userRole, providerMode = false }: Act
 				keepOpen: true,
 			}],
 		}] : []),
-	], [isPhaseoAdmin, modelId, providerMode]);
+	], [isPhaseoAdmin, isRefreshingPageData, modelId, pageRefreshTarget, providerMode, refreshPageData]);
 
 	const groups = useMemo<ActionGroup[]>(() => {
 		const candidateGroups: ActionGroup[] = [
@@ -657,12 +701,13 @@ export function PhaseoActionDock({ userId, userRole, providerMode = false }: Act
 														variant="ghost"
 														size="sm"
 														className="h-9 w-full justify-start gap-2 rounded-lg px-2.5 font-normal hover:bg-accent"
+														disabled={action.disabled}
 														onClick={() => {
 															action.onSelect?.();
 															if (!action.keepOpen) setOpen(false);
 														}}
 													>
-														<Icon className="size-4 text-muted-foreground" />
+														<Icon className={cn("size-4 text-muted-foreground", action.id === "refresh-page-data" && isRefreshingPageData && "animate-spin")} />
 														<span className="min-w-0 flex-1 truncate text-left">{action.label}</span>
 														<ChevronRight className="ml-auto size-3.5 text-muted-foreground/70" />
 													</Button>

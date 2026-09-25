@@ -13,6 +13,7 @@ import {
 import { fetchInternalAuthStatus } from "@/lib/fetchers/internal/fetchInternalAuthStatus";
 import { getServerAccountContext } from "@/lib/fetchers/internal/serverAccountContext";
 import { fetchInternalWebApi } from "@/lib/web-api/client";
+import { resolveActionDockPageRefresh } from "@/lib/cache/actionDockPageRefresh";
 import {
 	revalidateSingleModelAllAction,
 	revalidateSingleModelApiInfoAction,
@@ -372,6 +373,36 @@ export async function purgeCacheScopeAction(input: {
 
 	expireNextCacheScope(input.scope, result.targetId);
 	return result;
+}
+
+export async function refreshActionDockPageDataAction(pathname: string): Promise<CacheOpResult> {
+	return runAdminAction("Page data", async () => {
+		const target = resolveActionDockPageRefresh(pathname);
+		if (!target) {
+			return { ok: false, message: "This page does not have refreshable data." };
+		}
+
+		// Revalidate the exact open route even if the upstream cache purge fails.
+		revalidatePath(target.pathname);
+
+		if (target.scope) {
+			try {
+				await purgeCacheScopeAction({
+					scope: target.scope,
+					...(target.targetId ? { targetId: target.targetId } : {}),
+				});
+			} catch (error) {
+				// Keep the website cache fresh when the Worker purge is unavailable.
+				expireNextCacheScope(target.scope, target.targetId ?? null);
+				return {
+					ok: false,
+					message: `This page was refreshed, but its shared data cache could not be purged: ${error instanceof Error ? error.message : "request failed"}`,
+				};
+			}
+		}
+
+		return { ok: true, message: "Page data refreshed." };
+	});
 }
 
 export async function revalidateModelsGlobalDataAction(): Promise<CacheOpResult> {
