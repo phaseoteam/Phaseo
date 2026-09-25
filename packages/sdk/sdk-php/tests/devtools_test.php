@@ -532,6 +532,20 @@ try {
     assert_true(is_int($startedAt) || is_float($startedAt), "expected numeric started_at in metadata");
     assert_true((float) $startedAt > 1000000000000, "expected millisecond epoch started_at in metadata");
 
+    try {
+        invoke_private($client, "withLifecycleAndTelemetry", [
+            "responses", [], false,
+            static function (): array { throw new RuntimeException("connection lost"); },
+        ]);
+        throw new LogicException("expected transport failure");
+    } catch (RuntimeException $error) {
+        assert_true($error->getMessage() === "connection lost", "expected original transport failure");
+    }
+    $lines = array_values(array_filter(array_map("trim", explode(PHP_EOL, (string) file_get_contents($generationsPath)))));
+    $transportEntry = json_decode($lines[count($lines) - 1], true);
+    assert_true(!array_key_exists("status_code", $transportEntry["error"]), "unknown error status must be omitted");
+    assert_true(!array_key_exists("status_code", $transportEntry["metadata"]), "unknown metadata status must be omitted");
+
     echo "php devtools tests ok" . PHP_EOL;
 } finally {
     if (is_dir($tmpDir)) {

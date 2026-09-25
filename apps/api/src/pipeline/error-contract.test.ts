@@ -66,4 +66,15 @@ describe("gateway error contract", () => {
 		expect(parseRetryAfterSeconds("Thu, 01 Jan 1970 00:00:30 GMT", 0)).toBe(30);
 		expect(parseRetryAfterSeconds("not-a-delay", 0)).toBeNull();
 	});
+
+	it.each([-1, 0.5, 86401, NaN, Infinity, "15", null])("removes invalid retry delay %s instead of retaining the input spread", value => {
+		expect(normalizeGatewayErrorPayload({ error: "upstream_error", retry_after_seconds: value })).not.toHaveProperty("retry_after_seconds");
+		expect(normalizeGatewayErrorPayload({ error: "upstream_error", retry_after_seconds: value }, { retryAfterSeconds: 15 }).retry_after_seconds).toBe(15);
+	});
+
+	it("prefers a valid parsed option and falls back to a valid payload delay", () => {
+		expect(normalizeGatewayErrorPayload({ retry_after_seconds: 30 }, { retryAfterSeconds: 0 }).retry_after_seconds).toBe(0);
+		expect(normalizeGatewayErrorPayload({ retry_after_seconds: 30 }, { retryAfterSeconds: -1 }).retry_after_seconds).toBe(30);
+		expect(normalizeGatewayErrorPayload({ retry_after_seconds: 86400 }).retry_after_seconds).toBe(86400);
+	});
 });

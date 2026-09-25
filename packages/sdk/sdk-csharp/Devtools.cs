@@ -159,9 +159,9 @@ namespace PhaseoSdk
             var errorInfo = new Dictionary<string, object?>
             {
                 ["message"] = ex.Message,
-                ["type"] = ex.GetType().FullName ?? ex.GetType().Name,
-                ["status_code"] = statusCode
+                ["type"] = ex.GetType().FullName ?? ex.GetType().Name
             };
+            if (statusCode is not null) errorInfo["status_code"] = statusCode;
             if (ex is ApiErrorException apiError)
             {
                 foreach (var pair in new Dictionary<string, object?>

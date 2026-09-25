@@ -1354,8 +1354,10 @@ final class TelemetryRecorder
         $errorInfo = [
             "message" => $error->getMessage(),
             "type" => get_class($error),
-            "status_code" => $statusCode,
         ];
+        if ($statusCode !== null) {
+            $errorInfo["status_code"] = $statusCode;
+        }
         if ($error instanceof \Phaseo\Gen\RequestException) {
             $errorInfo = array_merge($errorInfo, array_filter([
                 "request_id" => $error->getRequestId(),

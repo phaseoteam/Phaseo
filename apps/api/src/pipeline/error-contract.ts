@@ -158,14 +158,11 @@ export function normalizeGatewayErrorPayload(
 	if (!nonEmptyString(output.support_url)) output.support_url = GATEWAY_ERROR_SUPPORT_URL;
 
 	const retryAfterSeconds =
-		numberOrNull(input.retry_after_seconds) ??
-		numberOrNull(options.retryAfterSeconds);
-	if (
-		retryAfterSeconds != null &&
-		Number.isSafeInteger(retryAfterSeconds) &&
-		retryAfterSeconds >= 0 &&
-		retryAfterSeconds <= MAX_RETRY_AFTER_SECONDS
-	) {
+		[options.retryAfterSeconds, input.retry_after_seconds].find((value): value is number =>
+			typeof value === "number" && Number.isSafeInteger(value) &&
+			value >= 0 && value <= MAX_RETRY_AFTER_SECONDS);
+	delete output.retry_after_seconds;
+	if (retryAfterSeconds !== undefined) {
 		output.retry_after_seconds = retryAfterSeconds;
 	}
 

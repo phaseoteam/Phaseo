@@ -10,6 +10,30 @@ namespace Phaseo.Sdk.Tests;
 public class DevtoolsTests
 {
     [Fact]
+    public async Task DevtoolsOmitsUnknownTransportStatus()
+    {
+        var handler = new StubHttpHandler(_ => throw new HttpRequestException("connection lost"));
+        var devtoolsDir = Path.Combine(Path.GetTempPath(), $"phaseo-devtools-{Guid.NewGuid():N}");
+        try
+        {
+            using var httpClient = new HttpClient(handler);
+            var client = new PhaseoSdk.Phaseo(
+                apiKey: "test", basePath: "http://localhost",
+                enableDeprecationWarnings: false, httpClient: httpClient,
+                devtools: PhaseoDevtools.Create(directory: devtoolsDir, enabled: true));
+            await Assert.ThrowsAsync<HttpRequestException>(() => client.CreateResponse(
+                new Dictionary<string, object> { ["model"] = "test/model", ["input"] = "hi" }));
+            using var entry = JsonDocument.Parse(File.ReadAllText(Path.Combine(devtoolsDir, "generations.jsonl")));
+            Assert.False(entry.RootElement.GetProperty("error").TryGetProperty("status_code", out _));
+            Assert.False(entry.RootElement.GetProperty("metadata").TryGetProperty("status_code", out _));
+        }
+        finally
+        {
+            if (Directory.Exists(devtoolsDir)) Directory.Delete(devtoolsDir, recursive: true);
+        }
+    }
+
+    [Fact]
     public async Task DevtoolsRecordsResponsesEntries()
     {
         var handler = new StubHttpHandler((request) =>

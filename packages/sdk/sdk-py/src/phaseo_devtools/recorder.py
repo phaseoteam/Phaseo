@@ -148,6 +148,10 @@ class TelemetryRecorder:
             }
         )
         if isinstance(entry["error"], Mapping):
+            entry["error"] = dict(entry["error"])
+            for status_key in ("status", "status_code"):
+                if entry["error"].get(status_key) is None:
+                    entry["error"].pop(status_key, None)
             for source_key, metadata_key in (
                 ("request_id", "request_id"),
                 ("generation_id", "generation_id"),
@@ -165,7 +169,9 @@ class TelemetryRecorder:
                 if value is not None:
                     entry["metadata"][metadata_key] = value
         if status_code is None:
-            entry["metadata"]["status_code"] = self._extract_error_status_code(error)
+            resolved_status = self._extract_error_status_code(error)
+            if resolved_status is not None:
+                entry["metadata"]["status_code"] = resolved_status
         self._append_entry(entry)
 
     def _base_entry(
@@ -188,8 +194,8 @@ class TelemetryRecorder:
                 "sdk": SDK_NAME,
                 "sdk_version": SDK_VERSION,
                 "stream": stream,
-                "chunk_count": chunk_count,
-                "status_code": status_code,
+                **({"chunk_count": chunk_count} if chunk_count is not None else {}),
+                **({"status_code": status_code} if status_code is not None else {}),
             },
         }
 

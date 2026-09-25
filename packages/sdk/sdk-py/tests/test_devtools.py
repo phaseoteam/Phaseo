@@ -1,8 +1,35 @@
 import json
 import httpx
+import pytest
 
 from phaseo import Phaseo, create_phaseo_devtools
 from gen import operations as ops
+
+
+@pytest.mark.parametrize("structured", [False, True])
+def test_devtools_omits_unknown_error_status(tmp_path, monkeypatch, structured):
+    class TransportError(RuntimeError):
+        def to_devtools_error(self):
+            return {"message": str(self), "status": None, "status_code": None}
+
+    def fail_request(client, body):
+        raise TransportError("connection lost") if structured else RuntimeError("connection lost")
+
+    monkeypatch.setattr(ops, "createChatCompletion", fail_request)
+    client = Phaseo(
+        api_key="sk_test_123",
+        base_url="https://example.test",
+        devtools=create_phaseo_devtools(enabled=True, directory=str(tmp_path)),
+    )
+    with pytest.raises(RuntimeError, match="connection lost"):
+        client.generate_text({"model": "test/model", "messages": []})
+
+    entry = json.loads((tmp_path / "generations.jsonl").read_text(encoding="utf-8"))
+    assert entry["error"]["message"] == "connection lost"
+    assert "status" not in entry["error"]
+    assert "status_code" not in entry["error"]
+    assert "status_code" not in entry["metadata"]
+    assert "chunk_count" not in entry["metadata"]
 
 
 def test_devtools_records_chat_completion(tmp_path, monkeypatch):
