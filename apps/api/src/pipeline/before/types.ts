@@ -338,6 +338,7 @@ export type ContextFetchTelemetry = {
  * Includes team info, gate checks, providers, and pricing
  */
 export type GatewayContextData = {
+    workspaceOwnerUserId?: string | null;
     /** Absolute public-catalog deadline; never extend it when caching workspace composition. */
     publicCatalogExpiresAt?: number;
     /** Absolute deadline shared by settings and BYOK reference compositions. */
@@ -677,6 +678,9 @@ export type WebFetchObservability = {
  * Contains all information needed for request processing
  */
 export type PipelineContext = {
+    /** Trusted private snapshot identity; never derived from request headers/key creator. */
+    workspaceOwnerUserId?: string | null;
+    workspaceRuntimeExpiresAt?: number;
     /** Request-owned diagnostics; never cache or serialize. Not enabled by public headers. */
     gatewayTimingTrace?: import("../telemetry/gateway-trace").GatewayTimingTrace;
     /** Request-owned persistence barrier; never cache or serialize this field. */

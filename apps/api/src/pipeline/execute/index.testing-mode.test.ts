@@ -14,8 +14,10 @@ const resolveProviderExecutorMock = vi.fn();
 const loadPriceCardMock = vi.fn();
 const releaseBackgroundRuntimeMock = vi.fn();
 const ensureRuntimeForBackgroundMock = vi.fn(() => releaseBackgroundRuntimeMock);
+let freeQuotaBindings: any = null;
 
 vi.mock("@/runtime/env", () => ({
+	getBindingsIfConfigured: () => freeQuotaBindings,
 	dispatchBackground: (promise: Promise<unknown>) => void promise,
 	ensureRuntimeForBackground: () => ensureRuntimeForBackgroundMock(),
     getSupabaseAdmin: () => ({ from: (table: string) => {
@@ -93,6 +95,7 @@ describe("doRequestWithIR pricing behavior in testing mode", () => {
 	afterEach(() => vi.restoreAllMocks());
 	beforeEach(() => {
 		vi.clearAllMocks();
+		freeQuotaBindings = null;
 		guardPricingFoundMock.mockResolvedValue({ ok: true });
 
 		guardAllFailedMock.mockResolvedValue({
@@ -142,6 +145,25 @@ describe("doRequestWithIR pricing behavior in testing mode", () => {
         expect(executor).toHaveBeenCalledOnce();
         expect(executor.mock.calls[0][0].ir.stream).toBe(expected);
         expect(request.stream).toBe(requested);
+    });
+
+    it("rejects exhausted free quota before any provider executor runs", async () => {
+        const admit = vi.fn().mockResolvedValue({ allowed: false, reason: "daily_limit", retryAfterSeconds: 60 });
+        freeQuotaBindings = { GATEWAY_FREE_MODEL_QUOTA_ENABLED: "true",
+            FREE_MODEL_QUOTA: { getByName: () => ({ admit }) }, FREE_MODEL_RATE_LIMITER: { limit: async () => ({ success: true }) } };
+        const candidate = { providerId: "poolside", pricingCard: { rules: [{ meter: "input_tokens", price_per_unit: "0", pricing_plan: "free", currency: "USD" }], currency: "USD" },
+            byokMeta: [], providerModelSlug: "fixture-model", capabilityParams: {} };
+        guardCandidatesMock.mockResolvedValue({ ok: true, value: [candidate] });
+        rankProvidersMock.mockResolvedValue([{ candidate, health: {} }]);
+        const executor = vi.fn(); resolveProviderExecutorMock.mockReturnValue(executor);
+        const request = createCtx({ capability: "text.generate", endpoint: "chat.completions", testingMode: true,
+            workspaceOwnerUserId: "10000000-0000-4000-8000-000000000001", workspaceRuntimeExpiresAt: Date.now() + 60_000 });
+        const result = await doRequestWithIR(request,
+            { model: "fixture-model", stream: true, messages: [{ role: "user", content: [{ type: "text", text: "test" }] }] } as any,
+            createTiming());
+        expect(result).toBeInstanceOf(Response); expect((result as Response).status).toBe(429);
+        expect(admit).toHaveBeenCalledOnce(); expect(executor).not.toHaveBeenCalled();
+        expect(onCallEndMock).not.toHaveBeenCalled();
     });
 
     it.each([true, false])("only falls back on explicit zero usage before output: %s", async (zeroUsage) => {

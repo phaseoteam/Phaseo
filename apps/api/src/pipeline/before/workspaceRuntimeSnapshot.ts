@@ -39,6 +39,8 @@ const byokReference = z.object({
  * decision: balances, budgets, effective tier and key authorization stay separate. */
 export const workspaceRuntimeSchema = z.object({
     version: z.literal(1), workspaceId: z.uuid(),
+    // Optional only for rolling deployment. Quota admission rejects absent identity.
+    ownerUserId: z.uuid().nullable().optional(),
     checkedAtMs: z.number().int().safe().nonnegative(), expiresAtMs: z.number().int().safe().nonnegative(),
     configuredTier: nullableText, billingMode: z.enum(["wallet", "invoice"]),
     settings: workspaceRuntimeSettingsSchema,

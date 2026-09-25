@@ -43,6 +43,17 @@ try {
           ('60000000-0000-4000-8000-000000000003','${wsA}','test',false,'disabled',3,true,'disabled-secret'),
           ('60000000-0000-4000-8000-000000000004','${wsB}','test',true,'b',1,false,'ciphertext-b');
     `);
+    const ownerMigration = await readFile(new URL('../migrations/20260925223500_gateway_workspace_quota_owner.sql', import.meta.url), 'utf8');
+    await db.exec(ownerMigration);
+    await db.exec(ownerMigration);
+    const owner = '70000000-0000-4000-8000-000000000001';
+    await db.query('update public.workspaces set owner_user_id=$1 where id in ($2,$3)', [owner,wsA,wsB]);
+    assert.equal((await snapshot(wsA)).ownerUserId, owner);
+    assert.equal((await snapshot(wsB)).ownerUserId, owner);
+    const nextOwner = '70000000-0000-4000-8000-000000000002';
+    await db.query('update public.workspaces set owner_user_id=$1 where id=$2', [nextOwner,wsB]);
+    assert.equal((await snapshot(wsB)).ownerUserId, nextOwner);
+    assert.equal((await snapshot(wsA)).ownerUserId, owner);
     for (const role of ['anon', 'authenticated']) {
         await db.exec(`set role ${role}`);
         await assert.rejects(snapshot(), /permission denied/);

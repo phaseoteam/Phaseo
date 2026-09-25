@@ -12,6 +12,7 @@ export function isFreePriceCard(
 			.toLowerCase();
 		const pricePerUnit = Number(rule.price_per_unit);
 		return (
+			(typeof rule.price_per_unit === "number" || (typeof rule.price_per_unit === "string" && rule.price_per_unit.trim() !== "")) &&
 			pricingPlan === "free" &&
 			Number.isFinite(pricePerUnit) &&
 			pricePerUnit === 0

@@ -15,6 +15,7 @@ import { enforceRegionalSurface } from "@/regional-surface";
 export { RealtimeRelayDurableObject } from "@core/realtime-relay-durable-object";
 export { ProviderRateLimitDurableObject } from "@core/provider-rate-limit-durable-object";
 export { RoutingHealthDurableObject } from "@core/routing-health-durable-object";
+export { FreeModelQuotaDurableObject } from "@core/free-model-quota-durable-object";
 
 const app = new Hono<Env>();
 

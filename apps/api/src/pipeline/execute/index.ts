@@ -12,6 +12,7 @@ import { getProviderPricingKey } from "../before/context.shared";
 import { selectVideoProviderOptions } from "@core/video-provider-options";
 import { resolveTextExecutionStream } from "@providers/textStreaming";
 import { prepareStreamAdmission, supportsZeroUsageReplay } from "./stream-admission";
+import { guardFreeModelAdmission } from "./free-model-admission";
 
 export type PipelineTiming = {
 	timer: Timer;
@@ -942,6 +943,13 @@ async function attemptProviderWithIR(
 			providerRateLimitReservation = rateLimit.reservation;
 		}
 		let reservationDenial: import("@core/video-reservations").VideoReservationDenial | undefined;
+		if (isTextGenerate) {
+			const quotaDenial = await guardFreeModelAdmission(ctx, pricingCard, credential.kind);
+			if (quotaDenial) {
+				await releaseManagedProviderReservation(providerRateLimitReservation);
+				return { ok: false, response: quotaDenial };
+			}
+		}
 		const buildExecutorArgs = () =>
 			({
 				ir: isTextGenerate ? {
