@@ -11,6 +11,7 @@ import { internalCacheRoutes } from "./cache";
 import { internalIoLogRoutes } from "./io-logs";
 import { internalNotificationTestRoutes } from "./notification-tests";
 import { internalObservabilityIncidentRoutes } from "./observability-incidents";
+import { internalFreeModelSettingsRoutes } from "./free-model-settings";
 
 export const internalRouter = new Hono<Env>();
 
@@ -20,3 +21,4 @@ internalRouter.route("/io-logs", internalIoLogRoutes);
 internalRouter.route("/video-webhooks", internalVideoWebhookRoutes);
 internalRouter.route("/notification-tests", internalNotificationTestRoutes);
 internalRouter.route("/observability-incidents", internalObservabilityIncidentRoutes);
+internalRouter.route("/free-model-quota", internalFreeModelSettingsRoutes);
