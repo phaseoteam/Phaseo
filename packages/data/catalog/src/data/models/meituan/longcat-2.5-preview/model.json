@@ -1,0 +1,93 @@
+{
+  "model_id": "meituan/longcat-2.5-preview",
+  "organisation_id": "meituan",
+  "name": "LongCat 2.5 Preview",
+  "status": "Preview",
+  "previous_model_id": null,
+  "description": "Meituan describes LongCat 2.5 Preview as a natively multimodal model for long-horizon tasks across terminals, browsers, GUIs, spreadsheets, and design tools. The announcement reports 1.6T total parameters (about 48B active) and a 1M-token context window.",
+  "announced_date": "2026-09-25T14:16:53Z",
+  "release_date": "2026-09-25T14:16:53Z",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": null,
+  "output_types": null,
+  "api_model_id": null,
+  "links": [
+    {
+      "title": "Announcement",
+      "kind": "announcement",
+      "url": "https://x.com/Meituan_LongCat/status/2103488918788411728?s=20"
+    },
+    {
+      "title": "LongCat API Platform",
+      "kind": "playground",
+      "url": "https://longcat.ai/platform/"
+    },
+    {
+      "title": "LongCat Chat",
+      "kind": "playground",
+      "url": "https://longcat.ai/chat/"
+    }
+  ],
+  "details": [
+    {
+      "name": "parameter_count",
+      "value": "1.6T total"
+    },
+    {
+      "name": "active_parameter_count",
+      "value": "~48B"
+    }
+  ],
+  "benchmarks": [],
+  "family_id": null,
+  "page_notice": null,
+  "model_type": null,
+  "knowledge_cutoff": null,
+  "limits": {
+    "context": 1000000,
+    "input": null,
+    "output": null
+  },
+  "modalities": {
+    "input": null,
+    "output": null
+  },
+  "reasoning": {
+    "supported": null,
+    "options": []
+  },
+  "capabilities": {
+    "attachment": null,
+    "tool_call": null,
+    "structured_output": null,
+    "temperature": null,
+    "streaming": null,
+    "web_search": null
+  },
+  "open_weights": null,
+  "sources": [
+    {
+      "kind": "announcement",
+      "url": "https://x.com/Meituan_LongCat/status/2103488918788411728?s=20",
+      "accessed_at": "2026-09-25T17:06:04Z",
+      "notes": "Official Meituan LongCat post announcing the preview, API availability, 1M-token context, 1.6T total parameters, and about 48B active parameters."
+    },
+    {
+      "kind": "playground",
+      "url": "https://longcat.ai/platform/",
+      "accessed_at": "2026-09-25T17:06:04Z",
+      "notes": "The API platform linked from the announcement; the public API documentation reviewed does not yet specify a LongCat 2.5 Preview model ID or request contract."
+    }
+  ],
+  "verification": {
+    "status": "partial",
+    "checked_at": "2026-09-25T17:06:04Z",
+    "notes": "The public announcement verifies the preview and stated context and parameter counts. The specific API model ID, modality contract, license, and Phaseo routing contract remain undocumented."
+  },
+  "last_updated": "2026-09-25T17:06:04Z",
+  "removal_date": null,
+  "replacement_model_id": null,
+  "license_url": null
+}

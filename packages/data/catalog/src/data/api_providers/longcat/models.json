@@ -127,5 +127,45 @@
       "notes": null
     },
     "rate_limits": []
+  },
+  {
+    "api_model_id": "meituan/longcat-2.5-preview",
+    "provider_api_model_id": "longcat:meituan/longcat-2.5-preview",
+    "provider_model_slug": "LongCat-2.5-Preview",
+    "internal_model_id": null,
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": null,
+    "output_modalities": null,
+    "context_length": 1000000,
+    "max_output_tokens": null,
+    "effective_from": "2026-09-25T14:16:53",
+    "effective_to": null,
+    "capabilities": [],
+    "provider_status": "preview",
+    "phaseo_status": "unsupported",
+    "access_scope": "public",
+    "routing_status": "disabled",
+    "routable": false,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      "https://x.com/Meituan_LongCat/status/2103488918788411728?s=20",
+      "https://longcat.ai/platform/"
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-25T17:06:04Z",
+      "notes": "The official announcement confirms a live preview and links the API platform, but the exact API model ID and request contract are not published in the reviewed docs."
+    },
+    "rate_limits": []
   }
 ]
