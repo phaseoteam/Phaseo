@@ -209,7 +209,7 @@ export default function SettingsSidebarTrigger({
 						type="button"
 						className={cn(
 							buttonVariants({ variant: "ghost", size: "icon" }),
-							"size-[var(--site-header-control-h,2.25rem)] shrink-0 rounded-lg",
+							"size-[var(--site-header-control-h,2.25rem)] shrink-0 rounded-lg max-[22rem]:size-8",
 						)}
 						aria-label="Open settings menu"
 					>

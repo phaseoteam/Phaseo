@@ -23,8 +23,8 @@ async function GatedSettingsSidebarTrigger() {
 
 export default function Header() {
 	const headerContent = (
-		<div className="grid h-[var(--site-header-height,4rem)] grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center max-[22rem]:gap-x-2 lg:flex lg:gap-3 xl:grid xl:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]">
-			<div className="flex min-w-0 items-center gap-[var(--site-header-left-gap,1.25rem)] overflow-hidden lg:shrink-0">
+		<div className="grid h-[var(--site-header-height,4rem)] grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center max-[22rem]:gap-x-1 max-[19.375rem]:gap-x-0 lg:flex lg:gap-3 xl:grid xl:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]">
+			<div className="flex min-w-0 items-center gap-[var(--site-header-left-gap,1.25rem)] overflow-hidden max-[22rem]:gap-1 lg:shrink-0">
 				<Suspense fallback={null}>
 					<GatedSettingsSidebarTrigger />
 				</Suspense>
@@ -39,7 +39,7 @@ export default function Header() {
 							alt="Phaseo"
 							width={154}
 							height={40}
-							className="h-[var(--site-header-logo-height,2.5rem)] w-auto select-none dark:hidden"
+							className="h-[var(--site-header-logo-height,2.5rem)] w-auto select-none max-[22rem]:h-3.5 max-[19.375rem]:h-3 dark:hidden"
 							style={{ width: "auto" }}
 							priority
 						/>
@@ -48,7 +48,7 @@ export default function Header() {
 							alt="Phaseo"
 							width={154}
 							height={40}
-							className="hidden h-[var(--site-header-logo-height,2.5rem)] w-auto select-none dark:block"
+							className="hidden h-[var(--site-header-logo-height,2.5rem)] w-auto select-none max-[22rem]:h-3.5 max-[19.375rem]:h-3 dark:block"
 							style={{ width: "auto" }}
 							priority
 						/>
@@ -133,7 +133,7 @@ export default function Header() {
 		>
 			<Suspense
 				fallback={
-					<div className="w-full max-w-full px-4 lg:px-5 xl:px-6">
+					<div className="w-full max-w-full px-4 max-[22rem]:px-2 max-[19.375rem]:px-1 lg:px-5 xl:px-6">
 						{headerContent}
 					</div>
 				}
