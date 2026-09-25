@@ -23,8 +23,8 @@ async function GatedSettingsSidebarTrigger() {
 
 export default function Header() {
 	const headerContent = (
-		<div className="grid h-[var(--site-header-height,4rem)] grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center max-[22rem]:grid-cols-[auto_auto_1fr] max-[22rem]:gap-x-2 max-[19.375rem]:grid-cols-[auto_minmax(0,1fr)] lg:flex lg:gap-3 xl:grid xl:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]">
-			<div className="flex min-w-0 items-center gap-[var(--site-header-left-gap,1.25rem)] overflow-hidden lg:shrink-0">
+		<div className="grid h-[var(--site-header-height,4rem)] grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center max-[22rem]:gap-x-1 max-[19.375rem]:gap-x-0 lg:flex lg:gap-3 xl:grid xl:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]">
+			<div className="flex min-w-0 items-center gap-[var(--site-header-left-gap,1.25rem)] overflow-hidden max-[22rem]:gap-1 lg:shrink-0">
 				<Suspense fallback={null}>
 					<GatedSettingsSidebarTrigger />
 				</Suspense>
@@ -32,14 +32,14 @@ export default function Header() {
 					<Link
 						href="/"
 						aria-label="Phaseo home"
-						className="inline-flex h-[var(--site-header-control-h,2.25rem)] shrink-0 items-center rounded-lg px-0.5 transition-colors hover:bg-zinc-100/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400/50 data-[state=open]:bg-zinc-100/70 lg:px-[var(--site-header-nav-px,0.75rem)] dark:hover:bg-zinc-900/60 dark:focus-visible:ring-zinc-600/50 dark:data-[state=open]:bg-zinc-900/60"
+						className="inline-flex h-[var(--site-header-control-h,2.25rem)] shrink-0 items-center rounded-lg px-2 transition-colors hover:bg-zinc-100/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400/50 data-[state=open]:bg-zinc-100/70 lg:px-[var(--site-header-nav-px,0.75rem)] dark:hover:bg-zinc-900/60 dark:focus-visible:ring-zinc-600/50 dark:data-[state=open]:bg-zinc-900/60"
 					>
 						<Image
 							src="/wordmark_light.svg"
 							alt="Phaseo"
 							width={154}
 							height={40}
-							className="h-[var(--site-header-logo-height,2.5rem)] w-auto select-none dark:hidden"
+							className="h-[var(--site-header-logo-height,2.5rem)] w-auto select-none max-[22rem]:h-3.5 max-[19.375rem]:h-3 dark:hidden"
 							style={{ width: "auto" }}
 							priority
 						/>
@@ -48,7 +48,7 @@ export default function Header() {
 							alt="Phaseo"
 							width={154}
 							height={40}
-							className="hidden h-[var(--site-header-logo-height,2.5rem)] w-auto select-none dark:block"
+							className="hidden h-[var(--site-header-logo-height,2.5rem)] w-auto select-none max-[22rem]:h-3.5 max-[19.375rem]:h-3 dark:block"
 							style={{ width: "auto" }}
 							priority
 						/>
@@ -72,7 +72,7 @@ export default function Header() {
 				</div>
 			</div>
 
-			<div className="flex min-w-0 justify-center max-[19.375rem]:hidden lg:shrink-0">
+			<div className="flex min-w-0 justify-center lg:shrink-0">
 				<Suspense
 					fallback={
 						<Skeleton className="h-9 w-[clamp(6rem,23vw,12rem)] max-[25rem]:w-9 xl:w-[var(--site-header-search-width-xl,14rem)]" />
@@ -133,7 +133,7 @@ export default function Header() {
 		>
 			<Suspense
 				fallback={
-					<div className="w-full max-w-full px-4 lg:px-5 xl:px-6">
+					<div className="w-full max-w-full px-4 max-[22rem]:px-2 max-[19.375rem]:px-1 lg:px-5 xl:px-6">
 						{headerContent}
 					</div>
 				}

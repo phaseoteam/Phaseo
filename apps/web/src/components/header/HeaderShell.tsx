@@ -19,7 +19,7 @@ export default function HeaderShell({ children }: HeaderShellProps) {
 
 	return (
 		<div
-			className="w-full max-w-full px-4 lg:px-5 xl:px-6"
+			className="w-full max-w-full px-4 max-[22rem]:px-2 max-[19.375rem]:px-1 lg:px-5 xl:px-6"
 			style={headerVars}
 			data-variant="full-width"
 		>
