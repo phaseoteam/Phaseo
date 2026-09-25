@@ -9,10 +9,13 @@ const env = {
 
 afterEach(() => {
 	vi.unstubAllGlobals();
+	vi.useRealTimers();
 });
 
 describe("public model routes", () => {
 	it("keeps expired rules and time windows in pricing history", async () => {
+		vi.useFakeTimers();
+		vi.setSystemTime(new Date("2026-08-30T12:00:00Z"));
 		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
 			const url = String(input);
 			if (url.includes("v2_model_provider_routes")) return new Response(JSON.stringify([{
