@@ -51,6 +51,14 @@ role/tenant/key isolation, admission and migration-idempotence checks. One main
 catalogue test fixture was corrected to retain route metadata; production
 catalogue behavior and its existing assertions are unchanged.
 
+The first live attempt stopped before producing request records. A repeat
+exercised three requests and exposed missing `incomplete_details` on the native
+buffered Responses encoder. The disposable key was revoked. The encoder now
+maps `length` and `content_filter` to the same incomplete reasons as the stream
+bridge. Five cross-path regression cases compare terminal status, reasons and
+usage, including ordinary completion, tools and failure; the 79 affected tests
+pass. The live contract assertion was not relaxed.
+
 ## Remaining rollout gates
 
 Pre-commit stream fallback, executable cancellation with exact-usage recovery,

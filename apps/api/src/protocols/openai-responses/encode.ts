@@ -49,6 +49,7 @@ export type OpenAIResponsesResponse = {
 		};
 	};
 	status: "completed" | "failed" | "incomplete";
+	incomplete_details?: { reason: "max_output_tokens" | "content_filter" };
 	status_details?: {
 		type: string;
 		reason: string;
@@ -199,7 +200,7 @@ export function encodeOpenAIResponsesResponse(
 	let status: "completed" | "failed" | "incomplete" = "completed";
 	if (mainChoice?.finishReason === "error") {
 		status = "failed";
-	} else if (mainChoice?.finishReason === "length") {
+	} else if (mainChoice?.finishReason === "length" || mainChoice?.finishReason === "content_filter") {
 		status = "incomplete";
 	}
 
@@ -212,6 +213,9 @@ export function encodeOpenAIResponsesResponse(
 		output: outputItems,
 		usage: encodeUsage(ir.usage),
 		status,
+		...(status === "incomplete" ? { incomplete_details: {
+			reason: mainChoice?.finishReason === "length" ? "max_output_tokens" as const : "content_filter" as const,
+		} } : {}),
 		...(ir.citations ? { citations: ir.citations } : {}),
 		...(ir.searchResults ? { search_results: ir.searchResults } : {}),
 		...(ir.images ? { images: ir.images } : {}),
