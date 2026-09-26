@@ -5,7 +5,7 @@ const require = createRequire(import.meta.url), wrangler = createRequire(require
 const { build } = wrangler("esbuild"), { Miniflare } = wrangler("miniflare");
 const root = fileURLToPath(new URL("../", import.meta.url));
 const bundle = await build({ absWorkingDir: root, bundle: true, format: "esm", platform: "browser", write: false,
-    external: ["cloudflare:workers"], stdin: { resolveDir: root, loader: "ts", contents: `
+    external: ["cloudflare:*", "node:*"], stdin: { resolveDir: root, loader: "ts", contents: `
         import { FreeModelQuotaDurableObject } from './src/core/free-model-quota-durable-object';
         import { initialFreeQuota, FREE_MODEL_DAILY_ALLOWANCE } from './src/core/free-model-quota';
         export class CostProbe extends FreeModelQuotaDurableObject {
@@ -37,7 +37,8 @@ const bundle = await build({ absWorkingDir: root, bundle: true, format: "esm", p
             } catch { return Response.json({ error: 'quota_unavailable' }, { status: 503 }); }
         }};
     ` } });
-const runtime = new Miniflare({ modules: true, script: bundle.outputFiles[0].text, compatibilityDate: "2025-10-01",
+const runtime = new Miniflare({ modules: [{ type: "ESModule", path: "quota-cost.mjs", contents: bundle.outputFiles[0].text }], compatibilityDate: "2025-10-01",
+    compatibilityFlags: ["nodejs_als"],
     durableObjects: { QUOTA: { className: "CostProbe", useSQLite: true } },
     outboundService: () => { throw new Error("Quota must not call external services"); } });
 async function call(path) {

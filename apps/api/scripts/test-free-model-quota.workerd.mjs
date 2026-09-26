@@ -5,7 +5,7 @@ const require = createRequire(import.meta.url), wrangler = createRequire(require
 const { build } = wrangler("esbuild"), { Miniflare } = wrangler("miniflare");
 const root = fileURLToPath(new URL("../", import.meta.url));
 const bundle = await build({ absWorkingDir: root, bundle: true, format: "esm", platform: "browser", write: false,
-    external: ["cloudflare:workers"], stdin: { resolveDir: root, loader: "ts", contents: `
+    external: ["cloudflare:*", "node:*"], stdin: { resolveDir: root, loader: "ts", contents: `
         import { FreeModelQuotaDurableObject } from './src/core/free-model-quota-durable-object';
         export class QuotaProbe extends FreeModelQuotaDurableObject {
             async inspect() { return { rows: this.ctx.storage.sql.exec('SELECT * FROM free_quota').toArray(), alarm: await this.ctx.storage.getAlarm() }; }
@@ -23,7 +23,8 @@ const bundle = await build({ absWorkingDir: root, bundle: true, format: "esm", p
             }
         }};
     ` } });
-const runtime = new Miniflare({ modules: true, script: bundle.outputFiles[0].text, compatibilityDate: "2025-10-01",
+const runtime = new Miniflare({ modules: [{ type: "ESModule", path: "quota.mjs", contents: bundle.outputFiles[0].text }], compatibilityDate: "2025-10-01",
+    compatibilityFlags: ["nodejs_als"],
     durableObjects: { QUOTA: { className: "QuotaProbe", useSQLite: true } },
     outboundService: () => { throw new Error("Unexpected network call from quota"); } });
 const request = async path => (await runtime.dispatchFetch(`https://local.invalid${path}`)).json();
