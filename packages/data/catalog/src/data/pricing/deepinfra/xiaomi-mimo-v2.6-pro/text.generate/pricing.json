@@ -1,0 +1,13 @@
+{
+  "key":"deepinfra:xiaomi/mimo-v2.6-pro:text.generate","api_provider_id":"deepinfra","provider_slug":"deepinfra","api_model_id":"xiaomi/mimo-v2.6-pro","capability_id":"text.generate",
+  "rules":[
+    {"meter":"input_text_tokens","unit":"token","unit_size":1000000,"price_per_unit":0.435,"currency":"USD","pricing_plan":"standard","note":null,"match":[],"priority":100,"effective_from":"2026-09-22T00:00:00Z","region":null,"cache_duration_seconds":null,"conditions":[],"source":"https://api.deepinfra.com/models/XiaomiMiMo/MiMo-V2.6-Pro"},
+    {"meter":"cached_read_text_tokens","unit":"token","unit_size":1000000,"price_per_unit":0.0036,"currency":"USD","pricing_plan":"standard","note":null,"match":[],"priority":100,"effective_from":"2026-09-22T00:00:00Z","region":null,"cache_duration_seconds":null,"conditions":[],"source":"https://api.deepinfra.com/models/XiaomiMiMo/MiMo-V2.6-Pro"},
+    {"meter":"output_text_tokens","unit":"token","unit_size":1000000,"price_per_unit":0.87,"currency":"USD","pricing_plan":"standard","note":null,"match":[],"priority":100,"effective_from":"2026-09-22T00:00:00Z","region":null,"cache_duration_seconds":null,"conditions":[],"source":"https://api.deepinfra.com/models/XiaomiMiMo/MiMo-V2.6-Pro"},
+    {"meter":"input_text_tokens","unit":"token","unit_size":1000000,"price_per_unit":0.348,"currency":"USD","pricing_plan":"flex","note":"DeepInfra flex multiplier is 0.8x.","match":[],"priority":100,"effective_from":"2026-09-22T00:00:00Z","region":null,"cache_duration_seconds":null,"conditions":[],"source":"https://api.deepinfra.com/models/XiaomiMiMo/MiMo-V2.6-Pro"},
+    {"meter":"cached_read_text_tokens","unit":"token","unit_size":1000000,"price_per_unit":0.00288,"currency":"USD","pricing_plan":"flex","note":"DeepInfra flex multiplier is 0.8x.","match":[],"priority":100,"effective_from":"2026-09-22T00:00:00Z","region":null,"cache_duration_seconds":null,"conditions":[],"source":"https://api.deepinfra.com/models/XiaomiMiMo/MiMo-V2.6-Pro"},
+    {"meter":"output_text_tokens","unit":"token","unit_size":1000000,"price_per_unit":0.696,"currency":"USD","pricing_plan":"flex","note":"DeepInfra flex multiplier is 0.8x.","match":[],"priority":100,"effective_from":"2026-09-22T00:00:00Z","region":null,"cache_duration_seconds":null,"conditions":[],"source":"https://api.deepinfra.com/models/XiaomiMiMo/MiMo-V2.6-Pro"}
+  ],"regions":[],"service_tiers":["standard","flex"],
+  "sources":[{"kind":"provider_models","url":"https://api.deepinfra.com/models/XiaomiMiMo/MiMo-V2.6-Pro","accessed_at":"2026-09-22T00:00:00Z","notes":"Authoritative DeepInfra token pricing and multipliers."}],
+  "verification":{"status":"verified","checked_at":"2026-09-22T00:00:00Z","notes":"Verified against DeepInfra's live model-details endpoint."}
+}
