@@ -13,7 +13,7 @@ const ctx = (workspaceId = "ws-a") => ({ workspaceId, workspaceOwnerUserId: owne
 beforeEach(() => {
     vi.clearAllMocks(); mocks.enabled = "true";
     mocks.getByName.mockReturnValue({ admit: mocks.admit });
-    mocks.admit.mockResolvedValue({ allowed: true, mode: "included", feeNanos: 0 });
+    mocks.admit.mockResolvedValue({ allowed: true, mode: "included", feeNanos: 0, remaining: 1499, policyVersion: 0 });
     mocks.limit.mockResolvedValue({ success: true });
 });
 describe("free-model routing admission", () => {
@@ -58,8 +58,45 @@ describe("free-model routing admission", () => {
         expect(mocks.admit).toHaveBeenCalledTimes(2);
     });
     it("cannot charge or dispatch an overage before accounting rollout", async () => {
-        mocks.admit.mockResolvedValue({ allowed: true, mode: "overage", feeNanos: 100_000 });
+        mocks.admit.mockResolvedValue({ allowed: true, mode: "overage", feeNanos: 100_000, remaining: 0, policyVersion: 1 });
         expect((await guardFreeModelAdmission(ctx(), free, "gateway"))?.status).toBe(503);
+    });
+    it("accepts the final included slot and valid denial boundaries", async () => {
+        mocks.admit.mockResolvedValue({ allowed: true, mode: "included", feeNanos: 0, remaining: 0, policyVersion: 1 });
+        expect(await guardFreeModelAdmission(ctx(), free, "gateway")).toBeNull();
+        for (const [reason, retryAfterSeconds] of [["rpm_limit", 1], ["daily_limit", 86_400]] as const) {
+            mocks.admit.mockResolvedValue({ allowed: false, reason, retryAfterSeconds });
+            const result = await guardFreeModelAdmission(ctx(), free, "gateway");
+            expect(result?.status).toBe(429);
+            expect(result?.headers.get("Retry-After")).toBe(String(retryAfterSeconds));
+            expect(await result?.json()).toMatchObject({ error: `free_model_${reason}` });
+        }
+    });
+    it.each([
+        undefined, null, {}, [], true, "allowed", { allowed: "true" },
+        { allowed: true }, { allowed: true, mode: "unexpected", feeNanos: 0, remaining: 1, policyVersion: 0 },
+        ...[1, -1, NaN, undefined].map(feeNanos => ({ allowed: true, mode: "included", feeNanos, remaining: 1, policyVersion: 0 })),
+        ...[-1, 1500, 0.5, undefined].map(remaining => ({ allowed: true, mode: "included", feeNanos: 0, remaining, policyVersion: 0 })),
+        ...[-1, Number.MAX_SAFE_INTEGER + 1, undefined].map(policyVersion => ({ allowed: true, mode: "included", feeNanos: 0, remaining: 1, policyVersion })),
+        { allowed: false, reason: "sensitive-unexpected-value", retryAfterSeconds: 1 },
+        ...[0, -1, 0.5, NaN, Infinity, 86401, "1", undefined].map(retryAfterSeconds => ({ allowed: false, reason: "daily_limit", retryAfterSeconds })),
+    ])("rejects malformed coordinator reply %# without retry or raw diagnostics", async decision => {
+        mocks.admit.mockResolvedValue(decision);
+        const request = ctx();
+        const responses = await Promise.all(Array.from({ length: 8 }, () => guardFreeModelAdmission(request, free, "gateway")));
+        for (const response of responses) {
+            expect(response?.status).toBe(503);
+            expect(await response?.json()).toEqual({ error: "free_model_quota_unavailable", error_type: "system", error_origin: "gateway" });
+            expect(response?.headers.get("Retry-After")).toBeNull();
+        }
+        expect(mocks.admit).toHaveBeenCalledOnce();
+        expect(mocks.limit).toHaveBeenCalledOnce();
+    });
+    it.each([{}, { success: "true" }, { success: 1 }, null])("rejects malformed edge reply %# before the coordinator", async edge => {
+        mocks.limit.mockResolvedValue(edge);
+        const response = await guardFreeModelAdmission(ctx(), free, "gateway");
+        expect(response?.status).toBe(503);
+        expect(mocks.admit).not.toHaveBeenCalled();
     });
     it("does not treat missing pricing as free or allow a paid route for explicit free intent", async () => {
         expect((await guardFreeModelAdmission({ ...ctx(), model: "lab/model:free" }, paid, "gateway"))?.status).toBe(503);

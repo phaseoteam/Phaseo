@@ -1,5 +1,6 @@
 import { getBindingsIfConfigured } from "@/runtime/env";
 import { countOperation } from "@/runtime/request-operations";
+import { FREE_MODEL_DAILY_ALLOWANCE, FREE_MODEL_OVERAGE_NANOS, type FreeQuotaDecision } from "@/core/free-model-quota";
 import { isFreePriceCard } from "../pricing/free";
 import type { PriceCard } from "../pricing";
 import type { PipelineContext } from "../before/types";
@@ -8,6 +9,22 @@ import type { PipelineContext } from "../before/types";
 // remain failed for every fallback; automatic retries could consume quota twice.
 const admissions = new WeakMap<PipelineContext, Promise<Response | null>>();
 const OWNER_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+// RPC types do not validate runtime replies (including deployment/version skew).
+// An ambiguous admission must not dispatch or be retried against the coordinator.
+function isQuotaDecision(value: unknown): value is FreeQuotaDecision {
+    if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+    const reply = value as Record<string, unknown>;
+    if (reply.allowed === false) {
+        return (reply.reason === "rpm_limit" || reply.reason === "daily_limit")
+            && typeof reply.retryAfterSeconds === "number" && Number.isSafeInteger(reply.retryAfterSeconds)
+            && reply.retryAfterSeconds >= 1 && reply.retryAfterSeconds <= 86_400;
+    }
+    if (reply.allowed !== true || typeof reply.policyVersion !== "number"
+        || !Number.isSafeInteger(reply.policyVersion) || reply.policyVersion < 0
+        || typeof reply.remaining !== "number" || !Number.isSafeInteger(reply.remaining) || reply.remaining < 0) return false;
+    return (reply.mode === "included" && reply.feeNanos === 0 && reply.remaining < FREE_MODEL_DAILY_ALLOWANCE)
+        || (reply.mode === "overage" && reply.feeNanos === FREE_MODEL_OVERAGE_NANOS && reply.remaining === 0);
+}
 function denied(code: string, status: number, retryAfter?: number): Response {
     return Response.json({ error: code, error_type: status === 429 ? "user" : "system",
         error_origin: status === 429 ? "user" : "gateway" }, { status,
@@ -37,9 +54,11 @@ export async function guardFreeModelAdmission(ctx: PipelineContext, card: PriceC
         try {
             // The edge guard sheds abusive local bursts. The DO owns global quota.
             const edge = await env.FREE_MODEL_RATE_LIMITER.limit({ key: owner });
-            if (!edge.success) return denied("free_model_rate_limit", 429, 60);
+            if (edge?.success === false) return denied("free_model_rate_limit", 429, 60);
+            if (edge?.success !== true) return denied("free_model_quota_unavailable", 503);
             countOperation("quotaRpc");
             const decision = await env.FREE_MODEL_QUOTA.getByName(`owner:${owner}`).admit();
+            if (!isQuotaDecision(decision)) return denied("free_model_quota_unavailable", 503);
             if (decision.allowed === false) return denied(`free_model_${decision.reason}`, 429, decision.retryAfterSeconds);
             if (decision.mode === "overage") {
                 // No partial billing rollout: the quoted fee requires durable
