@@ -12,6 +12,11 @@ GATEWAY_PUBLIC_BASE_URL = "https://api-staging.phaseo.app"
 GATEWAY_OPERATION_SAMPLE_RATE = "1"
 GATEWAY_CONTEXT_BUNDLE_ENABLED = "true"
 GATEWAY_WORKSPACE_RUNTIME_ENABLED = "true"
+GATEWAY_FREE_MODEL_QUOTA_ENABLED = "true"
+GATEWAY_SETTLEMENT_RECOVERY_ENABLED = "true"
+GATEWAY_SETTLEMENT_RECOVERY_QUEUE_NAME = "phaseo-gateway-staging-settlement-recovery"
+# Shared publication intents must not be acknowledged into staging-only KV.
+GATEWAY_WORKSPACE_PUBLICATION_ENABLED = "false"
 NODE_ENV = "production"
 SUPABASE_URL = "https://xansbgjaduxypzsmjwct.supabase.co"
 AMAZON_BEDROCK_REGION = "us-west-2"
@@ -79,6 +84,34 @@ namespace_id = "41001"
 limit = 10
 period = 60
 
+[[queues.producers]]
+binding = "SETTLEMENT_RECOVERY_QUEUE"
+queue = "phaseo-gateway-staging-settlement-recovery"
+
+[[queues.producers]]
+binding = "SETTLEMENT_RECOVERY_DEAD_LETTER"
+queue = "phaseo-gateway-staging-settlement-dead-letter"
+
+[[queues.consumers]]
+queue = "phaseo-gateway-staging-settlement-recovery"
+max_batch_size = 1
+max_batch_timeout = 1
+max_concurrency = 1
+max_retries = 5
+dead_letter_queue = "phaseo-gateway-staging-settlement-dead-letter"
+
+[[durable_objects.bindings]]
+name = "FREE_MODEL_QUOTA"
+class_name = "FreeModelQuotaDurableObject"
+
+[[ratelimits]]
+name = "FREE_MODEL_RATE_LIMITER"
+namespace_id = "41004"
+
+[ratelimits.simple]
+limit = 25
+period = 60
+
 [[ratelimits]]
 name = "OAUTH_TOKEN_RATE_LIMITER"
 namespace_id = "41002"
@@ -109,6 +142,10 @@ new_sqlite_classes = ["WorkspaceRequestState"]
 tag = "v3-routing-health"
 new_sqlite_classes = ["RoutingHealthDurableObject"]
 deleted_classes = ["WorkspaceRequestState"]
+
+[[migrations]]
+tag = "v4-free-model-quota"
+new_sqlite_classes = ["FreeModelQuotaDurableObject"]
 
 [[ratelimits]]
 name = "REALTIME_RELAY_RATE_LIMITER"
