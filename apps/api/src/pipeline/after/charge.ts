@@ -3,6 +3,7 @@
 // How: Tracks per-request charge attempts on pipeline context metadata.
 
 import type { PipelineContext } from "../before/types";
+import { recordSettlement, recordSettlementAttempt } from "@/runtime/request-operations";
 
 const CHARGE_RETRY_DELAYS_MS = [0, 100, 500] as const;
 const DEBIT_TIMEOUT_MS = 5_000;
@@ -39,6 +40,7 @@ export async function recordUsageAndChargeOnce(args: {
 		creditSnapshotBalanceNanos: ctx.gating?.credit?.balanceNanos ?? null,
 	};
 	const promise = (async () => {
+		recordSettlement("pending");
 		// Preserve fill -> debit -> invalidation order without delaying first token.
 		// Fills swallow cache failures, just as synchronous persistence did.
 		await Promise.all(ctx.creditCacheWrites ?? []);
@@ -52,9 +54,11 @@ export async function recordUsageAndChargeOnce(args: {
 				// Abort is ambiguous: every retry keeps the same DB identity and amount.
 				const debit = new AbortController();
 				const deadline = setTimeout(() => debit.abort(), DEBIT_TIMEOUT_MS);
+				recordSettlementAttempt();
 				try { await recordUsageAndCharge({ ...input, debitSignal: debit.signal }); }
 				finally { clearTimeout(deadline); }
 				meta.__usageChargeRecorded = true;
+				recordSettlement("confirmed");
 				return;
 			} catch (chargeErr) {
 				lastError = chargeErr;
@@ -69,6 +73,7 @@ export async function recordUsageAndChargeOnce(args: {
 		} catch {
 			console.error("settlement_recovery_enqueue_failed", { requestId: input.requestId, workspaceId: input.workspaceId });
 		}
+		recordSettlement(recoveryQueued ? "recovery_queued" : "unresolved");
 		console.error("recordUsageAndCharge failed after retries", {
 			recoveryQueued,
 			error: lastError,

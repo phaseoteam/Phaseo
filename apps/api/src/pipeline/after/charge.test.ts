@@ -9,8 +9,46 @@ vi.mock("../pricing/persist", () => ({
 }));
 
 import { recordUsageAndChargeOnce } from "./charge";
+import { RequestOperations, withRequestOperations } from "@/runtime/request-operations";
 
 describe("recordUsageAndChargeOnce", () => {
+    it.each(["success", "retry-success", "queued", "disabled", "failed"])("attributes %s settlement once across concurrent finalizers", async mode => {
+        vi.useFakeTimers();
+        const log = vi.spyOn(console, "error").mockImplementation(() => {});
+        try {
+            if (mode === "retry-success") recordUsageAndChargeMock.mockRejectedValueOnce(new Error("unknown"));
+            else if (mode !== "success") recordUsageAndChargeMock.mockRejectedValue(new Error("unknown"));
+            if (mode === "queued") recoveryMock.mockResolvedValue(true);
+            if (mode === "failed") recoveryMock.mockRejectedValue(new Error("unknown"));
+            const metrics = new RequestOperations();
+            const ctx: any = { requestId: "public", billingRequestId: "private-billing", workspaceId: "private-workspace", meta: {} };
+            const pending = withRequestOperations(metrics, () => Promise.all(Array.from({ length: 16 }, () =>
+                recordUsageAndChargeOnce({ ctx, costNanos: 100, endpoint: "responses" }))));
+            expect(metrics.snapshot().settlement).toEqual({ state: "pending", directAttempts: 0 });
+            await vi.runAllTimersAsync(); await pending;
+            const state = mode === "queued" ? "recovery_queued" : ["success", "retry-success"].includes(mode) ? "confirmed" : "unresolved";
+            const directAttempts = mode === "success" ? 1 : mode === "retry-success" ? 2 : 3;
+            expect(metrics.snapshot().settlement).toEqual({ state, directAttempts });
+            expect(recordUsageAndChargeMock).toHaveBeenCalledTimes(directAttempts);
+            expect(metrics.snapshot().total).toEqual({}); // Does not invent or add I/O.
+            expect(JSON.stringify(metrics.snapshot())).not.toMatch(/private|cost_nanos/);
+            if (state === "unresolved") {
+                recordUsageAndChargeMock.mockResolvedValue(undefined);
+                await withRequestOperations(metrics, () => recordUsageAndChargeOnce({ ctx, costNanos: 100, endpoint: "responses" }));
+                expect(metrics.snapshot().settlement).toEqual({ state: "confirmed", directAttempts: 4 });
+            }
+        } finally { log.mockRestore(); vi.useRealTimers(); }
+    });
+    it("does not manufacture settlement evidence for free or test requests", async () => {
+        const metrics = new RequestOperations();
+        const ctx: any = { requestId: "r", billingRequestId: "b", workspaceId: "w", meta: {} };
+        await withRequestOperations(metrics, async () => {
+            await recordUsageAndChargeOnce({ ctx, costNanos: 0, endpoint: "responses" });
+            await recordUsageAndChargeOnce({ ctx: { ...ctx, testingMode: true }, costNanos: 100, endpoint: "responses" });
+        });
+        expect(metrics.snapshot()).not.toHaveProperty("settlement");
+        expect(recordUsageAndChargeMock).not.toHaveBeenCalled();
+    });
     it("bounds stalled debit transports and hands off once after three ambiguous attempts", async () => {
         vi.useFakeTimers();
         const log = vi.spyOn(console, "error").mockImplementation(() => {});

@@ -18,7 +18,8 @@ const bundle = await build({ absWorkingDir: root, bundle: true, format: "esm", p
     }}], stdin: { resolveDir: root, loader: "ts", contents: `
         import { scope } from './src/pipeline/pricing/persist';
         import { recordUsageAndChargeOnce } from './src/pipeline/after/charge';
-        export default {fetch(request,env){return scope.run(env.LEDGER,async()=>{
+        import { RequestOperations, withRequestOperations, currentRequestOperations } from './src/runtime/request-operations';
+        export default {fetch(request,env){return scope.run(env.LEDGER,()=>withRequestOperations(new RequestOperations(),async()=>{
             const mode=new URL(request.url).pathname.slice(1);
             const ctx={requestId:'public',billingRequestId:mode,workspaceId:'fixture-workspace',meta:{},
                 creditCacheWrites:[new Promise(resolve=>setTimeout(resolve,10))]};
@@ -39,10 +40,10 @@ const bundle = await build({ absWorkingDir: root, bundle: true, format: "esm", p
                     catch(error){if(error.message==='settlement_identity_conflict')conflicts++;else throw error;}
                 }
                 await Promise.all(Array.from({length:32},()=>recordUsageAndChargeOnce({ctx:{...ctx},costNanos:10,endpoint:'responses'})));
-                return Response.json({recorded:ctx.meta.__usageChargeRecorded===true,conflicts});
+                return Response.json({recorded:ctx.meta.__usageChargeRecorded===true,conflicts,metrics:currentRequestOperations().snapshot()});
             }
-            return Response.json({recorded:ctx.meta.__usageChargeRecorded===true,conflict});
-        });}};
+            return Response.json({recorded:ctx.meta.__usageChargeRecorded===true,conflict,metrics:currentRequestOperations().snapshot()});
+        }));}};
     ` } });
 const calls = new Map();
 const committed = new Map();
@@ -67,13 +68,18 @@ try {
     const success = await call("success");
     assert.equal(calls.get("success"), 1, "concurrent finalizers must share one authoritative attempt");
     assert.equal(success.recorded, true); assert.equal(success.conflict, true);
+    assert.deepEqual(success.metrics.settlement, { state: "confirmed", directAttempts: 1 });
+    assert.deepEqual(success.metrics.total, {});
     const failed = await call("failure");
     assert.equal(calls.get("failure"), 3); assert.equal(failed.recorded, false);
+    assert.deepEqual(failed.metrics.settlement, { state: "unresolved", directAttempts: 3 });
     const recovered = await call("recover");
     assert.equal(calls.get("recover"), 4); assert.equal(recovered.recorded, true);
+    assert.deepEqual(recovered.metrics.settlement, { state: "confirmed", directAttempts: 4 });
     const retryIdentity = await call("retry-identity");
     assert.equal(retryIdentity.conflicts, 3);
     assert.equal(retryIdentity.recorded, true);
+    assert.deepEqual(retryIdentity.metrics.settlement, { state: "confirmed", directAttempts: 4 });
     assert.equal(calls.get("retry-identity"), 4);
     assert.equal(calls.has("different"), false, "Changed billing identity must never reach the source");
     assert.equal(committed.size, 1, "Lost confirmations and concurrent re-entry retain one mocked debit");
