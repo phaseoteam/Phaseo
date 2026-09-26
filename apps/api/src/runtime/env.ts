@@ -9,7 +9,7 @@ import type { ResponseCacheStore } from "@/core/response-cache";
 
 import { BINDING_KEYS } from "./env.binding-keys";
 import type { GatewayBindings } from "./env.types";
-import { countSupabaseOperation, currentRequestOperations, instrumentKv } from "./request-operations";
+import { countSupabaseOperation, currentRequestOperations, instrumentKv, measureDispatchStage } from "./request-operations";
 
 export type { GatewayBindings, GatewayRuntime } from "./env.types";
 
@@ -64,7 +64,7 @@ export function configureRuntime(env: GatewayBindings) {
 
     const globalFetch: typeof fetch = (input, init) => {
         countSupabaseOperation(input, init);
-        return fetch(input, init);
+        return measureDispatchStage("supabase.headers", () => fetch(input, init));
     };
 
     const reusable = cachedSupabase?.url === bindings.SUPABASE_URL && cachedSupabase.key === bindings.SUPABASE_SERVICE_ROLE_KEY;

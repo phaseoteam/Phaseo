@@ -3,6 +3,17 @@ import { describe, expect, it } from "vitest";
 import { contextSchema } from "./schemas";
 
 describe("contextSchema provider availability", () => {
+    it("accepts lifecycle metadata without treating it as geography", () => {
+        expect(contextSchema.parse(payload({ status: "available", announcement_date: "2026-09-22" }))
+            .providers[0]?.availabilityPolicy).toBeNull();
+    });
+    it.each([
+        { status: "available", countries: ["US"] },
+        { status: "available", mode: "invalid", countries: ["US"] },
+        { status: "unknown_shape" },
+    ])("does not discard malformed restrictions: %j", value => {
+        expect(contextSchema.safeParse(payload(value)).success).toBe(false);
+    });
     const payload = (availability: unknown) => ({
         workspace_id: "workspace-1",
         key_ok: true,

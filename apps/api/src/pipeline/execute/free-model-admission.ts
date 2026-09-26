@@ -1,5 +1,5 @@
 import { getBindingsIfConfigured } from "@/runtime/env";
-import { countOperation, recordQuotaAdmission, type QuotaAdmissionOutcome } from "@/runtime/request-operations";
+import { countOperation, recordQuotaAdmission, measureDispatchStage, type QuotaAdmissionOutcome } from "@/runtime/request-operations";
 import { FREE_MODEL_DAILY_ALLOWANCE, FREE_MODEL_OVERAGE_NANOS, type FreeQuotaDecision } from "@/core/free-model-quota";
 import { isFreePriceCard } from "../pricing/free";
 import type { PriceCard } from "../pricing";
@@ -58,11 +58,11 @@ export async function guardFreeModelAdmission(ctx: PipelineContext, card: PriceC
         }
         try {
             // The edge guard sheds abusive local bursts. The DO owns global quota.
-            const edge = await env.FREE_MODEL_RATE_LIMITER.limit({ key: owner });
+            const edge = await measureDispatchStage("quota.edge", () => env.FREE_MODEL_RATE_LIMITER!.limit({ key: owner }));
             if (edge?.success === false) return quotaDenied("edge_limited", "free_model_rate_limit", 429, 60);
             if (edge?.success !== true) return quotaDenied("unavailable", "free_model_quota_unavailable", 503);
             countOperation("quotaRpc");
-            const decision = await env.FREE_MODEL_QUOTA.getByName(`owner:${owner}`).admit();
+            const decision = await measureDispatchStage<FreeQuotaDecision>("quota.admission", () => env.FREE_MODEL_QUOTA!.getByName(`owner:${owner}`).admit());
             if (!isQuotaDecision(decision)) return quotaDenied("unavailable", "free_model_quota_unavailable", 503);
             if (decision.allowed === false) return quotaDenied(decision.reason === "rpm_limit" ? "rpm_limited" : "daily_limited",
                 `free_model_${decision.reason}`, 429, decision.retryAfterSeconds);

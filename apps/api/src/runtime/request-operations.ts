@@ -10,6 +10,13 @@ type KvPurpose = "auth" | "credit" | "sticky" | "context" | "health" | "other";
 type KvCounts = Partial<Record<KvPurpose, Partial<Record<KvOperation, number>>>>;
 export type QuotaAdmissionOutcome = "included" | "overage" | "edge_limited" | "rpm_limited" | "daily_limited" | "unavailable" | "overage_blocked";
 export type SettlementOutcome = "pending" | "confirmed" | "recovery_queued" | "unresolved";
+// Closed vocabulary: never accept resource identifiers or upstream error text.
+export type DispatchStage = "auth.version" | "auth.cache" | "auth.source"
+    | "context.preset" | "context.private" | "context.versions" | "context.cache" | "credit.cache"
+    | "catalog.cache" | "workspace.cache" | "context.source" | "catalog.refill" | "workspace.refill"
+    | "context.hydration" | "supabase.headers" | "quota.edge" | "quota.admission";
+type DispatchTiming = { stage: DispatchStage; startMs: number; endMs: number | null; state: "pending" | "fulfilled" | "rejected" };
+const MAX_DISPATCH_TIMINGS = 64;
 const scope = new AsyncLocalStorage<RequestOperations>();
 // Lazily initialized during a request: Workers disallow random I/O at module load.
 // This identifies module reuse only, not a customer, POP or physical isolate.
@@ -34,6 +41,24 @@ export class RequestOperations {
     private readonly runtimeInstanceId = runtimeInstanceId ??= crypto.randomUUID();
     readonly startedAt = performance.now();
     dispatchMs: number | null = null;
+    private readonly dispatchTimings: DispatchTiming[] = [];
+    private dispatchTimingsOverflow = false;
+    measure<T>(stage: DispatchStage, run: () => Promise<T>): Promise<T> {
+        if (this.dispatchMs !== null) return run();
+        if (this.dispatchTimings.length >= MAX_DISPATCH_TIMINGS) {
+            this.dispatchTimingsOverflow = true;
+            return run();
+        }
+        const timing: DispatchTiming = { stage, startMs: performance.now() - this.startedAt, endMs: null, state: "pending" };
+        this.dispatchTimings.push(timing);
+        const finish = (state: "fulfilled" | "rejected") => {
+            timing.endMs = performance.now() - this.startedAt;
+            timing.state = state;
+        };
+        try {
+            return run().then(value => { finish("fulfilled"); return value; }, error => { finish("rejected"); throw error; });
+        } catch (error) { finish("rejected"); throw error; }
+    }
     readonly pending = new Set<Promise<unknown>>();
     backgroundOverflow = false;
     // Admission is not inference success or a billable-write count. Keep only
@@ -91,6 +116,9 @@ export class RequestOperations {
     snapshot() {
         return { total: { ...this.total }, beforeDispatch: { ...this.beforeDispatch },
             runtimeInstanceId: this.runtimeInstanceId,
+            // Wall-clock intervals can overlap/nest; do not add them as CPU or dispatch time.
+            dispatchTimings: this.dispatchTimings.map(timing => ({ ...timing })),
+            dispatchTimingsOverflow: this.dispatchTimingsOverflow,
             kvByPurpose: Object.fromEntries(Object.entries(this.kvByPurpose).map(([purpose, counts]) => [purpose, { ...counts }])),
             beforeDispatchMs: this.dispatchMs, pendingBackground: this.pending.size,
             complete: !this.backgroundOverflow && this.pending.size === 0,
@@ -101,6 +129,11 @@ export class RequestOperations {
 }
 
 export function currentRequestOperations() { return scope.getStore(); }
+/** No additional clock reads, promise reactions or telemetry for unsampled requests. */
+export function measureDispatchStage<T>(stage: DispatchStage, run: () => Promise<T>): Promise<T> {
+    const record = scope.getStore();
+    return record ? record.measure(stage, run) : run();
+}
 export function withRequestOperations<T>(metrics: RequestOperations, run: () => T): T { return scope.run(metrics, run); }
 export function countOperation(operation: Operation, count = 1) { scope.getStore()?.count(operation, count); }
 export function markProviderDispatch() { scope.getStore()?.dispatch(); }
