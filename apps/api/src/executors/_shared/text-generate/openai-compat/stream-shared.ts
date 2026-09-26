@@ -1,4 +1,5 @@
 import { getProviderQuirks } from "./quirks";
+import { GatewayStreamError } from "@core/stream-error";
 
 export type StreamAdapterState = {
 	requestId: string;
@@ -13,7 +14,7 @@ export function applyStreamQuirks(chunk: any, state: StreamAdapterState, provide
 		try {
 			quirks.transformStreamChunk({ chunk, accumulated: state });
 		} catch {
-			// ignore quirk errors to avoid breaking stream
+			throw new GatewayStreamError("gateway", "transform", "gateway_stream_transform_failed");
 		}
 	}
 }

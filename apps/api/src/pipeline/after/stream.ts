@@ -168,7 +168,6 @@ export async function handleStreamResponse(
     let cachedFinishReason: string | null = null;
     let latestStreamUsageRaw: any = null;
     let latestGatewaySnapshot: any = null;
-    let streamErrorStatus: number | undefined;
     let appliedStreamResponsePlugins = false;
     const streamedToolCallKeys = new Set<string>();
     const streamedToolCallNames = new Set<string>();
@@ -207,17 +206,6 @@ export async function handleStreamResponse(
     }
 
     const onStreamEvent = (event: UnifiedStreamEvent) => {
-		if (event.type === "error") {
-            const error = event.payload?.response?.error ?? event.payload?.error ?? event.payload;
-            const status = Number(error?.status_code ?? error?.status ?? event.payload?.status);
-            const knownCodeStatus: Record<string, number> = {
-                invalid_api_key: 401, authentication_error: 401, permission_denied: 403,
-                insufficient_quota: 429, rate_limit_exceeded: 429, rate_limit_error: 429,
-            };
-            const code = String(error?.code ?? error?.type ?? "");
-            streamErrorStatus = Number.isInteger(status) && status >= 400 && status <= 599
-                ? status : Object.hasOwn(knownCodeStatus, code) ? knownCodeStatus[code] : undefined;
-		}
         if (event.type === "delta_tool") {
             const key =
                 event.toolCallId ??
@@ -453,6 +441,7 @@ export async function handleStreamResponse(
                 result.bill.finish_reason = finishReason;
             }
         },
+        credentialSource: result.keySource ?? ctx.meta.keySource,
         onCompletion: async (outcome) => {
             const { usage: usageRaw, finalInfo: info } = outcome;
             const streamFailed = outcome.state === "FAILED";
@@ -518,8 +507,8 @@ export async function handleStreamResponse(
 			const healthContext = (result as any).healthContext ?? null;
             const healthProvider = healthContext?.provider ?? result.provider;
 			const isProbe = Boolean(healthContext?.isProbe);
-			const healthImpact = classifyProviderHealthImpact({
-				upstreamStatus: streamErrorStatus ?? result.upstream.status,
+			const healthImpact = outcome.error?.healthImpact ?? classifyProviderHealthImpact({
+				upstreamStatus: result.upstream.status,
 				credentialSource: result.keySource,
 				aborted: info?.aborted === true && info.failureOrigin !== "provider",
 				failureOrigin: info.failureOrigin,
@@ -536,7 +525,7 @@ export async function handleStreamResponse(
 					provider: healthProvider,
 					model: baseModel,
 					ok: false,
-					upstreamStatus: result.upstream.status,
+					upstreamStatus: outcome.error?.status ?? result.upstream.status,
 					healthImpact,
 					latency_ms: ctx.meta.latency_ms ?? null,
 					generation_ms: ctx.meta.generation_ms ?? null,
