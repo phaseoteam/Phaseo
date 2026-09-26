@@ -523,7 +523,7 @@ function extractOpenAIResponsesEvents(
 		return events;
 	}
 
-	if (event === "response.completed") {
+	if (event === "response.completed" || event === "response.incomplete") {
 		const response = frame?.response ?? frame;
 		events.push({
 			type: "snapshot",
