@@ -8,6 +8,7 @@ import { getProviderResidencyMetadata } from "@/lib/config/providerResidency";
 import { parseRouteAvailabilityPolicy } from "@/lib/config/routeAvailability";
 import { getTextMany, keyVersionToken } from "@/core/kv";
 import { gatewayCreditCacheKey } from "@/core/gateway-credit-cache";
+import { contextLeases, encodeContextLease } from "./contextLeaseCache";
 import { isDataContributionAccessEnabled } from "@/core/feature-flags";
 import { normalizePrivateModelBaseUrl } from "@/core/private-models";
 import { loadPrivateRouteRow } from "./privateModelCache";
@@ -1050,6 +1051,7 @@ export async function fetchGatewayContext(args: {
     onCreditCacheWrite?: (write: Promise<void>) => void;
 }): Promise<GatewayContextData> {
 	const fetchStartedAt = performance.now();
+	const sourceCheckedAtMs = Date.now();
 	await assertPresetAccess(args);
 	const presetAccessMs = round3(performance.now() - fetchStartedAt);
 
@@ -1142,11 +1144,11 @@ export async function fetchGatewayContext(args: {
     if (shouldUseCache) {
         const cacheReadStartedAt = performance.now();
         try {
-            const cachedValues = await getTextMany([
-                dynamicCacheKey,
-                staticCacheKey,
-                creditCacheKey,
+            const [leasedValues, creditValues] = await Promise.all([
+                contextLeases.read([dynamicCacheKey, staticCacheKey], getTextMany),
+                getTextMany([creditCacheKey]),
             ]);
+            const cachedValues = { ...leasedValues, ...creditValues };
             const dynamicCachedRaw = cachedValues[dynamicCacheKey] ?? null;
             const staticCachedRaw = cachedValues[staticCacheKey] ?? null;
             const creditCachedRaw = cachedValues[creditCacheKey] ?? null;
@@ -1923,14 +1925,19 @@ export async function fetchGatewayContext(args: {
                     : clampTtl(isPreset ? Math.min(PRESET_TTL, pricingAwareStaticTtl) : pricingAwareStaticTtl);
                 const creditTtl = clampTtl(computeCreditSnapshotTtlForContext(parsed));
                 await persistCredit(split.credit, creditTtl);
+                const writeSegment = async (key: string, value: object, ttl: number): Promise<void> => {
+                    const raw = encodeContextLease(value, ttl, sourceCheckedAtMs);
+                    await cache.put(key, raw, { expirationTtl: ttl });
+                    contextLeases.remember(key, raw);
+                };
                 const backgroundCacheWrites: Promise<void>[] = [
                     ...(hasConfiguredKeyLimits(parsed.keyLimit)
                         ? []
-                        : [cache.put(dynamicCacheKey, JSON.stringify(split.dynamic), { expirationTtl: dynamicTtl })]),
+                        : [writeSegment(dynamicCacheKey, split.dynamic, dynamicTtl)]),
                 ];
                 if (staticTtl !== null) {
                     backgroundCacheWrites.push(
-                        cache.put(staticCacheKey, JSON.stringify(split.static), { expirationTtl: staticTtl }),
+                        writeSegment(staticCacheKey, split.static, staticTtl),
                     );
                 }
                 if (backgroundCacheWrites.length > 0) {

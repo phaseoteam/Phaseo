@@ -323,6 +323,27 @@ describe("fetchGatewayContext credit-only cache refresh", () => {
 		expect(runtime.supabase.from).not.toHaveBeenCalled();
 	});
 
+	it("keeps credit outside the warm context lease and returns isolated hydrated objects", async () => {
+		seedContextCache({ credit: { workspaceId, credit: { ok: true, balanceNanos: 3_000_000_000 }, teamEnrichment } });
+		const { encodeContextLease } = await import("./contextLeaseCache");
+		for (const [key, raw] of runtime.store) {
+			if (key.startsWith("gateway:dynamic:") || key.startsWith("gateway:static:")) {
+				runtime.store.set(key, encodeContextLease(JSON.parse(raw), 60, Date.now()));
+			}
+		}
+		const { fetchGatewayContext } = await import("./context");
+		const args = { workspaceId, model, endpoint, apiKeyId };
+		const first = await fetchGatewayContext(args);
+		first.key.ok = false;
+		runtime.store.delete(`gateway:credit:${workspaceId}`);
+		runtime.cache.get.mockClear();
+		const second = await fetchGatewayContext(args);
+		expect(second.key.ok).toBe(true);
+		expect(second.credit.balanceNanos).toBe(4_000_000_000);
+		expect(runtime.cache.get).toHaveBeenCalledExactlyOnceWith([`gateway:credit:${workspaceId}`], "text");
+		expect(runtime.supabase.from).toHaveBeenCalledWith("wallets");
+	});
+
 	it("awaits full-context credit writes but leaves unrelated cache writes in the background", async () => {
 		runtime.store.set(`gateway:keyver:id:${apiKeyId}`, "1");
 		runtime.deferWrites = true;
