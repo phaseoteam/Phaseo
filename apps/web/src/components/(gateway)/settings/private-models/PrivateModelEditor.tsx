@@ -1,4 +1,5 @@
 "use client";
+import { gatewayMutationMessage } from "@/lib/settings/gatewayPublication";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
@@ -24,8 +25,22 @@ export default function PrivateModelEditor({ mode, initialModel, workspaceNamesp
 	const [providerMode, setProviderMode] = useState<"existing" | "custom">(initialModel?.host_provider_id ? "existing" : "custom");
 	const [form, setForm] = useState({ ...EMPTY, name: initialModel?.name ?? "", model_reference: initialModel?.catalog_model_id ?? initialModel?.local_slug ?? initialModel?.model_id.split("/").slice(1).join("/") ?? "", base_url: initialModel?.base_url ?? "", upstream_model_id: initialModel?.upstream_model_id ?? "", description: initialModel?.description ?? "", host_provider_id: initialModel?.host_provider_id ?? "", custom_provider_name: initialModel?.custom_provider_name ?? "", custom_provider_url: initialModel?.custom_provider_url ?? "", routing_policy: initialModel?.routing_policy ?? "preferred", supports_responses: initialModel?.supports_responses ?? false, enabled: initialModel?.enabled ?? true, context_length: initialModel?.context_length?.toString() ?? "", max_output_tokens: initialModel?.max_output_tokens?.toString() ?? "" });
 	const set = (key: keyof typeof form, value: string | boolean) => setForm((current) => ({ ...current, [key]: value }));
-	const save = () => startTransition(async () => { try { const payload = { ...form, context_length: form.context_length ? Number(form.context_length) : null, max_output_tokens: form.max_output_tokens ? Number(form.max_output_tokens) : null }; if (mode === "create") await createPrivateModelAction(payload); else if (initialModel) await updatePrivateModelAction(initialModel.id, payload); toast.success(mode === "create" ? "Private model added." : "Private model updated."); router.push(BACK); await invalidateAccountQueries(queryClient); router.refresh(); } catch (error) { toast.error(error instanceof Error ? error.message : "The private model could not be saved."); } });
-	const remove = () => initialModel && confirm(`Delete ${initialModel.name}? This cannot be undone.`) && startTransition(async () => { try { await deletePrivateModelAction(initialModel.id); toast.success("Private model deleted."); router.push(BACK); await invalidateAccountQueries(queryClient); router.refresh(); } catch (error) { toast.error(error instanceof Error ? error.message : "The private model could not be deleted."); } });
+	const save = () => startTransition(async () => {
+		try {
+			const payload = { ...form, context_length: form.context_length ? Number(form.context_length) : null, max_output_tokens: form.max_output_tokens ? Number(form.max_output_tokens) : null };
+			if (mode === "edit" && !initialModel) throw new Error("Missing private model");
+			const result = mode === "create" ? await createPrivateModelAction(payload) : await updatePrivateModelAction(initialModel!.id, payload);
+			toast.success(gatewayMutationMessage(mode === "create" ? "Private model added." : "Private model updated.", result));
+			router.push(BACK); await invalidateAccountQueries(queryClient); router.refresh();
+		} catch (error) { toast.error(error instanceof Error ? error.message : "The private model could not be saved."); }
+	});
+	const remove = () => initialModel && confirm(`Delete ${initialModel.name}? This cannot be undone.`) && startTransition(async () => {
+		try {
+			const result = await deletePrivateModelAction(initialModel.id);
+			toast.success(gatewayMutationMessage("Private model deleted.", result));
+			router.push(BACK); await invalidateAccountQueries(queryClient); router.refresh();
+		} catch (error) { toast.error(error instanceof Error ? error.message : "The private model could not be deleted."); }
+	});
 	return <div className="space-y-6">
 		<Button variant="ghost" size="sm" asChild className="-ml-3"><Link href={BACK}><ChevronLeft className="mr-1 size-4" />Back to Private Models</Link></Button>
 		<div className="overflow-hidden rounded-xl border">

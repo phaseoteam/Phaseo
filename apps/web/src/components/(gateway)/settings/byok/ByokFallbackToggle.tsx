@@ -1,4 +1,5 @@
 "use client";
+import { gatewayMutationMessage } from "@/lib/settings/gatewayPublication";
 
 import React from "react";
 import { Switch } from "@/components/ui/switch";
@@ -23,7 +24,7 @@ export default function ByokFallbackToggle({
 		try {
 			toast.promise(operation, {
 				loading: "Saving fallback setting...",
-				success: "Fallback setting updated",
+				success: (result) => gatewayMutationMessage("Fallback setting updated", result),
 				error: (err) => err?.message ?? "Failed to update setting",
 			});
 			await operation;
