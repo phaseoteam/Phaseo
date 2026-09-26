@@ -1,0 +1,23 @@
+{
+  "organisation_id": "meganova-ai",
+  "name": "MegaNova AI",
+  "country_code": "US",
+  "description": null,
+  "colour": null,
+  "organisation_links": [],
+  "status": "active",
+  "routable": null,
+  "sources": [
+    {
+      "kind": "provider_docs",
+      "url": "https://docs.meganova.ai/inference-models/model-list.md",
+      "accessed_at": "2026-08-24T03:00:00Z",
+      "notes": "MegaNova identifies MegaNova AI as the publisher namespace for listed model meganova-ai/manta-flash-1.0."
+    }
+  ],
+  "verification": {
+    "status": "partial",
+    "checked_at": "2026-08-24T03:00:00Z",
+    "notes": "Publisher namespace verified from MegaNova’s official model catalogue; jurisdiction was not independently published."
+  }
+}

@@ -1,0 +1,73 @@
+{
+  "model_id": "bytedance/seedream-4-0-250828",
+  "organisation_id": "bytedance",
+  "name": "seedream 4 0 250828",
+  "status": "Available",
+  "previous_model_id": null,
+  "description": "Model offered through MegaNova under the exact upstream ID Bytedance/seedream-4-0-250828.",
+  "announced_date": null,
+  "release_date": null,
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": "text,image",
+  "output_types": "image",
+  "api_model_id": "bytedance/seedream-4-0-250828",
+  "links": [
+    {
+      "title": "MegaNova model list",
+      "kind": "documentation",
+      "url": "https://docs.meganova.ai/inference-models/model-list"
+    }
+  ],
+  "details": [],
+  "benchmarks": [],
+  "family_id": null,
+  "page_notice": null,
+  "model_type": null,
+  "knowledge_cutoff": null,
+  "limits": {
+    "context": null,
+    "input": null,
+    "output": null
+  },
+  "modalities": {
+    "input": [
+      "text",
+      "image/*"
+    ],
+    "output": [
+      "image/*"
+    ]
+  },
+  "reasoning": {
+    "supported": null,
+    "options": []
+  },
+  "capabilities": {
+    "attachment": true,
+    "tool_call": null,
+    "structured_output": null,
+    "temperature": null,
+    "streaming": null,
+    "web_search": null
+  },
+  "open_weights": null,
+  "sources": [
+    {
+      "kind": "provider_docs",
+      "url": "https://docs.meganova.ai/inference-models/model-list.md",
+      "accessed_at": "2026-08-24T03:00:00Z",
+      "notes": "MegaNova documents this model under exact upstream ID Bytedance/seedream-4-0-250828."
+    }
+  ],
+  "verification": {
+    "status": "verified",
+    "checked_at": "2026-08-24T03:00:00Z",
+    "notes": "Canonical identity and modalities verified against MegaNova’s official current model catalogue."
+  },
+  "last_updated": "2026-08-24T03:00:00Z",
+  "removal_date": null,
+  "replacement_model_id": null,
+  "license_url": null
+}
