@@ -1,5 +1,25 @@
 # @phaseo/java-sdk
 
+## 3.1.0
+
+### Minor Changes
+
+- [#2425](https://github.com/phaseoteam/Phaseo/pull/2425) [`9b68ad3`](https://github.com/phaseoteam/Phaseo/commit/9b68ad32bbad415bd591c01d2d46841fe43119d3) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Add TypeSafe Jev structured Decisions support through the `/v1/decisions` gateway endpoint, generated SDK operations, catalog pricing, and a dedicated Decisions playground.
+
+- [#2456](https://github.com/phaseoteam/Phaseo/pull/2456) [`65b3d54`](https://github.com/phaseoteam/Phaseo/commit/65b3d545d0ee9d476447ce7dc0909ea36e3aa0d8) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Add native pagination, resumable job handles, and full-request live capability preflight across every gateway SDK.
+
+- [#2451](https://github.com/phaseoteam/Phaseo/pull/2451) [`1a5fbcc`](https://github.com/phaseoteam/Phaseo/commit/1a5fbcc3b53e6ac0b0402725c10ac653a81dce1d) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Add live model endpoint capability discovery and structured parameter support
+  reports to every gateway SDK. Reports identify fully supported,
+  partially supported, unsupported, and unknown parameters, validate advertised
+  constraints, and return the provider routes that accept the complete parameter
+  set.
+
+- [#2455](https://github.com/phaseoteam/Phaseo/pull/2455) [`a94e315`](https://github.com/phaseoteam/Phaseo/commit/a94e31546ec77fbcbdc708f622d2c581afec2a4d) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Add a shared SDK transport contract with request-scoped controls, safe read retries, idempotency keys, raw response metadata, structured HTTP errors, and public request lifecycle hooks.
+
+### Patch Changes
+
+- [#2429](https://github.com/phaseoteam/Phaseo/pull/2429) [`2b78b13`](https://github.com/phaseoteam/Phaseo/commit/2b78b13e7225b6ccb54c9c4a615b73455cdb26b6) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Refine the Decisions chat experience with typed question controls, local conversation history, structured result rendering, canonical Jev model identity, and complete request timing metadata. Expose provider-neutral Decisions naming across the gateway, web proxy, OpenAPI contract, and generated SDKs while keeping TypeSafe's System One terminology inside its provider adapter. Keep text generation internally streamed while preserving non-streaming client responses.
+
 ## 3.0.0
 
 ### Major Changes

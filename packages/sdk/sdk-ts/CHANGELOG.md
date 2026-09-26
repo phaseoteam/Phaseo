@@ -1,5 +1,40 @@
 # @phaseo/sdk
 
+## 3.1.0
+
+### Minor Changes
+
+- [#2425](https://github.com/phaseoteam/Phaseo/pull/2425) [`9b68ad3`](https://github.com/phaseoteam/Phaseo/commit/9b68ad32bbad415bd591c01d2d46841fe43119d3) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Add TypeSafe Jev structured Decisions support through the `/v1/decisions` gateway endpoint, generated SDK operations, catalog pricing, and a dedicated Decisions playground.
+
+- [#2503](https://github.com/phaseoteam/Phaseo/pull/2503) [`280687b`](https://github.com/phaseoteam/Phaseo/commit/280687b57f92c63322f2765c197dbd82303e2330) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Keep chat reasoning choices compatible with model capabilities and expose the `instant` effort only in generated OpenAI-compatible request types.
+
+- [#2456](https://github.com/phaseoteam/Phaseo/pull/2456) [`65b3d54`](https://github.com/phaseoteam/Phaseo/commit/65b3d545d0ee9d476447ce7dc0909ea36e3aa0d8) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Add native pagination, resumable job handles, and full-request live capability preflight across every gateway SDK.
+
+- [#2451](https://github.com/phaseoteam/Phaseo/pull/2451) [`1a5fbcc`](https://github.com/phaseoteam/Phaseo/commit/1a5fbcc3b53e6ac0b0402725c10ac653a81dce1d) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Add live model endpoint capability discovery and structured parameter support
+  reports to every gateway SDK. Reports identify fully supported,
+  partially supported, unsupported, and unknown parameters, validate advertised
+  constraints, and return the provider routes that accept the complete parameter
+  set.
+
+- [#2443](https://github.com/phaseoteam/Phaseo/pull/2443) [`d97391a`](https://github.com/phaseoteam/Phaseo/commit/d97391ae0d33702621b35d350f88df31c7f100d5) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Add shared SDK request controls and diagnostics, native Python async resources,
+  resumable media jobs, structured output and streaming helpers, model capability
+  preflight, and deterministic testing transports. Export submitted room requests
+  as runnable TypeScript or Python and link requests to dashboard traces.
+  
+  Python JSON requests now use HTTPX. Catch PhaseoHTTPError (or
+  httpx.HTTPStatusError) instead of urllib.error.HTTPError, and use error.status
+  for the HTTP status; error.code contains the API error code.
+
+- [#2434](https://github.com/phaseoteam/Phaseo/pull/2434) [`2a980af`](https://github.com/phaseoteam/Phaseo/commit/2a980af08a30469407228b8d80915a5a10e67e04) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Add handwritten music, video, and batch submit-and-wait and wait-by-ID helpers with progress callbacks, configurable polling, local cancellation, and structured timeout and job-failure errors. Add Python music resource methods. Preserve direct HTTP operations and full terminal responses, including usage, billing, and per-request batch failures.
+
+- [#2455](https://github.com/phaseoteam/Phaseo/pull/2455) [`a94e315`](https://github.com/phaseoteam/Phaseo/commit/a94e31546ec77fbcbdc708f622d2c581afec2a4d) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Add a shared SDK transport contract with request-scoped controls, safe read retries, idempotency keys, raw response metadata, structured HTTP errors, and public request lifecycle hooks.
+
+### Patch Changes
+
+- [#2429](https://github.com/phaseoteam/Phaseo/pull/2429) [`2b78b13`](https://github.com/phaseoteam/Phaseo/commit/2b78b13e7225b6ccb54c9c4a615b73455cdb26b6) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Refine the Decisions chat experience with typed question controls, local conversation history, structured result rendering, canonical Jev model identity, and complete request timing metadata. Expose provider-neutral Decisions naming across the gateway, web proxy, OpenAPI contract, and generated SDKs while keeping TypeSafe's System One terminology inside its provider adapter. Keep text generation internally streamed while preserving non-streaming client responses.
+
+- [#2491](https://github.com/phaseoteam/Phaseo/pull/2491) [`c2c745a`](https://github.com/phaseoteam/Phaseo/commit/c2c745a3c5e5ce3fbea985ee2db2045badaa1983) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Expose the bounded model discovery filters on the generated model-list request.
+
 ## 3.0.0
 
 ### Major Changes
