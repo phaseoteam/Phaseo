@@ -11,11 +11,11 @@
     "context_length": 131072,
     "max_output_tokens": 32768,
     "effective_from": null,
-    "effective_to": null,
+    "effective_to": "2026-08-24T00:00:00Z",
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "active",
+        "status": "inactive",
         "params": [],
         "reasoning": true,
         "tool_call": true,
@@ -27,15 +27,11 @@
         "modes": []
       }
     ],
-    "routing_status": "active",
+    "routing_status": "disabled",
     "routable": false,
     "regions": {
-      "execution": [
-        "global"
-      ],
-      "data": [
-        "global"
-      ]
+      "execution": null,
+      "data": null
     },
     "service_tiers": [],
     "api": {
@@ -45,16 +41,16 @@
     },
     "sources": [
       {
-        "kind": "models.dev",
-        "url": "https://models.dev/api.json",
-        "accessed_at": "2026-07-23T09:08:52.190Z",
-        "notes": "Provider model slug: openai/gpt-oss-20b"
+        "kind": "documentation",
+        "url": "https://lmstudio.ai/docs/developer",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "Official documentation uses openai/gpt-oss-20b as an example local model identifier; availability depends on the user's installed models."
       }
     ],
     "verification": {
-      "status": "partial",
-      "checked_at": "2026-07-23T09:08:52.190Z",
-      "notes": "Provider support imported from models.dev; routing remains disabled."
+      "status": "verified",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "Retained as a historical local-model example, not an active fixed provider catalogue entry. LM Studio discovers available model keys from the user's installation."
     },
     "rate_limits": []
   },
@@ -70,11 +66,11 @@
     "context_length": 262144,
     "max_output_tokens": 16384,
     "effective_from": null,
-    "effective_to": null,
+    "effective_to": "2026-08-24T00:00:00Z",
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "active",
+        "status": "inactive",
         "params": [],
         "reasoning": false,
         "tool_call": true,
@@ -86,15 +82,11 @@
         "modes": []
       }
     ],
-    "routing_status": "active",
+    "routing_status": "disabled",
     "routable": false,
     "regions": {
-      "execution": [
-        "global"
-      ],
-      "data": [
-        "global"
-      ]
+      "execution": null,
+      "data": null
     },
     "service_tiers": [],
     "api": {
@@ -104,16 +96,16 @@
     },
     "sources": [
       {
-        "kind": "models.dev",
-        "url": "https://models.dev/api.json",
-        "accessed_at": "2026-07-23T09:08:52.190Z",
-        "notes": "Provider model slug: qwen/qwen3-30b-a3b-2507"
+        "kind": "documentation",
+        "url": "https://lmstudio.ai/docs/developer/rest/list",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "The local REST API lists the models available on the user's system; this imported identifier is not a guaranteed hosted offer."
       }
     ],
     "verification": {
-      "status": "partial",
-      "checked_at": "2026-07-23T09:08:52.190Z",
-      "notes": "Provider support imported from models.dev; routing remains disabled."
+      "status": "verified",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "Retained as a historical imported local-model example, not an active fixed provider catalogue entry. LM Studio discovers available model keys from the user's installation."
     },
     "rate_limits": []
   }
