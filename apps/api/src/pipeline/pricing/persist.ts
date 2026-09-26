@@ -185,7 +185,7 @@ export async function recordUsageAndCharge(args: {
     workspaceId: string;
     cost_nanos: number;
     creditSnapshotBalanceNanos?: number | null;
-    /** Recovery-only deadline for the debit transport; abort is not proof of rollback. */
+    /** Deadline for the debit transport only; abort is not proof of rollback. */
     debitSignal?: AbortSignal;
 }): Promise<ChargeRpcResult> {
     const releaseRuntime = ensureRuntimeForBackground();
@@ -354,7 +354,6 @@ export async function recordUsageAndCharge(args: {
         releaseRuntime();
     }
 }
-
 
 
 

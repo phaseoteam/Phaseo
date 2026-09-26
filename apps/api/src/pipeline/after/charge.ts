@@ -5,6 +5,7 @@
 import type { PipelineContext } from "../before/types";
 
 const CHARGE_RETRY_DELAYS_MS = [0, 100, 500] as const;
+const DEBIT_TIMEOUT_MS = 5_000;
 type ChargeAttempt = { workspaceId: string; requestId: string; costNanos: number; promise: Promise<void> };
 // Request-owned coordination only. Weak ownership cannot retain completed
 // request contexts for the isolate lifetime; Supabase still owns idempotency.
@@ -47,7 +48,12 @@ export async function recordUsageAndChargeOnce(args: {
 		for (const delayMs of CHARGE_RETRY_DELAYS_MS) {
 			try {
 				await waitBeforeRetry(delayMs);
-				await recordUsageAndCharge(input);
+				// A stalled debit must not prevent exhausted attempts reaching recovery.
+				// Abort is ambiguous: every retry keeps the same DB identity and amount.
+				const debit = new AbortController();
+				const deadline = setTimeout(() => debit.abort(), DEBIT_TIMEOUT_MS);
+				try { await recordUsageAndCharge({ ...input, debitSignal: debit.signal }); }
+				finally { clearTimeout(deadline); }
 				meta.__usageChargeRecorded = true;
 				return;
 			} catch (chargeErr) {

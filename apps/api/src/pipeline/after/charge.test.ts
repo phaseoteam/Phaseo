@@ -11,6 +11,45 @@ vi.mock("../pricing/persist", () => ({
 import { recordUsageAndChargeOnce } from "./charge";
 
 describe("recordUsageAndChargeOnce", () => {
+    it("bounds stalled debit transports and hands off once after three ambiguous attempts", async () => {
+        vi.useFakeTimers();
+        const log = vi.spyOn(console, "error").mockImplementation(() => {});
+        const signals: AbortSignal[] = [];
+        recordUsageAndChargeMock.mockImplementation((args: any) => new Promise<void>((_resolve, reject) => {
+            signals.push(args.debitSignal);
+            args.debitSignal?.addEventListener("abort", () => reject(new Error("response unknown")), { once: true });
+        }));
+        recoveryMock.mockResolvedValue(true);
+        try {
+            const ctx: any = { requestId: "public", billingRequestId: "server", workspaceId: "workspace", meta: {} };
+            const pending = Promise.all(Array.from({ length: 16 }, () => recordUsageAndChargeOnce({ ctx, costNanos: 100, endpoint: "responses" })));
+            await vi.advanceTimersByTimeAsync(4_999);
+            expect(signals[0]).toBeInstanceOf(AbortSignal);
+            expect(signals[0].aborted).toBe(false);
+            expect(recoveryMock).not.toHaveBeenCalled();
+            await vi.advanceTimersByTimeAsync(10_601); await pending;
+            expect(signals).toHaveLength(3);
+            expect(new Set(signals).size).toBe(3);
+            expect(signals.every(signal => signal.aborted)).toBe(true);
+            expect(recoveryMock).toHaveBeenCalledExactlyOnceWith({ requestId: "server", workspaceId: "workspace", cost_nanos: 100, creditSnapshotBalanceNanos: null });
+            expect(ctx.meta.__usageChargeRecorded).not.toBe(true);
+            expect(ctx.meta.__usageChargeRecoveryEnqueued).toBe(true);
+            expect(vi.getTimerCount()).toBe(0);
+        } finally { log.mockRestore(); vi.useRealTimers(); }
+    });
+    it("clears successful debit deadlines and never transfers a successful charge", async () => {
+        vi.useFakeTimers();
+        try {
+            const ctx: any = { requestId: "public", billingRequestId: "server", workspaceId: "workspace", meta: {} };
+            await recordUsageAndChargeOnce({ ctx, costNanos: 100, endpoint: "responses" });
+            const signal = (recordUsageAndChargeMock.mock.calls[0] as any)[0].debitSignal;
+            expect(signal).toBeInstanceOf(AbortSignal);
+            expect(vi.getTimerCount()).toBe(0);
+            await vi.advanceTimersByTimeAsync(10_000);
+            expect(signal.aborted).toBe(false);
+            expect(recoveryMock).not.toHaveBeenCalled();
+        } finally { vi.useRealTimers(); }
+    });
     it("coalesces concurrent finalizers before the credit-write barrier", async () => {
         let finish!: () => void;
         let settle!: () => void;
@@ -66,7 +105,7 @@ describe("recordUsageAndChargeOnce", () => {
             gating: { credit: { balanceNanos: 100_000_000_000_000 } }, rawBody: { creditSnapshotBalanceNanos: 1 } };
         await recordUsageAndChargeOnce({ ctx, costNanos: 10, endpoint: "responses" });
         expect(recordUsageAndChargeMock).toHaveBeenCalledWith({ requestId: "bill", workspaceId: "ws", cost_nanos: 10,
-            creditSnapshotBalanceNanos: 100_000_000_000_000 });
+            creditSnapshotBalanceNanos: 100_000_000_000_000, debitSignal: expect.any(AbortSignal) });
     });
     it("does not debit or invalidate until this request's credit snapshot is persisted", async () => {
         let finish!: () => void;
@@ -145,6 +184,7 @@ describe("recordUsageAndChargeOnce", () => {
 			workspaceId: "team_charge",
 			cost_nanos: 12345,
 			creditSnapshotBalanceNanos: null,
+			debitSignal: expect.any(AbortSignal),
 		});
 		expect(recordUsageAndChargeMock.mock.calls[0]?.[0]?.requestId).not.toBe(ctx.requestId);
 	});

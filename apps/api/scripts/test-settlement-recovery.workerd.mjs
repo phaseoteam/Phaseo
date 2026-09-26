@@ -10,11 +10,22 @@ const bundle = await build({ absWorkingDir: root, bundle: true, format: "esm", p
     external: ["cloudflare:*", "node:*"], stdin: { resolveDir: root, loader: "ts", contents: `
         import { handleSettlementRecoveryBatch, enqueueSettlementRecovery } from './src/core/settlement-recovery';
         import { configureRuntime, clearRuntime } from './src/runtime/env';
+        import { recordUsageAndChargeOnce } from './src/pipeline/after/charge';
         export default {
             queue: handleSettlementRecoveryBatch,
             async fetch(request, env) {
                 configureRuntime(env);
-                try { return Response.json({ queued: await enqueueSettlementRecovery(await request.json()) }); }
+                try {
+                    const input = await request.json();
+                    if (new URL(request.url).pathname === '/direct') {
+                        const ctx = { requestId: 'public', billingRequestId: input.requestId, workspaceId: input.workspaceId, meta: {} };
+                        await Promise.all(Array.from({ length: 16 }, () => recordUsageAndChargeOnce({ ctx,
+                            costNanos: input.cost_nanos, endpoint: 'responses' })));
+                        return Response.json({ queued: ctx.meta.__usageChargeRecoveryEnqueued === true,
+                            recorded: ctx.meta.__usageChargeRecorded === true });
+                    }
+                    return Response.json({ queued: await enqueueSettlementRecovery(input) });
+                }
                 finally { clearRuntime(); }
             }
         };
@@ -36,6 +47,13 @@ async function source(request) {
     chargeCalls.push(input);
     if (input.p_request_id === "permanent") return Response.json({ message: "fixture failure" }, { status: 503 });
     const identity = `${input.p_workspace_id}:${input.p_request_id}`;
+    if (input.p_request_id === "direct-handoff") {
+        // The first debit commits, but each of the three direct attempts loses
+        // its response to the real client's five-second transport deadline.
+        if (!ledger.has(identity)) ledger.set(identity, input.p_cost_nanos);
+        assert.equal(ledger.get(identity), input.p_cost_nanos);
+        if (chargeCalls.filter(call => call.p_request_id === "direct-handoff").length <= 3) await delay(7_000);
+    }
     if (ledger.has(identity)) {
         if (ledger.get(identity) !== input.p_cost_nanos) return Response.json({ message: "request_charge_amount_mismatch" }, { status: 409 });
         return Response.json({ status: "ok", already_applied: true, invalidate_credit_cache: true });
@@ -121,7 +139,14 @@ try {
     const recovered = await (await mf.getWorker("recovery")).queue("recovery", [message("stalled-replay", stalledBody, 2)]);
     assert.deepEqual(recovered.explicitAcks, ["stalled-replay"]);
     assert.equal(ledger.size, 3, "Restarted recovery preserves one debit after an actual transport timeout");
+    const directInput = { workspaceId, requestId: "direct-handoff", cost_nanos: 99 };
+    const direct = await mf.dispatchFetch("https://local.invalid/direct", { method: "POST", body: JSON.stringify(directInput) });
+    assert.deepEqual(await direct.json(), { queued: true, recorded: false });
+    await eventually(() => chargeCalls.filter(call => call.p_request_id === "direct-handoff").length === 4);
+    assert.equal(ledger.size, 4, "Three timed-out attempts and actual queue recovery still have one debit");
+    assert.equal(ledger.get(`${workspaceId}:direct-handoff`), 99);
     console.log(JSON.stringify({ result: "PASS", freshWorkerReplay: true, duplicateDebitPrevented: true,
         realQueueHandoff: true, nativeAcksAndRetries: true, actualTransportTimeout: true,
+        directTimeoutRecovery: true, coalescedDirectFinalizers: 16,
         quarantined: deadLetters.length, providerCalls: 0 }));
 } finally { await mf.dispose(); }
