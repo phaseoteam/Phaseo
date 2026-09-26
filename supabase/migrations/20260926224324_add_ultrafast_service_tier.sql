@@ -43,10 +43,3 @@ alter table public.v2_request_facts
     check (service_tier_observed is null or service_tier_observed in ('standard', 'priority', 'ultrafast', 'flex', 'batch')) not valid,
   add constraint v2_request_facts_service_tier_slug_check
     check (service_tier_slug is null or service_tier_slug in ('standard', 'priority', 'ultrafast', 'flex', 'batch')) not valid;
-
-alter table public.v2_request_facts
-  validate constraint v2_request_facts_service_tier_requested_check;
-alter table public.v2_request_facts
-  validate constraint v2_request_facts_service_tier_observed_check;
-alter table public.v2_request_facts
-  validate constraint v2_request_facts_service_tier_slug_check;
