@@ -13,6 +13,8 @@ GATEWAY_OPERATION_SAMPLE_RATE = "1"
 GATEWAY_CONTEXT_BUNDLE_ENABLED = "true"
 GATEWAY_WORKSPACE_RUNTIME_ENABLED = "true"
 GATEWAY_FREE_MODEL_QUOTA_ENABLED = "true"
+# Capability only: each owner must explicitly opt in through account settings.
+GATEWAY_FREE_MODEL_OVERAGE_ENABLED = "true"
 GATEWAY_SETTLEMENT_RECOVERY_ENABLED = "true"
 GATEWAY_SETTLEMENT_RECOVERY_QUEUE_NAME = "phaseo-gateway-staging-settlement-recovery"
 # Shared publication intents must not be acknowledged into staging-only KV.
