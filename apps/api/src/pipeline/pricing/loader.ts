@@ -3,58 +3,36 @@
 // How: Exposes helpers used by before/execute/after orchestration.
 
 import { getSupabaseAdmin } from "@/runtime/env";
+import { L1Cache, type CacheValue } from "@/runtime/cache/l1";
 import type { PriceCard, PriceRule, PricingTimeWindow } from "./types";
 
 const PRICING_L1_TTL_MS = 60_000;
 const PRICING_L1_NEGATIVE_TTL_MS = 15_000;
 
-type PricingL1Entry = {
-    value: PriceCard | null;
-    expiresAtMs: number;
-};
-
-const pricingL1 = new Map<string, PricingL1Entry>();
-const pricingInflight = new Map<string, Promise<PriceCard | null>>();
+const pricingL1 = new L1Cache<PriceCard | null>({
+    namespace: "pricing",
+    maxEntries: 512,
+    maxBytes: 8 * 1024 * 1024,
+    maxEntryBytes: 512 * 1024,
+    maxPending: 64,
+    sizeOf: (value, key) => 2 * (key.length + JSON.stringify(value).length),
+});
 
 function pricingCacheKey(provider: string, model: string, endpoint: string, providerModelSlug?: string | null): string {
-    return `${provider}:${model}:${endpoint}:${providerModelSlug ?? "*"}`;
-}
-
-function readPricingL1(key: string): PriceCard | null | undefined {
-    const entry = pricingL1.get(key);
-    if (!entry) return undefined;
-    if (entry.expiresAtMs <= Date.now()) {
-        pricingL1.delete(key);
-        return undefined;
-    }
-    return entry.value;
-}
-
-function writePricingL1(key: string, value: PriceCard | null, ttlMs: number): void {
-    if (!Number.isFinite(ttlMs) || ttlMs <= 0) return;
-    pricingL1.set(key, {
-        value,
-        expiresAtMs: Date.now() + ttlMs,
-    });
+    return JSON.stringify([provider, model, endpoint, providerModelSlug ?? null]);
 }
 
 function resolvePricingL1TtlMs(card: PriceCard, nowMs: number = Date.now()): number {
     if (!card.effective_to) return PRICING_L1_TTL_MS;
     const effectiveToMs = Date.parse(card.effective_to);
     if (!Number.isFinite(effectiveToMs)) return PRICING_L1_TTL_MS;
-    return Math.max(1, Math.min(PRICING_L1_TTL_MS, effectiveToMs - nowMs));
+    return Math.max(0, Math.min(PRICING_L1_TTL_MS, effectiveToMs - nowMs));
 }
 
 export async function loadPriceCard(provider: string, model: string, endpoint: string, providerModelSlug?: string | null): Promise<PriceCard | null> {
     const normalizedProviderModelSlug = providerModelSlug?.trim() || null;
     const cacheKey = pricingCacheKey(provider, model, endpoint, normalizedProviderModelSlug);
-    const l1 = readPricingL1(cacheKey);
-    if (l1 !== undefined) return l1;
-
-    const inflight = pricingInflight.get(cacheKey);
-    if (inflight) return inflight;
-
-    const loader = (async (): Promise<PriceCard | null> => {
+    return pricingL1.getOrLoad(cacheKey, async (): Promise<CacheValue<PriceCard | null>> => {
         const nowIso = new Date().toISOString();
         const supabase = getSupabaseAdmin();
         // Existing foreign keys let PostgREST fetch the complete pricing graph
@@ -79,16 +57,14 @@ export async function loadPriceCard(provider: string, model: string, endpoint: s
             ? query.eq("route.provider_model_slug", normalizedProviderModelSlug)
             : query.or(`model_slug.eq.${JSON.stringify(model)},provider_model_slug.eq.${JSON.stringify(model)}`, { referencedTable: "route" });
         const { data: skuRows, error: skuError } = await query;
-        if (skuError) return null;
+        if (skuError) return { value: null, expiresAtMs: 0 };
         if (!skuRows?.length) {
-            writePricingL1(cacheKey, null, PRICING_L1_NEGATIVE_TTL_MS);
-            return null;
+            return { value: null, expiresAtMs: Date.now() + PRICING_L1_NEGATIVE_TTL_MS };
         }
         const meterRows = skuRows.flatMap((row) => row.meters)
             .sort((left, right) => Number(left.meter_order) - Number(right.meter_order));
         if (!meterRows.length) {
-            writePricingL1(cacheKey, null, PRICING_L1_NEGATIVE_TTL_MS);
-            return null;
+            return { value: null, expiresAtMs: Date.now() + PRICING_L1_NEGATIVE_TTL_MS };
         }
         const skuById = new Map(skuRows.map((row) => [String(row.sku_id), row]));
 
@@ -164,19 +140,11 @@ export async function loadPriceCard(provider: string, model: string, endpoint: s
             version,
             rules,
         };
-        writePricingL1(cacheKey, card, resolvePricingL1TtlMs(card));
-        return card;
-    })();
-
-    pricingInflight.set(cacheKey, loader);
-    try {
-        return await loader;
-    } finally {
-        pricingInflight.delete(cacheKey);
-    }
+        const now = Date.now();
+        return { value: card, expiresAtMs: now + resolvePricingL1TtlMs(card, now), version: card.version };
+    });
 }
 
 export function __resetPricingLoaderCachesForTests(): void {
     pricingL1.clear();
-    pricingInflight.clear();
 }
