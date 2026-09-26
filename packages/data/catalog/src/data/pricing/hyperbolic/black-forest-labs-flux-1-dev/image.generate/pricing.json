@@ -18,17 +18,26 @@
       "region": null,
       "cache_duration_seconds": null,
       "conditions": [],
-      "source": null
+      "source": null,
+      "effective_to": "2026-08-24T00:00:00Z"
     }
   ],
   "regions": [],
   "service_tiers": [
     "standard"
   ],
-  "sources": [],
+  "sources": [
+    {
+      "url": "https://www.hyperbolic.ai/docs/inference/text-apis",
+      "kind": "pricing",
+      "accessed_at": "2026-08-24T00:00:00Z",
+      "notes": "Route is absent from Hyperbolic's current live table; historical pricing retained with a closed effective window."
+    }
+  ],
   "verification": {
-    "status": "unverified",
-    "checked_at": null,
-    "notes": null
-  }
+    "status": "verified",
+    "checked_at": "2026-08-24T00:00:00Z",
+    "notes": "Historical price closed during the official live catalogue reconciliation."
+  },
+  "effective_to": "2026-08-24T00:00:00Z"
 }
