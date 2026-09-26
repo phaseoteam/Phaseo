@@ -15,6 +15,10 @@ import { azureHeaders, resolveAzureConfig, resolveAzureCredential } from "@provi
 import { upstreamTestHeaders } from "@providers/shared/testing";
 import { normalizeTextUsageForPricing } from "@executors/_shared/usage/text";
 import { createAnthropicToResponsesStreamTransformer } from "./stream-transformer";
+import { observeAnthropicStream } from "./stream-usage";
+import { readSseEvents, SseProtocolError } from "@/core/sse";
+import { classifyStreamProviderError } from "@/core/stream-error";
+export { collectAnthropicStreamUsage } from "./stream-usage";
 import { resolveStreamForProtocol } from "@executors/_shared/text-generate/openai-compat";
 import { mapIrEffortToAnthropic } from "@core/reasoningEffort";
 import { isIRNativeToolDefinition } from "@core/nativeTools";
@@ -259,13 +263,14 @@ export async function executeAnthropic(args: ExecutorExecuteArgs): Promise<Execu
                         if (!res.body) {
                                 throw new Error("anthropic_stream_missing_body");
                         }
-						const [clientBody, accountingBody] = res.body.tee();
+						const observed = observeAnthropicStream(res.body, keyInfo.source);
 
                         const model = args.providerModelSlug || args.ir.model;
-						const responsesStream = clientBody.pipeThrough(
-                                createAnthropicToResponsesStreamTransformer(args.requestId, model),
+						const nativeMessages = args.protocol === "anthropic.messages" || (!args.protocol && args.endpoint === "messages");
+						const responsesStream = nativeMessages ? observed.stream : observed.stream.pipeThrough(
+                                createAnthropicToResponsesStreamTransformer(args.requestId, model, keyInfo.source),
                         );
-                        const normalized = resolveStreamForProtocol(
+                        const normalized = nativeMessages ? responsesStream : resolveStreamForProtocol(
                                 new Response(responsesStream, {
                                         status: res.status,
                                         headers: res.headers,
@@ -278,7 +283,7 @@ export async function executeAnthropic(args: ExecutorExecuteArgs): Promise<Execu
                                 kind: "stream",
                                 stream: normalized,
 								usageFinalizer: async () => {
-									const final = await collectAnthropicStreamUsage(accountingBody);
+									const final = observed.finalUsage();
 									return {
 										...bill,
 										usage: normalizeTextUsageForPricing(final.usage) ?? undefined,
@@ -298,6 +303,7 @@ export async function executeAnthropic(args: ExecutorExecuteArgs): Promise<Execu
 						const { message, firstFrameMs, totalMs } = await bufferAnthropicStreamToMessage(
 							res,
 							selectedDispatchAtMs,
+							keyInfo.source,
 						);
 
                         // CRITICAL: Convert to IR with proper tool_use extraction
@@ -326,57 +332,16 @@ export async function executeAnthropic(args: ExecutorExecuteArgs): Promise<Execu
                 }
 }
 
-export async function collectAnthropicStreamUsage(
-	stream: ReadableStream<Uint8Array>,
-): Promise<{ usage: Record<string, unknown>; stopReason: string | null }> {
-	const reader = stream.getReader();
-	const decoder = new TextDecoder();
-	let buffer = "";
-	let usage: Record<string, unknown> = {};
-	let stopReason: string | null = null;
-	const consume = (frame: string) => {
-		const data = frame
-			.split(/\r?\n/)
-			.filter((line) => line.startsWith("data:"))
-			.map((line) => line.slice(5).trim())
-			.join("\n");
-		if (!data || data === "[DONE]") return;
-		try {
-			const event = JSON.parse(data);
-			const eventUsage = event?.message?.usage ?? event?.usage;
-			if (eventUsage && typeof eventUsage === "object") usage = { ...usage, ...eventUsage };
-			if (typeof event?.delta?.stop_reason === "string") stopReason = event.delta.stop_reason;
-			if (typeof event?.message?.stop_reason === "string") stopReason = event.message.stop_reason;
-		} catch {
-			// The client stream remains authoritative and is forwarded unchanged.
-		}
-	};
-	while (true) {
-		const { value, done } = await reader.read();
-		buffer += decoder.decode(value ?? new Uint8Array(), { stream: !done });
-		let boundary: number;
-		while ((boundary = buffer.search(/\r?\n\r?\n/)) >= 0) {
-			consume(buffer.slice(0, boundary));
-			buffer = buffer.slice(boundary).replace(/^\r?\n\r?\n/, "");
-		}
-		if (done) break;
-	}
-	if (buffer.trim()) consume(buffer);
-	return { usage, stopReason };
-}
-
-function mapAnthropicStopReason(stopReason: string | null): Bill["finish_reason"] {
+export function mapAnthropicStopReason(stopReason: string | null): Bill["finish_reason"] {
 	if (stopReason === "max_tokens" || stopReason === "model_context_window_exceeded") return "length";
 	if (stopReason === "tool_use") return "tool_calls";
 	if (stopReason === "refusal") return "content_filter";
 	return stopReason ? "stop" : null;
 }
 
-async function bufferAnthropicStreamToMessage(res: Response, upstreamStartMs: number): Promise<{ message: any; firstFrameMs: number | null; totalMs: number | null }> {
+export async function bufferAnthropicStreamToMessage(res: Response, upstreamStartMs: number, credentialSource?: "gateway" | "byok"): Promise<{ message: any; firstFrameMs: number | null; totalMs: number | null }> {
 	if (!res.body) throw new Error("anthropic_stream_missing_body");
-	const reader = res.body.getReader();
-	const dec = new TextDecoder();
-	let buf = "";
+	let admittedChars = 0;
 	let firstFrameMs: number | null = null;
 	let terminalAtMs: number | null = null;
 	let finished = false;
@@ -399,6 +364,7 @@ async function bufferAnthropicStreamToMessage(res: Response, upstreamStartMs: nu
 	};
 
 	const getBlock = (index: number): AnthropicBlock => {
+		if (!Number.isInteger(index) || index < 0 || index >= 128) throw new SseProtocolError("sse_invalid_tool_delta");
 		if (!message.content[index]) {
 			message.content[index] = { type: "text", text: "" };
 		}
@@ -421,28 +387,19 @@ async function bufferAnthropicStreamToMessage(res: Response, upstreamStartMs: nu
 		}
 	};
 
-	while (true) {
-		const { value, done } = await reader.read();
-		if (done) break;
-		buf += dec.decode(value, { stream: true });
-		const frames = buf.split(/\n\n/);
-		buf = frames.pop() ?? "";
-
-		for (const raw of frames) {
-			const lines = raw.split("\n");
-			let data = "";
-			for (const line of lines) {
-				const l = line.replace(/\r$/, "");
-				if (l.startsWith("data:")) data += l.slice(5).trimStart();
-			}
-			if (!data || data === "[DONE]") continue;
+	for await (const event of readSseEvents(res.body, { onChunk: () => { firstFrameMs ??= Math.max(0, Date.now() - upstreamStartMs); } })) {
+			const data = event.data;
+			admittedChars += data.length;
+			if (admittedChars > 4 * 1024 * 1024) throw new SseProtocolError("sse_state_too_large");
 
 			let payload: any;
 			try {
 				payload = JSON.parse(data);
 			} catch {
-				continue;
+				throw new SseProtocolError("sse_invalid_json");
 			}
+			if (!payload || typeof payload !== "object" || Array.isArray(payload)) throw new SseProtocolError("sse_invalid_json");
+			if (payload.type === "error") throw classifyStreamProviderError(payload, credentialSource);
 			if (firstFrameMs === null) {
 				firstFrameMs = Math.max(0, Date.now() - upstreamStartMs);
 			}
@@ -459,12 +416,14 @@ async function bufferAnthropicStreamToMessage(res: Response, upstreamStartMs: nu
 				message.stop_reason = started.stop_reason ?? message.stop_reason;
 				message.stop_sequence = started.stop_sequence ?? message.stop_sequence;
 				message.content = Array.isArray(started.content) ? [...started.content] : [];
+				if (message.content.length > 128) throw new SseProtocolError("sse_state_too_large");
 				applyUsage(started.usage);
 				continue;
 			}
 
 			if (type === "content_block_start") {
 				const index = Number(payload?.index ?? 0);
+				if (!Number.isInteger(index) || index < 0 || index >= 128) throw new SseProtocolError("sse_invalid_tool_delta");
 				const block = payload?.content_block ?? {};
 				message.content[index] = {
 					...block,
@@ -524,13 +483,14 @@ async function bufferAnthropicStreamToMessage(res: Response, upstreamStartMs: nu
 				if (stopped && typeof stopped === "object") {
 					Object.assign(message, stopped);
 					if (Array.isArray(stopped.content)) {
+						if (stopped.content.length > 128) throw new SseProtocolError("sse_state_too_large");
 						message.content = [...stopped.content];
 					}
 					applyUsage(stopped.usage);
 				}
 				finished = true;
 				terminalAtMs = Date.now();
-				continue;
+				break;
 			}
 
 			if (type === "message") {
@@ -538,13 +498,14 @@ async function bufferAnthropicStreamToMessage(res: Response, upstreamStartMs: nu
 				const whole = payload?.message ?? payload;
 				Object.assign(message, whole);
 				if (!Array.isArray(message.content)) message.content = [];
+				if (message.content.length > 128) throw new SseProtocolError("sse_state_too_large");
 				applyUsage(whole?.usage);
+				if (whole.stop_reason) { finished = true; terminalAtMs = Date.now(); break; }
 			}
-		}
 	}
 
-	if (!finished && !message.id && (!Array.isArray(message.content) || message.content.length === 0)) {
-		throw new Error("anthropic_stream_missing_completion");
+	if (!finished) {
+		throw new SseProtocolError("sse_missing_terminal");
 	}
 
 	for (const block of message.content ?? []) {

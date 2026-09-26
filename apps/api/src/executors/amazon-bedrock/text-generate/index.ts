@@ -9,7 +9,8 @@ import { buildTextExecutor, cherryPickIRParams } from "@executors/_shared/text-g
 import { resolveStreamForProtocol, bufferStreamToIR } from "@executors/_shared/text-generate/openai-compat";
 import { irToOpenAIChat, openAIChatToIR } from "@executors/_shared/text-generate/openai-compat/transform-chat";
 import { irToOpenAIResponses, openAIResponsesToIR } from "@executors/_shared/text-generate/openai-compat/transform";
-import { collectAnthropicStreamUsage, irToAnthropicMessages, anthropicMessagesToIR } from "@executors/anthropic/text-generate";
+import { irToAnthropicMessages, anthropicMessagesToIR, mapAnthropicStopReason } from "@executors/anthropic/text-generate";
+import { observeAnthropicStream } from "@executors/anthropic/text-generate/stream-usage";
 import { createAnthropicToResponsesStreamTransformer } from "@executors/anthropic/text-generate/stream-transformer";
 import { normalizeTextUsageForPricing } from "@executors/_shared/usage/text";
 import { upstreamTestHeaders } from "@providers/shared/testing";
@@ -108,11 +109,12 @@ async function executeBedrockMessages(
 		if (!res.body) {
 			throw new Error("bedrock_messages_stream_missing_body");
 		}
-		const [clientBody, accountingBody] = res.body.tee();
-		const responsesStream = clientBody.pipeThrough(
-			createAnthropicToResponsesStreamTransformer(args.requestId, model),
+		const observed = observeAnthropicStream(res.body, keyInfo.source);
+		const nativeMessages = args.protocol === "anthropic.messages" || (!args.protocol && args.endpoint === "messages");
+		const responsesStream = nativeMessages ? observed.stream : observed.stream.pipeThrough(
+			createAnthropicToResponsesStreamTransformer(args.requestId, model, keyInfo.source),
 		);
-		const stream = resolveStreamForProtocol(
+		const stream = nativeMessages ? responsesStream : resolveStreamForProtocol(
 			new Response(responsesStream, {
 				status: res.status,
 				headers: res.headers,
@@ -124,15 +126,11 @@ async function executeBedrockMessages(
 			kind: "stream",
 			stream,
 			usageFinalizer: async () => {
-				const final = await collectAnthropicStreamUsage(accountingBody);
+				const final = observed.finalUsage();
 				return {
 					...bill,
 					usage: normalizeTextUsageForPricing(final.usage) ?? undefined,
-					finish_reason: final.stopReason === "max_tokens"
-						? "length"
-						: final.stopReason === "tool_use"
-							? "tool_calls"
-							: final.stopReason ? "stop" : null,
+					finish_reason: mapAnthropicStopReason(final.stopReason),
 				};
 			},
 			bill,

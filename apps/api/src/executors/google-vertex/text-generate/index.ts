@@ -8,7 +8,8 @@ import { fetchUpstream } from "@executors/_shared/timing/upstream";
 import { buildTextExecutor, cherryPickIRParams } from "@executors/_shared/text-generate/shared";
 import { bufferStreamToIR, resolveStreamForProtocol } from "@executors/_shared/text-generate/openai-compat";
 import { createSyntheticResponsesStreamFromIR } from "@executors/_shared/text-generate/synthetic-responses-stream";
-import { irToAnthropicMessages, anthropicMessagesToIR } from "@executors/anthropic/text-generate";
+import { irToAnthropicMessages, anthropicMessagesToIR, mapAnthropicStopReason } from "@executors/anthropic/text-generate";
+import { observeAnthropicStream } from "@executors/anthropic/text-generate/stream-usage";
 import { createAnthropicToResponsesStreamTransformer } from "@executors/anthropic/text-generate/stream-transformer";
 import { irToOpenAIChat, openAIChatToIR } from "@executors/_shared/text-generate/openai-compat/transform-chat";
 import { transformStream as transformGoogleGeminiStream } from "@executors/google-ai-studio/text-generate";
@@ -126,6 +127,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 
 	if (res.body && !isJsonResponse) {
 		if (irRequest.stream) {
+			let anthropicStream: ReturnType<typeof observeAnthropicStream> | undefined;
 			const stream = (() => {
 				if (route.family === "gemini") {
 					return transformGoogleGeminiStream(res.body!, args);
@@ -140,8 +142,10 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 						"chat",
 					);
 				}
-				const responsesStream = res.body!.pipeThrough(
-					createAnthropicToResponsesStreamTransformer(args.requestId, model),
+				anthropicStream = observeAnthropicStream(res.body!, keyInfo.source);
+				if (args.protocol === "anthropic.messages" || (!args.protocol && args.endpoint === "messages")) return anthropicStream.stream;
+				const responsesStream = anthropicStream.stream.pipeThrough(
+					createAnthropicToResponsesStreamTransformer(args.requestId, model, keyInfo.source),
 				);
 				return resolveStreamForProtocol(
 					new Response(responsesStream, {
@@ -156,7 +160,11 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 				kind: "stream",
 				allowEmptySuccess: true,
 				stream,
-				usageFinalizer: async () => null,
+				usageFinalizer: async () => {
+					if (!anthropicStream) return null;
+					const final = anthropicStream.finalUsage();
+					return { ...bill, usage: normalizeTextUsageForPricing(final.usage), finish_reason: mapAnthropicStopReason(final.stopReason) };
+				},
 				bill,
 				upstream: res,
 				keySource: keyInfo.source,
@@ -182,7 +190,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 				return res.body!;
 			}
 			return res.body!.pipeThrough(
-				createAnthropicToResponsesStreamTransformer(args.requestId, model),
+				createAnthropicToResponsesStreamTransformer(args.requestId, model, keyInfo.source),
 			);
 		})();
 		const routeForBuffer = route.family === "anthropic" ? "responses" : "chat";
