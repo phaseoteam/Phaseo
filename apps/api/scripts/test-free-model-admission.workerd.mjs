@@ -30,7 +30,7 @@ const bundle = await build({ absWorkingDir: root, bundle: true, format: "esm", p
                     const attempts = await Promise.all(Array.from({ length: 32 }, () => guardFreeModelAdmission(ctx, card, 'gateway')));
                     const results = await Promise.all(attempts.map(async result => ({ status: result?.status, body: await result?.json() })));
                     const settings = await env.MALFORMED_QUOTA.getByName('owner:' + ctx.workspaceOwnerUserId).getSettings();
-                    return Response.json({ results, used: settings.requestsUsedToday, metrics: metrics.snapshot() });
+                    return Response.json({ results, used: settings.requestsUsedToday, pending: settings.requestsPending, metrics: metrics.snapshot() });
                 }
                 const result = await guardFreeModelAdmission(ctx, card, 'gateway');
                 // Simulated provider fallback must not consume another quota slot.
@@ -61,7 +61,8 @@ try {
     assert.equal(statuses.filter(status => status === 200).length, 25);
     assert.equal(statuses.filter(status => status === 429).length, 7);
     const malformed = await (await runtime.dispatchFetch('https://local.invalid/malformed')).json();
-    assert.equal(malformed.used, 1, 'Ambiguous committed admission must not be retried');
+    assert.equal(malformed.used, 0, 'Unknown outcome is not a successful request');
+    assert.equal(malformed.pending, 1, 'Ambiguous committed admission must not be retried');
     assert.equal(malformed.results.length, 32);
     assert.equal(malformed.metrics.quotaAdmission, 'unavailable');
     assert.deepEqual(malformed.metrics.total, { quotaRpc: 1 });
@@ -71,5 +72,5 @@ try {
     }
     console.log(JSON.stringify({ result: "PASS", workspaces: 2, sharedOwner: true, requests: 32,
         accepted: 25, fallbacksConsumeAdditionalQuota: false, malformedReplyDispatches: 0,
-        ambiguousAdmissionWrites: malformed.used, externalRequests: 0 }));
+        ambiguousAdmissionReservations: malformed.pending, externalRequests: 0 }));
 } finally { await runtime.dispose(); }
