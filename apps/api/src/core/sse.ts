@@ -1,7 +1,7 @@
 import { createParser, type EventSourceMessage } from "eventsource-parser";
 
 export class SseProtocolError extends Error {
-    constructor(readonly code: "sse_frame_too_large" | "sse_chunk_too_large" | "sse_invalid_utf8" | "sse_invalid_json" | "sse_missing_terminal") {
+    constructor(readonly code: "sse_frame_too_large" | "sse_chunk_too_large" | "sse_invalid_utf8" | "sse_invalid_json" | "sse_missing_terminal" | "sse_state_too_large" | "sse_invalid_tool_delta") {
         super(code); this.name = "SseProtocolError";
     }
 }
