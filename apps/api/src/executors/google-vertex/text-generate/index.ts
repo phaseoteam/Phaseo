@@ -353,7 +353,8 @@ export function resolveVertexApiBase(bindings: Record<string, any>, providerId?:
 	const rawBase = String(bindings.GOOGLE_VERTEX_BASE_URL || "").replace(/\/+$/, "");
 	const project = String(bindings.GOOGLE_VERTEX_PROJECT || "").trim();
 	const configuredLocation = String(bindings.GOOGLE_VERTEX_LOCATION || "").trim().toLowerCase();
-	const requiredLocation = providerId === "google-vertex-eu" && family === "anthropic" ? "eu"
+	const requiredLocation = providerId === "google-vertex" && model === "gemini-3.1-flash-lite" ? "global"
+		: providerId === "google-vertex-eu" && family === "anthropic" ? "eu"
 		: providerId === "google-vertex" && family === "anthropic" ? "global"
 		: providerId === "google-vertex" && family === "openapi_chat" && model?.endsWith("-maas")
 			? model === "openai/gpt-oss-20b-maas" ? "us-central1" : "global" : undefined;

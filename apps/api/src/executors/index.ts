@@ -432,6 +432,11 @@ export const EXECUTORS_BY_PROVIDER: Record<string, ProviderCapabilityMap> = {
 	"aion-labs": { "text.generate": aionLabsText },
 	aionlabs: { "text.generate": aionLabsText },
 	"amazon-bedrock": { "text.generate": amazonBedrockText },
+	"amazon-bedrock-global": { "text.generate": amazonBedrockText },
+	"amazon-bedrock-us": { "text.generate": amazonBedrockText },
+	"amazon-bedrock-eu": { "text.generate": amazonBedrockText },
+	"amazon-bedrock-jp": { "text.generate": amazonBedrockText },
+	"amazon-bedrock-au": { "text.generate": amazonBedrockText },
 	"google-vertex": { "text.generate": googleVertexText, embeddings: googleVertexEmbeddings, "video.generate": googleVertexVideo, "audio.transcription": googleVertexTranscription },
 	"google-vertex-eu": { "text.generate": googleVertexText },
 	deepinfra: {
