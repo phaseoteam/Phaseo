@@ -26,9 +26,12 @@ describe("GMI Cloud Hy Image 3.5", () => {
 			onRequest: (call) => { body = call.bodyJson; },
 		}]);
 		try {
-			const result = await execute(args());
+			const request = args();
+			request.meta.returnUpstreamRequest = true;
+			const result = await execute(request);
 			expect(body).toEqual({ model: "hy-image-v3.5-preview", payload: { prompt: "A blue mug", size: "2048x2048", generate_max_pixels: 4194304 } });
 			expect((result.ir as any)?.data).toEqual([{ url: "https://gmi.example/image.png", b64Json: null, revisedPrompt: null }]);
+			expect(JSON.parse(result.mappedRequest ?? "{}")).toEqual(body);
 		} finally { mock.restore(); }
 	});
 
@@ -64,5 +67,7 @@ describe("GMI Cloud Hy Image 3.5", () => {
 	it("rejects more than five references before submitting", async () => {
 		const result = await execute(args(Array(6).fill("https://example.com/mug.png")));
 		expect(result.upstream.status).toBe(400);
+		expect(result.kind === "completed" && result.terminal).toBe(true);
+		expect(result.kind === "completed" && result.localClientError).toBe(true);
 	});
 });

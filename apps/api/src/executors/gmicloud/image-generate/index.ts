@@ -1,17 +1,21 @@
 import type { IRImageGenerationRequest, IRImageGenerationResponse } from "@core/ir";
-import type { ExecutorExecuteArgs, ExecutorResult, ProviderExecutor } from "@executors/types";
+import type { ExecutorCompletedResult, ExecutorExecuteArgs, ExecutorResult, ProviderExecutor } from "@executors/types";
 import { imageInputUrl, unsupportedImageOption } from "@executors/_shared/image-results";
 import { executeGmiQueueRequest, queueKeyMeta } from "../request-queue";
 
 const MODEL = "hy-image-v3.5-preview";
 
-function errorResult(args: ExecutorExecuteArgs, upstream: Response): ExecutorResult {
+function errorResult(args: ExecutorExecuteArgs, upstream: Response, mappedRequest?: string): ExecutorCompletedResult {
 	const key = queueKeyMeta(args);
-	return { kind: "completed", ir: undefined, upstream, bill: { cost_cents: 0, currency: "USD" }, keySource: key.source, byokKeyId: key.byokId };
+	return { kind: "completed", ir: undefined, upstream, bill: { cost_cents: 0, currency: "USD" }, keySource: key.source, byokKeyId: key.byokId, mappedRequest };
 }
 
 function validationError(args: ExecutorExecuteArgs, reason: string): ExecutorResult {
-	return errorResult(args, new Response(JSON.stringify({ error: "validation_error", reason }), { status: 400, headers: { "Content-Type": "application/json" } }));
+	return {
+		...errorResult(args, new Response(JSON.stringify({ error: "validation_error", reason }), { status: 400, headers: { "Content-Type": "application/json" } })),
+		terminal: true,
+		localClientError: true,
+	};
 }
 
 export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult> {
@@ -38,12 +42,15 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	const pixels = Number(dimensions[1]) * Number(dimensions[2]);
 	const generateMaxPixels = pixels <= 1048576 ? 1048576 : pixels <= 2359296 ? 2359296 : 4194304;
 	const payload = { prompt: ir.prompt, size, generate_max_pixels: generateMaxPixels, ...(imageInputs.length ? { image: imageInputs } : {}) };
+	const mappedRequest = args.meta.echoUpstreamRequest || args.meta.returnUpstreamRequest
+		? JSON.stringify({ model: MODEL, payload })
+		: undefined;
 	const result = await executeGmiQueueRequest(args, MODEL, payload);
-	if (!result.response.ok) return errorResult(args, result.response);
+	if (!result.response.ok) return errorResult(args, result.response, mappedRequest);
 	const outcome = result.json?.outcome ?? result.json?.result ?? result.json?.data ?? {};
 	const candidate = outcome.image_url ?? outcome.imageUrl ?? outcome.image_urls?.[0] ?? outcome.url ?? outcome.media_urls?.[0]?.url ?? outcome.media_urls?.[0] ?? outcome.images?.[0]?.url;
 	if (typeof candidate !== "string" || !/^https:\/\//i.test(candidate)) {
-		return errorResult(args, new Response(JSON.stringify({ error: "gmicloud_image_output_missing", request_id: result.requestId }), { status: 502, headers: { "Content-Type": "application/json" } }));
+		return errorResult(args, new Response(JSON.stringify({ error: "gmicloud_image_output_missing", request_id: result.requestId }), { status: 502, headers: { "Content-Type": "application/json" } }), mappedRequest);
 	}
 	const usage = { inputTokens: 0, outputTokens: 0, totalTokens: 0, requests: 1, output_image: 1 };
 	const response: IRImageGenerationResponse = {
@@ -51,7 +58,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		model: ir.model, provider: args.providerId, size, data: [{ url: candidate, b64Json: null, revisedPrompt: null }], usage, rawResponse: result.json,
 	};
 	const key = queueKeyMeta(args);
-	return { kind: "completed", ir: response, upstream: result.response, bill: { cost_cents: 0, currency: "USD", usage, upstream_id: result.requestId }, keySource: key.source, byokKeyId: key.byokId, rawResponse: result.json };
+	return { kind: "completed", ir: response, upstream: result.response, bill: { cost_cents: 0, currency: "USD", usage, upstream_id: result.requestId }, keySource: key.source, byokKeyId: key.byokId, mappedRequest, rawResponse: result.json };
 }
 
 export const executor: ProviderExecutor = execute;
