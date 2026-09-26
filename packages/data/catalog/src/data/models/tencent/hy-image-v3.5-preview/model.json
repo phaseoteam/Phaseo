@@ -1,0 +1,88 @@
+{
+  "model_id": "tencent/hy-image-v3.5-preview",
+  "organisation_id": "tencent",
+  "name": "Hy Image 3.5 Preview",
+  "status": "Available",
+  "previous_model_id": "tencent/hy-image-v3",
+  "description": "Tencent Hunyuan image generation and reference-based editing model, available through GMI Cloud at up to 2K output.",
+  "announced_date": null,
+  "release_date": null,
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": "text,image",
+  "output_types": "image",
+  "api_model_id": "tencent/hy-image-v3.5-preview",
+  "variants": [
+    {
+      "model_id": "tencent/hy-image-v3.5-preview:free",
+      "name": "Hy Image 3.5 Preview (Free)",
+      "variant_kind": "free"
+    }
+  ],
+  "links": [
+    {
+      "title": "GMI Cloud API example",
+      "kind": "documentation",
+      "url": "https://www.gmicloud.ai/zh-tw/blog/why-hy-image-35-preview-matters-what-held-up-when-i-tested-it"
+    }
+  ],
+  "details": [
+    {
+      "name": "gmicloud_max_reference_images",
+      "value": 5
+    },
+    {
+      "name": "gmicloud_max_output_pixels",
+      "value": 4194304
+    }
+  ],
+  "benchmarks": [],
+  "family_id": null,
+  "page_notice": null,
+  "model_type": null,
+  "knowledge_cutoff": null,
+  "limits": {
+    "context": null,
+    "input": null,
+    "output": null
+  },
+  "modalities": {
+    "input": [
+      "text",
+      "image"
+    ],
+    "output": [
+      "image"
+    ]
+  },
+  "reasoning": {
+    "supported": false,
+    "options": []
+  },
+  "capabilities": {
+    "attachment": true,
+    "tool_call": false,
+    "structured_output": false,
+    "temperature": null,
+    "streaming": false,
+    "web_search": false
+  },
+  "open_weights": null,
+  "sources": [
+    {
+      "kind": "provider_models",
+      "url": "https://www.gmicloud.ai/zh-tw/blog/why-hy-image-35-preview-matters-what-held-up-when-i-tested-it",
+      "accessed_at": "2026-09-25T00:00:00Z"
+    }
+  ],
+  "verification": {
+    "status": "verified",
+    "checked_at": "2026-09-26T00:00:00Z",
+    "notes": "Live GMI Cloud generation and reference image editing succeeded on 2026-09-26."
+  },
+  "last_updated": "2026-09-25T00:00:00Z",
+  "removal_date": null,
+  "replacement_model_id": null,
+  "license_url": null
+}

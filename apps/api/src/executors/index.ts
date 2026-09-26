@@ -82,6 +82,7 @@ import { executor as friendliText } from "./friendli/text-generate";
 import { executor as gmicloudText } from "./gmicloud/text-generate";
 import { executor as gmicloudMusic } from "./gmicloud/music-generate";
 import { executor as gmicloudAudioSpeech } from "./gmicloud/audio-speech";
+import { executor as gmicloudImage } from "./gmicloud/image-generate";
 import { executor as hyperbolicText } from "./hyperbolic/text-generate";
 import { executor as inceptionText } from "./inception/text-generate";
 import { executor as infermaticText } from "./infermatic/text-generate";
@@ -387,6 +388,8 @@ export const EXECUTORS_BY_PROVIDER: Record<string, ProviderCapabilityMap> = {
 		"text.generate": gmicloudText,
 		"music.generate": gmicloudMusic,
 		"audio.speech": gmicloudAudioSpeech,
+		"image.generate": gmicloudImage,
+		"image.edit": gmicloudImage,
 	},
 	hyperbolic: { "text.generate": hyperbolicText },
 	inception: { "text.generate": inceptionText },

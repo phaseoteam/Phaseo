@@ -16,6 +16,7 @@ export type GmiQueueResult = {
 	requestId: string;
 	response: Response;
 	json: any;
+	accepted: boolean;
 };
 
 function readFirstBinding(names: readonly string[]): string | undefined {
@@ -77,7 +78,7 @@ export async function executeGmiQueueRequest(
 		body,
 	});
 	const submitJson = await submitResponse.clone().json().catch(() => ({}));
-	if (!submitResponse.ok) return { requestId: requestIdFrom(submitJson) ?? "", response: submitResponse, json: submitJson };
+	if (!submitResponse.ok) return { requestId: requestIdFrom(submitJson) ?? "", response: submitResponse, json: submitJson, accepted: false };
 
 	const requestId = requestIdFrom(submitJson);
 	if (!requestId) {
@@ -85,6 +86,7 @@ export async function executeGmiQueueRequest(
 			requestId: "",
 			response: jsonResponse({ error: "gmicloud_request_id_missing", upstream: submitJson }, 502),
 			json: submitJson,
+			accepted: true,
 		};
 	}
 
@@ -102,7 +104,7 @@ export async function executeGmiQueueRequest(
 		);
 		latestJson = await latestResponse.clone().json().catch(() => ({}));
 		if (!latestResponse.ok) {
-			return { requestId, response: latestResponse, json: latestJson };
+			return { requestId, response: latestResponse, json: latestJson, accepted: true };
 		}
 	}
 
@@ -112,6 +114,7 @@ export async function executeGmiQueueRequest(
 			requestId,
 			response: jsonResponse({ error: "gmicloud_request_queue_failed", request_id: requestId }, 502),
 			json: latestJson,
+			accepted: true,
 		};
 	}
 	if (!isSuccess(finalStatus) && !isFailure(finalStatus)) {
@@ -119,9 +122,10 @@ export async function executeGmiQueueRequest(
 			requestId,
 			response: jsonResponse({ error: "gmicloud_request_queue_timeout", request_id: requestId, status: finalStatus || "processing" }, 504),
 			json: latestJson,
+			accepted: true,
 		};
 	}
-	return { requestId, response: latestResponse, json: latestJson };
+	return { requestId, response: latestResponse, json: latestJson, accepted: true };
 }
 
 export function extractMediaUrl(json: any): string | undefined {
