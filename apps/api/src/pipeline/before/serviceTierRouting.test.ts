@@ -56,7 +56,7 @@ vi.mock("@pipeline/pricing", () => ({
 function makeCard(args: {
     provider: string;
     model: string;
-    plans: Array<"standard" | "priority" | "batch" | "flex">;
+    plans: Array<"standard" | "priority" | "ultrafast" | "batch" | "flex">;
 }): PriceCard {
     return {
         provider: args.provider,
@@ -716,6 +716,63 @@ describe("applyServiceTierRouting", () => {
                 reason: "flex_sibling",
             },
         ]);
+    });
+
+    it("tries a priced Ultrafast sibling before dropping an unpriced base candidate", async () => {
+        queryState.providerRows = [{
+            provider_id: "google-ai-studio",
+            api_model_id: "google/gemini-3-pro-image-ultrafast",
+            provider_api_model_id: "provider-ultrafast-pam",
+            provider_model_slug: "gemini-3-pro-image-ultrafast",
+            is_active_gateway: true,
+            effective_from: "2026-05-29T00:00:00Z",
+            effective_to: null,
+        }];
+        queryState.capabilityRows = [{
+            provider_api_model_id: "provider-ultrafast-pam",
+            params: { mode: "ultrafast" },
+            max_input_tokens: 2_000_000,
+            max_output_tokens: 64_000,
+            status: "active",
+            updated_at: "2026-05-29T00:00:00Z",
+            created_at: "2026-05-29T00:00:00Z",
+        }];
+        const siblingCard = makeCard({
+            provider: "google-ai-studio",
+            model: "google/gemini-3-pro-image-ultrafast",
+            plans: ["ultrafast"],
+        });
+        loadPriceCardMock.mockResolvedValue(siblingCard);
+
+        const result = await applyServiceTierRouting({
+            candidates: [makeCandidate({
+                providerId: "google-ai-studio",
+                apiModelId: "google/gemini-3-pro-image",
+                providerModelSlug: "gemini-3-pro-image",
+                pricingCard: null,
+            })],
+            body: { service_tier: "ultrafast" },
+            capability: "text.generate",
+        });
+
+        expect(loadPriceCardMock).toHaveBeenCalledWith(
+            "google-ai-studio",
+            "google/gemini-3-pro-image-ultrafast",
+            "text.generate",
+        );
+        expect(result.candidates[0]).toMatchObject({
+            providerId: "google-ai-studio",
+            apiModelId: "google/gemini-3-pro-image-ultrafast",
+            providerModelSlug: "gemini-3-pro-image-ultrafast",
+            pricingCard: siblingCard,
+            capabilityParams: { mode: "ultrafast" },
+        });
+        expect(result.diagnostics.remappedProviders).toMatchObject([{
+            providerId: "google-ai-studio",
+            fromApiModelId: "google/gemini-3-pro-image",
+            toApiModelId: "google/gemini-3-pro-image-ultrafast",
+            reason: "ultrafast_sibling",
+        }]);
     });
 
 	it("drops a tier sibling when final-route workspace authorization rejects it", async () => {

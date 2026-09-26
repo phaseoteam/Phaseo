@@ -212,6 +212,19 @@ describe("after/pricing calculatePricing", () => {
         expect(result.totalNanos).toBe(2_000_000_000);
     });
 
+    it("bills an Ultrafast-only card at the Ultrafast rate", () => {
+        const card: PriceCard = {
+            ...TTS_CARD,
+            rules: [{ ...TTS_CARD.rules[0], pricing_plan: "ultrafast", price_per_unit: "20" }],
+        };
+        const result = calculatePricing(
+            { input_text_tokens: 1_000_000 },
+            card,
+            { service_tier: "ultrafast" },
+        );
+        expect(result.totalNanos).toBe(20_000_000_000);
+    });
+
     it("rejects default billing against a priority-only card", () => {
         const card: PriceCard = { ...TTS_CARD, rules: [{ ...TTS_CARD.rules[0], pricing_plan: "priority" }] };
         expect(() => calculatePricing({ input_text_tokens: 1_000 }, card, {})).toThrow("pricing_plan_missing:standard");

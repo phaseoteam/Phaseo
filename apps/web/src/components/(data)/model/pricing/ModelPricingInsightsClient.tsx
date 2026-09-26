@@ -9,6 +9,7 @@ import PricingPlanSelect from "@/components/(data)/model/pricing/PricingPlanSele
 import PricingInsights from "@/components/(data)/model/pricing/PricingInsights";
 import { subscribeProviderView } from "@/components/(data)/model/pricing/providerViewSync";
 import { normalizeGatewayStatusValue } from "@/components/(data)/model/pricing/providerGatewayStatus";
+import { getProviderAvailablePlans } from "@/components/(data)/model/pricing/providerPlanRouting";
 
 const PLAN_ORDER = ["free", "standard", "priority", "ultrafast", "flex", "batch"];
 
@@ -52,8 +53,8 @@ export default function ModelPricingInsightsClient({
 	const availablePlans = useMemo(() => {
 		const plans = new Set<string>();
 		for (const provider of visibleProviders) {
-			for (const rule of provider.pricing_rules) {
-				plans.add(rule.pricing_plan || "standard");
+			for (const plan of getProviderAvailablePlans(provider)) {
+				plans.add(plan);
 			}
 		}
 		return PLAN_ORDER.filter((plan) => plans.has(plan));

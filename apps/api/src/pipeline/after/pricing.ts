@@ -42,6 +42,7 @@ function derivePricingPlan(body: any, usage: any, card: PriceCard): string {
     const tier = normalizePricingServiceTier(body, usage, card);
 
     if (tier === "fast" || tier === "priority") return "priority";
+    if (tier === "ultrafast") return "ultrafast";
     if (tier === "batch") return "batch";
     if (tier === "flex") return "flex";
 

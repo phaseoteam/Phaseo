@@ -495,16 +495,7 @@ export async function applyServiceTierRouting(args: {
             });
             continue;
         }
-        if (!hasConfiguredPricing(candidate)) {
-            if (requestedPlan === "ultrafast") {
-                droppedProviders.push({
-                    providerId: candidate.providerId,
-                    apiModelId: candidate.apiModelId ?? null,
-                    providerModelSlug: candidate.providerModelSlug ?? null,
-                    reason: "service_tier_ultrafast_unsupported",
-                });
-                continue;
-            }
+        if (!hasConfiguredPricing(candidate) && requestedPlan !== "ultrafast") {
             nextCandidates.push(candidate);
             continue;
         }

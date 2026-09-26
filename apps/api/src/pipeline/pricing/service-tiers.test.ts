@@ -4,7 +4,7 @@ import type { PriceCard } from "./types";
 
 describe("dedicated service tier classification", () => {
     it.each([
-        [["priority"], true], [["flex"], true], [["batch"], true], [["priority", "flex"], true],
+        [["priority"], true], [["ultrafast"], true], [["flex"], true], [["batch"], true], [["priority", "flex"], true],
         [["standard", "priority"], false], [["on-demand"], false], [["llm-plus"], false],
         [["free"], false], [[], false],
     ] as Array<[string[], boolean]>)("classifies %j", (plans, expected) => {
