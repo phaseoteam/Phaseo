@@ -1,12 +1,25 @@
 import { DurableObject } from "cloudflare:workers";
 import type { GatewayBindings } from "@/runtime/env.types";
 import { decideFreeQuota, freeQuotaSettings, initialFreeQuota, parseFreeQuotaState, type FreeQuotaState } from "./free-model-quota";
+import { FreeModelFeeJournal } from "./free-model-fee-journal";
+import type { FreeModelReservationIdentity } from "./free-model-reservations";
 
-/** SQLite-backed, one singleton row, no indexes, logs, alarms, timers or network
- * calls. Warm admission reads memory; each acceptance writes exactly one row.
+/** Included quota: one singleton row, no alarms, timers or network calls.
+ * Paid fee recovery is lazy and separate from this fast path.
+ * Warm admission reads memory; each acceptance writes exactly one row.
  * Default output gates confirm persistence before an RPC response is sent. */
 export class FreeModelQuotaDurableObject extends DurableObject<GatewayBindings> {
     private quota: FreeQuotaState;
+    private fees?: FreeModelFeeJournal;
+
+    private feeJournal() { return this.fees ??= new FreeModelFeeJournal(this.ctx.storage, this.env); }
+
+    prepareFee(identity: FreeModelReservationIdentity) { return this.feeJournal().prepare(identity); }
+    finishFee(identity: FreeModelReservationIdentity, outcome: "capture" | "release") {
+        return this.feeJournal().finish(identity, outcome);
+    }
+    feeStatus() { return this.feeJournal().status(); }
+    async alarm() { await this.feeJournal().alarm(); }
 
     constructor(ctx: DurableObjectState, env: GatewayBindings) {
         super(ctx, env);

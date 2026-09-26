@@ -172,9 +172,11 @@ function shouldRetryWithLegacyTeamId(error: unknown): boolean {
 async function callReservationRpc(
 	fn: "gateway_wallet_reserve_once" | "gateway_wallet_capture_once" | "gateway_wallet_release_once",
 	params: ReservationRpcPayload,
+	signal?: AbortSignal,
 ): Promise<unknown> {
 	const supabase = getSupabaseAdmin();
-	const primary = await supabase.rpc(fn, params);
+	const primaryRequest = supabase.rpc(fn, params);
+	const primary = await (signal ? primaryRequest.abortSignal(signal) : primaryRequest);
 	if (!primary.error) return primary.data;
 	if (!shouldRetryWithLegacyTeamId(primary.error) || !params.p_workspace_id) {
 		throw primary.error;
@@ -186,12 +188,14 @@ async function callReservationRpc(
 	};
 	delete legacyParams.p_workspace_id;
 
-	const fallback = await supabase.rpc(fn, legacyParams);
+	const fallbackRequest = supabase.rpc(fn, legacyParams);
+	const fallback = await (signal ? fallbackRequest.abortSignal(signal) : fallbackRequest);
 	if (fallback.error) throw fallback.error;
 	return fallback.data;
 }
 
 export async function reserveWalletCredits(args: {
+	signal?: AbortSignal;
 	workspaceId: string;
 	reservationId: string;
 	amountNanos: number;
@@ -206,13 +210,14 @@ export async function reserveWalletCredits(args: {
 		p_hold_ref_id: args.holdRefId ?? null,
 		...(args.keyId ? { p_key_id: args.keyId } : {}),
 		...(args.requestCount != null ? { p_request_count: Math.max(0, Math.trunc(args.requestCount)) } : {}),
-	});
+	}, args.signal);
 	const normalized = normalizeResult(data, "held");
 	if (normalized.applied || normalized.alreadyApplied) await invalidateReservationCaches(args.workspaceId, args.keyId);
 	return normalized;
 }
 
 export async function captureWalletReservation(args: {
+	signal?: AbortSignal;
 	workspaceId: string;
 	reservationId: string;
 	captureRefId?: string | null;
@@ -222,13 +227,14 @@ export async function captureWalletReservation(args: {
 		p_workspace_id: args.workspaceId,
 		p_reservation_id: args.reservationId,
 		p_capture_ref_id: args.captureRefId ?? null,
-	});
+	}, args.signal);
 	const normalized = normalizeResult(data, "captured");
 	if (normalized.applied || normalized.alreadyApplied) await invalidateReservationCaches(args.workspaceId, args.keyId);
 	return normalized;
 }
 
 export async function releaseWalletReservation(args: {
+	signal?: AbortSignal;
 	workspaceId: string;
 	reservationId: string;
 	releaseRefId?: string | null;
@@ -238,7 +244,7 @@ export async function releaseWalletReservation(args: {
 		p_workspace_id: args.workspaceId,
 		p_reservation_id: args.reservationId,
 		p_release_ref_id: args.releaseRefId ?? null,
-	});
+	}, args.signal);
 	const normalized = normalizeResult(data, "released");
 	if (normalized.applied || normalized.alreadyApplied) await invalidateReservationCaches(args.workspaceId, args.keyId);
 	return normalized;
