@@ -1,0 +1,272 @@
+-- Promote the public Hugging Face ID to the canonical Phaseo ID while
+-- retaining the former TypeSafe ID as a routing alias.
+do $migration$
+declare
+  v_old_slug constant text := 'typesafe/kev-4b';
+  v_new_slug constant text := 'jaredpalmer/kev-4b';
+  v_legacy_slug constant text := 'typesafe/kev-4b-legacy';
+  v_release_event_id uuid;
+  v_release_event_status text;
+  v_rows integer;
+begin
+  if not exists (
+    select 1 from public.v2_models where model_slug = v_old_slug
+  ) then
+    return;
+  end if;
+
+  if exists (select 1 from public.v2_models where model_slug = v_new_slug)
+    or exists (select 1 from public.v2_models where model_slug = v_legacy_slug) then
+    raise exception 'Kev-4B canonical ID migration found an unexpected target row';
+  end if;
+
+  if not exists (select 1 from public.v2_labs where lab_slug = 'jaredpalmer')
+    or not exists (
+      select 1 from public.v2_model_families
+      where lab_slug = 'jaredpalmer' and family_slug = 'kev'
+    ) then
+    raise exception 'Jared Palmer lab and Kev family must exist before promoting Kev-4B';
+  end if;
+
+  if not exists (
+    select 1 from public.v2_model_aliases
+    where alias_slug = v_new_slug and model_slug = v_old_slug and enabled
+  ) then
+    raise exception 'Expected Jared Palmer Kev-4B alias was not found';
+  end if;
+
+  perform 1 from public.v2_models
+  where model_slug = v_old_slug
+  for update;
+
+  select id, status
+  into v_release_event_id, v_release_event_status
+  from public.model_release_push_events
+  where model_slug = v_old_slug
+  for update;
+
+  if v_release_event_id is not null and v_release_event_status <> 'pending' then
+    raise exception 'Kev-4B release event is not pending; refusing to rewrite it';
+  end if;
+
+  insert into public.v2_models (
+    model_slug,
+    lab_slug,
+    name,
+    description,
+    status,
+    hidden,
+    input_modalities,
+    output_modalities,
+    family_slug,
+    announced_at,
+    released_at,
+    deprecated_at,
+    retired_at,
+    metadata,
+    created_at,
+    updated_at,
+    license,
+    license_url,
+    previous_model_slug,
+    removal_date,
+    replacement_model_slug,
+    variant_kind,
+    base_model_slug,
+    catalogue_status
+  )
+  select
+    v_new_slug,
+    'jaredpalmer',
+    model.name,
+    model.description,
+    model.status,
+    model.hidden,
+    model.input_modalities,
+    model.output_modalities,
+    'kev',
+    model.announced_at,
+    model.released_at,
+    model.deprecated_at,
+    model.retired_at,
+    model.metadata || jsonb_build_object(
+      'canonical_id', v_new_slug,
+      'legacy_ids', jsonb_build_array(v_old_slug)
+    ),
+    model.created_at,
+    now(),
+    model.license,
+    model.license_url,
+    model.previous_model_slug,
+    model.removal_date,
+    model.replacement_model_slug,
+    model.variant_kind,
+    model.base_model_slug,
+    model.catalogue_status
+  from public.v2_models model
+  where model.model_slug = v_old_slug;
+
+  get diagnostics v_rows = row_count;
+  if v_rows <> 1 then
+    raise exception 'Expected to copy one Kev-4B model row, copied %', v_rows;
+  end if;
+
+  -- The insert trigger queues the new public release notification. Keep the
+  -- existing pending event (and its retry state) while changing its identity.
+  if v_release_event_id is not null then
+    delete from public.model_release_push_events
+    where model_slug = v_new_slug and id <> v_release_event_id;
+
+    update public.model_release_push_events event
+    set model_slug = v_new_slug,
+        lab_name = 'Jared Palmer',
+        released_at = coalesce(
+          event.released_at,
+          (select released_at from public.v2_models where model_slug = v_new_slug)
+        ),
+        updated_at = now()
+    where event.id = v_release_event_id and event.status = 'pending';
+
+    if not found then
+      raise exception 'Could not move the pending Kev-4B release event';
+    end if;
+  end if;
+
+  update public.provider_catalog_models
+  set canonical_model_slug = v_new_slug
+  where canonical_model_slug = v_old_slug;
+
+  update public.provider_catalog_route_candidates
+  set canonical_model_slug = v_new_slug
+  where canonical_model_slug = v_old_slug;
+
+  update public.provider_catalog_sync_models
+  set canonical_model_slug = v_new_slug
+  where canonical_model_slug = v_old_slug;
+
+  update public.v2_benchmark_results
+  set model_slug = v_new_slug
+  where model_slug = v_old_slug;
+
+  update public.v2_model_aliases
+  set alias_slug = v_old_slug,
+      model_slug = v_new_slug,
+      metadata = metadata || jsonb_build_object(
+        'notes', 'Former canonical Phaseo ID retained as a compatibility alias after the canonical ID moved to Jared Palmer.'
+      ),
+      updated_at = now()
+  where alias_slug = v_new_slug and model_slug = v_old_slug;
+
+  update public.v2_model_aliases
+  set model_slug = v_new_slug,
+      updated_at = now()
+  where model_slug = v_old_slug;
+
+  update public.v2_model_details
+  set model_slug = v_new_slug
+  where model_slug = v_old_slug;
+
+  update public.v2_model_links
+  set model_slug = v_new_slug,
+      updated_at = now()
+  where model_slug = v_old_slug;
+
+  update public.v2_model_page_notices
+  set model_slug = v_new_slug
+  where model_slug = v_old_slug;
+
+  update public.v2_model_provider_routes
+  set model_slug = v_new_slug,
+      updated_at = now()
+  where model_slug = v_old_slug;
+
+  update public.v2_models
+  set base_model_slug = v_new_slug,
+      updated_at = now()
+  where base_model_slug = v_old_slug;
+
+  update public.v2_private_usage_daily
+  set model_slug = v_new_slug
+  where model_slug = v_old_slug;
+
+  update public.v2_public_effective_pricing_daily
+  set model_slug = v_new_slug
+  where model_slug = v_old_slug;
+
+  update public.v2_public_provider_health_daily
+  set model_slug = v_new_slug
+  where model_slug = v_old_slug;
+
+  update public.v2_public_usage_daily
+  set model_slug = v_new_slug
+  where model_slug = v_old_slug;
+
+  update public.v2_public_usage_hourly
+  set model_slug = v_new_slug
+  where model_slug = v_old_slug;
+
+  update public.v2_request_facts
+  set requested_model_slug = v_new_slug
+  where requested_model_slug = v_old_slug;
+
+  update public.v2_request_facts
+  set routed_model_slug = v_new_slug
+  where routed_model_slug = v_old_slug;
+
+  update public.v2_subscription_plan_models
+  set model_slug = v_new_slug
+  where model_slug = v_old_slug;
+
+  update public.model_release_push_events
+  set model_slug = v_new_slug,
+      lab_name = 'Jared Palmer',
+      updated_at = now()
+  where model_slug = v_old_slug;
+
+  update public.v2_catalogue_source_overrides
+  set resource_id = v_new_slug,
+      updated_at = now()
+  where source_type = 'model' and source_key = v_old_slug;
+
+  insert into public.v2_catalogue_source_overrides (
+    source_type,
+    source_key,
+    disposition,
+    actor_user_id,
+    resource_id,
+    updated_at
+  ) values (
+    'model',
+    v_new_slug,
+    'database_managed',
+    null,
+    v_new_slug,
+    now()
+  )
+  on conflict (source_type, source_key) do update
+  set disposition = 'database_managed',
+      resource_id = excluded.resource_id,
+      updated_at = now();
+
+  -- Saved catalogue rows cannot be deleted, so retire and hide the old
+  -- TypeSafe row after all live references have moved.
+  update public.v2_models
+  set model_slug = v_legacy_slug,
+      status = 'disabled',
+      hidden = true,
+      catalogue_status = 'retired',
+      retired_at = coalesce(retired_at, now()),
+      replacement_model_slug = v_new_slug,
+      metadata = metadata || jsonb_build_object(
+        'canonical_model_id', v_new_slug,
+        'legacy_tombstone', true
+      ),
+      updated_at = now()
+  where model_slug = v_old_slug;
+
+  get diagnostics v_rows = row_count;
+  if v_rows <> 1 then
+    raise exception 'Expected to retire one legacy Kev-4B row, updated %', v_rows;
+  end if;
+end;
+$migration$;
