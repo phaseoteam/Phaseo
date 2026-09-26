@@ -11,6 +11,7 @@ import { BYOK_KEYS_PER_PROVIDER_LIMIT } from "@/core/byok";
 import { getProviderPricingKey } from "../before/context.shared";
 import { selectVideoProviderOptions } from "@core/video-provider-options";
 import { resolveTextExecutionStream } from "@providers/textStreaming";
+import { prepareStreamAdmission, supportsZeroUsageReplay } from "./stream-admission";
 
 export type PipelineTiming = {
 	timer: Timer;
@@ -586,6 +587,7 @@ export async function doRequestWithIR(
 		byok_key_id: entry.credential.kind === "byok" ? entry.credential.key.id : null,
 	}));
 	let anyPricingFound = anyPricingAvailable;
+	let precommitRetries = 0;
 
 	for (let attempt = 0; attempt < credentialPlan.length; attempt++) {
 		const choice = credentialPlan[attempt];
@@ -604,6 +606,46 @@ export async function doRequestWithIR(
 		);
 
 		if (result.ok) {
+			const selected = result.result;
+			// Never open another provider once a stream has left this orchestrator.
+			// Only inspect replay-safe text with a remaining authorized candidate.
+			if (normalizedCapability === "text.generate" && selected.kind === "stream" && selected.stream
+				&& allowFallbacks && precommitRetries < 2 && attempt + 1 < credentialPlan.length
+				&& ctx.meta.upstreamRequestCount === 1
+				&& supportsZeroUsageReplay(ir, choice.routed.candidate.pricingCard)) {
+				const admission = await prepareStreamAdmission(selected.stream, selected.keySource);
+				selected.stream = admission.stream;
+				if (admission.retryableZeroUsage && admission.failure) {
+					// The source has terminated with explicit zero usage. No customer
+					// finalizer runs for this attempt; the selected winner owns charging.
+					await admission.stream.cancel("precommit_zero_usage_retry");
+					await releaseManagedProviderReservation(selected.providerRateLimitReservation);
+					const failure = admission.failure;
+					const log = getProviderAttempts(ctx).find(entry => entry.attempt_number === attempt + 1);
+					if (log) Object.assign(log, { outcome: "retryable_error", type: "precommit_stream_failure",
+						status: failure.status, upstream_error_code: failure.code, retryable: true, fallback_attempted: true });
+					(ctx.attemptErrors ??= []).push({ provider: selected.provider, attempt_number: attempt + 1,
+						type: "precommit_stream_failure", status: failure.status, upstream_error_code: failure.code,
+						retryable: true, accounting: "explicit_zero_usage" });
+					const health = selected.healthContext;
+					if (health && !health.completed) {
+						dispatchProviderHealthBackground(async () => {
+							const update = await onCallEnd(ctx.endpoint, { observationId: health.observationId,
+								startedAt: health.startedAt, probe: health.isProbe, provider: health.provider, model: health.model,
+								latency_ms: Math.max(0, Date.now() - health.startedAt),
+								ok: false, upstreamStatus: failure.status, healthImpact: failure.healthImpact, tokens_in: 0, tokens_out: 0 });
+							if (health.isProbe && failure.healthImpact !== "neutral" && !update?.rateLimited) {
+								await reportProbeResult(ctx.endpoint, health.provider, health.model, false);
+							} else if (failure.healthImpact === "failure" && !update?.rateLimited) {
+								await maybeOpenOnRecentErrors(ctx.endpoint, health.provider, health.model);
+							}
+						});
+						health.completed = true;
+					}
+					precommitRetries++;
+					continue;
+				}
+			}
 			if (choice.credential.kind === "byok") {
 				const usedKeyId = choice.credential.key.id;
 				dispatchProviderHealthBackground(async () => {
