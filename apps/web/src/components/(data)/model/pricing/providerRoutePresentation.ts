@@ -27,7 +27,7 @@ export function getProviderRoutePresentation(provider: ProviderInfo, plan = "sta
 }
 
 export function isSelectableServiceTier(plan: string): boolean {
-    return ["priority", "flex", "batch"].includes(plan);
+    return ["priority", "ultrafast", "flex", "batch"].includes(plan);
 }
 
 // These sections describe route variants, not live health or availability.

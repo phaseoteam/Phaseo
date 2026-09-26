@@ -172,6 +172,27 @@ describe("providerPlanRouting", () => {
         ).toEqual(["anthropic/claude-opus-5-flex"]);
     });
 
+    it("derives an Ultrafast plan from an Ultrafast sibling model", () => {
+        const provider = makeProviderPricing();
+        provider.provider_models.push({
+            ...provider.provider_models[0],
+            id: "venice:opus48ultrafast",
+            provider_model_slug: "claude-opus-5-ultrafast",
+            model_id: "anthropic/claude-opus-5-ultrafast",
+        });
+        provider.pricing_rules.push({
+            ...provider.pricing_rules[0],
+            id: "std-ultrafast-input",
+            model_key: "venice:anthropic/claude-opus-5-ultrafast:text.generate",
+            pricing_plan: "standard",
+        });
+
+        expect(getProviderAvailablePlans(provider)).toEqual(["standard", "priority", "ultrafast"]);
+        expect(getProviderPricingRulesForPlan(provider, "ultrafast").map((rule) => rule.id)).toEqual([
+            "std-ultrafast-input",
+        ]);
+    });
+
     it("shows explicit xAI batch pricing without requiring gateway batch execution support", () => {
         const provider = makeProviderPricing();
         provider.provider.api_provider_id = "spacex-ai";

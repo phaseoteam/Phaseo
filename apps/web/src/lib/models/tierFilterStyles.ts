@@ -3,6 +3,7 @@ import {
 	Boxes,
 	CircleDot,
 	Layers3,
+	Rocket,
 	Shuffle,
 	Zap,
 	type LucideIcon,
@@ -44,6 +45,12 @@ const TIER_FILTER_META: Record<string, TierFilterMeta> = {
 		iconClassName: "text-violet-600 dark:text-violet-400",
 		filterIconHoverClassName:
 			"group-hover:text-violet-600 dark:group-hover:text-violet-400",
+	},
+	ultrafast: {
+		icon: Rocket,
+		iconClassName: "text-fuchsia-600 dark:text-fuchsia-400",
+		filterIconHoverClassName:
+			"group-hover:text-fuchsia-600 dark:group-hover:text-fuchsia-400",
 	},
 };
 

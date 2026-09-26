@@ -91,6 +91,8 @@ module Phaseo
     #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] reasoning
     #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] service_tier
+    #   @return [String, nil]
     # @!attribute [rw] session_id
     #   @return [String, nil]
     # @!attribute [rw] stop_sequences
@@ -111,7 +113,7 @@ module Phaseo
     #   @return [Float, nil]
     # @!attribute [rw] usage
     #   @return [Boolean, nil]
-    AnthropicMessagesRequest = Struct.new(:debug, :echo_upstream_request, :max_tokens, :messages, :meta, :metadata, :model, :provider, :provider_options, :reasoning, :session_id, :stop_sequences, :stream, :system, :temperature, :tool_choice, :tools, :top_k, :top_p, :usage, keyword_init: true)
+    AnthropicMessagesRequest = Struct.new(:debug, :echo_upstream_request, :max_tokens, :messages, :meta, :metadata, :model, :provider, :provider_options, :reasoning, :service_tier, :session_id, :stop_sequences, :stream, :system, :temperature, :tool_choice, :tools, :top_k, :top_p, :usage, keyword_init: true)
     # @!attribute [rw] content
     #   @return [Array<Hash{String => Object}>, nil]
     # @!attribute [rw] id

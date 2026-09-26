@@ -8,7 +8,7 @@ import type { ProviderCandidate } from "./types";
 import { parseRouteAvailabilityPolicy } from "@/lib/config/routeAvailability";
 import { resolveEffectiveDataPolicy } from "./dataPolicy";
 
-type ServiceTierPlan = "standard" | "priority" | "batch" | "flex";
+type ServiceTierPlan = "standard" | "priority" | "ultrafast" | "batch" | "flex";
 
 type ServiceTierRoutingDiagnostics = {
     requestedTier: string | null;
@@ -25,7 +25,7 @@ type ServiceTierRoutingDiagnostics = {
         providerId: string;
         fromApiModelId: string | null;
         toApiModelId: string;
-        reason: "priority_fast_sibling" | "flex_sibling";
+        reason: "priority_fast_sibling" | "ultrafast_sibling" | "flex_sibling";
     }>;
 };
 
@@ -86,6 +86,7 @@ function normalizeRequestedServiceTier(body: any): string | null {
 
 function normalizeRequestedPlan(tier: string | null): ServiceTierPlan | null {
     if (tier === "fast" || tier === "priority") return "priority";
+    if (tier === "ultrafast") return "ultrafast";
     if (tier === "batch") return "batch";
     if (tier === "flex") return "flex";
     if (tier === "standard") return "standard";
@@ -121,6 +122,10 @@ function isTierSiblingModel(candidate: ProviderCandidate, requestedPlan: Service
         const providerModelSlug = String(candidate.providerModelSlug ?? "").trim().toLowerCase();
         return apiModelId.endsWith("-flex") || providerModelSlug.endsWith("-flex");
     }
+    if (requestedPlan === "ultrafast") {
+        const providerModelSlug = String(candidate.providerModelSlug ?? "").trim().toLowerCase();
+        return apiModelId.endsWith("-ultrafast") || providerModelSlug.endsWith("-ultrafast");
+    }
     return false;
 }
 
@@ -136,6 +141,7 @@ function getTierSiblingApiModelId(
         }
         return `${apiModelId}-fast`;
     }
+    if (requestedPlan === "ultrafast") return `${apiModelId}-ultrafast`;
     if (requestedPlan === "flex") return `${apiModelId}-flex`;
     return null;
 }
@@ -174,7 +180,7 @@ function supportsRequestedTier(
     ) {
         return false;
     }
-    if (requestedPlan === "priority" || requestedPlan === "flex") {
+    if (requestedPlan === "priority" || requestedPlan === "ultrafast" || requestedPlan === "flex") {
         if (
             requestedPlan === "priority" &&
             PRIORITY_SIBLING_ROUTES.has(String(candidate.apiModelId ?? "").trim().toLowerCase()) &&
@@ -431,6 +437,7 @@ export async function applyServiceTierRouting(args: {
 		const candidates = args.candidates.filter((candidate) =>
 			!isTierDedicatedOffer(candidate, "priority") && !isTierSiblingModel(candidate, "priority") &&
 			!isTierDedicatedOffer(candidate, "flex") &&
+			!isTierDedicatedOffer(candidate, "ultrafast") && !isTierSiblingModel(candidate, "ultrafast") &&
 			!requiresExplicitServiceTier(candidate.pricingCard)
 		);
         return {
@@ -447,7 +454,9 @@ export async function applyServiceTierRouting(args: {
 					reason: isTierDedicatedOffer(candidate, "priority") || isTierSiblingModel(candidate, "priority")
 						? "service_tier_priority_required"
 						: isTierDedicatedOffer(candidate, "flex")
-							? "service_tier_flex_required" : "service_tier_standard_unsupported",
+							? "service_tier_flex_required"
+							: isTierDedicatedOffer(candidate, "ultrafast") || isTierSiblingModel(candidate, "ultrafast")
+								? "service_tier_ultrafast_required" : "service_tier_standard_unsupported",
 				})),
                 remappedProviders: [],
             },
@@ -477,7 +486,16 @@ export async function applyServiceTierRouting(args: {
 			});
 			continue;
 		}
-        if (!hasConfiguredPricing(candidate)) {
+        if (requestedPlan !== "ultrafast" && (isTierDedicatedOffer(candidate, "ultrafast") || isTierSiblingModel(candidate, "ultrafast"))) {
+            droppedProviders.push({
+                providerId: candidate.providerId,
+                apiModelId: candidate.apiModelId ?? null,
+                providerModelSlug: candidate.providerModelSlug ?? null,
+                reason: "service_tier_ultrafast_required",
+            });
+            continue;
+        }
+        if (!hasConfiguredPricing(candidate) && requestedPlan !== "ultrafast") {
             nextCandidates.push(candidate);
             continue;
         }
@@ -486,7 +504,7 @@ export async function applyServiceTierRouting(args: {
 
         if (
             supportsPublicRequestedTier &&
-            (requestedPlan === "priority" || requestedPlan === "flex")
+            (requestedPlan === "priority" || requestedPlan === "ultrafast" || requestedPlan === "flex")
         ) {
             const hiddenSiblingCandidate = await remapToHiddenTierSibling(
                 candidate,
@@ -517,7 +535,11 @@ export async function applyServiceTierRouting(args: {
                     providerId: candidate.providerId,
                     fromApiModelId: candidate.apiModelId ?? null,
                     toApiModelId: remappedApiModelId ?? "",
-                    reason: requestedPlan === "priority" ? "priority_fast_sibling" : "flex_sibling",
+                    reason: requestedPlan === "priority"
+                        ? "priority_fast_sibling"
+                        : requestedPlan === "ultrafast"
+                            ? "ultrafast_sibling"
+                            : "flex_sibling",
                 });
                 continue;
             }
@@ -568,6 +590,28 @@ export async function applyServiceTierRouting(args: {
                     fromApiModelId: candidate.apiModelId ?? null,
                     toApiModelId: remappedCandidate.apiModelId ?? `${String(candidate.apiModelId ?? "").trim()}-flex`,
                     reason: "flex_sibling",
+                });
+                continue;
+            }
+        }
+        if (requestedPlan === "ultrafast") {
+            const remappedCandidate = await remapToTierSibling(candidate, args.capability, requestedPlan, requestedTier);
+            if (remappedCandidate) {
+                if (args.authorizeRemappedCandidate && !args.authorizeRemappedCandidate(remappedCandidate)) {
+                    droppedProviders.push({
+                        providerId: remappedCandidate.providerId,
+                        apiModelId: remappedCandidate.apiModelId ?? null,
+                        providerModelSlug: remappedCandidate.providerModelSlug ?? null,
+                        reason: "service_tier_remap_not_authorized",
+                    });
+                    continue;
+                }
+                nextCandidates.push(remappedCandidate);
+                remappedProviders.push({
+                    providerId: candidate.providerId,
+                    fromApiModelId: candidate.apiModelId ?? null,
+                    toApiModelId: remappedCandidate.apiModelId ?? `${String(candidate.apiModelId ?? "").trim()}-ultrafast`,
+                    reason: "ultrafast_sibling",
                 });
                 continue;
             }

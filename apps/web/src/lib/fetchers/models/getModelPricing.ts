@@ -6,7 +6,7 @@ import { normalizeQuantizationScheme } from "@/lib/quantization";
 export interface PricingRule {
     id: string;                 // rule_id
     model_key: string;          // `${provider}:${model}:${endpoint}`
-    pricing_plan: string;       // standard|batch|flex|priority
+    pricing_plan: string;       // standard|fast|priority|ultrafast|batch|flex
     meter: string;              // e.g. input_text_tokens
     unit: string;               // token|image|second|minute|...
     unit_size: number;

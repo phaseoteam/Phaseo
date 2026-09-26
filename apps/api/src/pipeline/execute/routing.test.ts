@@ -571,6 +571,46 @@ describe("routeProviders testing mode", () => {
 		]);
 	});
 
+	it("keeps the global offer when its Ultrafast sibling is ineligible", async () => {
+		const result = await routeProviders(
+			[
+				candidate({
+					providerId: "example",
+					providerFamilyId: "example",
+					offerScope: "global",
+				}),
+				candidate({
+					providerId: "example-ultrafast",
+					providerFamilyId: "example",
+					offerScope: "specialized",
+					offerLabel: "ultrafast",
+					dataPolicyVariant: "zdr",
+					zeroDataRetention: true,
+				}),
+			],
+			{
+				endpoint: "responses",
+				model: "example/model",
+				workspaceId: "team_123",
+				body: { service_tier: "ultrafast" },
+				testingMode: false,
+			},
+		);
+
+		expect(result.ranked.map((entry) => entry.candidate.providerId)).toEqual(["example"]);
+		expect(
+			result.diagnostics.filterStages.find((stage) => stage.stage === "offer_scope_gate")?.droppedProviders,
+		).toEqual([
+			expect.objectContaining({
+				providerId: "example-ultrafast",
+				reason: "zdr_offer_requires_zdr_request",
+			}),
+		]);
+		expect(
+			result.diagnostics.filterStages.find((stage) => stage.stage === "service_tier_offer_replacement")?.afterCount,
+		).toBe(1);
+	});
+
 	it("expands provider.only for priority-tier specialized siblings", async () => {
 		const result = await routeProviders(
 			[

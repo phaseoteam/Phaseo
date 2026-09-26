@@ -110,6 +110,14 @@ export interface AnthropicMessagesRequest {
     mode?: "standard" | "pro";
     summary?: "auto" | "concise" | "detailed";
   };
+  service_tier?:
+    | "standard"
+    | "default"
+    | "fast"
+    | "ultrafast"
+    | "priority"
+    | "flex"
+    | "batch";
   session_id?: string;
   stop_sequences?: string[];
   stream?: boolean;

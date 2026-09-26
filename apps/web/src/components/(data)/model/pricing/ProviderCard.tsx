@@ -76,6 +76,7 @@ import type { ProviderRoutingStatus } from "@/lib/fetchers/models/getModelProvid
 import { Logo } from "@/components/Logo";
 import ProviderInfoHoverIcons from "@/components/(data)/model/ProviderInfoHoverIcons";
 import PricingPlanSelect from "@/components/(data)/model/pricing/PricingPlanSelect";
+import { ServiceTierBadge } from "@/components/(data)/model/pricing/ServiceTierBadge";
 import {
 	getParameterDocsHref,
 	getParameterReference,
@@ -209,6 +210,8 @@ function getPricingPlanLabel(plan: string): string {
 			return "Flex";
 		case "priority":
 			return "Fast";
+		case "ultrafast":
+			return "Ultrafast";
 		default:
 			return plan ? plan.charAt(0).toUpperCase() + plan.slice(1) : plan;
 	}
@@ -942,6 +945,14 @@ function getPlanTheme(plan: string) {
 				discountText: "text-violet-900 dark:text-violet-100",
 				discountStrong: "text-violet-700 dark:text-violet-300",
 				discountMuted: "text-violet-800/80 dark:text-violet-200/80",
+			};
+		case "ultrafast":
+			return {
+				accent: "text-fuchsia-700 dark:text-fuchsia-300",
+				discountBorder: "border-fuchsia-400",
+				discountText: "text-fuchsia-900 dark:text-fuchsia-100",
+				discountStrong: "text-fuchsia-700 dark:text-fuchsia-300",
+				discountMuted: "text-fuchsia-800/80 dark:text-fuchsia-200/80",
 			};
 		default:
 			return {
@@ -2039,7 +2050,8 @@ export default function ProviderCard({
 		selectedPlan === "batch" ||
 		selectedPlan === "flex" ||
 		selectedPlan === "free" ||
-		selectedPlan === "priority"
+		selectedPlan === "priority" ||
+		selectedPlan === "ultrafast"
 			? selectedPlan
 			: null;
 
@@ -3613,6 +3625,7 @@ export default function ProviderCard({
 											Pricing
 										</ProviderSheetSectionLink>
 									</h3>
+										{availablePlans.length > 0 ? <ServiceTierBadge plan={selectedPlan} /> : null}
 									{discountBadge ? (
 										<div
 											className={cn(

@@ -123,7 +123,13 @@ export interface ResponsesRequest {
   };
   safety_identifier?: string | null;
   service_tier?:
-    "standard" | "default" | "fast" | "priority" | "flex" | "batch";
+    | "standard"
+    | "default"
+    | "fast"
+    | "ultrafast"
+    | "priority"
+    | "flex"
+    | "batch";
   session_id?: string;
   store?: boolean;
   stream?: boolean;

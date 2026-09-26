@@ -160,6 +160,9 @@ public sealed class AnthropicMessagesRequest
 	[JsonPropertyName("reasoning")]
 	public Dictionary<string, object>? Reasoning { get; set; }
 
+	[JsonPropertyName("service_tier")]
+	public string? ServiceTier { get; set; }
+
 	[JsonPropertyName("session_id")]
 	public string? SessionId { get; set; }
 

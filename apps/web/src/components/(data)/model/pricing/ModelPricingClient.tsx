@@ -1365,9 +1365,10 @@ export default function ModelPricingClient({
 		const tierRank = (plan: string) => {
 			if (plan === "standard") return 0;
 			if (plan === "priority") return 1;
-			if (plan === "flex") return 2;
-			if (plan === "batch") return 3;
-			return 4;
+			if (plan === "ultrafast") return 2;
+			if (plan === "flex") return 3;
+			if (plan === "batch") return 4;
+			return 5;
 		};
 		const offeringName = (offering: ProviderOffering) =>
 			getProviderServiceTierDisplayName(offering.provider);

@@ -623,7 +623,7 @@ export type RoutingScoreTrace = {
 };
 
 export type RoutingFilterStageDiagnostics = {
-    stage: "hints.only" | "hints.ignore" | "status_gate" | "provider_routing_status_gate" | "model_routing_status_gate" | "capability_status_gate" | "offer_scope_gate" | "geographic_availability_gate" | "residency_gate" | "pricing_cap_gate" | "health_breaker";
+    stage: "hints.only" | "hints.ignore" | "status_gate" | "provider_routing_status_gate" | "model_routing_status_gate" | "capability_status_gate" | "offer_scope_gate" | "geographic_availability_gate" | "residency_gate" | "pricing_cap_gate" | "service_tier_offer_replacement" | "health_breaker";
     beforeCount: number;
     afterCount: number;
     droppedProviders: Array<{
@@ -788,7 +788,7 @@ function expandProviderHintsForSpecializedTierOffers(args: {
 	providerIds: string[];
 	tier: string | null;
 }): string[] {
-	if (args.tier !== "priority") return args.providerIds;
+	if (args.tier !== "priority" && args.tier !== "ultrafast") return args.providerIds;
 
 	const expanded = new Set(args.providerIds);
 	for (const requestedProviderId of args.providerIds) {
@@ -1170,25 +1170,14 @@ export async function routeProviders(
         if (hasExplicitRegionPreference) return true;
         if (
             offerScope === "specialized" &&
-            requestedServiceTier === "priority" &&
-            String(candidate.offerLabel ?? "").trim().toLowerCase() === "priority"
+            (requestedServiceTier === "priority" || requestedServiceTier === "ultrafast") &&
+            String(candidate.offerLabel ?? "").trim().toLowerCase() === requestedServiceTier
         ) {
             return true;
         }
         if (!hasGlobalOfferSibling(beforeOfferScopeGate, candidate)) return true;
         return false;
     });
-    if (requestedServiceTier === "priority") {
-		poolCandidates = filterStable(poolCandidates, (candidate) => {
-            const offerScope = normalizeOfferScope(candidate.offerScope);
-            if (offerScope !== "global") return true;
-            return !hasSpecializedTierSibling({
-                candidates: beforeOfferScopeGate,
-                candidate,
-                tier: requestedServiceTier,
-            });
-        });
-    }
     pushStage("offer_scope_gate", beforeOfferScopeGate, poolCandidates, (candidate) => {
         const offerScope = normalizeOfferScope(candidate.offerScope);
 		if (isZdrSpecializedOffer(candidate) && requireZeroDataRetention !== true) {
@@ -1204,14 +1193,14 @@ export async function routeProviders(
         if (offerScope === "regional") return "regional_offer_requires_explicit_opt_in";
         if (
             offerScope === "global" &&
-            requestedServiceTier === "priority" &&
+            (requestedServiceTier === "priority" || requestedServiceTier === "ultrafast") &&
             hasSpecializedTierSibling({
                 candidates: beforeOfferScopeGate,
                 candidate,
                 tier: requestedServiceTier,
             })
         ) {
-            return "global_offer_replaced_by_priority_specialized_offer";
+            return `global_offer_replaced_by_${requestedServiceTier}_specialized_offer`;
         }
         if (offerScope === "specialized") return "specialized_offer_requires_explicit_opt_in";
         return "non_global_offer_requires_explicit_opt_in";
@@ -1283,6 +1272,25 @@ export async function routeProviders(
             if (!candidate.pricingCard) return "pricing_unavailable_for_max_price_filter";
             return "exceeds_max_price";
         });
+    }
+
+    if (requestedServiceTier === "priority" || requestedServiceTier === "ultrafast") {
+        const beforeServiceTierOfferReplacement = poolCandidates;
+        poolCandidates = filterStable(poolCandidates, (candidate) => {
+            const offerScope = normalizeOfferScope(candidate.offerScope);
+            if (offerScope !== "global") return true;
+            return !hasSpecializedTierSibling({
+                candidates: beforeServiceTierOfferReplacement,
+                candidate,
+                tier: requestedServiceTier,
+            });
+        });
+        pushStage(
+            "service_tier_offer_replacement",
+            beforeServiceTierOfferReplacement,
+            poolCandidates,
+            (candidate) => `global_offer_replaced_by_${requestedServiceTier}_specialized_offer`,
+        );
     }
 
     if (!poolCandidates.length) {
