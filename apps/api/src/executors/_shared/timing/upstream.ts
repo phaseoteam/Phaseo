@@ -8,6 +8,7 @@ import type {
 	UpstreamResponseTiming,
 } from "@executors/types";
 import { observeGatewayStream, type GatewayTimingTrace } from "@pipeline/telemetry/gateway-trace";
+import { markProviderDispatch } from "@/runtime/request-operations";
 
 export type UpstreamTimingSnapshot = {
 	requestBuildMs?: number;
@@ -46,6 +47,7 @@ export function createUpstreamTimingTracker(trace?: GatewayTimingTrace): {
 		phase = "provider",
 	) => {
 		const fetchStartedAt = performance.now();
+        if (phase === "provider") markProviderDispatch();
         const dispatchAtMs = Date.now();
         const diagnosticStart = trace?.now();
         if (trace && phase === "provider") {

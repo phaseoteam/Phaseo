@@ -6,7 +6,7 @@
 	"name": "phaseo-gateway-perf",
 	"main": "src/index.ts",
 	"compatibility_date": "2026-07-22",
-	"compatibility_flags": ["global_fetch_strictly_public"],
+	"compatibility_flags": ["global_fetch_strictly_public", "nodejs_als"],
 	"workers_dev": true,
 	"preview_urls": true,
 	"placement": { "mode": "smart" },
