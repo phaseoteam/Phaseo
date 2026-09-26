@@ -15,6 +15,20 @@ type ChargeInput = Pick<SettlementRecoveryRecord, "workspaceId" | "requestId" | 
 const MAX_ATTEMPTS = 5;
 const MAX_AGE_MS = 24 * 60 * 60 * 1000;
 const DEBIT_TIMEOUT_MS = 5_000;
+const TRANSFER_TIMEOUT_MS = 5_000;
+
+async function sendRecoveryRecord<T>(queue: Queue<T>, body: T): Promise<void> {
+    let deadline!: ReturnType<typeof setTimeout>;
+    const timeout = new Promise<never>((_resolve, reject) => {
+        deadline = setTimeout(() => reject(new Error("settlement_transfer_unconfirmed")), TRANSFER_TIMEOUT_MS);
+    });
+    try {
+        // Queue sends are not cancellable. A timeout is UNKNOWN, not proof of
+        // rejection; retain the original identity on replay. The race observes
+        // late rejection too, without letting late success acknowledge a message.
+        await Promise.race([queue.send(body, { contentType: "json" }), timeout]);
+    } finally { clearTimeout(deadline); }
+}
 
 /** Only the exhausted-charge path calls this. No per-success queue operation.
  * Await send confirmation before marking ownership transferred to recovery. */
@@ -26,7 +40,7 @@ export async function enqueueSettlementRecovery(input: ChargeInput): Promise<boo
     }
     const record = SettlementRecoveryRecord.parse({ ...input, version: 1, createdAtMs: Date.now() });
     countOperation("settlementEnqueue");
-    await env.SETTLEMENT_RECOVERY_QUEUE.send(record, { contentType: "json" });
+    await sendRecoveryRecord(env.SETTLEMENT_RECOVERY_QUEUE, record);
     return true;
 }
 
@@ -73,7 +87,7 @@ export async function handleSettlementRecoveryBatch(batch: MessageBatch<unknown>
                 if (quarantine) {
                     // Preserve the original queue body without wrapping/increasing
                     // its size. Queue access is private; never log payloads.
-                    await env.SETTLEMENT_RECOVERY_DEAD_LETTER.send(message.body, { contentType: "json" });
+                    await sendRecoveryRecord(env.SETTLEMENT_RECOVERY_DEAD_LETTER, message.body);
                     message.ack();
                     counts.quarantined++;
                     console.error("settlement_recovery_quarantined", { messageId: message.id });

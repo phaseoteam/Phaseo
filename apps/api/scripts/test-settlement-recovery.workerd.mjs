@@ -13,8 +13,17 @@ const bundle = await build({ absWorkingDir: root, bundle: true, format: "esm", p
         import { recordUsageAndChargeOnce } from './src/pipeline/after/charge';
         export default {
             queue: handleSettlementRecoveryBatch,
-            async fetch(request, env) {
-                configureRuntime(env);
+            async fetch(request, env, execution) {
+                const delayedConfirmation = new URL(request.url).pathname === '/ambiguous-send';
+                const bindings = delayedConfirmation ? { ...env, SETTLEMENT_RECOVERY_QUEUE: {
+                    async send(body, options) {
+                        await env.SETTLEMENT_RECOVERY_QUEUE.send(body, options);
+                        const delayed = new Promise(resolve => setTimeout(resolve, 7_000));
+                        execution.waitUntil(delayed);
+                        await delayed;
+                    }
+                } } : env;
+                configureRuntime(bindings);
                 try {
                     const input = await request.json();
                     if (new URL(request.url).pathname === '/direct') {
@@ -24,7 +33,13 @@ const bundle = await build({ absWorkingDir: root, bundle: true, format: "esm", p
                         return Response.json({ queued: ctx.meta.__usageChargeRecoveryEnqueued === true,
                             recorded: ctx.meta.__usageChargeRecorded === true });
                     }
-                    return Response.json({ queued: await enqueueSettlementRecovery(input) });
+                    try { return Response.json({ queued: await enqueueSettlementRecovery(input) }); }
+                    catch (error) {
+                        if (delayedConfirmation && error.message === 'settlement_transfer_unconfirmed') {
+                            return Response.json({ confirmed: false });
+                        }
+                        throw error;
+                    }
                 }
                 finally { clearRuntime(); }
             }
@@ -145,8 +160,21 @@ try {
     await eventually(() => chargeCalls.filter(call => call.p_request_id === "direct-handoff").length === 4);
     assert.equal(ledger.size, 4, "Three timed-out attempts and actual queue recovery still have one debit");
     assert.equal(ledger.get(`${workspaceId}:direct-handoff`), 99);
+    const ambiguousInput = { workspaceId, requestId: "accepted-unconfirmed", cost_nanos: 77, creditSnapshotBalanceNanos: null };
+    const ambiguous = await mf.dispatchFetch("https://local.invalid/ambiguous-send", { method: "POST", body: JSON.stringify(ambiguousInput) });
+    assert.deepEqual(await ambiguous.json(), { confirmed: false }, "Accepted send without timely confirmation must remain unknown");
+    await eventually(() => ledger.has(`${workspaceId}:accepted-unconfirmed`));
+    assert.equal(ledger.size, 5);
+    await mf.dispose();
+    mf = runtime();
+    const duplicateSend = await mf.dispatchFetch("https://local.invalid/", { method: "POST", body: JSON.stringify(ambiguousInput) });
+    assert.deepEqual(await duplicateSend.json(), { queued: true });
+    await eventually(() => chargeCalls.filter(call => call.p_request_id === "accepted-unconfirmed").length === 2);
+    assert.equal(ledger.size, 5, "Unknown queue confirmation followed by fresh-Worker replay never duplicates a debit");
+    assert.equal(ledger.get(`${workspaceId}:accepted-unconfirmed`), 77);
     console.log(JSON.stringify({ result: "PASS", freshWorkerReplay: true, duplicateDebitPrevented: true,
         realQueueHandoff: true, nativeAcksAndRetries: true, actualTransportTimeout: true,
         directTimeoutRecovery: true, coalescedDirectFinalizers: 16,
+        ambiguousQueueAcceptanceReplay: true,
         quarantined: deadLetters.length, providerCalls: 0 }));
 } finally { await mf.dispose(); }

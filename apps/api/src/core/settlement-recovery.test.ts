@@ -21,6 +21,68 @@ beforeEach(() => {
 });
 
 describe("failed charge recovery", () => {
+    it.each(["resolve", "reject", "throw"])("clears the transfer timer on immediate %s", async mode => {
+        vi.useFakeTimers();
+        try {
+            if (mode === "reject") state.send.mockRejectedValue(new Error("unavailable"));
+            if (mode === "throw") state.send.mockImplementation(() => { throw new Error("unavailable"); });
+            if (mode === "resolve") expect(await enqueueSettlementRecovery(input)).toBe(true);
+            else await expect(enqueueSettlementRecovery(input)).rejects.toThrow("unavailable");
+            expect(vi.getTimerCount()).toBe(0);
+            expect(state.send).toHaveBeenCalledOnce();
+        } finally { vi.useRealTimers(); }
+    });
+    it("observes late send rejection without an unhandled rejection or a second send", async () => {
+        vi.useFakeTimers();
+        let fail!: (error: Error) => void;
+        state.send.mockReturnValue(new Promise<void>((_resolve, reject) => { fail = reject; }));
+        try {
+            const pending = enqueueSettlementRecovery(input).catch(error => error.message);
+            await vi.advanceTimersByTimeAsync(5_000);
+            expect(await pending).toBe("settlement_transfer_unconfirmed");
+            fail(new Error("late transport failure"));
+            await vi.advanceTimersByTimeAsync(1);
+            expect(state.send).toHaveBeenCalledOnce();
+            expect(vi.getTimerCount()).toBe(0);
+        } finally { vi.useRealTimers(); }
+    });
+    it("times out unconfirmed enqueue without treating late acceptance as confirmation", async () => {
+        vi.useFakeTimers();
+        let finish!: () => void;
+        state.send.mockReturnValue(new Promise<void>(resolve => { finish = resolve; }));
+        try {
+            let outcome = "pending";
+            const pending = enqueueSettlementRecovery(input).then(() => { outcome = "confirmed"; }, () => { outcome = "unknown"; });
+            await vi.advanceTimersByTimeAsync(4_999);
+            expect(outcome).toBe("pending");
+            await vi.advanceTimersByTimeAsync(1);
+            expect(outcome).toBe("unknown");
+            await pending;
+            finish(); await Promise.resolve();
+            expect(outcome).toBe("unknown");
+            expect(state.send).toHaveBeenCalledOnce();
+            expect(vi.getTimerCount()).toBe(0);
+        } finally { vi.useRealTimers(); }
+    });
+    it("continues a mixed batch after stalled quarantine and never acknowledges late transfer", async () => {
+        vi.useFakeTimers();
+        let finish!: () => void;
+        state.dead.mockReturnValue(new Promise<void>(resolve => { finish = resolve; }));
+        try {
+            const poison = message(null), healthy = message();
+            const pending = drain(batch(poison, healthy));
+            await vi.advanceTimersByTimeAsync(5_000);
+            expect(poison.retry).toHaveBeenCalledExactlyOnceWith({ delaySeconds: 300 });
+            await pending;
+            expect(poison.ack).not.toHaveBeenCalled();
+            expect(healthy.ack).toHaveBeenCalledOnce();
+            expect(healthy.retry).not.toHaveBeenCalled();
+            finish(); await Promise.resolve();
+            expect(poison.ack).not.toHaveBeenCalled();
+            expect(state.charge).toHaveBeenCalledOnce();
+            expect(vi.getTimerCount()).toBe(0);
+        } finally { vi.useRealTimers(); }
+    });
     it("does no queue work when disabled and fails closed with incomplete configuration", async () => {
         state.env.GATEWAY_SETTLEMENT_RECOVERY_ENABLED = "false";
         expect(await enqueueSettlementRecovery(input)).toBe(false);
