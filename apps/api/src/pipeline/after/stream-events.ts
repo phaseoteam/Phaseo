@@ -256,8 +256,8 @@ function parseResponsesMediaParts(value: any): Array<Extract<IRContentPart, { ty
 function extractOpenAIChatEvents(frame: any): UnifiedStreamEvent[] {
 	const events: UnifiedStreamEvent[] = [];
 
-	if (frame?.object === "error") {
-		events.push({ type: "error", message: frame?.message, payload: frame });
+	if (frame?.object === "error" || (frame?.error && typeof frame.error === "object")) {
+		events.push({ type: "error", message: frame?.error?.message ?? frame?.message, payload: frame });
 		return events;
 	}
 
