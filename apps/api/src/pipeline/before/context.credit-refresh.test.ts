@@ -323,7 +323,7 @@ describe("fetchGatewayContext credit-only cache refresh", () => {
 		expect(runtime.supabase.from).not.toHaveBeenCalled();
 	});
 
-	it("keeps credit outside the warm context lease and returns isolated hydrated objects", async () => {
+	it("keeps low-balance credit outside L1 and returns isolated hydrated objects", async () => {
 		seedContextCache({ credit: { workspaceId, credit: { ok: true, balanceNanos: 3_000_000_000 }, teamEnrichment } });
 		const { encodeContextLease } = await import("./contextLeaseCache");
 		for (const [key, raw] of runtime.store) {
@@ -342,6 +342,61 @@ describe("fetchGatewayContext credit-only cache refresh", () => {
 		expect(second.credit.balanceNanos).toBe(4_000_000_000);
 		expect(runtime.cache.get).toHaveBeenCalledExactlyOnceWith([`gateway:credit:${workspaceId}`], "text");
 		expect(runtime.supabase.from).toHaveBeenCalledWith("wallets");
+	});
+
+	it("serves leased high-balance context without KV or DB operations and isolates mutation", async () => {
+		seedContextCache({ credit: { workspaceId, credit: { ok: true, balanceNanos: 20_000_000_000 }, teamEnrichment } });
+		const { encodeContextLease } = await import("./contextLeaseCache");
+		for (const [key, raw] of runtime.store) {
+			if (!key.startsWith("gateway:keyver:")) runtime.store.set(key, encodeContextLease(JSON.parse(raw), 120, Date.now()));
+		}
+		const { fetchGatewayContext } = await import("./context");
+		const args = { workspaceId, model, endpoint, apiKeyId };
+		const first = await fetchGatewayContext(args);
+		first.credit.balanceNanos = 0;
+		runtime.cache.get.mockClear(); runtime.cache.put.mockClear(); runtime.supabase.from.mockClear();
+		const second = await fetchGatewayContext(args);
+		expect(second.credit.balanceNanos).toBe(20_000_000_000);
+		expect(runtime.cache.get).not.toHaveBeenCalled();
+		expect(runtime.cache.put).not.toHaveBeenCalled();
+		expect(runtime.supabase.from).not.toHaveBeenCalled();
+		expect(runtime.supabase.rpc).not.toHaveBeenCalled();
+	});
+
+	it("invalidates warm credit locally even when the remote delete fails", async () => {
+		seedContextCache({ credit: { workspaceId, credit: { ok: true, balanceNanos: 20_000_000_000 }, teamEnrichment } });
+		const { encodeContextLease } = await import("./contextLeaseCache");
+		for (const [key, raw] of runtime.store) {
+			if (!key.startsWith("gateway:keyver:")) runtime.store.set(key, encodeContextLease(JSON.parse(raw), 120, Date.now() - 100));
+		}
+		const { fetchGatewayContext } = await import("./context");
+		const { invalidateGatewayCreditCache } = await import("@/core/gateway-credit-cache");
+		const args = { workspaceId, model, endpoint, apiKeyId };
+		await fetchGatewayContext(args);
+		runtime.cache.delete.mockRejectedValueOnce(new Error("KV unavailable"));
+		await invalidateGatewayCreditCache(workspaceId);
+		runtime.walletResult = { data: { balance_nanos: 20_000_000_000, reserved_nanos: 20_000_000_000 }, error: null };
+		const second = await fetchGatewayContext(args);
+		expect(second.credit).toMatchObject({ ok: false, balanceNanos: 0, reason: "insufficient_funds" });
+		expect(runtime.supabase.from).toHaveBeenCalledWith("wallets");
+	});
+
+	it("does not install a pending pre-charge credit publication after local invalidation", async () => {
+		seedContextCache();
+		runtime.walletResult = { data: { balance_nanos: 20_000_000_000, reserved_nanos: 0 }, error: null };
+		runtime.deferWrites = true;
+		const { fetchGatewayContext } = await import("./context");
+		const { invalidateGatewayCreditCache } = await import("@/core/gateway-credit-cache");
+		const { creditAdmissionLeases } = await import("@/core/credit-admission-leases");
+		const args = { workspaceId, model, endpoint, apiKeyId };
+		await fetchGatewayContext({ ...args, onCreditCacheWrite: () => undefined });
+		await invalidateGatewayCreditCache(workspaceId);
+		for (const write of runtime.pendingWrites.splice(0)) write.resolve();
+		await Promise.all(runtime.background);
+		expect(creditAdmissionLeases.stats().entries).toBe(0);
+		runtime.deferWrites = false;
+		runtime.walletResult = { data: { balance_nanos: 0, reserved_nanos: 0 }, error: null };
+		expect((await fetchGatewayContext(args)).credit.ok).toBe(false);
 	});
 
 	it("awaits full-context credit writes but leaves unrelated cache writes in the background", async () => {
