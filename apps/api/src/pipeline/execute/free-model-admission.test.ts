@@ -2,10 +2,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { guardFreeModelAdmission } from "./free-model-admission";
 import type { PipelineContext } from "../before/types";
 import type { PriceCard } from "../pricing";
-const mocks = vi.hoisted(() => ({ enabled: "true", admit: vi.fn(), limit: vi.fn(), getByName: vi.fn(), count: vi.fn() }));
+const mocks = vi.hoisted(() => ({ enabled: "true", admit: vi.fn(), limit: vi.fn(), getByName: vi.fn(), count: vi.fn(), outcome: vi.fn() }));
 vi.mock("@/runtime/env", () => ({ getBindingsIfConfigured: () => ({ GATEWAY_FREE_MODEL_QUOTA_ENABLED: mocks.enabled,
     FREE_MODEL_QUOTA: { getByName: mocks.getByName }, FREE_MODEL_RATE_LIMITER: { limit: mocks.limit } }) }));
-vi.mock("@/runtime/request-operations", () => ({ countOperation: mocks.count }));
+vi.mock("@/runtime/request-operations", () => ({ countOperation: mocks.count, recordQuotaAdmission: mocks.outcome }));
 const owner = "10000000-0000-4000-8000-000000000001";
 const free = { rules: [{ pricing_plan: "free", price_per_unit: "0" }] } as PriceCard;
 const paid = { rules: [{ pricing_plan: "standard", price_per_unit: "1" }] } as PriceCard;
@@ -28,6 +28,7 @@ describe("free-model routing admission", () => {
         expect(mocks.admit).toHaveBeenCalledOnce(); expect(mocks.limit).toHaveBeenCalledOnce();
         expect(mocks.count).toHaveBeenCalledExactlyOnceWith("quotaRpc");
         expect((await guardFreeModelAdmission(request, paid, "gateway"))?.status).toBe(503);
+        expect(mocks.outcome).toHaveBeenCalledExactlyOnceWith("included");
     });
     it("keeps paid, BYOK and disabled traffic off the coordinator", async () => {
         await guardFreeModelAdmission(ctx(), paid, "gateway");
@@ -35,17 +36,21 @@ describe("free-model routing admission", () => {
         mocks.enabled = "false";
         await guardFreeModelAdmission(ctx(), free, "gateway");
         expect(mocks.admit).not.toHaveBeenCalled(); expect(mocks.limit).not.toHaveBeenCalled();
+        expect(mocks.outcome).not.toHaveBeenCalled();
     });
     it("fails closed without a fresh trusted owner, never falls back to key creator", async () => {
         for (const overrides of [{ workspaceOwnerUserId: null }, { workspaceOwnerUserId: "forged" }, { workspaceRuntimeExpiresAt: Date.now() - 1 }]) {
             expect((await guardFreeModelAdmission({ ...ctx(), ...overrides }, free, "gateway"))?.status).toBe(503);
         }
         expect(mocks.admit).not.toHaveBeenCalled();
+        expect(mocks.outcome).toHaveBeenCalledTimes(3);
+        expect(mocks.outcome).toHaveBeenLastCalledWith("unavailable");
     });
     it("sheds edge bursts before calling the DO", async () => {
         mocks.limit.mockResolvedValue({ success: false });
         expect((await guardFreeModelAdmission(ctx(), free, "gateway"))?.status).toBe(429);
         expect(mocks.admit).not.toHaveBeenCalled();
+        expect(mocks.outcome).toHaveBeenCalledExactlyOnceWith("edge_limited");
     });
     it("propagates limits and never retries an ambiguous RPC", async () => {
         mocks.admit.mockResolvedValue({ allowed: false, reason: "daily_limit", retryAfterSeconds: 321 });
@@ -56,10 +61,12 @@ describe("free-model routing admission", () => {
         expect((await guardFreeModelAdmission(request, free, "gateway"))?.status).toBe(503);
         expect((await guardFreeModelAdmission(request, free, "gateway"))?.status).toBe(503);
         expect(mocks.admit).toHaveBeenCalledTimes(2);
+        expect(mocks.outcome.mock.calls).toEqual([["daily_limited"], ["unavailable"]]);
     });
     it("cannot charge or dispatch an overage before accounting rollout", async () => {
         mocks.admit.mockResolvedValue({ allowed: true, mode: "overage", feeNanos: 100_000, remaining: 0, policyVersion: 1 });
         expect((await guardFreeModelAdmission(ctx(), free, "gateway"))?.status).toBe(503);
+        expect(mocks.outcome).toHaveBeenCalledExactlyOnceWith("overage_blocked");
     });
     it("accepts the final included slot and valid denial boundaries", async () => {
         mocks.admit.mockResolvedValue({ allowed: true, mode: "included", feeNanos: 0, remaining: 0, policyVersion: 1 });
@@ -71,6 +78,7 @@ describe("free-model routing admission", () => {
             expect(result?.headers.get("Retry-After")).toBe(String(retryAfterSeconds));
             expect(await result?.json()).toMatchObject({ error: `free_model_${reason}` });
         }
+        expect(mocks.outcome.mock.calls).toEqual([["included"], ["rpm_limited"], ["daily_limited"]]);
     });
     it.each([
         undefined, null, {}, [], true, "allowed", { allowed: "true" },
@@ -91,12 +99,14 @@ describe("free-model routing admission", () => {
         }
         expect(mocks.admit).toHaveBeenCalledOnce();
         expect(mocks.limit).toHaveBeenCalledOnce();
+        expect(mocks.outcome).toHaveBeenCalledExactlyOnceWith("unavailable");
     });
     it.each([{}, { success: "true" }, { success: 1 }, null])("rejects malformed edge reply %# before the coordinator", async edge => {
         mocks.limit.mockResolvedValue(edge);
         const response = await guardFreeModelAdmission(ctx(), free, "gateway");
         expect(response?.status).toBe(503);
         expect(mocks.admit).not.toHaveBeenCalled();
+        expect(mocks.outcome).toHaveBeenCalledExactlyOnceWith("unavailable");
     });
     it("does not treat missing pricing as free or allow a paid route for explicit free intent", async () => {
         expect((await guardFreeModelAdmission({ ...ctx(), model: "lab/model:free" }, paid, "gateway"))?.status).toBe(503);

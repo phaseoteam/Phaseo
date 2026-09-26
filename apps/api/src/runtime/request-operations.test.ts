@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { RequestOperations, withRequestOperations, countOperation, instrumentKv,
-    countSupabaseOperation, markProviderDispatch, shouldSampleOperations, recordStreamObservation,
+    countSupabaseOperation, markProviderDispatch, shouldSampleOperations, recordStreamObservation, recordQuotaAdmission,
     recordSettlement, recordSettlementAttempt } from "./request-operations";
 import { StreamSession, observeStreamOutcome } from "@/pipeline/after/stream-session";
 
@@ -20,6 +20,18 @@ describe("request operations", () => {
         expect(b.snapshot()).toMatchObject({ settlement: { state: "recovery_queued", directAttempts: 1 }, total: {} });
         a.snapshot().settlement!.directAttempts = 999;
         expect(a.snapshot().settlement!.directAttempts).toBe(2);
+    });
+    it("keeps one isolated quota outcome without adding operation counts", async () => {
+        recordQuotaAdmission("included"); // Unsampled: no request state is created.
+        const a = new RequestOperations(), b = new RequestOperations(), bypass = new RequestOperations();
+        expect(a.snapshot()).not.toHaveProperty("quotaAdmission");
+        await Promise.all([
+            withRequestOperations(a, async () => { await Promise.resolve(); recordQuotaAdmission("included"); recordQuotaAdmission("unavailable"); }),
+            withRequestOperations(b, async () => { recordQuotaAdmission("edge_limited"); await Promise.resolve(); }),
+        ]);
+        expect(a.snapshot()).toMatchObject({ quotaAdmission: "included", total: {} });
+        expect(b.snapshot()).toMatchObject({ quotaAdmission: "edge_limited", total: {} });
+        expect(bypass.snapshot()).not.toHaveProperty("quotaAdmission");
     });
     it("attributes mixed bulk reads and failed writes without retaining keys or values", async () => {
         const source = { getWithMetadata: vi.fn(), put: vi.fn(() => { throw new Error("offline"); }), delete: vi.fn(), list: vi.fn() };

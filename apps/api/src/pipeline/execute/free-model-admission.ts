@@ -1,5 +1,5 @@
 import { getBindingsIfConfigured } from "@/runtime/env";
-import { countOperation } from "@/runtime/request-operations";
+import { countOperation, recordQuotaAdmission, type QuotaAdmissionOutcome } from "@/runtime/request-operations";
 import { FREE_MODEL_DAILY_ALLOWANCE, FREE_MODEL_OVERAGE_NANOS, type FreeQuotaDecision } from "@/core/free-model-quota";
 import { isFreePriceCard } from "../pricing/free";
 import type { PriceCard } from "../pricing";
@@ -30,6 +30,10 @@ function denied(code: string, status: number, retryAfter?: number): Response {
         error_origin: status === 429 ? "user" : "gateway" }, { status,
         headers: { "Cache-Control": "no-store", ...(retryAfter ? { "Retry-After": String(retryAfter) } : {}) } });
 }
+function quotaDenied(outcome: QuotaAdmissionOutcome, code: string, status: number, retryAfter?: number): Response {
+    recordQuotaAdmission(outcome);
+    return denied(code, status, retryAfter);
+}
 
 export async function guardFreeModelAdmission(ctx: PipelineContext, card: PriceCard, keySource: "gateway" | "byok"): Promise<Response | null> {
     const existing = admissions.get(ctx);
@@ -49,25 +53,27 @@ export async function guardFreeModelAdmission(ctx: PipelineContext, card: PriceC
         if (!owner || !OWNER_ID.test(owner) || !Number.isFinite(ctx.workspaceRuntimeExpiresAt)
             || (ctx.workspaceRuntimeExpiresAt ?? 0) <= Date.now()
             || !env.FREE_MODEL_QUOTA || !env.FREE_MODEL_RATE_LIMITER) {
-            return denied("free_model_quota_unavailable", 503);
+            return quotaDenied("unavailable", "free_model_quota_unavailable", 503);
         }
         try {
             // The edge guard sheds abusive local bursts. The DO owns global quota.
             const edge = await env.FREE_MODEL_RATE_LIMITER.limit({ key: owner });
-            if (edge?.success === false) return denied("free_model_rate_limit", 429, 60);
-            if (edge?.success !== true) return denied("free_model_quota_unavailable", 503);
+            if (edge?.success === false) return quotaDenied("edge_limited", "free_model_rate_limit", 429, 60);
+            if (edge?.success !== true) return quotaDenied("unavailable", "free_model_quota_unavailable", 503);
             countOperation("quotaRpc");
             const decision = await env.FREE_MODEL_QUOTA.getByName(`owner:${owner}`).admit();
-            if (!isQuotaDecision(decision)) return denied("free_model_quota_unavailable", 503);
-            if (decision.allowed === false) return denied(`free_model_${decision.reason}`, 429, decision.retryAfterSeconds);
+            if (!isQuotaDecision(decision)) return quotaDenied("unavailable", "free_model_quota_unavailable", 503);
+            if (decision.allowed === false) return quotaDenied(decision.reason === "rpm_limit" ? "rpm_limited" : "daily_limited",
+                `free_model_${decision.reason}`, 429, decision.retryAfterSeconds);
             if (decision.mode === "overage") {
                 // No partial billing rollout: the quoted fee requires durable
                 // authorization/settlement recovery before this branch can run.
-                return denied("free_model_overage_not_available", 503);
+                return quotaDenied("overage_blocked", "free_model_overage_not_available", 503);
             }
+            recordQuotaAdmission("included");
             return null;
         } catch {
-            return denied("free_model_quota_unavailable", 503);
+            return quotaDenied("unavailable", "free_model_quota_unavailable", 503);
         }
     })();
     admissions.set(ctx, pending);
