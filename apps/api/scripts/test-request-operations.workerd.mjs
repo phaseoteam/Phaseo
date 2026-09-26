@@ -10,14 +10,14 @@ const bundle = await build({
     absWorkingDir: root, bundle: true, format: "esm", platform: "neutral", write: false,
     external: ["node:async_hooks"],
     stdin: { resolveDir: root, loader: "ts", contents: `
-        import { RequestOperations, withRequestOperations, instrumentKv, markProviderDispatch, countOperation }
+        import { RequestOperations, withRequestOperations, instrumentKv, markProviderDispatch, countOperation, measureDispatchStage }
             from './src/runtime/request-operations';
         export default { async fetch(request, env, ctx) {
             const record = new RequestOperations();
             return withRequestOperations(record, async () => {
                 const kv = instrumentKv(env.CACHE);
                 const count = Number(new URL(request.url).pathname.slice(1));
-                for (let n = 0; n < count; n++) await kv.get('gateway:credit:private');
+                for (let n = 0; n < count; n++) await measureDispatchStage('credit.cache', () => kv.get('gateway:credit:private'));
                 markProviderDispatch();
                 const background = Promise.resolve().then(() => { countOperation('healthRpc'); });
                 record.track(background); ctx.waitUntil(background);
@@ -36,6 +36,13 @@ try {
         assert.deepEqual(result.total, { kvRead: index + 1, healthRpc: 1 });
         assert.deepEqual(result.beforeDispatch, { kvRead: index + 1 });
         assert.equal(result.complete, true);
+        assert.equal(result.dispatchTimings.length, index + 1);
+        assert.equal(result.dispatchTimingsOverflow, false);
+        for (const timing of result.dispatchTimings) {
+            assert.equal(timing.stage, 'credit.cache');
+            assert.equal(timing.state, 'fulfilled');
+            assert.ok(timing.startMs >= 0 && timing.endMs >= timing.startMs && timing.endMs <= result.beforeDispatchMs);
+        }
         assert.deepEqual(result.kvByPurpose, { credit: { kvRead: index + 1 } });
         assert.match(result.runtimeInstanceId, /^[0-9a-f-]{36}$/);
         assert.equal(result.runtimeInstanceId, results[0].runtimeInstanceId);
