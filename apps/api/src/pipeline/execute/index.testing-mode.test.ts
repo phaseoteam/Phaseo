@@ -119,6 +119,46 @@ describe("doRequestWithIR pricing behavior in testing mode", () => {
 		expect(guardAllFailedMock).toHaveBeenCalled();
 	});
 
+    it.each([
+        { requested: false, parity: false, expected: false },
+        { requested: false, parity: true, expected: true },
+        { requested: true, parity: false, expected: true },
+    ])("selects text transport from trusted candidate parity: %j", async ({ requested, parity, expected }) => {
+        const declaration = { supported: true, bufferedParity: true, preferStreamingForBufferedRequests: true };
+        const candidate = { providerId: "poolside", pricingCard: { rules: [], currency: "USD" }, byokMeta: [],
+            providerModelSlug: "laguna-xs-2.1", capabilityParams: parity ? { stream: declaration } : {} };
+        guardCandidatesMock.mockResolvedValue({ ok: true, value: [candidate] });
+        rankProvidersMock.mockResolvedValue([{ candidate, health: {} }]);
+        const executor = vi.fn().mockResolvedValue({ kind: "completed", ir: {}, upstream: new Response("{}"),
+            bill: { cost_cents: 0, currency: "USD" }, keySource: "gateway" });
+        resolveProviderExecutorMock.mockReturnValue(executor);
+        const request = { model: "poolside/laguna-xs-2.1:free", stream: requested,
+            messages: [{ role: "user", content: [{ type: "text", text: "test" }] }],
+            // A client cannot self-certify parity through the payload.
+            rawRequest: { stream: requested, bufferedParity: true, capabilityParams: { stream: declaration } } };
+        await doRequestWithIR(createCtx({ capability: "text.generate", endpoint: "chat.completions", testingMode: true }),
+            request as any, createTiming());
+        expect(executor).toHaveBeenCalledOnce();
+        expect(executor.mock.calls[0][0].ir.stream).toBe(expected);
+        expect(request.stream).toBe(requested);
+    });
+
+    it("reevaluates buffered parity on fallback instead of inheriting the failed attempt's mode", async () => {
+        const candidates = [true, false].map(parity => ({ providerId: parity ? "poolside" : "openai",
+            pricingCard: { rules: [], currency: "USD" }, byokMeta: [], providerModelSlug: "fixture-model",
+            capabilityParams: { stream: { supported: true, bufferedParity: parity, preferStreamingForBufferedRequests: true } } }));
+        guardCandidatesMock.mockResolvedValue({ ok: true, value: candidates });
+        rankProvidersMock.mockResolvedValue(candidates.map(candidate => ({ candidate, health: {} })));
+        const executor = vi.fn(async (args: any) => ({ kind: "completed", ir: {},
+            upstream: new Response("{}", { status: args.providerId === "poolside" ? 503 : 200 }),
+            bill: { cost_cents: 0, currency: "USD" }, keySource: "gateway" }));
+        resolveProviderExecutorMock.mockReturnValue(executor);
+        await doRequestWithIR(createCtx({ capability: "text.generate", endpoint: "chat.completions", testingMode: true }),
+            { model: "fixture-model", stream: false, messages: [{ role: "user", content: [{ type: "text", text: "test" }] }] } as any,
+            createTiming());
+        expect(executor.mock.calls.map(call => call[0].ir.stream)).toEqual([true, false]);
+    });
+
 	it.each([429, 402, 401])("returns local video admission denial %s without fallback or provider failure", async (status) => {
 		const candidates = ["google", "minimax"].map((providerId) => ({
 			providerId, pricingCard: { rules: [], currency: "USD" }, byokMeta: [],

@@ -10,6 +10,7 @@ import { dispatchBackground, ensureRuntimeForBackground, getSupabaseAdmin } from
 import { BYOK_KEYS_PER_PROVIDER_LIMIT } from "@/core/byok";
 import { getProviderPricingKey } from "../before/context.shared";
 import { selectVideoProviderOptions } from "@core/video-provider-options";
+import { resolveTextExecutionStream } from "@providers/textStreaming";
 
 export type PipelineTiming = {
 	timer: Timer;
@@ -901,7 +902,10 @@ async function attemptProviderWithIR(
 		let reservationDenial: import("@core/video-reservations").VideoReservationDenial | undefined;
 		const buildExecutorArgs = () =>
 			({
-				ir: normalizedIr,
+				ir: isTextGenerate ? {
+					...normalizedIr,
+					stream: resolveTextExecutionStream((ir as IRChatRequest).stream === true, candidate.capabilityParams),
+				} : normalizedIr,
 				requestId: ctx.requestId,
 				workspaceId: ctx.workspaceId,
 				providerId: candidate.providerId,

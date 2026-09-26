@@ -5144,6 +5144,9 @@ export async function createResponse(
   currency?: string;
   finish_reason?: string | null;
   id?: string;
+  incomplete_details?: {
+    reason: "max_output_tokens" | "content_filter";
+  } | null;
   meta?: {
     [key: string]: unknown;
   };
@@ -5248,6 +5251,9 @@ export async function createResponse(
     currency?: string;
     finish_reason?: string | null;
     id?: string;
+    incomplete_details?: {
+      reason: "max_output_tokens" | "content_filter";
+    } | null;
     meta?: {
       [key: string]: unknown;
     };

@@ -4147,6 +4147,7 @@ type ResponsesResponse struct {
 	Currency *string `json:"currency,omitempty"`
 	FinishReason *string `json:"finish_reason,omitempty"`
 	Id *string `json:"id,omitempty"`
+	IncompleteDetails *map[string]interface{} `json:"incomplete_details,omitempty"`
 	Meta *map[string]interface{} `json:"meta,omitempty"`
 	Model *string `json:"model,omitempty"`
 	NativeResponseId *string `json:"nativeResponseId,omitempty"`

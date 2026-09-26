@@ -2598,6 +2598,7 @@ struct ResponsesResponse {
 	std::string currency;
 	std::optional<std::string> finish_reason;
 	std::string id;
+	std::optional<std::map<std::string, std::any>> incomplete_details;
 	std::map<std::string, std::any> meta;
 	std::string model;
 	std::optional<std::string> nativeResponseId;

@@ -6326,6 +6326,9 @@ public sealed class ResponsesResponse
 	[JsonPropertyName("id")]
 	public string? Id { get; set; }
 
+	[JsonPropertyName("incomplete_details")]
+	public Dictionary<string, object>? IncompleteDetails { get; set; }
+
 	[JsonPropertyName("meta")]
 	public Dictionary<string, object>? Meta { get; set; }
 
