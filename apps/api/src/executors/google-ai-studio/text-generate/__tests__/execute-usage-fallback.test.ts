@@ -48,6 +48,45 @@ afterAll(() => {
 });
 
 describe("google-ai-studio execute usage fallback", () => {
+	it.each(["openai.chat.completions", "openai.responses", "anthropic.messages"])("forwards native output before upstream completion: %s", async protocol => {
+		let upstream!: ReadableStreamDefaultController<Uint8Array>;
+		const encoder = new TextEncoder();
+		const send = (event: unknown) => upstream.enqueue(encoder.encode(`data: ${JSON.stringify(event)}\n\n`));
+		const source = new ReadableStream<Uint8Array>({ start(controller) { upstream = controller; } });
+		const mock = installFetchMock([{ match: url => url.endsWith("/v1beta/interactions"),
+			response: new Response(source, { headers: { "Content-Type": "text/event-stream" } }) }]);
+		try {
+			const result = await executor(buildArgs({ model: "google/gemini-3.8-flash", stream: true, store: false },
+				{ providerModelSlug: "gemini-3.8-flash", protocol }));
+			expect(mock.calls[0]?.bodyJson).toMatchObject({ stream: true, store: false });
+			expect(result.kind).toBe("stream");
+			if (result.kind !== "stream") throw new Error("expected stream");
+			send({ event_type: "interaction.created", interaction: { id: "native-stream" } });
+			send({ event_type: "step.start", index: 0, step: { type: "model_output" } });
+			send({ event_type: "step.delta", index: 0, delta: { type: "text", text: "early-output" } });
+			const reader = result.stream.getReader();
+			let timer: ReturnType<typeof setTimeout> | undefined;
+			try {
+				const early = (async () => {
+					let text = "";
+					for (let i = 0; i < 12 && !text.includes("early-output"); i++) {
+						const chunk = await reader.read();
+						if (chunk.done) break;
+						text += new TextDecoder().decode(chunk.value);
+					}
+					return text;
+				})();
+				expect(await Promise.race([early, new Promise((_, reject) => { timer = setTimeout(() => reject(new Error("stream buffered until completion")), 1000); })])).toContain("early-output");
+				clearTimeout(timer);
+				send({ event_type: "step.stop", index: 0 });
+				send({ event_type: "interaction.completed", interaction: { status: "completed", usage: { total_input_tokens: 7, total_output_tokens: 3, total_tokens: 10 } } });
+				upstream.close();
+				let terminal = "";
+				while (true) { const chunk = await reader.read(); if (chunk.done) break; terminal += new TextDecoder().decode(chunk.value); }
+				expect(terminal).toContain(protocol === "anthropic.messages" ? "message_stop" : protocol === "openai.responses" ? "response.completed" : "[DONE]");
+			} finally { clearTimeout(timer); await reader.cancel().catch(() => {}); reader.releaseLock(); }
+		} finally { mock.restore(); }
+	});
 	it("uses generateContent for explicit cached content", async () => {
 		const mock = installFetchMock([{
 			match: (url) => url.endsWith("/v1beta/models/gemini-2.5-flash:generateContent"),
@@ -133,21 +172,18 @@ describe("google-ai-studio execute usage fallback", () => {
 		expect(mock.calls[0]?.bodyJson?.generation_config).toBeUndefined();
 	});
 
-	it("does not transform a synthetic Interactions tool-call stream twice", async () => {
+	it("streams Interactions tool calls natively without storing the interaction", async () => {
 		const mock = installFetchMock([{
 			match: (url) => url.endsWith("/v1beta/interactions"),
-			response: new Response(JSON.stringify({
-				id: "interactions/tool-call",
-				status: "completed",
-				steps: [{
-					type: "function_call",
-					id: "call_datetime",
-					name: "datetime",
-					arguments: { timezone: "Europe/London" },
-				}],
-			}), {
+			response: new Response([
+				{ event_type: "interaction.created", interaction: { id: "interactions/tool-call" } },
+				{ event_type: "step.start", index: 0, step: { type: "function_call", id: "call_datetime", name: "datetime", arguments: {} } },
+				{ event_type: "step.delta", index: 0, delta: { type: "arguments_delta", arguments: '{"timezone":"Europe/London"}' } },
+				{ event_type: "step.stop", index: 0 },
+				{ event_type: "interaction.completed", interaction: { status: "completed", usage: { total_input_tokens: 10, total_output_tokens: 5, total_tokens: 15 } } },
+			].map(event => `data: ${JSON.stringify(event)}\n\n`).join(""), {
 				status: 200,
-				headers: { "Content-Type": "application/json" },
+				headers: { "Content-Type": "text/event-stream" },
 			}),
 		}]);
 
@@ -169,7 +205,7 @@ describe("google-ai-studio execute usage fallback", () => {
 			if (result.kind !== "stream") return;
 			const body = await new Response(result.stream).text();
 			expect(body).toContain("response.created");
-			expect(body).toContain("interactions/tool-call");
+			expect(mock.calls[0]?.bodyJson).toMatchObject({ stream: true, store: false });
 			expect(body).toContain("call_datetime");
 			expect(body).not.toContain("google_empty_response");
 		} finally {
