@@ -210,6 +210,13 @@ export async function recordUsageAndCharge(args: {
         const chargeResult = normalizeChargeRpcResult(onceRpc.data);
 
         if (!chargeResult) throw new Error("gateway_charge_result_missing");
+        // The legacy idempotency wrapper marks its record applied even when
+        // the underlying debit returns wallet_not_found. That is not a debit,
+        // including on replay; leave it unresolved for bounded reconciliation.
+        if (chargeResult.status === "wallet_not_found") {
+            await invalidateGatewayCreditCache(args.workspaceId);
+            throw new Error("gateway_charge_wallet_not_found");
+        }
         if (!chargeResult.applied && !chargeResult.already_applied) {
             throw new Error(`gateway_charge_not_applied:${chargeResult.status || "unknown"}`);
         }
@@ -354,7 +361,6 @@ export async function recordUsageAndCharge(args: {
         releaseRuntime();
     }
 }
-
 
 
 

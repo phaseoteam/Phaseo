@@ -111,6 +111,16 @@ describe("recordUsageAndCharge", () => {
 		expect(invalidateGatewayCreditCacheMock).toHaveBeenCalledWith("ws");
 	});
 
+	it.each(["applied", "already_applied"])("never treats a missing wallet as settled despite legacy %s", async flag => {
+		rpcMock.mockResolvedValue({ data: { status: "wallet_not_found", [flag]: true, invalidate_credit_cache: false }, error: null });
+		const { recordUsageAndCharge } = await import("./persist");
+		await expect(recordUsageAndCharge({ requestId: "immutable", workspaceId: "ws", cost_nanos: 100 }))
+			.rejects.toThrow("gateway_charge_wallet_not_found");
+		expect(invalidateGatewayCreditCacheMock).toHaveBeenCalledExactlyOnceWith("ws");
+		expect(enqueueAutoTopUpFailedEmailMock).not.toHaveBeenCalled();
+		expect(releaseRuntimeMock).toHaveBeenCalledOnce();
+	});
+
 	it("passes a recovery abort signal to the debit and preserves uncertain-debit invalidation", async () => {
 		const abort = new AbortController();
 		const error = { message: "AbortError: debit outcome unknown" };
