@@ -3,7 +3,7 @@ import { dispatchBackground, getBindingsIfConfigured, getSupabaseAdmin } from "@
 import { publicCatalogSchema as catalogSchema, isPublicCatalogFresh as fresh, type PublicCatalogSnapshot } from "./publicCatalogSnapshot";
 import { PublicCatalogCache, publicCatalogEndpoints } from "./publicCatalogCache";
 import { fetchWorkspaceRuntime, workspaceRuntimeCache, workspaceRuntimeEnabled } from "./workspaceRuntime";
-import { isWorkspaceRuntimeFresh, workspaceRuntimeSchema } from "./workspaceRuntimeSnapshot";
+import { isWorkspaceRuntimeFresh, workspaceRuntimeSchema, type WorkspaceRuntimeSnapshot } from "./workspaceRuntimeSnapshot";
 import { getWorkspacePolicyVersionToken } from "./workspacePolicy";
 export { publicCatalogEndpoints, publicCatalogKey } from "./publicCatalogCache";
 export { PUBLIC_CATALOG_MAX_AGE_MS, type PublicCatalogSnapshot } from "./publicCatalogSnapshot";
@@ -18,6 +18,8 @@ export type ContextBundle = {
     catalogReadMs: number;
     rpcMs: number;
     workspaceRuntimeExpiresAt?: number;
+    /** Request-owned source data; never embedded in cached compositions. */
+    workspaceRuntime?: WorkspaceRuntimeSnapshot;
     workspaceCacheStatus?: "hit" | "miss" | "bypass";
     workspaceReadMs?: number;
 };
@@ -115,7 +117,7 @@ export async function loadTextContextBundle(args: {
     }
     return {
         catalog, settings: bundle.settings, billingMode: bundle.billingMode, cacheStatus, catalogReadMs, rpcMs,
-        ...(useWorkspaceRuntime && workspace ? { workspaceRuntimeExpiresAt: workspace.expiresAtMs, workspaceCacheStatus, workspaceReadMs } : {}),
+        ...(useWorkspaceRuntime && workspace ? { workspaceRuntime: workspace, workspaceRuntimeExpiresAt: workspace.expiresAtMs, workspaceCacheStatus, workspaceReadMs } : {}),
         variants: catalog.variants.map(variant => ({ endpoint: variant.endpoint, payload: {
             ...bundle.context, pricing: structuredClone(variant.pricing),
             providers: variant.providers.map(provider => ({

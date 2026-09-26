@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { workspaceRuntimeSettingsSchema } from "./workspaceRuntimeSnapshot";
-const state = vi.hoisted(() => ({ rpc: vi.fn(), from: vi.fn(), get: vi.fn(), put: vi.fn(), version: vi.fn(), background: [] as Promise<unknown>[] }));
+const state = vi.hoisted(() => ({ rpc: vi.fn(), from: vi.fn(), get: vi.fn(), put: vi.fn(), multi: vi.fn(), version: vi.fn(), background: [] as Promise<unknown>[] }));
 vi.mock("@/runtime/env", () => ({
     getBindingsIfConfigured: () => ({ GATEWAY_CONTEXT_BUNDLE_ENABLED: "true", GATEWAY_WORKSPACE_RUNTIME_ENABLED: "true" }),
     getCache: () => ({ get: state.get, put: state.put }),
@@ -9,7 +9,7 @@ vi.mock("@/runtime/env", () => ({
 }));
 vi.mock("./workspacePolicy", () => ({ getWorkspacePolicyVersionToken: state.version }));
 vi.mock("./privateModelCache", () => ({loadPrivateRouteRow:async () => null}));
-vi.mock("@/core/kv", () => ({keyVersionToken:async () => "v0",getTextMany:async () => ({})}));
+vi.mock("@/core/kv", () => ({keyVersionToken:async () => "v0",getTextMany:state.multi}));
 vi.mock("@pipeline/pricing", () => ({loadPriceCard:async () => ({provider:"test",model:"lab/model",endpoint:"text.generate",effective_from:null,effective_to:null,currency:"USD",version:"v1",rules:[]})}));
 const workspaceId = "10000000-0000-4000-8000-000000000001";
 const other = "10000000-0000-4000-8000-000000000002";
@@ -34,6 +34,7 @@ function response(id = workspaceId, include = true, model = "lab/model") {
 beforeEach(() => {
     vi.resetModules(); vi.useFakeTimers(); vi.setSystemTime(1_000_000);
     state.get.mockReset().mockResolvedValue(null); state.put.mockReset().mockResolvedValue(undefined);
+    state.multi.mockReset().mockResolvedValue({});
     state.version.mockReset().mockResolvedValue("v1"); state.background = [];
     state.from.mockReset().mockImplementation(() => {throw new Error("Unexpected separate enrichment query");});
     state.rpc.mockReset().mockImplementation(async (name, params) => name === "gateway_fetch_workspace_runtime"
@@ -42,6 +43,117 @@ beforeEach(() => {
 afterEach(async () => { await Promise.all(state.background); vi.useRealTimers(); });
 
 describe("workspace snapshot bundle reader", () => {
+    function cachedPipeline() {
+        const store = new Map<string, string>();
+        state.put.mockImplementation(async (key, value) => { store.set(key, value); });
+        state.get.mockImplementation(async key => {
+            const raw = store.get(key);
+            return raw ? new Response(raw).body : null;
+        });
+        state.multi.mockImplementation(async keys => Object.fromEntries(keys.map((key: string) => [key, store.get(key) ?? null])));
+        state.rpc.mockImplementation(async (name, params) => {
+            if (name === "gateway_fetch_workspace_runtime") {
+                const snapshot = runtime(params.p_workspace_id);
+                snapshot.byok = {} as never;
+                snapshot.settings.routing_mode = "throughput";
+                return { data: snapshot, error: null };
+            }
+            const value = response(params.workspace_id, params.include_workspace, params.model);
+            if (value.data.workspaceRuntime) value.data.workspaceRuntime.byok = {} as never;
+            value.data.context.credit_ok.balance_nanos = 25_000_000_000;
+            return value;
+        });
+        return store;
+    }
+
+    it("stores no workspace configuration in per-key/model segments and serves immediate repeats without external reads", async () => {
+        const store = cachedPipeline();
+        const { fetchGatewayContext } = await import("./context");
+        const first = await fetchGatewayContext(args);
+        await Promise.all(state.background);
+        const segments = [...store].filter(([key]) => key.startsWith("gateway:dynamic:") || key.startsWith("gateway:static:"));
+        expect(segments).toHaveLength(2);
+        for (const [key, raw] of segments) {
+            expect(key).toContain(":runtime-v2:");
+            const data = JSON.parse(raw);
+            expect(data).not.toHaveProperty("workspaceRuntimeExpiresAt");
+            expect(data).not.toHaveProperty("teamSettings");
+            expect((data.providers ?? []).every((provider: any) => provider.byokMeta.length === 0)).toBe(true);
+        }
+        state.get.mockClear(); state.multi.mockClear(); state.rpc.mockClear(); state.put.mockClear();
+        const next = await fetchGatewayContext(args);
+        expect(next.teamSettings).toEqual(first.teamSettings);
+        expect(next.providers).toEqual(first.providers);
+        expect(next.contextTelemetry?.cacheStatus).toBe("hit");
+        expect(next.contextTelemetry?.workspaceCacheStatus).toBe("hit");
+        expect(state.get).not.toHaveBeenCalled(); expect(state.multi).not.toHaveBeenCalled();
+        expect(state.rpc).not.toHaveBeenCalled(); expect(state.put).not.toHaveBeenCalled();
+    });
+
+    it("refreshes expired workspace settings without rebuilding admission, catalog or per-key/model segments", async () => {
+        cachedPipeline();
+        const { fetchGatewayContext } = await import("./context");
+        await fetchGatewayContext(args); await Promise.all(state.background);
+        state.rpc.mockClear(); state.put.mockClear();
+        vi.setSystemTime(Date.now() + 61_000);
+        const next = await fetchGatewayContext(args); await Promise.all(state.background);
+        expect(next.teamSettings?.routingMode).toBe("throughput");
+        expect(next.contextTelemetry?.cacheStatus).toBe("hit");
+        expect(next.workspaceRuntimeExpiresAt).toBe(Date.now() + 60_000);
+        expect(state.rpc.mock.calls.map(call => call[0])).toEqual(["gateway_fetch_workspace_runtime"]);
+        expect(state.put).toHaveBeenCalledTimes(1);
+        expect(state.put.mock.calls[0][0]).toContain("gateway:workspace-runtime:");
+        expect(state.from).not.toHaveBeenCalled();
+    });
+
+    it("fails closed when expired workspace source cannot be refreshed even with valid composition segments", async () => {
+        cachedPipeline();
+        const { fetchGatewayContext } = await import("./context");
+        await fetchGatewayContext(args); await Promise.all(state.background);
+        vi.setSystemTime(Date.now() + 61_000);
+        state.rpc.mockResolvedValue({ data: null, error: { message: "unavailable" } });
+        await expect(fetchGatewayContext(args)).rejects.toThrow("workspace_runtime_source_failed");
+    });
+
+    it("isolates composed context across workspace generation changes", async () => {
+        cachedPipeline();
+        const { fetchGatewayContext } = await import("./context");
+        await fetchGatewayContext(args); await Promise.all(state.background);
+        state.rpc.mockClear(); state.version.mockResolvedValue("v2");
+        await fetchGatewayContext(args);
+        expect(state.rpc.mock.calls[0]).toEqual(["gateway_fetch_request_context_bundle_v2", expect.objectContaining({ include_workspace: true })]);
+    });
+
+    it("coalesces 32 source refills with request-owned objects and releases failed work", async () => {
+        const { refillWorkspaceRuntime } = await import("./workspaceRuntime");
+        let complete!: (value: unknown) => void;
+        state.rpc.mockImplementation(() => new Promise(resolve => { complete = resolve; }));
+        const requests = Array.from({ length: 32 }, () => refillWorkspaceRuntime(workspaceId, "v1"));
+        expect(state.rpc).toHaveBeenCalledTimes(1);
+        complete({ data: runtime(), error: null });
+        const results = await Promise.all(requests);
+        results[0].settings.routing_mode = "changed";
+        expect(results[1].settings.routing_mode).toBe("balanced");
+        state.rpc.mockResolvedValue({ data: null, error: { message: "unavailable" } });
+        await expect(refillWorkspaceRuntime(workspaceId, "v1")).rejects.toThrow("source_failed");
+        state.rpc.mockResolvedValue({ data: runtime(), error: null });
+        await expect(refillWorkspaceRuntime(workspaceId, "v1")).resolves.toMatchObject({ workspaceId });
+    });
+
+    it("bounds source concurrency and never coalesces mutation publication with old reads", async () => {
+        const { refillWorkspaceRuntime, publishWorkspaceRuntime } = await import("./workspaceRuntime");
+        const completions: ((value: unknown) => void)[] = [];
+        state.rpc.mockImplementation(() => new Promise(resolve => { completions.push(resolve); }));
+        const pending = Array.from({ length: 32 }, (_, index) => refillWorkspaceRuntime(workspaceId, `v${index}`));
+        await expect(refillWorkspaceRuntime(workspaceId, "v32")).rejects.toThrow("refill_capacity");
+        const publish = publishWorkspaceRuntime(workspaceId, "v0");
+        expect(state.rpc).toHaveBeenCalledTimes(33);
+        completions.forEach(resolve => resolve({ data: runtime(), error: null }));
+        await Promise.all([...pending, publish]);
+        state.rpc.mockResolvedValue({ data: runtime(), error: null });
+        await expect(refillWorkspaceRuntime(workspaceId, "v32")).resolves.toMatchObject({ workspaceId });
+    });
+
     it("feeds the actual context pipeline with source deadlines and no separate enrichment reads", async () => {
         state.rpc.mockImplementation(async (_name,params) => {
             const value = response(params.workspace_id,true,params.model);
