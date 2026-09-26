@@ -14,7 +14,11 @@ export class FreeModelQuotaDurableObject extends DurableObject<GatewayBindings> 
 
     private feeJournal() { return this.fees ??= new FreeModelFeeJournal(this.ctx.storage, this.env); }
 
-    prepareFee(identity: FreeModelReservationIdentity) { return this.feeJournal().prepare(identity); }
+    prepareFee(identity: FreeModelReservationIdentity, policyVersion: number) {
+        if (this.env.GATEWAY_FREE_MODEL_OVERAGE_ENABLED !== "true" || !this.quota.allowOverage
+            || policyVersion !== this.quota.policyVersion) return { allowed: false as const, reason: "policy_changed" };
+        return this.feeJournal().prepare(identity);
+    }
     finishFee(identity: FreeModelReservationIdentity, outcome: "capture" | "release") {
         return this.feeJournal().finish(identity, outcome);
     }

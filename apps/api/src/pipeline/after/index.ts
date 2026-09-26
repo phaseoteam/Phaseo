@@ -14,6 +14,7 @@ import { handleStreamResponse, handlePassthroughFallback } from "./stream";
 import { handleSuccessAudit, handleFailureAudit } from "./audit";
 import { makeHeaders, createResponse } from "./http";
 import { recordUsageAndChargeOnce } from "./charge";
+import { applyFreeModelFee, hasFreeModelFee, settleFreeModelFee } from "@/core/free-model-fee";
 import { shapeUsageForClient } from "../usage";
 import { logDebugEvent, previewValue } from "../debug";
 import { normalizeFinishReason } from "../audit/normalize-finish-reason";
@@ -476,11 +477,11 @@ async function handleNonStreamResponse(
 		isByok,
 		discountBps: ctx.teamSettings?.dataContributionDiscountBps,
 	});
-    const pricedWithByok = {
+    const pricedWithByok = applyFreeModelFee(ctx, {
 		...pricedWithByokSubtotal,
 		...successfulBilling,
 		...contributionDiscount,
-	};
+	});
     const pricedUsageFinalRaw = pricedWithByok.pricedUsage;
     const totalCentsFinal = pricedWithByok.totalCents;
     const totalNanosFinal = pricedWithByok.totalNanos;
@@ -563,6 +564,17 @@ async function handleNonStreamResponse(
         });
     }
 
+    // Persist the fee decision before returning a successful non-stream body.
+    // Included free and normal paid inference do not take this extra RPC.
+    if (hasFreeModelFee(ctx)) {
+        try { await settleFreeModelFee(ctx, true); }
+        catch {
+            // The coordinator may have captured despite a lost acknowledgement.
+            // Preserve the successful result; background retry keeps the same
+            // decision, and the durable hold remains reviewable if unreachable.
+            console.error("free_model_fee_success_unconfirmed", { requestId: ctx.billingRequestId });
+        }
+    }
     dispatchNonStreamSuccessSideEffects({
         ctx,
         result,

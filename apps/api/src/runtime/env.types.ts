@@ -13,6 +13,7 @@ export type GatewayBindings = {
     GATEWAY_WORKSPACE_PUBLICATION_DRAIN_ENABLED?: string;
     GATEWAY_PUBLIC_CATALOG_TARGETS?: string;
     GATEWAY_FREE_MODEL_QUOTA_ENABLED?: string;
+    GATEWAY_FREE_MODEL_OVERAGE_ENABLED?: string;
     FREE_MODEL_QUOTA?: DurableObjectNamespace<import("@core/free-model-quota-durable-object").FreeModelQuotaDurableObject>;
     FREE_MODEL_RATE_LIMITER?: RateLimit;
     SUPABASE_URL: string;

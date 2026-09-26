@@ -4,6 +4,7 @@
 // How: Emits audit events for success/failure requests.
 
 import { auditSuccess, auditFailure } from "../audit";
+import { freeModelFeeAudit, releaseFailedFreeModelFee } from "@/core/free-model-fee";
 import { protectStealthAuditArgs } from "../audit/stealth-identity";
 import { isStealthRequest } from "../stealth";
 import type { PipelineContext } from "../before/types";
@@ -278,6 +279,7 @@ export async function handleFailureAudit(
     errorDetails?: unknown,
     gatewayErrorPayload?: Record<string, unknown> | null,
 ) {
+    await releaseFailedFreeModelFee(ctx);
     const protectedOtlp = protectStealthAuditArgs({
         model: ctx.model,
         requestedModel: ctx.requestedModel ?? ctx.model,
@@ -680,6 +682,7 @@ export async function handleSuccessAudit(
                 labels: ctx.meta.labels ?? [],
                 client_source: ctx.meta.clientSource ?? null,
                 finish_reason: finishReason ?? null,
+                ...freeModelFeeAudit(ctx),
                 plugin_executions: sanitizeForAxiom(ctx.pluginExecutions ?? null),
                 routing_snapshot: sanitizeForAxiom((ctx as any).routingSnapshot ?? null),
                 routing_diagnostics: sanitizeForAxiom((ctx as any).routingDiagnostics ?? null),

@@ -1,14 +1,7 @@
-import { z } from "zod";
+import { FreeModelReservationIdentitySchema, type FreeModelReservationIdentity } from "./free-model-fee-identity";
+export { FreeModelReservationIdentitySchema, type FreeModelReservationIdentity } from "./free-model-fee-identity";
 import { FREE_MODEL_OVERAGE_NANOS } from "./free-model-quota";
 import { reserveWalletCredits, captureWalletReservation, releaseWalletReservation } from "./wallet-reservations";
-
-export const FreeModelReservationIdentitySchema = z.object({
-    workspaceId: z.string().uuid(),
-    keyId: z.string().uuid(),
-    // Server-owned billing identity, never an untrusted HTTP request-id header.
-    requestId: z.string().regex(/^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$/),
-}).strict();
-export type FreeModelReservationIdentity = z.infer<typeof FreeModelReservationIdentitySchema>;
 
 function reservation(input: FreeModelReservationIdentity) {
     const identity = FreeModelReservationIdentitySchema.parse(input);
@@ -22,7 +15,7 @@ function reservation(input: FreeModelReservationIdentity) {
 export async function reserveFreeModelOverage(input: FreeModelReservationIdentity, signal?: AbortSignal) {
     const args = reservation(input);
     const result = await reserveWalletCredits({ workspaceId: args.workspaceId, keyId: args.keyId,
-        reservationId: args.reservationId, holdRefId: args.requestId,
+        reservationId: args.reservationId, holdRefId: args.auditRequestId ?? args.requestId,
         amountNanos: FREE_MODEL_OVERAGE_NANOS, requestCount: 1, ...(signal ? { signal } : {}) });
     if ((result.applied || result.alreadyApplied) &&
         (result.status !== "held" || result.amountNanos !== FREE_MODEL_OVERAGE_NANOS)) {

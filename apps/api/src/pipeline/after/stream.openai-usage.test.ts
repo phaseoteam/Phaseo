@@ -10,6 +10,8 @@ const maybeOpenOnRecentErrorsMock = vi.fn();
 const maybeWriteStickyRoutingFromUsageMock = vi.fn();
 const classifyProviderHealthImpactMock = vi.fn();
 const recordManagedProviderTokensOnceMock = vi.fn();
+const feePrepareMock = vi.fn();
+const feeFinishMock = vi.fn();
 
 vi.mock("../audit", () => ({
 	auditSuccess: (...args: any[]) => auditSuccessMock(...args),
@@ -67,6 +69,9 @@ vi.mock("./pricing", () => ({
 }));
 
 vi.mock("@/runtime/env", () => ({
+	getBindingsIfConfigured: () => ({ GATEWAY_FREE_MODEL_OVERAGE_ENABLED: "true", FREE_MODEL_QUOTA: {
+		getByName: () => ({ prepareFee: feePrepareMock, finishFee: feeFinishMock }),
+	} }),
 	ensureRuntimeForBackground: () => () => {},
 	dispatchBackground: (promise: Promise<unknown>) => {
 		void promise.catch(() => {});
@@ -74,6 +79,7 @@ vi.mock("@/runtime/env", () => ({
 }));
 
 import { handleStreamResponse } from "./stream";
+import { authorizeFreeModelFee } from "@/core/free-model-fee";
 
 function makeOpenAIStream(): Response {
 	const frames = [
@@ -169,6 +175,38 @@ function baseCtx(): any {
 }
 
 describe("handleStreamResponse OpenAI usage finalization", () => {
+    it.each(["success", "empty", "incomplete", "failed", "disconnect"])("settles overage only on a successful stream (%s)", async mode => {
+        for (const mock of [auditSuccessMock, auditFailureMock, emitGatewayRequestEventMock, recordManagedProviderTokensOnceMock,
+            onCallEndMock, reportProbeResultMock, maybeOpenOnRecentErrorsMock, maybeWriteStickyRoutingFromUsageMock]) mock.mockReset().mockResolvedValue(undefined);
+        classifyProviderHealthImpactMock.mockReset().mockReturnValue("success");
+        feePrepareMock.mockReset().mockResolvedValue({ allowed: true });
+        feeFinishMock.mockReset().mockResolvedValue({ settled: true, review: false });
+        const actual = await vi.importActual<typeof import("./charge")>("./charge");
+        recordUsageAndChargeOnceMock.mockReset().mockImplementation(actual.recordUsageAndChargeOnce);
+        const ctx = { ...baseCtx(), workspaceId: "10000000-0000-4000-8000-000000000001",
+            workspaceOwnerUserId: "10000000-0000-4000-8000-000000000002", keyId: "20000000-0000-4000-8000-000000000001",
+            billingRequestId: "server-" + mode, meta: { ...baseCtx().meta, apiKeyId: "20000000-0000-4000-8000-000000000001" } };
+        await authorizeFreeModelFee(ctx, 1);
+        const upstream = mode === "incomplete" ? makeIncompleteOpenAIStream() : mode === "failed" ? makeFailedOpenAIStream()
+            : mode === "empty" ? new Response('data: {"choices":[{"index":0,"delta":{},"finish_reason":"stop"}],"usage":{"prompt_tokens":1,"completion_tokens":0}}\n\ndata: [DONE]\n\n') : makeOpenAIStream();
+        try {
+            const response = await handleStreamResponse(ctx, { kind: "stream", stream: upstream.body, upstream,
+                provider: "poolside", keySource: "gateway", usageFinalizer: async () => null,
+                bill: { cost_cents: 0, currency: "USD", usage: null, finish_reason: null } } as any, {} as any);
+            let wire = "";
+            if (mode === "disconnect") {
+                const reader = response.body!.getReader(); await reader.read(); await reader.cancel();
+            } else wire = await response.text();
+            await vi.waitFor(() => expect(feeFinishMock).toHaveBeenCalledOnce());
+            expect(feeFinishMock.mock.calls[0][1]).toBe(mode === "success" ? "capture" : "release");
+            if (mode === "success") {
+                expect(wire).toContain('"total_nanos":100000');
+                await vi.waitFor(() => expect(auditSuccessMock).toHaveBeenCalledOnce());
+                expect(auditSuccessMock.mock.calls[0][0]).toMatchObject({ totalNanos: 100000,
+                    detailMetadata: { free_model_fee_request_id: "server-success" } });
+            }
+        } finally { recordUsageAndChargeOnceMock.mockReset().mockResolvedValue(undefined); }
+    });
     it.each(["usage", "finalizer", "fallback"])("settles and audits %s before a stalled sticky hint", async mode => {
         for (const mock of [auditSuccessMock, emitGatewayRequestEventMock, recordUsageAndChargeOnceMock, recordManagedProviderTokensOnceMock,
             onCallEndMock, reportProbeResultMock, maybeOpenOnRecentErrorsMock]) mock.mockReset().mockResolvedValue(undefined);

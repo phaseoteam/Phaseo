@@ -33,7 +33,12 @@ const bundle = await build({ absWorkingDir: root, bundle: true, format: "esm", p
                 if(url.pathname === '/restart') { try { await stub.restart(); } catch {} return Response.json({ok:true}); }
                 if(url.pathname === '/admit') return Response.json(await stub.admit());
                 const input = await request.json();
-                return Response.json(url.pathname === '/prepare' ? await stub.prepareFee(input)
+                if(url.pathname === '/prepare') {
+                    const settings = await stub.getSettings();
+                    const enabled = await stub.setOverage(true, settings.policyVersion);
+                    return Response.json(await stub.prepareFee(input, enabled.settings.policyVersion));
+                }
+                return Response.json(url.pathname === '/prepare-stale' ? await stub.prepareFee(input, -1)
                     : await stub.finishFee(input, url.pathname.slice(1)));
             } catch(error) { return Response.json({ error: error.message }, {status:503}); }
         }};
@@ -63,12 +68,13 @@ async function source(request) {
 }
 const mf = new Miniflare({ modules:[{type:'ESModule',path:'journal.mjs',contents:bundle.outputFiles[0].text}], compatibilityDate:'2025-10-01', compatibilityFlags:['nodejs_als'],
     durableObjects:{ QUOTA:{className:'JournalProbe',useSQLite:true} }, kvNamespaces:['GATEWAY_CACHE'],
-    bindings:{SUPABASE_URL:'https://source.invalid',SUPABASE_SERVICE_ROLE_KEY:'fixture'}, outboundService:source });
+    bindings:{SUPABASE_URL:'https://source.invalid',SUPABASE_SERVICE_ROLE_KEY:'fixture',GATEWAY_FREE_MODEL_OVERAGE_ENABLED:'true'}, outboundService:source });
 const call = async (path, requestId = 'success', overrides = {}) => (await mf.dispatchFetch('https://local.invalid' + path,
     {method:'POST', body:JSON.stringify({...identity,requestId,...overrides})})).json();
 try {
     await call('/admit'); assert.deepEqual(await call('/inspect'), {rows:[],exists:0,alarm:null}); assert.equal(calls.length,0);
     assert.equal((await call('/prepare')).allowed,true);
+    assert.equal((await call('/prepare-stale', 'stale')).allowed,false);
     assert.equal((await call('/inspect')).rows[0].state,'held');
     assert.equal((await call('/capture')).settled,true);
     assert.equal((await call('/capture')).settled,true); assert.equal(mutations.captures,1);

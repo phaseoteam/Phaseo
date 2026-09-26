@@ -8,7 +8,7 @@ type Counts = Partial<Record<Operation, number>>;
 type KvOperation = "kvRead" | "kvWrite" | "kvDelete" | "kvList";
 type KvPurpose = "auth" | "credit" | "sticky" | "context" | "health" | "other";
 type KvCounts = Partial<Record<KvPurpose, Partial<Record<KvOperation, number>>>>;
-export type QuotaAdmissionOutcome = "included" | "edge_limited" | "rpm_limited" | "daily_limited" | "unavailable" | "overage_blocked";
+export type QuotaAdmissionOutcome = "included" | "overage" | "edge_limited" | "rpm_limited" | "daily_limited" | "unavailable" | "overage_blocked";
 export type SettlementOutcome = "pending" | "confirmed" | "recovery_queued" | "unresolved";
 const scope = new AsyncLocalStorage<RequestOperations>();
 // Lazily initialized during a request: Workers disallow random I/O at module load.

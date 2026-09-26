@@ -38,16 +38,17 @@ internalFreeModelSettingsRoutes.on(["GET", "PATCH"], "/", withRuntime(async (req
         const edge = await env.FREE_MODEL_RATE_LIMITER.limit({ key: `settings:${actor.userId}` });
         if (!edge.success) return json({ error: "rate_limited" }, 429, { ...PRIVATE, "Retry-After": "60" });
         const quota = env.FREE_MODEL_QUOTA.getByName(`owner:${actor.userId}`);
+        const overageAvailable = env.GATEWAY_FREE_MODEL_OVERAGE_ENABLED === "true";
         if (req.method === "GET") {
-            return json({ data: { ...await quota.getSettings(), overageAvailable: false } }, 200, PRIVATE);
+            return json({ data: { ...await quota.getSettings(), overageAvailable } }, 200, PRIVATE);
         }
         const body = Patch.safeParse(await req.json().catch(() => null));
         if (!body.success) return json({ error: "invalid_free_model_policy" }, 400, PRIVATE);
         // Do not collect apparent consent to a feature that cannot yet safely
         // authorize, settle and recover its fee. Disabling is always supported.
-        if (body.data.allowOverage) return json({ error: "free_model_overage_not_available" }, 409, PRIVATE);
-        const result = await quota.setOverage(false, body.data.expectedVersion);
-        return json({ data: { ...result.settings, overageAvailable: false },
+        if (body.data.allowOverage && !overageAvailable) return json({ error: "free_model_overage_not_available" }, 409, PRIVATE);
+        const result = await quota.setOverage(body.data.allowOverage, body.data.expectedVersion);
+        return json({ data: { ...result.settings, overageAvailable },
             ...(result.updated ? {} : { error: "policy_version_conflict" }) }, result.updated ? 200 : 409, PRIVATE);
     } catch {
         // No retry after an ambiguous mutation acknowledgement. GET the current
