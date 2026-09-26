@@ -35,7 +35,6 @@ function sseResponse(frames: string[]): Response {
 describe("bufferStreamToIR", () => {
 	it.each([
 		"data: [DONE]\r\n\r\n",
-		"data: [DONE]",
 	])("accepts a clean empty terminal stream: %j", async (body) => {
 		const buffered = await bufferStreamToIR(
 			sseResponse([body]),
@@ -53,7 +52,7 @@ describe("bufferStreamToIR", () => {
 		expect(buffered.ir.choices[0]?.finishReason).toBe("length");
 	});
 
-	it("captures trailing native chat text frames without a terminating separator", async () => {
+	it("rejects trailing native chat text without a wire terminal", async () => {
 		const response = sseResponse([
 			`data: ${JSON.stringify({
 				id: "chatcmpl_trailing_text",
@@ -65,15 +64,10 @@ describe("bufferStreamToIR", () => {
 			})}`,
 		]);
 
-		const buffered = await bufferStreamToIR(response, buildArgs(), "chat", Date.now());
-
-		expect(buffered.ir.choices[0]?.message?.content).toEqual([
-			{ type: "text", text: "done" },
-		]);
-		expect(buffered.ir.usage?.totalTokens).toBe(6);
+		await expect(bufferStreamToIR(response, buildArgs(), "chat", Date.now())).rejects.toMatchObject({ code: "sse_missing_terminal" });
 	});
 
-	it("captures trailing native chat tool call ids without a terminating separator", async () => {
+	it("rejects trailing tool metadata without a wire terminal", async () => {
 		const response = sseResponse([
 			`data: ${JSON.stringify({
 				id: "chatcmpl_trailing_tool",
@@ -115,17 +109,7 @@ describe("bufferStreamToIR", () => {
 			})}`,
 		]);
 
-		const buffered = await bufferStreamToIR(response, buildArgs(), "chat", Date.now());
-
-		expect(buffered.ir.choices[0]?.message?.toolCalls).toEqual([
-			{
-				id: "call_weather",
-				type: "function",
-				name: "get_weather",
-				arguments: "{\"city\":\"London\"}",
-			},
-		]);
-		expect(buffered.ir.choices[0]?.finishReason).toBe("tool_calls");
+		await expect(bufferStreamToIR(response, buildArgs(), "chat", Date.now())).rejects.toMatchObject({ code: "sse_missing_terminal" });
 	});
 
 	it("handles Google stream payload arrays with image parts", async () => {
