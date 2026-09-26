@@ -9,6 +9,8 @@ vi.mock("@pipeline/before/guards", () => ({
 
 vi.mock("@/runtime/env", () => ({
 	getSupabaseAdmin: (...args: unknown[]) => getSupabaseAdminMock(...args),
+	getBindingsIfConfigured: () => undefined,
+	dispatchBackground: (work: Promise<unknown>) => { void work; },
 }));
 
 vi.mock("../../utils", () => ({
