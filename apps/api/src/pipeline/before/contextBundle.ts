@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { measureDispatchStage } from "@/runtime/request-operations";
 import { dispatchBackground, getBindingsIfConfigured, getCache, getSupabaseAdmin } from "@/runtime/env";
 import { PublishedPublicCatalog } from "./publishedPublicCatalog";
 import { publicCatalogSchema as catalogSchema, isPublicCatalogFresh as fresh, type PublicCatalogSnapshot } from "./publicCatalogSnapshot";
@@ -118,19 +119,19 @@ export async function loadTextContextBundle(args: {
     let catalogReadMs = 0;
     let workspaceReadMs = 0;
     let [catalog, workspace] = await Promise.all([
-        (args.disableCache ? Promise.resolve(null) : publicCatalog.read(args.model, endpoints, args.skipCatalogMemoryCache))
+        (args.disableCache ? Promise.resolve(null) : measureDispatchStage("catalog.cache", () => publicCatalog.read(args.model, endpoints, args.skipCatalogMemoryCache)))
             .then(value => { catalogReadMs = performance.now() - cacheStarted; return value; }),
-        (workspaceVersion === null ? Promise.resolve(null) : workspaceRuntimeCache.read(args.workspaceId, workspaceVersion))
+        (workspaceVersion === null ? Promise.resolve(null) : measureDispatchStage("workspace.cache", () => workspaceRuntimeCache.read(args.workspaceId, workspaceVersion)))
             .then(value => { workspaceReadMs = performance.now() - cacheStarted; return value; }),
     ]);
     const cacheStatus = args.disableCache ? "bypass" : catalog ? "hit" : "miss";
     const rpcStarted = performance.now();
     const workspaceCacheStatus = workspaceVersion === null ? "bypass" : workspace ? "hit" : "miss";
-    const { data, error } = admission ? { data: null, error: null } : await getSupabaseAdmin().rpc(useWorkspaceRuntime ? "gateway_fetch_request_context_bundle_v2" : "gateway_fetch_request_context_bundle", {
+    const { data, error } = admission ? { data: null, error: null } : await measureDispatchStage("context.source", async () => await getSupabaseAdmin().rpc(useWorkspaceRuntime ? "gateway_fetch_request_context_bundle_v2" : "gateway_fetch_request_context_bundle", {
         workspace_id: args.workspaceId, api_key_id: args.apiKeyId, model: args.model,
         endpoint: args.endpoint, include_catalog: !catalog,
         ...(useWorkspaceRuntime ? { include_workspace: !workspace } : {}),
-    });
+    }));
     if (error) throw new Error(`gateway_context_bundle_error:${error.message ?? "unknown"}`);
     let rpcMs = performance.now() - rpcStarted;
     const legacySchema = z.object({
@@ -147,8 +148,8 @@ export async function loadTextContextBundle(args: {
             if (value.workspaceRuntime && isWorkspaceRuntimeFresh(value.workspaceRuntime, args.workspaceId)) workspace = value.workspaceRuntime;
             else {
                 const started = performance.now();
-                workspace = workspaceVersion === null ? await fetchWorkspaceRuntime(args.workspaceId)
-                    : await refillWorkspaceRuntime(args.workspaceId, workspaceVersion);
+                workspace = await measureDispatchStage("workspace.refill", () => workspaceVersion === null ? fetchWorkspaceRuntime(args.workspaceId)
+                    : refillWorkspaceRuntime(args.workspaceId, workspaceVersion));
                 rpcMs += performance.now() - started;
             }
             if (workspaceVersion !== null) dispatchBackground(workspaceRuntimeCache.publish(workspace, args.workspaceId, workspaceVersion).catch(() => false));
@@ -163,7 +164,7 @@ export async function loadTextContextBundle(args: {
         if (bundle.catalog && fresh(bundle.catalog, args.model, endpoints)) { catalog = bundle.catalog; publish = true; }
         else {
             const refreshStarted = performance.now();
-            catalog = await refillPublicCatalog(args.model, endpoints, args.disableCache);
+            catalog = await measureDispatchStage("catalog.refill", () => refillPublicCatalog(args.model, endpoints, args.disableCache));
             rpcMs += performance.now() - refreshStarted;
         }
         if (!fresh(catalog, args.model, endpoints) || (!admission && catalog.resolvedModel !== bundle.context.resolved_model)) {

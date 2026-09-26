@@ -4,6 +4,7 @@
 // How: Calls RPC/SQL to fetch provider, pricing, and gating context.
 
 import { dispatchBackground, getSupabaseAdmin, getCache } from "@/runtime/env";
+import { measureDispatchStage } from "@/runtime/request-operations";
 import { getProviderResidencyMetadata } from "@/lib/config/providerResidency";
 import { parseRouteAvailabilityPolicy } from "@/lib/config/routeAvailability";
 import { getTextMany, keyVersionToken } from "@/core/kv";
@@ -1056,7 +1057,7 @@ export async function fetchGatewayContext(args: {
 }): Promise<GatewayContextData> {
 	const fetchStartedAt = performance.now();
 	const sourceCheckedAtMs = Date.now();
-	await assertPresetAccess(args);
+	await measureDispatchStage("context.preset", () => assertPresetAccess(args));
 	const presetAccessMs = round3(performance.now() - fetchStartedAt);
 
     const supabase = getSupabaseAdmin();
@@ -1094,7 +1095,7 @@ export async function fetchGatewayContext(args: {
     let workspaceVersionToken: string | null = null;
     let requestWorkspace: WorkspaceRuntimeSnapshot | undefined;
     let cachedAdmission: CachedContextAdmission | undefined;
-    const privateModelLoad = loadWorkspacePrivateModel(args).then(
+    const privateModelLoad = measureDispatchStage("context.private", () => loadWorkspacePrivateModel(args)).then(
         value => ({ ok: true as const, value }),
         error => ({ ok: false as const, error }),
     ).then(result => {
@@ -1138,7 +1139,7 @@ export async function fetchGatewayContext(args: {
 			};
 		}
 
-        const hydrated = await hydrateByokKeys(value, args.workspaceId, args.model, args.apiKeyId);
+        const hydrated = await measureDispatchStage("context.hydration", () => hydrateByokKeys(value, args.workspaceId, args.model, args.apiKeyId));
         if (separateWorkspaceRuntime && (hydrated.workspaceRuntimeExpiresAt ?? 0) <= Date.now()) {
             throw new Error("workspace_runtime_composition_expired");
         }
@@ -1167,10 +1168,10 @@ export async function fetchGatewayContext(args: {
     if (needsVersionToken) {
         const keyVersionStartedAt = performance.now();
         const options = { useL1Cache: true, l1TtlMs: CONTEXT_KEY_VERSION_L1_TTL_MS };
-        const [keyVersion, workspaceVersion] = await Promise.all([
+        const [keyVersion, workspaceVersion] = await measureDispatchStage("context.versions", () => Promise.all([
             keyVersionToken("id", args.apiKeyId, options),
             getWorkspacePolicyVersionToken(args.workspaceId),
-        ]);
+        ]));
         // The initial workspace version preserves existing cache keys during
         // rollout. One workspace publication then fences every key's context.
         // Unknown publication state bypasses both cache reads and fills. It
@@ -1193,8 +1194,8 @@ export async function fetchGatewayContext(args: {
         const cacheReadStartedAt = performance.now();
         try {
             const [leasedValues, creditRaw] = await Promise.all([
-                contextLeases.read(separateWorkspaceRuntime ? [dynamicCacheKey] : [dynamicCacheKey, staticCacheKey], getTextMany),
-                creditAdmissionLeases.read(args.workspaceId, async () => (await getTextMany([creditCacheKey]))[creditCacheKey] ?? null),
+                measureDispatchStage("context.cache", () => contextLeases.read(separateWorkspaceRuntime ? [dynamicCacheKey] : [dynamicCacheKey, staticCacheKey], getTextMany)),
+                measureDispatchStage("credit.cache", () => creditAdmissionLeases.read(args.workspaceId, async () => (await getTextMany([creditCacheKey]))[creditCacheKey] ?? null)),
             ]);
             const cachedValues = { ...leasedValues, [creditCacheKey]: creditRaw };
             const dynamicCachedRaw = cachedValues[dynamicCacheKey] ?? null;
