@@ -14,7 +14,7 @@ export type SettlementOutcome = "pending" | "confirmed" | "recovery_queued" | "u
 export type DispatchStage = "auth.version" | "auth.cache" | "auth.source"
     | "context.preset" | "context.private" | "context.versions" | "context.cache" | "credit.cache"
     | "catalog.cache" | "workspace.cache" | "context.source" | "catalog.refill" | "workspace.refill"
-    | "context.hydration" | "supabase.headers";
+    | "context.hydration" | "supabase.headers" | "quota.edge" | "quota.admission";
 type DispatchTiming = { stage: DispatchStage; startMs: number; endMs: number | null; state: "pending" | "fulfilled" | "rejected" };
 const MAX_DISPATCH_TIMINGS = 64;
 const scope = new AsyncLocalStorage<RequestOperations>();

@@ -5,7 +5,7 @@ const quotaOutcomes = new Set(["included", "edge_limited", "rpm_limited", "daily
 const settlementOutcomes = new Set(["pending", "confirmed", "recovery_queued", "unresolved"]);
 const dispatchStages = new Set(["auth.version", "auth.cache", "auth.source", "context.preset", "context.private",
     "context.versions", "context.cache", "credit.cache", "catalog.cache", "workspace.cache", "context.source",
-    "catalog.refill", "workspace.refill", "context.hydration", "supabase.headers"]);
+    "catalog.refill", "workspace.refill", "context.hydration", "supabase.headers", "quota.edge", "quota.admission"]);
 const counts = value => Object.fromEntries(Object.entries(value ?? {}).filter(([key, count]) => operations.has(key) && Number.isSafeInteger(count) && count >= 0));
 const duration = value => typeof value === "number" && Number.isFinite(value) && value >= 0 ? value : null;
 const count = value => Number.isSafeInteger(value) && value >= 0 ? value : null;
