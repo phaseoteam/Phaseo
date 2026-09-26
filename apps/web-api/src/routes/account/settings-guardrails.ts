@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import type { Env } from "@/env";
 import { PRIVATE_NO_STORE_HEADERS } from "@/http/cache";
 import { requireAccountWorkspace } from "./context";
+import { invalidateWorkspaceGatewayContext } from "./gateway-invalidation";
 
 type GuardrailPayload = Record<string, any>;
 
@@ -72,23 +73,6 @@ async function adminContext(c: any, workspaceId: unknown) {
 
 export const accountSettingsGuardrailsRouter = new Hono<{ Bindings: Env }>();
 
-async function invalidateWorkspaceKeys(c: any, context: any): Promise<void> {
-	const keys = await context.client.from("keys").select("id").eq("workspace_id", context.workspaceId).neq("status", "deleted");
-	if (keys.error) return;
-	const origin = String(c.env.GATEWAY_API_ORIGIN ?? "http://localhost:8787").replace(/\/$/, "");
-	const controlKey = c.env.PHASEO_CONTROL_KEY;
-	const controlSecret = c.env.PHASEO_CONTROL_SECRET;
-	if (!controlKey || !controlSecret) return;
-	await Promise.allSettled((keys.data ?? []).map((key: any) => fetch(`${origin}/v1/keys/${encodeURIComponent(String(key.id))}/invalidate`, {
-		method: "POST",
-		headers: { authorization: `Bearer ${controlKey}`, "x-control-secret": controlSecret },
-	})));
-}
-
-function scheduleInvalidation(c: any, context: any): void {
-	c.executionCtx.waitUntil(invalidateWorkspaceKeys(c, context));
-}
-
 accountSettingsGuardrailsRouter.put("/guardrails/global", async (c) => {
 	const body: GuardrailPayload = await c.req.json<GuardrailPayload>().catch(() => ({}));
 	const context = await adminContext(c, body.workspaceId);
@@ -113,8 +97,8 @@ accountSettingsGuardrailsRouter.put("/guardrails/global", async (c) => {
 		}
 		const result = await context.client.from("workspace_settings").upsert({ workspace_id: context.workspaceId, ...guardrailRow(body, false) }, { onConflict: "workspace_id" });
 		if (result.error) throw result.error;
-		scheduleInvalidation(c, context);
-		return c.json({ success: true }, 200, PRIVATE_NO_STORE_HEADERS);
+		const gatewayCacheInvalidated = await invalidateWorkspaceGatewayContext(context, c.env);
+		return c.json({ success: true, gatewayCacheInvalidated }, 200, PRIVATE_NO_STORE_HEADERS);
 	} catch (error) { return c.json({ error: error instanceof Error ? error.message : "guardrail_write_failed" }, 503, PRIVATE_NO_STORE_HEADERS); }
 });
 
@@ -125,8 +109,8 @@ accountSettingsGuardrailsRouter.post("/guardrails", async (c) => {
 	try {
 		const result = await context.client.from("workspace_guardrails").insert({ workspace_id: context.workspaceId, ...guardrailRow(body) }).select("id").maybeSingle();
 		if (result.error) throw result.error;
-		scheduleInvalidation(c, context);
-		return c.json({ id: result.data?.id }, 200, PRIVATE_NO_STORE_HEADERS);
+		const gatewayCacheInvalidated = await invalidateWorkspaceGatewayContext(context, c.env);
+		return c.json({ id: result.data?.id, gatewayCacheInvalidated }, 200, PRIVATE_NO_STORE_HEADERS);
 	} catch (error) { return c.json({ error: error instanceof Error ? error.message : "guardrail_write_failed" }, 409, PRIVATE_NO_STORE_HEADERS); }
 });
 
@@ -137,8 +121,8 @@ accountSettingsGuardrailsRouter.put("/guardrails/:guardrailId", async (c) => {
 	try {
 		const result = await context.client.from("workspace_guardrails").update(guardrailRow(body)).eq("id", c.req.param("guardrailId")).eq("workspace_id", context.workspaceId);
 		if (result.error) throw result.error;
-		scheduleInvalidation(c, context);
-		return c.json({ success: true }, 200, PRIVATE_NO_STORE_HEADERS);
+		const gatewayCacheInvalidated = await invalidateWorkspaceGatewayContext(context, c.env);
+		return c.json({ success: true, gatewayCacheInvalidated }, 200, PRIVATE_NO_STORE_HEADERS);
 	} catch (error) { return c.json({ error: error instanceof Error ? error.message : "guardrail_write_failed" }, 409, PRIVATE_NO_STORE_HEADERS); }
 });
 
@@ -148,8 +132,8 @@ accountSettingsGuardrailsRouter.delete("/guardrails/:guardrailId", async (c) => 
 	if (!context) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
 	const result = await context.client.from("workspace_guardrails").delete().eq("id", c.req.param("guardrailId")).eq("workspace_id", context.workspaceId);
 	if (result.error) return c.json({ error: "guardrail_write_failed" }, 503, PRIVATE_NO_STORE_HEADERS);
-	scheduleInvalidation(c, context);
-	return c.json({ success: true }, 200, PRIVATE_NO_STORE_HEADERS);
+	const gatewayCacheInvalidated = await invalidateWorkspaceGatewayContext(context, c.env);
+	return c.json({ success: true, gatewayCacheInvalidated }, 200, PRIVATE_NO_STORE_HEADERS);
 });
 
 accountSettingsGuardrailsRouter.put("/guardrails/:guardrailId/keys", async (c) => {
@@ -170,10 +154,13 @@ accountSettingsGuardrailsRouter.put("/guardrails/:guardrailId/keys", async (c) =
 	if (removed.error) return c.json({ error: "guardrail_write_failed" }, 503, PRIVATE_NO_STORE_HEADERS);
 	if (keyIds.length) {
 		const inserted = await context.client.from("key_guardrails").insert(keyIds.map((keyId) => ({ key_id: keyId, guardrail_id: guardrailId })));
-		if (inserted.error) return c.json({ error: "guardrail_write_failed" }, 503, PRIVATE_NO_STORE_HEADERS);
+		if (inserted.error) {
+			const gatewayCacheInvalidated = await invalidateWorkspaceGatewayContext(context, c.env);
+			return c.json({ error: "guardrail_write_failed", gatewayCacheInvalidated }, 503, PRIVATE_NO_STORE_HEADERS);
+		}
 	}
-	scheduleInvalidation(c, context);
-	return c.json({ success: true }, 200, PRIVATE_NO_STORE_HEADERS);
+	const gatewayCacheInvalidated = await invalidateWorkspaceGatewayContext(context, c.env);
+	return c.json({ success: true, gatewayCacheInvalidated }, 200, PRIVATE_NO_STORE_HEADERS);
 });
 
 accountSettingsGuardrailsRouter.put("/guardrails/:guardrailId/members", async (c) => {
@@ -194,8 +181,11 @@ accountSettingsGuardrailsRouter.put("/guardrails/:guardrailId/members", async (c
 	if (removed.error) return c.json({ error: "guardrail_write_failed" }, 503, PRIVATE_NO_STORE_HEADERS);
 	if (userIds.length) {
 		const inserted = await context.client.from("workspace_member_guardrails").insert(userIds.map((userId) => ({ workspace_id: context.workspaceId, user_id: userId, guardrail_id: guardrailId })));
-		if (inserted.error) return c.json({ error: "guardrail_write_failed" }, 503, PRIVATE_NO_STORE_HEADERS);
+		if (inserted.error) {
+			const gatewayCacheInvalidated = await invalidateWorkspaceGatewayContext(context, c.env);
+			return c.json({ error: "guardrail_write_failed", gatewayCacheInvalidated }, 503, PRIVATE_NO_STORE_HEADERS);
+		}
 	}
-	scheduleInvalidation(c, context);
-	return c.json({ success: true }, 200, PRIVATE_NO_STORE_HEADERS);
+	const gatewayCacheInvalidated = await invalidateWorkspaceGatewayContext(context, c.env);
+	return c.json({ success: true, gatewayCacheInvalidated }, 200, PRIVATE_NO_STORE_HEADERS);
 });
