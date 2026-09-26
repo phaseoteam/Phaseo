@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { getSupabaseAdmin } from "@/runtime/env";
-import { publicCatalogEndpoints, publicCatalogKey, publishPublicCatalog } from "@/pipeline/before/contextBundle";
+import { publicCatalogEndpoints, publicCatalogKey, publishPublicCatalogFromControlPlane } from "@/pipeline/before/contextBundle";
 
 // Snapshot count, not model count: each wire endpoint has a separate key.
 export const PUBLIC_CATALOG_TARGET_LIMIT = 20;
@@ -26,7 +26,7 @@ export async function publishConfiguredPublicCatalog(rawTargets: string) {
                     p_model: target.model, p_endpoints: endpoints,
                 }).abortSignal(AbortSignal.timeout(10_000));
                 if (error) throw new Error("public_catalog_query_failed");
-                if (await publishPublicCatalog(data, { model: target.model, endpoints })) summary.published++;
+                if (await publishPublicCatalogFromControlPlane(data, { model: target.model, endpoints })) summary.published++;
                 else summary.skipped++;
             } catch {
                 // Do not log database payloads or arbitrary configured names.
