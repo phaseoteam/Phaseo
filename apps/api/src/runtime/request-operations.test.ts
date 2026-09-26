@@ -1,9 +1,26 @@
 import { describe, expect, it, vi } from "vitest";
 import { RequestOperations, withRequestOperations, countOperation, instrumentKv,
-    countSupabaseOperation, markProviderDispatch, shouldSampleOperations, recordStreamObservation } from "./request-operations";
+    countSupabaseOperation, markProviderDispatch, shouldSampleOperations, recordStreamObservation,
+    recordSettlement, recordSettlementAttempt } from "./request-operations";
 import { StreamSession, observeStreamOutcome } from "@/pipeline/after/stream-session";
 
 describe("request operations", () => {
+    it("isolates evolving settlement evidence without new operations or mutable snapshots", async () => {
+        recordSettlement("confirmed"); recordSettlementAttempt(); // Unsampled no-op.
+        const a = new RequestOperations(), b = new RequestOperations();
+        expect(a.snapshot()).not.toHaveProperty("settlement");
+        await Promise.all([
+            withRequestOperations(a, async () => {
+                recordSettlementAttempt(); await Promise.resolve(); recordSettlement("unresolved");
+                recordSettlementAttempt(); recordSettlement("confirmed");
+            }),
+            withRequestOperations(b, async () => { recordSettlementAttempt(); await Promise.resolve(); recordSettlement("recovery_queued"); }),
+        ]);
+        expect(a.snapshot()).toMatchObject({ settlement: { state: "confirmed", directAttempts: 2 }, total: {} });
+        expect(b.snapshot()).toMatchObject({ settlement: { state: "recovery_queued", directAttempts: 1 }, total: {} });
+        a.snapshot().settlement!.directAttempts = 999;
+        expect(a.snapshot().settlement!.directAttempts).toBe(2);
+    });
     it("attributes mixed bulk reads and failed writes without retaining keys or values", async () => {
         const source = { getWithMetadata: vi.fn(), put: vi.fn(() => { throw new Error("offline"); }), delete: vi.fn(), list: vi.fn() };
         const kv = instrumentKv(source as unknown as KVNamespace);

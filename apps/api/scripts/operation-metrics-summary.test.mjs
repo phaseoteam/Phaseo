@@ -2,6 +2,20 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { operationMetricsSummary } from "./operation-metrics-summary.mjs";
 
+test("settlement attribution exposes only bounded fields, never financial identities or raw errors", () => {
+    for (const state of ["pending", "confirmed", "recovery_queued", "unresolved"]) {
+        const summary = operationMetricsSummary({ requestId: "test-request", settlement: {
+            state, directAttempts: 3, cost_nanos: 100, workspaceId: "private", error: "secret",
+        } });
+        assert.deepEqual(summary.settlement, { state, directAttempts: 3 });
+        assert.ok(!JSON.stringify(summary).match(/private|secret|cost_nanos/));
+    }
+    for (const settlement of [null, {}, { state: "secret", directAttempts: 3 },
+        ...[-1, 1.5, Infinity, NaN, "3", Number.MAX_SAFE_INTEGER + 1].map(directAttempts => ({ state: "confirmed", directAttempts }))]) {
+        assert.ok(!Object.hasOwn(operationMetricsSummary({ requestId: "test-request", settlement }), "settlement"));
+    }
+});
+
 test("cost attribution retains only fixed categories and a valid module marker", () => {
     const runtimeInstanceId = "12345678-1234-4123-8123-123456789012";
     const summary = operationMetricsSummary({ requestId: "test-request", runtimeInstanceId,

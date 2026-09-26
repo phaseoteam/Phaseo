@@ -8,6 +8,7 @@ type Counts = Partial<Record<Operation, number>>;
 type KvOperation = "kvRead" | "kvWrite" | "kvDelete" | "kvList";
 type KvPurpose = "auth" | "credit" | "sticky" | "context" | "health" | "other";
 type KvCounts = Partial<Record<KvPurpose, Partial<Record<KvOperation, number>>>>;
+export type SettlementOutcome = "pending" | "confirmed" | "recovery_queued" | "unresolved";
 const scope = new AsyncLocalStorage<RequestOperations>();
 // Lazily initialized during a request: Workers disallow random I/O at module load.
 // This identifies module reuse only, not a customer, POP or physical isolate.
@@ -34,6 +35,17 @@ export class RequestOperations {
     dispatchMs: number | null = null;
     readonly pending = new Set<Promise<unknown>>();
     backgroundOverflow = false;
+    // Request-finalizer evidence, not a durable ledger or a count of debits.
+    // Re-entry may recover an unresolved attempt; retain the latest outcome.
+    private settlement: { state: SettlementOutcome; directAttempts: number } | undefined;
+    recordSettlement(outcome: SettlementOutcome) {
+        this.settlement ??= { state: outcome, directAttempts: 0 };
+        this.settlement.state = outcome;
+    }
+    recordSettlementAttempt() {
+        this.recordSettlement("pending");
+        this.settlement!.directAttempts++;
+    }
 	private stream: StreamObservation | undefined;
 	recordStream(value: StreamObservation) {
 		if (this.stream) return;
@@ -77,6 +89,7 @@ export class RequestOperations {
             kvByPurpose: Object.fromEntries(Object.entries(this.kvByPurpose).map(([purpose, counts]) => [purpose, { ...counts }])),
             beforeDispatchMs: this.dispatchMs, pendingBackground: this.pending.size,
             complete: !this.backgroundOverflow && this.pending.size === 0,
+            ...(this.settlement ? { settlement: { ...this.settlement } } : {}),
             ...(this.stream ? { stream: { ...this.stream } } : {}) };
     }
 }
@@ -86,6 +99,8 @@ export function withRequestOperations<T>(metrics: RequestOperations, run: () => 
 export function countOperation(operation: Operation, count = 1) { scope.getStore()?.count(operation, count); }
 export function markProviderDispatch() { scope.getStore()?.dispatch(); }
 export function recordStreamObservation(observation: StreamObservation) { scope.getStore()?.recordStream(observation); }
+export function recordSettlement(outcome: SettlementOutcome) { scope.getStore()?.recordSettlement(outcome); }
+export function recordSettlementAttempt() { scope.getStore()?.recordSettlementAttempt(); }
 
 const kvWrappers = new WeakMap<KVNamespace, KVNamespace>();
 export function instrumentKv(namespace: KVNamespace): KVNamespace {
