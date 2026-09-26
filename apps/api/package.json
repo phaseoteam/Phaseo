@@ -15,6 +15,7 @@
 		"simulate:pricing": "tsx scripts/pricing-simulator.tsx --all",
 		"simulate:pricing:test": "tsx scripts/test-pricing/pricing-simulator-harness.ts",
 		"test": "pnpm exec vitest run",
+		"test:runtime": "node --test scripts/native-runtime.test.mjs",
 		"test:aimock": "tsx scripts/run-aimock-tests.ts",
 		"test:aimock:record": "tsx scripts/run-aimock-tests.ts --record",
 		"test:live": "pnpm exec vitest run tests/integration/openai-gpt5-nano.live.spec.ts",
