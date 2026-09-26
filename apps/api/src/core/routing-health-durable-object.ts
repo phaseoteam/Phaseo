@@ -1,20 +1,32 @@
 import { DurableObject } from "cloudflare:workers";
+import { LRUCache } from "lru-cache";
 import type { GatewayBindings } from "@/runtime/env.types";
 import {
-    HEALTH_REPORT_MAX_AGE_MS, HEALTH_PUBLISH_INTERVAL_MS, HEALTH_SNAPSHOT_MAX_AGE_MS,
-    healthPoolName, healthSnapshotKey, reduceHealth,
+    HEALTH_REPORT_MAX_AGE_MS, healthPoolName, reduceHealth,
     type HealthObservation, type HealthEvidence, type HealthSnapshot, type HealthReceipt,
 } from "@pipeline/execute/health-evidence";
 
-type Metadata = { id: number; pool: string; version: number; published: number; published_at: number };
-const DEDUPE_RETENTION_MS = 5 * 60_000;
+type Metadata = { pool: string; version: number; published_at: number };
+const CHECKPOINT_INTERVAL_MS = 30_000;
+const MAX_PROVIDERS = 1024;
+export const HEALTH_BATCH_MAX = 64;
 
-/** One coordination atom per endpoint/model pool. No reads on the routing path,
- * no sockets/timers, and only a finite cleanup alarm once the pool becomes idle. */
+/** Advisory state only: crashes may lose uncheckpointed samples and dedupe.
+ * Never financial authority. One bounded atom per endpoint/model, idle alarms stop. */
 export class RoutingHealthDurableObject extends DurableObject<GatewayBindings> {
+    private readonly providers = new Map<string, HealthEvidence>();
+    private readonly seen = new LRUCache<string, true>({ max: 16_384, ttl: HEALTH_REPORT_MAX_AGE_MS });
+    private readonly dirty = new Set<string>();
+    private readonly generation = crypto.randomUUID();
+    private pool: string | undefined;
+    private version = 0;
+    private observedAt = 0;
+    private alarmAt: number | null = null;
+
     constructor(ctx: DurableObjectState, env: GatewayBindings) {
         super(ctx, env);
         ctx.blockConcurrencyWhile(async () => {
+            // Preserve schema and aggregate rows for rolling upgrades.
             ctx.storage.sql.exec(`
                 CREATE TABLE IF NOT EXISTS providers (provider TEXT PRIMARY KEY, state TEXT NOT NULL) WITHOUT ROWID;
                 CREATE TABLE IF NOT EXISTS reports (id TEXT PRIMARY KEY, received INTEGER NOT NULL) WITHOUT ROWID;
@@ -22,78 +34,95 @@ export class RoutingHealthDurableObject extends DurableObject<GatewayBindings> {
                 CREATE TABLE IF NOT EXISTS metadata (id INTEGER PRIMARY KEY CHECK(id=1), pool TEXT NOT NULL,
                     version INTEGER NOT NULL, published INTEGER NOT NULL, published_at INTEGER NOT NULL);
             `);
+            const meta = ctx.storage.sql.exec<Metadata>("SELECT * FROM metadata WHERE id=1").toArray()[0];
+            this.pool = meta?.pool;
+            this.version = meta?.version ?? 0;
+            for (const row of ctx.storage.sql.exec<{ provider: string; state: string }>("SELECT * FROM providers LIMIT 1024").toArray()) {
+                const state = JSON.parse(row.state) as HealthEvidence;
+                this.providers.set(row.provider, state);
+                this.observedAt = Math.max(this.observedAt, state.last_updated);
+            }
+            this.alarmAt = await ctx.storage.getAlarm();
         });
     }
 
     async observe(event: HealthObservation): Promise<HealthReceipt | null> {
+        return (await this.observeBatch([event]))[0];
+    }
+
+    async observeBatch(events: HealthObservation[]): Promise<Array<HealthReceipt | null>> {
+        if (!Array.isArray(events) || events.length === 0 || events.length > HEALTH_BATCH_MAX) throw new Error("Invalid health batch");
         const now = Date.now();
-        if (!event || typeof event.id !== "string" || event.id.length > 200 || !event.id ||
-            typeof event.endpoint !== "string" || event.endpoint.length > 100 ||
-            typeof event.model !== "string" || event.model.length > 500 ||
-            typeof event.provider !== "string" || !event.provider || event.provider.length > 200 ||
-            !Number.isFinite(event.observedAt) || !Number.isFinite(event.startedAt) ||
-            event.startedAt > event.observedAt || !Number.isFinite(event.latencyMs) || event.latencyMs < 0 ||
-            (event.tps !== null && (!Number.isFinite(event.tps) || event.tps < 0)) ||
-            typeof event.ok !== "boolean" || typeof event.limited !== "boolean" || typeof event.probe !== "boolean") {
-            throw new Error("Invalid health observation");
+        const expectedPool = this.pool ?? healthPoolName(events[0]?.endpoint, events[0]?.model);
+        const incomingProviders = new Set(this.providers.keys());
+        // Validate the whole batch before mutation, including capacity/pool identity.
+        for (const event of events) {
+            validateObservation(event);
+            if (healthPoolName(event.endpoint, event.model) !== expectedPool) throw new Error("Health pool mismatch");
+            if (event.observedAt >= now - HEALTH_REPORT_MAX_AGE_MS && event.observedAt <= now + 5000) incomingProviders.add(event.provider);
         }
-        if (event.observedAt < now - HEALTH_REPORT_MAX_AGE_MS || event.observedAt > now + 5_000) return null;
-        // Arm publication before acknowledging any durable observation. This
-        // also repairs scheduling after a prior publication exhausted retries.
-        const alarm = await this.ctx.storage.getAlarm();
-        if (alarm === null || alarm > now + HEALTH_PUBLISH_INTERVAL_MS) await this.ctx.storage.setAlarm(now + HEALTH_PUBLISH_INTERVAL_MS);
-        return this.ctx.storage.transactionSync(() => {
-            const sql = this.ctx.storage.sql;
-            const pool = healthPoolName(event.endpoint, event.model);
-            const meta = sql.exec<Metadata>("SELECT * FROM metadata WHERE id=1").toArray()[0];
-            if (meta && meta.pool !== pool) throw new Error("Health pool mismatch");
-            const previous = sql.exec<{ state: string }>("SELECT state FROM providers WHERE provider=?", event.provider).toArray()[0];
-            const state = previous ? JSON.parse(previous.state) as HealthEvidence : undefined;
-            if (sql.exec("SELECT id FROM reports WHERE id=?", event.id).toArray().length) return state ? { health: state, version: meta.version } : null;
-            if (!state && sql.exec<{ count: number }>("SELECT count(*) AS count FROM providers").one().count >= 1024) {
-                throw new Error("Health pool provider limit exceeded");
+        if (incomingProviders.size > MAX_PROVIDERS) throw new Error("Health pool provider limit exceeded");
+        const results = events.map(event => {
+            if (event.observedAt < now - HEALTH_REPORT_MAX_AGE_MS || event.observedAt > now + 5000) return null;
+            this.pool = expectedPool;
+            if (!this.seen.has(event.id)) {
+                this.providers.set(event.provider, reduceHealth(this.providers.get(event.provider), event));
+                this.seen.set(event.id, true);
+                this.dirty.add(event.provider);
+                this.version++;
+                this.observedAt = Math.max(this.observedAt, event.observedAt);
             }
-            const next = reduceHealth(state, event);
-            sql.exec("INSERT INTO reports VALUES (?,?)", event.id, now);
-            sql.exec("INSERT INTO providers VALUES (?,?) ON CONFLICT(provider) DO UPDATE SET state=excluded.state", event.provider, JSON.stringify(next));
-            sql.exec(`INSERT INTO metadata VALUES (1,?,1,0,0)
-                ON CONFLICT(id) DO UPDATE SET version=version+1`, pool);
-            return { health: next, version: (meta?.version ?? 0) + 1 };
+            const health = this.providers.get(event.provider);
+            return health ? { health: { ...health }, version: this.version, generation: this.generation } : null;
         });
+        if (this.dirty.size && this.alarmAt === null) {
+            this.alarmAt = now + CHECKPOINT_INTERVAL_MS;
+            try { await this.ctx.storage.setAlarm(this.alarmAt); }
+            catch (error) { this.alarmAt = null; throw error; }
+        }
+        return results;
+    }
+
+    getSnapshot(): HealthSnapshot {
+        // Reads never renew evidence age, touch storage or schedule alarms.
+        return { version: this.version, generation: this.generation, publishedAt: this.observedAt,
+            providers: Object.fromEntries([...this.providers].map(([provider, state]) => [provider, { ...state }])) };
     }
 
     async alarm(): Promise<void> {
-        const sql = this.ctx.storage.sql;
-        const now = Date.now();
-        // Bounded cleanup; retries older than two minutes are rejected even
-        // after their deduplication row is removed.
-        sql.exec("DELETE FROM reports WHERE id IN (SELECT id FROM reports WHERE received<? LIMIT 2000)", now - DEDUPE_RETENTION_MS);
-        const meta = sql.exec<Metadata>("SELECT * FROM metadata WHERE id=1").toArray()[0];
-        if (!meta) return;
-        if (meta.version > meta.published && now - meta.published_at >= HEALTH_PUBLISH_INTERVAL_MS) {
-            const [endpoint, model] = JSON.parse(meta.pool) as [string, string];
-            const providers = Object.fromEntries(sql.exec<{ provider: string; state: string }>("SELECT * FROM providers")
-                .toArray().map(row => [row.provider, JSON.parse(row.state) as HealthEvidence]));
-            const snapshot: HealthSnapshot = { version: meta.version, publishedAt: now, providers };
-            try {
-                await this.env.GATEWAY_CACHE.put(healthSnapshotKey(endpoint, model), JSON.stringify(snapshot), {
-                    expirationTtl: HEALTH_SNAPSHOT_MAX_AGE_MS / 1000,
-                });
-            } catch (error) {
-                console.warn("routing_health_publish_failed", { pool: meta.pool });
-                await this.ctx.storage.setAlarm(now + HEALTH_PUBLISH_INTERVAL_MS);
-                throw error;
+        this.alarmAt = null;
+        // No await while checkpointing: arrivals cannot be acknowledged away.
+        this.ctx.storage.transactionSync(() => {
+            const sql = this.ctx.storage.sql;
+            for (const provider of this.dirty) {
+                sql.exec("INSERT INTO providers VALUES (?,?) ON CONFLICT(provider) DO UPDATE SET state=excluded.state",
+                    provider, JSON.stringify(this.providers.get(provider)));
             }
-            // Only this alarm publishes. Reports may arrive during KV I/O;
-            // acknowledging this revision leaves those newer reports dirty.
-            sql.exec("UPDATE metadata SET published=?,published_at=? WHERE id=1", meta.version, now);
+            if (this.dirty.size) sql.exec(`INSERT INTO metadata VALUES (1,?,?,?,?)
+                ON CONFLICT(id) DO UPDATE SET pool=excluded.pool,version=excluded.version,published=excluded.published,published_at=excluded.published_at`,
+                this.pool!, this.version, this.version, this.observedAt);
+            // Bounded retirement of old advisory dedupe rows; no new report writes.
+            sql.exec("DELETE FROM reports WHERE id IN (SELECT id FROM reports LIMIT 2000)");
+        });
+        this.dirty.clear();
+        const legacy = this.ctx.storage.sql.exec("SELECT id FROM reports LIMIT 1").toArray().length > 0;
+        if (legacy) {
+            this.alarmAt = Date.now() + CHECKPOINT_INTERVAL_MS;
+            await this.ctx.storage.setAlarm(this.alarmAt);
         }
-        const current = sql.exec<Metadata>("SELECT * FROM metadata WHERE id=1").one();
-        const oldest = sql.exec<{ received: number }>("SELECT received FROM reports ORDER BY received LIMIT 1").toArray()[0];
-        let next = current.version > current.published ? Math.max(Date.now() + 1000, current.published_at + HEALTH_PUBLISH_INTERVAL_MS) : Infinity;
-        // Drain an expired backlog in bounded chunks instead of retaining it
-        // forever when a pool receives more than 2,000 reports per minute.
-        if (oldest) next = Math.min(next, Math.max(Date.now() + 1000, oldest.received + DEDUPE_RETENTION_MS + 1));
-        if (Number.isFinite(next)) await this.ctx.storage.setAlarm(next);
+        // Clean/empty objects never self-reschedule; future traffic re-arms.
+    }
+}
+
+function validateObservation(event: HealthObservation): void {
+    if (!event || typeof event.id !== "string" || event.id.length > 200 || !event.id ||
+        typeof event.endpoint !== "string" || !event.endpoint || event.endpoint.length > 100 ||
+        typeof event.model !== "string" || !event.model || event.model.length > 500 ||
+        typeof event.provider !== "string" || !event.provider || event.provider.length > 200 ||
+        !Number.isFinite(event.observedAt) || !Number.isFinite(event.startedAt) ||
+        event.startedAt > event.observedAt || !Number.isFinite(event.latencyMs) || event.latencyMs < 0 ||
+        (event.tps !== null && (!Number.isFinite(event.tps) || event.tps < 0)) ||
+        typeof event.ok !== "boolean" || typeof event.limited !== "boolean" || typeof event.probe !== "boolean") {
+        throw new Error("Invalid health observation");
     }
 }
