@@ -205,8 +205,9 @@ describe("AIMock provider matrix", () => {
                 const { result, testId } = await executeCapabilityScenario({
                     providerId,
                     capability: "image.generate",
+                    ...(providerId === "gmicloud" ? { providerModelSlug: "hy-image-v3.5-preview" } : {}),
                     ir: {
-                        model: providerId === "modelscope" ? "Qwen/Qwen-Image" : providerId === "ovhcloud" ? "stable-diffusion-xl" : providerId === "stepfun" ? "step-image-edit-2" : "gpt-image-1",
+                        model: providerId === "modelscope" ? "Qwen/Qwen-Image" : providerId === "ovhcloud" ? "stable-diffusion-xl" : providerId === "stepfun" ? "step-image-edit-2" : providerId === "gmicloud" ? "tencent/hy-image-v3.5-preview:free" : "gpt-image-1",
                         prompt: "[aimock-image] skyline",
                         n: 1,
                         ...(providerId === "modelscope" ? {} : { size: "1024x1024" }),
@@ -221,7 +222,7 @@ describe("AIMock provider matrix", () => {
                 } else {
                     expect((completed.ir as any)?.data?.[0]).toMatchObject({
                         url: "https://example.com/aimock/skyline.png",
-                        ...(providerId === "modelscope" ? {} : { revisedPrompt: "Deterministic AIMock skyline" }),
+                        ...(providerId === "modelscope" || providerId === "gmicloud" ? {} : { revisedPrompt: "Deterministic AIMock skyline" }),
                     });
                 }
                 if (providerId === "modelscope") {

@@ -266,9 +266,9 @@ function createGmiRequestQueueMount(): Mountable {
                 request_id: "gmicloud_aimock_request",
                 status: "success",
                 model: body.model,
-                outcome: {
-                    audio_base64: Buffer.from("AIMOCK_TTS_AUDIO").toString("base64"),
-                },
+                outcome: body.model === "hy-image-v3.5-preview"
+                    ? { media_urls: [{ url: "https://example.com/aimock/skyline.png" }] }
+                    : { audio_base64: Buffer.from("AIMOCK_TTS_AUDIO").toString("base64") },
             }));
             return true;
         },
