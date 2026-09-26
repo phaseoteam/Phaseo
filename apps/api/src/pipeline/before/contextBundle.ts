@@ -1,11 +1,10 @@
 import { z } from "zod";
-import { dispatchBackground, getBindingsIfConfigured, getCache, getSupabaseAdmin } from "@/runtime/env";
+import { dispatchBackground, getBindingsIfConfigured, getSupabaseAdmin } from "@/runtime/env";
 import { publicCatalogSchema as catalogSchema, isPublicCatalogFresh as fresh, type PublicCatalogSnapshot } from "./publicCatalogSnapshot";
+import { PublicCatalogCache, publicCatalogEndpoints } from "./publicCatalogCache";
+export { publicCatalogEndpoints, publicCatalogKey } from "./publicCatalogCache";
 export { PUBLIC_CATALOG_MAX_AGE_MS, type PublicCatalogSnapshot } from "./publicCatalogSnapshot";
 
-const MAX_ENTRIES = 32;
-const MAX_BYTES = 256_000;
-const REFRESH_AFTER_MS = 60_000;
 const record = z.record(z.string(), z.unknown());
 export type ContextBundle = {
     variants: { endpoint: string; payload: Record<string, unknown> }[];
@@ -16,83 +15,27 @@ export type ContextBundle = {
     catalogReadMs: number;
     rpcMs: number;
 };
-const entries = new Map<string, { value: PublicCatalogSnapshot; refreshAfter: number }>();
-export const publicCatalogEndpoints = (endpoint: string): string[] =>
-    endpoint === "text.generate" ? [endpoint] : ["text.generate", endpoint];
-export const publicCatalogKey = (model: string, endpoints: string[]) =>
-    `gateway:public-catalog:v1:${JSON.stringify([model, endpoints])}`;
+const publicCatalog = new PublicCatalogCache(
+    () => typeof caches === "undefined" ? undefined : caches.default,
+    () => getBindingsIfConfigured()?.GATEWAY_PUBLIC_BASE_URL,
+);
 
 export function contextBundleEnabled(): boolean {
     return getBindingsIfConfigured()?.GATEWAY_CONTEXT_BUNDLE_ENABLED === "true";
 }
 
-function remember(key: string, value: PublicCatalogSnapshot): void {
-    if (JSON.stringify(value).length > MAX_BYTES) return;
-    const existing = entries.get(key);
-    // An older replica or delayed refresh must not replace a newer snapshot.
-    if (existing && existing.value.checkedAt > value.checkedAt) return;
-    if (!entries.has(key) && entries.size >= MAX_ENTRIES) entries.delete(entries.keys().next().value!);
-    entries.set(key, { value: structuredClone(value), refreshAfter: Date.now() + REFRESH_AFTER_MS });
-}
-
-async function readCatalogFromKv(cache: KVNamespace, model: string, endpoints: string[]): Promise<PublicCatalogSnapshot | null> {
-    const key = publicCatalogKey(model, endpoints);
-    try {
-        const raw = await cache.get(key, { type: "text", cacheTtl: 30 });
-        if (!raw || raw.length > MAX_BYTES) return null;
-        const parsed = catalogSchema.safeParse(JSON.parse(raw));
-        if (!parsed.success || !fresh(parsed.data, model, endpoints)) return null;
-        remember(key, parsed.data);
-        return parsed.data;
-    } catch { return null; }
-}
-
-async function readCatalog(model: string, endpoints: string[]): Promise<PublicCatalogSnapshot | null> {
-    const key = publicCatalogKey(model, endpoints);
-    const local = entries.get(key);
-    if (local && fresh(local.value, model, endpoints)) {
-        if (Date.now() >= local.refreshAfter) {
-            local.refreshAfter = Date.now() + REFRESH_AFTER_MS;
-            // Capture the binding before the request runtime is released. Never
-            // share a request's I/O promise with another Worker invocation.
-            dispatchBackground(readCatalogFromKv(getCache(), model, endpoints));
-        }
-        return structuredClone(local.value);
-    }
-    entries.delete(key);
-    return readCatalogFromKv(getCache(), model, endpoints);
-}
-
 export async function publishPublicCatalog(input: unknown, expected?: { model: string; endpoints: string[] }): Promise<boolean> {
-    const parsed = catalogSchema.safeParse(input);
-    if (!parsed.success) return false;
-    const value = parsed.data;
-    if (!fresh(value, expected?.model ?? value.model, expected?.endpoints ?? value.endpoints)) return false;
-    // Unknown/hidden models can be workspace-private identifiers. Avoid putting
-    // their names into a shared negative cache; private-route lookup stays scoped.
-    if (value.variants.every(variant => variant.providers.length === 0)) return false;
-    const raw = JSON.stringify(value);
-    if (raw.length > MAX_BYTES) return false;
-    const key = publicCatalogKey(value.model, value.endpoints);
-    remember(key, value);
-    // Absolute expiresAt is checked on every read, including deadlines below
-    // KV's 60-second minimum expiration TTL and replicas with stale values.
-    await getCache().put(key, raw, {
-        expirationTtl: Math.max(60, Math.ceil((value.expiresAt - Date.now()) / 1000)),
-    });
-    return true;
+    return publicCatalog.publish(input, expected);
 }
 
 export async function loadTextContextBundle(args: {
     workspaceId: string; apiKeyId: string; model: string; endpoint: string; disableCache?: boolean;
-    /** Diagnostics: exercise shared KV without reusing this isolate's snapshot. */
+    /** Diagnostics: exercise Cache API without reusing this isolate's snapshot. */
     skipCatalogMemoryCache?: boolean;
 }): Promise<ContextBundle> {
     const endpoints = publicCatalogEndpoints(args.endpoint);
     const cacheStarted = performance.now();
-    let catalog = args.disableCache ? null : args.skipCatalogMemoryCache
-        ? await readCatalogFromKv(getCache(), args.model, endpoints)
-        : await readCatalog(args.model, endpoints);
+    let catalog = args.disableCache ? null : await publicCatalog.read(args.model, endpoints, args.skipCatalogMemoryCache);
     const catalogReadMs = performance.now() - cacheStarted;
     const cacheStatus = args.disableCache ? "bypass" : catalog ? "hit" : "miss";
     const rpcStarted = performance.now();

@@ -6,7 +6,7 @@ const state = vi.hoisted(() => ({
     rpc: vi.fn(), get: vi.fn(), put: vi.fn(), background: [] as Promise<unknown>[],
 }));
 vi.mock("@/runtime/env", () => ({
-    getBindingsIfConfigured: () => ({ GATEWAY_CONTEXT_BUNDLE_ENABLED: "true" }),
+    getBindingsIfConfigured: () => ({ GATEWAY_CONTEXT_BUNDLE_ENABLED: "true", GATEWAY_PUBLIC_BASE_URL: "https://staging.example" }),
     getSupabaseAdmin: () => ({ rpc: state.rpc }),
     getCache: () => ({ get: state.get, put: state.put }),
     dispatchBackground: (promise: Promise<unknown>) => { state.background.push(promise); },
@@ -21,20 +21,24 @@ function snapshot() {
     };
 }
 
-async function simulate(publish: boolean, visibilityDelaySeconds: number) {
+async function simulate(publish: boolean, sameDatacenter: boolean) {
     vi.resetModules(); vi.useFakeTimers();
     const start = Date.parse("2026-09-16T12:00:00Z"); vi.setSystemTime(start);
     const writes: { visibleAt: number; value: string }[] = [];
-    const stats = { requests: 0, requestCatalogBuilds: 0, scheduledCatalogBuilds: 0, kvReads: 0, kvWrites: 0, maximumAgeMs: 0 };
+    const stats = { requests: 0, requestCatalogBuilds: 0, scheduledCatalogBuilds: 0, cacheReads: 0, cacheWrites: 0, maximumAgeMs: 0 };
     state.background = [];
     state.get.mockImplementation(async () => {
-        stats.kvReads++;
+        stats.cacheReads++;
         return writes.findLast(write => write.visibleAt <= Date.now())?.value ?? null;
     });
     state.put.mockImplementation(async (_key, value) => {
-        stats.kvWrites++;
-        writes.push({ value, visibleAt: Date.now() + visibilityDelaySeconds * 1000 });
+        stats.cacheWrites++;
+        writes.push({ value, visibleAt: Date.now() });
     });
+    vi.stubGlobal("caches", { default: {
+        match: async () => { const raw = await state.get(); return raw ? new Response(raw) : undefined; },
+        put: async (key: string, response: Response) => state.put(key, await response.text()),
+    } });
     state.rpc.mockImplementation((name, args) => {
         if (name === "gateway_fetch_public_catalog") {
             stats.scheduledCatalogBuilds++;
@@ -53,7 +57,10 @@ async function simulate(publish: boolean, visibilityDelaySeconds: number) {
     for (let second = 0; second < 1800; second += 10) {
         vi.setSystemTime(start + second * 1000);
         if (publish && second % 120 === 0) {
+            const localWrites = writes.length;
             await publisher.publishConfiguredPublicCatalog(JSON.stringify([{ model: "lab/model", endpoint: "responses" }]));
+            // A scheduled publication in another datacenter cannot warm this L2.
+            if (!sameDatacenter) writes.splice(localWrites);
         }
         const result = await reader.loadTextContextBundle({ workspaceId: "workspace", apiKeyId: "key", model: "lab/model", endpoint: "responses" });
         stats.requests++;
@@ -64,15 +71,15 @@ async function simulate(publish: boolean, visibilityDelaySeconds: number) {
     return stats;
 }
 
-afterEach(() => vi.useRealTimers());
+afterEach(() => { vi.useRealTimers(); vi.unstubAllGlobals(); });
 describe("30-minute public catalog publication simulation", () => {
-    it.each([0, 60, 180, 360])("preserves expiry with %i seconds of simulated KV visibility delay", async delay => {
-        const baseline = await simulate(false, delay);
-        const candidate = await simulate(true, delay);
-        console.log("catalog_publication_simulation", JSON.stringify({ delaySeconds: delay, baseline, candidate }));
+    it.each([true, false])("preserves expiry with same-datacenter publication: %s", async sameDatacenter => {
+        const baseline = await simulate(false, sameDatacenter);
+        const candidate = await simulate(true, sameDatacenter);
+        console.log("catalog_publication_simulation", JSON.stringify({ sameDatacenter, baseline, candidate }));
         expect(candidate.maximumAgeMs).toBeLessThan(300_000);
         expect(candidate.requestCatalogBuilds).toBeLessThanOrEqual(baseline.requestCatalogBuilds);
-        if (delay <= 180) expect(candidate.requestCatalogBuilds).toBeLessThan(baseline.requestCatalogBuilds);
-        else expect(candidate.requestCatalogBuilds).toBeGreaterThan(0);
+        if (sameDatacenter) expect(candidate.requestCatalogBuilds).toBeLessThan(baseline.requestCatalogBuilds);
+        else expect(candidate.requestCatalogBuilds).toBe(baseline.requestCatalogBuilds);
     });
 });
