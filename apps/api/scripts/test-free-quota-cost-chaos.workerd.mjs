@@ -16,11 +16,16 @@ const bundle = await build({ absWorkingDir: root, bundle: true, format: "esm", p
                     bytes: this.ctx.storage.sql.databaseSize, alarm: await this.ctx.storage.getAlarm() };
             }
             seed(mode) {
-                const next = { ...initialFreeQuota(Date.now()), used: FREE_MODEL_DAILY_ALLOWANCE };
+                const next = { ...initialFreeQuota(Date.now()), used: mode === 'last' ? FREE_MODEL_DAILY_ALLOWANCE - 1 : FREE_MODEL_DAILY_ALLOWANCE };
                 const state = mode === 'corrupt' ? '{}' : JSON.stringify(next);
                 this.ctx.storage.sql.exec('INSERT INTO free_quota (id, state) VALUES (1, ?) ON CONFLICT(id) DO UPDATE SET state = excluded.state', state);
             }
             restart() { this.ctx.abort('fixture_restart'); }
+            previousDay() {
+                const state = { ...initialFreeQuota(Date.now() - 86_400_000), used: 1 };
+                this.ctx.storage.sql.exec('UPDATE free_quota SET state = ? WHERE id = 1', JSON.stringify(state));
+                this.ctx.storage.sql.exec('UPDATE free_quota_pending SET day = ?', state.day);
+            }
         }
         export default { async fetch(request, env) {
             const url = new URL(request.url), owner = url.searchParams.get('owner') ?? 'denied';
@@ -32,6 +37,9 @@ const bundle = await build({ absWorkingDir: root, bundle: true, format: "esm", p
                     case '/inspect': return Response.json(await stub.inspect());
                     case '/settings': return Response.json(await stub.getSettings());
                     case '/consent': return Response.json(await stub.setOverage(false, 0));
+                    case '/enable': return Response.json(await stub.setOverage(true, 0));
+                    case '/previous-day': await stub.previousDay(); return Response.json({ changed: true });
+                    case '/finish': return Response.json(await stub.finishIncluded(url.searchParams.get('id'), url.searchParams.get('success') === 'true'));
                     default: return Response.json(await stub.admit());
                 }
             } catch { return Response.json({ error: 'quota_unavailable' }, { status: 503 }); }
@@ -71,7 +79,7 @@ try {
         const second = await call('/admit?owner=isolated-' + n);
         const state = (await call('/inspect?owner=isolated-' + n)).data;
         assert.equal(first.data.allowed, true); assert.equal(second.data.allowed, true);
-        assert.equal(state.rows.length, 1); assert.equal(state.changes, 2);
+        assert.equal(state.rows.length, 1); assert.equal(state.changes, 4);
         assert.equal(JSON.parse(state.rows[0].state).used, 2);
         assert.equal(state.alarm, null);
         return state.bytes;
@@ -81,9 +89,45 @@ try {
     const broken = await call('/admit?owner=broken');
     assert.equal(broken.status, 503, "Malformed durable state must not mint new allowance");
     assert.equal((await call('/admit?owner=healthy')).data.allowed, true, "Broken owner must not poison other owners");
+    const admitted = (await call('/admit?owner=completion')).data;
+    assert.equal((await call('/settings?owner=completion')).data.requestsUsedToday, 0);
+    assert.equal((await call('/settings?owner=completion')).data.requestsPending, 1);
+    await call('/restart?owner=completion');
+    await call('/finish?owner=completion&id=' + admitted.reservationId + '&success=false');
+    await call('/finish?owner=completion&id=' + admitted.reservationId + '&success=false');
+    assert.equal((await call('/settings?owner=completion')).data.requestsUsedToday, 0);
+    assert.equal((await call('/settings?owner=completion')).data.requestsPending, 0);
+    const succeeded = (await call('/admit?owner=completion')).data;
+    await call('/finish?owner=completion&id=' + succeeded.reservationId + '&success=true');
+    await call('/finish?owner=completion&id=' + succeeded.reservationId + '&success=false');
+    assert.equal((await call('/settings?owner=completion')).data.requestsUsedToday, 1, 'A late error must not refund success');
+    await call('/seed?owner=boundary&mode=last');
+    await call('/restart?owner=boundary');
+    await call('/enable?owner=boundary');
+    const boundary = await waves(25, () => call('/admit?owner=boundary'));
+    const accepted = boundary.filter(result => result.data.allowed);
+    assert.equal(accepted.length, 1, 'Concurrent requests cannot exceed included quota or prematurely charge overage');
+    await call('/finish?owner=boundary&id=' + accepted[0].data.reservationId + '&success=false');
+    const replacement = (await call('/admit?owner=boundary')).data;
+    assert.equal(replacement.mode, 'included');
+    await call('/finish?owner=boundary&id=' + replacement.reservationId + '&success=true');
+    assert.equal((await call('/admit?owner=boundary')).data.mode, 'overage');
+    for (let i = 0; i < 25; i++) {
+        const failed = (await call('/admit?owner=rpm')).data;
+        assert.equal(failed.allowed, true);
+        await call('/finish?owner=rpm&id=' + failed.reservationId + '&success=false');
+    }
+    assert.equal((await call('/admit?owner=rpm')).data.reason, 'rpm_limit', 'Refunding daily allowance never refunds abuse protection');
+    const yesterday = (await call('/admit?owner=midnight')).data;
+    await call('/previous-day?owner=midnight'); await call('/restart?owner=midnight');
+    const today = (await call('/admit?owner=midnight')).data;
+    await call('/finish?owner=midnight&id=' + yesterday.reservationId + '&success=false');
+    await call('/finish?owner=midnight&id=' + today.reservationId + '&success=true');
+    assert.equal((await call('/settings?owner=midnight')).data.requestsUsedToday, 1, 'Late prior-day refunds cannot change today');
     console.log(JSON.stringify({ result: 'PASS', deniedRpcs: 1024, settingsRpcs: 128, unchangedConsentRpcs: 128,
         denialReadConsentRowMutations: after.changes - before.changes, isolatedOwners: owners.length,
-        acceptedRowMutationsPerOwner: 2, stateRowsPerOwner: 1, restartPreservesExhaustion: true,
+        acceptedRowMutationsPerOwner: 4, stateRowsPerOwner: 1, restartPreservesExhaustion: true,
+        successfulOnly: true, concurrentBoundary: true, idempotentCompletion: true, refundsPreserveRpm: true,
         corruptOwnerFailsClosed: true, externalCalls: 0, alarms: 0,
         note: 'Local operation evidence, not production billed duration or throughput' }));
 } finally { await runtime.dispose(); }

@@ -14,7 +14,7 @@ import { handleStreamResponse, handlePassthroughFallback } from "./stream";
 import { handleSuccessAudit, handleFailureAudit } from "./audit";
 import { makeHeaders, createResponse } from "./http";
 import { recordUsageAndChargeOnce } from "./charge";
-import { applyFreeModelFee, hasFreeModelFee, settleFreeModelFee } from "@/core/free-model-fee";
+import { applyFreeModelFee, hasFreeModelSettlement, settleFreeModelFee } from "@/core/free-model-fee";
 import { shapeUsageForClient } from "../usage";
 import { logDebugEvent, previewValue } from "../debug";
 import { normalizeFinishReason } from "../audit/normalize-finish-reason";
@@ -564,9 +564,9 @@ async function handleNonStreamResponse(
         });
     }
 
-    // Persist the fee decision before returning a successful non-stream body.
-    // Included free and normal paid inference do not take this extra RPC.
-    if (hasFreeModelFee(ctx)) {
+    // Persist the included-quota/fee decision before returning a successful
+    // non-stream body. Normal paid inference does not take this extra RPC.
+    if (hasFreeModelSettlement(ctx)) {
         try { await settleFreeModelFee(ctx, true); }
         catch {
             // The coordinator may have captured despite a lost acknowledgement.

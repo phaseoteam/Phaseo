@@ -13,7 +13,7 @@ const ctx = (workspaceId = "ws-a") => ({ workspaceId, workspaceOwnerUserId: owne
 beforeEach(() => {
     vi.clearAllMocks(); mocks.enabled = "true";
     mocks.getByName.mockReturnValue({ admit: mocks.admit });
-    mocks.admit.mockResolvedValue({ allowed: true, mode: "included", feeNanos: 0, remaining: 1499, policyVersion: 0 });
+    mocks.admit.mockResolvedValue({ allowed: true, mode: "included", feeNanos: 0, remaining: 1499, policyVersion: 0, reservationId: owner });
     mocks.limit.mockResolvedValue({ success: true });
 });
 describe("free-model routing admission", () => {
@@ -79,7 +79,7 @@ describe("free-model routing admission", () => {
         expect(mocks.outcome).toHaveBeenCalledExactlyOnceWith("overage_blocked");
     });
     it("accepts the final included slot and valid denial boundaries", async () => {
-        mocks.admit.mockResolvedValue({ allowed: true, mode: "included", feeNanos: 0, remaining: 0, policyVersion: 1 });
+        mocks.admit.mockResolvedValue({ allowed: true, mode: "included", feeNanos: 0, remaining: 0, policyVersion: 1, reservationId: owner });
         expect(await guardFreeModelAdmission(ctx(), free, "gateway")).toBeNull();
         for (const [reason, retryAfterSeconds] of [["rpm_limit", 1], ["daily_limit", 86_400]] as const) {
             mocks.admit.mockResolvedValue({ allowed: false, reason, retryAfterSeconds });
