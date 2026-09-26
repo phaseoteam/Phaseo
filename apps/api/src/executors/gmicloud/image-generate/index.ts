@@ -29,6 +29,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		return validationError(args, "gmicloud_image_requires_up_to_five_images");
 	}
 	if (images.some((image) => image instanceof Blob && image.size > 10 * 1024 * 1024)) return validationError(args, "gmicloud_image_upload_exceeds_10mb");
+	if (images.reduce((total, image) => total + (image instanceof Blob ? image.size : 0), 0) > 20 * 1024 * 1024) return validationError(args, "gmicloud_image_uploads_exceed_20mb");
 	if (args.capability === "image.edit" && images.length === 0) return validationError(args, "image_required_for_edit");
 	const imageInputs = await Promise.all(images.map((image) => imageInputUrl(image)));
 	if (imageInputs.some((image) => !/^https:\/\//i.test(image) && !/^data:image\/(?:png|jpeg|webp);base64,/i.test(image))) {
@@ -36,7 +37,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	}
 	const size = ir.size ?? "1024x1024";
 	const dimensions = /^(\d+)x(\d+)$/i.exec(size);
-	if (!dimensions || Number(dimensions[1]) < 256 || Number(dimensions[2]) < 256 || Number(dimensions[1]) > 8192 || Number(dimensions[2]) > 8192 || Number(dimensions[1]) * Number(dimensions[2]) > 4194304) {
+	if (!dimensions || Number(dimensions[1]) < 256 || Number(dimensions[2]) < 256 || Number(dimensions[1]) > 2048 || Number(dimensions[2]) > 2048 || Number(dimensions[1]) * Number(dimensions[2]) > 4194304) {
 		return validationError(args, "gmicloud_image_size_exceeds_2k");
 	}
 	const pixels = Number(dimensions[1]) * Number(dimensions[2]);
@@ -46,11 +47,11 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		? JSON.stringify({ model: MODEL, payload })
 		: undefined;
 	const result = await executeGmiQueueRequest(args, MODEL, payload);
-	if (!result.response.ok) return errorResult(args, result.response, mappedRequest);
+	if (!result.response.ok) return { ...errorResult(args, result.response, mappedRequest), terminal: result.accepted };
 	const outcome = result.json?.outcome ?? result.json?.result ?? result.json?.data ?? {};
 	const candidate = outcome.image_url ?? outcome.imageUrl ?? outcome.image_urls?.[0] ?? outcome.url ?? outcome.media_urls?.[0]?.url ?? outcome.media_urls?.[0] ?? outcome.images?.[0]?.url;
 	if (typeof candidate !== "string" || !/^https:\/\//i.test(candidate)) {
-		return errorResult(args, new Response(JSON.stringify({ error: "gmicloud_image_output_missing", request_id: result.requestId }), { status: 502, headers: { "Content-Type": "application/json" } }), mappedRequest);
+		return { ...errorResult(args, new Response(JSON.stringify({ error: "gmicloud_image_output_missing", request_id: result.requestId }), { status: 502, headers: { "Content-Type": "application/json" } }), mappedRequest), terminal: true };
 	}
 	const usage = { inputTokens: 0, outputTokens: 0, totalTokens: 0, requests: 1, output_image: 1 };
 	const response: IRImageGenerationResponse = {

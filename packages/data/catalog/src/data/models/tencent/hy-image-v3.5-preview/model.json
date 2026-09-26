@@ -78,7 +78,7 @@
   ],
   "verification": {
     "status": "verified",
-    "checked_at": "2026-09-25T00:00:00Z",
+    "checked_at": "2026-09-26T00:00:00Z",
     "notes": "Live GMI Cloud generation and reference image editing succeeded on 2026-09-26."
   },
   "last_updated": "2026-09-25T00:00:00Z",

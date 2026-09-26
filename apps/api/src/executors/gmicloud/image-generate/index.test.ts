@@ -70,4 +70,30 @@ describe("GMI Cloud Hy Image 3.5", () => {
 		expect(result.kind === "completed" && result.terminal).toBe(true);
 		expect(result.kind === "completed" && result.localClientError).toBe(true);
 	});
+
+	it("rejects combined uploads above 20 MiB before conversion", async () => {
+		const upload = new Blob([new Uint8Array(7 * 1024 * 1024)], { type: "image/png" });
+		const result = await execute(args([upload, upload, upload]));
+		expect(result.upstream.status).toBe(400);
+		expect(result.kind === "completed" && result.localClientError).toBe(true);
+	});
+
+	it("rejects either output dimension above 2K", async () => {
+		const request = args();
+		(request.ir as any).size = "8192x256";
+		const result = await execute(request);
+		expect(result.upstream.status).toBe(400);
+	});
+
+	it("does not retry a queue request accepted before a polling failure", async () => {
+		const mock = installFetchMock([
+			{ match: (url, init) => url.endsWith("/api/v1/ie/requestqueue/apikey/requests") && init?.method === "POST", response: jsonResponse({ request_id: "hy_req_poll", status: "processing" }) },
+			{ match: (url) => url.endsWith("/api/v1/ie/requestqueue/apikey/requests/hy_req_poll"), response: jsonResponse({ error: "unavailable" }, { status: 503 }) },
+		]);
+		try {
+			const result = await execute(args());
+			expect(result.upstream.status).toBe(503);
+			expect(result.kind === "completed" && result.terminal).toBe(true);
+		} finally { mock.restore(); }
+	});
 });
