@@ -167,4 +167,32 @@ export class FreeModelFeeJournal {
         return this.storage.sql.exec<{ state: string; count: number }>(
             "SELECT state, COUNT(*) AS count FROM free_fee_journal GROUP BY state").toArray();
     }
+
+    reviews() {
+        return this.storage.sql.exec<Entry>("SELECT * FROM free_fee_journal WHERE state = 'review' ORDER BY id LIMIT 128")
+            .toArray().map(row => ({ identity: FreeModelReservationIdentitySchema.parse(JSON.parse(row.identity)),
+                outcome: row.outcome, attempts: row.attempts }));
+    }
+
+    /** Explicit operator retry, never an instruction to choose a financial outcome.
+     * Exactly one source call, no new alarms. The attempt fence rejects stale tabs
+     * and duplicate submissions; the lifetime ceiling remains bounded too. */
+    async retryReviewed(workspaceId: string, requestId: string, expectedAttempts: number) {
+        const id = `${workspaceId}:${requestId}`;
+        return this.exclusive(id, async () => {
+            const row = this.get(id);
+            if (!row || row.state !== "review" || !row.outcome || row.attempts !== expectedAttempts
+                || !Number.isSafeInteger(expectedAttempts) || expectedAttempts < 0 || expectedAttempts >= 32) {
+                throw new Error("free_model_fee_review_conflict");
+            }
+            const identity = FreeModelReservationIdentitySchema.parse(JSON.parse(row.identity));
+            // Keep state=review across crashes, including a commit/lost response.
+            await this.change(() => this.storage.sql.exec("UPDATE free_fee_journal SET attempts = attempts + 1, due = NULL WHERE id = ?", id));
+            try {
+                await this.source(signal => finalizeFreeModelOverage(identity, row.outcome!, signal));
+                await this.change(() => this.storage.sql.exec("DELETE FROM free_fee_journal WHERE id = ?", id));
+                return { settled: true, review: false };
+            } catch { return { settled: false, review: true }; }
+        });
+    }
 }

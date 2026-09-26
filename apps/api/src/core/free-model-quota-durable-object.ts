@@ -23,6 +23,10 @@ export class FreeModelQuotaDurableObject extends DurableObject<GatewayBindings> 
         return this.feeJournal().finish(identity, outcome);
     }
     feeStatus() { return this.feeJournal().status(); }
+    feeReviews() { return this.feeJournal().reviews(); }
+    retryReviewedFee(workspaceId: string, requestId: string, expectedAttempts: number) {
+        return this.feeJournal().retryReviewed(workspaceId, requestId, expectedAttempts);
+    }
     async alarm() { await this.feeJournal().alarm(); }
 
     constructor(ctx: DurableObjectState, env: GatewayBindings) {
