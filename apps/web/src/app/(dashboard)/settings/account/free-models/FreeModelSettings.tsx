@@ -38,9 +38,8 @@ function FreeModelSettingsForOwner({ userId }: { userId: string | null }) {
     }
     const query = useQuery({ ...options, enabled: Boolean(userId), staleTime: 0, gcTime: 0, retry: false,
         queryFn: ({ signal }) => readOrDisable(signal) });
-    const mutation = useMutation({ retry: false,
+    const mutation = useMutation({ retry: false, gcTime: 0,
         mutationFn: (version: number) => readOrDisable(undefined, version),
-        onSuccess: result => client.setQueryData(options.queryKey, result),
     });
     const refresh = async () => {
         const result = await query.refetch();
@@ -74,7 +73,10 @@ function FreeModelSettingsForOwner({ userId }: { userId: string | null }) {
                                     {data.allowOverage ? <p className="text-sm">Previously saved consent is enabled, but charging remains disabled.</p> : null}
                                 </div>
                                 {data.allowOverage ? <Button variant="outline" disabled={mutation.isPending || query.isFetching || Boolean(mutation.error || query.error)}
-                                    onClick={() => mutation.mutate(data.policyVersion)}>{mutation.isPending ? "Disabling…" : "Disable saved consent"}</Button> : null}
+                                    onClick={() => mutation.mutate(data.policyVersion, {
+                                        // Observer callbacks stop on unmount; a late reply must not restore a previous owner's cache.
+                                        onSuccess: result => client.setQueryData(options.queryKey, result),
+                                    })}>{mutation.isPending ? "Disabling…" : "Disable saved consent"}</Button> : null}
                             </div>
                         </section>}
         {data && query.error ? <p role="alert">Refresh failed. Showing the last confirmed state; refresh before making changes.</p> : null}

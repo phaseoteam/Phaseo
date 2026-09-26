@@ -74,17 +74,17 @@ it("requires the browser session to match the owner before reading or writing", 
     await expect(mutationOptions().mutationFn(2)).rejects.toMatchObject({ status: 401 });
     expect(fetchAccountWebApi).not.toHaveBeenCalled();
 });
-it("sends only a version-fenced disable and updates UI only after confirmed success", async () => {
+it("sends only a version-fenced disable without an optimistic or unmounted cache update", async () => {
     render();
     const options = mutationOptions();
     expect(options.retry).toBe(false);
+    expect(options.gcTime).toBe(0);
+    expect(options.onSuccess).toBeUndefined();
     await options.mutationFn(2);
     expect(fetchAccountWebApi).toHaveBeenCalledWith("/api/account/free-model-quota", "session", expect.objectContaining({
         method: "PATCH", body: JSON.stringify({ allowOverage: false, expectedVersion: 2 }),
     }));
     expect(setQueryData).not.toHaveBeenCalled();
-    options.onSuccess({ data: { ...data, policyVersion: 3 } });
-    expect(setQueryData).toHaveBeenCalledWith(queryOptions().queryKey, { data: { ...data, policyVersion: 3 } });
 });
 it("blocks repeat mutations until refresh after conflicts or ambiguous failures", () => {
     query.data = { data: { ...data, allowOverage: true } };
