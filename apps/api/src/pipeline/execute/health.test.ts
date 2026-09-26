@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const runtime = vi.hoisted(() => {
     const store = new Map<string, string>();
@@ -50,6 +50,8 @@ async function flushBackground() {
 }
 
 describe("execute health state", () => {
+    afterEach(() => vi.restoreAllMocks());
+
     beforeEach(() => {
         runtime.store.clear();
         runtime.backgroundTasks.length = 0;
@@ -60,7 +62,8 @@ describe("execute health state", () => {
         vi.resetModules();
     });
 
-    it("serializes concurrent onCallStart updates for the same provider key", async () => {
+    it("serializes concurrent completion updates for the same provider key", async () => {
+        vi.spyOn(Date, "now").mockReturnValue(10_000);
         runtime.setGetDelay(15);
         const health = await import("./health");
         const endpoint = "responses";
@@ -70,14 +73,30 @@ describe("execute health state", () => {
 
         await Promise.all(
             Array.from({ length: requestCount }, () =>
-                health.onCallStart(endpoint, provider, model),
+                health.onCallEnd(endpoint, { provider, model, ok: true, latency_ms: 250 }),
             ),
         );
         await flushBackground();
 
         const snapshot = await health.readHealth(endpoint, provider, model);
-        expect(snapshot.inflight).toBe(requestCount);
+        expect(snapshot.rec_tot_ew_60s).toBe(requestCount);
+        expect(snapshot.rec_ok_ew_60s).toBe(snapshot.rec_tot_ew_60s);
         expect(snapshot.last_updated).toBeGreaterThan(0);
+    });
+
+    it.each([true, false])("persists one completion health write for ok=%s without in-flight bookkeeping", async (ok) => {
+        const health = await import("./health");
+        await health.onCallEnd("responses", { provider: "openai", model: "gpt-5.4-nano", ok, latency_ms: 250 });
+        await flushBackground();
+        expect(runtime.cache.put).toHaveBeenCalledTimes(1);
+        const persisted = JSON.parse(runtime.cache.put.mock.calls[0][1]);
+        expect(persisted).not.toHaveProperty("openai::inflight");
+        expect(persisted).not.toHaveProperty("openai::current_load");
+        const snapshot = await health.readHealth("responses", "openai", "gpt-5.4-nano");
+        expect(snapshot.rec_tot_ew_60s).toBe(1);
+        expect(snapshot.rec_ok_ew_60s).toBe(Number(ok));
+        expect(snapshot.err_ewma_60s).toBe(Number(!ok));
+        if (ok) expect(snapshot.lat_ewma_60s).toBe(250);
     });
 
     it("classifies only provider uptime failures as failures", async () => {
@@ -150,9 +169,6 @@ describe("execute health state", () => {
         const provider = "openai";
         const model = "gpt-5.4-nano";
 
-        await health.onCallStart(endpoint, provider, model);
-        await flushBackground();
-
         await health.onCallEnd(endpoint, {
             provider,
             model,
@@ -162,6 +178,8 @@ describe("execute health state", () => {
         });
         await flushBackground();
 
+        expect(runtime.cache.get).not.toHaveBeenCalled();
+        expect(runtime.cache.put).not.toHaveBeenCalled();
         const snapshot = await health.readHealth(endpoint, provider, model);
         expect(snapshot.inflight).toBe(0);
         expect(snapshot.err_ewma_10s).toBe(0);

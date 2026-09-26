@@ -35,6 +35,7 @@ export type ProviderHealth = {
     last_success_ms?: number;
     consecutive_failures?: number;
 
+    // Legacy snapshot fields; no longer maintained or used for routing.
     inflight: number;
     current_load: number;
 
@@ -872,22 +873,6 @@ export function resetHealthStateForTests(): void {
     keyUpdateQueues.clear();
 }
 
-export async function onCallStart(endpoint: Endpoint, provider: string, model: string) {
-    if (coordinatedHealthEnabled()) return; // No paid write for advisory in-flight counts.
-    const key = HEALTH_KEYS.health(endpoint, model);
-    await updateMap(key, (map) => {
-        const now = Date.now();
-        const inflightField = field(provider, "inflight");
-        const currentInflight = asNum(map[inflightField], 0);
-        const inflight = currentInflight + 1;
-        const softCap = Math.max(CONFIG_DEFAULTS.load_soft_cap, 1);
-        map[inflightField] = String(inflight);
-        map[field(provider, "current_load")] = String(Math.min(1, inflight / softCap));
-        map[field(provider, "last_updated")] = String(now);
-        return map;
-    }, HEALTH_STATE_TTL_SECONDS, "background");
-}
-
 export async function onCallEnd(
     endpoint: Endpoint,
     params: {
@@ -910,45 +895,34 @@ export async function onCallEnd(
     const { provider, model, ok, latency_ms } = params;
     const impact = params.healthImpact ?? (ok ? "success" : "failure");
     const rateLimited = impact === "failure" && (params.upstreamStatus === 429 || isRateLimitSignal(params.errorCode) || isRateLimitSignal(params.errorMessage));
+    // Neutral outcomes have no health evidence to persist. There is no longer
+    // an in-flight counter to decrement on cancellation or validation errors.
+    if (impact === "neutral") return { rateLimited };
     const textGeneration = endpoint === "responses" || endpoint === "chat.completions" || endpoint === "messages";
     // Generated text speed excludes the prompt. Other endpoints retain their
     // existing token-volume metric (e.g. input tokens processed by embeddings).
     const tokens = Math.max(0, params.tokens_out ?? 0) + (textGeneration ? 0 : Math.max(0, params.tokens_in ?? 0));
     if (coordinatedHealthEnabled()) {
-        if (impact !== "neutral") {
-            const now = Date.now();
-            const latency = Number.isFinite(latency_ms) ? Math.max(0, latency_ms) : 0;
-            const generation = Number.isFinite(params.generation_ms) ? Math.max(0, params.generation_ms ?? 0) : 0;
-            const tps = generation > 0 && tokens > 0 ? tokens / (generation / 1000) : null;
-            reportCoordinatedHealth({
-                id: params.observationId ?? crypto.randomUUID(), endpoint, model, provider,
-                observedAt: now, startedAt: Number.isFinite(params.startedAt) ? Math.min(now, params.startedAt!) : now - latency - generation,
-                ok: impact === "success", limited: rateLimited, probe: params.probe ?? false,
-                latencyMs: latency,
-                tps: tps !== null && Number.isFinite(tps) ? tps : null,
-            });
-        }
+        const now = Date.now();
+        const latency = Number.isFinite(latency_ms) ? Math.max(0, latency_ms) : 0;
+        const generation = Number.isFinite(params.generation_ms) ? Math.max(0, params.generation_ms ?? 0) : 0;
+        const tps = generation > 0 && tokens > 0 ? tokens / (generation / 1000) : null;
+        reportCoordinatedHealth({
+            id: params.observationId ?? crypto.randomUUID(), endpoint, model, provider,
+            observedAt: now, startedAt: Number.isFinite(params.startedAt) ? Math.min(now, params.startedAt!) : now - latency - generation,
+            ok: impact === "success", limited: rateLimited, probe: params.probe ?? false,
+            latencyMs: latency,
+            tps: tps !== null && Number.isFinite(tps) ? tps : null,
+        });
         return { rateLimited };
     }
     const key = HEALTH_KEYS.health(endpoint, model);
     await updateMap(key, (map) => {
         const now = Date.now();
-        const softCap = readConfig(map, provider, "load_soft_cap");
-        const inflightField = field(provider, "inflight");
-        const inflight = Math.max(asNum(map[inflightField], 0) - 1, 0);
-        const load = Math.min(1, inflight / Math.max(softCap, 1));
-
-        map[inflightField] = String(inflight);
-        map[field(provider, "current_load")] = String(load);
         map[field(provider, "last_updated")] = String(now);
-        map[field(provider, "load_soft_cap")] = String(softCap);
         map[field(provider, "err_open_th")] = String(readConfig(map, provider, "err_open_th"));
         map[field(provider, "base_open_secs")] = String(readConfig(map, provider, "base_open_secs"));
         map[field(provider, "max_open_secs")] = String(readConfig(map, provider, "max_open_secs"));
-
-        if (impact === "neutral") {
-            return map;
-        }
 
         const tau10 = HEALTH_CONSTANTS.TAU_10S_MS;
         const tau60 = HEALTH_CONSTANTS.TAU_60S_MS;

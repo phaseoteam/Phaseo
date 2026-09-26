@@ -856,10 +856,12 @@ async function handleDeleteKey(req: Request) {
 			return json({ error: "not_found", message: "API key not found" }, 404, { "Cache-Control": "no-store" });
 		}
 		if (String(existing.status ?? "").toLowerCase() === "deleted") {
+			// A previous deletion may have committed while invalidation failed.
+			await invalidateKeyCache({ id: existing.id, kid: existing.kid ?? null });
+			await supabase.from("key_guardrails").delete().eq("key_id", existing.id);
+			await supabase.from("broadcast_destination_keys").delete().eq("key_id", existing.id);
 			return json({ deleted: true }, 200, { "Cache-Control": "no-store" });
 		}
-
-		await invalidateKeyCache({ id: existing.id, kid: existing.kid ?? null });
 
 		const deletedAtIso = new Date().toISOString();
 		const tombstoneHash = `deleted:${existing.id}`;
@@ -877,10 +879,17 @@ async function handleDeleteKey(req: Request) {
 			throw new Error(updateError.message || "Failed to delete API key");
 		}
 
+		// New-version cache misses must see the committed tombstone, not an
+		// active row. Never acknowledge deletion before invalidation succeeds.
+		try {
+			await invalidateKeyCache({ id: existing.id, kid: existing.kid ?? null });
+		} finally {
+			// The tombstone is committed even if cache invalidation fails.
+			await auditApiKey(auth.value, "api_key.deleted", existing as KeyRow);
+		}
+
 		await supabase.from("key_guardrails").delete().eq("key_id", existing.id);
 		await supabase.from("broadcast_destination_keys").delete().eq("key_id", existing.id);
-		await auditApiKey(auth.value, "api_key.deleted", existing as KeyRow);
-
 		return json({ deleted: true }, 200, { "Cache-Control": "no-store" });
 	} catch (error: any) {
 		return internalServerError("keys.delete", error);

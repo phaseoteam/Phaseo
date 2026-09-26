@@ -35,6 +35,24 @@ function buildContext(overrides?: Partial<PipelineContext>): PipelineContext {
 }
 
 describe("after timing helpers", () => {
+	it.each(["hit", "miss", "bypass", "credit_refresh"] as const)("records the actual context cache state (%s)", (status) => {
+		const ctx = buildContext();
+		ctx.meta.beforeContextCacheStatus = status;
+		ctx.meta.timeToUpstreamRequestMs = 42;
+		expect(buildResponseTimeline(ctx)).toMatchObject({ routing_ms: 42, context_cache_status: status });
+	});
+
+	it("omits unknown cache diagnostics and keeps missing dispatch time unknown", () => {
+		const ctx = buildContext();
+		ctx.meta.beforeContextCacheStatus = "private-diagnostic" as never;
+		expect(buildResponseTimeline(ctx)).toEqual({ version: 1, routing_ms: null });
+		ctx.meta.beforeContextCacheStatus = "hit";
+		expect(buildResponseTimeline(ctx)).toEqual({ version: 1, routing_ms: null, context_cache_status: "hit" });
+	});
+
+	it("does not throw while reporting an error with only a partial request context", () => {
+		expect(buildResponseTimeline({ requestId: "early-failure" } as PipelineContext)).toEqual({ version: 1, routing_ms: null });
+	});
 	it("records the dispatch boundary for deduplicating retry preparation", () => {
 		const ctx = buildContext();
 		ctx.meta.startedAtMs = 1000;

@@ -2,6 +2,9 @@ import { z } from "zod";
 import { dispatchBackground, getBindingsIfConfigured, getCache, getSupabaseAdmin } from "@/runtime/env";
 
 export const PUBLIC_CATALOG_MAX_AGE_MS = 300_000;
+// The database and edge use independent wall clocks. Permit a small lead in
+// checkedAt without changing the source's absolute expiry or re-aging a copy.
+const PUBLIC_CATALOG_CLOCK_SKEW_MS = 1_000;
 const MAX_ENTRIES = 32;
 const MAX_BYTES = 256_000;
 const REFRESH_AFTER_MS = 60_000;
@@ -39,7 +42,7 @@ export function contextBundleEnabled(): boolean {
 
 function fresh(value: PublicCatalogSnapshot, model: string, endpoints: string[]): boolean {
     const now = Date.now();
-    return value.model === model && value.checkedAt <= now && value.expiresAt > now &&
+    return value.model === model && value.checkedAt <= now + PUBLIC_CATALOG_CLOCK_SKEW_MS && value.expiresAt > now &&
         value.expiresAt <= value.checkedAt + PUBLIC_CATALOG_MAX_AGE_MS &&
         JSON.stringify(value.endpoints) === JSON.stringify(endpoints) &&
         value.variants.length === endpoints.length &&
@@ -139,6 +142,15 @@ export async function loadTextContextBundle(args: {
             catalog = catalogSchema.parse(refreshed.data);
         }
         if (!fresh(catalog, args.model, endpoints) || catalog.resolvedModel !== bundle.context.resolved_model) {
+            console.warn("gateway_public_catalog_rejected", {
+                checkedAgeMs: Date.now() - catalog.checkedAt,
+                remainingMs: catalog.expiresAt - Date.now(),
+                lifetimeMs: catalog.expiresAt - catalog.checkedAt,
+                modelMatches: catalog.model === args.model,
+                resolvedModelMatches: catalog.resolvedModel === bundle.context.resolved_model,
+                endpointsMatch: JSON.stringify(catalog.endpoints) === JSON.stringify(endpoints),
+                variantsMatch: catalog.variants.length === endpoints.length && catalog.variants.every((variant, index) => variant.endpoint === endpoints[index]),
+            });
             throw new Error("gateway_public_catalog_changed_during_request");
         }
         if (!args.disableCache) dispatchBackground(publishPublicCatalog(catalog).catch(() => false));

@@ -48,6 +48,30 @@ beforeEach(() => {
 afterEach(() => { vi.useRealTimers(); });
 
 describe("shared public catalog and private context composition", () => {
+    it("accepts a small database clock lead without re-aging the catalog", async () => {
+        const value = catalog();
+        value.checkedAt += 51;
+        value.expiresAt += 51;
+        state.rpc.mockImplementation(async () => {
+            const response = result(); response.data.catalog = value; return response;
+        });
+        const { loadTextContextBundle } = await import("./contextBundle");
+        expect((await loadTextContextBundle(args)).catalog).toEqual(value);
+        expect(state.rpc).toHaveBeenCalledTimes(1);
+        expect(JSON.parse(state.put.mock.calls[0][1]).expiresAt).toBe(value.expiresAt);
+    });
+
+    it("rejects a catalog beyond the clock-skew bound even after a refresh", async () => {
+        const value = catalog(); value.checkedAt += 1001; value.expiresAt += 1001;
+        state.rpc.mockImplementation(async name => {
+            if (name === "gateway_fetch_public_catalog") return { data: value, error: null };
+            const response = result(); response.data.catalog = value; return response;
+        });
+        const { loadTextContextBundle } = await import("./contextBundle");
+        await expect(loadTextContextBundle(args)).rejects.toThrow("gateway_public_catalog_changed_during_request");
+        expect(state.put).not.toHaveBeenCalled();
+    });
+
     it("refreshes a valid local snapshot without waiting and uses the replacement after the old deadline", async () => {
         const old = catalog();
         const { loadTextContextBundle } = await import("./contextBundle");

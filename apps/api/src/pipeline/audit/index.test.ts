@@ -71,6 +71,30 @@ describe("audit request detail persistence", () => {
 		persistGatewayIoLogMock.mockResolvedValue(undefined);
 	});
 
+	it.each([400, 403, 500])("persists preflight failures with object-valued routing metadata (status=%s)", async (statusCode) => {
+		const insert = vi.fn(() => ({ select: () => ({ single: async () => ({
+			data: { id: "row_before", created_at: "2026-09-21T00:00:00Z", workspace_id: "ws_before" }, error: null,
+		}) }) }));
+		const rpc = vi.fn(async (_name, { p_event: event }) => {
+			for (const field of ["requested_routing", "sticky_routing"]) {
+				const value = event.routing_trace[field];
+				if (!value || typeof value !== "object" || Array.isArray(value)) {
+					return { error: { code: "23514", message: `routing trace ${field} must be an object` } };
+				}
+			}
+			return { data: "event_before", error: null };
+		});
+		getSupabaseAdminMock.mockReturnValue({ from: () => ({ insert }), rpc });
+		resolveGatewayIoLoggingPolicyMock.mockResolvedValue({ captureEnabled: false });
+		await auditFailure({ stage: "before", requestId: "req_before", workspaceId: "ws_before",
+			endpoint: "chat.completions", requestedModel: "poolside/laguna-xs-2.1:free", statusCode,
+			errorCode: "test_rejection", detailMetadata: { routing_diagnostics: { requestedRouting: null, stickyRouting: null } },
+		});
+		expect(insert).toHaveBeenCalledTimes(1);
+		expect(rpc).toHaveBeenCalledTimes(1);
+		expect(rpc.mock.calls[0][1].p_event.routing_trace).toMatchObject({ requested_routing: {}, sticky_routing: {} });
+	});
+
 	it.each([false, true])("retries analytics writes without duplicating the request log (stream=%s)", async (stream) => {
 		const insert = vi.fn(() => ({ select: () => ({ single: async () => ({
 			data: { id: "row_retry", created_at: "2026-09-20T08:58:00Z", workspace_id: "ws_retry" },

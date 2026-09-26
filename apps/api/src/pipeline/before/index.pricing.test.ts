@@ -212,7 +212,9 @@ describe("beforeRequest pricing loss-prevention", () => {
 		}));
 	});
 
-	it.each([false, true])("preserves pricing and carries the credit barrier only for streaming text (stream=%s)", async stream => {
+	it.each((["responses", "chat.completions", "messages"] as const).flatMap(endpoint =>
+		[false, true].map(stream => ({ endpoint, stream })),
+	))("preserves pricing and carries the credit barrier for $endpoint (stream=$stream)", async ({ endpoint, stream }) => {
 		guardModelMock.mockReturnValue({ ok: true, value: {
 			body: { model: "openai/gpt-4.1-mini", stream }, model: "openai/gpt-4.1-mini", stream,
 		} });
@@ -244,15 +246,38 @@ describe("beforeRequest pricing loss-prevention", () => {
 			headers: { "content-type": "application/json" },
 			body: JSON.stringify({ model: "openai/gpt-4.1-mini" }),
 		});
-		const result = await beforeRequest(req, "responses", new Timer(), null);
+		const result = await beforeRequest(req, endpoint, new Timer(), null);
 		expect(result.ok).toBe(true);
 		const register = guardContextMock.mock.calls[0][0].onCreditCacheWrite;
-		if (stream && result.ok) {
+		expect(register).toEqual(expect.any(Function));
+		if (result.ok) {
 			const write = Promise.resolve();
 			register(write);
 			expect(result.ctx.creditCacheWrites).toEqual([write]);
-		} else expect(register).toBeUndefined();
+		}
 	});
+
+	it.each(["responses", "chat.completions", "messages"] as const)(
+		"stops %s preflight when authoritative policy loading fails", async (endpoint) => {
+			const provider = providerWithPricingRules(1);
+			guardContextMock.mockResolvedValue({ ok: true, value: {
+				context: { pricing: { openai: provider.pricingCard } },
+				providers: [provider], resolvedModel: "openai/gpt-4.1-mini",
+			} });
+			fetchWorkspacePolicyMock.mockRejectedValue(new Error("workspace_settings_lookup_failed:unavailable"));
+			const result = await beforeRequest(new Request("https://gateway.local/v1/responses", {
+				method: "POST", body: JSON.stringify({ model: "openai/gpt-4.1-mini" }),
+			}), endpoint, new Timer(), null);
+			expect(result.ok).toBe(false);
+			if (result.ok) throw new Error("Unexpected preflight success");
+			expect(result.response.status).toBe(500);
+			expect(await result.response.json()).toMatchObject({
+				error: "gateway_error", reason: "workspace_policy_fetch_failed",
+			});
+			expect(applyWorkspacePolicyMock).not.toHaveBeenCalled();
+			expect(applyPromptInjectionGuardrailsMock).not.toHaveBeenCalled();
+		},
+	);
 
 	it("captures parsed model metadata before a context guard failure", async () => {
 		guardJsonMock.mockResolvedValue({

@@ -5,7 +5,6 @@
 
 import {
     onCallEnd,
-    onCallStart,
     admitThroughBreaker,
     reportProbeResult,
     maybeOpenOnRecentErrors,
@@ -82,8 +81,6 @@ export async function attemptProvider(
     delete (meta as Record<string, unknown>).generation_ms;
     delete (ctx.meta as Record<string, unknown>).latency_ms;
     delete (ctx.meta as Record<string, unknown>).generation_ms;
-
-    await onCallStart(ctx.endpoint, healthProvider, baseModel);
 
     if (!timing.internal.adapterMarked) {
         timing.timer.mark("adapter_start");
@@ -286,8 +283,6 @@ export async function attemptProvider(
         return { ok: false, error: e };
     }
 }
-
-
 
 
 

@@ -82,7 +82,19 @@ type WorkspacePolicyL1Entry = {
 };
 
 const workspacePolicyL1 = new Map<string, WorkspacePolicyL1Entry>();
-const workspacePolicyVersionL1 = new Map<string, { value: number; expiresAt: number }>();
+type PolicyVersionState = { value: number; expiresAt: number; epoch: object; pendingBumps: number };
+const workspacePolicyVersionL1 = new Map<string, PolicyVersionState>();
+
+function policyVersionState(workspaceId: string): PolicyVersionState {
+	let state = workspacePolicyVersionL1.get(workspaceId);
+	if (!state) state = { value: 0, expiresAt: 0, epoch: {}, pendingBumps: 0 };
+	workspacePolicyVersionL1.delete(workspaceId);
+	workspacePolicyVersionL1.set(workspaceId, state);
+	while (workspacePolicyVersionL1.size > WORKSPACE_POLICY_L1_MAX_ENTRIES) {
+		workspacePolicyVersionL1.delete(workspacePolicyVersionL1.keys().next().value!);
+	}
+	return state;
+}
 
 export type WorkspacePolicyDiagnostics = {
 	resolvedModel: string;
@@ -142,48 +154,58 @@ function workspacePolicyKvKey(workspaceId: string, apiKeyId: string, versionToke
 function readWorkspacePolicyVersionL1(workspaceId: string): number | null {
 	const entry = workspacePolicyVersionL1.get(workspaceId);
 	if (!entry) return null;
-	if (entry.expiresAt <= Date.now()) {
-		workspacePolicyVersionL1.delete(workspaceId);
-		return null;
-	}
+	if (entry.pendingBumps || entry.expiresAt <= Date.now()) return null;
 	return entry.value;
 }
 
-function writeWorkspacePolicyVersionL1(workspaceId: string, value: number): void {
-	workspacePolicyVersionL1.set(workspaceId, {
-		value,
-		expiresAt: Date.now() + ttlWithJitter(WORKSPACE_POLICY_VERSION_L1_TTL_MS),
-	});
+function writeWorkspacePolicyVersionL1(state: PolicyVersionState, value: number): void {
+	state.value = value;
+	state.expiresAt = Date.now() + ttlWithJitter(WORKSPACE_POLICY_VERSION_L1_TTL_MS);
 }
 
-async function getWorkspacePolicyVersionToken(workspaceId: string): Promise<string> {
+function parseWorkspacePolicyVersion(raw: string | null): number {
+	if (raw === null) return 0;
+	const parsed = Number(raw);
+	if (!/^\d+$/.test(raw) || !Number.isSafeInteger(parsed) || parsed < 0) {
+		throw new Error("invalid_workspace_policy_version");
+	}
+	return parsed;
+}
+
+async function getWorkspacePolicyVersionToken(workspaceId: string): Promise<string | null> {
 	const cached = readWorkspacePolicyVersionL1(workspaceId);
 	if (cached !== null) return `v${cached}`;
+	const state = policyVersionState(workspaceId);
+	const epoch = state.epoch;
+	if (state.pendingBumps) return null;
 
 	try {
 		const raw = await getCache().get(workspacePolicyVersionKey(workspaceId), "text");
-		const parsed = raw ? Number(raw) : 0;
-		const normalized = Number.isFinite(parsed) && parsed >= 0 ? Math.floor(parsed) : 0;
-		writeWorkspacePolicyVersionL1(workspaceId, normalized);
+		const normalized = parseWorkspacePolicyVersion(raw);
+		// An evicted or superseded read cannot restore or serve old permissions.
+		if (workspacePolicyVersionL1.get(workspaceId) !== state || state.epoch !== epoch || state.pendingBumps) return null;
+		writeWorkspacePolicyVersionL1(state, normalized);
 		return `v${normalized}`;
 	} catch {
-		return "v0";
+		// Unknown is not the initial version: old permissions must not be reused.
+		return null;
 	}
 }
 
 export async function bumpWorkspacePolicyVersion(workspaceId: string): Promise<number> {
-	let current = 0;
+	const state = policyVersionState(workspaceId);
+	const epoch = state.epoch = {};
+	state.expiresAt = 0;
+	state.pendingBumps++;
 	try {
 		const raw = await getCache().get(workspacePolicyVersionKey(workspaceId), "text");
-		const parsed = raw ? Number(raw) : 0;
-		current = Number.isFinite(parsed) && parsed >= 0 ? Math.floor(parsed) : 0;
-	} catch {
-		current = 0;
-	}
-	const next = current + 1;
-	await getCache().put(workspacePolicyVersionKey(workspaceId), String(next));
-	writeWorkspacePolicyVersionL1(workspaceId, next);
-	return next;
+		const current = parseWorkspacePolicyVersion(raw);
+		const next = current + 1;
+		if (!Number.isSafeInteger(next)) throw new Error("invalid_workspace_policy_version");
+		await getCache().put(workspacePolicyVersionKey(workspaceId), String(next));
+		if (workspacePolicyVersionL1.get(workspaceId) === state && state.epoch === epoch) writeWorkspacePolicyVersionL1(state, next);
+		return next;
+	} finally { state.pendingBumps--; }
 }
 
 function isStringArrayOrNull(value: unknown): value is string[] | null {
@@ -507,18 +529,21 @@ export async function fetchWorkspacePolicy(args: {
 }): Promise<WorkspacePolicy> {
 	const [workspaceVersionToken, apiKeyVersionToken] = await Promise.all([
 		getWorkspacePolicyVersionToken(args.workspaceId),
-		keyVersionToken("id", args.apiKeyId, { useL1Cache: true, l1TtlMs: 5_000 }),
+		keyVersionToken("id", args.apiKeyId, { useL1Cache: true, l1TtlMs: 5_000 }).catch(() => null),
 	]);
-	const versionToken = `${workspaceVersionToken}:${apiKeyVersionToken}`;
-	const cached = readWorkspacePolicyL1(args.workspaceId, args.apiKeyId, versionToken);
+	// Cache fills stay pinned to markers observed before the database read.
+	// Unknown markers bypass both cache layers, including writes.
+	const versionToken = workspaceVersionToken !== null && apiKeyVersionToken !== null
+		? `${workspaceVersionToken}:${apiKeyVersionToken}` : null;
+	const cached = versionToken === null ? null : readWorkspacePolicyL1(args.workspaceId, args.apiKeyId, versionToken);
 	if (cached) return cached;
 
 	try {
-		const raw = await getCache().get(
+		const raw = versionToken === null ? null : await getCache().get(
 			workspacePolicyKvKey(args.workspaceId, args.apiKeyId, versionToken),
 			"text",
 		);
-		if (raw) {
+		if (raw && versionToken !== null) {
 			const parsed = JSON.parse(raw);
 			if (isWorkspacePolicyLike(parsed)) {
 				writeWorkspacePolicyL1(args.workspaceId, args.apiKeyId, versionToken, parsed);
@@ -647,6 +672,7 @@ export async function fetchWorkspacePolicy(args: {
 		guardrails,
 		dynamicRoute,
 	});
+	if (versionToken === null) return policy;
 	writeWorkspacePolicyL1(args.workspaceId, args.apiKeyId, versionToken, policy);
 	dispatchBackground(
 		getCache()
