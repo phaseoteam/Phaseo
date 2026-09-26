@@ -8,6 +8,7 @@ type Counts = Partial<Record<Operation, number>>;
 type KvOperation = "kvRead" | "kvWrite" | "kvDelete" | "kvList";
 type KvPurpose = "auth" | "credit" | "sticky" | "context" | "health" | "other";
 type KvCounts = Partial<Record<KvPurpose, Partial<Record<KvOperation, number>>>>;
+export type QuotaAdmissionOutcome = "included" | "edge_limited" | "rpm_limited" | "daily_limited" | "unavailable" | "overage_blocked";
 export type SettlementOutcome = "pending" | "confirmed" | "recovery_queued" | "unresolved";
 const scope = new AsyncLocalStorage<RequestOperations>();
 // Lazily initialized during a request: Workers disallow random I/O at module load.
@@ -35,6 +36,10 @@ export class RequestOperations {
     dispatchMs: number | null = null;
     readonly pending = new Set<Promise<unknown>>();
     backgroundOverflow = false;
+    // Admission is not inference success or a billable-write count. Keep only
+    // the first outcome; provider fallbacks reuse the same request admission.
+    private quotaAdmission: QuotaAdmissionOutcome | undefined;
+    recordQuotaAdmission(outcome: QuotaAdmissionOutcome) { this.quotaAdmission ??= outcome; }
     // Request-finalizer evidence, not a durable ledger or a count of debits.
     // Re-entry may recover an unresolved attempt; retain the latest outcome.
     private settlement: { state: SettlementOutcome; directAttempts: number } | undefined;
@@ -89,6 +94,7 @@ export class RequestOperations {
             kvByPurpose: Object.fromEntries(Object.entries(this.kvByPurpose).map(([purpose, counts]) => [purpose, { ...counts }])),
             beforeDispatchMs: this.dispatchMs, pendingBackground: this.pending.size,
             complete: !this.backgroundOverflow && this.pending.size === 0,
+            ...(this.quotaAdmission ? { quotaAdmission: this.quotaAdmission } : {}),
             ...(this.settlement ? { settlement: { ...this.settlement } } : {}),
             ...(this.stream ? { stream: { ...this.stream } } : {}) };
     }
@@ -99,6 +105,7 @@ export function withRequestOperations<T>(metrics: RequestOperations, run: () => 
 export function countOperation(operation: Operation, count = 1) { scope.getStore()?.count(operation, count); }
 export function markProviderDispatch() { scope.getStore()?.dispatch(); }
 export function recordStreamObservation(observation: StreamObservation) { scope.getStore()?.recordStream(observation); }
+export function recordQuotaAdmission(outcome: QuotaAdmissionOutcome) { scope.getStore()?.recordQuotaAdmission(outcome); }
 export function recordSettlement(outcome: SettlementOutcome) { scope.getStore()?.recordSettlement(outcome); }
 export function recordSettlementAttempt() { scope.getStore()?.recordSettlementAttempt(); }
 

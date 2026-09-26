@@ -85,6 +85,7 @@ export async function composeWorkspaceRuntime(value: GatewayContextData, snapsho
     if (!isWorkspaceRuntimeFresh(snapshot, value.workspaceId)) throw new Error("workspace_runtime_composition_expired");
     return {
         ...value, teamSettings, workspaceRuntimeExpiresAt: snapshot.expiresAtMs,
+        workspaceOwnerUserId: snapshot.ownerUserId ?? null,
         providers: value.providers.map(provider => ({
             ...provider,
             byokMeta: (snapshot.byok[provider.providerId] ?? []).map(reference => byokMetaSchema.parse(reference)),

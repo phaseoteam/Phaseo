@@ -1,6 +1,7 @@
 const operations = new Set(["kvRead", "kvWrite", "kvDelete", "kvList", "supabaseRead", "supabaseMutation", "supabaseRpc", "healthRpc", "healthDropped", "quotaRpc", "settlementEnqueue", "cacheRead", "cacheWrite"]);
 const kvOperations = new Set(["kvRead", "kvWrite", "kvDelete", "kvList"]);
 const kvPurposes = ["auth", "credit", "sticky", "context", "health", "other"];
+const quotaOutcomes = new Set(["included", "edge_limited", "rpm_limited", "daily_limited", "unavailable", "overage_blocked"]);
 const settlementOutcomes = new Set(["pending", "confirmed", "recovery_queued", "unresolved"]);
 const counts = value => Object.fromEntries(Object.entries(value ?? {}).filter(([key, count]) => operations.has(key) && Number.isSafeInteger(count) && count >= 0));
 const duration = value => typeof value === "number" && Number.isFinite(value) && value >= 0 ? value : null;
@@ -19,6 +20,7 @@ export function operationMetricsSummary(record) {
         firstFrameMs: duration(stream.firstFrameMs), firstOutputObservedMs: duration(stream.firstOutputObservedMs), durationMs: duration(stream.durationMs),
     } : undefined;
     return { event: "gateway_operations", requestId: record.requestId,
+        ...(quotaOutcomes.has(record.quotaAdmission) ? { quotaAdmission: record.quotaAdmission } : {}),
         ...(settlementOutcomes.has(record.settlement?.state) && count(record.settlement?.directAttempts) !== null
             ? { settlement: { state: record.settlement.state, directAttempts: record.settlement.directAttempts } } : {}),
         ...(typeof record.runtimeInstanceId === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(record.runtimeInstanceId)

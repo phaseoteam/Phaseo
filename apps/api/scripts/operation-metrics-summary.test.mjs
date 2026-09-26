@@ -16,6 +16,18 @@ test("settlement attribution exposes only bounded fields, never financial identi
     }
 });
 
+test("quota attribution retains only the admission enum, not identities or raw replies", () => {
+    for (const quotaAdmission of ["included", "edge_limited", "rpm_limited", "daily_limited", "unavailable", "overage_blocked"]) {
+        const summary = operationMetricsSummary({ requestId: "test-request", quotaAdmission,
+            owner: "private", quota: { remaining: 999, secret: "private" } });
+        assert.equal(summary.quotaAdmission, quotaAdmission);
+        assert.ok(!JSON.stringify(summary).includes("private"));
+    }
+    for (const quotaAdmission of [undefined, null, "private", { outcome: "included", owner: "private" }, ["included"]]) {
+        assert.ok(!Object.hasOwn(operationMetricsSummary({ requestId: "test-request", quotaAdmission }), "quotaAdmission"));
+    }
+});
+
 test("cost attribution retains only fixed categories and a valid module marker", () => {
     const runtimeInstanceId = "12345678-1234-4123-8123-123456789012";
     const summary = operationMetricsSummary({ requestId: "test-request", runtimeInstanceId,

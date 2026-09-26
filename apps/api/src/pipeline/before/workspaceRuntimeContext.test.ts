@@ -20,6 +20,13 @@ function context(): GatewayContextData {
 beforeEach(() => { vi.useFakeTimers(); vi.setSystemTime(1_000_000); gate.mockReset().mockResolvedValue(true); });
 afterEach(() => vi.useRealTimers());
 describe("independent workspace composition", () => {
+    it("takes owner identity only from the current private snapshot", async () => {
+        const source = snapshot(); source.ownerUserId = "30000000-0000-4000-8000-000000000001";
+        const value = { ...context(), workspaceOwnerUserId: "old-owner" };
+        expect((await composeWorkspaceRuntime(value, source)).workspaceOwnerUserId).toBe(source.ownerUserId);
+        delete source.ownerUserId;
+        expect((await composeWorkspaceRuntime(value, source)).workspaceOwnerUserId).toBeNull();
+    });
     it("does not acquire admission authority from tier/settings and owns BYOK references", async () => {
         const source = snapshot(), value = context();
         const composed = await composeWorkspaceRuntime(value, source);

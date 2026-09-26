@@ -1382,6 +1382,8 @@ export async function beforeRequest(
         model: resolvedModel || model,
         workspaceId,
         stream,
+        workspaceOwnerUserId: context.workspaceOwnerUserId,
+        workspaceRuntimeExpiresAt: context.workspaceRuntimeExpiresAt,
         requestPath: requestPath ?? undefined,
         requestedParams: capabilityValidation.requestedParams,
         paramRoutingDiagnostics: capabilityValidation.paramRoutingDiagnostics,
