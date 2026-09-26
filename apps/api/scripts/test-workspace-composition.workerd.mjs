@@ -46,7 +46,8 @@ const runtime = new Miniflare({ modules: true, script: bundle.outputFiles[0].tex
         SOURCE: async request => {
             counts.sourceReads++; await new Promise(resolve => setTimeout(resolve, 30));
             const workspaceId = new URL(request.url).pathname.slice(1);
-            return Response.json({ version: 1, workspaceId, checkedAtMs: Date.now(), expiresAtMs: Date.now() + 60_000,
+            const checkedAtMs = Date.now();
+            return Response.json({ version: 1, workspaceId, checkedAtMs, expiresAtMs: checkedAtMs + 60_000,
                 configuredTier: "enterprise", billingMode: "wallet",
                 settings: Object.fromEntries(Object.keys(workspaceRuntimeSettingsSchema.shape).map(key => [key, null])),
                 byok: {test:[{provider_id:"test",id:"20000000-0000-4000-8000-000000000001",fingerprint_sha256:workspaceId,key_version:1,always_use:true}]} });
@@ -61,7 +62,8 @@ const runtime = new Miniflare({ modules: true, script: bundle.outputFiles[0].tex
 const workspace = "10000000-0000-4000-8000-000000000001", other = "10000000-0000-4000-8000-000000000002";
 const call = async id => {
     const response = await runtime.dispatchFetch(`https://fixture/${id}/v1`);
-    assert.equal(response.status, 200); return response.json();
+    const body = await response.text();
+    assert.equal(response.status, 200, body); return JSON.parse(body);
 };
 try {
     const burst = await Promise.all(Array.from({ length: 32 }, () => call(workspace)));
