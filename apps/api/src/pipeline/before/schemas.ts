@@ -3,6 +3,7 @@
 // How: Exposes helpers used by before/execute/after orchestration.
 
 import { z } from "zod";
+import { normalizeProviderAvailability } from "./providerAvailability";
 import type { PriceCard } from "../pricing";
 import type { PriceRule, PricingDimensionKey, PricingTimestampBasis, PricingTimeWindow } from "../pricing/types";
 import type {
@@ -294,7 +295,7 @@ const providerSchema = z
         stream_cancellation_evidence_kind: z.enum(["provider", "aggregator", "none"]).nullable().optional(),
         stream_cancellation_source_url: z.string().nullable().optional(),
         availability: z.preprocess(
-            value => typeof value === "string" ? null : value,
+            value => typeof value === "string" ? null : normalizeProviderAvailability(value),
             z.object({
                 mode: z.enum(["allowlist", "blocklist"]),
                 countries: z.array(z.string().regex(/^[A-Z]{2}$/)),
