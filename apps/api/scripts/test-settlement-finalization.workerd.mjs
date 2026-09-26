@@ -31,17 +31,35 @@ const bundle = await build({ absWorkingDir: root, bundle: true, format: "esm", p
             let conflict=false;
             if(mode==='success')try{await recordUsageAndChargeOnce({ctx,costNanos:20,endpoint:'responses'});}catch{conflict=true;}
             if(mode==='recover')await recordUsageAndChargeOnce({ctx,costNanos:10,endpoint:'responses'});
+            if(mode==='retry-identity'){
+                let conflicts=0;
+                for(const changed of [{ctx:{...ctx,billingRequestId:'different'},costNanos:10},
+                    {ctx:{...ctx,workspaceId:'other'},costNanos:10},{ctx,costNanos:20}]){
+                    try{await recordUsageAndChargeOnce({...changed,endpoint:'responses'});}
+                    catch(error){if(error.message==='settlement_identity_conflict')conflicts++;else throw error;}
+                }
+                await Promise.all(Array.from({length:32},()=>recordUsageAndChargeOnce({ctx:{...ctx},costNanos:10,endpoint:'responses'})));
+                return Response.json({recorded:ctx.meta.__usageChargeRecorded===true,conflicts});
+            }
             return Response.json({recorded:ctx.meta.__usageChargeRecorded===true,conflict});
         });}};
     ` } });
 const calls = new Map();
+const committed = new Map();
 const runtime = new Miniflare({ modules: [{ type: "ESModule", path: "settlement.mjs", contents: bundle.outputFiles[0].text }], compatibilityDate: "2025-10-01", compatibilityFlags: ["nodejs_compat"],
     serviceBindings: { LEDGER: async request => {
         const mode = new URL(request.url).pathname.slice(1), count = (calls.get(mode) ?? 0) + 1;
         calls.set(mode, count);
         const args = await request.json(); assert.equal(args.workspaceId, "fixture-workspace"); assert.equal(args.cost_nanos, 10);
+        if (mode === "retry-identity") {
+            // Model the first debit committing before three confirmations fail.
+            // The fourth call is a replay, not a new ledger movement.
+            const identity = `${args.workspaceId}:${args.requestId}`;
+            if (!committed.has(identity)) committed.set(identity, args.cost_nanos);
+            assert.equal(committed.get(identity), args.cost_nanos);
+        }
         await new Promise(resolve => setTimeout(resolve, 10));
-        return new Response("fixture", { status: mode.startsWith("independent-") || mode === "success" || (mode === "recover" && count > 3) ? 200 : 503 });
+        return new Response("fixture", { status: mode.startsWith("independent-") || mode === "success" || (["recover", "retry-identity"].includes(mode) && count > 3) ? 200 : 503 });
     } },
 });
 const call = async mode => { const response = await runtime.dispatchFetch(`https://fixture/${mode}`); assert.equal(response.status, 200); return response.json(); };
@@ -53,9 +71,15 @@ try {
     assert.equal(calls.get("failure"), 3); assert.equal(failed.recorded, false);
     const recovered = await call("recover");
     assert.equal(calls.get("recover"), 4); assert.equal(recovered.recorded, true);
+    const retryIdentity = await call("retry-identity");
+    assert.equal(retryIdentity.conflicts, 3);
+    assert.equal(retryIdentity.recorded, true);
+    assert.equal(calls.get("retry-identity"), 4);
+    assert.equal(calls.has("different"), false, "Changed billing identity must never reach the source");
+    assert.equal(committed.size, 1, "Lost confirmations and concurrent re-entry retain one mocked debit");
     await call("independent");
     assert.equal([...calls.keys()].filter(key => key.startsWith("independent-")).length, 32);
     for (const [key, count] of calls) if (key.startsWith("independent-")) assert.equal(count, 1);
     console.log(JSON.stringify({ result: "PASS", concurrentFinalizers: 32, successfulAttempts: 1, failedAttempts: 3, recoveryAttempts: 4,
-        independentSettlements: 32, conflictingAmountsRejected: true, realWalletOperations: 0 }));
+        independentSettlements: 32, conflictingAmountsRejected: true, exhaustedIdentityFence: true, realWalletOperations: 0 }));
 } finally { await runtime.dispose(); }

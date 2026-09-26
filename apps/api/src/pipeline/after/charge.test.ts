@@ -100,6 +100,32 @@ describe("recordUsageAndChargeOnce", () => {
             expect(ctx.meta.__usageChargeRecorded).toBe(true);
         } finally { log.mockRestore(); vi.useRealTimers(); }
     });
+    it.each(["disabled", "failed"].flatMap(recovery =>
+        ["workspace", "request", "amount"].map(field => ({ recovery, field }))))(
+        "retains the immutable $field after exhausted attempts and $recovery recovery", async ({ recovery, field }) => {
+            vi.useFakeTimers();
+            const log = vi.spyOn(console, "error").mockImplementation(() => {});
+            try {
+                recordUsageAndChargeMock.mockRejectedValue(new Error("commit outcome unknown"));
+                if (recovery === "failed") recoveryMock.mockRejectedValue(new Error("handoff unknown"));
+                const ctx: any = { requestId: "public", billingRequestId: "immutable", workspaceId: "workspace", meta: {} };
+                const pending = recordUsageAndChargeOnce({ ctx, costNanos: 10, endpoint: "responses" });
+                await vi.runAllTimersAsync(); await pending;
+                expect(recordUsageAndChargeMock).toHaveBeenCalledTimes(3);
+                recordUsageAndChargeMock.mockResolvedValue(undefined);
+                const changed = { ...ctx, ...(field === "workspace" ? { workspaceId: "other" } : {}),
+                    ...(field === "request" ? { billingRequestId: "different" } : {}) };
+                await expect(recordUsageAndChargeOnce({ ctx: changed, costNanos: field === "amount" ? 20 : 10, endpoint: "responses" }))
+                    .rejects.toThrow("settlement_identity_conflict");
+                expect(recordUsageAndChargeMock).toHaveBeenCalledTimes(3);
+                await Promise.all(Array.from({ length: 16 }, () => recordUsageAndChargeOnce({ ctx: { ...ctx }, costNanos: 10, endpoint: "responses" })));
+                expect(recordUsageAndChargeMock).toHaveBeenCalledTimes(4);
+                expect(ctx.meta.__usageChargeRecorded).toBe(true);
+                expect(recoveryMock).toHaveBeenCalledOnce();
+            } finally { log.mockRestore(); vi.useRealTimers(); }
+        },
+    );
+
     it("passes the server-owned admission balance into settlement", async () => {
         const ctx: any = { requestId: "r", billingRequestId: "bill", workspaceId: "ws", meta: {},
             gating: { credit: { balanceNanos: 100_000_000_000_000 } }, rawBody: { creditSnapshotBalanceNanos: 1 } };

@@ -6,7 +6,7 @@ import type { PipelineContext } from "../before/types";
 
 const CHARGE_RETRY_DELAYS_MS = [0, 100, 500] as const;
 const DEBIT_TIMEOUT_MS = 5_000;
-type ChargeAttempt = { workspaceId: string; requestId: string; costNanos: number; promise: Promise<void> };
+type ChargeAttempt = { workspaceId: string; requestId: string; costNanos: number; promise?: Promise<void> };
 // Request-owned coordination only. Weak ownership cannot retain completed
 // request contexts for the isolate lifetime; Supabase still owns idempotency.
 const chargeAttempts = new WeakMap<object, ChargeAttempt>();
@@ -31,7 +31,7 @@ export async function recordUsageAndChargeOnce(args: {
 		if (existing.workspaceId !== ctx.workspaceId || existing.requestId !== ctx.billingRequestId || existing.costNanos !== costNanos) {
 			throw new Error("settlement_identity_conflict");
 		}
-		return existing.promise;
+		if (existing.promise) return existing.promise;
 	}
 	if (meta.__usageChargeRecorded === true) return;
 	const input = {
@@ -79,13 +79,14 @@ export async function recordUsageAndChargeOnce(args: {
 			attempts: CHARGE_RETRY_DELAYS_MS.length,
 		});
 	})();
-	const attempt = { workspaceId: input.workspaceId, requestId: input.requestId, costNanos, promise };
+	const attempt: ChargeAttempt = { workspaceId: input.workspaceId, requestId: input.requestId, costNanos, promise };
 	// Install before any caller can cross the credit barrier or dynamic import.
 	chargeAttempts.set(meta, attempt);
 	try { await promise; }
 	finally {
-		// Retain coalescing after a confirmed debit OR durable handoff. Otherwise
-		// allow a later retry with the same DB identity; this guard is memory-only.
-		if (meta.__usageChargeRecorded !== true && meta.__usageChargeRecoveryEnqueued !== true && chargeAttempts.get(meta) === attempt) chargeAttempts.delete(meta);
+		// An unconfirmed debit/handoff may have committed. Release only the
+		// attempt promise so a later retry can run; never forget its identity.
+		// Weak ownership bounds this memory-only fence to the request lifetime.
+		if (meta.__usageChargeRecorded !== true && meta.__usageChargeRecoveryEnqueued !== true && chargeAttempts.get(meta) === attempt) attempt.promise = undefined;
 	}
 }
