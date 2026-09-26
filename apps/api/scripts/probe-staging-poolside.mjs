@@ -1,6 +1,7 @@
 // Explicit operator-only probe: staging, two verified free Poolside routes,
 // twelve requests (fourteen with expiry check), <=16 requested output tokens,
 // disposable key, no wallet edits.
+// WARM_REUSE repeats one model/endpoint instead of expanding the request budget.
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { createHmac, randomBytes, randomUUID } from "node:crypto";
@@ -13,6 +14,8 @@ const gateway = "https://api-staging.phaseo.app";
 const workspace = "72528cb6-603a-4e70-853f-709ef81b4851";
 const models = ["poolside/laguna-xs-2.1:free", "poolside/laguna-s-2.1:free"];
 const checkWorkspaceExpiry = process.env.LIVE_PROVIDER_ENDPOINT_MATRIX_WORKSPACE_REFRESH === "1";
+const checkWarmReuse = process.env.LIVE_PROVIDER_ENDPOINT_MATRIX_WARM_REUSE === "1";
+assert.ok(!(checkWarmReuse && checkWorkspaceExpiry), "Probe modes must be isolated");
 async function query(path, method = "GET", body) {
     const response = await fetch(database + path, { method, signal: AbortSignal.timeout(15_000),
         headers: { apikey: env.SUPABASE_SERVICE_ROLE_KEY, authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
@@ -146,9 +149,12 @@ try {
         prefix: kid.slice(0, 6), status: "active", scopes: "[]", created_by: target.owner_user_id,
         expires_at: new Date(Date.now() + 15 * 60_000).toISOString() });
     created = true;
-    console.log(JSON.stringify({ event: "temporary_key_created", keyId: id, maximumRequests: checkWorkspaceExpiry ? 14 : 12 }));
-    const cases = models.flatMap(model => ["chat/completions", "responses", "messages"].flatMap(surface =>
-        [false, true].map(stream => ({ model, surface, stream, afterWorkspaceExpiry: false }))));
+    console.log(JSON.stringify({ event: "temporary_key_created", keyId: id, maximumRequests: checkWorkspaceExpiry ? 14 : 12,
+        mode: checkWarmReuse ? "warm_reuse" : "protocol_matrix" }));
+    const cases = checkWarmReuse
+        ? Array.from({ length: 12 }, (_, index) => ({ model: models[0], surface: "chat/completions", stream: index % 2 === 1, afterWorkspaceExpiry: false }))
+        : models.flatMap(model => ["chat/completions", "responses", "messages"].flatMap(surface =>
+            [false, true].map(stream => ({ model, surface, stream, afterWorkspaceExpiry: false }))));
     if (checkWorkspaceExpiry) cases.push(...models.map(model => ({ model, surface: "chat/completions", stream: false, afterWorkspaceExpiry: true })));
     for (const { model, surface, stream, afterWorkspaceExpiry } of cases) {
         if (afterWorkspaceExpiry && records.length === 12) {
@@ -181,6 +187,7 @@ try {
     assert.equal(logs.length, records.length, "Missing request logs");
     assert.ok(logs.every(row => row.status_code === 200 && row.success && row.provider === "poolside" && models.includes(row.model_id) && Number(row.cost_nanos) === 0), "Charge/provider/result verification failed");
     console.log(JSON.stringify({ event: "protocol_matrix_pass", requests: records.length, zeroCostVerified: true,
+        mode: checkWarmReuse ? "warm_reuse" : "protocol_matrix",
         routingMs: logs.map(row => row.detail_metadata?.response_timeline?.routing_ms ?? null) }));
     if (process.env.LIVE_PROVIDER_ENDPOINT_MATRIX_DISCOVERY === "1") {
         for (const path of ["providers?limit=2", "pricing/models"]) {

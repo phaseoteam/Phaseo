@@ -837,7 +837,7 @@ async function initializeMatrix() {
 await initializeMatrix();
 
 describe.skipIf(!LIVE_RUN || !LIVE_MATRIX_RUN || !LIVE_POOLSIDE_STAGING)("Bounded Poolside staging protocol matrix", () => {
-    it("verifies both free models across text protocols with disposable authentication", async () => {
+    it("verifies configured free staging cases with disposable authentication", async () => {
         const envFiles: unknown = JSON.parse(process.env.LIVE_PROVIDER_ENDPOINT_MATRIX_OPERATOR_ENV_FILES ?? "[]");
         if (!Array.isArray(envFiles) || envFiles.length !== 2 || !envFiles.every(file => typeof file === "string" && path.isAbsolute(file))) {
             throw new Error("Provide exactly two absolute operator env-file paths; never inline credentials");
