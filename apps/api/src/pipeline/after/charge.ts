@@ -3,7 +3,7 @@
 // How: Tracks per-request charge attempts on pipeline context metadata.
 
 import type { PipelineContext } from "../before/types";
-import { hasFreeModelFee, freeModelFeeNanos, settleFreeModelFee } from "@/core/free-model-fee";
+import { hasFreeModelFee, hasFreeModelSettlement, freeModelFeeNanos, settleFreeModelFee } from "@/core/free-model-fee";
 import { recordSettlement, recordSettlementAttempt } from "@/runtime/request-operations";
 
 const CHARGE_RETRY_DELAYS_MS = [0, 100, 500] as const;
@@ -28,7 +28,7 @@ export async function recordUsageAndChargeOnce(args: {
 	if (hasFreeModelFee(ctx) && (!Number.isSafeInteger(args.costNanos) || args.costNanos < freeModelFeeNanos(ctx))) {
 		throw new Error("free_model_fee_pricing_mismatch");
 	}
-	const feeNanos = hasFreeModelFee(ctx) ? await settleFreeModelFee(ctx, true) : 0;
+	const feeNanos = hasFreeModelSettlement(ctx) ? await settleFreeModelFee(ctx, true) : 0;
 	const costNanos = args.costNanos - feeNanos;
 	if (!Number.isFinite(costNanos) || costNanos <= 0) return;
 

@@ -4,6 +4,7 @@
 
 import { getBindings, getSupabaseAdmin, dispatchBackground, configureRuntime, clearRuntime, getCache } from "@/runtime/env";
 import { keyVersionToken } from "@/core/kv";
+import { measureDispatchStage } from "@/runtime/request-operations";
 import {
 	resolveActiveKeyPepper,
 	resolveKeyPepperCandidates,
@@ -377,16 +378,16 @@ export async function authenticate(req: Request, options: AuthenticateOptions = 
     };
     const fetchFreshKeyRow = async (): Promise<KeyRow | "db_error" | null> => {
         try {
-            return lookupVersion === null ? await readSource() : await readAuthKeySource(parsed.kid, lookupVersion, readSource);
+            return await measureDispatchStage("auth.source", () => lookupVersion === null ? readSource() : readAuthKeySource(parsed.kid, lookupVersion, readSource));
         } catch { return "db_error"; }
     };
 
     if (useKvCache) {
         try {
-            lookupVersion = await keyVersionToken("kid", parsed.kid, {
+            lookupVersion = await measureDispatchStage("auth.version", () => keyVersionToken("kid", parsed.kid, {
                 useL1Cache: true,
                 l1TtlMs: KEY_VERSION_L1_TTL_MS,
-            });
+            }));
         } catch {
             // Unknown version: use the authoritative database without reading
             // or filling any credential cache, especially an older v0 entry.
@@ -400,7 +401,7 @@ export async function authenticate(req: Request, options: AuthenticateOptions = 
                 return { ...lease, internal: isInternalRequestAuthorized(req, bindings) };
             }
         }
-        const cachedLookup = lookupVersion === null ? null : await getCachedKey(parsed.kid, lookupVersion);
+        const cachedLookup = lookupVersion === null ? null : await measureDispatchStage("auth.cache", () => getCachedKey(parsed.kid, lookupVersion!));
         if (cachedLookup) {
             keyRow = cachedLookup;
             keyRowSource = "cache";

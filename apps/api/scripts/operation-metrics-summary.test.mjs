@@ -2,6 +2,19 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { operationMetricsSummary } from "./operation-metrics-summary.mjs";
 
+test("waterfall summaries bound cardinality, validate intervals and strip arbitrary fields", () => {
+    const valid = { stage: "context.private", startMs: 0, endMs: 30, state: "fulfilled", secret: "private-data" };
+    const pending = { stage: "auth.source", startMs: 3, endMs: null, state: "pending" };
+    const summary = operationMetricsSummary({ requestId: "test", dispatchTimings: [valid, pending,
+        { ...valid, stage: "private-data" }, { ...valid, startMs: -1 }, { ...valid, endMs: -1 },
+        { ...valid, state: "private-data" }, { ...valid, endMs: Infinity }, { ...pending, endMs: 5 }, null] });
+    assert.deepEqual(summary.dispatchTimings, [{ stage: "context.private", startMs: 0, endMs: 30, state: "fulfilled" }, pending]);
+    assert.ok(!JSON.stringify(summary).includes("private-data"));
+    const capped = operationMetricsSummary({ requestId: "test", dispatchTimings: Array(100).fill(valid) });
+    assert.equal(capped.dispatchTimings.length, 64);
+    assert.equal(capped.dispatchTimingsOverflow, true);
+});
+
 test("settlement attribution exposes only bounded fields, never financial identities or raw errors", () => {
     for (const state of ["pending", "confirmed", "recovery_queued", "unresolved"]) {
         const summary = operationMetricsSummary({ requestId: "test-request", settlement: {

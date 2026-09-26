@@ -27,16 +27,16 @@ export function parseFreeQuotaState(raw: string): FreeQuotaState {
     return value;
 }
 export type FreeQuotaDecision =
-    | { allowed: true; mode: "included" | "overage"; feeNanos: number; remaining: number; policyVersion: number }
+    | { allowed: true; mode: "included" | "overage"; feeNanos: number; remaining: number; policyVersion: number; reservationId?: string }
     | { allowed: false; reason: "rpm_limit" | "daily_limit"; retryAfterSeconds: number };
 
 export function initialFreeQuota(now: number): FreeQuotaState {
     return { day: Math.floor(now / DAY_MS), used: 0, tokens: FREE_MODEL_RPM, updatedAt: now, allowOverage: false, policyVersion: 0 };
 }
 
-/** Pure transition; caller persists next before acknowledging. No refund RPC on
- * the normal path: an admitted gateway attempt consumes allowance, even if the
- * provider subsequently fails. Internal fallback reuses this admission. */
+/** Pure admission transition. Used includes in-flight reservations; the owner
+ * coordinator releases failures and retains successful completions. RPM tokens
+ * are never refunded. Internal provider fallback reuses the same reservation. */
 export function decideFreeQuota(state: FreeQuotaState, clock: number): { decision: FreeQuotaDecision; next?: FreeQuotaState } {
     const now = Math.max(clock, state.updatedAt); // Clock regression cannot refill/reset quota.
     const day = Math.floor(now / DAY_MS);

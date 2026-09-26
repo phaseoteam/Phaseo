@@ -25,6 +25,18 @@ const fixture = () => ({
 });
 
 describe("compact public routing snapshots", () => {
+    it("normalizes lifecycle metadata without losing provider geographic restrictions", () => {
+        const value = fixture();
+        Object.assign(value.variants[0].providers[0], { availability: { status: "available", announcement_date: "2026-09-22" } });
+        const parsed = publicCatalogSchema.parse(value);
+        expect(parsed.variants[0].providers[0].availability).toBeNull();
+        expect(parsed.providerRows[0].metadata?.availability).toEqual(fixture().providerRows[0].metadata.availability);
+    });
+    it("does not silently discard malformed geographic objects", () => {
+        const value = fixture();
+        Object.assign(value.variants[0].providers[0], { availability: { status: "available", countries: ["US"] } });
+        expect(publicCatalogSchema.safeParse(value).success).toBe(false);
+    });
     it("preserves routing, capabilities, pricing conditions and cancellation policy", () => {
         expect(publicCatalogSchema.parse(fixture())).toEqual(fixture());
     });

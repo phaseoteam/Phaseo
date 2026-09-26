@@ -3,11 +3,13 @@ import { getBindingsIfConfigured } from "@/runtime/env";
 import { countOperation } from "@/runtime/request-operations";
 import { FreeModelReservationIdentitySchema, type FreeModelReservationIdentity } from "./free-model-fee-identity";
 import { FREE_MODEL_OVERAGE_NANOS } from "./free-model-quota";
+import { hasIncludedQuota, markIncludedQuota, finishIncludedQuota } from "./free-model-included";
 
 type Fee = { owner: string; identity: FreeModelReservationIdentity; authorized: boolean;
     billable: boolean; outcome?: "capture" | "release"; pending?: Promise<void> };
 const fees = new WeakMap<PipelineContext, Fee>();
 export function hasFreeModelFee(ctx: PipelineContext): boolean { return fees.has(ctx); }
+export function hasFreeModelSettlement(ctx: PipelineContext): boolean { return fees.has(ctx) || hasIncludedQuota(ctx); }
 export function freeModelFeeNanos(ctx: PipelineContext): number {
     const fee = fees.get(ctx);
     return fee?.authorized && fee.billable ? FREE_MODEL_OVERAGE_NANOS : 0;
@@ -35,6 +37,7 @@ export async function authorizeFreeModelFee(ctx: PipelineContext, policyVersion:
 
 /** Called only after successful-response suppression and provider discounts. */
 export function applyFreeModelFee<T extends { pricedUsage: any; totalNanos: number; totalCents: number; billingSuppressed: boolean }>(ctx: PipelineContext, priced: T): T {
+    markIncludedQuota(ctx, !priced.billingSuppressed);
     const fee = fees.get(ctx);
     if (!fee?.authorized) return priced;
     fee.billable = !priced.billingSuppressed;
@@ -61,6 +64,7 @@ export function freeModelFeeAudit(ctx: PipelineContext): Record<string, string> 
 
 /** Success is a fixed fee captured from its hold, not a second ordinary debit. */
 export async function settleFreeModelFee(ctx: PipelineContext, success: boolean): Promise<number> {
+    await finishIncludedQuota(ctx, success);
     const fee = fees.get(ctx);
     if (!fee) return 0;
     const outcome = success && fee.authorized && fee.billable ? "capture" : "release";

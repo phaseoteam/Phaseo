@@ -27,8 +27,6 @@ import {
 } from "../../google/shared/thinking";
 import { googleUsageMetadataToIRUsage } from "@providers/google-ai-studio/usage";
 import { encodeOpenAIChatResponse } from "@protocols/openai-chat/encode";
-import { createSyntheticResponsesStreamFromIR } from "@executors/_shared/text-generate/synthetic-responses-stream";
-import { buildSyntheticServerToolStream } from "@pipeline/surfaces/server-tools.stream";
 import { sanitizeGeminiSchema } from "@executors/google/shared/schema";
 import { supportsTextProviderInteractionsModel } from "@providers/textProfiles";
 import { readSseEvents, sseReadable, SseProtocolError } from "@core/sse";
@@ -1068,10 +1066,8 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	// fully supported generateContent path for other active models and explicit caches.
 	const modelCandidates = resolveGoogleModelCandidates(requestedModel);
 	let model = modelCandidates[0] || "gemini-2.0-flash-exp";
-	let forceSyntheticStream = Boolean(ir.stream) && (
-		isGeminiImageModelName(model) ||
-		(ir.googleCachedContent === undefined && supportsGoogleInteractions(model))
-	);
+	// Streaming is independent of persistence. Interactions supports native SSE
+	// with store:false; never wait for a complete JSON response to synthesize it.
 
 	// Google AI Studio base URL (allow env override for proxy/self-host routing)
 	const baseRoot = String(
@@ -1084,10 +1080,9 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	const makeEndpoint = (
 		candidateModel: string,
 		isInteractionsRequest: boolean,
-		candidateForceSyntheticStream: boolean,
 	) => {
 		if (isInteractionsRequest) return `${baseUrl}/interactions`;
-		return Boolean(ir.stream) && !candidateForceSyntheticStream
+		return Boolean(ir.stream)
 			? `${baseUrl}/models/${encodeURIComponent(candidateModel)}:streamGenerateContent?alt=sse`
 			: `${baseUrl}/models/${encodeURIComponent(candidateModel)}:generateContent`;
 	};
@@ -1106,17 +1101,13 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		const doRequest = async (candidateModel: string) => {
 			const isInteractionsRequest =
 				ir.googleCachedContent === undefined && supportsGoogleInteractions(candidateModel);
-			const candidateForceSyntheticStream = Boolean(ir.stream) && (
-				isGeminiImageModelName(candidateModel) ||
-				isInteractionsRequest
-			);
 			const requestBody = isInteractionsRequest
 				? await irToGemini(ir, candidateModel, args.upstreamTiming)
 				: await irToLegacyGemini(ir, candidateModel, args.upstreamTiming);
-			if (isInteractionsRequest && Boolean(ir.stream) && !candidateForceSyntheticStream) {
+			if (isInteractionsRequest && Boolean(ir.stream)) {
 				requestBody.stream = true;
 			}
-			const endpoint = makeEndpoint(candidateModel, isInteractionsRequest, candidateForceSyntheticStream);
+			const endpoint = makeEndpoint(candidateModel, isInteractionsRequest);
 			const response = await fetchUpstream(args, endpoint, {
 				method: "POST",
 				headers: {
@@ -1126,7 +1117,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 				},
 				body: JSON.stringify(requestBody),
 			});
-			return { candidateModel, requestBody, response, candidateForceSyntheticStream };
+			return { candidateModel, requestBody, response };
 		};
 
 		let attempted: Awaited<ReturnType<typeof doRequest>> | null = null;
@@ -1155,7 +1146,6 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		}
 
 		model = attempted.candidateModel;
-		forceSyntheticStream = attempted.candidateForceSyntheticStream;
 		const googleInteractionRequest = attempted.requestBody;
 		const response = attempted.response;
 		const selectedDispatchAtMs =
@@ -1179,69 +1169,12 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 			};
 		}
 
-		if (forceSyntheticStream) {
-			const rawData = await response.json();
-			const data = normalizeGeminiResponsePayload(rawData);
-			const irResponse = providerPayloadToIR(data, requestId, model, providerId);
-			applyGoogleOutputTokenFallback(irResponse);
-			const bill: any = {
-				cost_cents: 0,
-				currency: "USD",
-			};
-			const usageMeters = normalizeTextUsageForPricing(irResponse.usage ?? data?.usageMetadata);
-			if (usageMeters) {
-				bill.usage = usageMeters;
-			}
-			if (!hasUsableIRResponse(irResponse)) {
-				return {
-					kind: "completed",
-					ir: irResponse,
-					upstream: response,
-					bill,
-					keySource: keyInfo.source,
-					byokKeyId: keyInfo.byokId,
-					mappedRequest,
-					rawResponse: rawData,
-				};
-			}
-
-			const totalMs = Date.now() - selectedDispatchAtMs;
-			const finalPayload = encodeOpenAIChatResponse(irResponse, requestId);
-			const protocol = args.protocol ?? (args.endpoint === "responses" ? "openai.responses" : "openai.chat.completions");
-			const stream =
-				protocol === "openai.chat.completions"
-					? buildSyntheticServerToolStream({
-						protocol,
-						payload: finalPayload,
-						requestId,
-						model,
-						created: finalPayload.created,
-					})
-					: createSyntheticResponsesStreamFromIR(irResponse, requestId);
-
-			if (!stream) {
-				throw new Error("google_ai_studio_synthetic_stream_failed");
-			}
-
-			return {
-				kind: "stream",
-				stream,
-				streamAlreadyTransformed: true,
-				upstream: response,
-				bill,
-				keySource: keyInfo.source,
-				byokKeyId: keyInfo.byokId,
-				mappedRequest,
-				usageFinalizer: async () => bill.usage ?? null,
-				timing: {
-					latencyMs: undefined,
-					generationMs: totalMs,
-				},
-			};
-		}
-
 		const contentType = String(response.headers.get("content-type") || "").toLowerCase();
 		const isJsonResponse = contentType.includes("application/json") && !contentType.includes("text/event-stream");
+		if (ir.stream && isJsonResponse) {
+			await response.body?.cancel();
+			throw new Error("google_stream_expected_sse");
+		}
 
 		if (response.body && !isJsonResponse) {
 			if (ir.stream) {
@@ -1253,6 +1186,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 				return {
 					kind: "stream",
 					stream: transformedStream,
+					streamAlreadyTransformed: true,
 					bill: { cost_cents: 0, currency: "USD" },
 					upstream: response,
 					keySource: keyInfo.source,

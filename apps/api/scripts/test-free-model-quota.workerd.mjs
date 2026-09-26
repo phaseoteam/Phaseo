@@ -34,7 +34,8 @@ try {
     const admissions = await Promise.all(Array.from({ length: 32 }, () => request('/admit')));
     assert.equal(admissions.filter(r => r.allowed).length, 25);
     const used = await request('/settings');
-    assert.equal(used.requestsUsedToday, 25);
+    assert.equal(used.requestsUsedToday, 0);
+    assert.equal(used.requestsPending, 25);
     const inspected = await request('/inspect');
     assert.equal(inspected.rows.length, 1);
     assert.equal(inspected.alarm, null);
@@ -44,7 +45,8 @@ try {
     assert.equal((await request('/set?enabled=true&version=0')).updated, false);
     await request('/restart');
     const restored = await request('/settings');
-    assert.equal(restored.requestsUsedToday, 25);
+    assert.equal(restored.requestsUsedToday, 0);
+    assert.equal(restored.requestsPending, 25);
     assert.equal(restored.allowOverage, false);
     assert.equal(restored.policyVersion, 2);
     assert.equal((await request('/admit')).allowed, false);

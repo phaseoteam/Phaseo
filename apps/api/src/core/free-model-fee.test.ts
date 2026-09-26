@@ -1,22 +1,34 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { PipelineContext } from "@/pipeline/before/types";
-const mocks = vi.hoisted(() => ({ enabled: "true", prepare: vi.fn(), finish: vi.fn(), get: vi.fn(), debit: vi.fn(), count: vi.fn() }));
+const mocks = vi.hoisted(() => ({ enabled: "true", prepare: vi.fn(), finish: vi.fn(), included: vi.fn(), get: vi.fn(), debit: vi.fn(), count: vi.fn() }));
 vi.mock("@/runtime/env", () => ({ getBindingsIfConfigured: () => ({ GATEWAY_FREE_MODEL_OVERAGE_ENABLED: mocks.enabled,
     FREE_MODEL_QUOTA: { getByName: mocks.get } }) }));
 vi.mock("@/runtime/request-operations", () => ({ countOperation: mocks.count, recordSettlement: vi.fn(), recordSettlementAttempt: vi.fn() }));
 vi.mock("@/pipeline/pricing/persist", () => ({ recordUsageAndCharge: mocks.debit }));
 import { authorizeFreeModelFee, applyFreeModelFee, releaseFailedFreeModelFee, freeModelFeeAudit, settleFreeModelFee } from "./free-model-fee";
 import { recordUsageAndChargeOnce } from "@/pipeline/after/charge";
+import { registerIncludedQuota } from "./free-model-included";
 const context = () => ({ workspaceId: "10000000-0000-4000-8000-000000000001", workspaceOwnerUserId: "10000000-0000-4000-8000-000000000002",
     keyId: "20000000-0000-4000-8000-000000000001", billingRequestId: "private-server", requestId: "public-client",
     responseCache: { enabled: true }, meta: {} } as PipelineContext);
 const priced = (totalNanos = 0, billingSuppressed = false) => ({ pricedUsage: { output_tokens: 1, pricing: { lines: [], total_nanos: totalNanos } }, totalNanos, totalCents: 0, billingSuppressed });
 beforeEach(() => {
     vi.clearAllMocks(); mocks.enabled = "true";
-    mocks.get.mockReturnValue({ prepareFee: mocks.prepare, finishFee: mocks.finish });
+    mocks.get.mockReturnValue({ prepareFee: mocks.prepare, finishFee: mocks.finish, finishIncluded: mocks.included });
+    mocks.included.mockResolvedValue({ settled: true });
     mocks.prepare.mockResolvedValue({ allowed: true }); mocks.finish.mockResolvedValue({ settled: true, review: false });
 });
 describe("free fee lifecycle", () => {
+    it.each([false, true])("settles included quota with billing suppression=%s, never debiting money", async suppressed => {
+        const ctx = context(); registerIncludedQuota(ctx, "included-reservation");
+        const cost = applyFreeModelFee(ctx, priced(0, suppressed));
+        expect(cost.totalNanos).toBe(0);
+        await recordUsageAndChargeOnce({ ctx, costNanos: cost.totalNanos, endpoint: "responses" });
+        await releaseFailedFreeModelFee(ctx);
+        expect(mocks.included).toHaveBeenCalledExactlyOnceWith("included-reservation", !suppressed);
+        expect(mocks.prepare).not.toHaveBeenCalled(); expect(mocks.finish).not.toHaveBeenCalled();
+        expect(mocks.debit).not.toHaveBeenCalled();
+    });
     it("keeps included/disabled inference free of coordinator calls", async () => {
         const ctx = context(), cost = priced(); mocks.enabled = "false";
         expect(await authorizeFreeModelFee(ctx, 0)).toBe(false);

@@ -1,10 +1,11 @@
 import { getBindingsIfConfigured } from "@/runtime/env";
-import { countOperation, recordQuotaAdmission, type QuotaAdmissionOutcome } from "@/runtime/request-operations";
+import { countOperation, recordQuotaAdmission, measureDispatchStage, type QuotaAdmissionOutcome } from "@/runtime/request-operations";
 import { FREE_MODEL_DAILY_ALLOWANCE, FREE_MODEL_OVERAGE_NANOS, type FreeQuotaDecision } from "@/core/free-model-quota";
 import { isFreePriceCard } from "../pricing/free";
 import type { PriceCard } from "../pricing";
 import type { PipelineContext } from "../before/types";
 import { authorizeFreeModelFee, releaseFailedFreeModelFee } from "@/core/free-model-fee";
+import { registerIncludedQuota } from "@/core/free-model-included";
 
 // Request-owned only, never cached between HTTP requests. Failed/ambiguous RPCs
 // remain failed for every fallback; automatic retries could consume quota twice.
@@ -23,7 +24,8 @@ function isQuotaDecision(value: unknown): value is FreeQuotaDecision {
     if (reply.allowed !== true || typeof reply.policyVersion !== "number"
         || !Number.isSafeInteger(reply.policyVersion) || reply.policyVersion < 0
         || typeof reply.remaining !== "number" || !Number.isSafeInteger(reply.remaining) || reply.remaining < 0) return false;
-    return (reply.mode === "included" && reply.feeNanos === 0 && reply.remaining < FREE_MODEL_DAILY_ALLOWANCE)
+    return (reply.mode === "included" && reply.feeNanos === 0 && reply.remaining < FREE_MODEL_DAILY_ALLOWANCE
+        && typeof reply.reservationId === "string" && OWNER_ID.test(reply.reservationId))
         || (reply.mode === "overage" && reply.feeNanos === FREE_MODEL_OVERAGE_NANOS && reply.remaining === 0);
 }
 function denied(code: string, status: number, retryAfter?: number): Response {
@@ -58,11 +60,11 @@ export async function guardFreeModelAdmission(ctx: PipelineContext, card: PriceC
         }
         try {
             // The edge guard sheds abusive local bursts. The DO owns global quota.
-            const edge = await env.FREE_MODEL_RATE_LIMITER.limit({ key: owner });
+            const edge = await measureDispatchStage("quota.edge", () => env.FREE_MODEL_RATE_LIMITER!.limit({ key: owner }));
             if (edge?.success === false) return quotaDenied("edge_limited", "free_model_rate_limit", 429, 60);
             if (edge?.success !== true) return quotaDenied("unavailable", "free_model_quota_unavailable", 503);
             countOperation("quotaRpc");
-            const decision = await env.FREE_MODEL_QUOTA.getByName(`owner:${owner}`).admit();
+            const decision = await measureDispatchStage<FreeQuotaDecision>("quota.admission", () => env.FREE_MODEL_QUOTA!.getByName(`owner:${owner}`).admit());
             if (!isQuotaDecision(decision)) return quotaDenied("unavailable", "free_model_quota_unavailable", 503);
             if (decision.allowed === false) return quotaDenied(decision.reason === "rpm_limit" ? "rpm_limited" : "daily_limited",
                 `free_model_${decision.reason}`, 429, decision.retryAfterSeconds);
@@ -74,6 +76,7 @@ export async function guardFreeModelAdmission(ctx: PipelineContext, card: PriceC
                 recordQuotaAdmission("overage");
                 return null;
             }
+            registerIncludedQuota(ctx, decision.reservationId!);
             recordQuotaAdmission("included");
             return null;
         } catch {

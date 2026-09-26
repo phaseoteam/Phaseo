@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { normalizeProviderAvailability } from "./providerAvailability";
 
 export const PUBLIC_CATALOG_MAX_AGE_MS = 300_000;
 export const PUBLIC_CATALOG_MAX_BYTES = 256_000;
@@ -7,11 +8,11 @@ const number = z.number().finite().nullable().optional();
 const boolean = z.boolean().nullable().optional();
 const strings = z.array(z.string().max(2048)).max(512).nullable().optional();
 const record = z.record(z.string(), z.unknown());
-const availability = z.union([z.string(), z.object({
+const availability = z.preprocess(normalizeProviderAvailability, z.union([z.string(), z.object({
     mode: z.string(), countries: strings, country_source: text, unknown_country: text,
     blocked_subdivisions: strings, unknown_subdivision: text, reason: text,
     source_url: text, effective_from: text, effective_to: text,
-})]).nullable().optional();
+})]).nullable().optional());
 
 // Deliberately enumerate routing fields. Adding UI/admin fields to the database
 // projection must not silently publish them into a shared cache.

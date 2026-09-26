@@ -65,7 +65,7 @@ function FreeModelSettingsForOwner({ userId }: { userId: string | null }) {
                             <div className="border-t px-4 py-3.5 text-sm text-muted-foreground">
                                 Resets {new Date(data.resetsAtMs).toLocaleString(undefined, { timeZone: "UTC" })} UTC.
                                 {" "}{data.rpm}-request burst, refilling at {data.rpm} per minute.
-                                {" "}Admitted requests count even if the provider fails; internal retries count once.
+                                {" "}Only successful requests count. In-flight requests reserve a slot; failed requests return it. Rate limits still count attempts.
                             </div>
                             <div className="flex flex-col gap-3 border-t px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between">
                                 <div><h2 className="text-sm font-medium">Paid overage</h2>

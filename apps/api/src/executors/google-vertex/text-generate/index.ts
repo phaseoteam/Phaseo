@@ -124,6 +124,10 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 
 	const contentType = String(res.headers.get("content-type") || "").toLowerCase();
 	const isJsonResponse = contentType.includes("application/json") && !contentType.includes("text/event-stream");
+	if (irRequest.stream && isJsonResponse) {
+		await res.body?.cancel();
+		throw vertexError("google_vertex_stream_expected_sse");
+	}
 
 	if (res.body && !isJsonResponse) {
 		if (irRequest.stream) {

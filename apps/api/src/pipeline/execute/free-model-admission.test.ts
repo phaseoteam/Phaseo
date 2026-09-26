@@ -5,7 +5,7 @@ import type { PriceCard } from "../pricing";
 const mocks = vi.hoisted(() => ({ enabled: "true", admit: vi.fn(), limit: vi.fn(), getByName: vi.fn(), count: vi.fn(), outcome: vi.fn() }));
 vi.mock("@/runtime/env", () => ({ getBindingsIfConfigured: () => ({ GATEWAY_FREE_MODEL_QUOTA_ENABLED: mocks.enabled,
     FREE_MODEL_QUOTA: { getByName: mocks.getByName }, FREE_MODEL_RATE_LIMITER: { limit: mocks.limit } }) }));
-vi.mock("@/runtime/request-operations", () => ({ countOperation: mocks.count, recordQuotaAdmission: mocks.outcome }));
+vi.mock("@/runtime/request-operations", async importOriginal => ({ ...await importOriginal<typeof import("@/runtime/request-operations")>(), countOperation: mocks.count, recordQuotaAdmission: mocks.outcome }));
 const owner = "10000000-0000-4000-8000-000000000001";
 const free = { rules: [{ pricing_plan: "free", price_per_unit: "0" }] } as PriceCard;
 const paid = { rules: [{ pricing_plan: "standard", price_per_unit: "1" }] } as PriceCard;
@@ -13,10 +13,20 @@ const ctx = (workspaceId = "ws-a") => ({ workspaceId, workspaceOwnerUserId: owne
 beforeEach(() => {
     vi.clearAllMocks(); mocks.enabled = "true";
     mocks.getByName.mockReturnValue({ admit: mocks.admit });
-    mocks.admit.mockResolvedValue({ allowed: true, mode: "included", feeNanos: 0, remaining: 1499, policyVersion: 0 });
+    mocks.admit.mockResolvedValue({ allowed: true, mode: "included", feeNanos: 0, remaining: 1499, policyVersion: 0, reservationId: owner });
     mocks.limit.mockResolvedValue({ success: true });
 });
 describe("free-model routing admission", () => {
+    it("records only the edge and coordinator intervals without owner identifiers", async () => {
+        const { RequestOperations, withRequestOperations } = await import("@/runtime/request-operations");
+        const metrics = new RequestOperations();
+        await withRequestOperations(metrics, () => guardFreeModelAdmission(ctx(), free, "gateway"));
+        const timings = metrics.snapshot().dispatchTimings;
+        expect(timings.map(timing => timing.stage)).toEqual(["quota.edge", "quota.admission"]);
+        expect(timings.every(timing => timing.state === "fulfilled")).toBe(true);
+        expect(JSON.stringify(timings)).not.toContain(owner);
+        expect(mocks.admit).toHaveBeenCalledOnce();
+    });
     it("shares the owner's object across workspaces, never by API key", async () => {
         await guardFreeModelAdmission(ctx(), free, "gateway");
         await guardFreeModelAdmission(ctx("ws-b"), free, "gateway");
@@ -69,7 +79,7 @@ describe("free-model routing admission", () => {
         expect(mocks.outcome).toHaveBeenCalledExactlyOnceWith("overage_blocked");
     });
     it("accepts the final included slot and valid denial boundaries", async () => {
-        mocks.admit.mockResolvedValue({ allowed: true, mode: "included", feeNanos: 0, remaining: 0, policyVersion: 1 });
+        mocks.admit.mockResolvedValue({ allowed: true, mode: "included", feeNanos: 0, remaining: 0, policyVersion: 1, reservationId: owner });
         expect(await guardFreeModelAdmission(ctx(), free, "gateway")).toBeNull();
         for (const [reason, retryAfterSeconds] of [["rpm_limit", 1], ["daily_limit", 86_400]] as const) {
             mocks.admit.mockResolvedValue({ allowed: false, reason, retryAfterSeconds });
