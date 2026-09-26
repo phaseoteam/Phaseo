@@ -170,6 +170,18 @@ function dispatchNonStreamSuccessSideEffects(args: {
     }
     dispatchBackground((async () => {
         try {
+            // Settlement and audit must not wait behind optional cache/hint I/O.
+            // Keep the charge helper's credit-fill barrier and identity fence.
+            await recordUsageAndChargeOnce({ ctx, costNanos: totalNanos, endpoint: ctx.endpoint });
+            await recordManagedProviderTokensOnce({
+                ctx, providerId: result.provider, keySource: result.keySource,
+                usage: usageForBilling, reservation: result.providerRateLimitReservation,
+            });
+            await handleSuccessAudit(
+                ctx, result, false, usageForBilling, totalCents, totalNanos, currency,
+                finishReason, result.upstream.status, nativeResponseId, gatewayPayload,
+            );
+
             try {
                 const responseCache = getResponseCache();
                 const cacheState = ctx.responseCache;
@@ -232,33 +244,6 @@ function dispatchNonStreamSuccessSideEffects(args: {
                     error: error instanceof Error ? error.message : String(error),
                 });
             }
-
-            await recordUsageAndChargeOnce({
-                ctx,
-                costNanos: totalNanos,
-                endpoint: ctx.endpoint,
-            });
-			await recordManagedProviderTokensOnce({
-				ctx,
-				providerId: result.provider,
-				keySource: result.keySource,
-				usage: usageForBilling,
-				reservation: result.providerRateLimitReservation,
-			});
-
-            await handleSuccessAudit(
-                ctx,
-                result,
-                false,
-                usageForBilling,
-                totalCents,
-                totalNanos,
-                currency,
-                finishReason,
-                result.upstream.status,
-                nativeResponseId,
-                gatewayPayload,
-            );
 
         } finally {
             releaseRuntime();
@@ -634,4 +619,3 @@ async function handleNonStreamResponse(
     const responseStatus = result.upstream.status;
     return ctx.timer.span("after_create_response", () => createResponse(responseBody, responseStatus, headers));
 }
-
