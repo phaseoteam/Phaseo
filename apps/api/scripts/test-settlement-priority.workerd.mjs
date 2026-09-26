@@ -8,6 +8,7 @@ const fixtures = {
     state: `import {AsyncLocalStorage} from 'node:async_hooks'; export const scope=new AsyncLocalStorage();
         export const event=async name=>{const s=scope.getStore();s.events.push(name);if(name===s.stall)await s.gate;};`,
     env: `import {scope,event} from 'fixture-state';
+        export const getBindingsIfConfigured=()=>undefined;
         export const getSupabaseAdmin=()=>{throw new Error('Unexpected source call in local fixture');};
         export const ensureRuntimeForBackground=()=>()=>scope.getStore().events.push('release');
         export const dispatchBackground=p=>{scope.getStore().tasks.push(p);void p.catch(()=>{});};

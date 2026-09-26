@@ -25,21 +25,21 @@ export default function FreeModelSettings() {
 function FreeModelSettingsForOwner({ userId }: { userId: string | null }) {
     const client = useQueryClient();
     const options = privateSettingsOptions({ userId, workspaceId: null }, path);
-    async function readOrDisable(signal?: AbortSignal, expectedVersion?: number) {
+    async function readOrUpdate(signal?: AbortSignal, change?: { allowOverage: boolean; expectedVersion: number }) {
         const { data } = await createClient().auth.getSession();
         if (!userId || data.session?.user.id !== userId) throw new WebApiError(path, 401);
         signal?.throwIfAborted();
         return fetchAccountWebApi<{ data: QuotaSettings }>(path,
             process.env.NODE_ENV === "development" ? null : data.session.access_token, {
-                signal, ...(expectedVersion === undefined ? {} : {
-                    method: "PATCH", body: JSON.stringify({ allowOverage: false, expectedVersion }),
+                signal, ...(change === undefined ? {} : {
+                    method: "PATCH", body: JSON.stringify(change),
                 }),
             });
     }
     const query = useQuery({ ...options, enabled: Boolean(userId), staleTime: 0, gcTime: 0, retry: false,
-        queryFn: ({ signal }) => readOrDisable(signal) });
+        queryFn: ({ signal }) => readOrUpdate(signal) });
     const mutation = useMutation({ retry: false, gcTime: 0,
-        mutationFn: (version: number) => readOrDisable(undefined, version),
+        mutationFn: (change: { allowOverage: boolean; expectedVersion: number }) => readOrUpdate(undefined, change),
     });
     const refresh = async () => {
         const result = await query.refetch();
@@ -69,18 +69,22 @@ function FreeModelSettingsForOwner({ userId }: { userId: string | null }) {
                             </div>
                             <div className="flex flex-col gap-3 border-t px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between">
                                 <div><h2 className="text-sm font-medium">Paid overage</h2>
-                                    <p className="mt-0.5 text-sm text-muted-foreground">Paid overage is not available. Requests stop at the included limit.</p>
-                                    {data.allowOverage ? <p className="text-sm">Previously saved consent is enabled, but charging remains disabled.</p> : null}
+                                    <p className="mt-0.5 text-sm text-muted-foreground">{data.overageAvailable
+                                        ? `$${(data.overageFeeNanos * 1000 / 1e9).toFixed(2)} per 1,000 successful requests after your included allowance, charged to the requesting workspace. Failed requests are not charged.`
+                                        : "Paid overage is not available. Requests stop at the included limit."}</p>
+                                    {data.allowOverage && !data.overageAvailable ? <p className="text-sm">Previously saved consent is enabled, but charging remains disabled.</p> : null}
                                 </div>
-                                {data.allowOverage ? <Button variant="outline" disabled={mutation.isPending || query.isFetching || Boolean(mutation.error || query.error)}
-                                    onClick={() => mutation.mutate(data.policyVersion, {
+                                {data.allowOverage || data.overageAvailable ? <Button variant="outline" disabled={mutation.isPending || query.isFetching || Boolean(mutation.error || query.error)}
+                                    onClick={() => mutation.mutate({ allowOverage: !data.allowOverage, expectedVersion: data.policyVersion }, {
                                         // Observer callbacks stop on unmount; a late reply must not restore a previous owner's cache.
                                         onSuccess: result => client.setQueryData(options.queryKey, result),
-                                    })}>{mutation.isPending ? "Disabling…" : "Disable saved consent"}</Button> : null}
+                                    })}>{mutation.isPending ? (data.allowOverage ? "Disabling…" : "Enabling…")
+                                        : data.allowOverage ? (data.overageAvailable ? "Disable paid overage" : "Disable saved consent")
+                                            : "Enable paid overage"}</Button> : null}
                             </div>
                         </section>}
         {data && query.error ? <p role="alert">Refresh failed. Showing the last confirmed state; refresh before making changes.</p> : null}
         {mutation.error ? <p role="alert">The change could not be confirmed. Refresh to check the latest policy before trying again.</p> : null}
-        {mutation.isSuccess ? <p role="status">Paid overage consent is disabled.</p> : null}
+        {mutation.isSuccess ? <p role="status">Paid overage consent is {data?.allowOverage ? "enabled" : "disabled"}.</p> : null}
     </div>;
 }

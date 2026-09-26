@@ -14,10 +14,37 @@ const bundle = await build({ absWorkingDir: root, bundle: true, format: "esm", p
     external: ["cloudflare:*", "node:*"], stdin: { resolveDir: root, loader: "ts", contents: `
         import { configureRuntime, clearRuntime } from './src/runtime/env';
         import { reserveFreeModelOverage, finalizeFreeModelOverage } from './src/core/free-model-reservations';
+        import { FreeModelQuotaDurableObject } from './src/core/free-model-quota-durable-object';
+        import { guardFreeModelAdmission } from './src/pipeline/execute/free-model-admission';
+        import { applyFreeModelFee, releaseFailedFreeModelFee } from './src/core/free-model-fee';
+        import { recordUsageAndChargeOnce } from './src/pipeline/after/charge';
+        // Only the exhausted quota clock is synthetic. Fee journal, Worker RPC,
+        // wallet SQL, pricing and capture/release are production implementations.
+        export class ExhaustedQuota extends FreeModelQuotaDurableObject {
+            admit() { return { allowed:true, mode:'overage', feeNanos:100000, remaining:0, policyVersion:1 }; }
+        }
         export default { async fetch(request, env) {
             configureRuntime(env);
             try {
                 const input = await request.json(), operation = new URL(request.url).pathname.slice(1);
+                if (operation === 'inference') {
+                    const owner = '30000000-0000-4000-8000-000000000001';
+                    const stub = env.FREE_MODEL_QUOTA.getByName('owner:' + owner);
+                    await stub.setOverage(true, 0);
+                    const ctx = { ...input, billingRequestId:input.requestId, requestId:input.auditRequestId,
+                        workspaceOwnerUserId:owner, workspaceRuntimeExpiresAt:Date.now()+60000, meta:{} };
+                    const free = {rules:[{price_per_unit:'0',pricing_plan:'free'}]};
+                    const denied = await guardFreeModelAdmission(ctx, free, 'gateway');
+                    if (denied) return denied;
+                    // Internal fallback shares authorization; no second hold.
+                    const fallback = await guardFreeModelAdmission(ctx, free, 'gateway');
+                    if (fallback) return fallback;
+                    if (input.failed) { await releaseFailedFreeModelFee(ctx); return Response.json({cost:0}); }
+                    const priced = applyFreeModelFee(ctx, {pricedUsage:{output_tokens:input.empty?0:1},
+                        totalNanos:0,totalCents:0,billingSuppressed:!!input.empty});
+                    await Promise.all(Array.from({length:8},()=>recordUsageAndChargeOnce({ctx,costNanos:priced.totalNanos,endpoint:'responses'})));
+                    return Response.json({cost:priced.totalNanos});
+                }
                 return Response.json(await (operation === 'reserve' ? reserveFreeModelOverage(input)
                     : finalizeFreeModelOverage(input, operation)));
             } catch (error) { return Response.json({ error: error.message }, { status: 503 }); }
@@ -43,7 +70,10 @@ async function source(request) {
 function runtime() {
     return new Miniflare({ modules: [{ type: 'ESModule', path: 'fee-reservation.mjs', contents: bundle.outputFiles[0].text }],
         compatibilityDate: '2025-10-01', compatibilityFlags: ['nodejs_compat'], kvNamespaces: ['GATEWAY_CACHE'],
-        bindings: { SUPABASE_URL: 'https://source.invalid', SUPABASE_SERVICE_ROLE_KEY: 'fixture' }, outboundService: source });
+        bindings: { SUPABASE_URL: 'https://source.invalid', SUPABASE_SERVICE_ROLE_KEY: 'fixture',
+            GATEWAY_FREE_MODEL_QUOTA_ENABLED:'true', GATEWAY_FREE_MODEL_OVERAGE_ENABLED:'true' },
+        ratelimits: { FREE_MODEL_RATE_LIMITER: { simple:{limit:100,period:60},namespace_id:'1005' } },
+        durableObjects: { FREE_MODEL_QUOTA: {className:'ExhaustedQuota',useSQLite:true} }, outboundService: source });
 }
 let mf;
 try {
@@ -54,7 +84,8 @@ try {
             soft_blocked boolean default false, daily_limit_requests bigint, weekly_limit_requests bigint, monthly_limit_requests bigint,
             daily_limit_cost_nanos bigint, weekly_limit_cost_nanos bigint, monthly_limit_cost_nanos bigint);
         create table gateway_requests(workspace_id uuid, request_id text, endpoint text, model_id text, provider text,
-            status_code integer, success boolean, usage jsonb, cost_nanos bigint, currency text, key_id uuid, created_at timestamptz default now());
+            status_code integer, success boolean, usage jsonb, cost_nanos bigint, currency text, key_id uuid,
+            detail_metadata jsonb, created_at timestamptz default now());
         create table gateway_wallet_reservations(workspace_id uuid, reservation_id text, amount_nanos bigint, status text,
             hold_ref_id text, key_id uuid, request_count integer, created_at timestamptz, settled_amount_nanos bigint,
             captured_nanos bigint, released_nanos bigint, capture_ref_id text, release_ref_id text,
@@ -77,10 +108,11 @@ try {
         grant execute on function gateway_wallet_reserve_once(uuid,text,bigint,text,uuid,integer) to service_role;`);
     await db.exec(await migration('20260906162500_async_reservation_replay'));
     if (!process.env.TEST_PRE_MIGRATION) await db.exec(await migration('20260926090000_free_model_reservation_exposure'));
+    if (!process.env.TEST_PRE_MIGRATION) await db.exec(await migration('20260926090435_free_model_audit_identity'));
     await db.query('insert into wallets values($1,1000000,0,null),($2,1000000,0,null)', [workspace, other]);
     await db.query('insert into keys(id,workspace_id,daily_limit_cost_nanos) values($1,$2,150000)', [key, workspace]);
     mf = runtime();
-    const input = requestId => ({ workspaceId: workspace, keyId: key, requestId });
+    const input = requestId => ({ workspaceId: workspace, keyId: key, requestId, auditRequestId: 'public-' + requestId });
     const send = async (operation, body) => {
         const response = await mf.dispatchFetch(`https://worker.invalid/${operation}`, { method: 'POST', body: JSON.stringify(body) });
         return { status: response.status, body: await response.json() };
@@ -104,9 +136,16 @@ try {
     assert.equal((await send('reserve', input('budget-gap'))).body.status, 'workspace_daily_cost_budget_reached',
         'Workspace budget retains captured fee before audit');
     await db.exec('delete from workspace_budgets');
-    await db.query(`insert into gateway_requests(workspace_id,request_id,key_id,success,cost_nanos) values($1,'second',$2,true,100000)`, [workspace, key]);
+    // Same public request ID cannot impersonate the private billing identity.
+    await db.query(`insert into gateway_requests(workspace_id,request_id,key_id,success,cost_nanos,detail_metadata)
+        values($1,'public-second',$2,true,100000,'{"free_model_fee_request_id":"impostor"}')`, [workspace, key]);
     await db.query('update keys set daily_limit_cost_nanos=200000 where id=$1', [key]);
+    assert.equal((await send('reserve', input('spoof-key'))).body.status, 'daily_cost_limit_reached');
+    await db.query('update keys set daily_limit_cost_nanos=null where id=$1', [key]);
     await db.query(`insert into workspace_budgets(workspace_id,interval,limit_nanos) values($1,'daily',200000)`, [workspace]);
+    assert.equal((await send('reserve', input('spoof-budget'))).body.status, 'workspace_daily_cost_budget_reached');
+    await db.exec(`update gateway_requests set detail_metadata='{"free_model_fee_request_id":"second"}'`);
+    await db.query('update keys set daily_limit_cost_nanos=200000 where id=$1', [key]);
     assert.equal((await send('reserve', input('third'))).body.status, 'held', 'An audited fee must not be counted twice');
     await db.query(`update gateway_wallet_reservations set created_at=now()-interval '2 days' where reservation_id='free_model_hold:third'`);
     assert.equal((await send('reserve', input('midnight'))).body.status, 'workspace_daily_cost_budget_reached',
@@ -140,7 +179,16 @@ try {
         assert.equal(after - before, kind === 'batch' ? 1 : 0);
         await db.query('select * from gateway_wallet_release_once($1,$2,$3)', [workspace, rid, `${kind}-legacy`]);
     }
-    console.log(JSON.stringify({ result: 'PASS', calls, fixedFeeNanos: 100000, ledgerDebits: 1, syntheticBatchRows: 0,
+    const beforeLifecycle = calls;
+    for (const mode of ['success','failed','empty']) {
+        const reply = await send('inference',{...input('lifecycle-'+mode),failed:mode==='failed',empty:mode==='empty'});
+        assert.equal(reply.status,200); assert.equal(reply.body.cost,mode==='success'?100000:0);
+    }
+    assert.equal(calls-beforeLifecycle,6,'One reservation and settlement per request despite fallback/concurrent finalization');
+    assert.deepEqual((await db.query('select balance_nanos,reserved_nanos from wallets where workspace_id=$1',[workspace])).rows,
+        [{balance_nanos:800000,reserved_nanos:0}]);
+    assert.equal((await db.query('select count(*)::integer as count from credit_ledger')).rows[0].count,2);
+    console.log(JSON.stringify({ result: 'PASS', calls, fixedFeeNanos: 100000, ledgerDebits: 2, syntheticBatchRows: 0,
         keyAndWorkspaceLimits: true, releaseAndCaptureReplay: true, externalCalls: 0,
         limits: 'Local PGlite and native Workers; not deployed migration or concurrent PostgreSQL locking evidence' }));
 } finally { await mf?.dispose(); await db.close(); }

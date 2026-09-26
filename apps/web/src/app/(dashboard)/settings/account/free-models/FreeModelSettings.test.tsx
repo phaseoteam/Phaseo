@@ -71,7 +71,7 @@ it("requires the browser session to match the owner before reading or writing", 
     render();
     session.mockResolvedValue({ data: { session: { user: { id: "other" }, access_token: "other" } } });
     await expect(queryOptions().queryFn({ signal: new AbortController().signal })).rejects.toMatchObject({ status: 401 });
-    await expect(mutationOptions().mutationFn(2)).rejects.toMatchObject({ status: 401 });
+    await expect(mutationOptions().mutationFn({ allowOverage: false, expectedVersion: 2 })).rejects.toMatchObject({ status: 401 });
     expect(fetchAccountWebApi).not.toHaveBeenCalled();
 });
 it("sends only a version-fenced disable without an optimistic or unmounted cache update", async () => {
@@ -80,7 +80,7 @@ it("sends only a version-fenced disable without an optimistic or unmounted cache
     expect(options.retry).toBe(false);
     expect(options.gcTime).toBe(0);
     expect(options.onSuccess).toBeUndefined();
-    await options.mutationFn(2);
+    await options.mutationFn({ allowOverage: false, expectedVersion: 2 });
     expect(fetchAccountWebApi).toHaveBeenCalledWith("/api/account/free-model-quota", "session", expect.objectContaining({
         method: "PATCH", body: JSON.stringify({ allowOverage: false, expectedVersion: 2 }),
     }));
@@ -93,6 +93,18 @@ it("blocks repeat mutations until refresh after conflicts or ambiguous failures"
     expect(html).toContain("change could not be confirmed");
     expect(html).toMatch(/disabled=""[^>]*>Disable saved consent/);
     expect(html).not.toContain("consent is disabled.");
+});
+it("shows the success-only fee and enables with explicit version-fenced consent", async () => {
+    query.data = { data: { ...data, overageAvailable: true } };
+    const html = render();
+    expect(html).toContain("$0.10 per 1,000 successful requests");
+    expect(html).toContain("Failed requests are not charged");
+    expect(html).toContain("Enable paid overage");
+    await mutationOptions().mutationFn({ allowOverage: true, expectedVersion: 2 });
+    expect(fetchAccountWebApi).toHaveBeenCalledWith("/api/account/free-model-quota", "session", expect.objectContaining({
+        method: "PATCH", body: JSON.stringify({ allowOverage: true, expectedVersion: 2 }),
+    }));
+    expect(setQueryData).not.toHaveBeenCalled();
 });
 it("shows confirmed success and pending state accessibly", () => {
     mutation.isSuccess = true;

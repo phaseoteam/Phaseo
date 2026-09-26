@@ -4,6 +4,7 @@
 // How: Parses upstream errors, builds payloads, sets headers, and triggers audits.
 
 import type { Endpoint } from "./types";
+import { releaseFailedFreeModelFee } from "./free-model-fee";
 import {
     isBodyOnlyTextSessionEndpoint,
     normalizeTextBodySessionId,
@@ -662,6 +663,7 @@ export async function handleError({
         model?: string | null;
     },
 }): Promise<Response> {
+    if (ctx) await releaseFailedFreeModelFee(ctx);
     const headers = new Headers({ "Content-Type": "application/json", "Cache-Control": "no-store" });
     if (timingHeader) {
         headers.set("Server-Timing", timingHeader);
@@ -1165,7 +1167,6 @@ export async function handleError({
     });
     return new Response(JSON.stringify(errorPayload), { status: statusCode, headers });
 }
-
 
 
 

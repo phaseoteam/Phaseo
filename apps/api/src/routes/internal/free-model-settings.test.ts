@@ -13,7 +13,7 @@ const setOverage = vi.fn();
 const getByName = vi.fn();
 const limit = vi.fn();
 const env = { SUPABASE_URL: "https://source.invalid", SUPABASE_SERVICE_ROLE_KEY: "fixture", GATEWAY_CACHE: {},
-    GATEWAY_FREE_MODEL_QUOTA_ENABLED: "true", FREE_MODEL_QUOTA: { getByName }, FREE_MODEL_RATE_LIMITER: { limit } };
+    GATEWAY_FREE_MODEL_QUOTA_ENABLED: "true", GATEWAY_FREE_MODEL_OVERAGE_ENABLED: "false", FREE_MODEL_QUOTA: { getByName }, FREE_MODEL_RATE_LIMITER: { limit } };
 const execution = { waitUntil: vi.fn(), passThroughOnException: vi.fn() };
 
 function request(method = "GET", body?: unknown, headers: Record<string, string> = {}, bindings = env) {
@@ -31,6 +31,13 @@ beforeEach(() => {
 });
 
 describe("owner free-model settings", () => {
+    it("enables explicitly consented overage only when deployed, with a version fence", async () => {
+        const active = { ...env, GATEWAY_FREE_MODEL_OVERAGE_ENABLED: "true" };
+        expect(await (await request("GET", undefined, {}, active)).json()).toMatchObject({ data: { overageAvailable: true } });
+        const result = await request("PATCH", { allowOverage: true, expectedVersion: 2 }, {}, active);
+        expect(result.status).toBe(200);
+        expect(setOverage).toHaveBeenCalledWith(true, 2);
+    });
     it("is unavailable with the feature disabled and does not touch auth/storage", async () => {
         expect((await request("GET", undefined, {}, { ...env, GATEWAY_FREE_MODEL_QUOTA_ENABLED: "false" })).status).toBe(404);
         expect(actor).not.toHaveBeenCalled();

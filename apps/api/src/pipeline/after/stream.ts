@@ -11,6 +11,7 @@ import type { PriceCard } from "../pricing";
 import { calculatePricing } from "./pricing";
 import { handleFailureAudit, handleSuccessAudit } from "./audit";
 import { recordUsageAndChargeOnce } from "./charge";
+import { applyFreeModelFee, hasFreeModelFee, releaseFailedFreeModelFee } from "@/core/free-model-fee";
 import { shapeUsageForClient, stripUsagePricing } from "../usage";
 import { normalizeAnthropicUsage, presentUsageForClient, extractFinishReason } from "./payload";
 import {
@@ -269,13 +270,18 @@ export async function handleStreamResponse(
                 } else if (card) {
                     const shapedUsage = shapeStreamUsageForClient(next.usage);
                     const tier = ctx.teamEnrichment?.tier ?? 'basic';
-                    const { pricedUsage } = calculatePricing(
+                    const framePricing = calculatePricing(
                         shapedUsage,
                         card,
                         ctx.body,
                         tier,
                         ctx.meta
                     );
+                    const { pricedUsage } = hasFreeModelFee(ctx) && (cachedFinishReason || next.object === "chat.completion")
+                        ? applyFreeModelFee(ctx, { ...framePricing, ...applySuccessfulResponseBillingPolicy({
+                            endpoint: ctx.endpoint, ...framePricing,
+                            pricedUsage: attachToolUsageMetrics(framePricing.pricedUsage, buildToolUsage()),
+                        }) }) : framePricing;
                     if (ctx.meta.debug) {
                         console.log("[gateway][pricing] stream frame priced usage", {
                             requestId: ctx.requestId,
@@ -307,13 +313,18 @@ export async function handleStreamResponse(
                 } else if (card) {
                     const shapedUsage = shapeStreamUsageForClient(next.response.usage);
                     const tier = ctx.teamEnrichment?.tier ?? 'basic';
-                    const { pricedUsage } = calculatePricing(
+                    const framePricing = calculatePricing(
                         shapedUsage,
                         card,
                         ctx.body,
                         tier,
                         ctx.meta
                     );
+                    const { pricedUsage } = hasFreeModelFee(ctx) && (next.type === "response.completed" || next.response.status === "completed")
+                        ? applyFreeModelFee(ctx, { ...framePricing, ...applySuccessfulResponseBillingPolicy({
+                            endpoint: ctx.endpoint, ...framePricing,
+                            pricedUsage: attachToolUsageMetrics(framePricing.pricedUsage, buildToolUsage()),
+                        }) }) : framePricing;
                     if (ctx.meta.debug) {
                         console.log("[gateway][pricing] stream response priced usage", {
                             requestId: ctx.requestId,
@@ -456,6 +467,9 @@ export async function handleStreamResponse(
                 });
             }
             try {
+            // Overage counts only completed client requests. Draining a cancelled
+            // stream can still recover provider usage without charging this fee.
+            if (outcome.downstreamDisconnected) await releaseFailedFreeModelFee(ctx);
             const effectiveUsageRaw = usageRaw ?? latestStreamUsageRaw ?? stripUsagePricing(result.bill.usage);
             const hasTextRequestFallbackEndpoint =
                 ctx.endpoint === "chat.completions" ||
@@ -639,7 +653,7 @@ export async function handleStreamResponse(
 					totalNanos: pricedWithByokSubtotal.totalNanos,
 					totalCents: pricedWithByokSubtotal.totalCents,
 				});
-                const pricedWithByok = {
+                const pricedWithByok = applyFreeModelFee(ctx, {
 					...pricedWithByokSubtotal,
 					...successfulBilling,
 					...applyDataContributionDiscount({
@@ -649,7 +663,7 @@ export async function handleStreamResponse(
 						isByok,
 						discountBps: ctx.teamSettings?.dataContributionDiscountBps,
 					}),
-				};
+				});
                 result.bill.cost_cents = pricedWithByok.totalCents;
                 result.bill.currency = pricedWithByok.currency;
                 result.bill.usage = pricedWithByok.pricedUsage;
@@ -714,7 +728,7 @@ export async function handleStreamResponse(
 					totalNanos: pricedWithByokSubtotal.totalNanos,
 					totalCents: pricedWithByokSubtotal.totalCents,
 				});
-                const pricedWithByok = {
+                const pricedWithByok = applyFreeModelFee(ctx, {
 					...pricedWithByokSubtotal,
 					...successfulBilling,
 					...applyDataContributionDiscount({
@@ -724,7 +738,7 @@ export async function handleStreamResponse(
 						isByok,
 						discountBps: ctx.teamSettings?.dataContributionDiscountBps,
 					}),
-				};
+				});
                 await recordUsageAndChargeOnce({
                     ctx,
                     costNanos: pricedWithByok.totalNanos,
@@ -784,7 +798,7 @@ export async function handleStreamResponse(
 				totalNanos: pricedWithByokSubtotal.totalNanos,
 				totalCents: pricedWithByokSubtotal.totalCents,
 			});
-            const pricedWithByok = {
+            const pricedWithByok = applyFreeModelFee(ctx, {
 				...pricedWithByokSubtotal,
 				...successfulBilling,
 				...applyDataContributionDiscount({
@@ -794,7 +808,7 @@ export async function handleStreamResponse(
 					isByok,
 					discountBps: ctx.teamSettings?.dataContributionDiscountBps,
 				}),
-			};
+			});
 
             result.bill.cost_cents = pricedWithByok.totalCents;
             result.bill.currency = pricedWithByok.currency;

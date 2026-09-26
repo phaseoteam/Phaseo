@@ -4,6 +4,7 @@ import { FREE_MODEL_DAILY_ALLOWANCE, FREE_MODEL_OVERAGE_NANOS, type FreeQuotaDec
 import { isFreePriceCard } from "../pricing/free";
 import type { PriceCard } from "../pricing";
 import type { PipelineContext } from "../before/types";
+import { authorizeFreeModelFee, releaseFailedFreeModelFee } from "@/core/free-model-fee";
 
 // Request-owned only, never cached between HTTP requests. Failed/ambiguous RPCs
 // remain failed for every fallback; automatic retries could consume quota twice.
@@ -66,13 +67,17 @@ export async function guardFreeModelAdmission(ctx: PipelineContext, card: PriceC
             if (decision.allowed === false) return quotaDenied(decision.reason === "rpm_limit" ? "rpm_limited" : "daily_limited",
                 `free_model_${decision.reason}`, 429, decision.retryAfterSeconds);
             if (decision.mode === "overage") {
-                // No partial billing rollout: the quoted fee requires durable
-                // authorization/settlement recovery before this branch can run.
-                return quotaDenied("overage_blocked", "free_model_overage_not_available", 503);
+                if (!await authorizeFreeModelFee(ctx, decision.policyVersion)) {
+                    await releaseFailedFreeModelFee(ctx);
+                    return quotaDenied("overage_blocked", "free_model_overage_not_available", 503);
+                }
+                recordQuotaAdmission("overage");
+                return null;
             }
             recordQuotaAdmission("included");
             return null;
         } catch {
+            await releaseFailedFreeModelFee(ctx);
             return quotaDenied("unavailable", "free_model_quota_unavailable", 503);
         }
     })();
