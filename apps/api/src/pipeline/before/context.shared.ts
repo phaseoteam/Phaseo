@@ -230,6 +230,7 @@ type DynamicContextCacheEntry = Pick<
 	| "keyLimit"
 	| "keyEnrichment"
 	| "teamSettings"
+	| "workspaceRuntimeExpiresAt"
 > & {
 	// Legacy entries included credit in the dynamic context. Keep accepting
 	// them so deploys do not invalidate every hot context at once.
@@ -238,14 +239,16 @@ type DynamicContextCacheEntry = Pick<
 };
 type StaticContextCacheEntry = Pick<
 	GatewayContextData,
-	"workspaceId" | "resolvedModel" | "preset" | "providers" | "pricing" | "testingMode" | "publicCatalogExpiresAt"
+	"workspaceId" | "resolvedModel" | "preset" | "providers" | "pricing" | "testingMode" | "publicCatalogExpiresAt" | "workspaceRuntimeExpiresAt"
 >;
 type CreditContextCacheEntry = Pick<GatewayContextData, "workspaceId" | "credit" | "teamEnrichment">;
 
 export function isDynamicContextLike(value: unknown): value is DynamicContextCacheEntry {
 	if (!value || typeof value !== "object") return false;
 	const ctx = value as DynamicContextCacheEntry;
-	return Boolean(ctx.workspaceId && ctx.key && ctx.keyLimit);
+	return Boolean(ctx.workspaceId && ctx.key && ctx.keyLimit &&
+        (ctx.workspaceRuntimeExpiresAt === undefined ||
+            (Number.isFinite(ctx.workspaceRuntimeExpiresAt) && ctx.workspaceRuntimeExpiresAt > Date.now())));
 }
 
 export function isStaticContextLike(value: unknown): value is StaticContextCacheEntry {
@@ -253,6 +256,8 @@ export function isStaticContextLike(value: unknown): value is StaticContextCache
 	const ctx = value as StaticContextCacheEntry;
 	return Boolean(
 		ctx.workspaceId &&
+			(ctx.workspaceRuntimeExpiresAt === undefined ||
+                (Number.isFinite(ctx.workspaceRuntimeExpiresAt) && ctx.workspaceRuntimeExpiresAt > Date.now())) &&
 			(ctx.publicCatalogExpiresAt === undefined ||
                 (Number.isFinite(ctx.publicCatalogExpiresAt) && ctx.publicCatalogExpiresAt > Date.now())) &&
 			Array.isArray(ctx.providers) &&
@@ -280,11 +285,13 @@ export function mergeCachedContext(args: {
 	if (!credit) {
 		throw new Error("gateway_context_credit_cache_missing");
 	}
+    const workspaceDeadline = Math.min(args.dynamic.workspaceRuntimeExpiresAt ?? Infinity, args.static.workspaceRuntimeExpiresAt ?? Infinity);
 	return {
 		workspaceId: args.dynamic.workspaceId,
 		endpoint: args.endpoint as any,
 		resolvedModel: args.static.resolvedModel ?? null,
         publicCatalogExpiresAt: args.static.publicCatalogExpiresAt,
+        workspaceRuntimeExpiresAt: workspaceDeadline === Infinity ? undefined : workspaceDeadline,
 		preset: args.static.preset ?? null,
 		key: args.dynamic.key,
 		keyLimit: args.dynamic.keyLimit,
@@ -310,6 +317,7 @@ export function splitContextForCache(value: GatewayContextData): {
 			keyLimit: value.keyLimit,
 			keyEnrichment: value.keyEnrichment ?? null,
 			teamSettings: value.teamSettings ?? null,
+            workspaceRuntimeExpiresAt: value.workspaceRuntimeExpiresAt,
 			// Aggregate enrichment is observational rather than an authorization
 			// input. Keep it with the dynamic context so a credit-only refresh can
 			// preserve it while replacing its balance fields authoritatively.
@@ -319,6 +327,7 @@ export function splitContextForCache(value: GatewayContextData): {
 			workspaceId: value.workspaceId,
 			resolvedModel: value.resolvedModel ?? null,
             publicCatalogExpiresAt: value.publicCatalogExpiresAt,
+            workspaceRuntimeExpiresAt: value.workspaceRuntimeExpiresAt,
 			preset: value.preset ?? null,
 			providers: value.providers ?? [],
 			pricing: value.pricing ?? {},

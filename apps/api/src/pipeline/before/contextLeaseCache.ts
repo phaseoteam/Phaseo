@@ -37,11 +37,15 @@ export class ContextLeaseCache {
                 return { value: null, expiresAtMs: 0 };
             }
             const catalogDeadline = value.publicCatalogExpiresAt;
+            const workspaceDeadline = value.workspaceRuntimeExpiresAt;
+            if (workspaceDeadline !== undefined && (!Number.isFinite(workspaceDeadline) || workspaceDeadline <= now)) {
+                return { value: null, expiresAtMs: 0 };
+            }
             if (catalogDeadline !== undefined && (!Number.isFinite(catalogDeadline) || catalogDeadline <= now)) {
                 return { value: null, expiresAtMs: 0 };
             }
             return { value: raw, expiresAtMs: Math.min(
-                lease.expiresAtMs, catalogDeadline ?? Infinity, now + this.limit(key),
+                lease.expiresAtMs, catalogDeadline ?? Infinity, workspaceDeadline ?? Infinity, now + this.limit(key),
             ) };
         } catch { return { value: null, expiresAtMs: 0 }; }
     }

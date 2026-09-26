@@ -1,12 +1,15 @@
 import { bumpWorkspacePolicyVersion } from "@/pipeline/before/workspacePolicy";
 import { invalidatePrivateRoutes } from "@/pipeline/before/privateModelCache";
+import { publishWorkspaceRuntime, workspaceRuntimeEnabled } from "@/pipeline/before/workspaceRuntime";
 
 /** Call after committing a workspace mutation. Work is constant in API-key
  * count; it neither lists keys nor writes a marker for each key. Credit and
  * key-auth authority remain independently invalidated. */
 export async function publishWorkspaceMutation(workspaceId: string) {
     const [version, privateRoutes] = await Promise.allSettled([
-        bumpWorkspacePolicyVersion(workspaceId),
+        workspaceRuntimeEnabled()
+            ? bumpWorkspacePolicyVersion(workspaceId, version => publishWorkspaceRuntime(workspaceId, version))
+            : bumpWorkspacePolicyVersion(workspaceId),
         invalidatePrivateRoutes(workspaceId, { requirePublication: true }),
     ]);
     if (version.status === "rejected" || privateRoutes.status === "rejected") {

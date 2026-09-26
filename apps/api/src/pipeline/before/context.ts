@@ -15,6 +15,7 @@ import { isDataContributionAccessEnabled } from "@/core/feature-flags";
 import { normalizePrivateModelBaseUrl } from "@/core/private-models";
 import { loadPrivateRouteRow } from "./privateModelCache";
 import { contextBundleEnabled, loadTextContextBundle, type ContextBundle } from "./contextBundle";
+import { workspaceRuntimeEnabled } from "./workspaceRuntime";
 import { bytesToString, decryptBYOK } from "@pipeline/byok/decrypt";
 import { BYOK_KEYS_PER_PROVIDER_LIMIT, isByokKeyEligible } from "@/core/byok";
 import { contextSchema } from "./schemas";
@@ -1134,6 +1135,7 @@ export async function fetchGatewayContext(args: {
     let shouldUseCache = !args.disableCache;
     const needsVersionToken = shouldUseCache;
     let versionToken = "v0";
+    let workspaceVersionToken: string | null = null;
     if (needsVersionToken) {
         const keyVersionStartedAt = performance.now();
         const options = { useL1Cache: true, l1TtlMs: CONTEXT_KEY_VERSION_L1_TTL_MS };
@@ -1146,10 +1148,11 @@ export async function fetchGatewayContext(args: {
         // Unknown publication state bypasses both cache reads and fills. It
         // must never alias the initial version and reuse old permissions.
         shouldUseCache = workspaceVersion !== null;
+        workspaceVersionToken = workspaceVersion;
         versionToken = workspaceVersion === "v0" ? keyVersion : `${keyVersion}:w${workspaceVersion}`;
         telemetry.keyVersionMs = round3(performance.now() - keyVersionStartedAt);
     }
-    const testingModeCacheSegment = args.includeTestingMode ? "testing" : "default";
+    const testingModeCacheSegment = `${args.includeTestingMode ? "testing" : "default"}${useContextBundle && workspaceRuntimeEnabled() ? ":runtime-v1" : ""}`;
     const dynamicCacheKey = `${DYNAMIC_CACHE_PREFIX}:${testingModeCacheSegment}:${args.workspaceId}:${args.apiKeyId}:${versionToken}`;
     const creditCacheKey = gatewayCreditCacheKey(args.workspaceId);
     const staticCacheKey = isPreset
@@ -1296,10 +1299,12 @@ export async function fetchGatewayContext(args: {
         let contextBundle: ContextBundle | null = null;
         if (textContextCapabilities) {
             if (useContextBundle) {
-                contextBundle = await loadTextContextBundle(args);
+                contextBundle = await loadTextContextBundle({ ...args, workspaceVersionToken });
                 rpcTotalMs += contextBundle.rpcMs;
                 telemetry.catalogReadMs = round3(contextBundle.catalogReadMs);
                 telemetry.catalogCacheStatus = contextBundle.cacheStatus;
+                telemetry.workspaceCacheStatus = contextBundle.workspaceCacheStatus;
+                telemetry.workspaceReadMs = contextBundle.workspaceReadMs === undefined ? undefined : round3(contextBundle.workspaceReadMs);
             }
             const variants = contextBundle
                 ? contextBundle.variants.map(variant => ({ candidateCapability: variant.endpoint, parsed: contextSchema.parse(variant.payload) }))
@@ -1345,7 +1350,6 @@ export async function fetchGatewayContext(args: {
                 }
             }
         }
-        if (contextBundle) parsed.publicCatalogExpiresAt = contextBundle.catalog.expiresAt;
 
         // Fallback path for provider-scoped model slugs (e.g. mistral/mistral-medium-2508):
         // if RPC returned no providers and did not resolve the model, remap via provider_model_slug.
@@ -1379,6 +1383,11 @@ export async function fetchGatewayContext(args: {
         }
 
 
+        // Preserve source deadlines even if a fallback replaced parsed context.
+        if (contextBundle) {
+            parsed.publicCatalogExpiresAt = contextBundle.catalog.expiresAt;
+            parsed.workspaceRuntimeExpiresAt = contextBundle.workspaceRuntimeExpiresAt;
+        }
         parsed = applyNebiusRegionalModelAllowlist({
             parsed,
             requestedModel: args.model,
