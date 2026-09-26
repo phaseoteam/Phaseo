@@ -57,10 +57,44 @@ describe("failed charge recovery", () => {
         const pending = drain(batch(item));
         await vi.waitFor(() => expect(state.charge).toHaveBeenCalledOnce());
         expect(item.ack).not.toHaveBeenCalled();
-        expect(state.charge).toHaveBeenCalledWith(input);
+        expect(state.charge).toHaveBeenCalledWith({ ...input, debitSignal: expect.any(AbortSignal) });
         finish({ already_applied: true }); await pending;
         expect(item.ack).toHaveBeenCalledOnce();
         expect(item.retry).not.toHaveBeenCalled();
+    });
+    it("aborts a stalled debit and retries without acknowledging an unknown outcome", async () => {
+        vi.useFakeTimers();
+        let signal!: AbortSignal;
+        state.charge.mockImplementation(({ debitSignal }) => new Promise((_resolve, reject) => {
+            signal = debitSignal;
+            signal.addEventListener("abort", () => reject(new Error("ambiguous debit timeout")), { once: true });
+        }));
+        try {
+            const item = message();
+            const pending = drain(batch(item));
+            await vi.advanceTimersByTimeAsync(4_999);
+            expect(signal.aborted).toBe(false);
+            expect(item.retry).not.toHaveBeenCalled();
+            expect(item.ack).not.toHaveBeenCalled();
+            await vi.advanceTimersByTimeAsync(1); await pending;
+            expect(signal.aborted).toBe(true);
+            expect(item.ack).not.toHaveBeenCalled();
+            expect(item.retry).toHaveBeenCalledExactlyOnceWith({ delaySeconds: 30 });
+            expect(vi.getTimerCount()).toBe(0);
+        } finally { vi.useRealTimers(); }
+    });
+    it("clears debit deadlines on success and uses independent signals per record", async () => {
+        vi.useFakeTimers();
+        try {
+            const first = message(), second = message({ ...record(), requestId: "other" });
+            await drain(batch(first, second));
+            expect(first.ack).toHaveBeenCalledOnce(); expect(second.ack).toHaveBeenCalledOnce();
+            const signals = state.charge.mock.calls.map(([args]) => args.debitSignal);
+            expect(signals[0]).not.toBe(signals[1]);
+            expect(vi.getTimerCount()).toBe(0);
+            await vi.advanceTimersByTimeAsync(10_000);
+            expect(signals.every(signal => !signal.aborted)).toBe(true);
+        } finally { vi.useRealTimers(); }
     });
     it("replays a timeout-after-commit with no duplicate debit after a fresh invocation", async () => {
         const ledger = new Map<string, number>(); let debits = 0;

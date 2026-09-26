@@ -111,6 +111,22 @@ describe("recordUsageAndCharge", () => {
 		expect(invalidateGatewayCreditCacheMock).toHaveBeenCalledWith("ws");
 	});
 
+	it("passes a recovery abort signal to the debit and preserves uncertain-debit invalidation", async () => {
+		const abort = new AbortController();
+		const error = { message: "AbortError: debit outcome unknown" };
+		const abortSignal = vi.fn().mockResolvedValue({ data: null, error });
+		rpcMock.mockReturnValue({ abortSignal });
+		const { recordUsageAndCharge } = await import("./persist");
+		await expect(recordUsageAndCharge({ requestId: "immutable", workspaceId: "ws", cost_nanos: 100,
+			debitSignal: abort.signal })).rejects.toEqual(error);
+		expect(abortSignal).toHaveBeenCalledExactlyOnceWith(abort.signal);
+		expect(rpcMock).toHaveBeenCalledExactlyOnceWith("gateway_charge_with_credit_cache", {
+			p_workspace_id: "ws", p_request_id: "immutable", p_cost_nanos: 100, p_credit_snapshot_balance_nanos: null,
+		});
+		expect(invalidateGatewayCreditCacheMock).toHaveBeenCalledExactlyOnceWith("ws");
+		expect(releaseRuntimeMock).toHaveBeenCalledOnce();
+	});
+
 	it("queues an owner notification when Auto Top-Up has no payment method", async () => {
 		rpcMock.mockResolvedValue({
 			data: {

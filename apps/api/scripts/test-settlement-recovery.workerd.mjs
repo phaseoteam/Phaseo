@@ -41,6 +41,10 @@ async function source(request) {
         return Response.json({ status: "ok", already_applied: true, invalidate_credit_cache: true });
     }
     ledger.set(identity, input.p_cost_nanos);
+    if (input.p_request_id === "stalled-response") {
+        // Commit before the transport stalls: abort cannot establish rollback.
+        await delay(7_000);
+    }
     if (input.p_request_id === "lost-response" && !lostResponse) {
         lostResponse = true;
         return Response.json({ message: "response lost after commit" }, { status: 504 });
@@ -107,6 +111,17 @@ try {
     assert.equal(wrong.retryBatch.retry, true);
     assert.equal(wrong.retryBatch.delaySeconds, 300);
     assert.equal(ledger.size, 2);
+    const stalledBody = record("stalled-response");
+    const timedOut = await worker.queue("recovery", [message("stalled", stalledBody)]);
+    assert.deepEqual(timedOut.explicitAcks, [], "A five-second debit timeout must not acknowledge a committed-but-unknown result");
+    assert.deepEqual(timedOut.retryMessages, [{ msgId: "stalled", delaySeconds: 30 }]);
+    assert.equal(ledger.size, 3);
+    await mf.dispose();
+    mf = runtime();
+    const recovered = await (await mf.getWorker("recovery")).queue("recovery", [message("stalled-replay", stalledBody, 2)]);
+    assert.deepEqual(recovered.explicitAcks, ["stalled-replay"]);
+    assert.equal(ledger.size, 3, "Restarted recovery preserves one debit after an actual transport timeout");
     console.log(JSON.stringify({ result: "PASS", freshWorkerReplay: true, duplicateDebitPrevented: true,
-        realQueueHandoff: true, nativeAcksAndRetries: true, quarantined: deadLetters.length, providerCalls: 0 }));
+        realQueueHandoff: true, nativeAcksAndRetries: true, actualTransportTimeout: true,
+        quarantined: deadLetters.length, providerCalls: 0 }));
 } finally { await mf.dispose(); }

@@ -14,6 +14,7 @@ export type SettlementRecoveryRecord = z.infer<typeof SettlementRecoveryRecord>;
 type ChargeInput = Pick<SettlementRecoveryRecord, "workspaceId" | "requestId" | "cost_nanos" | "creditSnapshotBalanceNanos">;
 const MAX_ATTEMPTS = 5;
 const MAX_AGE_MS = 24 * 60 * 60 * 1000;
+const DEBIT_TIMEOUT_MS = 5_000;
 
 /** Only the exhausted-charge path calls this. No per-success queue operation.
  * Await send confirmation before marking ownership transferred to recovery. */
@@ -52,14 +53,21 @@ export async function handleSettlementRecoveryBatch(batch: MessageBatch<unknown>
                 quarantine = !parsed.success || age > MAX_AGE_MS || age < -60_000 || message.attempts > MAX_ATTEMPTS;
                 if (!quarantine && parsed.success) {
                     const { workspaceId, requestId, cost_nanos, creditSnapshotBalanceNanos } = parsed.data;
+                    const debit = new AbortController();
+                    const deadline = setTimeout(() => debit.abort(), DEBIT_TIMEOUT_MS);
                     try {
-                        const result = await recordUsageAndCharge({ workspaceId, requestId, cost_nanos, creditSnapshotBalanceNanos });
+                        const result = await recordUsageAndCharge({ workspaceId, requestId, cost_nanos, creditSnapshotBalanceNanos,
+                            debitSignal: debit.signal });
                         if (!result.applied && !result.already_applied) throw new Error("settlement_not_applied");
                         message.ack();
                         counts.settled++;
                         continue;
                     } catch {
+                        // A timed-out response may follow a committed debit. Keep
+                        // the original identity/amount when retrying; never refund.
                         quarantine = message.attempts >= MAX_ATTEMPTS;
+                    } finally {
+                        clearTimeout(deadline);
                     }
                 }
                 if (quarantine) {

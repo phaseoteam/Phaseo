@@ -185,6 +185,8 @@ export async function recordUsageAndCharge(args: {
     workspaceId: string;
     cost_nanos: number;
     creditSnapshotBalanceNanos?: number | null;
+    /** Recovery-only deadline for the debit transport; abort is not proof of rollback. */
+    debitSignal?: AbortSignal;
 }): Promise<ChargeRpcResult> {
     const releaseRuntime = ensureRuntimeForBackground();
     try {
@@ -192,12 +194,13 @@ export async function recordUsageAndCharge(args: {
         // The wrapper uses the same idempotent debit and returns an authoritative
         // cache decision in this round trip. No local or KV spending counter.
         const snapshotBalance = args.creditSnapshotBalanceNanos;
-        const onceRpc = await supabase.rpc("gateway_charge_with_credit_cache", {
+        const debit = supabase.rpc("gateway_charge_with_credit_cache", {
             p_workspace_id: args.workspaceId,
             p_request_id: args.requestId,
             p_cost_nanos: args.cost_nanos,
             p_credit_snapshot_balance_nanos: Number.isSafeInteger(snapshotBalance) && snapshotBalance! >= 0 ? snapshotBalance : null,
         });
+        const onceRpc = await (args.debitSignal ? debit.abortSignal(args.debitSignal) : debit);
         if (onceRpc.error) {
             // In particular, insufficient funds must not leave a high cached
             // balance reusable after a failed debit or an uncertain response.
@@ -351,7 +354,6 @@ export async function recordUsageAndCharge(args: {
         releaseRuntime();
     }
 }
-
 
 
 
