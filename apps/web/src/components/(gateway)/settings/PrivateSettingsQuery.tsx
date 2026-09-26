@@ -15,6 +15,12 @@ import { readCachedSettings, type SettingsResource, type SettingsResourceData } 
 
 const SettingsScopeContext = createContext<AccountQueryScope | null>(null);
 
+export function useAccountSettingsScope() {
+	const scope = useContext(SettingsScopeContext);
+	if (!scope) throw new Error("Missing private settings scope");
+	return scope;
+}
+
 export function PrivateSettingsProvider({ scope, children }: { scope: AccountQueryScope; children: ReactNode }) {
 	return <SettingsScopeContext value={scope}>{children}</SettingsScopeContext>;
 }
