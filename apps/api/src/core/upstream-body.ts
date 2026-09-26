@@ -2,14 +2,18 @@ import { SseProtocolError } from "./sse";
 
 /** Sniff only the bounded prefix; do not buffer a streamed response to detect
  * providers that ignore stream=true and return JSON (sometimes as text/plain). */
-export async function sniffUpstreamBody(source: ReadableStream<Uint8Array>, onChunk?: () => void) {
+export async function sniffUpstreamBody(source: ReadableStream<Uint8Array>, onChunk?: () => void, signal?: AbortSignal) {
     const reader = source.getReader(), prefix: Uint8Array[] = [];
     const decoder = new TextDecoder("utf-8", { fatal: true });
     let seen = 0, first = "", released = false;
-    const release = () => { if (!released) { released = true; reader.releaseLock(); } };
+    const cancel = () => { void reader.cancel(signal?.reason).catch(() => undefined); };
+    signal?.addEventListener("abort", cancel, { once: true });
+    const release = () => { if (!released) { released = true; signal?.removeEventListener("abort", cancel); reader.releaseLock(); } };
     try {
+        if (signal?.aborted) throw signal.reason;
         while (!first) {
             const next = await reader.read();
+            if (signal?.aborted) throw signal.reason;
             if (next.done) { release(); break; }
             if (!next.value.length) continue;
             onChunk?.();
@@ -26,10 +30,12 @@ export async function sniffUpstreamBody(source: ReadableStream<Uint8Array>, onCh
     let offset = 0;
     const stream = new ReadableStream<Uint8Array>({
         async pull(controller) {
+            if (signal?.aborted) { prefix.length = 0; release(); controller.error(signal.reason); return; }
             if (offset < prefix.length) { const value = prefix[offset]; prefix[offset++] = new Uint8Array(); controller.enqueue(value); return; }
             if (released) { controller.close(); return; }
             try {
                 const next = await reader.read();
+                if (signal?.aborted) throw signal.reason;
                 if (next.done) { release(); controller.close(); } else { onChunk?.(); controller.enqueue(next.value); }
             } catch (error) { release(); controller.error(error); }
         },
@@ -38,12 +44,16 @@ export async function sniffUpstreamBody(source: ReadableStream<Uint8Array>, onCh
     return { kind: first === "{" || first === "[" ? "json" as const : "sse" as const, stream };
 }
 
-export async function readBoundedUpstreamJson(source: ReadableStream<Uint8Array>, maximumBytes = 16 * 1024 * 1024): Promise<any> {
+export async function readBoundedUpstreamJson(source: ReadableStream<Uint8Array>, maximumBytes = 16 * 1024 * 1024, signal?: AbortSignal): Promise<any> {
     const reader = source.getReader(), decoder = new TextDecoder("utf-8", { fatal: true });
     let bytes = 0, text = "", complete = false;
+    const cancel = () => { void reader.cancel(signal?.reason).catch(() => undefined); };
+    signal?.addEventListener("abort", cancel, { once: true });
     try {
+        if (signal?.aborted) throw signal.reason;
         while (true) {
             const next = await reader.read();
+            if (signal?.aborted) throw signal.reason;
             if (next.done) { complete = true; break; }
             bytes += next.value.length;
             if (bytes > maximumBytes) throw new SseProtocolError("sse_state_too_large");
@@ -51,5 +61,5 @@ export async function readBoundedUpstreamJson(source: ReadableStream<Uint8Array>
         }
         try { text += decoder.decode(); } catch { throw new SseProtocolError("sse_invalid_utf8"); }
         try { return JSON.parse(text); } catch { throw new SseProtocolError("sse_invalid_json"); }
-    } finally { if (!complete) await reader.cancel().catch(() => undefined); reader.releaseLock(); }
+    } finally { signal?.removeEventListener("abort", cancel); if (!complete) await reader.cancel().catch(() => undefined); reader.releaseLock(); }
 }
