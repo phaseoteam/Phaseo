@@ -1,0 +1,42 @@
+{
+  "key": "gmicloud:tencent/hy-image-v3.5-preview:image.generate",
+  "api_provider_id": "gmicloud",
+  "provider_slug": "gmicloud",
+  "api_model_id": "tencent/hy-image-v3.5-preview",
+  "capability_id": "image.generate",
+  "rules": [
+    {
+      "meter": "requests",
+      "unit": "request",
+      "unit_size": 1,
+      "price_per_unit": 0.024,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "GMI Cloud standard price per image.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-10-02T00:00:00Z",
+      "effective_to": null,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
+    }
+  ],
+  "regions": [],
+  "service_tiers": [
+    "standard"
+  ],
+  "sources": [
+    {
+      "kind": "pricing",
+      "url": "https://www.gmicloud.ai/zh-tw/blog/why-hy-image-35-preview-matters-what-held-up-when-i-tested-it",
+      "accessed_at": "2026-09-25T00:00:00Z"
+    }
+  ],
+  "verification": {
+    "status": "partial",
+    "checked_at": "2026-09-25T00:00:00Z",
+    "notes": "Published campaign and pricing; live billing pending."
+  }
+}

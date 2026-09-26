@@ -5572,5 +5572,141 @@
       "notes": "Exact provider route and displayed free pricing verified on the authenticated GMICloud Model Hub."
     },
     "rate_limits": []
+  },
+  {
+    "api_model_id": "tencent/hy-image-v3.5-preview",
+    "canonical_model_id": "tencent/hy-image-v3.5-preview",
+    "provider_api_model_id": "gmicloud:tencent/hy-image-v3.5-preview",
+    "provider_model_slug": "hy-image-v3.5-preview",
+    "internal_model_id": "tencent/hy-image-v3.5-preview",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "image",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-10-02T00:00:00Z",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "image.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      },
+      {
+        "capability_id": "image.edit",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": true,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": "/api/v1/ie/requestqueue/apikey/requests",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://www.gmicloud.ai/zh-tw/blog/why-hy-image-35-preview-matters-what-held-up-when-i-tested-it",
+        "accessed_at": "2026-09-25T00:00:00Z"
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-09-26T00:00:00Z",
+      "notes": "Live GMI Cloud generation and reference image editing succeeded."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "tencent/hy-image-v3.5-preview:free",
+    "canonical_model_id": "tencent/hy-image-v3.5-preview:free",
+    "provider_api_model_id": "gmicloud:tencent/hy-image-v3.5-preview:free",
+    "provider_model_slug": "hy-image-v3.5-preview",
+    "internal_model_id": "tencent/hy-image-v3.5-preview",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "image",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-09-25T00:00:00Z",
+    "effective_to": "2026-10-02T00:00:00Z",
+    "capabilities": [
+      {
+        "capability_id": "image.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      },
+      {
+        "capability_id": "image.edit",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": true,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": "/api/v1/ie/requestqueue/apikey/requests",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "promotion",
+        "url": "https://www.gmicloud.ai/hy-week",
+        "accessed_at": "2026-09-25T00:00:00Z"
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-09-26T00:00:00Z",
+      "notes": "Live GMI Cloud generation and reference image editing succeeded."
+    },
+    "rate_limits": []
   }
 ]
