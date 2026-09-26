@@ -32,7 +32,9 @@ const bundle = await build({ absWorkingDir: root, bundle: true, format: "esm", p
                 if(url.pathname === '/fill') { await stub.fill(Number(url.searchParams.get('count') ?? 128)); return Response.json({ok:true}); }
                 if(url.pathname === '/restart') { try { await stub.restart(); } catch {} return Response.json({ok:true}); }
                 if(url.pathname === '/admit') return Response.json(await stub.admit());
+                if(url.pathname === '/reviews') return Response.json(await stub.feeReviews());
                 const input = await request.json();
+                if(url.pathname === '/retry') return Response.json(await stub.retryReviewedFee(input.workspaceId, input.requestId, Number(url.searchParams.get('attempts'))));
                 if(url.pathname === '/prepare') {
                     const settings = await stub.getSettings();
                     const enabled = await stub.setOverage(true, settings.policyVersion);
@@ -44,7 +46,7 @@ const bundle = await build({ absWorkingDir: root, bundle: true, format: "esm", p
         }};
     ` } });
 const ledger = new Map(), calls = [], mutations = { holds: 0, captures: 0, releases: 0 };
-let lost = false;
+let lost = false, permanentFailure = true;
 async function source(request) {
     const url = new URL(request.url); assert.equal(url.hostname, 'source.invalid');
     const input = await request.json(), fn = url.pathname.split('/').at(-1);
@@ -58,7 +60,7 @@ async function source(request) {
         return Response.json([{ok:true, applied:true, status:state, amount_nanos:100000}]);
     }
     assert.ok(['gateway_wallet_capture_once','gateway_wallet_release_once'].includes(fn));
-    if (input.p_reservation_id.endsWith(':permanent')) return Response.json({message:'fixture'}, {status:503});
+    if (input.p_reservation_id.endsWith(':permanent') && permanentFailure) return Response.json({message:'fixture'}, {status:503});
     const wanted = fn === 'gateway_wallet_capture_once' ? 'captured' : 'released';
     if (state !== 'held' && state !== wanted) return Response.json([{ok:false, reason:'reservation_not_active'}]);
     const already = state === wanted;
@@ -88,6 +90,9 @@ try {
     await call('/prepare','unknown'); await call('/restart');
     const beforeUnknown = calls.length; const unknown = await call('/tick');
     assert.equal(unknown.rows[0].state,'review'); assert.equal(unknown.alarm,null); assert.equal(calls.length,beforeUnknown);
+    const unknownReview = await call('/reviews'); assert.equal(unknownReview[0].outcome,null);
+    assert.match((await call('/retry?attempts=0','unknown')).error,/review_conflict/);
+    assert.equal(calls.length,beforeUnknown,'Operators cannot invent a missing financial outcome');
     assert.match((await call('/prepare','unknown',{keyId:'20000000-0000-4000-8000-000000000002'})).error,/identity_conflict/);
     assert.equal((await call('/release','unknown')).settled,true);
     assert.equal((await call('/prepare','denied')).allowed,false); assert.equal((await call('/inspect')).rows.length,0);
@@ -99,6 +104,28 @@ try {
     for(let i=0;i<6;i++) await call('/tick');
     const permanent = await call('/inspect'); assert.equal(permanent.rows[0].attempts,5); assert.equal(permanent.rows[0].state,'review'); assert.equal(permanent.alarm,null);
     assert.equal(calls.filter(c=>c.fn==='gateway_wallet_capture_once' && c.id.endsWith(':permanent')).length,5);
+    assert.match((await call('/retry?attempts=4','permanent')).error,/review_conflict/);
+    assert.equal((await call('/retry?attempts=5','permanent')).review,true);
+    assert.equal((await call('/reviews'))[0].attempts,6);
+    assert.match((await call('/retry?attempts=5','permanent')).error,/review_conflict/);
+    assert.equal((await call('/inspect')).alarm,null);
+    permanentFailure = false;
+    assert.equal((await call('/retry?attempts=6','permanent')).settled,true);
+    assert.equal((await call('/reviews')).length,0);
+    assert.equal(calls.filter(c=>c.fn==='gateway_wallet_capture_once' && c.id.endsWith(':permanent')).length,7);
+    permanentFailure = true;
+    await call('/prepare?owner=ceiling','ceiling:permanent');
+    await call('/capture?owner=ceiling','ceiling:permanent');
+    for(let i=0;i<4;i++) await call('/tick?owner=ceiling');
+    for(let attempts=5;attempts<32;attempts++) {
+        assert.equal((await call('/retry?owner=ceiling&attempts='+attempts,'ceiling:permanent')).review,true);
+    }
+    await call('/restart?owner=ceiling');
+    const beforeCeiling = calls.length;
+    assert.match((await call('/retry?owner=ceiling&attempts=32','ceiling:permanent')).error,/review_conflict/);
+    assert.equal(calls.length,beforeCeiling,'Lifetime attempt ceiling survives Worker replacement');
+    assert.equal((await call('/inspect?owner=ceiling')).alarm,null);
+    assert.equal((await call('/reviews?owner=ceiling'))[0].attempts,32);
     await call('/fill?owner=full'); const beforeFull = calls.length;
     assert.match((await call('/prepare?owner=full','overflow')).error,/capacity/); assert.equal(calls.length,beforeFull);
     assert.equal((await call('/inspect?owner=full')).rows.length,128);
