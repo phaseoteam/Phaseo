@@ -3,7 +3,7 @@ import type { StreamObservation } from "@/core/stream-observation";
 
 export type Operation = "kvRead" | "kvWrite" | "kvDelete" | "kvList"
     | "supabaseRead" | "supabaseMutation" | "supabaseRpc"
-    | "healthRpc" | "healthDropped" | "quotaRpc" | "cacheRead" | "cacheWrite";
+    | "healthRpc" | "healthDropped" | "quotaRpc" | "settlementEnqueue" | "cacheRead" | "cacheWrite";
 type Counts = Partial<Record<Operation, number>>;
 const scope = new AsyncLocalStorage<RequestOperations>();
 

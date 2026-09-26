@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const recordUsageAndChargeMock = vi.hoisted(() => vi.fn(async () => {}));
+const recoveryMock = vi.hoisted(() => vi.fn(async () => false));
+vi.mock("@/core/settlement-recovery", () => ({ enqueueSettlementRecovery: recoveryMock }));
 
 vi.mock("../pricing/persist", () => ({
 	recordUsageAndCharge: recordUsageAndChargeMock,
@@ -9,6 +11,45 @@ vi.mock("../pricing/persist", () => ({
 import { recordUsageAndChargeOnce } from "./charge";
 
 describe("recordUsageAndChargeOnce", () => {
+    it("bounds stalled debit transports and hands off once after three ambiguous attempts", async () => {
+        vi.useFakeTimers();
+        const log = vi.spyOn(console, "error").mockImplementation(() => {});
+        const signals: AbortSignal[] = [];
+        recordUsageAndChargeMock.mockImplementation((args: any) => new Promise<void>((_resolve, reject) => {
+            signals.push(args.debitSignal);
+            args.debitSignal?.addEventListener("abort", () => reject(new Error("response unknown")), { once: true });
+        }));
+        recoveryMock.mockResolvedValue(true);
+        try {
+            const ctx: any = { requestId: "public", billingRequestId: "server", workspaceId: "workspace", meta: {} };
+            const pending = Promise.all(Array.from({ length: 16 }, () => recordUsageAndChargeOnce({ ctx, costNanos: 100, endpoint: "responses" })));
+            await vi.advanceTimersByTimeAsync(4_999);
+            expect(signals[0]).toBeInstanceOf(AbortSignal);
+            expect(signals[0].aborted).toBe(false);
+            expect(recoveryMock).not.toHaveBeenCalled();
+            await vi.advanceTimersByTimeAsync(10_601); await pending;
+            expect(signals).toHaveLength(3);
+            expect(new Set(signals).size).toBe(3);
+            expect(signals.every(signal => signal.aborted)).toBe(true);
+            expect(recoveryMock).toHaveBeenCalledExactlyOnceWith({ requestId: "server", workspaceId: "workspace", cost_nanos: 100, creditSnapshotBalanceNanos: null });
+            expect(ctx.meta.__usageChargeRecorded).not.toBe(true);
+            expect(ctx.meta.__usageChargeRecoveryEnqueued).toBe(true);
+            expect(vi.getTimerCount()).toBe(0);
+        } finally { log.mockRestore(); vi.useRealTimers(); }
+    });
+    it("clears successful debit deadlines and never transfers a successful charge", async () => {
+        vi.useFakeTimers();
+        try {
+            const ctx: any = { requestId: "public", billingRequestId: "server", workspaceId: "workspace", meta: {} };
+            await recordUsageAndChargeOnce({ ctx, costNanos: 100, endpoint: "responses" });
+            const signal = (recordUsageAndChargeMock.mock.calls[0] as any)[0].debitSignal;
+            expect(signal).toBeInstanceOf(AbortSignal);
+            expect(vi.getTimerCount()).toBe(0);
+            await vi.advanceTimersByTimeAsync(10_000);
+            expect(signal.aborted).toBe(false);
+            expect(recoveryMock).not.toHaveBeenCalled();
+        } finally { vi.useRealTimers(); }
+    });
     it("coalesces concurrent finalizers before the credit-write barrier", async () => {
         let finish!: () => void;
         let settle!: () => void;
@@ -59,12 +100,38 @@ describe("recordUsageAndChargeOnce", () => {
             expect(ctx.meta.__usageChargeRecorded).toBe(true);
         } finally { log.mockRestore(); vi.useRealTimers(); }
     });
+    it.each(["disabled", "failed"].flatMap(recovery =>
+        ["workspace", "request", "amount"].map(field => ({ recovery, field }))))(
+        "retains the immutable $field after exhausted attempts and $recovery recovery", async ({ recovery, field }) => {
+            vi.useFakeTimers();
+            const log = vi.spyOn(console, "error").mockImplementation(() => {});
+            try {
+                recordUsageAndChargeMock.mockRejectedValue(new Error("commit outcome unknown"));
+                if (recovery === "failed") recoveryMock.mockRejectedValue(new Error("handoff unknown"));
+                const ctx: any = { requestId: "public", billingRequestId: "immutable", workspaceId: "workspace", meta: {} };
+                const pending = recordUsageAndChargeOnce({ ctx, costNanos: 10, endpoint: "responses" });
+                await vi.runAllTimersAsync(); await pending;
+                expect(recordUsageAndChargeMock).toHaveBeenCalledTimes(3);
+                recordUsageAndChargeMock.mockResolvedValue(undefined);
+                const changed = { ...ctx, ...(field === "workspace" ? { workspaceId: "other" } : {}),
+                    ...(field === "request" ? { billingRequestId: "different" } : {}) };
+                await expect(recordUsageAndChargeOnce({ ctx: changed, costNanos: field === "amount" ? 20 : 10, endpoint: "responses" }))
+                    .rejects.toThrow("settlement_identity_conflict");
+                expect(recordUsageAndChargeMock).toHaveBeenCalledTimes(3);
+                await Promise.all(Array.from({ length: 16 }, () => recordUsageAndChargeOnce({ ctx: { ...ctx }, costNanos: 10, endpoint: "responses" })));
+                expect(recordUsageAndChargeMock).toHaveBeenCalledTimes(4);
+                expect(ctx.meta.__usageChargeRecorded).toBe(true);
+                expect(recoveryMock).toHaveBeenCalledOnce();
+            } finally { log.mockRestore(); vi.useRealTimers(); }
+        },
+    );
+
     it("passes the server-owned admission balance into settlement", async () => {
         const ctx: any = { requestId: "r", billingRequestId: "bill", workspaceId: "ws", meta: {},
             gating: { credit: { balanceNanos: 100_000_000_000_000 } }, rawBody: { creditSnapshotBalanceNanos: 1 } };
         await recordUsageAndChargeOnce({ ctx, costNanos: 10, endpoint: "responses" });
         expect(recordUsageAndChargeMock).toHaveBeenCalledWith({ requestId: "bill", workspaceId: "ws", cost_nanos: 10,
-            creditSnapshotBalanceNanos: 100_000_000_000_000 });
+            creditSnapshotBalanceNanos: 100_000_000_000_000, debitSignal: expect.any(AbortSignal) });
     });
     it("does not debit or invalidate until this request's credit snapshot is persisted", async () => {
         let finish!: () => void;
@@ -78,6 +145,43 @@ describe("recordUsageAndChargeOnce", () => {
     });
 	beforeEach(() => {
 		recordUsageAndChargeMock.mockReset().mockResolvedValue(undefined);
+		recoveryMock.mockReset().mockResolvedValue(false);
+	});
+
+	it("transfers exhausted retries to durable recovery once across concurrent finalizers", async () => {
+		vi.useFakeTimers();
+		const log = vi.spyOn(console, "error").mockImplementation(() => {});
+		try {
+			recordUsageAndChargeMock.mockRejectedValue(new Error("down"));
+			recoveryMock.mockResolvedValue(true);
+			const ctx: any = { requestId: "client", billingRequestId: "server", workspaceId: "workspace", meta: {} };
+			const pending = Promise.all(Array.from({ length: 16 }, () => recordUsageAndChargeOnce({ ctx, costNanos: 100, endpoint: "responses" })));
+			await vi.runAllTimersAsync(); await pending;
+			expect(recordUsageAndChargeMock).toHaveBeenCalledTimes(3);
+			expect(recoveryMock).toHaveBeenCalledExactlyOnceWith({ requestId: "server", workspaceId: "workspace", cost_nanos: 100, creditSnapshotBalanceNanos: null });
+			expect(ctx.meta.__usageChargeRecorded).not.toBe(true);
+			expect(ctx.meta.__usageChargeRecoveryEnqueued).toBe(true);
+			await recordUsageAndChargeOnce({ ctx, costNanos: 100, endpoint: "responses" });
+			expect(recoveryMock).toHaveBeenCalledOnce();
+			await expect(recordUsageAndChargeOnce({ ctx, costNanos: 101, endpoint: "responses" })).rejects.toThrow("settlement_identity_conflict");
+		} finally { log.mockRestore(); vi.useRealTimers(); }
+	});
+
+	it("keeps failed enqueue recoverable and adds no queue work on successful settlement", async () => {
+		vi.useFakeTimers();
+		const log = vi.spyOn(console, "error").mockImplementation(() => {});
+		try {
+			recordUsageAndChargeMock.mockRejectedValue(new Error("down"));
+			recoveryMock.mockRejectedValue(new Error("queue unavailable"));
+			const ctx: any = { requestId: "client", billingRequestId: "server", workspaceId: "workspace", meta: {} };
+			const pending = recordUsageAndChargeOnce({ ctx, costNanos: 100, endpoint: "responses" });
+			await vi.runAllTimersAsync(); await pending;
+			expect(ctx.meta.__usageChargeRecoveryEnqueued).not.toBe(true);
+			recordUsageAndChargeMock.mockResolvedValue(undefined);
+			await recordUsageAndChargeOnce({ ctx, costNanos: 100, endpoint: "responses" });
+			expect(ctx.meta.__usageChargeRecorded).toBe(true);
+			expect(recoveryMock).toHaveBeenCalledOnce();
+		} finally { log.mockRestore(); vi.useRealTimers(); }
 	});
 
 	it("records usage charge once per request context", async () => {
@@ -106,6 +210,7 @@ describe("recordUsageAndChargeOnce", () => {
 			workspaceId: "team_charge",
 			cost_nanos: 12345,
 			creditSnapshotBalanceNanos: null,
+			debitSignal: expect.any(AbortSignal),
 		});
 		expect(recordUsageAndChargeMock.mock.calls[0]?.[0]?.requestId).not.toBe(ctx.requestId);
 	});
