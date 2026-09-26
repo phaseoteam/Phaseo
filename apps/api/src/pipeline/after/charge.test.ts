@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const recordUsageAndChargeMock = vi.hoisted(() => vi.fn(async () => {}));
+const recoveryMock = vi.hoisted(() => vi.fn(async () => false));
+vi.mock("@/core/settlement-recovery", () => ({ enqueueSettlementRecovery: recoveryMock }));
 
 vi.mock("../pricing/persist", () => ({
 	recordUsageAndCharge: recordUsageAndChargeMock,
@@ -78,6 +80,43 @@ describe("recordUsageAndChargeOnce", () => {
     });
 	beforeEach(() => {
 		recordUsageAndChargeMock.mockReset().mockResolvedValue(undefined);
+		recoveryMock.mockReset().mockResolvedValue(false);
+	});
+
+	it("transfers exhausted retries to durable recovery once across concurrent finalizers", async () => {
+		vi.useFakeTimers();
+		const log = vi.spyOn(console, "error").mockImplementation(() => {});
+		try {
+			recordUsageAndChargeMock.mockRejectedValue(new Error("down"));
+			recoveryMock.mockResolvedValue(true);
+			const ctx: any = { requestId: "client", billingRequestId: "server", workspaceId: "workspace", meta: {} };
+			const pending = Promise.all(Array.from({ length: 16 }, () => recordUsageAndChargeOnce({ ctx, costNanos: 100, endpoint: "responses" })));
+			await vi.runAllTimersAsync(); await pending;
+			expect(recordUsageAndChargeMock).toHaveBeenCalledTimes(3);
+			expect(recoveryMock).toHaveBeenCalledExactlyOnceWith({ requestId: "server", workspaceId: "workspace", cost_nanos: 100, creditSnapshotBalanceNanos: null });
+			expect(ctx.meta.__usageChargeRecorded).not.toBe(true);
+			expect(ctx.meta.__usageChargeRecoveryEnqueued).toBe(true);
+			await recordUsageAndChargeOnce({ ctx, costNanos: 100, endpoint: "responses" });
+			expect(recoveryMock).toHaveBeenCalledOnce();
+			await expect(recordUsageAndChargeOnce({ ctx, costNanos: 101, endpoint: "responses" })).rejects.toThrow("settlement_identity_conflict");
+		} finally { log.mockRestore(); vi.useRealTimers(); }
+	});
+
+	it("keeps failed enqueue recoverable and adds no queue work on successful settlement", async () => {
+		vi.useFakeTimers();
+		const log = vi.spyOn(console, "error").mockImplementation(() => {});
+		try {
+			recordUsageAndChargeMock.mockRejectedValue(new Error("down"));
+			recoveryMock.mockRejectedValue(new Error("queue unavailable"));
+			const ctx: any = { requestId: "client", billingRequestId: "server", workspaceId: "workspace", meta: {} };
+			const pending = recordUsageAndChargeOnce({ ctx, costNanos: 100, endpoint: "responses" });
+			await vi.runAllTimersAsync(); await pending;
+			expect(ctx.meta.__usageChargeRecoveryEnqueued).not.toBe(true);
+			recordUsageAndChargeMock.mockResolvedValue(undefined);
+			await recordUsageAndChargeOnce({ ctx, costNanos: 100, endpoint: "responses" });
+			expect(ctx.meta.__usageChargeRecorded).toBe(true);
+			expect(recoveryMock).toHaveBeenCalledOnce();
+		} finally { log.mockRestore(); vi.useRealTimers(); }
 	});
 
 	it("records usage charge once per request context", async () => {

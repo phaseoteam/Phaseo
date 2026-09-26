@@ -55,7 +55,16 @@ export async function recordUsageAndChargeOnce(args: {
 			}
 		}
 
+		let recoveryQueued = false;
+		try {
+			const { enqueueSettlementRecovery } = await import("@/core/settlement-recovery");
+			recoveryQueued = await enqueueSettlementRecovery(input);
+			if (recoveryQueued) meta.__usageChargeRecoveryEnqueued = true;
+		} catch {
+			console.error("settlement_recovery_enqueue_failed", { requestId: input.requestId, workspaceId: input.workspaceId });
+		}
 		console.error("recordUsageAndCharge failed after retries", {
+			recoveryQueued,
 			error: lastError,
 			requestId: ctx.requestId,
 			workspaceId: input.workspaceId,
@@ -69,8 +78,8 @@ export async function recordUsageAndChargeOnce(args: {
 	chargeAttempts.set(meta, attempt);
 	try { await promise; }
 	finally {
-		// Failure is not success: permit a later authoritative retry with the same
-		// DB idempotency key. This memory-only guard is not a durable retry queue.
-		if (meta.__usageChargeRecorded !== true && chargeAttempts.get(meta) === attempt) chargeAttempts.delete(meta);
+		// Retain coalescing after a confirmed debit OR durable handoff. Otherwise
+		// allow a later retry with the same DB identity; this guard is memory-only.
+		if (meta.__usageChargeRecorded !== true && meta.__usageChargeRecoveryEnqueued !== true && chargeAttempts.get(meta) === attempt) chargeAttempts.delete(meta);
 	}
 }

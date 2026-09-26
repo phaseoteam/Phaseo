@@ -35,7 +35,7 @@ const bundle = await build({ absWorkingDir: root, bundle: true, format: "esm", p
         });}};
     ` } });
 const calls = new Map();
-const runtime = new Miniflare({ modules: true, script: bundle.outputFiles[0].text, compatibilityDate: "2025-10-01", compatibilityFlags: ["nodejs_compat"],
+const runtime = new Miniflare({ modules: [{ type: "ESModule", path: "settlement.mjs", contents: bundle.outputFiles[0].text }], compatibilityDate: "2025-10-01", compatibilityFlags: ["nodejs_compat"],
     serviceBindings: { LEDGER: async request => {
         const mode = new URL(request.url).pathname.slice(1), count = (calls.get(mode) ?? 0) + 1;
         calls.set(mode, count);
