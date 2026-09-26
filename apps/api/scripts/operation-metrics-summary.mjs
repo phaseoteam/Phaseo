@@ -1,4 +1,6 @@
-const operations = new Set(["kvRead", "kvWrite", "kvDelete", "kvList", "supabaseRead", "supabaseMutation", "supabaseRpc", "healthRpc", "healthDropped", "quotaRpc", "cacheRead", "cacheWrite"]);
+const operations = new Set(["kvRead", "kvWrite", "kvDelete", "kvList", "supabaseRead", "supabaseMutation", "supabaseRpc", "healthRpc", "healthDropped", "quotaRpc", "settlementEnqueue", "cacheRead", "cacheWrite"]);
+const kvOperations = new Set(["kvRead", "kvWrite", "kvDelete", "kvList"]);
+const kvPurposes = ["auth", "credit", "sticky", "context", "health", "other"];
 const counts = value => Object.fromEntries(Object.entries(value ?? {}).filter(([key, count]) => operations.has(key) && Number.isSafeInteger(count) && count >= 0));
 const duration = value => typeof value === "number" && Number.isFinite(value) && value >= 0 ? value : null;
 const count = value => Number.isSafeInteger(value) && value >= 0 ? value : null;
@@ -16,6 +18,10 @@ export function operationMetricsSummary(record) {
         firstFrameMs: duration(stream.firstFrameMs), firstOutputObservedMs: duration(stream.firstOutputObservedMs), durationMs: duration(stream.durationMs),
     } : undefined;
     return { event: "gateway_operations", requestId: record.requestId,
+        ...(typeof record.runtimeInstanceId === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(record.runtimeInstanceId)
+            ? { runtimeInstanceId: record.runtimeInstanceId } : {}),
+        kvByPurpose: Object.fromEntries(kvPurposes.filter(purpose => record.kvByPurpose?.[purpose])
+            .map(purpose => [purpose, Object.fromEntries(Object.entries(counts(record.kvByPurpose[purpose])).filter(([key]) => kvOperations.has(key)))])),
         total: counts(record.total), beforeDispatch: counts(record.beforeDispatch),
         beforeDispatchMs: duration(record.beforeDispatchMs), complete: record.complete === true,
         pendingBackground: count(record.pendingBackground), ...(safeStream ? { stream: safeStream } : {}) };

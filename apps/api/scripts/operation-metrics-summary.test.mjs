@@ -2,6 +2,20 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { operationMetricsSummary } from "./operation-metrics-summary.mjs";
 
+test("cost attribution retains only fixed categories and a valid module marker", () => {
+    const runtimeInstanceId = "12345678-1234-4123-8123-123456789012";
+    const summary = operationMetricsSummary({ requestId: "test-request", runtimeInstanceId,
+        total: { settlementEnqueue: 1 }, kvByPurpose: { sticky: { kvWrite: 3, healthRpc: 7, secret: "private" },
+            auth: { kvRead: 2, kvWrite: -1 }, private: { kvWrite: 999 }, other: null } });
+    assert.equal(summary.runtimeInstanceId, runtimeInstanceId);
+    assert.deepEqual(summary.total, { settlementEnqueue: 1 });
+    assert.deepEqual(summary.kvByPurpose, { auth: { kvRead: 2 }, sticky: { kvWrite: 3 } });
+    assert.ok(!JSON.stringify(summary).includes("private"));
+    for (const marker of ["private", {}, runtimeInstanceId + "private", null]) {
+        assert.ok(!Object.hasOwn(operationMetricsSummary({ requestId: "test-request", runtimeInstanceId: marker }), "runtimeInstanceId"));
+    }
+});
+
 test("tail summaries retain only finite counters, timings and enumerated stream outcomes", () => {
     const summary = operationMetricsSummary({ requestId: "test-request", total: { kvRead: 1, kvWrite: -1, secret: 20 },
         pendingBackground: "private", stream: { state: "COMPLETED", committed: true, deliveredFrames: 3, deliveredBytes: 100,
