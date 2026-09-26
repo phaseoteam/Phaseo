@@ -31,8 +31,20 @@ describe("Chat terminal marker preservation", () => {
     });
     it("does not manufacture a terminal marker from EOF or an incomplete frame", async () => {
         for (const source of [terminal, `${terminal}data: [DO`]) {
-            const text = await new Response(transformChatStream(new Response(source).body!, args, state())).text();
-            expect(text).not.toContain("[DONE]");
+            await expect(new Response(transformChatStream(new Response(source).body!, args, state())).text())
+                .rejects.toThrow("sse_missing_terminal");
         }
+    });
+    it("parses CRLF and multiline JSON data without dropping tokens", async () => {
+        const source = 'data: {"choices":\r\ndata: []}\r\n\r\ndata: [DONE]\r\n\r\n';
+        const text = await new Response(transformChatStream(new Response(source).body!, args, state())).text();
+        expect(text).toBe('data: {"choices":[]}\n\ndata: [DONE]\n\n');
+    });
+    it("propagates malformed JSON and upstream read errors instead of closing successfully", async () => {
+        await expect(new Response(transformChatStream(new Response('data: {broken}\n\n').body!, args, state())).text())
+            .rejects.toThrow("sse_invalid_json");
+        const source = new ReadableStream<Uint8Array>({ pull(controller) { controller.error(new Error("upstream disconnected")); } });
+        await expect(new Response(transformChatStream(source, args, state())).text()).rejects.toThrow("upstream disconnected");
+        expect(source.locked).toBe(false);
     });
 });
