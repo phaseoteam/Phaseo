@@ -729,6 +729,38 @@ describe("video-finalization", () => {
 		expect(markVideoJobBilledMock).not.toHaveBeenCalled();
 	});
 
+	it.each([null, [], {}, [{ ok: true }]])("does not legacy-charge after an ambiguous real capture response %j", async (data) => {
+		const actual = await vi.importActual<typeof import("./wallet-reservations")>("./wallet-reservations");
+		const rpc = vi.fn().mockResolvedValue({ data, error: null });
+		getSupabaseAdminMock.mockReturnValue({ rpc });
+		captureWalletReservationMock.mockImplementation(actual.captureWalletReservation);
+		const result = await finalizeVideoJob({ workspaceId: "ws", videoId: "ambiguous", providerId: "openai",
+			status: "completed", model: "openai/sora-2", seconds: 4 });
+		expect(result).toMatchObject({ charged: false, reason: "capture_failed" });
+		expect(rpc).toHaveBeenCalledTimes(1);
+		expect(rpc.mock.calls[0][0]).toBe("gateway_wallet_capture_once");
+		expect(recordUsageAndChargeMock).not.toHaveBeenCalled();
+		expect(markVideoJobBilledMock).not.toHaveBeenCalled();
+	});
+
+	it.each([false, true])("does not use unknown capture as permission to debit again (exact pricing: %s)", async (exact) => {
+		captureWalletReservationMock.mockResolvedValue({ status: "unknown", applied: false, alreadyApplied: false });
+		if (exact) {
+			getVideoJobMetaMock.mockResolvedValue({ model: "openai/sora-2", seconds: 4, keySource: "gateway",
+				reservationId: "video_hold:unknown", reservedNanos: 100 });
+			loadPriceCardMock.mockResolvedValue({ rules: [] });
+			computeBillMock.mockReturnValue({ pricing: { total_nanos: 100 } });
+			applyByokServiceFeeMock.mockResolvedValue({ totalNanos: 100, pricedUsage: { pricing: { total_nanos: 100 } } });
+		}
+		const result = await finalizeVideoJob({ workspaceId: "ws", videoId: "unknown", providerId: "openai",
+			status: "completed", model: "openai/sora-2", seconds: 4 });
+		expect(result).toMatchObject({ charged: false, reason: "unknown" });
+		expect(captureWalletReservationMock).toHaveBeenCalledTimes(1);
+		expect(settleWalletReservationMock).not.toHaveBeenCalled();
+		expect(recordUsageAndChargeMock).not.toHaveBeenCalled();
+		expect(markVideoJobBilledMock).not.toHaveBeenCalled();
+	});
+
 	it.each(["failed", "cancelled", "expired"] as const)("releases reservation on %s terminal status", async (status) => {
 		getVideoJobRecordMock.mockResolvedValueOnce({
 			status: "in_progress",

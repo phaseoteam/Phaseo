@@ -28,6 +28,8 @@ export type WalletReservationStatus =
 	| "key_wrong_workspace"
 	| "reserved_balance_mismatch"
 	| "reservation_exceeded"
+	| "reservation_not_active"
+	| "wallet_not_found"
 	| "not_found"
 	| "unknown";
 
@@ -79,6 +81,7 @@ async function invalidateReservationCaches(workspaceId: string, keyId?: string |
 
 function normalizeStatus(value: unknown): WalletReservationStatus {
 	const status = String(value ?? "").trim().toLowerCase();
+	if (status === "reservation_not_found") return "not_found";
 	if (
 		status === "held" ||
 		status === "captured" ||
@@ -101,6 +104,8 @@ function normalizeStatus(value: unknown): WalletReservationStatus {
 		status === "key_wrong_workspace" ||
 		status === "reserved_balance_mismatch" ||
 		status === "reservation_exceeded" ||
+		status === "reservation_not_active" ||
+		status === "wallet_not_found" ||
 		status === "not_found"
 	) {
 		return status;
@@ -109,35 +114,44 @@ function normalizeStatus(value: unknown): WalletReservationStatus {
 }
 
 function toFinite(value: unknown): number | null {
+	if ((typeof value !== "number" && typeof value !== "string") || String(value).trim() === "") return null;
 	const n = Number(value);
 	return Number.isFinite(n) ? n : null;
 }
 
-function normalizeResult(data: unknown, successStatus?: "held" | "captured" | "released"): WalletReservationResult | null {
+function normalizeResult(data: unknown, successStatus: "held" | "captured" | "released"): WalletReservationResult {
+	const invalid = () => new Error("wallet_reservation_confirmation_invalid");
+	if (Array.isArray(data) && data.length !== 1) throw invalid();
 	const row = (Array.isArray(data) ? data[0] : data) as WalletReservationRpcRow | null | undefined;
-	if (!row || typeof row !== "object") return null;
+	if (!row || typeof row !== "object" || Array.isArray(row)) throw invalid();
+	for (const flag of [row.ok, row.applied, row.already_applied]) {
+		if (flag != null && typeof flag !== "boolean") throw invalid();
+	}
 	const explicitStatus = normalizeStatus(row.status);
+	if (row.status != null && explicitStatus === "unknown") throw invalid();
 	const reason = String(row.reason ?? "").trim().toLowerCase();
+	const replayStatus = reason === "already_reserved" ? "held" : reason === "already_captured" ? "captured"
+		: reason === "already_released" ? "released" : null;
 	const inferredStatus = explicitStatus !== "unknown"
 		? explicitStatus
-		: reason === "already_reserved" || (successStatus === "held" && row.ok === true)
-			? "held"
-			: reason === "already_captured" || (successStatus === "captured" && row.ok === true)
-				? "captured"
-				: reason === "already_released" || (successStatus === "released" && row.ok === true)
-					? "released"
-					: reason === "reservation_exceeded"
-						? "reservation_exceeded"
-						: normalizeStatus(reason);
+		: replayStatus ?? (row.ok === true && !reason ? successStatus : normalizeStatus(reason));
+	const confirmed = inferredStatus === "held" || inferredStatus === "captured" || inferredStatus === "released";
+	const applied = row.applied === true;
+	const alreadyApplied = row.already_applied === true || replayStatus !== null;
+	const amountNanos = toFinite(row.amount_nanos);
+	// An unknown/contradictory response is not proof that no hold or debit occurred.
+	// Throw so callers cannot switch to a different billing identity after a commit.
+	if (inferredStatus === "unknown" ||
+		(confirmed && reason !== "" && replayStatus === null && normalizeStatus(reason) !== inferredStatus) ||
+		(confirmed && (row.ok === false || (!applied && !alreadyApplied) ||
+			amountNanos == null || !Number.isSafeInteger(amountNanos) || amountNanos < 0)) ||
+		(!confirmed && (row.ok === true || applied || alreadyApplied)) ||
+		(replayStatus !== null && explicitStatus !== "unknown" && replayStatus !== explicitStatus)) throw invalid();
 	return {
-		applied: row.applied === true,
-		alreadyApplied:
-			row.already_applied === true ||
-			reason === "already_reserved" ||
-			reason === "already_captured" ||
-			reason === "already_released",
+		applied,
+		alreadyApplied,
 		status: inferredStatus,
-		amountNanos: Math.max(0, Number(row.amount_nanos ?? 0) || 0),
+		amountNanos: amountNanos ?? 0,
 		beforeBalanceNanos: toFinite(row.before_balance_nanos),
 		afterBalanceNanos: toFinite(row.after_balance_nanos),
 		beforeReservedNanos: toFinite(row.before_reserved_nanos),
@@ -193,16 +207,7 @@ export async function reserveWalletCredits(args: {
 		...(args.keyId ? { p_key_id: args.keyId } : {}),
 		...(args.requestCount != null ? { p_request_count: Math.max(0, Math.trunc(args.requestCount)) } : {}),
 	});
-	const normalized = normalizeResult(data, "held") ?? {
-		applied: false,
-		alreadyApplied: false,
-		status: "unknown",
-		amountNanos: Math.max(0, Math.trunc(args.amountNanos)),
-		beforeBalanceNanos: null,
-		afterBalanceNanos: null,
-		beforeReservedNanos: null,
-		afterReservedNanos: null,
-	};
+	const normalized = normalizeResult(data, "held");
 	if (normalized.applied || normalized.alreadyApplied) await invalidateReservationCaches(args.workspaceId, args.keyId);
 	return normalized;
 }
@@ -218,16 +223,7 @@ export async function captureWalletReservation(args: {
 		p_reservation_id: args.reservationId,
 		p_capture_ref_id: args.captureRefId ?? null,
 	});
-	const normalized = normalizeResult(data, "captured") ?? {
-		applied: false,
-		alreadyApplied: false,
-		status: "unknown",
-		amountNanos: 0,
-		beforeBalanceNanos: null,
-		afterBalanceNanos: null,
-		beforeReservedNanos: null,
-		afterReservedNanos: null,
-	};
+	const normalized = normalizeResult(data, "captured");
 	if (normalized.applied || normalized.alreadyApplied) await invalidateReservationCaches(args.workspaceId, args.keyId);
 	return normalized;
 }
@@ -243,16 +239,7 @@ export async function releaseWalletReservation(args: {
 		p_reservation_id: args.reservationId,
 		p_release_ref_id: args.releaseRefId ?? null,
 	});
-	const normalized = normalizeResult(data, "released") ?? {
-		applied: false,
-		alreadyApplied: false,
-		status: "unknown",
-		amountNanos: 0,
-		beforeBalanceNanos: null,
-		afterBalanceNanos: null,
-		beforeReservedNanos: null,
-		afterReservedNanos: null,
-	};
+	const normalized = normalizeResult(data, "released");
 	if (normalized.applied || normalized.alreadyApplied) await invalidateReservationCaches(args.workspaceId, args.keyId);
 	return normalized;
 }
@@ -272,16 +259,7 @@ export async function settleWalletReservation(args: {
 		p_settle_ref_id: args.settleRefId ?? null,
 	});
 	if (result.error) throw result.error;
-	const normalized = normalizeResult(result.data, "captured") ?? {
-		applied: false,
-		alreadyApplied: false,
-		status: "unknown",
-		amountNanos: Math.max(0, Math.trunc(args.actualNanos)),
-		beforeBalanceNanos: null,
-		afterBalanceNanos: null,
-		beforeReservedNanos: null,
-		afterReservedNanos: null,
-	};
+	const normalized = normalizeResult(result.data, "captured");
 	if (normalized.applied || normalized.alreadyApplied) await invalidateReservationCaches(args.workspaceId, args.keyId);
 	return normalized;
 }
