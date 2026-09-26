@@ -48,7 +48,9 @@ afterAll(() => {
 });
 
 describe("google-ai-studio execute usage fallback", () => {
-	it.each(["openai.chat.completions", "openai.responses", "anthropic.messages"])("forwards native output before upstream completion: %s", async protocol => {
+	it.each(["openai.chat.completions", "openai.responses", "anthropic.messages"].flatMap(protocol =>
+		["gemini-3.8-flash", "gemini-3.1-flash-image"].map(model => [protocol, model])))
+	("forwards native output before upstream completion: %s %s", async (protocol, model) => {
 		let upstream!: ReadableStreamDefaultController<Uint8Array>;
 		const encoder = new TextEncoder();
 		const send = (event: unknown) => upstream.enqueue(encoder.encode(`data: ${JSON.stringify(event)}\n\n`));
@@ -56,8 +58,8 @@ describe("google-ai-studio execute usage fallback", () => {
 		const mock = installFetchMock([{ match: url => url.endsWith("/v1beta/interactions"),
 			response: new Response(source, { headers: { "Content-Type": "text/event-stream" } }) }]);
 		try {
-			const result = await executor(buildArgs({ model: "google/gemini-3.8-flash", stream: true, store: false },
-				{ providerModelSlug: "gemini-3.8-flash", protocol }));
+			const result = await executor(buildArgs({ model: `google/${model}`, stream: true, store: false },
+				{ providerModelSlug: model, protocol }));
 			expect(mock.calls[0]?.bodyJson).toMatchObject({ stream: true, store: false });
 			expect(result.kind).toBe("stream");
 			if (result.kind !== "stream") throw new Error("expected stream");
@@ -85,6 +87,19 @@ describe("google-ai-studio execute usage fallback", () => {
 				while (true) { const chunk = await reader.read(); if (chunk.done) break; terminal += new TextDecoder().decode(chunk.value); }
 				expect(terminal).toContain(protocol === "anthropic.messages" ? "message_stop" : protocol === "openai.responses" ? "response.completed" : "[DONE]");
 			} finally { clearTimeout(timer); await reader.cancel().catch(() => {}); reader.releaseLock(); }
+		} finally { mock.restore(); }
+	});
+	it("rejects JSON for a requested stream rather than buffering and faking SSE", async () => {
+		let cancelled = false;
+		const mock = installFetchMock([{ match: url => url.endsWith("/v1beta/interactions"),
+			response: new Response(new ReadableStream({ cancel() { cancelled = true; } }), { headers: { "Content-Type": "application/json" } }) }]);
+		try {
+			const result = await executor(buildArgs({ model: "google/gemini-3.8-flash", stream: true },
+				{ providerModelSlug: "gemini-3.8-flash" }));
+			expect(result.kind).toBe("completed");
+			expect(result.upstream?.ok).toBe(false);
+			if (result.kind === "completed") expect(result.ir).toBeUndefined();
+			expect(cancelled).toBe(true);
 		} finally { mock.restore(); }
 	});
 	it("uses generateContent for explicit cached content", async () => {
