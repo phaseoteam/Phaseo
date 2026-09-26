@@ -71,7 +71,7 @@ async function source(request) {
     }
     if (ledger.has(identity)) {
         if (ledger.get(identity) !== input.p_cost_nanos) return Response.json({ message: "request_charge_amount_mismatch" }, { status: 409 });
-        return Response.json({ status: "ok", already_applied: true, invalidate_credit_cache: true });
+        return Response.json({ status: "top_up_not_required", already_applied: true, invalidate_credit_cache: true });
     }
     ledger.set(identity, input.p_cost_nanos);
     if (input.p_request_id === "stalled-response") {
@@ -82,7 +82,7 @@ async function source(request) {
         lostResponse = true;
         return Response.json({ message: "response lost after commit" }, { status: 504 });
     }
-    return Response.json({ status: "ok", applied: true, invalidate_credit_cache: false });
+    return Response.json({ status: "top_up_not_required", applied: true, invalidate_credit_cache: false });
 }
 function runtime() {
     return new Miniflare({ workers: [{ name: "recovery",

@@ -14,6 +14,13 @@ const other = "10000000-0000-4000-8000-000000000002";
 const missing = "10000000-0000-4000-8000-000000000003";
 const deadLetters = [];
 let lostResponse = false;
+const corruptions = new Map([
+    ["empty-confirmation", () => null],
+    ["multiple-confirmations", result => [result, result]],
+    ["unknown-confirmation", result => ({ ...result, status: "unknown" })],
+    ["contradictory-confirmation", result => ({ ...result, applied: true, already_applied: true })],
+]);
+const corrupted = new Set();
 const migration = name => readFile(new URL(`../../../supabase/migrations/${name}.sql`, import.meta.url), "utf8");
 function functionSql(sql, name) {
     const marker = `create or replace function public.${name}(`;
@@ -47,6 +54,10 @@ async function source(request) {
     if (input.p_request_id === "lost-response" && !lostResponse) {
         lostResponse = true; // The SQL transaction has committed before this transport failure.
         return Response.json({ message: "fixture response loss" }, { status: 504 });
+    }
+    if (corruptions.has(input.p_request_id) && !corrupted.has(input.p_request_id)) {
+        corrupted.add(input.p_request_id);
+        return Response.json(corruptions.get(input.p_request_id)(result));
     }
     return Response.json(result);
 }
@@ -106,7 +117,24 @@ try {
     assert.equal(deadLetters.length, 3);
     assert.deepEqual(deadLetters.map(row => row.requestId).sort(), ["held-funds", "lost-response", "missing-wallet"]);
     assert.equal(await balance(missing), undefined);
+    let expectedBalance = 9900;
+    for (const requestId of corruptions.keys()) {
+        const ambiguous = record(requestId, other);
+        const outcome = await (await mf.getWorker("recovery")).queue("recovery", [message(requestId, ambiguous)]);
+        expectedBalance -= 100;
+        assert.deepEqual(await balance(other), { balance_nanos: expectedBalance, reserved_nanos: 0 });
+        assert.deepEqual(outcome.explicitAcks, [], `${requestId} must not acknowledge an ambiguous debit`);
+        assert.deepEqual(outcome.retryMessages, [{ msgId: requestId, delaySeconds: 30 }]);
+        await mf.dispose(); mf = runtime();
+        const confirmed = await (await mf.getWorker("recovery")).queue("recovery", [
+            message(`${requestId}-replay`, ambiguous, 2), message(`${requestId}-duplicate`, ambiguous, 3),
+        ]);
+        assert.deepEqual(confirmed.explicitAcks, [`${requestId}-replay`, `${requestId}-duplicate`]);
+        assert.deepEqual(await balance(other), { balance_nanos: expectedBalance, reserved_nanos: 0 });
+        assert.equal((await charges()).filter(row => row.workspace_id === other && row.request_id === requestId).length, 1);
+    }
     console.log(JSON.stringify({ result: "PASS", actualSqlFunctions: true, commitResponseLossRestartReplay: true,
         amountConflictQuarantined: true, heldFundsPreserved: true, workspaceIdentityIsolated: true,
-        missingWalletNotSettled: true, externalCalls: 0, concurrency: "PGlite serializes SQL; not a lock-contention test" }));
+        missingWalletNotSettled: true, malformedConfirmationRestartReplayCases: corruptions.size,
+        externalCalls: 0, concurrency: "PGlite serializes SQL; not a lock-contention test" }));
 } finally { await mf?.dispose(); await db.close(); }
