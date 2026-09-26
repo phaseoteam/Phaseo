@@ -71,6 +71,7 @@ pub struct AnthropicMessagesRequest {
 	pub provider: Option<HashMap<String, String>>,
 	pub provider_options: Option<HashMap<String, String>>,
 	pub reasoning: Option<HashMap<String, String>>,
+	pub service_tier: Option<String>,
 	pub session_id: Option<String>,
 	pub stop_sequences: Option<Vec<String>>,
 	pub stream: Option<bool>,

@@ -941,6 +941,14 @@ export type CreateAnthropicMessageParams = {
       mode?: "standard" | "pro";
       summary?: "auto" | "concise" | "detailed";
     };
+    service_tier?:
+      | "standard"
+      | "default"
+      | "fast"
+      | "ultrafast"
+      | "priority"
+      | "flex"
+      | "batch";
     session_id?: string;
     stop_sequences?: string[];
     stream?: boolean;
@@ -2163,7 +2171,13 @@ export type CreateChatCompletionParams = {
     safety_identifier?: string | null;
     seed?: number;
     service_tier?:
-      "standard" | "default" | "fast" | "priority" | "flex" | "batch";
+      | "standard"
+      | "default"
+      | "fast"
+      | "ultrafast"
+      | "priority"
+      | "flex"
+      | "batch";
     session_id?: string;
     stop?: string | string[];
     store?: boolean;
@@ -5026,7 +5040,13 @@ export type CreateResponseParams = {
     };
     safety_identifier?: string | null;
     service_tier?:
-      "standard" | "default" | "fast" | "priority" | "flex" | "batch";
+      | "standard"
+      | "default"
+      | "fast"
+      | "ultrafast"
+      | "priority"
+      | "flex"
+      | "batch";
     session_id?: string;
     store?: boolean;
     stream?: boolean;

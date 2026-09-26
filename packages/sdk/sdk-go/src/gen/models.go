@@ -64,6 +64,7 @@ type AnthropicMessagesRequest struct {
 	Provider *map[string]interface{} `json:"provider,omitempty"`
 	ProviderOptions *map[string]interface{} `json:"provider_options,omitempty"`
 	Reasoning *map[string]interface{} `json:"reasoning,omitempty"`
+	ServiceTier *string `json:"service_tier,omitempty"`
 	SessionId *string `json:"session_id,omitempty"`
 	StopSequences *[]string `json:"stop_sequences,omitempty"`
 	Stream *bool `json:"stream,omitempty"`

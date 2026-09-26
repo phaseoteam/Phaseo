@@ -70,6 +70,7 @@ struct AnthropicMessagesRequest {
 	std::map<std::string, std::any> provider;
 	std::map<std::string, std::any> provider_options;
 	std::map<std::string, std::any> reasoning;
+	std::any service_tier;
 	std::string session_id;
 	std::vector<std::string> stop_sequences;
 	std::optional<bool> stream;

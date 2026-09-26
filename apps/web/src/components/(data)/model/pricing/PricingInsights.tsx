@@ -91,7 +91,7 @@ import {
 	resolveProviderLogoId,
 } from "@/lib/providers/providerOffers";
 import { cn } from "@/lib/utils";
-import { getTierFilterMeta } from "@/lib/models/tierFilterStyles";
+import { ServiceTierBadge } from "@/components/(data)/model/pricing/ServiceTierBadge";
 import {
 	getPricingHistoryTimestamps,
 	pricingHistoryToCsv,
@@ -463,7 +463,7 @@ const RANGE_LABELS: Array<{ value: PricingRange; label: string }> = [
 	{ value: "1y", label: "1Y" },
 	{ value: "all", label: "All" },
 ];
-const PRICING_PLAN_ORDER = ["free", "standard", "priority", "flex", "batch"];
+const PRICING_PLAN_ORDER = ["free", "standard", "priority", "ultrafast", "flex", "batch"];
 
 function getProviderPricingPlans(provider: ProviderPricing): string[] {
 	const plans = Array.from(
@@ -486,23 +486,19 @@ function formatMeterLabel(meter: string): string {
 }
 
 function formatPricingPlanLabel(plan: string): string {
-	return plan
+	const normalizedPlan = String(plan ?? "").trim().toLowerCase();
+	const knownLabels: Record<string, string> = {
+		standard: "Standard",
+		fast: "Fast",
+		priority: "Fast",
+		ultrafast: "Ultrafast",
+		flex: "Flex",
+		batch: "Batch",
+		free: "Free",
+	};
+	return knownLabels[normalizedPlan] ?? normalizedPlan
 		.replace(/[_-]+/g, " ")
 		.replace(/\b\w/g, (character) => character.toUpperCase());
-}
-
-function ServiceTierIcon({ plan }: { plan: string }) {
-	const tier = getTierFilterMeta(plan);
-	const Icon = tier.icon;
-	return <Icon className={cn("size-3.5 shrink-0", tier.iconClassName)} aria-hidden="true" />;
-}
-
-function ServiceTierIconBadge({ plan }: { plan: string }) {
-	return (
-		<span className="grid size-6 shrink-0 place-items-center rounded-md border border-border bg-background">
-			<ServiceTierIcon plan={plan} />
-		</span>
-	);
 }
 
 function PricingLineTypeIcon({ plan, color }: { plan: string; color: string }) {
@@ -523,14 +519,10 @@ function PricingLineTypeIcon({ plan, color }: { plan: string; color: string }) {
 }
 
 function PricingTierLabel({ providerName, plan }: { providerName: string; plan: string }) {
-	const tier = getTierFilterMeta(plan);
 	return (
 		<span className="inline-flex items-center gap-2.5 whitespace-nowrap text-foreground">
-			<ServiceTierIconBadge plan={plan} />
-			<span>
-				{providerName}{" "}
-				<span className={tier.iconClassName}>({formatPricingPlanLabel(plan)})</span>
-			</span>
+			<span>{providerName}</span>
+			<ServiceTierBadge plan={plan} />
 		</span>
 	);
 }
@@ -1675,6 +1667,7 @@ export default function PricingInsights({
 																{row.providerName}
 															</span>
 														</Link>
+										<ServiceTierBadge plan={row.pricingPlan} />
 										{row.isExternal ? <ExternalProviderBadge /> : null}
 										{additionalTierRows.length > 0 ? <Button
 											type="button"
@@ -1846,7 +1839,8 @@ export default function PricingInsights({
 												</span>
 												{row.providerName}
 											</span>
-											{row.isExternal ? <ExternalProviderBadge /> : null}
+										<ServiceTierBadge plan={row.pricingPlan} />
+										{row.isExternal ? <ExternalProviderBadge /> : null}
 							{additionalTierRows.length > 0 ? <Button type="button" variant="ghost" size="icon" onClick={(event) => { event.stopPropagation(); toggleProviderExpanded(row.providerId); }} aria-expanded={isExpanded} aria-label={`${isExpanded ? "Collapse" : "Expand"} ${row.providerName} service tiers`} className="size-7 shrink-0 rounded-md text-muted-foreground aria-expanded:!bg-transparent aria-expanded:text-muted-foreground hover:text-foreground hover:aria-expanded:!bg-transparent">
 														<ChevronDown className={cn("size-3.5 transition-transform", !isExpanded && "-rotate-90")} />
 													</Button> : null}

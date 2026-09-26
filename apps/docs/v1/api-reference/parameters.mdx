@@ -44,7 +44,7 @@ Parameter support still varies by endpoint, model, and provider. The model quick
 | [`reasoning_effort`](#reasoning_effort) | `string` | Lowering or increasing reasoning budget. |
 | [`reasoning_tokens`](#reasoning_tokens) | `integer` | Reasoning-specific token limit or accounting field. |
 | [`include_reasoning`](#include_reasoning) | `boolean` | Returning reasoning content or summaries where supported. |
-| [`service_tier`](#service_tier) | `string` | Choosing a supported request tier such as `priority` or `flex`; OpenAI also accepts `fast` as an alias. |
+| [`service_tier`](#service_tier) | `string` | Choosing a supported request tier such as `fast`, `ultrafast`, or `flex`. |
 | [`prompt_cache_key`](#prompt_cache_key) | `string` | Keeping cache-aware routing sticky for related requests. |
 | [`prompt_cache_options`](#prompt_cache_options) | `object` | Setting OpenAI prompt-cache mode and TTL controls. |
 | [`cache_control`](#cache_control) | `object` | Applying provider-neutral prompt cache hints or breakpoints. |
@@ -62,13 +62,13 @@ Parameter support still varies by endpoint, model, and provider. The model quick
 - [Chat Completions](./endpoint/chat-completions.mdx)
 - [Responses](/v1/api-reference/endpoint/responses)
 
-Use `priority` or `flex` only when the selected model and provider combination supports them. Phaseo keeps `priority` as the canonical premium tier; OpenAI routes also accept `fast` as an alias. `standard` is the default when `service_tier` is omitted.
+Use `ultrafast`, `fast` (or `priority` where supported), and `flex` only when the selected model and provider combination supports them. `Ultrafast` selects the highest-speed supported tier; `fast` and `priority` select the same Fast routing and pricing. `standard` is the default when `service_tier` is omitted.
 
 `Batch` is not a `service_tier` value. Batch requests use the separate Batch API.
 
 For Anthropic-compatible Messages requests, Anthropic's native upstream values are `auto` and `standard_only`. Phaseo may normalize or map these values across providers while preserving Anthropic-compatible behavior on `/v1/messages`.
 
-If you are using an official Anthropic SDK with a custom base URL pointed at Phaseo, prefer Anthropic-native values on `/v1/messages`. For normalized cross-provider tier controls such as `priority` and `flex`, or OpenAI's `fast` alias, prefer raw HTTP requests or the gateway-native / OpenAI-style text APIs.
+If you are using an official Anthropic SDK with a custom base URL pointed at Phaseo, prefer Anthropic-native values on `/v1/messages`. For normalized cross-provider tier controls such as `ultrafast`, `priority`, and `flex`, or OpenAI's `fast` alias, prefer raw HTTP requests or the gateway-native / OpenAI-style text APIs.
 
 ## Parameter reference
 
@@ -425,10 +425,10 @@ Selects a supported routing or pricing tier on compatible text APIs.
 | Field | Value |
 | --- | --- |
 | Type | `string` |
-| Supported values | `standard`, `fast`, `priority`, `flex` |
+| Supported values | `standard`, `fast`, `ultrafast`, `priority`, `flex` |
 | Default | `standard` |
 
-Use `priority` or `flex` only when the chosen model and provider combination supports them. Phaseo keeps `priority` as the canonical premium tier; supported OpenAI routes also accept `fast` as an alias with identical routing and pricing. Omit the field to stay on the default standard tier.
+Use `ultrafast`, `fast` (or `priority` where supported), and `flex` only when the chosen model and provider combination supports them. `Ultrafast` selects the highest-speed supported tier; `fast` and `priority` select the same Fast routing and pricing. Omit the field to stay on the default standard tier.
 
 Phaseo maps these gateway-normalized tier values to provider-native controls internally, so callers can use the same `service_tier` values across supported text surfaces.
 

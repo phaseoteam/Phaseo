@@ -118,6 +118,8 @@ class AnthropicMessagesRequest
 	/** @var array<string, mixed>|null */
 	public $reasoning;
 	/** @var string|null */
+	public $service_tier;
+	/** @var string|null */
 	public $session_id;
 	/** @var array|null */
 	public $stop_sequences;

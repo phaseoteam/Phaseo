@@ -9497,6 +9497,7 @@ components:
             - standard
             - default
             - fast
+            - ultrafast
             - priority
             - flex
             - batch
@@ -10150,6 +10151,17 @@ components:
         max_tokens:
           type: integer
           minimum: 1
+        service_tier:
+          type: string
+          description: Selects a supported routing or pricing tier on compatible text APIs.
+          enum:
+            - standard
+            - default
+            - fast
+            - ultrafast
+            - priority
+            - flex
+            - batch
         temperature:
           type: number
           minimum: 0
@@ -10356,6 +10368,7 @@ components:
             - standard
             - default
             - fast
+            - ultrafast
             - priority
             - flex
             - batch

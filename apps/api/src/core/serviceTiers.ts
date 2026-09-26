@@ -1,6 +1,6 @@
 import type { Endpoint } from "./types";
 
-export type NormalizedTextServiceTier = "standard" | "fast" | "priority" | "flex" | "batch";
+export type NormalizedTextServiceTier = "standard" | "fast" | "ultrafast" | "priority" | "flex" | "batch";
 export type TextServiceTierValidation =
 	| { ok: true; tier?: NormalizedTextServiceTier; field?: "service_tier" | "serviceTier" }
 	| {
@@ -20,6 +20,7 @@ export const TEXT_SERVICE_TIER_VALUES = [
 	"standard",
 	"default",
 	"fast",
+	"ultrafast",
 	"priority",
 	"flex",
 	"batch",
@@ -48,6 +49,7 @@ export function normalizeTextServiceTier(value: unknown): NormalizedTextServiceT
 	if (!tier) return undefined;
 	if (tier === "standard" || tier === "default") return "standard";
 	if (tier === "fast") return "fast";
+	if (tier === "ultrafast") return "ultrafast";
 	if (tier === "priority") return "priority";
 	if (tier === "flex") return "flex";
 	if (tier === "batch") return "batch";

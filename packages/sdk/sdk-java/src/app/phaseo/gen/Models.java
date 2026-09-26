@@ -67,6 +67,7 @@ public final class Models {
 		public Object provider;
 		public Object provider_options;
 		public Object reasoning;
+		public Object service_tier;
 		public String session_id;
 		public java.util.List<String> stop_sequences;
 		public Boolean stream;

@@ -1,6 +1,6 @@
 ---
 title: "Service Tiers"
-description: "How Standard, Fast, Flex, and Batch pricing modes work in Phaseo Gateway."
+description: "How Standard, Fast, Ultrafast, Flex, and Batch pricing modes work in Phaseo Gateway."
 icon: "gauge"
 ---
 
@@ -24,6 +24,7 @@ Service tiers are currently available only for supported text models on supporte
 | --- | --- | --- |
 | `Standard` | Default behavior. No extra field required. | General production traffic. |
 | `Fast` | Set `service_tier: "fast"` on the request. | Faster or premium routing where supported. OpenAI also accepts `priority`. |
+| `Ultrafast` | Set `service_tier: "ultrafast"` on the request. | Highest-speed routing where supported. |
 | `Flex` | Set `service_tier: "flex"` on the request. | Lower-cost routing where supported. |
 | `Batch` | Use the Batch API rather than `service_tier`. | Large deferred workloads where latency is less important. |
 
@@ -36,7 +37,7 @@ Use the same `service_tier` field when you call any supported synchronous text A
 - [Responses API reference](../api-reference/endpoint/responses.mdx)
 - [Shared parameter reference](../api-reference/parameters.mdx)
 
-The accepted `service_tier` values are `standard`, `fast`, `priority`, `flex`, and `batch`. `Standard` is the default behavior when `service_tier` is omitted. Phaseo uses `Fast` as the canonical premium tier name. For OpenAI routes, `priority` is accepted as a provider-compatible alias and uses the same routing and pricing. `Batch` is handled by the Batch API rather than synchronous text requests.
+The accepted `service_tier` values are `standard`, `fast`, `ultrafast`, `priority`, `flex`, and `batch`. `Standard` is the default behavior when `service_tier` is omitted. Phaseo uses `Fast` as the canonical premium tier name. For OpenAI routes, `priority` is accepted as a provider-compatible alias and uses the same routing and pricing. `Batch` is handled by the Batch API rather than synchronous text requests.
 
 <Note>
 Phaseo maps the normalized gateway values to provider-native controls internally. For example, an Anthropic route may receive Anthropic-native tier fields upstream, but the client-facing request still uses the gateway values listed here.
@@ -111,6 +112,18 @@ from runtime availability. A price shown in the catalog does not make that tier
 routable: Priority remains disabled unless the specific Mistral route advertises
 Priority support, and Batch must use the global Mistral Batch API. Priority eligibility
 still depends on the Mistral account and model.
+
+## Ultrafast
+
+Use `Ultrafast` for the highest-speed service tier when the model and provider offer it. Phaseo routes only to an Ultrafast-priced or Ultrafast-specific route; it does not fall back to Fast or Standard when that tier is unavailable.
+
+```json
+{
+  "model": "<model-id-with-ultrafast-pricing>",
+  "input": "Summarise this incident report.",
+  "service_tier": "ultrafast"
+}
+```
 
 ## Flex
 

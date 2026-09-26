@@ -17,7 +17,7 @@ import type {
 import { fmtUSD } from "./pricingHelpers";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 
-type PricingComparisonAccent = "batch" | "flex" | "free" | "priority" | null;
+type PricingComparisonAccent = "batch" | "flex" | "free" | "priority" | "ultrafast" | null;
 
 function renderComparisonToneClass(
 	kind?: PriceComparisonKind | null,
@@ -35,6 +35,9 @@ function renderComparisonToneClass(
 	}
 	if (accent === "priority") {
 		return "text-xs font-semibold text-violet-700 tabular-nums dark:text-violet-300";
+	}
+	if (accent === "ultrafast") {
+		return "text-xs font-semibold text-fuchsia-700 tabular-nums dark:text-fuchsia-300";
 	}
 	if (kind === "discount" || direction === "cheaper") {
 		return "text-xs font-semibold text-emerald-600 tabular-nums";

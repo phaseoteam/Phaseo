@@ -788,7 +788,7 @@ function expandProviderHintsForSpecializedTierOffers(args: {
 	providerIds: string[];
 	tier: string | null;
 }): string[] {
-	if (args.tier !== "priority") return args.providerIds;
+	if (args.tier !== "priority" && args.tier !== "ultrafast") return args.providerIds;
 
 	const expanded = new Set(args.providerIds);
 	for (const requestedProviderId of args.providerIds) {
@@ -1170,15 +1170,15 @@ export async function routeProviders(
         if (hasExplicitRegionPreference) return true;
         if (
             offerScope === "specialized" &&
-            requestedServiceTier === "priority" &&
-            String(candidate.offerLabel ?? "").trim().toLowerCase() === "priority"
+            (requestedServiceTier === "priority" || requestedServiceTier === "ultrafast") &&
+            String(candidate.offerLabel ?? "").trim().toLowerCase() === requestedServiceTier
         ) {
             return true;
         }
         if (!hasGlobalOfferSibling(beforeOfferScopeGate, candidate)) return true;
         return false;
     });
-    if (requestedServiceTier === "priority") {
+    if (requestedServiceTier === "priority" || requestedServiceTier === "ultrafast") {
 		poolCandidates = filterStable(poolCandidates, (candidate) => {
             const offerScope = normalizeOfferScope(candidate.offerScope);
             if (offerScope !== "global") return true;
@@ -1204,14 +1204,14 @@ export async function routeProviders(
         if (offerScope === "regional") return "regional_offer_requires_explicit_opt_in";
         if (
             offerScope === "global" &&
-            requestedServiceTier === "priority" &&
+            (requestedServiceTier === "priority" || requestedServiceTier === "ultrafast") &&
             hasSpecializedTierSibling({
                 candidates: beforeOfferScopeGate,
                 candidate,
                 tier: requestedServiceTier,
             })
         ) {
-            return "global_offer_replaced_by_priority_specialized_offer";
+            return `global_offer_replaced_by_${requestedServiceTier}_specialized_offer`;
         }
         if (offerScope === "specialized") return "specialized_offer_requires_explicit_opt_in";
         return "non_global_offer_requires_explicit_opt_in";

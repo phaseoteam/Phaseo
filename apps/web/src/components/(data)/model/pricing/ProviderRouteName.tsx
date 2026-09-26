@@ -9,6 +9,7 @@ import { getProviderRoutePresentation, isSelectableServiceTier } from "./provide
 
 const tierBadgeBackgrounds: Record<string, string> = {
     priority: "bg-violet-100 dark:bg-violet-950",
+    ultrafast: "bg-fuchsia-100 dark:bg-fuchsia-950",
     flex: "bg-sky-100 dark:bg-sky-950",
     batch: "bg-orange-100 dark:bg-orange-950",
 };

@@ -54,7 +54,7 @@ function asJsonObject(value: unknown): Record<string, unknown> {
         : {};
 }
 
-type CanonicalServiceTier = "standard" | "priority" | "flex" | "batch";
+type CanonicalServiceTier = "standard" | "priority" | "ultrafast" | "flex" | "batch";
 
 function canonicalServiceTier(value: unknown): CanonicalServiceTier | null {
     if (typeof value === "string") {
