@@ -273,6 +273,7 @@ export type GatewayBindings = {
     RELACE_BASE_URL?: string;
     REKA_API_KEY?: string;
     REKA_BASE_URL?: string;
+    RESPAN_API_KEY?: string;
     SAKANA_API_KEY?: string;
     SAKANA_BASE_URL?: string;
     SAIL_API_KEY?: string;

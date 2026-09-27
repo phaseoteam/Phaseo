@@ -286,6 +286,7 @@ export const BINDING_KEYS: Array<keyof GatewayBindings> = [
     "RELACE_BASE_URL",
     "REKA_API_KEY",
     "REKA_BASE_URL",
+    "RESPAN_API_KEY",
     "SAKANA_API_KEY",
     "SAKANA_BASE_URL",
     "SAIL_API_KEY",
