@@ -76,7 +76,6 @@ import type { ProviderRoutingStatus } from "@/lib/fetchers/models/getModelProvid
 import { Logo } from "@/components/Logo";
 import ProviderInfoHoverIcons from "@/components/(data)/model/ProviderInfoHoverIcons";
 import PricingPlanSelect from "@/components/(data)/model/pricing/PricingPlanSelect";
-import { ServiceTierBadge } from "@/components/(data)/model/pricing/ServiceTierBadge";
 import {
 	getParameterDocsHref,
 	getParameterReference,
@@ -3625,8 +3624,7 @@ export default function ProviderCard({
 											Pricing
 										</ProviderSheetSectionLink>
 									</h3>
-										{availablePlans.length > 0 ? <ServiceTierBadge plan={selectedPlan} /> : null}
-									{discountBadge ? (
+										{discountBadge ? (
 										<div
 											className={cn(
 												"inline-flex items-center gap-1.5 text-xs",
