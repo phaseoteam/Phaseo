@@ -152,6 +152,7 @@ function displayOrganisationName(raw: string | null | undefined): string | null 
 	]);
 	if (known.has(lower)) return known.get(lower)!;
 	if (value.includes("/")) return null;
+	if (/\s/.test(value)) return value;
 	const tokenKnown = new Map<string, string>([
 		["ai", "AI"],
 		["api", "API"],
