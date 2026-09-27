@@ -235,6 +235,9 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	if (rawInputTokens !== undefined && inputTokens === null) {
 		return malformedResponse(args, upstream, payload, keyInfo, captureRequest, requestBody, latencyMs);
 	}
+	if (model === "span-01-pro" && inputTokens === null) {
+		return malformedResponse(args, upstream, payload, keyInfo, captureRequest, requestBody, latencyMs);
+	}
 	const answers: Record<string, Record<string, unknown>> = {};
 	for (const behavior of behaviors) {
 		const score = scoreById.get(behavior.id);

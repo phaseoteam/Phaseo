@@ -109,7 +109,37 @@ describe("Respan Span-01 Decisions executor", () => {
 		}
 	});
 
-	it("routes span-01-pro and accepts omitted usage", async () => {
+	it("routes span-01-pro and reports billable usage", async () => {
+		const mock = installFetchMock([{
+			match: (url) => url === "https://api.respan.ai/api/v1/scores",
+			response: jsonResponse({
+				results: [{ id: "escalation", p_present: 0.2, p_absent: 0.7, p_not_observable: 0.1 }],
+				usage: { input_tokens: 51 },
+			}),
+		}]);
+
+		try {
+			const result = await executor(buildArgs({
+				ir: { ...(buildArgs().ir as any), model: "respan/span-01" } as any,
+				providerModelSlug: "span-01-pro",
+			}));
+			expect(mock.calls[0]?.bodyJson).toMatchObject({ model: "span-01-pro" });
+			expect(result.kind).toBe("completed");
+			expect(result.ir).toMatchObject({ usage: { inputTokens: 51, outputTokens: 0, totalTokens: 51 } });
+			expect(result.bill.usage).toEqual({
+				requests: 1,
+				input_tokens: 51,
+				input_text_tokens: 51,
+				output_tokens: 0,
+				output_text_tokens: 0,
+				total_tokens: 51,
+			});
+		} finally {
+			mock.restore();
+		}
+	});
+
+	it("fails closed when span-01-pro omits billable usage", async () => {
 		const mock = installFetchMock([{
 			match: (url) => url === "https://api.respan.ai/api/v1/scores",
 			response: jsonResponse({
@@ -123,9 +153,10 @@ describe("Respan Span-01 Decisions executor", () => {
 				providerModelSlug: "span-01-pro",
 			}));
 			expect(mock.calls[0]?.bodyJson).toMatchObject({ model: "span-01-pro" });
-			expect(result.kind).toBe("completed");
-			expect(result.ir).not.toHaveProperty("usage");
-			expect(result.bill.usage).toEqual({ requests: 1 });
+			expect(result.upstream.status).toBe(502);
+			expect(await result.upstream.json()).toMatchObject({ error: "invalid_respan_span_response" });
+			expect(result.ir).toBeUndefined();
+			expect(result.bill.usage).toBeUndefined();
 		} finally {
 			mock.restore();
 		}
