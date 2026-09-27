@@ -26,6 +26,20 @@ describe("usage model display helpers", () => {
 		).toBe("/models/google/veo-3.1-fast");
 	});
 
+	it("preserves capitalization in multiword organisation names", () => {
+		const metadata: ModelMetadataMap = new Map([
+			["tencent/hy-image-v3.5-preview:free", {
+				organisationId: "tencent",
+				organisationName: "Tencent Hunyuan",
+				modelName: "Hy Image 3.5 Preview (Free)",
+			}],
+		]);
+
+		expect(getModelDisplayName("tencent/hy-image-v3.5-preview:free", metadata)).toBe(
+			"Tencent Hunyuan: Hy Image 3.5 Preview (Free)",
+		);
+	});
+
 	it("keeps namespaced model IDs routable without metadata", () => {
 		expect(getModelDetailsHref("openai/gpt-5.4")).toBe(
 			"/models/openai/gpt-5.4",
