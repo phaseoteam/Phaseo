@@ -12,6 +12,13 @@ describe("resolveProviderExecutor", () => {
 		expect(resolveProviderExecutor("siliconflow", "decisions.make")).toBeTruthy();
 	});
 
+	it("resolves Respan Span-01 only for Decisions", () => {
+		const executor = EXECUTORS_BY_PROVIDER.respan?.["decisions.make"];
+		expect(executor).toBeTruthy();
+		expect(resolveProviderExecutor("respan", "decisions.make")).toBe(executor);
+		expect(resolveProviderExecutor("respan", "text.generate")).toBeNull();
+	});
+
 	it("registers every configured OpenAI-wire text provider explicitly", () => {
 		for (const providerId of Object.keys(OPENAI_COMPAT_CONFIG)) {
 			// Voyage uses the shared transport configuration for its native

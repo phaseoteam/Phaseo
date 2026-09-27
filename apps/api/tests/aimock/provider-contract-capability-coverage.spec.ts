@@ -27,6 +27,7 @@ const providersWithDedicatedNativeContractTests = new Set([
     "elevenlabs",
     "fal",
     "private-model",
+    "respan",
     "typesafe",
 ]);
 

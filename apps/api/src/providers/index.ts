@@ -114,6 +114,7 @@ const ADAPTERS: Record<string, ProviderAdapter> = {
     scaleway: createOpenAICompatibleAdapter("scaleway"),
     siliconflow: createOpenAICompatibleAdapter("siliconflow"),
     together: createOpenAICompatibleAdapter("together"),
+    respan: createUnsupportedAdapter("respan", "decisions.make uses the dedicated Span-01 executor"),
     venice: createOpenAICompatibleAdapter("venice"),
     "venice-e2ee": createOpenAICompatibleAdapter("venice-e2ee"),
     "weights-and-biases": createOpenAICompatibleAdapter("weights-and-biases"),
