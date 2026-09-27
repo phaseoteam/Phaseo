@@ -71,7 +71,7 @@ export function ImageModelSettingsDialog({
 			: (schema.sizeOptions[0] ?? "1024x1024");
 		const quality = schema.qualityOptions.includes(settings.params.quality)
 			? settings.params.quality
-			: (schema.qualityOptions[0] ?? "standard");
+			: (schema.qualityOptions[0] ?? "");
 		const style =
 			schema.styleOptions.length === 0
 				? ""
@@ -131,24 +131,26 @@ export function ImageModelSettingsDialog({
 						</SelectContent>
 					</Select>
 				</div>
-				<div className="grid gap-1.5">
-					<Label>{qualityLabel}</Label>
-					<Select
-						value={normalizedParams.quality}
-						onValueChange={(value) => onUpdateParams({ quality: value })}
-					>
-						<SelectTrigger>
-							<SelectValue placeholder={qualityPlaceholder} />
-						</SelectTrigger>
-						<SelectContent>
-							{schema.qualityOptions.map((quality) => (
-								<SelectItem key={quality} value={quality}>
-									{quality}
-								</SelectItem>
-							))}
-						</SelectContent>
-					</Select>
-				</div>
+				{schema.qualityOptions.length > 0 ? (
+					<div className="grid gap-1.5">
+						<Label>{qualityLabel}</Label>
+						<Select
+							value={normalizedParams.quality}
+							onValueChange={(value) => onUpdateParams({ quality: value })}
+						>
+							<SelectTrigger>
+								<SelectValue placeholder={qualityPlaceholder} />
+							</SelectTrigger>
+							<SelectContent>
+								{schema.qualityOptions.map((quality) => (
+									<SelectItem key={quality} value={quality}>
+										{quality}
+									</SelectItem>
+								))}
+							</SelectContent>
+						</Select>
+					</div>
+				) : null}
 				{schema.styleOptions.length > 0 ? (
 					<div className="grid gap-1.5">
 						<Label>Style</Label>
