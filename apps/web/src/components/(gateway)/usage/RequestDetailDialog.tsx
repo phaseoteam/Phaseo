@@ -1200,7 +1200,7 @@ export default function RequestDetailDialog({
 						) : null}
 						<Link
 							href={modelHref}
-							className="min-w-0 truncate text-foreground underline decoration-transparent transition-colors duration-200 hover:text-foreground hover:decoration-foreground/70"
+							className="min-w-0 break-words text-foreground underline decoration-transparent transition-colors duration-200 hover:text-foreground hover:decoration-foreground/70 sm:truncate"
 						>
 							{modelName || routedModelId || "-"}
 						</Link>
@@ -1248,7 +1248,7 @@ export default function RequestDetailDialog({
 								className="flex-shrink-0"
 							/>
 						) : null}
-						<span className="min-w-0 truncate">
+						<span className="min-w-0 break-words sm:truncate">
 							{modelName || routedModelId || "-"}
 						</span>
 					</div>
@@ -1266,12 +1266,12 @@ export default function RequestDetailDialog({
 					rows={[{ label: "Model ID", value: <code className="font-mono text-[11px]">{requestedModelId}</code> }]}
 				>
 					{requestedModelHref ? (
-						<Link href={requestedModelHref} className="inline-flex min-w-0 items-center justify-end gap-2 text-foreground underline decoration-transparent transition-colors hover:decoration-foreground/70">
+						<Link href={requestedModelHref} className="inline-flex min-w-0 items-center gap-2 text-foreground underline decoration-transparent transition-colors hover:decoration-foreground/70 sm:justify-end">
 							{requestedModelMeta ? <Logo id={requestedModelMeta.organisationId} width={16} height={16} className="shrink-0" /> : null}
-							<span className="truncate">{requestedModelName || requestedModelId}</span>
+							<span className="min-w-0 break-words sm:truncate">{requestedModelName || requestedModelId}</span>
 						</Link>
 					) : (
-						<span className="truncate">{requestedModelName || requestedModelId}</span>
+						<span className="break-words sm:truncate">{requestedModelName || requestedModelId}</span>
 					)}
 				</UsageEntityHoverCard>
 			) : (
@@ -1350,7 +1350,7 @@ export default function RequestDetailDialog({
 						label: "Upstream model ID",
 						description: "The provider-facing model identifier sent upstream for the successful attempt.",
 						value: (
-							<div className="flex min-w-0 flex-wrap items-center justify-end gap-2">
+							<div className="flex min-w-0 flex-wrap items-center gap-2 sm:justify-end">
 								{modelMeta ? <Logo id={modelMeta.organisationId} width={16} height={16} className="shrink-0" /> : null}
 								{concreteSuccessModelParts.map((value) => (
 									<code
@@ -2792,7 +2792,7 @@ function DetailRows({
 			{items.map((item) => (
 				<div
 					key={item.label}
-					className="grid min-h-6 min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-4"
+					className="grid min-h-6 min-w-0 gap-1 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:gap-4"
 				>
 					<div className="flex items-center gap-1.5 text-[11px] leading-5 text-muted-foreground">
 						<span>{titleCaseLabel(item.label)}</span>
@@ -2809,7 +2809,7 @@ function DetailRows({
 							</Tooltip>
 						) : null}
 					</div>
-					<div className="flex min-w-0 max-w-[18rem] justify-end break-words text-right text-sm font-medium text-foreground [&>div]:min-w-0 [&_code]:break-all">
+					<div className="flex min-w-0 justify-start break-words text-left text-sm font-medium text-foreground sm:max-w-[18rem] sm:justify-end sm:text-right [&>div]:min-w-0 [&_code]:break-all">
 						{item.value}
 					</div>
 				</div>
