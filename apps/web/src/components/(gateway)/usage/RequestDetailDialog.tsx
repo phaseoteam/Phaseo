@@ -1271,7 +1271,7 @@ export default function RequestDetailDialog({
 							<span className="min-w-0 break-words sm:truncate">{requestedModelName || requestedModelId}</span>
 						</Link>
 					) : (
-						<span className="break-words sm:truncate">{requestedModelName || requestedModelId}</span>
+						<span className="min-w-0 break-words sm:truncate">{requestedModelName || requestedModelId}</span>
 					)}
 				</UsageEntityHoverCard>
 			) : (
