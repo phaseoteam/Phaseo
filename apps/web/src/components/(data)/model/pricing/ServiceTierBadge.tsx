@@ -65,6 +65,10 @@ export function ServiceTierBadge({
 					tabIndex={0}
 					aria-label={`${label} service tier information`}
 					className="inline-flex cursor-help rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+					onClick={(event) => event.stopPropagation()}
+					onKeyDown={(event) => {
+						if (event.key === "Enter" || event.key === " ") event.stopPropagation();
+					}}
 				>
 					{badge}
 				</span>
