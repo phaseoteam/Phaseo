@@ -26,7 +26,7 @@ import {
 } from "@/components/(rankings)/chart-colors";
 import { formatModelDisplayName } from "@/lib/models/displayName";
 import { getModelDetailsHref } from "@/lib/models/modelHref";
-import { formatRoundedCount } from "@/lib/formatRoundedCount";
+import { formatCompactAxisTick } from "@/lib/formatRoundedCount";
 
 type UsageStackedBarProps = {
 	data: TimeseriesData[];
@@ -524,7 +524,7 @@ export function UsageStackedBar({
 						axisLine={false}
 					/>
 					<YAxis
-						tickFormatter={(value) => formatRoundedCount(Number(value))}
+						tickFormatter={(value) => formatCompactAxisTick(Number(value))}
 						width={60}
 						tickLine={false}
 						axisLine={false}

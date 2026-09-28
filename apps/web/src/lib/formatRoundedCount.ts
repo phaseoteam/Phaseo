@@ -19,5 +19,15 @@ export function formatRoundedCount(value: number): string {
 		if (value >= threshold) return `${Math.floor(value / threshold)}${suffix}`;
 	}
 
-	return value.toLocaleString();
+	return Math.floor(value).toLocaleString();
+}
+
+export function formatCompactAxisTick(value: number): string {
+	if (!Number.isFinite(value)) return "--";
+
+	for (const [threshold, suffix] of COUNT_UNITS) {
+		if (value >= threshold) return `${value / threshold}${suffix}`;
+	}
+
+	return String(value);
 }
