@@ -4,8 +4,8 @@
   "name": "Claude Sonnet 5.5",
   "status": "Available",
   "previous_model_id": "anthropic/claude-sonnet-5",
-  "description": "Claude Sonnet 5.5 is a Sonnet model in Anthropic's Claude 5.5 family. Its reported 1M-token context, 128K-token output limit, and pricing are pending official launch confirmation.",
-  "announced_date": "2026-09-22T00:00:00.000Z",
+  "description": "Claude Sonnet 5.5 combines a 1M-token context window and 128K-token output limit with adaptive thinking.",
+  "announced_date": "2026-09-28T00:00:00.000Z",
   "release_date": "2026-09-28T00:00:00.000Z",
   "deprecation_date": null,
   "retirement_date": null,
@@ -16,24 +16,21 @@
   "family_id": "anthropic/claude-5",
   "links": [
     {
-      "title": "Claude 5.5 family announcement",
+      "title": "Claude Sonnet 5.5 model details",
       "kind": "announcement",
-      "url": "https://www.anthropic.com/claude-opus-5-5"
+      "url": "https://platform.claude.com/docs/en/models/sonnet-5-5/overview"
     }
   ],
   "details": [
     {
       "name": "availability",
-      "value": "Anthropic announced Sonnet 5.5 on September 22, 2026, with launch to follow in the coming weeks. Provider availability is pending confirmation."
+      "value": "Released September 28, 2026 on Claude API, Claude Platform on AWS, Amazon Bedrock, Google Cloud, and Microsoft Foundry."
     }
   ],
   "benchmarks": [],
-  "page_notice": {
-    "tone": "info",
-    "markdown": "Provider availability and pricing are pending official launch confirmation."
-  },
+  "page_notice": null,
   "model_type": null,
-  "knowledge_cutoff": null,
+  "knowledge_cutoff": "2026-06",
   "limits": {
     "context": 1000000,
     "input": 1000000,
@@ -59,15 +56,15 @@
   "sources": [
     {
       "kind": "announcement",
-      "url": "https://www.anthropic.com/claude-opus-5-5",
+      "url": "https://platform.claude.com/docs/en/models/sonnet-5-5/overview",
       "accessed_at": "2026-09-28T00:00:00Z",
-      "notes": "Anthropic announces Claude Sonnet 5.5 as a forthcoming member of the Claude 5.5 family. No Sonnet 5.5 launch specifications are published here."
+      "notes": "Anthropic confirms the September 28 release, model IDs, platform availability, context and output limits, and standard pricing."
     }
   ],
   "verification": {
-    "status": "partial",
+    "status": "verified",
     "checked_at": "2026-09-28T00:00:00Z",
-    "notes": "Model name and planned release confirmed by Anthropic. Launch date, API ID, limits, modalities, provider availability, and prices require official confirmation before publishing."
+    "notes": "Anthropic's model overview and pricing page confirm release date, model IDs, specifications, availability, and standard Claude API prices."
   },
   "last_updated": "2026-09-28T00:00:00Z",
   "removal_date": null,

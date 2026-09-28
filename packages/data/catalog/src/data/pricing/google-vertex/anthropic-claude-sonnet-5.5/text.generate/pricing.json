@@ -12,7 +12,7 @@
       "price_per_unit": 2,
       "currency": "USD",
       "pricing_plan": "standard",
-      "note": "Provisional Claude Sonnet 5.5 launch rate based on pre-release report and Sonnet 5 provider pricing; confirm with google-vertex before publication.",
+      "note": "Anthropic published the standard Sonnet 5.5 rate; confirm provider-specific regional billing.",
       "match": [
         {
           "path": "input_tokens",
@@ -44,7 +44,7 @@
       "price_per_unit": 10,
       "currency": "USD",
       "pricing_plan": "standard",
-      "note": "Provisional Claude Sonnet 5.5 launch rate based on pre-release report and Sonnet 5 provider pricing; confirm with google-vertex before publication.",
+      "note": "Anthropic published the standard Sonnet 5.5 rate; confirm provider-specific regional billing.",
       "match": [
         {
           "path": "input_tokens",
@@ -76,7 +76,7 @@
       "price_per_unit": 0.2,
       "currency": "USD",
       "pricing_plan": "standard",
-      "note": "Provisional Claude Sonnet 5.5 launch rate based on pre-release report and Sonnet 5 provider pricing; confirm with google-vertex before publication.",
+      "note": "Anthropic published the standard Sonnet 5.5 rate; confirm provider-specific regional billing.",
       "match": [
         {
           "path": "input_tokens",
@@ -108,7 +108,7 @@
       "price_per_unit": 2.5,
       "currency": "USD",
       "pricing_plan": "standard",
-      "note": "Provisional Claude Sonnet 5.5 launch rate based on pre-release report and Sonnet 5 provider pricing; confirm with google-vertex before publication.",
+      "note": "Anthropic published the standard Sonnet 5.5 rate; confirm provider-specific regional billing.",
       "match": [
         {
           "path": "input_tokens",
@@ -140,7 +140,7 @@
       "price_per_unit": 4,
       "currency": "USD",
       "pricing_plan": "standard",
-      "note": "Provisional Claude Sonnet 5.5 launch rate based on pre-release report and Sonnet 5 provider pricing; confirm with google-vertex before publication.",
+      "note": "Anthropic published the standard Sonnet 5.5 rate; confirm provider-specific regional billing.",
       "match": [
         {
           "path": "input_tokens",
@@ -172,7 +172,7 @@
       "price_per_unit": 2,
       "currency": "USD",
       "pricing_plan": "standard",
-      "note": "Provisional Claude Sonnet 5.5 launch rate based on pre-release report and Sonnet 5 provider pricing; confirm with google-vertex before publication.",
+      "note": "Anthropic published the standard Sonnet 5.5 rate; confirm provider-specific regional billing.",
       "match": [
         {
           "path": "input_tokens",
@@ -204,7 +204,7 @@
       "price_per_unit": 10,
       "currency": "USD",
       "pricing_plan": "standard",
-      "note": "Provisional Claude Sonnet 5.5 launch rate based on pre-release report and Sonnet 5 provider pricing; confirm with google-vertex before publication.",
+      "note": "Anthropic published the standard Sonnet 5.5 rate; confirm provider-specific regional billing.",
       "match": [
         {
           "path": "input_tokens",
@@ -236,7 +236,7 @@
       "price_per_unit": 0.2,
       "currency": "USD",
       "pricing_plan": "standard",
-      "note": "Provisional Claude Sonnet 5.5 launch rate based on pre-release report and Sonnet 5 provider pricing; confirm with google-vertex before publication.",
+      "note": "Anthropic published the standard Sonnet 5.5 rate; confirm provider-specific regional billing.",
       "match": [
         {
           "path": "input_tokens",
@@ -268,7 +268,7 @@
       "price_per_unit": 2.5,
       "currency": "USD",
       "pricing_plan": "standard",
-      "note": "Provisional Claude Sonnet 5.5 launch rate based on pre-release report and Sonnet 5 provider pricing; confirm with google-vertex before publication.",
+      "note": "Anthropic published the standard Sonnet 5.5 rate; confirm provider-specific regional billing.",
       "match": [
         {
           "path": "input_tokens",
@@ -300,7 +300,7 @@
       "price_per_unit": 4,
       "currency": "USD",
       "pricing_plan": "standard",
-      "note": "Provisional Claude Sonnet 5.5 launch rate based on pre-release report and Sonnet 5 provider pricing; confirm with google-vertex before publication.",
+      "note": "Anthropic published the standard Sonnet 5.5 rate; confirm provider-specific regional billing.",
       "match": [
         {
           "path": "input_tokens",
@@ -332,7 +332,7 @@
       "price_per_unit": 1,
       "currency": "USD",
       "pricing_plan": "batch",
-      "note": "Provisional Claude Sonnet 5.5 launch rate based on pre-release report and Sonnet 5 provider pricing; confirm with google-vertex before publication.",
+      "note": "Anthropic published the standard Sonnet 5.5 rate; confirm provider-specific regional billing.",
       "match": [
         {
           "path": "input_tokens",
@@ -364,7 +364,7 @@
       "price_per_unit": 5,
       "currency": "USD",
       "pricing_plan": "batch",
-      "note": "Provisional Claude Sonnet 5.5 launch rate based on pre-release report and Sonnet 5 provider pricing; confirm with google-vertex before publication.",
+      "note": "Anthropic published the standard Sonnet 5.5 rate; confirm provider-specific regional billing.",
       "match": [
         {
           "path": "input_tokens",
@@ -396,7 +396,7 @@
       "price_per_unit": 1,
       "currency": "USD",
       "pricing_plan": "batch",
-      "note": "Provisional Claude Sonnet 5.5 launch rate based on pre-release report and Sonnet 5 provider pricing; confirm with google-vertex before publication.",
+      "note": "Anthropic published the standard Sonnet 5.5 rate; confirm provider-specific regional billing.",
       "match": [
         {
           "path": "input_tokens",
@@ -428,7 +428,7 @@
       "price_per_unit": 5,
       "currency": "USD",
       "pricing_plan": "batch",
-      "note": "Provisional Claude Sonnet 5.5 launch rate based on pre-release report and Sonnet 5 provider pricing; confirm with google-vertex before publication.",
+      "note": "Anthropic published the standard Sonnet 5.5 rate; confirm provider-specific regional billing.",
       "match": [
         {
           "path": "input_tokens",

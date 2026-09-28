@@ -4753,15 +4753,15 @@
     "sources": [
       {
         "kind": "announcement",
-        "url": "https://www.anthropic.com/claude-opus-5-5",
+        "url": "https://platform.claude.com/docs/en/models/sonnet-5-5/overview",
         "accessed_at": "2026-09-28T00:00:00Z",
-        "notes": "Anthropic announced Sonnet 5.5 as forthcoming; this source does not confirm the provider model ID or availability."
+        "notes": "Anthropic confirms this platform and model ID for the September 28 release."
       }
     ],
     "verification": {
-      "status": "unverified",
+      "status": "partial",
       "checked_at": "2026-09-28T00:00:00Z",
-      "notes": "Launch route staged from Sonnet 5. Confirm provider model ID and successful inference before publishing."
+      "notes": "Anthropic confirms this platform and model ID. Live inference through this Phaseo route remains to be smoke-tested."
     },
     "rate_limits": []
   }

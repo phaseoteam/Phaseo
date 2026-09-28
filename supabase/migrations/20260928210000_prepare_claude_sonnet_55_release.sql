@@ -1,7 +1,7 @@
 -- Prepare the Sonnet 5.5 release using Sonnet 5's existing provider coverage.
 -- The same DML was applied directly to Phaseo Prod on September 28, 2026.
 -- This idempotent migration records the change in repository history. Prices
--- inherit Sonnet 5 and remain provisional until officially verified.
+-- match the standard rates published by Anthropic on September 28, 2026.
 
 insert into public.v2_models (
   model_slug, lab_slug, name, description, status, hidden,
@@ -10,19 +10,19 @@ insert into public.v2_models (
 )
 values (
   'anthropic/claude-sonnet-5.5', 'anthropic', 'Claude Sonnet 5.5',
-  'Claude Sonnet 5.5 is a Sonnet model in Anthropic''s Claude 5.5 family.',
+  'Claude Sonnet 5.5 combines a 1M-token context window and 128K-token output limit with adaptive thinking.',
   'active', false, array['text', 'image']::text[], array['text']::text[],
-  'anthropic/claude-5', '2026-09-22T00:00:00Z'::timestamptz,
+  'anthropic/claude-5', '2026-09-28T00:00:00Z'::timestamptz,
   '2026-09-28T00:00:00Z'::timestamptz,
   jsonb_build_object(
     'source', 'release_migration',
-    'source_url', 'https://www.anthropic.com/claude-opus-5-5',
+    'source_url', 'https://platform.claude.com/docs/en/models/sonnet-5-5/overview',
     'previous_model_slug', 'anthropic/claude-sonnet-5',
     'limits', jsonb_build_object('context', 1000000, 'input', 1000000, 'output', 128000),
     'verification', jsonb_build_object(
-      'status', 'partial',
+      'status', 'verified',
       'checked_at', '2026-09-28T00:00:00Z',
-      'notes', 'Anthropic confirmed Sonnet 5.5 as forthcoming on September 22. The September 28 availability, model specifications, and prices are provisional pending official launch confirmation.'
+      'notes', 'Anthropic confirms September 28, 2026 release, model IDs, limits, availability, and standard Claude API pricing.'
     )
   ),
   'available'
@@ -44,11 +44,12 @@ select
   1000000, 128000, '2026-09-28T00:00:00Z'::timestamptz,
   (route.metadata - 'sources' - 'verification' - 'source_url') || jsonb_build_object(
     'source', 'release_migration',
+    'source_url', 'https://platform.claude.com/docs/en/models/sonnet-5-5/overview',
     'routable', true,
     'routing_status', 'active',
     'verification', jsonb_build_object(
-      'status', 'unverified',
-      'notes', 'Route is configured and enabled in Phaseo. Provider model ID, upstream availability, and live inference remain unverified.'
+      'status', 'partial',
+      'notes', 'Anthropic documents this platform and model ID; live inference on this Phaseo route remains to be smoke-tested.'
     )
   ),
   'available', 'enabled', route.access_scope, route.is_stealth,
@@ -115,11 +116,12 @@ select
   replace(sku.sku_code, 'sonnet-5', 'sonnet-5.5'),
   sku.version, sku.operation, 'active', sku.region,
   replace(sku.display_name, 'Sonnet 5', 'Sonnet 5.5'),
-  'Provisional Sonnet 5.5 pricing inherited from Sonnet 5; verify provider-specific rates before applying.',
+  'Claude Sonnet 5.5 provider pricing; confirm region-specific billing against the provider before relying on these estimates.',
   sku.currency, '2026-09-28T00:00:00Z'::timestamptz,
   (sku.metadata - 'source_url' - 'verification') || jsonb_build_object(
     'source', 'release_migration',
-    'pricing_status', 'provisional'
+    'source_url', 'https://platform.claude.com/docs/en/about-claude/pricing',
+    'pricing_status', 'published_standard_rates'
   ),
   sku.service_tier_slug, next_variant.variant_id
 from public.v2_pricing_skus sku
@@ -147,7 +149,8 @@ select
   meter.display_unit, meter.billable, meter.meter_order,
   (meter.metadata - 'source_url') || jsonb_build_object(
     'source', 'release_migration',
-    'pricing_status', 'provisional'
+    'source_url', 'https://platform.claude.com/docs/en/about-claude/pricing',
+    'pricing_status', 'published_standard_rates'
   )
 from public.v2_pricing_sku_meters meter
 join public.v2_pricing_skus old_sku on old_sku.sku_id = meter.sku_id
@@ -171,16 +174,6 @@ on conflict (alias_slug) do update set
   model_slug = excluded.model_slug,
   enabled = true,
   metadata = public.v2_model_aliases.metadata || excluded.metadata,
-  updated_at = now();
-
-insert into public.v2_model_page_notices (model_slug, tone, markdown)
-values (
-  'anthropic/claude-sonnet-5.5', 'info',
-  'Provider availability and pricing are pending official launch confirmation.'
-)
-on conflict (model_slug) do update set
-  tone = excluded.tone,
-  markdown = excluded.markdown,
   updated_at = now();
 
 do $$
