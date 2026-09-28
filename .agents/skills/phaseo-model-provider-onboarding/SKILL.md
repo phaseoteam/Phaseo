@@ -28,9 +28,9 @@ ask the user to connect it; never use the old JSON path as a fallback.
 - New provider or provider variant: add provider identity, credential and
   endpoint metadata, provider-model routes, pricing, and adapter configuration.
   Add code only if the existing gateway primitives cannot implement it.
-- New protocol or capability: use
-  [phaseo-modality-api-changes](../phaseo-modality-api-changes/SKILL.md) as a
-  companion. A catalogue row alone must not imply executable support.
+- New protocol or capability: inspect the public API contract and gateway
+  execution path, then ship any required code in a PR. A catalogue row alone
+  must not imply executable support.
 
 Never mark a route public or callable merely because an upstream models feed
 lists it.
@@ -119,6 +119,5 @@ Return a concise report containing:
 - Supabase readback and any code validation results;
 - known limitations, rollout flags, or follow-up work.
 
-Related skills: phaseo-modality-api-changes for cross-layer endpoint work,
-phaseo-async-webhooks for asynchronous lifecycle behavior, and phaseo-cli for
-safe discovery and smoke checks.
+Related skills: phaseo-async-webhooks for asynchronous lifecycle behavior and
+phaseo-cli for safe discovery and smoke checks.
