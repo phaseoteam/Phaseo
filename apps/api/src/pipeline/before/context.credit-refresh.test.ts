@@ -146,7 +146,7 @@ const teamEnrichment = {
 	requests_24h: 1,
 };
 
-function seedContextCache(options: { legacyCredit?: boolean; credit?: unknown } = {}): void {
+function seedContextCache(options: { legacyCredit?: boolean; credit?: unknown; endpoint?: string } = {}): void {
 	runtime.store.set(`gateway:keyver:id:${apiKeyId}`, "1");
 	runtime.store.set(
 		`gateway:dynamic:default:${workspaceId}:${apiKeyId}:v1`,
@@ -162,7 +162,7 @@ function seedContextCache(options: { legacyCredit?: boolean; credit?: unknown } 
 		}),
 	);
 	runtime.store.set(
-		`gateway:static:v5:default:${workspaceId}:v1:${endpoint}:${model}`,
+		`gateway:static:v5:default:${workspaceId}:v1:${options.endpoint ?? endpoint}:${model}`,
 		JSON.stringify({
 			workspaceId,
 			resolvedModel: model,
@@ -275,7 +275,7 @@ describe("fetchGatewayContext credit-only cache refresh", () => {
 	it("ignores stale legacy credit and fails closed using reserved funds", async () => {
 		seedContextCache({ legacyCredit: true });
 		runtime.walletResult = {
-			data: { balance_nanos: 1_500_000_000, reserved_nanos: 750_000_001 },
+			data: { balance_nanos: 150_000_000, reserved_nanos: 75_000_001 },
 			error: null,
 		};
 		const { fetchGatewayContext } = await import("./context");
@@ -291,10 +291,35 @@ describe("fetchGatewayContext credit-only cache refresh", () => {
 		expect(context.credit).toMatchObject({
 			ok: false,
 			reason: "insufficient_funds",
-			balanceNanos: 749_999_999,
+			balanceNanos: 74_999_999,
 		});
 		expect(context.contextTelemetry?.cacheStatus).toBe("credit_refresh");
 		expect(runtime.supabase.rpc).not.toHaveBeenCalled();
+	});
+
+	it("allows ordinary inference with less than one dollar available", async () => {
+		seedContextCache();
+		runtime.walletResult = {
+			data: { balance_nanos: 999_745_298, reserved_nanos: 0 },
+			error: null,
+		};
+		const { fetchGatewayContext } = await import("./context");
+		const context = await fetchGatewayContext({ workspaceId, model, endpoint, apiKeyId });
+		expect(context.credit).toMatchObject({ ok: true, balanceNanos: 999_745_298 });
+	});
+
+	it("keeps the one dollar minimum for video when the shared credit snapshot is cached", async () => {
+		seedContextCache({
+			endpoint: "video.generation",
+			credit: {
+				workspaceId,
+				credit: { ok: true, reason: null, resetAt: null, balanceNanos: 999_745_298 },
+				teamEnrichment,
+			},
+		});
+		const { fetchGatewayContext } = await import("./context");
+		const context = await fetchGatewayContext({ workspaceId, model, endpoint: "video.generation", apiKeyId });
+		expect(context.credit).toMatchObject({ ok: false, reason: "insufficient_funds" });
 	});
 
 	it("uses a valid separate credit snapshot without querying the wallet", async () => {

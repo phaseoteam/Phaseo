@@ -3,7 +3,7 @@ declare
   key_status          jsonb;
   key_limit_status    jsonb;
   workspace_budget_status jsonb;
-  min_balance_nanos   bigint := 1000000000; -- 1.00 USD
+  min_balance_nanos   bigint := case when endpoint like 'video.%' or endpoint like 'batch%' then 1000000000 else 100000000 end;
 
   providers           jsonb;
   pricing             jsonb;
@@ -237,7 +237,8 @@ begin
   from public.gateway_requests gr
   where gr.key_id  = gateway_fetch_request_context.api_key_id
     and gr.workspace_id = gateway_fetch_request_context.workspace_id
-    and gr.success is true;
+    and gr.success is true
+    and gr.created_at >= month_start;
 
   if v_soft_blocked then
     within_limits := false;

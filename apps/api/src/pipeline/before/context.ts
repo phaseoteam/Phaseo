@@ -79,7 +79,14 @@ const PRESET_TTL = 120;      // 2 minutes
 const CONTEXT_INFLIGHT_MAX_ENTRIES = 512;
 const CONTEXT_KEY_VERSION_L1_TTL_MS = 5_000;
 const FREE_ROUTER_MODEL_ID = "phaseo/free";
-const MIN_GATEWAY_CREDIT_NANOS = 1_000_000_000;
+const MIN_INFERENCE_CREDIT_NANOS = 100_000_000;
+const MIN_ASYNC_CREDIT_NANOS = 1_000_000_000;
+
+function minimumCreditNanos(endpoint: string): number {
+	return endpoint.startsWith("video.") || endpoint.startsWith("batch")
+		? MIN_ASYNC_CREDIT_NANOS
+		: MIN_INFERENCE_CREDIT_NANOS;
+}
 
 const contextInflight = new Map<string, Promise<GatewayContextData>>();
 
@@ -111,6 +118,22 @@ type CreditContextSnapshot = Pick<
 	"workspaceId" | "credit" | "teamEnrichment"
 >;
 
+function applyCreditMinimum(snapshot: CreditContextSnapshot, endpoint: string): CreditContextSnapshot {
+	if (snapshot.credit.reason && snapshot.credit.reason !== "insufficient_funds") return snapshot;
+	const hasMinimumCredit = finiteNonNegativeNanos(snapshot.credit.balanceNanos) >= minimumCreditNanos(endpoint);
+	return {
+		...snapshot,
+		credit: {
+			...snapshot.credit,
+			ok: hasMinimumCredit,
+			reason: hasMinimumCredit ? null : "insufficient_funds",
+		},
+		teamEnrichment: snapshot.teamEnrichment
+			? { ...snapshot.teamEnrichment, balance_is_low: !hasMinimumCredit }
+			: null,
+	};
+}
+
 function finiteNonNegativeNanos(value: unknown): number {
 	const parsed = Number(value);
 	return Number.isFinite(parsed) ? Math.max(0, parsed) : 0;
@@ -118,6 +141,7 @@ function finiteNonNegativeNanos(value: unknown): number {
 
 async function fetchFreshCreditContext(args: {
 	workspaceId: string;
+	endpoint: string;
 	teamEnrichment?: GatewayContextData["teamEnrichment"];
 }): Promise<CreditContextSnapshot> {
 	const { data, error } = await getSupabaseAdmin()
@@ -145,7 +169,7 @@ async function fetchFreshCreditContext(args: {
 	const rawBalanceNanos = finiteNonNegativeNanos(data.balance_nanos);
 	const reservedNanos = finiteNonNegativeNanos(data.reserved_nanos);
 	const availableNanos = Math.max(rawBalanceNanos - reservedNanos, 0);
-	const hasMinimumCredit = availableNanos >= MIN_GATEWAY_CREDIT_NANOS;
+	const hasMinimumCredit = availableNanos >= minimumCreditNanos(args.endpoint);
 	const teamEnrichment = args.teamEnrichment
 		? {
 			...args.teamEnrichment,
@@ -1177,6 +1201,7 @@ export async function fetchGatewayContext(args: {
 						const creditRefreshStartedAt = performance.now();
 						creditContext = await fetchFreshCreditContext({
 							workspaceId: args.workspaceId,
+							endpoint: args.endpoint,
 							teamEnrichment: dynamicParsed.teamEnrichment ?? null,
 						});
 						telemetry.creditRefreshMs = round3(
@@ -1196,6 +1221,7 @@ export async function fetchGatewayContext(args: {
                         await persistCredit(creditContext, creditTtl);
 						telemetry.cacheWriteMs = round3(performance.now() - creditWriteStartedAt);
 					}
+					creditContext = applyCreditMinimum(creditContext, args.endpoint);
 					telemetry.cacheStatus = cacheStatus;
                     const merged = mergeCachedContext({
                         dynamic: dynamicParsed,
@@ -1910,6 +1936,13 @@ export async function fetchGatewayContext(args: {
         telemetry.enrichMs = round3(performance.now() - enrichStartedAt);
 
         parsed.endpoint = args.endpoint as any;
+		const creditSnapshot = applyCreditMinimum({
+			workspaceId: parsed.workspaceId,
+			credit: parsed.credit,
+			teamEnrichment: parsed.teamEnrichment,
+		}, args.endpoint);
+		parsed.credit = creditSnapshot.credit;
+		parsed.teamEnrichment = creditSnapshot.teamEnrichment;
 
         // Compute adaptive TTLs and write split cache entries.
         if (shouldUseCache) {
