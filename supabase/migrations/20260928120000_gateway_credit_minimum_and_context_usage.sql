@@ -3,14 +3,17 @@
 do $migration$
 declare
   function_name text;
+  function_schema text;
   definition text;
   updated_definition text;
 begin
   foreach function_name in array array[
     'gateway_fetch_request_context_without_workspace_budget',
+    'gateway_context_access',
     'gateway_fetch_request_context_with_reservations'
   ] loop
-    select pg_get_functiondef(to_regprocedure(format('public.%I(uuid,text,text,uuid)', function_name)))
+    function_schema := case when function_name = 'gateway_context_access' then 'private' else 'public' end;
+    select pg_get_functiondef(to_regprocedure(format('%I.%I(uuid,text,text,uuid)', function_schema, function_name)))
     into definition;
     if definition is null then
       raise exception 'Missing gateway context function: %', function_name;
@@ -24,13 +27,13 @@ begin
       raise exception 'Gateway credit minimum not found in %', function_name;
     end if;
 
-    if function_name = 'gateway_fetch_request_context_without_workspace_budget' then
+    if function_name in ('gateway_fetch_request_context_without_workspace_budget', 'gateway_context_access') then
       -- Key limits are daily, weekly, or monthly. Older partitions cannot
       -- contribute to any configured limit or to today's key enrichment.
       definition := updated_definition;
       updated_definition := regexp_replace(
         definition,
-        '(and gr.workspace_id = gateway_fetch_request_context_without_workspace_budget.workspace_id[[:space:]]+and gr.success is true);',
+        format('(and gr.workspace_id = %s[.]workspace_id[[:space:]]+and gr.success is true);', function_name),
         E'\\1\n    and gr.created_at >= month_start;'
       );
       if updated_definition = definition then

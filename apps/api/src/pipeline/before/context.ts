@@ -1936,6 +1936,13 @@ export async function fetchGatewayContext(args: {
         telemetry.enrichMs = round3(performance.now() - enrichStartedAt);
 
         parsed.endpoint = args.endpoint as any;
+		const creditSnapshot = applyCreditMinimum({
+			workspaceId: parsed.workspaceId,
+			credit: parsed.credit,
+			teamEnrichment: parsed.teamEnrichment,
+		}, args.endpoint);
+		parsed.credit = creditSnapshot.credit;
+		parsed.teamEnrichment = creditSnapshot.teamEnrichment;
 
         // Compute adaptive TTLs and write split cache entries.
         if (shouldUseCache) {

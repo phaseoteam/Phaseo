@@ -218,4 +218,19 @@ describe("shared public catalog and private context composition", () => {
         expect(context.teamSettings?.routingMode).toBe("balanced");
         expect(context.publicCatalogExpiresAt).toBe(Date.now() + 300_000);
     });
+
+    it("admits a cold bundled text request with 99 cents available", async () => {
+        state.rpc.mockImplementation(async (_name, params) => {
+            const response = result(params.workspace_id, params.include_catalog, false) as any;
+            response.data.context.credit_ok = {
+                ok: false,
+                reason: "insufficient_funds",
+                balance_nanos: 999_745_298,
+            };
+            return response;
+        });
+        const { fetchGatewayContext } = await import("./context");
+        const context = await fetchGatewayContext({ ...args, disableCache: true });
+        expect(context.credit).toMatchObject({ ok: true, balanceNanos: 999_745_298 });
+    });
 });
