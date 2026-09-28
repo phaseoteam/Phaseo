@@ -86,6 +86,21 @@ describe("ElevenLabs audio endpoints", () => {
 		expect((await result.upstream.json()).error.param).toBe("speed");
 	});
 
+	it.each([
+		["speed", { speed: 1.2 }],
+		["style", { style: 0.5 }],
+	])("rejects nested %s for Eleven v4 before calling the provider", async (setting, voiceSettings) => {
+		const model = "eleven-labs/eleven-v4";
+		const result = await execSpeech({ endpoint: "audio.speech", model,
+			body: { model, input: "Hello", voice: "NfUrCNRReUL9RXS9upG1",
+				config: { elevenlabs: { voice_settings: voiceSettings } } },
+			meta: REQUEST_META, workspaceId: "team_test", providerId: "elevenlabs",
+			byokMeta: [], pricingCard: PRICING_CARD, providerModelSlug: "eleven_v4", stream: false,
+		} as any);
+		expect(result.upstream.status).toBe(400);
+		expect((await result.upstream.json()).error.param).toBe(`voice_settings.${setting}`);
+	});
+
 	it("maps audio.speech to text-to-speech with model slug conversion", async () => {
 		let capturedBody: any = null;
 		const mock = installFetchMock([
