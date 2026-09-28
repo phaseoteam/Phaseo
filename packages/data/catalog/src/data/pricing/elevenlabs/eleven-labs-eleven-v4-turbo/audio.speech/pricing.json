@@ -1,0 +1,36 @@
+{
+  "key": "elevenlabs:eleven-labs/eleven-v4-turbo:audio.speech",
+  "api_provider_id": "elevenlabs",
+  "provider_slug": "elevenlabs",
+  "api_model_id": "eleven-labs/eleven-v4-turbo",
+  "capability_id": "audio.speech",
+  "rules": [
+    {
+      "meter": "input_characters",
+      "unit": "character",
+      "unit_size": 1000,
+      "price_per_unit": 0.011,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Two-week ElevenLabs launch API rate; expires 2026-10-12.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-09-28T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": "https://www.reddit.com/r/ElevenLabs/comments/1wsff56/introducing_eleven_v4_and_eleven_v4_turbo/",
+      "effective_to": "2026-10-12T00:00:00Z"
+    }
+  ],
+  "regions": [],
+  "service_tiers": [
+    "standard"
+  ],
+  "sources": [],
+  "verification": {
+    "status": "verified",
+    "checked_at": "2026-09-28T00:00:00Z",
+    "notes": "https://www.reddit.com/r/ElevenLabs/comments/1wsff56/introducing_eleven_v4_and_eleven_v4_turbo/"
+  }
+}

@@ -305,10 +305,12 @@ struct AudioContentPart {
 };
 
 struct AudioSpeechRequest {
+	std::map<std::string, std::any> config;
 	std::any format;
 	std::string input;
 	std::string model;
 	std::map<std::string, std::any> provider;
+	std::optional<double> speed;
 	std::string voice;
 };
 

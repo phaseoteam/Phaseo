@@ -7,6 +7,8 @@ const OPENAPI_PATH = path.join(ROOT, "apps", "docs", "openapi", "v1", "openapi.y
 const SNAPSHOT_PATH = path.join(ROOT, "packages/data/catalog/generated/database-v2/enum-catalog.json");
 const snapshot = JSON.parse(fs.readFileSync(SNAPSHOT_PATH, "utf8")) as { models: string[]; callableModels: string[]; organisations: string[]; benchmarks: string[] };
 const VIRTUAL_CALLABLE_MODEL_IDS = ["phaseo/auto", "phaseo/free"];
+// Include announced models in SDK helpers while their routes await gateway deployment.
+const PENDING_CALLABLE_MODEL_IDS = ["eleven-labs/eleven-v4", "eleven-labs/eleven-v4-turbo"];
 // Preserve released SDK helper IDs after their last gateway route expires.
 // Runtime model IDs remain open strings; this snapshot must not break patch releases.
 const LEGACY_CALLABLE_MODEL_IDS = [
@@ -101,7 +103,7 @@ function uniqSorted(list: string[]): string[] {
 }
 
 function loadModelIds(): string[] { return uniqSorted(snapshot.models); }
-function loadCallableModelIds(): string[] { return uniqSorted([...snapshot.callableModels, ...VIRTUAL_CALLABLE_MODEL_IDS, ...LEGACY_CALLABLE_MODEL_IDS]); }
+function loadCallableModelIds(): string[] { return uniqSorted([...snapshot.callableModels, ...VIRTUAL_CALLABLE_MODEL_IDS, ...PENDING_CALLABLE_MODEL_IDS, ...LEGACY_CALLABLE_MODEL_IDS]); }
 function loadOrganisationIds(): string[] { return uniqSorted(snapshot.organisations); }
 function loadBenchmarkIds(): string[] { return uniqSorted(snapshot.benchmarks); }
 

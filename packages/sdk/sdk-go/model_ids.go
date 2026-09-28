@@ -410,6 +410,12 @@ const (
 	// Model ID: eleven-labs/eleven-v3
 	// Model page: https://phaseo.app/models/eleven-labs/eleven-v3
 	ModelIDElevenLabsElevenV3 gen.ModelId = "eleven-labs/eleven-v3"
+	// Model ID: eleven-labs/eleven-v4
+	// Model page: https://phaseo.app/models/eleven-labs/eleven-v4
+	ModelIDElevenLabsElevenV4 gen.ModelId = "eleven-labs/eleven-v4"
+	// Model ID: eleven-labs/eleven-v4-turbo
+	// Model page: https://phaseo.app/models/eleven-labs/eleven-v4-turbo
+	ModelIDElevenLabsElevenV4Turbo gen.ModelId = "eleven-labs/eleven-v4-turbo"
 	// Model ID: eleven-labs/music
 	// Model page: https://phaseo.app/models/eleven-labs/music
 	ModelIDElevenLabsMusic gen.ModelId = "eleven-labs/music"
@@ -2183,6 +2189,8 @@ var KnownModelIDs = []gen.ModelId{
 	ModelIDElevenLabsElevenTurboV2,
 	ModelIDElevenLabsElevenTurboV25,
 	ModelIDElevenLabsElevenV3,
+	ModelIDElevenLabsElevenV4,
+	ModelIDElevenLabsElevenV4Turbo,
 	ModelIDElevenLabsMusic,
 	ModelIDElevenLabsScribeV2,
 	ModelIDEssentialAiRnj1,

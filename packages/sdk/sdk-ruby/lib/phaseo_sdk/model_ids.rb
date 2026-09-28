@@ -406,6 +406,12 @@ module PhaseoSdk
     # Model ID: eleven-labs/eleven-v3
     # Model page: https://phaseo.app/models/eleven-labs/eleven-v3
     ELEVEN_LABS_ELEVEN_V3 = "eleven-labs/eleven-v3"
+    # Model ID: eleven-labs/eleven-v4
+    # Model page: https://phaseo.app/models/eleven-labs/eleven-v4
+    ELEVEN_LABS_ELEVEN_V4 = "eleven-labs/eleven-v4"
+    # Model ID: eleven-labs/eleven-v4-turbo
+    # Model page: https://phaseo.app/models/eleven-labs/eleven-v4-turbo
+    ELEVEN_LABS_ELEVEN_V4_TURBO = "eleven-labs/eleven-v4-turbo"
     # Model ID: eleven-labs/music
     # Model page: https://phaseo.app/models/eleven-labs/music
     ELEVEN_LABS_MUSIC = "eleven-labs/music"
@@ -2179,6 +2185,8 @@ module PhaseoSdk
     ModelIds::ELEVEN_LABS_ELEVEN_TURBO_V2,
     ModelIds::ELEVEN_LABS_ELEVEN_TURBO_V2_5,
     ModelIds::ELEVEN_LABS_ELEVEN_V3,
+    ModelIds::ELEVEN_LABS_ELEVEN_V4,
+    ModelIds::ELEVEN_LABS_ELEVEN_V4_TURBO,
     ModelIds::ELEVEN_LABS_MUSIC,
     ModelIds::ELEVEN_LABS_SCRIBE_V2,
     ModelIds::ESSENTIAL_AI_RNJ_1,

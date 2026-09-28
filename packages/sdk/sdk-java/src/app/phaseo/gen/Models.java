@@ -303,10 +303,12 @@ public final class Models {
 	}
 
 	public static class AudioSpeechRequest {
+		public Object config;
 		public Object format;
 		public String input;
 		public String model;
 		public Object provider;
+		public Double speed;
 		public String voice;
 	}
 

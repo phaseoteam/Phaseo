@@ -731,6 +731,9 @@ public sealed class AudioContentPart
 
 public sealed class AudioSpeechRequest
 {
+	[JsonPropertyName("config")]
+	public Dictionary<string, object>? Config { get; set; }
+
 	[JsonPropertyName("format")]
 	public string? Format { get; set; }
 
@@ -742,6 +745,9 @@ public sealed class AudioSpeechRequest
 
 	[JsonPropertyName("provider")]
 	public Dictionary<string, object>? Provider { get; set; }
+
+	[JsonPropertyName("speed")]
+	public double? Speed { get; set; }
 
 	[JsonPropertyName("voice")]
 	public string? Voice { get; set; }

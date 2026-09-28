@@ -15,6 +15,8 @@ description: "Generate TTS audio from text using the specified voice and format.
   `Zephyr`, `Puck`, `Charon`, `Kore`, `Fenrir`, `Leda`, `Orus`, `Aoede`, `Callirrhoe`, `Autonoe`, `Enceladus`, `Iapetus`, `Umbriel`, `Algieba`, `Despina`, `Erinome`, `Algenib`, `Rasalgethi`, `Laomedeia`, `Achernar`, `Alnilam`, `Schedar`, `Gacrux`, `Pulcherrima`, `Achird`, `Zubenelgenubi`, `Vindemiatrix`, `Sadachbia`, `Sadaltager`, `Sulafat`.
 - `elevenlabs`: common public starter voices are mapped (for example `rachel`, `domi`, `bella`, `antoni`, `elli`, `josh`, `arnold`, `adam`, `sam`).
 
+For `eleven-labs/eleven-v4` and `eleven-labs/eleven-v4-turbo`, pass any 20-character ElevenLabs voice library ID, including a custom clone. Set `config.elevenlabs.voice_settings.stability` and `similarity_boost` as needed. Eleven v4 does not support `speed` or `voice_settings.style`.
+
 If a provided `voice` is not valid for the routed provider/model mapping, the request returns `400 invalid_request_error` with `param: "voice"`.
 
 ## Provider Overrides

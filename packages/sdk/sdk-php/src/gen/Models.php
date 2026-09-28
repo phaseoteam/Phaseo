@@ -533,6 +533,8 @@ class AudioContentPart
 
 class AudioSpeechRequest
 {
+	/** @var array<string, mixed>|null */
+	public $config;
 	/** @var string|null */
 	public $format;
 	/** @var string */
@@ -541,6 +543,8 @@ class AudioSpeechRequest
 	public $model;
 	/** @var array<string, mixed>|null */
 	public $provider;
+	/** @var float|null */
+	public $speed;
 	/** @var string|null */
 	public $voice;
 }

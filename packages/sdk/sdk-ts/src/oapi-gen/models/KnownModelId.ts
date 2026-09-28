@@ -135,6 +135,8 @@ export type KnownModelId =
   | "eleven-labs/eleven-turbo-v2"
   | "eleven-labs/eleven-turbo-v2.5"
   | "eleven-labs/eleven-v3"
+  | "eleven-labs/eleven-v4"
+  | "eleven-labs/eleven-v4-turbo"
   | "eleven-labs/music"
   | "eleven-labs/scribe-v2"
   | "essential-ai/rnj-1"
