@@ -235,11 +235,8 @@ describe("public model routes", () => {
 				{ provider_slug: "provider-a", provider_model_slug: "gpt-test-a", model_slug: "openai/gpt-test", input_modalities: ["text"], output_modalities: ["text"], routing_enabled: true, status: "active", effective_from: null, effective_to: null },
 				{ provider_slug: "provider-b", provider_model_slug: "gpt-test-b", model_slug: "openai/gpt-test", input_modalities: ["image"], output_modalities: ["text"], routing_enabled: true, status: "active", effective_from: null, effective_to: null },
 			]), { status: 200 });
-			if (url.includes("v2_request_facts")) return new Response(JSON.stringify([{
-				request_event_id: "event-1", routed_model_slug: "openai/gpt-test", occurred_at: "2026-07-26T00:00:00Z",
-			}]), { status: 200 });
-			if (url.includes("v2_request_pricing_lines")) return new Response(JSON.stringify([{
-				request_event_id: "event-1", charged_nanos: 125,
+			if (url.includes("get_free_router_usage_summary")) return new Response(JSON.stringify([{
+				model_slug: "openai/gpt-test", requests_30d: 1, total_cost_nanos: "125", last_routed_at: "2026-07-26T00:00:00Z",
 			}]), { status: 200 });
 			return new Response("[]", { status: 200 });
 		}));
