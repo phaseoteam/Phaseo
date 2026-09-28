@@ -1675,6 +1675,7 @@ function collectDiscountEntriesFromOtherRules(
 function collectDiscountEntriesFromSections(
 	sections: ReturnType<typeof buildProviderSections>,
 ) {
+	const textInputs = sections.mediaInputs?.filter((row) => row.mod === "text") ?? [];
 	const imageInputs = sections.mediaInputs?.filter((row) => row.mod === "image") ?? [];
 	const videoInputs = sections.mediaInputs?.filter((row) => row.mod === "video") ?? [];
 	return [
@@ -1684,6 +1685,7 @@ function collectDiscountEntriesFromSections(
 		...collectDiscountEntriesFromTriple(sections.videoTokens),
 		...collectDiscountEntriesFromTriple(sections.embeddingTokens),
 		...collectDiscountEntriesFromTriple(sections.decisionTokens),
+		...collectDiscountEntriesFromUsage(textInputs),
 		...collectDiscountEntriesFromUsage(imageInputs),
 		...collectDiscountEntriesFromUsage(videoInputs),
 		...collectDiscountEntriesFromImage(sections.imageGen),
@@ -2402,6 +2404,7 @@ export default function ProviderCard({
 		!sec.decisionTokens &&
 		!sec.imageGen &&
 		!sec.videoGen &&
+		!textInputs.length &&
 		!audioInputs.length &&
 		!imageInputs.length &&
 		!videoInputs.length &&
