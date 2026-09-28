@@ -488,6 +488,10 @@ export const logoManifest = {
 		light: "/logos/relace_light.svg",
 		dark: "/logos/relace_dark.svg",
 	},
+	respan: {
+		light: "/logos/respan_light.svg",
+		dark: "/logos/respan_dark.svg",
+	},
 	scira: {
 		color: "/logos/scira.svg",
 	},
