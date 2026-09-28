@@ -94,7 +94,7 @@ insert into public.v2_route_capabilities (
 values (
   'upstage:upstage/solar-jev:systemone',
   'decisions.make',
-  'coming_soon',
+  'internal_testing',
   jsonb_build_object('model', true, 'state', true, 'questions', true),
   '2026-09-28T00:00:00Z'::timestamptz,
   jsonb_build_object(
