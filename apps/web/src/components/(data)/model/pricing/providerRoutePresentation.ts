@@ -32,6 +32,8 @@ export function isSelectableServiceTier(plan: string): boolean {
 
 // These sections describe route variants, not live health or availability.
 export function isProviderRouteVariant(provider: ProviderInfo, plan: string) {
+    // Claude Platform on AWS is an Anthropic-operated platform, not a regional route.
+    if (provider.api_provider_id === "anthropic-aws" && !isSelectableServiceTier(plan)) return false;
     return provider.offer_scope === "regional" ||
         provider.offer_scope === "specialized" ||
         getProviderRoutePresentation(provider).region !== null ||

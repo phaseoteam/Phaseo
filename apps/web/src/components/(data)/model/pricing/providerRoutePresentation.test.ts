@@ -39,6 +39,14 @@ describe("provider route presentation", () => {
         expect(getProviderRoutePresentation({ api_provider_id: "anthropic-aws-us", api_provider_name: "Anthropic AWS US", offer_label: "AWS US", offer_scope: "regional" })).toEqual({ name: "Claude Platform for AWS", region: "us", tier: null });
     });
 
+    it("shows Claude Platform on AWS with primary providers while keeping US and Batch routes separate", () => {
+        const aws = { api_provider_id: "anthropic-aws", api_provider_name: "Anthropic", offer_label: "AWS", offer_scope: "specialized" as const };
+        const awsUs = { ...aws, api_provider_id: "anthropic-aws-us", offer_scope: "regional" as const };
+        expect(isProviderRouteVariant(aws, "standard")).toBe(false);
+        expect(isProviderRouteVariant(aws, "batch")).toBe(true);
+        expect(isProviderRouteVariant(awsUs, "standard")).toBe(true);
+    });
+
     it("preserves unknown regional labels rather than inventing a region code", () => {
         const provider = { ...openai, api_provider_id: "example-region", offer_label: "Asia Pacific", offer_scope: "regional" as const };
         expect(getProviderRoutePresentation(provider).name).toContain("Asia Pacific");

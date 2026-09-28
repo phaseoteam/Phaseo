@@ -4,7 +4,7 @@ These instructions apply to `packages/data/catalog` and extend the repository-le
 
 ## Ownership and Shape
 
-- The database is the canonical source for models, API providers, organisations, benchmarks, pricing, aliases, families, and subscription plans. Use `/internal/data` for changes; the JSON importer is retired.
+- The database is the canonical source for models, API providers, organisations, benchmarks, pricing, aliases, families, and subscription plans. Use the connected Supabase plugin for catalogue changes and readback; `/internal/data` is the admin editor. The JSON importer is retired.
 - `src/data` holds archived compatibility fixtures; `generated/database-v2` holds daily public snapshots and the OpenAPI enum index. Do not use either as a database input feed. Follow the existing JSON/schema shape when maintaining fixtures. Do not add web-only presentation fields or duplicate a fact that already has a canonical owner.
 - Keep stable canonical IDs separate from provider route IDs, aliases, display names, and marketing labels. Preserve historical IDs unless an intentional migration updates every consumer.
 - Prefer explicit source-backed values over inference. If a fact is unknown, omit it or use the schema-supported unknown state rather than inventing a value.
@@ -19,11 +19,9 @@ These instructions apply to `packages/data/catalog` and extend the repository-le
 
 ## Validation and Tests
 
-- Structure validation: `pnpm validate:data`
-- Pricing validation: `pnpm validate:pricing`
-- Gateway compatibility: `pnpm validate:gateway`
-- Focused catalog tests live beside `src/data` and under `src/data/__tests__`.
-- Run all three validations for provider, route, capability, pricing, or canonical-ID changes.
+- Read back changed catalogue rows, aliases, route status, and pricing meters through the Supabase plugin. This is the primary validation for data-only changes.
+- `pnpm validate:data`, `pnpm validate:pricing`, and `pnpm validate:gateway` check archived fixtures. Run them when those fixtures or their validators change; they do not verify live Supabase data.
+- Focused compatibility-fixture tests live beside `src/data` and under `src/data/__tests__`.
 - Add deterministic regression coverage for new schema rules, alias resolution, pricing normalization, lifecycle handling, or cross-file invariants.
 
 ## Change Safety
