@@ -109,6 +109,15 @@ test('Sonnet 5.5 release creates complete provider routes and is idempotent', as
           1000000, 2000000000, 'Input text tokens', '1M tokens', true, 100,
           '{}'::jsonb from public.v2_pricing_skus where provider_model_id = $1
       `, [oldId]);
+      await db.query(`
+        insert into public.v2_pricing_sku_meters (
+          sku_id, meter_key, modality, direction, unit, unit_quantity,
+          price_nanos, display_label, display_unit, billable, meter_order,
+          metadata
+        ) select sku_id, 'output_text_tokens', 'text', 'output', 'token',
+          1000000, 10000000000, 'Output text tokens', '1M tokens', true, 200,
+          '{}'::jsonb from public.v2_pricing_skus where provider_model_id = $1
+      `, [oldId]);
     }
 
     await db.exec(migration);
@@ -127,7 +136,20 @@ test('Sonnet 5.5 release creates complete provider routes and is idempotent', as
       select count(*)::int as count from public.v2_pricing_sku_meters meter
       join public.v2_pricing_skus sku on sku.sku_id = meter.sku_id
       where sku.provider_model_id like '%claude-sonnet-5.5'
-    `)).rows[0].count, providers.length);
+    `)).rows[0].count, providers.length * 2 + 4 * 2);
+    const batchRates = (await db.query(`
+      select route.provider_slug, meter.meter_key,
+        meter.price_nanos / 1000000000 as price_per_million
+      from public.v2_pricing_skus sku
+      join public.v2_pricing_sku_meters meter on meter.sku_id = sku.sku_id
+      join public.v2_model_provider_routes route on route.provider_model_id = sku.provider_model_id
+      where route.model_slug = 'anthropic/claude-sonnet-5.5'
+        and sku.service_tier_slug = 'batch'
+      order by route.provider_slug, meter.meter_key
+    `)).rows;
+    assert.equal(batchRates.length, 8);
+    assert.ok(batchRates.every((rate) =>
+      Number(rate.price_per_million) === (rate.meter_key === 'input_text_tokens' ? 1 : 5)));
     assert.equal((await db.query(`
       select model_slug from public.v2_model_aliases
       where alias_slug = 'anthropic/claude-sonnet-latest'

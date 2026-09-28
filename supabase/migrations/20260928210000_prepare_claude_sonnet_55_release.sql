@@ -176,6 +176,67 @@ on conflict (alias_slug) do update set
   metadata = public.v2_model_aliases.metadata || excluded.metadata,
   updated_at = now();
 
+-- Anthropic publishes a 50% Batch API discount for input and output tokens.
+-- Claude Platform on AWS uses the same rates; US-only inference retains 1.1x.
+insert into public.v2_pricing_skus (
+  provider_model_id, sku_code, version, operation, status, region,
+  display_name, description, currency, effective_from, metadata,
+  service_tier_slug, route_variant_id
+)
+select
+  standard.provider_model_id, standard.sku_code || '-batch', standard.version,
+  standard.operation, 'active', standard.region,
+  'batch text.generate', 'Anthropic Batch API input and output tokens cost 50% of standard rates.',
+  standard.currency, '2026-09-28T00:00:00Z'::timestamptz,
+  (standard.metadata - 'source_key') || jsonb_build_object(
+    'source', 'release_migration',
+    'source_url', 'https://platform.claude.com/docs/en/about-claude/pricing',
+    'pricing_status', 'published_batch_rates',
+    'model_key', route.provider_slug || ':anthropic/claude-sonnet-5.5:text.generate',
+    'source_key', route.provider_slug || ':anthropic/claude-sonnet-5.5:text.generate:' || meter.meter_key || ':batch'
+  ),
+  'batch', standard.route_variant_id
+from public.v2_pricing_skus standard
+join public.v2_model_provider_routes route
+  on route.provider_model_id = standard.provider_model_id
+join public.v2_pricing_sku_meters meter on meter.sku_id = standard.sku_id
+where route.model_slug = 'anthropic/claude-sonnet-5.5'
+  and route.provider_slug = any (array['anthropic', 'anthropic-us', 'anthropic-aws', 'anthropic-aws-us'])
+  and standard.service_tier_slug = 'standard'
+  and standard.status = 'active'
+  and standard.effective_to is null
+  and meter.meter_key = any (array['input_text_tokens', 'output_text_tokens'])
+on conflict (provider_model_id, sku_code, version) do nothing;
+
+insert into public.v2_pricing_sku_meters (
+  sku_id, meter_key, modality, direction, unit, unit_quantity, price_nanos,
+  display_label, display_unit, billable, meter_order, metadata
+)
+select
+  batch.sku_id, meter.meter_key, meter.modality, meter.direction,
+  meter.unit, meter.unit_quantity, meter.price_nanos / 2,
+  meter.display_label, meter.display_unit, meter.billable, meter.meter_order,
+  (meter.metadata - 'source_key') || jsonb_build_object(
+    'source', 'release_migration',
+    'source_url', 'https://platform.claude.com/docs/en/about-claude/pricing',
+    'pricing_status', 'published_batch_rates'
+  )
+from public.v2_pricing_skus standard
+join public.v2_model_provider_routes route
+  on route.provider_model_id = standard.provider_model_id
+join public.v2_pricing_sku_meters meter on meter.sku_id = standard.sku_id
+join public.v2_pricing_skus batch
+  on batch.provider_model_id = standard.provider_model_id
+ and batch.sku_code = standard.sku_code || '-batch'
+ and batch.version = standard.version
+where route.model_slug = 'anthropic/claude-sonnet-5.5'
+  and route.provider_slug = any (array['anthropic', 'anthropic-us', 'anthropic-aws', 'anthropic-aws-us'])
+  and standard.service_tier_slug = 'standard'
+  and standard.status = 'active'
+  and standard.effective_to is null
+  and meter.meter_key = any (array['input_text_tokens', 'output_text_tokens'])
+on conflict (sku_id, meter_key) do nothing;
+
 do $$
 declare
   route_count integer;

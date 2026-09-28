@@ -68,23 +68,56 @@
       "cache_duration_seconds": null,
       "conditions": [],
       "source": null
+    },
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 1.1,
+      "currency": "USD",
+      "pricing_plan": "batch",
+      "note": "Anthropic Batch API: 50% off input and output tokens; US-only inference retains the 1.1x multiplier.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-09-28T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 5.5,
+      "currency": "USD",
+      "pricing_plan": "batch",
+      "note": "Anthropic Batch API: 50% off input and output tokens; US-only inference retains the 1.1x multiplier.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-09-28T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     }
   ],
   "regions": [],
   "service_tiers": [
-    "standard"
+    "standard",
+    "batch"
   ],
   "sources": [
     {
-      "kind": "announcement",
-      "url": "https://www.anthropic.com/claude-opus-5-5",
+      "kind": "official_pricing",
+      "url": "https://platform.claude.com/docs/en/about-claude/pricing",
       "accessed_at": "2026-09-28T00:00:00Z",
-      "notes": "Anthropic confirms Sonnet 5.5 is forthcoming but does not publish its pricing here. Rates are provisional and require official verification."
+      "notes": "Anthropic lists Sonnet 5.5 standard and Batch API rates. Claude Platform on AWS uses the same token rates; US-only inference applies a 1.1x multiplier."
     }
   ],
   "verification": {
-    "status": "unverified",
+    "status": "verified",
     "checked_at": "2026-09-28T00:00:00Z",
-    "notes": "Do not publish until official provider pricing and applicable regional and long-context rules are confirmed."
+    "notes": "Anthropic confirms Sonnet 5.5 standard and Batch pricing for Claude API and Claude Platform on AWS."
   }
 }
