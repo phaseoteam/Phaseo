@@ -83,7 +83,7 @@ const MIN_INFERENCE_CREDIT_NANOS = 100_000_000;
 const MIN_ASYNC_CREDIT_NANOS = 1_000_000_000;
 
 function minimumCreditNanos(endpoint: string): number {
-	return endpoint === "video.generation" || endpoint.startsWith("batch")
+	return endpoint.startsWith("video.") || endpoint.startsWith("batch")
 		? MIN_ASYNC_CREDIT_NANOS
 		: MIN_INFERENCE_CREDIT_NANOS;
 }

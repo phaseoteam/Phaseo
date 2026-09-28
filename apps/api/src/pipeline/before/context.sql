@@ -3,7 +3,7 @@ declare
   key_status          jsonb;
   key_limit_status    jsonb;
   workspace_budget_status jsonb;
-  min_balance_nanos   bigint := case when endpoint = 'video.generation' or endpoint like 'batch%' then 1000000000 else 100000000 end;
+  min_balance_nanos   bigint := case when endpoint like 'video.%' or endpoint like 'batch%' then 1000000000 else 100000000 end;
 
   providers           jsonb;
   pricing             jsonb;

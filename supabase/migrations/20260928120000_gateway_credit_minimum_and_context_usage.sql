@@ -18,7 +18,7 @@ begin
     updated_definition := regexp_replace(
       definition,
       'min_balance_nanos[[:space:]]+bigint[[:space:]]*:=[[:space:]]*1000000000;',
-      'min_balance_nanos bigint := case when endpoint = ''video.generation'' or endpoint like ''batch%'' then 1000000000 else 100000000 end;'
+      'min_balance_nanos bigint := case when endpoint like ''video.%'' or endpoint like ''batch%'' then 1000000000 else 100000000 end;'
     );
     if updated_definition = definition then
       raise exception 'Gateway credit minimum not found in %', function_name;
