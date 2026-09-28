@@ -116,6 +116,7 @@ describe("logos", () => {
 		["pi", "/logos/pi_light.svg", "/logos/pi_dark.svg"],
 		["prime-agent", "/logos/prime-intellect_light.svg", "/logos/prime-intellect_dark.svg"],
 		["runinfra", "/logos/runinfra.svg", "/logos/runinfra_dark.svg"],
+		["respan", "/logos/respan_light.svg", "/logos/respan_dark.svg"],
 		["roo-code", "/logos/roo-code_light.svg", "/logos/roo-code_dark.svg"],
 		["sarvam", "/logos/sarvam_light.svg", "/logos/sarvam_dark.svg"],
 		["tinfoil", "/logos/tinfoil_light.svg", "/logos/tinfoil_dark.svg"],
