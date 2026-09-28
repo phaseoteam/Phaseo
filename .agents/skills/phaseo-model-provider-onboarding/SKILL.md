@@ -15,8 +15,8 @@ fixtures and has no importer. Do not open a PR for catalogue content alone.
 
 The current main branch's `README.md` and `packages/data/catalog/AGENTS.md`
 describe this ownership. If instructions in an older checkout disagree, verify
-the current architecture before editing; never use the old JSON path as a
-fallback for an unavailable Supabase connection.
+the current architecture before editing. If the Supabase plugin is unavailable,
+ask the user to connect it; never use the old JSON path as a fallback.
 
 ## Classify the request
 
