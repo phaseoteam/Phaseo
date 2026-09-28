@@ -306,10 +306,12 @@ pub struct AudioContentPart {
 }
 
 pub struct AudioSpeechRequest {
+	pub config: Option<HashMap<String, String>>,
 	pub format: Option<String>,
 	pub input: String,
 	pub model: String,
 	pub provider: Option<HashMap<String, String>>,
+	pub speed: Option<f64>,
 	pub voice: Option<String>,
 }
 

@@ -299,10 +299,12 @@ type AudioContentPart struct {
 }
 
 type AudioSpeechRequest struct {
+	Config *map[string]interface{} `json:"config,omitempty"`
 	Format *string `json:"format,omitempty"`
 	Input string `json:"input"`
 	Model string `json:"model"`
 	Provider *map[string]interface{} `json:"provider,omitempty"`
+	Speed *float64 `json:"speed,omitempty"`
 	Voice *string `json:"voice,omitempty"`
 }
 
@@ -2388,6 +2390,8 @@ const (
 	KnownModelIdElevenLabsElevenTurboV2 KnownModelId = "eleven-labs/eleven-turbo-v2"
 	KnownModelIdElevenLabsElevenTurboV25 KnownModelId = "eleven-labs/eleven-turbo-v2.5"
 	KnownModelIdElevenLabsElevenV3 KnownModelId = "eleven-labs/eleven-v3"
+	KnownModelIdElevenLabsElevenV4 KnownModelId = "eleven-labs/eleven-v4"
+	KnownModelIdElevenLabsElevenV4Turbo KnownModelId = "eleven-labs/eleven-v4-turbo"
 	KnownModelIdElevenLabsMusic KnownModelId = "eleven-labs/music"
 	KnownModelIdElevenLabsScribeV2 KnownModelId = "eleven-labs/scribe-v2"
 	KnownModelIdEssentialAiRnj1 KnownModelId = "essential-ai/rnj-1"

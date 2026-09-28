@@ -5375,6 +5375,20 @@ export type CreateSpeechParams = {
   query?: Record<string, never>;
   headers?: Record<string, never>;
   body?: {
+    config?: {
+      elevenlabs?: {
+        language_code?: string;
+        output_format?: string;
+        voice_id?: string;
+        voice_settings?: {
+          similarity_boost?: number;
+          stability?: number;
+          [key: string]: unknown;
+        };
+        [key: string]: unknown;
+      };
+      [key: string]: unknown;
+    };
     format?: "mp3" | "wav" | "ogg" | "aac";
     input: string;
     model: string;
@@ -5415,6 +5429,7 @@ export type CreateSpeechParams = {
           };
       zdr?: boolean | null;
     };
+    speed?: number;
     voice?: string;
   };
 };

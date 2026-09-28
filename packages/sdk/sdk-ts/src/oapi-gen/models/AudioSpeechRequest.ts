@@ -1,4 +1,18 @@
 export interface AudioSpeechRequest {
+  config?: {
+    elevenlabs?: {
+      language_code?: string;
+      output_format?: string;
+      voice_id?: string;
+      voice_settings?: {
+        similarity_boost?: number;
+        stability?: number;
+        [key: string]: unknown;
+      };
+      [key: string]: unknown;
+    };
+    [key: string]: unknown;
+  };
   format?: "mp3" | "wav" | "ogg" | "aac";
   input: string;
   model: string;
@@ -39,5 +53,6 @@ export interface AudioSpeechRequest {
         };
     zdr?: boolean | null;
   };
+  speed?: number;
   voice?: string;
 }

@@ -280,6 +280,10 @@ namespace PhaseoSdk
         public const string ElevenLabsElevenTurboV25 = "eleven-labs/eleven-turbo-v2.5";
         /// <summary>Model ID: <c>eleven-labs/eleven-v3</c>. Model page: https://phaseo.app/models/eleven-labs/eleven-v3</summary>
         public const string ElevenLabsElevenV3 = "eleven-labs/eleven-v3";
+        /// <summary>Model ID: <c>eleven-labs/eleven-v4</c>. Model page: https://phaseo.app/models/eleven-labs/eleven-v4</summary>
+        public const string ElevenLabsElevenV4 = "eleven-labs/eleven-v4";
+        /// <summary>Model ID: <c>eleven-labs/eleven-v4-turbo</c>. Model page: https://phaseo.app/models/eleven-labs/eleven-v4-turbo</summary>
+        public const string ElevenLabsElevenV4Turbo = "eleven-labs/eleven-v4-turbo";
         /// <summary>Model ID: <c>eleven-labs/music</c>. Model page: https://phaseo.app/models/eleven-labs/music</summary>
         public const string ElevenLabsMusic = "eleven-labs/music";
         /// <summary>Model ID: <c>eleven-labs/scribe-v2</c>. Model page: https://phaseo.app/models/eleven-labs/scribe-v2</summary>

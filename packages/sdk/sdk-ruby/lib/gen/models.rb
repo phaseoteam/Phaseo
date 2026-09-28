@@ -428,6 +428,8 @@ module Phaseo
     # @!attribute [rw] type
     #   @return [String]
     AudioContentPart = Struct.new(:input_audio, :type, keyword_init: true)
+    # @!attribute [rw] config
+    #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] format
     #   @return [String, nil]
     # @!attribute [rw] input
@@ -436,9 +438,11 @@ module Phaseo
     #   @return [String]
     # @!attribute [rw] provider
     #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] speed
+    #   @return [Float, nil]
     # @!attribute [rw] voice
     #   @return [String, nil]
-    AudioSpeechRequest = Struct.new(:format, :input, :model, :provider, :voice, keyword_init: true)
+    AudioSpeechRequest = Struct.new(:config, :format, :input, :model, :provider, :speed, :voice, keyword_init: true)
     # @!attribute [rw] audio_b64
     #   @return [String, nil]
     # @!attribute [rw] audio_url

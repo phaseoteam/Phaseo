@@ -410,6 +410,12 @@ pub mod model_ids {
     /// Model ID: `eleven-labs/eleven-v3`.
     /// Model page: https://phaseo.app/models/eleven-labs/eleven-v3
     pub const ELEVEN_LABS_ELEVEN_V3: &str = "eleven-labs/eleven-v3";
+    /// Model ID: `eleven-labs/eleven-v4`.
+    /// Model page: https://phaseo.app/models/eleven-labs/eleven-v4
+    pub const ELEVEN_LABS_ELEVEN_V4: &str = "eleven-labs/eleven-v4";
+    /// Model ID: `eleven-labs/eleven-v4-turbo`.
+    /// Model page: https://phaseo.app/models/eleven-labs/eleven-v4-turbo
+    pub const ELEVEN_LABS_ELEVEN_V4_TURBO: &str = "eleven-labs/eleven-v4-turbo";
     /// Model ID: `eleven-labs/music`.
     /// Model page: https://phaseo.app/models/eleven-labs/music
     pub const ELEVEN_LABS_MUSIC: &str = "eleven-labs/music";
@@ -2184,6 +2190,8 @@ pub mod model_ids {
         ELEVEN_LABS_ELEVEN_TURBO_V2,
         ELEVEN_LABS_ELEVEN_TURBO_V2_5,
         ELEVEN_LABS_ELEVEN_V3,
+        ELEVEN_LABS_ELEVEN_V4,
+        ELEVEN_LABS_ELEVEN_V4_TURBO,
         ELEVEN_LABS_MUSIC,
         ELEVEN_LABS_SCRIBE_V2,
         ESSENTIAL_AI_RNJ_1,

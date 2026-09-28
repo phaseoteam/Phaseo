@@ -11374,6 +11374,10 @@ components:
           type: string
         voice:
           type: string
+        speed:
+          type: number
+          minimum: 0.25
+          maximum: 4
         format:
           type: string
           enum:
@@ -11383,6 +11387,28 @@ components:
             - aac
         provider:
           $ref: '#/components/schemas/ProviderRoutingOptions'
+        config:
+          type: object
+          additionalProperties: true
+          properties:
+            elevenlabs:
+              type: object
+              additionalProperties: true
+              properties:
+                voice_id:
+                  type: string
+                language_code:
+                  type: string
+                output_format:
+                  type: string
+                voice_settings:
+                  type: object
+                  additionalProperties: true
+                  properties:
+                    stability:
+                      type: number
+                    similarity_boost:
+                      type: number
     AudioTranscriptionRequest:
       type: object
       required:
@@ -21192,6 +21218,8 @@ components:
         - eleven-labs/eleven-turbo-v2
         - eleven-labs/eleven-turbo-v2.5
         - eleven-labs/eleven-v3
+        - eleven-labs/eleven-v4
+        - eleven-labs/eleven-v4-turbo
         - eleven-labs/music
         - eleven-labs/scribe-v2
         - essential-ai/rnj-1

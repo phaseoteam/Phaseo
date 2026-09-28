@@ -414,6 +414,12 @@ public final class ModelIds {
     /** Model ID: <code>eleven-labs/eleven-v3</code>. Model page: https://phaseo.app/models/eleven-labs/eleven-v3 */
     public static final String ELEVEN_LABS_ELEVEN_V3 = "eleven-labs/eleven-v3";
 
+    /** Model ID: <code>eleven-labs/eleven-v4</code>. Model page: https://phaseo.app/models/eleven-labs/eleven-v4 */
+    public static final String ELEVEN_LABS_ELEVEN_V4 = "eleven-labs/eleven-v4";
+
+    /** Model ID: <code>eleven-labs/eleven-v4-turbo</code>. Model page: https://phaseo.app/models/eleven-labs/eleven-v4-turbo */
+    public static final String ELEVEN_LABS_ELEVEN_V4_TURBO = "eleven-labs/eleven-v4-turbo";
+
     /** Model ID: <code>eleven-labs/music</code>. Model page: https://phaseo.app/models/eleven-labs/music */
     public static final String ELEVEN_LABS_MUSIC = "eleven-labs/music";
 
