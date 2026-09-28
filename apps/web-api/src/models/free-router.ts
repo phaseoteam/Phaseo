@@ -99,33 +99,20 @@ async function v2Overview(env: Env): Promise<FreeRouterOverview> {
 	}
 	const modelIds = [...eligible.keys()];
 	if (modelIds.length === 0) return EMPTY;
-	const loadUsage = async () => {
-		const values: Array<{ request_event_id: string; routed_model_slug: string | null; occurred_at: string }> = [];
-		for (let offset = 0; ; offset += 1_000) {
-			const result = await client.from("v2_request_facts").select("request_event_id,routed_model_slug,occurred_at")
-				.eq("requested_model_input", "phaseo/free").in("routed_model_slug", modelIds)
-				.gte("occurred_at", new Date(nowMs - 30 * 24 * 60 * 60 * 1_000).toISOString())
-				.order("occurred_at", { ascending: false }).range(offset, offset + 999);
-			if (result.error) throw result.error;
-			values.push(...(result.data ?? []));
-			if ((result.data?.length ?? 0) < 1_000) break;
-		}
-		return values;
-	};
-	const usageRows = await loadUsage();
-	const eventIds = usageRows.map((row) => row.request_event_id);
-	const pricingResult = eventIds.length ? await client.from("v2_request_pricing_lines").select("request_event_id,charged_nanos").in("request_event_id", eventIds) : { data: [], error: null };
-	if (pricingResult.error) throw pricingResult.error;
-	const costByEvent = new Map<string, number>();
-	for (const row of pricingResult.data ?? []) costByEvent.set(row.request_event_id, (costByEvent.get(row.request_event_id) ?? 0) + Math.max(0, Number(row.charged_nanos ?? 0) || 0));
 	const usage = new Map<string, FreeRouterModel["usage"]>();
-	for (const row of usageRows) {
-		const modelId = String(row.routed_model_slug ?? "");
-		const item = usage.get(modelId) ?? { requests30d: 0, totalCostNanos30d: 0, lastRoutedAt: null };
-		item.requests30d += 1;
-		item.totalCostNanos30d += Math.max(0, Math.round(costByEvent.get(row.request_event_id) ?? 0));
-		item.lastRoutedAt ??= row.occurred_at ?? null;
-		usage.set(modelId, item);
+	const usageResult = await client.rpc("get_free_router_usage_summary", {
+		p_model_slugs: modelIds,
+		p_since: new Date(nowMs - 30 * 24 * 60 * 60 * 1_000).toISOString(),
+	});
+	if (usageResult.error) throw usageResult.error;
+	for (const row of usageResult.data ?? []) {
+		const modelId = String(row.model_slug ?? "");
+		if (!modelId) continue;
+		usage.set(modelId, {
+			requests30d: Number(row.requests_30d ?? 0) || 0,
+			totalCostNanos30d: Math.max(0, Number(row.total_cost_nanos ?? 0) || 0),
+			lastRoutedAt: typeof row.last_routed_at === "string" ? row.last_routed_at : null,
+		});
 	}
 	const rowById = new Map((modelsResult.data ?? []).map((row) => [row.model_slug, row]));
 	const models = modelIds.map((modelId) => {

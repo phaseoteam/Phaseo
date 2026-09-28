@@ -91,6 +91,9 @@ backfill and consumer cutover are verified.
 - `get_public_models_page_rows()` is the public catalogue contract and now
   delegates to the v2 projection, including catalogue-only models and all
   available service tiers.
+- `get_free_router_usage_summary(model_slugs, since)` aggregates Free Models
+  Router request counts, charged nanos, and latest route time in the database,
+  returning one row per routed model to the web API.
 - `get_public_models_page_payload()` preserves lifecycle date ordering and
   uses `v2_models.created_at` to show more recently catalogued models first
   when lifecycle dates are equal.
