@@ -1,6 +1,7 @@
 -- Prepare the Sonnet 5.5 release using Sonnet 5's existing provider coverage.
--- Apply only after Anthropic confirms the model ID, launch, provider availability,
--- limits, and pricing. Prices below inherit Sonnet 5 until verified.
+-- The same DML was applied directly to Phaseo Prod on September 28, 2026.
+-- This idempotent migration records the change in repository history. Prices
+-- inherit Sonnet 5 and remain provisional until officially verified.
 
 insert into public.v2_models (
   model_slug, lab_slug, name, description, status, hidden,
@@ -21,7 +22,7 @@ values (
     'verification', jsonb_build_object(
       'status', 'partial',
       'checked_at', '2026-09-28T00:00:00Z',
-      'notes', 'Anthropic confirms the model is forthcoming. Launch specifications and prices must be checked before this migration is applied.'
+      'notes', 'Anthropic confirmed Sonnet 5.5 as forthcoming on September 22. The September 28 availability, model specifications, and prices are provisional pending official launch confirmation.'
     )
   ),
   'available'
@@ -47,7 +48,7 @@ select
     'routing_status', 'active',
     'verification', jsonb_build_object(
       'status', 'unverified',
-      'notes', 'Provider model ID and live inference must be verified before this migration is applied.'
+      'notes', 'Route is configured and enabled in Phaseo. Provider model ID, upstream availability, and live inference remain unverified.'
     )
   ),
   'available', 'enabled', route.access_scope, route.is_stealth,
