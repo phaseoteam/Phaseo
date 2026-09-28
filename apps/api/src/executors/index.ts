@@ -124,6 +124,7 @@ import { executor as rekaText } from "./reka/text-generate";
 import { executor as streamlakeText } from "./streamlake/text-generate";
 import { executor as switchpointText } from "./switchpoint/text-generate";
 import { executor as upstageText } from "./upstage/text-generate";
+import { executor as upstageDecisions } from "./upstage/systemone";
 import { executor as waferText } from "./wafer/text-generate";
 import { executor as tencentCloudText } from "./tencent-cloud/text-generate";
 import { executor as privateModelText } from "./private-model/text-generate";
@@ -292,6 +293,7 @@ export const EXECUTORS_BY_PROVIDER: Record<string, ProviderCapabilityMap> = {
 	},
 	upstage: {
 		"text.generate": upstageText,
+		"decisions.make": upstageDecisions,
 		ocr: upstageOcr,
 		embeddings: openaiEmbeddings,
 	},

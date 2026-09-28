@@ -7,7 +7,7 @@ import { fetchUpstream } from "@executors/_shared/timing/upstream";
 import { resolveProviderKey } from "@providers/keys";
 import { upstreamTestHeaders } from "@providers/shared/testing";
 import { getBindings } from "@/runtime/env";
-import { decodeTypeSafeSystemOneResponse } from "@protocols/typesafe-systemone/decode";
+import { decodeSystemOneResponse } from "@protocols/systemone/decode";
 
 const TYPESAFE_SYSTEMONE_URL = "https://api.typesafe.ai/v1/systemone";
 
@@ -86,7 +86,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		return malformedResponse(args, upstream);
 	}
 
-	const responseIr = decodeTypeSafeSystemOneResponse(payload, ir.model) as IRDecisionsResponse;
+	const responseIr = decodeSystemOneResponse(payload, ir.model) as IRDecisionsResponse;
 	// Keep Phaseo's canonical model ID in the client-facing payload while the
 	// provider alias/version remains available in rawResponse for diagnostics.
 	responseIr.model = ir.model;
