@@ -293,9 +293,9 @@ describe("buildProviderSections", () => {
 			unitSize: 1_000,
 			price: 0.1,
 			direction: "input" as const,
-			expectedPrice: 100,
-			expectedUnit: "Per 1M characters",
-			expectedShortUnit: "/M chars",
+			expectedPrice: 0.1,
+			expectedUnit: "Per 1K characters",
+			expectedShortUnit: "/1K chars",
 		},
 		{
 			name: "pixels",
@@ -457,6 +457,62 @@ describe("buildProviderSections", () => {
 			"Image Input $/image",
 			"Image Output $/1M",
 			"Image Output $/MP",
+		]);
+	});
+
+	test("shows speech character pricing per 1K characters in the provider table", () => {
+		const provider = makeProviderPricing();
+		const baseRule = provider.pricing_rules[0]!;
+		provider.pricing_rules = [{
+			...baseRule,
+			id: "eleven-v4-characters",
+			model_key: "openai:openai/gpt-5.5:audio.speech",
+			meter: "input_characters",
+			unit: "character",
+			unit_size: 1_000,
+			price_per_unit: 0.022,
+			match: [],
+		}];
+		provider.provider_models[0] = {
+			...provider.provider_models[0]!,
+			endpoint: "audio.speech",
+		};
+		const sections = buildProviderSections(provider, "standard");
+		const [column] = buildProviderTablePriceColumns([sections]);
+
+		expect(column).toMatchObject({ label: "Input", headerUnitLabel: "$/1K chars" });
+		expect(buildProviderTablePriceSummaryForColumn(sections, column!)).toMatchObject({
+			primary: { price: 0.022, formattedPrice: "$0.022" },
+		});
+	});
+
+	test("compares an introductory character price with its scheduled regular price", () => {
+		const provider = makeProviderPricing();
+		const baseRule = provider.pricing_rules[0]!;
+		const intro = {
+			...baseRule,
+			id: "eleven-v4-intro",
+			model_key: "openai:openai/gpt-5.5:audio.speech",
+			meter: "input_characters",
+			unit: "character",
+			unit_size: 1_000,
+			price_per_unit: 0.022,
+			effective_from: "2026-09-28T00:00:00.000Z",
+			effective_to: "2026-10-12T00:00:00.000Z",
+			match: [],
+		};
+		provider.provider_models[0] = { ...provider.provider_models[0]!, endpoint: "audio.speech" };
+		provider.pricing_rules = [intro, {
+			...intro,
+			id: "eleven-v4-regular",
+			price_per_unit: 0.08,
+			effective_from: "2026-10-12T00:00:00.000Z",
+			effective_to: null,
+		}];
+
+		const sections = buildProviderSections(provider, "standard", new Date("2026-09-28T12:00:00.000Z"));
+		expect(sections.otherRules).toEqual([
+			expect.objectContaining({ price: 0.022, basePrice: 0.08, comparisonKind: "discount" }),
 		]);
 	});
 

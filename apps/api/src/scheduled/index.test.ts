@@ -8,6 +8,9 @@ const runBatchProviderWebhookReplayJobMock = vi.fn();
 const runVideoReconciliationJobMock = vi.fn();
 const drainEmailOutboxMock = vi.fn();
 const runModelDiscoveryJobMock = vi.fn();
+const publicAnnouncementCheckMock = vi.fn();
+const runRecordInsertMock = vi.fn();
+const runRecordUpdateMock = vi.fn();
 const oauthCleanupRpcMock = vi.fn();
 const runGatewayIoRetentionBillingJobMock = vi.fn();
 const pruneExpiredDataContributionsMock = vi.fn();
@@ -24,7 +27,20 @@ vi.mock("./public-catalog", () => ({
 vi.mock("@/runtime/env", () => ({
 	clearRuntime: (...args: unknown[]) => clearRuntimeMock(...args),
 	configureRuntime: (...args: unknown[]) => configureRuntimeMock(...args),
-	getSupabaseAdmin: () => ({ rpc: (...args: unknown[]) => oauthCleanupRpcMock(...args) }),
+	getSupabaseAdmin: () => ({
+		rpc: (...args: unknown[]) => oauthCleanupRpcMock(...args),
+		from: () => ({
+			insert: (...args: unknown[]) => runRecordInsertMock(...args),
+			update: (...args: unknown[]) => {
+				runRecordUpdateMock(...args);
+				return { eq: async () => ({ error: null }) };
+			},
+		}),
+	}),
+}));
+
+vi.mock("@/pipeline/model-discovery/public-model-catalog-announcements", () => ({
+	runPublicModelAnnouncementCheck: (...args: unknown[]) => publicAnnouncementCheckMock(...args),
 }));
 
 vi.mock("@/core/async-notifications", () => ({
@@ -105,6 +121,9 @@ describe("handleScheduledEvent", () => {
 		runVideoReconciliationJobMock.mockReset();
 		drainEmailOutboxMock.mockReset();
 		runModelDiscoveryJobMock.mockReset();
+		publicAnnouncementCheckMock.mockReset().mockResolvedValue({ detected: 0, notified: 0, pending: 0, error: null });
+		runRecordInsertMock.mockReset().mockResolvedValue({ error: null });
+		runRecordUpdateMock.mockReset();
 		oauthCleanupRpcMock.mockReset();
 		runGatewayIoRetentionBillingJobMock.mockReset();
 		pruneExpiredDataContributionsMock.mockReset();
@@ -228,6 +247,27 @@ describe("handleScheduledEvent", () => {
 		expect(runBatchReconciliationJobMock).not.toHaveBeenCalled();
 		expect(runBatchProviderWebhookReplayJobMock).not.toHaveBeenCalled();
 		expect(runVideoReconciliationJobMock).not.toHaveBeenCalled();
+	});
+
+	it("creates one parent run before announcement writes and finishes it", async () => {
+		publicAnnouncementCheckMock.mockImplementationOnce(async ({ ensureRun }: { ensureRun: () => Promise<void> }) => {
+			await ensureRun();
+			await ensureRun();
+			return { detected: 1, notified: 1, pending: 0, error: null };
+		});
+
+		await handleScheduledEvent(scheduledEventAt("2026-06-10T00:01:00.000Z"), {} as any);
+
+		expect(runRecordInsertMock).toHaveBeenCalledTimes(1);
+		expect(runRecordInsertMock).toHaveBeenCalledWith(expect.objectContaining({
+			trigger: "scheduled",
+			source: "public_model_announcements",
+			status: "running",
+		}));
+		expect(runRecordUpdateMock).toHaveBeenCalledWith(expect.objectContaining({
+			status: "completed",
+			changes_count: 1,
+		}));
 	});
 
 	it("honors the model discovery kill switch", async () => {

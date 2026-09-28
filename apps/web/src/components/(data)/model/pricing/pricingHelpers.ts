@@ -209,6 +209,7 @@ export function formatTableUnitShortLabel(label: string) {
     if (normalized === "per call") return "/call";
     if (normalized === "per request") return "/request";
     if (normalized === "per character") return "/char";
+    if (normalized === "per 1k characters") return "/1K chars";
     if (normalized === "per 1m characters") return "/M chars";
     if (normalized === "per 1m bytes") return "/M bytes";
     if (normalized === "per page") return "/page";
@@ -402,7 +403,7 @@ function classifyMeterWithEndpoint(
 	const parsed = parseMeter(meter, explicitUnit);
 	const endpointModality = endpointToModality(endpoint);
 	if (endpointModality === "embeddings") return { ...parsed, mod: endpointModality };
-	if (parsed.mod !== "other" || parsed.unit !== "token") return parsed;
+	if (parsed.mod !== "other" || !["token", "character"].includes(parsed.unit)) return parsed;
 	return endpointModality ? { ...parsed, mod: endpointModality } : parsed;
 }
 
@@ -1514,12 +1515,12 @@ function normalizeTablePriceRate(
 
     const millionScaleLabels: Partial<Record<UnitClass, string>> = {
         byte: "Per 1M bytes",
-        character: "Per 1M characters",
+        character: "Per 1K characters",
         pixel: "Per 1M pixels",
     };
     const millionScaleLabel = unit ? millionScaleLabels[unit] : null;
     if (millionScaleLabel) {
-        const normalizedPrice = (price / quantity) * 1_000_000;
+        const normalizedPrice = (price / quantity) * (unit === "character" ? 1_000 : 1_000_000);
         return {
             price: normalizedPrice,
             unitLabel: millionScaleLabel,
@@ -1733,7 +1734,7 @@ export function getProviderTablePriceCandidates(
         .map((row, index) => ({
             row,
             index,
-            parsed: parseMeter(row.meter, row.unitLabel),
+            parsed: classifyMeterWithEndpoint(row.meter, row.unit, row.endpoint),
         }))
         .filter(({ parsed }) =>
             parsed.dir === direction ||
@@ -1800,7 +1801,7 @@ const PROVIDER_TABLE_MODALITY_ORDER: Modality[] = [
 
 const PROVIDER_TABLE_UNIT_ORDER = [
     "Per 1M tokens",
-    "Per 1M characters",
+    "Per 1K characters",
     "Per 1M bytes",
     "Per 1M pixels",
     "Per minute",
@@ -1817,7 +1818,7 @@ const PROVIDER_TABLE_UNIT_ORDER = [
 export function formatProviderTableHeaderUnit(unitLabelValue: string): string {
     const labels: Record<string, string> = {
         "Per 1M tokens": "$/1M",
-        "Per 1M characters": "$/1M chars",
+        "Per 1K characters": "$/1K chars",
         "Per 1M bytes": "$/1M bytes",
         "Per 1M pixels": "$/MP",
         "Per minute": "$/min",

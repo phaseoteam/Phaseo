@@ -179,10 +179,41 @@ async function handleModelDiscoveryScheduledEvent(event: ScheduledController, en
 async function handlePublicModelAnnouncementsScheduledEvent(env: GatewayBindings): Promise<void> {
 	configureRuntime(env);
 	try {
+		const runId = crypto.randomUUID();
+		let runCreated = false;
+		let runStart: Promise<void> | null = null;
+		const ensureRun = () => {
+			runStart ??= (async () => {
+				const { error } = await getSupabaseAdmin().from("model_discovery_runs").insert({
+					id: runId,
+					trigger: "scheduled",
+					source: "public_model_announcements",
+					status: "running",
+					started_at: new Date().toISOString(),
+				});
+				if (error) throw new Error(error.message || "Failed to insert public model announcement run");
+				runCreated = true;
+			})();
+			return runStart;
+		};
 		const summary = await runPublicModelAnnouncementCheck({
-			runId: crypto.randomUUID(),
+			runId,
 			notify: true,
+			ensureRun,
 		});
+		if (runCreated) {
+			const { error } = await getSupabaseAdmin()
+				.from("model_discovery_runs")
+				.update({
+					status: summary.error ? "completed_with_errors" : "completed",
+					finished_at: new Date().toISOString(),
+					changes_count: summary.detected,
+					summary: { publicModelAnnouncements: summary },
+					error: summary.error ?? null,
+				})
+				.eq("id", runId);
+			if (error) throw new Error(error.message || "Failed to finish public model announcement run");
+		}
 		if (summary.error) {
 			console.error("public_model_announcement_check_failed", summary.error);
 		} else if (summary.detected > 0 || summary.notified > 0 || summary.pending > 0) {

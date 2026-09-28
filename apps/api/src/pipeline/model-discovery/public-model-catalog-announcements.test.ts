@@ -54,6 +54,7 @@ type StateRow = {
 	status: string;
 	attempt_count: number;
 	catalogue_status_snapshot?: string | null;
+	public_visibility_snapshot?: boolean | null;
 };
 
 function buildClient(
@@ -109,7 +110,8 @@ describe("runPublicModelAnnouncementCheck", () => {
 		mocks.getSupabaseAdmin.mockReturnValue(supabase.client);
 		mocks.bindings.DISCORD_WEBHOOK_NEW_MODELS_PUBLIC = "https://discord.test/webhook";
 
-		const summary = await runPublicModelAnnouncementCheck({ runId: "run-1", notify: true });
+		const ensureRun = vi.fn(async () => {});
+		const summary = await runPublicModelAnnouncementCheck({ runId: "run-1", notify: true, ensureRun });
 
 		expect(summary).toMatchObject({
 			enabled: true,
@@ -124,6 +126,23 @@ describe("runPublicModelAnnouncementCheck", () => {
 			expect.objectContaining({ model_slug: "openai/internal", status: "baseline", last_run_id: "run-1" }),
 		]);
 		expect(mocks.sendDiscordWebhookPayload).not.toHaveBeenCalled();
+		expect(ensureRun).toHaveBeenCalledTimes(1);
+	});
+
+	it("does not create a run for an unchanged catalog", async () => {
+		const supabase = buildClient(
+			[{ model_slug: "openai/gpt-existing", name: "GPT Existing", lab_slug: "openai", hidden: false, status: "active", catalogue_status: "available" }],
+			[{ model_slug: "openai/gpt-existing", status: "announced", attempt_count: 0, catalogue_status_snapshot: "available", public_visibility_snapshot: true }],
+		);
+		mocks.getSupabaseAdmin.mockReturnValue(supabase.client);
+		const ensureRun = vi.fn(async () => {});
+
+		const summary = await runPublicModelAnnouncementCheck({ runId: "run-idle", notify: true, ensureRun });
+
+		expect(summary).toMatchObject({ error: null, detected: 0, pending: 0 });
+		expect(ensureRun).not.toHaveBeenCalled();
+		expect(supabase.upserts).toHaveLength(0);
+		expect(supabase.updates).toHaveLength(0);
 	});
 
 	it("announces new and previously pending available models with OG image URLs", async () => {
@@ -135,7 +154,7 @@ describe("runPublicModelAnnouncementCheck", () => {
 			],
 			[
 				{ model_slug: "anthropic/claude-pending", status: "pending", attempt_count: 2 },
-				{ model_slug: "openai/gpt-old", status: "announced", attempt_count: 0, catalogue_status_snapshot: "available" },
+				{ model_slug: "openai/gpt-old", status: "announced", attempt_count: 0, catalogue_status_snapshot: "available", public_visibility_snapshot: true },
 			],
 			[
 				{ model_slug: "openai/gpt-new", status: "pending", attempt_count: 0 },
@@ -167,6 +186,7 @@ describe("runPublicModelAnnouncementCheck", () => {
 		expect(supabase.updates.map((entry) => entry.values)).toEqual([
 			{
 				status: "announced",
+				catalogue_status_snapshot: "available",
 				last_run_id: "run-2",
 				announced_at: expect.any(String),
 				last_attempt_at: expect.any(String),
