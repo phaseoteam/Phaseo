@@ -1,5 +1,5 @@
-// Purpose: Decode TypeSafe's System One wire format into the gateway IR.
-// Why: Keeps the native structured-evaluation contract out of routing and billing.
+// Purpose: Decode System One structured decisions into the gateway IR.
+// Why: Normalizes the native response shape shared by System One providers.
 
 import type { IRDecisionsResponse, IRUsage } from "@core/ir";
 
@@ -8,7 +8,7 @@ function finiteNumber(value: unknown): number | undefined {
 	return Number.isFinite(parsed) && parsed >= 0 ? parsed : undefined;
 }
 
-export function decodeTypeSafeSystemOneResponse(
+export function decodeSystemOneResponse(
 	payload: any,
 	modelFallback: string,
 ): IRDecisionsResponse {
