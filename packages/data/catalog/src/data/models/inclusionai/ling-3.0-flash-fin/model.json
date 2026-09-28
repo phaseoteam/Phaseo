@@ -32,13 +32,13 @@
     },
     {
       "name": "pricing_note",
-      "value": "Novita currently labels this model as time-limited free and reports zero input and output token prices."
+      "value": "Novita charges $0.075 input, $0.015 cached input, and $0.22 output per million tokens."
     }
   ],
   "benchmarks": [],
   "page_notice": {
     "tone": "info",
-    "markdown": "Novita currently offers this model free for a limited time; no promotion end date is published."
+    "markdown": "Novita's free promotion has ended."
   },
   "model_type": "language",
   "knowledge_cutoff": null,
@@ -73,15 +73,15 @@
       "kind": "documentation",
       "url": "https://novita.ai/models/model-detail/inclusionai-ling-3.0-flash-fin",
       "accessed_at": "2026-08-27T00:00:00Z",
-      "notes": "Official Novita page and embedded live payload document the finance specialization, parameters, callable identifier, context and output limits, capabilities, platform release time, and time-limited zero pricing."
+      "notes": "Novita's model page documents the finance specialization and limits; its public models endpoint reports current token pricing."
     }
   ],
   "verification": {
     "status": "verified",
-    "checked_at": "2026-08-27T00:00:00Z",
-    "notes": "Verified against Novita's first-party model page and embedded live model payload."
+    "checked_at": "2026-09-28T16:09:37Z",
+    "notes": "Model metadata verified against Novita's model page; pricing verified against its public models endpoint."
   },
-  "last_updated": "2026-08-27T00:00:00Z",
+  "last_updated": "2026-09-28T16:09:37Z",
   "removal_date": null,
   "replacement_model_id": null,
   "license_url": null

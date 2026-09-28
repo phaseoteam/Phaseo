@@ -11111,13 +11111,13 @@
         "kind": "provider_model",
         "url": "https://novita.ai/models/model-detail/inclusionai-ling-3.0-flash-fin",
         "accessed_at": "2026-08-27T00:00:00Z",
-        "notes": "Novita's live model page reports the slug, limits, text modalities, function calling, reasoning, serverless chat endpoint, release time, and zero token prices."
+        "notes": "Novita's model page reports the slug, limits, modalities, features, and endpoint. Current token prices come from its public models endpoint."
       }
     ],
     "verification": {
       "status": "verified",
-      "checked_at": "2026-08-27T00:00:00Z",
-      "notes": "Verified from Novita's first-party live model payload."
+      "checked_at": "2026-09-28T16:09:37Z",
+      "notes": "Model availability and pricing verified from Novita's public models endpoint."
     },
     "rate_limits": []
   },

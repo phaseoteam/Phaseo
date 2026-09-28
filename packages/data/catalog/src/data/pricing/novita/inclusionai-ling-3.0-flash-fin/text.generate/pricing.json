@@ -9,63 +9,63 @@
       "meter": "input_text_tokens",
       "unit": "token",
       "unit_size": 1000000,
-      "price_per_unit": 0,
+      "price_per_unit": 0.075,
       "currency": "USD",
       "pricing_plan": "standard",
-      "note": "Novita currently offers Ling 3.0 Flash Fin free for a limited time; no end date is published.",
+      "note": "Novita's models endpoint reports $0.075 per million input tokens.",
       "match": [],
       "priority": 100,
-      "effective_from": "2026-08-27T10:00:00Z",
+      "effective_from": "2026-09-28T16:13:45Z",
       "region": null,
       "cache_duration_seconds": null,
       "conditions": [],
       "source": {
         "kind": "provider_pricing",
-        "url": "https://novita.ai/models/model-detail/inclusionai-ling-3.0-flash-fin",
-        "accessed_at": "2026-08-27T00:00:00Z",
-        "notes": "Novita's first-party model page reports time-limited free input pricing."
+        "url": "https://api.novita.ai/openai/v1/models",
+        "accessed_at": "2026-09-28T16:09:37Z",
+        "notes": "The models endpoint reports prompt.price_per_m_decimal as 0.075."
       }
     },
     {
       "meter": "cached_read_text_tokens",
       "unit": "token",
       "unit_size": 1000000,
-      "price_per_unit": 0,
+      "price_per_unit": 0.015,
       "currency": "USD",
       "pricing_plan": "standard",
-      "note": "Novita's live payload currently reports zero cached-input pricing.",
+      "note": "Novita's models endpoint reports $0.015 per million cached input tokens.",
       "match": [],
       "priority": 100,
-      "effective_from": "2026-08-27T10:00:00Z",
+      "effective_from": "2026-09-28T16:13:45Z",
       "region": null,
       "cache_duration_seconds": null,
       "conditions": [],
       "source": {
         "kind": "provider_pricing",
-        "url": "https://novita.ai/models/model-detail/inclusionai-ling-3.0-flash-fin",
-        "accessed_at": "2026-08-27T00:00:00Z",
-        "notes": "Novita's first-party model page reports zero cached-input pricing."
+        "url": "https://api.novita.ai/openai/v1/models",
+        "accessed_at": "2026-09-28T16:09:37Z",
+        "notes": "The models endpoint reports input_cache_read.price_per_m_decimal as 0.015."
       }
     },
     {
       "meter": "output_text_tokens",
       "unit": "token",
       "unit_size": 1000000,
-      "price_per_unit": 0,
+      "price_per_unit": 0.22,
       "currency": "USD",
       "pricing_plan": "standard",
-      "note": "Novita currently offers Ling 3.0 Flash Fin free for a limited time; no end date is published.",
+      "note": "Novita's models endpoint reports $0.22 per million output tokens.",
       "match": [],
       "priority": 100,
-      "effective_from": "2026-08-27T10:00:00Z",
+      "effective_from": "2026-09-28T16:13:45Z",
       "region": null,
       "cache_duration_seconds": null,
       "conditions": [],
       "source": {
         "kind": "provider_pricing",
-        "url": "https://novita.ai/models/model-detail/inclusionai-ling-3.0-flash-fin",
-        "accessed_at": "2026-08-27T00:00:00Z",
-        "notes": "Novita's first-party model page reports time-limited free output pricing."
+        "url": "https://api.novita.ai/openai/v1/models",
+        "accessed_at": "2026-09-28T16:09:37Z",
+        "notes": "The models endpoint reports completion.price_per_m_decimal as 0.22."
       }
     }
   ],
@@ -76,14 +76,14 @@
   "sources": [
     {
       "kind": "provider_pricing",
-      "url": "https://novita.ai/models/model-detail/inclusionai-ling-3.0-flash-fin",
-      "accessed_at": "2026-08-27T00:00:00Z",
-      "notes": "Novita labels Ling 3.0 Flash Fin as time-limited free and reports $0 input, cached input, and output token pricing."
+      "url": "https://api.novita.ai/openai/v1/models",
+      "accessed_at": "2026-09-28T16:09:37Z",
+      "notes": "Novita reports $0.075 input, $0.015 cached input, and $0.22 output per million tokens."
     }
   ],
   "verification": {
     "status": "verified",
-    "checked_at": "2026-08-27T00:00:00Z",
-    "notes": "Zero pricing is verified against Novita's first-party live model payload; no promotion end date is published."
+    "checked_at": "2026-09-28T16:09:37Z",
+    "notes": "Pricing verified against Novita's public models endpoint."
   }
 }
