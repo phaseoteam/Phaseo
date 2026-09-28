@@ -99,6 +99,7 @@ export type UsageRow = {
 export type PricingSectionKey =
     | "textTokens"
     | "requests"
+    | "textInputs"
     | "audioInputs"
     | "imageInputs"
     | "videoInputs"
@@ -673,6 +674,10 @@ function buildUpcomingChangeLabels(
             title: "Requests",
             subtitle: scope === "All usage" ? null : scope,
         };
+    }
+
+    if (dir === "input" && mod === "audio" && unit === "character" && conds.length === 0) {
+        return { sectionKey: "textInputs", title: "Text Input" };
     }
 
     if (

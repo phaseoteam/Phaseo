@@ -519,6 +519,9 @@ describe("buildProviderSections", () => {
 		expect(sections.mediaInputs).toEqual([
 			expect.objectContaining({ mod: "text", price: 0.022, basePrice: 0.08, comparisonKind: "discount" }),
 		]);
+		expect(sections.upcomingChanges).toEqual([
+			expect.objectContaining({ sectionKey: "textInputs", title: "Text Input", price: 0.08 }),
+		]);
 	});
 
 	test("keeps conditional character prices in the detailed rules", () => {

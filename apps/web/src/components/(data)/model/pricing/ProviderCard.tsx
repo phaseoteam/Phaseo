@@ -2138,6 +2138,7 @@ export default function ProviderCard({
 		sectionKey:
 			| "textTokens"
 			| "requests"
+			| "textInputs"
 			| "audioInputs"
 			| "imageInputs"
 			| "videoInputs"
@@ -2940,6 +2941,7 @@ export default function ProviderCard({
 			audioInputs.length > 0 ||
 			imageInputs.length > 0 ||
 			videoInputs.length > 0 ||
+			upcomingFor("textInputs").length > 0 ||
 			upcomingFor("audioInputs").length > 0 ||
 			upcomingFor("imageInputs").length > 0 ||
 			upcomingFor("videoInputs").length > 0) ? (
@@ -2955,6 +2957,9 @@ export default function ProviderCard({
 				) : null}
 				{videoInputs.length > 0 ? (
 					<InputsSection title="Video Input" rows={videoInputs} comparisonAccent={pricingComparisonAccent} />
+				) : null}
+				{upcomingFor("textInputs").length > 0 ? (
+					<UpcomingPricingSection rows={upcomingFor("textInputs")} title="Upcoming" compact />
 				) : null}
 				{upcomingFor("audioInputs").length > 0 ? (
 					<UpcomingPricingSection rows={upcomingFor("audioInputs")} title="Upcoming" compact />
