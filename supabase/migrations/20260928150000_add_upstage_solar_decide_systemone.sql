@@ -65,7 +65,7 @@ select
       'notes', 'Upstage documents Solar Decide and System One. Price is not listed on Upstage pricing, so routing remains disabled pending price confirmation and a live probe.'
     )
   ),
-  'available',
+  'coming_soon',
   'testing',
   'public',
   false,
@@ -87,7 +87,7 @@ select
   route.provider_model_id,
   'global:standard',
   'standard',
-  'disabled',
+  'active',
   false,
   'Standard',
   jsonb_build_object('source', 'admin', 'preview', true, 'pricing_status', 'not_published')

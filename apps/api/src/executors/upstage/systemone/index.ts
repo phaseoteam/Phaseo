@@ -1,9 +1,12 @@
 import type { IRDecisionsRequest, IRDecisionsResponse } from "@core/ir";
+import { BodyLimitExceededError, readStreamTextWithLimit } from "@core/bounded-stream";
 import type { ExecutorExecuteArgs, ExecutorResult, ProviderExecutor } from "@executors/types";
 import { fetchUpstream } from "@executors/_shared/timing/upstream";
 import { openAICompatUrl, resolveOpenAICompatKey } from "@providers/openai-compatible/config";
 import { upstreamTestHeaders } from "@providers/shared/testing";
 import { decodeSystemOneResponse } from "@protocols/systemone/decode";
+
+const MAX_RESPONSE_BYTES = 1024 * 1024;
 
 function malformedResponse(
 	args: ExecutorExecuteArgs,
@@ -70,7 +73,19 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		};
 	}
 
-	const rawBody = await upstream.clone().text();
+	let rawBody: string;
+	try {
+		rawBody = await readStreamTextWithLimit(
+			upstream.clone().body,
+			MAX_RESPONSE_BYTES,
+			"upstage_systemone_response_too_large",
+		);
+	} catch (error) {
+		if (error instanceof BodyLimitExceededError) {
+			return malformedResponse(args, upstream, { error: "upstream_response_too_large" });
+		}
+		throw error;
+	}
 	let payload: unknown = null;
 	try {
 		payload = JSON.parse(rawBody);

@@ -1,5 +1,6 @@
 -- Use Upstage's documented Solar Decide model ID in the catalogue.
 -- The previous entry used the unpublished solar-jev identifier.
+-- phaseo:allow-destructive-migration reason: Cancel only the obsolete pending Solar Jev release notice when a canonical Solar Decide notice already exists; keep the canonical notice and all completed history.
 
 insert into public.v2_models (
   model_slug, lab_slug, name, description, status, hidden,
@@ -59,20 +60,25 @@ begin
   end if;
 
   if v_release_event_id is not null then
-    delete from public.model_release_push_events
-    where model_slug = 'upstage/solar-decide'
-      and id <> v_release_event_id;
-
-    update public.model_release_push_events
-    set model_slug = 'upstage/solar-decide',
-        model_name = 'Solar Decide',
-        lab_name = 'Upstage',
-        released_at = coalesce(
-          released_at,
-          (select released_at from public.v2_models where model_slug = 'upstage/solar-decide')
-        ),
-        updated_at = now()
-    where id = v_release_event_id and status = 'pending';
+    if exists (
+      select 1
+      from public.model_release_push_events
+      where model_slug = 'upstage/solar-decide'
+    ) then
+      delete from public.model_release_push_events
+      where id = v_release_event_id and status = 'pending';
+    else
+      update public.model_release_push_events
+      set model_slug = 'upstage/solar-decide',
+          model_name = 'Solar Decide',
+          lab_name = 'Upstage',
+          released_at = coalesce(
+            released_at,
+            (select released_at from public.v2_models where model_slug = 'upstage/solar-decide')
+          ),
+          updated_at = now()
+      where id = v_release_event_id and status = 'pending';
+    end if;
   else
     update public.model_release_push_events
     set model_name = 'Solar Decide',
@@ -86,6 +92,10 @@ $$;
 update public.v2_model_provider_routes
 set model_slug = 'upstage/solar-decide',
     provider_model_slug = 'solar-decide',
+    status = 'active',
+    routing_enabled = false,
+    provider_availability_status = 'coming_soon',
+    phaseo_status = 'testing',
     metadata = metadata || jsonb_build_object(
       'source_url', 'https://console.upstage.ai/api/systemone',
       'api', jsonb_build_object(
@@ -148,7 +158,7 @@ select
       'notes', 'Upstage documents Solar Decide and System One. Price is not listed on Upstage pricing, so routing remains disabled pending price confirmation and a live probe.'
     )
   ),
-  'available',
+  'coming_soon',
   'testing',
   'public',
   false,
@@ -187,7 +197,7 @@ select
   route.provider_model_id,
   'global:standard',
   'standard',
-  'disabled',
+  'active',
   false,
   'Standard',
   jsonb_build_object('source', 'admin', 'preview', true, 'pricing_status', 'not_published')
