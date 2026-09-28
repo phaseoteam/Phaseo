@@ -42,4 +42,17 @@ describe("model discovery Discord colours", () => {
 			expect.objectContaining({ embeds: [expect.objectContaining({ color: 0xcc785c })] }),
 		);
 	});
+
+	it("does not send a blue announcement when organisation metadata cannot be read", async () => {
+		jest.mocked(fetchAdminCatalogRecord).mockImplementation(async (resource) => {
+			if (resource === "organisation") throw new Error("Catalogue unavailable");
+			return { row: { model_id: "anthropic/claude-test", name: "Claude Test", lab_slug: "anthropic" } };
+		});
+
+		const result = await sendInternalModelAnnouncementAction("anthropic/claude-test");
+
+		expect(result.ok).toBe(false);
+		expect(result.message).toContain("Catalogue unavailable");
+		expect(sendAdminModelAnnouncement).not.toHaveBeenCalled();
+	});
 });

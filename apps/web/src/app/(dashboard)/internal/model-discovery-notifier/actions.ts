@@ -47,6 +47,7 @@ type OrganisationMeta = {
 
 async function loadOrganisationMetaMap(organisationIds: string[]): Promise<Record<string, OrganisationMeta>> {
 	const ids = [...new Set(organisationIds.filter(Boolean))];
+	// Fail when the catalogue cannot be read; sending a blue fallback would hide missing metadata.
 	const entries = await Promise.all(ids.map(async (id) => {
 		const { row } = await fetchAdminCatalogRecord("organisation", id);
 		if (!row) return null;
