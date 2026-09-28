@@ -1,0 +1,4 @@
+interface:
+  display_name: "Phaseo Model and Provider Onboarding"
+  short_description: "Onboard models and pricing through Supabase."
+  default_prompt: "Use $phaseo-model-provider-onboarding to update Phaseo's canonical Supabase catalogue, verify the live rows, and change code only when needed."
