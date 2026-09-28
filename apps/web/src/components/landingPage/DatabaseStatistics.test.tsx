@@ -5,6 +5,7 @@ import {
 	fetchFrontendLandingStats,
 	fetchFrontendSignInSupportedModelsStats,
 } from "@/lib/fetchers/frontend/fetchPublicCatalog";
+import { DisplayPreferencesProvider } from "@/components/providers/DisplayPreferencesProvider";
 import DatabaseStats from "./DatabaseStatistics";
 
 jest.mock("@/lib/fetchers/frontend/fetchPublicCatalog", () => ({
@@ -40,7 +41,7 @@ describe("DatabaseStats", () => {
 				benchmark_results: 0,
 				api_providers: 10,
 			},
-			monthlyTokenTotal: 1_234,
+			monthlyTokenTotal: 49_910_627,
 		});
 		mockFetchFrontendSignInSupportedModelsStats.mockResolvedValue({
 			modelsCount: 100,
@@ -49,12 +50,15 @@ describe("DatabaseStats", () => {
 			recentCount: 8,
 		});
 
-		const html = renderToStaticMarkup(await DatabaseStats());
+		const html = renderToStaticMarkup(
+			<DisplayPreferencesProvider>{await DatabaseStats()}</DisplayPreferencesProvider>,
+		);
 
 		expect(html).toContain("Catalog models");
 		expect(html).toContain("Routable models");
 		expect(html).toMatch(
 			/<a[^>]*href="\/rankings"[^>]*>.*Monthly tokens routed/,
 		);
+		expect(html).toContain("49M+");
 	});
 });

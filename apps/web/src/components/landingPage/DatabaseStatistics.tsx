@@ -4,6 +4,7 @@ import {
 	fetchFrontendSignInSupportedModelsStats,
 } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import { DisplayNumber } from "@/components/display/DisplayValue";
+import { formatRoundedCount } from "@/lib/formatRoundedCount";
 
 function roundDisplayValue(raw: number, bucket: number) {
 	if (bucket <= 0) return raw;
@@ -35,7 +36,7 @@ export default async function DatabaseStats() {
 		},
 		{
 			label: "Monthly tokens routed",
-			value: <><DisplayNumber value={monthlyTokenTotal ?? 0} options={{ maximumFractionDigits: 1 }} />+</>,
+			value: `${formatRoundedCount(monthlyTokenTotal ?? 0)}+`,
 			route: "/rankings",
 		},
 	] as const;
