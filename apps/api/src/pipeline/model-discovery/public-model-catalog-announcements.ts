@@ -169,6 +169,7 @@ async function insertNewAnnouncementState(
 	runId: string,
 	models: PublicModelRow[],
 	nowIso: string,
+	ensureRun: () => Promise<void>,
 	baseline = false,
 ): Promise<void> {
 	if (models.length === 0) return;
@@ -190,6 +191,7 @@ async function insertNewAnnouncementState(
 	});
 	if (rows.length === 0) return;
 
+	await ensureRun();
 	const supabase = getSupabaseAdmin();
 	const { error } = await supabase
 		.from("model_discovery_public_announcements")
@@ -201,6 +203,7 @@ async function promoteAvailableAnnouncementState(
 	runId: string,
 	models: PublicModelRow[],
 	nowIso: string,
+	ensureRun: () => Promise<void>,
 ): Promise<void> {
 	const modelSlugs: string[] = [];
 	for (const model of models) {
@@ -210,6 +213,7 @@ async function promoteAvailableAnnouncementState(
 	}
 	if (modelSlugs.length === 0) return;
 
+	await ensureRun();
 	const supabase = getSupabaseAdmin();
 	for (let offset = 0; offset < modelSlugs.length; offset += PUBLIC_ANNOUNCEMENT_STATE_BATCH_SIZE) {
 		const batch = modelSlugs.slice(offset, offset + PUBLIC_ANNOUNCEMENT_STATE_BATCH_SIZE);
@@ -234,12 +238,13 @@ async function persistObservedAnnouncementState(
 	models: PublicModelRow[],
 	stateBySlug: Map<string, AnnouncementStateRow>,
 	nowIso: string,
+	ensureRun: () => Promise<void>,
 ): Promise<void> {
 	const updates = new Map<string, string[]>();
 	for (const model of models) {
 		const modelSlug = normalizeSlug(model.model_slug);
 		const state = modelSlug ? stateBySlug.get(modelSlug) : undefined;
-		if (!modelSlug || !state || (state.status !== "baseline" && state.status !== "announced")) continue;
+		if (!modelSlug || !state || (state.status !== "baseline" && state.status !== "announced") || isNewlyAvailable(model, state)) continue;
 		const catalogueStatus = model.catalogue_status ?? "";
 		const publicVisibility = isPublicModel(model);
 		if (
@@ -253,6 +258,7 @@ async function persistObservedAnnouncementState(
 	}
 	if (updates.size === 0) return;
 
+	await ensureRun();
 	const supabase = getSupabaseAdmin();
 	for (const [key, modelSlugs] of updates) {
 		const [catalogueStatus, publicVisibility] = JSON.parse(key) as [string, boolean];
@@ -277,8 +283,10 @@ async function markPendingRun(
 	runId: string,
 	models: PendingAnnouncement[],
 	nowIso: string,
+	ensureRun: () => Promise<void>,
 ): Promise<PendingAnnouncement[]> {
 	if (models.length === 0) return [];
+	await ensureRun();
 	const supabase = getSupabaseAdmin();
 	const { data, error } = await supabase.rpc("claim_model_discovery_public_announcements", {
 		p_run_id: runId,
@@ -373,8 +381,10 @@ function toNotification(model: PublicModelRow, stateAttemptCount: number): Pendi
 export async function runPublicModelAnnouncementCheck(args: {
 	runId: string;
 	notify: boolean;
+	ensureRun?: () => Promise<void>;
 }): Promise<PublicModelAnnouncementSummary> {
 	const summary = emptySummary();
+	const ensureRun = args.ensureRun ?? (async () => {});
 	const notificationsDisabled = toBool(
 		readBindingEnv(["MODEL_UPDATES_NOTIFICATIONS_DISABLED"]) ?? "false",
 		false,
@@ -394,7 +404,7 @@ export async function runPublicModelAnnouncementCheck(args: {
 
 		if (stateRows.length === 0) {
 			summary.baselineInitialized = true;
-			await insertNewAnnouncementState(args.runId, models, new Date().toISOString(), true);
+			await insertNewAnnouncementState(args.runId, models, new Date().toISOString(), ensureRun, true);
 			return summary;
 		}
 
@@ -416,9 +426,9 @@ export async function runPublicModelAnnouncementCheck(args: {
 
 		summary.detected = newModels.length + newlyAvailableModels.length;
 		summary.skipped = skippedModels.length;
-		await insertNewAnnouncementState(args.runId, [...newModels, ...skippedModels], nowIso);
-		await persistObservedAnnouncementState(args.runId, models, stateBySlug, nowIso);
-		await promoteAvailableAnnouncementState(args.runId, newlyAvailableModels, nowIso);
+		await insertNewAnnouncementState(args.runId, [...newModels, ...skippedModels], nowIso, ensureRun);
+		await persistObservedAnnouncementState(args.runId, models, stateBySlug, nowIso, ensureRun);
+		await promoteAvailableAnnouncementState(args.runId, newlyAvailableModels, nowIso, ensureRun);
 
 		const newModelSlugs = new Set(
 			[...newModels, ...newlyAvailableModels].flatMap((model) => {
@@ -458,7 +468,7 @@ export async function runPublicModelAnnouncementCheck(args: {
 			return summary;
 		}
 
-		const claimedModels = await markPendingRun(args.runId, pendingModels, new Date().toISOString());
+		const claimedModels = await markPendingRun(args.runId, pendingModels, new Date().toISOString(), ensureRun);
 		if (claimedModels.length === 0) return summary;
 		for (let index = 0; index < claimedModels.length; index += PUBLIC_ANNOUNCEMENT_BATCH_SIZE) {
 			const batch = claimedModels.slice(index, index + PUBLIC_ANNOUNCEMENT_BATCH_SIZE);
