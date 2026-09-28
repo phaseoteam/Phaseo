@@ -38,7 +38,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		...args,
 		forceGatewayKey: args.meta.forceGatewayKey,
 	});
-	const model = args.providerModelSlug?.trim() || "solar-jev";
+	const model = args.providerModelSlug?.trim() || "solar-decide";
 	const requestBody = {
 		model,
 		state: ir.state,

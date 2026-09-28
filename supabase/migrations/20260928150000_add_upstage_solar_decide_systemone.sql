@@ -1,5 +1,5 @@
--- Catalog Upstage Solar Jev for Phaseo's native Decisions endpoint.
--- Keep routing gated until Upstage publishes Solar Jev pricing and a live
+-- Catalog Upstage Solar Decide for Phaseo's native Decisions endpoint.
+-- Keep routing gated until Upstage publishes Solar Decide pricing and a live
 -- credentialed request has been verified.
 
 insert into public.v2_models (
@@ -7,10 +7,10 @@ insert into public.v2_models (
   input_modalities, output_modalities, family_slug, metadata
 )
 values (
-  'upstage/solar-jev',
+  'upstage/solar-decide',
   'upstage',
-  'Solar Jev',
-  'Upstage Solar Jev answers typed Noul, Choice, and Score questions against structured state.',
+  'Solar Decide',
+  'Upstage Solar Decide answers typed Noul, Choice, and Score questions against structured state.',
   'active',
   false,
   array['structured']::text[],
@@ -19,7 +19,7 @@ values (
   jsonb_build_object(
     'source_url', 'https://console.upstage.ai/api/systemone',
     'api_reference', 'https://console.upstage.ai/api/systemone',
-    'provider_model_slug', 'solar-jev',
+    'provider_model_slug', 'solar-decide',
     'capability', 'decisions.make',
     'legacy_capability', 'systemone',
     'preview', true,
@@ -38,11 +38,11 @@ insert into public.v2_model_provider_routes (
   context_length, effective_from, metadata, provider_availability_status,
   phaseo_status, access_scope, is_stealth, credential_mode
 )
-values (
-  'upstage:upstage/solar-jev:systemone',
-  'upstage/solar-jev',
+select
+  'upstage:upstage/solar-decide:systemone',
+  'upstage/solar-decide',
   'upstage',
-  'solar-jev',
+  'solar-decide',
   'active',
   false,
   array['structured']::text[],
@@ -62,7 +62,7 @@ values (
     'verification', jsonb_build_object(
       'status', 'catalogue_verified',
       'checked_at', '2026-09-28T00:00:00Z'::timestamptz,
-      'notes', 'Upstage documents Solar Jev and System One. Price is not listed on Upstage pricing, so routing remains disabled pending price confirmation and a live probe.'
+      'notes', 'Upstage documents Solar Decide and System One. Price is not listed on Upstage pricing, so routing remains disabled pending price confirmation and a live probe.'
     )
   ),
   'available',
@@ -70,6 +70,12 @@ values (
   'public',
   false,
   'managed_and_byok'
+where not exists (
+  select 1
+  from public.v2_model_provider_routes route
+  where route.model_slug = 'upstage/solar-decide'
+    and route.provider_slug = 'upstage'
+    and route.provider_model_slug = 'solar-decide'
 )
 on conflict (provider_model_id) do nothing;
 
@@ -77,22 +83,30 @@ insert into public.v2_route_variants (
   provider_model_id, variant_key, service_tier_slug, status,
   routing_enabled, endpoint_label, metadata
 )
-values (
-  'upstage:upstage/solar-jev:systemone',
+select
+  route.provider_model_id,
   'global:standard',
   'standard',
   'disabled',
   false,
   'Standard',
   jsonb_build_object('source', 'admin', 'preview', true, 'pricing_status', 'not_published')
-)
+from (
+  select provider_model_id
+  from public.v2_model_provider_routes
+  where model_slug = 'upstage/solar-decide'
+    and provider_slug = 'upstage'
+    and provider_model_slug = 'solar-decide'
+  order by (provider_model_id = 'upstage:upstage/solar-decide:systemone') desc
+  limit 1
+) route
 on conflict (provider_model_id, variant_key) do nothing;
 
 insert into public.v2_route_capabilities (
   provider_model_id, capability_id, status, params, effective_from, metadata
 )
-values (
-  'upstage:upstage/solar-jev:systemone',
+select
+  route.provider_model_id,
   'decisions.make',
   'internal_testing',
   jsonb_build_object('model', true, 'state', true, 'questions', true),
@@ -107,5 +121,13 @@ values (
     ),
     'pricing_status', 'not_published'
   )
-)
+from (
+  select provider_model_id
+  from public.v2_model_provider_routes
+  where model_slug = 'upstage/solar-decide'
+    and provider_slug = 'upstage'
+    and provider_model_slug = 'solar-decide'
+  order by (provider_model_id = 'upstage:upstage/solar-decide:systemone') desc
+  limit 1
+) route
 on conflict (provider_model_id, capability_id) do nothing;
