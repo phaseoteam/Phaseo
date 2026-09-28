@@ -295,7 +295,7 @@ describe("buildProviderSections", () => {
 			direction: "input" as const,
 			expectedPrice: 0.1,
 			expectedUnit: "Per 1K characters",
-			expectedShortUnit: "/1K chars",
+			expectedShortUnit: "/1K Chars",
 		},
 		{
 			name: "pixels",
@@ -480,7 +480,11 @@ describe("buildProviderSections", () => {
 		const sections = buildProviderSections(provider, "standard");
 		const [column] = buildProviderTablePriceColumns([sections]);
 
-		expect(column).toMatchObject({ label: "Input", headerUnitLabel: "$/1K chars" });
+		expect(sections.otherRules).toHaveLength(0);
+		expect(sections.mediaInputs).toEqual([
+			expect.objectContaining({ mod: "text", price: 0.022, unit: "character", unitQuantity: 1_000 }),
+		]);
+		expect(column).toMatchObject({ label: "Input", headerUnitLabel: "$/1K Chars" });
 		expect(buildProviderTablePriceSummaryForColumn(sections, column!)).toMatchObject({
 			primary: { price: 0.022, formattedPrice: "$0.022" },
 		});
@@ -511,8 +515,29 @@ describe("buildProviderSections", () => {
 		}];
 
 		const sections = buildProviderSections(provider, "standard", new Date("2026-09-28T12:00:00.000Z"));
+		expect(sections.otherRules).toHaveLength(0);
+		expect(sections.mediaInputs).toEqual([
+			expect.objectContaining({ mod: "text", price: 0.022, basePrice: 0.08, comparisonKind: "discount" }),
+		]);
+	});
+
+	test("keeps conditional character prices in the detailed rules", () => {
+		const provider = makeProviderPricing();
+		provider.provider_models[0] = { ...provider.provider_models[0]!, endpoint: "audio.speech" };
+		provider.pricing_rules = [{
+			...provider.pricing_rules[0]!,
+			model_key: "openai:openai/gpt-5.5:audio.speech",
+			meter: "input_characters",
+			unit: "character",
+			unit_size: 1_000,
+			price_per_unit: 0.03,
+			match: [{ path: "request.voice", op: "eq", value: "premium" }],
+		}];
+
+		const sections = buildProviderSections(provider, "standard");
+		expect(sections.mediaInputs).toBeUndefined();
 		expect(sections.otherRules).toEqual([
-			expect.objectContaining({ price: 0.022, basePrice: 0.08, comparisonKind: "discount" }),
+			expect.objectContaining({ meter: "input_characters", price: 0.03 }),
 		]);
 	});
 
