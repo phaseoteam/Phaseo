@@ -312,7 +312,9 @@
       "eleven-labs/scribe-v1",
       "eleven-labs/scribe-v2",
       "eleven-labs/scribe-v2-realtime",
-      "eleven-labs/music"
+      "eleven-labs/music",
+      "eleven-labs/eleven-v4",
+      "eleven-labs/eleven-v4-turbo"
     ],
     "essential-ai": [
       "essential-ai/rnj-1"
