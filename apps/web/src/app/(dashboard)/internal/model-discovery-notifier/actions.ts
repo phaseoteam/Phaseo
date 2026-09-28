@@ -1,7 +1,5 @@
 "use server";
 
-import fs from "node:fs";
-import path from "node:path";
 import type { InternalModelNotificationModel } from "@/lib/model-discovery/internalModelDiscordNotifier";
 import { fetchInternalAuthStatus } from "@/lib/fetchers/internal/fetchInternalAuthStatus";
 import {
@@ -42,63 +40,23 @@ function normalizeHexColour(value: unknown): string | null {
 	return `#${normalized.toLowerCase()}`;
 }
 
-function resolveRepoRoot(startDir: string): string {
-	const candidates = [
-		startDir,
-		path.resolve(startDir, ".."),
-		path.resolve(startDir, "..", ".."),
-	];
-	for (const candidate of candidates) {
-		const canonical = path.join(candidate, "packages", "data", "catalog", "src", "data", "organisations");
-		const legacy = path.join(candidate, "apps", "web", "src", "data", "organisations");
-		if (fs.existsSync(canonical) || fs.existsSync(legacy)) return candidate;
-	}
-	return startDir;
-}
-
 type OrganisationMeta = {
 	name?: string;
 	colour?: string;
 };
 
-function loadOrganisationMetaMap(): Record<string, OrganisationMeta> {
-	const map = new Map<string, OrganisationMeta>();
-	const repoRoot = resolveRepoRoot(process.cwd());
-	const canonicalRoot = path.join(repoRoot, "packages", "data", "catalog", "src", "data", "organisations");
-	const legacyRoot = path.join(repoRoot, "apps", "web", "src", "data", "organisations");
-	const root = fs.existsSync(canonicalRoot) ? canonicalRoot : fs.existsSync(legacyRoot) ? legacyRoot : null;
-	if (!root) return {};
-
-	const entries = fs.readdirSync(root, { withFileTypes: true });
-	for (const entry of entries) {
-		if (!entry.isDirectory()) continue;
-		const organisationPath = path.join(root, entry.name, "organisation.json");
-		if (!fs.existsSync(organisationPath)) continue;
-		try {
-			const parsed = JSON.parse(fs.readFileSync(organisationPath, "utf-8")) as Record<string, unknown>;
-			const organisationId =
-				typeof parsed.organisation_id === "string" && parsed.organisation_id.trim()
-					? parsed.organisation_id.trim().toLowerCase()
-					: entry.name.trim().toLowerCase();
-			const organisationName =
-				typeof parsed.name === "string" && parsed.name.trim()
-					? parsed.name.trim()
-					: null;
-			const colour =
-				normalizeHexColour(parsed.colour) ??
-				normalizeHexColour(parsed.color) ??
-				normalizeHexColour(parsed.colour_hex);
-			if (!organisationId) continue;
-			map.set(organisationId, {
-				name: organisationName ?? undefined,
-				colour: colour ?? undefined,
-			});
-		} catch {
-			// ignore malformed organisation records
-		}
-	}
-
-	return Object.fromEntries(Array.from(map.entries()));
+async function loadOrganisationMetaMap(organisationIds: string[]): Promise<Record<string, OrganisationMeta>> {
+	const ids = [...new Set(organisationIds.filter(Boolean))];
+	// Fail when the catalogue cannot be read; sending a blue fallback would hide missing metadata.
+	const entries = await Promise.all(ids.map(async (id) => {
+		const { row } = await fetchAdminCatalogRecord("organisation", id);
+		if (!row) return null;
+		return [id, {
+			name: trimOrNull(row.name) ?? undefined,
+			colour: normalizeHexColour(row.colour ?? row.metadata?.colour) ?? undefined,
+		}] as const;
+	}));
+	return Object.fromEntries(entries.filter((entry): entry is NonNullable<typeof entry> => entry !== null));
 }
 
 async function requireAdmin(): Promise<void> {
@@ -178,22 +136,22 @@ function parseModelLine(rawLine: string): InternalModelNotificationModel | null 
 	};
 }
 
-function parseModelsText(modelsText: string): InternalModelNotificationModel[] {
-	const metaMap = loadOrganisationMetaMap();
-	return modelsText
+async function parseModelsText(modelsText: string): Promise<InternalModelNotificationModel[]> {
+	const models = modelsText
 		.split(/\r?\n/g)
 		.map((line) => parseModelLine(line))
-		.filter((value): value is InternalModelNotificationModel => Boolean(value))
-		.map((model) => {
-			const creatorId = model.modelId.split("/")[0]?.trim().toLowerCase() || undefined;
-			const creatorMeta = creatorId ? metaMap[creatorId] : undefined;
-			return {
-				...model,
-				creatorId,
-				creatorName: creatorMeta?.name,
-				creatorColor: creatorMeta?.colour,
-			};
-		});
+		.filter((value): value is InternalModelNotificationModel => Boolean(value));
+	const metaMap = await loadOrganisationMetaMap(models.map((model) => model.modelId.split("/")[0]?.trim().toLowerCase() || ""));
+	return models.map((model) => {
+		const creatorId = model.modelId.split("/")[0]?.trim().toLowerCase() || undefined;
+		const creatorMeta = creatorId ? metaMap[creatorId] : undefined;
+		return {
+			...model,
+			creatorId,
+			creatorName: creatorMeta?.name,
+			creatorColor: creatorMeta?.colour,
+		};
+	});
 }
 
 export async function testInternalModelDiscoveryNotifierAction(
@@ -201,7 +159,7 @@ export async function testInternalModelDiscoveryNotifierAction(
 ): Promise<NotifierTestResult> {
 	try {
 		await requireAdmin();
-		const models = parseModelsText(input.modelsText ?? "");
+		const models = await parseModelsText(input.modelsText ?? "");
 		if (models.length === 0) {
 			return {
 				ok: false,
@@ -277,7 +235,7 @@ export async function sendInternalModelAnnouncementAction(
 			canonicalModelId.split("/")[0] ??
 			"phaseo"
 		).toLowerCase();
-		const lab = loadOrganisationMetaMap()[labSlug];
+		const lab = (await loadOrganisationMetaMap([labSlug]))[labSlug];
 		const modelName = trimOrNull(typeof row.name === "string" ? row.name : null) ?? canonicalModelId;
 		const nowIso = new Date().toISOString();
 		const payload = buildPublicModelAnnouncementPayload([{
