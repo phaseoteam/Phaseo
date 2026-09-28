@@ -96,7 +96,7 @@ function prepareBehaviors(questions: IRDecisionsRequest["questions"]): PreparedB
 	const behaviors: PreparedBehavior[] = [];
 	for (const [id, question] of entries) {
 		if (question.type !== "noul") {
-			return `Respan Span-01 supports Noul questions only; question "${id}" is ${question.type}.`;
+			return `Respan Span-01 supports "noul" questions only; "choice" and "score" questions are not supported. Question "${id}" uses "${question.type}".`;
 		}
 		if (typeof question.instructions !== "string" || !question.instructions.trim()) {
 			return `Question "${id}" must use plain-text instructions with Respan Span-01.`;

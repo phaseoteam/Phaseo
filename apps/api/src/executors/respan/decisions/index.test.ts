@@ -162,22 +162,36 @@ describe("Respan Span-01 Decisions executor", () => {
 		}
 	});
 
-	it("rejects Choice and Score questions before making an upstream call", async () => {
-		const mock = installFetchMock([]);
-		try {
-			const result = await executor(buildArgs({
-				ir: {
-					...(buildArgs().ir as any),
-					questions: { segment: { type: "choice", instructions: "Pick a segment", criteria: { sales: "Sales" } } },
-				} as any,
-			}));
-			expect(result.upstream.status).toBe(400);
-			expect(result.localClientError).toBe(true);
-			expect(mock.calls).toHaveLength(0);
-		} finally {
-			mock.restore();
-		}
-	});
+	it.each(["choice", "score"] as const)(
+		"returns a clear unsupported-question error for %s before an upstream call",
+		async (questionType) => {
+			const mock = installFetchMock([]);
+			try {
+				const result = await executor(buildArgs({
+					ir: {
+						...(buildArgs().ir as any),
+						questions: {
+							segment: {
+								type: questionType,
+								instructions: "Pick a segment",
+								criteria: { sales: "Sales" },
+							},
+						},
+					} as any,
+				}));
+				expect(result.upstream.status).toBe(400);
+				expect(result.localClientError).toBe(true);
+				expect(await result.upstream.json()).toMatchObject({
+					error: "unsupported_decision_request",
+					message: `Respan Span-01 supports "noul" questions only; "choice" and "score" questions are not supported. Question "segment" uses "${questionType}".`,
+					request_id: "req_respan_decisions_test",
+				});
+				expect(mock.calls).toHaveLength(0);
+			} finally {
+				mock.restore();
+			}
+		},
+	);
 
 	it("requires an explicit Respan span shape", async () => {
 		const mock = installFetchMock([]);
