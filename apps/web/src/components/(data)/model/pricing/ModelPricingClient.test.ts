@@ -64,4 +64,12 @@ describe("provider service tier display names", () => {
 
 		expect(getProviderTableDiscountBadge(sections)).toBe("33% Off");
 	});
+
+	it("shows introductory character SKU discounts in provider rows", () => {
+		const sections = {
+			mediaInputs: [{ mod: "text", price: 0.022, basePrice: 0.08, discountEndsAt: "2026-10-12T00:00:00.000Z" }],
+		} as unknown as ReturnType<typeof buildProviderSections>;
+
+		expect(getProviderTableDiscountBadge(sections)).toBe("73% Off");
+	});
 });

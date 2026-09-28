@@ -86,7 +86,7 @@ export type UsageRow = {
     unit: UnitClass;
     unitQuantity: number;
     unitLabel: string;
-    mod: "audio" | "image" | "video";
+    mod: "text" | "audio" | "image" | "video";
     basePrice?: number | null;
     comparisonKind?: PriceComparisonKind | null;
     comparisonDirection?: PriceComparisonDirection;
@@ -99,6 +99,7 @@ export type UsageRow = {
 export type PricingSectionKey =
     | "textTokens"
     | "requests"
+    | "textInputs"
     | "audioInputs"
     | "imageInputs"
     | "videoInputs"
@@ -209,8 +210,8 @@ export function formatTableUnitShortLabel(label: string) {
     if (normalized === "per call") return "/call";
     if (normalized === "per request") return "/request";
     if (normalized === "per character") return "/char";
-    if (normalized === "per 1k characters") return "/1K chars";
-    if (normalized === "per 1m characters") return "/M chars";
+    if (normalized === "per 1k characters") return "/1K Chars";
+    if (normalized === "per 1m characters") return "/M Chars";
     if (normalized === "per 1m bytes") return "/M bytes";
     if (normalized === "per page") return "/page";
     if (normalized === "per frame") return "/frame";
@@ -673,6 +674,10 @@ function buildUpcomingChangeLabels(
             title: "Requests",
             subtitle: scope === "All usage" ? null : scope,
         };
+    }
+
+    if (dir === "input" && mod === "audio" && unit === "character" && conds.length === 0) {
+        return { sectionKey: "textInputs", title: "Text Input" };
     }
 
     if (
@@ -1320,7 +1325,8 @@ export function buildProviderSections(
                 (((mod === "image" || mod === "video") && unit === "pixel") ||
                     (mod === "image" && unit === "image") ||
                     ((mod === "audio" || mod === "video") &&
-                        (unit === "second" || unit === "minute"))))
+                        (unit === "second" || unit === "minute")) ||
+                    (mod === "audio" && unit === "character" && conds.length === 0)))
         ) {
             const label = conciseConditionLabel(conds);
             const normalizedDuration =
@@ -1343,7 +1349,9 @@ export function buildProviderSections(
                 unitQuantity: normalizedDuration ? 1 : unitSize,
                 unitLabel: normalizedDuration?.unitLabel ?? unitLabel(unit, unitSize),
                 mod:
-                    mod === "audio"
+                    unit === "character"
+                        ? "text"
+                        : mod === "audio"
                         ? "audio"
                         : mod === "image"
                             ? "image"
@@ -1635,6 +1643,22 @@ export function getProviderTablePriceCandidates(
         pushTokenCandidate("decisions", sections.decisionTokens?.in);
         pushTokenCandidate("embeddings", sections.embeddingTokens?.in);
 
+        const textInputs = sections.mediaInputs
+            ?.filter((row) => row.mod === "text" && row.isCurrent)
+            .map((row, index) =>
+                createTablePriceCandidate({
+                    key: `input-text-${index}`,
+                    label: "audio",
+                    modality: "audio",
+                    price: row.price,
+                    unitLabel: row.unitLabel,
+                    unit: row.unit,
+                    unitQuantity: row.unitQuantity,
+                }),
+            ) ?? [];
+        sortTablePriceCandidates(textInputs);
+        candidates.push(...textInputs);
+
         const imageInputs = sections.mediaInputs
             ?.filter((row) => row.mod === "image" && row.isCurrent)
             .map((row, index) =>
@@ -1818,7 +1842,7 @@ const PROVIDER_TABLE_UNIT_ORDER = [
 export function formatProviderTableHeaderUnit(unitLabelValue: string): string {
     const labels: Record<string, string> = {
         "Per 1M tokens": "$/1M",
-        "Per 1K characters": "$/1K chars",
+        "Per 1K characters": "$/1K Chars",
         "Per 1M bytes": "$/1M bytes",
         "Per 1M pixels": "$/MP",
         "Per minute": "$/min",

@@ -825,28 +825,6 @@ function renderSecondaryTierSummary(
 	);
 }
 
-function formatPriceRange(values: number[]): string {
-	const finiteValues = values.filter((value) => Number.isFinite(value));
-	if (!finiteValues.length) return "--";
-	const min = Math.min(...finiteValues);
-	const max = Math.max(...finiteValues);
-	if (Math.abs(min - max) < 1e-9) return fmtUSD(min);
-	return `${fmtUSD(min)}-${fmtUSD(max)}`;
-}
-
-function formatCountLabel(count: number, singular: string, plural = `${singular}s`): string | null {
-	if (count <= 0) return null;
-	return `${count} ${count === 1 ? singular : plural}`;
-}
-
-type AdditionalMeterSummary = {
-	key: string;
-	label: string;
-	value: string;
-	unit: string;
-	detail: string | null;
-};
-
 function getRoutingHealthSummary(
 	routingStatus: ProviderRoutingStatus | null | undefined,
 ): { label: string; description: string } | null {
@@ -1697,6 +1675,7 @@ function collectDiscountEntriesFromOtherRules(
 function collectDiscountEntriesFromSections(
 	sections: ReturnType<typeof buildProviderSections>,
 ) {
+	const textInputs = sections.mediaInputs?.filter((row) => row.mod === "text") ?? [];
 	const imageInputs = sections.mediaInputs?.filter((row) => row.mod === "image") ?? [];
 	const videoInputs = sections.mediaInputs?.filter((row) => row.mod === "video") ?? [];
 	return [
@@ -1706,6 +1685,7 @@ function collectDiscountEntriesFromSections(
 		...collectDiscountEntriesFromTriple(sections.videoTokens),
 		...collectDiscountEntriesFromTriple(sections.embeddingTokens),
 		...collectDiscountEntriesFromTriple(sections.decisionTokens),
+		...collectDiscountEntriesFromUsage(textInputs),
 		...collectDiscountEntriesFromUsage(imageInputs),
 		...collectDiscountEntriesFromUsage(videoInputs),
 		...collectDiscountEntriesFromImage(sections.imageGen),
@@ -2150,6 +2130,7 @@ export default function ProviderCard({
 	) || Boolean(workspacePolicyBlockedReasons?.length);
 
 	const isFreePlan = selectedPlan === "free";
+	const textInputs = sec.mediaInputs?.filter((r) => r.mod === "text") ?? [];
 	const audioInputs = sec.mediaInputs?.filter((r) => r.mod === "audio") ?? [];
 	const imageInputs = sec.mediaInputs?.filter((r) => r.mod === "image") ?? [];
 	const videoInputs = sec.mediaInputs?.filter((r) => r.mod === "video") ?? [];
@@ -2157,6 +2138,7 @@ export default function ProviderCard({
 		sectionKey:
 			| "textTokens"
 			| "requests"
+			| "textInputs"
 			| "audioInputs"
 			| "imageInputs"
 			| "videoInputs"
@@ -2423,6 +2405,7 @@ export default function ProviderCard({
 		!sec.decisionTokens &&
 		!sec.imageGen &&
 		!sec.videoGen &&
+		!textInputs.length &&
 		!audioInputs.length &&
 		!imageInputs.length &&
 		!videoInputs.length &&
@@ -2952,26 +2935,20 @@ export default function ProviderCard({
 			))}
 		</div>
 	) : null;
-	const additionalMeterSummaries: AdditionalMeterSummary[] = [
-		sec.otherRules.length > 0
-			? {
-					key: "conditional",
-					label: "Conditional meters",
-					value: formatPriceRange(sec.otherRules.map((row) => row.price)),
-					unit: "See rules",
-					detail: formatCountLabel(sec.otherRules.length, "rule"),
-				}
-			: null,
-	].filter((summary): summary is AdditionalMeterSummary => Boolean(summary));
 	const pricingMediaInputContent =
 		!isFreePlan &&
-		(audioInputs.length > 0 ||
+		(textInputs.length > 0 ||
+			audioInputs.length > 0 ||
 			imageInputs.length > 0 ||
 			videoInputs.length > 0 ||
+			upcomingFor("textInputs").length > 0 ||
 			upcomingFor("audioInputs").length > 0 ||
 			upcomingFor("imageInputs").length > 0 ||
 			upcomingFor("videoInputs").length > 0) ? (
 			<div className="space-y-2.5 pt-1">
+				{textInputs.length > 0 ? (
+					<InputsSection title="Text Input" rows={textInputs} comparisonAccent={pricingComparisonAccent} />
+				) : null}
 				{audioInputs.length > 0 ? (
 					<InputsSection title="Audio Input" rows={audioInputs} comparisonAccent={pricingComparisonAccent} />
 				) : null}
@@ -2980,6 +2957,9 @@ export default function ProviderCard({
 				) : null}
 				{videoInputs.length > 0 ? (
 					<InputsSection title="Video Input" rows={videoInputs} comparisonAccent={pricingComparisonAccent} />
+				) : null}
+				{upcomingFor("textInputs").length > 0 ? (
+					<UpcomingPricingSection rows={upcomingFor("textInputs")} title="Upcoming" compact />
 				) : null}
 				{upcomingFor("audioInputs").length > 0 ? (
 					<UpcomingPricingSection rows={upcomingFor("audioInputs")} title="Upcoming" compact />
@@ -3050,24 +3030,6 @@ export default function ProviderCard({
 						))}
 					</div>
 				) : null}
-					{additionalMeterSummaries.length > 0 ? (
-						<div className="space-y-2">
-							{additionalMeterSummaries.map((summary) => (
-								<div
-									key={summary.key}
-									className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-4"
-								>
-									<div className="text-[11px] text-muted-foreground">{summary.label}</div>
-									<div className="text-right">
-										<div className="text-sm font-medium tabular-nums text-foreground">{summary.value}</div>
-										<div className="text-[10px] text-muted-foreground">
-											{summary.unit}{summary.detail ? ` / ${summary.detail}` : ""}
-										</div>
-									</div>
-								</div>
-							))}
-						</div>
-					) : null}
 					{sec.requests && sec.requests.length > 0 ? (
 						<div className="space-y-1.5">
 							{sec.requests.map((tier, index) => {
