@@ -4695,5 +4695,74 @@
       "notes": "The Vertex preview provider slug was supplied by the requester and is not separately published in the public model index; the canonical live capability, limits, and Vertex/Agent Platform pricing are documented by Google, while gateway routing remains disabled until a Vertex Live transcription executor is registered."
     },
     "rate_limits": []
+  },
+  {
+    "api_model_id": "anthropic/claude-sonnet-5.5",
+    "provider_api_model_id": "google-vertex:anthropic/claude-sonnet-5.5",
+    "provider_model_slug": "claude-sonnet-5-5",
+    "internal_model_id": "anthropic/claude-sonnet-5.5",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": 1000000,
+    "max_output_tokens": 128000,
+    "effective_from": "2026-09-28T00:00:00Z",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [
+          "include_reasoning",
+          "max_tokens",
+          "reasoning",
+          "response_format",
+          "stop",
+          "structured_outputs",
+          "tool_choice",
+          "tools",
+          "verbosity"
+        ],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": true,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "announcement",
+        "url": "https://www.anthropic.com/claude-opus-5-5",
+        "accessed_at": "2026-09-28T00:00:00Z",
+        "notes": "Anthropic announced Sonnet 5.5 as forthcoming; this source does not confirm the provider model ID or availability."
+      }
+    ],
+    "verification": {
+      "status": "unverified",
+      "checked_at": "2026-09-28T00:00:00Z",
+      "notes": "Launch route staged from Sonnet 5. Confirm provider model ID and successful inference before publishing."
+    },
+    "rate_limits": []
   }
 ]
