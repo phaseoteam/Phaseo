@@ -881,6 +881,7 @@ async function runTextGeneratePipelineInner(args: PipelineRunnerArgs, liveSink?:
 		}> = [];
 
 		if (preparedServerTools.config.enabled && exec.result.kind === "completed" && exec.result.ir) {
+			const serverToolExecutionTrace: NonNullable<typeof pre.ctx.serverToolTrace> = [];
 			const maxServerToolRounds = 8;
 			const maxServerToolCalls = Math.min(100, Math.max(1, irForExecution.maxToolCalls ?? 30));
 			let serverToolRounds = 0;
@@ -907,6 +908,7 @@ async function runTextGeneratePipelineInner(args: PipelineRunnerArgs, liveSink?:
 
 			while (true) {
 				if (liveSink?.signal.aborted) break;
+				const roundStartedAt = Date.now();
 				const continuation = await buildServerToolContinuation(
 					latestIrResponse,
 					preparedServerTools.config,
@@ -991,6 +993,11 @@ async function runTextGeneratePipelineInner(args: PipelineRunnerArgs, liveSink?:
 					});
 				}
 				serverToolRounds += 1;
+				const serverToolRound: NonNullable<typeof pre.ctx.serverToolTrace>[number] = {
+					round: serverToolRounds,
+					durationMs: Math.max(0, Date.now() - roundStartedAt),
+					calls: [],
+				};
 				serverToolUsage.datetimeRequests += continuation.usage.datetimeRequests ?? 0;
 				const webSearchRequestsBefore = serverToolUsage.webSearchRequests;
 				serverToolUsage.webSearchRequests += continuation.usage.webSearchRequests ?? 0;
@@ -1017,14 +1024,20 @@ async function runTextGeneratePipelineInner(args: PipelineRunnerArgs, liveSink?:
 				for (const result of continuation.toolResults) {
 					const call = toolCallsById.get(result.toolCallId);
 					if (!call) continue;
-					serverToolTrace.push({
+					const tracedCall = {
 						id: call.id,
 						name: call.name,
 						arguments: call.arguments,
 						output: result.content,
 						...(result.isError ? { isError: true } : {}),
-					});
+					};
+					serverToolTrace.push(tracedCall);
+					serverToolRound.calls.push(tracedCall);
 					liveSink?.toolResult(serverToolTrace[serverToolTrace.length - 1]);
+				}
+				if (serverToolRound.calls.length > 0) {
+					serverToolExecutionTrace.push(serverToolRound);
+					pre.ctx.serverToolTrace = serverToolExecutionTrace;
 				}
 				if (continuation.advisorUsage) {
 					aggregateUsage = mergeIRUsageTotals(aggregateUsage, continuation.advisorUsage);

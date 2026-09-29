@@ -719,6 +719,18 @@ export type PipelineContext = {
     guardrailEnforcement?: GuardrailEnforcementPayload | null;
     searchObservability?: SearchObservability | null;
     webFetchObservability?: WebFetchObservability | null;
+    /** Executions of gateway-managed tools; persisted only in the opt-in R2 I/O log. */
+    serverToolTrace?: Array<{
+        round: number;
+        durationMs: number;
+        calls: Array<{
+            id: string;
+            name: string;
+            arguments?: string;
+            output?: unknown;
+            isError?: boolean;
+        }>;
+    }>;
     responseCache?: ResponseCacheDiagnostics | null;
     attemptErrors?: Array<Record<string, unknown>>;
     providerAttempts?: ProviderAttemptLog[];

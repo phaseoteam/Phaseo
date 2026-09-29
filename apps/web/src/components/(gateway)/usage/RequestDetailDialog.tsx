@@ -12,6 +12,7 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CopyButton } from "@/components/ui/copy-button";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -31,14 +32,6 @@ import {
 	HoverCardContent,
 	HoverCardTrigger,
 } from "@/components/ui/hover-card";
-import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from "@/components/ui/table";
 import { Logo } from "@/components/Logo";
 import {
 	RequestRow,
@@ -52,10 +45,7 @@ import {
 	formatUsageNumber,
 	type UsageMeter,
 } from "./usageMeters";
-import {
-	DetailKeyValueGrid,
-	DetailTimingBar,
-} from "./DetailDialogPrimitives";
+import { DetailKeyValueGrid } from "./DetailDialogPrimitives";
 import { getModelDisplayName, type ModelMetadataMap } from "./model-display";
 import {
 	PROVIDER_PROMPT_TRAINING_POLICY_LABELS,
@@ -63,12 +53,12 @@ import {
 } from "@/lib/providers/promptTrainingPolicy";
 import { formatRoomError } from "@/lib/chat/formatRoomError";
 import UsageEntityHoverCard from "./UsageEntityHoverCard";
-import { RoutingTracePanel } from "@/components/(gateway)/usage/RoutingTracePanel";
 import { providerAttemptTimelineDuration, responseTimelineTiming } from "./responseTimeline";
 import {
 	ProviderInspectorSheet,
 	ProviderInspectorSheetContent,
 } from "@/components/(data)/model/pricing/ProviderInspectorSheet";
+import { GenerationTraceView } from "./GenerationTraceView";
 
 interface RequestDetailDialogProps {
 	open: boolean;
@@ -595,19 +585,6 @@ function formatThroughput(value: number | string | null | undefined): string {
 	const n = Number(value);
 	if (!Number.isFinite(n)) return "-";
 	return `${Math.round(n * 100) / 100} tok/s`;
-}
-
-function formatDuration(ms: number | null | undefined): string {
-	const value = Number(ms ?? 0);
-	if (!Number.isFinite(value) || value <= 0) return "-";
-	if (value < 1000) return `${Math.round(value)} ms`;
-	if (value < 60_000) {
-		const seconds = value / 1000;
-		return `${seconds >= 10 ? seconds.toFixed(1) : seconds.toFixed(2)} s`;
-	}
-	const minutes = Math.floor(value / 60_000);
-	const seconds = Math.round((value % 60_000) / 1000);
-	return seconds > 0 ? `${minutes}m ${seconds}s` : `${minutes}m`;
 }
 
 function formatScoreValue(value: number | null | undefined): string {
@@ -1141,7 +1118,6 @@ export default function RequestDetailDialog({
 	const workspacePolicyDiagnostics = routingDiagnostics?.workspacePolicy;
 	const consideredProviders = routingDiagnostics?.consideredProviders ?? [];
 	const rankedProviders = routingDiagnostics?.rankedProviders ?? [];
-	const storedRoutingDecisions = request.routing_decisions ?? [];
 	const failedProviders = formattedGatewayError?.failedProviders ?? [];
 	const failedStatuses = formattedGatewayError?.failedStatuses ?? [];
 	const pluginExecutions = extractPluginExecutions(request.detail_metadata ?? null);
@@ -1556,15 +1532,28 @@ export default function RequestDetailDialog({
 					</div>
 				) : null}
 
-				<ScrollArea
-					className={cn(
-						presentation === "sheet"
-							? "min-h-0 flex-1"
-							: "max-h-[calc(90vh-110px)]",
-					)}
-					viewportClassName="px-5 py-3 sm:px-6"
+				<Tabs
+					key={request.request_id}
+					defaultValue="overview"
+					className="min-h-0 flex-1 gap-0"
 				>
-					<div>
+					<TabsList
+						variant="line"
+						className="w-full shrink-0 justify-start rounded-none border-b border-border/70 px-5 sm:px-6"
+					>
+						<TabsTrigger value="overview">Overview</TabsTrigger>
+						<TabsTrigger value="trace">Trace</TabsTrigger>
+					</TabsList>
+					<TabsContent value="overview" className="flex min-h-0 flex-1 flex-col overflow-hidden">
+						<ScrollArea
+							className={cn(
+								presentation === "sheet"
+									? "min-h-0 flex-1"
+									: "max-h-[calc(90vh-150px)]",
+							)}
+							viewportClassName="px-5 py-3 sm:px-6"
+						>
+						<div>
 						{!request.success && (request.error_code || request.error_message) ? (
 							<div className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm">
 								<div className="mb-2 flex items-center gap-2 font-medium text-rose-900">
@@ -2676,15 +2665,6 @@ export default function RequestDetailDialog({
 							/>
 						</GenerationSection>
 
-						<GenerationSection title="Response timeline">
-							<DetailTimingBar items={responseTimelineItems} />
-							<RoutingTracePanel
-								trace={request.routing_trace ?? null}
-								decisions={storedRoutingDecisions}
-								providerNames={providerNames}
-							/>
-						</GenerationSection>
-
 						<GenerationSection title="Usage">
 							{usageMeters.length > 0 ? (
 								<div className="space-y-4">
@@ -2701,24 +2681,6 @@ export default function RequestDetailDialog({
 						<GenerationSection title="Data Policy">
 							<DetailRows items={dataPolicyItems} />
 						</GenerationSection>
-
-						{ioLog ? (
-							<GenerationSection title="Gateway I/O">
-								<div className="space-y-4 text-sm">
-									<div className="flex flex-wrap gap-x-4 gap-y-1 text-muted-foreground">
-										<span>Status: <span className="font-medium text-foreground">{ioLog.status}</span></span>
-										{ioLog.bytes ? <span>{format.number(ioLog.bytes)} bytes</span> : null}
-										{ioLog.retention_until ? <span>Retained until {format.dateTime(ioLog.retention_until)}</span> : null}
-									</div>
-									{ioLog.payload ? (
-										<div className="grid gap-4 xl:grid-cols-2">
-											<div className="min-w-0"><p className="mb-2 font-medium">Prompt</p><pre className="max-h-96 overflow-auto rounded-md border bg-muted/30 p-3 text-xs leading-5 whitespace-pre-wrap break-words">{JSON.stringify(ioLog.payload.request_payload ?? ioLog.payload.provider_request ?? null, null, 2)}</pre></div>
-											<div className="min-w-0"><p className="mb-2 font-medium">Completion</p><pre className="max-h-96 overflow-auto rounded-md border bg-muted/30 p-3 text-xs leading-5 whitespace-pre-wrap break-words">{JSON.stringify(ioLog.payload.gateway_response ?? ioLog.payload.provider_response ?? null, null, 2)}</pre></div>
-										</div>
-									) : <p className="text-muted-foreground">{ioLog.error ?? "No I/O payload is available for this request."}</p>}
-								</div>
-							</GenerationSection>
-						) : null}
 
 						<GenerationSection title="Technical Details">
 							<DetailRows items={technicalDetailItems} />
@@ -2740,8 +2702,23 @@ export default function RequestDetailDialog({
 								</div>
 							</GenerationSection>
 						) : null}
-					</div>
-				</ScrollArea>
+						</div>
+						</ScrollArea>
+					</TabsContent>
+					<TabsContent value="trace" className="flex min-h-0 flex-1 flex-col overflow-hidden">
+						<ScrollArea
+							className="h-full min-h-0"
+							viewportClassName="px-5 py-3 sm:px-6"
+						>
+							<GenerationTraceView
+								request={request}
+								ioLog={ioLog}
+								timelineItems={responseTimelineItems}
+								providerNames={providerNames}
+							/>
+						</ScrollArea>
+					</TabsContent>
+				</Tabs>
 		</>
 	);
 
@@ -2763,7 +2740,7 @@ export default function RequestDetailDialog({
 
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
-			<DialogContent className="max-h-[90vh] max-w-6xl overflow-hidden p-0">
+			<DialogContent className="flex max-h-[90vh] max-w-6xl flex-col overflow-hidden p-0">
 				<DialogHeader className="sr-only">
 					<DialogTitle>Request details</DialogTitle>
 				</DialogHeader>
