@@ -153,6 +153,61 @@ describe("openai text executor HTTP mode", () => {
 		expect(mock.calls[0]?.bodyJson?.stream_options).toEqual({ include_usage: true });
 	});
 
+	it.each([
+		["gpt-6.1-sol", undefined],
+		["gpt-6-astra", "ultrafast"],
+	] as const)("routes %s through Responses for Chat Completions requests", async (model, serviceTier) => {
+		const mock = installFetchMock([{
+			match: (url) => url === "https://api.openai.com/v1/responses",
+			response: jsonResponse({
+				id: "resp_gpt6_route",
+				object: "response",
+				created_at: Math.floor(Date.now() / 1000),
+				model,
+				status: "completed",
+				output: [],
+				usage: { input_tokens: 4, output_tokens: 1, total_tokens: 5 },
+			}),
+		}]);
+
+		const result = await executor({
+			...buildArgs({ model: `openai/${model}`, serviceTier }),
+			providerModelSlug: model,
+			endpoint: "chat.completions",
+			protocol: "openai.chat.completions",
+		});
+		mock.restore();
+
+		expect(result.kind).toBe("completed");
+		expect(mock.calls).toHaveLength(1);
+		expect(mock.calls[0]?.url).toBe("https://api.openai.com/v1/responses");
+		expect(mock.calls[0]?.bodyJson?.service_tier).toBe(serviceTier);
+	});
+
+	it("preserves GPT-6.1 Sol max reasoning effort", async () => {
+		const mock = installFetchMock([{
+			match: (url) => url === "https://api.openai.com/v1/responses",
+			response: jsonResponse({
+				id: "resp_gpt61_max",
+				object: "response",
+				created_at: Math.floor(Date.now() / 1000),
+				model: "gpt-6.1-sol",
+				status: "completed",
+				output: [],
+				usage: { input_tokens: 4, output_tokens: 1, total_tokens: 5 },
+			}),
+		}]);
+
+		const result = await executor({
+			...buildArgs({ model: "openai/gpt-6.1-sol", reasoning: { effort: "max" } }),
+			providerModelSlug: "gpt-6.1-sol",
+		});
+		mock.restore();
+
+		expect(result.kind).toBe("completed");
+		expect(mock.calls[0]?.bodyJson?.reasoning?.effort).toBe("max");
+	});
+
 	it("routes Chat Completions async tools through OpenAI Responses", async () => {
 		const mock = installFetchMock([{
 			match: (url) => url === "https://api.openai.com/v1/responses",
