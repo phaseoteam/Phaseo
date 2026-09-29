@@ -1076,7 +1076,7 @@ export function AdvancedTable({
 
 	return (
 		<div className="space-y-1.5">
-			<h4 className="text-xs font-semibold tracking-wide text-foreground">Additional pricing</h4>
+			<h4 className="text-xs font-semibold tracking-wide text-foreground">Usage rates</h4>
 			<div className="space-y-2">
 				{rows.map((row, index) => {
 					const conditions = formatConditions(row.conditions);
@@ -1087,7 +1087,9 @@ export function AdvancedTable({
 						>
 							<div className="min-w-0">
 								<div className="text-[11px] text-muted-foreground">
-									{formatMeterName(row.meter)}
+									{row.displayLabel && row.displayLabel !== row.meter
+										? row.displayLabel
+										: formatMeterName(row.meter)}
 								</div>
 								{conditions ? (
 									<div className="mt-0.5 truncate text-[10px] text-muted-foreground">

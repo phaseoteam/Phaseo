@@ -1137,7 +1137,7 @@ describe("public model routes", () => {
 						capability_status: "active",
 					}],
 					pricing_rules: [
-						{ id: "standard-price", pricing_plan: "standard" },
+						{ id: "standard-price", rule_id: "standard-meter", pricing_plan: "standard", modality: "text", direction: "input", display_label: "Prompt tokens", display_unit: "1M tokens" },
 						{ id: "batch-price", pricing_plan: "batch" },
 					],
 				}]), { status: 200 });
@@ -1158,7 +1158,7 @@ describe("public model routes", () => {
 				provider: { routing_status: "active" },
 				provider_models: [{ is_active_gateway: true }, { is_active_gateway: true }],
 				pricing_rules: [
-					{ id: "standard-price", pricing_plan: "standard" },
+					{ id: "standard-price", rule_id: "standard-meter", pricing_plan: "standard", modality: "text", direction: "input", display_label: "Prompt tokens", display_unit: "1M tokens" },
 					{ id: "batch-price", pricing_plan: "batch" },
 				],
 			}],

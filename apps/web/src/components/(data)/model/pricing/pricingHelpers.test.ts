@@ -460,6 +460,37 @@ describe("buildProviderSections", () => {
 		]);
 	});
 
+	test("uses SKU meter metadata for an unfamiliar meter key", () => {
+		const provider = makeProviderPricing();
+		provider.pricing_rules = [{
+			...provider.pricing_rules[0]!,
+			id: "custom-image-page",
+			meter: "custom_widget_rate",
+			modality: "image",
+			direction: "output",
+			display_label: "Rendered widget",
+			display_unit: "100 widgets",
+			unit: "widget",
+			unit_size: 100,
+			price_per_unit: 0.02,
+			match: [],
+		}];
+		const sections = buildProviderSections(provider, "standard");
+		const [column] = buildProviderTablePriceColumns([sections]);
+		expect(sections.otherRules).toEqual([expect.objectContaining({
+			meter: "custom_widget_rate",
+			displayLabel: "Rendered widget",
+			modality: "image",
+			direction: "output",
+		})]);
+		expect(column).toMatchObject({ label: "Output", headerUnitLabel: "$/100 widgets" });
+		expect(buildProviderTablePriceSummaryForColumn(sections, column!)).toMatchObject({
+			primary: { price: 0.02 },
+		});
+		provider.pricing_rules[0]!.display_unit = "widgets";
+		expect(buildProviderSections(provider, "standard").otherRules[0]?.unitLabel).toBe("Per 100 widgets");
+	});
+
 	test("shows speech character pricing per 1K characters in the provider table", () => {
 		const provider = makeProviderPricing();
 		const baseRule = provider.pricing_rules[0]!;
