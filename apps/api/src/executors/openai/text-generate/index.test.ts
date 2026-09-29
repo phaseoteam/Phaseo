@@ -663,6 +663,47 @@ describe("openai text executor HTTP mode", () => {
 		});
 	});
 
+	it("routes GPT-6.1 Sol Pro through Responses with pro reasoning", async () => {
+		const mock = installFetchMock([{
+			match: (url) => url === "https://api.openai.com/v1/responses",
+			response: jsonResponse({
+				id: "resp_sol61_pro",
+				object: "response",
+				created_at: Math.floor(Date.now() / 1000),
+				model: "gpt-6.1-sol",
+				status: "completed",
+				output: [{
+					type: "message",
+					role: "assistant",
+					content: [{ type: "output_text", text: "ok" }],
+				}],
+				usage: { input_tokens: 2, output_tokens: 1, total_tokens: 3 },
+			}, { status: 200 }),
+		}]);
+
+		const result = await executor({
+			...buildArgs({
+				model: "openai/gpt-6.1-sol-pro",
+				reasoning: { effort: "max" },
+			}),
+			providerModelSlug: "gpt-6.1-sol-pro",
+			capabilityParams: {
+				request: {
+					allowlist: ["reasoning.effort", "reasoning.mode", "max_tokens"],
+				},
+			},
+		});
+		mock.restore();
+
+		expect(result.kind).toBe("completed");
+		expect(mock.calls).toHaveLength(1);
+		expect(mock.calls[0]?.bodyJson?.model).toBe("gpt-6.1-sol");
+		expect(mock.calls[0]?.bodyJson?.reasoning).toMatchObject({
+			effort: "max",
+			mode: "pro",
+		});
+	});
+
 	it("preserves Astra max reasoning effort", async () => {
 		const mock = installFetchMock([{
 			match: (url) => url === "https://api.openai.com/v1/responses",
