@@ -37,7 +37,7 @@ function stripProviderPrefix(providerId: string, model: string): string {
 
 export function normalizeOpenAIProBatchModel(model: string): { model: string; proMode: boolean } {
 	const tail = stripProviderPrefix("openai", model.trim());
-	const match = tail.match(/^(gpt-5\.6-(?:sol|terra|luna)|gpt-6-astra)-pro$/iu);
+	const match = tail.match(/^(gpt-5\.6-(?:sol|terra|luna)|gpt-6-astra|gpt-6\.1-sol)-pro$/iu);
 	if (!match) return { model: tail, proMode: false };
 	return { model: match[1]!.toLowerCase(), proMode: true };
 }
