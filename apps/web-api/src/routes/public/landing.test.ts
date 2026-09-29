@@ -54,6 +54,7 @@ describe("public landing routes", () => {
 	});
 
 	it("returns model statistics and selected visible models", async () => {
+		const recentReleaseDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1_000).toISOString();
 		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
 			const url = String(input);
 			if (url.includes("v2_model_provider_routes")) {
@@ -66,7 +67,7 @@ describe("public landing routes", () => {
 				return new Response(JSON.stringify([{
 					model_id: "openai/gpt-test",
 					name: "GPT Test",
-					release_date: "2026-07-01",
+					release_date: recentReleaseDate,
 					data_organisations: {
 						organisation_id: "openai",
 						name: "OpenAI",
@@ -78,7 +79,7 @@ describe("public landing routes", () => {
 				{
 					model_id: "openai/gpt-test",
 					organisation_id: "openai",
-					release_date: "2026-07-01",
+					release_date: recentReleaseDate,
 				},
 				{
 					model_id: "anthropic/claude-test",
