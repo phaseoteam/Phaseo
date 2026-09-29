@@ -89,7 +89,7 @@ export async function fetchModelPricingSources(
 	for (const result of [capabilitiesResult, providersResult, skusResult]) if (result.error) throw result.error;
 	const skuIds = (skusResult.data ?? []).map((row) => id(row.sku_id)).filter(Boolean);
 	const metersResult = skuIds.length
-		? await client.from("v2_pricing_sku_meters").select("sku_meter_id,sku_id,meter_key,unit,unit_quantity,price_nanos,meter_order,metadata").in("sku_id", skuIds)
+		? await client.from("v2_pricing_sku_meters").select("sku_meter_id,sku_id,meter_key,modality,direction,unit,unit_quantity,price_nanos,display_label,display_unit,meter_order,metadata").in("sku_id", skuIds).eq("billable", true)
 		: { data: [], error: null };
 	if (metersResult.error) throw metersResult.error;
 	const providerMap = new Map((providersResult.data ?? []).map((row) => [id(row.provider_slug), row as Row]));
@@ -183,23 +183,29 @@ export async function fetchModelPricingSources(
 		if (!includeExpiredPricing && now >= effectiveTo) return [];
 		const priceNanos = Number(meter.price_nanos);
 		if (!Number.isFinite(priceNanos)) return [];
+		const skuMetadata = asRow(sku.metadata) ?? {};
+		const meterMetadata = asRow(meter.metadata) ?? {};
 		return [{
 			rule_id: meter.sku_meter_id,
 			model_key: `${id(route.provider_slug)}:${id(route.model_slug)}:${id(sku.operation) || "inference"}`,
 			capability_id: sku.operation,
 			pricing_plan: sku.service_tier_slug ?? "standard",
 			meter: meter.meter_key,
+			modality: meter.modality,
+			direction: meter.direction,
+			display_label: meter.display_label,
+			display_unit: meter.display_unit,
 			unit: meter.unit,
 			unit_size: Number(meter.unit_quantity ?? 1),
 			price_per_unit: priceNanos / 1_000_000_000,
 			currency: sku.currency ?? "USD",
-			priority: Number((asRow(meter.metadata) ?? {}).priority ?? meter.meter_order ?? 100),
+			priority: Number(meterMetadata.priority ?? meter.meter_order ?? 100),
 			effective_from: sku.effective_from,
 			effective_to: sku.effective_to,
 			note: null,
-			match: [],
-			billing_timestamp_basis: (asRow(sku.metadata) ?? {}).billing_timestamp_basis ?? "request_start",
-			time_windows: (asRow(sku.metadata) ?? {}).time_windows ?? [],
+			match: skuMetadata.match ?? meterMetadata.match ?? [],
+			billing_timestamp_basis: skuMetadata.billing_timestamp_basis ?? "request_start",
+			time_windows: skuMetadata.time_windows ?? [],
 		}];
 	});
 	return { providerRows, pricingRows };

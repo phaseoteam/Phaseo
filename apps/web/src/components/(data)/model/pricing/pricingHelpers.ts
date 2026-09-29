@@ -141,6 +141,9 @@ export type ProviderSections = {
     upcomingChanges?: UpcomingPricingChange[];
     otherRules: {
         meter: string;
+        displayLabel?: string | null;
+        modality?: Modality;
+        direction?: Direction;
         unit: UnitClass;
         unitQuantity: number;
         unitLabel: string;
@@ -400,12 +403,25 @@ function classifyMeterWithEndpoint(
     meter?: string,
     explicitUnit?: string | null,
     endpoint?: string | null,
+    explicitModality?: string | null,
+    explicitDirection?: string | null,
 ): { dir: Direction; mod: Modality; unit: UnitClass; raw: string } {
 	const parsed = parseMeter(meter, explicitUnit);
+	const declaredModality = String(explicitModality ?? "").trim().toLowerCase();
+	const declaredDirection = String(explicitDirection ?? "").trim().toLowerCase();
+	const mod = declaredModality === "embedding" ? "embeddings"
+		: (["text", "image", "audio", "video", "embeddings", "decisions", "multimodal"].includes(declaredModality)
+			? declaredModality as Modality : parsed.mod);
+	const dir = parsed.dir === "cached" || parsed.dir === "cachewrite"
+		? parsed.dir
+		: declaredDirection === "input" || declaredDirection === "output"
+			? declaredDirection : parsed.dir;
+	const declared = { ...parsed, mod, dir };
 	const endpointModality = endpointToModality(endpoint);
-	if (endpointModality === "embeddings") return { ...parsed, mod: endpointModality };
-	if (parsed.mod !== "other" || !["token", "character"].includes(parsed.unit)) return parsed;
-	return endpointModality ? { ...parsed, mod: endpointModality } : parsed;
+	if (declaredModality) return declared;
+	if (endpointModality === "embeddings") return { ...declared, mod: endpointModality };
+	if (declared.mod !== "other" || !["token", "character"].includes(declared.unit)) return declared;
+	return endpointModality ? { ...declared, mod: endpointModality } : declared;
 }
 
 export type ConditionLabelPref = { prefer?: string[] }; // e.g. ['cache_ttl','quality','resolution']
@@ -1138,6 +1154,8 @@ export function buildProviderSections(
             r.meter || "",
             r.unit || "",
             entry.endpoint,
+            r.modality,
+            r.direction,
         );
         const unitSize = r.unit_size ?? 1;
         const price = resolvePricingMeterPrice(r, pricingTimeUtc, now).pricePerUnit;
@@ -1395,9 +1413,14 @@ export function buildProviderSections(
         // 6) everything else → Advanced
         out.otherRules.push({
             meter: r.meter || "—",
+            displayLabel: r.display_label ?? null,
+            modality: mod,
+            direction: dir,
             unit,
             unitQuantity: unitSize,
-            unitLabel: unitLabel(unit, unitSize),
+            unitLabel: unit === "unknown" && r.display_unit
+                ? /^per\s/i.test(r.display_unit) ? r.display_unit : `Per ${r.display_unit}`
+                : unitLabel(unit, unitSize),
             price,
             basePrice: displayBasePrice,
             comparisonKind,
@@ -1758,7 +1781,7 @@ export function getProviderTablePriceCandidates(
         .map((row, index) => ({
             row,
             index,
-            parsed: classifyMeterWithEndpoint(row.meter, row.unit, row.endpoint),
+            parsed: classifyMeterWithEndpoint(row.meter, row.unit, row.endpoint, row.modality, row.direction),
         }))
         .filter(({ parsed }) =>
             parsed.dir === direction ||
@@ -1840,22 +1863,16 @@ const PROVIDER_TABLE_UNIT_ORDER = [
 ];
 
 export function formatProviderTableHeaderUnit(unitLabelValue: string): string {
-    const labels: Record<string, string> = {
-        "Per 1M tokens": "$/1M",
-        "Per 1K characters": "$/1K Chars",
-        "Per 1M bytes": "$/1M bytes",
-        "Per 1M pixels": "$/MP",
-        "Per minute": "$/min",
-        "Per request": "$/request",
-        "Per page": "$/page",
-        "Per image": "$/image",
-        "Per video": "$/video",
-        "Per frame": "$/frame",
-        "Per message": "$/message",
-        "Per credit": "$/credit",
-        "Provider-reported cost": "Pass-through",
-    };
-    return labels[unitLabelValue] ?? unitLabelValue;
+    if (unitLabelValue === "Provider-reported cost") return "Pass-through";
+    const match = unitLabelValue.trim().match(/^per\s+(?:(\d+(?:\.\d+)?[KM]|\d[\d,.]*)\s+)?(.+)$/i);
+    if (!match) return unitLabelValue;
+    const quantity = match[1] ?? "";
+    const unit = match[2].toLowerCase();
+    if (quantity === "1M" && unit === "tokens") return "$/1M";
+    if (quantity === "1M" && unit === "pixels") return "$/MP";
+    if (quantity === "1K" && unit === "characters") return "$/1K Chars";
+    const shortUnit = unit === "minute" ? "min" : unit === "second" ? "sec" : unit;
+    return `$/` + (quantity ? `${quantity} ${shortUnit}` : shortUnit);
 }
 
 export function buildProviderTablePriceColumns(

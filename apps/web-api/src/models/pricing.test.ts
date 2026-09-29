@@ -52,6 +52,7 @@ describe("publicPricingRouteIdentity", () => {
 					operation: "text.generate",
 					status: "active",
 					currency: "USD",
+					metadata: { match: [{ path: "request.quality", op: "eq", value: "premium" }] },
 				}]));
 			}
 			if (url.includes("v2_pricing_sku_meters")) {
@@ -59,9 +60,13 @@ describe("publicPricingRouteIdentity", () => {
 					sku_meter_id: "meter-stealth",
 					sku_id: "sku-stealth",
 					meter_key: "input_text_tokens",
+					modality: "text",
+					direction: "input",
 					unit: "token",
 					unit_quantity: 1_000_000,
 					price_nanos: 1_000_000_000,
+					display_label: "Prompt tokens",
+					display_unit: "1M tokens",
 					meter_order: 1,
 				}]));
 			}
@@ -100,6 +105,11 @@ describe("publicPricingRouteIdentity", () => {
 		});
 		expect(result.pricingRows[0]).toMatchObject({
 			model_key: "stealth:stealth/preview:text.generate",
+			modality: "text",
+			direction: "input",
+			display_label: "Prompt tokens",
+			display_unit: "1M tokens",
+			match: [{ path: "request.quality", op: "eq", value: "premium" }],
 		});
 		const serialized = JSON.stringify(result);
 		expect(serialized).not.toContain("private-provider");
