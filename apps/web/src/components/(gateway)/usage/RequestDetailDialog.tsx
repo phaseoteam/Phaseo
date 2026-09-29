@@ -830,7 +830,7 @@ export default function RequestDetailDialog({
 					onOpenChange={onOpenChange}
 					disablePointerDismissal={disablePointerDismissal}
 				>
-					<ProviderInspectorSheetContent className="!w-full max-w-none gap-0 overflow-hidden p-0 sm:max-w-none md:!w-[58vw] lg:!w-[54vw] xl:!w-[50vw] 2xl:!w-[46vw] data-[side=right]:sm:max-w-none">
+					<ProviderInspectorSheetContent className="!w-full max-w-none gap-0 overflow-hidden p-0 sm:max-w-none md:!w-[72vw] lg:!w-[68vw] xl:!w-[64vw] 2xl:!w-[60vw] data-[side=right]:sm:max-w-none">
 						{loadingContent}
 					</ProviderInspectorSheetContent>
 				</ProviderInspectorSheet>
@@ -2730,7 +2730,7 @@ export default function RequestDetailDialog({
 				disablePointerDismissal={disablePointerDismissal}
 			>
 				<ProviderInspectorSheetContent
-					className="!w-full max-w-none gap-0 overflow-hidden p-0 sm:max-w-none md:!w-[58vw] lg:!w-[54vw] xl:!w-[50vw] 2xl:!w-[46vw] data-[side=right]:sm:max-w-none"
+					className="!w-full max-w-none gap-0 overflow-hidden p-0 sm:max-w-none md:!w-[72vw] lg:!w-[68vw] xl:!w-[64vw] 2xl:!w-[60vw] data-[side=right]:sm:max-w-none"
 				>
 					{detailContent}
 				</ProviderInspectorSheetContent>

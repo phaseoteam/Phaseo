@@ -411,67 +411,61 @@ function RoleBadge({ role }: { role: string }) {
 
 function ToolCallBlock({ call, state }: { call: TraceToolCall; state: string }) {
 	return (
-		<div className="min-w-0 rounded-xl border border-amber-500/20 bg-background/70 p-3">
+		<div className="min-w-0 border-l-2 border-amber-500/50 bg-muted/20 px-3 py-2.5">
 			<div className="flex flex-wrap items-center gap-2">
 				<Wrench className="size-3.5 shrink-0 text-amber-500" aria-hidden="true" />
 				<code className="break-all text-xs font-semibold">{call.name}</code>
 				{call.id ? <code className="break-all text-[10px] text-muted-foreground">{call.id}</code> : null}
 				<span className="ml-auto rounded-full border border-amber-500/20 bg-amber-500/10 px-2 py-1 text-[10px] font-medium text-amber-700 dark:text-amber-300">{state}</span>
 			</div>
-			<details className="group/tool mt-3 rounded-md border border-border/60 bg-muted/20">
-				<summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-3 py-2 text-[11px] font-medium text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+			<details className="group/tool mt-2 border-t border-border/60">
+				<summary className="flex cursor-pointer list-none items-center justify-between gap-2 py-2 text-[11px] font-medium text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
 					<span>Arguments</span><span className="transition-transform group-open/tool:rotate-180">⌄</span>
 				</summary>
-				<pre className="max-h-64 overflow-auto border-t border-border/60 px-3 py-2.5 text-xs leading-5 whitespace-pre-wrap break-words">{stringify(call.arguments) || "{}"}</pre>
+				<pre className="max-h-64 overflow-auto border-t border-border/60 py-2.5 text-xs leading-5 whitespace-pre-wrap break-words">{stringify(call.arguments) || "{}"}</pre>
 			</details>
 		</div>
 	);
 }
 
 type LifecycleTone = "violet" | "sky" | "amber" | "emerald" | "slate";
-const lifecycleToneClasses: Record<LifecycleTone, { panel: string; marker: string; icon: string; activeNav: string }> = {
-	violet: { panel: "border-violet-500/25 bg-violet-500/[0.035]", marker: "border-violet-400/60 bg-background text-violet-600 dark:text-violet-300", icon: "bg-violet-500/10 text-violet-700 dark:text-violet-300", activeNav: "border-violet-500/40 bg-violet-500/10 text-violet-800 dark:text-violet-200" },
-	sky: { panel: "border-sky-500/25 bg-sky-500/[0.035]", marker: "border-sky-400/60 bg-background text-sky-600 dark:text-sky-300", icon: "bg-sky-500/10 text-sky-700 dark:text-sky-300", activeNav: "border-sky-500/40 bg-sky-500/10 text-sky-800 dark:text-sky-200" },
-	amber: { panel: "border-amber-500/25 bg-amber-500/[0.035]", marker: "border-amber-400/60 bg-background text-amber-600 dark:text-amber-300", icon: "bg-amber-500/10 text-amber-700 dark:text-amber-300", activeNav: "border-amber-500/40 bg-amber-500/10 text-amber-800 dark:text-amber-200" },
-	emerald: { panel: "border-emerald-500/25 bg-emerald-500/[0.035]", marker: "border-emerald-400/60 bg-background text-emerald-600 dark:text-emerald-300", icon: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300", activeNav: "border-emerald-500/40 bg-emerald-500/10 text-emerald-800 dark:text-emerald-200" },
-	slate: { panel: "border-slate-500/25 bg-slate-500/[0.035]", marker: "border-slate-400/60 bg-background text-slate-600 dark:text-slate-300", icon: "bg-slate-500/10 text-slate-700 dark:text-slate-300", activeNav: "border-slate-500/40 bg-slate-500/10 text-slate-800 dark:text-slate-200" },
+const lifecycleToneClasses: Record<LifecycleTone, { marker: string }> = {
+	violet: { marker: "border-violet-500/30 bg-violet-500/10 text-violet-600 dark:text-violet-300" },
+	sky: { marker: "border-sky-500/30 bg-sky-500/10 text-sky-600 dark:text-sky-300" },
+	amber: { marker: "border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-300" },
+	emerald: { marker: "border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-300" },
+	slate: { marker: "border-slate-500/30 bg-slate-500/10 text-slate-600 dark:text-slate-300" },
 };
-const lifecycleNavigation: Array<{ id: string; label: string; icon: LucideIcon; tone: LifecycleTone }> = [
-	{ id: "trace-routing", label: "Routing", icon: Route, tone: "violet" },
-	{ id: "trace-providers", label: "Providers", icon: Server, tone: "sky" },
-	{ id: "trace-tools", label: "Tools", icon: Wrench, tone: "amber" },
-	{ id: "trace-response", label: "Response", icon: MessageSquareText, tone: "emerald" },
-	{ id: "trace-capture", label: "R2 log", icon: Database, tone: "slate" },
+const lifecycleNavigation: Array<{ id: string; label: string; icon: LucideIcon }> = [
+	{ id: "trace-routing", label: "Routing", icon: Route },
+	{ id: "trace-providers", label: "Providers", icon: Server },
+	{ id: "trace-tools", label: "Tools", icon: Wrench },
+	{ id: "trace-response", label: "Response", icon: MessageSquareText },
+	{ id: "trace-capture", label: "R2 log", icon: Database },
 ];
 
-function LifecycleStep({ id, index, title, summary, icon: Icon, tone, badge, children }: {
-	id: string; index: number; title: string; summary: string; icon: LucideIcon; tone: LifecycleTone;
+function LifecycleStep({ id, title, summary, icon: Icon, tone, badge, children }: {
+	id: string; title: string; summary: string; icon: LucideIcon; tone: LifecycleTone;
 	badge?: React.ReactNode; children: React.ReactNode;
 }) {
 	const classes = lifecycleToneClasses[tone];
 	return (
-		<section id={id} data-lifecycle-step={id} tabIndex={-1} className="scroll-mt-16">
-			<div className="grid grid-cols-[36px_minmax(0,1fr)] gap-3">
-				<div className="relative z-10 flex justify-center pt-4">
-					<div className={cn("flex size-8 items-center justify-center rounded-full border shadow-sm", classes.marker)} aria-label={"Step " + index}>
+		<section id={id} data-lifecycle-step={id} tabIndex={-1} className="scroll-mt-20 pb-6 last:pb-2">
+			<div className="grid grid-cols-[30px_minmax(0,1fr)] gap-3.5 sm:gap-4">
+				<div className="relative z-10 flex justify-center">
+					<div className={cn("flex size-7 items-center justify-center rounded-lg border", classes.marker)}>
 						<Icon className="size-4" aria-hidden="true" />
 					</div>
 				</div>
-				<div className={cn("min-w-0 overflow-hidden rounded-2xl border shadow-sm", classes.panel)}>
-					<div className="flex flex-wrap items-start justify-between gap-3 border-b border-border/50 px-4 py-3.5">
-						<div className="flex min-w-0 items-start gap-3">
-							<div className={cn("mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-xl", classes.icon)}><Icon className="size-4" aria-hidden="true" /></div>
-							<div className="min-w-0">
-								<div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-									<span className="font-mono text-[10px] font-semibold tracking-widest text-muted-foreground">{String(index).padStart(2, "0")}</span>
-									<h2 className="text-sm font-semibold tracking-tight">{title}</h2>
-								</div>
-								<p className="mt-0.5 text-xs leading-5 text-muted-foreground">{summary}</p>
-							</div>
+				<div className="min-w-0">
+					<div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
+						<div className="min-w-0">
+							<h2 className="text-sm font-semibold tracking-tight">{title}</h2>
+							<p className="mt-0.5 text-xs leading-5 text-muted-foreground">{summary}</p>
 						</div>
 						{badge ? <div className="shrink-0">{badge}</div> : null}
 					</div>
-					<div className="min-w-0 p-3.5 sm:p-4">{children}</div>
+					<div className="min-w-0 pt-3">{children}</div>
 				</div>
 			</div>
 		</section>
@@ -529,9 +523,9 @@ function extractToolUsage(usage: unknown): Array<{ label: string; count: number 
 
 function InputMessages({ messages }: { messages: TraceMessage[] }) {
 	return (
-		<div className="space-y-3">
+		<div className="space-y-2">
 			{messages.map((message) => (
-				<div key={message.key} className="min-w-0 rounded-lg border border-border/60 bg-background/70 p-3">
+				<div key={message.key} className="min-w-0 border-l-2 border-border bg-muted/20 p-3">
 					<div className="mb-2 flex flex-wrap items-center gap-2">
 						<RoleBadge role={message.role} />
 						{message.toolCallId ? <code className="truncate text-[10px] text-muted-foreground">{message.toolCallId}</code> : null}
@@ -546,7 +540,7 @@ function InputMessages({ messages }: { messages: TraceMessage[] }) {
 
 function toolResultCard(result: TraceToolResult) {
 	return (
-		<div key={result.key} className={cn("rounded-xl border bg-background/70 p-3", result.isError ? "border-rose-500/30" : "border-emerald-500/20")}>
+		<div key={result.key} className={cn("border-l-2 bg-muted/20 px-3 py-2.5", result.isError ? "border-rose-500/60" : "border-emerald-500/60")}>
 			<div className="flex items-center gap-2 text-xs font-medium">
 				<Wrench className="size-3.5 text-amber-500" aria-hidden="true" />{result.name ?? "Tool result"}
 				<StatusPill tone={result.isError ? "rose" : "emerald"}>{result.isError ? "Failed" : "Result"}</StatusPill>
@@ -616,12 +610,15 @@ export function GenerationTraceView({ request, ioLog, timelineItems, providerNam
 	}
 
 	return (
-		<div ref={traceRootRef} className="space-y-4 pb-3">
-			<div className="overflow-hidden rounded-2xl border border-border/70 bg-gradient-to-br from-violet-500/10 via-background/90 to-background p-4">
+		<div ref={traceRootRef} className="space-y-4 pb-4">
+			<div className="overflow-hidden rounded-xl border border-border/70 bg-card/40 p-4">
 				<div className="flex flex-wrap items-start justify-between gap-3">
-					<div className="min-w-0">
-						<div className="flex items-center gap-2 text-sm font-semibold"><GitBranch className="size-4 text-violet-500" aria-hidden="true" />Request trace</div>
-						<div className="mt-1.5 truncate font-mono text-[11px] text-muted-foreground">{requestId}</div>
+					<div className="flex min-w-0 items-start gap-3">
+						<div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary"><GitBranch className="size-4" aria-hidden="true" /></div>
+						<div className="min-w-0">
+							<div className="text-sm font-semibold">Request lifecycle</div>
+							<div className="mt-0.5 truncate font-mono text-[11px] text-muted-foreground">{request.model_id ?? routeProviderName}</div>
+						</div>
 					</div>
 					<div className="flex flex-wrap gap-1.5">
 						<StatusPill tone={responseTone}>{request.success ? <CheckCircle2 className="size-3" aria-hidden="true" /> : <AlertCircle className="size-3" aria-hidden="true" />}{request.success ? "Completed" : "Failed"}</StatusPill>
@@ -629,47 +626,46 @@ export function GenerationTraceView({ request, ioLog, timelineItems, providerNam
 						{ioLog ? <StatusPill tone={payloadTone}>R2 {ioLog.status}</StatusPill> : null}
 					</div>
 				</div>
-				<div className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5 border-t border-border/50 pt-3 text-[11px] text-muted-foreground">
-					<span>{request.generation_ms != null ? formatTraceDuration(request.generation_ms) + " generation" : "Generation timing unavailable"}</span>
-					{ioLog?.bytes ? <span>{ioLog.bytes.toLocaleString()} bytes</span> : null}
-					{ioLog?.retention_until ? <span>Retained until {formatWordyDateTime(ioLog.retention_until)}</span> : null}
+				<div className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 border-t border-border/60 pt-3 sm:grid-cols-4">
+					<div><div className="text-[10px] font-medium text-muted-foreground">Generation</div><div className="mt-0.5 font-mono text-xs font-semibold tabular-nums">{formatTraceDuration(request.generation_ms) ?? "Not recorded"}</div></div>
+					<div><div className="text-[10px] font-medium text-muted-foreground">Provider attempts</div><div className="mt-0.5 font-mono text-xs font-semibold tabular-nums">{attempts.length ? attempts.length.toLocaleString() : "Not recorded"}</div></div>
+					<div><div className="text-[10px] font-medium text-muted-foreground">Tool calls</div><div className="mt-0.5 font-mono text-xs font-semibold tabular-nums">{toolActivityCount.toLocaleString()}</div></div>
+					<div><div className="text-[10px] font-medium text-muted-foreground">Retained until</div><div className="mt-0.5 truncate text-xs font-semibold">{ioLog?.retention_until ? formatWordyDateTime(ioLog.retention_until) : "Not stored"}</div></div>
 				</div>
 			</div>
 
-			<nav aria-label="Request lifecycle" className="sticky top-0 z-20 -mx-1 overflow-x-auto border-y border-border/70 bg-background/95 px-1 py-2 backdrop-blur-md">
-				<div className="flex min-w-max items-center gap-1.5">
-					{lifecycleNavigation.map((step, index) => {
+			<nav aria-label="Request lifecycle" className="sticky top-0 z-20 -mx-3 border-y border-border/70 bg-background/95 px-2 py-2 backdrop-blur-md sm:-mx-4 sm:px-3">
+				<div className="grid grid-cols-5 gap-1">
+					{lifecycleNavigation.map((step) => {
 						const active = activeStep === step.id;
 						const StepIcon = step.icon;
-						const count = step.id === "trace-tools" ? toolActivityCount : null;
 						return (
 							<button key={step.id} type="button" onClick={() => jumpToStep(step.id)} aria-current={active ? "step" : undefined}
-								className={cn("inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1.5 text-[11px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-									active ? lifecycleToneClasses[step.tone].activeNav : "border-transparent text-muted-foreground hover:border-border hover:bg-muted/60 hover:text-foreground")}>
-								<StepIcon className="size-3.5" aria-hidden="true" />
-								<span>{String(index + 1).padStart(2, "0")} {step.label}</span>
-								{count !== null && count > 0 ? <span className="rounded-full bg-amber-500/15 px-1.5 text-[10px] text-amber-700 dark:text-amber-300">{count}</span> : null}
+								className={cn("flex min-w-0 flex-col items-center justify-center gap-1 rounded-md px-1 py-1.5 text-[10px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:flex-row sm:gap-1.5 sm:px-2 sm:text-[11px]",
+									active ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted/60 hover:text-foreground")}>
+								<StepIcon className="size-3.5 shrink-0" aria-hidden="true" />
+								<span className="truncate">{step.label}</span>
 							</button>
 						);
 					})}
 				</div>
 			</nav>
 
-			<div className="relative space-y-4">
-				<div className="pointer-events-none absolute bottom-8 left-[17px] top-5 w-px bg-gradient-to-b from-violet-500 via-sky-500 to-slate-500 opacity-30" aria-hidden="true" />
+			<div className="relative space-y-0">
+				<div className="pointer-events-none absolute bottom-8 left-[14px] top-3 w-px bg-border/80" aria-hidden="true" />
 
-				<LifecycleStep id="trace-routing" index={1} title="Routing" summary={routingSummary} icon={Route} tone="violet" badge={<StatusPill tone="violet">{routingMode}</StatusPill>}>
+				<LifecycleStep id="trace-routing" title="Routing" summary={routingSummary} icon={Route} tone="violet" badge={<StatusPill tone="violet">{routingMode}</StatusPill>}>
 					<div className="space-y-3">
-						<div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-violet-500/15 bg-background/70 p-3">
+						<div className="flex flex-wrap items-center justify-between gap-3 border-l-2 border-primary/60 bg-muted/25 px-3 py-2.5">
 							<div className="min-w-0">
-								<div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Selected route</div>
+								<div className="text-[11px] font-medium text-muted-foreground">Selected route</div>
 								<div className="mt-1 truncate text-sm font-semibold">{routeProviderName}</div>
-								{request.model_id ? <div className="mt-0.5 truncate font-mono text-[10px] text-muted-foreground">{request.model_id}</div> : null}
+								{request.model_id ? <div className="mt-0.5 truncate font-mono text-[11px] text-muted-foreground">{request.model_id}</div> : null}
 							</div>
 							{routingTiming?.duration != null ? <StatusPill tone="violet"><Clock3 className="size-3" aria-hidden="true" />{formatTraceDuration(routingTiming.duration)}</StatusPill> : <StatusPill>Routing duration not recorded</StatusPill>}
 						</div>
 						<RoutingTracePanel trace={request.routing_trace ?? null} decisions={decisions} providerNames={providerNames} />
-						<details className="group/input rounded-xl border border-border/60 bg-background/50">
+						<details className="group/input border-y border-border/60">
 							<summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-3.5 py-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
 								<span className="min-w-0"><span className="block text-xs font-medium">Request input</span><span className="mt-0.5 block text-[10px] text-muted-foreground">{inputMessages.length ? inputMessages.length + " messages" : "Inspect submitted payload"}</span></span>
 								<span className="text-xs text-muted-foreground transition-transform group-open/input:rotate-180">⌄</span>
@@ -681,20 +677,20 @@ export function GenerationTraceView({ request, ioLog, timelineItems, providerNam
 					</div>
 				</LifecycleStep>
 
-				<LifecycleStep id="trace-providers" index={2} title="Provider attempts"
+				<LifecycleStep id="trace-providers" title="Provider attempts"
 					summary={attempts.length ? attempts.length + " upstream attempt" + (attempts.length === 1 ? "" : "s") + " recorded" : "The request's upstream timing and provider response."}
 					icon={Server} tone="sky" badge={<StatusPill tone="sky">{attempts.length ? attempts.length + " attempt" + (attempts.length === 1 ? "" : "s") : "Provider timing"}</StatusPill>}>
 					<div className="space-y-4">
-						{attempts.length > 0 ? <div className="space-y-2.5">
+						{attempts.length > 0 ? <div className="space-y-0">
 							{attempts.map((attempt, index) => {
 								const providerId = typeof attempt.provider === "string" ? attempt.provider : request.provider;
 								const providerName = providerId ? providerNames?.get(providerId) ?? providerId : "Provider attempt";
 								const status = getAttemptStatus(attempt as Record<string, unknown>);
 								const duration = attempt.duration_ms ?? attempt.latency_ms ?? attempt.generation_ms ?? attempt.total_ms;
 								const model = attempt.provider_model_slug ?? attempt.api_model_id;
-								const number = attempt.attempt_number ?? attempt.sequence ?? index + 1;
+								const number = index + 1;
 								return (
-									<div key={String(attempt.sequence ?? attempt.attempt_number ?? index)} className="rounded-xl border border-sky-500/15 bg-background/70 p-3">
+									<div key={String(attempt.sequence ?? attempt.attempt_number ?? index)} className="border-l-2 border-sky-500/45 py-2.5 pl-3.5 first:pt-1 last:pb-1">
 										<div className="flex flex-wrap items-start justify-between gap-2">
 											<div className="min-w-0">
 												<div className="flex flex-wrap items-center gap-2 text-xs font-semibold">
@@ -710,27 +706,27 @@ export function GenerationTraceView({ request, ioLog, timelineItems, providerNam
 								);
 							})}
 						</div> : null}
-						{providerTimingItems.length > 0 ? <div className="rounded-xl border border-border/60 bg-background/70 p-3">
-							<div className="mb-3 flex items-center gap-2 text-xs font-medium"><Clock3 className="size-3.5 text-sky-500" aria-hidden="true" />Recorded timing</div>
+						{providerTimingItems.length > 0 ? <div className="border-t border-border/60 pt-3">
+							<div className="mb-3 flex items-center gap-2 text-xs font-medium"><Clock3 className="size-3.5 text-primary" aria-hidden="true" />Recorded timing</div>
 							<DetailTimingBar items={providerTimingItems} />
-						</div> : attempts.length === 0 ? <div className="rounded-xl border border-dashed border-sky-500/25 bg-background/50 p-4 text-xs text-muted-foreground">No provider attempt details were recorded for this request.</div> : null}
+						</div> : attempts.length === 0 ? <div className="border-l-2 border-border bg-muted/20 px-3 py-2.5 text-xs text-muted-foreground">No provider attempt details were recorded for this request.</div> : null}
 					</div>
 				</LifecycleStep>
-				<LifecycleStep id="trace-tools" index={3} title="Tool activity"
+				<LifecycleStep id="trace-tools" title="Tool activity"
 					summary={toolActivityCount > 0 ? toolActivityCount + " tool request" + (toolActivityCount === 1 ? "" : "s") + " recorded" : "Gateway and provider tool calls, when present."}
 					icon={Wrench} tone="amber" badge={<StatusPill tone={toolActivityCount > 0 ? "amber" : "slate"}>{toolActivityCount > 0 ? toolActivityCount + " call" + (toolActivityCount === 1 ? "" : "s") : "No calls recorded"}</StatusPill>}>
 					<div className="space-y-3">
 						{toolUsage.length > 0 ? <div className="flex flex-wrap gap-1.5">{toolUsage.map((entry) => <StatusPill key={entry.label} tone="amber">{entry.count.toLocaleString()} {entry.label.toLowerCase()}</StatusPill>)}</div> : null}
 						{serverToolRounds.map((round) => (
-							<div key={round.key} className="rounded-xl border border-amber-500/20 bg-background/70 p-3">
-								<div className="mb-3 flex flex-wrap items-center justify-between gap-2 border-b border-amber-500/15 pb-2.5">
+							<div key={round.key} className="border-l-2 border-amber-500/45 pl-3.5">
+								<div className="mb-2 flex flex-wrap items-center justify-between gap-2">
 									<div className="flex items-center gap-2 text-xs font-semibold"><span className="inline-flex size-5 items-center justify-center rounded-full bg-amber-500/10 font-mono text-[10px] text-amber-700 dark:text-amber-300">{round.round}</span>Gateway tool round</div>
 									{round.durationMs !== null ? <StatusPill tone="amber"><Clock3 className="size-3" aria-hidden="true" />{formatTraceDuration(round.durationMs)}</StatusPill> : null}
 								</div>
 								<div className="space-y-3">{round.calls.map((call) => (
 									<div key={call.key} className="space-y-2">
 										<ToolCallBlock call={call} state={call.isError ? "Failed" : "Executed"} />
-										<div className={cn("rounded-lg border p-3", call.isError ? "border-rose-500/25 bg-rose-500/[0.035]" : "border-emerald-500/20 bg-emerald-500/[0.035]")}>
+										<div className={cn("border-l-2 px-3 py-2.5", call.isError ? "border-rose-500/60 bg-rose-500/[0.05]" : "border-emerald-500/60 bg-emerald-500/[0.05]")}>
 											<div className="mb-1.5 flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground"><CheckCircle2 className={cn("size-3.5", call.isError ? "text-rose-500" : "text-emerald-500")} aria-hidden="true" />{call.isError ? "Tool error" : "Tool result"}</div>
 											<pre className="max-h-64 overflow-auto whitespace-pre-wrap break-words text-xs leading-5">{stringify(call.output) || (call.output == null ? "No output captured." : "")}</pre>
 										</div>
@@ -742,38 +738,38 @@ export function GenerationTraceView({ request, ioLog, timelineItems, providerNam
 							const result = response.toolResults.find((candidate) => call.id !== null && candidate.id === call.id);
 							return <div key={call.key} className="space-y-2">
 								<ToolCallBlock call={call} state={result ? result.isError ? "Failed" : "Completed" : "Requested"} />
-								{result ? <div className={cn("rounded-lg border p-3", result.isError ? "border-rose-500/25 bg-rose-500/[0.035]" : "border-emerald-500/20 bg-emerald-500/[0.035]")}><div className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Execution result</div><pre className="max-h-64 overflow-auto whitespace-pre-wrap break-words text-xs leading-5">{stringify(result.output)}</pre></div> : <p className="pl-1 text-[11px] text-muted-foreground">No execution result was captured with this response.</p>}
+								{result ? <div className={cn("border-l-2 px-3 py-2.5", result.isError ? "border-rose-500/60 bg-rose-500/[0.05]" : "border-emerald-500/60 bg-emerald-500/[0.05]")}><div className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Execution result</div><pre className="max-h-64 overflow-auto whitespace-pre-wrap break-words text-xs leading-5">{stringify(result.output)}</pre></div> : <p className="pl-1 text-[11px] text-muted-foreground">No execution result was captured with this response.</p>}
 							</div>;
 						})}
 						{response.toolResults.filter((result) => !response.toolCalls.some((call) => call.id !== null && call.id === result.id)).map(toolResultCard)}
-						{!hasToolDetails && toolActivityCount > 0 ? <div role="status" className="rounded-xl border border-amber-500/25 bg-amber-500/[0.06] p-3.5">
+						{!hasToolDetails && toolActivityCount > 0 ? <div role="status" className="border-l-2 border-amber-500 bg-amber-500/[0.06] px-3 py-2.5">
 							<div className="flex items-center gap-2 text-xs font-semibold text-amber-800 dark:text-amber-200"><AlertCircle className="size-4" aria-hidden="true" />Usage recorded; call details are missing</div>
 							<p className="mt-1.5 text-xs leading-5 text-muted-foreground">The request usage includes tool activity, but this stored payload has no tool arguments or results to display.</p>
 						</div> : null}
-						{toolActivityCount === 0 ? <div className="rounded-xl border border-dashed border-amber-500/25 bg-background/50 p-4 text-xs text-muted-foreground">No tool calls or server tool executions were recorded for this request.</div> : null}
+						{toolActivityCount === 0 ? <div className="border-l-2 border-border bg-muted/20 px-3 py-2.5 text-xs text-muted-foreground">No tool calls or server tool executions were recorded for this request.</div> : null}
 					</div>
 				</LifecycleStep>
 
-				<LifecycleStep id="trace-response" index={4} title="Response"
+				<LifecycleStep id="trace-response" title="Response"
 					summary={response.text ? "Final response returned by the gateway." : "No final text response was captured."}
 					icon={MessageSquareText} tone="emerald" badge={<StatusPill tone={responseTone}>{request.status_code ?? (request.success ? "Complete" : "Error")}</StatusPill>}>
-					<div className="overflow-hidden rounded-xl border border-emerald-500/15 bg-background/70">
-						<div className="flex flex-wrap items-center justify-between gap-2 border-b border-emerald-500/15 px-3.5 py-2.5">
+					<div className="border-l-2 border-emerald-500/60 bg-muted/20 px-3.5 py-3">
+						<div className="flex flex-wrap items-center justify-between gap-2">
 							<div className="flex items-center gap-2 text-xs font-medium"><CheckCircle2 className="size-3.5 text-emerald-500" aria-hidden="true" />{response.label}</div>
 							{outputCopy ? <CopyButton size="sm" variant="ghost" content={outputCopy} aria-label="Copy model output" /> : null}
 						</div>
-						<div className="whitespace-pre-wrap break-words p-4 text-sm leading-6">{response.text || (response.value == null ? ioLog?.error ?? "No response payload was retained for this request." : "This response did not include final text. Inspect the captured payload below.")}</div>
+						<div className="mt-2 whitespace-pre-wrap break-words text-sm leading-6">{response.text || (response.value == null ? ioLog?.error ?? "No response payload was retained for this request." : "This response did not include final text. Inspect the captured payload below.")}</div>
 					</div>
 				</LifecycleStep>
 
-				<LifecycleStep id="trace-capture" index={5} title="Log capture"
+				<LifecycleStep id="trace-capture" title="Log capture"
 					summary={ioLog?.status === "stored" ? "Request and response payload retained in Cloudflare R2." : "I/O payload storage status and retention details."}
 					icon={Database} tone="slate" badge={<StatusPill tone={payloadTone}>{ioLog?.status ?? "Unavailable"}</StatusPill>}>
 					<div className="space-y-3">
-						<div className="grid gap-2 sm:grid-cols-3">
-							<div className="rounded-xl border border-border/60 bg-background/70 p-3"><div className="text-[10px] font-medium text-muted-foreground">Storage</div><div className="mt-1 text-xs font-semibold">{ioLog?.storage_provider === "cloudflare_r2" ? "Cloudflare R2" : ioLog?.storage_provider ?? "Not recorded"}</div></div>
-							<div className="rounded-xl border border-border/60 bg-background/70 p-3"><div className="text-[10px] font-medium text-muted-foreground">Payload size</div><div className="mt-1 text-xs font-semibold">{ioLog?.bytes ? ioLog.bytes.toLocaleString() + " bytes" : "Not recorded"}</div></div>
-							<div className="rounded-xl border border-border/60 bg-background/70 p-3"><div className="text-[10px] font-medium text-muted-foreground">Retention</div><div className="mt-1 text-xs font-semibold">{ioLog?.retention_until ? formatWordyDateTime(ioLog.retention_until) : "Not recorded"}</div></div>
+						<div className="grid grid-cols-2 gap-x-4 gap-y-3 border-y border-border/60 py-3 sm:grid-cols-3">
+							<div><div className="text-[10px] font-medium text-muted-foreground">Storage</div><div className="mt-1 text-xs font-semibold">{ioLog?.storage_provider === "cloudflare_r2" ? "Cloudflare R2" : ioLog?.storage_provider ?? "Not recorded"}</div></div>
+							<div><div className="text-[10px] font-medium text-muted-foreground">Payload size</div><div className="mt-1 font-mono text-xs font-semibold tabular-nums">{ioLog?.bytes ? ioLog.bytes.toLocaleString() + " bytes" : "Not recorded"}</div></div>
+							<div><div className="text-[10px] font-medium text-muted-foreground">Retention</div><div className="mt-1 text-xs font-semibold">{ioLog?.retention_until ? formatWordyDateTime(ioLog.retention_until) : "Not recorded"}</div></div>
 						</div>
 						{ioLog?.error ? <p className="rounded-lg border border-amber-500/25 bg-amber-500/[0.06] p-3 text-xs text-amber-800 dark:text-amber-200">{ioLog.error}</p> : null}
 						{payload ? <details className="group/raw rounded-xl border border-border/60 bg-background/60">
