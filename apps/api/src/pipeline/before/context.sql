@@ -458,6 +458,15 @@ begin
       m.provider_id,
       m.api_model_id,
       m.provider_model_slug,
+      coalesce(
+        (select route.metadata -> 'availability'
+         from public.v2_model_provider_routes route
+         where route.provider_model_id = m.provider_api_model_id
+           and jsonb_typeof(route.metadata -> 'availability') = 'object'
+           and (route.metadata -> 'availability' ->> 'mode') in ('allowlist', 'blocklist')
+           and jsonb_typeof(route.metadata -> 'availability' -> 'countries') = 'array'),
+        p.metadata -> 'availability'
+      ) as availability,
       m.routing_status as model_status,
       coalesce((m.metadata->>'external_routing_override')::boolean, false) as external_routing_override,
       m.input_modalities,
@@ -517,6 +526,7 @@ begin
           'api_model_id', pr.api_model_id,
           'pricing_key', pr.provider_id,
           'provider_model_slug', pr.provider_model_slug,
+          'availability', pr.availability,
           'model_status', pr.model_status,
           'external_routing_override', pr.external_routing_override,
           'input_modalities', pr.input_modalities,
