@@ -406,7 +406,7 @@ function getInputPayload(payload: Record<string, unknown> | null): unknown {
 }
 
 function RoleBadge({ role }: { role: string }) {
-	return <span className="shrink-0 rounded-md border border-border/70 bg-background/70 px-2 py-1 text-[11px] font-medium text-muted-foreground">{role}</span>;
+	return <span className="shrink-0 rounded-sm border border-border/70 bg-background/70 px-2 py-1 text-[11px] font-medium text-muted-foreground">{role}</span>;
 }
 
 function ToolCallBlock({ call, state }: { call: TraceToolCall; state: string }) {
@@ -416,7 +416,7 @@ function ToolCallBlock({ call, state }: { call: TraceToolCall; state: string }) 
 				<Wrench className="size-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
 				<code className="break-all text-xs font-semibold">{call.name}</code>
 				{call.id ? <code className="break-all text-[10px] text-muted-foreground">{call.id}</code> : null}
-				<span className={cn("ml-auto rounded-full border px-2 py-1 text-[10px] font-medium", state === "Failed" ? "border-rose-500/25 bg-rose-500/10 text-rose-700 dark:text-rose-300" : "border-border/70 bg-background/70 text-muted-foreground")}>{state}</span>
+				<span className={cn("ml-auto rounded-sm border px-2 py-1 text-[10px] font-medium", state === "Failed" ? "border-rose-500/25 bg-rose-500/10 text-rose-700 dark:text-rose-300" : "border-border/70 bg-background/70 text-muted-foreground")}>{state}</span>
 			</div>
 			<details className="group/tool mt-2 border-t border-border/60">
 				<summary className="flex cursor-pointer list-none items-center justify-between gap-2 py-2 text-[11px] font-medium text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
@@ -445,7 +445,7 @@ function LifecycleStep({ id, title, summary, icon: Icon, badge, children }: {
 		<section id={id} data-lifecycle-step={id} tabIndex={-1} className="scroll-mt-20 pb-6 last:pb-2">
 			<div className="grid grid-cols-[30px_minmax(0,1fr)] gap-3.5 sm:gap-4">
 				<div className="relative z-10 flex justify-center">
-					<div className="flex size-7 items-center justify-center rounded-lg border border-border/70 bg-background/70 text-muted-foreground">
+					<div className="flex size-7 items-center justify-center rounded-md border border-border/70 bg-background/70 text-muted-foreground">
 						<Icon className="size-4" aria-hidden="true" />
 					</div>
 				</div>
@@ -469,7 +469,7 @@ function StatusPill({ children, tone = "slate" }: { children: React.ReactNode; t
 		: tone === "amber" ? "border-amber-500/25 bg-amber-500/10 text-amber-700 dark:text-amber-300"
 		: tone === "rose" ? "border-rose-500/25 bg-rose-500/10 text-rose-700 dark:text-rose-300"
 		: "border-border/70 bg-background/70 text-muted-foreground";
-	return <span className={cn("inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-medium", colors)}>{children}</span>;
+	return <span className={cn("inline-flex items-center gap-1.5 rounded-sm border px-2 py-1 text-[10px] font-medium", colors)}>{children}</span>;
 }
 
 function formatTraceDuration(value: unknown): string | null {
@@ -603,10 +603,10 @@ export function GenerationTraceView({ request, ioLog, timelineItems, providerNam
 
 	return (
 		<div ref={traceRootRef} className="space-y-4 pb-4">
-			<div className="overflow-hidden rounded-xl border border-border/70 bg-card/40 p-4">
+			<div className="overflow-hidden rounded-md border border-border/70 bg-card/40 p-4">
 				<div className="flex flex-wrap items-start justify-between gap-3">
 					<div className="flex min-w-0 items-start gap-3">
-						<div className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-border/70 bg-background/70 text-muted-foreground"><GitBranch className="size-4" aria-hidden="true" /></div>
+						<div className="flex size-8 shrink-0 items-center justify-center rounded-md border border-border/70 bg-background/70 text-muted-foreground"><GitBranch className="size-4" aria-hidden="true" /></div>
 						<div className="min-w-0">
 							<div className="text-sm font-semibold">Request lifecycle</div>
 							<div className="mt-0.5 truncate font-mono text-[11px] text-muted-foreground">{request.model_id ?? routeProviderName}</div>
@@ -686,7 +686,7 @@ export function GenerationTraceView({ request, ioLog, timelineItems, providerNam
 										<div className="flex flex-wrap items-start justify-between gap-2">
 											<div className="min-w-0">
 												<div className="flex flex-wrap items-center gap-2 text-xs font-semibold">
-													<span className="inline-flex size-5 items-center justify-center rounded-full border border-border/70 bg-background/70 font-mono text-[10px] text-muted-foreground">{number}</span>
+													<span className="inline-flex size-5 items-center justify-center rounded-sm border border-border/70 bg-background/70 font-mono text-[10px] text-muted-foreground">{number}</span>
 													<span>{providerName}</span>
 												</div>
 												{model ? <div className="mt-1 truncate pl-7 font-mono text-[10px] text-muted-foreground">{model}</div> : null}
@@ -712,7 +712,7 @@ export function GenerationTraceView({ request, ioLog, timelineItems, providerNam
 						{serverToolRounds.map((round) => (
 							<div key={round.key} className="border-l-2 border-border pl-3.5">
 								<div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-									<div className="flex items-center gap-2 text-xs font-semibold"><span className="inline-flex size-5 items-center justify-center rounded-full border border-border/70 bg-background/70 font-mono text-[10px] text-muted-foreground">{round.round}</span>Gateway tool round</div>
+									<div className="flex items-center gap-2 text-xs font-semibold"><span className="inline-flex size-5 items-center justify-center rounded-sm border border-border/70 bg-background/70 font-mono text-[10px] text-muted-foreground">{round.round}</span>Gateway tool round</div>
 									{round.durationMs !== null ? <StatusPill><Clock3 className="size-3" aria-hidden="true" />{formatTraceDuration(round.durationMs)}</StatusPill> : null}
 								</div>
 								<div className="space-y-3">{round.calls.map((call) => (
@@ -763,8 +763,8 @@ export function GenerationTraceView({ request, ioLog, timelineItems, providerNam
 							<div><div className="text-[10px] font-medium text-muted-foreground">Payload size</div><div className="mt-1 font-mono text-xs font-semibold tabular-nums">{ioLog?.bytes ? ioLog.bytes.toLocaleString() + " bytes" : "Not recorded"}</div></div>
 							<div><div className="text-[10px] font-medium text-muted-foreground">Retention</div><div className="mt-1 text-xs font-semibold">{ioLog?.retention_until ? formatWordyDateTime(ioLog.retention_until) : "Not recorded"}</div></div>
 						</div>
-						{ioLog?.error ? <p className="rounded-lg border border-amber-500/25 bg-amber-500/[0.06] p-3 text-xs text-amber-800 dark:text-amber-200">{ioLog.error}</p> : null}
-						{payload ? <details className="group/raw rounded-xl border border-border/60 bg-background/60">
+						{ioLog?.error ? <p className="rounded-md border border-amber-500/25 bg-amber-500/[0.06] p-3 text-xs text-amber-800 dark:text-amber-200">{ioLog.error}</p> : null}
+						{payload ? <details className="group/raw rounded-md border border-border/60 bg-background/60">
 							<summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-3.5 py-3 text-xs font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"><span>Inspect retained payload</span><span className="text-muted-foreground transition-transform group-open/raw:rotate-180">⌄</span></summary>
 							<div className="space-y-3 border-t border-border/60 p-3">
 								{[
@@ -780,11 +780,11 @@ export function GenerationTraceView({ request, ioLog, timelineItems, providerNam
 											<h3 className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{label}</h3>
 											{content && !content.startsWith("No ") && !content.startsWith("Provider payload") ? <CopyButton size="sm" variant="ghost" content={content} aria-label={"Copy " + label.toLowerCase()} /> : null}
 										</div>
-										<pre className="max-h-72 overflow-auto whitespace-pre-wrap break-words rounded-lg border border-border/60 bg-muted/30 p-3 text-[11px] leading-5">{content}</pre>
+										<pre className="max-h-72 overflow-auto whitespace-pre-wrap break-words rounded-md border border-border/60 bg-muted/30 p-3 text-[11px] leading-5">{content}</pre>
 									</div>
 								))}
 							</div>
-						</details> : <div className="rounded-xl border border-dashed border-border/70 p-4 text-xs text-muted-foreground">{ioLog?.error ?? "No retained I/O payload is available for this request."}</div>}
+						</details> : <div className="rounded-md border border-dashed border-border/70 p-4 text-xs text-muted-foreground">{ioLog?.error ?? "No retained I/O payload is available for this request."}</div>}
 					</div>
 				</LifecycleStep>
 			</div>

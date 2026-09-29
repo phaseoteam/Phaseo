@@ -221,18 +221,18 @@ function CandidateCard({
 						<div className="flex min-w-0 flex-wrap items-center gap-1.5">
 							<span title={providerLabel(providerId, providerNames)} className="max-w-full truncate text-sm font-semibold">{providerLabel(providerId, providerNames)}</span>
 							{decision.selected ? (
-								<span className="inline-flex items-center gap-1 rounded-md bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium text-emerald-700 dark:text-emerald-300">
+								<span className="inline-flex items-center gap-1 rounded-sm bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium text-emerald-700 dark:text-emerald-300">
 									<Check className="size-3" /> Selected
 								</span>
 							) : decision.attempted ? (
-								<span className="rounded-md bg-amber-500/10 px-2 py-0.5 text-[10px] font-medium text-amber-700 dark:text-amber-300">Attempted</span>
+								<span className="rounded-sm bg-amber-500/10 px-2 py-0.5 text-[10px] font-medium text-amber-700 dark:text-amber-300">Attempted</span>
 							) : isExcluded ? (
-								<span className="inline-flex items-center gap-1 rounded-md bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+								<span className="inline-flex items-center gap-1 rounded-sm bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
 									<CircleSlash2 className="size-3" /> Excluded
 								</span>
 							) : null}
 							{derankLevel > 0 ? (
-								<span className="rounded-md bg-amber-500/10 px-2 py-0.5 text-[10px] font-medium text-amber-700 dark:text-amber-300">
+								<span className="rounded-sm bg-amber-500/10 px-2 py-0.5 text-[10px] font-medium text-amber-700 dark:text-amber-300">
 									Deranked L{derankLevel}
 								</span>
 							) : null}
@@ -262,7 +262,7 @@ function CandidateCard({
 				{Object.keys(normalizedFactors.active).length > 0 ? <TraceGroup title="Score breakdown" values={normalizedFactors.active} /> : null}
 				{Object.keys(trace).length === 0 && Object.keys(legacyFactors.active).length > 0 ? <TraceGroup title="Score breakdown" values={legacyFactors.active} /> : null}
 				{Object.keys(calculation).length + Object.keys(inputs).length + Object.keys(weights).length + Object.keys(recordedContext).length + Object.keys(contributions).length > 0 ? (
-					<details className="rounded-lg border border-border/60 bg-muted/20 px-3 py-2">
+					<details className="rounded-md border border-border/60 bg-muted/20 px-3 py-2">
 						<summary className="cursor-pointer text-xs text-muted-foreground">Technical details</summary>
 						<div className="mt-3 space-y-4">
 							{Object.keys(calculation).length > 0 ? <TraceGroup title="Calculation" values={calculation} /> : null}
@@ -306,7 +306,7 @@ export function RoutingTracePanel({
 	const mode = trace ? String(trace.routing_mode ?? "balanced") : "balanced";
 
 	return (
-		<details className="group/routing mt-4 rounded-lg border border-border/70 px-3 py-1">
+		<details className="group/routing mt-4 rounded-md border border-border/70 px-3 py-1">
 			<summary className="list-none cursor-pointer py-2 marker:hidden">
 				<div className="flex items-center justify-between gap-4">
 					<div className="min-w-0">
@@ -316,7 +316,7 @@ export function RoutingTracePanel({
 						</div>
 					</div>
 					<div className="flex shrink-0 items-center gap-2 text-[11px] text-muted-foreground">
-						<span className="rounded-md bg-muted px-2 py-1">{label(mode)}</span>
+						<span className="rounded-sm bg-muted px-2 py-1">{label(mode)}</span>
 						<ChevronDown className="size-3.5 transition-transform group-open/routing:rotate-180" />
 					</div>
 				</div>
