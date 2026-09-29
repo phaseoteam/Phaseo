@@ -411,12 +411,12 @@ function RoleBadge({ role }: { role: string }) {
 
 function ToolCallBlock({ call, state }: { call: TraceToolCall; state: string }) {
 	return (
-		<div className="min-w-0 border-l-2 border-amber-500/50 bg-muted/20 px-3 py-2.5">
+		<div className="min-w-0 border-l-2 border-border bg-muted/20 px-3 py-2.5">
 			<div className="flex flex-wrap items-center gap-2">
-				<Wrench className="size-3.5 shrink-0 text-amber-500" aria-hidden="true" />
+				<Wrench className="size-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
 				<code className="break-all text-xs font-semibold">{call.name}</code>
 				{call.id ? <code className="break-all text-[10px] text-muted-foreground">{call.id}</code> : null}
-				<span className="ml-auto rounded-full border border-amber-500/20 bg-amber-500/10 px-2 py-1 text-[10px] font-medium text-amber-700 dark:text-amber-300">{state}</span>
+				<span className={cn("ml-auto rounded-full border px-2 py-1 text-[10px] font-medium", state === "Failed" ? "border-rose-500/25 bg-rose-500/10 text-rose-700 dark:text-rose-300" : "border-border/70 bg-background/70 text-muted-foreground")}>{state}</span>
 			</div>
 			<details className="group/tool mt-2 border-t border-border/60">
 				<summary className="flex cursor-pointer list-none items-center justify-between gap-2 py-2 text-[11px] font-medium text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
@@ -428,14 +428,7 @@ function ToolCallBlock({ call, state }: { call: TraceToolCall; state: string }) 
 	);
 }
 
-type LifecycleTone = "violet" | "sky" | "amber" | "emerald" | "slate";
-const lifecycleToneClasses: Record<LifecycleTone, { marker: string }> = {
-	violet: { marker: "border-violet-500/30 bg-violet-500/10 text-violet-600 dark:text-violet-300" },
-	sky: { marker: "border-sky-500/30 bg-sky-500/10 text-sky-600 dark:text-sky-300" },
-	amber: { marker: "border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-300" },
-	emerald: { marker: "border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-300" },
-	slate: { marker: "border-slate-500/30 bg-slate-500/10 text-slate-600 dark:text-slate-300" },
-};
+type StatusTone = "amber" | "emerald" | "slate" | "rose";
 const lifecycleNavigation: Array<{ id: string; label: string; icon: LucideIcon }> = [
 	{ id: "trace-routing", label: "Routing", icon: Route },
 	{ id: "trace-providers", label: "Providers", icon: Server },
@@ -444,16 +437,15 @@ const lifecycleNavigation: Array<{ id: string; label: string; icon: LucideIcon }
 	{ id: "trace-capture", label: "R2 log", icon: Database },
 ];
 
-function LifecycleStep({ id, title, summary, icon: Icon, tone, badge, children }: {
-	id: string; title: string; summary: string; icon: LucideIcon; tone: LifecycleTone;
+function LifecycleStep({ id, title, summary, icon: Icon, badge, children }: {
+	id: string; title: string; summary: string; icon: LucideIcon;
 	badge?: React.ReactNode; children: React.ReactNode;
 }) {
-	const classes = lifecycleToneClasses[tone];
 	return (
 		<section id={id} data-lifecycle-step={id} tabIndex={-1} className="scroll-mt-20 pb-6 last:pb-2">
 			<div className="grid grid-cols-[30px_minmax(0,1fr)] gap-3.5 sm:gap-4">
 				<div className="relative z-10 flex justify-center">
-					<div className={cn("flex size-7 items-center justify-center rounded-lg border", classes.marker)}>
+					<div className="flex size-7 items-center justify-center rounded-lg border border-border/70 bg-background/70 text-muted-foreground">
 						<Icon className="size-4" aria-hidden="true" />
 					</div>
 				</div>
@@ -472,12 +464,10 @@ function LifecycleStep({ id, title, summary, icon: Icon, tone, badge, children }
 	);
 }
 
-function StatusPill({ children, tone = "slate" }: { children: React.ReactNode; tone?: LifecycleTone | "rose" }) {
+function StatusPill({ children, tone = "slate" }: { children: React.ReactNode; tone?: StatusTone }) {
 	const colors = tone === "emerald" ? "border-emerald-500/25 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
 		: tone === "amber" ? "border-amber-500/25 bg-amber-500/10 text-amber-700 dark:text-amber-300"
 		: tone === "rose" ? "border-rose-500/25 bg-rose-500/10 text-rose-700 dark:text-rose-300"
-		: tone === "sky" ? "border-sky-500/25 bg-sky-500/10 text-sky-700 dark:text-sky-300"
-		: tone === "violet" ? "border-violet-500/25 bg-violet-500/10 text-violet-700 dark:text-violet-300"
 		: "border-border/70 bg-background/70 text-muted-foreground";
 	return <span className={cn("inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-medium", colors)}>{children}</span>;
 }
@@ -542,7 +532,7 @@ function toolResultCard(result: TraceToolResult) {
 	return (
 		<div key={result.key} className={cn("border-l-2 bg-muted/20 px-3 py-2.5", result.isError ? "border-rose-500/60" : "border-emerald-500/60")}>
 			<div className="flex items-center gap-2 text-xs font-medium">
-				<Wrench className="size-3.5 text-amber-500" aria-hidden="true" />{result.name ?? "Tool result"}
+				<Wrench className="size-3.5 text-muted-foreground" aria-hidden="true" />{result.name ?? "Tool result"}
 				<StatusPill tone={result.isError ? "rose" : "emerald"}>{result.isError ? "Failed" : "Result"}</StatusPill>
 			</div>
 			<pre className="mt-2 max-h-64 overflow-auto whitespace-pre-wrap break-words text-xs leading-5">{stringify(result.output)}</pre>
@@ -574,7 +564,9 @@ export function GenerationTraceView({ request, ioLog, timelineItems, providerNam
 	const rawServerToolTrace = stringify(payload?.server_tool_trace);
 	const outputCopy = response.text || stringify(response.value);
 	const attempts = Array.isArray(request.provider_attempts) ? request.provider_attempts : [];
-	const providerTimingItems = timelineItems.filter((item) => item.key !== "phaseo-routing");
+	const providerTimingItems = timelineItems
+		.filter((item) => item.key !== "phaseo-routing")
+		.map((item) => ({ ...item, colorClass: "bg-muted-foreground/50" }));
 	const routingTiming = timelineItems.find((item) => item.key === "phaseo-routing");
 	const decisions = request.routing_decisions ?? [];
 	const rankedDecisions = decisions.filter((decision) => decision.decision === "ranked");
@@ -585,8 +577,8 @@ export function GenerationTraceView({ request, ioLog, timelineItems, providerNam
 	const routingSummary = selectedDecision
 		? routeProviderName + " selected from " + rankedDecisions.length + " scored candidate" + (rankedDecisions.length === 1 ? "" : "s")
 		: routeProvider ? routeProviderName + " selected" : "No route selection was recorded";
-	const payloadTone: LifecycleTone = ioLog?.status === "stored" ? "emerald" : ioLog?.status ? "amber" : "slate";
-	const responseTone: LifecycleTone = request.success ? "emerald" : "amber";
+	const payloadTone: StatusTone = ioLog?.status === "stored" ? "emerald" : ioLog?.status ? "amber" : "slate";
+	const responseTone: StatusTone = request.success ? "emerald" : "amber";
 
 	React.useEffect(() => {
 		const root = traceRootRef.current;
@@ -614,7 +606,7 @@ export function GenerationTraceView({ request, ioLog, timelineItems, providerNam
 			<div className="overflow-hidden rounded-xl border border-border/70 bg-card/40 p-4">
 				<div className="flex flex-wrap items-start justify-between gap-3">
 					<div className="flex min-w-0 items-start gap-3">
-						<div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary"><GitBranch className="size-4" aria-hidden="true" /></div>
+						<div className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-border/70 bg-background/70 text-muted-foreground"><GitBranch className="size-4" aria-hidden="true" /></div>
 						<div className="min-w-0">
 							<div className="text-sm font-semibold">Request lifecycle</div>
 							<div className="mt-0.5 truncate font-mono text-[11px] text-muted-foreground">{request.model_id ?? routeProviderName}</div>
@@ -622,7 +614,7 @@ export function GenerationTraceView({ request, ioLog, timelineItems, providerNam
 					</div>
 					<div className="flex flex-wrap gap-1.5">
 						<StatusPill tone={responseTone}>{request.success ? <CheckCircle2 className="size-3" aria-hidden="true" /> : <AlertCircle className="size-3" aria-hidden="true" />}{request.success ? "Completed" : "Failed"}</StatusPill>
-						<StatusPill tone="sky">{routeProviderName}</StatusPill>
+						<StatusPill>{routeProviderName}</StatusPill>
 						{ioLog ? <StatusPill tone={payloadTone}>R2 {ioLog.status}</StatusPill> : null}
 					</div>
 				</div>
@@ -654,15 +646,15 @@ export function GenerationTraceView({ request, ioLog, timelineItems, providerNam
 			<div className="relative space-y-0">
 				<div className="pointer-events-none absolute bottom-8 left-[14px] top-3 w-px bg-border/80" aria-hidden="true" />
 
-				<LifecycleStep id="trace-routing" title="Routing" summary={routingSummary} icon={Route} tone="violet" badge={<StatusPill tone="violet">{routingMode}</StatusPill>}>
+				<LifecycleStep id="trace-routing" title="Routing" summary={routingSummary} icon={Route} badge={<StatusPill>{routingMode}</StatusPill>}>
 					<div className="space-y-3">
-						<div className="flex flex-wrap items-center justify-between gap-3 border-l-2 border-primary/60 bg-muted/25 px-3 py-2.5">
+						<div className="flex flex-wrap items-center justify-between gap-3 border-l-2 border-border bg-muted/25 px-3 py-2.5">
 							<div className="min-w-0">
 								<div className="text-[11px] font-medium text-muted-foreground">Selected route</div>
 								<div className="mt-1 truncate text-sm font-semibold">{routeProviderName}</div>
 								{request.model_id ? <div className="mt-0.5 truncate font-mono text-[11px] text-muted-foreground">{request.model_id}</div> : null}
 							</div>
-							{routingTiming?.duration != null ? <StatusPill tone="violet"><Clock3 className="size-3" aria-hidden="true" />{formatTraceDuration(routingTiming.duration)}</StatusPill> : <StatusPill>Routing duration not recorded</StatusPill>}
+							{routingTiming?.duration != null ? <StatusPill><Clock3 className="size-3" aria-hidden="true" />{formatTraceDuration(routingTiming.duration)}</StatusPill> : <StatusPill>Routing duration not recorded</StatusPill>}
 						</div>
 						<RoutingTracePanel trace={request.routing_trace ?? null} decisions={decisions} providerNames={providerNames} />
 						<details className="group/input border-y border-border/60">
@@ -679,7 +671,7 @@ export function GenerationTraceView({ request, ioLog, timelineItems, providerNam
 
 				<LifecycleStep id="trace-providers" title="Provider attempts"
 					summary={attempts.length ? attempts.length + " upstream attempt" + (attempts.length === 1 ? "" : "s") + " recorded" : "The request's upstream timing and provider response."}
-					icon={Server} tone="sky" badge={<StatusPill tone="sky">{attempts.length ? attempts.length + " attempt" + (attempts.length === 1 ? "" : "s") : "Provider timing"}</StatusPill>}>
+					icon={Server} badge={<StatusPill>{attempts.length ? attempts.length + " attempt" + (attempts.length === 1 ? "" : "s") : "Provider timing"}</StatusPill>}>
 					<div className="space-y-4">
 						{attempts.length > 0 ? <div className="space-y-0">
 							{attempts.map((attempt, index) => {
@@ -690,38 +682,38 @@ export function GenerationTraceView({ request, ioLog, timelineItems, providerNam
 								const model = attempt.provider_model_slug ?? attempt.api_model_id;
 								const number = index + 1;
 								return (
-									<div key={String(attempt.sequence ?? attempt.attempt_number ?? index)} className="border-l-2 border-sky-500/45 py-2.5 pl-3.5 first:pt-1 last:pb-1">
+									<div key={String(attempt.sequence ?? attempt.attempt_number ?? index)} className="border-l-2 border-border py-2.5 pl-3.5 first:pt-1 last:pb-1">
 										<div className="flex flex-wrap items-start justify-between gap-2">
 											<div className="min-w-0">
 												<div className="flex flex-wrap items-center gap-2 text-xs font-semibold">
-													<span className="inline-flex size-5 items-center justify-center rounded-full bg-sky-500/10 font-mono text-[10px] text-sky-700 dark:text-sky-300">{number}</span>
+													<span className="inline-flex size-5 items-center justify-center rounded-full border border-border/70 bg-background/70 font-mono text-[10px] text-muted-foreground">{number}</span>
 													<span>{providerName}</span>
 												</div>
 												{model ? <div className="mt-1 truncate pl-7 font-mono text-[10px] text-muted-foreground">{model}</div> : null}
 											</div>
 											<div className="flex items-center gap-2"><StatusPill tone={status.tone}>{status.label}</StatusPill>{formatTraceDuration(duration) ? <span className="font-mono text-[10px] text-muted-foreground">{formatTraceDuration(duration)}</span> : null}</div>
 										</div>
-										{attempt.fallback_attempted === true || attempt.retryable === true ? <div className="mt-2 pl-7 text-[10px] text-sky-700 dark:text-sky-300">Retry or fallback path recorded</div> : null}
+										{attempt.fallback_attempted === true || attempt.retryable === true ? <div className="mt-2 pl-7 text-[10px] text-muted-foreground">Retry or fallback path recorded</div> : null}
 									</div>
 								);
 							})}
 						</div> : null}
 						{providerTimingItems.length > 0 ? <div className="border-t border-border/60 pt-3">
-							<div className="mb-3 flex items-center gap-2 text-xs font-medium"><Clock3 className="size-3.5 text-primary" aria-hidden="true" />Recorded timing</div>
+							<div className="mb-3 flex items-center gap-2 text-xs font-medium"><Clock3 className="size-3.5 text-muted-foreground" aria-hidden="true" />Recorded timing</div>
 							<DetailTimingBar items={providerTimingItems} />
 						</div> : attempts.length === 0 ? <div className="border-l-2 border-border bg-muted/20 px-3 py-2.5 text-xs text-muted-foreground">No provider attempt details were recorded for this request.</div> : null}
 					</div>
 				</LifecycleStep>
 				<LifecycleStep id="trace-tools" title="Tool activity"
 					summary={toolActivityCount > 0 ? toolActivityCount + " tool request" + (toolActivityCount === 1 ? "" : "s") + " recorded" : "Gateway and provider tool calls, when present."}
-					icon={Wrench} tone="amber" badge={<StatusPill tone={toolActivityCount > 0 ? "amber" : "slate"}>{toolActivityCount > 0 ? toolActivityCount + " call" + (toolActivityCount === 1 ? "" : "s") : "No calls recorded"}</StatusPill>}>
+					icon={Wrench} badge={<StatusPill>{toolActivityCount > 0 ? toolActivityCount + " call" + (toolActivityCount === 1 ? "" : "s") : "No calls recorded"}</StatusPill>}>
 					<div className="space-y-3">
-						{toolUsage.length > 0 ? <div className="flex flex-wrap gap-1.5">{toolUsage.map((entry) => <StatusPill key={entry.label} tone="amber">{entry.count.toLocaleString()} {entry.label.toLowerCase()}</StatusPill>)}</div> : null}
+						{toolUsage.length > 0 ? <div className="flex flex-wrap gap-1.5">{toolUsage.map((entry) => <StatusPill key={entry.label}>{entry.count.toLocaleString()} {entry.label.toLowerCase()}</StatusPill>)}</div> : null}
 						{serverToolRounds.map((round) => (
-							<div key={round.key} className="border-l-2 border-amber-500/45 pl-3.5">
+							<div key={round.key} className="border-l-2 border-border pl-3.5">
 								<div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-									<div className="flex items-center gap-2 text-xs font-semibold"><span className="inline-flex size-5 items-center justify-center rounded-full bg-amber-500/10 font-mono text-[10px] text-amber-700 dark:text-amber-300">{round.round}</span>Gateway tool round</div>
-									{round.durationMs !== null ? <StatusPill tone="amber"><Clock3 className="size-3" aria-hidden="true" />{formatTraceDuration(round.durationMs)}</StatusPill> : null}
+									<div className="flex items-center gap-2 text-xs font-semibold"><span className="inline-flex size-5 items-center justify-center rounded-full border border-border/70 bg-background/70 font-mono text-[10px] text-muted-foreground">{round.round}</span>Gateway tool round</div>
+									{round.durationMs !== null ? <StatusPill><Clock3 className="size-3" aria-hidden="true" />{formatTraceDuration(round.durationMs)}</StatusPill> : null}
 								</div>
 								<div className="space-y-3">{round.calls.map((call) => (
 									<div key={call.key} className="space-y-2">
@@ -752,10 +744,10 @@ export function GenerationTraceView({ request, ioLog, timelineItems, providerNam
 
 				<LifecycleStep id="trace-response" title="Response"
 					summary={response.text ? "Final response returned by the gateway." : "No final text response was captured."}
-					icon={MessageSquareText} tone="emerald" badge={<StatusPill tone={responseTone}>{request.status_code ?? (request.success ? "Complete" : "Error")}</StatusPill>}>
-					<div className="border-l-2 border-emerald-500/60 bg-muted/20 px-3.5 py-3">
+					icon={MessageSquareText} badge={<StatusPill tone={responseTone}>{request.status_code ?? (request.success ? "Complete" : "Error")}</StatusPill>}>
+					<div className="border-l-2 border-border bg-muted/20 px-3.5 py-3">
 						<div className="flex flex-wrap items-center justify-between gap-2">
-							<div className="flex items-center gap-2 text-xs font-medium"><CheckCircle2 className="size-3.5 text-emerald-500" aria-hidden="true" />{response.label}</div>
+							<div className="flex items-center gap-2 text-xs font-medium"><CheckCircle2 className="size-3.5 text-muted-foreground" aria-hidden="true" />{response.label}</div>
 							{outputCopy ? <CopyButton size="sm" variant="ghost" content={outputCopy} aria-label="Copy model output" /> : null}
 						</div>
 						<div className="mt-2 whitespace-pre-wrap break-words text-sm leading-6">{response.text || (response.value == null ? ioLog?.error ?? "No response payload was retained for this request." : "This response did not include final text. Inspect the captured payload below.")}</div>
@@ -764,7 +756,7 @@ export function GenerationTraceView({ request, ioLog, timelineItems, providerNam
 
 				<LifecycleStep id="trace-capture" title="Log capture"
 					summary={ioLog?.status === "stored" ? "Request and response payload retained in Cloudflare R2." : "I/O payload storage status and retention details."}
-					icon={Database} tone="slate" badge={<StatusPill tone={payloadTone}>{ioLog?.status ?? "Unavailable"}</StatusPill>}>
+					icon={Database} badge={<StatusPill tone={payloadTone}>{ioLog?.status ?? "Unavailable"}</StatusPill>}>
 					<div className="space-y-3">
 						<div className="grid grid-cols-2 gap-x-4 gap-y-3 border-y border-border/60 py-3 sm:grid-cols-3">
 							<div><div className="text-[10px] font-medium text-muted-foreground">Storage</div><div className="mt-1 text-xs font-semibold">{ioLog?.storage_provider === "cloudflare_r2" ? "Cloudflare R2" : ioLog?.storage_provider ?? "Not recorded"}</div></div>
