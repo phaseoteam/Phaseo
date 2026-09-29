@@ -90,7 +90,6 @@ export default function RouteRequestDetailDialog({
 		<RequestDetailDialog
 			open
 			presentation="sheet"
-			disablePointerDismissal
 			onOpenChange={(open) => {
 				if (!open) router.push(closeHref);
 			}}

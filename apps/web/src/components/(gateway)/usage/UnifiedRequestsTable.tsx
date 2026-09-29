@@ -1651,7 +1651,6 @@ export default function UnifiedRequestsTable({
 				open={dialogOpen}
 				loading={detailLoading}
 				presentation={detailBasePath ? "sheet" : undefined}
-				disablePointerDismissal={Boolean(detailBasePath)}
 				headerNavigation={
 					activeRequestIndex >= 0 ? (
 						<div className="flex items-center gap-2">
