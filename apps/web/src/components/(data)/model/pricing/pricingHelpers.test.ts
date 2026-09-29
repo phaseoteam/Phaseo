@@ -487,6 +487,8 @@ describe("buildProviderSections", () => {
 		expect(buildProviderTablePriceSummaryForColumn(sections, column!)).toMatchObject({
 			primary: { price: 0.02 },
 		});
+		provider.pricing_rules[0]!.display_unit = "widgets";
+		expect(buildProviderSections(provider, "standard").otherRules[0]?.unitLabel).toBe("Per 100 widgets");
 	});
 
 	test("shows speech character pricing per 1K characters in the provider table", () => {

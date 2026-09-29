@@ -1419,7 +1419,11 @@ export function buildProviderSections(
             unit,
             unitQuantity: unitSize,
             unitLabel: unit === "unknown" && r.display_unit
-                ? /^per\s/i.test(r.display_unit) ? r.display_unit : `Per ${r.display_unit}`
+                ? /^per\s/i.test(r.display_unit)
+                    ? r.display_unit
+                    : /^\d/.test(r.display_unit.trim()) || Number(unitSize) === 1
+                        ? `Per ${r.display_unit}`
+                        : `Per ${unitSize} ${r.display_unit}`
                 : unitLabel(unit, unitSize),
             price,
             basePrice: displayBasePrice,
