@@ -48,7 +48,7 @@ import {
 	ImageGenSection,
 	VideoGenSection,
 	InputsSection,
-	AdvancedTable,
+	MeterRateRows,
 	UpcomingPricingSection,
 } from "@/components/(data)/model/pricing/sections";
 import {
@@ -3013,7 +3013,7 @@ export default function ProviderCard({
 			upcomingFor("requests").length > 0 ||
 			sec.otherRules.length > 0 ||
 			upcomingFor("other").length > 0) ? (
-			<div className="space-y-2 pt-2">
+			<div className="space-y-2 pt-1">
 				{additionalTokenMetricTiles.length > 0 ? (
 					<div className="space-y-2">
 						{additionalTokenMetricTiles.map((tile) => (
@@ -3080,14 +3080,12 @@ export default function ProviderCard({
 						<UpcomingPricingSection rows={upcomingFor("requests")} title="Upcoming" compact />
 					) : null}
 					{sec.otherRules.length > 0 ? (
-						<div>
-							<AdvancedTable rows={sec.otherRules} />
-						</div>
+						<MeterRateRows rows={sec.otherRules} />
 					) : null}
 					{upcomingFor("other").length > 0 ? (
 						<UpcomingPricingSection
 							rows={upcomingFor("other")}
-							title="Other Upcoming Pricing"
+							title="Upcoming"
 							compact
 						/>
 					) : null}
@@ -3608,6 +3606,7 @@ export default function ProviderCard({
 						{pricingPrimaryContent}
 						{pricingMediaInputContent}
 						{pricingGeneratedOutputContent}
+						{pricingAdditionalContent}
 						{timeWindowPricingRules.length > 0 ? (
 							<div className="py-3">
 								<div className="flex items-start justify-between gap-3">
@@ -3698,7 +3697,6 @@ export default function ProviderCard({
 								</div>
 							</div>
 						) : null}
-								{pricingAdditionalContent}
 							</section>
 
 							<section

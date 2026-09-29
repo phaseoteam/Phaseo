@@ -1048,7 +1048,7 @@ export function UpcomingPricingSection({
 	);
 }
 
-export function AdvancedTable({
+export function MeterRateRows({
 	rows,
 }: {
 	rows: ProviderSections["otherRules"];
@@ -1075,44 +1075,41 @@ export function AdvancedTable({
 	};
 
 	return (
-		<div className="space-y-1.5">
-			<h4 className="text-xs font-semibold tracking-wide text-foreground">Usage rates</h4>
-			<div className="space-y-2">
-				{rows.map((row, index) => {
-					const conditions = formatConditions(row.conditions);
-					return (
-						<div
-							key={`${row.meter}-${row.ruleId ?? index}`}
-							className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-4"
-						>
-							<div className="min-w-0">
-								<div className="text-[11px] text-muted-foreground">
-									{row.displayLabel && row.displayLabel !== row.meter
-										? row.displayLabel
-										: formatMeterName(row.meter)}
+		<div className="space-y-2">
+			{rows.map((row, index) => {
+				const conditions = formatConditions(row.conditions);
+				return (
+					<div
+						key={`${row.meter}-${row.ruleId ?? index}`}
+						className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-4"
+					>
+						<div className="min-w-0">
+							<div className="text-[11px] text-muted-foreground">
+								{row.displayLabel && row.displayLabel !== row.meter
+									? row.displayLabel
+									: formatMeterName(row.meter)}
+							</div>
+							{conditions ? (
+								<div className="mt-0.5 truncate text-[10px] text-muted-foreground">
+									{conditions}
 								</div>
-								{conditions ? (
-									<div className="mt-0.5 truncate text-[10px] text-muted-foreground">
-										{conditions}
-									</div>
-								) : null}
-							</div>
-							<div className="flex items-baseline justify-end gap-2 text-right">
-								{renderComparisonPrices(
-									row.price,
-									row.basePrice,
-									countUsdDecimals(row.price),
-									row.comparisonKind,
-									row.comparisonDirection,
-								)}
-								<span className="text-[10px] text-muted-foreground">
-									{formatCompactUnit(row.unitLabel)}
-								</span>
-							</div>
+							) : null}
 						</div>
-					);
-				})}
-			</div>
+						<div className="flex items-baseline justify-end gap-2 text-right">
+							{renderComparisonPrices(
+								row.price,
+								row.basePrice,
+								countUsdDecimals(row.price),
+								row.comparisonKind,
+								row.comparisonDirection,
+							)}
+							<span className="text-[10px] text-muted-foreground">
+								{formatCompactUnit(row.unitLabel)}
+							</span>
+						</div>
+					</div>
+				);
+			})}
 		</div>
 	);
 }
