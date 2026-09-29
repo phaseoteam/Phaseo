@@ -7,7 +7,10 @@ const env = {
 	SUPABASE_SERVICE_ROLE_KEY: "service-role-key",
 };
 
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {
+	vi.unstubAllGlobals();
+	vi.useRealTimers();
+});
 
 describe("public landing routes", () => {
 	it("labels gateway rollups with their actual measurement window", async () => {
@@ -54,6 +57,8 @@ describe("public landing routes", () => {
 	});
 
 	it("returns model statistics and selected visible models", async () => {
+		vi.useFakeTimers();
+		vi.setSystemTime(new Date("2026-07-15T12:00:00Z"));
 		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
 			const url = String(input);
 			if (url.includes("v2_model_provider_routes")) {
