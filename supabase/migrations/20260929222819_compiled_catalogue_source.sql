@@ -1,4 +1,5 @@
 -- phaseo:allow-production-history-backfill reason: Restore the exact migration already recorded as applied in production.
+-- phaseo:allow-destructive-migration reason: TRUNCATE is a trigger event only; this migration does not truncate data.
 SET lock_timeout = '3s'; SET statement_timeout = '30s';
 -- Backend-only control-plane invalidation. No inference caller uses these RPCs.
 create table private.routing_catalogue_revision (
@@ -61,5 +62,4 @@ revoke all on function public.gateway_catalogue_source() from public,anon,authen
 grant execute on function public.gateway_catalogue_revision() to service_role;
 grant execute on function public.gateway_catalogue_source() to service_role;
 notify pgrst, 'reload schema';
-
 
