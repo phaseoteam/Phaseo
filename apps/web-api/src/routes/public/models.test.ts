@@ -1109,7 +1109,7 @@ describe("public model routes", () => {
 		expect(fetchMock.mock.calls.some(([input]) => String(input).includes("get_v2_model_availability"))).toBe(true);
 	});
 
-	it("uses standard-tier availability without dropping alternate pricing plans", async () => {
+	it("preserves each service tier availability without dropping alternate pricing plans", async () => {
 		const fetchMock = vi.fn(async (
 			input: RequestInfo | URL,
 			_init?: RequestInit,
@@ -1156,7 +1156,7 @@ describe("public model routes", () => {
 		await expect(response.json()).resolves.toMatchObject({
 			providers: [{
 				provider: { routing_status: "active" },
-				provider_models: [{ is_active_gateway: true }, { is_active_gateway: true }],
+				provider_models: [{ is_active_gateway: true }, { is_active_gateway: false }],
 				pricing_rules: [
 					{ id: "standard-price", rule_id: "standard-meter", pricing_plan: "standard", modality: "text", direction: "input", display_label: "Prompt tokens", display_unit: "1M tokens" },
 					{ id: "batch-price", pricing_plan: "batch" },

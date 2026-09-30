@@ -171,64 +171,6 @@ function normaliseGatewayStatus(value: unknown, isActive: unknown): string {
 	return isActive ? "active" : "inactive";
 }
 
-function mergeStandardPricingAvailability(
-	providers: Array<Record<string, unknown>>,
-): Array<Record<string, unknown>> {
-	// The all-tier payload already includes each standard variant. Use that
-	// projection instead of recomputing and transferring the full pricing RPC.
-	const standardProviders: Array<Record<string, unknown>> = providers.flatMap((entry) => {
-		const models = Array.isArray(entry.provider_models)
-			? entry.provider_models as Array<Record<string, unknown>>
-			: [];
-		const standardModels = models.filter((model) => model.service_tier === "standard");
-		return standardModels.length ? [{ ...entry, provider_models: standardModels }] : [];
-	});
-	const standardByProviderId = new Map(
-		standardProviders.flatMap((entry) => {
-			const provider = entry.provider as Record<string, unknown> | null;
-			const providerId = String(provider?.api_provider_id ?? "").trim();
-			return providerId ? [[providerId, entry] as const] : [];
-		}),
-	);
-
-	return providers.map((entry) => {
-		const provider = entry.provider as Record<string, unknown> | null;
-		const providerId = String(provider?.api_provider_id ?? "").trim();
-		const standardEntry = standardByProviderId.get(providerId);
-		if (!standardEntry) return entry;
-		const standardProvider = standardEntry.provider as Record<string, unknown> | null;
-		const standardModels = Array.isArray(standardEntry.provider_models)
-			? standardEntry.provider_models as Array<Record<string, unknown>>
-			: [];
-		const standardModelByKey = new Map(standardModels.map((model) => [
-			`${String(model.id ?? "")}::${String(model.endpoint ?? "")}`,
-			model,
-		]));
-		const providerModels = Array.isArray(entry.provider_models)
-			? (entry.provider_models as Array<Record<string, unknown>>).map((model) => {
-				const standardModel = standardModelByKey.get(
-					`${String(model.id ?? "")}::${String(model.endpoint ?? "")}`,
-				);
-				return standardModel ? {
-					...model,
-					is_active_gateway: standardModel.is_active_gateway,
-					routing_status: standardModel.routing_status,
-					capability_status: standardModel.capability_status,
-				} : model;
-			})
-			: entry.provider_models;
-		return {
-			...entry,
-			provider: standardProvider ? {
-				...provider,
-				status: standardProvider.status,
-				routing_status: standardProvider.routing_status,
-			} : provider,
-			provider_models: providerModels,
-		};
-	});
-}
-
 function collectJsonTokens(value: unknown, tokens: string[] = []): string[] {
 	if (Array.isArray(value)) {
 		for (const item of value) collectJsonTokens(item, tokens);
@@ -1606,11 +1548,7 @@ publicModelsRouter.get("/:modelId/pricing", async (c) => {
 			p_service_tier: requestedServiceTier,
 		});
 		if (!v2Pricing.error && Array.isArray(v2Pricing.data)) {
-			const providers = publicProviderPayload(requestedServiceTier === null
-				? mergeStandardPricingAvailability(
-					v2Pricing.data as Array<Record<string, unknown>>,
-				)
-				: v2Pricing.data as Array<Record<string, unknown>>);
+			const providers = publicProviderPayload(v2Pricing.data as Array<Record<string, unknown>>);
 			if (c.req.query("shape") === "source") {
 				return withPublicCache(c.json({
 					modelId,
