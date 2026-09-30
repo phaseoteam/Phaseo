@@ -80,6 +80,7 @@ function isWithinActiveOrUpcomingPricingWindow(
     return true;
 }
 export interface ProviderModel {
+    service_tier?: string | null;
     id: string;                 // provider_api_model_id
     api_provider_id: string;
     provider_model_slug?: string | null;
