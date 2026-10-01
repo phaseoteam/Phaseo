@@ -1,6 +1,6 @@
 import { strict as assert } from "node:assert";
 import { test } from "node:test";
-import { fetchModels, matchModel, matchModels, mergeResults, reasoningVariant, resultsFor, resultsForConfigurations, type SourceModel } from "./core";
+import { databaseModelMappings, fetchModels, matchModel, matchModels, mergeResults, reasoningVariant, resultsFor, resultsForConfigurations, type SourceModel } from "./core";
 import { writeBenchmarks } from "./catalog";
 
 const source = (overrides: Partial<SourceModel> = {}): SourceModel => ({
@@ -10,6 +10,15 @@ const source = (overrides: Partial<SourceModel> = {}): SourceModel => ({
 });
 const model = { model_id: "openai/example-1", organisation_id: "openai", name: "Example 1" };
 const config = { models: {}, creators: {} };
+test("database IDs attach renamed models and preserve all reasoning configurations", () => {
+	const id = "092a3b0e-c5c8-45dc-bf1b-53673c8ff352";
+	const models = [{ model_id: "openai/new-name", metadata: { external_ids: { artificial_analysis: id } } }];
+	const sources = [source({ id, name: "Example 1 (high)", slug: "example-1-high" }), source({ id: "other", name: "Example 1 (low)", slug: "example-1-low" })];
+	const [match] = matchModels(models, sources, { models: databaseModelMappings(models), creators: {} });
+	assert.equal(match.status, "matched");
+	assert.deepEqual(match.sources.map((entry) => entry.id), [id, "other"]);
+	assert.deepEqual(databaseModelMappings([{ model_id: "openai/excluded", metadata: { external_ids: { artificial_analysis: null } } }, model]), { "openai/excluded": null });
+});
 const page = (models: SourceModel[], number = 1, more = false, version = 4.3) => Response.json({ intelligence_index_version: version, pagination: { page: number, has_more: more }, data: models });
 
 test("fetches all free endpoint pages once and forwards server-side authentication", async () => {

@@ -1,3 +1,5 @@
+import { benchmarkSourceId } from "../benchmark-source-ids";
+
 export type EpochEciRow = {
 	model: string;
 	displayName: string;
@@ -46,13 +48,28 @@ export function parseEpochEciCsv(input: string): EpochEciRow[] {
 	}).sort((left, right) => right.score - left.score);
 }
 
-export function matchEpochRows(models: Array<{ model_slug: string; name: string }>, rows: EpochEciRow[]) {
-	const byName = new Map<string, Array<{ model_slug: string; name: string }>>();
+type EpochCatalogModel = { model_slug: string; name: string; metadata?: unknown };
+
+export function matchEpochRows(models: EpochCatalogModel[], rows: EpochEciRow[]) {
+	const explicit = new Map<string, EpochCatalogModel>();
+	const byName = new Map<string, EpochCatalogModel[]>();
+	const sourceIds = new Set(rows.map((row) => row.model));
+	if (sourceIds.size !== rows.length) throw new Error("Duplicate Epoch source IDs; no data was written.");
 	for (const model of models) {
+		const id = benchmarkSourceId(model.metadata, "epoch_ai", model.model_slug);
+		if (id !== undefined) {
+			if (id === null) continue;
+			if (!sourceIds.has(id)) throw new Error(`Epoch mapping for ${model.model_slug} refers to missing source ID ${id}.`);
+			if (explicit.has(id)) throw new Error(`Epoch source ${id} maps to both ${explicit.get(id)!.model_slug} and ${model.model_slug}.`);
+			explicit.set(id, model);
+			continue;
+		}
 		const key = normalizeEpochModelName(model.name);
 		byName.set(key, [...(byName.get(key) ?? []), model]);
 	}
 	return rows.map((row) => {
+		const mapped = explicit.get(row.model);
+		if (mapped) return { row, model: mapped, candidates: [mapped] };
 		const candidates = [...new Map([
 			...(byName.get(normalizeEpochModelName(row.displayName)) ?? []),
 			...(byName.get(normalizeEpochModelName(row.model)) ?? []),

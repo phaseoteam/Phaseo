@@ -1,3 +1,5 @@
+import { benchmarkSourceId } from "../benchmark-source-ids";
+
 export const METRICS = [
 	{ id: "aa-intelligence-index", name: "Artificial Analysis Intelligence Index", field: "artificial_analysis_intelligence_index", higherBetter: true },
 	{ id: "aa-coding-index", name: "Artificial Analysis Coding Index", field: "artificial_analysis_coding_index", higherBetter: true },
@@ -16,7 +18,16 @@ export type SourceModel = {
 export type CatalogModel = {
 	model_id: string; api_model_id?: string | null; organisation_id?: string | null; name?: string | null;
 	benchmarks?: Array<Record<string, unknown>> | null;
+	metadata?: unknown;
 };
+export function databaseModelMappings(models: CatalogModel[]): Record<string, string | null> {
+	const mappings: Record<string, string | null> = {};
+	for (const model of models) {
+		const id = benchmarkSourceId(model.metadata, "artificial_analysis", model.model_id);
+		if (id !== undefined) mappings[model.model_id] = id;
+	}
+	return mappings;
+}
 export type MappingConfig = {
 	// Canonical model ID -> stable Artificial Analysis model ID used to identify
 	// the evaluated model family. All reasoning configurations in that family

@@ -32,9 +32,9 @@ async function main() {
 	if (!sourceRows.length) throw new Error("Epoch ECI source returned no valid scores.");
 
 	const db = createAdminClient();
-	const models: Array<{ model_slug: string; name: string }> = [];
+	const models: Array<{ model_slug: string; name: string; metadata: unknown }> = [];
 	for (let offset = 0; ; offset += 500) {
-		const { data, error } = await db.from("v2_models").select("model_slug,name").order("model_slug").range(offset, offset + 499);
+		const { data, error } = await db.from("v2_models").select("model_slug,name,metadata").order("model_slug").range(offset, offset + 499);
 		if (error) throw error;
 		models.push(...(data ?? []));
 		if ((data ?? []).length < 500) break;
@@ -66,10 +66,12 @@ async function main() {
 		const { error } = await db.from("v2_benchmark_results").upsert(rows.slice(index, index + 250), { onConflict: "result_id" });
 		if (error) throw error;
 	}
-	const { data: activeRows, error: activeRowsError } = await db.from("v2_benchmark_results").select("result_id").eq("benchmark_id", BENCHMARK_ID).is("effective_to", null);
+	const { data: activeRows, error: activeRowsError } = await db.from("v2_benchmark_results").select("result_id,model_slug").eq("benchmark_id", BENCHMARK_ID).is("effective_to", null);
 	if (activeRowsError) throw activeRowsError;
 	const currentResultIds = new Set(rows.map((row) => row.result_id));
-	const staleResultIds = (activeRows ?? []).filter((row) => !currentResultIds.has(row.result_id)).map((row) => row.result_id);
+	const matchedModelIds = new Set(rows.map((row) => row.model_slug));
+	// Unmatched and opted-out models retain their prior results and provenance.
+	const staleResultIds = (activeRows ?? []).filter((row) => matchedModelIds.has(row.model_slug) && !currentResultIds.has(row.result_id)).map((row) => row.result_id);
 	if (staleResultIds.length) {
 		const { error } = await db.from("v2_benchmark_results").update({ effective_to: updatedAt, updated_at: updatedAt }).is("effective_to", null).in("result_id", staleResultIds);
 		if (error) throw error;

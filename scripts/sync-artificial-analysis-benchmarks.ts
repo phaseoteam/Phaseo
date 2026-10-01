@@ -3,7 +3,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { loadEnvFile } from "node:process";
 import { createAdminClient } from "../apps/web/src/utils/supabase/admin";
-import { METRICS, benchmarkId, fetchModels, matchModels, mergeResults, metricValue, resultsForConfigurations, type CatalogModel, type MappingConfig } from "./artificial-analysis/core";
+import { METRICS, benchmarkId, databaseModelMappings, fetchModels, matchModels, mergeResults, metricValue, resultsForConfigurations, type CatalogModel, type MappingConfig } from "./artificial-analysis/core";
 
 for (const file of ["apps/web/.env.local", ".env.local", ".env"]) {
 	if (existsSync(resolve(file))) loadEnvFile(resolve(file));
@@ -25,23 +25,23 @@ async function main() {
 	if (!apiKey) throw new Error("Set ARTIFICIAL_ANALYSIS_API_KEY in .env.local, .env, apps/web/.env.local or the environment.");
 	const write = process.argv.includes("--write");
 	const syncDb = true;
-	const config = JSON.parse(readFileSync(resolve("scripts/artificial-analysis/mappings.json"), "utf8")) as MappingConfig;
-	if (!config.models || !config.creators || Object.values(config.models).some((id) => id !== null && (typeof id !== "string" || !id)) || Object.values(config.creators).some((id) => typeof id !== "string" || !id)) throw new Error("Invalid Artificial Analysis mappings.");
+	const creators = JSON.parse(readFileSync(resolve("scripts/artificial-analysis/creators.json"), "utf8")) as MappingConfig["creators"];
+	if (!creators || Object.values(creators).some((id) => typeof id !== "string" || !id)) throw new Error("Invalid Artificial Analysis creator mappings.");
 	const entries: Array<{ file: string | null; model: CatalogModel }> = [];
 	const db = syncDb ? createAdminClient() : null;
 	const dbIds = new Set<string>();
 	if (db) {
 		for (let offset = 0; ; offset += 500) {
-			const { data, error } = await db.from("v2_models").select("model_slug,name,lab_slug").order("model_slug").range(offset, offset + 499);
+			const { data, error } = await db.from("v2_models").select("model_slug,name,lab_slug,metadata").order("model_slug").range(offset, offset + 499);
 			if (error) throw error;
 			for (const row of data ?? []) {
 				dbIds.add(row.model_slug);
-				if (!entries.some((entry) => entry.model.model_id === row.model_slug)) entries.push({ file: null, model: { model_id: row.model_slug, name: row.name, organisation_id: row.lab_slug } });
+				if (!entries.some((entry) => entry.model.model_id === row.model_slug)) entries.push({ file: null, model: { model_id: row.model_slug, name: row.name, organisation_id: row.lab_slug, metadata: row.metadata } });
 			}
 			if ((data ?? []).length < 500) break;
 		}
 	}
-	for (const id of Object.keys(config.models)) if (!entries.some((entry) => entry.model.model_id === id)) throw new Error(`Mapping references unknown Phaseo model ${id}.`);
+	const config: MappingConfig = { models: databaseModelMappings(entries.map((entry) => entry.model)), creators };
 	const source = await fetchModels(apiKey);
 	const updated_at = new Date().toISOString();
 	const matches = matchModels(entries.map((entry) => entry.model), source.models, config);
