@@ -23,9 +23,8 @@ describe("Artificial Analysis intelligence value", () => {
 			row(costId, 1, "other-source"), row(costId, 1, "source-high", "4.1.1"),
 		]) expect(intelligenceValueResults([intelligence, mismatch], intelligenceId, costId)).toEqual([]);
 	});
-	it("keeps zero cost and excludes undefined or invalid ratios", () => {
-		expect(intelligenceValueResults([row(intelligenceId, 50), row(costId, 0)], intelligenceId, costId)[0].score_numeric).toBe(0);
+	it("excludes zero cost and undefined or invalid ratios", () => {
 		for (const score of [0, -1, null, NaN, Infinity]) expect(intelligenceValueResults([row(intelligenceId, score), row(costId, 100)], intelligenceId, costId)).toEqual([]);
-		for (const cost of [-1, null, NaN, Infinity]) expect(intelligenceValueResults([row(intelligenceId, 50), row(costId, cost)], intelligenceId, costId)).toEqual([]);
+		for (const cost of [0, -1, null, NaN, Infinity]) expect(intelligenceValueResults([row(intelligenceId, 50), row(costId, cost)], intelligenceId, costId)).toEqual([]);
 	});
 });

@@ -70,7 +70,7 @@ export function buildArtificialAnalysisValue(benchmarks: PublicBenchmarkRanking[
 	const costs = new Map<string, number>();
 	for (const entry of cost?.entries ?? []) for (const configuration of entry.configurations ?? []) {
 		const identity = key(entry.model_id, configuration);
-		if (identity && Number.isFinite(configuration.score) && configuration.score >= 0) costs.set(identity, configuration.score);
+		if (identity && Number.isFinite(configuration.score) && configuration.score > 0) costs.set(identity, configuration.score);
 	}
 	const entries: PublicIntelligenceValueEntry[] = [];
 	for (const entry of intelligence?.entries ?? []) {

@@ -30,7 +30,7 @@ export function intelligenceValueResults(rows: Score[], intelligenceId: string, 
 		if (row.score_numeric == null || rawCost == null) return [];
 		const cost = Number(rawCost);
 		const intelligence = Number(row.score_numeric);
-		if (!Number.isFinite(intelligence) || intelligence <= 0 || !Number.isFinite(cost) || cost < 0) return [];
+		if (!Number.isFinite(intelligence) || intelligence <= 0 || !Number.isFinite(cost) || cost <= 0) return [];
 		const ratio = cost / intelligence;
 		if (!Number.isFinite(ratio)) return [];
 		return [{ ...row, score_numeric: ratio, intelligence_score: intelligence, evaluation_cost: cost }];
