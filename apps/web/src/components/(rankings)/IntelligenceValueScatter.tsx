@@ -1,8 +1,8 @@
 "use client";
 
-import { CartesianGrid, ResponsiveContainer, Scatter, ScatterChart, Tooltip, XAxis, YAxis } from "recharts";
+import { CartesianGrid, Cell, ResponsiveContainer, Scatter, ScatterChart, Tooltip, XAxis, YAxis } from "recharts";
 import type { PublicIntelligenceValueEntry } from "@/lib/fetchers/frontend/fetchPublicCatalog";
-import { formatArtificialAnalysisScore, formatArtificialAnalysisValue } from "@/lib/benchmarks/artificialAnalysis";
+import { artificialAnalysisChartColour, formatArtificialAnalysisScore, formatArtificialAnalysisValue } from "@/lib/benchmarks/artificialAnalysis";
 
 export default function IntelligenceValueScatter({ entries }: { entries: PublicIntelligenceValueEntry[] }) {
 	return <figure className="border-b px-2 py-5 sm:px-5">
@@ -17,13 +17,16 @@ export default function IntelligenceValueScatter({ entries }: { entries: PublicI
 						const entry = payload?.[0]?.payload as PublicIntelligenceValueEntry | undefined;
 						return active && entry ? <div className="max-w-72 rounded-lg border bg-popover p-3 text-xs text-popover-foreground shadow-md">
 							<p className="font-semibold">{entry.model_name}</p>
+							{entry.organisation_name ? <p className="text-muted-foreground">{entry.organisation_name}</p> : null}
 							<p className="mt-1 text-muted-foreground">{entry.other_info?.split(";")[0]}</p>
 							<p className="mt-2">Intelligence: {entry.intelligence_score}</p>
 							<p>Evaluation cost: {formatArtificialAnalysisScore("aa-intelligence-index-cost-v4", entry.evaluation_cost)}</p>
 							<p className="mt-1 font-semibold">{formatArtificialAnalysisValue(entry.score)} / intelligence point</p>
 						</div> : null;
 					}} />
-					<Scatter data={entries} fill="var(--primary)" fillOpacity={0.65} isAnimationActive={false} />
+					<Scatter data={entries} fillOpacity={0.8} isAnimationActive={false}>
+						{entries.map((entry) => <Cell key={entry.model_id} fill={artificialAnalysisChartColour(entry.organisation_id, entry.organisation_colour)} stroke="var(--foreground)" strokeOpacity={0.35} />)}
+					</Scatter>
 				</ScatterChart>
 			</ResponsiveContainer>
 		</div>
