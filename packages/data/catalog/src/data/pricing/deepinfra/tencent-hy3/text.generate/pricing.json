@@ -9,7 +9,7 @@
       "meter": "input_text_tokens",
       "unit": "token",
       "unit_size": 1000000,
-      "price_per_unit": 0.13999999999999999,
+      "price_per_unit": 0.13,
       "currency": "USD",
       "pricing_plan": "standard",
       "note": null,
@@ -24,7 +24,7 @@
       "meter": "output_text_tokens",
       "unit": "token",
       "unit_size": 1000000,
-      "price_per_unit": 0.58,
+      "price_per_unit": 0.53,
       "currency": "USD",
       "pricing_plan": "standard",
       "note": null,
@@ -39,7 +39,7 @@
       "meter": "cached_read_text_tokens",
       "unit": "token",
       "unit_size": 1000000,
-      "price_per_unit": 0.034999999999999996,
+      "price_per_unit": 0.033,
       "currency": "USD",
       "pricing_plan": "standard",
       "note": null,
@@ -54,7 +54,7 @@
       "meter": "input_text_tokens",
       "unit": "token",
       "unit_size": 1000000,
-      "price_per_unit": 0.11199999999999999,
+      "price_per_unit": 0.104,
       "currency": "USD",
       "pricing_plan": "flex",
       "note": null,
@@ -69,7 +69,7 @@
       "meter": "output_text_tokens",
       "unit": "token",
       "unit_size": 1000000,
-      "price_per_unit": 0.46399999999999997,
+      "price_per_unit": 0.424,
       "currency": "USD",
       "pricing_plan": "flex",
       "note": null,
@@ -84,7 +84,7 @@
       "meter": "cached_read_text_tokens",
       "unit": "token",
       "unit_size": 1000000,
-      "price_per_unit": 0.027999999999999997,
+      "price_per_unit": 0.0264,
       "currency": "USD",
       "pricing_plan": "flex",
       "note": null,
@@ -104,14 +104,14 @@
   "sources": [
     {
       "kind": "provider_models",
-      "url": "https://api.deepinfra.com/models/list",
-      "accessed_at": "2026-08-21T00:00:00Z",
+      "url": "https://api.deepinfra.com/models/tencent/Hy3",
+      "accessed_at": "2026-09-22T00:00:00Z",
       "notes": "Authoritative DeepInfra token pricing, cache multiplier, and per-model priority/flex multipliers."
     }
   ],
   "verification": {
     "status": "verified",
-    "checked_at": "2026-08-21T00:00:00Z",
+    "checked_at": "2026-09-22T00:00:00Z",
     "notes": "Current standard, cached-input, priority, and flex pricing reconciled against the live DeepInfra model-details endpoint."
   }
 }
