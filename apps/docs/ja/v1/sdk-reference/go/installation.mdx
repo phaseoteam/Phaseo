@@ -1,0 +1,24 @@
+---
+icon: "package"
+title: "Go SDKのインストール"
+description: "Go Modulesを使ってPhaseo Go SDKをインストールします。"
+---
+
+SDKは [`sdk-go/v2`](https://pkg.go.dev/github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v2) として公開されています。
+
+## 必要条件
+
+- Go 1.23以降
+
+## インストール
+
+```bash
+go get github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v2@latest
+```
+
+v2モジュールのパスをインポートします:
+
+```go
+import phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v2"
+```
+

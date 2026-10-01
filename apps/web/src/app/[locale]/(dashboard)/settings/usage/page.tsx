@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { Suspense } from "react";
 import { permanentRedirect, redirect } from "next/navigation";
 
@@ -33,9 +33,10 @@ import {
 	type ObservabilityRequestRow as RawRequestRow,
 } from "@/lib/fetchers/internal/fetchSettingsObservabilityData";
 
-export const metadata: Metadata = {
-	title: "Observability - Settings",
-};
+export async function generateMetadata(): Promise<Metadata> {
+	const t = await getTranslations("SettingsUI.settingsPageMetadata");
+	return { title: t("observability") };
+}
 
 type SearchParams = Record<string, string | string[] | undefined>;
 
@@ -103,27 +104,27 @@ function advanceBucket(date: Date, range: ObservabilityRange): Date {
 	return d;
 }
 
-function formatBucketLabel(date: Date, range: ObservabilityRange): string {
+function formatBucketLabel(date: Date, range: ObservabilityRange, locale: string): string {
 	if (range === "1h") {
-		return new Intl.DateTimeFormat("en-GB", {
+		return new Intl.DateTimeFormat(locale, {
 			hour: "2-digit",
 			minute: "2-digit",
 		}).format(date);
 	}
 	if (range === "1d") {
-		return new Intl.DateTimeFormat("en-GB", {
+		return new Intl.DateTimeFormat(locale, {
 			hour: "2-digit",
 			day: "numeric",
 			month: "short",
 		}).format(date);
 	}
 	if (range === "1w" || range === "1m") {
-		return new Intl.DateTimeFormat("en-GB", {
+		return new Intl.DateTimeFormat(locale, {
 			day: "numeric",
 			month: "short",
 		}).format(date);
 	}
-	return new Intl.DateTimeFormat("en-GB", {
+	return new Intl.DateTimeFormat(locale, {
 		month: "short",
 		year: "numeric",
 	}).format(date);
@@ -133,6 +134,7 @@ function buildEmptySeries(args: {
 	from: string;
 	to: string;
 	range: ObservabilityRange;
+	locale: string;
 }): ObservabilitySeriesPoint[] {
 	const from = new Date(args.from);
 	const to = new Date(args.to);
@@ -145,7 +147,7 @@ function buildEmptySeries(args: {
 	) {
 		points.push({
 			bucket: cursor.toISOString(),
-			label: formatBucketLabel(cursor, args.range),
+			label: formatBucketLabel(cursor, args.range, args.locale),
 			value: 0,
 		});
 	}
@@ -157,6 +159,7 @@ function sumByBucket(args: {
 	range: ObservabilityRange;
 	from: string;
 	to: string;
+	locale: string;
 	getValue: (row: RawRequestRow) => number;
 }): ObservabilitySeriesPoint[] {
 	const points = buildEmptySeries(args);
@@ -177,6 +180,7 @@ function cacheHitRateByBucket(args: {
 	range: ObservabilityRange;
 	from: string;
 	to: string;
+	locale: string;
 }): ObservabilitySeriesPoint[] {
 	const points = buildEmptySeries(args);
 	const totals = new Map(
@@ -217,6 +221,7 @@ function successRateByBucket(args: {
 	range: ObservabilityRange;
 	from: string;
 	to: string;
+	locale: string;
 }): ObservabilitySeriesPoint[] {
 	const points = buildEmptySeries(args);
 	const totals = new Map(points.map((point) => [point.bucket, { successful: 0, total: 0 }]));
@@ -239,6 +244,7 @@ function blendedPriceByBucket(args: {
 	range: ObservabilityRange;
 	from: string;
 	to: string;
+	locale: string;
 }): ObservabilitySeriesPoint[] {
 	const points = buildEmptySeries(args);
 	const totals = new Map(points.map((point) => [point.bucket, { spend: 0, tokens: 0 }]));
@@ -291,6 +297,7 @@ function makeRankedItems(args: {
 	range: ObservabilityRange;
 	from: string;
 	to: string;
+	locale: string;
 	getId: (row: RawRequestRow) => string | null;
 	getLabel: (id: string) => string;
 	getSubtitle?: (id: string) => string | null | undefined;
@@ -332,6 +339,7 @@ function makeRankedItems(args: {
 				range: args.range,
 				from: args.from,
 				to: args.to,
+				locale: args.locale,
 				getValue: (row) => usageTokens(row.usage),
 			}),
 		}))
@@ -363,6 +371,8 @@ function buildTimeSeriesBreakdown(args: {
 	range: ObservabilityRange;
 	from: string;
 	to: string;
+	locale: string;
+	otherLabel: string;
 	getId: (row: RawRequestRow) => string | null;
 	getLabel: (id: string) => string;
 	getValue: (row: RawRequestRow) => number;
@@ -392,7 +402,7 @@ function buildTimeSeriesBreakdown(args: {
 				...series,
 				{
 					id: "other",
-					label: "Other",
+					label: args.otherLabel,
 					sourceId: "__other",
 				},
 			]
@@ -432,6 +442,7 @@ function buildFixedTimeSeries(args: {
 	range: ObservabilityRange;
 	from: string;
 	to: string;
+	locale: string;
 	series: Array<{ id: string; label: string; color?: string }>;
 	getValues: (row: RawRequestRow) => Record<string, number>;
 }): ObservabilityTimeSeriesChart {
@@ -460,6 +471,8 @@ function buildFixedTimeSeries(args: {
 function buildExploreRows(args: {
 	rows: RawRequestRow[];
 	range: ObservabilityRange;
+	locale: string;
+	unknownLabel: string;
 	keyLabel: (id: string | null) => string;
 	appLabel: (id: string | null) => string;
 	modelLabel: (id: string | null) => string;
@@ -468,11 +481,11 @@ function buildExploreRows(args: {
 	for (const row of args.rows) {
 		const created = new Date(row.created_at);
 		if (Number.isNaN(created.getTime())) continue;
-		const bucket = formatBucketLabel(floorToBucket(created, args.range), args.range);
+		const bucket = formatBucketLabel(floorToBucket(created, args.range), args.range, args.locale);
 		const model = args.modelLabel(row.model_id);
 		const apiKey = args.keyLabel(row.key_id);
 		const app = args.appLabel(row.app_id);
-		const provider = row.provider ?? "Unknown";
+		const provider = row.provider ?? args.unknownLabel;
 		const key = `${bucket}\n${model}\n${apiKey}\n${app}\n${provider}`;
 		const existing =
 			grouped.get(key) ??
@@ -589,8 +602,11 @@ async function ObservabilityContent({
 	searchParams: Promise<SearchParams>;
 	initialTab: ObservabilityTab;
 }) {
-	const sp = await searchParams;
-	const t = await getTranslations("SettingsUI");
+	const [sp, t, locale] = await Promise.all([
+		searchParams,
+		getTranslations("SettingsUI"),
+		getLocale(),
+	]);
 	const rangeKeys = getUsageRangeParamKeys();
 	const presetParam = firstParam(sp[rangeKeys.preset]);
 	const preset = presetParam
@@ -619,7 +635,7 @@ async function ObservabilityContent({
 			<div className="rounded-xl border bg-card p-6">
 				<h1 className="text-xl font-semibold">{t("strings.Observability" as never)}</h1>
 				<p className="mt-2 text-sm text-muted-foreground">
-					Select or create a team to view observability.
+					{t("settingsPageCopy.observabilityNoTeam" as never)}
 				</p>
 			</div>
 		);
@@ -629,7 +645,7 @@ async function ObservabilityContent({
 			<div className="rounded-xl border bg-card p-6">
 				<h1 className="text-xl font-semibold">{t("strings.Unable to load observability" as never)}</h1>
 				<p className="mt-2 text-sm text-muted-foreground">
-					Please try again shortly.
+					{t("settingsPageCopy.observabilityRetry" as never)}
 				</p>
 			</div>
 		);
@@ -645,12 +661,12 @@ async function ObservabilityContent({
 	const appMetadata = new Map(initial.appMetadataEntries);
 
 	const modelLabel = (id: string | null) => {
-		if (!id) return "Unknown model";
+		if (!id) return t("strings.Unknown" as never);
 		const meta = modelMetadata.get(id);
 		return meta?.modelName || id;
 	};
 	const keyLabel = (id: string | null) => {
-		if (!id) return "No API key";
+		if (!id) return t("strings.Unknown key" as never);
 		const key = keyMap.get(id);
 		return key?.name || key?.prefix || id;
 	};
@@ -659,7 +675,7 @@ async function ObservabilityContent({
 		return key?.name && key?.prefix ? key.prefix : null;
 	};
 	const appLabel = (id: string | null) => {
-		if (!id) return "No app";
+		if (!id) return t("strings.Unknown app" as never);
 		return appNames.get(id) || id;
 	};
 	const modelFilterOptions = Array.from(new Set(rawRows.flatMap((row) => {
@@ -716,21 +732,22 @@ async function ObservabilityContent({
 	const kpis: ObservabilityKpi[] = [
 		makeKpi({
 			id: "spend",
-			label: "Total Spend",
+			label: t("observability.metricCost"),
 			value: currentSpend,
 			previous: previousSpend,
 			format: "currency",
 			sparkline: sumByBucket({
 				rows: rawRows,
-				range,
-				from,
-				to,
-				getValue: (row) => toNumber(row.cost_nanos) / 1e9,
+					range,
+					from,
+					to,
+					locale,
+					getValue: (row) => toNumber(row.cost_nanos) / 1e9,
 			}),
 		}),
 		makeKpi({
 			id: "requests",
-			label: "Requests",
+			label: t("observability.metricRequests"),
 			value: rawRows.length,
 			previous: previousRows.length,
 			format: "number",
@@ -739,12 +756,13 @@ async function ObservabilityContent({
 				range,
 				from,
 				to,
+				locale,
 				getValue: () => 1,
 			}),
 		}),
 		makeKpi({
 			id: "tokens",
-			label: "Tokens",
+			label: t("observability.metricTokens"),
 			value: currentTokens,
 			previous: previousTokens,
 			format: "number",
@@ -753,12 +771,13 @@ async function ObservabilityContent({
 				range,
 				from,
 				to,
+				locale,
 				getValue: (row) => usageTokens(row.usage),
 			}),
 		}),
 		makeKpi({
 			id: "cache",
-			label: "Cache Hit Rate",
+			label: t("observability.metricCacheHitRate" as never),
 			value: currentTokens > 0 ? currentCachedTokens / currentTokens : 0,
 			previous: previousTokens > 0 ? previousCachedTokens / previousTokens : 0,
 			format: "percent",
@@ -767,23 +786,24 @@ async function ObservabilityContent({
 				range,
 				from,
 				to,
+				locale,
 			}),
 		}),
 		makeKpi({
 			id: "success_rate",
-			label: "Success rate",
+			label: t("strings.Success rate"),
 			value: currentSuccessRate,
 			previous: previousSuccessRate,
 			format: "percent",
-			sparkline: successRateByBucket({ rows: rawRows, range, from, to }),
+			sparkline: successRateByBucket({ rows: rawRows, range, from, to, locale }),
 		}),
 		makeKpi({
 			id: "blended_price",
-			label: "Blended price / 1M",
+			label: t("observability.metricBlendedPricePerMillion" as never),
 			value: currentBlendedPrice,
 			previous: previousBlendedPrice,
 			format: "currency_per_million",
-			sparkline: blendedPriceByBucket({ rows: rawRows, range, from, to }),
+			sparkline: blendedPriceByBucket({ rows: rawRows, range, from, to, locale }),
 		}),
 	];
 
@@ -793,6 +813,7 @@ async function ObservabilityContent({
 		range,
 		from,
 		to,
+		locale,
 		getId: (row) => row.key_id,
 		getLabel: keyLabel,
 		getSubtitle: keySubtitle,
@@ -804,6 +825,7 @@ async function ObservabilityContent({
 		range,
 		from,
 		to,
+		locale,
 		getId: (row) => row.app_id,
 		getLabel: appLabel,
 		getImageUrl: (id) => appMetadata.get(id)?.imageUrl ?? null,
@@ -815,6 +837,7 @@ async function ObservabilityContent({
 		range,
 		from,
 		to,
+		locale,
 		getId: (row) => row.model_id,
 		getLabel: modelLabel,
 	});
@@ -824,6 +847,8 @@ async function ObservabilityContent({
 		range,
 		from,
 		to,
+		locale,
+		otherLabel: t("strings.Other"),
 		getId: (row) => row.model_id,
 		getLabel: modelLabel,
 		getValue: (row) => toNumber(row.cost_nanos) / 1e9,
@@ -833,6 +858,8 @@ async function ObservabilityContent({
 		range,
 		from,
 		to,
+		locale,
+		otherLabel: t("strings.Other"),
 		getId: (row) => row.model_id,
 		getLabel: modelLabel,
 		getValue: () => 1,
@@ -842,6 +869,8 @@ async function ObservabilityContent({
 		range,
 		from,
 		to,
+		locale,
+		otherLabel: t("strings.Other"),
 		limit: 10,
 		includeOther: true,
 	};
@@ -910,8 +939,9 @@ async function ObservabilityContent({
 		range,
 		from,
 		to,
+		locale,
 		series: [
-			{ id: "phaseo", label: "Phaseo Credits", color: "#2563eb" },
+			{ id: "phaseo", label: t("observability.metricPhaseoCredits" as never), color: "#2563eb" },
 			{ id: "byok", label: "BYOK", color: "#059669" },
 		],
 		getValues: (row) => {
@@ -926,10 +956,11 @@ async function ObservabilityContent({
 		range,
 		from,
 		to,
+		locale,
 		series: [
-			{ id: "input", label: "Input", color: "#2563eb" },
-			{ id: "output", label: "Output", color: "#059669" },
-			{ id: "reasoning", label: "Reasoning", color: "#d97706" },
+			{ id: "input", label: t("observability.metricInput" as never), color: "#2563eb" },
+			{ id: "output", label: t("observability.metricOutput" as never), color: "#059669" },
+			{ id: "reasoning", label: t("observability.metricReasoning" as never), color: "#d97706" },
 		],
 		getValues: (row) => ({
 			input: metricValue(row.usage, "input_tokens"),
@@ -944,9 +975,10 @@ async function ObservabilityContent({
 		range,
 		from,
 		to,
+		locale,
 		series: [
-			{ id: "cached", label: "Cached", color: "#059669" },
-			{ id: "uncached", label: "Uncached", color: "#94a3b8" },
+			{ id: "cached", label: t("observability.metricCached" as never), color: "#059669" },
+			{ id: "uncached", label: t("observability.metricUncached" as never), color: "#94a3b8" },
 		],
 		getValues: (row) => {
 			const tokens = usageTokens(row.usage);
@@ -982,6 +1014,7 @@ async function ObservabilityContent({
 				range,
 				from,
 				to,
+				locale,
 				getValue: (row) => toNumber(row.cost_nanos) / 1e9,
 			}),
 			trends: {
@@ -996,6 +1029,8 @@ async function ObservabilityContent({
 		exploreRows: buildExploreRows({
 			rows: rawRows,
 			range,
+			locale,
+			unknownLabel: t("strings.Unknown" as never),
 			keyLabel,
 			appLabel,
 			modelLabel,

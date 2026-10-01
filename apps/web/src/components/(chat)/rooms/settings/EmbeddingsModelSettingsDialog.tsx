@@ -96,7 +96,7 @@ export function EmbeddingsModelSettingsDialog({
 				{schema.supportsDimensions ? (
 					<div className="grid gap-1.5">
 						<Label htmlFor="embedding-dimensions">
-							Dimensions (max {schema.maxDimensions})
+							{t("dimensionsMax", { maxDimensions: schema.maxDimensions })}
 						</Label>
 						<Input
 							id="embedding-dimensions"
@@ -121,7 +121,7 @@ export function EmbeddingsModelSettingsDialog({
 					</div>
 				) : (
 					<p className="text-xs text-muted-foreground">
-						This model does not expose configurable output dimensions.
+						{t("dimensionsUnavailable")}
 					</p>
 				)}
 			</div>

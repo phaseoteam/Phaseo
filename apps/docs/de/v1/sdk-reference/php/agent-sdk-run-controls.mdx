@@ -1,0 +1,41 @@
+---
+icon: "rotate"
+title: "Ausgaben und Wiederholungen"
+description: "Validiere endgültige Ausgaben, wiederhole Modellanfragen und untersuche abgeschlossene PHP-Läufe."
+---
+
+Verwende die Ausgabevalidierung, wenn nachgelagerter PHP-Code eine vorhersehbare Struktur benötigt. Modellwiederholungen decken vorübergehende Request-Fehler ab; Wiederholungen von Tools mit Seiteneffekten müssen im Tool selbst erfolgen und idempotent sein.
+
+## Wiederholungen konfigurieren
+
+```php
+$agent = AgentSdk::createAgent(new AgentDefinition(
+    id: "research-agent",
+    model: "openai/gpt-5.4-nano",
+    modelRetry: new ModelRetryConfig(
+        maxRetries: 3,
+        baseDelayMs: 500,
+        maxDelayMs: 4000
+    )
+));
+```
+
+Das Laufergebnis enthält Status, Schritte, Nachrichten, normalisierte Nutzung, Stoppgrund und endgültige Ausgabe. Prüfe diese Felder, statt den endgültigen Text als vollständigen Laufdatensatz zu betrachten.
+
+## Endgültiges Ergebnis validieren
+```php
+$result = $agent->run(input: $prompt, client: $client);
+
+echo $result->output;
+echo $result->run->status;
+echo $result->usage["total_tokens"];
+echo $result->usage["cost"];
+```$result = $agent->run(input: $prompt, client: $client);
+
+echo $result->output;
+echo $result->run->status;
+echo $result->usage["total_tokens"];
+echo $result->usage["cost"];
+```
+
+Nutze [Abbruchbedingungen](./agent-sdk-stop-conditions), um Budgets durchzusetzen, und [Fehler und Fehlerbehebung](./agent-sdk-observability), um das Verhalten bei behebbaren Fehlern festzulegen.

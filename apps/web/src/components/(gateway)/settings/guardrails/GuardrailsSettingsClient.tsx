@@ -281,7 +281,7 @@ function SelectionDialog(props: {
 				<DialogFooter className="gap-2 sm:gap-0">
 					<DialogClose asChild>
 						<Button type="button" variant="outline" className="rounded-md">
-							Cancel
+							{t("settingsPageCopy.cancel")}
 						</Button>
 					</DialogClose>
 					<Button
@@ -292,7 +292,7 @@ function SelectionDialog(props: {
 							setOpen(false);
 						}}
 					>
-						Save ({draft.length})
+						{t("settingsPageCopy.saveSelectionCount", { count: draft.length })}
 					</Button>
 				</DialogFooter>
 			</DialogContent>
@@ -476,7 +476,7 @@ function GuardrailCard(props: {
 
 						<span className="inline-flex items-center gap-2 rounded-md border bg-background px-2 py-1">
 							<span className="font-medium text-foreground">
-								Models
+								{t("guardrailsControls.models")}
 							</span>
 							<span>
 								{modelMode === "none"

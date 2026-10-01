@@ -1,0 +1,62 @@
+---
+title: "Lista de comprobación de funciones para la migración"
+description: "Comprueba las capacidades de Phaseo que suelen influir en una migración de gateway."
+---
+
+# Lista de comprobación de funciones para la migración
+
+Usa esta lista para identificar qué partes de una integración de gateway existente pueden migrarse sin cambios y cuáles requieren una validación explícita. Se revisó por última vez el 23 de agosto de 2026.
+
+## Compatibilidad básica de solicitudes
+
+| Capacidad | Compatibilidad de Phaseo | Acción de migración |
+| --- | --- | --- |
+| Autenticación compatible con OpenAI | Compatible | Cambia la URL base y la clave de API; después, ejecuta una solicitud autenticada. |
+| Chat Completions | Compatible | Prueba solicitudes normales, en streaming, con llamadas a herramientas y con salidas estructuradas. |
+| Responses | Compatible | Prueba los formatos de entrada, eventos de streaming, herramientas y análisis de respuestas. |
+| Anthropic Messages | Compatible | Verifica los encabezados, prompts de sistema y eventos de streaming específicos de Anthropic. |
+| Identificadores de modelo | ID del catálogo de Phaseo | Valida cada ID de producción con `GET /v1/models`; no des por hecho que los alias coinciden. |
+| Endpoints de embeddings, imagen y audio | Depende del modelo y el proveedor | Comprueba que el modelo admita la operación necesaria antes del cambio. |
+
+## Controles de enrutamiento y políticas
+
+| Capacidad | Compatibilidad de Phaseo | Acción de migración |
+| --- | --- | --- |
+| Orden de proveedores | `provider.order` | Reproduce solo las reglas de orden que la carga de trabajo aún necesita. |
+| Listas de proveedores permitidos y excluidos | `provider.only` y `provider.ignore` | Valida los ID de proveedor y confirma que quede disponible al menos una ruta. |
+| Ordenar por precio, latencia o rendimiento | `provider.sort` | Tras probar, revisa el proveedor seleccionado en el uso de Gateway. |
+| Retención cero de datos | `provider.require_zero_data_retention` | Confirma que haya un proveedor compatible con el modelo antes de exigirlo. |
+| Ejecución regional y residencia de datos | Campos de solicitud y valores de privacidad predeterminados del espacio de trabajo | Prueba tanto el enrutamiento correcto como el error cuando no hay un proveedor coincidente. |
+| Prompts y valores predeterminados reutilizables | Ajustes preestablecidos | Traslada la configuración compartida a un ajuste preestablecido en vez de duplicarla en cada cliente. |
+
+## Operaciones y despliegue
+
+| Capacidad | Compatibilidad de Phaseo | Acción de migración |
+| --- | --- | --- |
+| Atribución de solicitudes | ID, nombre, URL y categorías de la aplicación | Conserva los encabezados de atribución durante la migración y comprueba la agrupación de aplicaciones en el panel. |
+| Detalles de solicitudes y proveedores | Uso de Gateway y registros de generación | Compara proveedor, latencia, uso de tokens y precios con prompts representativos. |
+| Lotes y trabajos asíncronos | API de lotes, archivos, vídeo, webhooks y WebSocket | Valida cambios de estado, facturación final, cancelación y recuperación de resultados. |
+| Compatibilidad con reproducción | Los registros de generación muestran metadatos de reproducción cuando están disponibles | Confirma que se pueda recuperar el endpoint y el contenido originales de las solicitudes fallidas. |
+| Despliegue gradual | División del tráfico en el cliente o la infraestructura | Mantén la reversión como un cambio de URL base y credenciales hasta estabilizar el cambio. |
+
+## Funciones que requieren validación específica de la carga de trabajo
+
+No des por hecho que la compatibilidad de la API significa que estos comportamientos sean idénticos:
+
+- Selección automática de proveedores y orden de alternativas
+- Afinidad de caché de prompts y precios de caché
+- Campos de solicitud específicos del proveedor
+- Metadatos exclusivos de la respuesta
+- Límites de frecuencia y tiempos de reintento
+- Políticas de retención, residencia y entrenamiento de datos
+- Disponibilidad y precio exactos de los modelos
+
+Prueba prompts y casos de fallo similares a producción antes de trasladar un volumen significativo de tráfico.
+
+## Guías relacionadas
+
+- [Guías de migración](./index.mdx)
+- [Revisión de preparación para la migración](./gateway-parity-review.mdx)
+- [Enrutamiento y alternativas](../guides/routing-and-fallbacks.mdx)
+- [Ajustes preestablecidos](../guides/presets.mdx)
+- [Atribución de aplicaciones](../guides/app-attribution.mdx)

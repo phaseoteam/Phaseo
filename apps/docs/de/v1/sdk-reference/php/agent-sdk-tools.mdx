@@ -1,0 +1,25 @@
+---
+icon: "wrench"
+title: "Werkzeuge"
+description: "Definiere validierte, genehmigungspflichtige, manuelle und fortschrittsmeldende PHP-Tools."
+---
+
+Erstelle `Tool`-Werte und übergib sie mit `AgentSdk::defineTool(...)`. Tools können Folgendes enthalten:
+
+- JSON-`parameters`, die dem Modell angezeigt werden
+- Validierungsfunktionen für `inputSchema`, `outputSchema` und `eventSchema`
+- `timeoutMs` und einen `execute`-Callback
+- `requireApproval` als boolescher Wert oder Callback
+- `onToolCalled` und `onResponseReceived` für interaktive Abläufe
+- `nextTurnParams` und `onError: "return-to-model"`
+
+Verwende `RuntimeContext::$emitProgress` für vorläufige Ergebnisse und `$setContext` für den Anwendungskontext.
+
+<Note>
+Tool-Callbacks werden in der Standard-PHP-Laufzeit synchron ausgeführt. Parallelität und Unterbrechungen richten sich daher nach den Möglichkeiten des PHP-Prozesses, in dem das SDK läuft.
+</Note>
+
+## Weiterführende Themen
+
+- [Status und Genehmigung](./agent-sdk-state-and-approval.mdx)
+- [Laufsteuerung](./agent-sdk-run-controls.mdx)

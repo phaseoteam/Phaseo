@@ -1,0 +1,178 @@
+---
+icon: "compass"
+title: "Advisor सर्वर टूल"
+description: "जनरेशन के दौरान एक मॉडल को दूसरे मॉडल से सलाह लेने दें।"
+---
+
+मुख्य मॉडल के उत्तर देने से पहले किसी दूसरे मॉडल से समीक्षा, योजना, तर्कसंगतता की जाँच या विशेषज्ञ राय लेनी हो, तो `phaseo:advisor` उपयोग करें।
+
+मुख्य मॉडल Advisor को किसी अन्य टूल की तरह कॉल करता है। Phaseo सर्वर पर Advisor मॉडल चलाकर उसकी सलाह को टूल परिणाम के रूप में लौटाता है। फिर मुख्य मॉडल अंतिम उत्तर लिखता है।
+
+<Note>
+समर्थित टेक्स्ट मॉडल में Advisor का प्रबंधन Gateway करता है। इसे Anthropic के नेटिव Advisor टूल में तभी बदला जाता है जब क्लाइंट स्पष्ट रूप से Anthropic का नेटिव टूल फ़ॉर्मैट भेजता है।
+</Note>
+
+## त्वरित शुरुआत
+
+```bash
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-5-nano",
+    "messages": [
+      { "role": "user", "content": "Design a rate limiter for a distributed API gateway." }
+    ],
+    "tools": [
+      {
+        "type": "phaseo:advisor",
+        "parameters": {
+          "model": "anthropic/claude-opus-5",
+          "max_uses": 1,
+          "max_completion_tokens": 1400
+        }
+      }
+    ]
+  }'
+```
+
+## Advisor मॉडल चुनना
+
+Tool definition में Advisor model तय किया जा सकता है:
+
+```json
+{
+  "type": "phaseo:advisor",
+  "parameters": {
+    "model": "anthropic/claude-opus-5"
+  }
+}
+```
+
+अगर `parameters.model` नहीं दिया गया है, तो tool call में `model` दिया जा सकता है। दोनों में से कोई भी सेट न हो, तो Phaseo बाहरी अनुरोध का मॉडल उपयोग करता है।
+
+## पैरामीटर
+
+```json
+{
+  "type": "phaseo:advisor",
+  "parameters": {
+    "name": "reviewer",
+    "model": "anthropic/claude-opus-5",
+    "instructions": "Review plans for correctness, missing edge cases, and implementation risk.",
+    "forward_transcript": true,
+    "max_uses": 2,
+    "max_completion_tokens": 1400,
+    "reasoning": { "effort": "high" },
+    "temperature": 0.2
+  }
+}
+```
+
+| पैरामीटर | प्रकार | डिफ़ॉल्ट | विवरण |
+| --- | --- | --- | --- |
+| `name` | string | none | Advisor का वैकल्पिक नाम। आगे-पीछे के खाली स्थान हटाने के बाद नाम अद्वितीय होना चाहिए। इसमें अक्षर, अंक, रिक्त स्थान, अंडरस्कोर और हाइफ़न हो सकते हैं। |
+| `model` | string | outer model | Advisor का उपयोग करने वाला मॉडल। इसे छोड़ने पर टूल कॉल में `model` दिया जा सकता है। |
+| `instructions` | string | default Advisor behavior | Advisor मॉडल के लिए अतिरिक्त निर्देश। |
+| `forward_transcript` | boolean | `false` | Advisor अनुरोध में मौजूदा बातचीत का ट्रांसक्रिप्ट शामिल करें। |
+| `max_uses` | integer | `1` | सर्वर-टूल लूप के दौरान Advisor को कॉल करने की अधिकतम संख्या। |
+| `max_completion_tokens` | integer | `1400` | Advisor के उत्तर में आउटपुट टोकन की अधिकतम संख्या। |
+| `max_tokens` | integer | `1400` | `max_completion_tokens` का पुराना उपनाम। |
+| `reasoning` | object | provider default | चुने गए मॉडल और प्रदाता के अनुसार Advisor कॉल के साथ भेजी जाने वाली तर्क-विन्यास जानकारी। |
+| `temperature` | number | provider default | Advisor कॉल का सैंपलिंग तापमान। |
+
+## टूल कॉल के आर्ग्युमेंट
+
+मॉडल आम तौर पर `prompt` के साथ Advisor को कॉल करता है:
+
+```json
+{
+  "prompt": "Review this migration plan and identify the riskiest assumptions."
+}
+```
+
+अगर Advisor definition में model तय नहीं है, तो tool call में `model` भी हो सकता है:
+
+```json
+{
+  "model": "anthropic/claude-opus-5",
+  "prompt": "Check this security design for missing controls."
+}
+```
+
+`forward_transcript` के `true` होने पर, मॉडल prompt न दे तो Phaseo केवल transcript वाली Advisor call चला सकता है।
+
+## कई Advisor
+
+हर Advisor के लिए एक `phaseo:advisor` entry जोड़ें। हर नामित Advisor अलग internal tool बनता है, जैसे `phaseo_advisor_security_reviewer` या `phaseo_advisor_architect`।
+
+```json
+{
+  "tools": [
+    {
+      "type": "phaseo:advisor",
+      "parameters": {
+        "name": "security-reviewer",
+        "model": "anthropic/claude-opus-5",
+        "instructions": "Review for vulnerabilities, abuse cases, and missing mitigations."
+      }
+    },
+    {
+      "type": "phaseo:advisor",
+      "parameters": {
+        "name": "architect",
+        "model": "openai/gpt-5",
+        "instructions": "Review system design tradeoffs and operational risks."
+      }
+    }
+  ]
+}
+```
+
+अधिकतम एक Advisor entry में `name` छोड़ा जा सकता है। कई Advisor होने पर `tool_choice: "phaseo:advisor"` force करने से Phaseo उस alias को पहले configured Advisor से map करता है।
+
+## टूल क्या लौटाता है
+
+Advisor tool result के रूप में JSON लौटाता है:
+
+```json
+{
+  "status": "ok",
+  "name": "reviewer",
+  "model": "anthropic/claude-opus-5",
+  "advice": "Start with a smaller migration slice and define rollback criteria before changing traffic routing."
+}
+```
+
+Advisor request नहीं चल सके तो Phaseo `advisor_invalid_request`, `advisor_max_uses_exceeded` या `advisor_request_failed` जैसा tool error लौटाता है।
+
+## बातचीत की मेमोरी
+
+Advisor अलग-अलग requests के बीच hidden state नहीं रखता। अगले अनुरोध में पुराने messages और tool results दोबारा भेजने पर मुख्य मॉडल पिछली सलाह देख सकता है। `forward_transcript` चालू हो तो Advisor उस अनुरोध का forwarded transcript भी देख सकता है।
+
+## उपयोग और मूल्य निर्धारण
+
+Advisor calls इनकी गिनती बढ़ाते हैं:
+
+```json
+{
+  "usage": {
+    "server_tool_use": {
+      "advisor_requests": 1
+    }
+  }
+}
+```
+
+Advisor model के tokens total usage में शामिल होते हैं और चुने गए Advisor model की rates पर कीमत तय की जा सकती है। Server-tool pricing में `server_tool_advisor_requests` भी इस्तेमाल हो सकता है।
+
+## मौजूदा सीमाएँ
+
+- Advisor की सलाह के लिए streaming अभी सक्षम नहीं है।
+- Advisor calls सलाह लिए गए model को अतिरिक्त tools नहीं देते।
+
+## संबंधित
+
+- [सर्वर टूल](./index.mdx)
+- [सबएजेंट](./subagent.mdx)
+- [Tool calling](../tool-calling.mdx)

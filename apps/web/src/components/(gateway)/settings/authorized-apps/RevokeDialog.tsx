@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertTriangle, X } from "lucide-react";
 import { toast } from "sonner";
+import { localizedSettingsError } from "@/i18n/error-messages";
 import { useTranslations } from "next-intl";
 
 interface RevokeDialogProps {
@@ -44,7 +45,7 @@ export default function RevokeDialog({
 			const result = await revokeAuthorizationAction(authorizationId);
 
 			if (result.error) {
-				setError(result.error);
+				setError(localizedSettingsError(result.error, t, "Failed to revoke access"));
 				return;
 			}
 
@@ -53,7 +54,7 @@ export default function RevokeDialog({
 			setOpen(false);
 			router.refresh();
 		} catch (err: any) {
-			setError(err.message || t("strings.Failed to revoke access" as never));
+			setError(localizedSettingsError(err, t, "Failed to revoke access"));
 		} finally {
 			setLoading(false);
 		}

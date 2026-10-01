@@ -1,0 +1,74 @@
+---
+icon: "shapes"
+title: "Salidas estructuradas"
+description: "Devuelve JSON predecible con los formatos de salida json_object o json_schema."
+---
+
+Las salidas estructuradas permiten exigir una respuesta legible por máquina en lugar de texto libre.
+
+## Compatibilidad de endpoints
+
+Usa las salidas estructuradas en:
+
+- `/v1/chat/completions` con `response_format`
+- `/v1/responses` con `text.format`
+- `/v1/messages` puede seguir devolviendo texto JSON, pero no usa el mismo contrato de `response_format`.
+
+## Solicitud
+
+```bash
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-5-nano",
+    "messages": [
+      { "role": "user", "content": "Return a JSON object with city and weather for London." }
+    ],
+    "response_format": {
+      "type": "json_schema",
+      "json_schema": {
+        "name": "weather_schema",
+        "strict": true,
+        "schema": {
+          "type": "object",
+          "properties": {
+            "city": { "type": "string" },
+            "weather": { "type": "string" }
+          },
+          "required": ["city", "weather"],
+          "additionalProperties": false
+        }
+      }
+    }
+  }'
+```
+
+## Respuesta
+
+```json
+{
+  "id": "chatcmpl_...",
+  "choices": [
+    {
+      "index": 0,
+      "finish_reason": "stop",
+      "message": {
+        "role": "assistant",
+        "content": "{\"city\":\"London\",\"weather\":\"Cloudy\"}"
+      }
+    }
+  ]
+}
+```
+
+## Notas sobre el contrato
+
+- `response_format.type` debe ser `text`, `json_object` o `json_schema`.
+- Para `json_schema`, incluye un objeto de esquema (`response_format.json_schema.schema` en solicitudes tipo chat o `text.format.schema` en solicitudes tipo Responses).
+- Valida el JSON en tu servidor antes de usarlo en otros sistemas.
+
+## Guías siguientes
+
+1. [Esquemas de salida estructurada](./structured-outputs-schemas.mdx)
+2. [Patrones de validación y alternativas](./structured-outputs-validation.mdx)

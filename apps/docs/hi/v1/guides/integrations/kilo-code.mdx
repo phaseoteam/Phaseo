@@ -1,0 +1,66 @@
+---
+title: "Kilo Code"
+description: "Custom OpenAI-संगत provider से Kilo Code को Phaseo से जोड़ें।"
+---
+
+Phaseo CLI Kilo Code की dedicated key बनाती और प्रबंधित करती है। इसे extension में custom provider के रूप में जोड़ें।
+
+## क्रेडेंशियल बनाएँ
+
+```bash
+phaseo login
+phaseo integrations setup kilo-code --model anthropic/claude-sonnet-4.6
+```
+
+## Kilo Code कॉन्फ़िगर करें
+
+1. VS Code में Kilo Code खोलें।
+2. Settings icon चुनें, **Providers** खोलें और **Add custom provider** चुनें।
+3. ये values दर्ज करें:
+
+| Kilo Code field | मान |
+| --- | --- |
+| Provider ID | `phaseo` |
+| Display name | `Phaseo` |
+| Provider API | **OpenAI Compatible** |
+| Base URL | `https://api.phaseo.app/v1` |
+| API key | इस कमांड का आउटपुट `phaseo integrations credential kilo-code` |
+
+4. कोई model discover न हो, तो ID `anthropic/claude-sonnet-4.6` मैन्युअल रूप से जोड़ें।
+5. **Submit** चुनें, फिर Phaseo model चुनें।
+
+Kilo चयन को `phaseo/anthropic/claude-sonnet-4.6` दिखाता है: `phaseo` local provider ID है; शेष हिस्सा model ID के रूप में Phaseo को भेजा जाता है।
+
+## जाँचें
+
+Kilo Code से `PHASEO_KILO_OK` जवाब देने को कहें और Phaseo activity में request दिखाई देने की पुष्टि करें।
+
+## हटाएँ
+
+Kilo Code में custom provider हटाएँ, फिर यह चलाएँ:
+
+```bash
+phaseo integrations remove kilo-code
+```
+
+CLI private extension storage साफ़ नहीं कर सकती, लेकिन हटाने पर key revoke हो जाती है।
+
+## समस्या निवारण
+
+### कोई model discover नहीं होता
+
+`/models` से discover करने की ज़रूरत नहीं; model मैन्युअल रूप से जोड़ें।
+
+### प्रमाणीकरण विफल होता है
+
+Saved value को `phaseo integrations credential kilo-code` के output से बदलें और Base URL ठीक वैसा ही रखें।
+
+### मॉडल का नाम अलग दिखता है
+
+Kilo में `phaseo/<Phaseo model ID>` चुनें, लेकिन model ID field में `phaseo/` न जोड़ें।
+
+## संबंधित विषय
+
+- [Kilo Code के कस्टम मॉडल](https://kilo.ai/docs/code-with-ai/agents/custom-models)
+- [कोडिंग असिस्टेंट](./coding-assistants.mdx)
+- [मॉडल](../../api-reference/endpoint/models.mdx)

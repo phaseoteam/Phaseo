@@ -1,0 +1,25 @@
+---
+icon: "files"
+title: "ファイル"
+description: "Python SDKで`/files`を呼び出します。"
+---
+
+**メソッド**: `client.upload_file()`、`client.list_files()`、`client.get_file()`、`client.get_file_content()`。
+
+```python
+uploaded = client.upload_file(
+    purpose="batch",
+    file="data:application/json;base64,eyJ0ZXN0Ijp0cnVlfQ==",
+)
+file_obj = client.get_file(uploaded["id"])
+file_bytes = client.get_file_content(uploaded["id"])
+
+print(uploaded)
+print(file_obj)
+print(file_bytes[:20])
+```
+
+<Note>
+  `list_files()`はSDKで利用できますが、`GET /files`は現在`file_list_not_supported_with_shared_gateway_key`を返します。
+  （共有ゲートウェイキー使用時）。アップロードしたファイルのIDを保存し、そのIDで直接取得してください。
+</Note>

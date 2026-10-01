@@ -1,0 +1,54 @@
+---
+title: "Claude Code"
+icon: "terminal"
+description: "Conecte o Claude Code ao Phaseo Gateway pela API compatível com Anthropic."
+---
+
+O Claude Code oferece suporte a gateways de LLM de terceiros por meio de variáveis de ambiente. O Phaseo disponibiliza uma interface compatível com Anthropic em `/v1/messages`, permitindo direcionar o Claude Code ao Phaseo sem alterar seus prompts.
+
+Se quiser que o Claude Code consulte a documentação atualizada do Phaseo durante uma sessão, adicione também o servidor [Docs MCP](./docs-mcp.mdx).
+
+## Configure com o Phaseo CLI
+
+```bash
+phaseo login
+phaseo claude
+claude
+```
+
+Instale primeiro a versão oficial do Claude Code. A configuração cria uma `Phaseo CLI: Claude Code API Key` sem expiração, armazena-a no cofre de credenciais do sistema operacional e configura o gateway e o auxiliar de chave de API do Claude Code. Nenhuma chave em texto simples é gravada nas configurações do Claude Code.
+
+## Configuração manual
+
+```bash
+export ANTHROPIC_BASE_URL="https://api.phaseo.app"
+export ANTHROPIC_AUTH_TOKEN="your_phaseo_api_key"
+export ANTHROPIC_API_KEY=""
+```
+
+```powershell
+$env:ANTHROPIC_BASE_URL = "https://api.phaseo.app"
+$env:ANTHROPIC_AUTH_TOKEN = "your_phaseo_api_key"
+$env:ANTHROPIC_API_KEY = ""
+```
+
+## Escolha um modelo (opcional)
+
+Defina `ANTHROPIC_MODEL` se quiser um padrão fixo. Use os IDs listados em [Modelos](../../api-reference/endpoint/models.mdx).
+
+## Inicie o Claude Code
+
+```bash
+claude
+```
+
+## Mapeamento de endpoints
+
+- O Claude Code chama endpoints no estilo Anthropic (`/v1/messages`).
+- O Phaseo processa essas solicitações por meio de [Anthropic Messages](../../api-reference/endpoint/anthropic-messages.mdx).
+
+## Observações de compatibilidade
+
+- `ANTHROPIC_AUTH_TOKEN` é enviado no cabeçalho `Authorization`, que o Phaseo aceita.
+- Você também pode definir `ANTHROPIC_MODEL` com o ID de um modelo Phaseo para que o Claude Code use sempre o mesmo modelo padrão.
+- Limitação atual: o streaming com ferramentas em Anthropic Messages pode retornar `400 invalid_request`. Se seu fluxo depender de ciclos de ferramentas em streaming, teste esse caminho antes de ampliar a implantação.

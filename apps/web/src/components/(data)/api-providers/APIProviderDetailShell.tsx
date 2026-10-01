@@ -11,7 +11,7 @@ import AccountPolicyNotice from "../AccountPolicyNotice";
 import ModelPageToc, { type ModelPageTocItem } from "../model/ModelPageToc";
 import EntityStickyHeader from "../EntityStickyHeader";
 import { Button } from "@/components/ui/button";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 
 interface APIProviderDetailShellProps {
 	apiProviderId: string;
@@ -25,6 +25,7 @@ export default async function APIProviderDetailShell({
 	tocItems = [],
 }: APIProviderDetailShellProps) {
 	const header = await fetchFrontendAPIProviderHeader(apiProviderId).catch(() => null);
+	const locale = await getLocale();
 	const t = await getTranslations("Catalogue.providers");
 
 	if (!header) {
@@ -52,14 +53,14 @@ export default async function APIProviderDetailShell({
 								{t("contribute")}
 								<Image
 									src="/social/github_light.svg"
-									alt="GitHub Logo"
+								alt="GitHub"
 									width={16}
 									height={16}
 									className="inline dark:hidden"
 								/>
 								<Image
 									src="/social/github_dark.svg"
-									alt="GitHub Logo"
+								alt="GitHub"
 									width={16}
 									height={16}
 									className="hidden dark:inline"
@@ -72,7 +73,7 @@ export default async function APIProviderDetailShell({
 		);
 	}
 	const countryName = header.country_code
-		? new Intl.DisplayNames(["en"], { type: "region" }).of(header.country_code.toUpperCase()) ?? header.country_code
+		? new Intl.DisplayNames([locale], { type: "region" }).of(header.country_code.toUpperCase()) ?? header.country_code
 		: null;
 
 	return (

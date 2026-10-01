@@ -3,6 +3,8 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { useLocale, useTranslations } from "next-intl";
+import { getLocalizedDocsHref } from "@/lib/docs";
 import {
 	ArrowRight,
 	Check,
@@ -360,6 +362,7 @@ function FirstPromptCodeBlock({
 	variant: HomeOpenSourceVariant;
 	onSelectSnippet: (id: SnippetId) => void;
 }) {
+	const t = useTranslations("Site.homeOpenSourceMarketing");
 	const [copied, setCopied] = useState(false);
 	const [tokens, setTokens] = useState<CodeTokensWithThemesResult | null>(null);
 	const [error, setError] = useState(false);
@@ -462,7 +465,7 @@ function FirstPromptCodeBlock({
 											{selectedMoreSnippet.label}
 										</>
 									) : (
-										"More"
+										t("more")
 									)}
 									<ChevronDown className="h-3.5 w-3.5" />
 								</button>
@@ -517,7 +520,7 @@ function FirstPromptCodeBlock({
 								copied ? "translate-y-full opacity-0" : "translate-y-0 opacity-100"
 							)}
 						>
-							Copy
+							{t("copy")}
 						</span>
 						<span
 							className={cn(
@@ -525,7 +528,7 @@ function FirstPromptCodeBlock({
 								copied ? "translate-y-0 opacity-100" : "-translate-y-full opacity-0"
 							)}
 						>
-							Copied
+							{t("copied")}
 						</span>
 					</span>
 				</button>
@@ -641,6 +644,8 @@ export default function HomeOpenSourceSection({
 }: {
 	variant?: HomeOpenSourceVariant;
 }) {
+	const t = useTranslations("Site.homeOpenSourceMarketing");
+	const locale = useLocale();
 	const [snippetId, setSnippetId] = useState<SnippetId>("curl");
 	const [modelIndex, setModelIndex] = useState(0);
 	const [modelTickerIndex, setModelTickerIndex] = useState(0);
@@ -777,20 +782,25 @@ export default function HomeOpenSourceSection({
 			<div className="space-y-6">
 				<div className="space-y-4 text-center">
 					<h2 className="text-3xl font-semibold tracking-[-0.04em] text-zinc-950 dark:text-zinc-50 sm:text-4xl">
-						Build on the World&apos;s Largest Open Source AI Gateway.
+						{t("title")}
 					</h2>
 					<p className="mx-auto max-w-2xl text-base leading-7 text-zinc-600 dark:text-zinc-300 md:text-lg">
-						Ship with one OpenAI-compatible integration, broad provider coverage, and
-						production-grade reliability, without lock-in or black-box infrastructure.
+						{t("description")}
 					</p>
 				</div>
 				<div className="mx-auto flex w-full max-w-2xl flex-col gap-3 border-t border-zinc-200/80 pt-4 dark:border-zinc-800/80">
 					<div className="rounded-xl border border-zinc-200/80 bg-white/90 p-4 text-left dark:border-zinc-800 dark:bg-zinc-950/80">
 						<p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
-							Send your first request in under five minutes.
+							{t("firstRequest")}
 						</p>
 						<p className="mt-1 text-sm text-zinc-600 dark:text-zinc-300">
-							Swap only the <code className="rounded bg-zinc-100 px-1 py-0.5 dark:bg-zinc-900">model</code> ID to route any supported model through the same API.
+							{t.rich("modelIdDescription", {
+								code: (chunks) => (
+									<code className="rounded bg-zinc-100 px-1 py-0.5 dark:bg-zinc-900">
+										{chunks}
+									</code>
+								),
+							})}
 						</p>
 						<FirstPromptCodeBlock
 							activeSnippet={activeSnippet}
@@ -807,21 +817,23 @@ export default function HomeOpenSourceSection({
 							variant="outline"
 							className="h-10 rounded-xl px-5 text-sm font-semibold"
 						>
-								<Link href={variant === "beta" ? "/models" : "https://phaseo.app/docs/v1/quickstart"}>
+								<Link href={variant === "beta" ? "/models" : getLocalizedDocsHref(locale, "/v1/quickstart")}>
 									{variant === "beta" ? (
 										<span className="group inline-flex items-center gap-2">
-											<span>Explore</span>
+											<span>{t("explore")}</span>
 											<SharedProviderTicker
 												currentId={currentTickerPair.explore.id}
 												incomingId={incomingTickerPair.explore.id}
 												isSliding={isModelTickerSliding}
-												ariaLabel={`${currentTickerPair.explore.label} provider`}
+												ariaLabel={t("providerAria", {
+													provider: currentTickerPair.explore.label,
+												})}
 											/>
-											<span>Models</span>
+											<span>{t("models")}</span>
 										</span>
 									) : (
 									<>
-										Read docs
+										{t("readDocs")}
 										<ArrowRight className="h-4 w-4" />
 									</>
 								)}
@@ -829,14 +841,14 @@ export default function HomeOpenSourceSection({
 						</Button>
 						<Button asChild variant="default" className="h-10 rounded-xl px-5 text-sm font-semibold">
 							<Link href="/settings/keys">
-								Get API Key
+								{t("getApiKey")}
 								<ArrowRight className="h-4 w-4" />
 							</Link>
 						</Button>
 						<Button asChild variant="outline" className="h-10 rounded-xl px-5 text-sm font-semibold">
 							<Link href="https://github.com/phaseoteam/Phaseo">
 								<GitHubBrandIcon className="h-4 w-4" />
-								View GitHub
+								{t("viewGitHub")}
 							</Link>
 						</Button>
 						<Button asChild variant="outline" className="h-10 rounded-xl px-4 text-sm font-semibold">
@@ -846,12 +858,14 @@ export default function HomeOpenSourceSection({
 										currentId={currentTickerPair.migration.id}
 										incomingId={incomingTickerPair.migration.id}
 										isSliding={isModelTickerSliding}
-										ariaLabel={`${currentTickerPair.migration.label} migration source`}
+										ariaLabel={t("migrationSourceAria", {
+											provider: currentTickerPair.migration.label,
+										})}
 									/>
 									<ArrowRight className="h-3.25 w-3.25 text-zinc-500/80 dark:text-zinc-400/80" />
 									<PhaseoTickerLogo />
 								</span>
-								Migration guide
+								{t("migrationGuide")}
 							</Link>
 						</Button>
 					</div>
@@ -859,16 +873,16 @@ export default function HomeOpenSourceSection({
 						<div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 							<div className="text-left">
 								<p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
-									Prefer not to integrate APIs yet?
+									{t("notReadyTitle")}
 								</p>
 								<p className="text-sm text-zinc-600 dark:text-zinc-300">
-									Use Chat to test models in the browser and compare outputs with no code.
+									{t("notReadyDescription")}
 								</p>
 							</div>
 							<Button asChild variant="outline" className="h-8 rounded-xl px-3 text-xs font-semibold sm:shrink-0">
 								<Link href="/chat">
 									<MessageSquare className="h-3.5 w-3.5" />
-									Try Chat
+									{t("tryChat")}
 									<ArrowRight className="h-3.5 w-3.5" />
 								</Link>
 							</Button>

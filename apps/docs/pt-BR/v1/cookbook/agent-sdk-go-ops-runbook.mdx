@@ -1,0 +1,64 @@
+---
+title: "Crie um agente de runbook operacional em Go"
+icon: "clipboard-check"
+description: "Use o Agent SDK para Go para combinar algumas ferramentas locais determinísticas em um loop limitado de solução de problemas."
+---
+
+Use esta receita quando um serviço Go precisar responder a perguntas operacionais com contexto local.
+
+## 1. Prepare os SDKs
+
+<Note type="warning">O módulo Go Agent SDK ainda não tem uma versão pública. Siga as [instruções de instalação a partir do código-fonte](../sdk-reference/go/agent-sdk-installation.mdx).</Note>
+
+## 2. Defina pequenas ferramentas de runtime
+
+```go
+statusTool := phaseoagent.DefineTool(phaseoagent.Tool{
+  ID:          "read-status",
+  Description: "Read the current service status page summary.",
+  Execute: func(input any, ctx phaseoagent.RuntimeContext) (any, error) {
+    return map[string]any{
+      "status": "degraded",
+      "summary": "Latency is elevated on one provider route.",
+    }, nil
+  },
+})
+```
+
+## 3. Crie o agente
+
+```go
+agent := phaseoagent.CreateAgent(phaseoagent.AgentDefinition{
+  ID:           "ops-runbook-agent",
+  Model:        "openai/gpt-5.4-nano",
+  Instructions: "Use tools when helpful and answer briefly.",
+  Tools:        []phaseoagent.Tool{statusTool},
+})
+```
+
+## 4. Execute um turno limitado de solução de problemas
+
+```go
+client, _ := phaseoagent.CreateGatewayAgentClient(phaseoagent.GatewayAgentClientOptions{})
+
+result, err := agent.Run(context.Background(), phaseoagent.RunOptions{
+  Input:  "What is happening with provider latency right now?",
+  Client: client,
+})
+if err != nil {
+  panic(err)
+}
+
+fmt.Println(result.Output)
+```
+
+## Quando esta receita é adequada
+
+- o fluxo de trabalho pertence a um único serviço Go
+- o contexto de apoio já existe em chamadas locais ou internas
+- você quer um loop de agente sem introduzir ainda um sistema de jobs mais amplo
+
+## Relacionados
+
+- [Agent SDK para Go](../sdk-reference/go/agent-sdk.mdx)
+- [Fundamente extrações com web fetch](./tool-grounding-with-web-fetch.mdx)

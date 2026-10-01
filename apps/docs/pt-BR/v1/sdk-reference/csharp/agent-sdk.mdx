@@ -1,0 +1,49 @@
+---
+title: "Uso"
+description: "Execute ciclos de ferramentas, revisão humana, novas tentativas e agentes retomáveis com o Agent SDK para C#."
+---
+
+## Preparar o ambiente de execução
+
+O pacote do Agent SDK ainda não está disponível no NuGet. Siga as [instruções de instalação a partir do código-fonte](./agent-sdk-installation.mdx).
+
+## Início rápido
+
+```csharp
+using PhaseoAgentSdk;
+
+var agent = AgentSdk.CreateAgent(new AgentDefinition
+{
+    Id = "quickstart-agent",
+    Model = "openai/gpt-5.4-nano",
+    Instructions = "Answer concisely and helpfully."
+});
+
+var result = await agent.Run(new RunOptions
+{
+    Input = "Give me one fun fact about cURL.",
+    Client = AgentSdk.CreateGatewayAgentClient(),
+});
+
+Console.WriteLine(result.Output);
+```
+
+## Recursos incluídos
+
+- `AgentSdk.CreateAgent(...)`
+- `AgentSdk.DefineTool(...)`
+- `AgentSdk.CreateGatewayAgentClient(...)`
+- um ciclo de ferramentas limitado sobre a API `responses` do Phaseo
+
+## Ambiente de execução avançado
+
+O C# oferece suporte a delegates de validação e aprovação, ferramentas HITL e manuais, progresso, erros recuperáveis, enumeráveis assíncronos reproduzíveis, auxiliares para interrupção, turnos dinâmicos, `NextTurnParams` persistidos, uso e custo normalizados e `IStateAccessor`.
+
+## Streaming e cancelamento
+
+`Agent.Stream(...)` e `Agent.ContinueStream(...)` usam `IAsyncEnumerable` sobre o fluxo SSE de Responses do gateway. Consuma `TextStream()` ou `FullStream()` e chame `Cancel()` para cancelar o token vinculado à solicitação. As etapas concluídas mantêm IDs de solicitação, metadados do provedor, motivos de término, avisos, uso e custo.
+
+## Páginas relacionadas
+
+- [Visão geral do Agent SDK](../agent-sdk/overview.mdx)
+- [Agent SDK para TypeScript](../typescript/agent-sdk.mdx)

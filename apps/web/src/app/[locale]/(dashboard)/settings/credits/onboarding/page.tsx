@@ -1,15 +1,17 @@
 import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHeader";
 import EnterpriseBillingOnboardingClient from "@/components/(gateway)/credits/EnterpriseBillingOnboardingClient";
 import { Card, CardContent } from "@/components/ui/card";
-import type { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
 import { redirect } from "next/navigation";
 import { fetchSettingsCreditsOnboardingInitialData } from "@/lib/fetchers/internal/fetchSettingsCreditsOnboardingInitialData";
 
-export const metadata: Metadata = {
-	title: "Billing Onboarding - Settings",
-};
+export async function generateMetadata() {
+	const t = await getTranslations("SettingsUI");
+	return { title: t("headers.billingOnboarding") + " - " + t("headers.settings") };
+}
 
 export default async function BillingOnboardingPage() {
+	const t = await getTranslations("SettingsUI");
 	const initialData = await fetchSettingsCreditsOnboardingInitialData();
 
 	if (!initialData.signedIn) {
@@ -70,7 +72,7 @@ export default async function BillingOnboardingPage() {
 			) : (
 				<Card>
 					<CardContent className="pt-6 text-sm text-muted-foreground">
-						Only owners and admins can change billing setup for this workspace.
+						{t("settingsPageCopy.billingAdminsOnly")}
 					</CardContent>
 				</Card>
 			)}

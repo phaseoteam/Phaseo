@@ -1,0 +1,71 @@
+---
+icon: "search-check"
+title: "Descoberta de modelos (AI SDK)"
+description: "Como buscar IDs de modelos atuais para usar com o provedor do AI SDK."
+---
+
+O provedor do Vercel AI SDK não oferece um método `listModels()` integrado. Use um destes padrões para manter os IDs dos modelos atualizados.
+
+## Opção 1: buscar pela API Gateway
+
+```ts
+const response = await fetch("https://api.phaseo.app/v1/models", {
+  method: "GET",
+  headers: {
+    Authorization: `Bearer ${process.env.PHASEO_API_KEY}`,
+  },
+});
+
+const filteredResponse = await fetch(
+  "https://api.phaseo.app/v1/models?provider=anthropic&status=active,deprecated&availability=all",
+  {
+    headers: {
+      Authorization: `Bearer ${process.env.PHASEO_API_KEY}`,
+    },
+  },
+);
+
+if (!response.ok || !filteredResponse.ok) {
+  throw new Error("Failed to load models");
+}
+
+const models = await response.json();
+const filteredModels = await filteredResponse.json();
+console.log(models, filteredModels);
+```
+
+## Opção 2: usar o SDK oficial de TypeScript
+
+```ts
+import Phaseo from "@phaseo/sdk";
+
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
+const models = await client.getModels({
+  provider: ["anthropic"],
+  status: ["active", "deprecated"],
+  availability: "all",
+});
+
+console.log(models);
+```
+
+## Usar IDs descobertos com o AI SDK
+
+```ts
+import { phaseo } from "@phaseo/ai-sdk-provider";
+import { generateText } from "ai";
+
+const result = await generateText({
+  model: phaseo("openai/gpt-5-nano"),
+  prompt: "Hello from a discovered model ID.",
+});
+
+console.log(result.text);
+```
+
+## Observações
+
+- Os IDs de modelos usam o formato `provider/model`.
+- `/v1/models` aceita filtros como `provider`, `status`, `organisation`, `endpoints` e `availability`.
+- Verifique periodicamente a disponibilidade dos modelos para acompanhar alterações de roteamento e descontinuações.
+- Prefira selecionar IDs em `/v1/models` em vez de fixá-los no código a longo prazo.

@@ -1,0 +1,74 @@
+---
+icon: "shapes"
+title: "संरचित आउटपुट"
+description: "json_object या json_schema output formats के साथ predictable JSON लौटाएँ।"
+---
+
+Structured outputs से free-form text के बजाय machine-readable output लागू कर सकते हैं।
+
+## एंडपॉइंट समर्थन
+
+Structured outputs इन पर उपयोग करें:
+
+- `/v1/chat/completions` के साथ `response_format`
+- `/v1/responses` के साथ `text.format`
+- `/v1/messages` अब भी JSON text लौटा सकता है, लेकिन वही `response_format` contract उपयोग नहीं करता।
+
+## अनुरोध
+
+```bash
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-5-nano",
+    "messages": [
+      { "role": "user", "content": "Return a JSON object with city and weather for London." }
+    ],
+    "response_format": {
+      "type": "json_schema",
+      "json_schema": {
+        "name": "weather_schema",
+        "strict": true,
+        "schema": {
+          "type": "object",
+          "properties": {
+            "city": { "type": "string" },
+            "weather": { "type": "string" }
+          },
+          "required": ["city", "weather"],
+          "additionalProperties": false
+        }
+      }
+    }
+  }'
+```
+
+## जवाब
+
+```json
+{
+  "id": "chatcmpl_...",
+  "choices": [
+    {
+      "index": 0,
+      "finish_reason": "stop",
+      "message": {
+        "role": "assistant",
+        "content": "{\"city\":\"London\",\"weather\":\"Cloudy\"}"
+      }
+    }
+  ]
+}
+```
+
+## कॉन्ट्रैक्ट संबंधी नोट
+
+- `response_format.type` `text`, `json_object` या `json_schema` होना चाहिए।
+- `json_schema` के लिए schema object शामिल करें (chat-style payload में `response_format.json_schema.schema`, Responses-style payload में `text.format.schema`)।
+- आगे उपयोग करने से पहले अपने server पर JSON validate करें।
+
+## आगे के guides
+
+1. [संरचित आउटपुट स्कीमा](./structured-outputs-schemas.mdx)
+2. [सत्यापन और fallback पैटर्न](./structured-outputs-validation.mdx)

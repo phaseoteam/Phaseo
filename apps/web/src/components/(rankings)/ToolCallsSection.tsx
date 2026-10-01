@@ -5,8 +5,10 @@ import {
 	fetchFrontendRankingToolCallTimeseries,
 } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import { formatModelDisplayName } from "@/lib/models/displayName";
+import { getTranslations } from "next-intl/server";
 
 export async function ToolCallsSection() {
+	const t = await getTranslations("Catalogue.rankings");
 	const result = await fetchFrontendRankingToolCallTimeseries(
 		"year",
 		"week",
@@ -63,9 +65,9 @@ export async function ToolCallsSection() {
 			className="scroll-mt-32 space-y-4 border-t border-border pt-12"
 		>
 			<div className="space-y-0.5">
-				<h2 className="text-2xl font-semibold leading-8">Tool Calls</h2>
+				<h2 className="text-2xl font-semibold leading-8">{t("toolCalls")}</h2>
 				<p className="max-w-3xl text-sm text-muted-foreground">
-					Models ranked by privacy-safe aggregate tool-call volume.
+					{t("toolCallsDescription")}
 				</p>
 			</div>
 			{result.data.length ? (
@@ -77,14 +79,14 @@ export async function ToolCallsSection() {
 					logoIdMap={logoIdMap}
 					organisationNameMap={organisationNameMap}
 					modelLicenseMap={modelLicenseMap}
-					leaderboardTitle="Tool Calls Leaderboard"
-					leaderboardDescription="Compare models by tool calls across the selected usage period."
-					valueUnit="tool calls"
+					leaderboardTitle={t("toolCallsLeaderboardTitle")}
+					leaderboardDescription={t("toolCallsLeaderboardDescription")}
+					valueUnit={t("toolCallsUnit")}
 				/>
 			) : (
 				<EmptyChartPreview
-					title="No public tool-call rankings yet"
-					description="This section will populate once the public aggregate contains sufficient tool-call activity."
+				title={t("noPublicToolCallRankings")}
+				description={t("toolCallsPopulateDescription")}
 					heightClassName="h-[220px]"
 				/>
 			)}

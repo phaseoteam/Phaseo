@@ -1,0 +1,10 @@
+---
+title: "डायनामिक रूट अपडेट करें"
+sidebarTitle: "रूट अपडेट करें"
+badge: "बीटा"
+openapi: "/hi/openapi/v1/openapi.localized.yaml PATCH /routing/dynamic-routes/{id}"
+description: "रूट मेटाडेटा अपडेट करता है या नया कॉन्फ़िगरेशन संस्करण बनाता है।"
+---
+<Note>इस एंडपॉइंट के लिए `settings:write` वाली प्रबंधन API कुंजी आवश्यक है।</Note>
+
+`config` बदलने से नया अपरिवर्तनीय संस्करण बनता है। केवल मेटाडेटा बदलने से संस्करण नहीं बनता।

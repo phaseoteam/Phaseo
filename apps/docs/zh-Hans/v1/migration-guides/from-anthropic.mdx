@@ -1,0 +1,102 @@
+---
+title: "从 Anthropic SDK 迁移"
+sidebarTitle: "Anthropic SDK"
+description: "将 Anthropic SDK 集成迁移到 Phaseo，同时保留熟悉的 Messages API 工作流。"
+icon: "/icons/brands/anthropic.svg"
+---
+
+使用本指南可以保留 Anthropic SDK 工作流，同时通过 Phaseo 发送请求。先更改客户端配置，再验证模型 ID 和应用依赖的 Anthropic 专属行为。
+
+## 变更内容
+
+| 设置 | 之前 | 之后 |
+| --- | --- | --- |
+| 基础 URL | Anthropic 默认值 | `https://api.phaseo.app/v1` |
+| API 密钥 | Anthropic 密钥 | `PHASEO_API_KEY` |
+| 模型 | Anthropic 模型名称 | `GET /v1/models` 返回的 Phaseo 模型 ID |
+| Messages 调用 | 现有 SDK 调用 | 通常不变 |
+
+<Steps>
+<Step title="创建 Phaseo API 密钥">
+
+在[网关密钥](https://phaseo.app/gateway/keys)中创建密钥，并将其作为 `PHASEO_API_KEY` 提供给应用。
+
+</Step>
+
+<Step title="更新 Anthropic 客户端">
+
+将 SDK 指向 Phaseo 基础 URL，并使用你的 Phaseo 密钥。
+
+<CodeGroup>
+```typescript TypeScript
+import Anthropic from "@anthropic-ai/sdk";
+
+const client = new Anthropic({
+  apiKey: process.env.PHASEO_API_KEY,
+  baseURL: "https://api.phaseo.app/v1",
+});
+
+const response = await client.messages.create({
+  model: "anthropic/claude-sonnet-4.6",
+  max_tokens: 256,
+  messages: [{ role: "user", content: "Reply with: migration ready" }],
+});
+```
+
+```python Python
+import os
+import anthropic
+
+client = anthropic.Anthropic(
+    api_key=os.environ["PHASEO_API_KEY"],
+    base_url="https://api.phaseo.app/v1",
+)
+
+response = client.messages.create(
+    model="anthropic/claude-sonnet-4.6",
+    max_tokens=256,
+    messages=[{"role": "user", "content": "Reply with: migration ready"}],
+)
+```
+
+```bash cURL
+curl https://api.phaseo.app/v1/messages \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "anthropic/claude-sonnet-4.6",
+    "max_tokens": 256,
+    "messages": [{"role": "user", "content": "Reply with: migration ready"}]
+  }'
+```
+</CodeGroup>
+
+</Step>
+
+<Step title="验证 Anthropic 专属行为">
+
+使用应用实际采用的模型，测试系统提示词、流式传输、工具调用、推理选项和结构化输出。移除已弃用的 Beta 请求头或请求字段，不要未经检查就将它们带入新的请求路径。
+
+</Step>
+
+<Step title="逐步发布">
+
+使用两种配置运行一组有代表性的提示词并进行比较。切换生产流量前，检查输出格式、延迟、令牌用量、错误和费用。
+
+</Step>
+</Steps>
+
+## 迁移检查清单
+
+- 已在每个部署环境中配置 Phaseo 密钥。
+- Anthropic 客户端已指向 `https://api.phaseo.app/v1`。
+- 已通过 `GET /v1/models` 验证每个生产模型 ID。
+- 在预发布环境中，流式传输和工具调用流程均已通过。
+- 已检查 Anthropic 专属的 Beta 请求头和参数。
+- 回滚仍只需更改密钥和端点配置。
+
+## 后续步骤
+
+- [Anthropic 模型迁移](../model-migrations/index.mdx)
+- [模型](../exploring/models.mdx)
+- [工具调用](../guides/tool-calling.mdx)

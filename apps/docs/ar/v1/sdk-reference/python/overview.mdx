@@ -1,0 +1,43 @@
+---
+icon: "compass"
+title: "نظرة عامة على Python SDK"
+description: "عميل Python الرسمي لواجهة Phaseo Gateway API"
+---
+
+ثبّت الحزمة المنشورة [~phaseo~](https://pypi.org/project/phaseo/) من PyPI.
+
+يوفّر Phaseo Python SDK حاليًا عميلًا متزامنًا لواجهة Phaseo Gateway API.
+
+## الميزات
+
+-   نماذج طلبات ذات أنواع محددة ومُنشأة من مواصفات OpenAPI.
+-   مساعدات مضمّنة للدردشة والاستجابات والرسائل والصور والصوت والتضمينات والإشراف والملفات والدفعات وعمليات الإنشاء ومهام الفيديو غير المتزامنة.
+-   مساعدات البث للنصوص والاستجابات والرسائل (مكررات ~stream_*~).
+- تشمل وظائف مستوى التحكم عرض النماذج ونقاط النهاية والمؤسسات، واكتشاف الأسعار وحسابها، وإدارة دورة حياة مفاتيح API ومساحات العمل، وفحص المفتاح الحالي، والاطلاع على الحالة والمزوّدين والأرصدة والنشاط والتحليلات.
+
+## مثال سريع
+
+```python
+from phaseo import Phaseo
+
+client = Phaseo(api_key="your-api-key")
+
+response = client.generate_response(
+    {
+        "model": "openai/gpt-5-nano",
+        "input": "Reply with: python sdk works",
+    }
+)
+
+print(response.get("id"))
+```
+
+## "ما الذي يتضمنه"
+
+-   عميل `Phaseo`
+-   `chat.completions.create(...)` and `responses.create(...)` مساعدات التوافق
+-   مساعدات الموارد مثل `client.batches`, `client.videos`, `client.files`, and `client.async_jobs`
+-   مساعدات لعناوين WebSocket لتدفّقات دورة حياة المهام غير المتزامنة والدفعات والفيديو
+-   مساعدات دورة حياة النموذج مثل `get_model_deprecation_info(...)` and `validate_model(...)`
+-   مكررات البث للنصوص والاستجابات والرسائل
+-   نماذج الطلب والاستجابة المُنشأة في ~phaseo.models~

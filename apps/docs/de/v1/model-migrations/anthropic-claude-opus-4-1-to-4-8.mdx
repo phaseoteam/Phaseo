@@ -1,0 +1,83 @@
+---
+title: "Anthropic Claude Opus 4.8"
+description: "Wichtige Hinweise zur Einführung von Claude Opus 4.8, einschließlich adaptivem Denken, Sampling-Steuerung und langem Kontext."
+icon: "/icons/brands/anthropic.svg"
+---
+
+# Anthropic Claude Opus 4.8
+
+Mit diesem Leitfaden führen Sie `anthropic/claude-opus-4.8` sicher in der Produktion ein.
+
+Anthropic hat Claude Opus 4.1 am 5. Juni 2026 abgekündigt und die Einstellung für den 5. August 2026 angesetzt. Die Migration baut aufeinander auf: Übernehmen Sie zuerst die Änderungen am Anfrageformat von Opus 4.7 und prüfen Sie anschließend die Verhaltensänderungen von Opus 4.8.
+
+## Neuerungen
+
+- Die Phaseo-Modell-ID lautet `anthropic/claude-opus-4.8`.
+- Opus 4.7 und neuere Modelle lehnen nicht standardmäßige Sampling-Parameter wie `temperature`, `top_p` und `top_k` ab.
+- Opus 4.7 und neuere Modelle lehnen manuelle Budgets für erweitertes Denken ab; verwenden Sie adaptives Denken.
+- Opus 4.8 setzt `output_config.effort` standardmäßig auf `high`.
+- Opus 4.8 unterstützt Systemnachrichten mitten im Gespräch.
+- Opus 4.8 erhöht die Standardgrenzen auf eine Million Kontexttokens und maximal 128.000 Ausgabetokens für Claude API, Claude Platform auf AWS, Amazon Bedrock und Vertex AI.
+
+## Schnelleinstieg für die Migration
+
+### 1. Modell-ID aktualisieren
+
+Setzen Sie die Modell-ID auf `anthropic/claude-opus-4.8`.
+
+### 2. Nicht standardmäßige Sampling-Parameter entfernen
+
+Wenn Ihre Opus-4.1-Anfragen noch einen dieser Werte setzen, entfernen Sie ihn vor dem Rollout:
+
+- `temperature`
+- `top_p`
+- `top_k`
+
+Bei Opus 4.7 und neueren Modellen führen nicht standardmäßige Werte zu `400`.
+
+### 3. Manuelle Thinking-Budgets durch adaptives Denken ersetzen
+
+Wenn Sie noch alte Thinking-Payloads senden, zum Beispiel:
+
+- `thinking: { "type": "enabled", "budget_tokens": 32000 }`
+
+wechseln Sie zu:
+
+- `thinking: { "type": "adaptive" }`
+- `output_config.effort = "high"` als Ausgangswert
+
+### 4. Erwartungen an Aufwand und langen Kontext neu festlegen
+
+Opus 4.8 verwendet standardmäßig `high` und unterstützt auf den von Anthropic betriebenen API-Oberflächen deutlich mehr Kontext als Opus 4.1. Testen Sie erneut:
+
+- Latenzbudgets
+- Tokenverbrauch
+- Prompt-Caching-Verhalten
+- lange Dokumente und Agenten-Traces
+
+Gehen Sie bei Microsoft Foundry nicht davon aus, dass das Kontextfenster von einer Million Tokens dort bereits zum Start verfügbar ist. Anthropic dokumentiert für Opus 4.8 auf Foundry ein Fenster von 200.000 Tokens.
+
+### 5. Aktualisierte Anweisungen in langen Gesprächen prüfen
+
+Opus 4.8 unterstützt Systemnachrichten mitten im Gespräch. Wenn Ihre Agentenschleife derzeit den gesamten System-Prompt in jedem Turn neu schreibt, lässt sich dieser Ablauf möglicherweise vereinfachen und mehr Cache-Treffer bleiben erhalten.
+
+## Was Sie testen sollten
+
+- Anfragen, die noch `temperature`, `top_p` oder `top_k` senden.
+- Thinking-Routen, die bisher von `budget_tokens` abhingen.
+- Lang laufende Agenten- und Tool-Workflows.
+- Schema-empfindliche Ausgaben mit expliziten `effort`-Stufen.
+- Änderungen bei Tokenkosten und Latenz für Ihre meistgenutzten Opus-4.1-Promptklassen.
+
+## Sicherer Rollout
+
+1. Entfernen Sie Sampling-Parameter und alte Thinking-Budgets, bevor Sie Traffic umstellen.
+2. Führen Sie Opus 4.8 parallel mit produktionsnahen Prompts und Tool-Abläufen aus.
+3. Testen Sie schrittweise und halten Sie während der Überschneidungsphase vor dem 5. August 2026 eine Fallback-Route bereit.
+4. Erhöhen Sie den Traffic erst, wenn Latenz, Kosten und Aufgabenabschluss innerhalb Ihrer Zielwerte liegen.
+
+## Quellen
+
+- [Abkündigungen von Anthropic-Modellen](https://platform.claude.com/docs/en/about-claude/model-deprecations)
+- [Anthropic-Migrationsleitfaden](https://platform.claude.com/docs/en/about-claude/models/migration-guide)
+- [Neuigkeiten zu Claude Opus 4.8](https://platform.claude.com/docs/en/about-claude/models/whats-new-claude-4-8)

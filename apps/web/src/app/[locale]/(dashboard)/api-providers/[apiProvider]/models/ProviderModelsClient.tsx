@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { debounce, useQueryState } from "nuqs";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { CopyButton } from "@/components/ui/copy-button";
 import {
@@ -68,21 +69,22 @@ function formatUsd(value: number | null | undefined): string {
 
 function formatMeterDisplay(
 	meter: APIProviderModelPricingMeter,
+	labels: { millionPixels: string; millionTokens: string; unit: string },
 ): { amount: number | null; unitLabel: string } {
 	const isPixelMeter = meter.unit === "pixel" || meter.meter.includes("pixel");
 	const isTokenMeter = meter.unit === "token" || meter.meter.includes("token");
 	if (meter.price_per_1m_usd != null && Number.isFinite(meter.price_per_1m_usd)) {
 		if (isPixelMeter) {
-			return { amount: meter.price_per_1m_usd, unitLabel: "1M pixels" };
+			return { amount: meter.price_per_1m_usd, unitLabel: labels.millionPixels };
 		}
 		if (isTokenMeter) {
-			return { amount: meter.price_per_1m_usd, unitLabel: "1M tokens" };
+			return { amount: meter.price_per_1m_usd, unitLabel: labels.millionTokens };
 		}
 	}
 
 	return {
 		amount: meter.price_per_unit_usd,
-		unitLabel: meter.display_unit_label || meter.unit || "unit",
+		unitLabel: meter.display_unit_label || meter.unit || labels.unit,
 	};
 }
 
@@ -158,6 +160,15 @@ export default function ProviderModelsClient({
 	providerLabel,
 	models,
 }: ProviderModelsClientProps) {
+	const t = useTranslations("Catalogue.providerModelList");
+	const modalityLabels: Record<string, string> = {
+		text: t("capabilities.text"),
+		image: t("capabilities.image"),
+		audio: t("capabilities.audio"),
+		video: t("capabilities.video"),
+		rerank: t("capabilities.rerank"),
+		embeddings: t("capabilities.embeddings"),
+	};
 	const [searchQuery, setSearchQuery] = useQueryState("q", {
 		defaultValue: "",
 		parse: (value) => value || "",
@@ -197,10 +208,10 @@ export default function ProviderModelsClient({
 		[selectedParams, parameterLabelMap],
 	);
 	const selectedParamsSummary = useMemo(() => {
-		if (selectedParamLabels.length === 0) return "Filter Parameters";
+		if (selectedParamLabels.length === 0) return t("filterParameters");
 		if (selectedParamLabels.length === 1) return selectedParamLabels[0];
-		return `${selectedParamLabels.length} Selected Parameters`;
-	}, [selectedParamLabels]);
+		return t("selectedParameters", { count: selectedParamLabels.length });
+	}, [selectedParamLabels, t]);
 
 	const filteredModels = useMemo(() => {
 		const q = searchQuery.trim().toLowerCase();
@@ -296,14 +307,14 @@ export default function ProviderModelsClient({
 							size="icon"
 							className="h-9 w-9 shrink-0"
 							onClick={clearParameterFilters}
-							aria-label="Clear selected parameter filters"
+											aria-label={t("clearSelectedParameterFilters")}
 						>
 							<X className="h-4 w-4" />
 						</Button>
 					) : null}
 					{searchQuery.length > 0 ? (
 						<Button variant="ghost" size="sm" onClick={clearFilters}>
-							Clear
+										{t("clear")}
 						</Button>
 					) : null}
 				</div>
@@ -316,14 +327,14 @@ export default function ProviderModelsClient({
 								limitUrlUpdates: debounce(200),
 							})
 						}
-						placeholder="Search models"
+						placeholder={t("searchPlaceholder")}
 						className="h-9"
-						aria-label="Search models"
+						aria-label={t("searchPlaceholder")}
 					/>
 				</div>
 
 				<div className="text-sm text-muted-foreground md:justify-self-end md:text-right">
-					{filteredModels.length} models
+					{t("modelsCount", { count: filteredModels.length })}
 				</div>
 			</div>
 
@@ -334,18 +345,18 @@ export default function ProviderModelsClient({
 							<EmptyMedia variant="icon">
 								<FilePlus />
 							</EmptyMedia>
-							<EmptyTitle>No models found</EmptyTitle>
+							<EmptyTitle>{t("noModelsTitle")}</EmptyTitle>
 							<EmptyDescription>
-								There are no models for this provider yet.
+								{t("noModelsForProvider")}
 							</EmptyDescription>
 						</EmptyHeader>
 						<EmptyContent>
 							<div className="flex gap-2">
 								<Button asChild>
-									<a href="/contribute">Contribute</a>
+									<a href="/contribute">{t("contribute")}</a>
 								</Button>
 								<Button variant="outline" asChild>
-									<a href="https://phaseo.app">Learn more</a>
+									<a href="https://phaseo.app">{t("learnMore")}</a>
 								</Button>
 							</div>
 						</EmptyContent>
@@ -356,15 +367,15 @@ export default function ProviderModelsClient({
 							<EmptyMedia variant="icon">
 								<FilePlus />
 							</EmptyMedia>
-							<EmptyTitle>No matching models</EmptyTitle>
+							<EmptyTitle>{t("noMatchingModels")}</EmptyTitle>
 							<EmptyDescription>
-								No models matched your search or selected parameters.
+								{t("noModelsMatched")}
 							</EmptyDescription>
 						</EmptyHeader>
 						<EmptyContent>
 							<Button asChild>
 								<Link href={clearHref} onClick={clearFilters}>
-									Clear filters
+									{t("clearFilters")}
 								</Link>
 							</Button>
 						</EmptyContent>
@@ -409,18 +420,18 @@ export default function ProviderModelsClient({
 												variant="ghost"
 												size="sm"
 												className="shrink-0 opacity-0 transition-opacity duration-150 group-hover/model-row:opacity-100 group-focus-within/model-row:opacity-100"
-												aria-label="Copy model ID"
+												aria-label={t("copyModelId")}
 											/>
 										</div>
 
 										<div className="space-y-2">
 											<div className="text-xs tracking-wide text-muted-foreground/80">
-												Modalities
+												{t("modalities")}
 											</div>
 											<div className="grid gap-2 sm:grid-cols-2">
 												<div className="min-w-0 space-y-1">
 													<div className="text-xs tracking-wide text-muted-foreground/80">
-														Input
+														{t("input")}
 													</div>
 													<div className="flex flex-wrap items-center gap-1.5">
 														{inputModalityIcons.length > 0 ? (
@@ -433,7 +444,7 @@ export default function ProviderModelsClient({
 																	>
 																		<Icon className="h-4 w-4" />
 																		<span className="text-xs leading-none">
-																			{item.label}
+																	{modalityLabels[item.id] ?? item.label}
 																		</span>
 																	</span>
 																);
@@ -446,7 +457,7 @@ export default function ProviderModelsClient({
 
 												<div className="min-w-0 space-y-1">
 													<div className="text-xs tracking-wide text-muted-foreground/80">
-														Output
+														{t("output")}
 													</div>
 													<div className="flex flex-wrap items-center gap-1.5">
 														{outputModalityIcons.length > 0 ? (
@@ -459,7 +470,7 @@ export default function ProviderModelsClient({
 																	>
 																		<Icon className="h-4 w-4" />
 																		<span className="text-xs leading-none">
-																			{item.label}
+																	{modalityLabels[item.id] ?? item.label}
 																		</span>
 																	</span>
 																);
@@ -475,7 +486,7 @@ export default function ProviderModelsClient({
 
 									<div className="space-y-2 border-t pt-3 md:border-t-0 md:border-l md:pt-0 md:pl-4">
 										<div className="text-xs tracking-wide text-muted-foreground/80">
-											Supported Parameters
+											{t("supportedParameters")}
 										</div>
 										<div className="flex flex-wrap items-center gap-1.5">
 											{paramLabels.length > 0 ? (
@@ -496,11 +507,15 @@ export default function ProviderModelsClient({
 									</div>
 
 									<div className="space-y-2 border-t pt-3 md:border-t-0 md:border-l md:pt-0 md:pl-4">
-										<div className="text-xs text-muted-foreground">Pricing</div>
+										<div className="text-xs text-muted-foreground">{t("pricing")}</div>
 										{pricingMeters.length > 0 ? (
 											<div className="space-y-1.5">
 												{pricingMeters.map((meter) => {
-													const display = formatMeterDisplay(meter);
+													const display = formatMeterDisplay(meter, {
+														millionPixels: t("oneMillionPixels"),
+														millionTokens: t("oneMillionTokens"),
+														unit: t("unit"),
+													});
 													return (
 														<div key={`${model.model_id}-meter-${meter.meter}`}>
 															<div className="text-sm">
@@ -517,9 +532,10 @@ export default function ProviderModelsClient({
 															{meter.meter === "image_pixels" &&
 															meter.estimated_price_per_image_usd != null ? (
 																<div className="text-xs text-muted-foreground">
-																	~{" "}
-																	{formatUsd(meter.estimated_price_per_image_usd)} / 1024x1024
-																	image
+													{t("estimatedImagePrice", {
+														price: formatUsd(meter.estimated_price_per_image_usd),
+														size: "1024×1024",
+													})}
 																</div>
 															) : null}
 														</div>
@@ -528,7 +544,7 @@ export default function ProviderModelsClient({
 											</div>
 										) : model.starting_price_usd != null ? (
 											<div className="text-xs text-muted-foreground">
-												From {formatUsd(model.starting_price_usd)} /{" "}
+												{t("startingAt", { price: formatUsd(model.starting_price_usd) })} /{" "}
 												{model.starting_price_unit ?? "unit"}
 											</div>
 										) : (

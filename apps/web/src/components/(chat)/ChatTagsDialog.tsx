@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useTranslations } from "next-intl";
 import { Check, Plus, TagIcon, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -74,6 +75,7 @@ export function ChatTagsDialog({
 	onOpenChange,
 	onSave,
 }: ChatTagsDialogProps) {
+	const t = useTranslations("Product.chat.tagDialog");
 	const targets = useMemo(
 		() => (threads && threads.length > 0 ? threads : thread ? [thread] : []),
 		[thread, threads],
@@ -96,7 +98,7 @@ export function ChatTagsDialog({
 			)
 		: null;
 	const canAddTag = normalizedName.length > 0;
-	const createButtonLabel = matchingExistingTag ? "Add tag" : "Create tag";
+	const createButtonLabel = matchingExistingTag ? t("addTag") : t("createTag");
 
 	const addTag = () => {
 		if (!normalizedName) return;
@@ -123,10 +125,10 @@ export function ChatTagsDialog({
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			<DialogContent className="max-w-lg gap-5 p-5">
 				<DialogHeader>
-					<DialogTitle>Chat Tags</DialogTitle>
+					<DialogTitle>{t("title")}</DialogTitle>
 					{multiple ? (
 						<DialogDescription>
-							Apply tags to {targets.length} selected chats.
+							{t("applyToChats", { count: targets.length })}
 						</DialogDescription>
 					) : null}
 				</DialogHeader>
@@ -134,9 +136,9 @@ export function ChatTagsDialog({
 					{availableTags.length > 0 ? (
 						<div className="grid gap-2">
 							<div className="flex items-center justify-between gap-3">
-								<Label>Choose existing tags</Label>
+								<Label>{t("existingTags")}</Label>
 								<span className="text-xs text-muted-foreground">
-									{selectedTags.length} selected
+									{t("selectedCount", { count: selectedTags.length })}
 								</span>
 							</div>
 							<ScrollArea
@@ -171,10 +173,10 @@ export function ChatTagsDialog({
 					) : null}
 					<div className="grid gap-2">
 						<div className="flex items-center justify-between gap-3">
-							<Label htmlFor="chat-tag-name">Create a tag</Label>
+							<Label htmlFor="chat-tag-name">{t("createTag")}</Label>
 							{matchingExistingTag ? (
 								<span className="text-xs text-muted-foreground">
-									Matches existing tag
+									{t("matchesExisting")}
 								</span>
 							) : null}
 						</div>
@@ -190,13 +192,13 @@ export function ChatTagsDialog({
 										addTag();
 									}
 								}}
-								placeholder="Research, billing, ideas..."
+								placeholder={t("namePlaceholder")}
 								className="pl-9"
 							/>
 						</div>
 						{matchingExistingTag ? null : (
 							<div className="grid gap-1.5">
-								<span className="text-xs text-muted-foreground">Color</span>
+								<span className="text-xs text-muted-foreground">{t("color")}</span>
 								<div className="grid grid-cols-9 gap-1.5 rounded-md border border-border bg-muted/20 p-2">
 									{TAG_COLORS.map((option) => (
 										<button
@@ -209,7 +211,7 @@ export function ChatTagsDialog({
 											)}
 											style={{ backgroundColor: option }}
 											onClick={() => setColor(option)}
-											aria-label={`Use tag color ${option}`}
+											aria-label={t("useColor", { color: option })}
 											aria-pressed={option === color}
 										/>
 									))}
@@ -229,7 +231,7 @@ export function ChatTagsDialog({
 						</div>
 					</div>
 					<div className="grid gap-2">
-						<Label>Assigned tags</Label>
+						<Label>{t("assignedTags")}</Label>
 						{selectedTags.length > 0 ? (
 							<div className="flex flex-wrap gap-2">
 								{selectedTags.map((tag) => (
@@ -250,7 +252,7 @@ export function ChatTagsDialog({
 													prev.filter((entry) => entry.id !== tag.id),
 												)
 											}
-											aria-label={`Remove ${tag.name}`}
+											aria-label={t("removeTag", { tagName: tag.name })}
 										>
 											<X className="h-3 w-3" />
 										</button>
@@ -259,7 +261,7 @@ export function ChatTagsDialog({
 							</div>
 						) : (
 							<p className="rounded-md border border-dashed border-border px-3 py-4 text-sm text-muted-foreground">
-								No tags assigned.
+								{t("noTags")}
 							</p>
 						)}
 					</div>
@@ -270,10 +272,10 @@ export function ChatTagsDialog({
 						variant="outline"
 						onClick={() => onOpenChange(false)}
 					>
-						Cancel
+						{t("cancel")}
 					</Button>
 					<Button type="button" onClick={() => onSave(selectedTags)}>
-						Save Tags
+						{t("save")}
 					</Button>
 				</DialogFooter>
 			</DialogContent>

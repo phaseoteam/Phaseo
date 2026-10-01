@@ -1,0 +1,83 @@
+---
+title: "Anthropic Claude Opus 4.8"
+description: "適応型思考、サンプリング制御、長いコンテキストなど、Claude Opus 4.8 の導入時に確認する内容です。"
+icon: "/icons/brands/anthropic.svg"
+---
+
+# Anthropic Claude Opus 4.8
+
+`anthropic/claude-opus-4.8` を本番環境に安全に導入するには、このガイドを使います。
+
+Anthropic は 2026 年 6 月 5 日に Claude Opus 4.1 を非推奨にし、2026 年 8 月 5 日に提供終了する予定を発表しました。移行手順は段階的です。まず Claude Opus 4.7 のリクエスト形式の変更を適用し、その後 Opus 4.8 の動作変更を確認します。
+
+## 新機能
+
+- Phaseo のモデル ID は `anthropic/claude-opus-4.8` です。
+- Opus 4.7 以降では `temperature`、`top_p`、`top_k` などのデフォルト以外のサンプリング設定が拒否されます。
+- Opus 4.7 以降では手動の拡張 thinking budget が拒否されるため、適応型 thinking を使います。
+- Opus 4.8 の `output_config.effort` はデフォルトで `high` です。
+- Opus 4.8 は会話の途中で system メッセージを追加できます。
+- Opus 4.8 は Claude API、AWS 上の Claude Platform、Amazon Bedrock、Vertex AI で、標準の上限をコンテキスト 100 万トークン、最大出力 128K トークンに引き上げます。
+
+## 移行クイックスタート
+
+### 1. モデル ID を更新する
+
+モデル ID を `anthropic/claude-opus-4.8` にします。
+
+### 2. デフォルト以外のサンプリングパラメーターを削除する
+
+Opus 4.1 のリクエストで次の値を設定している場合は、ロールアウト前に削除します。
+
+- `temperature`
+- `top_p`
+- `top_k`
+
+Opus 4.7 以降では、これらのデフォルト以外の値に `400` が返されます。
+
+### 3. 手動の thinking budget を適応型 thinking に置き換える
+
+次のような従来の thinking payload を送っている場合：
+
+- `thinking: { "type": "enabled", "budget_tokens": 32000 }`
+
+次に移行します。
+
+- `thinking: { "type": "adaptive" }`
+- 基準として `output_config.effort = "high"`
+
+### 4. effort と長いコンテキストの想定を見直す
+
+Opus 4.8 は `high` をデフォルトとし、Anthropic が運営する API で Opus 4.1 より大きなコンテキストウィンドウに対応します。次を再テストします。
+
+- レイテンシ予算
+- トークン使用量
+- プロンプトキャッシュの動作
+- 長い文書やエージェントトレース
+
+Microsoft Foundry では、提供開始時から 100 万トークンのコンテキストウィンドウを使えるとは限りません。Anthropic は Foundry 上の Opus 4.8 について 20 万トークンのウィンドウを案内しています。
+
+### 5. 長い会話中の指示更新を確認する
+
+Opus 4.8 は会話の途中で system メッセージを受け付けます。エージェントループが各ターンでシステムプロンプト全体を書き換えている場合、フローを簡素化してキャッシュヒットを維持できる可能性があります。
+
+## テスト項目
+
+- `temperature`、`top_p`、`top_k` をまだ送るリクエスト。
+- `budget_tokens` に依存していた thinking 有効化ルート。
+- 長時間のエージェントおよびツールワークフロー。
+- 明示的な `effort` レベルを使うスキーマ重視の出力。
+- 使用量の多い Opus 4.1 プロンプトでのトークンコストとレイテンシの差。
+
+## 安全なロールアウト
+
+1. トラフィックを切り替える前に、サンプリング設定と古い thinking budget を削除します。
+2. 本番に近いプロンプトとツール処理で Opus 4.8 をシャドー実行します。
+3. 2026 年 8 月 5 日より前の重複期間中はフォールバック経路を残して段階的に試します。
+4. レイテンシ、コスト、タスク完了の差が目標範囲内になってから拡大します。
+
+## 参考資料
+
+- [Anthropic モデルの非推奨情報](https://platform.claude.com/docs/en/about-claude/model-deprecations)
+- [Anthropic の移行ガイド](https://platform.claude.com/docs/en/about-claude/models/migration-guide)
+- [Claude Opus 4.8 の新機能](https://platform.claude.com/docs/en/about-claude/models/whats-new-claude-4-8)

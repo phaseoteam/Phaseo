@@ -1,4 +1,5 @@
 import type { ShikiLang } from "@/components/(data)/model/quickstart/shiki";
+import { getMigrationTranslations } from "./migration-locales";
 
 const PHASEO_BASE_URL = "https://api.phaseo.app/v1";
 
@@ -699,10 +700,59 @@ const client = new OpenAI({
 	},
 ];
 
-export function getMigrationPosts(): MigrationPost[] {
-	return MIGRATION_POSTS;
+function localizeMigrationPost(post: MigrationPost, locale: string): MigrationPost {
+	const translations = getMigrationTranslations(locale, post.slug);
+	if (!translations) {
+		return post;
+	}
+	const translate = (text: string): string => translations[text] ?? text;
+
+	return {
+		...post,
+		title: translate(post.title),
+		seoTitle: translate(post.seoTitle),
+		description: translate(post.description),
+		excerpt: translate(post.excerpt),
+		keywords: post.keywords.map(translate),
+		prerequisites: post.prerequisites.map(translate),
+		sections: post.sections.map((section) => ({
+			...section,
+			title: translate(section.title),
+			paragraphs: section.paragraphs.map(translate),
+			checklist: section.checklist?.map(translate),
+			codeSnippets: section.codeSnippets?.map((snippet) => ({
+				...snippet,
+				label: translate(snippet.label),
+			})),
+			screenshots: section.screenshots?.map((screenshot) => ({
+				...screenshot,
+				title: translate(screenshot.title),
+				description: translate(screenshot.description),
+			})),
+		})),
+		validationSteps: post.validationSteps.map(translate),
+		faq: post.faq.map((item) => ({
+			question: translate(item.question),
+			answer: translate(item.answer),
+		})),
+		references: post.references?.map((reference) => ({
+			...reference,
+			label: translate(reference.label),
+		})),
+	};
 }
 
-export function getMigrationPost(slug: string): MigrationPost | undefined {
-	return MIGRATION_POSTS.find((post) => post.slug === slug);
+export function getMigrationPosts(locale?: string): MigrationPost[] {
+	if (!locale || locale === "en-GB") {
+		return MIGRATION_POSTS;
+	}
+	return MIGRATION_POSTS.map((post) => localizeMigrationPost(post, locale));
+}
+
+export function getMigrationPost(
+	slug: string,
+	locale?: string,
+): MigrationPost | undefined {
+	const post = MIGRATION_POSTS.find((item) => item.slug === slug);
+	return post && locale ? localizeMigrationPost(post, locale) : post;
 }

@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { Languages } from "lucide-react";
 import { NextIntlClientProvider } from "next-intl";
+import { getTranslations } from "next-intl/server";
 import { AuthLocalisationPreview } from "@/components/internal/localisation/AuthLocalisationPreview";
 import { Spinner } from "@/components/ui/spinner";
 import { requireInternalAdmin } from "@/lib/auth/requireInternalAdmin";
@@ -19,14 +20,16 @@ type LocalisationPreviewPageProps = {
 	params: Promise<{ previewLocale: string }>;
 };
 
-export const metadata: Metadata = {
-	title: "Localisation preview",
-	description: "Internal review surface for draft Phaseo translations.",
-	robots: {
-		index: false,
-		follow: false,
-	},
-};
+export async function generateMetadata({ params }: LocalisationPreviewPageProps): Promise<Metadata> {
+	const { previewLocale } = await params;
+	if (!isCatalogLocale(previewLocale)) return {};
+	const t = await getTranslations({ locale: previewLocale, namespace: "Product.internalTools" });
+	return {
+		title: t("localisationPreviewTitle"),
+		description: t("localisationPreviewDescription"),
+		robots: { index: false, follow: false },
+	};
+}
 
 export function generateStaticParams(): Array<{ previewLocale: string }> {
 	return catalogLocales.map((previewLocale) => ({ previewLocale }));
@@ -56,6 +59,7 @@ async function LocalisationPreviewContent({
 	if (!isCatalogLocale(requestedLocale)) notFound();
 
 	const locale = requestedLocale;
+	const t = await getTranslations({ locale, namespace: "Product.internalTools.localisationPreview" });
 	const definition = getLocaleDefinition(locale);
 	const messages = getTypedCatalogMessages(locale);
 	const appleLocaleCount = catalogLocales.filter(
@@ -67,13 +71,12 @@ async function LocalisationPreviewContent({
 			<header className="space-y-3">
 				<div className="flex items-center gap-2 text-sm text-muted-foreground">
 					<Languages className="size-4" aria-hidden="true" />
-					Draft localisation preview
+					{t("draftPreviewTitle")}
 				</div>
 				<div className="space-y-2">
-					<h1 className="text-3xl font-bold">{definition.englishName}</h1>
+					<h1 className="text-3xl font-bold">{definition.nativeName}</h1>
 					<p className="max-w-3xl text-muted-foreground">
-						This admin-only surface renders the real auth catalogs without
-						publishing localized routes. Authentication actions are disabled.
+						{t("description")}
 					</p>
 				</div>
 				<div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
@@ -81,19 +84,19 @@ async function LocalisationPreviewContent({
 						{locale}
 					</span>
 					<span className="rounded-full border px-2.5 py-1">
-						{definition.reviewState}
+						{t(`reviewStates.${definition.reviewState}` as never)}
 					</span>
 					<span className="rounded-full border px-2.5 py-1">
 						{definition.dir.toUpperCase()}
 					</span>
 					<span className="rounded-full border px-2.5 py-1">
-						{appleLocaleCount} of {appleAppStoreLocales.length} Apple matrix locales
+						{t("appleLocaleCoverage", { covered: appleLocaleCount, total: appleAppStoreLocales.length })}
 					</span>
 				</div>
 			</header>
 
 			<nav
-				aria-label="Preview locale"
+				aria-label={t("localeNavigation")}
 				className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3"
 			>
 				{catalogLocales.map((candidate) => {

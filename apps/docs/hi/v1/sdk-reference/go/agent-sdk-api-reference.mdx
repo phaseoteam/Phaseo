@@ -1,0 +1,25 @@
+---
+icon: "braces"
+title: "API संदर्भ"
+description: "Go Agent SDK के मुख्य types और methods देखें।"
+---
+
+| API | उद्देश्य |
+| --- | --- |
+| `CreateAgent(...)` | एजेंट तय करें |
+| `DefineTool(...)` | स्थानीय या मैन्युअल टूल तय करें |
+| `CreateGatewayAgentClient(...)` | मॉडल टर्न को Phaseo से जोड़ें |
+| `Agent.Run(...)` | पूरा होने या रुकने तक चलाएँ |
+| `Agent.Stream(...)` | दोबारा चलाए जा सकने वाले stream consumer के साथ चलाएँ |
+| `Agent.Continue(...)` | सहेजी या रुकी स्थिति जारी रखें |
+| `StreamResult.Result()` | पूरे हुए रन को पढ़ें |
+| `StreamResult.Text()` | टेक्स्ट अंश पढ़ें |
+| `StreamResult.Events()` | सभी इवेंट पढ़ें |
+| `StreamResult.Cancel()` | सक्रिय रन रद्द करें |
+
+महत्वपूर्ण types में `AgentDefinition`, `RunOptions`, `RunResult`, `RunRecord`, `RunStep`, `Tool`, `ToolDecision`, `ToolOutput`, `RuntimeContext`, `StateAccessor`, `ModelRetryConfig` और `ToolExecutionConfig` शामिल हैं।
+
+## संबंधित विषय
+
+- [अपना पहला एजेंट बनाएँ](./agent-sdk.mdx)
+- [Observability और DevTools](./agent-sdk-observability.mdx)

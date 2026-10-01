@@ -1,0 +1,75 @@
+---
+title: "Autenticação"
+description: "Use chaves de API para autenticar todas as solicitações ao Phaseo Gateway."
+icon: "key-round"
+---
+
+Consulte esta referência para enviar solicitações autenticadas ou decidir como armazenar e alternar suas chaves.
+
+O Phaseo Gateway usa tokens Bearer. Todas as solicitações de API devem incluir uma chave válida do seu workspace.
+
+---
+
+## Tipos de chave
+
+- **Chaves de API do Gateway** chamam endpoints de modelos, provedores e geração disponíveis no seu workspace.
+- **Chaves de API de gerenciamento** chamam APIs administrativas. Veja [Chaves de API de gerenciamento](./management-api-keys.mdx).
+- **Chaves rotacionadas** podem ser criadas a qualquer momento e substituídas no app antes de remover a chave antiga.
+
+As chaves seguem o formato `phaseo_v1_sk_<kid>_<secret>`. Trate-as como senhas e evite armazená-las em código executado no cliente ou em repositórios públicos.
+
+<Note>
+Você pode chamar modelos `:free` sem depositar créditos. Modelos pagos exigem saldo disponível na carteira.
+</Note>
+
+---
+
+## Formato do cabeçalho
+
+Inclua a chave no cabeçalho `Authorization` de todas as solicitações:
+
+```http
+Authorization: Bearer phaseo_v1_sk_<kid>_<secret>
+```
+
+A maioria dos clientes HTTP permite configurar isso uma única vez. Por exemplo, com `fetch`:
+
+```ts
+const response = await fetch("https://api.phaseo.app/v1/chat/completions", {
+	method: "POST",
+	headers: {
+		Authorization: `Bearer ${process.env.PHASEO_API_KEY}`,
+		"Content-Type": "application/json",
+	},
+	body: JSON.stringify({
+		model: "gpt-5-nano-2025-08-07",
+		messages: [
+			{ role: "system", content: "You are a helpful assistant." },
+			{
+				role: "user",
+				content: "Summarize the drawbacks to AI.",
+			},
+		],
+	}),
+});
+```
+
+---
+
+## Lista de verificação para gerenciar chaves
+
+| Prática            | Por que isso importa                                                           |
+| ------------------- | ------------------------------------------------------------------------ |
+| Use uma chave por app | Assim, você pode alterná-la sem afetar outros serviços.                |
+| Armazene as chaves com segurança | Gerenciadores de segredos evitam a exposição acidental em logs ou ferramentas de monitoramento de erros.  |
+| Monitore o uso       | O painel mostra métricas por chave para você detectar anomalias rapidamente. |
+| Remova chaves sem uso  | Excluir chaves antigas reduz a superfície de possíveis abusos.        |
+
+---
+
+## Erros comuns de autenticação
+
+- **401 Não autorizado**: a chave está ausente, é inválida ou pertence a um workspace desativado.
+- **403 Proibido**: a chave existe, mas não pode acessar o provedor ou modelo solicitado.
+- **429 Muitas solicitações**: a chave ou o workspace excedeu um limite. Consulte os [limites de taxa](./rate-limits.mdx).
+- **Erros 5xx**: tente novamente com espera exponencial e entre em contato com o [suporte](https://phaseo.app/help) se o problema persistir.

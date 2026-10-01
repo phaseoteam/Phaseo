@@ -1,0 +1,206 @@
+---
+title: "प्रोवाइडर-योग्य मॉडल ID"
+description: "एक ही मॉडल पहचानकर्ता से अनुरोध को सटीक प्रोवाइडर और मॉडल तक रूट करें।"
+icon: "route"
+---
+
+Provider-qualified model IDs से आप `model` फ़ील्ड में सटीक provider और canonical model चुन सकते हैं। इन्हें तब उपयोग करें जब provider का चुनाव routing preference के बजाय request contract का हिस्सा हो।
+
+## वाक्यविन्यास
+
+```text
+<provider-id>:<canonical-model-id>
+```
+
+उदाहरण के लिए:
+
+```text
+baseten:thinking-machines/inkling-small
+deepinfra:deepseek/deepseek-v3
+crofai:moonshotai/kimi-k3
+```
+
+पहला colon provider और canonical model ID को अलग करता है। Model namespace के बाद के colons model suffix बने रहते हैं, इसलिए पहचान अस्पष्ट नहीं होती:
+
+```text
+baseten:google/gemma-4-26b-a4b:free
+```
+
+इस उदाहरण में:
+
+- `baseten` अनुरोधित provider है
+- `google/gemma-4-26b-a4b:free` Phaseo का canonical model ID है
+
+## अनुरोध भेजें
+
+किसी भी ऐसे endpoint पर qualified identifier उपयोग करें जो model ID स्वीकार करता हो।
+
+<CodeGroup>
+
+```bash cURL
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "baseten:thinking-machines/inkling-small",
+    "input": "Explain mixture-of-experts routing in two sentences."
+  }'
+```
+
+```javascript JavaScript
+const response = await fetch("https://api.phaseo.app/v1/responses", {
+  method: "POST",
+  headers: {
+    Authorization: "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    model: "baseten:thinking-machines/inkling-small",
+    input: "Explain mixture-of-experts routing in two sentences.",
+  }),
+});
+
+const result = await response.json();
+```
+
+```python Python
+import os
+import requests
+
+response = requests.post(
+    "https://api.phaseo.app/v1/responses",
+    headers={
+        "Authorization": f"Bearer {os.environ['PHASEO_API_KEY']}",
+        "Content-Type": "application/json",
+    },
+    json={
+        "model": "baseten:thinking-machines/inkling-small",
+        "input": "Explain mixture-of-experts routing in two sentences.",
+    },
+)
+
+result = response.json()
+```
+
+</CodeGroup>
+
+## सटीक रूटिंग का व्यवहार
+
+Provider qualifier सटीक पाबंदी है। Phaseo पात्र providers को अनुरोधित provider तक सीमित करता है और उस request में किसी दूसरे provider पर fallback नहीं करता।
+
+Qualifier अन्य controls को bypass नहीं करता। Provider को फिर भी:
+
+- अनुरोधित endpoint पर canonical model देना चाहिए
+- endpoint capability के लिए enabled होना चाहिए
+- workspace और API key policies पूरी करनी चाहिए
+- preset और privacy restrictions पूरी करनी चाहिए
+- अनुरोधित service tier और parameters support करने चाहिए
+- valid pricing configured होनी चाहिए
+
+इनमें से कोई भी जाँच विफल हो, तो Phaseo चुपचाप दूसरा provider चुनने के बजाय request reject करता है।
+
+## रूटिंग फ़ील्ड के साथ तालमेल
+
+Qualified provider और explicit routing fields आपस में मेल खाने चाहिए।
+
+```json
+{
+  "model": "baseten:thinking-machines/inkling-small",
+  "provider": {
+    "only": ["baseten"]
+  }
+}
+```
+
+मेल खाता `provider.only` या `routing.only` value स्वीकार किया जाता है। परस्पर विरोधी allowlist या qualified provider को शामिल करने वाली ignore list validation error लौटाती है।
+
+उदाहरण के लिए, यह request विरोधाभासी है और reject होगी:
+
+```json
+{
+  "model": "baseten:thinking-machines/inkling-small",
+  "provider": {
+    "only": ["deepinfra"]
+  }
+}
+```
+
+Provider केवल preference हो और दूसरे provider पर fallback चाहिए, तो बिना qualification वाला canonical model ID तथा सामान्य [routing और fallback controls](./routing-and-fallbacks.mdx) उपयोग करें।
+
+## प्रदाता के नाम से निर्दिष्ट मुफ़्त मॉडल
+
+`:free` वाली qualified request केवल तभी स्वीकार होती है जब वही सटीक provider canonical model और endpoint के लिए पात्र free route देता हो।
+
+```json
+{
+  "model": "baseten:google/gemma-4-26b-a4b:free",
+  "input": "Hello"
+}
+```
+
+Phaseo अनुरोध को तभी स्वीकार करता है जब चुने गए route में खाली न हो ऐसी pricing card हो और हर मौजूदा pricing rule:
+
+- स्पष्ट रूप से `free` लेबल किया गया हो
+- उसकी कीमत बिल्कुल शून्य हो
+
+Pricing न होना, paid या mixed pricing, negative pricing, या शून्य मूल्य वाला ऐसा नियम जिस पर स्पष्ट free label न हो—इन सभी स्थितियों में provider execution से पहले request reject होती है।
+
+<Note>
+Canonical `:free` model मौजूद होने का अर्थ यह नहीं है कि उस underlying model को देने वाले सभी providers free route भी देते हैं।
+</Note>
+
+## प्रदाता स्लग और उपनाम
+
+Phaseo provider catalogue में उपलब्ध slug उपयोग करें। Slugs lowercase में normalize होते हैं और समर्थित legacy या brand aliases canonical provider ID से map होते हैं।
+
+उदाहरण के लिए, `NovitaAI` और `novita-ai` दोनों अभी `novita` में normalize होते हैं।
+
+Malformed और अज्ञात slugs provider selection से पहले reject होते हैं। Phaseo उन्हें model name के हिस्से के रूप में upstream नहीं भेजता।
+
+## वैलिडेशन त्रुटियाँ
+
+Provider-qualified ID की विफलताओं में HTTP `400` और top-level error code `validation_error` आता है। सही कारण के लिए `reason` या `details[].keyword` देखें।
+
+| कारण | अर्थ |
+| --- | --- |
+| `invalid_provider_slug` | Provider वाला भाग खाली है या उसमें असमर्थित characters हैं। |
+| `unknown_provider_slug` | Slug का प्रारूप सही है, लेकिन वह पहचाना हुआ Phaseo provider नहीं है। |
+| `invalid_provider_qualified_model` | संयुक्त identifier `<provider>:<publisher>/<model>` से मेल नहीं खाता। |
+| `provider_qualified_model_conflict` | `provider.only`, `provider.ignore`, `routing.only` या `routing.ignore` qualifier का विरोध करता है। |
+| `qualified_provider_unavailable` | Provider पहचाना गया है, लेकिन अनुरोधित endpoint पर वह मॉडल उपलब्ध नहीं कराता। |
+| `qualified_free_provider_unavailable` | सटीक provider route को सभी नियमों में शून्य pricing के साथ स्पष्ट रूप से free सत्यापित नहीं किया गया। |
+
+Error example:
+
+```json
+{
+  "error": "validation_error",
+  "status_code": 400,
+  "reason": "unknown_provider_slug",
+  "description": "Unknown provider slug \"not-a-provider\" in provider-qualified model \"not-a-provider:publisher/model\". Use a provider slug returned by Phaseo's provider catalogue.",
+  "provider": "not-a-provider",
+  "model": "publisher/model",
+  "details": [
+    {
+      "path": ["model"],
+      "keyword": "unknown_provider_slug"
+    }
+  ]
+}
+```
+
+## दोनों रूपों में से चुनें
+
+| ज़रूरत | सुझाया गया model value |
+| --- | --- |
+| Phaseo को provider चुनने और providers के बीच fallback करने दें | `thinking-machines/inkling-small` |
+| दूसरे provider पर fallback के बिना Baseten आवश्यक करें | `baseten:thinking-machines/inkling-small` |
+| एक सत्यापित free provider route आवश्यक करें | `baseten:google/gemma-4-26b-a4b:free` |
+
+## संबंधित गाइड
+
+- [रूटिंग और फ़ॉलबैक](./routing-and-fallbacks.mdx)
+- [API प्रोवाइडर](../exploring/api-providers.mdx)
+- [मॉडल](../exploring/models.mdx)
+- [त्रुटि प्रबंधन](../developers/error-handling.mdx)
+- [प्रीसेट](./presets.mdx)

@@ -1,0 +1,33 @@
+---
+icon: "files"
+title: "Dateien"
+description: "Verwende das PHP-SDK zum Hochladen von Dateien, Abrufen von Metadaten und Auslesen des Dateiinhalts."
+---
+
+**Methoden**: `uploadFile()`, `listFiles()`, `retrieveFile()`, `retrieveFileContent()`
+
+### Beispiel
+
+```php
+<?php
+
+require 'vendor/autoload.php';
+
+use Phaseo\Sdk\Phaseo;
+
+$apiKey = getenv('PHASEO_API_KEY');
+$client = new Phaseo(apiKey: $apiKey);
+
+$uploaded = $client->uploadFile([
+    'purpose' => 'batch',
+    'file' => 'data:application/json;base64,eyJ0ZXN0Ijp0cnVlfQ==',
+]);
+
+$file = $client->retrieveFile('file_123');
+$content = $client->retrieveFileContent('file_123');
+```
+
+<Note>
+`listFiles()` ist im SDK verfügbar, aber `GET /files` gibt mit dem gemeinsam genutzten Gateway-Schlüssel derzeit `file_list_not_supported_with_shared_gateway_key` zurück
+Speichere die IDs hochgeladener Dateien und rufe sie direkt ab.
+</Note>

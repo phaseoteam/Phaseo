@@ -9,7 +9,10 @@ import { fetchFrontendAPIProviders, fetchFrontendModels } from "@/lib/fetchers/f
 import { fetchSettingsPresetsInitialData } from "@/lib/fetchers/internal/fetchSettingsPresetsInitialData";
 import { getTranslations } from "next-intl/server";
 
-export const metadata = { title: "Edit Preset - Settings" };
+export async function generateMetadata() {
+	const t = await getTranslations("SettingsUI");
+	return { title: t("headers.editPreset") + " - " + t("headers.settings") };
+}
 
 export default async function PresetDetailPage({ params }: { params: Promise<{ presetSlug: string }> }) {
 	const { presetSlug } = await params;
@@ -37,12 +40,12 @@ export default async function PresetDetailPage({ params }: { params: Promise<{ p
 					<div className="min-w-0">
 						<div className="flex flex-wrap items-center gap-2">
 					<h1 className="truncate text-xl font-semibold">{t("headers.editPreset")}</h1>
-							{preset.hasDraftChanges ? <Badge variant="secondary">Unpublished Changes</Badge> : null}
+							{preset.hasDraftChanges ? <Badge variant="secondary">{t("settingsPageCopy.unpublished")}</Badge> : null}
 						</div>
 						<p className="text-sm text-muted-foreground">{t("headers.presetDraftDescription")}</p>
 					</div>
 				</div>
-				<ProductFeedbackButton surface="settings_preset_editor" prompt="Tell us what is missing or confusing about the Preset editor." />
+				<ProductFeedbackButton surface="settings_preset_editor" prompt={t("settingsPageCopy.presetFeedbackPrompt")} />
 			</div>
 			<PresetForm
 				models={models}

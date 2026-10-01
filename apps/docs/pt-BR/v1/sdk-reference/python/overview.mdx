@@ -1,0 +1,43 @@
+---
+icon: "compass"
+title: "Visão geral do SDK Python"
+description: "Cliente Python oficial da API do Phaseo Gateway"
+---
+
+Instale pelo PyPI o pacote publicado [~phaseo~](https://pypi.org/project/phaseo/).
+
+Atualmente, o SDK Python do Phaseo oferece um cliente síncrono para a API do Phaseo Gateway.
+
+## Recursos
+
+-   Modelos de solicitação tipados e gerados a partir da especificação OpenAPI.
+-   Helpers integrados para chat, respostas, mensagens, imagens, áudio, embeddings, moderações, arquivos, lotes, gerações e trabalhos assíncronos de vídeo.
+-   Helpers de streaming para texto, respostas e mensagens (iteradores ~stream_*~).
+- Funções do plano de controle para consultar modelos, endpoints e organizações; descobrir e calcular preços; gerenciar o ciclo de vida de chaves de API e workspaces; verificar a chave atual e consultar status, provedores, créditos, atividade e análises.
+
+## Exemplo rápido
+
+```python
+from phaseo import Phaseo
+
+client = Phaseo(api_key="your-api-key")
+
+response = client.generate_response(
+    {
+        "model": "openai/gpt-5-nano",
+        "input": "Reply with: python sdk works",
+    }
+)
+
+print(response.get("id"))
+```
+
+## "O que está incluído"
+
+-   Cliente `Phaseo`
+-   `chat.completions.create(...)` and `responses.create(...)` helpers de compatibilidade
+-   Helpers de recursos, como `client.batches`, `client.videos`, `client.files`, and `client.async_jobs`
+-   Helpers de URL WebSocket para fluxos do ciclo de vida de trabalhos assíncronos, lotes e vídeos
+-   Helpers de ciclo de vida de modelos, como `get_model_deprecation_info(...)` and `validate_model(...)`
+-   Iteradores de streaming para texto, respostas e mensagens
+-   Modelos de solicitação/resposta gerados em ~phaseo.models~

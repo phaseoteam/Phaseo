@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Loader2, LogIn, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslations } from "next-intl";
+import { localizedSettingsError } from "@/i18n/error-messages";
 import {
 	deletePasskeyAction,
 	startPasskeyRegistrationAction,
@@ -58,7 +59,10 @@ export function PasskeyManager({ hasPassword }: { hasPassword: boolean }) {
 			if (error) throw error;
 			setPasskeys((data ?? []) as Passkey[]);
 		} catch (error) {
-			const message = error instanceof Error ? error.message : s("Could not load passkeys");
+			const message =
+				error instanceof Error && error.message.includes("passkey_disabled")
+					? s("Passkeys are not enabled for this environment yet.")
+					: localizedSettingsError(error, t, "Could not load passkeys", s("Could not load passkeys"));
 			if (!message.includes("passkey_disabled")) toast.error(message);
 		} finally {
 			setLoading(false);
@@ -153,12 +157,11 @@ export function PasskeyManager({ hasPassword }: { hasPassword: boolean }) {
 				requestedAction.type === "register"
 					? s("Could not add passkey")
 					: s("Could not remove passkey");
-			const message = error instanceof Error ? error.message : fallback;
-			toast.error(
-				message.includes("passkey_disabled")
+			const message =
+				error instanceof Error && error.message.includes("passkey_disabled")
 					? s("Passkeys are not enabled for this environment yet.")
-					: message,
-			);
+					: localizedSettingsError(error, t, "Could not remove passkey", fallback);
+			toast.error(message);
 		} finally {
 			setPending(false);
 		}

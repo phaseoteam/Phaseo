@@ -1,0 +1,41 @@
+---
+icon: "compass"
+title: "TypeScript SDK の概要"
+description: "Phaseo Gateway API 用の公式 TypeScript クライアント"
+---
+
+公開済みの [~@phaseo/sdk~](https://www.npmjs.com/package/@phaseo/sdk) パッケージを npm からインストールします。
+
+Phaseo TypeScript SDK は、型安全で使いやすい Phaseo Gateway API の操作方法を提供します。OpenAPI 仕様を基盤とし、生成済み型による完全な TypeScript サポートとシンプルなクライアントインターフェースを備えています。
+
+## 主な機能
+
+-   **型安全**: OpenAPI 仕様から生成された型による完全な TypeScript サポート
+-   **シンプルな API**: 使いやすく、明快なインターフェースのクライアント
+-   **生成コード**: 正式な API 仕様から自動生成
+-   **包括範囲**: Gateway API のすべてのエンドポイントをカバー
+
+## 簡単な例
+
+```typescript
+import Phaseo from "@phaseo/sdk";
+
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
+
+const response = await client.generateText({
+	model: "openai/gpt-4o-mini",
+	messages: [{ role: "user", content: "Hello, how are you?" }],
+});
+
+console.log(response.choices[0].message.content);
+```
+
+## 含まれるもの
+
+-   すべての API 操作に使う `Phaseo` クライアントクラス
+-   リソース別ヘルパー（例:） `client.models`, `client.batches`, `client.videos`, and `client.asyncJobs`
+-   モデルの検索や料金確認に使うヘルパー（例:） `client.getModels()`, `client.listProviders()`, `client.getCredits()`, `client.getActivity()`, `client.getAnalytics()`, `client.listEndpoints()`, `client.listOrganisations()`, `client.listPricingModels()`, `client.calculatePricing()`, `client.listApiKeys()`, `client.createApiKey()`, `client.getApiKey(id)`, `client.updateApiKey(id, ...)`, `client.deleteApiKey(id)`, `client.listWorkspaces()`, `client.getWorkspace(id)`, `client.createWorkspace(...)`, `client.updateWorkspace(id, ...)`, `client.deleteWorkspace(id)`, and `client.getCurrentApiKey()`
+-   バッチと動画のライフサイクルストリーム用非同期ジョブ WebSocket URL ヘルパー
+-   すべてのリクエストとレスポンスオブジェクト用の生成済み型
+-   Chat Completions、モデル、クレジットなどを含む API 全体のカバー
+-   開発体験を高める TypeScript 定義

@@ -1,0 +1,63 @@
+---
+title: "Cline"
+description: "اربط Cline بـ Phaseo عبر المزوّد المتوافق مع OpenAI الخاص به."
+---
+
+تنشئ Phaseo CLI مفتاحًا مخصصًا لـ Cline وتديره. يخزن Cline بيانات الاعتماد في مخزن الأسرار الآمن في VS Code، لذا يتم الإدخال النهائي في واجهة الإضافة.
+
+## إنشاء بيانات الاعتماد
+
+```bash
+phaseo login
+phaseo integrations setup cline --model anthropic/claude-sonnet-4.6
+```
+
+## تهيئة Cline
+
+1. افتح لوحة Cline في VS Code.
+2. اختر رمز الإعدادات أو المزوّد أسفل مربع الدردشة.
+3. اختر **OpenAI Compatible**.
+4. أدخل القيم التالية:
+
+| حقل Cline | القيمة |
+| --- | --- |
+| Base URL | `https://api.phaseo.app/v1` |
+| API Key | ناتج الأمر `phaseo integrations credential cline` |
+| Model ID | `anthropic/claude-sonnet-4.6` أو النموذج الذي يعرضه الإعداد |
+
+5. احفظ المزوّد. إذا ظهر خيار **Verify** في إصدارك، فحدده.
+6. اختر النموذج المُهيأ للمهمة التالية.
+
+## التحقق
+
+اطلب من Cline الرد بـ `PHASEO_CLINE_OK` وتحقق من ظهور الطلب في نشاط Phaseo.
+
+## الإزالة
+
+احذف مزوّد Phaseo في Cline أو بدّله، ثم شغّل:
+
+```bash
+phaseo integrations remove cline
+```
+
+لا تستطيع CLI مسح مساحة التخزين الخاصة بإضافات VS Code، لكن الإزالة تلغي المفتاح المحفوظ.
+
+## استكشاف الأخطاء وإصلاحها
+
+### فشل التحقق
+
+أبقِ عنوان URL الأساسي كما هو تمامًا، بما في ذلك `/v1`، والصق مفتاحًا استرجعته للتو دون علامات اقتباس أو مسافات.
+
+### قائمة النماذج فارغة
+
+أدخل معرّف نموذج Phaseo يدويًا. لا يلزم اكتشاف النماذج.
+
+### تعمل المحادثة لكن الأدوات تفشل
+
+اختر نموذج Phaseo يدعم استدعاء الأدوات. فالاتصال ودعم النموذج للأدوات اختباران منفصلان.
+
+## مواضيع ذات صلة
+
+- [تهيئة Cline المتوافقة مع OpenAI](https://docs.cline.bot/enterprise-solutions/configuration/remote-configuration/openai-compatible/member-configuration)
+- [مساعدو البرمجة](./coding-assistants.mdx)
+- [النماذج](../../api-reference/endpoint/models.mdx)

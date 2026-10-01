@@ -2,6 +2,7 @@
 
 import React from "react";
 import { useTranslations } from "next-intl";
+import { localizedSettingsError } from "@/i18n/error-messages";
 import {
 	Card,
 	CardHeader,
@@ -173,7 +174,8 @@ export default function TeamsRequests({
 				await toast.promise(approveJoinRequest(request.id), {
 					loading: s("Approving…"),
 					success: s("Request approved"),
-					error: (err) => `${s("Failed:")} ${err?.message || err}`,
+					error: (err) =>
+						`${s("Failed:")} ${localizedSettingsError(err, t, "Action failed")}`,
 				});
 				await onApprove?.(request.id);
 			} catch {
@@ -190,7 +192,8 @@ export default function TeamsRequests({
 				await toast.promise(rejectJoinRequest(request.id), {
 					loading: s("Rejecting…"),
 					success: s("Request rejected"),
-					error: (err) => `${s("Failed:")} ${err?.message || err}`,
+					error: (err) =>
+						`${s("Failed:")} ${localizedSettingsError(err, t, "Action failed")}`,
 				});
 				await onReject?.(request.id);
 			} catch {

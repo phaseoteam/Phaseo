@@ -1,4 +1,5 @@
 import { Card } from "@/components/ui/card";
+import { getTranslations } from "next-intl/server";
 import type {
 	ModelBenchmarkHighlight,
 	ModelBenchmarkResult,
@@ -12,11 +13,12 @@ type Props = {
 	mode?: "summary" | "full";
 };
 
-export default function ModelBenchmarks({
+export default async function ModelBenchmarks({
 	highlightCards,
 	benchmarkTableData,
 	mode = "full",
 }: Props) {
+	const t = await getTranslations("Catalogue.models.detail.benchmarkGrid");
 	const showFull = mode === "full";
 
 	return (
@@ -26,7 +28,7 @@ export default function ModelBenchmarks({
 					<ModelBenchmarksGrid highlights={highlightCards} />
 				) : (
 					<Card className="border border-dashed bg-muted/30 p-6 text-center text-sm text-muted-foreground">
-						No benchmark highlights available yet.
+						{t("noHighlights")}
 					</Card>
 				)}
 			</section>
@@ -35,7 +37,7 @@ export default function ModelBenchmarks({
 				<>
 					<section className="space-y-3">
 						<div>
-							<h2 className="text-xl font-semibold">Benchmark table</h2>
+							<h2 className="text-xl font-semibold">{t("tableTitle")}</h2>
 						</div>
 						<ModelBenchmarksTable grouped={benchmarkTableData ?? {}} />
 					</section>

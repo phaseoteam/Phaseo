@@ -18,16 +18,21 @@ export async function generateMetadata(): Promise<Metadata> {
 	});
 }
 
-async function ModelsPageContent() {
+async function ModelsPageContent({ title }: { title: string }) {
 	return (
-		<ModelsPageClient catalogueVersion={await resolveModelsCatalogueVersion()} />
+		<ModelsPageClient
+			catalogueVersion={await resolveModelsCatalogueVersion()}
+			title={title}
+		/>
 	);
 }
 
-export default function ModelsPage() {
+export default async function ModelsPage() {
+	const t = await getTranslations("Catalogue.models");
+
 	return (
-		<Suspense fallback={<ModelsPageSkeleton />}>
-			<ModelsPageContent />
+		<Suspense fallback={<ModelsPageSkeleton title={t("title")} />}>
+			<ModelsPageContent title={t("title")} />
 		</Suspense>
 	);
 }

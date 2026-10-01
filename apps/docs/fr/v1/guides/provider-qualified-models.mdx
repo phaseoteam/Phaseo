@@ -1,0 +1,207 @@
+---
+title: "Identifiants de modèle qualifiés par fournisseur"
+description: "Acheminez une requête vers un fournisseur et un modèle précis à l’aide d’un seul identifiant de modèle."
+icon: "route"
+---
+
+Les identifiants de modèle qualifiés par fournisseur permettent de sélectionner un fournisseur précis et un modèle canonique dans le champ `model`. Utilisez-les lorsque le choix du fournisseur fait partie du contrat de la requête et non d’une simple préférence de routage.
+
+## Syntaxe
+
+```text
+<provider-id>:<canonical-model-id>
+```
+
+Par exemple :
+
+```text
+baseten:thinking-machines/inkling-small
+deepinfra:deepseek/deepseek-v3
+crofai:moonshotai/kimi-k3
+```
+
+Le premier deux-points sépare le fournisseur de l’identifiant du modèle canonique. Les deux-points qui suivent l’espace de noms du modèle restent des suffixes du modèle, ce qui ne crée aucune ambiguïté :
+
+```text
+baseten:google/gemma-4-26b-a4b:free
+```
+
+Dans cet exemple :
+
+- `baseten` est le fournisseur demandé
+- `google/gemma-4-26b-a4b:free` est l’identifiant canonique du modèle Phaseo
+
+## Envoyer une requête
+
+Utilisez l’identifiant qualifié partout où le point de terminaison accepte un identifiant de modèle.
+
+<CodeGroup>
+
+```bash cURL
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "baseten:thinking-machines/inkling-small",
+    "input": "Explain mixture-of-experts routing in two sentences."
+  }'
+```
+
+```javascript JavaScript
+const response = await fetch("https://api.phaseo.app/v1/responses", {
+  method: "POST",
+  headers: {
+    Authorization: "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    model: "baseten:thinking-machines/inkling-small",
+    input: "Explain mixture-of-experts routing in two sentences.",
+  }),
+});
+
+const result = await response.json();
+```
+
+```python Python
+import os
+import requests
+
+response = requests.post(
+    "https://api.phaseo.app/v1/responses",
+    headers={
+        "Authorization": f"Bearer {os.environ['PHASEO_API_KEY']}",
+        "Content-Type": "application/json",
+    },
+    json={
+        "model": "baseten:thinking-machines/inkling-small",
+        "input": "Explain mixture-of-experts routing in two sentences.",
+    },
+)
+
+result = response.json()
+```
+
+</CodeGroup>
+
+## Comportement du routage exact
+
+Le qualificateur de fournisseur est une contrainte exacte. Phaseo limite l’ensemble des fournisseurs éligibles au fournisseur demandé et ne bascule pas vers un autre fournisseur pour cette requête.
+
+Le qualificateur ne contourne pas les autres contrôles. Le fournisseur doit également :
+
+- exposer le modèle canonique sur le point de terminaison demandé
+- être activé pour la capacité du point de terminaison
+- respecter les politiques de l’espace de travail et de la clé d’API
+- respecter les restrictions de préréglage et de confidentialité
+- prendre en charge le niveau de service et les paramètres demandés
+- disposer d’une configuration tarifaire valide
+
+Si l’un de ces contrôles échoue, Phaseo rejette la requête plutôt que de sélectionner silencieusement un autre fournisseur.
+
+## Interaction avec les champs de routage
+
+Le fournisseur qualifié et les champs de routage explicites doivent être cohérents.
+
+```json
+{
+  "model": "baseten:thinking-machines/inkling-small",
+  "provider": {
+    "only": ["baseten"]
+  }
+}
+```
+
+Une valeur `provider.only` ou `routing.only` correspondante est acceptée. Une liste d’autorisation contradictoire, ou une liste d’exclusion contenant le fournisseur qualifié, entraîne une erreur de validation.
+
+Par exemple, cette requête est contradictoire et sera rejetée :
+
+```json
+{
+  "model": "baseten:thinking-machines/inkling-small",
+  "provider": {
+    "only": ["deepinfra"]
+  }
+}
+```
+
+Si le fournisseur n’est qu’une préférence et qu’un basculement entre fournisseurs est souhaité, continuez à utiliser un identifiant de modèle canonique non qualifié avec les [contrôles de routage et de repli](./routing-and-fallbacks.mdx).
+
+## Modèles gratuits qualifiés par fournisseur
+
+Une requête qualifiée avec `:free` est acceptée uniquement si ce fournisseur précis propose une route gratuite éligible pour le modèle canonique et le point de terminaison.
+
+```json
+{
+  "model": "baseten:google/gemma-4-26b-a4b:free",
+  "input": "Hello"
+}
+```
+
+Phaseo échoue de façon sécurisée, sauf si la route sélectionnée possède une grille tarifaire non vide dont chaque règle actuelle :
+
+- porte explicitement le libellé `free`
+- applique un prix exactement égal à zéro
+
+En l’absence de tarifs, avec des tarifs payants, mixtes ou négatifs, ou avec une règle à prix nul sans libellé gratuit explicite, la requête est rejetée avant l’exécution chez le fournisseur.
+
+<Note>
+L’existence d’un modèle canonique `:free` ne signifie pas que tous les fournisseurs du modèle sous-jacent proposent une route gratuite.
+</Note>
+
+## Slugs et alias de fournisseurs
+
+Utilisez un slug exposé par le catalogue des fournisseurs Phaseo. Les slugs sont normalisés en minuscules et les alias hérités ou de marque pris en charge sont convertis vers l’identifiant canonique du fournisseur.
+
+Par exemple, `NovitaAI` et `novita-ai` sont actuellement normalisés en `novita`.
+
+Les slugs mal formés ou inconnus sont rejetés avant la sélection du fournisseur. Phaseo ne les transmet pas en amont dans le nom du modèle.
+
+## Erreurs de validation
+
+Les erreurs d’identifiant qualifié par fournisseur utilisent HTTP `400` et le code d’erreur principal `validation_error`. Consultez `reason` ou `details[].keyword` pour connaître la cause précise.
+
+| Motif | Signification |
+| --- | --- |
+| `invalid_provider_slug` | La partie fournisseur est vide ou contient des caractères non pris en charge. |
+| `unknown_provider_slug` | Le slug est correctement formé, mais ne correspond pas à un fournisseur Phaseo reconnu. |
+| `invalid_provider_qualified_model` | L’identifiant combiné ne correspond pas au format `<provider>:<publisher>/<model>`. |
+| `provider_qualified_model_conflict` | `provider.only`, `provider.ignore`, `routing.only` ou `routing.ignore` contredit le qualificateur. |
+| `qualified_provider_unavailable` | Le fournisseur est reconnu, mais ne propose pas ce modèle sur le point de terminaison demandé. |
+| `qualified_free_provider_unavailable` | La route précise du fournisseur n’est pas vérifiée comme gratuite avec un tarif nul pour toutes les règles. |
+
+Exemple d’erreur :
+
+```json
+{
+  "error": "validation_error",
+  "status_code": 400,
+  "reason": "unknown_provider_slug",
+  "description": "Unknown provider slug \"not-a-provider\" in provider-qualified model \"not-a-provider:publisher/model\". Use a provider slug returned by Phaseo's provider catalogue.",
+  "provider": "not-a-provider",
+  "model": "publisher/model",
+  "details": [
+    {
+      "path": ["model"],
+      "keyword": "unknown_provider_slug"
+    }
+  ]
+}
+```
+
+## Choisir entre les deux formats
+
+| Besoin | Valeur de modèle recommandée |
+| --- | --- |
+| Laisser Phaseo choisir et basculer entre les fournisseurs | `thinking-machines/inkling-small` |
+| Exiger Baseten sans basculement entre fournisseurs | `baseten:thinking-machines/inkling-small` |
+| Exiger une route gratuite vérifiée chez un fournisseur | `baseten:google/gemma-4-26b-a4b:free` |
+
+## Guides associés
+
+- [Routage et solutions de repli](./routing-and-fallbacks.mdx)
+- [Fournisseurs d’API](../exploring/api-providers.mdx)
+- [Modèles](../exploring/models.mdx)
+- [Gestion des erreurs](../developers/error-handling.mdx)
+- [Préréglages](./presets.mdx)
+

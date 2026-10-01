@@ -1,0 +1,32 @@
+---
+icon: "layers"
+title: "Itens do fluxo"
+description: "Consuma eventos de texto, raciocínio, ferramentas e itens do provedor em execuções de agentes Go."
+---
+
+`Stream` expõe uma sequência reproduzível de eventos para interfaces de agentes ao vivo. Os deltas de texto são os mais simples de consumir; o fluxo completo também inclui raciocínio, itens do provedor, progresso de ferramentas, alterações do ciclo de vida e a resposta final.
+
+```go
+stream := agent.Stream(ctx, phaseoagent.RunOptions{Input: prompt, Client: client})
+
+for event := range stream.Events() {
+  switch event.Type {
+  case "response.output_text.delta":
+    fmt.Print(event.Details["delta"])
+  case "response.reasoning.delta":
+    renderReasoning(event.Details)
+  case "response.item":
+    renderItem(event.Details["item"])
+  case "tool.preliminary_result":
+    renderProgress(event.Details)
+  }
+}
+
+result, err := stream.Result()
+```
+
+<Note>
+Atualmente, o Go expõe itens do provedor pelo mapa genérico de detalhes de `AgentEvent`, em vez de uma união fechada de tipos. Verifique `event.Type`, valide os dados do item na fronteira da interface e mantenha um fallback para eventos desconhecidos para preservar a compatibilidade futura.
+</Note>
+
+O histórico de eventos pode ser reproduzido após a conclusão. Assim, consumidores separados podem exibir texto, persistir eventos e criar uma linha do tempo de auditoria sem iniciar outra solicitação ao modelo.

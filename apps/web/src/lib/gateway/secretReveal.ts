@@ -4,8 +4,6 @@ export type ApiKeyPresetId = "development" | "production" | "ci" | "sandbox";
 
 export type ApiKeyLimitPreset = {
 	id: ApiKeyPresetId;
-	label: string;
-	description: string;
 	limits: {
 		dailyRequests: number;
 		weeklyRequests: number;
@@ -19,8 +17,6 @@ export type ApiKeyLimitPreset = {
 export const API_KEY_LIMIT_PRESETS: ApiKeyLimitPreset[] = [
 	{
 		id: "development",
-		label: "Development",
-		description: "Low daily spend cap for local apps and prototypes.",
 		limits: {
 			dailyRequests: 1_000,
 			weeklyRequests: 0,
@@ -32,8 +28,6 @@ export const API_KEY_LIMIT_PRESETS: ApiKeyLimitPreset[] = [
 	},
 	{
 		id: "production",
-		label: "Production",
-		description: "No preset caps. Add limits later if you need them.",
 		limits: {
 			dailyRequests: 0,
 			weeklyRequests: 0,
@@ -45,8 +39,6 @@ export const API_KEY_LIMIT_PRESETS: ApiKeyLimitPreset[] = [
 	},
 	{
 		id: "ci",
-		label: "CI",
-		description: "Request cap for tests, evals, and release jobs.",
 		limits: {
 			dailyRequests: 5_000,
 			weeklyRequests: 25_000,
@@ -58,8 +50,6 @@ export const API_KEY_LIMIT_PRESETS: ApiKeyLimitPreset[] = [
 	},
 	{
 		id: "sandbox",
-		label: "Sandbox",
-		description: "Tight cap for demos, trials, and shared experiments.",
 		limits: {
 			dailyRequests: 100,
 			weeklyRequests: 1_000,

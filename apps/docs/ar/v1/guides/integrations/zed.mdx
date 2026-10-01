@@ -1,0 +1,44 @@
+---
+title: "Zed"
+description: "أضف Phaseo في Zed كمزوّد نماذج متوافق مع OpenAI."
+---
+
+شغّل `phaseo integrations setup zed`. تضيف CLI معرّف المزوّد `phaseo` وعنوان API `https://api.phaseo.app/v1` والنموذج المحدد إلى `settings.json` دون تغيير الإعدادات الأخرى.
+
+## حفظ مفتاح API في Zed
+
+يخزّن Zed مفاتيح المزوّدين في سلسلة مفاتيح النظام، لذا فهذه هي الخطوة الوحيدة المتبقية في الواجهة.
+
+1. افتح لوحة الأوامر وشغّل **agent: open settings**.
+2. ضمن **AI**، اختر **LLM Providers → Configure**.
+
+![إعدادات الذكاء الاصطناعي في Zed مع إبراز LLM Providers](/images/integrations/zed-agent-settings.png)
+
+3. إذا ظهر Phaseo بالفعل، فافتحه والصق المفتاح المخصص. وإلا فاختر **Add Provider → OpenAI**.
+
+![صفحة LLM Providers في Zed مع Add Provider](/images/integrations/zed-llm-providers.png)
+
+4. كخيار يدوي، أدخل ما يلي:
+
+| الحقل | القيمة |
+| --- | --- |
+| Provider Name | `Phaseo` |
+| API URL | `https://api.phaseo.app/v1` |
+| API Key | ناتج الأمر `phaseo integrations credential zed` |
+| Model Name | معرّف نموذج Phaseo المحدد |
+
+![نموذج Zed لإضافة مزوّد متوافق مع OpenAI](/images/integrations/zed-add-compatible-provider.png)
+
+لا تحدد **Save Provider** قبل إدخال عنوان URL الأساسي ومعرّف النموذج والمفتاح كاملًا.
+
+## التحقق
+
+افتح سلسلة Agent جديدة، وحدد نموذج Phaseo وأرسل طلبًا قصيرًا. إذا أبلغ Zed عن مفتاح غير صالح، فأعِد تشغيل `phaseo integrations credential zed` واستبدل المفتاح المحفوظ في Zed.
+
+## الإزالة
+
+```bash
+phaseo integrations remove zed
+```
+
+تزيل CLI مزوّد Phaseo من `settings.json` وتلغي مفتاحه المخصص. إذا ظل Zed يعرض إدخال سلسلة المفاتيح القديم، فأزل Phaseo من **LLM Providers** أيضًا.

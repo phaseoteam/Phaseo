@@ -35,6 +35,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { SortablePresetList } from "./SortablePresetList";
 import { useTranslations } from "next-intl";
+import { localizedSettingsError } from "@/i18n/error-messages";
 
 interface APIProviderCard {
 	api_provider_id: string;
@@ -65,9 +66,6 @@ type PresetEditorView =
 	| "reasoning";
 
 const EXCLUDED_STATUSES = ["retired", "rumoured", "deprecated"];
-const VISIBILITY_LABELS: Record<PresetVisibility, string> = { private: "Only Me", team: "Share With Workspace", public: "Publish to Marketplace" };
-const ROUTING_LABELS: Record<PresetRoutingMode, string> = { balanced: "Balanced", price: "Lowest Cost", latency: "Lowest Latency", throughput: "Highest Throughput" };
-const HEALING_LABELS: Record<ResponseHealingMode, string> = { safe: "Safe", strict: "Strict" };
 const REASONING_LABELS: Record<ReasoningEffort, string> = { none: "None", minimal: "Minimal", low: "Low", medium: "Medium", high: "High", xhigh: "Extra High", max: "Maximum" };
 
 const PROVIDER_TO_LOGO_MAP: Record<string, string> = {
@@ -212,6 +210,8 @@ export default function PresetForm({
 	initialPreset,
 }: PresetFormProps) {
 	const t = useTranslations("SettingsUI");
+	const numberExamplePlaceholder = (value: string) =>
+		t("strings.numberExamplePlaceholder" as never, { value } as never);
 	const initialConfig = initialPreset?.config ?? {};
 	const initialProvider = initialConfig.provider ?? {};
 	const initialParameters = initialConfig.parameters ?? {};
@@ -609,7 +609,7 @@ export default function PresetForm({
 			router.push("/settings/presets");
 			router.refresh();
 		} catch (error) {
-			toast.error(error instanceof Error ? error.message : t("strings.Failed to save preset" as never));
+			toast.error(localizedSettingsError(error, t, "Failed to save preset"));
 		} finally {
 			setLoading(false);
 		}
@@ -678,7 +678,7 @@ export default function PresetForm({
 			<p className="mt-1 text-xs text-muted-foreground">{t("strings.Private presets are only visible to you. Workspace presets can be used by members. Public presets appear in the marketplace." as never)}</p>
 							</div>
 							<Select value={visibility} onValueChange={(value: PresetVisibility) => setVisibility(value)}>
-								<SelectTrigger className="w-full sm:w-56"><SelectValue>{VISIBILITY_LABELS[visibility]}</SelectValue></SelectTrigger>
+								<SelectTrigger className="w-full sm:w-56"><SelectValue>{visibility === "private" ? t("strings.Only Me" as never) : visibility === "team" ? t("strings.Share With Workspace" as never) : t("strings.Publish to Marketplace" as never)}</SelectValue></SelectTrigger>
 								<SelectContent className="rounded-md">
 			<SelectItem value="private">{t("strings.Only Me" as never)}</SelectItem>
 			<SelectItem value="team">{t("strings.Share With Workspace" as never)}</SelectItem>
@@ -688,8 +688,7 @@ export default function PresetForm({
 						</div>
 						{visibility === "public" ? (
 							<p className="text-xs text-muted-foreground">
-								This preset will be published to the Marketplace and can be invoked using{" "}
-								<span className="font-mono text-foreground">@{workspacePublisher?.handle ?? "workspace"}/{buildPresetSlugPreview(slug || name) || "preset"}</span>.
+								{t("presetForm.publicMarketplaceReference", { reference: `@${workspacePublisher?.handle ?? "workspace"}/${buildPresetSlugPreview(slug || name) || "preset"}` })}
 							</p>
 						) : null}
 					</section>
@@ -722,7 +721,7 @@ export default function PresetForm({
 								{selectedModels.length ? <Button type="button" variant="ghost" size="sm" onClick={() => setSelectedModels([])}>{t("strings.Clear" as never)}</Button> : null}
 							</div>
 						</div>
-						<SortablePresetList items={selectedModelOptions} onChange={setSelectedModels} defaultFirst emptyLabel="No models selected yet." />
+						<SortablePresetList items={selectedModelOptions} onChange={setSelectedModels} defaultFirst emptyLabel={t("presetForm.emptyModels")} />
 					</section>
 
 					<Separator />
@@ -781,8 +780,8 @@ export default function PresetForm({
 					</button>
 					<FormSection
 						icon={<Sliders className="h-4 w-4" />}
-						title="Request Defaults"
-						description="Set the default routing profile, caching policy, and system prompt for requests using this preset."
+						title={t("presetForm.requestDefaultsTitle")}
+						description={t("presetForm.requestDefaultsDescription")}
 						stacked
 					>
 						<div className="space-y-2">
@@ -792,7 +791,7 @@ export default function PresetForm({
 								onValueChange={(value: PresetRoutingMode) => setRoutingMode(value)}
 							>
 								<SelectTrigger>
-									<SelectValue>{ROUTING_LABELS[routingMode]}</SelectValue>
+									<SelectValue>{routingMode === "balanced" ? t("strings.Balanced" as never) : routingMode === "price" ? t("strings.Lowest cost" as never) : routingMode === "latency" ? t("strings.Lowest latency" as never) : t("strings.Highest throughput" as never)}</SelectValue>
 								</SelectTrigger>
 								<SelectContent className="rounded-md">
 									<SelectItem value="balanced">{t("strings.Balanced" as never)}</SelectItem>
@@ -802,7 +801,7 @@ export default function PresetForm({
 								</SelectContent>
 							</Select>
 							<p className="text-xs text-muted-foreground">
-								This overrides the workspace routing mode when requests use this preset.
+								{t("presetForm.routingProfileHelp")}
 							</p>
 						</div>
 
@@ -811,7 +810,7 @@ export default function PresetForm({
 								<div className="space-y-0.5">
 						<Label>{t("strings.Enable Response Caching" as never)}</Label>
 									<p className="text-xs text-muted-foreground">
-										Cache exact-match non-stream text responses for requests using this preset.
+										{t("presetForm.responseCachingHelp")}
 									</p>
 								</div>
 								<Switch
@@ -831,7 +830,7 @@ export default function PresetForm({
 										placeholder="300"
 									/>
 									<p className="text-xs text-muted-foreground">
-										Controls how long cached responses remain reusable for exact request matches.
+										{t("presetForm.cacheTtlHelp")}
 									</p>
 								</div>
 							)}
@@ -842,11 +841,11 @@ export default function PresetForm({
 							<Textarea
 								value={systemPrompt}
 								onChange={(e) => setSystemPrompt(e.target.value)}
-								placeholder="You are a helpful AI assistant..."
+								placeholder={t("presetForm.systemPromptPlaceholder")}
 								rows={6}
 							/>
 							<p className="text-xs text-muted-foreground">
-								This system prompt will be prepended to all requests using this preset
+								{t("presetForm.systemPromptHelp")}
 							</p>
 						</div>
 					</FormSection>
@@ -861,19 +860,19 @@ export default function PresetForm({
 						className="inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
 					>
 						<ChevronLeft className="h-4 w-4" />
-						<span>Overview / Plugins</span>
+						<span>{t("presetForm.pluginsBreadcrumb")}</span>
 					</button>
 					<FormSection
 						icon={<Settings2 className="h-4 w-4" />}
-						title="Plugins"
-						description="Enable deterministic gateway plugins that should apply whenever this preset is used."
+						title={t("presetForm.pluginsTitle")}
+						description={t("presetForm.pluginsDescription")}
 						stacked
 					>
 					<div className="flex items-center justify-between">
 						<div className="space-y-0.5">
-							<Label>Response Healing</Label>
+							<Label>{t("strings.Response Healing" as never)}</Label>
 							<p className="text-xs text-muted-foreground">
-								Repair near-valid structured JSON responses before they reach the client.
+								{t("presetForm.responseHealingDescription")}
 							</p>
 						</div>
 						<Switch
@@ -884,7 +883,7 @@ export default function PresetForm({
 					{responseHealingEnabled && (
 						<div className="space-y-3">
 							<div className="space-y-2">
-								<Label>Healing Mode</Label>
+								<Label>{t("presetForm.healingModeLabel")}</Label>
 								<Select
 									value={responseHealingMode}
 									onValueChange={(value: ResponseHealingMode) =>
@@ -892,7 +891,7 @@ export default function PresetForm({
 									}
 								>
 									<SelectTrigger>
-										<SelectValue>{HEALING_LABELS[responseHealingMode]}</SelectValue>
+										<SelectValue>{t(`strings.${responseHealingMode === "safe" ? "Safe" : "Strict"}` as never)}</SelectValue>
 									</SelectTrigger>
 									<SelectContent className="rounded-md">
 										<SelectItem value="safe">{t("strings.Safe" as never)}</SelectItem>
@@ -906,7 +905,7 @@ export default function PresetForm({
 								</p>
 							</div>
 							<p className="text-xs text-muted-foreground">
-								Request-level plugin settings can still override this default by plugin ID.
+								{t("presetForm.pluginOverrideHelp")}
 							</p>
 						</div>
 					)}
@@ -1080,7 +1079,7 @@ export default function PresetForm({
 											min="0"
 											value={maxPricePrompt}
 											onChange={(e) => setMaxPricePrompt(e.target.value)}
-											placeholder="e.g. 0.25"
+											placeholder={numberExamplePlaceholder("0.25")}
 										/>
 									</div>
 									<div className="space-y-2">
@@ -1091,7 +1090,7 @@ export default function PresetForm({
 											min="0"
 											value={maxPriceCompletion}
 											onChange={(e) => setMaxPriceCompletion(e.target.value)}
-											placeholder="e.g. 1.50"
+											placeholder={numberExamplePlaceholder("1.50")}
 										/>
 									</div>
 								</div>
@@ -1107,19 +1106,19 @@ export default function PresetForm({
 								<div className="grid gap-4 sm:grid-cols-2">
 									<div className="space-y-2">
 										<Label>p50</Label>
-										<Input type="number" min="0" value={throughputP50} onChange={(e) => setThroughputP50(e.target.value)} placeholder="e.g. 100" />
+										<Input type="number" min="0" value={throughputP50} onChange={(e) => setThroughputP50(e.target.value)} placeholder={numberExamplePlaceholder("100")} />
 									</div>
 									<div className="space-y-2">
 										<Label>p75</Label>
-										<Input type="number" min="0" value={throughputP75} onChange={(e) => setThroughputP75(e.target.value)} placeholder="e.g. 100" />
+										<Input type="number" min="0" value={throughputP75} onChange={(e) => setThroughputP75(e.target.value)} placeholder={numberExamplePlaceholder("100")} />
 									</div>
 									<div className="space-y-2">
 										<Label>p90</Label>
-										<Input type="number" min="0" value={throughputP90} onChange={(e) => setThroughputP90(e.target.value)} placeholder="e.g. 100" />
+										<Input type="number" min="0" value={throughputP90} onChange={(e) => setThroughputP90(e.target.value)} placeholder={numberExamplePlaceholder("100")} />
 									</div>
 									<div className="space-y-2">
 										<Label>p99</Label>
-										<Input type="number" min="0" value={throughputP99} onChange={(e) => setThroughputP99(e.target.value)} placeholder="e.g. 100" />
+										<Input type="number" min="0" value={throughputP99} onChange={(e) => setThroughputP99(e.target.value)} placeholder={numberExamplePlaceholder("100")} />
 									</div>
 								</div>
 							</div>
@@ -1134,19 +1133,19 @@ export default function PresetForm({
 								<div className="grid gap-4 sm:grid-cols-2">
 									<div className="space-y-2">
 										<Label>p50</Label>
-										<Input type="number" min="0" value={latencyP50} onChange={(e) => setLatencyP50(e.target.value)} placeholder="e.g. 5" />
+										<Input type="number" min="0" value={latencyP50} onChange={(e) => setLatencyP50(e.target.value)} placeholder={numberExamplePlaceholder("5")} />
 									</div>
 									<div className="space-y-2">
 										<Label>p75</Label>
-										<Input type="number" min="0" value={latencyP75} onChange={(e) => setLatencyP75(e.target.value)} placeholder="e.g. 5" />
+										<Input type="number" min="0" value={latencyP75} onChange={(e) => setLatencyP75(e.target.value)} placeholder={numberExamplePlaceholder("5")} />
 									</div>
 									<div className="space-y-2">
 										<Label>p90</Label>
-										<Input type="number" min="0" value={latencyP90} onChange={(e) => setLatencyP90(e.target.value)} placeholder="e.g. 5" />
+										<Input type="number" min="0" value={latencyP90} onChange={(e) => setLatencyP90(e.target.value)} placeholder={numberExamplePlaceholder("5")} />
 									</div>
 									<div className="space-y-2">
 										<Label>p99</Label>
-										<Input type="number" min="0" value={latencyP99} onChange={(e) => setLatencyP99(e.target.value)} placeholder="e.g. 5" />
+										<Input type="number" min="0" value={latencyP99} onChange={(e) => setLatencyP99(e.target.value)} placeholder={numberExamplePlaceholder("5")} />
 									</div>
 								</div>
 							</div>
@@ -1184,7 +1183,7 @@ export default function PresetForm({
 								placeholder="0.7"
 							/>
 							<p className="text-xs text-muted-foreground">
-								Controls randomness. Lower is more focused (0-2)
+								{t("presetForm.temperatureHelp")}
 							</p>
 						</div>
 
@@ -1200,7 +1199,7 @@ export default function PresetForm({
 								placeholder="0.9"
 							/>
 							<p className="text-xs text-muted-foreground">
-								Nucleus sampling threshold (0-1)
+								{t("presetForm.topPHelp")}
 							</p>
 						</div>
 
@@ -1214,7 +1213,7 @@ export default function PresetForm({
 								placeholder="40"
 							/>
 							<p className="text-xs text-muted-foreground">
-								Token vocabulary cutoff (0 for unlimited)
+								{t("presetForm.topKHelp")}
 							</p>
 						</div>
 
@@ -1228,7 +1227,7 @@ export default function PresetForm({
 								placeholder="4096"
 							/>
 							<p className="text-xs text-muted-foreground">
-								Maximum response tokens
+								{t("presetForm.maxTokensHelp")}
 							</p>
 						</div>
 
@@ -1244,7 +1243,7 @@ export default function PresetForm({
 								placeholder="0"
 							/>
 							<p className="text-xs text-muted-foreground">
-								Reduce repetition (-2 to 2)
+								{t("presetForm.penaltyHelp")}
 							</p>
 						</div>
 
@@ -1260,7 +1259,7 @@ export default function PresetForm({
 								placeholder="0"
 							/>
 							<p className="text-xs text-muted-foreground">
-								Reduce repetition (-2 to 2)
+								{t("presetForm.penaltyHelp")}
 							</p>
 						</div>
 
@@ -1276,7 +1275,7 @@ export default function PresetForm({
 								placeholder="1"
 							/>
 							<p className="text-xs text-muted-foreground">
-								Penalize repeated tokens (1 to 2+)
+								{t("presetForm.repetitionPenaltyHelp")}
 							</p>
 						</div>
 
@@ -1289,7 +1288,7 @@ export default function PresetForm({
 								placeholder={t("strings.Random" as never)}
 							/>
 							<p className="text-xs text-muted-foreground">
-								Deterministic output when specified
+								{t("presetForm.seedHelp")}
 							</p>
 						</div>
 					</div>
@@ -1317,7 +1316,7 @@ export default function PresetForm({
 						<div className="space-y-0.5">
 							<Label>{t("strings.Enable Reasoning" as never)}</Label>
 							<p className="text-xs text-muted-foreground">
-								Enable chain-of-thought reasoning for supported models
+								{t("presetForm.reasoningEnabledHelp")}
 							</p>
 						</div>
 						<Switch
@@ -1351,7 +1350,7 @@ export default function PresetForm({
 										</SelectContent>
 									</Select>
 									<p className="text-xs text-muted-foreground">
-										Higher effort = more thorough reasoning but more tokens
+										{t("presetForm.reasoningEffortHelp")}
 									</p>
 								</div>
 
@@ -1367,7 +1366,7 @@ export default function PresetForm({
 										placeholder={t("strings.Leave empty for model default" as never)}
 									/>
 									<p className="text-xs text-muted-foreground">
-										Maximum tokens for reasoning process
+										{t("presetForm.reasoningMaxTokensHelp")}
 									</p>
 								</div>
 							</div>
@@ -1376,7 +1375,7 @@ export default function PresetForm({
 								<div className="space-y-0.5">
 									<Label>{t("strings.Exclude Reasoning from Output" as never)}</Label>
 									<p className="text-xs text-muted-foreground">
-										Don&apos;t include reasoning tokens in final response
+										{t("presetForm.excludeReasoningHelp")}
 									</p>
 								</div>
 								<Switch

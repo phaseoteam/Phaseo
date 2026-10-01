@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { Label } from "@/components/ui/label";
 import {
 	Select,
@@ -21,6 +22,7 @@ export function WorkspaceSelectField({
 }: {
 	workspaces: Workspace[];
 }) {
+	const t = useTranslations("Common.dropdown");
 	const [workspaceId, setWorkspaceId] = useState(workspaces[0]?.id ?? "");
 	const items = workspaces.map((workspace) => ({
 		value: workspace.id,
@@ -30,10 +32,10 @@ export function WorkspaceSelectField({
 	return (
 		<div className="space-y-2">
 			<input type="hidden" name="workspace_id" value={workspaceId} />
-			<Label htmlFor="workspace_id">Workspace</Label>
+			<Label htmlFor="workspace_id">{t("workspace")}</Label>
 			<Select items={items} value={workspaceId} onValueChange={setWorkspaceId}>
 				<SelectTrigger id="workspace_id">
-					<SelectValue placeholder="Choose a workspace" />
+					<SelectValue placeholder={t("chooseWorkspace")} />
 				</SelectTrigger>
 				<SelectContent>
 					{workspaces.map((workspace) => (

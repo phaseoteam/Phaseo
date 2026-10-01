@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { ExternalLink } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -116,11 +117,12 @@ function getCategoryColor(category: string): string {
 	return colors[Math.abs(hash) % colors.length];
 }
 
-export default function BenchmarkOverview({
+export default async function BenchmarkOverview({
 	benchmark,
 }: {
 	benchmark: BenchmarkPage;
 }) {
+	const t = await getTranslations("Catalogue.benchmarks");
 	const results = benchmark.results ?? [];
 
 	const orderHints = results
@@ -235,7 +237,7 @@ export default function BenchmarkOverview({
 					<div className="flex flex-wrap items-center gap-2">
 						{benchmark.type ? (
 							<Badge variant="outline">
-								Type: {benchmark.type}
+								{t("typeLabel")}: {benchmark.type}
 							</Badge>
 						) : null}
 						{renderCategories()}
@@ -256,7 +258,7 @@ export default function BenchmarkOverview({
 								target="_blank"
 								rel="noopener noreferrer"
 							>
-								View benchmark source
+								{t("viewSource")}
 								<ExternalLink className="ml-2 h-4 w-4" />
 							</Link>
 						</Button>

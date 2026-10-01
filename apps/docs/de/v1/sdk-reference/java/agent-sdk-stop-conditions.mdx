@@ -1,0 +1,25 @@
+---
+icon: "circle-check"
+title: "Abbruchbedingungen"
+description: "Begrenze die Arbeit von Java-Agenten nach Schritten, Token, Kosten, Dauer, Tools oder Beendigungsgrund."
+---
+
+Kombiniere Stoppfunktionen in `AgentDefinition.stopWhen`:
+
+```java
+var stopWhen = List.of(
+    AgentSdk.stepCountIs(12),
+    AgentSdk.maxTokensUsed(40_000),
+    AgentSdk.maxCost(2),
+    AgentSdk.maxDuration(Duration.ofMinutes(1))
+);
+```
+
+Weitere Helpers sind `hasToolCall(...)` und `finishReasonIs(...)`. Die erste zutreffende Bedingung zeichnet einen Stoppgrund auf und gibt einen gestoppten Lauf zurück, statt ihn unbemerkt fortzusetzen.
+
+Verwende Kosten- und Tokenlimits nur, wenn die ausgewählte Modellroute diese Daten meldet. Behalte immer ein Schritt- oder Dauerlimit als alternative Laufzeitgrenze bei.
+
+## Weiterführende Themen
+
+- [Dynamische Turns](./agent-sdk-dynamic-turns.mdx)
+- [Ausgaben und Wiederholungen](./agent-sdk-run-controls.mdx)

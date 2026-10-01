@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import Link from "next/link";
 import {
 	type ColumnDef,
@@ -42,30 +43,22 @@ function getUptimeColorClass(value: number | null): string {
 	return "bg-rose-500";
 }
 
-function formatRangeLabel(start: string, end: string): string {
+function formatRangeLabel(start: string, end: string, locale: string): string {
 	const startDate = new Date(start);
 	const endDate = new Date(end);
 	if (
 		!Number.isFinite(startDate.getTime()) ||
 		!Number.isFinite(endDate.getTime())
 	) {
-		return `Requests from ${start} to ${end}`;
+		return `${start} – ${end}`;
 	}
 
-	const startLabel = startDate.toLocaleString("en-US", {
+	const formatter = new Intl.DateTimeFormat(locale, {
 		weekday: "short",
 		hour: "2-digit",
 		minute: "2-digit",
-		hour12: false,
 	});
-	const endLabel = endDate.toLocaleString("en-US", {
-		weekday: "short",
-		hour: "2-digit",
-		minute: "2-digit",
-		hour12: false,
-	});
-
-	return `Requests from ${startLabel} to ${endLabel}`;
+	return `${formatter.format(startDate)} – ${formatter.format(endDate)}`;
 }
 
 interface ProviderTableProps {
@@ -75,6 +68,8 @@ interface ProviderTableProps {
 export default function ModelProviderPerformanceTable({
 	providers,
 }: ProviderTableProps) {
+	const t = useTranslations("Catalogue.modelDetail.performance");
+	const locale = useLocale();
 	const [sorting, setSorting] = useState<SortingState>([
 		{ id: "avgThroughput", desc: true },
 	]);
@@ -92,7 +87,7 @@ export default function ModelProviderPerformanceTable({
 							column.toggleSorting(column.getIsSorted() === "asc")
 						}
 					>
-						Provider
+						{t("provider")}
 						<ArrowUpDown className="ml-2 h-4 w-4" />
 					</Button>
 				),
@@ -137,7 +132,7 @@ export default function ModelProviderPerformanceTable({
 							column.toggleSorting(column.getIsSorted() === "asc")
 						}
 					>
-						Throughput
+						{t("throughput")}
 						<ArrowUpDown className="ml-2 h-4 w-4" />
 					</Button>
 				),
@@ -157,7 +152,7 @@ export default function ModelProviderPerformanceTable({
 							column.toggleSorting(column.getIsSorted() === "asc")
 						}
 					>
-						Latency
+						{t("latency")}
 						<ArrowUpDown className="ml-2 h-4 w-4" />
 					</Button>
 				),
@@ -177,7 +172,7 @@ export default function ModelProviderPerformanceTable({
 							column.toggleSorting(column.getIsSorted() === "asc")
 						}
 					>
-						E2E Latency
+						{t("endToEndLatency")}
 						<ArrowUpDown className="ml-2 h-4 w-4" />
 					</Button>
 				),
@@ -189,7 +184,7 @@ export default function ModelProviderPerformanceTable({
 			},
 			{
 				id: "uptime",
-				header: "Uptime",
+				header: t("uptime"),
 				enableSorting: false,
 				cell: ({ row }) => (
 					<div className="flex items-center gap-4">
@@ -200,25 +195,29 @@ export default function ModelProviderPerformanceTable({
 								);
 								const label =
 									bucket.successPct != null
-										? `${bucket.successPct.toFixed(
-												0
-										  )}% success`
-										: "No data";
+										? `${bucket.successPct.toFixed(0)}% ${t("success")}`
+										: t("noData");
 								return (
 									<div
 										key={`${row.original.provider}-${bucket.start}-${index}`}
 										className={`h-2.5 w-9 rounded-full transition-colors ${color}`}
-										title={`${label} - ${formatRangeLabel(
-											bucket.start,
-											bucket.end
-										)}`}
+											title={t("uptimeBucketTitle", {
+											status: label,
+											range: formatRangeLabel(
+												bucket.start,
+												bucket.end,
+												locale,
+											),
+										})}
 									>
 										<span className="sr-only">
-											{label} during{" "}
-											{formatRangeLabel(
-												bucket.start,
-												bucket.end
-											)}
+											{t("duringRange", {
+												range: formatRangeLabel(
+													bucket.start,
+													bucket.end,
+													locale,
+												),
+											})}
 										</span>
 									</div>
 								);
@@ -233,7 +232,7 @@ export default function ModelProviderPerformanceTable({
 				),
 			},
 		],
-		[]
+		[t, locale]
 	);
 
 	const table = useReactTable({
@@ -251,8 +250,7 @@ export default function ModelProviderPerformanceTable({
 		return (
 			<div className="rounded-lg border border-dashed border-gray-300 bg-muted/20 p-6 text-center">
 				<p className="text-sm font-semibold text-muted-foreground">
-					No provider performance data available for the last 24
-					hours.
+					{t("noProviderPerformanceData")}
 				</p>
 			</div>
 		);
@@ -263,10 +261,10 @@ export default function ModelProviderPerformanceTable({
 			<div className="flex flex-wrap items-center justify-between gap-2">
 				<div>
 					<p className="text-xs uppercase tracking-wide text-muted-foreground">
-						Provider performance
+						{t("providerPerformance")}
 					</p>
 					<h3 className="text-lg font-semibold text-foreground">
-						Last 24 hours
+						{t("last24Hours")}
 					</h3>
 				</div>
 			</div>
@@ -328,7 +326,7 @@ export default function ModelProviderPerformanceTable({
 									colSpan={columns.length}
 									className="h-24 text-center"
 								>
-									No providers found.
+									{t("noProvidersFound")}
 								</TableCell>
 							</TableRow>
 						)}

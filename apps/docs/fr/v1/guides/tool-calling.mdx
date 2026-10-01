@@ -1,0 +1,292 @@
+---
+title: "Appels d’outils"
+description: "Utilisez en toute sécurité les appels de fonctions déclenchés par le modèle via la passerelle."
+icon: "wrench"
+---
+
+Les appels d’outils permettent aux modèles de demander des actions structurées (par exemple, des recherches dans une base de données, la météo ou des appels d’API internes) plutôt que de deviner les réponses.
+
+La passerelle prend en charge les charges utiles d’outils sur les points de terminaison texte suivants :
+
+- `/v1/chat/completions` (`tools` et `tool_calls` au format OpenAI)
+- `/v1/responses` (éléments de sortie `function_call` au format Réponses)
+- `/v1/messages` (blocs `tool_use` au format Anthropic)
+
+## Requête
+
+```bash
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-5-nano",
+    "messages": [
+      { "role": "user", "content": "What is the weather in London?" }
+    ],
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "get_weather",
+          "description": "Get current weather by city",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "city": { "type": "string" }
+            },
+            "required": ["city"]
+          }
+        }
+      }
+    ],
+    "tool_choice": {
+      "type": "function",
+      "function": { "name": "get_weather" }
+    },
+    "stream": false
+  }'
+```
+
+## Réponse
+
+```json
+{
+  "id": "chatcmpl_...",
+  "object": "chat.completion",
+  "choices": [
+    {
+      "index": 0,
+      "finish_reason": "tool_calls",
+      "message": {
+        "role": "assistant",
+        "content": null,
+        "tool_calls": [
+          {
+            "id": "call_123",
+            "type": "function",
+            "function": {
+              "name": "get_weather",
+              "arguments": "{\"city\":\"London\"}"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}
+```
+
+Exécutez votre outil, puis renvoyez son résultat dans la requête suivante pour que l’assistant puisse terminer sa réponse.
+
+## Outils serveur intégrés
+
+La passerelle expose actuellement les outils serveur intégrés suivants :
+
+- `gateway:datetime`
+- `phaseo:web_search`
+- `phaseo:web_fetch`
+- `phaseo:advisor`
+- `phaseo:image_generation`
+- `phaseo:apply_patch`
+
+Cet outil s’exécute côté passerelle, sans exécuteur côté client. La passerelle le transforme en appel d’outil ou de fonction en amont, l’exécute et renvoie le résultat dans la boucle du modèle.
+
+Pour connaître la configuration complète, l’utilisation et la tarification, consultez [Outils serveur](./server-tools/index.mdx).
+
+Structure de requête prise en charge :
+
+```json
+{
+  "tools": [
+    {
+      "type": "gateway:datetime",
+      "parameters": {
+        "timezones": ["Europe/London", "UTC"]
+      }
+    }
+  ]
+}
+```
+
+Remarques :
+
+- `parameters.timezones` est facultatif et permet de demander jusqu’à 5 fuseaux horaires IANA valides en un seul appel.
+- Le résultat contient un tableau `timezones` avec la date et l’heure ISO, ainsi que le fuseau horaire résolu pour chaque zone demandée.
+- L’utilisation inclut `usage.server_tool_use.datetime_requests`.
+- Privilégiez `tool_choice: "auto"` afin que le modèle décide quand l’appeler.
+
+### Exemple de recherche Web
+
+```json
+{
+  "tools": [
+    {
+      "type": "phaseo:web_search",
+      "parameters": {
+        "engine": "exa",
+        "max_results": 5,
+        "max_total_results": 15,
+        "search_context_size": "medium",
+        "max_characters": 2048,
+        "allowed_domains": ["arxiv.org", "nature.com"],
+        "include_highlights": true
+      }
+    }
+  ]
+}
+```
+
+Remarques :
+
+- Le modèle fournit la requête de recherche lorsqu’il appelle l’outil.
+- `engine: "auto"` utilise la recherche Exa gérée. `engine: "exa"`, `engine: "parallel"` et `engine: "firecrawl"` lancent une recherche gérée par la passerelle lorsque la clé du fournisseur correspondant est configurée.
+- `engine: "native"` sur `phaseo:web_search` est converti en outil de recherche Web natif du fournisseur pour la surface utilisée, comme `web_search_preview` chez OpenAI ou `web_search_20250305` chez Anthropic.
+- `max_results` limite chaque recherche ; `max_total_results` limite le total cumulé des résultats sur toute la boucle des outils serveur.
+- La recherche gérée prend en charge `allowed_domains` / `excluded_domains`, `search_context_size` et `max_characters` lorsque le moteur sélectionné propose les contrôles correspondants.
+- L’utilisation inclut `usage.server_tool_use.web_search_requests`, `usage.server_tool_use.web_search_results` et `usage.server_tool_use.web_search_extra_results`.
+- La recherche Exa gérée peut être facturée à l’aide des compteurs `server_tool_web_search_requests` et `server_tool_web_search_extra_results`.
+
+### Exemple de récupération Web
+
+```json
+{
+  "tools": [
+    {
+      "type": "phaseo:web_fetch",
+      "parameters": {
+        "engine": "direct",
+        "max_chars": 12000,
+        "allowed_domains": ["docs.example.com"],
+        "blocked_domains": ["internal.example.com"]
+      }
+    }
+  ]
+}
+```
+
+Remarques :
+
+- Le modèle indique l’`url` cible lorsqu’il appelle l’outil.
+- Seuls les URL HTTP(S) et les types de contenu textuels sont pris en charge.
+- `engine: "auto"` utilise la récupération native sur la surface Anthropic Messages ; sinon, Exa si `EXA_API_KEY` est configurée, puis la récupération HTTP directe de la passerelle.
+- `engine: "direct"` utilise la récupération HTTP directe de la passerelle. `engine: "exa"` utilise l’extraction de contenu Exa lorsque `EXA_API_KEY` est configurée.
+- `engine: "parallel"` utilise Parallel Extract si `PARALLEL_API_KEY` est configurée. `engine: "firecrawl"` utilise Firecrawl Scrape si `FIRECRAWL_API_KEY` est configurée.
+- Sur la surface Anthropic Messages, `engine: "native"` est converti en outil natif Anthropic `web_fetch_20260209`. Sur les autres surfaces, utilisez `engine: "direct"` ou un moteur d’extraction géré.
+- Si `max_chars` est omis, `max_content_tokens` est accepté comme alias pour limiter la taille de récupération en jetons.
+- `allowed_domains` et `blocked_domains` limitent les URL qui peuvent être récupérées.
+- Le contenu HTML est réduit à du texte brut de longueur limitée avant d’être réinjecté dans la boucle du modèle.
+- L’utilisation inclut `usage.server_tool_use.web_fetch_requests`.
+- La récupération gérée peut être facturée avec le compteur `server_tool_web_fetch_requests`. La récupération ou la recherche native du fournisseur utilise `native_web_fetch_requests` et `native_web_search_requests` ; les fiches tarifaires des modèles peuvent remplacer les valeurs par défaut du fournisseur.
+
+Exemple de récupération native Anthropic :
+
+```json
+{
+  "tools": [
+    {
+      "type": "phaseo:web_fetch",
+      "parameters": {
+        "engine": "native",
+        "max_content_tokens": 9000,
+        "allowed_domains": ["docs.example.com"]
+      }
+    }
+  ],
+  "tool_choice": "phaseo:web_fetch"
+}
+```
+
+### Exemple Advisor
+
+```json
+{
+  "tools": [
+    {
+      "type": "phaseo:advisor",
+      "parameters": {
+        "name": "reviewer",
+        "model": "claude-opus-5",
+        "instructions": "Review plans for correctness, missing edge cases, and implementation risk.",
+        "forward_transcript": true,
+        "max_uses": 2,
+        "max_completion_tokens": 1400,
+        "temperature": 0.2
+      }
+    }
+  ],
+  "tool_choice": "phaseo:advisor"
+}
+```
+
+Remarques :
+
+- Advisor est géré par la passerelle et fonctionne avec les modèles texte pris en charge. Le modèle appelant reçoit l’outil `phaseo_advisor` ou une variante nommée telle que `phaseo_advisor_reviewer`, puis la passerelle exécute la requête Advisor.
+- `parameters.name` est facultatif. Utilisez des noms uniques pour exposer plusieurs conseillers ; ils peuvent contenir des lettres, des chiffres, des espaces, des tirets bas et des tirets.
+- `parameters.model` fixe le modèle Advisor. S’il est omis, l’appel à l’outil peut fournir `model` ; sinon, la passerelle utilise le modèle de la requête externe.
+- `parameters.forward_transcript` vaut `false` par défaut. Définissez-le sur `true` si Advisor doit recevoir la transcription actuelle de la conversation.
+- Le modèle fournit généralement le `prompt` Advisor lorsqu’il appelle l’outil. Si `forward_transcript` vaut `true`, la passerelle peut exécuter un appel Advisor contenant uniquement la transcription lorsque aucun prompt n’est fourni. `max_tokens` est accepté comme ancien alias de `max_completion_tokens`.
+- L’utilisation inclut `usage.server_tool_use.advisor_requests`.
+
+### Exemple de génération d’images
+
+```json
+{
+  "tools": [
+    {
+      "type": "phaseo:image_generation",
+      "parameters": {
+        "model": "openai/gpt-image-2",
+        "quality": "high",
+        "aspect_ratio": "16:9",
+        "output_format": "png"
+      }
+    }
+  ]
+}
+```
+
+Remarques :
+
+- Le modèle fournit le `prompt` de l’image lorsqu’il appelle l’outil. `description` est également accepté comme alias du prompt.
+- `parameters.model` fixe le modèle d’image. S’il est omis, l’appel peut fournir `model` ; sinon, Phaseo utilise le modèle d’image par défaut.
+- Le résultat de l’outil contient soit `imageUrl`, soit des données d’image en base64, selon la réponse du fournisseur.
+- L’utilisation inclut `usage.server_tool_use.image_generation_requests` ; les jetons du modèle d’image sont intégrés à la requête parente.
+
+### Exemple d’application de patch
+
+```json
+{
+  "tools": [
+    {
+      "type": "phaseo:apply_patch"
+    }
+  ],
+  "tool_choice": "auto"
+}
+```
+
+Remarques :
+
+- Vous pouvez utiliser `phaseo:apply_patch` avec Responses API.
+- Phaseo valide les opérations du patch et les renvoie dans le résultat de l’outil. Votre client décide de l’appliquer ou de le rejeter.
+- Les types d’opérations pris en charge sont `create_file`, `update_file` et `delete_file`.
+- L’utilisation inclut `usage.server_tool_use.apply_patch_requests`.
+
+## Fonctionnement du streaming
+
+Les requêtes avec appels d’outils peuvent également utiliser `stream: true`.
+
+Pour les outils serveur gérés par la passerelle, celle-ci peut :
+
+- matérialiser le tour d’appel d’outil en amont
+- exécuter l’outil serveur
+- poursuivre la boucle du modèle
+- réémettre un flux synthétique au client
+
+Le contrat côté client reste ainsi compatible avec le streaming, même lorsque la passerelle exécute elle-même une partie de la boucle d’outils.
+
+## Guides suivants
+
+1. [Modèles d’appels d’outils](./tool-calling-patterns.mdx)
+2. [Sécurité et validation des appels d’outils](./tool-calling-safety.mdx)
+3. [Sorties structurées](./structured-outputs.mdx)

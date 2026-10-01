@@ -1,4 +1,5 @@
 import { fetchAdminCreditGrants } from "@/lib/fetchers/internal/fetchAdminCreditGrants";
+import { getLocale, getTranslations } from "next-intl/server";
 import { createCreditGrantAction } from "./actions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -7,24 +8,23 @@ import { Button } from "@/components/ui/button";
 import ExpiryDateTimeField from "./ExpiryDateTimeField";
 import CreditGrantEditDialog from "./CreditGrantEditDialog";
 
-export const metadata = {
-	title: "Internal Credits",
-	description: "Admin controls for promo credit grants.",
-};
+export async function generateMetadata() {
+	const t = await getTranslations("Product.internalTools.promoCredits");
+	return { title: t("title"), description: t("description") };
+}
 
 const BIGINT_ZERO = BigInt(0);
 const NANOS_PER_USD = BigInt(1_000_000_000);
-const NANOS_PER_CENT = BigInt(10_000_000);
 
-function formatUsdFromNanos(nanos: number | null | undefined): string {
+function formatUsdFromNanos(nanos: number | null | undefined, locale: string): string {
 	const value = Number(nanos ?? 0);
-	if (!Number.isFinite(value)) return "$0.00";
-	return new Intl.NumberFormat("en-US", {
+	const formatter = new Intl.NumberFormat(locale, {
 		style: "currency",
 		currency: "USD",
 		minimumFractionDigits: 2,
 		maximumFractionDigits: 2,
-	}).format(value / 1_000_000_000);
+	});
+	return formatter.format(Number.isFinite(value) ? value / 1_000_000_000 : 0);
 }
 
 function parseNanos(value: unknown): bigint {
@@ -38,25 +38,25 @@ function parseNanos(value: unknown): bigint {
 	return BIGINT_ZERO;
 }
 
-function formatUsdFromNanosBigInt(nanos: bigint): string {
-	const isNegative = nanos < BIGINT_ZERO;
-	const absolute = isNegative ? -nanos : nanos;
-	const dollars = absolute / NANOS_PER_USD;
-	const cents = (absolute % NANOS_PER_USD) / NANOS_PER_CENT;
-	const sign = isNegative ? "-" : "";
-	return `${sign}$${dollars.toLocaleString("en-US")}.${cents
-		.toString()
-		.padStart(2, "0")}`;
+function formatUsdFromNanosBigInt(nanos: bigint, locale: string): string {
+	return new Intl.NumberFormat(locale, {
+		style: "currency",
+		currency: "USD",
+		minimumFractionDigits: 2,
+		maximumFractionDigits: 2,
+	}).format(Number(nanos) / Number(NANOS_PER_USD));
 }
 
-function formatDate(value: string | null | undefined): string {
+function formatDate(value: string | null | undefined, locale: string): string {
 	if (!value) return "-";
 	const date = new Date(value);
 	if (!Number.isFinite(date.getTime())) return "-";
-	return date.toLocaleString();
+	return date.toLocaleString(locale);
 }
 
 export default async function InternalCreditsPage() {
+	const locale = await getLocale();
+	const t = await getTranslations("Product.internalTools.promoCredits");
 	const grants = await fetchAdminCreditGrants();
 
 	const now = Date.now();
@@ -87,20 +87,20 @@ export default async function InternalCreditsPage() {
 	return (
 		<main className="container mx-auto px-4 py-8 space-y-6">
 			<div>
-				<h1 className="text-3xl font-bold mb-2">Promo Credit Grants</h1>
+				<h1 className="text-3xl font-bold mb-2">{t("title")}</h1>
 				<p className="text-muted-foreground">
-					Create, disable, and edit friendly promo code grants.
+					{t("description")}
 				</p>
 			</div>
 
 			<Card>
 				<CardHeader className="pb-2">
-					<CardTitle>Create Promo Code</CardTitle>
+					<CardTitle>{t("createTitle")}</CardTitle>
 				</CardHeader>
 				<CardContent>
 					<form action={createCreditGrantAction} className="grid gap-4 md:grid-cols-2">
 						<div className="space-y-2">
-							<Label htmlFor="promo-code">Code</Label>
+							<Label htmlFor="promo-code">{t("code")}</Label>
 							<Input
 								id="promo-code"
 								name="code"
@@ -112,7 +112,7 @@ export default async function InternalCreditsPage() {
 							/>
 						</div>
 						<div className="space-y-2">
-							<Label htmlFor="promo-amount-usd">Amount (USD)</Label>
+							<Label htmlFor="promo-amount-usd">{t("amountUsd")}</Label>
 							<Input
 								id="promo-amount-usd"
 								name="amount_usd"
@@ -124,7 +124,7 @@ export default async function InternalCreditsPage() {
 							/>
 						</div>
 						<div className="space-y-2">
-							<Label htmlFor="promo-max-redemptions">Max Redemptions</Label>
+							<Label htmlFor="promo-max-redemptions">{t("maxRedemptions")}</Label>
 							<Input
 								id="promo-max-redemptions"
 								name="max_redemptions"
@@ -137,15 +137,15 @@ export default async function InternalCreditsPage() {
 						</div>
 						<ExpiryDateTimeField />
 						<div className="space-y-2 md:col-span-2">
-							<Label htmlFor="promo-note">Internal Note (optional)</Label>
+							<Label htmlFor="promo-note">{t("internalNoteOptional")}</Label>
 							<Input
 								id="promo-note"
 								name="note"
-								placeholder="Apology credit for incident on 2026-03-22"
+								placeholder={t("notePlaceholder")}
 							/>
 						</div>
 						<div className="md:col-span-2 flex justify-end">
-							<Button type="submit">Create Code</Button>
+							<Button type="submit">{t("createCode")}</Button>
 						</div>
 					</form>
 				</CardContent>
@@ -154,11 +154,11 @@ export default async function InternalCreditsPage() {
 			<Card>
 				<CardHeader className="pb-2">
 					<div className="flex flex-wrap items-center justify-between gap-3">
-						<CardTitle>Existing Promo Codes</CardTitle>
+						<CardTitle>{t("existingTitle")}</CardTitle>
 						<div className="rounded-md border bg-muted/40 px-3 py-1.5 text-xs text-muted-foreground">
-							<p className="uppercase tracking-wide">Outstanding (active + unexpired)</p>
+							<p className="uppercase tracking-wide">{t("outstanding")}</p>
 							<p className="text-sm font-semibold text-foreground">
-								{formatUsdFromNanosBigInt(outstandingNanos)}
+								{formatUsdFromNanosBigInt(outstandingNanos, locale)}
 							</p>
 						</div>
 					</div>
@@ -167,14 +167,14 @@ export default async function InternalCreditsPage() {
 					<table className="w-full text-sm">
 						<thead>
 							<tr className="border-b text-left">
-								<th className="py-2 pr-4">Code</th>
-								<th className="py-2 pr-4">Amount</th>
-								<th className="py-2 pr-4">Usage</th>
-								<th className="py-2 pr-4">Expires</th>
-								<th className="py-2 pr-4">Status</th>
-								<th className="py-2 pr-4">Created</th>
-								<th className="py-2 pr-4">Note</th>
-								<th className="py-2">Actions</th>
+								<th className="py-2 pr-4">{t("tableCode")}</th>
+								<th className="py-2 pr-4">{t("tableAmount")}</th>
+								<th className="py-2 pr-4">{t("tableUsage")}</th>
+								<th className="py-2 pr-4">{t("tableExpires")}</th>
+								<th className="py-2 pr-4">{t("tableStatus")}</th>
+								<th className="py-2 pr-4">{t("tableCreated")}</th>
+								<th className="py-2 pr-4">{t("tableNote")}</th>
+								<th className="py-2">{t("tableActions")}</th>
 							</tr>
 						</thead>
 						<tbody>
@@ -183,13 +183,13 @@ export default async function InternalCreditsPage() {
 								return (
 									<tr key={String(grant.id)} className="border-b align-top">
 										<td className="py-2 pr-4 font-medium">{String(grant.code ?? "-")}</td>
-										<td className="py-2 pr-4">{formatUsdFromNanos(Number(grant.amount_nanos ?? 0))}</td>
+									<td className="py-2 pr-4">{formatUsdFromNanos(Number(grant.amount_nanos ?? 0), locale)}</td>
 										<td className="py-2 pr-4">
 											{Number(grant.redemptions_count ?? 0)} / {Number(grant.max_redemptions ?? 0)}
 										</td>
-										<td className="py-2 pr-4">{formatDate(grant.expires_at)}</td>
-										<td className="py-2 pr-4">{isActive ? "Active" : "Inactive"}</td>
-										<td className="py-2 pr-4">{formatDate(grant.created_at)}</td>
+									<td className="py-2 pr-4">{formatDate(grant.expires_at, locale)}</td>
+									<td className="py-2 pr-4">{isActive ? t("active") : t("inactive")}</td>
+									<td className="py-2 pr-4">{formatDate(grant.created_at, locale)}</td>
 										<td className="py-2 pr-4">{String(grant.note ?? "-")}</td>
 										<td className="py-2">
 											<CreditGrantEditDialog

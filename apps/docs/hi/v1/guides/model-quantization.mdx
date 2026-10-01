@@ -1,0 +1,38 @@
+---
+icon: "binary"
+title: "मॉडल क्वांटाइज़ेशन"
+description: "Quantization का परिचय और quantization व parameters पर गाइड श्रृंखला में आगे का मार्ग।"
+---
+
+यह पेज quantization और inference parameters पर पूरी guide series का शुरुआती बिंदु है।
+
+अगर आप model variants चुन रहे हैं (जैसे `BF16` बनाम `FP8`) या request settings (`temperature`, `top_p`, token budgets) tune कर रहे हैं, तो यहाँ से शुरू करके जुड़े guides पढ़ें।
+
+## क्वांटाइज़ेशन क्या है?
+
+Quantization में model weights और activations को कम precision वाले numbers से दिखाया जाता है, जिससे memory usage घटता है और inference तेज़ होता है।
+
+सामान्यतः:
+
+- अधिक precision: बेहतर quality/stability, लेकिन अधिक लागत।
+- कम precision: बेहतर throughput और कम लागत, लेकिन quality risk अधिक।
+
+## इस श्रृंखला के गाइड
+
+1. [क्वांटाइज़ेशन फ़ॉर्मैट](./quantization-formats.mdx)
+2. [क्वांटाइज़ेशन विधियाँ](./quantization-methods.mdx)
+3. [क्वांटाइज़ेशन रणनीति चुनना](./quantization-selection.mdx)
+4. [अनुमान पैरामीटर](./inference-parameters.mdx)
+5. [सैंपलिंग और डिकोडिंग पैरामीटर](./sampling-and-decoding.mdx)
+6. [संदर्भ और टोकन बजट](./context-and-token-budgeting.mdx)
+
+## सुझाया गया क्रम
+
+1. पहले formats और methods पढ़ें।
+2. शुरुआती variant चुनने के लिए selection guide उपयोग करें।
+3. उस baseline पर inference parameters tune करें।
+4. Production prompt traces के आधार पर token budgets तय करें।
+
+## व्यावहारिक सुझाव
+
+क्वांटाइज़ेशन और पैरामीटर समायोजन को हमेशा वास्तविक प्रॉम्प्ट और स्वीकृति मानदंडों पर जाँचें, केवल कृत्रिम सूक्ष्म-बेंचमार्क पर नहीं।

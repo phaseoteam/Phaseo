@@ -10,6 +10,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import { useTranslations } from "next-intl";
 import {
   ChevronDownIcon,
   ExternalLinkIcon,
@@ -19,7 +20,6 @@ import { type ComponentProps, createContext, isValidElement, useContext } from "
 
 const providers = {
   github: {
-    title: "Open in GitHub",
     createUrl: (url: string) => url,
     icon: (
       <svg fill="currentColor" role="img" viewBox="0 24">
@@ -29,7 +29,6 @@ const providers = {
     ),
   },
   scira: {
-    title: "Open in Scira",
     createUrl: (q: string) =>
       `https://scira.ai/?${new URLSearchParams({
         q,
@@ -94,7 +93,6 @@ const providers = {
     ),
   },
   chatgpt: {
-    title: "Open in ChatGPT",
     createUrl: (prompt: string) =>
       `https://chatgpt.com/?${new URLSearchParams({
         hints: "search",
@@ -113,7 +111,6 @@ const providers = {
     ),
   },
   claude: {
-    title: "Open in Claude",
     createUrl: (q: string) =>
       `https://claude.ai/new?${new URLSearchParams({
         q,
@@ -135,7 +132,6 @@ const providers = {
     ),
   },
   t3: {
-    title: "Open in T3 Chat",
     createUrl: (q: string) =>
       `https://t3.chat/new?${new URLSearchParams({
         q,
@@ -143,7 +139,6 @@ const providers = {
     icon: <MessageCircleIcon />,
   },
   v0: {
-    title: "Open in v0",
     createUrl: (q: string) =>
       `https://v0.app?${new URLSearchParams({
         q,
@@ -161,7 +156,6 @@ const providers = {
     ),
   },
   cursor: {
-    title: "Open in Cursor",
     createUrl: (text: string) => {
       const url = new URL("https://cursor.com/link/prompt");
       url.searchParams.set("text", text);
@@ -182,6 +176,11 @@ const providers = {
     ),
   },
 };
+
+function ProviderTitle({ provider }: { provider: string }) {
+  const t = useTranslations("Product.chatRooms.aiElements");
+  return <>{t("openInProvider", { provider })}</>;
+}
 
 const OpenInContext = createContext<{ query: string } | undefined>(undefined);
 
@@ -234,9 +233,10 @@ export const OpenInSeparator = (props: OpenInSeparatorProps) => (
 export type OpenInTriggerProps = ComponentProps<typeof DropdownMenuTrigger>;
 
 export const OpenInTrigger = ({ children, render, ...props }: OpenInTriggerProps) => {
+  const t = useTranslations("Product.chatRooms.aiElements");
   const fallback = (
     <Button type="button" variant="outline">
-      {children ?? "Open in chat"}
+      {children ?? t("openInChat")}
       <ChevronDownIcon className="size-4" />
     </Button>
   );
@@ -261,7 +261,7 @@ export const OpenInChatGPT = (props: OpenInChatGPTProps) => {
         target="_blank" />}>
 
         <span className="shrink-0">{providers.chatgpt.icon}</span>
-        <span className="flex-1">{providers.chatgpt.title}</span>
+        <span className="flex-1"><ProviderTitle provider="ChatGPT" /></span>
         <ExternalLinkIcon className="size-4 shrink-0" />
 
     </DropdownMenuItem>
@@ -280,7 +280,7 @@ export const OpenInClaude = (props: OpenInClaudeProps) => {
         target="_blank" />}>
 
         <span className="shrink-0">{providers.claude.icon}</span>
-        <span className="flex-1">{providers.claude.title}</span>
+        <span className="flex-1"><ProviderTitle provider="Claude" /></span>
         <ExternalLinkIcon className="size-4 shrink-0" />
 
     </DropdownMenuItem>
@@ -299,7 +299,7 @@ export const OpenInT3 = (props: OpenInT3Props) => {
         target="_blank" />}>
 
         <span className="shrink-0">{providers.t3.icon}</span>
-        <span className="flex-1">{providers.t3.title}</span>
+        <span className="flex-1"><ProviderTitle provider="T3 Chat" /></span>
         <ExternalLinkIcon className="size-4 shrink-0" />
 
     </DropdownMenuItem>
@@ -318,7 +318,7 @@ export const OpenInScira = (props: OpenInSciraProps) => {
         target="_blank" />}>
 
         <span className="shrink-0">{providers.scira.icon}</span>
-        <span className="flex-1">{providers.scira.title}</span>
+        <span className="flex-1"><ProviderTitle provider="Scira" /></span>
         <ExternalLinkIcon className="size-4 shrink-0" />
 
     </DropdownMenuItem>
@@ -337,7 +337,7 @@ export const OpenInv0 = (props: OpenInv0Props) => {
         target="_blank" />}>
 
         <span className="shrink-0">{providers.v0.icon}</span>
-        <span className="flex-1">{providers.v0.title}</span>
+        <span className="flex-1"><ProviderTitle provider="v0" /></span>
         <ExternalLinkIcon className="size-4 shrink-0" />
 
     </DropdownMenuItem>
@@ -356,7 +356,7 @@ export const OpenInCursor = (props: OpenInCursorProps) => {
         target="_blank" />}>
 
         <span className="shrink-0">{providers.cursor.icon}</span>
-        <span className="flex-1">{providers.cursor.title}</span>
+        <span className="flex-1"><ProviderTitle provider="Cursor" /></span>
         <ExternalLinkIcon className="size-4 shrink-0" />
 
     </DropdownMenuItem>

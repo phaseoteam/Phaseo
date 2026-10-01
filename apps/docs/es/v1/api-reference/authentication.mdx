@@ -1,0 +1,57 @@
+---
+title: "Autenticación"
+description: "Autentica solicitudes con claves de API de tipo bearer y gestiona su ciclo de vida de forma segura."
+icon: "key"
+---
+
+Todas las solicitudes al Gateway requieren una clave de API de tipo bearer.
+
+Crea y administra tus claves en el panel de Phaseo.
+
+<Note>
+Las llamadas a modelos `:free` pueden ejecutarse sin créditos depositados. Las llamadas a modelos de pago requieren saldo disponible en la cartera.
+</Note>
+
+## Usar una clave de API
+
+Incluye tu clave de API en el encabezado `Authorization` con el esquema `Bearer`:
+
+```bash
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-5-nano",
+    "input": "Hello!"
+  }'
+```
+
+## Formato y tratamiento de las claves
+
+- Formato de la clave: `phaseo_v1_sk_<kid>_<secret>`
+- Guarda las claves en un gestor de secretos, no en código que se ejecuta en el navegador.
+- Usa claves distintas para cada aplicación y entorno para que sea más seguro rotarlas.
+
+## Claves de administración
+
+Las claves de la API de administración se crean y gestionan en el panel de Phaseo, no a través de la API pública.
+
+Úsalas para endpoints de administración con privilegios, como [Créditos](./endpoint/credits.mdx) y [Actividad](./endpoint/activity.mdx), y para futuras API del plano de control, como las de guardrails, gestión de claves y espacios de trabajo.
+
+## Errores de autenticación
+
+- `401`: falta la clave de API, está mal formada o no es válida.
+- `403`: la clave es válida, pero no permite acceder a la función solicitada.
+
+## Páginas relacionadas
+
+- [Límites](./limits.mdx)
+- [Errores y depuración](./errors.mdx)
+
+<Visibility for="agents">
+Si implementas flujos de autenticación como agente:
+
+- Usa las habilidades del repositorio para gestionar secretos y configurar variables de entorno.
+- Nunca incluyas claves de API del Gateway en código enviado al cliente.
+- Prefiere tokens internos de corta duración entre el frontend y tu backend; las claves del Gateway deben permanecer solo en el servidor.
+</Visibility>

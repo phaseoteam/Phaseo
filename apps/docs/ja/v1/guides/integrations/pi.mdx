@@ -1,0 +1,47 @@
+---
+title: "Pi"
+icon: "terminal"
+description: "インストール済みのPiモデルカタログをPhaseo Gatewayに接続します。"
+---
+
+## Phaseo CLIで設定する
+
+本番環境向けのこれらのコマンドにはPhaseoアカウントが必要です。CLIはログインとセットアップ時に専用のGateway資格情報を作成します。
+
+```bash
+phaseo login
+phaseo pi
+```
+
+まずPiの公式リリースをインストールします。セットアップにより、管理対象のプロバイダー拡張機能が`~/.pi/agent/extensions/phaseo.ts`に作成されます。この拡張機能はChat Completions対応の有効なPhaseoテキストモデルをすべて公開し、各リクエスト時にPhaseo CLIから専用APIキーを取得します。
+
+初期モデルを選ぶか、必要に応じて1つのモデルだけを設定します。
+
+```bash
+phaseo pi --model anthropic/claude-sonnet-4.6
+phaseo pi --catalog default
+```
+
+ファイルの変更内容を事前に確認するには`--dry-run`を使います。
+
+## 起動して確認する
+
+```bash
+pi
+```
+
+「/model」を開いて`phaseo`プロバイダーを選び、簡単なプロンプトを送ります。管理対象の拡張機能だけを削除し、専用キーを失効させるには、次を実行します。
+
+```bash
+phaseo integrations remove pi
+```
+
+## 資格情報への手動アクセス
+
+生成された拡張機能は、Piのコマンド連携型キー構文を使います。
+
+```text
+!phaseo integrations credential pi
+```
+
+拡張機能にキーが平文で書き込まれることはありません。

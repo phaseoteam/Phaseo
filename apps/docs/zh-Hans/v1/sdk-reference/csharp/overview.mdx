@@ -1,0 +1,15 @@
+---
+title: "C# SDK"
+description: "Phaseo Gateway 的官方 .NET 客户端。"
+---
+
+从 NuGet 安装已发布的 [`Phaseo.Sdk`](https://www.nuget.org/packages/Phaseo.Sdk) 包。
+
+本地封装器 `packages/sdk/sdk-csharp/Client.cs` 目前提供用于聊天、响应、Anthropic 消息、图像、音频、嵌入、内容审核、文件、批处理、视频、生成、模型/供应商/端点/组织/定价、API 密钥发现及生命周期变更、工作区/当前密钥生命周期辅助功能、定价计算、活动/额度/分析、健康检查、模型生命周期验证以及异步作业 WebSocket URL 的高级辅助方法。可通过直接辅助方法或 `client.AsyncJobs.WebSocketUrl(...)` 调用。
+
+```csharp
+using PhaseoSdk;
+
+var client = new Phaseo("YOUR_KEY");
+var models = await client.ListModels(new Dictionary<string, string> { ["limit"] = "5" });
+```

@@ -1,0 +1,120 @@
+---
+title: "MCP de la documentation"
+icon: "plug-zap"
+description: "Connectez le serveur MCP de la documentation Phaseo à Codex, Claude Code, Cursor ou VS Code."
+---
+
+Pour que votre agent de programmation réponde aux questions sur Phaseo à partir de la documentation à jour plutôt que de données d’entraînement obsolètes, connectez le serveur MCP de la documentation Phaseo.
+
+Ce serveur MCP est en lecture seule. Il permet aux agents de rechercher dans la documentation et de lire des pages entières pendant leur travail.
+
+## URL du serveur
+
+`https://phaseo.app/docs/mcp`
+
+## Ce qu’il fournit
+
+- Recherche à jour dans toute la documentation Phaseo
+- Contenu intégral des pages lorsqu’un agent a besoin de plus de détails
+- Accès au résumé des capacités [skill.md](https://phaseo.app/docs/skill.md) hébergé en ligne
+
+## Codex
+
+Ajouter le serveur :
+
+```bash
+codex mcp add phaseoDocs --url https://phaseo.app/docs/mcp
+```
+
+Vérifier la connexion :
+
+```bash
+codex mcp list
+```
+
+## Claude Code
+
+Ajouter le serveur au projet actuel :
+
+```bash
+claude mcp add --transport http phaseo-docs https://phaseo.app/docs/mcp
+```
+
+Le rendre disponible dans tous les projets :
+
+```bash
+claude mcp add --transport http --scope user phaseo-docs https://phaseo.app/docs/mcp
+```
+
+Vérifier la connexion :
+
+```bash
+claude mcp list
+```
+
+## Cursor
+
+Utilisez le menu contextuel de la documentation pour installer le serveur MCP dans Cursor, ou ajoutez-le manuellement :
+
+```json
+{
+  "mcpServers": {
+    "phaseoDocs": {
+      "url": "https://phaseo.app/docs/mcp"
+    }
+  }
+}
+```
+
+## OpenCode
+
+Ajoutez le serveur de documentation Phaseo à `opencode.json` :
+
+```json
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "phaseoDocs": {
+      "type": "remote",
+      "url": "https://phaseo.app/docs/mcp"
+    }
+  }
+}
+```
+
+## VS Code
+
+Utilisez le menu contextuel de la documentation pour installer le serveur MCP dans VS Code, ou ajoutez-le manuellement :
+
+```json
+{
+  "servers": {
+    "phaseoDocs": {
+      "type": "http",
+      "url": "https://phaseo.app/docs/mcp"
+    }
+  }
+}
+```
+
+## Quand l’utiliser
+
+Utilisez Docs MCP lorsque vous souhaitez que votre agent :
+
+- Consulte le format actuel des requêtes avant d’écrire du code
+- Vérifie la prise en charge d’un endpoint par un modèle ou un fournisseur
+- Vérifie le routage, les préréglages, les garde-fous ou le comportement des tâches asynchrones
+- Récupère des exemples de la documentation sans quitter votre éditeur
+
+## Exemples de prompts
+
+- `Consulte le format de requête Responses dans la documentation Phaseo et donne-moi un exemple minimal.`
+- `Avant de modifier cette requête, utilise le serveur MCP Docs de Phaseo pour vérifier le fonctionnement de provider.sort.`
+- `Trouve la documentation Phaseo sur les garde-fous et résume les éléments qui influent sur le routage des fournisseurs.`
+
+## Guides associés
+
+- [Codex](./codex.mdx)
+- [Claude Code](./claude-code.mdx)
+- [Démarrage rapide](../../quickstart.mdx)
+- [Référence API](../../api-reference/introduction.mdx)

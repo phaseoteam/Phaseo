@@ -1,9 +1,12 @@
+"use client";
+
 import React, { useRef, useEffect } from "react";
 import Image from "next/image";
 import { ExtendedModel, SubscriptionPlans } from "@/data/types";
 import { Separator } from "@/components/ui/separator";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Check, X } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
 
 interface ModelInProductsProps {
 	model: ExtendedModel; // currently viewed model
@@ -14,6 +17,8 @@ export default function ModelInProducts({
 	model,
 	plans,
 }: ModelInProductsProps) {
+	const locale = useLocale();
+	const t = useTranslations("Catalogue.models");
 	// Plans that include the current model
 	const matchingPlans = plans.filter(
 		(plan: any) =>
@@ -62,11 +67,10 @@ export default function ModelInProducts({
 					<span className="text-xl">📦</span>
 				</div>
 				<p className="text-base font-medium">
-					No product or subscription plan availability yet
+					{t("noPlanAvailability")}
 				</p>
 				<p className="mt-1 text-sm text-muted-foreground">
-					We&apos;re continuously adding product data. Have info to
-					share?
+					{t("addingProductDataPrompt")}
 				</p>
 				<div className="mt-3">
 					<a
@@ -75,7 +79,7 @@ export default function ModelInProducts({
 						rel="noopener noreferrer"
 						className="inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors"
 					>
-						Contribute on GitHub
+						{t("contributeOnGitHub")}
 					</a>
 				</div>
 			</div>
@@ -91,7 +95,11 @@ export default function ModelInProducts({
 				? v
 				: NaN;
 		if (!Number.isFinite(n)) return null;
-		return n % 1 === 0 ? `$${n.toFixed(0)}` : `$${n.toFixed(2)}`;
+		return new Intl.NumberFormat(locale, {
+			style: "currency",
+			currency: "USD",
+			maximumFractionDigits: n % 1 === 0 ? 0 : 2,
+		}).format(n);
 	};
 
 	// Build a normalised, de-duped list of ALL features shown across the visible plans
@@ -130,7 +138,7 @@ export default function ModelInProducts({
 		<>
 			<div className="space-y-4">
 				<h3 className="text-lg font-semibold mb-2">
-					Product & Subscription Plan Availability
+					{t("planAvailability")}
 				</h3>
 				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
 					{matchingPlans.map((plan, planIdx) => {
@@ -140,7 +148,7 @@ export default function ModelInProducts({
 
 						const providerLabel: string | undefined =
 							plan.provider_name || plan.provider_id;
-						const displayName: string = plan.name || "Plan";
+						const displayName: string = plan.name || t("planFallback");
 
 						const rawUsd =
 							(plan as any).usd_price ??
@@ -149,9 +157,9 @@ export default function ModelInProducts({
 						const normalizedFrequency = String(frequency).toLowerCase();
 						const priceBadge =
 							normalizedFrequency === "usage"
-								? "Usage-based"
+								? t("usageBased")
 								: normalizedFrequency === "custom"
-								? "Custom pricing"
+									? t("customPricing")
 								: formatUsd(rawUsd);
 
 						const rateLimit: string | null =
@@ -217,22 +225,22 @@ export default function ModelInProducts({
 
 									<div className="mt-1 rounded-md border bg-muted/40 p-3">
 										<div className="text-sm font-semibold mb-1">
-											This model
+											{t("thisModel")}
 										</div>
 										<div className="flex flex-col gap-1 text-sm">
 											<div className="flex items-center gap-2">
 												<span className="text-muted-foreground">
-													Rate limit:
+													{t("rateLimit")}
 												</span>
 												<span className="font-medium">
 													{rateLimit ||
-														"No published rate limit"}
+														t("noPublishedRateLimit")}
 												</span>
 											</div>
 											{modelInfo && (
-												<div className="text-muted-foreground">
-													<span className="font-medium">
-														Notes:
+											<div className="text-muted-foreground">
+												<span className="font-medium">
+													{t("notes")}
 													</span>{" "}
 													{modelInfo}
 												</div>
@@ -244,7 +252,7 @@ export default function ModelInProducts({
 									{allFeatures.length > 0 && (
 										<div className="mt-1">
 											<span className="font-semibold text-sm">
-												Features:
+												{t("features")}
 											</span>
 											<div
 												ref={(el) => {
@@ -273,24 +281,24 @@ export default function ModelInProducts({
 																	className={`flex items-start gap-2 text-sm rounded-md px-3 py-2 border ${
 																		present
 																			? "bg-muted/60"
-																			: "bg-background"
-																	}`}
-																>
-																	<span
-																		className={`mt-0.5 ${
-																			present
-																				? "text-green-600 dark:text-green-400"
-																				: "text-red-600 dark:text-red-400"
-																		}`}
-																		aria-label={
-																			present
-																				? "Included"
-																				: "Not included"
-																		}
-																		title={
-																			present
-																				? "Included"
-																				: "Not included"
+															: "bg-background"
+														}`}
+													>
+													<span
+														className={`mt-0.5 ${
+															present
+																? "text-green-600 dark:text-green-400"
+																: "text-red-600 dark:text-red-400"
+														}`}
+														aria-label={
+															present
+																? t("included")
+																: t("notIncluded")
+														}
+														title={
+															present
+															? t("included")
+															: t("notIncluded")
 																		}
 																	>
 																		{present ? (
@@ -328,7 +336,7 @@ export default function ModelInProducts({
 											rel="noopener noreferrer"
 											className="mt-1 inline-block text-xs text-blue-600 underline decoration-transparent hover:decoration-current transition-colors duration-200"
 										>
-											Learn more
+											{t("learnMore")}
 										</a>
 									)}
 								</CardContent>

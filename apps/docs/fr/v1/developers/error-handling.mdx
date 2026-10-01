@@ -1,0 +1,40 @@
+---
+title: "Gestion des erreurs"
+description: "Comprenez les types d’erreurs et les stratégies de reprise pour fiabiliser vos intégrations Gateway."
+icon: "triangle-alert"
+---
+
+Même les meilleurs modèles connaissent parfois des échecs. Ce guide explique comment Gateway signale les erreurs et comment y répondre.
+
+---
+
+## Catégories d’erreurs
+
+Les erreurs peuvent provenir de Gateway, du fournisseur ou de votre requête. La réponse inclut des métadonnées pour vous aider à diagnostiquer le problème.
+
+| Plage de statuts | Signification                                  | Action habituelle                        |
+| ----------- | ---------------------------------------- | ------------------------------------- |
+| 400-499     | Requête invalide ou problème d’authentification | Corrigez le contenu de la requête ou les identifiants.       |
+| 429         | Limite de débit atteinte                             | Réessayez avec un délai et respectez les limites. |
+| 500-599     | Échec de Gateway ou du fournisseur              | Réessayez avec un délai et consignez les détails.    |
+
+---
+
+## Comportement des nouvelles tentatives
+
+- Mettez en place un délai exponentiel avec jitter.
+- Respectez l’en-tête `Retry-After` lorsqu’il est présent.
+- Évitez les tentatives infinies en définissant un nombre maximal.
+
+---
+
+## Erreurs des fournisseurs
+
+Les erreurs proviennent parfois d’un fournisseur en amont. Nous essaierons de l’indiquer dans la réponse. Si elles persistent, le routeur devrait, si possible, éviter ce fournisseur.
+
+---
+
+## Pour aller plus loin
+
+- Consultez les [limites de débit](./rate-limits.mdx) pour anticiper le throttling.
+- Découvrez le [routage et les replis](../guides/routing-and-fallbacks.mdx).

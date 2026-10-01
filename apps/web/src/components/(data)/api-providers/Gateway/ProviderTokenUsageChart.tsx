@@ -11,12 +11,14 @@ import {
 	fetchFrontendAPIProviderAppTokenTimeseries,
 	fetchFrontendAPIProviderModelTokenTimeseries,
 } from "@/lib/fetchers/frontend/fetchPublicCatalog";
+import { getTranslations } from "next-intl/server";
 
 export default async function ProviderTokenUsageChart({
 	apiProviderId,
 }: {
 	apiProviderId: string;
 }) {
+	const t = await getTranslations("Catalogue.providers");
 	const [{ models, points }, { apps, points: appPoints }] = await Promise.all([
 		fetchFrontendAPIProviderModelTokenTimeseries(apiProviderId, {
 			days: 30,
@@ -30,7 +32,7 @@ export default async function ProviderTokenUsageChart({
 
 	return (
 		<section id="token-usage" className="scroll-mt-36 space-y-3">
-			<h2 className="text-xl font-semibold">Token Usage</h2>
+			<h2 className="text-xl font-semibold">{t("tokenUsage")}</h2>
 
 			{models.length > 0 && points.length > 0 ? (
 				<ProviderTokenUsageChartClient
@@ -45,10 +47,9 @@ export default async function ProviderTokenUsageChart({
 						<EmptyMedia variant="icon">
 							<BarChart3 />
 						</EmptyMedia>
-						<EmptyTitle>No Token Usage Yet</EmptyTitle>
+						<EmptyTitle>{t("noTokenUsageYet")}</EmptyTitle>
 						<EmptyDescription className="max-w-md mx-auto">
-							Usage over time will appear once this provider receives
-							gateway traffic.
+							{t("usageWillAppearAfterTraffic")}
 						</EmptyDescription>
 					</EmptyHeader>
 				</Empty>

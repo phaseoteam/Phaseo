@@ -1,0 +1,33 @@
+---
+icon: "files"
+title: "الملفات"
+description: "استخدم SDK PHP لرفع الملفات واستعراض بياناتها الوصفية واسترجاع محتواها."
+---
+
+**الطرق**: `uploadFile()` و`listFiles()` و`retrieveFile()` و`retrieveFileContent()`
+
+### مثال
+
+```php
+<?php
+
+require 'vendor/autoload.php';
+
+use Phaseo\Sdk\Phaseo;
+
+$apiKey = getenv('PHASEO_API_KEY');
+$client = new Phaseo(apiKey: $apiKey);
+
+$uploaded = $client->uploadFile([
+    'purpose' => 'batch',
+    'file' => 'data:application/json;base64,eyJ0ZXN0Ijp0cnVlfQ==',
+]);
+
+$file = $client->retrieveFile('file_123');
+$content = $client->retrieveFileContent('file_123');
+```
+
+<Note>
+تتوفر `listFiles()` عبر SDK، لكن `GET /files` يعيد حاليًا `file_list_not_supported_with_shared_gateway_key` عند استخدام مفتاح البوابة المشترك
+احتفظ بمعرّفات الملفات المرفوعة واسترجعها مباشرةً.
+</Note>

@@ -3,20 +3,14 @@ import { buildMetadata } from "@/lib/seo";
 import MarkdownPreviewer from "@/components/(tools)/MarkdownPreviewer";
 import { getTranslations } from "next-intl/server";
 
-export const metadata: Metadata = buildMetadata({
-	title: "Markdown Previewer - Live Preview For Prompts & Docs",
-	description:
-		"Write and preview Markdown in real time for prompts, system messages, and documentation, with a fast editing flow that helps teams format AI workflow content reliably.",
-	path: "/tools/markdown-preview",
-	keywords: [
-		"Markdown preview",
-		"Markdown editor",
-		"prompt formatting",
-		"system prompts",
-		"AI documentation",
-		"Phaseo tools",
-	],
-});
+export async function generateMetadata(): Promise<Metadata> {
+	const t = await getTranslations("Product.tools.markdown");
+	return buildMetadata({
+		title: t("title"),
+		description: t("description"),
+		path: "/tools/markdown-preview",
+	});
+}
 
 export default async function MarkdownPreviewPage() {
 	await getTranslations("Product.tools.markdown");

@@ -1,0 +1,473 @@
+---
+title: "使用方法"
+description: "Phaseo GatewayとTypeScript Agent SDKを使ってエージェントアプリケーションを構築します。"
+---
+
+1回のテキスト生成だけでは足りないアプリケーションには、`@phaseo/agent-sdk`を使用します:
+
+- 複数ステップのツールループ
+- ローカルランタイムツール
+- SDKが返す状態から再開できる実行
+- 人による承認を明示的に待つ一時停止
+- 型付きの最終出力
+- 既存のTypeScript SDKを通じたゲートウェイ経由のモデルターン
+
+このパッケージはインストールして使うSDKであり、ホスト型エージェントプラットフォームではありません。アプリケーション、デプロイモデル、返された実行状態を保存する方法は利用者が用意します。
+
+## 状態モデル
+
+Agent SDKはPhaseoがホストするサービスに実行状態を保存しません。
+
+- `run()`は後で続行するために必要な状態全体を返します。
+リクエスト間やプロセス再起動後も実行を再開したい場合は、返された状態をアプリケーション独自のストアに保存してください。
+- `continueRun()`は前回の実行状態をそのまま受け取ります。
+
+Phaseoはアプリケーションの外部に何も保存しません。
+
+## インストール
+
+```bash
+pnpm add @phaseo/sdk @phaseo/agent-sdk
+```
+
+## SDKの内容
+
+- `createAgent()`
+- `defineTool()`
+- `createGatewayAgentClient()`
+- 以前に返された実行状態から続行する`continueRun()`
+- 段階的に取得でき、再生も可能な結果を返す`stream()`と`continueStream()`
+- `stepCountIs()`、`maxCost()`、`hasToolCall()`などの停止条件ヘルパー
+
+## 最初のエージェント
+
+```typescript
+import {
+  createAgent,
+  createGatewayAgentClient,
+  defineTool,
+} from "@phaseo/agent-sdk";
+
+const lookupDocs = defineTool({
+  id: "lookup-docs",
+  description: "Look up an internal docs page by slug.",
+  parameters: {
+    type: "object",
+    properties: {
+      slug: { type: "string" },
+    },
+    required: ["slug"],
+    additionalProperties: false,
+  },
+  async execute(input: { slug: string }) {
+    return {
+      slug: input.slug,
+      url: `https://phaseo.app/docs/v1/${input.slug}`,
+    };
+  },
+});
+
+const agent = createAgent({
+  id: "support-docs-agent",
+  model: "phaseo/free",
+  instructions: "Use tools when helpful and finish with a concise answer.",
+  tools: [lookupDocs],
+});
+
+const result = await agent.run({
+  input: "Find the docs page for presets and explain when to use them.",
+  client: createGatewayAgentClient({
+    clientOptions: {
+      apiKey: process.env.PHASEO_API_KEY!,
+    },
+  }),
+});
+
+console.log(result.output);
+```
+
+## 基本的な考え方
+
+ランタイムループでは、次の4つを行います:
+
+1. 現在のメッセージ状態をモデルクライアントへ送信します
+2. 返されたローカルツール呼び出しを実行します
+3. ツールの結果を次のターンに追加します
+4. 各ステップの完了時に更新された実行状態を返します
+
+これにより、ホスト型のオーケストレーション製品に依存せず、アプリケーション内で再開可能なループを実現できます。
+
+## 基本プリミティブ
+
+### `createAgent()`
+
+`createAgent()`で次を定義します:
+
+- 安定した`id`
+- 指示
+- 1つのモデルまたはプリセット
+- 少数のツール一覧
+- 任意の出力パーサー
+- 任意の人によるレビュー規則
+- 任意の再試行とツール実行の制御
+
+最初のエージェントは範囲を絞りましょう。通常は1つのワークフローと1〜2個のツールで十分です。
+
+### `defineTool()`
+
+ローカルランタイムツールでは次を定義します:
+
+- `id`
+- `description`
+- 任意のJSON`parameters`
+- 任意の`timeoutMs`
+- `inputSchema`と`outputSchema`のランタイムバリデーター
+- `execute()`、`execute: false`、または人の介入を伴うコールバック
+- `requireApproval`、`onError`、`nextTurnParams`、進捗イベント
+
+```typescript
+const fetchTicket = defineTool({
+  id: "fetch-ticket",
+  description: "Load one internal support ticket.",
+  parameters: {
+    type: "object",
+    properties: {
+      ticketId: { type: "string" },
+    },
+    required: ["ticketId"],
+    additionalProperties: false,
+  },
+  timeoutMs: 3_000,
+  async execute(input: { ticketId: string }, context) {
+    const response = await fetch(`https://internal.example/tickets/${input.ticketId}`, {
+      signal: context.signal,
+    });
+
+    return await response.json();
+  },
+});
+```
+
+タイムアウトが発生すると、ランタイムは`context.signal`を中断し、実行を`failed`としてマークして、タイムアウトエラーを再スローします。
+
+スキーマには関数、または`parse()`か`safeParse()`を公開する任意のオブジェクトを指定できます。不正なモデル引数やツール結果は、ツール境界を越える前にエラーになります。
+
+## 承認、HITL、手動ツール
+
+副作用を伴うツールを呼び出しごとに制御します:
+
+```typescript
+const deploy = defineTool({
+  id: "deploy",
+  requireApproval: ({ environment }) => environment === "production",
+  async execute(input: { environment: string }) {
+    return deployRelease(input.environment);
+  },
+});
+```
+
+`run.pause.pendingToolCalls`で実行が一時停止します。並行する呼び出しを混同しないよう、正確な呼び出しIDを指定して再開してください:
+
+```typescript
+const resumed = await agent.continueRun({
+  run: paused,
+  client,
+  approvals: [{ toolCallId: "call_deploy_42" }],
+  rejections: [{ toolCallId: "call_delete_17", reason: "Not authorized" }],
+});
+```
+
+アプリケーション側で実行する処理には`execute: false`を設定し、結果を`toolOutputs`で渡します。対話型ツールでは`onToolCalled`から`null`を返します。続行後、`onResponseReceived`でユーザーの応答を検証または変換できます。
+
+## 進捗を出力するツール
+
+非同期ジェネレーターは、途中結果を公開してから最終結果を1つ返せます:
+
+```typescript
+const indexRepository = defineTool({
+  id: "index-repository",
+  async *execute(input: { path: string }) {
+    yield { phase: "scan" };
+    yield { phase: "embed" };
+    return { indexed: 248 };
+  },
+});
+```
+
+進捗は`tool.preliminary_result`イベントとして、またステップの`preliminaryResults`に表示されます。
+
+## ストリーミング結果
+
+`stream()`はストリーミング対応モデルクライアントで同じ状態機械を開始します。結果は再生可能なため、UI、テレメトリー、永続化コードから同時に読み取れます:
+
+```typescript
+const result = agent.stream({ input, client });
+
+for await (const delta of result.getTextStream()) {
+  process.stdout.write(delta);
+}
+
+const [text, completed] = await Promise.all([result.getText(), result.getResult()]);
+```
+
+用途に応じて`getReasoningStream()`、`getItemsStream()`、`getToolStream()`、`getFullStream()`を使い分けます。`cancel()`は実行を中断します。
+
+### 型付き実行アイテムの表示
+
+`getItemsStream()`は`AgentItem<TOutput>`を返します。これは`switch`で安全に分岐できる判別付きユニオンです:
+
+```typescript
+for await (const item of result.getItemsStream()) {
+  switch (item.type) {
+    case "message":
+      renderAssistantMessage(item.content);
+      break;
+    case "reasoning":
+      renderReasoning(item.text);
+      break;
+    case "tool_call":
+      renderToolCall(item.toolCallId, item.name, item.input);
+      break;
+    case "tool_result":
+      renderToolResult(item.toolCallId, item.output);
+      break;
+    case "error":
+      renderError(item.message);
+      break;
+    case "output":
+      renderFinalOutput(item.value);
+      break;
+  }
+}
+```
+
+`run()`または`stream()`の後、同じ順序付きアイテム契約を`completed.items`から利用できます。プロバイダーの出力はメッセージ、推論、ツール呼び出し、ツール結果、エラー、最終出力のアイテムに正規化されます。プロバイダー固有のフィールドは、正規化済みアイテムの`rawProviderItem`から引き続き取得できます。
+
+## 停止条件と動的なターン
+
+停止条件は配列で組み合わせます。最初に一致した条件が理由を記録し、`stopped`状態の実行を返します:
+
+```typescript
+import { maxCost, maxTokensUsed, stepCountIs } from "@phaseo/agent-sdk";
+
+const agent = createAgent({
+  id: "bounded-research",
+  stopWhen: [stepCountIs(12), maxTokensUsed(40_000), maxCost(2)],
+  model: ({ context }) => context.fast ? "phaseo/free" : "anthropic/claude-sonnet-4",
+  instructions: ({ numberOfTurns }) => `Research turn ${numberOfTurns}`,
+});
+```
+
+ツールは`context.setContext()`でアプリケーションコンテキストを設定し、直後のターンを`nextTurnParams`で上書きできます。
+
+### `createGatewayAgentClient()`
+
+モデルターンをPhaseo Gateway経由で実行する場合は、ゲートウェイアダプターを使用します。
+
+次のようなゲートウェイ固有の制御を渡せます:
+
+- `responseFormat`
+- `plugins`
+- `gatewayTools`
+- `toolChoice`
+- `webSearchOptions`
+- `providerOptions`
+- `promptCacheKey`
+- `includeMeta`
+
+これにより、実行ごとに生のリクエストペイロードを作り直す代わりに、ルーティング、検索、構造化出力、プラグインのデフォルトをモデルクライアントの近くに保てます。
+
+## アプリケーション側での永続化
+
+アプリケーションで実行再開が必要な場合は、返された`AgentRunResult`を直接保存するか、非同期の`load(runId)`および`save(result)`メソッドを持つ`state`アクセサーを用意します。これにより、シリアル化したレコードを各層に渡さず、続行中の実行で`runId`を使用できます。
+
+SDKには設計上、永続化アダプターやホスト型の状態バックエンドは含まれていません。
+
+そのため、次のことができます:
+
+- 1回限りの実行をプロセス内だけで完結させる
+- 一時停止中または未完了の実行をアプリケーション独自のレコードにシリアル化する
+- 保存した実行状態を読み込み直し、後で`continueRun()`に渡す
+
+## 人によるレビューと続行
+
+実行をチェックポイントで一時停止し、承認を待つ場合は`humanReview`を使用します:
+
+```typescript
+const agent = createAgent({
+  id: "support-agent",
+  humanReview: ({ response }) =>
+    response.message.content.includes("needs approval")
+      ? {
+          reason: "approval_required",
+          payload: { draft: response.message.content },
+        }
+      : null,
+});
+```
+
+人による明示的な入力で続行します:
+
+```typescript
+const continued = await agent.continueRun({
+  run: pausedResult,
+  client,
+  humanInput: "Approved. Continue and return the final answer.",
+});
+```
+
+## 型付き出力
+
+アプリケーションで型付きの最終値が必要な場合は`parseOutput`を使用します:
+
+```typescript
+const agent = createAgent<string, { summary: string }>({
+  id: "summary-agent",
+  parseOutput(text) {
+    return JSON.parse(text) as { summary: string };
+  },
+});
+```
+
+モデルの挙動をより厳密にするには、ゲートウェイアダプターの構造化出力と組み合わせます:
+
+```typescript
+const client = createGatewayAgentClient({
+  clientOptions: {
+    apiKey: process.env.PHASEO_API_KEY!,
+  },
+  responseFormat: {
+    type: "json_schema",
+    name: "agent_answer",
+    schema: {
+      type: "object",
+      properties: {
+        summary: { type: "string" },
+      },
+      required: ["summary"],
+      additionalProperties: false,
+    },
+  },
+  plugins: [{ id: "response-healing" }],
+});
+```
+
+## ランタイム制御
+
+### モデルの再試行
+
+一時的なモデルエラーが発生したとき、実行を`failed`として保存する前に再試行するには`modelRetry`を使います:
+
+```typescript
+const agent = createAgent({
+  id: "support-agent",
+  modelRetry: {
+    maxRetries: 2,
+    backoffMs: 250,
+  },
+});
+```
+
+`maxRetries`は、最初のモデルリクエスト後に行う追加試行の数です。
+永続化されたステップレコードでは、最終的な再試行数を`modelAttempts`に保存します。
+
+### ローカルツールの並行実行
+
+1回のモデルターンで複数の独立したツールを安全に呼び出せる場合は、`toolExecution.toolConcurrency`を設定します:
+
+```typescript
+const agent = createAgent({
+  id: "research-agent",
+  toolExecution: {
+    toolConcurrency: 3,
+  },
+  tools: [fetchDocs, fetchStatus, fetchIncidents],
+});
+```
+
+ランタイムは引き続きツール結果メッセージの順序を保持します。
+
+### プリセットによるルーティング
+
+ルーティング、プロンプト、パラメーターのデフォルトをアプリのコードに埋め込まず、ダッシュボードで管理する場合は`preset`を使います:
+
+```typescript
+const agent = createAgent({
+  id: "support-triage-agent",
+  preset: "support-triage",
+});
+```
+
+## イベントフック
+
+ログ、テレメトリー、内部ワークフロー向けのライフサイクルフックが必要な場合は`onEvent`を使います。
+
+現在のイベント:
+
+- `run.started`
+- `run.resumed`
+- `step.started`
+- `step.completed`
+- `step.failed`
+- `step.cancelled`
+- `model.requested`
+- `model.completed`
+- `model.failed`
+- `tool.started`
+- `tool.completed`
+- `tool.failed`
+- `checkpoint.saved`
+- `run.waiting_for_human`
+- `run.cancelled`
+- `run.completed`
+- `run.failed`
+
+ステップが成功すると、チェックポイント付きのステップが永続化された後にランタイムが`step.completed`を発行します。
+
+## エラー処理
+
+ゲートウェイのエラーは`AgentGatewayError`として再スローされます:
+
+```typescript
+import { AgentGatewayError } from "@phaseo/agent-sdk";
+
+try {
+  await agent.run({ input, client });
+} catch (error) {
+  if (error instanceof AgentGatewayError) {
+    console.error(error.status, error.requestId, error.reason);
+  }
+  throw error;
+}
+```
+
+ゲートウェイ由来のエラーの場合、失敗した実行とステップには`errorDetails`も保存されます。
+
+## 同梱の例
+
+現在、パッケージには次の例が含まれています:
+
+- `examples/research-brief-agent.ts`
+- `examples/support-triage-agent.ts`
+- `examples/coding-review-agent.ts`
+- `examples/parallel-tool-agent.ts`
+
+## 現在のスコープ
+
+このSDKは、アプリケーション構築の基本要素に意図的に焦点を当てています:
+
+- ローカルまたはアプリケーション管理のチェックポイント永続化
+- ゲートウェイ経由のモデルターン
+- ローカルツール
+- 再開可能なエージェントループ
+- ステップごとに正規化されたトークン使用量、コスト、警告、終了理由、ツール結果
+
+ホスト型オーケストレーションプラットフォームを目指したり、特定のリモート永続化バックエンドを同梱したりはしません。
+
+## 関連ガイド
+
+- [TypeScriptで永続的なエージェントループを構築する](../../cookbook/agent-sdk-durable-loop.mdx)
+- [エージェントによるWeb検索で調査する](../../cookbook/agent-sdk-research-brief.mdx)
+- [プリセット駆動のエージェントでサポートをトリアージする](../../cookbook/agent-sdk-support-triage.mdx)
+- [ローカルランタイムツールでコードをレビューする](../../cookbook/agent-sdk-coding-review.mdx)
+- [ローカルツールを並行して呼び出す](../../cookbook/agent-sdk-parallel-tools.mdx)

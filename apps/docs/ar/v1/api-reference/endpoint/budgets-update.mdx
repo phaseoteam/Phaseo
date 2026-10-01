@@ -1,0 +1,9 @@
+---
+title: "تحديث ميزانية مساحة العمل"
+sidebarTitle: "تحديث الميزانية"
+badge: "تجريبي"
+openapi: "/ar/openapi/v1/openapi.localized.yaml PATCH /budgets/{id}"
+description: "يغيّر فترة ميزانية مساحة العمل أو حد الإنفاق."
+---
+
+يتطلب `budgets:write`. يؤدي خفض الحد إلى أقل من الاستخدام الحالي إلى حظر الطلبات الجديدة فورًا.

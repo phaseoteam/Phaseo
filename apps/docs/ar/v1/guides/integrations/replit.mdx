@@ -1,0 +1,67 @@
+---
+title: "Replit"
+icon: "box"
+description: "استدعِ Phaseo من تطبيقات Replit وعمليات النشر."
+---
+
+استخدم Phaseo من Replit عبر SDK الرسمي لـ OpenAI أو مزوّد Phaseo الرسمي لـ AI SDK. احفظ مفتاح API في Replit Secrets بدلًا من الشيفرة المصدرية.
+
+## إضافة السر
+
+في مساحة عمل Replit، افتح **Tools → Secrets** وأضف:
+
+```text
+PHASEO_API_KEY=phaseo_v1_sk_...
+```
+
+سيكون السر متاحًا لتطبيقك كمتغير بيئة.
+
+## TypeScript باستخدام SDK الخاص بـ OpenAI
+
+```bash
+npm install openai
+```
+
+```ts
+import OpenAI from "openai";
+
+const client = new OpenAI({
+	apiKey: process.env.PHASEO_API_KEY,
+	baseURL: "https://api.phaseo.app/v1",
+});
+
+const response = await client.responses.create({
+	model: "openai/gpt-5-nano",
+	input: "Reply with only: ok",
+});
+
+console.log(response.output_text);
+```
+
+## TypeScript باستخدام AI SDK
+
+```bash
+npm install @phaseo/ai-sdk-provider
+```
+
+```ts
+import { phaseo } from "@phaseo/ai-sdk-provider";
+import { generateText } from "ai";
+
+const { text } = await generateText({
+	model: phaseo("openai/gpt-5-nano"),
+	prompt: "Reply with only: ok",
+});
+
+console.log(text);
+```
+
+## عمليات النشر
+
+أضف `PHASEO_API_KEY` إلى أسرار عملية النشر، بالإضافة إلى مساحة التطوير. وتأكد من أن عملية النشر لا تسجّل متغيرات البيئة أو ترويسات الطلبات.
+
+## مواضيع ذات صلة
+
+- [SDK الخاص بـ OpenAI](./openai-sdk.mdx)
+- [AI SDK](./ai-sdk.mdx)
+- [المصادقة](../../developers/authentication.mdx)

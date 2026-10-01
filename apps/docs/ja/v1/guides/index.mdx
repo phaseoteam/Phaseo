@@ -1,0 +1,66 @@
+---
+title: "ガイド"
+description: "初期設定、機能開発、インテグレーション、本番運用に合ったPhaseoガイドを見つけましょう。"
+icon: "book-open"
+---
+
+取り組む作業が決まっていて、最適なガイドをすぐに見つけたい場合は、ここから始めてください。
+
+## 初めてのインテグレーション
+
+Phaseoを初めてインテグレーションする場合は、次の順に進めてください。
+
+1. [クイックスタート](../quickstart.mdx)：リクエストを1回成功させます。
+2. [認証](../developers/authentication.mdx)：キーを安全に保存して送信します。
+3. [サンプル](./examples.mdx)：リクエストの例をアプリに取り込みます。
+
+<Note>
+`:free`モデルはクレジットを入金せずに呼び出せます。有料モデルには利用可能なウォレット残高が必要です。
+</Note>
+
+## アプリの機能を開発する
+
+基本的なリクエストが動作し、製品の機能を追加したい場合は、次のガイドを使ってください。
+
+<Columns cols={2}>
+	<Card title="レシピ集" icon="chef-hat" href="../cookbook/index.mdx">
+		無料ルーティング、プリセット、非同期ジョブ、コーディングエージェントの設定を扱う実践的なレシピです。
+	</Card>
+	<Card title="ルーティングとフォールバック" icon="git-branch" href="./routing-and-fallbacks.mdx">
+		プロバイダーの順序、フェイルオーバー動作、信頼性とのトレードオフを制御します。
+	</Card>
+	<Card title="ツール呼び出し" icon="wrench" href="./tool-calling.mdx">
+		関数ツール、安全性チェック、安定したツールループを実装します。
+	</Card>
+	<Card title="サーバーツール" icon="sparkles" href="./server-tools/index.mdx">
+		Phaseoが提供する日時、Web検索、Web取得、Advisorツールを使います。
+	</Card>
+	<Card title="構造化出力" icon="braces" href="./structured-outputs.mdx">
+		スキーマを使って、予測可能な機械可読レスポンスを生成します。
+	</Card>
+	<Card title="ストリーミング" icon="radio" href="./streaming.mdx">
+		SSEで低レイテンシのレスポンスを配信し、本番運用向けの対策も整えます。
+	</Card>
+	<Card title="プロンプトキャッシュ" icon="database-zap" href="./prompt-caching.mdx">
+		Chat Completions、Responses、Anthropic Messagesで安定したプロンプトコンテキストを再利用します。
+	</Card>
+</Columns>
+
+## 本番環境で運用する
+
+トラフィック、信頼性、セキュリティ、キーのライフサイクルを考慮する段階になったら、次のガイドを使ってください。
+
+<Columns cols={2}>
+	<Card title="エラー処理" icon="triangle-alert" href="../developers/error-handling.mdx">
+		ステータスコード、エラー形式、再試行戦略を使ってデバッグします。
+	</Card>
+	<Card title="レート制限" icon="gauge" href="../developers/rate-limits.mdx">
+		負荷時のスループットとバックオフを計画します。
+	</Card>
+	<Card title="ベストプラクティス" icon="shield-check" href="../developers/best-practices.mdx">
+		信頼性と安全性を高めるためのチェックリストです。
+	</Card>
+	<Card title="管理APIキー" icon="key-round" href="../developers/management-api-keys.mdx">
+		キーのライフサイクル管理と環境の分離を自動化します。
+	</Card>
+</Columns>

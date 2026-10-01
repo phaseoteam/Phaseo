@@ -1,0 +1,25 @@
+---
+icon: "braces"
+title: "مرجع API"
+description: "راجع الفئات والدوال والأساليب الرئيسية في Python Agent SDK."
+---
+
+| API | الغرض |
+| --- | --- |
+| `create_agent(...)` | تعريف وكيل |
+| `define_tool(...)` | تعريف أداة محلية أو يدوية |
+| `create_gateway_agent_client(...)` | ربط جولات النموذج بـ Phaseo |
+| `agent.run(...)` | التشغيل حتى الاكتمال أو الإيقاف المؤقت |
+| `agent.stream(...)` | التشغيل باستخدام مستهلكي تدفق قابلين لإعادة الاستخدام |
+| `agent.continue_run(...)` | متابعة حالة محفوظة أو متوقفة مؤقتًا |
+| `stream.result()` | قراءة التشغيل المكتمل |
+| `stream.text_stream()` | قراءة أجزاء النص |
+| `stream.full_stream()` | قراءة جميع الأحداث |
+| `stream.cancel()` | إلغاء التشغيل النشط |
+
+تشمل الأنواع المهمة `AgentTool` و`AgentToolDecision` و`AgentToolOutput` و`AgentRunResult` و`AgentStateAccessor` و`AgentModelRetryConfig` و`AgentToolExecutionConfig`.
+
+## مواضيع ذات صلة
+
+- [أنشئ وكيلك الأول](./agent-sdk.mdx)
+- [قابلية المراقبة وDevTools](./agent-sdk-observability.mdx)

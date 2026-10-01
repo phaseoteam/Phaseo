@@ -1,0 +1,24 @@
+---
+title: "Java Agent SDK（开发中）"
+description: "了解仍在开发中的 Java Agent SDK 运行时。"
+---
+
+<Note type="warning">
+  Java Client SDK 和 Agent SDK 仍在开发中，尚未发布到 Maven Central。
+</Note>
+
+Java Agent SDK 是基于 Java Client SDK 构建的纯源码运行时，提供与 TypeScript Agent SDK 相同的核心约定：
+
+- 有界的多步骤工具循环
+- 带有每工具超时的并发工具
+- 模型重试与退避
+- 人工审核暂停和可恢复的运行记录
+- 生命周期事件和 Phaseo DevTools JSONL 捕获
+- 由 Java Client SDK 支持的网关适配器
+
+运行始终留在你的应用中。Phaseo 处理模型请求；你的服务负责持久化、队列、授权和审核界面。
+
+## 下一步
+
+- [安装](./agent-sdk-installation.mdx)
+- [用法](./agent-sdk.mdx)

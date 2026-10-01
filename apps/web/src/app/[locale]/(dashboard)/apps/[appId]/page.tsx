@@ -96,8 +96,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 	}
 
 	return buildMetadata({
-		title: `${app.title} - App Usage`,
-		description: `Usage analytics for ${app.title}, including model usage and request activity over time.`,
+		title: t("metadataAppTitle", { name: app.title }),
+		description: t("metadataAppDescription", { name: app.title }),
 		path,
 		imagePath:
 			typeof app.image_url === "string" && app.image_url.startsWith("/")
@@ -105,9 +105,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 				: undefined,
 		keywords: [
 			app.title,
-			`${app.title} AI app`,
-			"AI app analytics",
-			"Phaseo app profile",
+			`${app.title} ${t("aiAppKeyword")}`,
+			t("appAnalyticsKeyword"),
+			t("appProfileKeyword"),
 		],
 	});
 }
@@ -303,7 +303,7 @@ export default async function Page({ params }: PageProps) {
 				</div>
 				<AppUsageChart
 					rows={resolvedRows}
-					windowLabel="Last 4 weeks"
+					windowLabel={t("lastFourWeeks")}
 					modelLabels={modelLabels}
 					modelColours={modelColours}
 				/>

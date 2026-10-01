@@ -1,0 +1,24 @@
+---
+icon: "circle-check"
+title: "停止条件"
+description: "可按步骤、token、成本、时长、工具或结束原因限制 Python 代理的工作。"
+---
+
+通过 `stop_when` 组合停止辅助函数：
+
+```python
+stop_when = [
+    step_count_is(12),
+    max_tokens_used(40_000),
+    max_cost(2),
+    max_duration(60_000),
+]
+```
+
+其他辅助函数包括 `has_tool_call(...)` 和 `finish_reason_is(...)`。即使使用成本或 token 上限，也请设置步骤数或持续时间上限，因为这些限制依赖于报告的用量。
+
+## 相关内容
+
+- [动态轮次](./agent-sdk-dynamic-turns.mdx)
+- [输出和重试](./agent-sdk-run-controls.mdx)
+

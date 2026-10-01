@@ -1,0 +1,10 @@
+---
+title: "Dynamische Route löschen"
+sidebarTitle: "Route löschen"
+badge: "Beta"
+openapi: "/de/openapi/v1/openapi.localized.yaml DELETE /routing/dynamic-routes/{id}"
+description: "Löscht eine dynamische Route und ihren Versionsverlauf."
+---
+<Note>Für diesen Endpunkt ist ein Management-API-Schlüssel mit `settings:write` erforderlich.</Note>
+
+Übergib optional `confirm_name`, um den exakten Namen zu bestätigen. Nach dem Löschen werden die Kontexte verknüpfter Schlüssel aktualisiert.

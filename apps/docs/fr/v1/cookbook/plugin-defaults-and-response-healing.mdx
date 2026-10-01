@@ -1,0 +1,173 @@
+---
+title: "Définir les valeurs par défaut des plugins pour les workflows JSON structurés"
+icon: "puzzle"
+description: "Utilisez les règles de plugin du workspace, des presets et des requêtes pour assurer une réparation cohérente des réponses."
+---
+
+Suivez cette recette si les requêtes à sortie structurée ont besoin d’une règle de plugin stable, plutôt que de paramètres différents pour chaque requête.
+
+## 1. Comprendre les priorités
+
+La règle des plugins du gateway est résolue dans cet ordre :
+
+1. valeurs par défaut du workspace
+2. valeurs par défaut des presets
+3. plugins au niveau de la requête
+
+Les couches moins prioritaires peuvent remplacer celles qui les précèdent, sauf si la valeur par défaut du workspace est explicitement verrouillée.
+
+## 2. Définir la valeur par défaut du workspace
+
+Utilisez les paramètres de routage lorsqu’un workspace doit activer par défaut la réparation des réponses pour les requêtes JSON structurées.
+
+C’est le bon endroit pour définir :
+
+- des valeurs opérationnelles générales
+- le comportement partagé des clés API
+- la prévention des écarts entre services
+
+## 3. Verrouiller la règle si elle n’est pas négociable
+
+Si la réparation des réponses doit toujours rester activée dans un workspace, verrouillez cette valeur par défaut.
+
+Avec une valeur par défaut du workspace verrouillée :
+
+- les presets ne peuvent pas la désactiver
+- le contenu des requêtes ne peut pas la désactiver
+- les journaux indiquent toujours si le plugin a été appliqué, ignoré ou a échoué
+
+## 4. Utiliser des presets pour les workflows spécifiques
+
+Les presets constituent la bonne couche si une famille de requêtes doit combiner :
+
+- des paramètres de sortie structurée
+- des valeurs par défaut du plugin de réparation des réponses
+
+Cette couche peut aussi sélectionner le mode de réparation :
+
+- `safe` pour un nettoyage syntaxique limité
+- `strict` pour un comportement qui supprime uniquement les enveloppes
+
+Le corps des requêtes reste ainsi plus compact, et le routage comme le comportement de sortie sont plus faciles à réutiliser entre les services.
+
+## 5. Remplacer la configuration au niveau de la requête uniquement si le workspace l’autorise
+
+Si la valeur par défaut du workspace n’est pas verrouillée, une requête peut toujours remplacer directement la configuration du plugin :
+
+## Exemple de requête
+<CodeGroup>
+```bash cURL
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "phaseo/free",
+    "input": "Return valid JSON",
+    "response_format": {
+      "type": "json_schema",
+      "json_schema": {
+        "name": "answer",
+        "schema": {
+          "type": "object",
+          "properties": {
+            "summary": { "type": "string" }
+          },
+          "required": ["summary"],
+          "additionalProperties": false
+        }
+      }
+    },
+    "plugins": [
+      { "id": "response-healing", "enabled": true }
+    ]
+  }'
+```
+
+```typescript TypeScript SDK
+import Phaseo from "@phaseo/sdk";
+
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
+
+const response = await client.generateResponse({
+  model: "phaseo/free",
+  input: "Return valid JSON",
+  response_format: {
+    type: "json_schema",
+    json_schema: {
+      name: "answer",
+      schema: {
+        type: "object",
+        properties: {
+          summary: { type: "string" },
+        },
+        required: ["summary"],
+        additionalProperties: false,
+      },
+    },
+  },
+  plugins: [{ id: "response-healing", enabled: true }],
+});
+
+console.log(response.output_text);
+```
+
+```python Python SDK
+from phaseo import Phaseo
+
+client = Phaseo(api_key="YOUR_API_KEY")
+
+response = client.generate_response(
+    {
+        "model": "phaseo/free",
+        "input": "Return valid JSON",
+        "response_format": {
+            "type": "json_schema",
+            "json_schema": {
+                "name": "answer",
+                "schema": {
+                    "type": "object",
+                    "properties": {
+                        "summary": {"type": "string"}
+                    },
+                    "required": ["summary"],
+                    "additionalProperties": False,
+                },
+            },
+        },
+        "plugins": [
+            {"id": "response-healing", "enabled": True}
+        ],
+    }
+)
+
+print(response.get("output_text"))
+```
+</CodeGroup>
+## 6. Vérifier le comportement dans les journaux
+
+Après une requête, examinez la vue détaillée et vérifiez les éléments suivants :
+
+- `plugin_executions` contient `response-healing`
+- l’état correspond à l’une de ces valeurs :
+  - `applied`
+  - `skipped`
+  - `failed`
+- le mode de plugin effectif est visible
+- les erreurs de validation apparaissent lorsque l’application du schéma rejette un contenu réparé candidat
+
+## 7. Que faire si le comportement varie selon les services
+
+Si deux services se comportent différemment, comparez :
+
+- les paramètres de routage du workspace
+- les valeurs par défaut des plugins dans les presets
+- les `plugins` de chaque requête
+- le verrouillage ou non de la valeur par défaut du workspace
+
+Ne cherchez pas d’abord du côté de la qualité du modèle : vérifiez que ces couches de règles sont identiques.
+
+## Voir aussi
+
+- [Récupérer un JSON structuré mal formé](./response-healing-for-structured-json.mdx)
+- [Utiliser le cache de réponses avec des presets](./response-caching-with-presets.mdx)
+- [Agent SDK TypeScript](../sdk-reference/typescript/agent-sdk.mdx)

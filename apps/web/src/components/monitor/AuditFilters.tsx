@@ -1,6 +1,7 @@
 "use client";
 
 import { useQueryState } from "nuqs";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -49,6 +50,7 @@ export function AuditFilters({
 	filteredCount,
 	providerOptions,
 }: AuditFiltersProps) {
+	const tUi = useTranslations("Common.ui");
 	const [searchQuery, setSearchQuery] = useQueryState("search", {
 		defaultValue: "",
 		parse: (value) => value || "",
@@ -162,9 +164,9 @@ export function AuditFilters({
 	const quickFilters: QuickFilter[] = [
 		{
 			id: "active-gateway",
-			label: "Active on Gateway",
+			label: tUi("filters.quickActiveGateway"),
 			icon: CheckCircle2,
-			description: "Models active on at least one gateway provider",
+			description: tUi("filters.quickActiveGatewayDescription"),
 			apply: () => {
 				if (filterGatewayStatus === "active") {
 					setFilterGatewayStatus("");
@@ -176,9 +178,9 @@ export function AuditFilters({
 		},
 		{
 			id: "inactive-gateway",
-			label: "Inactive on Gateway",
+			label: tUi("filters.quickInactiveGateway"),
 			icon: XCircle,
-			description: "Models not active on any gateway provider",
+			description: tUi("filters.quickInactiveGatewayDescription"),
 			apply: () => {
 				if (filterGatewayStatus === "inactive") {
 					setFilterGatewayStatus("");
@@ -190,9 +192,9 @@ export function AuditFilters({
 		},
 		{
 			id: "no-benchmarks",
-			label: "No Benchmarks",
+			label: tUi("filters.noBenchmarks"),
 			icon: BarChart3,
-			description: "Models with zero benchmark results",
+			description: tUi("filters.quickNoBenchmarksDescription"),
 			apply: () => {
 				if (filterHasBenchmarks === "false") {
 					setFilterHasBenchmarks("");
@@ -204,9 +206,9 @@ export function AuditFilters({
 		},
 		{
 			id: "has-benchmarks",
-			label: "Has Benchmarks",
+			label: tUi("filters.hasBenchmarks"),
 			icon: BarChart3,
-			description: "Models with at least one benchmark result",
+			description: tUi("filters.quickHasBenchmarksDescription"),
 			apply: () => {
 				if (filterHasBenchmarks === "true") {
 					setFilterHasBenchmarks("");
@@ -218,9 +220,9 @@ export function AuditFilters({
 		},
 		{
 			id: "recent",
-			label: "Recently Released",
+			label: tUi("filters.quickRecentlyReleased"),
 			icon: Calendar,
-			description: "Models released in the last 6 months",
+			description: tUi("filters.quickRecentlyReleasedDescription"),
 			apply: () => {
 				if (
 					filterReleaseDateOp === "gt" &&
@@ -243,9 +245,9 @@ export function AuditFilters({
 		},
 		{
 			id: "multi-provider",
-			label: "Multi-Provider",
+			label: tUi("filters.quickMultiProvider"),
 			icon: Zap,
-			description: "Models available on 3+ providers",
+			description: tUi("filters.quickMultiProviderDescription"),
 			apply: () => {
 				if (
 					filterProvidersOp === "gte" &&
@@ -263,10 +265,10 @@ export function AuditFilters({
 		},
 		{
 			id: "active-no-pricing",
-			label: "Active Pricing Gaps",
+			label: tUi("filters.quickActivePricingGaps"),
 			icon: DollarSign,
 			description:
-				"Models active on gateway with at least one active provider missing pricing",
+				tUi("filters.quickActivePricingGapsDescription"),
 			apply: () => {
 				if (
 					filterGatewayStatus === "active" &&
@@ -335,7 +337,7 @@ export function AuditFilters({
 			<div className="flex items-center gap-4 flex-wrap">
 				<div className="flex-1 min-w-[300px]">
 					<Input
-						placeholder="Search models, organizations, providers..."
+						placeholder={tUi("filters.modelSearchPlaceholder")}
 						value={searchQuery}
 						onChange={(e) => setSearchQuery(e.target.value)}
 						className="w-full"
@@ -344,7 +346,7 @@ export function AuditFilters({
 
 				<div className="flex items-center gap-2">
 					<Badge variant="outline" className="text-sm">
-						{filteredCount} / {totalModels} models
+						{tUi("filters.modelsCount", { filtered: filteredCount, total: totalModels })}
 					</Badge>
 
 					{hasActiveFilters && (
@@ -355,7 +357,7 @@ export function AuditFilters({
 							className="h-8"
 						>
 							<X className="h-4 w-4 mr-1" />
-							Clear all ({activeFilterCount})
+							{tUi("filters.clearAllCount", { count: activeFilterCount })}
 						</Button>
 					)}
 				</div>
@@ -364,7 +366,7 @@ export function AuditFilters({
 			{/* Quick filters */}
 			<div className="flex items-center gap-2 flex-wrap">
 				<span className="text-sm text-muted-foreground font-medium">
-					Quick Filters:
+					{tUi("filters.quickFilters")}
 				</span>
 				{quickFilters.map((filter) => {
 					const Icon = filter.icon;
@@ -391,7 +393,7 @@ export function AuditFilters({
 					<PopoverTrigger asChild>
 						<Button variant="outline" size="sm" className="h-8">
 							<Filter className="h-3 w-3 mr-1" />
-							Advanced Filters
+											{tUi("filters.advancedFilters")}
 							{activeFilterCount > 0 && (
 								<Badge
 									variant="secondary"
@@ -406,15 +408,13 @@ export function AuditFilters({
 						<div className="space-y-4">
 							<div>
 								<h4 className="font-semibold mb-3">
-									Advanced Filters
+									{tUi("filters.advancedFilters")}
 								</h4>
 							</div>
 
 							{/* Gateway Status */}
 							<div className="space-y-2">
-								<Label htmlFor="gateway-status">
-									Gateway Status
-								</Label>
+								<Label htmlFor="gateway-status">{tUi("filters.gatewayStatus")}</Label>
 								<Select
 									value={filterGatewayStatus || "any"}
 									onValueChange={(value) =>
@@ -424,25 +424,19 @@ export function AuditFilters({
 									}
 								>
 									<SelectTrigger id="gateway-status">
-										<SelectValue placeholder="Any" />
+										<SelectValue placeholder={tUi("filters.any")} />
 									</SelectTrigger>
 									<SelectContent>
-										<SelectItem value="any">Any</SelectItem>
-										<SelectItem value="active">
-											Active
-										</SelectItem>
-										<SelectItem value="inactive">
-											Inactive
-										</SelectItem>
+										<SelectItem value="any">{tUi("filters.any")}</SelectItem>
+										<SelectItem value="active">{tUi("filters.active")}</SelectItem>
+										<SelectItem value="inactive">{tUi("filters.inactive")}</SelectItem>
 									</SelectContent>
 								</Select>
 							</div>
 
 							{/* Has Benchmarks */}
 							<div className="space-y-2">
-								<Label htmlFor="has-benchmarks">
-									Benchmarks
-								</Label>
+								<Label htmlFor="has-benchmarks">{tUi("filters.benchmarks")}</Label>
 								<Select
 									value={filterHasBenchmarks || "any"}
 									onValueChange={(value) =>
@@ -452,23 +446,19 @@ export function AuditFilters({
 									}
 								>
 									<SelectTrigger id="has-benchmarks">
-										<SelectValue placeholder="Any" />
+										<SelectValue placeholder={tUi("filters.any")} />
 									</SelectTrigger>
 									<SelectContent>
-										<SelectItem value="any">Any</SelectItem>
-										<SelectItem value="true">
-											Has Benchmarks
-										</SelectItem>
-										<SelectItem value="false">
-											No Benchmarks
-										</SelectItem>
+										<SelectItem value="any">{tUi("filters.any")}</SelectItem>
+										<SelectItem value="true">{tUi("filters.hasBenchmarks")}</SelectItem>
+										<SelectItem value="false">{tUi("filters.noBenchmarks")}</SelectItem>
 									</SelectContent>
 								</Select>
 							</div>
 
 							{/* Hidden Models */}
 							<div className="space-y-2">
-								<Label htmlFor="hidden">Visibility</Label>
+								<Label htmlFor="hidden">{tUi("filters.visibility")}</Label>
 								<Select
 									value={filterHidden || "any"}
 									onValueChange={(value) =>
@@ -476,23 +466,19 @@ export function AuditFilters({
 									}
 								>
 									<SelectTrigger id="hidden">
-										<SelectValue placeholder="Any" />
+										<SelectValue placeholder={tUi("filters.any")} />
 									</SelectTrigger>
 									<SelectContent>
-										<SelectItem value="any">Any</SelectItem>
-										<SelectItem value="false">
-											Visible Only
-										</SelectItem>
-										<SelectItem value="true">
-											Hidden Only
-										</SelectItem>
+										<SelectItem value="any">{tUi("filters.any")}</SelectItem>
+										<SelectItem value="false">{tUi("filters.visibleOnly")}</SelectItem>
+										<SelectItem value="true">{tUi("filters.hiddenOnly")}</SelectItem>
 									</SelectContent>
 								</Select>
 							</div>
 
 							{/* Provider */}
 							<div className="space-y-2">
-								<Label htmlFor="provider">Provider</Label>
+								<Label htmlFor="provider">{tUi("filters.provider")}</Label>
 								<Select
 									value={filterProvider || "any"}
 									onValueChange={(value) =>
@@ -500,10 +486,10 @@ export function AuditFilters({
 									}
 								>
 									<SelectTrigger id="provider">
-										<SelectValue placeholder="Any provider" />
+										<SelectValue placeholder={tUi("select.anyProvider")} />
 									</SelectTrigger>
 									<SelectContent>
-										<SelectItem value="any">Any</SelectItem>
+										<SelectItem value="any">{tUi("filters.any")}</SelectItem>
 										{providerOptions.map((provider) => (
 											<SelectItem
 												key={provider.providerId}
@@ -518,7 +504,7 @@ export function AuditFilters({
 
 							{/* Pricing */}
 							<div className="space-y-2">
-								<Label htmlFor="has-pricing">Pricing</Label>
+								<Label htmlFor="has-pricing">{tUi("filters.pricing")}</Label>
 								<Select
 									value={filterHasPricing || "any"}
 									onValueChange={(value) =>
@@ -526,19 +512,19 @@ export function AuditFilters({
 									}
 								>
 									<SelectTrigger id="has-pricing">
-										<SelectValue placeholder="Any" />
+										<SelectValue placeholder={tUi("filters.any")} />
 									</SelectTrigger>
 									<SelectContent>
-										<SelectItem value="any">Any</SelectItem>
-										<SelectItem value="true">Has Pricing</SelectItem>
-										<SelectItem value="false">No Pricing</SelectItem>
+										<SelectItem value="any">{tUi("filters.any")}</SelectItem>
+										<SelectItem value="true">{tUi("filters.hasPricing")}</SelectItem>
+										<SelectItem value="false">{tUi("filters.noPricing")}</SelectItem>
 									</SelectContent>
 								</Select>
 							</div>
 
 							{/* Release Date Filter */}
 							<div className="space-y-2">
-								<Label>Release Date</Label>
+								<Label>{tUi("filters.releaseDate")}</Label>
 								<div className="flex gap-2">
 									<Select
 										value={filterReleaseDateOp || "none"}
@@ -549,19 +535,13 @@ export function AuditFilters({
 										}
 									>
 										<SelectTrigger className="w-[100px]">
-											<SelectValue placeholder="Op" />
+											<SelectValue placeholder={tUi("filters.operator")} />
 										</SelectTrigger>
 										<SelectContent>
 											<SelectItem value="none">-</SelectItem>
-											<SelectItem value="gt">
-												After
-											</SelectItem>
-											<SelectItem value="lt">
-												Before
-											</SelectItem>
-											<SelectItem value="eq">
-												On
-											</SelectItem>
+											<SelectItem value="gt">{tUi("filters.after")}</SelectItem>
+											<SelectItem value="lt">{tUi("filters.before")}</SelectItem>
+											<SelectItem value="eq">{tUi("filters.on")}</SelectItem>
 										</SelectContent>
 									</Select>
 									<Input
@@ -579,7 +559,7 @@ export function AuditFilters({
 
 							{/* Provider Count Filter */}
 							<div className="space-y-2">
-								<Label>Provider Count</Label>
+								<Label>{tUi("filters.providerCount")}</Label>
 								<div className="flex gap-2">
 									<Select
 										value={filterProvidersOp || "none"}
@@ -590,7 +570,7 @@ export function AuditFilters({
 										}
 									>
 										<SelectTrigger className="w-[100px]">
-											<SelectValue placeholder="Op" />
+											<SelectValue placeholder={tUi("filters.operator")} />
 										</SelectTrigger>
 										<SelectContent>
 											<SelectItem value="none">-</SelectItem>
@@ -615,14 +595,14 @@ export function AuditFilters({
 											)
 										}
 										disabled={!filterProvidersOp}
-										placeholder="Count"
+										placeholder={tUi("filters.count")}
 									/>
 								</div>
 							</div>
 
 							{/* Benchmark Count Filter */}
 							<div className="space-y-2">
-								<Label>Benchmark Count</Label>
+								<Label>{tUi("filters.benchmarkCount")}</Label>
 								<div className="flex gap-2">
 									<Select
 										value={filterBenchmarksOp || "none"}
@@ -633,7 +613,7 @@ export function AuditFilters({
 										}
 									>
 										<SelectTrigger className="w-[100px]">
-											<SelectValue placeholder="Op" />
+											<SelectValue placeholder={tUi("filters.operator")} />
 										</SelectTrigger>
 										<SelectContent>
 											<SelectItem value="none">-</SelectItem>
@@ -658,7 +638,7 @@ export function AuditFilters({
 											)
 										}
 										disabled={!filterBenchmarksOp}
-										placeholder="Count"
+										placeholder={tUi("filters.count")}
 									/>
 								</div>
 							</div>
@@ -670,7 +650,7 @@ export function AuditFilters({
 									size="sm"
 									onClick={clearAllFilters}
 								>
-									Clear All
+								{tUi("filters.clearAll")}
 								</Button>
 								<Button
 									size="sm"
@@ -678,7 +658,7 @@ export function AuditFilters({
 										setShowAdvancedFilters(false)
 									}
 								>
-									Apply Filters
+						{tUi("filters.applyFilters")}
 								</Button>
 							</div>
 						</div>
@@ -690,7 +670,7 @@ export function AuditFilters({
 			{hasActiveFilters && (
 				<div className="flex items-center gap-2 flex-wrap">
 					<span className="text-sm text-muted-foreground">
-						Active:
+						{tUi("filters.activeTag")}
 					</span>
 					{searchQuery && (
 						<Badge
@@ -698,7 +678,7 @@ export function AuditFilters({
 							className="gap-1 cursor-pointer"
 							onClick={() => setSearchQuery("")}
 						>
-							Search: {searchQuery}
+							{tUi("filters.searchTag")}: {searchQuery}
 							<X className="h-3 w-3" />
 						</Badge>
 					)}
@@ -708,10 +688,10 @@ export function AuditFilters({
 							className="gap-1 cursor-pointer"
 							onClick={() => setFilterGatewayStatus("")}
 						>
-							Gateway:{" "}
+							{tUi("filters.gatewayTag")}: {" "}
 							{filterGatewayStatus === "active"
-								? "Active"
-								: "Inactive"}
+								? tUi("filters.active")
+								: tUi("filters.inactive")}
 							<X className="h-3 w-3" />
 						</Badge>
 					)}
@@ -721,8 +701,10 @@ export function AuditFilters({
 							className="gap-1 cursor-pointer"
 							onClick={() => setFilterHasBenchmarks("")}
 						>
-							Benchmarks:{" "}
-							{filterHasBenchmarks === "true" ? "Yes" : "No"}
+							{tUi("filters.benchmarksTag")}: {" "}
+							{filterHasBenchmarks === "true"
+								? tUi("filters.hasBenchmarks")
+								: tUi("filters.noBenchmarks")}
 							<X className="h-3 w-3" />
 						</Badge>
 					)}
@@ -735,7 +717,7 @@ export function AuditFilters({
 								setFilterReleaseDateValue("");
 							}}
 						>
-							Release:{" "}
+							{tUi("filters.releaseTag")}: {" "}
 							{filterReleaseDateOp === "gt"
 								? "After"
 								: filterReleaseDateOp === "lt"
@@ -754,7 +736,12 @@ export function AuditFilters({
 								setFilterProvidersValue("");
 							}}
 						>
-							Providers: {filterProvidersOp}{" "}
+							{tUi("filters.providersTag")}: {" "}
+							{filterProvidersOp === "gt" ? ">" : null}
+							{filterProvidersOp === "gte" ? "≥" : null}
+							{filterProvidersOp === "lt" ? "<" : null}
+							{filterProvidersOp === "lte" ? "≤" : null}
+							{filterProvidersOp === "eq" ? "=" : null}{" "}
 							{filterProvidersValue}
 							<X className="h-3 w-3" />
 						</Badge>
@@ -768,7 +755,12 @@ export function AuditFilters({
 								setFilterBenchmarksValue("");
 							}}
 						>
-							Benchmarks: {filterBenchmarksOp}{" "}
+							{tUi("filters.benchmarksTag")}: {" "}
+							{filterBenchmarksOp === "gt" ? ">" : null}
+							{filterBenchmarksOp === "gte" ? "≥" : null}
+							{filterBenchmarksOp === "lt" ? "<" : null}
+							{filterBenchmarksOp === "lte" ? "≤" : null}
+							{filterBenchmarksOp === "eq" ? "=" : null}{" "}
 							{filterBenchmarksValue}
 							<X className="h-3 w-3" />
 						</Badge>
@@ -779,8 +771,9 @@ export function AuditFilters({
 							className="gap-1 cursor-pointer"
 							onClick={() => setFilterHidden("")}
 						>
-							{filterHidden === "true" ? "Hidden" : "Visible"}{" "}
-							Only
+							{filterHidden === "true"
+								? tUi("filters.hiddenOnly")
+								: tUi("filters.visibleOnly")}
 							<X className="h-3 w-3" />
 						</Badge>
 					)}
@@ -790,8 +783,10 @@ export function AuditFilters({
 							className="gap-1 cursor-pointer"
 							onClick={() => setFilterHasPricing("")}
 						>
-							Pricing{filterProvider ? " (Provider)" : ""}:{" "}
-							{filterHasPricing === "true" ? "Yes" : "No"}
+							{tUi("filters.pricing")}{filterProvider ? ` (${tUi("filters.provider")})` : ""}:{" "}
+							{filterHasPricing === "true"
+								? tUi("filters.hasPricing")
+								: tUi("filters.noPricing")}
 							<X className="h-3 w-3" />
 						</Badge>
 					)}
@@ -801,7 +796,7 @@ export function AuditFilters({
 							className="gap-1 cursor-pointer"
 							onClick={() => setFilterPricingGap("")}
 						>
-							Pricing Gap: Active Provider Missing
+							{tUi("filters.activePricingGapTag")}
 							<X className="h-3 w-3" />
 						</Badge>
 					)}
@@ -811,7 +806,7 @@ export function AuditFilters({
 							className="gap-1 cursor-pointer"
 							onClick={() => setFilterProvider("")}
 						>
-							Provider:{" "}
+							{tUi("filters.providerTag")}: {" "}
 							{providerOptions.find(
 								(provider) => provider.providerId === filterProvider
 							)?.providerName ?? filterProvider}

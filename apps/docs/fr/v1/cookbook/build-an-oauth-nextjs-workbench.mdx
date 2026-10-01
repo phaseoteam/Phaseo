@@ -1,0 +1,193 @@
+---
+title: "Créer un environnement de travail OAuth avec Next.js"
+icon: "key-round"
+description: "Suivez l’exemple OAuth complet avec Next.js pour créer une application gateway avec connexion et proxy unifié."
+---
+
+Utilisez cette page si votre produit nécessite une connexion, un accès au gateway fondé sur une session et plus qu’une seule route de chat.
+
+**Objectif :** Exécutez l’environnement de travail connecté et envoyez les requêtes Phaseo via un proxy protégé unique côté serveur.
+
+**Résultat :** Une application locale avec connexion OAuth, jetons associés à la session, découverte des modèles, chat et testeur d’endpoints.
+
+<Prompt
+  description="Créez un **environnement de travail Next.js avec connexion** OAuth et un proxy Phaseo unifié."
+  icon="shield-user"
+  actions={["copy", "cursor"]}
+>
+{`Vous créez une application Next.js connectée avec Phaseo Gateway.
+
+Créez une application de type environnement de travail avec :
+- une connexion OAuth 2.1 + PKCE
+- un stockage des jetons associé à la session
+- une route proxy gateway unifiée côté serveur
+- la découverte des modèles
+- un flux de chat utilisant l’API Responses
+- un testeur générique pour d’autres endpoints Phaseo
+
+Exigences :
+- Gardez les identifiants du gateway et les jetons d’accès côté serveur.
+- Utilisez une liste d’autorisation du proxy pour plus de sécurité.
+- Prenez en charge le renouvellement des jetons.
+- Gardez l’environnement de travail compréhensible sans le surconcevoir.
+- Ajoutez un court README avec la configuration, les variables d’environnement et les étapes de lancement.
+
+Vérification :
+- lancez l’application si possible
+- vérifiez le parcours de connexion dans la limite de la configuration locale
+- vérifiez au moins un parcours de requête gateway via le proxy
+- indiquez précisément ce que vous avez vérifié et ce qui dépend encore de la configuration OAuth externe.`}
+</Prompt>
+
+## Projet d’exemple
+
+- GitHub: [examples/oauth-client-nextjs](https://github.com/phaseoteam/Phaseo/tree/main/examples/oauth-client-nextjs)
+- Chemin local du dépôt : `examples/oauth-client-nextjs`
+
+## Fonctionnalités de l’application
+
+- une connexion OAuth 2.1 + PKCE
+- le stockage et le renouvellement des jetons associés à la session
+- un proxy unifié pour les routes de contrôle et de génération
+- la découverte des modèles
+- un flux de chat via `/responses`
+- un testeur générique pour les autres routes du gateway
+
+## Quand commencer avec cet exemple
+
+Utilisez cet exemple si :
+
+- les utilisateurs finaux doivent se connecter avec un accès délégué
+- il vous faut plus qu’une simple page de chat
+- vous voulez une route serveur sécurisée pour plusieurs endpoints Phaseo
+
+Ne commencez pas ici si :
+
+- vous avez uniquement besoin d’une interface de chat simple avec clé API
+- vous voulez d’abord un script ou une CLI
+
+## Fichiers principaux
+
+- `app/page.tsx`
+- `app/dashboard/page.tsx`
+- `app/dashboard/GatewayWorkbench.tsx`
+- `app/api/gateway/[...surface]/route.ts`
+- `lib/oauth.ts`
+- `lib/session.ts`
+
+## Pourquoi l’exemple est structuré ainsi
+
+### 1. OAuth reste séparé de la logique du gateway
+
+L’application isole :
+
+- la logique de démarrage de l’authentification et du callback
+- la gestion chiffrée des sessions
+- le renouvellement des jetons
+
+Cela simplifie le code d’intégration IA et facilite le diagnostic des problèmes de connexion.
+
+### 2. Une seule route proxy gère les appels au gateway
+
+La route proxy catch-all :
+
+- vérifie la liste d’autorisation des endpoints
+- ajoute le jeton bearer actuel
+- renouvelle les jetons si nécessaire
+- transmet les corps des requêtes et réponses
+
+C’est un bon modèle pour utiliser plusieurs endpoints Phaseo sans dupliquer la logique d’authentification dans chaque route.
+
+### 3. Le tableau de bord sert aussi d’environnement de travail interne
+
+La page de l’environnement de travail ne sert pas uniquement au chat :
+
+- elle découvre les modèles
+- elle teste `/responses`
+- elle peut aussi tester des endpoints autres que ceux de chat
+
+C’est utile pour l’intégration, l’assurance qualité et le débogage interne avant de créer une interface plus aboutie pour les utilisateurs.
+
+## Prérequis
+
+- - Node.js et un gestionnaire de paquets compatible
+- - un client OAuth configuré avec l’URL de callback locale
+- - un secret de session robuste
+
+## Exécuter l’exemple
+
+<CodeGroup>
+```bash npm
+cd examples/oauth-client-nextjs
+npm install
+cp .env.example .env.local
+```
+
+```bash pnpm
+cd examples/oauth-client-nextjs
+pnpm install
+cp .env.example .env.local
+```
+
+```bash yarn
+cd examples/oauth-client-nextjs
+yarn install
+cp .env.example .env.local
+```
+
+```bash bun
+cd examples/oauth-client-nextjs
+bun install
+cp .env.example .env.local
+```
+</CodeGroup>
+
+Définissez :
+
+- `NEXT_PUBLIC_OAUTH_CLIENT_ID`
+- `OAUTH_CLIENT_SECRET`
+- `NEXT_PUBLIC_PHASEO_URL`
+- `NEXT_PUBLIC_REDIRECT_URI`
+- `SESSION_SECRET`
+- `NEXT_PUBLIC_GATEWAY_URL`
+
+Puis lancez :
+
+<CodeGroup>
+```bash npm
+npm run dev
+```
+
+```bash pnpm
+pnpm dev
+```
+
+```bash yarn
+yarn dev
+```
+
+```bash bun
+bun run dev
+```
+</CodeGroup>
+
+Ouvrez `http://localhost:3000`.
+
+## Vérifier le résultat
+
+- La connexion revient à l’URL de callback configurée et crée une session.
+- Le tableau de bord peut découvrir des modèles via le proxy.
+- Une requête à l’API Responses aboutit sans exposer de jeton d’accès au navigateur.
+- Un endpoint absent de la liste d’autorisation du proxy est rejeté.
+
+## Personnaliser l’exemple
+
+- - limitez la liste d’autorisation du proxy aux endpoints réellement nécessaires à votre produit
+- - conservez l’environnement de travail en interne pendant que vous créez une interface plus claire pour les utilisateurs
+- - remplacez le testeur générique par des parcours dédiés une fois l’intégration stabilisée
+
+## Guides associés
+
+- [Créer une application de chat web avec Next.js](./build-a-nextjs-web-chat-app.mdx)
+- [Consignes pour démarrer une mini-application](./mini-app-starter-prompts.mdx)
+- [Exemples](../guides/examples.mdx)

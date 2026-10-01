@@ -1,0 +1,18 @@
+---
+icon: "list-filter"
+title: "أداة الخادم للبحث عن النماذج"
+description: "دع النموذج يعثر على النماذج المناسبة في فهرس Phaseo المحدّث."
+---
+
+استخدم`phaseo:search_models` عندما يحتاج النموذج المستدعي إلى اختيار نموذج أو التوصية به استنادًا إلى بيانات الفهرس الحالية.
+
+```json
+{
+  "tools": [{ "type": "phaseo:search_models", "parameters": { "max_results": 5 } }],
+  "max_tool_calls": 10
+}
+```
+
+يمكن لاستدعاء الأداة التصفية حسب `query`, `input_modalities`, `output_modalities`, `series`, `provider`, و`required_params`. تتضمن النتائج معرّفات النماذج والوسائط والمزوّدين والمعلمات المدعومة وبيانات التسعير.
+
+يُبلّغ عن الاستخدام في `usage.server_tool_use.search_models_requests`.

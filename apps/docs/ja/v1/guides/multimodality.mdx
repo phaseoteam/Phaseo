@@ -1,0 +1,27 @@
+---
+title: "マルチモーダル"
+description: "ゲートウェイ経由でテキスト、画像、音声、動画などのモダリティを利用します。"
+icon: "shapes"
+---
+
+ゲートウェイは統一APIを通じて複数のモダリティを提供します。エンドポイントごとに機能が異なり、モデルの対応状況はプロバイダーによって変わります。
+
+## モダリティとエンドポイント
+
+| モダリティ | 主なエンドポイント | 備考 |
+| --- | --- | --- |
+| テキスト | `/v1/responses`、`/v1/chat/completions`、`/v1/messages` | 構造化出力と会話形式の出力。 |
+| 画像 | `/v1/images/generations`、`/v1/images/edits` | テキストからの画像生成と画像編集。 |
+| 音声（TTS/STT/翻訳） | `/v1/audio/speech`、`/v1/audio/transcriptions`、`/v1/audio/translations` | 音声合成、文字起こし、音声翻訳。 |
+| 動画 | `/v1/videos`、`/v1/videos/{video_id}`、`/v1/videos/{video_id}/content`、`/v1/videos/{video_id}`（DELETE） | 非同期の動画ジョブを作成し、状態を確認し、内容を取得して、ジョブを削除します。 |
+| 音楽 | `/v1/music/generate` | 対応プロバイダーを使った音楽生成。 |
+| OCR | `/v1/ocr` | 対応している場合に画像からテキストを抽出します。 |
+
+## モデルの対応状況を確認する
+
+[モデルエンドポイント](../api-reference/endpoint/models.mdx)で利用可能なモデルと対応エンドポイントを確認できます。プロバイダーの対応状況は[プロバイダーエンドポイント](../api-reference/endpoint/providers.mdx)で確認できます。
+
+## ベストプラクティス
+
+- モデル名が複数のモダリティで共通でも、必要なモダリティに合ったエンドポイントを選びます。
+- リリース前に[APIリファレンス](../api-reference/introduction.mdx)に沿ってペイロードを検証します。

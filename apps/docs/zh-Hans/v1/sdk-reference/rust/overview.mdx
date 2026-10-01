@@ -1,0 +1,57 @@
+---
+icon: "compass"
+title: "Rust SDK"
+description: "使用官方 phaseo crate 从 Rust 向 Phaseo Gateway 发送请求。"
+---
+
+使用已发布的 [`phaseo`](https://crates.io/crates/phaseo) crate，即可从 Rust 应用调用 Phaseo Gateway。
+
+高级客户端支持：
+
+- 使用 `Phaseo::responses(...)` 调用 Responses API
+- 使用 `Phaseo::chat_completions(...)` 调用 Chat Completions
+- 使用 `Phaseo::post(...)` 调用其他 JSON 端点
+- 使用 `Phaseo::from_env()` 读取环境变量配置
+- 自定义 HTTPS 端点和本地回环开发服务器
+- 结构化状态、JSON 正文、请求 ID 和错误详情
+
+```rust
+use phaseo::Phaseo;
+use serde_json::json;
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let client = Phaseo::from_env()?;
+    let response = client.responses(&json!({
+        "model": "openai/gpt-5.6-sol",
+        "input": "Reply with exactly: Rust SDK works"
+    }))?;
+
+    println!("{}", response.body);
+    Ok(())
+}
+```
+
+<Note>
+  `0.1` 版已受支持并发布，但 Rust API 在 `1.0` 之前仍可能演进。生产环境请固定到兼容的次版本。
+</Note>
+
+## 当前范围
+
+高级客户端采用同步方式，并接受 `serde_json::Value` 请求正文。生成的底层模块仍可通过 `phaseo::gen` 使用；`phaseo::client`、`phaseo::models` 和 `phaseo::operations` 提供便捷的重新导出。
+
+Rust 客户端目前不提供异步传输层或高级流式辅助方法。在这些功能加入前，如应用需要流式传输，请使用原始 HTTP API。
+
+<Columns cols={2}>
+  <Card title="安装 Rust SDK" icon="package" href="./installation.mdx">
+    添加 crate 并配置 API 密钥。
+  </Card>
+  <Card title="发送请求" icon="play" href="./usage.mdx">
+    调用 Responses、Chat Completions 和其他 JSON 端点。
+  </Card>
+  <Card title="Rust API 参考" icon="book-open" href="./api-reference.mdx">
+    查看 `phaseo 0.1` 的确切公共类型和方法。
+  </Card>
+  <Card title="docs.rs" icon="arrow-up-right-from-square" href="https://docs.rs/phaseo">
+    浏览生成的 Rust API 文档。
+  </Card>
+</Columns>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
+import { useTranslations } from "next-intl";
 import {
 	ChevronDown,
 	Wrench,
@@ -341,6 +342,9 @@ function ToolCallMarker({
 	messageId: string;
 	index: number;
 }) {
+	const t = useTranslations("Product.chatRooms.toolMarkers");
+	const tSelect = useTranslations("Common.ui.select");
+	const tStatus = useTranslations("Common.ui.status");
 	const [open, setOpen] = useState(false);
 	const isRunning = toolCall.status === "running";
 	const isFailed = toolCall.status === "failed";
@@ -355,11 +359,7 @@ function ToolCallMarker({
 		: isRunning
 			? "text-muted-foreground"
 			: "text-muted-foreground transition-colors group-hover/tool-marker:text-emerald-600 dark:group-hover/tool-marker:text-emerald-400";
-	const statusLabel = isRunning
-		? "Running"
-		: isFailed
-			? "Failure"
-			: "Success";
+	const statusLabel = t(isRunning ? "running" : isFailed ? "failed" : "success");
 	const statusClassName = getStatusClassName(toolCall.status);
 
 	return (
@@ -392,12 +392,12 @@ function ToolCallMarker({
 									className="text-sm"
 									duration={1.4}
 								>
-									{`Calling ${label}...`}
+									{t("calling", { tool: label })}
 								</Shimmer>
 							) : isFailed ? (
-								`Tool failed: ${label}`
+								t("toolFailed", { tool: label })
 							) : (
-								`Called ${label}`
+								t("called", { tool: label })
 							)}
 						</span>
 						{hasDetails ? (
@@ -425,15 +425,15 @@ function ToolCallMarker({
 						</div>
 					</div>
 					<ToolDetailBlock
-						label="Input"
+						label={tSelect("input")}
 						value={inputDetail}
 					/>
 					<ToolDetailBlock
-						label="Output"
+						label={tSelect("output")}
 						value={outputDetail}
 					/>
 					<ToolDetailBlock
-						label="Error"
+						label={tStatus("error")}
 						value={errorDetail}
 					/>
 				</div>

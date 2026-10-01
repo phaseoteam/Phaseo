@@ -3,13 +3,12 @@ import type { Metadata } from "next";
 import { connection } from "next/server";
 import { buildMetadata } from "@/lib/seo";
 import {
-	formatSupportWait,
+	getSupportWaitParts,
 	getSupportAvailability,
-	getLondonInfo,
 } from "@/lib/support/schedule";
 import { ContactClient } from "@/components/contact/ContactClient";
 import { fetchContactPersonalization } from "@/lib/fetchers/internal/fetchContactPersonalization";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import type { PublicLocale } from "@/i18n/routing";
 
 export async function generateMetadata({ params }: LayoutProps<"/[locale]">): Promise<Metadata> {
@@ -37,30 +36,51 @@ function getTawkConfig() {
 async function ContactPersonalization() {
 	await connection();
 
+	const locale = await getLocale();
+	const t = await getTranslations({
+		locale: locale as PublicLocale,
+		namespace: "Site.contact",
+	});
 	const { isOpen, minutesUntilNextWindow } = getSupportAvailability();
-	const londonInfo = getLondonInfo();
-	const backOnlineLabel = formatSupportWait(minutesUntilNextWindow);
+	const wait = getSupportWaitParts(minutesUntilNextWindow);
+	const backOnlineLabel = wait
+		? t(
+				wait.unit === "minutes"
+					? "resumeAfterMinutes"
+					: "resumeAfterHours",
+				{ count: wait.count },
+			)
+		: null;
 	const statusLabel = isOpen
-		? "Available now"
+		? t("availableNow")
 		: backOnlineLabel
-			? `Back in ${backOnlineLabel}`
-			: "Outside hours";
+			? t("backIn", { time: backOnlineLabel })
+			: t("outsideHours");
 	const statusTone = isOpen
 		? "bg-emerald-500 ring-emerald-400/60"
 		: "bg-amber-500 ring-amber-400/60";
 	const waitText = isOpen
-		? "I'm available right now. Expect a direct human reply within 30 minutes."
+		? t("availableReplyNotice")
 		: backOnlineLabel
-			? `Support will be back online in ${backOnlineLabel}. Replies may be delayed, but you will still get a direct human response from me as soon as possible.`
-			: "I'm away right now. Replies may be delayed, but you will still get a direct human response from me as soon as possible.";
+			? t("supportBackInNotice", { time: backOnlineLabel })
+			: t("supportAwayNotice");
 	const personalization = await fetchContactPersonalization();
 	const { tawkPropertyId, tawkWidgetId } = getTawkConfig();
+	const londonTimeLabel = new Intl.DateTimeFormat(locale, {
+		weekday: "short",
+		day: "2-digit",
+		month: "short",
+		hour: "2-digit",
+		minute: "2-digit",
+		hour12: false,
+		timeZone: "Europe/London",
+	}).format(new Date());
 
 	return (
 		<ContactClient
 			isOpen={isOpen}
 			isAuthenticated={personalization.isAuthenticated}
-			londonTimeLabel={londonInfo.label}
+			londonTimeLabel={londonTimeLabel}
 			statusLabel={statusLabel}
 			statusTone={statusTone}
 			waitText={waitText}
@@ -73,8 +93,9 @@ async function ContactPersonalization() {
 	);
 }
 
-export default function ContactPage() {
+export default async function ContactPage() {
 	const { tawkPropertyId, tawkWidgetId } = getTawkConfig();
+	const t = await getTranslations("Site.contact");
 
 	return (
 		<Suspense
@@ -83,9 +104,9 @@ export default function ContactPage() {
 					isOpen={false}
 					isAuthenticated={false}
 					londonTimeLabel=""
-					statusLabel="Checking availability"
+					statusLabel={t("checking")}
 					statusTone="bg-amber-500 ring-amber-400/60"
-					waitText="Loading current support hours..."
+					waitText={t("loadingSupportHours")}
 					userEmail={null}
 					tierLabel=""
 					defaultInternalId=""

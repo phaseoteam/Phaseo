@@ -1,0 +1,71 @@
+---
+icon: "search-check"
+title: "Découverte des modèles (AI SDK)"
+description: "Comment récupérer des ID de modèles actuels à utiliser avec le fournisseur AI SDK."
+---
+
+Le fournisseur Vercel AI SDK ne propose pas de méthode `listModels()` intégrée. Utilisez l’un de ces modèles pour garder les ID de modèles à jour.
+
+## Option 1 : récupérer les modèles depuis l’API Gateway
+
+```ts
+const response = await fetch("https://api.phaseo.app/v1/models", {
+  method: "GET",
+  headers: {
+    Authorization: `Bearer ${process.env.PHASEO_API_KEY}`,
+  },
+});
+
+const filteredResponse = await fetch(
+  "https://api.phaseo.app/v1/models?provider=anthropic&status=active,deprecated&availability=all",
+  {
+    headers: {
+      Authorization: `Bearer ${process.env.PHASEO_API_KEY}`,
+    },
+  },
+);
+
+if (!response.ok || !filteredResponse.ok) {
+  throw new Error("Failed to load models");
+}
+
+const models = await response.json();
+const filteredModels = await filteredResponse.json();
+console.log(models, filteredModels);
+```
+
+## Option 2 : utiliser le SDK TypeScript officiel
+
+```ts
+import Phaseo from "@phaseo/sdk";
+
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
+const models = await client.getModels({
+  provider: ["anthropic"],
+  status: ["active", "deprecated"],
+  availability: "all",
+});
+
+console.log(models);
+```
+
+## Utiliser les ID découverts avec AI SDK
+
+```ts
+import { phaseo } from "@phaseo/ai-sdk-provider";
+import { generateText } from "ai";
+
+const result = await generateText({
+  model: phaseo("openai/gpt-5-nano"),
+  prompt: "Hello from a discovered model ID.",
+});
+
+console.log(result.text);
+```
+
+## Remarques
+
+- Les ID de modèles suivent le format `provider/model`.
+- `/v1/models` accepte des filtres tels que `provider`, `status`, `organisation`, `endpoints` et `availability`.
+- Vérifiez régulièrement la disponibilité des modèles pour repérer les changements de routage et les dépréciations.
+- Privilégiez la sélection des ID depuis `/v1/models` plutôt que leur inscription en dur à long terme.

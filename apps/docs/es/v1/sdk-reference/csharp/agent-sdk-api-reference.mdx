@@ -1,0 +1,25 @@
+---
+icon: "braces"
+title: "Referencia de la API"
+description: "Referencia de los principales tipos y métodos del Agent SDK de C#."
+---
+
+| API | Función |
+| --- | --- |
+| `AgentSdk.CreateAgent(...)` | Definir un agente |
+| `AgentSdk.DefineTool(...)` | Definir una herramienta local o manual |
+| `AgentSdk.CreateGatewayAgentClient(...)` | Conectar los turnos del modelo a Phaseo |
+| `Agent.Run(...)` | Ejecutar hasta un estado final o en pausa |
+| `Agent.Stream(...)` | Ejecutar con flujos asíncronos que se pueden reproducir |
+| `Agent.ContinueRun(...)` | Continuar un estado guardado o en pausa |
+| `AgentStreamResult.GetResult()` | Esperar a que finalice la ejecución |
+| `AgentStreamResult.TextStream()` | Leer los incrementos de texto |
+| `AgentStreamResult.FullStream()` | Leer todos los eventos del ciclo de vida |
+| `AgentStreamResult.Cancel()` | Cancelar la ejecución activa |
+
+Entre los registros y las interfaces importantes se incluyen `AgentDefinition`, `RunOptions`, `RunResult`, `RunRecord`, `RunStep`, `Tool`, `ToolDecision`, `ToolOutput`, `RuntimeContext`, `IStateAccessor`, `ModelRetryConfig` y `ToolExecutionConfig`.
+
+## Contenido relacionado
+
+- [Crea tu primer agente](./agent-sdk.mdx)
+- [Errores y detalles del gateway](./agent-sdk-observability.mdx)

@@ -1,0 +1,24 @@
+---
+icon: "triangle-alert"
+title: "Erreurs et dépannage"
+description: "Diagnostiquez les échecs des agents Java, les données d’outils non valides et les exécutions interrompues."
+---
+
+Distinguez les erreurs de transport et de passerelle des données d’outil ou de sortie non valides. Une exécution en échec conserve son statut, son étape active, le nombre de nouvelles tentatives, l’identifiant de requête, l’identifiant de réponse natif et les détails disponibles de la passerelle.
+
+## Vérifications courantes
+
+- Vérifiez que le processus Java a accès à `PHASEO_API_KEY`.
+- Attribuez un identifiant unique et stable à chaque outil.
+- Fournissez les approbations, rejets et résultats manuels à l’aide des identifiants exacts des appels d’outils.
+- Enregistrez un `RunResult` en pause avant de rendre le contrôle à une autre requête ou à un worker.
+- Gardez les validateurs déterministes et sans effets de bord.
+- Traitez les exceptions d’annulation et de délai d’attente comme terminales, sauf si l’application démarre explicitement une nouvelle exécution.
+
+Utilisez les hooks de cycle de vie pour la télémétrie de l’application et DevTools pour enregistrer localement les exécutions, plutôt que de vous fier uniquement à la sortie de la console.
+
+## À lire aussi
+
+- [Hooks de cycle de vie](./agent-sdk-lifecycle-hooks.mdx)
+- [DevTools](./agent-sdk-devtools.mdx)
+- [État et approbation](./agent-sdk-state-and-approval.mdx)

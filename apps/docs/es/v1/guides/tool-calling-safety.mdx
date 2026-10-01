@@ -1,0 +1,47 @@
+---
+icon: "shield-check"
+title: "Seguridad y validación de llamadas a herramientas"
+description: "Valida los argumentos de las herramientas, protege su ejecución y evita acciones inseguras del modelo."
+---
+
+Trata los argumentos de herramientas generados por el modelo como datos no confiables.
+
+## Lista de comprobación de seguridad
+
+- Mantén los esquemas de herramientas mínimos y explícitos.
+- Valida los argumentos analizados antes de ejecutar la herramienta.
+- Permite solo los nombres de herramientas autorizados y rechaza los desconocidos.
+- Añade tiempos de espera y reintentos a las llamadas externas.
+- Registra el ID de llamada, el nombre de la herramienta y los fallos de validación.
+
+## Ejemplo de validación de solicitudes (TypeScript + Zod)
+
+```typescript
+import { z } from "zod";
+
+const WeatherArgs = z.object({
+  city: z.string().min(1),
+});
+
+function executeToolCall(name: string, rawArgs: string) {
+  if (name !== "get_weather") {
+    throw new Error(`Unsupported tool: ${name}`);
+  }
+
+  const parsed = WeatherArgs.parse(JSON.parse(rawArgs));
+  return getWeather(parsed.city);
+}
+```
+
+## Estrategia ante fallos
+
+Si falla la validación:
+
+1. No ejecutes la herramienta.
+2. Devuelve un mensaje de error controlado en el siguiente turno del modelo.
+3. Pide al modelo que lo intente de nuevo con argumentos corregidos.
+
+## Nota sobre streaming
+
+Por ahora, usa solicitudes sin streaming (`stream: false`) para llamadas a herramientas y así cumplir la validación de solicitudes del gateway.
+

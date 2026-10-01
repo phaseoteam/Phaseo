@@ -1,6 +1,7 @@
 import { Megaphone, Rocket, Archive, Ban } from "lucide-react";
 import RelativeDateBadge from "./RelativeDateBadge";
 import { formatModelLifecycleDate } from "@/lib/dates/modelLifecycleDates";
+import { getLocale, getTranslations } from "next-intl/server";
 
 interface KeyDatesProps {
 	announced?: string;
@@ -11,7 +12,7 @@ interface KeyDatesProps {
 	showEmpty?: boolean;
 }
 
-export default function KeyDates({
+export default async function KeyDates({
 	announced,
 	released,
 	deprecated,
@@ -19,31 +20,33 @@ export default function KeyDates({
 	showHeading = true,
 	showEmpty = false,
 }: KeyDatesProps) {
+	const locale = await getLocale();
+	const t = await getTranslations("Catalogue.modelDetail.metadata");
 	const entries = [
 		{
 			key: "announced",
-			label: "Announcement",
+			label: t("announcement"),
 			value: announced,
 			Icon: Megaphone,
 			accentClassName: "text-blue-700 dark:text-blue-300",
 		},
 		{
 			key: "released",
-			label: "Release",
+			label: t("release"),
 			value: released,
 			Icon: Rocket,
 			accentClassName: "text-emerald-700 dark:text-emerald-300",
 		},
 		{
 			key: "deprecated",
-			label: "Deprecation",
+			label: t("deprecation"),
 			value: deprecated,
 			Icon: Ban,
 			accentClassName: "text-amber-700 dark:text-amber-300",
 		},
 		{
 			key: "retired",
-			label: "Retirement",
+			label: t("retirement"),
 			value: retired,
 			Icon: Archive,
 			accentClassName: "text-zinc-700 dark:text-zinc-300",
@@ -57,7 +60,7 @@ export default function KeyDates({
 
 	return (
 		<div className="space-y-2">
-			{showHeading ? <h3 className="text-base font-semibold">Key Dates</h3> : null}
+			{showHeading ? <h3 className="text-base font-semibold">{t("keyDates")}</h3> : null}
 			<div className="grid overflow-hidden rounded-lg border border-border/70 bg-card md:grid-cols-4">
 				{visibleEntries.map(({ key, label, value, Icon, accentClassName }) => (
 					<div
@@ -81,7 +84,7 @@ export default function KeyDates({
 						>
 							{value ? (
 								<>
-									<span>{formatModelLifecycleDate(value)}</span>
+									<span>{formatModelLifecycleDate(value, locale)}</span>
 									<span className="text-muted-foreground/50">·</span>
 									<RelativeDateBadge
 										date={value}
@@ -89,7 +92,7 @@ export default function KeyDates({
 									/>
 								</>
 							) : (
-								"Not listed"
+								t("notListed")
 							)}
 						</p>
 					</div>

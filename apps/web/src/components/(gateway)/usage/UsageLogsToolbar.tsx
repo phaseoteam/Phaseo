@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { useTranslations } from "next-intl";
+import { localizedSettingsError } from "@/i18n/error-messages";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
 	CalendarDays,
@@ -79,13 +80,6 @@ function parseTypedRangeInput(value: string): { from: string; to: string } | nul
 	const to = parseAbsoluteDateTimeInput(parts[1] ?? "");
 	if (!from || !to) return null;
 	return { from, to };
-}
-
-function getErrorMessage(error: unknown, fallback: string): string {
-	if (error instanceof Error && error.message.trim().length > 0) {
-		return error.message;
-	}
-	return fallback;
 }
 
 function LiveIndicator({ className }: { className?: string }) {
@@ -400,7 +394,11 @@ export default function UsageLogsToolbar({
 						const result = await revalidateUsage("logs");
 						if (!result.ok) {
 							throw new Error(
-								result.message || t("strings.Failed to revalidate usage data." as never),
+								localizedSettingsError(
+									result.message,
+									t,
+									"Failed to revalidate usage data.",
+								),
 							);
 						}
 					}
@@ -412,7 +410,7 @@ export default function UsageLogsToolbar({
 						loading: t("strings.Refreshing usage data..." as never),
 						success: t("strings.Usage data refreshed." as never),
 						error: (error: unknown) =>
-							getErrorMessage(error, t("strings.Failed to revalidate usage data." as never)),
+							localizedSettingsError(error, t, "Failed to revalidate usage data."),
 					});
 				} else {
 					await refreshPromise;
@@ -637,7 +635,7 @@ export default function UsageLogsToolbar({
 										onClick={applyCustomRange}
 										disabled={!draftRange?.from}
 									>
-										Apply
+						{t("strings.Apply" as never)}
 									</Button>
 								</div>
 							</div>
@@ -683,7 +681,7 @@ export default function UsageLogsToolbar({
 									{showLivePreset ? (
 										<RangeOptionButton
 											badge="live"
-											label="Live"
+											label={t("strings.Live" as never)}
 											live
 											active={effectivePreset === "live"}
 											onClick={() => selectPreset("live")}

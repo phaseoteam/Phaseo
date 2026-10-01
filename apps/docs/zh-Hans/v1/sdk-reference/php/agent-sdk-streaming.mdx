@@ -1,0 +1,26 @@
+---
+icon: "radio"
+title: "流式传输"
+description: "使用 PHP Agent 的文本、推理、项目和生命周期流。"
+---
+
+`Agent::stream(...)` 会返回 `AgentStreamResult`：
+
+```php
+$stream = $agent->stream($input, $client);
+
+foreach ($stream->textStream() as $delta) {
+    echo $delta;
+}
+
+$completed = $stream->result;
+```
+
+如需其他视图，请使用 `reasoningStream()`、`itemStream()` 或 `fullStream()`。从供应商的同步流中读取事件后，每个可迭代对象仍可重放。
+
+PHP 项目值仍是通用数组和对象，而不是 TypeScript 的判别联合类型。
+
+## 相关内容
+
+- [工具](./agent-sdk-tools.mdx)
+- [可观测性与 DevTools](./agent-sdk-observability.mdx)

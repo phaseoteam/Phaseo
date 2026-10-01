@@ -1,0 +1,24 @@
+---
+title: "概要"
+description: "C# Agent SDKの用途と、現在利用できる機能を紹介します。"
+---
+
+C# Agent SDKはPhaseo Gateway向けの完全なローカルエージェントランタイムです。再試行、並行タスク、キャンセルとタイムアウト、人によるレビュー、再開可能な状態、ライフサイクルイベント、DevTools記録を備えています。
+
+次の用途に使えます。
+
+- 軽量で上限のあるツールループ
+- ゲートウェイ経由の`responses`リクエスト
+- 永続化とオーケストレーションをアプリケーション側で制御すること
+
+## 提供機能
+
+- `AgentSdk.CreateAgent(...)`
+- `AgentSdk.DefineTool(...)`
+- `AgentSdk.CreateGatewayAgentClient(...)`
+- Phaseoの`responses` API上で動作する上限付きツールループ
+
+## 次のステップ
+
+- [インストール](./agent-sdk-installation.mdx)
+- [使い方](./agent-sdk.mdx)

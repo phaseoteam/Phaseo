@@ -1,6 +1,7 @@
 "use client";
 
 import { Maximize2 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import type {
 	ModelPerformancePoint,
 	ModelPerformanceSummary,
@@ -37,28 +38,28 @@ type MetricValueKey =
 type MetricDefinition = {
 	metric: MetricKey;
 	valueKey: MetricValueKey;
-	label: string;
-	description: string;
+	labelKey: string;
+	descriptionKey: string;
 };
 
 const METRICS: MetricDefinition[] = [
 	{
 		metric: "throughput",
 		valueKey: "avgThroughput",
-		label: "Throughput",
-		description: "Output tokens per second across the complete provider request.",
+		labelKey: "throughput",
+		descriptionKey: "metricDescriptions.throughputCard",
 	},
 	{
 		metric: "latency",
 		valueKey: "avgLatencyMs",
-		label: "Latency",
-		description: "Time from request start until the first generated output arrives.",
+		labelKey: "latency",
+		descriptionKey: "metricDescriptions.latencyCard",
 	},
 	{
 		metric: "endToEnd",
 		valueKey: "avgEndToEndMs",
-		label: "End-to-end latency",
-		description: "Total time from request start until the complete response is returned.",
+		labelKey: "endToEndLatency",
+		descriptionKey: "metricDescriptions.endToEndCard",
 	},
 ];
 
@@ -99,6 +100,7 @@ export default function ModelPerformanceCards({
 	providerHourly7d,
 	qualitySeries = [],
 }: ModelPerformanceCardsProps) {
+	const t = useTranslations("Catalogue.modelDetail.performance");
 	void summary;
 	void prevSummary;
 	const hasHourly = hourly.some((point) => point.requests > 0);
@@ -112,7 +114,11 @@ export default function ModelPerformanceCards({
 			.filter((point) => point.requests > 0)
 			.map((point) => point.provider),
 	).size;
-	const detailSeriesLabel = `${usesHourlyData ? "Hourly observations for" : "Daily observations for"} all ${providerCount.toLocaleString()} recorded provider${providerCount === 1 ? "" : "s"}`;
+	const metrics = METRICS.map((definition) => ({
+		...definition,
+		label: t(definition.labelKey as never),
+		description: t(definition.descriptionKey as never),
+	}));
 	const metricData = (metric: MetricKey, detailed: boolean) =>
 		selectMetricData(
 			metric,
@@ -124,7 +130,7 @@ export default function ModelPerformanceCards({
 	return (
 		<div className="space-y-4">
 			<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-				{METRICS.map((definition) => (
+				{metrics.map((definition) => (
 					<Dialog key={definition.metric}>
 						<div className="min-w-0 rounded-lg border border-border/70 bg-background px-4 py-4">
 							<ModelProviderTrendChart
@@ -138,7 +144,7 @@ export default function ModelPerformanceCards({
 										<button
 											type="button"
 											className="inline-flex size-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
-											aria-label={`Expand ${definition.label}`}
+												aria-label={t("expandMetric", { metric: definition.label } as never)}
 										>
 											<Maximize2 className="size-3.5" />
 										</button>
@@ -150,9 +156,11 @@ export default function ModelPerformanceCards({
 							<DialogHeader className="pr-10">
 								<DialogTitle className="text-xl">{definition.label}</DialogTitle>
 								<DialogDescription>
-									{definition.description}{" "}
-									{detailSeriesLabel}{" "}
-									are shown below.
+									{t("metricDialogDescription", {
+										description: definition.description,
+										count: providerCount,
+										resolution: usesHourlyData ? "hour" : "day",
+									} as never)}
 								</DialogDescription>
 							</DialogHeader>
 							<div className="h-full min-h-0 overflow-hidden rounded-lg border border-border/70 bg-background p-4">
@@ -173,17 +181,17 @@ export default function ModelPerformanceCards({
 
 			<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
 				<ModelQualityTrendChart
-					title="Tool call errors"
+					title={t("qualityMetrics.toolCallErrors.label" as never)}
 					data={qualitySeries}
 					metric="toolCallErrorPct"
 				/>
 				<ModelQualityTrendChart
-					title="Structured response errors"
+					title={t("qualityMetrics.structuredResponseErrors.label" as never)}
 					data={qualitySeries}
 					metric="structuredOutputErrorPct"
 				/>
 				<ModelQualityTrendChart
-					title="Cache hit rate"
+					title={t("qualityMetrics.cacheHitRate.label" as never)}
 					data={qualitySeries}
 					metric="cacheHitRatePct"
 				/>
@@ -191,8 +199,7 @@ export default function ModelPerformanceCards({
 
 			{!hasHourly ? (
 				<p className="text-xs text-muted-foreground">
-					Low sample volume in the last 24 hours. Trends use the available{" "}
-					seven-day history.
+					{t("lowSampleVolume")}
 				</p>
 			) : null}
 		</div>

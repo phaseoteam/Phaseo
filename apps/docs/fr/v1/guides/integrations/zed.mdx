@@ -1,0 +1,44 @@
+---
+title: "Zed"
+description: "Ajoutez Phaseo comme fournisseur de modèles compatible avec OpenAI dans Zed."
+---
+
+Exécutez `phaseo integrations setup zed`. La CLI ajoute l’identifiant de fournisseur `phaseo`, l’URL d’API `https://api.phaseo.app/v1` et le modèle choisi à `settings.json`, sans modifier les autres paramètres.
+
+## Enregistrer la clé API dans Zed
+
+Zed stocke les clés des fournisseurs dans le trousseau système ; il ne reste donc qu’une étape à effectuer dans l’interface.
+
+1. Ouvrez la palette de commandes et exécutez **agent: open settings**.
+2. Dans **AI**, sélectionnez **LLM Providers → Configure**.
+
+![Paramètres IA de Zed avec LLM Providers mis en évidence](/images/integrations/zed-agent-settings.png)
+
+3. Si Phaseo apparaît déjà, ouvrez-le et collez la clé dédiée. Sinon, sélectionnez **Add Provider → OpenAI**.
+
+![Page LLM Providers de Zed avec Add Provider](/images/integrations/zed-llm-providers.png)
+
+4. Pour une configuration manuelle, saisissez :
+
+| Champ | Valeur |
+| --- | --- |
+| Provider Name | `Phaseo` |
+| API URL | `https://api.phaseo.app/v1` |
+| API Key | Sortie de `phaseo integrations credential zed` |
+| Model Name | Identifiant du modèle Phaseo sélectionné |
+
+![Formulaire Zed pour ajouter un fournisseur compatible avec OpenAI](/images/integrations/zed-add-compatible-provider.png)
+
+Ne sélectionnez pas **Save Provider** tant que l’URL de base, l’identifiant du modèle et la clé ne sont pas renseignés.
+
+## Vérifier
+
+Ouvrez un nouveau fil Agent, sélectionnez le modèle Phaseo et envoyez une courte requête. Si Zed indique que la clé est invalide, relancez `phaseo integrations credential zed` et remplacez la clé enregistrée dans Zed.
+
+## Supprimer
+
+```bash
+phaseo integrations remove zed
+```
+
+La CLI supprime le fournisseur Phaseo de `settings.json` et révoque sa clé dédiée. Si l’ancienne entrée du trousseau apparaît encore dans Zed, supprimez également Phaseo de **LLM Providers**.

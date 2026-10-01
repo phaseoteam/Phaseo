@@ -7,6 +7,7 @@
 
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts";
 import { Card } from "@/components/ui/card";
+import { useLocale, useTranslations } from "next-intl";
 import type { MarketShareData } from "@/lib/fetchers/rankings/getRankingsData";
 
 interface MarketShareVisualizationsProps {
@@ -32,7 +33,9 @@ export function MarketShareVisualizations({
     data,
     dimension,
 }: MarketShareVisualizationsProps) {
-    const chartData = data.map((row, idx) => ({
+	const locale = useLocale();
+	const t = useTranslations("Catalogue.rankings");
+	const chartData = data.map((row, idx) => ({
         name: row.name,
         value: row.share_pct,
         requests: row.requests,
@@ -67,15 +70,15 @@ export function MarketShareVisualizations({
                                     <div className="space-y-1">
                                         <p className="font-semibold">{data.name}</p>
                                         <div className="text-sm space-y-1 pt-2 border-t">
-                                            <p>Share: {data.value.toFixed(1)}%</p>
-                                            <p>Requests: {data.requests.toLocaleString()}</p>
-                                            <p>
-                                                Tokens:{" "}
+	                                            <p>{t("shareLabel")}: {data.value.toLocaleString(locale, { maximumFractionDigits: 1 })}%</p>
+	                                            <p>{t("requestsLabel")}: {data.requests.toLocaleString(locale)}</p>
+	                                            <p>
+	                                                {t("tokensLabel")}:{" "}
                                                 {data.tokens >= 1e9
                                                     ? `${(data.tokens / 1e9).toFixed(2)}B`
                                                     : data.tokens >= 1e6
                                                     ? `${(data.tokens / 1e6).toFixed(2)}M`
-                                                    : data.tokens.toLocaleString()}
+                                                    : data.tokens.toLocaleString(locale)}
                                             </p>
                                         </div>
                                     </div>

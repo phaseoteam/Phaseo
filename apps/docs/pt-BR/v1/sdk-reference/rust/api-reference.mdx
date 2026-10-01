@@ -1,0 +1,59 @@
+---
+title: "Referência da API Rust"
+description: "Tipos e métodos públicos do phaseo 0.1."
+---
+
+Esta página descreve a API de alto nível compatível com [`phaseo 0.1`](https://docs.rs/phaseo/0.1.0/phaseo/).
+
+## `Phaseo`
+
+Cliente síncrono e autenticado do gateway.
+
+| Método | Retorna | Finalidade |
+| --- | --- | --- |
+| `Phaseo::new(api_key)` | `Result<Phaseo, PhaseoError>` | Cria um cliente com a URL base de produção. |
+| `Phaseo::from_env()` | `Result<Phaseo, PhaseoError>` | Lê `PHASEO_API_KEY` e, opcionalmente, `PHASEO_BASE_URL`. |
+| `.with_base_url(url)` | `Result<Phaseo, PhaseoError>` | Substitui a URL base. URLs remotas exigem HTTPS; hosts loopback exatos podem usar HTTP. |
+| `.with_header(name, value)` | `Phaseo` | Adiciona um cabeçalho às próximas solicitações. |
+| `.responses(request)` | `Result<PhaseoResponse, PhaseoError>` | Envia JSON por POST para `/responses`. |
+| `.chat_completions(request)` | `Result<PhaseoResponse, PhaseoError>` | Envia JSON por POST para `/chat/completions`. |
+| `.post(path, request)` | `Result<PhaseoResponse, PhaseoError>` | Envia JSON por POST para outro caminho abaixo da URL base configurada. |
+
+Todos os corpos das solicitações são `&serde_json::Value`.
+
+## `PhaseoResponse`
+
+| Campo | Tipo | Significado |
+| --- | --- | --- |
+| `status` | `u16` | Código de status HTTP. |
+| `body` | `serde_json::Value` | Resposta JSON analisada ou string JSON quando a resposta não era um JSON válido. |
+| `request_id` | `Option<String>` | Cabeçalho de resposta `x-request-id`, quando presente. |
+
+## `PhaseoError`
+
+| Campo | Tipo | Significado |
+| --- | --- | --- |
+| `message` | `String` | Mensagem de erro de configuração, transporte ou gateway. |
+| `status` | `Option<u16>` | Status HTTP do gateway quando uma resposta foi recebida. |
+| `body` | `Option<serde_json::Value>` | Corpo do erro do gateway analisado, quando disponível. |
+
+`PhaseoError` implementa `std::error::Error` e `Display`.
+
+## Módulos gerados
+
+O crate também expõe o cliente OpenAPI gerado:
+
+| Módulo | Finalidade |
+| --- | --- |
+| `phaseo::gen` | Cliente gerado completo, modelos e módulos de operações. |
+| `phaseo::client` | Reexporta `phaseo::gen::client`. |
+| `phaseo::models` | Reexporta `phaseo::gen::models`. |
+| `phaseo::operations` | Reexporta `phaseo::gen::operations`. |
+| `phaseo::model_ids` | IDs de modelos da Phaseo gerados. |
+
+Os nomes e tipos de operações gerados seguem a saída OpenAPI e podem ser de nível mais baixo que os auxiliares de `Phaseo`. Prefira os métodos de alto nível acima para Responses e Chat Completions.
+
+## Referências externas
+
+- [`phaseo` no crates.io](https://crates.io/crates/phaseo)
+- [`phaseo` no docs.rs](https://docs.rs/phaseo)

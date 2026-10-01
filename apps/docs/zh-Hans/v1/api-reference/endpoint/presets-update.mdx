@@ -1,0 +1,10 @@
+---
+title: "更新预设草稿"
+sidebarTitle: "更新预设"
+badge: "测试版"
+openapi: "/zh-Hans/openapi/v1/openapi.localized.yaml PATCH /presets/{id}"
+description: "更新预设草稿的元数据和配置。"
+---
+<Note>此端点需要具有 `presets:write` 权限的管理 API 密钥。</Note>
+
+使用 `replace_config` 替换完整的草稿配置。否则，提供的配置字段会在顶层合并。

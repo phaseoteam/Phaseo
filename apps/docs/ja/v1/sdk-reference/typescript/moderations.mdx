@@ -1,0 +1,59 @@
+---
+icon: "shield-check"
+title: "モデレーション"
+description: "TypeScript SDKで/moderationsを呼び出します。"
+---
+
+**メソッド**：`client.generateModeration()`。
+
+### 例
+```typescript
+const moderation = await client.generateModeration({
+  model: "openai/omni-moderation-latest",
+  input: "Text to classify",
+});
+```
+
+### 主なパラメーター
+- `model`（必須）：モデレーションモデルのID（例：`openai/omni-moderation-latest`）。
+- `input`（必須）：文字列またはコンテンツ項目の配列（テキストまたは`image_url`）。
+- 任意：`categories`／`severity`フィルター（対応している場合）と`user`タグ。
+
+### 戻り値
+`ModerationResponse`
+
+```json
+{
+  "results": [
+    {
+      "flagged": false,
+      "categories": {
+        "hate": false,
+        "hate/threatening": false,
+        "harassment": false,
+        "harassment/threatening": false,
+        "self-harm": false,
+        "self-harm/intent": false,
+        "self-harm/instructions": false,
+        "sexual": false,
+        "sexual/minors": false,
+        "violence": false,
+        "violence/graphic": false
+      },
+      "category_scores": {
+        "hate": 0.01,
+        "hate/threatening": 0.0,
+        "harassment": 0.02,
+        "harassment/threatening": 0.0,
+        "self-harm": 0.0,
+        "self-harm/intent": 0.0,
+        "self-harm/instructions": 0.0,
+        "sexual": 0.05,
+        "sexual/minors": 0.0,
+        "violence": 0.01,
+        "violence/graphic": 0.0
+      }
+    }
+  ]
+}
+```

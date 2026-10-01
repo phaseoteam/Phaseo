@@ -1,0 +1,131 @@
+---
+title: "Mit dem Rust Agent SDK entwickeln"
+description: "Erstelle einen synchronen Rust-Agenten, der über Phaseo Gateway ein lokales Tool aufruft."
+---
+
+Mit dieser Anleitung erstellst du einen kleinen Agenten mit Tool-Unterstützung und siehst dir seinen abgeschlossenen Lauf an.
+
+## Ein Tool definieren
+
+```rust
+use phaseo_agent::{define_tool, Tool};
+use serde_json::json;
+
+let lookup = define_tool(Tool::new(
+    "lookup_docs",
+    "Look up a Phaseo documentation topic",
+    json!({
+        "type": "object",
+        "properties": {
+            "topic": { "type": "string" }
+        },
+        "required": ["topic"]
+    }),
+    |input, context| {
+        Ok(json!({
+            "topic": input["topic"],
+            "run_id": context.run_id,
+            "found": true
+        }))
+    },
+));
+```
+
+Die Closure wird lokal ausgeführt. Ihr `RuntimeContext` enthält die Lauf-ID, die Agent-ID, den Schrittindex, den Anwendungskontext und den ursprünglichen Tool-Aufruf.
+
+## Den Agenten erstellen
+
+```rust
+use phaseo_agent::{create_agent, AgentDefinition};
+
+let agent = create_agent(
+    AgentDefinition::new("docs-agent", "openai/gpt-5.6-sol")
+        .instructions("Use lookup_docs when it helps. Finish with a concise answer.")
+        .max_steps(6)
+        .tool(lookup),
+);
+```
+
+## Über Phaseo Gateway ausführen
+
+```rust
+use phaseo_agent::{create_gateway_agent_client, RunOptions};
+
+let mut client = create_gateway_agent_client("openai/gpt-5.6-sol")?;
+let mut options = RunOptions::new("Explain when to use routing presets.");
+options.context = serde_json::json!({
+    "workspace": "docs"
+});
+
+let result = agent.run(&mut client, options)?;
+println!("{}", result.output);
+```
+
+## Vollständiges Beispiel
+
+```rust
+use phaseo_agent::{
+    create_agent, create_gateway_agent_client, define_tool, AgentDefinition,
+    RunOptions, Tool,
+};
+use serde_json::json;
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let lookup = define_tool(Tool::new(
+        "lookup_docs",
+        "Look up a Phaseo documentation topic",
+        json!({
+            "type": "object",
+            "properties": {
+                "topic": { "type": "string" }
+            },
+            "required": ["topic"]
+        }),
+        |input, context| {
+            Ok(json!({
+                "topic": input["topic"],
+                "run_id": context.run_id,
+                "found": true
+            }))
+        },
+    ));
+
+    let agent = create_agent(
+        AgentDefinition::new("docs-agent", "openai/gpt-5.6-sol")
+            .instructions("Use lookup_docs when helpful. Answer concisely.")
+            .max_steps(6)
+            .tool(lookup),
+    );
+
+    let mut client = create_gateway_agent_client("openai/gpt-5.6-sol")?;
+    let result = agent.run(
+        &mut client,
+        RunOptions::new("Explain when to use routing presets."),
+    )?;
+
+    println!("{}", result.output);
+    println!("steps: {}", result.run.step_count);
+    println!("tokens: {}", result.usage.total_tokens);
+    Ok(())
+}
+```
+
+## Laufstatus
+
+`RunResult` enthält:
+
+- `run`: Status, IDs, effektives Modell, Schrittlimit, Kontext und Pausenstatus
+- `steps`: jeden Modellzug, Anfrage-ID, Provider, Modell, Abschlussgrund, Tool-Aufrufe und Nutzung
+- `messages`: den vollständigen Nachrichtenverlauf von Modell und Tools
+- `output`: den endgültigen Ausgabewert
+- `usage`: aggregierte Tokenwerte und alle Kosten, die der Modellclient bereitstellt
+
+## Aktuelles Ausführungsmodell
+
+Läufe des Rust Agent SDK sind synchron. Lokale Tools werden nacheinander ausgeführt. Verwende einen Worker-Thread oder eine Task-Grenze der Anwendung, wenn ein Lauf keinen Request-Handler blockieren soll.
+
+## Weiter
+
+- [Tools und Freigaben](./agent-sdk-tools.mdx)
+- [Läufe speichern und fortsetzen](./agent-sdk-state-and-approval.mdx)
+- [Ereignisse, Wiederholungen und Fehler](./agent-sdk-events-and-errors.mdx)

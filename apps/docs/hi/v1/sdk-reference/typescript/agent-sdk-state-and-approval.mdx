@@ -1,0 +1,77 @@
+---
+icon: "database"
+title: "स्टेट और अनुमोदन"
+description: "रन स्टेट सहेजें, टूल कॉल को मंज़ूरी दें और रुके हुए एजेंट को जारी रखें।"
+---
+
+जब एजेंट को आगे बढ़ने से पहले किसी व्यक्ति, बाहरी जॉब या ऐप्लिकेशन-स्वामित्व वाले टूल का इंतज़ार करना हो, तब continuation उपयोग करें। Agent SDK बाद में जारी रखने के लिए आवश्यक पूरा रन स्टेट लौटाता है।
+
+<Note>
+Phaseo, Agent SDK रन को होस्ट की गई एजेंट सेवा में सहेजता नहीं है। यदि अनुरोध या प्रोसेस रीस्टार्ट के बाद रन जारी रखना है, तो अपने ऐप्लिकेशन में resumable रन स्टेट सहेजें।
+</Note>
+
+## टूल कॉल को मंज़ूरी दें
+
+अनुमोदन केवल उन कॉल के लिए आवश्यक करें जिन्हें इसकी ज़रूरत है:
+
+```typescript
+const deploy = defineTool({
+  id: "deploy",
+  requireApproval: ({ environment }) => environment === "production",
+  async execute(input: { environment: string }) {
+    return deployRelease(input.environment);
+  },
+});
+```
+
+रन `run.pause.pendingToolCalls` में लंबित कॉल के साथ रुकता है। समानांतर कॉल में भ्रम न हो, इसलिए सटीक कॉल ID से जारी रखें:
+
+```typescript
+const resumed = await agent.continueRun({
+  run: paused,
+  client,
+  approvals: [{ toolCallId: "call_deploy_42" }],
+  rejections: [
+    { toolCallId: "call_delete_17", reason: "Not authorized" },
+  ],
+});
+```
+
+## मानवीय समीक्षा के लिए रोकें
+
+जब अगला टर्न शुरू होने से पहले पूरे मॉडल उत्तर की जाँच करनी हो, तब `humanReview` उपयोग करें:
+
+```typescript
+const agent = createAgent({
+  id: "support-agent",
+  humanReview: ({ response }) =>
+    response.message.content.includes("needs approval")
+      ? {
+          reason: "approval_required",
+          payload: { draft: response.message.content },
+        }
+      : null,
+});
+```
+
+स्पष्ट मानवीय इनपुट के साथ जारी रखें:
+
+```typescript
+const continued = await agent.continueRun({
+  run: pausedResult,
+  client,
+  humanInput: "Approved. Continue and return the final answer.",
+});
+```
+
+## रन स्टेट सहेजें
+
+लौटाए गए `AgentRunResult` को सीधे सहेजें या asynchronous `load(runId)` और `save(result)` मेथड वाला `state` accessor दें। फिर जारी रन हर लेयर में serialized रिकॉर्ड भेजने के बजाय `runId` इस्तेमाल कर सकता है।
+
+SDK में persistence adapters या hosted state backend नहीं है। आपका ऐप one-shot रन को प्रोसेस में रख सकता है और केवल रुके या अधूरे रन सहेज सकता है।
+
+## संबंधित गाइड
+
+- [टूल परिभाषित और चलाएँ](./agent-sdk-tools.mdx)
+- [एजेंट रन नियंत्रित करें](./agent-sdk-run-controls.mdx)
+- [टिकाऊ एजेंट लूप बनाएँ](../../cookbook/agent-sdk-durable-loop.mdx)

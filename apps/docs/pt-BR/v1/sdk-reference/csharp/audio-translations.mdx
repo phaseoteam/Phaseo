@@ -1,0 +1,30 @@
+---
+icon: "arrow-right-left"
+title: "Traduções"
+description: "Chame /audio/translations com o SDK C#."
+---
+
+**Método**: `client.CreateTranslation(...)`
+
+### Exemplo
+```csharp
+using PhaseoSdk;
+
+var client = new Phaseo(apiKey);
+var response = await client.CreateTranslation(new Dictionary<string, object>
+{
+    ["model"] = "openai/gpt-4o-transcribe",
+    ["audio_b64"] = "base64-audio"
+});
+```
+
+### Parâmetros principais
+- `model` (obrigatório): ID de um modelo compatível com tradução.
+- `file` (obrigatório): dados de áudio a serem traduzidos.
+- `prompt`: contexto opcional para orientar a tradução.
+- `temperature` (0–2): aleatoriedade da amostragem.
+- `response_format`: `json`, `text`, `srt`, `verbose_json` etc.
+
+### Retorno
+`AudioTranscriptionResponse`
+

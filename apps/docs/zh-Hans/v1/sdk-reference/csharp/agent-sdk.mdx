@@ -1,0 +1,49 @@
+---
+title: "用法"
+description: "使用 C# Agent SDK 运行工具循环、人工审核、重试和可恢复的智能体。"
+---
+
+## 准备运行时环境
+
+Agent SDK 包尚未发布到 NuGet。请按照[从源代码安装的说明](./agent-sdk-installation.mdx)操作。
+
+## 快速入门
+
+```csharp
+using PhaseoAgentSdk;
+
+var agent = AgentSdk.CreateAgent(new AgentDefinition
+{
+    Id = "quickstart-agent",
+    Model = "openai/gpt-5.4-nano",
+    Instructions = "Answer concisely and helpfully."
+});
+
+var result = await agent.Run(new RunOptions
+{
+    Input = "Give me one fun fact about cURL.",
+    Client = AgentSdk.CreateGatewayAgentClient(),
+});
+
+Console.WriteLine(result.Output);
+```
+
+## 提供的功能
+
+- `AgentSdk.CreateAgent(...)`
+- `AgentSdk.DefineTool(...)`
+- `AgentSdk.CreateGatewayAgentClient(...)`
+- 通过 Phaseo `responses` API 运行有界工具循环
+
+## 高级运行时
+
+C# 支持验证与审批委托、HITL 和手动工具、进度跟踪、可恢复错误、可重放的异步枚举、停止辅助方法、动态轮次、持久化的 `NextTurnParams`、规范化用量与成本，以及 `IStateAccessor`。
+
+## 流式传输与取消
+
+`Agent.Stream(...)` 和 `Agent.ContinueStream(...)` 通过网关的 Responses SSE 流使用 `IAsyncEnumerable`。读取 `TextStream()` 或 `FullStream()`，并调用 `Cancel()` 取消关联的请求令牌。已完成的步骤会保留请求 ID、供应商元数据、结束原因、警告、用量和成本。
+
+## 相关页面
+
+- [Agent SDK 概览](../agent-sdk/overview.mdx)
+- [TypeScript Agent SDK](../typescript/agent-sdk.mdx)

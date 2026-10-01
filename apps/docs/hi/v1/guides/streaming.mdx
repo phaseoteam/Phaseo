@@ -1,0 +1,50 @@
+---
+title: "क्रमिक आउटपुट"
+description: "कम latency में tokens भेजने के लिए server-sent events (SSE) उपयोग करें।"
+icon: "radio"
+---
+
+Streaming incremental SSE frames में output भेजता है, जिससे users को response जल्दी दिखता है।
+
+## समर्थित एंडपॉइंट
+
+- `/v1/responses`
+- `/v1/chat/completions`
+- `/v1/messages`
+
+## अनुरोध
+
+```bash
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-5-nano",
+    "input": "Stream a short hello message.",
+    "stream": true
+  }'
+```
+
+## जवाब
+
+```text
+data: {"id":"resp_...","object":"response","status":"in_progress",...}
+data: {"type":"response.output_text.delta","delta":"Hello"}
+data: {"type":"response.completed",...}
+data: [DONE]
+```
+
+## SDK विकल्प
+
+- TypeScript SDK: `client.streamResponses()`, `client.streamChat()` और `client.streamMessages()`
+- Python SDK: `client.stream_responses()`, `client.stream_chat()` और `client.stream_message()`
+- Vercel AI SDK: `streamText(...)` को `@phaseo/ai-sdk-provider` के साथ इस्तेमाल करें
+
+## ज़रूरी सीमा
+
+Gateway के मौजूदा request validation स्तर पर tools के साथ `stream: true` देने पर अनुरोध अस्वीकार होता है (`400 invalid_request`)। Tool-calling loops के लिए non-streaming mode उपयोग करें।
+
+## आगे के guides
+
+1. [SSE event reference](./streaming-sse.mdx)
+2. [Production में streaming](./streaming-production.mdx)

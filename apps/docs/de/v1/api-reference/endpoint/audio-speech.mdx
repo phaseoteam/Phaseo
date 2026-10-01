@@ -1,0 +1,34 @@
+---
+title: "Sprachausgabe erstellen"
+sidebarTitle: "Sprachausgabe erstellen"
+badge: "Beta"
+openapi: "/de/openapi/v1/openapi.localized.yaml POST /audio/speech"
+description: "Mit der angegebenen Stimme und dem angegebenen Format TTS-Audio aus Text erzeugen."
+---
+
+## Stimmenzuordnung
+
+`voice` wird je nach Anbieter mithilfe einer internen Aliaszuordnung normalisiert:
+
+- `openai`: gängige Stimmen (zum Beispiel `alloy`, `ash`, `ballad`, `coral`, `echo`, `fable`, `onyx`, `nova`, `sage`, `shimmer`, `verse`, `cedar`, `marin`).
+- `google` (AI Studio / Gemini TTS): kanonische vorgefertigte Stimmen:
+  `Zephyr`, `Puck`, `Charon`, `Kore`, `Fenrir`, `Leda`, `Orus`, `Aoede`, `Callirrhoe`, `Autonoe`, `Enceladus`, `Iapetus`, `Umbriel`, `Algieba`, `Despina`, `Erinome`, `Algenib`, `Rasalgethi`, `Laomedeia`, `Achernar`, `Alnilam`, `Schedar`, `Gacrux`, `Pulcherrima`, `Achird`, `Zubenelgenubi`, `Vindemiatrix`, `Sadachbia`, `Sadaltager`, `Sulafat`.
+- `elevenlabs`: gängige öffentliche Einstiegsstimmen werden zugeordnet (zum Beispiel `rachel`, `domi`, `bella`, `antoni`, `elli`, `josh`, `arnold`, `adam`, `sam`).
+
+Ist `voice` für die Anbieter-/Modellzuordnung der Route ungültig, gibt die Anfrage `400 invalid_request_error` mit `param: "voice"` zurück.
+
+## Anbieterüberschreibungen
+
+Du kannst weiterhin anbieterspezifische Stimmeinstellungen übergeben:
+
+- ElevenLabs: `config.elevenlabs.voice_id` / `config.elevenlabs.voice` / `config.elevenlabs.voiceName`
+- Google: `config.google.voice_name` / `config.google.voiceName`
+
+Verwende `voice` auf oberster Ebene als Standardwert für bessere Portabilität.
+
+## Stimmenbeispiele
+
+- OpenAI: [openai.fm](https://www.openai.fm/)
+- Beispiele für Google-TTS-Stimmen: [Gemini-Dokumentation zur Sprachsynthese](https://ai.google.dev/gemini-api/docs/speech-generation#voices)
+- ElevenLabs-Stimmenbibliothek: [ElevenLabs Voice Library](https://elevenlabs.io/voice-library)
+

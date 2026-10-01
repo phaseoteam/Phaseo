@@ -1,0 +1,11 @@
+---
+title: "Publicar versão do preset"
+sidebarTitle: "Publicar versão"
+badge: "Beta"
+openapi: "/pt-BR/openapi/v1/openapi.localized.yaml POST /presets/{id}/versions"
+description: "Publicar o rascunho atual do preset como uma versão imutável."
+---
+<Note>Este endpoint requer uma chave de API de gerenciamento com `presets:write` e uma identidade de usuário associada.</Note>
+
+O método de versionamento do preset determina o rótulo padrão da versão. Presets com SemVer podem informar `version_label` explicitamente.
+

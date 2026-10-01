@@ -1,0 +1,63 @@
+---
+icon: "search-check"
+title: "जनरेशन रिकॉर्ड देखना"
+description: "पिछली generation पाने के लिए /generation call करें।"
+---
+
+**Method**: `client.getGeneration()`।
+
+### उदाहरण
+```typescript
+const record = await client.getGeneration("G-01ABC...");
+```
+
+### पैरामीटर
+- `id` (string, required): पिछली call से मिला request ID।
+
+### रिटर्न मान
+Generation record (JSON)
+
+Gateway ने पूरी request details सहेजी हों, तो returned record में `replay_supported` और `replay_request` होंगे। नियंत्रित rerun के लिए `replay_request` को original endpoint पर भेजें।
+
+Timing fields पूरे gateway में एक ही semantics का पालन करते हैं:
+
+- `latency_ms`: पहला token या output byte/frame आने तक का समय, यदि track किया गया हो
+- `generation_ms`: latency के बाद generation time, यदि track किया गया हो
+
+```json
+{
+  "created_at": "2026-05-05T12:00:00.000Z",
+  "request_id": "G-01ABC123",
+  "team_id": "team-123",
+  "app_id": "app-123",
+  "endpoint": "chat/completions",
+  "model_id": "openai/gpt-4o-mini",
+  "provider": "openai",
+  "native_response_id": "chatcmpl-123",
+  "stream": false,
+  "byok": false,
+  "status_code": 200,
+  "success": true,
+  "error_code": null,
+  "error_message": null,
+  "latency_ms": 1500,
+  "generation_ms": 1400,
+  "usage": {
+    "prompt_tokens": 9,
+    "completion_tokens": 9,
+    "total_tokens": 18
+  },
+  "cost_nanos": 1000000,
+  "currency": "USD",
+  "pricing_lines": [],
+  "key_id": "key-123",
+  "throughput": null,
+  "replay_supported": true,
+  "replay_request": {
+    "model": "openai/gpt-4o-mini",
+    "messages": [
+      { "role": "user", "content": "Say hello" }
+    ]
+  }
+}
+```

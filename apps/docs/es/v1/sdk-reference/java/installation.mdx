@@ -1,0 +1,43 @@
+---
+title: "Instalación del SDK de Java (en desarrollo)"
+description: "Compila desde el código fuente el SDK de Java, que aún está en desarrollo."
+---
+
+<Note type="warning">El SDK de Java está en desarrollo y aún no se ha publicado en Maven Central.</Note>
+
+## Requisitos
+
+- Java 17+
+- Maven 3.8+
+
+## Compilar localmente
+
+```bash
+cd packages/sdk/sdk-java
+mvn -DskipTests package
+```
+
+Esto genera `target/sdk-java-0.0.0-local.jar`.
+
+## Usarlo en tu proyecto
+
+Instala el JAR generado en la caché local de Maven:
+
+```bash
+mvn install:install-file \
+  -Dfile=target/sdk-java-0.0.0-local.jar \
+  -DgroupId=app.phaseo \
+  -DartifactId=sdk-java \
+  -Dversion=0.0.0-local \
+  -Dpackaging=jar
+```
+
+Después, añádelo como dependencia en el archivo `pom.xml` de tu aplicación:
+
+```xml
+<dependency>
+  <groupId>app.phaseo</groupId>
+  <artifactId>sdk-java</artifactId>
+  <version>0.0.0-local</version>
+</dependency>
+```

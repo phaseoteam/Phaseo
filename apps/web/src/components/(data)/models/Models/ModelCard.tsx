@@ -244,10 +244,13 @@ function providerStatusPriority(status: string): number {
 	return providerStatusOrderIndex.get(status) ?? providerStatusOrderIndex.size + 1;
 }
 
-function formatProviderStatusLabel(status: string): string {
+function formatProviderStatusLabel(
+	status: string,
+	labels: Record<string, string>,
+): string {
 	const normalized = normalizeProviderStatus(status);
-	const mapped = PROVIDER_STATUS_META[normalized];
-	if (mapped) return mapped.label;
+	const localized = labels[normalized];
+	if (localized) return localized;
 	return normalized
 		.replace(/_/g, " ")
 		.replace(/\b\w/g, (char) => char.toUpperCase());
@@ -529,6 +532,20 @@ function ModelCardImpl({
 	contentPaddingClassName?: string;
 }) {
 	const t = useTranslations("Catalogue.models");
+	const tDetail = useTranslations("Catalogue.modelDetail");
+	const tProviderStatus = useTranslations(
+		"Catalogue.modelDetail.providerTable.statuses",
+	);
+	const providerStatusLabels: Record<string, string> = {
+		active: tProviderStatus("active"),
+		inactive: tProviderStatus("inactive"),
+		disabled: tProviderStatus("disabled"),
+		coming_soon: tProviderStatus("comingSoon"),
+		internal_testing: tProviderStatus("internalTesting"),
+		rate_limited: tProviderStatus("rateLimited"),
+		degraded: tProviderStatus("degraded"),
+		external: tProviderStatus("external"),
+	};
 	const modelSlug = model.model_id;
 	const modelHref =
 		getModelDetailsHref(model.organisation_id, model.model_id) ??
@@ -1001,7 +1018,11 @@ function ModelCardImpl({
 							<div className="w-6 h-6 relative">
 								<Logo
 									id={model.organisation_id}
-									alt={model.organisation_name || "Provider Logo"}
+									alt={tDetail("availabilityLabels.providerLogo", {
+										provider:
+											model.organisation_name ||
+											tDetail("availabilityLabels.unknownProvider"),
+										})}
 									className="object-contain"
 									fill
 								/>
@@ -1066,7 +1087,7 @@ function ModelCardImpl({
 							href={modelHref}
 							prefetch={false}
 							scroll
-							aria-label={`Open ${safeModelDisplayName}`}
+							aria-label={t("viewDetails")}
 							className="group/open"
 						>
 							<ArrowUpRight
@@ -1082,7 +1103,7 @@ function ModelCardImpl({
 				</div>
 
 				<div className="grid gap-2 text-xs md:grid-cols-3">
-					<ModelCardScrollRail ariaLabel="Model summary" className="md:col-span-3">
+					<ModelCardScrollRail ariaLabel={t("modelSummary")} className="md:col-span-3">
 						<div className="flex w-max min-w-full items-center gap-1.5 pb-px text-[11px] [&>*]:shrink-0">
 						{priceSummary ? (
 							pricingDetailRows.length > 0 ? (
@@ -1282,7 +1303,7 @@ function ModelCardImpl({
 								<HoverCardContent align="start" className="w-72 p-3">
 									<div className="space-y-2">
 										<div className="text-xs font-medium text-foreground">
-											Provider Support
+										{tDetail("providerTable.heading")}
 										</div>
 										<ScrollArea className="pr-1" style={{ height: providerListHeight }}>
 											<div className="space-y-1 pr-2">
@@ -1322,7 +1343,7 @@ function ModelCardImpl({
 															<span
 																className={cn("h-1.5 w-1.5 rounded-full", PROVIDER_STATUS_META[provider.status]?.dotClassName ?? "bg-muted-foreground/60")}
 															/>
-															{formatProviderStatusLabel(provider.status)}
+															{formatProviderStatusLabel(provider.status, providerStatusLabels)}
 														</span>
 													</div>
 												))}
@@ -1341,15 +1362,17 @@ function ModelCardImpl({
 						)}
 						{maxContextLength ? (
 							<div className="inline-flex items-center gap-1 rounded-md border border-border/60 bg-muted/30 px-2 py-1">
-								<span className="text-muted-foreground">Context</span>
+								<span className="text-muted-foreground">{t("filtersUi.contextLength")}</span>
 								<span className="font-medium text-foreground tabular-nums">
-									{`${formatTokenCount(maxContextLength)} tokens`}
+									{t("tokenCountDisplay", {
+										count: formatTokenCount(maxContextLength),
+									})}
 								</span>
 							</div>
 						) : null}
 						{routerRequests30d !== null ? (
 							<div className="inline-flex items-center gap-1 rounded-md border border-border/60 bg-muted/30 px-2 py-1">
-								<span className="text-muted-foreground">Requests (30d)</span>
+								<span className="text-muted-foreground">{t("freeRouter.requests30d")}</span>
 								<span className="font-medium tabular-nums text-foreground">
 									{routerRequests30d.toLocaleString()}
 								</span>
@@ -1357,7 +1380,7 @@ function ModelCardImpl({
 						) : null}
 						{routerSpend30d ? (
 							<div className="inline-flex items-center gap-1 rounded-md border border-border/60 bg-muted/30 px-2 py-1">
-								<span className="text-muted-foreground">Spend (30d)</span>
+								<span className="text-muted-foreground">{t("freeRouter.spend30d")}</span>
 								<span className="font-medium tabular-nums text-foreground">
 									{routerSpend30d}
 								</span>
@@ -1369,9 +1392,9 @@ function ModelCardImpl({
 					<div className="min-w-0 space-y-1 md:col-span-3">
 						<div className="flex items-center gap-2 min-w-0">
 							<span className="w-11 shrink-0 text-[11px] text-muted-foreground">
-								Input
+								{t("input")}
 							</span>
-							<ModelCardScrollRail ariaLabel="Input modalities" className="flex-1">
+							<ModelCardScrollRail ariaLabel={t("filtersUi.inputModalities")} className="flex-1">
 								<div className="flex w-max min-w-full items-center gap-1 pb-px [&>*]:shrink-0">
 								{inputModalityDisplay.visible.length > 0 ? (
 									<>
@@ -1393,7 +1416,7 @@ function ModelCardImpl({
 										})}
 										{inputModalityDisplay.hiddenCount > 0 ? (
 											<span className="inline-flex items-center rounded-md border border-border/60 bg-background px-1.5 py-0.5 text-[11px] text-muted-foreground">
-												+{inputModalityDisplay.hiddenCount} others
+												{t("othersCount", { count: inputModalityDisplay.hiddenCount })}
 											</span>
 										) : null}
 									</>
@@ -1405,9 +1428,9 @@ function ModelCardImpl({
 						</div>
 						<div className="flex items-center gap-2 min-w-0">
 							<span className="w-11 shrink-0 text-[11px] text-muted-foreground">
-								Output
+								{t("output")}
 							</span>
-							<ModelCardScrollRail ariaLabel="Output modalities" className="flex-1">
+							<ModelCardScrollRail ariaLabel={t("filtersUi.outputModalities")} className="flex-1">
 								<div className="flex w-max min-w-full items-center gap-1 pb-px [&>*]:shrink-0">
 								{outputModalityDisplay.visible.length > 0 ? (
 									<>
@@ -1429,7 +1452,7 @@ function ModelCardImpl({
 										})}
 										{outputModalityDisplay.hiddenCount > 0 ? (
 											<span className="inline-flex items-center rounded-md border border-border/60 bg-background px-1.5 py-0.5 text-[11px] text-muted-foreground">
-												+{outputModalityDisplay.hiddenCount} others
+												{t("othersCount", { count: outputModalityDisplay.hiddenCount })}
 											</span>
 										) : null}
 									</>

@@ -4,21 +4,28 @@ import type { ModelEvent } from "@/lib/fetchers/updates/types";
 import { fetchFrontendModelUpdates } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import { buildMetadata } from "@/lib/seo";
 import type { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
+import type { RuntimeLocale } from "@/i18n/locales";
 
-export const metadata: Metadata = buildMetadata({
-	title: "AI Release Calendar",
-	description:
-		"Visualise every model announcement, release and lifecycle change in one calendar. Explore what happened on any day and see how the AI model ecosystem is evolving over time.",
-	path: "/updates/calendar",
-	keywords: [
-		"AI model calendar",
-		"AI model release calendar",
-		"LLM releases",
-		"AI changelog",
-		"model lifecycle",
-		"Phaseo",
-	],
-});
+export async function generateMetadata(props: {
+	params: Promise<{ locale: RuntimeLocale }>;
+}): Promise<Metadata> {
+	const { locale } = await props.params;
+	const t = await getTranslations({ locale, namespace: "Catalogue.updatesMetadata" });
+	return buildMetadata({
+		title: t("calendarTitle"),
+		description: t("calendarDescription"),
+		path: "/updates/calendar",
+		keywords: [
+			"AI model calendar",
+			"AI model release calendar",
+			"LLM releases",
+			"AI changelog",
+			"model lifecycle",
+			"Phaseo",
+		],
+	});
+}
 
 const UPCOMING_LIMIT = 64;
 

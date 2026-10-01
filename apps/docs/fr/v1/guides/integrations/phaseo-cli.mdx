@@ -1,0 +1,164 @@
+---
+title: "CLI Phaseo"
+icon: "terminal"
+description: "Installez la CLI officielle Phaseo, configurez vos environnements de programmation et gérez Phaseo depuis le terminal."
+---
+
+La CLI Phaseo est distribuée sous la forme de `@phaseo/cli`. Elle connecte les environnements de programmation à Phaseo et fournit un workflow terminal officiel pour gérer le plan de contrôle Phaseo.
+
+Utilisez-la pour :
+
+- Vous connecter en tant qu’utilisateur Phaseo depuis un shell local ou distant, ou un environnement d’agent
+- Créer et renouveler des clés API ou des clés de gestion
+- Gérer les espaces de travail, les préréglages, les paramètres et les garde-fous
+- Utiliser OAuth dans la CLI officielle pendant que les applications OAuth créées par les utilisateurs restent en test privé
+- Consulter les modèles, fournisseurs, tarifs, crédits, activité, analyses et générations
+
+## Installation
+
+<CodeGroup>
+
+```bash title="npm"
+npm install -g @phaseo/cli
+```
+
+```bash title="pnpm"
+pnpm add -g @phaseo/cli
+```
+
+```bash title="yarn"
+yarn global add @phaseo/cli
+```
+
+```bash title="bun"
+bun add -g @phaseo/cli
+```
+
+</CodeGroup>
+
+## Vérifier la version installée
+
+```bash
+phaseo --version
+phaseo version
+phaseo version --json
+```
+
+- `phaseo --version` affiche la version installée.
+- `phaseo version` affiche la version et la commande de mise à jour recommandée pour le gestionnaire de paquets actuel.
+- Les exécutions interactives affichent aussi une suggestion de mise à jour lorsqu’une version publiée plus récente est disponible.
+
+L’ancienne commande `phaseo` reste disponible comme alias de compatibilité.
+
+## Connexion
+
+Commencez par :
+
+```bash
+phaseo login
+```
+
+La CLI prend en charge deux parcours officiels :
+
+- **Se connecter avec Phaseo** : OAuth dans le navigateur avec code d’autorisation et PKCE
+- **Se connecter avec un code d’appareil** : idéal pour SSH, CI, les shells sans interface et les environnements d’agents
+
+Vous pouvez imposer l’un ou l’autre parcours :
+
+```bash
+phaseo login --browser
+phaseo login --device-code
+```
+
+Les environnements distants et non interactifs privilégient automatiquement le code d’appareil.
+
+## Sortie du terminal
+
+Les terminaux interactifs affichent les couleurs et la hiérarchie visuelle de Phaseo, ainsi que des indicateurs temporaires pendant la configuration. Ceux-ci utilisent `stderr` et effacent leur ligne une fois le travail terminé. Un `stderr` non TTY et `TERM=dumb` désactivent l’animation ; `NO_COLOR` désactive les couleurs. Les commandes avec `--json` renvoient toujours une sortie structurée sans décoration, adaptée aux agents et à l’automatisation. N’utilisez `FORCE_COLOR=1` que si un wrapper de terminal prend en charge les couleurs sans se déclarer comme TTY.
+
+## Vérifier votre identité
+
+```bash
+phaseo whoami
+phaseo whoami --json
+```
+
+Cette commande renvoie votre utilisateur Phaseo actuel, ses portées, l’espace de travail actif et les espaces disponibles.
+
+## Créer des clés
+
+```bash
+phaseo keys create --name "Local CLI Key"
+phaseo keys create --name "Agent Sandbox Key" --json
+phaseo keys current
+```
+
+Utilisez `--json` lorsqu’un agent ou une automatisation doit récupérer une seule fois la clé créée au format brut.
+
+## Gérer les espaces de travail et les garde-fous
+
+```bash
+phaseo workspaces list
+phaseo workspaces members <workspace-id-or-slug>
+
+phaseo guardrails list
+phaseo guardrails create --name "Production Safety" --body-json '{"enabled":true}'
+```
+
+La CLI permet d’utiliser depuis le terminal les fonctions utiles du tableau de bord Phaseo et des API de gestion.
+
+## Applications OAuth
+
+Phaseo utilise un seul serveur d’autorisation OAuth pour la CLI officielle, les applications créées par les utilisateurs et les clients MCP enregistrés dynamiquement. La CLI utilise une connexion par navigateur ou code d’appareil avec des jetons d’actualisation renouvelés. Les clients tiers utilisent le code d’autorisation avec PKCE, des portées explicites et le consentement de l’espace de travail, des jetons d’accès délégués révocables et, en option, une association à une ressource protégée.
+
+L’API Phaseo hébergée active OAuth tiers. Les déploiements auto-hébergés ou de prévisualisation le désactivent, sauf si `PHASEO_THIRD_PARTY_OAUTH_ENABLED` reçoit une valeur vraie. Les valeurs acceptées sont `1`, `true`, `yes` et `on`, sans distinction de casse après suppression des espaces. Son activation expose la gestion des applications OAuth créées par les utilisateurs et l’enregistrement dynamique des clients ; associez-la donc à une configuration vérifiée des URI de redirection, du consentement, des secrets clients, des limites de débit et de l’autorisation des espaces de travail.
+
+```bash title=".env"
+PHASEO_THIRD_PARTY_OAUTH_ENABLED=true
+```
+
+```bash title="Docker"
+docker run -e PHASEO_THIRD_PARTY_OAUTH_ENABLED=true phaseo
+```
+
+```yaml title="Kubernetes"
+env:
+  - name: PHASEO_THIRD_PARTY_OAUTH_ENABLED
+    value: "true"
+```
+
+## Modèle de sécurité
+
+- Par défaut, les sessions CLI nécessitent un stockage sécurisé fourni par le système d’exploitation. Définissez explicitement `PHASEO_SESSION_BACKEND=file` uniquement si aucun trousseau système n’est disponible ; les jetons d’actualisation seront stockés dans un fichier texte aux permissions restreintes.
+- `phaseo logout` révoque le jeton d’actualisation stocké avant d’effacer l’état local.
+- Les clés de gestion nécessitent des capacités explicites.
+- Les clés d’inférence classiques s’appuient sur les garde-fous, les règles de routage et les paramètres de l’espace de travail plutôt que sur un modèle de portées distinct.
+
+## Mettre à jour
+
+<CodeGroup>
+
+```bash title="npm"
+npm install -g @phaseo/cli@latest
+```
+
+```bash title="pnpm"
+pnpm add -g @phaseo/cli@latest
+```
+
+```bash title="yarn"
+yarn global add @phaseo/cli@latest
+```
+
+```bash title="bun"
+bun add -g @phaseo/cli@latest
+```
+
+</CodeGroup>
+
+## Étapes suivantes
+
+- [Clés de gestion de l’API](../../developers/management-api-keys.mdx)
+- [Authentification](../../developers/authentication.mdx)
+- [Codex](./codex.mdx)
+- [Claude Code](./claude-code.mdx)

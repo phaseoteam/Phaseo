@@ -1,0 +1,36 @@
+---
+icon: "building-2"
+title: "编辑组织"
+description: "在 Phaseo 数据集中更新组织记录。"
+---
+
+组织数据存放在 `packages/data/catalog/src/data/organisations` 下的 JSON 文件中。
+
+## 1. 查找组织
+
+每个组织对应一个 JSON 文件，例如：
+
+`packages/data/catalog/src/data/organisations/openai.json`
+
+## 2. 进行修改
+
+常见的更新内容包括：
+
+- 名称、描述和网站
+- 国家代码或元数据字段
+- 与模型或供应商的关联链接
+
+请确保格式和字段顺序与相邻文件一致。
+
+## 3. 验证数据
+
+创建 PR 前，请运行数据验证脚本：
+
+```bash
+pnpm validate:data
+```
+
+## 4. 创建 PR
+
+对事实内容的任何更改都请附上来源或参考资料。
+

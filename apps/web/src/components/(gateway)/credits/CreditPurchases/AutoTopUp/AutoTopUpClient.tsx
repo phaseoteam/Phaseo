@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useMemo, useState, useEffect } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import {
 	Dialog,
 	DialogTrigger,
@@ -60,14 +61,49 @@ interface Props {
 	embedded?: boolean;
 }
 
-const fmtUSD = (v: number) =>
-	new Intl.NumberFormat("en-US", {
+const fmtUSD = (v: number, locale: string) =>
+	new Intl.NumberFormat(locale, {
 		style: "currency",
 		currency: "USD",
 	}).format(v);
 
-const toNumber = (v: string): number | "" =>
-	v === "" ? "" : Number.parseFloat(v.replace(/[^0-9.]/g, ""));
+const toNumber = (value: string, locale: string): number | "" => {
+	if (value === "") return "";
+	const numberFormat = new Intl.NumberFormat(locale, { useGrouping: true });
+	const decimalSeparator = new Intl.NumberFormat(locale)
+		.formatToParts(1.1)
+		.find((part) => part.type === "decimal")?.value ?? ".";
+	const groupSeparators = new Set(
+		numberFormat.formatToParts(12345.6)
+			.filter((part) => part.type === "group")
+			.map((part) => part.value),
+	);
+	const digitFormat = new Intl.NumberFormat(locale, { useGrouping: false });
+	let normalized = value;
+	for (const [digit, localizedDigit] of Array.from({ length: 10 }, (_, digit) => [
+		String(digit),
+		digitFormat.format(digit),
+	] as const)) {
+		normalized = normalized.replaceAll(localizedDigit, digit);
+	}
+	for (const separator of groupSeparators) {
+		normalized = normalized.replaceAll(separator, "");
+	}
+	normalized = normalized.replace(decimalSeparator, ".").replace(/[^0-9.]/g, "");
+	const decimalIndex = normalized.indexOf(".");
+	if (decimalIndex >= 0) {
+		normalized = `${normalized.slice(0, decimalIndex + 1)}${normalized.slice(decimalIndex + 1).replaceAll(".", "")}`;
+	}
+	if (!normalized || normalized === ".") return "";
+	const parsed = Number.parseFloat(normalized);
+	return Number.isFinite(parsed) ? parsed : "";
+};
+
+const formatInputAmount = (value: number, locale: string) =>
+	new Intl.NumberFormat(locale, {
+		useGrouping: false,
+		maximumFractionDigits: 2,
+	}).format(value);
 
 // --- helper to choose a sensible default PM ---
 function getDefaultPmId(info?: StripeInfo | null): string | null {
@@ -82,6 +118,10 @@ export default function AutoTopUpClient({
 	stripeInfo,
 	embedded = false,
 }: Props) {
+	const locale = useLocale();
+	const t = useTranslations("SettingsUI");
+	const text = (key: string) => t(`credits.autoTopUpPanel.${key}` as never);
+	const minimumTopUpText = text("minimumTopUp").replace("{amount}", fmtUSD(1, locale));
 	// Compute current "best" default PM based on provided stripeInfo
 	const initialDefaultPm = useMemo(
 		() => getDefaultPmId(stripeInfo),
@@ -137,17 +177,15 @@ export default function AutoTopUpClient({
 		setSaving(true);
 		try {
 			await toast.promise(DisableAutoTopUpServer(), {
-				loading: "Disabling auto top-up...",
-				success: "Auto top-up disabled",
-				error: (err) => err?.message ?? "Failed to disable auto top-up",
+				loading: text("disabling"),
+				success: text("disabledToast"),
+				error: text("disableFailed"),
 			});
 			setEnabled(false);
 			setOpen(false);
 			setHasChanges(false);
-		} catch (e: any) {
-			setError(
-				e?.message ?? "Something went wrong disabling auto top-up."
-			);
+		} catch {
+			setError(text("disableFailed"));
 		} finally {
 			setSaving(false);
 		}
@@ -190,19 +228,17 @@ export default function AutoTopUpClient({
 					paymentMethodId: payload.auto_top_up_account_id ?? null,
 				}),
 				{
-					loading: "Saving auto top-up settings...",
-					success: "Auto top-up enabled",
-					error: (err) => err?.message ?? "Failed to save settings",
+					loading: text("saving"),
+					success: text("enabledToast"),
+					error: text("saveFailed"),
 				}
 			);
 
 			setEnabled(true);
 			setOpen(false);
 			setHasChanges(false);
-		} catch (e: any) {
-			setError(
-				e?.message ?? "Something went wrong saving your settings."
-			);
+		} catch {
+			setError(text("saveFailed"));
 		} finally {
 			setSaving(false);
 		}
@@ -242,7 +278,7 @@ export default function AutoTopUpClient({
 								<span data-pii="true">****{pm.card?.last4 ?? ""}</span>
 							</div>
 							<div className="text-xs text-zinc-500 capitalize">
-								{pm.card?.brand ?? "Card"}
+								{pm.card?.brand ?? text("card")}
 							</div>
 						</div>
 					</div>
@@ -251,7 +287,7 @@ export default function AutoTopUpClient({
 					<div className="flex items-center gap-2">
 						{isDefault && (
 							<span className="text-xs px-2 py-1 rounded-full bg-indigo-50 text-indigo-700 font-medium">
-								Default
+														{text("default")}
 							</span>
 						)}
 
@@ -286,16 +322,13 @@ export default function AutoTopUpClient({
 						embedded && "text-base font-semibold"
 					)}
 				>
-					Auto Top-Up
+					{text("title")}
 					<Tooltip>
 						<TooltipTrigger asChild>
 							<Info className="h-4 w-4 text-zinc-500" />
 						</TooltipTrigger>
 						<TooltipContent>
-							<p>
-								Automatically add credits when your balance
-								drops below a threshold.
-							</p>
+							<p>{text("description")}</p>
 						</TooltipContent>
 					</Tooltip>
 				</CardTitle>
@@ -307,7 +340,7 @@ export default function AutoTopUpClient({
 							: "bg-red-100 text-red-700 hover:bg-red-200 hover:text-red-800 dark:bg-red-900 dark:text-red-100 dark:hover:bg-red-800"
 					)}
 				>
-					{enabled ? "Enabled" : "Disabled"}
+					{enabled ? text("enabled") : text("disabled")}
 				</Badge>
 			</CardHeader>
 
@@ -317,7 +350,7 @@ export default function AutoTopUpClient({
 				<Dialog open={open} onOpenChange={setOpen}>
 					<DialogTrigger asChild>
 						<Button variant="outline" className="w-full">
-							{enabled ? "Configure" : "Enable"}
+							{enabled ? text("configure") : text("enable")}
 						</Button>
 					</DialogTrigger>
 
@@ -325,7 +358,7 @@ export default function AutoTopUpClient({
 						<div className="px-6 pt-6">
 							<DialogHeader className="space-y-1">
 								<DialogTitle className="text-xl">
-									Configure Auto Top-Up
+									{text("configureTitle")}
 								</DialogTitle>
 							</DialogHeader>
 						</div>
@@ -335,12 +368,10 @@ export default function AutoTopUpClient({
 							<div className="rounded-lg border p-3">
 								<div>
 									<div className="font-medium">
-										Auto Top-Up
+										{text("title")}
 									</div>
 									<p className="text-sm text-zinc-600">
-										When on, we&apos;ll charge the selected
-										card whenever your balance falls below
-										your threshold.
+																		{text("description")}
 									</p>
 								</div>
 							</div>
@@ -348,13 +379,13 @@ export default function AutoTopUpClient({
 							{/* Payment methods */}
 							<section>
 								<Label className="text-sm">
-									Payment method to charge
+									{text("paymentMethod")}
 								</Label>
 								<div className="mt-2">
 									{methods?.length ? (
 										<div
 											role="radiogroup"
-											aria-label="Select payment method"
+												aria-label={text("selectPaymentMethod")}
 											className="grid grid-cols-1 items-start gap-3"
 										>
 											{methods
@@ -393,8 +424,9 @@ export default function AutoTopUpClient({
 													<div className="relative">
 														<button
 															type="button"
-															className="rounded-2xl p-3 border border-zinc-200 hover:bg-zinc-50 w-12 h-12 grid place-items-center"
+																	className="rounded-2xl p-3 border border-zinc-200 hover:bg-zinc-50 w-12 h-12 grid place-items-center"
 															aria-haspopup="menu"
+															aria-label={text("morePaymentMethods")}
 														>
 															<svg
 																xmlns="http://www.w3.org/2000/svg"
@@ -444,7 +476,7 @@ export default function AutoTopUpClient({
 																							{pm
 																								.card
 																								?.brand ??
-																								"Card"}
+																								text("card")}
 																						</div>
 																					</div>
 																				</div>
@@ -454,7 +486,7 @@ export default function AutoTopUpClient({
 																						variant="secondary"
 																						className="text-[10px]"
 																					>
-																						Default
+																						{text("default")}
 																					</Badge>
 																				)}
 																			</button>
@@ -464,16 +496,14 @@ export default function AutoTopUpClient({
 														</div>
 													</div>
 													<div className="text-xs text-zinc-500 ml-2">
-														+{methods.length - 2}
+														+{new Intl.NumberFormat(locale).format(methods.length - 2)}
 													</div>
 												</div>
 											) : null}
 										</div>
 									) : (
 										<div className="rounded-lg border p-4 text-sm text-zinc-600">
-											No saved payment methods found. You
-											must add a card in Billing before
-											enabling Auto Top-Up.
+											{text("noPaymentMethods")}
 										</div>
 									)}
 								</div>
@@ -486,27 +516,26 @@ export default function AutoTopUpClient({
 										htmlFor="min-before"
 										className="mb-2"
 									>
-										When balance is below (USD)
+										{text("thresholdLabel")}
 									</Label>
 									<Input
 										id="min-before"
 										inputMode="decimal"
-										placeholder="e.g. 5.00"
+										placeholder={text("thresholdPlaceholder")}
 										value={
 											minBefore === ""
-												? ""
-												: String(minBefore)
+																			? ""
+																				: formatInputAmount(minBefore, locale)
 										}
 										onChange={(e) => {
-											setMinBefore(
-												toNumber(e.target.value)
+												setMinBefore(
+													toNumber(e.target.value, locale)
 											);
 											setHasChanges(true);
 										}}
 									/>
 									<p className="mt-1 text-xs text-zinc-500">
-										We recommend less than your usual
-										top-up.
+										{text("thresholdHint")}
 									</p>
 								</div>
 								<div>
@@ -514,26 +543,26 @@ export default function AutoTopUpClient({
 										htmlFor="topup-amount"
 										className="mb-2"
 									>
-										Top-up amount (USD)
+										{text("amountLabel")}
 									</Label>
 									<Input
 										id="topup-amount"
 										inputMode="decimal"
-										placeholder="e.g. 20.00"
+										placeholder={text("amountPlaceholder")}
 										value={
 											topUpAmount === ""
-												? ""
-												: String(topUpAmount)
+													? ""
+														: formatInputAmount(topUpAmount, locale)
 										}
 										onChange={(e) => {
-											setTopUpAmount(
-												toNumber(e.target.value)
+												setTopUpAmount(
+													toNumber(e.target.value, locale)
 											);
 											setHasChanges(true);
 										}}
 									/>
 									<p className="mt-1 text-xs text-zinc-500">
-										Minimum $1.00 per top-up.
+										{minimumTopUpText}
 									</p>
 								</div>
 							</section>
@@ -553,7 +582,7 @@ export default function AutoTopUpClient({
 										variant="secondary"
 										disabled={saving}
 									>
-										Cancel
+										{text("cancel")}
 									</Button>
 								</DialogClose>
 								{enabled && hasChanges ? (
@@ -565,10 +594,10 @@ export default function AutoTopUpClient({
 										{saving ? (
 											<>
 												<Loader2 className="h-4 w-4 mr-2 animate-spin" />
-												Saving…
+												{text("savingShort")}
 											</>
 										) : (
-											"Save changes"
+											text("saveChanges")
 										)}
 									</Button>
 								) : enabled ? (
@@ -581,10 +610,10 @@ export default function AutoTopUpClient({
 										{saving ? (
 											<>
 												<Loader2 className="h-4 w-4 mr-2 animate-spin" />
-												Disabling…
+												{text("disablingShort")}
 											</>
 										) : (
-											"Disable"
+											text("disable")
 										)}
 									</Button>
 								) : (
@@ -596,10 +625,10 @@ export default function AutoTopUpClient({
 										{saving ? (
 											<>
 												<Loader2 className="h-4 w-4 mr-2 animate-spin" />
-												Saving…
+												{text("savingShort")}
 											</>
 										) : (
-											"Save & enable"
+											text("saveAndEnable")
 										)}
 									</Button>
 								)}
@@ -611,19 +640,19 @@ export default function AutoTopUpClient({
 				{/* Summary row */}
 				<div className="grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
 					<div className="rounded-lg border p-2.5">
-						<div className="text-xs text-zinc-500">Triggers at</div>
+						<div className="text-xs text-zinc-500">{text("triggersAt")}</div>
 						<div className="font-medium">
-							{minBefore === "" ? "—" : fmtUSD(Number(minBefore))}
+							{minBefore === "" ? "—" : fmtUSD(Number(minBefore), locale)}
 						</div>
 					</div>
 					<div className="rounded-lg border p-2.5">
 						<div className="text-xs text-zinc-500">
-							Top-up amount
+							{text("amountLabelSummary")}
 						</div>
 						<div className="font-medium">
 							{topUpAmount === ""
 								? "—"
-								: fmtUSD(Number(topUpAmount))}
+								: fmtUSD(Number(topUpAmount), locale)}
 						</div>
 					</div>
 				</div>

@@ -1,0 +1,210 @@
+---
+title: "Assistentes de programação"
+icon: "compass"
+description: "Adicione o Phaseo como provedor de modelos no Cursor, VS Code, Codex, Claude Code e em outras ferramentas de programação."
+---
+
+Use este guia para adicionar o Phaseo como provedor de modelos em assistentes de programação compatíveis com endpoints personalizados de OpenAI ou Anthropic.
+
+## Configure com a CLI do Phaseo
+
+Faça login uma vez e configure seu ambiente de programação:
+
+```bash
+phaseo login
+phaseo codex
+```
+
+Este comando verifica se o ambiente está instalado. Se estiver ausente em um terminal interativo, o Phaseo mostra o comando de instalação compatível e pede confirmação antes de executá-lo. Em seguida, cria uma chave exclusiva para o ambiente e grava a configuração. Execuções não interativas mostram instruções de instalação úteis sem fazer alterações no sistema sem supervisão. OpenCode, DeepSeek Harness, Pi, Prime Agent e OpenClaw também recebem todos os modelos de texto ativos compatíveis com Chat Completions. Use `--skip-install`, `--catalog default` ou `--dry-run` para limitar o comportamento.
+
+Use o comando de nível inferior para outras integrações ou quando a instalação for gerenciada separadamente:
+
+```bash
+phaseo integrations setup codex
+```
+
+Os nomes de integração compatíveis são `codex`, `claude-code`, `opencode`, `deepseek-harness`, `pi`, `openclaw`, `hermes`, `aider`, `cline`, `roo-code`, `kilo-code`, `continue`, `cursor` e `zed`.
+
+A CLI cria uma chave de API separada e sem expiração para cada assistente. Ela configura o Aider e o Continue automaticamente em instalações limpas e também grava as configurações de provedor/modelo do Zed. Para assistentes que mantêm segredos exclusivamente na interface do editor, ela mostra os campos restantes, inclui um link para o guia específico e permite copiar somente a chave daquele assistente:
+
+```bash
+phaseo integrations credential codex
+```
+
+Visualize qualquer alteração de arquivo antes da configuração e desconecte tudo corretamente depois:
+
+```bash
+phaseo integrations setup codex --dry-run
+phaseo integrations remove codex
+```
+
+A remoção exclui as configurações pertencentes ao Phaseo e revoga a chave daquele assistente. Ela não remove configurações não relacionadas.
+
+## Configurações do provedor
+
+Use estes valores, a menos que a ferramenta peça outro nome de campo:
+
+| Configuração | Valor |
+| --- | --- |
+| Tipo de provedor | OpenAI Compatible |
+| URL base | `https://api.phaseo.app/v1` |
+| Chave de API | Sua chave de API do Phaseo |
+| Modelo | Um ID de modelo do Phaseo, como `openai/gpt-5-nano` |
+
+Para ferramentas compatíveis com Anthropic, use:
+
+| Configuração | Valor |
+| --- | --- |
+| URL base | `https://api.phaseo.app` |
+| Token de autenticação | Sua chave de API do Phaseo |
+| Modelo | Um ID de modelo do Phaseo, como `anthropic/claude-sonnet-4.5` |
+
+## Cursor
+
+O Cursor oferece suporte a endpoints personalizados compatíveis com OpenAI nas configurações da chave de API OpenAI.
+
+1. Abra Cursor Settings.
+2. Acesse `Models`.
+3. Ative ou adicione a opção `OpenAI API Key`.
+4. Cole sua chave de API do Phaseo.
+5. Ative `Override OpenAI Base URL`.
+6. Defina a URL base como `https://api.phaseo.app/v1`.
+7. Adicione um modelo personalizado usando um ID de modelo do Phaseo, por exemplo, `openai/gpt-5-nano`.
+8. Ative o modelo e verifique-o no seletor de modelos do Cursor.
+
+Se o Cursor rejeitar um ID de modelo com `/`, crie o alias local mais próximo permitido pela interface e direcione-o ao modelo do Phaseo na sua configuração, se o cliente aceitar aliases.
+
+## VS Code
+
+O VS Code permite adicionar modelos pelo editor Language Models quando o provedor compatível com OpenAI está disponível na sua versão do VS Code ou do Insiders.
+
+1. Abra a Paleta de Comandos.
+2. Execute `Chat: Manage Language Models`.
+3. Escolha `OpenAI Compatible` ou `OAI Compatible`.
+4. Insira sua chave de API do Phaseo.
+5. Defina o endpoint ou a URL base como `https://api.phaseo.app/v1`.
+6. Adicione um ID de modelo do Phaseo, por exemplo, `openai/gpt-5-nano`.
+7. Selecione o novo modelo no seletor de modelos do chat.
+
+Se sua versão do VS Code não mostrar um provedor compatível com OpenAI, use uma extensão compatível com provedores personalizados, como Continue, Cline, Roo Code ou Kilo Code.
+
+## Continue
+
+O Continue pode usar o Phaseo por meio do provedor OpenAI com uma base de API personalizada.
+
+```yaml
+name: Phaseo
+version: 0.0.1
+schema: v1
+
+models:
+  - name: Phaseo GPT-5 Nano
+    provider: openai
+    model: openai/gpt-5-nano
+    apiKey: ${{ secrets.PHASEO_API_KEY }}
+    apiBase: https://api.phaseo.app/v1
+    roles:
+      - chat
+      - edit
+      - apply
+```
+
+Se o Continue usar Responses por padrão, mas seu fluxo precisar de compatibilidade com Chat Completions, defina `useResponsesApi: false`.
+
+## Cline, Roo Code e Kilo Code
+
+Essas ferramentas oferecem configurações de provedor semelhantes.
+
+1. Abra as configurações da extensão.
+2. Escolha `OpenAI Compatible` como provedor.
+3. Defina a URL base como `https://api.phaseo.app/v1`.
+4. Cole sua chave de API do Phaseo.
+5. Informe um ID de modelo do Phaseo.
+6. Salve e faça uma solicitação curta de chat antes de usar ferramentas de edição de arquivos.
+
+## Aider
+
+Defina as variáveis de ambiente compatíveis com OpenAI e informe o modelo ao iniciar:
+
+```bash
+export OPENAI_API_BASE="https://api.phaseo.app/v1"
+export OPENAI_API_KEY="your_phaseo_api_key"
+aider --model openai/openai/gpt-5-nano
+```
+
+O Aider costuma esperar que modelos personalizados compatíveis com OpenAI tenham o prefixo `openai/`. Como os IDs de modelo do Phaseo já incluem prefixos de provedor, a string completa do modelo no Aider pode ser `openai/openai/gpt-5-nano`.
+
+## Pi, Prime Agent, OpenClaw e Hermes Agent
+
+`phaseo pi` adiciona uma extensão de provedor dedicada que obtém a chave da CLI do Phaseo em tempo de execução. `phaseo prime-agent` grava um provedor baseado em comando em `~/.prime/agent/models.json`. Ambos recebem o catálogo de modelos compatíveis do Phaseo. `phaseo openclaw` registra o catálogo compatível e uma SecretRef baseada em exec, sem colocar a chave de API em `openclaw.json`.
+
+`phaseo hermes` oferece executar o instalador oficial da Nous Research quando o Hermes não estiver instalado e, em seguida, configura o agente. Ele salva as configurações anteriores de modelo do Hermes, define o Phaseo como endpoint personalizado e usa o comando oficial `hermes config set` para colocar a chave dedicada em `~/.hermes/.env` como `OPENAI_API_KEY`. O Hermes usa deliberadamente esse arquivo em texto simples para credenciais do provedor; proteja-o como qualquer outro arquivo de chave de API. A remoção restaura as configurações anteriores, remove `OPENAI_API_KEY`, exclui o estado de recuperação do Phaseo e revoga a chave.
+
+## Zed
+
+Execute `phaseo integrations setup zed` e siga as etapas exibidas para adicionar um provedor compatível com OpenAI nas configurações do Zed. Use a chave gerada somente no campo de credenciais do Zed.
+
+## Codex
+
+Use o [guia específico do Codex](./codex.mdx) para Codex CLI, Codex App e a extensão IDE do Codex. Em resumo:
+
+```toml
+model = "openai/gpt-5.5"
+model_provider = "phaseo"
+
+[model_providers.phaseo]
+name = "Phaseo"
+base_url = "https://api.phaseo.app/v1"
+env_key = "PHASEO_API_KEY"
+wire_api = "responses"
+```
+
+Provedores personalizados do Codex usam o protocolo Responses.
+
+## OpenCode
+
+Use o [guia específico do OpenCode](./opencode.mdx) se quiser que ele chame o Phaseo por meio de um provedor personalizado compatível com OpenAI.
+
+## Claude Code
+
+Use o [guia específico do Claude Code](./claude-code.mdx). Claude Code usa variáveis de ambiente do gateway compatíveis com Anthropic:
+
+```bash
+export ANTHROPIC_BASE_URL="https://api.phaseo.app"
+export ANTHROPIC_AUTH_TOKEN="your_phaseo_api_key"
+export ANTHROPIC_API_KEY=""
+```
+
+Depois, inicie o Claude Code no mesmo shell:
+
+```bash
+claude
+```
+
+## Claude Desktop
+
+O Claude Desktop oferece suporte a servidores MCP, mas não disponibiliza a mesma configuração de provedor de modelos personalizado que assistentes de programação como Cursor, Codex ou Claude Code. Use o [Docs MCP](./docs-mcp.mdx) para adicionar contexto da documentação do Phaseo ao Claude Desktop. Use o Claude Code quando precisar que o Phaseo seja o gateway de modelos.
+
+## CLI do Deep Agents e ferramentas LangChain
+
+Use a mesma URL base e chave de API do [LangChain](./langchain.mdx). Se a ferramenta ler variáveis de ambiente da OpenAI, defina:
+
+```bash
+export OPENAI_API_KEY="your_phaseo_api_key"
+export OPENAI_BASE_URL="https://api.phaseo.app/v1"
+```
+
+Depois, informe um ID de modelo do Phaseo no campo de modelo da ferramenta.
+
+## Observações
+
+- Os assistentes de programação tratam barras em IDs de modelo de maneiras diferentes. Se a interface rejeitar `openai/gpt-5-nano`, crie um alias local se a ferramenta oferecer suporte.
+- Teste cuidadosamente os fluxos de edição de arquivos. `phaseo:apply_patch` funciona somente com Responses.
+- Adicione o [Docs MCP](./docs-mcp.mdx) quando quiser que o assistente consulte a documentação do Phaseo durante uma sessão.
+- Prefira Chat Completions em ferramentas de programação mais antigas, a menos que a ferramenta ofereça suporte explícito a eventos Responses e ferramentas de servidor.
+
+## Relacionado
+
+- [Ferramentas de servidor](../server-tools/index.mdx)
+- [Responses](../../api-reference/endpoint/responses.mdx)
+- [Chat Completions](../../api-reference/endpoint/chat-completions.mdx)

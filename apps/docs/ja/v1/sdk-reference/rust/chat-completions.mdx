@@ -1,0 +1,44 @@
+---
+title: "チャット補完"
+description: "Rust SDKでOpenAI互換のChat Completionsリクエストを送信します。"
+---
+
+既存の連携でメッセージ形式のChat Completionsペイロードを使っている場合は、`chat_completions(...)`を使用します。
+
+```rust
+use phaseo::Phaseo;
+use serde_json::json;
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let client = Phaseo::from_env()?;
+    let response = client.chat_completions(&json!({
+        "model": "openai/gpt-5.6-sol",
+        "messages": [
+            {
+                "role": "system",
+                "content": "Answer concisely."
+            },
+            {
+                "role": "user",
+                "content": "What is provider fallback?"
+            }
+        ]
+    }))?;
+
+    let text = response
+        .body
+        .pointer("/choices/0/message/content")
+        .and_then(|value| value.as_str())
+        .unwrap_or("");
+
+    println!("{text}");
+    Ok(())
+}
+```
+
+新しい連携では[Responses API](./responses.mdx)を推奨します。テキスト、マルチモーダル入力、ツール、より豊富な出力項目に対応する単一のリクエストモデルを提供します。
+
+## 関連項目
+
+- [Chat Completions APIリファレンス](../../api-reference/endpoint/chat-completions.mdx)
+- [Rust APIリファレンス](./api-reference.mdx)

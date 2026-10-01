@@ -1,0 +1,87 @@
+---
+title: "パッチを適用する"
+description: "Responsesモデルに、検証済みのパッチ操作を返させます。"
+icon: "file-pen-line"
+---
+
+Responsesのワークフローでファイル変更を構造化されたパッチ操作として返したい場合は、`phaseo:apply_patch`を使います。Phaseoは操作を検証してクライアントに返しますが、ファイルシステムやリポジトリは変更しません。
+
+<Note>
+`phaseo:apply_patch` is available on `/v1/responses`.
+</Note>
+
+## リクエスト
+
+```bash
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-5-nano",
+    "input": "Create a small README patch for this project.",
+    "tools": [
+      { "type": "phaseo:apply_patch" }
+    ]
+  }'
+```
+
+## 操作の構造
+
+モデルがツールを呼び出すと、操作オブジェクトが送信されます。
+
+```json
+{
+  "operation": {
+    "type": "update_file",
+    "path": "/README.md",
+    "diff": "@@ ...\n-Old text\n+New text\n"
+  }
+}
+```
+
+対応する操作タイプ:
+
+| 種類 | 必須フィールド |
+| --- | --- |
+| `create_file` | `path`, `diff` |
+| `update_file` | `path`, `diff` |
+| `delete_file` | `path` |
+
+## ツールの結果
+
+Phaseoは検証済みの操作をモデルループに返します。
+
+```json
+{
+  "status": "completed",
+  "operation": {
+    "type": "update_file",
+    "path": "/README.md",
+    "diff": "@@ ...\n-Old text\n+New text\n"
+  },
+  "message": "Patch operation validated. The client must apply or reject this patch and report the result."
+}
+```
+
+パッチの適用、ユーザーへの提示、拒否、または修正した操作の再生成依頼は、引き続きアプリケーション側の責任です。
+
+## 使用量と料金
+
+Phaseoは次の値を記録します。
+
+```json
+{
+  "usage": {
+    "server_tool_use": {
+      "apply_patch_requests": 1
+    }
+  }
+}
+```
+
+料金カードでは、`server_tool_apply_patch_requests`メーターを使って課金できます。
+
+## 関連項目
+
+- [サーバーツール](./index.mdx)
+- [Responses API](../../api-reference/endpoint/responses.mdx)

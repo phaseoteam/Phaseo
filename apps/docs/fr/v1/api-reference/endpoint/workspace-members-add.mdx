@@ -1,0 +1,10 @@
+---
+title: "Ajouter des membres à l’espace de travail"
+sidebarTitle: "Ajouter des membres"
+badge: "Bêta"
+openapi: "/fr/openapi/v1/openapi.localized.yaml POST /workspaces/{id}/members/add"
+description: "Ajoute des utilisateurs existants à un espace de travail."
+---
+<Note>Ce point de terminaison nécessite une clé API de gestion avec `workspaces:write` et un rôle de propriétaire ou d’administrateur.</Note>
+
+Le rôle peut être `admin` ou `member`. Ce point de terminaison ne permet pas d’attribuer la propriété de l’espace de travail.

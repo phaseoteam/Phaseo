@@ -1,0 +1,25 @@
+---
+icon: "radio-tower"
+title: "लाइफ़साइकल हुक"
+description: "Go एजेंट रन, मॉडल टर्न, टूल, विराम और पूर्णता को रियल टाइम में देखें।"
+---
+
+मॉडल transport से ऐप को जोड़े बिना structured lifecycle event पाने के लिए `RunOptions` या `ContinueOptions` में `OnEvent` सेट करें。
+
+```go
+result, err := agent.Run(ctx, phaseoagent.RunOptions{
+  Input: prompt,
+  Client: client,
+  OnEvent: func(event phaseoagent.AgentEvent) {
+    logger.Info("agent event",
+      "type", event.Type,
+      "run_id", event.RunID,
+      "details", event.Details,
+    )
+  },
+})
+```
+
+उपयोगी इवेंट में रन का शुरू होना, पूरा होना या विफल होना; मॉडल के प्रयास; आउटपुट टेक्स्ट और reasoning के अंश; टूल का शुरू होना, प्रगति, पूरा होना या विफल होना; और मानवीय जाँच-बिंदु शामिल हैं।
+
+handler को तेज़ और non-blocking रखें। persistence में समय लग सकता हो तो इवेंट अपनी queue या telemetry layer को भेजें, और बाहर भेजने से पहले tool input से संवेदनशील जानकारी हटाएँ।

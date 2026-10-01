@@ -1,0 +1,51 @@
+---
+icon: "package"
+title: "Instalación"
+description: "Instala y configura el TypeScript Agent SDK de Phaseo."
+---
+
+El Agent SDK se publica como [`@phaseo/agent-sdk`](https://www.npmjs.com/package/@phaseo/agent-sdk) en npm.
+
+## Requisitos
+
+- un proyecto TypeScript o JavaScript que use npm, pnpm, Yarn o Bun
+- una clave de API de Phaseo
+
+## Instalación
+
+Instala el Agent SDK con el gestor de paquetes que prefieras:
+
+<CodeGroup>
+
+    ```bash title="npm"
+    npm install @phaseo/agent-sdk
+    ```
+
+    ```bash title="pnpm"
+    pnpm add @phaseo/agent-sdk
+    ```
+
+    ```bash title="yarn"
+    yarn add @phaseo/agent-sdk
+    ```
+
+    ```bash title="bun"
+    bun add @phaseo/agent-sdk
+    ```
+
+</CodeGroup>
+
+El paquete principal `@phaseo/sdk` se instala automáticamente como dependencia.
+
+## Entorno
+
+Configura tu clave de API del gateway antes de ejecutar los ejemplos:
+
+```bash
+export PHASEO_API_KEY="phaseo_v1_sk_..."
+```
+
+## Siguiente
+
+- [Descripción general](./agent-sdk-overview.mdx)
+- [Crear con Agent SDK](./agent-sdk.mdx)

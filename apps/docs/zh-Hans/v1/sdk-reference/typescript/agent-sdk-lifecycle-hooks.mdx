@@ -1,0 +1,46 @@
+---
+icon: "radio-tower"
+title: "生命周期钩子"
+description: "响应运行、模型、步骤、工具和检查点事件。"
+---
+
+使用 `onEvent` 更新产品界面、写入审计记录，或将 Agent 活动接入现有遥测系统。
+
+## 监听运行
+
+```typescript
+const result = await agent.run({
+  input,
+  client,
+  onEvent(event) {
+    console.log(event.type, event.runId);
+  },
+});
+```
+
+事件处理函数应保持简短。如果缓慢的网络或存储操作不应延迟运行，请将其放入应用队列。
+
+## 事件类别
+
+| 类别 | 事件 |
+| --- | --- |
+| 运行 | `run.started`, `run.resumed`, `run.waiting_for_human`, `run.cancelled`, `run.completed`, `run.failed` |
+| 步骤 | `step.started`, `step.completed`, `step.failed`, `step.cancelled` |
+| 模型 | `model.requested`, `model.completed`, `model.failed` |
+| 工具 | `tool.started`, `tool.preliminary_result`, `tool.completed`, `tool.failed` |
+| 状态 | `checkpoint.saved` |
+
+完成的步骤保存到检查点后才会发出 `step.completed`。因此，持久化或遥测系统可将其视为稳定边界。
+
+## 为产品界面选择事件
+
+- 使用 [流式传输](./agent-sdk-streaming.mdx) 中的模型增量实时显示回答文本。
+- 使用工具事件显示工具调用卡片和进度指示器。
+- 使用 `run.waiting_for_human` 显示审批或输入控件。
+- 使用运行结束事件关闭加载状态并记录结果。
+
+## 相关指南
+
+- [流式传输](./agent-sdk-streaming.mdx)
+- [状态与审批](./agent-sdk-state-and-approval.mdx)
+- [DevTools](./agent-sdk-devtools.mdx)

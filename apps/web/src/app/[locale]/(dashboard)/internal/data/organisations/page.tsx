@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { fetchAdminCatalogList } from "@/lib/fetchers/internal/fetchAdminCatalog";
 
 const PAGE_SIZE = 100;
@@ -8,6 +9,7 @@ export default async function InternalOrganisationsPage({
 }: {
 	searchParams: Promise<{ q?: string; page?: string }>;
 }) {
+	const t = await getTranslations("Product.internalTools.dataEditor");
 	const params = await searchParams;
 	const queryText = (params.q ?? "").trim().replace(/[(),]/g, " ");
 	const currentPage = Math.max(1, Number.parseInt(params.page ?? "1", 10) || 1);
@@ -29,22 +31,22 @@ export default async function InternalOrganisationsPage({
 		<div className="container mx-auto space-y-8 py-8">
 			<div className="flex flex-col items-stretch justify-between gap-3 lg:flex-row lg:items-start">
 				<div>
-					<h1 className="text-2xl font-semibold">Organisations</h1>
-					<p className="text-sm text-muted-foreground">Small list view for fast record navigation.</p>
+					<h1 className="text-2xl font-semibold">{t("organisationsTitle")}</h1>
+					<p className="text-sm text-muted-foreground">{t("listDescription")}</p>
 				</div>
 				<Link href="/internal/data/organisations/new" className="w-full rounded-md border px-3 py-1.5 text-center text-sm hover:bg-muted/40 lg:w-auto">
-					New organisation
+					{t("newOrganisation")}
 				</Link>
 			</div>
 			<form className="flex flex-col gap-3 sm:flex-row" action="/internal/data/organisations" method="get">
 				<input
 					name="q"
 					defaultValue={queryText}
-					placeholder="Search organisations by name or ID"
+					placeholder={t("searchOrganisationsPlaceholder")}
 					className="w-full rounded-md border px-3 py-2 text-sm sm:max-w-md"
 				/>
 				<button type="submit" className="rounded-md border px-3 py-2 text-sm">
-					Search
+					{t("search")}
 				</button>
 			</form>
 			<div className="grid gap-2 2xl:grid-cols-2">
@@ -61,22 +63,22 @@ export default async function InternalOrganisationsPage({
 			</div>
 			<div className="flex flex-col gap-3 border-t pt-4 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
 				<div>
-					Page {currentPage} of {totalPages} • {totalRows} total
+					{t("pageSummary", { page: currentPage, pages: totalPages, total: totalRows })}
 				</div>
 				<div className="flex gap-2">
 					{hasPrev ? (
 						<Link href={pageHref(currentPage - 1)} className="rounded-md border px-3 py-1.5 hover:bg-muted/40">
-							Previous
+							{t("previous")}
 						</Link>
 					) : (
-						<span className="rounded-md border px-3 py-1.5 opacity-50">Previous</span>
+						<span className="rounded-md border px-3 py-1.5 opacity-50">{t("previous")}</span>
 					)}
 					{hasNext ? (
 						<Link href={pageHref(currentPage + 1)} className="rounded-md border px-3 py-1.5 hover:bg-muted/40">
-							Next
+							{t("next")}
 						</Link>
 					) : (
-						<span className="rounded-md border px-3 py-1.5 opacity-50">Next</span>
+						<span className="rounded-md border px-3 py-1.5 opacity-50">{t("next")}</span>
 					)}
 				</div>
 			</div>

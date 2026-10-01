@@ -1,15 +1,17 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { fetchAdminModelFormOptions } from "@/lib/fetchers/internal/fetchAdminCatalog";
 import { createModelAction } from "../../actions";
 import NewModelForm from "./NewModelForm";
 
 export default async function NewModelPage() {
+	const t = await getTranslations("Product.internalTools.dataEditor");
 	const { organisations, providers, families, benchmarks, previousModels, subscriptionPlans } = await fetchAdminModelFormOptions();
 
 	return (
 		<div className="container mx-auto space-y-8 py-8">
 			<div>
-				<h1 className="text-2xl font-semibold">Create model</h1>
+				<h1 className="text-2xl font-semibold">{t("modelCreateTitle")}</h1>
 			</div>
 			<NewModelForm
 				organisations={organisations as Array<{ organisation_id: string; name: string | null }>}
@@ -29,7 +31,7 @@ export default async function NewModelPage() {
 			/>
 			<div className="flex">
 				<Link href="/internal/data/models" className="rounded-md border px-3 py-2 text-sm">
-					Back to models
+					{t("backToModels")}
 				</Link>
 			</div>
 		</div>

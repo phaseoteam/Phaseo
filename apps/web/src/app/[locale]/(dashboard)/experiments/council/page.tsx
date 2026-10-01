@@ -6,15 +6,14 @@ import NoFooterStyle from "@/components/layout/NoFooterStyle";
 import { fetchExperimentsCouncilModels } from "@/lib/fetchers/frontend/fetchExperimentsCouncilModels";
 import { buildDefaultCouncilPresets } from "@/lib/experiments/councilPresets";
 
-export const metadata: Metadata = {
-	title: "Experiments Council - Multi-model orchestration",
-	description:
-		"Run Phaseo Council: parallel source models, strict analyser JSON, and one fused final answer.",
-	keywords: ["Experiments Council", "model fusion", "AI orchestration", "Phaseo"],
-	alternates: {
-		canonical: "/experiments/council",
-	},
-};
+export async function generateMetadata(): Promise<Metadata> {
+	const t = await getTranslations("Product.experimentsCouncil");
+	return {
+		title: t("title"),
+		description: t("description"),
+		alternates: { canonical: "/experiments/council" },
+	};
+}
 
 export default async function CouncilPage() {
 	const t = await getTranslations("Product.experimentsCouncil");

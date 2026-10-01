@@ -1,0 +1,77 @@
+---
+title: "Guides de migration"
+description: "Guides pour changer de plateforme ou adopter une version précise d’un modèle."
+icon: "compass"
+---
+
+# Guides de migration
+
+Les guides de migration Phaseo couvrent deux types d’évolution :
+
+- passer d’une autre plateforme ou passerelle à Phaseo
+- adopter une version de modèle sur la même plateforme
+
+<Columns cols={2}>
+	<Card title="Migrations de modèles" icon="brain-circuit" href="../model-migrations/index.mdx">
+		Mettez un modèle à niveau tout en conservant globalement la même intégration.
+	</Card>
+	<Card title="Migrations de plateforme" icon="arrow-right-left" href="./assistant.mdx">
+		Passez à un autre SDK, fournisseur ou passerelle et adaptez votre intégration à Phaseo.
+	</Card>
+</Columns>
+
+## Migrations de modèles
+
+Utilisez ces guides lorsque l’intégration reste globalement la même, mais que le modèle sous-jacent change.
+
+Ils couvrent :
+
+- les changements de paramètres de requête
+- les évolutions du comportement des prompts et du raisonnement
+- les différences de sortie structurée et d’appel d’outils
+- les stratégies de déploiement progressif, de repli et de retour arrière
+
+Guides de migration de modèles disponibles :
+
+- [Anthropic Claude Opus 5](../model-migrations/anthropic-claude-opus-5.mdx)
+- [OpenAI GPT-5.6](../model-migrations/openai-migrating-to-gpt-5-6.mdx)
+- [Anthropic Claude Opus 4.8](../model-migrations/anthropic-claude-opus-4-1-to-4-8.mdx)
+- [Anthropic Claude Opus 4.7](../model-migrations/anthropic-claude-opus-4-6-to-4-7.mdx)
+- [Mistral Small 4](../model-migrations/mistral-small-3-2-to-mistral-small-4.mdx)
+- [OpenAI GPT-5.4](../model-migrations/openai-migrating-to-gpt-5-4.mdx)
+- [Google Nano Banana 2](../model-migrations/google-nano-banana-1-to-nano-banana-2.mdx)
+- [Google Gemini 3.1](../model-migrations/google-migrating-to-gemini-3-and-3-1.mdx)
+- [Anthropic Claude Sonnet 4.6](../model-migrations/anthropic-claude-sonnet-4-5-to-4-6.mdx)
+- [SpaceXAI Grok 4.20](../model-migrations/xai-grok-4-20.mdx)
+- [Anthropic Claude Opus 4.6](../model-migrations/anthropic-claude-opus-4-5-to-4-6.mdx)
+
+## Migrations de plateforme
+
+Utilisez ces guides si vous changez de SDK, de fournisseur ou de passerelle et souhaitez adapter votre intégration à Phaseo.
+
+<Card title="Créer une liste de migration" icon="wand-sparkles" href="./assistant.mdx">
+	Choisissez votre intégration actuelle et ouvrez l’assistant interactif.
+</Card>
+
+Guides de migration de plateforme disponibles :
+
+- [Migration depuis le SDK OpenAI](./from-openai.mdx)
+- [Migration depuis le SDK Anthropic](./from-anthropic.mdx)
+- [Migration depuis OpenRouter](./from-openrouter.mdx) : remplacez l’endpoint et la clé, vérifiez les modèles et testez le streaming et le retour arrière.
+- [Migration depuis Vercel AI Gateway](./from-vercel.mdx)
+- [Migration depuis LLMGateway](./from-llmgateway.mdx)
+- [Migration depuis LiteLLM](./from-litellm.mdx)
+- [Migration depuis Cloudflare AI Gateway](./from-cloudflare.mdx)
+- [Migration depuis Helicone AI Gateway](./from-helicone.mdx)
+
+Planifiez et validez le déploiement :
+
+- [Revue de préparation à la migration](./gateway-parity-review.mdx)
+- [Liste de contrôle des fonctionnalités de migration](./feature-parity-matrix.mdx)
+
+## Utiliser ces guides
+
+1. Déterminez si vous changez de plateforme, de modèle ou des deux.
+2. Commencez par le guide correspondant à la partie la plus risquée de la migration.
+3. Vérifiez les paramètres de requête et le comportement de l’endpoint avant de comparer la qualité des réponses.
+4. Exécutez des évaluations proches de la production avant de déplacer le trafic réel.

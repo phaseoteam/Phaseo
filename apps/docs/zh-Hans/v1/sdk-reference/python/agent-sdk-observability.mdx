@@ -1,0 +1,23 @@
+---
+icon: "triangle-alert"
+title: "错误与故障排查"
+description: "排查 Python Agent 失败、无效工具数据和中断的运行。"
+---
+
+失败结果会保留当前步骤、重试次数、请求 ID、原生响应 ID、供应商元数据和可用的网关详情。
+
+请检查：
+
+- 进程可访问 `PHASEO_API_KEY`
+- 工具 ID 唯一
+- 审批决策使用确切的调用 ID
+- 在继续另一个请求前已保存暂停状态
+- 验证器不会产生副作用
+- 取消操作会传递到工具内部的网络或存储任务
+
+使用生命周期事件记录应用遥测，并使用 DevTools 在本地检查运行。
+
+## 相关内容
+
+- [生命周期钩子](./agent-sdk-lifecycle-hooks.mdx)
+- [DevTools](./agent-sdk-devtools.mdx)

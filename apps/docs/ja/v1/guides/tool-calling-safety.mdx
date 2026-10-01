@@ -1,0 +1,47 @@
+---
+icon: "shield-check"
+title: "ツール呼び出しの安全性と検証"
+description: "ツール引数を検証し、実行を保護して、モデルによる危険な操作を防ぎます。"
+---
+
+モデルが生成したツール引数は、信頼できない入力として扱います。
+
+## 安全チェックリスト
+
+- ツールのスキーマは必要最小限にし、明確に定義します。
+- 解析した引数を検証してからツールを実行します。
+- ツール名は許可リストで管理し、未知の名前は拒否します。
+- 外部呼び出しにはタイムアウトと再試行を設定します。
+- 呼び出しID、ツール名、検証エラーをログに記録します。
+
+## リクエスト検証の例（TypeScript + Zod）
+
+```typescript
+import { z } from "zod";
+
+const WeatherArgs = z.object({
+  city: z.string().min(1),
+});
+
+function executeToolCall(name: string, rawArgs: string) {
+  if (name !== "get_weather") {
+    throw new Error(`Unsupported tool: ${name}`);
+  }
+
+  const parsed = WeatherArgs.parse(JSON.parse(rawArgs));
+  return getWeather(parsed.city);
+}
+```
+
+## 失敗時の対応
+
+検証に失敗した場合:
+
+1. ツールを実行しません。
+2. 次のモデルターンに、制御されたエラーペイロードを返します。
+3. 引数を修正して再試行するようモデルに依頼します。
+
+## ストリーミングに関する注意
+
+現時点では、ゲートウェイのリクエスト検証を通すため、ツール呼び出しでは非ストリーミング（`stream: false`）を使ってください。
+

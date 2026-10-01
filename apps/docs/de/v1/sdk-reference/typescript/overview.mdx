@@ -1,0 +1,41 @@
+---
+icon: "compass"
+title: "TypeScript-SDK-Übersicht"
+description: "Offizieller TypeScript-Client für die Phaseo-Gateway-API"
+---
+
+Installiere das veröffentlichte Paket [~@phaseo/sdk~](https://www.npmjs.com/package/@phaseo/sdk) über npm.
+
+Das Phaseo-TypeScript-SDK bietet eine typsichere und komfortable Möglichkeit, mit der Phaseo-Gateway-API zu arbeiten. Es basiert auf der OpenAPI-Spezifikation und bietet vollständige TypeScript-Unterstützung mit generierten Typen und einer einfachen Client-Schnittstelle.
+
+## Funktionen
+
+-   **Typsicher**: vollständige TypeScript-Unterstützung mit aus der OpenAPI-Spezifikation generierten Typen
+-   **Einfache API**: benutzerfreundlicher Client mit übersichtlicher Schnittstelle
+-   **Generierter Code**: wird automatisch aus der kanonischen API-Spezifikation erzeugt
+-   **Umfassend**: deckt alle Gateway-API-Endpoints ab
+
+## Schnellstart-Beispiel
+
+```typescript
+import Phaseo from "@phaseo/sdk";
+
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
+
+const response = await client.generateText({
+	model: "openai/gpt-4o-mini",
+	messages: [{ role: "user", content: "Hello, how are you?" }],
+});
+
+console.log(response.choices[0].message.content);
+```
+
+## Lieferumfang
+
+-   `Phaseo`-Clientklasse für sämtliche API-Interaktionen
+-   Ressourcenbasierte Hilfsfunktionen wie `client.models`, `client.batches`, `client.videos`, and `client.asyncJobs`
+-   Hilfsfunktionen zur Erkundung und Preisermittlung wie `client.getModels()`, `client.listProviders()`, `client.getCredits()`, `client.getActivity()`, `client.getAnalytics()`, `client.listEndpoints()`, `client.listOrganisations()`, `client.listPricingModels()`, `client.calculatePricing()`, `client.listApiKeys()`, `client.createApiKey()`, `client.getApiKey(id)`, `client.updateApiKey(id, ...)`, `client.deleteApiKey(id)`, `client.listWorkspaces()`, `client.getWorkspace(id)`, `client.createWorkspace(...)`, `client.updateWorkspace(id, ...)`, `client.deleteWorkspace(id)`, and `client.getCurrentApiKey()`
+-   WebSocket-URL-Hilfsfunktionen für Lebenszyklus-Streams asynchroner Batch- und Videojobs
+-   Generierte Typen für alle Anfrage- und Antwortobjekte
+-   Vollständige API-Abdeckung, einschließlich Chat Completions, Modellen, Guthaben und mehr
+-   TypeScript-Definitionen für eine bessere Entwicklungserfahrung

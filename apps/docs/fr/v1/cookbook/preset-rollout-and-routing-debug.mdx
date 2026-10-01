@@ -1,0 +1,111 @@
+---
+title: "Déployer des préréglages et déboguer le routage"
+icon: "route"
+description: "Utilisez des préréglages pour uniformiser les valeurs par défaut des prompts et du routage, puis examinez les détails des requêtes pour comprendre le choix de routage de Phaseo."
+---
+
+Utilisez cette recette pour partager un préréglage entre plusieurs services au lieu de recopier partout les mêmes prompts, modèles et valeurs de routage.
+
+## Objectif
+
+- Uniformiser les valeurs par défaut des prompts et paramètres.
+- Limiter les fournisseurs autorisés lors d’un déploiement ou pour respecter une exigence de conformité.
+- Conserver suffisamment de contexte pour expliquer le choix de routage d’une requête.
+
+## 1. Créer le préréglage
+
+Dans **Tableau de bord -> Paramètres -> Préréglages**, créez un préréglage avec :
+
+- un nom et un slug explicites
+- un prompt système
+- les modèles approuvés
+- les préférences de fournisseur
+- des valeurs de paramètre par défaut, comme `temperature`
+
+Utilisez le slug du préréglage dans votre code d’appel afin de réutiliser la même politique de requête dans différents environnements.
+
+## 2. Garder un corps de requête réduit
+
+Le principal avantage des préréglages est que l’appelant n’a plus à répéter les mêmes valeurs par défaut de routage et de prompts dans chaque requête.
+
+<CodeGroup>
+```bash cURL
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "anthropic/claude-sonnet-4-5",
+    "input": "Generate a release summary for the last 24 hours.",
+    "preset": "release-summary"
+  }'
+```
+
+```typescript TypeScript SDK
+import Phaseo from "@phaseo/sdk";
+
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
+
+const response = await client.generateResponse({
+  model: "anthropic/claude-sonnet-4-5",
+  input: "Generate a release summary for the last 24 hours.",
+  preset: "release-summary",
+});
+
+console.log(response.output_text);
+```
+
+```python Python SDK
+from phaseo import Phaseo
+
+client = Phaseo(api_key="YOUR_API_KEY")
+
+response = client.generate_response(
+    {
+        "model": "anthropic/claude-sonnet-4-5",
+        "input": "Generate a release summary for the last 24 hours.",
+        "preset": "release-summary",
+    }
+)
+
+print(response.get("output_text"))
+```
+</CodeGroup>
+
+## 3. Comprendre les changements apportés par le préréglage
+
+Le préréglage est appliqué avant le routage des fournisseurs :
+
+- les paramètres manquants de la requête sont complétés à partir du préréglage
+- le prompt du préréglage est ajouté au début de la couche système
+- les préférences de fournisseur réduisent la liste des fournisseurs disponibles avant leur classement
+- les restrictions de modèle sont vérifiées en amont au lieu de modifier silencieusement le routage
+
+## 4. Déboguer le résultat du routage
+
+Si une requête n’est pas routée comme prévu, ouvrez-la dans **Gateway -> Utilisation** et examinez :
+
+- les fournisseurs pris en compte
+- les candidats classés
+- les facteurs de routage associés à chaque candidat
+- les blocages liés aux règles de l’espace de travail ou aux garde-fous
+
+C’est le moyen le plus rapide de savoir :
+
+- pourquoi un fournisseur a été ignoré
+- pourquoi une requête a été bloquée
+- pourquoi une option moins coûteuse ou moins latente est arrivée en tête
+
+## 5. Modèle opérationnel
+
+Suivez ce modèle de déploiement lorsque vous modifiez le comportement du routage :
+
+1. Créez un nouveau slug de préréglage pour la nouvelle règle.
+2. Faites passer un appel à faible risque au nouveau préréglage.
+3. Examinez les détails des requêtes et les tendances d’activité.
+4. Élargissez le déploiement uniquement lorsque les résultats de routage sont conformes aux attentes.
+
+## Guides associés
+
+- [Préréglages](../guides/presets.mdx)
+- [Routage et solutions de repli](../guides/routing-and-fallbacks.mdx)
+- [Gestion des erreurs](../developers/error-handling.mdx)

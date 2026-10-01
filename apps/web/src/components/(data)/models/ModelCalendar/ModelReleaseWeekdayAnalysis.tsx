@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import Link from "next/link";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { Logo } from "@/components/Logo";
@@ -10,7 +11,6 @@ import {
 	ChartTooltip,
 	ChartTooltipContent,
 } from "@/components/ui/chart";
-import { cn } from "@/lib/utils";
 import {
 	Dialog,
 	DialogContent,
@@ -20,7 +20,6 @@ import {
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
-const WEEKDAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const DEFAULT_CARD_LIMIT = 10;
 const DEFAULT_CHART_ROW_LIMIT = 10;
 const EXPANDED_CARD_LIMIT = 10;
@@ -28,13 +27,13 @@ const EXPANDED_CHART_ROW_LIMIT = 20;
 type ExpandLevel = 0 | 1 | 2;
 
 const DAY_SERIES = [
-	{ key: "mon", label: "Mon", color: "#60a5fa" },
-	{ key: "tue", label: "Tue", color: "#34d399" },
-	{ key: "wed", label: "Wed", color: "#fbbf24" },
-	{ key: "thu", label: "Thu", color: "#f97316" },
-	{ key: "fri", label: "Fri", color: "#a78bfa" },
-	{ key: "sat", label: "Sat", color: "#f472b6" },
-	{ key: "sun", label: "Sun", color: "#94a3b8" },
+	{ key: "mon", color: "#60a5fa" },
+	{ key: "tue", color: "#34d399" },
+	{ key: "wed", color: "#fbbf24" },
+	{ key: "thu", color: "#f97316" },
+	{ key: "fri", color: "#a78bfa" },
+	{ key: "sat", color: "#f472b6" },
+	{ key: "sun", color: "#94a3b8" },
 ] as const;
 
 type WeekdayStat = {
@@ -96,16 +95,31 @@ function shortenLabel(value: string, max = 18) {
 	return `${normalized.slice(0, max - 3)}...`;
 }
 
-function formatPercent(value: number) {
-	return `${(value * 100).toFixed(1)}%`;
+function formatPercent(value: number, locale: string) {
+	return new Intl.NumberFormat(locale, {
+		style: "percent",
+		maximumFractionDigits: 1,
+	}).format(value);
 }
 
-function formatNumber(value: number) {
+function formatNumber(value: number, locale: string) {
 	if (!Number.isFinite(value)) return "--";
-	if (value >= 1e9) return `${(value / 1e9).toFixed(1)}B`;
-	if (value >= 1e6) return `${(value / 1e6).toFixed(1)}M`;
-	if (value >= 1e3) return `${(value / 1e3).toFixed(1)}K`;
-	return value.toLocaleString();
+	return new Intl.NumberFormat(locale, {
+		notation: "compact",
+		maximumFractionDigits: 1,
+	}).format(value);
+}
+
+function getWeekdayLabels(locale: string) {
+	const monday = new Date(Date.UTC(2024, 0, 1));
+	return Array.from({ length: 7 }, (_, index) => {
+		const date = new Date(monday);
+		date.setUTCDate(monday.getUTCDate() + index);
+		return new Intl.DateTimeFormat(locale, {
+			weekday: "short",
+			timeZone: "UTC",
+		}).format(date);
+	});
 }
 
 function getLocalMonthDayKey(date: Date) {
@@ -118,13 +132,21 @@ export default function ModelReleaseWeekdayAnalysis({
 	events,
 	compact = false,
 }: ModelReleaseWeekdayAnalysisProps) {
+	const locale = useLocale();
+	const t = useTranslations("Catalogue.updatesCalendar.weekdayAnalysis");
+	const now = useMemo(() => new Date(), []);
+	const weekdayLabels = useMemo(() => getWeekdayLabels(locale), [locale]);
+	const daySeries = useMemo(
+		() => DAY_SERIES.map((day, index) => ({ ...day, label: weekdayLabels[index] })),
+		[weekdayLabels]
+	);
 	const [hoveredDayKey, setHoveredDayKey] = useState<string | null>(null);
 	const [expandLevel, setExpandLevel] = useState<ExpandLevel>(0);
 	const [organisationQuery, setOrganisationQuery] = useState("");
 	const [isPending, startTransition] = useTransition();
 	const analysis = useMemo<AnalysisResult | null>(() => {
-		const nowMs = Date.now();
-		const todayMonthDayKey = getLocalMonthDayKey(new Date());
+		const nowMs = now.getTime();
+		const todayMonthDayKey = getLocalMonthDayKey(now);
 		const releaseEvents = events.filter((event) => {
 			if (!event.types.includes("Released")) return false;
 			const parsed = new Date(event.date);
@@ -184,7 +206,7 @@ export default function ModelReleaseWeekdayAnalysis({
 		}
 
 		const totalReleases = releaseEvents.length;
-		const weekdayStats = WEEKDAY_LABELS.map((label, index) => ({
+		const weekdayStats = weekdayLabels.map((label, index) => ({
 			label,
 			count: weekdayCounts[index],
 			share: totalReleases === 0 ? 0 : weekdayCounts[index] / totalReleases,
@@ -247,14 +269,24 @@ export default function ModelReleaseWeekdayAnalysis({
 					? 0
 					: totalReleases / uniqueReleaseDays.size,
 			weekdayStats,
-			topWeekdayLabel: WEEKDAY_LABELS[topWeekdayIndex],
+			topWeekdayLabel: weekdayLabels[topWeekdayIndex],
 			topWeekdayCount: weekdayCounts[topWeekdayIndex],
 			topWeekdayShare:
 				totalReleases === 0 ? 0 : weekdayCounts[topWeekdayIndex] / totalReleases,
 			organisationStats,
 			organisationChartRows,
 		};
-	}, [events]);
+	}, [events, now, weekdayLabels]);
+	const organisationLabelById = useMemo(
+		() =>
+			new Map(
+				(analysis?.organisationChartRows ?? []).map((row) => [
+					row.organisationId,
+					row.shortLabel,
+				])
+			),
+		[analysis?.organisationChartRows]
+	);
 
 	if (!analysis) return null;
 
@@ -278,31 +310,20 @@ export default function ModelReleaseWeekdayAnalysis({
 		analysis.organisationChartRows.length > DEFAULT_CHART_ROW_LIMIT;
 	const chartHeightPx = expandLevel === 0 ? 420 : 840;
 
-	const daySeriesByLabel = new Map<string, (typeof DAY_SERIES)[number]>(
-		DAY_SERIES.map((day) => [day.label, day])
+	const daySeriesByLabel = new Map<string, (typeof daySeries)[number]>(
+		daySeries.map((day) => [day.label, day])
 	);
 	const dayOrder = new Map<string, number>(
 		DAY_SERIES.map((day, index) => [day.key, index])
 	);
-	const organisationLabelById = useMemo(
-		() =>
-			new Map(
-				analysis.organisationChartRows.map((row) => [
-					row.organisationId,
-					row.shortLabel,
-				])
-			),
-		[analysis.organisationChartRows]
-	);
-
 	const chartConfig = {
-		mon: { label: "Mon", color: "#60a5fa" },
-		tue: { label: "Tue", color: "#34d399" },
-		wed: { label: "Wed", color: "#fbbf24" },
-		thu: { label: "Thu", color: "#f97316" },
-		fri: { label: "Fri", color: "#a78bfa" },
-		sat: { label: "Sat", color: "#f472b6" },
-		sun: { label: "Sun", color: "#94a3b8" },
+		mon: { label: weekdayLabels[0], color: "#60a5fa" },
+		tue: { label: weekdayLabels[1], color: "#34d399" },
+		wed: { label: weekdayLabels[2], color: "#fbbf24" },
+		thu: { label: weekdayLabels[3], color: "#f97316" },
+		fri: { label: weekdayLabels[4], color: "#a78bfa" },
+		sat: { label: weekdayLabels[5], color: "#f472b6" },
+		sun: { label: weekdayLabels[6], color: "#94a3b8" },
 	} as const;
 
 	const renderOrganisationCard = (org: OrganisationStat) => {
@@ -327,12 +348,15 @@ export default function ModelReleaseWeekdayAnalysis({
 						{org.organisationName}
 					</span>
 					<p className="truncate text-[10px] text-zinc-500 dark:text-zinc-400">
-						Top {WEEKDAY_LABELS[org.topWeekdayIndex]} · {formatPercent(org.topWeekdayShare)}
+						{t("organisationTopWeekday", {
+							day: weekdayLabels[org.topWeekdayIndex],
+							share: formatPercent(org.topWeekdayShare, locale),
+						})}
 					</p>
 				</div>
 				<div className="flex shrink-0 items-center gap-2 text-[10px] text-zinc-500 dark:text-zinc-400">
 					<span>
-						Today {org.releasedTodayCount}
+						{t("todayCount", { count: formatNumber(org.releasedTodayCount, locale) })}
 					</span>
 					<span className="font-mono font-semibold text-zinc-700 dark:text-zinc-300">
 						{org.total}
@@ -367,17 +391,19 @@ export default function ModelReleaseWeekdayAnalysis({
 				<div className="flex items-start justify-between gap-3">
 					<div>
 						<h2 className="font-semibold text-zinc-900 dark:text-zinc-50">
-							Release day analysis
+								{t("title")}
 						</h2>
 						<p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-							{analysis.totalReleases.toLocaleString()} releases across{" "}
-							{analysis.uniqueReleaseDayCount.toLocaleString()} active days
+								{t("compactSummary", {
+									releases: formatNumber(analysis.totalReleases, locale),
+									days: formatNumber(analysis.uniqueReleaseDayCount, locale),
+								})}
 						</p>
 					</div>
 					<div className="text-right">
-						<p className="text-xs text-zinc-500 dark:text-zinc-400">Top day</p>
+						<p className="text-xs text-zinc-500 dark:text-zinc-400">{t("topDay")}</p>
 						<p className="font-semibold">
-							{analysis.topWeekdayLabel} · {formatPercent(analysis.topWeekdayShare)}
+							{analysis.topWeekdayLabel} · {formatPercent(analysis.topWeekdayShare, locale)}
 						</p>
 					</div>
 				</div>
@@ -398,7 +424,7 @@ export default function ModelReleaseWeekdayAnalysis({
 									/>
 								</div>
 								<span className="text-right font-mono text-zinc-500 dark:text-zinc-400">
-									{entry.count}
+										{formatNumber(entry.count, locale)}
 								</span>
 							</div>
 						);
@@ -422,7 +448,7 @@ export default function ModelReleaseWeekdayAnalysis({
 									}
 									className="rounded-md border border-zinc-200 px-2.5 py-1 font-medium disabled:opacity-50 dark:border-zinc-700"
 								>
-									{expandLevel === 0 ? "Show more" : "Show all"}
+										{expandLevel === 0 ? t("showMore") : t("showAll")}
 								</button>
 							) : null}
 							{expandLevel > 0 ? (
@@ -431,7 +457,7 @@ export default function ModelReleaseWeekdayAnalysis({
 									onClick={() => startTransition(() => setExpandLevel(0))}
 									className="rounded-md border border-zinc-200 px-2.5 py-1 font-medium dark:border-zinc-700"
 								>
-									Collapse
+									{t("collapse")}
 								</button>
 							) : null}
 						</div>
@@ -446,37 +472,37 @@ export default function ModelReleaseWeekdayAnalysis({
 			<div className="space-y-4 border-t border-zinc-200 pt-5 dark:border-zinc-800">
 				<div>
 					<h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">
-						Release day analysis
+						{t("title")}
 					</h2>
 				</div>
 
 				<div className="mt-2 flex flex-wrap gap-x-6 gap-y-2 text-sm">
 					<div className="flex items-center gap-2">
-						<span className="text-zinc-500 dark:text-zinc-400">Release events</span>
+						<span className="text-zinc-500 dark:text-zinc-400">{t("releaseEvents")}</span>
 						<span className="font-semibold text-zinc-900 dark:text-zinc-50">
-							{analysis.totalReleases.toLocaleString()}
+							{formatNumber(analysis.totalReleases, locale)}
 						</span>
 					</div>
 					<div className="flex items-center gap-2">
-						<span className="text-zinc-500 dark:text-zinc-400">Models released</span>
+						<span className="text-zinc-500 dark:text-zinc-400">{t("modelsReleased")}</span>
 						<span className="font-semibold text-zinc-900 dark:text-zinc-50">
-							{analysis.uniqueModelCount.toLocaleString()}
+							{formatNumber(analysis.uniqueModelCount, locale)}
 						</span>
 					</div>
 					<div className="flex items-center gap-2">
-						<span className="text-zinc-500 dark:text-zinc-400">Active release days</span>
+						<span className="text-zinc-500 dark:text-zinc-400">{t("activeReleaseDays")}</span>
 						<span className="font-semibold text-zinc-900 dark:text-zinc-50">
-							{analysis.uniqueReleaseDayCount.toLocaleString()}
+							{formatNumber(analysis.uniqueReleaseDayCount, locale)}
 						</span>
 					</div>
 					<div className="flex items-center gap-2">
-						<span className="text-zinc-500 dark:text-zinc-400">Top release day</span>
+						<span className="text-zinc-500 dark:text-zinc-400">{t("topReleaseDay")}</span>
 						<span className="font-semibold text-zinc-900 dark:text-zinc-50">
 							{analysis.topWeekdayLabel}
 						</span>
 						<span className="text-zinc-500 dark:text-zinc-400">
-							{analysis.topWeekdayCount.toLocaleString()} (
-							{formatPercent(analysis.topWeekdayShare)})
+							{formatNumber(analysis.topWeekdayCount, locale)} (
+							{formatPercent(analysis.topWeekdayShare, locale)})
 						</span>
 					</div>
 				</div>
@@ -499,7 +525,7 @@ export default function ModelReleaseWeekdayAnalysis({
 							</span>{" "}
 							<span className="font-mono">{entry.count.toLocaleString()}</span>{" "}
 							<span className="text-zinc-500 dark:text-zinc-400">
-								({formatPercent(entry.share)})
+								({formatPercent(entry.share, locale)})
 							</span>
 						</div>
 					))}
@@ -508,10 +534,10 @@ export default function ModelReleaseWeekdayAnalysis({
 				<div className="mt-5 grid gap-4 lg:grid-cols-[1.4fr_1fr]">
 					<div className="rounded-md border border-zinc-200/80 p-3 dark:border-zinc-800/90">
 						<h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
-							Release weekday mix by organisation (top {visibleOrganisationChartRows.length})
+								{t("weekdayMixTitle", { count: formatNumber(visibleOrganisationChartRows.length, locale) })}
 						</h3>
 						<p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-							Stacked bars show how each organisation distributes releases across weekdays.
+							{t("weekdayMixDescription")}
 						</p>
 						<ChartContainer
 							config={chartConfig}
@@ -530,7 +556,7 @@ export default function ModelReleaseWeekdayAnalysis({
 									allowDecimals={false}
 									tickLine={false}
 									axisLine={false}
-									tickFormatter={(value) => formatNumber(Number(value))}
+									tickFormatter={(value) => formatNumber(Number(value), locale)}
 								/>
 								<YAxis
 									type="category"
@@ -568,7 +594,7 @@ export default function ModelReleaseWeekdayAnalysis({
 												formatter={(value, name, item) => {
 													const amount = Number(value ?? 0);
 													const dayKey = String(item?.dataKey ?? name ?? "");
-													const day = DAY_SERIES.find(
+													const day = daySeries.find(
 														(entry) => entry.key === dayKey
 													);
 													const share =
@@ -591,8 +617,8 @@ export default function ModelReleaseWeekdayAnalysis({
 																<span>{day?.label ?? String(name)}</span>
 															</span>
 															<span className="font-mono">
-																{amount.toLocaleString()} (
-																{formatPercent(share)})
+										{formatNumber(amount, locale)} (
+										{formatPercent(share, locale)})
 															</span>
 														</div>
 													);
@@ -601,7 +627,7 @@ export default function ModelReleaseWeekdayAnalysis({
 										);
 									}}
 								/>
-								{DAY_SERIES.map((series) => {
+									{daySeries.map((series) => {
 									const active = hoveredDayKey
 										? hoveredDayKey === series.key
 										: true;
@@ -625,7 +651,7 @@ export default function ModelReleaseWeekdayAnalysis({
 
 					<div className="rounded-md border border-zinc-200/80 p-3 dark:border-zinc-800/90">
 						<h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
-							Organisation weekday tendencies
+							{t("organisationWeekdayTendencies")}
 						</h3>
 						<div className="mt-3 text-xs">
 							{visibleOrganisationCards.map(renderOrganisationCard)}
@@ -641,30 +667,31 @@ export default function ModelReleaseWeekdayAnalysis({
 									type="button"
 									className="rounded-md border border-zinc-200 bg-white px-3 py-1 text-xs font-medium text-zinc-700 transition hover:border-zinc-300 hover:text-zinc-900 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-300 dark:hover:border-zinc-500 dark:hover:text-zinc-100"
 								>
-									Browse all organisations
+					{t("browseOrganisations")}
 								</button>
 							</DialogTrigger>
 							<DialogContent className="max-w-lg rounded-md">
 								<DialogHeader>
-									<DialogTitle>Browse organisations</DialogTitle>
+									<DialogTitle>{t("browseOrganisations")}</DialogTitle>
 								</DialogHeader>
 								<input
 									type="search"
 									value={organisationQuery}
 									onChange={(event) => setOrganisationQuery(event.target.value)}
-									placeholder="Search organisations"
+								placeholder={t("searchOrganisations")}
 									className="h-9 w-full rounded-md border border-zinc-200 bg-transparent px-3 text-sm outline-none placeholder:text-zinc-500 focus:border-zinc-400 dark:border-zinc-700 dark:focus:border-zinc-500"
 								/>
 								<p className="text-xs text-zinc-500 dark:text-zinc-400">
-									{matchingOrganisations.length.toLocaleString()} organisation
-									{matchingOrganisations.length === 1 ? "" : "s"}
+									{t("organisationCount", {
+										count: formatNumber(matchingOrganisations.length, locale),
+									})}
 								</p>
 								<ScrollArea className="h-[420px] pr-3">
 									{matchingOrganisations.length > 0 ? (
 										matchingOrganisations.map(renderOrganisationCard)
 									) : (
 										<p className="py-8 text-center text-sm text-zinc-500 dark:text-zinc-400">
-											No organisations match that search.
+											{t("noOrganisationsMatch")}
 										</p>
 									)}
 								</ScrollArea>
@@ -677,7 +704,7 @@ export default function ModelReleaseWeekdayAnalysis({
 								onClick={() => startTransition(() => setExpandLevel(1))}
 								className="rounded-md border border-zinc-200 bg-white px-3 py-1 text-xs font-medium text-zinc-700 transition hover:border-zinc-300 hover:text-zinc-900 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-300 dark:hover:border-zinc-500 dark:hover:text-zinc-100"
 							>
-								Show more organisations
+								{t("showMoreOrganisations")}
 							</button>
 						) : null}
 						{expandLevel > 0 ? (
@@ -686,15 +713,19 @@ export default function ModelReleaseWeekdayAnalysis({
 								onClick={() => startTransition(() => setExpandLevel(0))}
 								className="rounded-md border border-zinc-200 bg-white px-3 py-1 text-xs font-medium text-zinc-700 transition hover:border-zinc-300 hover:text-zinc-900 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-300 dark:hover:border-zinc-500 dark:hover:text-zinc-100"
 							>
-								Collapse
+								{t("collapse")}
 							</button>
 						) : null}
 					</div>
 				) : null}
 
 				<p className="mt-4 text-xs text-zinc-500 dark:text-zinc-400">
-					Average releases per active release day:{" "}
-					{analysis.avgReleasesPerActiveDay.toFixed(2)}
+					{t("averageReleasesPerActiveDay", {
+						count: analysis.avgReleasesPerActiveDay.toLocaleString(locale, {
+							minimumFractionDigits: 2,
+							maximumFractionDigits: 2,
+						}),
+					})}
 				</p>
 			</div>
 		</section>

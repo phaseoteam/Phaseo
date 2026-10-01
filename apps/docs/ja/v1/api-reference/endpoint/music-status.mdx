@@ -1,0 +1,46 @@
+---
+title: "音楽生成結果を取得"
+sidebarTitle: "音楽生成結果を取得"
+badge: "Beta"
+openapi: "/ja/openapi/v1/openapi.localized.yaml GET /music/generate/{music_id}"
+description: "PhaseoのリクエストIDを使って音楽生成結果を取得します。"
+---
+
+`POST /music/generate`で作成した音楽結果を取得します。プロバイダー処理が完了している場合は保存済みの正規化結果を返し、ジョブが非同期処理中の場合は上流プロバイダーをポーリングします。
+
+## レスポンスの形式
+
+```json
+{
+  "id": "req_01JY6MUSIC123",
+  "object": "music",
+  "status": "completed",
+  "provider": "suno",
+  "model": "V4_5PLUS",
+  "nativeResponseId": "task_123",
+  "output": [
+    {
+      "index": 0,
+      "id": "clip_1",
+      "audio_url": "https://...",
+      "stream_audio_url": "https://...",
+      "image_url": "https://...",
+      "title": "Midnight Blue",
+      "tags": "jazz, piano",
+      "duration": 8
+    }
+  ],
+  "usage": {
+    "output_audio_count": 1,
+    "output_audio_seconds": 8
+  }
+}
+```
+
+## 補足
+
+- `status`の値: `queued`、`in_progress`、`completed`、`failed`。
+- 生成が完了すると`usage`が含まれます。
+- `nativeResponseId`ではなく、`POST /music/generate`が返したPhaseoの`id`を指定してください。
+- プロバイダー固有の状態確認APIと取得APIは、このエンドポイントの内部で処理されます。
+

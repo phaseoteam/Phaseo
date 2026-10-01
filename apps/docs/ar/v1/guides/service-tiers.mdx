@@ -1,0 +1,172 @@
+---
+title: "مستويات الخدمة"
+description: "آلية عمل أوضاع التسعير Standard وFast وFlex وBatch في Phaseo Gateway."
+icon: "gauge"
+---
+
+تتيح لك مستويات الخدمة اختيار أوضاع مختلفة للتسعير والتنفيذ عندما يدعمها المزوّد.
+
+يختلف التوفر حسب المزوّد والنموذج. إذا لم يدعم النموذج المطلوب مستوىً معينًا، فلن توجّه البوابة الطلب عبره.
+
+<Note type="warning">
+تتوفر مستويات الخدمة حاليًا لنماذج النصوص والمزوّدين المدعومين فقط.
+</Note>
+
+يدعم `service_tier` واجهات طلبات النص الثلاث جميعها:
+
+- رسائل متوافقة مع Anthropic على `/v1/messages`
+- إكمالات المحادثة المتوافقة مع OpenAI على `/v1/chat/completions`
+- ردود متوافقة مع OpenAI على `/v1/responses`
+
+## نظرة عامة على المستويات
+
+| المستوى | طريقة الطلب | الاستخدام المعتاد |
+| --- | --- | --- |
+| `Standard` | السلوك الافتراضي. لا حاجة إلى حقل إضافي. | حركة الإنتاج العامة. |
+| `Fast` | اضبط `service_tier: "fast"` في الطلب. | توجيه أسرع أو مميّز عند الدعم. وتقبل OpenAI أيضًا `priority`. |
+| `Flex` | اضبط `service_tier: "flex"` في الطلب. | توجيه أقل تكلفة عند الدعم. |
+| `Batch` | استخدم Batch API بدلًا من `service_tier`. | أحمال عمل كبيرة مؤجلة لا تكون فيها زمن الاستجابة أولوية. |
+
+## توافق API
+
+استخدم الحقل `service_tier` نفسه عند استدعاء أي واجهة نصية متزامنة مدعومة:
+
+- [مرجع Anthropic Messages API](../api-reference/endpoint/anthropic-messages.mdx)
+- [مرجع Chat Completions API](../api-reference/endpoint/chat-completions.mdx)
+- [مرجع Responses API](../api-reference/endpoint/responses.mdx)
+- [مرجع المعلمات المشتركة](../api-reference/parameters.mdx)
+
+القيم المقبولة لـ `service_tier` هي `standard` و`fast` و`priority` و`flex` و`batch`. ويكون `Standard` هو السلوك الافتراضي عند حذف `service_tier`. تستخدم Phaseo `Fast` اسمًا أساسيًا للمستوى المميّز. وفي مسارات OpenAI، يُقبل `priority` كاسم بديل متوافق مع المزوّد ويستخدم التوجيه والتسعير نفسيهما. أما `Batch` فتتولاه Batch API بدلًا من طلبات النص المتزامنة.
+
+<Note>
+تربط Phaseo داخليًا قيم البوابة الموحدة بعناصر التحكم الأصلية للمزوّد. فقد يتلقى مسار Anthropic حقول مستويات أصلية من Anthropic upstream، بينما يظل طلب العميل يستخدم قيم البوابة المذكورة هنا.
+</Note>
+
+## Standard
+
+`Standard` هو وضع التوجيه الافتراضي. لا تحتاج إلى ضبط `service_tier` لاستخدامه.
+
+```json
+{
+  "model": "openai/gpt-5.5",
+  "input": "Summarise this incident report."
+}
+```
+
+## Fast
+
+استخدم `Fast` عندما تريد العرض المميّز أو الأعلى أولوية لدى المزوّد. تستخدم Phaseo الاسم المحايد `fast`. وتسمّي OpenAI هذا وضع Fast، وتقبل `fast` و`priority` في النماذج المدعومة.
+
+```json
+{
+  "model": "openai/gpt-5.5",
+  "input": "Summarise this incident report.",
+  "service_tier": "fast"
+}
+```
+
+### مثال Anthropic Messages
+
+```json
+{
+  "model": "anthropic/claude-sonnet-4",
+  "max_tokens": 512,
+  "messages": [
+    { "role": "user", "content": "Summarise this incident report." }
+  ],
+  "service_tier": "fast"
+}
+```
+
+عند التوجيه إلى Anthropic، تربط Phaseo القيمة بعنصر التحكم الأصلي المناسب لدى المزوّد.
+
+### أولوية Mistral والتوجيه في الاتحاد الأوروبي
+
+يتطلب Mistral Priority Tier حساب مؤسسة مؤهلًا لدى Mistral. تربط Phaseo
+`priority` بوضع الأولوية التلقائية لدى Mistral وتُحاسب وفق المستوى الذي يبلّغ عنه Mistral؛
+إذا عاد Mistral إلى Standard، فيُطبّق تسعير Standard.
+
+يمكن تثبيت GLM 5.2 على نقطة النهاية الإقليمية لـ Mistral في الاتحاد الأوروبي باستخدام عرض المزوّد `mistral-eu`
+عرض المزوّد:
+
+```json
+{
+  "model": "z-ai/glm-5.2",
+  "messages": [
+    { "role": "user", "content": "Summarise this incident report." }
+  ],
+  "service_tier": "priority",
+  "provider": {
+    "only": ["mistral-eu"],
+    "required_execution_region": "eu"
+  }
+}
+```
+
+تُضاف زيادة قدرها 10% إلى سعر الاستدلال الإقليمي لدى Mistral. يتوفر تسعير Batch ضمن عرض Mistral العالمي، لكن
+Mistral لا يدعم Batch على نقاط النهاية الإقليمية.
+
+تسجل Phaseo أسعار Batch وPriority المرجعية المنشورة من Mistral منفصلةً عن توفرها أثناء التشغيل.
+ظهور سعر في الكتالوج لا يعني أن المستوى قابل للتوجيه:
+تظل Priority معطلة ما لم يعلن مسار Mistral المحدد دعمها،
+ويجب استخدام Batch API العالمية من Mistral لـ Batch. وتظل أهلية Priority مرتبطة
+بحساب Mistral والنموذج.
+
+## Flex
+
+استخدم `Flex` عندما يوفّر المزوّد مستوى خدمة أقل تكلفة وتقبل المفاضلات المرتبطة به.
+
+```json
+{
+  "model": "openai/gpt-5.5",
+  "input": "Summarise this incident report.",
+  "service_tier": "flex"
+}
+```
+
+### مثال Chat Completions
+
+```json
+{
+  "model": "openai/gpt-5.5",
+  "messages": [
+    { "role": "user", "content": "Summarise this incident report." }
+  ],
+  "service_tier": "flex"
+}
+```
+
+### مثال Responses
+
+```json
+{
+  "model": "openai/gpt-5.5",
+  "input": [
+    { "role": "user", "content": "Summarise this incident report." }
+  ],
+  "service_tier": "flex"
+}
+```
+
+## Batch
+
+تُعد `batch` قيمة مستوى معروفة للتنفيذ على دفعات، لكن واجهات النص المتزامنة ترفض `service_tier: "batch"` بخطأ تحقق يوجّه إلى Batch API.
+
+استخدم Batch API أو سير عمل المهام الدفعية، لأن تسعير Batch ينطبق على التنفيذ المؤجل على دفعات، لا على الطلبات المتزامنة العادية.
+
+## ملاحظات
+
+- يعتمد دعم المستويات على المزوّد والنموذج.
+- تعرض بطاقات الأسعار في صفحات النماذج أسعار كل مستوى عند توفر البيانات.
+- يقدّم بعض المزوّدين عروضًا متخصصة upstream، وتحوّلها Phaseo إلى تجربة مستويات موحدة في الكتالوج.
+- تُوحّد قيم `service_tier` الظاهرة للعميل عبر واجهات النص المدعومة، بينما تعالج البوابة الأسماء الأصلية للمزوّدين.
+
+## صفحات ذات صلة
+
+- [مرجع Anthropic Messages API](../api-reference/endpoint/anthropic-messages.mdx)
+- [مرجع Chat Completions API](../api-reference/endpoint/chat-completions.mdx)
+- [مرجع Responses API](../api-reference/endpoint/responses.mdx)
+- [المعلمات](../api-reference/parameters.mdx)
+- [التوجيه والبدائل الاحتياطية](./routing-and-fallbacks.mdx)
+- [Chat completions (SDK الخاص بـ TypeScript)](../sdk-reference/typescript/chat-completions.mdx)
+- [Responses (SDK الخاص بـ TypeScript)](../sdk-reference/typescript/responses.mdx)

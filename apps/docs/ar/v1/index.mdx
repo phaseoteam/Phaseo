@@ -1,0 +1,100 @@
+---
+title: "ابدأ من هنا"
+description: "اختر مسار وثائق Phaseo المناسب لطلبك الأول أو لترحيل تكامل أو إعداد SDK أو الإطلاق إلى بيئة الإنتاج."
+icon: "house"
+---
+
+استخدم هذه الصفحة إذا كنت تعرف ما تريد بناءه، لكنك لا تعرف أي صفحة من وثائق Phaseo ينبغي أن تفتح أولاً.
+
+توفّر Phaseo واجهة API واحدة للوصول إلى النماذج، وتوجيه الطلبات إلى المزوّدين، ومعرفة الأسعار، وتتبع الاستخدام، وتشغيل سير عمل الذكاء الاصطناعي غير المتزامن.
+
+إذا كنت جديداً على Phaseo، فابدأ بإرسال طلب يعمل بنجاح. وإذا كان لديك تكامل ذكاء اصطناعي بالفعل، فانتقل مباشرةً إلى دليل الترحيل أو SDK المناسب لتطبيقك.
+
+## إرسال طلبك الأول بنجاح
+
+لإنشاء تكامل جديد، اتبع الخطوات التالية:
+
+1. أنشئ مفتاح API في لوحة التحكم.
+2. أرسل طلباً إلى نموذج نصي متاح حالياً.
+3. اقرأ النص المُنشأ من الاستجابة.
+4. تابع إلى دليل SDK أو التوجيه أو الإنتاج المناسب لخطوتك التالية.
+
+## الطلب الأول
+
+<CodeGroup>
+```bash cURL
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-5.6-sol",
+    "input": "Reply with: docs ready",
+    "temperature": 0
+  }'
+```
+
+```typescript TypeScript SDK
+import Phaseo from "@phaseo/sdk";
+
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
+
+const response = await client.generateResponse({
+  model: "openai/gpt-5.6-sol",
+  input: "Reply with: docs ready",
+  temperature: 0,
+});
+
+console.log(response.output_text);
+```
+
+```python Python SDK
+from phaseo import Phaseo
+
+client = Phaseo(api_key="YOUR_API_KEY")
+
+response = client.generate_response(
+    {
+        "model": "openai/gpt-5.6-sol",
+        "input": "Reply with: docs ready",
+        "temperature": 0,
+    }
+)
+
+print(response.get("output_text"))
+```
+</CodeGroup>
+
+إذا نجح الطلب، فتابع إلى [دليل البدء السريع](./quickstart.mdx) لإكمال خطوات الطلب الأول.
+
+---
+
+## اختر المسار المناسب
+
+إذا كان لديك تكامل أو سلسلة أدوات بالفعل، فابدأ من الخيار الأقرب إلى احتياجك بدلاً من قراءة الوثائق من البداية.
+
+<Columns cols={2}>
+	<Card title="أنتقل من OpenAI" icon="arrow-right-left" href="./migration-guides/from-openai.mdx">
+		احتفظ بالتنسيق المتوافق مع OpenAI، وغيّر عنوان URL الأساسي، ثم تحقّق من دعم النموذج.
+	</Card>
+	<Card title="أنتقل من OpenRouter" icon="arrow-right-left" href="./migration-guides/from-openrouter.mdx">
+		انقل إعدادات التوجيه مع التحقق من التكافؤ والإطلاق على مراحل.
+	</Card>
+	<Card title="أرسل طلبات HTTP مباشرةً" icon="globe" href="./quickstart.mdx">
+		ابدأ باستخدام cURL وResponses API، ثم راجع مرجع نقطة النهاية عند الحاجة.
+	</Card>
+	<Card title="أستخدم TypeScript SDK" icon="file-code-2" href="./sdk-reference/typescript/overview.mdx">
+		استخدم عميل TypeScript مع Responses والمحادثة والصور والصوت وغيرها.
+	</Card>
+	<Card title="أستخدم Python SDK" icon="snake" href="./sdk-reference/python/overview.mdx">
+		ابدأ بعميل Python إذا كان تكاملك يعمل ضمن البرامج النصية أو workers أو الخدمات الخلفية أو notebooks.
+	</Card>
+	<Card title="أستخدم AI SDK" icon="sparkles" href="./sdk-reference/sdk/ai-sdk.mdx">
+		اربط تطبيقات Vercel AI SDK بـPhaseo من دون إعادة بناء المطالبات أو تدفق النموذج.
+	</Card>
+	<Card title="أستخدم Codex أو Claude Code" icon="bot" href="./guides/integrations/index.mdx">
+		أعد إعداد gateway وDocs MCP وتكاملات مساعدات البرمجة من مكان واحد.
+	</Card>
+	<Card title="أحتاج إلى أمثلة فقط" icon="code" href="./guides/examples.mdx">
+		انتقل مباشرةً إلى طلبات قابلة للنسخ ومشروعات نموذجية إذا كنت تعرف الأساسيات بالفعل.
+	</Card>
+</Columns>

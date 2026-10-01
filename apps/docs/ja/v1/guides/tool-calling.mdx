@@ -1,0 +1,292 @@
+---
+title: "## ツール呼び出し"
+description: "Gatewayを介して、モデル主導の関数呼び出しを安全に使います。"
+icon: "wrench"
+---
+
+ツール呼び出しを使うと、モデルは答えを推測する代わりに、構造化された操作（データベース検索、天気の確認、社内APIの呼び出しなど）を要求できます。
+
+Gatewayは次のテキストエンドポイントでツールペイロードに対応しています。
+
+- `/v1/chat/completions`（OpenAI形式の`tools`と`tool_calls`）
+- `/v1/responses`（Responses 形式の`function_call`出力項目）
+- `/v1/messages`（Anthropic形式の`tool_use`ブロック）
+
+## リクエスト
+
+```bash
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-5-nano",
+    "messages": [
+      { "role": "user", "content": "What is the weather in London?" }
+    ],
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "get_weather",
+          "description": "Get current weather by city",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "city": { "type": "string" }
+            },
+            "required": ["city"]
+          }
+        }
+      }
+    ],
+    "tool_choice": {
+      "type": "function",
+      "function": { "name": "get_weather" }
+    },
+    "stream": false
+  }'
+```
+
+## レスポンス
+
+```json
+{
+  "id": "chatcmpl_...",
+  "object": "chat.completion",
+  "choices": [
+    {
+      "index": 0,
+      "finish_reason": "tool_calls",
+      "message": {
+        "role": "assistant",
+        "content": null,
+        "tool_calls": [
+          {
+            "id": "call_123",
+            "type": "function",
+            "function": {
+              "name": "get_weather",
+              "arguments": "{\"city\":\"London\"}"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}
+```
+
+ツールを実行し、次のリクエストでその結果を返すと、アシスタントは回答を完成できます。
+
+## 組み込みサーバーツール
+
+Gatewayには現在、次のサーバーツールが組み込まれています。
+
+- `gateway:datetime`
+- `phaseo:web_search`
+- `phaseo:web_fetch`
+- `phaseo:advisor`
+- `phaseo:image_generation`
+- `phaseo:apply_patch`
+
+このツールはクライアント側の実行機能なしでGateway上で動きます。Gatewayが上流のツールまたは関数呼び出しに書き換えて実行し、その結果をモデルの処理ループに返します。
+
+詳細な設定、使用方法、料金については[サーバーツール](./server-tools/index.mdx)を参照してください。
+
+対応するリクエスト形式:
+
+```json
+{
+  "tools": [
+    {
+      "type": "gateway:datetime",
+      "parameters": {
+        "timezones": ["Europe/London", "UTC"]
+      }
+    }
+  ]
+}
+```
+
+注意:
+
+- `parameters.timezones`は省略可能で、1回の呼び出しで最大5つの有効なIANAタイムゾーンを指定できます。
+- 結果には`timezones`配列が含まれます。各タイムゾーンについて、ISO形式の日時と解決済みのタイムゾーンが示されます。
+- 使用量には`usage.server_tool_use.datetime_requests`が含まれます。
+- モデルが呼び出すタイミングを判断できるよう、`tool_choice: "auto"`を使うことをおすすめします。
+
+### Web検索の例
+
+```json
+{
+  "tools": [
+    {
+      "type": "phaseo:web_search",
+      "parameters": {
+        "engine": "exa",
+        "max_results": 5,
+        "max_total_results": 15,
+        "search_context_size": "medium",
+        "max_characters": 2048,
+        "allowed_domains": ["arxiv.org", "nature.com"],
+        "include_highlights": true
+      }
+    }
+  ]
+}
+```
+
+注意:
+
+- モデルはツールを呼び出す際に検索クエリを指定します。
+- `engine: "auto"`は管理型のExa検索に解決されます。`engine: "exa"`、`engine: "parallel"`、`engine: "firecrawl"`は、対応するプロバイダーキーが設定されている場合にGateway管理の検索を実行します。
+- `phaseo:web_search`で`engine: "native"`を指定すると、リクエスト形式に応じたプロバイダーのネイティブWeb検索ツールに変換されます。たとえばOpenAIの`web_search_preview`やAnthropicの`web_search_20250305`です。
+- `max_results`は各検索呼び出しの結果数を制限し、`max_total_results`はサーバーツールループ全体の累積結果数を制限します。
+- 選択した検索エンジンが該当する設定に対応している場合、管理型検索では`allowed_domains` / `excluded_domains`、`search_context_size`、`max_characters`を使えます。
+- 使用量には`usage.server_tool_use.web_search_requests`、`usage.server_tool_use.web_search_results`、`usage.server_tool_use.web_search_extra_results`が含まれます。
+- 管理型Exa検索は`server_tool_web_search_requests`と`server_tool_web_search_extra_results`のメーターで課金できます。
+
+### Web Fetchの例
+
+```json
+{
+  "tools": [
+    {
+      "type": "phaseo:web_fetch",
+      "parameters": {
+        "engine": "direct",
+        "max_chars": 12000,
+        "allowed_domains": ["docs.example.com"],
+        "blocked_domains": ["internal.example.com"]
+      }
+    }
+  ]
+}
+```
+
+注意:
+
+- モデルはツールの呼び出し時に取得対象の`url`を指定します。
+- 対応しているのはHTTP(S)のURLとテキスト系のコンテンツタイプのみです。
+- `engine: "auto"`はAnthropic Messagesではネイティブ取得を使い、それ以外では`EXA_API_KEY`設定時にExaを使います。どちらも使えない場合はGatewayの直接HTTP取得を使います。
+- `engine: "direct"`はGatewayから直接HTTP取得します。`engine: "exa"`は`EXA_API_KEY`設定時にExaでコンテンツを抽出します。
+- `PARALLEL_API_KEY`設定時、`engine: "parallel"`はParallel Extractを使います。`FIRECRAWL_API_KEY`設定時、`engine: "firecrawl"`はFirecrawl Scrapeを使います。
+- Anthropic Messagesでは`engine: "native"`をAnthropicネイティブの`web_fetch_20260209`ツールに変換します。それ以外の形式では`engine: "direct"`または管理型抽出エンジンを使ってください。
+- `max_chars`を省略した場合、`max_content_tokens`をトークン数で上限を指定する取得サイズのエイリアスとして使えます。
+- `allowed_domains`と`blocked_domains`で取得可能なURLを制限します。
+- HTMLは、モデルの処理ループに戻す前に長さを制限したプレーンテキストに変換されます。
+- 使用量には`usage.server_tool_use.web_fetch_requests`が含まれます。
+- 管理対象のフェッチ機能は`server_tool_web_fetch_requests`メーターに基づいて課金されます。プロバイダー独自のフェッチと検索は、それぞれ`native_web_fetch_requests`と`native_web_search_requests`に基づいて課金されます。モデルの価格カードから、プロバイダーに組み込まれた既定値を上書きできます。
+
+ネイティブAnthropic取得の例:
+
+```json
+{
+  "tools": [
+    {
+      "type": "phaseo:web_fetch",
+      "parameters": {
+        "engine": "native",
+        "max_content_tokens": 9000,
+        "allowed_domains": ["docs.example.com"]
+      }
+    }
+  ],
+  "tool_choice": "phaseo:web_fetch"
+}
+```
+
+### Advisorの例
+
+```json
+{
+  "tools": [
+    {
+      "type": "phaseo:advisor",
+      "parameters": {
+        "name": "reviewer",
+        "model": "claude-opus-5",
+        "instructions": "Review plans for correctness, missing edge cases, and implementation risk.",
+        "forward_transcript": true,
+        "max_uses": 2,
+        "max_completion_tokens": 1400,
+        "temperature": 0.2
+      }
+    }
+  ],
+  "tool_choice": "phaseo:advisor"
+}
+```
+
+注意:
+
+- AdvisorはGatewayが管理し、対応するテキストモデルで利用できます。呼び出し元のモデルには`phaseo_advisor`ツール、または`phaseo_advisor_reviewer`のような名前付きツールが渡され、GatewayがAdvisorリクエストを実行します。
+- `parameters.name`は省略可能です。複数のAdvisorを使う場合は一意の名前を付けます。名前には英字、数字、空白、アンダースコア、ハイフンを使用できます。
+- `parameters.model`でAdvisorモデルを固定します。省略した場合、ツール呼び出しで`model`を指定できます。それもなければ、Gatewayは外側のリクエストのモデルを使います。
+- `parameters.forward_transcript`のデフォルトは`false`です。Advisorに現在の会話履歴を渡すには`true`にします。
+- モデルは通常、ツール呼び出し時にAdvisorの`prompt`を指定します。`forward_transcript`が`true`で`prompt`がない場合、Gatewayは会話履歴のみを使ってAdvisorを呼び出せます。`max_tokens`は`max_completion_tokens`の旧エイリアスとして受け付けられます。
+- 使用量には`usage.server_tool_use.advisor_requests`が含まれます。
+
+### 画像生成の例
+
+```json
+{
+  "tools": [
+    {
+      "type": "phaseo:image_generation",
+      "parameters": {
+        "model": "openai/gpt-image-2",
+        "quality": "high",
+        "aspect_ratio": "16:9",
+        "output_format": "png"
+      }
+    }
+  ]
+}
+```
+
+注意:
+
+- ツールを呼び出す際、モデルは画像の`prompt`を指定します。`description`もプロンプトのエイリアスとして使えます。
+- `parameters.model`で画像モデルを固定します。省略するとツール呼び出しで`model`を指定できます。どちらもなければPhaseoのデフォルト画像モデルを使います。
+- プロバイダーの応答に応じて、ツール結果には`imageUrl`またはbase64形式の画像データが含まれます。
+- 使用量には`usage.server_tool_use.image_generation_requests`が含まれます。画像モデルのトークン使用量は親リクエストに統合されます。
+
+### パッチ適用の例
+
+```json
+{
+  "tools": [
+    {
+      "type": "phaseo:apply_patch"
+    }
+  ],
+  "tool_choice": "auto"
+}
+```
+
+注意:
+
+- Responses API で `phaseo:apply_patch` を使用できます。
+- Phaseoはパッチ操作を検証してツール結果に返します。パッチを適用するか拒否するかはクライアント側で決めます。
+- 対応する操作タイプは`create_file`、`update_file`、`delete_file`です。
+- 使用量には`usage.server_tool_use.apply_patch_requests`が含まれます。
+
+## ストリーミングの動作
+
+ツール呼び出しのリクエストでは`stream: true`も使えます。
+
+Gatewayが管理するサーバーツールでは、Gatewayは次の処理を行うことがあります。
+
+- 上流のツール呼び出しターンを展開する
+- サーバーツールを実行する
+- モデルの処理ループを続ける
+- クライアントに合成ストリームを再送する
+
+これによりGateway自身がツールループの一部を実行する場合も、クライアント側の契約はストリーミングに対応したままです。
+
+## 次のガイド
+
+1. [## ツール呼び出し Patterns](./tool-calling-patterns.mdx)
+2. [## ツール呼び出し Safety and Validation](./tool-calling-safety.mdx)
+3. [構造化出力](./structured-outputs.mdx)

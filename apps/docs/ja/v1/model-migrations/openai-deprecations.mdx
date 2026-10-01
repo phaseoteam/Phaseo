@@ -1,0 +1,39 @@
+---
+title: "OpenAI の提供終了モデルとサービス"
+description: "AI Stats カタログで管理している OpenAI モデルおよびプラットフォームの提供終了日です。"
+icon: "/icons/brands/openai.svg"
+---
+
+# OpenAI の提供終了モデルとサービス
+
+OpenAI は [API の提供終了ページ](https://developers.openai.com/api/docs/deprecations)で提供終了日と推奨される移行先を公開しています。このページを移行チェックリストとして使い、本番プロンプト、ツール、レイテンシ、コストの範囲で移行先を検証します。
+
+## 提供終了予定のモデル
+
+| モデルファミリー | 非推奨日 | 停止日 | 推奨される移行先 |
+| --- | --- | --- | --- |
+| `gpt-realtime`、`gpt-audio`、`gpt-realtime-mini`、`gpt-audio-mini` | 2026年7月20日 | 2027年1月20日 | `openai/gpt-realtime-2.1`、`openai/gpt-realtime-2.1-mini`、または `openai/gpt-audio-1.5` |
+| `gpt-4o-mini-transcribe-2025-03-20` | 2026年7月20日 | 2027年1月20日 | `openai/gpt-4o-mini-transcribe` |
+| 日付付き GPT-5 および o3 スナップショット | 2026年6月11日 | 2026年12月11日 | `openai/gpt-5.6-sol`、`openai/gpt-5.6-terra`、または `openai/gpt-5.6-luna` |
+| `gpt-image-1-mini`、`gpt-image-1.5`、`chatgpt-image-latest` | 2026年6月2日 | 2026年12月1日 | `openai/gpt-image-2` |
+| GPT-3.5、GPT-4、GPT-4.1 nano、GPT-4o、o1、o3-mini、o4-mini の旧スナップショット | 2026年4月22日 | 2026年10月23日 | OpenAI の提供終了ページにあるモデル別の推奨事項を参照してください |
+| Sora 2 モデル | 2026年3月24日 | 2026年9月24日 | 移行先は未発表 |
+
+カタログは該当する OpenAI モデルの項目にライフサイクル日を記録し、OpenAI が代替モデルを示している場合はその ID も掲載します。日付は OpenAI が指定したプロバイダーのスナップショットに適用されます。カタログでは正規のモデル ID を通じて公開される場合があります。
+
+## プラットフォームの提供終了
+
+OpenAI はモデルではない製品の移行も案内しています。
+
+- 再利用可能なプロンプトは 2026 年 11 月 30 日に終了予定です。プロンプトの内容をアプリケーションコードに移します。
+- Evals プラットフォームは 2026 年 10 月 31 日に読み取り専用となり、11 月 30 日に終了します。OpenAI は Promptfoo への移行を推奨しています。
+- Agent Builder は 2026 年 11 月 30 日に終了します。Agents SDK または ChatGPT Workspace Agents に移行します。
+
+## 移行チェックリスト
+
+1. テスト環境で提供終了予定のモデルまたは製品を置き換えます。
+2. 構造化出力、ツール呼び出し、音声品質、長いコンテキストのタスクを中心に、代表的な評価を再実行します。
+3. 本番に近い並行処理数でレイテンシと費用を比較します。
+4. 停止日前に、明示的なロールバック経路を用意して移行先を段階的に試します。
+
+公式日付、スナップショットの完全な対応表、エンドポイント別の案内は[OpenAI API の提供終了ドキュメント](https://developers.openai.com/api/docs/deprecations)を参照してください。

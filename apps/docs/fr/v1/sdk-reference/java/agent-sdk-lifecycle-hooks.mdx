@@ -1,0 +1,25 @@
+---
+icon: "radio-tower"
+title: "Hooks de cycle de vie"
+description: "Réagissez aux événements d’exécution, de modèle, d’étape, d’outil et de point de contrôle en Java."
+---
+
+Transmettez un consommateur d’événements dans `RunOptions` pour relier un agent à une chronologie produit, un journal d’audit ou un pipeline de télémétrie :
+
+```java
+event -> logger.info("{} {}", event.type(), event.runId())
+```
+
+Les catégories d’événements comprennent :
+
+- démarrage, reprise, attente humaine, fin, annulation et échec d’une exécution
+- démarrage, point de contrôle, fin, annulation et échec d’une étape
+- requête, fin et échec d’un appel au modèle
+- démarrage, progression préliminaire, fin et échec d’un outil
+
+Gardez le rappel rapide. Placez les opérations lentes de stockage ou de réseau dans une file, en dehors de la boucle d’exécution.
+
+## À lire aussi
+
+- [Flux](./agent-sdk-streaming.mdx)
+- [DevTools](./agent-sdk-devtools.mdx)

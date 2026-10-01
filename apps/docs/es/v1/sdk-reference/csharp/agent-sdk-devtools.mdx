@@ -1,0 +1,18 @@
+---
+icon: "chart-spline"
+title: "Herramientas de desarrollo"
+description: "Captura localmente las ejecuciones del Agent SDK de .NET para desarrollo y depuración."
+---
+
+Activa la captura local en JSONL con `AgentSdk.CreateAgentDevtools(...)` y pásala en `RunOptions`.
+
+Las entradas capturadas incluyen el estado y la duración de la ejecución, detalles del modelo y proveedor, ID de solicitud, mensajes, pasos, actividad de herramientas, uso, coste y errores estructurados.
+
+<Warning>
+Las entradas del agente, el contexto y los resultados de las herramientas pueden contener datos sensibles. Mantén la salida de DevTools fuera del control de versiones y de las imágenes de producción.
+</Warning>
+
+## Relacionado
+
+- [Hooks del ciclo de vida](./agent-sdk-lifecycle-hooks.mdx)
+- [Errores y solución de problemas](./agent-sdk-observability.mdx)

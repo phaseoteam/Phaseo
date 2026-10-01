@@ -1,0 +1,29 @@
+---
+icon: "database"
+title: "État et approbation"
+description: "Mettez les agents Python en pause pour obtenir une décision humaine et poursuivre l’état géré par l’application."
+---
+
+Utilisez `human_review` comme point de contrôle général. Les outils soumis à approbation et les outils manuels placent les identifiants exacts des appels dans `paused.run.pause.pending_tool_calls`.
+
+```python
+from phaseo_agent import AgentToolDecision, AgentToolOutput
+
+pending = paused.run.pause.pending_tool_calls
+
+continued = agent.continue_run(
+    run=paused,
+    client=client,
+    approvals=[AgentToolDecision(pending[0].call.id)],
+    tool_outputs=[AgentToolOutput(pending[1].call.id, {"status": "complete"})],
+)
+```
+
+Fournissez `rejections` pour refuser des appels ou `human_input` pour une pause générale de révision. Les décisions sont associées à l’identifiant de l’appel, pas au nom de l’outil.
+
+Implémentez `AgentStateAccessor.load(run_id)` et `save(result)` lorsque les exécutions doivent survivre aux requêtes ou aux redémarrages du processus. La reprise pourra alors charger l’état avec `run_id`.
+
+## À lire aussi
+
+- [Outils](./agent-sdk-tools.mdx)
+- [Contrôle des exécutions](./agent-sdk-run-controls.mdx)

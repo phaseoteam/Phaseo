@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { sanitizeReturnUrl } from "@/lib/auth/return-url";
@@ -18,10 +19,10 @@ type EnterpriseSignInPageProps = {
 	searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
-export const metadata: Metadata = {
-	title: "SSO",
-	description: "Sign in with your organization's SSO provider.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+	const t = await getTranslations("Common.authFlows.enterpriseSso");
+	return { title: "SSO | Phaseo", description: t("metaDescription") };
+}
 
 export default function EnterpriseSignInPage({
 	searchParams,
@@ -36,6 +37,7 @@ export default function EnterpriseSignInPage({
 async function EnterpriseSignInPageContent({
 	searchParams,
 }: EnterpriseSignInPageProps) {
+	const t = await getTranslations("Common.authFlows.enterpriseSso");
 	if (!(await samlSsoFlag())) notFound();
 	const params = (await searchParams) ?? {};
 	const localeParam = Array.isArray(params.locale)
@@ -55,10 +57,9 @@ async function EnterpriseSignInPageContent({
 		<div className="grid min-h-svh place-items-center p-6 md:p-10">
 			<div className="w-full max-w-sm space-y-6">
 				<div className="space-y-2 text-center">
-					<h1 className="text-2xl font-bold">Sign in with SSO</h1>
+					<h1 className="text-2xl font-bold">{t("title")}</h1>
 					<p className="text-sm text-muted-foreground">
-						Use your work email domain to continue with your organization&apos;s
-						SSO provider.
+						{t("description")}
 					</p>
 				</div>
 
@@ -68,7 +69,7 @@ async function EnterpriseSignInPageContent({
 						<input type="hidden" name="returnUrl" value={returnUrl} />
 					) : null}
 					<div className="grid gap-2">
-						<Label htmlFor="domain">Work Email Or Domain</Label>
+						<Label htmlFor="domain">{t("emailOrDomain")}</Label>
 						<Input
 							id="domain"
 							name="domain"
@@ -77,13 +78,13 @@ async function EnterpriseSignInPageContent({
 							autoComplete="email"
 							autoCapitalize="none"
 							spellCheck={false}
-							placeholder="you@company.com or company.com"
+							placeholder={t("emailDomainPlaceholder")}
 							required
 						/>
 					</div>
 
 					<Button type="submit" className="w-full">
-						Continue with SSO
+						{t("continue")}
 					</Button>
 				</form>
 
@@ -94,7 +95,7 @@ async function EnterpriseSignInPageContent({
 						})}
 						className="underline underline-offset-4"
 					>
-						Back to standard sign in
+						{t("backToStandardSignIn")}
 					</Link>
 				</div>
 			</div>

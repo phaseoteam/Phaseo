@@ -1,0 +1,82 @@
+---
+title: Management-API-Schlüssel
+description: Erstellen Sie Management-Schlüssel mit gezielten Berechtigungen für Phaseo-Control-Plane-APIs.
+icon: "key-round"
+---
+
+Management-API-Schlüssel sind serverseitige Zugangsdaten für die Control Plane von Phaseo: Guthaben, Aktivitäten, Workspace-Verwaltung, Schlüsselverwaltung, Voreinstellungen, Einstellungen und Guardrails. Sie sind nicht für Inferenzanfragen gedacht.
+
+Erstellen Sie sie unter **Dashboard → Einstellungen → Management-Schlüssel**. Das Geheimnis wird nur einmal angezeigt. Speichern Sie es in Ihrem Geheimnismanager, bevor Sie den Dialog schließen.
+
+## Zugangsdaten
+
+| Zugangsdaten | Verwendung | Gesteuert wird |
+| --- | --- | --- |
+| Gateway-API-Schlüssel | Modell- und Generierungsanfragen | Routing-Richtlinie, Budgets, Limits und zugewiesene Guardrails |
+| Management-API-Schlüssel | Control-Plane-Anfragen | Explizite Management-Funktionen und Workspace-Rollenprüfungen |
+| OAuth-Zugriffstoken | Delegierter Zugriff auf die Control Plane | Genehmigte OAuth-Bereiche und Workspace-Rollenprüfungen |
+
+Management-Routen akzeptieren nur `phaseo_v1_mk_<kid>_<secret>`. Gateway-API-Schlüssel verwenden `phaseo_v1_sk_<kid>_<secret>` und sind ausschließlich für Inferenz vorgesehen. Sie erhalten keinen Zugriff auf Control-Plane-Endpunkte.
+
+Verwenden Sie Management-Schlüssel nur in serverseitigem Code:
+
+```http
+Authorization: Bearer phaseo_v1_mk_<kid>_<secret>
+```
+
+Die Produktions-Basis-URL lautet:
+
+```text
+https://api.phaseo.app/v1
+```
+
+## Zugriffsstufe auswählen
+
+Das Dashboard bietet explizite Vorlagen. Beim Erstellen eines Schlüssels wird jede Vorlage in die aufgeführten Funktionen aufgelöst. Phaseo speichert niemals einen Platzhalter wie `all`. Ein Schlüssel kann daher nicht stillschweigend eine später neu eingeführte Berechtigung erhalten.
+
+| Vorlage | Berechtigungen |
+| --- | --- |
+| **Read** | Alle aktuellen Management-Funktionen `*:read` |
+| **Write** | Alle aktuellen Funktionen `*:read` und `*:write`; kein Löschzugriff |
+| **All** | Alle aktuellen Management-Funktionen zum Lesen, Schreiben und Löschen |
+
+## Funktionsübersicht
+
+Verwenden Sie für gängige Fälle eine Zugriffsvorlage. Wählen Sie explizite Funktionen aus, wenn eine Integration eng begrenzte, zweckgebundene Berechtigungen benötigt.
+
+| Bereich | Lesen | Schreiben | Löschen |
+| --- | --- | --- | --- |
+| Identität und Katalog | `me:read`, `models:read`, `providers:read`, `pricing:read` | — | — |
+| Nutzung und Beobachtbarkeit | `credits:read`, `activity:read`, `analytics:read`, `generations:read`, `feedback:read` | `feedback:write` | — |
+| Workspaces | `workspaces:read` | `workspaces:write` | `workspaces:delete` |
+| Gateway-API-Schlüssel | `keys:read` | `keys:write` | `keys:delete` |
+| Management-API-Schlüssel | `management_keys:read` | `management_keys:write` | `management_keys:delete` |
+| Voreinstellungen | `presets:read` | `presets:write` | `presets:delete` |
+| Einstellungen | `settings:read` | `settings:write` | — |
+| Anbieter-Zugangsdaten | `provider_credentials:read` | `provider_credentials:write` | `provider_credentials:delete` |
+| Guardrails | `guardrails:read` | `guardrails:write` | `guardrails:delete` |
+| Budgets | `budgets:read` | `budgets:write` | `budgets:delete` |
+| OAuth-Clients | `oauth_clients:read` | `oauth_clients:write` | `oauth_clients:delete` |
+
+`Write`-Vorlagen enthalten die zugehörigen Leseberechtigungen. So kann eine Integration eine Ressource vor einer Aktualisierung prüfen. `All` umfasst Löschberechtigungen und sollte nur für vertrauenswürdige Verwaltungsautomatisierungen verwendet werden.
+
+## Bereiche und Workspace-Rollen
+
+Ein Bereich ist notwendig, reicht allein aber nicht aus. Phaseo prüft zusätzlich, ob der Schlüssel oder OAuth-Prinzipal zum angeforderten Workspace gehört und die erforderliche Workspace-Rolle besitzt. Ein beschränkter Schlüssel kann keine Funktion verwenden, um auf einen anderen Workspace zuzugreifen oder Eigentums- und Administratorprüfungen zu umgehen.
+
+Beispielsweise erlaubt `keys:write` Schlüsselverwaltungsaktionen. Die Workspace-Rollenprüfung entscheidet, ob der Aufrufer Schlüssel in diesem Workspace verwalten darf.
+
+## Guardrails sind etwas anderes
+
+Guardrails gelten für **Gateway-API-Schlüssel** und steuern den Inferenzverkehr: Routing-Beschränkungen, Budgets, den Umgang mit Prompt-Injection und Regeln für vertrauliche Informationen. Die Bereiche eines Management-Schlüssels legen fest, welche Verwaltungs-APIs ein Zugang aufrufen darf. Diese Kontrollen ergänzen sich und ersetzen einander nicht.
+
+Unter [Guardrails für API-Schlüssel einführen](../cookbook/guardrails-for-api-keys.mdx) erfahren Sie, wie Sie Guardrails für einen Inferenzschlüssel einrichten.
+
+## Sicherheit und Rotation
+
+- Halten Sie Management-Schlüssel aus Browsern, Desktop-Protokollen, der Versionsverwaltung und Chats heraus.
+- Verwenden Sie pro Integration einen eigenen Schlüssel und bevorzugen Sie die engste Vorlage.
+- Legen Sie ein Ablaufdatum fest, wenn die Integration keinen unbegrenzten Zugriff benötigt.
+- Sperren oder löschen Sie nicht mehr benötigte Schlüssel sofort.
+- Ersetzen Sie einen offengelegten Schlüssel, bevor Sie den Vorfall weiter untersuchen.
+

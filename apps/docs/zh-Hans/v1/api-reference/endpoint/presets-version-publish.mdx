@@ -1,0 +1,11 @@
+---
+title: "发布预设版本"
+sidebarTitle: "发布版本"
+badge: "Beta"
+openapi: "/zh-Hans/openapi/v1/openapi.localized.yaml POST /presets/{id}/versions"
+description: "将当前预设草稿发布为不可变版本。"
+---
+<Note>此端点需要具有 `presets:write` 权限的管理 API 密钥和关联的用户身份。</Note>
+
+preset 的版本管理方式决定默认版本标签。采用 SemVer 的 preset 可以显式提供 `version_label`。
+

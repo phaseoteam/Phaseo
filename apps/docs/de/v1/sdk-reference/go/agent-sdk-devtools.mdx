@@ -1,0 +1,19 @@
+---
+icon: "chart-spline"
+title: "Entwicklertools"
+description: "Erfasse Go-Agent-SDK-Läufe im lokalen Phaseo-DevTools-Ereignisformat."
+---
+
+Die DevTools-Aufzeichnung schreibt für jeden Lauf und jede Fortsetzung einen strukturierten JSONL-Datensatz. Das ist beim Erstellen von Zeitachsen, Genehmigungsoberflächen und Tool-Aufrufansichten hilfreich.
+
+```go
+result, err := agent.Run(ctx, phaseoagent.RunOptions{
+  Input: prompt,
+  Client: client,
+  Devtools: phaseoagent.CreateAgentDevtools(".phaseo-devtools"),
+})
+```
+
+Der Datensatz enthält Laufstatus, Verbrauch, Modellversuche, Tool-Aufrufe, Pausen, Anfragemetadaten und Fehler. Fortsetzungen werden über dieselbe Lauf-ID verknüpft.
+
+Betrachte die lokale Aufzeichnung nicht als Audit-Speicher für die Produktion. Wende deine eigenen Regeln für Aufbewahrung, Zugriffskontrolle, Schwärzung und Verschlüsselung an, bevor du sensible Prompts oder Tool-Ergebnisse speicherst.

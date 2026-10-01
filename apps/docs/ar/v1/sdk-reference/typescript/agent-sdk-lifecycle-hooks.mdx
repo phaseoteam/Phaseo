@@ -1,0 +1,46 @@
+---
+icon: "radio-tower"
+title: "خطافات دورة الحياة"
+description: "استجب لأحداث التشغيل والنموذج والخطوة والأداة ونقطة الحفظ."
+---
+
+استخدم `onEvent` لتحديث واجهات المنتج أو كتابة سجلات التدقيق أو ربط نشاط الوكيل بنظام القياس عن بُعد الحالي.
+
+## الاستماع إلى عملية تشغيل
+
+```typescript
+const result = await agent.run({
+  input,
+  client,
+  onEvent(event) {
+    console.log(event.type, event.runId);
+  },
+});
+```
+
+اجعل معالجات الأحداث صغيرة. انقل عمليات الشبكة أو التخزين البطيئة إلى قائمة انتظار التطبيق عندما لا ينبغي أن تؤخر التشغيل.
+
+## مجموعات الأحداث
+
+| المجموعة | الأحداث |
+| --- | --- |
+| التشغيل | `run.started`, `run.resumed`, `run.waiting_for_human`, `run.cancelled`, `run.completed`, `run.failed` |
+| الخطوة | `step.started`, `step.completed`, `step.failed`, `step.cancelled` |
+| النموذج | `model.requested`, `model.completed`, `model.failed` |
+| الأداة | `tool.started`, `tool.preliminary_result`, `tool.completed`, `tool.failed` |
+| الحالة | `checkpoint.saved` |
+
+يصدر `step.completed` بعد حفظ نقطة تحقق للخطوة المكتملة. يتيح ذلك لأنظمة الاستمرارية أو القياس عن بُعد اعتباره حدًا ثابتًا.
+
+## اختيار أحداث لواجهة المنتج
+
+- استخدم فروق النموذج من [البث](./agent-sdk-streaming.mdx) لعرض نص الإجابة مباشرةً.
+- استخدم أحداث الأدوات لعرض بطاقات استدعاء الأدوات ومؤشرات التقدم.
+- استخدم `run.waiting_for_human` لعرض عناصر التحكم في الموافقة أو الإدخال.
+- استخدم أحداث انتهاء التشغيل لإغلاق حالات التحميل وتسجيل النتائج.
+
+## أدلة ذات صلة
+
+- [البث](./agent-sdk-streaming.mdx)
+- [الحالة والموافقة](./agent-sdk-state-and-approval.mdx)
+- [DevTools](./agent-sdk-devtools.mdx)

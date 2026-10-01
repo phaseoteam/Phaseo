@@ -1,0 +1,84 @@
+---
+icon: "clock-3"
+title: "Datum-und-Uhrzeit-Serverwerkzeug"
+description: "Stelle Modellen das aktuelle Datum und die Uhrzeit in einer oder mehreren Zeitzonen bereit."
+---
+
+Verwende `phaseo:datetime`, wenn eine Anfrage vom aktuellen Datum, Wochentag, der Uhrzeit oder Zeitzone abhängt.
+
+Das Modell entscheidet, wann es das Tool aufruft. Phaseo gibt die aufgelösten Zeitzonen und aktuellen Zeitstempel an das Modell zurück, das anschließend die endgültige Antwort formuliert.
+
+## Schnellstart
+
+```bash
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-5-nano",
+    "messages": [
+      { "role": "user", "content": "What day of the week is it in Tokyo?" }
+    ],
+    "tools": [
+      {
+        "type": "phaseo:datetime",
+        "parameters": {
+          "timezones": ["Asia/Tokyo", "UTC"]
+        }
+      }
+    ]
+  }'
+```
+
+## Konfiguration
+
+```json
+{
+  "type": "phaseo:datetime",
+  "parameters": {
+    "timezones": ["Europe/London", "UTC"]
+  }
+}
+```
+
+| Parameter | Typ | Standardwert | Beschreibung |
+| --- | --- | --- | --- |
+| `timezones` | string[] | `["UTC"]` | Bis zu 5 IANA-Zeitzonennamen, die bei einem Tool-Aufruf zurückgegeben werden, z. B. `["Europe/London", "UTC"]`. |
+
+## Tool-Ergebnis
+
+Das Tool-Ergebnis enthält einen Eintrag für jede angefragte Zeitzone.
+
+```json
+{
+  "timezones": [
+    {
+      "timezone": "Europe/London",
+      "datetime": "2026-07-03T10:00:00.123+01:00"
+    },
+    {
+      "timezone": "UTC",
+      "datetime": "2026-07-03T09:00:00.123+00:00"
+    }
+  ]
+}
+```
+
+## Nutzung
+
+Datetime-Aufrufe erhöhen:
+
+```json
+{
+  "usage": {
+    "server_tool_use": {
+      "datetime_requests": 1
+    }
+  }
+}
+```
+
+## Verwandte Seiten
+
+- [Server-Tools](./index.mdx)
+- [Tool-Aufrufe](../tool-calling.mdx)

@@ -1,0 +1,134 @@
+---
+title: "Tools und Freigaben"
+description: "Definiere lokale, externe und freigabepflichtige Tools im Rust Agent SDK."
+---
+
+## Lokale Tools
+
+Verwende `Tool::new(...)`, wenn der Rust-Prozess den Vorgang ausführen kann:
+
+```rust
+use phaseo_agent::Tool;
+use serde_json::json;
+
+let get_status = Tool::new(
+    "get_status",
+    "Get the current service status",
+    json!({
+        "type": "object",
+        "properties": {
+            "service": { "type": "string" }
+        },
+        "required": ["service"]
+    }),
+    |input, _context| {
+        Ok(json!({
+            "service": input["service"],
+            "status": "healthy"
+        }))
+    },
+);
+```
+
+Der Wert von `parameters` wird dem Modell als JSON Schema übergeben. Tool-Eingaben und -Ausgaben sind `serde_json::Value`. Validiere nicht vertrauenswürdige Argumente im Executor, wenn du strengere Laufzeitgarantien benötigst.
+
+## Freigabepflichtige Tools
+
+Füge `require_approval()` hinzu, damit die Ausführung vor dem Vorgang angehalten wird:
+
+```rust
+let deploy = Tool::new(
+    "deploy",
+    "Deploy an application environment",
+    json!({
+        "type": "object",
+        "properties": {
+            "environment": { "type": "string" }
+        },
+        "required": ["environment"]
+    }),
+    |input, _context| {
+        Ok(json!({
+            "environment": input["environment"],
+            "deployed": true
+        }))
+    },
+)
+.require_approval();
+```
+
+Wenn das Modell dieses Tool aufruft, wird der Lauf mit `run.status == "waiting_for_human"` und `run.pause.kind == "tool_approval"` zurückgegeben.
+
+Setze den Lauf mit der exakten Aufruf-ID fort:
+
+```rust
+use phaseo_agent::{ContinueOptions, ToolDecision};
+
+let approvals = paused.run.pause.as_ref().unwrap()
+    .pending_tool_calls
+    .iter()
+    .map(|pending| ToolDecision {
+        tool_call_id: pending.call.id.clone(),
+        reason: Some("Approved by the release operator".to_string()),
+    })
+    .collect();
+
+let mut options = ContinueOptions::new(paused);
+options.approvals = approvals;
+
+let completed = agent.continue_run(&mut client, options)?;
+```
+
+Die Rust-API `0.1` bietet keinen eigenen Ablehnungstyp. Lass nicht genehmigte Aufrufe pausiert oder wende vor dem Fortsetzen die Ablehnungsrichtlinie deiner Anwendung an.
+
+## Externe Tools
+
+Verwende `Tool::external(...)`, wenn ein anderer Prozess den Vorgang ausführt:
+
+```rust
+let ticket_lookup = Tool::external(
+    "ticket_lookup",
+    "Load one support ticket",
+    json!({
+        "type": "object",
+        "properties": {
+            "ticket_id": { "type": "string" }
+        },
+        "required": ["ticket_id"]
+    }),
+);
+```
+
+Der Pausentyp lautet `external_output`, wenn jeder ausstehende Aufruf ein externes Ergebnis benötigt. Übergib jedes Ergebnis mit der jeweiligen Aufruf-ID:
+
+```rust
+use phaseo_agent::{ContinueOptions, ToolOutput};
+
+let outputs = paused.run.pause.as_ref().unwrap()
+    .pending_tool_calls
+    .iter()
+    .map(|pending| ToolOutput {
+        tool_call_id: pending.call.id.clone(),
+        output: json!({
+            "subject": "Provider latency increased",
+            "priority": "high"
+        }),
+    })
+    .collect();
+
+let mut options = ContinueOptions::new(paused);
+options.tool_outputs = outputs;
+
+let completed = agent.continue_run(&mut client, options)?;
+```
+
+Wenn ein Modellzug eine Mischung aus automatischen Tools und ausstehenden Aufrufen enthält, führt die Laufzeit die automatischen Tools aus, bevor sie die Pause zurückgibt.
+
+## Tool-Fehler
+
+Ein `AgentError`, den ein lokaler Executor zurückgibt, wird zu einer strukturierten Tool-Fehlermeldung und an das Modell gesendet. Ein unbekannter Tool-Name oder eine fehlende Freigabe beziehungsweise Ausgabe lässt das Fortsetzen mit `AgentError` fehlschlagen.
+
+## Verwandte Inhalte
+
+- [Läufe speichern und fortsetzen](./agent-sdk-state-and-approval.mdx)
+- [Agent-API-Referenz](./agent-sdk-api-reference.mdx)

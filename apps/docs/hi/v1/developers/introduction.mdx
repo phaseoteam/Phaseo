@@ -1,0 +1,100 @@
+---
+title: "Phaseo कैसे काम करता है"
+description: "Endpoints, SDKs, routing या production settings चुनने से पहले Phaseo Gateway को समझें।"
+icon: "terminal"
+---
+
+Gateway के साथ निर्माण शुरू करने से पहले पूरी अवधारणा समझने के लिए यह विवरण पढ़ें।
+
+Phaseo मॉडल, प्रोवाइडर, रूटिंग, कीमत और एसिंक्रोनस AI वर्कफ़्लो के लिए एक API देता है।
+
+इससे आप:
+
+-   एक ही सुसंगत API से कई प्रोवाइडर को कॉल कर सकते हैं
+-   अनुरोध और जवाब का प्रबंधन आसान बना सकते हैं
+-   उपयोग, लेटेंसी और कीमत को एक जगह ट्रैक कर सकते हैं
+-   ऐप को दोबारा बनाए बिना मॉडल या रूटिंग रणनीति बदल सकते हैं
+
+<Note>
+बिना क्रेडिट जमा किए `:free` मॉडल इस्तेमाल किए जा सकते हैं। पेड मॉडल के लिए वॉलेट में उपलब्ध बैलेंस चाहिए।
+</Note>
+
+---
+
+## Gateway क्यों इस्तेमाल करें
+
+एक से अधिक प्रोवाइडर, मॉडल, endpoint परिवार या डिप्लॉयमेंट वातावरण की ज़रूरत पड़ते ही AI इंटीग्रेशन जटिल हो जाते हैं।
+
+Phaseo आपके ऐप को एक स्थिर इंटीग्रेशन लेयर देता है। पहले उत्पाद का फ़्लो जारी करें, फिर हर कॉलर को दोबारा लिखे बिना मॉडल, प्रोवाइडर, रूटिंग और कीमत की रणनीति बदलें।
+
+---
+
+## मुख्य अवधारणाएँ
+
+<Columns cols={2}>
+	<Card
+		title="एकीकृत endpoints"
+		icon="terminal"
+		href="../api-reference/introduction.mdx"
+	>
+		टेक्स्ट, इमेज, मॉडरेशन, ऑडियो, वीडियो और प्रोवाइडर-संगत रूट के लिए एक जैसा API फ़ॉर्मैट इस्तेमाल करें।
+	</Card>
+	<Card title="रूटिंग नियंत्रण" icon="git-branch" href="../guides/routing-and-fallbacks.mdx">
+		उपलब्धता, लागत, लेटेंसी, क्षेत्र और नीतियों के आधार पर अनुरोधों को प्रोवाइडर के बीच भेजने का तरीका चुनें।
+	</Card>
+	<Card title="उपयोग और लागत ट्रैकिंग" icon="chart-column-increasing">
+		प्रोडक्शन में क्या हो रहा है, यह देखने के लिए अनुरोधों की संख्या, टोकन उपयोग, लेटेंसी और कीमत ट्रैक करें।
+	</Card>
+	<Card title="BYOK (अपनी key लाएँ)" icon="key">
+		Gateway का वही इंटरफ़ेस रखते हुए प्रोवाइडर की बिलिंग और सीमाएँ इस्तेमाल करने के लिए उनकी keys जोड़ें।
+	</Card>
+</Columns>
+
+---
+
+## सुझाया गया तरीका
+
+1. Phaseo अकाउंट बनाने के लिए **[साइन अप करें](https://phaseo.app/hi/sign-up)**।
+2. डैशबोर्ड में **[API key बनाएँ](https://phaseo.app/hi/gateway/keys)**।
+3. `/v1/responses` endpoint से **अपना पहला अनुरोध भेजें**।
+4. SDKs, रूटिंग, ऑब्ज़र्वेबिलिटी और रिलीज़ के लिए **अपना प्रोडक्शन तरीका चुनें**।
+
+<Card
+	title="क्विकस्टार्ट"
+	icon="rocket"
+	href="../quickstart.mdx"
+	horizontal
+>
+	मुफ़्त मॉडल से अपनी पहली सफल API कॉल करें।
+</Card>
+
+---
+
+## अगले चरण
+
+<Columns cols={2}>
+	<Card
+		title="प्रमाणीकरण"
+		icon="lock"
+		href="./authentication.mdx"
+	>
+		अपनी व्यक्तिगत या टीम API key से सुरक्षित रूप से प्रमाणीकरण करना सीखें।
+	</Card>
+	<Card title="API रेफ़रेंस" icon="code" href="../api-reference/introduction.mdx">
+		Endpoints, पैरामीटर और जवाब के स्कीमा सहित पूरा API दस्तावेज़ देखें।
+	</Card>
+	<Card
+		title="बेहतर तरीके"
+		icon="shield-check"
+		href="./best-practices.mdx"
+	>
+		Phaseo Gateway का अधिकतम लाभ उठाने के सुझाव।
+	</Card>
+	<Card title="उदाहरण" icon="terminal" href="../guides/examples.mdx">
+		Next.js, Node.js streaming, Python और curl के लिए तैयार snippets कॉपी करें।
+	</Card>
+</Columns>
+
+---
+
+अगर आपको implementation पर आधारित walkthrough चाहिए, तो [Gateway इंटीग्रेशन](./integrating-with-the-gateway.mdx) जारी रखें और उपयोग बढ़ने पर [इंटीग्रेशन](../guides/integrations/index.mdx) या [Rate limits](./rate-limits.mdx) देखें।

@@ -1,0 +1,32 @@
+---
+icon: "square-terminal"
+title: "Exemplos"
+description: "Copie padrões específicos de PHP para ferramentas, aprovações, streaming e execuções limitadas."
+---
+
+## Implantação com aprovação
+
+```php
+$deploy = new Tool(
+    id: "deploy",
+    description: "Deploy the selected release",
+    requireApproval: true,
+    execute: fn (array $input, $runtime) => $deployments->deploy($input)
+);
+```
+
+Armazene a execução retornada quando ela entrar em `waiting_for_human` e depois continue com uma decisão associada ao ID da chamada pendente.
+
+## Transmitir texto
+
+```php
+$stream = $agent->stream(input: $prompt, client: $client);
+foreach ($stream->textStream() as $delta) { echo $delta; }
+$result = $stream->getResult();
+```
+
+## Limitar o trabalho autônomo
+
+Combine limites de etapas, tokens, custo e duração para que o agente não exceda o orçamento da aplicação, mesmo que continue encontrando trabalho útil.
+
+Consulte [ferramentas](./agent-sdk-tools.mdx), [estado e aprovação](./agent-sdk-state-and-approval.mdx) e [condições de parada](./agent-sdk-stop-conditions.mdx) para ver os contratos completos.

@@ -1,0 +1,57 @@
+---
+icon: "compass"
+title: "Rust SDK"
+description: "आधिकारिक `phaseo` crate का उपयोग करके Rust से Phaseo Gateway अनुरोध भेजें।"
+---
+
+Rust ऐप्लिकेशन से Phaseo Gateway पर अनुरोध भेजने के लिए प्रकाशित [`phaseo`](https://crates.io/crates/phaseo) crate का उपयोग करें।
+
+उच्च-स्तरीय क्लाइंट ये सुविधाएँ देता है:
+
+- `Phaseo::responses(...)` से Responses API अनुरोध
+- `Phaseo::chat_completions(...)` से Chat Completions अनुरोध
+- `Phaseo::post(...)` से अन्य JSON एंडपॉइंट
+- `Phaseo::from_env()` से पर्यावरण-आधारित कॉन्फ़िगरेशन
+- कस्टम HTTPS एंडपॉइंट और loopback विकास सर्वर
+- संरचित स्थिति, JSON बॉडी, अनुरोध ID और त्रुटि विवरण
+
+```rust
+use phaseo::Phaseo;
+use serde_json::json;
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let client = Phaseo::from_env()?;
+    let response = client.responses(&json!({
+        "model": "openai/gpt-5.6-sol",
+        "input": "Reply with exactly: Rust SDK works"
+    }))?;
+
+    println!("{}", response.body);
+    Ok(())
+}
+```
+
+<Note>
+  संस्करण `0.1` समर्थित और प्रकाशित है, लेकिन `1.0` से पहले Rust API बदल सकती है। प्रोडक्शन में संगत minor version पिन करें।
+</Note>
+
+## मौजूदा दायरा
+
+Ergonomic client synchronous है और `serde_json::Value` request bodies स्वीकार करता है। Generated low-level modules `phaseo::gen` में उपलब्ध हैं; convenience re-exports `phaseo::client`, `phaseo::models` और `phaseo::operations` में हैं।
+
+Rust client में अभी async transport या high-level streaming helper नहीं है। ये helpers आने से पहले app को streaming चाहिए, तो raw HTTP API उपयोग करें।
+
+<Columns cols={2}>
+  <Card title="Install the Rust SDK" icon="package" href="./installation.mdx">
+    Crate जोड़ें और API key configure करें।
+  </Card>
+  <Card title="Send requests" icon="play" href="./usage.mdx">
+    Responses, Chat Completions और अन्य JSON एंडपॉइंट को कॉल करें।
+  </Card>
+  <Card title="Rust API reference" icon="book-open" href="./api-reference.mdx">
+    `phaseo 0.1` के exact public types और methods देखें।
+  </Card>
+  <Card title="docs.rs" icon="arrow-up-right-from-square" href="https://docs.rs/phaseo">
+    Generated Rust API documentation देखें।
+  </Card>
+</Columns>

@@ -1,0 +1,10 @@
+---
+title: "更新 API 密钥"
+sidebarTitle: "更新 API 密钥"
+badge: "测试版"
+openapi: "/zh-Hans/openapi/v1/openapi.localized.yaml PATCH /keys/{id}"
+description: "更新 API 密钥元数据和状态。"
+---
+<Note>此端点需要管理 API 密钥。不接受标准网关 API 密钥。</Note>
+
+可使用此路由重命名密钥、调整范围、设置过期时间、禁用密钥，或通过 `limit` 和 `limit_reset` 设置支出上限。

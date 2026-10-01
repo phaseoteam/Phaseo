@@ -25,6 +25,7 @@ import { Switch } from "@/components/ui/switch";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
 import { useTranslations } from "next-intl";
+import { localizedSettingsError } from "@/i18n/error-messages";
 import { cn } from "@/lib/utils";
 import {
 	getProviderCredentialFormKind,
@@ -75,10 +76,10 @@ type AzureDeploymentForm = {
 	modelId: string;
 };
 
-function maskFromValue(v: string) {
+function maskFromValue(v: string, valueNotAvailable: string) {
 	const start = 6;
 	const end = 4;
-	if (!v) return "(value not available)";
+	if (!v) return valueNotAvailable;
 	if (v.length <= start + end) return "*".repeat(Math.max(6, v.length));
 	return `${v.slice(0, start)}${"*".repeat(Math.max(6, v.length - start - end))}${v.slice(-end)}`;
 }
@@ -108,6 +109,7 @@ export default function BYOKInputDialog({
 	initial = null,
 }: Props) {
 	const t = useTranslations("SettingsUI");
+	const valueNotAvailable = t("strings.valueNotAvailable" as never);
 	const activeProviderId = providerId ?? initial?.providerId ?? null;
 	const credentialFormKind = useMemo(
 		() => getProviderCredentialFormKind(activeProviderId),
@@ -311,7 +313,7 @@ export default function BYOKInputDialog({
 			onSaved?.();
 		} catch (err: any) {
 			console.error(err);
-			toast.error(err?.message || t("strings.Failed to save key" as never));
+			toast.error(localizedSettingsError(err, t, "Failed to save key"));
 		} finally {
 			setLoading(false);
 		}
@@ -341,14 +343,14 @@ export default function BYOKInputDialog({
 								rel="noreferrer"
 								className="underline underline-offset-2 hover:text-foreground"
 							>
-								View valid models
+								{t("settingsCopy.byok.viewValidModels")}
 							</Link>
 						</div>
 					) : null}
 
 					<div className="grid gap-2">
 						<div className="flex items-center justify-between gap-2">
-							<Label htmlFor="value">{initial ? `Replace ${credentialLabel} (optional)` : credentialLabel}</Label>
+							<Label htmlFor="value">{initial ? t("settingsCopy.byok.replaceCredentialOptional", { credential: credentialLabel }) : credentialLabel}</Label>
 							<HoverCard>
 								<HoverCardTrigger asChild>
 									<span
@@ -364,7 +366,7 @@ export default function BYOKInputDialog({
 										<div>{onboarding.intro}</div>
 										{onboarding.docsUrl ? (
 											<div>
-												See{" "}
+												{t("settingsCopy.byok.docsPrefix")} {" "}
 												<Link
 													href={onboarding.docsUrl}
 													target={onboarding.docsUrl.startsWith("http") ? "_blank" : undefined}
@@ -373,7 +375,7 @@ export default function BYOKInputDialog({
 												>
 													{onboarding.docsLabel}
 												</Link>{" "}
-												for more information.
+												{t("settingsCopy.byok.docsSuffix")}
 											</div>
 										) : null}
 									</div>
@@ -385,8 +387,8 @@ export default function BYOKInputDialog({
 								{initial.prefix || initial.suffix
 									? `${initial.prefix ?? ""}${"*".repeat(6)}${initial.suffix ?? ""}`
 									: initial.value
-										? maskFromValue(initial.value)
-										: "(value not available)"}
+										? maskFromValue(initial.value, valueNotAvailable)
+										: valueNotAvailable}
 							</div>
 						) : null}
 
@@ -427,7 +429,7 @@ export default function BYOKInputDialog({
 								)}
 								{initial ? (
 									<p className="text-xs text-muted-foreground">
-										Leave all fields blank to keep existing credentials.
+										{t("settingsCopy.byok.keepAllCredentials")}
 									</p>
 								) : null}
 							</div>
@@ -446,7 +448,7 @@ export default function BYOKInputDialog({
 								/>
 								{initial ? (
 									<p className="text-xs text-muted-foreground">
-										Leave both fields blank to keep existing credentials.
+										{t("settingsCopy.byok.keepBothCredentials")}
 									</p>
 								) : null}
 							</div>
@@ -456,7 +458,7 @@ export default function BYOKInputDialog({
 									<div key={deployment.id} className="rounded-md border p-2 space-y-2">
 										<div className="flex items-center justify-between">
 											<div className="text-xs font-medium text-muted-foreground">
-												Deployment {idx + 1}
+												{t("settingsPageCopy.deploymentWithIndex", { index: idx + 1 })}
 											</div>
 											{azureDeployments.length > 1 ? (
 												<Button
@@ -537,11 +539,11 @@ export default function BYOKInputDialog({
 									}
 								>
 									<Plus className="h-4 w-4 mr-1" />
-									Add deployment
+									{t("settingsCopy.byok.addDeployment")}
 								</Button>
 								{initial ? (
 									<p className="text-xs text-muted-foreground">
-										Leave all deployment fields blank to keep existing credentials.
+										{t("settingsCopy.byok.keepDeploymentCredentials")}
 									</p>
 								) : null}
 							</div>
@@ -618,10 +620,10 @@ export default function BYOKInputDialog({
 
 					<DialogFooter className="gap-2">
 						<Button variant="outline" type="button" onClick={() => embedded ? onCancel?.() : setOpen(false)}>
-							Cancel
+							{t("settingsPageCopy.cancel")}
 						</Button>
 						<Button type="submit" disabled={loading || !canSubmit}>
-							{loading ? "Saving..." : "Save"}
+							{loading ? t("settingsPageCopy.saving") : t("settingsPageCopy.save")}
 						</Button>
 					</DialogFooter>
 				</form>

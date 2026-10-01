@@ -1,0 +1,69 @@
+---
+title: "Arbeitsbereiche"
+description: "Organisiere API-Schlüssel, Einstellungen und Administratorzugriff, ohne deinen Phaseo-Tarif zu ändern."
+icon: "building-2"
+---
+
+Workspaces bündeln API-Schlüssel, Routing-Einstellungen, Presets, Guardrails und Administratorzugriff für ein Team, Produkt oder eine Umgebung.
+
+Workspaces sind im Phaseo-Standarddienst mit nutzungsbasierter Abrechnung enthalten. Du brauchst keinen separaten Tarif, um sie zu erstellen oder zu verwenden.
+
+## Wann du einen Workspace erstellen solltest
+
+Verwende separate Workspaces, wenn du Folgendes möchtest:
+
+- Entwicklungs-, Staging- und Produktionszugangsdaten zu trennen
+- verschiedene Produkte oder Kundenprojekte getrennt zu halten
+- administrativen Integrationen nur Zugriff auf benötigte Ressourcen zu geben
+- unterschiedliche Routing-, Preset- oder Guardrail-Richtlinien anzuwenden
+
+Für eine kleine Integration reicht möglicherweise der Standard-Workspace.
+
+## Workspaces verwalten
+
+Du kannst Workspaces über das Phaseo-Dashboard oder die Management-API verwalten.
+
+Die Workspace-API verwendet [Management-API-Schlüssel](../developers/management-api-keys.mdx). Standard-Gateway-API-Schlüssel sind für Inferenzanfragen vorgesehen und können keine Workspace-Verwaltungsendpunkte aufrufen.
+
+| Aufgabe | Endpunkt |
+| --- | --- |
+| Workspaces auflisten | [`GET /workspaces`](../api-reference/endpoint/workspaces-list.mdx) |
+| Workspace erstellen | [`POST /workspaces`](../api-reference/endpoint/workspaces-create.mdx) |
+| Workspace abrufen | [`GET /workspaces/{id}`](../api-reference/endpoint/workspaces-get.mdx) |
+| Workspace aktualisieren | [`PATCH /workspaces/{id}`](../api-reference/endpoint/workspaces-update.mdx) |
+| Workspace löschen | [`DELETE /workspaces/{id}`](../api-reference/endpoint/workspaces-delete.mdx) |
+
+<Note>
+Workspace-Verwaltungsendpunkte sind derzeit als Beta gekennzeichnet. Gestalte administrative Automatisierungen so, dass sie leicht wiederholt werden können, und prüfe API-Antworten, bevor du Folgeänderungen anwendest.
+</Note>
+
+## Passenden Zugriff wählen
+
+Erstelle einen Management-Schlüssel nur mit den Workspace-Berechtigungen, die deine Integration benötigt:
+
+- `workspaces:read` zum Auflisten und Prüfen von Workspaces
+- `workspaces:write` zum Erstellen oder Aktualisieren von Workspaces
+- `workspaces:delete` zum Löschen von Workspaces
+
+Phaseo prüft außerdem Workspace-Mitgliedschaft und Rollen. Eine Berechtigung allein gewährt keinen Zugriff auf einen anderen Workspace.
+
+Speichere Management-Schlüssel im serverseitigen Secret-Speicher. Lege sie nicht in Browser-Code, Desktop-Protokollen, der Versionsverwaltung oder Chats offen.
+
+## Workspace löschen
+
+Der Standard-Workspace kann nicht gelöscht werden. Entferne oder verschiebe vor dem Löschen eines anderen Workspaces dessen aktive API-Schlüssel, damit Anfragen nicht mehr auf einen nicht vorhandenen Workspace verweisen.
+
+## Abrechnung
+
+Workspaces bilden keine eigenen Preistarife. Die Nutzung wird weiterhin nach dem Standardmodell mit nutzungsbasierter Abrechnung berechnet, das unter [Preise und Abrechnung](../pricing/tiers.mdx) beschrieben ist.
+
+## Nächste Schritte
+
+<CardGroup cols={2}>
+	<Card title="Management-API-Schlüssel" icon="key-round" href="../developers/management-api-keys.mdx">
+		Erstelle ein serverseitiges Zugangsmittel mit eingeschränkten Berechtigungen zur Workspace-Verwaltung.
+	</Card>
+	<Card title="Authentifizierung" icon="key" href="../developers/authentication.mdx">
+		Verwende Gateway-API-Schlüssel für Modell- und Generierungsanfragen.
+	</Card>
+</CardGroup>

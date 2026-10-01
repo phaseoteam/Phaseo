@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState, useTransition, useEffect } from "react";
 import {
 	Dialog,
@@ -28,24 +29,32 @@ import { fetchOrganisations } from "@/app/(dashboard)/internal/audit/actions-adv
 import { useRouter } from "next/navigation";
 
 const MODALITY_OPTIONS = [
-	"text",
-	"image",
-	"video",
-	"audio",
-	"audio_stt",
-	"audio_tts",
-	"audio_music",
-	"file",
-	"embeddings",
-	"code",
-	"vision",
-	"speech",
-	"multimodal",
-];
+	{ value: "text", label: "modalities.text" },
+	{ value: "image", label: "modalities.image" },
+	{ value: "video", label: "modalities.video" },
+	{ value: "audio", label: "modalities.audio" },
+	{ value: "audio_stt", label: "modalities.audioStt" },
+	{ value: "audio_tts", label: "modalities.audioTts" },
+	{ value: "audio_music", label: "modalities.audioMusic" },
+	{ value: "file", label: "modalities.file" },
+	{ value: "embeddings", label: "modalities.embeddings" },
+	{ value: "code", label: "modalities.code" },
+	{ value: "vision", label: "modalities.vision" },
+	{ value: "speech", label: "modalities.speech" },
+	{ value: "multimodal", label: "modalities.multimodal" },
+] as const;
 
-const STATUS_OPTIONS = ["active", "beta", "deprecated", "retired", "preview"];
+const STATUS_OPTIONS = [
+	{ value: "active", label: "statuses.active" },
+	{ value: "beta", label: "statuses.beta" },
+	{ value: "deprecated", label: "statuses.deprecated" },
+	{ value: "retired", label: "statuses.retired" },
+	{ value: "preview", label: "statuses.preview" },
+] as const;
 
 export function CreateModelDialog() {
+	const tUi = useTranslations("Common.ui");
+	const t = useTranslations("Common.ui.modelCreation");
 	const router = useRouter();
 	const [open, setOpen] = useState(false);
 	const [isPending, startTransition] = useTransition();
@@ -95,7 +104,7 @@ export function CreateModelDialog() {
 
 	const handleCreate = () => {
 		if (!modelId || !name) {
-			setError("Model ID and Name are required");
+			setError(t("missingRequired"));
 			return;
 		}
 
@@ -117,7 +126,7 @@ export function CreateModelDialog() {
 				setOpen(false);
 				router.refresh();
 			} else {
-				setError(result.error || "Failed to create model");
+				setError(t("failedCreate"));
 			}
 		});
 	};
@@ -139,14 +148,14 @@ export function CreateModelDialog() {
 			<DialogTrigger asChild>
 				<Button>
 					<Plus className="mr-2 h-4 w-4" />
-					Create Model
+					{t("title")}
 				</Button>
 			</DialogTrigger>
 			<DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto w-[95vw] sm:w-full">
 				<DialogHeader>
-					<DialogTitle className="text-lg sm:text-xl">Create New Model</DialogTitle>
+					<DialogTitle className="text-lg sm:text-xl">{t("dialogTitle")}</DialogTitle>
 					<DialogDescription className="text-sm">
-						Add a new model to the database. All fields can be edited later.
+						{t("description")}
 					</DialogDescription>
 				</DialogHeader>
 
@@ -160,33 +169,33 @@ export function CreateModelDialog() {
 					{/* Model ID */}
 					<div className="space-y-2">
 						<Label htmlFor="model-id">
-							Model ID * <span className="text-xs text-muted-foreground">(unique identifier)</span>
+							{t("modelId")} * <span className="text-xs text-muted-foreground">({t("uniqueIdentifier")})</span>
 						</Label>
 						<Input
 							id="model-id"
 							value={modelId}
 							onChange={(e) => setModelId(e.target.value)}
-							placeholder="e.g., openai/gpt-4-turbo"
+							placeholder={t("modelIdExample")}
 						/>
 						<p className="text-xs text-muted-foreground">
-							Use format: organization/model-name or provider/model-name
+							{t("modelIdHelp")}
 						</p>
 					</div>
 
 					{/* Name */}
 					<div className="space-y-2">
-						<Label htmlFor="name">Display Name *</Label>
+						<Label htmlFor="name">{t("displayName")} *</Label>
 						<Input
 							id="name"
 							value={name}
 							onChange={(e) => setName(e.target.value)}
-							placeholder="e.g., GPT-4 Turbo"
+							placeholder={t("displayNameExample")}
 						/>
 					</div>
 
 					{/* Organization */}
 					<div className="space-y-2">
-						<Label htmlFor="organisation-select">Organization</Label>
+						<Label htmlFor="organisation-select">{t("organization")}</Label>
 						<Select
 							value={organisationId || "none"}
 							onValueChange={(value) =>
@@ -194,10 +203,10 @@ export function CreateModelDialog() {
 							}
 						>
 							<SelectTrigger id="organisation-select">
-								<SelectValue placeholder="Select organization" />
+								<SelectValue placeholder={t("selectOrganization")} />
 							</SelectTrigger>
 							<SelectContent>
-								<SelectItem value="none">None</SelectItem>
+								<SelectItem value="none">{tUi("select.none")}</SelectItem>
 								{organisations.map((org) => (
 									<SelectItem key={org.id} value={org.id}>
 										{org.name}
@@ -209,15 +218,15 @@ export function CreateModelDialog() {
 
 					{/* Status */}
 					<div className="space-y-2">
-						<Label htmlFor="status">Status</Label>
+						<Label htmlFor="status">{t("status")}</Label>
 						<Select value={status} onValueChange={setStatus}>
 							<SelectTrigger id="status">
-								<SelectValue placeholder="Select status" />
+								<SelectValue placeholder={t("selectStatus")} />
 							</SelectTrigger>
 							<SelectContent>
 								{STATUS_OPTIONS.map((opt) => (
-									<SelectItem key={opt} value={opt}>
-										{opt.charAt(0).toUpperCase() + opt.slice(1)}
+									<SelectItem key={opt.value} value={opt.value}>
+										{t(opt.label)}
 									</SelectItem>
 								))}
 							</SelectContent>
@@ -232,13 +241,13 @@ export function CreateModelDialog() {
 							onCheckedChange={(checked) => setHidden(checked === true)}
 						/>
 						<Label htmlFor="hidden" className="cursor-pointer font-normal text-sm">
-							Hidden (model won't appear in public listings)
+							{t("hidden")} <span className="text-muted-foreground">({t("hiddenDescription")})</span>
 						</Label>
 					</div>
 
 					{/* Release Date */}
 					<div className="space-y-2">
-						<Label htmlFor="release-date">Release Date</Label>
+						<Label htmlFor="release-date">{t("releaseDate")}</Label>
 						<Input
 							id="release-date"
 							type="date"
@@ -249,7 +258,7 @@ export function CreateModelDialog() {
 
 					{/* Retirement Date */}
 					<div className="space-y-2">
-						<Label htmlFor="retirement-date">Retirement Date</Label>
+						<Label htmlFor="retirement-date">{t("retirementDate")}</Label>
 						<Input
 							id="retirement-date"
 							type="date"
@@ -260,51 +269,51 @@ export function CreateModelDialog() {
 
 					{/* Input Modalities */}
 					<div className="space-y-2">
-						<Label>Input Modalities</Label>
+						<Label>{t("inputModalities")}</Label>
 						<div className="flex flex-wrap gap-2">
 							{MODALITY_OPTIONS.map((modality) => (
 								<Badge
-									key={modality}
+									key={modality.value}
 									variant={
-										inputTypes.includes(modality) ? "default" : "outline"
+										inputTypes.includes(modality.value) ? "default" : "outline"
 									}
 									className="cursor-pointer text-xs sm:text-sm"
-									onClick={() => toggleInputType(modality)}
+									onClick={() => toggleInputType(modality.value)}
 								>
-									{modality}
-									{inputTypes.includes(modality) && (
+									{t(modality.label)}
+									{inputTypes.includes(modality.value) && (
 										<X className="ml-1 h-3 w-3" />
 									)}
 								</Badge>
 							))}
 						</div>
 						<p className="text-xs text-muted-foreground">
-							Click to toggle input modalities
+							{t("toggleInputModalities")}
 						</p>
 					</div>
 
 					{/* Output Modalities */}
 					<div className="space-y-2">
-						<Label>Output Modalities</Label>
+						<Label>{t("outputModalities")}</Label>
 						<div className="flex flex-wrap gap-2">
 							{MODALITY_OPTIONS.map((modality) => (
 								<Badge
-									key={modality}
+									key={modality.value}
 									variant={
-										outputTypes.includes(modality) ? "default" : "outline"
+										outputTypes.includes(modality.value) ? "default" : "outline"
 									}
 									className="cursor-pointer text-xs sm:text-sm"
-									onClick={() => toggleOutputType(modality)}
+									onClick={() => toggleOutputType(modality.value)}
 								>
-									{modality}
-									{outputTypes.includes(modality) && (
+									{t(modality.label)}
+									{outputTypes.includes(modality.value) && (
 										<X className="ml-1 h-3 w-3" />
 									)}
 								</Badge>
 							))}
 						</div>
 						<p className="text-xs text-muted-foreground">
-							Click to toggle output modalities
+							{t("toggleOutputModalities")}
 						</p>
 					</div>
 				</div>
@@ -316,7 +325,7 @@ export function CreateModelDialog() {
 						disabled={isPending}
 						className="w-full sm:w-auto"
 					>
-						Cancel
+						{t("cancel")}
 					</Button>
 					<Button
 						onClick={handleCreate}
@@ -324,7 +333,7 @@ export function CreateModelDialog() {
 						className="w-full sm:w-auto"
 					>
 						{isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-						Create Model
+						{t("title")}
 					</Button>
 				</DialogFooter>
 			</DialogContent>

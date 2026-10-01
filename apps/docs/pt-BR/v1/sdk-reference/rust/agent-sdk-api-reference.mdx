@@ -1,0 +1,173 @@
+---
+title: "Referência da API do Rust Agent SDK"
+description: "Structs, traits e métodos públicos do phaseo-agent 0.1."
+---
+
+Esta página descreve a API pública do [`phaseo-agent 0.1`](https://docs.rs/phaseo-agent/0.1.0/phaseo_agent/).
+
+## Definição do agente
+
+| API | Finalidade |
+| --- | --- |
+| `AgentDefinition::new(id, model)` | Cria uma definição de agente com limite padrão de oito etapas. |
+| `.instructions(text)` | Define as instruções do modelo. |
+| `.tool(tool)` | Adiciona uma ferramenta. |
+| `.max_steps(limit)` | Define o limite de turnos do modelo. O valor mínimo é um. |
+| `.model_retries(count, backoff)` | Tenta novamente as requisições de modelo que falharam com um intervalo `Duration` fixo. |
+| `.human_review(callback)` | Pausa após uma resposta do modelo quando a função de callback retorna `Some(HumanReviewRequest)`. |
+| `create_agent(definition)` | Cria um `Agent`. |
+
+## Executar e continuar
+
+| Método | Finalidade |
+| --- | --- |
+| `Agent::run(client, options)` | Executa de forma síncrona sem uma função de callback de eventos. |
+| `Agent::run_with_events(client, options, callback)` | Executa de forma síncrona e emite valores `AgentEvent`. |
+| `Agent::continue_run(client, options)` | Continua uma execução pausada. |
+| `Agent::continue_with_events(client, options, callback)` | Continua a execução e emite eventos. |
+
+Campos de `RunOptions`:
+
+- `input: Value`
+- `context: Value`
+- `model: Option<String>`
+- `max_steps: Option<usize>`
+
+Crie os valores padrão com `RunOptions::new(input)`.
+
+Campos de `ContinueOptions`:
+
+- `result: RunResult`
+- `human_input: Option<String>`
+- `approvals: Vec<ToolDecision>`
+- `tool_outputs: Vec<ToolOutput>`
+
+Crie os valores padrão com `ContinueOptions::new(result)`.
+
+## Ferramentas
+
+| API | Finalidade |
+| --- | --- |
+| `Tool::new(id, description, parameters, executor)` | Define uma ferramenta local síncrona. |
+| `Tool::external(id, description, parameters)` | Define uma ferramenta atendida pelo aplicativo após uma pausa. |
+| `Tool::require_approval()` | Exige aprovação com o ID exato antes da execução local. |
+| `define_tool(tool)` | Retorna a ferramenta fornecida para manter um estilo consistente de definição. |
+
+A assinatura do executor é:
+
+```rust
+Fn(
+    serde_json::Value,
+    &RuntimeContext,
+) -> Result<serde_json::Value, AgentError>
+    + Send
+    + Sync
+    + 'static
+```
+
+`Tool` expõe `id`, `description`, `parameters`, `execute` e `require_approval`. Prefira os construtores e o método builder para manter consistentes os tipos do executor e os valores padrão.
+
+O `RuntimeContext` enviado ao executor contém:
+
+- `run_id`
+- `agent_id`
+- `step_index`
+- `context`
+- `tool_call`
+
+## Mensagens e chamadas de ferramenta
+
+`Message` contém `role`, `content`, `tool_calls`, `tool_call_id` opcional, `name` opcional e `is_error`. Crie mensagens comuns com:
+
+- `Message::user(content)`
+- `Message::assistant(content)`
+
+`ToolCall` contém o ID da chamada `id`, o nome da ferramenta `name` e a entrada JSON `input`.
+
+`ToolSpec` contém o ID da ferramenta `id`, a descrição `description` e os parâmetros JSON Schema `parameters` enviados a um cliente de modelo.
+
+## Clientes de modelo
+
+Implemente `ModelClient` para usar outro transporte de modelo:
+
+```rust
+pub trait ModelClient {
+    fn generate(
+        &mut self,
+        request: &ModelRequest,
+    ) -> Result<ModelResponse, AgentError>;
+}
+```
+
+O adaptador integrado do Gateway está disponível por meio de:
+
+- `GatewayAgentClient::new(phaseo_client, model)`
+- `GatewayAgentClient::from_env(model)`
+- `create_gateway_agent_client(model)`
+
+Ele envia valores `ModelRequest` para `POST /responses` e normaliza o texto de saída, chamadas de função, metadados da requisição e uso.
+
+`ModelRequest` contém o ID do agente, o modelo efetivo, as instruções, as mensagens atuais, as especificações de ferramentas e o contexto do aplicativo.
+
+`ModelResponse` contém:
+
+- `message: Message`
+- `usage: UsageSummary`
+- `request_id: Option<String>`
+- `provider: Option<String>`
+- `model: Option<String>`
+- `finish_reason: Option<String>`
+
+## Tipos de revisão e pausa
+
+`HumanReviewContext` contém os IDs da execução e do agente, o índice da etapa, as mensagens atuais, a resposta normalizada do modelo e o contexto do aplicativo.
+
+Retorne `HumanReviewRequest { reason, payload }` no callback de revisão para pausar uma execução.
+
+`HumanPause` contém:
+
+- `reason`
+- o payload JSON `payload`
+- `kind`
+- `pending_tool_calls`
+
+Cada `PendingToolCall` contém a `ToolCall` original, o tipo de entrada necessário `kind` e um motivo legível.
+
+`ToolDecision` fornece um `tool_call_id` aprovado e um motivo opcional. `ToolOutput` fornece um `tool_call_id` e uma saída JSON.
+
+## Registros de execução
+
+`RunResult` contém:
+
+- `run: RunRecord`
+- `steps: Vec<RunStep>`
+- `output: Value`
+- `messages: Vec<Message>`
+- `usage: UsageSummary`
+
+`RunRecord` contém os IDs da execução e do agente, o modelo efetivo e o limite de etapas, o status, a entrada original, o contexto do aplicativo, a contagem de etapas, uma pausa opcional, um motivo de parada opcional e registros de data e hora.
+
+`RunStep` contém seu índice e status, a contagem de tentativas do modelo, as chamadas de ferramenta, o ID da requisição, o provedor, o modelo, o motivo de encerramento, um erro opcional e o uso.
+
+`UsageSummary` contém `input_tokens`, `output_tokens`, `cached_tokens`, `total_tokens` e `cost`.
+
+O cliente de modelo fornece `cost`. No momento, o adaptador integrado do Gateway 0.1 não mapeia `cost_nanos` nem `cost_cents` do Gateway para esse campo.
+
+`RunResult`, `RunRecord`, `RunStep`, `Message`, `ToolCall`, `HumanPause`, `PendingToolCall`, `ToolDecision`, `ToolOutput` e `UsageSummary` são compatíveis com a serialização Serde quando suas definições derivam `Serialize` e `Deserialize`.
+
+## Eventos e erros
+
+Campos de `AgentEvent`:
+
+- `event_type`
+- `run_id`
+- `agent_id`
+- `timestamp_ms`
+- `details`
+
+`AgentError` implementa `std::error::Error` e `Display`. Use `AgentError::new(...)` para criar um e `message()` para ler sua mensagem.
+
+## Referências externas
+
+- [`phaseo-agent` no crates.io](https://crates.io/crates/phaseo-agent)
+- [`phaseo-agent` no docs.rs](https://docs.rs/phaseo-agent)

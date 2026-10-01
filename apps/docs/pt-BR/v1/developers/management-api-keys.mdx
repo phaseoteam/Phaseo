@@ -1,0 +1,82 @@
+---
+title: Chaves de API de gerenciamento
+description: Crie chaves de gerenciamento com permissões específicas para as APIs do plano de controle da Phaseo.
+icon: "key-round"
+---
+
+As chaves de API de gerenciamento são credenciais de servidor para o plano de controle da Phaseo: créditos, atividade, administração de espaços de trabalho, gerenciamento de chaves, predefinições, configurações e guardrails. Elas não servem para enviar solicitações de inferência.
+
+Crie essas chaves em **Painel → Configurações → Chaves de gerenciamento**. O segredo é exibido uma única vez; salve-o no seu gerenciador de segredos antes de fechar a janela.
+
+## Tipos de credencial
+
+| Credencial | Uso | Controles |
+| --- | --- | --- |
+| Chave de API do Gateway | Solicitações de modelos e geração | Política de roteamento, orçamentos, limites e guardrails associados |
+| Chave de API de gerenciamento | Solicitações do plano de controle | Recursos explícitos de gerenciamento e verificações de função no espaço de trabalho |
+| Token de acesso OAuth | Acesso delegado ao plano de controle | Escopos OAuth aprovados e verificações de função no espaço de trabalho |
+
+As rotas de gerenciamento aceitam apenas `phaseo_v1_mk_<kid>_<secret>`. As chaves de API do Gateway usam `phaseo_v1_sk_<kid>_<secret>` e são exclusivas para inferência; elas não acessam endpoints do plano de controle.
+
+Use chaves de gerenciamento somente em código do lado do servidor:
+
+```http
+Authorization: Bearer phaseo_v1_mk_<kid>_<secret>
+```
+
+A URL base de produção é:
+
+```text
+https://api.phaseo.app/v1
+```
+
+## Escolha um nível de acesso
+
+O painel oferece modelos explícitos. Ao criar a chave, cada modelo se expande para os recursos listados; a Phaseo nunca armazena um curinga como `all`. Assim, uma chave não pode receber implicitamente uma nova permissão adicionada no futuro.
+
+| Modelo | Permissões |
+| --- | --- |
+| **Read** | Todos os recursos de gerenciamento `*:read` atuais |
+| **Write** | Todos os recursos `*:read` e `*:write` atuais; sem acesso para excluir |
+| **All** | Todos os recursos atuais de leitura, escrita e exclusão |
+
+## Referência de recursos
+
+Use um modelo de acesso para casos comuns. Escolha recursos explícitos quando uma integração precisar de permissões menores e específicas para a finalidade.
+
+| Área | Leitura | Escrita | Exclusão |
+| --- | --- | --- | --- |
+| Identidade e catálogo | `me:read`, `models:read`, `providers:read`, `pricing:read` | — | — |
+| Uso e observabilidade | `credits:read`, `activity:read`, `analytics:read`, `generations:read`, `feedback:read` | `feedback:write` | — |
+| Espaços de trabalho | `workspaces:read` | `workspaces:write` | `workspaces:delete` |
+| Chaves de API do Gateway | `keys:read` | `keys:write` | `keys:delete` |
+| Chaves de API de gerenciamento | `management_keys:read` | `management_keys:write` | `management_keys:delete` |
+| Predefinições | `presets:read` | `presets:write` | `presets:delete` |
+| Configurações | `settings:read` | `settings:write` | — |
+| Credenciais de provedores | `provider_credentials:read` | `provider_credentials:write` | `provider_credentials:delete` |
+| Guardrails | `guardrails:read` | `guardrails:write` | `guardrails:delete` |
+| Orçamentos | `budgets:read` | `budgets:write` | `budgets:delete` |
+| Clientes OAuth | `oauth_clients:read` | `oauth_clients:write` | `oauth_clients:delete` |
+
+Os modelos `Write` incluem os recursos de leitura correspondentes para que a integração possa consultar um recurso antes de atualizá-lo. `All` inclui recursos de exclusão; use-o somente para automações administrativas confiáveis.
+
+## Escopos e funções no espaço de trabalho
+
+Um escopo é necessário, mas não é suficiente. A Phaseo também verifica se a chave ou a entidade OAuth pertence ao espaço de trabalho solicitado e tem a função necessária. Uma chave com escopo definido não pode usar um recurso para acessar outro espaço de trabalho nem ignorar as verificações de propriedade e administração.
+
+Por exemplo, `keys:write` autoriza operações de gerenciamento de chaves, enquanto a verificação da função no espaço de trabalho determina se quem fez a solicitação pode gerenciar chaves naquele espaço.
+
+## Guardrails são diferentes
+
+Os guardrails se aplicam às **chaves de API do Gateway** e controlam o tráfego de inferência: restrições de roteamento, orçamentos, tratamento de injeção de prompt e regras para informações confidenciais. Os escopos das chaves de gerenciamento determinam quais APIs administrativas uma credencial pode chamar. São controles complementares, não substitutos.
+
+Consulte [Implemente guardrails em chaves de API](../cookbook/guardrails-for-api-keys.mdx) para configurar guardrails em uma chave de inferência.
+
+## Segurança e rotação
+
+- Mantenha as chaves de gerenciamento fora de navegadores, logs do computador, controle de versão e chats.
+- Use uma chave específica por integração e prefira o modelo mais restrito.
+- Defina uma data de expiração se a integração não precisar de acesso indefinido.
+- Pause ou exclua imediatamente as chaves que não estiverem em uso.
+- Se uma chave vazar, faça a rotação antes de continuar investigando o incidente.
+

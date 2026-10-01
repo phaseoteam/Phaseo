@@ -1,0 +1,83 @@
+---
+title: "メッセージを作成"
+sidebarTitle: "メッセージを作成"
+openapi: "/ja/openapi/v1/openapi.localized.yaml POST /messages"
+description: "`/v1/messages` の Anthropic 互換 Messages エンドポイントです。"
+---
+`/v1/messages` は Anthropic Messages API のリクエスト形式を受け取り、Anthropic 形式の応答を返します。
+
+## ストリーミング
+
+`stream: true` を設定すると、Anthropic 形式の Server-Sent Events（`message_start`、`content_block_*`、`message_delta`、`message_stop`）を受信できます。
+
+## 補足
+
+- Anthropic のツール使用フィールドに対応しています。
+- `stream: true` はツールループでも利用できます。Gateway 管理サーバーツールでは、Phaseo が上流のターンを処理してループを続行し、合成ストリームを再送する場合があります。
+- Anthropic ネイティブの Web 検索ツール形式も `tools` で直接指定できます。例: `type: "web_search_20250305"`。
+- `X-Phaseo-Strictness` ヘッダーで、未対応パラメーターの扱いを制御します。
+
+## サーバーツール
+
+`/v1/messages` は次の Gateway 管理サーバーツールにも対応しています。
+
+- `gateway:datetime`
+- `phaseo:web_search`
+- `phaseo:web_fetch`
+- `phaseo:advisor`
+- `phaseo:image_generation`
+
+Phaseo はこれらのツールを上流プロバイダー向けの Anthropic 互換形式に変換してサーバー側で実行し、ツールループを続行します。
+
+## プロバイダーのネイティブ Web 検索
+
+互換性のある Anthropic モデルとプロバイダーの組み合わせがネイティブ Web 検索に対応している場合は、ネイティブのツール定義を直接渡すこともできます。
+
+```bash
+curl https://api.phaseo.app/v1/messages \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "anthropic/claude-sonnet-4",
+    "max_tokens": 512,
+    "messages": [
+      { "role": "user", "content": "Find the latest Anthropic web search guidance." }
+    ],
+    "tools": [
+      {
+        "type": "web_search_20250305",
+        "name": "web_search",
+        "max_uses": 3,
+        "allowed_domains": ["docs.anthropic.com"]
+      }
+    ],
+    "tool_choice": { "type": "tool", "name": "web_search" }
+  }'
+```
+
+実行前に、プロバイダーのルーティングで `web_search_options` の対応状況が引き続き確認されます。
+
+### 日時の例
+
+```bash
+curl https://api.phaseo.app/v1/messages \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "anthropic/claude-sonnet-4",
+    "max_tokens": 512,
+    "stream": false,
+    "messages": [
+      { "role": "user", "content": "What time is it in America/New_York right now?" }
+    ],
+    "tools": [
+      {
+        "type": "gateway:datetime",
+        "parameters": { "timezone": "America/New_York" }
+      }
+    ],
+    "tool_choice": { "type": "auto" }
+  }'
+```
+
+使用すると、`usage.server_tool_use.*` カウンターにサーバーツールの呼び出し回数が記録されます。

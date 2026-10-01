@@ -1,0 +1,178 @@
+---
+icon: "compass"
+title: "أداة Advisor على الخادم"
+description: "أتِح لنموذج استشارة نموذج آخر أثناء التوليد."
+---
+
+استخدم `phaseo:advisor` عندما تريد إتاحة مراجعة أو خطة أو تحقق من المعقولية أو رأي متخصص من نموذج آخر قبل أن ينهي النموذج الرئيسي عمله.
+
+يستدعي النموذج الرئيسي Advisor مثل أي أداة أخرى. تشغّل Phaseo نموذج Advisor على الخادم وتعيد المشورة كنتيجة للأداة، ثم يكتب النموذج الرئيسي الرد النهائي.
+
+<Note>
+تدير البوابة Advisor عبر نماذج النص المدعومة. ولا يتحول إلى أداة Advisor الأصلية لدى Anthropic إلا إذا أرسل العميل بنية الأداة الأصلية صراحةً.
+</Note>
+
+## البدء السريع
+
+```bash
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-5-nano",
+    "messages": [
+      { "role": "user", "content": "Design a rate limiter for a distributed API gateway." }
+    ],
+    "tools": [
+      {
+        "type": "phaseo:advisor",
+        "parameters": {
+          "model": "anthropic/claude-opus-5",
+          "max_uses": 1,
+          "max_completion_tokens": 1400
+        }
+      }
+    ]
+  }'
+```
+
+## اختيار نموذج Advisor
+
+يمكنك تثبيت نموذج Advisor في تعريف الأداة:
+
+```json
+{
+  "type": "phaseo:advisor",
+  "parameters": {
+    "model": "anthropic/claude-opus-5"
+  }
+}
+```
+
+إذا حُذف `parameters.model`، فيمكن لاستدعاء الأداة تقديم `model`. وإذا لم يُحدّد أيٌّ منهما، تستخدم Phaseo نموذج الطلب الخارجي.
+
+## المعلمات
+
+```json
+{
+  "type": "phaseo:advisor",
+  "parameters": {
+    "name": "reviewer",
+    "model": "anthropic/claude-opus-5",
+    "instructions": "Review plans for correctness, missing edge cases, and implementation risk.",
+    "forward_transcript": true,
+    "max_uses": 2,
+    "max_completion_tokens": 1400,
+    "reasoning": { "effort": "high" },
+    "temperature": 0.2
+  }
+}
+```
+
+| المعلمة | النوع | الافتراضي | الوصف |
+| --- | --- | --- | --- |
+| `name` | string | none | اسم Advisor اختياري. يجب أن يكون الاسم فريدًا بعد إزالة المسافات من طرفيه، ويمكن أن يحتوي على أحرف وأرقام ومسافات وشرطات سفلية وواصلات. |
+| `model` | string | outer model | نموذج Advisor المطلوب استدعاؤه. إذا حُذف، يمكن لاستدعاء الأداة تقديم `model`. |
+| `instructions` | string | default Advisor behavior | تعليمات إضافية لنموذج Advisor. |
+| `forward_transcript` | boolean | `false` | ضمّ سجل المحادثة الحالية إلى طلب Advisor. |
+| `max_uses` | integer | `1` | الحد الأقصى لاستدعاءات هذا Advisor أثناء دورة أدوات الخادم. |
+| `max_completion_tokens` | integer | `1400` | الحد الأقصى لرموز الإخراج في رد Advisor. |
+| `max_tokens` | integer | `1400` | اسم بديل قديم لـ `max_completion_tokens`. |
+| `reasoning` | object | provider default | إعداد الاستدلال الذي يُمرّر إلى استدعاء Advisor إذا كان النموذج أو المزوّد المحدد يدعمه. |
+| `temperature` | number | provider default | درجة حرارة أخذ العينات لاستدعاء Advisor. |
+
+## وسائط استدعاء الأداة
+
+عادةً ما يستدعي النموذج Advisor باستخدام `prompt`:
+
+```json
+{
+  "prompt": "Review this migration plan and identify the riskiest assumptions."
+}
+```
+
+إذا لم يثبّت تعريف Advisor نموذجًا، فيمكن أن يتضمن استدعاء الأداة أيضًا `model`:
+
+```json
+{
+  "model": "anthropic/claude-opus-5",
+  "prompt": "Check this security design for missing controls."
+}
+```
+
+عندما تكون `forward_transcript` بقيمة `true`، يمكن لـ Phaseo تنفيذ استدعاء Advisor يتضمن سجل المحادثة فقط إذا لم يقدّم النموذج prompt.
+
+## عدة مستشارين
+
+أضف إدخال `phaseo:advisor` لكل مستشار. يصبح كل مستشار مسمّى أداة داخلية مستقلة، مثل `phaseo_advisor_security_reviewer` أو `phaseo_advisor_architect`.
+
+```json
+{
+  "tools": [
+    {
+      "type": "phaseo:advisor",
+      "parameters": {
+        "name": "security-reviewer",
+        "model": "anthropic/claude-opus-5",
+        "instructions": "Review for vulnerabilities, abuse cases, and missing mitigations."
+      }
+    },
+    {
+      "type": "phaseo:advisor",
+      "parameters": {
+        "name": "architect",
+        "model": "openai/gpt-5",
+        "instructions": "Review system design tradeoffs and operational risks."
+      }
+    }
+  ]
+}
+```
+
+يمكن لإدخال Advisor واحد فقط على الأكثر حذف `name`. إذا فرضت `tool_choice: "phaseo:advisor"` مع عدة مستشارين، تربط Phaseo هذا الاسم المستعار بأول Advisor تم ضبطه.
+
+## ما الذي تعيده الأداة
+
+يعيد Advisor بيانات JSON كنتيجة للأداة:
+
+```json
+{
+  "status": "ok",
+  "name": "reviewer",
+  "model": "anthropic/claude-opus-5",
+  "advice": "Start with a smaller migration slice and define rollback criteria before changing traffic routing."
+}
+```
+
+إذا تعذر تنفيذ طلب Advisor، تعيد Phaseo خطأ أداة مثل `advisor_invalid_request` أو `advisor_max_uses_exceeded` أو `advisor_request_failed`.
+
+## ذاكرة المحادثة
+
+لا يحتفظ Advisor بحالة مخفية بين الطلبات. إذا أعدت إرسال الرسائل ونتائج الأدوات السابقة في الطلب التالي، فسيتمكن النموذج الرئيسي من رؤية الاستشارة السابقة. وعند تفعيل `forward_transcript`، يستطيع Advisor أيضًا رؤية سجل المحادثة المُمرّر في ذلك الطلب.
+
+## الاستخدام والتسعير
+
+تزيد استدعاءات Advisor العداد التالي:
+
+```json
+{
+  "usage": {
+    "server_tool_use": {
+      "advisor_requests": 1
+    }
+  }
+}
+```
+
+تُحتسب رموز نموذج Advisor ضمن إجمالي الاستخدام، ويمكن تسعيرها وفق أسعار نموذج Advisor المحدد. كما يمكن لتسعير أدوات الخادم استخدام `server_tool_advisor_requests`.
+
+## القيود الحالية
+
+- لم يُفعّل بث مشورة Advisor بعد.
+- لا تتيح استدعاءات Advisor أدوات إضافية للنموذج الذي تتم استشارته.
+
+## ذات صلة
+
+- [أدوات الخادم](./index.mdx)
+- [وكيل فرعي](./subagent.mdx)
+- [استدعاء الأدوات](../tool-calling.mdx)

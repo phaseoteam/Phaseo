@@ -1,0 +1,75 @@
+---
+title: "प्रमाणीकरण"
+description: "Phaseo Gateway के हर अनुरोध को प्रमाणित करने के लिए API keys इस्तेमाल करें।"
+icon: "key-round"
+---
+
+प्रमाणित अनुरोध भेजने या keys को सुरक्षित रखने और बदलने का तरीका तय करने के लिए यह संदर्भ देखें।
+
+Phaseo Gateway Bearer tokens इस्तेमाल करता है। हर API अनुरोध में आपके workspace की एक मान्य key होनी चाहिए।
+
+---
+
+## कुंजी के प्रकार
+
+- **Gateway API keys** आपके workspace में उपलब्ध मॉडल, प्रोवाइडर और जनरेशन endpoints को कॉल करती हैं।
+- **प्रबंधन API कुंजियाँ** प्रशासन API को कॉल करती हैं। [प्रबंधन API कुंजियाँ](./management-api-keys.mdx) देखें।
+- **बदली गई keys** कभी भी बनाई जा सकती हैं। पुरानी key हटाने से पहले अपने ऐप में नई key लगा दें।
+
+Keys का फ़ॉर्मैट `phaseo_v1_sk_<kid>_<secret>` होता है। इन्हें पासवर्ड की तरह सुरक्षित रखें और client-side कोड या सार्वजनिक repositories में न रखें।
+
+<Note>
+बिना क्रेडिट जमा किए `:free` मॉडल कॉल कर सकते हैं। पेड मॉडल के लिए वॉलेट में उपलब्ध बैलेंस चाहिए।
+</Note>
+
+---
+
+## हेडर का फ़ॉर्मैट
+
+हर अनुरोध के `Authorization` header में key जोड़ें:
+
+```http
+Authorization: Bearer phaseo_v1_sk_<kid>_<secret>
+```
+
+ज़्यादातर HTTP clients में इसे एक बार सेट किया जा सकता है। उदाहरण के लिए, `fetch` के साथ:
+
+```ts
+const response = await fetch("https://api.phaseo.app/v1/chat/completions", {
+	method: "POST",
+	headers: {
+		Authorization: `Bearer ${process.env.PHASEO_API_KEY}`,
+		"Content-Type": "application/json",
+	},
+	body: JSON.stringify({
+		model: "gpt-5-nano-2025-08-07",
+		messages: [
+			{ role: "system", content: "You are a helpful assistant." },
+			{
+				role: "user",
+				content: "Summarize the drawbacks to AI.",
+			},
+		],
+	}),
+});
+```
+
+---
+
+## कुंजी प्रबंधन की जाँच-सूची
+
+| तरीका            | यह क्यों ज़रूरी है                                                           |
+| ------------------- | ------------------------------------------------------------------------ |
+| हर ऐप के लिए अलग key रखें | इससे दूसरी सेवाओं को प्रभावित किए बिना key बदली जा सकती है।                |
+| Keys को सुरक्षित रखें | Secrets manager, logs या error-tracking में key गलती से दिखने से बचाते हैं।  |
+| उपयोग पर नज़र रखें       | Dashboard में हर key के metrics दिखते हैं, जिससे आप जल्दी असामान्य गतिविधि पकड़ सकते हैं। |
+| बेकार keys हटाएँ  | पुरानी keys हटाने से संभावित दुरुपयोग की गुंजाइश कम होती है।        |
+
+---
+
+## प्रमाणीकरण की आम गड़बड़ियाँ
+
+- **401 अनुमति नहीं है**: key मौजूद नहीं है, मान्य नहीं है या बंद workspace से जुड़ी है।
+- **403 निषिद्ध**: key है, लेकिन अनुरोधित प्रोवाइडर या मॉडल तक पहुँच नहीं है।
+- **429 बहुत ज़्यादा अनुरोध**: key या workspace ने सीमा पार कर दी है। [Rate limits](./rate-limits.mdx) देखें।
+- **5xx त्रुटियाँ**: exponential backoff के साथ फिर कोशिश करें और समस्या बनी रहने पर [सहायता](https://phaseo.app/help) से संपर्क करें।

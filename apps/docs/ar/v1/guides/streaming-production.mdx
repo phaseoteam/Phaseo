@@ -1,0 +1,52 @@
+---
+icon: "server-cog"
+title: "البث في بيئة الإنتاج"
+description: "أنماط تشغيلية لتجربة بث متينة وخلفية موثوقة."
+---
+
+استخدم هذه الأنماط عند الانتقال من النموذج الأولي إلى الإنتاج.
+
+## قائمة التحقق من الموثوقية
+
+- اضبط مهلة زمنية وعناصر تحكم للإلغاء من جهة العميل.
+- تعامل مع `429` و`5xx` باستخدام تراجع أسي.
+- اعتبر التدفقات المنقطعة قابلة لإعادة المحاولة.
+- إذا كانت الدقة مهمة، فلا تحفظ النص الجزئي إلا بعد اكتمال الرد.
+
+## مثال على الإلغاء في المتصفح أو Node
+
+```typescript
+const controller = new AbortController();
+const timeout = setTimeout(() => controller.abort(), 30_000);
+
+try {
+  const response = await fetch("https://api.phaseo.app/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${process.env.PHASEO_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: "openai/gpt-5-nano",
+      messages: [{ role: "user", content: "Stream a short summary." }],
+      stream: true,
+    }),
+    signal: controller.signal,
+  });
+  // Parse SSE frames from response.body here.
+} finally {
+  clearTimeout(timeout);
+}
+```
+
+## إرشادات الواجهة
+
+- اعرض تغييرات الرموز تدريجيًا.
+- اعرض حالة واضحة تفيد بانتهاء التوليد عند وصول `[DONE]`.
+- احتفظ بمعرّف الطلب ومعرّف النموذج في السجلات لتتمكن من إعادة الطلب وتصحيحه.
+
+## متى لا تستخدم البث
+
+- تدفقات استدعاء الأدوات مع التحقق الحالي من الطلبات (`stream + tools` مرفوض).
+- تدفقات العمل التي تتطلب التحقق الكامل قبل عرض أي محتوى للمستخدم.
+

@@ -1,0 +1,155 @@
+---
+title: "Fundamente um fluxo do SDK TypeScript com busca na web gerenciada"
+icon: "search"
+description: "Use o SDK oficial de TypeScript com predefinições, busca na web gerenciada e metadados de resposta para manter um fluxo fundamentado e fácil de depurar."
+---
+
+Use esta receita quando um serviço de TypeScript ou JavaScript precisar combinar:
+
+- padrões de roteamento definidos por predefinição
+- a ferramenta gerenciada `phaseo:web_search`
+- análise estrita da resposta
+- metadados no nível da requisição para depuração
+
+## Objetivo
+
+- manter quem chama no SDK oficial
+- evitar reconstruir manualmente payloads brutos de compatibilidade
+- preservar metadados suficientes para depurar resultados de busca, roteamento e comportamento do plugin
+
+## 1. Comece com um cliente compartilhado
+
+```ts
+import Phaseo from "@phaseo/sdk";
+
+export const gateway = new Phaseo({
+  apiKey: process.env.PHASEO_API_KEY!,
+});
+```
+
+## 2. Primeiro, coloque os padrões estáveis em uma predefinição
+
+Crie uma predefinição quando vários chamadores precisarem compartilhar:
+
+- política de modelos
+- preferências de provedores
+- padrões de raciocínio
+- prompt do sistema
+- comportamento determinístico de cache
+
+Depois, limite a requisição do SDK aos valores que variam naquela chamada.
+
+## 3. Peça uma resposta fundamentada pela ferramenta de busca gerenciada
+
+```ts
+const response = await gateway.generateResponse({
+  preset: "research-brief",
+  input: "Find the latest public changes to our webhook delivery behavior and summarize them.",
+  tools: [
+    {
+      type: "phaseo:web_search",
+      parameters: {
+        query: "site:phaseo.app webhook delivery retries",
+        max_results: 5,
+        include_highlights: true,
+      },
+    },
+  ],
+  tool_choice: "phaseo:web_search",
+  response_format: {
+    type: "json_schema",
+    name: "research_brief",
+    schema: {
+      type: "object",
+      required: ["summary", "sources"],
+      properties: {
+        summary: { type: "string" },
+        sources: {
+          type: "array",
+          minItems: 1,
+          items: {
+            type: "object",
+            required: ["title", "url"],
+            properties: {
+              title: { type: "string" },
+              url: { type: "string", format: "uri" },
+            },
+            additionalProperties: false,
+          },
+        },
+      },
+      additionalProperties: false,
+    },
+  },
+  plugins: [{ id: "response-healing" }],
+  meta: true,
+});
+```
+
+Isso oferece:
+
+- padrões de roteamento e prompt gerenciados pela predefinição
+- busca gerenciada pelo servidor, sem depender do suporte à busca nativa do provedor
+- saída estruturada para uma análise posterior previsível
+- os metadados necessários para depuração operacional
+
+## 4. Analise a saída e mantenha os campos de depuração
+
+```ts
+const firstMessage = Array.isArray(response.output)
+  ? response.output.find((item) => item?.type === "message")
+  : null;
+
+const text = Array.isArray(firstMessage?.content)
+  ? firstMessage.content.find((part) => part?.type === "output_text")?.text ?? ""
+  : "";
+
+const payload = JSON.parse(text);
+
+console.log({
+  responseId: response.id,
+  selectedProvider: response.meta?.routing?.selected_provider,
+  pluginExecutions: response.meta?.plugin_executions,
+  serverToolUse: response.usage?.server_tool_use,
+});
+
+console.log(payload);
+```
+
+Esses campos facilitam verificar:
+
+- qual provedor realmente atendeu à requisição
+- se a busca gerenciada foi executada
+- se a recuperação de resposta foi executada
+- qual requisição inspecionar no painel
+
+## 5. Confira nos logs a requisição fundamentada
+
+Abra a requisição em **Gateway -> Uso** e inspecione:
+
+- resultados de busca normalizados
+- citações
+- seleção do provedor
+- metadados de execução do plugin
+
+Se o comportamento da busca ou a classificação estiver incorreto, ajuste a predefinição ou os parâmetros da ferramenta com base nos logs, em vez de adicionar substituições sem evidências.
+
+## 6. Separe fluxos exploratórios dos determinísticos
+
+Padrão recomendado:
+
+1. uma predefinição para resultados de pesquisa estruturados e determinísticos
+2. outra predefinição para requisições exploratórias ou com temperatura mais alta
+
+Assim, você mantém:
+
+- o cache de respostas mais organizado
+- o comportamento de roteamento mais fácil de entender
+- fluxos com muitas buscas separados do tráfego geral de geração
+
+## Guias relacionados
+
+- [Depure requisições de busca na web](./web-search-debugging.mdx)
+- [Implante predefinições e depure o roteamento](./preset-rollout-and-routing-debug.mdx)
+- [Recupere respostas JSON estruturadas](./response-healing-for-structured-json.mdx)
+- [Visão geral do SDK TypeScript](../sdk-reference/typescript/overview.mdx)

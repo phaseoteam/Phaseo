@@ -1,0 +1,73 @@
+---
+title: "Codex"
+icon: "code-2"
+description: "Verwende das Phaseo Gateway als benutzerdefinierten Anbieter für Codex CLI, Codex App und die Codex-IDE-Erweiterung."
+---
+Codex unterstützt benutzerdefinierte Modellanbieter über `config.toml`. So kannst du Codex-Anfragen über Phaseo leiten und deinen gewohnten CLI-, App- oder IDE-Ablauf beibehalten.
+
+Wenn Codex während der Arbeit auch die aktuelle Phaseo-Dokumentation lesen soll, füge zusätzlich den Server [Docs MCP](./docs-mcp.mdx) hinzu.
+
+<Visibility for="humans">
+<Note>
+Brauchst du neben der Anbieterkonfiguration auch Hilfe beim Einrichten wiederverwendbarer Agenten? Installiere die öffentlichen Phaseo-Skills aus [`phaseoteam/skills`](https://github.com/phaseoteam/skills):
+
+```bash
+npx skills add phaseoteam/skills --agent codex --skill '*'
+```
+</Note>
+</Visibility>
+
+<Visibility for="agents">
+<Note>
+Brauchst du neben der Anbieterkonfiguration auch Hilfe beim Einrichten wiederverwendbarer Agenten? Installiere die öffentlichen Phaseo-Skills aus [`phaseoteam/skills`](https://github.com/phaseoteam/skills):
+
+```bash
+npx skills add phaseoteam/skills --agent codex --skill '*'
+```
+</Note>
+</Visibility>
+
+## Mit der Phaseo CLI einrichten
+
+```bash
+phaseo login
+phaseo codex --model openai/gpt-5.6-terra
+```
+
+Installiere Codex zuerst aus der offiziellen Version. Die Einrichtung erstellt einen unbegrenzt gültigen `Phaseo CLI: Codex API Key`, speichert ihn im Anmeldedatenspeicher des Betriebssystems und legt ein eigenes Phaseo-Profil an. Codex ruft den Schlüssel über den CLI-Helfer ab, sodass er nicht im Klartext in `config.toml` steht.
+
+### Starte Codex mit:
+
+```bash
+codex --profile phaseo
+```
+
+## Manuelle Konfiguration
+
+Erstelle oder aktualisiere deine Benutzerkonfiguration in `~/.codex/config.toml`. Für ein vertrauenswürdiges Projekt kannst du dieselben Einstellungen auch in `.codex/config.toml` im Repository ablegen.
+
+```toml
+model = "openai/gpt-5.5"
+model_provider = "phaseo"
+
+[model_providers.phaseo]
+name = "Phaseo"
+base_url = "https://api.phaseo.app/v1"
+env_key = "PHASEO_API_KEY"
+wire_api = "responses"
+```
+
+Codex verwendet für benutzerdefinierte Anbieter derzeit das Responses-Protokoll. Behalte `wire_api = "responses"` bei oder lasse die Option weg, um den Standard zu verwenden.
+
+Codex App und IDE-Erweiterung verwenden dieselben Konfigurationsebenen. Öffne die Datei in der IDE-Erweiterung über `Codex Settings > Open config.toml`.
+
+## Überprüfung
+
+- Prüfe vor dem Start unter [Modelle](../../api-reference/endpoint/models.mdx), ob die Modell-ID vorhanden ist.
+- Verwende [Responses](../../api-reference/endpoint/responses.mdx) für den standardmäßigen Codex-Ablauf.
+
+## Fehlerbehebung
+
+- `401 Unauthorized`: Führe `phaseo whoami` aus und starte anschließend `phaseo codex` erneut.
+- `model_not_found`: Rufe eine aktuelle ID unter [Modelle](../../api-reference/endpoint/models.mdx) ab und aktualisiere `model`.
+- Anbieterspezifische Probleme: Lies unter [Routing und Fallbacks](../routing-and-fallbacks.mdx) nach, wie die Umschaltung funktioniert.

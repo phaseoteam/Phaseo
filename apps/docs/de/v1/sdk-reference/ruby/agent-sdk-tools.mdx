@@ -1,0 +1,21 @@
+---
+icon: "wrench"
+title: "Werkzeuge"
+description: "Definiere validierte, genehmigungspflichtige, manuelle und Fortschritt meldende Ruby-Tools."
+---
+
+Erstelle `PhaseoAgentSdk::Tool`-Werte und übergib sie über `define_tool`. Tools können Folgendes enthalten:
+
+- JSON-`parameters`, die dem Modell angezeigt werden
+- Validierungs-Callbacks für `input_schema`, `output_schema` und `event_schema`
+- `timeout_ms` und ein `execute`-Callback
+- boolesches oder aufrufbares `require_approval`
+- `on_tool_called` und `on_response_received` für interaktive Abläufe
+- `next_turn_params` und `on_error: "return-to-model"`
+
+Verwende `runtime.emit_progress` für vorläufige Ergebnisse und `set_context` für den Anwendungskontext. Eine begrenzte Zahl von Threads kann unabhängige Tools parallel ausführen, während gespeicherte Ergebnisse in der Reihenfolge der Modellaufrufe bleiben.
+
+## Weiterführende Themen
+
+- [Status und Genehmigung](./agent-sdk-state-and-approval.mdx)
+- [Laufsteuerung](./agent-sdk-run-controls.mdx)

@@ -1,0 +1,19 @@
+---
+title: "Enviar um arquivo"
+sidebarTitle: "Enviar um arquivo"
+badge: "Beta"
+openapi: "/pt-BR/openapi/v1/openapi.localized.yaml POST /files"
+description: "Envie um arquivo para processamento em lote. O gateway armazena metadados de propriedade para que o mesmo espaço de trabalho possa recuperar o arquivo ou seu conteúdo mais tarde."
+---
+
+Salve o `file_id` retornado e reutilize-o com:
+
+- `POST /v1/batches`
+- `GET /v1/files/{file_id}`
+- `GET /v1/files/{file_id}/content`
+
+<Note>
+`GET /v1/files` ainda não é compatível com a chave compartilhada do gateway; por isso, a resposta do envio é a fonte oficial para obter o ID do arquivo.
+</Note>
+
+

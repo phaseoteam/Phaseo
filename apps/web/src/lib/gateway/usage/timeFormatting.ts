@@ -1,5 +1,9 @@
-export function formatDateTime(date: Date, timeZone: string): string {
-	return new Intl.DateTimeFormat("en-US", {
+export function formatDateTime(
+	date: Date,
+	timeZone: string,
+	locale = "en-US",
+): string {
+	return new Intl.DateTimeFormat(locale, {
 		year: "numeric",
 		month: "short",
 		day: "2-digit",
@@ -21,6 +25,7 @@ export function formatWordyDateTime(
 	options?: {
 		includeTime?: boolean;
 		includeYear?: boolean;
+		locale?: string;
 	},
 ): string {
 	if (!value) return "-";
@@ -30,7 +35,7 @@ export function formatWordyDateTime(
 		return typeof value === "string" ? value : "-";
 	}
 
-	return new Intl.DateTimeFormat("en-US", {
+	return new Intl.DateTimeFormat(options?.locale ?? "en-US", {
 		month: "short",
 		day: "2-digit",
 		...(options?.includeYear ?? shouldShowYear(date) ? { year: "numeric" } : {}),
@@ -47,6 +52,7 @@ export function formatWordyDateTime(
 export function formatWordyRange(
 	start: string | null | undefined,
 	end: string | null | undefined,
+	locale = "en-US",
 ): string {
 	if (!start || !end) return "-";
 	const startDate = new Date(start);
@@ -68,7 +74,8 @@ export function formatWordyRange(
 		return `${formatWordyDateTime(startDate, {
 			includeYear,
 			includeTime: true,
-		})} - ${new Intl.DateTimeFormat("en-US", {
+			locale,
+		})} - ${new Intl.DateTimeFormat(locale, {
 			hour: "2-digit",
 			minute: "2-digit",
 			hour12: false,
@@ -78,9 +85,11 @@ export function formatWordyRange(
 	return `${formatWordyDateTime(startDate, {
 		includeYear,
 		includeTime: true,
+		locale,
 	})} - ${formatWordyDateTime(endDate, {
 		includeYear,
 		includeTime: true,
+		locale,
 	})}`;
 }
 

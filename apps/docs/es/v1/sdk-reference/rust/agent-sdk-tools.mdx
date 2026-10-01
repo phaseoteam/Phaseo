@@ -1,0 +1,134 @@
+---
+title: "Herramientas y aprobaciones"
+description: "Define herramientas locales, externas y sujetas a aprobación en el SDK de agentes de Rust."
+---
+
+## Herramientas locales
+
+Usa `Tool::new(...)` cuando el proceso de Rust pueda ejecutar la operación:
+
+```rust
+use phaseo_agent::Tool;
+use serde_json::json;
+
+let get_status = Tool::new(
+    "get_status",
+    "Get the current service status",
+    json!({
+        "type": "object",
+        "properties": {
+            "service": { "type": "string" }
+        },
+        "required": ["service"]
+    }),
+    |input, _context| {
+        Ok(json!({
+            "service": input["service"],
+            "status": "healthy"
+        }))
+    },
+);
+```
+
+El valor de `parameters` se envía al modelo como JSON Schema. La entrada y la salida de la herramienta usan `serde_json::Value`; valida los argumentos no confiables dentro del ejecutor si necesitas garantías más estrictas durante la ejecución.
+
+## Herramientas que requieren aprobación
+
+Añade `require_approval()` para pausar antes de ejecutar la operación:
+
+```rust
+let deploy = Tool::new(
+    "deploy",
+    "Deploy an application environment",
+    json!({
+        "type": "object",
+        "properties": {
+            "environment": { "type": "string" }
+        },
+        "required": ["environment"]
+    }),
+    |input, _context| {
+        Ok(json!({
+            "environment": input["environment"],
+            "deployed": true
+        }))
+    },
+)
+.require_approval();
+```
+
+Cuando el modelo llama a esta herramienta, la ejecución devuelve `run.status == "waiting_for_human"` y `run.pause.kind == "tool_approval"`.
+
+Reanuda la ejecución con el ID exacto de la llamada:
+
+```rust
+use phaseo_agent::{ContinueOptions, ToolDecision};
+
+let approvals = paused.run.pause.as_ref().unwrap()
+    .pending_tool_calls
+    .iter()
+    .map(|pending| ToolDecision {
+        tool_call_id: pending.call.id.clone(),
+        reason: Some("Approved by the release operator".to_string()),
+    })
+    .collect();
+
+let mut options = ContinueOptions::new(paused);
+options.approvals = approvals;
+
+let completed = agent.continue_run(&mut client, options)?;
+```
+
+La API Rust `0.1` no ofrece un tipo de rechazo independiente. Deja en pausa las llamadas no aprobadas o aplica la política de rechazo de tu aplicación antes de reanudar.
+
+## Herramientas externas
+
+Usa `Tool::external(...)` cuando otro proceso realice la operación:
+
+```rust
+let ticket_lookup = Tool::external(
+    "ticket_lookup",
+    "Load one support ticket",
+    json!({
+        "type": "object",
+        "properties": {
+            "ticket_id": { "type": "string" }
+        },
+        "required": ["ticket_id"]
+    }),
+);
+```
+
+El tipo de pausa es `external_output` cuando todas las llamadas pendientes necesitan un resultado externo. Proporciona cada resultado usando el ID de la llamada:
+
+```rust
+use phaseo_agent::{ContinueOptions, ToolOutput};
+
+let outputs = paused.run.pause.as_ref().unwrap()
+    .pending_tool_calls
+    .iter()
+    .map(|pending| ToolOutput {
+        tool_call_id: pending.call.id.clone(),
+        output: json!({
+            "subject": "Provider latency increased",
+            "priority": "high"
+        }),
+    })
+    .collect();
+
+let mut options = ContinueOptions::new(paused);
+options.tool_outputs = outputs;
+
+let completed = agent.continue_run(&mut client, options)?;
+```
+
+Si un turno del modelo combina herramientas automáticas y pendientes, el entorno de ejecución ejecuta las herramientas automáticas antes de devolver la pausa.
+
+## Errores de herramientas
+
+Un `AgentError` devuelto por un ejecutor local se convierte en un mensaje de error estructurado de la herramienta y se envía al modelo. Un nombre de herramienta desconocido o la falta de aprobación o de resultados hacen que la continuación falle con `AgentError`.
+
+## Contenido relacionado
+
+- [Guardar y reanudar ejecuciones](./agent-sdk-state-and-approval.mdx)
+- [Referencia de la API de agentes](./agent-sdk-api-reference.mdx)

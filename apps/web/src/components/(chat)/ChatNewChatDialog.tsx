@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -32,14 +33,14 @@ export function ChatNewChatDialog({
     onUseCurrent,
     onUseDefaults,
 }: ChatNewChatDialogProps) {
+	const t = useTranslations("Product.chat.newChatDialog");
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="w-[calc(100vw-1rem)] max-w-md">
                 <DialogHeader className="space-y-2 text-left">
-                    <DialogTitle>Reuse chat parameters?</DialogTitle>
+                    <DialogTitle>{t("title")}</DialogTitle>
                     <DialogDescription>
-                        This chat has custom settings. Do you want to carry them into your new
-                        chat or reset to defaults?
+                        {t("description")}
                     </DialogDescription>
                 </DialogHeader>
                 {changes.length > 0 ? (
@@ -56,9 +57,11 @@ export function ChatNewChatDialog({
                 ) : null}
                 <DialogFooter>
                     <Button className="w-full sm:w-auto" variant="ghost" onClick={onUseDefaults}>
-                        Use defaults
+                        {t("useDefaults")}
                     </Button>
-                    <Button className="w-full sm:w-auto" onClick={onUseCurrent}>Use current</Button>
+                    <Button className="w-full sm:w-auto" onClick={onUseCurrent}>
+                        {t("useCurrent")}
+                    </Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>

@@ -1,0 +1,23 @@
+---
+icon: "wrench"
+title: "工具"
+description: "定义经过验证、需审批、手动执行和可报告进度的 Python 工具。"
+---
+
+创建 `AgentTool` 值并通过 `define_tool(...)` 传入。工具可以定义：
+
+- 提供给模型的 JSON `parameters`
+- 可调用的 `input_schema`、`output_schema` 和 `event_schema` 验证器
+- `timeout_ms` 和 `execute(input, runtime)`
+- 布尔值或可调用的 `require_approval`
+- 用于交互式工作的 `on_tool_called` 和 `on_response_received`
+- `next_turn_params` 和 `on_error="return-to-model"`
+
+调用 `runtime.emit_progress(value)` 报告初步结果；后续轮次需要更新的应用上下文时，调用 `runtime.set_context(value)`。
+
+互不依赖的工具请使用 `AgentToolExecutionConfig(tool_concurrency=...)`。即使执行并发，保存的结果仍会按模型调用顺序排列。
+
+## 相关内容
+
+- [状态与审批](./agent-sdk-state-and-approval.mdx)
+- [运行控制](./agent-sdk-run-controls.mdx)

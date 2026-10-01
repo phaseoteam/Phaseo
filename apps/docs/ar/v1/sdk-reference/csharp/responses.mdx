@@ -1,0 +1,36 @@
+---
+icon: "sparkles"
+title: "الاستجابات"
+description: "استدعِ واجهة Responses API باستخدام SDK C#."
+---
+
+**الطريقة**: `client.GenerateResponse(...)` أو `client.CreateResponse(...)`
+
+### مثال
+```csharp
+using PhaseoSdk;
+
+var client = new Phaseo(apiKey);
+var response = await client.GenerateResponse(new Dictionary<string, object>
+{
+    ["model"] = "openai/gpt-5-nano",
+    ["input"] = "Summarise this text",
+    ["temperature"] = 0.7
+});
+```
+
+### المعلمات الأساسية
+- `model` (مطلوب): معرّف النموذج المستهدف.
+- `input` (مطلوب): مصفوفة مرتبة من عناصر الإدخال، مثل الرسائل واستدعاءات الأدوات.
+- `temperature` (0–2): كلما زادت القيمة زادت العشوائية.
+- `top_p` (0–1) / `top_k` (>=1): إعدادات أخذ العينات بالنواة وأفضل k خيارات.
+- `max_output_tokens` (عدد صحيح): حد صارم للرموز المولّدة في كل استجابة؛ استخدم `max_output_tokens_per_message` لتحديد كل رسالة.
+- الأدوات: `tools` (تعريفات) و`tool_choice` (تلقائي/بلا/محدد) و`max_tool_calls` (عدد صحيح) و`parallel_tool_calls` (قيمة منطقية).
+- الاحتمالات اللوغاريتمية: `logprobs` (قيمة منطقية) و`top_logprobs` (0–20) لإرجاع الاحتمال اللوغاريتمي لكل رمز.
+- المخرجات: `response_format` (json/text) و`service_tier` و`store` (قيمة منطقية) و`stream` (قيمة منطقية).
+- البيانات الوصفية: `metadata` (كائن يُمرّر كما هو) و`reasoning` (كائن لتلميحات مستوى الاستدلال).
+- إضافات البوابة: `usage` (قيمة منطقية لطلب بيانات الاستخدام) و`meta` (قيمة منطقية لتضمين كتلة meta).
+
+### القيمة المعادة
+`ResponsesResponse`
+

@@ -2,7 +2,7 @@
 
 import { AlertCircle } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { formatRoomError } from "@/lib/chat/formatRoomError";
+import { formatRoomError, type RoomErrorTranslator } from "@/lib/chat/formatRoomError";
 import { cn } from "@/lib/utils";
 
 type RoomErrorNoticeProps = {
@@ -12,7 +12,7 @@ type RoomErrorNoticeProps = {
 
 export function RoomErrorNotice({ error, className }: RoomErrorNoticeProps) {
 	const t = useTranslations("Product.chatRooms");
-	const formatted = formatRoomError(error);
+	const formatted = formatRoomError(error, t as unknown as RoomErrorTranslator);
 	return (
 		<div
 			role="alert"

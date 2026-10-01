@@ -1,0 +1,29 @@
+---
+title: "Java Agent SDKのインストール（開発中）"
+description: "開発中のJava Agent SDKをソースからビルドします。"
+---
+
+<Note type="warning">
+  Java Agent SDKはまだMaven Centralで公開されていません。このソースワークフローは評価目的でのみ使用してください。
+</Note>
+
+## 必要条件
+
+- Java 17以降
+- Maven
+
+## ソースからビルド
+
+```bash
+git clone https://github.com/phaseoteam/Phaseo.git
+cd Phaseo
+mvn -f packages/sdk/agent-sdk-java/pom.xml package
+```
+
+サンプルを実行する前に、アプリケーション環境で `PHASEO_API_KEY` を設定してください。
+
+## 次のステップ
+
+- [概要](./agent-sdk-overview.mdx)
+- [使い方](./agent-sdk.mdx)
+

@@ -1,0 +1,23 @@
+---
+icon: "wrench"
+title: "الأدوات"
+description: "عرّف أدوات Python متحققة وتتطلب موافقة أو تُنفذ يدويًا أو تُصدر تحديثات التقدم."
+---
+
+أنشئ قيم `AgentTool` ومرّرها عبر `define_tool(...)`. ويمكن للأدوات تحديد:
+
+- `parameters` بصيغة JSON تُعرض على النموذج
+- أدوات تحقق قابلة للاستدعاء لـ`input_schema` و`output_schema` و`event_schema`
+- `timeout_ms` و`execute(input, runtime)`
+- `require_approval` بقيمة منطقية أو قابلة للاستدعاء
+- `on_tool_called` و`on_response_received` للعمل التفاعلي
+- `next_turn_params` و`on_error="return-to-model"`
+
+استدعِ `runtime.emit_progress(value)` لإبلاغ النتائج الأولية و`runtime.set_context(value)` عندما تحتاج الخطوات اللاحقة إلى سياق تطبيق محدّث.
+
+استخدم `AgentToolExecutionConfig(tool_concurrency=...)` للأدوات المستقلة. وتحافظ النتائج المحفوظة على ترتيب استدعاءات النموذج حتى عند تداخل عمليات التنفيذ.
+
+## مواضيع ذات صلة
+
+- [الحالة والموافقة](./agent-sdk-state-and-approval.mdx)
+- [عناصر التحكم في التشغيل](./agent-sdk-run-controls.mdx)

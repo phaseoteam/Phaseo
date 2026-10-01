@@ -1,0 +1,25 @@
+---
+icon: "layers"
+title: "Itens do fluxo"
+description: "Consuma eventos de texto, raciocínio, ferramentas e itens do provedor em execuções de agentes Ruby."
+---
+
+O resultado do fluxo oferece consumidores reutilizáveis para texto e itens do provedor.
+
+```ruby
+stream = agent.stream(input: prompt, client: client)
+
+stream.item_stream.each do |item|
+  render_item(item)
+end
+
+result = stream.result
+```
+
+Use `full_stream` se a interface também precisar de fragmentos de raciocínio, progresso das ferramentas, pontos de verificação de aprovação ou eventos do ciclo de vida.
+
+<Note>
+Os valores dos itens em Ruby são hashes genéricos, não uma união fechada de itens tipados. Valide os campos usados pela interface e mantenha um fallback para itens desconhecidos e futuros eventos do provedor.
+</Note>
+
+Ruby consome o fluxo do provedor de forma síncrona e permite percorrer novamente a sequência coletada. Isso, por si só, não cria um serviço de envio em segundo plano.

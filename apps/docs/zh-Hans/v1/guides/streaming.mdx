@@ -1,0 +1,50 @@
+---
+title: "流式传输"
+description: "使用服务器发送事件（SSE）低延迟地传输 token。"
+icon: "radio"
+---
+
+流式传输会通过 SSE 帧逐步返回输出，让用户更早看到响应。
+
+## 支持的端点
+
+- `/v1/responses`
+- `/v1/chat/completions`
+- `/v1/messages`
+
+## 请求
+
+```bash
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-5-nano",
+    "input": "Stream a short hello message.",
+    "stream": true
+  }'
+```
+
+## 响应
+
+```text
+data: {"id":"resp_...","object":"response","status":"in_progress",...}
+data: {"type":"response.output_text.delta","delta":"Hello"}
+data: {"type":"response.completed",...}
+data: [DONE]
+```
+
+## SDK 选项
+
+- TypeScript SDK：`client.streamResponses()`、`client.streamChat()` 和 `client.streamMessages()`
+- Python SDK：`client.stream_responses()`、`client.stream_chat()` 和 `client.stream_message()`
+- Vercel AI SDK：使用 `streamText(...)` 和 `@phaseo/ai-sdk-provider`
+
+## 重要限制
+
+在当前网关请求校验阶段，工具与 `stream: true` 不能同时使用（会返回 `400 invalid_request`）。工具调用循环请使用非流式模式。
+
+## 后续指南
+
+1. [SSE 事件参考](./streaming-sse.mdx)
+2. [生产环境中的流式传输](./streaming-production.mdx)

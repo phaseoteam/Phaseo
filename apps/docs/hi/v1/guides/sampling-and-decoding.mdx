@@ -1,0 +1,38 @@
+---
+icon: "shuffle"
+title: "सैंपलिंग और डिकोडिंग"
+description: "Decoding strategies और penalties model outputs को कैसे आकार देते हैं।"
+---
+
+Decoding तय करता है कि model probabilities में से अगला token कैसे चुना जाए।
+
+## आम controls
+
+| Control | उद्देश्य | टिप्पणियाँ |
+| --- | --- | --- |
+| `temperature` | randomness का global control | अक्सर सबसे पहले tune किया जाता है |
+| `top_p` | cumulative probability mass सीमित करता है | अक्सर moderate temperature के साथ |
+| `top_k` | सबसे अधिक probability वाले tokens तक चयन सीमित करता है | हर provider पर उपलब्ध नहीं |
+| `frequency_penalty` | tokens/phrases की पुनरावृत्ति को हतोत्साहित करता है | बार-बार दोहराने वाले loops घटाने में सहायक |
+| `presence_penalty` | नए tokens/topics लाने को प्रोत्साहित करता है | व्यापक exploration में उपयोगी |
+| `repetition_penalty` | दोहराए गए text patterns पर penalty (provider/model पर निर्भर) | लक्ष्य समान, implementation semantics अलग |
+
+## आम presets
+
+| उपयोग का मामला | सुझाया गया profile |
+| --- | --- |
+| Deterministic extraction/classification | कम `temperature` (`0.0` से `0.2`), narrow sampling |
+| Balanced assistant output | मध्यम `temperature` (`0.3` से `0.7`), `top_p` लगभग `0.9` से `1.0` |
+| Creative generation | अधिक `temperature` और व्यापक sampling, साथ में कड़ा evaluation |
+
+## आम विफलताएँ
+
+- बहुत random: तथ्य असंगत और structured output अस्थिर।
+- बहुत deterministic: दोहराव वाले या फीके completions।
+- बहुत अधिक penalties: अटपटी भाषा और विषय से भटकाव।
+
+## व्यावहारिक सलाह
+
+1. Decoding को globally नहीं, हर task के अनुसार tune करें।
+2. Extraction/JSON tasks के लिए conservative settings रखें।
+3. Creative tasks में randomness धीरे-धीरे बढ़ाएँ और human review से नतीजों का मूल्यांकन करें।

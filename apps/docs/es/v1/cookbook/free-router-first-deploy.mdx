@@ -1,0 +1,156 @@
+---
+title: "Empieza con el router gratuito"
+icon: "rocket"
+description: "Empieza con phaseo/free para que tu primera integración funcione sin tener que elegir de antemano un único modelo gratuito."
+---
+
+Usa esta guía para poner en marcha tu primera integración con Phaseo sin elegir todavía un modelo de pago.
+
+En lugar de elegir tú un modelo gratuito, envía las solicitudes a `phaseo/free`. Phaseo seleccionará un modelo gratuito disponible que admita la solicitud.
+## Ejemplo de solicitud
+<CodeGroup>
+```bash cURL
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "phaseo/free",
+    "input": "Summarize why provider-aware free routing helps prototypes.",
+    "temperature": 0.2
+  }'
+```
+
+```typescript TypeScript SDK
+import Phaseo from "@phaseo/sdk";
+
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
+
+const response = await client.generateResponse({
+  model: "phaseo/free",
+  input: "Summarize why provider-aware free routing helps prototypes.",
+  temperature: 0.2,
+});
+
+console.log(response.output_text);
+```
+
+```python Python SDK
+from phaseo import Phaseo
+
+client = Phaseo(api_key="YOUR_API_KEY")
+
+response = client.generate_response(
+    {
+        "model": "phaseo/free",
+        "input": "Summarize why provider-aware free routing helps prototypes.",
+        "temperature": 0.2,
+    }
+)
+
+print(response.get("output_text"))
+```
+
+```go Go SDK
+package main
+
+import (
+  "context"
+  "fmt"
+
+  phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v2"
+)
+
+func main() {
+  client := phaseo.New("YOUR_API_KEY", "https://api.phaseo.app/v1")
+
+  response, err := client.GenerateResponse(context.Background(), phaseo.ResponsesRequest{
+    Model: "phaseo/free",
+    Input: map[string]interface{}{
+      "role": "user",
+      "content": []map[string]string{
+        {
+          "type": "input_text",
+          "text": "Summarize why provider-aware free routing helps prototypes.",
+        },
+      },
+    },
+  })
+  if err != nil {
+    panic(err)
+  }
+
+  fmt.Println(response)
+}
+```
+
+```csharp C# SDK
+using PhaseoSdk;
+using System.Collections.Generic;
+
+var client = new Phaseo("YOUR_API_KEY");
+
+var response = await client.GenerateResponse(new Dictionary<string, object>
+{
+    ["model"] = "phaseo/free",
+    ["input"] = "Summarize why provider-aware free routing helps prototypes.",
+    ["temperature"] = 0.2
+});
+
+Console.WriteLine(response);
+```
+
+```php PHP SDK
+<?php
+require 'vendor/autoload.php';
+
+use Phaseo\Sdk\Phaseo;
+
+$client = new Phaseo(getenv('PHASEO_API_KEY') ?: 'YOUR_API_KEY');
+
+$response = $client->generateResponse([
+    'model' => 'phaseo/free',
+    'input' => 'Summarize why provider-aware free routing helps prototypes.',
+    'temperature' => 0.2,
+]);
+
+print_r($response);
+```
+
+```ruby Ruby SDK
+require 'phaseo_sdk'
+
+client = PhaseoSdk::Phaseo.new(api_key: ENV.fetch('PHASEO_API_KEY', 'YOUR_API_KEY'))
+
+response = client.generate_response(
+  model: 'phaseo/free',
+  input: 'Summarize why provider-aware free routing helps prototypes.',
+  temperature: 0.2
+)
+
+puts response
+```
+</CodeGroup>
+## Qué ocurre en segundo plano
+
+1. La solicitud se envía al alias compartido `phaseo/free`.
+2. Phaseo comprueba qué modelos gratuitos pueden atenderla.
+3. Selecciona un modelo gratuito disponible y lo usa para generar la respuesta.
+4. Los detalles de la solicitud muestran el modelo exacto que se ejecutó para que puedas inspeccionarlo o depurarlo más tarde.
+
+## Después de la primera solicitud
+
+- En **Gateway -> Uso**, abre los detalles de la solicitud y confirma qué modelo se utilizó.
+- Si una política del espacio de trabajo bloquea la solicitud, revisa los detalles para ver qué ajuste la detuvo.
+- Si ningún modelo gratuito admite la función que necesitas, cambia de `phaseo/free` a un modelo de pago específico en lugar de repetir la solicitud.
+
+## Notas para producción
+
+- Reserva `phaseo/free` para prototipos, demostraciones y tráfico de bajo riesgo.
+- Si necesitas latencia, estilo de salida o proveedor predecibles, cambia a un modelo específico cuando sepas cuál funciona mejor.
+- Si necesitas un comportamiento estable de los prompts entre servicios, combina esta guía con [Presets](../guides/presets.mdx).
+
+## Guías relacionadas
+
+- [Guía rápida](../quickstart.mdx)
+- [Enrutamiento y alternativas](../guides/routing-and-fallbacks.mdx)
+- [Errores de API](../api-reference/errors.mdx)

@@ -8,6 +8,7 @@ import ComparisonDisplay from "./ComparisonDisplay";
 import { ExtendedModel } from "@/data/types";
 import ModelCombobox from "./ModelCombobox";
 import type { CompareGatewayUsageByModel } from "./types";
+import { useTranslations } from "next-intl";
 
 const decodeModelIdFromUrl = (value: string): string => {
 	const trimmed = value?.trim();
@@ -53,14 +54,15 @@ function EmptyComparisonState({
 	models: ExtendedModel[];
 	onSelect: (ids: string[]) => void;
 }) {
+	const t = useTranslations("Catalogue.compare");
 	return (
 		<CompareFrame>
 			<div className="max-w-2xl">
 				<h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-					Compare AI models
+					{t("emptyTitle")}
 				</h1>
 				<p className="mt-2 text-sm leading-6 text-muted-foreground sm:text-base">
-					Compare pricing, performance, context, benchmarks, and availability side by side.
+					{t("emptyDescription")}
 				</p>
 			</div>
 
@@ -71,8 +73,8 @@ function EmptyComparisonState({
 						models={models}
 						selected={[]}
 						setSelected={onSelect}
-						labelWhenEmpty="Select a model"
-						labelWhenSelected="Select a model"
+						labelWhenEmpty={t("selectModel")}
+						labelWhenSelected={t("selectModel")}
 						showSelectionCount={false}
 						className="h-14 w-full justify-center rounded-xl border border-dashed border-border/80 text-sm text-muted-foreground hover:border-sky-500/50 hover:bg-card hover:text-foreground"
 					/>
@@ -87,6 +89,7 @@ export default function CompareDashboard({
 	comparisonData,
 	usageByModel,
 }: CompareDashboardProps) {
+	const t = useTranslations("Catalogue.compare");
 	const searchParams = useSearchParams() ?? new URLSearchParams();
 	const router = useRouter();
 	const selected = searchParams
@@ -173,11 +176,10 @@ export default function CompareDashboard({
 				<div className="flex flex-col items-center justify-center min-h-[60vh] px-4">
 				<div className="max-w-2xl w-full bg-yellow-50 border border-yellow-200 rounded-lg p-6">
 					<h2 className="text-xl font-semibold text-yellow-900 mb-2">
-						Models Not Found
+						{t("notFoundTitle")}
 					</h2>
 					<p className="text-yellow-800 mb-4">
-						The following model IDs from the URL could not be found
-						in the database:
+					{t("notFoundBody")}
 					</p>
 					<ul className="list-disc list-inside text-yellow-700 mb-4">
 						{notFound.map((id) => (
@@ -187,7 +189,7 @@ export default function CompareDashboard({
 						))}
 					</ul>
 					<p className="text-sm text-yellow-700">
-						Please use the search below to find valid model IDs.
+						{t("notFoundSearch")}
 					</p>
 				</div>
 				<Separator className="my-8 w-full max-w-4xl" />
@@ -216,13 +218,13 @@ export default function CompareDashboard({
 		return (
 			<CompareFrame>
 				<div className="flex flex-col items-center justify-center min-h-[40vh] text-center text-muted-foreground space-y-2">
-				<p>We couldn&apos;t load the comparison data for this query.</p>
+				<p>{t("loadFailure")}</p>
 				<button
 					type="button"
 					className="text-sm font-medium underline underline-offset-4"
 					onClick={() => setSelected(uniqueResolvedSelectionIds)}
 				>
-					Refresh selection
+					{t("refreshSelection")}
 				</button>
 				</div>
 			</CompareFrame>

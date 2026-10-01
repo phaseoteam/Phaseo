@@ -1,0 +1,153 @@
+---
+icon: "server-cog"
+title: "Ferramentas do servidor"
+description: "Permita que os modelos chamem ferramentas operadas pelo Phaseo durante uma solicitação."
+---
+
+Ferramentas de servidor são executadas pelo Phaseo durante uma solicitação ao modelo. O modelo decide quando chamá-las; o Phaseo as executa no servidor e devolve o resultado ao ciclo do modelo.
+
+Use ferramentas de servidor quando o modelo precisar da hora atual, de contexto da Web, do texto de uma página ou da orientação de outro modelo, sem criar seu próprio executor de ferramentas.
+
+<Note>
+As ferramentas de servidor estão em beta. Os formatos das solicitações e os dados retornados podem mudar conforme evolui o suporte dos provedores.
+</Note>
+
+## Ferramentas disponíveis
+
+| Ferramenta | Tipo | Uso |
+| --- | --- | --- |
+| Data e hora | `phaseo:datetime` | Data e hora atuais em até 5 fusos horários |
+| Busca na Web | `phaseo:web_search` | Buscas na Web iniciadas pelo modelo durante uma solicitação |
+| Busca de páginas da Web | `phaseo:web_fetch` | Busca e extração de texto de URLs específicas |
+| Advisor | `phaseo:advisor` | Consulta a outro modelo durante a geração |
+| Subagente | `phaseo:subagent` | Delegação de uma tarefa específica a um modelo auxiliar |
+| Fusão | `phaseo:fusion` | Análise paralela seguida da síntese do modelo |
+| Buscar modelos | `phaseo:search_models` | Busca de modelos adequados no catálogo atualizado |
+| Geração de imagens | `phaseo:image_generation` | Criação de imagens pelo ciclo de ferramentas do modelo |
+| Aplicar patch | `phaseo:apply_patch` | Geração de patches de arquivos validados na Responses API |
+
+## Como funcionam as ferramentas de servidor
+
+1. Adicione uma ou mais ferramentas de servidor ao array `tools`.
+2. O modelo decide se precisa de uma ferramenta e emite uma chamada de ferramenta.
+3. O Phaseo intercepta a chamada da ferramenta de servidor, executa-a e envia o resultado de volta ao modelo.
+4. O modelo continua e redige a resposta final.
+
+As ferramentas de servidor podem ser usadas com suas próprias ferramentas de função. O Phaseo executa apenas as ferramentas de servidor; sua aplicação continua tratando as chamadas `function` comuns.
+
+## Início rápido
+
+```bash
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-5-nano",
+    "messages": [
+      { "role": "user", "content": "What are the latest AI policy updates this week?" }
+    ],
+    "tools": [
+      { "type": "phaseo:web_search" },
+      { "type": "phaseo:datetime", "parameters": { "timezones": ["Europe/London", "UTC"] } }
+    ]
+  }'
+```
+
+## Combinação com ferramentas de função
+
+```json
+{
+  "model": "openai/gpt-5-nano",
+  "messages": [
+    { "role": "user", "content": "Find recent funding news and save the best item." }
+  ],
+  "tools": [
+    { "type": "phaseo:web_search", "parameters": { "max_results": 3 } },
+    {
+      "type": "function",
+      "function": {
+        "name": "save_research_item",
+        "description": "Save a selected research item",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "title": { "type": "string" },
+            "url": { "type": "string" }
+          },
+          "required": ["title", "url"]
+        }
+      }
+    }
+  ]
+}
+```
+
+Se o modelo chamar `phaseo:web_search`, o Phaseo executará essa chamada automaticamente. Se chamar `save_research_item`, sua aplicação receberá a chamada da função e deverá retornar o resultado em uma solicitação seguinte.
+
+## Endpoints compatíveis
+
+As ferramentas de servidor são compatíveis com:
+
+- `/v1/chat/completions`
+- `/v1/responses`
+- `/v1/messages`
+
+Solicitações em streaming são compatíveis. Para ferramentas de servidor gerenciadas pelo gateway, o Phaseo pode materializar o turno de chamada da ferramenta upstream, executá-la, continuar o ciclo e emitir um stream sintético com a resposta final.
+
+## Acompanhamento de uso
+
+O uso das ferramentas de servidor é informado em `usage.server_tool_use`:
+
+```json
+{
+  "usage": {
+    "input_tokens": 105,
+    "output_tokens": 250,
+    "server_tool_use": {
+      "datetime_requests": 1,
+      "web_search_requests": 2,
+      "web_search_results": 8,
+      "web_fetch_requests": 1,
+      "advisor_requests": 1,
+      "subagent_requests": 1,
+      "fusion_requests": 1,
+      "search_models_requests": 1,
+      "image_generation_requests": 1
+    }
+  }
+}
+```
+
+A precificação também pode usar medidores de ferramentas de servidor como `server_tool_web_search_requests`, `server_tool_web_search_extra_results`, `server_tool_web_fetch_requests`, `server_tool_advisor_requests`, `server_tool_image_generation_requests`, `native_web_search_requests` e `native_web_fetch_requests` quando configurados nos cartões de preços dos modelos.
+
+## Páginas de ferramentas
+
+<Columns cols={2}>
+  <Card title="Data e hora" icon="clock" href="./datetime.mdx">
+    Forneça ao modelo a data e a hora atuais.
+  </Card>
+  <Card title="Busca na Web" icon="search" href="./web-search.mdx">
+    Permita que o modelo pesquise na Web quando precisar de informações atuais.
+  </Card>
+  <Card title="Busca de páginas da Web" icon="file-search" href="./web-fetch.mdx">
+    Permita que o modelo busque e leia URLs específicas.
+  </Card>
+  <Card title="Advisor" icon="message-square" href="./advisor.mdx">
+    Permita que um modelo consulte outro durante a geração.
+  </Card>
+  <Card title="Subagente" icon="cpu" href="./subagent.mdx">
+    Permita que o modelo delegue tarefas específicas a um modelo auxiliar.
+  </Card>
+  <Card title="Fusão" icon="sparkles" href="./fusion.mdx">
+	Execute análises paralelas com vários modelos e sintetize os resultados.
+  </Card>
+	<Card title="Buscar modelos" icon="list-filter" href="./search-models.mdx">
+		Permita que o modelo procure um modelo adequado no catálogo atualizado do Phaseo.
+	</Card>
+  <Card title="Geração de imagens" icon="image" href="./image-generation.mdx">
+    Permita que o modelo crie imagens enquanto responde.
+  </Card>
+	<Card title="Aplicar patch" icon="file-diff" href="./apply-patch.mdx">
+		Gere um patch validado para criar, atualizar ou excluir arquivos.
+	</Card>
+</Columns>

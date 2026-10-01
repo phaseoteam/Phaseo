@@ -1,6 +1,7 @@
 "use client";
 
 import { BarChart3, CircuitBoard } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
 	ChartContainer,
@@ -8,60 +9,42 @@ import {
 	ChartTooltipContent,
 } from "@/components/ui/chart";
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
-import CheckItem from "../page/CheckItem";
 import type { GatewayMarketingMetrics } from "@/lib/fetchers/gateway/getMarketingMetrics";
 
-function formatPercent(value: number | null | undefined, digits = 2): string {
+function formatPercent(value: number | null | undefined, locale: string, digits = 2): string {
 	const normalized = value == null || Number.isNaN(value) ? 0 : value;
-	return `${normalized.toFixed(digits)}%`;
+	return `${new Intl.NumberFormat(locale, {
+		minimumFractionDigits: digits,
+		maximumFractionDigits: digits,
+	}).format(normalized)}%`;
 }
 
-function formatLatency(value: number | null | undefined): string {
+function formatLatency(value: number | null | undefined, locale: string): string {
 	const normalized = value == null || Number.isNaN(value) ? 0 : value;
-	return `${Math.round(normalized)} ms`;
+	return `${new Intl.NumberFormat(locale, { maximumFractionDigits: 0 }).format(Math.round(normalized))} ms`;
 }
 
-function formatCompactNumber(value: number | null | undefined): string {
+function formatCompactNumber(value: number | null | undefined, locale: string): string {
 	const normalized = value == null || Number.isNaN(value) ? 0 : value;
-	return Intl.NumberFormat("en-US", {
+	return Intl.NumberFormat(locale, {
 		notation: "compact",
 		maximumFractionDigits: 1,
 	}).format(normalized);
 }
 
-function formatAbsoluteNumber(
-	value: number | string | null | undefined
-): string {
+function formatAbsoluteNumber(value: number | string | null | undefined, locale: string): string {
 	if (value == null) return "0";
 	const numericValue =
 		typeof value === "number" ? value : Number.parseFloat(String(value));
 	if (!Number.isFinite(numericValue)) return "0";
-	return Intl.NumberFormat("en-US").format(Math.round(numericValue));
+	return Intl.NumberFormat(locale).format(Math.round(numericValue));
 }
 
-function formatHourLabel(iso: string): string {
-	const date = new Date(iso);
-	return date.toLocaleString(undefined, {
-		weekday: "short",
-		hour: "numeric",
-	});
-}
-
-function formatHoursAgoTick(value: number | string | null | undefined): string {
-	const hours =
-		value == null || Number.isNaN(Number(value))
-			? null
-			: Math.max(0, Math.round(Number(value)));
-
-	if (hours == null) {
-		return "";
-	}
-
-	return hours === 0 ? "Now" : `${hours}h`;
-}
-
-function formatHoursAgoTooltip(
-	value: number | string | null | undefined
+function formatHoursAgoTick(
+	value: number | string | null | undefined,
+	locale: string,
+	nowLabel: string,
+	hourAbbreviation: string
 ): string {
 	const hours =
 		value == null || Number.isNaN(Number(value))
@@ -72,12 +55,15 @@ function formatHoursAgoTooltip(
 		return "";
 	}
 
-	return hours === 0 ? "Now" : `${hours}h ago`;
+	return hours === 0
+		? nowLabel
+		: `${new Intl.NumberFormat(locale).format(hours)} ${hourAbbreviation}`;
 }
 
 function formatTooltipNumber(
 	value: number | string | null | undefined,
-	unit: string
+	unit: string,
+	locale: string
 ): string {
 	if (value == null) return `0 ${unit}`;
 	const numericValue =
@@ -85,7 +71,7 @@ function formatTooltipNumber(
 	if (!Number.isFinite(numericValue)) {
 		return `0 ${unit}`;
 	}
-	return `${Intl.NumberFormat("en-US", {
+	return `${Intl.NumberFormat(locale, {
 		maximumFractionDigits: 1,
 	}).format(numericValue)} ${unit}`;
 }
@@ -95,13 +81,20 @@ interface ReliabilitySectionProps {
 }
 
 export function ReliabilitySection({ metrics }: ReliabilitySectionProps) {
+	const t = useTranslations("Site.gatewayMarketing.reliability");
+	const locale = useLocale();
 	const throughputData = (() => {
 		return metrics.timeseries.throughput.map((point) => {
 			const hoursAgo =
 				typeof point.hoursAgo === "number" ? point.hoursAgo : 0;
 			return {
 				...point,
-				label: formatHoursAgoTick(hoursAgo),
+				label: formatHoursAgoTick(
+					hoursAgo,
+					locale,
+					t("now"),
+					t("hourAbbreviation")
+				),
 				requestsPerHour: point.requests,
 				tokensPerHour: Math.round(point.tokensPerMin * 60),
 				hoursAgo,
@@ -120,52 +113,53 @@ export function ReliabilitySection({ metrics }: ReliabilitySectionProps) {
 				<div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,500px)]">
 					<div className="space-y-4">
 						<h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">
-							Reliability you can trust. Openness you can verify.
+							{t("title")}
 						</h2>
 						<p className="text-sm text-slate-600 dark:text-slate-400">
-							Latency, uptime, and throughput telemetry feed
-							directly into routing. Every adapter, health probe,
-							and ingestion script lives under an open source
-							licence.
+							{t("description")}
 						</p>
 					</div>
 					<Card className="border-slate-200">
 						<CardHeader className="space-y-3">
 							<CardTitle className="flex items-center gap-2 text-base">
 								<CircuitBoard className="h-4 w-4 text-slate-500 dark:text-slate-300" />
-								Last 24 hours
+								{t("last24Hours")}
 							</CardTitle>
 							<div className="grid grid-cols-2 gap-4 text-sm text-slate-700 dark:text-slate-300">
 								<div className="flex items-center justify-between">
-									<span>Uptime</span>
+									<span>{t("uptime")}</span>
 									<span className="font-semibold">
 										{formatPercent(
 											metrics.summary.uptimePct,
+											locale,
 											3
 										)}
 									</span>
 								</div>
 								<div className="flex items-center justify-between">
-									<span>Median latency</span>
+									<span>{t("medianLatency")}</span>
 									<span className="font-semibold">
 										{formatLatency(
-											metrics.summary.latencyP50Ms
+											metrics.summary.latencyP50Ms,
+											locale
 										)}
 									</span>
 								</div>
 								<div className="flex items-center justify-between">
-									<span>Tokens served</span>
+									<span>{t("tokensServed")}</span>
 									<span className="font-semibold">
 										{formatCompactNumber(
-											metrics.summary.tokens24h
+											metrics.summary.tokens24h,
+											locale
 										)}
 									</span>
 								</div>
 								<div className="flex items-center justify-between">
-									<span>Models supported</span>
+									<span>{t("modelsSupported")}</span>
 									<span className="font-semibold">
 										{formatAbsoluteNumber(
-											metrics.summary.supportedModels
+											metrics.summary.supportedModels,
+											locale
 										)}
 									</span>
 								</div>
@@ -178,18 +172,17 @@ export function ReliabilitySection({ metrics }: ReliabilitySectionProps) {
 					<CardHeader className="space-y-2">
 						<CardTitle className="flex items-center gap-2 text-base">
 							<BarChart3 className="h-4 w-4 text-slate-500 dark:text-slate-300" />
-							Gateway tokens per hour (24h)
+													{t("tokensPerHour")}
 						</CardTitle>
 						<p className="text-sm text-slate-600 dark:text-slate-400">
-							Healthy token volume and stability driven by
-							community contributions and enterprise adoption.
+							{t("chartDescription")}
 						</p>
 					</CardHeader>
 					<CardContent>
 						<ChartContainer
 							config={{
 								tokens: {
-									label: "Tokens",
+									label: t("tokens"),
 									color: "hsl(145 80% 45%)",
 								},
 							}}
@@ -225,7 +218,7 @@ export function ReliabilitySection({ metrics }: ReliabilitySectionProps) {
 								/>
 								<YAxis
 									tickFormatter={(value) =>
-										formatCompactNumber(value)
+										formatCompactNumber(value, locale)
 									}
 									width={68}
 								/>
@@ -234,10 +227,13 @@ export function ReliabilitySection({ metrics }: ReliabilitySectionProps) {
 										<ChartTooltipContent
 											className="gap-2.5"
 											labelFormatter={(_, payload) =>
-												formatHoursAgoTooltip(
-													payload?.[0]?.payload
-														?.hoursAgo
-												)
+												(() => {
+													const hoursAgo = payload?.[0]?.payload?.hoursAgo;
+													if (typeof hoursAgo !== "number") return "";
+													return hoursAgo === 0
+														? t("now")
+														: t("hoursAgo", { count: Math.max(0, Math.round(hoursAgo)) });
+												})()
 											}
 											formatter={(value) => {
 												const resolved = Array.isArray(
@@ -250,11 +246,12 @@ export function ReliabilitySection({ metrics }: ReliabilitySectionProps) {
 														<span className="font-mono text-sm font-semibold text-slate-900 dark:text-slate-100">
 															{formatTooltipNumber(
 																resolved,
-																"tokens"
+														t("tokens"),
+															locale
 															)}
 														</span>
 														<span className="text-[0.65rem] uppercase tracking-[0.3em] text-slate-500 dark:text-slate-400">
-															per hour
+														{t("perHour")}
 														</span>
 													</div>
 												);

@@ -1,0 +1,74 @@
+---
+title: "Gateway API の概要"
+sidebarTitle: "概要"
+description: "Phaseo Gateway のベース URL、認証、エンドポイントの種類について説明します。"
+icon: "map"
+---
+
+エンドポイントリファレンスを開く前に、このページで適切な API パスを確認してください。Phaseo Gateway のすべてのエンドポイントは共通のベース URL を使用し、Bearer 認証を使います。
+
+## パスを選ぶ
+
+| 目的 | 参照先 |
+| --- | --- |
+| 最初のリクエストを送信する | [クイックスタート](../quickstart.mdx) |
+| テキストを生成する、またはツールを使う | `POST /responses` |
+| 既存の OpenAI 互換連携を維持する | `POST /chat/completions` |
+| モデルとプロバイダーを確認する | `GET /models` と `GET /providers` |
+| 音楽を作成する、またはファイルを管理する | `POST /music/generations` と `POST /files` |
+
+## ベース URL
+
+本番環境のベース URL:
+
+```http
+https://api.phaseo.app/v1
+```
+
+このリファレンスのエンドポイントパスは、すべてベース URL `/v1` からの相対パスです。
+
+## OpenAPI
+
+OpenAPI ファイルを使うと、Postman、Hoppscotch、SDK ジェネレーターに API をインポートできます。
+
+<Card
+  title="Phaseo Gateway OpenAPI"
+  icon="list-bullet"
+  href="https://github.com/phaseoteam/Phaseo/blob/main/apps/docs/openapi/v1/openapi.public.yaml"
+>
+  仕様ファイルを表示
+</Card>
+
+## 認証
+
+ほとんどのエンドポイントには標準の Gateway API キーが必要です。管理エンドポイントには、ダッシュボードで作成した管理 API キーが必要です。
+
+```http
+Authorization: Bearer phaseo_v1_sk_<kid>_<secret>
+```
+
+認証に失敗すると、API は `401` を返します。
+
+## API リソース
+
+| リソース | 機能 |
+| --- | --- |
+| Responses API | ツール、構造化出力、マルチモーダル入力を使ってモデルの応答を生成します。 |
+| Chat Completions | 既存の OpenAI 互換チャット連携を維持します。 |
+| Anthropic Messages | Anthropic 互換の Messages 連携を維持します。 |
+| Embeddings | 検索、取得、分類用のベクトル表現を作成します。 |
+| Images | 画像を生成または編集します。 |
+| テキスト読み上げ | テキストから音声を生成します。 |
+| 音声認識 | 音声を文字起こし、または翻訳します。 |
+| 音楽生成 | 音楽生成ジョブを作成し、状態を確認します。 |
+| Files | 対応する API ワークフローの入力ファイルをアップロード、取得します。 |
+| モデル、プロバイダー、エンドポイント | Gateway で利用可能な項目を確認します。 |
+| 価格、アクティビティ、生成 | コストを見積もり、リクエスト結果を確認します。 |
+| API キーとワークスペース | プログラムからのアクセスとワークスペースリソースを管理します。 |
+
+## 課金とレート制限
+
+- Phaseo 独自のレート制限は適用しません。レート制限は上流プロバイダーが適用します。
+- 有料リクエストでは、事前のクレジット確認に通るだけのウォレット残高が必要です。
+- `:free` を含む無料モデルでは、入金済みクレジットは不要です。
+

@@ -1,0 +1,117 @@
+---
+title: "Von LLM Gateway migrieren"
+sidebarTitle: "LLM Gateway"
+description: "Wechsle mit einem OpenAI-kompatiblen Endpunktwechsel, geprüften Modell-IDs und schrittweiser Validierung von LLMGateway zu Phaseo Gateway."
+icon: "/icons/brands/llmgateway.svg"
+---
+
+Wenn deine Anwendung LLM Gateway bereits über einen OpenAI-kompatiblen Client nutzt, kannst du die Anfrageinhalte meist beibehalten und zunächst nur die Gateway-Grenze ersetzen.
+
+## Was sich ändert
+
+| Einstellung | Vorher | Nachher |
+| --- | --- | --- |
+| Basis-URL | `https://api.llmgateway.io/v1` | `https://api.phaseo.app/v1` |
+| API-Schlüssel | `LLM_GATEWAY_API_KEY` | `PHASEO_API_KEY` |
+| Modell-Aliase | Bestehende Gateway-Aliase | Mit `GET /v1/models` prüfen oder zentral normalisieren |
+| Request-Inhalt | Bisherige OpenAI-kompatible Anfrage | Beim ersten Migrationsschritt unverändert lassen |
+
+## Vor dem Start
+
+- Die aktuelle LLM-Gateway-Endpunkt- und API-Schlüsselkonfiguration.
+- `PHASEO_API_KEY` in lokalen, Staging- und Produktionsumgebungen.
+- Eine Referenzstichprobe zu Ausgabequalität, Latenz und Fehlerrate.
+
+## 1) Erfasse die Integrationspunkte
+
+Finde die genauen Dateien, die den LLM-Gateway-Client erstellen und konfigurieren.
+
+- Suche nach der Verwendung von `LLM_GATEWAY_*`-Umgebungsvariablen.
+- Finde alle Basis-URL-Angaben in der Laufzeitkonfiguration.
+- Erfasse aktive Modell-IDs und Fallback-Ketten.
+- Notiere gemeinsam genutzte Prompt-Standards, Anbieter-Zulassungs- oder Sperrregeln und Parameter-Presets, die in Gateway-Presets verschoben werden sollten.
+
+## 2) Ändere Endpunkt und Zugangsdaten
+
+Lass die Anfrageinhalte zunächst unverändert. Ändere zuerst nur Endpunkt und Schlüssel, um das Risiko zu verringern.
+
+<CodeGroup>
+```typescript TypeScript
+// Before
+import OpenAI from "openai";
+
+const before = new OpenAI({
+  apiKey: process.env.LLM_GATEWAY_API_KEY,
+  baseURL: "https://api.llmgateway.io/v1",
+});
+```
+
+```typescript TypeScript
+// After
+import OpenAI from "openai";
+
+const after = new OpenAI({
+  apiKey: process.env.PHASEO_API_KEY,
+  baseURL: "https://api.phaseo.app/v1",
+});
+```
+
+```bash cURL
+curl -s "https://api.phaseo.app/v1/chat/completions" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-4.1-mini",
+    "messages": [{"role":"user","content":"Hello"}]
+  }'
+```
+</CodeGroup>
+
+## 3) Prüfe die Modellkompatibilität
+
+Rufe den Phaseo-Modellkatalog ab und überprüfe jedes Modell, das in der Produktion verwendet wird.
+
+Wenn deine aktuelle Konfiguration nicht präfixierte Aliase wie `gpt-4o` nutzt, normalisiere sie an einer zentralen Stelle, statt jeden Aufrufer zu ändern.
+
+Wenn deine bisherige Gateway-Schicht auch Anfrage-Standards oder Anbietereinschränkungen zentralisiert, ordne dieses Verhalten während der Migration den [Presets](../guides/presets.mdx) und [Routing und Fallbacks](../guides/routing-and-fallbacks.mdx) zu, statt es für jeden Aufrufer neu zu implementieren.
+
+```bash
+curl -s "https://api.phaseo.app/v1/models" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" | jq '.data | length'
+```
+
+## 4) LLMGateway-Migrations-Checkliste
+
+- Alle `LLM_GATEWAY_*`-Variablen wurden zugeordnet oder entfernt.
+- Die Basis-URL wurde auf `https://api.phaseo.app/v1` geändert.
+- `PHASEO_API_KEY` ist in allen Deployment-Umgebungen konfiguriert.
+- Produktionsmodell-IDs wurden mit `/v1/models` überprüft.
+- Je eine Anfrage mit und ohne Streaming wurde in Staging geprüft.
+- Fehlerbehandlung für ungültige Schlüssel und Modelle wurde erneut geprüft.
+- Gemeinsame Prompt- und Routing-Standards wurden bei Bedarf in Presets verschoben.
+- Generierungsabfragen über `GET /v1/generations?id=<request_id>` wurden erneut geprüft, damit fehlgeschlagene Anfragen bei `replay_supported=true` mit dem gespeicherten `replay_request`-Inhalt wiedergegeben werden können.
+
+## 5) Prüfe und rolle aus
+
+1. Führe deine Golden-Prompt-Suite aus und vergleiche Qualität, Latenz und Kosten mit der Basislinie.
+2. Stelle sicher, dass fehlgeschlagene Staging-Anfragen über den von `GET /v1/generations` zurückgegebenen Replay-Inhalt wiederhergestellt werden können.
+3. Veröffentliche hinter einem Canary-Schalter und erhöhe den Verkehrsanteil schrittweise, sobald die Ergebnisse stabil sind.
+4. Beobachte Produktionsmetriken mindestens einen Release-Zyklus lang, bevor du die alte Konfiguration entfernst.
+
+## Validierungsbefehle
+
+```bash
+curl -s "https://api.phaseo.app/v1/health"
+curl -s "https://api.phaseo.app/v1/models" -H "Authorization: Bearer $PHASEO_API_KEY"
+```
+
+Anschließend:
+
+- Führe in Staging je eine Anfrage mit und ohne Streaming aus.
+- Spiele deine Golden Prompts erneut ab und vergleiche sie mit der Basislinie.
+
+## Nächste Schritte
+
+- [Von OpenRouter migrieren](./from-openrouter.mdx)
+- [Von Vercel AI Gateway migrieren](./from-vercel.mdx)
+- [Schnellstart](../quickstart.mdx)

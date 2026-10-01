@@ -1,0 +1,78 @@
+---
+title: "SpaceXAI Grok 4.20"
+description: "推論制御やマルチエージェントの effort 設定など、Grok 4.20 の導入時に確認する内容です。"
+icon: "/icons/brands/grok.svg"
+---
+
+# SpaceXAI Grok 4.20
+
+Phaseo Gateway で Grok 4.20 を安全に導入するには、このガイドを使います。
+
+カタログ内の基本ルート：
+
+- `spacex-ai/grok-4-20-2026-02-17`
+
+プロバイダーのモデル ID で公開される、任意のマルチエージェントルート：
+
+- `spacex-ai/grok-4.20-multi-agent-beta-0309`
+
+## 移行クイックスタート
+
+ほとんどの連携では、モデル ID を更新して通常の検証を再実行するだけで移行できます。
+
+既存のリクエストと応答の形式はそのまま使えます。
+
+## 新機能
+
+基本の Grok 4.20 ルートでは、Phaseo Gateway 側の動作変更は必要ありません。
+
+実質的な変更は、マルチエージェント版の調整方法です。
+
+Phaseo Gateway では次のように設定します。
+
+- 基本 Grok 4.20 の推論は、通常どおり `reasoning.enabled` で切り替えられます。
+- マルチエージェント版は `reasoning.effort` で調整します。
+- `low`、`medium`、`high`、`extra high` を指定します。
+- SpaceXAI の説明では、`low` と `medium` は 4 エージェント、`high` と `extra high` はより大きなマルチエージェント構成に対応します。
+
+Gateway リクエストで `agent_count` を直接使うことはありません。
+
+### 推論制御を使う基本 Grok 4.20
+
+基本モデルを使い、`reasoning.enabled` を直接設定します。
+
+```json
+{
+  "model": "spacex-ai/grok-4-20-2026-02-17",
+  "input": "Explain this architecture",
+  "reasoning": {
+    "enabled": true
+  }
+}
+```
+
+### effort 制御を使うマルチエージェント Grok 4.20
+
+マルチエージェントモデルを選び、`reasoning.effort` で深さを調整します。
+
+```json
+{
+  "model": "spacex-ai/grok-4.20-multi-agent-beta-0309",
+  "input": "Evaluate three rollout options with tradeoffs",
+  "reasoning": {
+    "effort": "medium"
+  }
+}
+```
+
+推論 effort のレベル：
+
+- `low`
+- `medium`
+- `high`
+- `extra high`
+
+## 参考資料
+
+- [SpaceXAI のマルチエージェント機能](https://docs.x.ai/developers/model-capabilities/text/multi-agent)
+- [SpaceXAI の新モデルへの移行](https://docs.x.ai/docs/guides/migrating-to-new-models)

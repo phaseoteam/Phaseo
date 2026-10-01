@@ -1,0 +1,23 @@
+---
+icon: "shuffle"
+title: "动态轮次"
+description: "在 Ruby Agent 的轮次之间更改路由、指令、工具和采样设置。"
+---
+
+Agent 的可调用字段会在每个模型轮次前，根据当前运行状态重新计算请求参数。
+
+```ruby
+agent = PhaseoAgentSdk.create_agent(
+  id: "support-agent",
+  model: ->(turn) {
+    turn.run.step_count > 3 ? "openai/gpt-5.4" : "openai/gpt-5.4-nano"
+  },
+  instructions: ->(turn) {
+    "Resolve the request using the current context."
+  }
+)
+```
+
+动态工具和采样值也可遵循相同模式。工具可以设置 `next_turn_params`，仅修改紧接着的下一次请求。这些覆盖项会跨越审批检查点保留，并在下一轮后失效。
+
+需要在每轮重新计算的策略请使用可调用函数。工具专属的交接设置请使用 `next_turn_params`。

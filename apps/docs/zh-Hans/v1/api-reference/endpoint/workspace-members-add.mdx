@@ -1,0 +1,10 @@
+---
+title: "添加工作区成员"
+sidebarTitle: "添加成员"
+badge: "测试版"
+openapi: "/zh-Hans/openapi/v1/openapi.localized.yaml POST /workspaces/{id}/members/add"
+description: "将现有用户添加到工作区。"
+---
+<Note>此端点需要具有 `workspaces:write` 权限的管理 API 密钥以及所有者或管理员角色。</Note>
+
+角色可以是 `admin` 或 `member`。无法通过此端点分配工作区所有权。

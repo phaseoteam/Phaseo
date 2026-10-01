@@ -1,0 +1,36 @@
+---
+icon: "sparkles"
+title: "応答"
+description: "C# SDKでResponses APIを呼び出します。"
+---
+
+**メソッド**: `client.GenerateResponse(...)`または`client.CreateResponse(...)`
+
+### 例
+```csharp
+using PhaseoSdk;
+
+var client = new Phaseo(apiKey);
+var response = await client.GenerateResponse(new Dictionary<string, object>
+{
+    ["model"] = "openai/gpt-5-nano",
+    ["input"] = "Summarise this text",
+    ["temperature"] = 0.7
+});
+```
+
+### 主なパラメーター
+- `model`（必須）：対象モデルのID。
+- `input`（必須）：メッセージやツール呼び出しなど、順序付きの入力項目の配列。
+- `temperature`（0～2）：値が高いほどランダム性が増します。
+- `top_p`（0～1）/ `top_k`（>=1）：nucleus/k-bestサンプリングの制御。
+- `max_output_tokens`（整数）：レスポンスごとの生成トークン数の上限。各メッセージ項目には`max_output_tokens_per_message`を使います。
+- ツール：`tools`（定義）、`tool_choice`（自動/なし/指定）、`max_tool_calls`（整数）、`parallel_tool_calls`（真偽値）。
+- 対数確率：`logprobs`（真偽値）、`top_logprobs`（0～20）。トークンごとの対数確率を返します。
+- 出力：`response_format`（json/text）、`service_tier`、`store`（真偽値）、`stream`（真偽値）。
+- メタデータ：`metadata`（そのまま渡されるオブジェクト）、`reasoning`（推論の強さを指定するオブジェクト）。
+- ゲートウェイ追加項目：`usage`（使用量を要求する真偽値）、`meta`（metaブロックを含める真偽値）。
+
+### 戻り値
+`ResponsesResponse`
+

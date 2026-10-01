@@ -1,0 +1,144 @@
+---
+title: "Explorando benchmarks"
+description: "Entenda como os benchmarks de modelos de IA são coletados, padronizados e visualizados no Phaseo."
+sidebarTitle: "Benchmarks"
+icon: "chart-no-axes-column"
+---
+
+Os benchmarks são fundamentais para medir a qualidade e a evolução dos modelos no Phaseo.
+Eles fornecem **métricas objetivas e reproduzíveis** para comparar o desempenho dos modelos em diferentes tarefas, domínios e provedores, de raciocínio e programação a compreensão de linguagem e reconhecimento de imagens.
+
+---
+
+## O que são benchmarks?
+
+Um **benchmark** é um conjunto de dados ou uma avaliação criada para testar o desempenho de um modelo em uma tarefa específica.
+Ao executar vários modelos no mesmo conjunto de dados, podemos medir seus pontos fortes e fracos relativos.
+
+Exemplos comuns:
+
+-   🧠 **MMLU (Massive Multitask Language Understanding)** — avalia conhecimentos gerais e raciocínio.
+-   🔢 **GSM8K** — avalia raciocínio matemático e resolução de problemas.
+-   💬 **HellaSwag** — avalia bom senso e compreensão contextual.
+-   🧮 **ARC-Challenge** — mede raciocínio científico e lógica.
+-   💡 **HumanEval** — avalia habilidades de programação e geração de código.
+
+---
+
+## Como o Phaseo lida com benchmarks
+
+O Phaseo coleta dados de benchmarks de **várias fontes públicas** e **relatórios oficiais** e os padroniza em um formato consistente.
+
+A seção de benchmarks de cada modelo inclui:
+
+-   **Valor da pontuação** — normalmente expresso como porcentagem ou em uma escala padronizada.
+-   **Fonte do conjunto de dados** — por exemplo, MMLU, GSM8K etc.
+-   **Método de avaliação** — indica como a pontuação foi calculada (relatório oficial, avaliação de terceiros ou contribuição da comunidade).
+-   **Última atualização** — mostra quando os dados do benchmark foram atualizados pela última vez.
+
+---
+
+## Exemplo de página de benchmark
+
+---
+
+## Categorias de benchmarks
+
+Os benchmarks são agrupados em categorias que representam a habilidade testada:
+
+| Categoria                   | Exemplos               | Descrição                                                           |
+| -------------------------- | ---------------------- | --------------------------------------------------------------------- |
+| **Raciocínio**              | MMLU, GSM8K, ARC       | Avalia lógica geral, raciocínio em várias etapas e resolução de problemas.       |
+| **Compreensão de linguagem** | HellaSwag, BoolQ, PIQA | Mede compreensão de leitura, bom senso e capacidade linguística. |
+| **Geração de código**        | HumanEval, MBPP        | Avalia a programação e a precisão na síntese de código.                    |
+| **Matemática e ciências**         | GSM8K, MATH, SciQ      | Tem foco no raciocínio numérico e científico.                        |
+| **Multimodal**             | MathVista, MMMU        | Combina tarefas de compreensão de texto e imagens.                         |
+
+---
+
+## Como interpretar as pontuações
+
+| Faixa de valores | Interpretação                                                    |
+| ----------- | ----------------------------------------------------------------- |
+| **90-100%** | Excepcional — desempenho próximo ao estado da arte.                  |
+| **80-89%**  | Excelente — adequado para a maioria dos casos de uso em produção.                |
+| **60-79%**  | Bom — confiável para tarefas gerais, mas pode ter dificuldades em casos extremos. |
+| **< 60%**   | Em desenvolvimento — mais indicado para cenários experimentais ou de pesquisa.         |
+
+Lembre-se de que alguns benchmarks usam **sistemas de pontuação diferentes**.
+O Phaseo os padroniza sempre que possível para tornar as comparações mais úteis.
+
+---
+
+## Visualizando benchmarks no Phaseo
+
+Os resultados dos benchmarks são visualizados com:
+
+-   📊 **Gráficos de barras** para comparar modelos no mesmo conjunto de dados.
+-   📈 **Gráficos de tendência** que mostram a evolução dos modelos ao longo do tempo.
+-   🧮 **Pontuações agregadas** para resumir o desempenho em vários conjuntos de dados.
+
+Cada conjunto de dados de benchmark no Phaseo inclui filtros para:
+
+-   Tipo de modelo (chat, código, embeddings etc.)
+-   Provedor
+-   Ano de lançamento
+-   Categoria do conjunto de dados
+
+Isso permite identificar padrões rapidamente, como quais famílias se destacam em tarefas de raciocínio ou programação.
+
+---
+
+## Fontes de dados e metodologia
+
+O Phaseo reúne dados de benchmarks provenientes de:
+
+-   Artigos de pesquisa e relatórios oficiais de modelos.
+-   Páginas de avaliação de provedores (OpenAI Evals, Anthropic Reports etc.).
+-   Conjuntos de dados abertos da comunidade (por exemplo, rankings do Hugging Face).
+-   Envios diretos de usuários pelo GitHub.
+
+Todos os dados são padronizados e verificados antes da publicação.
+Consulte [Pesquisa e metodologia → Metodologia de benchmarks](../research/benchmark-methodology.mdx) para ver todos os detalhes.
+
+---
+
+## Exemplos de uso
+
+| Objetivo                                 | Exemplo                                                              |
+| ------------------------------------ | -------------------------------------------------------------------- |
+| Comparar modelos de raciocínio             | “Qual modelo tem a maior pontuação no GSM8K?”                               |
+| Avaliar o equilíbrio entre custo e desempenho | “O GPT-4o justifica o custo mais alto em comparação com o Claude 3.5 Sonnet?” |
+| Acompanhar o progresso anual                | “Quanto a precisão no MMLU melhorou desde 2022?”                    |
+| Pesquisar benchmarks por categoria      | “Quais modelos lideram em raciocínio multimodal?”                         |
+
+---
+
+## Contribuir com dados de benchmarks
+
+Você pode enviar pontuações novas ou corrigidas para ajudar a manter o Phaseo atualizado.
+Cada envio é revisado antes da inclusão para garantir consistência e precisão.
+
+<Card
+	title="Contribuir com dados de benchmarks"
+	icon="github"
+	href="../research/submitting-scores.mdx"
+	horizontal
+>
+	Saiba como adicionar ou editar informações de benchmarks com segurança.
+</Card>
+
+---
+
+## Próximas etapas
+
+Depois de entender como os dados de benchmarks funcionam, você pode explorar os **provedores de API** que disponibilizam esses modelos por meio de programação.
+
+<Card
+	title="Explorar provedores de API"
+	icon="network"
+	href="./api-providers.mdx"
+	horizontal
+>
+	Veja onde e como os modelos são hospedados, precificados e acessados.
+</Card>

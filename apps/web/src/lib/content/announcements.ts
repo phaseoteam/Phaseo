@@ -51,14 +51,17 @@ export type AnnouncementSummary = {
 
 export type AnnouncementPost = AnnouncementSummary & {
 	content: string;
+	contentLocale: string;
 };
 
 type AnnouncementPostLookupOptions = {
 	includeFuture?: boolean;
+	locale?: string;
 };
 
 type AnnouncementListOptions = {
 	includeFuture?: boolean;
+	locale?: string;
 };
 
 function parseDocument(raw: string): {
@@ -234,7 +237,7 @@ export function isAnnouncementPublished(value: string, now = new Date()): boolea
 	return isPublishedDate(value, now);
 }
 
-async function loadAnnouncements(): Promise<AnnouncementPost[]> {
+async function loadAnnouncements(locale?: string): Promise<AnnouncementPost[]> {
 	let entries: Dirent[];
 
 	try {
@@ -258,7 +261,24 @@ async function loadAnnouncements(): Promise<AnnouncementPost[]> {
 			);
 			if (!extension) return null;
 
-			const filePath = path.join(ANNOUNCEMENTS_CONTENT_ROOT, entry.name);
+			const englishFilePath = path.join(ANNOUNCEMENTS_CONTENT_ROOT, entry.name);
+			let filePath = englishFilePath;
+			let contentLocale = "en-GB";
+			if (locale && locale !== "en-GB" && !locale.startsWith("en-")) {
+				const localizedPath = path.join(
+					ANNOUNCEMENTS_CONTENT_ROOT,
+					"locales",
+					locale,
+					entry.name,
+				);
+				try {
+					await fs.access(localizedPath);
+					filePath = localizedPath;
+					contentLocale = locale;
+				} catch {
+					// Keep the English source until a locale-specific article is available.
+				}
+			}
 			const slug = entry.name.slice(0, -extension.length);
 			if (EXCLUDED_ANNOUNCEMENT_SLUGS.has(slug.toLowerCase())) {
 				return null;
@@ -288,6 +308,7 @@ async function loadAnnouncements(): Promise<AnnouncementPost[]> {
 
 			return {
 				slug,
+				contentLocale,
 				title,
 				shortTitle,
 				description,
@@ -317,17 +338,17 @@ async function loadAnnouncements(): Promise<AnnouncementPost[]> {
 export async function getAnnouncementPosts(
 	options: AnnouncementListOptions = {}
 ): Promise<AnnouncementSummary[]> {
-	const posts = await loadAnnouncements();
+	const posts = await loadAnnouncements(options.locale);
 	return posts
 		.filter((post) => options.includeFuture || isPublishedDate(post.publishedAt))
-		.map(({ content: _content, ...summary }) => summary);
+		.map(({ content: _content, contentLocale: _contentLocale, ...summary }) => summary);
 }
 
 export async function getAnnouncementPost(
 	slug: string,
 	options: AnnouncementPostLookupOptions = {}
 ): Promise<AnnouncementPost | null> {
-	const posts = await loadAnnouncements();
+	const posts = await loadAnnouncements(options.locale);
 	const post = posts.find((candidate) => candidate.slug === slug) ?? null;
 	if (!post) {
 		return null;
@@ -347,20 +368,16 @@ export async function getAnnouncementParams(): Promise<Array<{ slug: string }>> 
 		.map((post) => ({ slug: post.slug }));
 }
 
-export function formatAnnouncementDate(value: string): string {
+export function formatAnnouncementDate(value: string, locale: string): string {
 	const parsed = new Date(value);
 	if (Number.isNaN(parsed.getTime())) {
 		return value;
 	}
 
-	return parsed.toLocaleDateString("en-GB", {
+	return parsed.toLocaleDateString(locale, {
 		timeZone: "UTC",
 		year: "numeric",
 		month: "long",
 		day: "2-digit",
 	});
-}
-
-export function formatAnnouncementReadingTime(minutes: number): string {
-	return `${Math.max(1, minutes)} min read`;
 }

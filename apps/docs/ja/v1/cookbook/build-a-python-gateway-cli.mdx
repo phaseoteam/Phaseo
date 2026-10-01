@@ -1,0 +1,117 @@
+---
+title: "Python ゲートウェイ CLI を作成する"
+icon: "terminal"
+description: "Python クイックスタートのサンプルを使って、Python を中心とした CLI やバックエンド連携を一通り作成します。"
+---
+
+最初の Phaseo 連携を Python で実装し、CLI、ワーカー、バックエンドサービスの実用的な出発点が必要な場合に、このページを利用してください。
+
+**目標:** 小さな Python コマンドラインアプリケーションから Phaseo の制御ルートと生成ルートを実行します。
+
+**成果:** ワーカー、スクリプト、バックエンド連携に応じて変更できる、依存関係の少ない CLI を作成します。
+
+<Prompt
+  description="Phaseo のルートを使う **Python ゲートウェイ CLI** を作成します。"
+  icon="terminal-square"
+  actions={["copy", "cursor"]}
+>
+{`Phaseo Gateway 用の Python 製 CLI またはサーバー側の連携機能を作成します。
+
+次の機能を備えた小さな Python アプリを作成してください。
+- 環境変数から PHASEO_API_KEY を読み込む
+- 制御ルートの簡易テストモードを備える
+- テキスト生成コマンドを備える
+- 依存関係を最小限にする
+
+要件:
+- 特別な理由がない限り、Python 標準ライブラリを優先してください。
+- リクエストの内容を明示してください。
+- 成功と失敗がはっきり分かるメッセージを表示してください。
+- 汎用的で大規模な CLI ではなく、役立つコマンドを 1、2 個用意してください。
+- 例を含む簡潔な README を追加してください。
+
+成果物:
+- Python アプリのコード
+- 簡単な使い方のコマンド
+- .env.example ファイル、または同等の環境変数の説明
+
+確認項目:
+- 可能であれば、ルートの簡易テストを実行してください。
+- 可能であれば、テキスト生成が成功することを確認してください。
+- 確認できたことと、未確認のままのことを正確に記載してください。`}
+</Prompt>
+
+## サンプルプロジェクト
+
+- GitHub: [examples/gateway-python-quickstart](https://github.com/phaseoteam/Phaseo/tree/main/examples/gateway-python-quickstart)
+- リポジトリ内のパス: `examples/gateway-python-quickstart`
+
+## このアプリでできること
+
+- 次のような制御ルートを実行します。
+  - `GET /v1/health`
+  - `GET /v1/models`
+  - `GET /v1/providers`
+- 次のような生成ルートを実行します。
+  - `POST /v1/responses`
+  - `POST /v1/chat/completions`
+  - `POST /v1/embeddings`
+  - その他の複数のエンドポイント
+
+## このサンプルが役立つ理由
+
+次の内容を確認できます。
+
+- サードパーティ依存のない Python 中心の実装例
+- 明示的なリクエストペイロードとレスポンス処理
+- ワーカー、スクリプト、内部ツールに応用できる実践的なパターン
+
+## 前提条件
+
+- Python 3
+- Phaseo API キー
+
+## サンプルを実行する
+
+```bash
+cd examples/gateway-python-quickstart
+cp .env.example .env.local
+```
+
+次の値を設定します。
+
+- `PHASEO_API_KEY`
+
+続けて、次を実行します。
+
+```bash
+python quickstart.py smoke
+python quickstart.py responses --prompt "Return exactly: integration_ok"
+python quickstart.py --help
+```
+
+## 動作を確認する
+
+- スモークテストモードで API に接続できることを確認します。
+- Responses コマンドが `integration_ok` を出力します。
+- `--help` でリクエストを送信せずに使用可能なコマンドを確認できます。
+- 認証エラーや API エラーが端末にわかりやすく表示されます。
+
+## コードで確認すること
+
+- 環境変数の読み込み方法
+- CLI でコマンドを振り分ける方法
+- 各リクエストのペイロードを組み立てる方法
+- 非同期の動画・音楽ルートと、1回の応答で完了するテキストルートを分けて処理する方法
+
+## サンプルを自分用に変更する
+
+- サービスで使わないエンドポイントを削除します。
+- ヘッダーをあちこちに重複して記述せず、共通のリクエストヘルパーを使います。
+- より高水準のクライアントが必要になったら、Python SDK に切り替えます。
+
+## 関連ガイド
+
+- [ミニアプリの開始プロンプト](./mini-app-starter-prompts.mdx)
+- [Python で構造化 JSON を返す](./sdk-python-presets-and-json.mdx)
+- [サンプル](../guides/examples.mdx)

@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, Globe2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -29,10 +30,13 @@ type LeaderboardAppRow = {
 
 type RankingRange = "today" | "week" | "month";
 
-const RANGE_OPTIONS: Array<{ value: RankingRange; label: string }> = [
-	{ value: "today", label: "Today" },
-	{ value: "week", label: "This week" },
-	{ value: "month", label: "This month" },
+const RANGE_OPTIONS: Array<{
+	value: RankingRange;
+	labelKey: "today" | "thisWeek" | "thisMonth";
+}> = [
+	{ value: "today", labelKey: "today" },
+	{ value: "week", labelKey: "thisWeek" },
+	{ value: "month", labelKey: "thisMonth" },
 ];
 
 function formatCompactNumber(value: number): string {
@@ -64,6 +68,7 @@ export default function TopAppsLeaderboardTable({
 	rowsByRange: Record<RankingRange, LeaderboardAppRow[]>;
 	imageUrlsById: Record<string, string | null>;
 }) {
+	const tUi = useTranslations("Common.ui");
 	const [range, setRange] = useState<RankingRange>("month");
 	const [page, setPage] = useState(1);
 	const rows = rowsByRange[range];
@@ -78,7 +83,8 @@ export default function TopAppsLeaderboardTable({
 		const splitAt = Math.ceil(pagedRows.length / 2);
 		return [pagedRows.slice(0, splitAt), pagedRows.slice(splitAt)];
 	}, [pagedRows]);
-	const rangeLabel = RANGE_OPTIONS.find((option) => option.value === range)?.label;
+	const rangeLabelKey = RANGE_OPTIONS.find((option) => option.value === range)?.labelKey;
+	const rangeLabel = rangeLabelKey ? tUi(`rangeOptions.${rangeLabelKey}`) : "";
 
 	return (
 		<div>
@@ -86,10 +92,10 @@ export default function TopAppsLeaderboardTable({
 				<div>
 					<h2 className="flex items-center gap-2 text-2xl font-semibold tracking-tight">
 						<Globe2 className="size-5 text-muted-foreground" />
-						Global ranking
+						{tUi("apps.globalRanking")}
 					</h2>
 					<p className="mt-1 text-sm text-muted-foreground">
-						Apps ranked by token usage across Phaseo Gateway.
+						{tUi("apps.rankingDescription")}
 					</p>
 				</div>
 				<Select
@@ -99,13 +105,13 @@ export default function TopAppsLeaderboardTable({
 						setPage(1);
 					}}
 				>
-					<SelectTrigger size="sm" aria-label="Ranking period" className="min-w-32 border border-border/70 bg-transparent">
-						<SelectValue placeholder="Ranking period" />
+					<SelectTrigger size="sm" aria-label={tUi("select.rankingPeriod")} className="min-w-32 border border-border/70 bg-transparent">
+						<SelectValue placeholder={tUi("select.rankingPeriod")} />
 					</SelectTrigger>
 					<SelectContent align="end">
 						{RANGE_OPTIONS.map((option) => (
-							<SelectItem key={option.value} value={option.value} label={option.label}>
-								{option.label}
+							<SelectItem key={option.value} value={option.value} label={tUi(`rangeOptions.${option.labelKey}`)}>
+								{tUi(`rangeOptions.${option.labelKey}`)}
 							</SelectItem>
 						))}
 					</SelectContent>
@@ -114,8 +120,12 @@ export default function TopAppsLeaderboardTable({
 
 			{pagedRows.length === 0 ? (
 				<div className="border-b border-border/70 py-16 text-center">
-					<p className="text-sm font-medium">No usage recorded {rangeLabel?.toLowerCase()}.</p>
-					<p className="mt-1 text-xs text-muted-foreground">Rankings appear as public app traffic is processed.</p>
+					<p className="text-sm font-medium">
+						{tUi("apps.noUsageRecorded", { range: rangeLabel })}
+					</p>
+					<p className="mt-1 text-xs text-muted-foreground">
+						{tUi("apps.rankingsAppear")}
+					</p>
 				</div>
 			) : (
 				<div className="grid border-b border-border/70 lg:grid-cols-2 lg:divide-x lg:divide-border/70">
@@ -143,13 +153,13 @@ export default function TopAppsLeaderboardTable({
 										/>
 										<div className="min-w-0">
 											<p className="truncate text-sm font-semibold text-foreground group-hover:underline group-hover:underline-offset-4">{app.appName}</p>
-											<p className="mt-0.5 truncate text-xs text-muted-foreground">
-												{urlLabel ?? `${formatCompactNumber(app.requests)} requests`} · {app.uniqueModels} {app.uniqueModels === 1 ? "model" : "models"}
-											</p>
+							<p className="mt-0.5 truncate text-xs text-muted-foreground">
+								{urlLabel ?? tUi("apps.requests", { count: app.requests })} · {tUi("apps.models", { count: app.uniqueModels })}
+							</p>
 											<AppCategoryTags categoryCsv={app.appCategory} className="mt-1.5" />
 										</div>
 										<p className="pl-2 text-right text-sm font-semibold tabular-nums text-foreground">
-											{formatCompactNumber(app.tokens)} <span className="hidden font-normal text-muted-foreground sm:inline">tokens</span>
+							{formatCompactNumber(app.tokens)} <span className="hidden font-normal text-muted-foreground sm:inline">{tUi("apps.tokens")}</span>
 										</p>
 									</Link>
 								);
@@ -161,13 +171,15 @@ export default function TopAppsLeaderboardTable({
 
 			{totalPages > 1 ? (
 				<div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/70 py-3">
-					<p className="text-xs text-muted-foreground">Page {currentPage} of {totalPages}</p>
+					<p className="text-xs text-muted-foreground">
+						{tUi("apps.page", { page: currentPage, totalPages })}
+					</p>
 					<div className="flex items-center gap-1.5">
 						<Button
 							type="button"
 							variant="outline"
 							size="icon-sm"
-							aria-label="Previous page"
+							aria-label={tUi("apps.previousPage")}
 							onClick={() => setPage((p) => Math.max(1, p - 1))}
 							disabled={currentPage === 1}
 						>
@@ -178,7 +190,7 @@ export default function TopAppsLeaderboardTable({
 							type="button"
 							variant="outline"
 							size="icon-sm"
-							aria-label="Next page"
+							aria-label={tUi("apps.nextPage")}
 							onClick={() =>
 								setPage((p) => Math.min(totalPages, p + 1))
 							}

@@ -1,0 +1,19 @@
+---
+icon: "chart-spline"
+title: "डेवलपर टूल"
+description: "PHP Agent SDK रन को Phaseo DevTools के स्थानीय event फ़ॉर्मैट में कैप्चर करें।"
+---
+
+टूल टाइमलाइन, approval इंटरफ़ेस और रन inspector बनाते समय DevTools कैप्चर चालू करें।
+
+```php
+$result = $agent->run(
+    input: $prompt,
+    client: $client,
+    devtools: AgentSdk::createAgentDevtools(".phaseo-devtools")
+);
+```
+
+हर रन और continuation एक structured JSONL रिकॉर्ड लिखता है, जिसमें status, usage, model attempts, tool calls, pauses, request metadata और errors शामिल होते हैं।
+
+स्थानीय कैप्चर विकास में सहायता के लिए है, production audit store नहीं। संवेदनशील सामग्री सहेजने से पहले ऐप-विशिष्ट redaction, access control, encryption और retention लागू करें।

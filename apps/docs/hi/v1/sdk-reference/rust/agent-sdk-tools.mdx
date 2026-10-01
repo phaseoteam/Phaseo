@@ -1,0 +1,134 @@
+---
+title: "टूल और अनुमोदन"
+description: "Rust Agent SDK में स्थानीय, बाहरी और अनुमोदन की आवश्यकता वाले टूल परिभाषित करें।"
+---
+
+## स्थानीय टूल
+
+जब Rust प्रक्रिया ऑपरेशन चला सकती हो, तब `Tool::new(...)` इस्तेमाल करें:
+
+```rust
+use phaseo_agent::Tool;
+use serde_json::json;
+
+let get_status = Tool::new(
+    "get_status",
+    "Get the current service status",
+    json!({
+        "type": "object",
+        "properties": {
+            "service": { "type": "string" }
+        },
+        "required": ["service"]
+    }),
+    |input, _context| {
+        Ok(json!({
+            "service": input["service"],
+            "status": "healthy"
+        }))
+    },
+);
+```
+
+`parameters` वैल्यू मॉडल को JSON Schema के रूप में भेजी जाती है। टूल इनपुट और आउटपुट `serde_json::Value` होते हैं। अगर रनटाइम पर अधिक मज़बूत गारंटी चाहिए, तो executor के अंदर अविश्वसनीय आर्ग्युमेंट की जाँच करें।
+
+## अनुमोदन की आवश्यकता वाले टूल
+
+ऑपरेशन चलाने से पहले रोकने के लिए `require_approval()` जोड़ें:
+
+```rust
+let deploy = Tool::new(
+    "deploy",
+    "Deploy an application environment",
+    json!({
+        "type": "object",
+        "properties": {
+            "environment": { "type": "string" }
+        },
+        "required": ["environment"]
+    }),
+    |input, _context| {
+        Ok(json!({
+            "environment": input["environment"],
+            "deployed": true
+        }))
+    },
+)
+.require_approval();
+```
+
+जब मॉडल इस टूल को कॉल करता है, तो रन `run.status == "waiting_for_human"` और `run.pause.kind == "tool_approval"` के साथ लौटता है।
+
+सटीक कॉल ID का उपयोग करके रन फिर से शुरू करें:
+
+```rust
+use phaseo_agent::{ContinueOptions, ToolDecision};
+
+let approvals = paused.run.pause.as_ref().unwrap()
+    .pending_tool_calls
+    .iter()
+    .map(|pending| ToolDecision {
+        tool_call_id: pending.call.id.clone(),
+        reason: Some("Approved by the release operator".to_string()),
+    })
+    .collect();
+
+let mut options = ContinueOptions::new(paused);
+options.approvals = approvals;
+
+let completed = agent.continue_run(&mut client, options)?;
+```
+
+Rust `0.1` API में अलग अस्वीकृति प्रकार उपलब्ध नहीं है। जिस कॉल को अनुमोदन नहीं मिला उसे रुका रहने दें, या फिर से शुरू करने से पहले अपने ऐप की अस्वीकृति नीति लागू करें।
+
+## बाहरी टूल
+
+जब कोई दूसरी प्रक्रिया ऑपरेशन करती है, तब `Tool::external(...)` इस्तेमाल करें:
+
+```rust
+let ticket_lookup = Tool::external(
+    "ticket_lookup",
+    "Load one support ticket",
+    json!({
+        "type": "object",
+        "properties": {
+            "ticket_id": { "type": "string" }
+        },
+        "required": ["ticket_id"]
+    }),
+);
+```
+
+जब हर लंबित कॉल को बाहरी नतीजे की ज़रूरत हो, तब pause kind `external_output` होता है। हर नतीजा उसकी कॉल ID के साथ दें:
+
+```rust
+use phaseo_agent::{ContinueOptions, ToolOutput};
+
+let outputs = paused.run.pause.as_ref().unwrap()
+    .pending_tool_calls
+    .iter()
+    .map(|pending| ToolOutput {
+        tool_call_id: pending.call.id.clone(),
+        output: json!({
+            "subject": "Provider latency increased",
+            "priority": "high"
+        }),
+    })
+    .collect();
+
+let mut options = ContinueOptions::new(paused);
+options.tool_outputs = outputs;
+
+let completed = agent.continue_run(&mut client, options)?;
+```
+
+अगर मॉडल के एक टर्न में ऑटोमैटिक और लंबित, दोनों तरह के टूल हों, तो pause लौटाने से पहले runtime ऑटोमैटिक टूल चलाता है।
+
+## टूल की त्रुटियाँ
+
+स्थानीय executor से लौटाया गया `AgentError` संरचित टूल त्रुटि संदेश बनकर मॉडल को भेजा जाता है। अज्ञात टूल नाम या अनुमोदन/आउटपुट न मिलने पर आगे चलाने का अनुरोध `AgentError` के साथ विफल होता है।
+
+## संबंधित जानकारी
+
+- [रन सेव करें और फिर शुरू करें](./agent-sdk-state-and-approval.mdx)
+- [Agent API संदर्भ](./agent-sdk-api-reference.mdx)

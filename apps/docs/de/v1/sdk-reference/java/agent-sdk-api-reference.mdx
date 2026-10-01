@@ -1,0 +1,25 @@
+---
+icon: "braces"
+title: "API-Referenz"
+description: "Schlage die wichtigsten Records und Methoden des Java Agent SDK nach."
+---
+
+| API | Zweck |
+| --- | --- |
+| `AgentSdk.createAgent(...)` | Einen Agenten definieren |
+| `AgentSdk.defineTool(...)` | Ein lokales oder manuelles Tool definieren |
+| `AgentSdk.createGatewayAgentClient(...)` | Modellzüge mit Phaseo verbinden |
+| `Agent.run(...)` | Bis zum Abschluss oder Pausieren ausführen |
+| `Agent.stream(...)` | Mit erneut durchlaufbaren Stream-Consumern ausführen |
+| `Agent.continueRun(...)` | Einen gespeicherten oder pausierten Zustand fortsetzen |
+| `StreamResult.getResult()` | Den abgeschlossenen Lauf lesen |
+| `StreamResult.textStream()` | Textänderungen lesen |
+| `StreamResult.fullStream()` | Alle Ereignisse lesen |
+| `StreamResult.cancel()` | Den aktiven Lauf abbrechen |
+
+Zu den wichtigen Records und Interfaces gehören `AgentDefinition`, `RunOptions`, `RunResult`, `RunRecord`, `RunStep`, `Tool`, `ToolDecision`, `ToolOutput`, `RuntimeContext`, `StateAccessor`, `ModelRetryConfig` und `ToolExecutionConfig`.
+
+## Weiterführende Themen
+
+- [Erstelle deinen ersten Agenten](./agent-sdk.mdx)
+- [Observability und DevTools](./agent-sdk-observability.mdx)

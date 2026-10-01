@@ -1,6 +1,7 @@
 "use client";
 
 import { BarChart3, Loader2 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
@@ -29,7 +30,7 @@ export default function ModelPercentileSelect({
 	onChange,
 	isLoading = false,
 	disabled = false,
-	ariaLabel = "Select percentile",
+	ariaLabel,
 }: {
 	value: ModelPercentile;
 	onChange: (value: ModelPercentile) => void;
@@ -37,6 +38,8 @@ export default function ModelPercentileSelect({
 	disabled?: boolean;
 	ariaLabel?: string;
 }) {
+	const tPerformance = useTranslations("Catalogue.modelDetail.performance");
+	const tQuickstart = useTranslations("Catalogue.models.detail.quickstart");
 	const selector = (
 		<DropdownMenu>
 			<DropdownMenuTrigger asChild>
@@ -44,8 +47,8 @@ export default function ModelPercentileSelect({
 					variant="outline"
 					size="sm"
 					className="h-8 gap-2 rounded-md px-3 text-xs"
-					aria-label={ariaLabel}
-					title={disabled ? "Coming Soon" : undefined}
+					aria-label={ariaLabel ?? tPerformance("selectPercentile")}
+					title={disabled ? tQuickstart("comingSoon") : undefined}
 					disabled={disabled || isLoading}
 				>
 					{isLoading ? (
@@ -58,7 +61,7 @@ export default function ModelPercentileSelect({
 			</DropdownMenuTrigger>
 			<DropdownMenuContent align="end" className="w-48 rounded-md">
 				<div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
-					Performance Percentile
+					{tPerformance("selectPercentile")}
 				</div>
 				<DropdownMenuSeparator />
 				<DropdownMenuRadioGroup
@@ -90,7 +93,7 @@ export default function ModelPercentileSelect({
 					{selector}
 				</span>
 			</TooltipTrigger>
-			<TooltipContent>Coming Soon</TooltipContent>
+		<TooltipContent>{tQuickstart("comingSoon")}</TooltipContent>
 		</Tooltip>
 	);
 }

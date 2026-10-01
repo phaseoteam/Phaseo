@@ -1,0 +1,21 @@
+---
+icon: "wrench"
+title: "الأدوات"
+description: "عرّف أدوات Go متحققة وتتطلب موافقة أو تُنفذ يدويًا أو تُصدر تحديثات التقدم."
+---
+
+أنشئ قيم `Tool` ومرّرها عبر `DefineTool(...)`. ويمكن أن تتضمن الأدوات:
+
+- `Parameters` بصيغة JSON تُعرض على النموذج
+- أدوات تحقق لـ`InputSchema` و`OutputSchema` و`EventSchema`
+- `Timeout` ودالة `Execute(input, RuntimeContext)`
+- `RequireApproval` غير المشروط أو شرط `Approval` مشروط
+- `OnToolCalled` و`OnResponseReceived` للعمل التفاعلي
+- تجاوزات `NextTurn` و`OnError: "return-to-model"`
+
+استخدم `RuntimeContext.EmitProgress` و`SetContext` وسياق `context.Context` المقدّم. ينفّذ `ToolExecutionConfig{Concurrency: ...}` الأدوات المستقلة بالتوازي مع الحفاظ على ترتيب نتائج الأدوات.
+
+## مواضيع ذات صلة
+
+- [الحالة والموافقة](./agent-sdk-state-and-approval.mdx)
+- [عناصر التحكم في التشغيل](./agent-sdk-run-controls.mdx)

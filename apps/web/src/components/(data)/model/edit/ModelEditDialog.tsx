@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
+import { useTranslations } from "next-intl"
 import { Pencil, Loader2, ChevronDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
@@ -48,23 +49,11 @@ export interface ModelData {
   family_id: string | null
 }
 
-const TAB_LABELS = {
-  basic: "Basic",
-  details: "Details",
-  benchmarks: "Benchmarks",
-  pricing: "Pricing",
-  providers: "Providers",
-} as const
-
-const TAB_HELPERS = {
-  basic: "Edit basic model information",
-  details: "Edit modalities, details, and links",
-  benchmarks: "Manage benchmark results",
-  pricing: "Configure pricing rules",
-  providers: "Configure provider mappings and capabilities",
-} as const
+const MODEL_EDITOR_TABS = ["basic", "details", "benchmarks", "pricing", "providers"] as const
 
 export default function ModelEditDialog({ modelId, tab }: ModelEditDialogProps) {
+  const tEditor = useTranslations("Common.ui.modelEditor")
+  const tActions = useTranslations("Common.ui.actions")
   const [open, setOpen] = useState(false)
   const [model, setModel] = useState<ModelData | null>(null)
   const [providers, setProviders] = useState<Array<{ id: string; name: string }>>([])
@@ -138,10 +127,9 @@ export default function ModelEditDialog({ modelId, tab }: ModelEditDialogProps) 
       })
 
     toast.promise(savePromise, {
-      loading: "Saving model...",
-      success: "Model saved",
-      error: (err) =>
-        err instanceof Error ? err.message : "Failed to save changes",
+      loading: tEditor("savingModel"),
+      success: tEditor("modelSaved"),
+      error: tEditor("saveFailed"),
     })
 
     try {
@@ -149,14 +137,13 @@ export default function ModelEditDialog({ modelId, tab }: ModelEditDialogProps) 
       setOpen(false)
     } catch (err) {
       console.error("[ModelEditDialog] Error saving:", err)
-      setError(err instanceof Error ? err.message : "Failed to save changes")
+      setError(tEditor("saveFailed"))
     } finally {
       setSaving(false)
     }
   }
 
-  const validTabs = Object.keys(TAB_LABELS)
-  const currentTab = validTabs.includes(activeTab) ? activeTab : "basic"
+  const currentTab = MODEL_EDITOR_TABS.find((value) => value === activeTab) ?? "basic"
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -167,10 +154,8 @@ export default function ModelEditDialog({ modelId, tab }: ModelEditDialogProps) 
       </DialogTrigger>
       <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Edit Model</DialogTitle>
-          <DialogDescription>
-            Make changes and click save when done.
-          </DialogDescription>
+          <DialogTitle>{tEditor("dialogTitle")}</DialogTitle>
+          <DialogDescription>{tEditor("dialogDescription")}</DialogDescription>
         </DialogHeader>
 
         {loading ? (
@@ -183,24 +168,24 @@ export default function ModelEditDialog({ modelId, tab }: ModelEditDialogProps) 
               <DropdownMenu>
                 <DropdownMenuTrigger render={<Button variant="outline" className="w-48 justify-between" />}>
 
-                    {TAB_LABELS[currentTab as keyof typeof TAB_LABELS]}
+                    {tEditor(`tabs.${currentTab}` as never)}
                     <ChevronDown className="ml-2 h-4 w-4 opacity-50" />
 
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start" className="w-48">
-                  {Object.entries(TAB_LABELS).map(([value, label]) => (
+                  {MODEL_EDITOR_TABS.map((value) => (
                     <DropdownMenuItem
                       key={value}
                       onClick={() => setActiveTab(value)}
                       className={currentTab === value ? "font-medium" : ""}
                     >
-                      {label}
+                      {tEditor(`tabs.${value}` as never)}
                     </DropdownMenuItem>
                   ))}
                 </DropdownMenuContent>
               </DropdownMenu>
               <span className="text-sm text-muted-foreground">
-                {TAB_HELPERS[currentTab as keyof typeof TAB_HELPERS]}
+                {tEditor(`tabHelpers.${currentTab}` as never)}
               </span>
             </div>
 
@@ -233,15 +218,15 @@ export default function ModelEditDialog({ modelId, tab }: ModelEditDialogProps) 
               )}
             </div>
 
-            {error && <p className="text-red-500 text-sm">Error: {error}</p>}
+            {error && <p className="text-red-500 text-sm">{error}</p>}
 
             <div className="flex justify-end space-x-2 pt-4 border-t">
-              <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-              <Button onClick={handleSave} disabled={saving}>{saving ? "Saving..." : "Save"}</Button>
+              <Button variant="outline" onClick={() => setOpen(false)}>{tEditor("cancel")}</Button>
+              <Button onClick={handleSave} disabled={saving}>{saving ? tEditor("savingModel") : tActions("save")}</Button>
             </div>
           </>
         ) : (
-          <p className="text-center py-8">Error loading model.</p>
+          <p className="text-center py-8">{tEditor("loadingError")}</p>
         )}
       </DialogContent>
     </Dialog>

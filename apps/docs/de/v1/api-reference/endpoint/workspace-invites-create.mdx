@@ -1,0 +1,10 @@
+---
+title: "Workspace-Einladung erstellen"
+sidebarTitle: "Einladung erstellen"
+badge: "Beta"
+openapi: "/de/openapi/v1/openapi.localized.yaml POST /workspaces/{id}/invites"
+description: "Erstellt eine zeitlich begrenzte Workspace-Einladung."
+---
+<Note>Für diesen Endpunkt ist ein Management-API-Schlüssel mit `workspaces:write` erforderlich.</Note>
+
+Das Klartext-`token` wird nur einmal zurückgegeben. Bewahre es sicher auf; spätere Listenaufrufe geben nur eine Vorschau zurück.

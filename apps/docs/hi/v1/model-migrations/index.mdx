@@ -1,0 +1,43 @@
+---
+icon: "compass"
+title: "मॉडल माइग्रेशन"
+description: "Production में नए model releases सुरक्षित रूप से अपनाने के लिए model-विशिष्ट मार्गदर्शन।"
+---
+
+# मॉडल माइग्रेशन
+
+एक ही platform पर रहते हुए model upgrade करने के लिए इन गाइड का उपयोग करें।
+
+ये उन बदलावों पर ध्यान देती हैं जो मौजूदा integrations को अक्सर सबसे पहले प्रभावित करते हैं:
+
+- request parameters में बदलाव
+- prompts और reasoning के व्यवहार में बदलाव
+- structured output और tool-calling में regressions
+- rollout, fallback और rollback की रणनीति
+
+## मॉडल गाइड
+
+गाइड target model की release date के अनुसार, नए से पुराने क्रम में हैं।
+
+| Model | Release | उपयोगी है |
+| --- | --- | --- |
+| [Anthropic Claude Opus 5](./anthropic-claude-opus-5.mdx) | 24 जुलाई 2026 | जटिल reasoning और लंबे समय के agent tasks |
+| [OpenAI GPT-5.6](./openai-migrating-to-gpt-5-6.mdx) | 9 जुलाई 2026 | स्तरित reasoning, coding और पेशेवर काम |
+| [Anthropic Claude Opus 4.8](./anthropic-claude-opus-4-1-to-4-8.mdx) | 28 मई 2026 | लंबा context और adaptive thinking |
+| [Anthropic Claude Opus 4.7](./anthropic-claude-opus-4-6-to-4-7.mdx) | 16 अप्रैल 2026 | सख्त request controls के साथ उच्च-प्रयास reasoning |
+| [Mistral Small 4](./mistral-small-3-2-to-mistral-small-4.mdx) | 16 मार्च 2026 | optional reasoning वाले कुशल workloads |
+| [OpenAI GPT-5.4](./openai-migrating-to-gpt-5-4.mdx) | 5 मार्च 2026 | reasoning, vision और computer use |
+| [Google Nano Banana 2](./google-nano-banana-1-to-nano-banana-2.mdx) | 26 फ़रवरी 2026 | production image generation और editing |
+| [Google Gemini 3.1](./google-migrating-to-gemini-3-and-3-1.mdx) | 19 फ़रवरी 2026 | multimodal और reasoning-heavy workloads |
+| [Anthropic Claude Sonnet 4.6](./anthropic-claude-sonnet-4-5-to-4-6.mdx) | 17 फ़रवरी 2026 | coding, computer use और agent planning |
+| [SpaceXAI Grok 4.20](./xai-grok-4-20.mdx) | 17 फ़रवरी 2026 | reasoning और multi-agent workloads |
+| [Anthropic Claude Opus 4.6](./anthropic-claude-opus-4-5-to-4-6.mdx) | 5 फ़रवरी 2026 | लंबे coding tasks और agentic काम |
+
+## इस section का उपयोग कैसे करें
+
+1. जिस model family पर जा रहे हैं, उसकी सटीक गाइड से शुरुआत करें।
+2. output quality जाँचने से पहले request parameters अपडेट करें।
+3. production-जैसे prompts के साथ prompt और schema evaluations दोबारा चलाएँ।
+4. fallback और rollback के स्पष्ट नियम बनाकर traffic धीरे-धीरे बदलें।
+
+अगर आप सिर्फ़ model नहीं, बल्कि provider, SDK या gateway बदल रहे हैं, तो [Migration Guides](../migration-guides/index.mdx) section देखें।

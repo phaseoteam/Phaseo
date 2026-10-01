@@ -1,0 +1,25 @@
+---
+icon: "radio-tower"
+title: "लाइफ़साइकल हुक"
+description: "PHP एजेंट रन, मॉडल टर्न, टूल, विराम और पूर्णता देखें।"
+---
+
+रन के दौरान संरचित लाइफ़साइकल इवेंट पाने के लिए `onEvent` callback दें।
+
+```php
+$result = $agent->run(
+    input: $prompt,
+    client: $client,
+    onEvent: function (array $event): void {
+        $logger->info("agent event", [
+            "type" => $event["type"],
+            "run_id" => $event["run_id"],
+            "details" => $event["details"] ?? [],
+        ]);
+    }
+);
+```
+
+उपयोगी इवेंट में रन का शुरू होना, पूरा होना या विफल होना; मॉडल के प्रयास; टेक्स्ट और reasoning के अंश; टूल का शुरू होना, प्रगति, पूरा होना या विफल होना; और मानवीय जाँच-बिंदु शामिल हैं।
+
+callback को तेज़ रखें। धीमे persistence काम को queue में भेजें और बाहरी telemetry को इवेंट भेजने से पहले संवेदनशील tool input हटाएँ।

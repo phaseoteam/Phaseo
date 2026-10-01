@@ -1,0 +1,24 @@
+---
+icon: "circle-check"
+title: "रोकने की शर्तें"
+description: "Python एजेंट के काम को स्टेप, टोकन, लागत, अवधि, टूल या समाप्ति कारण से सीमित करें।"
+---
+
+`stop_when` के ज़रिए स्टॉप हेल्पर जोड़ें:
+
+```python
+stop_when = [
+    step_count_is(12),
+    max_tokens_used(40_000),
+    max_cost(2),
+    max_duration(60_000),
+]
+```
+
+अन्य हेल्पर में `has_tool_call(...)` और `finish_reason_is(...)` शामिल हैं। लागत या टोकन सीमा के साथ भी स्टेप या अवधि की सीमा रखें, क्योंकि वे रिपोर्ट किए गए उपयोग पर निर्भर करते हैं।
+
+## संबंधित
+
+- [डायनामिक टर्न](./agent-sdk-dynamic-turns.mdx)
+- [आउटपुट और रीट्राई](./agent-sdk-run-controls.mdx)
+

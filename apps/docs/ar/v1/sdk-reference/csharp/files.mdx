@@ -1,0 +1,26 @@
+---
+icon: "files"
+title: "الملفات"
+description: "استخدم SDK C# لرفع الملفات واستعراض بياناتها الوصفية واسترجاع محتواها."
+---
+
+**الطرق**: `client.UploadFile()` و`client.ListFiles()` و`client.RetrieveFile()` و`client.RetrieveFileContent()`.
+
+### مثال
+```csharp
+var client = new Phaseo(apiKey: apiKey);
+
+var uploaded = await client.UploadFile(new Dictionary<string, object>
+{
+    ["purpose"] = "batch",
+    ["file"] = "data:application/json;base64,eyJ0ZXN0Ijp0cnVlfQ=="
+});
+
+var file = await client.RetrieveFile("file_123");
+var content = await client.RetrieveFileContent("file_123");
+```
+
+<Note>
+تتوفر `ListFiles()` عبر SDK، لكن `GET /files` يعيد حاليًا `file_list_not_supported_with_shared_gateway_key` عند استخدام مفتاح البوابة المشترك
+احتفظ بمعرّفات الملفات المرفوعة واسترجعها مباشرةً.
+</Note>

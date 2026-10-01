@@ -1,35 +1,32 @@
 import { BarChart3, Gauge, GitCommit, ShieldCheck } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import CheckItem from "../page/CheckItem";
-
-const DIFFERENTIATORS = [
-	{
-		title: "Open Source & Trustworthy",
-		description:
-			"Full transparency through open source code builds trust - audit our security, compliance, and routing logic yourself.",
-		icon: ShieldCheck,
-	},
-	{
-		title: "Latency-aware routing",
-		description:
-			"EWMA and percentile health signals shift traffic before incidents degrade your SLAs.",
-		icon: Gauge,
-	},
-	{
-		title: "Observability first",
-		description:
-			"Request-level cost, tokens, latency, success codes, and traces are captured automatically.",
-		icon: BarChart3,
-	},
-	{
-		title: "Community-driven development",
-		description:
-			"Active community contributions and transparent roadmap accelerate the development of new adapters, features and open access to AI.",
-		icon: GitCommit,
-	},
-];
+import { useTranslations } from "next-intl";
 
 export function WhyWeWinSection() {
+	const t = useTranslations("Site.gatewayMarketing.why");
+	const differentiators = [
+		{
+			title: t("cards.openSourceTitle"),
+			description: t("cards.openSourceDescription"),
+			icon: ShieldCheck,
+		},
+		{
+			title: t("cards.latencyTitle"),
+			description: t("cards.latencyDescription"),
+			icon: Gauge,
+		},
+		{
+			title: t("cards.observabilityTitle"),
+			description: t("cards.observabilityDescription"),
+			icon: BarChart3,
+		},
+		{
+			title: t("cards.communityTitle"),
+			description: t("cards.communityDescription"),
+			icon: GitCommit,
+		},
+	];
 	return (
 		<section
 			id="why-we-win"
@@ -38,30 +35,25 @@ export function WhyWeWinSection() {
 			<div className="grid gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
 				<div className="space-y-6">
 					<h2 className="text-3xl font-semibold text-zinc-900 dark:text-zinc-100">
-						Why teams choose the Phaseo Gateway
+						{t("title")}
 					</h2>
 					<p className="text-base text-zinc-600 dark:text-zinc-300">
-						We deliver an open-source routing, telemetry, and
-						compliance stack so teams can move faster without
-						rebuilding plumbing.
+						{t("description")}
 					</p>
 					<ul className="space-y-3 text-sm text-zinc-700 dark:text-zinc-300">
 						<CheckItem>
-							Health data gates and failover logic flip settings
-							across providers in seconds.
+							{t("healthPoint")}
 						</CheckItem>
 						<CheckItem>
-							Community contributions ship adapters quicker, with
-							every change public and open for review.
+							{t("communityPoint")}
 						</CheckItem>
 						<CheckItem>
-							Open source transparency enables self-auditing of
-							security, compliance, and routing logic.
+							{t("transparencyPoint")}
 						</CheckItem>
 					</ul>
 				</div>
 				<div className="grid gap-4 sm:grid-cols-2">
-					{DIFFERENTIATORS.map(
+					{differentiators.map(
 						({ title, description, icon: Icon }, index) => (
 							<Card
 								key={title}

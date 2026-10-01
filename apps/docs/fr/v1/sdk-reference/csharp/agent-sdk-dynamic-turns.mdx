@@ -1,0 +1,17 @@
+---
+icon: "shuffle"
+title: "Tours dynamiques"
+description: "Modifiez les paramètres du modèle .NET et les outils entre les tours de l’agent."
+---
+
+Utilisez `DynamicModel`, `DynamicInstructions`, `Temperature`, `MaxOutputTokens`, `TopP` et `DynamicTools` lorsque les tours suivants doivent tenir compte du contexte ou des résultats d’outils précédents.
+
+Les outils peuvent mettre à jour le contexte de l’application via `RuntimeContext.SetContext` et fournir `NextTurnParams` pour la requête suivante uniquement. Ces remplacements sont conservés avec l’état d’exécution en pause lors de la reprise après approbation.
+
+Veillez à ce que le contexte de l’application soit sérialisable si l’état d’une exécution peut être enregistré via `IStateAccessor`.
+
+## À lire aussi
+
+- [Outils](./agent-sdk-tools.mdx)
+- [État et approbation](./agent-sdk-state-and-approval.mdx)
+- [Conditions d’arrêt](./agent-sdk-stop-conditions.mdx)

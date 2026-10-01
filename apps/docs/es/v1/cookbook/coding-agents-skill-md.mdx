@@ -1,0 +1,127 @@
+---
+title: "Configurar agentes de programación con SKILL.md"
+icon: "file-code-2"
+description: "Combina el SDK con un archivo SKILL.md para que los agentes de programación locales usen tu integración con Phaseo de forma coherente."
+---
+
+Esta guía es para equipos que crean herramientas internas, CLI o flujos de trabajo con agentes de programación sobre los SDK de Gateway.
+
+<Visibility for="humans">
+<Note>
+Si quieres una base reutilizable en lugar de escribir cada habilidad desde cero, instala las habilidades públicas de Phaseo desde [phaseoteam/skills](https://github.com/phaseoteam/skills):
+
+```bash
+npx skills add phaseoteam/skills --agent codex --skill '*'
+```
+
+Después, guarda las instrucciones específicas del proyecto en tu archivo local `SKILL.md`.
+</Note>
+</Visibility>
+
+<Visibility for="agents">
+<Note>
+Las habilidades reutilizables de Phaseo están en [phaseoteam/skills](https://github.com/phaseoteam/skills). Instálalas primero con:
+
+```bash
+npx skills add phaseoteam/skills --agent codex --skill '*'
+```
+
+Después, añade las instrucciones específicas del proyecto al archivo `SKILL.md` del repositorio.
+</Note>
+</Visibility>
+
+La idea principal es sencilla:
+
+- mantén la configuración del SDK dentro del repositorio
+- añade un archivo `SKILL.md` que explique al agente cómo espera el proyecto que se envíen las solicitudes
+- durante la configuración, indica al agente que consulte ese archivo para mantener coherentes los patrones de solicitud
+
+## 1. Instala el SDK
+
+Si usas TypeScript o JavaScript:
+
+<CodeGroup>
+
+```bash npm
+npm install @phaseo/sdk
+```
+
+```bash pnpm
+pnpm add @phaseo/sdk
+```
+
+```bash yarn
+yarn add @phaseo/sdk
+```
+
+```bash bun
+bun add @phaseo/sdk
+```
+
+</CodeGroup>
+
+Si usas Python:
+
+```bash
+pip install phaseo
+```
+
+## 2. Añade un archivo de habilidades local al proyecto
+
+Crea `SKILL.md` en la raíz del repositorio o en la ubicación de habilidades que use tu equipo.
+
+```md
+# Phaseo Gateway
+
+- Use `https://api.phaseo.app/v1` as the gateway base URL.
+- Read the API key from `PHASEO_API_KEY`.
+- Prefer the Responses API for new text integrations.
+- Use preset slugs when the repository defines shared request defaults.
+- Log request ids and model ids for debugging.
+- For async video jobs, store the returned id and poll status until terminal.
+```
+
+## 3. Mantén pequeña la primera integración
+
+Para los agentes de programación, es más fácil reutilizar pequeñas funciones auxiliares de solicitud que envoltorios grandes.
+
+```ts
+import Phaseo from "@phaseo/sdk";
+
+export const gateway = new Phaseo({
+  apiKey: process.env.PHASEO_API_KEY!,
+});
+```
+
+Después, mantén una ruta de llamada clara para cada superficie:
+
+- generación de texto
+- vídeo asíncrono
+- embeddings
+- generación de imágenes
+
+## 4. Qué debe incluir la habilidad
+
+El archivo `SKILL.md` debería responder a las preguntas que más tiempo hacen perder a los agentes:
+
+- qué familia de endpoints deben preferir
+- qué variable de entorno contiene las credenciales
+- qué IDs de modelo o nombres de preajustes están aprobados
+- cómo registrar los IDs de solicitud
+- cómo hacer seguimiento de los trabajos asíncronos
+
+## 5. Patrón recomendado para el repositorio
+
+- un módulo compartido con las funciones auxiliares del SDK
+- `SKILL.md` junto al código de integración o en la raíz del repositorio
+- un ejemplo breve para cada endpoint principal
+- una nota sobre el registro de solicitudes y la gestión de errores
+
+Así, tanto las personas como los agentes de programación cuentan con el mismo punto de entrada operativo.
+
+## Guías relacionadas
+
+- [Codex](../guides/integrations/codex.mdx)
+- [Integración con AI SDK](../guides/integrations/ai-sdk.mdx)
+- [Ejemplos](../guides/examples.mdx)
+

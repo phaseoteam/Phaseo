@@ -1,3 +1,4 @@
+import { getTranslations } from "next-intl/server";
 import { Suspense } from "react";
 import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
 import { batchApiFlag } from "@/lib/flags";
@@ -7,16 +8,18 @@ import WebhooksSettingsClient, {
 	type WebhookEndpoint,
 } from "@/components/(gateway)/settings/webhooks/WebhooksSettingsClient";
 
-export const metadata = {
-	title: "Webhooks - Settings",
-};
+export async function generateMetadata() {
+	const t = await getTranslations("SettingsUI.settingsPageMetadata");
+	return { title: t("webhooks") };
+}
 
 export default async function WebhooksSettingsPage() {
+	const t = await getTranslations("SettingsUI.settingsPageCopy");
 	return (
 		<main className="space-y-6">
 			<section className="space-y-2">
 				<h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-50">
-					Webhooks
+					{t("webhooksTitle")}
 				</h1>
 			</section>
 			<Suspense fallback={<SettingsSectionFallback />}>
@@ -27,10 +30,11 @@ export default async function WebhooksSettingsPage() {
 }
 
 async function WebhooksSettingsContent() {
+	const t = await getTranslations("SettingsUI.settingsPageCopy");
 	if (!(await batchApiFlag())) {
 		return (
 			<div className="rounded-lg border border-border/60 bg-muted/20 p-4 text-sm text-muted-foreground">
-				Webhook settings are currently limited to the enabled Batch API segment.
+				{t("webhooksBatchApiLimit")}
 			</div>
 		);
 	}
@@ -40,7 +44,7 @@ async function WebhooksSettingsContent() {
 	if (!accessToken || !workspaceId) {
 		return (
 			<div className="rounded-lg border border-border/60 bg-muted/20 p-4 text-sm text-muted-foreground">
-				Select a workspace to manage webhooks.
+				{t("webhooksWorkspace")}
 			</div>
 		);
 	}

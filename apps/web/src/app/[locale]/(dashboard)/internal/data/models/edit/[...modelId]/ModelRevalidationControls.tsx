@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import {
 	revalidateSingleModelAllAction,
@@ -15,6 +16,7 @@ type Props = {
 type RefreshScope = "data" | "api" | "all";
 
 export default function ModelRevalidationControls({ modelId }: Props) {
+	const t = useTranslations("Product.internalTools.dataEditor");
 	const [isPending, startTransition] = useTransition();
 	const [runningScope, setRunningScope] = useState<RefreshScope | null>(null);
 	const [message, setMessage] = useState<string | null>(null);
@@ -28,23 +30,20 @@ export default function ModelRevalidationControls({ modelId }: Props) {
 		startTransition(async () => {
 			try {
 				if (scope === "data") {
-					const result = await revalidateSingleModelDataAction(modelId);
-					setMessage(result.message);
+					await revalidateSingleModelDataAction(modelId);
+					setMessage(t("cacheRevalidatedData"));
 					return;
 				}
 				if (scope === "api") {
-					const result = await revalidateSingleModelApiInfoAction(modelId);
-					setMessage(result.message);
+					await revalidateSingleModelApiInfoAction(modelId);
+					setMessage(t("cacheRevalidatedApiInfo"));
 					return;
 				}
-				const result = await revalidateSingleModelAllAction(modelId);
-				setMessage(result.message);
+				await revalidateSingleModelAllAction(modelId);
+				setMessage(t("cacheRevalidatedAll"));
 			} catch (actionError) {
-				setError(
-					actionError instanceof Error
-						? actionError.message
-						: "Failed to revalidate model cache."
-				);
+				console.error("Failed to revalidate model cache", actionError);
+				setError(t("cacheFailure"));
 			} finally {
 				setRunningScope(null);
 			}
@@ -56,9 +55,9 @@ export default function ModelRevalidationControls({ modelId }: Props) {
 	return (
 		<div className="rounded-lg border p-4 space-y-3">
 			<div>
-				<h2 className="text-sm font-medium">Cache controls</h2>
+				<h2 className="text-sm font-medium">{t("cacheControls")}</h2>
 				<p className="text-xs text-muted-foreground">
-					Revalidate this model across the site by scope.
+					{t("cacheControlsDescription")}
 				</p>
 			</div>
 			<div className="flex flex-wrap gap-2">
@@ -68,7 +67,7 @@ export default function ModelRevalidationControls({ modelId }: Props) {
 					onClick={() => runAction("data")}
 					disabled={isPending}
 				>
-					{isBusy("data") ? "Revalidating data..." : "Revalidate Data"}
+					{isBusy("data") ? t("revalidatingData") : t("revalidateData")}
 				</Button>
 				<Button
 					type="button"
@@ -76,14 +75,14 @@ export default function ModelRevalidationControls({ modelId }: Props) {
 					onClick={() => runAction("api")}
 					disabled={isPending}
 				>
-					{isBusy("api") ? "Revalidating API info..." : "Revalidate API Info"}
+					{isBusy("api") ? t("revalidatingApiInfo") : t("revalidateApiInfo")}
 				</Button>
 				<Button
 					type="button"
 					onClick={() => runAction("all")}
 					disabled={isPending}
 				>
-					{isBusy("all") ? "Revalidating all..." : "Revalidate Everything"}
+					{isBusy("all") ? t("revalidatingAll") : t("revalidateAll")}
 				</Button>
 			</div>
 			{message ? (

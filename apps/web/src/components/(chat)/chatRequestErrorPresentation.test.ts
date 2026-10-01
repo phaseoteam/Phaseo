@@ -12,19 +12,19 @@ function error(status: number | null, errorCode: string | null = null) {
 
 describe("getChatRequestErrorPresentation", () => {
 	it.each([
-		[402, "payment", "Please add credits to use this model"],
-		[401, "authentication", "Please sign in again"],
-		[400, "validation", "This request needs a change"],
-		[403, "forbidden", "This request isn't allowed"],
-		[404, "model-unavailable", "This model isn't available"],
-		[408, "timeout", "The request timed out"],
-		[409, "conflict", "The request couldn't be completed"],
-		[429, "rate-limit", "This model is busy right now"],
-		[503, "service", "The model is temporarily unavailable"],
-	] as const)("maps HTTP %i to %s", (status, kind, title) => {
+		[402, "payment", "titles.addCredits"],
+		[401, "authentication", "titles.signInAgain"],
+		[400, "validation", "titles.requestNeedsChange"],
+		[403, "forbidden", "titles.requestNotAllowed"],
+		[404, "model-unavailable", "titles.modelUnavailable"],
+		[408, "timeout", "titles.requestTimedOut"],
+		[409, "conflict", "titles.requestConflict"],
+		[429, "rate-limit", "titles.modelBusy"],
+		[503, "service", "titles.temporarilyUnavailable"],
+	] as const)("maps HTTP %i to %s", (status, kind, titleKey) => {
 		const presentation = getChatRequestErrorPresentation(error(status));
 
-		expect(presentation).toMatchObject({ kind, title });
+		expect(presentation).toMatchObject({ kind, titleKey });
 	});
 
 	it("recognizes streamed errors without an HTTP status", () => {
@@ -45,12 +45,12 @@ describe("getChatRequestErrorPresentation", () => {
 		});
 	});
 
-	it("keeps provider detail for validation errors", () => {
+	it("leaves validation detail to the caller", () => {
 		const presentation = getChatRequestErrorPresentation({
 			...error(422),
 			description: "Temperature must be below 1.",
 		});
 
-		expect(presentation.description).toBe("Temperature must be below 1.");
+		expect(presentation.descriptionKey).toBeNull();
 	});
 });

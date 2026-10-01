@@ -1,0 +1,25 @@
+---
+icon: "wrench"
+title: "टूल"
+description: "जाँचे गए, approval-gated, manual और progress देने वाले PHP टूल परिभाषित करें।"
+---
+
+`Tool` वैल्यू बनाएँ और उन्हें `AgentSdk::defineTool(...)` के ज़रिए दें। टूल में ये शामिल हो सकते हैं:
+
+- मॉडल को दिखाए जाने वाले JSON `parameters`
+- `inputSchema`, `outputSchema` और `eventSchema` validation callback
+- `timeoutMs` और `execute` callback
+- boolean या callback के रूप में `requireApproval`
+- interactive काम के लिए `onToolCalled` और `onResponseReceived`
+- `nextTurnParams` और `onError: "return-to-model"`
+
+शुरुआती नतीजों के लिए `RuntimeContext::$emitProgress` और ऐप context के लिए `$setContext` उपयोग करें।
+
+<Note>
+मानक PHP runtime में tool callback synchronous चलते हैं। इसलिए concurrency और interruption उस PHP process की क्षमताओं पर निर्भर करते हैं जिसमें SDK चलता है।
+</Note>
+
+## संबंधित विषय
+
+- [स्थिति और अनुमोदन](./agent-sdk-state-and-approval.mdx)
+- [रन कंट्रोल](./agent-sdk-run-controls.mdx)

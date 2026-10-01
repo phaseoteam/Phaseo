@@ -4,6 +4,7 @@ import {
 	buildPublicProfileSlug,
 	calculatePeriodChange,
 	calculateStreaks,
+	formatUsdFromNanos,
 } from "./profile"
 
 describe("profile helpers", () => {
@@ -54,7 +55,7 @@ describe("profile helpers", () => {
 		expect(calculatePeriodChange(0, 0)).toBeNull()
 	})
 
-	it("builds heatmap days with requests, tokens, spend, and full weekday labels", () => {
+	it("builds heatmap days with usage and window flags", () => {
 		const days = buildHeatmapDays(
 			new Map([
 				["2026-05-11", { requests: 3, tokens: 1200, spendNanos: 25_000_000 }],
@@ -70,7 +71,6 @@ describe("profile helpers", () => {
 				requests: 3,
 				tokens: 1200,
 				spendNanos: 25_000_000,
-				weekdayLabel: "M",
 				inTrailingWindow: true,
 				isFuture: false,
 			}),
@@ -78,7 +78,6 @@ describe("profile helpers", () => {
 		expect(days[1]).toEqual(
 			expect.objectContaining({
 				date: "2026-05-12",
-				weekdayLabel: "T",
 				inTrailingWindow: true,
 				isFuture: false,
 			}),
@@ -86,9 +85,12 @@ describe("profile helpers", () => {
 		expect(days[6]).toEqual(
 			expect.objectContaining({
 				date: "2026-05-17",
-				weekdayLabel: "S",
 				isFuture: true,
 			}),
 		)
+	})
+
+	it("formats profile currency using the selected locale", () => {
+		expect(formatUsdFromNanos(1_234_500_000, "de-DE")).toContain("1,2345")
 	})
 })

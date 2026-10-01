@@ -53,6 +53,7 @@ interface RequestBuilderProps {
 
 export default function RequestBuilder({ models }: RequestBuilderProps) {
 	const t = useTranslations("Product.tools.request");
+	const tUi = useTranslations("Common.ui");
 	const initialModelId = models?.[0]?.modelId ?? "";
 
 	const [model, setModel] = useState<string>(initialModelId);
@@ -793,17 +794,17 @@ print(response.json()["choices"][0]["message"]["content"])`;
 																		<SelectValue placeholder={t("none")} />
 														</SelectTrigger>
 														<SelectContent>
-															<SelectItem value="minimal">
-																minimal
+										<SelectItem value="minimal">
+											{tUi("requestBuilder.minimal")}
 															</SelectItem>
-															<SelectItem value="low">
-																low
+										<SelectItem value="low">
+											{tUi("requestBuilder.low")}
 															</SelectItem>
-															<SelectItem value="medium">
-																medium
+										<SelectItem value="medium">
+											{tUi("requestBuilder.medium")}
 															</SelectItem>
-															<SelectItem value="high">
-																high
+										<SelectItem value="high">
+											{tUi("requestBuilder.high")}
 															</SelectItem>
 														</SelectContent>
 													</Select>
@@ -832,14 +833,14 @@ print(response.json()["choices"][0]["message"]["content"])`;
 																		<SelectValue placeholder={t("none")} />
 														</SelectTrigger>
 														<SelectContent>
-															<SelectItem value="auto">
-																auto
+										<SelectItem value="auto">
+											{tUi("requestBuilder.auto")}
 															</SelectItem>
-															<SelectItem value="concise">
-																concise
+										<SelectItem value="concise">
+											{tUi("requestBuilder.concise")}
 															</SelectItem>
-															<SelectItem value="detailed">
-																detailed
+										<SelectItem value="detailed">
+											{tUi("requestBuilder.detailed")}
 															</SelectItem>
 														</SelectContent>
 													</Select>

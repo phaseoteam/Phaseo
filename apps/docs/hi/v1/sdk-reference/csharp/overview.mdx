@@ -1,0 +1,15 @@
+---
+title: "C# SDK"
+description: "Phaseo Gateway के लिए आधिकारिक .NET क्लाइंट।"
+---
+
+NuGet से प्रकाशित [`Phaseo.Sdk`](https://www.nuget.org/packages/Phaseo.Sdk) पैकेज इंस्टॉल करें।
+
+स्थानीय रैपर `packages/sdk/sdk-csharp/Client.cs` फिलहाल चैट, Responses, Anthropic Messages, इमेज, ऑडियो, एम्बेडिंग, मॉडरेशन, फ़ाइल, बैच, वीडियो और जनरेशन; मॉडल/प्रदाता/एंडपॉइंट/संगठन/मूल्य निर्धारण; API कुंजी खोज और जीवनचक्र बदलाव; वर्कस्पेस तथा वर्तमान कुंजी के जीवनचक्र सहायक; मूल्य गणना; गतिविधि/क्रेडिट/विश्लेषण; स्वास्थ्य जाँच; मॉडल जीवनचक्र सत्यापन; और एसिंक्रोनस जॉब के WebSocket URL के लिए उच्च-स्तरीय हेल्पर देता है। इन्हें सीधे या `client.AsyncJobs.WebSocketUrl(...)` के ज़रिए उपयोग करें। इन्हें सीधे helpers या `client.AsyncJobs.WebSocketUrl(...)` से इस्तेमाल किया जा सकता है।
+
+```csharp
+using PhaseoSdk;
+
+var client = new Phaseo("YOUR_KEY");
+var models = await client.ListModels(new Dictionary<string, string> { ["limit"] = "5" });
+```

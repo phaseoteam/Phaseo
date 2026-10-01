@@ -1,0 +1,57 @@
+---
+icon: "compass"
+title: "SDK Rust"
+description: "Envie solicitações ao gateway da Phaseo em Rust com o crate oficial phaseo."
+---
+
+Use o crate publicado [`phaseo`](https://crates.io/crates/phaseo) para chamar o gateway da Phaseo em um aplicativo Rust.
+
+O cliente de alto nível oferece suporte a:
+
+- solicitações à API Responses com `Phaseo::responses(...)`
+- solicitações de Chat Completions com `Phaseo::chat_completions(...)`
+- outros endpoints JSON com `Phaseo::post(...)`
+- configuração baseada no ambiente com `Phaseo::from_env()`
+- endpoints HTTPS personalizados e servidores de desenvolvimento loopback
+- status, corpo JSON, ID da solicitação e detalhes estruturados do erro
+
+```rust
+use phaseo::Phaseo;
+use serde_json::json;
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let client = Phaseo::from_env()?;
+    let response = client.responses(&json!({
+        "model": "openai/gpt-5.6-sol",
+        "input": "Reply with exactly: Rust SDK works"
+    }))?;
+
+    println!("{}", response.body);
+    Ok(())
+}
+```
+
+<Note>
+  A versão `0.1` tem suporte e está publicada, mas a API Rust ainda pode evoluir antes da `1.0`. Fixe uma versão minor compatível em produção.
+</Note>
+
+## Escopo atual
+
+O cliente de alto nível é síncrono e aceita corpos de solicitação `serde_json::Value`. Os módulos de baixo nível gerados continuam disponíveis em `phaseo::gen`, com reexportações convenientes em `phaseo::client`, `phaseo::models` e `phaseo::operations`.
+
+O cliente Rust ainda não oferece transporte assíncrono nem auxiliar de streaming de alto nível. Use a API HTTP bruta se o aplicativo precisar de streaming antes da inclusão desses recursos.
+
+<Columns cols={2}>
+  <Card title="Instalar o SDK Rust" icon="package" href="./installation.mdx">
+    Adicione o crate e configure sua chave de API.
+  </Card>
+  <Card title="Enviar solicitações" icon="play" href="./usage.mdx">
+    Chame Responses, Chat Completions e outros endpoints JSON.
+  </Card>
+  <Card title="Referência da API Rust" icon="book-open" href="./api-reference.mdx">
+    Consulte os tipos e métodos públicos exatos em `phaseo 0.1`.
+  </Card>
+  <Card title="docs.rs" icon="arrow-up-right-from-square" href="https://docs.rs/phaseo">
+    Consulte a documentação gerada da API Rust.
+  </Card>
+</Columns>

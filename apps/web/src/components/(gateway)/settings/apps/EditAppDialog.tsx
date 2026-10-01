@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 import { useTranslations } from "next-intl";
+import { localizedSettingsError } from "@/i18n/error-messages";
 import {
 	APP_CATEGORY_OPTIONS,
 	MAX_APP_CATEGORIES,
@@ -58,17 +59,13 @@ function normalizeUrl(value: string) {
 	return trimmed.length > 0 ? trimmed : "about:blank";
 }
 
-function formatCategorySummary(categories: AppCategory[], translate: (key: string) => string) {
-	if (categories.length === 0) return translate("Choose up to 3 categories");
-	return categories
-		.map(
-			(category) => {
-				const label = APP_CATEGORY_OPTIONS.find((option) => option.value === category)?.label;
-				return label ? translate(label) : null;
-			}
-		)
-		.filter(Boolean)
-		.join(", ");
+function formatCategorySummary(
+	categories: AppCategory[],
+	emptyLabel: string,
+	translate: (category: AppCategory) => string,
+) {
+	if (categories.length === 0) return emptyLabel;
+	return categories.map(translate).join(", ");
 }
 
 export default function EditAppDialog({
@@ -226,7 +223,8 @@ export default function EditAppDialog({
 			toast.promise(updatePromise, {
 				loading: s("Saving changes..."),
 				success: s("App updated"),
-				error: (err) => err?.message ?? s("Failed to update app"),
+				error: (err) =>
+					localizedSettingsError(err, t, "Failed to update app"),
 			});
 			await updatePromise;
 			onUpdated({
@@ -359,7 +357,11 @@ export default function EditAppDialog({
 										<span className="flex min-w-0 items-center gap-2">
 											<Folder className="size-4 shrink-0 text-muted-foreground" />
 											<span className="truncate text-sm">
-													{formatCategorySummary(categories, s)}
+											{formatCategorySummary(
+												categories,
+												s("Choose up to 3 categories"),
+												(category) => t(`apps.categories.${category}` as never),
+											)}
 											</span>
 										</span>
 										<ChevronDown className="size-4 shrink-0 text-muted-foreground" />
@@ -387,7 +389,7 @@ export default function EditAppDialog({
 												<Icon
 													className={`size-4 transition-colors ${visuals.iconClassName}`}
 												/>
-												{option.label}
+												{t(`apps.categories.${option.value}` as never)}
 											</DropdownMenuCheckboxItem>
 										);
 									})}

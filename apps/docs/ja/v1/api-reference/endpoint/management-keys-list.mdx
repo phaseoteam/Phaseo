@@ -1,0 +1,10 @@
+---
+title: "管理キーを一覧表示"
+sidebarTitle: "管理キーを一覧表示"
+badge: "ベータ"
+openapi: "/ja/openapi/v1/openapi.localized.yaml GET /management-keys"
+description: "認証済みワークスペースの管理キーのメタデータを一覧表示します。"
+---
+<Note>このエンドポイントにはオーナーまたは管理者のIDと `management_keys:read` が必要です。</Note>
+
+生のキー値は返されません。`limit` と `offset` で結果をページ分割します。

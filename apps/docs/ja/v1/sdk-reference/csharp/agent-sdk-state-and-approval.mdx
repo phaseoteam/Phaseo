@@ -1,0 +1,23 @@
+---
+icon: "database"
+title: "状態と承認"
+description: "人による判断のためにC#エージェントを一時停止し、アプリケーション管理の状態から続行します。"
+---
+
+一般的なチェックポイントには`AgentDefinition.HumanReview`を使います。承認ゲート付きまたは手動のツールは、正確な呼び出しIDを`Run.Pause.PendingToolCalls`に設定します。
+
+`Agent.ContinueRun(...)`を使い、次の値を指定して続行します。
+
+- `Approvals`または`Rejections`内の`ToolDecision`レコード
+- アプリケーションが実行した作業に対する`ToolOutput`レコード
+- 一般的なレビュー一時停止に対する`HumanInput`
+- 前の`RunResult`、または`IStateAccessor`と`RunId`
+
+判断は呼び出しIDと照合されるため、同じツールへの並行呼び出しも区別されます。
+
+リクエストやプロセス再起動をまたいで実行状態を保持するには、`IStateAccessor.Load(...)`と`Save(...)`を実装します。PhaseoはAgent SDKの実行状態をホストしません。
+
+## 関連項目
+
+- [ツール](./agent-sdk-tools.mdx)
+- [実行制御](./agent-sdk-run-controls.mdx)

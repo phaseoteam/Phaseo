@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useTranslations } from "next-intl";
 import { useQueryState } from "nuqs";
 import { Activity, Coins, Zap } from "lucide-react";
 import MetricChartCard from "./MetricChartCard";
@@ -37,6 +38,7 @@ export default function MetricsOverview({
 	validKeyIds = [],
 	initialChartData = null,
 }: MetricsOverviewProps) {
+	const tUi = useTranslations("Common.ui");
 	const [keyFilter] = useQueryState("key");
 	const [groupBy] = useQueryState<GroupBy>("group", {
 		defaultValue: "model",
@@ -191,7 +193,7 @@ export default function MetricsOverview({
 		<>
 			<div className="grid grid-cols-1 md:grid-cols-3 gap-6">
 				<MetricChartCard
-					title="Requests"
+					title={tUi("metrics.requests")}
 					icon={Activity}
 					currentValue={chartData.totals.requests.current}
 					previousValue={chartData.totals.requests.previous}
@@ -205,7 +207,7 @@ export default function MetricsOverview({
 				/>
 
 				<MetricChartCard
-					title="Tokens"
+					title={tUi("metrics.tokens")}
 					icon={Zap}
 					currentValue={chartData.totals.tokens.current}
 					previousValue={chartData.totals.tokens.previous}
@@ -219,7 +221,7 @@ export default function MetricsOverview({
 				/>
 
 				<MetricChartCard
-					title="Cost"
+					title={tUi("metrics.cost")}
 					icon={Coins}
 					currentValue={chartData.totals.cost.current}
 					previousValue={chartData.totals.cost.previous}
@@ -237,7 +239,7 @@ export default function MetricsOverview({
 				<MetricDetailDialog
 					open={dialogOpen}
 					onOpenChange={setDialogOpen}
-					title="Requests Breakdown"
+					title={tUi("metrics.requestsBreakdown")}
 					metric="requests"
 					chartData={chartData.requestsChart}
 					colorMap={resolvedColorMap}
@@ -250,7 +252,7 @@ export default function MetricsOverview({
 				<MetricDetailDialog
 					open={dialogOpen}
 					onOpenChange={setDialogOpen}
-					title="Tokens Breakdown"
+					title={tUi("metrics.tokensBreakdown")}
 					metric="tokens"
 					chartData={chartData.tokensChart}
 					colorMap={resolvedColorMap}
@@ -263,7 +265,7 @@ export default function MetricsOverview({
 				<MetricDetailDialog
 					open={dialogOpen}
 					onOpenChange={setDialogOpen}
-					title="Cost Breakdown"
+					title={tUi("metrics.costBreakdown")}
 					metric="cost"
 					chartData={chartData.costChart}
 					colorMap={resolvedColorMap}
@@ -274,4 +276,3 @@ export default function MetricsOverview({
 		</>
 	);
 }
-

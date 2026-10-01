@@ -1,0 +1,80 @@
+---
+icon: "search-check"
+title: "Eine Quantisierungsstrategie auswählen"
+description: "Praktische Entscheidungshilfe zur Auswahl von BF16/FP8/INT8/INT4-Varianten je nach Workload."
+---
+
+Verwende diesen Ablauf, um Quantisierungsvarianten sicher auszuwählen.
+
+Um die Auswahl im Phaseo Gateway durchzusetzen, sende einen OpenRouter-kompatiblen Routing-Filter:
+
+```json
+{
+  "model": "meta/llama-3.3-70b-instruct",
+  "messages": [{ "role": "user", "content": "Hello" }],
+  "provider": {
+    "quantizations": ["FP8"]
+  }
+}
+```
+
+Der Filter gilt für Modellangebote eines Providers, nicht nur für Providernamen. Beim Abgleich wird die Groß-/Kleinschreibung ignoriert; eindeutige Aliase wie `float8` für `FP8` und `bfloat16` für `BF16` werden unterstützt. Angebote ohne Quantisierungsmetadaten sind nicht zulässig. Gibt es kein passendes zulässiges Angebot, schlägt die Anfrage mit Routing-Diagnose fehl; Phaseo weicht nicht auf eine ungeprüfte Quantisierung aus. Die entsprechende Struktur `routing.quantizations` wird ebenfalls unterstützt.
+
+## Schritt 1: Erfolgskriterien festlegen
+
+Vor der Wahl einer Quantisierung:
+
+- Lege Qualitätsschwellen fest (Aufgabengenauigkeit, Erfolgsraten und Gültigkeit strukturierter Ausgaben).
+- Lege Ziele für Latenz und Kosten fest.
+- Definiere inakzeptable Fehlerarten.
+
+## Schritt 2: Eine hochwertige Basis auswählen
+
+Beginne mit einer genaueren Basis (häufig `BF16` oder `FP16`) und miss:
+
+- Ausgabequalität
+- Median- und Tail-Latenz
+- Token- und Kostenprofil
+
+Sie dient als Vergleichsbasis.
+
+## Schritt 3: Präzision schrittweise verringern
+
+Bewerte schrittweise Varianten mit geringerer Präzision:
+
+1. `FP8` or `INT8`
+2. Nutze `FP4` oder `INT4` nur, wenn du Kosten senken oder den Durchsatz erhöhen musst.
+
+Wechsle nicht direkt zur kleinsten Variante, wenn du nicht bereits überzeugende Belege dafür hast, dass sie für deinen Workload funktioniert.
+
+## Schritt 4: Reale Workloads bewerten
+
+Verwende Prompts, die dem Produktionseinsatz entsprechen:
+
+- Lange Prompts
+- Mehrstufiges Schlussfolgern
+- Tool-Aufrufe
+- Grenzfälle aus Support-Tickets
+
+## Schritt 5: Pro Endpunkt oder Anwendungsfall entscheiden
+
+Eine Quantisierung muss nicht für alle Anwendungsfälle passen.
+
+Beispiele:
+
+- Kundensupport und kritische Entscheidungen: hohe Präzision.
+- Klassifizierung oder Zusammenfassung großer Datenmengen: Eine geringere Präzision kann ausreichen.
+
+## Empfohlene Ausgangspunkte
+
+| Art der Arbeitslast | Geeignete Startquantisierung |
+| --- | --- |
+| Qualitätskritisches Schlussfolgern | `BF16` / `FP16` |
+| Ausgewogenes Verhältnis zwischen Kosten und Qualität | `FP8` / `INT8` |
+| Hoher Durchsatz bei geringen Kosten | `INT4` / `FP4` (nach Validierung) |
+
+## Deployment-Richtlinie
+
+- Richte ein Ausweichmodell oder eine Ersatzquantisierung ein.
+- Überwache Qualitätsabweichungen nach der Einführung.
+- Teste erneut, wenn sich die Laufzeitumgebung des Providers oder die Modellversion ändert.

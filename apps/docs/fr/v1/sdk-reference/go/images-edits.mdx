@@ -1,0 +1,32 @@
+---
+icon: "wand-sparkles"
+title: "Modification d’images"
+description: "Modifiez des images avec le SDK Go."
+---
+
+Utilisez la méthode wrapper :
+
+- `client.CreateImageEdit(ctx, req)`
+
+```go
+import (
+  "context"
+  "fmt"
+  phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v2"
+)
+
+client := phaseo.New(apiKey, "https://api.phaseo.app/v1")
+
+resp, err := client.CreateImageEdit(context.Background(), map[string]interface{}{
+  "model": "openai/gpt-image-1",
+  "prompt": "Turn this into a watercolor style",
+  "image": "data:image/png;base64,...",
+})
+if err != nil {
+  panic(err)
+}
+
+fmt.Println(resp)
+```
+
+

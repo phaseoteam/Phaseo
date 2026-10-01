@@ -1,0 +1,62 @@
+---
+icon: "database"
+title: "Esquemas de salida estructurada"
+description: "Cómo diseñar esquemas JSON prácticos para las respuestas de los modelos."
+---
+
+Para obtener salidas estructuradas fiables, diseñar bien el esquema importa más que elegir el modelo.
+
+## Empieza con algo sencillo
+
+- Prefiere objetos planos a estructuras con muchos niveles anidados.
+- Usa `required` para cada campo necesario.
+- Establece `additionalProperties: false` si necesitas controlar estrictamente la estructura.
+
+## Solicitud
+
+```json
+{
+  "model": "openai/gpt-5-nano",
+  "messages": [
+    { "role": "user", "content": "Return a purchase summary for order 42." }
+  ],
+  "response_format": {
+    "type": "json_schema",
+    "json_schema": {
+      "name": "purchase_summary",
+      "strict": true,
+      "schema": {
+        "type": "object",
+        "properties": {
+          "order_id": { "type": "string" },
+          "total_usd": { "type": "number" },
+          "status": { "type": "string", "enum": ["pending", "paid", "failed"] }
+        },
+        "required": ["order_id", "total_usd", "status"],
+        "additionalProperties": false
+      }
+    }
+  }
+}
+```
+
+## Respuesta
+
+```json
+{
+  "choices": [
+    {
+      "message": {
+        "content": "{\"order_id\":\"42\",\"total_usd\":19.99,\"status\":\"paid\"}"
+      }
+    }
+  ]
+}
+```
+
+## Errores frecuentes
+
+- Dejar como opcionales campos que deberían ser obligatorios.
+- Usar campos de texto demasiado amplios en lugar de restricciones `enum`.
+- Permitir que el esquema de la documentación difiera del validador del servidor.
+

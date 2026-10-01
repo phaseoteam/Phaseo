@@ -1,0 +1,24 @@
+---
+icon: "circle-check"
+title: "停止条件"
+description: "按步骤数、令牌数、成本、时长、工具或结束原因限制 Ruby Agent 运行。"
+---
+
+组合停止函数，使自主任务保持在应用预算范围内。
+
+```ruby
+agent = PhaseoAgentSdk.create_agent(
+  id: "bounded-research",
+  model: "openai/gpt-5.4-nano",
+  stop_when: [
+    PhaseoAgentSdk.step_count_is(12),
+    PhaseoAgentSdk.max_tokens_used(40_000),
+    PhaseoAgentSdk.max_cost(2.50),
+    PhaseoAgentSdk.max_duration(120_000)
+  ]
+)
+```
+
+也可按工具调用和结束原因设置条件。运行完成后，请检查 `result.run.stop_reason` 和规范化用量，以区分预算触发的停止与模型正常结束。
+
+停止是一个有界结果，不会自动视为异常。请决定哪些原因应视为成功、可重试或展示给用户。

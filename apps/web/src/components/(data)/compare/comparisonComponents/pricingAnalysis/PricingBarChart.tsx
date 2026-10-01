@@ -22,6 +22,10 @@ interface PricingBarChartProps {
 	data: PricingBarChartDatum[];
 	scaleMode: "linear" | "log";
 	CustomTooltip: React.FC<any>;
+	locale: string;
+	inputLabel: string;
+	outputLabel: string;
+	blendedLabel: string;
 }
 
 function getNiceMax(value: number): number {
@@ -51,29 +55,37 @@ function buildLogTicks(min: number, max: number): number[] {
 	return Array.from(new Set(ticks)).sort((a, b) => a - b);
 }
 
-function formatAxisUsd(value: number, scaleMode: "linear" | "log"): string {
+function formatAxisUsd(value: number, scaleMode: "linear" | "log", locale: string): string {
 	if (!Number.isFinite(value)) return "$0";
 
 	if (scaleMode === "linear") {
-		return `$${Number(value).toLocaleString("en-US", {
+		return new Intl.NumberFormat(locale, {
+			style: "currency",
+			currency: "USD",
 			maximumFractionDigits: 0,
-		})}`;
+		}).format(Number(value));
 	}
 
 	let maximumFractionDigits = 0;
 	if (Math.abs(value) < 1) maximumFractionDigits = 4;
 	else if (Math.abs(value) < 10) maximumFractionDigits = 2;
 
-	return `$${Number(value).toLocaleString("en-US", {
+	return new Intl.NumberFormat(locale, {
+		style: "currency",
+		currency: "USD",
 		minimumFractionDigits: 0,
 		maximumFractionDigits,
-	})}`;
+	}).format(Number(value));
 }
 
 export default function PricingBarChart({
 	data,
 	scaleMode,
 	CustomTooltip,
+	locale,
+	inputLabel,
+	outputLabel,
+	blendedLabel,
 }: PricingBarChartProps) {
 	const allVals = [
 		...data.map((d) => (typeof d.input === "number" ? d.input : 0)),
@@ -125,15 +137,15 @@ export default function PricingBarChart({
 					tickLine={false}
 					domain={scaleMode === "log" ? [logFloor, niceMax] : [0, niceMax]}
 					ticks={scaleMode === "log" ? logTicks : linearTicks}
-					tickFormatter={(value) => formatAxisUsd(Number(value), scaleMode)}
+					tickFormatter={(value) => formatAxisUsd(Number(value), scaleMode, locale)}
 					allowDecimals={false}
 				/>
 				<Tooltip content={<CustomTooltip />} cursor={{ fill: "rgba(148,163,184,0.12)" }} />
-				<Bar dataKey="input" name="Input" fill="#0ea5e9" barSize={16} radius={[4, 4, 0, 0]} />
-				<Bar dataKey="output" name="Output" fill="#10b981" barSize={16} radius={[4, 4, 0, 0]} />
+				<Bar dataKey="input" name={inputLabel} fill="#0ea5e9" barSize={16} radius={[4, 4, 0, 0]} />
+				<Bar dataKey="output" name={outputLabel} fill="#10b981" barSize={16} radius={[4, 4, 0, 0]} />
 				<Bar
 					dataKey="blended"
-					name="Blended (90/10)"
+					name={blendedLabel}
 					fill="#f59e0b"
 					barSize={16}
 					radius={[4, 4, 0, 0]}

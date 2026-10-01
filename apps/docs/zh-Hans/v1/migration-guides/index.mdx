@@ -1,0 +1,77 @@
+---
+title: "迁移指南"
+description: "介绍如何更换平台或采用特定模型版本。"
+icon: "compass"
+---
+
+# 迁移指南
+
+Phaseo 迁移指南涵盖两类升级：
+
+- 从其他平台或 Gateway 迁移到 Phaseo
+- 在同一平台采用新版本模型
+
+<Columns cols={2}>
+	<Card title="模型迁移" icon="brain-circuit" href="../model-migrations/index.mdx">
+		升级模型，同时尽量保持现有集成不变。
+	</Card>
+	<Card title="平台迁移" icon="arrow-right-left" href="./assistant.mdx">
+		更换 SDK、提供商或 Gateway，并将现有集成接入 Phaseo。
+	</Card>
+</Columns>
+
+## 模型迁移
+
+如果集成方式基本不变，只是底层模型发生变化，请使用这些指南。
+
+指南涵盖：
+
+- 请求参数变更
+- 提示词和推理行为变化
+- 结构化输出与工具调用差异
+- 灰度发布、回退和回滚策略
+
+当前模型迁移指南：
+
+- [Anthropic Claude Opus 5](../model-migrations/anthropic-claude-opus-5.mdx)
+- [OpenAI GPT-5.6](../model-migrations/openai-migrating-to-gpt-5-6.mdx)
+- [Anthropic Claude Opus 4.8](../model-migrations/anthropic-claude-opus-4-1-to-4-8.mdx)
+- [Anthropic Claude Opus 4.7](../model-migrations/anthropic-claude-opus-4-6-to-4-7.mdx)
+- [Mistral Small 4](../model-migrations/mistral-small-3-2-to-mistral-small-4.mdx)
+- [OpenAI GPT-5.4](../model-migrations/openai-migrating-to-gpt-5-4.mdx)
+- [Google Nano Banana 2](../model-migrations/google-nano-banana-1-to-nano-banana-2.mdx)
+- [Google Gemini 3.1](../model-migrations/google-migrating-to-gemini-3-and-3-1.mdx)
+- [Anthropic Claude Sonnet 4.6](../model-migrations/anthropic-claude-sonnet-4-5-to-4-6.mdx)
+- [SpaceXAI Grok 4.20](../model-migrations/xai-grok-4-20.mdx)
+- [Anthropic Claude Opus 4.6](../model-migrations/anthropic-claude-opus-4-5-to-4-6.mdx)
+
+## 平台迁移
+
+如果你要更换 SDK、提供商或 Gateway，并需要将现有集成映射到 Phaseo，请使用这些指南。
+
+<Card title="创建迁移清单" icon="wand-sparkles" href="./assistant.mdx">
+	选择当前集成并打开交互式迁移助手。
+</Card>
+
+当前平台迁移指南：
+
+- [从 OpenAI SDK 迁移](./from-openai.mdx)
+- [从 Anthropic SDK 迁移](./from-anthropic.mdx)
+- [从 OpenRouter 迁移](./from-openrouter.mdx)：更换端点和密钥、验证模型，并测试流式请求和回滚。
+- [从 Vercel AI Gateway 迁移](./from-vercel.mdx)
+- [从 LLMGateway 迁移](./from-llmgateway.mdx)
+- [从 LiteLLM 迁移](./from-litellm.mdx)
+- [从 Cloudflare AI Gateway 迁移](./from-cloudflare.mdx)
+- [从 Helicone AI Gateway 迁移](./from-helicone.mdx)
+
+规划并验证发布：
+
+- [迁移准备情况审查](./gateway-parity-review.mdx)
+- [迁移功能清单](./feature-parity-matrix.mdx)
+
+## 如何使用这些指南
+
+1. 确认你要更换的是平台、模型，还是两者。
+2. 从迁移中风险最高的部分对应的指南开始。
+3. 比较输出质量之前，先验证请求参数和端点行为。
+4. 切换线上流量前，先运行接近生产环境的评估。

@@ -1,0 +1,10 @@
+---
+title: "分叉公共预设"
+sidebarTitle: "分叉预设"
+badge: "测试版"
+openapi: "/zh-Hans/openapi/v1/openapi.localized.yaml POST /presets/{id}/fork"
+description: "将公共预设分叉到管理工作区。"
+---
+<Note>此端点需要具有 `presets:write` 权限的管理 API 密钥和关联的用户身份。</Note>
+
+省略 `source_version_id` 即可分叉当前有效版本。新预设为私有，并保留上游谱系。

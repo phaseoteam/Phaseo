@@ -1,4 +1,6 @@
 import React, { Suspense } from "react";
+import type { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
 import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
 import ConsentForm from "@/components/(gateway)/oauth/ConsentForm";
@@ -8,11 +10,10 @@ import { AlertTriangle } from "lucide-react";
 import { isSafeOAuthRedirectUrl } from "@/lib/oauth/safeUrls";
 import { apiBaseUrl } from "@/lib/oauth/apiBaseUrl";
 
-export const metadata = {
-	title: "Authorize Application - Phaseo",
-	description:
-		"Authorize a third-party application to access your Phaseo account, choose permitted team scopes, and review exactly what the integration can read or modify before approval.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+	const t = await getTranslations("Common.authFlows.oauthConsent");
+	return { title: t("metaTitle"), description: t("metaDescription") };
+}
 
 interface ConsentPageProps {
 	searchParams: Promise<{
@@ -32,15 +33,12 @@ const FIRST_PARTY_CLIENTS: Record<
 	string,
 	{
 		name: string;
-		description: string;
 		homepage_url: string | null;
 		logo_url: string | null;
 	}
 > = {
 	phaseo_cli: {
 		name: "Phaseo CLI",
-		description:
-			"Official first-party Phaseo command line interface for signing in, managing workspaces, and creating keys.",
 		homepage_url: null,
 		logo_url: null,
 	},
@@ -96,14 +94,15 @@ async function loadConsentClientMetadata(supabase: any, clientId: string) {
 	}
 }
 
-export default function ConsentPage({ searchParams }: ConsentPageProps) {
+export default async function ConsentPage({ searchParams }: ConsentPageProps) {
+	const t = await getTranslations("Common.authFlows.oauthConsent");
 	return (
 		<Suspense
 			fallback={
 				<div className="container max-w-2xl mx-auto py-12">
 					<Card className="p-8">
 						<div className="text-center text-muted-foreground">
-							Loading authorization request...
+							{t("loading")}
 						</div>
 					</Card>
 				</div>
@@ -115,6 +114,7 @@ export default function ConsentPage({ searchParams }: ConsentPageProps) {
 }
 
 async function ConsentPageContent({ searchParams }: ConsentPageProps) {
+	const t = await getTranslations("Common.authFlows.oauthConsent");
 	const params = await searchParams;
 	const supabase = await createClient();
 	const oauthClient = supabase.auth.oauth as any;
@@ -139,12 +139,11 @@ async function ConsentPageContent({ searchParams }: ConsentPageProps) {
 					<Alert variant="destructive">
 						<AlertTriangle className="h-4 w-4" />
 						<AlertDescription>
-							<strong>Authorization Error:</strong> {params.error}
+							<strong>{t("authorizationError")}:</strong> {params.error}
 						</AlertDescription>
 					</Alert>
 					<p className="text-sm text-muted-foreground mt-4">
-						The authorization request could not be processed. Please try again or contact
-						the application developer.
+						{t("requestCouldNotProcess")}
 					</p>
 				</Card>
 			</div>
@@ -173,9 +172,8 @@ async function ConsentPageContent({ searchParams }: ConsentPageProps) {
 						<Alert variant="destructive">
 							<AlertTriangle className="h-4 w-4" />
 							<AlertDescription>
-								<strong>Authorization Error:</strong>{" "}
-								{authorizationError?.message ||
-									"The authorization request was not found or has expired."}
+								<strong>{t("authorizationError")}:</strong>{" "}
+								{t("requestNotFound")}
 							</AlertDescription>
 						</Alert>
 					</Card>
@@ -238,7 +236,7 @@ async function ConsentPageContent({ searchParams }: ConsentPageProps) {
 						<Alert variant="destructive">
 							<AlertTriangle className="h-4 w-4" />
 							<AlertDescription>
-								<strong>Invalid Request:</strong> Missing client_id parameter
+								<strong>{t("invalidRequest")}:</strong> {t("missingClientId")}
 							</AlertDescription>
 						</Alert>
 					</Card>
@@ -270,7 +268,7 @@ async function ConsentPageContent({ searchParams }: ConsentPageProps) {
 			resolvedAppMetadata = {
 				client_id: params.client_id,
 				name: firstPartyClient.name,
-				description: firstPartyClient.description,
+				description: t("firstPartyDescription"),
 				homepage_url: firstPartyClient.homepage_url,
 				logo_url: firstPartyClient.logo_url,
 				redirect_uris: redirectUris,
@@ -287,12 +285,11 @@ async function ConsentPageContent({ searchParams }: ConsentPageProps) {
 						<Alert variant="destructive">
 							<AlertTriangle className="h-4 w-4" />
 							<AlertDescription>
-								<strong>Application Not Found:</strong> The OAuth application could not be
-								found or has been disabled.
+								<strong>{t("applicationNotFound")}:</strong> {t("applicationDisabled")}
 							</AlertDescription>
 						</Alert>
 						<p className="text-sm text-muted-foreground mt-4">
-							Client ID: <code className="text-xs">{params.client_id}</code>
+							{t("clientId")}: <code className="text-xs">{params.client_id}</code>
 						</p>
 					</Card>
 				</div>
@@ -307,12 +304,11 @@ async function ConsentPageContent({ searchParams }: ConsentPageProps) {
 						<Alert variant="destructive">
 							<AlertTriangle className="h-4 w-4" />
 							<AlertDescription>
-								<strong>Invalid Request:</strong> PKCE is required (missing code_challenge)
+								<strong>{t("invalidRequest")}:</strong> {t("pkceMissing")}
 							</AlertDescription>
 						</Alert>
 						<p className="text-sm text-muted-foreground mt-4">
-							OAuth 2.1 requires PKCE for all authorization flows. Please update your
-							client implementation.
+							{t("pkceDescription")}
 						</p>
 					</Card>
 				</div>
@@ -326,7 +322,7 @@ async function ConsentPageContent({ searchParams }: ConsentPageProps) {
 						<Alert variant="destructive">
 							<AlertTriangle className="h-4 w-4" />
 							<AlertDescription>
-								<strong>Invalid Request:</strong> Missing redirect_uri parameter
+								<strong>{t("invalidRequest")}:</strong> {t("missingRedirectUri")}
 							</AlertDescription>
 						</Alert>
 					</Card>
@@ -344,8 +340,7 @@ async function ConsentPageContent({ searchParams }: ConsentPageProps) {
 						<Alert variant="destructive">
 							<AlertTriangle className="h-4 w-4" />
 							<AlertDescription>
-								<strong>Invalid Request:</strong> redirect_uri is not registered for this
-								application
+								<strong>{t("invalidRequest")}:</strong> {t("redirectUriUnregistered")}
 							</AlertDescription>
 						</Alert>
 					</Card>
@@ -380,12 +375,11 @@ async function ConsentPageContent({ searchParams }: ConsentPageProps) {
 					<Alert variant="destructive">
 						<AlertTriangle className="h-4 w-4" />
 						<AlertDescription>
-							<strong>No Teams Found:</strong> You need to be a member of at least one team
-							to authorize applications.
+								<strong>{t("noTeamsFound")}:</strong> {t("teamsMembershipRequired")}
 						</AlertDescription>
 					</Alert>
 					<p className="text-sm text-muted-foreground mt-4">
-						Please create a team first, then try again.
+							{t("createTeamFirst")}
 					</p>
 				</Card>
 			</div>

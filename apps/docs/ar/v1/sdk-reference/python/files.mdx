@@ -1,0 +1,25 @@
+---
+icon: "files"
+title: "الملفات"
+description: "استدعِ `/files` باستخدام SDK Python."
+---
+
+**الطرق**: `client.upload_file()` و`client.list_files()` و`client.get_file()` و`client.get_file_content()`.
+
+```python
+uploaded = client.upload_file(
+    purpose="batch",
+    file="data:application/json;base64,eyJ0ZXN0Ijp0cnVlfQ==",
+)
+file_obj = client.get_file(uploaded["id"])
+file_bytes = client.get_file_content(uploaded["id"])
+
+print(uploaded)
+print(file_obj)
+print(file_bytes[:20])
+```
+
+<Note>
+  يتضمن SDK الدالة `list_files()`، لكن `GET /files` يعيد حاليًا `file_list_not_supported_with_shared_gateway_key`
+  باستخدام مفتاح البوابة المشترك. احفظ معرّفات الملفات التي رفعتها واسترجعها مباشرةً.
+</Note>

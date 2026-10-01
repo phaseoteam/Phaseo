@@ -1,0 +1,57 @@
+---
+title: "Authentifizierung"
+description: "Authentifiziere Anfragen mit Bearer-API-Schlüsseln und verwalte deren Lebenszyklus sicher."
+icon: "key"
+---
+
+Alle Gateway-Anfragen benötigen einen Bearer-API-Schlüssel.
+
+Erstelle und verwalte Schlüssel im Phaseo-Dashboard.
+
+<Note>
+Aufrufe von `:free`-Modellen können ohne eingezahltes Guthaben ausgeführt werden. Für Aufrufe kostenpflichtiger Modelle ist ein verfügbares Wallet-Guthaben erforderlich.
+</Note>
+
+## API-Schlüssel verwenden
+
+Füge deinen API-Schlüssel mit dem Schema `Bearer` in den Header `Authorization` ein:
+
+```bash
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-5-nano",
+    "input": "Hello!"
+  }'
+```
+
+## Schlüsselformat und sicherer Umgang
+
+- Schlüsselformat: `phaseo_v1_sk_<kid>_<secret>`
+- Speichere Schlüssel in einem Secret-Manager, nicht in Browser-Code.
+- Verwende pro App und Umgebung einen eigenen Schlüssel, damit du ihn sicher rotieren kannst.
+
+## Verwaltungsschlüssel
+
+Management-API-Schlüssel werden im Phaseo-Dashboard erstellt und verwaltet, nicht über die öffentliche API.
+
+Verwende sie für privilegierte Verwaltungsendpunkte wie [Guthaben](./endpoint/credits.mdx) und [Aktivität](./endpoint/activity.mdx) sowie für künftige Control-Plane-APIs, etwa für Guardrails, Schlüssel- und Workspace-Verwaltung.
+
+## Authentifizierungsfehler
+
+- `401`: API-Schlüssel fehlt, ist fehlerhaft formatiert oder ungültig.
+- `403`: Der Schlüssel ist gültig, kann aber nicht auf die angeforderte Funktion zugreifen.
+
+## Verwandte Seiten
+
+- [Limits](./limits.mdx)
+- [Fehler und Debugging](./errors.mdx)
+
+<Visibility for="agents">
+Wenn du als Agent Authentifizierungsabläufe implementierst:
+
+- Verwende Repository-Skills für den Umgang mit Secrets und die Einrichtung der Umgebung.
+- Gib Gateway-API-Schlüssel niemals in an den Client ausgeliefertem Code aus.
+- Bevorzuge kurzlebige interne Tokens zwischen Frontend und Backend. Gateway-Schlüssel dürfen nur auf dem Server liegen.
+</Visibility>

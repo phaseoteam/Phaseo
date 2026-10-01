@@ -1,7 +1,11 @@
+import { getTranslations } from "next-intl/server";
 import type { Metadata } from "next";
 import { UsageLogsRoutePage } from "../page";
 
-export const metadata: Metadata = { title: "Video Logs - Settings" };
+export async function generateMetadata(): Promise<Metadata> {
+	const t = await getTranslations("SettingsUI.settingsPageMetadata");
+	return { title: t("videoLogs") };
+}
 
 export default function VideosPage(props: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
 	return <UsageLogsRoutePage view="jobs" jobKind="video" searchParams={props.searchParams} />;

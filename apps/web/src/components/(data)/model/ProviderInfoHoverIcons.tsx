@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import {
@@ -13,7 +14,6 @@ import {
 	Workflow,
 } from "lucide-react";
 import {
-	PROVIDER_DATA_POLICY_TIER_LABELS,
 	type ProviderDataPolicyConfidence,
 	type ProviderDataPolicyContractMode,
 	type ProviderDataPolicyTier,
@@ -28,17 +28,15 @@ import type {
 	ZeroDataRetentionMode,
 } from "@/lib/providers/providerResidency";
 import {
-	formatResidencyMode,
 	formatResidencyRegionList,
-	formatZeroDataRetention,
 } from "@/lib/providers/residencyDisplay";
 import {
 	formatDerivedPricingMultiplierLabel,
-	formatRegionalPricingMode,
 	getRegionalPricingHint,
 	type RegionalPricingMode,
 } from "@/lib/providers/providerPricingPolicy";
 import { normalizeQuantizationScheme } from "@/lib/quantization";
+import { getLocalizedDocsHref } from "@/lib/docs";
 
 const QUANTIZATION_DOCS_URL =
 	"https://phaseo.app/docs/v1/guides/model-quantization";
@@ -198,9 +196,11 @@ function getDataPolicyTierState(
 	return unique.length === 1 ? unique[0] : "mixed";
 }
 
-function formatDataPolicyTier(value: ProviderDataPolicyTier | "mixed"): string {
-	if (value === "mixed") return "Varies by mapping";
-	return PROVIDER_DATA_POLICY_TIER_LABELS[value];
+function getZeroDataRetentionDetailKey(state: ZeroDataRetentionMode | "mixed"): string | null {
+	if (state === true) return "zdrDetails.true";
+	if (state === false) return "zdrDetails.false";
+	if (state === "mixed") return "zdrDetails.mixed";
+	return null;
 }
 
 function getDataPolicyIcon(state: ProviderDataPolicyTier | "mixed") {
@@ -215,21 +215,6 @@ function getDataPolicyIcon(state: ProviderDataPolicyTier | "mixed") {
 			return <Workflow className="h-3.5 w-3.5 text-amber-500 dark:text-amber-400" />;
 		default:
 			return <CircleHelp className="h-3.5 w-3.5" />;
-	}
-}
-
-function getDataPolicySummary(state: ProviderDataPolicyTier | "mixed"): string {
-	switch (state) {
-		case "private":
-			return "No provider training or non-transient prompt storage is documented for this route.";
-		case "logs":
-			return "Provider may retain prompts or request logs, but is not known to train on them.";
-		case "trains":
-			return "Provider may use prompts or outputs for training or model improvement.";
-		case "mixed":
-			return "Data policy varies across provider/model mappings.";
-		default:
-			return "No clear provider-level policy is listed. Treat as unknown for sensitive data.";
 	}
 }
 
@@ -262,21 +247,6 @@ function getZeroDataRetentionState(
 	if (!entries.length) return false;
 	const unique = Array.from(new Set(entries.map((entry) => entry.zeroDataRetention)));
 	return unique.length === 1 ? unique[0] : "mixed";
-}
-
-function getZeroDataRetentionDetail(
-	state: ZeroDataRetentionMode | "mixed",
-): string | null {
-	switch (state) {
-		case true:
-			return "Documented as true for this provider mapping.";
-		case false:
-			return "ZDR is not guaranteed for this provider mapping.";
-		case "mixed":
-			return "Zero-data-retention handling varies across provider/model mappings.";
-		default:
-			return null;
-	}
 }
 
 function IconHover({
@@ -388,6 +358,8 @@ export default function ProviderInfoHoverIcons({
 	showModelMappingTrigger?: boolean;
 	className?: string;
 }) {
+	const t = useTranslations("Catalogue.modelDetail.providerInfo");
+	const locale = useLocale();
 	const slugs = uniqueDefined(providerModelSlugs);
 	const modelIds = uniqueDefined(apiModelIds);
 	const displayModelIds = slugs.length > 0 ? slugs : modelIds;
@@ -399,12 +371,11 @@ export default function ProviderInfoHoverIcons({
 	const promptTrainingEntries = normalizePromptTrainingEntries(promptTraining);
 	const residencyEntries = normalizeResidencyEntries(residency);
 	const dataPolicyTierState = getDataPolicyTierState(dataPolicyEntries);
-	const dataPolicySummary = getDataPolicySummary(dataPolicyTierState);
+	const dataPolicySummary = t(`policySummaries.${dataPolicyTierState}` as never);
 	const residencyModeState = getResidencyModeState(residencyEntries);
 	const zeroDataRetentionState = getZeroDataRetentionState(residencyEntries);
-	const zeroDataRetentionDetail = getZeroDataRetentionDetail(
-		zeroDataRetentionState,
-	);
+	const zeroDataRetentionDetailKey = getZeroDataRetentionDetailKey(zeroDataRetentionState);
+	const zeroDataRetentionDetail = zeroDataRetentionDetailKey ? t(zeroDataRetentionDetailKey as never) : null;
 	const dataPolicySourceUrls = uniqueDefined(
 		dataPolicyEntries.map((entry) => entry.sourceUrl),
 	);
@@ -485,19 +456,21 @@ export default function ProviderInfoHoverIcons({
 		<div className={cn("flex items-center gap-1.5", className)}>
 			{hasDataPolicy ? (
 				<IconHover
-					ariaLabel="Data policy"
+					ariaLabel={t("dataPolicy")}
 					content={
 						<div className="space-y-2">
 							<InfoBlock
-								title="Data policy"
-								value={formatDataPolicyTier(dataPolicyTierState)}
+								title={t("dataPolicy")}
+								value={t(`policyTiers.${dataPolicyTierState}` as never)}
 								meta={dataPolicySummary}
 								tone={dataPolicyTierState === "trains" ? "risk" : "default"}
 							/>
 							<InfoBlock
-								title="Zero data retention"
+								title={t("zeroDataRetention")}
 								value={
-									formatZeroDataRetention(zeroDataRetentionState)
+									zeroDataRetentionState === true ? t("zdrValues.true")
+										: zeroDataRetentionState === false ? t("zdrValues.false")
+										: zeroDataRetentionState === "mixed" ? t("zdrValues.mixed") : t("zdrValues.unknown")
 								}
 								meta={zeroDataRetentionDetail}
 							/>
@@ -511,7 +484,7 @@ export default function ProviderInfoHoverIcons({
 											rel="noopener noreferrer"
 											className="text-primary underline decoration-transparent hover:decoration-current"
 										>
-											View policy source
+											{t("viewPolicySource")}
 										</Link>
 									))}
 								</div>
@@ -527,7 +500,7 @@ export default function ProviderInfoHoverIcons({
 											rel="noopener noreferrer"
 											className="text-primary underline decoration-transparent hover:decoration-current"
 										>
-											View policy source
+											{t("viewPolicySource")}
 										</Link>
 									))}
 								</div>
@@ -543,7 +516,7 @@ export default function ProviderInfoHoverIcons({
 											rel="noopener noreferrer"
 											className="text-primary underline decoration-transparent hover:decoration-current"
 										>
-											View privacy policy
+											{t("viewPrivacyPolicy")}
 										</Link>
 									))}
 									{promptTrainingTermsUrls.slice(0, 1).map((url) => (
@@ -554,7 +527,7 @@ export default function ProviderInfoHoverIcons({
 											rel="noopener noreferrer"
 											className="text-primary underline decoration-transparent hover:decoration-current"
 										>
-											View terms
+											{t("viewTerms")}
 										</Link>
 									))}
 								</div>
@@ -568,24 +541,20 @@ export default function ProviderInfoHoverIcons({
 
 			{hasQuantization ? (
 				<IconHover
-					ariaLabel="Quantization details"
+					ariaLabel={t("quantizationDetails")}
 					triggerClassName="w-auto min-w-7 max-w-[108px] px-2"
 					content={
 						<div className="space-y-2">
 							<p className="leading-relaxed text-muted-foreground">
-								This provider serves this model using{" "}
-								<code className="rounded bg-muted px-1 py-0.5 text-foreground">
-									{quantization}
-								</code>{" "}
-								quantization.
+								{t("quantizationDescription", { scheme: quantization ?? "" })}
 							</p>
 							<Link
-								href={QUANTIZATION_DOCS_URL}
+				href={getLocalizedDocsHref(locale, QUANTIZATION_DOCS_URL)}
 								target="_blank"
 								rel="noopener noreferrer"
 								className="text-primary underline decoration-transparent hover:decoration-current"
 							>
-								Read quantization docs
+								{t("readQuantizationDocs")}
 							</Link>
 						</div>
 					}
@@ -598,41 +567,39 @@ export default function ProviderInfoHoverIcons({
 
 			{hasResidency ? (
 				<IconHover
-					ariaLabel="Processing and data centre locations"
+					ariaLabel={t("processingAndDataLocations")}
 					content={
 						<div className="space-y-2">
 							<InfoBlock
-								title="Processing location"
+								title={t("processingLocation")}
 								value={
 									residencyExecutionRegions.length > 0
 										? formatResidencyRegionList(residencyExecutionRegions)
-										: "Unknown"
+										: t("unknown")
 								}
 								meta={
 									residencyModeState !== "unknown"
-										? formatResidencyMode(residencyModeState)
+									? t(`residencyModes.${residencyModeState === "provider_managed" ? "providerManaged" : residencyModeState === "customer_selectable" ? "customerSelectable" : residencyModeState === "account_selected" ? "accountSelected" : residencyModeState}` as never)
 										: null
 								}
 							/>
 							<InfoBlock
-								title="Data centre location"
+								title={t("dataCentreLocation")}
 								value={
 									residencyDataRegions.length > 0
 										? formatResidencyRegionList(residencyDataRegions)
-										: "Unknown"
+										: t("unknown")
 								}
 							/>
 							{hasPricingPolicy ? (
 								<InfoBlock
-									title="Pricing"
+									title={t("pricing")}
 									value={
 										derivedPricingLabel ??
 										((pricingPolicy?.regionalPricingMode ?? "unknown") !==
 										"unknown"
-											? formatRegionalPricingMode(
-													pricingPolicy?.regionalPricingMode ?? "unknown",
-												)
-											: "Varies")
+											? t(`pricingModes.${pricingPolicy?.regionalPricingMode === "same_as_global" ? "sameAsGlobal" : pricingPolicy?.regionalPricingMode === "source_region_rates" ? "sourceRegionRates" : pricingPolicy?.regionalPricingMode === "offer_specific" ? "offerSpecific" : pricingPolicy?.regionalPricingMode}` as never)
+											: t("varies"))
 									}
 									meta={
 										summarizePricingNote(pricingNotes[0] ?? regionalPricingHint ?? "")
@@ -657,7 +624,7 @@ export default function ProviderInfoHoverIcons({
 													rel="noopener noreferrer"
 													className="text-primary underline decoration-transparent hover:decoration-current"
 												>
-													{index === 0 ? "Policy source" : "Pricing source"}
+											{index === 0 ? t("policySource") : t("pricingSource")}
 												</Link>
 											))}
 										</div>
@@ -673,11 +640,11 @@ export default function ProviderInfoHoverIcons({
 
 			{hasModelMapping ? (
 				<IconHover
-					ariaLabel="Provider label"
+					ariaLabel={t("providerLabel")}
 					content={
 						<div className="space-y-2">
 							<p className="leading-relaxed text-muted-foreground">
-								This provider exposes this mapping as:
+								{t("providerMappingIntro")}
 							</p>
 							<div className="flex flex-col items-start gap-1">
 								{displayModelIds.map((modelId) => (
@@ -693,7 +660,7 @@ export default function ProviderInfoHoverIcons({
 								href={`/api-providers/${providerId}`}
 								className="text-primary underline decoration-transparent hover:decoration-current"
 							>
-								View provider page
+								{t("viewProviderPage")}
 							</Link>
 						</div>
 					}

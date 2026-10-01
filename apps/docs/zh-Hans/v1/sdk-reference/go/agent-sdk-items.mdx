@@ -1,0 +1,32 @@
+---
+icon: "layers"
+title: "流项目"
+description: "使用 Go Agent 运行产生的文本、推理、工具和供应商项目事件。"
+---
+
+`Stream` 为实时 Agent 界面提供可重放的事件序列。文本增量最容易处理；完整事件流还包含推理、供应商项目、工具进度、生命周期变更和最终响应。
+
+```go
+stream := agent.Stream(ctx, phaseoagent.RunOptions{Input: prompt, Client: client})
+
+for event := range stream.Events() {
+  switch event.Type {
+  case "response.output_text.delta":
+    fmt.Print(event.Details["delta"])
+  case "response.reasoning.delta":
+    renderReasoning(event.Details)
+  case "response.item":
+    renderItem(event.Details["item"])
+  case "tool.preliminary_result":
+    renderProgress(event.Details)
+  }
+}
+
+result, err := stream.Result()
+```
+
+<Note>
+Go 目前通过 `AgentEvent` 的通用 details 映射公开供应商项目，而非封闭的类型联合。请根据 `event.Type` 分支，在界面边界验证项目载荷，并为未知事件保留回退处理以保持向前兼容。
+</Note>
+
+执行完成后仍可重放事件历史，因此不同的消费者可以分别呈现文本、保存事件并构建审计时间线，而无需再次请求模型。

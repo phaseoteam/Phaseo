@@ -1,0 +1,473 @@
+---
+title: "使用"
+description: "使用 TypeScript Agent SDK 基于 Phaseo Gateway 构建自己的 agent 应用。"
+---
+
+当应用需要一次性文本生成之外的能力时，请使用 `@phaseo/agent-sdk`：
+
+- 多步工具循环
+- 本地运行时工具
+- 从 SDK 返回的状态恢复运行
+- 明确等待人工审批的暂停
+- 类型化的最终输出
+- 通过现有 TypeScript SDK 调用网关模型轮次
+
+此软件包是可安装的 SDK，而非托管式 agent 平台。应用、部署模式以及运行状态的持久化策略均由你自行提供。
+
+## 状态模型
+
+Agent SDK 不会将运行状态持久化到 Phaseo 托管的服务中。
+
+- `run()` 会返回稍后继续运行所需的完整状态。
+- 如果应用需要跨请求或进程重启恢复运行，请将返回的状态保存在自己的应用存储中。
+- `continueRun()` 会直接接受此前的运行状态。
+
+Phaseo 不会在你的应用之外持久化任何内容。
+
+## 安装
+
+```bash
+pnpm add @phaseo/sdk @phaseo/agent-sdk
+```
+
+## SDK 提供的内容
+
+- `createAgent()`
+- `defineTool()`
+- `createGatewayAgentClient()`
+- `continueRun()`：从之前返回的运行状态继续
+- `stream()` 和 `continueStream()`：获取可增量读取、可重放的结果
+- 停止条件辅助函数，例如 `stepCountIs()`、`maxCost()` 和 `hasToolCall()`
+
+## 第一个 agent
+
+```typescript
+import {
+  createAgent,
+  createGatewayAgentClient,
+  defineTool,
+} from "@phaseo/agent-sdk";
+
+const lookupDocs = defineTool({
+  id: "lookup-docs",
+  description: "Look up an internal docs page by slug.",
+  parameters: {
+    type: "object",
+    properties: {
+      slug: { type: "string" },
+    },
+    required: ["slug"],
+    additionalProperties: false,
+  },
+  async execute(input: { slug: string }) {
+    return {
+      slug: input.slug,
+      url: `https://phaseo.app/docs/v1/${input.slug}`,
+    };
+  },
+});
+
+const agent = createAgent({
+  id: "support-docs-agent",
+  model: "phaseo/free",
+  instructions: "Use tools when helpful and finish with a concise answer.",
+  tools: [lookupDocs],
+});
+
+const result = await agent.run({
+  input: "Find the docs page for presets and explain when to use them.",
+  client: createGatewayAgentClient({
+    clientOptions: {
+      apiKey: process.env.PHASEO_API_KEY!,
+    },
+  }),
+});
+
+console.log(result.output);
+```
+
+## 工作原理
+
+运行时循环会执行四个步骤：
+
+1. 将当前消息状态发送给模型客户端
+2. 执行返回的本地工具调用
+3. 将工具结果加入下一轮
+4. 每个步骤完成后返回更新后的运行状态
+
+这样，应用便可获得可恢复的循环，而无需依赖托管式编排产品。
+
+## 核心原语
+
+### `createAgent()`
+
+使用 `createAgent()` 定义：
+
+- 一个稳定的 `id`
+- 指令
+- 一个模型或预设
+- 一个精简的工具列表
+- 可选的输出解析
+- 可选的人工审核规则
+- 可选的重试和工具执行控制
+
+第一个 agent 应保持精简。通常一个工作流和一两个工具就够了。
+
+### `defineTool()`
+
+使用以下内容定义本地运行时工具：
+
+- `id`
+- `description`
+- 可选的 JSON `parameters`
+- 可选的 `timeoutMs`
+- `inputSchema` 和 `outputSchema` 运行时验证器
+- `execute()`、`execute: false` 或人工参与回调
+- `requireApproval`、`onError`、`nextTurnParams` 和进度事件
+
+```typescript
+const fetchTicket = defineTool({
+  id: "fetch-ticket",
+  description: "Load one internal support ticket.",
+  parameters: {
+    type: "object",
+    properties: {
+      ticketId: { type: "string" },
+    },
+    required: ["ticketId"],
+    additionalProperties: false,
+  },
+  timeoutMs: 3_000,
+  async execute(input: { ticketId: string }, context) {
+    const response = await fetch(`https://internal.example/tickets/${input.ticketId}`, {
+      signal: context.signal,
+    });
+
+    return await response.json();
+  },
+});
+```
+
+超时后，运行时会中止 `context.signal`，将运行标记为 `failed`，并重新抛出超时错误。
+
+schema 可以是函数，也可以是提供 `parse()` 或 `safeParse()` 的对象。无效的模型参数和工具结果会在跨越工具边界前失败。
+
+## 审批、HITL 和手动工具
+
+按次审批会产生副作用的工具调用：
+
+```typescript
+const deploy = defineTool({
+  id: "deploy",
+  requireApproval: ({ environment }) => environment === "production",
+  async execute(input: { environment: string }) {
+    return deployRelease(input.environment);
+  },
+});
+```
+
+运行会在 `run.pause.pendingToolCalls` 处暂停。请使用准确的调用 ID 恢复，以免混淆并发调用：
+
+```typescript
+const resumed = await agent.continueRun({
+  run: paused,
+  client,
+  approvals: [{ toolCallId: "call_deploy_42" }],
+  rejections: [{ toolCallId: "call_delete_17", reason: "Not authorized" }],
+});
+```
+
+由应用执行的工作应设置 `execute: false`，并通过 `toolOutputs` 提供结果。交互式工具应从 `onToolCalled` 返回 `null`；继续运行后，`onResponseReceived` 可验证或转换人工输入。
+
+## 可报告进度的工具
+
+异步生成器可以先发布初步结果，最后返回一个最终结果：
+
+```typescript
+const indexRepository = defineTool({
+  id: "index-repository",
+  async *execute(input: { path: string }) {
+    yield { phase: "scan" };
+    yield { phase: "embed" };
+    return { indexed: 248 };
+  },
+});
+```
+
+进度会以 `tool.preliminary_result` 事件的形式出现，也会包含在步骤的 `preliminaryResults` 中。
+
+## 流式结果
+
+`stream()` 会使用支持流式传输的模型客户端启动相同状态机。其结果可重放，因此 UI、遥测和持久化代码可并发读取：
+
+```typescript
+const result = agent.stream({ input, client });
+
+for await (const delta of result.getTextStream()) {
+  process.stdout.write(delta);
+}
+
+const [text, completed] = await Promise.all([result.getText(), result.getResult()]);
+```
+
+如需更具体的消费者，请使用 `getReasoningStream()`、`getItemsStream()`、`getToolStream()` 或 `getFullStream()`。`cancel()` 会中止运行。
+
+### 渲染类型化运行项
+
+`getItemsStream()` 会生成 `AgentItem<TOutput>`，这是可安全用于 `switch` 的判别联合：
+
+```typescript
+for await (const item of result.getItemsStream()) {
+  switch (item.type) {
+    case "message":
+      renderAssistantMessage(item.content);
+      break;
+    case "reasoning":
+      renderReasoning(item.text);
+      break;
+    case "tool_call":
+      renderToolCall(item.toolCallId, item.name, item.input);
+      break;
+    case "tool_result":
+      renderToolResult(item.toolCallId, item.output);
+      break;
+    case "error":
+      renderError(item.message);
+      break;
+    case "output":
+      renderFinalOutput(item.value);
+      break;
+  }
+}
+```
+
+无论使用 `run()` 还是 `stream()`，完成后都可通过 `completed.items` 获取相同的有序项结构。提供商输出会规范化为消息、推理、工具调用、工具结果、错误和最终输出项。规范化后的提供商项仍可通过 `rawProviderItem` 获取提供商专用字段。
+
+## 停止条件和动态轮次
+
+停止条件以数组形式组合；第一个匹配条件会记录原因并返回 `stopped` 状态的运行：
+
+```typescript
+import { maxCost, maxTokensUsed, stepCountIs } from "@phaseo/agent-sdk";
+
+const agent = createAgent({
+  id: "bounded-research",
+  stopWhen: [stepCountIs(12), maxTokensUsed(40_000), maxCost(2)],
+  model: ({ context }) => context.fast ? "phaseo/free" : "anthropic/claude-sonnet-4",
+  instructions: ({ numberOfTurns }) => `Research turn ${numberOfTurns}`,
+});
+```
+
+工具可通过 `context.setContext()` 设置应用上下文，并通过 `nextTurnParams` 覆盖紧接着的下一轮参数。
+
+### `createGatewayAgentClient()`
+
+当模型轮次应通过 Phaseo Gateway 执行时，请使用网关适配器。
+
+它可以携带以下网关原生控制项：
+
+- `responseFormat`
+- `plugins`
+- `gatewayTools`
+- `toolChoice`
+- `webSearchOptions`
+- `providerOptions`
+- `promptCacheKey`
+- `includeMeta`
+
+这样，应用可将路由、搜索、结构化输出和插件默认值集中在模型客户端附近，无需每次运行都重新构造原始请求负载。
+
+## 应用自主管理的持久化
+
+如果应用需要恢复运行，可直接持久化返回的 `AgentRunResult`，或提供带有异步 `load(runId)` 和 `save(result)` 方法的 `state` 访问器。这样，继续运行时可使用 `runId`，无需在各层传递序列化记录。
+
+SDK 有意不提供持久化适配器或托管式状态后端。
+
+因此，你可以：
+
+- 将一次性运行完全保留在进程内
+- 将暂停或未完成的运行序列化到自己的应用记录中
+- 重新加载已保存的运行状态，并在之后传回 `continueRun()`
+
+## 人工审核与继续运行
+
+当运行应创建检查点并等待审批时，请使用 `humanReview`：
+
+```typescript
+const agent = createAgent({
+  id: "support-agent",
+  humanReview: ({ response }) =>
+    response.message.content.includes("needs approval")
+      ? {
+          reason: "approval_required",
+          payload: { draft: response.message.content },
+        }
+      : null,
+});
+```
+
+使用明确的人工输入继续：
+
+```typescript
+const continued = await agent.continueRun({
+  run: pausedResult,
+  client,
+  humanInput: "Approved. Continue and return the final answer.",
+});
+```
+
+## 类型化输出
+
+当应用需要类型化的最终值时，请使用 `parseOutput`：
+
+```typescript
+const agent = createAgent<string, { summary: string }>({
+  id: "summary-agent",
+  parseOutput(text) {
+    return JSON.parse(text) as { summary: string };
+  },
+});
+```
+
+如需更严格地控制模型行为，可将其与网关适配器上的结构化输出结合使用：
+
+```typescript
+const client = createGatewayAgentClient({
+  clientOptions: {
+    apiKey: process.env.PHASEO_API_KEY!,
+  },
+  responseFormat: {
+    type: "json_schema",
+    name: "agent_answer",
+    schema: {
+      type: "object",
+      properties: {
+        summary: { type: "string" },
+      },
+      required: ["summary"],
+      additionalProperties: false,
+    },
+  },
+  plugins: [{ id: "response-healing" }],
+});
+```
+
+## 运行时控制
+
+### 模型重试
+
+当模型发生暂时性故障时，可使用 `modelRetry` 在将运行持久化为 `failed` 前进行重试：
+
+```typescript
+const agent = createAgent({
+  id: "support-agent",
+  modelRetry: {
+    maxRetries: 2,
+    backoffMs: 250,
+  },
+});
+```
+
+`maxRetries` 统计首次模型请求之后的额外尝试次数。
+持久化的步骤记录会将最终重试次数存储在 `modelAttempts` 中。
+
+### 并发本地工具
+
+如果一个模型轮次可以安全地调用多个独立工具，请设置 `toolExecution.toolConcurrency`：
+
+```typescript
+const agent = createAgent({
+  id: "research-agent",
+  toolExecution: {
+    toolConcurrency: 3,
+  },
+  tools: [fetchDocs, fetchStatus, fetchIncidents],
+});
+```
+
+运行时仍会保留工具结果消息的顺序。
+
+### 基于预设的路由
+
+若要在仪表板中管理路由、prompt 或参数默认值，而不是将其硬编码到应用中，请使用 `preset`：
+
+```typescript
+const agent = createAgent({
+  id: "support-triage-agent",
+  preset: "support-triage",
+});
+```
+
+## 事件钩子
+
+若应用需要用于日志、遥测或内部工作流的生命周期钩子，请使用 `onEvent`。
+
+当前事件包括：
+
+- `run.started`
+- `run.resumed`
+- `step.started`
+- `step.completed`
+- `step.failed`
+- `step.cancelled`
+- `model.requested`
+- `model.completed`
+- `model.failed`
+- `tool.started`
+- `tool.completed`
+- `tool.failed`
+- `checkpoint.saved`
+- `run.waiting_for_human`
+- `run.cancelled`
+- `run.completed`
+- `run.failed`
+
+步骤成功后，运行时会在持久化带检查点的步骤后发出 `step.completed`。
+
+## 错误处理
+
+网关故障会以 `AgentGatewayError` 的形式重新抛出：
+
+```typescript
+import { AgentGatewayError } from "@phaseo/agent-sdk";
+
+try {
+  await agent.run({ input, client });
+} catch (error) {
+  if (error instanceof AgentGatewayError) {
+    console.error(error.status, error.requestId, error.reason);
+  }
+  throw error;
+}
+```
+
+若故障来自网关，失败的运行和步骤也会持久化 `errorDetails`。
+
+## 内置示例
+
+该软件包目前包含以下示例：
+
+- `examples/research-brief-agent.ts`
+- `examples/support-triage-agent.ts`
+- `examples/coding-review-agent.ts`
+- `examples/parallel-tool-agent.ts`
+
+## 当前范围
+
+SDK 有意专注于构建应用所需的基础能力：
+
+- 本地或由应用管理的检查点持久化
+- 网关模型轮次
+- 本地工具
+- 可恢复的 agent 循环
+- 每步规范化的 token 用量、成本、警告、结束原因和工具结果
+
+它不打算成为托管式编排平台，也不会附带单一且强制的远程持久化后端。
+
+## 相关指南
+
+- [使用 TypeScript 构建持久 agent 循环](../../cookbook/agent-sdk-durable-loop.mdx)
+- [使用 agent 支持的网页搜索进行研究](../../cookbook/agent-sdk-research-brief.mdx)
+- [使用预设驱动的 agent 分流支持请求](../../cookbook/agent-sdk-support-triage.mdx)
+- [使用本地运行时工具审查代码](../../cookbook/agent-sdk-coding-review.mdx)
+- [并发调用本地工具](../../cookbook/agent-sdk-parallel-tools.mdx)

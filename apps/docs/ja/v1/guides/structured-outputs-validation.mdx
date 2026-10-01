@@ -1,0 +1,45 @@
+---
+icon: "circle-check"
+title: "構造化出力の検証"
+description: "構造化出力のサーバー側検証、再試行、フォールバック戦略。"
+---
+
+スキーマ制約付きで生成する場合でも、必ずサーバー側で出力を検証してください。
+
+## 推奨フロー
+
+1. スキーマ制約付きの出力をリクエストします。
+2. JSONを解析します。
+3. サーバーのスキーマに照らして検証します。
+4. 無効な場合は、修正用プロンプトを指定して一度だけ再試行します。
+5. それでも無効な場合は、安全な失敗処理に切り替えます。
+
+## 検証例（TypeScript）
+
+```typescript
+import { z } from "zod";
+
+const Summary = z.object({
+  order_id: z.string(),
+  total_usd: z.number(),
+  status: z.enum(["pending", "paid", "failed"]),
+});
+
+function parseStructuredContent(content: string) {
+  const data = JSON.parse(content);
+  return Summary.parse(data);
+}
+```
+
+## 再試行用の修正プロンプト
+
+検証に失敗した場合は、短い修正指示を送ります。
+
+`前回の出力はスキーマに一致しませんでした。必須フィールドを含み、追加のキーがない有効なJSONのみを返してください。`
+
+## 本番環境での推奨事項
+
+- ユースケースごとにスキーマを用意し、バージョン管理します。
+- モデルIDごとに検証失敗率を追跡します。
+- モデル変更後にスキーマ違反が急増した場合はアラートを出します。
+

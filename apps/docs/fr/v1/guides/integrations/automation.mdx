@@ -1,0 +1,63 @@
+---
+title: "Automatisation des workflows"
+icon: "workflow"
+description: "Utilisez Phaseo depuis Zapier, n8n, Pipedream et d’autres plateformes d’automatisation."
+---
+
+Phaseo fonctionne dès aujourd’hui dans les outils d’automatisation capables d’envoyer des requêtes HTTP authentifiées. Des applications natives dans les marketplaces pourront offrir une expérience plus guidée par la suite.
+
+## Requête commune
+
+Utilisez ces paramètres dans une action HTTP, webhook ou code :
+
+| Paramètre | Valeur |
+| --- | --- |
+| Méthode | `POST` |
+| URL | `https://api.phaseo.app/v1/responses` |
+| En-tête | `Authorization: Bearer <PHASEO_API_KEY>` |
+| En-tête | `Content-Type: application/json` |
+
+```json
+{
+  "model": "openai/gpt-5-nano",
+  "input": "Summarise the supplied workflow data in one paragraph."
+}
+```
+
+Stockez la clé API Phaseo dans le coffre d’identifiants ou de secrets de la plateforme. Ne l’inscrivez pas directement dans une définition de workflow partagée.
+
+## Zapier
+
+Utilisez **Webhooks by Zapier → Custom Request** :
+
+1. Sélectionnez `POST`.
+2. Saisissez `https://api.phaseo.app/v1/responses`.
+3. Ajoutez les en-têtes bearer et content-type.
+4. Mappez les champs des étapes Zap précédentes dans `input`.
+5. Testez le Zap avec des données non sensibles.
+
+Une application Zapier native de Phaseo ajouterait la sélection de modèles, des actions de sortie structurée et l’authentification propre à Phaseo, mais sa publication nécessiterait la plateforme développeur de Zapier.
+
+## n8n
+
+Utilisez le nœud **HTTP Request** avec une authentification bearer et un corps JSON. Pour des données de workflow structurées, mappez l’élément en amont dans le champ `input` à l’aide d’une expression n8n.
+
+Un nœud communautaire officiel n8n pourrait ensuite proposer des opérations comme Generate Response, List Models, Get Model Pricing et Create Embedding sans configuration HTTP manuelle.
+
+## Pipedream
+
+Utilisez une étape de requête HTTP ou de code Node.js. Stockez `PHASEO_API_KEY` comme secret Pipedream et lisez-le depuis l’environnement de l’étape.
+
+## Recommandations pour la production
+
+- Définissez une limite de dépenses pour la clé Gateway API utilisée par chaque automatisation.
+- Attribuez une clé propre à chaque automatisation afin d’isoler l’utilisation et la révocation.
+- Utilisez des sorties structurées lorsque les étapes suivantes attendent des champs lisibles par machine.
+- Gérez les nouvelles tentatives pour les réponses `429` et les erreurs `5xx` récupérables.
+- Ne répétez pas des actions externes non idempotentes simplement parce qu’une étape du modèle a été relancée.
+
+## À lire aussi
+
+- [Réponses](../../api-reference/endpoint/responses.mdx)
+- [Sorties structurées](../structured-outputs.mdx)
+- [Gestion des erreurs](../../developers/error-handling.mdx)

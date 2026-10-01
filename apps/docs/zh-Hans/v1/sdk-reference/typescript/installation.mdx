@@ -1,0 +1,70 @@
+---
+icon: "package"
+title: "TypeScript SDK 安装指南"
+description: "如何安装和设置 Phaseo TypeScript SDK。"
+---
+
+该 SDK 以 [`@phaseo/sdk`](https://www.npmjs.com/package/@phaseo/sdk) 的名称发布在 npm 上。
+
+## 安装
+
+使用你偏好的包管理器安装 SDK：
+
+<CodeGroup>
+
+    ```bash title="npm"
+    npm install @phaseo/sdk
+    ```
+
+    ```bash title="pnpm"
+    pnpm add @phaseo/sdk
+    ```
+
+    ```bash title="yarn"
+    yarn add @phaseo/sdk
+    ```
+
+    </CodeGroup>
+
+## 要求
+
+- Node.js 18+
+- TypeScript 4.5+（用于类型定义）
+
+## 设置
+
+### API 密钥
+
+使用 SDK 需要 Phaseo API 密钥。请在[网关密钥](https://phaseo.app/gateway/keys)中创建。
+
+### 环境变量
+
+将 API 密钥设置为环境变量：
+
+```bash
+export PHASEO_API_KEY="phaseo_v1_sk_<kid>_<secret>"
+```
+
+### 基本用法
+
+```typescript
+import Phaseo from "@phaseo/sdk";
+
+// Initialize the client
+const client = new Phaseo({
+	apiKey: process.env.PHASEO_API_KEY!,
+});
+
+// Make your first request
+const response = await client.generateText({
+	model: "openai/gpt-4o-mini",
+	messages: [{ role: "user", content: "Hello!" }],
+});
+
+console.log(response.choices[0].message.content);
+```
+
+## 后续步骤
+
+- 查看[使用指南](./usage.mdx)了解详细示例
+- 查看 [API 参考](../../api-reference/introduction.mdx)了解端点文档

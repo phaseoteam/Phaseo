@@ -1,0 +1,23 @@
+---
+icon: "wrench"
+title: "टूल"
+description: "जाँचे गए, approval-gated, manual और progress देने वाले Python tools परिभाषित करें।"
+---
+
+`AgentTool` वैल्यू बनाएँ और उन्हें `define_tool(...)` के ज़रिए दें। Tools ये तय कर सकते हैं:
+
+- मॉडल को दिखाए जाने वाले JSON `parameters`
+- callable `input_schema`, `output_schema` और `event_schema` validator
+- `timeout_ms` और `execute(input, runtime)`
+- boolean या callable `require_approval`
+- interactive काम के लिए `on_tool_called` और `on_response_received`
+- `next_turn_params` और `on_error="return-to-model"`
+
+प्रारंभिक नतीजों के लिए `runtime.emit_progress(value)` और अगले टर्न में अपडेटेड ऐप context के लिए `runtime.set_context(value)` कॉल करें।
+
+स्वतंत्र tools के लिए `AgentToolExecutionConfig(tool_concurrency=...)` उपयोग करें। executions साथ चलें तब भी सहेजे गए नतीजे model call का क्रम बनाए रखते हैं।
+
+## संबंधित विषय
+
+- [स्थिति और अनुमोदन](./agent-sdk-state-and-approval.mdx)
+- [रन कंट्रोल](./agent-sdk-run-controls.mdx)

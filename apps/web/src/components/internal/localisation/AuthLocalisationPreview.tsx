@@ -1,4 +1,4 @@
-"use client";
+	"use client";
 
 import { useState, type SyntheticEvent } from "react";
 import { useTranslations } from "next-intl";
@@ -17,14 +17,6 @@ const surfaces = [
 ] as const;
 type PreviewSurface = (typeof surfaces)[number];
 
-const surfaceLabels: Record<PreviewSurface, string> = {
-	"sign-in": "Sign in",
-	"sign-up": "Sign up",
-	reset: "Password reset",
-	"reset-sent": "Reset sent",
-	error: "Auth error",
-};
-
 function preventPreviewAction(event: SyntheticEvent) {
 	event.preventDefault();
 	event.stopPropagation();
@@ -32,6 +24,7 @@ function preventPreviewAction(event: SyntheticEvent) {
 
 export function AuthLocalisationPreview() {
 	const [surface, setSurface] = useState<PreviewSurface>("sign-in");
+	const t = useTranslations("Product.internalTools.localisationPreview");
 	const shared = useTranslations("Auth.shared");
 	const error = useTranslations("Auth.error");
 
@@ -40,7 +33,7 @@ export function AuthLocalisationPreview() {
 			<div
 				className="flex flex-wrap gap-2"
 				role="group"
-				aria-label="Authentication preview surface"
+				aria-label={t("surfaceGroup")}
 			>
 				{surfaces.map((candidate) => (
 					<Button
@@ -51,18 +44,18 @@ export function AuthLocalisationPreview() {
 						aria-pressed={surface === candidate}
 						onClick={() => setSurface(candidate)}
 					>
-						{surfaceLabels[candidate]}
+						{t(`surfaces.${candidate}` as never)}
 					</Button>
 				))}
 			</div>
 
 			<p id="localisation-preview-readonly" className="text-sm text-muted-foreground">
-				Authentication actions are disabled in this review-only preview.
+				{t("readonlyNotice")}
 			</p>
 
 			<div
 				role="region"
-				aria-label="Read-only localized authentication preview"
+				aria-label={t("previewRegion")}
 				aria-describedby="localisation-preview-readonly"
 				onClickCapture={preventPreviewAction}
 				onSubmitCapture={preventPreviewAction}

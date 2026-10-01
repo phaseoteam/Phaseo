@@ -1,0 +1,39 @@
+---
+title: "OpenAI 即将弃用的模型和服务"
+description: "AI Stats 目录中跟踪的 OpenAI 模型和平台弃用日期。"
+icon: "/icons/brands/openai.svg"
+---
+
+# OpenAI 即将弃用的模型和服务
+
+OpenAI 会在 [API 弃用页面](https://developers.openai.com/api/docs/deprecations)公布弃用日期和推荐替代方案。请将本页作为迁移清单，并使用生产提示词、工具、延迟和成本预算验证替代方案。
+
+## 弃用模型
+
+| 模型系列 | 弃用日期 | 停止服务日期 | 推荐替代方案 |
+| --- | --- | --- | --- |
+| `gpt-realtime`、`gpt-audio`、`gpt-realtime-mini`、`gpt-audio-mini` | 2026 年 7 月 20 日 | 2027 年 1 月 20 日 | `openai/gpt-realtime-2.1`、`openai/gpt-realtime-2.1-mini` 或 `openai/gpt-audio-1.5` |
+| `gpt-4o-mini-transcribe-2025-03-20` | 2026 年 7 月 20 日 | 2027 年 1 月 20 日 | `openai/gpt-4o-mini-transcribe` |
+| 带日期的 GPT-5 和 o3 快照 | 2026 年 6 月 11 日 | 2026 年 12 月 11 日 | `openai/gpt-5.6-sol`、`openai/gpt-5.6-terra` 或 `openai/gpt-5.6-luna` |
+| `gpt-image-1-mini`、`gpt-image-1.5`、`chatgpt-image-latest` | 2026 年 6 月 2 日 | 2026 年 12 月 1 日 | `openai/gpt-image-2` |
+| GPT-3.5、GPT-4、GPT-4.1 nano、GPT-4o、o1、o3-mini 和 o4-mini 的旧快照 | 2026 年 4 月 22 日 | 2026 年 10 月 23 日 | 查看 OpenAI 弃用页面中的模型专属建议 |
+| Sora 2 模型 | 2026 年 3 月 24 日 | 2026 年 9 月 24 日 | 尚未公布替代方案 |
+
+目录会在受影响的 OpenAI 模型条目中记录这些生命周期日期，并在 OpenAI 提供替代型号时列出相应 ID。日期适用于 OpenAI 指定的提供商快照；目录可能通过规范模型 ID 提供这些快照。
+
+## 平台弃用
+
+OpenAI 也公布不属于模型条目的产品迁移计划：
+
+- 可复用提示词计划于 2026 年 11 月 30 日停止服务。请将提示词内容移至应用代码。
+- Evals 平台将于 2026 年 10 月 31 日转为只读，并于 11 月 30 日停止服务。OpenAI 建议迁移到 Promptfoo。
+- Agent Builder 将于 2026 年 11 月 30 日停止服务。请迁移到 Agents SDK 或 ChatGPT Workspace Agents。
+
+## 迁移清单
+
+1. 在预发布环境替换即将弃用的模型或产品。
+2. 重新运行有代表性的评估，重点检查结构化输出、工具调用、音频质量和长上下文任务。
+3. 在接近生产环境的并发量下比较延迟和费用。
+4. 在停止服务日期前逐步启用替代方案，并明确设置回滚路由。
+
+官方日期、完整快照映射和端点专属说明，请参阅 [OpenAI API 弃用文档](https://developers.openai.com/api/docs/deprecations)。

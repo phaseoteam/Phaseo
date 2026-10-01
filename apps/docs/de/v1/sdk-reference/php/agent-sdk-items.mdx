@@ -1,0 +1,25 @@
+---
+icon: "layers"
+title: "Stream-Elemente"
+description: "Konsumiere Text-, Reasoning-, Tool- und Provider-Elementereignisse aus PHP-Agent-Läufen."
+---
+
+Das Stream-Ergebnis stellt erneut durchlaufbare Consumer für Text und strukturierte Ereignisse bereit.
+
+```php
+$stream = $agent->stream(input: $prompt, client: $client);
+
+foreach ($stream->itemStream() as $item) {
+    renderItem($item);
+}
+
+$result = $stream->getResult();
+```
+
+Verwende den vollständigen Ereignis-Stream, wenn die Oberfläche zusätzlich zu Provider-Elementen Reasoning-Änderungen, Tool-Fortschritt, Genehmigungsprüfpunkte oder Lifecycle-Änderungen benötigt.
+
+<Note>
+PHP-Elementwerte sind generische Arrays oder Objekte und keine abgeschlossene Union typisierter Elemente. Validiere die von deiner Oberfläche verwendeten Felder und behalte einen Fallback für unbekannte Elemente und künftige Provider-Ereignisse bei.
+</Note>
+
+PHP konsumiert den Provider-Stream synchron und macht die gesammelte Sequenz erneut durchlaufbar. Das eignet sich für Request-Worker und CLI-Programme, bildet aber allein keinen Hintergrund-Push-Kanal.

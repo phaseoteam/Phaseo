@@ -1,0 +1,49 @@
+---
+title: "Workspace-Benachrichtigungen"
+description: "Sende Workspace-Alarme per E-Mail, in Chat-Kanäle oder an einen HTTPS-Webhook."
+icon: "bell-ring"
+---
+
+Nutze Benachrichtigungsziele, um aktivierte Workspace-Alarme an die Tools zu senden, die dein Team bereits überwacht. Die Ziele werden im gesamten Workspace gemeinsam genutzt und können getestet werden, bevor du ihnen wichtige Betriebsalarme anvertraust.
+
+## Ziel hinzufügen
+
+1. Öffne **Gateway → Einstellungen → Benachrichtigungen**.
+2. Wähle **Ziel hinzufügen** aus.
+3. Gib einen Namen ein und wähle einen oder mehrere Kanäle aus.
+4. Füge die Zieldetails und bei Bedarf Erwähnungen hinzu.
+5. Wähle für jeden eingerichteten Kanal **Test senden** aus.
+6. Erstelle die Ziele, sobald alle Tests erfolgreich waren.
+
+Phaseo unterstützt:
+
+- E-Mail-Adressen und Verteilerlisten
+- Discord-Kanäle über ein Bot-Token
+- Discord-Webhooks
+- eingehende Slack-Webhooks
+- URLs von Microsoft-Teams-Workflows
+- eigene HTTPS-Webhooks
+
+Zugangsdaten und Webhook-URLs werden vor dem Speichern verschlüsselt. Beschränke Kanalzugangsdaten auf den Benachrichtigungsversand und rotiere sie, falls sie offengelegt wurden.
+
+## Produktalarme aktivieren
+
+Auf der Benachrichtigungsseite werden die für deinen Workspace verfügbaren Alarmtypen angezeigt. Aktiviere **Alarme zur Modellabkündigung**, um vor der Abschaltung eines im Workspace verwendeten Modells benachrichtigt zu werden.
+
+Zusätzlich zu den im Dashboard angezeigten integrierten Empfängern werden Alarme auch an die eingerichteten Ziele gesendet.
+
+## Erwähnungen
+
+Mit optionalen Erwähnungsfeldern kann ein Alarm bestimmte Empfänger benachrichtigen:
+
+- Discord unterstützt Benutzer- und Rollen-IDs.
+- Slack unterstützt Benutzer- und Benutzergruppen-IDs.
+- Microsoft Teams unterstützt Microsoft-365-E-Mail-Adressen oder Entra-Objekt-IDs.
+
+Verwende Erwähnungen sparsam. Häufige Workspace-Alarme sollten normalerweise an einen überwachten Kanal gehen, statt eine große Gruppe direkt zu alarmieren.
+
+## Ziele testen und entfernen
+
+Wähle neben einem vorhandenen Ziel **Test senden**, nachdem du Zugangsdaten rotiert oder die Kanaleinstellungen geändert hast. Entferne nicht mehr überwachte Ziele, damit Alarme nicht scheinbar an einen aufgegebenen Kanal gesendet werden.
+
+Eigene Webhooks müssen HTTPS verwenden und die Anfrage vor der Verarbeitung prüfen. Gib zeitnah eine erfolgreiche Antwort zurück und verlagere langsamere Aufgaben in einen Hintergrundprozess.

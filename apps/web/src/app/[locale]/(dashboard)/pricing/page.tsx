@@ -17,10 +17,11 @@ import {
 	X,
 } from "lucide-react";
 import { buildMetadata } from "@/lib/seo";
+import { getLocalizedDocsHref } from "@/lib/docs";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
 	Accordion,
 	AccordionContent,
@@ -31,7 +32,7 @@ import { GATEWAY_TIERS } from "@/components/(gateway)/credits/tiers";
 import { PricingComparisonShell } from "./PricingComparisonShell";
 import { EnterprisePricingSection } from "./EnterprisePricingSection";
 import { enterpriseSelfServePreviewEnabled } from "@/lib/flags";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import type { PublicLocale } from "@/i18n/routing";
 
 export async function generateMetadata({ params }: LayoutProps<"/[locale]">): Promise<Metadata> {
@@ -44,7 +45,7 @@ type Cell =
 	| { type: "included"; note?: string; inlineText?: string }
 	| { type: "excluded"; note?: string; inlineText?: string }
 	| { type: "not_applicable"; note?: string; inlineText?: string }
-	| { type: "text"; value: string };
+	| { type: "text"; value?: string; messageKey?: string };
 
 type MatrixRow = {
 	feature: string;
@@ -72,15 +73,10 @@ type Competitor = {
 
 type ComparisonOption = "phaseo" | CompetitorKey;
 
-type FAQItem = {
-	id: string;
-	question: string;
-	answer: string;
-};
+type FAQItem = { id: string };
 
 type FAQSection = {
 	id: string;
-	title: string;
 	items: FAQItem[];
 };
 
@@ -90,11 +86,44 @@ function getTierByKey(key: "basic") {
 	return tier;
 }
 
-function PlanCell({ cell, label }: { cell: Cell; label: string }) {
+type PricingTranslate = (key: string, values?: Record<string, unknown>) => string;
+
+function getPricingCopyKey(value: string): string {
+	return value
+		.toLowerCase()
+		.normalize("NFKD")
+		.replace(/[\u0300-\u036f]/g, "")
+		.replace(/[^a-z0-9]+/g, "-")
+		.replace(/^-|-$/g, "");
+}
+
+function translatePricingCopy(value: string, translate: PricingTranslate): string {
+	return translate(`matrix.copy.${getPricingCopyKey(value)}`);
+}
+
+function PlanCell({
+	cell,
+	label,
+	translate,
+	values,
+	localizeContent,
+}: {
+	cell: Cell;
+	label: string;
+	translate: PricingTranslate;
+	values: Record<string, unknown>;
+	localizeContent: boolean;
+}) {
 	if (cell.type === "text") {
 		return (
 			<div className="flex flex-col items-center justify-center gap-1.5 text-center">
-				<span className="text-xs leading-4 text-muted-foreground">{cell.value}</span>
+				<span className="text-xs leading-4 text-muted-foreground">
+					{cell.messageKey
+						? translate(cell.messageKey, values)
+						: localizeContent
+							? translatePricingCopy(cell.value ?? "", translate)
+							: cell.value}
+				</span>
 			</div>
 		);
 	}
@@ -102,10 +131,10 @@ function PlanCell({ cell, label }: { cell: Cell; label: string }) {
 	const included = cell.type === "included";
 	const notApplicable = cell.type === "not_applicable";
 	const statusLabel = included
-		? "Included"
+		? translate("matrix.included")
 		: notApplicable
-			? "Not applicable"
-			: "Not included";
+			? translate("matrix.notApplicable")
+			: translate("matrix.notIncluded");
 	const iconClass = included
 		? "inline-flex h-5 w-5 items-center justify-center rounded-full border border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-700/60 dark:bg-emerald-950/30 dark:text-emerald-300"
 		: notApplicable
@@ -125,7 +154,11 @@ function PlanCell({ cell, label }: { cell: Cell; label: string }) {
 
 	const inlineText = cell.inlineText ? (
 		<span className="max-w-44 text-[11px] leading-4 text-muted-foreground">
-			{cell.inlineText}
+			{cell.inlineText === "Not advertised"
+				? translate("matrix.notAdvertised")
+				: localizeContent
+					? translatePricingCopy(cell.inlineText, translate)
+					: cell.inlineText}
 		</span>
 	) : null;
 
@@ -141,18 +174,20 @@ function PlanCell({ cell, label }: { cell: Cell; label: string }) {
 
 	return (
 		<div className="flex flex-col items-center justify-center gap-1 text-center">
-			<HoverCard openDelay={120}>
-				<HoverCardTrigger asChild>
-					<button
-						type="button"
-						className="rounded-full"
-						aria-label={`${label}: ${statusLabel}. View details`}
-					>
-						{iconNode}
-					</button>
-				</HoverCardTrigger>
-				<HoverCardContent className="w-64 text-xs leading-5">{cell.note}</HoverCardContent>
-			</HoverCard>
+			<Tooltip>
+				<TooltipTrigger
+					type="button"
+					className="rounded-full"
+					aria-label={translate("matrix.detailsAriaLabel", { label, status: statusLabel })}
+				>
+					{iconNode}
+				</TooltipTrigger>
+				<TooltipContent className="max-w-64 whitespace-normal text-xs leading-5">
+					{localizeContent
+						? translatePricingCopy(cell.note, translate)
+						: cell.note}
+				</TooltipContent>
+			</Tooltip>
 			{inlineText}
 		</div>
 	);
@@ -437,8 +472,8 @@ const MATRIX_SECTIONS: MatrixSection[] = [
 			{
 				feature: "Credit purchase fee",
 				free: { type: "not_applicable", inlineText: "No top-up required" },
-				payg: { type: "text", value: `${basicTier.feePct.toFixed(0)}% ($1 minimum) when credits are purchased` },
-				enterprise: { type: "text", value: "5% ($1 minimum) when credits are purchased" },
+				payg: { type: "text", messageKey: "matrix.paygCreditPurchaseFee" },
+				enterprise: { type: "text", messageKey: "matrix.enterpriseCreditPurchaseFee" },
 			},
 			{
 				feature: "Models",
@@ -572,8 +607,8 @@ const MATRIX_SECTIONS: MatrixSection[] = [
 			},
 			{
 				feature: "BYOK service fee",
-				free: { type: "text", value: "250K requests/month included, then 2.5% of provider-equivalent cost" },
-				payg: { type: "text", value: "250K requests/month included, then 2.5% of provider-equivalent cost" },
+				free: { type: "text", messageKey: "matrix.byokServiceFee" },
+				payg: { type: "text", messageKey: "matrix.byokServiceFee" },
 			},
 			{
 				feature: "Usage limits management",
@@ -746,265 +781,48 @@ const MATRIX_SECTIONS: MatrixSection[] = [
 ];
 
 const FAQ_SECTIONS: FAQSection[] = [
-	{
-		id: "billing-pricing",
-		title: "Charges and Billing",
-		items: [
-			{
-				id: "how-are-tokens-billed",
-				question: "How is managed model usage billed?",
-				answer:
-					"Input, output, and other billable usage is deducted from your Phaseo credit balance at the model prices shown in the catalog. Phaseo does not add a separate markup to each managed request.",
-			},
-			{
-				id: "what-does-phaseo-charge",
-				question: "What does Phaseo charge?",
-				answer:
-					`For managed usage, Phaseo charges a ${basicTier.feePct.toFixed(0)}% fee, with a $1 minimum, when you purchase credits. For BYOK, the first ${BYOK_MONTHLY_FREE_REQUESTS.toLocaleString("en-US")} requests each UTC calendar month have no Phaseo service fee. After that, the fee is ${BYOK_SERVICE_FEE_PERCENT}% of provider-equivalent cost.`,
-			},
-			{
-				id: "is-top-up-fee-per-request",
-				question: `Is the ${basicTier.feePct.toFixed(0)}% credit fee charged on every request?`,
-				answer:
-					`No. The ${basicTier.feePct.toFixed(0)}% fee, subject to a $1 minimum, is charged once when credits are purchased. Managed model usage then draws down those credits at the catalog price without another Phaseo request markup.`,
-			},
-			{
-				id: "how-is-billing-structured",
-				question: "How is billing structured?",
-				answer:
-					"Free access includes supported free models, public data, SDKs, and integrations. Paid model usage draws down prepaid credits. Teams that need SSO, SCIM, governance, or included payment benefits can add a separate monthly Enterprise subscription without changing how model usage is metered.",
-			},
-			{
-				id: "are-sdks-priced-separately",
-				question: "Do SDKs or integrations cost extra?",
-				answer:
-					"No. Phaseo client SDKs, Agent SDKs, compatibility layers, and documented integrations do not require a separate plan or subscription. Requests made through them follow the same managed usage or BYOK pricing shown on this page.",
-			},
-			{
-				id: "contracts-commitments",
-				question: "Do I need a contract or monthly commitment?",
-				answer:
-					"Pay As You Go has no contract, subscription, or minimum monthly spend. Enterprise is an optional monthly subscription that can be activated self-serve; it does not require a negotiated enterprise agreement.",
-			},
-			{
-				id: "are-failed-or-fallback-attempts-billed",
-				question: "Are failed or fallback attempts billed?",
-				answer:
-					"Phaseo records managed charges for successful model usage. A failed attempt does not add a successful-usage charge. If a fallback provider completes the request, the usage served by that provider is billed normally. BYOK providers may apply their own billing rules to work processed before an error.",
-			},
-			{
-				id: "streaming-pricing",
-				question: "Are streaming responses billed differently?",
-				answer:
-					"No. Streaming changes how the response is delivered, not the Phaseo pricing model. The measured input, output, and other billable usage is charged at the same catalog price as a non-streaming request.",
-			},
-			{
-				id: "data-api-free",
-				question: "Is Data API access free?",
-				answer:
-					"Yes. Data API access is available to everyone. You do not need to purchase gateway credits to query public model, provider, pricing, benchmark, or ranking data.",
-			},
-			{
-				id: "payment-methods",
-				question: "What payment methods do you accept?",
-				answer:
-					"Phaseo accepts credit and debit cards for credit top-ups. Supported Enterprise workspaces can also fund credits by USD bank transfer as that payment method is enabled for their Stripe customer. The standard 5% top-up fee applies across supported payment methods.",
-			},
-			{
-				id: "refunds",
-				question: "Can I refund a credit purchase?",
-				answer:
-					"A credit purchase is eligible for a self-serve refund within 24 hours if none of the purchased credits have been used. You can review eligibility and request the refund from Settings → Credits.",
-			},
-			{
-				id: "invoices",
-				question: "Can I download an invoice?",
-				answer:
-					"Yes. PDF invoices are available for completed credit purchases from Settings → Credits. If an invoice is missing for a successful payment, contact support with the payment ID and date.",
-			},
-		],
-	},
-	{
-		id: "enterprise",
-		title: "Enterprise",
-		items: [
-			{
-				id: "enterprise-plan",
-				question: "What is Self Serve Enterprise?",
-				answer: "It is a monthly workspace subscription for teams that need SAML SSO, SCIM provisioning, departments and roles, audit and governance controls, and priority support. Exact self-serve pricing is available for teams from 100 to 100,000 active members.",
-			},
-			{
-				id: "enterprise-credit-fees",
-				question: "Does Enterprise change credit top-up fees?",
-				answer: "No. Self Serve Enterprise is a subscription for identity, governance and support. Credit purchases remain separate and use the standard 5% top-up fee, with a $1 minimum, across supported payment methods.",
-			},
-			{
-				id: "enterprise-team-sizes",
-				question: "How does pricing change as my team grows?",
-				answer: "Enterprise is priced for your exact active-member count, with lower marginal per-member rates at larger volumes. The calculator shows an immediate self-serve monthly price for teams up to 100,000 members.",
-			},
-			{
-				id: "enterprise-usage-billing",
-				question: "Does Enterprise include model usage?",
-				answer: "No. The Enterprise subscription pays for identity, governance and support. Managed model usage still draws from the workspace credit balance at catalog prices. There is no committed model spend: use as much or as little as you need and the same subscription price applies.",
-			},
-			{
-				id: "enterprise-bank-transfer",
-				question: "Do USD bank transfers use different pricing?",
-				answer: "Not currently. Supported USD bank transfers use the same 5% credit top-up fee as card funding. Any exceptional wire, refund or banking fee is shown separately when applicable.",
-			},
-		],
-	},
-	{
-		id: "byok",
-		title: "Bring Your Own Key",
-		items: [
-			{
-				id: "how-does-byok-work",
-				question: "How is BYOK billed?",
-				answer:
-					`Your provider bills model usage directly to your provider account. Phaseo does not charge a service fee for your first ${BYOK_MONTHLY_FREE_REQUESTS.toLocaleString("en-US")} BYOK requests each UTC calendar month. After that allowance, Phaseo charges ${BYOK_SERVICE_FEE_PERCENT}% of provider-equivalent cost.`,
-			},
-			{
-				id: "what-is-included-with-byok",
-				question: "What is included with BYOK?",
-				answer:
-					"Secure provider-key storage, gateway routing, request logs, provider selection, and priority or fallback key ordering are included. Provider-side quotas, negotiated rates, and billing remain attached to your provider account.",
-			},
-			{
-				id: "provider-equivalent-cost",
-				question: "What does provider-equivalent cost mean?",
-				answer:
-					"It is the catalog cost of the same model, provider route, and measured usage if Phaseo-managed credentials had served the request. After the monthly free allowance, the 2.5% BYOK service fee is calculated from that reference amount, not from the amount you top up or the balance in your provider account.",
-			},
-			{
-				id: "can-i-control-byok-fallback",
-				question: "Can I control when Phaseo uses my provider keys?",
-				answer:
-					"Yes. Priority keys are tried before Phaseo-managed providers. You can also enable fallback BYOK keys that are tried after managed providers.",
-			},
-		],
-	},
-	{
-		id: "usage-controls",
-		title: "Usage and Controls",
-		items: [
-			{
-				id: "do-you-enforce-rate-limits",
-				question: "Do you enforce platform rate limits?",
-				answer:
-					"No. Phaseo does not apply platform-level rate limits. Upstream providers may still apply their own limits.",
-			},
-			{
-				id: "can-i-separate-environments",
-				question: "Can I separate development, staging, and production?",
-				answer:
-					"Yes. Create separate API keys and policies for each environment so usage, controls, and logs remain isolated.",
-			},
-			{
-				id: "can-i-set-budgets",
-				question: "Can I set budgets and spend controls?",
-				answer:
-					"Yes. Pay As You Go includes API-key and team-level limits and spend controls. Free-model usage does not require spend controls.",
-			},
-		],
-	},
-	{
-		id: "routing-reliability",
-		title: "Routing and Reliability",
-		items: [
-			{
-				id: "provider-unavailable",
-				question: "What happens if a provider is unavailable?",
-				answer:
-					"Phaseo can retry or route to another provider that supports the selected model when a provider is rate-limited or returns an error. Presets, provider restrictions, and BYOK fallback settings determine which alternatives are available.",
-			},
-			{
-				id: "routing-mode",
-				question: "Can I optimise routing for price or latency?",
-				answer:
-					"Yes. Workspace routing modes can rank compatible providers by balanced performance, price, latency, or throughput. You can also use presets to restrict the provider set before routing begins.",
-			},
-			{
-				id: "region-privacy-routing",
-				question: "Can I restrict regions or require zero data retention?",
-				answer:
-					"Yes, when matching provider offers are available. Requests can specify required execution and data regions or require zero-data-retention support. Phaseo returns an error rather than silently using a route that does not meet those requirements.",
-			},
-			{
-				id: "model-pricing-changes",
-				question: "What happens when a model is deprecated or its price changes?",
-				answer:
-					"Phaseo tracks model lifecycle and provider availability in the catalog. Current catalog pricing is applied when a request is served. Use exact model IDs, availability data, and fallback presets when you need controlled migrations between model versions.",
-			},
-		],
-	},
-	{
-		id: "apis-features",
-		title: "APIs and Features",
-		items: [
-			{
-				id: "openai-anthropic-migration",
-				question: "Can I migrate from OpenAI, Anthropic, or another gateway?",
-				answer:
-					"Yes. Phaseo provides OpenAI-compatible Chat Completions and Responses APIs, an Anthropic-compatible Messages API, SDK compatibility, and migration guides. Most integrations begin by changing the base URL, API key, and model ID.",
-			},
-			{
-				id: "tools-structured-output",
-				question: "Do you support tools and structured output?",
-				answer:
-					"Yes. Tool calling, structured-output schemas, server tools, and optional response healing are available where the selected model and endpoint support them. Model capability data is available through the catalog and Data API.",
-			},
-			{
-				id: "multimodal-endpoints",
-				question: "Which modalities can I use?",
-				answer:
-					"Phaseo supports text, image, video, audio, speech, transcription, music, embeddings, moderation, reranking, OCR, and realtime workflows across supported models and providers. Availability and billing units vary by model.",
-			},
-		],
-	},
-	{
-		id: "privacy-data",
-		title: "Privacy and Data",
-		items: [
-			{
-				id: "training-data",
-				question: "Does Phaseo train on my prompts or responses?",
-				answer:
-					"No. Phaseo does not use gateway prompts or responses to train its own models. Requests are sent to the provider that serves them, so that provider's data and training policies still apply unless your routing requirements exclude that provider.",
-			},
-			{
-				id: "request-logging",
-				question: "What request data does Phaseo store?",
-				answer:
-					"Phaseo stores operational and billing metadata such as model, provider, token counts, latency, and errors. Raw prompts and responses are not persistently stored by default. If workspace I/O logging is enabled, payload retention follows the workspace privacy and retention settings.",
-			},
-		],
-	},
-	{
-		id: "support-status",
-		title: "Support and Status",
-		items: [
-			{
-				id: "service-status",
-				question: "Where can I check incidents and uptime?",
-				answer:
-					"Current service status and incident history are published at status.phaseo.app. Request IDs and activity logs can help support trace a specific failure.",
-			},
-			{
-				id: "contact-support",
-				question: "How do I contact support?",
-				answer:
-					"Use the contact page or email support@phaseo.app for account, billing, and technical questions. Bug reports and feature requests can also be filed through the public GitHub repository.",
-			},
-		],
-	},
+	{ id: "billing-pricing", items: [
+		"how-are-tokens-billed", "what-does-phaseo-charge", "is-top-up-fee-per-request",
+		"how-is-billing-structured", "are-sdks-priced-separately", "contracts-commitments",
+		"are-failed-or-fallback-attempts-billed", "streaming-pricing", "data-api-free",
+		"payment-methods", "refunds", "invoices",
+	].map((id) => ({ id })) },
+	{ id: "enterprise", items: [
+		"enterprise-plan", "enterprise-credit-fees", "enterprise-team-sizes",
+		"enterprise-usage-billing", "enterprise-bank-transfer",
+	].map((id) => ({ id })) },
+	{ id: "byok", items: [
+		"how-does-byok-work", "what-is-included-with-byok", "provider-equivalent-cost",
+		"can-i-control-byok-fallback",
+	].map((id) => ({ id })) },
+	{ id: "usage-controls", items: [
+		"do-you-enforce-rate-limits", "can-i-separate-environments", "can-i-set-budgets",
+	].map((id) => ({ id })) },
+	{ id: "routing-reliability", items: [
+		"provider-unavailable", "routing-mode", "region-privacy-routing", "model-pricing-changes",
+	].map((id) => ({ id })) },
+	{ id: "apis-features", items: [
+		"openai-anthropic-migration", "tools-structured-output", "multimodal-endpoints",
+	].map((id) => ({ id })) },
+	{ id: "privacy-data", items: ["training-data", "request-logging"].map((id) => ({ id })) },
+	{ id: "support-status", items: ["service-status", "contact-support"].map((id) => ({ id })) },
 ];
 
 export default async function PricingPage() {
 	const showEnterprisePreview = await enterpriseSelfServePreviewEnabled();
+	const locale = await getLocale();
 	const t = await getTranslations("Site.pricing");
 	const translate = t as unknown as (key: string, values?: Record<string, unknown>) => string;
+	const faqMessageValues = {
+		fee: basicTier.feePct,
+		serviceFee: BYOK_SERVICE_FEE_PERCENT,
+		freeRequests: BYOK_MONTHLY_FREE_REQUESTS,
+		minimum: new Intl.NumberFormat(locale, {
+			style: "currency",
+			currency: "USD",
+			maximumFractionDigits: 0,
+		}).format(1),
+	};
 	return (
 		<main className="relative min-h-screen overflow-hidden">
 			<div className="container mx-auto max-w-7xl px-4 py-12 sm:py-16">
@@ -1017,12 +835,12 @@ export default async function PricingPage() {
 						<Link className="underline underline-offset-4" href="/tools/pricing-calculator">
 										{t("modelPricingCalculator")}
 						</Link>
-						{" "}and review{" "}
+						{" "}{t("andReview")}{" "}
 						<Link
 							className="underline underline-offset-4"
 							href="/how-phaseo-calculates-model-pricing"
 						>
-							how Phaseo calculates model pricing
+							{t("modelPricingGuide")}
 						</Link>
 						.
 					</p>
@@ -1085,31 +903,34 @@ export default async function PricingPage() {
 				<section className="space-y-5">
 					<div className="max-w-3xl">
 						<h2 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
-							What Phaseo charges
+							{t("whatPhaseoCharges")}
 						</h2>
 						<p className="mt-2 text-sm leading-6 text-muted-foreground">
-							Model usage and Phaseo fees are shown separately so you can see what is charged, by whom, and when.
+							{t("usageAndFeeDetails")}
 						</p>
 					</div>
 					<dl className="grid border-y border-zinc-200/80 dark:border-zinc-800/80 lg:grid-cols-3 lg:divide-x lg:divide-zinc-200/80 lg:dark:divide-zinc-800/80">
 						{[
 							{
 								icon: Coins,
-								term: "Managed model usage",
-								value: "Catalog model price",
-								detail: "Deducted from your prepaid credits after successful usage. No additional Phaseo request markup.",
+								term: t("managedModelUsage"),
+								value: t("catalogModelPrice"),
+								detail: t("managedModelUsageDetails"),
 							},
 							{
 								icon: ReceiptText,
-								term: "Credit purchase",
-								value: `${basicTier.feePct.toFixed(0)}% top-up fee ($1 minimum)`,
-								detail: "Charged when you purchase credits. It is not charged again for each managed request.",
+								term: t("creditPurchase"),
+								value: t("creditTopUpValue", { feePercent: basicTier.feePct.toFixed(0) }),
+								detail: t("creditPurchaseDetails"),
 							},
 							{
 								icon: KeyRound,
-								term: "Bring Your Own Key",
-								value: `${BYOK_MONTHLY_FREE_REQUESTS.toLocaleString("en-US")} requests included, then ${BYOK_SERVICE_FEE_PERCENT}% of provider-equivalent cost`,
-								detail: "Your provider bills model usage directly. The allowance resets at the start of each UTC month.",
+								term: t("bringYourOwnKey"),
+								value: t("byokUsageValue", {
+									freeRequests: BYOK_MONTHLY_FREE_REQUESTS,
+								feePercent: new Intl.NumberFormat(locale, { maximumFractionDigits: 2 }).format(BYOK_SERVICE_FEE_PERCENT),
+								}),
+								detail: t("byokUsageDetails"),
 							},
 						].map((item) => {
 							const Icon = item.icon;
@@ -1117,9 +938,11 @@ export default async function PricingPage() {
 								<div key={item.term} className="flex gap-4 py-5 lg:px-6 lg:first:pl-0 lg:last:pr-0">
 									<Icon className="mt-0.5 h-5 w-5 shrink-0 text-foreground" aria-hidden="true" />
 									<div>
-										<dt className="text-sm font-semibold text-foreground">{item.term}</dt>
-										<dd className="mt-2 text-sm leading-6 text-muted-foreground">
-											<span className="font-medium text-foreground">{item.value}.</span>{" "}
+									<dt className="text-sm font-semibold text-foreground">{item.term}</dt>
+									<dd className="mt-2 text-sm leading-6 text-muted-foreground">
+										<span className="font-medium text-foreground">
+											{item.value}{/[.!?。！？؟۔।]$/u.test(item.value) ? "" : "."}
+										</span>{" "}
 											{item.detail}
 										</dd>
 									</div>
@@ -1145,10 +968,10 @@ export default async function PricingPage() {
 							</colgroup>
 							<thead className="border-b border-zinc-200/70 bg-zinc-50/80 dark:border-zinc-800/70 dark:bg-zinc-900/60">
 								<tr>
-									<th className="px-4 py-3 font-medium text-zinc-700 dark:text-zinc-300">Feature</th>
-									<th className="free-column px-4 py-3 text-center font-medium text-zinc-700 dark:text-zinc-300">Free access</th>
+								<th className="px-4 py-3 font-medium text-zinc-700 dark:text-zinc-300">{t("featureColumn")}</th>
+								<th className="free-column px-4 py-3 text-center font-medium text-zinc-700 dark:text-zinc-300">{t("freeAccessColumn")}</th>
 									<th className="px-4 py-3 text-center font-bold text-foreground">
-										<span className="phaseo-default">Pay As You Go</span>
+										<span className="phaseo-default">{t("payg")}</span>
 										<span className="phaseo-compare hidden">
 											<span className="inline-flex items-center justify-center gap-2">
 												<Image src="/logo_light.svg" alt="" width={20} height={20} className="h-5 w-5 dark:hidden" />
@@ -1157,7 +980,7 @@ export default async function PricingPage() {
 											</span>
 										</span>
 									</th>
-									<th className="enterprise-column px-4 py-3 text-center font-bold text-foreground">Enterprise</th>
+									<th className="enterprise-column px-4 py-3 text-center font-bold text-foreground">{t("matrix.copy.enterprise")}</th>
 									{COMPETITORS.map((competitor) => (
 										<th key={competitor.key} className="competitor-cell hidden px-4 py-3 text-center font-semibold text-foreground">
 											<a href={competitor.href} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 underline decoration-transparent underline-offset-4 hover:decoration-current">
@@ -1170,8 +993,9 @@ export default async function PricingPage() {
 								</tr>
 							</thead>
 							<tbody className="divide-y divide-zinc-200/70 dark:divide-zinc-800/70">
-								{MATRIX_SECTIONS.map((section) => (
-									<Fragment key={section.id}>
+								{MATRIX_SECTIONS.map((section) => {
+									return (
+										<Fragment key={section.id}>
 										<tr
 											className="bg-zinc-50/70 dark:bg-zinc-900/40"
 										>
@@ -1179,39 +1003,45 @@ export default async function PricingPage() {
 												colSpan={4 + COMPETITORS.length}
 												className="px-4 py-3 text-base font-semibold text-foreground"
 											>
-												{section.title}
+												{translatePricingCopy(section.title, translate)}
 											</td>
 										</tr>
-										{section.rows.map((row) => (
-											<tr key={`${section.id}-${row.feature}`} className="h-[72px]">
+										{section.rows.map((row) => {
+											const rowLabel = translatePricingCopy(row.feature, translate);
+											return (
+												<tr key={`${section.id}-${row.feature}`} className="h-[72px]">
 												<td className="px-4 py-3 align-middle text-foreground font-medium">
 													{row.featureHref ? (
 														<Link
-															href={row.featureHref}
+														href={row.featureHref.startsWith("https://phaseo.app/docs/") ? getLocalizedDocsHref(locale, row.featureHref) : row.featureHref}
 															className="underline decoration-transparent underline-offset-4 hover:decoration-current"
 														>
-															{row.feature}
+															{rowLabel}
 														</Link>
 													) : (
-														row.feature
+														rowLabel
 													)}
 												</td>
-										<td className="free-column px-4 py-3 align-middle text-center"><PlanCell cell={row.free} label={`${row.feature}, Free access`} /></td>
-										<td className={`${isBestChoice(row.feature, "phaseo", row.payg) ? "best-cell " : ""}px-4 py-3 align-middle text-center`}>
-											<PlanCell cell={row.payg} label={`${row.feature}, Pay As You Go`} />
-										</td>
-										<td className="enterprise-column px-4 py-3 align-middle text-center">
-											<PlanCell cell={row.enterprise ?? row.payg} label={`${row.feature}, Enterprise`} />
-										</td>
-										{COMPETITORS.map((competitor) => (
-											<td key={competitor.key} className={`${isBestChoice(row.feature, competitor.key, getCompetitorCell(row.feature, competitor.key)) ? "best-cell " : ""}competitor-cell hidden px-4 py-3 align-middle text-center`}>
-												<PlanCell cell={getCompetitorCell(row.feature, competitor.key)} label={`${row.feature}, ${competitor.name}`} />
+												<td className="free-column px-4 py-3 align-middle text-center">
+													<PlanCell cell={row.free} label={translate("matrix.cellLabel", { feature: rowLabel, plan: t("freeAccessColumn") })} translate={translate} values={faqMessageValues} localizeContent />
+												</td>
+											<td className={`${isBestChoice(row.feature, "phaseo", row.payg) ? "best-cell " : ""}px-4 py-3 align-middle text-center`}>
+												<PlanCell cell={row.payg} label={translate("matrix.cellLabel", { feature: rowLabel, plan: t("payg") })} translate={translate} values={faqMessageValues} localizeContent />
 											</td>
-										))}
-											</tr>
-										))}
-									</Fragment>
-								))}
+											<td className="enterprise-column px-4 py-3 align-middle text-center">
+													<PlanCell cell={row.enterprise ?? row.payg} label={translate("matrix.cellLabel", { feature: rowLabel, plan: t("matrix.copy.enterprise") })} translate={translate} values={faqMessageValues} localizeContent />
+											</td>
+											{COMPETITORS.map((competitor) => (
+												<td key={competitor.key} className={`${isBestChoice(row.feature, competitor.key, getCompetitorCell(row.feature, competitor.key)) ? "best-cell " : ""}competitor-cell hidden px-4 py-3 align-middle text-center`}>
+												<PlanCell cell={getCompetitorCell(row.feature, competitor.key)} label={translate("matrix.cellLabel", { feature: rowLabel, plan: competitor.name })} translate={translate} values={faqMessageValues} localizeContent />
+												</td>
+											))}
+												</tr>
+											);
+										})}
+										</Fragment>
+									);
+								})}
 							</tbody>
 						</table>
 					</PricingComparisonShell>
@@ -1233,14 +1063,16 @@ export default async function PricingPage() {
 						{FAQ_SECTIONS.map((section) => (
 							<div key={section.id} className="space-y-2">
 								<h3 className="text-base font-semibold text-zinc-700 dark:text-zinc-200">
-									{section.title}
+									{translate(`faq.sectionTitles.${section.id}`)}
 								</h3>
 								<Accordion type="single" collapsible>
 									{section.items.map((item) => (
 										<AccordionItem key={item.id} value={`${section.id}-${item.id}`}>
-											<AccordionTrigger>{item.question}</AccordionTrigger>
+											<AccordionTrigger>
+												{translate(`faq.questions.${item.id}`, faqMessageValues)}
+											</AccordionTrigger>
 											<AccordionContent className="text-muted-foreground leading-6">
-												{item.answer}
+												{translate(`faq.answers.${item.id}`, faqMessageValues)}
 											</AccordionContent>
 										</AccordionItem>
 									))}

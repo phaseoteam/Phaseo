@@ -1,0 +1,39 @@
+---
+icon: "sparkles"
+title: "Antworten"
+description: "Rufe /responses mit dem Go-Wrapper auf."
+---
+
+Verwende die Wrapper-Methode:
+
+- `client.GenerateResponse(ctx, req)`
+
+```go
+import (
+  "context"
+  "fmt"
+  phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v2"
+)
+
+client := phaseo.New(apiKey, "https://api.phaseo.app/v1")
+input := map[string]interface{}{
+  "role": "user",
+  "content": []map[string]interface{}{
+    {
+      "type": "input_text",
+      "text": "Reply with: responses endpoint works",
+    },
+  },
+}
+resp, err := client.GenerateResponse(context.Background(), phaseo.ResponsesRequest{
+  Model: "openai/gpt-5-nano",
+  Input: &input,
+})
+if err != nil {
+  panic(err)
+}
+
+fmt.Println(resp)
+```
+
+Der Wrapper bietet noch keine eigene Streaming-Hilfsfunktion.

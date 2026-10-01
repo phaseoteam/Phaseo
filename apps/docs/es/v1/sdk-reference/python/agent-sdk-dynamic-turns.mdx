@@ -1,0 +1,19 @@
+---
+icon: "shuffle"
+title: "Turnos dinámicos"
+description: "Cambia la configuración del modelo y las herramientas de Python entre turnos del agente."
+---
+
+El modelo, los modelos alternativos, las instrucciones, la temperatura, el máximo de tokens de salida, top-p y las herramientas pueden ser valores fijos o callbacks que se evalúan en cada turno.
+
+Usa `runtime.set_context(value)` cuando una herramienta obtenga información que se necesite más adelante. Usa `next_turn_params` para una anulación que solo se aplique a la solicitud de modelo inmediatamente posterior.
+
+Las anulaciones del siguiente turno se guardan junto con el estado pausado, de modo que un punto de control de aprobación no descarta la decisión de enrutamiento o muestreo.
+
+Mantén el contexto serializable al usar `AgentStateAccessor`.
+
+## Relacionado
+
+- [Herramientas](./agent-sdk-tools.mdx)
+- [Estado y aprobación](./agent-sdk-state-and-approval.mdx)
+- [Condiciones de parada](./agent-sdk-stop-conditions.mdx)

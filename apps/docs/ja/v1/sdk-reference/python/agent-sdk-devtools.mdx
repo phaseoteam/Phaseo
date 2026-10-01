@@ -1,0 +1,18 @@
+---
+icon: "chart-spline"
+title: "開発ツール"
+description: "開発やデバッグ用に、Python Agent SDK の実行をローカルに記録します。"
+---
+
+ローカルの JSONL 記録を有効にするには `create_agent_devtools(...)` に渡します `run(...)`, `stream(...)`, or continuation.
+
+記録には状態、所要時間、モデルやプロバイダーの詳細、リクエスト ID、メッセージ、ステップ、ツールの動作、使用量、コスト、構造化エラーが含まれます。
+
+<Warning>
+エージェントの入力、コンテキスト、ツールの結果には機密データが含まれる場合があります。DevTools の出力をソース管理や本番用イメージに含めないでください。
+</Warning>
+
+## 関連ページ
+
+- [ライフサイクルフック](./agent-sdk-lifecycle-hooks.mdx)
+- [エラーとトラブルシューティング](./agent-sdk-observability.mdx)

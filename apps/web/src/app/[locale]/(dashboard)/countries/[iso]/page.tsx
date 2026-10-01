@@ -12,8 +12,10 @@ import {
 	formatCountryDate,
 } from "@/components/(data)/countries/utils";
 import { fetchFrontendCountry } from "@/lib/fetchers/frontend/fetchPublicCatalog";
-import { buildMetadata } from "@/lib/seo";
+import { buildLocalizedPageMetadata } from "@/lib/auth/localized-metadata";
 import { notFound } from "next/navigation";
+import { getTranslations } from "next-intl/server";
+import type { PublicLocale } from "@/i18n/routing";
 
 async function loadCountry(isoInput: string) {
 	const iso = normaliseIso(isoInput);
@@ -23,9 +25,10 @@ async function loadCountry(isoInput: string) {
 export async function generateMetadata({
 	params,
 }: {
-	params: Promise<{ iso: string }>;
+	params: Promise<{ iso: string; locale: PublicLocale }>;
 }): Promise<Metadata> {
-	const { iso: isoParamRaw } = await params;
+	const { iso: isoParamRaw, locale } = await params;
+	const t = await getTranslations({ locale, namespace: "Catalogue.countryDetail" });
 	const isoParam = normaliseIso(isoParamRaw);
 	const country = await loadCountry(isoParam);
 	const pathIso = isoParam.toLowerCase();
@@ -33,35 +36,24 @@ export async function generateMetadata({
 	const imagePath = `/og/countries/${pathIso}`;
 
 	if (!country) {
-		return buildMetadata({
-			title: `${isoParam || "Unknown"} - AI Country View`,
-			description:
-				"This country view is still filling in. As Phaseo expands coverage, this page will include local organisations, model catalogues, provider footprints, and release activity trends.",
-			path,
-			keywords: [
-				"Phaseo",
-				"countries",
-				"AI country view",
-				"AI organisations",
-			],
+		return buildLocalizedPageMetadata({
+			locale,
+			pathname: path,
+			title: t("metadataUnknownTitle", { country: isoParam || t("unknownCountry") }),
+			description: t("metadataUnknownDescription"),
+			keywords: ["Phaseo", t("metadataCountryKeyword"), t("metadataAiCountryKeyword"), t("metadataOrganisationsKeyword")],
 			imagePath,
 		});
 	}
 
 	const countryName = country.countryName;
 
-	return buildMetadata({
-		title: `${countryName} AI Models`,
-		description: `Explore AI organisations and models tracked in ${countryName} on Phaseo. See which providers and model families originate from this country and how its AI ecosystem is evolving.`,
-		path,
-		keywords: [
-			"Phaseo",
-			"countries",
-			countryName,
-			`AI in ${countryName}`,
-			"AI organisations",
-			"AI models",
-		],
+	return buildLocalizedPageMetadata({
+		locale,
+		pathname: path,
+		title: t("metadataCountryTitle", { country: countryName }),
+		description: t("metadataCountryDescription", { country: countryName }),
+		keywords: ["Phaseo", countryName, t("metadataCountryKeyword"), t("metadataOrganisationsKeyword"), t("metadataAiModelsKeyword")],
 		imagePath,
 	});
 }
@@ -69,22 +61,15 @@ export async function generateMetadata({
 export default async function CountryDetailPage({
 	params,
 }: {
-	params: Promise<{ iso: string }>;
+	params: Promise<{ iso: string; locale: PublicLocale }>;
 }) {
-	const { iso: isoParamRaw } = await params;
+	const { iso: isoParamRaw, locale } = await params;
+	const t = await getTranslations({ locale, namespace: "Catalogue.countryDetail" });
 	const iso = normaliseIso(isoParamRaw);
 	const country = await loadCountry(iso);
 
 	if (!country) {
-		notFound();
-		return (
-			<CountryDetailShell iso={iso} country={undefined}>
-				<div className="rounded-2xl border border-dashed border-zinc-300 bg-white/70 p-6 text-sm text-muted-foreground dark:border-zinc-700 dark:bg-zinc-900/70">
-					We do not yet have organisations or models mapped to this
-					country. Check back soon as we expand coverage.
-				</div>
-			</CountryDetailShell>
-		);
+		return notFound();
 	}
 
 	const organisationEntries = country.organisations;
@@ -94,7 +79,7 @@ export default async function CountryDetailPage({
 	const latestAccent = latestModel?.organisation_colour ?? "hsl(222 89% 53%)";
 
 	return (
-		<CountryDetailShell iso={iso} country={country} tocItems={[{ id: "overview", label: "Overview" }, { id: "latest-releases", label: "Latest Releases" }, { id: "organisations", label: "Organisations" }, { id: "models", label: "Models" }]}>
+		<CountryDetailShell iso={iso} country={country} tocItems={[{ id: "overview", label: t("overview") }, { id: "latest-releases", label: t("latestReleases") }, { id: "organisations", label: t("organisations") }, { id: "models", label: t("models") }]}>
 			<div className="space-y-10">
 				<section
 					id="overview"
@@ -103,7 +88,7 @@ export default async function CountryDetailPage({
 					<div className="flex flex-col border-b border-border/70 px-4 py-5 md:border-b-0">
 						<div className="flex items-center justify-between">
 							<p className="text-sm font-semibold text-muted-foreground">
-								Active organisations
+								{t("activeOrganisations")}
 							</p>
 						</div>
 						<p className="mt-1 text-3xl font-semibold text-zinc-950 dark:text-zinc-50">
@@ -113,7 +98,7 @@ export default async function CountryDetailPage({
 					<div className="flex flex-col border-b border-border/70 px-4 py-5 md:border-b-0">
 						<div className="flex items-center justify-between">
 							<p className="text-sm font-semibold text-muted-foreground">
-								Models tracked
+								{t("modelsTracked")}
 							</p>
 						</div>
 						<p className="mt-1 text-3xl font-semibold text-zinc-950 dark:text-zinc-50">
@@ -126,11 +111,11 @@ export default async function CountryDetailPage({
 								className="text-sm font-semibold"
 								style={{ color: latestAccent }}
 							>
-								Latest model
+								{t("latestModel")}
 							</p>
 							{latestModel?.primary_date ? (
 								<p className="text-xs text-muted-foreground">
-									{formatCountryDate(latestModel.primary_date)}
+									{formatCountryDate(latestModel.primary_date, locale, t("unknownValue"))}
 								</p>
 							) : null}
 						</div>
@@ -148,7 +133,7 @@ export default async function CountryDetailPage({
 												id={latestModel.organisation_id}
 												alt={
 													latestModel.organisation_name ??
-													"Organisation logo"
+													t("organisationLogoAlt")
 												}
 												className="object-contain"
 												width={30}
@@ -172,7 +157,7 @@ export default async function CountryDetailPage({
 											>
 												<span className="relative underline decoration-transparent hover:decoration-current transition-colors duration-200">
 													{latestModel.organisation_name ??
-														"Unknown organisation"}
+														t("unknownOrganisation")}
 												</span>
 											</Link>
 										)}
@@ -181,7 +166,7 @@ export default async function CountryDetailPage({
 							</div>
 						) : (
 							<p className="mt-2 text-sm text-muted-foreground">
-								No latest model tracked yet.
+								{t("noLatestModel")}
 							</p>
 						)}
 					</div>
@@ -189,15 +174,13 @@ export default async function CountryDetailPage({
 
 				<section id="latest-releases" className="scroll-mt-36 space-y-4">
 					<h2 className="text-xl font-semibold text-zinc-950 dark:text-zinc-50">
-						Latest releases from {country.countryName}
+						{t("latestReleasesFrom", { country: country.countryName })}
 					</h2>
 					{modelsToShow.length ? (
 						<div className="space-y-4">
 							{Array.from(
 								modelsToShow.reduce((map, model) => {
-									const label = formatCountryDate(
-										model.primary_date
-									);
+									const label = formatCountryDate(model.primary_date, locale, t("unknownValue"));
 									if (!map.has(label)) map.set(label, []);
 									map.get(label)!.push(model);
 									return map;
@@ -220,8 +203,7 @@ export default async function CountryDetailPage({
 						</div>
 					) : (
 						<p className="text-sm text-muted-foreground">
-							No models have been mapped to {country.countryName}{" "}
-							yet.
+							{t("noModelsMappedToCountry", { country: country.countryName })}
 						</p>
 					)}
 				</section>
@@ -229,7 +211,7 @@ export default async function CountryDetailPage({
 				<section id="organisations" className="scroll-mt-36 space-y-4">
 					<div className="flex items-center justify-between">
 						<h2 className="text-xl font-semibold text-zinc-950 dark:text-zinc-50">
-							Organisations From {country.countryName}
+							{t("organisationsFrom", { country: country.countryName })}
 						</h2>
 					</div>
 					{organisationEntries.length ? (
@@ -243,8 +225,7 @@ export default async function CountryDetailPage({
 						</div>
 					) : (
 						<p className="text-sm text-muted-foreground">
-							No organisations have been mapped to{" "}
-							{country.countryName} yet.
+							{t("noOrganisationsMappedToCountry", { country: country.countryName })}
 						</p>
 					)}
 				</section>
@@ -252,10 +233,10 @@ export default async function CountryDetailPage({
 				<section id="models" className="scroll-mt-36 space-y-4 border-t border-border pt-10">
 					<div className="space-y-1">
 						<h2 className="text-xl font-semibold text-zinc-950 dark:text-zinc-50">
-							Models From {country.countryName}
+							{t("modelsFrom", { country: country.countryName })}
 						</h2>
 						<p className="text-sm text-muted-foreground">
-							Browse the complete catalogue, grouped by organisation.
+							{t("browseCatalogue")}
 						</p>
 					</div>
 					<CountryModelsSection models={models} />

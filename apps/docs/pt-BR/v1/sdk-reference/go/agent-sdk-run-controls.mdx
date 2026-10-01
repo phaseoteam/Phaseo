@@ -1,0 +1,41 @@
+---
+icon: "rotate"
+title: "Saídas e novas tentativas"
+description: "Valide saídas finais, repita solicitações ao modelo e inspecione execuções concluídas em Go."
+---
+
+Valide a saída para manter o valor retornado pelo agente dentro do contrato esperado pela aplicação. As novas tentativas do modelo se aplicam a solicitações com falha; as tentativas de ferramentas devem ser explícitas na implementação e usadas somente quando forem seguras.
+
+## Configurar novas tentativas do modelo
+
+```go
+agent := phaseoagent.CreateAgent(phaseoagent.AgentDefinition{
+  ID: "research-agent",
+  Model: "openai/gpt-5.4-nano",
+  ModelRetry: phaseoagent.ModelRetryConfig{
+    MaxRetries: 3,
+    BaseDelay:  500 * time.Millisecond,
+    MaxDelay:   4 * time.Second,
+  },
+})
+```
+
+O registro da execução preserva o número de tentativas do modelo em cada etapa. Uma nova tentativa não descarta os resultados de ferramentas já concluídas.
+
+## Validar o resultado final
+
+Defina `OutputSchema` em `AgentDefinition` quando o código seguinte exigir um resultado estruturado. A validação ocorre antes de o resultado ser marcado como concluído; assim, uma saída inválida falha no limite do agente, e não mais tarde na aplicação.
+
+## Inspecionar o resultado
+
+```go
+result, err := agent.Run(ctx, phaseoagent.RunOptions{Input: prompt, Client: client})
+if err != nil { return err }
+
+fmt.Println(result.Output)
+fmt.Println(result.Run.Status)
+fmt.Println(result.Usage.TotalTokens)
+fmt.Println(result.Usage.Cost)
+```
+
+Use [condições de parada](./agent-sdk-stop-conditions.mdx) para impor orçamentos e limites rígidos, e [erros e solução de problemas](./agent-sdk-observability.mdx) para lidar com falhas.

@@ -14,6 +14,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { useLocale, useTranslations } from "next-intl";
 import { ChevronDownIcon } from "lucide-react";
 import type { ComponentProps, ReactNode } from "react";
 import { createContext, useContext, useEffect, useState } from "react";
@@ -132,6 +133,7 @@ export const WebPreviewUrl = ({
   onKeyDown,
   ...props
 }: WebPreviewUrlProps) => {
+  const t = useTranslations("Product.chatRooms.aiElements");
   const { url, setUrl } = useWebPreview();
   const [inputValue, setInputValue] = useState(url);
 
@@ -158,7 +160,7 @@ export const WebPreviewUrl = ({
       className="h-8 flex-1 text-sm"
       onChange={onChange ?? handleChange}
       onKeyDown={handleKeyDown}
-      placeholder="Enter URL..."
+      placeholder={t("enterUrl")}
       value={value ?? inputValue}
       {...props}
     />
@@ -185,6 +187,7 @@ export const WebPreviewBody = ({
   src,
   ...props
 }: WebPreviewBodyProps) => {
+  const t = useTranslations("Product.chatRooms.aiElements");
   const { url } = useWebPreview();
   const previewUrl = normalizeWebPreviewUrl(src ?? url);
 
@@ -195,7 +198,7 @@ export const WebPreviewBody = ({
         referrerPolicy="no-referrer"
         sandbox="allow-scripts allow-forms allow-popups allow-presentation"
         src={previewUrl}
-        title="Preview"
+        title={t("preview")}
         {...props}
       />
       {loading}
@@ -217,6 +220,8 @@ export const WebPreviewConsole = ({
   children,
   ...props
 }: WebPreviewConsoleProps) => {
+  const locale = useLocale();
+  const t = useTranslations("Product.chatRooms.aiElements");
   const { consoleOpen, setConsoleOpen } = useWebPreview();
 
   return (
@@ -231,7 +236,7 @@ export const WebPreviewConsole = ({
           className="flex w-full items-center justify-between p-4 text-left font-medium hover:bg-neutral-100/50 dark:hover:bg-neutral-800/50"
           variant="ghost"
         >
-          Console
+          {t("console")}
           <ChevronDownIcon
             className={cn(
               "h-4 w-4 transition-transform duration-200",
@@ -248,7 +253,7 @@ export const WebPreviewConsole = ({
       >
         <div className="max-h-48 space-y-1 overflow-y-auto">
           {logs.length === 0 ? (
-            <p className="text-neutral-500 dark:text-neutral-400">No console output</p>
+            <p className="text-neutral-500 dark:text-neutral-400">{t("noConsoleOutput")}</p>
           ) : (
             logs.map((log, index) => (
               <div
@@ -261,7 +266,7 @@ export const WebPreviewConsole = ({
                 key={`${log.timestamp.getTime()}-${index}`}
               >
                 <span className="text-neutral-500 dark:text-neutral-400">
-                  {log.timestamp.toLocaleTimeString()}
+                  {log.timestamp.toLocaleTimeString(locale)}
                 </span>{""}
                 {log.message}
               </div>

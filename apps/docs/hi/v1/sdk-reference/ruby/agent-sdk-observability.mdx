@@ -1,0 +1,23 @@
+---
+icon: "triangle-alert"
+title: "त्रुटियाँ और समस्या निवारण"
+description: "Ruby एजेंट में model, tool, validation, timeout और continuation failures संभालें।"
+---
+
+Agent की विफलता आम तौर पर model request, स्थानीय tool, schema validation, timeout या अधूरे मानवीय निर्णय से होती है।
+
+## टूल की त्रुटि से उबरना
+
+जब मॉडल tool error से उबर सकता हो, तो `on_error: "return-to-model"` सेट करें। error tool result बन जाता है और agent दूसरी कार्रवाई चुन सकता है। असुरक्षित या recover न हो सकने वाले कामों के लिए fail-run व्यवहार रखें।
+
+## Ruby का निष्पादन समझें
+
+Ruby सामान्य synchronous iteration से model stream consume करता है। network और process tools पर स्पष्ट timeout रखें और धीमे persistence काम से lifecycle callback को block न करें।
+
+## आगे जारी रखने के दौरान आई त्रुटियों की जाँच करें
+
+हर pending call के लिए tool-call ID से जुड़ा approval, rejection या बाहर से दिया गया output चाहिए। approval UI दिखाने से पहले लौटाई गई पूरी run state सहेजें।
+
+## उपयोगी फ़ील्ड लॉग करें
+
+रन ID, चरण इंडेक्स, अनुरोध ID, प्रदाता, मॉडल, समाप्ति कारण, टूल-कॉल ID और रुकने का कारण दर्ज करें। कच्चे प्रॉम्प्ट लॉग करने के बजाय जीवनचक्र हुक या DevTools का उपयोग करें।

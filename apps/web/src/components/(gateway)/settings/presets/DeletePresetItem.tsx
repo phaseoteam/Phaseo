@@ -76,8 +76,7 @@ export default function DeletePresetItem({ p, open: controlledOpen, onOpenChange
 				<form onSubmit={onDelete} className="space-y-4">
 					<div className="space-y-2">
 						<p className="text-sm">
-							{t("strings.To confirm, type the preset name" as never)}{" "}
-							<strong>{p.name}</strong> below.
+							{t("settingsPageCopy.confirmPresetName" as never, { name: p.name } as never)}
 						</p>
 						<Input
 							value={confirm}

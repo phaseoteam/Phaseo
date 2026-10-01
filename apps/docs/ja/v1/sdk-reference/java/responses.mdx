@@ -1,0 +1,31 @@
+---
+icon: "sparkles"
+title: "応答"
+description: "Java SDKで `/responses` を呼び出します。"
+---
+
+**メソッド**: `client.createResponse(...)`
+
+```java
+import app.phaseo.sdk.Phaseo;
+
+Phaseo client = new Phaseo(System.getenv("PHASEO_API_KEY"));
+
+String body = """
+{
+  "model": "openai/gpt-5-nano",
+  "input": [
+    {
+      "role": "user",
+      "content": [
+        { "type": "input_text", "text": "Reply with: java sdk works" }
+      ]
+    }
+  ]
+}
+""";
+
+Object response = client.createResponse(body);
+System.out.println(String.valueOf(response));
+```
+

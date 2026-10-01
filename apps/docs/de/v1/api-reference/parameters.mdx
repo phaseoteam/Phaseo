@@ -1,0 +1,621 @@
+---
+title: "Parameter"
+description: "Feldgenaue Referenz der Phaseo-Anfrageparameter für Text, Routing und Debugging."
+icon: "sliders-horizontal"
+---
+
+Diese Seite ist die feldgenaue Referenz der von Phaseo bereitgestellten Anfrageparameter.
+
+Nutze diese Seite, wenn du wissen möchtest:
+
+- was ein Parameter bewirkt
+- welchen Typ er erwartet
+- den üblichen Bereich oder zulässige Werte
+- ob er Qualität, Kosten, Latenz oder Routing beeinflusst
+
+Wenn du Tipps zur Abstimmung statt Felddefinitionen suchst, findest du sie unter [Inferenzparameter](../guides/inference-parameters.mdx) und [Sampling und Decoding](../guides/sampling-and-decoding.mdx).
+
+Die Parameterunterstützung variiert weiterhin je nach Endpunkt, Modell und Anbieter. Die Schnellstarttabelle des Modells fasst die Unterstützung der aktuell aktiven Anbieter für eine bestimmte Route zusammen.
+
+## Schnellübersicht
+
+| Parameter | Typ | Zweck |
+| --- | --- | --- |
+| [`model`](#model) | `string` | Auswahl der auszuführenden Gateway-Modell-ID. |
+| [`stream`](#stream) | `boolean` | Schrittweise SSE-Ausgabe statt einer einzelnen vollständigen Antwort. |
+| [`temperature`](#temperature) | `number` | Zufälligkeit erhöhen oder verringern. |
+| [`top_p`](#top_p) | `number` | Den Pool für Nucleus Sampling verkleinern oder erweitern. |
+| [`top_k`](#top_k) | `integer` | Sampling auf die k wahrscheinlichsten Token-Kandidaten beschränken. |
+| [`max_tokens`](#max_tokens) | `integer` |Ausgabelänge auf Routen begrenzen, die noch diesen Feldnamen verwenden. |
+| [`max_output_tokens`](#max_output_tokens) | `integer` | Ausgabelänge auf Routen begrenzen, die den neueren Feldnamen verwenden. |
+| [`max_completion_tokens`](#max_completion_tokens) | `integer` | Ausgabelänge bei neueren OpenAI-artigen Text-APIs begrenzen. |
+| [`frequency_penalty`](#frequency_penalty) | `number` | Wiederholte Tokens und Formulierungen unterbinden. |
+| [`presence_penalty`](#presence_penalty) | `number` | Themen- oder Wortschatzwechsel fördern. |
+| [`repetition_penalty`](#repetition_penalty) | `number` | Anbieterspezifische Wiederholungskontrolle. |
+| [`seed`](#seed) | `integer` | Reproduzierbarkeit verbessern, sofern der Upstream-Anbieter dies unterstützt. |
+| [`stop`](#stop) | `string` or `string[]` | Explizite Stoppsequenzen festlegen. |
+| [`logprobs`](#logprobs) / [`top_logprobs`](#top_logprobs) | `boolean` / `integer` | Token-Wahrscheinlichkeitsdaten anfordern. |
+| [`tools`](#tools), [`tool_choice`](#tool_choice) | `array`, `string`, `object` | Steuerung von Tool-Aufrufen und Funktionsausführung. |
+| [`parallel_tool_calls`](#parallel_tool_calls) | `boolean` | Sequenzielle Tool-Ausführung erlauben oder erzwingen. |
+| [`response_format`](#response_format) | `string` or `object` | Klartext-, JSON- oder schema-konforme Ausgabe. |
+| [`json_schema`](#json_schema) | `object` | Das Schema für strukturierte Ausgaben festlegen. |
+| [`structured_outputs`](#structured_outputs) | `boolean` | Fähigkeitssignal für zuverlässige schema-konforme Ausgaben. |
+| [`reasoning`](#reasoning) | `object` | Anbieterspezifische Reasoning-Konfiguration. |
+| [`reasoning_effort`](#reasoning_effort) | `string` | Reasoning-Budget verringern oder erhöhen. |
+| [`reasoning_tokens`](#reasoning_tokens) | `integer` | Reasoning-spezifisches Token-Limit oder Abrechnungsfeld. |
+| [`include_reasoning`](#include_reasoning) | `boolean` | Reasoning-Inhalte oder Zusammenfassungen zurückgeben, sofern unterstützt. |
+| [`service_tier`](#service_tier) | `string` | Eine unterstützte Anfrage-Stufe wie `priority` oder `flex` auswählen; OpenAI akzeptiert außerdem `fast` als Alias. |
+| [`prompt_cache_key`](#prompt_cache_key) | `string` | Cache-bewusstes Routing für zusammengehörige Anfragen beibehalten. |
+| [`cache_control`](#cache_control) | `object` | Anbieterneutrale Prompt-Cache-Hinweise oder Trennpunkte anwenden. |
+| [`prompt_cache_retention`](#prompt_cache_retention) | `string` | Die OpenAI-kompatible Aufbewahrungsdauer des Prompt-Caches festlegen. |
+| [`provider`](#provider) | `object` | Routing und Anbieterauswahl beeinflussen. |
+| [`provider_options`](#provider_options) | `object` | Anbietereigene Einstellungen durch das Gateway weitergeben. |
+| [`meta`](#meta) / [`usage`](#usage) | `boolean` | Zusätzliche Metadaten oder Nutzungsdaten in der Antwort zurückgeben. |
+| [`debug`](#debug) | `object` | Routing-Traces und Diagnose-Payloads anfordern. |
+
+## Hinweise zu Endpunkten
+
+`service_tier` wird auf den wichtigsten Textanfrage-Schnittstellen unterstützt:
+
+- [Anthropic Messages](./endpoint/anthropic-messages.mdx)
+- [Chat Completions](./endpoint/chat-completions.mdx)
+- [Responses](./endpoint/responses.mdx)
+
+Verwende `priority` oder `flex` nur, wenn die ausgewählte Modell-Anbieter-Kombination sie unterstützt. Phaseo behält `priority` als kanonische Premiumstufe bei; OpenAI-Routen akzeptieren außerdem `fast` als Alias. Wird `service_tier` ausgelassen, gilt `standard`.
+
+`Batch` ist kein Wert für `service_tier`. Batch-Anfragen verwenden die separate Batch-API.
+
+Bei Anthropic-kompatiblen Messages-Anfragen lauten die nativen Upstream-Werte von Anthropic `auto` und `standard_only`. Phaseo kann diese Werte anbieterübergreifend normalisieren oder zuordnen und dabei das Anthropic-kompatible Verhalten unter `/v1/messages` beibehalten.
+
+Wenn du ein offizielles Anthropic-SDK mit einer benutzerdefinierten Basis-URL für Phaseo verwendest, solltest du unter `/v1/messages` die nativen Anthropic-Werte nutzen. Für normalisierte, anbieterübergreifende Stufen wie `priority` und `flex` oder OpenAIs Alias `fast` eignen sich rohe HTTP-Anfragen oder die gateway-eigenen bzw. OpenAI-artigen Text-APIs besser.
+
+## Parameterreferenz
+
+<span id="model"></span>
+<h3 id="parameter-model"><code>model</code></h3>
+
+Wählt die Gateway-Modell-ID für die Anfrage aus.
+
+| Feld | Wert |
+| --- | --- |
+| Typ | `string` |
+| Erforderlich | Ja |
+| Beispiel | `openai/gpt-5-nano` |
+
+Verwende die kanonische Modell-ID aus dem Schnellstart der jeweiligen Modellseite, es sei denn, du möchtest bewusst einen unterstützten Alias nutzen. Kanonische IDs sind die sicherste Wahl für Beispiele, Automatisierung und langfristige Integrationen.
+
+<span id="stream"></span>
+<h3 id="parameter-stream"><code>stream</code></h3>
+
+Gibt die Ausgabe schrittweise über Server-Sent Events zurück, statt auf einen einzelnen Antworttext zu warten.
+
+| Feld | Wert |
+| --- | --- |
+| Typ | `boolean` |
+| Standard | `false` |
+| Übliche Werte | `true`, `false` |
+
+Aktiviere die Option für Chat-Oberflächen, die Token-für-Token-Anzeige oder lange Antworten, bei denen eine frühe Ausgabe die Nutzererfahrung verbessert. Deaktiviere sie, wenn du eine vollständige JSON-Antwort, einfachere Wiederholungen oder eine leichtere strukturierte Analyse bevorzugst.
+
+Hinweise:
+
+Die Streaming-Unterstützung variiert je nach Endpunkt.
+Streaming ist normalerweise eine Transportoption und keine Qualitätssteuerung.
+Tool-Aufrufe und strukturierte Ausgaben können je nach Anbieter unterschiedlich gestreamt werden.
+
+<span id="temperature"></span>
+<h3 id="parameter-temperature"><code>temperature</code></h3>
+
+Steuert, wie zufällig Tokens ausgewählt werden.
+
+| Feld | Wert |
+| --- | --- |
+| Typ | `number` |
+| Üblicher Bereich | `0.0` bis `2.0`, sofern unterstützt |
+| Standard | Anbieter- und modellspezifisch |
+| Guter Ausgangspunkt | `0.2` to `0.7` |
+
+Niedrige Werte führen zu konservativeren und reproduzierbareren Ausgaben. Höhere Werte sorgen für mehr Abwechslung, was beim Brainstorming oder kreativen Schreiben helfen kann, aber auch die Konsistenz und Schemaeinhaltung verringern kann.
+
+Geeignete Anwendungsfälle:
+
+- Extraktion
+- Klassifizierung
+- JSON- oder Schemaausgabe
+- Kreative Generierung
+
+Praktische Hinweise:
+
+Beginne bei strukturierten Aufgaben mit einem niedrigen Wert.
+Ändere zuerst `temperature` oder `top_p`, nicht beide gleichzeitig.
+Hohe Temperatur kann zusammen mit aggressiver Quantisierung die Instabilität verstärken.
+
+<span id="top_p"></span>
+<h3 id="parameter-top_p"><code>top_p</code></h3>
+
+Wendet Nucleus Sampling an, indem die Kandidaten auf die kleinste Tokenmenge begrenzt werden, deren kumulierte Wahrscheinlichkeit `top_p` erreicht.
+
+| Feld | Wert |
+| --- | --- |
+| Typ | `number` |
+| Üblicher Bereich | `0.0` bis `1.0`, sofern unterstützt |
+| Standard | Anbieter- und modellspezifisch |
+| Guter Ausgangspunkt | `0.9` to `1.0` |
+
+Niedrige Werte beschränken die Wahrscheinlichkeitsmasse, aus der das Modell auswählt, und führen meist zu sichereren und gezielteren Ausgaben. Höhere Werte lassen mehr Tokens zu.
+
+Hinweise:
+
+Passe `top_p` an, wenn du den Suchraum verkleinern oder vergrößern möchtest, ohne die Temperatur direkt zu ändern.
+Für die meisten Anwendungen sind eine moderate `temperature` und ein `top_p` nahe 1,0 ein sinnvoller Ausgangspunkt.
+
+<span id="top_k"></span>
+<h3 id="parameter-top_k"><code>top_k</code></h3>
+
+Begrenzt bei unterstützenden Anbietern das Sampling in jedem Schritt auf die k wahrscheinlichsten Token-Kandidaten.
+
+| Feld | Wert |
+| --- | --- |
+| Typ | `integer` |
+| Üblicher Bereich | `>= 1`, sofern unterstützt |
+| Standard | Anbieter- und modellspezifisch |
+
+Niedrige `top_k`-Werte schränken die Auswahl des Modells ein und können die Ausgabe vorhersehbarer machen. Höhere Werte erweitern den Kandidatenpool.
+
+Hinweise:
+
+`top_k` ist nicht bei allen Anbietern verfügbar.
+Betrachte es als eine explizitere Begrenzung des Token-Pools als `top_p`.
+
+<span id="max_tokens"></span>
+<h3 id="parameter-max_tokens"><code>max_tokens</code></h3>
+
+Begrenzt die Ausgabelänge bei Endpunkten und Anbietern, die noch das Feld `max_tokens` verwenden.
+
+| Feld | Wert |
+| --- | --- |
+| Typ | `integer` |
+| Üblicher Bereich | `>= 1` |
+| Standard | Anbieter- und modellspezifisch |
+
+Nutze den Wert, um Kosten, Latenz und das Risiko abgeschnittener Ausgaben zu steuern. Ist er zu niedrig, kann die Ausgabe unvollständig wirken, obwohl das Modell korrekt gearbeitet hat.
+
+<span id="max_output_tokens"></span>
+<h3 id="parameter-max_output_tokens"><code>max_output_tokens</code></h3>
+
+Begrenzt die Ausgabelänge auf Routen, die `max_output_tokens` statt `max_tokens` verwenden.
+
+| Feld | Wert |
+| --- | --- |
+| Typ | `integer` |
+| Üblicher Bereich | `>= 1` |
+| Standard | Anbieter- und modellspezifisch |
+
+Dieser Regler entspricht semantisch `max_tokens`. Du solltest aber den Feldnamen senden, den der ausgewählte Endpunkt oder die SDK-Schnittstelle erwartet.
+
+<span id="max_completion_tokens"></span>
+<h3 id="parameter-max_completion_tokens"><code>max_completion_tokens</code></h3>
+
+Begrenzt die Ausgabelänge bei neueren OpenAI-artigen Text-APIs, die `max_completion_tokens` verwenden.
+
+| Feld | Wert |
+| --- | --- |
+| Typ | `integer` |
+| Üblicher Bereich | `>= 1` |
+| Standard | Anbieter- und modellspezifisch |
+
+Dies ist ein weiteres Feld für das Ausgabetoken-Limit. Verwende den vom Endpunkt erwarteten Namen, statt mehrere Aliase für die Ausgabelänge in einer Anfrage zu mischen.
+
+<span id="frequency_penalty"></span>
+<h3 id="parameter-frequency_penalty"><code>frequency_penalty</code></h3>
+
+Verringert die Wahrscheinlichkeit wiederholter Tokens proportional dazu, wie oft sie bereits vorgekommen sind.
+
+| Feld | Wert |
+| --- | --- |
+| Typ | `number` |
+| Üblicher Bereich | Üblicherweise `-2.0` bis `2.0`, sofern unterstützt |
+| Standard | Üblicherweise `0` |
+
+Erhöhe den Wert, wenn das Modell in Schleifen gerät, Sätze wiederholt oder dieselben Formulierungen zu oft verwendet.
+
+<span id="presence_penalty"></span>
+<h3 id="parameter-presence_penalty"><code>presence_penalty</code></h3>
+
+Verringert die Wiederverwendung von Tokens, sobald sie einmal aufgetreten sind. So kann das Modell neue Themen oder Formulierungen erkunden.
+
+| Feld | Wert |
+| --- | --- |
+| Typ | `number` |
+| Üblicher Bereich | Üblicherweise `-2.0` bis `2.0`, sofern unterstützt |
+| Standard | Üblicherweise `0` |
+
+Im Vergleich zu `frequency_penalty` steuert dieser Parameter meist umfassender die Neuartigkeit statt die Anzahl der Wiederholungen.
+
+<span id="repetition_penalty"></span>
+<h3 id="parameter-repetition_penalty"><code>repetition_penalty</code></h3>
+
+Wendet anbieterspezifisches Verhalten zur Wiederholungsvermeidung an, das über die klassischen OpenAI-artigen Penalty-Felder hinausgeht.
+
+| Feld | Wert |
+| --- | --- |
+| Typ | `number` |
+| Üblicher Bereich | Anbieter- und modellspezifisch, oft etwa `0.0` bis `2.0` |
+| Standard | Anbieter- und modellspezifisch |
+
+Die Funktion ähnelt `frequency_penalty` und `presence_penalty`, die Bedeutung variiert jedoch stärker je nach Anbieter. Betrachte den Parameter als anbietereigenes Verhalten und nicht als universell identischen Regler.
+
+<span id="seed"></span>
+<h3 id="parameter-seed"><code>seed</code></h3>
+
+Fordert deterministisches Sampling an, sofern der Upstream-Anbieter die Generierung mit Seed unterstützt.
+
+| Feld | Wert |
+| --- | --- |
+| Typ | `integer` |
+| Standard | Nicht gesetzt |
+
+Nutze den Parameter zum Debugging, für Regressionstests und zur möglichst genauen Reproduktion des Verhaltens im Rahmen der Upstream-Plattform. Generierung mit Seed verbessert die Reproduzierbarkeit, garantiert aber nicht bei allen Anbietern oder Infrastrukturänderungen vollständigen Determinismus.
+
+<span id="stop"></span>
+<h3 id="parameter-stop"><code>stop</code></h3>
+
+Definiert eine oder mehrere Sequenzen, die die Generierung vorzeitig beenden.
+
+| Feld | Wert |
+| --- | --- |
+| Typ | `string` or `string[]` |
+| Standard | Nicht gesetzt |
+| Häufige Verwendung | Parser-Grenzen, Vorlagenenden und Protokollmarker |
+
+Nützlich für feste Ausgabegrenzen, etwa um vor einer Fußzeile, einem Tool-Trennzeichen oder dem nächsten generierten Abschnitt zu stoppen.
+
+<span id="logprobs"></span>
+<h3 id="parameter-logprobs"><code>logprobs</code></h3>
+
+Fordert nach Möglichkeit Wahrscheinlichkeitsmetadaten auf Token-Ebene an.
+
+| Feld | Wert |
+| --- | --- |
+| Typ | `boolean` |
+| Standard | `false` |
+
+Nützlich vor allem für Analyse, Evaluierung, Ranking, Debugging und Vertrauensbewertungen. Für normale Produktantworten wird es meist nicht benötigt.
+
+<span id="top_logprobs"></span>
+<h3 id="parameter-top_logprobs"><code>top_logprobs</code></h3>
+
+Fordert für jede Ausgabeposition die wichtigsten alternativen Token-Kandidaten samt Log-Wahrscheinlichkeiten an.
+
+| Feld | Wert |
+| --- | --- |
+| Typ | `integer` |
+| Üblicher Bereich | Anbieterspezifisch, häufig `0` bis `20` |
+| Erfordert | `logprobs: true` |
+
+Nutze den Parameter, wenn du alternative Token-Zweige statt nur des gewählten Ausgabetokens untersuchen möchtest.
+
+<span id="tools"></span>
+<h3 id="parameter-tools"><code>tools</code></h3>
+
+Deklariert aufrufbare Tools oder Funktionen für Modell-Workflows mit Tool-Nutzung.
+
+| Feld | Wert |
+| --- | --- |
+| Typ | `array` |
+| Standard | Nicht gesetzt |
+
+Sofern die Endpunktdokumentation nichts anderes vorgibt, verwende das OpenAI-artige Tool-Schema. Tool-Deklarationen beschreiben, was das Modell aufrufen darf, nicht ob es ein Tool aufrufen muss.
+
+<span id="tool_choice"></span>
+<h3 id="parameter-tool_choice"><code>tool_choice</code></h3>
+
+Legt fest, ob das Modell Tools automatisch aufrufen darf, keine Tools aufrufen darf oder ein bestimmtes Tool verwenden muss.
+
+| Feld | Wert |
+| --- | --- |
+| Typ | `string` or `object` |
+| Häufige Werte | `none`, `auto`, `required` |
+
+Verwende `none`, wenn du nur Inhalte möchtest, `auto`, wenn das Modell selbst entscheiden darf, und strengere Werte, wenn die nachgelagerte Orchestrierung einen Tool-Aufruf verlangt.
+
+<span id="parallel_tool_calls"></span>
+<h3 id="parameter-parallel_tool_calls"><code>parallel_tool_calls</code></h3>
+
+Erlaubt oder verhindert parallele Tool-Aufrufe auf kompatiblen APIs.
+
+| Feld | Wert |
+| --- | --- |
+| Typ | `boolean` |
+| Standard | Endpunkt- und anbieterspezifisch |
+
+Deaktiviere den Parameter, wenn nachgelagerte Systeme eine strikt sequenzielle Ausführung, geordnete Nebenwirkungen oder einfachere Agent-Traces erfordern.
+
+<span id="response_format"></span>
+<h3 id="parameter-response_format"><code>response_format</code></h3>
+
+Fordert ein bestimmtes Ausgabeformat an, etwa Klartext, JSON oder schema-konforme Antworten.
+
+| Feld | Wert |
+| --- | --- |
+| Typ | `string` or `object` |
+| Standard | Endpunkt- und anbieterspezifisch |
+
+Die genau akzeptierten Formen hängen vom Endpunkt und Provider-Adapter ab. Nutze den Parameter für mehr als freien Text, besonders für JSON-Antworten und strukturierte Extraktion.
+
+<span id="structured_outputs"></span>
+<h3 id="parameter-structured_outputs"><code>structured_outputs</code></h3>
+
+Zeigt die Unterstützung zuverlässiger strukturierter oder schema-konformer Antworten für die ausgewählte Route und Anbietergruppe an.
+
+| Feld | Wert |
+| --- | --- |
+| Typ | `boolean` |
+| Bedeutung | Fähigkeitssignal statt direkter Einstellmöglichkeit |
+
+In Schnellstarttabellen zeigt dies, ob der ausgewählte Endpunkt und die aktiven Anbieter strukturierte Ausgaben zuverlässig unterstützen. Am besten wird es als Metadatum zur Unterstützung verstanden.
+
+<span id="json_schema"></span>
+<h3 id="parameter-json_schema"><code>json_schema</code></h3>
+
+Stellt das JSON-Schema bereit, mit dem strukturierte Ausgaben bei kompatiblen Modellen und Endpunkten erzwungen werden.
+
+| Feld | Wert |
+| --- | --- |
+| Typ | `object` |
+| Verwendet mit | Workflows mit strukturierten oder schema-konformen Antworten |
+
+Nutze den Parameter, wenn deine Anwendung garantierte Felder, typisierte Extraktion oder einen strikten Antwortvertrag benötigt. Halte die Schemas eng und auf die jeweilige Aufgabe zugeschnitten, damit sie besser eingehalten werden.
+
+<span id="reasoning"></span>
+<h3 id="parameter-reasoning"><code>reasoning</code></h3>
+
+Enthält anbieterspezifische Reasoning-Einstellungen für APIs mit Reasoning-Unterstützung.
+
+| Feld | Wert |
+| --- | --- |
+| Typ | `object` |
+| Standard | Nicht gesetzt |
+
+Je nach Route kann dies Aktivierung, Aufwand, Token-Budget, Ausführlichkeit oder die Rückgabe von Reasoning-Inhalten umfassen.
+
+<span id="reasoning_effort"></span>
+<h3 id="parameter-reasoning_effort"><code>reasoning_effort</code></h3>
+
+Fordert ein niedrigeres oder höheres Reasoning-Budget an, sofern Endpunkt und Modell diese Steuerung anbieten.
+
+| Feld | Wert |
+| --- | --- |
+| Typ | `string` |
+| Häufige Werte | Anbieterspezifisch, oft mit Werten wie `minimal`, `low`, `medium`, `high` und `none` |
+| Standard | Anbieter- und modellspezifisch |
+
+Ein höherer Aufwand kann schwierige Reasoning-Aufgaben verbessern, erhöht aber Latenz und Token-Verbrauch. Ein niedrigerer Aufwand eignet sich oft besser für schnellere und günstigere Anfragen.
+
+<span id="reasoning_tokens"></span>
+<h3 id="parameter-reasoning_tokens"><code>reasoning_tokens</code></h3>
+
+Steht für ein Reasoning-spezifisches Token-Feld, sofern unterstützt.
+
+| Feld | Wert |
+| --- | --- |
+| Typ | `integer` |
+| Standard | Anbieter- und modellspezifisch |
+
+Je nach Route kann dies ein Anfrage-Regler, ein Limit oder ein Abrechnungsfeld der Antwort sein und muss kein universell unterstützter Anfrageparameter sein.
+
+<span id="include_reasoning"></span>
+<h3 id="parameter-include_reasoning"><code>include_reasoning</code></h3>
+
+Fordert nach Möglichkeit Reasoning-Inhalte oder Zusammenfassungen in Antworten an.
+
+| Feld | Wert |
+| --- | --- |
+| Typ | `boolean` |
+| Standard | `false` |
+
+Verwende den Parameter mit Bedacht. Reasoning-Payloads können größer sein, sind möglicherweise nicht für jedes Modell verfügbar und eignen sich oft nicht für Produktionsantworten ohne zusätzlichen Diagnosebedarf.
+
+<span id="service_tier"></span>
+<h3 id="parameter-service_tier"><code>service_tier</code></h3>
+
+Wählt eine unterstützte Routing- oder Preisstufe auf kompatiblen Text-APIs aus.
+
+| Feld | Wert |
+| --- | --- |
+| Typ | `string` |
+| Unterstützte Werte | `standard`, `fast`, `priority`, `flex` |
+| Standard | `standard` |
+
+Verwende `priority` oder `flex` nur, wenn die gewählte Modell-Anbieter-Kombination sie unterstützt. Phaseo behält `priority` als kanonische Premiumstufe bei; unterstützte OpenAI-Routen akzeptieren außerdem `fast` als Alias mit identischem Routing und Preis. Lasse das Feld weg, um die Standardstufe zu verwenden.
+
+Phaseo ordnet diese vom Gateway normalisierten Stufenwerte intern den anbietereigenen Einstellungen zu. Auf unterstützten Text-Schnittstellen können daher dieselben `service_tier`-Werte verwendet werden.
+
+Hinweise:
+
+`Batch` ist ein separater API-Ablauf und kein Wert für die Service-Stufe.
+Die Unterstützung variiert je nach Endpunkt und Anbieter.
+
+<span id="prompt_cache_key"></span>
+<h3 id="parameter-prompt_cache_key"><code>prompt_cache_key</code></h3>
+
+Stellt einen stabilen Cache-Affinitätsschlüssel für prompt-cache-bewusstes Routing bereit.
+
+| Feld | Wert |
+| --- | --- |
+| Typ | `string` |
+| Zweck | Affinitätsrouting für zusammengehörige gecachte Prompts |
+
+Nutze den Parameter, wenn mehrere Anfragen stabile Prompt-Präfixe teilen und nach Möglichkeit denselben Upstream-Anbieter oder dieselbe Region verwenden sollen. Phaseo kann die Cache-Affinität auch aus dem Anfragekontext ableiten; ein expliziter Schlüssel eignet sich jedoch besser für lange Gespräche, Agent-Sitzungen und wiederholte Workflows.
+
+<span id="cache_control"></span>
+<h3 id="parameter-cache_control"><code>cache_control</code></h3>
+
+Wendet eine anbieterneutrale Prompt-Cache-Richtlinie auf unterstützten Textanfrage-Schnittstellen an.
+
+| Feld | Wert |
+| --- | --- |
+| Typ | `object` |
+| Gemeinsame Felder | `type`, `ttl`, `scope` |
+| Zweck | Automatisches Prompt-Caching und explizite Cache-Trennpunkte |
+
+Verwende `cache_control` auf der obersten Ebene von Chat-Completions-, Responses- und Anthropic-Messages-Anfragen, wenn derselbe Cache-Hinweis das gemeinsame Gateway-Schema durchlaufen soll. Bei Bedarf kannst du `cache_control` auch auf unterstützten Inhaltsblöcken setzen, um Cache-Trennpunkte festzulegen.
+
+Übliche TTL-Werte sind `5m` und `1h`, abhängig von der Unterstützung durch Anbieter und Modell. Anbieterspezifische Aliase wie `provider_options.anthropic.cache_control` und `provider_options.google.cache_control` werden für native Integrationen weiterhin akzeptiert.
+
+<span id="prompt_cache_retention"></span>
+<h3 id="parameter-prompt_cache_retention"><code>prompt_cache_retention</code></h3>
+
+Legt die OpenAI-kompatible Aufbewahrungsrichtlinie für den Prompt-Cache bei unterstützten OpenAI-Anfragen fest.
+
+| Feld | Wert |
+| --- | --- |
+| Typ | `string` |
+| Beispiel | `24h` |
+| Zweck | OpenAI-Prompt-Cache-Aufbewahrung |
+
+Nutze den Parameter, um OpenAI-Optionen zur Cache-Aufbewahrung ohne Verschachtelung in anbieterspezifischen Optionen zu übergeben. Der anbieterbezogene Alias `provider_options.openai.prompt_cache_retention` wird weiterhin akzeptiert. Sind beide vorhanden, hat der Wert der obersten Ebene `prompt_cache_retention` Vorrang.
+
+<span id="provider"></span>
+<h3 id="parameter-provider"><code>provider</code></h3>
+
+Enthält Routing-Beschränkungen und Anbieterpräferenzen.
+
+| Feld | Wert |
+| --- | --- |
+| Typ | `object` |
+| Zweck | Routing-Regeln, Anbieterauswahl und Compliance-Anforderungen |
+
+Nutze den Parameter, um festzulegen, welche Upstream-Anbieter die Anfrage ausführen dürfen, wie sie eingestuft werden oder welche Compliance-Anforderungen gelten.
+
+Häufige Felder sind:
+
+| Feld | Typ | Zweck |
+| --- | --- | --- |
+| `order` | `string[]` | Bevorzugte Anbieterreihenfolge. |
+| `only` | `string[]` | Beschränkt das Routing auf bestimmte Anbieter. |
+| `ignore` | `string[]` | Schließt bestimmte Anbieter aus. |
+| `include_alpha` | `boolean` | Lässt Alpha-Anbieter bei Routing-Entscheidungen zu. |
+| `sort` | `string` or `object` | Ordnet Anbieter, häufig nach `price`, `latency` oder `throughput`. |
+| `required_execution_region` | `string` | Beschränkt die Ausführung auf eine vorgeschriebene Region. |
+| `required_data_region` | `string` | Beschränkt die Datenverarbeitung auf eine vorgeschriebene Region. |
+| `require_zero_data_retention` | `boolean` | Verlangt Anbieter, die die Anforderungen an Zero Data Retention erfüllen. |
+| `max_price` | `object` | Legt Höchstgrenzen für Prompt-, Completion-, Bild-, Audio- oder Anfragekosten fest. |
+| `quantizations` | `string[]` | Verlangt ein zulässiges Angebot, dessen Katalogquantisierung einem dieser Werte entspricht. |
+
+`quantizations` folgt dem mit OpenRouter kompatiblen Vokabular für Provider-Routing und wird sowohl unter `provider` als auch unter `routing` akzeptiert. Beim Abgleich wird die Groß-/Kleinschreibung ignoriert; Leerzeichen, Bindestriche und Unterstriche werden übergangen. Eindeutige Namen wie `float8`/`FP8` und `bfloat16`/`BF16` sind Aliase. Angebote ohne Quantisierungsmetadaten werden bei aktivem Filter ausgeschlossen. Gibt es kein passendes zulässiges Angebot, liefert das Gateway einen Fehler mit den angeforderten und verfügbaren Quantisierungen, statt unbemerkt eine andere Variante zu wählen.
+
+<span id="provider_options"></span>
+<h3 id="parameter-provider_options"><code>provider_options</code></h3>
+
+Enthält anbieterspezifische Passthrough-Einstellungen, die nicht in die gemeinsame Gateway-Anfragestruktur normalisiert werden sollen.
+
+| Feld | Wert |
+| --- | --- |
+| Typ | `object` |
+| Zweck | Anbietereigene Steuerungen |
+
+Beispiele:
+
+- `openai.context_management`
+- `openai.prompt_cache_retention`
+- `anthropic.cache_control`
+- `google.cache_control`
+- `google.cached_content`
+
+Nutze den Parameter für anbietereigene Funktionen, wenn der Rest der Anfrage im gemeinsamen Gateway-Schema bleiben soll. Für allgemeine Cache-Hinweise solltest du `cache_control` auf oberster Ebene verwenden, für die OpenAI-kompatible Aufbewahrung `prompt_cache_retention`.
+
+Beispiele zum Prompt-Caching einzelner Anbieter für Chat Completions, Responses und Anthropic Messages findest du unter [Prompt-Caching](../guides/prompt-caching.mdx).
+
+<span id="meta"></span>
+<h3 id="parameter-meta"><code>meta</code></h3>
+
+Fordert zusätzliche Antwortmetadaten an, sofern unterstützt.
+
+| Feld | Wert |
+| --- | --- |
+| Typ | `boolean` |
+| Standard | Endpunktspezifisch |
+
+Nutze den Parameter für zusätzliche, nicht zentrale Antwortmetadaten zum Debugging, für Analysen oder zur nachgelagerten Prüfung.
+
+<span id="usage"></span>
+<h3 id="parameter-usage"><code>usage</code></h3>
+
+Fordert Nutzungsabrechnungsdetails an, sofern unterstützt.
+
+| Feld | Wert |
+| --- | --- |
+| Typ | `boolean` |
+| Standard | Endpunktspezifisch |
+
+Nützlich, wenn Token- oder Nutzungsdaten ausdrücklich im Antworttext stehen sollen, statt nur in Headern oder Dashboards.
+
+<span id="debug"></span>
+<h3 id="parameter-debug"><code>debug</code></h3>
+
+Aktiviert kontrollierte Diagnoseinformationen zu Anfrage und Routing.
+
+| Feld | Wert |
+| --- | --- |
+| Typ | `object` |
+| Zweck | Nur für Entwicklung und Fehlerbehebung |
+
+Zu den unterstützten Debug-Feldern gehören:
+
+| Feld | Typ | Zweck |
+| --- | --- | --- |
+| `enabled` | `boolean` | Aktiviert den Debug-Modus für die Anfrage. |
+| `return_upstream_request` | `boolean` | Fügt den transformierten Upstream-Anfrage-Payload ein. |
+| `return_upstream_response` | `boolean` | Fügt nach Möglichkeit den Upstream-Antwort-Payload ein. |
+| `trace` | `boolean` | Gibt Routing- oder Debug-Traces zurück. |
+| `trace_level` | `summary` or `full` | Steuert den Detailgrad der Traces. |
+
+Debug-Payloads können vertraulichen Anfragekontext enthalten. Verwende sie nur während der Entwicklung oder in streng kontrollierten Umgebungen.
+
+## Beispielanfrage
+
+```json
+{
+  "model": "openai/gpt-5-nano",
+  "input": "Summarize this changelog.",
+  "stream": false,
+  "temperature": 0.3,
+  "max_output_tokens": 300,
+  "provider": {
+    "order": ["openai", "anthropic"],
+    "ignore": ["some-provider"],
+    "sort": "latency",
+    "required_execution_region": "eu",
+    "require_zero_data_retention": true
+  },
+  "debug": {
+    "enabled": true,
+    "trace": true,
+    "trace_level": "summary"
+  }
+}
+```
+
+## Ausführliche Erläuterungen
+
+Wenn du ausführlichere Hinweise zur Abstimmung statt einer reinen Feldreferenz suchst, lies als Nächstes:
+
+- [Inferenzparameter](../guides/inference-parameters.mdx) mit praktischen Hinweisen zu temperature, top_p, top_k, Token-Limits, Stoppsequenzen und Abstimmung
+- [Sampling und Decoding](../guides/sampling-and-decoding.mdx) dazu, wie Zufälligkeit, Penalties und Decoding-Einstellungen das Modellverhalten verändern
+
+## Verwandte Seiten
+
+- [Inferenzparameter](../guides/inference-parameters.mdx)
+- [Sampling und Decoding](../guides/sampling-and-decoding.mdx)
+- [Datenstrom](./streaming.mdx)
+- [Limits](./limits.mdx)
+- [Fehler und Debugging](./errors.mdx)
+
+<Visibility for="agents">
+Wenn du die Parameterverarbeitung als Agent implementierst:
+
+- nutze Repository-Skills zur Schema-Validierung und Prüfung der Anfrageform
+- erhalte unbekannte anbieterspezifische Schlüssel in Passthrough-Abläufen, sofern zulässig
+- prüfe die Endpunktkompatibilität, bevor du erweiterte Felder wie Tools, Streaming oder Debug-Optionen kombinierst
+</Visibility>

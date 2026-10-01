@@ -44,9 +44,9 @@ function parseLocalDateTimeInput(
 	return localDateTime;
 }
 
-function formatDateTimeInTimeZone(date: Date, timeZone: string): string {
+function formatDateTimeInTimeZone(date: Date, timeZone: string, locale?: string): string {
 	try {
-		return new Intl.DateTimeFormat(undefined, {
+		return new Intl.DateTimeFormat(locale, {
 			year: "numeric",
 			month: "short",
 			day: "2-digit",
@@ -56,7 +56,7 @@ function formatDateTimeInTimeZone(date: Date, timeZone: string): string {
 			timeZone,
 		}).format(date);
 	} catch {
-		return date.toLocaleString();
+		return date.toLocaleString(locale);
 	}
 }
 
@@ -78,7 +78,8 @@ export function getBrowserTimeZone(): string {
 export function buildExpirySelectionPreview(
 	dateValue: string,
 	timeValue: string,
-	defaultTime = "23:59"
+	defaultTime = "23:59",
+	locale?: string
 ): ExpirySelectionPreview | null {
 	const localDateTime = parseLocalDateTimeInput(dateValue, timeValue, defaultTime);
 	if (!localDateTime) return null;
@@ -89,8 +90,8 @@ export function buildExpirySelectionPreview(
 		timezone,
 		timezoneOffset,
 		timezoneDisplay: `${timezone} (UTC${timezoneOffset})`,
-		localDisplay: formatDateTimeInTimeZone(localDateTime, timezone),
-		utcDisplay: formatDateTimeInTimeZone(localDateTime, "UTC"),
+		localDisplay: formatDateTimeInTimeZone(localDateTime, timezone, locale),
+		utcDisplay: formatDateTimeInTimeZone(localDateTime, "UTC", locale),
 		utcIso: localDateTime.toISOString(),
 	};
 }

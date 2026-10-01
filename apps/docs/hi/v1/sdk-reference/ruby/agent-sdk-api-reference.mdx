@@ -1,0 +1,24 @@
+---
+icon: "braces"
+title: "API संदर्भ"
+description: "Ruby Agent SDK की मुख्य classes और methods का संदर्भ।"
+---
+
+| API | उद्देश्य |
+| --- | --- |
+| `PhaseoAgentSdk.create_agent(...)` | एजेंट परिभाषित करें |
+| `PhaseoAgentSdk.define_tool(...)` | स्थानीय या मैन्युअल टूल परिभाषित करें |
+| `PhaseoAgentSdk.create_gateway_agent_client(...)` | मॉडल टर्न को Phaseo से जोड़ें |
+| `Agent#run` | पूरा होने या रुकने तक चलाएँ |
+| `Agent#stream` | दोबारा चलाए जा सकने वाले sequence के साथ चलाएँ |
+| `Agent#continue_run` | सहेजी या रोकी गई स्थिति से जारी रखें |
+| `StreamResult#result` | पूरा हुआ रन पढ़ें |
+| `StreamResult#text_stream` | टेक्स्ट डेल्टा पढ़ें |
+| `StreamResult#full_stream` | सभी इवेंट पढ़ें |
+
+मुख्य क्लास और मानों में `Tool`, `ToolDecision`, `ToolOutput`, `RuntimeContext`, `RunResult`, पुनः प्रयास कॉन्फ़िगरेशन, टूल निष्पादन कॉन्फ़िगरेशन और स्थिति एक्सेसर शामिल हैं।
+
+## संबंधित विषय
+
+- [अपना पहला एजेंट बनाएँ](./agent-sdk.mdx)
+- [Observability और DevTools](./agent-sdk-observability.mdx)

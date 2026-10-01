@@ -1,0 +1,126 @@
+---
+title: "Nur zu EU- oder ZDR-fähigen Anbietern routen"
+icon: "globe-2"
+description: "Lege Anforderungen an Datenresidenz und Zero Data Retention für eine Anfrage fest, damit sie nur zu konformen Anbieterangeboten geroutet wird."
+---
+
+Verwende dieses Rezept, wenn du Anbieter für eine einzelne Anfrage aus Compliance- oder Datenschutzgründen filtern musst, ohne die Richtlinie für den gesamten Arbeitsbereich zu ändern.
+
+## Ziel
+
+- Ausführung in der EU voraussetzen.
+- Datenresidenz in der EU voraussetzen.
+- Anbieter voraussetzen, die Zero Data Retention unterstützen.
+
+## 1. Anforderungen an die Datenresidenz zur Anfrage hinzufügen
+
+Lege die Anforderungen direkt im Anfrage-Body fest.
+
+<CodeGroup>
+```bash cURL
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "google/gemini-3.1-flash-lite",
+    "input": "Summarize the ticket in one line.",
+    "provider": {
+      "required_execution_region": "eu",
+      "required_data_region": "eu",
+      "require_zero_data_retention": true
+    }
+  }'
+```
+
+```typescript TypeScript SDK
+import Phaseo from "@phaseo/sdk";
+
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
+
+const response = await client.generateResponse({
+  model: "google/gemini-3.1-flash-lite",
+  input: "Summarize the ticket in one line.",
+  provider: {
+    required_execution_region: "eu",
+    required_data_region: "eu",
+    require_zero_data_retention: true,
+  },
+});
+
+console.log(response.output_text);
+```
+
+```python Python SDK
+from phaseo import Phaseo
+
+client = Phaseo(api_key="YOUR_API_KEY")
+
+response = client.generate_response(
+    {
+        "model": "google/gemini-3.1-flash-lite",
+        "input": "Summarize the ticket in one line.",
+        "provider": {
+            "required_execution_region": "eu",
+            "required_data_region": "eu",
+            "require_zero_data_retention": True,
+        },
+    }
+)
+
+print(response.get("output_text"))
+```
+</CodeGroup>
+
+Unterstützte Anfragefilter für diesen Ablauf:
+
+- `required_execution_region`
+- `required_data_region`
+- `require_zero_data_retention`
+
+## 2. Nur die Regelmenge verwenden, die zur Richtlinie passt
+
+Fordere nur an, was die Arbeitslast tatsächlich benötigt.
+
+Beispiele:
+
+- nur Ausführungsort:
+  - `required_execution_region: "eu"`
+- nur Speicherort der Daten:
+  - `required_data_region: "eu"`
+- nur Anbieter mit ZDR-Unterstützung:
+  - `require_zero_data_retention: true`
+
+## 3. Mit einem kleineren Anbieterkreis rechnen
+
+Die Filter werden vor der Anbieterbewertung angewendet und können Anbieter vollständig ausschließen.
+
+Das bedeutet:
+
+- die Anfrage kann zu einem teureren regionalen Angebot geroutet werden
+- die Anbieterliste kann deutlich kleiner ausfallen
+- die Anfrage kann fehlschlagen, wenn kein Anbieter für das Modell die Anforderungen erfüllt
+
+## 4. Wenn möglich, vorab die Modellseite prüfen
+
+Prüfe vor dem Bereitstellen der Anfrage die Anbieterkarten auf der Modellseite auf:
+
+- regionale Angebote wie `OpenAI EU` oder `Google Vertex EU`
+- ZDR-Unterstützung
+- Hinweise und Quellen zu den Datenschutzrichtlinien der Anbieter
+
+So kannst du sicherstellen, dass mindestens ein geeigneter Anbieter verfügbar ist, bevor du die Anforderung im Produktionsverkehr durchsetzt.
+
+## 5. Datenschutz-Einstellungen des Arbeitsbereichs als Standardwerte verwenden
+
+Wenn die Richtlinie für alle Anfragen eines Arbeitsbereichs gelten soll, lege sie unter **Einstellungen -> Datenschutz** fest, statt dieselben Anfragefilter überall zu wiederholen.
+
+Verwende die Anfragefelder, wenn die Regel gilt für:
+
+- einen Workflow
+- einen Kunden
+- eine einzelne Anfrage
+
+## Verwandte Anleitungen
+
+- [Routing und Fallbacks](../guides/routing-and-fallbacks.mdx)
+- [Voreinstellungen](../guides/presets.mdx)

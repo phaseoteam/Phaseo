@@ -1,0 +1,24 @@
+---
+icon: "braces"
+title: "مرجع API"
+description: "مرجع لأهم فئات وطرق PHP Agent SDK."
+---
+
+| API | الغرض |
+| --- | --- |
+| `AgentSdk::createAgent(...)` | تعريف وكيل |
+| `AgentSdk::defineTool(...)` | تعريف أداة محلية أو يدوية |
+| `AgentSdk::createGatewayAgentClient(...)` | ربط خطوات النموذج بـPhaseo |
+| `Agent::run(...)` | التشغيل حتى الاكتمال أو الإيقاف المؤقت |
+| `Agent::stream(...)` | التشغيل باستخدام عناصر قابلة للتكرار وإعادة القراءة |
+| `Agent::continueRun(...)` | متابعة حالة محفوظة أو متوقفة مؤقتًا |
+| `Agent::continueRunById(...)` | إعادة التحميل والمتابعة عبر أداة وصول إلى الحالة |
+| `AgentStreamResult::textStream()` | قراءة أجزاء النص المتتابعة |
+| `AgentStreamResult::fullStream()` | قراءة جميع الأحداث |
+
+تشمل الفئات المهمة `AgentDefinition` و`RunResult` و`RunRecord` و`Tool` و`ToolDecision` و`ToolOutput` و`RuntimeContext` و`StateAccessor` و`GatewayAgentClientOptions`.
+
+## مواضيع ذات صلة
+
+- [أنشئ وكيلك الأول](./agent-sdk.mdx)
+- [قابلية المراقبة وDevTools](./agent-sdk-observability.mdx)

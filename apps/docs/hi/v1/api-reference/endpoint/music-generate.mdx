@@ -1,0 +1,69 @@
+---
+title: "संगीत बनाएँ"
+sidebarTitle: "संगीत बनाएँ"
+badge: "Beta"
+openapi: "/hi/openapi/v1/openapi.localized.yaml POST /music/generate"
+---
+
+एक प्रदाता-स्वतंत्र API के ज़रिए संगीत बनाएँ। Phaseo सिंक्रोनस प्रतिक्रियाओं और प्रदाता कतार की जाँच को पर्दे के पीछे संभालता है।
+
+जनरेशन पूरा होने पर प्रतिक्रिया में `audio_url` या `audio_base64` शामिल होता है। यदि प्रदाता ऐसा जॉब लौटाता है जो अभी पूरा नहीं हुआ है, तो उसी प्रतिक्रिया के `id` के साथ `GET /music/generate/{music_id}` उपयोग करें।
+
+## अनुरोध का स्वरूप
+
+```json
+{
+  "model": "minimax/music-3.0:free",
+  "prompt": "Warm jazz trio with brushed drums",
+  "format": "mp3"
+}
+```
+
+## Suno विकल्प
+
+- `suno.customMode` (बूलियन, डिफ़ॉल्ट `false`)
+- `suno.instrumental` (बूलियन, डिफ़ॉल्ट `false`)
+- `suno.prompt` (शीर्ष-स्तरीय `prompt` का वैकल्पिक ओवरराइड)
+- `suno.style`, `suno.title` (`customMode = true` होने पर आवश्यक)
+- `suno.personaId`, `suno.personaModel`
+- `suno.negativeTags`, `suno.vocalGender`
+- `suno.styleWeight`, `suno.weirdnessConstraint`, `suno.audioWeight`
+
+## मान्यकरण नियम
+
+- `customMode = false` होने पर `prompt` आवश्यक है।
+- `customMode = true` होने पर `style` और `title` दोनों आवश्यक हैं।
+- `customMode = true` और `instrumental = false` होने पर `prompt` आवश्यक है।
+
+मान्यकरण त्रुटियाँ `400` के साथ यह लौटाती हैं:
+
+```json
+{
+  "error": "validation_error",
+  "reason": "..."
+}
+```
+
+## जवाब
+
+```json
+{
+  "id": "req_01JY6MUSIC123",
+  "object": "music",
+  "status": "completed",
+  "provider": "gmicloud",
+  "model": "minimax/music-3.0:free",
+  "nativeResponseId": "5c30b275-d669-4a25-8151-de6d60214853",
+  "audio_url": "https://.../generated-music.mp3",
+  "usage": {
+    "requests": 1,
+    "output_audio_seconds": 25.364
+  }
+}
+```
+
+- `id` Phaseo का स्थिर अनुरोध ID है। अनुरोध प्राप्त करने के लिए `GET /music/generate/{music_id}` का उपयोग करें।
+- `nativeResponseId` upstream provider का पहचानकर्ता है और provider से अनुरोध मिलान तथा सहायता पाने के लिए उपयोग होता है।
+- `status` `queued`, `in_progress`, `completed` या `failed` हो सकता है।
+- `usage` में `output_audio_seconds` शामिल हो सकता है, जब provider जनरेट की गई अवधि बताता है।
+

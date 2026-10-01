@@ -1,4 +1,5 @@
 import { Pencil } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { fetchInternalAuthStatus } from "@/lib/fetchers/internal/fetchInternalAuthStatus";
@@ -19,11 +20,13 @@ export default async function OrganisationEditButton({
     return null;
   }
 
+  const t = await getTranslations("Catalogue.organisations");
+
   return (
     <Button variant="outline" size="sm" asChild>
       <Link
         href={`/internal/data/organisations/${organisationId}/edit`}
-        aria-label="Edit organisation"
+        aria-label={t("editOrganisation")}
       >
         <Pencil className="h-4 w-4" />
       </Link>

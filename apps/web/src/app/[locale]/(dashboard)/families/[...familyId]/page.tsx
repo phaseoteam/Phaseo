@@ -15,8 +15,10 @@ import ModelPageToc from "@/components/(data)/model/ModelPageToc";
 import { Badge } from "@/components/ui/badge";
 import type { FamilyModelItem } from "@/lib/fetchers/families/types";
 import { fetchFrontendFamily } from "@/lib/fetchers/frontend/fetchPublicCatalog";
-import { buildMetadata } from "@/lib/seo";
+import { buildLocalizedPageMetadata } from "@/lib/auth/localized-metadata";
 import { cn } from "@/lib/utils";
+import { getTranslations } from "next-intl/server";
+import type { PublicLocale } from "@/i18n/routing";
 
 const STATUS_STYLES: Record<string, string> = {
 	Available:
@@ -35,17 +37,6 @@ const STATUS_STYLES: Record<string, string> = {
 		"border-rose-500/40 bg-rose-500/10 text-rose-700 dark:text-rose-300",
 	default: "border-border bg-muted/40 text-muted-foreground",
 };
-
-const monthYearFormatter = new Intl.DateTimeFormat("en", {
-	month: "short",
-	year: "numeric",
-});
-
-const fullDateFormatter = new Intl.DateTimeFormat("en", {
-	day: "numeric",
-	month: "short",
-	year: "numeric",
-});
 
 function parseFamilyId(input: string[] | string | undefined): string {
 	if (!input) return "";
@@ -70,7 +61,7 @@ function sortMembers(members: FamilyModelItem[]) {
 	});
 }
 
-function getReleaseSpan(members: FamilyModelItem[]) {
+function getReleaseSpan(members: FamilyModelItem[], locale: string) {
 	const dates = members
 		.map(getMemberDate)
 		.filter((date): date is Date => Boolean(date))
@@ -80,8 +71,12 @@ function getReleaseSpan(members: FamilyModelItem[]) {
 	const first = dates[0];
 	const last = dates[dates.length - 1];
 	if (!first || !last) return null;
-	const firstLabel = monthYearFormatter.format(first);
-	const lastLabel = monthYearFormatter.format(last);
+	const formatter = new Intl.DateTimeFormat(locale, {
+		month: "short",
+		year: "numeric",
+	});
+	const firstLabel = formatter.format(first);
+	const lastLabel = formatter.format(last);
 	return { firstLabel, lastLabel };
 }
 
@@ -95,42 +90,40 @@ async function fetchFamily(familyId: string) {
 }
 
 export async function generateMetadata(props: {
-	params: Promise<{ familyId: string[] }>;
+	params: Promise<{ familyId: string[]; locale: PublicLocale }>;
 }): Promise<Metadata> {
-	const { familyId: rawFamilyId } = await props.params;
+	const { familyId: rawFamilyId, locale } = await props.params;
+	const t = await getTranslations({ locale, namespace: "Catalogue.families" });
 	const familyId = parseFamilyId(rawFamilyId);
 	const family = await fetchFamily(familyId);
 	const path = `/families/${familyId}`;
 
 	if (!family) {
-		return buildMetadata({
-			title: "AI Model Family",
-			description:
-				"Explore related AI models within the same family and follow their release history on Phaseo.",
-			path,
-			keywords: ["AI model family", "AI models", "Phaseo"],
+		return buildLocalizedPageMetadata({
+			locale,
+			pathname: path,
+			title: t("detailUnknownTitle"),
+			description: t("detailUnknownDescription"),
+			keywords: ["Phaseo", t("detailKeyword"), t("detailModelsKeyword")],
 		});
 	}
 
-	return buildMetadata({
-		title: `${family.family_name} Family - Related AI Models`,
-		description: `${family.family_name} family on Phaseo. Explore ${family.models.length} related models and their release history.`,
-		path,
-		keywords: [
-			family.family_name,
-			`${family.family_name} family`,
-			"AI model family",
-			"Phaseo",
-		],
+	return buildLocalizedPageMetadata({
+		locale,
+		pathname: path,
+		title: t("detailTitle", { family: family.family_name }),
+		description: t("detailDescription", { family: family.family_name, count: family.models.length }),
+		keywords: [family.family_name, t("detailKeyword"), t("detailModelsKeyword"), "Phaseo"],
 	});
 }
 
 export default async function Page({
 	params,
 }: {
-	params: Promise<{ familyId: string[] }>;
+	params: Promise<{ familyId: string[]; locale: PublicLocale }>;
 }) {
-	const { familyId: rawFamilyId } = await params;
+	const { familyId: rawFamilyId, locale } = await params;
+	const t = await getTranslations({ locale, namespace: "Catalogue.families" });
 	const familyId = parseFamilyId(rawFamilyId);
 	const family = await fetchFrontendFamily(familyId);
 
@@ -140,7 +133,22 @@ export default async function Page({
 	const primaryOrganisationId = members[0]?.organisation_id ?? null;
 	const primaryOrganisationName =
 		members[0]?.organisation?.name ?? primaryOrganisationId;
-	const releaseSpan = getReleaseSpan(members);
+	const releaseSpan = getReleaseSpan(members, locale);
+	const dateFormatter = new Intl.DateTimeFormat(locale, {
+		day: "numeric",
+		month: "short",
+		year: "numeric",
+	});
+	const statusLabels: Record<string, string> = {
+		Available: t("statusAvailable"),
+		Announced: t("statusAnnounced"),
+		Preview: t("statusPreview"),
+		"Limited Access": t("statusLimitedAccess"),
+		Withheld: t("statusWithheld"),
+		Rumoured: t("statusRumoured"),
+		Deprecated: t("statusDeprecated"),
+		Retired: t("statusRetired"),
+	};
 
 	return (
 		<main className="min-h-screen">
@@ -151,7 +159,7 @@ export default async function Page({
 					className="group inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
 				>
 					<ArrowLeft className="size-4 transition-transform group-hover:-translate-x-0.5" />
-					All model families
+				{t("allFamilies")}
 				</Link>
 
 				<header id="family-detail-primary-header" className="mt-7 scroll-mt-36 grid gap-6 border-b border-border/70 pb-8 lg:grid-cols-[minmax(0,1fr)_minmax(380px,0.65fr)] lg:items-center">
@@ -179,7 +187,7 @@ export default async function Page({
 									href={`/organisations/${primaryOrganisationId}`}
 									className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium underline decoration-border underline-offset-4 transition-colors hover:decoration-foreground"
 								>
-									By {primaryOrganisationName}
+									{t("by", { name: primaryOrganisationName })}
 									<ArrowUpRight className="size-3.5" />
 								</Link>
 							) : null}
@@ -188,9 +196,9 @@ export default async function Page({
 
 					<dl className="grid grid-cols-2 border-y border-border/70 lg:border-y-0">
 						{[
-							{ label: "Models", value: String(members.length) },
+							{ label: t("modelsLabel"), value: String(members.length) },
 							{
-								label: "Release span",
+								label: t("releaseSpan"),
 								value: releaseSpan ? (
 									<span className="inline-flex items-center gap-1.5 whitespace-nowrap">
 										{releaseSpan.firstLabel}
@@ -205,7 +213,7 @@ export default async function Page({
 										) : null}
 									</span>
 								) : (
-									"Dates pending"
+									t("datesPending")
 								),
 							},
 						].map((stat) => (
@@ -225,7 +233,7 @@ export default async function Page({
 				</header>
 
 				<div className="mt-6 flex flex-col gap-6 lg:flex-row lg:items-start">
-					<ModelPageToc items={[{ id: "family-detail-primary-header", label: "Overview" }, { id: "family-members", label: "Family Members" }]} className="lg:h-full lg:w-40 lg:shrink-0 xl:w-44" />
+				<ModelPageToc items={[{ id: "family-detail-primary-header", label: t("overview") }, { id: "family-members", label: t("members") }]} className="lg:h-full lg:w-40 lg:shrink-0 xl:w-44" />
 					<div className="min-w-0 flex-1">
 				<section id="family-members" className="scroll-mt-36 py-8 md:py-10" aria-labelledby="family-members-heading">
 					<div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
@@ -234,10 +242,10 @@ export default async function Page({
 								id="family-members-heading"
 								className="text-xl font-semibold tracking-tight md:text-2xl"
 							>
-								Family members
+								{t("members")}
 							</h2>
 						</div>
-						<p className="text-sm text-muted-foreground">Newest to oldest</p>
+						<p className="text-sm text-muted-foreground">{t("newestToOldest")}</p>
 					</div>
 
 					{members.length ? (
@@ -269,14 +277,14 @@ export default async function Page({
 											</div>
 											<div className="flex items-center gap-2 text-sm text-muted-foreground">
 												<CalendarDays className="size-4" />
-												{date ? fullDateFormatter.format(date) : "Date pending"}
+												{date ? dateFormatter.format(date) : t("datesPending")}
 											</div>
 											<div>
 												<Badge
 													variant="outline"
 													className={cn("rounded-full", statusClass)}
 												>
-													{member.status ?? "Status pending"}
+													{member.status ? (statusLabels[member.status] ?? member.status) : t("statusPending")}
 												</Badge>
 											</div>
 											<ChevronRight className="hidden size-5 text-muted-foreground transition-transform group-hover:translate-x-1 sm:block" />
@@ -289,7 +297,7 @@ export default async function Page({
 						<div className="border-y border-dashed border-border/70 py-14 text-center">
 							<Layers3 className="mx-auto size-6 text-muted-foreground" />
 							<p className="mt-3 text-sm text-muted-foreground">
-								No family members are recorded yet.
+								{t("noMembers")}
 							</p>
 						</div>
 					)}

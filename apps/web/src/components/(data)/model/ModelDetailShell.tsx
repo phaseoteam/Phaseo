@@ -190,14 +190,14 @@ export default async function ModelDetailShell({
 							<Button asChild variant="outline" size="sm" className="flex-1 justify-center rounded-lg xl:flex-none">
 								<Link href={`/chat?model=${modelId}`}>
 									<MessageSquare className="h-4 w-4" />
-									{t("chat")}
+										{t("detail.actions.chat")}
 								</Link>
 							</Button>
 						) : null}
 						<Button asChild variant="outline" size="sm" className="flex-1 justify-center rounded-lg xl:flex-none">
 							<Link href={`/compare?models=${modelId}`}>
 								<Scale className="h-4 w-4" />
-								{t("compareButton")}
+								{t("detail.actions.compare")}
 							</Link>
 						</Button>
 						{canChat ? <UseModelSheet modelId={modelId} modelName={header.name} gatewayMetadata={gatewayMetadata} triggerId="quickstart" className="col-span-2 w-full min-w-[8.5rem] justify-center sm:w-auto sm:flex-1 xl:flex-none" /> : null}

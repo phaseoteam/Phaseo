@@ -1,0 +1,10 @@
+---
+title: "Öffentliches Preset ableiten"
+sidebarTitle: "Preset ableiten"
+badge: "Beta"
+openapi: "/de/openapi/v1/openapi.localized.yaml POST /presets/{id}/fork"
+description: "Leitet ein öffentliches Preset in den Management-Workspace ab."
+---
+<Note>Für diesen Endpunkt ist ein Management-API-Schlüssel mit `presets:write` und eine zugeordnete Nutzeridentität erforderlich.</Note>
+
+Lass `source_version_id` weg, um die aktive Version abzuleiten. Das neue Preset ist privat und behält seine Herkunft bei.

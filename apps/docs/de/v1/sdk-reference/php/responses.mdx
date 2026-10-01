@@ -1,0 +1,55 @@
+---
+icon: "sparkles"
+title: "Antworten"
+description: "Rufe die Responses-API mit dem PHP-SDK auf."
+---
+
+**Methoden**: `generateResponse()`, `createResponse()`
+
+### Beispiel
+
+```php
+<?php
+
+require 'vendor/autoload.php';
+
+use Phaseo\Sdk\Phaseo;
+
+$apiKey = getenv('PHASEO_API_KEY');
+$client = new Phaseo(apiKey: $apiKey);
+
+$response = $client->createResponse([
+    'model' => 'openai/gpt-4.1',
+    'input' => [
+        [
+            'role' => 'user',
+            'content' => [
+                [
+                    'type' => 'output_text',
+                    'text' => 'Summarise this text'
+                ]
+            ]
+        ]
+    ],
+    'temperature' => 0.7,
+    'stream' => false
+]);
+echo $response['output'][0]['content'][0]['text'];
+```
+
+### Wichtige Parameter
+
+- `model` (erforderlich): ID des Zielmodells.
+- `input` (erforderlich): geordnetes Array mit Eingabeelementen (Nachrichten, Tool-Aufrufen usw.).
+- `temperature` (0–2): Je höher der Wert, desto zufälliger das Ergebnis.
+- `top_p` (0–1): Nucleus-Sampling-Steuerung.
+- `max_output_tokens` (Ganzzahl): Obergrenze der pro Antwort generierten Tokens.
+- Tools: `tools` (Definitionen), `tool_choice` (auto/none/bestimmtes Tool), `max_tool_calls` (Ganzzahl), `parallel_tool_calls` (boolesch).
+- Logprobs: `top_logprobs` (0–20), um Logprobs pro Token zurückzugeben.
+- Ausgabe: `service_tier`, `store` (boolesch), `stream` (boolesch).
+- Metadaten: `metadata` (durchgereichtes Objekt), `reasoning` (Objekt mit Hinweisen zum Aufwand).
+- Gateway-Erweiterungen: `usage` (boolesch, um Nutzungsdaten anzufordern), `meta` (boolesch, um den Meta-Block einzuschließen).
+
+### Rückgabe
+
+JSON-Objekt `ResponsesResponse`.

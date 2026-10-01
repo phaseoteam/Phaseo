@@ -18,6 +18,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
 import { useTranslations } from "next-intl";
+import { localizedSettingsError } from "@/i18n/error-messages";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -299,7 +300,12 @@ export default function TeamsMembers({
 			router.refresh();
 		} catch (error: any) {
 			toast.error(
-				error?.message ?? s("Unable to update the member role right now.")
+				localizedSettingsError(
+					error,
+					t,
+					"Action failed",
+					s("Unable to update the member role right now."),
+				),
 			);
 		} finally {
 			setLoading(false);
@@ -336,7 +342,12 @@ export default function TeamsMembers({
 					selectedMember.user_id
 				);
 				if (result && result.ok === false) {
-					const message = result.message ?? s("Unable to revoke access.");
+					const message = localizedSettingsError(
+						result.message,
+						t,
+						"Action failed",
+						s("Unable to revoke access."),
+					);
 					if (message.toLowerCase().includes("owner")) {
 						toast.error(s("You can't revoke the owner's access."));
 					} else {
@@ -356,7 +367,14 @@ export default function TeamsMembers({
 			setSelectedMember(null);
 			router.refresh();
 		} catch (error: any) {
-			toast.error(error?.message ?? s("Unable to revoke access right now."));
+			toast.error(
+				localizedSettingsError(
+					error,
+					t,
+					"Action failed",
+					s("Unable to revoke access right now."),
+				),
+			);
 		} finally {
 			setLoading(false);
 		}

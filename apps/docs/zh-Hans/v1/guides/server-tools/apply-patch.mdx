@@ -1,0 +1,87 @@
+---
+title: "应用补丁"
+description: "让 Responses 模型返回经过验证的补丁操作。"
+icon: "file-pen-line"
+---
+
+当 Responses 工作流需要以结构化补丁操作返回文件更改时，请使用 `phaseo:apply_patch`。Phaseo 会校验该操作并返回给客户端，但不会修改文件系统或代码库。
+
+<Note>
+`phaseo:apply_patch` is available on `/v1/responses`.
+</Note>
+
+## 请求
+
+```bash
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-5-nano",
+    "input": "Create a small README patch for this project.",
+    "tools": [
+      { "type": "phaseo:apply_patch" }
+    ]
+  }'
+```
+
+## 操作结构
+
+模型调用该工具时，会发送一个操作对象：
+
+```json
+{
+  "operation": {
+    "type": "update_file",
+    "path": "/README.md",
+    "diff": "@@ ...\n-Old text\n+New text\n"
+  }
+}
+```
+
+支持的操作类型：
+
+| 类型 | 必填字段 |
+| --- | --- |
+| `create_file` | `path`, `diff` |
+| `update_file` | `path`, `diff` |
+| `delete_file` | `path` |
+
+## 工具结果
+
+Phaseo 会将验证后的操作返回模型循环：
+
+```json
+{
+  "status": "completed",
+  "operation": {
+    "type": "update_file",
+    "path": "/README.md",
+    "diff": "@@ ...\n-Old text\n+New text\n"
+  },
+  "message": "Patch operation validated. The client must apply or reject this patch and report the result."
+}
+```
+
+应用仍需负责应用补丁、向用户展示、拒绝补丁，或要求模型返回修订后的操作。
+
+## 用量与定价
+
+Phaseo 会记录：
+
+```json
+{
+  "usage": {
+    "server_tool_use": {
+      "apply_patch_requests": 1
+    }
+  }
+}
+```
+
+价格卡可通过 `server_tool_apply_patch_requests` 计量项对此计费。
+
+## 相关内容
+
+- [服务器工具](./index.mdx)
+- [Responses API](../../api-reference/endpoint/responses.mdx)

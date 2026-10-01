@@ -1,0 +1,29 @@
+---
+icon: "database"
+title: "Zustand und Freigabe"
+description: "Pausiere Python-Agents für menschliche Entscheidungen und setze anwendungsverwalteten Zustand fort."
+---
+
+Verwende `human_review` als allgemeinen Prüfpunkt. Freigabepflichtige und manuelle Tools tragen die exakten Aufruf-IDs in `paused.run.pause.pending_tool_calls` ein.
+
+```python
+from phaseo_agent import AgentToolDecision, AgentToolOutput
+
+pending = paused.run.pause.pending_tool_calls
+
+continued = agent.continue_run(
+    run=paused,
+    client=client,
+    approvals=[AgentToolDecision(pending[0].call.id)],
+    tool_outputs=[AgentToolOutput(pending[1].call.id, {"status": "complete"})],
+)
+```
+
+Gib `rejections` für abgelehnte Aufrufe oder `human_input` für eine allgemeine Prüfungsunterbrechung an. Entscheidungen werden anhand der Aufruf-ID zugeordnet, nicht anhand des Tool-Namens.
+
+Implementiere `AgentStateAccessor.load(run_id)` und `save(result)`, wenn Ausführungen Anfragen oder Prozessneustarts überstehen müssen. Die Fortsetzung kann den Zustand dann über `run_id` laden.
+
+## Weiterführende Themen
+
+- [Werkzeuge](./agent-sdk-tools.mdx)
+- [Ausführung steuern](./agent-sdk-run-controls.mdx)

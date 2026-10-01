@@ -1,0 +1,72 @@
+---
+title: "Migrationsbereitschaft prüfen"
+description: "Prüfe, ob ein bestehender Gateway-Workload für den Wechsel zu Phaseo bereit ist."
+---
+
+Nutze diese Prüfung, bevor du die Umstellung des Gateways planst. Sie konzentriert sich auf Verhaltensweisen, die sich ändern können, obwohl beide Plattformen OpenAI-kompatible Anfragen annehmen.
+
+## 1. Erfasse die Integrationspunkte
+
+Notiere alle Stellen, an denen das aktuelle Gateway verwendet wird:
+
+- Basis-URLs und Umgebungsvariablen für API-Schlüssel
+- SDK-Initialisierung und benutzerdefinierte Header
+- Modell-IDs und Fallback-Modelle
+- Anbieterreihenfolge, Zulassungslisten und Datenschutzanforderungen
+- Code für Streaming, Tool-Aufrufe und strukturierte Ausgaben
+- Batch-Jobs, Dateien, Webhooks und asynchrone Statusabfragen
+- Request-Zuordnung und Benutzer- oder Sitzungsmetadaten
+
+Lege diese Bestandsaufnahme zum Rollout-Plan, damit Reviewer prüfen können, dass die Migration keinen zweiten, versteckten Konfigurationspfad zurücklässt.
+
+## 2. Ordne jeder Funktion einen Status zu
+
+Vergib für jedes Verhalten im Produktivbetrieb einen Status:
+
+| Status | Bedeutung |
+| --- | --- |
+| Unverändert | Dasselbe Request-Feld und dasselbe Antwortverhalten wurden bestätigt. |
+| Zugeordnet | Phaseo unterstützt das Ergebnis über ein anderes Feld oder eine andere Konfiguration. |
+| Angepasst | Eine Kompatibilitätsschicht übersetzt die Anfrage oder Antwort. |
+| Nicht unterstützt | Der Workload muss diese Abhängigkeit entfernen oder den bisherigen Pfad beibehalten. |
+| Nicht geprüft | Die Unterstützung ist möglicherweise vorhanden, aber es fehlen noch Nachweise unter produktionsnahen Bedingungen. |
+
+Nutze die [Checkliste für Migrationsfunktionen](./feature-parity-matrix.mdx), um zentrale Anfragen, Routing, Zuordnung, asynchrone Abläufe und Betrieb abzudecken.
+
+## 3. Prüfe repräsentativen Datenverkehr
+
+Erstelle aus typischen Mustern des Workloads einen kleinen Testsatz, ohne sensible Produktionsdaten zu kopieren.
+
+Teste:
+
+1. Eine normale Anfrage für jeden verwendeten Endpunkt.
+2. Streaming über denselben Client-Pfad wie im Produktivbetrieb.
+3. Tool-Aufrufe und strukturierte Ausgaben mit realistischen Schemas.
+4. Alle Anbieter- und Datenschutzvorgaben.
+5. Ungültige Schlüssel und Modelle, Ratenbegrenzungen sowie Fehler bei nicht verfügbaren Anbietern.
+6. Batch- oder asynchrone Jobs bis zu den Endzuständen Erfolg, Fehler und Abbruch.
+
+Vergleiche Antwortqualität, Latenz, Tokenverbrauch, ausgewählten Anbieter und Gesamtkosten. Notiere für jedes Ergebnis die Request-ID, damit du es in der Gateway-Nutzung untersuchen kannst.
+
+## 4. Erhalte Zuordnung und Beobachtbarkeit
+
+Behalte App-Zuordnungsheader bei, wenn sie die aufrufende Anwendung beschreiben. Phaseo unterstützt stabile App-IDs, Namen, URLs und Kategorien. Wenn du sie während der Migration entfernst, werden Kosten- und Nutzungsvergleiche schwieriger.
+
+Unter [App-Zuordnung](../guides/app-attribution.mdx) findest du die unterstützten Header und Kategorien.
+
+## 5. Rolle mit einer umkehrbaren Umstellung aus
+
+Beginne mit Entwicklungs- und internem Datenverkehr. Leite erst dann einen kleinen Anteil des Produktionsverkehrs um, wenn der Testsatz erfolgreich ist. Halte den Rollback bis zu stabilen Ergebnissen auf Änderungen an Endpunkt und Zugangsdaten beschränkt.
+
+Kombiniere die erste Umstellung nicht mit unabhängigen Optimierungen an Prompts, Modellen oder Routing. Nimm diese Änderungen vor, nachdem die Gateway-Grenze geprüft wurde.
+
+## Plattformbezogene Anleitungen
+
+- [OpenAI-SDK](./from-openai.mdx)
+- [Anthropic-SDK](./from-anthropic.mdx)
+- [OpenRouter](./from-openrouter.mdx)
+- [Vercel AI Gateway](./from-vercel.mdx)
+- [LLMGateway](./from-llmgateway.mdx)
+- [LiteLLM](./from-litellm.mdx)
+- [Cloudflare AI Gateway](./from-cloudflare.mdx)
+- [Helicone AI Gateway](./from-helicone.mdx)

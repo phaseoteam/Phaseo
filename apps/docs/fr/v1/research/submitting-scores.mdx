@@ -1,0 +1,64 @@
+---
+icon: "upload"
+title: "Soumettre des scores"
+description: "Partagez de nouveaux résultats de benchmarks avec la communauté Phaseo de manière structurée et facile à examiner."
+---
+
+Nous accueillons les contributions des fournisseurs, des chercheurs et des utilisateurs avancés. Suivez le processus ci-dessous pour accélérer le traitement de votre soumission.
+
+---
+
+## 1. Préparer les données
+
+- Vérifiez que le benchmark existe dans `/data/benchmarks`. Sinon, ouvrez une issue pour le proposer.
+- Rassemblez les résultats bruts, notamment le format des prompts, le système d’évaluation et les détails du matériel.
+- Ajoutez une référence publique (article de blog, publication ou dépôt du jeu de données) si elle existe.
+
+> ✅ **Conseil**
+> Un script ou notebook reproductible accélère considérablement la vérification.
+
+---
+
+## 2. Forker le dépôt
+
+1. Forkez [github.com/phaseoteam/data](https://github.com/phaseoteam/data).
+2. Créez une branche (par exemple, `add-claude-3.5-sonnet-mmlu`).
+3. Mettez à jour le JSON du benchmark concerné avec vos scores et métadonnées.
+
+---
+
+## 3. Exécuter la validation
+
+Utilisez les outils du dépôt pour vérifier la structure et les plages de valeurs :
+
+```bash
+pnpm install
+pnpm run validate:benchmarks
+```
+
+Corrigez tous les problèmes signalés avant d’envoyer votre pull request.
+
+---
+
+## 4. Ouvrir une pull request
+
+Incluez les éléments suivants dans la description de votre PR :
+
+- Nom et partition du benchmark (par exemple, `GSM8K test`).
+- ID du modèle et fournisseur.
+- Liens vers les références ou les journaux d’évaluation.
+- Résumé de la méthode de calcul du score.
+
+Les responsables examineront la soumission, demanderont des précisions si nécessaire et la fusionneront après approbation.
+
+---
+
+## 5. Suivre la publication
+
+Après la fusion, le score apparaîtra lors de la prochaine synchronisation des données. Suivez l’avancement sur le canal Discord #data-updates ou dans le journal des modifications public.
+
+---
+
+## Besoin d’aide ?
+
+Contactez-nous sur le [Discord communautaire](https://discord.gg/aQyywCvgZ5) ou par e-mail à [l’assistance](mailto:daniel@phaseo.app). Nous serons ravis de collaborer sur les imports volumineux ou les recherches menées avec des partenaires.

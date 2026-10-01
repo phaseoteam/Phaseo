@@ -1,0 +1,16 @@
+---
+icon: "layers"
+title: "Trabajar con resultados y elementos"
+description: "Crea cronologías de ejecuciones de .NET a partir de mensajes, pasos, herramientas y eventos de flujo."
+---
+
+`RunResult` es el resultado persistente de un agente. Contiene el registro de ejecución, mensajes, pasos, uso y coste, advertencias, motivos de finalización y resultado final.
+
+Usa `TextStream()` para obtener en tiempo real el texto de la respuesta y `FullStream()` para los eventos del modelo, las herramientas, los pasos, la ejecución y los elementos del proveedor. Actualmente, C# expone los elementos del proveedor como objetos genéricos, no como la unión discriminada `AgentItem` de TypeScript.
+
+Crea cronologías del producto a partir de los eventos del ciclo de vida mientras se ejecuta el agente y, después, reconstruye el estado final a partir de los mensajes y pasos persistidos.
+
+## Relacionado
+
+- [Transmisión](./agent-sdk-streaming.mdx)
+- [Hooks del ciclo de vida](./agent-sdk-lifecycle-hooks.mdx)

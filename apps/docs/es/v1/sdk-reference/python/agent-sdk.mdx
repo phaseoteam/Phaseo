@@ -1,0 +1,49 @@
+---
+title: "Uso"
+description: "Ejecuta ciclos de herramientas, revisión humana, reintentos y agentes reanudables con el Agent SDK para Python."
+---
+
+## Preparar el entorno de ejecución
+
+El paquete independiente aún no está disponible en PyPI. Sigue las [instrucciones para instalarlo desde el código fuente](./agent-sdk-installation.mdx).
+
+## Inicio rápido
+
+```python
+from phaseo_agent import create_agent, create_gateway_agent_client
+
+agent = create_agent({
+    "id": "quickstart-agent",
+    "model": "openai/gpt-5.4-nano",
+    "instructions": "Answer concisely and helpfully.",
+})
+
+result = agent.run(
+    input="Give me one fun fact about cURL.",
+    client=create_gateway_agent_client(),
+)
+
+print(result.output)
+```
+
+## Funciones incluidas
+
+- `create_agent(...)`
+- `define_tool(...)`
+- `create_gateway_agent_client(...)`
+- reintentos, herramientas concurrentes, tiempos de espera y eventos del ciclo de vida
+- pausas para revisión humana con `continue_run(...)`
+- estado serializable y captura en Phaseo Devtools
+
+## Entorno de ejecución avanzado
+
+Python admite esquemas y aprobaciones mediante funciones, herramientas HITL y manuales, seguimiento del progreso, errores recuperables, flujos reproducibles, utilidades para detener la ejecución, turnos dinámicos, anulaciones persistentes del siguiente turno, uso y coste normalizados, y acceso al estado gestionado por la aplicación.
+
+## Transmisión y cancelación
+
+`agent.stream(...)` y `agent.continue_stream(...)` usan el flujo SSE de Responses del gateway. Consume `text_stream()`, `reasoning_stream()`, `item_stream()`, `tool_stream()` o `full_stream()`; llama a `cancel()` para cerrar la solicitud activa. Los pasos completados conservan los ID de solicitud, los metadatos del proveedor, los motivos de finalización, las advertencias, el uso y el coste.
+
+## Páginas relacionadas
+
+- [Descripción general del Agent SDK](../agent-sdk/overview.mdx)
+- [Agent SDK para TypeScript](../typescript/agent-sdk.mdx)

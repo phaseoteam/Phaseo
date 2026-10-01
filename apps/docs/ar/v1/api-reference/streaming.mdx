@@ -1,0 +1,68 @@
+---
+title: "البث"
+description: "ابث مخرجات النموذج في الوقت الفعلي باستخدام SSE على نقاط نهاية النص الأساسية."
+icon: "radio"
+---
+
+يتيح البث لواجهة المستخدم عرض الرموز فور توليدها بدلًا من انتظار الاستجابة كاملة.
+
+## نقاط النهاية المدعومة
+
+- `POST /v1/responses`
+- `POST /v1/chat/completions`
+- `POST /v1/messages`
+
+## تفعيل البث
+
+اضبط `stream: true` في جسم الطلب.
+
+```bash
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-5-nano",
+    "input": "Write a short greeting.",
+    "stream": true
+  }'
+```
+
+## شكل إطارات SSE
+
+تُعاد التدفقات على هيئة إطارات SSE:
+
+```text
+data: {"id":"resp_...","status":"in_progress",...}
+data: {"type":"response.output_text.delta","delta":"Hello"}
+data: {"type":"response.completed",...}
+data: [DONE]
+```
+
+## التعامل مع الأخطاء أثناء البث
+
+- إذا فشل الطلب قبل بدء البث، فستتلقى استجابة خطأ JSON عادية.
+- إذا فشل بعد إرسال جزء من المخرجات، فتعامل مع التدفق على أنه غير مكتمل وأتح للمستخدم إعادة المحاولة في الواجهة.
+- سجّل `generation_id` دائمًا عند وجوده لتسهيل الدعم والربط بين السجلات.
+
+## الإلغاء
+
+استخدم عناصر التحكم في الإلغاء (`AbortController` في JavaScript أو مهلة للطلب في عمال الخلفية) كي لا تستهلك التدفقات المتروكة سعة بلا داعٍ.
+
+## قيد معروف
+
+ترفض طبقة التحقق الحالية من الطلبات في Gateway استخدام `stream: true` مع استدعاء الأدوات. استخدم الوضع غير المتدفق في حلقات استدعاء الأدوات.
+
+## صفحات ذات صلة
+
+- [نقطة نهاية Responses](./endpoint/responses.mdx)
+- [نقطة نهاية Chat Completions](./endpoint/chat-completions.mdx)
+- [نقطة نهاية Messages](./endpoint/anthropic-messages.mdx)
+- [الأخطاء وتصحيحها](./errors.mdx)
+
+<Visibility for="agents">
+إذا كنت تنفّذ البث بصفتك وكيلاً:
+
+- استخدم مهارات المستودع لتحليل SSE وإعادة المحاولة والإلغاء.
+- راجع مخططات كل نقطة نهاية قبل إضافة افتراضات خاصة بمزوّد بعينه.
+- افصل عرض المخرجات التدريجي عن حفظ الحالة النهائية.
+</Visibility>

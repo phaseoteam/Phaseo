@@ -1,0 +1,10 @@
+---
+title: "Dériver un préréglage public"
+sidebarTitle: "Dériver le préréglage"
+badge: "Bêta"
+openapi: "/fr/openapi/v1/openapi.localized.yaml POST /presets/{id}/fork"
+description: "Dérive un préréglage public dans l’espace de travail de gestion."
+---
+<Note>Ce point de terminaison nécessite une clé API de gestion avec `presets:write` et une identité utilisateur associée.</Note>
+
+Omettez `source_version_id` pour dériver la version active. Le nouveau préréglage est privé et conserve la filiation amont.

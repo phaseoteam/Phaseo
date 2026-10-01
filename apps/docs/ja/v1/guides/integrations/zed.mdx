@@ -1,0 +1,44 @@
+---
+title: "Zed"
+description: "ZedにOpenAI互換のモデルプロバイダーとしてPhaseoを追加します。"
+---
+
+`phaseo integrations setup zed`を実行します。CLIはプロバイダーID `phaseo`、API URL `https://api.phaseo.app/v1`、選択したモデルを`settings.json`に追加し、他の設定は変更しません。
+
+## ZedにAPIキーを保存する
+
+Zedはプロバイダーキーをシステムのキーチェーンに保存するため、残る操作はUI上のこの手順だけです。
+
+1. コマンドパレットを開き、**agent: open settings**を実行します。
+2. **AI**で**LLM Providers → Configure**を選択します。
+
+![LLM Providersを強調表示したZedのAI設定画面](/images/integrations/zed-agent-settings.png)
+
+3. Phaseoがすでに表示されている場合は開いて専用キーを貼り付けます。表示されていない場合は**Add Provider → OpenAI**を選択します。
+
+![Add Providerを含むZedのLLM Providersページ](/images/integrations/zed-llm-providers.png)
+
+4. 手動で設定する場合は、次の値を入力します。
+
+| 項目 | 値 |
+| --- | --- |
+| Provider Name | `Phaseo` |
+| API URL | `https://api.phaseo.app/v1` |
+| API Key | 次のコマンドの出力 `phaseo integrations credential zed` |
+| Model Name | 選択したPhaseoモデルのID |
+
+![OpenAI互換プロバイダーを追加するZedのフォーム](/images/integrations/zed-add-compatible-provider.png)
+
+Base URL、モデルID、キーを入力し終えるまで、**Save Provider**を選択しないでください。
+
+## 確認する
+
+新しいAgentスレッドを開き、Phaseoモデルを選択して短いリクエストを送信します。Zedが無効なキーを報告した場合は、`phaseo integrations credential zed`を再実行し、Zedに保存したキーを置き換えます。
+
+## 削除する
+
+```bash
+phaseo integrations remove zed
+```
+
+CLIは`settings.json`からPhaseoプロバイダーを削除し、専用キーを失効させます。Zedに古いキーチェーン項目が残っている場合は、**LLM Providers**からPhaseoも削除してください。

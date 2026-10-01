@@ -1,0 +1,207 @@
+---
+title: "Anbieterqualifizierte Modell-IDs"
+description: "Leiten Sie eine Anfrage mit einer einzelnen Modell-ID an einen bestimmten Anbieter und ein bestimmtes Modell."
+icon: "route"
+---
+
+Mit anbieterqualifizierten Modell-IDs können Sie im Feld `model` einen bestimmten Anbieter und ein kanonisches Modell auswählen. Verwenden Sie sie, wenn die Anbieterauswahl Teil des Anfragevertrags und keine bloße Routing-Präferenz ist.
+
+## Syntax
+
+```text
+<provider-id>:<canonical-model-id>
+```
+
+Beispiele:
+
+```text
+baseten:thinking-machines/inkling-small
+deepinfra:deepseek/deepseek-v3
+crofai:moonshotai/kimi-k3
+```
+
+Der erste Doppelpunkt trennt den Anbieter von der kanonischen Modell-ID. Doppelpunkte nach dem Modell-Namespace bleiben Modell-Suffixe; dadurch ist die Schreibweise eindeutig:
+
+```text
+baseten:google/gemma-4-26b-a4b:free
+```
+
+In diesem Beispiel:
+
+- `baseten` ist der angeforderte Anbieter
+- `google/gemma-4-26b-a4b:free` ist die kanonische Phaseo-Modell-ID
+
+## Anfrage senden
+
+Verwenden Sie die qualifizierte ID überall dort, wo der Endpunkt eine Modell-ID akzeptiert.
+
+<CodeGroup>
+
+```bash cURL
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "baseten:thinking-machines/inkling-small",
+    "input": "Explain mixture-of-experts routing in two sentences."
+  }'
+```
+
+```javascript JavaScript
+const response = await fetch("https://api.phaseo.app/v1/responses", {
+  method: "POST",
+  headers: {
+    Authorization: "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    model: "baseten:thinking-machines/inkling-small",
+    input: "Explain mixture-of-experts routing in two sentences.",
+  }),
+});
+
+const result = await response.json();
+```
+
+```python Python
+import os
+import requests
+
+response = requests.post(
+    "https://api.phaseo.app/v1/responses",
+    headers={
+        "Authorization": f"Bearer {os.environ['PHASEO_API_KEY']}",
+        "Content-Type": "application/json",
+    },
+    json={
+        "model": "baseten:thinking-machines/inkling-small",
+        "input": "Explain mixture-of-experts routing in two sentences.",
+    },
+)
+
+result = response.json()
+```
+
+</CodeGroup>
+
+## Verhalten des exakten Routings
+
+Die Anbieterqualifizierung ist eine feste Einschränkung. Phaseo begrenzt die geeigneten Anbieter auf den angeforderten Anbieter und wechselt bei dieser Anfrage nicht zu einem anderen Anbieter.
+
+Die Qualifizierung umgeht keine anderen Kontrollen. Der Anbieter muss weiterhin:
+
+- das kanonische Modell am angeforderten Endpunkt bereitstellen
+- für die Endpunktfähigkeit aktiviert sein
+- die Workspace- und API-Schlüsselrichtlinien erfüllen
+- Voreinstellungs- und Datenschutzeinschränkungen erfüllen
+- die angeforderte Service-Stufe und Parameter unterstützen
+- eine gültige Preiskonfiguration haben
+
+Wenn eine dieser Prüfungen fehlschlägt, lehnt Phaseo die Anfrage ab, statt stillschweigend einen anderen Anbieter auszuwählen.
+
+## Zusammenspiel mit Routing-Feldern
+
+Der qualifizierte Anbieter und explizite Routing-Felder müssen übereinstimmen.
+
+```json
+{
+  "model": "baseten:thinking-machines/inkling-small",
+  "provider": {
+    "only": ["baseten"]
+  }
+}
+```
+
+Ein passender Wert für `provider.only` oder `routing.only` wird akzeptiert. Eine widersprüchliche Zulassungsliste oder eine Ignorierliste, die den qualifizierten Anbieter enthält, führt zu einem Validierungsfehler.
+
+Beispielsweise ist diese Anfrage widersprüchlich und wird abgelehnt:
+
+```json
+{
+  "model": "baseten:thinking-machines/inkling-small",
+  "provider": {
+    "only": ["deepinfra"]
+  }
+}
+```
+
+Wenn die Anbieterauswahl nur eine Präferenz ist und anbieterübergreifende Fallbacks gewünscht sind, verwenden Sie weiterhin eine nicht qualifizierte kanonische Modell-ID mit den normalen [Routing- und Fallback-Steuerungen](./routing-and-fallbacks.mdx).
+
+## Anbieterqualifizierte kostenlose Modelle
+
+Eine qualifizierte `:free`-Anfrage wird nur akzeptiert, wenn genau dieser Anbieter eine geeignete kostenlose Route für das kanonische Modell und den Endpunkt bereitstellt.
+
+```json
+{
+  "model": "baseten:google/gemma-4-26b-a4b:free",
+  "input": "Hello"
+}
+```
+
+Phaseo lehnt die Anfrage standardmäßig ab, sofern die ausgewählte Route keine nicht leere Preisliste besitzt und jede aktuelle Preisregel:
+
+- ausdrücklich als `free` gekennzeichnet ist
+- exakt den Preis null hat
+
+Fehlende, kostenpflichtige, gemischte oder negative Preise sowie eine Nullpreisregel ohne ausdrückliche Kennzeichnung als kostenlos führen zur Ablehnung, bevor der Anbieter aufgerufen wird.
+
+<Note>
+Ein kanonisches Modell mit `:free` bedeutet nicht, dass jeder Anbieter des zugrunde liegenden Modells eine kostenlose Route anbietet.
+</Note>
+
+## Anbieter-Slugs und Aliase
+
+Verwenden Sie einen Anbieter-Slug aus dem Phaseo-Anbieterkatalog. Slugs werden in Kleinbuchstaben normalisiert; unterstützte ältere oder Marken-Aliase werden der kanonischen Anbieter-ID zugeordnet.
+
+Zum Beispiel werden `NovitaAI` und `novita-ai` derzeit zu `novita` normalisiert.
+
+Fehlerhafte und unbekannte Slugs werden vor der Anbieterauswahl abgelehnt. Phaseo sendet sie nicht als Teil des Modellnamens an den Upstream-Anbieter.
+
+## Validierungsfehler
+
+Fehler bei anbieterqualifizierten IDs verwenden HTTP `400` und den übergeordneten Fehlercode `validation_error`. Prüfen Sie `reason` oder `details[].keyword` auf den genauen Grund.
+
+| Grund | Bedeutung |
+| --- | --- |
+| `invalid_provider_slug` | Der Anbieteranteil ist leer oder enthält nicht unterstützte Zeichen. |
+| `unknown_provider_slug` | Der Slug ist korrekt formatiert, gehört aber zu keinem erkannten Phaseo-Anbieter. |
+| `invalid_provider_qualified_model` | Die kombinierte ID entspricht nicht dem Format `<provider>:<publisher>/<model>`. |
+| `provider_qualified_model_conflict` | `provider.only`, `provider.ignore`, `routing.only` oder `routing.ignore` widerspricht der Qualifizierung. |
+| `qualified_provider_unavailable` | Der Anbieter ist bekannt, stellt das Modell aber am angeforderten Endpunkt nicht bereit. |
+| `qualified_free_provider_unavailable` | Die genaue Anbieterroute wurde nicht als kostenlos mit Nullpreisen für alle Regeln bestätigt. |
+
+Fehlerbeispiel:
+
+```json
+{
+  "error": "validation_error",
+  "status_code": 400,
+  "reason": "unknown_provider_slug",
+  "description": "Unknown provider slug \"not-a-provider\" in provider-qualified model \"not-a-provider:publisher/model\". Use a provider slug returned by Phaseo's provider catalogue.",
+  "provider": "not-a-provider",
+  "model": "publisher/model",
+  "details": [
+    {
+      "path": ["model"],
+      "keyword": "unknown_provider_slug"
+    }
+  ]
+}
+```
+
+## Zwischen den beiden Formen wählen
+
+| Anforderung | Empfohlener Modellwert |
+| --- | --- |
+| Phaseo soll den Anbieter auswählen und zwischen Anbietern wechseln können | `thinking-machines/inkling-small` |
+| Baseten ohne anbieterübergreifenden Fallback erzwingen | `baseten:thinking-machines/inkling-small` |
+| Eine geprüfte kostenlose Anbieterroute voraussetzen | `baseten:google/gemma-4-26b-a4b:free` |
+
+## Zugehörige Anleitungen
+
+- [Routing und Fallbacks](./routing-and-fallbacks.mdx)
+- [API-Anbieter](../exploring/api-providers.mdx)
+- [Modelle](../exploring/models.mdx)
+- [Fehlerbehandlung](../developers/error-handling.mdx)
+- [Voreinstellungen](./presets.mdx)
+

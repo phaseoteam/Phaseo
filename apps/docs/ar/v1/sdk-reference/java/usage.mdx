@@ -1,0 +1,37 @@
+---
+icon: "square-terminal"
+title: "استخدام SDK Java"
+description: "كيفية تهيئة غلاف SDK Java واستخدامه."
+---
+
+## الإعداد
+
+```java
+import app.phaseo.sdk.Phaseo;
+
+String apiKey = System.getenv("PHASEO_API_KEY");
+Phaseo client = new Phaseo(apiKey);
+```
+
+## النمط
+
+تبدو استدعاءات الغلاف المعتادة كما يلي:
+
+```java
+Object response = client.createChatCompletion("""
+{
+  "model": "openai/gpt-5-nano",
+  "messages": [
+    { "role": "user", "content": "Say hello from Java" }
+  ]
+}
+""");
+```
+
+تعيد طرق الغلاف عقد JSON محللة لمعظم نقاط نهاية JSON ومصفوفات بايت لمساعدات محتوى الملفات والفيديو.
+
+## التوصيات
+
+- ابدأ باستخدام `app.phaseo.sdk.Phaseo` لواجهات البوابة الشائعة.
+- لا تستخدم `app.phaseo.gen.Client` و`app.phaseo.gen.Operations` إلا عند الحاجة إلى عملية منخفضة المستوى لم تُضف إلى الغلاف بعد.
+- ابدأ بالأمثلة الخاصة بكل نقطة نهاية في هذا القسم لمعرفة أسماء طرق الغلاف الحالية.

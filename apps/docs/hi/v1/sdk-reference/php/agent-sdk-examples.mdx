@@ -1,0 +1,32 @@
+---
+icon: "square-terminal"
+title: "उदाहरण"
+description: "Tools, approvals, streaming और सीमित runs के लिए PHP patterns अपनाएँ।"
+---
+
+## अनुमोदन के साथ डिप्लॉयमेंट
+
+```php
+$deploy = new Tool(
+    id: "deploy",
+    description: "Deploy the selected release",
+    requireApproval: true,
+    execute: fn (array $input, $runtime) => $deployments->deploy($input)
+);
+```
+
+Run के `waiting_for_human` में पहुँचने पर उसे सहेजें, फिर pending call ID से जुड़ा निर्णय देकर जारी रखें।
+
+## टेक्स्ट स्ट्रीम करें
+
+```php
+$stream = $agent->stream(input: $prompt, client: $client);
+foreach ($stream->textStream() as $delta) { echo $delta; }
+$result = $stream->getResult();
+```
+
+## स्वायत्त काम सीमित करें
+
+Step, token, cost और duration limits मिलाएँ, ताकि उपयोगी काम मिलता रहने पर भी agent application budget से आगे न जाए।
+
+पूरे contracts के लिए [टूल](./agent-sdk-tools.mdx), [स्थिति और अनुमोदन](./agent-sdk-state-and-approval.mdx) और [रोकने की शर्तें](./agent-sdk-stop-conditions.mdx) देखें।

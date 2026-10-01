@@ -2,6 +2,7 @@
 
 import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -44,13 +45,6 @@ function toDateTimeLocalInput(value: string | null): string {
 	return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
 
-function getErrorMessage(error: unknown, fallback: string): string {
-	if (error instanceof Error && error.message.trim().length > 0) {
-		return error.message;
-	}
-	return fallback;
-}
-
 export default function CreditGrantEditDialog(props: Props) {
 	const {
 		grantId,
@@ -63,6 +57,8 @@ export default function CreditGrantEditDialog(props: Props) {
 	} = props;
 
 	const router = useRouter();
+	const locale = useLocale();
+	const t = useTranslations("Product.internalTools.promoCredits");
 	const formRef = useRef<HTMLFormElement>(null);
 	const [open, setOpen] = useState(false);
 	const [isSaving, setIsSaving] = useState(false);
@@ -81,8 +77,8 @@ export default function CreditGrantEditDialog(props: Props) {
 	const expiryPreview = useMemo(() => {
 		if (!expiryLocalValue) return null;
 		const [datePart, timePart] = expiryLocalValue.split("T");
-		return buildExpirySelectionPreview(datePart ?? "", timePart ?? "", "23:59");
-	}, [expiryLocalValue]);
+		return buildExpirySelectionPreview(datePart ?? "", timePart ?? "", "23:59", locale);
+	}, [expiryLocalValue, locale]);
 	const browserTimeZone = useMemo(() => getBrowserTimeZone(), []);
 
 	async function handleSave() {
@@ -91,9 +87,12 @@ export default function CreditGrantEditDialog(props: Props) {
 		setIsSaving(true);
 		try {
 			await toast.promise(updateCreditGrantAction(formData), {
-				loading: "Saving promo code...",
-				success: "Promo code updated.",
-				error: (error) => getErrorMessage(error, "Failed to update promo code."),
+				loading: t("saving"),
+				success: t("saved"),
+				error: (error) => {
+					console.error("Failed to update promo code", error);
+					return t("saveFailure");
+				},
 			});
 			router.refresh();
 			setOpen(false);
@@ -109,9 +108,12 @@ export default function CreditGrantEditDialog(props: Props) {
 		setIsDisabling(true);
 		try {
 			await toast.promise(disableCreditGrantAction(formData), {
-				loading: "Disabling promo code...",
-				success: "Promo code disabled.",
-				error: (error) => getErrorMessage(error, "Failed to disable promo code."),
+				loading: t("disabling"),
+				success: t("disabled"),
+				error: (error) => {
+					console.error("Failed to disable promo code", error);
+					return t("disableFailure");
+				},
 			});
 			router.refresh();
 			setOpen(false);
@@ -122,7 +124,7 @@ export default function CreditGrantEditDialog(props: Props) {
 
 	async function handleDelete() {
 		if (!canDelete || isBusy) return;
-		if (!window.confirm(`Delete promo code ${code}? This cannot be undone.`)) {
+		if (!window.confirm(t("deleteConfirmation", { code }))) {
 			return;
 		}
 		const formData = new FormData();
@@ -130,9 +132,12 @@ export default function CreditGrantEditDialog(props: Props) {
 		setIsDeleting(true);
 		try {
 			await toast.promise(deleteCreditGrantAction(formData), {
-				loading: "Deleting promo code...",
-				success: "Promo code deleted.",
-				error: (error) => getErrorMessage(error, "Failed to delete promo code."),
+				loading: t("deleting"),
+				success: t("deleted"),
+				error: (error) => {
+					console.error("Failed to delete promo code", error);
+					return t("deleteFailure");
+				},
 			});
 			router.refresh();
 			setOpen(false);
@@ -145,16 +150,13 @@ export default function CreditGrantEditDialog(props: Props) {
 		<Dialog open={open} onOpenChange={setOpen}>
 			<DialogTrigger asChild>
 				<Button type="button" variant="outline" size="sm">
-					Edit
+					{t("edit")}
 				</Button>
 			</DialogTrigger>
 			<DialogContent>
 				<DialogHeader>
-					<DialogTitle>Edit Promo Code</DialogTitle>
-					<DialogDescription>
-						Update redemption limits, expiry, active status, and note for{" "}
-						<span className="font-medium text-foreground">{code}</span>.
-					</DialogDescription>
+					<DialogTitle>{t("editTitle")}</DialogTitle>
+					<DialogDescription>{t("editDescription", { code })}</DialogDescription>
 				</DialogHeader>
 				<form
 					ref={formRef}
@@ -167,7 +169,7 @@ export default function CreditGrantEditDialog(props: Props) {
 					<input type="hidden" name="grant_id" value={grantId} />
 					<div className="grid grid-cols-2 gap-3">
 						<div className="space-y-1">
-							<Label htmlFor={`max-redemptions-${grantId}`}>Max Redemptions</Label>
+							<Label htmlFor={`max-redemptions-${grantId}`}>{t("maxRedemptions")}</Label>
 							<Input
 								id={`max-redemptions-${grantId}`}
 								name="max_redemptions"
@@ -178,7 +180,7 @@ export default function CreditGrantEditDialog(props: Props) {
 							/>
 						</div>
 						<div className="space-y-1">
-							<Label htmlFor={`redemptions-count-${grantId}`}>Redemptions Used</Label>
+							<Label htmlFor={`redemptions-count-${grantId}`}>{t("redemptionsUsed")}</Label>
 							<Input
 								id={`redemptions-count-${grantId}`}
 								name="redemptions_count"
@@ -190,7 +192,7 @@ export default function CreditGrantEditDialog(props: Props) {
 						</div>
 					</div>
 					<div className="space-y-1">
-						<Label htmlFor={`expires-at-${grantId}`}>Expires At</Label>
+						<Label htmlFor={`expires-at-${grantId}`}>{t("expiresAt")}</Label>
 						<Input
 							id={`expires-at-${grantId}`}
 							name="expires_at_local"
@@ -201,14 +203,14 @@ export default function CreditGrantEditDialog(props: Props) {
 						{expiryPreview ? (
 							<div className="rounded-md border border-dashed bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
 								<p>
-									Timezone:{" "}
+									{t("timeZone")}:{" "}
 									<span className="font-medium text-foreground">
 										{expiryPreview.timezoneDisplay}
 									</span>
 								</p>
-								<p>Local expiry: {expiryPreview.localDisplay}</p>
+							<p>{t("localExpiry")}: {expiryPreview.localDisplay}</p>
 								<p>
-									Stored as UTC:{" "}
+									{t("storedUtc")}:{" "}
 									<span className="font-mono text-foreground">
 										{expiryPreview.utcDisplay}
 									</span>
@@ -216,19 +218,18 @@ export default function CreditGrantEditDialog(props: Props) {
 							</div>
 						) : (
 							<p className="text-xs text-muted-foreground">
-								Uses your browser timezone ({browserTimeZone}). Pick a date/time
-								to preview the UTC value that will be stored.
+								{t("timeZoneHelp", { timezone: browserTimeZone })}
 							</p>
 						)}
 						<input type="hidden" name="expires_at" value={hiddenExpiresAt} />
 					</div>
 					<div className="space-y-1">
-						<Label htmlFor={`note-${grantId}`}>Note</Label>
+						<Label htmlFor={`note-${grantId}`}>{t("tableNote")}</Label>
 						<Input
 							id={`note-${grantId}`}
 							name="note"
 							defaultValue={note ?? ""}
-							placeholder="Internal note"
+							placeholder={t("notePlaceholderShort")}
 						/>
 					</div>
 					<label className="inline-flex items-center gap-2 text-sm text-muted-foreground">
@@ -240,16 +241,15 @@ export default function CreditGrantEditDialog(props: Props) {
 							defaultChecked={isActive}
 							className="h-4 w-4"
 						/>
-						Active
+						{t("active")}
 					</label>
 					{!canDelete ? (
 						<p className="text-xs text-muted-foreground">
-							Codes with redemption history can be disabled, but not deleted or
-							reused.
+							{t("usedHistoryWarning")}
 						</p>
 					) : (
 						<p className="text-xs text-muted-foreground">
-							Unused codes can be deleted to free the slug for reuse later.
+							{t("unusedWarning")}
 						</p>
 					)}
 					<DialogFooter>
@@ -261,7 +261,7 @@ export default function CreditGrantEditDialog(props: Props) {
 								void handleDelete();
 							}}
 						>
-							Delete
+							{t("delete")}
 						</Button>
 						<Button
 							type="button"
@@ -271,10 +271,10 @@ export default function CreditGrantEditDialog(props: Props) {
 								void handleDisable();
 							}}
 						>
-							Disable
+							{t("disable")}
 						</Button>
 						<Button type="submit" disabled={isBusy}>
-							Save Changes
+							{t("saveChanges")}
 						</Button>
 					</DialogFooter>
 				</form>

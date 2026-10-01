@@ -1,0 +1,136 @@
+---
+icon: "cloud-download"
+title: "Web Fetch सर्वर टूल"
+description: "अनुरोध के दौरान मॉडल को खास URL प्राप्त करने और पढ़ने दें।"
+---
+
+जब मॉडल को कोई ज्ञात URL पढ़ना हो—जैसे दस्तावेज़ पेज, लेख, changelog या PDF जैसी टेक्स्ट सामग्री—तब `phaseo:web_fetch` इस्तेमाल करें।
+
+मॉडल तय करता है कि URL कब लाना है, URL देता है और टूल संदर्भ के रूप में सीमित लंबाई वाला पेज टेक्स्ट प्राप्त करता है।
+
+## यह कैसे काम करता है
+
+1. `{ "type": "phaseo:web_fetch" }` को `tools` में जोड़ें।
+2. मॉडल तय करता है कि उसे URL लाने की ज़रूरत है या नहीं।
+3. Phaseo कॉन्फ़िगर किए गए engine से सामग्री प्राप्त करके निकालता है।
+4. निकाला गया टेक्स्ट, शीर्षक, URL और truncation मेटाडेटा मॉडल को लौटाए जाते हैं।
+5. मॉडल अंतिम जवाब लिखता है और ज़रूरत पड़ने पर और URL ला सकता है।
+
+## जल्दी शुरू करें
+
+```bash
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-5-nano",
+    "messages": [
+      { "role": "user", "content": "Summarize https://phaseo.app/docs/v1/guides/tool-calling" }
+    ],
+    "tools": [
+      { "type": "phaseo:web_fetch" }
+    ]
+  }'
+```
+
+## कॉन्फ़िगरेशन
+
+```json
+{
+  "type": "phaseo:web_fetch",
+  "parameters": {
+    "engine": "direct",
+    "max_chars": 12000,
+    "allowed_domains": ["phaseo.app"],
+    "blocked_domains": ["internal.example.com"]
+  }
+}
+```
+
+| पैरामीटर | प्रकार | डिफ़ॉल्ट | विवरण |
+| --- | --- | --- | --- |
+| `engine` | string | surface पर निर्भर | fetch engine: `auto`, `native`, `direct`, `exa`, `parallel` या `firecrawl`। |
+| `max_chars` | integer | `12000` | मॉडल को लौटाए जाने वाले निकाले गए टेक्स्ट की अधिकतम लंबाई। |
+| `max_content_tokens` | integer | कोई नहीं | token-आधारित वैकल्पिक नाम, जिसका उपयोग `max_chars` न देने पर होता है। |
+| `max_uses` | integer | `10` | server-tool loop के दौरान अधिकतम fetch कॉल। |
+| `allowed_domains` | string[] | कोई नहीं | केवल इन domains से fetch की अनुमति दें। |
+| `blocked_domains` | string[] | कोई नहीं | इन domains से fetch अस्वीकार करें। वैकल्पिक नाम: `excluded_domains`। |
+
+## इंजन चुनें
+
+| Engine | व्यवहार |
+| --- | --- |
+| `auto` | `/v1/messages` पर Anthropic का native fetch इस्तेमाल करता है; नहीं तो कॉन्फ़िगर होने पर Exa; अन्यथा gateway का direct fetch। |
+| `direct` | Gateway runtime से सीधे fetch करता है और सीमित टेक्स्ट निकालता है। |
+| `exa` | कॉन्फ़िगर होने पर Exa content extraction का उपयोग करता है। |
+| `parallel` | कॉन्फ़िगर होने पर Parallel Extract का उपयोग करता है। |
+| `firecrawl` | कॉन्फ़िगर होने पर Firecrawl Scrape का उपयोग करता है। |
+| `native` | `/v1/messages` पर Anthropic native `web_fetch_20260209` में बदलता है। अन्य surfaces को `direct` या managed engine इस्तेमाल करना चाहिए। |
+
+केवल HTTP(S) URL समर्थित हैं। Gateway का direct fetch टेक्स्ट-जैसे content type स्वीकार करता है और मॉडल को लौटाने से पहले HTML को साधारण टेक्स्ट में बदलता है।
+
+## Anthropic का नेटिव फ़ेच
+
+```json
+{
+  "model": "claude-sonnet-4.6",
+  "max_tokens": 1024,
+  "messages": [
+    { "role": "user", "content": "Read the docs page and summarize the limits." }
+  ],
+  "tools": [
+    {
+      "type": "phaseo:web_fetch",
+      "parameters": {
+        "engine": "native",
+        "max_content_tokens": 9000,
+        "allowed_domains": ["phaseo.app"]
+      }
+    }
+  ],
+  "tool_choice": { "type": "tool", "name": "phaseo:web_fetch" }
+}
+```
+
+## टूल का परिणाम
+
+Managed fetch इस तरह के फ़ील्ड वाला JSON टूल परिणाम लौटाता है:
+
+```json
+{
+  "provider": "fetch",
+  "engine": "direct",
+  "url": "https://phaseo.app/docs/v1/guides/tool-calling",
+  "final_url": "https://phaseo.app/docs/v1/guides/tool-calling",
+  "status": 200,
+  "content_type": "text/html",
+  "title": "Tool Calling",
+  "text": "...",
+  "truncated": false,
+  "returned_chars": 8421
+}
+```
+
+यह मानने से पहले कि मॉडल को पूरा पेज मिला है, `truncated` जाँचें।
+
+## उपयोग और कीमत
+
+Web Fetch कॉल यह संख्या बढ़ाती हैं:
+
+```json
+{
+  "usage": {
+    "server_tool_use": {
+      "web_fetch_requests": 1
+    }
+  }
+}
+```
+
+Managed fetch की कीमत में `server_tool_web_fetch_requests` मीटर इस्तेमाल हो सकता है। अगर मॉडल के price card में मीटर परिभाषित है, तो प्रोवाइडर के native fetch उपयोग में `native_web_fetch_requests` इस्तेमाल हो सकता है।
+
+## संबंधित गाइड
+
+- [वेब सर्च](./web-search.mdx)
+- [सर्वर टूल](./index.mdx)
+- [Web Fetch से जवाब को स्रोत दें](../../cookbook/tool-grounding-with-web-fetch.mdx)

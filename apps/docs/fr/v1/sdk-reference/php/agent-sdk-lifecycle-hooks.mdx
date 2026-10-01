@@ -1,0 +1,25 @@
+---
+icon: "radio-tower"
+title: "Hooks de cycle de vie"
+description: "Observez les exécutions des agents PHP, les tours du modèle, les outils, les pauses et la fin."
+---
+
+Transmettez un rappel `onEvent` pour recevoir des événements structurés du cycle de vie pendant l’exécution.
+
+```php
+$result = $agent->run(
+    input: $prompt,
+    client: $client,
+    onEvent: function (array $event): void {
+        $logger->info("agent event", [
+            "type" => $event["type"],
+            "run_id" => $event["run_id"],
+            "details" => $event["details"] ?? [],
+        ]);
+    }
+);
+```
+
+Les événements utiles incluent le démarrage, la fin et l’échec d’une exécution ; les tentatives du modèle ; les fragments de texte et de raisonnement ; le démarrage, la progression, la fin et l’échec des outils ; ainsi que les points de validation humaine.
+
+Gardez les rappels rapides. Mettez en file les opérations de persistance lentes et masquez les entrées d’outil sensibles avant de transmettre les événements à un service de télémétrie externe.

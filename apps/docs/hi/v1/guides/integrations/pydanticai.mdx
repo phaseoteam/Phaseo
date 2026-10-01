@@ -1,0 +1,46 @@
+---
+title: "PydanticAI"
+icon: "braces"
+description: "PydanticAI और Phaseo से typed Python agents बनाएँ।"
+---
+
+Typed outputs, validation और संक्षिप्त OpenAI-संगत model setup वाले Python agents के लिए PydanticAI उपयोग करें।
+
+## इंस्टॉल करें
+
+```bash
+pip install "pydantic-ai-slim[openai]"
+```
+
+## मॉडल कॉन्फ़िगर करें
+
+```python
+import os
+from pydantic_ai import Agent
+from pydantic_ai.models.openai import OpenAIChatModel
+from pydantic_ai.providers.openai import OpenAIProvider
+
+model = OpenAIChatModel(
+    "openai/gpt-5-nano",
+    provider=OpenAIProvider(
+        api_key=os.environ["PHASEO_API_KEY"],
+        base_url="https://api.phaseo.app/v1",
+    ),
+)
+
+agent = Agent(model, system_prompt="Answer concisely.")
+result = agent.run_sync("Reply with only: ok")
+print(result.output)
+```
+
+## नोट्स
+
+- PydanticAI का OpenAI-संगत path OpenAI-शैली का chat behavior उपयोग करता है।
+- `phaseo:apply_patch` जैसी Responses-only सुविधाओं के लिए direct Phaseo Responses calls उपयोग करें।
+- Structured output schemas को चुने गए model की context window के अनुरूप छोटा रखें।
+
+## संबंधित विषय
+
+- [Structured Outputs](../structured-outputs.mdx)
+- [OpenAI SDK](./openai-sdk.mdx)
+- [मॉडल](../../api-reference/endpoint/models.mdx)

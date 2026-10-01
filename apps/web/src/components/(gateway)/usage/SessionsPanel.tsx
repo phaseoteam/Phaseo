@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import {
@@ -119,9 +119,13 @@ function getUsageTokenCounts(request: SessionRequestRow): {
 	return { input, output };
 }
 
-function buildAppLabel(app: AppMetadata | null | undefined, fallbackId?: string | null): string {
+function buildAppLabel(
+	app: AppMetadata | null | undefined,
+	fallbackId: string | null | undefined,
+	unknownAppLabel: string,
+): string {
 	if (app?.title?.trim()) return app.title.trim();
-	return fallbackId?.trim() || "Unknown app";
+	return fallbackId?.trim() || unknownAppLabel;
 }
 
 function stopRowClick(event: React.MouseEvent<HTMLElement>) {
@@ -155,11 +159,16 @@ function AppBadge({
 	app: AppMetadata | null | undefined;
 	compact?: boolean;
 }) {
+	const t = useTranslations("SettingsUI");
 	if (!appId) {
 		return <Badge variant="outline" className="rounded-md">-</Badge>;
 	}
 
-	const appLabel = buildAppLabel(app, appId);
+	const appLabel = buildAppLabel(
+		app,
+		appId,
+		t("strings.Unknown app" as never),
+	);
 
 	return (
 		<Link
@@ -199,6 +208,7 @@ function RequestStatusBadge({
 	success: boolean;
 	statusCode: number | null;
 }) {
+	const t = useTranslations("Common.ui");
 	return (
 		<Badge
 			variant="outline"
@@ -209,7 +219,11 @@ function RequestStatusBadge({
 					: "border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-800/70 dark:bg-rose-950/40 dark:text-rose-300",
 			)}
 		>
-			{success ? "Success" : statusCode ? `Error ${statusCode}` : "Error"}
+			{success
+				? t("status.success")
+				: statusCode
+					? `${t("status.error")} ${statusCode}`
+					: t("status.error")}
 		</Badge>
 	);
 }
@@ -225,6 +239,8 @@ function TimeHover({
 	relativeNowMs: number | null;
 	triggerClassName?: string;
 }) {
+	const locale = useLocale();
+	const tTime = useTranslations("Common.ui.time");
 	if (!value) return <>-</>;
 
 	const date = new Date(value);
@@ -239,27 +255,27 @@ function TimeHover({
 						triggerClassName,
 					)}
 				>
-					{formatWordyDateTime(value, { includeTime: true })}
+					{formatWordyDateTime(value, { includeTime: true, locale })}
 				</span>
 			</HoverCardTrigger>
 			<HoverCardContent align="start" className="w-auto">
 				<div className="grid gap-2 text-xs">
 					<div className="grid grid-cols-[120px_1fr] gap-2">
 						<div className="text-muted-foreground">{userTimeZone}</div>
-						<div className="font-mono">{formatDateTime(date, userTimeZone)}</div>
+						<div className="font-mono">{formatDateTime(date, userTimeZone, locale)}</div>
 					</div>
 					<div className="grid grid-cols-[120px_1fr] gap-2">
 						<div className="text-muted-foreground">UTC</div>
-						<div className="font-mono">{formatDateTime(date, "UTC")}</div>
+						<div className="font-mono">{formatDateTime(date, "UTC", locale)}</div>
 					</div>
 					<div className="grid grid-cols-[120px_1fr] gap-2">
-						<div className="text-muted-foreground">Relative</div>
+						<div className="text-muted-foreground">{tTime("relative")}</div>
 						<div className="font-mono">
 							{relativeNowMs ? formatRelativeToNow(date, relativeNowMs) : "-"}
 						</div>
 					</div>
 					<div className="grid grid-cols-[120px_1fr] gap-2">
-						<div className="text-muted-foreground">Timestamp</div>
+						<div className="text-muted-foreground">{tTime("timestamp")}</div>
 						<div className="font-mono">{unixSeconds}</div>
 					</div>
 				</div>
@@ -281,6 +297,8 @@ function PeriodHover({
 	relativeNowMs: number | null;
 	triggerClassName?: string;
 }) {
+	const locale = useLocale();
+	const tTime = useTranslations("Common.ui.time");
 	if (!start || !end) return <>-</>;
 
 	return (
@@ -292,42 +310,42 @@ function PeriodHover({
 						triggerClassName,
 					)}
 				>
-					{formatWordyRange(start, end)}
+					{formatWordyRange(start, end, locale)}
 				</span>
 			</HoverCardTrigger>
 			<HoverCardContent align="start" className="w-auto">
 				<div className="grid gap-3 text-xs">
 					<div className="space-y-1">
-						<div className="font-semibold text-foreground">Start</div>
+						<div className="font-semibold text-foreground">{tTime("start")}</div>
 						<div className="grid grid-cols-[120px_1fr] gap-2">
 							<div className="text-muted-foreground">{userTimeZone}</div>
 							<div className="font-mono">
-								{formatDateTime(new Date(start), userTimeZone)}
+								{formatDateTime(new Date(start), userTimeZone, locale)}
 							</div>
 						</div>
 						<div className="grid grid-cols-[120px_1fr] gap-2">
 							<div className="text-muted-foreground">UTC</div>
-							<div className="font-mono">{formatDateTime(new Date(start), "UTC")}</div>
+							<div className="font-mono">{formatDateTime(new Date(start), "UTC", locale)}</div>
 						</div>
 						<div className="grid grid-cols-[120px_1fr] gap-2">
-							<div className="text-muted-foreground">Relative</div>
+							<div className="text-muted-foreground">{tTime("relative")}</div>
 							<div className="font-mono">
 								{relativeNowMs ? formatRelativeToNow(new Date(start), relativeNowMs) : "-"}
 							</div>
 						</div>
 					</div>
 					<div className="space-y-1">
-						<div className="font-semibold text-foreground">End</div>
+						<div className="font-semibold text-foreground">{tTime("end")}</div>
 						<div className="grid grid-cols-[120px_1fr] gap-2">
 							<div className="text-muted-foreground">{userTimeZone}</div>
-							<div className="font-mono">{formatDateTime(new Date(end), userTimeZone)}</div>
+							<div className="font-mono">{formatDateTime(new Date(end), userTimeZone, locale)}</div>
 						</div>
 						<div className="grid grid-cols-[120px_1fr] gap-2">
 							<div className="text-muted-foreground">UTC</div>
-							<div className="font-mono">{formatDateTime(new Date(end), "UTC")}</div>
+							<div className="font-mono">{formatDateTime(new Date(end), "UTC", locale)}</div>
 						</div>
 						<div className="grid grid-cols-[120px_1fr] gap-2">
-							<div className="text-muted-foreground">Relative</div>
+							<div className="text-muted-foreground">{tTime("relative")}</div>
 							<div className="font-mono">
 								{relativeNowMs ? formatRelativeToNow(new Date(end), relativeNowMs) : "-"}
 							</div>
@@ -348,6 +366,10 @@ function SessionModelsCell({
 	modelMetadata: ModelMetadataMap;
 	maxVisible?: number;
 }) {
+	const t = useTranslations("SettingsUI");
+	const s = (key: string) => t(`strings.${key}` as never);
+	const m = (key: string, values: Record<string, string | number>) =>
+		t(`strings.${key}` as never, values as never);
 	const visibleModels = modelCounts.slice(0, maxVisible);
 	const hiddenModels = modelCounts.slice(maxVisible);
 	const hiddenCount = Math.max(0, modelCounts.length - visibleModels.length);
@@ -397,13 +419,13 @@ function SessionModelsCell({
 							variant="outline"
 							className="cursor-help rounded-md underline decoration-transparent transition-colors duration-200 hover:bg-muted hover:decoration-current"
 						>
-							+{hiddenCount} more
+							{m("More models count", { count: hiddenCount })}
 						</Badge>
 					</HoverCardTrigger>
 					<HoverCardContent align="start" className="w-72 p-3">
 						<div className="space-y-2">
 							<div className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-								More models
+								{s("More models")}
 							</div>
 							<div className="flex flex-wrap gap-1.5">
 								{hiddenModels.map(({ model_id: modelId }) => {
@@ -473,6 +495,10 @@ function SessionDetailSheet({
 	onOpenChange: (open: boolean) => void;
 }) {
 	const t = useTranslations("SettingsUI");
+	const s = (key: string) => t(`strings.${key}` as never);
+	const m = (key: string, values: Record<string, string | number>) =>
+		t(`strings.${key}` as never, values as never);
+	const locale = useLocale();
 	const userTimeZone =
 		typeof Intl !== "undefined"
 			? Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"
@@ -533,13 +559,13 @@ function SessionDetailSheet({
 			new Date(session.first_request_at).getTime(),
 	);
 	const headlineMetrics = [
-		{ label: "Requests", value: session.request_count.toLocaleString() },
-		{ label: "Duration", value: formatDuration(sessionDuration) },
-		{ label: "Input tokens", value: loading ? "…" : formatUsageNumber(tokenTotals.input) },
-		{ label: "Output tokens", value: loading ? "…" : formatUsageNumber(tokenTotals.output) },
-		{ label: "Cost", value: formatMoneyFromNanos(session.total_cost_nanos) },
+		{ label: s("Requests"), value: session.request_count.toLocaleString() },
+		{ label: s("Duration"), value: formatDuration(sessionDuration) },
+		{ label: s("Input tokens"), value: loading ? "…" : formatUsageNumber(tokenTotals.input) },
+		{ label: s("Output tokens"), value: loading ? "…" : formatUsageNumber(tokenTotals.output) },
+		{ label: s("Cost"), value: formatMoneyFromNanos(session.total_cost_nanos) },
 		{
-			label: "Success rate",
+			label: s("Success rate"),
 			value:
 				loading || successRate == null
 					? "…"
@@ -547,15 +573,15 @@ function SessionDetailSheet({
 		},
 	];
 	const subtitle = [
-		formatWordyRange(session.first_request_at, session.last_request_at),
-		`${session.request_count.toLocaleString()} reqs`,
-		`${modelCounts.length} models`,
+		formatWordyRange(session.first_request_at, session.last_request_at, locale),
+		m("Request count", { count: session.request_count }),
+		m("Model count", { count: modelCounts.length }),
 	]
 		.filter(Boolean)
 		.join(" · ");
 	const sessionDetailItems = [
 		{
-			label: "Session ID",
+			label: s("Session ID"),
 			value: (
 				<div className="flex items-center gap-2">
 					<code className="min-w-0 truncate font-mono text-xs">
@@ -566,13 +592,13 @@ function SessionDetailSheet({
 						variant="ghost"
 						className="text-muted-foreground hover:text-foreground"
 						content={session.session_id}
-						aria-label="Copy session id"
+						aria-label={s("Copy session id")}
 					/>
 				</div>
 			),
 		},
 		{
-			label: "Period",
+			label: s("Period"),
 			value: (
 				<PeriodHover
 					start={session.first_request_at}
@@ -584,12 +610,12 @@ function SessionDetailSheet({
 			),
 		},
 		{
-			label: "First request",
-			value: formatWordyDateTime(session.first_request_at, { includeTime: true }),
+			label: s("First request"),
+			value: formatWordyDateTime(session.first_request_at, { includeTime: true, locale }),
 		},
 		{
-			label: "Last request",
-			value: formatWordyDateTime(session.last_request_at, { includeTime: true }),
+			label: s("Last request"),
+			value: formatWordyDateTime(session.last_request_at, { includeTime: true, locale }),
 		},
 	];
 
@@ -598,6 +624,7 @@ function SessionDetailSheet({
 			? buildAppLabel(
 					appMetadata.get(selectedRequest.app_id),
 					selectedRequest.app_title ?? selectedRequest.app_id,
+					s("Unknown app"),
 				)
 			: selectedRequest?.app_title ?? null;
 
@@ -616,7 +643,7 @@ function SessionDetailSheet({
 					<div className="flex min-h-0 flex-1 flex-col">
 						<ProviderInspectorSheetHeader className="border-b border-border/70 px-5 py-4 pr-14 sm:px-6 sm:py-5">
 							<ProviderInspectorSheetTitle className="min-w-0 truncate text-lg font-semibold">
-									Session {shortenIdentifier(session.session_id, 6)}
+								{m("Session title", { id: shortenIdentifier(session.session_id, 6) })}
 							</ProviderInspectorSheetTitle>
 							<ProviderInspectorSheetDescription>{subtitle}</ProviderInspectorSheetDescription>
 						</ProviderInspectorSheetHeader>
@@ -633,13 +660,13 @@ function SessionDetailSheet({
 								))}
 							</div>
 
-							<DetailSection title="Session details" className="border-none bg-transparent p-0">
+							<DetailSection title={s("Session details")} className="border-none bg-transparent p-0">
 								<DetailKeyValueGrid columns={2} items={sessionDetailItems} />
 							</DetailSection>
 
 							<div className="grid gap-6 sm:grid-cols-2">
 								<DetailSection
-									title={sessionApps.length === 1 ? "App" : "Apps"}
+									title={s(sessionApps.length === 1 ? "App" : "Apps")}
 									className="border-none bg-transparent p-0"
 								>
 									{sessionApps.length > 0 ? (
@@ -653,7 +680,7 @@ function SessionDetailSheet({
 									)}
 								</DetailSection>
 								<DetailSection
-									title="Models in session"
+									title={s("Models in session")}
 									className="border-none bg-transparent p-0"
 								>
 									<SessionModelsCell
@@ -665,12 +692,12 @@ function SessionDetailSheet({
 							</div>
 
 							<DetailSection
-								title="Request timeline"
+								title={s("Request timeline")}
 								className="border-none bg-transparent p-0"
 							>
 								{requests.length === 0 ? (
 									<div className="rounded-lg border border-dashed px-4 py-8 text-sm text-muted-foreground">
-										No requests found for this session in the selected period.
+										{s("No requests found for this session in the selected period.")}
 									</div>
 								) : (
 									<ScrollArea
@@ -724,7 +751,7 @@ function SessionDetailSheet({
 														<button
 															type="button"
 															className="text-left"
-															aria-label={`Open details for request ${request.request_id}`}
+															aria-label={m("Open details for request", { id: request.request_id })}
 															onClick={(event) => {
 																event.stopPropagation();
 																setSelectedRequest(request);
@@ -739,7 +766,7 @@ function SessionDetailSheet({
 														</button>
 													</TableCell>
 											<TableCell className="py-2">
-												{request.client_source_name ?? request.client_source_id ?? "Direct HTTP"}
+													{request.client_source_name ?? request.client_source_id ?? s("Direct HTTP")}
 											</TableCell>
 											<TableCell className="py-2">
 														<div className="flex max-w-[280px] items-center gap-2">
@@ -883,6 +910,7 @@ export default function SessionsPanel({
 	sessionFilter?: string | null;
 }) {
 	const t = useTranslations("SettingsUI");
+	const locale = useLocale();
 	const userTimeZone =
 		typeof Intl !== "undefined"
 			? Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"
@@ -1131,7 +1159,7 @@ export default function SessionsPanel({
 							<div className="flex items-start justify-between gap-3">
 								<div className="min-w-0 space-y-1">
 									<div className="text-sm font-medium text-foreground">
-										{formatWordyRange(session.first_request_at, session.last_request_at)}
+										{formatWordyRange(session.first_request_at, session.last_request_at, locale)}
 									</div>
 									<div className="flex items-center gap-1.5 font-mono text-xs text-muted-foreground">
 										<span title={session.session_id}>
@@ -1146,8 +1174,8 @@ export default function SessionsPanel({
 												stopRowClick(event);
 												copySessionId(session.session_id);
 											}}
-											title="Copy session ID"
-											aria-label="Copy session ID"
+									title={t("strings.Copy session id" as never)}
+									aria-label={t("strings.Copy session id" as never)}
 										>
 											{copiedSessionId === session.session_id ? (
 												<Check className="h-3 w-3" />
@@ -1159,7 +1187,7 @@ export default function SessionsPanel({
 								</div>
 								<div className="shrink-0 text-right">
 									<div className="font-mono text-xs text-muted-foreground">
-										{session.request_count.toLocaleString()} reqs
+								{t("strings.Request count" as never, { count: session.request_count } as never)}
 									</div>
 									<div className="font-mono text-sm text-foreground">
 										{formatMoneyFromNanos(session.total_cost_nanos)}
@@ -1189,19 +1217,19 @@ export default function SessionsPanel({
 					<TableHeader>
 						<TableRow className="h-9">
 							<TableHead>
-								Period
+													{t("strings.Period" as never)}
 							</TableHead>
 							<TableHead>
-								Session ID
+													{t("strings.Session ID" as never)}
 							</TableHead>
 							<TableHead>
-								Models
+													{t("strings.Models" as never)}
 							</TableHead>
 							<TableHead className="text-right">
-								Reqs
+													{t("strings.Requests" as never)}
 							</TableHead>
 							<TableHead className="text-right">
-								Cost
+									{t("strings.Cost" as never)}
 							</TableHead>
 						</TableRow>
 					</TableHeader>
@@ -1243,8 +1271,8 @@ export default function SessionsPanel({
 													stopRowClick(event);
 													copySessionId(session.session_id);
 												}}
-												title="Copy session ID"
-												aria-label="Copy session ID"
+									title={t("strings.Copy session id" as never)}
+									aria-label={t("strings.Copy session id" as never)}
 											>
 												{copiedSessionId === session.session_id ? (
 													<Check className="h-3.5 w-3.5" />

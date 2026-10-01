@@ -1,0 +1,11 @@
+---
+title: "Observability-Protokollierungsrichtlinie aktualisieren"
+sidebarTitle: "Protokollierungsrichtlinie aktualisieren"
+badge: "Beta"
+openapi: "/de/openapi/v1/openapi.localized.yaml PATCH /observability/logging-policy"
+description: "Speicherung und Aufbewahrungsdauer der Ein-/Ausgabeprotokolle des Arbeitsbereichs konfigurieren."
+---
+<Note>Für diesen Endpunkt ist ein Management-API-Schlüssel mit `settings:write` erforderlich.</Note>
+
+Die Aufbewahrungsdauer muss zwischen 90 und 365 Tagen liegen. Wenn die Protokollierung deaktiviert wird, wird auch die Datenschutzsperre für Ein-/Ausgabeprotokolle des Arbeitsbereichs deaktiviert.
+

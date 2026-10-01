@@ -1,0 +1,41 @@
+---
+icon: "rotate"
+title: "المخرجات وإعادة المحاولة"
+description: "تحقّق من المخرجات النهائية، وأعِد طلبات النموذج، وافحص عمليات تشغيل Go المكتملة."
+---
+
+تحقّق من المخرجات لضمان توافق القيمة التي يعيدها الوكيل مع العقد الذي يتوقعه تطبيقك. تنطبق محاولات النموذج على الطلبات الفاشلة؛ أما محاولات الأدوات فيجب أن تكون صريحة في تنفيذها وألا تُستخدم إلا عندما تكون آمنة.
+
+## إعداد محاولات النموذج
+
+```go
+agent := phaseoagent.CreateAgent(phaseoagent.AgentDefinition{
+  ID: "research-agent",
+  Model: "openai/gpt-5.4-nano",
+  ModelRetry: phaseoagent.ModelRetryConfig{
+    MaxRetries: 3,
+    BaseDelay:  500 * time.Millisecond,
+    MaxDelay:   4 * time.Second,
+  },
+})
+```
+
+يحتفظ سجل التشغيل بعدد محاولات النموذج لكل خطوة. ولا تؤدي إعادة المحاولة إلى حذف نتائج الأدوات المكتملة سابقًا.
+
+## التحقق من النتيجة النهائية
+
+اضبط `OutputSchema` على `AgentDefinition` عندما يحتاج الكود اللاحق إلى نتيجة منظّمة. يجري التحقق قبل وضع علامة الاكتمال على النتيجة، لذا تفشل المخرجات غير الصالحة عند حدود الوكيل بدلًا من فشلها لاحقًا داخل التطبيق.
+
+## فحص النتيجة
+
+```go
+result, err := agent.Run(ctx, phaseoagent.RunOptions{Input: prompt, Client: client})
+if err != nil { return err }
+
+fmt.Println(result.Output)
+fmt.Println(result.Run.Status)
+fmt.Println(result.Usage.TotalTokens)
+fmt.Println(result.Usage.Cost)
+```
+
+استخدم [شروط الإيقاف](./agent-sdk-stop-conditions.mdx) لفرض الميزانيات والحدود الصارمة، و[الأخطاء واستكشاف المشكلات وإصلاحها](./agent-sdk-observability.mdx) لمعالجة الإخفاقات.

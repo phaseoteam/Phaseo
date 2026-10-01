@@ -1,0 +1,23 @@
+---
+icon: "wrench"
+title: "टूल"
+description: "जाँचे गए, approval-gated, manual और progress देने वाले C# tools परिभाषित करें।"
+---
+
+`Tool` रिकॉर्ड बनाएँ और उन्हें `AgentSdk.DefineTool(...)` के ज़रिए दें। किसी उपकरण में ये शामिल हो सकते हैं:
+
+- मॉडल को दिखाए जाने वाले JSON `Parameters`
+- `InputSchema`, `OutputSchema` और `EventSchema` validation delegate
+- हर tool का `Timeout` और asynchronous `Execute` delegate
+- बिना शर्त या शर्त आधारित अनुमोदन
+- interactive काम के लिए `OnToolCalled` और `OnResponseReceived`
+- अगले टर्न के override और recover किए जा सकने वाले tool-error handling
+
+प्रारंभिक नतीजों के लिए `RuntimeContext.EmitProgress`, ऐप context के लिए `SetContext` और cancellation-सक्षम dependencies के लिए `CancellationToken` उपयोग करें।
+
+स्वतंत्र tools `ToolExecutionConfig` से साथ चल सकते हैं। execution किसी अलग क्रम में पूरा हो, तब भी सहेजे गए tool-result messages model call का क्रम बनाए रखते हैं।
+
+## संबंधित विषय
+
+- [स्थिति और अनुमोदन](./agent-sdk-state-and-approval.mdx)
+- [रन कंट्रोल](./agent-sdk-run-controls.mdx)

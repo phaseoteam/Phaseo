@@ -1,0 +1,14 @@
+---
+title: "Comprobar el estado de la pasarela"
+sidebarTitle: "Comprobación del estado"
+badge: "Beta"
+openapi: "/es/openapi/v1/openapi.localized.yaml GET /health"
+description: "Devolver una comprobación básica del estado de Phaseo Gateway."
+---
+
+Usa este endpoint sin autenticación para comprobar rápidamente la conectividad. Para consultar las incidencias actuales y el historial, visita la [página de estado de Phaseo](https://status.phaseo.app).
+
+<Note>
+Una respuesta de estado correcta no garantiza que estén disponibles todas las rutas de proveedores o modelos. Usa la respuesta predeterminada de `GET /v1/models` para confirmar qué rutas están disponibles.
+</Note>
+

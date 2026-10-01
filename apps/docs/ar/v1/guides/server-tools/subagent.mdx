@@ -1,0 +1,108 @@
+---
+icon: "bot"
+title: "أداة الخادم Subagent"
+description: "اسمح للنموذج الرئيسي بتفويض المهام المركزة إلى نموذج مساعد."
+---
+
+استخدم `phaseo:subagent` عندما يحتاج النموذج الرئيسي إلى إحالة مهمة مستقلة إلى نموذج مساعد أصغر أو أسرع ضمن الطلب نفسه.
+
+يستدعي النموذج الرئيسي أداة Subagent مع وصف للمهمة. يشغّل Phaseo النموذج المساعد على الخادم ويعيد نتيجته ضمن سياق الأداة، ثم يتيح للنموذج الرئيسي إكمال الإجابة.
+
+## بدء سريع
+
+```bash
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-5-nano",
+    "messages": [
+      { "role": "user", "content": "Compare these release notes and summarize the breaking changes." }
+    ],
+    "tools": [
+      {
+        "type": "phaseo:subagent",
+        "parameters": {
+          "model": "openai/gpt-5-nano",
+          "instructions": "Return concise findings for the main model. Do not address the end user directly.",
+          "max_uses": 3,
+          "max_completion_tokens": 1200
+        }
+      }
+    ]
+  }'
+```
+
+## المعلمات
+
+```json
+{
+  "type": "phaseo:subagent",
+  "parameters": {
+    "model": "openai/gpt-5-nano",
+    "instructions": "You are a fast, focused worker. Complete only the delegated task.",
+    "max_uses": 3,
+    "max_completion_tokens": 1200,
+    "reasoning": { "effort": "low" },
+    "temperature": 0.2
+  }
+}
+```
+
+| المعلمة | النوع | الافتراضي | الوصف |
+| --- | --- | --- | --- |
+| `model` | string | `openai/gpt-5-nano` | النموذج المساعد المطلوب استدعاؤه. |
+| `instructions` | string | تعليمات موجّهة للعامل | تعليمات إضافية تُضاف إلى السلوك الافتراضي لـ Subagent. |
+| `max_uses` | integer | `10` | الحد الأقصى لاستدعاءات Subagent ضمن حلقة أدوات الخادم. |
+| `max_completion_tokens` | integer | القيمة الافتراضية للمستشار | الحد الأقصى لرموز الإخراج لكل استجابة من النموذج المساعد. |
+| `max_tokens` | integer | القيمة الافتراضية للمستشار | اسم مستعار قديم لـ `max_completion_tokens`. |
+| `reasoning` | object | القيمة الافتراضية للمزوّد | إعداد الاستدلال الذي يُمرّر إلى النموذج المساعد عند دعمه. |
+| `temperature` | number | القيمة الافتراضية للمزوّد | درجة حرارة أخذ العينات لاستدعاء النموذج المساعد. |
+
+## وسائط استدعاء الأداة
+
+يستدعي النموذج عادةً Subagent باستخدام `task_description`:
+
+```json
+{
+  "task_description": "Extract the three highest-risk migration steps from the supplied plan."
+}
+```
+
+يقبل Phaseo أيضًا `task` أو `prompt` أو `input` كأسماء مستعارة عندما يُصدر النموذج اسم وسيطة مختلفًا قليلًا.
+
+## ما تعيده الأداة
+
+تعيد Subagent كائن JSON بوصفه نتيجة الأداة:
+
+```json
+{
+  "status": "ok",
+  "model": "openai/gpt-5-nano",
+  "result": "The highest-risk steps are schema migration, traffic cutover, and rollback verification."
+}
+```
+
+إذا تعذّر تشغيل طلب النموذج المساعد، يعيد Phaseo خطأ أداة مثل `subagent_invalid_request`, `subagent_max_uses_exceeded`, or `subagent_request_failed`.
+
+## الاستخدام والتسعير
+
+تزيد استدعاءات Subagent ما يلي:
+
+```json
+{
+  "usage": {
+    "server_tool_use": {
+      "subagent_requests": 1
+    }
+  }
+}
+```
+
+تُحتسب رموز النموذج المساعد ضمن إجمالي الاستخدام، وقد تُسعّر وفق أسعار النموذج المحدد.
+
+## مواضيع ذات صلة
+
+- [Advisor](./advisor.mdx)
+- [Fusion](./fusion.mdx)
+- [أدوات الخادم](./index.mdx)

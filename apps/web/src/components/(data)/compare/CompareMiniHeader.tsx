@@ -8,6 +8,7 @@ import { Pencil, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ProviderLogoName } from "./ProviderLogoName";
+import { useTranslations } from "next-intl";
 
 interface CompareMiniHeaderProps {
 	models: ExtendedModel[];
@@ -33,6 +34,7 @@ const encodeModelIdForUrl = (value: string): string => {
 };
 
 export default function CompareMiniHeader({ models }: CompareMiniHeaderProps) {
+	const t = useTranslations("Catalogue.compare");
 	const searchParams = useSearchParams() ?? new URLSearchParams();
 	const router = useRouter();
 	const [comboboxOpen, setComboboxOpen] = useState(false);
@@ -81,12 +83,12 @@ export default function CompareMiniHeader({ models }: CompareMiniHeaderProps) {
 					<div className="flex items-center justify-between gap-2">
 						<div className="flex items-center gap-2">
 							<span className="text-sm font-semibold text-foreground">
-								Compare
+								{t("miniTitle")}
 							</span>
 						</div>
 						{selectedModels.length === 0 ? (
 							<span className="hidden sm:inline text-xs text-muted-foreground">
-								Select up to four models
+								{t("selectUpToFour")}
 							</span>
 						) : null}
 					</div>
@@ -102,8 +104,8 @@ export default function CompareMiniHeader({ models }: CompareMiniHeaderProps) {
 										open={comboboxOpen}
 										onOpenChange={handleComboboxOpenChange}
 										replaceTargetId={replaceTargetId}
-										labelWhenEmpty="Add Model"
-										labelWhenSelected="Add Model"
+										labelWhenEmpty={t("addModel")}
+										labelWhenSelected={t("addModel")}
 										showSelectionCount={false}
 										className="h-7 px-2 text-xs shrink-0"
 									/>
@@ -134,7 +136,7 @@ export default function CompareMiniHeader({ models }: CompareMiniHeaderProps) {
 												variant="ghost"
 												className="h-5 w-5 p-0 flex-shrink-0 hover:bg-muted rounded-md"
 												onClick={() => openReplaceDialog(model.id)}
-												aria-label={`Edit ${model.name}`}
+								aria-label={t("editModel", { name: model.name })}
 											>
 												<Pencil className="h-3 w-3" />
 											</Button>
@@ -149,7 +151,7 @@ export default function CompareMiniHeader({ models }: CompareMiniHeaderProps) {
 														)
 													)
 												}
-												aria-label={`Remove ${model.name}`}
+								aria-label={t("removeSelectedModel", { name: model.name })}
 											>
 												<X className="h-3 w-3" />
 											</Button>
@@ -164,8 +166,8 @@ export default function CompareMiniHeader({ models }: CompareMiniHeaderProps) {
 										open={comboboxOpen}
 										onOpenChange={handleComboboxOpenChange}
 										replaceTargetId={replaceTargetId}
-										labelWhenEmpty="Add Model"
-										labelWhenSelected="Add Model"
+										labelWhenEmpty={t("addModel")}
+										labelWhenSelected={t("addModel")}
 										showSelectionCount={false}
 										className="h-7 px-2 text-xs shrink-0"
 									/>

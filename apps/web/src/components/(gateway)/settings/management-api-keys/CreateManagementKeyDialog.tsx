@@ -24,6 +24,7 @@ import { ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import { SecretRevealActions } from "../keys/SecretRevealActions";
 import { useTranslations } from "next-intl";
+import { localizedSettingsError } from "@/i18n/error-messages";
 
 const KEY_TEMPLATES = [
 	{
@@ -124,11 +125,14 @@ export default function CreateManagementKeyDialog({
 				expiresAt,
 			});
 			setPlainKey(res?.plaintext ?? null);
-		} catch (err: any) {
-			const message =
-				err?.message ??
-				t("strings.Could not create management API key right now. Please try again." as never);
-			toast.error(message);
+		} catch (err: unknown) {
+			toast.error(
+				localizedSettingsError(
+					err,
+					t,
+					"Could not create management API key right now. Please try again.",
+				),
+			);
 		} finally {
 			setLoading(false);
 		}

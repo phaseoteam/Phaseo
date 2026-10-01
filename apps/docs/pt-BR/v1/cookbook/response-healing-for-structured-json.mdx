@@ -1,0 +1,119 @@
+---
+title: "Recupere respostas JSON estruturadas"
+icon: "wand-sparkles"
+description: "Recupere saídas JSON estruturadas quase válidas sem ampliar esquemas nem repetir manualmente respostas malformadas."
+---
+
+Use esta receita quando seu aplicativo exigir JSON estrito e alguns modelos retornarem ocasionalmente uma saída quase válida que ainda faz o parser falhar.
+
+## 1. Comece com um contrato de resposta estruturada
+
+A recuperação de respostas só é útil quando a requisição já solicita saída estruturada.
+
+Bons casos de uso:
+
+- `response_format.type = "json_object"`
+- saída no estilo JSON Schema
+- uma estrutura de objeto estável usada por vários chamadores
+
+Não habilite a recuperação para solicitações de prosa aberta.
+
+## 2. Habilite o plugin na camada adequada
+
+Você pode habilitar `response-healing` em três lugares:
+
+1. na política padrão de plugins do workspace
+2. na configuração de plugins de uma predefinição
+3. em `plugins` na requisição
+
+A precedência é:
+
+1. workspace
+2. predefinição
+3. requisição
+
+Use os padrões de uma predefinição quando um fluxo de trabalho sempre esperar JSON estruturado.
+
+## 3. Mantenha a saída do modelo restrita
+
+A recuperação funciona melhor quando o formato de saída solicitado já está delimitado.
+
+Recomendações:
+
+- um objeto, em vez de vários blocos sem relação
+- chaves obrigatórias explícitas
+- temperatura determinística sempre que possível
+- não peça texto explicativo fora do payload JSON
+
+## 4. Entenda os limites da recuperação de respostas
+
+O fluxo atual de recuperação é determinístico e funciona somente sem streaming. Requisições de streaming ignoram totalmente essa etapa.
+
+Ele pode corrigir:
+
+- cercas de código Markdown ao redor do JSON
+- vírgulas sobrando no final
+- delimitadores seguros ausentes
+- chaves de objeto sem aspas em estruturas que ainda possam ser recuperadas
+
+Para uma política mais restrita, use o modo `strict`. Ele apenas extrai JSON já válido de cercas de código ou do texto ao redor e não aplica as transformações sintáticas mais amplas.
+
+Quando a requisição usa saída no estilo JSON Schema, a recuperação também valida o payload recuperado antes de reescrevê-lo. O validador atual cobre restrições comuns, como:
+
+- chaves obrigatórias
+- tipos básicos escalares e de contêiner
+- enums e valores const
+- limites de arrays e `uniqueItems`
+- comprimento de strings, expressões regulares e formatos comuns, como `email`, `uri`, `uuid` e `date-time`
+- limites numéricos e `multipleOf`
+- limites de propriedades de objetos e `additionalProperties: false`
+
+Ele não pode:
+
+- inventar campos semânticos ausentes
+- adivinhar valores de negócio
+- transformar prosa arbitrária em dados válidos
+
+## 5. Confirme se o plugin realmente foi executado
+
+Quando a recuperação é executada, os detalhes da requisição devem mostrar informações sobre a execução do plugin.
+
+Confira:
+
+- o ID do plugin
+- se ele tentou fazer uma transformação
+- se o payload foi alterado
+- o motivo da falha quando a resposta não pôde ser recuperada
+- se a requisição não usava streaming, caso você esperasse que a recuperação fosse executada
+
+Se o plugin não aparecer, confirme que a política da requisição, da predefinição ou do workspace o habilitou.
+
+## 6. Separe problemas do parser de problemas no conteúdo
+
+Se a recuperação não ajudar, identifique qual tipo de falha ocorreu:
+
+1. JSON malformado, mas ainda próximo da estrutura esperada
+2. JSON válido segundo o esquema, porém com campos incorretos
+3. prosa em vez de JSON
+4. saída truncada porque o limite de tokens é baixo demais
+
+Somente o caso 1 é adequado para recuperação de respostas.
+
+## 7. Implante gradualmente
+
+1. habilite a recuperação em uma predefinição com saída estruturada estável
+2. acompanhe os metadados de execução do plugin nos logs
+3. confirme que os payloads recuperados correspondem ao esquema esperado
+4. amplie para predefinições semelhantes somente depois de conferir que os logs estão corretos
+
+## 8. Escolha o modo adequado
+
+- Use `safe` quando o fluxo de trabalho se beneficiar de uma limpeza sintática limitada, como remover vírgulas finais ou adicionar aspas a chaves sem aspas.
+- Use `strict` quando o fluxo de trabalho só puder aceitar JSON já válido depois que os delimitadores forem removidos.
+- Confira os detalhes da requisição para confirmar qual modo foi executado.
+
+## Guias relacionados
+
+- [Use cache de respostas com predefinições](./response-caching-with-presets.mdx)
+- [Implante predefinições e depure o roteamento](./preset-rollout-and-routing-debug.mdx)
+- [TypeScript Agent SDK](../sdk-reference/typescript/agent-sdk.mdx)

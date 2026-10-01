@@ -1,0 +1,14 @@
+---
+icon: "search-check"
+title: "Recherche de génération"
+description: "Appelez la recherche /generations avec le SDK Python."
+---
+
+```python
+record = client.get_generation("G-01ABC...")
+
+print(record)
+```
+
+Lorsque les détails de la requête ont été enregistrés, l’enregistrement renvoyé inclut également `replay_supported` et `replay_request`, ce qui permet de renvoyer la charge utile capturée au point de terminaison d’origine.
+

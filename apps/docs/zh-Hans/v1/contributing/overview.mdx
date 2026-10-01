@@ -1,0 +1,154 @@
+---
+title: "为 Phaseo 做贡献"
+description: "了解如何为 Phaseo 项目贡献数据、文档或改进，帮助打造全球最全面的 AI 数据库。"
+sidebarTitle: "贡献"
+icon: "handshake"
+---
+
+Phaseo 是一个**开放且由社区驱动的项目**，旨在让所有人都能免费获取尽可能多的 AI 模型、基准测试和供应商信息。
+
+你的贡献有助于保持平台内容准确、透明并及时更新。  
+无论是修正拼写错误、添加基准测试数据还是改进文档，每一份贡献都有价值。
+
+---
+
+## 为何贡献？
+
+AI 的发展速度不断加快，新的模型、更新和价格变动每天都在发生。  
+通过贡献，你可以帮助：
+
+-   保持模型、组织和基准测试数据的时效性与可靠性
+-   提高不同供应商之间 AI 对比的准确性
+-   分享研究见解、社区发现或缺失的元数据
+-   加强推动 AI 透明化的开放生态
+-   确保数据库继续免费开放并由社区共同拥有
+
+你的名字也会显示在[贡献者页面](https://phaseo.app/contribute)，以表彰你的贡献。
+
+---
+
+## 你可以贡献什么
+
+<Columns cols={2}>
+	<Card
+		title="模型数据"
+		icon="brain"
+		href="./editing-a-model.mdx"
+	>
+		更新或添加模型能力、基准测试和价格等信息。
+	</Card>
+	<Card
+		title="组织数据"
+		icon="building"
+		href="./editing-an-organisation.mdx"
+	>
+		添加或更正模型背后公司或研究团队的信息。
+	</Card>
+</Columns>
+
+---
+
+## 贡献流程概览
+
+1. **Fork** [Phaseo 的 GitHub 仓库](https://github.com/phaseoteam/Phaseo)。
+2. **创建分支**以进行更改（例如 `fix-model-data` 或 `add-new-benchmark`）。
+3. 按照[仓库结构](./repo-structure.mdx)中的说明**编辑 JSON 或 Markdown 文件**。
+4. 如有需要，请**在本地测试更改**（例如在 Next.js 前端查看）。
+5. **提交并推送**更改。
+6. **创建拉取请求（PR）**，说明更改内容及原因。
+
+审核并批准后，你的贡献会被合并并显示在 Phaseo 实时数据库中。
+
+---
+
+## 贡献类型
+
+| 类型                   | 示例                                                 | 难度 |
+| ---------------------- | ------------------------------------------------------- | ---------- |
+| **数据修正**           | 更正模型名称、供应商或基准测试数值。 | 简单       |
+| **新增条目**          | 添加新的模型、基准测试或组织。         | 中等   |
+| **结构性更改**  | 调整数据库或架构布局。                    | 高级   |
+| **添加功能**   | 添加 UI 组件或 Next.js 逻辑。                  | 高级   |
+| **文档修改** | 改进 Markdown 文件或指南。                     | 简单       |
+
+无论你想进行什么更改，我们都欢迎各种规模和复杂程度的贡献。
+
+---
+
+## 指南和标准
+
+所有贡献都必须遵循以下标准，以确保数据质量和一致性：
+
+-   **准确来源:** 仅包含经过验证或正式发布的数据。
+-   **格式一致:** 确保大小写、缩进和架构键正确。
+-   **记录版本变更:** 让变更日志或提交消息清晰易懂。
+-   **引用来源:** 在 PR 描述中包含数据来源链接。
+-   **尊重他人的沟通:** 请遵守我们的 [行为准则](../community/code-of-conduct.mdx).
+
+---
+
+## 贡献流程示例
+
+```bash
+# 1. Fork and clone the repo
+git clone https://github.com/yourusername/Phaseo.git
+
+# 2. Create a new branch
+git checkout -b add-openai-new-model
+
+# 3. Make your edits
+# e.g. edit packages/data/catalog/src/data/models/openai/new-model/model.json
+
+# 4. Stage, commit, and push
+git add .
+git commit -m "Added new OpenAI model with updated benchmark data"
+git push origin add-openai-new-model
+
+# 5. Open a Pull Request on GitHub
+# Describe your changes and link any sources
+```
+
+---
+
+## 需要帮助？
+
+如果你不确定如何贡献，或想在提交前获得反馈，可以：
+
+-   在 [Phaseo Discord](https://discord.gg/aQyywCvgZ5) 中提问。
+-   有问题或建议时，请发起 **GitHub 讨论**。
+-   如需评审指导，请在 PR 中提及维护者。
+
+<Card
+	title="如何贡献"
+	icon="handshake"
+	href="./how-to-contribute.mdx"
+	horizontal
+>
+	了解首次贡献的详细步骤。
+</Card>
+
+我们非常感谢所有贡献，无论大小，因为它们有助于为 AI 社区构建和维护这一宝贵资源。
+
+---
+
+## 后续步骤
+
+接下来了解你所关注领域的具体贡献流程：
+
+<Columns cols={2}>
+	<Card
+		title="如何贡献"
+		icon="compass"
+		href="./how-to-contribute.mdx"
+	>
+		了解编辑文件和创建 PR 的详细流程。
+	</Card>
+	<Card
+		title="仓库结构"
+		icon="folder-tree"
+		href="./repo-structure.mdx"
+	>
+		了解 Phaseo 仓库的组织结构。
+	</Card>
+</Columns>
+

@@ -1,0 +1,26 @@
+---
+icon: "radio"
+title: "स्ट्रीमिंग"
+description: "PHP एजेंट के टेक्स्ट, reasoning, item और lifecycle stream का उपयोग करें।"
+---
+
+`Agent::stream(...)` एक `AgentStreamResult` लौटाता है:
+
+```php
+$stream = $agent->stream($input, $client);
+
+foreach ($stream->textStream() as $delta) {
+    echo $delta;
+}
+
+$completed = $stream->result;
+```
+
+अन्य projection के लिए `reasoningStream()`, `itemStream()` या `fullStream()` उपयोग करें। provider के synchronous stream से इवेंट पढ़ लेने के बाद भी हर iterable को दोबारा चलाया जा सकता है।
+
+PHP item वैल्यू सामान्य array और object ही रहती हैं; वे TypeScript का discriminated item union नहीं हैं।
+
+## संबंधित विषय
+
+- [टूल](./agent-sdk-tools.mdx)
+- [Observability और DevTools](./agent-sdk-observability.mdx)

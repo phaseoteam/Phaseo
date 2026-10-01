@@ -1,0 +1,31 @@
+---
+icon: "braces"
+title: "المخرجات المنظّمة (AI SDK)"
+description: "أنشئ كائنات JSON تم التحقق منها وفق مخطط باستخدام Phaseo وVercel AI SDK."
+---
+
+استخدم `generateObject` للحصول على مخرجات محددة الأنواع.
+
+```ts
+import { phaseo } from "@phaseo/ai-sdk-provider";
+import { generateObject } from "ai";
+import { z } from "zod";
+
+const { object } = await generateObject({
+  model: phaseo("openai/gpt-5-nano"),
+  schema: z.object({
+    title: z.string(),
+    priority: z.enum(["low", "medium", "high"]),
+    actions: z.array(z.string()),
+  }),
+  prompt: "Create a short incident follow-up plan.",
+});
+
+console.log(object);
+```
+
+## ملاحظات
+
+- فضّل التعدادات الصريحة والحقول المطلوبة في المخططات.
+- اجعل المطالبات متوافقة مع بنية المخطط.
+- عالج أخطاء التحليل والتحقق في الشيفرة المستدعية.

@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Check, ChevronDown, Copy } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -28,6 +29,7 @@ export default function ModelIdentifierControl({
 	aliases = [],
 	variants = [],
 }: ModelIdentifierControlProps) {
+	const t = useTranslations("Catalogue.models.detail.actions");
 	const router = useRouter();
 	const copyResetTimerRef = useRef<number | null>(null);
 	const options = useMemo<string[]>(
@@ -77,7 +79,7 @@ export default function ModelIdentifierControl({
 			setCopied(false);
 			copyResetTimerRef.current = null;
 		}, 1500);
-		toast.success("Model ID copied", {
+		toast.success(t("identifierCopied"), {
 			description,
 		});
 	};
@@ -98,8 +100,8 @@ export default function ModelIdentifierControl({
 				markCopied(value);
 			} catch {
 				setCopied(false);
-				toast.error("Copy failed", {
-					description: "Could not copy the selected model identifier.",
+				toast.error(t("copyFailed"), {
+					description: t("copyFailedDescription"),
 				});
 			}
 		}
@@ -118,8 +120,8 @@ export default function ModelIdentifierControl({
 			<button
 				type="button"
 				className="group inline-flex max-w-full items-center gap-1 px-0 py-0 text-left text-xs font-medium text-zinc-700 transition-colors hover:text-zinc-950 focus-visible:outline-none focus-visible:ring-0 dark:text-zinc-300 dark:hover:text-zinc-50"
-				aria-label={`Copy model identifier ${defaultIdentifier}`}
-				title={copied ? "Copied" : "Copy model identifier"}
+				aria-label={t("copyIdentifierWithValue", { identifier: defaultIdentifier })}
+				title={copied ? t("copied") : t("copyIdentifier")}
 				onClick={() => void copyIdentifier(defaultIdentifier)}
 			>
 				<span className="min-w-0 select-none truncate font-mono">{defaultIdentifier}</span>
@@ -135,7 +137,7 @@ export default function ModelIdentifierControl({
 			<DropdownMenuTrigger render={<button
 					type="button"
 				className="group inline-flex max-w-full items-center gap-1 px-0 py-0 text-left text-xs font-medium text-zinc-700 transition-colors hover:text-zinc-950 focus-visible:outline-none focus-visible:ring-0 dark:text-zinc-300 dark:hover:text-zinc-50"
-					aria-label="Model identifiers" />}>
+					aria-label={t("modelIdentifiers")} />}>
 
 					<span className="min-w-0 select-none truncate font-mono">{defaultIdentifier}</span>
 					<span className="ml-0.5 shrink-0 text-zinc-500 transition-all duration-150 group-hover:opacity-100 group-focus-visible:opacity-100 dark:text-zinc-400">
@@ -147,7 +149,7 @@ export default function ModelIdentifierControl({
 				{hasVariants ? (
 					<>
 						<div className="px-2 py-1.5 text-[11px] font-medium text-muted-foreground">
-							Model variants
+							{t("modelVariants")}
 						</div>
 						{variants.map((variant) => {
 							const isCurrent = variant.model_id === defaultIdentifier;
@@ -166,7 +168,7 @@ export default function ModelIdentifierControl({
 										<span className="truncate">{variant.name}</span>
 									</span>
 									<span className="shrink-0 text-[11px] capitalize text-muted-foreground">
-										{variant.variant_kind === "standard" ? "Base" : variant.variant_kind}
+										{variant.variant_kind === "standard" ? t("base") : variant.variant_kind}
 									</span>
 								</DropdownMenuItem>
 							);
@@ -175,7 +177,7 @@ export default function ModelIdentifierControl({
 					</>
 				) : null}
 				<div className="px-2 py-1.5 text-[11px] font-medium text-muted-foreground">
-					Identifiers
+					{t("identifiers")}
 				</div>
 				{options.map((option, index) => (
 					<DropdownMenuItem
@@ -188,7 +190,7 @@ export default function ModelIdentifierControl({
 					>
 						<span className="min-w-0 truncate">{option}</span>
 						<span className="shrink-0 text-[11px] text-zinc-500 dark:text-zinc-400">
-							{index === 0 ? "Default" : "Alias"}
+							{index === 0 ? t("defaultIdentifier") : t("aliasIdentifier")}
 						</span>
 					</DropdownMenuItem>
 				))}

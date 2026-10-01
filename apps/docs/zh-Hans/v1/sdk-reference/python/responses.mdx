@@ -1,0 +1,83 @@
+---
+icon: "sparkles"
+title: "响应"
+description: "使用 Python SDK 调用 Responses API。"
+---
+
+**方法**：`client.generate_response()`（使用 `client.stream_responses()` 流式传输已解析的分块）。
+
+### 示例
+```python
+resp = client.generate_response({
+    "model": "openai/gpt-4.1",
+    "input": [{"role": "user", "content": [{"type": "input_text", "text": "Summarise this"}]}],
+    "temperature": 0.7,
+})
+```
+
+### 流式传输
+```python
+for chunk in client.stream_responses({
+    "model": "openai/gpt-4.1",
+    "input": [{"role": "user", "content": [{"type": "input_text", "text": "Stream this"}]}],
+    "stream": True,
+}):
+    if chunk.get("text"):
+        print(chunk["text"], end="", flush=True)
+```
+
+### 关键参数
+- `model`（必填）：目标模型 ID。
+- `input`（必填）：按顺序排列的输入项数组（消息、工具调用等）。
+- `temperature`（0–2）：值越高，结果越随机。
+- `top_p`（0–1）/ `top_k`（>=1）：核采样和 top-k 采样控制项。
+- `max_output_tokens`（整数）：每个响应生成的 token 数上限。
+- 工具：`tools`（定义）、`tool_choice`（auto/none/指定工具）、`max_tool_calls`（整数）、`parallel_tool_calls`（布尔值）。
+- Logprobs：`logprobs`（布尔值）、`top_logprobs`（0–20），用于返回每个 token 的 logprobs。
+- 输出：`response_format`（json/text）、`service_tier`、`store`（布尔值）、`stream`（布尔值）。
+- 元数据：`metadata`（透传对象）、`reasoning`（用于提示推理强度的对象）。
+- 网关扩展项：`usage`（用于请求用量的布尔值）、`meta`（用于包含 meta 块的布尔值）。
+
+### 返回值
+`ResponsesResponse`
+
+```json
+{
+  "id": "resp_123",
+  "object": "response",
+  "created_at": 1677652288,
+  "status": "completed",
+  "model": "gpt-4.1",
+  "output": [
+    {
+      "type": "message",
+      "id": "msg_123",
+      "status": "completed",
+      "role": "assistant",
+      "content": [
+        {
+          "type": "output_text",
+          "text": "Hello there, how may I assist you today?"
+        }
+      ]
+    }
+  ],
+  "usage": {
+    "input_tokens": 9,
+    "output_tokens": 12,
+    "total_tokens": 21
+  }
+}
+```
+
+`stream: true` 时以换行符分隔的 SSE 帧：
+
+```
+data: {"id":"resp_123","object":"response","created_at":1677652288,"status":"in_progress","model":"gpt-4.1","output":[{"type":"message","id":"msg_123","status":"in_progress","role":"assistant","content":[]}]}
+
+data: {"id":"resp_123","object":"response","created_at":1677652288,"status":"in_progress","model":"gpt-4.1","output":[{"type":"message","id":"msg_123","status":"in_progress","role":"assistant","content":[{"type":"output_text","text":"Hello"}]}]}
+
+data: {"id":"resp_123","object":"response","created_at":1677652288,"status":"completed","model":"gpt-4.1","output":[{"type":"message","id":"msg_123","status":"completed","role":"assistant","content":[{"type":"output_text","text":"Hello there, how may I assist you today?"}]}],"usage":{"input_tokens":9,"output_tokens":12,"total_tokens":21}}
+
+data: [DONE]
+```

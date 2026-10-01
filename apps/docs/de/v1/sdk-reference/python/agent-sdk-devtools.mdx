@@ -1,0 +1,18 @@
+---
+icon: "chart-spline"
+title: "Entwicklertools"
+description: "Zeichne Python-Agent-SDK-Läufe lokal für Entwicklung und Fehlersuche auf."
+---
+
+Aktiviere die lokale JSONL-Aufzeichnung mit `create_agent_devtools(...)` und übergib sie an `run(...)`, `stream(...)`, or continuation.
+
+Die erfassten Einträge enthalten Status und Dauer, Modell- und Anbieterdetails, Anfrage-IDs, Nachrichten, Schritte, Werkzeugaktivität, Nutzung, Kosten und strukturierte Fehler.
+
+<Warning>
+Agent-Eingaben, Kontext und Werkzeugergebnisse können vertrauliche Daten enthalten. Nimm DevTools-Ausgaben nicht in die Versionsverwaltung oder Produktionsimages auf.
+</Warning>
+
+## Verwandte Themen
+
+- [Lifecycle-Hooks](./agent-sdk-lifecycle-hooks.mdx)
+- [Fehler und Fehlerbehebung](./agent-sdk-observability.mdx)

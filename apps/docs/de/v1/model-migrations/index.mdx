@@ -1,0 +1,43 @@
+---
+icon: "compass"
+title: "Modellmigrationen"
+description: "Modellspezifische Hinweise für die sichere Einführung neuer Modellversionen in der Produktion."
+---
+
+# Modellmigrationen
+
+Nutzen Sie diese Leitfäden, wenn Sie das Modell aktualisieren und auf derselben Plattform bleiben.
+
+Sie konzentrieren sich auf Änderungen, die bestehende Integrationen häufig zuerst beeinträchtigen:
+
+- Änderungen an Anfrageparametern
+- Unterschiede im Verhalten von Prompts und Reasoning
+- Regressionen bei strukturierten Ausgaben und Tool-Aufrufen
+- Strategien für schrittweise Einführung, Fallback und Rollback
+
+## Modellleitfäden
+
+Die Leitfäden sind nach Veröffentlichungsdatum des Zielmodells sortiert, beginnend mit dem neuesten.
+
+| Modell | Veröffentlicht | Geeignet für |
+| --- | --- | --- |
+| [Anthropic Claude Opus 5](./anthropic-claude-opus-5.mdx) | 24. Juli 2026 | Komplexes Reasoning und lang laufende Agenten |
+| [OpenAI GPT-5.6](./openai-migrating-to-gpt-5-6.mdx) | 9. Juli 2026 | Abgestuftes Reasoning, Programmierung und professionelle Arbeit |
+| [Anthropic Claude Opus 4.8](./anthropic-claude-opus-4-1-to-4-8.mdx) | 28. Mai 2026 | Langer Kontext und adaptives Denken |
+| [Anthropic Claude Opus 4.7](./anthropic-claude-opus-4-6-to-4-7.mdx) | 16. April 2026 | Intensives Reasoning mit strengeren Anfragekontrollen |
+| [Mistral Small 4](./mistral-small-3-2-to-mistral-small-4.mdx) | 16. März 2026 | Effiziente Workloads mit optionalem Reasoning |
+| [OpenAI GPT-5.4](./openai-migrating-to-gpt-5-4.mdx) | 5. März 2026 | Reasoning, Vision und Computernutzung |
+| [Google Nano Banana 2](./google-nano-banana-1-to-nano-banana-2.mdx) | 26. Februar 2026 | Bildgenerierung und -bearbeitung in der Produktion |
+| [Google Gemini 3.1](./google-migrating-to-gemini-3-and-3-1.mdx) | 19. Februar 2026 | Multimodale und reasoning-intensive Workloads |
+| [Anthropic Claude Sonnet 4.6](./anthropic-claude-sonnet-4-5-to-4-6.mdx) | 17. Februar 2026 | Programmierung, Computernutzung und Agentenplanung |
+| [SpaceXAI Grok 4.20](./xai-grok-4-20.mdx) | 17. Februar 2026 | Reasoning und Multi-Agenten-Workloads |
+| [Anthropic Claude Opus 4.6](./anthropic-claude-opus-4-5-to-4-6.mdx) | 5. Februar 2026 | Lang laufende Programmier- und Agentenaufgaben |
+
+## Diesen Bereich verwenden
+
+1. Beginnen Sie mit dem Leitfaden für die genaue Modellfamilie, auf die Sie wechseln.
+2. Aktualisieren Sie die Anfrageparameter, bevor Sie die Ausgabequalität testen.
+3. Wiederholen Sie Prompt- und Schema-Auswertungen mit produktionsnahen Beispielen.
+4. Stellen Sie den Traffic schrittweise um und legen Sie Fallback- und Rollback-Regeln fest.
+
+Wenn Sie Anbieter, SDK oder Gateway statt nur des Modells wechseln, nutzen Sie den Bereich [Migrationsleitfäden](../migration-guides/index.mdx).

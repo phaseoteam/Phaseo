@@ -1,0 +1,44 @@
+---
+title: "إكمالات المحادثة"
+description: "أرسل طلبات Chat Completions المتوافقة مع OpenAI باستخدام SDK Rust."
+---
+
+استخدم `chat_completions(...)` عندما يكون تكامل قائم يستخدم بالفعل حمولات Chat Completions المعتمدة على الرسائل.
+
+```rust
+use phaseo::Phaseo;
+use serde_json::json;
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let client = Phaseo::from_env()?;
+    let response = client.chat_completions(&json!({
+        "model": "openai/gpt-5.6-sol",
+        "messages": [
+            {
+                "role": "system",
+                "content": "Answer concisely."
+            },
+            {
+                "role": "user",
+                "content": "What is provider fallback?"
+            }
+        ]
+    }))?;
+
+    let text = response
+        .body
+        .pointer("/choices/0/message/content")
+        .and_then(|value| value.as_str())
+        .unwrap_or("");
+
+    println!("{text}");
+    Ok(())
+}
+```
+
+للتكاملات الجديدة، يُفضّل استخدام [Responses API](./responses.mdx). فهي توفر نموذج طلب واحدًا للنص والإدخال متعدد الوسائط والأدوات وعناصر المخرجات الأكثر تنوعًا.
+
+## مواضيع ذات صلة
+
+- [مرجع API الخاص بـ Chat Completions](../../api-reference/endpoint/chat-completions.mdx)
+- [مرجع API الخاص بـ Rust](./api-reference.mdx)

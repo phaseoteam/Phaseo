@@ -1,0 +1,17 @@
+---
+icon: "wand-sparkles"
+title: "Generación de imágenes"
+description: "Llama a /images/generations con el SDK de Python."
+---
+
+**Método**: `client.generate_image()`
+
+```python
+result = client.generate_image({
+    "model": "openai/gpt-image-1",
+    "prompt": "A lighthouse at golden hour",
+})
+
+print(result)
+```
+

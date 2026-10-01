@@ -1,0 +1,25 @@
+---
+icon: "radio-tower"
+title: "Hooks do ciclo de vida"
+description: "Observe execuções de agentes PHP, turnos do modelo, ferramentas, pausas e conclusão."
+---
+
+Passe um callback `onEvent` para receber eventos estruturados do ciclo de vida enquanto a execução ocorre.
+
+```php
+$result = $agent->run(
+    input: $prompt,
+    client: $client,
+    onEvent: function (array $event): void {
+        $logger->info("agent event", [
+            "type" => $event["type"],
+            "run_id" => $event["run_id"],
+            "details" => $event["details"] ?? [],
+        ]);
+    }
+);
+```
+
+Entre os eventos úteis estão início, conclusão e falha da execução; tentativas do modelo; fragmentos de texto e raciocínio; início, progresso, conclusão e falha das ferramentas; e pontos de revisão humana.
+
+Mantenha os callbacks rápidos. Enfile tarefas lentas de persistência e remova dados sensíveis das entradas de ferramentas antes de encaminhar eventos para telemetria externa.

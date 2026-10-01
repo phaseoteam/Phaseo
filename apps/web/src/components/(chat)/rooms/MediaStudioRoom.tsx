@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState, type SyntheticEvent } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { Logo } from "@/components/Logo";
 import type { GatewaySupportedModel } from "@/lib/fetchers/gateway/getGatewaySupportedModelIds";
 import { filterModelsForRoom } from "@/lib/chat/rooms";
@@ -516,10 +516,10 @@ function extractEntryMetrics(payload: any): EntryMetrics {
 	};
 }
 
-function formatTimestamp(value: string): string {
+function formatTimestamp(value: string, locale: string): string {
 	const date = new Date(value);
 	if (Number.isNaN(date.getTime())) return value;
-	return date.toLocaleString(undefined, {
+	return date.toLocaleString(locale, {
 		day: "2-digit",
 		month: "short",
 		year: "numeric",
@@ -529,28 +529,49 @@ function formatTimestamp(value: string): string {
 	});
 }
 
-function formatDuration(durationMs: number | null | undefined): string {
-	if (typeof durationMs !== "number" || !Number.isFinite(durationMs)) return "N/A";
-	if (durationMs < 1000) return `${Math.round(durationMs)}ms`;
-	return `${(durationMs / 1000).toFixed(2)}s`;
+function formatDuration(
+	durationMs: number | null | undefined,
+	locale: string,
+	notAvailable: string,
+): string {
+	if (typeof durationMs !== "number" || !Number.isFinite(durationMs)) return notAvailable;
+	if (durationMs < 1000) {
+		return `${new Intl.NumberFormat(locale).format(Math.round(durationMs))}ms`;
+	}
+	const seconds = new Intl.NumberFormat(locale, {
+		minimumFractionDigits: 2,
+		maximumFractionDigits: 2,
+	});
+	return `${seconds.format(durationMs / 1000)}s`;
 }
 
-function formatCost(costUsd: number | null | undefined): string {
-	if (typeof costUsd !== "number" || !Number.isFinite(costUsd)) return "N/A";
-	return `$${costUsd.toFixed(3)}`;
+function formatCost(costUsd: number | null | undefined, locale: string, notAvailable: string): string {
+	if (typeof costUsd !== "number" || !Number.isFinite(costUsd)) return notAvailable;
+	return new Intl.NumberFormat(locale, {
+		style: "currency",
+		currency: "USD",
+		minimumFractionDigits: 3,
+		maximumFractionDigits: 3,
+	}).format(costUsd);
 }
 
-function formatCostFull(costUsd: number | null | undefined): string {
-	if (typeof costUsd !== "number" || !Number.isFinite(costUsd)) return "N/A";
-	return `$${costUsd.toLocaleString(undefined, {
+function formatCostFull(costUsd: number | null | undefined, locale: string, notAvailable: string): string {
+	if (typeof costUsd !== "number" || !Number.isFinite(costUsd)) return notAvailable;
+	return new Intl.NumberFormat(locale, {
+		style: "currency",
+		currency: "USD",
 		minimumFractionDigits: 2,
 		maximumFractionDigits: 9,
-	})}`;
+	}).format(costUsd);
 }
 
-function formatVideoSeconds(seconds: number | null | undefined): string {
-	if (typeof seconds !== "number" || !Number.isFinite(seconds) || seconds <= 0) return "N/A";
-	return `${Math.round(seconds)}s`;
+function formatVideoSeconds(
+	seconds: number | null | undefined,
+	locale: string,
+	notAvailable: string,
+): string {
+	if (typeof seconds !== "number" || !Number.isFinite(seconds) || seconds <= 0) return notAvailable;
+	return `${new Intl.NumberFormat(locale).format(Math.round(seconds))}s`;
 }
 
 function getGenerationStatus(payload: any): string | null {
@@ -595,9 +616,9 @@ function getGenerationProgressPercent(payload: any): number | null {
 	return null;
 }
 
-function formatPendingStatusLabel(value: string | null | undefined): string {
+function formatPendingStatusLabel(value: string | null | undefined, pendingLabel: string): string {
 	const normalized = typeof value === "string" ? value.trim() : "";
-	if (!normalized) return "Pending";
+	if (!normalized) return pendingLabel;
 	return normalized
 		.replace(/[_-]+/g, " ")
 		.toLowerCase()
@@ -607,18 +628,39 @@ function formatPendingStatusLabel(value: string | null | undefined): string {
 function getPendingGenerationState(
 	entry: GenerationEntry,
 	roomId: "image" | "video",
+	labels: {
+		pending: string;
+		queued: string;
+		processing: string;
+		inProgress: string;
+		percentComplete: (progress: number) => string;
+		statusWithProgress: (status: string, progress: number) => string;
+		generatingImage: string;
+		generatingVideo: string;
+	},
 ): { label: string; progress: number | null; subtitle: string } {
 	const progress = normalizeProgressPercent(entry.progressPercent);
-	const statusLabel = formatPendingStatusLabel(entry.statusLabel ?? entry.status);
+	const rawStatus = (entry.statusLabel ?? entry.status ?? "").trim().toLowerCase();
+	const statusLabel = new Map([
+		["pending", labels.pending],
+		["queued", labels.queued],
+		["submitted", labels.queued],
+		["created", labels.queued],
+		["in_progress", labels.inProgress],
+		["processing", labels.processing],
+		["running", labels.processing],
+	]).get(rawStatus) ?? formatPendingStatusLabel(rawStatus, labels.pending);
 	return {
-		label: progress !== null ? `${statusLabel} (${progress}%)` : statusLabel,
+		label: progress !== null
+			? labels.statusWithProgress(statusLabel, progress)
+			: statusLabel,
 		progress,
 		subtitle:
 			progress !== null
-				? `${progress}% complete`
+				? labels.percentComplete(progress)
 				: roomId === "image"
-					? "Generating image..."
-					: "Generating video...",
+					? labels.generatingImage
+					: labels.generatingVideo,
 	};
 }
 
@@ -626,10 +668,6 @@ function wait(ms: number) {
 	return new Promise<void>((resolve) => {
 		window.setTimeout(resolve, ms);
 	});
-}
-
-function toRecoveredVideoPrompt(): string {
-	return "Recovered video generation";
 }
 
 function normalizeVideoEntryStatusFromJob(status: unknown): GenerationEntry["status"] {
@@ -718,7 +756,7 @@ function mergeVideoEntriesWithJobs(
 			id: `video-job:${resourceId}`,
 			createdAt: timestamp,
 			modelId: job.modelId ?? "video",
-			prompt: toRecoveredVideoPrompt(),
+			prompt: "",
 			url: "",
 			status: nextStatus === "completed" ? "pending" : nextStatus,
 			statusLabel: job.statusLabel ?? job.status,
@@ -870,6 +908,20 @@ function buildResolvedEntries(args: {
 
 export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 	const t = useTranslations("Product.chatRooms");
+	const locale = useLocale();
+	const mediaStudioLabels = {
+		pending: t("mediaStudio.pendingLabel"),
+		queued: t("mediaStudio.queuedLabel"),
+		processing: t("mediaStudio.processingLabel"),
+		inProgress: t("mediaStudio.inProgressLabel"),
+		percentComplete: (progress: number) =>
+			t("mediaStudio.percentComplete", { progress }),
+		statusWithProgress: (status: string, progress: number) =>
+			t("mediaStudio.statusWithProgress", { status, progress }),
+		generatingImage: t("mediaStudio.generatingImage"),
+		generatingVideo: t("generatingVideo"),
+	};
+	const notAvailable = t("mediaStudio.notAvailable");
 	const isImageRoom = roomId === "image";
 	const { toggleSidebar, state: sidebarState } = useSidebar();
 	const filteredModels = useMemo(
@@ -1412,22 +1464,22 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 		const settings = previewEntry.imageSettings;
 		const items: Array<{ label: string; value: string }> = [];
 		if (settings.aspectRatio) {
-			items.push({ label: "Aspect Ratio", value: settings.aspectRatio });
+			items.push({ label: t("mediaStudio.aspectRatio"), value: settings.aspectRatio });
 		}
 		if (settings.imageSize) {
-			items.push({ label: "Image Size", value: settings.imageSize });
+			items.push({ label: t("mediaStudio.imageSize"), value: settings.imageSize });
 		}
 		if (settings.resolution) {
-			items.push({ label: "Resolution", value: settings.resolution });
+			items.push({ label: t("resolution"), value: settings.resolution });
 		}
 		if (settings.quality) {
-			items.push({ label: "Quality", value: settings.quality });
+			items.push({ label: t("mediaStudio.quality"), value: settings.quality });
 		}
 		if (settings.style) {
-			items.push({ label: "Style", value: settings.style });
+			items.push({ label: t("mediaStudio.style"), value: settings.style });
 		}
 		return items;
-	}, [previewEntry, roomId]);
+	}, [previewEntry, roomId, t]);
 
 	const confirmDeleteEntry = useCallback(async (entryId: string) => {
 		const targetEntry = entriesRef.current.find((entry) => entry.id === entryId);
@@ -1446,12 +1498,12 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 			);
 		} catch (err) {
 			setError(
-				err instanceof Error ? err.message : "Unable to remove generation",
+					err instanceof Error ? err.message : t("mediaStudio.removeErrorFallback"),
 			);
 		} finally {
 			setDeleteEntryId(null);
 		}
-	}, []);
+	}, [t]);
 
 	const toggleTemporaryMode = () => {
 		if (!temporaryMode) {
@@ -1506,7 +1558,7 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 				effectiveSubmitModelIds.length === 0
 			) return;
 			if (roomId === "video" && hasPendingEntries) {
-				setError("Please wait until the current video generation has completed.");
+				setError(t("mediaStudio.waitCurrentVideoGeneration"));
 				return;
 			}
 			setError(null);
@@ -1719,7 +1771,9 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 							}
 						} catch (err) {
 							failures.push(
-								err instanceof Error ? err.message : `Generation failed (${targetModelId})`,
+								err instanceof Error
+									? err.message
+									: t("mediaStudio.generationFailedForModel", { modelId: targetModelId }),
 							);
 							await replaceEntry(pendingEntry.id, [
 								{
@@ -1737,11 +1791,11 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 					setError(
 						failures.length === 1
 							? failures[0]
-							: `${failures.length} generation requests failed.`,
+							: t("mediaStudio.generationRequestsFailed", { count: failures.length }),
 					);
 				}
 			} catch (err) {
-				setError(err instanceof Error ? err.message : "Generation failed");
+				setError(err instanceof Error ? err.message : t("generationFailed"));
 			} finally {
 				setActiveRequestCount((count) => Math.max(0, count - 1));
 			}
@@ -1759,6 +1813,7 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 			replaceEntry,
 			selectedModelIds,
 			temporaryMode,
+			t,
 		],
 	);
 
@@ -1798,7 +1853,7 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 								size="icon"
 							className="-ml-1 h-8 w-8"
 							onClick={toggleSidebar}
-							aria-label={sidebarState === "expanded" ? "Collapse sidebar" : "Open sidebar"}
+								aria-label={sidebarState === "expanded" ? t("collapseSidebar") : t("openSidebar")}
 							>
 							{sidebarState === "expanded" ? (
 								<PanelLeftClose className="h-4 w-4" />
@@ -1858,8 +1913,8 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 						<CircleAlert className="mt-0.5 h-4 w-4 shrink-0" />
 						<p>
 							{isImageRoom
-								? "Image generation is in progress. Keep this page open until it completes."
-								: "Please wait until video generation has completed before starting another one."}
+								? t("mediaStudio.imageGenerationInProgress")
+								: t("mediaStudio.videoGenerationInProgress")}
 						</p>
 					</div>
 				) : null}
@@ -1867,22 +1922,22 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 					<RoomEmptyState
 						description={
 							isImageRoom
-								? "What would you like to bring to life?"
-								: "What story would you like to set in motion?"
+								? t("mediaStudio.imageEmptyDescription")
+								: t("mediaStudio.videoEmptyDescription")
 						}
 						suggestions={
 							isImageRoom
 								? [
-										{ label: "Design a product shot", prompt: "A refined studio product photograph with soft directional light" },
-										{ label: "Create a cinematic scene", prompt: "A cinematic landscape at golden hour with dramatic atmosphere" },
-										{ label: "Illustrate an idea", prompt: "A thoughtful editorial illustration about creativity and technology" },
-										{ label: "Make something playful", prompt: "A playful, colorful character in a richly detailed miniature world" },
-									]
+										{ label: t("mediaStudio.imageProductShotLabel"), prompt: t("mediaStudio.imageProductShotPrompt") },
+										{ label: t("mediaStudio.imageCinematicLabel"), prompt: t("mediaStudio.imageCinematicPrompt") },
+										{ label: t("mediaStudio.imageIllustrationLabel"), prompt: t("mediaStudio.imageIllustrationPrompt") },
+										{ label: t("mediaStudio.imagePlayfulLabel"), prompt: t("mediaStudio.imagePlayfulPrompt") },
+								]
 								: [
-										{ label: "Create a product reveal", prompt: "A slow cinematic product reveal with controlled studio lighting" },
-										{ label: "Animate a landscape", prompt: "A sweeping camera move across a misty landscape at sunrise" },
-										{ label: "Make a short story", prompt: "A quiet visual story about finding wonder in an ordinary moment" },
-										{ label: "Explore abstract motion", prompt: "Elegant abstract forms flowing and transforming in slow motion" },
+										{ label: t("mediaStudio.videoProductRevealLabel"), prompt: t("mediaStudio.videoProductRevealPrompt") },
+										{ label: t("mediaStudio.videoLandscapeLabel"), prompt: t("mediaStudio.videoLandscapePrompt") },
+										{ label: t("mediaStudio.videoStoryLabel"), prompt: t("mediaStudio.videoStoryPrompt") },
+										{ label: t("mediaStudio.videoAbstractLabel"), prompt: t("mediaStudio.videoAbstractPrompt") },
 									]
 						}
 						onSelectPrompt={setPrompt}
@@ -1891,7 +1946,7 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 					<div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 2xl:grid-cols-7">
 						{entries.map((entry) => {
 							const modelLabel = modelLabelById.get(entry.modelId) ?? entry.modelId;
-							const pendingState = getPendingGenerationState(entry, "image");
+							const pendingState = getPendingGenerationState(entry, "image", mediaStudioLabels);
 							return (
 								<div
 									key={entry.id}
@@ -1902,7 +1957,7 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 											<div className="flex h-full w-full flex-col items-center justify-center gap-2 px-4 text-center">
 												<CircleAlert className="h-5 w-5 text-destructive" />
 												<p className="text-sm font-medium text-destructive">
-													Generation Failed
+												{t("generationFailed")}
 												</p>
 											</div>
 										) : entry.url ? (
@@ -1915,7 +1970,7 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 											>
 												<img
 													src={entry.url}
-													alt={entry.prompt || "Generated image"}
+								alt={entry.prompt || t("mediaStudio.generatedImage")}
 													className="h-full w-full object-cover"
 												/>
 												<div className="pointer-events-none absolute inset-0 bg-black/25 opacity-0 transition-opacity duration-200 group-hover:opacity-100" />
@@ -1949,7 +2004,7 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 											{modelLabel}
 										</p>
 										<div className="flex items-center justify-between gap-2">
-										<p className="text-[11px] text-muted-foreground">Cost: {formatCost(entry.costUsd)}</p>
+						<p className="text-[11px] text-muted-foreground">{t("mediaStudio.cost")}: {formatCost(entry.costUsd, locale, notAvailable)}</p>
 										{entry.status === "completed" ? (
 											<RoomResponseTimestamp createdAt={entry.createdAt} className="order-last ml-auto" />
 										) : null}
@@ -1985,7 +2040,7 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 																variant="ghost"
 																size="icon"
 																className="h-7 w-7 text-destructive hover:bg-destructive/10 hover:text-destructive"
-																aria-label={entry.status === "pending" ? "Remove pending generation" : "Delete failed generation"}
+												aria-label={entry.status === "pending" ? t("mediaStudio.removePendingGenerationLabel") : t("deleteFailedGeneration")}
 															>
 																<Trash2 className="h-3.5 w-3.5" />
 															</Button>
@@ -1996,8 +2051,7 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 														{entry.status === "pending" ? t("removePendingGeneration") : t("removeFailedGeneration")}
 																</AlertDialogTitle>
 																<AlertDialogDescription>
-																	This removes the failed item from your local room
-																	history.
+												{entry.status === "pending" ? t("mediaStudio.removeGenerationDescription") : t("mediaStudio.failedRemovalDescription")}
 																</AlertDialogDescription>
 															</AlertDialogHeader>
 															<AlertDialogFooter>
@@ -2008,7 +2062,7 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 																		void confirmDeleteEntry(entry.id);
 																	}}
 																>
-																	Delete
+												{t("mediaStudio.delete")}
 																</AlertDialogAction>
 															</AlertDialogFooter>
 														</AlertDialogContent>
@@ -2037,7 +2091,7 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 						{(() => {
 							const entry = currentVideoEntry;
 							const modelLabel = modelLabelById.get(entry.modelId) ?? entry.modelId;
-							const pendingState = getPendingGenerationState(entry, "video");
+							const pendingState = getPendingGenerationState(entry, "video", mediaStudioLabels);
 							return (
 								<div className="group/response flex min-h-[460px] flex-col overflow-hidden rounded-md border border-border bg-card">
 									<div className="flex items-start justify-between gap-3 border-b border-border px-4 py-3">
@@ -2046,12 +2100,12 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 												{modelLabel}
 											</p>
 											<p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
-												{entry.prompt || "No prompt"}
+												{entry.prompt || t("mediaStudio.noPrompt")}
 											</p>
 										</div>
 										<div className="flex items-center gap-2">
 											<RoomResponseTimestamp createdAt={entry.createdAt} className="order-last" />
-											<p className="text-xs text-muted-foreground">Cost: {formatCost(entry.costUsd)}</p>
+											<p className="text-xs text-muted-foreground">{t("mediaStudio.cost")}: {formatCost(entry.costUsd, locale, notAvailable)}</p>
 											{entry.status === "failed" ? (
 												<div className="flex items-center gap-1">
 													<Button
@@ -2092,7 +2146,7 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 															<AlertDialogHeader>
 										<AlertDialogTitle>{t("removeFailedGeneration")}</AlertDialogTitle>
 																<AlertDialogDescription>
-																	This removes the failed item from your local room history.
+													{t("mediaStudio.failedRemovalDescription")}
 																</AlertDialogDescription>
 															</AlertDialogHeader>
 															<AlertDialogFooter>
@@ -2103,7 +2157,7 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 																		void confirmDeleteEntry(entry.id);
 																	}}
 																>
-																	Delete
+													{t("mediaStudio.delete")}
 																</AlertDialogAction>
 															</AlertDialogFooter>
 														</AlertDialogContent>
@@ -2129,7 +2183,7 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 												<CircleAlert className="h-8 w-8 text-destructive" />
 										<p className="text-sm font-medium text-destructive">{t("generationFailed")}</p>
 												<p className="text-xs text-muted-foreground">
-													Try updating the prompt or model settings and run again.
+													{t("mediaStudio.failedGenerationRetryHint")}
 												</p>
 											</div>
 										) : entry.url ? (
@@ -2176,7 +2230,7 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 													</div>
 												) : null}
 												<p className="text-xs text-muted-foreground">
-													Please wait until generation has completed.
+										{t("mediaStudio.waitGenerationComplete")}
 												</p>
 											</div>
 										)}
@@ -2187,7 +2241,7 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 					</div>
 				) : (
 					<div className="flex min-h-[240px] items-center justify-center rounded-md border border-dashed border-border bg-muted/15 px-6 text-center text-sm text-muted-foreground">
-						Your generated videos will appear here.
+						{t("mediaStudio.videoEmptyState")}
 					</div>
 				)}
 			</main>
@@ -2196,7 +2250,7 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 				<div className="mx-auto w-full max-w-3xl space-y-2">
 					{roomId === "video" && hasPendingEntries ? (
 						<p className="text-xs text-muted-foreground">
-							Video generation is running. Please wait until it has completed before starting another generation.
+							{t("mediaStudio.videoPendingNotice")}
 						</p>
 					) : null}
 					{infoNotice ? (
@@ -2220,8 +2274,8 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 							}}
 							placeholder={
 								roomId === "image"
-									? "Generate an image of anything"
-									: "Generate a video of anything"
+								? t("mediaStudio.imagePlaceholder")
+								: t("mediaStudio.videoPlaceholder")
 							}
 							disabled={roomId === "video" && hasPendingEntries}
 							rows={1}
@@ -2240,11 +2294,11 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 							>
 								{roomId === "video" && (hasPendingEntries || isLoading)
 									? <RoomWorkingIndicator
-										label="Generating video..."
+										label={t("generatingVideo")}
 									/>
 									: submitModelIds.length > 1
-										? `Create (${submitModelIds.length})`
-										: "Create"}
+										? t("mediaStudio.createCount", { count: submitModelIds.length })
+										: t("mediaStudio.create")}
 							</Button>
 						</div>
 					</RoomComposerSurface>
@@ -2267,7 +2321,7 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 											{modelLabelById.get(previewEntry.modelId) ?? previewEntry.modelId}
 										</DialogTitle>
 										<DialogDescription className="text-sm text-muted-foreground">
-											{previewEntry.prompt || "No prompt"}
+											{previewEntry.prompt || t("mediaStudio.noPrompt")}
 										</DialogDescription>
 									</DialogHeader>
 								</div>
@@ -2275,7 +2329,7 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 									<div className="flex max-h-[62vh] min-h-[320px] items-center justify-center overflow-hidden rounded-md border border-border bg-background/60">
 										<img
 											src={previewEntry.url}
-											alt={previewEntry.prompt || "Generated image"}
+											alt={previewEntry.prompt || t("mediaStudio.generatedImage")}
 											className="h-auto max-h-[60vh] w-auto max-w-full object-contain"
 										/>
 									</div>
@@ -2284,21 +2338,21 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 									<div className="flex flex-wrap items-center justify-between gap-3">
 										<div className="flex min-w-0 flex-1 flex-col gap-2">
 											<div className="flex items-center gap-2 overflow-x-auto whitespace-nowrap text-xs text-muted-foreground">
-												<span>Timestamp: {formatTimestamp(previewEntry.createdAt)}</span>
+												<span>{t("mediaStudio.timestamp")}: {formatTimestamp(previewEntry.createdAt, locale)}</span>
 												<span className="h-3 w-px bg-border" aria-hidden="true" />
-												<span>Cost: {formatCostFull(previewEntry.costUsd)}</span>
+												<span>{t("mediaStudio.cost")}: {formatCostFull(previewEntry.costUsd, locale, notAvailable)}</span>
 												<span className="h-3 w-px bg-border" aria-hidden="true" />
 												<span className="inline-flex items-center gap-1">
-													<span>Generation Time: {formatDuration(previewEntry.durationMs)}</span>
+													<span>{t("mediaStudio.generationTime")}: {formatDuration(previewEntry.durationMs, locale, notAvailable)}</span>
 													<Tooltip>
 														<TooltipTrigger asChild>
 															<span className="inline-flex h-4 w-4 items-center justify-center text-muted-foreground">
 																<Info className="h-3.5 w-3.5" />
-																<span className="sr-only">Generation time info</span>
+															<span className="sr-only">{t("mediaStudio.generationTimeInfo")}</span>
 															</span>
 														</TooltipTrigger>
 														<TooltipContent>
-															Time it took to generate this image.
+																{t("mediaStudio.imageGenerationTimeTooltip")}
 														</TooltipContent>
 													</Tooltip>
 												</span>
@@ -2328,27 +2382,27 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 											<AlertDialogTrigger asChild>
 												<Button type="button" variant="outline" className="gap-2">
 													<Trash2 className="h-4 w-4" />
-													Delete
+													{t("mediaStudio.delete")}
 												</Button>
 											</AlertDialogTrigger>
 											<AlertDialogContent>
 												<AlertDialogHeader>
 													<AlertDialogTitle>
-														Remove generation?
+														{t("mediaStudio.removeGenerationTitle")}
 													</AlertDialogTitle>
 													<AlertDialogDescription>
-														This removes the item from your local room history.
+														{t("mediaStudio.removeGenerationDescription")}
 													</AlertDialogDescription>
 												</AlertDialogHeader>
 												<AlertDialogFooter>
-													<AlertDialogCancel>Cancel</AlertDialogCancel>
+													<AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
 													<AlertDialogAction
 														className="bg-destructive text-white hover:bg-destructive/90"
 														onClick={() => {
 															void confirmDeleteEntry(previewEntry.id);
 														}}
 													>
-														Delete
+									{t("mediaStudio.delete")}
 													</AlertDialogAction>
 												</AlertDialogFooter>
 											</AlertDialogContent>
@@ -2361,8 +2415,8 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 												rel="noopener noreferrer"
 												download
 											>
-												<Download className="h-4 w-4" />
-												Download
+													<Download className="h-4 w-4" />
+													{t("mediaStudio.download")}
 											</a>
 										) : null}
 										</div>
@@ -2377,7 +2431,7 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 											{modelLabelById.get(previewEntry.modelId) ?? previewEntry.modelId}
 										</DialogTitle>
 										<DialogDescription className="text-sm text-muted-foreground">
-											{previewEntry.prompt || "No prompt"}
+										{previewEntry.prompt || t("mediaStudio.noPrompt")}
 										</DialogDescription>
 									</DialogHeader>
 								</div>
@@ -2431,28 +2485,28 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 									<div className="flex flex-wrap items-center justify-between gap-3">
 										<div className="flex min-w-0 flex-1 flex-col gap-2">
 											<div className="flex items-center gap-2 overflow-x-auto whitespace-nowrap text-xs text-muted-foreground">
-												<span>Timestamp: {formatTimestamp(previewEntry.createdAt)}</span>
+												<span>{t("mediaStudio.timestamp")}: {formatTimestamp(previewEntry.createdAt, locale)}</span>
 												<span className="h-3 w-px bg-border" aria-hidden="true" />
-												<span>Cost: {formatCostFull(previewEntry.costUsd)}</span>
+												<span>{t("mediaStudio.cost")}: {formatCostFull(previewEntry.costUsd, locale, notAvailable)}</span>
 												<span className="h-3 w-px bg-border" aria-hidden="true" />
 												<span className="inline-flex items-center gap-1">
-													<span>Generation Time: {formatDuration(previewEntry.durationMs)}</span>
+													<span>{t("mediaStudio.generationTime")}: {formatDuration(previewEntry.durationMs, locale, notAvailable)}</span>
 													<Tooltip>
 														<TooltipTrigger asChild>
 															<span className="inline-flex h-4 w-4 items-center justify-center text-muted-foreground">
 																<Info className="h-3.5 w-3.5" />
-																<span className="sr-only">Generation time info</span>
+															<span className="sr-only">{t("mediaStudio.generationTimeInfo")}</span>
 															</span>
 														</TooltipTrigger>
 														<TooltipContent>
-															Time it took to generate this video.
+																{t("mediaStudio.videoGenerationTimeTooltip")}
 														</TooltipContent>
 													</Tooltip>
 												</span>
 												<span className="h-3 w-px bg-border" aria-hidden="true" />
-												<span>Seconds: {formatVideoSeconds(previewEntry.videoSeconds)}</span>
+												<span>{t("mediaStudio.seconds")}: {formatVideoSeconds(previewEntry.videoSeconds, locale, notAvailable)}</span>
 												<span className="h-3 w-px bg-border" aria-hidden="true" />
-												<span>Resolution: {previewEntry.videoResolution ?? "N/A"}</span>
+												<span>{t("resolution")}: {previewEntry.videoResolution ?? notAvailable}</span>
 											</div>
 										</div>
 										<div className="flex items-center gap-2">
@@ -2468,7 +2522,7 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 														variant="outline"
 														size="icon"
 														className="h-8 w-8 text-destructive hover:bg-destructive/10 hover:text-destructive"
-														aria-label="Delete generation"
+														aria-label={t("mediaStudio.deleteGenerationLabel")}
 													>
 														<Trash2 className="h-4 w-4" />
 													</Button>
@@ -2476,21 +2530,21 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 												<AlertDialogContent>
 													<AlertDialogHeader>
 														<AlertDialogTitle>
-															Remove generation?
+															{t("mediaStudio.removeGenerationTitle")}
 														</AlertDialogTitle>
 														<AlertDialogDescription>
-															This removes the item from your local room history.
+															{t("mediaStudio.removeGenerationDescription")}
 														</AlertDialogDescription>
 													</AlertDialogHeader>
 													<AlertDialogFooter>
-														<AlertDialogCancel>Cancel</AlertDialogCancel>
+														<AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
 														<AlertDialogAction
 															className="bg-destructive text-white hover:bg-destructive/90"
 															onClick={() => {
 																void confirmDeleteEntry(previewEntry.id);
 															}}
 														>
-															Delete
+										{t("mediaStudio.delete")}
 														</AlertDialogAction>
 													</AlertDialogFooter>
 												</AlertDialogContent>
@@ -2503,8 +2557,8 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 													rel="noopener noreferrer"
 													download
 												>
-													<Download className="h-4 w-4" />
-													Download
+														<Download className="h-4 w-4" />
+														{t("mediaStudio.download")}
 												</a>
 											) : null}
 										</div>
@@ -2549,7 +2603,7 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 								(modelSettings.modelDisplayNameById[dialogModelId] ||
 									modelSettings.modelSettingsModelLabel ||
 									dialogModelId)) ||
-							"Selected model";
+							t("model");
 						setInfoNotice(`${label}: ${message}`);
 					}}
 					onReset={resetModelSettings}

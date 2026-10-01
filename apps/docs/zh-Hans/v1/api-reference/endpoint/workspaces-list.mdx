@@ -1,0 +1,10 @@
+---
+title: "列出工作区"
+sidebarTitle: "列出工作区"
+badge: "测试版"
+openapi: "/zh-Hans/openapi/v1/openapi.localized.yaml GET /workspaces"
+description: "列出经过身份验证的管理密钥所有者所拥有的工作区。"
+---
+<Note>此端点需要管理 API 密钥。不接受标准网关 API 密钥。</Note>
+
+返回已认证管理上下文可见的工作区，并支持使用 `offset` 和 `limit` 分页。

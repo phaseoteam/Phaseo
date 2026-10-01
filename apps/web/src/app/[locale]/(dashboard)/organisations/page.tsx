@@ -4,26 +4,20 @@ import OrganisationsDisplay from "@/components/(data)/organisations/Organisation
 import type { OrganisationCard } from "@/lib/fetchers/organisations/getAllOrganisations";
 import { fetchFrontendOrganisations } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import { Skeleton } from "@/components/ui/skeleton";
+import { getLocale, getTranslations } from "next-intl/server";
+import { buildLocalizedPageMetadata } from "@/lib/auth/localized-metadata";
 
-export const metadata: Metadata = {
-	title: "AI Labs",
-	description:
-		"Explore AI labs and the models they create, with release, availability, pricing, and performance data on Phaseo.",
-	keywords: [
-		"AI providers",
-		"AI labs",
-		"AI models",
-		"machine learning providers",
-		"AI benchmarks",
-		"AI pricing",
-		"AI directory",
-		"compare AI providers",
-		"Phaseo",
-	],
-	alternates: {
-		canonical: "/organisations",
-	},
-};
+export async function generateMetadata(): Promise<Metadata> {
+	const locale = await getLocale();
+	const t = await getTranslations("Catalogue.organisations");
+	return buildLocalizedPageMetadata({
+		locale: locale as never,
+		pathname: "/organisations",
+		title: t("title"),
+		description: t("description"),
+		keywords: [t("title"), t("keywordAiModels"), t("keywordAiGateway"), "Phaseo"],
+	});
+}
 
 async function OrganisationsSection() {
 	const organisations =

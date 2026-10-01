@@ -1,0 +1,12 @@
+---
+title: "重新排序文档"
+sidebarTitle: "重新排序文档"
+badge: "Beta"
+openapi: "/zh-Hans/openapi/v1/openapi.localized.yaml POST /rerank"
+description: "使用受支持的重排模型，根据文档与查询的相关性进行排序。"
+---
+
+在将候选文档传递给搜索、检索或生成步骤之前，可使用此端点重新排序。
+
+部署前请通过 `GET /v1/models` 验证模型。默认响应仅包含具有公共 Gateway 路由的模型。
+

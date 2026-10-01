@@ -1,0 +1,10 @@
+---
+title: "تفريع إعداد مسبق عام"
+sidebarTitle: "تفريع الإعداد المسبق"
+badge: "تجريبي"
+openapi: "/ar/openapi/v1/openapi.localized.yaml POST /presets/{id}/fork"
+description: "يفرّع إعدادًا مسبقًا عامًا إلى مساحة عمل الإدارة."
+---
+<Note>تتطلب نقطة النهاية هذه مفتاح API للإدارة يتضمن `presets:write` وهوية مستخدم مرتبطة.</Note>
+
+اترك `source_version_id` فارغًا لتفريع الإصدار النشط. الإعداد المسبق الجديد خاص ويحافظ على سلالة المصدر upstream.

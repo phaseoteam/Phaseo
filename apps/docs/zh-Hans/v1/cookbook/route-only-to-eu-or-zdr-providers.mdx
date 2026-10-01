@@ -1,0 +1,126 @@
+---
+title: "仅路由到欧盟或支持 ZDR 的提供方"
+icon: "globe-2"
+description: "在单个请求中设置数据驻留和零数据保留要求，使请求只路由到符合条件的提供方。"
+---
+
+如果某个请求需要出于合规或数据处理原因筛选提供方，但你不想更改整个工作区的策略，请使用此方案。
+
+## 目标
+
+- 要求在欧盟执行。
+- 要求数据驻留在欧盟。
+- 要求提供方支持零数据保留。
+
+## 1. 在请求中添加数据驻留要求
+
+直接在请求正文中设置提供方要求。
+
+<CodeGroup>
+```bash cURL
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "google/gemini-3.1-flash-lite",
+    "input": "Summarize the ticket in one line.",
+    "provider": {
+      "required_execution_region": "eu",
+      "required_data_region": "eu",
+      "require_zero_data_retention": true
+    }
+  }'
+```
+
+```typescript TypeScript SDK
+import Phaseo from "@phaseo/sdk";
+
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
+
+const response = await client.generateResponse({
+  model: "google/gemini-3.1-flash-lite",
+  input: "Summarize the ticket in one line.",
+  provider: {
+    required_execution_region: "eu",
+    required_data_region: "eu",
+    require_zero_data_retention: true,
+  },
+});
+
+console.log(response.output_text);
+```
+
+```python Python SDK
+from phaseo import Phaseo
+
+client = Phaseo(api_key="YOUR_API_KEY")
+
+response = client.generate_response(
+    {
+        "model": "google/gemini-3.1-flash-lite",
+        "input": "Summarize the ticket in one line.",
+        "provider": {
+            "required_execution_region": "eu",
+            "required_data_region": "eu",
+            "require_zero_data_retention": True,
+        },
+    }
+)
+
+print(response.get("output_text"))
+```
+</CodeGroup>
+
+此流程支持的请求级筛选条件：
+
+- `required_execution_region`
+- `required_data_region`
+- `require_zero_data_retention`
+
+## 2. 仅使用满足策略所需的规则
+
+只要求工作负载真正需要的条件。
+
+例如：
+
+- 仅限制执行地点：
+  - `required_execution_region: "eu"`
+- 仅限制数据地点：
+  - `required_data_region: "eu"`
+- 仅选择支持 ZDR 的提供方：
+  - `require_zero_data_retention: true`
+
+## 3. 预期候选提供方会减少
+
+这些筛选条件会在提供方排序前应用，因此可能会完全排除某些提供方。
+
+这意味着：
+
+- 请求可能会路由到价格更高的区域性方案。
+- 提供方列表可能会大幅缩小。
+- 如果该模型没有提供方满足要求，请求可能会失败。
+
+## 4. 如有条件，提前检查模型页面
+
+正式部署请求前，请在模型页面的提供方卡片中检查：
+
+- 区域性方案，例如 `OpenAI EU` 或 `Google Vertex EU`
+- 是否支持 ZDR
+- 提供方数据策略的说明和来源
+
+这样可以先确认至少有一个符合条件的提供方，再将要求应用到生产流量。
+
+## 5. 使用工作区隐私设置作为默认值
+
+如果策略应适用于工作区的所有请求，请在**设置 -> 隐私**中配置，而不是在每个请求中重复相同的筛选条件。
+
+以下情况适合使用请求字段：
+
+- 按工作流设置
+- 按客户设置
+- 按请求设置
+
+## 相关指南
+
+- [路由与故障回退](../guides/routing-and-fallbacks.mdx)
+- [预设](../guides/presets.mdx)

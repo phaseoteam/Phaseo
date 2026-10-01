@@ -14,6 +14,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { acceptTeamInviteAction } from "@/app/(dashboard)/settings/teams/actions";
+import { localizedSettingsError } from "@/i18n/error-messages";
 
 export default function AcceptInviteDialog({
 	currentUserId,
@@ -47,8 +48,8 @@ export default function AcceptInviteDialog({
 			);
 			// close after a short delay
 			setTimeout(() => onOpenChange(false), 900);
-		} catch (err: any) {
-			setMessage(err?.message ?? s("Could not submit request"));
+		} catch (err: unknown) {
+			setMessage(localizedSettingsError(err, t, "Could not submit request"));
 		} finally {
 			setLoading(false);
 		}

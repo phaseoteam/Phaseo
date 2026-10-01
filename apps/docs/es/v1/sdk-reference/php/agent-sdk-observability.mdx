@@ -1,0 +1,23 @@
+---
+icon: "triangle-alert"
+title: "Errores y solución de problemas"
+description: "Gestiona errores del modelo, las herramientas, la validación, los tiempos de espera y la continuación en agentes PHP."
+---
+
+Los errores de los agentes suelen deberse a una solicitud al modelo, una herramienta local, la validación del esquema, un tiempo de espera o la falta de una decisión humana.
+
+## Recuperarse de errores de herramientas
+
+Configura `onError: "return-to-model"` cuando el modelo pueda recuperarse de un error de herramienta. El error se convierte en un resultado de herramienta estructurado y la ejecución puede elegir otra acción. Mantén el comportamiento de fail-run para operaciones inseguras o irrecuperables.
+
+## Comprender la ejecución de PHP
+
+Los callbacks de herramientas de PHP se ejecutan de forma síncrona. Por eso, la concurrencia de herramientas y la interrupción están limitadas por el entorno de ejecución de PHP y el cliente de E/S subyacente. Configura tiempos de espera explícitos en las herramientas de red y procesos, y no des por hecho que siempre se puede detener a la fuerza un callback cuyo tiempo de espera haya vencido.
+
+## Diagnosticar errores de continuación
+
+Cada llamada pendiente necesita una aprobación, un rechazo o un resultado proporcionado externamente que se identifique por el ID de llamada a la herramienta. Guarda el estado de ejecución completo que se devuelve antes de mostrar una interfaz de aprobación.
+
+## Registrar campos útiles
+
+Registra el ID de ejecución, el índice del paso, el ID de solicitud, el proveedor, el modelo, el motivo de finalización, el ID de llamada a la herramienta y el motivo de detención. Usa hooks del ciclo de vida o DevTools en lugar de registrar prompts y credenciales sin procesar.

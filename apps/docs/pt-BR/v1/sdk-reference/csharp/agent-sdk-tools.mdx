@@ -1,0 +1,23 @@
+---
+icon: "wrench"
+title: "Ferramentas"
+description: "Defina ferramentas C# validadas, sujeitas a aprovação, manuais e que geram progresso."
+---
+
+Crie registros `Tool` e passe-os por `AgentSdk.DefineTool(...)`. Uma ferramenta pode incluir:
+
+- `Parameters` JSON exibidos ao modelo
+- delegates de validação `InputSchema`, `OutputSchema` e `EventSchema`
+- `Timeout` por ferramenta e um delegate assíncrono `Execute`
+- aprovação incondicional ou condicional
+- `OnToolCalled` e `OnResponseReceived` para trabalho interativo
+- substituições para o próximo turno e tratamento recuperável de erros de ferramentas
+
+Use `RuntimeContext.EmitProgress` para resultados preliminares, `SetContext` para o contexto da aplicação e `CancellationToken` para dependências que aceitam cancelamento.
+
+Ferramentas independentes podem ser executadas em paralelo por meio de `ToolExecutionConfig`. As mensagens de resultado salvas mantêm a ordem das chamadas do modelo mesmo se a execução terminar em outra ordem.
+
+## Relacionados
+
+- [Estado e aprovação](./agent-sdk-state-and-approval.mdx)
+- [Controles da execução](./agent-sdk-run-controls.mdx)

@@ -1,0 +1,22 @@
+---
+icon: "layers"
+title: "Trabalhar com resultados e itens"
+description: "Crie cronologias de execução do Python a partir de mensagens, etapas, ferramentas e itens transmitidos em streaming."
+---
+
+`AgentRunResult` contém o estado persistente da execução, mensagens, etapas, uso e custo, avisos, motivos de conclusão e saída final.
+
+Use `text_stream()` para obter o texto da resposta e `item_stream()` para itens do provedor e do runtime. Atualmente, os itens em Python são dicionários, não a união discriminada `AgentItem` do TypeScript.
+
+```python
+for item in stream.item_stream():
+    item_type = item.get("type")
+    render_timeline_item(item_type, item)
+```
+
+Mantenha o acesso a dicionários específicos do provedor em um único adaptador da aplicação e depois persista o resultado concluído para reconstruí-lo mais tarde.
+
+## Relacionados
+
+- [Transmissão contínua](./agent-sdk-streaming.mdx)
+- [Hooks de ciclo de vida](./agent-sdk-lifecycle-hooks.mdx)

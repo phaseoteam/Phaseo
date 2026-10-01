@@ -1,0 +1,292 @@
+---
+title: "Tool-Aufrufe"
+description: "Nutze modellgesteuerte Funktionsaufrufe sicher über das Gateway."
+icon: "wrench"
+---
+
+Mit Tool-Aufrufen können Modelle strukturierte Aktionen anfordern (z. B. Datenbankabfragen, Wetterprüfungen oder interne API-Aufrufe), statt Antworten zu erraten.
+
+Das Gateway unterstützt Tool-Payloads über diese Text-Endpunkte:
+
+- `/v1/chat/completions` (OpenAI-typische `tools` und `tool_calls`)
+- `/v1/responses` (Antworts-typische `function_call`-Ausgabeelemente)
+- `/v1/messages` (Anthropic-typische `tool_use`-Blöcke)
+
+## Anfrage
+
+```bash
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-5-nano",
+    "messages": [
+      { "role": "user", "content": "What is the weather in London?" }
+    ],
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "get_weather",
+          "description": "Get current weather by city",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "city": { "type": "string" }
+            },
+            "required": ["city"]
+          }
+        }
+      }
+    ],
+    "tool_choice": {
+      "type": "function",
+      "function": { "name": "get_weather" }
+    },
+    "stream": false
+  }'
+```
+
+## Antwort
+
+```json
+{
+  "id": "chatcmpl_...",
+  "object": "chat.completion",
+  "choices": [
+    {
+      "index": 0,
+      "finish_reason": "tool_calls",
+      "message": {
+        "role": "assistant",
+        "content": null,
+        "tool_calls": [
+          {
+            "id": "call_123",
+            "type": "function",
+            "function": {
+              "name": "get_weather",
+              "arguments": "{\"city\":\"London\"}"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}
+```
+
+Führe dein Tool aus und sende das Ergebnis in der nächsten Anfrage zurück, damit der Assistent die Antwort abschließen kann.
+
+## Integrierte Server-Tools
+
+Das Gateway stellt derzeit folgende integrierte Server-Tools bereit:
+
+- `gateway:datetime`
+- `phaseo:web_search`
+- `phaseo:web_fetch`
+- `phaseo:advisor`
+- `phaseo:image_generation`
+- `phaseo:apply_patch`
+
+Dieses Tool wird auf Gateway-Seite ausgeführt; ein clientseitiger Executor ist nicht erforderlich. Das Gateway wandelt es in einen vorgelagerten Tool- oder Funktionsaufruf um, führt ihn aus und gibt das Ergebnis an den Modellablauf zurück.
+
+Ausführliche Informationen zu Konfiguration, Nutzung und Abrechnung findest du unter [Server-Tools](./server-tools/index.mdx).
+
+Unterstütztes Anfrageformat:
+
+```json
+{
+  "tools": [
+    {
+      "type": "gateway:datetime",
+      "parameters": {
+        "timezones": ["Europe/London", "UTC"]
+      }
+    }
+  ]
+}
+```
+
+Hinweise:
+
+- `parameters.timezones` ist optional und kann bis zu 5 gültige IANA-Zeitzonen in einem Aufruf anfordern.
+- Das Ergebnis enthält ein `timezones`-Array mit ISO-Datum und -Uhrzeit sowie der aufgelösten Zeitzone für jede angeforderte Zone.
+- Die Nutzung umfasst `usage.server_tool_use.datetime_requests`.
+- Verwende bevorzugt `tool_choice: "auto"`, damit das Modell selbst entscheiden kann, wann es das Tool aufruft.
+
+### Websuchbeispiel
+
+```json
+{
+  "tools": [
+    {
+      "type": "phaseo:web_search",
+      "parameters": {
+        "engine": "exa",
+        "max_results": 5,
+        "max_total_results": 15,
+        "search_context_size": "medium",
+        "max_characters": 2048,
+        "allowed_domains": ["arxiv.org", "nature.com"],
+        "include_highlights": true
+      }
+    }
+  ]
+}
+```
+
+Hinweise:
+
+- Das Modell gibt die Suchanfrage beim Tool-Aufruf an.
+- `engine: "auto"` verwendet die verwaltete Exa-Suche. `engine: "exa"`, `engine: "parallel"` und `engine: "firecrawl"` verwenden die verwaltete Gateway-Suche, wenn der passende Provider-Schlüssel konfiguriert ist.
+- `engine: "native"` wird bei `phaseo:web_search` für die jeweilige Anfrageoberfläche in das native Websuch-Tool des Providers umgewandelt, etwa OpenAIs `web_search_preview` oder Anthropics `web_search_20250305`.
+- `max_results` begrenzt die Ergebnisse pro Suchaufruf; `max_total_results` begrenzt die Gesamtergebnisse im Server-Tool-Ablauf.
+- Die verwaltete Suche unterstützt `allowed_domains` / `excluded_domains`, `search_context_size` und `max_characters`, sofern die ausgewählte Suchmaschine entsprechende Einstellungen anbietet.
+- Die Nutzung umfasst `usage.server_tool_use.web_search_requests`, `usage.server_tool_use.web_search_results` und `usage.server_tool_use.web_search_extra_results`.
+- Die verwaltete Exa-Suche kann über die Meter `server_tool_web_search_requests` und `server_tool_web_search_extra_results` abgerechnet werden.
+
+### Webabruf-Beispiel
+
+```json
+{
+  "tools": [
+    {
+      "type": "phaseo:web_fetch",
+      "parameters": {
+        "engine": "direct",
+        "max_chars": 12000,
+        "allowed_domains": ["docs.example.com"],
+        "blocked_domains": ["internal.example.com"]
+      }
+    }
+  ]
+}
+```
+
+Hinweise:
+
+- Das Modell gibt beim Tool-Aufruf die Ziel-`url` an.
+- Unterstützt werden nur HTTP(S)-URLs und textähnliche Inhaltstypen.
+- `engine: "auto"` verwendet auf der Anthropic-Messages-Oberfläche den nativen Abruf, sonst Exa bei konfiguriertem `EXA_API_KEY` und andernfalls den direkten HTTP-Abruf des Gateways.
+- `engine: "direct"` verwendet den direkten HTTP-Abruf des Gateways. `engine: "exa"` nutzt die Inhaltsextraktion von Exa, wenn `EXA_API_KEY` konfiguriert ist.
+- `engine: "parallel"` verwendet Parallel Extract, wenn `PARALLEL_API_KEY` konfiguriert ist. `engine: "firecrawl"` verwendet Firecrawl Scrape, wenn `FIRECRAWL_API_KEY` konfiguriert ist.
+- Auf der Anthropic-Messages-Oberfläche wird `engine: "native"` in Anthropics natives Tool `web_fetch_20260209` umgewandelt. Auf anderen Anfrageoberflächen solltest du `engine: "direct"` oder eine verwaltete Extraktions-Engine verwenden.
+- Wenn `max_chars` fehlt, wird `max_content_tokens` als Alias zur Begrenzung der Abrufgröße in Token akzeptiert.
+- `allowed_domains` und `blocked_domains` begrenzen die abrufbaren URLs.
+- HTML-Inhalte werden auf Text mit begrenzter Länge reduziert, bevor sie in den Modellablauf zurückgegeben werden.
+- Die Nutzung umfasst `usage.server_tool_use.web_fetch_requests`.
+- Für den verwalteten Abruf kann das Meter `server_tool_web_fetch_requests` verwendet werden. Native Abruf- und Suchnutzung des Providers wird über `native_web_fetch_requests` und `native_web_search_requests` abgerechnet; Modellpreiskarten können die Provider-Standardwerte überschreiben.
+
+Beispiel für nativen Anthropic-Abruf:
+
+```json
+{
+  "tools": [
+    {
+      "type": "phaseo:web_fetch",
+      "parameters": {
+        "engine": "native",
+        "max_content_tokens": 9000,
+        "allowed_domains": ["docs.example.com"]
+      }
+    }
+  ],
+  "tool_choice": "phaseo:web_fetch"
+}
+```
+
+### Advisor-Beispiel
+
+```json
+{
+  "tools": [
+    {
+      "type": "phaseo:advisor",
+      "parameters": {
+        "name": "reviewer",
+        "model": "claude-opus-5",
+        "instructions": "Review plans for correctness, missing edge cases, and implementation risk.",
+        "forward_transcript": true,
+        "max_uses": 2,
+        "max_completion_tokens": 1400,
+        "temperature": 0.2
+      }
+    }
+  ],
+  "tool_choice": "phaseo:advisor"
+}
+```
+
+Hinweise:
+
+- Advisor wird vom Gateway verwaltet und funktioniert mit unterstützten Textmodellen. Das aufrufende Modell erhält ein `phaseo_advisor`-Tool oder eine benannte Variante wie `phaseo_advisor_reviewer`; das Gateway führt die Advisor-Anfrage aus.
+- `parameters.name` ist optional. Verwende eindeutige Namen, um mehrere Advisors bereitzustellen. Namen dürfen Buchstaben, Zahlen, Leerzeichen, Unterstriche und Bindestriche enthalten.
+- `parameters.model` legt das Advisor-Modell fest. Fehlt der Parameter, kann der Tool-Aufruf `model` angeben; andernfalls verwendet das Gateway das Modell der äußeren Anfrage.
+- `parameters.forward_transcript` ist standardmäßig `false`. Setze den Wert auf `true`, wenn Advisor den aktuellen Gesprächsverlauf erhalten soll.
+- Das Modell gibt beim Tool-Aufruf normalerweise den Advisor-`prompt` an. Bei `forward_transcript` auf `true` kann das Gateway einen Advisor-Aufruf nur mit dem Gesprächsverlauf ausführen, wenn kein Prompt angegeben ist. `max_tokens` wird als veralteter Alias für `max_completion_tokens` akzeptiert.
+- Die Nutzung umfasst `usage.server_tool_use.advisor_requests`.
+
+### Beispiel für Bildgenerierung
+
+```json
+{
+  "tools": [
+    {
+      "type": "phaseo:image_generation",
+      "parameters": {
+        "model": "openai/gpt-image-2",
+        "quality": "high",
+        "aspect_ratio": "16:9",
+        "output_format": "png"
+      }
+    }
+  ]
+}
+```
+
+Hinweise:
+
+- Beim Tool-Aufruf gibt das Modell den Bild-`prompt` an. `description` wird ebenfalls als Prompt-Alias akzeptiert.
+- `parameters.model` legt das Bildmodell fest. Fehlt der Parameter, kann der Tool-Aufruf `model` angeben; andernfalls verwendet Phaseo das Standard-Bildmodell.
+- Das Tool-Ergebnis enthält je nach Provider-Antwort entweder `imageUrl` oder base64-kodierte Bilddaten.
+- Die Nutzung umfasst `usage.server_tool_use.image_generation_requests`; der Tokenverbrauch des Bildmodells wird der übergeordneten Anfrage zugerechnet.
+
+### Beispiel für Patch-Anwendung
+
+```json
+{
+  "tools": [
+    {
+      "type": "phaseo:apply_patch"
+    }
+  ],
+  "tool_choice": "auto"
+}
+```
+
+Hinweise:
+
+- Die Responses API unterstützt `phaseo:apply_patch`.
+- Phaseo validiert die Patch-Operationen und gibt sie im Tool-Ergebnis zurück. Dein Client entscheidet, ob der Patch angewendet oder abgelehnt wird.
+- Unterstützte Operationstypen sind `create_file`, `update_file` und `delete_file`.
+- Die Nutzung umfasst `usage.server_tool_use.apply_patch_requests`.
+
+## Streaming-Verhalten
+
+Tool-Aufrufe können auch `stream: true` verwenden.
+
+Bei gatewayverwalteten Server-Tools kann das Gateway:
+
+- den vorgelagerten Tool-Aufruf-Zug materialisieren
+- das Server-Tool ausführen
+- den Modellablauf fortsetzen
+- einen synthetischen Stream an den Client zurücksenden
+
+So bleibt der clientseitige Vertrag streamingfreundlich, auch wenn das Gateway Teile des Tool-Ablaufs selbst ausführt.
+
+## Nächste Anleitungen
+
+1. [Muster für Tool-Aufrufe](./tool-calling-patterns.mdx)
+2. [Sicherheit und Validierung von Tool-Aufrufen](./tool-calling-safety.mdx)
+3. [Strukturierte Ausgaben](./structured-outputs.mdx)

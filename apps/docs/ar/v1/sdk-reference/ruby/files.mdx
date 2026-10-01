@@ -1,0 +1,27 @@
+---
+icon: "files"
+title: "الملفات"
+description: "استخدم SDK Ruby لرفع الملفات واستعراض بياناتها الوصفية واسترجاع محتواها."
+---
+
+**الطرق**: `upload_file` و`list_files` و`retrieve_file` و`retrieve_file_content`.
+
+### مثال
+```ruby
+require 'phaseo_sdk'
+
+client = PhaseoSdk::Phaseo.new(api_key: ENV.fetch('PHASEO_API_KEY'))
+
+uploaded = client.upload_file(
+  'purpose' => 'batch',
+  'file' => 'data:application/json;base64,eyJ0ZXN0Ijp0cnVlfQ=='
+)
+
+file = client.retrieve_file('file_123')
+content = client.retrieve_file_content('file_123')
+```
+
+<Note>
+تتوفر `list_files` عبر SDK، لكن `GET /files` يعيد حاليًا `file_list_not_supported_with_shared_gateway_key` عند استخدام مفتاح البوابة المشترك
+احتفظ بمعرّفات الملفات المرفوعة واسترجعها مباشرةً.
+</Note>

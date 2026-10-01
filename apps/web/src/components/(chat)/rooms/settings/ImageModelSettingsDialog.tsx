@@ -60,14 +60,18 @@ export function ImageModelSettingsDialog({
 	const t = useTranslations("Product.chatRooms");
 	const schema = getImageModelSchema(selectedModelId ?? "");
 	const isGoogleImageSchema = schema.variant.startsWith("google-");
-	const sizeLabel = isGoogleImageSchema ? "Aspect ratio" : "Resolution";
+	const sizeLabel = isGoogleImageSchema
+		? t("mediaStudio.aspectRatio")
+		: t("resolution");
 	const sizePlaceholder = isGoogleImageSchema
-		? "Select aspect ratio"
-		: "Select resolution";
-	const qualityLabel = isGoogleImageSchema ? "Image size" : "Quality";
+		? t("selectAspectRatio")
+		: t("selectResolution");
+	const qualityLabel = isGoogleImageSchema
+		? t("mediaStudio.imageSize")
+		: t("mediaStudio.quality");
 	const qualityPlaceholder = isGoogleImageSchema
-		? "Select image size"
-		: "Select quality";
+		? t("selectImageSize")
+		: t("selectQuality");
 	const normalizedParams = useMemo(() => {
 		const size = schema.sizeOptions.includes(settings.params.size)
 			? settings.params.size
@@ -154,7 +158,7 @@ export function ImageModelSettingsDialog({
 				</div>
 				{schema.styleOptions.length > 0 ? (
 					<div className="grid gap-1.5">
-						<Label>Style</Label>
+						<Label>{t("mediaStudio.style")}</Label>
 						<Select
 							value={normalizedParams.style}
 							onValueChange={(value) => onUpdateParams({ style: value })}

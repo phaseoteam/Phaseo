@@ -1,0 +1,108 @@
+---
+title: "Phaseo mit DeepSeek Harness verwenden"
+icon: "terminal"
+description: "Füge Phaseo in DeepSeek Harness als benutzerdefinierten OpenAI-kompatiblen Provider hinzu."
+---
+
+Verbinde DeepSeek Harness mit Phaseo, um Phaseo-Modelle und -Routing über die Harness-Weboberfläche zu nutzen. Ein eigener Adapter ist nicht nötig: Harness kann OpenAI-kompatible Chat-Completions-Anfragen direkt an Phaseo senden.
+
+**Ergebnis:** Phaseo erscheint als Provider in der Harness-Modellauswahl, und neue Harness-Sitzungen können ein von Phaseo bereitgestelltes Modell verwenden.
+
+## Voraussetzungen
+
+- Phaseo-CLI, ein Phaseo-Konto und eine installierte Version von DeepSeek Harness
+
+Die Live-Anfrage in dieser Anleitung verwendet Provider-Anmeldedaten und kann Kosten für die Modellnutzung verursachen.
+
+## Mit der Phaseo-CLI einrichten
+
+Richte Provider, Basis-URL, Protokoll, Modellkatalog und Standardmodell mit einem einzigen Befehl ein:
+
+```bash
+phaseo login
+phaseo dsh
+```
+
+Die CLI lässt nicht zu Phaseo gehörende Einträge in `$DSH_HOME/cordis.patch.yml` unverändert und markiert den Phaseo-Block, damit sie nur die von ihr verwalteten Einstellungen aktualisieren oder entfernen kann. Sie synchronisiert alle aktiven Phaseo-Textmodelle, die mit Chat Completions kompatibel sind. Bei Bedarf kannst du ein anderes Standardmodell angeben:
+
+```bash
+phaseo dsh --model YOUR_PHASEO_MODEL_ID
+```
+
+Das Setup erstellt außerdem einen nicht ablaufenden Gateway-Schlüssel namens `Phaseo CLI: DeepSeek Harness API Key` und schreibt ihn direkt in den geschützten Harness-Speicher `$DSH_HOME/.credentials.yaml`. Verwende `--catalog default`, um nur das ausgewählte Modell einzurichten.
+
+Mit `phaseo integrations remove deepseek-harness` werden nur die von Phaseo verwalteten Einstellungen entfernt und der von der CLI erstellte Schlüssel widerrufen.
+
+## Phaseo manuell in der Harness-Oberfläche hinzufügen
+
+1. Öffne in DeepSeek Harness **Settings > Models**.
+2. Wähle **Add a custom provider** aus.
+3. Gib folgende Werte ein:
+
+| Feld | Wert |
+| --- | --- |
+| Provider ID | `phaseo` |
+| Display name | `Phaseo` |
+| Base URL | `https://api.phaseo.app/v1` |
+| API protocol | `OpenAI Completions` |
+| API key | Dein Phaseo-API-Schlüssel |
+
+4. Wähle unter **Model catalog** die Option **Fetch available models** aus.
+5. Wähle ein Chat-Completions-Modell mit Tool-Unterstützung, etwa `anthropic/claude-sonnet-4.6`, und speichere den Provider.
+6. Wechsle zurück zum Composer, wähle das Phaseo-Modell und starte eine neue Sitzung.
+
+Harness speichert die Provider-ID in Sitzungen und Anmeldedatenverweisen. Behandle `phaseo` daher als dauerhaft. Anzeigename, URL, Anmeldedaten und Modellliste lassen sich später noch bearbeiten.
+
+## Phaseo mit YAML konfigurieren
+
+Du kannst denselben Provider direkt in `$DSH_HOME/settings.yaml` konfigurieren. Speichere den API-Schlüssel nicht in dieser Datei; `apiKeyEnv` benennt die Anmeldedaten, die Harness auflösen soll.
+
+```yaml
+llm-pi-ai:
+  providers:
+    phaseo:
+      displayName: Phaseo
+      apiKeyEnv: PHASEO_API_KEY
+      api: openai-completions
+      baseURL: https://api.phaseo.app/v1
+      models:
+        - id: YOUR_PHASEO_MODEL_ID
+```
+
+Stelle `PHASEO_API_KEY` in der Umgebung bereit, die Harness startet, oder speichere dieselben Anmeldedaten auf der Models-Seite. Ersetze `YOUR_PHASEO_MODEL_ID` durch die genaue ID aus der Phaseo-Modellerkennung. Für Coding-Agent-Abläufe empfiehlt sich `anthropic/claude-sonnet-4.6`.
+
+<Note>
+  Die Liste `models` in `settings.yaml` ist ein gespeicherter Katalog und keine Live-Abfrage. Aktualisiere sie, wenn Harness weitere Phaseo-Modelle anzeigen soll.
+</Note>
+
+## Verbindung überprüfen
+
+Prüfe Anmeldedaten und Modellerkennungsroute unabhängig, bevor du Harness testest:
+
+```bash
+curl https://api.phaseo.app/v1/models \
+  -H "Authorization: Bearer $PHASEO_API_KEY"
+```
+
+Wähle anschließend in einer neuen Harness-Sitzung ein Phaseo-Modell aus und sende:
+
+```text
+Reply with exactly: Phaseo is connected.
+```
+
+Eine erfolgreiche Antwort bestätigt den gesamten Weg von Harness über Phaseo bis zum ausgewählten Modellanbieter.
+
+## Fehlerbehebung
+
+- **Die Modellsuche gibt `401` zurück** – Prüfe, ob der Phaseo-API-Schlüssel aktuell ist und die Basis-URL `/v1` enthält.
+- **Das Modell fehlt in der Auswahl** – Lade den Katalog erneut oder füge die genaue Phaseo-Modell-ID unter `models` in `$DSH_HOME/settings.yaml` hinzu.
+- **Harness meldet `MISSING_CREDENTIAL`** – Speichere den Schlüssel auf der Models-Seite oder stelle `PHASEO_API_KEY` dem Harness-Prozess bereit.
+- **Eine Anfrage verwendet den falschen Endpunkt** – Wähle `OpenAI Completions` / `openai-completions`. Diese Harness-Integration nutzt Phaseos kompatible Route `/v1/chat/completions`.
+- **Ein Modell lehnt Function-Tools mit aktiviertem Reasoning ab** – Wähle ein Modell, das Tools in Chat Completions unterstützt. Modelle, die für Reasoning mit Tools die Responses API benötigen, sind mit diesem Harness-Provider-Protokoll nicht kompatibel.
+- **Eine bestehende Sitzung behält das alte Modell** – Starte eine neue Sitzung. Harness speichert Provider und Modell für Sitzungen, die bereits eine Anfrage gesendet haben.
+
+## Weiterführende Anleitungen
+
+- [Schnellstart](../../quickstart.mdx)
+- [Eine Node-REST-Smoke-App erstellen](../../cookbook/build-a-node-rest-smoke-app.mdx)
+- [Routing und Fallbacks](../routing-and-fallbacks.mdx)

@@ -4,6 +4,14 @@ import { WorkspaceSelectField } from "./WorkspaceSelectField";
 
 const mockSelectProps: Array<Record<string, unknown>> = [];
 
+jest.mock("next-intl", () => ({
+	useTranslations: () => (key: string) =>
+		({
+			workspace: "Workspace",
+			chooseWorkspace: "Choose a workspace",
+		})[key as "workspace" | "chooseWorkspace"] ?? key,
+}));
+
 jest.mock("@/components/ui/select", () => ({
 	Select: ({ children, ...props }: { children: ReactNode } & Record<string, unknown>) => {
 		mockSelectProps.push(props);
@@ -12,7 +20,8 @@ jest.mock("@/components/ui/select", () => ({
 	SelectContent: ({ children }: { children: ReactNode }) => <div>{children}</div>,
 	SelectItem: ({ children }: { children: ReactNode }) => <div>{children}</div>,
 	SelectTrigger: ({ children }: { children: ReactNode }) => <div>{children}</div>,
-	SelectValue: () => null,
+	SelectValue: ({ placeholder }: { placeholder?: string }) =>
+		placeholder ? <span>{placeholder}</span> : null,
 }));
 
 describe("WorkspaceSelectField", () => {
@@ -33,6 +42,7 @@ describe("WorkspaceSelectField", () => {
 		});
 		expect(html).toContain('name="workspace_id"');
 		expect(html).toContain('value="workspace-uuid"');
+		expect(html).toContain("Choose a workspace");
 		expect(html).toContain("Acme Platform (owner)");
 	});
 });

@@ -37,6 +37,7 @@ import {
 	getPricingContextTiers,
 	type PricingContextTier,
 } from "./pricingMeterConditions";
+import { useLocale, useTranslations } from "next-intl";
 
 interface PricingReferenceProps {
 	meters: PricingMeter[];
@@ -51,18 +52,34 @@ interface PricingReferenceProps {
 const TOKEN_VOLUME_PRESETS = [1_000_000, 10_000_000, 100_000_000, 1_000_000_000];
 const BUDGET_PRESETS = [1, 10, 100, 1_000];
 
+type LocalizedPricingContextTier = PricingContextTier & {
+	label: string;
+	detail: string;
+};
+
 function isTokenMeter(meter: PricingMeter): boolean {
 	return parseMeter(meter.meter).unit === "token" || meter.unit.toLowerCase().includes("token");
 }
 
-function formatUnitPrice(meter: PricingMeter, pricingTimeUtc: string) {
+function formatUnitPrice(
+	meter: PricingMeter,
+	pricingTimeUtc: string,
+	locale: string,
+	perMillionTokens: string,
+	formatUnitPriceMessage: (values: { price: string; currency: string; count: string; unit: string }) => string
+) {
 	const derivedUnit = parseMeter(meter.meter).unit;
 	const unitLabel = derivedUnit !== "unknown" ? derivedUnit : meter.unit;
 	const { pricePerUnit, pricePerUnitRaw } = resolvePricingMeterPrice(meter, pricingTimeUtc);
 	if (unitLabel.toLowerCase().includes("token")) {
-		return `${fmtUSD((pricePerUnit / (meter.unit_size || 1)) * 1_000_000)} per 1M tokens`;
+		return `${fmtUSD((pricePerUnit / (meter.unit_size || 1)) * 1_000_000)} ${perMillionTokens}`;
 	}
-	return `${pricePerUnitRaw} ${meter.currency} per ${meter.unit_size.toLocaleString()} ${unitLabel}`;
+	return formatUnitPriceMessage({
+		price: pricePerUnitRaw,
+		currency: meter.currency,
+		count: meter.unit_size.toLocaleString(locale),
+		unit: unitLabel,
+	});
 }
 
 function meterSortPriority(meterName: string) {
@@ -81,10 +98,16 @@ function ContextRateStack({
 	tiers,
 	meterName,
 	pricingTimeUtc,
+	locale,
+	perMillionTokens,
+	formatUnitPriceMessage,
 }: {
-	tiers: PricingContextTier[];
+	tiers: LocalizedPricingContextTier[];
 	meterName: string;
 	pricingTimeUtc: string;
+	locale: string;
+	perMillionTokens: string;
+	formatUnitPriceMessage: (values: { price: string; currency: string; count: string; unit: string }) => string;
 }) {
 	return (
 		<div className={tiers.length > 1 ? "grid gap-2 sm:grid-cols-2" : "grid gap-2"}>
@@ -94,7 +117,7 @@ function ContextRateStack({
 				return (
 					<div key={tier.key} className="min-h-[74px] rounded-lg border bg-muted/20 px-3 py-2.5">
 						<p className="text-[10px] font-medium text-muted-foreground">{tier.label}</p>
-						<p className="mt-0.5 text-sm font-semibold tabular-nums">{formatUnitPrice(meter, pricingTimeUtc)}</p>
+						<p className="mt-0.5 text-sm font-semibold tabular-nums">{formatUnitPrice(meter, pricingTimeUtc, locale, perMillionTokens, formatUnitPriceMessage)}</p>
 						<p className="mt-0.5 text-[10px] text-muted-foreground">{tier.detail}</p>
 					</div>
 				);
@@ -112,20 +135,51 @@ export function PricingReference({
 	pricingTimeUtc,
 	comparisonModels,
 }: PricingReferenceProps) {
+	const locale = useLocale();
+	const t = useTranslations("Product.tools.pricing");
+	const translateMeter = useTranslations("Catalogue.modelDetail.pricing.meters");
+	const getMeterLabel = (meterName: string) =>
+		translateMeter.has(meterName as never)
+			? translateMeter(meterName as never)
+			: formatSentenceLabel(formatMeterName(meterName));
+	const localizeContextTier = (tier: PricingContextTier): LocalizedPricingContextTier => {
+		let label: string;
+		switch (tier.labelKey) {
+			case "publishedRate": label = t("publishedRate"); break;
+			case "standardContext": label = t("standardContext"); break;
+			case "longContext": label = t("longContext"); break;
+			case "contextTier": label = t("contextTier", { index: tier.labelIndex ?? 1 }); break;
+		}
+
+		let detail: string;
+		switch (tier.detailKey) {
+			case "noContextPriceChange": detail = t("noContextPriceChange"); break;
+			case "upToInputTokens": detail = t("upToInputTokens", { count: tier.upperTokenCount ?? "" }); break;
+			case "overInputTokens": detail = t("overInputTokens", { count: tier.lowerTokenCount ?? "" }); break;
+			case "inputTokenRange": detail = t("inputTokenRange", {
+				lower: tier.lowerTokenCount ?? "",
+				upper: tier.upperTokenCount ?? "",
+			}); break;
+		}
+		return { ...tier, label, detail };
+	};
 	if (meters.length === 0) return null;
 	const activeModels: ComparisonPricingModel[] =
 		comparisonModels && comparisonModels.length > 0
 			? comparisonModels
 			: [{
 				key: "primary",
-				label: selectedModelLabel || selectedModelId || "Selected Model",
+				label: selectedModelLabel || selectedModelId || t("selectedModel"),
 				modelId: selectedModelId,
 				provider: selectedProvider || selectedModelId?.split("/")[0] || "selected",
 				pricingPlan: pricingPlan || "standard",
 				meters,
 			}];
 	const contextTiersByModel = new Map(
-		activeModels.map((model) => [model.key, getPricingContextTiers(model.allMeters ?? model.meters)])
+		activeModels.map((model) => [
+			model.key,
+			getPricingContextTiers(model.allMeters ?? model.meters).map(localizeContextTier),
+		])
 	);
 	const hasContextTiers = [...contextTiersByModel.values()].some((tiers) => tiers.length > 1);
 	const blendedTiersByModel = new Map(
@@ -134,7 +188,7 @@ export function PricingReference({
 			(contextTiersByModel.get(model.key) ?? []).map((tier) => ({
 				tier,
 				rate: calculateArtificialAnalysisBlendedRate(tier.meters, pricingTimeUtc),
-			})).filter((entry): entry is { tier: PricingContextTier; rate: BlendedRate } => Boolean(entry.rate)),
+			})).filter((entry): entry is { tier: LocalizedPricingContextTier; rate: BlendedRate } => Boolean(entry.rate)),
 		])
 	);
 	const hasBlendedRates = [...blendedTiersByModel.values()].some((tiers) => tiers.length > 0);
@@ -149,14 +203,14 @@ export function PricingReference({
 		<Card>
 			<CardHeader className="border-b bg-muted/10">
 				<CardTitle className="flex flex-wrap items-center justify-between gap-2">
-					<span>Pricing reference</span>
+					<span>{t("pricingReference")}</span>
 					<Badge variant="outline" className="rounded-lg bg-background text-[11px]">
-						Rates at {pricingTimeUtc} UTC
+						{t("ratesAtUtc", { time: pricingTimeUtc })}
 					</Badge>
 				</CardTitle>
 				{hasContextTiers ? (
 					<p className="text-xs text-muted-foreground">
-						Standard and long-context rates are shown together. Cost totals continue to follow the input tokens entered above.
+						{t("contextRatesDescription")}
 					</p>
 				) : null}
 			</CardHeader>
@@ -164,25 +218,25 @@ export function PricingReference({
 				{hasBlendedRates ? (
 					<section className="space-y-3">
 						<div>
-							<h3 className="text-sm font-semibold">Text token snapshot</h3>
+							<h3 className="text-sm font-semibold">{t("textTokenSnapshot")}</h3>
 							<p className="text-xs text-muted-foreground">
-								Artificial Analysis-style 7:2:1 mix of cache-hit input, regular input, and output. Cache writes and storage are excluded.
+								{t("blendedMixDescription")}
 							</p>
 						</div>
 						<ScrollArea scrollBarOrientation="horizontal" className="w-full rounded-xl border" viewportClassName="rounded-xl">
 							<Table>
 								<TableHeader>
 									<TableRow className="bg-muted/20 hover:bg-muted/20">
-										<TableHead className="sticky left-0 z-10 min-w-[250px] bg-muted/20">Rate</TableHead>
+										<TableHead className="sticky left-0 z-10 min-w-[250px] bg-muted/20">{t("rate")}</TableHead>
 										{activeModels.map((model) => <TableHead key={`blend-head-${model.key}`} className="min-w-[240px]"><PricingModelHeader model={model} /></TableHead>)}
 									</TableRow>
 								</TableHeader>
 								<TableBody>
 									{[
-										{ key: "blended", label: "Blended rate", description: "7:2:1 per 1M tokens", value: (rate: BlendedRate) => rate.blendedPer1M },
-										{ key: "cache", label: "Cache-hit input", description: "70% of the blend", value: (rate: BlendedRate) => rate.cacheHitPer1M },
-										{ key: "input", label: "Regular input", description: "20% of the blend", value: (rate: BlendedRate) => rate.inputPer1M },
-										{ key: "output", label: "Output", description: "10% of the blend", value: (rate: BlendedRate) => rate.outputPer1M },
+										{ key: "blended", label: t("blendedRate"), description: t("blendedRateDescription"), value: (rate: BlendedRate) => rate.blendedPer1M },
+										{ key: "cache", label: t("cacheHitInput"), description: t("cacheHitShare"), value: (rate: BlendedRate) => rate.cacheHitPer1M },
+										{ key: "input", label: t("regularInput"), description: t("regularInputShare"), value: (rate: BlendedRate) => rate.inputPer1M },
+										{ key: "output", label: t("output"), description: t("outputShare"), value: (rate: BlendedRate) => rate.outputPer1M },
 									].map((row) => (
 										<TableRow key={row.key}>
 											<TableCell className="sticky left-0 z-10 bg-background">
@@ -193,7 +247,7 @@ export function PricingReference({
 											</TableCell>
 										{activeModels.map((model) => {
 											const tierRates = blendedTiersByModel.get(model.key) ?? [];
-											if (tierRates.length === 0) return <TableCell key={`${row.key}-${model.key}`} className="text-sm text-muted-foreground">Not available</TableCell>;
+											if (tierRates.length === 0) return <TableCell key={`${row.key}-${model.key}`} className="text-sm text-muted-foreground">{t("notAvailable")}</TableCell>;
 											return (
 												<TableCell key={`${row.key}-${model.key}`}>
 													<div className={tierRates.length > 1 ? "grid gap-2 sm:grid-cols-2" : "grid gap-2"}>
@@ -217,7 +271,7 @@ export function PricingReference({
 							</ScrollArea>
 							{[...blendedTiersByModel.values()].flat().some(({ rate }) => rate.usesInputForCache) ? (
 								<p className="text-[11px] text-muted-foreground">
-									Where no cache-hit price is published, the regular input price is used for that part of the blend.
+									{t("cacheFallbackDescription")}
 								</p>
 							) : null}
 						</section>
@@ -225,14 +279,14 @@ export function PricingReference({
 
 				<section className="space-y-3">
 					<div>
-						<h3 className="text-sm font-semibold">All priced meters</h3>
-						<p className="text-xs text-muted-foreground">Unit rates with fixed token-volume and budget comparisons where applicable.</p>
+						<h3 className="text-sm font-semibold">{t("allPricedMeters")}</h3>
+						<p className="text-xs text-muted-foreground">{t("unitRatesDescription")}</p>
 					</div>
 					<ScrollArea scrollBarOrientation="horizontal" className="w-full rounded-xl border" viewportClassName="rounded-xl">
 						<Table>
 							<TableHeader>
 								<TableRow className="bg-muted/20 hover:bg-muted/20">
-									<TableHead className="sticky left-0 z-10 min-w-[250px] bg-muted/20">Meter</TableHead>
+									<TableHead className="sticky left-0 z-10 min-w-[250px] bg-muted/20">{t("meter")}</TableHead>
 								{activeModels.map((model) => <TableHead key={`meter-head-${model.key}`} className="min-w-[360px]"><PricingModelHeader model={model} /></TableHead>)}
 								</TableRow>
 							</TableHeader>
@@ -242,36 +296,43 @@ export function PricingReference({
 									const example = representative ? getExamplesForMeter(representative)[1] ?? getExamplesForMeter(representative)[0] ?? 1 : 1;
 									return (
 										<TableRow key={meterName}>
-											<TableCell className="sticky left-0 z-10 bg-background"><MeterLabel meterName={meterName} label={formatSentenceLabel(formatMeterName(meterName))} description={representative?.unit || "Usage"} /></TableCell>
+										<TableCell className="sticky left-0 z-10 bg-background"><MeterLabel meterName={meterName} label={getMeterLabel(meterName)} description={representative?.unit || t("usage")} /></TableCell>
 											{activeModels.map((model) => {
 												const meter = model.meters.find((item) => item.meter === meterName);
-												if (!meter) return <TableCell key={`${meterName}-${model.key}`} className="text-sm text-muted-foreground">Not priced</TableCell>;
+												if (!meter) return <TableCell key={`${meterName}-${model.key}`} className="text-sm text-muted-foreground">{t("notPriced")}</TableCell>;
 												const timeWindow = resolvePricingMeterPrice(meter, pricingTimeUtc).timeWindow;
 												const contextTiers = contextTiersByModel.get(model.key) ?? [];
 												return (
 													<TableCell key={`${meterName}-${model.key}`}>
-										<ContextRateStack tiers={contextTiers} meterName={meterName} pricingTimeUtc={pricingTimeUtc} />
+										<ContextRateStack
+											tiers={contextTiers}
+											meterName={meterName}
+											pricingTimeUtc={pricingTimeUtc}
+											locale={locale}
+											perMillionTokens={t("perMillionTokens")}
+											formatUnitPriceMessage={(values) => t("unitPrice", values)}
+										/>
 										{isTokenMeter(meter) ? (
 											<div className="mt-3 space-y-3 border-t pt-3">
-												<p className="text-[10px] font-medium text-muted-foreground">Current rate calculations</p>
+												<p className="text-[10px] font-medium text-muted-foreground">{t("currentRateCalculations")}</p>
 														<div>
-															<p className="mb-1.5 text-[10px] font-medium text-muted-foreground">Token volume</p>
+															<p className="mb-1.5 text-[10px] font-medium text-muted-foreground">{t("tokenVolume")}</p>
 															<div className="grid grid-cols-4 gap-2">
 																{TOKEN_VOLUME_PRESETS.map((quantity) => (
 																	<div key={quantity} className="min-w-0">
-																		<p className="text-[10px] text-muted-foreground">{formatQuantity(quantity)}</p>
+																	<p className="text-[10px] text-muted-foreground">{formatQuantity(quantity, t("unlimited"))}</p>
 																		<p className="truncate text-xs font-semibold tabular-nums">{fmtUSD(calculateCost(quantity, meter, pricingTimeUtc))}</p>
 																	</div>
 																))}
 															</div>
 														</div>
 														<div>
-															<p className="mb-1.5 text-[10px] font-medium text-muted-foreground">Budget buys</p>
+															<p className="mb-1.5 text-[10px] font-medium text-muted-foreground">{t("budgetBuys")}</p>
 															<div className="grid grid-cols-4 gap-2">
 																{BUDGET_PRESETS.map((budget) => (
 																	<div key={budget} className="min-w-0">
-																		<p className="text-[10px] text-muted-foreground">${budget.toLocaleString()}</p>
-																		<p className="truncate text-xs font-semibold tabular-nums">{formatQuantity(calculateUnits(budget, meter, pricingTimeUtc))}</p>
+																		<p className="text-[10px] text-muted-foreground">{new Intl.NumberFormat(locale, { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(budget)}</p>
+																		<p className="truncate text-xs font-semibold tabular-nums">{formatQuantity(calculateUnits(budget, meter, pricingTimeUtc), t("unlimited"))}</p>
 																	</div>
 																))}
 															</div>
@@ -279,8 +340,8 @@ export function PricingReference({
 													</div>
 												) : (
 													<>
-														<p className="mt-1 text-xs text-muted-foreground">{formatQuantity(example)} costs {fmtUSD(calculateCost(example, meter, pricingTimeUtc))}</p>
-														<p className="mt-1 text-xs text-muted-foreground">$10 buys {formatQuantity(calculateUnits(10, meter, pricingTimeUtc))}</p>
+														<p className="mt-1 text-xs text-muted-foreground">{t("costsValue", { quantity: formatQuantity(example, t("unlimited")), price: fmtUSD(calculateCost(example, meter, pricingTimeUtc)) })}</p>
+														<p className="mt-1 text-xs text-muted-foreground">{t("buysValue", { budget: new Intl.NumberFormat(locale, { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(10), units: formatQuantity(calculateUnits(10, meter, pricingTimeUtc), t("unlimited")) })}</p>
 													</>
 												)}
 														{timeWindow ? <p className="mt-1 text-[11px] text-muted-foreground">{formatPricingTimeWindow(timeWindow)}</p> : null}

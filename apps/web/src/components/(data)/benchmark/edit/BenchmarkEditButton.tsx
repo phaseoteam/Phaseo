@@ -1,4 +1,5 @@
 import { Pencil } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { fetchInternalAuthStatus } from "@/lib/fetchers/internal/fetchInternalAuthStatus";
@@ -10,6 +11,7 @@ interface BenchmarkEditButtonProps {
 export default async function BenchmarkEditButton({
   benchmarkId,
 }: BenchmarkEditButtonProps) {
+	const t = await getTranslations("Catalogue.benchmarks");
   const authStatus = await fetchInternalAuthStatus().catch(() => ({
     isAdmin: false,
     signedIn: false,
@@ -23,7 +25,7 @@ export default async function BenchmarkEditButton({
     <Button variant="outline" size="sm" asChild>
       <Link
         href={`/internal/data/benchmarks/${benchmarkId}/edit`}
-        aria-label="Edit benchmark"
+        aria-label={t("editBenchmark")}
       >
         <Pencil className="h-4 w-4" />
       </Link>

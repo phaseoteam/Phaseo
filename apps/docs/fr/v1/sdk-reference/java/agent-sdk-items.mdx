@@ -1,0 +1,23 @@
+---
+icon: "layers"
+title: "Résultats et éléments"
+description: "Créez des chronologies d’exécution Java à partir des messages, étapes, outils et événements des fournisseurs."
+---
+
+Utilisez `RunResult` comme résultat durable d’un agent Java. Il contient l’enregistrement d’exécution, les messages enregistrés, les étapes, l’utilisation et le coût normalisés, les avertissements, les motifs de fin et la sortie finale.
+
+`StreamResult.fullStream()` inclut les événements d’éléments du fournisseur, ainsi que les événements de modèle, d’outil, d’étape et d’exécution. Java expose actuellement les éléments du fournisseur sous forme d’objets génériques, et non de l’union discriminée `AgentItem` de TypeScript.
+
+Pour créer une chronologie du produit :
+
+1. Affichez le texte de `textStream()` pendant l’exécution de l’agent.
+2. Affichez des cartes d’outils à partir des événements de cycle de vie des outils.
+3. Enregistrez le `RunResult` terminé.
+4. Reconstruisez la chronologie finale à partir des messages et des étapes enregistrés.
+
+Regroupez les données d’éléments propres au fournisseur dans un adaptateur applicatif afin qu’un changement de format du fournisseur n’affecte pas le reste de l’interface.
+
+## À lire aussi
+
+- [Flux](./agent-sdk-streaming.mdx)
+- [Hooks de cycle de vie](./agent-sdk-lifecycle-hooks.mdx)

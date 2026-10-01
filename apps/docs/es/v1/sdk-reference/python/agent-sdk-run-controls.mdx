@@ -1,0 +1,23 @@
+---
+icon: "braces"
+title: "Salidas y reintentos"
+description: "Valida las salidas de agentes Python y reintenta, de forma limitada, los fallos del modelo."
+---
+
+Usa la validación de salida final si el código Python posterior espera datos estructurados. Los callbacks de validación deben ser deterministas y generar un error cuando el valor final no cumpla el contrato de la aplicación.
+
+Configura reintentos limitados con `AgentModelRetryConfig`:
+
+```python
+retry = AgentModelRetryConfig(max_retries=2, backoff_ms=250)
+```
+
+El paso completado conserva el recuento final de intentos del modelo. Los errores de herramientas siguen su propia política y no se reintentan como solicitudes al modelo.
+
+El cliente de la pasarela acepta salida estructurada, opciones de enrutamiento, proveedor, razonamiento, herramientas administradas, plugins, caché de prompts y opciones de solicitud adicionales.
+
+## Relacionado
+
+- [Turnos dinámicos](./agent-sdk-dynamic-turns.mdx)
+- [Condiciones de parada](./agent-sdk-stop-conditions.mdx)
+- [Errores y solución de problemas](./agent-sdk-observability.mdx)

@@ -19,6 +19,7 @@ import {
 } from "recharts";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useTranslations } from "next-intl";
 
 // Custom tooltip component
 type TooltipProps = {
@@ -68,6 +69,7 @@ export function BenchmarkDialog({
 	benchmarkName,
 	data,
 }: BenchmarkDialogProps) {
+	const t = useTranslations("Catalogue.benchmarks");
 	// Limit to top 40 models for dialog
 	const topModels = data.slice(0, 40);
 	// Get a map of unique providers for color coding
@@ -102,8 +104,8 @@ export function BenchmarkDialog({
 						{benchmarkName}
 						<Badge variant="secondary">
 							{data.length > 40
-								? `Top 40 of ${data.length}`
-								: `${data.length} models`}
+								? t("topModelsCount", { count: data.length })
+								: t("modelsCount", { count: data.length })}
 						</Badge>
 					</DialogTitle>
 				</DialogHeader>

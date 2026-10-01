@@ -1,0 +1,278 @@
+---
+title: "Erros e depuração"
+description: "Entenda os erros da Phaseo e resolva mais rapidamente problemas comuns de solicitação, provedor e roteamento."
+icon: "bug"
+---
+
+Use esta página para entender o que um erro da Phaseo significa e o que fazer em seguida.
+
+Toda resposta de erro segue o mesmo formato JSON, para que seu aplicativo trate falhas de maneira consistente entre modelos e provedores.
+
+## Exemplo de resposta de erro
+
+```json
+{
+  "generation_id": "G-abc123",
+  "status_code": 502,
+  "error": "upstream_error",
+  "error_type": "system",
+  "error_origin": "upstream",
+  "reason": "all_candidates_failed",
+  "description": "Provider \"google-ai-studio\" failed with HTTP 403 for endpoint \"responses\" on model \"google/gemini-2.5-pro\".",
+  "attempt_count": 1,
+  "failed_providers": ["google-ai-studio"],
+  "failed_statuses": [403],
+  "provider_failure_diagnostics": {
+    "category": "provider_access_missing",
+    "hint": "The provider account appears not to have access to this model or feature yet. Verify account entitlements and provider-side access.",
+    "provider": "google-ai-studio"
+  },
+  "upstream_error": {
+    "code": "PERMISSION_DENIED",
+    "message": "The caller does not have permission.",
+    "description": null,
+    "param": null
+  },
+  "failure_sample": [
+    {
+      "provider": "google-ai-studio",
+      "type": "upstream_non_2xx",
+      "status": 403,
+      "upstream_error_code": "PERMISSION_DENIED",
+      "upstream_error_message": "The caller does not have permission.",
+      "upstream_error_description": null,
+      "upstream_error_param": null,
+      "upstream_payload_preview": "{\"error\":{\"status\":\"PERMISSION_DENIED\"}}",
+      "retryable": false
+    }
+  ]
+}
+```
+
+## Campos que você sempre receberá
+
+- `generation_id`: ID estável da solicitação que você pode compartilhar com o suporte.
+- `status_code`: corresponde ao código de status HTTP.
+- `error`: código de erro legível por máquina, como `validation_error`.
+- `error_type`: classe geral, normalmente `user` ou `system`.
+- `error_origin`: indica se o problema foi causado principalmente pelo solicitante, pela Phaseo ou por um provedor upstream.
+- `description`: explicação simples do que aconteceu.
+- `details` (opcional): detalhes estruturados de validação quando o erro está na validação da solicitação.
+
+## Outros campos que podem aparecer
+
+Alguns erros trazem mais detalhes para ajudar a corrigir o problema rapidamente:
+
+- `reason`: motivo mais específico, como `all_candidates_failed` ou `pricing_not_configured`.
+- `provider_candidate_diagnostics` e `provider_enablement`: explicam por que um modelo não pôde ser usado com o endpoint solicitado.
+- `routing_diagnostics`: detalhes adicionais sobre como o roteamento ou as verificações de disponibilidade restringiram as opções.
+- `provider_failure_diagnostics`: dicas sobre credenciais ausentes, falta de acesso, restrições regionais, limites de taxa e falhas semelhantes do provedor.
+- `upstream_error` e `failure_sample`: resumo aproximado da primeira falha do provedor, se a solicitação chegou até ele.
+- `failed_providers`, `failed_statuses` e `attempt_count`: contexto adicional de novas tentativas e failover.
+
+## Interprete as classes de status
+
+| Status | Significado | Ação recomendada |
+| --- | --- | --- |
+| `400-499` | Problema na solicitação, autenticação ou permissão | Corrija a solicitação ou as credenciais antes de tentar novamente. |
+| `429` | Limitação de taxa do provedor ou da rota | Tente novamente com espera progressiva e respeite `Retry-After`. |
+| `500-599` | Falha da Phaseo ou do provedor upstream | Tente novamente com espera progressiva e aleatória e registre o ID da solicitação. |
+
+## Códigos de erro comuns
+
+| Tipo | Status HTTP | Descrição |
+| --- | --- | --- |
+| `authentication_error` | `401` | A chave de API está ausente ou é inválida. |
+| `authorization_error` | `403` | A chave não tem acesso a este recurso. |
+| `not_found_error` | `404` | O endpoint ou recurso não foi encontrado. |
+| `rate_limit_error` | `429` | Muitas solicitações. Tente novamente após o intervalo indicado. |
+| `validation_error` | `400` | Parâmetros ou corpo da solicitação inválidos. |
+| `provider_error` | `502` | O provedor upstream do modelo não respondeu corretamente. |
+| `server_error` | `500` | Ocorreu um problema inesperado na Phaseo. |
+
+## Quando um provedor falha
+
+Se a Phaseo chegou a um provedor, mas a solicitação ainda falhou, você poderá ver:
+
+- `provider_failure_diagnostics.category`
+- `provider_failure_diagnostics.hint`
+- `provider_failure_diagnostics.provider`
+
+As categorias atuais incluem:
+
+- `credentials_not_configured`
+- `credentials_invalid_or_forbidden`
+- `provider_access_missing`
+- `region_or_project_restriction`
+- `model_unavailable_for_endpoint`
+- `rate_limited`
+- `server_error`
+
+Esses campos ajudam a resolver o problema sem ativar o modo de depuração completo.
+
+## Quando um modelo ou endpoint não está disponível
+
+Para respostas `unsupported_model_or_endpoint`, a Phaseo pode incluir:
+
+- `provider_candidate_diagnostics`
+- `provider_enablement`
+- `missing_pricing_providers`
+- `routing_diagnostics`
+
+Essas informações ajudam a distinguir entre:
+
+- um modelo conhecido que ainda não está ativo
+- um modelo incompatível com o endpoint solicitado
+- dados de preço ausentes
+- restrições de rollout ou disponibilidade interna
+
+Campos comuns:
+
+- `provider_candidate_diagnostics.totalProviders`: número de provedores conhecidos para o modelo antes do filtro por endpoint.
+- `provider_candidate_diagnostics.supportsEndpointCount`: número desses provedores compatíveis com o endpoint solicitado.
+- `provider_candidate_diagnostics.candidateCount`: número de provedores restantes após as verificações de adaptador.
+- `provider_candidate_diagnostics.droppedUnsupportedEndpoint`: provedores removidos por não oferecerem suporte ao endpoint.
+- `provider_candidate_diagnostics.droppedMissingAdapter`: pares provedor/endpoint removidos porque ainda não existe um adaptador do Gateway para esse endpoint.
+- `provider_enablement.capability`: recurso sob verificação, como `video_generation`.
+- `provider_enablement.providersBefore` / `provider_enablement.providersAfter`: provedores antes e depois dos filtros de capacidade ou habilitação.
+- `provider_enablement.dropped[].reason`: motivos legíveis por máquina, como `pricing_missing`.
+- `routing_diagnostics.filterStages[].stage`: etapa de roteamento, por exemplo filtro de capacidade, rollout ou estado de roteamento.
+- `routing_diagnostics.filterStages[].beforeCount` / `routing_diagnostics.filterStages[].afterCount`: quantidade de provedores antes e depois de cada etapa.
+- `routing_diagnostics.filterStages[].droppedProviders[].reason`: motivos legíveis por máquina, como restrições de rollout ou roteamento.
+
+### Exemplo
+
+```json
+{
+  "generation_id": "G-unsupported123",
+  "status_code": 400,
+  "error": "unsupported_model_or_endpoint",
+  "description": "No provider is currently routable for endpoint \"responses\" on model \"example/model\".",
+  "provider_candidate_diagnostics": {
+    "totalProviders": 3,
+    "supportsEndpointCount": 2,
+    "candidateCount": 1,
+    "droppedUnsupportedEndpoint": ["provider-a"],
+    "droppedMissingAdapter": [
+      {
+        "providerId": "provider-b",
+        "endpoint": "responses"
+      }
+    ]
+  },
+  "provider_enablement": {
+    "capability": "responses",
+    "providersBefore": ["provider-b", "provider-c"],
+    "providersAfter": ["provider-c"],
+    "dropped": [
+      {
+        "providerId": "provider-b",
+        "reason": "pricing_missing"
+      }
+    ]
+  },
+  "routing_diagnostics": {
+    "filterStages": [
+      {
+        "stage": "provider_routing_status",
+        "beforeCount": 1,
+        "afterCount": 0,
+        "droppedProviders": [
+          {
+            "providerId": "provider-c",
+            "reason": "provider_status_not_ready"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+## Modo de depuração opcional
+
+A maioria dos esquemas de solicitação aceita um objeto `debug` para investigação controlada:
+
+```json
+{
+  "debug": {
+    "enabled": true,
+    "return_upstream_request": true,
+    "return_upstream_response": false,
+    "trace": true,
+    "trace_level": "summary"
+  }
+}
+```
+
+Campos disponíveis:
+
+- `enabled`
+- `return_upstream_request`
+- `return_upstream_response`
+- `trace`
+- `trace_level` (`summary` ou `full`)
+
+Use o modo de depuração somente em desenvolvimento ou em ambientes rigorosamente controlados.
+
+## Estratégia de novas tentativas
+
+- **Erros da série 400:** corrija a solicitação antes de tentar novamente.
+- **429:** implemente espera exponencial e respeite o cabeçalho `Retry-After`.
+- **Erros da série 500:** tente novamente com segurança após uma breve espera.
+
+Exemplo:
+
+```js
+if (error.error === "rate_limit_error") {
+  await sleep(retryAfterMs);
+  return retryRequest();
+}
+```
+
+## Observações específicas sobre streaming
+
+- Se a solicitação falhar antes do início do streaming, você receberá um payload JSON de erro padrão.
+- Se falhar no meio do fluxo, considere o trecho parcial incompleto e ofereça a opção de tentar novamente.
+- Sempre registre `generation_id` e os metadados do endpoint/modelo.
+
+## Dicas para solucionar problemas
+
+- Consulte a [página de status do Gateway](https://status.phaseo.app) para verificar incidentes em andamento.
+- Compare o payload da solicitação com a documentação do endpoint.
+- Informe `generation_id` ao entrar em contato com o suporte.
+
+## Recursos relacionados
+
+<Columns cols={2}>
+	<Card
+		title="Autenticação"
+		icon="key"
+		href="./authentication.mdx"
+	>
+		Autentique-se com chaves de API Bearer.
+	</Card>
+	<Card
+		title="Limites"
+		icon="gauge"
+		href="./limits.mdx"
+	>
+		Lide com limitações de taxa e novas tentativas definidas pelos provedores.
+	</Card>
+	<Card
+		title="Streaming"
+		icon="radio"
+		href="./streaming.mdx"
+	>
+		Use SSE com segurança em fluxos de produção.
+	</Card>
+</Columns>
+
+<Visibility for="agents">
+Se estiver implementando tratamento de erros como agente:
+
+- Use skills do repositório para lógica de novas tentativas, logs estruturados e análise de erros compatível com o esquema.
+- Trate payloads de depuração como potencialmente confidenciais e redija-os antes de armazená-los em logs persistentes.
+- Prefira novas tentativas determinísticas (limite de tentativas e jitter) a loops sem limite.
+</Visibility>
+

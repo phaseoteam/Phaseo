@@ -82,8 +82,7 @@ export function ModerationModelSettingsDialog({
 					/>
 				</div>
 				<p className="text-xs text-muted-foreground">
-					If any category score meets this threshold, the entry is marked flagged in
-					the room UI.
+					{t("moderationThresholdHelp")}
 				</p>
 			</div>
 		</RoomModelSettingsShell>

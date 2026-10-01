@@ -1,0 +1,136 @@
+---
+icon: "cloud-download"
+title: "Outil serveur Web Fetch"
+description: "Permettez aux modèles de consulter des URL spécifiques pendant une requête."
+---
+
+Utilisez `phaseo:web_fetch` lorsque le modèle doit lire une URL connue, par exemple une page de documentation, un article, un journal des modifications ou une source textuelle semblable à un PDF.
+
+Le modèle décide quand effectuer la consultation, fournit l’URL et reçoit un extrait de texte de la page dont la taille est limitée, comme contexte d’outil.
+
+## Fonctionnement
+
+1. Ajoutez `{ "type": "phaseo:web_fetch" }` à `tools`.
+2. Le modèle décide s’il doit consulter une URL.
+3. Phaseo récupère et extrait le contenu avec le moteur configuré.
+4. Le texte extrait, le titre, l’URL et les métadonnées de troncature sont renvoyés au modèle.
+5. Le modèle rédige sa réponse finale et peut consulter d’autres URL si nécessaire.
+
+## Démarrage rapide
+
+```bash
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-5-nano",
+    "messages": [
+      { "role": "user", "content": "Summarize https://phaseo.app/docs/v1/guides/tool-calling" }
+    ],
+    "tools": [
+      { "type": "phaseo:web_fetch" }
+    ]
+  }'
+```
+
+## Configuration
+
+```json
+{
+  "type": "phaseo:web_fetch",
+  "parameters": {
+    "engine": "direct",
+    "max_chars": 12000,
+    "allowed_domains": ["phaseo.app"],
+    "blocked_domains": ["internal.example.com"]
+  }
+}
+```
+
+| Paramètre | Type | Valeur par défaut | Description |
+| --- | --- | --- | --- |
+| `engine` | string | dépend de l’interface | Moteur de récupération : `auto`, `native`, `direct`, `exa`, `parallel` ou `firecrawl`. |
+| `max_chars` | entier | `12000` | Nombre maximal de caractères extraits renvoyés au modèle. |
+| `max_content_tokens` | entier | aucun | Alias exprimé en jetons, utilisé si `max_chars` est omis. |
+| `max_uses` | entier | `10` | Nombre maximal d’appels de récupération au cours de la boucle de l’outil serveur. |
+| `allowed_domains` | string[] | aucun | Autorise uniquement la récupération depuis ces domaines. |
+| `blocked_domains` | string[] | aucun | Refuse la récupération depuis ces domaines. Alias : `excluded_domains`. |
+
+## Sélection du moteur
+
+| Moteur | Comportement |
+| --- | --- |
+| `auto` | Utilise la récupération native d’Anthropic sur `/v1/messages` ; sinon Exa si configuré ; sinon la récupération directe du gateway. |
+| `direct` | Récupère directement depuis l’environnement d’exécution du gateway et extrait un texte limité. |
+| `exa` | Utilise l’extraction de contenu Exa si elle est configurée. |
+| `parallel` | Utilise Parallel Extract si configuré. |
+| `firecrawl` | Utilise Firecrawl Scrape si configuré. |
+| `native` | Convertit l’outil en `web_fetch_20260209` natif d’Anthropic sur `/v1/messages`. Les autres interfaces doivent utiliser `direct` ou un moteur géré. |
+
+Seules les URL HTTP(S) sont prises en charge. La récupération directe du gateway accepte les types de contenu textuels et convertit le HTML en texte brut avant de le renvoyer au modèle.
+
+## Récupération native d’Anthropic
+
+```json
+{
+  "model": "claude-sonnet-4.6",
+  "max_tokens": 1024,
+  "messages": [
+    { "role": "user", "content": "Read the docs page and summarize the limits." }
+  ],
+  "tools": [
+    {
+      "type": "phaseo:web_fetch",
+      "parameters": {
+        "engine": "native",
+        "max_content_tokens": 9000,
+        "allowed_domains": ["phaseo.app"]
+      }
+    }
+  ],
+  "tool_choice": { "type": "tool", "name": "phaseo:web_fetch" }
+}
+```
+
+## Résultat de l’outil
+
+La récupération gérée renvoie un résultat d’outil JSON avec des champs tels que :
+
+```json
+{
+  "provider": "fetch",
+  "engine": "direct",
+  "url": "https://phaseo.app/docs/v1/guides/tool-calling",
+  "final_url": "https://phaseo.app/docs/v1/guides/tool-calling",
+  "status": 200,
+  "content_type": "text/html",
+  "title": "Tool Calling",
+  "text": "...",
+  "truncated": false,
+  "returned_chars": 8421
+}
+```
+
+Vérifiez `truncated` avant de supposer que le modèle a reçu la page complète.
+
+## Utilisation et tarification
+
+Les appels Web Fetch incrémentent :
+
+```json
+{
+  "usage": {
+    "server_tool_use": {
+      "web_fetch_requests": 1
+    }
+  }
+}
+```
+
+La tarification de la récupération gérée peut utiliser `server_tool_web_fetch_requests`. L’utilisation de la récupération native du fournisseur peut utiliser `native_web_fetch_requests` lorsqu’une carte tarifaire de modèle définit cette unité.
+
+## Guides associés
+
+- [Recherche Web](./web-search.mdx)
+- [Outils serveur](./index.mdx)
+- [Ancrer les réponses avec Web Fetch](../../cookbook/tool-grounding-with-web-fetch.mdx)

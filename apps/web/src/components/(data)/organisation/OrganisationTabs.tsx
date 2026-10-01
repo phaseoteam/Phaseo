@@ -2,6 +2,7 @@
 "use client";
 
 import React from "react";
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ChevronDown } from "lucide-react";
@@ -14,12 +15,12 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-const tabs = [
-	{ label: "Overview", key: "overview" },
-	{ label: "Models", key: "models" },
-];
-
 export default function TabBar({ organisationId }: { organisationId: string }) {
+	const t = useTranslations("Catalogue.organisations");
+	const tabs = [
+		{ label: t("overviewTab"), key: "overview" },
+		{ label: t("modelsTab"), key: "models" },
+	];
 	// With layouts removed, `useSelectedLayoutSegment()` may not be available.
 	// Derive the active tab from the pathname instead. Example:
 	// /organisations/openai/models -> activeKey === 'models'
@@ -118,7 +119,7 @@ export default function TabBar({ organisationId }: { organisationId: string }) {
 					<DropdownMenuTrigger render={<Button className="group w-full p-2 border rounded text-base bg-background text-foreground flex justify-between items-center" />}>
 
 							{tabs.find((t) => t.key === activeKey)?.label ??
-								"Overview"}
+								t("overviewTab")}
 							<ChevronDown className="ml-2 h-4 w-4 transition-transform group-data-[state=open]:rotate-180" />
 
 					</DropdownMenuTrigger>

@@ -1,0 +1,19 @@
+---
+icon: "shuffle"
+title: "動的なターン"
+description: "エージェントのターン間でPythonのモデル設定やツールを変更します。"
+---
+
+モデル、フォールバックモデル、指示、温度、最大出力トークン数、top-p、ツールには、固定値または各ターンで評価されるコールバックを指定できます。
+
+ツールが後で必要になる情報を取得したら、`runtime.set_context(value)`を使います。直後のモデルリクエストだけに適用する上書きには`next_turn_params`を使います。
+
+次のターンへの上書き値は一時停止状態とともに保存されるため、承認チェックポイントを経てもルーティングやサンプリングの判断は破棄されません。
+
+`AgentStateAccessor`を使う場合は、コンテキストをシリアライズ可能にしてください。
+
+## 関連項目
+
+- [ツール](./agent-sdk-tools.mdx)
+- [状態と承認](./agent-sdk-state-and-approval.mdx)
+- [停止条件](./agent-sdk-stop-conditions.mdx)

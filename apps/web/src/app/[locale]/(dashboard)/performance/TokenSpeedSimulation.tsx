@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import { Pause, Play, RotateCcw } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -16,9 +17,9 @@ const sampleTokens = [
 
 const playbackSlowdown = 4;
 const lanes = [
-	{ name: "Measured pace", rate: 18, firstToken: 900, color: "bg-amber-500" },
-	{ name: "Fast pace", rate: 45, firstToken: 520, color: "bg-sky-500" },
-	{ name: "Very fast pace", rate: 90, firstToken: 240, color: "bg-emerald-500" },
+	{ nameKey: "measuredPace" as const, rate: 18, firstToken: 900, color: "bg-amber-500" },
+	{ nameKey: "fastPace" as const, rate: 45, firstToken: 520, color: "bg-sky-500" },
+	{ nameKey: "veryFastPace" as const, rate: 90, firstToken: 240, color: "bg-emerald-500" },
 ].map((lane) => ({
 	...lane,
 	speed: `${lane.rate} tokens/s`,
@@ -28,6 +29,7 @@ const lanes = [
 const windowSize = 72;
 
 export default function TokenSpeedSimulation() {
+	const t = useTranslations("Catalogue.performance");
 	const [elapsed, setElapsed] = useState(0);
 	const [playing, setPlaying] = useState(false);
 	const [isVisible, setIsVisible] = useState(false);
@@ -77,14 +79,14 @@ export default function TokenSpeedSimulation() {
 		<div ref={simulationRef} className="overflow-hidden rounded-md border border-border/70 bg-background">
 			<div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/70 bg-muted/30 px-5 py-3">
 				<div>
-					<p className="text-sm font-medium">Live relative-speed playback</p>
-					<p className="mt-0.5 text-xs text-muted-foreground">Speeds are slowed proportionally so the difference is visible.</p>
+					<p className="text-sm font-medium">{t("liveRelativeSpeedPlayback")}</p>
+					<p className="mt-0.5 text-xs text-muted-foreground">{t("relativeSpeedsDescription")}</p>
 				</div>
 				<div className="flex gap-2">
 					<Button className="rounded-md" size="sm" variant="outline" onClick={() => setPlaying((value) => !value)}>
-						{playing ? <Pause /> : <Play />}{playing ? "Pause" : "Play"}
+						{playing ? <Pause /> : <Play />}{playing ? t("pausePlayback") : t("playPlayback")}
 					</Button>
-					<Button className="rounded-md" size="sm" variant="outline" onClick={replay}><RotateCcw />Replay</Button>
+					<Button className="rounded-md" size="sm" variant="outline" onClick={replay}><RotateCcw />{t("replayPlayback")}</Button>
 				</div>
 			</div>
 
@@ -101,13 +103,13 @@ export default function TokenSpeedSimulation() {
 					);
 					const waiting = elapsed < lane.firstToken;
 					return (
-						<div key={lane.name} className="grid gap-4 px-5 py-6 sm:grid-cols-[9rem_minmax(0,1fr)]">
+						<div key={lane.nameKey} className="grid gap-4 px-5 py-6 sm:grid-cols-[9rem_minmax(0,1fr)]">
 							<div>
-								<div className="flex items-center gap-2"><span className={`size-2 rounded-full ${lane.color}`} /><p className="text-sm font-medium">{lane.name}</p></div>
+								<div className="flex items-center gap-2"><span className={`size-2 rounded-full ${lane.color}`} /><p className="text-sm font-medium">{t(lane.nameKey)}</p></div>
 								<p className="mt-1 pl-4 font-mono text-xs text-muted-foreground">{lane.speed}</p>
 							</div>
 							<StreamingOutput
-								laneName={lane.name}
+								laneName={lane.nameKey}
 								waiting={waiting}
 								generatedCount={generatedCount}
 								tokens={visibleTokens}
@@ -118,8 +120,8 @@ export default function TokenSpeedSimulation() {
 			</div>
 
 			<div className="flex items-center justify-between border-t border-border/70 bg-muted/20 px-5 py-2 font-mono text-xs text-muted-foreground">
-				<span>{playing ? "Streaming continuously" : "Playback paused"}</span>
-				<span>{(elapsed / 1000).toFixed(1)} seconds</span>
+				<span>{playing ? t("streamingContinuously") : t("playbackPaused")}</span>
+				<span>{t("elapsedSeconds", { seconds: (elapsed / 1000).toFixed(1) })}</span>
 			</div>
 		</div>
 	);
@@ -136,6 +138,7 @@ function StreamingOutput({
 	generatedCount: number;
 	tokens: Array<{ absoluteIndex: number; value: string }>;
 }) {
+	const t = useTranslations("Catalogue.performance");
 	const outputRef = useRef<HTMLDivElement>(null);
 
 	useEffect(() => {
@@ -150,7 +153,7 @@ function StreamingOutput({
 			viewportClassName="p-4 font-mono text-sm leading-7"
 		>
 			<div>
-				{waiting && <span className="inline-flex items-center gap-2 text-muted-foreground"><span className="size-1.5 animate-pulse rounded-full bg-muted-foreground" />Waiting for first token</span>}
+				{waiting && <span className="inline-flex items-center gap-2 text-muted-foreground"><span className="size-1.5 animate-pulse rounded-full bg-muted-foreground" />{t("waitingForFirstToken")}</span>}
 				<span aria-hidden="true">
 					{tokens.map((token, index) => (
 						<span key={`${laneName}-${token.absoluteIndex}`} className={index === tokens.length - 1 ? "bg-foreground px-0.5 text-background" : ""}>{token.value}{" "}</span>

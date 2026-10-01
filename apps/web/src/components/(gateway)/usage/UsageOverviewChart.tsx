@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { useTranslations } from "next-intl";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import {
@@ -199,6 +200,7 @@ export default function UsageOverviewChart({
 	groupMode = "model",
 	keyMeta = [],
 }: Props) {
+	const tUi = useTranslations("Common.ui");
 	const [metric, setMetric] = React.useState<"requests" | "tokens" | "spend">(
 		"tokens"
 	);
@@ -370,8 +372,8 @@ export default function UsageOverviewChart({
 				metric === "spend"
 					? "USD"
 					: metric === "tokens"
-					? "Tokens"
-					: "Requests";
+					? tUi("metrics.tokens")
+					: tUi("metrics.requests");
 			return {
 				data,
 				label,
@@ -379,11 +381,11 @@ export default function UsageOverviewChart({
 				seriesStyle: cfg, // colours + strokes
 				seriesMeta: { topGroups, groupMode }, // for debugging/extension if needed
 			};
-		}, [rows, range, metric, colorPalette, groupMode, formatSeriesLabel]);
+		}, [rows, range, metric, colorPalette, groupMode, formatSeriesLabel, tUi]);
 
 	// Feed these into ChartContainer so it exposes CSS vars like --color-<seriesKey>
 	const chartConfig = {
-		value: { label: "Usage", color: "hsl(var(--primary))" },
+		value: { label: tUi("metrics.usage"), color: "hsl(var(--primary))" },
 		...(Object.fromEntries(
 			Object.entries(seriesStyle).map(([k, v]) => [
 				k,
@@ -396,7 +398,7 @@ export default function UsageOverviewChart({
 		<Card>
 			<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-8">
 				<CardTitle className="text-sm font-medium">
-					Usage Overview
+					{tUi("metrics.usageOverview")}
 				</CardTitle>
 				<ToggleGroup
 					type="single"
@@ -409,16 +411,16 @@ export default function UsageOverviewChart({
 						value="requests"
 						className="px-4 h-8 text-sm"
 					>
-						Requests
+						{tUi("metrics.requests")}
 					</ToggleGroupItem>
 					<ToggleGroupItem
 						value="tokens"
 						className="px-4 h-8 text-sm"
 					>
-						Tokens
+						{tUi("metrics.tokens")}
 					</ToggleGroupItem>
 					<ToggleGroupItem value="spend" className="px-4 h-8 text-sm">
-						Cost
+						{tUi("metrics.cost")}
 					</ToggleGroupItem>
 				</ToggleGroup>
 			</CardHeader>

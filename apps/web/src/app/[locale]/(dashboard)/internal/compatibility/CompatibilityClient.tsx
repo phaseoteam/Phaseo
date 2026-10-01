@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useTranslations } from "next-intl";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -32,23 +33,20 @@ type ValidationResult = {
 	error?: string;
 };
 
-const TARGETS: { id: Target; label: string; description: string; source: string }[] = [
+const TARGETS: { id: Target; label: string; source: string }[] = [
 	{
 		id: "openai.responses",
 		label: "OpenAI Responses",
-		description: "Validates a 200 JSON response against OpenAI Responses schema.",
 		source: "apps/api/openapi.openai.yml",
 	},
 	{
 		id: "openai.chat.completions",
 		label: "OpenAI Chat Completions",
-		description: "Validates a 200 JSON response against OpenAI Chat Completions schema.",
 		source: "apps/api/openapi.openai.yml",
 	},
 	{
 		id: "anthropic.messages",
 		label: "Anthropic Messages",
-		description: "Validates a 200 JSON response against Anthropic Messages schema.",
 		source: "apps/api/openapi.anthropic.json",
 	},
 ];
@@ -70,6 +68,26 @@ function emptyState(): Record<Target, ValidationResult | null> {
 }
 
 export default function CompatibilityClient() {
+	const t = useTranslations("Product.internalTools.compatibility");
+	const validationErrorMessage = (error: ValidationError) => {
+		const params = error.params ?? {};
+		switch (error.keyword) {
+			case "required":
+				return t("missingProperty", {
+					property: String(params.missingProperty ?? ""),
+				});
+			case "type":
+				return t("expectedType", { type: String(params.type ?? "") });
+			case "additionalProperties":
+				return t("unexpectedProperty", {
+					property: String(params.additionalProperty ?? ""),
+				});
+			case "enum":
+				return t("invalidOption");
+			default:
+				return t("schemaViolation");
+		}
+	};
 	const [payloads, setPayloads] = useState<Record<Target, string>>({
 		"openai.responses": "",
 		"openai.chat.completions": "",
@@ -98,7 +116,7 @@ export default function CompatibilityClient() {
 			if (!raw) {
 				setResults((prev) => ({
 					...prev,
-					[target]: { valid: false, errors: [], error: "Paste a JSON response to validate." },
+					[target]: { valid: false, errors: [], error: t("pasteResponseFirst") },
 				}));
 				return;
 			}
@@ -106,13 +124,13 @@ export default function CompatibilityClient() {
 			let parsed: unknown;
 			try {
 				parsed = JSON.parse(raw);
-			} catch (error) {
+			} catch {
 				setResults((prev) => ({
 					...prev,
 					[target]: {
 						valid: false,
 						errors: [],
-						error: error instanceof Error ? error.message : "Invalid JSON",
+						error: t("invalidJson"),
 					},
 				}));
 				return;
@@ -121,19 +139,22 @@ export default function CompatibilityClient() {
 			let data: ValidationResult;
 			try {
 				data = await fetchInternalWebApi<ValidationResult>("/api/internal/compatibility/validate", (await getBrowserAccessToken()) ?? "", { method: "POST", body: JSON.stringify({ target, payload: parsed }) });
-			} catch (error) {
+			} catch {
 				setResults((prev) => ({
 					...prev,
 					[target]: {
 						valid: false,
 						errors: [],
-						error: error instanceof Error ? error.message : "Validation failed",
+						error: t("requestFailed"),
 					},
 				}));
 				return;
 			}
 
-			setResults((prev) => ({ ...prev, [target]: data }));
+			setResults((prev) => ({
+				...prev,
+				[target]: data.error ? { ...data, error: t("requestFailed") } : data,
+			}));
 		} finally {
 			setLoading((prev) => ({ ...prev, [target]: false }));
 		}
@@ -143,11 +164,10 @@ export default function CompatibilityClient() {
 		<div className="mx-4 sm:mx-8 py-6 sm:py-10">
 			<div className="mb-6 sm:mb-8">
 				<h1 className="text-2xl sm:text-3xl font-bold">
-					Gateway Compatibility
+					{t("pageTitle")}
 				</h1>
 				<p className="text-sm sm:text-base text-muted-foreground">
-					Validate gateway responses against official OpenAI and Anthropic
-					response schemas.
+					{t("pageDescription")}
 				</p>
 			</div>
 
@@ -168,9 +188,9 @@ export default function CompatibilityClient() {
 							<Card>
 								<CardHeader className="space-y-2">
 									<CardTitle>{tab.label}</CardTitle>
-									<CardDescription>{tab.description}</CardDescription>
+									<CardDescription>{t("targetDescription", { target: tab.label })}</CardDescription>
 									<div className="flex flex-wrap items-center gap-2 text-xs">
-										<Badge variant="outline">Schema source</Badge>
+										<Badge variant="outline">{t("schemaSource")}</Badge>
 										<span className="text-muted-foreground">{tab.source}</span>
 									</div>
 								</CardHeader>
@@ -180,7 +200,7 @@ export default function CompatibilityClient() {
 										onChange={(event) =>
 											updatePayload(tab.id, event.target.value)
 										}
-										placeholder="Paste the JSON response to validate."
+										placeholder={t("pasteResponsePlaceholder")}
 										className="min-h-[240px] font-mono text-xs leading-relaxed"
 									/>
 									<div className="flex flex-wrap gap-3">
@@ -188,15 +208,15 @@ export default function CompatibilityClient() {
 											onClick={() => validatePayload(tab.id)}
 											disabled={isLoading}
 										>
-											{isLoading ? "Validating..." : "Validate Response"}
+											{isLoading ? t("validating") : t("validateResponse")}
 										</Button>
 										{result?.valid && (
 											<Badge className="bg-emerald-500/15 text-emerald-700">
-												Valid
+												{t("valid")}
 											</Badge>
 										)}
 										{result && !result.valid && (
-											<Badge variant="destructive">Invalid</Badge>
+											<Badge variant="destructive">{t("invalid")}</Badge>
 										)}
 									</div>
 								</CardContent>
@@ -204,7 +224,7 @@ export default function CompatibilityClient() {
 
 							{result?.error && (
 								<Alert variant="destructive">
-									<AlertTitle>Validation failed</AlertTitle>
+									<AlertTitle>{t("validationFailed")}</AlertTitle>
 									<AlertDescription>
 										{result.error}
 									</AlertDescription>
@@ -215,10 +235,10 @@ export default function CompatibilityClient() {
 								<Card className="border-destructive/40">
 									<CardHeader>
 										<CardTitle className="text-base">
-											Schema issues
+											{t("schemaIssues")}
 										</CardTitle>
 										<CardDescription>
-											{result.errors?.length ?? 0} issue(s) detected.
+											{t("issueCount", { count: result.errors?.length ?? 0 })}
 										</CardDescription>
 									</CardHeader>
 									<CardContent className="space-y-3">
@@ -232,11 +252,11 @@ export default function CompatibilityClient() {
 														{formatPointer(err.instancePath)}
 													</div>
 													<div className="text-sm text-foreground">
-														{err.message ?? "Schema violation"}
+												{validationErrorMessage(err)}
 													</div>
 													{err.keyword && (
 														<div className="text-xs text-muted-foreground">
-															Rule: {err.keyword}
+												{t("rule", { keyword: err.keyword })}
 														</div>
 													)}
 												</div>
@@ -252,4 +272,3 @@ export default function CompatibilityClient() {
 		</div>
 	);
 }
-

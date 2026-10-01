@@ -1,0 +1,119 @@
+---
+title: "Antworten für strukturiertes JSON reparieren"
+icon: "wand-sparkles"
+description: "Stelle fast gültige strukturierte JSON-Ausgaben wieder her, ohne Schemas zu erweitern oder fehlerhafte Antworten manuell erneut anzufordern."
+---
+
+Verwende dieses Rezept, wenn deine Anwendung striktes JSON benötigt und Modelle gelegentlich eine fast gültige Ausgabe zurückgeben, die der Parser trotzdem nicht verarbeiten kann.
+
+## 1. Mit einem Vertrag für strukturierte Antworten beginnen
+
+Die Antwortreparatur ist nur dann sinnvoll, wenn die Anfrage bereits eine strukturierte Ausgabe verlangt.
+
+Geeignete Fälle:
+
+- `response_format.type = "json_object"`
+- Ausgabe im JSON-Schema-Format
+- eine stabile Objektform, die mehrere Aufrufer verwenden
+
+Aktiviere die Reparatur nicht für offene Prosaanfragen.
+
+## 2. Das Plugin auf der passenden Ebene aktivieren
+
+Du kannst `response-healing` an drei Stellen aktivieren:
+
+1. in der Standard-Plugin-Richtlinie des Arbeitsbereichs
+2. in der Plugin-Konfiguration einer Voreinstellung
+3. in `plugins` der Anfrage
+
+Die Priorität ist:
+
+1. Arbeitsbereich
+2. Voreinstellung
+3. Anfrage
+
+Verwende die Standardwerte einer Voreinstellung, wenn ein Workflow immer strukturiertes JSON erwartet.
+
+## 3. Die Modellausgabe eng begrenzen
+
+Die Reparatur funktioniert am besten, wenn die gewünschte Ausgabeform bereits eingeschränkt ist.
+
+Empfehlungen:
+
+- ein Objekt statt mehrerer unabhängiger Blöcke
+- explizite Pflichtfelder
+- nach Möglichkeit eine deterministische Temperatur
+- keine zusätzlichen Erläuterungen außerhalb der JSON-Nutzlast anfordern
+
+## 4. Möglichkeiten und Grenzen der Antwortreparatur kennen
+
+Der aktuelle Reparaturpfad ist deterministisch und funktioniert nur ohne Streaming. Bei Streaming-Anfragen wird die Antwortreparatur vollständig übersprungen.
+
+Er kann Folgendes korrigieren:
+
+- Markdown-Codeblöcke um das JSON
+- nachgestellte Kommas
+- fehlende, sicher ergänzbare Abschlüsse
+- Schlüssel ohne Anführungszeichen in ansonsten wiederherstellbaren Objekten
+
+Wenn du eine engere Richtlinie brauchst, verwende den `strict`-Modus. Er löst nur bereits gültiges JSON aus Codeblöcken oder umgebendem Text heraus und überspringt die umfangreicheren syntaktischen Reparaturen.
+
+Wenn die Anfrage eine JSON-Schema-Ausgabe verwendet, validiert die Reparatur die wiederhergestellte Nutzlast zusätzlich, bevor sie sie umschreibt. Der aktuelle Validator deckt übliche Einschränkungen ab, darunter:
+
+- Pflichtschlüssel
+- grundlegende Skalare und Containertypen
+- Enums und const-Werte
+- Array-Grenzen und `uniqueItems`
+- Zeichenkettenlänge, reguläre Ausdrücke und gängige Formate wie `email`, `uri`, `uuid` und `date-time`
+- Zahlengrenzen und `multipleOf`
+- Objekt-Eigenschaftsgrenzen und `additionalProperties: false`
+
+Er kann nicht:
+
+- fehlende semantische Felder erfinden
+- fachliche Werte erraten
+- beliebige Prosa in gültige Daten umwandeln
+
+## 5. Prüfen, ob das Plugin tatsächlich ausgeführt wurde
+
+Wenn die Reparatur ausgeführt wird, sollten die Anfragedetails Informationen zur Plugin-Ausführung enthalten.
+
+Prüfe:
+
+- die Plugin-ID
+- ob eine Transformation versucht wurde
+- ob sich die Nutzlast geändert hat
+- den Fehlergrund, wenn die Antwort nicht wiederhergestellt werden konnte
+- ob die Anfrage ohne Streaming erfolgte, falls du eine Reparatur erwartet hast
+
+Wenn das Plugin nicht auftaucht, überprüfe, ob es in der Anfrage, der Voreinstellung oder der Arbeitsbereichsrichtlinie aktiviert ist.
+
+## 6. Parserprobleme von Inhaltsproblemen unterscheiden
+
+Wenn die Reparatur nicht hilft, bestimme die Art des Fehlers:
+
+1. fehlerhaftes JSON, das strukturell noch nahe am erwarteten Format ist
+2. schemakonformes JSON mit falschen Feldern
+3. Prosa statt JSON
+4. abgeschnittene Ausgabe wegen eines zu niedrigen Tokenlimits
+
+Nur Fall 1 eignet sich für die Antwortreparatur.
+
+## 7. Schrittweise ausrollen
+
+1. aktiviere die Reparatur für eine Voreinstellung mit stabiler strukturierter Ausgabe
+2. beobachte die Ausführungsmetadaten des Plugins in den Protokollen
+3. bestätige, dass wiederhergestellte Nutzlasten dem erwarteten Schema entsprechen
+4. erweitere die Einstellung erst auf ähnliche Voreinstellungen, wenn die Protokolle unauffällig sind
+
+## 8. Den passenden Modus wählen
+
+- Verwende `safe`, wenn der Workflow von begrenzter Syntaxbereinigung wie dem Entfernen nachgestellter Kommas oder dem Ergänzen von Anführungszeichen um Schlüssel profitiert.
+- Verwende `strict`, wenn der Workflow nur bereits gültiges JSON nach dem Entfernen von umgebendem Text akzeptieren soll.
+- Prüfe die Anfragedetails, um den ausgeführten Modus zu bestätigen.
+
+## Verwandte Anleitungen
+
+- [Antwort-Caching mit Voreinstellungen verwenden](./response-caching-with-presets.mdx)
+- [Voreinstellungen ausrollen und Routing untersuchen](./preset-rollout-and-routing-debug.mdx)
+- [TypeScript Agent SDK](../sdk-reference/typescript/agent-sdk.mdx)

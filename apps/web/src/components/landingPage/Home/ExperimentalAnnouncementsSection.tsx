@@ -4,6 +4,7 @@ import {
 	formatAnnouncementDate,
 	getAnnouncementPosts,
 } from "@/lib/content/announcements";
+import { getLocale, getTranslations } from "next-intl/server";
 
 export function ExperimentalAnnouncementsSectionFallback() {
 	return (
@@ -22,7 +23,9 @@ export function ExperimentalAnnouncementsSectionFallback() {
 }
 
 export default async function ExperimentalAnnouncementsSection() {
-	const posts = await getAnnouncementPosts();
+	const locale = await getLocale();
+	const t = await getTranslations({ locale, namespace: "Content.blog" });
+	const posts = await getAnnouncementPosts({ locale });
 	const [featured, ...rest] = posts.slice(0, 3);
 
 	if (!featured) {
@@ -38,7 +41,7 @@ export default async function ExperimentalAnnouncementsSection() {
 				<div className="flex h-full flex-col justify-between gap-6">
 					<div className="space-y-4">
 						<p className="text-[11px] font-semibold uppercase tracking-[0.26em] text-zinc-500 dark:text-zinc-400">
-							Latest from the blog
+							{t("latestFromBlog")}
 						</p>
 						<h2 className="max-w-xl text-3xl font-semibold tracking-[-0.05em] text-zinc-950 group-hover:text-zinc-700 dark:text-zinc-50 dark:group-hover:text-zinc-300 sm:text-4xl">
 							{featured.title}
@@ -49,7 +52,7 @@ export default async function ExperimentalAnnouncementsSection() {
 					</div>
 					<div className="flex flex-wrap items-center gap-3">
 						<span className="rounded-full border border-zinc-200/80 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-zinc-500 dark:border-zinc-800/80 dark:text-zinc-400">
-							{formatAnnouncementDate(featured.publishedAt)}
+												{formatAnnouncementDate(featured.publishedAt, locale)}
 						</span>
 						{featured.tags.slice(0, 2).map((tag) => (
 							<span
@@ -66,11 +69,10 @@ export default async function ExperimentalAnnouncementsSection() {
 			<div className="flex h-full flex-col justify-between gap-4">
 				<div className="space-y-3">
 					<p className="text-[11px] font-semibold uppercase tracking-[0.26em] text-zinc-500 dark:text-zinc-400">
-						From the journal
+						{t("fromJournal")}
 					</p>
 					<p className="max-w-md text-sm leading-7 text-zinc-600 dark:text-zinc-300">
-						Blog posts should feel more editorial than the model updates, so this
-						side stays quieter and more text-led.
+						{t("journalDescription")}
 					</p>
 				</div>
 				<div className="grid gap-3">
@@ -81,7 +83,7 @@ export default async function ExperimentalAnnouncementsSection() {
 							className="group rounded-[1.6rem] border border-zinc-200/80 bg-white px-4 py-4 transition-colors hover:border-zinc-300 dark:border-zinc-800/80 dark:bg-zinc-950/78 dark:hover:border-zinc-700"
 						>
 							<p className="text-[11px] uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-400">
-								{formatAnnouncementDate(post.publishedAt)}
+								{formatAnnouncementDate(post.publishedAt, locale)}
 							</p>
 							<h3 className="mt-2 text-lg font-semibold tracking-[-0.03em] text-zinc-950 group-hover:text-zinc-700 dark:text-zinc-50 dark:group-hover:text-zinc-300">
 								{post.title}
@@ -96,7 +98,7 @@ export default async function ExperimentalAnnouncementsSection() {
 					href="/blog"
 					className="inline-flex items-center gap-2 text-sm font-semibold text-zinc-900 hover:text-zinc-700 dark:text-zinc-100 dark:hover:text-zinc-300"
 				>
-					View all posts
+					{t("viewAllPosts")}
 					<ArrowRight className="h-4 w-4" />
 				</Link>
 			</div>

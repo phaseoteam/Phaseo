@@ -1,4 +1,5 @@
 import { Card } from "@/components/ui/card";
+import { useTranslations } from "next-intl";
 import {
 	BarChart3,
 	TrendingUp,
@@ -36,6 +37,7 @@ function formatDate(value: string | Date | null | undefined): string | null {
 }
 
 export default function BenchmarkMetrics({ benchmark }: BenchmarkMetricsProps) {
+	const t = useTranslations("Catalogue.benchmarks");
 	const results: any[] = benchmark?.results ?? [];
 
 	const orderHints = results
@@ -112,7 +114,7 @@ export default function BenchmarkMetrics({ benchmark }: BenchmarkMetricsProps) {
 							modelName:
 								result.model?.name ??
 								result.model_id ??
-								"Unknown model",
+								t("unknownModel"),
 						};
 					}
 					return acc;
@@ -171,9 +173,9 @@ export default function BenchmarkMetrics({ benchmark }: BenchmarkMetricsProps) {
 				bestScore = {
 					value: numericScore,
 					modelName:
-						result.model?.name ??
-						result.model_id ??
-						"Unknown model",
+									result.model?.name ??
+									result.model_id ??
+									t("unknownModel"),
 				};
 			}
 		}
@@ -181,29 +183,29 @@ export default function BenchmarkMetrics({ benchmark }: BenchmarkMetricsProps) {
 
 	const metrics = [
 		{
-			label: "Recorded Results",
+			label: t("recordedResults"),
 			value: results.length.toString(),
-			helper: "Total benchmark submissions",
+			helper: t("totalSubmissions"),
 			icon: Database,
 			color: "text-purple-600 dark:text-purple-400",
 			bgColor: "bg-purple-50 dark:bg-purple-950/30",
 		},
 		{
-			label: "Average Score",
+			label: t("averageScore"),
 			value: formatBenchmarkScore({
 				value: averageScore,
 				isPercentage: hasPercentage,
 			}),
 			helper:
 				scores.length > 0
-					? `${scores.length} recorded scores`
-					: "No numeric scores yet",
+					? t("recordedScores", { count: scores.length })
+					: t("noNumericScores"),
 			icon: BarChart3,
 			color: "text-indigo-600 dark:text-indigo-400",
 			bgColor: "bg-indigo-50 dark:bg-indigo-950/30",
 		},
 		{
-			label: "Score Range",
+			label: t("scoreRange"),
 			value:
 				minScore != null && maxScore != null
 					? `${formatBenchmarkScore({
@@ -214,15 +216,15 @@ export default function BenchmarkMetrics({ benchmark }: BenchmarkMetricsProps) {
 							isPercentage: hasPercentage,
 					  })}`
 					: "-",
-			helper: "Lowest to highest score recorded",
+			helper: t("scoreRangeDescription"),
 			icon: Minimize2,
 			color: "text-red-600 dark:text-red-400",
 			bgColor: "bg-red-50 dark:bg-red-950/30",
 		},
 		{
 			label: isLowerBetter
-				? "Leading Model (lowest score)"
-				: "Leading Model",
+				? t("leadingModelLowest")
+				: t("leadingModel"),
 			value: topModel
 				? `${formatBenchmarkScore({
 						value: topModel.numericScore,
@@ -234,7 +236,7 @@ export default function BenchmarkMetrics({ benchmark }: BenchmarkMetricsProps) {
 						isPercentage: hasPercentage,
 				  })} - ${bestScore.modelName}`
 				: "-",
-			helper: "Best performing model",
+			helper: t("bestPerformingModel"),
 			icon: Crown,
 			color: "text-amber-600 dark:text-amber-400",
 			bgColor: "bg-amber-50 dark:bg-amber-950/30",

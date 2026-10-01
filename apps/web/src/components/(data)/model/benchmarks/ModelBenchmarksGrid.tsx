@@ -2,6 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
+import { useLocale, useTranslations } from "next-intl";
 
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -31,18 +32,20 @@ function clampScore(value: number | null | undefined): number {
 function ScoreIndicator({
 	score,
 	isPercentage,
-	label,
+	recordedLabel,
+	scoreValueLabel,
 }: {
 	score: number | null;
 	isPercentage: boolean;
-	label: string;
+	recordedLabel: string;
+	scoreValueLabel: string;
 }) {
 	if (!isPercentage || score == null) {
 		return (
 			<span
 				className="h-2.5 w-2.5 rounded-full bg-muted-foreground/45"
-				title={`${label} score recorded`}
-				aria-label={`${label} score recorded`}
+				title={recordedLabel}
+				aria-label={recordedLabel}
 			/>
 		);
 	}
@@ -55,12 +58,8 @@ function ScoreIndicator({
 			style={{
 				background: `conic-gradient(var(--primary) ${normalizedScore}%, var(--muted) 0)`,
 			}}
-			title={`${label}: ${normalizedScore.toFixed(
-				normalizedScore % 1 === 0 ? 0 : 1
-			)}%`}
-			aria-label={`${label}: ${normalizedScore.toFixed(
-				normalizedScore % 1 === 0 ? 0 : 1
-			)}%`}
+			title={scoreValueLabel}
+			aria-label={scoreValueLabel}
 		>
 			<span className="absolute inset-[4px] rounded-full bg-card" />
 		</span>
@@ -68,12 +67,14 @@ function ScoreIndicator({
 }
 
 export function ModelBenchmarksGrid({ highlights }: ModelBenchmarksGridProps) {
+	const t = useTranslations("Catalogue.models.detail.benchmarkGrid");
+	const locale = useLocale();
 	const [showAllOnMobile, setShowAllOnMobile] = React.useState(false);
 
 	if (!highlights.length) {
 		return (
 			<div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
-				No benchmark results available for this model yet.
+				{t("noResults")}
 			</div>
 		);
 	}
@@ -99,7 +100,7 @@ export function ModelBenchmarksGrid({ highlights }: ModelBenchmarksGridProps) {
 									>
 										<span className="relative truncate font-semibold underline decoration-transparent hover:decoration-current transition-colors duration-200">
 											{highlight.benchmarkName ||
-												"Unnamed Benchmark"}
+										t("unnamedBenchmark")}
 										</span>
 									</Link>
 								</div>
@@ -110,7 +111,13 @@ export function ModelBenchmarksGrid({ highlights }: ModelBenchmarksGridProps) {
 									<ScoreIndicator
 										score={highlight.score}
 										isPercentage={highlight.isPercentage}
-										label={highlight.benchmarkName}
+										recordedLabel={t("scoreRecorded", {
+											benchmark: highlight.benchmarkName,
+										})}
+										scoreValueLabel={t("scoreValue", {
+											benchmark: highlight.benchmarkName,
+											score: `${(clampScore(highlight.score) / 100).toLocaleString(locale, { style: "percent", maximumFractionDigits: 1 })}`,
+										})}
 									/>
 								</div>
 							</div>
@@ -126,7 +133,7 @@ export function ModelBenchmarksGrid({ highlights }: ModelBenchmarksGridProps) {
 					className="w-full sm:hidden"
 					onClick={() => setShowAllOnMobile((current) => !current)}
 				>
-					{showAllOnMobile ? "Show less" : `Show ${sorted.length - 6} more`}
+					{showAllOnMobile ? t("showLess") : t("showMore", { count: sorted.length - 6 })}
 				</Button>
 			) : null}
 		</div>

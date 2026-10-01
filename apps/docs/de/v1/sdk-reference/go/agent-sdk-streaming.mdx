@@ -1,0 +1,26 @@
+---
+icon: "radio"
+title: "Datenstromübertragung"
+description: "Übertrage Go-Agent-Text und -Ereignisse mit erneut abspielbaren Consumern."
+---
+
+`Agent.Stream(...)` gibt ein erneut abspielbares `StreamResult` zurück:
+
+```go
+stream := agent.Stream(ctx, phaseoagent.RunOptions{Input: input, Client: client})
+
+for delta := range stream.Text() {
+  fmt.Print(delta)
+}
+
+completed, err := stream.Result()
+```
+
+Verwende `Events()` für Lifecycle- und Provider-Ereignisse. Rufe `Cancel()` auf, um den Stream-Kontext und die aktive Modellanfrage abzubrechen.
+
+Go bietet noch keinen nativen Consumer für typisierte Elemente wie TypeScript. Verwende die Ereignisfolge und abgeschlossene Laufdatensätze für strukturierte Produkt-Zeitachsen.
+
+## Weiterführende Themen
+
+- [Werkzeuge](./agent-sdk-tools.mdx)
+- [Observability und DevTools](./agent-sdk-observability.mdx)

@@ -1,0 +1,19 @@
+---
+title: "تحميل ملف"
+sidebarTitle: "تحميل ملف"
+badge: "Beta"
+openapi: "/ar/openapi/v1/openapi.localized.yaml POST /files"
+description: "حمّل ملفًا لمعالجته على دفعات. تخزّن البوابة بيانات الملكية الوصفية لكي تتمكن مساحة العمل نفسها لاحقًا من استرداد الملف أو محتواه."
+---
+
+احفظ `file_id` المُعاد واستخدمه مجددًا مع:
+
+- `POST /v1/batches`
+- `GET /v1/files/{file_id}`
+- `GET /v1/files/{file_id}/content`
+
+<Note>
+لا يتوفر `GET /v1/files` حاليًا باستخدام مفتاح البوابة المشترك، لذا تُعد استجابة التحميل المرجع الأساسي للحصول على معرّف الملف.
+</Note>
+
+

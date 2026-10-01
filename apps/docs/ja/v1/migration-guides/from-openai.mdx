@@ -1,0 +1,110 @@
+---
+title: "OpenAI SDK からの移行"
+sidebarTitle: "OpenAI SDK"
+description: "クライアント設定を変更し、モデル ID を確認して、アプリで使うワークフローをテストすることで、既存の OpenAI SDK 統合を Phaseo に移行します。"
+icon: "/icons/brands/openai.svg"
+---
+
+このガイドでは、アプリケーションの残りの部分を書き換えずに、既存の OpenAI SDK 統合を Phaseo に移行します。ベース URL と API キーを変更し、リクエスト自体はそのままにして、本番トラフィックを切り替える前に各モデルとエンドポイントを確認します。
+
+## 変更点
+
+| 設定 | 変更前 | 変更後 |
+| --- | --- | --- |
+| ベース URL | OpenAI の既定値 | `https://api.phaseo.app/v1` |
+| API キー | OpenAI のキー | `PHASEO_API_KEY` |
+| モデル | OpenAI のモデル名 | `GET /v1/models` が返すモデル ID |
+| リクエストコード | 既存の SDK 呼び出し | 通常は変更不要 |
+
+<Steps>
+<Step title="Phaseo API キーを作成する">
+
+[Gateway キー](https://phaseo.app/gateway/keys)でキーを作成し、アプリケーションを実行するすべての環境に追加します。
+
+```bash
+PHASEO_API_KEY=phaseo_v1_sk_...
+```
+
+</Step>
+
+<Step title="クライアントの接続先を Phaseo にする">
+
+OpenAI SDK はそのまま使い、まず認証情報とベース URL だけを変更します。
+
+<CodeGroup>
+```typescript TypeScript
+import OpenAI from "openai";
+
+const client = new OpenAI({
+  apiKey: process.env.PHASEO_API_KEY,
+  baseURL: "https://api.phaseo.app/v1",
+});
+
+const response = await client.chat.completions.create({
+  model: "openai/gpt-4.1-mini",
+  messages: [{ role: "user", content: "Reply with: migration ready" }],
+});
+```
+
+```python Python
+import os
+from openai import OpenAI
+
+client = OpenAI(
+    api_key=os.environ["PHASEO_API_KEY"],
+    base_url="https://api.phaseo.app/v1",
+)
+
+response = client.chat.completions.create(
+    model="openai/gpt-4.1-mini",
+    messages=[{"role": "user", "content": "Reply with: migration ready"}],
+)
+```
+
+```bash cURL
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-4.1-mini",
+    "messages": [{"role": "user", "content": "Reply with: migration ready"}]
+  }'
+```
+</CodeGroup>
+
+</Step>
+
+<Step title="モデル ID とエンドポイントの対応状況を確認する">
+
+以前のエイリアスがそのまま使えると想定せず、Phaseo で利用できるモデルを一覧表示します。
+
+```bash
+curl https://api.phaseo.app/v1/models \
+  -H "Authorization: Bearer $PHASEO_API_KEY"
+```
+
+ストリーミング、ツール、構造化出力、画像、音声、ファイル、バッチなど、使用するすべての本番ワークフローを確認します。対応するエンドポイントは [API リファレンス](../api-reference/introduction.mdx) で確認してください。
+
+</Step>
+
+<Step title="テストして段階的に展開する">
+
+旧設定と新設定の両方で代表的なプロンプトを実行します。出力形式、レイテンシ、トークン使用量、エラー、コストを比較してから、トラフィックを段階的に移行します。
+
+</Step>
+</Steps>
+
+## 移行チェックリスト
+
+- 開発、ステージング、本番環境で Phaseo キーを設定した。
+- クライアントのベース URL は `https://api.phaseo.app/v1`。
+- 本番で使うすべてのモデル ID が `GET /v1/models` に含まれている。
+- ステージングでストリーミング有り・無しのリクエストが成功する。
+- アプリで使う場合、ツール呼び出しと構造化出力が動作する。
+- ロールバックは引き続き設定内のキーとエンドポイントの変更だけで行える。
+
+## 次のステップ
+
+- [ルーティングとフォールバック](../guides/routing-and-fallbacks.mdx)
+- [モデル](../exploring/models.mdx)
+- [エラー処理](../developers/error-handling.mdx)

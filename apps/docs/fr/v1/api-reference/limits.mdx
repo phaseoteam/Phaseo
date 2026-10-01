@@ -1,0 +1,59 @@
+---
+title: "Limites"
+description: "Comprenez les limites imposées par les fournisseurs et mettez en place des tentatives de nouvelle requête résilientes."
+icon: "gauge"
+---
+
+Le Gateway n’applique actuellement pas de plafond de requêtes distinct au niveau de la plateforme. La plupart des limitations proviennent des fournisseurs en amont.
+
+## Fonctionnement des limites
+
+- Le fournisseur sélectionné pour le modèle peut limiter la fréquence des requêtes.
+- Le trafic BYOK est soumis aux limites de votre compte fournisseur.
+- Le routage et les replis du Gateway peuvent réduire les échecs, mais des réponses `429` restent possibles.
+
+## Gérer les réponses `429`
+
+- Respectez `Retry-After` lorsqu’il est présent.
+- Appliquez un délai exponentiel avec une part d’aléatoire (jitter).
+- Fixez un nombre maximal de nouvelles tentatives et gérez l’échec proprement.
+
+Phaseo transmet la valeur validée de `Retry-After` lorsque le fournisseur sélectionné en fournit une. Pour les requêtes BYOK, des informations de quota du fournisseur peuvent également être renvoyées dans les en-têtes `X-Phaseo-Upstream-RateLimit-*`. Ces en-têtes de quota sont volontairement omis pour les requêtes utilisant les fournisseurs gérés : ils décrivent la capacité partagée de Phaseo, et non le quota d’un client. Les autres en-têtes amont ne sont pas transmis.
+
+```ts
+async function retryWithBackoff(run: () => Promise<Response>, maxRetries = 4) {
+  for (let attempt = 0; attempt <= maxRetries; attempt += 1) {
+    const response = await run();
+    if (response.status !== 429) return response;
+
+    const retryAfterHeader = response.headers.get("retry-after");
+    const retryAfterMs = retryAfterHeader
+      ? Number(retryAfterHeader) * 1000
+      : Math.min(1000 * 2 ** attempt, 8000);
+
+    await new Promise((resolve) => setTimeout(resolve, retryAfterMs));
+  }
+
+  throw new Error("Rate limit retries exhausted");
+}
+```
+
+## Surveillance
+
+- Suivez le taux de réponses `429` par endpoint et par modèle.
+- Surveillez la fréquence des replis pour repérer la pression exercée sur les fournisseurs.
+- Utilisez ensemble les métriques du tableau de bord et les journaux de votre application pour analyser les incidents.
+
+## Pages associées
+
+- [Authentification](./authentication.mdx)
+- [Paramètres](./parameters.mdx)
+- [Erreurs et débogage](./errors.mdx)
+
+<Visibility for="agents">
+Si vous implémentez des nouvelles tentatives en tant qu’agent :
+
+- Utilisez les compétences du dépôt pour créer des boucles de nouvelle tentative sûres et maîtriser les délais d’attente.
+- Centralisez la configuration des nouvelles tentatives (nombre d’essais, délai de base et délai maximal).
+- Ne réessayez pas des requêtes non idempotentes sans accord explicite du produit.
+</Visibility>

@@ -1,0 +1,172 @@
+---
+title: "服务等级"
+description: "Phaseo Gateway 中 Standard、Fast、Flex 和 Batch 计费模式的工作方式。"
+icon: "gauge"
+---
+
+供应商支持时，你可以选择不同的服务等级、计费和交付模式。
+
+可用性因供应商和模型而异。如果请求的模型不支持某个等级，Gateway 不会通过该等级路由请求。
+
+<Note type="warning">
+目前，服务等级仅适用于受支持供应商提供的受支持文本模型。
+</Note>
+
+`service_tier` 适用于以下三种文本请求接口：
+
+- Anthropic 兼容的 Messages（`/v1/messages`）
+- OpenAI 兼容的 Chat Completions（`/v1/chat/completions`）
+- OpenAI 兼容的 Responses（`/v1/responses`）
+
+## 等级概览
+
+| 等级 | 请求方式 | 典型用途 |
+| --- | --- | --- |
+| `Standard` | 默认行为。无需添加字段。 | 常规生产流量。 |
+| `Fast` | 在请求中设置 `service_tier: "fast"`。 | 在支持的情况下使用更快或优先级更高的路由。OpenAI 也接受 `priority`。 |
+| `Flex` | 在请求中设置 `service_tier: "flex"。 | 在支持的情况下使用更低成本的路由。 |
+| `Batch` | 使用 Batch API，而不是 `service_tier`。 | 适用于对延迟要求不高的大批量延后任务。 |
+
+## API 兼容性
+
+调用任何受支持的同步文本 API 时，都使用相同的 `service_tier` 字段：
+
+- [Anthropic Messages API 参考](../api-reference/endpoint/anthropic-messages.mdx)
+- [Chat Completions API 参考](../api-reference/endpoint/chat-completions.mdx)
+- [Responses API 参考](../api-reference/endpoint/responses.mdx)
+- [共享参数参考](../api-reference/parameters.mdx)
+
+`service_tier` 的可接受值为 `standard`、`fast`、`priority`、`flex` 和 `batch`。省略 `service_tier` 时，默认行为为 `Standard`。Phaseo 将 `Fast` 作为高级等级的规范名称。在 OpenAI 路由中，`priority` 是受支持的供应商兼容别名，使用相同的路由和计费。`Batch` 由 Batch API 处理，不适用于同步文本请求。
+
+<Note>
+Phaseo 会在内部将标准化的 Gateway 值映射为供应商原生控制项。例如，Anthropic 路由在上游可能会收到 Anthropic 原生等级字段，但客户端请求仍使用此处列出的 Gateway 值。
+</Note>
+
+## Standard
+
+`Standard` 是默认路由模式。无需设置 `service_tier` 即可使用。
+
+```json
+{
+  "model": "openai/gpt-5.5",
+  "input": "Summarise this incident report."
+}
+```
+
+## Fast
+
+想使用供应商的高级或更高优先级选项时，请选择 `Fast`。Phaseo 使用不依赖供应商的名称 `fast`。OpenAI 将其称为 Fast 模式，并在受支持的模型上接受 `fast` 和 `priority`。
+
+```json
+{
+  "model": "openai/gpt-5.5",
+  "input": "Summarise this incident report.",
+  "service_tier": "fast"
+}
+```
+
+### Anthropic Messages 示例
+
+```json
+{
+  "model": "anthropic/claude-sonnet-4",
+  "max_tokens": 512,
+  "messages": [
+    { "role": "user", "content": "Summarise this incident report." }
+  ],
+  "service_tier": "fast"
+}
+```
+
+路由到 Anthropic 时，Phaseo 会将其映射为相应的供应商原生控制项。
+
+### Mistral Priority 与欧盟路由
+
+Mistral Priority Tier 需要符合条件的 Mistral 企业账户。Phaseo 会将
+`priority` 映射为 Mistral 的自动优先模式，并按 Mistral 报告的等级计费；
+如果 Mistral 回退到 Standard，则按 Standard 费率计费。
+
+使用供应商套餐 `mistral-eu`，可将 GLM 5.2 固定到 Mistral 的欧盟区域端点：
+套餐：
+
+```json
+{
+  "model": "z-ai/glm-5.2",
+  "messages": [
+    { "role": "user", "content": "Summarise this incident report." }
+  ],
+  "service_tier": "priority",
+  "provider": {
+    "only": ["mistral-eu"],
+    "required_execution_region": "eu"
+  }
+}
+```
+
+Mistral 区域推理会加收 10% 费用。全球 Mistral 套餐提供 Batch 计费，但
+Mistral 区域端点不支持 Batch。
+
+Phaseo 会分别记录 Mistral 公布的 Batch 和 Priority 参考费率以及运行时可用性。
+目录中显示价格并不代表该等级可以路由：
+除非具体 Mistral 路由声明支持 Priority，否则 Priority 仍处于禁用状态；
+Batch 必须使用 Mistral 全球 Batch API。Priority 资格仍取决于
+Mistral 账户和模型。
+
+## Flex
+
+当供应商提供成本更低的服务等级，且你愿意接受相应取舍时，请使用 `Flex`。
+
+```json
+{
+  "model": "openai/gpt-5.5",
+  "input": "Summarise this incident report.",
+  "service_tier": "flex"
+}
+```
+
+### Chat Completions 示例
+
+```json
+{
+  "model": "openai/gpt-5.5",
+  "messages": [
+    { "role": "user", "content": "Summarise this incident report." }
+  ],
+  "service_tier": "flex"
+}
+```
+
+### Responses 示例
+
+```json
+{
+  "model": "openai/gpt-5.5",
+  "input": [
+    { "role": "user", "content": "Summarise this incident report." }
+  ],
+  "service_tier": "flex"
+}
+```
+
+## Batch
+
+`batch` 是批处理执行可识别的等级值，但同步文本 API 会拒绝 `service_tier: "batch"`，并通过验证错误提示改用 Batch API。
+
+请使用 Batch API 或批处理作业流程，因为 Batch 计费适用于延后批量执行，而非普通同步请求。
+
+## 说明
+
+- 服务等级支持因供应商和模型而异。
+- 有相关数据时，模型页面的价格卡会显示各等级的费率。
+- 部分供应商提供专门的上游套餐，Phaseo 会将其映射为目录中统一的等级体验。
+- 面向客户端的 `service_tier` 值在受支持的文本接口中保持统一；供应商原生名称由 Gateway 内部处理。
+
+## 相关页面
+
+- [Anthropic Messages API 参考](../api-reference/endpoint/anthropic-messages.mdx)
+- [Chat Completions API 参考](../api-reference/endpoint/chat-completions.mdx)
+- [Responses API 参考](../api-reference/endpoint/responses.mdx)
+- [参数](../api-reference/parameters.mdx)
+- [路由与回退](./routing-and-fallbacks.mdx)
+- [Chat Completions（TypeScript SDK）](../sdk-reference/typescript/chat-completions.mdx)
+- [Responses（TypeScript SDK）](../sdk-reference/typescript/responses.mdx)

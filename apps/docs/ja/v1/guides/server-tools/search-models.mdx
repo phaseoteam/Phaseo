@@ -1,0 +1,18 @@
+---
+icon: "list-filter"
+title: "モデル検索サーバーツール"
+description: "Phaseoの最新カタログからモデルが適切な候補を見つけられるようにします。"
+---
+
+次のように使います：`phaseo:search_models` 呼び出し元のモデルが最新のカタログメタデータを使ってモデルを選択または提案する場合に使います。
+
+```json
+{
+  "tools": [{ "type": "phaseo:search_models", "parameters": { "max_results": 5 } }],
+  "max_tool_calls": 10
+}
+```
+
+ツール呼び出しでは次の項目で絞り込めます: `query`, `input_modalities`, `output_modalities`, `series`, `provider`, と `required_params`. 結果にはモデル ID、モダリティ、プロバイダー、対応パラメーター、料金メタデータが含まれます。
+
+使用量は次のフィールドで報告されます: `usage.server_tool_use.search_models_requests`.

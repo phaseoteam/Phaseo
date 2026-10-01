@@ -1,0 +1,64 @@
+---
+title: "Goで運用手順書エージェントを作成する"
+icon: "clipboard-check"
+description: "Go Agent SDKを使い、少数の決定的なローカルツールを組み合わせて、範囲を絞ったトラブルシューティングループを作ります。"
+---
+
+ローカルのコンテキストを使って運用上の質問に答える必要があるGoサービスで、このレシピを使います。
+
+## 1. SDKを準備する
+
+<Note type="warning">Go Agent SDKにはまだ公開モジュールバージョンがありません。[ソースからのインストール手順](../sdk-reference/go/agent-sdk-installation.mdx)に従ってください。</Note>
+
+## 2. 小さなランタイムツールを定義する
+
+```go
+statusTool := phaseoagent.DefineTool(phaseoagent.Tool{
+  ID:          "read-status",
+  Description: "Read the current service status page summary.",
+  Execute: func(input any, ctx phaseoagent.RuntimeContext) (any, error) {
+    return map[string]any{
+      "status": "degraded",
+      "summary": "Latency is elevated on one provider route.",
+    }, nil
+  },
+})
+```
+
+## 3. エージェントを作成する
+
+```go
+agent := phaseoagent.CreateAgent(phaseoagent.AgentDefinition{
+  ID:           "ops-runbook-agent",
+  Model:        "openai/gpt-5.4-nano",
+  Instructions: "Use tools when helpful and answer briefly.",
+  Tools:        []phaseoagent.Tool{statusTool},
+})
+```
+
+## 4. 範囲を絞ったトラブルシューティングのターンを実行する
+
+```go
+client, _ := phaseoagent.CreateGatewayAgentClient(phaseoagent.GatewayAgentClientOptions{})
+
+result, err := agent.Run(context.Background(), phaseoagent.RunOptions{
+  Input:  "What is happening with provider latency right now?",
+  Client: client,
+})
+if err != nil {
+  panic(err)
+}
+
+fmt.Println(result.Output)
+```
+
+## このレシピが適する場面
+
+- ワークフローが1つのGoサービス内で完結する
+- 補足コンテキストをローカルまたは内部呼び出しで取得できる
+- 大規模なジョブシステムを導入せずにエージェントループを使いたい
+
+## 関連項目
+
+- [Go Agent SDK](../sdk-reference/go/agent-sdk.mdx)
+- [web fetchで抽出結果の根拠を示す](./tool-grounding-with-web-fetch.mdx)

@@ -1,0 +1,77 @@
+---
+icon: "database"
+title: "Estado e aprovação"
+description: "Persista o estado das execuções, aprove chamadas de ferramentas e continue agentes pausados."
+---
+
+Use a continuação quando um agente precisar aguardar uma pessoa, uma tarefa externa ou uma ferramenta controlada pelo aplicativo antes de prosseguir. O Agent SDK retorna todo o estado necessário para continuar depois.
+
+<Note>
+A Phaseo não persiste execuções do Agent SDK em um serviço de agentes hospedado. Armazene o estado retomável no seu aplicativo quando ele precisar sobreviver a uma solicitação ou à reinicialização de um processo.
+</Note>
+
+## Aprove uma chamada de ferramenta
+
+Exija aprovação somente das chamadas que precisam dela:
+
+```typescript
+const deploy = defineTool({
+  id: "deploy",
+  requireApproval: ({ environment }) => environment === "production",
+  async execute(input: { environment: string }) {
+    return deployRelease(input.environment);
+  },
+});
+```
+
+A execução pausa com chamadas pendentes em `run.pause.pendingToolCalls`. Continue pelo ID exato da chamada para não confundir chamadas simultâneas:
+
+```typescript
+const resumed = await agent.continueRun({
+  run: paused,
+  client,
+  approvals: [{ toolCallId: "call_deploy_42" }],
+  rejections: [
+    { toolCallId: "call_delete_17", reason: "Not authorized" },
+  ],
+});
+```
+
+## Pausar para revisão humana
+
+Use `humanReview` quando a resposta completa do modelo precisar ser conferida antes de começar outro turno:
+
+```typescript
+const agent = createAgent({
+  id: "support-agent",
+  humanReview: ({ response }) =>
+    response.message.content.includes("needs approval")
+      ? {
+          reason: "approval_required",
+          payload: { draft: response.message.content },
+        }
+      : null,
+});
+```
+
+Continue com uma entrada humana explícita:
+
+```typescript
+const continued = await agent.continueRun({
+  run: pausedResult,
+  client,
+  humanInput: "Approved. Continue and return the final answer.",
+});
+```
+
+## Persista o estado da execução
+
+Persista diretamente o `AgentRunResult` retornado ou forneça um acesso `state` com os métodos assíncronos `load(runId)` e `save(result)`. Assim, uma execução continuada pode usar `runId` em vez de passar o registro serializado por todas as camadas.
+
+O SDK não inclui adaptadores de persistência nem um backend de estado hospedado. Seu aplicativo pode manter execuções pontuais em memória e salvar apenas execuções pausadas ou incompletas.
+
+## Guias relacionados
+
+- [Definir e executar ferramentas](./agent-sdk-tools.mdx)
+- [Controlar execuções do agente](./agent-sdk-run-controls.mdx)
+- [Criar um ciclo durável de agente](../../cookbook/agent-sdk-durable-loop.mdx)

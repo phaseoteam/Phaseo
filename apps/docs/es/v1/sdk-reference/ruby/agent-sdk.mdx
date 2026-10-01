@@ -1,0 +1,47 @@
+---
+title: "Uso"
+description: "Ejecuta bucles de herramientas, revisiones humanas, reintentos y agentes reanudables con el Agent SDK de Ruby."
+---
+
+## Preparar el entorno de ejecución
+
+La gema del Agent SDK aún no está publicada en RubyGems. Sigue las [instrucciones de instalación desde el código fuente](./agent-sdk-installation.mdx).
+
+## Inicio rápido
+
+```ruby
+require "phaseo_agent_sdk"
+
+agent = PhaseoAgentSdk.create_agent(
+  id: "quickstart-agent",
+  model: "openai/gpt-5.4-nano",
+  instructions: "Answer concisely and helpfully."
+)
+
+result = agent.run(
+  input: "Give me one fun fact about cURL.",
+  client: PhaseoAgentSdk.create_gateway_agent_client
+)
+
+puts result.output
+```
+
+## Qué incluye
+
+- `PhaseoAgentSdk.create_agent(...)`
+- `PhaseoAgentSdk.define_tool(...)`
+- `PhaseoAgentSdk.create_gateway_agent_client(...)`
+- Un bucle de herramientas acotado sobre la API `responses` de Phaseo
+
+## Entorno de ejecución avanzado
+
+Ruby admite funciones de validación y aprobación, HITL y herramientas manuales, progreso, errores recuperables, enumeradores reproducibles, métodos auxiliares de detención, turnos dinámicos, parámetros persistentes para el turno siguiente, uso/coste normalizados y accesores de estado compatibles con duck typing.
+
+## Streaming y cancelación
+
+`Agent#stream(...)` y `Agent#continue_stream(...)` consumen el flujo SSE de Responses del gateway en un hilo de trabajo. Usa `text_stream`, `reasoning_stream`, `item_stream` o `full_stream`; llama a `cancel` para detener el hilo y cerrar el flujo HTTP. Los pasos completados conservan los ID de solicitud, los metadatos del proveedor, los motivos de finalización, las advertencias, el uso y el coste.
+
+## Contenido relacionado
+
+- [Descripción general del Agent SDK](../agent-sdk/overview.mdx)
+- [Agent SDK de TypeScript](../typescript/agent-sdk.mdx)

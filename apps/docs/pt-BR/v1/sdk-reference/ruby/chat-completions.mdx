@@ -1,0 +1,36 @@
+---
+icon: "messages-square"
+title: "Conclusões de chat"
+description: "Chame /chat/completions com o SDK Ruby."
+---
+
+**Métodos**: `client.generate_text(...)`, `client.create_chat_completion(...)`.
+
+### Exemplo
+```ruby
+require 'phaseo_sdk'
+
+client = PhaseoSdk::Phaseo.new(api_key: ENV.fetch("PHASEO_API_KEY"))
+
+response = client.create_chat_completion(
+  "model" => "openai/gpt-4o-mini",
+  messages: [
+    { "role" => "user", "content" => "Write a limerick about lighthouses." }
+  ],
+  "temperature" => 0.5
+)
+```
+
+### Parâmetros principais
+- `model` (obrigatório): ID do modelo de destino.
+- `messages` (obrigatório): mensagens ordenadas com os papéis `user`/`system`/`assistant`/`tool`; o conteúdo é texto.
+- Amostragem: `temperature` (0–2), `top_p` (0–1), `top_k` (>=1), `seed` (inteiro, opcional).
+- Tamanho e penalidades: `max_output_tokens` (inteiro), `presence_penalty` e `frequency_penalty` (-2 a 2), `stop` (string ou array de strings).
+- Ferramentas: `tools` (definições), `tool_choice` (automática/nenhuma/ferramenta específica), `max_tool_calls` (inteiro), `parallel_tool_calls` (booleano).
+- Logprobs: `logprobs` (booleano), `top_logprobs` (0–20).
+- Saída: `response_format` (json/text), `metadata` (objeto repassado sem alterações), `stream` (booleano), `service_tier`.
+- Extras do gateway: `usage` (booleano para solicitar o uso), `meta` (booleano para incluir o bloco meta).
+
+### Retorno
+`ChatCompletionsResponse`
+

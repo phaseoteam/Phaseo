@@ -1,0 +1,59 @@
+---
+title: "Limites"
+description: "Entenda os limites de requisição definidos pelos provedores e crie uma estratégia de repetição resiliente."
+icon: "gauge"
+---
+
+Atualmente, o Gateway não impõe um limite separado de requisições em nível de plataforma. A maior parte do controle de tráfego vem dos provedores upstream.
+
+## Como os limites funcionam
+
+- O provedor selecionado para o modelo pode limitar a frequência das requisições.
+- O tráfego BYOK segue os limites da sua conta no provedor.
+- O roteamento e os fallbacks do Gateway podem reduzir falhas, mas respostas `429` ainda podem ocorrer.
+
+## Como lidar com respostas `429`
+
+- Respeite `Retry-After` quando estiver presente.
+- Use backoff exponencial com jitter.
+- Defina um número máximo de tentativas e trate a falha de forma adequada.
+
+A Phaseo encaminha um valor validado de `Retry-After` quando o provedor selecionado o envia. Em solicitações BYOK, detalhes de cota do provedor também podem ser retornados nos cabeçalhos `X-Phaseo-Upstream-RateLimit-*`. Esses cabeçalhos de cota são omitidos intencionalmente em solicitações feitas a provedores gerenciados, pois descrevem a capacidade compartilhada da Phaseo, não o limite de um cliente específico. Outros cabeçalhos upstream não são encaminhados.
+
+```ts
+async function retryWithBackoff(run: () => Promise<Response>, maxRetries = 4) {
+  for (let attempt = 0; attempt <= maxRetries; attempt += 1) {
+    const response = await run();
+    if (response.status !== 429) return response;
+
+    const retryAfterHeader = response.headers.get("retry-after");
+    const retryAfterMs = retryAfterHeader
+      ? Number(retryAfterHeader) * 1000
+      : Math.min(1000 * 2 ** attempt, 8000);
+
+    await new Promise((resolve) => setTimeout(resolve, retryAfterMs));
+  }
+
+  throw new Error("Rate limit retries exhausted");
+}
+```
+
+## Monitoramento
+
+- Acompanhe a taxa de respostas `429` por endpoint e modelo.
+- Observe a frequência de fallbacks para identificar pressão sobre os provedores.
+- Analise as métricas do painel junto com os logs do aplicativo durante a investigação de incidentes.
+
+## Páginas relacionadas
+
+- [Autenticação](./authentication.mdx)
+- [Parâmetros](./parameters.mdx)
+- [Erros e depuração](./errors.mdx)
+
+<Visibility for="agents">
+Se você estiver implementando novas tentativas como agente:
+
+- Use as skills do repositório para criar loops seguros e controlar timeouts.
+- Centralize as configurações de repetição (número de tentativas, espera inicial e espera máxima).
+- Nunca repita solicitações não idempotentes sem aprovação explícita do produto.
+</Visibility>

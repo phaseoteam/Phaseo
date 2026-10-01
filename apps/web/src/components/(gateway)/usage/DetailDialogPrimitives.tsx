@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useTranslations } from "next-intl";
 import { type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -145,11 +146,12 @@ export function DetailTimingBar({
 		}))
 		.filter((item) => item.duration > 0);
 	const total = safeItems.reduce((sum, item) => sum + item.duration, 0);
+	const t = useTranslations("SettingsUI");
 
 	if (!safeItems.length || total <= 0) {
 		return (
 			<div className="text-sm text-muted-foreground">
-				No timing metrics available for this request.
+				{t("strings.No timing metrics available for this request." as never)}
 			</div>
 		);
 	}

@@ -14,6 +14,7 @@ import NotificationRouteSelector from "@/components/(gateway)/settings/notificat
 import type { NotificationDestination, NotificationEventKind } from "@/lib/fetchers/internal/settingsTypes";
 import { cn } from "@/lib/utils";
 import { useTranslations } from "next-intl";
+import { localizedSettingsError } from "@/i18n/error-messages";
 
 function parseThreshold(value: string): number | null {
 	const normalized = value.trim();
@@ -33,6 +34,7 @@ export default function LowBalanceEmailAlertsClient(props: {
 	notificationRoutes: Partial<Record<NotificationEventKind, string[]>>;
 }) {
 	const t = useTranslations("SettingsUI.credits");
+	const settingsT = useTranslations("SettingsUI");
 	const [autoTopUpFailureEnabled, setAutoTopUpFailureEnabled] = React.useState(props.autoTopUpFailureEmailEnabled);
 	const [enabled, setEnabled] = React.useState(Boolean(props.enabled));
 	const [paymentMethodExpiringEnabled, setPaymentMethodExpiringEnabled] = React.useState(props.paymentMethodExpiringEmailEnabled);
@@ -57,11 +59,12 @@ export default function LowBalanceEmailAlertsClient(props: {
 				toast.promise(setLowBalanceEmailAlert(next), {
 					loading: t("savingAlert"),
 					success: t("saved"),
-					error: (e: any) => e?.message ?? t("saveAlertFailed"),
+					error: (e: unknown) =>
+						localizedSettingsError(e, settingsT, "Action failed", t("saveAlertFailed")),
 				});
 			}, 500);
 		},
-		[],
+		[t, settingsT],
 	);
 	const schedulePreferenceSave = React.useCallback((preference: "autoTopUpFailure" | "paymentMethodExpiring", nextEnabled: boolean) => {
 		const existing = preferenceDebounceRef.current[preference];
@@ -70,10 +73,11 @@ export default function LowBalanceEmailAlertsClient(props: {
 			toast.promise(setBillingNotificationPreference({ preference, enabled: nextEnabled }), {
 				loading: t("savingPreference"),
 				success: t("saved"),
-				error: (error: any) => error?.message ?? t("savePreferenceFailed"),
+					error: (error: unknown) =>
+						localizedSettingsError(error, settingsT, "Action failed", t("savePreferenceFailed")),
 			});
 		}, 500);
-	}, []);
+	}, [t, settingsT]);
 
 	const parsedThresholdUsd = React.useMemo(() => parseThreshold(threshold), [threshold]);
 	const thresholdInvalid = enabled && parsedThresholdUsd == null;

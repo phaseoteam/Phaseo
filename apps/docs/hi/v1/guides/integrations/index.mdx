@@ -1,0 +1,113 @@
+---
+title: "एकीकरण"
+description: "Phaseo को लोकप्रिय SDKs, frameworks, agents और observability tools से जोड़ें।"
+icon: "compass"
+---
+
+ज़्यादातर integrations में OpenAI या Anthropic-संगत client को Phaseo पर point करके Phaseo API key उपयोग की जाती है। जिस tool का उपयोग करते हैं, उसकी guide से शुरू करें।
+
+## आधार URL
+
+| Client style | Base URL |
+| --- | --- |
+| OpenAI-संगत clients | `https://api.phaseo.app/v1` |
+| Anthropic-संगत clients | `https://api.phaseo.app` |
+
+[Models endpoint](../../api-reference/endpoint/models.mdx) से model IDs लें। नए OpenAI-style apps के लिए [Responses](../../api-reference/endpoint/responses.mdx) बेहतर है। पुरानी libraries के लिए आम तौर पर [Chat Completions](../../api-reference/endpoint/chat-completions.mdx) सबसे सुरक्षित विकल्प है।
+
+## SDK और सीधे क्लाइंट
+
+<Columns cols={2}>
+	<Card title="OpenAI SDK" icon="code" href="./openai-sdk.mdx">
+		Phaseo base URL के साथ official OpenAI clients उपयोग करें।
+	</Card>
+	<Card title="Anthropic SDK" icon="message-square" href="./anthropic-sdk.mdx">
+		`/v1/messages` के ज़रिए Anthropic-संगत clients उपयोग करें।
+	</Card>
+	<Card title="AI SDK" icon="bolt" href="./ai-sdk.mdx">
+		Vercel AI SDK के लिए first-party Phaseo provider उपयोग करें।
+	</Card>
+	<Card title="LiteLLM" icon="route" href="./litellm.mdx">
+		LiteLLM traffic को Phaseo के ज़रिए route करें या LiteLLM proxy के पीछे Phaseo उपलब्ध कराएँ।
+	</Card>
+</Columns>
+
+## ऐप और एजेंट फ़्रेमवर्क
+
+<Columns cols={2}>
+	<Card title="LangChain" icon="link" href="./langchain.mdx">
+		`ChatOpenAI` और Phaseo base URL के साथ LangChain Python उपयोग करें।
+	</Card>
+	<Card title="LlamaIndex" icon="database" href="./llamaindex.mdx">
+		RAG और indexing workflows के लिए Phaseo उपयोग करें।
+	</Card>
+	<Card title="PydanticAI" icon="braces" href="./pydanticai.mdx">
+		Phaseo के साथ typed Python agents बनाएँ।
+	</Card>
+	<Card title="Mastra" icon="workflow" href="./mastra.mdx">
+		Mastra agents और workflows में Phaseo उपयोग करें।
+	</Card>
+	<Card title="TanStack AI" icon="layers" href="./tanstack-ai.mdx">
+		TanStack AI के OpenAI-संगत adapter को connect करें।
+	</Card>
+	<Card title="Effect AI SDK" icon="function-square" href="./effect-ai.mdx">
+		Effect TypeScript applications से Phaseo उपयोग करें।
+	</Card>
+</Columns>
+
+## प्लेटफ़ॉर्म और संचालन
+
+<Columns cols={2}>
+	<Card title="LiveKit" icon="radio" href="./livekit.mdx">
+		LiveKit Agents और voice applications में Phaseo models उपयोग करें।
+	</Card>
+	<Card title="Replit" icon="box" href="./replit.mdx">
+		Phaseo के साथ Replit applications बनाएँ और deploy करें।
+	</Card>
+	<Card title="Workflow automation" icon="workflow" href="./automation.mdx">
+		Zapier, n8n, Pipedream और समान platforms से Phaseo call करें।
+	</Card>
+	<Card title="Infisical" icon="key-round" href="./infisical.mdx">
+		Scoped, zero-downtime Phaseo API key rotation तैयार करें।
+	</Card>
+</Columns>
+
+## कोडिंग सहायक और अवलोकनीयता
+
+<Columns cols={2}>
+	<Card title="Coding assistants" icon="terminal" href="./coding-assistants.mdx">
+		Cursor, VS Code, Continue, Aider, Cline, Roo Code, Kilo Code और अन्य संबंधित टूलों में Phaseo को मॉडल प्रदाता के रूप में जोड़ें।
+	</Card>
+	<Card title="Claude Code" icon="terminal" href="./claude-code.mdx">
+		Claude-संगत coding workflows को Phaseo के ज़रिए route करें।
+	</Card>
+	<Card title="Codex" icon="code" href="./codex.mdx">
+		Codex provider के रूप में Phaseo उपयोग करें।
+	</Card>
+	<Card title="DeepSeek Harness" icon="terminal" href="./deepseek-harness.mdx">
+		DeepSeek Harness में Phaseo को custom OpenAI-संगत provider जोड़ें।
+	</Card>
+	<Card title="OpenCode" icon="git-branch" href="./opencode.mdx">
+		Custom Phaseo provider के साथ OpenCode configure करें।
+	</Card>
+	<Card title="Pi" icon="terminal" href="./pi.mdx">
+		Pi में पूरा Phaseo model catalog install करें।
+	</Card>
+	<Card title="Prime Agent" icon="terminal" href="./prime-agent.mdx">
+		Phaseo के ज़रिए लंबे समय तक काम करने के लिए Prime Agent configure करें।
+	</Card>
+	<Card title="Observability" icon="activity" href="./observability.mdx">
+		Phaseo traffic को Langfuse, LangSmith, OpenTelemetry या समान tools से भेजें।
+	</Card>
+	<Card title="Docs MCP" icon="plug-zap" href="./docs-mcp.mdx">
+		Coding agents और assistants में live Phaseo docs जोड़ें।
+	</Card>
+</Columns>
+
+## सुझाए गए defaults
+
+- `PHASEO_API_KEY` एक बार set करके उसे client की expected environment variable से map करें।
+- Model ID को जस का तस रखें, जैसे `openai/gpt-5-nano`।
+- OpenAI-संगत libraries के लिए `https://api.phaseo.app/v1` उपयोग करें, जब तक tool root host साफ़ तौर पर न माँगे।
+- Anthropic-संगत SDKs और `/v1/messages` जोड़ने वाले tools के लिए `https://api.phaseo.app` उपयोग करें।
+- Agent traffic ले जाने से पहले staging में streaming और tool calling जाँचें।

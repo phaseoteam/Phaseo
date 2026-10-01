@@ -1,3 +1,4 @@
+import { getTranslations } from "next-intl/server";
 import Link from "next/link";
 import { ArrowUpRight, Building2 } from "lucide-react";
 
@@ -7,12 +8,13 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { fetchSettingsTeamsInitialData } from "@/lib/fetchers/internal/fetchSettingsTeamsInitialData";
 
-export const metadata = {
-	title: "Workspaces - Account Settings",
-};
+export async function generateMetadata() {
+	const t = await getTranslations("SettingsUI");
+	return { title: `${t("headers.workspaces")} - ${t("headers.settings")}` };
+}
 
 export default async function AccountWorkspacesPage() {
-	const data = await fetchSettingsTeamsInitialData();
+	const [data, t] = await Promise.all([fetchSettingsTeamsInitialData(), getTranslations("SettingsUI")]);
 	const manageable = new Set(data.manageableTeamIds);
 	const activeWorkspace = data.teams.find(
 		(workspace) => workspace.id === data.initialTeamId,
@@ -55,17 +57,17 @@ export default async function AccountWorkspacesPage() {
 								<div className="min-w-0">
 									<div className="flex flex-wrap items-center gap-2">
 										<p className="truncate text-sm font-medium">{workspace.name}</p>
-										{isPersonal ? <Badge variant="secondary">Personal</Badge> : null}
+										{isPersonal ? <Badge variant="secondary">{t("strings.Personal" as never)}</Badge> : null}
 										{membership?.role ? <Badge variant="outline" className="capitalize">{membership.role}</Badge> : null}
 									</div>
 									<p className="mt-1 text-xs text-muted-foreground">
-										{memberCount} {memberCount === 1 ? "member" : "members"}
+										{t("settingsCopy.teams.memberCount", { count: memberCount })}
 									</p>
 								</div>
 							</div>
 							<Button asChild variant="outline" size="sm">
 								<Link href={`/settings/workspaces/${manageable.has(workspace.id) ? "settings" : "members"}?workspaceId=${encodeURIComponent(workspace.id)}`}>
-									{manageable.has(workspace.id) ? "Open Settings" : "View members"}
+									{manageable.has(workspace.id) ? t("settingsCopy.teams.openSettings") : t("settingsCopy.teams.viewMembers")}
 									<ArrowUpRight className="size-3.5" />
 								</Link>
 							</Button>

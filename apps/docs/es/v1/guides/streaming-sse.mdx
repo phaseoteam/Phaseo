@@ -1,0 +1,53 @@
+---
+icon: "radio-tower"
+title: "Eventos SSE de streaming"
+description: "Entiende la estructura de los frames y analiza flujos SSE de forma segura."
+---
+
+Todos los endpoints de streaming usan frames de tipo SSE:
+
+`data: <json-or-sentinel>`
+
+## Secuencia habitual de frames
+
+1. Uno o varios frames de progreso o fragmentos incrementales.
+2. Un frame de finalización con el estado final y el uso.
+3. El marcador `data: [DONE]`.
+
+## Ejemplo de analizador JavaScript
+
+```typescript
+for await (const line of client.streamText({
+  model: "openai/gpt-5-nano",
+  messages: [{ role: "user", content: "Say hello." }],
+  stream: true,
+})) {
+  if (!line.startsWith("data:")) continue;
+  const payload = line.slice(5).trim();
+  if (payload === "[DONE]") break;
+  console.log(payload);
+}
+```
+
+## Ejemplo de analizador Python
+
+```python
+for line in client.stream_response({
+    "model": "openai/gpt-5-nano",
+    "input": "Say hello.",
+    "stream": True,
+}):
+    if not line.startswith("data:"):
+        continue
+    payload = line[5:].strip()
+    if payload == "[DONE]":
+        break
+    print(payload)
+```
+
+## Notas sobre el formato de los endpoints
+
+- `/v1/chat/completions`: eventos fragmentados al estilo `choices[].delta`.
+- `/v1/responses`: eventos de elementos de salida o fragmentos al estilo Responses.
+- `/v1/messages`: eventos al estilo de Anthropic (`message_start`, `content_block_delta`, `message_stop`).
+

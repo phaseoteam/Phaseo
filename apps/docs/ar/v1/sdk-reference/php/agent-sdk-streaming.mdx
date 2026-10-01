@@ -1,0 +1,26 @@
+---
+icon: "radio"
+title: "البث"
+description: "استهلك تدفقات النص والاستدلال والعناصر ودورة الحياة لوكلاء PHP."
+---
+
+تعيد `Agent::stream(...)` قيمة `AgentStreamResult`:
+
+```php
+$stream = $agent->stream($input, $client);
+
+foreach ($stream->textStream() as $delta) {
+    echo $delta;
+}
+
+$completed = $stream->result;
+```
+
+استخدم `reasoningStream()` أو `itemStream()` أو `fullStream()` للحصول على طرق عرض أخرى. يمكن إعادة قراءة كل عنصر قابل للتكرار بعد استهلاك أحداث تدفق المزوّد المتزامن.
+
+تظل قيم العناصر في PHP مصفوفات وكائنات عامة، وليست اتحاد العناصر المميّز في TypeScript.
+
+## مواضيع ذات صلة
+
+- [الأدوات](./agent-sdk-tools.mdx)
+- [قابلية المراقبة وDevTools](./agent-sdk-observability.mdx)

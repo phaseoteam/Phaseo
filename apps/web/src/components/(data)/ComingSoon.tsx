@@ -4,14 +4,15 @@
 import * as React from "react";
 import { Sparkles, Hammer, Clock, Home, Info } from "lucide-react";
 import { motion } from "motion/react";
+import { useLocale, useTranslations } from "next-intl";
 
 type Action =
 	| {
-			label: string;
-			href: string;
-			external?: boolean;
-			icon?: React.ReactNode;
-	  }
+		label: string;
+		href: string;
+		external?: boolean;
+		icon?: React.ReactNode;
+	}
 	| { label: string; onClick: () => void; icon?: React.ReactNode };
 
 type Crumb = { label: string; href?: string };
@@ -42,11 +43,27 @@ function cn(...classes: Array<string | false | null | undefined>) {
 	return classes.filter(Boolean).join(" ");
 }
 
-function formatEta(eta?: Date | string) {
+function formatEta(eta: Date | string | undefined, locale: string) {
 	if (!eta) return null;
-	if (typeof eta === "string") return eta;
+	if (typeof eta === "string") {
+		const formatMonth = (value: string) => {
+			const match = value.match(
+				/^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+(\d{4})$/,
+			);
+			if (!match) return value;
+			const parsed = new Date(`${match[1]} 1, ${match[2]} UTC`);
+			return Number.isNaN(parsed.getTime())
+				? value
+				: new Intl.DateTimeFormat(locale, {
+						year: "numeric",
+						month: "short",
+						timeZone: "UTC",
+					}).format(parsed);
+		};
+		return eta.split(" to ").map(formatMonth).join(" – ");
+	}
 	try {
-		return eta.toLocaleDateString(undefined, {
+		return eta.toLocaleDateString(locale, {
 			year: "numeric",
 			month: "short",
 		});
@@ -72,7 +89,9 @@ export default function ComingSoon({
 	className,
 	children,
 }: ComingSoonProps) {
-	const etaText = formatEta(eta);
+	const locale = useLocale();
+	const t = useTranslations("Content.roadmap");
+	const etaText = formatEta(eta, locale);
 
 	const alignment =
 		align === "center"
@@ -156,7 +175,7 @@ export default function ComingSoon({
                                 dark:border-zinc-800 dark:bg-zinc-900/50 dark:text-zinc-400"
 								>
 									<Clock className="h-3.5 w-3.5" />
-									<span>Expected: {etaText}</span>
+										<span>{t("expected")}: {etaText}</span>
 								</div>
 							)}
 							{!!tags?.length && (
@@ -351,10 +370,7 @@ export default function ComingSoon({
 							</div>
 
 							<p>
-								This page is under active development. We’re
-								shipping fast - expect frequent updates to every
-								page, and docs. If you’ve got ideas, we’d love
-								your feedback.
+								{t("developmentNotice")}
 							</p>
 						</div>
 					</div>
@@ -363,4 +379,3 @@ export default function ComingSoon({
 		</Section>
 	);
 }
-

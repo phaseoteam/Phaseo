@@ -1,0 +1,26 @@
+---
+icon: "radio"
+title: "Transmissão"
+description: "Transmita texto e eventos de agentes Go com consumidores que podem reproduzir o fluxo novamente."
+---
+
+`Agent.Stream(...)` retorna um `StreamResult` que pode ser reproduzido novamente:
+
+```go
+stream := agent.Stream(ctx, phaseoagent.RunOptions{Input: input, Client: client})
+
+for delta := range stream.Text() {
+  fmt.Print(delta)
+}
+
+completed, err := stream.Result()
+```
+
+Use `Events()` para eventos do ciclo de vida e do provedor. Chame `Cancel()` para cancelar o contexto do fluxo e a solicitação ativa ao modelo.
+
+O Go ainda não oferece o mesmo consumidor nativo de itens tipados que o TypeScript; use a sequência de eventos e os registros de execução concluídos para criar linhas do tempo estruturadas do produto.
+
+## Conteúdo relacionado
+
+- [Ferramentas](./agent-sdk-tools.mdx)
+- [Observabilidade e DevTools](./agent-sdk-observability.mdx)

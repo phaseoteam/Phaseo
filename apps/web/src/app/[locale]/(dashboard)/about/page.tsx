@@ -12,19 +12,24 @@ import {
 	Wallet,
 } from "lucide-react";
 import { buildMetadata } from "@/lib/seo";
-import { useTranslations } from "next-intl";
+import { getLocale, getTranslations } from "next-intl/server";
+import type { PublicLocale } from "@/i18n/routing";
+import { getLocalizedDocsHref } from "@/lib/docs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 
-export const metadata: Metadata = buildMetadata({
-	title: "About",
-	description:
-		"Learn what Phaseo does, how the gateway and model directory work together, and where to find updates, pricing, and platform policies.",
-	path: "/about",
-	keywords: ["Phaseo", "about", "AI gateway", "model database", "pricing"],
-});
+export async function generateMetadata({ params }: { params: Promise<{ locale: PublicLocale }> }): Promise<Metadata> {
+	const { locale } = await params;
+	const t = await getTranslations({ locale, namespace: "Site.about" });
+	return buildMetadata({
+		title: t("metadataTitle"),
+		description: t("metadataDescription"),
+		path: "/about",
+		keywords: t.raw("metadataKeywords" as never) as string[],
+	});
+}
 
 function SectionTitle({
 	eyebrow,
@@ -69,82 +74,45 @@ function ResourceButton({
 	);
 }
 
-const platformFlow = [
-	{
-		title: "Unified Model Access",
-		description: "Browse and compare model capabilities and pricing across providers in one surface.",
-		points: [
-			"Access as many models and providers as possible from one place.",
-			"Compare capabilities, benchmarks, and cost using a consistent structure.",
-		],
-		href: "/models",
-		icon: Database,
-	},
-	{
-		title: "Gateway Execution",
-		description: "Route requests across providers with an OpenAI-compatible API layer.",
-		points: [
-			"Keep integration code stable while provider offerings evolve.",
-			"Apply practical routing and control policies without lock-in.",
-		],
-		href: "/",
-		icon: Route,
-	},
-	{
-		title: "Release Intelligence",
-		description: "Stay current on launches, deprecations, and retirements as they happen.",
-		points: [
-			"Track release events without manual monitoring.",
-			"See what changed, what is sunsetting, and what to migrate to.",
-		],
-		href: "/updates/models",
-		icon: GitBranch,
-	},
-	{
-		title: "Request Observability",
-		description: "Get clear signal on request behavior, reliability, and provider performance.",
-		points: [
-			"Inspect usage, errors, latency, and model/provider distribution.",
-			"Audit behavior over time and spot drift quickly.",
-		],
-		href: "/settings/usage",
-		icon: LineChart,
-	},
+const platformFlowLinks = [
+	{ href: "/models", icon: Database },
+	{ href: "/", icon: Route },
+	{ href: "/updates/models", icon: GitBranch },
+	{ href: "/settings/usage", icon: LineChart },
 ] as const;
 
-const offerings = [
-	{
-		title: "Model Directory",
-		description: "Decision-ready model data with benchmarks, pricing, and provider coverage.",
-		href: "/models",
-		badges: ["Coverage", "Benchmarks", "Pricing"],
-		icon: Database,
-	},
-	{
-		title: "Gateway",
-		description: "OpenAI-compatible API surface to execute across many providers.",
-		href: "/",
-		badges: ["Compatibility", "Routing", "Controls"],
-		icon: Route,
-	},
-	{
-		title: "Release Intelligence",
-		description: "Track new releases, deprecations, and retirements in one feed.",
-		href: "/updates/models",
-		badges: ["Releases", "Deprecations", "Retirements"],
-		icon: GitBranch,
-	},
-	{
-		title: "Gateway Observability",
-		description: "Clear operational insight into requests, latency, errors, and behavior shifts.",
-		href: "/settings/usage",
-		badges: ["Usage", "Reliability", "Auditability"],
-		icon: LineChart,
-	},
+const offeringLinks = [
+	{ href: "/models", icon: Database },
+	{ href: "/", icon: Route },
+	{ href: "/updates/models", icon: GitBranch },
+	{ href: "/settings/usage", icon: LineChart },
 ] as const;
 
-export default function AboutPage() {
-	const t = useTranslations("Site.about");
+const resourceLinks = [
+	{ key: "announcements", href: "https://phaseo.app/docs/v1/changelog", external: true },
+	{ key: "modelUpdates", href: "/updates/models" },
+	{ key: "gatewayUsage", href: "/settings/usage" },
+	{ key: "mission", href: "/mission" },
+	{ key: "roadmap", href: "/roadmap" },
+	{ key: "contact", href: "/contact" },
+] as const;
+
+export default async function AboutPage() {
+	const locale = await getLocale();
+	const t = await getTranslations({ locale, namespace: "Site.about" });
+	const platformFlow = t.raw("platformFlow" as never) as Array<{
+		title: string;
+		description: string;
+		points: string[];
+	}>;
+	const offerings = t.raw("offerings" as never) as Array<{
+		title: string;
+		description: string;
+		badges: string[];
+	}>;
+	const heroTags = t.raw("heroTags" as never) as string[];
+	const company = t.raw("company" as never) as Record<string, string>;
+	const resources = t.raw("resources" as never) as Record<string, string>;
 	return (
 		<main className="relative min-h-screen overflow-hidden">
 			<div className="mx-4 px-2 py-12 sm:mx-6 sm:px-0 sm:py-16 lg:mx-8 xl:mx-10 2xl:mx-auto 2xl:max-w-[1460px]">
@@ -153,15 +121,7 @@ export default function AboutPage() {
 						<Badge variant="secondary" className="text-[11px]">
 							{t("badge")}
 						</Badge>
-						<Badge variant="outline" className="text-[11px]">
-							AI Models
-						</Badge>
-						<Badge variant="outline" className="text-[11px]">
-							Gateway
-						</Badge>
-						<Badge variant="outline" className="text-[11px]">
-							Observability
-						</Badge>
+						{heroTags.map((tag) => <Badge key={tag} variant="outline" className="text-[11px]">{tag}</Badge>)}
 					</div>
 
 					<h1 className="max-w-4xl text-4xl font-semibold tracking-tight text-foreground sm:text-5xl">
@@ -207,9 +167,9 @@ export default function AboutPage() {
 
 					<ol className="relative space-y-4 before:absolute before:left-4 before:top-4 before:h-[calc(100%-2rem)] before:w-px before:bg-zinc-200 dark:before:bg-zinc-800">
 						{platformFlow.map((item, idx) => {
-							const Icon = item.icon;
+							const Icon = platformFlowLinks[idx].icon;
 							return (
-								<li key={item.title} className="relative pl-11">
+									<li key={platformFlowLinks[idx].href} className="relative pl-11">
 									<div className="absolute left-0 top-2 flex h-8 w-8 items-center justify-center rounded-full border border-zinc-200 bg-white text-zinc-700 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200">
 										<Icon className="h-4 w-4" />
 									</div>
@@ -218,7 +178,7 @@ export default function AboutPage() {
 											<div className="flex flex-wrap items-center justify-between gap-3">
 												<CardTitle className="text-base">{item.title}</CardTitle>
 												<Badge variant="outline" className="text-[11px]">
-													Step {idx + 1}
+												{t("step", { number: idx + 1 })}
 												</Badge>
 											</div>
 											<p className="text-sm leading-6 text-muted-foreground">{item.description}</p>
@@ -234,7 +194,7 @@ export default function AboutPage() {
 											</ul>
 											<div className="mt-4">
 												<Button asChild variant="ghost" className="h-9 px-2 -ml-2">
-													<Link href={item.href}>Open {item.title}</Link>
+												<Link href={platformFlowLinks[idx].href}>{t("openItem", { title: item.title })}</Link>
 												</Button>
 											</div>
 										</CardContent>
@@ -251,16 +211,16 @@ export default function AboutPage() {
 
 				<section className="space-y-7 animate-in fade-in-0 slide-in-from-bottom-2 duration-700">
 					<SectionTitle
-						eyebrow="What We Build"
-						title="Durable product surfaces that stay useful as AI changes."
-						description="Our goal is simple: keep access broad, interfaces stable, and operations understandable."
+						eyebrow={t("whatWeBuild")}
+						title={t("whatWeBuildTitle")}
+						description={t("whatWeBuildDescription")}
 					/>
 
 					<div className="space-y-4">
-						{offerings.map((item) => {
-							const Icon = item.icon;
+						{offerings.map((item, idx) => {
+							const Icon = offeringLinks[idx].icon;
 							return (
-								<Card key={item.title} className="border-zinc-200/70 bg-white/75 dark:border-zinc-800/70 dark:bg-zinc-950/60">
+								<Card key={offeringLinks[idx].href} className="border-zinc-200/70 bg-white/75 dark:border-zinc-800/70 dark:bg-zinc-950/60">
 									<CardContent className="grid gap-4 p-5 sm:grid-cols-[auto_1fr_auto] sm:items-center">
 										<div className="flex h-10 w-10 items-center justify-center rounded-lg border border-zinc-200/70 bg-white dark:border-zinc-800/70 dark:bg-zinc-950">
 											<Icon className="h-4 w-4 text-foreground" />
@@ -269,7 +229,7 @@ export default function AboutPage() {
 											<h3 className="text-base font-semibold text-foreground">{item.title}</h3>
 											<p className="text-sm leading-6 text-muted-foreground">{item.description}</p>
 											<div className="flex flex-wrap gap-2">
-												{item.badges.map((badge) => (
+											{item.badges.map((badge) => (
 													<Badge key={badge} variant="secondary" className="text-[11px]">
 														{badge}
 													</Badge>
@@ -277,8 +237,8 @@ export default function AboutPage() {
 											</div>
 										</div>
 										<Button asChild variant="outline" className="justify-between">
-											<Link href={item.href}>
-												Open
+										<Link href={offeringLinks[idx].href}>
+												{t("open")}
 												<ArrowRight className="h-4 w-4" />
 											</Link>
 										</Button>
@@ -295,9 +255,9 @@ export default function AboutPage() {
 
 				<section className="space-y-7 animate-in fade-in-0 slide-in-from-bottom-2 duration-700">
 					<SectionTitle
-						eyebrow="Pricing"
-						title="Platform pricing and model pricing are separate surfaces."
-						description="Use Phaseo Pricing for our platform/service pricing, and use the Pricing Calculator for model-level estimation."
+						eyebrow={t("pricingSection.eyebrow" as never)}
+						title={t("pricingSection.title" as never)}
+						description={t("pricingSection.description" as never)}
 					/>
 
 					<div className="grid gap-4 md:grid-cols-2">
@@ -305,14 +265,14 @@ export default function AboutPage() {
 							<CardHeader className="space-y-2">
 								<div className="flex items-center gap-2 text-sm font-semibold text-foreground">
 									<Wallet className="h-4 w-4" />
-									Phaseo Pricing
+									{t("pricing")}
 								</div>
 								<p className="text-sm leading-6 text-muted-foreground">
-									See platform pricing details, including credit purchase fee tiers and billing coverage.
+									{t("pricingSection.platformDescription" as never)}
 								</p>
 							</CardHeader>
 							<CardContent className="pt-0">
-								<ResourceButton href="/pricing" label="Open Phaseo Pricing" />
+								<ResourceButton href="/pricing" label={`${t("open")} ${t("pricing")}`} />
 							</CardContent>
 						</Card>
 
@@ -320,15 +280,15 @@ export default function AboutPage() {
 							<CardHeader className="space-y-2">
 								<div className="flex items-center gap-2 text-sm font-semibold text-foreground">
 									<LineChart className="h-4 w-4" />
-									Model Pricing Tools
+									{t("pricingSection.modelToolsTitle" as never)}
 								</div>
 								<p className="text-sm leading-6 text-muted-foreground">
-									Use model-level pricing references and cost estimation tools for scenario planning.
+									{t("pricingSection.modelToolsDescription" as never)}
 								</p>
 							</CardHeader>
 							<CardContent className="pt-0 space-y-2">
-								<ResourceButton href="/tools/pricing-calculator" label="Open Pricing Calculator" />
-								<ResourceButton href="/models" label="Browse Models" variant="ghost" />
+								<ResourceButton href="/tools/pricing-calculator" label={`${t("open")} ${t("pricingSection.calculator" as never)}`} />
+								<ResourceButton href="/models" label={t("exploreModels")} variant="ghost" />
 							</CardContent>
 						</Card>
 					</div>
@@ -341,9 +301,9 @@ export default function AboutPage() {
 				<section className="grid gap-6 lg:grid-cols-[1fr_0.92fr] lg:items-start animate-in fade-in-0 slide-in-from-bottom-2 duration-700">
 					<div className="space-y-6">
 						<SectionTitle
-							eyebrow="Company"
-							title="Open by default, explicit in behavior, clear in operations."
-							description="We prioritize transparent coverage and public documentation over vague claims. Compatibility, lifecycle updates, and observability are first-class."
+							eyebrow={company.sectionLabel}
+							title={company.title}
+							description={company.description}
 						/>
 
 						<div className="grid gap-4 sm:grid-cols-2">
@@ -351,10 +311,10 @@ export default function AboutPage() {
 								<CardHeader className="space-y-2">
 									<div className="flex items-center gap-2 text-sm font-semibold text-foreground">
 										<Sparkles className="h-4 w-4" />
-										Open by default
+										{company.openTitle}
 									</div>
 									<p className="text-sm leading-6 text-muted-foreground">
-										Access should be broad and practical, with consistent naming and clear docs.
+										{company.openDescription}
 									</p>
 								</CardHeader>
 							</Card>
@@ -363,10 +323,10 @@ export default function AboutPage() {
 								<CardHeader className="space-y-2">
 									<div className="flex items-center gap-2 text-sm font-semibold text-foreground">
 										<GitBranch className="h-4 w-4" />
-										Clear lifecycle signals
+										{company.lifecycleTitle}
 									</div>
 									<p className="text-sm leading-6 text-muted-foreground">
-										New releases, deprecations, and retirements are tracked so migration work is predictable.
+										{company.lifecycleDescription}
 									</p>
 								</CardHeader>
 							</Card>
@@ -375,10 +335,10 @@ export default function AboutPage() {
 								<CardHeader className="space-y-2">
 									<div className="flex items-center gap-2 text-sm font-semibold text-foreground">
 										<ShieldCheck className="h-4 w-4" />
-										Operational clarity
+										{company.operationsTitle}
 									</div>
 									<p className="text-sm leading-6 text-muted-foreground">
-										Request-level observability keeps behavior auditable and easier to debug in production.
+										{company.operationsDescription}
 									</p>
 								</CardHeader>
 							</Card>
@@ -387,22 +347,17 @@ export default function AboutPage() {
 
 					<Card className="border-zinc-200/70 bg-white/75 shadow-sm dark:border-zinc-800/70 dark:bg-zinc-950/60">
 						<CardHeader className="space-y-2">
-							<CardTitle className="text-base">Where to find things</CardTitle>
+							<CardTitle className="text-base">{company.resourcesTitle}</CardTitle>
 							<p className="text-sm leading-6 text-muted-foreground">
-								Everything company, product, and policy related in one place.
+								{company.resourcesDescription}
 							</p>
 						</CardHeader>
 							<CardContent className="grid gap-3">
-								<ResourceButton href="https://phaseo.app/docs/v1/changelog" label="Announcements" external />
-								<ResourceButton href="/updates/models" label="Model Updates" />
-								<ResourceButton href="/settings/usage" label="Gateway Usage" />
-								<ResourceButton href="/mission" label="Our Mission" />
-								<ResourceButton href="/roadmap" label="Roadmap" />
-								<ResourceButton href="/contact" label="Contact" />
+								{resourceLinks.map((resource) => <ResourceButton key={resource.key} href={resource.href.startsWith("https://phaseo.app/docs/") ? getLocalizedDocsHref(locale, resource.href) : resource.href} label={resources[resource.key]} external={"external" in resource} />)}
 							<Separator className="my-1 bg-zinc-200/70 dark:bg-zinc-800/70" />
 							<div className="grid gap-2 sm:grid-cols-2">
-								<ResourceButton href="/terms" label="Terms" variant="ghost" />
-								<ResourceButton href="/privacy" label="Privacy" variant="ghost" />
+								<ResourceButton href="/terms" label={resources.terms} variant="ghost" />
+								<ResourceButton href="/privacy" label={resources.privacy} variant="ghost" />
 							</div>
 							<ResourceButton href="https://github.com/phaseoteam/Phaseo" label="GitHub" external variant="ghost" />
 						</CardContent>

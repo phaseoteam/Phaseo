@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import dynamic from "next/dynamic";
 import Image from "next/image";
 import { useQueryState } from "nuqs";
+import { useLocale, useTranslations } from "next-intl";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import {
@@ -116,6 +117,7 @@ function RequestRowContextMenu({
 	modelId: string | null;
 	onInspect: () => void;
 }) {
+	const tUi = useTranslations("Common.ui");
 	const requestId = row.request_id?.trim() || null;
 	const sessionId = row.session_id?.trim() || null;
 	const nativeResponseId = row.native_response_id?.trim() || null;
@@ -127,9 +129,9 @@ function RequestRowContextMenu({
 	const copyValue = async (label: string, value: string) => {
 		try {
 			await navigator.clipboard.writeText(value);
-			toast.success(`${label} copied`);
+			toast.success(tUi("actions.copied", { label }));
 		} catch {
-			toast.error(`Failed to copy ${label.toLowerCase()}`);
+			toast.error(tUi("actions.copyFailed", { label }));
 		}
 	};
 
@@ -138,44 +140,44 @@ function RequestRowContextMenu({
 			{canInspect ? (
 				<ContextMenuItem className="rounded-md" onClick={onInspect}>
 					<PanelRightOpen />
-					Open Request Details
+					{tUi("actions.openRequestDetails")}
 				</ContextMenuItem>
 			) : null}
 			{canInspect && hasCopyAction ? <ContextMenuSeparator /> : null}
 			{requestId ? (
 				<ContextMenuItem
 					className="rounded-md"
-					onClick={() => void copyValue("Request ID", requestId)}
+					onClick={() => void copyValue(tUi("identifiers.requestId"), requestId)}
 				>
 					<Copy />
-					Copy Request ID
+					{tUi("actions.copyRequestId")}
 				</ContextMenuItem>
 			) : null}
 			{sessionId ? (
 				<ContextMenuItem
 					className="rounded-md"
-					onClick={() => void copyValue("Session ID", sessionId)}
+					onClick={() => void copyValue(tUi("identifiers.sessionId"), sessionId)}
 				>
 					<Copy />
-					Copy Session ID
+					{tUi("actions.copySessionId")}
 				</ContextMenuItem>
 			) : null}
 			{nativeResponseId ? (
 				<ContextMenuItem
 					className="rounded-md"
-					onClick={() => void copyValue("Native response ID", nativeResponseId)}
+					onClick={() => void copyValue(tUi("identifiers.nativeResponseId"), nativeResponseId)}
 				>
 					<Copy />
-					Copy Native Response ID
+					{tUi("actions.copyNativeResponseId")}
 				</ContextMenuItem>
 			) : null}
 			{resolvedModelId ? (
 				<ContextMenuItem
 					className="rounded-md"
-					onClick={() => void copyValue("Model ID", resolvedModelId)}
+					onClick={() => void copyValue(tUi("identifiers.modelId"), resolvedModelId)}
 				>
 					<Copy />
-					Copy Model ID
+					{tUi("actions.copyModelId")}
 				</ContextMenuItem>
 			) : null}
 		</ContextMenuContent>
@@ -323,6 +325,8 @@ export default function UnifiedRequestsTable({
 	detailBasePath,
 	onExportRef,
 }: UnifiedRequestsTableProps) {
+	const tUi = useTranslations("Common.ui");
+	const locale = useLocale();
 	const userTimeZone =
 		typeof Intl !== "undefined"
 			? Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"
@@ -754,31 +758,31 @@ export default function UnifiedRequestsTable({
 				const requestedModelId = getRequestedModelId(row);
 				const routedModelId = getRoutedModelId(row);
 				return {
-					Timestamp: new Date(row.created_at).toLocaleString(),
-					"Requested Model": getModelDisplayName(
+					[tUi("time.timestamp")]: new Date(row.created_at).toLocaleString(),
+					[tUi("requestsTable.requestedModel")]: getModelDisplayName(
 						requestedModelId,
 						resolvedModelMetadata,
 					),
-					"Requested Model ID": requestedModelId || "-",
-					"Routed Model": getModelDisplayName(
+					[tUi("requestsTable.requestedModelId")]: requestedModelId || "-",
+					[tUi("requestsTable.routedModel")]: getModelDisplayName(
 						routedModelId,
 						resolvedModelMetadata,
 					),
-					"Routed Model ID": routedModelId || "-",
-					Provider: providerLabel,
-					Source: source?.name ?? "Direct HTTP",
-					"Source ID": source?.id ?? "api",
-					"Source Type": source?.kind ?? "api",
-					"Source Version": source?.version ?? "-",
-					"Source Detection": source?.detection ?? "unknown",
-					App: appLabel,
-					Usage: usageSummary,
-					"Input Tokens": formatUsageNumber(inputTokens),
-					"Output Tokens": formatUsageNumber(outputTokens),
-					Cost: formatCost(row.cost_nanos),
-					"Generation (ms)": row.generation_ms || row.latency_ms || "-",
-					"Finish Reason": row.finish_reason || "-",
-					Status: row.success ? "Success" : "Error",
+					[tUi("requestsTable.routedModelId")]: routedModelId || "-",
+					[tUi("select.provider")]: providerLabel,
+					[tUi("requestsTable.source")]: source?.name ?? tUi("requestsTable.directHttp"),
+					[tUi("requestsTable.sourceId")]: source?.id ?? "api",
+					[tUi("requestsTable.sourceType")]: source?.kind ?? "api",
+					[tUi("requestsTable.sourceVersion")]: source?.version ?? "-",
+					[tUi("requestsTable.sourceDetection")]: source?.detection ?? tUi("requestsTable.unknown"),
+					[tUi("requestsTable.app")]: appLabel,
+					[tUi("metrics.usage")]: usageSummary,
+					[tUi("requestsTable.inputTokens")]: formatUsageNumber(inputTokens),
+					[tUi("requestsTable.outputTokens")]: formatUsageNumber(outputTokens),
+					[tUi("metrics.cost")]: formatCost(row.cost_nanos),
+					[tUi("requestsTable.generationMs")]: row.generation_ms || row.latency_ms || "-",
+					[tUi("requestsTable.finishReason")]: row.finish_reason || "-",
+					[tUi("select.status")]: row.success ? tUi("status.success") : tUi("status.error"),
 				};
 			});
 
@@ -788,10 +792,10 @@ export default function UnifiedRequestsTable({
 			if (format === "csv") {
 				exportToCSV(exportData, filename);
 			} else {
-				exportToPDF(exportData, filename, "Gateway Requests");
+				exportToPDF(exportData, filename, tUi("requestsTable.exportTitle"));
 			}
 		},
-		[data, appNames, providerNames, resolvedModelMetadata],
+		[data, appNames, providerNames, resolvedModelMetadata, tUi],
 	);
 
 	// Expose export handler via ref
@@ -807,8 +811,8 @@ export default function UnifiedRequestsTable({
 			<div className="flex items-center gap-3 rounded-md border border-border/70 bg-muted/15 px-3 py-2.5 text-sm" role="status" aria-live="polite">
 				<Loader2 className="size-4 shrink-0 animate-spin text-muted-foreground" />
 				<div className="min-w-0">
-					<p className="font-medium text-foreground">Loading requests</p>
-					<p className="truncate text-xs text-muted-foreground">Searching the selected time range and applying your filters.</p>
+					<p className="font-medium text-foreground">{tUi("requestsTable.loading")}</p>
+					<p className="truncate text-xs text-muted-foreground">{tUi("requestsTable.loadingDescription")}</p>
 				</div>
 			</div>
 		) : null}
@@ -856,7 +860,7 @@ export default function UnifiedRequestsTable({
 							row.app_id ? appNames.get(row.app_id) : null,
 						);
 						const appLabel = row.app_id
-							? appTitle ?? mappedAppName ?? "Unknown app"
+							? appTitle ?? mappedAppName ?? tUi("requestsTable.unknownApp")
 							: null;
 						const appHref = row.app_id
 							? `/apps/${encodeURIComponent(row.app_id)}`
@@ -892,6 +896,7 @@ export default function UnifiedRequestsTable({
 										<div className="font-mono text-xs text-muted-foreground">
 											{formatWordyDateTime(row.created_at, {
 												includeTime: true,
+												locale,
 											})}
 										</div>
 										<div className="mt-1 flex items-center gap-2">
@@ -994,7 +999,7 @@ export default function UnifiedRequestsTable({
 											className="border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800/70 dark:bg-emerald-950/40 dark:text-emerald-300"
 												>
 													<CheckCircle2 className="mr-1 h-3 w-3" />
-													Success
+													{tUi("status.success")}
 												</Badge>
 											) : (
 												<Badge
@@ -1002,7 +1007,7 @@ export default function UnifiedRequestsTable({
 											className="border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-800/70 dark:bg-rose-950/40 dark:text-rose-300"
 												>
 													<XCircle className="mr-1 h-3 w-3" />
-													Error
+													{tUi("status.error")}
 												</Badge>
 											)}
 										</div>
@@ -1139,11 +1144,11 @@ export default function UnifiedRequestsTable({
 								<div className="mt-3 flex items-center justify-between gap-3">
 									<div className="min-w-0 space-y-1 text-xs text-muted-foreground">
 										<div className="flex items-center gap-1">
-											<span className="font-medium text-foreground/80">Usage:</span>
+											<span className="font-medium text-foreground/80">{tUi("metrics.usage")}:</span>
 											<span className="truncate">{usageDisplay.primary}</span>
 										</div>
 										<div className="flex items-center gap-1">
-											<span className="font-medium text-foreground/80">Stop reason:</span>
+											<span className="font-medium text-foreground/80">{tUi("requestsTable.stopReason")}:</span>
 											<span className="truncate">{row.finish_reason || "-"}</span>
 										</div>
 									</div>
@@ -1165,22 +1170,22 @@ export default function UnifiedRequestsTable({
 				<Table wrapInContainer={false} className="min-w-[1080px] whitespace-nowrap text-xs">
 					<TableHeader>
 						<TableRow className="h-9">
-							<TableHead className="w-[180px]">Timestamp</TableHead>
-							<TableHead className="hidden">Requested model</TableHead>
-							<TableHead>Model</TableHead>
+							<TableHead className="w-[180px]">{tUi("time.timestamp")}</TableHead>
+							<TableHead className="hidden">{tUi("requestsTable.requestedModel")}</TableHead>
+							<TableHead>{tUi("requestsTable.model")}</TableHead>
 							<TableHead>
-								Source
+								{tUi("requestsTable.source")}
 							</TableHead>
-							<TableHead>Provider</TableHead>
+							<TableHead>{tUi("select.provider")}</TableHead>
 							<TableHead>
-								App
+								{tUi("requestsTable.app")}
 							</TableHead>
-							<TableHead className="text-right">Usage</TableHead>
-							<TableHead className="text-right">Cost</TableHead>
+							<TableHead className="text-right">{tUi("metrics.usage")}</TableHead>
+							<TableHead className="text-right">{tUi("metrics.cost")}</TableHead>
 							<TableHead>
-								Finish
+								{tUi("requestsTable.finish")}
 							</TableHead>
-							<TableHead>Status</TableHead>
+							<TableHead>{tUi("select.status")}</TableHead>
 						</TableRow>
 					</TableHeader>
 					<TableBody>
@@ -1232,7 +1237,7 @@ export default function UnifiedRequestsTable({
 									colSpan={10}
 									className="py-10 text-center text-muted-foreground"
 								>
-									No requests found
+									{tUi("requestsTable.noRequestsFound")}
 								</TableCell>
 							</TableRow>
 						) : (
@@ -1265,7 +1270,7 @@ export default function UnifiedRequestsTable({
 										row.app_id ? appNames.get(row.app_id) : null,
 									);
 									const appLabel = row.app_id
-										? appTitle ?? mappedAppName ?? "Unknown app"
+										? appTitle ?? mappedAppName ?? tUi("requestsTable.unknownApp")
 										: null;
 									const appHref = row.app_id
 										? `/apps/${encodeURIComponent(row.app_id)}`
@@ -1310,6 +1315,7 @@ export default function UnifiedRequestsTable({
 														<span className="cursor-help underline underline-offset-2 decoration-dotted">
 															{formatWordyDateTime(row.created_at, {
 																includeTime: true,
+																locale,
 															})}
 														</span>
 													</HoverCardTrigger>
@@ -1330,6 +1336,7 @@ export default function UnifiedRequestsTable({
 																			row.created_at,
 																		),
 																		userTimeZone,
+																		locale,
 																	)}
 																</div>
 															</div>
@@ -1343,12 +1350,13 @@ export default function UnifiedRequestsTable({
 																			row.created_at,
 																		),
 																		"UTC",
+																		locale,
 																	)}
 																</div>
 															</div>
 															<div className="grid grid-cols-[120px_1fr] gap-2">
 																<div className="text-muted-foreground">
-																	Relative
+																	{tUi("time.relative")}
 																</div>
 																<div className="font-mono">
 																	{relativeNowMs
@@ -1363,7 +1371,7 @@ export default function UnifiedRequestsTable({
 															</div>
 															<div className="grid grid-cols-[120px_1fr] gap-2">
 																<div className="text-muted-foreground">
-																	Timestamp
+																	{tUi("time.timestamp")}
 																</div>
 																<div className="font-mono">
 																	{Math.floor(
@@ -1632,7 +1640,7 @@ export default function UnifiedRequestsTable({
 												<div className="flex min-h-5 items-center">
 												{row.app_id ? (
 													<UsageEntityHoverCard
-														title={appLabel ?? "Unknown app"}
+														title={appLabel ?? tUi("requestsTable.unknownApp")}
 														href={appHref}
 														visual={
 															isPhaseoChatApp(row) ? (
@@ -1731,7 +1739,7 @@ export default function UnifiedRequestsTable({
 													className="border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800/70 dark:bg-emerald-950/40 dark:text-emerald-300"
 														>
 															<CheckCircle2 className="mr-1 h-3 w-3" />
-															Success
+															{tUi("status.success")}
 														</Badge>
 													) : (
 														<Badge
@@ -1739,7 +1747,7 @@ export default function UnifiedRequestsTable({
 													className="border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-800/70 dark:bg-rose-950/40 dark:text-rose-300"
 														>
 															<XCircle className="mr-1 h-3 w-3" />
-															Error
+															{tUi("status.error")}
 														</Badge>
 													)}
 												</div>
@@ -1764,7 +1772,7 @@ export default function UnifiedRequestsTable({
 			{/* Pagination */}
 			<div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 				<div className="flex items-center gap-2 text-xs text-muted-foreground">
-					<span>Rows per page</span>
+								<span>{tUi("requestsTable.rowsPerPage")}</span>
 					<Select value={String(pageSize)} onValueChange={(value) => { void setPageSize(Number(value)); void setPage(1); }}>
 						<SelectTrigger size="sm" className="h-8 w-[72px] rounded-md border-border/70 bg-background">
 							<SelectValue />
@@ -1844,7 +1852,7 @@ export default function UnifiedRequestsTable({
 									variant="ghost"
 									size="icon-sm"
 									disabled={!previousRequest}
-									aria-label="Open previous request"
+									aria-label={tUi("requestsTable.openPreviousRequest")}
 									onClick={() => previousRequest && handleRowClick(previousRequest)}
 								>
 									<ChevronLeft className="size-4" />
@@ -1854,7 +1862,7 @@ export default function UnifiedRequestsTable({
 									variant="ghost"
 									size="icon-sm"
 									disabled={!nextRequest}
-									aria-label="Open next request"
+									aria-label={tUi("requestsTable.openNextRequest")}
 									onClick={() => nextRequest && handleRowClick(nextRequest)}
 								>
 									<ChevronRight className="size-4" />

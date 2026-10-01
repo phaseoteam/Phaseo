@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { usePathname } from "next/navigation";
 import { ChevronUp } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -19,6 +20,7 @@ const CATALOGUE_ROOTS = [
 const VISIBILITY_THRESHOLD = 320;
 
 export default function CatalogueScrollToTop() {
+	const t = useTranslations("Common.ui.accessibility");
 	const pathname = usePathname() ?? "";
 	const [visible, setVisible] = useState(false);
 	const enabled = CATALOGUE_ROOTS.some(
@@ -42,7 +44,7 @@ export default function CatalogueScrollToTop() {
 	return (
 		<button
 			type="button"
-			aria-label="Scroll to top"
+			aria-label={t("scrollToTop")}
 			onClick={() => {
 				const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 				window.scrollTo({ top: 0, behavior: reducedMotion ? "auto" : "smooth" });

@@ -1,0 +1,65 @@
+---
+icon: "circle-check"
+title: "Condiciones de detención"
+description: "Limita el trabajo del agente por pasos, tokens, costo, duración, llamadas a herramientas o motivo de finalización."
+---
+
+Usa condiciones de detención para establecer un presupuesto de ejecución claro para cada agente. Las condiciones se comprueban con los pasos completados y el uso acumulado.
+
+## Combinar límites integrados
+
+```typescript
+import {
+  maxCost,
+  maxDuration,
+  maxTokensUsed,
+  stepCountIs,
+} from "@phaseo/agent-sdk";
+
+const agent = createAgent({
+  id: "bounded-research",
+  stopWhen: [
+    stepCountIs(12),
+    maxTokensUsed(40_000),
+    maxCost(2),
+    maxDuration(60_000),
+  ],
+});
+```
+
+La primera condición que se cumpla registra su motivo y devuelve una ejecución con `status: "stopped"`.
+
+## Ayudantes disponibles
+
+| Ayudante | Se detiene cuando… |
+| --- | --- |
+| `stepCountIs(limit)` | La cantidad de pasos completados alcanza el límite |
+| `maxTokensUsed(limit)` | El uso acumulado de tokens alcanza el límite |
+| `maxCost(limit)` | El costo acumulado informado alcanza el límite |
+| `maxDuration(ms)` | El tiempo de ejecución alcanza la duración límite |
+| `hasToolCall(name)` | Un paso contiene la llamada a herramienta indicada |
+| `finishReasonIs(reason)` | Un paso del modelo informa del motivo de finalización |
+
+## Añadir una condición personalizada
+
+Una condición puede devolver `false`, `true` o una cadena con el motivo:
+
+```typescript
+const stopAfterRepeatedFailures = ({ steps }) => {
+  const failures = steps.filter((step) => step.status === "failed").length;
+  return failures >= 2 ? "repeated_failures" : false;
+};
+
+const agent = createAgent({
+  id: "support-agent",
+  stopWhen: [stepCountIs(10), stopAfterRepeatedFailures],
+});
+```
+
+Si los operadores o la interfaz del producto deben explicar por qué terminó una ejecución, es mejor incluir una cadena con el motivo.
+
+## Guías relacionadas
+
+- [Turnos dinámicos](./agent-sdk-dynamic-turns.mdx)
+- [Salidas y reintentos](./agent-sdk-run-controls.mdx)
+- [Hooks del ciclo de vida](./agent-sdk-lifecycle-hooks.mdx)

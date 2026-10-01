@@ -1,0 +1,58 @@
+---
+icon: "bot"
+title: "SDK de agentes para Rust"
+description: "Crie agentes síncronos com ferramentas usando phaseo-agent."
+---
+
+Use o crate publicado [`phaseo-agent`](https://crates.io/crates/phaseo-agent) quando um aplicativo Rust precisar de um ciclo de modelo limitado, ferramentas locais, aprovações ou revisão humana retomável.
+
+O SDK de agentes para Rust se baseia no cliente `phaseo` e executa as etapas do modelo pela API Responses da Phaseo.
+
+## Recursos compatíveis
+
+| Recurso | Suporte do Rust |
+| --- | --- |
+| Ferramentas locais executáveis | Sim; executadas de forma síncrona na ordem das chamadas ao modelo |
+| Saídas de ferramentas externas | Sim; por meio de `Tool::external(...)` e `ContinueOptions` |
+| Aprovação de ferramentas | Sim; pelo ID exato da chamada da ferramenta |
+| Revisão humana | Sim; com estado de execução pausado e serializável |
+| Novas tentativas do modelo | Sim; com intervalo fixo entre tentativas |
+| Eventos do ciclo de vida | Sim; por meio de métodos de execução baseados em callbacks |
+| Agregação de uso | Tokens de entrada, saída, em cache e totais; custo quando preenchido por um cliente de modelo personalizado |
+| Limites de execução | Número máximo de etapas do modelo |
+| Adaptador do Gateway | API Responses por meio de `GatewayAgentClient` |
+| Streaming | Ainda não é compatível |
+| Execução assíncrona e cancelamento | Ainda não são compatíveis |
+| Ferramentas locais simultâneas | Ainda não são compatíveis |
+| Validação de esquema em tempo de execução | O JSON Schema é enviado ao modelo; entradas e saídas locais são `serde_json::Value` |
+| Captura do Devtools | Ainda não é compatível |
+
+<Note>
+  Rust é um ambiente de execução síncrono compatível, não uma porta com todos os recursos do ambiente de streaming do TypeScript. Estas páginas documentam apenas as APIs disponibilizadas no `phaseo-agent 0.1`.
+</Note>
+
+## Modelo de execução
+
+1. envia as mensagens atuais e as definições de ferramentas a um `ModelClient`
+2. executa as ferramentas locais disponíveis
+3. pausa para aprovações, resultados externos ou revisão humana quando necessário
+4. acrescenta os resultados e continua até concluir ou atingir o limite de etapas
+
+O SDK não armazena execuções em um serviço hospedado pela Phaseo. Salve `RunResult` no seu aplicativo quando uma execução precisar sobreviver à reinicialização de um processo.
+
+O adaptador Gateway `0.1` ainda não mapeia `cost_nanos` nem `cost_cents` do Gateway para `UsageSummary.cost`. Para consultar os gastos, use a resposta do Gateway ou o registro de geração em vez do campo de custo do Agent SDK.
+
+<Columns cols={2}>
+  <Card title="Instalar o SDK de agentes" icon="package" href="./agent-sdk-installation.mdx">
+    Adicione os dois crates Rust e configure sua chave de API.
+  </Card>
+  <Card title="Crie seu primeiro agente" icon="play" href="./agent-sdk.mdx">
+    Execute um ciclo local de ferramentas pelo Phaseo Gateway.
+  </Card>
+  <Card title="Ferramentas e aprovações" icon="wrench" href="./agent-sdk-tools.mdx">
+    Adicione ferramentas locais, externas e sujeitas a aprovação.
+  </Card>
+  <Card title="Referência da API de agentes" icon="book-open" href="./agent-sdk-api-reference.mdx">
+    Consulte as estruturas, traits e métodos exatos do Rust.
+  </Card>
+</Columns>

@@ -18,7 +18,7 @@ import germanSettingsUiMessages from "../../messages/de-DE/settings-ui.json";
 import ptSettingsUiMessages from "../../messages/pt-BR/settings-ui.json";
 import jaSettingsUiMessages from "../../messages/ja/settings-ui.json";
 import arSettingsUiMessages from "../../messages/ar-SA/settings-ui.json";
-import { mergeCatalogMessages } from "./message-overlays";
+import { mergeCatalogMessages, nestDottedMessageKeys } from "./message-overlays";
 import type { PublicLocale } from "./routing";
 
 export type SourceSettingsMessages = typeof englishSettingsMessages;
@@ -58,7 +58,7 @@ export function getSettingsMessages(locale: PublicLocale): SettingsMessages {
 }
 
 export function getSettingsUiMessages(locale: PublicLocale): SettingsUiMessages {
-	return settingsUiCatalogs[locale];
+	return nestDottedMessageKeys(settingsUiCatalogs[locale]);
 }
 
 export function getSettingsSidebarItemLabel(

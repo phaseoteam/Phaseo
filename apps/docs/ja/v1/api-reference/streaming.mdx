@@ -1,0 +1,68 @@
+---
+title: "ストリーミング"
+description: "主要なテキストエンドポイントで SSE を使い、モデル出力をリアルタイムで配信します。"
+icon: "radio"
+---
+
+ストリーミングを使うと、応答全体を待たずに、生成されたトークンを UI に順次表示できます。
+
+## 対応エンドポイント
+
+- `POST /v1/responses`
+- `POST /v1/chat/completions`
+- `POST /v1/messages`
+
+## ストリーミングを有効にする
+
+リクエスト本文で `stream: true` を設定します。
+
+```bash
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-5-nano",
+    "input": "Write a short greeting.",
+    "stream": true
+  }'
+```
+
+## SSE フレームの形式
+
+ストリームは SSE フレームとして返されます。
+
+```text
+data: {"id":"resp_...","status":"in_progress",...}
+data: {"type":"response.output_text.delta","delta":"Hello"}
+data: {"type":"response.completed",...}
+data: [DONE]
+```
+
+## ストリーミング中のエラー処理
+
+- ストリーミング開始前にリクエストが失敗した場合、通常の JSON エラー応答を受け取ります。
+- 出力の一部が届いた後に失敗した場合、ストリームは未完了として扱い、UI から再試行できるようにします。
+- サポートや照合に備え、`generation_id` がある場合は必ず記録してください。
+
+## キャンセル
+
+キャンセル機能（JavaScript の `AbortController` やバックエンド worker のリクエストタイムアウト）を使い、放棄されたストリームが不要な容量を消費しないようにします。
+
+## 既知の制限
+
+現在の Gateway リクエスト検証レイヤーでは、`stream: true` とツール呼び出しの併用は拒否されます。ツールを呼び出すループでは非ストリーミングを使用してください。
+
+## 関連ページ
+
+- [Responses エンドポイント](./endpoint/responses.mdx)
+- [Chat Completions エンドポイント](./endpoint/chat-completions.mdx)
+- [Messages エンドポイント](./endpoint/anthropic-messages.mdx)
+- [エラーとデバッグ](./errors.mdx)
+
+<Visibility for="agents">
+エージェントとしてストリーミングを実装する場合:
+
+- SSE の解析、再試行、キャンセルにはリポジトリのスキルを使用してください。
+- プロバイダー固有の前提を加える前に、各エンドポイントのスキーマを確認してください。
+- 逐次表示と最終状態の保存は分離してください。
+</Visibility>

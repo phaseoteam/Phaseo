@@ -1,0 +1,95 @@
+---
+title: "Cloudflare AI Gateway से माइग्रेट करें"
+sidebarTitle: "Cloudflare AI Gateway"
+description: "ऐप के अनुरोध प्रवाह को बनाए रखते हुए Cloudflare AI Gateway route को Phaseo से बदलें।"
+icon: "/icons/brands/cloudflare.svg"
+---
+
+अगर आपका ऐप Cloudflare AI Gateway के ज़रिए पहले से OpenAI-संगत अनुरोध भेजता है, तो इस गाइड का उपयोग करें। पहले Gateway सीमा बदलें, फिर केवल वही रूटिंग, कैशिंग और ऑब्ज़र्वेबिलिटी दोबारा बनाएं जिनकी प्रोडक्शन ट्रैफ़िक को सच में ज़रूरत है।
+
+## क्या बदलेगा
+
+| सेटिंग | पहले | बाद में |
+| --- | --- | --- |
+| Gateway URL | खाते और Gateway के लिए विशिष्ट Cloudflare URL | `https://api.phaseo.app/v1` |
+| प्रमाणीकरण | Cloudflare और प्रोवाइडर क्रेडेंशियल | `PHASEO_API_KEY` |
+| रूटिंग नीति | Cloudflare Gateway कॉन्फ़िगरेशन | Phaseo रूटिंग सेटिंग और presets |
+| अनुरोध दृश्यता | Cloudflare analytics | Phaseo गतिविधि और अनुरोध विवरण |
+
+<Steps>
+<Step title="मौजूदा Gateway कॉन्फ़िगरेशन की सूची बनाएं">
+
+Cloudflare Gateway URL, प्रोवाइडर routes, कस्टम हेडर, कैश नियम, retry व्यवहार और ऐप द्वारा उपयोग किए जाने वाले analytics दर्ज करें। इससे ज़रूरी व्यवहार उन सेटिंग से अलग हो जाता है जिन्हें अब माइग्रेट करने की ज़रूरत नहीं है।
+
+</Step>
+
+<Step title="एंडपॉइंट और क्रेडेंशियल बदलें">
+
+जहां संभव हो अनुरोध payload को वैसा ही रखें और OpenAI-संगत क्लाइंट की सीमा अपडेट करें।
+
+<CodeGroup>
+```typescript TypeScript
+import OpenAI from "openai";
+
+const client = new OpenAI({
+  apiKey: process.env.PHASEO_API_KEY,
+  baseURL: "https://api.phaseo.app/v1",
+});
+
+const response = await client.chat.completions.create({
+  model: "openai/gpt-4.1-mini",
+  messages: [{ role: "user", content: "Reply with: migration ready" }],
+});
+```
+
+```python Python
+import os
+from openai import OpenAI
+
+client = OpenAI(
+    api_key=os.environ["PHASEO_API_KEY"],
+    base_url="https://api.phaseo.app/v1",
+)
+```
+
+```bash cURL
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-4.1-mini",
+    "messages": [{"role": "user", "content": "Reply with: migration ready"}]
+  }'
+```
+</CodeGroup>
+
+</Step>
+
+<Step title="रूटिंग और साझा डिफ़ॉल्ट फिर से बनाएं">
+
+स्थिर प्रोवाइडर प्रतिबंध, प्रॉम्प्ट डिफ़ॉल्ट और generation पैरामीटर को [Presets](../guides/presets.mdx) में ले जाएं। प्रोवाइडर क्रम और fallback व्यवहार को [Routing and Fallbacks](../guides/routing-and-fallbacks.mdx) से कॉन्फ़िगर करें।
+
+Cloudflare की कैश और analytics सेटिंग अपने आप स्थानांतरित नहीं होतीं। हर व्यवहार के लिए स्पष्ट निर्णय लें कि वह Phaseo, आपके ऐप या edge layer में होना चाहिए।
+
+</Step>
+
+<Step title="कटओवर से पहले जांच करें">
+
+ज़रूरत के अनुसार non-streaming, streaming, त्रुटियों, टूल और संरचित आउटपुट का परीक्षण करें। ट्रैफ़िक धीरे-धीरे बदलने से पहले latency, output, token उपयोग और लागत की तुलना करें।
+
+</Step>
+</Steps>
+
+## माइग्रेशन चेकलिस्ट
+
+- Cloudflare-विशिष्ट Gateway URL और हेडर हटा दिए गए हैं।
+- प्रोडक्शन मॉडल ID को `GET /v1/models` से सत्यापित किया गया है।
+- ज़रूरी कैश व्यवहार को जानबूझकर फिर से बनाया या बंद किया गया है।
+- Phaseo गतिविधि और अनुरोध विवरण टीम को आवश्यक दृश्यता देते हैं।
+- रोलबैक अब भी केवल endpoint और कुंजी की सेटिंग बदलने तक सीमित है।
+
+## अगले चरण
+
+- [Presets](../guides/presets.mdx)
+- [Routing and Fallbacks](../guides/routing-and-fallbacks.mdx)
+- [ऑब्ज़र्वेबिलिटी](../guides/integrations/observability.mdx)

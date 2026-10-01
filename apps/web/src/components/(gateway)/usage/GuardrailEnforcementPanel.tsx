@@ -23,12 +23,14 @@ export default function GuardrailEnforcementPanel({
 		metrics.totals.blocked > 0 ||
 		metrics.totals.redacted > 0 ||
 		metrics.totals.flagged > 0;
-	const missingSignals = [
-		!metrics.signalsRecorded.redacted ? "redact" : null,
-		!metrics.signalsRecorded.flagged ? "flag" : null,
-	]
-		.filter(Boolean)
-		.join(" and ");
+	const missingSignalsMessage =
+		!metrics.signalsRecorded.redacted && !metrics.signalsRecorded.flagged
+			? t("strings.guardrailBothSignalsPending" as never)
+			: !metrics.signalsRecorded.redacted
+				? t("strings.guardrailRedactionSignalPending" as never)
+				: !metrics.signalsRecorded.flagged
+					? t("strings.guardrailFlagSignalPending" as never)
+					: null;
 
 	return (
 		<Card>
@@ -90,9 +92,9 @@ export default function GuardrailEnforcementPanel({
 										>
 											<div className="flex items-center justify-between gap-4">
 												<div className="text-sm font-medium">{bucket.label}</div>
-												<div className="font-mono text-xs text-muted-foreground">
-													{bucket.blocked} blocked / {bucket.redacted} redacted /{" "}
-													{bucket.flagged} flagged
+											<div className="font-mono text-xs text-muted-foreground">
+													{bucket.blocked} {t("strings.Blocked" as never)} / {bucket.redacted} {t("strings.Redacted" as never)} /{" "}
+													{bucket.flagged} {t("strings.Flagged" as never)}
 												</div>
 											</div>
 											<div className="mt-2 h-2 overflow-hidden rounded-full bg-muted">
@@ -138,10 +140,9 @@ export default function GuardrailEnforcementPanel({
 							</div>
 						)}
 
-						{missingSignals ? (
+						{missingSignalsMessage ? (
 							<div className="rounded-xl border border-border/60 bg-muted/20 p-4 text-sm text-muted-foreground">
-								The {missingSignals} counter will populate once those enforcement
-								outcomes are emitted by the API layer.
+								{missingSignalsMessage}
 							</div>
 						) : null}
 					</div>

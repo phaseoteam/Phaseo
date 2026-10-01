@@ -1,10 +1,12 @@
 import type { SubscriptionPlanFeature } from "@/lib/fetchers/subscription-plans/types";
+import type { SubscriptionPlansMessages } from "@/i18n/subscription-plans";
 
 interface SubscriptionPlanFeaturesTableProps {
 	features?: SubscriptionPlanFeature[] | null;
+	messages: Pick<SubscriptionPlansMessages["detail"], "feature" | "value" | "description">;
 }
 
-export default function SubscriptionPlanFeaturesTable({ features }: SubscriptionPlanFeaturesTableProps) {
+export default function SubscriptionPlanFeaturesTable({ features, messages }: SubscriptionPlanFeaturesTableProps) {
 	if (!features || features.length === 0) {
 		return null;
 	}
@@ -16,13 +18,13 @@ export default function SubscriptionPlanFeaturesTable({ features }: Subscription
 					<thead>
 						<tr className="bg-muted/50">
 							<th className="border border-gray-200 dark:border-gray-700 px-4 py-3 text-left font-semibold">
-								Feature
+								{messages.feature}
 							</th>
 							<th className="border border-gray-200 dark:border-gray-700 px-4 py-3 text-left font-semibold">
-								Value
+								{messages.value}
 							</th>
 							<th className="border border-gray-200 dark:border-gray-700 px-4 py-3 text-left font-semibold">
-								Description
+								{messages.description}
 							</th>
 						</tr>
 					</thead>

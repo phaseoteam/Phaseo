@@ -1,3 +1,5 @@
+"use client";
+
 import * as React from "react";
 import {
 	Card,
@@ -11,6 +13,7 @@ import { Calendar } from "lucide-react";
 import type { ExtendedModel } from "@/data/types";
 import Link from "next/link";
 import { ProviderLogoName } from "../../ProviderLogoName";
+import { useLocale, useTranslations } from "next-intl";
 
 function getMonthDiff(date1: Date, date2: Date) {
 	const years = date1.getFullYear() - date2.getFullYear();
@@ -18,13 +21,35 @@ function getMonthDiff(date1: Date, date2: Date) {
 	return years * 12 + months;
 }
 
-function formatDate(dateStr: string) {
+function formatDate(dateStr: string, locale: string) {
 	const date = new Date(dateStr);
-	return date.toLocaleDateString("en-GB", {
+	return date.toLocaleDateString(locale, {
 		day: "2-digit",
 		month: "short",
 		year: "numeric",
 	});
+}
+
+function formatMonthSpan(months: number, locale: string): string {
+	const totalMonths = Math.abs(months);
+	const years = Math.floor(totalMonths / 12);
+	const remainingMonths = totalMonths % 12;
+	const parts: string[] = [];
+	if (years > 0) {
+		parts.push(new Intl.NumberFormat(locale, { style: "unit", unit: "year", unitDisplay: "short" }).format(years));
+	}
+	if (remainingMonths > 0 || parts.length === 0) {
+		parts.push(new Intl.NumberFormat(locale, { style: "unit", unit: "month", unitDisplay: "short" }).format(remainingMonths || 0));
+	}
+	return parts.join(" ");
+}
+
+function formatMonthDifference(months: number, locale: string): string {
+	return new Intl.NumberFormat(locale, {
+		style: "unit",
+		unit: "month",
+		unitDisplay: "long",
+	}).format(Math.abs(months));
 }
 
 function positionStyle(idx: number, total: number): React.CSSProperties {
@@ -42,6 +67,8 @@ export default function ReleaseTimeline({
 }: {
 	selectedModels: ExtendedModel[];
 }) {
+	const t = useTranslations("Catalogue.compare");
+	const locale = useLocale();
 	const modelsWithDates = selectedModels.filter(
 		(model): model is ExtendedModel & { release_date: string } =>
 			model.release_date !== null
@@ -74,19 +101,18 @@ export default function ReleaseTimeline({
 		new Date(newest.release_date),
 		new Date(oldest.release_date)
 	);
-	const spanYears = Math.floor(spanMonths / 12);
-	const spanRemMonths = Math.abs(spanMonths % 12);
-	const spanString =
-		[
-			spanYears > 0 ? `${spanYears}y` : null,
-			spanRemMonths > 0 ? `${spanRemMonths}m` : null,
-		]
-			.filter(Boolean)
-			.join(" ") || "0m";
+	const spanString = formatMonthSpan(spanMonths, locale);
 
 	// Build summary mini-section comparing oldest and newest
-	const oldestDate = formatDate(oldest.release_date);
-	const newestDate = formatDate(newest.release_date);
+	const oldestDate = formatDate(oldest.release_date, locale);
+	const newestDate = formatDate(newest.release_date, locale);
+	const linkedModel = (model: ExtendedModel) => (chunks: React.ReactNode) => (
+		<Link href={`/models/${model.id}`} className="group">
+			<span className="relative underline decoration-transparent group-hover:decoration-current transition-colors duration-200 font-semibold">
+				{chunks}
+			</span>
+		</Link>
+	);
 	const summarySection = (
 		<Card className="mb-4 border border-border/60 bg-background/60 shadow-none">
 			<Card className="flex items-center gap-2 p-4 border-none bg-transparent">
@@ -96,72 +122,28 @@ export default function ReleaseTimeline({
 				</span>
 				<div className="text-sm">
 					{modelsWithDates.length === 1 ? (
-						<>
-							<span className="block font-medium">
-								<Link
-									href={`/models/${
-										oldest.id
-									}`}
-									className="group"
-								>
-									<span className="relative underline decoration-transparent group-hover:decoration-current transition-colors duration-200 font-semibold">
-										{oldest.name}
-									</span>
-								</Link>{" "}
-								was released on {oldestDate}.
-							</span>
-						</>
+						<span className="block font-medium">
+							{t.rich("releaseSingle", {
+								model: linkedModel(oldest),
+								date: oldestDate,
+							})}
+						</span>
 					) : (
 						<>
 							<span className="block font-medium">
-								<Link
-									href={`/models/${
-										newest.id
-									}`}
-									className="group"
-								>
-									<span className="relative underline decoration-transparent group-hover:decoration-current transition-colors duration-200 font-semibold">
-										{newest.name}
-									</span>
-								</Link>{" "}
-								was released on {newestDate}, while{" "}
-								<Link
-									href={`/models/${
-										oldest.id
-									}`}
-									className="group"
-								>
-									<span className="relative underline decoration-transparent group-hover:decoration-current transition-colors duration-200 font-semibold">
-										{oldest.name}
-									</span>
-								</Link>{" "}
-								was released on {oldestDate}.
+								{t.rich("releaseMultiple", {
+									newest: linkedModel(newest),
+									newestDate,
+									oldest: linkedModel(oldest),
+									oldestDate,
+								})}
 							</span>
 							<span className="block text-xs text-muted-foreground mt-1">
-								<Link
-									href={`/models/${
-										newest.id
-									}`}
-									className="group"
-								>
-									<span className="relative underline decoration-transparent group-hover:decoration-current transition-colors duration-200 font-semibold">
-										{newest.name}
-									</span>
-								</Link>{" "}
-								is {Math.abs(diffMonths)} month
-								{Math.abs(diffMonths) !== 1 ? "s" : ""} newer
-								than{" "}
-								<Link
-									href={`/models/${
-										oldest.id
-									}`}
-									className="group"
-								>
-									<span className="relative underline decoration-transparent group-hover:decoration-current transition-colors duration-200 font-semibold">
-										{oldest.name}
-									</span>
-								</Link>
-								.
+								{t.rich("releaseDifference", {
+									newest: linkedModel(newest),
+									oldest: linkedModel(oldest),
+									duration: formatMonthDifference(diffMonths, locale),
+								})}
 							</span>
 						</>
 					)}
@@ -174,9 +156,9 @@ export default function ReleaseTimeline({
 		<section className="space-y-3">
 			<header className="flex items-start justify-between gap-4">
 				<div className="space-y-1">
-					<h2 className="text-lg font-semibold">Release timeline</h2>
+					<h2 className="text-lg font-semibold">{t("releaseTimeline")}</h2>
 					<p className="text-sm text-muted-foreground">
-						Model release chronology.
+						{t("releaseTimelineDescription")}
 					</p>
 				</div>
 				{modelsWithDates.length > 1 ? (
@@ -187,7 +169,7 @@ export default function ReleaseTimeline({
 							" px-3 py-1 text-xs font-semibold mt-1 transition-colors duration-150 hover:bg-green-200 hover:text-green-900 hover:border-green-400 dark:hover:bg-green-900 dark:hover:text-green-100"
 						}
 					>
-						{spanString} span
+						{t("dateSpan", { duration: spanString })}
 					</Badge>
 				) : null}
 			</header>
@@ -220,7 +202,7 @@ export default function ReleaseTimeline({
 												className="group"
 											>
 												<span className="relative underline decoration-transparent group-hover:decoration-current transition-colors duration-200">
-													{formatDate(model.release_date)}
+													{formatDate(model.release_date, locale)}
 												</span>
 											</Link>
 										</span>
@@ -239,7 +221,7 @@ export default function ReleaseTimeline({
 										model.provider?.name ??
 										"unknown";
 									const providerName =
-										model.provider?.name ?? providerId ?? "Unknown";
+						model.provider?.name ?? providerId ?? t("unknownProvider");
 									return (
 										<div
 											key={model.id}
@@ -298,4 +280,3 @@ export default function ReleaseTimeline({
 		</section>
 	);
 }
-

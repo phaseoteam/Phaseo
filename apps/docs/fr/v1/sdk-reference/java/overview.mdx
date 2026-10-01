@@ -1,0 +1,25 @@
+---
+title: "SDK Java (en cours de développement)"
+description: "Compilez depuis les sources le client Java, encore en développement."
+---
+
+<Note type="warning">
+  Le SDK Java est en cours de développement et n’est pas encore publié sur Maven Central. Utilisez la compilation depuis les sources uniquement à des fins d’évaluation.
+</Note>
+
+Le SDK Java inclut désormais une couche légère écrite à la main au-dessus du client généré :
+
+- `app.phaseo.sdk.Phaseo` fournit des méthodes de haut niveau pour le chat, les réponses, les messages Anthropic, les images, les embeddings, la modération, l’audio/la transcription/la traduction, les traitements par lots, les fichiers, la vidéo, les modèles/fournisseurs/endpoints/organisations/tarifs, la découverte et la gestion du cycle de vie des clés API, la gestion du cycle de vie de l’espace de travail et de la clé courante, le calcul des tarifs, l’activité/les crédits/les analyses, la recherche de générations, la validation du cycle de vie, les URL WebSocket des tâches asynchrones via des méthodes directes ou `client.asyncJobs.websocketUrl(...)`, ainsi qu’une télémétrie compatible avec les outils de développement.
+- `app.phaseo.gen.Client` et `app.phaseo.gen.Operations` restent disponibles dans la couche basse pour accéder à toutes les opérations si nécessaire.
+
+## État actuel
+
+- En cours de développement ; pas encore publié sur Maven Central.
+- Le code source se trouve dans `packages/sdk/sdk-java`.
+- Le code généré de bas niveau se trouve dans `packages/sdk/sdk-java/src/gen`.
+- Le wrapper écrit à la main se trouve dans `packages/sdk/sdk-java/src/app/phaseo/sdk`.
+
+## Étapes suivantes
+
+- [Installation](./installation.mdx)
+- [Utilisation](./usage.mdx)

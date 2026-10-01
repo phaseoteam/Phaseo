@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useReducer } from "react";
+import { useLocale, useTranslations } from "next-intl";
 
-function relTime(iso: string, now = new Date()) {
+function relTime(iso: string, locale: string, now = new Date()) {
 	const date = new Date(iso);
 	const diffMs = +now - Date.parse(iso);
 	const sec = Math.round(diffMs / 1000);
 	const abs = Math.abs(sec);
-	const rtf = new Intl.RelativeTimeFormat("en", { numeric: "auto" });
+	const rtf = new Intl.RelativeTimeFormat(locale, { numeric: "auto" });
 
 	if (abs < 60) return rtf.format(-sec, "second");
 	const min = Math.round(sec / 60);
@@ -41,11 +42,11 @@ function isDateToday(dateStr: string) {
 	);
 }
 
-function formatDate(dateStr: string) {
+function formatDate(dateStr: string, locale: string) {
 	const date = new Date(dateStr);
 	// Show the canonical calendar date from the DB (UTC) so releases
 	// stored at midnight UTC appear on the intended day.
-	return date.toLocaleDateString("en-US", {
+	return date.toLocaleDateString(locale, {
 		timeZone: "UTC",
 		year: "numeric",
 		month: "short",
@@ -60,6 +61,8 @@ export default function TimeDisplay({
 	dateIso: string;
 	isModelRelease: boolean;
 }) {
+	const locale = useLocale();
+	const t = useTranslations("Catalogue.updates.models");
 	const [_, update] = useReducer(() => ({}), {});
 	useEffect(() => {
 		const interval = setInterval(update, 60000); // update every minute
@@ -71,13 +74,13 @@ export default function TimeDisplay({
 		if (today) {
 			return (
 				<span className="text-[10px] uppercase tracking-wide font-semibold text-amber-800 bg-amber-200 dark:text-amber-200 dark:bg-amber-800 rounded px-2 py-0.5 border border-amber-300 dark:border-amber-700">
-					Today
+					{t("today")}
 				</span>
 			);
 		} else {
-			return <time dateTime={dateIso}>{formatDate(dateIso)}</time>;
+			return <time dateTime={dateIso}>{formatDate(dateIso, locale)}</time>;
 		}
 	} else {
-		return <span>{relTime(dateIso)}</span>;
+		return <span>{relTime(dateIso, locale)}</span>;
 	}
 }

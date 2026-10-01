@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useTranslations } from "next-intl";
 import type { ComponentType } from "react";
 import {
 	AudioLines,
@@ -55,6 +56,37 @@ const ICONS: Record<ChatRoomId, ComponentType<{ className?: string }>> = {
 
 const DISABLED_ROOMS = new Set<ChatRoomId>(["ocr", "rerank"]);
 
+type ChatRoomLabelKey =
+	| "text"
+	| "fusion"
+	| "image"
+	| "video"
+	| "audio"
+	| "speech"
+	| "speechToText"
+	| "music"
+	| "realtime"
+	| "moderation"
+	| "embeddings"
+	| "ocr"
+	| "rerank";
+
+const CHAT_ROOM_LABEL_KEYS: Record<ChatRoomId, ChatRoomLabelKey> = {
+	text: "text",
+	fusion: "fusion",
+	image: "image",
+	video: "video",
+	audio: "audio",
+	speech: "speech",
+	"speech-to-text": "speechToText",
+	music: "music",
+	realtime: "realtime",
+	moderation: "moderation",
+	embeddings: "embeddings",
+	ocr: "ocr",
+	rerank: "rerank",
+};
+
 function isRoomActive(pathname: string, route: string): boolean {
 	if (route === "/chat") {
 		return pathname === "/chat";
@@ -63,6 +95,7 @@ function isRoomActive(pathname: string, route: string): boolean {
 }
 
 export function ChatRoomSwitcher({ className }: { className?: string } = {}) {
+	const tUi = useTranslations("Common.ui");
 	const { realtimeEnabled, videoEnabled } = useChatFeatureFlags();
 	const pathname = usePathname() ?? "/chat";
 	const { state: sidebarState, isMobile } = useSidebar();
@@ -82,19 +115,19 @@ export function ChatRoomSwitcher({ className }: { className?: string } = {}) {
 						<DropdownMenuTrigger render={<Button
 								variant="ghost"
 								className="relative h-8 w-full min-w-0 justify-start gap-0 overflow-hidden rounded-md px-2 text-sm font-medium group-data-[state=collapsed]:rounded-full"
-								aria-label={activeRoom.label} />}>
+								aria-label={tUi(`chatRooms.${CHAT_ROOM_LABEL_KEYS[activeRoom.id]}`)} />}>
 
 								<ActiveIcon className="h-4 w-4 shrink-0" />
 								<span className="ml-2 inline-flex min-w-0 items-center gap-2 whitespace-nowrap group-data-[collapsible=icon]:hidden">
 									<span>
-										{activeRoom.label}
+										{tUi(`chatRooms.${CHAT_ROOM_LABEL_KEYS[activeRoom.id]}`)}
 									</span>
 									{activeRoom.beta ? (
 										<Badge
 											variant="outline"
 										className="h-4 rounded-[4px]! px-1.5 text-[10px] font-medium"
 										>
-											Beta
+											{tUi("status.beta")}
 										</Badge>
 									) : null}
 								</span>
@@ -108,7 +141,7 @@ export function ChatRoomSwitcher({ className }: { className?: string } = {}) {
 						sideOffset={10}
 						hidden={!collapsed || isMobile}
 					>
-						{activeRoom.label}
+						{tUi(`chatRooms.${CHAT_ROOM_LABEL_KEYS[activeRoom.id]}`)}
 					</TooltipContent>
 				</Tooltip>
 				<DropdownMenuContent
@@ -137,18 +170,18 @@ export function ChatRoomSwitcher({ className }: { className?: string } = {}) {
 												className="cursor-not-allowed opacity-60"
 											>
 												<Icon className="h-4 w-4" />
-												<span>{room.label}</span>
+												<span>{tUi(`chatRooms.${CHAT_ROOM_LABEL_KEYS[room.id]}`)}</span>
 												<Badge
 													variant="outline"
 											className="ml-auto h-4 rounded-[4px]! px-1.5 text-[10px] font-medium"
 												>
-													Coming soon
+													{tUi("status.comingSoon")}
 												</Badge>
 											</DropdownMenuItem>
 										</div>
 									</TooltipTrigger>
 									<TooltipContent side="right" align="center">
-										Coming soon
+										{tUi("status.comingSoon")}
 									</TooltipContent>
 								</Tooltip>
 							);
@@ -161,10 +194,10 @@ export function ChatRoomSwitcher({ className }: { className?: string } = {}) {
 							>
 
 									<Icon className="h-4 w-4" />
-									<span>{room.label}</span>
+									<span>{tUi(`chatRooms.${CHAT_ROOM_LABEL_KEYS[room.id]}`)}</span>
 									{room.beta ? (
 										<Badge variant="outline" className="ml-auto h-4 rounded-[4px]! px-1.5 text-[10px] font-medium">
-											Beta
+											{tUi("status.beta")}
 										</Badge>
 									) : null}
 

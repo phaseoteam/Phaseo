@@ -1,0 +1,139 @@
+---
+icon: "search-check"
+title: "أداة بحث الويب على الخادم"
+description: "أتِح للنماذج البحث على الويب أثناء الطلب."
+---
+
+استخدم `phaseo:web_search` عندما يحتاج النموذج إلى معلومات حديثة أو موثّقة بالمصادر. يحدّد النموذج وقت البحث ويصوغ الاستعلام، ويمكنه البحث عدة مرات ضمن الطلب الواحد.
+
+تعيد Phaseo إلى النموذج عناوين URL والعناوين والمقتطفات والنتائج البارزة ونص الصفحة اختياريًا، ليتمكن من كتابة رد يستند إلى المصادر.
+
+<Note>
+لم يُفعّل بحث Google الأصلي على الويب ضمن أدوات خادم Phaseo بعد. استخدم البحث المُدار أو البحث الأصلي للمزوّد عبر المسارات المدعومة من OpenAI وAnthropic.
+</Note>
+
+## آلية العمل
+
+1. أضف `{ "type": "phaseo:web_search" }` إلى `tools`.
+2. يقرّر النموذج ما إذا كان يحتاج إلى البحث ثم يصدر استعلامًا.
+3. تنفّذ Phaseo البحث باستخدام المحرك المُعدّ.
+4. تُعاد النتائج إلى النموذج ضمن سياق الأداة.
+5. يكتب النموذج الرد النهائي، ويمكنه البحث مجددًا عند الحاجة.
+
+## بدء سريع
+
+```bash
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-5-nano",
+    "messages": [
+      { "role": "user", "content": "What were the major AI announcements this week?" }
+    ],
+    "tools": [
+      { "type": "phaseo:web_search" }
+    ]
+  }'
+```
+
+## الإعداد
+
+```json
+{
+  "type": "phaseo:web_search",
+  "parameters": {
+    "engine": "exa",
+    "max_results": 5,
+    "max_total_results": 15,
+    "search_context_size": "medium",
+    "max_characters": 2048,
+    "allowed_domains": ["arxiv.org", "nature.com"],
+    "excluded_domains": ["reddit.com"],
+    "include_highlights": true,
+    "include_text": false
+  }
+}
+```
+
+| المعلمة | النوع | الافتراضي | الوصف |
+| --- | --- | --- | --- |
+| `engine` | string | `exa` | محرك البحث: `auto` أو `native` أو `exa` أو `parallel` أو `firecrawl` أو `perplexity`. |
+| `max_results` | integer | `5` | العدد الأقصى للنتائج المعادة في استدعاء البحث الواحد. |
+| `max_total_results` | integer | `10` | الحد الأقصى التراكمي للنتائج عبر دورة أدوات الخادم. |
+| `max_uses` | integer | `10` | الحد الأقصى لاستدعاءات البحث عبر دورة أدوات الخادم. |
+| `search_context_size` | string | `medium` | حجم السياق للمحركات التي تدعم ضبط حجم المقاطع البارزة: `low` أو `medium` أو `high`. |
+| `max_characters` | integer | engine default | الحد الأقصى لأحرف النص لكل نتيجة عند تضمين النص. |
+| `allowed_domains` | string[] | none | أعِد النتائج من هذه النطاقات فقط. الاسم البديل: `include_domains`. |
+| `excluded_domains` | string[] | none | استبعد النتائج من هذه النطاقات. الاسم البديل: `exclude_domains`. |
+| `include_highlights` | boolean | `true` | ضمّ المقاطع البارزة أو المقتطفات التي يوفرها المحرك عند توفرها. |
+| `include_text` | boolean | `false` | ضمّ نصًا أكثر اكتمالًا للنتيجة إذا كان المحرك يدعم ذلك. |
+| `user_location` | object | none | تلميح موقع اختياري للمحركات التي تدعم البحث المحلي. |
+
+## اختيار المحرك
+
+| Engine | السلوك |
+| --- | --- |
+| `exa` | بحث Exa مُدار. يجب أن تكون Phaseo قد أعدّت Exa لبيئة تشغيل البوابة. |
+| `auto` | يستخدم المحرك المُدار الافتراضي المُعدّ، وهو Exa حاليًا. |
+| `parallel` | يستخدم بحث Parallel عند إعداده. |
+| `firecrawl` | يستخدم بحث Firecrawl عند إعداده. |
+| `perplexity` | يستخدم واجهة Perplexity Search API الرسمية عند إعدادها. ويدعم النتائج المرتبة و`search_context_size` والبحث الإقليمي استنادًا إلى `user_location.country` والنطاقات المسموح بها أو المستبعدة. |
+| `native` | يحوّل التعريف إلى أداة بحث ويب أصلية للمزوّد قبل استدعاء النموذج upstream إذا كانت واجهة الطلب تدعم ذلك. |
+
+استخدم `engine: "native"` في تعريف الأداة فقط. إذا حاول النموذج إرسال `engine: "native"` ضمن استدعاء بحث صادر بالفعل عبر البوابة، تعيد Phaseo خطأ أداة لأن اختيار الأدوات الأصلية يجب أن يتم قبل إرسال الطلب upstream.
+
+## تصفية النطاقات
+
+استخدم `allowed_domains` عندما يجب أن تستند الإجابة إلى مجموعة مصادر محددة:
+
+```json
+{
+  "type": "phaseo:web_search",
+  "parameters": {
+    "allowed_domains": ["phaseo.app", "github.com"]
+  }
+}
+```
+
+استخدم `excluded_domains` عندما يُسمح بالبحث الواسع على الويب، مع استبعاد نطاقات محددة من النتائج.
+
+يقبل Perplexity وFirecrawl إما `allowed_domains` أو `excluded_domains` في استدعاء بحث واحد، وليس كليهما. يقبل Perplexity ما يصل إلى 20 مرشح نطاق لكل طلب، ويحوّل النطاقات المستبعدة إلى تنسيق قائمة الحظر لديه.
+
+## Responses API
+
+تعمل بنية الأداة نفسها مع `/v1/responses`:
+
+```json
+{
+  "model": "openai/gpt-5-nano",
+  "input": "Find the latest release notes for Phaseo.",
+  "tools": [
+    { "type": "phaseo:web_search", "parameters": { "max_results": 4 } }
+  ]
+}
+```
+
+## الاستخدام والتسعير
+
+تزيد استدعاءات البحث على الويب العدادات التالية:
+
+```json
+{
+  "usage": {
+    "server_tool_use": {
+      "web_search_requests": 1,
+      "web_search_results": 5,
+      "web_search_extra_results": 0
+    }
+  }
+}
+```
+
+يمكن أن يستخدم تسعير البحث المُدار العدادين `server_tool_web_search_requests` و`server_tool_web_search_extra_results`. ويمكن استخدام `native_web_search_requests` للبحث الأصلي للمزوّد إذا عرّفت بطاقة سعر النموذج هذا العداد.
+
+## ذات صلة
+
+- [جلب الويب](./web-fetch.mdx)
+- [أدوات الخادم](./index.mdx)
+- [إسناد الإجابات باستخدام البحث وجلب صفحات الويب](../../cookbook/tool-grounding-with-web-fetch.mdx)

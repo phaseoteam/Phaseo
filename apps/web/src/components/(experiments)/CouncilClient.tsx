@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import {
 	AlertCircle,
 	ChevronDown,
@@ -191,23 +191,6 @@ function clampModels(models: string[]) {
 	return out;
 }
 
-function displayStatus(status: string) {
-	switch (status) {
-		case "running_sources":
-			return "Running sources";
-		case "awaiting_synthesis":
-			return "Awaiting synthesis";
-		case "running_analysis":
-			return "Running analysis";
-		case "running_fusion":
-			return "Running fusion";
-		case "local_pending":
-			return "Starting";
-		default:
-			return status[0]?.toUpperCase() + status.slice(1);
-	}
-}
-
 function getLogoId(value: string) {
 	const provider = value.trim().toLowerCase();
 	if (!provider) return "unknown";
@@ -223,9 +206,9 @@ function pickLogoId(organisationId: string | null, providerId: string) {
 	return providerId;
 }
 
-function formatRunTime(iso: string) {
+function formatRunTime(iso: string, locale: string) {
 	try {
-		return new Date(iso).toLocaleString(undefined, {
+		return new Date(iso).toLocaleString(locale, {
 			month: "short",
 			day: "numeric",
 			hour: "2-digit",
@@ -795,9 +778,27 @@ export default function CouncilClient({
 	routeBasePath = "/experiments/council",
 }: CouncilClientProps) {
 	const router = useRouter();
+	const locale = useLocale();
 	const t = useTranslations("Product.experimentsCouncil");
+	const chatT = useTranslations("Product.chat");
+	const localizeCouncilError = (message: string | null | undefined) => {
+		const statusMatch = message?.match(/^Request failed \((\d+)\)\.$/);
+		if (statusMatch?.[1]) {
+			return t("requestFailedWithStatus", { status: statusMatch[1] });
+		}
+		switch (message) {
+			case "Insufficient source quorum.":
+				return t("synthesisQuorumError");
+			case "One or more source models failed.":
+				return t("sourceModelsFailed");
+			case "Request failed.":
+				return chatT("requestFailed");
+			default:
+				return message ?? null;
+		}
+	};
 	const initialAuth = useInitialChatAuth();
-	const [dayPeriod, setDayPeriod] = useState("Morning");
+	const [dayPeriod, setDayPeriod] = useState<"morning" | "afternoon" | "evening">("morning");
 	const [prompt, setPrompt] = useState("");
 	const [presets, setPresets] = useState<CouncilPresetOption[]>(
 		initialPresets.map(toSystemPresetOption),
@@ -834,7 +835,7 @@ export default function CouncilClient({
 
 	useEffect(() => {
 		const hour = new Date().getHours();
-		setDayPeriod(hour < 12 ? "Morning" : hour < 18 ? "Afternoon" : "Evening");
+		setDayPeriod(hour < 12 ? "morning" : hour < 18 ? "afternoon" : "evening");
 	}, []);
 
 	useEffect(() => {
@@ -1057,7 +1058,8 @@ export default function CouncilClient({
 			case "failed": return t("failed");
 			case "queued": return t("queued");
 			case "completed": return t("complete");
-			default: return displayStatus(status);
+			case "partial": return t("partial");
+			default: return t("unknownRunStatus", { status });
 		}
 	};
 	const isHydratingInitialRun = initialSelectedRunId != null && !runsLoaded;
@@ -1143,9 +1145,9 @@ export default function CouncilClient({
 			: selectedRun?.modelSlugs ?? []
 	).slice(0, 4);
 	const step3StatusLabel = synthesisBusy
-		? "Fusing"
+		? t("fusing")
 		: displayedSynthesis || selectedRun?.isSynthesised
-			? "Fused"
+			? t("fused")
 		: t("selected");
 	const analysisView =
 		displayRun?.analysis_json ??
@@ -1227,14 +1229,14 @@ export default function CouncilClient({
 		? [
 				{
 					key: "agreement" as AnalysisCategoryKey,
-					label: "Agreement",
+					label: t("analysisCategories.agreement"),
 					points: analysisSections.agreement
 						.map((item) => item.point)
 						.filter(Boolean),
 				},
 				{
 					key: "key_differences" as AnalysisCategoryKey,
-					label: "Key Differences",
+					label: t("analysisCategories.keyDifferences"),
 					points: analysisSections.key_differences
 						.map((item) => {
 							if (item.topic) return item.topic;
@@ -1252,21 +1254,21 @@ export default function CouncilClient({
 				},
 				{
 					key: "partial_coverage" as AnalysisCategoryKey,
-					label: "Partial Coverage",
+					label: t("analysisCategories.partialCoverage"),
 					points: analysisSections.partial_coverage
 						.map((item) => item.point)
 						.filter(Boolean),
 				},
 				{
 					key: "unique_insights" as AnalysisCategoryKey,
-					label: "Unique Insights",
+					label: t("analysisCategories.uniqueInsights"),
 					points: analysisSections.unique_insights
 						.map((item) => item.insight)
 						.filter(Boolean),
 				},
 				{
 					key: "blind_spots" as AnalysisCategoryKey,
-					label: "Blind Spots",
+					label: t("analysisCategories.blindSpots"),
 					points: analysisSections.blind_spots.filter(Boolean),
 				},
 			]
@@ -1377,7 +1379,7 @@ export default function CouncilClient({
 		}
 		const normalizedName = name.trim();
 		if (!normalizedName) {
-			setErrorMessage("Enter a preset name.");
+			setErrorMessage(t("presetNameRequired"));
 			return;
 		}
 		setIsCreatingCustomPreset(true);
@@ -1902,7 +1904,7 @@ export default function CouncilClient({
 						aria-label={t("newFusion")}
 					>
 						<SquarePen className="h-4 w-4 shrink-0" />
-						New Fusion
+						{t("newFusion")}
 					</Button>
 					<Button
 						variant="ghost"
@@ -1911,7 +1913,7 @@ export default function CouncilClient({
 						aria-label={t("searchFusions")}
 					>
 						<Search className="h-4 w-4 shrink-0" />
-						Search Fusions
+						{t("searchFusions")}
 					</Button>
 				</div>
 					<SidebarGroup className={cn("flex min-h-0 flex-1", CHAT_SIDEBAR_HISTORY_GROUP_CLASS)}>
@@ -1928,7 +1930,7 @@ export default function CouncilClient({
 										setSelectedRunIds(new Set());
 									}}
 								>
-									{runEditMode ? "Done" : "Edit"}
+									{runEditMode ? t("done") : t("edit")}
 								</Button>
 							) : null}
 						</div>
@@ -1943,7 +1945,7 @@ export default function CouncilClient({
 									onClick={() => void deleteSelectedRuns()}
 								>
 									<Trash2 className="mr-1 h-3.5 w-3.5" />
-									Delete {selectedRunIds.size > 0 ? selectedRunIds.size : ""}
+									{t("deleteSelectedRuns", { count: selectedRunIds.size })}
 								</Button>
 							</div>
 						) : null}
@@ -1952,7 +1954,7 @@ export default function CouncilClient({
 								<SidebarMenu className="space-y-1">
 									{runs.length === 0 ? (
 										<div className="rounded-md border border-dashed border-border px-3 py-2 text-xs text-muted-foreground">
-											No stored runs yet.
+											{t("noStoredRuns")}
 										</div>
 									) : (
 										runs.map((run) => (
@@ -1976,7 +1978,7 @@ export default function CouncilClient({
 														<div className="flex items-center justify-between text-[10px] text-muted-foreground">
 															<span className="inline-flex items-center gap-1">
 																<Clock3 className="h-3 w-3" />
-																{formatRunTime(run.createdAt)}
+																{formatRunTime(run.createdAt, locale)}
 															</span>
 									<span>{translatedStatus(run.status)}</span>
 														</div>
@@ -2032,7 +2034,7 @@ export default function CouncilClient({
 												</span>
 											))}
 										</div>
-										<span className="text-sm">{selectedPreset?.sourceModels.length ?? 0} models</span>
+						<span className="text-sm">{t("modelsCount", { count: selectedPreset?.sourceModels.length ?? 0 })}</span>
 										<ChevronsUpDown className="h-3.5 w-3.5 text-muted-foreground" />
 									</Button>
 								</PopoverTrigger>
@@ -2127,7 +2129,7 @@ export default function CouncilClient({
 											{runs.map((run) => (
 												<CommandItem
 													key={`mobile-run-${run.id}`}
-										value={`${run.originalPrompt} ${translatedStatus(run.status)} ${formatRunTime(run.createdAt)}`}
+										value={`${run.originalPrompt} ${translatedStatus(run.status)} ${formatRunTime(run.createdAt, locale)}`}
 													onSelect={() => {
 														if (run.id == null) return;
 														setMobileRunPickerOpen(false);
@@ -2137,7 +2139,7 @@ export default function CouncilClient({
 													<div className="min-w-0 flex-1">
 														<p className="truncate text-xs font-medium">{run.originalPrompt}</p>
 														<p className="text-[10px] text-muted-foreground">
-															{translatedStatus(run.status)} - {formatRunTime(run.createdAt)}
+															{translatedStatus(run.status)} - {formatRunTime(run.createdAt, locale)}
 														</p>
 													</div>
 													<Check
@@ -2199,14 +2201,14 @@ export default function CouncilClient({
 														) : (
 															<RotateCcw className="mr-1.5 h-3.5 w-3.5" />
 														)}
-														Retry Failed
+										{t("retryFailed")}
 													</Button>
 												) : null}
 									<p className="text-xs text-muted-foreground">{t("runSourceModels")}</p>
 											</div>
 										</div>
 										<div className="rounded-md border border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
-																{translatedStatus(selectedRun.status)} - {successfulSourceCount} {t("complete")} - {failedSourceCount} {t("failed")} - {totalSourceOutputTokens.toLocaleString()} {t("outputTokens")}
+																{translatedStatus(selectedRun.status)} - {successfulSourceCount} {t("complete")} - {failedSourceCount} {t("failed")} - {totalSourceOutputTokens.toLocaleString(locale)} {t("outputTokens")}
 										</div>
 										<div className="space-y-2">
 											{selectedRun.modelSlugs.map((modelId) => {
@@ -2222,8 +2224,8 @@ export default function CouncilClient({
 															? t("running")
 													: isCompleted
 														? outputTokens !== null
-															? `Complete (${outputTokens.toLocaleString()} tokens, ${((result?.latency_ms ?? 0) / 1000).toFixed(1)}s)`
-															: `Complete (${((result?.latency_ms ?? 0) / 1000).toFixed(1)}s)`
+															? t("completedWithUsage", { tokens: outputTokens.toLocaleString(locale), tokenLabel: t("outputTokens"), seconds: ((result?.latency_ms ?? 0) / 1000).toLocaleString(locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 }) })
+															: t("completedWithoutUsage", { seconds: ((result?.latency_ms ?? 0) / 1000).toLocaleString(locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 }) })
 																: isFailed
 																	? t("failed")
 																	: t("queued");
@@ -2425,7 +2427,7 @@ export default function CouncilClient({
 																</div>
 															) : (
 																<div className="text-muted-foreground">
-																	Analysis returned no structured findings for this run.
+												{t("analysisNoFindings")}
 																</div>
 															)}
 														</div>
@@ -2457,7 +2459,7 @@ export default function CouncilClient({
 										{sourceViewResult ? (
 											<div className="space-y-3">
 												<div className="max-h-[480px] overflow-auto p-1 text-sm leading-6">
-															<Streamdown>{sourceViewResult.output_text ?? sourceViewResult.error ?? t("noOutputYet")}</Streamdown>
+											<Streamdown>{localizeCouncilError(sourceViewResult.output_text ?? sourceViewResult.error) ?? t("noOutputYet")}</Streamdown>
 												</div>
 												{sourceViewResult.output_text ? (
 													<Button
@@ -2476,7 +2478,7 @@ export default function CouncilClient({
 											</div>
 										) : (
 											<div className="rounded-md border border-dashed border-border p-3 text-sm text-muted-foreground">
-												Waiting for selected model output.
+												{t("waitingForOutput")}
 											</div>
 										)}
 										<Dialog
@@ -2496,7 +2498,7 @@ export default function CouncilClient({
 													</div>
 													<div className="min-h-0 flex-1 overflow-auto px-4 py-3 text-sm leading-6">
 														<Streamdown>
-																{sourceViewResult?.output_text ?? sourceViewResult?.error ?? t("noOutputYet")}
+												{localizeCouncilError(sourceViewResult?.output_text ?? sourceViewResult?.error) ?? t("noOutputYet")}
 														</Streamdown>
 													</div>
 												</div>
@@ -2618,7 +2620,7 @@ export default function CouncilClient({
 
 							{errorMessage ? (
 								<div className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-									{errorMessage}
+									{localizeCouncilError(errorMessage)}
 								</div>
 							) : null}
 						</div>
@@ -2641,19 +2643,19 @@ export default function CouncilClient({
 							<div className="w-full space-y-8">
 								<div className="space-y-2 text-center">
 									<h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-										Good {dayPeriod}{firstName ? `, ${firstName}` : ""}
+										{chatT("greeting", { period: chatT(dayPeriod), name: firstName ? `, ${firstName}` : "" })}
 									</h1>
 									<p className="text-sm text-muted-foreground">
-										Bring several perspectives together in one answer.
+										{t("promptDescription")}
 									</p>
-								</div>
-								<div className="grid gap-2 sm:grid-cols-2">
-									{[
-										["Compare approaches", "Compare the strongest approaches to solving this problem, including tradeoffs."],
-										["Challenge an idea", "Evaluate this idea from several perspectives and identify its weakest assumptions."],
-										["Reach a recommendation", "Consider the available options and produce a clear, evidence-based recommendation."],
-										["Explore a question", "Explore this question through several distinct expert perspectives."],
-									].map(([label, starterPrompt]) => (
+				</div>
+				<div className="grid gap-2 sm:grid-cols-2">
+					{[
+						{ label: t("starterPrompts.compareApproaches"), prompt: t("starterPrompts.compareApproachesPrompt") },
+						{ label: t("starterPrompts.challengeIdea"), prompt: t("starterPrompts.challengeIdeaPrompt") },
+						{ label: t("starterPrompts.reachRecommendation"), prompt: t("starterPrompts.reachRecommendationPrompt") },
+						{ label: t("starterPrompts.exploreQuestion"), prompt: t("starterPrompts.exploreQuestionPrompt") },
+					].map(({ label, prompt: starterPrompt }) => (
 										<button
 											key={label}
 											type="button"
@@ -2667,7 +2669,7 @@ export default function CouncilClient({
 								</div>
 								{errorMessage ? (
 									<div className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-										{errorMessage}
+										{localizeCouncilError(errorMessage)}
 									</div>
 								) : null}
 								<div className="hidden space-y-5">
@@ -2732,7 +2734,7 @@ export default function CouncilClient({
 															<Input
 																value={presetNameDraft}
 																onChange={(event) => setPresetNameDraft(event.target.value)}
-																placeholder="Preset name"
+																placeholder={t("presetName")}
 																className="h-7 w-32 text-xs"
 																onKeyDown={(event) => {
 																	if (event.key === "Enter") {
@@ -2784,11 +2786,11 @@ export default function CouncilClient({
 																	className="h-7 gap-1.5 rounded-md px-2 text-xs text-muted-foreground hover:bg-muted hover:text-foreground"
 																	onClick={() => {
 																		setIsSavingPresetInline(true);
-																		setPresetNameDraft("My Preset");
+																		setPresetNameDraft(t("defaultPresetName"));
 																	}}
 																>
 																	<Save className="h-3 w-3" />
-																	Save Group
+											{t("saveGroup")}
 																</Button>
 															) : null}
 															{canUpdateSelectedCustomPreset ? (
@@ -2901,7 +2903,7 @@ export default function CouncilClient({
 
 										{errorMessage ? (
 											<div className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-												{errorMessage}
+												{localizeCouncilError(errorMessage)}
 											</div>
 										) : null}
 								</div>
@@ -2979,9 +2981,9 @@ export default function CouncilClient({
 								</ProviderInspectorSheetTitle>
 								<ProviderInspectorSheetDescription>
 									{sourceViewResult?.status === "completed"
-										? `${sourceViewResult.output_tokens?.toLocaleString() ?? "—"} output tokens · ${((sourceViewResult.latency_ms ?? 0) / 1000).toFixed(1)}s`
+										? t("outputSummary", { tokens: sourceViewResult.output_tokens?.toLocaleString(locale) ?? "—", tokenLabel: t("outputTokens"), seconds: ((sourceViewResult.latency_ms ?? 0) / 1000).toLocaleString(locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 }) })
 										: sourceViewResult?.status === "failed"
-											? "Generation failed"
+											? t("generationFailed")
 															: t("generatingResponse")}
 								</ProviderInspectorSheetDescription>
 							</div>
@@ -2991,7 +2993,7 @@ export default function CouncilClient({
 						<div className="px-5 py-5 text-sm leading-7">
 							{sourceViewResult ? (
 								<Streamdown>
-															{sourceViewResult.output_text ?? sourceViewResult.error ?? t("noOutputYet")}
+										{localizeCouncilError(sourceViewResult.output_text ?? sourceViewResult.error) ?? t("noOutputYet")}
 								</Streamdown>
 							) : (
 								<div className="flex min-h-48 items-center justify-center text-muted-foreground">
@@ -3025,7 +3027,7 @@ export default function CouncilClient({
 				title={t("searchFusionsTitle")}
 				placeholder={t("searchFusionsPlaceholder")}
 				emptyLabel={t("noFusionsFound")}
-				groupLabel="Fusions"
+				groupLabel={t("fusionsGroupLabel")}
 				conversations={runs.map((run) => ({
 					id: String(run.id),
 					title: run.originalPrompt,

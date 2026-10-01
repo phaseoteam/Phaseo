@@ -1,0 +1,32 @@
+---
+icon: "square-terminal"
+title: "أمثلة"
+description: "استخدم أنماط Ruby عملية للأدوات والموافقات والبث وعمليات التشغيل المحدودة."
+---
+
+## نشر يتطلب موافقة
+
+```ruby
+deploy = PhaseoAgentSdk.define_tool(
+  id: "deploy",
+  description: "Deploy the selected release",
+  require_approval: true,
+  execute: ->(input, runtime) { deployments.deploy(input) }
+)
+```
+
+احفظ عملية التشغيل المعادة عند دخولها `waiting_for_human`، ثم تابعها بقرار مرتبط بمعرّف الاستدعاء المعلّق.
+
+## بث النص
+
+```ruby
+stream = agent.stream(input: prompt, client: client)
+stream.text_stream.each { |delta| print delta }
+result = stream.result
+```
+
+## تقييد العمل المستقل
+
+اجمع حدود الخطوات والرموز والتكلفة والمدة حتى لا يتجاوز الوكيل ميزانية التطبيق، حتى إذا واصل العثور على عمل مفيد.
+
+للاطلاع على التفاصيل الكاملة، راجع [الأدوات](./agent-sdk-tools.mdx) و[الحالة والموافقة](./agent-sdk-state-and-approval.mdx) و[شروط الإيقاف](./agent-sdk-stop-conditions.mdx).

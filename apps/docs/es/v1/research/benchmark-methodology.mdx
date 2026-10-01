@@ -1,0 +1,61 @@
+---
+title: "Metodología de benchmarks"
+description: "Descubre cómo Phaseo recopila, normaliza y publica resultados de benchmarks."
+icon: "clipboard-check"
+---
+
+Los benchmarks son la base para comparar modelos y proveedores. Esta página explica cómo se incorporan los datos a la plataforma y cómo mantenemos la coherencia.
+
+---
+
+## Fuentes de datos
+
+- **Fuentes oficiales** — Anuncios de proveedores, blogs técnicos y materiales de prensa.
+- **Artículos académicos** — Publicaciones revisadas por pares y prepublicaciones de arXiv con resultados reproducibles.
+- **Contribuciones de la comunidad** — Aportaciones verificadas de la comunidad de Phaseo y sus colaboradores.
+
+Cada puntuación debe incluir una cita pública o una evaluación reproducible antes de aceptarse.
+
+---
+
+## Normalización
+
+Estandarizamos los nombres, las métricas y las particiones de los benchmarks para que las comparaciones entre modelos sean precisas:
+
+1. Asigna cada contribución a un ID interno de benchmark.
+2. Convierte las métricas publicadas a una escala canónica (por ejemplo, porcentajes).
+3. Anota las diferencias, como variantes con pocos ejemplos o sistemas de evaluación personalizados.
+4. Ejecuta una validación automatizada para comprobar que los campos y rangos sean razonables.
+
+---
+
+## Frecuencia de actualización
+
+- Semanalmente para conjuntos populares como MMLU, GSM8K y HumanEval.
+- Mensualmente para benchmarks especializados o emergentes.
+- A petición, cuando proveedores o miembros de la comunidad envían evaluaciones de alta calidad.
+
+Las actualizaciones importantes generan entradas en el registro de cambios para que puedas revisar las variaciones históricas.
+
+---
+
+## Transparencia y reproducibilidad
+
+| Práctica | Resultado |
+| --- | --- |
+| Enlace a las fuentes primarias | Los usuarios pueden verificar rápidamente las puntuaciones. |
+| Registrar las fechas `last_updated` | Permite detectar cuándo conviene revisar un benchmark. |
+| Documentar la configuración de evaluación | Aclara el formato del prompt, las ventanas de contexto y el muestreo. |
+| Marcar las puntuaciones revisadas por personas | Distingue la validación manual de los procesos automatizados. |
+
+---
+
+## Ciclo de comentarios
+
+Si detectas discrepancias o datos ausentes:
+
+1. Abre un issue en GitHub con pruebas o referencias.
+2. Envía un pull request usando las [guías de contribución](../contributing/overview.mdx).
+3. Escríbenos por Discord para coordinar importaciones de datos grandes.
+
+Revisamos cada informe y compartimos actualizaciones de estado mientras verificamos el benchmark.

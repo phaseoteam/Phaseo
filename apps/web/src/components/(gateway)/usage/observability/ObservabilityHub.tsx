@@ -128,13 +128,13 @@ type ObservabilityFilterOption = {
 
 const FILTER_FIELDS: Array<{
 	id: ObservabilityFilterField;
-	label: string;
+	messageKey: "fieldWorkspace" | "dimensionApiKey" | "dimensionModel" | "fieldUser";
 	icon: React.ComponentType<{ className?: string }>;
 }> = [
-	{ id: "workspace", label: "Workspace", icon: Workflow },
-	{ id: "key", label: "Key", icon: KeyRound },
-	{ id: "model", label: "Model", icon: Blocks },
-	{ id: "user", label: "User", icon: UserRound },
+	{ id: "workspace", messageKey: "fieldWorkspace", icon: Workflow },
+	{ id: "key", messageKey: "dimensionApiKey", icon: KeyRound },
+	{ id: "model", messageKey: "dimensionModel", icon: Blocks },
+	{ id: "user", messageKey: "fieldUser", icon: UserRound },
 ];
 
 function formatNumber(value: number): string {
@@ -166,13 +166,11 @@ function formatKpiValue(kpi: ObservabilityKpi, value = kpi.value): string {
 	return formatNumber(value);
 }
 
-function formatDelta(value: number | null): string {
-	if (value === null) return "No previous data";
-	return `${Math.abs(value).toFixed(1)}% vs previous`;
+function formatDeltaPercent(value: number): string {
+	return Math.abs(value).toFixed(1);
 }
 
-function formatCompactDelta(value: number | null): string {
-	if (value === null) return "No prev data";
+function formatCompactDeltaPercent(value: number): string {
 	return `${Math.abs(value).toFixed(1)}%`;
 }
 
@@ -183,12 +181,12 @@ function uniqueOptions(values: string[], limit = 80): ObservabilityFilterOption[
 		.map((value) => ({ value, label: value }));
 }
 
-function buildFilterOptions(data: ObservabilityData): Record<
+function buildFilterOptions(data: ObservabilityData, currentWorkspaceLabel: string): Record<
 	ObservabilityFilterField,
 	ObservabilityFilterOption[]
 > {
 	return {
-		workspace: [{ value: "current", label: "Current workspace" }],
+		workspace: [{ value: "current", label: currentWorkspaceLabel }],
 		key: uniqueOptions(data.exploreRows.map((row) => row.apiKey)),
 		model:
 			data.filterOptions?.models?.length
@@ -198,35 +196,13 @@ function buildFilterOptions(data: ObservabilityData): Record<
 	};
 }
 
-function fieldLabel(field: ObservabilityFilterField): string {
-	return FILTER_FIELDS.find((item) => item.id === field)?.label ?? field;
-}
-
-function filterValueLabel(filter: ObservabilityFilter): string {
-	if (filter.values.length === 0) return "Select values";
-	if (filter.values.length === 1) return filter.values[0]?.label ?? "1 value";
-	return `${filter.values.length} ${filterValueNoun(filter.field, filter.values.length)}`;
-}
-
-function filterValueNoun(field: ObservabilityFilterField, count: number): string {
-	const plural = count !== 1;
-	if (field === "workspace") return plural ? "workspaces" : "workspace";
-	if (field === "key") return plural ? "keys" : "key";
-	if (field === "model") return plural ? "models" : "model";
-	return plural ? "users" : "user";
-}
-
-function operatorLabel(
-	operator: ObservabilityFilterOperator,
-	valueCount = 2,
-): string {
-	if (valueCount <= 1) return operator === "include" ? "is" : "is not";
-	return operator === "include" ? "is any of" : "is none of";
+function filterFieldMessageKey(field: ObservabilityFilterField) {
+	return FILTER_FIELDS.find((item) => item.id === field)?.messageKey ?? "fieldUser";
 }
 
 function FilterSearchBox({
 	value,
-	placeholder = "Search...",
+	placeholder,
 	onChange,
 	onEnter,
 }: {
@@ -235,6 +211,7 @@ function FilterSearchBox({
 	onChange: (value: string) => void;
 	onEnter?: () => void;
 }) {
+	const t = useTranslations("SettingsUI.observability");
 	return (
 		<div className="relative border-b">
 			<Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -244,7 +221,7 @@ function FilterSearchBox({
 				onKeyDown={(event) => {
 					if (event.key === "Enter") onEnter?.();
 				}}
-				placeholder={placeholder}
+				placeholder={placeholder ?? t("searchOptions")}
 				className="h-9 rounded-none border-0 pl-9 shadow-none focus-visible:ring-0"
 			/>
 		</div>
@@ -260,10 +237,12 @@ function FilterFieldMenu({
 	onQueryChange: (value: string) => void;
 	onSelect: (field: ObservabilityFilterField) => void;
 }) {
+	const t = useTranslations("SettingsUI.observability");
 	const normalized = query.trim().toLowerCase();
-	const fields = FILTER_FIELDS.filter((item) =>
-		item.label.toLowerCase().includes(normalized),
-	);
+	const fields = FILTER_FIELDS.map((item) => ({
+		...item,
+		label: t(item.messageKey),
+	})).filter((item) => item.label.toLowerCase().includes(normalized));
 	return (
 		<div>
 			<FilterSearchBox value={query} onChange={onQueryChange} />
@@ -309,6 +288,7 @@ function FilterValueMenu({
 	onSelect: (option: ObservabilityFilterOption) => void;
 	onAddText: () => void;
 }) {
+	const t = useTranslations("SettingsUI.observability");
 	const normalized = query.trim().toLowerCase();
 	const visibleOptions = options
 		.filter((option) => option.label.toLowerCase().includes(normalized))
@@ -326,7 +306,7 @@ function FilterValueMenu({
 				>
 					<ChevronRight className="h-4 w-4 rotate-180 text-muted-foreground" />
 					<FieldIcon className="h-4 w-4 text-muted-foreground" />
-					{fieldLabel(field)}
+					{t(filterFieldMessageKey(field))}
 				</button>
 			) : null}
 			<FilterSearchBox
@@ -335,8 +315,8 @@ function FilterValueMenu({
 				onEnter={onAddText}
 				placeholder={
 					field === "user"
-						? "Type user id or email..."
-						: `Search ${fieldLabel(field).toLowerCase()}...`
+						? t("userSearch")
+						: t("searchField", { field: t(filterFieldMessageKey(field)).toLowerCase() })
 				}
 			/>
 			<div className="max-h-72 overflow-y-auto p-1">
@@ -378,8 +358,8 @@ function FilterValueMenu({
 					>
 						<span className="min-w-0 truncate">
 							{query.trim()
-								? `Add "${query.trim()}"`
-								: `No ${fieldLabel(field).toLowerCase()} options`}
+								? t("addValue", { value: query.trim() })
+								: t("noFieldOptions", { field: t(filterFieldMessageKey(field)).toLowerCase() })}
 						</span>
 						{query.trim() ? (
 							<Plus className="h-3.5 w-3.5 text-muted-foreground" />
@@ -402,6 +382,7 @@ function AppliedFilterChip({
 	onUpdate: (filter: Partial<ObservabilityFilter>) => void;
 	onRemove: () => void;
 }) {
+	const t = useTranslations("SettingsUI.observability");
 	const [valueOpen, setValueOpen] = React.useState(false);
 	const [valueQuery, setValueQuery] = React.useState("");
 	const FieldIcon =
@@ -410,7 +391,7 @@ function AppliedFilterChip({
 		<div className="inline-flex h-9 max-w-full items-center overflow-hidden rounded-md border bg-background text-sm">
 			<div className="flex h-full items-center gap-1.5 border-r px-2 font-medium">
 				<FieldIcon className="h-3.5 w-3.5 text-muted-foreground" />
-				{fieldLabel(filter.field)}
+				{t(filterFieldMessageKey(filter.field))}
 			</div>
 			<button
 				type="button"
@@ -421,7 +402,9 @@ function AppliedFilterChip({
 					})
 				}
 			>
-				{operatorLabel(filter.operator, filter.values.length)}
+				{filter.values.length <= 1
+					? t(filter.operator === "include" ? "is" : "isNot")
+					: t(filter.operator === "include" ? "isAnyOf" : "isNoneOf")}
 			</button>
 			<Popover open={valueOpen} onOpenChange={setValueOpen}>
 				<PopoverTrigger asChild>
@@ -429,7 +412,11 @@ function AppliedFilterChip({
 						type="button"
 						className="h-full max-w-[220px] truncate border-r px-2 font-medium hover:bg-muted"
 					>
-						{filterValueLabel(filter)}
+						{filter.values.length === 0
+							? t("selectValues")
+							: filter.values.length === 1
+								? filter.values[0]?.label ?? t("selectValues")
+								: t("selectedValuesCount", { count: filter.values.length })}
 					</button>
 				</PopoverTrigger>
 				<PopoverContent align="start" className="w-[280px] p-0">
@@ -485,6 +472,7 @@ function Sparkline({
 	formatValue?: (value: number) => string;
 	onHoverPoint?: (point: ObservabilitySeriesPoint | null) => void;
 }) {
+	const t = useTranslations("SettingsUI.observability");
 	const [hoveredIndex, setHoveredIndex] = React.useState<number | null>(null);
 	const activePointerIdRef = React.useRef<number | null>(null);
 	const suppressClickUntilRef = React.useRef(0);
@@ -579,7 +567,7 @@ function Sparkline({
 			<svg
 				viewBox={`0 0 ${width} ${height}`}
 				role="img"
-				aria-label="No trend data"
+				aria-label={t("noTrendData")}
 				className="h-full min-h-[34px] w-full min-w-[72px] overflow-visible text-blue-500"
 			/>
 		);
@@ -592,7 +580,7 @@ function Sparkline({
 			aria-label={
 				titlePoint
 					? `${titlePoint.label}: ${formatValue(titlePoint.value)}`
-					: "No trend data"
+					: t("noTrendData")
 			}
 			className="h-full min-h-[34px] w-full min-w-[72px] touch-pan-y select-none overflow-visible text-blue-500"
 			onClick={handleClick}
@@ -606,7 +594,7 @@ function Sparkline({
 			<title>
 				{titlePoint
 					? `${titlePoint.label}: ${formatValue(titlePoint.value)}`
-					: "No trend data"}
+					: t("noTrendData")}
 			</title>
 			<polyline
 				points={points}
@@ -637,6 +625,7 @@ function KpiMetric({
 }: {
 	kpi: ObservabilityKpi;
 }) {
+	const t = useTranslations("SettingsUI.observability");
 	const [hoveredPoint, setHoveredPoint] =
 		React.useState<ObservabilitySeriesPoint | null>(null);
 	const positive = (kpi.deltaPercent ?? 0) >= 0;
@@ -675,11 +664,15 @@ function KpiMetric({
 										{kpi.deltaPercent !== null ? (
 											<DeltaIcon className="h-3 w-3" />
 										) : null}
-										<span>{formatCompactDelta(kpi.deltaPercent)}</span>
+										<span>
+											{kpi.deltaPercent === null
+												? t("noPrior")
+												: formatCompactDeltaPercent(kpi.deltaPercent)}
+										</span>
 									</span>
 								</UiTooltipTrigger>
 								<UiTooltipContent side="bottom" sideOffset={6}>
-									Compared with previous period
+					{t("comparedWithPreviousPeriod")}
 								</UiTooltipContent>
 							</UiTooltip>
 						)}
@@ -700,10 +693,11 @@ function KpiMetric({
 }
 
 function ExploreButton() {
+	const t = useTranslations("SettingsUI.observability");
 	return (
 		<Button asChild variant="ghost" size="sm" className="h-6 gap-1 px-1.5 text-xs">
 			<Link href="/settings/usage/explore">
-				Explore
+				{t("explore")}
 				<ArrowUpRight className="h-3.5 w-3.5" />
 			</Link>
 		</Button>
@@ -1133,23 +1127,17 @@ type TrendChartType = "bar" | "line" | "dot";
 
 const TREND_METRICS: Array<{
 	id: TrendMetric;
-	label: string;
 	valueKind: TimeSeriesValueKind;
 	icon: React.ComponentType<{ className?: string }>;
 }> = [
 	{
 		id: "spend",
-		label: "Spend",
 		valueKind: "currency",
 		icon: CircleDollarSign,
 	},
-	{ id: "requests", label: "Requests", valueKind: "number", icon: Hash },
-	{ id: "tokens", label: "Tokens", valueKind: "number", icon: Coins },
+	{ id: "requests", valueKind: "number", icon: Hash },
+	{ id: "tokens", valueKind: "number", icon: Coins },
 ];
-
-function trendMetricLabel(metric: TrendMetric) {
-	return TREND_METRICS.find((item) => item.id === metric)?.label ?? metric;
-}
 
 function trendMetricValueKind(metric: TrendMetric): TimeSeriesValueKind {
 	return TREND_METRICS.find((item) => item.id === metric)?.valueKind ?? "number";
@@ -1381,7 +1369,7 @@ function RankedListItem({
 					<div className="truncate text-sm font-medium">{item.label}</div>
 				</div>
 				<div className="text-xs text-muted-foreground">
-					{item.subtitle ?? `${item.requests} requests`}
+					{item.subtitle ?? t("requestCount", { count: item.requests })}
 				</div>
 			</div>
 			<div className="text-right">
@@ -1399,7 +1387,11 @@ function RankedListItem({
 						{item.deltaPercent !== null ? (
 							<DeltaIcon className="h-3 w-3" />
 						) : null}
-						<span>{formatDelta(item.deltaPercent)}</span>
+						<span>
+							{item.deltaPercent === null
+								? t("noPreviousData")
+								: t("deltaVsPrevious", { percent: formatDeltaPercent(item.deltaPercent) })}
+						</span>
 					</div>
 				) : null}
 			</div>
@@ -1489,6 +1481,7 @@ function TrendChartPanel({
 	charts: ObservabilityTrendMetricCharts;
 	metric: TrendMetric;
 }) {
+	const t = useTranslations("SettingsUI.observability");
 	const [showOther, setShowOther] = React.useState(true);
 	const [cumulative, setCumulative] = React.useState(false);
 	const [chartType, setChartType] = React.useState<TrendChartType>("bar");
@@ -1524,10 +1517,10 @@ function TrendChartPanel({
 			<CardHeader className="flex flex-row items-start justify-between gap-3 pb-2">
 				<div>
 					<CardTitle className="text-base">
-						{trendMetricLabel(metric)} over time
+						{t("trendOverTime", { metric: t(metric) })}
 					</CardTitle>
 					<p className="mt-1 text-sm text-muted-foreground">
-						{title} {trendMetricLabel(metric).toLowerCase()} by day.
+						{t("trendByDay", { group: title, metric: t(metric) })}
 					</p>
 				</div>
 				<div className="flex items-center gap-1">
@@ -1580,7 +1573,7 @@ function TrendDelta({ item }: { item: ObservabilityRankedItem }) {
 		>
 			{item.deltaPercent !== null ? <Icon className="h-3 w-3" /> : null}
 			{item.deltaPercent === null
-				? "No prior"
+			? t("noPrior")
 				: `${Math.abs(item.deltaPercent).toFixed(1)}%`}
 		</span>
 	);
@@ -1603,7 +1596,7 @@ function TrendingPanel({
 			<CardContent className="space-y-3">
 				{items.length === 0 ? (
 					<p className="text-sm text-muted-foreground">
-						No {title.toLowerCase()} usage in this period.
+						{t("noUsagePeriod")}
 					</p>
 				) : null}
 				{items.slice(0, 6).map((item, index) => (
@@ -1623,7 +1616,7 @@ function TrendingPanel({
 								<span className="truncate text-sm font-medium">{item.label}</span>
 							</div>
 							<div className="truncate pl-4 text-xs text-muted-foreground">
-								{item.subtitle ?? `${formatNumber(item.tokens)} toks`}
+								{item.subtitle ?? `${formatNumber(item.tokens)} ${t("toks")}`}
 							</div>
 						</div>
 						<div className="text-emerald-600">
@@ -1648,6 +1641,7 @@ function TrendSection({
 	charts: ObservabilityTrendMetricCharts;
 	items: ObservabilityRankedItem[];
 }) {
+	const t = useTranslations("SettingsUI.observability");
 	const [metric, setMetric] = React.useState<TrendMetric>("spend");
 	const selectedMetric =
 		TREND_METRICS.find((item) => item.id === metric) ?? TREND_METRICS[0];
@@ -1671,7 +1665,7 @@ function TrendSection({
 					<SelectTrigger className="h-9 w-36 rounded-xl">
 						<span className="flex min-w-0 items-center gap-2">
 							<SelectedMetricIcon className="h-4 w-4 shrink-0 text-muted-foreground" />
-							<span className="truncate">{selectedMetric.label}</span>
+							<span className="truncate">{t(metric)}</span>
 						</span>
 					</SelectTrigger>
 					<SelectContent align="end">
@@ -1681,7 +1675,7 @@ function TrendSection({
 								<SelectItem key={item.id} value={item.id}>
 									<span className="flex items-center gap-2">
 										<Icon className="h-4 w-4 text-muted-foreground" />
-										{item.label}
+										{t(item.id)}
 									</span>
 								</SelectItem>
 							);
@@ -1698,6 +1692,7 @@ function TrendSection({
 }
 
 function Overview({ data }: { data: ObservabilityData }) {
+	const t = useTranslations("SettingsUI.observability");
 	return (
 		<div className="space-y-4 sm:space-y-6">
 			<div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 2xl:grid-cols-6">
@@ -1709,13 +1704,13 @@ function Overview({ data }: { data: ObservabilityData }) {
 				))}
 			</div>
 			<div className="grid gap-4 xl:grid-cols-2">
-				<RankedList title="Top API Keys" items={data.topApiKeys} kind="key" />
-				<RankedList title="Top Apps" items={data.topApps} kind="app" />
+				<RankedList title={t("topApiKeys")} items={data.topApiKeys} kind="key" />
+				<RankedList title={t("topApps")} items={data.topApps} kind="app" />
 			</div>
 			<div className="grid gap-4 xl:grid-cols-2">
 				<ChartCard
-					title="Usage by model"
-					subtitle="Daily spend in USD by model."
+					title={t("usageByModel")}
+					subtitle={t("dailySpendByModel")}
 					className="xl:col-span-2"
 				>
 					<StackedTimeSeriesBarChart
@@ -1724,26 +1719,26 @@ function Overview({ data }: { data: ObservabilityData }) {
 					/>
 				</ChartCard>
 				<ChartCard
-					title="Usage type"
-					subtitle="Daily Phaseo Credits versus BYOK spend."
+					title={t("usageType")}
+					subtitle={t("dailyCreditsByokSpend")}
 				>
 					<StackedTimeSeriesAreaChart
 						data={data.charts.usageTypeCost}
 						valueKind="currency"
 					/>
 				</ChartCard>
-				<ChartCard title="Request volume by model">
+				<ChartCard title={t("requestVolumeByModel")}>
 					<StackedTimeSeriesBarChart data={data.charts.requestVolumeByModel} />
 				</ChartCard>
 				<ChartCard
-					title="Token split"
-					subtitle="Daily input, output, and reasoning tokens."
+					title={t("tokenSplit")}
+					subtitle={t("dailyInputOutputReasoningTokens")}
 				>
 					<StackedTimeSeriesBarChart data={data.charts.tokenSplit} />
 				</ChartCard>
 				<ChartCard
-					title="Cached and uncached tokens"
-					subtitle="Daily cached and uncached token volume."
+					title={t("cachedAndUncachedTokens")}
+					subtitle={t("dailyCachedUncachedTokenVolume")}
 				>
 					<StackedTimeSeriesBarChart
 						data={data.charts.cacheSplit}
@@ -1756,20 +1751,21 @@ function Overview({ data }: { data: ObservabilityData }) {
 }
 
 function Trends({ data }: { data: ObservabilityData }) {
+	const t = useTranslations("SettingsUI.observability");
 	return (
 		<div className="space-y-6">
 			<TrendSection
-				title="Models"
+				title={t("models")}
 				charts={data.charts.trends.models}
 				items={data.trendingModels}
 			/>
 			<TrendSection
-				title="API Keys"
+				title={t("apiKeys")}
 				charts={data.charts.trends.keys}
 				items={data.trendingKeys}
 			/>
 			<TrendSection
-				title="Apps"
+				title={t("apps")}
 				charts={data.charts.trends.apps}
 				items={data.trendingApps}
 			/>
@@ -1802,28 +1798,26 @@ type ExploreTableSort = {
 
 const EXPLORE_DIMENSIONS: Array<{
 	id: ExploreDimension;
-	label: string;
 	icon: React.ComponentType<{ className?: string }>;
 }> = [
-	{ id: "model", label: "Model", icon: Blocks },
-	{ id: "apiKey", label: "API Key", icon: KeyRound },
-	{ id: "app", label: "App", icon: Workflow },
-	{ id: "provider", label: "Provider", icon: UserRound },
+	{ id: "model", icon: Blocks },
+	{ id: "apiKey", icon: KeyRound },
+	{ id: "app", icon: Workflow },
+	{ id: "provider", icon: UserRound },
 ];
 
 const EXPLORE_METRICS: Array<{
 	id: ExploreMetric;
-	label: string;
 	valueKind: TimeSeriesValueKind;
 	icon: React.ComponentType<{ className?: string }>;
 }> = [
-	{ id: "cost", label: "Total Usage ($)", valueKind: "currency", icon: CircleDollarSign },
-	{ id: "requests", label: "Requests", valueKind: "number", icon: Hash },
-	{ id: "tokens", label: "Tokens", valueKind: "number", icon: Coins },
-	{ id: "inputTokens", label: "Input Tokens", valueKind: "number", icon: Coins },
-	{ id: "outputTokens", label: "Output Tokens", valueKind: "number", icon: Coins },
-	{ id: "cachedTokens", label: "Cached Tokens", valueKind: "number", icon: Coins },
-	{ id: "errors", label: "Errors", valueKind: "number", icon: CircleDot },
+	{ id: "cost", valueKind: "currency", icon: CircleDollarSign },
+	{ id: "requests", valueKind: "number", icon: Hash },
+	{ id: "tokens", valueKind: "number", icon: Coins },
+	{ id: "inputTokens", valueKind: "number", icon: Coins },
+	{ id: "outputTokens", valueKind: "number", icon: Coins },
+	{ id: "cachedTokens", valueKind: "number", icon: Coins },
+	{ id: "errors", valueKind: "number", icon: CircleDot },
 ];
 
 function selectExploreOption<T extends string>(
@@ -1854,10 +1848,12 @@ function aggregateExploreRows(args: {
 	sort: ExploreSort;
 	limit: number;
 	showOther: boolean;
+	unknownLabel: string;
+	otherLabel: string;
 }) {
 	const totals = new Map<string, { value: number; count: number; requests: number; tokens: number; cost: number; errors: number }>();
 	for (const row of args.rows) {
-		const key = String(row[args.dimension] || "Unknown");
+		const key = String(row[args.dimension] || args.unknownLabel);
 		const current =
 			totals.get(key) ?? { value: 0, count: 0, requests: 0, tokens: 0, cost: 0, errors: 0 };
 		current.value += Number(row[args.metric] ?? 0);
@@ -1886,7 +1882,7 @@ function aggregateExploreRows(args: {
 	if (args.showOther && hidden.length > 0) {
 		visible.push({
 			id: "other",
-			label: "Other",
+			label: args.otherLabel,
 			value: hidden.reduce((sum, row) => sum + row.value, 0),
 			requests: hidden.reduce((sum, row) => sum + row.requests, 0),
 			tokens: hidden.reduce((sum, row) => sum + row.tokens, 0),
@@ -2078,6 +2074,8 @@ function SortableTableHead({
 }
 
 function Explore({ data }: { data: ObservabilityData }) {
+	const t = useTranslations("SettingsUI.observability");
+	const tStrings = useTranslations("SettingsUI.strings");
 	const [dimension, setDimension] = React.useState<ExploreDimension>("model");
 	const [metric, setMetric] = React.useState<ExploreMetric>("cost");
 	const [rollup, setRollup] = React.useState<ExploreRollup>("total");
@@ -2087,11 +2085,19 @@ function Explore({ data }: { data: ObservabilityData }) {
 	const [chartType, setChartType] = React.useState<TrendChartType>("bar");
 	const [showChart, setShowChart] = React.useState(false);
 	const [tableSort, setTableSort] = React.useState<ExploreTableSort>(null);
+	const localizedMetrics = EXPLORE_METRICS.map((item) => ({
+		...item,
+		label: t(`metric${item.id[0]?.toUpperCase()}${item.id.slice(1)}` as never),
+	}));
+	const localizedDimensions = EXPLORE_DIMENSIONS.map((item) => ({
+		...item,
+		label: t(`dimension${item.id[0]?.toUpperCase()}${item.id.slice(1)}` as never),
+	}));
 	const metricOption =
-		EXPLORE_METRICS.find((item) => item.id === metric) ?? EXPLORE_METRICS[0];
+		localizedMetrics.find((item) => item.id === metric) ?? localizedMetrics[0];
 	const dimensionOption =
-		EXPLORE_DIMENSIONS.find((item) => item.id === dimension) ??
-		EXPLORE_DIMENSIONS[0];
+		localizedDimensions.find((item) => item.id === dimension) ??
+		localizedDimensions[0];
 	const modelLogoByLabel = React.useMemo(
 		() =>
 			new Map(
@@ -2104,16 +2110,27 @@ function Explore({ data }: { data: ObservabilityData }) {
 	);
 	const aggregated = React.useMemo(
 		() =>
-			aggregateExploreRows({
-				rows: data.exploreRows,
-				dimension,
-				metric,
-				rollup,
-				sort,
-				limit: Number(limit),
-				showOther,
-			}),
-		[data.exploreRows, dimension, metric, rollup, sort, limit, showOther],
+				aggregateExploreRows({
+					rows: data.exploreRows,
+					dimension,
+					metric,
+					rollup,
+					sort,
+					limit: Number(limit),
+					showOther,
+					unknownLabel: tStrings("Unknown"),
+					otherLabel: tStrings("Other"),
+				}),
+		[
+			data.exploreRows,
+			dimension,
+			metric,
+			rollup,
+			sort,
+			limit,
+			showOther,
+			tStrings,
+		],
 	);
 	const sortedRows = React.useMemo(() => {
 		if (!tableSort) return aggregated.rows;
@@ -2143,19 +2160,19 @@ function Explore({ data }: { data: ObservabilityData }) {
 					<ButtonGroup className={exploreToolbarGroupClass}>
 						<ExploreSelect
 							value={metric}
-							options={EXPLORE_METRICS}
+							options={localizedMetrics}
 							onValueChange={setMetric}
 							className="w-44"
 							grouped
 						/>
 						<ButtonGroupSeparator />
 						<span className="flex h-full items-center px-2 text-xs text-muted-foreground">
-							by
+							{t("by")}
 						</span>
 						<ButtonGroupSeparator />
 						<ExploreSelect
 							value={dimension}
-							options={EXPLORE_DIMENSIONS}
+							options={localizedDimensions}
 							onValueChange={setDimension}
 							className="w-36"
 							grouped
@@ -2167,11 +2184,11 @@ function Explore({ data }: { data: ObservabilityData }) {
 							onValueChange={(value) => setSort(value as ExploreSort)}
 						>
 							<SelectTrigger className={cn(exploreToolbarSegmentClass, "w-24")}>
-								<span>{sort === "desc" ? "Top" : "Bottom"}</span>
+								<span>{sort === "desc" ? t("top") : t("bottom")}</span>
 							</SelectTrigger>
 							<SelectContent align="start">
-								<SelectItem value="desc">Top</SelectItem>
-								<SelectItem value="asc">Bottom</SelectItem>
+								<SelectItem value="desc">{t("top")}</SelectItem>
+								<SelectItem value="asc">{t("bottom")}</SelectItem>
 							</SelectContent>
 						</Select>
 						<ButtonGroupSeparator />
@@ -2194,12 +2211,12 @@ function Explore({ data }: { data: ObservabilityData }) {
 						>
 							<SelectTrigger className={cn(exploreToolbarSegmentClass, "w-36")}>
 								<span>
-									Rollup: {rollup === "average" ? "Average" : "Total"}
+									{rollup === "average" ? t("rollupAverage") : t("rollupTotal")}
 								</span>
 							</SelectTrigger>
 							<SelectContent align="start">
-								<SelectItem value="total">Rollup: Total</SelectItem>
-								<SelectItem value="average">Rollup: Average</SelectItem>
+								<SelectItem value="total">{t("rollupTotal")}</SelectItem>
+								<SelectItem value="average">{t("rollupAverage")}</SelectItem>
 							</SelectContent>
 						</Select>
 					</ButtonGroup>
@@ -2210,7 +2227,7 @@ function Explore({ data }: { data: ObservabilityData }) {
 						className={cn(exploreToolbarButtonClass, "gap-2")}
 					>
 						<ListFilter className="h-4 w-4" />
-						Filters
+						{t("filters")}
 					</Button>
 					<Button
 						type="button"
@@ -2220,7 +2237,7 @@ function Explore({ data }: { data: ObservabilityData }) {
 						onClick={() => setShowChart((current) => !current)}
 					>
 						<BarChart3 className="h-4 w-4" />
-						{showChart ? "Hide chart" : "Show chart"}
+						{showChart ? t("hideChart") : t("showChart")}
 					</Button>
 					<div className="ml-auto flex items-center gap-2">
 						<TrendChartOptions
@@ -2235,7 +2252,7 @@ function Explore({ data }: { data: ObservabilityData }) {
 					</div>
 				</div>
 				<div className="text-xs text-muted-foreground">
-					Showing {aggregated.rows.length} of {aggregated.allCount} groups.
+					{t("showingGroups", { shown: aggregated.rows.length, total: aggregated.allCount })}
 				</div>
 			</div>
 
@@ -2255,10 +2272,10 @@ function Explore({ data }: { data: ObservabilityData }) {
 					<div>
 						<CardTitle className="flex items-center gap-2 text-base">
 							<Table2 className="h-4 w-4 text-muted-foreground" />
-							Breakdown
+							{t("breakdown")}
 						</CardTitle>
 						<p className="mt-1 text-sm text-muted-foreground">
-							{metricOption.label} by {dimensionOption.label}.
+							{t("metricByDimension", { metric: metricOption.label, dimension: dimensionOption.label })}
 						</p>
 					</div>
 				</div>
@@ -2277,35 +2294,35 @@ function Explore({ data }: { data: ObservabilityData }) {
 									onSortChange={cycleTableSort}
 								/>
 								<SortableTableHead
-									label="Value"
+									label={t("value")}
 									sortKey="value"
 									activeSort={tableSort}
 									onSortChange={cycleTableSort}
 									className="text-right"
 								/>
 								<SortableTableHead
-									label="% of total"
+									label={t("shareOfTotal")}
 									sortKey="share"
 									activeSort={tableSort}
 									onSortChange={cycleTableSort}
 									className="w-[220px] text-right"
 								/>
 								<SortableTableHead
-									label="Requests"
+									label={t("requests")}
 									sortKey="requests"
 									activeSort={tableSort}
 									onSortChange={cycleTableSort}
 									className="text-right"
 								/>
 								<SortableTableHead
-									label="Tokens"
+									label={t("tokens")}
 									sortKey="tokens"
 									activeSort={tableSort}
 									onSortChange={cycleTableSort}
 									className="text-right"
 								/>
 								<SortableTableHead
-									label="Cost"
+									label={t("spend")}
 									sortKey="cost"
 									activeSort={tableSort}
 									onSortChange={cycleTableSort}
@@ -2375,9 +2392,9 @@ function Guardrails({
 }) {
 	const t = useTranslations("SettingsUI.observability");
 	const breakdown = [
-		{ id: "blocked", label: "Blocked", value: metrics.totals.blocked },
-		{ id: "redacted", label: "Redacted", value: metrics.totals.redacted },
-		{ id: "flagged", label: "Flagged", value: metrics.totals.flagged },
+		{ id: "blocked", label: t("blocked"), value: metrics.totals.blocked },
+		{ id: "redacted", label: t("redacted"), value: metrics.totals.redacted },
+		{ id: "flagged", label: t("flagged"), value: metrics.totals.flagged },
 	];
 	const timeline = metrics.buckets.map((bucket) => ({
 		id: bucket.bucket,
@@ -2391,7 +2408,7 @@ function Guardrails({
 					<Card key={item.id} className="rounded-lg">
 						<CardHeader className="pb-2">
 							<CardTitle className="text-sm text-muted-foreground">
-								{item.label} requests
+								{t("guardrailRequestCount", { label: item.label })}
 							</CardTitle>
 						</CardHeader>
 						<CardContent>
@@ -2409,7 +2426,7 @@ function Guardrails({
 				<ChartCard
 					 title={t("guardrailEventsOverTime")}
 				>
-					<BarBreakdownChart data={timeline} label="events" />
+					<BarBreakdownChart data={timeline} label={t("events")} />
 				</ChartCard>
 			</div>
 			<Card className="rounded-lg">

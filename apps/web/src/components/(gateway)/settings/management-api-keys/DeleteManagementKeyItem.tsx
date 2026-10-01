@@ -89,8 +89,7 @@ export default function DeleteManagementKeyItem({
 				<form onSubmit={onDelete} className="space-y-4">
 					<div className="space-y-2">
 						<p className="text-sm">
-							{t("strings.To confirm, type the key name" as never)}{" "}
-							<strong>{k.name}</strong> below.
+							{t("settingsPageCopy.confirmKeyName" as never, { name: k.name } as never)}
 						</p>
 						<Input
 							value={confirm}

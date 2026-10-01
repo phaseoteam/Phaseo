@@ -1,0 +1,25 @@
+---
+icon: "braces"
+title: "API-Referenz"
+description: "Schlage die wichtigsten Klassen, Funktionen und Methoden des Python Agent SDK nach."
+---
+
+| API | Zweck |
+| --- | --- |
+| `create_agent(...)` | Einen Agenten definieren |
+| `define_tool(...)` | Ein lokales oder manuelles Tool definieren |
+| `create_gateway_agent_client(...)` | Modellzüge mit Phaseo verbinden |
+| `agent.run(...)` | Bis zum Abschluss oder Pausieren ausführen |
+| `agent.stream(...)` | Mit erneut durchlaufbaren Stream-Consumern ausführen |
+| `agent.continue_run(...)` | Einen gespeicherten oder pausierten Zustand fortsetzen |
+| `stream.result()` | Den abgeschlossenen Lauf lesen |
+| `stream.text_stream()` | Textänderungen lesen |
+| `stream.full_stream()` | Alle Ereignisse lesen |
+| `stream.cancel()` | Den aktiven Lauf abbrechen |
+
+Zu den wichtigen Typen gehören `AgentTool`, `AgentToolDecision`, `AgentToolOutput`, `AgentRunResult`, `AgentStateAccessor`, `AgentModelRetryConfig` und `AgentToolExecutionConfig`.
+
+## Weiterführende Themen
+
+- [Erstelle deinen ersten Agenten](./agent-sdk.mdx)
+- [Observability und DevTools](./agent-sdk-observability.mdx)

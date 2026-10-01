@@ -1,0 +1,50 @@
+---
+title: "Créer une réponse"
+sidebarTitle: "Créer une réponse"
+openapi: "/fr/openapi/v1/openapi.localized.yaml POST /responses"
+---
+## Outils serveur
+
+`/v1/responses` prend en charge les outils de fonction classiques ainsi que les outils serveur gérés par le Gateway suivants :
+
+- `gateway:datetime`
+- `phaseo:web_search`
+- `phaseo:web_fetch`
+- `phaseo:advisor`
+- `phaseo:image_generation`
+- `phaseo:apply_patch`
+
+### Exemple de date et heure
+
+```bash
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-5-nano",
+    "stream": false,
+    "input": [
+      { "role": "user", "content": "Give me the current datetime in Asia/Tokyo." }
+    ],
+    "tools": [
+      {
+        "type": "gateway:datetime",
+        "parameters": { "timezone": "Asia/Tokyo" }
+      }
+    ],
+    "tool_choice": "auto"
+  }'
+```
+
+Lorsqu’un outil serveur est utilisé, les compteurs `usage.server_tool_use.*` correspondants sont inclus dans les données d’utilisation.
+
+- `gateway:datetime` -> `datetime_requests`
+- `phaseo:web_search` -> `web_search_requests`, `web_search_results`, `web_search_extra_results`
+- `phaseo:web_fetch` -> `web_fetch_requests`
+- `phaseo:advisor` -> `advisor_requests`
+- `phaseo:image_generation` -> `image_generation_requests`
+- `phaseo:apply_patch` -> `apply_patch_requests`
+
+## À propos du streaming
+
+`stream: true` est également pris en charge. Avec les outils serveur gérés par le Gateway, Phaseo peut matérialiser le tour d’appel d’outil amont, poursuivre la boucle, puis réémettre un flux synthétique.

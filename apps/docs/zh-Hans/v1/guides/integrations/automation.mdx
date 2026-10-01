@@ -1,0 +1,63 @@
+---
+title: "工作流自动化"
+icon: "workflow"
+description: "通过 Zapier、n8n、Pipedream 等自动化平台使用 Phaseo。"
+---
+
+目前，能够发送经过身份验证的 HTTP 请求的自动化产品已可使用 Phaseo。以后可通过原生市场应用提供更简化的体验。
+
+## 通用请求
+
+在 HTTP、webhook 或代码操作中使用以下设置：
+
+| 设置项 | 值 |
+| --- | --- |
+| 方法 | `POST` |
+| URL | `https://api.phaseo.app/v1/responses` |
+| 请求头 | `Authorization: Bearer <PHASEO_API_KEY>` |
+| 请求头 | `Content-Type: application/json` |
+
+```json
+{
+  "model": "openai/gpt-5-nano",
+  "input": "Summarise the supplied workflow data in one paragraph."
+}
+```
+
+请将 Phaseo API 密钥存放在平台的凭据或密钥库中。不要将密钥直接写入共享工作流定义。
+
+## Zapier
+
+使用 **Webhooks by Zapier → Custom Request**：
+
+1. 选择 `POST`。
+2. 输入 `https://api.phaseo.app/v1/responses`。
+3. 添加 bearer 和 content-type 请求头。
+4. 将 Zap 前序步骤中的字段映射到 `input`。
+5. 使用非敏感数据测试 Zap。
+
+原生 Phaseo Zapier 应用可提供模型选择、结构化输出操作和 Phaseo 专用身份验证，但需要通过 Zapier 开发者平台发布。
+
+## n8n
+
+使用带 bearer 身份验证和 JSON 请求体的 **HTTP Request** 节点。对于结构化工作流数据，可使用 n8n 表达式将上游项目映射到 `input` 字段。
+
+以后，n8n 官方社区节点可提供 Generate Response、List Models、Get Model Pricing 和 Create Embedding 等操作，无需手动设置 HTTP。
+
+## Pipedream
+
+使用 HTTP 请求步骤或 Node.js 代码步骤。将 `PHASEO_API_KEY` 存为 Pipedream 密钥，并从步骤环境中读取。
+
+## 生产环境建议
+
+- 为每个自动化使用的 Gateway API 密钥设置支出限额。
+- 为每个自动化分配独立密钥，以隔离用量和撤销操作。
+- 下游步骤需要机器可读字段时，请使用结构化输出。
+- 为 `429` 和可恢复的 `5xx` 响应添加重试处理。
+- 不要仅因模型步骤重试，就重复执行非幂等的外部操作。
+
+## 相关内容
+
+- [响应](../../api-reference/endpoint/responses.mdx)
+- [结构化输出](../structured-outputs.mdx)
+- [错误处理](../../developers/error-handling.mdx)

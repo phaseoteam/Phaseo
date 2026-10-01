@@ -1,0 +1,74 @@
+---
+title: "Descripción general de la API de Gateway"
+sidebarTitle: "Descripción general"
+description: "URL base, autenticación y familias de endpoints de Phaseo Gateway."
+icon: "map"
+---
+
+Usa esta página para encontrar la ruta de API adecuada antes de abrir la referencia de un endpoint. Todos los endpoints de Phaseo Gateway comparten una URL base y usan autenticación Bearer.
+
+## Elige una ruta
+
+| Si quieres | Empieza por |
+| --- | --- |
+| Enviar tu primera solicitud | [Guía de inicio rápido](../quickstart.mdx) |
+| Generar texto o usar herramientas | `POST /responses` |
+| Mantener una integración OpenAI compatible existente | `POST /chat/completions` |
+| Explorar modelos y proveedores | `GET /models` y `GET /providers` |
+| Crear música o gestionar archivos | `POST /music/generations` y `POST /files` |
+
+## URL base
+
+URL base de producción:
+
+```http
+https://api.phaseo.app/v1
+```
+
+Todas las rutas de endpoints de esta referencia son relativas a la URL base `/v1`.
+
+## OpenAPI
+
+Usa el archivo OpenAPI para importar la API en Postman, Hoppscotch o un generador de SDK.
+
+<Card
+  title="OpenAPI de Phaseo Gateway"
+  icon="list-bullet"
+  href="https://github.com/phaseoteam/Phaseo/blob/main/apps/docs/openapi/v1/openapi.public.yaml"
+>
+  Ver el archivo de especificación
+</Card>
+
+## Autenticación
+
+La mayoría de los endpoints requieren una clave de API de Gateway estándar. Los endpoints de administración requieren una clave de API de administración creada en el panel.
+
+```http
+Authorization: Bearer phaseo_v1_sk_<kid>_<secret>
+```
+
+Si falla la autenticación, la API devuelve `401`.
+
+## Recursos de la API
+
+| Recurso | Función |
+| --- | --- |
+| API de Responses | Generar respuestas de modelos con herramientas, salida estructurada y entradas multimodales. |
+| Chat Completions | Mantener una integración de chat OpenAI compatible existente. |
+| Mensajes de Anthropic | Mantener una integración de Messages compatible con Anthropic. |
+| Embeddings | Crear representaciones vectoriales para búsqueda, recuperación y clasificación. |
+| Imágenes | Generar o editar imágenes. |
+| Texto a voz | Generar audio hablado a partir de texto. |
+| Voz a texto | Transcribir o traducir audio. |
+| Generación de música | Crear trabajos de generación musical y consultar su estado. |
+| Archivos | Subir y recuperar entradas para los flujos de trabajo de API compatibles. |
+| Modelos, proveedores y endpoints | Consultar lo que ofrece Gateway. |
+| Precios, actividad y generaciones | Estimar costes y consultar resultados de solicitudes. |
+| Claves de API y espacios de trabajo | Gestionar el acceso programático y los recursos del espacio de trabajo. |
+
+## Facturación y límites de tasa
+
+- Phaseo no aplica sus propios límites de tasa. Los aplican los proveedores ascendentes.
+- Las solicitudes de pago requieren saldo suficiente en la cartera para superar la comprobación de crédito previa.
+- Los modelos gratuitos con `:free` no requieren créditos depositados.
+

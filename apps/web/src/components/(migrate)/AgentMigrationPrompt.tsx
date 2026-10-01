@@ -4,6 +4,7 @@ import { Check, Copy, ExternalLink } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useTranslations } from "next-intl";
 
 const SKILL_URL =
 	"https://github.com/phaseoteam/Phaseo/blob/main/.agents/skills/openrouter-to-phaseo-migration/SKILL.md";
@@ -26,6 +27,7 @@ Run the narrowest relevant tests while editing, then run the repository's normal
 Finish with the changed files, old-to-new credential names, model mappings, removed OpenRouter dependencies, test evidence, live-check evidence, remaining parity gaps, and a patch-level rollback procedure. The migration is complete only when no active runtime or deployment path still depends on OpenRouter.`;
 
 export function AgentMigrationPrompt() {
+	const t = useTranslations("Content.migrate.agentPrompt");
 	const [copied, setCopied] = useState(false);
 
 	useEffect(() => {
@@ -50,17 +52,15 @@ export function AgentMigrationPrompt() {
 		>
 			<div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
 				<div className="max-w-2xl">
-					<p className="text-sm font-medium text-primary">For coding agents</p>
+					<p className="text-sm font-medium text-primary">{t("codingAgents")}</p>
 					<h2
 						id="agent-migration-prompt-title"
 						className="mt-1 text-xl font-semibold tracking-tight"
 					>
-						Give this to your coding agent
+						{t("title")}
 					</h2>
 					<p className="mt-2 text-sm leading-6 text-muted-foreground">
-						Paste this into your coding agent when you want OpenRouter removed, not kept as
-						a fallback. The prompt links to the maintained skill and defines when the
-						cutover is done.
+						{t("description")}
 					</p>
 				</div>
 				<Button
@@ -70,7 +70,7 @@ export function AgentMigrationPrompt() {
 					onClick={() => void copyPrompt()}
 				>
 					{copied ? <Check /> : <Copy />}
-					{copied ? "Copied" : "Copy prompt"}
+					{copied ? t("copied") : t("copyPrompt")}
 				</Button>
 			</div>
 
@@ -90,7 +90,7 @@ export function AgentMigrationPrompt() {
 				rel="noopener noreferrer"
 				className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium underline underline-offset-4"
 			>
-				Read the migration skill
+				{t("readSkill")}
 				<ExternalLink className="size-3.5" />
 			</a>
 		</aside>

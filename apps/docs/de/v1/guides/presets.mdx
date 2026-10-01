@@ -1,0 +1,140 @@
+---
+title: "Voreinstellungen"
+description: "Speichern Sie wiederverwendbare Gateway-Konfigurationen für Ihr Team."
+icon: "sliders-horizontal"
+---
+
+Voreinstellungen sind wiederverwendbare Konfigurationen, mit denen Teams Prompts, Modellpräferenzen und Routing-Standards vereinheitlichen können. Sie werden im Phaseo-Dashboard verwaltet und können teamweit geteilt werden.
+
+## Schnellstart
+
+<Steps>
+<Step title="Voreinstellung erstellen">
+
+Öffnen Sie **Dashboard -> Einstellungen -> Voreinstellungen** und erstellen Sie eine Voreinstellung mit einem eindeutigen Slug, z. B. `release-summary`. Fügen Sie nur Standards hinzu, die von allen Aufrufern verwendet werden sollen.
+
+</Step>
+
+<Step title="Voreinstellung in einer Anfrage referenzieren">
+
+Der Aufrufer konzentriert sich auf die Nutzereingabe, während die Voreinstellung stabile Standardwerte für Prompt, Parameter und Routing liefert.
+
+<CodeGroup>
+
+```bash cURL
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+	  -d '{
+	    "model": "@release-summary",
+	    "input": "Generate a release summary for the last 24 hours."
+	  }'
+```
+
+```typescript TypeScript
+import Phaseo from "@phaseo/sdk";
+
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
+
+const response = await client.generateResponse({
+	  model: "@release-summary",
+	  input: "Generate a release summary for the last 24 hours.",
+});
+```
+
+```python Python
+from phaseo import Phaseo
+
+client = Phaseo(api_key="YOUR_API_KEY")
+
+response = client.generate_response({
+	    "model": "@release-summary",
+	    "input": "Generate a release summary for the last 24 hours.",
+})
+```
+
+</CodeGroup>
+
+</Step>
+
+<Step title="Routing-Ergebnis prüfen">
+
+Öffnen Sie die Anfrage unter **Gateway -> Nutzung**, um zu prüfen, welche Standards angewendet wurden und welcher Anbieter sie ausgeführt hat.
+
+</Step>
+</Steps>
+
+## Mögliche Inhalte einer Voreinstellung
+
+- Ein System-Prompt, der jeder Anfrage vorangestellt wird.
+- Erlaubte Modelle oder Modellfamilien.
+- Zulassungs- und Ignorierlisten für Anbieterpräferenzen beim Routing.
+- Standardparameter wie temperature, top_p, max_tokens und ähnliche Einstellungen.
+- Optionale Reasoning-Standards für unterstützte Modelle.
+
+Voreinstellungsnamen beginnen mit `@`, damit sie leicht erkennbar sind.
+
+Rufen Sie eine Voreinstellung ausschließlich über das Feld `model` der Anfrage auf. Phaseo stellt kein separates `preset`-Anfragefeld bereit.
+
+- Private Voreinstellungen und Workspace-Voreinstellungen verwenden `@{slug}` und werden im Workspace des API-Schlüssels aufgelöst.
+- Öffentliche Voreinstellungen verwenden `@{username}/{slug}` und können aus jedem Workspace aufgelöst werden. Beispiel: `@octavia/release-summary`.
+
+Für eine öffentliche Veröffentlichung sind ein aktiviertes öffentliches Profil und ein Benutzername erforderlich. Konflikte bei öffentlichen Slugs gelten nur für den jeweiligen Herausgeber. Zwei Herausgeber können daher denselben Slug ohne Mehrdeutigkeit verwenden. Benutzernamen sind global eindeutig. Slugs werden in Kleinbuchstaben normalisiert und unterstützen Buchstaben, Ziffern, Bindestriche, Unterstriche, Punkte und Doppelpunkte.
+
+## Versionen und Marketplace-Forks
+
+Beim Speichern werden Änderungen in einem privaten Entwurf übernommen. Sobald sie bereit sind, verwenden Sie **Neue Version veröffentlichen**. Phaseo erstellt eine unveränderliche Version mit Nummer und behält frühere Versionen zur Prüfung bei.
+
+Eigentümer können festlegen, wie Versionsbezeichnungen angezeigt werden:
+
+- **Fortlaufend:** `v1`, `v2`, `v3`.
+- **Semantische Versionierung:** explizite SemVer-Bezeichnungen wie `1.2.0`, `2.0.0-beta.1` oder `1.4.2+build.7`.
+- **Datumsbasiert:** `YYYY.MM.DD`, mit numerischem Zusatz, wenn am selben Datum mehrere Versionen veröffentlicht werden, z. B. `2026.08.02.2`.
+
+Intern verwaltet Phaseo eine eigene fortlaufende Versionsnummer. So bleiben Chronologie, Vergleiche mit der Quelle und die Abstammung unabhängig vom gewählten öffentlichen Bezeichnungsformat deterministisch.
+
+Marketplace-Kopien bleiben an die genaue Upstream-Version gebunden, von der sie erstellt wurden. Bei einer neuen Veröffentlichung des Herausgebers zeigt die Kopie einen Aktualisierungshinweis an. Das Anwenden der Aktualisierung ändert nur den Entwurf der Kopie. Der Workspace-Eigentümer kann sie prüfen und ausdrücklich veröffentlichen, ohne dass ein Upstream-Autor das Produktionsverhalten ändert.
+
+Phaseo speichert sowohl die direkte Quelle als auch die vollständige Abstammung jedes Forks. Marketplace-Seiten können daher direkte Forks von allen Nachkommen unterscheiden, auch wenn eine Voreinstellung mehrfach kopiert und erneut veröffentlicht wurde.
+
+## So werden Voreinstellungen zusammengeführt
+
+Wird im Gateway-Kontext eine Anfrage mit einer Voreinstellung aufgelöst, wird die Voreinstellung vor dem Provider-Routing angewendet:
+
+- Standardparameter füllen nur Felder aus, die im Anfrage-Body fehlen. Bereits vom Aufrufer übergebene Werte werden nicht überschrieben.
+- Enthält die Anfrage bereits eine Systemnachricht, wird der Prompt der Voreinstellung davor eingefügt. Bei einem Anthropic-artigen `system`-Feld wird der Prompt dort vorangestellt.
+- Zulassungs- und Ignorierlisten für Anbieter werden vor der Anbieterauswahl angewendet. Sie verkleinern den Fallback-Pool und dienen nicht nur als dekorative Markierung.
+- Anfragen außerhalb der Modell-Zulassungsliste der Voreinstellung werden früh abgelehnt, statt unbemerkt umgeleitet zu werden.
+
+Voreinstellungen sind damit die zentrale öffentliche Schnittstelle für wiederverwendbare Anfrage-Standards und einfache Kompatibilitätstransformationen. Aufrufer müssen dieselbe Prompt- oder Parameterlogik nicht mehrfach implementieren.
+
+## Aktueller öffentlicher Funktionsumfang
+
+Der Ablauf für Voreinstellungen im Dashboard ist bewusst auf eine stabile, klar definierte Teilmenge der Anfrageanpassungen beschränkt:
+
+- System-Prompt-Injektion
+- Modell-Zulassungslisten
+- Routing-Einschränkungen mit Zulassungs- oder Ignorierlisten für Anbieter
+- Standardwerte für Decoding und Generierung
+- Reasoning-Standards
+
+Wenn Sie komplexere Transformationen pro Aufrufer benötigen, bündeln Sie sie in einer Anwendungsschicht und verwenden Sie Voreinstellungen für teamweit wiederverwendbare Standards.
+
+## Voreinstellungen verwalten
+
+Erstellen und verwalten Sie Voreinstellungen unter **Dashboard -> Einstellungen -> Voreinstellungen**. Nutzen Sie verschiedene Slugs, wenn Workflows deutlich unterschiedliche Prompts, Routing- oder Cache-Einstellungen benötigen.
+
+## Wann Voreinstellungen sinnvoll sind
+
+- System-Prompts über mehrere Dienste hinweg vereinheitlichen.
+- Routing aus Compliance-Gründen auf zugelassene Anbieter beschränken.
+- Standardparameter in verschiedenen Umgebungen konsistent halten.
+- Migrationsprojekten einen dauerhaften Ort für Prompt-, Routing- und Parameterstandards geben, während der Anwendungscode weitgehend unverändert bleibt.
+
+## Zugehörige Anleitungen
+
+- [Feedback zu Voreinstellungen sammeln](./preset-feedback.mdx)
+- [Routing und Fallbacks](./routing-and-fallbacks.mdx)
+- [Inferenzparameter](./inference-parameters.mdx)
+- [Funktionsvergleichsmatrix](../migration-guides/feature-parity-matrix.mdx)
+

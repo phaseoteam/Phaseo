@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -17,6 +18,7 @@ interface MonitorClientProps {
 }
 
 export function MonitorClient({ initialModelData }: MonitorClientProps) {
+	const tUi = useTranslations("Common.ui");
 	const [activeTab, setActiveTab] = useState("table");
 	const [changeHistory, setChangeHistory] = useState<ChangeHistory[]>([]);
 
@@ -98,8 +100,8 @@ export function MonitorClient({ initialModelData }: MonitorClientProps) {
 	return (
 		<Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
 			<TabsList className="grid w-full grid-cols-2">
-				<TabsTrigger value="table">Endpoints Table</TabsTrigger>
-				<TabsTrigger value="timeline">Change History</TabsTrigger>
+				<TabsTrigger value="table">{tUi("editorTabs.endpointsTable")}</TabsTrigger>
+				<TabsTrigger value="timeline">{tUi("editorTabs.changeHistory")}</TabsTrigger>
 			</TabsList>
 
 			<TabsContent value="table" className="mt-6">

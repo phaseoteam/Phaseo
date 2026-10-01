@@ -1,0 +1,37 @@
+---
+icon: "brain-circuit"
+title: "モデル"
+description: "Goラッパーでモデルを一覧表示します。"
+---
+
+ラッパーメソッドを使います。
+
+- `client.GetModels(ctx, query)`
+
+```go
+import (
+  "context"
+  "fmt"
+  phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v2"
+)
+
+client := phaseo.New(apiKey, "https://api.phaseo.app/v1")
+models, err := client.GetModels(context.Background(), map[string]string{
+  "provider": "anthropic",
+  "provider_status": "beta,not_ready",
+  "provider_availability_reason": "preview_only,provider_not_ready",
+  "capability_status": "coming_soon,internal_testing",
+  "availability": "all",
+  "limit": "10",
+})
+if err != nil {
+  panic(err)
+}
+
+fmt.Println(models)
+```
+
+対応するクエリキーは、`provider`、`provider_status`、`provider_routing_status`、`model_routing_status`、`capability_status`、`provider_availability_status`、`provider_availability_reason`、`status`、`organisation`、`endpoints`、`input_types`、`output_types`、`params`、`availability`、`limit`、`offset`です。
+
+`availability=all`と併せて`provider_availability_reason`を使うと、`preview_only`、`provider_not_ready`、`gated`、`access_limited`、`region_limited`、`project_limited`、`paused`、`soft_blocked`などのロールアウト状態を取得できます。`availability=all`と`capability_status`を併用すると、`coming_soon`や`internal_testing`などルーティングできないエンドポイントの対応情報を取得できます。
+

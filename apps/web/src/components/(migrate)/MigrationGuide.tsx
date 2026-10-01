@@ -9,6 +9,8 @@ import CodeBlock from "@/components/(data)/model/quickstart/CodeBlock";
 import type { ShikiLang } from "@/components/(data)/model/quickstart/shiki";
 import { BASE_URL } from "@/components/(data)/model/quickstart/config";
 import { cn } from "@/lib/utils";
+import { useLocale, useTranslations } from "next-intl";
+import { getLocalizedDocsHref } from "@/lib/docs";
 
 type SourceId =
 	| "openai-sdk"
@@ -1179,6 +1181,72 @@ const FULL_GUIDE_LINK_BY_SOURCE: Partial<
 	},
 };
 
+const MIGRATION_COPY_KEYS: Record<string, string> = {
+	"OpenAI Compatible Libraries": "sourceLabels.compatibleLibraries",
+	"Just getting started": "sourceLabels.gettingStarted",
+	"Using the official OpenAI SDKs today.": "sourceDescriptions.openaiSdk",
+	"Using the Anthropic client libraries.": "sourceDescriptions.anthropicSdk",
+	"Routing requests through OpenRouter.": "sourceDescriptions.openrouter",
+	"Using Vercel AI Gateway or the AI SDK provider stack.": "sourceDescriptions.vercelAi",
+	"Using Requesty as an OpenAI-compatible gateway.": "sourceDescriptions.requesty",
+	"Using LLMGateway as an OpenAI-compatible endpoint.": "sourceDescriptions.llmGateway",
+	"Any OpenAI-style SDK or REST integration.": "sourceDescriptions.compatibleLibraries",
+	"Set up from scratch with the fastest path.": "sourceDescriptions.gettingStarted",
+	"Which OpenAI SDK are you using?": "prompts.openaiSdk",
+	"Which Anthropic SDK are you using?": "prompts.anthropicSdk",
+	"How do you call OpenRouter today?": "prompts.openrouter",
+	"How are you integrated with Vercel today?": "prompts.vercelAi",
+	"How do you call Requesty today?": "prompts.requesty",
+	"How do you call LLMGateway today?": "prompts.llmGateway",
+	"Choose your environment.": "prompts.environment",
+	"Pick your preferred integration.": "prompts.integration",
+	"Keep the OpenAI client and swap the base URL.": "options.keepOpenAiClient",
+	"Keep the Anthropic client and swap the base URL.": "options.keepAnthropicClient",
+	"Point the Python SDK to Phaseo.": "options.pointPythonSdk",
+	"Switch your REST calls to the Gateway.": "options.switchRestToGateway",
+	"Replace the Vercel/OpenAI provider factory with the official Phaseo provider.": "options.switchVercelProvider",
+	"Use REST calls in any runtime.": "options.restAnyRuntime",
+	"Keep the client and swap env vars plus base URL.": "options.swapEnvironmentAndBaseUrl",
+	"Use OpenAI Python client settings for Phaseo.": "options.openAiPythonSettings",
+	"Switch REST calls to Phaseo Gateway.": "options.switchRestToPhaseo",
+	"Use OpenAI SDK-compatible configuration.": "options.openAiCompatibleConfiguration",
+	"Use the OpenAI Python client with Phaseo.": "options.openAiPythonWithPhaseo",
+	"Call the Gateway directly.": "options.callGatewayDirectly",
+	"Full typed client with helpers.": "options.typedSdk",
+	"Async-first Python client.": "options.asyncPythonSdk",
+	"Fastest way to send a request.": "options.fastestRequest",
+	"API Reference": "docs.apiReference",
+	"Endpoints, auth, and error formats.": "docs.apiReferenceDescription",
+	"Quickstart": "docs.quickstart",
+	"Make your first Gateway call in minutes.": "docs.quickstartDescription",
+	"Tool Calling": "docs.toolCalling",
+	"Tools, tool_choice, and function routing.": "docs.toolCallingDescription",
+	"Structured Outputs": "docs.structuredOutputs",
+	"Schema-locked responses with constraints.": "docs.structuredOutputsDescription",
+	"Feature Parity Matrix": "docs.featureParity",
+	"Gateway migration parity by surface and competitor.": "docs.featureParityDescription",
+	"Gateway Parity Review": "docs.parityReview",
+	"Repo-grounded review of proven and still-open parity areas.": "docs.parityReviewDescription",
+	"Use your Phaseo API key": "steps.useApiKey",
+	"Create a key in the Phaseo dashboard and store it as PHASEO_API_KEY.": "steps.createApiKey",
+	"Point the base URL to Phaseo": "steps.setBaseUrlTitle",
+	"Keep your payloads the same": "steps.keepPayloadTitle",
+	"Your model selection and message payloads remain unchanged.": "steps.keepPayloadDescription",
+	"Send the Authorization header": "steps.authorizationHeaderTitle",
+	"Add Authorization: Bearer <key> on every request.": "steps.authorizationHeaderDescription",
+	"Use your Phaseo Gateway key": "changeTitles.useGatewayKey",
+	"Route requests through Phaseo": "changeTitles.routeThroughPhaseo",
+	"Update model ids": "changeTitles.updateModelIds",
+	"Switch to the Phaseo AI SDK provider": "changeTitles.switchAiSdk",
+	"Replace OPENAI_API_KEY with PHASEO_API_KEY from the Phaseo dashboard.": "changes.replaceOpenAiKey",
+	"Replace ANTHROPIC_API_KEY with PHASEO_API_KEY from the Phaseo dashboard.": "changes.replaceAnthropicKey",
+	"Set PHASEO_API_KEY from the Phaseo dashboard for the SDK client.": "changes.setSdkKey",
+	"Set PHASEO_API_KEY from the Phaseo dashboard and use it for the SDK client.": "changes.setSdkKey",
+	"Send Authorization: Bearer YOUR_API_KEY on every request.": "changes.sendAuthorization",
+	"Replace the Vercel OpenAI provider factory with createPhaseo(...) from @phaseo/ai-sdk-provider.": "changes.replaceVercelProvider",
+	Diff: "diff",
+};
+
 function getAfterSnippet(pathId: PathId, surface: AfterApiSurface): Snippet {
 	if (surface === "chat-completions") {
 		return SNIPPETS[pathId];
@@ -1347,6 +1415,37 @@ function OptionCard({
 }
 
 export function MigrationGuide() {
+	const tAssistant = useTranslations("Content.migrate.assistant");
+	const locale = useLocale();
+	const translateCopy = (value: string) => {
+		if (value === "Before (No SDK configured)") {
+			return `${tAssistant("before")} (${tAssistant("snippetNoSdk")})`;
+		}
+		if (value.startsWith("Before (")) {
+			return `${tAssistant("before")} ${value.slice("Before".length)}`;
+		}
+		const key = MIGRATION_COPY_KEYS[value];
+		if (key) return tAssistant(key as never);
+		if (value === `Set the base URL to ${BASE_URL}.`) {
+			return tAssistant("steps.setBaseUrlDescription", { baseUrl: BASE_URL });
+		}
+		if (value === `Set baseURL to ${BASE_URL} so traffic goes through the Gateway.`) {
+			return tAssistant("changes.routeBaseUrl", { baseUrl: BASE_URL });
+		}
+		if (value === `Set base_url to ${BASE_URL} so traffic goes through the Gateway.`) {
+			return tAssistant("changes.routeBaseUrlPython", { baseUrl: BASE_URL });
+		}
+		if (value === `Send requests to ${BASE_URL}/chat/completions.`) {
+			return tAssistant("changes.routeRest", { endpoint: `${BASE_URL}/chat/completions` });
+		}
+		if (value.includes("openai/gpt-4.1-mini")) {
+			return tAssistant("changes.openAiModelIds", { modelId: "openai/gpt-4.1-mini" });
+		}
+		if (value.includes("anthropic/claude-3.5-sonnet")) {
+			return tAssistant("changes.anthropicModelIds", { modelId: "anthropic/claude-3.5-sonnet" });
+		}
+		return value;
+	};
 	const [source, setSource] = useState<SourceId | null>(null);
 	const flow = useMemo(() => (source ? FLOWS[source] : null), [source]);
 	const [pathId, setPathId] = useState<PathId | null>(null);
@@ -1387,10 +1486,10 @@ export function MigrationGuide() {
 				<section className="space-y-4">
 					<div className="space-y-2">
 						<p className="text-xs uppercase tracking-wide text-muted-foreground">
-							Step 1
+							{tAssistant("stepLabel", { number: 1 })}
 						</p>
 						<h2 className="text-2xl font-semibold">
-							Where are you migrating from?
+							{tAssistant("sourceQuestion")}
 						</h2>
 					</div>
 					<div className="grid gap-3 sm:grid-cols-2">
@@ -1403,8 +1502,8 @@ export function MigrationGuide() {
 							return (
 								<OptionCard
 									key={option.id}
-									label={option.label}
-									description={option.description}
+									label={translateCopy(option.label)}
+									description={translateCopy(option.description)}
 									logoId={logoId}
 									icon={icon}
 									active={source === option.id}
@@ -1418,10 +1517,10 @@ export function MigrationGuide() {
 				<section className="space-y-4">
 					<div className="space-y-2">
 						<p className="text-xs uppercase tracking-wide text-muted-foreground">
-							Step 2
+							{tAssistant("stepLabel", { number: 2 })}
 						</p>
 						<h3 className="text-xl font-semibold">
-							{flow ? flow.prompt : "Choose a source to continue."}
+							{flow ? translateCopy(flow.prompt) : tAssistant("chooseSource")}
 						</h3>
 					</div>
 					{flow ? (
@@ -1429,8 +1528,8 @@ export function MigrationGuide() {
 							{flow.options.map((option) => (
 								<OptionCard
 									key={option.id}
-									label={option.label}
-									description={option.description}
+									label={translateCopy(option.label)}
+									description={translateCopy(option.description)}
 									active={pathId === option.id}
 									onClick={() => setPathId(option.id)}
 								/>
@@ -1438,8 +1537,7 @@ export function MigrationGuide() {
 						</div>
 					) : (
 						<div className="rounded-xl border border-dashed border-border/60 p-4 text-sm text-muted-foreground">
-							Select where you are migrating from to see the next
-							options.
+							{tAssistant("selectSourcePrompt")}
 						</div>
 					)}
 				</section>
@@ -1450,10 +1548,10 @@ export function MigrationGuide() {
 					<div className="flex flex-wrap items-center justify-between gap-3">
 						<div className="space-y-1">
 							<p className="text-xs uppercase tracking-wide text-muted-foreground">
-								Step 3
+								{tAssistant("stepLabel", { number: 3 })}
 							</p>
 							<h3 className="text-xl font-semibold">
-								Review the changes
+								{tAssistant("reviewChanges")}
 							</h3>
 							<p className="text-xs text-muted-foreground">
 								{selectedOption.label}
@@ -1472,7 +1570,7 @@ export function MigrationGuide() {
 									onClick={() => setDiffView("split")}
 									aria-pressed={diffView === "split"}
 								>
-									Split
+										{tAssistant("split")}
 								</Button>
 								<Button
 									type="button"
@@ -1485,7 +1583,7 @@ export function MigrationGuide() {
 									onClick={() => setDiffView("diff")}
 									aria-pressed={diffView === "diff"}
 								>
-									Diff
+										{tAssistant("diff")}
 								</Button>
 							</div>
 							<Button
@@ -1496,7 +1594,7 @@ export function MigrationGuide() {
 									setPathId(null);
 								}}
 							>
-								Start over
+								{tAssistant("startOver")}
 							</Button>
 						</div>
 					</div>
@@ -1507,9 +1605,9 @@ export function MigrationGuide() {
 								key={`${selectedOption.id}-${step.title}`}
 								className="rounded-xl border border-border/60 p-4"
 							>
-								<p className="text-sm font-semibold">{step.title}</p>
-								<p className="text-xs text-muted-foreground">
-									{step.description}
+									<p className="text-sm font-semibold">{translateCopy(step.title)}</p>
+									<p className="text-xs text-muted-foreground">
+										{translateCopy(step.description)}
 								</p>
 							</div>
 						))}
@@ -1520,27 +1618,26 @@ export function MigrationGuide() {
 							<div className="space-y-3">
 								<div className="space-y-1">
 									<p className="text-xs uppercase tracking-wide text-muted-foreground">
-										Before & After
+										{tAssistant("beforeAndAfter")}
 									</p>
 									<p className="text-sm text-muted-foreground">
-										Compare your current integration with the Phaseo version,
-										or switch to Diff for a single view.
+										{tAssistant("comparisonDescription")}
 									</p>
 								</div>
 								<div className="grid gap-6 lg:grid-cols-2">
 									<div className="space-y-2">
 										<p className="text-xs uppercase tracking-wide text-muted-foreground">
-											Before
+												{tAssistant("before")}
 										</p>
 										<CodeBlock
-											label={beforeSnippet?.label}
+											label={beforeSnippet?.label ? translateCopy(beforeSnippet.label) : undefined}
 											code={beforeSnippet?.code ?? ""}
 											lang={beforeSnippet?.lang}
 										/>
 									</div>
 									<div className="space-y-2">
 										<p className="text-xs uppercase tracking-wide text-muted-foreground">
-											After
+											{tAssistant("after")}
 										</p>
 										<div className="flex flex-wrap items-center gap-2">
 											{AFTER_API_SURFACE_OPTIONS.map((surfaceOption) => (
@@ -1557,12 +1654,12 @@ export function MigrationGuide() {
 													aria-pressed={afterSurface === surfaceOption.id}
 													className="h-7 rounded-full px-3 text-xs"
 												>
-													{surfaceOption.label}
+													{translateCopy(surfaceOption.label)}
 												</Button>
 											))}
 										</div>
 										<CodeBlock
-											label={afterSnippet?.label}
+													label={afterSnippet?.label ? translateCopy(afterSnippet.label) : undefined}
 											code={afterSnippet?.code ?? ""}
 											lang={afterSnippet?.lang}
 										/>
@@ -1572,7 +1669,7 @@ export function MigrationGuide() {
 							{changeNotes.length > 0 ? (
 								<div className="space-y-3">
 									<p className="text-xs uppercase tracking-wide text-muted-foreground">
-										Key changes
+											{tAssistant("keyChanges")}
 									</p>
 									<div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
 										{changeNotes.map((note) => (
@@ -1581,10 +1678,10 @@ export function MigrationGuide() {
 												className="rounded-xl border border-border/60 p-4"
 											>
 												<p className="text-sm font-semibold">
-													{note.title}
+													{translateCopy(note.title)}
 												</p>
 												<p className="text-xs text-muted-foreground">
-													{note.description}
+													{translateCopy(note.description)}
 												</p>
 											</div>
 										))}
@@ -1595,10 +1692,10 @@ export function MigrationGuide() {
 					) : (
 						<div className="space-y-2">
 							<p className="text-xs uppercase tracking-wide text-muted-foreground">
-								Diff
+									{tAssistant("diff")}
 							</p>
 							<CodeBlock
-								label={diffSnippet?.label}
+								label={diffSnippet?.label ? translateCopy(diffSnippet.label) : undefined}
 								code={diffSnippet?.code ?? ""}
 								lang={diffSnippet?.lang}
 							/>
@@ -1607,18 +1704,18 @@ export function MigrationGuide() {
 
 					<div className="space-y-3">
 						<p className="text-xs uppercase tracking-wide text-muted-foreground">
-							Documentation
+							{tAssistant("docsHeading")}
 						</p>
 						<div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
 							{DOC_LINKS.map((link) => (
 								<Link
 									key={link.href}
-									href={link.href}
+									href={getLocalizedDocsHref(locale, link.href)}
 									className="rounded-xl border border-border/60 p-4 transition hover:border-primary/40 hover:bg-muted/40"
 								>
-									<p className="text-sm font-semibold">{link.label}</p>
+								<p className="text-sm font-semibold">{translateCopy(link.label)}</p>
 									<p className="text-xs text-muted-foreground">
-										{link.description}
+										{translateCopy(link.description)}
 									</p>
 								</Link>
 							))}
@@ -1631,10 +1728,9 @@ export function MigrationGuide() {
 			{fullGuide ? (
 				<section className="rounded-xl border border-primary/30 bg-primary/5 px-4 py-3">
 					<p className="text-sm">
-						If you are migrating from {fullGuide.label}, check out the full
-						step-by-step guide.{" "}
+						{tAssistant("fullGuidePrompt", { source: translateCopy(fullGuide.label) })}{" "}
 						<Link href={fullGuide.href} className="font-medium text-primary hover:underline">
-							Read full guide
+							{tAssistant("readFullGuide")}
 						</Link>
 					</p>
 				</section>

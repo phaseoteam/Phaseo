@@ -1,0 +1,77 @@
+---
+title: "Document images पार्स करें"
+description: "Cohere Parse v5.0 से document images का क्रमबद्ध text, tables, images और layout metadata निकालें।"
+---
+
+साधारण OCR से अधिक की ज़रूरत हो, तो Parse endpoint उपयोग करें। यह pages का क्रम बनाए रखता है और Markdown या text, image तथा table के structured blocks लौटा सकता है।
+
+<Warning>
+  Cohere का public Parse API अभी केवल image URLs और base64 image data URIs स्वीकार करता है। भेजने से पहले PDF pages को images में बदलें। हर image 20 MB, 50 megapixels या decode होने के बाद 200 MB से बड़ी नहीं होनी चाहिए।
+</Warning>
+
+## Markdown में पार्स करें
+
+Markdown में पढ़ने का क्रम बना रहता है, tables HTML के रूप में आती हैं और पहचानी गई images पेज के metadata से जुड़ती हैं।
+
+<CodeGroup>
+```bash cURL
+curl https://api.phaseo.app/v1/parse \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "cohere/parse-v5.0",
+    "document": {
+      "type": "image_url",
+      "image_url": "https://example.com/invoice.png"
+    },
+    "output_format": "markdown"
+  }'
+```
+
+```ts TypeScript
+const response = await fetch("https://api.phaseo.app/v1/parse", {
+  method: "POST",
+  headers: {
+    Authorization: `Bearer ${process.env.PHASEO_API_KEY}`,
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    model: "cohere/parse-v5.0",
+    document: {
+      type: "image_url",
+      image_url: "https://example.com/invoice.png",
+    },
+    output_format: "markdown",
+  }),
+});
+
+const parsed = await response.json();
+console.log(parsed.pages[0].markdown.content);
+```
+
+```python Python
+import os
+import requests
+
+response = requests.post(
+    "https://api.phaseo.app/v1/parse",
+    headers={"Authorization": f"Bearer {os.environ['PHASEO_API_KEY']}"},
+    json={
+        "model": "cohere/parse-v5.0",
+        "document": {
+            "type": "image_url",
+            "image_url": "https://example.com/invoice.png",
+        },
+        "output_format": "markdown",
+    },
+)
+response.raise_for_status()
+print(response.json()["pages"][0]["markdown"]["content"])
+```
+</CodeGroup>
+
+## संरचित ब्लॉक लौटाएँ
+
+`output_format` को `blocks` सेट करें, ताकि क्रमबद्ध text, image और table regions मिलें। उपलब्ध होने पर image और table blocks में pixel और normalized bounding boxes शामिल होते हैं।
+
+Parse usage प्रति page मापा जाता है। Provider के billed pages बताने पर response में Cohere metadata और normalized `usage.input_pages` value शामिल होती है। Cohere अभी evaluation के लिए rate-limited API access मुफ़्त देता है और उसने Parse की production दर प्रकाशित नहीं की है।

@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState, useTransition, useEffect } from "react";
 import {
 	Dialog,
@@ -82,6 +83,7 @@ export function UnifiedModelEditor({
 	open,
 	onOpenChange,
 }: UnifiedModelEditorProps) {
+	const tUi = useTranslations("Common.ui");
 	const router = useRouter();
 	const [isPending, startTransition] = useTransition();
 	const [error, setError] = useState<string | null>(null);
@@ -168,7 +170,7 @@ export function UnifiedModelEditor({
 				router.refresh();
 				setError(null);
 			} else {
-				setError(result.error || "Failed to update model");
+				setError(result.error || tUi("modelEditor.advanced.errors.updateModel"));
 			}
 		});
 	};
@@ -187,7 +189,7 @@ export function UnifiedModelEditor({
 				router.refresh();
 				setError(null);
 			} else {
-				setError(result.error || "Failed to update details");
+				setError(result.error || tUi("modelEditor.advanced.errors.updateDetails"));
 			}
 		});
 	};
@@ -206,7 +208,7 @@ export function UnifiedModelEditor({
 				router.refresh();
 				setError(null);
 			} else {
-				setError(result.error || "Failed to update links");
+				setError(result.error || tUi("modelEditor.advanced.errors.updateLinks"));
 			}
 		});
 	};
@@ -225,7 +227,7 @@ export function UnifiedModelEditor({
 				router.refresh();
 				setError(null);
 			} else {
-				setError(result.error || "Failed to update aliases");
+				setError(result.error || tUi("modelEditor.advanced.errors.updateAliases"));
 			}
 		});
 	};
@@ -244,7 +246,7 @@ export function UnifiedModelEditor({
 				router.refresh();
 				setError(null);
 			} else {
-				setError(result.error || "Failed to update organization");
+				setError(result.error || tUi("modelEditor.advanced.errors.updateOrganization"));
 			}
 		});
 	};
@@ -261,7 +263,7 @@ export function UnifiedModelEditor({
 				onOpenChange(false);
 				router.refresh();
 			} else {
-				setError(result.error || "Failed to delete model");
+				setError(result.error || tUi("modelEditor.advanced.errors.deleteModel"));
 			}
 		});
 	};
@@ -285,9 +287,9 @@ export function UnifiedModelEditor({
 			<Dialog open={open} onOpenChange={onOpenChange}>
 				<DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto w-[95vw] sm:w-full">
 					<DialogHeader>
-						<DialogTitle className="text-lg sm:text-xl">Edit Model: {model.modelName}</DialogTitle>
+						<DialogTitle className="text-lg sm:text-xl">{tUi("modelEditor.advanced.editModel", { modelName: model.modelName })}</DialogTitle>
 						<DialogDescription className="text-sm">
-							Comprehensive model configuration and management
+							{tUi("modelEditor.advanced.description", { modelName: model.modelName })}
 						</DialogDescription>
 					</DialogHeader>
 
@@ -299,11 +301,11 @@ export function UnifiedModelEditor({
 
 					<Tabs defaultValue="basic" className="w-full">
 						<TabsList className="grid w-full grid-cols-3 sm:grid-cols-6 gap-1">
-							<TabsTrigger value="basic" className="text-xs sm:text-sm">Basic</TabsTrigger>
-							<TabsTrigger value="details" className="text-xs sm:text-sm">Details</TabsTrigger>
-							<TabsTrigger value="links" className="text-xs sm:text-sm">Links</TabsTrigger>
-							<TabsTrigger value="aliases" className="text-xs sm:text-sm">Aliases</TabsTrigger>
-							<TabsTrigger value="organization" className="text-xs sm:text-sm">Org</TabsTrigger>
+							<TabsTrigger value="basic" className="text-xs sm:text-sm">{tUi("editorTabs.basic")}</TabsTrigger>
+							<TabsTrigger value="details" className="text-xs sm:text-sm">{tUi("editorTabs.details")}</TabsTrigger>
+							<TabsTrigger value="links" className="text-xs sm:text-sm">{tUi("editorTabs.links")}</TabsTrigger>
+							<TabsTrigger value="aliases" className="text-xs sm:text-sm">{tUi("editorTabs.aliases")}</TabsTrigger>
+							<TabsTrigger value="organization" className="text-xs sm:text-sm">{tUi("editorTabs.organization")}</TabsTrigger>
 							<TabsTrigger value="danger" className="text-xs sm:text-sm">⚠️</TabsTrigger>
 						</TabsList>
 
@@ -311,7 +313,7 @@ export function UnifiedModelEditor({
 						<TabsContent value="basic" className="space-y-4">
 							{/* Model ID (read-only) */}
 							<div className="space-y-2">
-								<Label htmlFor="model-id">Model ID</Label>
+								<Label htmlFor="model-id">{tUi("modelEditor.publicModelId")}</Label>
 								<Input
 									id="model-id"
 									value={model.modelId}
@@ -319,32 +321,32 @@ export function UnifiedModelEditor({
 									className="bg-muted"
 								/>
 								<p className="text-xs text-muted-foreground">
-									Model ID cannot be changed
+									{tUi("modelEditor.advanced.modelIdReadOnly")}
 								</p>
 							</div>
 
 							{/* Name */}
 							<div className="space-y-2">
-								<Label htmlFor="name">Display Name *</Label>
+								<Label htmlFor="name">{tUi("modelCreation.displayName")} *</Label>
 								<Input
 									id="name"
 									value={name}
 									onChange={(e) => setName(e.target.value)}
-									placeholder="e.g., GPT-4 Turbo"
+									placeholder={tUi("modelCreation.displayNameExample")}
 								/>
 							</div>
 
 							{/* Status */}
 							<div className="space-y-2">
-								<Label htmlFor="status">Status</Label>
+								<Label htmlFor="status">{tUi("modelCreation.status")}</Label>
 								<Select value={status || "active"} onValueChange={setStatus}>
 									<SelectTrigger id="status">
-										<SelectValue placeholder="Select status" />
+										<SelectValue placeholder={tUi("modelCreation.selectStatus")} />
 									</SelectTrigger>
 									<SelectContent>
 										{STATUS_OPTIONS.map((opt) => (
 											<SelectItem key={opt} value={opt}>
-												{opt.charAt(0).toUpperCase() + opt.slice(1)}
+												{tUi(`modelCreation.statuses.${opt}` as never)}
 											</SelectItem>
 										))}
 									</SelectContent>
@@ -352,20 +354,25 @@ export function UnifiedModelEditor({
 							</div>
 
 							{/* Hidden */}
-							<div className="flex items-center space-x-2">
+							<div className="flex items-start space-x-2">
 								<Checkbox
 									id="hidden"
 									checked={hidden}
 									onCheckedChange={(checked) => setHidden(checked === true)}
 								/>
-								<Label htmlFor="hidden" className="cursor-pointer font-normal">
-									Hidden (model won't appear in public listings)
-								</Label>
+								<div className="space-y-1">
+									<Label htmlFor="hidden" className="cursor-pointer font-normal">
+										{tUi("modelEditor.advanced.hidden")}
+									</Label>
+									<p className="text-xs text-muted-foreground">
+										{tUi("modelEditor.advanced.hiddenDescription")}
+									</p>
+								</div>
 							</div>
 
 							{/* Release Date */}
 							<div className="space-y-2">
-								<Label htmlFor="release-date">Release Date</Label>
+								<Label htmlFor="release-date">{tUi("modelCreation.releaseDate")}</Label>
 								<Input
 									id="release-date"
 									type="date"
@@ -376,7 +383,7 @@ export function UnifiedModelEditor({
 
 							{/* Retirement Date */}
 							<div className="space-y-2">
-								<Label htmlFor="retirement-date">Retirement Date</Label>
+								<Label htmlFor="retirement-date">{tUi("modelCreation.retirementDate")}</Label>
 								<Input
 									id="retirement-date"
 									type="date"
@@ -387,7 +394,7 @@ export function UnifiedModelEditor({
 
 							{/* Input Modalities */}
 							<div className="space-y-2">
-								<Label>Input Modalities</Label>
+								<Label>{tUi("modelEditor.inputTypes")}</Label>
 								<div className="flex flex-wrap gap-2">
 									{MODALITY_OPTIONS.map((modality) => (
 										<Badge
@@ -406,13 +413,13 @@ export function UnifiedModelEditor({
 									))}
 								</div>
 								<p className="text-xs text-muted-foreground">
-									Click to toggle input modalities
+									{tUi("modelEditor.advanced.toggleInputTypes")}
 								</p>
 							</div>
 
 							{/* Output Modalities */}
 							<div className="space-y-2">
-								<Label>Output Modalities</Label>
+								<Label>{tUi("modelEditor.outputTypes")}</Label>
 								<div className="flex flex-wrap gap-2">
 									{MODALITY_OPTIONS.map((modality) => (
 										<Badge
@@ -431,26 +438,26 @@ export function UnifiedModelEditor({
 									))}
 								</div>
 								<p className="text-xs text-muted-foreground">
-									Click to toggle output modalities
+									{tUi("modelEditor.advanced.toggleOutputTypes")}
 								</p>
 							</div>
 
 							<Button onClick={handleSaveBasic} disabled={isPending || !name}>
 								{isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-								Save Basic Info
+								{tUi("actions.save")}
 							</Button>
 						</TabsContent>
 
 						{/* DETAILS */}
 						<TabsContent value="details" className="space-y-4">
 							<p className="text-sm text-muted-foreground">
-								Add custom key-value details for this model
+								{tUi("modelEditor.advanced.detailsHelp")}
 							</p>
 
 							{details.map((detail, idx) => (
 								<div key={idx} className="flex gap-2">
 									<Input
-										placeholder="Detail name"
+										placeholder={tUi("modelEditor.advanced.detailName")}
 										value={detail.name}
 										onChange={(e) => {
 											const newDetails = [...details];
@@ -459,7 +466,7 @@ export function UnifiedModelEditor({
 										}}
 									/>
 									<Input
-										placeholder="Detail value"
+										placeholder={tUi("modelEditor.advanced.detailValue")}
 										value={detail.value}
 										onChange={(e) => {
 											const newDetails = [...details];
@@ -485,19 +492,19 @@ export function UnifiedModelEditor({
 								onClick={() => setDetails([...details, { name: "", value: "" }])}
 							>
 								<Plus className="h-4 w-4 mr-2" />
-								Add Detail
+								{tUi("modelEditor.advanced.addDetail")}
 							</Button>
 
 							<Button onClick={handleSaveDetails} disabled={isPending}>
 								{isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-								Save Details
+								{tUi("modelEditor.advanced.saveDetails")}
 							</Button>
 						</TabsContent>
 
 						{/* LINKS */}
 						<TabsContent value="links" className="space-y-4">
 							<p className="text-sm text-muted-foreground">
-								Add external links for documentation, blog posts, etc.
+								{tUi("modelEditor.advanced.linksHelp")}
 							</p>
 
 							{links.map((link, idx) => (
@@ -511,12 +518,12 @@ export function UnifiedModelEditor({
 										}}
 									>
 										<SelectTrigger className="w-[180px]">
-											<SelectValue placeholder="Link type" />
+											<SelectValue placeholder={tUi("modelEditor.advanced.linkType")} />
 										</SelectTrigger>
 										<SelectContent>
 											{LINK_TYPES.map((type) => (
 												<SelectItem key={type} value={type}>
-													{type.charAt(0).toUpperCase() + type.slice(1)}
+													{tUi(`modelEditor.advanced.linkTypeOptions.${type}` as never)}
 												</SelectItem>
 											))}
 										</SelectContent>
@@ -550,25 +557,25 @@ export function UnifiedModelEditor({
 								}
 							>
 								<Plus className="h-4 w-4 mr-2" />
-								Add Link
+								{tUi("modelEditor.advanced.addLink")}
 							</Button>
 
 							<Button onClick={handleSaveLinks} disabled={isPending}>
 								{isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-								Save Links
+								{tUi("modelEditor.advanced.saveLinks")}
 							</Button>
 						</TabsContent>
 
 						{/* ALIASES */}
 						<TabsContent value="aliases" className="space-y-4">
 							<p className="text-sm text-muted-foreground">
-								Manage alternative names/identifiers for this model
+								{tUi("modelEditor.advanced.aliasesHelp")}
 							</p>
 
 							{aliases.map((alias, idx) => (
 								<div key={idx} className="flex gap-2 items-center">
 									<Input
-										placeholder="Alias name"
+										placeholder={tUi("modelEditor.advanced.aliasName")}
 										value={alias.alias}
 										onChange={(e) => {
 											const newAliases = [...aliases];
@@ -590,7 +597,7 @@ export function UnifiedModelEditor({
 											htmlFor={`enabled-${idx}`}
 											className="cursor-pointer font-normal whitespace-nowrap"
 										>
-											Enabled
+											{tUi("modelEditor.advanced.enabled")}
 										</Label>
 									</div>
 									<Button
@@ -613,25 +620,25 @@ export function UnifiedModelEditor({
 								}
 							>
 								<Plus className="h-4 w-4 mr-2" />
-								Add Alias
+								{tUi("modelEditor.advanced.addAlias")}
 							</Button>
 
 							<Button onClick={handleSaveAliases} disabled={isPending}>
 								{isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-								Save Aliases
+								{tUi("modelEditor.advanced.saveAliases")}
 							</Button>
 						</TabsContent>
 
 						{/* ORGANIZATION */}
 						<TabsContent value="organization" className="space-y-4">
 							<div className="space-y-2">
-								<Label htmlFor="organisation-select">Organization</Label>
+								<Label htmlFor="organisation-select">{tUi("modelEditor.advanced.organization")}</Label>
 								<Select value={selectedOrg || "none"} onValueChange={(value) => setSelectedOrg(value === "none" ? "" : value)}>
 									<SelectTrigger id="organisation-select">
-										<SelectValue placeholder="Select organization" />
+										<SelectValue placeholder={tUi("modelEditor.advanced.selectOrganization")} />
 									</SelectTrigger>
 									<SelectContent>
-										<SelectItem value="none">None</SelectItem>
+										<SelectItem value="none">{tUi("select.none")}</SelectItem>
 										{organisations.map((org) => (
 											<SelectItem key={org.id} value={org.id}>
 												{org.name}
@@ -640,13 +647,13 @@ export function UnifiedModelEditor({
 									</SelectContent>
 								</Select>
 								<p className="text-xs text-muted-foreground">
-									Current: {model.organisationName || "None"}
+									{tUi("modelEditor.advanced.currentOrganization", { organization: model.organisationName || tUi("select.none") })}
 								</p>
 							</div>
 
 							<Button onClick={handleSaveOrganization} disabled={isPending}>
 								{isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-								Update Organization
+								{tUi("modelEditor.advanced.updateOrganization")}
 							</Button>
 						</TabsContent>
 
@@ -654,11 +661,10 @@ export function UnifiedModelEditor({
 						<TabsContent value="danger" className="space-y-4">
 							<div className="border border-red-200 rounded-lg p-4 bg-red-50">
 								<h3 className="text-lg font-semibold text-red-900 mb-2">
-									Danger Zone
+									{tUi("modelEditor.advanced.dangerZone")}
 								</h3>
 								<p className="text-sm text-red-800 mb-4">
-									These actions are irreversible. Please be certain before
-									proceeding.
+									{tUi("modelEditor.advanced.dangerZoneDescription")}
 								</p>
 
 								<Button
@@ -667,7 +673,7 @@ export function UnifiedModelEditor({
 									disabled={isPending}
 								>
 									<Trash2 className="mr-2 h-4 w-4" />
-									Delete Model
+									{tUi("modelEditor.advanced.deleteModel")}
 								</Button>
 							</div>
 						</TabsContent>
@@ -678,20 +684,16 @@ export function UnifiedModelEditor({
 			<AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
 				<AlertDialogContent>
 					<AlertDialogHeader>
-						<AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-						<AlertDialogDescription>
-							This will permanently delete <strong>{model.modelName}</strong> and
-							all associated data (provider models, pricing rules, benchmarks,
-							etc). This action cannot be undone.
-						</AlertDialogDescription>
+						<AlertDialogTitle>{tUi("modelEditor.advanced.deleteConfirmationTitle")}</AlertDialogTitle>
+						<AlertDialogDescription>{tUi("modelEditor.advanced.deleteConfirmationDescription", { modelName: model.modelName })}</AlertDialogDescription>
 					</AlertDialogHeader>
 					<AlertDialogFooter>
-						<AlertDialogCancel>Cancel</AlertDialogCancel>
+						<AlertDialogCancel>{tUi("modelEditor.advanced.cancel")}</AlertDialogCancel>
 						<AlertDialogAction
 							onClick={handleDeleteModel}
 							className="bg-red-600 hover:bg-red-700"
 						>
-							Delete Permanently
+							{tUi("modelEditor.advanced.deletePermanently")}
 						</AlertDialogAction>
 					</AlertDialogFooter>
 				</AlertDialogContent>

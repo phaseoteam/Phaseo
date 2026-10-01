@@ -3,7 +3,7 @@
 import React, { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import useSWR from "swr";
 import { usePathname, useRouter } from "@/i18n/navigation";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { useTheme } from "next-themes";
 import { toast } from "sonner";
@@ -61,6 +61,7 @@ import {
 	wasAwayLongEnough,
 } from "./Search.freshness";
 import { compareSearchCategories } from "./Search.ranking";
+import { getLocalizedDocsHref } from "@/lib/docs";
 
 interface Props {
 	className?: string;
@@ -402,6 +403,39 @@ function SearchBrowseRow({
 	onTogglePin?: (item: SearchableItem) => void;
 }) {
 	const t = useTranslations("Common.search");
+	let displayTitle = item.title;
+	let displaySubtitle = item.subtitle;
+	if (item.id.startsWith("action-") || item.id.startsWith("resource-")) {
+		displayTitle = t(`palette.items.${item.id}.title` as never);
+		displaySubtitle = item.subtitle
+			? t(`palette.items.${item.id}.subtitle` as never)
+			: item.subtitle;
+	} else if (item.id.startsWith("nav-")) {
+		displayTitle = t(`palette.navigationItems.${item.id}` as never);
+		displaySubtitle = null;
+	} else if (item.id === "context-internal-cache") {
+		displayTitle = t("palette.context.cacheControlCentre" as never);
+		displaySubtitle = t("palette.context.purgeCacheScopes" as never);
+	} else if (item.id.startsWith("context-model-chat-")) {
+		displayTitle = t("palette.context.chatWithModel" as never);
+	} else if (item.id.startsWith("context-model-compare-")) {
+		displayTitle = t("palette.context.compareThisModel" as never);
+	} else if (item.id.startsWith("context-model-copy-")) {
+		displayTitle = t("palette.context.copyModelId" as never);
+	} else if (item.id.startsWith("context-cache-")) {
+		const entity = item.id.split("-")[2] ?? "model";
+		displayTitle = t("palette.context.openCacheControlsForEntity" as never, {
+			entity: t(`palette.context.entities.${entity}` as never),
+		} as never);
+	} else {
+		const entity = item.id.match(/^context-(provider|organisation|benchmark)-copy-/)?.[1];
+		if (entity) {
+			displayTitle = t("palette.context.copyEntityId" as never, {
+				entity: t(`palette.context.entities.${entity}` as never),
+			} as never);
+		}
+	}
+	const displayItem = { ...item, title: displayTitle, subtitle: displaySubtitle };
 	return (
 		<div
 			data-search-row-key={rowKey}
@@ -417,14 +451,14 @@ function SearchBrowseRow({
 				onFocus={onActive}
 				className="flex min-w-0 flex-1 items-center gap-2 px-2 py-1.5 text-left outline-hidden"
 			>
-				<SearchBrowseIcon item={item} type={type} />
+				<SearchBrowseIcon item={displayItem} type={type} />
 				<div className="min-w-0 flex flex-1 items-baseline gap-2">
 					<span className="truncate font-medium text-foreground">
-						{item.title}
+						{displayTitle}
 					</span>
-					{showSubtitle && item.subtitle ? (
+					{showSubtitle && displaySubtitle ? (
 						<span className="min-w-0 truncate text-xs text-muted-foreground">
-							{item.subtitle}
+							{displaySubtitle}
 						</span>
 					) : null}
 				</div>
@@ -448,7 +482,7 @@ function SearchBrowseRow({
 				<button
 					type="button"
 					onClick={() => onTogglePin(item)}
-				aria-label={isPinned ? t("unpin", { title: item.title }) : t("pin", { title: item.title })}
+				aria-label={isPinned ? t("unpin", { title: displayTitle }) : t("pin", { title: displayTitle })}
 					className={cn(
 						"absolute right-7 top-1/2 z-10 flex size-6 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground opacity-0 outline-hidden transition hover:bg-background hover:text-foreground focus-visible:opacity-100 group-hover/search-row:opacity-100",
 						isPinned && "opacity-100 text-foreground",
@@ -631,6 +665,7 @@ export default function Search({
 	initiallyOpen = false,
 }: Props) {
 	const t = useTranslations("Common.search");
+	const locale = useLocale();
 	const router = useRouter();
 	const pathname = usePathname() ?? "/";
 	const { resolvedTheme, setTheme } = useTheme();
@@ -666,7 +701,7 @@ export default function Search({
 	);
 	searchGenerationRef.current = searchData?.cacheGeneration ?? 1;
 	const searchDataError = searchDataFetchError
-		? "Unable to load search data."
+		? t("searchDataUnavailable")
 		: null;
 	const [scrollViewport, setScrollViewport] = useState<HTMLDivElement | null>(null);
 	const [pinnedItems, setPinnedItems] = useState<PaletteItem[]>([]);
@@ -830,11 +865,14 @@ export default function Search({
 		if (!item.href) return;
 		setOpen(false);
 		if (item.external) {
-			window.open(item.href, "_blank", "noopener,noreferrer");
+			const href = item.href.startsWith("https://phaseo.app/docs/")
+				? getLocalizedDocsHref(locale, item.href)
+				: item.href;
+			window.open(href, "_blank", "noopener,noreferrer");
 			return;
 		}
 		router.push(item.href);
-	}, [resolvedTheme, router, setTheme, t]);
+	}, [locale, resolvedTheme, router, setTheme, t]);
 
 	const handleTogglePin = useCallback((item: SearchableItem) => {
 		setPinnedItems((currentItems) => {
@@ -1302,7 +1340,7 @@ export default function Search({
 										const categoryConfig = {
 											actions: { heading: t("actions"), type: "action" as const, showSubtitle: true },
 											context: { heading: t("onThisPage"), type: "context" as const, showSubtitle: true },
-											navigation: { heading: t("navigation"), type: "navigation" as const, showSubtitle: true },
+							navigation: { heading: t("navigation"), type: "navigation" as const, showSubtitle: false },
 											resources: { heading: t("resources"), type: "resource" as const, showSubtitle: true },
 											workspaces: { heading: t("workspaces"), type: "workspace" as const, showSubtitle: true },
 											models: { heading: t("models"), type: undefined, showSubtitle: false },

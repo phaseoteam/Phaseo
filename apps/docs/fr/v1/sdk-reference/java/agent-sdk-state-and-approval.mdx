@@ -1,0 +1,21 @@
+---
+icon: "database"
+title: "État et approbation"
+description: "Mettez les agents Java en pause pour obtenir une décision humaine et reprendre l’état géré par l’application."
+---
+
+Renvoyez `HumanReviewRequest` depuis `AgentDefinition.humanReview` pour créer un point de contrôle général. Les approbations d’outils et le travail manuel placent les identifiants exacts des appels dans le résultat en pause.
+
+Continuez avec `Agent.continueRun(...)` en fournissant :
+
+- des entrées `ToolDecision` pour approuver ou rejeter
+- des entrées `ToolOutput` pour les outils manuels
+- une saisie humaine pour une pause de révision générale
+- un `RunResult` sérialisé ou un identifiant d’exécution associé à `StateAccessor`
+
+Le SDK ne dépend pas d’un état Agent SDK hébergé. Implémentez `StateAccessor` si une exécution doit survivre aux requêtes ou aux redémarrages du service.
+
+## À lire aussi
+
+- [Outils](./agent-sdk-tools.mdx)
+- [Contrôles d’exécution](./agent-sdk-run-controls.mdx)

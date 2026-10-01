@@ -1,0 +1,28 @@
+---
+icon: "search-check"
+title: "Consulta de generaciones"
+description: "Consulta las generaciones guardadas con el SDK de Go."
+---
+
+Usa el método del wrapper:
+
+- `client.GetGeneration(ctx, generationID)`
+
+```go
+import (
+  "context"
+  "fmt"
+  phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v2"
+)
+
+client := phaseo.New(apiKey, "https://api.phaseo.app/v1")
+record, err := client.GetGeneration(context.Background(), "G-01ABC...")
+if err != nil {
+  panic(err)
+}
+
+fmt.Println(record)
+```
+
+Si se guardaron los detalles de la solicitud, el registro devuelto también incluye `replay_supported` y `replay_request` para que puedas volver a enviar la carga capturada al endpoint original.
+

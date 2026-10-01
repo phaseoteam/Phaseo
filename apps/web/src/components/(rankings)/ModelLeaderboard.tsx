@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
@@ -45,11 +46,14 @@ type ModelLeaderboardProps = {
 	maxExpanded?: number;
 };
 
-const RANGE_OPTIONS: Array<{ key: LeaderboardRange; label: string }> = [
-	{ key: "today", label: "Today" },
-	{ key: "week", label: "Last 7d" },
-	{ key: "month", label: "Last 30d" },
-	{ key: "trending", label: "Trending" },
+const RANGE_OPTIONS: Array<{
+	key: LeaderboardRange;
+	labelKey: "today" | "last7Days" | "last30Days" | "trending";
+}> = [
+	{ key: "today", labelKey: "today" },
+	{ key: "week", labelKey: "last7Days" },
+	{ key: "month", labelKey: "last30Days" },
+	{ key: "trending", labelKey: "trending" },
 ];
 
 function formatTokens(value: number) {
@@ -60,7 +64,7 @@ function formatTokens(value: number) {
 	return value.toLocaleString();
 }
 
-function getChangeDisplay(entry: ModelLeaderboardEntry) {
+function getChangeDisplay(entry: ModelLeaderboardEntry, newLabel: string) {
 	const trend = entry.trend ?? "same";
 	const fallbackChange =
 		Number.isFinite(entry.prev_rank ?? NaN) &&
@@ -73,7 +77,7 @@ function getChangeDisplay(entry: ModelLeaderboardEntry) {
 			: fallbackChange;
 
 	if (trend === "new") {
-		return { text: "New", className: "text-indigo-500" };
+		return { text: newLabel, className: "text-indigo-500" };
 	}
 
 	if (!Number.isFinite(rawValue) || rawValue === 0) {
@@ -111,6 +115,7 @@ export function ModelLeaderboard({
 	maxCollapsed = 10,
 	maxExpanded = 20,
 }: ModelLeaderboardProps) {
+	const tUi = useTranslations("Common.ui");
 	const availableRanges = useMemo(
 		() =>
 			RANGE_OPTIONS.filter(
@@ -132,8 +137,8 @@ export function ModelLeaderboard({
 	if (!entries.length) {
 		return (
 			<RankingsEmptyState
-				title="No leaderboard data yet"
-				description="Leaderboard entries appear once rankings are available."
+				title={tUi("rankings.noDataTitle")}
+				description={tUi("rankings.noDataDescription")}
 			/>
 		);
 	}
@@ -164,7 +169,7 @@ export function ModelLeaderboard({
 						}}
 					>
 						<SelectTrigger className="h-9 min-w-40 shrink-0 rounded-md px-3">
-							<SelectValue placeholder="Range" />
+						<SelectValue placeholder={tUi("select.range")} />
 						</SelectTrigger>
 						<SelectContent className="min-w-44 rounded-md">
 							{RANGE_OPTIONS.map((option) => (
@@ -174,7 +179,7 @@ export function ModelLeaderboard({
 									disabled={!dataByRange[option.key]?.length}
 									className="whitespace-nowrap rounded-md"
 								>
-									{option.label}
+									{tUi(`rangeOptions.${option.labelKey}`)}
 								</SelectItem>
 							))}
 						</SelectContent>
@@ -186,7 +191,7 @@ export function ModelLeaderboard({
 			<div className="space-y-2">
 				<div className="grid gap-2 md:grid-cols-2">
 					{visibleEntries.map((entry, index) => {
-					const change = getChangeDisplay(entry);
+					const change = getChangeDisplay(entry, tUi("rankings.new"));
 					const rankValue =
 						typeof entry.rank === "number" ? entry.rank : NaN;
 					const rankLabel =
@@ -301,7 +306,7 @@ export function ModelLeaderboard({
 							<div className="pt-2">
 								<div className="grid gap-2 md:grid-cols-2">
 									{extraEntries.map((entry, index) => {
-							const change = getChangeDisplay(entry);
+							const change = getChangeDisplay(entry, tUi("rankings.new"));
 							const rankValue =
 								typeof entry.rank === "number"
 									? entry.rank
@@ -426,7 +431,7 @@ export function ModelLeaderboard({
 						aria-expanded={showAll}
 					>
 						<span className="flex items-center gap-2">
-							{showAll ? "Show top 10" : "Show top 20"}
+							{tUi("rankings.showTop", { count: showAll ? maxCollapsed : maxExpanded })}
 							<ChevronDown
 								className={cn(
 									"h-4 w-4 transition-transform",

@@ -1,0 +1,192 @@
+---
+icon: "users-round"
+title: "Como contribuir"
+description: "Guia passo a passo para fazer sua primeira contribuição ao Phaseo, desde configurar o ambiente até enviar um pull request."
+---
+
+Contribuir com o **Phaseo** é simples, transparente e aberto a todos.
+Este guia explica todo o processo, seja para editar um registro de modelo, atualizar dados de benchmark, melhorar a documentação ou contribuir com novas ideias.
+
+---
+
+## Antes de começar
+
+Você precisará instalar algumas ferramentas básicas:
+
+| Ferramenta | Finalidade | Instalação |
+| ------------------ | ---------------------------------------------- | -------------------------------------------------- |
+| **Git**            | Controle de versão para clonar e enviar alterações.     | [Instale o Git](https://git-scm.com/downloads)       |
+| **Node.js (v20+)** | Executa o site do Phaseo localmente (Next.js).      | [Baixe o Node.js](https://nodejs.org/en/download) |
+| **pnpm**           | Gerenciador de pacotes usado neste projeto.          | `npm install -g pnpm`                              |
+| **conta do GitHub** | Necessária para forks, issues e pull requests. | [Cadastre-se aqui](https://github.com/signup)          |
+
+Se você quiser editar apenas **dados** ou a **documentação Markdown**, poderá fazer as alterações diretamente no GitHub sem configurar um ambiente local.
+
+---
+
+## 1. Faça um fork do repositório
+
+Acesse o [repositório do Phaseo no GitHub](https://github.com/phaseoteam/Phaseo) e clique em **Fork**, no canto superior direito.
+Isso cria uma cópia própria do projeto que você pode editar livremente.
+
+---
+
+## 2. Clone seu fork
+
+```bash
+git clone https://github.com/yourusername/Phaseo.git
+cd Phaseo
+```
+
+Isso baixa seu fork para o computador local.
+
+---
+
+## 3. Crie uma nova branch
+
+A prática recomendada é criar uma nova branch para cada alteração:
+
+```bash
+git checkout -b update-benchmark-data
+```
+
+Use um nome de branch descritivo que represente a alteração para facilitar a revisão.
+
+Exemplos:
+
+-   `fix-{model-name}`
+-   `add-new-organisation`
+-   `improve-docs`
+-   `update-pricing-for-{model-name}`
+
+---
+
+## 4. Faça as alterações
+
+Dependendo do que você quer editar:
+
+| Área | Arquivos | Descrição |
+| --------------------- | --------------------------------------------- | ----------------------------------------------------- |
+| **Dados de modelos**        | `/packages/data/catalog/src/data/models/**/model.json`     | Adicione ou atualize metadados, preços ou benchmarks de modelos. |
+| **Dados de organizações** | `/packages/data/catalog/src/data/organisations/*.json`     | Atualize informações sobre empresas ou grupos de pesquisa.    |
+| **Dados de benchmark**    | `/packages/data/catalog/src/data/benchmarks/**/*.json`     | Envie novos resultados de avaliação ou correções.         |
+| **Documentação**     | `/apps/docs/v1/**/*.mdx`                      | Melhore ou amplie guias, referências e páginas de documentação. |
+| **Gateway**           | `/apps/api/*`                                 | Faça alterações no gateway de API.                      |
+
+Se estiver editando dados, siga os esquemas e formatos de campos descritos em [Estrutura do repositório](./repo-structure.mdx).
+
+---
+
+## 5. Visualize suas alterações (opcional)
+
+Se quiser visualizar suas alterações localmente:
+
+```bash
+pnpm install
+pnpm dev
+```
+
+Use [http://localhost:3100](http://localhost:3100) para alterações no site e [http://localhost:3101](http://localhost:3101) para alterações na documentação. As alterações de dados só poderão ser visualizadas depois que uma PR for criada, pois o app web obtém os dados do banco de dados.
+
+---
+
+## 6. Faça commit das alterações
+
+Quando estiver satisfeito, faça commit do seu trabalho:
+
+```bash
+git add .
+git commit -m "Updated benchmark data for Claude 3.5 Sonnet"
+```
+
+Use uma mensagem de commit que descreva as alterações para ajudar os revisores a entender sua contribuição.
+
+---
+
+## 7. Envie sua branch
+
+```bash
+git push origin update-benchmark-data
+```
+
+---
+
+## 8. Abra um pull request (PR)
+
+1. Acesse seu fork no GitHub.
+2. Uma mensagem para criar um PR será exibida. Clique em **Compare & Pull Request**.
+3. Preencha o modelo do PR com as informações relevantes sobre suas alterações.
+4. Envie o PR.
+
+Depois de revisado e aprovado, o PR será integrado ao repositório principal do Phaseo.
+
+---
+
+## 9. Comemore
+
+Sua contribuição ficará disponível após a integração. Agradecemos seu esforço e apoio por ter chegado até aqui.
+
+<Card
+	title="Ver contribuidores"
+	icon="users"
+	href="https://phaseo.app/contribute"
+	horizontal
+>
+	Veja todas as pessoas que ajudaram a construir o Phaseo.
+</Card>
+
+---
+
+## Dicas para contribuir
+
+-   Mantenha os PRs **pequenos e objetivos**: uma alteração lógica por PR.
+-   Sempre que possível, siga o padrão [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) e use **prefixos claros** como `fix:`, `add:` ou `chore:`.
+-   Se sua alteração afetar a precisão dos dados, inclua **fontes ou referências**.
+-   Para ideias grandes ou incertas, abra uma **discussão no GitHub** ou converse no Discord antes de começar a programar.
+-   Mantenha sempre o respeito e siga nosso [Código de Conduta](../community/code-of-conduct.mdx).
+
+---
+
+## Resumo do fluxo de exemplo
+
+```bash
+# 1. Fork and clone
+
+git clone https://github.com/yourusername/Phaseo.git
+cd Phaseo
+
+# 2. Create branch
+git checkout -b add-openai-new-model
+
+# 3. Make changes
+# e.g., update packages/data/catalog/src/data/models/openai/new-model/model.json
+
+# 4. Commit and push
+git add .
+git commit -m "Add new OpenAI model entry"
+git push origin add-new-openai-model
+
+# 5. Create a Pull Request on GitHub
+```
+
+---
+
+## Próximas etapas
+
+<Columns cols={2}>
+	<Card
+		title="Estrutura do repositório"
+		icon="folder-tree"
+		href="./repo-structure.mdx"
+	>
+		Conheça a estrutura de pastas e onde encontrar os principais arquivos de dados.
+	</Card>
+	<Card
+		title="Editar um modelo"
+		icon="brain"
+		href="./editing-a-model.mdx"
+	>
+		Comece com um exemplo prático: atualizar ou adicionar um registro de modelo.
+	</Card>
+</Columns>
+

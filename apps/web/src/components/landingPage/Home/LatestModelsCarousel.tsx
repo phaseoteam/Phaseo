@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { useReducedMotion } from "motion/react";
 import { Pause, Play } from "lucide-react";
 import UpdateCard from "@/components/updates/UpdateCard";
@@ -17,6 +18,7 @@ type LatestModelsCarouselProps = {
 };
 
 export function LatestModelsCarousel({ cards }: LatestModelsCarouselProps) {
+	const t = useTranslations("Catalogue.updates.models");
 	const prefersReducedMotion = useReducedMotion();
 	const [isFocusPaused, setIsFocusPaused] = useState(false);
 	const [isUserPaused, setIsUserPaused] = useState(false);
@@ -65,7 +67,11 @@ export function LatestModelsCarousel({ cards }: LatestModelsCarouselProps) {
 				<button
 					type="button"
 					aria-pressed={isUserPaused}
-					aria-label={isUserPaused ? "Play latest model updates" : "Pause latest model updates"}
+					aria-label={
+						isUserPaused
+							? t("playLatestModelUpdates")
+							: t("pauseLatestModelUpdates")
+					}
 					onClick={() => setIsUserPaused((paused) => !paused)}
 					className="absolute top-1 right-2 z-20 inline-flex h-7 w-7 items-center justify-center rounded-md border border-zinc-200/80 bg-white/90 text-zinc-500 shadow-sm transition-colors hover:bg-white hover:text-zinc-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400/70 dark:border-zinc-800/80 dark:bg-zinc-950/90 dark:text-zinc-400 dark:hover:bg-zinc-950 dark:hover:text-zinc-50"
 				>

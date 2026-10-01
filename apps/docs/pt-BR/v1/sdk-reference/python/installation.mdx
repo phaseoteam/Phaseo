@@ -1,0 +1,74 @@
+---
+icon: "package"
+title: "Instalação do SDK Python"
+description: "Como instalar e configurar o SDK Python do Phaseo."
+---
+
+O SDK é publicado como [`phaseo`](https://pypi.org/project/phaseo/) no PyPI.
+
+## Instalação
+
+Instale o SDK usando o gerenciador de pacotes Python de sua preferência:
+
+<CodeGroup>
+
+    ```bash title="pip"
+    pip install phaseo
+    ```
+
+    ```bash title="uv"
+    uv add phaseo
+    ```
+
+</CodeGroup>
+
+## Requisitos
+
+- Python 3.10+
+
+## Configuração
+
+### Chave de API
+
+Crie uma chave de API no [painel do Phaseo](https://phaseo.app/gateway/keys).
+
+### Variável de ambiente
+
+```bash
+export PHASEO_API_KEY="phaseo_v1_sk_<kid>_<secret>"
+```
+
+### Uso básico
+
+```python
+from phaseo import Phaseo
+import os
+
+client = Phaseo(api_key=os.environ["PHASEO_API_KEY"])
+
+response = client.generate_text(
+    {
+        "model": "openai/gpt-5-nano",
+        "messages": [{"role": "user", "content": "Hello!"}],
+    }
+)
+
+print(response["choices"][0]["message"]["content"])
+```
+
+### Configuração opcional do cliente
+
+```python
+from phaseo import Phaseo
+
+client = Phaseo(
+    api_key="your-api-key",
+    base_url="https://api.phaseo.app/v1",
+    timeout=30.0,
+)
+```
+
+## Próximas etapas
+
+- Confira o [guia de uso](./usage.mdx)
+- Explore a [referência da API](../../api-reference/introduction.mdx)

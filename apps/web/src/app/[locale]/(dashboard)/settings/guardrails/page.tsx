@@ -1,3 +1,4 @@
+import { getTranslations } from "next-intl/server";
 import { Suspense } from "react";
 import Link from "next/link";
 import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHeader";
@@ -17,9 +18,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ProductFeedbackButton } from "@/components/feedback/ProductFeedbackButton";
 
-export const metadata = {
-	title: "Guardrails - Settings",
-};
+export async function generateMetadata() {
+	const t = await getTranslations("SettingsUI");
+	return { title: `${t("headers.guardrails")} - ${t("headers.settings")}` };
+}
 
 export default function GuardrailsSettingsPage() {
 	return (
@@ -32,6 +34,7 @@ export default function GuardrailsSettingsPage() {
 }
 
 async function GuardrailsSettingsContent() {
+	const t = await getTranslations("SettingsUI");
 	const initialData = await fetchSettingsGuardrailsInitialData();
 	const header = (
 		<SettingsPageHeader
@@ -39,18 +42,18 @@ async function GuardrailsSettingsContent() {
 			titleKey="headers.guardrails"
 			description="Set workspace policies for members and API keys."
 			descriptionKey="headers.guardrailsDescription"
-			meta={<Badge variant="outline">Beta</Badge>}
+			meta={<Badge variant="outline">{t("settingsPageCopy.beta")}</Badge>}
 			actions={(
 				<>
 					{initialData.canManageGuardrails ? <Button asChild type="button" className="rounded-md">
 						<Link href="/settings/guardrails/new">
 							<Plus className="h-4 w-4" />
-							New Guardrail
+							{t("settingsPageCopy.guardrailNew")}
 						</Link>
 					</Button> : null}
 					<ProductFeedbackButton
 						surface="settings_guardrails"
-						prompt="Tell us what would make Guardrails more useful for your workspace."
+						prompt={t("settingsPageCopy.guardrailFeedback")}
 					/>
 				</>
 			)}
@@ -66,9 +69,9 @@ async function GuardrailsSettingsContent() {
 					<EmptyMedia variant="icon">
 						<Shield className="h-5 w-5" />
 					</EmptyMedia>
-					<EmptyTitle>Select a workspace</EmptyTitle>
+					<EmptyTitle>{t("settingsCopy.guardrails.selectWorkspace")}</EmptyTitle>
 					<EmptyDescription>
-						Choose a workspace to view and manage its guardrails.
+						{t("settingsPageCopy.guardrailsWorkspaceBody")}
 					</EmptyDescription>
 				</EmptyHeader>
 				</Empty>

@@ -1,0 +1,120 @@
+---
+title: "MCP للوثائق"
+icon: "plug-zap"
+description: "اربط خادم MCP لوثائق Phaseo بـ Codex أو Claude Code أو Cursor أو VS Code."
+---
+
+إذا أردت أن يجيب وكيل البرمجة عن أسئلة Phaseo بالاستناد إلى الوثائق الحالية بدلًا من بيانات تدريب قديمة، فاربط خادم MCP لوثائق Phaseo.
+
+خادم MCP هذا للقراءة فقط. يساعد الوكلاء على البحث في الوثائق وقراءة الصفحات كاملة أثناء العمل.
+
+## عنوان URL للخادم
+
+`https://phaseo.app/docs/mcp`
+
+## ما الذي يتيحه
+
+- بحث مباشر في وثائق Phaseo
+- محتوى الصفحة كاملًا عندما يحتاج الوكيل إلى مزيد من التفاصيل
+- الوصول إلى ملخص الإمكانات المستضاف [skill.md](https://phaseo.app/docs/skill.md)
+
+## Codex
+
+أضف الخادم:
+
+```bash
+codex mcp add phaseoDocs --url https://phaseo.app/docs/mcp
+```
+
+تحقّق من الاتصال:
+
+```bash
+codex mcp list
+```
+
+## Claude Code
+
+أضف الخادم إلى المشروع الحالي:
+
+```bash
+claude mcp add --transport http phaseo-docs https://phaseo.app/docs/mcp
+```
+
+اجعله متاحًا في جميع المشاريع:
+
+```bash
+claude mcp add --transport http --scope user phaseo-docs https://phaseo.app/docs/mcp
+```
+
+تحقّق من الاتصال:
+
+```bash
+claude mcp list
+```
+
+## Cursor
+
+استخدم القائمة السياقية في الوثائق لتثبيت خادم MCP في Cursor، أو أضفه يدويًا:
+
+```json
+{
+  "mcpServers": {
+    "phaseoDocs": {
+      "url": "https://phaseo.app/docs/mcp"
+    }
+  }
+}
+```
+
+## OpenCode
+
+أضف خادم وثائق Phaseo إلى `opencode.json`:
+
+```json
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "phaseoDocs": {
+      "type": "remote",
+      "url": "https://phaseo.app/docs/mcp"
+    }
+  }
+}
+```
+
+## VS Code
+
+استخدم القائمة السياقية في الوثائق لتثبيت خادم MCP في VS Code، أو أضفه يدويًا:
+
+```json
+{
+  "servers": {
+    "phaseoDocs": {
+      "type": "http",
+      "url": "https://phaseo.app/docs/mcp"
+    }
+  }
+}
+```
+
+## متى تستخدمه
+
+استخدم Docs MCP عندما تريد من وكيلك أن:
+
+- يتحقق من أحدث بنية للطلب قبل كتابة التعليمات البرمجية
+- يتحقق من دعم نموذج أو مزوّد لنقطة نهاية
+- يراجع التوجيه أو الإعدادات المسبقة أو الضوابط أو سلوك المهام غير المتزامنة
+- يستخرج أمثلة من الوثائق مع البقاء داخل المحرر
+
+## أمثلة على الطلبات
+
+- `ابحث في وثائق Phaseo عن تنسيق طلب Responses وقدّم لي مثالًا مختصرًا.`
+- `قبل تعديل هذا الطلب، استخدم خادم Docs MCP الخاص بـ Phaseo للتحقق من طريقة عمل provider.sort.`
+- `اعثر على وثائق الضوابط في Phaseo ولخّص الأجزاء التي تؤثر في توجيه المزوّدين.`
+
+## أدلة ذات صلة
+
+- [Codex](./codex.mdx)
+- [Claude Code](./claude-code.mdx)
+- [البدء السريع](../../quickstart.mdx)
+- [مرجع API](../../api-reference/introduction.mdx)

@@ -1,0 +1,22 @@
+---
+icon: "chart-spline"
+title: "開発ツール"
+description: "開発やデバッグのためにJava Agent SDKの実行をローカルに記録します。"
+---
+
+`AgentSdk.createAgentDevtools(...)`を使って実行のローカル記録を有効にします。
+
+```java
+var devtools = AgentSdk.createAgentDevtools(".phaseo-devtools");
+```
+
+`RunOptions`を通じてこの値を渡します。記録されたJSONLエントリーには、実行ステータスと所要時間、モデルとプロバイダーの詳細、リクエストID、メッセージ、ステップ、ツールの動作、使用量、コスト、構造化されたエラーが含まれます。
+
+<Warning>
+エージェントの入力、メッセージ、コンテキスト、ツール結果には機密データが含まれる場合があります。DevToolsディレクトリをソース管理と本番イメージから除外してください。
+</Warning>
+
+## 関連項目
+
+- [ライフサイクルフック](./agent-sdk-lifecycle-hooks.mdx)
+- [エラーとトラブルシューティング](./agent-sdk-observability.mdx)

@@ -1,0 +1,41 @@
+---
+icon: "compass"
+title: "Visão geral do SDK TypeScript"
+description: "Cliente TypeScript oficial da API do Phaseo Gateway"
+---
+
+Instale pelo npm o pacote publicado [~@phaseo/sdk~](https://www.npmjs.com/package/@phaseo/sdk).
+
+O SDK TypeScript do Phaseo oferece uma forma prática e segura em termos de tipos para interagir com a API do Phaseo Gateway. Baseado na especificação OpenAPI, ele oferece suporte completo a TypeScript, tipos gerados e uma interface simples de cliente.
+
+## Recursos
+
+-   **Segurança de tipos**: suporte completo a TypeScript com tipos gerados a partir da especificação OpenAPI
+-   **API simples**: cliente fácil de usar com uma interface clara
+-   **Código gerado**: gerado automaticamente a partir da especificação canônica da API
+-   **Abrangente**: cobre todos os endpoints da Gateway API
+
+## Exemplo rápido
+
+```typescript
+import Phaseo from "@phaseo/sdk";
+
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
+
+const response = await client.generateText({
+	model: "openai/gpt-4o-mini",
+	messages: [{ role: "user", content: "Hello, how are you?" }],
+});
+
+console.log(response.choices[0].message.content);
+```
+
+## O que está incluído
+
+-   Classe de cliente `Phaseo` para todas as interações com a API
+-   Helpers organizados por recurso, como `client.models`, `client.batches`, `client.videos`, and `client.asyncJobs`
+-   Helpers de descoberta e preços, como `client.getModels()`, `client.listProviders()`, `client.getCredits()`, `client.getActivity()`, `client.getAnalytics()`, `client.listEndpoints()`, `client.listOrganisations()`, `client.listPricingModels()`, `client.calculatePricing()`, `client.listApiKeys()`, `client.createApiKey()`, `client.getApiKey(id)`, `client.updateApiKey(id, ...)`, `client.deleteApiKey(id)`, `client.listWorkspaces()`, `client.getWorkspace(id)`, `client.createWorkspace(...)`, `client.updateWorkspace(id, ...)`, `client.deleteWorkspace(id)`, and `client.getCurrentApiKey()`
+-   Helpers de URL WebSocket para fluxos do ciclo de vida de trabalhos assíncronos, lotes e vídeos
+-   Tipos gerados para todos os objetos de solicitação e resposta
+-   Cobertura completa da API, incluindo conclusões de chat, modelos, créditos e muito mais
+-   Definições TypeScript para uma melhor experiência de desenvolvimento

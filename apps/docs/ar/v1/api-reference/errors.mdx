@@ -1,0 +1,277 @@
+---
+title: "الأخطاء وتصحيحها"
+description: "افهم أخطاء Phaseo وأصلح مشكلات الطلب والمزوّد والتوجيه الشائعة بسرعة أكبر."
+icon: "bug"
+---
+
+استخدم هذه الصفحة لفهم معنى خطأ Phaseo وما ينبغي فعله بعد ذلك.
+
+تتبع جميع استجابات الأخطاء تنسيق JSON واحدًا، ما يتيح لتطبيقك معالجة الإخفاقات باتساق عبر النماذج والمزوّدين.
+
+## مثال على استجابة خطأ
+
+```json
+{
+  "generation_id": "G-abc123",
+  "status_code": 502,
+  "error": "upstream_error",
+  "error_type": "system",
+  "error_origin": "upstream",
+  "reason": "all_candidates_failed",
+  "description": "Provider \"google-ai-studio\" failed with HTTP 403 for endpoint \"responses\" on model \"google/gemini-2.5-pro\".",
+  "attempt_count": 1,
+  "failed_providers": ["google-ai-studio"],
+  "failed_statuses": [403],
+  "provider_failure_diagnostics": {
+    "category": "provider_access_missing",
+    "hint": "The provider account appears not to have access to this model or feature yet. Verify account entitlements and provider-side access.",
+    "provider": "google-ai-studio"
+  },
+  "upstream_error": {
+    "code": "PERMISSION_DENIED",
+    "message": "The caller does not have permission.",
+    "description": null,
+    "param": null
+  },
+  "failure_sample": [
+    {
+      "provider": "google-ai-studio",
+      "type": "upstream_non_2xx",
+      "status": 403,
+      "upstream_error_code": "PERMISSION_DENIED",
+      "upstream_error_message": "The caller does not have permission.",
+      "upstream_error_description": null,
+      "upstream_error_param": null,
+      "upstream_payload_preview": "{\"error\":{\"status\":\"PERMISSION_DENIED\"}}",
+      "retryable": false
+    }
+  ]
+}
+```
+
+## الحقول التي ستتلقاها دائمًا
+
+- `generation_id`: معرّف طلب ثابت يمكنك مشاركته مع فريق الدعم.
+- `status_code`: يطابق رمز حالة HTTP.
+- `error`: رمز خطأ قابل للقراءة آليًا، مثل `validation_error`.
+- `error_type`: فئة عامة، تكون عادةً `user` أو `system`.
+- `error_origin`: يوضح ما إذا كان السبب الأساسي هو المتصل أو Phaseo أو مزوّد أساسي.
+- `description`: شرح مبسط لما حدث.
+- `details` (اختياري): تفاصيل تحقق منظمة عندما يكون الخطأ متعلقًا بالتحقق من صحة الطلب.
+
+## حقول إضافية قد تظهر
+
+تتضمن بعض الأخطاء تفاصيل أكثر لمساعدتك على حل المشكلة بسرعة:
+
+- `reason`: سبب فرعي أدق، مثل `all_candidates_failed` أو `pricing_not_configured`.
+- `provider_candidate_diagnostics` و`provider_enablement`: يوضحان سبب تعذر استخدام النموذج مع نقطة النهاية المطلوبة.
+- `routing_diagnostics`: تفاصيل إضافية عن كيفية تضييق خيارات الطلب عبر فحوصات التوجيه أو التوفر.
+- `provider_failure_diagnostics`: تلميحات بشأن بيانات الاعتماد المفقودة أو غياب الوصول أو القيود الإقليمية أو حدود المعدل وإخفاقات المزوّد المماثلة.
+- `upstream_error` و`failure_sample`: ملخص بأفضل جهد لإخفاق المزوّد الأول إذا وصل الطلب إلى مزوّد.
+- `failed_providers` و`failed_statuses` و`attempt_count`: سياق إضافي حول إعادة المحاولة والتحويل الاحتياطي.
+
+## إرشادات فئات الحالة
+
+| الحالة | المعنى | الإجراء الموصى به |
+| --- | --- | --- |
+| `400-499` | مشكلة في الطلب أو المصادقة أو الأذونات | أصلح الطلب أو بيانات الاعتماد قبل إعادة المحاولة. |
+| `429` | تقييد للمعدل من المزوّد أو المسار | أعد المحاولة مع تراجع تدريجي والتزم بـ `Retry-After`. |
+| `500-599` | إخفاق في Phaseo أو مزوّد أساسي | أعد المحاولة بتراجع يتضمن تفاوتًا عشوائيًا وسجّل معرّف الطلب. |
+
+## رموز الأخطاء الشائعة
+
+| النوع | حالة HTTP | الوصف |
+| --- | --- | --- |
+| `authentication_error` | `401` | مفتاح API مفقود أو غير صالح. |
+| `authorization_error` | `403` | لا يملك المفتاح صلاحية الوصول إلى هذا المورد. |
+| `not_found_error` | `404` | تعذر العثور على نقطة النهاية أو المورد. |
+| `rate_limit_error` | `429` | عدد الطلبات كبير جدًا. أعد المحاولة بعد المهلة المحددة. |
+| `validation_error` | `400` | معلمات أو جسم طلب غير صالح. |
+| `provider_error` | `502` | لم يستجب مزوّد النموذج الأساسي بطريقة صحيحة. |
+| `server_error` | `500` | حدثت مشكلة غير متوقعة داخل Phaseo. |
+
+## عند إخفاق مزوّد
+
+إذا وصلت Phaseo إلى مزوّد لكن الطلب أخفق رغم ذلك، فقد ترى:
+
+- `provider_failure_diagnostics.category`
+- `provider_failure_diagnostics.hint`
+- `provider_failure_diagnostics.provider`
+
+تشمل الفئات الحالية:
+
+- `credentials_not_configured`
+- `credentials_invalid_or_forbidden`
+- `provider_access_missing`
+- `region_or_project_restriction`
+- `model_unavailable_for_endpoint`
+- `rate_limited`
+- `server_error`
+
+تهدف هذه الحقول إلى مساعدتك في حل المشكلة دون تشغيل وضع التصحيح الكامل.
+
+## عند عدم توفر نموذج أو نقطة نهاية
+
+قد تتضمن استجابات `unsupported_model_or_endpoint` ما يلي:
+
+- `provider_candidate_diagnostics`
+- `provider_enablement`
+- `missing_pricing_providers`
+- `routing_diagnostics`
+
+يساعدك ذلك على التمييز بين:
+
+- نموذج معروف لم يُفعّل بعد
+- نموذج لا يدعم نقطة النهاية المطلوبة
+- بيانات أسعار مفقودة
+- قيود الطرح أو التوفر الداخلي
+
+حقول شائعة:
+
+- `provider_candidate_diagnostics.totalProviders`: عدد المزوّدين المعروفين للنموذج قبل التصفية حسب نقطة النهاية.
+- `provider_candidate_diagnostics.supportsEndpointCount`: عدد المزوّدين الذين يدعمون نقطة النهاية المطلوبة.
+- `provider_candidate_diagnostics.candidateCount`: عدد المزوّدين المتبقين بعد فحوصات المحوّل.
+- `provider_candidate_diagnostics.droppedUnsupportedEndpoint`: المزوّدون المستبعدون لعدم دعم نقطة النهاية.
+- `provider_candidate_diagnostics.droppedMissingAdapter`: أزواج المزوّد ونقطة النهاية المستبعدة لعدم وجود محوّل Gateway لهذه النقطة بعد.
+- `provider_enablement.capability`: بوابة الإمكانية قيد التنفيذ، مثل `video_generation`.
+- `provider_enablement.providersBefore` / `provider_enablement.providersAfter`: المزوّدون قبل التصفية حسب الإمكانية أو التفعيل وبعدها.
+- `provider_enablement.dropped[].reason`: أسباب قابلة للقراءة آليًا، مثل `pricing_missing`.
+- `routing_diagnostics.filterStages[].stage`: مرحلة التوجيه، مثل التصفية حسب الإمكانية أو الطرح أو حالة التوجيه.
+- `routing_diagnostics.filterStages[].beforeCount` / `routing_diagnostics.filterStages[].afterCount`: عدد المزوّدين قبل كل مرحلة وبعدها.
+- `routing_diagnostics.filterStages[].droppedProviders[].reason`: أسباب قابلة للقراءة آليًا، مثل قيود الطرح أو التوجيه.
+
+### مثال
+
+```json
+{
+  "generation_id": "G-unsupported123",
+  "status_code": 400,
+  "error": "unsupported_model_or_endpoint",
+  "description": "No provider is currently routable for endpoint \"responses\" on model \"example/model\".",
+  "provider_candidate_diagnostics": {
+    "totalProviders": 3,
+    "supportsEndpointCount": 2,
+    "candidateCount": 1,
+    "droppedUnsupportedEndpoint": ["provider-a"],
+    "droppedMissingAdapter": [
+      {
+        "providerId": "provider-b",
+        "endpoint": "responses"
+      }
+    ]
+  },
+  "provider_enablement": {
+    "capability": "responses",
+    "providersBefore": ["provider-b", "provider-c"],
+    "providersAfter": ["provider-c"],
+    "dropped": [
+      {
+        "providerId": "provider-b",
+        "reason": "pricing_missing"
+      }
+    ]
+  },
+  "routing_diagnostics": {
+    "filterStages": [
+      {
+        "stage": "provider_routing_status",
+        "beforeCount": 1,
+        "afterCount": 0,
+        "droppedProviders": [
+          {
+            "providerId": "provider-c",
+            "reason": "provider_status_not_ready"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+## وضع تصحيح اختياري
+
+تدعم معظم مخططات الطلبات كائن `debug` لتصحيح المشكلات ضمن ضوابط محددة:
+
+```json
+{
+  "debug": {
+    "enabled": true,
+    "return_upstream_request": true,
+    "return_upstream_response": false,
+    "trace": true,
+    "trace_level": "summary"
+  }
+}
+```
+
+الحقول المتاحة:
+
+- `enabled`
+- `return_upstream_request`
+- `return_upstream_response`
+- `trace`
+- `trace_level` (`summary` أو `full`)
+
+استخدم وضع التصحيح في التطوير أو البيئات الخاضعة لرقابة صارمة فقط.
+
+## استراتيجية إعادة المحاولة
+
+- **أخطاء الفئة 400:** أصلح طلبك قبل إعادة المحاولة.
+- **429:** طبّق تراجعًا أسيًا والتزم بترويسة `Retry-After`.
+- **أخطاء الفئة 500:** أعد المحاولة بأمان بعد مهلة قصيرة.
+
+مثال:
+
+```js
+if (error.error === "rate_limit_error") {
+  await sleep(retryAfterMs);
+  return retryRequest();
+}
+```
+
+## ملاحظات خاصة بالبث
+
+- إذا أخفق الطلب قبل بدء البث، فستتلقى حمولة خطأ JSON قياسية.
+- إذا أخفق أثناء البث، فتعامل مع التدفق الجزئي على أنه غير مكتمل واعرض خيار إعادة المحاولة.
+- سجّل دائمًا `generation_id` وبيانات نقطة النهاية والنموذج الوصفية.
+
+## نصائح لاستكشاف المشكلات
+
+- تحقّق من [صفحة حالة Gateway](https://status.phaseo.app) للاطلاع على الحوادث الجارية.
+- راجع حمولة الطلب مقابل توثيق نقطة النهاية.
+- شارك `generation_id` عند التواصل مع الدعم.
+
+## موارد ذات صلة
+
+<Columns cols={2}>
+	<Card
+		title="المصادقة"
+		icon="key"
+		href="./authentication.mdx"
+	>
+		صادِق باستخدام مفاتيح API من نوع Bearer.
+	</Card>
+	<Card
+		title="الحدود"
+		icon="gauge"
+		href="./limits.mdx"
+	>
+		تعامل مع تقييد المعدل وإعادة المحاولة اللذين يفرضهما المزوّد.
+	</Card>
+	<Card
+		title="البث"
+		icon="radio"
+		href="./streaming.mdx"
+	>
+		استخدم SSE بأمان في تدفقات الإنتاج.
+	</Card>
+</Columns>
+
+<Visibility for="agents">
+إذا كنت تنفّذ معالجة الأخطاء بصفتك وكيلًا:
+
+- استخدم مهارات المستودع لمنطق إعادة المحاولة والتسجيل المنظم وتحليل الأخطاء الآمن وفق المخطط.
+- تعامل مع حمولات التصحيح على أنها قد تكون حساسة ونقّحها قبل حفظها في سجلات دائمة.
+- فضّل إعادة المحاولة الحتمية (محاولات محدودة مع تفاوت عشوائي) على الحلقات غير المحدودة.
+</Visibility>

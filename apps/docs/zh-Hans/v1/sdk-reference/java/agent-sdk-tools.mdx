@@ -1,0 +1,23 @@
+---
+icon: "wrench"
+title: "工具"
+description: "定义经过验证、需审批、手动执行和可报告进度的 Java 工具。"
+---
+
+`AgentSdk.Tool` 支持：
+
+- 提供给模型的 JSON `parameters`
+- 用于验证输入、输出和进度事件的 `Validator` 函数
+- 每个工具独立的 `Duration` 超时
+- 无条件或有条件的审批
+- 由应用完成的手动工具
+- 通过 `RuntimeContext.emitProgress()` 报告初步进度
+- `fail-run` 或 `return-to-model` 错误处理
+- 工具成功执行后应用于下一轮的覆盖项
+
+通过 `AgentSdk.defineTool(...)` 传入工具记录，并要求副作用操作经过明确审批或由应用手动执行。
+
+## 相关内容
+
+- [状态与审批](./agent-sdk-state-and-approval.mdx)
+- [运行控制](./agent-sdk-run-controls.mdx)

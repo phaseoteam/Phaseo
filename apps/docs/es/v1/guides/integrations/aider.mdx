@@ -1,0 +1,70 @@
+---
+title: "Aider"
+description: "Conecta Aider a Phaseo con una configuración administrada automáticamente."
+---
+
+Phaseo CLI puede crear una clave de API dedicada y configurar Aider para que use Phaseo en cada sesión nueva.
+
+## Configurar Aider
+
+```bash
+phaseo login
+phaseo integrations setup aider --model anthropic/claude-sonnet-4.6
+```
+
+Si `~/.aider.conf.yml` no existe, la configuración crea un archivo administrado por Phaseo que contiene:
+
+```yaml
+model: openai/anthropic/claude-sonnet-4.6
+openai-api-base: https://api.phaseo.app/v1
+openai-api-key: <dedicated Phaseo key>
+```
+
+Aider necesita el prefijo `openai/` para dirigir un modelo personalizado a través de su adaptador compatible con OpenAI. El modelo que se envía a Phaseo sigue siendo `anthropic/claude-sonnet-4.6`.
+
+<Warning>
+La clave de API se guarda en texto sin formato porque `.aider.conf.yml` es una de las ubicaciones de credenciales documentadas por Aider. Protege el archivo con los permisos habituales de tu cuenta de usuario y no lo confirmes en el repositorio.
+</Warning>
+
+Si ya tienes una configuración de Aider, la CLI se detiene sin modificarla. Combina los tres valores anteriores en la configuración que quieras que cargue Aider. Aider comprueba el directorio principal, la raíz del repositorio y el directorio actual; los archivos posteriores tienen prioridad.
+
+## Verificar
+
+Abre un repositorio e inicia Aider:
+
+```bash
+aider
+```
+
+Confirma que el resultado de inicio muestra `openai/anthropic/claude-sonnet-4.6` y luego pídele que responda `PHASEO_AIDER_OK`. La solicitud también debería aparecer en la actividad de Phaseo.
+
+Una advertencia de modelo desconocido no impide el envío de solicitudes. Añade metadatos del modelo a Aider solo si necesitas estimaciones precisas de límites de tokens o costos.
+
+## Eliminar
+
+```bash
+phaseo integrations remove aider
+```
+
+La eliminación revoca la clave dedicada y borra `~/.aider.conf.yml` solo si el archivo aún conserva el marcador de propiedad de Phaseo CLI. Si añadiste Phaseo manualmente a un archivo existente, elimina tú mismo los tres valores de Phaseo.
+
+## Solución de problemas
+
+### Aider usa otro endpoint o modelo
+
+Busca archivos `.aider.conf.yml` en la raíz del repositorio y en el directorio actual. Esos archivos anulan la configuración del directorio principal. Las variables de entorno y las opciones de la línea de comandos también pueden reemplazar los valores guardados.
+
+### Falla la autenticación
+
+Ejecuta `phaseo integrations credential aider` y compara el resultado con `openai-api-key`. Mantén `openai-api-base` exactamente en `https://api.phaseo.app/v1`.
+
+### No se puede resolver el modelo
+
+Conserva el prefijo `openai/` exclusivo de Aider. Por ejemplo, el modelo de Phaseo `openai/gpt-5.6-terra` se convierte en `openai/openai/gpt-5.6-terra` en Aider.
+
+## Relacionado
+
+- [Documentación de Aider para la API compatible con OpenAI](https://aider.chat/docs/llms/openai-compat.html)
+- [Configuración YAML de Aider](https://aider.chat/docs/config/aider_conf.html)
+- [Asistentes de programación](./coding-assistants.mdx)
+- [Modelos](../../api-reference/endpoint/models.mdx)

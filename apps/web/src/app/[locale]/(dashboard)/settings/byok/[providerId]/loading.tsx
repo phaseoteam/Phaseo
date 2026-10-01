@@ -1,6 +1,9 @@
-export default function ByokProviderLoading() {
+import { getTranslations } from "next-intl/server";
+
+export default async function ByokProviderLoading() {
+	const t = await getTranslations("SettingsUI.labels");
 	return (
-		<div className="mx-auto animate-pulse space-y-8" aria-label="Loading provider keys">
+		<div className="mx-auto animate-pulse space-y-8" aria-label={t("loading")}>
 			<div className="space-y-5">
 				<div className="h-5 w-36 rounded-md bg-muted" />
 				<div className="flex items-center justify-between gap-4">

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import {
 	Check,
 	Copy,
@@ -38,11 +39,12 @@ import {
 import {
 	ALL_PARAMETERS_DOCS_HREF,
 	getParameterDocsHref,
-	getParameterReference,
+	getParameterReferenceTranslationKey,
 } from "@/lib/parameters/reference";
 import { getTierFilterMeta } from "@/lib/models/tierFilterStyles";
 import { cn } from "@/lib/utils";
 import { captureProductEvent } from "@/lib/productAnalytics";
+import { getLocalizedDocsHref } from "@/lib/docs";
 
 type LanguageFamilyOption = {
 	id: string;
@@ -56,16 +58,16 @@ type QuickstartVisual =
 
 type ServiceTierOption = {
 	value: "standard" | "priority" | "flex" | "batch";
-	label: string;
+	labelKey: "tierStandard" | "tierFast" | "tierFlex" | "tierBatch";
 	disabled?: boolean;
-	hint?: string;
+	hintKey?: "comingSoon";
 };
 
 const SERVICE_TIER_OPTIONS: ServiceTierOption[] = [
-	{ value: "standard", label: "Standard" },
-	{ value: "priority", label: "Fast" },
-	{ value: "flex", label: "Flex" },
-	{ value: "batch", label: "Batch", disabled: true, hint: "Coming soon" },
+	{ value: "standard", labelKey: "tierStandard" },
+	{ value: "priority", labelKey: "tierFast" },
+	{ value: "flex", labelKey: "tierFlex" },
+	{ value: "batch", labelKey: "tierBatch", disabled: true, hintKey: "comingSoon" },
 ];
 
 type QuickstartUsageSectionProps = {
@@ -287,9 +289,15 @@ function sortSupportedParameters(
 function MiniCopyButton({
 	content,
 	onCopy,
+	copyText,
+	copiedText,
+	codeCopiedText,
 }: {
 	content: string;
 	onCopy: () => void;
+	copyText: string;
+	copiedText: string;
+	codeCopiedText: string;
 }) {
 	const [copied, setCopied] = useState(false);
 
@@ -305,8 +313,8 @@ function MiniCopyButton({
 			size="icon"
 			variant="outline"
 			className="h-8 w-full gap-1.5 rounded-lg px-3 lg:size-8 lg:px-0"
-			aria-label={copied ? "Code copied" : "Copy code"}
-			title={copied ? "Copied" : "Copy code"}
+			aria-label={copied ? codeCopiedText : copyText}
+			title={copied ? copiedText : copyText}
 			onClick={async () => {
 				await navigator.clipboard.writeText(content);
 				setCopied(true);
@@ -314,7 +322,7 @@ function MiniCopyButton({
 			}}
 		>
 			{copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-			<span className="text-xs lg:sr-only">{copied ? "Copied" : "Copy"}</span>
+			<span className="text-xs lg:sr-only">{copied ? copiedText : copyText}</span>
 		</Button>
 	);
 }
@@ -432,19 +440,24 @@ export function QuickstartUsageSection({
 	anthropicPythonUsage,
 	anthropicNodeUsage,
 }: QuickstartUsageSectionProps) {
+	const t = useTranslations("Catalogue.models.detail.quickstart");
+	const locale = useLocale();
 	const shouldStream = supportsStreaming && streamingEnabled;
 	const selectedLanguageFamilyLabel =
 		availableLanguageFamilies.find((family) => family.id === selectedLanguageFamilyId)
-			?.label ?? "Language";
+			?.label ?? t("language");
 	const selectedLanguageFamilyVisual =
 		getLanguageFamilyVisual(selectedLanguageFamilyId);
 	const selectedExampleTypeLabel =
 		secondaryLanguageOptions.find((option) => option.value === selectedLanguage)
-			?.label ?? "Example type";
+			?.label ?? t("exampleType");
 	const selectedExampleTypeVisual = getLanguageOptionVisual(selectedLanguage);
-	const selectedServiceTierLabel =
-		SERVICE_TIER_OPTIONS.find((option) => option.value === selectedServiceTier)
-			?.label ?? "Service tier";
+	const selectedServiceTierOption = SERVICE_TIER_OPTIONS.find(
+		(option) => option.value === selectedServiceTier,
+	);
+	const selectedServiceTierLabel = selectedServiceTierOption
+		? t(selectedServiceTierOption.labelKey)
+		: t("serviceTier");
 	const selectedServiceTierVisual = getServiceTierVisual(selectedServiceTier);
 	const sortedSupportedParameters = useMemo(
 		() => sortSupportedParameters(supportedParameters),
@@ -571,7 +584,7 @@ export function QuickstartUsageSection({
 									>
 										<SelectGroup>
 											<SelectLabel className="text-[11px] tracking-[0.04em] text-muted-foreground">
-												Endpoint
+												{t("endpoint")}
 											</SelectLabel>
 											<SelectSeparator />
 											{endpointOptions.map((option) => (
@@ -590,7 +603,7 @@ export function QuickstartUsageSection({
 								onValueChange={onSelectLanguageFamily}
 							>
 								<SelectTrigger className="h-8 w-full rounded-lg bg-muted/60 text-xs">
-									<SelectValue placeholder="Language">
+									<SelectValue placeholder={t("language")}>
 										<OptionLabel
 											label={selectedLanguageFamilyLabel}
 											visual={selectedLanguageFamilyVisual}
@@ -604,7 +617,7 @@ export function QuickstartUsageSection({
 								>
 									<SelectGroup>
 										<SelectLabel className="text-[11px] tracking-[0.04em] text-muted-foreground">
-											Language
+											{t("language")}
 										</SelectLabel>
 										<SelectSeparator />
 										{availableLanguageFamilies.map((family) => (
@@ -622,7 +635,7 @@ export function QuickstartUsageSection({
 						<div className="w-full lg:w-44">
 							<Select value={selectedLanguage} onValueChange={onSelectLanguage}>
 								<SelectTrigger className="h-8 w-full rounded-lg bg-muted/60 text-xs">
-									<SelectValue placeholder="Example type">
+									<SelectValue placeholder={t("exampleType")}>
 										<OptionLabel
 											label={selectedExampleTypeLabel}
 											visual={selectedExampleTypeVisual}
@@ -636,7 +649,7 @@ export function QuickstartUsageSection({
 								>
 									<SelectGroup>
 										<SelectLabel className="text-[11px] tracking-[0.04em] text-muted-foreground">
-											Example type
+											{t("exampleType")}
 										</SelectLabel>
 										<SelectSeparator />
 										{secondaryLanguageOptions.map((option) => (
@@ -660,7 +673,7 @@ export function QuickstartUsageSection({
 									}
 								>
 									<SelectTrigger className="h-8 w-full rounded-lg bg-muted/60 text-xs">
-										<SelectValue placeholder="Service tier">
+										<SelectValue placeholder={t("serviceTier")}>
 											<OptionLabel
 												label={selectedServiceTierLabel}
 												visual={selectedServiceTierVisual}
@@ -674,7 +687,7 @@ export function QuickstartUsageSection({
 									>
 										<SelectGroup>
 											<SelectLabel className="text-[11px] tracking-[0.04em] text-muted-foreground">
-												Service tier
+												{t("serviceTier")}
 											</SelectLabel>
 											<SelectSeparator />
 											{SERVICE_TIER_OPTIONS.map((option) => (
@@ -682,17 +695,15 @@ export function QuickstartUsageSection({
 													key={option.value}
 													value={option.value}
 													disabled={option.disabled}
-													title={option.hint}
+													title={option.hintKey ? t(option.hintKey) : undefined}
 												>
 													<div className="flex w-full items-center justify-between gap-3">
 														<OptionLabel
-															label={option.label}
+														label={t(option.labelKey)}
 															visual={getServiceTierVisual(option.value)}
 														/>
-														{option.hint ? (
-															<span className="text-[10px] uppercase tracking-[0.08em] text-muted-foreground">
-																{option.hint}
-															</span>
+														{option.hintKey ? (
+															<span className="text-[10px] uppercase tracking-[0.08em] text-muted-foreground">{t(option.hintKey!)}</span>
 														) : null}
 													</div>
 												</SelectItem>
@@ -705,19 +716,22 @@ export function QuickstartUsageSection({
 						{showStreamingControl ? (
 							<div className="flex h-8 w-full items-center justify-between gap-2 rounded-lg bg-muted/60 px-3 lg:w-auto lg:justify-start">
 								<span className="text-xs font-medium">
-									{supportsStreaming ? "Streaming" : "No stream"}
+									{supportsStreaming ? t("streaming") : t("noStream")}
 								</span>
 								<Switch
 									checked={streamingEnabled}
 									onCheckedChange={onToggleStreaming}
 									disabled={!supportsStreaming}
-									aria-label={supportsStreaming ? "Enable streaming" : "Streaming unavailable"}
+									aria-label={supportsStreaming ? t("enableStreaming") : t("streamingUnavailable")}
 								/>
 							</div>
 						) : null}
 						<div className="w-full lg:absolute lg:right-2 lg:top-2 lg:w-auto">
 									<MiniCopyButton
 										content={requestExample.code}
+							copyText={t("copyCode")}
+							copiedText={t("copied")}
+							codeCopiedText={t("codeCopied")}
 										onCopy={() =>
 											captureProductEvent("quickstart_code_copied", {
 												code_kind: "request",
@@ -736,10 +750,10 @@ export function QuickstartUsageSection({
 				<div className="flex flex-col gap-2 px-3 py-2">
 					<div className="flex items-center justify-between gap-3">
 						<span className="text-xs font-medium text-muted-foreground">
-							Accepted IDs
+							{t("acceptedIds")}
 						</span>
 						<span className="text-xs text-muted-foreground">
-							Click to use and copy
+							{t("clickToUseAndCopy")}
 						</span>
 					</div>
 					{acceptedIdentifiers.length > 0 ? (
@@ -760,7 +774,7 @@ export function QuickstartUsageSection({
 													model_id: analyticsModelId,
 													selected_model_id: identifier,
 												});
-											toast.success("Updated model ID", {
+											toast.success(t("updatedModelId"), {
 												description: identifier,
 											});
 										}}
@@ -777,7 +791,7 @@ export function QuickstartUsageSection({
 						</div>
 					) : (
 						<p className="text-xs text-muted-foreground">
-							Use the model ID shown in the request example above.
+							{t("useModelIdFromExample")}
 						</p>
 					)}
 				</div>
@@ -788,46 +802,41 @@ export function QuickstartUsageSection({
 							<div className="flex flex-wrap items-start justify-between gap-3">
 								<div className="space-y-1">
 									<p className="text-xs font-medium text-muted-foreground">
-										Parameters
+										{t("parameters")}
 									</p>
 									<p className="text-xs text-muted-foreground">
-										Aggregated across active providers for the{" "}
-										{selectedEndpointLabel.toLowerCase()} route.
+										{t("parametersForRoute", { endpoint: selectedEndpointLabel })}
 									</p>
 									<p className="text-xs text-muted-foreground">
-										Routing will select a compatible provider when a
-										parameter narrows availability, so this list stays
-										model-facing instead of provider-facing.
+										{t("routingParameterExplanation")}
 									</p>
 								</div>
 								<Link
-									href={ALL_PARAMETERS_DOCS_HREF}
+									href={getLocalizedDocsHref(locale, ALL_PARAMETERS_DOCS_HREF)}
 									target="_blank"
 									rel="noopener noreferrer"
 									className="text-xs text-muted-foreground underline underline-offset-4 hover:text-foreground"
 								>
-									View all parameters
+									{t("viewAllParameters")}
 								</Link>
 							</div>
 							<div className="overflow-hidden rounded-lg border border-border/70">
 								<Table className="text-xs">
 									<TableHeader>
 										<TableRow className="hover:bg-transparent">
-											<TableHead className="h-9 px-3">Parameter</TableHead>
-											<TableHead className="h-9 px-3">Description</TableHead>
+											<TableHead className="h-9 px-3">{t("parameter")}</TableHead>
+											<TableHead className="h-9 px-3">{t("descriptionLabel")}</TableHead>
 										</TableRow>
 									</TableHeader>
 									<TableBody>
 										{sortedSupportedParameters.map((parameter) => {
-											const reference = getParameterReference(
-												parameter.param_id,
-											);
+							const descriptionKey = getParameterReferenceTranslationKey(parameter.param_id);
 
 											return (
 												<TableRow key={parameter.param_id}>
 													<TableCell className="px-3 py-2">
 														<Link
-															href={getParameterDocsHref(parameter.param_id)}
+												href={getLocalizedDocsHref(locale, getParameterDocsHref(parameter.param_id))}
 															target="_blank"
 															rel="noopener noreferrer"
 															className="inline-flex text-foreground underline underline-offset-4 hover:text-foreground/80"
@@ -838,7 +847,7 @@ export function QuickstartUsageSection({
 														</Link>
 													</TableCell>
 													<TableCell className="px-3 py-2 align-top text-muted-foreground">
-														{reference.description}
+														{t(`parameterDescriptions.${descriptionKey}` as never)}
 													</TableCell>
 												</TableRow>
 											);
@@ -852,7 +861,7 @@ export function QuickstartUsageSection({
 				) : null}
 				{docsLinks.length > 0 ? (
 					<div className="flex flex-wrap items-center gap-2 px-3 py-2 text-xs text-muted-foreground">
-						<span>Docs:</span>
+						<span>{t("docsLabel")}</span>
 						{docsLinks.map((link) => (
 							<Link
 								key={link.href}

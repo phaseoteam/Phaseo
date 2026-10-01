@@ -1,0 +1,80 @@
+---
+title: "Google Gemini 3.1"
+description: "介绍采用 Gemini 3.1 时需要了解的推理控制、多模态处理和思考签名。"
+icon: "/icons/brands/google.svg"
+---
+
+# Google Gemini 3.1
+
+使用本指南，在生产环境中安全采用 Gemini 3.1 系列：
+
+- `google/gemini-3-pro-preview`
+- `google/gemini-3-flash-preview`
+- `google/gemini-3.1-pro-preview`
+- `google/gemini-3.1-flash-lite-preview`
+
+Gemini 3 对推理控制和多模态处理引入了实际的 API 变更。Gemini 3.1 又提升了基准能力，尤其适用于复杂、重度推理任务。
+
+## 新功能
+
+- Gemini 3 将 `thinking_level` 引入为控制推理深度的主要参数。
+- Gemini 3 为多模态视觉处理新增 `media_resolution`。
+- Gemini 3 使用思考签名，在多次调用之间保留推理上下文。
+- 在更严格的工作流中，缺少思考签名可能降低质量或导致 `400` 错误。
+- Gemini 3.1 Pro 是面向复杂任务和代理工作流的更强推理升级。
+
+## 迁移快速入门
+
+### 1. 重新映射推理控制
+
+如果应用提供通用推理选项，请谨慎将其映射到 Gemini 3 路由。在 OpenAI 兼容流程中，`reasoning_effort` 在概念上对应 Gemini 的 `thinking_level`，但两者行为并非完全相同，需要重新测试。
+
+### 2. 正确处理思考签名
+
+使用官方 Gemini SDK 和标准聊天历史时，签名通常会自动处理。如果构建较底层的请求流程，尤其涉及函数调用或图像生成与编辑，请保留返回的签名，并按要求原样传回。
+
+### 3. 调整提示词风格
+
+Gemini 3 建议使用直接提示词和参数控制，而不是冗长的提示词框架。如果当前提示词为了弥补旧模型行为而写得很复杂，请简化后重新评估。
+
+### 4. 调整多模态设置
+
+如果路由包含图像、文档或混合媒体，请重新测试 `media_resolution`，不要假设旧默认值仍然合适。
+
+## 测试内容
+
+### 提示词和推理行为
+
+- 简洁提示词与复杂框架提示词的比较
+- 分步骤推理任务
+- 长上下文综合
+- 需要保持推理连续性的代理工作流
+
+### 响应处理
+
+- 跨轮次保留签名
+- 函数调用成功率
+- Schema 通过率
+- 更改思考控制后出现的空、部分或格式错误输出
+
+### 生产指标
+
+- 各 `thinking_level` 下的延迟
+- token 用量和成本
+- 不同 `media_resolution` 设置下的多模态路由性能
+- Gemini 3 与 Gemini 3.1 Pro 的任务成功率比较
+
+## 发布建议
+
+将 Gemini 3 和 Gemini 3.1 视为两次独立迁移。
+
+1. 先迁移请求格式和签名处理。
+2. 然后在 Gemini 3 上重新运行提示词和 Schema 评估。
+3. 对需要更深推理的路由单独启用 Gemini 3.1 Pro。
+4. 为高流量工作负载保留更简单或成本更低的回退方案。
+
+## 来源
+
+- [Gemini 3 开发者指南](https://ai.google.dev/gemini-api/docs/gemini-3)
+- [Gemini 3 的 Gemini API 新更新](https://developers.googleblog.com/en/new-gemini-api-updates-for-gemini-3/)
+- [Gemini 3.1 Pro 发布公告](https://blog.google/innovation-and-ai/models-and-research/gemini-models/gemini-3-1-pro/)

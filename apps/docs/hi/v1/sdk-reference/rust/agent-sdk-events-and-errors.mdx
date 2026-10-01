@@ -1,0 +1,95 @@
+---
+title: "इवेंट, रीट्राई और त्रुटियाँ"
+description: "Rust एजेंट के सिंक्रोनस रन देखें और मॉडल या टूल की विफलताओं को संभालें।"
+---
+
+## लाइफ़साइकल इवेंट
+
+इवेंट सिंक्रोनस रूप से पाने के लिए `run_with_events(...)` या `continue_with_events(...)` का उपयोग करें:
+
+```rust
+use phaseo_agent::{AgentEvent, RunOptions};
+
+let mut on_event = |event: &AgentEvent| {
+    println!(
+        "{} run={} details={}",
+        event.event_type,
+        event.run_id,
+        event.details
+    );
+};
+
+let result = agent.run_with_events(
+    &mut client,
+    RunOptions::new("Check project health"),
+    Some(&mut on_event),
+)?;
+```
+
+रनटाइम अभी ये इवेंट भेजता है:
+
+- `run.started`
+- `model.request.started`
+- `model.response.completed`
+- `tool.started`
+- `tool.completed`
+- `run.paused`
+- `run.resumed`
+- `run.completed`
+- `run.stopped`
+
+कॉलबैक रन के थ्रेड पर चलते हैं। इन्हें तेज़ रखें या काम किसी दूसरे कंपोनेंट को सौंपें।
+
+## मॉडल रीट्राई
+
+```rust
+use std::time::Duration;
+
+let definition = AgentDefinition::new(
+    "resilient-agent",
+    "openai/gpt-5.6-sol",
+)
+.model_retries(2, Duration::from_millis(250));
+```
+
+`max_retries` पहली रिक्वेस्ट के बाद अतिरिक्त प्रयासों की गिनती करता है। `RunStep.model_attempts` सफल मॉडल उत्तर पाने के प्रयासों की संख्या दर्ज करता है।
+
+## उपयोग
+
+`RunResult.usage` इन मानों का कुल देता है:
+
+- `input_tokens`
+- `output_tokens`
+- `cached_tokens`
+- `total_tokens`
+- मॉडल क्लाइंट द्वारा भरे जाने पर `cost`
+
+हर `RunStep` में उपयोग का सारांश, अनुरोध ID, प्रोवाइडर, मॉडल और समाप्ति का कारण भी शामिल होता है।
+
+बिल्ट-इन `0.1` Gateway अडैप्टर, Gateway के `cost_nanos` या `cost_cents` को `UsageSummary.cost` में मैप नहीं करता। सटीक खर्च के लिए Gateway रिस्पॉन्स या जनरेशन रिकॉर्ड देखें।
+
+## त्रुटियाँ
+
+रनटाइम की सभी विफलताएँ `AgentError` का उपयोग करती हैं:
+
+```rust
+match agent.run(&mut client, options) {
+    Ok(result) => println!("{}", result.output),
+    Err(error) => eprintln!("Agent failed: {}", error.message()),
+}
+```
+
+Gateway के `PhaseoError` मान `AgentError` में बदल जाते हैं। मूल Gateway स्थिति और बॉडी चाहिए, तो `phaseo` क्लाइंट को सीधे कॉल करें या ऐसा कस्टम `ModelClient` बनाएँ जो अपनी त्रुटि प्रक्रिया में ये फ़ील्ड सुरक्षित रखे।
+
+लोकल टूल एग्ज़ीक्यूटर की त्रुटियाँ रन को तुरंत समाप्त करने के बजाय टूल नतीजों के रूप में मॉडल को लौटाई जाती हैं।
+
+## स्टेप सीमाएँ
+
+`AgentDefinition::max_steps(...)` मॉडल टर्न की डिफ़ॉल्ट सीमा सेट करता है। किसी एक रन के लिए इसे बदलें:
+
+```rust
+let mut options = RunOptions::new("Investigate this issue");
+options.max_steps = Some(4);
+```
+
+सीमा पूरी होने पर `run.status` का मान `stopped` और `run.stop_reason` का मान `max_steps:<limit>` होता है.

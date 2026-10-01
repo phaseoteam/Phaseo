@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useLocale, useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
 import { AlertTriangle, CheckCircle2, GitCompare, Search } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -36,15 +37,18 @@ type ApiModelConflictsClientProps = {
 	snapshot: ApiModelConflictsSnapshot;
 };
 
-function formatTimestamp(value: string): string {
+function formatTimestamp(value: string, locale: string): string {
 	const date = new Date(value);
 	if (Number.isNaN(date.getTime())) return value;
-	return date.toLocaleString();
+	return date.toLocaleString(locale);
 }
 
 export default function ApiModelConflictsClient({
 	snapshot,
 }: ApiModelConflictsClientProps) {
+	const tUi = useTranslations("Common.ui");
+	const tConflict = useTranslations("Common.ui.apiModelConflicts");
+	const locale = useLocale();
 	const [query, setQuery] = useState("");
 	const [providerFilter, setProviderFilter] = useState<string>("all");
 	const [conflictsOnly, setConflictsOnly] = useState(false);
@@ -169,20 +173,19 @@ export default function ApiModelConflictsClient({
 	return (
 		<div className="mx-8 py-8 space-y-6">
 			<div className="space-y-2">
-				<h1 className="text-2xl font-semibold">API Model Conflict Inspector</h1>
+				<h1 className="text-2xl font-semibold">{tConflict("title")}</h1>
 				<p className="text-sm text-muted-foreground">
-					Compare provider API model IDs, detect likely aliases, and spot model-to-pricing
-					mismatches.
+					{tConflict("description")}
 				</p>
 				<p className="text-xs text-muted-foreground">
-					Generated: {formatTimestamp(snapshot.generatedAt)}
+					{tConflict("generatedAt", { date: formatTimestamp(snapshot.generatedAt, locale) })}
 				</p>
 			</div>
 
 			<div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
 				<Card>
 					<CardHeader className="pb-2">
-						<CardDescription>Provider Models</CardDescription>
+						<CardDescription>{tConflict("providerModels")}</CardDescription>
 						<CardTitle className="text-2xl">
 							{snapshot.totals.providerModels}
 						</CardTitle>
@@ -190,7 +193,7 @@ export default function ApiModelConflictsClient({
 				</Card>
 				<Card>
 					<CardHeader className="pb-2">
-						<CardDescription>Potential Alias Conflicts</CardDescription>
+						<CardDescription>{tConflict("potentialAliasConflicts")}</CardDescription>
 						<CardTitle className="text-2xl">
 							{snapshot.totals.conflictGroups}
 						</CardTitle>
@@ -198,7 +201,7 @@ export default function ApiModelConflictsClient({
 				</Card>
 				<Card>
 					<CardHeader className="pb-2">
-						<CardDescription>Missing Pricing Rows</CardDescription>
+						<CardDescription>{tConflict("missingPricingRows")}</CardDescription>
 						<CardTitle className="text-2xl text-amber-700">
 							{snapshot.totals.modelsWithMissingPricing}
 						</CardTitle>
@@ -206,7 +209,7 @@ export default function ApiModelConflictsClient({
 				</Card>
 				<Card>
 					<CardHeader className="pb-2">
-						<CardDescription>Likely Model/Pricing Mismatches</CardDescription>
+						<CardDescription>{tConflict("likelyModelPricingMismatches")}</CardDescription>
 						<CardTitle className="text-2xl text-red-700">
 							{snapshot.totals.likelyMismatchRows}
 						</CardTitle>
@@ -216,35 +219,35 @@ export default function ApiModelConflictsClient({
 
 			<Card>
 				<CardHeader>
-					<CardTitle className="text-lg">Filters</CardTitle>
+					<CardTitle className="text-lg">{tConflict("filtersTitle")}</CardTitle>
 					<CardDescription>
-						Narrow by provider or focus only on conflict and pricing issues.
+						{tConflict("filtersDescription")}
 					</CardDescription>
 				</CardHeader>
 				<CardContent className="space-y-4">
 					<div className="grid gap-4 lg:grid-cols-2">
 						<div className="space-y-2">
-							<Label htmlFor="api-model-conflicts-search">Search</Label>
+							<Label htmlFor="api-model-conflicts-search">{tConflict("search")}</Label>
 							<div className="relative">
 								<Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
 								<Input
 									id="api-model-conflicts-search"
 									value={query}
 									onChange={(event) => setQuery(event.target.value)}
-									placeholder="provider, model id, internal id, canonical key..."
+									placeholder={tConflict("searchPlaceholder")}
 									className="pl-9"
 								/>
 							</div>
 						</div>
 
 						<div className="space-y-2">
-							<Label htmlFor="api-model-conflicts-provider">Provider</Label>
+							<Label htmlFor="api-model-conflicts-provider">{tConflict("provider")}</Label>
 							<Select value={providerFilter} onValueChange={setProviderFilter}>
 								<SelectTrigger id="api-model-conflicts-provider">
-									<SelectValue placeholder="All providers" />
+						<SelectValue placeholder={tUi("select.allProviders")} />
 								</SelectTrigger>
 								<SelectContent className="max-h-80">
-									<SelectItem value="all">All providers</SelectItem>
+						<SelectItem value="all">{tUi("select.allProviders")}</SelectItem>
 									{providerOptions.map((providerId) => (
 										<SelectItem key={providerId} value={providerId}>
 											{providerId}
@@ -258,21 +261,21 @@ export default function ApiModelConflictsClient({
 					<div className="flex flex-wrap items-center gap-6">
 						<label className="flex items-center gap-2 text-sm">
 							<Switch checked={conflictsOnly} onCheckedChange={setConflictsOnly} />
-							<span>Conflicts only</span>
+							<span>{tConflict("conflictsOnly")}</span>
 						</label>
 						<label className="flex items-center gap-2 text-sm">
 							<Switch
 								checked={missingPricingOnly}
 								onCheckedChange={setMissingPricingOnly}
 							/>
-							<span>Missing pricing only</span>
+							<span>{tConflict("missingPricingOnly")}</span>
 						</label>
 						<label className="flex items-center gap-2 text-sm">
 							<Switch
 								checked={likelyMismatchOnly}
 								onCheckedChange={setLikelyMismatchOnly}
 							/>
-							<span>Likely mismatch only</span>
+							<span>{tConflict("likelyMismatchOnly")}</span>
 						</label>
 
 						{hasActiveFilters ? (
@@ -287,7 +290,7 @@ export default function ApiModelConflictsClient({
 									setLikelyMismatchOnly(false);
 								}}
 							>
-								Clear Filters
+								{tConflict("clearFilters")}
 							</Button>
 						) : null}
 					</div>
@@ -296,10 +299,9 @@ export default function ApiModelConflictsClient({
 
 			<Card>
 				<CardHeader>
-					<CardTitle className="text-lg">Likely Mismatches</CardTitle>
+					<CardTitle className="text-lg">{tConflict("likelyMismatches")}</CardTitle>
 					<CardDescription>
-						Rows with missing pricing where an orphan pricing directory in the same provider
-						looks like the same model family.
+						{tConflict("likelyMismatchesDescription")}
 					</CardDescription>
 				</CardHeader>
 				<CardContent>
@@ -307,17 +309,17 @@ export default function ApiModelConflictsClient({
 						<Table>
 							<TableHeader>
 								<TableRow>
-									<TableHead>Provider</TableHead>
-									<TableHead>API Model</TableHead>
-									<TableHead>Missing Pricing</TableHead>
-									<TableHead>Candidate Pricing Slugs</TableHead>
+									<TableHead>{tConflict("provider")}</TableHead>
+									<TableHead>{tConflict("apiModel")}</TableHead>
+									<TableHead>{tConflict("missingPricing")}</TableHead>
+									<TableHead>{tConflict("candidatePricingSlugs")}</TableHead>
 								</TableRow>
 							</TableHeader>
 							<TableBody>
 								{likelyMismatches.length === 0 ? (
 									<TableRow>
 										<TableCell colSpan={4} className="py-6 text-center text-muted-foreground">
-											No likely mismatches for current filters.
+											{tConflict("noLikelyMismatches")}
 										</TableCell>
 									</TableRow>
 								) : (
@@ -354,10 +356,9 @@ export default function ApiModelConflictsClient({
 
 			<Card>
 				<CardHeader>
-					<CardTitle className="text-lg">Potential Alias Conflict Groups</CardTitle>
+					<CardTitle className="text-lg">{tConflict("potentialAliasConflictGroups")}</CardTitle>
 					<CardDescription>
-						Canonicalized model IDs where multiple raw API model IDs appear to represent the
-						same family.
+						{tConflict("potentialAliasConflictGroupsDescription")}
 					</CardDescription>
 				</CardHeader>
 				<CardContent>
@@ -365,17 +366,17 @@ export default function ApiModelConflictsClient({
 						<Table>
 							<TableHeader>
 								<TableRow>
-									<TableHead>Canonical Key</TableHead>
-									<TableHead>Variants</TableHead>
-									<TableHead>Providers</TableHead>
-									<TableHead>Issues</TableHead>
+									<TableHead>{tConflict("canonicalKey")}</TableHead>
+									<TableHead>{tConflict("variants")}</TableHead>
+									<TableHead>{tConflict("providers")}</TableHead>
+									<TableHead>{tConflict("issues")}</TableHead>
 								</TableRow>
 							</TableHeader>
 							<TableBody>
 								{filteredConflictGroups.length === 0 ? (
 									<TableRow>
 										<TableCell colSpan={4} className="py-6 text-center text-muted-foreground">
-											No conflict groups for current filters.
+											{tConflict("noConflictGroups")}
 										</TableCell>
 									</TableRow>
 								) : (
@@ -396,15 +397,17 @@ export default function ApiModelConflictsClient({
 											</TableCell>
 											<TableCell>
 												<div className="flex flex-wrap items-center gap-2">
-													<Badge variant="secondary">{group.entryCount} rows</Badge>
+											<Badge variant="secondary">
+												{tConflict("counts.rows", { count: group.entryCount })}
+											</Badge>
 													{group.missingPricingCount > 0 ? (
 														<Badge variant="destructive">
-															{group.missingPricingCount} missing pricing
+															{tConflict("counts.missingPricing", { count: group.missingPricingCount })}
 														</Badge>
 													) : null}
 													{group.likelyMismatchCount > 0 ? (
 														<Badge variant="outline" className="border-amber-500 text-amber-700">
-															{group.likelyMismatchCount} likely mismatch
+															{tConflict("counts.likelyMismatches", { count: group.likelyMismatchCount })}
 														</Badge>
 													) : null}
 												</div>
@@ -420,9 +423,9 @@ export default function ApiModelConflictsClient({
 
 			<Card>
 				<CardHeader>
-					<CardTitle className="text-lg">Provider API Model Rows</CardTitle>
+					<CardTitle className="text-lg">{tConflict("providerApiModelRows")}</CardTitle>
 					<CardDescription>
-						Showing {visibleRows.length} of {filteredEntries.length} matching rows.
+						{tConflict("showingRows", { visible: visibleRows.length, total: filteredEntries.length })}
 					</CardDescription>
 				</CardHeader>
 				<CardContent className="space-y-4">
@@ -430,19 +433,19 @@ export default function ApiModelConflictsClient({
 						<Table>
 							<TableHeader>
 								<TableRow>
-									<TableHead>Provider</TableHead>
-									<TableHead>API Model ID</TableHead>
-									<TableHead>Internal Model</TableHead>
-									<TableHead>Status</TableHead>
-									<TableHead>Pricing Coverage</TableHead>
-									<TableHead>Conflict</TableHead>
+									<TableHead>{tConflict("provider")}</TableHead>
+									<TableHead>{tConflict("apiModelId")}</TableHead>
+									<TableHead>{tConflict("internalModel")}</TableHead>
+									<TableHead>{tConflict("status")}</TableHead>
+									<TableHead>{tConflict("pricingCoverage")}</TableHead>
+									<TableHead>{tConflict("conflict")}</TableHead>
 								</TableRow>
 							</TableHeader>
 							<TableBody>
 								{visibleRows.length === 0 ? (
 									<TableRow>
 										<TableCell colSpan={6} className="py-6 text-center text-muted-foreground">
-											No rows match the current filters.
+											{tConflict("noRows")}
 										</TableCell>
 									</TableRow>
 								) : (
@@ -461,16 +464,16 @@ export default function ApiModelConflictsClient({
 												<div className="flex flex-wrap items-center gap-2">
 													{entry.isActiveGateway ? (
 														<Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-100">
-															Gateway Active
+															{tUi("status.gatewayActive")}
 														</Badge>
 													) : (
-														<Badge variant="secondary">Gateway Inactive</Badge>
+														<Badge variant="secondary">{tUi("status.gatewayInactive")}</Badge>
 													)}
 													<Badge variant="outline">
-														{entry.activeCapabilities.length} capabilities
+														{tConflict("counts.capabilities", { count: entry.activeCapabilities.length })}
 													</Badge>
 													<Badge variant="outline">
-														{entry.supportedParams.length} params
+													{tConflict("counts.params", { count: entry.supportedParams.length })}
 													</Badge>
 												</div>
 											</TableCell>
@@ -478,7 +481,7 @@ export default function ApiModelConflictsClient({
 												{entry.missingPricingCapabilities.length === 0 ? (
 													<div className="flex items-center gap-2 text-emerald-700">
 														<CheckCircle2 className="h-4 w-4" />
-														<span className="text-sm">Complete</span>
+														<span className="text-sm">{tConflict("complete")}</span>
 													</div>
 												) : (
 													<div className="space-y-2">
@@ -493,7 +496,7 @@ export default function ApiModelConflictsClient({
 															<div className="flex items-start gap-1 text-amber-700">
 																<AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
 																<div className="text-xs">
-																	Candidate slug(s):{" "}
+																	{tConflict("candidateSlugs")}{" "}
 																	{entry.likelyMismatchPricingSlugs.join(", ")}
 																</div>
 															</div>
@@ -507,7 +510,7 @@ export default function ApiModelConflictsClient({
 														<div className="flex items-center gap-2 text-amber-700">
 															<GitCompare className="h-4 w-4" />
 															<span className="text-sm">
-																{entry.conflictApiModelIds.length} variants
+																{tConflict("counts.variants", { count: entry.conflictApiModelIds.length })}
 															</span>
 														</div>
 														<div className="flex flex-wrap gap-1">
@@ -528,7 +531,7 @@ export default function ApiModelConflictsClient({
 														</div>
 													</div>
 												) : (
-													<span className="text-sm text-muted-foreground">No conflict</span>
+													<span className="text-sm text-muted-foreground">{tConflict("noConflict")}</span>
 												)}
 											</TableCell>
 										</TableRow>
@@ -540,7 +543,7 @@ export default function ApiModelConflictsClient({
 
 					{filteredEntries.length > visibleRows.length ? (
 						<p className="text-xs text-muted-foreground">
-							Only the first 500 rows are shown. Refine filters to inspect additional rows.
+							{tConflict("rowLimit")}
 						</p>
 					) : null}
 				</CardContent>
@@ -548,15 +551,14 @@ export default function ApiModelConflictsClient({
 
 			<Card>
 				<CardHeader>
-					<CardTitle className="text-lg">Orphan Pricing Directories</CardTitle>
+					<CardTitle className="text-lg">{tConflict("orphanPricingDirectories")}</CardTitle>
 					<CardDescription>
-						Pricing model folders present under `packages/data/catalog/src/data/pricing` that do not map to any
-						provider API model ID slug.
+						{tConflict("orphanPricingDirectoriesDescription")}
 					</CardDescription>
 				</CardHeader>
 				<CardContent className="space-y-3">
 					{filteredOrphans.length === 0 ? (
-						<p className="text-sm text-muted-foreground">No orphan pricing directories.</p>
+						<p className="text-sm text-muted-foreground">{tConflict("noOrphanPricingDirectories")}</p>
 					) : (
 						filteredOrphans.map((provider) => (
 							<div key={provider.providerId} className="rounded-md border p-3">
@@ -565,8 +567,7 @@ export default function ApiModelConflictsClient({
 										{provider.providerId}
 									</Badge>
 									<Badge variant="secondary">
-										{provider.orphanModelSlugs.length} orphan slug
-										{provider.orphanModelSlugs.length === 1 ? "" : "s"}
+										{tConflict("counts.orphanSlugs", { count: provider.orphanModelSlugs.length })}
 									</Badge>
 								</div>
 								<div className="flex flex-wrap gap-1">

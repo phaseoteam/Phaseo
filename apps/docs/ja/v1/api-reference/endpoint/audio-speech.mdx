@@ -1,0 +1,34 @@
+---
+title: "音声を生成"
+sidebarTitle: "音声を生成"
+badge: "Beta"
+openapi: "/ja/openapi/v1/openapi.localized.yaml POST /audio/speech"
+description: "指定した音声と形式で、テキストからTTS音声を生成します。"
+---
+
+## 音声のマッピング
+
+`voice`は内部エイリアスマップを使ってプロバイダーごとに正規化されます。
+
+- `openai`: 一般的な音声（例: `alloy`, `ash`, `ballad`, `coral`, `echo`, `fable`, `onyx`, `nova`, `sage`, `shimmer`, `verse`, `cedar`, `marin`).
+- `google` (AI Studio / Gemini TTS): 標準のプリビルド音声:
+  `Zephyr`, `Puck`, `Charon`, `Kore`, `Fenrir`, `Leda`, `Orus`, `Aoede`, `Callirrhoe`, `Autonoe`, `Enceladus`, `Iapetus`, `Umbriel`, `Algieba`, `Despina`, `Erinome`, `Algenib`, `Rasalgethi`, `Laomedeia`, `Achernar`, `Alnilam`, `Schedar`, `Gacrux`, `Pulcherrima`, `Achird`, `Zubenelgenubi`, `Vindemiatrix`, `Sadachbia`, `Sadaltager`, `Sulafat`.
+- `elevenlabs`: 一般公開されている初期音声をマッピングします（例: `rachel`, `domi`, `bella`, `antoni`, `elli`, `josh`, `arnold`, `adam`, `sam`).
+
+指定した`voice`がルート先のプロバイダーとモデルで無効な場合、リクエストは`param: "voice"`を含む`400 invalid_request_error`を返します。
+
+## プロバイダー固有の設定
+
+プロバイダー固有の音声設定も渡せます。
+
+- ElevenLabs: `config.elevenlabs.voice_id` / `config.elevenlabs.voice` / `config.elevenlabs.voiceName`
+- Google: `config.google.voice_name` / `config.google.voiceName`
+
+移植性を高めるため、トップレベルの`voice`を既定値として使ってください。
+
+## 音声サンプル
+
+- OpenAI: [openai.fm](https://www.openai.fm/)
+- Google TTSの音声例: [Gemini の音声生成ドキュメント](https://ai.google.dev/gemini-api/docs/speech-generation#voices)
+- ElevenLabsの音声ライブラリ: [ElevenLabs Voice Library](https://elevenlabs.io/voice-library)
+

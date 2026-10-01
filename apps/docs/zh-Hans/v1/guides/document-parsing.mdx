@@ -1,0 +1,77 @@
+---
+title: "解析文档图像"
+description: "使用 Cohere Parse v5.0 从文档图像中提取有序文本、表格、图像和布局元数据。"
+---
+
+如果需要的不只是普通 OCR，请使用 Parse 端点。它会保留页面顺序，并可返回 Markdown 或结构化的文本、图像和表格区块。
+
+<Warning>
+  Cohere 的公开 Parse API 目前仅接受图像 URL 和 base64 图像数据 URI。发送前请将 PDF 页面转换为图像。每张图像不得超过 20 MB、5000 万像素或解码后 200 MB。
+</Warning>
+
+## 解析并返回 Markdown
+
+Markdown 会保留阅读顺序、以内嵌 HTML 的形式呈现表格，并将检测到的图像链接到页面元数据。
+
+<CodeGroup>
+```bash cURL
+curl https://api.phaseo.app/v1/parse \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "cohere/parse-v5.0",
+    "document": {
+      "type": "image_url",
+      "image_url": "https://example.com/invoice.png"
+    },
+    "output_format": "markdown"
+  }'
+```
+
+```ts TypeScript
+const response = await fetch("https://api.phaseo.app/v1/parse", {
+  method: "POST",
+  headers: {
+    Authorization: `Bearer ${process.env.PHASEO_API_KEY}`,
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    model: "cohere/parse-v5.0",
+    document: {
+      type: "image_url",
+      image_url: "https://example.com/invoice.png",
+    },
+    output_format: "markdown",
+  }),
+});
+
+const parsed = await response.json();
+console.log(parsed.pages[0].markdown.content);
+```
+
+```python Python
+import os
+import requests
+
+response = requests.post(
+    "https://api.phaseo.app/v1/parse",
+    headers={"Authorization": f"Bearer {os.environ['PHASEO_API_KEY']}"},
+    json={
+        "model": "cohere/parse-v5.0",
+        "document": {
+            "type": "image_url",
+            "image_url": "https://example.com/invoice.png",
+        },
+        "output_format": "markdown",
+    },
+)
+response.raise_for_status()
+print(response.json()["pages"][0]["markdown"]["content"])
+```
+</CodeGroup>
+
+## 返回结构化区块
+
+将 `output_format` 设为 `blocks`，即可接收按顺序排列的文本、图像和表格区域。图像和表格区块会在可用时包含像素坐标和归一化边界框。
+
+Parse 按页计量。供应商报告计费页数时，响应会包含 Cohere 元数据和规范化的 `usage.input_pages` 值。Cohere 目前提供免费的限速评估 API，尚未公布 Parse 的生产环境费率。

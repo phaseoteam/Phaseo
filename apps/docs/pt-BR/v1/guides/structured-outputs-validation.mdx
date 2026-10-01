@@ -1,0 +1,45 @@
+---
+icon: "circle-check"
+title: "Validação de saídas estruturadas"
+description: "Validação no servidor, novas tentativas e estratégias alternativas para saídas estruturadas."
+---
+
+Mesmo com a geração restrita por esquema, sempre valide a saída no servidor.
+
+## Fluxo recomendado
+
+1. Solicite uma saída restrita por um esquema.
+2. Analise o JSON.
+3. Valide com o esquema do servidor.
+4. Se for inválido, tente novamente uma vez com um prompt corretivo.
+5. Se continuar inválida, use uma alternativa segura de falha.
+
+## Exemplo de validação (TypeScript)
+
+```typescript
+import { z } from "zod";
+
+const Summary = z.object({
+  order_id: z.string(),
+  total_usd: z.number(),
+  status: z.enum(["pending", "paid", "failed"]),
+});
+
+function parseStructuredContent(content: string) {
+  const data = JSON.parse(content);
+  return Summary.parse(data);
+}
+```
+
+## Prompt corretivo para nova tentativa
+
+Quando a validação falhar, envie uma instrução corretiva curta:
+
+`Sua saída anterior não correspondeu ao esquema. Retorne apenas JSON válido, com os campos obrigatórios e sem chaves extras.`
+
+## Recomendações para produção
+
+- Mantenha um esquema por caso de uso e versione-o.
+- Acompanhe as taxas de falha de validação por ID do modelo.
+- Gere alertas para aumentos repentinos nas falhas de esquema após mudanças no modelo.
+

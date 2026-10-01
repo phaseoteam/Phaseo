@@ -18,9 +18,10 @@ import {
 import { fetchSettingsOAuthAppDetailInitialData } from "@/lib/fetchers/internal/fetchSettingsOAuthAppDetailInitialData";
 import { getTranslations } from "next-intl/server";
 
-export const metadata = {
-	title: "OAuth App Details - Settings",
-};
+export async function generateMetadata() {
+	const t = await getTranslations("SettingsUI.settingsPageMetadata");
+	return { title: t("oauthAppDetails") };
+}
 
 interface OAuthAppDetailPageProps {
 	params: Promise<{

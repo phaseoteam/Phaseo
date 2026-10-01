@@ -1,4 +1,5 @@
 import { Logo } from "@/components/Logo";
+import { useTranslations } from "next-intl";
 import { Card, CardContent } from "@/components/ui/card";
 import TimeDisplay from "@/components/updates/TimeDisplay";
 import type { EventType, ModelEvent } from "@/lib/fetchers/updates/types";
@@ -28,6 +29,7 @@ export default function ModelUpdateCard({
 	event,
 	eventTypeOptions,
 }: ModelUpdateCardProps) {
+	const t = useTranslations("Catalogue.updates.models");
 	const { model } = event;
 	const modelHref = `/models/${model.model_id}`;
 	const organisationId = model.organisation.organisation_id.toLowerCase();
@@ -81,7 +83,7 @@ export default function ModelUpdateCard({
 						isModelRelease={event.types.includes("Released")}
 					/>
 					<Link href={modelHref} className="font-semibold text-foreground hover:underline">
-						View
+						{t("viewModel")}
 					</Link>
 				</div>
 			</CardContent>

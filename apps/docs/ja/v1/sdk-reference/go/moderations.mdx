@@ -1,0 +1,30 @@
+---
+icon: "shield-check"
+title: "モデレーション"
+description: "Goラッパーで `/moderations` を呼び出します。"
+---
+
+次のラッパーメソッドを使います:
+
+- `client.GenerateModeration(ctx, req)`
+
+```go
+import (
+  "context"
+  "fmt"
+  phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v2"
+)
+
+client := phaseo.New(apiKey, "https://api.phaseo.app/v1")
+resp, err := client.GenerateModeration(context.Background(), map[string]interface{}{
+  "model": "openai/omni-moderation-latest",
+  "input": "some text to classify",
+})
+if err != nil {
+  panic(err)
+}
+
+fmt.Println(resp)
+```
+
+

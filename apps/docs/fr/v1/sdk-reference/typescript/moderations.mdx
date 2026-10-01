@@ -1,0 +1,59 @@
+---
+icon: "shield-check"
+title: "Modération"
+description: "Appelez /moderations avec le SDK TypeScript."
+---
+
+**Méthode** : `client.generateModeration()`.
+
+### Exemple
+```typescript
+const moderation = await client.generateModeration({
+  model: "openai/omni-moderation-latest",
+  input: "Text to classify",
+});
+```
+
+### Paramètres clés
+- `model` (obligatoire) : ID du modèle de modération (par exemple, `openai/omni-moderation-latest`).
+- `input` (obligatoire) : chaîne ou tableau d’éléments de contenu (texte ou `image_url`).
+- Facultatif : filtres `categories`/`severity` (si pris en charge) et étiquette `user`.
+
+### Retour
+`ModerationResponse`
+
+```json
+{
+  "results": [
+    {
+      "flagged": false,
+      "categories": {
+        "hate": false,
+        "hate/threatening": false,
+        "harassment": false,
+        "harassment/threatening": false,
+        "self-harm": false,
+        "self-harm/intent": false,
+        "self-harm/instructions": false,
+        "sexual": false,
+        "sexual/minors": false,
+        "violence": false,
+        "violence/graphic": false
+      },
+      "category_scores": {
+        "hate": 0.01,
+        "hate/threatening": 0.0,
+        "harassment": 0.02,
+        "harassment/threatening": 0.0,
+        "self-harm": 0.0,
+        "self-harm/intent": 0.0,
+        "self-harm/instructions": 0.0,
+        "sexual": 0.05,
+        "sexual/minors": 0.0,
+        "violence": 0.01,
+        "violence/graphic": 0.0
+      }
+    }
+  ]
+}
+```

@@ -1,0 +1,84 @@
+---
+icon: "sparkles"
+title: "Responses API"
+description: "TypeScript SDK से Responses API कॉल करें।"
+---
+
+**तरीका**: `client.generateResponse()` (पार्स किए गए हिस्सों को स्ट्रीम करने के लिए `client.streamResponses()`).
+
+### उदाहरण
+```typescript
+const resp = await client.generateResponse({
+  model: "openai/gpt-4.1",
+  input: [{ role: "user", content: [{ type: "input_text", text: "Summarise this text" }] }],
+  temperature: 0.7,
+  stream: false,
+});
+```
+
+### स्ट्रीमिंग
+```typescript
+for await (const chunk of client.streamResponses({
+  model: "openai/gpt-4.1",
+  input: [{ role: "user", content: [{ type: "input_text", text: "Stream this" }] }],
+  stream: true,
+})) {
+  if (chunk.text) process.stdout.write(chunk.text);
+}
+```
+
+### मुख्य पैरामीटर
+- `model` (आवश्यक): लक्ष्य मॉडल ID।
+- `input` (आवश्यक): इनपुट आइटम का क्रमबद्ध ऐरे (संदेश, टूल कॉल आदि)।
+- `temperature` (0-2): मान जितना अधिक, आउटपुट उतना अधिक यादृच्छिक।
+- `top_p` (0-1) / `top_k` (>=1): Nucleus / k-best सैंपलिंग नियंत्रण।
+- `max_output_tokens` (int): हर प्रतिक्रिया में जनरेट होने वाले टोकन की अधिकतम सीमा।
+- टूल: `tools` (परिभाषाएँ), `tool_choice` (`auto`/`none`/विशिष्ट), `max_tool_calls` (पूर्णांक), `parallel_tool_calls` (बूलियन)।
+- लॉग प्रायिकताएँ: `logprobs` (बूलियन), `top_logprobs` (0-20), हर टोकन की लॉग प्रायिकताएँ लौटाने के लिए।
+- आउटपुट: `response_format` (json/text), `service_tier`, `store` (bool), `stream` (bool).
+- मेटाडेटा: `metadata` (object) बिना बदलाव आगे भेजने के लिए, `reasoning` (object) रीज़निंग प्रयास का संकेत देने के लिए.
+- Gateway के अतिरिक्त विकल्प: `usage` (bool उपयोग का अनुरोध करने के लिए), `meta` (bool meta ब्लॉक शामिल करने के लिए).
+
+### रिटर्न
+`ResponsesResponse`
+
+```json
+{
+  "id": "resp_123",
+  "object": "response",
+  "created_at": 1677652288,
+  "status": "completed",
+  "model": "gpt-4.1",
+  "output": [
+    {
+      "type": "message",
+      "id": "msg_123",
+      "status": "completed",
+      "role": "assistant",
+      "content": [
+        {
+          "type": "output_text",
+          "text": "Hello there, how may I assist you today?"
+        }
+      ]
+    }
+  ],
+  "usage": {
+    "input_tokens": 9,
+    "output_tokens": 12,
+    "total_tokens": 21
+  }
+}
+```
+
+या `stream: true` होने पर नई पंक्ति से अलग किए गए SSE फ़्रेम:
+
+```
+data: {"id":"resp_123","object":"response","created_at":1677652288,"status":"in_progress","model":"gpt-4.1","output":[{"type":"message","id":"msg_123","status":"in_progress","role":"assistant","content":[]}]}
+
+data: {"id":"resp_123","object":"response","created_at":1677652288,"status":"in_progress","model":"gpt-4.1","output":[{"type":"message","id":"msg_123","status":"in_progress","role":"assistant","content":[{"type":"output_text","text":"Hello"}]}]}
+
+data: {"id":"resp_123","object":"response","created_at":1677652288,"status":"completed","model":"gpt-4.1","output":[{"type":"message","id":"msg_123","status":"completed","role":"assistant","content":[{"type":"output_text","text":"Hello there, how may I assist you today?"}]}],"usage":{"input_tokens":9,"output_tokens":12,"total_tokens":21}}
+
+data: [DONE]
+```

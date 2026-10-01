@@ -5,9 +5,10 @@ import { ProductFeedbackButton } from "@/components/feedback/ProductFeedbackButt
 import { fetchSettingsDynamicRoutesInitialData } from "@/lib/fetchers/internal/fetchSettingsDynamicRoutesInitialData";
 import { getTranslations } from "next-intl/server";
 
-export const metadata = {
-	title: "Dynamic Routing - Settings",
-};
+export async function generateMetadata() {
+	const t = await getTranslations("SettingsUI.settingsPageMetadata");
+	return { title: t("dynamicRouting") };
+}
 
 export default async function DynamicRoutingSettingsPage() {
 	const t = await getTranslations("SettingsUI");
@@ -18,7 +19,7 @@ export default async function DynamicRoutingSettingsPage() {
 					<h1 className="text-2xl font-bold">{t("headers.dynamicRouting")}</h1>
 					<ProductFeedbackButton
 						surface="settings_dynamic_routes"
-						prompt="Tell us what is missing or confusing about Dynamic Routes."
+						prompt={t("headers.feedbackDynamicRoutesPrompt")}
 					/>
 				</div>
 				<p className="mt-2 text-sm text-muted-foreground">{t("headers.dynamicRoutingDescription")}</p>

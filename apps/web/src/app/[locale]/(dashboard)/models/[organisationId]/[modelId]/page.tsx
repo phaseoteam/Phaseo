@@ -45,6 +45,7 @@ import {
 	resolveModelLineageNames,
 } from "@/components/(data)/model/overview/modelOverviewMetadata";
 import { supportsProvenanceVerification } from "@/components/(data)/model/overview/ModelVerificationSection";
+import { getLocale, getTranslations } from "next-intl/server";
 
 async function ModelCreatorModelsSectionContent({
 	modelId,
@@ -86,6 +87,10 @@ async function ModelFaqSectionContent({
 		Awaited<ReturnType<typeof fetchFrontendModelGatewayMetadata>> | null
 	>;
 }) {
+	const locale = await getLocale();
+	const translateFaq = await getTranslations("Catalogue.models.detail.faqContent");
+	const translateModality = await getTranslations("Common.ui.modelCreation.modalities");
+	const translatePricing = await getTranslations("Catalogue.modelDetail.pricing");
 	const [pricing, timeline, gatewayMetadata] = await Promise.all([
 		pricingPromise,
 		fetchFrontendModelTimeline(model.model_id).catch(() => null),
@@ -107,23 +112,13 @@ async function ModelFaqSectionContent({
 			pricing={pricing}
 			relatedModels={relatedModels}
 			gatewayMetadata={gatewayMetadata}
+			translate={(key, values) => translateFaq(key as never, values as never)}
+			translateModality={(key) => translateModality(key as never)}
+			translatePricing={(key, values) => translatePricing(key as never, values as never)}
+			locale={locale}
 		/>
 	);
 }
-
-const baseModelPageTocItems: ModelPageTocItem[] = [
-	{ id: "providers", label: "Providers" },
-	{ id: "performance", label: "Performance" },
-	{ id: "pricing", label: "Pricing" },
-	{ id: "benchmarks", label: "Benchmarks" },
-	{ id: "activity", label: "Activity" },
-	{ id: "apps", label: "Apps" },
-	{ id: "uptime", label: "Uptime" },
-	{ id: "verification", label: "Verification" },
-	{ id: "about", label: "About" },
-	{ id: "subscriptions", label: "Subscriptions" },
-	{ id: "faq", label: "FAQ" },
-];
 
 function getModelPageTocItems({
 	showBenchmarks,
@@ -131,13 +126,28 @@ function getModelPageTocItems({
 	status,
 	isGatewayActive,
 	showVerification,
+	labels,
 }: {
 	showBenchmarks: boolean;
 	showSubscriptions: boolean;
 	status?: string | null;
 	isGatewayActive: boolean;
 	showVerification: boolean;
+	labels: Record<string, string>;
 }): ModelPageTocItem[] {
+	const baseModelPageTocItems: ModelPageTocItem[] = [
+		{ id: "providers", label: labels.providers },
+		{ id: "performance", label: labels.performance },
+		{ id: "pricing", label: labels.pricing },
+		{ id: "benchmarks", label: labels.benchmarks },
+		{ id: "activity", label: labels.activity },
+		{ id: "apps", label: labels.apps },
+		{ id: "uptime", label: labels.uptime },
+		{ id: "verification", label: labels.verification },
+		{ id: "about", label: labels.about },
+		{ id: "subscriptions", label: labels.subscriptions },
+		{ id: "faq", label: labels.faq },
+	];
 	if (status === "Retired") {
 		return baseModelPageTocItems.filter((item) => {
 			if (item.id === "benchmarks") return showBenchmarks;
@@ -208,6 +218,7 @@ export async function generateMetadata(props: {
 		: analyseModelIndexability({ modelId, name: modelName, organisationName });
 	const path = getModelPath(modelId);
 	const imagePath = `/og/models/${modelId}`;
+	const translateTitle = await getTranslations("Catalogue.models.detail.seoTitles");
 	return buildMetadata({
 		title: buildModelOverviewMetadataTitle(modelName, {
 			providerCount,
@@ -217,7 +228,7 @@ export async function generateMetadata(props: {
 				.map((entry) => entry.context_length ?? 0)
 				.filter((value) => value > 0)
 				.sort((left, right) => right - left)[0],
-		}),
+		}, (key, values) => translateTitle(key as never, values as never)),
 		description: buildModelOverviewMetadataDescription({
 			modelName,
 			organisationName,
@@ -288,12 +299,26 @@ export default async function Page({
 		? fetchFrontendModelPerformance(modelId, 24).catch(() => null)
 		: Promise.resolve(null);
 	const isRetired = modelOverview?.status === "Retired";
+	const t = await getTranslations("Catalogue.models.detail.navigation");
 	const modelPageTocItems = getModelPageTocItems({
 		showBenchmarks,
 		showSubscriptions,
 		status: modelOverview?.status,
 		isGatewayActive,
 		showVerification: supportsProvenanceVerification(modelOverview.output_types),
+		labels: {
+			providers: t("providers"),
+			performance: t("performance"),
+			pricing: t("pricing"),
+			benchmarks: t("benchmarks"),
+			activity: t("activity"),
+			apps: t("apps"),
+			uptime: t("uptime"),
+			verification: t("verification"),
+			about: t("about"),
+			subscriptions: t("subscriptions"),
+			faq: t("faq"),
+		},
 	});
 	const modelName = modelOverview?.name ?? modelId.split("/").slice(-1)[0] ?? modelId;
 	const organisationName =

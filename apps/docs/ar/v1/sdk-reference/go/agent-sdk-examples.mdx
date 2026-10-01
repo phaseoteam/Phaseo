@@ -1,0 +1,34 @@
+---
+icon: "square-terminal"
+title: "أمثلة"
+description: "استخدم أنماط Go عملية للأدوات والموافقات والبث وعمليات التشغيل المحدودة."
+---
+
+## نشر يتطلب موافقة
+
+```go
+deploy := phaseoagent.Tool{
+  ID: "deploy",
+  Description: "Deploy the selected release",
+  RequireApproval: true,
+  Execute: func(input any, runtime phaseoagent.RuntimeContext) (any, error) {
+    return deploymentService.Deploy(runtime.Context, input)
+  },
+}
+```
+
+شغّل الوكيل واحفظ السجل المعاد عندما تصبح حالته `waiting_for_human`. تابعه بقرار مرتبط بمعرّف استدعاء الأداة المعلّق.
+
+## البث إلى الطرفية
+
+```go
+stream := agent.Stream(ctx, phaseoagent.RunOptions{Input: prompt, Client: client})
+for delta := range stream.Text() { fmt.Print(delta) }
+result, err := stream.Result()
+```
+
+## تقييد البحث المستقل
+
+اجمع `StepCountIs` و`MaxTokensUsed` و`MaxCost` و`MaxDuration` حتى لا يتجاوز الوكيل طويل التشغيل ميزانية المنتج، حتى إذا واصل العثور على عمل مفيد.
+
+للاطلاع على التفاصيل الكاملة، راجع [الأدوات](./agent-sdk-tools.mdx) و[الحالة والموافقة](./agent-sdk-state-and-approval.mdx) و[شروط الإيقاف](./agent-sdk-stop-conditions.mdx).

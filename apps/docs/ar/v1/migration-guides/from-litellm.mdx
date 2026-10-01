@@ -1,0 +1,96 @@
+---
+title: "الترحيل من LiteLLM"
+sidebarTitle: "LiteLLM"
+description: "استبدل وكيل LiteLLM بـ Phaseo مع الحفاظ على مسار الطلبات المتوافق مع OpenAI الذي يستخدمه تطبيقك حاليًا."
+icon: "blocks"
+---
+
+استخدم هذا الدليل إذا كان تطبيقك يستدعي وكيل LiteLLM عبر عميل متوافق مع OpenAI. بدّل حد الوكيل أولًا، ثم عيّن الأسماء المستعارة وقواعد التوجيه والإعدادات الافتراضية المشتركة عن قصد.
+
+## ما الذي سيتغير
+
+| الإعداد | قبل | بعد |
+| --- | --- | --- |
+| عنوان URL الأساسي | وكيل LiteLLM لديك | `https://api.phaseo.app/v1` |
+| مفتاح API | مفتاح وكيل LiteLLM | `PHASEO_API_KEY` |
+| الأسماء المستعارة للنماذج | إعدادات LiteLLM | معرّفات نماذج Phaseo أو أسماء مستعارة للتطبيق |
+| إعدادات التوجيه الافتراضية | إعدادات LiteLLM | إعدادات التوجيه والإعدادات المسبقة في Phaseo |
+
+<Steps>
+<Step title="احصر إعداد الوكيل">
+
+أدرج كل أسماء النماذج المستعارة والبدائل وقواعد المزوّد وسياسات إعادة المحاولة والميزانيات وعمليات الاستدعاء ومتغيرات البيئة المستخدمة في نشر LiteLLM الحالي. حدّد الإعدادات التي تمثل سياسة مشتركة وتلك الخاصة بتطبيق واحد.
+
+</Step>
+
+<Step title="استبدل نقطة نهاية الوكيل">
+
+أبقِ شيفرة الطلب المتوافقة مع OpenAI كما هي، وغيّر عنوان URL الأساسي والمفتاح.
+
+<CodeGroup>
+```typescript TypeScript
+import OpenAI from "openai";
+
+const client = new OpenAI({
+  apiKey: process.env.PHASEO_API_KEY,
+  baseURL: "https://api.phaseo.app/v1",
+});
+
+const response = await client.chat.completions.create({
+  model: "openai/gpt-4.1-mini",
+  messages: [{ role: "user", content: "Reply with: migration ready" }],
+});
+```
+
+```python Python
+import os
+from openai import OpenAI
+
+client = OpenAI(
+    api_key=os.environ["PHASEO_API_KEY"],
+    base_url="https://api.phaseo.app/v1",
+)
+```
+
+```bash cURL
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-4.1-mini",
+    "messages": [{"role": "user", "content": "Reply with: migration ready"}]
+  }'
+```
+</CodeGroup>
+
+</Step>
+
+<Step title="عيّن الأسماء المستعارة وقواعد التوجيه">
+
+تحقّق من كل نموذج إنتاج باستخدام `GET /v1/models`. إذا كانت التطبيقات المستدعية تعتمد على أسماء مستعارة داخلية، فوحّدها عند حد واحد في التطبيق بدلًا من تعديل كل طلب.
+
+انقل المطالبات والمعلمات وقيود المزوّد القابلة لإعادة الاستخدام إلى [الإعدادات المسبقة](../guides/presets.mdx). واضبط ترتيب المزوّدين والبدائل عبر [التوجيه والرجوع الاحتياطي](../guides/routing-and-fallbacks.mdx).
+
+</Step>
+
+<Step title="تحقّق من مسارات عمل الإنتاج">
+
+اختبر البث والأدوات والمخرجات المنظّمة وإعادة المحاولة وتحويل الأخطاء وأي قابلية رصد تعتمد على عمليات الاستدعاء كان نشر LiteLLM يديرها. قارن زمن الاستجابة والمخرجات واستخدام الرموز والتكلفة قبل نقل حركة المرور تدريجيًا.
+
+</Step>
+</Steps>
+
+## قائمة التحقق من الترحيل
+
+- تم تحديد عناوين URL ومفاتيح LiteLLM واعتماديات النشر.
+- لكل نموذج واسم مستعار في الإنتاج تعيين صريح في Phaseo.
+- نُقلت الإعدادات الافتراضية المشتركة إلى الإعدادات المسبقة أو إلى حد واحد في التطبيق.
+- تنجح اختبارات البث والأدوات والمخرجات المنظّمة في التجهيز عند استخدامها.
+- وُضع بديل مقصود لعمليات الاستدعاء وبيانات القياس عن بُعد المطلوبة.
+- يظل التراجع مقتصرًا على تغيير إعداد نقطة النهاية والمفتاح.
+
+## الخطوات التالية
+
+- [الإعدادات المسبقة](../guides/presets.mdx)
+- [التوجيه والرجوع الاحتياطي](../guides/routing-and-fallbacks.mdx)
+- [قابلية الرصد](../guides/integrations/observability.mdx)

@@ -1,0 +1,23 @@
+---
+icon: "triangle-alert"
+title: "Erreurs et dépannage"
+description: "Diagnostiquez les échecs des agents .NET, les données d’outils non valides et les exécutions interrompues."
+---
+
+Un `RunResult` en échec conserve l’étape active, le nombre de nouvelles tentatives, l’identifiant de requête, l’identifiant de réponse natif, les métadonnées du fournisseur et les détails disponibles de la passerelle.
+
+Vérifiez d’abord les points suivants :
+
+- le processus a accès à `PHASEO_API_KEY`
+- les identifiants des outils sont uniques et stables
+- les décisions d’approbation utilisent les identifiants exacts des appels d’outils
+- l’état en pause est enregistré avant que le contrôle ne quitte la requête
+- les validateurs ne produisent pas d’effets de bord
+- les jetons d’annulation atteignent les dépendances utilisées dans les outils
+
+Utilisez les hooks de cycle de vie pour la télémétrie de l’application et DevTools pour inspecter les exécutions localement.
+
+## À lire aussi
+
+- [Hooks de cycle de vie](./agent-sdk-lifecycle-hooks.mdx)
+- [DevTools](./agent-sdk-devtools.mdx)

@@ -8,7 +8,7 @@ import type {
 	ProviderPricing,
 } from "@/lib/fetchers/models/getModelPricing";
 import { formatModelLifecycleDate } from "@/lib/dates/modelLifecycleDates";
-import { PRICING_METER_OPTIONS } from "@/lib/pricing/meters";
+import { PRICING_METER_OPTIONS, PRICING_METER_VALUES } from "@/lib/pricing/meters";
 import type { ModelLineageLinks } from "./modelOverviewMetadata";
 import ModelFaqAccordion from "./ModelFaqAccordion";
 
@@ -24,16 +24,62 @@ function parseTypes(value: string | null | undefined): string[] {
 	);
 }
 
-function joinNaturalList(values: string[]): string {
-	if (values.length === 0) return "";
-	if (values.length === 1) return values[0]!;
-	if (values.length === 2) return `${values[0]} and ${values[1]}`;
-	return `${values.slice(0, -1).join(", ")}, and ${values.at(-1)}`;
+function joinNaturalList(values: string[], locale: string): string {
+	return new Intl.ListFormat(locale, { style: "long", type: "conjunction" }).format(values);
 }
 
 const MAX_FAQ_PROVIDER_NAMES = 8;
 
-function getFaqProviders(pricing: ProviderPricing[]) {
+const PRICING_UNITS = new Set([
+	"token",
+	"pixel",
+	"character",
+	"image",
+	"video",
+	"second",
+	"credit",
+	"request",
+	"byte",
+	"page",
+	"minute",
+]);
+
+type ModelFaqTranslate = (
+	key: string,
+	values?: Record<string, string | number>,
+) => string;
+
+const FAQ_MODALITY_KEYS: Record<string, string> = {
+	text: "text",
+	image: "image",
+	video: "video",
+	audio: "audio",
+	"audio stt": "audioStt",
+	"audio tts": "audioTts",
+	"audio music": "audioMusic",
+	file: "file",
+	embeddings: "embeddings",
+	code: "code",
+	vision: "vision",
+	speech: "speech",
+	multimodal: "multimodal",
+	embedding: "embedding",
+	rerank: "rerank",
+	moderation: "moderation",
+	moderations: "moderation",
+};
+
+function localizeModalities(
+	modalities: string[],
+	translateModality?: (key: string) => string,
+): string[] {
+	return modalities.map((modality) => {
+		const key = FAQ_MODALITY_KEYS[modality.toLowerCase()];
+		return key && translateModality ? translateModality(key) : modality;
+	});
+}
+
+function getFaqProviders(pricing: ProviderPricing[], locale: string) {
 	const providersById = new Map<string, { id: string; name: string }>();
 	for (const entry of pricing) {
 		const id = entry.provider.api_provider_id.trim();
@@ -43,7 +89,7 @@ function getFaqProviders(pricing: ProviderPricing[]) {
 		}
 	}
 	const providers = Array.from(providersById.values()).sort((left, right) =>
-		left.name.localeCompare(right.name),
+		left.name.localeCompare(right.name, locale),
 	);
 	return {
 		visible: providers.slice(0, MAX_FAQ_PROVIDER_NAMES),
@@ -87,7 +133,32 @@ function capabilityAnswer(args: {
 	label: string;
 	support: CapabilitySupport;
 	isGatewayActive: boolean;
+	translate?: ModelFaqTranslate;
 }) {
+	if (args.translate) {
+		if (!args.isGatewayActive) {
+			return args.translate("answers.capabilityInactive", {
+				model: args.modelName,
+				label: args.label,
+			});
+		}
+		if (args.support === "supported") {
+			return args.translate("answers.capabilitySupported", {
+				model: args.modelName,
+				label: args.label,
+			});
+		}
+		if (args.support === "unsupported") {
+			return args.translate("answers.capabilityUnsupported", {
+				model: args.modelName,
+				label: args.label,
+			});
+		}
+		return args.translate("answers.capabilityUnknown", {
+			model: args.modelName,
+			label: args.label,
+		});
+	}
 	if (!args.isGatewayActive) {
 		return `${args.modelName} is not currently active in the Phaseo Gateway, so ${args.label} is not available through the API.`;
 	}
@@ -100,7 +171,21 @@ function capabilityAnswer(args: {
 	return `Phaseo does not currently have enough active route metadata to confirm whether ${args.modelName} supports ${args.label}.`;
 }
 
-function getStatusDescription(status: ModelOverviewPage["status"]): string {
+function getStatusDescription(
+	status: ModelOverviewPage["status"],
+	translate?: ModelFaqTranslate,
+): string {
+	const statusKeys: Record<string, string> = {
+		Rumoured: "rumoured",
+		Announced: "announced",
+		Preview: "preview",
+		"Limited Access": "limitedAccess",
+		Withheld: "withheld",
+		Deprecated: "deprecated",
+		Retired: "retired",
+	};
+	const key = status ? statusKeys[status] ?? "available" : "available";
+	if (translate) return translate(`statuses.${key}`);
 	switch (status) {
 		case "Rumoured":
 			return "a rumoured AI model";
@@ -168,7 +253,7 @@ const PRICING_METER_PRIORITY = [
 	"requests",
 ];
 
-function formatCurrency(amount: number, currency: string): string {
+function formatCurrency(amount: number, currency: string, locale: string): string {
 	const normalizedCurrency = normalizeCurrencyCode(currency);
 	const fractionDigits = amount === 0 ? 0 : amount < 0.0001 ? 8 : amount < 0.01 ? 4 : 2;
 	const options: Intl.NumberFormatOptions = {
@@ -178,9 +263,9 @@ function formatCurrency(amount: number, currency: string): string {
 		maximumFractionDigits: fractionDigits,
 	};
 	try {
-		return new Intl.NumberFormat("en-US", options).format(amount);
+		return new Intl.NumberFormat(locale, options).format(amount);
 	} catch {
-		return new Intl.NumberFormat("en-US", {
+		return new Intl.NumberFormat(locale, {
 			...options,
 			currency: "USD",
 		}).format(amount);
@@ -192,7 +277,11 @@ function normalizeCurrencyCode(currency: string): string {
 	return /^[A-Z]{3}$/.test(normalized) ? normalized : "USD";
 }
 
-function normaliseRulePrice(rule: PricingRule): {
+function normaliseRulePrice(
+	rule: PricingRule,
+	locale: string,
+	translatePricing?: ModelFaqTranslate,
+): {
 	price: number;
 	formattedPrice: string;
 	billingKey: string;
@@ -212,23 +301,36 @@ function normaliseRulePrice(rule: PricingRule): {
 	const millionUnitLabel = millionUnitLabels[unit];
 	if (millionUnitLabel) {
 		const price = rawPrice * (1_000_000 / unitSize);
+		const formattedCurrency = formatCurrency(price, rule.currency, locale);
+		const unitLabel = translatePricing?.(`units.${unit}`) ?? millionUnitLabel.replace("1M ", "");
 		return {
 			price,
-			formattedPrice: `${formatCurrency(price, rule.currency)} per ${millionUnitLabel}`,
+			formattedPrice: translatePricing
+				? translatePricing("ratePerMillion", { price: formattedCurrency, unit: unitLabel })
+				: `${formattedCurrency} per ${millionUnitLabel}`,
 			billingKey: `${normalizeCurrencyCode(rule.currency)}:${millionUnitLabel}`,
 		};
 	}
 
 	const price = rawPrice / unitSize;
-	const unitLabel = unit || "unit";
+	const unitLabel = translatePricing
+		? translatePricing(`unitsSingular.${PRICING_UNITS.has(unit) ? unit : "unit"}`)
+		: unit || "unit";
+	const formattedCurrency = formatCurrency(price, rule.currency, locale);
 	return {
 		price,
-		formattedPrice: `${formatCurrency(price, rule.currency)} per ${unitLabel}`,
-		billingKey: `${normalizeCurrencyCode(rule.currency)}:${unitLabel}`,
+		formattedPrice: translatePricing
+			? translatePricing("ratePerUnit", { price: formattedCurrency, unit: unitLabel })
+			: `${formattedCurrency} per ${unitLabel}`,
+		billingKey: `${normalizeCurrencyCode(rule.currency)}:${unit || "unit"}`,
 	};
 }
 
-function getPricingHighlights(pricing: ProviderPricing[]): PricingHighlight[] {
+function getPricingHighlights(
+	pricing: ProviderPricing[],
+	locale: string,
+	translatePricing?: ModelFaqTranslate,
+): PricingHighlight[] {
 	const candidates = pricing.flatMap((provider) =>
 		provider.pricing_rules
 			.filter((rule) => {
@@ -236,7 +338,7 @@ function getPricingHighlights(pricing: ProviderPricing[]): PricingHighlight[] {
 				return !plan || plan === "standard" || plan === "free";
 			})
 			.map((rule) => {
-				const normalized = normaliseRulePrice(rule);
+				const normalized = normaliseRulePrice(rule, locale, translatePricing);
 				if (!normalized) return null;
 				return {
 					meter: rule.meter,
@@ -262,11 +364,14 @@ function getPricingHighlights(pricing: ProviderPricing[]): PricingHighlight[] {
 		.slice(0, 4)
 		.map((candidate) => ({
 			key: `${candidate.meter}:${candidate.billingKey}`,
-			label:
-				PRICING_METER_LABELS.get(candidate.meter) ??
-				candidate.meter
-					.replace(/_/g, " ")
-					.replace(/\b\w/g, (letter) => letter.toUpperCase()),
+			label: translatePricing
+				? PRICING_METER_VALUES.includes(candidate.meter as (typeof PRICING_METER_VALUES)[number])
+					? translatePricing(`meters.${candidate.meter}`)
+					: translatePricing("meter")
+				: PRICING_METER_LABELS.get(candidate.meter) ??
+					candidate.meter
+						.replace(/_/g, " ")
+						.replace(/\b\w/g, (letter) => letter.toUpperCase()),
 			formattedPrice: candidate.formattedPrice,
 		}));
 }
@@ -279,6 +384,10 @@ export default function ModelFaqSection({
 	pricing,
 	relatedModels,
 	gatewayMetadata,
+	translate,
+	translateModality,
+	translatePricing,
+	locale = "en-US",
 }: {
 	model: ModelOverviewPage;
 	benchmarkCount: number;
@@ -287,12 +396,21 @@ export default function ModelFaqSection({
 	pricing: ProviderPricing[];
 	relatedModels?: ModelLineageLinks;
 	gatewayMetadata?: ModelGatewayMetadata | null;
+	translate?: ModelFaqTranslate;
+	translateModality?: (key: string) => string;
+	translatePricing?: ModelFaqTranslate;
+	locale?: string;
 }) {
 	const modelName = model.name;
+	const statusDescription = getStatusDescription(model.status, translate);
+	const question = (key: string, fallback: string) =>
+		translate ? translate(`questions.${key}`, { model: modelName }) : fallback;
 	const organisationName = model.organisation.name;
 	const releaseDate = model.release_date ?? model.announcement_date ?? null;
 	const inputTypes = parseTypes(model.input_types);
 	const outputTypes = parseTypes(model.output_types);
+	const localizedInputTypes = localizeModalities(inputTypes, translateModality);
+	const localizedOutputTypes = localizeModalities(outputTypes, translateModality);
 	const inputContextLength = getNumericDetail(
 		model,
 		"input_context_length",
@@ -304,21 +422,80 @@ export default function ModelFaqSection({
 		"output_context_length",
 		"max_output_tokens",
 	);
-	const pricingHighlights = isGatewayActive ? getPricingHighlights(pricing) : [];
-	const faqProviders = getFaqProviders(pricing);
+	const pricingHighlights = isGatewayActive
+		? getPricingHighlights(pricing, locale, translatePricing)
+		: [];
+	const formatFaqPrice = (highlight: PricingHighlight) =>
+		translatePricing
+			? translatePricing("faqMeterPrice", {
+					meter: highlight.label,
+					price: highlight.formattedPrice,
+				})
+			: `${highlight.label}: ${highlight.formattedPrice}`;
+	const faqProviders = getFaqProviders(pricing, locale);
 	// Native tool definitions are the minimum requirement for tool calling.
 	// tool_choice controls selection behaviour but cannot establish tool support alone.
 	const toolCallingSupport = getCapabilitySupport(gatewayMetadata, ["tools"]);
 	const structuredOutputSupport = getCapabilitySupport(gatewayMetadata, [
 		"structured_outputs",
 	]);
+	let providerIndex = 0;
+	const providerList = new Intl.ListFormat(locale, {
+		style: "long",
+		type: "conjunction",
+	}).formatToParts(faqProviders.visible.map((provider) => provider.name)).map((part, index) => {
+		if (part.type !== "element") return part.value;
+		const provider = faqProviders.visible[providerIndex++];
+		return provider ? (
+			<Link
+				key={`provider-${provider.id}`}
+				href={`/api-providers/${provider.id}`}
+				className="font-medium underline underline-offset-4"
+			>
+				{part.value}
+			</Link>
+		) : <span key={`provider-part-${index}`}>{part.value}</span>;
+	});
+	const formattedInputLength = inputContextLength
+		? new Intl.NumberFormat(locale).format(inputContextLength)
+		: null;
+	const formattedOutputLength = outputContextLength
+		? new Intl.NumberFormat(locale).format(outputContextLength)
+		: null;
+	const contextAnswerText = translate
+		? inputContextLength
+			? `${translate("answers.contextInputRecorded", { model: modelName, input: formattedInputLength! })}${outputContextLength ? translate("answers.contextOutputSuffix", { output: formattedOutputLength! }) : "."}`
+			: translate("answers.contextOutputOnly", { model: modelName, output: formattedOutputLength! })
+		: inputContextLength
+			? `${modelName} has a recorded input context length of ${inputContextLength.toLocaleString(locale)} tokens${outputContextLength ? ` and a recorded maximum output length of ${outputContextLength.toLocaleString(locale)} tokens` : ""}.`
+			: `${modelName} does not have an input context length recorded${outputContextLength ? ` and a recorded maximum output length of ${outputContextLength.toLocaleString(locale)} tokens` : ""}.`;
+	const providerStatusText = isGatewayActive && activeProviderCount > 0
+		? translate
+			? translate("answers.providerActive", { model: modelName, count: activeProviderCount })
+			: `${modelName} is available through the Phaseo API, with ${activeProviderCount} active ${activeProviderCount === 1 ? "provider" : "providers"} currently recorded.`
+		: translate
+			? translate("answers.providerInactive", { model: modelName })
+			: `${modelName} is not currently marked as active in the Phaseo Gateway.`;
+	const providerNameList = joinNaturalList(faqProviders.visible.map((provider) => provider.name), locale);
+	const providerListText = faqProviders.visible.length > 0
+		? `${translate ? translate("answers.providerListPrefix") : "Recorded providers include"} ${providerNameList}${faqProviders.remainingCount > 0 ? `, ${translate ? translate("answers.providerMore", { count: faqProviders.remainingCount }) : `and ${faqProviders.remainingCount} more`}` : ""}.`
+		: "";
+	const providerSectionText = `${translate ? translate("answers.providerSectionPrefix") : "The"} ${translate ? translate("links.providers") : "providers section"} ${translate ? translate("answers.providerSectionSuffix") : "shows the routes and availability currently recorded by Phaseo."}`;
+	const providerAnswerText = [providerStatusText, providerListText, providerSectionText].filter(Boolean).join(" ");
+	const modelAnswerText = `${translate ? translate("answers.modelPrefix", { model: modelName, status: statusDescription }) : `${modelName} is ${statusDescription} from`} ${organisationName}.`;
+	const toolCallingLabel = translate?.("labels.toolCalling") ?? "tool calling";
+	const structuredOutputsLabel = translate?.("labels.structuredOutputs") ?? "structured outputs";
+	const toolCallingAnswer = capabilityAnswer({ modelName, label: toolCallingLabel, support: toolCallingSupport, isGatewayActive, translate });
+	const structuredOutputsAnswer = capabilityAnswer({ modelName, label: structuredOutputsLabel, support: structuredOutputSupport, isGatewayActive, translate });
 
 	const items = [
 		{
-			question: `What is ${modelName}?`,
+			question: question("model", `What is ${modelName}?`),
 			answer: (
 				<>
-					{modelName} is {getStatusDescription(model.status)} from{" "}
+					{translate
+						? translate("answers.modelPrefix", { model: modelName, status: statusDescription })
+						: `${modelName} is ${statusDescription} from`}{" "}
 					<Link
 						href={`/organisations/${model.organisation_id}`}
 						className="font-medium underline underline-offset-4"
@@ -332,125 +509,79 @@ export default function ModelFaqSection({
 		...(inputContextLength || outputContextLength
 			? [
 					{
-						question: `What is the context length of ${modelName}?`,
-						answer: (
-							<>
-								{inputContextLength
-									? `${modelName} has a recorded input context length of ${inputContextLength.toLocaleString("en-US")} tokens`
-									: `${modelName} does not have an input context length recorded`}
-								{outputContextLength
-									? ` and a recorded maximum output length of ${outputContextLength.toLocaleString("en-US")} tokens`
-									: ""}
-								.
-							</>
-						),
+						question: question("contextLength", `What is the context length of ${modelName}?`),
+						answer: contextAnswerText,
 					},
 				]
 			: []),
 		...(pricingHighlights.length > 0
 			? [
 					{
-						question: `How much does ${modelName} cost?`,
+						question: question("cost", `How much does ${modelName} cost?`),
 						answer: (
 							<>
-				The lowest base rates currently recorded across providers for {modelName} are{" "}
-				{pricingHighlights.map((highlight, index) => (
-					<span key={highlight.key}>
-										{index > 0 ? (index === pricingHighlights.length - 1 ? "; and " : "; ") : ""}
-										{highlight.label} at {highlight.formattedPrice}
-									</span>
-								))}
-								. The{" "}
-								<Link href="#pricing" className="font-medium underline underline-offset-4">
-									pricing section
-								</Link>{" "}
-								shows every recorded provider, pricing plan, meter, and condition.
+				{translate
+					? translate("answers.costIntro", {
+						model: modelName,
+						rates: joinNaturalList(pricingHighlights.map(formatFaqPrice), locale),
+					})
+					: `The lowest base rates currently recorded across providers for ${modelName} are ${pricingHighlights.map((highlight) => `${highlight.label} at ${highlight.formattedPrice}`).join("; ")}.`}{" "}
+				{translate ? translate("answers.pricingPrefix") : "The"}{" "}
+				<Link href="#pricing" className="font-medium underline underline-offset-4">
+					{translate ? translate("links.pricing") : "pricing section"}
+				</Link>{" "}
+				{translate ? translate("answers.pricingSuffix") : "shows every recorded provider, pricing plan, meter, and condition."}
 							</>
 						),
 					},
 				]
 			: []),
 		{
-			question: `What providers serve ${modelName}, and can I use it via API?`,
+			question: question("providers", `What providers serve ${modelName}, and can I use it via API?`),
 			answer: (
 				<>
-					{isGatewayActive && activeProviderCount > 0
-						? `${modelName} is available through the Phaseo API, with ${activeProviderCount} active ${activeProviderCount === 1 ? "provider" : "providers"} currently recorded. `
-						: `${modelName} is not currently marked as active in the Phaseo Gateway. `}
+					{providerStatusText}{" "}
 					{faqProviders.visible.length > 0 ? (
 						<>
-							Recorded providers include{" "}
-							{faqProviders.visible.map((provider, index) => {
-								const isLast = index === faqProviders.visible.length - 1;
-								const separator =
-									index === 0
-										? ""
-										: faqProviders.remainingCount > 0
-											? ", "
-											: faqProviders.visible.length === 2
-												? " and "
-												: isLast
-													? ", and "
-													: ", ";
-								return (
-									<span key={provider.id}>
-										{separator}
-										<Link
-											href={`/api-providers/${provider.id}`}
-											className="font-medium underline underline-offset-4"
-										>
-											{provider.name}
-										</Link>
-									</span>
-								);
-							})}
+							{translate ? translate("answers.providerListPrefix") : "Recorded providers include"}{" "}
+							{providerList}
 							{faqProviders.remainingCount > 0
-								? `, and ${faqProviders.remainingCount} more. `
+								? `, ${translate ? translate("answers.providerMore", { count: faqProviders.remainingCount }) : `and ${faqProviders.remainingCount} more`}. `
 								: ". "}
 						</>
 					) : null}
-					The{" "}
+					{translate ? translate("answers.providerSectionPrefix") : "The"}{" "}
 					<Link href="#providers" className="font-medium underline underline-offset-4">
-						providers section
+						{translate ? translate("links.providers") : "providers section"}
 					</Link>{" "}
-					shows the routes and availability currently recorded by Phaseo.
+					{translate ? translate("answers.providerSectionSuffix") : "shows the routes and availability currently recorded by Phaseo."}
 				</>
 			),
 		},
 		{
-			question: `Does ${modelName} support tool calling?`,
-			answer: capabilityAnswer({
-				modelName,
-				label: "tool calling",
-				support: toolCallingSupport,
-				isGatewayActive,
-			}),
+			question: question("toolCalling", `Does ${modelName} support tool calling?`),
+			answer: toolCallingAnswer,
 		},
 		{
-			question: `Does ${modelName} support structured outputs?`,
-			answer: capabilityAnswer({
-				modelName,
-				label: "structured outputs",
-				support: structuredOutputSupport,
-				isGatewayActive,
-			}),
+			question: question("structuredOutputs", `Does ${modelName} support structured outputs?`),
+			answer: structuredOutputsAnswer,
 		},
 		...(relatedModels?.previous || relatedModels?.next || model.family_id
 			? [
 					{
-						question: `What models are related to ${modelName}?`,
+						question: question("relatedModels", `What models are related to ${modelName}?`),
 						answer: (
 							<>
 								{relatedModels?.previous ? (
 									<>
-										Phaseo records{" "}
+										{translate ? translate("answers.previousPrefix") : "Phaseo records"}{" "}
 										<Link
 											href={`/models/${relatedModels.previous.modelId}`}
 											className="font-medium underline underline-offset-4"
 										>
 											{relatedModels.previous.modelName}
 										</Link>{" "}
-										as the previous model.{" "}
+										{translate ? translate("answers.previousSuffix") : "as the previous model."}{" "}
 									</>
 								) : null}
 								{relatedModels?.next ? (
@@ -461,19 +592,19 @@ export default function ModelFaqSection({
 										>
 											{relatedModels.next.modelName}
 										</Link>{" "}
-										is recorded as the next model.{" "}
+										{translate ? translate("answers.nextSuffix") : "is recorded as the next model."}{" "}
 									</>
 								) : null}
 								{model.family_id ? (
 									<>
-										View the{" "}
+										{translate ? translate("answers.familyPrefix") : "View the"}{" "}
 										<Link
 											href={`/families/${model.family_id}`}
 											className="font-medium underline underline-offset-4"
 										>
-											model family
+											{translate ? translate("links.family") : "model family"}
 										</Link>{" "}
-										for the complete release history.
+										{translate ? translate("answers.familySuffix") : "for the complete release history."}
 									</>
 								) : null}
 							</>
@@ -484,16 +615,16 @@ export default function ModelFaqSection({
 		...(benchmarkCount > 0
 			? [
 					{
-						question: `What benchmark results are available for ${modelName}?`,
+						question: question("benchmarks", `What benchmark results are available for ${modelName}?`),
 						answer: (
 							<>
-								Phaseo currently tracks {benchmarkCount}{" "}
-								{benchmarkCount === 1 ? "benchmark result" : "benchmark results"}
-								{" "}for {modelName}. Review the{" "}
+								{translate
+									? translate("answers.benchmarkIntro", { count: benchmarkCount, model: modelName })
+									: `Phaseo currently tracks ${benchmarkCount} ${benchmarkCount === 1 ? "benchmark result" : "benchmark results"} for ${modelName}. Review the`}{" "}
 								<Link href="#benchmarks" className="font-medium underline underline-offset-4">
-									benchmark section
+									{translate ? translate("links.benchmarks") : "benchmark section"}
 								</Link>{" "}
-								for scores, ranks, methodology context, and available sources.
+								{translate ? translate("answers.benchmarkSuffix") : "for scores, ranks, methodology context, and available sources."}
 							</>
 						),
 					},
@@ -502,14 +633,18 @@ export default function ModelFaqSection({
 		...(inputTypes.length > 0 || outputTypes.length > 0
 			? [
 					{
-						question: `What modalities does ${modelName} support?`,
+						question: question("modalities", `What modalities does ${modelName} support?`),
 						answer: (
 							<>
 								{inputTypes.length > 0
-									? `${modelName} accepts ${joinNaturalList(inputTypes)} input${inputTypes.length === 1 ? "" : "s"}. `
+									? translate
+										? translate("answers.modalitiesInput", { model: modelName, modalities: joinNaturalList(localizedInputTypes, locale) })
+										: `${modelName} accepts ${joinNaturalList(inputTypes, locale)} input${inputTypes.length === 1 ? "" : "s"}. `
 									: ""}
 								{outputTypes.length > 0
-									? `It produces ${joinNaturalList(outputTypes)} output${outputTypes.length === 1 ? "" : "s"}.`
+									? translate
+										? translate("answers.modalitiesOutput", { model: modelName, modalities: joinNaturalList(localizedOutputTypes, locale) })
+										: `It produces ${joinNaturalList(outputTypes, locale)} output${outputTypes.length === 1 ? "" : "s"}.`
 									: ""}
 							</>
 						),
@@ -519,8 +654,14 @@ export default function ModelFaqSection({
 		...(releaseDate
 			? [
 					{
-						question: `When was ${modelName} released?`,
-						answer: `${modelName} was ${model.release_date ? "released" : "announced"} on ${formatModelLifecycleDate(releaseDate)}.`,
+						question: question("releaseDate", `When was ${modelName} released?`),
+						answer: translate
+							? translate("answers.releaseDate", {
+									model: modelName,
+									verb: translate(model.release_date ? "answers.released" : "answers.announced"),
+									date: new Intl.DateTimeFormat(locale, { timeZone: "UTC", day: "numeric", month: "short", year: "numeric" }).format(new Date(releaseDate)),
+								})
+							: `${modelName} was ${model.release_date ? "released" : "announced"} on ${formatModelLifecycleDate(releaseDate)}.`,
 					},
 				]
 			: []),
@@ -531,39 +672,39 @@ export default function ModelFaqSection({
 		mainEntity: [
 			{
 				"@type": "Question",
-				name: `What is ${modelName}?`,
+				name: question("model", `What is ${modelName}?`),
 				acceptedAnswer: {
 					"@type": "Answer",
-					text: `${modelName} is ${getStatusDescription(model.status)} from ${organisationName}.`,
+					text: modelAnswerText,
 				},
 			},
 			...(inputContextLength || outputContextLength
 				? [{
 					"@type": "Question",
-					name: `What is the context length of ${modelName}?`,
+					name: question("contextLength", `What is the context length of ${modelName}?`),
 					acceptedAnswer: {
 						"@type": "Answer",
-						text: `${inputContextLength ? `${modelName} has a recorded input context length of ${inputContextLength.toLocaleString("en-US")} tokens` : `${modelName} does not have an input context length recorded`}${outputContextLength ? ` and a recorded maximum output length of ${outputContextLength.toLocaleString("en-US")} tokens` : ""}.`,
+						text: contextAnswerText,
 					},
 				}]
 				: []),
 			{
 				"@type": "Question",
-				name: `What providers serve ${modelName}, and can I use it via API?`,
+				name: question("providers", `What providers serve ${modelName}, and can I use it via API?`),
 				acceptedAnswer: {
 					"@type": "Answer",
-					text: `${isGatewayActive && activeProviderCount > 0 ? `${modelName} is available through the Phaseo API, with ${activeProviderCount} active ${activeProviderCount === 1 ? "provider" : "providers"} currently recorded.` : `${modelName} is not currently marked as active in the Phaseo Gateway.`}${faqProviders.visible.length > 0 ? ` Recorded providers include ${joinNaturalList(faqProviders.visible.map((provider) => provider.name))}${faqProviders.remainingCount > 0 ? ` and ${faqProviders.remainingCount} more` : ""}.` : ""}`,
+					text: providerAnswerText,
 				},
 			},
 			{
 				"@type": "Question",
-				name: `Does ${modelName} support tool calling?`,
-				acceptedAnswer: { "@type": "Answer", text: capabilityAnswer({ modelName, label: "tool calling", support: toolCallingSupport, isGatewayActive }) },
+				name: question("toolCalling", `Does ${modelName} support tool calling?`),
+				acceptedAnswer: { "@type": "Answer", text: toolCallingAnswer },
 			},
 			{
 				"@type": "Question",
-				name: `Does ${modelName} support structured outputs?`,
-				acceptedAnswer: { "@type": "Answer", text: capabilityAnswer({ modelName, label: "structured outputs", support: structuredOutputSupport, isGatewayActive }) },
+				name: question("structuredOutputs", `Does ${modelName} support structured outputs?`),
+				acceptedAnswer: { "@type": "Answer", text: structuredOutputsAnswer },
 			},
 		],
 	};
@@ -572,7 +713,7 @@ export default function ModelFaqSection({
 		<section id="faq" className="scroll-mt-28 space-y-4 border-t border-border/60 pt-5">
 			<JsonLdScript id="model-faq-json-ld" data={faqSchema} />
 			<h2 className="text-xl font-semibold tracking-tight">
-				Frequently Asked Questions
+				{translate?.("title") ?? "Frequently Asked Questions"}
 			</h2>
 			<ModelFaqAccordion items={items} />
 		</section>

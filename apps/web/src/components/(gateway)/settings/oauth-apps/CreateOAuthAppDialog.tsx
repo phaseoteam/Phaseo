@@ -22,6 +22,7 @@ import { Card } from "@/components/ui/card";
 import OAuthScopeSelector from "./OAuthScopeSelector";
 import { DEFAULT_THIRD_PARTY_OAUTH_SCOPES } from "@/lib/oauth/scopes";
 import { useTranslations } from "next-intl";
+import { localizedSettingsError } from "@/i18n/error-messages";
 
 interface CreateOAuthAppDialogProps {
 	currentTeamId: string | null;
@@ -48,7 +49,7 @@ export default function CreateOAuthAppDialog({
 
 	const handleCreate = async () => {
 		if (!currentTeamId) {
-			setError("Select a workspace before creating an OAuth app");
+			setError(t("strings.selectWorkspace" as never));
 			return;
 		}
 		setLoading(true);
@@ -68,7 +69,7 @@ export default function CreateOAuthAppDialog({
 			});
 
 			if (result.error) {
-				setError(result.error);
+				setError(localizedSettingsError(result.error, t, "Failed to create OAuth app"));
 				return;
 			}
 
@@ -80,7 +81,7 @@ export default function CreateOAuthAppDialog({
 			// Refresh the page data
 			router.refresh();
 		} catch (err: any) {
-		setError(err.message || t("strings.Failed to create OAuth app" as never));
+			setError(localizedSettingsError(err, t, "Failed to create OAuth app"));
 		} finally {
 			setLoading(false);
 		}
@@ -167,7 +168,7 @@ export default function CreateOAuthAppDialog({
 								</div>
 							</Card>
 							<p className="text-xs text-muted-foreground mt-1">
-								Store this securely. It won&apos;t be shown again.
+								{t("oauthCopy.createdSecretNotice")}
 							</p>
 						</div>
 
@@ -202,18 +203,18 @@ export default function CreateOAuthAppDialog({
 				<DialogTitle>{t("strings.Create OAuth App" as never)}</DialogTitle>
 					<DialogDescription>
 					{t("strings.Create a new OAuth application for third-party integrations." as never)}
-						You&apos;ll receive a client ID and secret to use in your application.
+						{t("oauthCopy.clientCredentialsDescription")}
 					</DialogDescription>
 				</DialogHeader>
 
 				<div className="space-y-4">
 					<div>
 						<Label htmlFor="name">
-							Application Name <span className="text-red-500">*</span>
+							{t("oauthCopy.applicationName")} <span className="text-red-500">*</span>
 						</Label>
 						<Input
 							id="name"
-							placeholder="My Awesome App"
+							placeholder={t("oauthCopy.applicationNamePlaceholder")}
 							value={formData.name}
 							onChange={(e) =>
 								setFormData({ ...formData, name: e.target.value })
@@ -221,14 +222,14 @@ export default function CreateOAuthAppDialog({
 							maxLength={100}
 						/>
 						<p className="text-xs text-muted-foreground mt-1">
-							A friendly name for your OAuth application
+							{t("oauthCopy.applicationNameHelp")}
 						</p>
 					</div>
 
 					<div>
 					<Label>{t("strings.Scopes this app may request" as never)}</Label>
 						<p className="mb-3 text-xs text-muted-foreground">
-							Select the least access your integration needs. Users must still approve any requested permissions during OAuth consent.
+							{t("oauthCopy.minimumScopesHelp")}
 						</p>
 						<OAuthScopeSelector
 							selectedScopes={formData.allowedScopes}
@@ -240,7 +241,7 @@ export default function CreateOAuthAppDialog({
 					<Label htmlFor="description">{t("strings.Description" as never)}</Label>
 						<Textarea
 							id="description"
-							placeholder="Describe what your app does..."
+							placeholder={t("oauthCopy.descriptionPlaceholder")}
 							value={formData.description}
 							onChange={(e) =>
 								setFormData({ ...formData, description: e.target.value })
@@ -264,7 +265,7 @@ export default function CreateOAuthAppDialog({
 
 					<div>
 						<Label htmlFor="redirectUris">
-							Redirect URIs <span className="text-red-500">*</span>
+							{t("oauthCopy.redirectUrisLabel")} <span className="text-red-500">*</span>
 						</Label>
 						<Textarea
 							id="redirectUris"
@@ -276,7 +277,7 @@ export default function CreateOAuthAppDialog({
 							rows={4}
 						/>
 						<p className="text-xs text-muted-foreground mt-1">
-							One URI per line. Users will be redirected here after authorization.
+							{t("oauthCopy.redirectUrisHelp")}
 						</p>
 					</div>
 

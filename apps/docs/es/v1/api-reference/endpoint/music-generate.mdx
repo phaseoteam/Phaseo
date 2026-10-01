@@ -1,0 +1,69 @@
+---
+title: "Generar música"
+sidebarTitle: "Generar música"
+badge: "Beta"
+openapi: "/es/openapi/v1/openapi.localized.yaml POST /music/generate"
+---
+
+Genera música con una API independiente del proveedor. Phaseo gestiona las respuestas síncronas y consulta en segundo plano las colas de los proveedores.
+
+Cuando la generación termina, la respuesta incluye `audio_url` o `audio_base64`. Si un proveedor devuelve un trabajo aún activo, usa el mismo `id` de la respuesta con `GET /music/generate/{music_id}`.
+
+## Estructura de la solicitud
+
+```json
+{
+  "model": "minimax/music-3.0:free",
+  "prompt": "Warm jazz trio with brushed drums",
+  "format": "mp3"
+}
+```
+
+## Opciones de Suno
+
+- `suno.customMode` (booleano; predeterminado: `false`)
+- `suno.instrumental` (booleano; predeterminado: `false`)
+- `suno.prompt` (anulación opcional de `prompt` en el nivel superior)
+- `suno.style`, `suno.title` (obligatorio cuando `customMode = true`)
+- `suno.personaId`, `suno.personaModel`
+- `suno.negativeTags`, `suno.vocalGender`
+- `suno.styleWeight`, `suno.weirdnessConstraint`, `suno.audioWeight`
+
+## Reglas de validación
+
+- Cuando `customMode = false`, se requiere `prompt`.
+- Cuando `customMode = true`, se requieren `style` y `title`.
+- Cuando `customMode = true` e `instrumental = false`, se requiere `prompt`.
+
+Los errores de validación devuelven `400` con:
+
+```json
+{
+  "error": "validation_error",
+  "reason": "..."
+}
+```
+
+## Respuesta
+
+```json
+{
+  "id": "req_01JY6MUSIC123",
+  "object": "music",
+  "status": "completed",
+  "provider": "gmicloud",
+  "model": "minimax/music-3.0:free",
+  "nativeResponseId": "5c30b275-d669-4a25-8151-de6d60214853",
+  "audio_url": "https://.../generated-music.mp3",
+  "usage": {
+    "requests": 1,
+    "output_audio_seconds": 25.364
+  }
+}
+```
+
+- `id` es el identificador de solicitud estable de Phaseo. Úsalo para recuperar la solicitud mediante `GET /music/generate/{music_id}`.
+- `nativeResponseId` es el identificador del proveedor ascendente; sirve para correlacionar solicitudes y contactar con su equipo de soporte.
+- `status` puede ser `queued`, `in_progress`, `completed` o `failed`.
+- `usage` puede incluir `output_audio_seconds` cuando el proveedor informa de la duración generada.
+

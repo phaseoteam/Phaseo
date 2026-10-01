@@ -2,9 +2,6 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
 export const metadata: Metadata = {
-	title: "Audio models redirect",
-	description:
-		"Redirect route to the API provider models view for Phaseo audio model listings.",
 	robots: {
 		index: false,
 		follow: false,

@@ -1,0 +1,74 @@
+---
+icon: "shapes"
+title: "结构化输出"
+description: "使用 json_object 或 json_schema 输出格式返回可预测的 JSON。"
+---
+
+结构化输出可强制使用机器可读格式，而非自由文本。
+
+## 端点支持情况
+
+可在以下端点使用结构化输出：
+
+- `/v1/chat/completions`，使用 `response_format`
+- `/v1/responses`，使用 `text.format`
+- `/v1/messages` 仍可返回 JSON 文本，但不使用相同的 `response_format` 契约。
+
+## 请求
+
+```bash
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-5-nano",
+    "messages": [
+      { "role": "user", "content": "Return a JSON object with city and weather for London." }
+    ],
+    "response_format": {
+      "type": "json_schema",
+      "json_schema": {
+        "name": "weather_schema",
+        "strict": true,
+        "schema": {
+          "type": "object",
+          "properties": {
+            "city": { "type": "string" },
+            "weather": { "type": "string" }
+          },
+          "required": ["city", "weather"],
+          "additionalProperties": false
+        }
+      }
+    }
+  }'
+```
+
+## 响应
+
+```json
+{
+  "id": "chatcmpl_...",
+  "choices": [
+    {
+      "index": 0,
+      "finish_reason": "stop",
+      "message": {
+        "role": "assistant",
+        "content": "{\"city\":\"London\",\"weather\":\"Cloudy\"}"
+      }
+    }
+  ]
+}
+```
+
+## 契约说明
+
+- `response_format.type` 应为 `text`、`json_object` 或 `json_schema`。
+- 使用 `json_schema` 时需包含 Schema 对象（chat 风格请求使用 `response_format.json_schema.schema`，Responses 风格请求使用 `text.format.schema`）。
+- 在下游使用前，请在服务器上校验 JSON。
+
+## 后续指南
+
+1. [结构化输出 Schema](./structured-outputs-schemas.mdx)
+2. [校验与回退模式](./structured-outputs-validation.mdx)

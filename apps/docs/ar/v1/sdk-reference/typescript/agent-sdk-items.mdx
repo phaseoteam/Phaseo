@@ -1,0 +1,77 @@
+---
+icon: "layers"
+title: "التعامل مع العناصر"
+description: "اعرض الرسائل ذات الأنواع المحددة والاستدلال ونشاط الأدوات والأخطاء والمخرجات النهائية."
+---
+
+استخدم العناصر لإنشاء مخطط زمني منظّم للوكيل دون تحليل أحداث خاصة بمزوّد بعينه. تكشف عمليات التشغيل المتدفقة والمكتملة عن العقد المرتب نفسه `AgentItem<TOutput>`.
+
+## أنواع العناصر
+
+`AgentItem<TOutput>` اتحاد تمييزي:
+
+| النوع | الحقول المهمة | يمثل |
+| --- | --- | --- |
+| `message` | `role`, `content` | نص المساعد أو المحادثة |
+| `reasoning` | `text` | استدلال يقدمه النموذج |
+| `tool_call` | `toolCallId`, `name`, `input` | استدعاء أداة مقترح |
+| `tool_result` | `toolCallId`, `name`, `output` | استدعاء أداة مكتمل |
+| `error` | `message` وتفاصيل أداة اختيارية | خطأ في المزوّد أو الأداة |
+| `output` | `value` | المخرج النهائي الذي حلّله الوكيل |
+
+## عرض مخطط زمني متدفق
+
+يضيّق TypeScript نوع كل عنصر استنادًا إلى الخاصية `type`:
+
+```typescript
+const stream = agent.stream({ input, client });
+
+for await (const item of stream.getItemsStream()) {
+  switch (item.type) {
+    case "message":
+      renderAssistantMessage(item.content);
+      break;
+    case "reasoning":
+      renderReasoning(item.text);
+      break;
+    case "tool_call":
+      renderToolCall(item.toolCallId, item.name, item.input);
+      break;
+    case "tool_result":
+      renderToolResult(item.toolCallId, item.output);
+      break;
+    case "error":
+      renderError(item.message);
+      break;
+    case "output":
+      renderFinalOutput(item.value);
+      break;
+  }
+}
+```
+
+## قراءة العناصر بعد الاكتمال
+
+تتضمن النتيجة المكتملة الأشكال المرتبة نفسها للعناصر:
+
+```typescript
+const completed = await stream.getResult();
+
+for (const item of completed.items) {
+  saveTimelineItem(completed.run.id, item);
+}
+```
+
+يتيح ذلك للمنتج عرض النشاط مباشرة ثم إعادة بناء المخطط الزمني نفسه لاحقًا من حالة التشغيل المحفوظة.
+
+## الوصول إلى بيانات خاصة بمزوّد
+
+تُوحّد مخرجات المزوّد إلى أنواع عناصر قابلة للنقل. وإذا احتاج تكامل إلى حقل خاص بمزوّد بعينه، تحتفظ العناصر الموحّدة بالحمولة الأصلية في `rawProviderItem`.
+
+استخدم الحقول القابلة للنقل في منطق المنتج كلما أمكن. تعامل مع `rawProviderItem` كحل احتياطي للتكاملات الخاصة بمزوّد، لا كعقد افتراضي للتطبيق.
+
+## أدلة ذات صلة
+
+- [البث](./agent-sdk-streaming.mdx)
+- [الأدوات](./agent-sdk-tools.mdx)
+- [خطافات دورة الحياة](./agent-sdk-lifecycle-hooks.mdx)

@@ -1,0 +1,25 @@
+---
+icon: "circle-check"
+title: "Condiciones de detención"
+description: "Limita el trabajo de agentes Java por pasos, tokens, coste, duración, herramientas o motivo de finalización."
+---
+
+Combine las funciones auxiliares de parada en `AgentDefinition.stopWhen`:
+
+```java
+var stopWhen = List.of(
+    AgentSdk.stepCountIs(12),
+    AgentSdk.maxTokensUsed(40_000),
+    AgentSdk.maxCost(2),
+    AgentSdk.maxDuration(Duration.ofMinutes(1))
+);
+```
+
+También hay funciones como `hasToolCall(...)` y `finishReasonIs(...)`. La primera condición coincidente registra un motivo de detención y devuelve una ejecución detenida en lugar de continuar silenciosamente.
+
+Usa límites de coste y tokens solo si la ruta del modelo seleccionada informa esos datos. Mantén siempre un límite de pasos o duración como límite alternativo de ejecución.
+
+## Relacionado
+
+- [Turnos dinámicos](./agent-sdk-dynamic-turns.mdx)
+- [Salidas y reintentos](./agent-sdk-run-controls.mdx)

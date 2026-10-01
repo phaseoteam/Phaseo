@@ -1,0 +1,47 @@
+---
+title: "Pi"
+icon: "terminal"
+description: "Verbinde einen installierten Pi-Modellkatalog mit dem Phaseo Gateway."
+---
+
+## Mit der Phaseo-CLI einrichten
+
+Diese produktionsbereiten Befehle setzen ein Phaseo-Konto voraus. Die CLI erstellt beim Anmelden und Einrichten die eigene Gateway-Zugangsdaten.
+
+```bash
+phaseo login
+phaseo pi
+```
+
+Installiere Pi zuerst aus der offiziellen Version. Beim Einrichten wird eine verwaltete Provider-Erweiterung unter `~/.pi/agent/extensions/phaseo.ts` abgelegt. Sie stellt alle aktiven Phaseo-Textmodelle bereit, die mit Chat Completions kompatibel sind, und ruft bei jeder Anfrage den eigenen API-Schlüssel über die Phaseo-CLI ab.
+
+Wähle ein Startmodell oder richte bei Bedarf nur ein Modell ein:
+
+```bash
+phaseo pi --model anthropic/claude-sonnet-4.6
+phaseo pi --catalog default
+```
+
+Verwende `--dry-run`, um Dateiänderungen vorab anzuzeigen.
+
+## Starten und überprüfen
+
+```bash
+pi
+```
+
+Öffne `/model`, wähle den Provider `phaseo` und sende eine einfache Anfrage. Entferne nur die verwaltete Erweiterung und widerrufe ihren eigenen Schlüssel mit:
+
+```bash
+phaseo integrations remove pi
+```
+
+## Manueller Zugriff auf Zugangsdaten
+
+Die erstellte Erweiterung verwendet Pis befehlsbasierte Schlüssel-Syntax:
+
+```text
+!phaseo integrations credential pi
+```
+
+In der Erweiterung wird kein Schlüssel im Klartext gespeichert.

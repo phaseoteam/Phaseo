@@ -1,0 +1,192 @@
+---
+icon: "users-round"
+title: "如何贡献"
+description: "本指南将逐步介绍如何首次为 Phaseo 做贡献，内容涵盖环境设置到提交拉取请求。"
+---
+
+为 **Phaseo** 做贡献简单、透明，并向所有人开放。
+无论是编辑模型条目、更新基准测试数据、改进文档还是提出新想法，本指南都会带你了解完整流程。
+
+---
+
+## 开始之前
+
+你需要安装一些基本工具：
+
+| 工具 | 用途 | 安装 |
+| ------------------ | ---------------------------------------------- | -------------------------------------------------- |
+| **Git**            | 用于克隆并推送更改的版本控制工具。     | [安装 Git](https://git-scm.com/downloads)       |
+| **Node.js (v20+)** | 在本地运行 Phaseo 网站（Next.js）。      | [下载 Node.js](https://nodejs.org/en/download) |
+| **pnpm**           | 此项目使用的包管理器。          | `npm install -g pnpm`                              |
+| **GitHub 账号** | 用于派生仓库、问题和拉取请求。 | [在此注册](https://github.com/signup)          |
+
+如果你只想编辑**数据**或 **Markdown 文档**，可以直接在 GitHub 上修改，无需设置本地环境。
+
+---
+
+## 1. 派生仓库
+
+前往 [Phaseo 的 GitHub 仓库](https://github.com/phaseoteam/Phaseo)，点击右上角的 **Fork**。
+这样会创建一份你自己的项目副本，你可以自由修改。
+
+---
+
+## 2. 克隆派生仓库
+
+```bash
+git clone https://github.com/yourusername/Phaseo.git
+cd Phaseo
+```
+
+这会将派生仓库下载到你的本地计算机。
+
+---
+
+## 3. 创建新分支
+
+建议为每项更改创建一个新分支：
+
+```bash
+git checkout -b update-benchmark-data
+```
+
+请使用能体现更改内容的分支名称，以便他人审查。
+
+示例：
+
+-   `fix-{model-name}`
+-   `add-new-organisation`
+-   `improve-docs`
+-   `update-pricing-for-{model-name}`
+
+---
+
+## 4. 进行更改
+
+根据你要编辑的内容：
+
+| 范围 | 文件 | 说明 |
+| --------------------- | --------------------------------------------- | ----------------------------------------------------- |
+| **模型数据**        | `/packages/data/catalog/src/data/models/**/model.json`     | 添加或更新模型元数据、价格或基准测试数据。 |
+| **组织数据** | `/packages/data/catalog/src/data/organisations/*.json`     | 更新公司或研究团队的相关信息。    |
+| **基准测试数据**    | `/packages/data/catalog/src/data/benchmarks/**/*.json`     | 提交新的评测结果或更正内容。         |
+| **文档**     | `/apps/docs/v1/**/*.mdx`                      | 改进或扩展指南、参考资料和文档页面。 |
+| **网关**           | `/apps/api/*`                                 | 修改 API 网关。                      |
+
+如果你要编辑数据，请遵循[仓库结构](./repo-structure.mdx)中说明的架构和字段格式。
+
+---
+
+## 5. 预览更改（可选）
+
+如需在本地预览更改：
+
+```bash
+pnpm install
+pnpm dev
+```
+
+网站更改请访问 [http://localhost:3100](http://localhost:3100)，文档更改请访问 [http://localhost:3101](http://localhost:3101)。由于 Web 应用从数据库读取数据，数据更改需在创建 PR 后才能预览。
+
+---
+
+## 6. 提交更改
+
+确认更改无误后，提交修改：
+
+```bash
+git add .
+git commit -m "Updated benchmark data for Claude 3.5 Sonnet"
+```
+
+请使用能描述更改内容的提交信息，帮助审查者理解你的贡献。
+
+---
+
+## 7. 推送分支
+
+```bash
+git push origin update-benchmark-data
+```
+
+---
+
+## 8. 创建拉取请求（PR）
+
+1. 前往你在 GitHub 上的派生仓库。
+2. GitHub 会提示你创建 PR，点击 **Compare & Pull Request**。
+3. 在 PR 模板中填写与你的更改相关的信息。
+4. 提交 PR。
+
+PR 经审查并批准后，会合并到 Phaseo 主仓库。
+
+---
+
+## 9. 庆祝
+
+合并后，你的贡献就会正式发布。感谢你付出的努力和支持。
+
+<Card
+	title="查看贡献者"
+	icon="users"
+	href="https://phaseo.app/contribute"
+	horizontal
+>
+	查看所有帮助构建 Phaseo 的贡献者。
+</Card>
+
+---
+
+## 贡献建议
+
+-   让 PR **小而聚焦**，每个 PR 只包含一项逻辑上独立的更改。
+-   尽量遵循 [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) 规范，并使用 `fix:`、`add:` 或 `chore:` 等**清晰的提交前缀**。
+-   如果更改会影响数据准确性，请附上**来源或参考资料**。
+-   对于较大或不确定的想法，请先在 **GitHub Discussions** 或 Discord 中讨论，再开始编码。
+-   始终尊重他人，并遵守我们的[行为准则](../community/code-of-conduct.mdx)。
+
+---
+
+## 示例工作流程
+
+```bash
+# 1. Fork and clone
+
+git clone https://github.com/yourusername/Phaseo.git
+cd Phaseo
+
+# 2. Create branch
+git checkout -b add-openai-new-model
+
+# 3. Make changes
+# e.g., update packages/data/catalog/src/data/models/openai/new-model/model.json
+
+# 4. Commit and push
+git add .
+git commit -m "Add new OpenAI model entry"
+git push origin add-new-openai-model
+
+# 5. Create a Pull Request on GitHub
+```
+
+---
+
+## 后续步骤
+
+<Columns cols={2}>
+	<Card
+		title="仓库结构"
+		icon="folder-tree"
+		href="./repo-structure.mdx"
+	>
+		了解文件夹布局以及关键数据文件的位置。
+	</Card>
+	<Card
+		title="编辑模型"
+		icon="brain"
+		href="./editing-a-model.mdx"
+	>
+		从实际示例入手：更新或添加模型条目。
+	</Card>
+</Columns>
+

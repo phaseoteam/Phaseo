@@ -1,0 +1,66 @@
+---
+icon: "shuffle"
+title: "動的ターン"
+description: "エージェントのターン間でモデル、指示、サンプリング、ツールを変更します。"
+---
+
+後続のモデルターンでアプリのコンテキストや前のツール結果に応答する場合は、動的な値を使います。値は固定するか、現在のターンから計算できます。
+
+## ランタイムでモデルを選ぶ
+
+```typescript
+type ResearchContext = {
+  fast: boolean;
+};
+
+const agent = createAgent<string, string, ResearchContext>({
+  id: "research-agent",
+  model: ({ context }) =>
+    context?.fast ? "phaseo/free" : "anthropic/claude-sonnet-4",
+  instructions: ({ numberOfTurns }) =>
+    `Research turn ${numberOfTurns}. Cite the evidence you use.`,
+});
+```
+
+エージェント定義では`model`、`models`、`instructions`、`temperature`、`maxOutputTokens`、`topP`に動的な値を指定できます。
+
+## ツールからアプリのコンテキストを更新する
+
+ツールは`context.setContext()`で後続ターン用の情報を保存できます。
+
+```typescript
+const chooseMode = defineTool({
+  id: "choose-mode",
+  async execute(input: { fast: boolean }, context) {
+    context.setContext({ fast: input.fast });
+    return { selected: input.fast ? "fast" : "thorough" };
+  },
+});
+```
+
+実行を保存して後から再開する場合に備え、コンテキストは小さくシリアライズ可能に保ちます。
+
+## 次のターンだけを上書きする
+
+エージェント定義を恒久的に変えず、ツールで次のリクエストを変更するには`nextTurnParams`を使います。
+
+```typescript
+const broadenSearch = defineTool({
+  id: "broaden-search",
+  nextTurnParams: {
+    temperature: 0.3,
+    maxOutputTokens: 2_000,
+  },
+  async execute() {
+    return { broadened: true };
+  },
+});
+```
+
+次のターンの値では、モデル、指示、temperature、最大出力トークン数、top-pサンプリング、利用可能なツールを変更できます。
+
+## 関連ガイド
+
+- [停止条件](./agent-sdk-stop-conditions.mdx)
+- [状態と承認](./agent-sdk-state-and-approval.mdx)
+- [出力と再試行](./agent-sdk-run-controls.mdx)

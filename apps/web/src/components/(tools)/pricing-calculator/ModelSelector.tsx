@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import {
 	ModelSelector as ModelPicker,
 	ModelSelectorContent,
@@ -52,8 +53,9 @@ function formatProviderLabel(providerId: string): string {
 		.replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
-function formatPlanLabel(plan: string): string {
+function formatPlanLabel(plan: string, standardLabel: string): string {
 	const value = plan.replace(/[-_]+/g, " ").trim().toLowerCase();
+	if (value === "standard") return standardLabel;
 	return value ? value[0].toUpperCase() + value.slice(1) : "";
 }
 
@@ -77,14 +79,16 @@ function releaseTimestamp(
 }
 
 function formatReleaseDate(
+	locale: string,
+	unknownLabel: string,
 	releaseDate?: string | null,
 	announcementDate?: string | null
 ): string {
 	const value = releaseDate || announcementDate;
-	if (!value) return "Release unknown";
+	if (!value) return unknownLabel;
 	const parsed = new Date(value);
-	if (Number.isNaN(parsed.getTime())) return "Release unknown";
-	return new Intl.DateTimeFormat("en", {
+	if (Number.isNaN(parsed.getTime())) return unknownLabel;
+	return new Intl.DateTimeFormat(locale, {
 		day: "numeric",
 		month: "short",
 		year: "numeric",
@@ -142,6 +146,8 @@ export function ModelSelector({
 	onRemoveModel,
 	onUpdateModelConfig,
 }: ModelSelectorProps) {
+	const locale = useLocale();
+	const t = useTranslations("Product.tools.pricing");
 	const [open, setOpen] = useState(false);
 	const [query, setQuery] = useState("");
 	const [activeModelId, setActiveModelId] = useState<string | null>(null);
@@ -296,13 +302,13 @@ export function ModelSelector({
 			<CardHeader className="rounded-none border-b bg-muted/15 p-5">
 				<CardTitle className="flex flex-wrap items-start justify-between gap-3">
 					<div className="space-y-1">
-						<span className="text-base">Choose models</span>
+						<span className="text-base">{t("chooseModels")}</span>
 						<p className="text-xs font-normal text-muted-foreground">
-							Search the full model catalogue and add as many comparisons as you need.
+							{t("modelsSelectorDescription")}
 						</p>
 					</div>
 					<Badge variant="outline" className="rounded-lg bg-background text-xs">
-						{selectedModels.length} selected
+						{t("selectedCount", { count: selectedModels.length })}
 					</Badge>
 				</CardTitle>
 			</CardHeader>
@@ -325,9 +331,9 @@ export function ModelSelector({
 									<Search className="size-4" />
 								</span>
 								<span className="min-w-0">
-									<span className="block truncate text-sm font-medium">Search models</span>
+									<span className="block truncate text-sm font-medium">{t("searchModels")}</span>
 									<span className="block truncate text-xs text-muted-foreground">
-										{modelOptions.length.toLocaleString()} models in the catalogue
+										{t("modelsInCatalogue", { count: modelOptions.length.toLocaleString(locale) })}
 									</span>
 								</span>
 							</span>
@@ -335,12 +341,12 @@ export function ModelSelector({
 						</Button>
 					</ModelSelectorTrigger>
 					<ModelSelectorContent
-						title="Select models for pricing comparison"
+						title={t("selectModelsDialogTitle")}
 						className="w-[min(94vw,920px)] max-w-3xl"
 						commandProps={{ shouldFilter: false }}
 					>
 						<ModelSelectorInput
-							placeholder="Search models, organisations, providers, or endpoints..."
+							placeholder={t("modelSearchPlaceholder")}
 							value={query}
 							onValueChange={(value) => {
 								setQuery(value);
@@ -366,13 +372,13 @@ export function ModelSelector({
 							}}
 						/>
 						<div className="flex items-center justify-between border-b px-4 py-2 text-xs text-muted-foreground">
-							<span>{filteredModels.length.toLocaleString()} models</span>
-							<span>Models can be added more than once</span>
+							<span>{t("modelCount", { count: filteredModels.length })}</span>
+							<span>{t("modelsCanBeAddedMoreThanOnce")}</span>
 						</div>
 						<VirtualizedModelCatalog
 							sections={[{
 								key: "priced-models",
-								heading: normalizedQuery ? "Search results" : "Recently released",
+								heading: normalizedQuery ? t("searchResults") : t("recentlyReleased"),
 								items: filteredModels,
 							}]}
 							getItemKey={(model) => model.modelId}
@@ -381,7 +387,7 @@ export function ModelSelector({
 							onActiveItemChange={setActiveModelId}
 							onSelectItem={(model) => onAddModel(model.modelId)}
 							estimateItemSize={64}
-							emptyContent="No models found."
+							emptyContent={t("noModelsFound")}
 							renderItem={(model) => {
 									const selectedCount = selectionCountByModelId.get(model.modelId) ?? 0;
 									return (
@@ -405,15 +411,15 @@ export function ModelSelector({
 											</span>
 											<span className="hidden shrink-0 items-center gap-1.5 sm:flex">
 												<Badge variant="secondary" className="rounded-md text-[10px]">
-													{model.providers.length} provider{model.providers.length === 1 ? "" : "s"}
+													{t("providerCount", { count: model.providers.length })}
 												</Badge>
 												<Badge variant="outline" className="rounded-md text-[10px]">
-													{model.meterCount > 0 ? `${model.meterCount} meters` : "Pricing on add"}
+													{model.meterCount > 0 ? t("meterCount", { count: model.meterCount }) : t("pricingOnAdd")}
 												</Badge>
 											</span>
 											{selectedCount > 0 ? (
 												<Badge variant="outline" className="shrink-0 rounded-md text-[10px]">
-													{selectedCount} added
+													{t("addedCount", { count: selectedCount })}
 												</Badge>
 											) : null}
 											{loadingModelSet.has(model.modelId) ? (
@@ -464,7 +470,7 @@ export function ModelSelector({
 										size="icon-sm"
 										className="rounded-lg text-muted-foreground hover:text-destructive"
 										onClick={() => onRemoveModel(selection.id)}
-										aria-label={`Remove ${option?.displayName || modelId}`}
+										aria-label={t("removeModel", { name: option?.displayName || modelId })}
 									>
 										<X className="size-4" />
 									</Button>
@@ -472,7 +478,7 @@ export function ModelSelector({
 
 								<div className="mt-4 grid gap-2 sm:grid-cols-3">
 									<div className="space-y-1.5">
-										<span className="text-xs font-medium text-muted-foreground">Endpoint</span>
+										<span className="text-xs font-medium text-muted-foreground">{t("endpoint")}</span>
 										<Select
 										value={endpoint}
 										onValueChange={(nextEndpoint) => onUpdateModelConfig(selection.id, { endpoint: nextEndpoint, provider: "", pricingPlan: "" })}
@@ -488,7 +494,7 @@ export function ModelSelector({
 									</div>
 
 									<div className="space-y-1.5">
-										<span className="text-xs font-medium text-muted-foreground">Provider</span>
+										<span className="text-xs font-medium text-muted-foreground">{t("provider")}</span>
 										<Select
 										value={provider}
 										onValueChange={(nextProvider) => onUpdateModelConfig(selection.id, { provider: nextProvider, pricingPlan: "" })}
@@ -504,25 +510,25 @@ export function ModelSelector({
 									</div>
 
 									<div className="space-y-1.5">
-										<span className="text-xs font-medium text-muted-foreground">Pricing plan</span>
+										<span className="text-xs font-medium text-muted-foreground">{t("pricingPlan")}</span>
 										<Select
 										value={config?.pricingPlan || planOptions[0] || ""}
 										onValueChange={(pricingPlan) => onUpdateModelConfig(selection.id, { pricingPlan })}
 									>
 										<SelectTrigger className="h-11 w-full rounded-xl border bg-background px-3">
 											<PricingPlanIcon plan={config?.pricingPlan || planOptions[0] || ""} />
-											<span className="min-w-0 flex-1 truncate text-left">{formatPlanLabel(config?.pricingPlan || planOptions[0] || "")}</span>
+											<span className="min-w-0 flex-1 truncate text-left">{formatPlanLabel(config?.pricingPlan || planOptions[0] || "", t("standardPlan"))}</span>
 										</SelectTrigger>
 										<SelectContent align="start">
-											{planOptions.map((value) => <SelectItem key={value} value={value}><PricingPlanIcon plan={value} />{formatPlanLabel(value)}</SelectItem>)}
+											{planOptions.map((value) => <SelectItem key={value} value={value}><PricingPlanIcon plan={value} />{formatPlanLabel(value, t("standardPlan"))}</SelectItem>)}
 										</SelectContent>
 										</Select>
 									</div>
 								</div>
 
 								<div className="mt-3 flex flex-wrap gap-1.5 text-[11px] text-muted-foreground">
-									<span className="inline-flex items-center gap-1 rounded-md bg-muted px-2 py-1"><CalendarDays className="size-3" />{formatReleaseDate(option?.releaseDate, option?.announcementDate)}</span>
-									<span className="inline-flex items-center gap-1 rounded-md bg-muted px-2 py-1"><DatabaseZap className="size-3" />{option?.meterCount ?? 0} priced meters</span>
+									<span className="inline-flex items-center gap-1 rounded-md bg-muted px-2 py-1"><CalendarDays className="size-3" />{formatReleaseDate(locale, t("releaseUnknown"), option?.releaseDate, option?.announcementDate)}</span>
+									<span className="inline-flex items-center gap-1 rounded-md bg-muted px-2 py-1"><DatabaseZap className="size-3" />{t("pricedMeters", { count: option?.meterCount ?? 0 })}</span>
 								</div>
 							</div>
 						);

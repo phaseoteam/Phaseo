@@ -2,8 +2,6 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
 export const metadata: Metadata = {
-	title: "GitHub redirect",
-	description: "Redirect route to the official Phaseo GitHub repository.",
 	robots: {
 		index: false,
 		follow: false,

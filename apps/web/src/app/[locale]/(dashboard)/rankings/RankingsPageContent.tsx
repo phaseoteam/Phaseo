@@ -25,9 +25,7 @@ import {
 	type ModalitySectionData,
 } from "@/components/(rankings)/ModalityLeaderboards";
 import { RankingsModalityTabs } from "@/components/(rankings)/RankingsModalityTabs";
-import ModelPageToc, {
-	type ModelPageTocItem,
-} from "@/components/(data)/model/ModelPageToc";
+import ModelPageToc from "@/components/(data)/model/ModelPageToc";
 import { ChartSkeleton, ListSkeleton } from "@/components/(rankings)/Skeletons";
 import { InlineInfoTooltip } from "@/components/(rankings)/InlineInfoTooltip";
 import {
@@ -64,30 +62,16 @@ export type RankingModality =
 
 export const RANKING_MODALITIES: RankingModality[] = ["text", "image", "embeddings", "rerank", "audio", "video", "speech", "transcription"];
 
-const rankingSectionLabels: Record<RankingModality, string> = {
-	text: "AI Model Rankings",
-	image: "Image Model Rankings",
-	embeddings: "Embedding Model Rankings",
-	rerank: "Rerank Model Rankings",
-	audio: "Audio Model Rankings",
-	video: "Video Model Rankings",
-	speech: "Speech Model Rankings",
-	transcription: "Transcription Model Rankings",
+const rankingSectionLabelKeys: Record<RankingModality, string> = {
+	text: "modalityTitles.text",
+	image: "modalityTitles.image",
+	embeddings: "modalityTitles.embeddings",
+	rerank: "modalityTitles.rerank",
+	audio: "modalityTitles.audio",
+	video: "modalityTitles.video",
+	speech: "modalityTitles.speech",
+	transcription: "modalityTitles.transcription",
 };
-
-const textRankingTocItems: ModelPageTocItem[] = [
-	{ id: "text", label: "Leaderboard" },
-	{ id: "fastest-models", label: "Fastest Models" },
-	{ id: "benchmarks", label: "Intelligence Index" },
-	{ id: "context-length", label: "Context Length" },
-	{ id: "unique-users", label: "Unique Users" },
-	{ id: "retention", label: "Return Rate" },
-	{ id: "market-share", label: "Market Share" },
-	{ id: "tool-calls", label: "Tool Calls" },
-	{ id: "image-inputs", label: "Image Inputs" },
-	{ id: "top-apps", label: "Top Apps" },
-	{ id: "geography", label: "Countries" },
-];
 
 export function isRankingModality(value: string): value is RankingModality {
 	return RANKING_MODALITIES.includes(value as RankingModality);
@@ -132,19 +116,19 @@ export default async function RankingsPageContent({
 	const isTextPage = modality === "text";
 	const tocItems = isTextPage
 		? [
-				{ id: "text", label: "Leaderboard" },
-				{ id: "fastest-models", label: "Fastest Models" },
+				{ id: "text", label: translate("leaderboard") },
+				{ id: "fastest-models", label: translate("fastestModels") },
 				{ id: "benchmarks", label: translate("intelligenceIndex") },
 				{ id: "context-length", label: translate("contextLength") },
-				{ id: "unique-users", label: "Unique Users" },
+				{ id: "unique-users", label: translate("uniqueUsers") },
 				{ id: "retention", label: translate("weeklyReturnRate") },
-				{ id: "market-share", label: "Market Share" },
-				{ id: "tool-calls", label: "Tool Calls" },
+				{ id: "market-share", label: translate("marketShare") },
+				{ id: "tool-calls", label: translate("toolCalls") },
 				{ id: "image-inputs", label: translate("imageInputs") },
-				{ id: "top-apps", label: "Top Apps" },
+				{ id: "top-apps", label: translate("topApps") },
 				{ id: "geography", label: translate("countries") },
 			]
-		: [{ id: modality, label: rankingSectionLabels[modality] }];
+		: [{ id: modality, label: translate(rankingSectionLabelKeys[modality]) }];
 
     return (
         <div className="min-h-screen bg-background text-foreground">
@@ -182,20 +166,20 @@ export default async function RankingsPageContent({
 
                     <section id="market-share" className="scroll-mt-32 space-y-12 border-t border-border pt-12">
 						<div className="space-y-0.5">
-							<h2 className="text-2xl font-semibold leading-8">Market Share</h2>
+							<h2 className="text-2xl font-semibold leading-8">{translate("marketShare")}</h2>
 							<p className="max-w-3xl text-sm text-muted-foreground">
-								How gateway usage is distributed across model creators and API providers.
+								{translate("marketShareDescription")}
 							</p>
 						</div>
                         <section className="space-y-4">
                             <div className="space-y-0.5">
-								<h3 className="text-xl font-semibold leading-8">Market Share by Organization</h3>
+								<h3 className="text-xl font-semibold leading-8">{translate("marketShareByOrganisation")}</h3>
                                 <p className="text-sm text-muted-foreground">
                                     <span className="inline-flex items-center gap-1.5">
-                                        Weekly organization share trends across the gateway.
+                                        {translate("weeklyOrganizationShareTrends")}
                                         <InlineInfoTooltip
-                                            label="What is an organization?"
-                                            description="An organization is the model creator or lab, such as OpenAI, Anthropic, or Google."
+                                            label={translate("whatIsOrganization")}
+                                            description={translate("organizationDefinition")}
                                         />
                                     </span>
                                 </p>
@@ -206,13 +190,13 @@ export default async function RankingsPageContent({
                         </section>
                         <section className="space-y-4">
                             <div className="space-y-0.5">
-                                <h3 className="text-xl font-semibold leading-8">Market Share by Provider</h3>
+                                <h3 className="text-xl font-semibold leading-8">{translate("marketShareByProvider")}</h3>
                                 <p className="text-sm text-muted-foreground">
                                     <span className="inline-flex items-center gap-1.5">
-                                        Weekly provider share trends across routed traffic.
+                                        {translate("weeklyProviderShareTrends")}
                                         <InlineInfoTooltip
-                                            label="What is a provider?"
-                                            description="A provider is the API endpoint serving requests for a model, such as OpenAI API, Azure OpenAI, or Together."
+                                            label={translate("whatIsProvider")}
+                                            description={translate("providerDefinition")}
                                         />
                                     </span>
                                 </p>
@@ -250,12 +234,9 @@ export default async function RankingsPageContent({
 
 // Server components for data fetching
 
-function formatTokens(value: number) {
+function formatTokens(value: number, locale: string) {
 	if (!Number.isFinite(value)) return "--";
-	if (value >= 1e9) return `${(value / 1e9).toFixed(1)}B`;
-	if (value >= 1e6) return `${(value / 1e6).toFixed(1)}M`;
-	if (value >= 1e3) return `${(value / 1e3).toFixed(1)}K`;
-	return value.toLocaleString();
+	return new Intl.NumberFormat(locale, { notation: "compact", maximumFractionDigits: 1 }).format(value);
 }
 
 function metadataFor(
@@ -270,8 +251,8 @@ function metadataFor(
 	};
 }
 
-function formatCount(value: number, unit: string) {
-	const formatted = formatTokens(value);
+function formatCount(value: number, unit: string, locale: string) {
+	const formatted = new Intl.NumberFormat(locale, { notation: "compact", maximumFractionDigits: 1 }).format(value);
 	return `${formatted} ${unit}`;
 }
 
@@ -280,7 +261,6 @@ function buildVolumeEntries(
 	metric: Exclude<keyof MultimodalData, "model_id">,
 	metaMap: Record<string, { name: string | null; organisation_id: string | null; organisation_name: string | null }>,
 	label: (value: number) => string,
-	secondary: (value: number) => string,
 ): ModalityLeaderboardEntry[] {
 	return rows
 		.map((row): ModalityLeaderboardEntry | null => {
@@ -293,7 +273,6 @@ function buildVolumeEntries(
 				...meta,
 				value,
 				value_label: label(value),
-				secondary: secondary(value),
 			};
 		})
 		.filter((entry): entry is ModalityLeaderboardEntry => entry !== null)
@@ -307,6 +286,12 @@ function buildPerformanceEntries(
 	metric: "median_throughput" | "median_latency_ms",
 	metaMap: Record<string, { name: string | null; organisation_id: string | null; organisation_name: string | null }>,
 	providerNames: Record<string, string>,
+	locale: string,
+	labels: {
+		throughput: (value: string) => string;
+		latency: (value: string) => string;
+		medianLatency: (value: string) => string;
+	},
 ): ModalityLeaderboardEntry[] {
 	const lowerIsBetter = metric === "median_latency_ms";
 	return rows
@@ -331,16 +316,15 @@ function buildPerformanceEntries(
 				value,
 				value_label:
 					metric === "median_throughput"
-						? `${value.toFixed(1)} tok/s`
-						: `${value.toFixed(0)} ms`,
-				secondary: `${Number(row.requests ?? 0).toLocaleString()} recent requests`,
+						? labels.throughput(new Intl.NumberFormat(locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(value))
+						: labels.latency(new Intl.NumberFormat(locale, { maximumFractionDigits: 0 }).format(value)),
 				tertiary:
 					metric === "median_throughput"
 						? Number(row.median_latency_ms ?? 0) > 0
-							? `${Number(row.median_latency_ms).toFixed(0)} ms median latency`
+							? labels.medianLatency(new Intl.NumberFormat(locale, { maximumFractionDigits: 0 }).format(Number(row.median_latency_ms)))
 							: null
 						: Number(row.median_throughput ?? 0) > 0
-							? `${Number(row.median_throughput).toFixed(1)} tok/s`
+							? labels.throughput(new Intl.NumberFormat(locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(Number(row.median_throughput)))
 							: null,
 				lowerIsBetter,
 			};
@@ -358,6 +342,10 @@ async function ModalityLeaderboardsServer({
 }: {
 	modality: RankingModality;
 }) {
+	const [t, locale] = await Promise.all([
+		getTranslations("Catalogue.rankings"),
+		getLocale(),
+	]);
 	const [
 		multimodalRes,
 		perfRes,
@@ -438,299 +426,173 @@ async function ModalityLeaderboardsServer({
 		multimodalRes.data,
 		"text_tokens",
 		metaMap,
-		(value) => formatTokens(value),
-		() => "text tokens over the last 30 days",
+		(value) => formatTokens(value, locale),
 	);
 	const imageInputEntries = buildVolumeEntries(
 		multimodalRes.data,
 		"image_inputs",
 		metaMap,
-		(value) => formatCount(value, "images"),
-		() => "image inputs observed over the last 30 days",
+		(value) => formatCount(value, t("usageImagesUnit"), locale),
 	);
 	const imageGeneratedEntries = buildVolumeEntries(
 		multimodalRes.data,
 		"image_outputs",
 		metaMap,
-		(value) => formatCount(value, "images"),
-		() => "images generated over the last 30 days",
+		(value) => formatCount(value, t("usageImagesUnit"), locale),
 	);
 	const audioEntries = buildVolumeEntries(
 		multimodalRes.data,
 		"audio_tokens",
 		metaMap,
-		(value) => formatTokens(value),
-		() => "audio tokens over the last 30 days",
+		(value) => formatTokens(value, locale),
 	);
 	const videoEntries = buildVolumeEntries(
 		multimodalRes.data,
 		"video_tokens",
 		metaMap,
-		(value) => formatTokens(value),
-		() => "video tokens over the last 30 days",
+		(value) => formatTokens(value, locale),
 	);
 	const videoSecondsEntries = buildVolumeEntries(
 		multimodalRes.data,
 		"video_seconds",
 		metaMap,
-		(value) => `${value.toLocaleString()} sec`,
-		() => "generated video duration over the last 30 days",
+		(value) => formatCount(value, t("usageSecondsUnit"), locale),
 	);
 	const cacheEntries = buildVolumeEntries(
 		multimodalRes.data,
 		"cached_tokens",
 		metaMap,
-		(value) => formatTokens(value),
-		() => "cached tokens over the last 30 days",
+		(value) => formatTokens(value, locale),
 	);
 	const audioSecondsEntries = buildVolumeEntries(
 		multimodalRes.data,
 		"audio_seconds",
 		metaMap,
-		(value) => `${(value / 60).toFixed(value >= 600 ? 0 : 1)} min`,
-		() => "tracked audio duration over the last 30 days",
+		(value) => `${new Intl.NumberFormat(locale, { maximumFractionDigits: value >= 600 ? 0 : 1 }).format(value / 60)} ${t("usageMinutesUnit")}`,
 	);
 	const embeddingEntries = buildVolumeEntries(
 		multimodalRes.data,
 		"embedding_tokens",
 		metaMap,
-		(value) => formatTokens(value),
-		() => "embedding tokens over the last 30 days",
+		(value) => formatTokens(value, locale),
 	);
 	const rerankEntries = buildVolumeEntries(
 		multimodalRes.data,
 		"rerank_quad_tokens",
 		metaMap,
-		(value) => formatTokens(value),
-		() => "rerank quadtokens over the last 30 days",
+		(value) => formatTokens(value, locale),
 	);
 	const throughputEntries = buildPerformanceEntries(
 		perfRes.data,
 		"median_throughput",
 		metaMap,
 		providerNames,
+		locale,
+		{
+			throughput: (value) => t("modalityThroughputValue", { value }),
+			latency: (value) => t("modalityLatencyValue", { value }),
+			medianLatency: (value) => t("modalityMedianLatencyValue", { value }),
+		},
 	);
 	const latencyEntries = buildPerformanceEntries(
 		perfRes.data,
 		"median_latency_ms",
 		metaMap,
 		providerNames,
+		locale,
+		{
+			throughput: (value) => t("modalityThroughputValue", { value }),
+			latency: (value) => t("modalityLatencyValue", { value }),
+			medianLatency: (value) => t("modalityMedianLatencyValue", { value }),
+		},
 	);
 
+	const localizedModalityTitles = t.raw("modalityTitles" as never) as Record<RankingModality, string>;
+	const localizedMetricTitles = t.raw("modalityMetricTitles" as never) as Record<string, string>;
+	const sectionCopy = (id: RankingModality) => ({
+		title: localizedModalityTitles[id],
+		description: t("modalitySectionDescription"),
+		chartTitle: t("modalityTopModels"),
+		chartDescription: t("modalityChartDescription"),
+	});
+	const metricCopy = (id: string, entries: ModalityLeaderboardEntry[]) => ({
+		id,
+		title: localizedMetricTitles[id],
+		description: t("modalityMetricDescription"),
+		entries,
+	});
 	const sections: ModalitySectionData[] = [
 		{
 			id: "text",
-			label: "Text",
-			title: "AI Model Rankings",
-			description:
-				"Based on real usage data from Phaseo gateway traffic.",
-			chartTitle: "Top Models",
-			chartDescription: "Weekly usage of models across Phaseo.",
+			...sectionCopy("text"),
 			primaryTimeseries: textTimeseries.data,
 			primaryEntries: textEntries,
 			metrics: [
-				{
-					id: "text-volume",
-					title: "Total Text Tokens",
-					description: "Models ranked by observed text token volume.",
-					entries: textEntries,
-				},
-				{
-					id: "text-throughput",
-					title: "Fastest Generation",
-					description: "Highest recent median output throughput.",
-					entries: throughputEntries,
-				},
-				{
-					id: "text-latency",
-					title: "Lowest Latency",
-					description: "Lowest recent median response latency.",
-					entries: latencyEntries,
-				},
-				{
-					id: "text-cache",
-					title: "Most Cached Tokens",
-					description: "Models with the most cache participation.",
-					entries: cacheEntries,
-				},
-				{
-					id: "text-image-inputs",
-					title: "Most Image Inputs",
-					description: "Vision-style image inputs attached to model traffic.",
-					entries: imageInputEntries,
-				},
+				metricCopy("text-volume", textEntries),
+				metricCopy("text-throughput", throughputEntries),
+				metricCopy("text-latency", latencyEntries),
+				metricCopy("text-cache", cacheEntries),
+				metricCopy("text-image-inputs", imageInputEntries),
 			],
 		},
 		{
 			id: "image",
-			label: "Image",
-			title: "Image Model Rankings",
-			description:
-				"Compare multimodal models by the number of image inputs they process.",
-			chartTitle: "Top Models by Image Inputs",
-			chartDescription: "Weekly image inputs processed by multimodal models.",
+			...sectionCopy("image"),
 			primaryTimeseries: imageInputTimeseries.data,
 			primaryEntries: imageInputEntries,
 			metrics: [
-				{
-					id: "image-generated",
-					title: "Images Generated",
-					description: "Models ranked by observed generated-image count.",
-					entries: imageGeneratedEntries,
-				},
-				{
-					id: "image-inputs",
-					title: "Most Image Inputs",
-					description: "Vision inputs attached to multimodal model traffic.",
-					entries: imageInputEntries,
-				},
-				{
-					id: "image-timeseries",
-					title: "Images Generated Over Time",
-					description: "Weekly generated-image counts should be plotted as a time series.",
-					entries: [],
-					dataNeeded:
-						"Add a public generated-image time series by model/provider, plus dimensions for size, quality, and request type.",
-				},
+				metricCopy("image-generated", imageGeneratedEntries),
+				metricCopy("image-inputs", imageInputEntries),
+				metricCopy("image-timeseries", []),
 			],
 		},
 		{
 			id: "embeddings",
-			label: "Embeddings",
-			title: "Embedding Model Rankings",
-			description:
-				"Compare embedding models by native embedding workload volume.",
-			chartTitle: "Top Embedding Models",
-			chartDescription: "Weekly embedding-token volume by model.",
+			...sectionCopy("embeddings"),
 			primaryTimeseries: embeddingTimeseries.data,
 			primaryEntries: embeddingEntries,
-			metrics: [
-				{
-					id: "embedding-volume",
-					title: "Embedding Volume",
-					description: "Rank by native embedding token volume.",
-					entries: embeddingEntries,
-					dataNeeded:
-						"Add generated vector counts by model/provider/week so embedding volume can be shown alongside tokens.",
-				},
-			],
+			metrics: [metricCopy("embedding-volume", embeddingEntries)],
 		},
 		{
 			id: "rerank",
-			label: "Rerank",
-			title: "Rerank Model Rankings",
-			description:
-				"Compare rerank models by observed workload volume.",
-			chartTitle: "Top Rerank Models",
-			chartDescription: "Weekly rerank workload volume by model.",
+			...sectionCopy("rerank"),
 			primaryTimeseries: rerankTimeseries.data,
 			primaryEntries: rerankEntries,
-			metrics: [
-				{
-					id: "rerank-volume",
-					title: "Rerank Volume",
-					description: "Rank by rerank requests and documents scored.",
-					entries: rerankEntries,
-					dataNeeded:
-						"Add document-count rollups by model/provider/week so rerank volume is not only quadtokens.",
-				},
-			],
+			metrics: [metricCopy("rerank-volume", rerankEntries)],
 		},
 		{
 			id: "audio",
-			label: "Audio",
-			title: "Audio Model Rankings",
-			description:
-				"Compare audio-capable models by audio token volume and tracked duration.",
-			chartTitle: "Top Audio Models",
-			chartDescription: "Weekly audio-token volume by model.",
+			...sectionCopy("audio"),
 			primaryTimeseries: audioTimeseries.data,
 			primaryEntries: audioEntries,
 			metrics: [
-				{
-					id: "audio-tokens",
-					title: "Total Audio Tokens",
-					description: "Models ranked by observed audio token volume.",
-					entries: audioEntries,
-				},
-				{
-					id: "audio-cache",
-					title: "Audio Duration",
-					description: "Tracked audio seconds across speech, transcription, and audio input workloads.",
-					entries: audioSecondsEntries,
-					dataNeeded:
-						"Split audio seconds by endpoint so speech and transcription can have separate leaderboards.",
-				},
+				metricCopy("audio-tokens", audioEntries),
+				metricCopy("audio-cache", audioSecondsEntries),
 			],
 		},
 		{
 			id: "video",
-			label: "Video",
-			title: "Video Model Rankings",
-			description:
-				"Compare video models by generated duration and multimodal video usage.",
-			chartTitle: "Top Video Models",
-			chartDescription: "Weekly generated-video seconds by model.",
+			...sectionCopy("video"),
 			primaryTimeseries: videoSecondsTimeseries.data,
 			primaryEntries: videoSecondsEntries,
 			metrics: [
-				{
-					id: "video-seconds",
-					title: "Seconds Generated",
-					description: "Models ranked by generated video duration.",
-					entries: videoSecondsEntries,
-				},
-				{
-					id: "video-tokens",
-					title: "Total Video Tokens",
-					description: "Models ranked by observed video token volume.",
-					entries: videoEntries,
-					dataNeeded:
-						"Split video context tokens from generated-video seconds in provider-specific charts.",
-				},
+				metricCopy("video-seconds", videoSecondsEntries),
+				metricCopy("video-tokens", videoEntries),
 			],
 		},
 		{
 			id: "speech",
-			label: "Speech",
-			title: "Speech Model Rankings",
-			description:
-				"Compare text-to-speech models as sufficient public usage data becomes available.",
-			chartTitle: "Top Speech Models",
-			chartDescription: "Weekly generated speech duration by model once exposed.",
+			...sectionCopy("speech"),
 			primaryTimeseries: [],
 			primaryEntries: [],
-			metrics: [
-				{
-					id: "speech-seconds",
-					title: "Speech Seconds Generated",
-					description: "Rank text-to-speech models by generated duration.",
-					entries: [],
-					dataNeeded:
-						"Add generated speech seconds, request count, latency, and price-per-second rollups.",
-				},
-			],
+			metrics: [metricCopy("speech-seconds", [])],
 		},
 		{
 			id: "transcription",
-			label: "Transcription",
-			title: "Transcription Model Rankings",
-			description:
-				"Compare transcription models as sufficient public audio-duration data becomes available.",
-			chartTitle: "Top Transcription Models",
-			chartDescription: "Weekly transcribed minutes by model once exposed.",
+			...sectionCopy("transcription"),
 			primaryTimeseries: [],
 			primaryEntries: [],
-			metrics: [
-				{
-					id: "transcription-minutes",
-					title: "Minutes Transcribed",
-					description: "Rank speech-to-text models by processed audio duration.",
-					entries: [],
-					dataNeeded:
-						"Add transcribed audio minutes, request count, language, latency, and error-rate rollups.",
-				},
-			],
+			metrics: [metricCopy("transcription-minutes", [])],
 		},
 	];
 
@@ -754,13 +616,14 @@ async function ModalityLeaderboardsServer({
 	);
 }
 
-function TextRankingSignals({
+async function TextRankingSignals({
 	throughputEntries,
 	latencyEntries,
 }: {
 	throughputEntries: ModalityLeaderboardEntry[];
 	latencyEntries: ModalityLeaderboardEntry[];
 }) {
+	const t = await getTranslations("Catalogue.rankings");
 	return (
 		<div className="space-y-16">
 			<section
@@ -769,20 +632,20 @@ function TextRankingSignals({
 			>
 				<span id="performance" className="sr-only" aria-hidden="true" />
 				<div className="space-y-0.5">
-					<h2 className="text-2xl font-semibold leading-8">Fastest Models</h2>
+					<h2 className="text-2xl font-semibold leading-8">{t("fastestModels")}</h2>
 					<p className="max-w-3xl text-sm text-muted-foreground">
-						Recent production performance across routes with sufficient public samples.
+						{t("fastestModelsDescription")}
 					</p>
 				</div>
 				<div className="grid gap-12 xl:grid-cols-2 xl:gap-16">
 					<RankingBarTable
-						title="Fastest Generation"
-						description="Highest median output throughput over the last 30 days."
+						title={t("fastestGeneration")}
+						description={t("fastestGenerationDescription")}
 						entries={throughputEntries}
 					/>
 					<RankingBarTable
-						title="Lowest Latency"
-						description="Lowest median response latency over the last 30 days."
+						title={t("lowestLatency")}
+						description={t("lowestLatencyDescription")}
 						entries={latencyEntries}
 						lowerIsBetter
 					/>
@@ -793,6 +656,7 @@ function TextRankingSignals({
 }
 
 async function UniqueUsersSectionServer() {
+	const t = await getTranslations("Catalogue.rankings");
 	const result = await fetchFrontendRankingUniqueUserTimeseries("year", "week", 10).catch(() => ({ data: [] }));
 	const modelIds = Array.from(
 		new Set(
@@ -837,9 +701,9 @@ async function UniqueUsersSectionServer() {
 	return (
 		<section id="unique-users" className="scroll-mt-32 space-y-4 border-t border-border pt-12">
 			<div className="space-y-0.5">
-				<h2 className="text-2xl font-semibold leading-8">Unique Users</h2>
+				<h2 className="text-2xl font-semibold leading-8">{t("uniqueUsers")}</h2>
 				<p className="max-w-3xl text-sm text-muted-foreground">
-					Model adoption by distinct gateway actors, so token-heavy workloads do not dominate the ranking alone.
+					{t("uniqueUsersDescription")}
 				</p>
 			</div>
 			<UsageStackedBar
@@ -850,9 +714,9 @@ async function UniqueUsersSectionServer() {
 				logoIdMap={logoIdMap}
 				organisationNameMap={organisationNameMap}
 				modelLicenseMap={modelLicenseMap}
-				leaderboardTitle="Unique Users Leaderboard"
-				leaderboardDescription="Compare models by distinct people or workspaces using them across the selected usage period."
-				valueUnit="users"
+				leaderboardTitle={t("uniqueUsersLeaderboardTitle")}
+				leaderboardDescription={t("uniqueUsersLeaderboardDescription")}
+				valueUnit={t("usageUsersUnit")}
 			/>
 		</section>
 	);
@@ -920,6 +784,7 @@ async function MarketShareOrganizationServer() {
 }
 
 async function MarketShareProviderServer() {
+	const t = await getTranslations("Catalogue.rankings");
     const [timeseriesResult, leaderboardResult] = await Promise.all([
         fetchFrontendMarketShareTimeseries("provider", "year", "week", 10).catch(() => ({ data: [] })),
         fetchFrontendMarketShare("provider", "year").catch(() => ({ data: [] })),
@@ -945,7 +810,7 @@ async function MarketShareProviderServer() {
         .filter((row) => row.name && row.name.toLowerCase() !== "unknown")
         .map((row) => ({
             ...row,
-            name: row.name === "Other" ? "Other" : providerNameMap[row.name] ?? row.name,
+			name: row.name === "Other" ? t("usageOtherSeries") : providerNameMap[row.name] ?? row.name,
         }));
 
     const filtered = (leaderboardResult.data ?? [])

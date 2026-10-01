@@ -219,7 +219,7 @@ export default function MetricChartCard({
 				<div className="flex items-end justify-between gap-3 flex-wrap">
 					<div className="text-3xl font-bold">{format(currentValue)}</div>
 					<div className="text-sm text-muted-foreground">
-						Avg:{" "}
+						{t("strings.Avg" as never)}:{" "}
 						<span className="font-mono font-medium text-foreground">
 							{metricType === "currency"
 								? format(avgValue)

@@ -1,0 +1,74 @@
+---
+icon: "shapes"
+title: "構造化出力"
+description: "json_objectまたはjson_schemaの出力形式で、予測可能なJSONを返します。"
+---
+
+構造化出力を使うと、自由形式のテキストではなく機械可読な形式を指定できます。
+
+## 対応エンドポイント
+
+構造化出力は次のエンドポイントで使えます。
+
+- `response_format`を使う`/v1/chat/completions`
+- `text.format`を使う`/v1/responses`
+- `/v1/messages`もJSONテキストを返せますが、同じ`response_format`の仕様は使いません。
+
+## リクエスト
+
+```bash
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-5-nano",
+    "messages": [
+      { "role": "user", "content": "Return a JSON object with city and weather for London." }
+    ],
+    "response_format": {
+      "type": "json_schema",
+      "json_schema": {
+        "name": "weather_schema",
+        "strict": true,
+        "schema": {
+          "type": "object",
+          "properties": {
+            "city": { "type": "string" },
+            "weather": { "type": "string" }
+          },
+          "required": ["city", "weather"],
+          "additionalProperties": false
+        }
+      }
+    }
+  }'
+```
+
+## レスポンス
+
+```json
+{
+  "id": "chatcmpl_...",
+  "choices": [
+    {
+      "index": 0,
+      "finish_reason": "stop",
+      "message": {
+        "role": "assistant",
+        "content": "{\"city\":\"London\",\"weather\":\"Cloudy\"}"
+      }
+    }
+  ]
+}
+```
+
+## 仕様上の注意
+
+- `response_format.type`には`text`、`json_object`、`json_schema`を指定します。
+- `json_schema`ではスキーマオブジェクトを含めます（chat形式のペイロードでは`response_format.json_schema.schema`、Responses形式では`text.format.schema`）。
+- 後続処理に渡す前に、サーバー側でJSONを検証します。
+
+## 次のガイド
+
+1. [構造化出力のスキーマ](./structured-outputs-schemas.mdx)
+2. [検証とフォールバックのパターン](./structured-outputs-validation.mdx)

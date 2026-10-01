@@ -328,10 +328,10 @@ export function nowIso() {
 	return new Date().toISOString();
 }
 
-export function buildTitle(messages: ChatMessage[]) {
+export function buildTitle(messages: ChatMessage[], emptyTitle: string) {
 	const first = messages.find((msg) => msg.role === "user");
-	if (!first) return "New chat";
-	return first.content.trim().slice(0, 48) || "New chat";
+	if (!first) return emptyTitle;
+	return first.content.trim().slice(0, 48) || emptyTitle;
 }
 
 export function buildPersonalizationPrompt(

@@ -1,0 +1,13 @@
+---
+title: "إنشاء مفتاح API"
+sidebarTitle: "إنشاء مفتاح API"
+badge: "Beta"
+openapi: "/ar/openapi/v1/openapi.localized.yaml POST /keys"
+description: "إنشاء مفتاح API جديد في مساحة العمل التي تمت المصادقة عليها."
+---
+<Note>
+يتطلب هذا المسار مفتاح API للإدارة. ولا تُقبل مفاتيح Gateway API القياسية.
+</Note>
+
+يُعاد مفتاح API بنصه الواضح مرة واحدة عند إنشائه. تُقبل حقول التوافق `limit` و`limit_reset` و`include_byok_in_limit`؛ ويتعامل Phaseo حاليًا مع `include_byok_in_limit` لأغراض التوافق فقط ويستبعد BYOK دائمًا من حد هذا المفتاح.
+

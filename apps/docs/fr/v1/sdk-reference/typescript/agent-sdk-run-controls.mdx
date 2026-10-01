@@ -1,0 +1,78 @@
+---
+icon: "braces"
+title: "Sorties et tentatives"
+description: "Validez les sorties finales, réessayez les erreurs temporaires du modèle et appliquez des paramètres de routage gérés."
+---
+
+Utilisez l’analyse de sortie lorsque le reste de votre application a besoin d’une valeur typée plutôt que de texte libre. Ajoutez un nombre limité de tentatives pour les erreurs temporaires du modèle, tout en laissant les erreurs de validation et de règles visibles par votre application.
+
+## Analyser une sortie typée
+
+`parseOutput` convertit le texte final lorsque la boucle de l’agent est terminée :
+
+```typescript
+const agent = createAgent<string, { summary: string }>({
+  id: "summary-agent",
+  parseOutput(text) {
+    return JSON.parse(text) as { summary: string };
+  },
+});
+```
+
+Pour imposer un comportement plus strict au modèle, associez l’analyse à une réponse structurée du client de passerelle :
+
+```typescript
+const client = createGatewayAgentClient({
+  clientOptions: {
+    apiKey: process.env.PHASEO_API_KEY!,
+  },
+  responseFormat: {
+    type: "json_schema",
+    name: "agent_answer",
+    schema: {
+      type: "object",
+      properties: {
+        summary: { type: "string" },
+      },
+      required: ["summary"],
+      additionalProperties: false,
+    },
+  },
+  plugins: [{ id: "response-healing" }],
+});
+```
+
+## Réessayer les requêtes au modèle
+
+Utilisez `modelRetry` lorsqu’une erreur temporaire du modèle doit être réessayée pendant l’exécution en cours :
+
+```typescript
+const agent = createAgent({
+  id: "support-agent",
+  modelRetry: {
+    maxRetries: 2,
+    backoffMs: 250,
+  },
+});
+```
+
+`maxRetries` compte les tentatives après la première requête. Le nombre final de tentatives est enregistré dans l’étape sous `modelAttempts`.
+
+## Utiliser les paramètres de routage gérés
+
+Utilisez `preset` lorsque les paramètres de routage, de prompt ou de paramètres doivent rester dans le tableau de bord :
+
+```typescript
+const agent = createAgent({
+  id: "support-triage-agent",
+  preset: "support-triage",
+});
+```
+
+L’adaptateur de passerelle peut également transmettre `responseFormat`, `plugins`, `gatewayTools`, `toolChoice`, `webSearchOptions`, `providerOptions`, `promptCacheKey` et `includeMeta`.
+
+## Guides associés
+
+- [Modifier les tours ultérieurs du modèle](./agent-sdk-dynamic-turns.mdx)
+- [Arrêter un agent en toute sécurité](./agent-sdk-stop-conditions.mdx)
+- [Gérer les erreurs](./agent-sdk-events-and-errors.mdx)

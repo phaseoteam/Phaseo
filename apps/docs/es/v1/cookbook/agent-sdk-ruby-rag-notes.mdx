@@ -1,0 +1,64 @@
+---
+title: "Resume notas internas con el Agent SDK de Ruby"
+icon: "notebook-tabs"
+description: "Usa el Agent SDK de Ruby para consultar notas locales y devolver un resumen acotado a través de Phaseo Gateway."
+---
+
+Usa esta receta cuando un servicio Ruby necesite un pequeño asistente de notas internas sin delegar la orquestación en otro sistema.
+
+## 1. Prepara los SDK
+
+<Note type="warning">El paquete Ruby Agent SDK aún no está disponible en RubyGems. Sigue las [instrucciones de instalación desde el código fuente](../sdk-reference/ruby/agent-sdk-installation.mdx).</Note>
+
+## 2. Define una herramienta para buscar notas
+
+```ruby
+lookup_note = PhaseoAgentSdk.define_tool(
+  PhaseoAgentSdk::Tool.new(
+    id: "lookup-note",
+    description: "Look up one internal note by topic.",
+    parameters: {
+      type: "object",
+      properties: {
+        topic: { type: "string" },
+      },
+      required: ["topic"],
+    },
+    execute: lambda do |input, _context|
+      {
+        topic: input["topic"],
+        summary: "Presets centralize routing defaults so app code stays smaller.",
+      }
+    end
+  )
+)
+```
+
+## 3. Crea y ejecuta el agente
+
+```ruby
+agent = PhaseoAgentSdk.create_agent(
+  id: "notes-agent",
+  model: "openai/gpt-5.4-nano",
+  instructions: "Use tools when helpful and answer in one short paragraph.",
+  tools: [lookup_note]
+)
+
+result = agent.run(
+  input: "Summarize our note about presets.",
+  client: PhaseoAgentSdk.create_gateway_agent_client
+)
+
+puts result.output
+```
+
+## Cuándo encaja esta receta
+
+- las entradas de la herramienta son simples y deterministas
+- la aplicación Ruby ya controla la fuente de datos
+- quieres un patrón práctico de herramientas locales para un flujo acotado
+
+## Relacionados
+
+- [Agent SDK de Ruby](../sdk-reference/ruby/agent-sdk.mdx)
+- [Crea un ciclo de agente duradero](./agent-sdk-durable-loop.mdx)

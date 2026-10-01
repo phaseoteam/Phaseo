@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/hover-card";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
+import { useLocale, useTranslations } from "next-intl";
 import type { LanguageModelUsage } from "ai";
 import { type ComponentProps, createContext, useContext } from "react";
 import { getUsage } from "tokenlens";
@@ -62,13 +63,14 @@ export const Context = ({
 
 const ContextIcon = () => {
   const { usedTokens, maxTokens } = useContextValue();
+  const t = useTranslations("Product.chatRooms.aiElements");
   const circumference = 2 * Math.PI * ICON_RADIUS;
   const usedPercent = usedTokens / maxTokens;
   const dashOffset = circumference * (1 - usedPercent);
 
   return (
     <svg
-      aria-label="Model context usage"
+      aria-label={t("modelContextUsage")}
       height="20"
       role="img"
       style={{ color: "currentcolor" }}
@@ -104,9 +106,10 @@ const ContextIcon = () => {
 export type ContextTriggerProps = ComponentProps<typeof Button>;
 
 export const ContextTrigger = ({ children, ...props }: ContextTriggerProps) => {
+  const locale = useLocale();
   const { usedTokens, maxTokens } = useContextValue();
-  const usedPercent = usedTokens / maxTokens;
-  const renderedPercent = new Intl.NumberFormat("en-US", {
+  const usedPercent = maxTokens > 0 ? usedTokens / maxTokens : 0;
+  const renderedPercent = new Intl.NumberFormat(locale, {
     style: "percent",
     maximumFractionDigits: 1,
   }).format(usedPercent);
@@ -144,16 +147,17 @@ export const ContextContentHeader = ({
   className,
   ...props
 }: ContextContentHeaderProps) => {
+  const locale = useLocale();
   const { usedTokens, maxTokens } = useContextValue();
-  const usedPercent = usedTokens / maxTokens;
-  const displayPct = new Intl.NumberFormat("en-US", {
+  const usedPercent = maxTokens > 0 ? usedTokens / maxTokens : 0;
+  const displayPct = new Intl.NumberFormat(locale, {
     style: "percent",
     maximumFractionDigits: 1,
   }).format(usedPercent);
-  const used = new Intl.NumberFormat("en-US", {
+  const used = new Intl.NumberFormat(locale, {
     notation: "compact",
   }).format(usedTokens);
-  const total = new Intl.NumberFormat("en-US", {
+  const total = new Intl.NumberFormat(locale, {
     notation: "compact",
   }).format(maxTokens);
 
@@ -195,6 +199,8 @@ export const ContextContentFooter = ({
   className,
   ...props
 }: ContextContentFooterProps) => {
+  const locale = useLocale();
+  const t = useTranslations("Product.chatRooms.aiElements");
   const { modelId, usage } = useContextValue();
   const costUSD = modelId
     ? getUsage({
@@ -205,7 +211,7 @@ export const ContextContentFooter = ({
         },
       }).costUSD?.totalUSD
     : undefined;
-  const totalCost = new Intl.NumberFormat("en-US", {
+  const totalCost = new Intl.NumberFormat(locale, {
     style: "currency",
     currency: "USD",
   }).format(costUSD ?? 0);
@@ -220,7 +226,7 @@ export const ContextContentFooter = ({
     >
       {children ?? (
         <>
-          <span className="text-neutral-500 dark:text-neutral-400">Total cost</span>
+          <span className="text-neutral-500 dark:text-neutral-400">{t("totalCost")}</span>
           <span>{totalCost}</span>
         </>
       )}
@@ -235,6 +241,8 @@ export const ContextInputUsage = ({
   children,
   ...props
 }: ContextInputUsageProps) => {
+  const locale = useLocale();
+  const t = useTranslations("Product.chatRooms.aiElements");
   const { usage, modelId } = useContextValue();
   const inputTokens = usage?.inputTokens ?? 0;
 
@@ -252,7 +260,7 @@ export const ContextInputUsage = ({
         usage: { input: inputTokens, output: 0 },
       }).costUSD?.totalUSD
     : undefined;
-  const inputCostText = new Intl.NumberFormat("en-US", {
+  const inputCostText = new Intl.NumberFormat(locale, {
     style: "currency",
     currency: "USD",
   }).format(inputCost ?? 0);
@@ -262,7 +270,7 @@ export const ContextInputUsage = ({
       className={cn("flex items-center justify-between text-xs", className)}
       {...props}
     >
-      <span className="text-neutral-500 dark:text-neutral-400">Input</span>
+      <span className="text-neutral-500 dark:text-neutral-400">{t("input")}</span>
       <TokensWithCost costText={inputCostText} tokens={inputTokens} />
     </div>
   );
@@ -275,6 +283,8 @@ export const ContextOutputUsage = ({
   children,
   ...props
 }: ContextOutputUsageProps) => {
+  const locale = useLocale();
+  const t = useTranslations("Product.chatRooms.aiElements");
   const { usage, modelId } = useContextValue();
   const outputTokens = usage?.outputTokens ?? 0;
 
@@ -292,7 +302,7 @@ export const ContextOutputUsage = ({
         usage: { input: 0, output: outputTokens },
       }).costUSD?.totalUSD
     : undefined;
-  const outputCostText = new Intl.NumberFormat("en-US", {
+  const outputCostText = new Intl.NumberFormat(locale, {
     style: "currency",
     currency: "USD",
   }).format(outputCost ?? 0);
@@ -302,7 +312,7 @@ export const ContextOutputUsage = ({
       className={cn("flex items-center justify-between text-xs", className)}
       {...props}
     >
-      <span className="text-neutral-500 dark:text-neutral-400">Output</span>
+      <span className="text-neutral-500 dark:text-neutral-400">{t("output")}</span>
       <TokensWithCost costText={outputCostText} tokens={outputTokens} />
     </div>
   );
@@ -315,6 +325,8 @@ export const ContextReasoningUsage = ({
   children,
   ...props
 }: ContextReasoningUsageProps) => {
+  const locale = useLocale();
+  const t = useTranslations("Product.chatRooms.aiElements");
   const { usage, modelId } = useContextValue();
   const reasoningTokens = usage?.reasoningTokens ?? 0;
 
@@ -332,7 +344,7 @@ export const ContextReasoningUsage = ({
         usage: { reasoningTokens },
       }).costUSD?.totalUSD
     : undefined;
-  const reasoningCostText = new Intl.NumberFormat("en-US", {
+  const reasoningCostText = new Intl.NumberFormat(locale, {
     style: "currency",
     currency: "USD",
   }).format(reasoningCost ?? 0);
@@ -342,7 +354,7 @@ export const ContextReasoningUsage = ({
       className={cn("flex items-center justify-between text-xs", className)}
       {...props}
     >
-      <span className="text-neutral-500 dark:text-neutral-400">Reasoning</span>
+      <span className="text-neutral-500 dark:text-neutral-400">{t("reasoning")}</span>
       <TokensWithCost costText={reasoningCostText} tokens={reasoningTokens} />
     </div>
   );
@@ -355,6 +367,8 @@ export const ContextCacheUsage = ({
   children,
   ...props
 }: ContextCacheUsageProps) => {
+  const locale = useLocale();
+  const t = useTranslations("Product.chatRooms.aiElements");
   const { usage, modelId } = useContextValue();
   const cacheTokens = usage?.cachedInputTokens ?? 0;
 
@@ -372,7 +386,7 @@ export const ContextCacheUsage = ({
         usage: { cacheReads: cacheTokens, input: 0, output: 0 },
       }).costUSD?.totalUSD
     : undefined;
-  const cacheCostText = new Intl.NumberFormat("en-US", {
+  const cacheCostText = new Intl.NumberFormat(locale, {
     style: "currency",
     currency: "USD",
   }).format(cacheCost ?? 0);
@@ -382,7 +396,7 @@ export const ContextCacheUsage = ({
       className={cn("flex items-center justify-between text-xs", className)}
       {...props}
     >
-      <span className="text-neutral-500 dark:text-neutral-400">Cache</span>
+      <span className="text-neutral-500 dark:text-neutral-400">{t("cache")}</span>
       <TokensWithCost costText={cacheCostText} tokens={cacheTokens} />
     </div>
   );
@@ -394,15 +408,19 @@ const TokensWithCost = ({
 }: {
   tokens?: number;
   costText?: string;
-}) => (
-  <span>
-    {tokens === undefined
-      ? "—"
-      : new Intl.NumberFormat("en-US", {
-          notation: "compact",
-        }).format(tokens)}
-    {costText ? (
-      <span className="ml-2 text-neutral-500 dark:text-neutral-400">• {costText}</span>
-    ) : null}
-  </span>
-);
+}) => {
+  const locale = useLocale();
+
+  return (
+    <span>
+      {tokens === undefined
+        ? "—"
+        : new Intl.NumberFormat(locale, {
+            notation: "compact",
+          }).format(tokens)}
+      {costText ? (
+        <span className="ml-2 text-neutral-500 dark:text-neutral-400">• {costText}</span>
+      ) : null}
+    </span>
+  );
+};

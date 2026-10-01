@@ -1,0 +1,116 @@
+---
+icon: "package"
+title: "AI SDK de Vercel"
+description: "Genera texto, transmite respuestas y usa herramientas con el proveedor de Phaseo para AI SDK 7."
+---
+
+Usa el proveedor oficial de Phaseo para llamar a modelos de Phaseo desde Vercel AI SDK 7. Empieza aquí si tu aplicación ya usa `generateText`, `streamText` u otra función de AI SDK.
+
+## Instalación
+
+<CodeGroup>
+
+```bash title="npm"
+npm install @phaseo/ai-sdk-provider
+```
+
+```bash title="pnpm"
+pnpm add @phaseo/ai-sdk-provider
+```
+
+```bash title="yarn"
+yarn add @phaseo/ai-sdk-provider
+```
+
+```bash title="bun"
+bun add @phaseo/ai-sdk-provider
+```
+
+</CodeGroup>
+
+El paquete de Phaseo sin versión sigue la etiqueta `latest` de npm y selecciona la versión activa del proveedor compatible con AI SDK 7. Declara AI SDK 7 como dependencia de par, por lo que los gestores de paquetes que instalan automáticamente las dependencias de par instalan también la versión compatible del entorno de ejecución.
+
+Configura `PHASEO_API_KEY` en el entorno del servidor y envía tu primera solicitud:
+
+```typescript
+import { phaseo } from "@phaseo/ai-sdk-provider";
+import { generateText } from "ai";
+
+const result = await generateText({
+  model: phaseo("openai/gpt-5.6-sol"),
+  prompt: "Reply with: AI SDK works",
+});
+
+console.log(result.text);
+console.log(result.providerMetadata);
+```
+
+Usa un ID de modelo actual del [endpoint de modelos](../../api-reference/endpoint/models.mdx).
+
+## Transmitir texto
+
+```typescript
+import { phaseo } from "@phaseo/ai-sdk-provider";
+import { streamText } from "ai";
+
+const result = streamText({
+  model: phaseo("openai/gpt-5.6-sol"),
+  prompt: "Stream a short greeting.",
+});
+
+for await (const chunk of result.textStream) {
+  process.stdout.write(chunk);
+}
+
+console.log(await result.providerMetadata);
+```
+
+## Añadir atribución de la aplicación
+
+Crea una instancia del proveedor para incluir información de tu aplicación en los detalles de las solicitudes de Phaseo:
+
+```typescript
+import { createPhaseo } from "@phaseo/ai-sdk-provider";
+
+const phaseo = createPhaseo({
+  apiKey: process.env.PHASEO_API_KEY,
+  headers: {
+    "x-title": "My App",
+    "http-referer": "https://example.com",
+  },
+});
+```
+
+`PHASEO_BASE_URL` es opcional y su valor predeterminado es `https://api.phaseo.app/v1`.
+
+## Funciones compatibles con AI SDK 7
+
+- Generación y transmisión de texto
+- Respuestas de razonamiento y ajustes
+- Herramientas de función y entradas de herramientas transmitidas
+- Salida JSON y JSON Schema
+- Entradas de archivos de texto e imagen
+- Fuentes de citas de URL
+- Embeddings y generación de imágenes
+- Reordenamiento de resultados
+- Transcripción y generación de voz
+- Metadatos del proveedor, uso, señales de cancelación y fragmentos sin procesar del flujo
+
+El reordenamiento de resultados se admite mediante `rerank()` con `phaseo.rerankingModel(modelId)`. La compatibilidad con modelos y proveedores varía. El proveedor no anuncia actualmente referencias a archivos gestionados, habilidades ni definiciones, resultados o respuestas de aprobación de herramientas ejecutadas por el proveedor. Las herramientas de función ejecutadas por la aplicación pueden usar el flujo normal de ejecución y aprobación de AI SDK.
+
+## Versiones anteriores de AI SDK
+
+- AI SDK 6: instala `@phaseo/ai-sdk-provider@ai-sdk-v6`.
+- AI SDK 5: instala `@phaseo/ai-sdk-provider@ai-sdk-v5`.
+
+Si la instalación automática de dependencias de par está desactivada, instala por separado la versión principal correspondiente de `ai` (`ai@^7`, `ai@^6` o `ai@^5`).
+
+## Guías relacionadas
+
+- [Generar texto](./generate-text/index.mdx)
+- [Transmitir texto](./stream-text/index.mdx)
+- [Uso de herramientas](./tool-calling/index.mdx)
+- [Salida estructurada](./structured-output/index.mdx)
+- [Embeddings](./embeddings/index.mdx)
+- [Imágenes](./images/index.mdx)
+- [Audio](./audio/index.mdx)

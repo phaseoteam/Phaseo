@@ -1,0 +1,47 @@
+---
+icon: "calculator"
+title: "Kontext und Token-Budgetierung"
+description: "So verteilst du Eingabe- und Ausgabetoken für Qualität, Geschwindigkeit und Kosten."
+---
+
+Die Token-Budgetierung ist eine zentrale Fähigkeit für den Produktionseinsatz. Sie wirkt sich direkt auf Latenz, Kosten und Zuverlässigkeit aus.
+
+## Bestandteile des Token-Budgets
+
+Der Gesamtumfang einer Anfrage umfasst in der Regel:
+
+- System- und Entwickleranweisungen
+- Nutzerprompt oder -eingabe
+- Abgerufener Kontext (RAG, Dokumentation und Tools)
+- Tool-Schemas oder Funktionsdefinitionen
+- Ausgabetoken des Modells
+
+## Warum Budgets wichtig sind
+
+- Längere Prompts erhöhen Latenz und Kosten.
+- Zu lange Prompts können die Relevanz beeinträchtigen, wenn der Kontext von geringer Qualität ist.
+- Ein zu kleines Ausgabebudget kann Antworten abschneiden und ungültige strukturierte Ausgaben verursachen.
+
+## Strategie zur Budgetierung
+
+1. Lege für jede Route ein maximales Eingabetoken-Ziel fest.
+2. Plane einen Ausgabepuffer für die längsten erwarteten Antworten ein.
+3. Entferne wenig hilfreichen Kontext konsequent.
+4. Überwache die tatsächliche Verteilung des Token-Verbrauchs im Zeitverlauf.
+
+## Praktische Schutzmaßnahmen
+
+- Setze feste Obergrenzen für Ein- und Ausgabetoken.
+- Ergänze Vorabregeln zum Kürzen oder Zusammenfassen umfangreicher Kontexte.
+- Verwende routenspezifische Limits (Suchantworten oder umfangreiche Generierung).
+- Prüfe Ausgaben auf Kürzungsmarker oder unvollständiges JSON.
+
+## Häufige Fehler
+
+- Dasselbe Tokenlimit für alle Endpunkte übernehmen.
+- Ausführliche System-Prompts für jede Anfrageart beibehalten.
+- Den zusätzlichen Tokenbedarf von Tool-Schemas ignorieren.
+
+## Empfehlung
+
+Behandle Token-Budgets als Konfiguration, die fortlaufend überwacht werden muss, nicht als einmalige Einrichtung.

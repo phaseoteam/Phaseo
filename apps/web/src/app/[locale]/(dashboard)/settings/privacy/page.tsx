@@ -1,3 +1,4 @@
+import { getTranslations } from "next-intl/server";
 import { Suspense } from "react";
 import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHeader";
 import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
@@ -5,9 +6,10 @@ import AccountPrivacySettingsClient from "@/components/(gateway)/settings/accoun
 import { DataContributionSettingsCard } from "@/components/(gateway)/settings/privacy/DataContributionSettingsCard";
 import { fetchSettingsPrivacyInitialData } from "@/lib/fetchers/internal/fetchSettingsPrivacyInitialData";
 
-export const metadata = {
-	title: "Privacy - Settings",
-};
+export async function generateMetadata() {
+	const t = await getTranslations("SettingsUI");
+	return { title: `${t("headers.privacy")} - ${t("headers.settings")}` };
+}
 
 export default function PrivacySettingsPage() {
 	return (
@@ -26,12 +28,13 @@ export default function PrivacySettingsPage() {
 }
 
 async function PrivacySettingsContent() {
+	const t = await getTranslations("SettingsUI");
 	const initialData = await fetchSettingsPrivacyInitialData();
 
 	if (!initialData.workspaceId) {
 		return (
 			<div className="rounded-lg border border-border/60 bg-muted/20 p-4 text-sm text-muted-foreground">
-				Select a workspace to manage privacy settings.
+				{t("settingsPageCopy.privacyWorkspace")}
 			</div>
 		);
 	}

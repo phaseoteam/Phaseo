@@ -3,6 +3,7 @@ import { fetchFrontendSubscriptionPlan } from "@/lib/fetchers/frontend/fetchPubl
 import Link from "next/link";
 import type { Metadata } from "next";
 import { buildMetadata } from "@/lib/seo";
+import { formatSubscriptionPlanMessage, getSubscriptionPlansMessagesFor } from "@/i18n/subscription-plans";
 
 async function fetchPlanForModels(planId: string) {
 	try {
@@ -17,38 +18,36 @@ async function fetchPlanForModels(planId: string) {
 }
 
 export async function generateMetadata(props: {
-	params: Promise<{ planId: string }>;
+	params: Promise<{ locale: string; planId: string }>;
 }): Promise<Metadata> {
-	const { planId } = await props.params;
+	const { planId, locale } = await props.params;
+	const messages = getSubscriptionPlansMessagesFor(locale);
 	const plan = await fetchPlanForModels(planId);
 	const path = `/subscription-plans/${planId}/models`;
 	const imagePath = `/og/subscription-plans/${planId}`;
 
 	if (!plan) {
 		return buildMetadata({
-			title: "AI Subscription Plan Models",
-			description:
-				"See which AI models are included in popular subscription plans on Phaseo, with access scope, provider coverage, and plan-level model availability details.",
+			title: messages.metadata.fallbackTitle,
+			description: messages.metadata.fallbackDescription,
 			path,
-			keywords: [
-				"AI subscription models",
-				"models included in AI plans",
-				"AI model access",
-				"Phaseo",
-			],
+			keywords: ["Phaseo"],
 			imagePath,
 		});
 	}
 
-	const providerName = plan.organisation?.name ?? "AI provider";
+	const providerName = plan.organisation?.name ?? messages.detail.unknownProvider;
 
 	const description = [
-		`Models included in the ${plan.name} subscription from ${providerName}.`,
-		"See which AI models you can access, how they compare to alternatives, and what’s available at each subscription tier.",
+		formatSubscriptionPlanMessage(messages.metadata.modelsLead, {
+			plan: plan.name,
+			provider: providerName,
+		}),
+		messages.metadata.modelsDescription,
 	].join(" ");
 
 	return buildMetadata({
-		title: `${plan.name} - Models Included in This Subscription`,
+		title: formatSubscriptionPlanMessage(messages.metadata.modelsTitle, { plan: plan.name }),
 		description,
 		path,
 		keywords: [
@@ -56,7 +55,6 @@ export async function generateMetadata(props: {
 			`${plan.name} models`,
 			`${plan.name} model access`,
 			providerName,
-			"AI subscription models",
 			"Phaseo",
 		],
 		imagePath,
@@ -66,9 +64,10 @@ export async function generateMetadata(props: {
 export default async function Page({
 	params,
 }: {
-	params: Promise<{ planId: string }>;
+	params: Promise<{ locale: string; planId: string }>;
 }) {
-	const { planId } = await params;
+	const { planId, locale } = await params;
+	const messages = getSubscriptionPlansMessagesFor(locale);
 
 	const plan = await fetchFrontendSubscriptionPlan(planId);
 
@@ -79,7 +78,7 @@ export default async function Page({
 	return (
 		<SubscriptionPlanDetailShell planId={planId} tab="models">
 			<section className="space-y-4">
-				<h2 className="text-xl font-semibold">All Included Models</h2>
+				<h2 className="text-xl font-semibold">{messages.detail.allIncludedModels}</h2>
 					{plan.models && plan.models.length > 0 ? (
 						<div className="divide-y divide-border/70 border-y border-border/70">
 							{plan.models.map((modelInfo) => (
@@ -96,7 +95,7 @@ export default async function Page({
 										</Link>
 										{modelInfo.model.organisation_name && (
 											<p className="text-sm text-muted-foreground">
-												by{" "}
+												{messages.detail.byOrganisation.replace("{name}", "")}
 												{
 													modelInfo.model
 														.organisation_name
@@ -105,7 +104,7 @@ export default async function Page({
 										)}
 										{modelInfo.rate_limit && (
 											<p className="text-xs text-muted-foreground mt-1">
-												Rate limit:{" "}
+												{messages.detail.rateLimit.replace("{limit}", "")}
 												{JSON.stringify(
 													modelInfo.rate_limit
 												)}
@@ -117,7 +116,7 @@ export default async function Page({
 						</div>
 					) : (
 						<p className="text-muted-foreground">
-							No models information available.
+							{messages.detail.noModels}
 						</p>
 					)}
 			</section>

@@ -7,7 +7,7 @@ import {
 } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import ProviderModelsClient from "./models/ProviderModelsClient";
 import type { Metadata } from "next";
-import { absoluteUrl, buildMetadata } from "@/lib/seo";
+import { absoluteUrl } from "@/lib/seo";
 import { JsonLdScript } from "@/components/seo/JsonLdScript";
 import { notFound } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
@@ -39,38 +39,12 @@ export async function generateMetadata(props: {
 	const header = await fetchProviderMeta(apiProvider);
 	if (!header) notFound();
 	const imagePath = `/og/api-providers/${apiProvider}`;
-
-	// Fallback: provider not found / fetch failed
-	if (!header) {
-		return buildMetadata({
-			title: "AI API Provider Performance Analytics",
-			description:
-				"Inspect AI API provider performance on Phaseo with latency, throughput, and reliability metrics from real gateway traffic, plus model usage trends and provider-level rankings.",
-			path: `/api-providers/${apiProvider}`,
-			keywords: [
-				"AI API provider",
-				"API performance",
-				"latency monitoring",
-				"throughput metrics",
-				"gateway analytics",
-				"Phaseo",
-			],
-			imagePath,
-			imageAlt: "Phaseo API provider insights",
-			openGraph: {
-				type: "website",
-			},
-		});
-	}
-
-	const providerName = header.api_provider_name ?? "AI API provider";
-
-	const description = [
-		`${providerName} on Phaseo - real-world performance analytics from the Phaseo Gateway.`,
-		"Review token usage trends, latency, throughput, and average generation time, plus which apps and models drive this provider's traffic.",
-	]
-		.filter(Boolean)
-		.join(" ");
+	const t = await getTranslations({
+		locale,
+		namespace: "Catalogue.providers",
+	});
+	const providerName = header.api_provider_name ?? t("unknown");
+	const description = `${providerName} — ${t("performanceDescription")}`;
 
 	return buildLocalizedPageMetadata({
 		locale: locale as PublicLocale,
@@ -87,7 +61,7 @@ export async function generateMetadata(props: {
 			"Phaseo",
 		],
 		imagePath,
-		imageAlt: `${providerName} gateway analytics on Phaseo`,
+		imageAlt: `${providerName} — ${t("performance")}`,
 		openGraph: {
 			type: "website",
 		},
@@ -105,19 +79,20 @@ export default async function Page({
 	if (!header) notFound();
 	const models = await fetchFrontendAPIProviderModels(apiProvider);
 	const t = await getTranslations("Catalogue.providers");
+	const tNav = await getTranslations("Common.nav");
 
 	// Generate structured data for the provider page.
 	const generateStructuredData = () => {
 		if (!header) return null;
 
-		const providerName = header.api_provider_name || "API Provider";
+		const providerName = header.api_provider_name || t("unknown");
 
 		// Organization Schema
 		const organizationSchema = {
 			"@context": "https://schema.org",
 			"@type": "Organization",
 			"name": providerName,
-			"description": `${providerName} is an AI API provider tracked on Phaseo. View real-world performance analytics, latency metrics, throughput data, and popular models.`,
+			"description": `${providerName} — ${t("performanceDescription")}`,
 		};
 
 		// Breadcrumb Schema
@@ -128,13 +103,13 @@ export default async function Page({
 				{
 					"@type": "ListItem",
 					"position": 1,
-					"name": "Home",
+					"name": tNav("home"),
 					"item": absoluteUrl("/"),
 				},
 				{
 					"@type": "ListItem",
 					"position": 2,
-					"name": "API Providers",
+					"name": tNav("providers"),
 					"item": absoluteUrl("/api-providers"),
 				},
 				{

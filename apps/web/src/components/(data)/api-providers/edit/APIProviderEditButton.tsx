@@ -2,6 +2,7 @@ import { Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { fetchInternalAuthStatus } from "@/lib/fetchers/internal/fetchInternalAuthStatus";
+import { getTranslations } from "next-intl/server";
 
 interface APIProviderEditButtonProps {
   apiProviderId: string;
@@ -19,11 +20,13 @@ export default async function APIProviderEditButton({
     return null;
   }
 
+  const t = await getTranslations("Product.internalTools.dataEditor");
+
   return (
     <Button variant="outline" size="sm" asChild>
       <Link
         href={`/internal/data/api-providers/${apiProviderId}/edit`}
-        aria-label="Edit API provider"
+        aria-label={t("providerEditTitle")}
       >
         <Pencil className="h-4 w-4" />
       </Link>

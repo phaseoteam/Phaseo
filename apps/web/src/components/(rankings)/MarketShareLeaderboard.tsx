@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/Logo";
@@ -22,19 +23,16 @@ type MarketShareLeaderboardProps = {
 	maxExpanded?: number;
 };
 
-function formatTokens(value: number) {
+function formatTokens(value: number, locale: string) {
 	if (!Number.isFinite(value)) return "--";
-	if (value >= 1e9) return `${(value / 1e9).toFixed(1).replace(/\.0$/, "")}B`;
-	if (value >= 1e6) return `${(value / 1e6).toFixed(1).replace(/\.0$/, "")}M`;
-	if (value >= 1e3) return `${(value / 1e3).toFixed(1).replace(/\.0$/, "")}K`;
-	return value.toLocaleString();
+	return new Intl.NumberFormat(locale, { notation: "compact", maximumFractionDigits: 1 }).format(value);
 }
 
-function formatPercent(value: number) {
+function formatPercent(value: number, locale: string, lessThanOneLabel: string) {
 	if (!Number.isFinite(value)) return "--";
-	if (value === 0) return "0%";
-	if (value < 1) return "<1%";
-	return `${Math.round(value)}%`;
+	if (value === 0) return new Intl.NumberFormat(locale, { style: "percent", maximumFractionDigits: 0 }).format(0);
+	if (value < 1) return lessThanOneLabel;
+	return new Intl.NumberFormat(locale, { style: "percent", maximumFractionDigits: 0 }).format(value / 100);
 }
 
 export function MarketShareLeaderboard({
@@ -42,13 +40,15 @@ export function MarketShareLeaderboard({
 	maxCollapsed = 10,
 	maxExpanded = 20,
 }: MarketShareLeaderboardProps) {
+	const t = useTranslations("Catalogue.rankings");
+	const locale = useLocale();
 	const [showAll, setShowAll] = useState(false);
 
 	if (!data.length) {
 		return (
 			<EmptyLeaderboardPreview
-				title="No market share data yet"
-				description="Market share entries appear once usage is recorded."
+				title={t("notEnoughData")}
+				description={t("marketShareEmptyDescription")}
 			/>
 		);
 	}
@@ -125,10 +125,10 @@ export function MarketShareLeaderboard({
 							</div>
 							<div className="text-right">
 								<div className="whitespace-nowrap text-sm tabular-nums text-muted-foreground">
-									{formatPercent(entry.share_pct)}
+									{formatPercent(entry.share_pct, locale, t("lessThanOnePercent"))}
 								</div>
 								<div className="text-xs text-muted-foreground">
-									{formatTokens(entry.tokens)}
+									{formatTokens(entry.tokens, locale)}
 								</div>
 							</div>
 								</div>
@@ -149,7 +149,7 @@ export function MarketShareLeaderboard({
 						className="text-muted-foreground"
 					>
 						<span className="flex items-center gap-2">
-							{showAll ? "Show less" : "Show more"}
+							{showAll ? t("usageShowLess") : t("usageShowMore")}
 							<ChevronDown
 								className={[
 									"h-4 w-4 transition-transform",

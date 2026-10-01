@@ -1,0 +1,193 @@
+---
+title: "فرز طلبات الدعم باستخدام الإعدادات المسبقة ومعالجة إخفاقات الحواجز"
+icon: "life-buoy"
+description: "شغّل وكيلًا لفرز الدعم يعتمد على إعداد مسبق ويعيد JSON صارمًا، ويوقف الحالات عالية المخاطر لمراجعتها، ويُبقي إخفاقات الحواجز ظاهرة."
+---
+
+استخدم هذه الوصفة عندما يحتاج سير عمل الدعم إلى:
+
+- وراثة إعدادات التوجيه والموجّهات الافتراضية من إعداد مسبق في لوحة التحكم
+- إرجاع مخرجات منظمة صارمة
+- إيقاف الحالات الخطرة مؤقتًا لمراجعتها بشريًا
+- إبقاء إخفاقات البوابة ظاهرة في السجلات بدلًا من إخفائها داخل رمز الوكيل
+
+## 1. ابدأ بإعداد مسبق
+
+أنشئ إعدادًا مسبقًا مثل `support-triage` يتولى:
+
+- النموذج الموجّه افتراضيًا أو هدف الموجّه
+- تفضيلات مزودي الخدمة
+- موجّه نظام الدعم
+- معلمات فك الترميز الثابتة
+
+وبذلك يركز رمز الوكيل على التحكم في سير العمل بدلًا من تكرار سياسات الطلبات.
+
+## 2. حدّد عقدًا واضحًا لعملية الفرز
+
+```ts
+type SupportTriageDecision = {
+  queue: "billing" | "reliability" | "product" | "security";
+  severity: "low" | "medium" | "high";
+  needsHumanReview: boolean;
+  summary: string;
+};
+```
+
+اجعل بنية المخرجات الأولى صغيرة بما يكفي ليفحصها المشغلون بسرعة.
+
+## 3. أنشئ الوكيل المعتمد على الإعداد المسبق
+
+```ts
+import { createAgent } from "@phaseo/agent-sdk";
+
+const supportTriageAgent = createAgent<string, SupportTriageDecision>({
+  id: "support-triage-agent",
+  preset: "support-triage",
+  parseOutput(text) {
+    return JSON.parse(text) as SupportTriageDecision;
+  },
+  humanReview: ({ parsedOutput }) =>
+    parsedOutput?.needsHumanReview
+      ? {
+          reason: "support_triage_review_required",
+          payload: parsedOutput,
+        }
+      : null,
+});
+```
+
+يحل SDK القيمة `preset: "support-triage"` إلى صيغة الاسم المستعار للبوابة `@support-triage`.
+
+## 4. هيّئ المهايئ المتصل بالبوابة
+
+استخدم القيم الافتراضية للمهايئ للعناصر التي يجب أن تبقى ثابتة في كل عملية فرز:
+
+```ts
+import {
+  createGatewayAgentClient,
+} from "@phaseo/agent-sdk";
+
+const client = createGatewayAgentClient({
+  clientOptions: {
+    apiKey: process.env.PHASEO_API_KEY!,
+  },
+  responseFormat: {
+    type: "json_schema",
+    name: "support_triage_decision",
+    schema: {
+      type: "object",
+      properties: {
+        queue: {
+          type: "string",
+          enum: ["billing", "reliability", "product", "security"],
+        },
+        severity: {
+          type: "string",
+          enum: ["low", "medium", "high"],
+        },
+        needsHumanReview: { type: "boolean" },
+        summary: { type: "string" },
+      },
+      required: ["queue", "severity", "needsHumanReview", "summary"],
+      additionalProperties: false,
+    },
+  },
+  plugins: [{ id: "response-healing", mode: "strict" }],
+});
+```
+
+## 5. شغّل سير العمل مع عدد محدود من محاولات الإعادة
+
+```ts
+const result = await supportTriageAgent.run({
+  input: "Customer says webhook deliveries failed overnight and asks whether data was lost.",
+  client,
+  modelRetry: {
+    maxRetries: 2,
+    backoffMs: 250,
+  },
+  onEvent(event) {
+    console.log(event.type, event.runId, event.attempt);
+  },
+});
+```
+
+إذا توقف التشغيل للمراجعة، فاستأنفه صراحةً:
+
+```ts
+if (result.run.status === "waiting_for_human") {
+  const continued = await supportTriageAgent.continueRun({
+    run: result,
+    client,
+    humanInput: "Approved. Finalize the triage decision.",
+  });
+
+  console.log(continued.output);
+}
+```
+
+## 6. تعامل مع إخفاقات البوابة كأحداث تشغيلية
+
+لا تُخفِ الإخفاقات بابتلاعها داخل سلسلة استدعاءات الوكيل.
+
+بدلًا من ذلك، التقط `AgentGatewayError` صراحةً:
+
+```ts
+import { AgentGatewayError } from "@phaseo/agent-sdk";
+
+try {
+  await supportTriageAgent.run({
+    input: "Customer says webhook deliveries failed overnight and asks whether data was lost.",
+    client,
+    store,
+  });
+} catch (error) {
+  if (error instanceof AgentGatewayError) {
+    console.error("Gateway request failed", {
+      status: error.status,
+      requestId: error.requestId,
+      generationId: error.generationId,
+      reason: error.reason,
+      providerFailureDiagnostics: error.providerFailureDiagnostics,
+      routingDiagnostics: error.routingDiagnostics,
+    });
+  }
+  throw error;
+}
+```
+
+ثم:
+
+1. دع بيئة التشغيل تحفظ حالة التشغيل والخطوة `failed`
+2. افحص `loaded.run.errorDetails` أو `loaded.steps[n].errorDetails` في مسارات الاستعادة اللاحقة عندما لا يعود الاستثناء الأصلي في الذاكرة
+3. افحص تفاصيل الطلب بحثًا عن:
+   - تطبيق الحواجز
+   - تفاصيل التوجيه
+   - تنفيذ الإضافات
+   - معرّفات الطلب وبيانات مزود الخدمة
+
+وهذا مهم بشكل خاص عندما:
+
+- يحظر أحد الحواجز الطلب
+- ترفض قائمة السماح في الإعداد المسبق النموذج المطلوب
+- تؤدي بيانات اعتماد مزود الخدمة أو عوامل تصفية التفعيل إلى إزالة المرشحين للتوجيه
+- يفشل إصلاح الاستجابة في استعادة JSON صالح وفق المخطط
+
+## 7. ما ينبغي التحقق منه
+
+بعد تشغيل ناجح وآخر يتضمن مخاطر عمدًا، تحقق مما يلي:
+
+- يعرض عرض تفاصيل الطلب الهدف المحدد بواسطة الإعداد المسبق
+- تتوقف الحالات عالية المخاطر عند `waiting_for_human`
+- تحتفظ خطوات النموذج المعاد تنفيذها بـ `modelAttempts`
+- تظل إخفاقات الحواجز أو الإعداد المسبق ظاهرة في تفاصيل الطلب ولا تُخفى ضمن استثناءات الوكيل
+
+## أدلة ذات صلة
+
+- [SDK الوكلاء لـ TypeScript](../sdk-reference/typescript/agent-sdk.mdx)
+- [الإعدادات المسبقة](../guides/presets.mdx)
+- [التوجيه والبدائل الاحتياطية](../guides/routing-and-fallbacks.mdx)
+- [التحقق من صحة المخرجات المنظمة](../guides/structured-outputs-validation.mdx)
+- [طرح الإعدادات المسبقة وتصحيح أخطاء التوجيه](./preset-rollout-and-routing-debug.mdx)
+- [استعادة JSON منظم غير صالح](./response-healing-for-structured-json.mdx)
+- [إنشاء حلقة وكيل متينة باستخدام TypeScript](./agent-sdk-durable-loop.mdx)

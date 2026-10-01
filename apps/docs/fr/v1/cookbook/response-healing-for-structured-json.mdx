@@ -1,0 +1,119 @@
+---
+title: "Réparer les réponses JSON structurées"
+icon: "wand-sparkles"
+description: "Récupérez des sorties JSON structurées presque valides sans élargir les schémas ni relancer manuellement des réponses mal formées."
+---
+
+Utilisez cette recette si votre application exige du JSON strict et que certains modèles renvoient parfois une sortie presque valide qui fait tout de même échouer l’analyseur.
+
+## 1. Commencer par un contrat de réponse structurée
+
+La réparation de réponse n’est utile que si la requête demande déjà une sortie structurée.
+
+Cas adaptés :
+
+- `response_format.type = "json_object"`
+- sortie au format JSON Schema
+- forme d’objet stable utilisée par plusieurs appelants
+
+N’activez pas la réparation pour des requêtes de texte libre.
+
+## 2. Activer le plugin au bon niveau
+
+Vous pouvez activer `response-healing` à trois endroits :
+
+1. la politique de plugins par défaut de l’espace de travail
+2. la configuration de plugins d’un préréglage
+3. `plugins` dans la requête
+
+L’ordre de priorité est le suivant :
+
+1. espace de travail
+2. préréglage
+3. requête
+
+Utilisez les valeurs par défaut d’un préréglage lorsqu’un flux de travail attend toujours du JSON structuré.
+
+## 3. Limiter la sortie du modèle
+
+La réparation fonctionne mieux lorsque la forme de sortie demandée est déjà contrainte.
+
+Recommandations :
+
+- un seul objet plutôt que plusieurs blocs sans rapport
+- des clés obligatoires explicites
+- une température déterministe dans la mesure du possible
+- aucun texte explicatif demandé en dehors de la charge utile JSON
+
+## 4. Comprendre les limites de la réparation de réponse
+
+Le mécanisme actuel est déterministe et ne fonctionne qu’en mode sans streaming. Les requêtes de streaming ignorent complètement la réparation.
+
+Il peut corriger :
+
+- les blocs de code Markdown qui entourent le JSON
+- les virgules finales
+- les fermetures sûres manquantes
+- les clés d’objet sans guillemets dans des objets récupérables
+
+Pour une politique plus stricte, utilisez le mode `strict`. Celui-ci extrait uniquement le JSON déjà valide des blocs de code ou du texte environnant et ignore les transformations de réparation syntaxique plus larges.
+
+Lorsque la requête utilise une sortie au format JSON Schema, la réparation valide également la charge récupérée avant de la réécrire. Le validateur actuel couvre les contraintes courantes suivantes :
+
+- les clés obligatoires
+- les types scalaires et conteneurs de base
+- les énumérations et les valeurs const
+- les limites de tableau et `uniqueItems`
+- la longueur des chaînes, les expressions régulières et les formats courants tels que `email`, `uri`, `uuid` et `date-time`
+- les limites numériques et `multipleOf`
+- les limites de propriétés d’objet et `additionalProperties: false`
+
+Il ne peut pas :
+
+- inventer des champs sémantiques manquants
+- deviner des valeurs métier
+- convertir du texte libre en données valides
+
+## 5. Vérifier que le plugin s’est exécuté
+
+Lorsque la réparation s’exécute, les détails de la requête doivent afficher des informations sur l’exécution du plugin.
+
+Vérifiez :
+
+- l’identifiant du plugin
+- s’il a tenté une transformation
+- si la charge utile a changé
+- la raison de l’échec lorsque la réponse n’a pas pu être récupérée
+- que la requête était sans streaming si vous vous attendiez à une réparation
+
+Si le plugin n’apparaît pas, vérifiez qu’il est bien activé dans la requête, le préréglage ou la politique de l’espace de travail.
+
+## 6. Distinguer les problèmes d’analyse des problèmes de contenu
+
+Si la réparation n’aide pas, déterminez de quel type d’échec il s’agit :
+
+1. JSON mal formé mais structurellement proche du format attendu
+2. JSON valide selon le schéma, mais avec des champs incorrects
+3. texte libre à la place du JSON
+4. sortie tronquée parce que la limite de jetons est trop basse
+
+Seul le cas 1 est adapté à la réparation de réponse.
+
+## 7. Déployer progressivement
+
+1. activez la réparation sur un préréglage dont la sortie structurée est stable
+2. surveillez les métadonnées d’exécution du plugin dans les journaux
+3. vérifiez que les charges récupérées respectent le schéma attendu
+4. étendez le réglage aux préréglages similaires uniquement lorsque les journaux sont corrects
+
+## 8. Choisir le bon mode
+
+- Utilisez `safe` si le flux de travail bénéficie d’un nettoyage syntaxique limité, comme la suppression des virgules finales ou l’ajout de guillemets autour des clés non citées.
+- Utilisez `strict` si le flux de travail doit uniquement accepter du JSON déjà valide une fois les enveloppes retirées.
+- Consultez les détails de la requête pour confirmer le mode exécuté.
+
+## Guides associés
+
+- [Utiliser le cache de réponses avec des préréglages](./response-caching-with-presets.mdx)
+- [Déployer des préréglages et déboguer le routage](./preset-rollout-and-routing-debug.mdx)
+- [SDK Agent pour TypeScript](../sdk-reference/typescript/agent-sdk.mdx)

@@ -1,0 +1,134 @@
+---
+title: "ツールと承認"
+description: "Rust Agent SDK でローカル、外部、承認が必要なツールを定義します。"
+---
+
+## ローカルツール
+
+Rust プロセスが操作を実行できる場合は、`Tool::new(...)` を使います。
+
+```rust
+use phaseo_agent::Tool;
+use serde_json::json;
+
+let get_status = Tool::new(
+    "get_status",
+    "Get the current service status",
+    json!({
+        "type": "object",
+        "properties": {
+            "service": { "type": "string" }
+        },
+        "required": ["service"]
+    }),
+    |input, _context| {
+        Ok(json!({
+            "service": input["service"],
+            "status": "healthy"
+        }))
+    },
+);
+```
+
+`parameters` の値は JSON Schema としてモデルに送信されます。ツールの入力と出力は `serde_json::Value` です。実行時により強い保証が必要な場合は、信頼できない引数を executor 内で検証してください。
+
+## 承認が必要なツール
+
+`require_approval()` を追加すると、実行前に処理を一時停止できます。
+
+```rust
+let deploy = Tool::new(
+    "deploy",
+    "Deploy an application environment",
+    json!({
+        "type": "object",
+        "properties": {
+            "environment": { "type": "string" }
+        },
+        "required": ["environment"]
+    }),
+    |input, _context| {
+        Ok(json!({
+            "environment": input["environment"],
+            "deployed": true
+        }))
+    },
+)
+.require_approval();
+```
+
+モデルがこのツールを呼び出すと、実行は `run.status == "waiting_for_human"` および `run.pause.kind == "tool_approval"` を返します。
+
+正確な呼び出し ID を指定して再開します。
+
+```rust
+use phaseo_agent::{ContinueOptions, ToolDecision};
+
+let approvals = paused.run.pause.as_ref().unwrap()
+    .pending_tool_calls
+    .iter()
+    .map(|pending| ToolDecision {
+        tool_call_id: pending.call.id.clone(),
+        reason: Some("Approved by the release operator".to_string()),
+    })
+    .collect();
+
+let mut options = ContinueOptions::new(paused);
+options.approvals = approvals;
+
+let completed = agent.continue_run(&mut client, options)?;
+```
+
+Rust `0.1` API には個別の拒否型はありません。承認していない呼び出しは一時停止したままにするか、再開する前にアプリケーションの拒否ポリシーを適用してください。
+
+## 外部ツール
+
+別のプロセスが操作を実行する場合は、`Tool::external(...)` を使います。
+
+```rust
+let ticket_lookup = Tool::external(
+    "ticket_lookup",
+    "Load one support ticket",
+    json!({
+        "type": "object",
+        "properties": {
+            "ticket_id": { "type": "string" }
+        },
+        "required": ["ticket_id"]
+    }),
+);
+```
+
+保留中のすべての呼び出しに外部結果が必要な場合、一時停止の種類は `external_output` になります。各結果を呼び出し ID に対応付けて指定します。
+
+```rust
+use phaseo_agent::{ContinueOptions, ToolOutput};
+
+let outputs = paused.run.pause.as_ref().unwrap()
+    .pending_tool_calls
+    .iter()
+    .map(|pending| ToolOutput {
+        tool_call_id: pending.call.id.clone(),
+        output: json!({
+            "subject": "Provider latency increased",
+            "priority": "high"
+        }),
+    })
+    .collect();
+
+let mut options = ContinueOptions::new(paused);
+options.tool_outputs = outputs;
+
+let completed = agent.continue_run(&mut client, options)?;
+```
+
+モデルの1ターンで自動ツールと保留中のツールが混在する場合、一時停止を返す前にランタイムが自動ツールを実行します。
+
+## ツールのエラー
+
+ローカル executor が返す `AgentError` は、構造化されたツールエラーメッセージに変換され、モデルに送信されます。不明なツール名、承認の不足、または出力の不足がある場合、再開時に `AgentError` が返ります。
+
+## 関連項目
+
+- [実行を保存して再開する](./agent-sdk-state-and-approval.mdx)
+- [Agent API リファレンス](./agent-sdk-api-reference.mdx)

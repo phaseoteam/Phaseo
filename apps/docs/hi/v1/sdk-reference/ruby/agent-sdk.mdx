@@ -1,0 +1,47 @@
+---
+title: "उपयोग"
+description: "Ruby Agent SDK से tool loops, human review, retries और resumable agents चलाएँ।"
+---
+
+## रनटाइम तैयार करें
+
+Agent SDK gem अभी RubyGems पर उपलब्ध नहीं है। [Source से installation निर्देश](./agent-sdk-installation.mdx) देखें।
+
+## त्वरित शुरुआत
+
+```ruby
+require "phaseo_agent_sdk"
+
+agent = PhaseoAgentSdk.create_agent(
+  id: "quickstart-agent",
+  model: "openai/gpt-5.4-nano",
+  instructions: "Answer concisely and helpfully."
+)
+
+result = agent.run(
+  input: "Give me one fun fact about cURL.",
+  client: PhaseoAgentSdk.create_gateway_agent_client
+)
+
+puts result.output
+```
+
+## इसमें क्या शामिल है
+
+- `PhaseoAgentSdk.create_agent(...)`
+- `PhaseoAgentSdk.define_tool(...)`
+- `PhaseoAgentSdk.create_gateway_agent_client(...)`
+- Phaseo `responses` API पर सीमित टूल लूप
+
+## उन्नत रनटाइम
+
+Ruby में सत्यापन और अनुमोदन फ़ंक्शन, HITL और मैन्युअल टूल, प्रगति, फिर से संभाली जा सकने वाली त्रुटियाँ, दोबारा चलाए जा सकने वाले enumerators, रोकने वाले helpers, डायनामिक टर्न, अगले टर्न के लिए सहेजे गए पैरामीटर, सामान्यीकृत उपयोग/लागत और duck-typed स्थिति एक्सेसर उपलब्ध हैं।
+
+## स्ट्रीमिंग और रद्द करना
+
+`Agent#stream(...)` और `Agent#continue_stream(...)` वर्कर थ्रेड पर Gateway की Responses SSE स्ट्रीम का उपयोग करते हैं। `text_stream`, `reasoning_stream`, `item_stream` या `full_stream` पढ़ें; वर्कर रोकने और HTTP स्ट्रीम बंद करने के लिए `cancel` कॉल करें। पूरे हुए चरणों में अनुरोध ID, प्रदाता मेटाडेटा, समाप्ति कारण, चेतावनियाँ, उपयोग और लागत सुरक्षित रहती हैं।
+
+## संबंधित विषय
+
+- [Agent SDK का अवलोकन](../agent-sdk/overview.mdx)
+- [TypeScript Agent SDK](../typescript/agent-sdk.mdx)

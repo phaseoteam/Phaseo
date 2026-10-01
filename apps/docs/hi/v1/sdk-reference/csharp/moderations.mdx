@@ -1,0 +1,27 @@
+---
+icon: "shield-check"
+title: "मॉडरेशन"
+description: "C# SDK से `/moderations` कॉल करें।"
+---
+
+**मेथड**: `client.GenerateModeration(...)` या `client.CreateModeration(...)`
+
+### उदाहरण
+```csharp
+using PhaseoSdk;
+
+var client = new Phaseo(apiKey);
+var response = await client.GenerateModeration(new Dictionary<string, object>
+{
+    ["model"] = "openai/omni-moderation-latest",
+    ["input"] = "Text to classify"
+});
+```
+
+### मुख्य पैरामीटर
+- `model` (ज़रूरी): moderation मॉडल ID (जैसे `openai/omni-moderation-latest`)।
+- `input` (आवश्यक): स्ट्रिंग या सामग्री आइटमों की सूची (पाठ या `image_url`)।
+- वैकल्पिक: `categories`/`severity` फ़िल्टर (समर्थित होने पर) और `user` टैग।
+
+### रिटर्न वैल्यू
+`ModerationResponse`

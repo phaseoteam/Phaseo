@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
 import Link from "next/link";
+import { useLocale, useTranslations } from "next-intl";
 import { AlertCircle, CheckCircle2, History, RefreshCw, ShieldAlert } from "lucide-react";
 import { toast } from "sonner";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -30,14 +31,41 @@ import { purgeCacheScopeAction } from "./actions";
 
 type PendingPurge = { scope: CacheScope; targetId: string };
 
-function formatTimestamp(value: string) {
-	return new Intl.DateTimeFormat(undefined, {
+const SCOPE_KEYS: Record<string, string> = {
+	search: "search",
+	catalogue: "catalogue",
+	model: "model",
+	provider: "provider",
+	organisation: "organisation",
+	benchmark: "benchmark",
+	apps: "apps",
+	landing: "landing",
+	rankings: "rankings",
+	updates: "updates",
+	pricing: "pricing",
+	"all-public": "allPublic",
+};
+
+const TARGET_LABEL_KEYS: Record<string, string> = {
+	model: "model",
+	provider: "provider",
+	organisation: "organisation",
+	benchmark: "benchmark",
+	apps: "apps",
+};
+
+function formatTimestamp(value: string, locale: string) {
+	return new Intl.DateTimeFormat(locale, {
 		dateStyle: "medium",
 		timeStyle: "short",
 	}).format(new Date(value));
 }
 
 export default function CacheOpsClient() {
+	const locale = useLocale();
+	const t = useTranslations("Product.internalTools.cacheOps");
+	const tInternal = useTranslations("Product.internalTools");
+	const tScopes = useTranslations("Product.developerMenu.scopes");
 	const [state, setState] = useState<CacheControlState | null>(null);
 	const [error, setError] = useState<string | null>(null);
 	const [targets, setTargets] = useState<Record<string, string>>({});
@@ -47,14 +75,24 @@ export default function CacheOpsClient() {
 	const [lastResult, setLastResult] = useState<CachePurgeResult | null>(null);
 	const [isPending, startTransition] = useTransition();
 
+	const scopeLabel = (id: string) => {
+		const key = SCOPE_KEYS[id];
+		return key ? tScopes(key as never) : t("unknownScope");
+	};
+	const targetLabel = (id: string) => {
+		const key = TARGET_LABEL_KEYS[id];
+		return key ? t(`targetLabels.${key}` as never) : t("unknownScope");
+	};
+
 	const loadState = useCallback(async () => {
 		try {
 			setError(null);
 			setState(await fetchCacheControlState());
 		} catch (loadError) {
-			setError(loadError instanceof Error ? loadError.message : String(loadError));
+			console.error("Failed to load cache controls", loadError);
+			setError(t("loadFailure"));
 		}
-	}, []);
+	}, [t]);
 
 	useEffect(() => {
 		const timeoutId = window.setTimeout(() => {
@@ -69,11 +107,11 @@ export default function CacheOpsClient() {
 
 	const generation = state?.generations.find((item) => item.scope === "search");
 	const quickScopes = useMemo(
-		() => state?.scopes.filter((scope) => !scope.targetLabel && scope.id !== "all-public") ?? [],
+		() => state?.scopes.filter((scope) => !TARGET_LABEL_KEYS[scope.id] && scope.id !== "all-public") ?? [],
 		[state],
 	);
 	const targetedScopes = useMemo(
-		() => state?.scopes.filter((scope) => Boolean(scope.targetLabel)) ?? [],
+		() => state?.scopes.filter((scope) => Boolean(TARGET_LABEL_KEYS[scope.id])) ?? [],
 		[state],
 	);
 	const destructiveScope = state?.scopes.find((scope) => scope.id === "all-public");
@@ -81,7 +119,7 @@ export default function CacheOpsClient() {
 	function preparePurge(scope: CacheScope) {
 		const targetId = targets[scope.id]?.trim() ?? "";
 		if (scope.targetRequired && !targetId) {
-			toast.error(`${scope.targetLabel ?? "Target"} is required`);
+			toast.error(t("targetRequired", { target: targetLabel(scope.id) }));
 			return;
 		}
 		setBumpBrowserGeneration(scope.affectsSearch);
@@ -101,10 +139,11 @@ export default function CacheOpsClient() {
 				});
 				setLastResult(result);
 				setPendingPurge(null);
-				toast.success(`${scope.label} cache purged`);
+				toast.success(t("purgeSuccess", { scope: scopeLabel(scope.id) }));
 				await loadState();
 			} catch (purgeError) {
-				toast.error(purgeError instanceof Error ? purgeError.message : String(purgeError));
+				console.error("Failed to purge cache scope", purgeError);
+				toast.error(t("purgeFailure"));
 			}
 		});
 	}
@@ -114,33 +153,33 @@ export default function CacheOpsClient() {
 			<div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
 				<div className="space-y-1">
 					<div className="flex items-center gap-2">
-						<h1 className="text-2xl font-semibold">Cache Control Centre</h1>
-						{generation ? <Badge variant="secondary">Search generation {generation.generation}</Badge> : null}
+						<h1 className="text-2xl font-semibold">{tInternal("cacheControlCentreTitle")}</h1>
+						{generation ? <Badge variant="secondary">{t("generationUpdated", { generation: generation.generation })}</Badge> : null}
 					</div>
 					<p className="max-w-2xl text-sm text-muted-foreground">
-						Purge the matching Cloudflare Worker and website cache families in one operation.
+						{tInternal("cacheControlCentreDescription")}
 					</p>
 				</div>
 				<div className="flex gap-2">
 					<Button variant="outline" size="sm" onClick={() => void loadState()} disabled={isPending}>
-						<RefreshCw className="size-4" /> Refresh status
+						<RefreshCw className="size-4" /> {t("refreshStatus")}
 					</Button>
-					<Button variant="outline" size="sm" render={<Link href="/internal" />}>Back to Internal</Button>
+					<Button variant="outline" size="sm" render={<Link href="/internal" />}>{t("backToInternal")}</Button>
 				</div>
 			</div>
 
 			<Alert>
 				<ShieldAlert className="size-4" />
-				<AlertTitle>Automatic invalidation remains the normal path</AlertTitle>
-				<AlertDescription>
-					Use this page for imports, repairs, or incident recovery. Edge purges cannot remove an object already stored in a visitor&apos;s browser, so search-aware scopes can also advance a tiny browser generation marker.
+					<AlertTitle>{t("automaticTitle")}</AlertTitle>
+					<AlertDescription>
+						{t("automaticDescription")}
 				</AlertDescription>
 			</Alert>
 
 			{error ? (
 				<Alert variant="destructive">
 					<AlertCircle className="size-4" />
-					<AlertTitle>Cache controls unavailable</AlertTitle>
+					<AlertTitle>{t("unavailableTitle")}</AlertTitle>
 					<AlertDescription>{error}</AlertDescription>
 				</Alert>
 			) : null}
@@ -148,30 +187,30 @@ export default function CacheOpsClient() {
 			{lastResult ? (
 				<Alert>
 					<CheckCircle2 className="size-4 text-emerald-600" />
-					<AlertTitle>Full cache purge completed</AlertTitle>
+					<AlertTitle>{t("purgeCompletedTitle")}</AlertTitle>
 					<AlertDescription>
-						Purged {lastResult.tags.length} Worker tags and invalidated the matching website cache at {formatTimestamp(lastResult.purgedAt)}.
-						{lastResult.generation ? ` Search generation is now ${lastResult.generation}.` : ""}
-						{lastResult.generationWarning ? ` ${lastResult.generationWarning}` : ""}
+						{t("completedSummary", { count: lastResult.tags.length, date: formatTimestamp(lastResult.purgedAt, locale) })}
+						{lastResult.generation !== null ? ` ${t("generationUpdated", { generation: lastResult.generation })}` : ""}
+						{lastResult.generationWarning ? ` ${t("generationWarning")}` : ""}
 					</AlertDescription>
 				</Alert>
 			) : null}
 
 			<Card>
 				<CardHeader>
-					<CardTitle>Quick scopes</CardTitle>
-					<CardDescription>Broad but bounded operations for common data changes.</CardDescription>
+					<CardTitle>{t("quickScopes")}</CardTitle>
+					<CardDescription>{t("quickScopesDescription")}</CardDescription>
 				</CardHeader>
 				<CardContent className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
 					{quickScopes.map((scope) => (
 						<div key={scope.id} className="flex min-h-36 flex-col rounded-2xl border p-4">
 							<div className="flex items-start justify-between gap-3">
-								<div className="font-medium">{scope.label}</div>
-								<Badge variant="outline">{scope.tagCount} tags</Badge>
+								<div className="font-medium">{scopeLabel(scope.id)}</div>
+								<Badge variant="outline">{t("tagCount", { count: scope.tagCount })}</Badge>
 							</div>
-							<p className="mt-2 flex-1 text-sm text-muted-foreground">{scope.description}</p>
+							<p className="mt-2 flex-1 text-sm text-muted-foreground">{t("quickScopeDescription")}</p>
 							<Button className="mt-4 w-full" variant="outline" onClick={() => preparePurge(scope)} disabled={isPending}>
-								Purge scope
+								{t("purgeScope")}
 							</Button>
 						</div>
 					))}
@@ -180,24 +219,24 @@ export default function CacheOpsClient() {
 
 			<Card>
 				<CardHeader>
-					<CardTitle>Targeted scopes</CardTitle>
-					<CardDescription>Use the canonical ID from the data editor or the public URL.</CardDescription>
+					<CardTitle>{t("targetedScopes")}</CardTitle>
+					<CardDescription>{t("targetedScopesDescription")}</CardDescription>
 				</CardHeader>
 				<CardContent className="grid gap-4 md:grid-cols-2">
 					{targetedScopes.map((scope) => (
 						<div key={scope.id} className="space-y-3 rounded-2xl border p-4">
 							<div>
-								<div className="font-medium">{scope.label}</div>
-								<p className="mt-1 text-sm text-muted-foreground">{scope.description}</p>
+								<div className="font-medium">{scopeLabel(scope.id)}</div>
+								<p className="mt-1 text-sm text-muted-foreground">{t("targetScopeDescription")}</p>
 							</div>
 							<Input
 								value={targets[scope.id] ?? ""}
 								onChange={(event) => setTargets((current) => ({ ...current, [scope.id]: event.target.value }))}
-								placeholder={scope.targetPlaceholder}
-								aria-label={scope.targetLabel}
+								placeholder={targetLabel(scope.id)}
+								aria-label={targetLabel(scope.id)}
 							/>
 							<Button variant="outline" onClick={() => preparePurge(scope)} disabled={isPending || (scope.targetRequired && !(targets[scope.id] ?? "").trim())}>
-								Purge {scope.targetRequired ? "target" : (targets[scope.id] ?? "").trim() ? "target" : "global scope"}
+								{scope.targetRequired || (targets[scope.id] ?? "").trim() ? t("purgeTarget") : t("purgeGlobalScope")}
 							</Button>
 						</div>
 					))}
@@ -207,12 +246,12 @@ export default function CacheOpsClient() {
 			{destructiveScope ? (
 				<Card className="border-destructive/40">
 					<CardHeader>
-						<CardTitle className="text-destructive">Incident recovery</CardTitle>
-						<CardDescription>{destructiveScope.description}</CardDescription>
+						<CardTitle className="text-destructive">{t("incidentRecovery")}</CardTitle>
+						<CardDescription>{t("quickScopeDescription")}</CardDescription>
 					</CardHeader>
 					<CardContent>
 						<Button variant="destructive" onClick={() => preparePurge(destructiveScope)} disabled={isPending}>
-							Purge all named public Worker caches
+							{t("purgeGlobalScope")}
 						</Button>
 					</CardContent>
 				</Card>
@@ -220,8 +259,8 @@ export default function CacheOpsClient() {
 
 			<Card>
 				<CardHeader>
-					<CardTitle className="flex items-center gap-2"><History className="size-4" /> Recent operations</CardTitle>
-					<CardDescription>Server-side audit trail for the latest 25 manual purge attempts.</CardDescription>
+					<CardTitle className="flex items-center gap-2"><History className="size-4" /> {t("recentOperations")}</CardTitle>
+					<CardDescription>{t("recentOperationsDescription")}</CardDescription>
 				</CardHeader>
 				<CardContent>
 					{state?.events.length ? (
@@ -229,50 +268,51 @@ export default function CacheOpsClient() {
 							{state.events.map((event) => (
 								<div key={event.id} className="flex flex-col gap-1 px-4 py-3 text-sm sm:flex-row sm:items-center sm:justify-between">
 									<div>
-										<span className="font-medium">{event.scope}</span>
+										<span className="font-medium">{scopeLabel(event.scope)}</span>
 										{event.target_id ? <span className="text-muted-foreground"> · {event.target_id}</span> : null}
-										<span className="text-muted-foreground"> · {event.tags.length} tags</span>
+										<span className="text-muted-foreground"> · {t("tagCount", { count: event.tags.length })}</span>
 									</div>
 									<div className="flex items-center gap-2 text-muted-foreground">
-										<Badge variant={event.purge_succeeded ? "secondary" : "destructive"}>{event.purge_succeeded ? "Succeeded" : "Failed"}</Badge>
-										<span>{formatTimestamp(event.created_at)}</span>
+										<Badge variant={event.purge_succeeded ? "secondary" : "destructive"}>{event.purge_succeeded ? t("eventSucceeded") : t("eventFailed")}</Badge>
+										<span>{formatTimestamp(event.created_at, locale)}</span>
 									</div>
 								</div>
 							))}
 						</div>
-					) : <p className="text-sm text-muted-foreground">No manual purges recorded yet.</p>}
+					) : <p className="text-sm text-muted-foreground">{t("noOperations")}</p>}
 				</CardContent>
 			</Card>
 
 			<AlertDialog open={Boolean(pendingPurge)} onOpenChange={(open) => { if (!open && !isPending) setPendingPurge(null); }}>
 				<AlertDialogContent>
 					<AlertDialogHeader>
-						<AlertDialogTitle>Purge {pendingPurge?.scope.label}?</AlertDialogTitle>
+						<AlertDialogTitle>{t("confirmTitle", { scope: pendingPurge ? scopeLabel(pendingPurge.scope.id) : "" })}</AlertDialogTitle>
 						<AlertDialogDescription>
-							Cloudflare will evict {pendingPurge?.scope.tagCount ?? 0} named cache tags
-							{pendingPurge?.targetId ? ` for ${pendingPurge.targetId}` : ""}, and the matching website data and page caches will be expired immediately.
+							{pendingPurge?.targetId
+								? t("confirmDescriptionWithTarget", { count: pendingPurge.scope.tagCount, target: pendingPurge.targetId })
+								: t("confirmDescription", { count: pendingPurge?.scope.tagCount ?? 0 })}
 						</AlertDialogDescription>
 					</AlertDialogHeader>
 					{pendingPurge?.scope.affectsSearch ? (
 						<label className="flex items-start gap-3 rounded-xl border p-3 text-sm">
 							<Checkbox checked={bumpBrowserGeneration} onCheckedChange={(checked) => setBumpBrowserGeneration(checked === true)} />
-							<span><span className="font-medium">Refresh open browser tabs</span><br /><span className="text-muted-foreground">Advance the search generation so returning tabs discover new models without a hard refresh.</span></span>
+							<span><span className="font-medium">{t("refreshTabs")}</span><br /><span className="text-muted-foreground">{t("refreshTabsDescription")}</span></span>
 						</label>
 					) : null}
 					{pendingPurge?.scope.danger === "high" ? (
 						<div className="space-y-2">
-							<label className="text-sm font-medium" htmlFor="purge-confirmation">Type PURGE to continue</label>
+							<label className="text-sm font-medium" htmlFor="purge-confirmation">{t("typePurge")}</label>
 							<Input id="purge-confirmation" value={destructiveConfirmation} onChange={(event) => setDestructiveConfirmation(event.target.value)} autoComplete="off" />
 						</div>
 					) : null}
 					<AlertDialogFooter>
-						<AlertDialogCancel disabled={isPending}>Cancel</AlertDialogCancel>
+						<AlertDialogCancel disabled={isPending}>{t("cancel")}</AlertDialogCancel>
 						<AlertDialogAction
 							variant={pendingPurge?.scope.danger === "high" ? "destructive" : "default"}
 							disabled={isPending || (pendingPurge?.scope.danger === "high" && destructiveConfirmation !== "PURGE")}
 							onClick={confirmPurge}
 						>
-							{isPending ? "Purging…" : "Confirm purge"}
+							{isPending ? t("purging") : t("confirmPurge")}
 						</AlertDialogAction>
 					</AlertDialogFooter>
 				</AlertDialogContent>

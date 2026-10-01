@@ -3,7 +3,8 @@
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
+import { localizedSettingsError } from "@/i18n/error-messages";
 import { BarChart3, Database, Percent, Plus, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -33,21 +34,24 @@ const DEFAULT_CATEGORIES = JSON.stringify({
 	operation: ["research", "content", "automation", "other"],
 }, null, 2);
 
-function formatMoney(nanos: number): string {
-	return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 4 })
+function formatMoney(locale: string, nanos: number): string {
+	return new Intl.NumberFormat(locale, { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 4 })
 		.format(nanos / 1_000_000_000);
 }
 
 export function DataContributionSettingsCard({ initial }: { initial: DataContributionSettings }) {
 	const t = useTranslations("SettingsUI");
+	const locale = useLocale();
 	const s = (key: string) => t(`strings.${key}` as never);
 	const router = useRouter();
 	const [enabled, setEnabled] = useState(initial.enabled);
 	const [confirmOpen, setConfirmOpen] = useState(false);
 	const [createOpen, setCreateOpen] = useState(false);
 	const [pending, startTransition] = useTransition();
+	const discount = new Intl.NumberFormat(locale, { maximumFractionDigits: 2 }).format(initial.discountBps / 100);
+	const sampleRate = new Intl.NumberFormat(locale, { maximumFractionDigits: 2 }).format(initial.classifierSampleRateBps / 100);
 	const [name, setName] = useState("");
-	const [instructions, setInstructions] = useState("Classify the request by its business use case. Return only labels from the taxonomy.");
+	const [instructions, setInstructions] = useState(() => t("contributionCopy.defaultInstructions" as never));
 	const [categories, setCategories] = useState(DEFAULT_CATEGORIES);
 
 	const categoryTotals = useMemo(() => {
@@ -67,7 +71,7 @@ export function DataContributionSettingsCard({ initial }: { initial: DataContrib
 				 toast.success(next ? s("Data contribution enabled") : s("Data contribution disabled"));
 				router.refresh();
 			} catch (error) {
-				 toast.error(error instanceof Error ? error.message : s("Could not update data contribution"));
+				 toast.error(localizedSettingsError(error, t, "Action failed", s("Could not update data contribution")));
 			}
 		});
 	}
@@ -82,7 +86,7 @@ export function DataContributionSettingsCard({ initial }: { initial: DataContrib
 				 toast.success(s("Classifier created"));
 				router.refresh();
 			} catch (error) {
-				 toast.error(error instanceof Error ? error.message : s("Could not create classifier"));
+				 toast.error(localizedSettingsError(error, t, "Action failed", s("Could not create classifier")));
 			}
 		});
 	}
@@ -96,10 +100,7 @@ export function DataContributionSettingsCard({ initial }: { initial: DataContrib
 						<Badge variant={enabled ? "default" : "secondary"}>{enabled ? s("Active") : s("Opt in")}</Badge>
 					</div>
 					<p className="max-w-3xl text-sm leading-6 text-muted-foreground">
-						Every eligible non-BYOK request receives a {initial.discountBps / 100}% discount. Phaseo retains up to 100% of successful prompts and completions
-						after redacting secrets and personal information, in a dedicated private bucket for no more than 30 days.
-						Only {initial.classifierSampleRateBps / 100}% is currently selected for upstream classification.
-						Only aggregate task statistics appear here; raw content is never published.
+						{t("contributionCopy.summary", { discount, sampleRate })}
 					</p>
 				</div>
 				{enabled ? (
@@ -119,7 +120,7 @@ export function DataContributionSettingsCard({ initial }: { initial: DataContrib
 							</div>
 							<DialogFooter>
 								<DialogClose asChild><Button variant="outline">{s("Cancel")}</Button></DialogClose>
-								<Button disabled={pending} onClick={() => changeConsent(true)}>Enable and save {initial.discountBps / 100}%</Button>
+								<Button disabled={pending} onClick={() => changeConsent(true)}>{t("contributionCopy.enableAndSave", { discount })}</Button>
 							</DialogFooter>
 						</DialogContent>
 					</Dialog>
@@ -128,20 +129,20 @@ export function DataContributionSettingsCard({ initial }: { initial: DataContrib
 
 			<div className="grid border-b sm:grid-cols-3">
 				<div className="flex items-center gap-3 border-b p-4 sm:border-b-0 sm:border-r"><Percent className="size-4 text-emerald-600" /><div><div className="text-xs text-muted-foreground">{s("Discount")}</div><div className="font-semibold">{initial.discountBps / 100}% {s("per request")}</div></div></div>
-				<div className="flex items-center gap-3 border-b p-4 sm:border-b-0 sm:border-r"><Database className="size-4 text-sky-600" /><div><div className="text-xs text-muted-foreground">{s("Retained (30 days)")}</div><div className="font-semibold">{initial.contributions30d.toLocaleString()} {s("requests")}</div></div></div>
-				<div className="flex items-center gap-3 p-4"><BarChart3 className="size-4 text-violet-600" /><div><div className="text-xs text-muted-foreground">{s("Discount earned")}</div><div className="font-semibold">{formatMoney(initial.discountNanos30d)}</div></div></div>
+				<div className="flex items-center gap-3 border-b p-4 sm:border-b-0 sm:border-r"><Database className="size-4 text-sky-600" /><div><div className="text-xs text-muted-foreground">{s("Retained (30 days)")}</div><div className="font-semibold">{new Intl.NumberFormat(locale).format(initial.contributions30d)} {s("requests")}</div></div></div>
+				<div className="flex items-center gap-3 p-4"><BarChart3 className="size-4 text-violet-600" /><div><div className="text-xs text-muted-foreground">{s("Discount earned")}</div><div className="font-semibold">{formatMoney(locale, initial.discountNanos30d)}</div></div></div>
 			</div>
 
 			<div className="grid gap-6 p-5 lg:grid-cols-[minmax(0,1.2fr)_minmax(280px,.8fr)]">
 				<div className="space-y-3">
 					<div className="flex items-center justify-between gap-3">
-						<div><h3 className="text-sm font-semibold">{s("Classifiers")}</h3><p className="text-xs text-muted-foreground">{s("Run asynchronously on a deterministic upstream sample, using Flex by default.")} ({initial.classifierSampleRateBps / 100}%)</p></div>
+						<div><h3 className="text-sm font-semibold">{s("Classifiers")}</h3><p className="text-xs text-muted-foreground">{s("Run asynchronously on a deterministic upstream sample, using Flex by default.")} ({sampleRate}%)</p></div>
 						<Dialog open={createOpen} onOpenChange={setCreateOpen}>
 							<DialogTrigger asChild><Button size="sm" variant="outline"><Plus className="mr-1 size-4" />{s("Custom classifier")}</Button></DialogTrigger>
 							<DialogContent className="sm:max-w-2xl">
 								<DialogHeader><DialogTitle>{s("Create classifier")}</DialogTitle><DialogDescription>{s("Define private labels for your own domain. The built-in task classifier remains the recommended baseline.")}</DialogDescription></DialogHeader>
 								<div className="space-y-4">
-									<div className="space-y-1.5"><Label htmlFor="classifier-name">{s("Name")}</Label><Input id="classifier-name" value={name} onChange={(event) => setName(event.target.value)} placeholder="Customer intent" /></div>
+									<div className="space-y-1.5"><Label htmlFor="classifier-name">{s("Name")}</Label><Input id="classifier-name" value={name} onChange={(event) => setName(event.target.value)} placeholder={t("contributionCopy.customerIntentPlaceholder")} /></div>
 									<div className="space-y-1.5"><Label htmlFor="classifier-instructions">{s("Instructions")}</Label><textarea id="classifier-instructions" className="min-h-24 w-full rounded-md border bg-background px-3 py-2 text-sm" value={instructions} onChange={(event) => setInstructions(event.target.value)} /></div>
 									<div className="space-y-1.5"><Label htmlFor="classifier-categories">{s("Categories (JSON)")}</Label><textarea id="classifier-categories" className="min-h-44 w-full rounded-md border bg-background px-3 py-2 font-mono text-xs" value={categories} onChange={(event) => setCategories(event.target.value)} /></div>
 								</div>
@@ -152,10 +153,10 @@ export function DataContributionSettingsCard({ initial }: { initial: DataContrib
 					<div className="divide-y rounded-lg border">
 						{initial.classifiers.map((classifier) => (
 							<div key={classifier.id} className="flex items-start justify-between gap-4 p-3">
-								<div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><span className="text-sm font-medium">{classifier.name}</span><Badge variant="outline">{classifier.kind === "phaseo_task" ? "Starter" : "Custom"}</Badge><Badge variant="secondary">{classifier.service_tier}</Badge></div><p className="mt-1 text-xs text-muted-foreground">{Object.values(classifier.categories).flat().length} labels · {classifier.model}</p></div>
+								<div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><span className="text-sm font-medium">{classifier.name}</span><Badge variant="outline">{classifier.kind === "phaseo_task" ? t("contributionCopy.starter") : t("contributionCopy.custom")}</Badge><Badge variant="secondary">{classifier.service_tier}</Badge></div><p className="mt-1 text-xs text-muted-foreground">{t("contributionCopy.labelCount" as never, { count: Object.values(classifier.categories).flat().length } as never)} · {classifier.model}</p></div>
 								<div className="flex items-center gap-2">
 									<Switch checked={classifier.enabled} disabled={pending || classifier.kind === "phaseo_task"} onCheckedChange={(next) => startTransition(async () => { await setDataContributionClassifierEnabled(classifier.id, next); router.refresh(); })} />
-									{classifier.kind === "custom" ? <Button size="icon" variant="ghost" disabled={pending} aria-label={`Delete ${classifier.name}`} onClick={() => startTransition(async () => { await deleteDataContributionClassifier(classifier.id); toast.success("Classifier deleted"); router.refresh(); })}><Trash2 className="size-4" /></Button> : null}
+									{classifier.kind === "custom" ? <Button size="icon" variant="ghost" disabled={pending} aria-label={t("identity.deleteClassifier" as never, { name: classifier.name } as never)} onClick={() => startTransition(async () => { await deleteDataContributionClassifier(classifier.id); toast.success(s("Classifier deleted")); router.refresh(); })}><Trash2 className="size-4" /></Button> : null}
 								</div>
 							</div>
 						))}

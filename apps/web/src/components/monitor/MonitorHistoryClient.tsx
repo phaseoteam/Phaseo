@@ -2,6 +2,7 @@
 
 import { startTransition, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { useLocale, useTranslations } from "next-intl";
 import {
 	Activity,
 	AlertTriangle,
@@ -150,13 +151,13 @@ type DisplayRowKind =
 	| "status";
 type ChangeFilter = "all" | DisplayRowKind;
 
-const CHANGE_FILTER_OPTIONS: Array<{ label: string; value: ChangeFilter }> = [
-	{ label: "All", value: "all" },
-	{ label: "Status", value: "status" },
-	{ label: "Pricing", value: "pricing" },
-	{ label: "Description", value: "description" },
-	{ label: "Links", value: "link" },
-	{ label: "Benchmark results", value: "benchmark" },
+const CHANGE_FILTER_OPTIONS: ChangeFilter[] = [
+	"all",
+	"status",
+	"pricing",
+	"description",
+	"link",
+	"benchmark",
 ];
 
 export type ChangeHistory = {
@@ -243,6 +244,7 @@ type DiffSegment = {
 };
 
 type FilterOption = MonitorHistoryFilterOption;
+type MonitorTranslate = (key: string, values?: Record<string, unknown>) => string;
 
 type FilterOptionGroup = {
 	heading?: string;
@@ -299,8 +301,8 @@ function humanizeModelSlug(value: string | null | undefined) {
 	return humanizeSlug(normalized);
 }
 
-function formatAbsoluteTime(timestamp: string) {
-	return new Intl.DateTimeFormat("en-US", {
+function formatAbsoluteTime(timestamp: string, locale: string) {
+	return new Intl.DateTimeFormat(locale, {
 		day: "numeric",
 		hour: "2-digit",
 		hour12: false,
@@ -309,8 +311,8 @@ function formatAbsoluteTime(timestamp: string) {
 	}).format(new Date(timestamp));
 }
 
-function formatUtcTime(timestamp: string) {
-	return new Intl.DateTimeFormat("en-US", {
+function formatUtcTime(timestamp: string, locale = "en-GB") {
+	return new Intl.DateTimeFormat(locale, {
 		day: "numeric",
 		hour: "2-digit",
 		hour12: false,
@@ -326,49 +328,65 @@ function formatShortCommit(commit: string | null | undefined) {
 	return value ? value.slice(0, 7) : null;
 }
 
-function formatRelativeTime(timestamp: string, now: number) {
+function formatRelativeTime(timestamp: string, now: number, locale: string) {
 	const deltaMs = Math.max(0, now - new Date(timestamp).getTime());
 	const minutes = Math.floor(deltaMs / 60000);
 	const hours = Math.floor(deltaMs / 3600000);
 	const days = Math.floor(deltaMs / 86400000);
+	const relativeTime = new Intl.RelativeTimeFormat(locale, { numeric: "auto" });
 
-	if (minutes < 1) return "just now";
-	if (minutes < 60) return minutes === 1 ? "1 minute ago" : `${minutes} minutes ago`;
-	if (hours < 24) return hours === 1 ? "1 hour ago" : `${hours} hours ago`;
-	if (days < 30) return days === 1 ? "1 day ago" : `${days} days ago`;
+	if (minutes < 1) return relativeTime.format(0, "second");
+	if (minutes < 60) return relativeTime.format(-minutes, "minute");
+	if (hours < 24) return relativeTime.format(-hours, "hour");
+	if (days < 30) return relativeTime.format(-days, "day");
 
 	const months = Math.floor(days / 30);
-	return months === 1 ? "1 month ago" : `${months} months ago`;
+	return relativeTime.format(-months, "month");
 }
 
-function formatNumber(value: number) {
+function formatNumber(value: number, locale: string) {
 	if (!Number.isFinite(value)) return String(value);
-	if (Math.abs(value) < 1) return value.toFixed(4);
-	return value.toLocaleString();
+	if (Math.abs(value) < 1) {
+		return value.toLocaleString(locale, {
+			maximumFractionDigits: 4,
+			minimumFractionDigits: 4,
+		});
+	}
+	return value.toLocaleString(locale);
 }
 
-function formatPriceValue(value: unknown): string {
+function formatPriceValue(value: unknown, locale: string, t: MonitorTranslate): string {
 	if (typeof value === "number" && Number.isFinite(value)) {
 		const absolute = Math.abs(value);
 		const maximumFractionDigits =
 			absolute >= 1 ? 2 : absolute >= 0.1 ? 3 : absolute >= 0.01 ? 4 : 6;
-		return `$${value.toLocaleString("en-US", {
+		return `$${value.toLocaleString(locale, {
 			maximumFractionDigits,
 			minimumFractionDigits: 2,
 		})} /MTOK`;
 	}
 
-	if (value == null) return "Unavailable";
-	return String(value);
+	if (value == null) return t("values.unavailable");
+	return formatGenericValue(value, locale, t);
 }
 
-function formatGenericValue(value: unknown): string {
+function formatGenericValue(value: unknown, locale: string, t: MonitorTranslate): string {
 	if (Array.isArray(value)) {
-		return value.map((entry) => formatGenericValue(entry)).join(", ");
+		return value.map((entry) => formatGenericValue(entry, locale, t)).join(", ");
 	}
-	if (typeof value === "number") return formatNumber(value);
+	if (typeof value === "number") return formatNumber(value, locale);
 	if (typeof value === "boolean") return value ? "true" : "false";
-	if (value == null) return "None";
+	if (value == null) return t("values.none");
+	if (typeof value === "string") {
+		const valueKey: Record<string, string> = {
+			Available: "values.available",
+			Listed: "values.listed",
+			None: "values.none",
+			Unavailable: "values.unavailable",
+		};
+		const key = valueKey[value];
+		if (key) return t(key);
+	}
 	return String(value);
 }
 
@@ -376,16 +394,16 @@ function isDateOnlyMonitorField(field: string) {
 	return field === "deprecation_date" || field === "retirement_date";
 }
 
-function formatMonitorDateValue(value: unknown): string {
-	if (value == null) return "None";
+function formatMonitorDateValue(value: unknown, locale: string, t: MonitorTranslate): string {
+	if (value == null) return t("values.none");
 	const text = String(value).trim();
-	if (!text) return "None";
+	if (!text) return t("values.none");
 	const normalizedText = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/.test(text)
 		? `${text}Z`
 		: text;
 	const parsed = new Date(normalizedText);
 	if (Number.isNaN(parsed.getTime())) return text;
-	return new Intl.DateTimeFormat("en-US", {
+	return new Intl.DateTimeFormat(locale, {
 		day: "numeric",
 		month: "short",
 		timeZone: "UTC",
@@ -446,6 +464,8 @@ function getProviderStatusMeta(value: unknown) {
 
 function renderProviderStatusValue(
 	value: unknown,
+	t: MonitorTranslate,
+	locale: string,
 	style: "current" | "previous" = "current",
 ) {
 	const meta = getProviderStatusMeta(value);
@@ -458,12 +478,16 @@ function renderProviderStatusValue(
 						: "font-mono font-medium text-zinc-950 dark:text-zinc-50"
 				}
 			>
-				{formatGenericValue(value)}
+				{formatGenericValue(value, locale, t)}
 			</span>
 		);
 	}
 
 	const Icon = meta.icon;
+	const normalizedStatus = normalizeProviderStatusValue(value);
+	const statusKey = Object.hasOwn(PROVIDER_STATUS_META, normalizedStatus)
+		? normalizedStatus
+		: "unknown";
 	return (
 		<span
 			className={[
@@ -477,7 +501,9 @@ function renderProviderStatusValue(
 				.join(" ")}
 		>
 			<Icon className="h-3.5 w-3.5 shrink-0" />
-			<span>{meta.label}</span>
+			<span>
+				{t(`providerStatus.${statusKey}`, { status: humanizeSlug(normalizedStatus) })}
+			</span>
 		</span>
 	);
 }
@@ -817,8 +843,8 @@ function getPricingPlan(field: string) {
 	return parsePricingField(field)?.plan ?? "default";
 }
 
-function getPricingPlanLabel(plan: string) {
-	return plan === "default" ? "Default" : humanizeSlug(plan);
+function getPricingPlanLabel(plan: string, t: MonitorTranslate) {
+	return plan === "default" ? t("pricingPlans.default") : humanizeSlug(plan);
 }
 
 function getPricingPlansForRows(rows: DisplayRow[]) {
@@ -829,7 +855,7 @@ function getPricingPlansForRows(rows: DisplayRow[]) {
 	return plans.sort((a, b) => {
 		const planDiff = (PLAN_ORDER[a] ?? 99) - (PLAN_ORDER[b] ?? 99);
 		if (planDiff !== 0) return planDiff;
-		return getPricingPlanLabel(a).localeCompare(getPricingPlanLabel(b));
+		return a.localeCompare(b);
 	});
 }
 
@@ -1029,11 +1055,11 @@ function getCardKey(change: ChangeHistory) {
 	return `${change.commit ?? "unknown"}:${change.entityType}:${change.entityId ?? change.model}:${change.endpoint ?? "catalogue"}`;
 }
 
-function getCardContextLabel(card: MonitorCard) {
-	if (card.primaryEntityType === "model") return "Model";
-	if (card.primaryEntityType === "api-provider") return "Provider";
-	if (card.primaryEntityType === "pricing") return "Pricing update";
-	return card.isOfficialModelRecord ? "Model" : "Provider";
+function getCardContextLabel(card: MonitorCard, t: MonitorTranslate) {
+	if (card.primaryEntityType === "model") return t("context.model");
+	if (card.primaryEntityType === "api-provider") return t("context.provider");
+	if (card.primaryEntityType === "pricing") return t("context.pricingUpdate");
+	return card.isOfficialModelRecord ? t("context.model") : t("context.provider");
 }
 
 function getCardSortPriority(card: MonitorCard) {
@@ -1043,7 +1069,7 @@ function getCardSortPriority(card: MonitorCard) {
 	return 3;
 }
 
-function buildCommitGroups(data: ChangeHistory[], now: number): CommitGroup[] {
+function buildCommitGroups(data: ChangeHistory[], now: number, locale: string): CommitGroup[] {
 	const sorted = [...data].sort(
 		(a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
 	);
@@ -1056,11 +1082,11 @@ function buildCommitGroups(data: ChangeHistory[], now: number): CommitGroup[] {
 
 		if (!group) {
 			group = {
-				absoluteLabel: formatAbsoluteTime(change.timestamp),
+				absoluteLabel: formatAbsoluteTime(change.timestamp, locale),
 				cards: [],
 				commit: change.commit,
 				id: groupId,
-				relativeLabel: formatRelativeTime(change.timestamp, now),
+				relativeLabel: formatRelativeTime(change.timestamp, now, locale),
 				timestamp: change.timestamp,
 			};
 			groups.set(groupId, group);
@@ -1128,7 +1154,7 @@ function getActionBadgeClasses(kind: BadgeKind) {
 	return "border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-950/60 dark:bg-sky-950/30 dark:text-sky-300";
 }
 
-function renderValueTransition(row: DisplayRow) {
+function renderValueTransition(row: DisplayRow, t: MonitorTranslate, locale: string) {
 	if (row.kind === "description") {
 		const removedSegments = diffTextSegments(
 			String(row.oldValue ?? ""),
@@ -1159,22 +1185,22 @@ function renderValueTransition(row: DisplayRow) {
 
 	if (isProviderStatusRow(row)) {
 		if (row.oldValue == null && row.newValue != null) {
-			return <div className="flex min-w-0 flex-wrap items-center gap-2 text-sm">{renderProviderStatusValue(row.newValue)}</div>;
+			return <div className="flex min-w-0 flex-wrap items-center gap-2 text-sm">{renderProviderStatusValue(row.newValue, t, locale)}</div>;
 		}
 
 		if (row.oldValue != null && row.newValue == null) {
 			return (
 				<div className="flex min-w-0 flex-wrap items-center gap-2 text-sm">
-					{renderProviderStatusValue(row.oldValue, "previous")}
+					{renderProviderStatusValue(row.oldValue, t, locale, "previous")}
 				</div>
 			);
 		}
 
 		return (
 			<div className="flex min-w-0 flex-wrap items-center gap-2 text-sm">
-				{renderProviderStatusValue(row.oldValue, "previous")}
+				{renderProviderStatusValue(row.oldValue, t, locale, "previous")}
 				<ArrowRight className="h-3.5 w-3.5 shrink-0 text-zinc-400 dark:text-zinc-600" />
-				{renderProviderStatusValue(row.newValue)}
+				{renderProviderStatusValue(row.newValue, t, locale)}
 			</div>
 		);
 	}
@@ -1207,10 +1233,10 @@ function renderValueTransition(row: DisplayRow) {
 
 	const formatValue =
 		row.kind === "pricing"
-			? formatPriceValue
+			? (value: unknown) => formatPriceValue(value, locale, t)
 			: isDateOnlyMonitorField(row.field)
-				? formatMonitorDateValue
-				: formatGenericValue;
+				? (value: unknown) => formatMonitorDateValue(value, locale, t)
+				: (value: unknown) => formatGenericValue(value, locale, t);
 	if (row.oldValue == null && row.newValue != null) {
 		return (
 			<div className="flex min-w-0 flex-wrap items-center gap-2 text-sm">
@@ -1276,35 +1302,88 @@ function renderValueTransition(row: DisplayRow) {
 	);
 }
 
-function parsePricingLabelDetail(detail: string, field?: string) {
-	const pricingDisplay = field ? getPricingDisplayParts(field) : null;
-	if (pricingDisplay) {
-		return {
-			label: pricingDisplay.label,
-			meta: pricingDisplay.qualifiers.join(" • "),
-			schedule: pricingDisplay.schedule.join(" / "),
-		};
+function getLocalizedPricingLabelParts(
+	field: string,
+	locale: string,
+	t: MonitorTranslate,
+) {
+	const parsed = parsePricingField(field);
+	if (!parsed) return null;
+	const { conditions, meter, plan } = parsed;
+	const meterKeyById: Record<string, string> = {
+		cached_read_text_tokens: "cacheRead",
+		cached_write_text_tokens: "cacheWrite",
+		cached_write_text_tokens_5m: "cacheWriteFiveMinuteTtl",
+		cached_write_text_tokens_1h: "cacheWriteOneHourTtl",
+		input_audio_tokens: "audioInput",
+		input_image_tokens: "imageInput",
+		input_text_tokens: "textInput",
+		input_tokens: "textInput",
+		input_video_tokens: "videoInput",
+		output_audio_tokens: "audioOutput",
+		output_image_tokens: "imageOutput",
+		output_tokens: "textOutput",
+		output_text_tokens: "textOutput",
+		output_video_seconds: "videoOutput",
+		requests: "requests",
+		total_tokens: "totalTokens",
+	};
+	const meterKey = meterKeyById[meter];
+	const label = meterKey ? t(`pricingMeters.${meterKey}`) : humanizeSlug(meter);
+	const qualifiers: string[] = [];
+	const schedule: string[] = [];
+	if (plan && plan !== "default") {
+		qualifiers.push(t("pricingMetadata.plan", { plan: humanizeSlug(plan) }));
 	}
-
-	const parts = detail
-		.split(" / ")
-		.map((part) => part.trim())
-		.filter(Boolean);
-	const scheduleParts = parts.filter(
-		(part) => part.startsWith("From ") || part.startsWith("Until "),
-	);
-	const metaParts = parts.filter(
-		(part) => !part.startsWith("From ") && !part.startsWith("Until "),
-	);
-
+	for (const condition of conditions) {
+		const [path, operator, value] = condition.split("~");
+		if (path === "effective_from" && operator === "eq" && value) {
+			schedule.push(t("pricingMetadata.from", { date: formatUtcTime(value, locale) }));
+		} else if (path === "effective_to" && operator === "eq" && value) {
+			schedule.push(t("pricingMetadata.until", { date: formatUtcTime(value, locale) }));
+		} else if (path === "cache_ttl" && operator === "eq" && value) {
+			qualifiers.push(t("pricingMetadata.cacheTtl", { value }));
+		} else if (path === "priority" && operator === "eq" && value) {
+			qualifiers.push(t("pricingMetadata.priority", { value }));
+		} else if (condition) {
+			const prettyPath = humanizeSlug(path || condition);
+			const operatorLabel: Record<string, string> = { eq: "", gt: ">", gte: ">=", lt: "<", lte: "<=" };
+			qualifiers.push(
+				operator === "eq" && path && value
+					? `${prettyPath} ${value}`
+					: operatorLabel[operator ?? ""] && value
+						? `${prettyPath} ${operatorLabel[operator]} ${value}`
+						: prettyPath,
+			);
+		}
+	}
 	return {
-		label: "",
-		meta: metaParts.join(" / "),
-		schedule: scheduleParts.join(" / "),
+		label,
+		meta: qualifiers.length > 0 ? qualifiers.join(" • ") : undefined,
+		schedule: schedule.length > 0 ? schedule.join(" / ") : undefined,
 	};
 }
 
-function renderRow(row: DisplayRow) {
+function localizeRowLabel(row: DisplayRow, t: MonitorTranslate) {
+	const fixedLabels: Record<string, string> = {
+		"Deprecation date": "rowLabels.deprecationDate",
+		Description: "rowLabels.description",
+		"Provider availability": "rowLabels.providerAvailability",
+		"Provider listing": "rowLabels.providerListing",
+		"Retirement date": "rowLabels.retirementDate",
+		Status: "rowLabels.status",
+	};
+	const key = fixedLabels[row.label];
+	if (key) return t(key);
+	const tierAvailability = row.label.match(/^(.*?) tier availability$/);
+	if (tierAvailability) return t("rowLabels.tierAvailability", { tier: tierAvailability[1] });
+	if (row.kind === "link" && row.label.endsWith(" link")) {
+		return t("rowLabels.link", { name: row.label.slice(0, -" link".length) });
+	}
+	return row.label;
+}
+
+function renderRow(row: DisplayRow, t: MonitorTranslate, locale: string) {
 	const isPositive = (row.percentChange ?? 0) > 0;
 	const trendClasses = isPositive
 		? "text-emerald-600 dark:text-emerald-400"
@@ -1327,8 +1406,9 @@ function renderRow(row: DisplayRow) {
 			: "sm:grid-cols-[minmax(160px,220px)_minmax(0,1fr)_auto]";
 	const rowGapClass = usesCompactStatusLayout ? "gap-x-1.5" : "gap-x-2";
 	const rowPaddingClass = row.kind === "pricing" ? "pt-2" : "pt-2.5";
-	const pricingDetail =
-		row.kind === "pricing" ? parsePricingLabelDetail(row.labelDetail ?? "", row.field) : null;
+	const pricingDetail = row.kind === "pricing"
+		? getLocalizedPricingLabelParts(row.field, locale, t)
+		: null;
 
 	return (
 		<div
@@ -1387,7 +1467,7 @@ function renderRow(row: DisplayRow) {
 								isDateOnlyRow || isLinkRow ? "sm:whitespace-nowrap" : "",
 							].join(" ")}
 						>
-							{row.label}
+							{localizeRowLabel(row, t)}
 							{isBenchmarkRow && row.labelDetail ? (
 								<Tooltip delayDuration={150}>
 									<TooltipTrigger asChild>
@@ -1414,7 +1494,7 @@ function renderRow(row: DisplayRow) {
 					</>
 				)}
 			</div>
-			{renderValueTransition(row)}
+			{renderValueTransition(row, t, locale)}
 			{typeof row.percentChange === "number" && Number.isFinite(row.percentChange) ? (
 				<div
 					className={[
@@ -1531,14 +1611,16 @@ function renderCard(
 	card: MonitorCard,
 	selectedPricingPlan: string | undefined,
 	onSelectPricingPlan: ((plan: string) => void) | null,
+	t: MonitorTranslate,
+	locale: string,
 ) {
 	const actionLabel =
 		card.actionKind === "added"
-			? "Added"
+			? t("actionAdded")
 			: card.actionKind === "removed"
-				? "Removed"
+				? t("actionRemoved")
 				: null;
-	const contextLabel = getCardContextLabel(card);
+	const contextLabel = getCardContextLabel(card, t);
 	const pricingPlans = getPricingPlansForRows(card.rows);
 	const activePricingPlan =
 		pricingPlans.length > 0
@@ -1641,7 +1723,7 @@ function renderCard(
 				{pricingPlans.length > 1 && onSelectPricingPlan ? (
 					<div className="flex flex-wrap items-center gap-2">
 						<span className="text-xs font-medium uppercase tracking-[0.14em] text-zinc-400 dark:text-zinc-500">
-							Tier
+										{t("tier")}
 						</span>
 						<div className="inline-flex rounded-lg border border-zinc-200 bg-zinc-50 p-1 dark:border-zinc-800 dark:bg-zinc-900">
 							{pricingPlans.map((plan) => {
@@ -1658,14 +1740,14 @@ function renderCard(
 												: "text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200",
 										].join(" ")}
 									>
-										{getPricingPlanLabel(plan)}
+										{getPricingPlanLabel(plan, t)}
 									</button>
 								);
 							})}
 						</div>
 					</div>
 				) : null}
-				{visibleRows.map((row) => renderRow(row))}
+				{visibleRows.map((row) => renderRow(row, t, locale))}
 			</div>
 		</article>
 	);
@@ -1692,6 +1774,7 @@ function FilterCombobox({
 	selectedQuery: string;
 	selectedLabel?: string;
 }) {
+	const t = useTranslations("Catalogue.monitor");
 	const [open, setOpen] = useState(false);
 	const [searchValue, setSearchValue] = useState("");
 	const [visibleOptionLimit, setVisibleOptionLimit] = useState(INITIAL_COMBOBOX_OPTIONS);
@@ -1858,7 +1941,7 @@ function FilterCombobox({
 						)}
 						{hasMoreOptions ? (
 							<div className="px-3 py-2 text-xs text-zinc-500 dark:text-zinc-400">
-								Scroll for more
+								{t("scrollForMore")}
 							</div>
 						) : null}
 					</CommandList>
@@ -1883,6 +1966,9 @@ export function MonitorHistoryClient({
 	now?: number;
 	providerOptions?: MonitorHistoryFilterOption[];
 }) {
+	const t = useTranslations("Catalogue.monitor");
+	const translate = t as unknown as MonitorTranslate;
+	const locale = useLocale();
 	const isRemoteMode = Boolean(initialPage && modelOptions && providerOptions);
 	const [modelQuery, setModelQuery] = useState("");
 	const [modelLabel, setModelLabel] = useState<string | undefined>();
@@ -1926,7 +2012,7 @@ export function MonitorHistoryClient({
 			.then((result) => {
 				if (requestId !== remoteRequestIdRef.current) return;
 				if (!result.ok) {
-					setRemoteError(result.error);
+					setRemoteError(t("loadHistoryError"));
 					return;
 				}
 				setRemoteEntries(result.page.entries);
@@ -1935,7 +2021,7 @@ export function MonitorHistoryClient({
 			.catch((error: unknown) => {
 				if (requestId !== remoteRequestIdRef.current) return;
 				setRemoteError(
-					error instanceof Error ? error.message : "Failed to load monitor history.",
+					t("loadHistoryError"),
 				);
 			})
 			.finally(() => {
@@ -1966,7 +2052,7 @@ export function MonitorHistoryClient({
 			return {
 				modelOptionGroups: [
 					{
-						heading: "Models",
+					heading: t("modelsGroup"),
 						options: [...(modelOptions ?? [])].sort((a, b) =>
 							a.label.localeCompare(b.label),
 						),
@@ -1974,7 +2060,7 @@ export function MonitorHistoryClient({
 				] satisfies FilterOptionGroup[],
 				providerOptionGroups: [
 					{
-						heading: "Providers",
+					heading: t("providersGroup"),
 						options: [...(providerOptions ?? [])].sort((a, b) =>
 							a.label.localeCompare(b.label),
 						),
@@ -2016,7 +2102,7 @@ export function MonitorHistoryClient({
 		return {
 			modelOptionGroups: [
 				{
-					heading: "Models",
+					heading: t("modelsGroup"),
 					options: Array.from(modelOptionsMap.values()).sort((a, b) =>
 						a.label.localeCompare(b.label),
 					),
@@ -2024,21 +2110,21 @@ export function MonitorHistoryClient({
 			] satisfies FilterOptionGroup[],
 			providerOptionGroups: [
 				{
-					heading: "Providers",
+					heading: t("providersGroup"),
 					options: Array.from(providerOptionsMap.values()).sort((a, b) =>
 						a.label.localeCompare(b.label),
 					),
 				},
 			] satisfies FilterOptionGroup[],
 		};
-	}, [isRemoteMode, modelOptions, providerOptions, trackedData]);
+	}, [isRemoteMode, modelOptions, providerOptions, t, trackedData]);
 	const typeOptionGroups: FilterOptionGroup[] = [
 		{
-			heading: "Change type",
-			options: CHANGE_FILTER_OPTIONS.filter((option) => option.value !== "all").map((option) => ({
-				label: option.label,
-				query: option.value,
-				value: option.value,
+			heading: t("changeType"),
+			options: CHANGE_FILTER_OPTIONS.filter((option) => option !== "all").map((option) => ({
+				label: t(`changeFilter.${option}` as never),
+				query: option,
+				value: option,
 			})),
 		},
 	];
@@ -2066,7 +2152,10 @@ export function MonitorHistoryClient({
 		[deferredModelQuery, deferredProviderQuery, isRemoteMode, trackedData, typeFilter],
 	);
 
-	const groupedCommits = useMemo(() => buildCommitGroups(filteredData, now), [filteredData, now]);
+	const groupedCommits = useMemo(
+		() => buildCommitGroups(filteredData, now, locale),
+		[filteredData, locale, now],
+	);
 	const visibleGroups = isRemoteMode
 		? groupedCommits
 		: groupedCommits.slice(0, visibleCommitCount);
@@ -2083,9 +2172,7 @@ export function MonitorHistoryClient({
 	const lastSyncedCommit = isRemoteMode ? remotePage?.lastSha : meta?.lastSha;
 	const shortLastSyncedCommit = formatShortCommit(lastSyncedCommit);
 	const selectedTypeLabel =
-		typeFilter === "all"
-			? undefined
-			: CHANGE_FILTER_OPTIONS.find((option) => option.value === typeFilter)?.label;
+		typeFilter === "all" ? undefined : t(`changeFilter.${typeFilter}` as never);
 	const totalCommits = isRemoteMode
 		? remotePage?.totalCommits ?? groupedCommits.length
 		: meta?.commitCount ?? groupedCommits.length;
@@ -2108,7 +2195,7 @@ export function MonitorHistoryClient({
 			});
 			if (requestId !== remoteRequestIdRef.current) return;
 			if (!result.ok) {
-				setRemoteError(result.error);
+				setRemoteError(t("loadMoreHistoryError"));
 				return;
 			}
 			setRemoteEntries((current) => [...current, ...result.page.entries]);
@@ -2116,7 +2203,7 @@ export function MonitorHistoryClient({
 		} catch (error) {
 			if (requestId !== remoteRequestIdRef.current) return;
 			setRemoteError(
-				error instanceof Error ? error.message : "Failed to load more monitor history.",
+				t("loadMoreHistoryError"),
 			);
 		} finally {
 			if (requestId === remoteRequestIdRef.current) {
@@ -2129,17 +2216,16 @@ export function MonitorHistoryClient({
 		<div className="space-y-6 text-zinc-900 dark:text-zinc-100">
 			<section className="space-y-3 border-b border-zinc-200/80 pb-6 dark:border-zinc-800/80">
 				<h1 className="text-3xl font-semibold tracking-[-0.04em] text-zinc-950 dark:text-zinc-50 sm:text-4xl">
-					Monitor
+					{t("title")}
 				</h1>
 
 				<p className="max-w-4xl text-sm leading-6 text-zinc-600 dark:text-zinc-400 sm:text-base">
-					Track model availability, pricing shifts, benchmark score changes, and
-					description updates from the catalog history in one compact feed.
+					{t("pageDescription")}
 				</p>
 
 				<div className="grid overflow-hidden rounded-[1.5rem] border border-zinc-200/80 bg-white/70 dark:border-zinc-800/80 dark:bg-zinc-950/50 sm:grid-cols-3 sm:divide-x sm:divide-zinc-200/80 dark:sm:divide-zinc-800/80">
 					<div className="px-4 py-4">
-						<p className="text-sm text-zinc-500 dark:text-zinc-400">Last synced commit</p>
+						<p className="text-sm text-zinc-500 dark:text-zinc-400">{t("lastSyncedCommit")}</p>
 						<p className="mt-1 text-2xl font-semibold text-zinc-950 dark:text-zinc-50">
 							{shortLastSyncedCommit ? (
 								<Link
@@ -2151,31 +2237,32 @@ export function MonitorHistoryClient({
 									{shortLastSyncedCommit}
 								</Link>
 							) : (
-								"Unknown"
+								t("unknown")
 							)}
 						</p>
 					</div>
 
 					<div className="border-t border-zinc-200/80 px-4 py-4 sm:border-t-0 dark:border-zinc-800/80">
-						<p className="text-sm text-zinc-500 dark:text-zinc-400">Generated</p>
+						<p className="text-sm text-zinc-500 dark:text-zinc-400">{t("generated")}</p>
 						<p className="mt-1 text-2xl font-semibold text-zinc-950 dark:text-zinc-50">
-							{generatedAt ? formatAbsoluteTime(generatedAt.toISOString()) : "Unknown"}
+							{generatedAt ? formatAbsoluteTime(generatedAt.toISOString(), locale) : t("unknown")}
 						</p>
 					</div>
 
 					<div className="border-t border-zinc-200/80 px-4 py-4 sm:border-t-0 dark:border-zinc-800/80">
-						<p className="text-sm text-zinc-500 dark:text-zinc-400">Commits covered</p>
+						<p className="text-sm text-zinc-500 dark:text-zinc-400">{t("commitsCovered")}</p>
 						<p className="mt-1 text-2xl font-semibold text-zinc-950 dark:text-zinc-50">
-							{totalCommits.toLocaleString()}
+							{totalCommits.toLocaleString(locale)}
 						</p>
 					</div>
 				</div>
 
 				{staleDays !== null && staleDays > 7 ? (
 					<p className="text-sm text-amber-700 dark:text-amber-300">
-						This history is {staleDays} day{staleDays === 1 ? "" : "s"} old. Rerun
-						<span className="mx-1 font-mono">scripts/update-monitor-history.ts</span>
-						before publishing if fresher catalog changes should be visible.
+						{t.rich("staleHistory", {
+							days: staleDays,
+							code: (chunks) => <span className="mx-1 font-mono">{chunks}</span>,
+						})}
 					</p>
 				) : null}
 			</section>
@@ -2183,14 +2270,14 @@ export function MonitorHistoryClient({
 			<section className="border-b border-zinc-200/80 pb-4 dark:border-zinc-800/80">
 				<div className="grid gap-3 md:grid-cols-[minmax(0,1.35fr)_minmax(0,1.1fr)_220px]">
 					<FilterCombobox
-						anyLabel="Any model"
+						anyLabel={t("anyModel")}
 						icon={Search}
-						placeholder="Filter by model"
-						searchPlaceholder="Search models..."
+						placeholder={t("filterModel")}
+						searchPlaceholder={t("searchModels")}
 						selectedQuery={modelQuery}
 						selectedLabel={modelLabel}
 						groups={modelOptionGroups}
-						emptyLabel="No model found."
+						emptyLabel={t("noModelFound")}
 						onSelect={({ label, value }) =>
 							startTransition(() => {
 								setVisibleCommitCount(DEFAULT_VISIBLE_COMMITS);
@@ -2201,14 +2288,14 @@ export function MonitorHistoryClient({
 					/>
 
 					<FilterCombobox
-						anyLabel="Any provider"
+						anyLabel={t("anyProvider")}
 						icon={Search}
-						placeholder="Filter by provider"
-						searchPlaceholder="Search providers..."
+						placeholder={t("filterProvider")}
+						searchPlaceholder={t("searchProviders")}
 						selectedQuery={providerQuery}
 						selectedLabel={providerLabel}
 						groups={providerOptionGroups}
-						emptyLabel="No provider found."
+						emptyLabel={t("noProviderFound")}
 						onSelect={({ label, value }) =>
 							startTransition(() => {
 								setVisibleCommitCount(DEFAULT_VISIBLE_COMMITS);
@@ -2219,14 +2306,14 @@ export function MonitorHistoryClient({
 					/>
 
 					<FilterCombobox
-						anyLabel="All change types"
+						anyLabel={t("allChangeTypes")}
 						icon={ListFilter}
-						placeholder="All change types"
-						searchPlaceholder="Search change types..."
+						placeholder={t("allChangeTypes")}
+						searchPlaceholder={t("searchChangeTypes")}
 						selectedQuery={typeFilter === "all" ? "" : typeFilter}
 						selectedLabel={selectedTypeLabel}
 						groups={typeOptionGroups}
-						emptyLabel="No change type found."
+						emptyLabel={t("noChangeTypeFound")}
 						onSelect={({ value }) =>
 							startTransition(() => {
 								setVisibleCommitCount(DEFAULT_VISIBLE_COMMITS);
@@ -2247,10 +2334,10 @@ export function MonitorHistoryClient({
 				{visibleGroups.length === 0 ? (
 					<div className="rounded-[1.5rem] border border-dashed border-zinc-300 px-6 py-10 text-center dark:border-zinc-800">
 						<p className="text-lg font-medium text-zinc-950 dark:text-white">
-							No changes match these filters.
+							{t("noChangesMatch")}
 						</p>
 						<p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
-							Try a broader model or provider search to bring entries back into view.
+							{t("broadenSearch")}
 						</p>
 					</div>
 				) : (
@@ -2282,18 +2369,20 @@ export function MonitorHistoryClient({
 								</div>
 
 								<div className="mx-auto max-w-4xl space-y-3">
-									{group.cards.map((card) =>
-										renderCard(
-											card,
-											pricingPlanSelections[card.id],
-											getPricingPlansForRows(card.rows).length > 1
-												? (plan) =>
-														setPricingPlanSelections((current) => ({
-															...current,
-															[card.id]: plan,
-														}))
-												: null,
-										),
+								{group.cards.map((card) =>
+									renderCard(
+										card,
+										pricingPlanSelections[card.id],
+										getPricingPlansForRows(card.rows).length > 1
+											? (plan) =>
+												setPricingPlanSelections((current) => ({
+													...current,
+													[card.id]: plan,
+												}))
+											: null,
+										translate,
+										locale,
+									),
 									)}
 								</div>
 							</div>
@@ -2310,7 +2399,7 @@ export function MonitorHistoryClient({
 								disabled={isLoadingRemote}
 								className="inline-flex items-center gap-2 rounded-[1.1rem] border border-zinc-200 bg-white px-4 py-2 text-sm font-medium text-zinc-700 transition-colors hover:border-zinc-300 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200 dark:hover:border-zinc-700 dark:hover:bg-zinc-900"
 							>
-								{isLoadingRemote ? "Loading commits..." : "Load more commits"}
+								{isLoadingRemote ? t("loadingCommits") : t("loadMoreCommits")}
 							</button>
 						</div>
 					) : null
@@ -2323,7 +2412,7 @@ export function MonitorHistoryClient({
 							}
 							className="inline-flex items-center gap-2 rounded-[1.1rem] border border-zinc-200 bg-white px-4 py-2 text-sm font-medium text-zinc-700 transition-colors hover:border-zinc-300 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200 dark:hover:border-zinc-700 dark:hover:bg-zinc-900"
 						>
-							Load more commits
+							{t("loadMoreCommits")}
 							<span className="text-zinc-400 dark:text-zinc-500">
 								({Math.min(LOAD_MORE_COMMITS, groupedCommits.length - visibleGroups.length)})
 							</span>

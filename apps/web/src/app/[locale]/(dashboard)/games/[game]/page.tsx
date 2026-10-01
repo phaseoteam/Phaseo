@@ -5,16 +5,23 @@ import { Suspense } from "react";
 import { GameExperience } from "@/components/(games)/GameExperience";
 import { catalogueGamesEnabled } from "@/lib/games/preview";
 import { GAME_INFO, isGameKey } from "@/lib/games/types";
+import type { PublicLocale } from "@/i18n/routing";
 
-type GamePageProps = { params: Promise<{ game: string }> };
+type GamePageProps = { params: Promise<{ locale: string; game: string }> };
 
 export async function generateMetadata({
   params,
 }: GamePageProps): Promise<Metadata> {
-  const { game } = await params;
-  return isGameKey(game)
-    ? { title: GAME_INFO[game].title, description: GAME_INFO[game].description }
-    : {};
+  const { locale, game } = await params;
+  if (!isGameKey(game)) return {};
+  const t = await getTranslations({
+    locale: locale as PublicLocale,
+    namespace: "Product.games",
+  });
+  return {
+    title: t(GAME_INFO[game].titleKey),
+    description: t(GAME_INFO[game].descriptionKey),
+  };
 }
 
 async function GamePageContent({ params }: GamePageProps) {

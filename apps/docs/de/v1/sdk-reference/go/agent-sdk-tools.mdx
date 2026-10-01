@@ -1,0 +1,21 @@
+---
+icon: "wrench"
+title: "Werkzeuge"
+description: "Definiere validierte, genehmigungspflichtige, manuelle und Fortschritt meldende Go-Tools."
+---
+
+Erstelle `Tool`-Werte und übergib sie über `DefineTool(...)`. Tools können Folgendes enthalten:
+
+- JSON-`Parameters`, die dem Modell angezeigt werden
+- Validatoren für `InputSchema`, `OutputSchema` und `EventSchema`
+- ein `Timeout` und eine Funktion `Execute(input, RuntimeContext)`
+- bedingungsloses `RequireApproval` oder ein bedingtes `Approval`-Prädikat
+- `OnToolCalled` und `OnResponseReceived` für interaktive Abläufe
+- `NextTurn`-Überschreibungen und `OnError: "return-to-model"`
+
+Verwende `RuntimeContext.EmitProgress`, `SetContext` und den bereitgestellten `context.Context`. `ToolExecutionConfig{Concurrency: ...}` führt unabhängige Tools parallel aus und behält dabei die Reihenfolge der Ergebnisse bei.
+
+## Weiterführende Themen
+
+- [Status und Genehmigung](./agent-sdk-state-and-approval.mdx)
+- [Laufsteuerung](./agent-sdk-run-controls.mdx)

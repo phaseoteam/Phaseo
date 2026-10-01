@@ -1,0 +1,24 @@
+---
+icon: "braces"
+title: "API संदर्भ"
+description: "PHP Agent SDK की मुख्य classes और methods का संदर्भ।"
+---
+
+| API | उद्देश्य |
+| --- | --- |
+| `AgentSdk::createAgent(...)` | एजेंट परिभाषित करें |
+| `AgentSdk::defineTool(...)` | स्थानीय या मैन्युअल टूल परिभाषित करें |
+| `AgentSdk::createGatewayAgentClient(...)` | मॉडल टर्न को Phaseo से जोड़ें |
+| `Agent::run(...)` | पूरा होने या रुकने तक चलाएँ |
+| `Agent::stream(...)` | दोबारा चलाए जा सकने वाले iterable के साथ चलाएँ |
+| `Agent::continueRun(...)` | सहेजी या रोकी गई स्थिति से जारी रखें |
+| `Agent::continueRunById(...)` | state accessor के ज़रिए दोबारा लोड करके जारी रखें |
+| `AgentStreamResult::textStream()` | टेक्स्ट डेल्टा पढ़ें |
+| `AgentStreamResult::fullStream()` | सभी इवेंट पढ़ें |
+
+मुख्य classes में `AgentDefinition`, `RunResult`, `RunRecord`, `Tool`, `ToolDecision`, `ToolOutput`, `RuntimeContext`, `StateAccessor` और `GatewayAgentClientOptions` शामिल हैं।
+
+## संबंधित विषय
+
+- [अपना पहला एजेंट बनाएँ](./agent-sdk.mdx)
+- [Observability और DevTools](./agent-sdk-observability.mdx)

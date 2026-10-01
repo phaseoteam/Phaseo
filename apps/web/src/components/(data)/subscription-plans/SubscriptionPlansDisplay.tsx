@@ -6,15 +6,16 @@ import SubscriptionPlanCard from "./SubscriptionPlanCard";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 import type { SubscriptionPlanSummary } from "@/lib/fetchers/subscription-plans/types";
+import type { SubscriptionPlansMessages } from "@/i18n/subscription-plans";
 
 interface SubscriptionPlansDisplayProps {
 	plans: SubscriptionPlanSummary[];
-	labels?: { title: string; description?: string; search: string; empty: string };
+	labels: SubscriptionPlansMessages;
 }
 
 export default function SubscriptionPlansDisplay({
 	plans,
-	labels = { title: "Subscription Plans", search: "Search plans...", empty: "No subscription plans found for the selected filters." },
+	labels,
 }: SubscriptionPlansDisplayProps) {
 	// State for filters
 	const [search, setSearch] = useQueryState("search", {
@@ -76,6 +77,7 @@ export default function SubscriptionPlansDisplay({
 						<SubscriptionPlanCard
 							key={plan.plan_uuid}
 							plan={plan}
+							messages={labels.detail}
 						/>
 					))
 				) : (

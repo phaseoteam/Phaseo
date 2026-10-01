@@ -8,10 +8,35 @@
     "updated": "更新日：{date}",
     "moreIn": "{category} のその他の記事"
   },
+  "announcementComponents": {
+    "followPhaseo": "Phaseoをフォロー",
+    "followOn": "{platform}でPhaseoをフォロー：{handle}",
+    "joinDiscord": "Discordに参加",
+    "getStartedTitle": "Phaseoで開発を始める",
+    "getStartedDescription": "Gatewayキーを作成し、クイックスタートを実行するか、トラフィックを移行する前にモデルを比較できます。",
+    "getGatewayKey": "Gatewayキーを作成",
+    "readQuickstart": "クイックスタートを読む",
+    "browseModels": "モデルを見る",
+    "installCli": "CLIをインストール",
+    "updateCli": "CLIを更新",
+    "choosePackageManager": "パッケージマネージャーを選んで、コマンドをコピーしてください。",
+    "copyCommand": "{packageManager}のコマンドをコピー",
+    "incrementCounter": "カウントを増やす",
+    "decrementCounter": "カウントを減らす"
+  },
   "blog": {
     "title": "Phaseo ブログ",
-    "categories": { "all": "すべての記事", "announcements": "お知らせ", "guides": "ガイド", "data": "データ" },
+    "categories": {
+      "all": "すべての記事",
+      "announcements": "お知らせ",
+      "guides": "ガイド",
+      "data": "データ"
+    },
     "preview": "プレビュー",
+    "onThisPage": "このページ",
+    "tableOfContents": "目次",
+    "readPost": "記事を読む",
+    "showMore": "さらに表示",
     "pinned": "ピン留めされた記事",
     "recent": "最新の記事",
     "showAll": "すべての記事を見る",
@@ -19,6 +44,12 @@
     "emptyDescription": "新しい更新情報は公開されるとここに表示されます。",
     "emptyCategory": "このカテゴリにはまだ記事がありません。",
     "back": "ブログに戻る",
+    "readingTime": "約{minutes}分で読めます",
+    "latestFromBlog": "ブログの最新記事",
+    "noPublishedPosts": "公開されたブログ記事はまだありません。",
+    "fromJournal": "ジャーナルから",
+    "journalDescription": "製品ニュース、ガイド、リリースノート。",
+    "viewAllPosts": "すべての記事を見る",
     "englishBodyNotice": "この編集コンテンツは現在英語で提供されています。周囲のインターフェースは翻訳されていますが、意味を保つため原文の記事を表示しています。"
   },
   "roadmap": {
@@ -46,52 +77,325 @@
     "plannedFeature": "計画中の機能",
     "seeRoadmapItem": "ロードマップ項目を見る",
     "goHome": "ホームへ戻る",
-    "status": { "Planned": "計画中", "In Progress": "進行中", "Beta": "ベータ", "Shipped": "提供済み", "Ongoing": "継続中" },
+    "status": {
+      "Planned": "計画中",
+      "In Progress": "進行中",
+      "Beta": "ベータ",
+      "Shipped": "提供済み",
+      "Ongoing": "継続中"
+    },
     "milestones": {
-      "gateway": { "title": "Gateway 対応範囲の拡大", "description": "より賢いルーティングのデフォルト設定とともに、対応プロバイダー、モデル、モダリティを継続的に拡大します。" },
-      "expanded-database": { "title": "データベース対応範囲", "description": "カタログ全体でモデル、プロバイダー、料金、リリースデータの取り込みと検証を継続します。" },
-      "usage-limits": { "title": "利用上限", "description": "キーごとの支出・利用管理により、意図しない使い過ぎを抑え、チームの予算を適用します。" },
-      "guardrails": { "title": "ガードレール", "description": "gateway を通過するトラフィック全体で、安全性、ポリシー、モデレーションの管理機能を拡充します。" },
-      "privacy-settings": { "title": "プライバシー設定", "description": "Phaseo Gateway を利用するチーム向けに、より細かなプライバシーと保持期間の管理機能を提供します。" },
-      "provisioning-keys": { "title": "管理 API キー", "description": "権限の高い管理認証情報を自動で作成し、ライフサイクルを管理できるようにします。" },
-      "presets": { "title": "プリセットマーケットプレイス", "description": "本番環境で使えるプリセット設定を、より簡単に共有、発見、ワンクリックで導入できるようにします。" },
-      "anthropic-compatibility": { "title": "Anthropic 互換性", "description": "gateway の /messages エンドポイントから Anthropic Messages API 互換機能を提供します。" },
-      "organisation-page": { "title": "組織ページ", "description": "関連するモデルとメタデータを掲載した、専用の組織ページを提供します。" },
-      "model-page": { "title": "モデルページ", "description": "料金、利用可能状況、クイックスタートの詳細を掲載した、専用のモデルページを提供します。" },
-      "benchmarks": { "title": "ベンチマークページ", "description": "順位の変動とモデルごとの性能比較を確認できるベンチマークページを提供します。" },
-      "api-providers": { "title": "API プロバイダーページ", "description": "対応モデル、料金の参照情報、機能の対応範囲を掲載したプロバイダーページを提供します。" },
-      "latest-updates": { "title": "最新の更新", "description": "リリース、お知らせ、データベースの更新をまとめて確認できるストリームを提供します。" },
-      "countries-pages": { "title": "国別ページ", "description": "組織とモデルの利用状況をつなぐ、国単位のビューを提供します。" },
-      "revamped-pricing-page": { "title": "料金リファレンスの刷新", "description": "モデルとプロバイダーを中心にナビゲーションできる、より見やすい料金リファレンスを提供します。" },
-      "database-updates": { "title": "データベース更新フィード", "description": "データベースレベルで継続している変更を表示する、拡充された更新フィードを提供します。" },
-      "sources": { "title": "インラインソース", "description": "関連するモデルやプロバイダーのデータの横に、出典情報を直接表示します。" },
-      "compare": { "title": "モデル比較", "description": "料金、機能、主要なメタデータをモデル同士で並べて比較できるようにします。" }
-    }
+      "gateway": {
+        "title": "Gateway 対応範囲の拡大",
+        "description": "より賢いルーティングのデフォルト設定とともに、対応プロバイダー、モデル、モダリティを継続的に拡大します。"
+      },
+      "expanded-database": {
+        "title": "データベース対応範囲",
+        "description": "カタログ全体でモデル、プロバイダー、料金、リリースデータの取り込みと検証を継続します。"
+      },
+      "usage-limits": {
+        "title": "利用上限",
+        "description": "キーごとの支出・利用管理により、意図しない使い過ぎを抑え、チームの予算を適用します。"
+      },
+      "guardrails": {
+        "title": "ガードレール",
+        "description": "gateway を通過するトラフィック全体で、安全性、ポリシー、モデレーションの管理機能を拡充します。"
+      },
+      "privacy-settings": {
+        "title": "プライバシー設定",
+        "description": "Phaseo Gateway を利用するチーム向けに、より細かなプライバシーと保持期間の管理機能を提供します。"
+      },
+      "provisioning-keys": {
+        "title": "管理 API キー",
+        "description": "権限の高い管理認証情報を自動で作成し、ライフサイクルを管理できるようにします。"
+      },
+      "presets": {
+        "title": "プリセットマーケットプレイス",
+        "description": "本番環境で使えるプリセット設定を、より簡単に共有、発見、ワンクリックで導入できるようにします。"
+      },
+      "anthropic-compatibility": {
+        "title": "Anthropic 互換性",
+        "description": "gateway の /messages エンドポイントから Anthropic Messages API 互換機能を提供します。"
+      },
+      "organisation-page": {
+        "title": "組織ページ",
+        "description": "関連するモデルとメタデータを掲載した、専用の組織ページを提供します。"
+      },
+      "model-page": {
+        "title": "モデルページ",
+        "description": "料金、利用可能状況、クイックスタートの詳細を掲載した、専用のモデルページを提供します。"
+      },
+      "benchmarks": {
+        "title": "ベンチマークページ",
+        "description": "順位の変動とモデルごとの性能比較を確認できるベンチマークページを提供します。"
+      },
+      "api-providers": {
+        "title": "API プロバイダーページ",
+        "description": "対応モデル、料金の参照情報、機能の対応範囲を掲載したプロバイダーページを提供します。"
+      },
+      "latest-updates": {
+        "title": "最新の更新",
+        "description": "リリース、お知らせ、データベースの更新をまとめて確認できるストリームを提供します。"
+      },
+      "countries-pages": {
+        "title": "国別ページ",
+        "description": "組織とモデルの利用状況をつなぐ、国単位のビューを提供します。"
+      },
+      "revamped-pricing-page": {
+        "title": "料金リファレンスの刷新",
+        "description": "モデルとプロバイダーを中心にナビゲーションできる、より見やすい料金リファレンスを提供します。"
+      },
+      "database-updates": {
+        "title": "データベース更新フィード",
+        "description": "データベースレベルで継続している変更を表示する、拡充された更新フィードを提供します。"
+      },
+      "sources": {
+        "title": "インラインソース",
+        "description": "関連するモデルやプロバイダーのデータの横に、出典情報を直接表示します。"
+      },
+      "compare": {
+        "title": "モデル比較",
+        "description": "料金、機能、主要なメタデータをモデル同士で並べて比較できるようにします。"
+      }
+    },
+    "expected": "予定",
+    "developmentNotice": "このページは現在開発中で、頻繁に更新します。ご意見をお聞かせください。"
   },
   "migrate": {
     "title": "移行",
     "description": "OpenRouter、Vercel AI Gateway、Requesty、LLMGateway、OpenAI 互換ライブラリから Phaseo Gateway へ移行するためのインタラクティブなガイドです。",
     "heading": "移行アシスタント",
     "intro": "現在の構成を選択すると、最適な移行ガイドが表示されます。",
-    "englishBodyNotice": "この移行ガイドは現在英語で提供されています。周囲のインターフェースは翻訳されていますが、技術的な正確さを保つため原文のガイドを表示しています。"
+    "ui": {
+      "breadcrumb": "パンくずリスト",
+      "backToAllGuides": "すべての移行ガイドに戻る",
+      "readTime": "約{minutes}分で読めます",
+      "updatedAt": "更新日：{date}",
+      "tryPhaseo": "Phaseoを試す",
+      "comparePhaseoOpenRouter": "PhaseoとOpenRouterを比較",
+      "prerequisites": "事前準備",
+      "checklist": "チェックリスト",
+      "validationSteps": "検証手順",
+      "faqHeading": "よくある質問",
+      "migrationResources": "移行に役立つ資料",
+      "openrouterCtaTitle": "移行をお任せください。",
+      "customMigrationCtaTitle": "個別の移行差分が必要ですか？",
+      "openrouterCtaBody": "お問い合わせください。エンドポイントの切り替え、モデルの確認、移行レビューを含め、OpenRouter連携からPhaseoへの移行を無料で支援します。",
+      "customMigrationCtaBody": "対話型アシスタントで、現在のSDKと言語に合わせた変更前後のコード例を作成できます。",
+      "getFreeMigrationHelp": "無料の移行支援を依頼",
+      "openMigrationAssistant": "移行アシスタントを開く"
+    },
+    "agentPrompt": {
+      "codingAgents": "コーディングエージェント向け",
+      "title": "この指示をコーディングエージェントに渡す",
+      "description": "OpenRouterをフォールバックとして残さず削除したい場合は、この内容をエージェントに貼り付けます。保守されているスキルへのリンクと、移行完了の条件が含まれています。",
+      "copied": "コピーしました",
+      "copyPrompt": "プロンプトをコピー",
+      "readSkill": "移行スキルを読む"
+    },
+    "englishBodyNotice": "この移行ガイドは現在英語で提供されています。周囲のインターフェースは翻訳されていますが、技術的な正確さを保つため原文のガイドを表示しています。",
+    "assistant": {
+      "stepLabel": "ステップ {number}",
+      "sourceQuestion": "どこから移行しますか？",
+      "chooseSource": "続行するには移行元を選択してください。",
+      "selectSourcePrompt": "現在の移行元を選択すると、次の選択肢が表示されます。",
+      "reviewChanges": "変更内容を確認",
+      "split": "分割表示",
+      "diff": "差分",
+      "startOver": "最初からやり直す",
+      "beforeAndAfter": "移行前と移行後",
+      "comparisonDescription": "現在の連携とPhaseo版を比較するか、差分表示に切り替えてください。",
+      "before": "移行前",
+      "after": "移行後",
+      "keyChanges": "主な変更点",
+      "fullGuidePrompt": "{source} から移行する場合は、詳しい手順ガイドをご覧ください。",
+      "readFullGuide": "完全版ガイドを読む",
+      "snippetNoSdk": "SDKが設定されていません",
+      "sourceLabels": {
+        "compatibleLibraries": "OpenAI互換ライブラリ",
+        "gettingStarted": "初めての方"
+      },
+      "sourceDescriptions": {
+        "openaiSdk": "現在、OpenAI公式SDKを使用しています。",
+        "anthropicSdk": "Anthropicのクライアントライブラリを使用しています。",
+        "openrouter": "OpenRouter経由でリクエストをルーティングしています。",
+        "vercelAi": "Vercel AI GatewayまたはAI SDKのプロバイダースタックを使用しています。",
+        "requesty": "OpenAI互換ゲートウェイとしてRequestyを使用しています。",
+        "llmGateway": "OpenAI互換エンドポイントとしてLLMGatewayを使用しています。",
+        "compatibleLibraries": "OpenAI互換のSDKまたはREST連携を使用しています。",
+        "gettingStarted": "最短の手順でゼロから設定できます。"
+      },
+      "prompts": {
+        "openaiSdk": "どのOpenAI SDKを使用していますか？",
+        "anthropicSdk": "どのAnthropic SDKを使用していますか？",
+        "openrouter": "現在、OpenRouterをどのように呼び出していますか？",
+        "vercelAi": "現在、Vercelとどのように連携していますか？",
+        "requesty": "現在、Requestyをどのように呼び出していますか？",
+        "llmGateway": "現在、LLMGatewayをどのように呼び出していますか？",
+        "environment": "環境を選択してください。",
+        "integration": "希望する連携方法を選択してください。"
+      },
+      "options": {
+        "keepOpenAiClient": "OpenAIクライアントを維持し、ベースURLを切り替えます。",
+        "keepAnthropicClient": "Anthropicクライアントを使い続け、ベースURLを変更します。",
+        "pointPythonSdk": "Python SDKの接続先をPhaseoにします。",
+        "switchRestToGateway": "RESTリクエストをGateway経由に切り替えます。",
+        "switchVercelProvider": "Vercel/OpenAIプロバイダーファクトリーを公式Phaseoプロバイダーに置き換えます。",
+        "restAnyRuntime": "任意のランタイムでRESTリクエストを使用できます。",
+        "swapEnvironmentAndBaseUrl": "クライアントを維持し、環境変数とベースURLを切り替えます。",
+        "openAiPythonSettings": "OpenAI Pythonクライアントの設定をPhaseo向けに使用します。",
+        "switchRestToPhaseo": "RESTリクエストをPhaseo Gatewayに切り替えます。",
+        "openAiCompatibleConfiguration": "OpenAI SDK互換の設定を使用します。",
+        "openAiPythonWithPhaseo": "OpenAI PythonクライアントをPhaseoで使用します。",
+        "callGatewayDirectly": "Gatewayを直接呼び出します。",
+        "typedSdk": "ヘルパー付きの完全な型定義クライアントです。",
+        "asyncPythonSdk": "非同期処理を優先したPythonクライアントです。",
+        "fastestRequest": "リクエストを最速で送信できます。"
+      },
+      "steps": {
+        "useApiKey": "Phaseo APIキーを使用",
+        "createApiKey": "Phaseoダッシュボードでキーを作成し、PHASEO_API_KEYとして保存します。",
+        "setBaseUrlTitle": "ベースURLをPhaseoに向ける",
+        "setBaseUrlDescription": "ベースURLを{baseUrl}に設定します。",
+        "keepPayloadTitle": "リクエスト内容はそのまま",
+        "keepPayloadDescription": "モデルの選択とメッセージの内容は変更されません。",
+        "authorizationHeaderTitle": "Authorizationヘッダーを送信",
+        "authorizationHeaderDescription": "すべてのリクエストにAuthorization: Bearer <key>を追加します。"
+      },
+      "changeTitles": {
+        "useGatewayKey": "Phaseo Gatewayキーを使用",
+        "routeThroughPhaseo": "リクエストをPhaseo経由にする",
+        "updateModelIds": "モデルIDを更新",
+        "switchAiSdk": "Phaseo AI SDKプロバイダーに切り替え"
+      },
+      "changes": {
+        "replaceOpenAiKey": "PhaseoダッシュボードのPHASEO_API_KEYに置き換えます。",
+        "replaceAnthropicKey": "PhaseoダッシュボードのPHASEO_API_KEYに置き換えます。",
+        "setSdkKey": "SDKクライアント用に、PhaseoダッシュボードのPHASEO_API_KEYを設定します。",
+        "sendAuthorization": "すべてのリクエストでAuthorization: Bearer YOUR_API_KEYを送信します。",
+        "replaceVercelProvider": "Vercel OpenAIプロバイダーファクトリーを@phaseo/ai-sdk-providerのcreatePhaseo(...)に置き換えます。",
+        "routeBaseUrl": "baseURLを{baseUrl}に設定し、トラフィックをGateway経由にします。",
+        "routeBaseUrlPython": "base_urlを{baseUrl}に設定し、トラフィックをGateway経由にします。",
+        "routeRest": "リクエストを{endpoint}に送信します。",
+        "openAiModelIds": "{modelId}などのPhaseoモデルIDを使用します。各モデルのクイックスタートで確認できます。",
+        "anthropicModelIds": "{modelId}などのPhaseoモデルIDを使用します。各モデルのクイックスタートで確認できます。"
+      },
+      "docs": {
+        "apiReference": "APIリファレンス",
+        "apiReferenceDescription": "エンドポイント、認証、エラー形式。",
+        "quickstart": "クイックスタート",
+        "quickstartDescription": "数分で最初のGateway呼び出しを実行できます。",
+        "toolCalling": "ツール呼び出し",
+        "toolCallingDescription": "ツール、tool_choice、関数ルーティング。",
+        "structuredOutputs": "構造化出力",
+        "structuredOutputsDescription": "制約付きのスキーマ固定レスポンス。",
+        "featureParity": "機能パリティ表",
+        "featureParityDescription": "インターフェースと競合サービスごとのGateway移行機能。",
+        "parityReview": "Gatewayパリティレビュー",
+        "parityReviewDescription": "実装済みと未対応の機能パリティ項目をリポジトリに基づいて確認します。"
+      },
+      "docsHeading": "ドキュメント"
+    }
   },
   "worksWith": {
     "title": "Phaseo 対応アプリ",
     "description": "Phaseo Gateway で構築されたアプリや統合機能をご覧ください。本番ツール、オープンソースプロジェクト、さまざまなワークフローやチームから生まれたコミュニティの取り組みを紹介しています。",
     "intro": "Phaseo Gateway を利用するアプリ、ツール、統合機能をご覧ください。チームは Phaseo のルーティング、料金、モデルアクセスを基盤に構築でき、ユーザーは自分の Phaseo API キーを利用できます。",
-    "community": "コミュニティ", "submitApp": "アプリを登録", "contribute": "Phaseo に貢献する",
-    "emptyTitle": "アプリはまだありません", "emptyDescription": "この一覧はコミュニティからの登録を受け付けています。最初のアプリを追加してください。", "addApp": "アプリを追加",
-    "added": "追加日：{date}", "visitSite": "サイトを見る", "setupDocs": "セットアップドキュメント", "openSource": "オープンソース",
-    "contributing": "貢献する", "contributingDescription": "以下の手順に従って、Phaseo 対応アプリの一覧にアプリを追加してください。", "requirements": "要件",
-    "tags": { "chat": "チャット", "coding": "コーディング", "productivity": "生産性", "creative": "クリエイティブ", "research": "リサーチ", "other": "その他" }
+    "community": "コミュニティ",
+    "submitApp": "アプリを登録",
+    "contribute": "Phaseo に貢献する",
+    "emptyTitle": "アプリはまだありません",
+    "emptyDescription": "この一覧はコミュニティからの登録を受け付けています。最初のアプリを追加してください。",
+    "addApp": "アプリを追加",
+    "added": "追加日：{date}",
+    "visitSite": "サイトを見る",
+    "setupDocs": "セットアップドキュメント",
+    "openSource": "オープンソース",
+    "contributing": "貢献する",
+    "contributingDescription": "以下の手順に従って、Phaseo 対応アプリの一覧にアプリを追加してください。",
+    "requirements": "要件",
+    "tags": {
+      "chat": "チャット",
+      "coding": "コーディング",
+      "productivity": "生産性",
+      "creative": "クリエイティブ",
+      "research": "リサーチ",
+      "other": "その他"
+    },
+    "appLogoAlt": "{app} のロゴ",
+    "requirementModelAccess": "AI モデルへのアクセスに Phaseo を使用してください。",
+    "requirementBringOwnKey": "ユーザーが自分の Phaseo API キーを使えるようにしてください。",
+    "requirementPublicAccess": "アプリを一般公開するか、公開ランディングページを用意してください。",
+    "requirementLogo": "ロゴ画像を用意してください。",
+    "howToSubmit": "登録方法",
+    "forkRepository": "このリポジトリをフォークします。",
+    "addCatalogEntry": "アプリの項目を次のファイルに追加します：",
+    "addLogo": "ロゴを次の場所に追加します：",
+    "submitPullRequest": "プルリクエストを送信します。",
+    "entryFormat": "項目の形式",
+    "validTags": "有効なタグ",
+    "questions": "ご質問はありますか？",
+    "questionHelp": "質問や登録のサポートが必要な場合は、issue を作成してください。"
   },
   "acknowledgements": {
-    "title": "謝辞", "description": "Phaseo が依存し、そこから学んでいるオープンソースプロジェクト、プラットフォーム、デザインの取り組みを紹介します。",
-    "heading": "多くの人の仕事によって築かれています。", "intro": "Phaseo はオープンソースソフトウェア、思慮深いデザイン、信頼できるインフラの上に成り立っています。このページでは、私たちが作るものに大きな影響を与えているプロジェクトとチームを紹介します。",
-    "thanks": "Phaseo を可能にしているすべてのメンテナー、コントリビューター、研究者、デザイナーに感謝します。", "howUsed": "Phaseo での利用方法", "disclaimer": "これは管理対象の製品謝辞であり、完全なソフトウェア部品表やライセンス通知ではありません。パッケージごとの著作権およびライセンス条件は、それぞれのプロジェクトに帰属します。", "continue": "続行", "review": "確認", "accessibleStates": "アクセシブルな状態", "streamingResponse": "ストリーミングレスポンス", "searchExample": "検索例"
+    "title": "謝辞",
+    "description": "Phaseo が依存し、そこから学んでいるオープンソースプロジェクト、プラットフォーム、デザインの取り組みを紹介します。",
+    "heading": "多くの人の仕事によって築かれています。",
+    "intro": "Phaseo はオープンソースソフトウェア、思慮深いデザイン、信頼できるインフラの上に成り立っています。このページでは、私たちが作るものに大きな影響を与えているプロジェクトとチームを紹介します。",
+    "thanks": "Phaseo を可能にしているすべてのメンテナー、コントリビューター、研究者、デザイナーに感謝します。",
+    "howUsed": "Phaseo での利用方法",
+    "disclaimer": "これは管理対象の製品謝辞であり、完全なソフトウェア部品表やライセンス通知ではありません。パッケージごとの著作権およびライセンス条件は、それぞれのプロジェクトに帰属します。",
+    "continue": "続行",
+    "review": "確認",
+    "accessibleStates": "アクセシブルな状態",
+    "streamingResponse": "ストリーミングレスポンス",
+    "searchExample": "検索例",
+    "createdBy": "作成者: {name}",
+    "reliableGateway": "信頼性の高いゲートウェイ",
+    "routeByHealthPriceCapability": "稼働状況、価格、機能に基づいてルーティング",
+    "orbWorking": "処理中",
+    "orbSearching": "検索中",
+    "orbSolving": "解決中",
+    "orbComposing": "作成中",
+    "orbLabel": "{state}のオーブ",
+    "groups": {
+      "interface": { "label": "インターフェース", "description": "Phaseoのウェブ体験と操作言語を支える基盤です。" },
+      "aiExperience": { "label": "AI体験", "description": "モデルの出力を配信、描画、説明するためにPhaseoが利用するプロジェクトです。" },
+      "platform": { "label": "プラットフォーム", "description": "Phaseoを安定して運用するためのインフラとサービスです。" },
+      "productIntelligence": { "label": "プロダクト分析", "description": "リリース、信頼性、プロダクトの動作を理解するためのツールです。" }
+    },
+    "items": {
+      "react": { "description": "Phaseoのインタラクティブなプロダクト画面を支える、宣言的なコンポーネントと状態のモデルです。", "usedFor": "チャット、モデル比較、設定、オブザーバビリティなど、状態を持つすべての画面をReactコンポーネントで構成しています。" },
+      "nextjs": { "description": "サーバー描画、ルーティング、メタデータ、キャッシュ、クライアント操作を統合するアプリケーションフレームワークです。", "usedFor": "公開カタログ、認証済みワークスペース、APIブリッジ、このページはすべて同じApp Routerアプリケーションを共有しています。" },
+      "tailwind": { "description": "影響を受けるコンポーネントの近くでデザインを調整できる、ユーティリティベースのスタイリングシステムです。", "usedFor": "レスポンシブレイアウト、タイポグラフィ、色、動き、ダークモードを共通のデザイントークンとユーティリティで表現します。" },
+      "baseUi": { "description": "最終的なビジュアルデザインを押し付けずに堅牢な動作を提供する、オープンなコンポーネントパターンとアクセシブルなヘッドレスプリミティブです。", "usedFor": "Phaseoのダイアログ、メニュー、ツールチップ、ボタン、セレクター、キーボード操作はこれらの基盤を利用しています。" },
+      "lucide": { "description": "プロダクトインターフェースで幅広く使える、一貫性があり読み取りやすいアイコンファミリーです。", "usedFor": "テキストだけでは分かりにくいナビゲーション、モデル操作、リクエスト状況、設定、コンパクトな操作部をアイコンで分かりやすくします。" },
+      "thinkingOrbs": { "description": "汎用的なスピナーに頼らず、バックグラウンド作業の状態を見せるよう丁寧に調整されたCanvasアニメーションです。", "usedFor": "Phaseo Chatでは、送信やキュー登録中の作業状態と、アシスタントが回答を準備している間の作成状態を表示します。" },
+      "streamdown": { "description": "トークン単位で届く未完成のテキスト向けに設計されたMarkdownレンダラーです。", "usedFor": "回答の配信中に最終文書を待たず、見出し、リスト、リンク、コード、数式を表示できます。" },
+      "shiki": { "description": "TextMate互換の構文ハイライターで、エディター品質の文法サポートを使ってコードを表示します。", "usedFor": "モデルの回答に含まれるコードは、技術的な比較やデバッグ中も、言語やテーマを問わず読みやすく表示されます。" },
+      "cloudflare": { "description": "エッジコンピューティング、永続的な調整、ストレージ、ネットワーク、セキュリティを備えたグローバルなアプリケーションプラットフォームです。", "usedFor": "Phaseoのゲートウェイと関連APIはWorkersなどのサービスを使い、利用者の近くで実行しながら長時間の処理を調整します。" },
+      "supabase": { "description": "認証、ストレージ、リアルタイム機能、開発者向けツールを備えたPostgresプラットフォームです。", "usedFor": "Phaseoはアカウントの識別と、ワークスペース、利用状況、クレジット、ゲートウェイ設定などの永続的なリレーショナルデータにSupabaseを利用しています。" },
+      "vercel": { "description": "Next.jsと最新のウェブ配信に最適化された、デプロイとアプリケーションのインフラです。", "usedFor": "PhaseoのウェブサイトはVercelでビルド、プレビュー、配信され、非公開APIを通じてプラットフォーム全体と接続します。" },
+      "hono": { "description": "最新のJavaScriptランタイム向けに設計された、小規模で標準準拠のウェブフレームワークです。", "usedFor": "PhaseoのCloudflare Workers API全体でルーティング、ミドルウェア、型付きリクエスト処理を提供します。" },
+      "stripe": { "description": "安全な決済、支払い方法、請求書、請求イベントのための決済インフラです。", "usedFor": "顧客がPhaseoクレジットを購入・管理する際の金融取引をStripeが処理します。" },
+      "posthog": { "description": "イベント、ファネル、セッション診断、機能の動作を分析するオープンなプロダクト分析プラットフォームです。", "usedFor": "Phaseoは測定したプロダクトのシグナルで信頼性を把握し、直感を根拠とみなすことなく操作フローを改善します。" },
+      "statsig": { "description": "機能管理と実験を通じて、プロダクトの変更を制御しながら提供するプラットフォームです。", "usedFor": "機能ゲートを使うことで変更を段階的に導入して結果を比較でき、展開に予期しない問題が起きてもすばやく復旧できます。" }
+    }
   },
   "contribute": {
-    "title": "貢献する", "description": "Phaseo を支えるコントリビューターとスポンサーを紹介し、コミュニティのプロフィールや貢献履歴を確認できます。参加、スポンサー、プラットフォーム改善の方法もわかりやすく案内します。",
-    "heading": "コントリビューターとスポンサー", "intro": "私たちはオープンに開発しています。この一覧には Phaseo リポジトリに貢献したすべての人と、GitHub Sponsors を通じて開発を支援している人が掲載されています。素晴らしい人たちです！", "contributors": "リポジトリのコントリビューター", "contributorCount": "{count} 人のコントリビューター", "sponsors": "スポンサー", "listed": "{count} 件を掲載"
+    "title": "貢献する",
+    "description": "Phaseo を支えるコントリビューターとスポンサーを紹介し、コミュニティのプロフィールや貢献履歴を確認できます。参加、スポンサー、プラットフォーム改善の方法もわかりやすく案内します。",
+    "heading": "コントリビューターとスポンサー",
+    "intro": "私たちはオープンに開発しています。この一覧には Phaseo リポジトリに貢献したすべての人と、GitHub Sponsors を通じて開発を支援している人が掲載されています。素晴らしい人たちです！",
+    "contributors": "リポジトリのコントリビューター",
+    "contributorCount": "{count} 人のコントリビューター",
+    "sponsors": "スポンサー",
+    "listed": "{count} 件を掲載",
+    "contributorExportPending": "コントリビューターのデータを準備しています。エクスポート処理を開始するか、しばらくしてから再度ご確認ください。",
+    "commitCount": "{count} 件のコミット",
+    "communityContributor": "コミュニティのコントリビューター",
+    "sponsorListEmpty": "スポンサーはまだ登録されていません。コミュニティに参加すると、まもなくここに名前が表示されます。",
+    "viewProfile": "プロフィールを表示",
+    "linkUnavailable": "リンクを利用できません"
   }
 }

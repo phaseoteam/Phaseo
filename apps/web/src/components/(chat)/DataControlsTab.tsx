@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef } from "react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Upload, Download } from "lucide-react";
 import { upsertChat } from "@/lib/indexeddb/chats";
@@ -12,6 +13,7 @@ type DataControlsTabProps = {
 
 export function DataControlsTab({ onExportChats }: DataControlsTabProps) {
 	const fileInputRef = useRef<HTMLInputElement>(null);
+	const t = useTranslations("Product.chat.dataControls");
 
 	const handleImportChats = async (event: React.ChangeEvent<HTMLInputElement>) => {
 		const file = event.target.files?.[0];
@@ -22,7 +24,7 @@ export function DataControlsTab({ onExportChats }: DataControlsTabProps) {
 			const data = JSON.parse(text);
 
 			if (!data.chats || !Array.isArray(data.chats)) {
-				throw new Error("Invalid file format. Expected { chats: [...] }");
+				throw new Error(t("invalidFileFormat"));
 			}
 
 			const chats: ChatThread[] = data.chats;
@@ -30,7 +32,7 @@ export function DataControlsTab({ onExportChats }: DataControlsTabProps) {
 			// Validate each chat has required fields
 			for (const chat of chats) {
 				if (!chat.id || !chat.title || !chat.modelId || !chat.createdAt || !chat.updatedAt || !Array.isArray(chat.messages) || !chat.settings) {
-					throw new Error("Invalid chat data structure");
+					throw new Error(t("invalidChatData"));
 				}
 			}
 
@@ -39,13 +41,20 @@ export function DataControlsTab({ onExportChats }: DataControlsTabProps) {
 				await upsertChat(chat);
 			}
 
-			alert(`Successfully imported ${chats.length} chats`);
+			alert(t("importSuccess", { count: chats.length }));
 
 			// Refresh the page to show imported chats
 			window.location.reload();
 		} catch (error) {
 			console.error("Import error:", error);
-			alert(`Failed to import chats: ${error instanceof Error ? error.message : "Unknown error"}`);
+			const message =
+				error instanceof Error &&
+				(error.message === t("invalidFileFormat") || error.message === t("invalidChatData"))
+					? error.message
+					: t("unknownError");
+			alert(t("importFailure", {
+				message,
+			}));
 		}
 
 		// Reset the input
@@ -62,7 +71,7 @@ export function DataControlsTab({ onExportChats }: DataControlsTabProps) {
 				onClick={onExportChats}
 			>
 				<Download className="mr-2 h-4 w-4" />
-				Export Chats
+				{t("exportChats")}
 			</Button>
 			<Button
 				variant="ghost"
@@ -70,7 +79,7 @@ export function DataControlsTab({ onExportChats }: DataControlsTabProps) {
 				onClick={() => fileInputRef.current?.click()}
 			>
 				<Upload className="mr-2 h-4 w-4" />
-				Import Chats
+				{t("importChats")}
 			</Button>
 			<input
 				ref={fileInputRef}

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
+import { useTranslations } from "next-intl";
 import remarkGfm from "remark-gfm";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -14,6 +15,7 @@ interface ModelDescriptionPanelProps {
 export default function ModelDescriptionPanel({
 	description,
 }: ModelDescriptionPanelProps) {
+	const t = useTranslations("Catalogue.models.detail.actions");
 	const [expanded, setExpanded] = useState(false);
 	const descriptionRef = useRef<HTMLDivElement>(null);
 	const [canExpand, setCanExpand] = useState(false);
@@ -59,7 +61,7 @@ export default function ModelDescriptionPanel({
 					className="mt-2 h-7 px-1 text-xs text-muted-foreground"
 					onClick={() => setExpanded((current) => !current)}
 				>
-					{expanded ? "Show less" : "Show full"}
+					{expanded ? t("showLessDescription") : t("showFullDescription")}
 				</Button>
 			) : null}
 		</div>

@@ -1,0 +1,19 @@
+---
+icon: "music"
+title: "TTS (texto para fala)"
+description: "Chame /audio/speech com o SDK Python."
+---
+
+**Método**: `client.generate_speech()`
+
+```python
+result = client.generate_speech({
+    "model": "openai/gpt-4o-mini-tts",
+    "input": "Hello world",
+    "voice": "alloy",
+    "format": "mp3",
+})
+
+print(result)
+```
+

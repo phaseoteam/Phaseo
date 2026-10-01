@@ -1,23 +1,21 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
+import type { RuntimeLocale } from "@/i18n/locales";
 import { buildMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = buildMetadata({
-	title: "AI Updates - Latest AI Model, Web & YouTube Changes",
-	description:
-		"Stay up to date with the latest in AI. See new model launches, deprecations, research drops, data hubs, and YouTube explainers aggregated by Phaseo from across the ecosystem.",
-	path: "/updates",
-	keywords: [
-		"AI updates",
-		"AI news",
-		"new AI models",
-		"AI changelog",
-		"model launches",
-		"AI research updates",
-		"YouTube AI releases",
-		"Phaseo",
-	],
-});
+export async function generateMetadata(props: {
+	params: Promise<{ locale: RuntimeLocale }>;
+}): Promise<Metadata> {
+	const { locale } = await props.params;
+	const t = await getTranslations({ locale, namespace: "Catalogue.updatesMetadata" });
+	return buildMetadata({
+		title: t("modelTitle"),
+		description: t("modelDescription"),
+		path: "/updates",
+		keywords: ["AI updates", "AI news", "model releases", "AI research", "Phaseo"],
+	});
+}
 
 export default function Page() {
 	redirect("/updates/models");

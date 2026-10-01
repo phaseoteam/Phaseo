@@ -17,6 +17,7 @@ import { Card } from "@/components/ui/card";
 import { AlertTriangle, Copy, Check } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslations } from "next-intl";
+import { localizedSettingsError } from "@/i18n/error-messages";
 
 interface RegenerateSecretDialogProps {
 	clientId: string;
@@ -47,7 +48,7 @@ export default function RegenerateSecretDialog({
 			const result = await regenerateClientSecretAction(clientId);
 
 			if (result.error) {
-				setError(result.error);
+				setError(localizedSettingsError(result.error, t, "Failed to regenerate secret"));
 				return;
 			}
 
@@ -57,7 +58,7 @@ export default function RegenerateSecretDialog({
 
 			router.refresh();
 		} catch (err: any) {
-			setError(err.message || t("strings.Failed to regenerate secret" as never));
+			setError(localizedSettingsError(err, t, "Failed to regenerate secret"));
 		} finally {
 			setLoading(false);
 		}
@@ -143,8 +144,8 @@ export default function RegenerateSecretDialog({
 				<DialogHeader>
 					<DialogTitle>{t("strings.Regenerate Client Secret?" as never)}</DialogTitle>
 					<DialogDescription>
-						This will invalidate the current secret for <strong>{appName}</strong>.
-						Any apps using the old secret will stop working.
+						{t("oauthCopy.invalidatesCurrentSecret", { appName })}
+						{t("oauthCopy.oldSecretWarning")}
 					</DialogDescription>
 				</DialogHeader>
 

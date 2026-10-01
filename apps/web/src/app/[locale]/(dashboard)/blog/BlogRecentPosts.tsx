@@ -6,6 +6,7 @@ import { ArrowUpRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useTranslations } from "next-intl";
 
 type BlogRecentPost = {
 	slug: string;
@@ -24,10 +25,10 @@ type BlogRecentPostsProps = {
 const DEFAULT_RECENT_COUNT = 5;
 const RECENT_COUNT_STEP = 5;
 
-function PreviewBadge() {
+function PreviewBadge({ label }: { label: string }) {
 	return (
 		<Badge className="rounded-full border-amber-300 bg-amber-100 text-[11px] font-semibold text-amber-900 hover:bg-amber-100 dark:border-amber-500/40 dark:bg-amber-500/15 dark:text-amber-200">
-			Preview
+			{label}
 		</Badge>
 	);
 }
@@ -67,7 +68,15 @@ function PostMeta({ post }: { post: BlogRecentPost }) {
 	);
 }
 
-function LatestPostRow({ post }: { post: BlogRecentPost }) {
+function LatestPostRow({
+	post,
+	previewLabel,
+	readPostLabel,
+}: {
+	post: BlogRecentPost;
+	previewLabel: string;
+	readPostLabel: string;
+}) {
 	return (
 		<Link
 			href={`/blog/${post.slug}`}
@@ -80,13 +89,13 @@ function LatestPostRow({ post }: { post: BlogRecentPost }) {
 				/>
 				{post.isPreview ? (
 					<div className="absolute left-2 top-2">
-						<PreviewBadge />
+						<PreviewBadge label={previewLabel} />
 					</div>
 				) : null}
 			</div>
 			<div className="flex min-w-0 flex-col justify-center gap-3 py-1 sm:py-2">
 				<div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-zinc-500 dark:text-zinc-400">
-					<span>{post.isPreview ? "Preview" : post.categoryLabel}</span>
+					<span>{post.isPreview ? previewLabel : post.categoryLabel}</span>
 					<PostMeta post={post} />
 				</div>
 				<div className="space-y-2">
@@ -98,7 +107,7 @@ function LatestPostRow({ post }: { post: BlogRecentPost }) {
 					</p>
 				</div>
 				<div className="flex items-center gap-2 text-sm font-medium text-zinc-950 dark:text-zinc-50">
-					Read post
+					{readPostLabel}
 					<ArrowUpRight className="h-4 w-4 transition group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
 				</div>
 			</div>
@@ -107,6 +116,7 @@ function LatestPostRow({ post }: { post: BlogRecentPost }) {
 }
 
 export function BlogRecentPosts({ posts }: BlogRecentPostsProps) {
+	const t = useTranslations("Content.blog");
 	const [visiblePostCount, setVisiblePostCount] = useState(DEFAULT_RECENT_COUNT);
 	const visiblePosts = posts.slice(0, visiblePostCount);
 	const hasMorePosts = visiblePostCount < posts.length;
@@ -115,7 +125,12 @@ export function BlogRecentPosts({ posts }: BlogRecentPostsProps) {
 		<>
 			<div className="space-y-3">
 				{visiblePosts.map((post) => (
-					<LatestPostRow key={post.slug} post={post} />
+					<LatestPostRow
+						key={post.slug}
+						post={post}
+						previewLabel={t("preview")}
+						readPostLabel={t("readPost")}
+					/>
 				))}
 			</div>
 			{hasMorePosts ? (
@@ -131,7 +146,7 @@ export function BlogRecentPosts({ posts }: BlogRecentPostsProps) {
 							)
 						}
 					>
-						Show more
+						{t("showMore")}
 					</Button>
 				</div>
 			) : null}

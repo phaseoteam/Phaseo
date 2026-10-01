@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useEffect, useMemo, useRef } from "react";
 import {
 	Table,
@@ -49,6 +50,9 @@ export function AuditDataTable({
 	data,
 	loading = false,
 }: AuditDataTableProps) {
+	const tUi = useTranslations("Common.ui");
+	const tAccessibility = useTranslations("Common.accessibility");
+	const tAudit = useTranslations("Common.ui.auditDataTable");
 	const [searchQuery] = useQueryState("search", {
 		defaultValue: "",
 		parse: (value) => value || "",
@@ -497,10 +501,10 @@ export function AuditDataTable({
 						<TableHeader>
 							<TableRow className="bg-background">
 								<TableHead className="bg-background w-20 border border-gray-200 shadow-sm sticky left-0 z-10">
-									<div className="font-semibold">Actions</div>
+									<div className="font-semibold">{tAudit("actions")}</div>
 								</TableHead>
 								<TableHead className="bg-background min-w-16 border border-gray-200 shadow-sm">
-									<div className="font-semibold">Model ID</div>
+									<div className="font-semibold">{tAudit("modelId")}</div>
 								</TableHead>
 								<TableHead className="bg-background min-w-48 border border-gray-200 shadow-sm">
 									<Button
@@ -508,7 +512,7 @@ export function AuditDataTable({
 										onClick={() => handleSort("modelName")}
 										className="h-auto p-0 font-semibold"
 									>
-										Model Name {getSortIcon("modelName")}
+											{tAudit("modelName")} {getSortIcon("modelName")}
 									</Button>
 								</TableHead>
 								<TableHead className="bg-background min-w-32 border border-gray-200 shadow-sm">
@@ -519,7 +523,7 @@ export function AuditDataTable({
 										}
 										className="h-auto p-0 font-semibold"
 									>
-										Organization{" "}
+											{tAudit("organization")}{" "}
 										{getSortIcon("organisationName")}
 									</Button>
 								</TableHead>
@@ -529,12 +533,12 @@ export function AuditDataTable({
 										onClick={() => handleSort("totalProviders")}
 										className="h-auto p-0 font-semibold"
 									>
-										Providers {getSortIcon("totalProviders")}
+											{tAudit("providers")} {getSortIcon("totalProviders")}
 									</Button>
 								</TableHead>
 								<TableHead className="bg-background min-w-40 border border-gray-200 shadow-sm">
 									<div className="font-semibold">
-										Provider Details
+											{tAudit("providerDetails")}
 									</div>
 								</TableHead>
 								<TableHead className="bg-background min-w-24 text-center border border-gray-200 shadow-sm">
@@ -545,7 +549,7 @@ export function AuditDataTable({
 										}
 										className="h-auto p-0 font-semibold"
 									>
-										Gateway Status {getSortIcon("isActiveOnGateway")}
+											{tAudit("gatewayStatus")} {getSortIcon("isActiveOnGateway")}
 									</Button>
 								</TableHead>
 								<TableHead className="bg-background min-w-20 text-center border border-gray-200 shadow-sm">
@@ -556,7 +560,7 @@ export function AuditDataTable({
 										}
 										className="h-auto p-0 font-semibold"
 									>
-										Benchmarks {getSortIcon("benchmarkCount")}
+											{tAudit("benchmarks")} {getSortIcon("benchmarkCount")}
 									</Button>
 								</TableHead>
 								<TableHead className="bg-background min-w-24 text-center border border-gray-200 shadow-sm">
@@ -565,7 +569,7 @@ export function AuditDataTable({
 										onClick={() => handleSort("pricingRulesCount")}
 										className="h-auto p-0 font-semibold"
 									>
-										Pricing Coverage {getSortIcon("pricingRulesCount")}
+											{tAudit("pricingCoverage")} {getSortIcon("pricingRulesCount")}
 									</Button>
 								</TableHead>
 								<TableHead className="bg-background min-w-24 text-center border border-gray-200 shadow-sm">
@@ -574,7 +578,7 @@ export function AuditDataTable({
 										onClick={() => handleSort("releaseDate")}
 										className="h-auto p-0 font-semibold"
 									>
-										Release Date{" "}
+										{tAudit("releaseDate")}{" "}
 										{getSortIcon("releaseDate")}
 									</Button>
 								</TableHead>
@@ -586,7 +590,7 @@ export function AuditDataTable({
 										}
 										className="h-auto p-0 font-semibold"
 									>
-										Retirement Date{" "}
+										{tAudit("retirementDate")}{" "}
 										{getSortIcon("retirementDate")}
 									</Button>
 								</TableHead>
@@ -599,7 +603,7 @@ export function AuditDataTable({
 										colSpan={11}
 										className="text-center py-8 border border-gray-200"
 									>
-										Loading...
+										{tAudit("loading")}
 									</TableCell>
 								</TableRow>
 							) : filteredSortedData.length === 0 ? (
@@ -608,7 +612,7 @@ export function AuditDataTable({
 										colSpan={11}
 										className="text-center py-8 border border-gray-200"
 									>
-										No models match the current search
+										{tAudit("noModelsMatch")}
 									</TableCell>
 								</TableRow>
 							) : (
@@ -620,76 +624,45 @@ export function AuditDataTable({
 														variant="ghost"
 														className="h-8 w-8 p-0" />}>
 
-														<span className="sr-only">
-															Open menu
-														</span>
+														<span className="sr-only">{tUi("actions.openMenu")}</span>
 														<MoreHorizontal className="h-4 w-4" />
 
 												</DropdownMenuTrigger>
 												<DropdownMenuContent align="start">
 													<DropdownMenuLabel>
-														Actions
+													{tAudit("actions")}
 													</DropdownMenuLabel>
 													<DropdownMenuItem render={<Link
 															href={`/internal/data/models/edit/${item.modelId}?tab=basic`}
-															className="cursor-pointer" />}>
-
-															Edit Basic
-
-													</DropdownMenuItem>
+															className="cursor-pointer" />}>{tUi("actions.editBasic")}</DropdownMenuItem>
 													<DropdownMenuItem render={<Link
 															href={`/internal/data/models/edit/${item.modelId}?tab=details`}
-															className="cursor-pointer" />}>
-
-															Edit Details
-
-													</DropdownMenuItem>
+															className="cursor-pointer" />}>{tUi("actions.editDetails")}</DropdownMenuItem>
 													<DropdownMenuItem render={<Link
 															href={`/internal/data/models/edit/${item.modelId}?tab=benchmarks`}
-															className="cursor-pointer" />}>
-
-															Edit Benchmarks
-
-													</DropdownMenuItem>
+															className="cursor-pointer" />}>{tUi("actions.editBenchmarks")}</DropdownMenuItem>
 													<DropdownMenuItem render={<Link
 															href={`/internal/data/models/edit/${item.modelId}?tab=providers${filterProvider ? `&provider=${encodeURIComponent(filterProvider)}` : ""}`}
-															className="cursor-pointer" />}>
-
-															Edit Providers
-
-													</DropdownMenuItem>
+															className="cursor-pointer" />}>{tUi("actions.editProviders")}</DropdownMenuItem>
 													<DropdownMenuItem render={<Link
 															href={`/internal/data/models/edit/${item.modelId}?tab=pricing`}
-															className="cursor-pointer" />}>
-
-															Edit Pricing
-
-													</DropdownMenuItem>
+															className="cursor-pointer" />}>{tUi("actions.editPricing")}</DropdownMenuItem>
 													<DropdownMenuSeparator />
 													<DropdownMenuItem render={<Link
 															href={`/models/${item.modelId}`}
 															className="cursor-pointer" />}>
 
-															<ExternalLink className="mr-2 h-4 w-4" />
-															View Model
-
-													</DropdownMenuItem>
+															<ExternalLink className="mr-2 h-4 w-4" />{tUi("actions.viewModel")}</DropdownMenuItem>
 													<DropdownMenuItem render={<Link
 															href={`/models/${item.modelId}#providers`}
 															className="cursor-pointer" />}>
 
-															<ExternalLink className="mr-2 h-4 w-4" />
-															View Providers
-
-													</DropdownMenuItem>
+															<ExternalLink className="mr-2 h-4 w-4" />{tUi("actions.viewProviders")}</DropdownMenuItem>
 													<DropdownMenuItem render={<Link
 															href={`/models/${item.modelId}#benchmarks`}
 															className="cursor-pointer" />}>
 
-															<ExternalLink className="mr-2 h-4 w-4" />
-															View Benchmarks
-
-													</DropdownMenuItem>
+															<ExternalLink className="mr-2 h-4 w-4" />{tUi("actions.viewBenchmarks")}</DropdownMenuItem>
 												</DropdownMenuContent>
 											</DropdownMenu>
 										</TableCell>
@@ -708,7 +681,7 @@ export function AuditDataTable({
 																	id={
 																		item.organisationId
 																	}
-																	alt="Organisation logo"
+																		alt={tAccessibility("organisationLogo")}
 																	className="object-contain"
 																	fill
 																/>
@@ -796,10 +769,7 @@ export function AuditDataTable({
 																	</span>
 																	{" - "}
 																		<span className="text-muted-foreground">
-																			{provider
-																				.capabilities
-																				.length}{" "}
-																			enabled capabilities
+																		{tAudit("enabledCapabilities", { count: provider.capabilities.length })}
 																		</span>
 																	</div>
 																)
@@ -813,7 +783,7 @@ export function AuditDataTable({
 												<div className="flex items-center justify-center gap-2">
 													<div className="w-2 h-2 rounded-full bg-green-500" />
 													<span className="text-sm font-medium text-green-700">
-														Active
+														{tAudit("active")}
 													</span>
 													<span className="text-xs text-muted-foreground">
 														({item.activeGatewayProviders})
@@ -823,7 +793,7 @@ export function AuditDataTable({
 												<div className="flex items-center justify-center gap-2">
 													<div className="w-2 h-2 rounded-full bg-gray-400" />
 													<span className="text-sm text-muted-foreground">
-														Inactive
+														{tAudit("inactive")}
 													</span>
 												</div>
 											)}
@@ -911,14 +881,14 @@ export function AuditDataTable({
 																				}
 																			>
 																				{provider.hasPricing
-																					? `Pricing (${provider.pricingRulesCount})`
-																					: "No pricing"}
+													? tAudit("pricingCount", { count: provider.pricingRulesCount })
+													: tAudit("noPricing")}
 																			</span>
 																			<div className="text-[11px] text-muted-foreground">
-																				Capabilities:{" "}
+														{tAudit("capabilitiesLabel")}{" "}
 																				{provider.capabilities.length > 0
 																					? provider.capabilities.join(", ")
-																					: "None"}
+															: tAudit("none")}
 																			</div>
 																		</div>
 																	</div>
@@ -944,9 +914,11 @@ export function AuditDataTable({
 				{/* Pagination */}
 				<div className="flex flex-wrap items-center justify-between gap-3 text-sm text-muted-foreground">
 					<div>
-						Showing {totalItems === 0 ? 0 : pageStart + 1}-
-						{Math.min(pageStart + PAGE_SIZE, totalItems)} of{" "}
-						{totalItems}
+						{tAudit("paginationSummary", {
+							start: totalItems === 0 ? 0 : pageStart + 1,
+							end: Math.min(pageStart + PAGE_SIZE, totalItems),
+							total: totalItems,
+						})}
 					</div>
 					<div className="flex items-center gap-1">
 						<Button

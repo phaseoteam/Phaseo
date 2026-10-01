@@ -4,23 +4,16 @@ import RequestBuilder from "@/components/(tools)/RequestBuilder";
 import { fetchFrontendGatewayModels } from "@/lib/fetchers/frontend/fetchFrontendGatewayModels";
 import { getTranslations } from "next-intl/server";
 
-export const metadata: Metadata = buildMetadata({
-    title: "Request Builder",
-    description:
-        "Interactively build AI API requests for the Phaseo Gateway and providers. Configure models and parameters, then export ready-to-run code snippets in your favourite language.",
-    path: "/tools/request-builder",
-    keywords: [
-        "API request builder",
-        "AI API requests",
-        "code snippets",
-        "curl generator",
-        "AI gateway",
-        "Phaseo tools",
-    ],
-});
+export async function generateMetadata(): Promise<Metadata> {
+	const t = await getTranslations("Product.tools.request");
+	return buildMetadata({
+		title: t("title"),
+		description: t("description"),
+		path: "/tools/request-builder",
+	});
+}
 
 export default async function RequestBuilderPage() {
-    await getTranslations("Product.tools.request");
     const models = await fetchFrontendGatewayModels();
 
     return <RequestBuilder models={models} />;

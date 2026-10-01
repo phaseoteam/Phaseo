@@ -1,0 +1,46 @@
+---
+icon: "shield-check"
+title: "Tool calling की सुरक्षा और validation"
+description: "Tool arguments validate करें, execution को सुरक्षित बनाएँ और model की unsafe actions रोकें।"
+---
+
+Model द्वारा बनाए गए tool arguments को untrusted input मानें।
+
+## सुरक्षा जाँच-सूची
+
+- Tool schemas को छोटा और स्पष्ट रखें।
+- Tool execute करने से पहले parsed arguments validate करें।
+- Tool names को allowlist करें और unknown tools अस्वीकार करें।
+- External calls के लिए timeouts और retries जोड़ें।
+- Call ID, tool name और validation failures log करें।
+
+## अनुरोध सत्यापन का उदाहरण (TypeScript + Zod)
+
+```typescript
+import { z } from "zod";
+
+const WeatherArgs = z.object({
+  city: z.string().min(1),
+});
+
+function executeToolCall(name: string, rawArgs: string) {
+  if (name !== "get_weather") {
+    throw new Error(`Unsupported tool: ${name}`);
+  }
+
+  const parsed = WeatherArgs.parse(JSON.parse(rawArgs));
+  return getWeather(parsed.city);
+}
+```
+
+## विफलता से निपटने की रणनीति
+
+Validation विफल होने पर:
+
+1. Tool execute न करें।
+2. अगले model turn में controlled error payload लौटाएँ।
+3. Model से corrected arguments के साथ फिर कोशिश करने को कहें।
+
+## स्ट्रीमिंग पर ध्यान दें
+
+अभी gateway request validation के लिए tool-calling requests non-streaming (`stream: false`) रखें।

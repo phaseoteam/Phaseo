@@ -1,11 +1,12 @@
 import Image from "next/image";
 import { Link } from "@/i18n/navigation";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { FooterStatusIndicator } from "@/components/FooterStatusIndicator";
 import { ThemeSelector } from "@/components/theme-toggle";
 import { Logo } from "@/components/Logo";
 import { FooterYearRange } from "./FooterYearRange";
 import { FooterLocaleSwitcher } from "@/components/i18n/FooterLocaleSwitcher";
+import { getLocalizedDocsHref } from "@/lib/docs";
 
 const startYear = 2025;
 
@@ -20,17 +21,19 @@ const productLinks = [
 ];
 
 const developerLinks = [
-	{ href: "https://phaseo.app/docs/v1", label: "Documentation", external: true },
+	{ href: "/v1", label: "Documentation", external: true, docs: true },
 	{
-		href: "https://phaseo.app/docs/v1/api-reference/introduction",
+		href: "/v1/api-reference/introduction",
 		label: "API Reference",
 		external: true,
+		docs: true,
 	},
-	{ href: "https://phaseo.app/docs/v1/quickstart", label: "Quickstart", external: true },
+	{ href: "/v1/quickstart", label: "Quickstart", external: true, docs: true },
 	{
-		href: "https://phaseo.app/docs/v1/sdk-reference/typescript/overview",
+		href: "/v1/sdk-reference/typescript/overview",
 		label: "SDKs",
 		external: true,
+		docs: true,
 	},
 ];
 
@@ -86,6 +89,7 @@ type FooterLink = {
 	label: string;
 	logoId?: string;
 	external?: boolean;
+	docs?: boolean;
 };
 
 const FOOTER_LABEL_KEYS = {
@@ -132,6 +136,7 @@ function FooterLinkList({
 	titleKey: "explore" | "build" | "resources" | "company" | "community";
 }) {
 	const t = useTranslations("Common.footer");
+	const locale = useLocale();
 	return (
 		<div className="flex min-w-0 flex-col gap-2">
 			<h3 className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">
@@ -141,7 +146,7 @@ function FooterLinkList({
 				{links.map((link) => (
 					<li key={`${title}-${link.href}`}>
 						<Link
-							href={link.href}
+							href={link.docs ? getLocalizedDocsHref(locale, link.href) : link.href}
 							prefetch={link.external ? undefined : false}
 							target={link.external ? "_blank" : undefined}
 							rel={link.external ? "noopener noreferrer" : undefined}

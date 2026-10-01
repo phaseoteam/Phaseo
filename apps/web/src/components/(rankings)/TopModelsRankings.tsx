@@ -6,6 +6,7 @@
 "use client";
 
 import { useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import { TrendingUp, TrendingDown, Minus, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -34,6 +35,8 @@ export function TopModelsRankings({
     initialTimeRange = "week",
     initialMetric = "tokens",
 }: TopModelsRankingsProps) {
+    const t = useTranslations("Catalogue.rankings");
+    const locale = useLocale();
     const [data] = useState(initialData);
     const [timeRange] = useState<TimeRange>(initialTimeRange as TimeRange);
     const [metric] = useState<Metric>(initialMetric as Metric);
@@ -41,8 +44,8 @@ export function TopModelsRankings({
     if (!data.length) {
         return (
             <RankingsEmptyState
-                title="No rankings data yet"
-                description="Rankings appear once enough requests are aggregated to meet privacy thresholds."
+                title={t("noData")}
+                description={t("rankingsPrivacyThresholdDescription")}
             />
         );
     }
@@ -54,21 +57,21 @@ export function TopModelsRankings({
                 return (
                     <div className="flex items-center gap-1 text-green-600">
                         <TrendingUp className="h-4 w-4" />
-                        <span className="text-xs">+{change}</span>
+                        <span className="text-xs">+{new Intl.NumberFormat(locale).format(change)}</span>
                     </div>
                 );
             case "down":
                 return (
                     <div className="flex items-center gap-1 text-red-600">
                         <TrendingDown className="h-4 w-4" />
-                        <span className="text-xs">-{change}</span>
+                        <span className="text-xs">-{new Intl.NumberFormat(locale).format(change)}</span>
                     </div>
                 );
             case "new":
                 return (
                     <Badge variant="secondary" className="text-xs">
                         <Sparkles className="h-3 w-3 mr-1" />
-                        New
+                        {t("usageChangeNew")}
                     </Badge>
                 );
             default:
@@ -81,15 +84,15 @@ export function TopModelsRankings({
         if (!Number.isFinite(safeValue)) return "--";
         if (metricType === "tokens") {
             return safeValue >= 1e9
-                ? `${(safeValue / 1e9).toFixed(2)}B`
+                ? new Intl.NumberFormat(locale, { notation: "compact", maximumFractionDigits: 2 }).format(safeValue)
                 : safeValue >= 1e6
-                ? `${(safeValue / 1e6).toFixed(2)}M`
+                ? new Intl.NumberFormat(locale, { notation: "compact", maximumFractionDigits: 2 }).format(safeValue)
                 : safeValue >= 1e3
-                ? `${(safeValue / 1e3).toFixed(2)}K`
-                : safeValue.toString();
+                ? new Intl.NumberFormat(locale, { notation: "compact", maximumFractionDigits: 2 }).format(safeValue)
+                : new Intl.NumberFormat(locale).format(safeValue);
         }
-        if (metricType === "cost") return `$${safeValue.toFixed(2)}`;
-        return safeValue.toLocaleString();
+        if (metricType === "cost") return new Intl.NumberFormat(locale, { style: "currency", currency: "USD" }).format(safeValue);
+        return new Intl.NumberFormat(locale).format(safeValue);
     };
 
     return (
@@ -98,14 +101,14 @@ export function TopModelsRankings({
                 <Table>
                     <TableHeader>
                         <TableRow>
-                            <TableHead className="w-16">Rank</TableHead>
-                            <TableHead className="w-20">Trend</TableHead>
-                            <TableHead>Model</TableHead>
-                            <TableHead>Provider</TableHead>
-                            <TableHead className="text-right">Requests</TableHead>
-                            <TableHead className="text-right">Tokens</TableHead>
-                            <TableHead className="text-right">Latency (P50)</TableHead>
-                            <TableHead className="text-right">Success Rate</TableHead>
+                            <TableHead className="w-16">{t("rankColumn")}</TableHead>
+                            <TableHead className="w-20">{t("trendColumn")}</TableHead>
+                            <TableHead>{t("modelColumn")}</TableHead>
+                            <TableHead>{t("providerColumn")}</TableHead>
+                            <TableHead className="text-right">{t("usageRequestsUnit")}</TableHead>
+                            <TableHead className="text-right">{t("usageTokensUnit")}</TableHead>
+                            <TableHead className="text-right">{t("latencyP50Column")}</TableHead>
+                            <TableHead className="text-right">{t("successRateColumn")}</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -122,10 +125,10 @@ export function TopModelsRankings({
                                         {getTrendIcon(row.trend ?? "same", rankChange)}
                                     </TableCell>
                                     <TableCell className="font-semibold">
-                                        {row.model_id || "Unknown"}
+                                        {row.model_id || t("unknownModelLabel")}
                                     </TableCell>
                                     <TableCell className="text-muted-foreground">
-                                        {row.provider || "Unknown"}
+                                        {row.provider || t("unknownProviderLabel")}
                                     </TableCell>
                                     <TableCell className="text-right">
                                         {formatValue(row.requests, "requests")}
@@ -135,7 +138,7 @@ export function TopModelsRankings({
                                     </TableCell>
                                     <TableCell className="text-right">
                                         {Number.isFinite(latency)
-                                            ? `${Math.round(latency)}ms`
+                                            ? `${new Intl.NumberFormat(locale).format(Math.round(latency))} ms`
                                             : "--"}
                                     </TableCell>
                                     <TableCell className="text-right">
@@ -151,7 +154,7 @@ export function TopModelsRankings({
                                             }
                                         >
                                             {Number.isFinite(successRate)
-                                                ? `${(successRate * 100).toFixed(1)}%`
+                                                ? new Intl.NumberFormat(locale, { style: "percent", minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(successRate)
                                                 : "--"}
                                         </span>
                                     </TableCell>

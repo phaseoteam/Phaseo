@@ -1,0 +1,27 @@
+---
+icon: "files"
+title: "ファイル"
+description: "Ruby SDKでファイルのアップロード、メタデータの取得、内容の取得を行います。"
+---
+
+**メソッド**: `upload_file`、`list_files`、`retrieve_file`、`retrieve_file_content`。
+
+### 例
+```ruby
+require 'phaseo_sdk'
+
+client = PhaseoSdk::Phaseo.new(api_key: ENV.fetch('PHASEO_API_KEY'))
+
+uploaded = client.upload_file(
+  'purpose' => 'batch',
+  'file' => 'data:application/json;base64,eyJ0ZXN0Ijp0cnVlfQ=='
+)
+
+file = client.retrieve_file('file_123')
+content = client.retrieve_file_content('file_123')
+```
+
+<Note>
+`list_files`はSDKから呼び出せますが、共有Gatewayキーでは現在`GET /files`が`file_list_not_supported_with_shared_gateway_key`を返します
+アップロードしたファイルIDを保存し、個別に取得してください。
+</Note>

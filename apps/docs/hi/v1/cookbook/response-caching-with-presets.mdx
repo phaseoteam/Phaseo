@@ -1,0 +1,92 @@
+---
+title: "Preset के साथ response caching"
+icon: "database"
+description: "बार-बार आने वाले अनुरोधों का तेज़ और अनुमानित उत्तर देने के लिए preset defaults को deterministic response caching के साथ जोड़ें।"
+---
+
+स्थिर prompts वाले बार-बार के अनुरोधों में latency और दोहराए गए inference की लागत घटाने के लिए यह तरीका अपनाएँ।
+
+## 1. अलग-अलग अनुरोधों के बजाय preset से शुरू करें
+
+जब इन चीज़ों को स्थिर रखना हो, तो preset बनाएँ:
+
+- लक्ष्य मॉडल
+- प्रदाता की प्राथमिकताएँ
+- temperature और अन्य generation parameters
+- reasoning सेटिंग
+- system prompt
+
+इससे अनुरोध स्थिर रहता है और cache key भी स्थिर रहती है।
+
+## 2. Preset स्तर पर response caching चालू करें
+
+कॉन्फ़िगर करें:
+
+- `response_caching.enabled = true`
+- उपयुक्त `ttl_seconds`
+
+सुझाए गए defaults:
+
+- तेज़ी से बदलने वाले तथ्यात्मक prompts के लिए छोटा TTL
+- स्थिर संरचित आउटपुट के लिए लंबा TTL
+
+## 3. अनुरोध को deterministic रखें
+
+अनावश्यक बदलाव से बचने पर response caching बेहतर काम करती है।
+
+इन चीज़ों को बदलने से बचें:
+
+- system prompt की भाषा
+- temperature
+- provider overrides
+- reasoning config
+- टूल सूचियाँ
+
+यदि कोई caller इन्हें बार-बार बदलता है, तो सभी के cache reuse को प्रभावित करने के बजाय उसके लिए अलग preset बनाएँ।
+
+## 4. अनुरोध के विवरण में cache व्यवहार जाँचें
+
+Cache path से गुज़रने वाले अनुरोधों के विवरण में cache जानकारी दिखनी चाहिए।
+
+जाँचें:
+
+- cache hit या miss
+- TTL का व्यवहार
+- cached उत्तर मिलने पर provider context
+
+## 5. Cache और routing को सोच-समझकर जोड़ें
+
+सुझाए गए तरीके:
+
+1. deterministic structured outputs के लिए caching चालू वाला preset उपयोग करें।
+2. खोजपरक या अधिक temperature वाले अनुरोधों के लिए caching बंद वाला दूसरा preset उपयोग करें।
+
+इससे असंगत ट्रैफ़िक को मिलाने के बजाय cache में उपयोगी अनुरोध बने रहते हैं।
+
+## 6. TTL बढ़ाने से पहले misses की जाँच करें
+
+यदि hit की अपेक्षा है लेकिन misses मिल रहे हैं, तो तुलना करें:
+
+- prompt टेक्स्ट
+- मॉडल ID
+- provider विकल्प
+- response format
+- टूल और tool choice
+- preset slug/config
+
+TTL बढ़ाने से fingerprint mismatch ठीक नहीं होगा।
+
+## 7. Cache कब न करें
+
+इनके लिए response caching को default रूप से चालू न करें:
+
+- लाइव बाहरी स्थिति पर निर्भर prompts
+- तेज़ी से बदलते context वाले उपयोगकर्ता-विशिष्ट उत्तर
+- बदलते tool outputs वाले अनुरोध
+- अत्यधिक stochastic generations जिनका सटीक replay वांछित न हो
+
+## संबंधित गाइड
+
+- [Presets लागू करें और routing debug करें](./preset-rollout-and-routing-debug.mdx)
+- [उदाहरण](../guides/examples.mdx)
+- [TypeScript SDK](../sdk-reference/typescript/overview.mdx)

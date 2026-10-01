@@ -1,0 +1,33 @@
+---
+icon: "mic"
+title: "تحويل الكلام إلى نص (STT)"
+description: "استدعِ /audio/transcriptions باستخدام SDK TypeScript."
+---
+
+**الطريقة**: `client.generateTranscription()`.
+
+### مثال
+```typescript
+const transcript = await client.generateTranscription({
+  model: "openai/gpt-4o-transcribe",
+  file: "data:audio/mp3;base64,...",
+  language: "en",
+});
+```
+
+### المعلمات الأساسية
+- `model` (مطلوب): معرّف نموذج يدعم النسخ الصوتي.
+- `file` (مطلوب): بيانات الصوت (URL أو base64 أو ثنائية).
+- `language`: رمز اللغة كإشارة (مثل `en`).
+- `prompt`: سياق اختياري لتحسين الدقة.
+- `temperature` (0–2): عشوائية أخذ العينات.
+- `response_format`: ‏`json` و`text` و`srt` و`verbose_json` وغيرها.
+
+### القيمة المعادة
+`AudioTranscriptionResponse`
+
+```json
+{
+  "text": "Hello world"
+}
+```

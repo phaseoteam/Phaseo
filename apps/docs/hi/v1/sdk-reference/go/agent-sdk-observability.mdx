@@ -1,0 +1,33 @@
+---
+icon: "triangle-alert"
+title: "त्रुटियाँ और समस्या निवारण"
+description: "Go agents में model, tool, validation, cancellation और continuation failures संभालें।"
+---
+
+Agent failures आम तौर पर model request, local tool, schema validation, cancellation या अधूरे मानवीय निर्णय से होते हैं। इन स्थितियों को logs में दिखाएँ और callers को सुरक्षित errors लौटाएँ।
+
+## टूल की त्रुटियों से उबरें
+
+जब model किसी failure से उबर सकता हो, तब tool पर `OnError: "return-to-model"` सेट करें। SDK error को tool result में बदलता है और अगली turn को दूसरी कार्रवाई चुनने देता है। असुरक्षित या recover न हो सकने वाली failures के लिए default fail-run व्यवहार रखें।
+
+## कैंसलेशन का सम्मान करें
+
+Request context को `Run`, `Continue` या `Stream` में दें। इसे cancel करने से model streaming रुकती है और नए tool work शुरू नहीं होते।
+
+```go
+ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+defer cancel()
+
+result, err := agent.Run(ctx, options)
+if errors.Is(err, context.DeadlineExceeded) {
+  // Persist enough application state to retry or report the timeout.
+}
+```
+
+## आगे जारी रखने के दौरान आई त्रुटियों का निदान करें
+
+जब run किसी व्यक्ति की प्रतीक्षा कर रहा हो, तो हर pending call के लिए tool-call ID से जुड़ी approval, rejection या बाहरी result चाहिए। लौटाया गया पूरा run record सहेजें; केवल मानवीय संदेश उन निर्णयों का विकल्प नहीं है।
+
+## उपयोगी संदर्भ दर्ज करें
+
+रन ID, चरण इंडेक्स, अनुरोध ID, प्रदाता, मॉडल, समाप्ति कारण, टूल-कॉल ID और रुकने का कारण दर्ज करें। जीवनचक्र हुक और DevTools, ट्रांसपोर्ट-स्तर की लॉगिंग के बिना ये फ़ील्ड दिखाते हैं। Lifecycle hooks और DevTools transport-level logging के बिना ये fields दिखाते हैं।

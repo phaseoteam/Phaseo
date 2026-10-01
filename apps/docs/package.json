@@ -4,8 +4,14 @@
 	"private": true,
 	"scripts": {
 		"dev": "mintlify dev --port 3101 --no-open",
-		"build": "pnpm dlx mint validate",
+		"build": "pnpm run openapi:locales:check && pnpm run validate:locales && pnpm run translation:freshness:check && pnpm dlx mint validate",
 		"check:links": "pnpm dlx mint broken-links",
+		"openapi:locales": "node scripts/generate-localized-openapi.mjs",
+		"openapi:locales:check": "node scripts/generate-localized-openapi.mjs --check",
+		"translation:freshness:init": "node scripts/translation-freshness.mjs init",
+		"translation:freshness:check": "node scripts/translation-freshness.mjs check",
+		"translation:freshness:record": "node scripts/translation-freshness.mjs record",
+		"validate:locales": "node scripts/validate-locales.mjs",
 		"preview": "mintlify preview",
 		"clean": "rimraf .mint"
 	},

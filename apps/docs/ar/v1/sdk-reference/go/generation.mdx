@@ -1,0 +1,28 @@
+---
+icon: "search-check"
+title: "البحث عن سجل التوليد"
+description: "ابحث عن عمليات التوليد المحفوظة باستخدام Go SDK."
+---
+
+استخدم طريقة الغلاف:
+
+- `client.GetGeneration(ctx, generationID)`
+
+```go
+import (
+  "context"
+  "fmt"
+  phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v2"
+)
+
+client := phaseo.New(apiKey, "https://api.phaseo.app/v1")
+record, err := client.GetGeneration(context.Background(), "G-01ABC...")
+if err != nil {
+  panic(err)
+}
+
+fmt.Println(record)
+```
+
+إذا حُفظت تفاصيل الطلب، فسيتضمن السجل المُعاد أيضًا `replay_supported` و`replay_request` لتتمكن من إعادة إرسال الحمولة المحفوظة إلى نقطة النهاية الأصلية.
+

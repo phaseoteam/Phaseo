@@ -1,0 +1,39 @@
+---
+title: "Modèles et services OpenAI obsolètes"
+description: "Dates d’obsolescence des modèles et plateformes OpenAI suivies dans le catalogue AI Stats."
+icon: "/icons/brands/openai.svg"
+---
+
+# Modèles et services OpenAI obsolètes
+
+OpenAI publie les dates d’obsolescence et les remplacements recommandés sur sa [page consacrée aux obsolescences de l’API](https://developers.openai.com/api/docs/deprecations). Utilisez cette page comme liste de migration, puis validez le remplacement avec vos prompts, outils, objectifs de latence et budgets de production.
+
+## Modèles obsolètes
+
+| Famille de modèles | Date d’obsolescence | Date d’arrêt | Remplacement recommandé |
+| --- | --- | --- | --- |
+| `gpt-realtime`, `gpt-audio`, `gpt-realtime-mini`, `gpt-audio-mini` | 20 juillet 2026 | 20 janvier 2027 | `openai/gpt-realtime-2.1`, `openai/gpt-realtime-2.1-mini` ou `openai/gpt-audio-1.5` |
+| `gpt-4o-mini-transcribe-2025-03-20` | 20 juillet 2026 | 20 janvier 2027 | `openai/gpt-4o-mini-transcribe` |
+| Versions datées de GPT-5 et o3 | 11 juin 2026 | 11 décembre 2026 | `openai/gpt-5.6-sol`, `openai/gpt-5.6-terra` ou `openai/gpt-5.6-luna` |
+| `gpt-image-1-mini`, `gpt-image-1.5`, `chatgpt-image-latest` | 2 juin 2026 | 1er décembre 2026 | `openai/gpt-image-2` |
+| Anciennes versions de GPT-3.5, GPT-4, GPT-4.1 nano, GPT-4o, o1, o3-mini et o4-mini | 22 avril 2026 | 23 octobre 2026 | Consultez les recommandations par modèle sur la page d’obsolescence d’OpenAI |
+| Modèles Sora 2 | 24 mars 2026 | 24 septembre 2026 | Aucun remplacement annoncé |
+
+Le catalogue consigne ces dates de cycle de vie dans les fiches des modèles OpenAI concernés et indique les nouveaux identifiants lorsqu’OpenAI en fournit. Les dates s’appliquent aux versions du fournisseur citées par OpenAI ; le catalogue peut les exposer sous un identifiant de modèle canonique.
+
+## Obsolescences de plateforme
+
+OpenAI publie aussi des migrations de produits qui ne correspondent pas à des modèles :
+
+- Les prompts réutilisables seront arrêtés le 30 novembre 2026. Transférez leur contenu dans le code de l’application.
+- La plateforme Evals passera en lecture seule le 31 octobre 2026, puis fermera le 30 novembre 2026. OpenAI recommande de migrer vers Promptfoo.
+- Agent Builder fermera le 30 novembre 2026. Migrez vers Agents SDK ou ChatGPT Workspace Agents.
+
+## Liste de contrôle de migration
+
+1. Remplacez le modèle ou le produit obsolète dans un environnement de test.
+2. Relancez des évaluations représentatives, notamment pour les sorties structurées, les appels d’outils, la qualité audio et les tâches à long contexte.
+3. Comparez la latence et les dépenses avec une concurrence proche de la production.
+4. Déployez progressivement le remplacement et définissez une route de retour arrière explicite avant la date d’arrêt.
+
+Pour les dates de référence, la correspondance complète des versions et les consignes propres à chaque endpoint, consultez la [documentation OpenAI sur les obsolescences de l’API](https://developers.openai.com/api/docs/deprecations).

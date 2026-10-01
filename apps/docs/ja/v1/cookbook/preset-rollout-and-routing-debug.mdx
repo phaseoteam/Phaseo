@@ -1,0 +1,111 @@
+---
+title: "プリセットを展開してルーティングをデバッグする"
+icon: "route"
+description: "プリセットでプロンプトとルーティングの既定値を統一し、リクエストの詳細から Phaseo のルーティング理由を確認します。"
+---
+
+同じプロンプト、モデル、ルーティング設定を各所に複製せず、複数のサービスでプリセットを再利用したい場合に使います。
+
+## 目的
+
+- プロンプトとパラメーターの既定値を統一する。
+- 展開時やコンプライアンス要件に合わせて、使用可能なプロバイダーを制限する。
+- リクエストがそのようにルーティングされた理由を説明できるだけの情報を保持する。
+
+## 1. プリセットを作成する
+
+**ダッシュボード -> 設定 -> プリセット**で、次の内容を含むプリセットを作成します。
+
+- 分かりやすい名前と slug
+- システムプロンプト
+- 承認済みモデル
+- プロバイダーの優先設定
+- `temperature` などのパラメーター既定値
+
+呼び出しコードでプリセットの slug を指定すると、環境をまたいで同じリクエストポリシーを再利用できます。
+
+## 2. リクエスト本文を小さく保つ
+
+プリセットの主な利点は、呼び出し元が各リクエストで同じルーティングやプロンプトの既定値を繰り返す必要がなくなることです。
+
+<CodeGroup>
+```bash cURL
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "anthropic/claude-sonnet-4-5",
+    "input": "Generate a release summary for the last 24 hours.",
+    "preset": "release-summary"
+  }'
+```
+
+```typescript TypeScript SDK
+import Phaseo from "@phaseo/sdk";
+
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
+
+const response = await client.generateResponse({
+  model: "anthropic/claude-sonnet-4-5",
+  input: "Generate a release summary for the last 24 hours.",
+  preset: "release-summary",
+});
+
+console.log(response.output_text);
+```
+
+```python Python SDK
+from phaseo import Phaseo
+
+client = Phaseo(api_key="YOUR_API_KEY")
+
+response = client.generate_response(
+    {
+        "model": "anthropic/claude-sonnet-4-5",
+        "input": "Generate a release summary for the last 24 hours.",
+        "preset": "release-summary",
+    }
+)
+
+print(response.get("output_text"))
+```
+</CodeGroup>
+
+## 3. プリセットによる変更を理解する
+
+プリセットはプロバイダーのルーティング前に適用されます。
+
+- リクエストにないパラメーターはプリセットから補完される
+- プリセットのプロンプトがシステム層の先頭に追加される
+- プロバイダーの優先設定により、順位付けの前に利用可能なプロバイダーを絞り込みます
+- モデル制限は早い段階で確認され、通知なく別の経路へ切り替わることはない
+
+## 4. ルーティング結果をデバッグする
+
+リクエストが想定どおりにルーティングされない場合は、**Gateway -> Usage** で開き、次を確認します。
+
+- 検討されたプロバイダー
+- 順位付けされた候補
+- 各候補に紐付いたルーティング要因
+- ワークスペースポリシーやガードレールによるブロック
+
+次の点をすばやく確認できます。
+
+- プロバイダーが除外された理由
+- リクエストがブロックされた理由
+- より低コストまたは低レイテンシの候補が選ばれた理由
+
+## 5. 運用パターン
+
+ルーティング動作を変更するときは、次の手順で展開します。
+
+1. 新しいポリシー用のプリセット slug を作成します。
+2. リスクの低い呼び出し元を新しいプリセットに切り替えます。
+3. リクエストの詳細とアクティビティの傾向を確認します。
+4. ルーティング結果が想定どおりであることを確認してから展開を広げます。
+
+## 関連ガイド
+
+- [プリセット](../guides/presets.mdx)
+- [ルーティングとフォールバック](../guides/routing-and-fallbacks.mdx)
+- [エラー処理](../developers/error-handling.mdx)

@@ -1,0 +1,275 @@
+---
+title: "प्रॉम्प्ट कैशिंग"
+description: "Chat Completions, Responses और Anthropic Messages requests में स्थिर prompt context दोबारा उपयोग करें।"
+icon: "database-zap"
+---
+
+जब कई requests में वही बड़ा context आता है, तब prompt caching उपयोग करें। स्थिर निर्देशों, दस्तावेज़ों, उदाहरणों, tool outputs या tool definitions को cacheable चिह्नित करें, ताकि supported providers बाद की calls में context दोबारा उपयोग कर सकें।
+
+Prompt caching, [response caching](../cookbook/response-caching-with-presets.mdx) से अलग है। Prompt caching में inference चलता रहता है, लेकिन बार-बार input process करने की लागत और latency कम हो सकती है। Response caching समान request के लिए पहले से बना उत्तर लौटाता है।
+
+<Note>
+Prompt caching provider और model के अनुसार बदलती है। Unsupported providers cache hints अनदेखा करते हैं या cached pricing के बिना route करते हैं। Cache read/write rates के लिए model page की pricing table देखें।
+</Note>
+
+## कौन-सी सामग्री cache करें
+
+ऐसी सामग्री cache करें जो requests के बीच स्थिर रहती है:
+
+- लंबे system instructions
+- दोबारा उपयोग किए जाने वाले RAG दस्तावेज़
+- few-shot के उदाहरण
+- टूल की परिभाषाएँ
+- बड़े tool results जिन्हें अगले turn में दोबारा उपयोग किया जाए
+
+हर request में बदलने वाली सामग्री, छोटे one-off user input या ऐसा संवेदनशील data cache न करें जिसे चुने गए provider पर store करने की आपकी policy अनुमति नहीं देती।
+
+## कैश नियंत्रण
+
+Phaseo, Chat Completions, Responses और Anthropic Messages अनुरोधों के शीर्ष स्तर पर संगतता संकेत `cache_control` स्वीकार करता है:
+
+```json
+{
+  "cache_control": {
+    "type": "ephemeral",
+    "ttl": "5m"
+  }
+}
+```
+
+कम समय के shared context के लिए `ttl: "5m"` और provider तथा model support करें तो लंबे समय के prompt cache entries के लिए `ttl: "1h"` चुनें। Supported providers top-level cache control को automatic/default cache policy मानते हैं।
+
+स्पष्ट cache breakpoints के लिए supported text, image, tool result और tool definition blocks पर सीधे `cache_control` भी रख सकते हैं:
+
+```json
+{
+  "type": "text",
+  "text": "Large stable reference text...",
+  "cache_control": {
+    "type": "ephemeral",
+    "ttl": "1h"
+  }
+}
+```
+
+Provider-specific aliases अब भी supported हैं। उदाहरण के लिए, `provider_options` के ज़रिए default Anthropic cache policy लागू कर सकते हैं:
+
+```json
+{
+  "provider_options": {
+    "anthropic": {
+      "cache_control": {
+        "type": "ephemeral",
+        "ttl": "5m",
+        "scope": "last_user_message"
+      }
+    }
+  }
+}
+```
+
+`scope` के समर्थित मान:
+
+| Scope | व्यवहार |
+| --- | --- |
+| `all_text` | जिन system text और user text/image blocks में पहले से cache control नहीं है, उनमें इसे जोड़ें। |
+| `last_user_message` | केवल सबसे नए user message में cache control जोड़ें। |
+| `none` | Default cache policy लागू न करें। |
+
+Block-level `cache_control` default policy पर प्राथमिकता रखता है।
+
+## Chat Completions
+
+OpenAI-compatible chat clients उपयोग करते समय `/v1/chat/completions` उपयोग करें।
+
+```bash
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "anthropic/claude-sonnet-4",
+    "messages": [
+      {
+        "role": "system",
+        "content": [
+          {
+            "type": "text",
+            "text": "You are a support assistant. Follow the company policy exactly.",
+            "cache_control": { "type": "ephemeral", "ttl": "1h" }
+          }
+        ]
+      },
+      {
+        "role": "user",
+        "content": "Summarise the latest ticket."
+      }
+    ]
+  }'
+```
+
+OpenAI के माध्यम से भेजे जाने वाले अनुरोधों में कैश प्रतिधारण के विकल्प, OpenAI-संगत शीर्ष-स्तरीय फ़ील्ड के ज़रिए दें:
+
+```json
+{
+  "prompt_cache_retention": "24h"
+}
+```
+
+Provider-specific alias भी स्वीकार किया जाता है:
+
+```json
+{
+  "provider_options": {
+    "openai": {
+      "prompt_cache_retention": "24h"
+    }
+  }
+}
+```
+
+## Responses
+
+नए OpenAI-compatible text integrations और agent flows के लिए `/v1/responses` उपयोग करें।
+
+```bash
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "anthropic/claude-sonnet-4",
+    "input": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "input_text",
+            "text": "Reference document: Refunds are available for 30 days when...",
+            "cache_control": { "type": "ephemeral", "ttl": "5m" }
+          },
+          {
+            "type": "input_text",
+            "text": "Answer this customer: Can I return an item after 20 days?"
+          }
+        ]
+      }
+    ]
+  }'
+```
+
+पहले से Google Gemini cached content resource हो, तो उसे `provider_options.google.cached_content` से पास करें:
+
+```json
+{
+  "provider_options": {
+    "google": {
+      "cached_content": "cachedContents/abc123"
+    }
+  }
+}
+```
+
+## Anthropic Messages
+
+आपका client Anthropic-compatible हो, तो `/v1/messages` उपयोग करें।
+
+```bash
+curl https://api.phaseo.app/v1/messages \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "anthropic/claude-sonnet-4",
+    "max_tokens": 512,
+    "system": [
+      {
+        "type": "text",
+        "text": "You are a careful support assistant. Use the policy below.",
+        "cache_control": { "type": "ephemeral", "ttl": "1h" }
+      }
+    ],
+    "messages": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "Policy: refunds are available for 30 days when...",
+            "cache_control": { "type": "ephemeral", "ttl": "5m" }
+          },
+          {
+            "type": "text",
+            "text": "Can this customer return an item after 20 days?"
+          }
+        ]
+      }
+    ],
+    "tools": [
+      {
+        "name": "lookup_order",
+        "description": "Look up order status.",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "order_id": { "type": "string" }
+          },
+          "required": ["order_id"]
+        },
+        "cache_control": { "type": "ephemeral", "ttl": "5m" }
+      }
+    ]
+  }'
+```
+
+Anthropic Messages में इन पर cache control समर्थित है:
+
+- `system` के टेक्स्ट ब्लॉक
+- संदेश का पाठ और इमेज ब्लॉक
+- टूल परिणाम ब्लॉक
+- टूल की परिभाषाएँ
+
+## उपयोग और मूल्य निर्धारण के फ़ील्ड
+
+Provider cache usage लौटाए, तो Phaseo उसे common usage fields में normalize करता है।
+
+| Field | अर्थ |
+| --- | --- |
+| `input_tokens_details.cached_tokens` | Provider prompt cache से पढ़े गए cached input tokens। |
+| `output_tokens_details.cached_tokens` | Provider prompt cache में लिखे गए cached input tokens। |
+| `cached_read_text_tokens` | Cache reads का pricing meter। यह provider cache से दोबारा उपयोग किया गया cached input text है। |
+| `cached_write_text_tokens` | Provider का cache-write price एक हो, तो यह cache writes का pricing meter है। |
+| `cached_write_text_tokens_5m` | Provider TTL-specific writes report करे, तो 5 minute TTL के लिए cache-write tokens। |
+| `cached_write_text_tokens_1h` | Provider TTL-specific writes report करे, तो 1 hour TTL के लिए cache-write tokens। |
+
+Cache writes आम तौर पर सामान्य input tokens से महँगे होते हैं; cache reads सस्ते। सही pricing provider, model और TTL पर निर्भर करती है।
+
+## व्यावहारिक जाँच
+
+Prompt caching जोड़ने के बाद:
+
+1. Cache बनाने या warm करने के लिए एक request भेजें।
+2. उसी cacheable content के साथ दूसरा request भेजें।
+3. जवाब के उपयोग आँकड़ों और अनुरोध विवरण में कैश-पठन/कैश-लेखन फ़ील्ड देखें।
+4. केवल पहली call नहीं, कई calls में latency और cost की तुलना करें।
+
+## प्रदाता से जुड़ाव
+
+डिफ़ॉल्ट रूप से Phaseo प्रदाता की प्रॉम्प्ट-कैश उपयोगिता को रूटिंग संकेत मानता है। जब कोई प्रदाता
+कैश से मिले इनपुट टोकन लौटाता है, तो समान कैश कुंजी या स्थिर शुरुआती संदर्भ वाले अनुरोध
+15 मिनट तक उसी प्रदाता को प्राथमिकता देते हैं। इससे दूसरे प्रदाता को भुगतान करके
+उसी प्रॉम्प्ट कैश को फिर से बनाने से बचा जा सकता है।
+
+`session_id` शामिल करने पर, कैश रीड दिखाई देने से सेशन एफिनिटी भी बनती है।
+Phaseo सक्रिय सेशन अवधि के दौरान यह एफिनिटी बनाए रखता है, फिर भी
+यदि प्रदाता अस्वस्थ हो या नीति के अनुसार पात्र न रहे, तो फ़ेलओवर की अनुमति देता है।
+
+एक request के लिए इसे बंद करने हेतु `provider.cache_aware_routing` को `false` सेट करें। इसके बाद
+request में `session_id` हो, लेकिन केवल सामान्य context-based routing चाहिए, तो
+`routing.session_affinity` को `false` सेट करें।
+
+## संबंधित पेज
+
+- [Chat Completions](../api-reference/endpoint/chat-completions.mdx)
+- [Responses](../api-reference/endpoint/responses.mdx)
+- [Anthropic Messages](../api-reference/endpoint/anthropic-messages.mdx)
+- [पैरामीटर](../api-reference/parameters.mdx)
+- [संदर्भ और टोकन बजट](./context-and-token-budgeting.mdx)
+- [Presets के साथ response caching उपयोग करें](../cookbook/response-caching-with-presets.mdx)

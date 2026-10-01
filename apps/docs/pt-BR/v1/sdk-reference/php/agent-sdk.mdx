@@ -1,0 +1,51 @@
+---
+title: "Uso"
+description: "Execute loops de ferramentas, revisão humana, novas tentativas e agentes retomáveis com o Agent SDK para PHP."
+---
+
+## Preparar o runtime
+
+O pacote Agent SDK ainda não está disponível no Packagist. Siga as [instruções de instalação a partir do código-fonte](./agent-sdk-installation.mdx).
+
+## Início rápido
+
+```php
+<?php
+require "vendor/autoload.php";
+
+use Phaseo\AgentSdk\AgentDefinition;
+use Phaseo\AgentSdk\AgentSdk;
+
+$agent = AgentSdk::createAgent(new AgentDefinition(
+    id: "quickstart-agent",
+    model: "openai/gpt-5.4-nano",
+    instructions: "Answer concisely and helpfully."
+));
+
+$result = $agent->run(
+    input: "Give me one fun fact about cURL.",
+    client: AgentSdk::createGatewayAgentClient()
+);
+
+echo $result->output . PHP_EOL;
+```
+
+## O que inclui
+
+- `AgentSdk::createAgent(...)`
+- `AgentSdk::defineTool(...)`
+- `AgentSdk::createGatewayAgentClient(...)`
+- um loop de ferramentas com limites usando a API `responses` da Phaseo
+
+## Runtime avançado
+
+O PHP oferece funções de validação e aprovação, ferramentas HITL e manuais, progresso, erros recuperáveis, iteradores reproduzíveis, auxiliares de parada, turnos dinâmicos, parâmetros persistidos para o próximo turno, uso e custo normalizados e `StateAccessor`.
+
+## Streaming e cancelamento
+
+`Agent::stream(...)` e `Agent::continueStream(...)` conduzem o stream SSE de Responses do gateway por uma Fiber à medida que o iterador retornado é consumido. Use `textStream()`, `reasoningStream()`, `itemStream()` ou `fullStream()`; chame `cancel()` para parar a Fiber e fechar o gerador. As etapas concluídas mantêm IDs de solicitação, metadados do provedor, motivos de conclusão, avisos, uso e custo.
+
+## Relacionados
+
+- [Visão geral do Agent SDK](../agent-sdk/overview.mdx)
+- [Agent SDK para TypeScript](../typescript/agent-sdk.mdx)

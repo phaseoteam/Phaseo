@@ -1,0 +1,73 @@
+---
+title: "Google Nano Banana 2"
+description: "Aspectos clave para adoptar Nano Banana 2 en generación y edición de imágenes en producción."
+icon: "/icons/brands/google.svg"
+---
+
+# Google Nano Banana 2
+
+Usa esta guía para incorporar Nano Banana 2 de forma segura a tus flujos de imágenes en producción.
+
+Nano Banana 2 no es solo una mejora de calidad. Google lo presenta como un modelo de imágenes listo para producción, con más control sobre el formato, la resolución y la fidelidad de salida.
+
+## Novedades
+
+- Nano Banana 2 permite controlar explícitamente la relación de aspecto.
+- Las resoluciones de salida van de `512px` a `4K`.
+- Mejora la consistencia de los sujetos entre generaciones y ediciones.
+- Sigue mejor las instrucciones.
+- Mejora la representación y traducción de texto dentro de las imágenes.
+- Ofrece mayor fidelidad visual y mantiene una generación rápida.
+
+## Inicio rápido de la migración
+
+### 1. Vuelve a comprobar las expectativas de salida
+
+Si el código posterior presupone un tamaño, una relación de aspecto o un recorte fijos, actualízalo antes del despliegue. Nano Banana 2 es más flexible, por lo que es más fácil que deje de cumplir supuestos anteriores.
+
+### 2. Actualiza los presets del producto
+
+Revisa:
+
+- presets de relación de aspecto para redes sociales
+- resoluciones predeterminadas
+- flujos de edición y relleno de imagen
+- etiquetas de la interfaz que describen los tamaños disponibles
+
+### 3. Ajusta los prompts para la edición de imágenes
+
+Como sigue mejor las instrucciones, los prompts que especificaban en exceso la composición, el texto o el estilo pueden ser demasiado rígidos. Vuelve a probar con prompts más cortos y compara los resultados.
+
+## Qué probar
+
+### Calidad de salida
+
+- relaciones de aspecto verticales, cuadradas y panorámicas
+- salidas de resolución baja y alta
+- consistencia de los sujetos en ediciones iterativas
+- texto, letreros, subtítulos y traducciones dentro de imágenes
+
+### Compatibilidad del flujo de trabajo
+
+- manejo de archivos con resoluciones mayores
+- tiempos de espera en generaciones de mayor fidelidad
+- tasa de aprobación de moderación o revisión humana
+- supuestos de redimensionamiento y procesamiento de recursos posteriores
+
+### Métricas del producto
+
+- latencia de generación de principio a fin
+- tasa de salidas utilizables
+- tasa de reintentos
+- coste por recurso aprobado
+
+## Recomendaciones para el despliegue
+
+1. Divide las pruebas por relación de aspecto y resolución; no lo trates como una única migración.
+2. Valida el flujo de recursos con el mayor tamaño de salida que quieras admitir.
+3. Prueba prompts reales de producción, sobre todo ediciones y solicitudes de texto en imágenes.
+4. Si la interfaz ofrece opciones de imagen, despliega los cambios de presets predeterminados por separado del cambio de modelo.
+
+## Fuentes
+
+- [Nano Banana 2](https://blog.google/innovation-and-ai/technology/ai/nano-banana-2/)

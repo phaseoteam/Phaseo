@@ -47,6 +47,7 @@ function LogoFallback({ name }: { name: string }) {
 export default async function WorksWithPage({ params }: { params: Promise<{ locale: PublicLocale }> }) {
 	const { locale } = await params;
 	const t = await getTranslations({ locale, namespace: "Content.worksWith" });
+	const formatDate = (date: string) => new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeZone: "UTC" }).format(new Date(`${date}T12:00:00.000Z`));
 	const tagLabels: Record<WorksWithApp["tags"][number], string> = {
 		chat: t("tags.chat"), coding: t("tags.coding"), productivity: t("tags.productivity"), creative: t("tags.creative"), research: t("tags.research"), other: t("tags.other"),
 	};
@@ -96,7 +97,7 @@ export default async function WorksWithPage({ params }: { params: Promise<{ loca
 										<div className="relative h-12 w-12 overflow-hidden rounded-lg border border-zinc-200 bg-white">
 											<Image
 												src={app.logo}
-												alt={`${app.name} logo`}
+												alt={t("appLogoAlt", { app: app.name })}
 												fill
 												className="object-contain p-1"
 												sizes="48px"
@@ -108,7 +109,7 @@ export default async function WorksWithPage({ params }: { params: Promise<{ loca
 									<div>
 										<CardTitle className="text-lg">{app.name}</CardTitle>
 										<CardDescription className="text-xs">
-										{t("added", { date: app.date_added })}
+											{t("added", { date: formatDate(app.date_added) })}
 										</CardDescription>
 									</div>
 								</div>
@@ -162,31 +163,31 @@ export default async function WorksWithPage({ params }: { params: Promise<{ loca
 					<div className="space-y-3">
 						<h3 className="text-base font-semibold text-zinc-900">{t("requirements")}</h3>
 						<ul className="list-disc space-y-1 pl-5">
-							<li>Use Phaseo for AI model access.</li>
-							<li>Allow users to bring their own Phaseo API key.</li>
-							<li>Be publicly accessible (or have a public landing page).</li>
-							<li>Have a logo image.</li>
+							<li>{t("requirementModelAccess")}</li>
+							<li>{t("requirementBringOwnKey")}</li>
+							<li>{t("requirementPublicAccess")}</li>
+							<li>{t("requirementLogo")}</li>
 						</ul>
 					</div>
 
 					<div className="space-y-3">
-						<h3 className="text-base font-semibold text-zinc-900">How to submit</h3>
+						<h3 className="text-base font-semibold text-zinc-900">{t("howToSubmit")}</h3>
 						<ol className="list-decimal space-y-2 pl-5">
-							<li>Fork this repository.</li>
+							<li>{t("forkRepository")}</li>
 							<li>
-								Add your app entry to{" "}
+								{t("addCatalogEntry")} {" "}
 								<code className="rounded bg-zinc-100 px-1 py-0.5">packages/data/catalog/src/data/works-with-phaseo.json</code>.
 							</li>
 							<li>
-								Add your logo to{" "}
+								{t("addLogo")} {" "}
 								<code className="rounded bg-zinc-100 px-1 py-0.5">apps/web/public/works-with-phaseo/&lt;your-app-name&gt;/logo.png</code>.
 							</li>
-							<li>Submit a pull request.</li>
+							<li>{t("submitPullRequest")}</li>
 						</ol>
 					</div>
 
 					<div className="space-y-3">
-						<h3 className="text-base font-semibold text-zinc-900">Entry format</h3>
+						<h3 className="text-base font-semibold text-zinc-900">{t("entryFormat")}</h3>
 						<pre className="overflow-auto rounded-lg border border-zinc-200 bg-zinc-50 p-4 text-xs text-zinc-800">
 {`{
   "name": "Your App Name",
@@ -202,7 +203,7 @@ export default async function WorksWithPage({ params }: { params: Promise<{ loca
 					</div>
 
 					<div className="space-y-2">
-						<h3 className="text-base font-semibold text-zinc-900">Valid tags</h3>
+						<h3 className="text-base font-semibold text-zinc-900">{t("validTags")}</h3>
 						<div className="flex flex-wrap gap-2">
 							{Object.entries(tagLabels).map(([tag, label]) => (
 								<Badge key={tag} variant="outline">
@@ -213,9 +214,9 @@ export default async function WorksWithPage({ params }: { params: Promise<{ loca
 					</div>
 
 					<div className="space-y-2">
-						<h3 className="text-base font-semibold text-zinc-900">Questions?</h3>
+						<h3 className="text-base font-semibold text-zinc-900">{t("questions")}</h3>
 						<p>
-							Open an issue if you have questions or need help with your submission.
+							{t("questionHelp")}
 						</p>
 					</div>
 				</CardContent>

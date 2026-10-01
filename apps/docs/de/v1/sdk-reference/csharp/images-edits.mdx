@@ -1,0 +1,35 @@
+---
+icon: "wand-sparkles"
+title: "Bildbearbeitung"
+description: "Rufe /images/edits mit dem C#-SDK auf."
+---
+
+**Methode**: `client.CreateImageEdit(...)`
+
+### Beispiel
+```csharp
+using PhaseoSdk;
+
+var client = new Phaseo(apiKey);
+var response = await client.CreateImageEdit(new Dictionary<string, object>
+{
+    ["model"] = "openai/gpt-image-1",
+    ["prompt"] = "Make it sunset",
+    ["image"] = "data:image/png;base64,...",
+    ["mask"] = "data:image/png;base64,..."
+});
+```
+
+### Wichtige Parameter
+- `model` (erforderlich): ID eines bildbearbeitungsfähigen Modells.
+- `image` (erforderlich): Stream oder Datei des Ausgangsbilds.
+- `prompt`: optionale neue Bearbeitungsanweisung.
+- `mask`: optionale Maske (transparente Bereiche werden bearbeitet).
+- `n` (1–10): Anzahl der bearbeiteten Varianten.
+- `size`: z. B. `1024x1024`, `1024x1792` oder `1792x1024`.
+- `response_format`: `url` oder `b64_json`.
+- `user`: optionales Endnutzer-Tag.
+
+### Rückgabewert
+`ImageGenerationResponse`
+

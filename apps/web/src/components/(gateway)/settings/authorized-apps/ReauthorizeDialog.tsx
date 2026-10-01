@@ -5,11 +5,12 @@ import { useRouter } from "next/navigation";
 import { Copy, ExternalLink, RefreshCw, Terminal } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslations } from "next-intl";
+import { localizedSettingsError } from "@/i18n/error-messages";
 import { reauthorizeCliScopesAction } from "@/app/(dashboard)/settings/authorized-apps/actions";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { oauthScopeLabel } from "@/lib/oauth/scopes";
+import { useLocalizedOAuthScopes } from "@/components/(gateway)/oauth/useLocalizedOAuthScopes";
 
 interface ReauthorizeDialogProps {
 	authorizationId: string;
@@ -22,6 +23,7 @@ interface ReauthorizeDialogProps {
 export default function ReauthorizeDialog({ authorizationId, appName, homepageUrl, currentScopes, additionalScopes }: ReauthorizeDialogProps) {
 	const t = useTranslations("SettingsUI");
 	const s = (key: string) => t(`strings.${key}` as never);
+	const { getScopeCopy } = useLocalizedOAuthScopes();
 	const isPhaseoCli = appName === "Phaseo CLI";
 	const [open, setOpen] = useState(false);
 	const [selectedAdditionalScopes, setSelectedAdditionalScopes] = useState<string[]>([]);
@@ -40,7 +42,7 @@ export default function ReauthorizeDialog({ authorizationId, appName, homepageUr
 		const result = await reauthorizeCliScopesAction(authorizationId, Array.from(new Set([...currentScopes, ...selectedAdditionalScopes])));
 		setSaving(false);
 		if (result.error) {
-			toast.error(result.error);
+			toast.error(localizedSettingsError(result.error, t, "Action failed"));
 			return;
 		}
 		toast.success(s("CLI permissions restored"));
@@ -75,7 +77,7 @@ export default function ReauthorizeDialog({ authorizationId, appName, homepageUr
 										{additionalScopes.map((scope) => (
 											<label key={scope} className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 hover:bg-muted/60">
 												<Checkbox checked={selectedAdditionalScopes.includes(scope)} onCheckedChange={(checked) => toggleAdditionalScope(scope, checked === true)} />
-												<span className="text-xs">{oauthScopeLabel(scope)}</span>
+												<span className="text-xs">{getScopeCopy(scope).label}</span>
 											</label>
 										))}
 									</div>

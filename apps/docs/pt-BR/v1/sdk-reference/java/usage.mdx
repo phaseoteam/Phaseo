@@ -1,0 +1,37 @@
+---
+icon: "square-terminal"
+title: "Uso do SDK Java"
+description: "Como inicializar e usar o wrapper do SDK Java."
+---
+
+## Configuração
+
+```java
+import app.phaseo.sdk.Phaseo;
+
+String apiKey = System.getenv("PHASEO_API_KEY");
+Phaseo client = new Phaseo(apiKey);
+```
+
+## Padrão
+
+Chamadas comuns do wrapper são assim:
+
+```java
+Object response = client.createChatCompletion("""
+{
+  "model": "openai/gpt-5-nano",
+  "messages": [
+    { "role": "user", "content": "Say hello from Java" }
+  ]
+}
+""");
+```
+
+Os métodos do wrapper retornam nós JSON analisados para a maioria dos endpoints JSON e arrays de bytes para as funções auxiliares de conteúdo de arquivos e vídeo.
+
+## Recomendações
+
+- Comece com `app.phaseo.sdk.Phaseo` para as funções comuns do gateway.
+- Use `app.phaseo.gen.Client` e `app.phaseo.gen.Operations` somente quando precisar de uma operação de nível mais baixo que ainda não foi incluída no wrapper.
+- Comece pelos exemplos específicos de cada endpoint nesta seção para consultar os nomes atuais dos métodos do wrapper.

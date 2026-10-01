@@ -1,0 +1,11 @@
+---
+title: "Mettre à jour une destination d’observabilité"
+sidebarTitle: "Mettre à jour la destination"
+badge: "Beta"
+openapi: "/fr/openapi/v1/openapi.localized.yaml PATCH /observability/destinations/{id}"
+description: "Mettre à jour la destination policy, filters, or credentials."
+---
+<Note>Ce point de terminaison nécessite une clé API de gestion avec `settings:write`.</Note>
+
+Omettez `config` pour conserver la configuration chiffrée existante. Si vous le fournissez, la configuration de la destination sera remplacée de façon atomique.
+

@@ -1,0 +1,28 @@
+---
+icon: "search-check"
+title: "生成记录查询"
+description: "使用 Go SDK 查询已保存的生成记录。"
+---
+
+使用封装方法：
+
+- `client.GetGeneration(ctx, generationID)`
+
+```go
+import (
+  "context"
+  "fmt"
+  phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v2"
+)
+
+client := phaseo.New(apiKey, "https://api.phaseo.app/v1")
+record, err := client.GetGeneration(context.Background(), "G-01ABC...")
+if err != nil {
+  panic(err)
+}
+
+fmt.Println(record)
+```
+
+如果保存了请求详情，返回的记录还会包含 `replay_supported` 和 `replay_request` 以便将捕获的负载重新提交到原始端点。
+

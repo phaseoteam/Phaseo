@@ -61,11 +61,51 @@ const previewData: SettingsDynamicRoutesInitialData = {
 	],
 };
 
-export const metadata = { title: "Dynamic routing preview" };
+export async function generateMetadata() {
+	const t = await getTranslations("SettingsUI.settingsPageMetadata");
+	return { title: t("dynamicRoutingPreview") };
+}
 
 export default async function DynamicRoutingDemoPage() {
 	const t = await getTranslations("SettingsUI");
+	const routingT = await getTranslations("SettingsUI.routingStudio");
 	if (process.env.NODE_ENV === "production") notFound();
+	const demoNodeLabelKeys: Record<string, string> = {
+		start: "requestReceived",
+		plan: "demoPaidCustomer",
+		"pro-budget": "demoCheckTeamBudget",
+		experiment: "demoFreeTierRollout",
+		sonnet: "demoHighQualityResponse",
+		mini: "demoBudgetFallback",
+		flash: "demoStableFreeModel",
+		candidate: "demoCandidateModel",
+	};
+	const localizedPreviewData: SettingsDynamicRoutesInitialData = {
+		...previewData,
+		routes: previewData.routes.map((route) => ({
+			...route,
+			name: routingT("demoRouteName"),
+			description: routingT("demoRouteDescription"),
+			config: {
+				...route.config,
+				nodes: route.config.nodes?.map((node) => ({
+					...node,
+					data: {
+						...node.data,
+						label: demoNodeLabelKeys[node.id] ? routingT(demoNodeLabelKeys[node.id] as never) : node.data.label,
+						branches: node.data.branches?.map((branch: any) => ({
+							...branch,
+							label: branch.id === "stable" ? routingT("stable") : branch.id === "candidate" ? routingT("candidate") : branch.label,
+						})),
+					},
+				})),
+			},
+		})),
+		keys: previewData.keys.map((key) => ({
+			...key,
+			name: key.id.endsWith("101") ? routingT("demoProductionKey") : routingT("demoEvaluationKey"),
+		})),
+	};
 	return (
 		<div className="space-y-6">
 			<header>
@@ -73,7 +113,7 @@ export default async function DynamicRoutingDemoPage() {
 				<p className="mt-2 text-sm text-muted-foreground">{t("headers.dynamicRoutingDescription")}</p>
 			</header>
 			<div className="border-l-2 border-cyan-500 px-3 py-1 text-sm text-muted-foreground">{t("headers.dynamicRoutingPreview")}</div>
-			<DynamicRoutesStudio initialData={previewData} demoMode />
+			<DynamicRoutesStudio initialData={localizedPreviewData} demoMode />
 		</div>
 	);
 }

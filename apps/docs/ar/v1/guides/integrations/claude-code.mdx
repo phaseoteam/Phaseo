@@ -1,0 +1,54 @@
+---
+title: "Claude Code"
+icon: "terminal"
+description: "اربط Claude Code بـ Phaseo Gateway عبر واجهة API المتوافقة مع Anthropic."
+---
+
+يدعم Claude Code بوابات LLM التابعة لجهات خارجية عبر متغيرات البيئة. يوفّر Phaseo واجهة متوافقة مع Anthropic على `/v1/messages`، لذا يمكنك توجيه Claude Code إلى Phaseo دون تغيير طلباتك.
+
+إذا أردت أن يطّلع Claude Code على وثائق Phaseo الحالية أثناء الجلسة، فأضف خادم [Docs MCP](./docs-mcp.mdx) أيضًا.
+
+## الإعداد باستخدام Phaseo CLI
+
+```bash
+phaseo login
+phaseo claude
+claude
+```
+
+ثبّت أولًا الإصدار الرسمي من Claude Code. ينشئ الإعداد `Phaseo CLI: Claude Code API Key` غير منتهٍ، ويحفظه في مخزن بيانات الاعتماد الخاص بنظام التشغيل، ويضبط بوابة Claude Code ومساعد مفتاح API. لا يُكتب أي مفتاح كنص صريح في إعدادات Claude Code.
+
+## الإعداد اليدوي
+
+```bash
+export ANTHROPIC_BASE_URL="https://api.phaseo.app"
+export ANTHROPIC_AUTH_TOKEN="your_phaseo_api_key"
+export ANTHROPIC_API_KEY=""
+```
+
+```powershell
+$env:ANTHROPIC_BASE_URL = "https://api.phaseo.app"
+$env:ANTHROPIC_AUTH_TOKEN = "your_phaseo_api_key"
+$env:ANTHROPIC_API_KEY = ""
+```
+
+## اختيار نموذج (اختياري)
+
+إذا أردت نموذجًا افتراضيًا ثابتًا، فاضبط `ANTHROPIC_MODEL`. استخدم معرّفات النماذج المدرجة في [النماذج](../../api-reference/endpoint/models.mdx).
+
+## بدء Claude Code
+
+```bash
+claude
+```
+
+## تعيين نقاط النهاية
+
+- يستدعي Claude Code نقاط النهاية المتوافقة مع Anthropic (`/v1/messages`).
+- يعالج Phaseo هذه الطلبات عبر [Anthropic Messages](../../api-reference/endpoint/anthropic-messages.mdx).
+
+## ملاحظات التوافق
+
+- يُرسل `ANTHROPIC_AUTH_TOKEN` في ترويسة `Authorization` التي يقبلها Phaseo.
+- يمكنك أيضًا ضبط `ANTHROPIC_MODEL` على معرّف نموذج Phaseo كي يستخدم Claude Code نموذجًا افتراضيًا واحدًا.
+- القيد الحالي: قد يعيد البث مع الأدوات في Anthropic Messages الخطأ `400 invalid_request`. إذا كان سير عملك يعتمد على حلقات الأدوات المتدفقة، فاختبر هذا المسار قبل التوسّع في الإطلاق.

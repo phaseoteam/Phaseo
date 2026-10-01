@@ -47,7 +47,8 @@ import {
 	X,
 } from "lucide-react";
 import { toast } from "sonner";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
+import { localizedSettingsError } from "@/i18n/error-messages";
 import { Controls } from "@/components/ai-elements/controls";
 import { Logo } from "@/components/Logo";
 import { Badge } from "@/components/ui/badge";
@@ -147,20 +148,77 @@ function nodeData(type: DynamicRouteNodeType, providers: Provider[]): Record<str
 	return { label: "Request received" };
 }
 
-function summaryFor(node: DynamicRouteNode, providers: Provider[]): string {
-	if (node.type === "condition") return `${node.data.source}${node.data.path ? `.${node.data.path}` : ""} ${String(node.data.operator).replaceAll("_", " ")} ${node.data.value ?? ""}`;
-	if (node.type === "percentage") return (node.data.branches ?? []).map((branch: any) => `${branch.percentage}% ${branch.label}`).join(" · ");
+type StudioTranslator = (key: string, values?: Record<string, string | number>) => string;
+
+const CONFIGURED_NODE_LABEL_KEYS: Record<string, string> = {
+	"Request received": "requestReceived",
+	"Check a request value": "checkRequestValue",
+	"Split traffic": "splitTraffic",
+	"Call a model": "callModel",
+	"Limit requests": "limitRequests",
+	"Limit spend": "limitSpend",
+	"Return response": "returnResponse",
+	"Default model": "defaultModel",
+};
+
+const CONFIGURED_BRANCH_LABEL_KEYS: Record<string, string> = {
+	Primary: "primary",
+	Experiment: "experiment",
+	Stable: "stable",
+	Candidate: "candidate",
+};
+
+const CONDITION_OPERATOR_KEYS: Record<string, string> = {
+	equals: "equals",
+	does_not_equal: "doesNotEqual",
+	contains: "contains",
+	starts_with: "startsWith",
+	exists: "exists",
+	greater_than: "greaterThan",
+	less_than: "lessThan",
+	is_one_of: "isOneOf",
+};
+
+function getConfiguredLabel(label: string | null | undefined, fallbackKey: string, translate: StudioTranslator): string {
+	if (!label) return translate(fallbackKey);
+	const translationKey = CONFIGURED_NODE_LABEL_KEYS[label];
+	return translationKey ? translate(translationKey) : label;
+}
+
+function getConfiguredBranchLabel(label: string, translate: StudioTranslator): string {
+	const translationKey = CONFIGURED_BRANCH_LABEL_KEYS[label];
+	return translationKey ? translate(translationKey) : label;
+}
+
+function periodLabel(window: string, translate: StudioTranslator): string {
+	if (window === "daily") return translate("perDay");
+	if (window === "weekly") return translate("perWeek");
+	if (window === "monthly") return translate("perMonth");
+	return window;
+}
+
+function summaryFor(node: DynamicRouteNode, providers: Provider[], locale: string, translate: StudioTranslator): string {
+	if (node.type === "condition") {
+		const operator = String(node.data.operator);
+		const operatorKey = CONDITION_OPERATOR_KEYS[operator];
+		return `${node.data.source}${node.data.path ? `.${node.data.path}` : ""} ${operatorKey ? translate(operatorKey) : operator.replaceAll("_", " ")} ${node.data.value ?? ""}`;
+	}
+	if (node.type === "percentage") return (node.data.branches ?? []).map((branch: any) => `${branch.percentage}% ${getConfiguredBranchLabel(branch.label, translate)}`).join(" · ");
 	if (node.type === "model") {
 		const providerNames = (node.data.providerOrder ?? []).map((id: string) => providers.find((provider) => provider.id === id)?.name ?? id);
-		return [node.data.model || "Choose a model", providerNames.join(" → ")].filter(Boolean).join(" · ");
+		return [node.data.model || translate("chooseModel"), providerNames.join(" → ")].filter(Boolean).join(" · ");
 	}
-	if (node.type === "rate_limit") return `${Number(node.data.maxRequests ?? 0).toLocaleString()} requests / ${node.data.window}`;
-	if (node.type === "budget_limit") return `$${Number(node.data.maxCostUsd ?? 0).toLocaleString()} / ${node.data.window}`;
+	if (node.type === "rate_limit") return translate("rateLimitSummary", { count: Number(node.data.maxRequests ?? 0), period: periodLabel(node.data.window ?? "daily", translate) });
+	if (node.type === "budget_limit") {
+		const amount = new Intl.NumberFormat(locale, { style: "currency", currency: "USD" }).format(Number(node.data.maxCostUsd ?? 0));
+		return translate("budgetLimitSummary", { amount, period: periodLabel(node.data.window ?? "monthly", translate) });
+	}
 	return NODE_COPY[node.type].description;
 }
 
 function WorkflowNodeCard({ data, selected }: { data: any; selected: boolean }) {
 	const t = useTranslations("SettingsUI.routingStudio");
+	const translate: StudioTranslator = (key, values) => t(key as never, values as never);
 	const node = data.node as DynamicRouteNode;
 	const copy = NODE_COPY[node.type];
 	const Icon = copy.icon;
@@ -171,7 +229,7 @@ function WorkflowNodeCard({ data, selected }: { data: any; selected: boolean }) 
 			<div className="flex items-start gap-3">
 				<div className="grid size-8 shrink-0 place-items-center rounded-lg border border-current/15 bg-background/80"><Icon className="size-4" /></div>
 				<div className="min-w-0 flex-1">
-					<div className="flex items-center justify-between gap-2"><p className="truncate text-sm font-semibold">{node.data.label || t(copy.label as never)}</p><span className="text-[11px] text-muted-foreground">{t(copy.label as never)}</span></div>
+					<div className="flex items-center justify-between gap-2"><p className="truncate text-sm font-semibold">{data.displayLabel ?? getConfiguredLabel(node.data.label, copy.label, translate)}</p><span className="text-[11px] text-muted-foreground">{t(copy.label as never)}</span></div>
 					<p className="mt-1 line-clamp-2 text-xs leading-5 text-muted-foreground">{data.summary === copy.description ? t(copy.description as never) : data.summary === "Choose a model" ? t("chooseModel") : data.summary}</p>
 				</div>
 			</div>
@@ -187,7 +245,7 @@ function WorkflowNodeCard({ data, selected }: { data: any; selected: boolean }) 
 				<Handle id="within" type="source" position={Position.Bottom} style={{ left: "25%" }} className="!size-3.5 !border-2 !border-background !bg-emerald-500" />
 				<Handle id="exceeded" type="source" position={Position.Bottom} style={{ left: "75%" }} className="!size-3.5 !border-2 !border-background !bg-rose-500" />
 			</div> : null}
-			{node.type === "percentage" ? <div className="mt-3 flex gap-2 border-t border-current/10 pt-2">{(node.data.branches ?? []).slice(0, 4).map((branch: any, index: number, branches: any[]) => <span key={branch.id} className="min-w-0 flex-1 rounded-md bg-violet-500/15 px-2 py-1 text-center text-[11px] font-semibold text-violet-300">{branch.percentage}% {branch.label}<Handle id={branch.id} type="source" position={Position.Bottom} style={{ left: `${((index + 0.5) / branches.length) * 100}%` }} className="!size-3.5 !border-2 !border-background !bg-violet-500" /></span>)}</div> : null}
+			{node.type === "percentage" ? <div className="mt-3 flex gap-2 border-t border-current/10 pt-2">{(node.data.branches ?? []).slice(0, 4).map((branch: any, index: number, branches: any[]) => <span key={branch.id} className="min-w-0 flex-1 rounded-md bg-violet-500/15 px-2 py-1 text-center text-[11px] font-semibold text-violet-300">{branch.percentage}% {getConfiguredBranchLabel(branch.label, translate)}<Handle id={branch.id} type="source" position={Position.Bottom} style={{ left: `${((index + 0.5) / branches.length) * 100}%` }} className="!size-3.5 !border-2 !border-background !bg-violet-500" /></span>)}</div> : null}
 			{!isBranch && node.type !== "end" ? <Handle type="source" position={Position.Bottom} className="!size-3.5 !border-2 !border-background !bg-muted-foreground" /> : null}
 		</div>
 	);
@@ -232,11 +290,11 @@ function buildRoutingModelOptions(models: GatewaySupportedModel[]): RoutingModel
 	});
 }
 
-function releaseGroupLabel(releaseDate: string | null): string {
+function releaseGroupLabel(releaseDate: string | null, locale: string): string {
 	if (!releaseDate) return "earlierModels";
 	const date = new Date(releaseDate);
 	if (Number.isNaN(date.getTime())) return "earlierModels";
-	return new Intl.DateTimeFormat(undefined, { month: "long", year: "numeric", timeZone: "UTC" }).format(date);
+	return new Intl.DateTimeFormat(locale, { month: "long", year: "numeric", timeZone: "UTC" }).format(date);
 }
 
 function capabilityLabel(capability: string): string {
@@ -300,13 +358,14 @@ function ProviderSelect({ value, onChange, providers }: { value: string; onChang
 
 function GatewayModelCombobox({ value, onChange, options, excludedIds = [], requiredCapabilities = [], ariaLabel, loading, error }: { value: string; onChange: (value: string) => void; options: RoutingModelOption[]; excludedIds?: string[]; requiredCapabilities?: string[]; ariaLabel: string; loading: boolean; error: boolean }) {
 	const t = useTranslations("SettingsUI.routingStudio");
+	const locale = useLocale();
 	const [open, setOpen] = useState(false);
 	const selected = options.find((option) => option.id === value);
 	const excluded = new Set(excludedIds.filter((id) => id !== value));
 	const available = options.filter((option) => !excluded.has(option.id) && requiredCapabilities.every((capability) => option.capabilities.includes(capability)));
 	const grouped = new Map<string, RoutingModelOption[]>();
 	for (const option of available) {
-		const rawGroup = releaseGroupLabel(option.releaseDate);
+		const rawGroup = releaseGroupLabel(option.releaseDate, locale);
 		const group = rawGroup === "earlierModels" ? t("earlierModels") : rawGroup;
 		grouped.set(group, [...(grouped.get(group) ?? []), option]);
 	}
@@ -363,6 +422,7 @@ function conditionTriggerExample(node: DynamicRouteNode): string {
 
 function NodeInspector({ node, providers, update, remove }: { node: DynamicRouteNode; providers: Provider[]; update: (data: Record<string, any>) => void; remove: () => void }) {
 	const t = useTranslations("SettingsUI.routingStudio");
+	const translate: StudioTranslator = (key, values) => t(key as never, values as never);
 	const copy = NODE_COPY[node.type];
 	const [copied, setCopied] = useState(false);
 	const { data: modelCatalog, error: modelCatalogRequestError, isLoading: modelCatalogLoading } = useSWR<{ models: GatewaySupportedModel[] }>(publicSWRKeys.gatewayModels, publicSWRFetcher);
@@ -379,14 +439,14 @@ function NodeInspector({ node, providers, update, remove }: { node: DynamicRoute
 	return (
 		<div className="space-y-5 p-5">
 			<div className="flex items-start justify-between gap-3"><div><p className="text-sm font-semibold">{t(copy.label as never)}</p><p className="mt-1 text-xs text-muted-foreground">{t(copy.description as never)}</p></div>{node.type !== "start" ? <Button size="icon-sm" variant="ghost" onClick={remove} aria-label={t("deleteNode")}><Trash2 className="size-4" /></Button> : null}</div>
-			<div className="space-y-2"><Label>{t("label")}</Label><Input value={node.data.label ?? ""} onChange={(event) => update({ label: event.target.value })} /></div>
+			<div className="space-y-2"><Label>{t("label")}</Label><Input value={getConfiguredLabel(node.data.label, copy.label, translate)} onChange={(event) => update({ label: event.target.value })} /></div>
 			{node.type === "condition" ? <>
 				<div className="space-y-2"><Label>{t("readFrom")}</Label><StudioSelect ariaLabel={t("readFrom")} value={node.data.source ?? "metadata"} onChange={(source) => update({ source })} options={[{ value: "metadata", label: t("customMetadata") }, { value: "body", label: t("requestBody") }, { value: "header", label: t("requestHeader") }, { value: "endpoint", label: t("endpoint") }, { value: "model", label: t("requestedModel") }, { value: "session_id", label: t("sessionId") }]} /></div>
 				{["metadata", "body", "header"].includes(node.data.source) ? <div className="space-y-2"><Label>{node.data.source === "header" ? t("headerName") : t("fieldPath")}</Label><Input value={node.data.path ?? ""} onChange={(event) => update({ path: event.target.value })} placeholder={node.data.source === "metadata" ? "customer.plan" : node.data.source === "header" ? "x-region" : "input.priority"} /></div> : null}
 				<div className="grid grid-cols-2 gap-3"><div className="space-y-2"><Label>{t("operator")}</Label><StudioSelect ariaLabel={t("operator")} value={node.data.operator ?? "equals"} onChange={(operator) => update({ operator })} options={[{ value: "equals", label: t("equals") }, { value: "not_equals", label: t("doesNotEqual") }, { value: "contains", label: t("contains") }, { value: "starts_with", label: t("startsWith") }, { value: "exists", label: t("exists") }, { value: "greater_than", label: t("greaterThan") }, { value: "less_than", label: t("lessThan") }, { value: "in", label: t("isOneOf") }]} /></div><div className="space-y-2"><Label>{t("value")}</Label><Input disabled={node.data.operator === "exists"} value={node.data.value ?? ""} onChange={(event) => update({ value: event.target.value })} /></div></div>
 				<div className="overflow-hidden rounded-xl border bg-zinc-950 text-zinc-100"><div className="flex items-center justify-between border-b border-white/10 px-3 py-2"><div className="flex items-center gap-2 text-xs font-medium"><Code2 className="size-3.5" />{t("triggerBranch")}</div><Button size="icon-sm" variant="ghost" className="text-zinc-300 hover:bg-white/10 hover:text-white" onClick={copyExample} aria-label={t("copyRequestExample")}>{copied ? <Check className="size-3.5 text-emerald-400" /> : <Copy className="size-3.5" />}</Button></div><pre className="max-h-64 overflow-auto p-3 text-[11px] leading-5 text-zinc-300"><code>{example}</code></pre></div>
 			</> : null}
-			{node.type === "percentage" ? <div className="space-y-3"><Label>{t("trafficAllocation")}</Label>{(node.data.branches ?? []).map((branch: any, index: number) => <div key={branch.id} className="grid grid-cols-[1fr_88px] gap-2"><Input value={branch.label} onChange={(event) => update({ branches: node.data.branches.map((item: any, itemIndex: number) => itemIndex === index ? { ...item, label: event.target.value } : item) })} /><div className="relative"><Input type="number" min={0} max={100} value={branch.percentage} onChange={(event) => update({ branches: node.data.branches.map((item: any, itemIndex: number) => itemIndex === index ? { ...item, percentage: Number(event.target.value) } : item) })} /><span className="pointer-events-none absolute right-3 top-2 text-sm text-muted-foreground">%</span></div></div>)}<p className={cn("text-xs", (node.data.branches ?? []).reduce((sum: number, branch: any) => sum + Number(branch.percentage || 0), 0) === 100 ? "text-muted-foreground" : "text-destructive")}>{t("allocationsTotal")}</p></div> : null}
+			{node.type === "percentage" ? <div className="space-y-3"><Label>{t("trafficAllocation")}</Label>{(node.data.branches ?? []).map((branch: any, index: number) => <div key={branch.id} className="grid grid-cols-[1fr_88px] gap-2"><Input value={getConfiguredBranchLabel(branch.label, translate)} onChange={(event) => update({ branches: node.data.branches.map((item: any, itemIndex: number) => itemIndex === index ? { ...item, label: event.target.value } : item) })} /><div className="relative"><Input type="number" min={0} max={100} value={branch.percentage} onChange={(event) => update({ branches: node.data.branches.map((item: any, itemIndex: number) => itemIndex === index ? { ...item, percentage: Number(event.target.value) } : item) })} /><span className="pointer-events-none absolute right-3 top-2 text-sm text-muted-foreground">%</span></div></div>)}<p className={cn("text-xs", (node.data.branches ?? []).reduce((sum: number, branch: any) => sum + Number(branch.percentage || 0), 0) === 100 ? "text-muted-foreground" : "text-destructive")}>{t("allocationsTotal")}</p></div> : null}
 			{node.type === "model" ? <>
 				<div className="space-y-2"><Label>{t("primaryModel")}</Label><GatewayModelCombobox value={node.data.model ?? ""} onChange={(model) => {
 					const capabilities = modelOptions.find((option) => option.id === model)?.capabilities ?? [];
@@ -435,6 +495,15 @@ function branchLabel(handle: string | null | undefined): string {
 	return handle ? handle.replaceAll("_", " ") : "unconnected";
 }
 
+function edgeLabel(edge: DynamicRouteEdge, nodes: DynamicRouteNode[], translate: StudioTranslator): string {
+	const source = nodes.find((node) => node.id === edge.source);
+	if (source?.type === "percentage") {
+		const branch = (source.data.branches ?? []).find((item: any) => item.id === edge.sourceHandle);
+		return branch ? getConfiguredBranchLabel(branch.label, translate) : translate("unconnected");
+	}
+	return translate(branchLabel(edge.sourceHandle));
+}
+
 function MobileFlowEditor({ nodes, edges, entryNodeId, providers, selectedNodeId, onSelect, onAdd, onUpdate, onRemove }: {
 	nodes: DynamicRouteNode[];
 	edges: DynamicRouteEdge[];
@@ -447,9 +516,11 @@ function MobileFlowEditor({ nodes, edges, entryNodeId, providers, selectedNodeId
 	onRemove: (id: string) => void;
 }) {
 	const t = useTranslations("SettingsUI.routingStudio");
+	const translate: StudioTranslator = (key, values) => t(key as never, values as never);
+	const locale = useLocale();
 	const ordered = orderedRouteNodes(nodes, edges, entryNodeId);
 	const selectedNode = nodes.find((node) => node.id === selectedNodeId) ?? ordered[0] ?? null;
-	const nodeNames = new Map(nodes.map((node) => [node.id, node.data.label || t(NODE_COPY[node.type].label as never)]));
+	const nodeNames = new Map(nodes.map((node) => [node.id, getConfiguredLabel(node.data.label, NODE_COPY[node.type].label, translate)]));
 	return <div className="lg:hidden">
 		<div className="border-b p-4"><div className="flex items-center gap-2"><ListTree className="size-4 text-muted-foreground" /><div><p className="text-sm font-semibold">{t("addStep")}</p><p className="text-xs text-muted-foreground">{t("canvasHint")}</p></div></div><div className="mt-3"><StudioSelect ariaLabel={t("addStep")} value="__add__" onChange={(value) => { if (value !== "__add__") onAdd(value as DynamicRouteNodeType); }} options={[{ value: "__add__", label: t("addStep") }, ...(["condition", "percentage", "model", "rate_limit", "budget_limit", "end"] as DynamicRouteNodeType[]).map((type) => ({ value: type, label: t(NODE_COPY[type].label as never) }))]} /></div></div>
 		<div className="space-y-3 p-4">{ordered.map((node, index) => {
@@ -457,13 +528,16 @@ function MobileFlowEditor({ nodes, edges, entryNodeId, providers, selectedNodeId
 			const Icon = copy.icon;
 			const outgoing = edges.filter((edge) => edge.source === node.id);
 			const selected = node.id === selectedNode?.id;
-			return <div key={node.id} className="relative pl-10"><div className={cn("absolute left-0 top-3 grid size-7 place-items-center rounded-full border bg-background text-xs font-semibold", selected && "border-primary text-primary")}>{index + 1}</div>{index < ordered.length - 1 ? <div className="absolute bottom-[-14px] left-[13px] top-10 w-px bg-border" /> : null}<button onClick={() => onSelect(node.id)} className={cn("w-full rounded-xl border p-4 text-left transition", selected ? "border-primary bg-primary/5" : "bg-card")}><div className="flex items-start gap-3"><div className={cn("grid size-8 shrink-0 place-items-center rounded-lg border", copy.tone)}><Icon className="size-4" /></div><div className="min-w-0 flex-1"><div className="flex items-center justify-between gap-2"><p className="truncate text-sm font-semibold">{node.data.label || t(copy.label as never)}</p><Badge variant="outline" className="shrink-0">{t(copy.label as never)}</Badge></div><p className="mt-1 text-xs leading-5 text-muted-foreground">{summaryFor(node, providers)}</p></div></div>{outgoing.length ? <div className="mt-3 space-y-1.5 border-t pt-3">{outgoing.map((edge) => <div key={edge.id} className="flex items-center justify-between gap-3 text-xs"><span className={cn("rounded-md px-2 py-1 font-semibold", edge.sourceHandle === "false" || edge.sourceHandle === "exceeded" ? "bg-rose-500/15 text-rose-400" : "bg-emerald-500/15 text-emerald-400")}>{t(branchLabel(edge.sourceHandle) as never)}</span><span className="truncate text-muted-foreground">→ {nodeNames.get(edge.target) ?? t("unconnected")}</span></div>)}</div> : null}</button>{selected ? <div className="mt-3 overflow-hidden rounded-xl border bg-muted/15"><NodeInspector node={node} providers={providers} update={(data) => onUpdate(node.id, data)} remove={() => onRemove(node.id)} /></div> : null}</div>;
+			return <div key={node.id} className="relative pl-10"><div className={cn("absolute left-0 top-3 grid size-7 place-items-center rounded-full border bg-background text-xs font-semibold", selected && "border-primary text-primary")}>{index + 1}</div>{index < ordered.length - 1 ? <div className="absolute bottom-[-14px] left-[13px] top-10 w-px bg-border" /> : null}<button onClick={() => onSelect(node.id)} className={cn("w-full rounded-xl border p-4 text-left transition", selected ? "border-primary bg-primary/5" : "bg-card")}><div className="flex items-start gap-3"><div className={cn("grid size-8 shrink-0 place-items-center rounded-lg border", copy.tone)}><Icon className="size-4" /></div><div className="min-w-0 flex-1"><div className="flex items-center justify-between gap-2"><p className="truncate text-sm font-semibold">{getConfiguredLabel(node.data.label, copy.label, translate)}</p><Badge variant="outline" className="shrink-0">{t(copy.label as never)}</Badge></div><p className="mt-1 text-xs leading-5 text-muted-foreground">{summaryFor(node, providers, locale, translate)}</p></div></div>{outgoing.length ? <div className="mt-3 space-y-1.5 border-t pt-3">{outgoing.map((edge) => <div key={edge.id} className="flex items-center justify-between gap-3 text-xs"><span className={cn("rounded-md px-2 py-1 font-semibold", edge.sourceHandle === "false" || edge.sourceHandle === "exceeded" ? "bg-rose-500/15 text-rose-400" : "bg-emerald-500/15 text-emerald-400")}>{edgeLabel(edge, nodes, translate)}</span><span className="truncate text-muted-foreground">→ {nodeNames.get(edge.target) ?? t("unconnected")}</span></div>)}</div> : null}</button>{selected ? <div className="mt-3 overflow-hidden rounded-xl border bg-muted/15"><NodeInspector node={node} providers={providers} update={(data) => onUpdate(node.id, data)} remove={() => onRemove(node.id)} /></div> : null}</div>;
 		})}</div>
 	</div>;
 }
 
 export default function DynamicRoutesStudio({ initialData, demoMode = false }: { initialData: SettingsDynamicRoutesInitialData; demoMode?: boolean }) {
 	const rs = useTranslations("SettingsUI.routingStudio");
+	const translate: StudioTranslator = (key, values) => rs(key as never, values as never);
+	const locale = useLocale();
+	const settingsT = useTranslations("SettingsUI");
 	const router = useRouter();
 	const [routes, setRoutes] = useState(() => initialData.routes.map(normalizedRoute));
 	const [selectedRouteId, setSelectedRouteId] = useState<string | null>(routes[0]?.id ?? null);
@@ -480,7 +554,7 @@ export default function DynamicRoutesStudio({ initialData, demoMode = false }: {
 	const providerSignature = initialData.providers.map((provider) => `${provider.id}:${provider.name}`).join("|");
 	const selectedNode = routeNodes.find((node) => node.id === selectedNodeId) ?? null;
 
-	const [flowNodes, setFlowNodes] = useState<Node[]>(() => routeNodes.map((node) => ({ id: node.id, type: "workflow", position: node.position ?? { x: 0, y: 0 }, data: { node, summary: summaryFor(node, initialData.providers) }, selected: node.id === selectedNodeId })));
+	const [flowNodes, setFlowNodes] = useState<Node[]>(() => routeNodes.map((node) => ({ id: node.id, type: "workflow", position: node.position ?? { x: 0, y: 0 }, data: { node, displayLabel: getConfiguredLabel(node.data.label, NODE_COPY[node.type].label, translate), summary: summaryFor(node, initialData.providers, locale, translate) }, selected: node.id === selectedNodeId })));
 	const [flowInstance, setFlowInstance] = useState<ReactFlowInstance | null>(null);
 	const paletteDragTypeRef = useRef<DynamicRouteNodeType | null>(null);
 	const suppressPaletteClickRef = useRef(false);
@@ -490,7 +564,7 @@ export default function DynamicRoutesStudio({ initialData, demoMode = false }: {
 		setFlowNodes((current) => {
 			const next = routeNodes.map((node) => {
 				const existing = current.find((item) => item.id === node.id);
-				return { ...existing, id: node.id, type: "workflow", position: node.position ?? existing?.position ?? { x: 0, y: 0 }, data: { node, summary: summaryFor(node, initialData.providers) }, selected: node.id === selectedNodeId };
+				return { ...existing, id: node.id, type: "workflow", position: node.position ?? existing?.position ?? { x: 0, y: 0 }, data: { node, displayLabel: getConfiguredLabel(node.data.label, NODE_COPY[node.type].label, translate), summary: summaryFor(node, initialData.providers, locale, translate) }, selected: node.id === selectedNodeId };
 			});
 			const unchanged = next.length === current.length && next.every((node, index) => {
 				const previous = current[index];
@@ -499,7 +573,8 @@ export default function DynamicRoutesStudio({ initialData, demoMode = false }: {
 					previous.selected === node.selected &&
 					previous.position.x === node.position.x &&
 					previous.position.y === node.position.y &&
-					previous.data.summary === node.data.summary;
+					previous.data.summary === node.data.summary &&
+					previous.data.displayLabel === node.data.displayLabel;
 			});
 			return unchanged ? current : next;
 		});
@@ -507,7 +582,7 @@ export default function DynamicRoutesStudio({ initialData, demoMode = false }: {
 		// persisted route changing. Stable signatures prevent a render loop while
 		// still synchronizing every semantic route/provider update.
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [routeNodesSignature, selectedNodeId, providerSignature]);
+	}, [routeNodesSignature, selectedNodeId, providerSignature, locale]);
 	const flowEdges = useMemo<Edge[]>(() => routeEdges.map((edge) => ({ ...edge, sourceHandle: edge.sourceHandle ?? undefined, type: "smoothstep", interactionWidth: 24, markerEnd: { type: MarkerType.ArrowClosed }, style: { strokeWidth: 1.75 } })), [routeEdges]);
 
 	function replaceSelected(update: (route: DynamicRouteRow) => DynamicRouteRow) {
@@ -594,11 +669,11 @@ export default function DynamicRoutesStudio({ initialData, demoMode = false }: {
 	function createRoute() {
 		const createLocal = (id: string, version: number) => {
 			const now = new Date().toISOString();
-			const route: DynamicRouteRow = { id, workspace_id: initialData.workspaceId ?? "demo", name: `Untitled route ${routes.length + 1}`, description: null, status: "active", version, config: newConfig(), keyIds: [], created_at: now, updated_at: now, versions: [{ version, status: "draft", created_at: now }] };
+			const route: DynamicRouteRow = { id, workspace_id: initialData.workspaceId ?? "demo", name: rs("titleNewRoute", { number: routes.length + 1 }), description: null, status: "active", version, config: newConfig(), keyIds: [], created_at: now, updated_at: now, versions: [{ version, status: "draft", created_at: now }] };
 			setRoutes((current) => [route, ...current]); setSelectedRouteId(id); setSelectedNodeId("start"); setTab("editor");
 		};
 	if (demoMode) { createLocal(crypto.randomUUID(), 1); toast.success(rs("draftCreated")); return; }
-	startTransition(async () => { try { const config = newConfig(); const created = await createDynamicRouteAction({ name: rs("titleNewRoute", { number: routes.length + 1 }), description: null, config }); createLocal(created.id, created.version); router.refresh(); } catch (error) { toast.error(error instanceof Error ? error.message : rs("couldNotCreate")); } });
+	startTransition(async () => { try { const config = newConfig(); const created = await createDynamicRouteAction({ name: rs("titleNewRoute", { number: routes.length + 1 }), description: null, config }); createLocal(created.id, created.version); router.refresh(); } catch (error) { toast.error(localizedSettingsError(error, settingsT, "Action failed", rs("couldNotCreate"))); } });
 	}
 
 	function saveRoute() {
@@ -608,21 +683,21 @@ export default function DynamicRoutesStudio({ initialData, demoMode = false }: {
 			return { ...route, version: nextVersion, updated_at: savedAt, versions: [{ version: nextVersion, status: "draft", created_at: savedAt }, ...(route.versions ?? []).filter((version) => version.version !== nextVersion).map((version) => version.status === "draft" ? { ...version, status: "superseded" as const } : version)] };
 		});
 		if (demoMode) { saveLocal(); toast.success(rs("draftSaved")); return; }
-		startTransition(async () => { try { const [saved] = await Promise.all([updateDynamicRouteAction(selectedRoute.id, { name: selectedRoute.name, description: selectedRoute.description, status: selectedRoute.status, config: selectedRoute.config }), attachDynamicRouteKeysAction(selectedRoute.id, selectedRoute.keyIds)]); saveLocal(saved.version); toast.success(rs("draftSaved")); router.refresh(); } catch (error) { toast.error(error instanceof Error ? error.message : rs("couldNotSave")); } });
+		startTransition(async () => { try { const [saved] = await Promise.all([updateDynamicRouteAction(selectedRoute.id, { name: selectedRoute.name, description: selectedRoute.description, status: selectedRoute.status, config: selectedRoute.config }), attachDynamicRouteKeysAction(selectedRoute.id, selectedRoute.keyIds)]); saveLocal(saved.version); toast.success(rs("draftSaved")); router.refresh(); } catch (error) { toast.error(localizedSettingsError(error, settingsT, "Action failed", rs("couldNotSave"))); } });
 	}
 
 	function deleteRoute() {
 		if (!selectedRoute) return;
 		const remove = () => { const remaining = routes.filter((route) => route.id !== selectedRoute.id); setRoutes(remaining); setSelectedRouteId(remaining[0]?.id ?? null); setSelectedNodeId(remaining[0]?.config.entryNodeId ?? null); };
 		if (demoMode) { remove(); toast.success(rs("routeDeleted")); return; }
-		startTransition(async () => { try { await deleteDynamicRouteAction(selectedRoute.id, selectedRoute.name); remove(); router.refresh(); } catch (error) { toast.error(error instanceof Error ? error.message : rs("couldNotDelete")); } });
+		startTransition(async () => { try { await deleteDynamicRouteAction(selectedRoute.id, selectedRoute.name); remove(); router.refresh(); } catch (error) { toast.error(localizedSettingsError(error, settingsT, "Action failed", rs("couldNotDelete"))); } });
 	}
 
 	function deployVersion(version: number) {
 		if (!selectedRoute) return;
 		const deployLocal = () => replaceSelected((route) => ({ ...route, deployed_version: version, versions: (route.versions ?? []).map((item) => ({ ...item, status: item.version === version ? "deployed" as const : item.status === "deployed" ? "superseded" as const : item.status })) }));
 		if (demoMode) { deployLocal(); toast.success(rs("versionDeployedLocally", { version })); return; }
-		startTransition(async () => { try { await deployDynamicRouteVersionAction(selectedRoute.id, version); deployLocal(); toast.success(rs("versionDeployed", { version })); router.refresh(); } catch (error) { toast.error(error instanceof Error ? error.message : rs("couldNotDeploy")); } });
+		startTransition(async () => { try { await deployDynamicRouteVersionAction(selectedRoute.id, version); deployLocal(); toast.success(rs("versionDeployed", { version })); router.refresh(); } catch (error) { toast.error(localizedSettingsError(error, settingsT, "Action failed", rs("couldNotDeploy"))); } });
 	}
 
 	if (!selectedRoute) return <div className="rounded-xl border border-dashed p-12 text-center"><Workflow className="mx-auto size-7 text-muted-foreground" /><h2 className="mt-4 text-lg font-semibold">{rs("createFirstTitle")}</h2><p className="mt-2 text-sm text-muted-foreground">{rs("createFirstDescription")}</p><Button className="mt-5" onClick={createRoute}><Plus className="size-4" />{rs("newRoute")}</Button></div>;
@@ -634,11 +709,11 @@ export default function DynamicRoutesStudio({ initialData, demoMode = false }: {
 					<div className="min-w-0 flex-1">
 						<p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">{rs("editingRoute")}</p>
 						<div className="mt-1.5 flex flex-wrap items-center gap-2">
-							<div className="w-full min-w-0 sm:w-72"><StudioSelect ariaLabel="Editing route" value={selectedRoute.id} onChange={(routeId) => { const route = routes.find((item) => item.id === routeId); setSelectedRouteId(routeId); setSelectedNodeId(route?.config.entryNodeId ?? null); }} options={routes.map((route) => ({ value: route.id, label: route.name }))} /></div>
-							<Badge variant="outline" className="h-6 capitalize">{selectedRoute.status}</Badge>
+						<div className="w-full min-w-0 sm:w-72"><StudioSelect ariaLabel={rs("editingRoute")} value={selectedRoute.id} onChange={(routeId) => { const route = routes.find((item) => item.id === routeId); setSelectedRouteId(routeId); setSelectedNodeId(route?.config.entryNodeId ?? null); }} options={routes.map((route) => ({ value: route.id, label: route.name }))} /></div>
+							<Badge variant="outline" className="h-6 capitalize">{selectedRoute.status === "active" ? settingsT("strings.Active" as never) : selectedRoute.status === "paused" ? rs("paused") : selectedRoute.status === "draft" ? rs("draft") : selectedRoute.status === "deployed" ? rs("deployed") : selectedRoute.status}</Badge>
 						</div>
 						<p className="mt-2 max-w-2xl text-xs leading-5 text-muted-foreground">{selectedRoute.description || rs("noDescription")}</p>
-						<div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground"><span>{selectedRoute.keyIds.length} API key{selectedRoute.keyIds.length === 1 ? "" : "s"}</span><span aria-hidden="true">·</span><span>Version {selectedRoute.version}{selectedRoute.deployed_version === selectedRoute.version ? " deployed" : " draft"}</span></div>
+						<div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground"><span>{rs("apiKeysCount", { count: selectedRoute.keyIds.length })}</span><span aria-hidden="true">·</span><span>{rs("versionStatus", { version: selectedRoute.version, status: selectedRoute.deployed_version === selectedRoute.version ? rs("deployed") : rs("draft") })}</span></div>
 					</div>
 					<div className="flex shrink-0 items-center gap-2"><Button variant="outline" onClick={createRoute} aria-label={rs("newRoute")}><Plus className="size-4" /><span className="hidden sm:inline">{rs("newRoute")}</span></Button><Button onClick={saveRoute} disabled={isPending}><Save className="size-4" /><span className="sm:hidden">{rs("save")}</span><span className="hidden sm:inline">{rs("saveVersion")}</span></Button></div>
 				</div>
@@ -659,7 +734,7 @@ export default function DynamicRoutesStudio({ initialData, demoMode = false }: {
 				{inspectorOpen ? <aside className="w-[360px] overflow-y-auto border-l">{selectedNode ? <NodeInspector node={selectedNode} providers={initialData.providers} update={(data) => updateNode(selectedNode.id, data)} remove={() => removeNode(selectedNode.id)} /> : <div className="p-6 text-sm text-muted-foreground">{rs("selectNode")}</div>}</aside> : null}
 			</div><MobileFlowEditor nodes={routeNodes} edges={routeEdges} entryNodeId={config.entryNodeId} providers={initialData.providers} selectedNodeId={selectedNodeId} onSelect={setSelectedNodeId} onAdd={addNode} onUpdate={updateNode} onRemove={removeNode} /></> : null}
 
-			{tab === "versions" ? <div className="mx-auto max-w-4xl p-8"><div className="flex items-start justify-between"><div><h2 className="text-lg font-semibold">{rs("versionHistory")}</h2><p className="mt-1 text-sm text-muted-foreground">{rs("versionHistoryDescription")}</p></div><Button onClick={() => deployVersion(selectedRoute.version)}><Rocket className="size-4" />{rs("deployVersion", { version: selectedRoute.version })}</Button></div><div className="mt-6 divide-y rounded-xl border">{(selectedRoute.versions?.length ? selectedRoute.versions : [{ version: selectedRoute.version, status: "draft" as const, created_at: selectedRoute.updated_at }]).map((version) => <div key={`${version.version}-${version.created_at}`} className="flex items-center gap-4 p-4"><div className="grid size-9 place-items-center rounded-lg bg-muted"><History className="size-4" /></div><div className="flex-1"><div className="flex items-center gap-2"><p className="text-sm font-medium">{rs("version", { version: version.version })}</p><Badge variant="outline">{version.status === "deployed" ? rs("deployed") : rs("draft")}</Badge></div><p className="mt-1 text-xs text-muted-foreground">{new Date(version.created_at).toLocaleString()}</p></div>{version.status !== "deployed" ? <Button size="sm" variant="outline" onClick={() => deployVersion(version.version)}>{rs("deploy")}</Button> : <span className="flex items-center gap-1 text-xs text-emerald-500"><Check className="size-3.5" />{rs("live")}</span>}</div>)}</div></div> : null}
+			{tab === "versions" ? <div className="mx-auto max-w-4xl p-8"><div className="flex items-start justify-between"><div><h2 className="text-lg font-semibold">{rs("versionHistory")}</h2><p className="mt-1 text-sm text-muted-foreground">{rs("versionHistoryDescription")}</p></div><Button onClick={() => deployVersion(selectedRoute.version)}><Rocket className="size-4" />{rs("deployVersion", { version: selectedRoute.version })}</Button></div><div className="mt-6 divide-y rounded-xl border">{(selectedRoute.versions?.length ? selectedRoute.versions : [{ version: selectedRoute.version, status: "draft" as const, created_at: selectedRoute.updated_at }]).map((version) => <div key={`${version.version}-${version.created_at}`} className="flex items-center gap-4 p-4"><div className="grid size-9 place-items-center rounded-lg bg-muted"><History className="size-4" /></div><div className="flex-1"><div className="flex items-center gap-2"><p className="text-sm font-medium">{rs("version", { version: version.version })}</p><Badge variant="outline">{version.status === "deployed" ? rs("deployed") : rs("draft")}</Badge></div><p className="mt-1 text-xs text-muted-foreground">{new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeStyle: "short" }).format(new Date(version.created_at))}</p></div>{version.status !== "deployed" ? <Button size="sm" variant="outline" onClick={() => deployVersion(version.version)}>{rs("deploy")}</Button> : <span className="flex items-center gap-1 text-xs text-emerald-500"><Check className="size-3.5" />{rs("live")}</span>}</div>)}</div></div> : null}
 
 			{tab === "settings" ? <div className="mx-auto grid max-w-4xl gap-8 p-8 md:grid-cols-2"><div className="space-y-5"><div><h2 className="text-lg font-semibold">{rs("routeDetails")}</h2><p className="mt-1 text-sm text-muted-foreground">{rs("routeDetailsDescription")}</p></div><div className="space-y-2"><Label>{rs("name")}</Label><Input value={selectedRoute.name} onChange={(event) => replaceSelected((route) => ({ ...route, name: event.target.value }))} /></div><div className="space-y-2"><Label>{rs("description")}</Label><Textarea value={selectedRoute.description ?? ""} onChange={(event) => replaceSelected((route) => ({ ...route, description: event.target.value }))} /></div><div className="flex items-center justify-between rounded-lg border p-4"><div><p className="text-sm font-medium">{rs("cacheAwareRouting")}</p><p className="text-xs text-muted-foreground">{rs("cacheAwareRoutingDescription")}</p></div><Switch checked={config.cacheAwareRouting !== false} onCheckedChange={(cacheAwareRouting) => updateConfig((current) => ({ ...current, cacheAwareRouting }))} /></div><div className="flex items-center justify-between rounded-lg border p-4"><div><p className="text-sm font-medium">{rs("sessionAffinity")}</p><p className="text-xs text-muted-foreground">{rs("sessionAffinityDescription")}</p></div><Switch checked={config.sessionAffinity !== false} onCheckedChange={(sessionAffinity) => updateConfig((current) => ({ ...current, sessionAffinity }))} /></div></div><div><div><h2 className="text-lg font-semibold">{rs("attachApiKeys")}</h2><p className="mt-1 text-sm text-muted-foreground">{rs("attachApiKeysDescription")}</p></div><div className="mt-5 space-y-2">{initialData.keys.map((key) => { const active = selectedRoute.keyIds.includes(key.id); return <button key={key.id} onClick={() => replaceSelected((route) => ({ ...route, keyIds: active ? route.keyIds.filter((id) => id !== key.id) : [...route.keyIds, key.id] }))} className={cn("flex w-full items-center gap-3 rounded-lg border p-3 text-left", active && "border-primary bg-primary/5")}><KeyRound className="size-4" /><div className="flex-1"><p className="text-sm font-medium">{key.name}</p><p className="text-xs text-muted-foreground">{key.prefix}</p></div>{active ? <Check className="size-4 text-primary" /> : null}</button>; })}</div><Button variant="destructive" className="mt-8" onClick={deleteRoute}><Trash2 className="size-4" />{rs("deleteRoute")}</Button></div></div> : null}
 

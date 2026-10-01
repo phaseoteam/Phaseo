@@ -1,0 +1,64 @@
+---
+icon: "upload"
+title: "提交评分"
+description: "以结构清晰、便于审核的方式与 Phaseo 社区分享新的基准测试结果。"
+---
+
+我们欢迎提供商、研究人员和高级用户贡献数据。请按照以下流程提交，以便我们尽快处理。
+
+---
+
+## 1. 准备数据
+
+- 确认基准测试已存在于 `/data/benchmarks`。如果不存在，请创建 issue 提出新增建议。
+- 收集原始结果，包括提示词格式、评估框架和硬件详情。
+- 如有公开出处，请提供引用（博客文章、论文或数据集仓库）。
+
+> ✅ **提示**
+> 分享可复现的脚本或笔记本可显著加快验证。
+
+---
+
+## 2. Fork 仓库
+
+1. Fork [github.com/phaseoteam/data](https://github.com/phaseoteam/data)。
+2. 创建新分支（例如 `add-claude-3.5-sonnet-mmlu`）。
+3. 在相应的基准测试 JSON 中更新分数和元数据。
+
+---
+
+## 3. 运行验证
+
+使用仓库工具检查结构和值范围是否正确：
+
+```bash
+pnpm install
+pnpm run validate:benchmarks
+```
+
+提交 pull request 前，请修复所有报告的问题。
+
+---
+
+## 4. 创建 pull request
+
+请在 PR 描述中包含以下内容：
+
+- 基准测试名称和数据拆分（例如 `GSM8K test`）。
+- 模型 ID 和提供商。
+- 引用或评估日志链接。
+- 分数的生成方式概述。
+
+维护者会审核提交，如有需要会要求补充说明，并在批准后合并。
+
+---
+
+## 5. 跟踪发布
+
+合并后，分数会在下一次计划的数据同步中显示。你可以在 Discord 的 #data-updates 频道或公开变更日志中查看进度。
+
+---
+
+## 需要帮助？
+
+请在[社区 Discord](https://discord.gg/aQyywCvgZ5) 联系我们，或发送邮件至[支持团队](mailto:daniel@phaseo.app)。我们乐于协助大型导入或合作研究。

@@ -1,0 +1,21 @@
+---
+icon: "database"
+title: "Status und Genehmigung"
+description: "Pausiere Go-Agenten für menschliche Entscheidungen und setze den anwendungseigenen Zustand fort."
+---
+
+Verwende `HumanReview` für einen allgemeinen Prüfpunkt. Genehmigungspflichtige und manuelle Tools füllen `Run.Pause.PendingToolCalls` mit den exakten Aufruf-IDs.
+
+Setze den Lauf mit `Agent.Continue(...)` fort und übergib:
+
+- `ToolDecision`-Einträge in `Approvals` oder `Rejections`
+- `ToolOutput`-Einträge für manuelle Arbeit
+- `HumanInput` für eine allgemeine Prüfungspause
+- das vorherige `RunResult` oder `RunID` mit einem `StateAccessor`
+
+Entscheidungen verwenden die exakten Aufruf-IDs, sodass gleichzeitige Aufrufe desselben Tools unterscheidbar bleiben. Implementiere `StateAccessor.Load(...)` und `Save(...)`, wenn Läufe Anfragen oder Neustarts überdauern müssen.
+
+## Weiterführende Themen
+
+- [Werkzeuge](./agent-sdk-tools.mdx)
+- [Laufsteuerung](./agent-sdk-run-controls.mdx)

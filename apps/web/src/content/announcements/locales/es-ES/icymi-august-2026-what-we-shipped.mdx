@@ -1,0 +1,133 @@
+---
+title: "Por si te lo perdiste: Lo que lanzamos en agosto de 2026"
+shortTitle: "Por si te lo perdiste: agosto de 2026"
+description: Agosto facilitó conectar herramientas de programación, mejoró el seguimiento de solicitudes, añadió controles de autoservicio para espacios de trabajo y depuró el catálogo de proveedores.
+publishedAt: 2026-08-30
+author: Phaseo Team
+category: data
+pinned: false
+coverImage: /blog-images/recap-august-2026.png
+tags:
+  - Resumen mensual
+  - Resumen mensual
+  - Producto
+  - Modelos
+draft: false
+---
+
+Agosto fue un mes muy activo, incluso para nosotros. Facilitamos la conexión de Phaseo con herramientas de programación, registramos más detalles de cada solicitud de Gateway, añadimos controles de autoservicio para espacios de trabajo y por fin depuramos a fondo el catálogo de proveedores.
+
+Este resumen recoge el trabajo publicado entre el **1 y el 30 de agosto de 2026**, según las solicitudes de cambios integradas, el historial de versiones y los datos del catálogo del mes.
+
+## Lo que lanzamos
+
+### Conectar herramientas de programación es más fácil
+
+La CLI de Phaseo ahora gestiona más pasos entre la instalación y el primer uso útil.
+
+Añadimos publicación independiente, comprobaciones de actualizaciones, el comando `doctor` e integraciones con OpenCode y otros agentes de programación. La configuración del entorno con un solo comando detecta las herramientas compatibles, explica qué instalará y pide permiso antes de modificar la configuración local. La CLI también permite comparar modelos antes de comprometer una aplicación con una ruta.
+
+Además, añadimos una migración guiada desde OpenRouter. Se centra en lo que realmente cambia: credenciales, URL base, identificadores de modelos y atribución de solicitudes.
+
+Este mes también llegó el código inicial del espacio de trabajo de escritorio y del cliente móvil Expo. Ninguno está listo para su lanzamiento como cliente final. Son el punto de partida para llevar los mismos espacios de trabajo, el catálogo de modelos y el historial de solicitudes más allá del navegador.
+
+### La observabilidad sigue la solicitud completa
+
+Ahora registramos más etapas del ciclo de vida de cada solicitud, incluida la latencia, el comportamiento de la transmisión, el uso, los intentos de los proveedores y la decisión final de enrutamiento.
+
+En agosto añadimos la latencia entre tokens y la medición de entradas almacenadas en caché, persistimos los intentos de solicitudes a proveedores y añadimos la exportación de GenAI OpenTelemetry. También mejoramos la inspección de los registros de uso, restauramos la atribución del origen de las solicitudes y la separamos de la aplicación Chat. Las vistas de enrutamiento explican ahora por qué se seleccionó un proveedor.
+
+Las páginas de rendimiento de modelos incorporaron mejores filtros, estados sincronizados al pasar por los gráficos, historial de precios, detalles de proveedores y tasas de retorno semanales. Ajustamos las reglas para modelos con poco volumen: pueden mostrar datos útiles sin presentar una muestra pequeña como concluyente. Las clasificaciones siguen disponibles si falla una fuente de datos externa.
+
+Si una solicitud es lenta, costosa, se reintenta o se envía a un destino inesperado, ahora hay más indicios para entender el motivo.
+
+### Las API multimodales empezaron a compartir la misma infraestructura
+
+Este mes hubo cambios en las cargas de trabajo de lotes, vídeo, tiempo real, imágenes, música, transcripción y documentos. Algunas recibieron rutas nuevas; otras necesitaron trabajo menos visible en facturación, propiedad o gestión de fallos.
+
+Reforzamos los controles de propiedad, facturación y fallos en las canalizaciones de las API Batch y Video. También revisamos la admisión de retransmisiones en tiempo real y los ciclos de vida de Durable Objects. Los proveedores de audio ahora siguen contratos más coherentes, y la música generada puede completar todo el ciclo asíncrono, incluida la recuperación.
+
+Gateway añadió rutas para Meta Muse Image 1.0 y varios modelos multimedia de MiniMax. Cohere Parse v5 incorporó el análisis de documentos a un nivel de ruta estándar, mientras que los modelos de transcripción Gemini ampliaron la cobertura de audio.
+
+Los adaptadores propiedad de los proveedores y la configuración basada en bases de datos van sustituyendo gradualmente el código de enrutamiento creado para cada caso. Las nuevas modalidades pueden reutilizar autenticación, captura de uso, facturación, seguimiento y alternativas en lugar de llegar con otra pila independiente que mantener.
+
+### Los espacios de trabajo ganaron controles empresariales sin una cola de solicitudes de soporte
+
+Se lanzaron complementos Enterprise de autoservicio para SSO, SCIM, gestión de directorios y departamentos. SCIM incorporó una implementación de proveedor de servicios, permisos por departamento y una conciliación más segura.
+
+Ahora las notificaciones de los espacios de trabajo pueden dirigirse al correo electrónico, Discord, Slack, Microsoft Teams o webhooks HTTPS personalizados. Los equipos pueden elegir un destino para cada alerta en vez de enviar todas las notificaciones a un único canal global.
+
+Los controles de privacidad ya se aplican en todo el espacio de trabajo, hay filtros de políticas de proveedores disponibles en el catálogo y el Centro de confianza de Phaseo está activo. Las páginas de modelos y proveedores también muestran con más claridad la retención, el procesamiento regional y las políticas de datos.
+
+Los equipos no deberían necesitar abrir una conversación con soporte para saber dónde se procesan las solicitudes, cómo gestiona los datos un proveedor, quién puede acceder al espacio de trabajo o dónde llegará una alerta. Esa información ahora está más cerca de los ajustes correspondientes.
+
+### Chat y Compare eliminaron muchas pequeñas molestias
+
+Ningún cambio de agosto en Chat es enorme por sí solo, pero el conjunto se nota.
+
+Las comparaciones en paralelo aprovechan mejor las pantallas anchas y mantienen legible el contenido de los mensajes en portátiles y tabletas. Los borradores se conservan al iniciar sesión, las salas de modelos clasifican con más fiabilidad y el selector de modelos se abre cuando un mensaje no tiene ninguno seleccionado. Chat también incorporó indicadores de actividad, acuses de recibo, acciones para seleccionar asistentes y marcas en la cronología cuando cambia el modelo activo.
+
+Los filtros de modelos en móviles ahora coinciden con los de escritorio, la búsqueda global ordena por relevancia, los resultados muestran los nombres regionales de los proveedores y las tarjetas del catálogo indican el estado del ciclo de vida. Compare se abre directamente y conserva los controles en su última posición.
+
+En su mayoría, son mejoras que eliminan fricción: justo lo que necesitaban Chat y Compare.
+
+### Revisamos el catálogo proveedor por proveedor
+
+Revisamos la identidad de los modelos, su disponibilidad, precios, regiones, niveles de servicio, políticas de privacidad, compatibilidad con parámetros y estado de retirada en todo el catálogo de proveedores.
+
+Esto incluyó las principales plataformas propias y decenas de proveedores de inferencia más pequeños. Durante el proceso, separamos la disponibilidad de los proveedores del estado de enrutamiento de Phaseo, añadimos fichas independientes de modelos gratuitos, protegimos la identidad de proveedores sigilosos y corregimos el tratamiento de proveedores inactivos y externos.
+
+Los precios ahora admiten historial por periodos, promociones, tarifas fuera de horas punta, políticas por nivel y comparaciones de descuentos más claras. También cambiamos el nombre del nivel de servicio Priority por Fast. Es lo que eligen los desarrolladores y resulta menos ambiguo que la antigua etiqueta interna.
+
+En la práctica, hay menos registros duplicados y rutas inactivas. También es más fácil responder a la pregunta para la que existe el catálogo: quién puede ejecutar este modelo, dónde, con qué política y a qué precio.
+
+## También lanzamos
+
+- Los ajustes preestablecidos incorporaron versiones inmutables, linaje de bifurcaciones, protección de invocaciones y observabilidad de comentarios.
+- Las funciones de los modelos y las preguntas frecuentes sobre llamadas a herramientas están disponibles desde las páginas del catálogo.
+- Mejoraron la transmisión y la visualización de Server Tools.
+- Actualizamos Models API y la interfaz MCP para usar los datos actuales del catálogo.
+- Las páginas de proveedores y laboratorios ganaron más logotipos, etiquetas regionales y estados de disponibilidad más claros.
+- Los recursos de marca ya se pueden descargar en SVG y PNG, con vistas previas claras y oscuras.
+- El acceso a la base de datos pasó a PlanetScale, con menos salida de datos y consultas etiquetadas para facilitar el diagnóstico.
+- Next.js pasó a la línea de versiones 16.3, con actualizaciones posteriores de compatibilidad y seguridad.
+
+## Modelos destacados
+
+Los lanzamientos de agosto abarcaron programación, medios, documentos y modelos de pesos abiertos. Ningún modelo concentró todas las novedades del mes.
+
+GLM 5.3 de Z.AI fue uno de nuestros mayores esfuerzos de enrutamiento del mes. Le siguió GLM 5.3 Flash, con rutas en OpenRouter, Baseten, FriendliAI, CrofAI, Morph, Reka, Databricks, AkashML, GMI Cloud, DigitalOcean, Parasail y otros. También se amplió la familia Qwen 3.8, con las versiones Max, 2.4T A95B, 27B y Flash.
+
+Google lanzó Gemini 3.7 Flash, mientras que xAI añadió Grok 4.6 y Grok Imagine Image 2.0. Entre los modelos multimedia estuvieron Muse Spark 1.2, Muse Glimmer 30B, Seedance 2.5 y DeepSeek V4 Flash Vision Exp. Cohere Parse v5 añadió análisis de documentos, e IBM lanzó la familia Granite 4.2 en tamaños de 3B, 8B y 30B.
+
+Consulta los datos de lanzamientos más recientes:
+
+- [Ver las novedades recientes](/updates)
+
+## Resumen de lanzamientos
+
+El historial de GitHub muestra **557 solicitudes de cambios integradas** entre el 1 y el 30 de agosto. El changelog de agosto registra **29 lanzamientos de modelos**. La mayor parte del trabajo se centró en la configuración de herramientas de programación, el seguimiento de solicitudes, las API multimodales, la administración de espacios de trabajo y la limpieza del catálogo.
+
+## Modelos lanzados en agosto de 2026
+
+El changelog de agosto incluye estos lanzamientos:
+
+- 3 de agosto: Qwen 3.8 Max (`qwen/qwen3.8-max`) y Namazu (`sakana/namazu`)
+- 5 de agosto: Ling 3.0 Tiny (`inclusionai/ling-3.0-tiny`), Muse Spark 1.2 (`meta/muse-spark-1.2`), Muse Spark 1.2 Contributor (`meta/muse-spark-1.2-contributor`) y Shieldstral 1.0 3B (`mistral/shieldstral-1.0-3b`)
+- 6 de agosto: Solar Pro 4 (`upstage/solar-pro-4`)
+- 7 de agosto: Seedance 2.5 (`bytedance/seedance-2.5`)
+- 10 de agosto: Muse Glimmer 30B (`meta/muse-glimmer-30b`)
+- 11 de agosto: MAI Code 1.1 Flash (`microsoft/mai-code-1.1-flash`), Nemotron 3.5 Lightning 30B A3B (`nvidia/nemotron-3.5-lightning`) y Grok Imagine Image 2.0 (`spacex-ai/grok-imagine-image-2.0`)
+- 12 de agosto: Grok 4.6 (`spacex-ai/grok-4.6`) y Qwen 3.8 2.4T A95B (`qwen/qwen3.8-2.4t-a95b`)
+- 13 de agosto: Gemini 3.7 Flash (`google/gemini-3.7-flash`), OCR 4.1 (`mistral/ocr-4.1`), DeepSeek V4 Pro 0813 (`deepseek/deepseek-v4-pro-0813`) y dots3-note Preview (`dots-studio/dots3-note-prev`)
+- 14 de agosto: GLM 5.3 (`z-ai/glm-5.3`) y Qwen 3.8 27B (`qwen/qwen3.8-27b`)
+- 21 de agosto: DeepSeek V4 Flash Vision Exp (`deepseek/deepseek-v4-flash-vision-exp`)
+- 25 de agosto: Granite 4.2 30B (`ibm/granite-4.2-30b`), Granite 4.2 8B (`ibm/granite-4.2-8b`) y Granite 4.2 3B (`ibm/granite-4.2-3b`)
+- 26 de agosto: Qwen 3.8 Flash (`qwen/qwen3.8-flash`) y GLM 5.3 Flash (`z-ai/glm-5.3-flash`)
+- 27 de agosto: Parse v5.0 (`cohere/parse-v5.0`) y Ling 3.0 Flash Fin (`inclusionai/ling-3.0-flash-fin`)
+- 28 de agosto: Hy4 Preview (`tencent/hy4-preview`)
+
+## Lo que viene
+
+Las bases de escritorio y móvil aún están en desarrollo, y algunas rutas multimodales todavía tienen particularidades de cada proveedor. En septiembre seguiremos desarrollando esos clientes, eliminando más excepciones y facilitando el uso de la nueva información de enrutamiento para elegir entre modelos y proveedores.
+

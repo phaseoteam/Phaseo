@@ -1,0 +1,43 @@
+---
+icon: "compass"
+title: "Python SDK 概览"
+description: "Phaseo Gateway API 的官方 Python 客户端"
+---
+
+从 PyPI 安装已发布的 [~phaseo~](https://pypi.org/project/phaseo/) 软件包。
+
+Phaseo Python SDK 目前提供用于 Phaseo Gateway API 的同步客户端。
+
+## 功能
+
+-   根据 OpenAPI 规范生成的类型化请求模型。
+-   内置辅助方法涵盖聊天、Responses、Messages、图像、音频、嵌入、审核、文件、批处理、生成及异步视频任务。
+-   文本、Responses 和 Messages 的流式辅助方法（~stream_*~ 迭代器）。
+- 控制平面辅助功能包括查询模型、端点和组织，发现并计算价格，管理 API 密钥与工作区的生命周期，检查当前密钥，以及查看健康状态、提供商、额度、活动和分析数据。
+
+## 快速示例
+
+```python
+from phaseo import Phaseo
+
+client = Phaseo(api_key="your-api-key")
+
+response = client.generate_response(
+    {
+        "model": "openai/gpt-5-nano",
+        "input": "Reply with: python sdk works",
+    }
+)
+
+print(response.get("id"))
+```
+
+## "包含内容"
+
+-   `Phaseo` 客户端
+-   `chat.completions.create(...)` and `responses.create(...)` 兼容辅助方法
+-   资源辅助方法，例如 `client.batches`, `client.videos`, `client.files`, and `client.async_jobs`
+-   用于批处理和视频生命周期流的异步任务 WebSocket URL 辅助方法
+-   模型生命周期辅助方法，例如 `get_model_deprecation_info(...)` and `validate_model(...)`
+-   文本、Responses 和 Messages 的流式迭代器
+-   ~phaseo.models~ 中生成的请求/响应模型

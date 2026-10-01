@@ -1,0 +1,132 @@
+---
+title: "Python SDK でプリセットを使い、構造化 JSON を送信する"
+icon: "braces"
+description: "公式 Python SDK でプリセット、構造化出力、リクエスト単位のデバッグを使い、生の HTTP 呼び出しに切り替えずに実装します。"
+---
+
+Python サービスで、各リクエストにプロンプト、ルーティング、パラメーター設定を繰り返し記述するのではなく、ダッシュボードで管理する既定値を使う場合は、このレシピを利用してください。
+
+## 目標
+
+- Python の呼び出しコードを小さく保つ
+- モデルをコードに固定せず、プリセットの slug でルーティングする
+- 厳密な構造化出力を要求する
+- ルーティングやプラグインの動作をデバッグできるだけの応答メタデータを保持する
+
+## 1. 共有クライアントから始める
+
+```python
+import os
+
+from phaseo import Phaseo
+
+gateway = Phaseo(api_key=os.environ["PHASEO_API_KEY"])
+```
+
+リクエストごとにクライアントを作らず、共有してください。
+
+## 2. 安定した既定値をプリセットに移す
+
+次の設定を複数の呼び出し元で安定させるには、**ダッシュボード -> 設定 -> プリセット**でプリセットを作成します。
+
+- システムプロンプト
+- モデルまたは許可モデルのリスト
+- プロバイダーの優先設定
+- 推論の設定
+- 温度やその他の生成パラメーター
+- 決定的な再実行が重要な場合の応答キャッシュポリシー
+
+プリセットを作成したら、Python 側の呼び出しコードは簡潔に保てます。
+
+## 3. 厳密な JSON 形式を要求する
+
+```python
+response = gateway.generate_response(
+    {
+        "preset": "release-summary",
+        "input": "Summarize the last 24 hours of deployment activity.",
+        "response_format": {
+            "type": "json_schema",
+            "name": "release_summary",
+            "schema": {
+                "type": "object",
+                "required": ["summary", "risk_level"],
+                "properties": {
+                    "summary": {"type": "string"},
+                    "risk_level": {
+                        "type": "string",
+                        "enum": ["low", "medium", "high"],
+                    },
+                },
+                "additionalProperties": False,
+            },
+        },
+        "plugins": [{"id": "response-healing"}],
+        "meta": True,
+    }
+)
+```
+
+この形式が効果的な理由:
+
+- `preset` を使うと、ルーティングとプロンプトの既定値をアプリケーションコードの外で管理できます。
+- `response_format` で契約を明示できます。
+- ワークフローで許可されていれば、`plugins` でほぼ有効な不正 JSON を復元できます。
+- `meta` でルーティングとプラグイン実行の情報を保持し、デバッグに役立てられます。
+
+## 4. JSON を解析し、運用上の ID を記録する
+
+```python
+import json
+
+message_text = ""
+for item in response.get("output", []):
+    if item.get("type") != "message":
+        continue
+    for part in item.get("content", []):
+        if part.get("type") == "output_text":
+            message_text = part.get("text", "")
+            break
+
+payload = json.loads(message_text)
+
+print("response_id:", response.get("id"))
+print("selected_provider:", response.get("meta", {}).get("routing", {}).get("selected_provider"))
+print("plugin_executions:", response.get("meta", {}).get("plugin_executions"))
+print(payload)
+```
+
+Python のワーカーでは、通常これだけでアプリケーションログの1行を次の情報に関連付けられます。
+
+- ダッシュボードのリクエスト詳細ダイアログ
+- ルーティング診断
+- プラグインの実行メタデータ
+
+## 5. 上書き設定を追加する前にデバッグする
+
+想定と異なるプロバイダーにルーティングされた場合:
+
+1. **Gateway -> 使用量** でリクエストを開きます。
+2. ルーティング診断と候補プロバイダーを確認します。
+3. 構造化 JSON を使った場合は、プラグイン実行メタデータを確認します。
+4. ログで実際の動作を確認してからプリセットを変更します。
+
+多数のリクエスト単位の上書きを追加して、1件のリクエストを無理に修正しないでください。通常、プリセットを使う意味がなくなります。
+
+## 6. 再利用する場合はキャッシュとの互換性を保つ
+
+プリセットで応答キャッシュを有効にしている場合:
+
+- プロンプトの文言を安定させる
+- 応答スキーマを安定させる
+- リクエストごとの不要なプロバイダー上書きを避ける
+- 頻繁に変わるツールリストを避ける
+
+呼び出し元ごとに本当に異なる動作が必要なら、共有ワークフローのキャッシュ再利用性を下げず、別のプリセットを使ってください。
+
+## 関連ガイド
+
+- [プリセットを展開してルーティングをデバッグする](./preset-rollout-and-routing-debug.mdx)
+- [プリセットで応答キャッシュを使う](./response-caching-with-presets.mdx)
+- [構造化 JSON の応答を修復する](./response-healing-for-structured-json.mdx)
+- [Python SDK の概要](../sdk-reference/python/overview.mdx)

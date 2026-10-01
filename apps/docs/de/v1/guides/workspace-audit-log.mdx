@@ -1,0 +1,21 @@
+---
+title: "Workspace-Auditprotokoll"
+description: "Prüfe sicherheitsrelevante administrative Änderungen im Workspace."
+---
+
+Workspace-Eigentümer und -Administratoren können Änderungen am Lebenszyklus von Schlüsseln unter **Einstellungen → Workspace → Aktivität** prüfen. Die Ereignisse beziehen sich auf den aktiven Workspace und sind vom neuesten zum ältesten sortiert.
+
+Die erste Version protokolliert folgende Vorgänge:
+
+- Erstellen, Umbenennen, Pausieren, Fortsetzen, Ändern von Limits, Rotieren und Löschen von API-Schlüsseln
+- Erstellen und Löschen von Verwaltungsschlüsseln sowie Umbenennen, Pausieren, Fortsetzen und Ändern von Zugriffsvorlagen, Limits und Ablaufdatum
+
+Jedes Ereignis enthält den Akteur, die Aktion, das Ziel, einen Zeitstempel und ausgewählte sichere Änderungsmetadaten. Audit-Ereignisse können nur angefügt werden. Phaseo speichert in diesem Protokoll weder Schlüssel im Klartext noch Anmeldedaten-Hashes, Autorisierungsheader, vollständige Berechtigungslisten oder Request-Bodies.
+
+Nur Workspace-Eigentümer und -Administratoren haben Zugriff auf das Auditprotokoll. Normale Mitglieder können die Ereignisse nicht lesen, und die zugrunde liegende Tabelle ist für authentifizierte Datenbankclients nicht zugänglich.
+
+Rufe zur Automatisierung `GET /v1/audit-events` mit einem Verwaltungsschlüssel auf, der über `activity:read` verfügt. Verwende den zurückgegebenen `next_cursor`, um ältere Ereignisse ohne Lücken zwischen Zeitstempeln abzurufen.
+
+<Note>
+  Request- und Generierungsprotokolle zeigen, welcher Datenverkehr ausgeführt wurde. Das Workspace-Auditprotokoll zeigt, wer wann eine administrative Einstellung geändert hat.
+</Note>

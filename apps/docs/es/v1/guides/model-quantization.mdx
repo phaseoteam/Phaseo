@@ -1,0 +1,38 @@
+---
+icon: "binary"
+title: "Cuantización de modelos"
+description: "Introducción a la cuantización y guía para continuar la serie sobre cuantización y parámetros."
+---
+
+Esta página es el punto de partida de una serie completa de guías sobre cuantización y parámetros de inferencia.
+
+Si estás eligiendo variantes de modelos (por ejemplo, `BF16` frente a `FP8`) o ajustando la configuración de las solicitudes (`temperature`, `top_p`, presupuestos de tokens), empieza aquí y sigue las guías enlazadas.
+
+## ¿Qué es la cuantización?
+
+La cuantización representa los pesos y las activaciones del modelo con números de menor precisión para reducir el uso de memoria y acelerar la inferencia.
+
+En general:
+
+- Mayor precisión: mejor calidad y estabilidad, pero mayor coste.
+- Menor precisión: más rendimiento y menor coste, pero mayor riesgo para la calidad.
+
+## Guías de la serie
+
+1. [Formatos de cuantización](./quantization-formats.mdx)
+2. [Métodos de cuantización](./quantization-methods.mdx)
+3. [Elegir una estrategia de cuantización](./quantization-selection.mdx)
+4. [Parámetros de inferencia](./inference-parameters.mdx)
+5. [Parámetros de muestreo y decodificación](./sampling-and-decoding.mdx)
+6. [Contexto y presupuesto de tokens](./context-and-token-budgeting.mdx)
+
+## Orden recomendado
+
+1. Lee primero los formatos y los métodos.
+2. Usa la guía de selección para elegir una variante inicial.
+3. Ajusta los parámetros de inferencia a partir de esa configuración de referencia.
+4. Finaliza los presupuestos de tokens con trazas de prompts de producción.
+
+## Recordatorio práctico
+
+La cuantización y el ajuste de parámetros siempre deben validarse con tus prompts y criterios de aceptación reales, no solo con microbenchmarks sintéticos.

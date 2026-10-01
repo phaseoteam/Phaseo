@@ -1,0 +1,36 @@
+---
+icon: "shield-check"
+title: "内容审核"
+description: "使用 PHP SDK 调用 /moderations。"
+---
+
+**方法**：`generateModeration()`、`createModeration()`
+
+### 示例
+
+```php
+<?php
+
+require 'vendor/autoload.php';
+
+use Phaseo\Sdk\Phaseo;
+
+$apiKey = getenv('PHASEO_API_KEY');
+$client = new Phaseo(apiKey: $apiKey);
+
+$response = $client->createModeration([
+    'model' => 'openai/omni-moderation-latest',
+    'input' => 'Text to classify'
+]);
+echo $response['results'][0]['flagged'] ? 'Flagged' : 'Not flagged';
+```
+
+### 关键参数
+
+-   `model`（必填）：内容审核模型 ID（例如 `openai/omni-moderation-latest`）。
+-   `input`（必填）：内容项（文本或 `image_url`）。
+-   可选：`categories`/`severity` 筛选条件（受支持时）及 `user` 标记。
+
+### 返回值
+
+审核响应

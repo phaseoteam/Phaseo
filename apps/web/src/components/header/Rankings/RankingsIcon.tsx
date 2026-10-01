@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { Trophy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -11,6 +12,7 @@ import {
 import { cn } from "@/lib/utils";
 
 export function RankingsIcon() {
+	const t = useTranslations("Common.nav");
 	return (
 		<Tooltip>
 			<TooltipTrigger asChild>
@@ -21,7 +23,7 @@ export function RankingsIcon() {
 				>
 					<Link
 						href="/rankings"
-						aria-label="Rankings"
+						aria-label={t("rankings")}
 						className={cn(
 							"inline-flex h-10 w-10 items-center justify-center rounded-lg",
 							"text-zinc-600 hover:bg-zinc-100",
@@ -34,7 +36,7 @@ export function RankingsIcon() {
 				</Button>
 			</TooltipTrigger>
 			<TooltipContent side="bottom">
-				<p>Rankings</p>
+				<p>{t("rankings")}</p>
 			</TooltipContent>
 		</Tooltip>
 	);

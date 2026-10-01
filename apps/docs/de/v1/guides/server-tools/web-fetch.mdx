@@ -1,0 +1,136 @@
+---
+icon: "cloud-download"
+title: "Server-Tool Web Fetch"
+description: "Ermögliche Modellen, während einer Anfrage bestimmte URLs abzurufen und zu lesen."
+---
+
+Verwende `phaseo:web_fetch`, wenn das Modell eine bekannte URL lesen soll, etwa eine Dokumentationsseite, einen Artikel, ein Änderungsprotokoll oder eine PDF-ähnliche Textquelle.
+
+Das Modell entscheidet, wann es die URL abruft, gibt sie an und erhält begrenzten Seitentext als Tool-Kontext zurück.
+
+## Funktionsweise
+
+1. Füge `{ "type": "phaseo:web_fetch" }` zu `tools` hinzu.
+2. Das Modell entscheidet, ob es eine URL abrufen muss.
+3. Phaseo ruft den Inhalt mit der konfigurierten Engine ab und extrahiert ihn.
+4. Der extrahierte Text, Titel, die URL und Kürzungsmetadaten werden an das Modell zurückgegeben.
+5. Das Modell verfasst die endgültige Antwort und kann bei Bedarf weitere URLs abrufen.
+
+## Schnellstart
+
+```bash
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-5-nano",
+    "messages": [
+      { "role": "user", "content": "Summarize https://phaseo.app/docs/v1/guides/tool-calling" }
+    ],
+    "tools": [
+      { "type": "phaseo:web_fetch" }
+    ]
+  }'
+```
+
+## Konfiguration
+
+```json
+{
+  "type": "phaseo:web_fetch",
+  "parameters": {
+    "engine": "direct",
+    "max_chars": 12000,
+    "allowed_domains": ["phaseo.app"],
+    "blocked_domains": ["internal.example.com"]
+  }
+}
+```
+
+| Parameter | Typ | Standardwert | Beschreibung |
+| --- | --- | --- | --- |
+| `engine` | string | abhängig von der Oberfläche | Abruf-Engine: `auto`, `native`, `direct`, `exa`, `parallel` oder `firecrawl`. |
+| `max_chars` | Ganzzahl | `12000` | Maximale Anzahl extrahierter Zeichen, die an das Modell zurückgegeben werden. |
+| `max_content_tokens` | Ganzzahl | keiner | Tokenbasierter Alias, der verwendet wird, wenn `max_chars` nicht angegeben ist. |
+| `max_uses` | Ganzzahl | `10` | Maximale Anzahl von Abrufen innerhalb der Server-Tool-Schleife. |
+| `allowed_domains` | string[] | keiner | Erlaubt Abrufe nur von diesen Domains. |
+| `blocked_domains` | string[] | keiner | Lehnt Abrufe von diesen Domains ab. Alias: `excluded_domains`. |
+
+## Engine-Auswahl
+
+| Engine | Verhalten |
+| --- | --- |
+| `auto` | Verwendet den nativen Anthropic-Abruf unter `/v1/messages`; andernfalls Exa, sofern konfiguriert; andernfalls den direkten Gateway-Abruf. |
+| `direct` | Ruft Inhalte direkt aus der Gateway-Laufzeit ab und extrahiert begrenzten Text. |
+| `exa` | Verwendet die Exa-Inhaltsextraktion, sofern konfiguriert. |
+| `parallel` | Verwendet Parallel Extract, sofern konfiguriert. |
+| `firecrawl` | Verwendet Firecrawl Scrape, sofern konfiguriert. |
+| `native` | Wird unter `/v1/messages` in Anthropic `web_fetch_20260209` umgewandelt. Andere Oberflächen sollten `direct` oder eine verwaltete Engine verwenden. |
+
+Unterstützt werden nur HTTP(S)-URLs. Der direkte Gateway-Abruf akzeptiert textähnliche Inhaltstypen und wandelt HTML vor der Rückgabe an das Modell in Klartext um.
+
+## Nativer Anthropic-Abruf
+
+```json
+{
+  "model": "claude-sonnet-4.6",
+  "max_tokens": 1024,
+  "messages": [
+    { "role": "user", "content": "Read the docs page and summarize the limits." }
+  ],
+  "tools": [
+    {
+      "type": "phaseo:web_fetch",
+      "parameters": {
+        "engine": "native",
+        "max_content_tokens": 9000,
+        "allowed_domains": ["phaseo.app"]
+      }
+    }
+  ],
+  "tool_choice": { "type": "tool", "name": "phaseo:web_fetch" }
+}
+```
+
+## Tool-Ergebnis
+
+Der verwaltete Abruf gibt ein JSON-Tool-Ergebnis mit Feldern wie diesen zurück:
+
+```json
+{
+  "provider": "fetch",
+  "engine": "direct",
+  "url": "https://phaseo.app/docs/v1/guides/tool-calling",
+  "final_url": "https://phaseo.app/docs/v1/guides/tool-calling",
+  "status": 200,
+  "content_type": "text/html",
+  "title": "Tool Calling",
+  "text": "...",
+  "truncated": false,
+  "returned_chars": 8421
+}
+```
+
+Prüfe `truncated`, bevor du annimmst, dass das Modell die ganze Seite erhalten hat.
+
+## Nutzung und Preise
+
+Abrufe mit Web Fetch erhöhen diesen Wert:
+
+```json
+{
+  "usage": {
+    "server_tool_use": {
+      "web_fetch_requests": 1
+    }
+  }
+}
+```
+
+Für verwaltete Abrufe kann `server_tool_web_fetch_requests` abgerechnet werden. Die Nutzung nativer Provider-Abrufe kann `native_web_fetch_requests` verwenden, wenn die Modell-Preiskarte diesen Zähler definiert.
+
+## Verwandte Anleitungen
+
+- [Websuche](./web-search.mdx)
+- [Server-Tools](./index.mdx)
+- [Antworten mit Web Fetch fundieren](../../cookbook/tool-grounding-with-web-fetch.mdx)

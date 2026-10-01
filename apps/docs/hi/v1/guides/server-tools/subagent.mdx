@@ -1,0 +1,108 @@
+---
+icon: "bot"
+title: "Subagent सर्वर टूल"
+description: "मुख्य मॉडल को केंद्रित काम किसी सहायक मॉडल को सौंपने दें।"
+---
+
+जब मुख्य मॉडल को उसी अनुरोध में कोई स्वतंत्र काम छोटे या तेज़ सहायक मॉडल को देना हो, तब `phaseo:subagent` उपयोग करें।
+
+मुख्य मॉडल काम का विवरण देकर Subagent टूल कॉल करता है। Phaseo सर्वर पर सहायक मॉडल चलाता है, उसका नतीजा टूल संदर्भ के रूप में लौटाता है और मुख्य मॉडल को उत्तर पूरा करने देता है।
+
+## त्वरित शुरुआत
+
+```bash
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-5-nano",
+    "messages": [
+      { "role": "user", "content": "Compare these release notes and summarize the breaking changes." }
+    ],
+    "tools": [
+      {
+        "type": "phaseo:subagent",
+        "parameters": {
+          "model": "openai/gpt-5-nano",
+          "instructions": "Return concise findings for the main model. Do not address the end user directly.",
+          "max_uses": 3,
+          "max_completion_tokens": 1200
+        }
+      }
+    ]
+  }'
+```
+
+## पैरामीटर
+
+```json
+{
+  "type": "phaseo:subagent",
+  "parameters": {
+    "model": "openai/gpt-5-nano",
+    "instructions": "You are a fast, focused worker. Complete only the delegated task.",
+    "max_uses": 3,
+    "max_completion_tokens": 1200,
+    "reasoning": { "effort": "low" },
+    "temperature": 0.2
+  }
+}
+```
+
+| पैरामीटर | प्रकार | डिफ़ॉल्ट | विवरण |
+| --- | --- | --- | --- |
+| `model` | string | `openai/gpt-5-nano` | कॉल किया जाने वाला सहायक मॉडल। |
+| `instructions` | string | वर्कर के लिए केंद्रित निर्देश | Subagent के डिफ़ॉल्ट व्यवहार में जोड़े गए अतिरिक्त निर्देश। |
+| `max_uses` | integer | `10` | सर्वर-टूल लूप के दौरान Subagent कॉल की अधिकतम संख्या। |
+| `max_completion_tokens` | integer | Advisor का डिफ़ॉल्ट | हर सहायक मॉडल उत्तर के अधिकतम आउटपुट टोकन। |
+| `max_tokens` | integer | Advisor का डिफ़ॉल्ट | `max_completion_tokens` का पुराना उपनाम। |
+| `reasoning` | object | प्रदाता का डिफ़ॉल्ट | समर्थित होने पर सहायक मॉडल को भेजा जाने वाला रीजनिंग कॉन्फ़िगरेशन। |
+| `temperature` | number | प्रदाता का डिफ़ॉल्ट | सहायक मॉडल कॉल का सैंपलिंग तापमान। |
+
+## टूल-कॉल तर्क
+
+मॉडल आम तौर पर `task_description` के साथ Subagent को कॉल करता है:
+
+```json
+{
+  "task_description": "Extract the three highest-risk migration steps from the supplied plan."
+}
+```
+
+यदि मॉडल थोड़ा अलग तर्क नाम भेजता है, तो Phaseo `task`, `prompt` या `input` को उपनाम के रूप में भी स्वीकार करता है।
+
+## टूल क्या लौटाता है
+
+Subagent टूल के परिणाम के रूप में JSON लौटाता है:
+
+```json
+{
+  "status": "ok",
+  "model": "openai/gpt-5-nano",
+  "result": "The highest-risk steps are schema migration, traffic cutover, and rollback verification."
+}
+```
+
+यदि सहायक मॉडल का अनुरोध नहीं चल सकता, तो Phaseo ऐसा टूल त्रुटि संदेश लौटाता है: `subagent_invalid_request`, `subagent_max_uses_exceeded`, or `subagent_request_failed`.
+
+## उपयोग और कीमत
+
+Subagent कॉल इनकी संख्या बढ़ाते हैं:
+
+```json
+{
+  "usage": {
+    "server_tool_use": {
+      "subagent_requests": 1
+    }
+  }
+}
+```
+
+सहायक मॉडल के टोकन कुल उपयोग में गिने जाते हैं और चयनित मॉडल की दरों से उनका शुल्क लिया जा सकता है।
+
+## संबंधित
+
+- [Advisor](./advisor.mdx)
+- [Fusion](./fusion.mdx)
+- [सर्वर टूल](./index.mdx)

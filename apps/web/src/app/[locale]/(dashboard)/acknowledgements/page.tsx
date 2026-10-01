@@ -25,150 +25,131 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: P
 }
 
 type Acknowledgement = {
+	id: string;
 	name: string;
-	description: string;
-	usedFor: string;
 	href: string;
 	note?: string;
 	demo?: "orbs" | "primitives" | "streaming" | "icons";
 };
 
 const groups: Array<{
-	label: string;
-	description: string;
+	id: string;
 	items: Acknowledgement[];
 }> = [
 	{
-		label: "Interface",
-		description: "The foundations behind Phaseo's web experience and interaction language.",
+		id: "interface",
 		items: [
 			{
+				id: "react",
 				name: "React",
-				description: "The declarative component and state model underlying Phaseo's interactive product surfaces.",
-				usedFor: "Chat, model comparison, settings, observability, and every stateful interface are composed as React components.",
 				href: "https://react.dev/",
 			},
 			{
+				id: "nextjs",
 				name: "Next.js",
-				description: "The application framework that joins server rendering, routing, metadata, caching, and client interaction.",
-				usedFor: "The public catalogue, authenticated workspace, API bridges, and this page all share one App Router application.",
 				href: "https://nextjs.org/",
 			},
 			{
+				id: "tailwind",
 				name: "Tailwind CSS",
-				description: "A utility-first styling system that keeps visual decisions close to the components they affect.",
-				usedFor: "Responsive layout, typography, color, motion, and dark mode are expressed through a shared set of design tokens and utilities.",
 				href: "https://tailwindcss.com/",
 			},
 			{
+				id: "baseUi",
 				name: "shadcn/ui & Base UI",
-				description: "Open component patterns and accessible headless primitives that provide strong behavior without prescribing the final visual design.",
-				usedFor: "Dialogs, menus, tooltips, buttons, selectors, and keyboard interactions throughout Phaseo build on these foundations.",
 				href: "https://ui.shadcn.com/",
 				demo: "primitives",
 			},
 			{
+				id: "lucide",
 				name: "Lucide",
-				description: "A consistent, readable icon family with a broad vocabulary for product interfaces.",
-				usedFor: "Icons clarify navigation, model actions, request status, settings, and compact controls where text alone would be cumbersome.",
 				href: "https://lucide.dev/",
 				demo: "icons",
 			},
 			{
+				id: "thinkingOrbs",
 				name: "Thinking Orbs",
-				description: "A family of carefully tuned canvas animations that gives background work a visible state without relying on a generic spinner.",
-				usedFor: "Phaseo Chat uses the working state in the send and queue control, and the composing state while an assistant is preparing a response.",
 				href: "https://orbs.jakubantalik.com/",
-				note: "Created by Jakub Antalík",
+				note: "createdBy",
 				demo: "orbs",
 			},
 		],
 	},
 	{
-		label: "AI Experience",
-		description: "Projects that help Phaseo stream, render, and explain model output.",
+		id: "aiExperience",
 		items: [
 			{
+				id: "streamdown",
 				name: "Streamdown",
-				description: "A Markdown renderer designed for incomplete text that is still arriving token by token.",
-				usedFor: "Phaseo can render headings, lists, links, code, and mathematics while a response is streaming without waiting for the final document.",
 				href: "https://streamdown.ai/",
 				demo: "streaming",
 			},
 			{
+				id: "shiki",
 				name: "Shiki",
-				description: "A TextMate-compatible syntax highlighter that renders code with editor-quality grammar support.",
-				usedFor: "Code in model responses remains legible across languages and themes, including during technical comparisons and debugging.",
 				href: "https://shiki.style/",
 			},
 		],
 	},
 	{
-		label: "Platform",
-		description: "Infrastructure and services that help Phaseo operate reliably.",
+		id: "platform",
 		items: [
 			{
+				id: "cloudflare",
 				name: "Cloudflare",
-				description: "A global application platform spanning edge compute, durable coordination, storage, networking, and security.",
-				usedFor: "Phaseo's gateway and supporting APIs use Workers and related services to execute close to users and coordinate long-running workloads.",
 				href: "https://www.cloudflare.com/",
 			},
 			{
+				id: "supabase",
 				name: "Supabase",
-				description: "A Postgres platform with authentication, storage, realtime capabilities, and developer tooling.",
-				usedFor: "Phaseo relies on Supabase for account identity and durable relational data such as workspaces, usage, credits, and gateway configuration.",
 				href: "https://supabase.com/",
 			},
 			{
+				id: "vercel",
 				name: "Vercel",
-				description: "Deployment and application infrastructure optimized for Next.js and modern web delivery.",
-				usedFor: "The Phaseo website is built, previewed, and served through Vercel while private APIs connect to the wider platform.",
 				href: "https://vercel.com/",
 			},
 			{
+				id: "hono",
 				name: "Hono",
-				description: "A small, standards-based web framework designed for modern JavaScript runtimes.",
-				usedFor: "It provides routing, middleware, and typed request handling across Phaseo's Cloudflare Workers APIs.",
 				href: "https://hono.dev/",
 			},
 			{
+				id: "stripe",
 				name: "Stripe",
-				description: "Payment infrastructure for secure checkout, payment methods, invoices, and billing events.",
-				usedFor: "Stripe handles the financial transaction layer when customers purchase and manage Phaseo credits.",
 				href: "https://stripe.com/",
 			},
 		],
 	},
 	{
-		label: "Product Intelligence",
-		description: "Tools that help us understand releases, reliability, and product behavior.",
+		id: "productIntelligence",
 		items: [
 			{
+				id: "posthog",
 				name: "PostHog",
-				description: "An open product analytics platform covering events, funnels, session diagnostics, and feature behavior.",
-				usedFor: "Phaseo uses measured product signals to understand reliability and improve flows without treating intuition as evidence.",
 				href: "https://posthog.com/",
 			},
 			{
+				id: "statsig",
 				name: "Statsig",
-				description: "A feature-management and experimentation platform for controlled product delivery.",
-				usedFor: "Feature gates let Phaseo introduce changes gradually, compare outcomes, and recover quickly when a rollout behaves unexpectedly.",
 				href: "https://www.statsig.com/",
 			},
 		],
 	},
 ];
 
-function Demo({ type }: { type: NonNullable<Acknowledgement["demo"]> }) {
+type AcknowledgementsTranslate = (key: string, values?: Record<string, string | number>) => string;
+
+function Demo({ type, translate }: { type: NonNullable<Acknowledgement["demo"]>; translate: AcknowledgementsTranslate }) {
 	if (type === "orbs") return <OrbSpecimen />;
 	if (type === "primitives") {
 		return (
 			<div className="flex flex-wrap items-center gap-2 rounded-xl border border-zinc-200/80 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-900/40">
-				<Button size="sm">Continue</Button>
-				<Button size="sm" variant="outline">Review</Button>
-				<Button size="icon-sm" variant="ghost" aria-label="Search example"><Search /></Button>
+				<Button size="sm">{translate("continue")}</Button>
+				<Button size="sm" variant="outline">{translate("review")}</Button>
+				<Button size="icon-sm" variant="ghost" aria-label={translate("searchExample")}><Search /></Button>
 				<span className="inline-flex items-center gap-1.5 rounded-full border border-zinc-200 bg-white px-2.5 py-1 text-xs text-zinc-600 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-300">
-					<Check className="h-3 w-3" /> Accessible states
+					<Check className="h-3 w-3" /> {translate("accessibleStates")}
 				</span>
 			</div>
 		);
@@ -176,23 +157,23 @@ function Demo({ type }: { type: NonNullable<Acknowledgement["demo"]> }) {
 	if (type === "icons") {
 		return (
 			<div className="flex items-center gap-5 rounded-xl border border-zinc-200/80 bg-zinc-50 px-5 py-4 text-zinc-600 dark:border-zinc-800 dark:bg-zinc-900/40 dark:text-zinc-300">
-				<Search className="h-5 w-5" aria-label="Search" />
-				<Sparkles className="h-5 w-5" aria-label="Sparkles" />
-				<Code2 className="h-5 w-5" aria-label="Code" />
-				<ArrowRight className="h-5 w-5" aria-label="Arrow right" />
+			<Search className="h-5 w-5" aria-hidden="true" />
+			<Sparkles className="h-5 w-5" aria-hidden="true" />
+			<Code2 className="h-5 w-5" aria-hidden="true" />
+			<ArrowRight className="h-5 w-5" aria-hidden="true" />
 			</div>
 		);
 	}
 	return (
 		<div className="overflow-hidden rounded-xl border border-zinc-200/80 bg-zinc-950 p-4 font-mono text-xs leading-6 dark:border-zinc-800">
-			<p className="text-zinc-500">Streaming response</p>
-			<p className="text-zinc-100"><span className="text-emerald-400">##</span> A reliable gateway</p>
-			<p className="text-zinc-300">Route by health, price, and capability<span className="ml-0.5 inline-block h-3.5 w-1 animate-pulse bg-zinc-400 align-middle" /></p>
+			<p className="text-zinc-500">{translate("streamingResponse")}</p>
+			<p className="text-zinc-100"><span className="text-emerald-400">##</span> {translate("reliableGateway")}</p>
+			<p className="text-zinc-300">{translate("routeByHealthPriceCapability")}<span className="ml-0.5 inline-block h-3.5 w-1 animate-pulse bg-zinc-400 align-middle" /></p>
 		</div>
 	);
 }
 
-function AcknowledgementRow({ item, howUsed }: { item: Acknowledgement; howUsed: string }) {
+function AcknowledgementRow({ item, howUsed, translate }: { item: Acknowledgement; howUsed: string; translate: AcknowledgementsTranslate }) {
 	return (
 		<li className="group grid gap-4 py-7 sm:grid-cols-[minmax(10rem,0.36fr)_minmax(0,1fr)] sm:items-start sm:gap-8">
 			<div>
@@ -206,15 +187,15 @@ function AcknowledgementRow({ item, howUsed }: { item: Acknowledgement; howUsed:
 					<ArrowUpRight className="h-3.5 w-3.5 text-muted-foreground transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
 				</Link>
 				{item.note ? (
-					<p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">{item.note}</p>
+					<p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">{translate(item.note, { name: "Jakub Antalík" })}</p>
 				) : null}
 			</div>
 			<div className="max-w-3xl space-y-3">
-				<p className="text-sm leading-6 text-foreground/85">{item.description}</p>
+				<p className="text-sm leading-6 text-foreground/85">{translate(`items.${item.id}.description`)}</p>
 				<p className="text-sm leading-6 text-muted-foreground">
-					<span className="font-medium text-foreground">{howUsed}</span>{" "}{item.usedFor}
+					<span className="font-medium text-foreground">{howUsed}</span>{" "}{translate(`items.${item.id}.usedFor`)}
 				</p>
-				{item.demo ? <div className="pt-2"><Demo type={item.demo} /></div> : null}
+				{item.demo ? <div className="pt-2"><Demo type={item.demo} translate={translate} /></div> : null}
 			</div>
 		</li>
 	);
@@ -223,6 +204,7 @@ function AcknowledgementRow({ item, howUsed }: { item: Acknowledgement; howUsed:
 export default async function AcknowledgementsPage({ params }: { params: Promise<{ locale: PublicLocale }> }) {
 	const { locale } = await params;
 	const t = await getTranslations({ locale, namespace: "Content.acknowledgements" });
+	const translate = t as unknown as AcknowledgementsTranslate;
 	return (
 		<div className="mx-auto w-full max-w-6xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
 			<header className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_18rem] lg:items-end">
@@ -244,16 +226,16 @@ export default async function AcknowledgementsPage({ params }: { params: Promise
 
 			<div className="space-y-10">
 				{groups.map((group) => (
-					<section key={group.label} aria-labelledby={`group-${group.label.replaceAll(" ", "-").toLowerCase()}`}>
+					<section key={group.id} aria-labelledby={`group-${group.id}`}>
 						<div className="grid gap-2 border-b border-zinc-200/80 pb-4 dark:border-zinc-800 sm:grid-cols-[minmax(10rem,0.36fr)_minmax(0,1fr)] sm:gap-8">
-							<h2 id={`group-${group.label.replaceAll(" ", "-").toLowerCase()}`} className="text-lg font-semibold text-foreground">
-								{group.label}
+							<h2 id={`group-${group.id}`} className="text-lg font-semibold text-foreground">
+								{translate(`groups.${group.id}.label`)}
 							</h2>
-							<p className="max-w-2xl text-sm leading-6 text-muted-foreground">{group.description}</p>
+							<p className="max-w-2xl text-sm leading-6 text-muted-foreground">{translate(`groups.${group.id}.description`)}</p>
 						</div>
 						<ul className="divide-y divide-zinc-200/70 dark:divide-zinc-800/70">
 							{group.items.map((item) => (
-								<AcknowledgementRow key={item.name} item={item} howUsed={t("howUsed")} />
+								<AcknowledgementRow key={item.id} item={item} howUsed={t("howUsed")} translate={translate} />
 							))}
 						</ul>
 					</section>

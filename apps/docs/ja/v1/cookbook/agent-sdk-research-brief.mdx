@@ -1,0 +1,163 @@
+---
+title: "構造化出力と Web 検索を使った調査"
+icon: "telescope"
+description: "Web 検索を利用し、Agent SDK を通じて厳密な JSON を返す TypeScript エージェントを作成します。"
+---
+
+次のようなエージェントワークフローには、このレシピを使います。
+
+- TypeScript Agent SDK を使って実行する
+- 管理された Web 検索を利用する
+- 厳密に構造化された JSON を返す
+- ほぼ有効な不正 JSON を決定的に復元する
+
+## 1. SDK をインストールする
+
+<CodeGroup>
+```bash npm
+npm install @phaseo/sdk @phaseo/agent-sdk
+```
+
+```bash pnpm
+pnpm add @phaseo/sdk @phaseo/agent-sdk
+```
+
+```bash yarn
+yarn add @phaseo/sdk @phaseo/agent-sdk
+```
+
+```bash bun
+bun add @phaseo/sdk @phaseo/agent-sdk
+```
+</CodeGroup>
+
+## 2. 範囲を限定した出力契約を定義する
+
+最初の調査結果を小さく保つと、運用担当者がログで確認しやすくなります。
+
+```ts
+type ResearchBrief = {
+  topic: string;
+  summary: string;
+  sources: Array<{
+    title: string;
+    url: string;
+  }>;
+};
+```
+
+## 3. エージェントを作成する
+
+`parseOutput` を使うと、ランタイムから生のテキストではなく型付きデータが返ります。
+
+```ts
+import { createAgent } from "@phaseo/agent-sdk";
+
+export const researchBriefAgent = createAgent<string, ResearchBrief>({
+  id: "research-brief-agent",
+  model: "phaseo/free",
+  instructions:
+    "Research the user's topic with web search when needed and return a concise JSON brief with cited sources.",
+  parseOutput(text) {
+    return JSON.parse(text) as ResearchBrief;
+  },
+});
+```
+
+## 4. Gateway アダプターを一度だけ設定する
+
+重要なポイント:
+
+- `responseFormat` で出力スキーマを明示する
+- `plugins` でほぼ有効な JSON の修復を有効にする
+- `gatewayTools` で管理された Web 検索をモデルに公開する
+- ワークフローで常に情報源が必要な場合、`toolChoice` で検索ツールを必須にする
+
+```ts
+import {
+  createGatewayAgentClient,
+} from "@phaseo/agent-sdk";
+
+const client = createGatewayAgentClient({
+  clientOptions: {
+    apiKey: process.env.PHASEO_API_KEY!,
+  },
+  responseFormat: {
+    type: "json_schema",
+    name: "research_brief",
+    schema: {
+      type: "object",
+      properties: {
+        topic: { type: "string" },
+        summary: { type: "string" },
+        sources: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              title: { type: "string" },
+              url: { type: "string" },
+            },
+            required: ["title", "url"],
+            additionalProperties: false,
+          },
+          minItems: 1,
+        },
+      },
+      required: ["topic", "summary", "sources"],
+      additionalProperties: false,
+    },
+  },
+  plugins: [{ id: "response-healing" }],
+  gatewayTools: [
+    { type: "phaseo:web_search", parameters: { max_results: 5 } },
+  ],
+  toolChoice: "phaseo:web_search",
+  webSearchOptions: { search_context_size: "high" },
+});
+```
+
+## 5. ワークフローを実行する
+
+```ts
+const result = await researchBriefAgent.run({
+  input: "Summarize the latest browser automation support patterns for coding agents.",
+  client,
+  onEvent(event) {
+    console.log(event.type, event.runId);
+  },
+});
+
+console.log(result.output);
+```
+
+## 6. ログで確認する内容
+
+実行が成功したら、リクエスト詳細を開いて次の点を確認します。
+
+- 要求したネイティブ Web 検索ツール、または管理検索の実行履歴が表示される
+- 検索結果と引用が保存されている
+- 修復が必要だった場合に限り、プラグイン実行に `response-healing` が表示される
+- 最終出力が要求した JSON Schema に一致する
+
+## 7. このパターンを使う場面
+
+次のような場合に使います。
+
+- ローカルツールを深く連携させるより、1回の調査が中心である
+- モデルが回答前に情報源を参照する必要がある
+- 後続の呼び出し元が文章ではなく型付き JSON を必要とする
+
+次のような場合は使わないでください。
+
+- 使用する URL がすでに決まっていて、`phaseo:web_fetch` で十分である
+- プロバイダー側のツールより、高度なローカルツールが必要である
+- 出力契約が柔軟で、厳密な JSON による複雑さが利点を上回る
+
+## 関連ガイド
+
+- [TypeScript Agent SDK](../sdk-reference/typescript/agent-sdk.mdx)
+- [構造化出力](../guides/structured-outputs.mdx)
+- [構造化出力を検証する](../guides/structured-outputs-validation.mdx)
+- [Web 検索リクエストをデバッグする](./web-search-debugging.mdx)
+- [不正な構造化 JSON を復元する](./response-healing-for-structured-json.mdx)

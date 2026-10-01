@@ -1,0 +1,10 @@
+---
+title: "Crear destino de observabilidad"
+sidebarTitle: "Crear destino"
+badge: "Beta"
+openapi: "/es/openapi/v1/openapi.localized.yaml POST /observability/destinations"
+description: "Crea un destino de webhook u OpenTelemetry."
+---
+<Note>Este endpoint requiere una clave de API de gestión con `settings:write`.</Note>
+
+El objeto `config` es de solo escritura y se cifra antes de almacenarse. Los endpoints deben usar direcciones HTTPS públicas.

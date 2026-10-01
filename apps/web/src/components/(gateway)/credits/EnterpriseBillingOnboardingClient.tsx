@@ -16,6 +16,7 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { useTranslations } from "next-intl";
+import { localizedSettingsError } from "@/i18n/error-messages";
 
 type Props = {
 	teamName: string;
@@ -34,8 +35,16 @@ const SIGNATURE_PATH_LENGTH = 560;
 
 export default function EnterpriseBillingOnboardingClient(props: Props) {
 	const t = useTranslations("SettingsUI.credits");
+	const settingsT = useTranslations("SettingsUI");
 	const router = useRouter();
-	const isEnterprise = props.teamTier.toLowerCase() === "enterprise";
+	const normalizedTeamTier = props.teamTier.trim().toLowerCase();
+	const isEnterprise = normalizedTeamTier === "enterprise";
+	const localizedTeamTier =
+		normalizedTeamTier === "enterprise"
+			? t("enterprise")
+			: normalizedTeamTier === "basic"
+				? t("basic")
+				: props.teamTier;
 	const isInvoiceActive = props.currentBillingMode === "invoice";
 	const [started, setStarted] = React.useState<boolean>(isInvoiceActive);
 	const [billingDay, setBillingDay] = React.useState<number>(
@@ -153,7 +162,8 @@ export default function EnterpriseBillingOnboardingClient(props: Props) {
 				{
 					loading: t("savingBilling"),
 					success: t("billingSaved"),
-					error: (err: any) => err?.message ?? t("billingSaveFailed"),
+					error: (err: unknown) =>
+						localizedSettingsError(err, settingsT, "Action failed", t("billingSaveFailed")),
 				}
 			);
 			router.push("/settings/credits");
@@ -180,7 +190,7 @@ export default function EnterpriseBillingOnboardingClient(props: Props) {
 
 			{!isEnterprise ? (
 				<p className="text-sm text-muted-foreground">
-					{t("teamTierMessage", { tier: props.teamTier })}
+					{t("teamTierMessage", { tier: localizedTeamTier })}
 				</p>
 			) : null}
 

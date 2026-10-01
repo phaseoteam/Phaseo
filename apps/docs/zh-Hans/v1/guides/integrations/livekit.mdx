@@ -1,0 +1,59 @@
+---
+title: "LiveKit"
+icon: "radio"
+description: "在 LiveKit Agents 中使用 Phaseo 模型。"
+---
+
+LiveKit Agents 可通过其 OpenAI 插件调用任何兼容 OpenAI 的聊天端点。将插件指向 Phaseo，即可使用 Phaseo 模型 ID 和路由。
+
+## Python
+
+```bash
+uv add "livekit-agents[openai]"
+```
+
+```python
+import os
+from livekit.agents import AgentSession
+from livekit.plugins import openai
+
+session = AgentSession(
+    llm=openai.LLM(
+        model="openai/gpt-5-nano",
+        api_key=os.environ["PHASEO_API_KEY"],
+        base_url="https://api.phaseo.app/v1",
+    ),
+)
+```
+
+## Node.js
+
+```bash
+pnpm add @livekit/agents @livekit/agents-plugin-openai
+```
+
+```ts
+import { voice } from "@livekit/agents";
+import * as openai from "@livekit/agents-plugin-openai";
+
+const session = new voice.AgentSession({
+	llm: new openai.LLM({
+		model: "openai/gpt-5-nano",
+		apiKey: process.env.PHASEO_API_KEY,
+		baseURL: "https://api.phaseo.app/v1",
+	}),
+});
+```
+
+## 说明
+
+- 自定义端点请使用兼容 OpenAI 的 Chat Completions 模式。
+- LiveKit 专用于 Responses 的 OpenAI 工具不会自动转换为 Phaseo 服务器工具。
+- 除非所选 LiveKit 接口支持该模态的自定义 OpenAI 兼容 URL，否则请分别配置语音转文本和文本转语音。
+- 在处理生产语音流量前，请测试中断处理、工具调用和流式传输延迟。
+
+## 相关内容
+
+- [OpenAI SDK](./openai-sdk.mdx)
+- [流式传输](../streaming.mdx)
+- [工具调用](../tool-calling.mdx)

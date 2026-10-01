@@ -1,0 +1,24 @@
+---
+icon: "shield-check"
+title: "Moderación"
+description: "Usa el SDK de Python para llamar a `/moderations`."
+---
+
+**Método**: `client.generate_moderation()`.
+
+### Ejemplo
+```python
+moderation = client.generate_moderation({
+    "model": "openai/omni-moderation-latest",
+    "input": "Text to classify",
+})
+```
+
+### Parámetros principales
+- `model` (obligatorio): ID del modelo de moderación (por ejemplo, `openai/omni-moderation-latest`).
+- `input` (obligatorio): cadena o matriz de elementos de contenido (texto o `image_url`).
+- Opcional: filtros `categories`/`severity` (si son compatibles) y etiqueta `user`.
+
+### Devuelve
+`ModerationResponse`
+

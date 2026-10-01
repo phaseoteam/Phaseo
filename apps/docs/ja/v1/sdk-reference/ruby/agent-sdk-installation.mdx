@@ -1,0 +1,40 @@
+---
+icon: "package"
+title: "インストール"
+description: "Phaseo Ruby Agent SDKをインストールして設定します。"
+---
+
+Agent SDKはRubyGemsで[`phaseo_agent_sdk`](https://rubygems.org/gems/phaseo_agent_sdk)として公開されています。
+
+## 必要条件
+
+- Ruby 3.2以降
+- RubyGemsまたはBundler
+- Phaseo APIキー
+
+## インストール
+
+```bash
+gem install phaseo_agent_sdk
+```
+
+または`Gemfile`に追加します。
+
+```ruby
+gem "phaseo_agent_sdk"
+```
+
+コアgemの`phaseo_sdk`は依存関係として自動的にインストールされます。
+
+## 環境
+
+サンプルを実行する前に、ゲートウェイAPIキーを設定します。
+
+```bash
+export PHASEO_API_KEY="phaseo_v1_sk_..."
+```
+
+## 次のステップ
+
+- [概要](./agent-sdk-overview.mdx)
+- [Agent SDKで開発する](./agent-sdk.mdx)

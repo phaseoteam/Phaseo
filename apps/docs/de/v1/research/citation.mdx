@@ -1,0 +1,66 @@
+---
+icon: "book-open"
+title: "Zitieren"
+description: "So kennzeichnest du in deiner Arbeit die Nutzung von Phaseo-Daten, Benchmarks und Gateway-Tools."
+---
+
+Phaseo bündelt öffentliche Informationen und Benchmark-Ergebnisse von Modellanbietern und Evaluierungsprojekten.
+Wenn du Phaseo zum Nachschlagen, Vergleichen oder Überwachen von Modellen nutzt, hilft eine kurze Quellenangabe anderen dabei, die Plattform zu entdecken.
+
+---
+
+## Kurzfassung
+
+Wenn Phaseo hilfreich war, verlinke die Plattform an einer passenden Stelle (Methodik, Fußnote oder Danksagung):
+
+> Diese Arbeit nutzt Modellmetadaten und aggregierte Benchmark-Ergebnisse von [Phaseo](https://phaseo.app).
+
+---
+
+## Zitierempfehlung (optional)
+
+Für eine formellere Quellenangabe kannst du Folgendes verwenden:
+
+```text
+Phaseo. (2025). Phaseo: Aggregated benchmarks and gateway for AI models. https://phaseo.app
+```
+
+BibTeX (optional):
+
+```bibtex
+@misc{phaseo-2025,
+    title  = {Phaseo: Aggregated benchmarks and gateway for AI models},
+    author = {{Phaseo Team}},
+    year   = {2025},
+    url    = {https://phaseo.app}
+}
+```
+
+---
+
+## Benchmark-Daten
+
+Phaseo **führt Benchmarks nicht selbst aus**. Wir stellen von Benchmark-Autoren und Modellanbietern veröffentlichte Scores dar und vereinheitlichen sie.
+
+Wenn du Benchmark-Ergebnisse verwendest, die du über Phaseo abgerufen hast:
+
+1. Zitiere den ursprünglichen Benchmark und das Paper als Hauptquelle.
+2. Du kannst Phaseo zusätzlich als Ort nennen, an dem du die Scores abgerufen oder verglichen hast.
+3. Gib Folgendes an:
+
+- Benchmark-Name und Split (zum Beispiel `MMLU test`).
+- Modell-ID und Anbieter.
+- URL der betreffenden Phaseo-Seite oder API.
+- Abrufdatum.
+
+Textbeispiel:
+
+> Benchmark-Scores wurden über Phaseo abgerufen (MMLU-test-Split), abgerufen am 3. März 2025. Modell: `openai-gpt-4o`; Anbieter: OpenAI.
+
+## Gateway und Tools
+
+Bei der Beschreibung von Integrationen kannst du Phaseo als Gateway-Schicht und nicht als Quelle für Forschungsbenchmarks nennen:
+
+> Wir haben Phaseo Gateway verwendet, um den Zugriff auf Modelle von OpenAI, Anthropic und Google über eine einzige API zu vereinheitlichen.
+
+Verlinke direkt auf die [API-Referenz](../api-reference/introduction.mdx), damit Leser mehr erfahren können.

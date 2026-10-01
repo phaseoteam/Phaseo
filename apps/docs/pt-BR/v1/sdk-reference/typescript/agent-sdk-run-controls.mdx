@@ -1,0 +1,78 @@
+---
+icon: "braces"
+title: "Saídas e novas tentativas"
+description: "Valide as saídas finais, tente novamente em caso de falhas transitórias do modelo e aplique padrões de roteamento gerenciados."
+---
+
+Use o processamento da saída quando o restante do aplicativo precisar de um valor tipado em vez de texto livre. Limite as novas tentativas para falhas transitórias do modelo e mantenha os erros de validação e de política visíveis para o aplicativo.
+
+## Analisar uma saída tipada
+
+`parseOutput` converte o texto final quando o ciclo do agente termina:
+
+```typescript
+const agent = createAgent<string, { summary: string }>({
+  id: "summary-agent",
+  parseOutput(text) {
+    return JSON.parse(text) as { summary: string };
+  },
+});
+```
+
+Para exigir um comportamento mais rigoroso do modelo, combine a análise com uma resposta estruturada do cliente do gateway:
+
+```typescript
+const client = createGatewayAgentClient({
+  clientOptions: {
+    apiKey: process.env.PHASEO_API_KEY!,
+  },
+  responseFormat: {
+    type: "json_schema",
+    name: "agent_answer",
+    schema: {
+      type: "object",
+      properties: {
+        summary: { type: "string" },
+      },
+      required: ["summary"],
+      additionalProperties: false,
+    },
+  },
+  plugins: [{ id: "response-healing" }],
+});
+```
+
+## Tentar novamente as solicitações ao modelo
+
+Use `modelRetry` quando uma falha transitória do modelo precisar ser repetida na execução atual:
+
+```typescript
+const agent = createAgent({
+  id: "support-agent",
+  modelRetry: {
+    maxRetries: 2,
+    backoffMs: 250,
+  },
+});
+```
+
+`maxRetries` conta as tentativas após a primeira solicitação. A contagem final fica armazenada na etapa em `modelAttempts`.
+
+## Usar padrões de roteamento gerenciados
+
+Use `preset` quando os padrões de roteamento, prompt ou parâmetros devem permanecer no dashboard:
+
+```typescript
+const agent = createAgent({
+  id: "support-triage-agent",
+  preset: "support-triage",
+});
+```
+
+O adaptador do gateway também pode levar `responseFormat`, `plugins`, `gatewayTools`, `toolChoice`, `webSearchOptions`, `providerOptions`, `promptCacheKey` e `includeMeta`.
+
+## Guias relacionados
+
+- [Alterar turnos posteriores do modelo](./agent-sdk-dynamic-turns.mdx)
+- [Parar um agente com segurança](./agent-sdk-stop-conditions.mdx)
+- [Lidar com erros](./agent-sdk-events-and-errors.mdx)

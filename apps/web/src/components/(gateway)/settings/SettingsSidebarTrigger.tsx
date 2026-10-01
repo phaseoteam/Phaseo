@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useState, useSyncExternalStore } from "react";
 import {
 	Building2,
@@ -52,6 +53,7 @@ export default function SettingsSidebarTrigger({
 	showWebhooks?: boolean;
 	showAutoRouting?: boolean;
 }) {
+	const t = useTranslations("SettingsUI");
 	const pathname = usePathname() ?? "";
 	const [open, setOpen] = useState(false);
 	const isHydrated = useSyncExternalStore(
@@ -205,7 +207,7 @@ export default function SettingsSidebarTrigger({
 							buttonVariants({ variant: "ghost", size: "icon" }),
 							"size-[var(--site-header-control-h,2.25rem)] shrink-0 rounded-lg",
 						)}
-						aria-label="Open settings menu"
+						aria-label={t("settingsCopy.settingsSidebar.open")}
 					>
 						<MenuIcon className="size-5" aria-hidden="true" />
 					</button>
@@ -217,19 +219,19 @@ export default function SettingsSidebarTrigger({
 				>
 					<SheetHeader className="flex h-[var(--site-header-height,3.75rem)] flex-row items-center justify-between gap-3 border-b px-4 py-0">
 						<div className="min-w-0">
-							<SheetTitle>Settings</SheetTitle>
+							<SheetTitle>{t("settingsCopy.settingsSidebar.settingsTitle")}</SheetTitle>
 							<SheetDescription className="sr-only">
-								Navigate account and workspace settings.
+								{t("settingsCopy.settingsSidebar.description")}
 							</SheetDescription>
 						</div>
 						<SheetClose asChild>
-							<Button variant="ghost" size="icon" aria-label="Close settings menu">
+							<Button variant="ghost" size="icon" aria-label={t("settingsCopy.settingsSidebar.close")}>
 								<X className="size-5" />
 							</Button>
 						</SheetClose>
 					</SheetHeader>
 					<div className="px-3 pt-3">
-						<div className="grid grid-cols-2 rounded-lg bg-muted/70 p-1" aria-label="Settings scope">
+						<div className="grid grid-cols-2 rounded-lg bg-muted/70 p-1" aria-label={t("settingsCopy.settingsSidebar.scope")}>
 							<button
 								type="button"
 								aria-pressed={visibleScope === "personal"}
@@ -241,7 +243,7 @@ export default function SettingsSidebarTrigger({
 										: "text-muted-foreground hover:text-foreground",
 								)}
 							>
-								<UserRound className="size-3.5" /> Account
+								<UserRound className="size-3.5" /> {t("settingsCopy.settingsSidebar.accountScope")}
 							</button>
 							<button
 								type="button"
@@ -254,7 +256,7 @@ export default function SettingsSidebarTrigger({
 										: "text-muted-foreground hover:text-foreground",
 								)}
 							>
-								<Building2 className="size-3.5" /> Workspace
+								<Building2 className="size-3.5" /> {t("settingsCopy.settingsSidebar.workspaceScope")}
 							</button>
 						</div>
 					</div>

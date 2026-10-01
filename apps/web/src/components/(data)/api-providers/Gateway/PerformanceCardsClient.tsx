@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import Link from "next/link";
 import {
 	Minus,
@@ -47,11 +48,11 @@ function toUtcBucket(date: Date): string {
 	return bucket.toISOString();
 }
 
-function formatBucketDate(timestamp: string | null): string {
+function formatBucketDate(timestamp: string | null, locale: string): string {
 	if (!timestamp) return "";
 	const date = new Date(timestamp);
 	if (!Number.isFinite(date.getTime())) return "";
-	return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+	return date.toLocaleDateString(locale, { month: "short", day: "numeric" });
 }
 
 function formatMetricValue(metric: MetricKey, value: number | null): string {
@@ -152,15 +153,18 @@ function MiniModelLeaderboard({
 	metric,
 	dateLabel,
 	items,
+	locale,
 }: {
 	metric: MetricKey;
 	dateLabel: string | null;
 	items: ProviderMetrics["dailyModelLeaderboards"][string]["throughput"];
+	locale: string;
 }) {
+	const t = useTranslations("Catalogue.providers");
 	return (
 		<div className="mt-3">
 			<div className="mb-2 text-center text-xs text-muted-foreground">
-				{formatBucketDate(dateLabel)}
+				{formatBucketDate(dateLabel, locale)}
 			</div>
 			{items.length > 0 ? (
 				<div className="space-y-1.5">
@@ -176,7 +180,7 @@ function MiniModelLeaderboard({
 								{item.label}
 							</Link>
 							<div className="inline-flex items-baseline gap-1 justify-self-end">
-								<span className="text-[11px] text-muted-foreground">Avg</span>
+								<span className="text-[11px] text-muted-foreground">{t("averageAbbreviation")}</span>
 								<span className="text-sm font-medium text-foreground">
 									{formatMetricValue(metric, item.value)}
 								</span>
@@ -187,9 +191,9 @@ function MiniModelLeaderboard({
 			) : (
 				<Empty size="compact" className="min-h-[88px]">
 					<EmptyHeader className="gap-1">
-						<EmptyTitle className="text-sm">No model data for this day</EmptyTitle>
+						<EmptyTitle className="text-sm">{t("noModelDataForDay")}</EmptyTitle>
 						<EmptyDescription className="text-xs">
-							Move across the chart to inspect another date.
+							{t("inspectAnotherDate")}
 						</EmptyDescription>
 					</EmptyHeader>
 				</Empty>
@@ -199,6 +203,7 @@ function MiniModelLeaderboard({
 }
 
 export default function PerformanceCardsClient(props: PerformanceCardsClientProps) {
+	const t = useTranslations("Catalogue.providers");
 	const hasPerformanceData = [
 		...props.throughputData.map((point) => point.avgThroughput),
 		...props.latencyData.map((point) => point.avgLatencyMs),
@@ -215,7 +220,7 @@ export default function PerformanceCardsClient(props: PerformanceCardsClientProp
 					</div>
 				))}
 			</div>
-			<p className="border-t border-border/70 px-3 py-3 text-sm text-muted-foreground sm:px-5">Performance metrics will appear after this provider serves gateway traffic.</p>
+			<p className="border-t border-border/70 px-3 py-3 text-sm text-muted-foreground sm:px-5">{t("performanceDataWillAppear")}</p>
 		</div>
 	);
 }
@@ -227,6 +232,7 @@ function PerformanceCardsWithData({
 	dailyModelLeaderboards,
 	summary,
 }: PerformanceCardsClientProps) {
+	const locale = useLocale();
 	const [hoveredBucket, setHoveredBucket] = useState<string | null>(null);
 	const syncId = "provider-performance-sync";
 
@@ -302,6 +308,7 @@ function PerformanceCardsWithData({
 					metric="throughput"
 					dateLabel={activeBucket}
 					items={throughputLeaderboard}
+					locale={locale}
 				/>
 			</PerformanceCard>
 
@@ -322,6 +329,7 @@ function PerformanceCardsWithData({
 					metric="latency"
 					dateLabel={activeBucket}
 					items={latencyLeaderboard}
+					locale={locale}
 				/>
 			</PerformanceCard>
 
@@ -342,6 +350,7 @@ function PerformanceCardsWithData({
 					metric="e2e"
 					dateLabel={activeBucket}
 					items={e2eLeaderboard}
+					locale={locale}
 				/>
 			</PerformanceCard>
 		</div>

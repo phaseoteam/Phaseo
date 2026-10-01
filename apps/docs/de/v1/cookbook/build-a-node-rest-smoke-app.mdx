@@ -1,0 +1,117 @@
+---
+title: "Eine Node-REST-Smoke-App erstellen"
+icon: "server"
+description: "Nutze das Node-Schnellstartbeispiel als Anleitung für eine direkte HTTP-Integration und ein Smoke-Test-Skript."
+---
+
+Nutze diese Seite, wenn du eine möglichst kleine Node-Integration möchtest und jede HTTP-Anfrage klar nachvollziehen willst.
+
+**Ziel:** Prüfe den Phaseo-Status, die Modellerkennung und eine Generierungsanfrage über direktes HTTP.
+
+**Ergebnis:** Ein Skript mit wenigen Abhängigkeiten, das du als Smoke-Test für Bereitstellung oder Integration verwenden kannst.
+
+<Prompt
+  description="Erstelle mit direktem HTTP eine **Node-REST-Smoke-App** für Phaseo."
+  icon="terminal"
+  actions={["copy", "cursor"]}
+>
+{`Du erstellst eine kleine Node.js-Integration für Phaseo Gateway über direktes HTTP.
+
+Erstelle ein skriptbasiertes App-Projekt, das:
+- PHASEO_API_KEY aus der Umgebung liest
+- Status- und Modellerkennungsrouten aufruft
+- eine Textgenerierungsanfrage sendet
+- optional einen zusätzlichen Bereich wie Embeddings aufruft
+
+Anforderungen:
+- Verwende fetch direkt, kein SDK.
+- Halte den Code frei von unnötigen Abhängigkeiten.
+- Gestalte Request-Payloads explizit und leicht prüfbar.
+- Gib im Terminal klare Erfolgs- und Fehlermeldungen aus.
+- Unterstütze einen schnellen Smoke-Modus und einen umfangreicheren End-to-End-Modus.
+
+Lieferumfang:
+- das Skript
+- Befehle in package.json
+- eine kurze README
+- einen Eintrag in .env.example
+
+Überprüfung:
+- führe den Smoke-Modus nach Möglichkeit aus
+- führe nach Möglichkeit einen vollständigen Anfragepfad aus
+- berichte, was geprüft wurde und welche Annahmen noch offen sind.`}
+</Prompt>
+
+## Beispielprojekt
+
+- GitHub: [examples/gateway-node-quickstart](https://github.com/phaseoteam/Phaseo/tree/main/examples/gateway-node-quickstart)
+- Lokaler Repository-Pfad: `examples/gateway-node-quickstart`
+
+## Was die App macht
+
+- ruft `GET /v1/health`
+- ruft `GET /v1/models`
+- testet Generierungsrouten wie `POST /v1/responses`
+- bietet eine direkte HTTP-Referenz für Smoke-Tests, Skripte und Backend-Prüfungen
+
+## Wann dieses Beispiel passt
+
+Beginne hier, wenn:
+
+- du direkte API-Aufrufe debuggen möchtest
+- du vorerst keine SDK-Abstraktionen möchtest
+- du statt einer Web-UI ein Skript, einen Worker oder eine CLI entwickelst
+
+## Voraussetzungen
+
+- Node.js mit integrierter Unterstützung für `fetch` support
+- ein Phaseo-API-Schlüssel
+
+## Beispiel ausführen
+
+```bash
+cd examples/gateway-node-quickstart
+cp .env.example .env.local
+```
+
+Setze:
+
+- `PHASEO_API_KEY`
+
+Führe anschließend einen der folgenden Befehle aus:
+
+```bash
+npm run smoke
+```
+
+oder:
+
+```bash
+npm run start
+```
+
+## Ergebnis prüfen
+
+- Der Smoke-Modus bestätigt, dass die API erreichbar ist.
+- Die Modellerkennung gibt mindestens ein Modell zurück.
+- Der vollständige Durchlauf gibt eine erfolgreiche Generierungsantwort aus.
+- Authentifizierung und Antworten mit einem anderen HTTP-Status als 200 erzeugen klare Fehlermeldungen im Terminal.
+
+## Worauf du im Code achten solltest
+
+- wie das Skript ... lädt `.env.local`
+- wie der Authorization-Header gesetzt wird
+- wie jede Anfrage explizit aufgebaut wird
+- wie Antworten mit einem anderen HTTP-Status als 200 sichtbar gemacht und nicht verschluckt werden
+
+## So passt du das Beispiel an
+
+- kürze das Skript auf die Routen, die dein Service tatsächlich benötigt
+- verschiebe gemeinsam genutzten Anfragecode in einen Helper, wenn mehrere Skripte ihn verwenden
+- wechsle später zum TypeScript-SDK, falls sich der direkte HTTP-Weg wiederholt
+
+## Verwandte Anleitungen
+
+- [Prompts für den Einstieg mit einer Mini-App](./mini-app-starter-prompts.mdx)
+- [Mit dem kostenlosen Router starten](./free-router-first-deploy.mdx)
+- [Beispiele](../guides/examples.mdx)

@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import type { ModelCard as ModelCardType } from "@/lib/fetchers/models/getAllModels";
 import { Logo } from "@/components/Logo";
 import { formatCountryDate } from "@/components/(data)/countries/utils";
+import { useLocale, useTranslations } from "next-intl";
 
 interface CountryModelCardProps {
     model: ModelCardType;
@@ -19,8 +20,10 @@ export function CountryModelCard({
     variant = "default",
     showDatePill = true,
 }: CountryModelCardProps) {
+	const locale = useLocale();
+	const t = useTranslations("Catalogue.countryDetail");
     const modelSlug = model.model_id;
-    const releaseDate = formatCountryDate(model.primary_date);
+    const releaseDate = formatCountryDate(model.primary_date, locale, t("unknownValue"));
     const accentColour = model.organisation_colour;
     const accentBorder = accentColour ?? "rgba(59,130,246,0.9)";
 
@@ -34,7 +37,7 @@ export function CountryModelCard({
                     >
                         <Logo
                             id={model.organisation_id}
-                            alt={model.organisation_name ?? "Provider logo"}
+                            alt={model.organisation_name ?? t("providerLogoAlt")}
                             width={24}
                             height={24}
                             className="object-contain"
@@ -59,7 +62,7 @@ export function CountryModelCard({
                                 >
                                     <span className="relative underline decoration-transparent hover:decoration-current transition-colors duration-200">
                                         {model.organisation_name ??
-                                            "Unknown organisation"}
+                                            t("unknownOrganisation")}
                                     </span>
                                 </Link>
                             )}
@@ -72,7 +75,7 @@ export function CountryModelCard({
                     size="icon"
                     className="group h-8 w-8 shrink-0 rounded-full"
                     tabIndex={-1}
-                    aria-label={`View ${model.name}`}
+                    aria-label={t("viewModel", { name: model.name })}
                     style={{
                         "--provider-color": accentBorder,
                     } as React.CSSProperties}
@@ -104,7 +107,7 @@ export function CountryModelCard({
                     >
                         <Logo
                             id={model.organisation_id}
-                            alt={model.organisation_name ?? "Provider logo"}
+                            alt={model.organisation_name ?? t("providerLogoAlt")}
                             width={30}
                             height={30}
                             className="object-contain"
@@ -126,7 +129,7 @@ export function CountryModelCard({
                             >
                                 <span className="relative underline decoration-transparent hover:decoration-current transition-colors duration-200">
                                     {model.organisation_name ??
-                                        "Unknown organisation"}
+                                        t("unknownOrganisation")}
                                 </span>
                             </Link>
                         </p>

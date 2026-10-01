@@ -1,0 +1,44 @@
+---
+title: "Zed"
+description: "Zed में Phaseo को OpenAI-compatible model provider के रूप में जोड़ें।"
+---
+
+`phaseo integrations setup zed` चलाएँ। CLI provider ID `phaseo`, API URL `https://api.phaseo.app/v1` और चुना हुआ model `settings.json` में जोड़ती है, बाकी settings नहीं बदलती।
+
+## Zed में API कुंजी सहेजें
+
+Zed provider keys को system keychain में रखता है, इसलिए यही एक बचा हुआ UI step है।
+
+1. Command palette खोलें और **agent: open settings** चलाएँ।
+2. **AI** के अंतर्गत **LLM Providers → Configure** चुनें।
+
+![LLM Providers highlight के साथ Zed AI settings](/images/integrations/zed-agent-settings.png)
+
+3. अगर Phaseo दिखे, तो उसे खोलकर dedicated key paste करें। नहीं तो **Add Provider → OpenAI** चुनें।
+
+![Add Provider के साथ Zed LLM Providers page](/images/integrations/zed-llm-providers.png)
+
+4. Manual विकल्प के तौर पर यह दर्ज करें:
+
+| Field | Value |
+| --- | --- |
+| Provider Name | `Phaseo` |
+| API URL | `https://api.phaseo.app/v1` |
+| API Key | इस कमांड का आउटपुट `phaseo integrations credential zed` |
+| Model Name | चुने गए Phaseo model का ID |
+
+![OpenAI-compatible provider जोड़ने के लिए Zed form](/images/integrations/zed-add-compatible-provider.png)
+
+Base URL, model ID और key भरने से पहले **Save Provider** न चुनें।
+
+## पुष्टि करें
+
+नया Agent thread खोलें, Phaseo model चुनें और छोटा request भेजें। अगर Zed invalid key बताए, तो `phaseo integrations credential zed` दोबारा चलाएँ और Zed में saved key बदलें।
+
+## हटाएँ
+
+```bash
+phaseo integrations remove zed
+```
+
+CLI `settings.json` से Phaseo provider हटाती है और उसकी dedicated key revoke करती है। अगर Zed में पुरानी keychain entry दिखे, तो **LLM Providers** से भी Phaseo हटाएँ।

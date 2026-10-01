@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ChangeEvent, DragEvent } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { MessageScroller } from "@shadcn/react/message-scroller";
 import { ChatConversationComposer } from "@/components/(chat)/ChatConversationComposer";
 import { ChatConversationMessages } from "@/components/(chat)/ChatConversationMessages";
@@ -27,11 +28,9 @@ import {
 	Upload,
 } from "lucide-react";
 import {
-	DEFAULT_CHAT_PLACEHOLDER,
 	REASONING_OPTIONS,
 	extensionForAudioMimeType,
 	extractClipboardFiles,
-	getRandomPlaceholder,
 	getSupportedRecordingMimeType,
 	normalizeAttachmentFiles,
 } from "./chatConversationHelpers";
@@ -166,6 +165,10 @@ export function ChatConversation({
 	requestError = null,
 	responseLayout = "sequential",
 }: ChatConversationProps) {
+	const t = useTranslations("Common.ui.accessibility");
+	const tChatRoom = useTranslations("Common.ui.chatRooms");
+	const tUi = useTranslations("Common.ui");
+	const tProductChat = useTranslations("Product.chat");
 	const isUnified = mode === "unified";
 	const pathname = usePathname();
 	const searchParams = useSearchParams();
@@ -213,13 +216,28 @@ export function ChatConversation({
 	const recordingChunksRef = useRef<Blob[]>([]);
 	const appliedPresetRef = useRef<string | null>(null);
 
-	const [placeholder, setPlaceholder] = useState<string>(
-		DEFAULT_CHAT_PLACEHOLDER,
+	const localizedReasoningOptions = useMemo(
+		() => {
+			const labels: Record<
+				NonNullable<ChatSettings["reasoningEffort"]>,
+				string
+			> = {
+				none: tUi("requestBuilder.none"),
+				minimal: tUi("requestBuilder.minimal"),
+				low: tUi("requestBuilder.low"),
+				medium: tUi("requestBuilder.medium"),
+				high: tUi("requestBuilder.high"),
+				xhigh: tUi("requestBuilder.extraHigh"),
+				max: tUi("requestBuilder.max"),
+			};
+			return REASONING_OPTIONS.map((option) => ({
+				...option,
+				label: labels[option.value],
+			}));
+		},
+		[tUi],
 	);
-
-	useEffect(() => {
-		setPlaceholder(getRandomPlaceholder());
-	}, []);
+	const placeholder = tProductChat("askAnything");
 
 	useEffect(() => {
 		if (!isAuthenticated) return;
@@ -882,7 +900,7 @@ export function ChatConversation({
         {isFileDragActive ? (
             <div
                 role="status"
-                aria-label="Drop to attach files"
+                aria-label={t("dropToAttachFiles")}
                 className="pointer-events-none absolute inset-0 z-50 grid place-items-center border-2 border-dashed border-primary/60 bg-background/80 p-6 text-center backdrop-blur-[2px]"
             >
                 <div className="rounded-2xl border border-primary/20 bg-background/95 px-8 py-7 shadow-[0_24px_80px_-32px_hsl(var(--primary)/0.45)]">
@@ -891,15 +909,15 @@ export function ChatConversation({
                             <Upload className="size-5" strokeWidth={1.8} />
                         </div>
                         <p className="text-base font-semibold tracking-tight text-foreground">
-                            Drop to attach
+                            {t("dropToAttach")}
                         </p>
                     </div>
                     <div className="mt-5 flex items-center justify-center gap-2 text-muted-foreground">
                         {[
-                            { label: "Images", icon: FileImage },
-                            { label: "Audio", icon: FileAudio },
-                            { label: "Video", icon: FileVideo },
-                            { label: "Files", icon: FileText },
+                            { label: tChatRoom("image"), icon: FileImage },
+                            { label: tChatRoom("audio"), icon: FileAudio },
+                            { label: tChatRoom("video"), icon: FileVideo },
+                            { label: tChatRoom("files"), icon: FileText },
                         ].map(({ label, icon: Icon }) => (
                             <div
                                 key={label}
@@ -959,7 +977,7 @@ export function ChatConversation({
 						</MessageScroller.Content>
 					</MessageScroller.Viewport>
 					<MessageScroller.Button
-						aria-label="Scroll to latest message"
+						aria-label={t("scrollToLatestMessage")}
 						className="absolute bottom-4 left-1/2 z-20 inline-flex h-9 w-9 -translate-x-1/2 items-center justify-center rounded-full border border-border bg-background text-foreground shadow-sm transition hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring data-[active=false]:pointer-events-none data-[active=false]:opacity-0"
 						direction="end"
 					>
@@ -992,7 +1010,7 @@ export function ChatConversation({
 				reasoningPickerOpen={reasoningPickerOpen}
 				onReasoningPickerOpenChange={setReasoningPickerOpen}
 				reasoningSelection={reasoningSelection}
-				reasoningOptions={REASONING_OPTIONS}
+				reasoningOptions={localizedReasoningOptions}
 				onReasoningSelection={applyReasoningSelection}
 				selectedModelCount={selectedModelCount}
 				selectedModelsHint={selectedModelsHint}

@@ -1,0 +1,68 @@
+---
+icon: "brain-circuit"
+title: "模型"
+description: "使用 Ruby SDK 列出模型。"
+---
+
+**方法**：`client.list_models(...)`。
+
+### 示例
+```ruby
+require 'phaseo_sdk'
+
+client = PhaseoSdk::Phaseo.new(api_key: ENV.fetch("PHASEO_API_KEY"))
+models = client.list_models(
+  limit: "5",
+  provider: "anthropic",
+  provider_status: "beta,not_ready",
+  provider_availability_reason: "preview_only,provider_not_ready",
+  capability_status: "coming_soon,internal_testing",
+  availability: "all",
+)
+```
+
+### 关键参数
+- `provider`（可选）：按提供方筛选
+- `provider_status` / `provider_routing_status` / `model_routing_status`（可选）：按发布和路由状态筛选
+- `capability_status` / `provider_availability_status` / `provider_availability_reason`（可选）：按能力和可用性筛选
+- `provider_availability_reason` 与 `availability: "all"` 搭配使用时，可筛选 `preview_only`、`provider_not_ready`、`gated`、`access_limited`、`region_limited`、`project_limited`、`paused` 或 `soft_blocked` 等发布状态
+- `capability_status` 与 `availability: "all"` 搭配使用时，可筛选 `coming_soon` 或 `internal_testing` 等不可路由的端点映射
+- `status`（可选）：按模型生命周期状态筛选
+- `organisation`（可选）：按组织筛选
+- `endpoints`（可选）：端点数组
+- `input_types` / `output_types` / `params`（可选）：能力筛选条件
+- `availability`（可选）：`active` 或 `all`
+- `limit`（可选）：数量
+- `offset`（可选）：要跳过的条目数
+
+### 返回值
+`ModelListResponse`
+
+```json
+{
+  "ok": true,
+  "limit": 50,
+  "offset": 0,
+  "total": 123,
+  "models": [
+    {
+      "model_id": "openai/gpt-4o-mini",
+      "name": "GPT-4o Mini",
+      "release_date": "2024-07-18",
+      "status": "active",
+      "organisation_id": "openai",
+      "aliases": ["gpt-4o-mini"],
+      "endpoints": ["chat/completions", "responses"],
+      "input_types": ["text"],
+      "output_types": ["text"],
+      "providers": [
+        {
+          "api_provider_id": "openai",
+          "params": ["temperature", "max_tokens"]
+        }
+      ]
+    }
+  ]
+}
+```
+

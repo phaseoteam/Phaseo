@@ -1,0 +1,21 @@
+---
+title: "Journal d’audit de l’espace de travail"
+description: "Consultez les modifications d’administration de l’espace de travail liées à la sécurité."
+---
+
+Les propriétaires et administrateurs de l’espace de travail peuvent consulter les changements du cycle de vie des clés dans **Paramètres → Espace de travail → Activité**. Les événements sont limités à l’espace de travail actif et classés du plus récent au plus ancien.
+
+La première version consigne les opérations suivantes :
+
+- Création, renommage, mise en pause, reprise, modification des limites, rotation et suppression de clés API
+- Création et suppression de clés de gestion ; renommage, mise en pause, reprise et modification des modèles d’accès, des limites et de l’expiration
+
+Chaque événement comprend l’acteur, l’action, la cible, l’horodatage et quelques métadonnées sûres sur la modification. Les événements d’audit sont ajoutés sans être modifiés. Phaseo ne stocke dans ce journal ni clés en texte brut, ni hachages d’identifiants, ni en-têtes d’autorisation, ni listes complètes de portées, ni corps de requêtes.
+
+L’accès au journal d’audit est réservé aux propriétaires et administrateurs de l’espace de travail. Les membres ordinaires ne peuvent pas consulter les événements, et la table sous-jacente n’est pas exposée aux clients de base de données authentifiés.
+
+Pour automatiser la consultation, appelez `GET /v1/audit-events` avec une clé de gestion disposant du droit `activity:read`. Utilisez le `next_cursor` renvoyé pour récupérer les événements plus anciens sans intervalle entre les horodatages.
+
+<Note>
+  Les journaux des requêtes et des générations indiquent quel trafic a été exécuté. Le journal d’audit de l’espace de travail indique qui a modifié un contrôle administratif et à quel moment.
+</Note>

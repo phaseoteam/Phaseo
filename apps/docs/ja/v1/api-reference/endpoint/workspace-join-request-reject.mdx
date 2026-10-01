@@ -1,0 +1,10 @@
+---
+title: "ワークスペース参加リクエストを拒否"
+sidebarTitle: "参加リクエストを拒否"
+badge: "ベータ"
+openapi: "/ja/openapi/v1/openapi.localized.yaml POST /workspaces/{id}/join-requests/{request_id}/reject"
+description: "保留中のワークスペース参加リクエストを拒否します。"
+---
+<Note>このエンドポイントには `workspaces:write` 権限を持つ管理APIキーが必要です。</Note>
+
+決定は確定され、ワークスペースの監査ログに記録されます。

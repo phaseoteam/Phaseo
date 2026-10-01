@@ -1,0 +1,98 @@
+---
+title: "プリセットのフィードバックを収集する"
+description: "Phaseo ダッシュボードで回答の評価を記録し、プリセットの品質を比較します。"
+icon: "message-square-more"
+---
+
+Preset Feedback を使うと、アプリケーションからの評価を、回答を生成したプリセットに紐付けられます。レイテンシやコストだけでなく、実際のユーザーシグナルを使ってプロンプトやルーティングの変更を比較できます。
+
+<Note>
+Preset Feedback はアルファ版です。チームによる本番 AI 応答の評価方法を参考に、API とダッシュボードを改良しています。さらに役立つ機能にするためのご意見は、[Preset Feedback ページ](https://phaseo.app/settings/presets/experiments)の **Feedback** ボタンからお寄せください。
+</Note>
+
+## 始める前に
+
+必要なもの:
+
+- `feedback:write` 権限を持つ Phaseo API キー
+- Phaseo が返すリクエスト ID
+- 分析するプリセットの UUID
+
+フィードバックを記録するときにプリセット ID を含めてください。これにより、イベントがプリセット比較とコホート分析に表示されます。
+
+## 評価を記録する
+
+ユーザーが回答を評価した後、またはアプリケーションが結果を判定した後にフィードバックを送信します。
+
+```bash cURL
+curl https://api.phaseo.app/v1/feedback \
+  -X POST \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "requestId": "gen_01K...",
+    "presetId": "8f54b2d9-9ba3-4ced-8a7f-9bb70a44dbea",
+    "rating": "thumbs_up",
+    "score": 1,
+    "comment": "The answer resolved the customer question.",
+    "metadataDimensions": {
+      "plan": "pro",
+      "surface": "support_chat"
+    }
+  }'
+```
+
+フィードバックイベントでは、リクエスト、セッション、プリセット、テスト実行のいずれかを少なくとも 1 つ指定する必要があります。スコアは省略可能で、`0` から `1` の範囲で指定します。
+
+## 評価を選ぶ
+
+実際に収集したシグナルに合う評価を選択します。
+
+- ユーザーの簡単な反応には `thumbs_up` または `thumbs_down`
+- 評価済みの回答には `correct`、`partly_correct`、`incorrect`
+- 運用上の問題には `bad_format`、`too_slow`、`too_expensive`
+- 安全性に関する結果には `unsafe` または `refused_incorrectly`
+- 他の値が当てはまらない場合は `not_helpful` または `other`
+
+すべてのシグナルを数値スコアに変換する必要はありません。明示的な評価の方がダッシュボードで比較を説明しやすくなります。
+
+## プリセットを比較する
+
+[設定 → プリセット → Feedback](https://phaseo.app/settings/presets/experiments) を開いて、次の操作を行います。
+
+- 肯定・部分的・否定的な評価の割合を比較する
+- 基準となるプリセットを選択する
+- 日付、評価、メタデータのディメンションで絞り込む
+- イベントのリクエスト、セッション、コメント、タグを確認する
+
+プラン、デプロイ、ロケール、アプリケーションの画面など、カーディナリティの低い値は `metadataDimensions` に追加します。任意の値やカーディナリティの高いコンテキストは `metadata` に保存してください。
+
+## API でフィードバックを読む
+
+最近のイベントを一覧表示します:
+
+```bash
+curl "https://api.phaseo.app/v1/feedback?preset_id=PRESET_UUID&limit=100" \
+  -H "Authorization: Bearer $PHASEO_API_KEY"
+```
+
+サーバー側の概要をリクエストします:
+
+```bash
+curl "https://api.phaseo.app/v1/feedback/summary?group_by=preset&since=2026-08-01T00:00:00Z" \
+  -H "Authorization: Bearer $PHASEO_API_KEY"
+```
+
+読み取り操作には `feedback:read` が必要です。結果は認証済みワークスペースと呼び出し元に表示されるプリセットに限定されます。
+
+## Alpha 版の現在の制限
+
+ダッシュボードが分析するのは、選択期間に一致する最新のフィードバック行 10,000 件までです。
+プリセット比較には明示的な評価を使い、数値スコアは補足情報として表示します。
+テスト実行やカスタム結果イベントの API は利用できますが、ダッシュボードでのワークフローは現在も改善中です。
+
+## 関連ガイド
+
+- [プリセット](./presets.mdx)
+- [プリセットを展開してルーティングをデバッグする](../cookbook/preset-rollout-and-routing-debug.mdx)
+- [アプリの帰属情報](./app-attribution.mdx)

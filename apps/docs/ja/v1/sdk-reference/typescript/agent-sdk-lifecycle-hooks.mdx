@@ -1,0 +1,46 @@
+---
+icon: "radio-tower"
+title: "ライフサイクルフック"
+description: "実行、モデル、ステップ、ツール、チェックポイントのイベントに応答します。"
+---
+
+`onEvent`を使うと、プロダクト画面の更新、監査記録の作成、既存のテレメトリーへのエージェント活動の接続ができます。
+
+## 実行を監視する
+
+```typescript
+const result = await agent.run({
+  input,
+  client,
+  onEvent(event) {
+    console.log(event.type, event.runId);
+  },
+});
+```
+
+イベントハンドラーは小さく保ちます。実行を遅らせてはならない低速なネットワーク処理やストレージ処理は、アプリケーションのキューに移します。
+
+## イベントの種類
+
+| 種類 | イベント |
+| --- | --- |
+| 実行 | `run.started`, `run.resumed`, `run.waiting_for_human`, `run.cancelled`, `run.completed`, `run.failed` |
+| ステップ | `step.started`, `step.completed`, `step.failed`, `step.cancelled` |
+| モデル | `model.requested`, `model.completed`, `model.failed` |
+| ツール | `tool.started`, `tool.preliminary_result`, `tool.completed`, `tool.failed` |
+| 状態 | `checkpoint.saved` |
+
+完了したステップのチェックポイント保存後に`step.completed`が発行されます。永続化やテレメトリーのコンシューマーは、これを安定した境界として扱えます。
+
+## プロダクト画面に使うイベントを選ぶ
+
+- 回答テキストをリアルタイム表示するには、[ストリーミング](./agent-sdk-streaming.mdx)のモデル差分を使います。
+- ツール呼び出しカードや進捗インジケーターにはツールイベントを使います。
+- 承認や入力の操作を表示するには、`run.waiting_for_human`を使います。
+- 実行終了イベントを使って読み込み状態を閉じ、結果を記録します。
+
+## 関連ガイド
+
+- [ストリーミング](./agent-sdk-streaming.mdx)
+- [状態と承認](./agent-sdk-state-and-approval.mdx)
+- [DevTools](./agent-sdk-devtools.mdx)

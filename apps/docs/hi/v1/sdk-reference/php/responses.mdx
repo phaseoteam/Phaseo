@@ -1,0 +1,55 @@
+---
+icon: "sparkles"
+title: "रिस्पॉन्स"
+description: "PHP SDK से Responses API call करें।"
+---
+
+**Methods**: `generateResponse()`, `createResponse()`
+
+### उदाहरण
+
+```php
+<?php
+
+require 'vendor/autoload.php';
+
+use Phaseo\Sdk\Phaseo;
+
+$apiKey = getenv('PHASEO_API_KEY');
+$client = new Phaseo(apiKey: $apiKey);
+
+$response = $client->createResponse([
+    'model' => 'openai/gpt-4.1',
+    'input' => [
+        [
+            'role' => 'user',
+            'content' => [
+                [
+                    'type' => 'output_text',
+                    'text' => 'Summarise this text'
+                ]
+            ]
+        ]
+    ],
+    'temperature' => 0.7,
+    'stream' => false
+]);
+echo $response['output'][0]['content'][0]['text'];
+```
+
+### मुख्य parameters
+
+- `model` (आवश्यक): लक्ष्य मॉडल ID।
+- `input` (आवश्यक): इनपुट आइटम (संदेश, टूल कॉल आदि) की क्रमबद्ध सूची।
+- `temperature` (0–2): मान जितना अधिक होगा, आउटपुट उतना ही यादृच्छिक होगा।
+- `top_p` (0–1): न्यूक्लियस सैंपलिंग नियंत्रण।
+- `max_output_tokens` (integer): हर प्रतिक्रिया में जनरेट होने वाले टोकन की अधिकतम सीमा।
+- टूल: `tools` (परिभाषाएँ), `tool_choice` (auto/none/विशिष्ट), `max_tool_calls` (पूर्णांक), `parallel_tool_calls` (बूलियन)।
+- लॉग प्रायिकताएँ: `top_logprobs` (0–20), हर टोकन की लॉग प्रायिकताएँ लौटाने के लिए।
+- आउटपुट: `service_tier`, `store` (बूलियन), `stream` (बूलियन)।
+- मेटाडेटा: `metadata` (पास-थ्रू ऑब्जेक्ट), `reasoning` (प्रयास-सूचना वाला ऑब्जेक्ट)।
+- Gateway के अतिरिक्त विकल्प: `usage` (उपयोग आँकड़े माँगने के लिए बूलियन), `meta` (मेटा ब्लॉक शामिल करने के लिए बूलियन)।
+
+### रिटर्न मान
+
+`ResponsesResponse` JSON object।

@@ -1,0 +1,34 @@
+---
+icon: "rotate"
+title: "输出与重试"
+description: "验证最终输出、重试模型调用，并检查已完成的 Ruby 运行。"
+---
+
+当后续 Ruby 代码需要可预测的结果结构时，请验证输出。模型重试用于处理暂时性请求故障；对会产生副作用的工具进行重试时，必须明确配置并确保幂等。
+
+## 配置重试
+
+```ruby
+agent = PhaseoAgentSdk.create_agent(
+  id: "research-agent",
+  model: "openai/gpt-5.4-nano",
+  model_retry: PhaseoAgentSdk::ModelRetryConfig.new(
+    max_retries: 3,
+    base_delay_ms: 500,
+    max_delay_ms: 4_000
+  )
+)
+```
+
+结果包含运行记录、步骤、消息、规范化用量、停止原因和最终输出。
+
+```ruby
+result = agent.run(input: prompt, client: client)
+
+puts result.output
+puts result.run.status
+puts result.usage[:total_tokens]
+puts result.usage[:cost]
+```
+
+使用[停止条件](./agent-sdk-stop-conditions.mdx)强制执行预算，并参考[错误与故障排查](./agent-sdk-observability.mdx)选择可恢复故障的处理方式。

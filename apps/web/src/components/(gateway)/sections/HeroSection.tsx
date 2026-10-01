@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { HeroProviderMarquee } from "./HeroProviderMarquee";
 import type { GatewayMarketingMetrics } from "@/lib/fetchers/gateway/getMarketingMetrics";
 import { resolveLogo } from "@/lib/logos";
+import { useTranslations } from "next-intl";
 
 function formatPercent(value: number | null | undefined, digits = 2): string {
 	const normalized = value == null || Number.isNaN(value) ? 0 : value;
@@ -40,21 +41,22 @@ const blockedMarqueeProviderIds = new Set([
 ]);
 
 export function HeroSection({ metrics }: HeroSectionProps) {
+	const t = useTranslations("Site.gatewayMarketing.hero");
 	const statCards = [
 		{
-			label: "Uptime (24h)",
+			label: t("uptime24h"),
 			value: formatPercent(metrics.summary.uptimePct, 2),
 		},
 		{
-			label: "Supported providers",
+			label: t("supportedProviders"),
 			value: formatAbsoluteNumber(metrics.summary.supportedProviders),
 		},
 		{
-			label: "Supported models",
+			label: t("supportedModels"),
 			value: formatAbsoluteNumber(metrics.summary.supportedModels),
 		},
 		{
-			label: "Tokens (24h)",
+			label: t("tokens24h"),
 			value: formatCompactNumber(metrics.summary.tokens24h),
 		},
 	];
@@ -84,25 +86,23 @@ export function HeroSection({ metrics }: HeroSectionProps) {
 				<div className="space-y-10">
 					<div className="space-y-5">
 						<h1 className="text-4xl font-semibold leading-tight tracking-tight text-slate-900 dark:text-slate-100 sm:text-5xl lg:text-6xl">
-							<span>World's largest unified AI gateway.</span>
+							<span>{t("title")}</span>
 							<span className="block text-indigo-600">
-								Fully open source.
+								{t("openSourceTitle")}
 							</span>
 						</h1>
 						<p className="text-lg text-slate-600 dark:text-slate-400">
-							One API for chat, vision, audio, and embeddings with
-							live telemetry, compliance controls, and provider
-							failover built in.
+							{t("description")}
 						</p>
 						<div className="flex flex-wrap gap-3">
 							<Button asChild size="lg">
 								<Link href="/sign-up">
-									Start building
+									{t("startBuilding")}
 									<ArrowRight className="h-4 w-4" />
 								</Link>
 							</Button>
 							<Button asChild variant="outline" size="lg">
-								<Link href="#quickstart">View quickstart</Link>
+								<Link href="#quickstart">{t("viewQuickstart")}</Link>
 							</Button>
 						</div>
 					</div>
@@ -123,20 +123,16 @@ export function HeroSection({ metrics }: HeroSectionProps) {
 					</div>
 					<div className="space-y-3">
 						<p className="text-sm font-semibold text-slate-600 dark:text-slate-400">
-							Supported providers
+							{t("supportedProviders")}
 						</p>
 						<HeroProviderMarquee logos={heroProviderLogos} />
 					</div>
 					<div className="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-900">
 						<p className="font-semibold text-amber-900">
-							Working to lower pricing + increase model offering
+							{t("pricingCommitmentTitle")}
 						</p>
 						<p className="mt-2 text-slate-700">
-							I am working as hard as I can to lower pricing and
-							will do so at every opportunity; I'm a solo
-							developer, but this is something I'm actively
-							addressing as well as looking to expand the gateway
-							substantially as soon as possible.
+							{t("pricingCommitmentDescription")}
 						</p>
 					</div>
 				</div>

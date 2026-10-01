@@ -1,0 +1,49 @@
+---
+title: "Princípios"
+description: "Os princípios de produto que orientam o Phaseo Gateway, o roteamento, a observabilidade e os dados dos modelos."
+icon: "scale"
+---
+
+Use esta explicação para entender as escolhas de produto por trás do Gateway e do catálogo de modelos.
+
+O Phaseo se baseia em alguns princípios simples: manter as integrações portáveis, tornar visível o comportamento dos modelos e provedores e dar às equipes controle de roteamento suficiente para operar com segurança em produção.
+
+## Abertura e transparência
+
+Sempre que possível, preços, disponibilidade dos provedores, comportamento do roteamento e dados de desempenho devem ficar visíveis.
+
+Isso significa que o Phaseo deve facilitar as respostas a perguntas práticas:
+
+- quais provedores podem atender a este modelo?
+- quanto custa a solicitação?
+- qual foi a velocidade da rota?
+- o que mudou quando um modelo ou provedor foi atualizado?
+
+## Uma API para todos os modelos
+
+Os provedores de modelos não oferecem APIs idênticas. O Phaseo fornece à sua aplicação uma camada estável entre ecossistemas de provedores, famílias de modelos e modalidades.
+
+O objetivo não é esconder todas as diferenças entre provedores. É manter os fluxos comuns consistentes e deixar explícito o comportamento específico de cada provedor quando isso for importante.
+
+## Portabilidade e resiliência
+
+Sistemas de IA em produção precisam resistir a mudanças de modelos, incidentes com provedores, variações de preço e limites da conta.
+
+O Phaseo mantém as integrações portáveis com rotas compatíveis com os provedores e resilientes com controles de roteamento e fallback.
+
+## Observabilidade desde o início
+
+Toda solicitação em produção deve ser mais fácil de depurar depois que acontece.
+
+O Phaseo registra uso, latência, custos, detalhes de erros e identificadores de solicitações. Assim, as equipes entendem o comportamento do sistema sem precisar criar sua própria camada de observabilidade primeiro.
+
+## Comunidade respeitosa
+
+O Phaseo oferece documentação pública, dados de modelos, exemplos e caminhos para contribuir. O feedback deve ser específico, construtivo e útil para quem mantém a plataforma e o catálogo.
+
+## Próximos passos
+
+- Comece pelo [Início rápido](../quickstart.mdx).
+- Aprenda sobre [roteamento e fallbacks](./routing-and-fallbacks.mdx).
+- Consulte o [tratamento de erros](../api-reference/errors.mdx).
+- Explore a [Referência da API](../api-reference/introduction.mdx).

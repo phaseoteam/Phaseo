@@ -1,0 +1,59 @@
+---
+title: "Rust API 参考"
+description: "phaseo 0.1 的公共类型和方法。"
+---
+
+本页介绍 [`phaseo 0.1`](https://docs.rs/phaseo/0.1.0/phaseo/) 中受支持的高级 API。
+
+## `Phaseo`
+
+同步认证网关客户端。
+
+| 方法 | 返回值 | 用途 |
+| --- | --- | --- |
+| `Phaseo::new(api_key)` | `Result<Phaseo, PhaseoError>` | 使用生产环境基础 URL 创建客户端。 |
+| `Phaseo::from_env()` | `Result<Phaseo, PhaseoError>` | 读取 `PHASEO_API_KEY` 和可选的 `PHASEO_BASE_URL`。 |
+| `.with_base_url(url)` | `Result<Phaseo, PhaseoError>` | 替换基础 URL。远程 URL 必须使用 HTTPS；精确的 loopback 主机可使用 HTTP。 |
+| `.with_header(name, value)` | `Phaseo` | 为后续请求添加标头。 |
+| `.responses(request)` | `Result<PhaseoResponse, PhaseoError>` | 将 JSON POST 到 `/responses`。 |
+| `.chat_completions(request)` | `Result<PhaseoResponse, PhaseoError>` | 将 JSON POST 到 `/chat/completions`。 |
+| `.post(path, request)` | `Result<PhaseoResponse, PhaseoError>` | 将 JSON POST 到已配置基础 URL 下的其他路径。 |
+
+所有请求正文均为 `&serde_json::Value`。
+
+## `PhaseoResponse`
+
+| 字段 | 类型 | 含义 |
+| --- | --- | --- |
+| `status` | `u16` | HTTP 状态码。 |
+| `body` | `serde_json::Value` | 解析后的 JSON 响应；若响应不是有效 JSON，则为 JSON 字符串。 |
+| `request_id` | `Option<String>` | 存在时的 `x-request-id` 响应标头。 |
+
+## `PhaseoError`
+
+| 字段 | 类型 | 含义 |
+| --- | --- | --- |
+| `message` | `String` | 配置、传输或网关错误消息。 |
+| `status` | `Option<u16>` | 收到响应时的网关 HTTP 状态。 |
+| `body` | `Option<serde_json::Value>` | 可用时解析后的网关错误正文。 |
+
+`PhaseoError` 实现了 `std::error::Error` 和 `Display`。
+
+## 生成模块
+
+该 crate 还公开了生成的 OpenAPI 客户端：
+
+| 模块 | 用途 |
+| --- | --- |
+| `phaseo::gen` | 完整的生成客户端、模型和操作模块。 |
+| `phaseo::client` | 重新导出 `phaseo::gen::client`。 |
+| `phaseo::models` | 重新导出 `phaseo::gen::models`。 |
+| `phaseo::operations` | 重新导出 `phaseo::gen::operations`。 |
+| `phaseo::model_ids` | 生成的 Phaseo 模型标识符。 |
+
+生成的操作名称和类型遵循 OpenAPI 输出，抽象层级可能低于 `Phaseo` 辅助方法。Responses 和 Chat Completions 建议优先使用上面的高级方法。
+
+## 外部参考
+
+- [`phaseo`（crates.io）](https://crates.io/crates/phaseo)
+- [`phaseo`（docs.rs）](https://docs.rs/phaseo)

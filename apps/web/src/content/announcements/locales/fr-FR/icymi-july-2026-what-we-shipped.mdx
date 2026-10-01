@@ -1,0 +1,155 @@
+---
+title: "À retenir : nos livraisons de juillet 2026"
+shortTitle: "À retenir : juillet 2026"
+description: En juillet, Phaseo a été lancé, les fondations du catalogue et du routage ont été reconstruites, les outils de développement élargis et la couverture des modèles fortement étendue.
+publishedAt: 2026-07-30
+author: Phaseo Team
+category: data
+pinned: false
+coverImage: /blog-images/recap-july-2026.png
+tags:
+  - Récapitulatif
+  - Récapitulatif mensuel
+  - Produit
+  - Modèles
+draft: false
+---
+
+Juillet a été un mois déterminant pour Phaseo. AI Stats est devenu Phaseo, mais les changements ont largement dépassé le nouveau nom. Nous avons reconstruit les fondations du catalogue et du routage, élargi Gateway et ses outils de développement, publié des SDK dans davantage de langages et suivi l’une des périodes de sorties de modèles les plus chargées de l’année.
+
+Ce récapitulatif couvre les changements livrés du **1er au 30 juillet 2026**, d’après l’historique des versions, les demandes de modification fusionnées et les données du catalogue pour le mois.
+
+## Ce qui a été livré
+
+### AI Stats est devenu Phaseo
+
+Le passage public d’AI Stats à Phaseo a eu lieu en juillet.
+
+Le nouveau nom reflète mieux l’évolution du produit : une plateforme pour découvrir, router et observer des modèles d’IA. Le changement de marque a été appliqué au site public, à la documentation, aux exemples des SDK, aux consignes sur les variables d’environnement, aux favicons, aux URL canoniques et aux textes du produit.
+
+Le but n’était pas de casser les intégrations existantes. La configuration actuelle continue de fonctionner, tandis que les nouveaux exemples destinés aux développeurs utilisent le nom Phaseo et les variables `PHASEO_*`.
+
+La migration a également donné au produit une structure plus claire pour les futures annonces, notes de sortie des modèles, guides et articles de données. Phaseo peut désormais se développer comme une infrastructure au lieu d’être présenté uniquement comme un site de statistiques.
+
+### Le catalogue et Gateway reposent sur des fondations V2 plus solides
+
+Le changement technique le plus important du mois est la nouvelle architecture V2 des données de modèles et du routage.
+
+Phaseo dispose maintenant d’une structure canonique plus claire pour les laboratoires, les modèles, les alias, les fournisseurs, leurs routes, les capacités, les régions, les variantes, les niveaux de service, les offres tarifaires, les compteurs d’utilisation, les faits relatifs aux requêtes et les décisions de routage. Les données du catalogue dans le dépôt restent la source de rédaction et sont importées directement dans V2.
+
+Les vues publiques des modèles sont passées à des projections compactes reposant sur Cloudflare, avec des sections de pages de modèles chargées en parallèle et des réponses du catalogue mises en cache. Nous avons aussi renforcé l’invalidation du cache : une actualisation administrative peut maintenant purger à la fois les données Worker et les routes du site déjà rendues correspondantes.
+
+Pour les utilisateurs, le catalogue représente mieux le marché réel des modèles : variantes standard et gratuites, disponibilité propre à chaque fournisseur, routes externes, modèles à venir et inactifs, tarifs par période, ainsi que niveaux de service standard, par lots, flexibles et prioritaires.
+
+Gateway a aussi gagné des bases de routage plus fiables, avec des adaptateurs gérés par les fournisseurs, des solutions de repli ordonnées pour les fournisseurs et BYOK, la reprise après déclenchement du disjoncteur, une mesure unifiée de la durée du streaming, une télémétrie respectueuse de la vie privée et une identité de route plus précise dans les enregistrements de requêtes.
+
+Ces fondations se voient moins qu’une nouvelle page, mais elles soutiennent presque tout ce que Phaseo doit faire ensuite.
+
+### Les outils de développement se sont étendus à MCP, la CLI et les SDK
+
+MCP authentifié a été lancé en juillet. Les outils compatibles disposent ainsi d’un moyen en lecture seule d’explorer les modèles, tarifs, utilisations et données de santé des requêtes de Phaseo.
+
+Le travail OAuth associé a inclus l’enregistrement dynamique des clients, PKCE, des sessions renouvelables, des autorisations liées aux ressources, la gestion du consentement, la découverte des métadonnées dans le navigateur et une séparation plus stricte entre l’accès MCP en lecture seule et les opérations privilégiées de Gateway. L’interface MCP publique a ensuite été réduite à dix outils en lecture seule examinés en préparation de la soumission du module.
+
+La CLI a reçu des parcours OAuth plus sûrs, l’inspection des journaux de requêtes ainsi que des commandes d’analyse et de tarification. Les clés de gestion ont également reçu des droits plus précisément limités.
+
+La couverture des SDK s’est largement étendue. Phaseo a préparé et publié des paquets clients de production et des SDK d’agents dans plusieurs langages, dont TypeScript, Python, Go, PHP, Ruby, Java, C#, C++, et Rust. Le SDK d’agents a posé des bases pratiques pour les outils, les nouvelles tentatives, les approbations, la revue humaine, l’état reprenable, les événements et la prise en charge de Gateway Responses.
+
+L’objectif est simple : les développeurs doivent pouvoir utiliser Phaseo depuis leur pile préférée sans reconstruire l’authentification, la gestion des requêtes, les boucles d’agents et l’observabilité.
+
+### Chat, les outils et les parcours asynchrones sont devenus plus complets
+
+Chat a reçu de nombreuses améliorations de fiabilité et d’ergonomie tout au long du mois de juillet.
+
+Les appels d’outils sont désormais transmis et affichés de façon plus cohérente, y compris les traces des outils serveur pour les modèles Gemini actuels. Les durées et les métadonnées des réponses sont plus claires, le rendu LaTeX a été rétabli, la sélection des modèles est plus rapide et les réglages ainsi que l’affichage mobile ont été peaufinés. Chat et Fusion partagent maintenant un espace de travail, et Fusion est directement accessible depuis le sélecteur de salles.
+
+Gateway a également amélioré les aspects de l’infrastructure d’IA qui ressemblent moins au chat. La gestion de l’API Batch a été renforcée en vue du déploiement en production, les sessions vocales en temps réel ont reçu un parcours sécurisé médié par le serveur et la prise en charge de l’API vidéo a progressé avec un déploiement par étapes.
+
+Ensemble, ces changements rendent Phaseo plus adapté aux tâches multimodales et de longue durée, au-delà des requêtes textuelles à un seul tour.
+
+### Les tarifs et la supervision inspirent davantage confiance
+
+En juillet, nous avons amélioré à la fois les données enregistrées par Phaseo et la manière de les expliquer.
+
+Les pages de performances des modèles proposent une attribution plus claire des fournisseurs et des vues de percentiles plus riches. Les graphiques d’un seul fournisseur peuvent afficher P50, P75, P90, P95 et P99 en même temps, tandis que ceux de plusieurs fournisseurs conservent les comparaisons. Les usages hebdomadaires ont été rétablis avec des unités adaptées au modèle : jetons, heures de vidéo générée, secondes audio, images, caractères ou requêtes.
+
+La collecte de l’utilisation en streaming a été renforcée : la facturation attend les dernières données d’utilisation faisant autorité lorsque les fournisseurs les envoient. Les réponses vides mais facturables des fournisseurs sont également enregistrées et réglées correctement, au lieu de disparaître comme des échecs sans coût.
+
+Les pages de tarifs affichent plus clairement la disponibilité des fournisseurs, les comparaisons de niveaux de service, les tarifs par période et les variantes gratuites. Le calculateur a aussi été reconstruit. Les tarifs de Phaseo ont été clarifiés : Gateway est facturé à l’usage et BYOK comprend un million de requêtes par mois avant l’application de frais de service de 2,5 %.
+
+L’objectif général est de rendre les décisions de coût et de performances explicables avant et après l’exécution d’une requête.
+
+## Autres nouveautés
+
+- Les passkeys sont maintenant disponibles pour tout le monde afin de se connecter sans mot de passe et de gérer les comptes.
+- Une base SAML SSO à accès contrôlé a été ajoutée pour l’authentification des espaces de travail.
+- Le référencement des pages de modèles, leur présence dans le sitemap, les liens de cycle de vie, les avis et la gestion des pages introuvables ont été améliorés.
+- Les métadonnées des politiques de données des fournisseurs sont plus précises et importées de façon cohérente.
+- Les surveillances des modèles et des tarifs ont gagné une automatisation plus sûre, des alertes dédupliquées et des synchronisations du catalogue plus fiables.
+- La page publique des modèles a retrouvé les variantes gratuites, la gestion des fournisseurs externes et les vues des états actif, à venir et inactif.
+- Les fiches fournisseurs, les filtres du catalogue, la navigation des classements et les liens de filiation des modèles ont été améliorés.
+- Le site utilise davantage de routes API reposant sur Cloudflare pour récupérer ses données web.
+- Next.js et d’autres dépendances ont reçu des mises à jour de sécurité et de compatibilité.
+
+## Modèles à retenir
+
+Juillet a connu une période particulièrement dense de sorties de modèles et d’élargissement de la couverture des fournisseurs.
+
+GPT-5.6 Sol, Terra et Luna d’OpenAI sont arrivés dans le catalogue avec GPT Live 1 et sa variante Mini. Google a ajouté Gemini 3.6 Flash et Gemini 3.5 Flash-Lite. Anthropic a lancé Claude Opus 5, tandis que Poolside ajoutait Laguna XS 2.1 et Laguna S 2.1.
+
+Kimi K3 de Moonshot AI a représenté l’un des plus gros travaux d’intégration de fournisseurs du mois. Phaseo a ajouté et affiné des routes chez Venice, SiliconFlow, GMI Cloud, Novita, Nebius Token Factory, Baseten, Fireworks, DigitalOcean, Wafer, CrofAI et d’autres. Le routage standard, prioritaire et flexible permet maintenant des déploiements K3 propres à chaque fournisseur sans modifier l’identifiant public du modèle.
+
+Le mois a aussi inclus la famille Inkling de Thinking Machines, SpaceXAI Grok 4.5, Aion 3.0, des modèles multimédias Muse de Meta, des modèles Fugu de Sakana, Ling 3.0 Flash, Macaron V1 Venti, Fugu Cyber, Qwen3.8 Max Preview et la couverture catalogue de Google Lyria 3.5.
+
+Consultez les dernières données de sortie :
+
+- [Voir les nouveautés récentes](/updates)
+
+## Bilan du mois
+
+L’historique GitHub recense **272 demandes de modification fusionnées** entre le 1er et le 30 juillet. Le mois a porté sur la migration Phaseo, l’architecture V2 du catalogue et du routage, les outils de développement authentifiés, la publication des SDK, Chat et les parcours asynchrones, les tarifs et la supervision, ainsi qu’un déploiement particulièrement large de modèles et de fournisseurs.
+
+## Modèles sortis en juillet 2026
+
+Le changelog de juillet comprend ces sorties et retours à la disponibilité :
+
+- 1er juillet : Claude Fable 5 de nouveau disponible (`anthropic/claude-fable-5`)
+- 2 juillet : Laguna XS 2.1 (`poolside/laguna-xs-2.1`)
+- 6 juillet : GPT Realtime 2.1 (`openai/gpt-realtime-2.1`)
+- 6 juillet : GPT Realtime 2.1 Mini (`openai/gpt-realtime-2.1-mini`)
+- 6 juillet : Hy3 (`tencent/hy3`)
+- 7 juillet : Aion 3.0 (`aion-labs/aion-3.0`)
+- 7 juillet : Aion 3.0 Mini (`aion-labs/aion-3.0-mini`)
+- 7 juillet : Muse Image (`meta/muse-image`)
+- 7 juillet : Muse Video (`meta/muse-video`)
+- 7 juillet : Fugu (`sakana/fugu`)
+- 7 juillet : Fugu Ultra (`sakana/fugu-ultra`)
+- 8 juillet : GPT Live 1 (`openai/gpt-live-1`)
+- 8 juillet : GPT Live 1 Mini (`openai/gpt-live-1-mini`)
+- 8 juillet : Grok 4.5 (`spacex-ai/grok-4.5`)
+- 8 juillet : Kat Coder Air V2.5 (`kwaipilot/kat-coder-air-v2.5`)
+- 8 juillet : Kat Coder Pro V2.5 (`kwaipilot/kat-coder-pro-v2.5`)
+- 9 juillet : GPT 5.6 Sol (`openai/gpt-5.6-sol`)
+- 9 juillet : GPT 5.6 Terra (`openai/gpt-5.6-terra`)
+- 9 juillet : GPT 5.6 Luna (`openai/gpt-5.6-luna`)
+- 15 juillet : Inkling (`thinking-machines/inkling`)
+- 15 juillet : Inkling 64K (`thinking-machines/inkling-64k`)
+- 15 juillet : Inkling Small (`thinking-machines/inkling-small`)
+- 16 juillet : Kimi K3 (`moonshotai/kimi-k3`)
+- 19 juillet : Laguna S 2.1 (`poolside/laguna-s-2.1`)
+- 19 juillet : Qwen3.8 Max Preview (`qwen/qwen3.8-max-preview`)
+- 21 juillet : Gemini 3.6 Flash (`google/gemini-3.6-flash`)
+- 21 juillet : Gemini 3.5 Flash-Lite (`google/gemini-3.5-flash-lite`)
+- 21 juillet : Macaron V1 Venti (`mindai/macaron-v1-venti`)
+- 21 juillet : Fugu Cyber (`sakana/fugu-cyber`)
+- 23 juillet : Ling 3.0 Flash (`inclusionai/ling-3.0-flash`)
+- 24 juillet : Claude Opus 5 (`anthropic/claude-opus-5`)
+
+## Prochainement
+
+Juillet a posé les fondations de la prochaine étape de Phaseo : une supervision plus approfondie, une prise en charge élargie des parcours multimodaux et asynchrones, des mises à jour automatisées du catalogue plus fiables et une expérience de développement cohérente sur le web, la CLI, MCP et les SDK dans chaque langage.
+
+Le [30 juillet 2026](https://x.com/sama/status/2082880720989532597), OpenAI a réduit de 80 % le tarif de l’API GPT-5.6 Luna et de 20 % celui de Terra, avec l’objectif annoncé d’offrir le meilleur compromis entre prix et intelligence à chaque niveau. C’est la direction que nous souhaitons pour le secteur. Les progrès des modèles, de l’inférence, du routage et des logiciels de production devraient apporter davantage d’intelligence par euro dépensé, pour tout le monde.
+
+Notre mission est de créer la passerelle d’IA la plus complète et d’offrir le meilleur compromis entre prix et intelligence à chaque niveau. Nous continuerons à réduire nos propres coûts et à répercuter ces économies dans nos tarifs. Notre objectif n’est pas de maximiser les marges, mais de construire le meilleur produit possible avec les personnes qui l’utilisent. Phaseo restera open source et la communauté aura toujours sa place dans les choix de développement à venir.
+

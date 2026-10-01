@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { AppWindow, Bot, Braces, Copy, Database, GraduationCap, Info, ListFilter, LoaderCircle, Package, ShieldCheck, ShieldQuestion, Terminal, XCircle } from "lucide-react";
@@ -61,7 +61,7 @@ import {
 	PROVIDER_PROMPT_TRAINING_POLICY_LABELS,
 	normalizeProviderPromptTrainingPolicy,
 } from "@/lib/providers/promptTrainingPolicy";
-import { formatRoomError } from "@/lib/chat/formatRoomError";
+import { formatRoomError, type RoomErrorTranslator } from "@/lib/chat/formatRoomError";
 import UsageEntityHoverCard from "./UsageEntityHoverCard";
 import { RoutingTracePanel } from "@/components/(gateway)/usage/RoutingTracePanel";
 import {
@@ -784,7 +784,11 @@ function RequestHeader({
 	headerNavigation?: React.ReactNode;
 }) {
 	const t = useTranslations("SettingsUI");
-	const timestamp = formatWordyDateTime(request.created_at, { includeTime: true });
+	const locale = useLocale();
+	const timestamp = formatWordyDateTime(request.created_at, {
+		includeTime: true,
+		locale,
+	});
 	return (
 		<div className="relative">
 			{headerNavigation ? (
@@ -822,7 +826,12 @@ export default function RequestDetailDialog({
 	loading = false,
 }: RequestDetailDialogProps) {
 	const t = useTranslations("SettingsUI");
+	const roomErrorT = useTranslations("Product.chatRooms");
+	const roomErrorTranslator = roomErrorT as unknown as RoomErrorTranslator;
+	const locale = useLocale();
 	const s = (key: string) => t(`strings.${key}` as never);
+	const m = (key: string, values: Record<string, string | number>) =>
+		t(`strings.${key}` as never, values as never);
 	const searchParams = useSearchParams();
 
 	if (!request) return null;
@@ -1086,9 +1095,9 @@ export default function RequestDetailDialog({
 		  })
 		: null;
 	const formattedGatewayError = request.error_payload
-		? formatRoomError(JSON.stringify(request.error_payload))
+		? formatRoomError(JSON.stringify(request.error_payload), roomErrorTranslator)
 		: request.error_message?.trim()
-			? formatRoomError(request.error_message)
+			? formatRoomError(request.error_message, roomErrorTranslator)
 			: null;
 	const formattedDetailRouting = request.detail_metadata
 		? formatRoomError(
@@ -1101,6 +1110,7 @@ export default function RequestDetailDialog({
 						request.detail_metadata.provider_enablement_diagnostics,
 					routing_diagnostics: request.detail_metadata.routing_diagnostics,
 				}),
+				roomErrorTranslator,
 			)
 		: null;
 	const guardrailEnforcement = extractGuardrailEnforcement(request.error_payload);
@@ -1477,7 +1487,9 @@ export default function RequestDetailDialog({
 				<span className="inline-flex items-center justify-end gap-2">
 					<Database className="size-3.5 shrink-0 text-muted-foreground" />
 					{ioLog?.retention_until
-						? s("Retained Until").replace("{date}", formatWordyDateTime(ioLog.retention_until))
+						? m("Retained until", {
+								date: formatWordyDateTime(ioLog.retention_until, { locale }),
+							})
 						: s("No Retained Payload")}
 				</span>
 			),
@@ -1507,7 +1519,7 @@ export default function RequestDetailDialog({
 			value: (
 				<span className="inline-flex items-center justify-end gap-2">
 					<ClientSourceIcon kind={request.client_source_kind ?? "api"} />
-					{request.client_source_name ?? request.client_source_id ?? "Direct HTTP"}
+					{request.client_source_name ?? request.client_source_id ?? s("Direct HTTP")}
 				</span>
 			),
 		},
@@ -1523,7 +1535,7 @@ export default function RequestDetailDialog({
 				{loading ? (
 					<div className="flex items-center gap-2 border-b border-border/70 px-5 py-2 text-xs text-muted-foreground sm:px-6">
 						<LoaderCircle className="size-3.5 animate-spin" />
-						Fetching full generation log…
+						{s("Fetching full generation log…")}
 					</div>
 				) : null}
 				{headerActions ? (
@@ -1545,7 +1557,7 @@ export default function RequestDetailDialog({
 							<div className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm">
 								<div className="mb-2 flex items-center gap-2 font-medium text-rose-900">
 									<XCircle className="h-4 w-4" />
-									Error details
+									{s("Error details")}
 								</div>
 								<div className="space-y-1 text-rose-900/90">
 									{request.error_code ? (
@@ -1748,7 +1760,7 @@ export default function RequestDetailDialog({
 										<div className="grid gap-2 sm:grid-cols-3">
 											<div>
 												<div className="text-xs font-medium uppercase tracking-wide text-rose-950/70">
-													Known
+													{s("Known providers")}
 												</div>
 												<div className="font-mono text-sm">
 													{providerCandidateDiagnostics.totalProviders ?? "-"}
@@ -1756,7 +1768,7 @@ export default function RequestDetailDialog({
 											</div>
 											<div>
 												<div className="text-xs font-medium uppercase tracking-wide text-rose-950/70">
-													Supports endpoint
+													{s("Providers supporting endpoint")}
 												</div>
 												<div className="font-mono text-sm">
 													{providerCandidateDiagnostics.supportsEndpointCount ?? "-"}
@@ -1764,7 +1776,7 @@ export default function RequestDetailDialog({
 											</div>
 											<div>
 												<div className="text-xs font-medium uppercase tracking-wide text-rose-950/70">
-													Candidates
+													{s("Candidates")}
 												</div>
 												<div className="font-mono text-sm">
 													{providerCandidateDiagnostics.candidateCount ?? "-"}
@@ -1775,7 +1787,7 @@ export default function RequestDetailDialog({
 										0 ? (
 											<div className="mt-3">
 												<div className="mb-1 text-xs font-medium uppercase tracking-wide text-rose-950/70">
-													Unsupported endpoints
+													{s("Unsupported endpoints")}
 												</div>
 												<div className="flex flex-wrap gap-2">
 													{providerCandidateDiagnostics.droppedUnsupportedEndpoint.map(
@@ -1794,7 +1806,7 @@ export default function RequestDetailDialog({
 										{providerCandidateDiagnostics.droppedMissingAdapter.length > 0 ? (
 											<div className="mt-3 space-y-2">
 												<div className="text-xs font-medium uppercase tracking-wide text-rose-950/70">
-													Missing adapters
+													{s("Missing adapters")}
 												</div>
 												{providerCandidateDiagnostics.droppedMissingAdapter.map(
 													(entry, index) => (
@@ -1811,7 +1823,7 @@ export default function RequestDetailDialog({
 															{entry.endpoint ? (
 																<>
 																	{" "}
-																	for{" "}
+													<span className="text-rose-950/70">{s("Endpoint")}:</span>{" "}
 																	<code className="rounded bg-rose-100 px-1.5 py-0.5 text-xs">
 																		{entry.endpoint}
 																	</code>
@@ -1838,7 +1850,7 @@ export default function RequestDetailDialog({
 										<div className="grid gap-3 sm:grid-cols-2">
 											<div>
 												<div className="mb-1 text-xs font-medium uppercase tracking-wide text-rose-950/70">
-													Before
+												{s("Before")}
 												</div>
 												<div className="flex flex-wrap gap-2">
 													{providerEnablement.providersBefore.length > 0 ? (
@@ -1857,7 +1869,7 @@ export default function RequestDetailDialog({
 											</div>
 											<div>
 												<div className="mb-1 text-xs font-medium uppercase tracking-wide text-rose-950/70">
-													After
+												{s("After")}
 												</div>
 												<div className="flex flex-wrap gap-2">
 													{providerEnablement.providersAfter.length > 0 ? (
@@ -1878,7 +1890,7 @@ export default function RequestDetailDialog({
 										{providerEnablement.dropped.length > 0 ? (
 											<div className="mt-3 space-y-2">
 												<div className="text-xs font-medium uppercase tracking-wide text-rose-950/70">
-													Dropped providers
+												{s("Dropped providers")}
 												</div>
 												{providerEnablement.dropped.map((entry, index) => (
 													<div
@@ -1932,7 +1944,7 @@ export default function RequestDetailDialog({
 										<div className="mt-3 grid gap-3 sm:grid-cols-2">
 											<div>
 												<div className="mb-1 text-xs font-medium uppercase tracking-wide text-rose-950/70">
-													Active guardrails
+												{s("Active guardrails")}
 												</div>
 												<div className="flex flex-wrap gap-2">
 													{workspacePolicyDiagnostics.activeGuardrailIds.length > 0 ? (
@@ -1946,7 +1958,7 @@ export default function RequestDetailDialog({
 											</div>
 											<div>
 												<div className="mb-1 text-xs font-medium uppercase tracking-wide text-rose-950/70">
-													Allowed models
+												{s("Allowed models")}
 												</div>
 												<div className="flex flex-wrap gap-2">
 													{workspacePolicyDiagnostics.allowedApiModels.length > 0 ? (
@@ -1960,7 +1972,7 @@ export default function RequestDetailDialog({
 											</div>
 											<div>
 												<div className="mb-1 text-xs font-medium uppercase tracking-wide text-rose-950/70">
-													Provider allowlist
+												{s("Provider allowlist")}
 												</div>
 												<div className="flex flex-wrap gap-2">
 													{workspacePolicyDiagnostics.providerAllowlist.length > 0 ? (
@@ -1975,7 +1987,7 @@ export default function RequestDetailDialog({
 											</div>
 											<div>
 												<div className="mb-1 text-xs font-medium uppercase tracking-wide text-rose-950/70">
-													Provider blocklist
+												{s("Provider blocklist")}
 												</div>
 												<div className="flex flex-wrap gap-2">
 													{workspacePolicyDiagnostics.providerBlocklist.length > 0 ? (
@@ -1990,7 +2002,7 @@ export default function RequestDetailDialog({
 											</div>
 											<div>
 												<div className="mb-1 text-xs font-medium uppercase tracking-wide text-rose-950/70">
-													Request provider only
+												{s("Request provider only")}
 												</div>
 												<div className="flex flex-wrap gap-2">
 													{workspacePolicyDiagnostics.requestProviderOnly.length > 0 ? (
@@ -2005,7 +2017,7 @@ export default function RequestDetailDialog({
 											</div>
 											<div>
 												<div className="mb-1 text-xs font-medium uppercase tracking-wide text-rose-950/70">
-													Request provider ignore
+												{s("Request provider ignore")}
 												</div>
 												<div className="flex flex-wrap gap-2">
 													{workspacePolicyDiagnostics.requestProviderIgnore.length > 0 ? (
@@ -2030,7 +2042,7 @@ export default function RequestDetailDialog({
 										{consideredProviders.length > 0 ? (
 											<div className="mb-3">
 												<div className="mb-1 text-xs font-medium uppercase tracking-wide text-rose-950/70">
-													Providers considered
+													{s("Providers considered")}
 												</div>
 												<div className="flex flex-wrap gap-2">
 													{consideredProviders.map((provider, index) => (
@@ -2063,7 +2075,7 @@ export default function RequestDetailDialog({
 										{rankedProviders.length > 0 ? (
 											<div className="mb-3">
 												<div className="mb-1 text-xs font-medium uppercase tracking-wide text-rose-950/70">
-													Ranked providers
+													{s("Ranked providers")}
 												</div>
 												<div className="space-y-2">
 													{rankedProviders.slice(0, 5).map((provider, index) => (
@@ -2079,7 +2091,7 @@ export default function RequestDetailDialog({
 														: s("Unknown provider")}
 																</div>
 																<code className="rounded bg-rose-100 px-1.5 py-0.5 text-xs">
-																	score {formatScoreValue(provider.score)}
+													{s("Score")}: {formatScoreValue(provider.score)}
 																</code>
 															</div>
 															{provider.apiModelId || provider.providerModelSlug ? (
@@ -2098,32 +2110,32 @@ export default function RequestDetailDialog({
 															) : null}
 															<div className="mt-2 flex flex-wrap gap-2 text-xs text-rose-950/80">
 																<code className="rounded bg-rose-100 px-1.5 py-0.5">
-																	success {formatScoreValue(provider.scoreFactors.successRate)}
+													{s("Success rate")}: {formatScoreValue(provider.scoreFactors.successRate)}
 																</code>
 																<code className="rounded bg-rose-100 px-1.5 py-0.5">
-																	latency {formatScoreValue(provider.scoreFactors.latencyScore)}
+													{s("Latency")}: {formatScoreValue(provider.scoreFactors.latencyScore)}
 																</code>
 																<code className="rounded bg-rose-100 px-1.5 py-0.5">
-																	tail {formatScoreValue(provider.scoreFactors.tailLatencyScore)}
+													{s("Tail latency")}: {formatScoreValue(provider.scoreFactors.tailLatencyScore)}
 																</code>
 																<code className="rounded bg-rose-100 px-1.5 py-0.5">
-																	throughput {formatScoreValue(provider.scoreFactors.throughputScore)}
+													{s("Throughput")}: {formatScoreValue(provider.scoreFactors.throughputScore)}
 																</code>
 																<code className="rounded bg-rose-100 px-1.5 py-0.5">
-																	price {formatScoreValue(provider.scoreFactors.priceScore)}
+													{s("Price")}: {formatScoreValue(provider.scoreFactors.priceScore)}
 																</code>
 																<code className="rounded bg-rose-100 px-1.5 py-0.5">
-																	token fit {formatScoreValue(provider.scoreFactors.tokenAffinity)}
+													{s("Token fit")}: {formatScoreValue(provider.scoreFactors.tokenAffinity)}
 																</code>
 																{provider.scoreFactors.cacheBoostMultiplier != null &&
 																provider.scoreFactors.cacheBoostMultiplier > 1 ? (
 																	<code className="rounded bg-rose-100 px-1.5 py-0.5">
-																		cache boost {formatScoreValue(provider.scoreFactors.cacheBoostMultiplier)}
+													{s("Cache boost")}: {formatScoreValue(provider.scoreFactors.cacheBoostMultiplier)}
 																	</code>
 																) : null}
 																{provider.breaker ? (
 																	<code className="rounded bg-rose-100 px-1.5 py-0.5">
-																		breaker {provider.breaker}
+													{s("Circuit breaker")}: {provider.breaker}
 																	</code>
 																) : null}
 															</div>
@@ -2139,19 +2151,19 @@ export default function RequestDetailDialog({
 													className="rounded-lg border border-rose-200/70 bg-white/70 p-3 text-sm"
 												>
 													<div className="flex flex-wrap items-center gap-2">
-														<span className="font-medium">
-															{stage.stage
-																? formatDiagnosticLabel(stage.stage)
-																: `Stage ${index + 1}`}
+									<span className="font-medium">
+										{stage.stage
+											? formatDiagnosticLabel(stage.stage)
+											: m("Stage number", { number: index + 1 })}
 														</span>
 														{stage.beforeCount != null ? (
 															<code className="rounded bg-rose-100 px-1.5 py-0.5 text-xs">
-																before {stage.beforeCount}
+														{s("Before")}: {stage.beforeCount}
 															</code>
 														) : null}
 														{stage.afterCount != null ? (
 															<code className="rounded bg-rose-100 px-1.5 py-0.5 text-xs">
-																after {stage.afterCount}
+														{s("After")}: {stage.afterCount}
 															</code>
 														) : null}
 													</div>
@@ -2194,7 +2206,7 @@ export default function RequestDetailDialog({
 							<div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
 								<div className="mb-2 flex flex-wrap items-center gap-2 font-medium">
 									<Info className="h-4 w-4" />
-									Guardrail enforcement
+									{s("Guardrail enforcement")}
 								</div>
 								<div className="grid gap-3 sm:grid-cols-2">
 									<div className="space-y-1">
@@ -2227,7 +2239,7 @@ export default function RequestDetailDialog({
 									</div>
 									<div>
 										<div className="mb-1 text-xs font-medium uppercase tracking-wide text-amber-950/70">
-											Guardrails
+											{s("Guardrails")}
 										</div>
 										<div className="flex flex-wrap gap-2">
 											{guardrailEnforcement.guardrailIds.length > 0 ? (
@@ -2248,7 +2260,7 @@ export default function RequestDetailDialog({
 								{guardrailEnforcement.detectors.length > 0 ? (
 									<div className="mt-3 space-y-2">
 										<div className="text-xs font-medium uppercase tracking-wide text-amber-950/70">
-											Detectors
+											{s("Detectors")}
 										</div>
 										{guardrailEnforcement.detectors.map((detector, index) => (
 											<div
@@ -2277,7 +2289,7 @@ export default function RequestDetailDialog({
 							<div className="rounded-2xl border border-violet-200 bg-violet-50 p-4 text-sm text-violet-950">
 								<div className="mb-2 flex items-center gap-2 font-medium">
 									<Info className="h-4 w-4" />
-									Plugin execution
+									{s("Plugin execution")}
 								</div>
 								<div className="space-y-3">
 									{pluginExecutions.map((execution, index) => (
@@ -2353,7 +2365,7 @@ export default function RequestDetailDialog({
 											{execution.transformsApplied.length > 0 ? (
 												<div className="mt-3">
 													<div className="mb-1 text-xs font-medium uppercase tracking-wide text-violet-950/70">
-														Transforms applied
+												{s("Transforms applied")}
 													</div>
 													<div className="flex flex-wrap gap-2">
 														{execution.transformsApplied.map((transform) => (
@@ -2370,7 +2382,7 @@ export default function RequestDetailDialog({
 											{execution.validationErrors.length > 0 ? (
 												<div className="mt-3">
 													<div className="mb-1 text-xs font-medium uppercase tracking-wide text-violet-950/70">
-														Validation errors
+													{s("Validation errors")}
 													</div>
 													<div className="space-y-1">
 														{execution.validationErrors.map((error, errorIndex) => (
@@ -2394,7 +2406,7 @@ export default function RequestDetailDialog({
 							<div className="rounded-2xl border border-cyan-200 bg-cyan-50 p-4 text-sm text-cyan-950">
 								<div className="mb-2 flex items-center gap-2 font-medium">
 									<Info className="h-4 w-4" />
-									Web search observability
+									{s("Web search observability")}
 								</div>
 								<div className="grid gap-2 sm:grid-cols-4">
 									<div>
@@ -2417,7 +2429,7 @@ export default function RequestDetailDialog({
 								{searchObservability.nativeSearches.length > 0 ? (
 									<div className="mt-3 space-y-2">
 										<div className="text-xs font-medium uppercase tracking-wide text-cyan-950/70">
-											Native searches
+											{s("Native searches")}
 										</div>
 										{searchObservability.nativeSearches.map((search, index) => (
 											<div
@@ -2426,7 +2438,7 @@ export default function RequestDetailDialog({
 											>
 												<div className="flex flex-wrap items-center gap-2">
 													<span className="font-medium">
-														{search.query ?? `Search ${index + 1}`}
+														{search.query ?? m("Search number", { number: index + 1 })}
 													</span>
 													{search.type ? (
 														<code className="rounded bg-cyan-100 px-1.5 py-0.5 text-xs">
@@ -2446,7 +2458,7 @@ export default function RequestDetailDialog({
 								{searchObservability.managedSearches.length > 0 ? (
 									<div className="mt-3 space-y-2">
 										<div className="text-xs font-medium uppercase tracking-wide text-cyan-950/70">
-											Managed searches
+											{s("Managed searches")}
 										</div>
 										{searchObservability.managedSearches.map((search, index) => (
 											<div
@@ -2455,7 +2467,7 @@ export default function RequestDetailDialog({
 											>
 												<div className="flex flex-wrap items-center gap-2">
 													<span className="font-medium">
-														{search.query ?? `Search ${index + 1}`}
+														{search.query ?? m("Search number", { number: index + 1 })}
 													</span>
 													{search.provider ? (
 														<code className="rounded bg-cyan-100 px-1.5 py-0.5 text-xs">
@@ -2469,8 +2481,7 @@ export default function RequestDetailDialog({
 													) : null}
 												</div>
 												<div className="mt-1 text-cyan-950/85">
-													{search.resultCount} result
-													{search.resultCount === 1 ? "" : "s"}
+													{m("Search result count", { count: search.resultCount })}
 													{search.requestId ? ` | ${search.requestId}` : ""}
 												</div>
 											</div>
@@ -2480,7 +2491,7 @@ export default function RequestDetailDialog({
 								{searchObservability.results.length > 0 ? (
 									<div className="mt-3 space-y-2">
 										<div className="text-xs font-medium uppercase tracking-wide text-cyan-950/70">
-											Search results
+											{s("Search results")}
 										</div>
 										{searchObservability.results.map((result, index) => (
 											<div
@@ -2491,7 +2502,7 @@ export default function RequestDetailDialog({
 													{result.title ? (
 														<span className="font-medium">{result.title}</span>
 													) : (
-														<span className="font-medium">Result {index + 1}</span>
+													<span className="font-medium">{m("Result number", { number: index + 1 })}</span>
 													)}
 													{result.type ? (
 														<code className="rounded bg-cyan-100 px-1.5 py-0.5 text-xs">
@@ -2523,7 +2534,7 @@ export default function RequestDetailDialog({
 								{searchObservability.citations.length > 0 ? (
 									<div className="mt-3 space-y-2">
 										<div className="text-xs font-medium uppercase tracking-wide text-cyan-950/70">
-											Citations
+											{s("Citations")}
 										</div>
 										{searchObservability.citations.map((citation, index) => (
 											<div
@@ -2532,7 +2543,7 @@ export default function RequestDetailDialog({
 											>
 												<div className="flex flex-wrap items-center gap-2">
 													<span className="font-medium">
-														{citation.title ?? `Citation ${index + 1}`}
+														{citation.title ?? m("Citation number", { number: index + 1 })}
 													</span>
 													{citation.type ? (
 														<code className="rounded bg-cyan-100 px-1.5 py-0.5 text-xs">
@@ -2568,7 +2579,7 @@ export default function RequestDetailDialog({
 							<div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
 								<div className="mb-2 flex items-center gap-2 font-medium">
 									<Info className="h-4 w-4" />
-									Web fetch observability
+									{s("Web fetch observability")}
 								</div>
 								<div className="grid gap-2 sm:grid-cols-2">
 									<div>
@@ -2585,7 +2596,7 @@ export default function RequestDetailDialog({
 								</div>
 								<div className="mt-3 space-y-2">
 									<div className="text-xs font-medium uppercase tracking-wide text-amber-950/70">
-										Fetched pages
+										{s("Fetched pages")}
 									</div>
 									{webFetchObservability.fetches.map((entry, index) => (
 										<div
@@ -2594,7 +2605,7 @@ export default function RequestDetailDialog({
 										>
 											<div className="flex flex-wrap items-center gap-2">
 												<span className="font-medium">
-													{entry.title ?? `Fetch ${index + 1}`}
+													{entry.title ?? m("Fetch number", { number: index + 1 })}
 												</span>
 												{entry.provider ? (
 													<code className="rounded bg-amber-100 px-1.5 py-0.5 text-xs">
@@ -2625,8 +2636,8 @@ export default function RequestDetailDialog({
 												</div>
 											) : null}
 											<div className="mt-2 text-amber-950/85">
-												{entry.returnedChars.toLocaleString()} chars returned
-												{entry.truncated ? " | truncated" : ""}
+												{m("Returned character count", { count: entry.returnedChars })}
+												{entry.truncated ? <> · {s("Truncated")}</> : null}
 											</div>
 										</div>
 									))}
@@ -2669,7 +2680,7 @@ export default function RequestDetailDialog({
 								</div>
 							) : (
 								<div className="text-sm text-muted-foreground">
-									No usage metrics available.
+									{s("No usage metrics available.")}
 								</div>
 							)}
 						</GenerationSection>
@@ -2683,8 +2694,16 @@ export default function RequestDetailDialog({
 								<div className="space-y-4 text-sm">
 									<div className="flex flex-wrap gap-x-4 gap-y-1 text-muted-foreground">
 										<span>{s("Status:")} <span className="font-medium text-foreground">{ioLog.status}</span></span>
-										{ioLog.bytes ? <span>{ioLog.bytes.toLocaleString()} bytes</span> : null}
-										{ioLog.retention_until ? <span>Retained until {formatWordyDateTime(ioLog.retention_until)}</span> : null}
+										{ioLog.bytes ? <span>{m("Byte count", { count: ioLog.bytes })}</span> : null}
+										{ioLog.retention_until ? (
+											<span>
+												{m("Retained until", {
+													date: formatWordyDateTime(ioLog.retention_until, {
+														locale,
+													}),
+												})}
+											</span>
+										) : null}
 									</div>
 									{ioLog.payload ? (
 										<div className="grid gap-4 xl:grid-cols-2">
@@ -2752,7 +2771,7 @@ export default function RequestDetailDialog({
 function GenerationSection({ title, children }: { title: string; children: React.ReactNode }) {
 	return (
 		<section className="border-b border-border/70 py-2 last:border-b-0">
-			<h2 className="mb-2 text-sm font-semibold text-foreground">{titleCaseLabel(title)}</h2>
+			<h2 className="mb-2 text-sm font-semibold text-foreground">{title}</h2>
 			{children}
 		</section>
 	);
@@ -2763,6 +2782,10 @@ function DetailRows({
 }: {
 	items: Array<{ label: string; value: React.ReactNode; description?: string }>;
 }) {
+	const t = useTranslations("SettingsUI");
+	const aboutLabel = (label: string) =>
+		t("strings.About label" as never, { label } as never);
+
 	return (
 		<div className="space-y-2">
 			{items.map((item) => (
@@ -2771,11 +2794,11 @@ function DetailRows({
 					className="grid min-h-6 min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-4"
 				>
 					<div className="flex items-center gap-1.5 text-[11px] leading-5 text-muted-foreground">
-						<span>{titleCaseLabel(item.label)}</span>
+						<span>{item.label}</span>
 						{item.description ? (
 							<Tooltip>
 								<TooltipTrigger asChild>
-									<button type="button" className="inline-flex shrink-0 text-muted-foreground/70 hover:text-foreground" aria-label={`About ${item.label}`}>
+									<button type="button" className="inline-flex shrink-0 text-muted-foreground/70 hover:text-foreground" aria-label={aboutLabel(item.label)}>
 										<Info className="size-3" />
 									</button>
 								</TooltipTrigger>

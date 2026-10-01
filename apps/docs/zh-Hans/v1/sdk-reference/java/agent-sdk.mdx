@@ -1,0 +1,62 @@
+---
+title: "使用指南"
+description: "定义工具、运行 Java Agent，并在人为审核后恢复运行。"
+---
+
+## 工具循环
+
+```java
+import app.phaseo.agent.AgentSdk;
+import java.util.List;
+import java.util.Map;
+
+var lookup = AgentSdk.defineTool(new AgentSdk.Tool(
+    "lookup_docs",
+    (input, context) -> Map.of("article", "Presets keep routing stable."),
+    "Look up a documentation article",
+    Map.of("type", "object"),
+    java.time.Duration.ofSeconds(10)
+));
+
+var agent = AgentSdk.createAgent(new AgentSdk.AgentDefinition(
+    "support-agent",
+    "openai/gpt-5.4-nano",
+    null,
+    "Use tools when useful and answer concisely.",
+    List.of(lookup),
+    12,
+    null,
+    null,
+    new AgentSdk.ModelRetryConfig(2, java.time.Duration.ofMillis(250)),
+    new AgentSdk.ToolExecutionConfig(4)
+));
+
+var result = agent.run(new AgentSdk.RunOptions(
+    "Explain presets",
+    AgentSdk.createGatewayAgentClient(),
+    null, null, null, null, null, null,
+    event -> System.out.println(event.type()),
+    AgentSdk.createAgentDevtools(".phaseo-devtools")
+));
+```
+
+## 人工审核
+
+从 `AgentDefinition.humanReview` 返回 `HumanReviewRequest` 以保存运行检查点。持久化返回的 `RunResult`，在应用中收集决定，然后携带 `humanInput` 调用 `continueRun(...)`。Agent SDK 不依赖隐藏的托管状态。
+
+## Responses API 选项
+
+通过 `GatewayOptions.requestOptions` 传入其他 Responses API 字段。适配器会应用 Agent 管理的 `model`、`input`、`instructions` 和本地函数工具。
+
+## 高级运行时
+
+Java 支持验证和审批接口、HITL 与手动工具、进度、可恢复错误、可重放迭代器、停止辅助方法、动态轮次、持久化 `NextTurnParams`、规范化用量/成本以及 `StateAccessor`。
+
+## 流式传输与取消
+
+`Agent.stream(...)` 和 `Agent.continueStream(...)` 会消费网关的 Responses SSE 流。使用 `textStream()` 或 `fullStream()` 获取可重放结果；调用 `cancel()` 中断活动 worker 和 HTTP 读取。已完成步骤会保留请求 ID、提供方元数据、结束原因、警告、用量和成本。
+
+## 相关内容
+
+- [Agent SDK 概览](../agent-sdk/overview.mdx)
+- [Java 客户端 SDK](./overview.mdx)

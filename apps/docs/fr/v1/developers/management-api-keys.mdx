@@ -1,0 +1,82 @@
+---
+title: Clés d’API de gestion
+description: Créez des clés de gestion aux autorisations ciblées pour les API du plan de contrôle Phaseo.
+icon: "key-round"
+---
+
+Les clés d’API de gestion sont des identifiants côté serveur destinés au plan de contrôle Phaseo : crédits, activité, administration des espaces de travail, gestion des clés, préréglages, paramètres et garde-fous. Elles ne servent pas à envoyer des requêtes d’inférence.
+
+Créez-les dans **Tableau de bord → Paramètres → Clés de gestion**. Le secret ne s’affiche qu’une seule fois : enregistrez-le dans votre gestionnaire de secrets avant de fermer la boîte de dialogue.
+
+## Types d’identifiants
+
+| Identifiant | Utilisation | Contrôles |
+| --- | --- | --- |
+| Clé d’API Gateway | Requêtes de modèle et de génération | Politique de routage, budgets, limites et garde-fous associés |
+| Clé d’API de gestion | Requêtes du plan de contrôle | Capacités de gestion explicites et vérifications du rôle dans l’espace de travail |
+| Jeton d’accès OAuth | Accès délégué au plan de contrôle | Portées OAuth approuvées et vérifications du rôle dans l’espace de travail |
+
+Les routes de gestion acceptent uniquement `phaseo_v1_mk_<kid>_<secret>`. Les clés d’API Gateway utilisent `phaseo_v1_sk_<kid>_<secret>` et sont réservées à l’inférence ; elles ne peuvent pas accéder aux points de terminaison du plan de contrôle.
+
+Utilisez les clés de gestion uniquement depuis du code côté serveur :
+
+```http
+Authorization: Bearer phaseo_v1_mk_<kid>_<secret>
+```
+
+L’URL de base de production est :
+
+```text
+https://api.phaseo.app/v1
+```
+
+## Choisir un niveau d’accès
+
+Le tableau de bord propose des modèles explicites. Lors de la création de la clé, chaque modèle se développe en capacités répertoriées ; Phaseo ne stocke jamais de joker tel que `all`. Une clé ne peut donc pas recevoir implicitement une nouvelle autorisation ajoutée ultérieurement.
+
+| Modèle | Autorisations |
+| --- | --- |
+| **Read** | Toutes les capacités de gestion actuelles `*:read` |
+| **Write** | Toutes les capacités actuelles `*:read` et `*:write` ; aucun accès à la suppression |
+| **All** | Toutes les capacités de gestion actuelles de lecture, d’écriture et de suppression |
+
+## Référence des capacités
+
+Utilisez un modèle d’accès pour les cas courants. Choisissez des capacités explicites lorsqu’une intégration a besoin d’autorisations plus limitées et adaptées à son usage.
+
+| Domaine | Lecture | Écriture | Suppression |
+| --- | --- | --- | --- |
+| Identité et catalogue | `me:read`, `models:read`, `providers:read`, `pricing:read` | — | — |
+| Utilisation et observabilité | `credits:read`, `activity:read`, `analytics:read`, `generations:read`, `feedback:read` | `feedback:write` | — |
+| Espaces de travail | `workspaces:read` | `workspaces:write` | `workspaces:delete` |
+| Clés d’API Gateway | `keys:read` | `keys:write` | `keys:delete` |
+| Clés d’API de gestion | `management_keys:read` | `management_keys:write` | `management_keys:delete` |
+| Préréglages | `presets:read` | `presets:write` | `presets:delete` |
+| Paramètres | `settings:read` | `settings:write` | — |
+| Identifiants de fournisseur | `provider_credentials:read` | `provider_credentials:write` | `provider_credentials:delete` |
+| Garde-fous | `guardrails:read` | `guardrails:write` | `guardrails:delete` |
+| Budgets | `budgets:read` | `budgets:write` | `budgets:delete` |
+| Clients OAuth | `oauth_clients:read` | `oauth_clients:write` | `oauth_clients:delete` |
+
+Les modèles `Write` incluent les capacités de lecture correspondantes afin qu’une intégration puisse consulter une ressource avant de la modifier. Le modèle `All` inclut les capacités de suppression ; réservez-le aux automatisations d’administration de confiance.
+
+## Portées et rôles dans l’espace de travail
+
+Une portée est nécessaire, mais ne suffit pas. Phaseo vérifie également que la clé ou l’identité OAuth appartient à l’espace de travail demandé et possède le rôle requis. Une clé à portée définie ne peut pas utiliser une capacité pour accéder à un autre espace de travail ni contourner les vérifications de propriété et d’administration.
+
+Par exemple, `keys:write` autorise les opérations de gestion des clés, tandis que la vérification du rôle dans l’espace de travail détermine si l’appelant peut gérer les clés dans cet espace.
+
+## Les garde-fous sont différents
+
+Les garde-fous s’appliquent aux **clés d’API Gateway** et contrôlent le trafic d’inférence : restrictions de routage, budgets, gestion des injections de prompt et règles relatives aux informations sensibles. Les portées des clés de gestion déterminent quelles API d’administration un identifiant peut appeler. Ces contrôles se complètent, mais ne se remplacent pas.
+
+Consultez [Déployer des garde-fous sur les clés d’API](../cookbook/guardrails-for-api-keys.mdx) pour mettre en place des garde-fous sur une clé d’inférence.
+
+## Sécurité et rotation
+
+- Gardez les clés de gestion hors des navigateurs, des journaux de poste de travail, du contrôle de version et des discussions.
+- Utilisez une clé dédiée par intégration et privilégiez le modèle le plus restrictif.
+- Définissez une date d’expiration si l’intégration n’a pas besoin d’un accès permanent.
+- Suspendez ou supprimez immédiatement les clés inutilisées.
+- Si une clé est divulguée, renouvelez-la avant de poursuivre l’analyse de l’incident.
+

@@ -1,0 +1,134 @@
+---
+title: "Outils et approbations"
+description: "Définissez des outils locaux, externes et soumis à approbation dans le SDK Agent pour Rust."
+---
+
+## Outils locaux
+
+Utilisez `Tool::new(...)` lorsque le processus Rust peut effectuer l’opération :
+
+```rust
+use phaseo_agent::Tool;
+use serde_json::json;
+
+let get_status = Tool::new(
+    "get_status",
+    "Get the current service status",
+    json!({
+        "type": "object",
+        "properties": {
+            "service": { "type": "string" }
+        },
+        "required": ["service"]
+    }),
+    |input, _context| {
+        Ok(json!({
+            "service": input["service"],
+            "status": "healthy"
+        }))
+    },
+);
+```
+
+La valeur de `parameters` est envoyée au modèle au format JSON Schema. Les entrées et sorties d’outil sont des `serde_json::Value` ; validez les arguments non fiables dans l’exécuteur si vous avez besoin de garanties d’exécution plus strictes.
+
+## Outils soumis à approbation
+
+Ajoutez `require_approval()` pour suspendre l’exécution avant d’effectuer l’opération :
+
+```rust
+let deploy = Tool::new(
+    "deploy",
+    "Deploy an application environment",
+    json!({
+        "type": "object",
+        "properties": {
+            "environment": { "type": "string" }
+        },
+        "required": ["environment"]
+    }),
+    |input, _context| {
+        Ok(json!({
+            "environment": input["environment"],
+            "deployed": true
+        }))
+    },
+)
+.require_approval();
+```
+
+Lorsque le modèle appelle cet outil, l’exécution renvoie `run.status == "waiting_for_human"` et `run.pause.kind == "tool_approval"`.
+
+Reprenez avec l’identifiant exact de l’appel :
+
+```rust
+use phaseo_agent::{ContinueOptions, ToolDecision};
+
+let approvals = paused.run.pause.as_ref().unwrap()
+    .pending_tool_calls
+    .iter()
+    .map(|pending| ToolDecision {
+        tool_call_id: pending.call.id.clone(),
+        reason: Some("Approved by the release operator".to_string()),
+    })
+    .collect();
+
+let mut options = ContinueOptions::new(paused);
+options.approvals = approvals;
+
+let completed = agent.continue_run(&mut client, options)?;
+```
+
+L’API Rust `0.1` ne fournit pas de type de refus distinct. Laissez les appels non approuvés en pause ou appliquez la politique de refus de votre application avant de reprendre.
+
+## Outils externes
+
+Utilisez `Tool::external(...)` lorsqu’un autre processus effectue l’opération :
+
+```rust
+let ticket_lookup = Tool::external(
+    "ticket_lookup",
+    "Load one support ticket",
+    json!({
+        "type": "object",
+        "properties": {
+            "ticket_id": { "type": "string" }
+        },
+        "required": ["ticket_id"]
+    }),
+);
+```
+
+Le type de pause est `external_output` lorsque chaque appel en attente nécessite un résultat externe. Fournissez chaque résultat avec l’identifiant de l’appel :
+
+```rust
+use phaseo_agent::{ContinueOptions, ToolOutput};
+
+let outputs = paused.run.pause.as_ref().unwrap()
+    .pending_tool_calls
+    .iter()
+    .map(|pending| ToolOutput {
+        tool_call_id: pending.call.id.clone(),
+        output: json!({
+            "subject": "Provider latency increased",
+            "priority": "high"
+        }),
+    })
+    .collect();
+
+let mut options = ContinueOptions::new(paused);
+options.tool_outputs = outputs;
+
+let completed = agent.continue_run(&mut client, options)?;
+```
+
+Si un tour du modèle combine des outils automatiques et des appels en attente, l’environnement d’exécution exécute les outils automatiques avant de renvoyer la pause.
+
+## Erreurs d’outil
+
+Un `AgentError` renvoyé par un exécuteur local devient un message d’erreur d’outil structuré, puis est transmis au modèle. Un nom d’outil inconnu ou l’absence d’approbation ou de sortie fait échouer la reprise avec `AgentError`.
+
+## Pour aller plus loin
+
+- [Enregistrer et reprendre des exécutions](./agent-sdk-state-and-approval.mdx)
+- [Référence de l’API Agent](./agent-sdk-api-reference.mdx)

@@ -1,0 +1,9 @@
+---
+title: "Actualizar un presupuesto del espacio de trabajo"
+sidebarTitle: "Actualizar presupuesto"
+badge: "Beta"
+openapi: "/es/openapi/v1/openapi.localized.yaml PATCH /budgets/{id}"
+description: "Cambia el intervalo o el límite de gasto de un presupuesto del espacio de trabajo."
+---
+
+Requiere `budgets:write`. Si reduces el límite por debajo del uso actual, se bloquearán las solicitudes nuevas de inmediato.

@@ -1,0 +1,58 @@
+---
+title: "Bewährte Vorgehensweisen"
+description: "Entwickle zuverlässige KI-Funktionen mit diesen Leitlinien zu Architektur, Sicherheit und Observability."
+icon: "clipboard-check"
+---
+
+Wenn du eine solide Grundlage schaffst, lässt sich das Gateway problemlos in Produktions-Workloads integrieren. Mit diesen Empfehlungen verbesserst du Ausfallsicherheit, Sicherheit und Wartbarkeit.
+
+---
+
+## Architektur
+
+-   **Anbieterlogik isolieren.** Bündle Gateway-Aufrufe in einem eigenen Dienst oder SDK, damit Änderungen begrenzt bleiben.
+-   **Antworten nach Möglichkeit streamen.** Senke die Latenz von Assistenten, indem du Tokens sofort an die Benutzeroberfläche sendest.
+-   **Nicht kritische Aufgaben bündeln.** Stelle Hintergrundgenerierungen oder Auswertungen in eine Warteschlange, um Lastspitzen abzufangen.
+
+---
+
+## Sicherheit
+
+-   Speichere API-Schlüssel in der Produktion in Secrets-Managern (AWS Secrets Manager, Doppler, 1Password) statt in `.env`-Dateien.
+-   Aktiviere die Anfrage-Signierung für deine eigenen APIs, damit Client-Anwendungen keine Gateway-Schlüssel offenlegen.
+-   Protokolliere Schlüssel nur gekürzt (zum Beispiel `sk_prod_abcd...`), um Zugangsdaten nicht preiszugeben.
+
+---
+
+## Zuverlässigkeit
+
+-   Setze für alle wiederholbaren Fehler (HTTP 429 oder 5xx) exponentielles Backoff mit Jitter ein.
+-   Beachte den Header [`Retry-After`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Retry-After), bevor du limitierte Anfragen wiederholst.
+-   Überwache Anbietermetadaten, um automatische Wechsel von einem Anbieter zu einem anderen zu erkennen.
+
+---
+
+## Beobachtbarkeit
+
+| Signal        | Empfohlene Maßnahme                                                |
+| ------------- | ----------------------------------------------------------------- |
+| Latenz       | Verfolge p95- und p99-Zeiten, um Leistungseinbußen früh zu erkennen.             |
+| Tokenverbrauch   | Setze Kosten mit Geschäftskennzahlen in Beziehung, um den ROI zu bewerten.            |
+| Fehlerrate   | Löse einen Alarm aus, wenn die Ausfälle über längere Zeit 1 % überschreiten.             |
+| Anbietermix  | Stelle sicher, dass der Traffic wie erwartet auf die Anbieter verteilt wird.         |
+
+---
+
+## Zusammenarbeit
+
+-   Dokumentiere Prompt-Vorlagen, Eingabeparameter und die Verarbeitung von Ausgaben im internen Wiki.
+-   Teile Dashboards, die Änderungen bei Benchmarks und deren Auswirkungen auf dein Produkt zeigen.
+-   Fördere regelmäßige Überprüfungen durch Produkt-, Research- und Support-Teams, damit das Verhalten abgestimmt bleibt.
+
+---
+
+## Weiterführende Informationen
+
+-   Erfahre, wie du [Fehler](./error-handling.mdx) sauber behandelst.
+-   Plane mit [Rate Limits](./rate-limits.mdx) für steigenden Bedarf.
+-   Sieh dir die [Beispiele](../guides/examples.mdx) als Referenz an.

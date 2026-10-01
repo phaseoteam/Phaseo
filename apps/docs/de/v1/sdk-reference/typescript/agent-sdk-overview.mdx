@@ -1,0 +1,45 @@
+---
+title: "Übersicht"
+description: "Wofür das TypeScript Agent SDK gedacht ist und wann du es einsetzen solltest."
+---
+
+Verwende das TypeScript Agent SDK, wenn deine Anwendung mehr als eine einzelne Generierung benötigt:
+
+- mehrstufige lokale Tool-Schleifen
+- fortsetzbarer Ausführungsstatus
+- vom Gateway unterstützte Modellaufrufe
+- validierte strukturierte Ausgaben, gestreamter Fortschritt und Plugin-fähiges Routing
+
+Es baut auf `@phaseo/sdk` auf und definiert den Referenzvertrag für die Laufzeit, den auch die Agent-SDKs anderer Sprachen verwenden.
+
+## Matrix der Laufzeitfunktionen
+
+| Funktion | SDK-Unterstützung |
+| --- | --- |
+| Ausführbare und parallele Tools | Integriert, mit deterministischer Ergebnisreihenfolge und Timeouts pro Tool |
+| Laufzeitvalidierung | Eingabe-, Ausgabe-, Ereignis- und Agent-Endergebnisschemas mit `parse`, `safeParse` oder Validatorfunktionen |
+| Menschliche Freigabe | Pro Tool oder Aufruf, mit Freigabe über die exakte Aufruf-ID und Ablehnung beim Fortsetzen |
+| Tools mit menschlicher Beteiligung | Pause mit `onToolCalled` und Transformation mit `onResponseReceived` |
+| Manuelle Tools | `execute: false` und extern bereitgestellte `toolOutputs` |
+| Tools mit Fortschrittsmeldungen | Async-Generator-Tools und `tool.preliminary_result`-Ereignisse |
+| Fehlerbehandlung für Tools | Lauf abbrechen oder dem Modell einen strukturierten Tool-Fehler zurückgeben |
+| Streaming | Model-Deltas sowie wiederabspielbare Text-, Reasoning-, Element-, Tool- und vollständige Event-Consumer |
+| Abbruchsteuerung | Schritte, Dauer, Tokens, Kosten, Tool-Aufrufe, Beendigungsgrund und benutzerdefinierte Prädikate |
+| Dynamische Turns | Dynamisches Modell, Anweisungen, Sampling-Werte, Tool-Sets, Kontextänderungen und `nextTurnParams` |
+| Dauerhafte Fortsetzung | Serialisierbare Laufergebnisse oder ein anwendungseigener `state`-Zugriff zum Laden und Speichern |
+| Beobachtbarkeit | Normalisierte Nutzungs- und Kostendaten, Warnungen, Beendigungsgründe, Schrittergebnisse, Lifecycle-Ereignisse und lokale Devtools |
+
+## Was du erhältst
+
+- `createAgent()`
+- `defineTool()`
+- `createGatewayAgentClient()`
+- `run()`, `stream()`, `continueRun()` und `continueStream()`
+- ausführbare, manuelle, freigabepflichtige Tools und Tools mit menschlicher Beteiligung
+- Laufzeit-Eingabe- und Ausgabeschemas, Generator-Fortschritt, kombinierbare Abbruchbedingungen sowie Nutzungs- und Kostenübersichten
+- optionale, anwendungseigene Statuszugriffe und Lifecycle-Ereignisse für Devtools
+
+## Weiter
+
+- [Installation](./agent-sdk-installation.mdx)
+- [Verwendung](./agent-sdk.mdx)

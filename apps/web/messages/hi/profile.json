@@ -37,6 +37,11 @@
   "period1y": "पिछले साल",
   "periodAll": "पूरे समय",
   "tokens": "टोकन",
-  "spend": "खर्च करना",
-  "requests": "अनुरोध"
+  "spend": "खर्च",
+  "requests": "अनुरोध",
+  "avgLatency": "औसतन {value} मिलीसेकंड",
+  "activeDaysCount": "{total} में से {active}",
+  "activityLevel": "गतिविधि स्तर {level}",
+  "topModelsByMetric": "{metric} के अनुसार",
+  "changeVsPrior": "{change}% पिछले समय की तुलना में"
 }

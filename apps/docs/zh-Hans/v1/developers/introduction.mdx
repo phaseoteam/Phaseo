@@ -1,0 +1,100 @@
+---
+title: "Phaseo 的工作方式"
+description: "在选择端点、SDK、路由或生产环境设置之前，先了解 Phaseo Gateway。"
+icon: "terminal"
+---
+
+在使用 Gateway 构建应用之前，可通过本说明了解整体工作方式。
+
+Phaseo 为模型、提供商、路由、定价和异步 AI 工作流提供统一 API。
+
+因此，你可以：
+
+-   通过统一的 API 调用多个提供商
+-   简化请求和响应处理
+-   在一个位置跟踪用量、延迟和价格
+-   无需重构应用即可更换模型或路由策略
+
+<Note>
+无需预存积分即可使用 `:free` 模型。付费模型需要钱包中有可用余额。
+</Note>
+
+---
+
+## 为什么要使用 Gateway
+
+当你需要接入多个提供商、模型、端点系列或部署环境时，AI 集成就会变得复杂。
+
+Phaseo 为应用提供稳定的集成层。你可以先发布产品流程，再调整模型、提供商、路由和定价策略，无需重写每个调用方。
+
+---
+
+## 核心概念
+
+<Columns cols={2}>
+	<Card
+		title="统一端点"
+		icon="terminal"
+		href="../api-reference/introduction.mdx"
+	>
+		通过统一的 API 格式调用文本、图像、内容审核、音频、视频和兼容提供商的路由。
+	</Card>
+	<Card title="路由控制" icon="git-branch" href="../guides/routing-and-fallbacks.mdx">
+		根据可用性、成本、延迟、区域和策略，选择请求在提供商之间的流转方式。
+	</Card>
+	<Card title="用量与成本跟踪" icon="chart-column-increasing">
+		跟踪请求量、令牌用量、延迟和价格，以便了解生产环境中的运行情况。
+	</Card>
+	<Card title="BYOK（使用自己的密钥）" icon="key">
+		如果希望采用提供商自己的计费方式和限制，同时保留相同的 Gateway 接口，可以连接提供商密钥。
+	</Card>
+</Columns>
+
+---
+
+## 推荐步骤
+
+1. **[注册](https://phaseo.app/zh-Hans/sign-up)** Phaseo 账户。
+2. 在控制台中**[生成 API 密钥](https://phaseo.app/zh-Hans/gateway/keys)**。
+3. 向 `/v1/responses` 端点**发送第一个请求**。
+4. 为 SDK、路由、可观测性和发布流程**选择生产环境方案**。
+
+<Card
+	title="快速入门"
+	icon="rocket"
+	href="../quickstart.mdx"
+	horizontal
+>
+	使用免费模型成功发起第一次 API 调用。
+</Card>
+
+---
+
+## 后续步骤
+
+<Columns cols={2}>
+	<Card
+		title="身份验证"
+		icon="lock"
+		href="./authentication.mdx"
+	>
+		了解如何使用个人或团队 API 密钥安全地进行身份验证。
+	</Card>
+	<Card title="API 参考" icon="code" href="../api-reference/introduction.mdx">
+		浏览包含端点、参数和响应架构的完整 API 文档。
+	</Card>
+	<Card
+		title="最佳实践"
+		icon="shield-check"
+		href="./best-practices.mdx"
+	>
+		充分使用 Phaseo Gateway 的操作建议。
+	</Card>
+	<Card title="示例" icon="terminal" href="../guides/examples.mdx">
+		复制可直接运行的 Next.js、Node.js 流式处理、Python 和 curl 代码片段。
+	</Card>
+</Columns>
+
+---
+
+如果你需要以构建应用为主的操作指南，请继续阅读 [Gateway 集成](./integrating-with-the-gateway.mdx)，并根据使用规模了解[集成方案](../guides/integrations/index.mdx)或[速率限制](./rate-limits.mdx)。

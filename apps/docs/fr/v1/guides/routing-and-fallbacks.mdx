@@ -1,0 +1,282 @@
+---
+title: "Routage et solutions de repli"
+description: "Comment Gateway sélectionne les fournisseurs et assure la fiabilité des requêtes."
+icon: "git-branch"
+---
+
+La passerelle Phaseo achemine chaque requête vers un fournisseur capable de servir le modèle choisi. Lorsqu’un fournisseur est lent, applique une limite de débit ou renvoie des erreurs, Gateway peut tenter des solutions de repli afin que vos requêtes aboutissent.
+
+## Choisir un mode de routage
+
+Commencez par `balanced`, sauf si une exigence de production est nettement plus importante que les autres.
+
+| Mode | À utiliser lorsque |
+| --- | --- |
+| `balanced` | Vous recherchez un compromis pratique entre prix, latence, débit et disponibilité. |
+| `price` | La réduction du coût fournisseur compte davantage que la rapidité de réponse. |
+| `latency` | Le démarrage rapide de la réponse est votre priorité. |
+| `throughput` | La vitesse de génération soutenue des tokens est votre priorité. |
+
+Configurez la valeur par défaut de l’espace de travail dans **Tableau de bord -> Paramètres -> Routage**. Utilisez des préréglages lorsqu’un flux de travail nécessite une politique de fournisseur ou de modèle plus restrictive que celle de l’espace de travail.
+
+### Suffixes de routage des modèles
+
+Ajoutez un suffixe de routage lorsque vous souhaitez que l’identifiant du modèle impose le mode d’optimisation pour cette requête :
+
+| Suffixe | Mode de routage |
+| --- | --- |
+| `:nitro` | `throughput` |
+| `:cheap` | `price` |
+| `:fast` | `latency` |
+
+Par exemple, `openai/gpt-5-mini:nitro` privilégie le débit. Un suffixe reconnu prend le pas sur `routing.mode` ou `provider.sort` dans la requête, ainsi que sur les modes de routage du préréglage et de l’espace de travail. Les autres contraintes restent applicables, notamment les listes de fournisseurs autorisés, les exigences régionales, les garde-fous et les plafonds de prix.
+
+## Fonctionnement général du routage
+
+- Vous envoyez une requête avec un identifiant de modèle.
+- Gateway évalue l’état de santé, la latence et les capacités des fournisseurs.
+- Un fournisseur est sélectionné et la requête est exécutée.
+
+Pour diagnostiquer le routage, consultez les résultats des requêtes dans les journaux d’activité et les métadonnées de la réponse.
+
+## Sélectionner un modèle avec le routeur automatique
+
+Le routage automatique est actuellement en phase Alpha et n’est disponible que pour certains espaces de travail.
+
+Utilisez `phaseo/auto` lorsque le modèle doit s’adapter à la charge de travail. Phaseo part de tous les modèles de texte éligibles en production, applique les contraintes de l’espace de travail, puis crée une liste de candidats adaptée à la charge :
+
+1. Ouvrez **Tableau de bord -> Paramètres -> Routage -> Routage automatique**.
+2. Choisissez d’optimiser les performances équilibrées, la qualité, le coût ou la latence.
+3. Sélectionnez un profil de dépenses Économique, Standard, Premium ou sans restriction. Ces profils appliquent des plafonds fixes aux prix d’entrée et de sortie avant la notation.
+4. Vous pouvez limiter les modèles éligibles avec des motifs comme `anthropic/*`, `openai/gpt-5.*` ou un identifiant de modèle exact.
+5. Choisissez si Phaseo peut essayer les autres modèles classés après un échec pouvant faire l’objet d’une nouvelle tentative.
+6. Enregistrez la configuration.
+
+Les applications peuvent alors activer le routeur sans recopier la politique de routage de l’espace de travail dans chaque requête :
+
+```json
+{
+  "model": "phaseo/auto",
+  "input": "Review this TypeScript function for correctness."
+}
+```
+
+La requête ne peut pas modifier l’objectif de l’espace de travail, le profil de dépenses ou les motifs de modèles. Les requêtes utilisant un modèle fixe continuent de contourner le routeur automatique.
+
+L’objectif modifie le poids relatif de la qualité du modèle, de la fiabilité du fournisseur, de la latence et du prix :
+
+| Objectif | À utiliser lorsque |
+| --- | --- |
+| `balanced` | Vous souhaitez une valeur par défaut pratique qui tient compte des quatre signaux. |
+| `quality` | Les résultats des évaluations pertinentes sont les plus importants. |
+| `cost` | Le prix estimé le plus bas des tokens d’entrée et de sortie est prioritaire. |
+| `latency` | La réduction de la latence récente du fournisseur est prioritaire. |
+
+Les profils de dépenses imposent des plafonds de prix fermes pour le niveau standard, en USD par million de tokens de texte :
+
+| Profil de dépenses | Prix d’entrée maximal | Prix de sortie maximal |
+| --- | ---: | ---: |
+| Économique | $0.10 | $0.50 |
+| Standard | $0.30 | $1.50 |
+| Premium | $1 | $5 |
+| Tout prix | Aucun plafond | Aucun plafond |
+
+Les limites personnalisées définissent directement les plafonds d’entrée et de sortie. Les modèles dont le prix standard du texte est inconnu ne font pas partie de l’ensemble de candidats géré.
+
+Pour chaque requête `phaseo/auto`, Phaseo crée une requête enfant Gateway classique vers un modèle de classification à faible coût et épinglé. La requête enfant utilise le même espace de travail et la même identité de facturation, apparaît séparément dans les journaux et porte les étiquettes `purpose=auto_routing_classifier` et l’identifiant de la requête parente. Le classificateur renvoie une répartition structurée des types de charge, un score de complexité et une valeur de confiance ; il ne sélectionne jamais directement un modèle.
+
+Les faits avérés de la requête, comme les outils et le format de sortie structuré, sont inclus dans des métadonnées de confiance. Si la requête du classificateur échoue, expire ou renvoie des données non valides, Phaseo utilise le classificateur local déterministe — code, raisonnement, utilisation d’outils, sortie structurée, traduction, résumé ou usage général — au lieu de faire échouer la génération.
+
+La complexité du classificateur représente le niveau minimal de capacité probablement nécessaire pour produire une réponse fiable et acceptable. Phaseo ajoute une marge de capacité, puis combine l’adéquation aux évaluations avec l’objectif de l’espace de travail, le prix, la latence, l’état de santé et la fiabilité du fournisseur. La requête du classificateur et celle du modèle de génération choisi sont facturées séparément par le pipeline Gateway habituel.
+
+Avant la notation, chaque modèle autorisé doit réussir les contrôles habituels concernant le point de terminaison, le modèle de l’espace de travail, le fournisseur, la confidentialité, les garde-fous et le disjoncteur. Le routeur combine ensuite les évaluations pertinentes du catalogue Phaseo (hors données déclarées par les fournisseurs eux-mêmes) avec l’état de santé, la latence et les prix actuels des fournisseurs Phaseo. L’absence de données d’évaluation ou d’exploitation est neutre ; elle n’élargit pas la liste d’autorisation.
+
+Le champ de réponse `model` identifie le modèle sélectionné. Les détails de la requête affichent la charge de travail, l’objectif, le modèle choisi, l’ordre des modèles de repli, les scores des candidats et des facteurs, les identifiants d’évaluation, les exclusions et la version de l’algorithme. Les traces de routage ne contiennent pas le contenu des requêtes ni des réponses.
+
+Si les modèles de repli sont activés pour l’espace de travail, Phaseo réessaie les modèles classés suivants après les réponses `429`, `500`, `502`, `503` ou `504`. Chaque nouvelle tentative repasse par l’ensemble du processus de politique et de sélection du fournisseur. Les erreurs client ne changent pas de modèle.
+
+Un modèle fixe choisi par une route dynamique associée est prioritaire. Dans ce cas, les détails de la requête indiquent la substitution et le routeur automatique désactive ses modèles de repli pour cette requête.
+
+<Warning>
+  Les profils de dépenses et les motifs de modèles déterminent l’éligibilité, pas la qualité. Validez la répartition des modèles obtenue avec vos propres charges de travail.
+</Warning>
+
+## Comprendre une décision de routage
+
+Ouvrez **Tableau de bord -> Paramètres -> Utilisation -> Journaux des requêtes**, sélectionnez une requête, puis développez **Observabilité du routage** sous **Réponses des fournisseurs**.
+
+Le journal des requêtes affiche :
+
+- tous les fournisseurs classés et leur score final
+- le fournisseur choisi par Phaseo et ceux qui ont été essayés
+- les fournisseurs exclus avant le classement et le motif enregistré
+- les fournisseurs rétrogradés en raison de leur statut de déploiement ou de routage
+- les entrées, pondérations, contributions et multiplicateurs utilisés pour noter chaque fournisseur classé
+
+Les facteurs de score sont séparés du contexte enregistré. Un facteur de score modifie le résultat final du mode de routage actif. Le contexte enregistré permet d’expliquer la décision, mais n’influence pas nécessairement le score.
+
+En mode `balanced`, Phaseo note les fournisseurs éligibles en fonction de la fiabilité, de la latence, de la latence de queue, du débit, du prix et de l’adéquation aux tokens. Le calcul affiché indique la contribution de chaque facteur au score final, au lieu de présenter toutes les métriques enregistrées comme également importantes.
+
+### Fiabilité et disponibilité des fournisseurs
+
+L’échantillon de fiabilité est la valeur utilisée dans le score. Il est calculé à partir des résultats du fournisseur ; le taux de réussite est affiché à titre de contexte complémentaire.
+
+Ces résultats diminuent la disponibilité du fournisseur :
+
+- échecs d’authentification (`401`)
+- échecs de paiement (`402`)
+- réponses indiquant que le modèle est introuvable (`404`)
+- erreurs serveur (`500` et plus)
+- erreurs après le début du flux de réponse
+- réponses HTTP réussies qui se terminent par un motif d’erreur
+
+Ces résultats ne diminuent pas la disponibilité du fournisseur :
+
+- requêtes incorrectes (`400`)
+- restrictions géographiques (`403`)
+- charges utiles trop volumineuses (`413`)
+- limites de débit (`429`)
+
+Les restrictions géographiques et les limites de débit sont suivies séparément, car elles ne montrent pas que le fournisseur lui-même est indisponible.
+
+### Disponibilité et confidentialité des traces
+
+Les traces de routage complètes sont disponibles pour les requêtes effectuées après l’activation de l’observabilité du routage. Les requêtes antérieures peuvent afficher une trace partielle ou aucun détail de routage.
+
+Les traces de routage sont limitées et ne contiennent aucun contenu. Elles comprennent les valeurs et statuts nécessaires pour expliquer le choix du fournisseur, sans copier les prompts, les messages ou le contenu généré dans la trace.
+
+## Choisir un fournisseur précis dans l’identifiant du modèle
+
+Utilisez `<provider-id>:<canonical-model-id>` lorsqu’une requête doit utiliser une paire fournisseur-modèle précise :
+
+```json
+{
+  "model": "baseten:thinking-machines/inkling-small",
+  "input": "Hello"
+}
+```
+
+Le qualificatif désactive le repli vers d’autres fournisseurs pour cette requête. Les suffixes restent intégrés à l’identifiant canonique, y compris dans des identifiants comme `baseten:google/gemma-4-26b-a4b:free`.
+
+Consultez [Identifiants de modèle qualifiés par fournisseur](./provider-qualified-models.mdx) pour connaître la syntaxe complète, la validation des routes gratuites, les priorités de routage, les alias, les codes d’erreur et les exemples de requêtes.
+
+## Contrôler le routage et les solutions de repli
+
+Les contrôles publics actuels du routage et des solutions de repli sont explicites :
+
+### Les préréglages limitent le pool de repli
+
+Dans **Tableau de bord -> Paramètres -> Préréglages**, vous pouvez définir :
+
+- les modèles autorisés
+- les listes de fournisseurs autorisés
+- les listes de fournisseurs ignorés
+- le comportement par défaut des prompts et des paramètres
+
+Ces contraintes sont appliquées avant la sélection du fournisseur. Un préréglage peut donc limiter volontairement les fournisseurs éligibles aux nouvelles tentatives et au basculement.
+
+### Le mode de routage modifie le classement des fournisseurs
+
+Dans **Tableau de bord -> Paramètres -> Routage**, les espaces de travail peuvent régler la façon dont Gateway classe les fournisseurs compatibles :
+
+- `balanced`
+- `price`
+- `latency`
+- `throughput`
+
+La même page propose aussi des options pour les canaux bêta et alpha. Vous pouvez ainsi introduire volontairement le trafic de préversion au lieu de le laisser apparaître comme un effet de routage non suivi.
+
+### Le repli BYOK est explicite
+
+Dans **Tableau de bord -> Paramètres -> BYOK**, les équipes peuvent autoriser ou non une requête BYOK qui échoue à basculer sur les crédits Phaseo. Il s’agit du contrôle public actuel pour le cas courant « ma clé personnelle a échoué : la requête doit-elle tout de même aboutir ? ».
+
+### Les routes dynamiques associent une politique aux clés d’API
+
+Dans **Tableau de bord -> Paramètres -> Routage**, créez une route dynamique lorsque différentes clés d’API ou catégories de requêtes nécessitent un comportement fournisseur distinct. Une route peut :
+
+- créer des branches selon des champs imbriqués du corps, des en-têtes, des métadonnées personnalisées, du point de terminaison, du modèle ou de l’identifiant de session
+- répartir le trafic par pourcentage pour les tests A/B et les déploiements progressifs
+- imposer des limites quotidiennes, hebdomadaires ou mensuelles de requêtes et de coûts à l’aide des compteurs d’utilisation de la clé authentifiée
+- appeler un autre modèle et choisir son mode de routage, sa préférence fournisseur et sa politique de repli
+- activer l’affinité liée au cache et à la session
+- s’associer à une ou plusieurs clés d’API d’inférence
+
+Les conditions offrent des sorties vrai et faux. Les nœuds de débit et de budget offrent des sorties « dans la limite » et « dépassé ». La sélection par pourcentage est déterministe pour une session ou une clé de cache de prompt : une même conversation en cache ne change donc pas aléatoirement de branche pendant un déploiement.
+
+L’enregistrement crée une version brouillon immuable. Le déploiement d’une version sélectionnée copie cet instantané dans Gateway et invalide les caches de politique des clés associées. Les versions précédentes restent disponibles pour un retour arrière. Les recommandations opérationnelles sur l’état de santé des fournisseurs apparaissent dans **Insights**, séparément de l’éditeur de flux.
+
+Les métadonnées personnalisées sont disponibles sur les surfaces d’inférence de texte compatibles avec OpenAI :
+
+```json
+{
+  "model": "openai/gpt-5-mini",
+  "metadata": {
+	    "customer_plan": "pro",
+	    "workspace": "acme"
+  }
+}
+```
+
+## Comportement des solutions de repli
+
+Si un fournisseur renvoie des erreurs ou des limites de débit, Gateway peut réessayer ou acheminer la requête vers un autre fournisseur prenant en charge le même modèle. Vous devez tout de même traiter les réponses `429` et `5xx` avec un délai exponentiel.
+
+Les nœuds de modèle d’une route dynamique peuvent également définir une liste ordonnée de modèles de repli. Phaseo épuise d’abord les tentatives auprès des fournisseurs éligibles pour le modèle sélectionné. Si la réponse obtenue permet une nouvelle tentative (`429`, `500`, `502`, `503` ou `504`), Gateway relance l’ensemble du processus de politique et de sélection des fournisseurs pour chaque modèle de repli, dans l’ordre. Les erreurs client sont renvoyées immédiatement sans changer de modèle.
+
+Chaque modèle de repli est vérifié indépendamment au regard des restrictions de modèles de l’espace de travail, des garde-fous, de la politique fournisseur, des prix et des capacités prises en charge. Une route peut enregistrer jusqu’à huit modèles de repli.
+
+Pour en savoir plus :
+
+- [Limites de débit](../developers/rate-limits.mdx)
+- [Gestion des erreurs](../developers/error-handling.mdx)
+
+## Affinité liée au cache et à la session
+
+Le routage tenant compte du cache est activé par défaut sur les points de terminaison de génération de texte. Lorsqu’un fournisseur signale une véritable lecture du cache de prompt, Phaseo épingle le contexte correspondant à ce fournisseur pendant 15 minutes, à condition qu’il reste sain et autorisé par la route, le préréglage, les garde-fous et la politique de requête actifs.
+
+Lorsque `session_id` est présent, l’affinité du cache est associée à la session et non uniquement au contexte initial. Phaseo la renouvelle lorsqu’il observe une nouvelle lecture du cache et la conserve pendant 24 heures maximum d’activité de session. Les disjoncteurs et les filtres de politique restent toujours prioritaires sur l’affinité.
+
+Désactivez cette option pour une seule requête sans modifier les valeurs par défaut de l’espace de travail ou de la route dynamique :
+
+```json
+{
+  "model": "openai/gpt-5",
+  "session_id": "support-session-42",
+  "provider": {
+    "cache_aware_routing": false
+  }
+}
+```
+
+Pour conserver l’affinité du cache de contexte tout en ignorant l’identifiant de session pour une requête, utilisez :
+
+```json
+{
+  "model": "openai/gpt-5",
+  "session_id": "support-session-42",
+  "routing": {
+    "session_affinity": false
+  }
+}
+```
+
+## Considérations BYOK
+
+Utilisez BYOK si vous souhaitez profiter du routage et de l’observabilité Phaseo tout en faisant facturer l’utilisation du modèle par le fournisseur à votre propre compte.
+
+- Les 250 000 premières requêtes BYOK terminées de chaque mois civil UTC ne donnent lieu à aucuns frais de service Phaseo.
+- Au-delà de cette franchise, Phaseo facture 2,5 % du coût équivalent facturé par le fournisseur.
+- Conservez au moins 1 $ de crédit Phaseo. Cela protège le repli géré et le prélèvement des frais après la franchise ; le fournisseur continue de facturer directement votre compte chez lui.
+- Les quotas, la politique de données, l’accès aux modèles et les restrictions de compte de votre fournisseur restent applicables.
+
+Les identifiants fournisseur sont chiffrés avec AES-256-GCM et associés à l’espace de travail et au fournisseur avant leur stockage. Limitez chaque clé aux modèles et aux clés d’API Phaseo qui en ont besoin. Désactivez le repli géré si une requête ne doit jamais utiliser de crédits Phaseo.
+
+## Éléments à journaliser
+
+Pour les charges de production, journalisez les identifiants de requête, les codes d’état des réponses et les identifiants de modèle. Vous pourrez ainsi corréler les échecs et confirmer le comportement du routage pendant le diagnostic.
+
+## Guides associés
+
+- [Préréglages](./presets.mdx)
+- [Matrice de parité des fonctionnalités](../migration-guides/feature-parity-matrix.mdx)
+

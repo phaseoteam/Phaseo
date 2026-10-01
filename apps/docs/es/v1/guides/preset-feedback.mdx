@@ -1,0 +1,98 @@
+---
+title: "Recopilar comentarios sobre ajustes preestablecidos"
+description: "Registra valoraciones de respuestas y compara la calidad de los ajustes preestablecidos en el panel de Phaseo."
+icon: "message-square-more"
+---
+
+Preset Feedback te permite asociar las valoraciones de tu aplicación con el ajuste preestablecido que generó una respuesta. Úsalo para comparar cambios en prompts y enrutamiento con señales reales de los usuarios, en lugar de basarte solo en la latencia y el coste.
+
+<Note>
+Preset Feedback está en fase Alfa. Estamos perfeccionando la API y el panel según la forma en que los equipos evalúan respuestas de IA en producción. Usa el botón **Comentarios** en la [página de Preset Feedback](https://phaseo.app/settings/presets/experiments) para contarnos cómo podemos mejorarlo.
+</Note>
+
+## Antes de empezar
+
+Necesitas:
+
+- Una clave de API de Phaseo con la capacidad `feedback:write`
+- El ID de solicitud que devuelve Phaseo
+- El UUID del ajuste preestablecido que quieres analizar
+
+Incluye el ID del ajuste preestablecido al registrar comentarios. Así, el evento aparecerá en las comparaciones de presets y en el análisis por cohortes.
+
+## Registrar una valoración
+
+Envía comentarios cuando un usuario valore una respuesta o cuando tu aplicación determine un resultado.
+
+```bash cURL
+curl https://api.phaseo.app/v1/feedback \
+  -X POST \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "requestId": "gen_01K...",
+    "presetId": "8f54b2d9-9ba3-4ced-8a7f-9bb70a44dbea",
+    "rating": "thumbs_up",
+    "score": 1,
+    "comment": "The answer resolved the customer question.",
+    "metadataDimensions": {
+      "plan": "pro",
+      "surface": "support_chat"
+    }
+  }'
+```
+
+El evento de comentarios debe referirse al menos a una solicitud, sesión, ajuste preestablecido o ejecución de prueba. La puntuación es opcional y debe estar entre `0` y `1`.
+
+## Elige una valoración
+
+Elige una valoración que describa la señal que realmente recopilaste:
+
+- `thumbs_up` o `thumbs_down` para reacciones sencillas de usuarios
+- `correct`, `partly_correct` o `incorrect` para respuestas evaluadas
+- `bad_format`, `too_slow` o `too_expensive` para problemas operativos
+- `unsafe` o `refused_incorrectly` para resultados de seguridad
+- `not_helpful` u `other` cuando no encajen las demás opciones
+
+No conviertas todas las señales en puntuaciones numéricas. Las valoraciones explícitas facilitan explicar las comparaciones en el panel.
+
+## Comparar ajustes preestablecidos
+
+Abre [Configuración → Ajustes preestablecidos → Comentarios](https://phaseo.app/settings/presets/experiments) para:
+
+- Comparar las tasas de valoraciones positivas, parciales y negativas
+- Seleccionar un ajuste preestablecido de referencia
+- Filtrar por fecha, valoración y dimensiones de metadatos
+- Consultar la solicitud, sesión, comentarios y etiquetas asociados al evento
+
+Añade valores de baja cardinalidad, como el plan, el despliegue, el idioma o la superficie de la aplicación, a `metadataDimensions`. Guarda el contexto arbitrario o de alta cardinalidad en `metadata`.
+
+## Leer comentarios mediante la API
+
+Lista los eventos recientes:
+
+```bash
+curl "https://api.phaseo.app/v1/feedback?preset_id=PRESET_UUID&limit=100" \
+  -H "Authorization: Bearer $PHASEO_API_KEY"
+```
+
+Solicita un resumen del servidor:
+
+```bash
+curl "https://api.phaseo.app/v1/feedback/summary?group_by=preset&since=2026-08-01T00:00:00Z" \
+  -H "Authorization: Bearer $PHASEO_API_KEY"
+```
+
+Las operaciones de lectura requieren `feedback:read`. Los resultados se limitan al espacio de trabajo autenticado y a los ajustes preestablecidos visibles para quien realiza la solicitud.
+
+## Límites actuales de Alpha
+
+- El panel analiza como máximo las 10.000 filas de comentarios coincidentes más recientes del periodo seleccionado.
+- Las comparaciones de ajustes preestablecidos usan valoraciones explícitas; las puntuaciones numéricas se muestran como información complementaria.
+- Las API para ejecuciones de prueba y eventos de resultados personalizados están disponibles, pero sus flujos en el panel siguen evolucionando.
+
+## Guías relacionadas
+
+- [Ajustes preestablecidos](./presets.mdx)
+- [Desplegar ajustes preestablecidos y depurar el enrutamiento](../cookbook/preset-rollout-and-routing-debug.mdx)
+- [Atribución de aplicaciones](./app-attribution.mdx)

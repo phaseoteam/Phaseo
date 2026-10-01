@@ -1,0 +1,24 @@
+---
+icon: "braces"
+title: "API 参考"
+description: "PHP Agent SDK 的主要类和方法参考。"
+---
+
+| API | 用途 |
+| --- | --- |
+| `AgentSdk::createAgent(...)` | 定义 Agent |
+| `AgentSdk::defineTool(...)` | 定义本地或手动工具 |
+| `AgentSdk::createGatewayAgentClient(...)` | 将模型轮次连接到 Phaseo |
+| `Agent::run(...)` | 运行至结束或暂停 |
+| `Agent::stream(...)` | 使用可重放的可迭代对象运行 |
+| `Agent::continueRun(...)` | 继续已保存或已暂停的状态 |
+| `Agent::continueRunById(...)` | 通过状态访问器重新加载并继续 |
+| `AgentStreamResult::textStream()` | 读取文本增量 |
+| `AgentStreamResult::fullStream()` | 读取所有事件 |
+
+重要类包括 `AgentDefinition`、`RunResult`、`RunRecord`、`Tool`、`ToolDecision`、`ToolOutput`、`RuntimeContext`、`StateAccessor` 和 `GatewayAgentClientOptions`。
+
+## 相关内容
+
+- [构建你的第一个 Agent](./agent-sdk.mdx)
+- [可观测性与 DevTools](./agent-sdk-observability.mdx)

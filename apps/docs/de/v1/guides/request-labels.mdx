@@ -1,0 +1,42 @@
+---
+title: "Anfragekennzeichnungen"
+description: "Ordne Gateway-Anfragen codebasierten Teams, Funktionen oder Umgebungen zu und schlüssle Ausgaben nach Label auf."
+icon: "tags"
+---
+
+Verwende Request-Labels, wenn der Anwendungscode eine stabile Kostenkategorie benötigt, die genauer ist als ein API-Schlüssel oder eine Anwendung. Labels werden mit dem Anfrage-Audit erfasst und lassen sich in Analysen filtern, ohne die Modellanfrage zu ändern.
+
+## Labels senden
+
+Setze `X-Phaseo-Metadata` auf ein JSON-Objekt mit bis zu 32 eindeutigen Schlüssel-Wert-Labels:
+
+```bash
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -H 'X-Phaseo-Metadata: {"labels":[{"key":"team","value":"support"},{"key":"environment","value":"production"}]}' \
+  -d '{
+    "model": "openai/gpt-5-nano",
+    "input": "Summarize this ticket."
+  }'
+```
+
+Die TypeScript- und Python-SDKs akzeptieren benutzerdefinierte Header, sodass derselbe Header am Client konfiguriert werden kann. Labels werden nicht an Provider weitergeleitet.
+
+## Ausgaben aufschlüsseln
+
+Verwende den Analytics-Endpunkt mit `label_key` und `label_value`:
+
+```text
+GET /v1/analytics?label_key=team&label_value=support
+```
+
+Die Antwort verwendet dasselbe gruppierte Ausgabenformat wie ungefilterte Analysen, enthält aber nur Anfragen mit genau diesem Label-Paar.
+
+## Regeln
+
+- Schlüssel dürfen Buchstaben, Zahlen, `_`, `.`, `:` oder `-` enthalten und höchstens 64 Zeichen lang sein.
+- Werte sind Strings mit höchstens 256 Zeichen.
+- Eine Anfrage kann bis zu 32 Labels enthalten; der Header ist auf 8 KiB begrenzt.
+- Doppelte Schlüssel oder fehlerhafte Metadaten werden mit `400 invalid_request` abgelehnt.
+- Speichere keine Prompts, Geheimnisse, E-Mail-Adressen oder andere personenbezogene Daten in Labels.

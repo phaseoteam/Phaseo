@@ -1,15 +1,17 @@
 import Link from "next/link";
 import { Rocket } from "lucide-react";
 import { headers } from "next/headers";
+import { getTranslations } from "next-intl/server";
 import ModelUpdateCard, { type EventTypeOption } from "@/components/(data)/models/ModelUpdates/ModelUpdateCard";
 import ModelCalendarRouteSwitch from "@/components/updates/ModelCalendarRouteSwitch";
 import type { ModelEvent } from "@/lib/fetchers/updates/types";
 import { fetchFrontendOrganisationReleaseEvents } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import { buildMetadata } from "@/lib/seo";
 import type { Metadata } from "next";
+import type { RuntimeLocale } from "@/i18n/locales";
 
 type PageProps = {
-	params: Promise<{ organisationId: string }>;
+	params: Promise<{ locale: RuntimeLocale; organisationId: string }>;
 	searchParams: Promise<{ view?: string }>;
 };
 
@@ -24,22 +26,35 @@ type ReleaseDayGroup = {
 };
 
 const WEEKDAY_SERIES = [
-	{ key: "mon", label: "Mon", fullLabel: "Monday", color: "#60a5fa" },
-	{ key: "tue", label: "Tue", fullLabel: "Tuesday", color: "#34d399" },
-	{ key: "wed", label: "Wed", fullLabel: "Wednesday", color: "#fbbf24" },
-	{ key: "thu", label: "Thu", fullLabel: "Thursday", color: "#f97316" },
-	{ key: "fri", label: "Fri", fullLabel: "Friday", color: "#a78bfa" },
-	{ key: "sat", label: "Sat", fullLabel: "Saturday", color: "#f472b6" },
-	{ key: "sun", label: "Sun", fullLabel: "Sunday", color: "#94a3b8" },
+	{ key: "mon", color: "#60a5fa" },
+	{ key: "tue", color: "#34d399" },
+	{ key: "wed", color: "#fbbf24" },
+	{ key: "thu", color: "#f97316" },
+	{ key: "fri", color: "#a78bfa" },
+	{ key: "sat", color: "#f472b6" },
+	{ key: "sun", color: "#94a3b8" },
 ] as const;
 
 function parseViewMode(value: string | undefined): ViewMode {
 	return value === "today" ? "today" : "all";
 }
 
-function getWeekdaySeries(date: Date) {
+function getWeekdaySeries(date: Date, locale: string) {
 	const mondayFirstIndex = (date.getUTCDay() + 6) % 7;
-	return WEEKDAY_SERIES[mondayFirstIndex] ?? WEEKDAY_SERIES[0];
+	const weekdayDate = new Date(
+		Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate())
+	);
+	return {
+		...(WEEKDAY_SERIES[mondayFirstIndex] ?? WEEKDAY_SERIES[0]),
+		fullLabel: new Intl.DateTimeFormat(locale, {
+			weekday: "long",
+			timeZone: "UTC",
+		}).format(weekdayDate),
+		label: new Intl.DateTimeFormat(locale, {
+			weekday: "short",
+			timeZone: "UTC",
+		}).format(weekdayDate),
+	};
 }
 
 function resolveValidTimeZone(value: string | null | undefined): string | null {
@@ -78,13 +93,16 @@ function getMonthDayKeyForDate(
 }
 
 export async function generateMetadata(props: {
-	params: Promise<{ organisationId: string }>;
+	params: Promise<{ locale: RuntimeLocale; organisationId: string }>;
 }): Promise<Metadata> {
-	const { organisationId } = await props.params;
+	const { locale, organisationId } = await props.params;
+	const t = await getTranslations({
+		locale,
+		namespace: "Catalogue.updatesCalendar.organisation",
+	});
 	return buildMetadata({
-		title: `Organisation Model Releases - ${organisationId}`,
-		description:
-			"Explore release history for a specific organisation. See models released today and complete release timelines in Phaseo.",
+		title: t("metadataTitle", { organisation: organisationId }),
+		description: t("description"),
 		path: `/updates/calendar/organisations/${organisationId}`,
 		keywords: [
 			"AI model releases",
@@ -99,10 +117,18 @@ export default async function OrganisationCalendarPage({
 	params,
 	searchParams,
 }: PageProps) {
-	const [{ organisationId }, { view: rawView }] = await Promise.all([
+	const [{ locale, organisationId }, { view: rawView }] = await Promise.all([
 		params,
 		searchParams,
 	]);
+	const t = await getTranslations({
+		locale,
+		namespace: "Catalogue.updatesCalendar.organisation",
+	});
+	const eventTypeT = await getTranslations({
+		locale,
+		namespace: "Catalogue.updates.eventTypes",
+	});
 	const requestHeaders = await headers();
 	const view = parseViewMode(rawView);
 	const requestTimeZone = resolveValidTimeZone(
@@ -129,15 +155,15 @@ export default async function OrganisationCalendarPage({
 		releasedEvents.map((event) => event.model.model_id)
 	).size;
 	const visibleEvents = view === "today" ? releasedTodayEvents : releasedEvents;
-	const cardsTitle =
-		view === "today"
-			? `Released on this day (${releasedTodayEvents.length})`
-			: `All releases (${releasedEvents.length})`;
+	const formatCount = (count: number) => new Intl.NumberFormat(locale).format(count);
+	const cardsTitle = view === "today"
+		? t("titleToday", { count: formatCount(releasedTodayEvents.length) })
+		: t("titleAll", { count: formatCount(releasedEvents.length) });
 	const groupedByDayMap = new Map<string, ReleaseDayGroup>();
 	for (const event of visibleEvents) {
 		const date = new Date(event.date);
 		const weekdayIndex = (date.getUTCDay() + 6) % 7;
-		const weekday = getWeekdaySeries(date);
+		const weekday = getWeekdaySeries(date, locale);
 		const existing = groupedByDayMap.get(weekday.key);
 		if (existing) {
 			existing.events.push(event);
@@ -158,7 +184,7 @@ export default async function OrganisationCalendarPage({
 
 	const releaseBadge: EventTypeOption = {
 		type: "Released",
-		label: "Release",
+		label: eventTypeT("released"),
 		icon: <Rocket className="size-3.5" />,
 		badgeClass:
 			"bg-green-100 text-green-800 border border-green-300 px-2 py-1 text-xs flex items-center gap-1 dark:bg-green-950 dark:text-green-300 dark:border-green-800",
@@ -173,7 +199,7 @@ export default async function OrganisationCalendarPage({
 								href="/updates/calendar"
 								className="font-medium text-zinc-700 hover:underline dark:text-zinc-300"
 							>
-								Back to calendar
+								{t("backToCalendar")}
 							</Link>
 						</div>
 						<ModelCalendarRouteSwitch active="calendar" />
@@ -181,38 +207,25 @@ export default async function OrganisationCalendarPage({
 
 					<div className="space-y-1">
 						<h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-50">
-							{organisationName} release details
+							{t("detailsTitle", { organisation: organisationName })}
 						</h1>
 						<p className="text-sm text-zinc-600 dark:text-zinc-300">
-							Track today&apos;s releases or review full released model history
-							for this organisation.
+							{t("description")}
 						</p>
 					</div>
 
 					<div className="flex flex-wrap items-center gap-2 text-xs">
 						<span className="rounded-md border border-zinc-200 bg-white px-2.5 py-1 dark:border-zinc-700 dark:bg-zinc-950">
-							Total release events:{" "}
-							<span className="font-semibold">
-								{releasedEvents.length.toLocaleString()}
-							</span>
+							{t("totalReleaseEvents", { count: formatCount(releasedEvents.length) })}
 						</span>
 						<span className="rounded-md border border-zinc-200 bg-white px-2.5 py-1 dark:border-zinc-700 dark:bg-zinc-950">
-							Released models:{" "}
-							<span className="font-semibold">
-								{uniqueReleasedModelCount.toLocaleString()}
-							</span>
+							{t("releasedModels", { count: formatCount(uniqueReleasedModelCount) })}
 						</span>
 						<span className="rounded-md border border-zinc-200 bg-white px-2.5 py-1 dark:border-zinc-700 dark:bg-zinc-950">
-							Released on this day:{" "}
-							<span className="font-semibold">
-								{releasedTodayEvents.length.toLocaleString()}
-							</span>
+							{t("releasedOnThisDay", { count: formatCount(releasedTodayEvents.length) })}
 						</span>
 						<span className="rounded-md border border-zinc-200 bg-white px-2.5 py-1 dark:border-zinc-700 dark:bg-zinc-950">
-							Weekday groups:{" "}
-							<span className="font-semibold">
-								{groupedByDay.length.toLocaleString()}
-							</span>
+							{t("weekdayGroups", { count: formatCount(groupedByDay.length) })}
 						</span>
 					</div>
 
@@ -227,7 +240,7 @@ export default async function OrganisationCalendarPage({
 									: "border-zinc-300 bg-white text-zinc-700 hover:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-300 dark:hover:border-zinc-500"
 							}`}
 						>
-							Released on this day
+							{t("releasedOnThisDayButton")}
 						</Link>
 						<Link
 							href={`/updates/calendar/organisations/${encodeURIComponent(
@@ -239,7 +252,7 @@ export default async function OrganisationCalendarPage({
 									: "border-zinc-300 bg-white text-zinc-700 hover:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-300 dark:hover:border-zinc-500"
 							}`}
 						>
-							All released models
+							{t("allReleasedModelsButton")}
 						</Link>
 					</div>
 				</div>
@@ -250,7 +263,7 @@ export default async function OrganisationCalendarPage({
 					</h2>
 					{groupedByDay.length === 0 ? (
 						<div className="rounded-md border border-dashed border-zinc-300 p-4 text-sm text-zinc-600 dark:border-zinc-700 dark:text-zinc-300">
-							No model releases found for this day across recorded years.
+							{t("noReleasesThisDay")}
 						</div>
 					) : (
 						<div className="space-y-4">
@@ -276,10 +289,9 @@ export default async function OrganisationCalendarPage({
 										</div>
 										<div className="flex items-center gap-2 text-xs">
 											<span className="rounded-md border border-zinc-300 bg-white px-2 py-0.5 font-medium text-zinc-700 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-300">
-												{dayGroup.events.length} release
-												{dayGroup.events.length === 1
-													? ""
-													: "s"}
+												{t("releaseCount", {
+													count: formatCount(dayGroup.events.length),
+												})}
 											</span>
 										</div>
 									</header>

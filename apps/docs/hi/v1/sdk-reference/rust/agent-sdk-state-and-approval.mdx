@@ -1,0 +1,89 @@
+---
+title: "रन सहेजें और जारी रखें"
+description: "Rust Agent SDK का रन स्टेट सहेजें और टूल या मानवीय समीक्षा के बाद जारी रखें।"
+---
+
+`RunResult` को Serde से serialize किया जा सकता है। जब रुकी हुई स्थिति को प्रोसेस रीस्टार्ट के बाद भी रखना हो, तो उसे अपने डेटाबेस, ऑब्जेक्ट स्टोर या जॉब रिकॉर्ड में सहेजें।
+
+## रुका हुआ स्टेट सहेजें
+
+```rust
+let paused_json = serde_json::to_string_pretty(&paused)?;
+std::fs::write("paused-run.json", paused_json)?;
+```
+
+## स्टेट बहाल करें
+
+```rust
+use phaseo_agent::RunResult;
+
+let saved = std::fs::read_to_string("paused-run.json")?;
+let paused: RunResult = serde_json::from_str(&saved)?;
+```
+
+जारी रखने से पहले वही एजेंट परिभाषा और टूल फिर बनाएँ। Closures और `AgentDefinition` serialized रन का हिस्सा नहीं हैं।
+
+प्रभावी मॉडल और अधिकतम स्टेप संख्या `RunRecord` में सहेजी जाती है, इसलिए जारी रखने के बाद प्रति-रन overrides सक्रिय रहते हैं।
+
+## मानवीय समीक्षा
+
+पूरे हुए मॉडल टर्न की जाँच और मानवीय इनपुट माँगने के लिए `human_review(...)` उपयोग करें:
+
+```rust
+use phaseo_agent::{AgentDefinition, HumanReviewRequest};
+use serde_json::json;
+
+let definition = AgentDefinition::new(
+    "review-agent",
+    "openai/gpt-5.6-sol",
+)
+.human_review(|context| {
+    if context.response.message.content.contains("needs approval") {
+        Some(HumanReviewRequest {
+            reason: "Review the proposed action".to_string(),
+            payload: json!({
+                "draft": context.response.message.content
+            }),
+        })
+    } else {
+        None
+    }
+});
+```
+
+मानवीय इनपुट के साथ जारी रखें:
+
+```rust
+use phaseo_agent::ContinueOptions;
+
+let mut options = ContinueOptions::new(paused);
+options.human_input = Some(
+    "Approved. Continue and return the final result.".to_string(),
+);
+
+let completed = agent.continue_run(&mut client, options)?;
+```
+
+## रुकने के प्रकार
+
+| `pause.kind` | जारी रखने के लिए आवश्यक मान |
+| --- | --- |
+| `human_review` | गैर-खाली `ContinueOptions.human_input` |
+| `tool_approval` | टूल-कॉल ID के अनुसार `ToolDecision` प्रविष्टियाँ |
+| `external_output` | टूल-कॉल ID के अनुसार `ToolOutput` प्रविष्टियाँ |
+| `tool_input` | अनुमोदन और बाहरी आउटपुट का मिश्रण |
+
+
+## ऐप्लिकेशन-स्वामित्व वाला persistence
+
+Rust Agent SDK कोई hosted state backend या persistence adapter नहीं देता। इन चीज़ों का प्रबंधन आपका ऐप्लिकेशन करता है:
+
+- सहेजे गए रन का एन्क्रिप्शन और retention
+- अनुमोदन और मानवीय इनपुट के लिए authorization
+- टूल executors को फिर बनाना
+- जारी किए गए side effects के लिए idempotency
+
+## संबंधित
+
+- [टूल और अनुमोदन](./agent-sdk-tools.mdx)
+- [इवेंट, रीट्राई और त्रुटियाँ](./agent-sdk-events-and-errors.mdx)

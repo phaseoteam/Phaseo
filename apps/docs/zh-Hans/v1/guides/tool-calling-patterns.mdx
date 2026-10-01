@@ -1,0 +1,95 @@
+---
+icon: "waypoints"
+title: "工具调用模式"
+description: "适用于 chat completions 和 responses 端点的可靠工具调用循环。"
+---
+
+使用这些模式可让工具调用循环行为确定且易于调试。
+
+## 模式 1：Chat Completions 循环
+
+1. 发送用户消息和工具定义。
+2. 如果 `finish_reason` 为 `tool_calls`，则执行每个工具调用。
+3. 将工具输出作为 `role: "tool"` 消息发回。
+4. 读取助手的最终回答。
+
+### 请求（续）
+
+```json
+{
+  "model": "openai/gpt-5-nano",
+  "messages": [
+    { "role": "user", "content": "What is the weather in Seattle?" },
+    {
+      "role": "assistant",
+      "content": null,
+      "tool_calls": [
+        {
+          "id": "call_123",
+          "type": "function",
+          "function": {
+            "name": "get_weather",
+            "arguments": "{\"city\":\"Seattle\"}"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "tool_call_id": "call_123",
+      "content": "72F and sunny"
+    }
+  ],
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "get_weather",
+        "parameters": {
+          "type": "object",
+          "properties": { "city": { "type": "string" } },
+          "required": ["city"]
+        }
+      }
+    }
+  ]
+}
+```
+
+## 模式 2：Responses 循环
+
+在 `/v1/responses` 中，模型的工具调用会显示为 `function_call` 类型的输出项。
+然后发送包含 `function_call_output` 输入项的后续请求。
+
+### 请求（后续）
+
+```json
+{
+  "model": "openai/gpt-5-nano",
+  "input": [
+    {
+      "type": "message",
+      "role": "user",
+      "content": [{ "type": "input_text", "text": "What's the weather in Seattle?" }]
+    },
+    {
+      "type": "function_call",
+      "call_id": "call_123",
+      "name": "get_weather",
+      "arguments": "{\"city\":\"Seattle\"}"
+    },
+    {
+      "type": "function_call_output",
+      "call_id": "call_123",
+      "output": "72F and sunny"
+    }
+  ]
+}
+```
+
+## 选择端点
+
+- 如果已采用 OpenAI 风格的消息循环，请优先使用 `/v1/chat/completions`。
+- 如果应用统一使用 Responses API，请优先使用 `/v1/responses`。
+- 如果应用基于 Anthropic，请使用 `/v1/messages`。
+

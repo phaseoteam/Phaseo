@@ -1,0 +1,62 @@
+---
+title: "Funktions-Checkliste für die Migration"
+description: "Prüfe die Phaseo-Funktionen, die eine Gateway-Migration häufig beeinflussen."
+---
+
+# Funktions-Checkliste für die Migration
+
+Mit dieser Checkliste erkennst du, welche Teile einer bestehenden Gateway-Integration unverändert übernommen werden können und welche ausdrücklich geprüft werden müssen. Zuletzt geprüft am 23. August 2026.
+
+## Kompatibilität zentraler Anfragen
+
+| Funktion | Phaseo-Unterstützung | Migrationsschritt |
+| --- | --- | --- |
+| OpenAI-kompatible Authentifizierung | Unterstützt | Ändere Basis-URL und API-Schlüssel und führe anschließend eine authentifizierte Anfrage aus. |
+| Chat Completions | Unterstützt | Teste normale Anfragen, Streaming, Tool-Aufrufe und strukturierte Ausgaben. |
+| Responses | Unterstützt | Teste Eingabeformate, Streaming-Ereignisse, Tools und das Parsen der Antwort. |
+| Anthropic Messages | Unterstützt | Prüfe Anthropic-spezifische Header, System-Prompts und Streaming-Ereignisse. |
+| Modellkennungen | Phaseo-Katalog-IDs | Prüfe jede Produktions-ID mit `GET /v1/models`; gehe nicht davon aus, dass Aliase übereinstimmen. |
+| Embedding-, Bild- und Audio-Endpoints | Je nach Modell und Anbieter | Prüfe vor der Umstellung, ob das Modell den benötigten Vorgang unterstützt. |
+
+## Routing- und Richtliniensteuerung
+
+| Funktion | Phaseo-Unterstützung | Migrationsschritt |
+| --- | --- | --- |
+| Anbieterreihenfolge | `provider.order` | Übernimm nur die Reihenfolgeregeln, die der Workload noch benötigt. |
+| Erlaubnis- und Ignorierlisten für Anbieter | `provider.only` und `provider.ignore` | Prüfe Anbieter-IDs und stelle sicher, dass mindestens eine Route verfügbar bleibt. |
+| Sortierung nach Preis, Latenz oder Durchsatz | `provider.sort` | Prüfe nach dem Test den ausgewählten Anbieter in der Gateway-Nutzung. |
+| Keine Datenspeicherung | `provider.require_zero_data_retention` | Stelle sicher, dass es einen passenden Anbieter für das Modell gibt, bevor du diese Anforderung erzwingst. |
+| Regionale Ausführung und Datenresidenz | Anfragefelder und Datenschutz-Standardwerte des Workspaces | Teste sowohl erfolgreiches Routing als auch den Fehlerfall ohne passenden Anbieter. |
+| Wiederverwendbare Prompts und Standardwerte | Presets | Verschiebe gemeinsame Konfiguration in ein Preset, statt sie für jeden Aufrufer zu duplizieren. |
+
+## Betrieb und Rollout
+
+| Funktion | Phaseo-Unterstützung | Migrationsschritt |
+| --- | --- | --- |
+| Anfragezuordnung | App-ID, Name, URL und Kategorien | Behalte Attributions-Header während der Migration bei und prüfe die App-Gruppierung im Dashboard. |
+| Anfrage- und Anbieterdetails | Gateway-Nutzung und Generierungsdatensätze | Vergleiche Anbieter, Latenz, Token-Verbrauch und Preise mit repräsentativen Prompts. |
+| Batch- und Async-Jobs | Batch-, Datei-, Video-, Webhook- und WebSocket-APIs | Prüfe Statusübergänge, endgültige Abrechnung, Abbruch und Ergebnisabruf. |
+| Replay-Unterstützung | Generierungsdatensätze enthalten verfügbare Replay-Metadaten | Stelle sicher, dass Endpoint und Payload fehlgeschlagener Anfragen wiederhergestellt werden können. |
+| Schrittweiser Rollout | Traffic-Aufteilung auf Client- oder Infrastrukturebene | Halte das Rollback bis zur stabilen Umstellung auf einen Wechsel von Basis-URL und Zugangsdaten beschränkt. |
+
+## Funktionen, die eine workload-spezifische Prüfung erfordern
+
+API-Kompatibilität bedeutet nicht, dass sich diese Verhaltensweisen gleichen:
+
+- automatische Anbieterauswahl und Fallback-Reihenfolge
+- Prompt-Cache-Affinität und Cache-Preise
+- anbieterspezifische Anfragefelder
+- ausschließlich in der Antwort enthaltene Metadaten
+- Rate-Limits und Wiederholungszeitpunkte
+- Richtlinien zu Datenspeicherung, Datenresidenz und Training
+- genaue Modellverfügbarkeit und Preise
+
+Führe produktionsnahe Prompts und Fehlerfälle aus, bevor du nennenswerten Traffic umleitest.
+
+## Zugehörige Anleitungen
+
+- [Migrationsleitfäden](./index.mdx)
+- [Migrationsbereitschaft prüfen](./gateway-parity-review.mdx)
+- [Routing und Fallbacks](../guides/routing-and-fallbacks.mdx)
+- [Presets](../guides/presets.mdx)
+- [App-Zuordnung](../guides/app-attribution.mdx)

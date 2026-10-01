@@ -1,0 +1,26 @@
+---
+icon: "radio"
+title: "流式传输"
+description: "使用可重放的消费者流式传输 Java Agent 文本和事件。"
+---
+
+`Agent.stream(...)` 会返回 `StreamResult`：
+
+```java
+var stream = agent.stream(options);
+
+for (var delta : stream.textStream()) {
+  System.out.print(delta);
+}
+
+var completed = stream.getResult();
+```
+
+`textStream()` 和 `fullStream()` 可重放，因此产品界面和遥测代码可以分别读取同一次运行。调用 `cancel()` 可中断当前流工作进程。
+
+Java 项目事件仍是通用对象，而不是 TypeScript 的判别联合类型 `AgentItem`。
+
+## 相关内容
+
+- [工具](./agent-sdk-tools.mdx)
+- [可观测性与 DevTools](./agent-sdk-observability.mdx)

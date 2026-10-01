@@ -47,20 +47,15 @@ type TrendingPublicApp = {
 	imageUrl?: string | null;
 };
 
-export const metadata: Metadata = buildMetadata({
-	title: "AI App Rankings: Usage Trends & Top Apps",
-	description:
-		"See the most popular and fastest-growing AI apps on Phaseo Gateway, with leaderboard and token-usage trends.",
-	path: "/apps",
-	keywords: [
-		"AI apps",
-		"AI app rankings",
-		"app leaderboard",
-		"app usage trends",
-		"app trends",
-	],
-	robots: { index: false, follow: true },
-});
+export async function generateMetadata(): Promise<Metadata> {
+	const t = await getTranslations("Product.apps");
+	return buildMetadata({
+		title: t("title"),
+		description: t("description"),
+		path: "/apps",
+		robots: { index: false, follow: true },
+	});
+}
 
 function formatCompactNumber(value: number): string {
 	if (!Number.isFinite(value)) return "0";

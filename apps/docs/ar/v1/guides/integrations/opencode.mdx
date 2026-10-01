@@ -1,0 +1,75 @@
+---
+title: "OpenCode"
+icon: "git-branch"
+description: "اربط OpenCode ببوابة Phaseo عبر مزوّد مخصص متوافق مع OpenAI."
+---
+
+يمكن لـ OpenCode استدعاء Phaseo عبر مزوّد مخصص متوافق مع OpenAI. استخدم هذا الإعداد إذا أردت أن تمرّ اختيارات النماذج والاستخدام والتوجيه في OpenCode عبر مفتاح API واحد من Phaseo.
+
+## 1) إعداد OpenCode
+
+ثبّت OpenCode من الإصدار الرسمي، ثم استخدم CLI الخاص بـ Phaseo لإضافة مزوّد عام ومزامنة جميع نماذج Phaseo المتوافقة وحفظ مفتاح مخصص في مخزن بيانات اعتماد OpenCode:
+
+```bash
+phaseo opencode --model openai/gpt-5.6-terra
+```
+
+ينشئ الأمر مفتاح `Phaseo CLI: OpenCode API Key` غير منتهي الصلاحية، ويحافظ على إعدادات OpenCode وبيانات اعتماده الأخرى، ويدعم `--dry-run`. يحدّث ملف `opencode.jsonc` العام إن كان موجودًا، وإلا يستخدم `~/.config/opencode/opencode.json`.
+
+استخدم `--catalog default` لتهيئة النموذج المحدد فقط.
+
+تحتفظ CLI بنسخة خاصة بها في مخزن بيانات اعتماد نظام التشغيل، وتلغي المفتاح عند تشغيل `phaseo integrations remove opencode`.
+
+## الإعداد اليدوي
+
+أنشئ `opencode.json` أو حدّثه في مشروعك أو في إعدادات OpenCode العامة:
+
+```json
+{
+  "$schema": "https://opencode.ai/config.json",
+  "model": "phaseo/openai/gpt-5.5",
+  "provider": {
+    "phaseo": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "Phaseo",
+      "options": {
+        "baseURL": "https://api.phaseo.app/v1",
+        "apiKey": "{env:PHASEO_API_KEY}"
+      },
+      "models": {
+        "openai/gpt-5.5": {
+          "name": "GPT-5.5"
+        },
+        "openai/gpt-5.4-mini": {
+          "name": "GPT-5.4 Mini"
+        },
+        "anthropic/claude-sonnet-4.5": {
+          "name": "Claude Sonnet 4.5"
+        }
+      }
+    }
+  }
+}
+```
+
+أضف النماذج إلى كائن `models` أو احذفها لمطابقة معرّفات نماذج Phaseo التي تريد استخدامها في OpenCode.
+
+## 2) تشغيل OpenCode
+
+أعد تشغيل OpenCode بعد تعديل الإعدادات، ثم اختر نموذج Phaseo من `/models`.
+
+لإزالة مزوّد Phaseo وحده لاحقًا، شغّل:
+
+```bash
+phaseo integrations remove opencode
+```
+
+## التحقق
+
+- أرسل طلبًا بسيطًا قبل استخدام مهام سير العمل التي تعدّل الملفات.
+- إذا رُفض النموذج، فتحقق من المعرّف الدقيق عبر [نقطة النهاية Models](../../api-reference/endpoint/models.mdx).
+- إذا فشل التحقق من الهوية، فأعد تشغيل `phaseo opencode` وتحقق من `opencode auth list`.
+
+## إضافة سياق التوثيق
+
+لتمكين OpenCode من قراءة وثائق Phaseo أثناء الجلسة، أضف خادم [Docs MCP](./docs-mcp.mdx) أيضًا.

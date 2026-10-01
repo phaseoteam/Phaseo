@@ -1,0 +1,21 @@
+---
+icon: "chart-spline"
+title: "Ferramentas de desenvolvimento"
+description: "Capture localmente as execuções do SDK de agentes Ruby no formato de eventos do DevTools da Phaseo."
+---
+
+Ative a captura do DevTools ao criar linhas do tempo de ferramentas, interfaces de aprovação e inspetores de execução.
+
+```ruby
+result = agent.run(
+  input: prompt,
+  client: client,
+  devtools: PhaseoAgentSdk.create_agent_devtools(
+    directory: ".phaseo-devtools"
+  )
+)
+```
+
+Cada execução e continuação grava um registro JSONL estruturado com status, uso, tentativas de modelo, chamadas de ferramentas, pausas, metadados da solicitação e erros.
+
+A captura local é um recurso de desenvolvimento, não um registro de auditoria de produção. Aplique as regras específicas do aplicativo para ocultação de dados, controle de acesso, criptografia e retenção.

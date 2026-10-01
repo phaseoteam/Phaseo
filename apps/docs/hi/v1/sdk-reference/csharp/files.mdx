@@ -1,0 +1,26 @@
+---
+icon: "files"
+title: "फ़ाइलें"
+description: "File upload, metadata और file-content retrieval के लिए C# SDK उपयोग करें।"
+---
+
+**Methods**: `client.UploadFile()`, `client.ListFiles()`, `client.RetrieveFile()`, `client.RetrieveFileContent()`।
+
+### उदाहरण
+```csharp
+var client = new Phaseo(apiKey: apiKey);
+
+var uploaded = await client.UploadFile(new Dictionary<string, object>
+{
+    ["purpose"] = "batch",
+    ["file"] = "data:application/json;base64,eyJ0ZXN0Ijp0cnVlfQ=="
+});
+
+var file = await client.RetrieveFile("file_123");
+var content = await client.RetrieveFileContent("file_123");
+```
+
+<Note>
+`ListFiles()` SDK के ज़रिए उपलब्ध है, लेकिन shared gateway key पर `GET /files` अभी `file_list_not_supported_with_shared_gateway_key` लौटाता है
+Uploaded file IDs सहेजें और उन्हें सीधे retrieve करें।
+</Note>

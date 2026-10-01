@@ -1,0 +1,184 @@
+---
+icon: "folder-open"
+title: "リポジトリ構成"
+description: "Phaseoリポジトリの構成と、データ、ドキュメント、設定ファイルの場所を確認できます。"
+---
+
+Phaseoに貢献する前に、**リポジトリの構成**を把握しておくことが大切です。
+必要なものを見つけやすく、拡張しやすいよう、データ、ドキュメント、アプリのロジックを分けています。
+
+---
+
+## 概要
+
+リポジトリのルートディレクトリは次のようになっています:
+
+```bash
+Phaseo/
++-- apps/
+¦   +-- web/ # The main Phaseo Next.js website (contains data)
+¦   +-- api/ # The Phaseo Gateway API (Hono/Cloudflare Workers)
+¦   +-- docs/ # The Mintlify-powered documentation site
+¦
++-- packages/ # SDKs and shared tooling
+¦   +-- sdk-ts/
+¦   +-- sdk-py/
+¦   +-- sdk-go/
+¦   +-- sdk-csharp/
+¦   +-- sdk-php/
+¦   +-- sdk-ruby/
+¦   +-- sdk-java/
+¦   +-- sdk-rust/
+¦   +-- sdk-cpp/
+¦   +-- ai-sdk-phaseo/
+¦
++-- scripts/ # Automation scripts and utilities
++-- .changeset/ # Release metadata
++-- turbo.json # Turborepo configuration
++-- package.json # Global scripts and dependencies
++-- README.md # Root readme file
+```
+
+---
+
+## データフォルダー
+
+Phaseoの構造化データは `/packages/data/catalog/src/data` ディレクトリ内の**JSONファイル**に保存されています。
+これらのファイルがモデル、ベンチマーク、料金の信頼できる情報源です。
+
+### `/packages/data/catalog/src/data/models`
+
+モデルごとに1つのJSONファイルが含まれます。
+各ファイルには、モデルのメタデータ、料金、ベンチマーク、機能が記載されています。
+
+例:
+`/packages/data/catalog/src/data/models/openai/gpt-5-2025-08-07/model.json`
+
+---
+
+### `/packages/data/catalog/src/data/organisations`
+
+モデルを開発する企業や研究グループの情報を記載します。
+各JSONファイルには、名前、説明、設立日、ウェブサイト、国が含まれます。
+
+例:
+`/packages/data/catalog/src/data/organisations/openai.json`
+
+---
+
+### `/packages/data/catalog/src/data/benchmarks`
+
+ベンチマークのメタデータとモデル間で集計した結果が含まれます。
+各ベンチマークには、ID、名前、説明、カテゴリ、指標があります。
+
+例:
+`/packages/data/catalog/src/data/benchmarks/mmlu.json`
+
+---
+
+### `/packages/data/catalog/src/data/api_providers`
+
+対応するすべてのAPIプロバイダーとモデルを一覧表示します。
+モデルと組織の両方に関連付けられます。
+
+例:
+`/packages/data/catalog/src/data/api_providers/openai.json`
+
+---
+
+### `/packages/data/catalog/src/data/pricing`
+
+傾向分析のため、価格の履歴を時系列で記録します。
+ファイルにはタイムスタンプがあり、プロバイダーごとに集計されることが多いです。
+
+---
+
+## ドキュメントフォルダー
+
+ドキュメントは **MDX** で記述され、`/apps/docs/v1/` にあります。
+各フォルダーはMintlify設定内のグループに対応しています。
+
+| フォルダー | 用途 |
+| ----------------------------- | ------------------------------------------------------- |
+| `/apps/docs/v1/exploring`     | データに関する概念（モデル、ベンチマーク、プロバイダー）を説明します。 |
+| `/apps/docs/v1/contributing`  | 貢献者向けの手順ガイドです。                   |
+| `/apps/docs/v1/developers`    | 統合とAPIの使用方法を説明するガイドです。                       |
+| `/apps/docs/v1/api-reference` | すべてのエンドポイントの詳細なリファレンスです。                  |
+| `/apps/docs/v1/community`     | サポート、FAQ、コミュニティのページです。                      |
+
+---
+
+## アプリケーションフォルダー
+
+| パス | 説明 |
+| ------------ | ------------------------------------------------------------------------------------------------- |
+| `/apps/web`  | Next.js 15とTailwindCSSで構築されたPhaseoのメインサイトです。正規データを `packages/data/catalog/src/data` から読み込みます。 |
+| `/apps/api`  | API Gatewayです。ルーティング、キャッシュ、モデルプロキシのロジックを扱います。                                         |
+| `/apps/docs` | 現在読んでいるMintlifyドキュメントプロジェクトです。                                           |
+
+各アプリは独立して動作しますが、`/packages` を通じて型と設定を共有します。
+
+---
+
+## SDKパッケージ
+
+`/packages` ディレクトリには、さまざまなプログラミング言語からPhaseo APIを利用するSDKがあります。
+
+| SDK | 説明 |
+| ------------ | ------------------------------------------------ |
+| `sdk-ts`     | Node.jsおよびウェブアプリ用のTypeScript SDKです。 |
+| `sdk-py`     | Python SDKです。                                      |
+| `sdk-go`     | Go SDKです。                                          |
+| `sdk-csharp` | C# SDKです。                                          |
+| `sdk-php`    | PHP SDKです。                                         |
+| `sdk-ruby`   | Ruby SDKです。                                        |
+| `sdk-java`   | Java SDKです。                                        |
+| `sdk-rust`   | Rust SDKです。                                        |
+| `sdk-cpp`    | C++ SDKです。                                         |
+| `ai-sdk-phaseo` | Vercel AI SDK用プロバイダーです。                      |
+
+---
+
+## 自動化とスクリプト
+
+Phaseoでは自動化を使ってデータを最新の状態に保っています:
+
+-   **インポーター**: Hugging FaceやプロバイダーAPIなどから新しいデータを取得します。
+-   **監視処理**: GitHub Actionsで定期実行し、更新を検出してコミットします。
+-   **ユーティリティ**: 検証、スキーマチェック、JSONの整形を行います。
+
+これらは `/scripts/` で確認できます。
+
+---
+
+## まず始める場所
+
+貢献する場合:
+
+-   **データ:** `/packages/data/catalog/src/data/` 内のJSONファイルを確認してください。
+-   **ドキュメント:** `/apps/docs/v1/` 内のMDXファイルを確認してください。
+-   **コード:** `/apps/web` または `/apps/api` を確認してください。
+-   **自動化:** `/scripts/` を変更または確認してください。
+-   **SDK:** `/packages/` で各言語向けSDKを確認してください。
+
+---
+
+## 関連ページ
+
+<Columns cols={2}>
+	<Card
+		title="モデルを編集"
+		icon="brain"
+		href="./editing-a-model.mdx"
+	>
+		モデルデータの更新や追加方法を確認できます。
+	</Card>
+	<Card
+		title="組織を編集"
+		icon="building"
+		href="./editing-an-organisation.mdx"
+	>
+		組織データを安全に変更する方法を確認できます。
+	</Card>
+</Columns>
+

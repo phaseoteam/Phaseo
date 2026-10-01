@@ -1,0 +1,64 @@
+---
+title: "उपयोग"
+description: "Go Agent SDK से tool loops, human review, retries और resumable agents चलाएँ।"
+---
+
+## रनटाइम तैयार करें
+
+Agent SDK का अभी public Go module version उपलब्ध नहीं है। [सोर्स से इंस्टॉल करने के निर्देश](./agent-sdk-installation.mdx) का पालन करें।
+
+## त्वरित शुरुआत
+
+```go
+package main
+
+import (
+  "context"
+  "fmt"
+
+  phaseoagent "github.com/phaseoteam/Phaseo/packages/sdk/agent-sdk-go"
+)
+
+func main() {
+  client, err := phaseoagent.CreateGatewayAgentClient(phaseoagent.GatewayAgentClientOptions{})
+  if err != nil {
+    panic(err)
+  }
+
+  agent := phaseoagent.CreateAgent(phaseoagent.AgentDefinition{
+    ID:           "quickstart-agent",
+    Model:        "openai/gpt-5.4-nano",
+    Instructions: "Answer concisely and helpfully.",
+  })
+
+  result, err := agent.Run(context.Background(), phaseoagent.RunOptions{
+    Input:  "Give me one fun fact about cURL.",
+    Client: client,
+  })
+  if err != nil {
+    panic(err)
+  }
+
+  fmt.Println(result.Output)
+}
+```
+
+## इसमें क्या शामिल है
+
+- `CreateAgent(...)`
+- `DefineTool(...)`
+- `CreateGatewayAgentClient(...)`
+- Phaseo `responses` API पर सीमित टूल लूप
+
+## उन्नत रनटाइम
+
+Go में सत्यापक और अनुमोदन, HITL और मैन्युअल टूल, प्रगति, फिर से संभाली जा सकने वाली त्रुटियाँ, दोबारा पढ़े जा सकने वाले चैनल, स्टॉप हेल्पर, डायनामिक टर्न, संग्रहीत `NextTurnParams`, सामान्यीकृत उपयोग/लागत और `StateAccessor` का समर्थन है।
+
+## स्ट्रीमिंग और रद्द करना
+
+`Agent.Stream(...)` और `Agent.ContinueStream(...)` gateway का Responses SSE stream consume करते हैं। अलग consumers को replay चाहिए तो `Text()` या `Events()` कई बार पढ़ें और request context cancel करने के लिए `Cancel()` call करें। पूरे हुए चरणों में अनुरोध ID, प्रदाता मेटाडेटा, समाप्ति कारण, चेतावनियाँ, उपयोग और लागत सुरक्षित रहते हैं।
+
+## संबंधित गाइड
+
+- [Agent SDK का अवलोकन](../agent-sdk/overview.mdx)
+- [TypeScript Agent SDK](../typescript/agent-sdk.mdx)

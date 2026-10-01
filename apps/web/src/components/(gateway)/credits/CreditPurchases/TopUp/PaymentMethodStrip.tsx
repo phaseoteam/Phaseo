@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ShieldCheck, CreditCard, Check } from "lucide-react";
@@ -47,6 +48,14 @@ export default function PaymentMethodStrip({
     onChange: (v: string | "new") => void;
 }) {
 	const router = useRouter();
+	const t = useTranslations("SettingsUI");
+	const text = (key: string, values?: Record<string, string>) => {
+		let message = t(`credits.purchaseFlow.${key}` as never);
+		for (const [name, replacement] of Object.entries(values ?? {})) {
+			message = message.replace(`{${name}}`, replacement);
+		}
+		return message;
+	};
     const methods: Array<{
         id: string;
         card?: {
@@ -67,7 +76,7 @@ export default function PaymentMethodStrip({
     return (
         <div className="space-y-3">
             <div className="flex items-center justify-between">
-                <div className="text-sm font-medium">Payment method</div>
+                <div className="text-sm font-medium">{text("paymentMethod")}</div>
                 <Link
 					href="/settings/payment-methods"
 					prefetch
@@ -75,11 +84,11 @@ export default function PaymentMethodStrip({
 					onPointerEnter={() => router.prefetch("/settings/payment-methods")}
 					className="text-xs text-muted-foreground underline underline-offset-4 transition-colors hover:text-foreground"
 				>
-                    Manage
+                    {text("managePaymentMethods")}
                 </Link>
             </div>
 
-            <div role="radiogroup" aria-label="Select payment method" className="grid grid-cols-1 items-start gap-3">
+            <div role="radiogroup" aria-label={text("selectPaymentMethod")} className="grid grid-cols-1 items-start gap-3">
                 {sortedMethods.map((pm: any) => {
                     const active = value === pm.id;
                     const brand = formatCardBrand(pm.card?.brand);
@@ -91,7 +100,7 @@ export default function PaymentMethodStrip({
                             key={pm.id}
                             active={active}
                             onClick={() => onChange(pm.id)}
-                            ariaLabel={`${brand} ending ${last4}`}
+							ariaLabel={text("savedCardEnding", { brand, last4 })}
                         >
                             <div className="flex items-center justify-between gap-3">
                                 <div className="flex items-center gap-3">
@@ -109,7 +118,7 @@ export default function PaymentMethodStrip({
                                                 ? (
                                                     <span data-pii="true">
                                                         {" "}
-                                                        - Expires{" "}
+                                                        - {text("expires")}{" "}
                                                         {String(pm.card.exp_month).padStart(2, "0")}/
                                                         {String(pm.card.exp_year).slice(-2)}
                                                     </span>
@@ -122,7 +131,7 @@ export default function PaymentMethodStrip({
                                 <div className="flex items-center gap-2">
                                     {isDefault && (
                                         <span className="rounded-md border bg-background px-2 py-0.5 text-xs font-medium text-muted-foreground">
-                                            Default
+                                            {text("default")}
                                         </span>
                                     )}
 
@@ -144,7 +153,7 @@ export default function PaymentMethodStrip({
                 <Tile
                     active={value === "new"}
                     onClick={() => onChange("new")}
-                    ariaLabel="Use a new card"
+                    ariaLabel={text("useNewCard")}
                 >
                     <div className="flex items-center justify-between gap-3">
                         <div className="flex items-center gap-3">
@@ -153,8 +162,8 @@ export default function PaymentMethodStrip({
                             </div>
 
                             <div className="leading-tight">
-                                <div className="text-sm font-medium text-foreground">Use a new card</div>
-                                <div className="text-xs text-muted-foreground">Pay with a new card at checkout</div>
+                                <div className="text-sm font-medium text-foreground">{text("useNewCard")}</div>
+                                <div className="text-xs text-muted-foreground">{text("newCardDescription")}</div>
                             </div>
                         </div>
 

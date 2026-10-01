@@ -1,0 +1,63 @@
+---
+title: "عرض قدرات مسارات النموذج"
+badge: "Beta"
+openapi: "/ar/openapi/v1/openapi.localized.yaml GET /models/{author}/{slug}/endpoints"
+description: "استعراض مسارات المزوّدين والوسائط والمعلمات والتوفر والأسعار المتاحة لنموذج واحد."
+---
+
+استخدم هذا المسار قبل إرسال الطلب إذا كان تطبيقك بحاجة إلى التأكد من توفر مجموعة النموذج والمزوّد والمسار والمعلمات.
+
+بالنسبة إلى `openai/gpt-5.4-mini`، استخدم:
+
+```bash
+curl "https://api.phaseo.app/v1/models/openai/gpt-5.4-mini/endpoints" \
+  -H "Authorization: Bearer $PHASEO_API_KEY"
+```
+
+يمثل كل صف قدرة لمزوّد ومسار، ويتضمن:
+
+- معرّف القدرة الأساسي ومسار API العام
+- معرّف المزوّد واسمه ورابطه المختصر للنموذج
+- وسائط الإدخال والإخراج
+- أسماء المعلمات المدعومة وتفاصيلها المنظمة
+- حالات المزوّد والنموذج والقدرة والتوجيه والتوفر
+- تواريخ السريان عندما يكون المسار مجدولًا أو محدودًا زمنيًا
+- ملخص أسعار المسار
+
+## تضمين المسارات المجدولة وغير النشطة
+
+لا يعيد الإعداد الافتراضي `availability=active` إلا الصفوف ذات المسارات المتاحة للعامة. استخدم `availability=all` لفحص المسارات القادمة وغير النشطة:
+
+```bash
+curl "https://api.phaseo.app/v1/models/openai/gpt-5.4-mini/endpoints?availability=all" \
+  -H "Authorization: Bearer $PHASEO_API_KEY"
+```
+
+لا توجّه حركة الإنتاج إلى صف إلا إذا كانت `availability_status` تساوي `active` وكانت `is_active_gateway` تساوي `true`.
+
+## تصفية المسارات
+
+استخدم عوامل تصفية قابلة للتكرار أو مفصولة بفواصل لـ:
+
+- `provider`
+- `provider_status`
+- `provider_routing_status`
+- `model_routing_status`
+- `capability_status`
+- `provider_availability_status`
+- `provider_availability_reason`
+- `status`
+- `supported_parameters`
+
+على سبيل المثال، يعيد هذا مسارات OpenAI التي تدعم `temperature`:
+
+```bash
+curl "https://api.phaseo.app/v1/models/openai/gpt-5.4-mini/endpoints?provider=openai&supported_parameters=temperature" \
+  -H "Authorization: Bearer $PHASEO_API_KEY"
+```
+
+## مسارات ذات صلة
+
+- [عرض النماذج](./models.mdx)
+- [عرض المسارات](./endpoints.mdx)
+

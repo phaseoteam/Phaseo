@@ -1,0 +1,45 @@
+---
+title: "Visão geral"
+description: "Para que serve o TypeScript Agent SDK e quando usá-lo."
+---
+
+Use o TypeScript Agent SDK quando seu aplicativo precisar de mais do que uma geração pontual:
+
+- loops locais de ferramentas com várias etapas
+- estado de execução retomável
+- turnos de modelo apoiados pelo gateway
+- saídas estruturadas validadas, progresso em streaming e roteamento compatível com plugins
+
+Ele se base em `@phaseo/sdk` e define o contrato de runtime de referência compartilhado pelos SDKs Agent nas outras linguagens.
+
+## Matriz de recursos do runtime
+
+| Recurso | Suporte do SDK |
+| --- | --- |
+| Ferramentas executáveis e simultâneas | Integradas, com ordenação determinística dos resultados e timeouts por ferramenta |
+| Validação em runtime | Esquemas de entrada, saída, eventos e resultado final do agente com `parse`, `safeParse` ou funções validadoras |
+| Aprovação humana | Por ferramenta ou chamada, com aprovação pelo ID exato da chamada e rejeição ao retomar |
+| Ferramentas com intervenção humana | Pausa com `onToolCalled` e transformação com `onResponseReceived` |
+| Ferramentas manuais | `execute: false` e `toolOutputs` fornecidos externamente |
+| Ferramentas que informam progresso | Ferramentas geradoras assíncronas e eventos `tool.preliminary_result` |
+| Recuperação de erros de ferramentas | Interrompe a execução ou retorna um erro estruturado da ferramenta ao modelo |
+| Streaming | Deltas do modelo e consumidores reproduzíveis de texto, raciocínio, itens, ferramentas e eventos completos |
+| Controles de parada | Etapas, duração, tokens, custo, chamadas de ferramentas, motivo de conclusão e predicados personalizados |
+| Turnos dinâmicos | Modelo, instruções, valores de amostragem, conjuntos de ferramentas, alteração de contexto e `nextTurnParams` dinâmicos |
+| Continuação durável | Resultados de execução serializáveis ou um acesso a `state` com carregamento e salvamento controlados pelo aplicativo |
+| Observabilidade | Uso e custo normalizados, avisos, motivos de conclusão, resultados das etapas, eventos do ciclo de vida e ferramentas de desenvolvimento locais |
+
+## O que você recebe
+
+- `createAgent()`
+- `defineTool()`
+- `createGatewayAgentClient()`
+- `run()`, `stream()`, `continueRun()` e `continueStream()`
+- ferramentas executáveis, manuais, sujeitas à aprovação e com intervenção humana
+- esquemas de entrada e saída em runtime, progresso de geradores, condições de parada combináveis e resumos de uso e custo
+- acessores de estado opcionais controlados pelo aplicativo e eventos de ciclo de vida para ferramentas de desenvolvimento
+
+## Próximas etapas
+
+- [Instalação](./agent-sdk-installation.mdx)
+- [Uso](./agent-sdk.mdx)

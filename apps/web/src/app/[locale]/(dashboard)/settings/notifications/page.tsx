@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
 import { connection } from "next/server";
 import { Suspense } from "react";
 
@@ -8,7 +8,10 @@ import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHead
 import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
 import { fetchSettingsCreditsInitialData } from "@/lib/fetchers/internal/fetchSettingsCreditsInitialData";
 
-export const metadata: Metadata = { title: "Notifications - Settings" };
+export async function generateMetadata() {
+	const t = await getTranslations("SettingsUI");
+	return { title: `${t("headers.notifications")} - ${t("headers.settings")}` };
+}
 
 export default function NotificationsPage() {
 	return <Suspense fallback={<SettingsSectionFallback />}><NotificationsContent /></Suspense>;

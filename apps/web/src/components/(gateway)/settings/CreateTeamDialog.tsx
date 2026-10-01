@@ -22,6 +22,7 @@ import {
 	DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
+import { localizedSettingsError } from "@/i18n/error-messages";
 import AcceptInviteDialog from "./AcceptInviteDialog";
 import { createTeamAction } from "@/app/(dashboard)/settings/teams/actions";
 
@@ -49,10 +50,8 @@ export default function CreateTeamDialog({
 			await createTeamAction(name, currentUserId);
 			setOpen(false);
 			setName("");
-		} catch (err: any) {
-			const message =
-				err?.message ?? "Could not create workspace right now. Please try again.";
-			toast.error(message);
+		} catch (err: unknown) {
+			toast.error(localizedSettingsError(err, t, "Action failed"));
 		} finally {
 			setLoading(false);
 		}

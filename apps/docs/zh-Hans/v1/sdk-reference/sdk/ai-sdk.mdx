@@ -1,0 +1,116 @@
+---
+icon: "package"
+title: "Vercel AI SDK"
+description: "通过 Phaseo 的 AI SDK 7 提供方生成文本、流式传输响应并使用工具。"
+---
+
+使用 Phaseo 官方提供方，通过 Vercel AI SDK 7 调用 Phaseo 模型。如果你的应用已经使用 `generateText`、`streamText` 或其他 AI SDK 函数，请从这里开始。
+
+## 安装
+
+<CodeGroup>
+
+```bash title="npm"
+npm install @phaseo/ai-sdk-provider
+```
+
+```bash title="pnpm"
+pnpm add @phaseo/ai-sdk-provider
+```
+
+```bash title="yarn"
+yarn add @phaseo/ai-sdk-provider
+```
+
+```bash title="bun"
+bun add @phaseo/ai-sdk-provider
+```
+
+</CodeGroup>
+
+不带版本号的 Phaseo 软件包遵循 npm 的 `latest` 标签，并选择当前与 AI SDK 7 兼容的提供方版本。它将 AI SDK 7 声明为对等依赖，因此启用了对等依赖自动安装的包管理器也会自动安装兼容的运行时。
+
+在服务器环境中设置 `PHASEO_API_KEY`，然后发送第一个请求：
+
+```typescript
+import { phaseo } from "@phaseo/ai-sdk-provider";
+import { generateText } from "ai";
+
+const result = await generateText({
+  model: phaseo("openai/gpt-5.6-sol"),
+  prompt: "Reply with: AI SDK works",
+});
+
+console.log(result.text);
+console.log(result.providerMetadata);
+```
+
+请使用[模型端点](../../api-reference/endpoint/models.mdx)中的最新模型 ID。
+
+## 流式传输文本
+
+```typescript
+import { phaseo } from "@phaseo/ai-sdk-provider";
+import { streamText } from "ai";
+
+const result = streamText({
+  model: phaseo("openai/gpt-5.6-sol"),
+  prompt: "Stream a short greeting.",
+});
+
+for await (const chunk of result.textStream) {
+  process.stdout.write(chunk);
+}
+
+console.log(await result.providerMetadata);
+```
+
+## 添加应用标识信息
+
+如果希望 Phaseo 请求详情中包含应用信息，请创建一个提供方实例：
+
+```typescript
+import { createPhaseo } from "@phaseo/ai-sdk-provider";
+
+const phaseo = createPhaseo({
+  apiKey: process.env.PHASEO_API_KEY,
+  headers: {
+    "x-title": "My App",
+    "http-referer": "https://example.com",
+  },
+});
+```
+
+`PHASEO_BASE_URL` 是可选项，默认值为 `https://api.phaseo.app/v1`。
+
+## AI SDK 7 支持的功能
+
+- 文本生成和流式传输
+- 推理输出和设置
+- 函数工具和流式工具输入
+- JSON 和 JSON Schema 输出
+- 文本文件和图像文件输入
+- URL 引用来源
+- 嵌入和图像生成
+- 重新排序
+- 转录和语音生成
+- 提供方元数据、用量、中止信号和原始流数据块
+
+可以通过 `rerank()` 和 `phaseo.rerankingModel(modelId)` 使用重新排序。不同模型和提供方支持的能力仍有差异。目前，该提供方未声明支持托管文件引用、技能，也未声明支持由提供方执行的工具定义、工具结果或审批响应。由应用执行的函数工具可以使用 AI SDK 的标准执行和审批流程。
+
+## 较早版本的 AI SDK
+
+- AI SDK 6：安装 `@phaseo/ai-sdk-provider@ai-sdk-v6`。
+- AI SDK 5：安装 `@phaseo/ai-sdk-provider@ai-sdk-v5`。
+
+如果未启用对等依赖自动安装，请单独安装对应主版本的 `ai`（`ai@^7`、`ai@^6` 或 `ai@^5`）。
+
+## 相关指南
+
+- [生成文本](./generate-text/index.mdx)
+- [流式传输文本](./stream-text/index.mdx)
+- [工具调用](./tool-calling/index.mdx)
+- [结构化输出](./structured-output/index.mdx)
+- [嵌入](./embeddings/index.mdx)
+- [图像](./images/index.mdx)
+- [音频](./audio/index.mdx)

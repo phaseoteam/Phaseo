@@ -410,13 +410,16 @@ function formatCategoryLabel(category: string): string {
 		.join(" / ");
 }
 
-function formatAppliedInputTypes(types: Array<"text" | "image">): string {
+function formatAppliedInputTypes(
+	types: Array<"text" | "image">,
+	labels: { text: string; image: string; both: string; unknown: string },
+): string {
 	const hasText = types.includes("text");
 	const hasImage = types.includes("image");
-	if (hasText && hasImage) return "Text + Image";
-	if (hasText) return "Text";
-	if (hasImage) return "Image";
-	return "Unknown";
+	if (hasText && hasImage) return labels.both;
+	if (hasText) return labels.text;
+	if (hasImage) return labels.image;
+	return labels.unknown;
 }
 
 function getGenerationMs(raw: unknown): number | null {
@@ -560,6 +563,15 @@ function safeParsePinned(value: string | null): Record<string, boolean> {
 
 export function ModerationRoom({ models }: { models: GatewaySupportedModel[] }) {
 	const t = useTranslations("Product.chatRooms");
+	const tChat = useTranslations("Product.chat");
+	const tUi = useTranslations("Common.ui");
+	const tSearch = useTranslations("Common.search");
+	const inputTypeLabels = {
+		text: tChat("text"),
+		image: tChat("image"),
+		both: t("textAndImage"),
+		unknown: t("unknown"),
+	};
 	const { toggleSidebar, state: sidebarState, isMobile } = useSidebar();
 	const collapsed = sidebarState === "collapsed" && !isMobile;
 	const filteredModels = useMemo(
@@ -974,10 +986,10 @@ export function ModerationRoom({ models }: { models: GatewaySupportedModel[] }) 
 	}) => {
 		const { entry, modelLabel, flagged, threshold, generationMs, rows } = params;
 		const lines: string[] = [];
-		lines.push("Moderation Result");
-		lines.push(`Model: ${modelLabel}`);
-		lines.push(`Status: ${flagged ? "Flagged" : "Clear"}`);
-		lines.push(`Threshold: ${(threshold * 100).toFixed(0)}%`);
+		lines.push(t("moderationResultTitle"));
+		lines.push(`${t("model")}: ${modelLabel}`);
+		lines.push(`${t("status")}: ${flagged ? t("flagged") : t("clear")}`);
+		lines.push(t("threshold", { value: (threshold * 100).toFixed(0) }));
 		const flaggedTypes = Array.from(
 			new Set(
 				rows
@@ -986,28 +998,28 @@ export function ModerationRoom({ models }: { models: GatewaySupportedModel[] }) 
 			),
 		).filter((type): type is "text" | "image" => type === "text" || type === "image");
 		if (flaggedTypes.length) {
-			lines.push(`Flag source: ${formatAppliedInputTypes(flaggedTypes)}`);
+			lines.push(`${t("flagSource")}: ${formatAppliedInputTypes(flaggedTypes, inputTypeLabels)}`);
 		}
 		if (typeof generationMs === "number" && Number.isFinite(generationMs)) {
-			lines.push(`Generation: ${(generationMs / 1000).toFixed(2)} s`);
+			lines.push(`${t("generation")}: ${(generationMs / 1000).toFixed(2)} s`);
 		}
 		if (entry.text.trim()) {
-			lines.push(`Input: ${entry.text.trim()}`);
+			lines.push(`${tChat("text")}: ${entry.text.trim()}`);
 		}
 		if (entry.imageUrls.length) {
-			lines.push(`Images: ${entry.imageUrls.length}`);
+			lines.push(t("imageCount", { count: entry.imageUrls.length }));
 		}
 		lines.push(
-			"Scoring note: each category has one combined score. Source indicates which input type(s) were applied for that category.",
+			t("scoringNote"),
 		);
 		lines.push("");
-		lines.push("Categories:");
+		lines.push(`${t("categories")}:`);
 		for (const row of rows) {
-			const status = row.categoryFlagged || row.aboveThreshold ? "Risk" : "Clear";
+			const status = row.categoryFlagged || row.aboveThreshold ? t("risk") : t("clear");
 			const source =
 				row.appliedInputTypes.length > 0
-					? formatAppliedInputTypes(row.appliedInputTypes)
-					: "Unknown";
+					? formatAppliedInputTypes(row.appliedInputTypes, inputTypeLabels)
+					: t("unknown");
 			lines.push(
 				`- ${formatCategoryLabel(row.category)}: ${status} (${(row.score * 100).toFixed(2)}%, ${source})`,
 			);
@@ -1175,7 +1187,7 @@ export function ModerationRoom({ models }: { models: GatewaySupportedModel[] }) 
 			if (!overrides?.forcedText) {
 				setText((current) => current || inputText);
 			}
-			setError(err instanceof Error ? err.message : "Moderation failed");
+			setError(err instanceof Error ? err.message : t("requestFailed"));
 		} finally {
 			if (pendingEntryId) {
 				setEntries((prev) => prev.filter((item) => item.id !== pendingEntryId));
@@ -1221,7 +1233,7 @@ export function ModerationRoom({ models }: { models: GatewaySupportedModel[] }) 
 									}}
 								>
 									<PencilLine className="mr-2 h-4 w-4" />
-									Rename
+									{tUi("actions.rename")}
 								</DropdownMenuItem>
 								<DropdownMenuItem onClick={() => toggleConversationPin(conversation)}>
 									{conversation.pinned ? (
@@ -1229,7 +1241,7 @@ export function ModerationRoom({ models }: { models: GatewaySupportedModel[] }) 
 									) : (
 										<Pin className="mr-2 h-4 w-4" />
 									)}
-									{conversation.pinned ? "Unpin" : "Pin"}
+{conversation.pinned ? tUi("actions.unpin") : tUi("actions.pin")}
 								</DropdownMenuItem>
 								<DropdownMenuSeparator />
 								<DropdownMenuItem
@@ -1239,7 +1251,7 @@ export function ModerationRoom({ models }: { models: GatewaySupportedModel[] }) 
 									className="group text-foreground focus:text-destructive data-highlighted:text-destructive"
 								>
 									<Trash2 className="mr-2 h-4 w-4 text-muted-foreground group-data-highlighted:text-destructive" />
-									Delete
+									{tUi("actions.delete")}
 								</DropdownMenuItem>
 							</DropdownMenuContent>
 						</DropdownMenu>
@@ -1260,13 +1272,13 @@ export function ModerationRoom({ models }: { models: GatewaySupportedModel[] }) 
 										variant="ghost"
 										className="h-8 min-w-0 w-full justify-start px-2 text-sm font-medium"
 										onClick={startNewConversation}
-										aria-label="New Chat"
+									aria-label={t("newChat")}
 									>
 										<SquarePen className="h-4 w-4 shrink-0" />
 									</Button>
 								</TooltipTrigger>
 								<TooltipContent side="right" align="center" sideOffset={10}>
-									New Chat
+								{t("newChat")}
 								</TooltipContent>
 							</Tooltip>
 						) : (
@@ -1274,7 +1286,7 @@ export function ModerationRoom({ models }: { models: GatewaySupportedModel[] }) 
 								variant="ghost"
 								className="h-8 min-w-0 w-full flex-1 justify-start gap-2 px-2 text-sm font-medium"
 								onClick={startNewConversation}
-								aria-label="New Chat"
+								aria-label={t("newChat")}
 							>
 								<SquarePen className="h-4 w-4 shrink-0" />
 								<span className="truncate text-left">{t("newChat")}</span>
@@ -1287,7 +1299,7 @@ export function ModerationRoom({ models }: { models: GatewaySupportedModel[] }) 
 										variant="ghost"
 										className="h-8 min-w-0 w-full justify-start px-2 text-sm font-medium"
 										asChild
-										aria-label="Database"
+									aria-label={t("database")}
 									>
 										<Link
 											href="/"
@@ -1298,7 +1310,7 @@ export function ModerationRoom({ models }: { models: GatewaySupportedModel[] }) 
 									</Button>
 								</TooltipTrigger>
 								<TooltipContent side="right" align="center" sideOffset={10}>
-									Database
+								{t("database")}
 								</TooltipContent>
 							</Tooltip>
 						) : (
@@ -1306,7 +1318,7 @@ export function ModerationRoom({ models }: { models: GatewaySupportedModel[] }) 
 								variant="ghost"
 								className="h-8 min-w-0 w-full flex-1 justify-start gap-0 px-2 text-sm font-medium"
 								asChild
-								aria-label="Database"
+								aria-label={t("database")}
 							>
 								<Link href="/" className="group/db flex w-full min-w-0 items-center gap-2">
 									<Database className="h-4 w-4 shrink-0" />
@@ -1322,13 +1334,13 @@ export function ModerationRoom({ models }: { models: GatewaySupportedModel[] }) 
 										variant="ghost"
 										className="h-8 min-w-0 w-full justify-start px-2 text-sm font-medium"
 										onClick={() => setConversationSearchOpen(true)}
-										aria-label="Search Chats"
+									aria-label={t("searchChats")}
 									>
 										<Search className="h-4 w-4 shrink-0" />
 									</Button>
 								</TooltipTrigger>
 								<TooltipContent side="right" align="center" sideOffset={10}>
-									Search Chats
+								{t("searchChats")}
 								</TooltipContent>
 							</Tooltip>
 						) : (
@@ -1336,7 +1348,7 @@ export function ModerationRoom({ models }: { models: GatewaySupportedModel[] }) 
 								variant="ghost"
 								className="h-8 min-w-0 w-full flex-1 justify-start gap-2 px-2 text-sm font-medium"
 								onClick={() => setConversationSearchOpen(true)}
-								aria-label="Search Chats"
+								aria-label={t("searchChats")}
 							>
 								<Search className="h-4 w-4 shrink-0" />
 								<span className="truncate text-left">{t("searchChats")}</span>
@@ -1349,15 +1361,15 @@ export function ModerationRoom({ models }: { models: GatewaySupportedModel[] }) 
 						<SidebarGroupLabel>{t("chats")}</SidebarGroupLabel>
 							<SidebarGroupContent className="overflow-hidden">
 								<SidebarMenu>
-									{renderConversationSection("Pinned", groupedConversations.pinned)}
-									{renderConversationSection("Today", groupedConversations.today)}
-									{renderConversationSection("Yesterday", groupedConversations.yesterday)}
-									{renderConversationSection("This week", groupedConversations.week)}
-									{renderConversationSection("This month", groupedConversations.month)}
-									{renderConversationSection("Older", groupedConversations.older)}
+{renderConversationSection(tSearch("pinned"), groupedConversations.pinned)}
+										{renderConversationSection(t("today"), groupedConversations.today)}
+										{renderConversationSection(t("yesterday"), groupedConversations.yesterday)}
+										{renderConversationSection(t("thisWeek"), groupedConversations.week)}
+										{renderConversationSection(t("thisMonth"), groupedConversations.month)}
+										{renderConversationSection(t("older"), groupedConversations.older)}
 									{conversations.length === 0 ? (
 										<p className="px-2 py-3 text-xs text-muted-foreground">
-											No chats found.
+										{tChat("noChatsFound")}
 										</p>
 									) : null}
 								</SidebarMenu>
@@ -1382,7 +1394,7 @@ export function ModerationRoom({ models }: { models: GatewaySupportedModel[] }) 
 									size="icon"
 								className="-ml-1 h-8 w-8"
 								onClick={toggleSidebar}
-								aria-label={sidebarState === "expanded" ? "Collapse sidebar" : "Open sidebar"}
+							aria-label={sidebarState === "expanded" ? t("collapseSidebar") : t("openSidebar")}
 								>
 								{sidebarState === "expanded" ? (
 									<PanelLeftClose className="h-4 w-4" />
@@ -1439,12 +1451,12 @@ export function ModerationRoom({ models }: { models: GatewaySupportedModel[] }) 
 				<div className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-5">
 					{activeEntries.length === 0 ? (
 						<RoomEmptyState
-							description="What content would you like to check?"
+							description={t("moderationEmptyDescription")}
 							suggestions={[
-							{ label: "Check a support reply", prompt: "I understand this is frustrating. Let me help you resolve the issue." },
-							{ label: "Review community content", prompt: "Review this community post for content policy concerns." },
-							{ label: "Test a borderline phrase", prompt: "Evaluate this text and explain which safety categories may apply." },
-							{ label: "Check marketing copy", prompt: "Review this promotional copy for potentially unsafe or misleading language." },
+							{ label: t("moderationSupportLabel"), prompt: t("moderationSupportPrompt") },
+							{ label: t("moderationCommunityLabel"), prompt: t("moderationCommunityPrompt") },
+							{ label: t("moderationBorderlineLabel"), prompt: t("moderationBorderlinePrompt") },
+							{ label: t("moderationMarketingLabel"), prompt: t("moderationMarketingPrompt") },
 						]}
 							onSelectPrompt={setText}
 						/>
@@ -1555,7 +1567,7 @@ export function ModerationRoom({ models }: { models: GatewaySupportedModel[] }) 
 									<div key={entry.id} className="group/response space-y-3">
 										<div className="ml-auto w-full max-w-2xl rounded-2xl bg-foreground px-4 py-3 text-sm text-background">
 											<p className="whitespace-pre-wrap">
-												{entry.text || "Image moderation request"}
+{entry.text || t("moderationInputAlt")}
 											</p>
 										</div>
 										<div className="mr-auto w-full max-w-3xl">
@@ -1566,7 +1578,7 @@ export function ModerationRoom({ models }: { models: GatewaySupportedModel[] }) 
 												<Logo id={logoId} alt={logoAlt} width={16} height={16} className="shrink-0 rounded-none" />
 												<span className="truncate">{modelLabel}</span>
 											</Link>
-											<RoomWorkingIndicator label="Generating moderation response..." />
+<RoomWorkingIndicator label={t("generatingModeration")} />
 										</div>
 									</div>
 								);
@@ -1593,7 +1605,7 @@ export function ModerationRoom({ models }: { models: GatewaySupportedModel[] }) 
 														onClick={cancelEditPrompt}
 													>
 														<X className="mr-1 h-4 w-4" />
-														Cancel
+														{tChat("cancel")}
 													</Button>
 													<Button
 														size="sm"
@@ -1603,7 +1615,7 @@ export function ModerationRoom({ models }: { models: GatewaySupportedModel[] }) 
 														}}
 													>
 														<Save className="mr-1 h-4 w-4" />
-														Save
+														{tChat("save")}
 													</Button>
 												</div>
 											</div>
@@ -1618,7 +1630,7 @@ export function ModerationRoom({ models }: { models: GatewaySupportedModel[] }) 
 															<img
 																key={`${entry.id}-input-${index}`}
 																src={url}
-																alt="Moderation input"
+											alt={t("moderationInputAlt")}
 																className="max-h-44 w-full rounded-md border border-white/20 object-cover"
 															/>
 														))}
@@ -1650,7 +1662,7 @@ export function ModerationRoom({ models }: { models: GatewaySupportedModel[] }) 
 													</Button>
 												</TooltipTrigger>
 												<TooltipContent side="top">
-													{promptCopied ? "Copied" : "Copy prompt"}
+{promptCopied ? tChat("copied") : tChat("copy")}
 												</TooltipContent>
 											</Tooltip>
 											<Tooltip>
@@ -1693,7 +1705,7 @@ export function ModerationRoom({ models }: { models: GatewaySupportedModel[] }) 
 															: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
 													}`}
 												>
-													{flagged ? "Flagged" : "Clear"}
+														{flagged ? t("flagged") : t("clear")}
 												</span>
 											</div>
 											{entry.result ? (
@@ -1701,10 +1713,10 @@ export function ModerationRoom({ models }: { models: GatewaySupportedModel[] }) 
 											<div className="rounded-md border border-border bg-muted/20 p-3">
 														<div className="mb-2 flex items-center justify-between">
 															<p className="text-xs font-semibold uppercase text-muted-foreground">
-																Top signal
+														{t("topSignal")}
 															</p>
 															<p className="text-xs text-muted-foreground">
-																Threshold {(threshold * 100).toFixed(0)}%
+														{t("threshold", { value: (threshold * 100).toFixed(0) })}
 															</p>
 														</div>
 														{highestCategory ? (
@@ -1716,10 +1728,11 @@ export function ModerationRoom({ models }: { models: GatewaySupportedModel[] }) 
 																		)}
 																	</p>
 																	<p className="text-xs text-muted-foreground">
-																		{aboveThresholdCount} categories at or above threshold
+													{t("categoriesAtOrAboveThreshold", { count: aboveThresholdCount })}
 																		{highestCategory.appliedInputTypes.length
 																			? ` • ${formatAppliedInputTypes(
-																					highestCategory.appliedInputTypes,
+															highestCategory.appliedInputTypes,
+															inputTypeLabels,
 																				)}`
 																			: ""}
 																	</p>
@@ -1730,7 +1743,7 @@ export function ModerationRoom({ models }: { models: GatewaySupportedModel[] }) 
 															</div>
 														) : (
 															<p className="text-xs text-muted-foreground">
-																No category scores returned.
+														{t("noCategoryScores")}
 															</p>
 														)}
 													</div>
@@ -1738,7 +1751,7 @@ export function ModerationRoom({ models }: { models: GatewaySupportedModel[] }) 
 													<div className="space-y-2">
 														<div className="flex items-center justify-between gap-2">
 															<p className="text-xs font-semibold uppercase text-muted-foreground">
-																Categories
+													{t("categories")}
 															</p>
 															{showCategoryViewSelector ? (
 																<DropdownMenu>
@@ -1748,10 +1761,10 @@ export function ModerationRoom({ models }: { models: GatewaySupportedModel[] }) 
 																			className="h-6 px-1 text-xs font-medium text-muted-foreground hover:text-foreground" />}>
 
 																			{selectedCategoryView === "combined"
-																				? "All"
+												? tUi("moderation.all")
 																				: selectedCategoryView === "text"
-																					? "Text Only"
-																					: "Image Only"}
+													? tUi("moderation.textOnly")
+														: tUi("moderation.imageOnly")}
 
 																	</DropdownMenuTrigger>
 																<DropdownMenuContent align="end" className="w-28 rounded-md [&_[data-slot=dropdown-menu-item]]:rounded-md">
@@ -1763,7 +1776,7 @@ export function ModerationRoom({ models }: { models: GatewaySupportedModel[] }) 
 																				}))
 																			}
 																		>
-																			All
+						{tUi("moderation.all")}
 																		</DropdownMenuItem>
 																		<DropdownMenuItem
 																			onClick={() =>
@@ -1773,7 +1786,7 @@ export function ModerationRoom({ models }: { models: GatewaySupportedModel[] }) 
 																				}))
 																			}
 																		>
-																			Text Only
+						{tUi("moderation.textOnly")}
 																		</DropdownMenuItem>
 																		<DropdownMenuItem
 																			onClick={() =>
@@ -1783,7 +1796,7 @@ export function ModerationRoom({ models }: { models: GatewaySupportedModel[] }) 
 																				}))
 																			}
 																		>
-																			Image Only
+						{tUi("moderation.imageOnly")}
 																		</DropdownMenuItem>
 																	</DropdownMenuContent>
 																</DropdownMenu>
@@ -1791,8 +1804,13 @@ export function ModerationRoom({ models }: { models: GatewaySupportedModel[] }) 
 														</div>
 														<p className="text-[11px] text-muted-foreground">
 															{selectedCategoryView === "combined"
-																? "Scores are combined per category. Source indicates whether text, image, or both contributed."
-																: `Showing categories attributed to ${selectedCategoryView}. Scores are still combined per category.`}
+										? t("combinedScoresDescription")
+										: t("showingCategoryView", {
+											view:
+											selectedCategoryView === "text"
+												? tUi("moderation.textOnly")
+												: tUi("moderation.imageOnly"),
+										})}
 														</p>
 														{visibleCategoryRows.length ? (
 															<div className="grid gap-2 md:grid-cols-2">
@@ -1809,7 +1827,8 @@ export function ModerationRoom({ models }: { models: GatewaySupportedModel[] }) 
 																			{row.appliedInputTypes.length ? (
 																				<span className="rounded px-1.5 py-0.5 text-[10px] font-medium bg-muted text-muted-foreground">
 																					{formatAppliedInputTypes(
-																						row.appliedInputTypes,
+															row.appliedInputTypes,
+															inputTypeLabels,
 																					)}
 																				</span>
 																			) : null}
@@ -1823,8 +1842,8 @@ export function ModerationRoom({ models }: { models: GatewaySupportedModel[] }) 
 																			>
 																				{row.categoryFlagged ||
 																				row.aboveThreshold
-																					? "Risk"
-																					: "Clear"}
+											? t("risk")
+											: t("clear")}
 																			</span>
 																			<span className="font-medium">
 																				{(row.score * 100).toFixed(2)}%
@@ -1855,14 +1874,14 @@ export function ModerationRoom({ models }: { models: GatewaySupportedModel[] }) 
 															</div>
 														) : (
 															<p className="text-xs text-muted-foreground">
-																No categories for this view.
+										{t("noCategoriesForView")}
 															</p>
 														)}
 													</div>
 												</div>
 											) : (
 												<p className="text-xs text-muted-foreground">
-													No moderation categories returned.
+									{t("noModerationCategories")}
 												</p>
 											)}
 										</div>
@@ -1915,7 +1934,7 @@ export function ModerationRoom({ models }: { models: GatewaySupportedModel[] }) 
 													</Button>
 												</TooltipTrigger>
 												<TooltipContent side="top">
-													{resultCopied ? "Copied" : "Copy result"}
+													{resultCopied ? tChat("copied") : tChat("copy")}
 												</TooltipContent>
 											</Tooltip>
 											<Popover
@@ -1944,7 +1963,7 @@ export function ModerationRoom({ models }: { models: GatewaySupportedModel[] }) 
 														<div className="grid gap-1.5">
 															<div className="flex items-center justify-between">
 																<span className="text-muted-foreground">
-																	Generation
+												{t("generation")}
 																</span>
 																<span>
 																	{generationSeconds === null
@@ -2046,14 +2065,14 @@ export function ModerationRoom({ models }: { models: GatewaySupportedModel[] }) 
 									tools={[
 										{
 											id: "image-url",
-											label: "Add image URL",
+											label: t("addImageUrl"),
 											icon: Link2,
 											active: Boolean(showImageUrlInput || imageUrl.trim()),
 											onSelect: () => setShowImageUrlInput((prev) => !prev),
 										},
 										{
 											id: "upload-image",
-											label: "Upload image",
+											label: t("uploadImage"),
 											icon: ImagePlus,
 											active: Boolean(imageFile),
 											onSelect: () => imageFileInputRef.current?.click(),

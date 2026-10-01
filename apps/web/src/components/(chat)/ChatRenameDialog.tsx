@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import {
     Dialog,
     DialogContent,
@@ -26,14 +27,15 @@ export function ChatRenameDialog({
     onChange,
     onSave,
 }: ChatRenameDialogProps) {
+	const t = useTranslations("Product.chat.renameDialog");
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent>
                 <DialogHeader>
-                    <DialogTitle>Rename chat</DialogTitle>
+                    <DialogTitle>{t("title")}</DialogTitle>
                 </DialogHeader>
                 <div className="grid gap-2">
-                    <Label htmlFor="chat-title">Title</Label>
+                    <Label htmlFor="chat-title">{t("titleLabel")}</Label>
                     <Input
                         id="chat-title"
                         value={value}
@@ -41,7 +43,7 @@ export function ChatRenameDialog({
                     />
                 </div>
                 <DialogFooter>
-                    <Button onClick={onSave}>Save</Button>
+                    <Button onClick={onSave}>{t("save")}</Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>

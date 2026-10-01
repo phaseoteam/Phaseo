@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import {
 	Sidebar,
 	SidebarInset,
@@ -436,6 +437,7 @@ function ChatPlaygroundContent({
 	modelParam,
 	promptParam,
 }: ChatPlaygroundProps) {
+	const tChat = useTranslations("Product.chat");
 	const isUnified = true;
 	const [threads, setThreads] = useState<ChatThread[]>([]);
 	const [activeId, setActiveId] = useState<string | null>(null);
@@ -643,7 +645,7 @@ function ChatPlaygroundContent({
 			const createdAt = nowIso();
 			const newThread: ChatThread = {
 				id,
-				title: "New chat",
+				title: tChat("defaultTitle"),
 				titleLocked: false,
 				modelId: "",
 				createdAt,
@@ -657,7 +659,7 @@ function ChatPlaygroundContent({
 			await upsertChat(newThread, "text");
 			return [newThread];
 		},
-		[],
+		[tChat],
 	);
 
 	useEffect(() => {
@@ -787,7 +789,7 @@ function ChatPlaygroundContent({
 			]);
 			const newThread: ChatThread = {
 				id,
-				title: "New chat",
+				title: tChat("defaultTitle"),
 				titleLocked: false,
 				modelId,
 				createdAt,
@@ -831,6 +833,7 @@ function ChatPlaygroundContent({
 		[
 			activeId,
 			setActiveThread,
+			tChat,
 			temporaryMode,
 			temporaryThread,
 		],
@@ -2875,11 +2878,11 @@ function ChatPlaygroundContent({
 			const content = buildUserMessageContent(payload);
 			if (!content.trim() && payload.attachments.length === 0) return false;
 			if (!isAuthenticated) {
-				setError("Sign in to start chatting.");
+				setError(tChat("errors.signInToChat"));
 				return false;
 			}
 			if (!activeThread.modelId) {
-				setError("Select a model to start chatting.");
+				setError(tChat("errors.selectModelToChat"));
 				setModelPickerOpen(true);
 				return false;
 			}
@@ -2925,7 +2928,10 @@ function ChatPlaygroundContent({
 
 			const nextTitle = activeThread.titleLocked
 				? activeThread.title
-				: buildTitle([...(activeThread.messages ?? []), userMessage]);
+				: buildTitle(
+						[...(activeThread.messages ?? []), userMessage],
+						tChat("defaultTitle"),
+					);
 
 			let updatedThread: ChatThread = {
 				...activeThread,
@@ -2962,7 +2968,7 @@ function ChatPlaygroundContent({
 				)
 			) {
 				setError(
-					"The selected model does not support this output modality. Pick a model that supports this endpoint.",
+					tChat("errors.unsupportedOutputModality"),
 				);
 				setModelPickerOpen(true);
 				return true;
@@ -2975,7 +2981,7 @@ function ChatPlaygroundContent({
 				!supportsModelAudioInput(updatedThread.modelId)
 			) {
 				setError(
-					"The selected model does not support audio input. Choose an audio-input compatible model.",
+					tChat("errors.unsupportedAudioInput"),
 				);
 				setModelPickerOpen(true);
 				return true;
@@ -3008,9 +3014,9 @@ function ChatPlaygroundContent({
 			});
 			if (enabledModelIds.length === 0) {
 				setError(
-					hasAudioAttachment
-						? "No selected models can accept audio input. Select at least one audio-input compatible model."
-						: "No selected models match the current output modality or they are all turned off.",
+						hasAudioAttachment
+							? tChat("errors.noSelectedModelsCanAcceptAudio")
+							: tChat("errors.noSelectedModelsMatchOutput"),
 				);
 				setModelSettingsTargetModelId(updatedThread.modelId);
 				setModelSettingsOpen(true);
@@ -3057,6 +3063,7 @@ function ChatPlaygroundContent({
 			isSending,
 			isAuthenticated,
 			supportsModelAudioInput,
+			tChat,
 			temporaryMode,
 			updateThreadState,
 		],
@@ -3068,7 +3075,7 @@ function ChatPlaygroundContent({
 			const nextContent = content.trim();
 			if (!nextContent) return;
 			if (!isAuthenticated) {
-				setError("Sign in to start chatting.");
+				setError(tChat("errors.signInToChat"));
 				return;
 			}
 
@@ -3105,7 +3112,7 @@ function ChatPlaygroundContent({
 
 			const nextTitle = editedThread.titleLocked
 				? editedThread.title
-				: buildTitle(editedThread.messages);
+				: buildTitle(editedThread.messages, tChat("defaultTitle"));
 			const updatedThread = {
 				...editedThread,
 				title: nextTitle,
@@ -3169,6 +3176,7 @@ function ChatPlaygroundContent({
 			executeCompletion,
 			isAuthenticated,
 			isSending,
+			tChat,
 			temporaryMode,
 			updateThreadState,
 		],
@@ -3206,7 +3214,7 @@ function ChatPlaygroundContent({
 		async (messageId: string) => {
 			if (!activeThread || isSending) return;
 			if (!isAuthenticated) {
-				setError("Sign in to start chatting.");
+				setError(tChat("errors.signInToChat"));
 				return;
 			}
 			const messageIndex = activeThread.messages.findIndex(
@@ -3227,7 +3235,7 @@ function ChatPlaygroundContent({
 			);
 			if (targetSettings.enabled === false) {
 				setError(
-					"This model is turned off for the current chat. Enable it in per-model settings.",
+					tChat("errors.modelTurnedOff"),
 				);
 				setModelSettingsTargetModelId(targetModelId);
 				setModelSettingsOpen(true);
@@ -3248,6 +3256,7 @@ function ChatPlaygroundContent({
 			executeCompletion,
 			isAuthenticated,
 			isSending,
+			tChat,
 		],
 	);
 	const handleBranchAssistant = useCallback(
@@ -3259,7 +3268,9 @@ function ChatPlaygroundContent({
 			if (messageIndex < 0) return;
 			setError(null);
 			const createdAt = nowIso();
-			const branchTitle = `Branch: ${activeThread.title || "New chat"}`;
+			const branchTitle = tChat("branchTitle", {
+				title: activeThread.title || tChat("defaultTitle"),
+			});
 			const messages = activeThread.messages
 				.slice(0, messageIndex + 1)
 				.map((message) => ({
@@ -3289,7 +3300,7 @@ function ChatPlaygroundContent({
 			setThreads((prev) => [newThread, ...prev]);
 			setActiveThread(newThread);
 		},
-		[activeThread, setActiveThread],
+		[activeThread, setActiveThread, tChat],
 	);
 	const updateActiveSettings = useCallback(
 		(partial: Partial<ChatSettings>) => {
@@ -3325,7 +3336,7 @@ function ChatPlaygroundContent({
 						}
 					})
 					.catch(() => {
-						setError("Unable to create a chat for the selected model.");
+						setError(tChat("errors.createChatFailed"));
 					});
 				return;
 			}
@@ -3803,6 +3814,7 @@ function ChatPlaygroundContent({
 		composerRequiresAudioInput,
 		isProviderSupportedForModel,
 		isModelSelectableForContext,
+		tChat,
 		temporaryMode,
 		updateThreadState,
 	]);
@@ -3816,11 +3828,11 @@ function ChatPlaygroundContent({
 			if (!requiresAudioInput || !activeModelId) return;
 			if (supportsModelAudioInput(activeModelId)) return;
 			setError(
-				"Audio is attached. Select a model that supports audio input to continue.",
+				tChat("errors.audioAttachmentNeedsModel"),
 			);
 			setModelPickerOpen(true);
 		},
-		[activeModelId, supportsModelAudioInput],
+		[activeModelId, supportsModelAudioInput, tChat],
 	);
 
 	const handleDeleteThread = async () => {
@@ -3936,7 +3948,7 @@ function ChatPlaygroundContent({
 			setTemporaryThread({
 				id: TEMP_CHAT_ID,
 				sessionId: crypto.randomUUID(),
-				title: "Temporary chat",
+				title: tChat("shortcuts.temporaryChatTitle"),
 				titleLocked: true,
 				modelId: activeThread?.modelId ?? defaultModelId,
 				createdAt: nowIso(),

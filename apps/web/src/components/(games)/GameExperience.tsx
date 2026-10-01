@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { useTranslations } from "next-intl";
+import { useLocale } from "next-intl";
 import { readGameState, writeGameState } from "./gameStorage";
 import { GameModelIdentity } from "./GameModelIdentity";
 import { SprintGame } from "./SprintGame";
@@ -86,11 +87,18 @@ function GameScaffold({
   children,
 }: {
   game: GameKey;
-  date: string;
+  date?: string;
   children: React.ReactNode;
 }) {
   const t = useTranslations("Product.games");
+  const locale = useLocale();
   const info = GAME_INFO[game];
+  const dateLabel = date
+    ? new Intl.DateTimeFormat(locale, {
+        dateStyle: "medium",
+        timeZone: "UTC",
+      }).format(new Date(date.length === 10 ? `${date}T00:00:00Z` : date))
+    : t("today");
   return (
     <main className="min-h-screen bg-background px-4 py-8 sm:py-12">
       <div className="mx-auto max-w-6xl [&_[data-slot=button]]:rounded-lg">
@@ -101,14 +109,14 @@ function GameScaffold({
               {t("allGames")}
             </Link>
           </Button>
-          <Badge variant="outline">{t("daily", { date })}</Badge>
+          <Badge variant="outline">{t("daily", { date: dateLabel })}</Badge>
         </div>
         <header className="mb-8 max-w-3xl">
           <h1 className="font-heading text-4xl font-semibold tracking-tight sm:text-5xl">
-            {info.title}
+            {t(info.titleKey)}
           </h1>
           <p className="mt-3 text-base leading-7 text-muted-foreground">
-            {info.description}
+            {t(info.descriptionKey)}
           </p>
         </header>
         <nav
@@ -123,7 +131,7 @@ function GameScaffold({
               variant={key === game ? "default" : "outline"}
               className="rounded-lg"
             >
-              <Link href={GAME_INFO[key].path}>{GAME_INFO[key].title}</Link>
+              <Link href={GAME_INFO[key].path}>{t(GAME_INFO[key].titleKey)}</Link>
             </Button>
           ))}
         </nav>
@@ -299,7 +307,7 @@ function ModeleGame({ puzzle }: { puzzle: ModelePuzzle }) {
         </CardContent>
       </Card>
       <div aria-live="polite" className="text-sm text-muted-foreground">
-        {state.guesses.length} / {puzzle.maxGuesses} guesses
+        {t("guesses", { count: state.guesses.length, max: puzzle.maxGuesses })}
       </div>
       {[...state.guesses].reverse().map((guess, reverseIndex) => (
         <Card key={guess.model.id} size="sm" className={GAME_CARD_CLASS}>
@@ -307,7 +315,7 @@ function ModeleGame({ puzzle }: { puzzle: ModelePuzzle }) {
             <CardTitle className="flex flex-wrap items-center justify-between gap-2">
               <GameModelIdentity model={guess.model} />
               <Badge variant="secondary" className="shrink-0">
-                Guess {state.guesses.length - reverseIndex}
+                {t("guessNumber", { number: state.guesses.length - reverseIndex })}
               </Badge>
             </CardTitle>
           </CardHeader>
@@ -657,7 +665,7 @@ function HeadToHeadGame({ puzzle }: { puzzle: HeadToHeadPuzzle }) {
                 }
               />
               <div className="self-center text-xs font-semibold text-muted-foreground">
-                VS
+                {t("versus")}
               </div>
               <HeadChoice
                 candidate={round.right}
@@ -783,7 +791,7 @@ export function GameExperience({ game }: { game: GameKey }) {
   }, [game]);
   if (error)
     return (
-      <GameScaffold game={game} date="Today">
+      <GameScaffold game={game}>
         <Card className={GAME_CARD_CLASS}>
           <CardHeader>
             <CardTitle>{t("puzzleUnavailable")}</CardTitle>
@@ -802,7 +810,7 @@ export function GameExperience({ game }: { game: GameKey }) {
     );
   if (!puzzle)
     return (
-      <GameScaffold game={game} date="Today">
+      <GameScaffold game={game}>
         <div className="flex min-h-64 items-center justify-center text-muted-foreground">
           <Loader2 className="mr-2 animate-spin" />
           {t("preparingPuzzle")}

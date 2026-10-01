@@ -141,6 +141,8 @@ export function RoomModelSettingsShell({
 	children,
 }: RoomModelSettingsShellProps) {
 	const t = useTranslations("Product.chatRooms");
+	const tModelPicker = useTranslations("Product.chat.modelPicker");
+	const tUi = useTranslations("Common.ui");
 	const [modelPickerOpen, setModelPickerOpen] = useState(false);
 	const [modelSearchValue, setModelSearchValue] = useState("");
 	const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
@@ -152,10 +154,10 @@ export function RoomModelSettingsShell({
 	const providerValue = settings.providerId || "auto";
 	const selectedProviderLabel =
 		providerValue === "auto"
-			? "Auto (Gateway)"
+			? tUi("select.autoGateway")
 			: (filteredProviderOptions.find(
 					(provider) => provider.id === providerValue,
-				)?.name ?? "Auto (Gateway)");
+				)?.name ?? tUi("select.autoGateway"));
 	const groupedModelChoices = useMemo(() => {
 		const grouped = new Map<string, typeof modelChoices>();
 		for (const choice of modelChoices) {
@@ -239,7 +241,7 @@ export function RoomModelSettingsShell({
 												</span>
 											) : (
 												<span className="truncate text-muted-foreground">
-													Select model
+													{t("selectModelForRoom")}
 												</span>
 											)}
 											<ChevronsUpDown className="h-4 w-4 shrink-0 opacity-60" />
@@ -259,7 +261,9 @@ export function RoomModelSettingsShell({
 										<CommandEmpty>{t("noModelsFound")}</CommandEmpty>
 												{hasModelSearchValue ? (
 													<CommandGroup
-														heading={`Results (${rankedModelChoices.length})`}
+										heading={tModelPicker("results", {
+											count: rankedModelChoices.length,
+										})}
 													>
 														{rankedModelChoices.map(({ choice }) => (
 															<CommandItem
@@ -287,7 +291,7 @@ export function RoomModelSettingsShell({
 																			variant="secondary"
 																			className="h-5 px-1.5 text-[10px]"
 																		>
-																			Selected
+																			{tUi("status.selected")}
 																		</Badge>
 																	) : null}
 																</div>
@@ -323,7 +327,7 @@ export function RoomModelSettingsShell({
 																				variant="secondary"
 																				className="h-5 px-1.5 text-[10px]"
 																			>
-																				Selected
+																				{tUi("status.selected")}
 																			</Badge>
 																		) : null}
 																	</div>
@@ -400,7 +404,7 @@ export function RoomModelSettingsShell({
 								<div>
 									<p className="text-sm font-medium">{t("enabled")}</p>
 									<p className="text-xs text-muted-foreground">
-										Disable to prevent sends with this model.
+										{t("disableModelSends")}
 									</p>
 								</div>
 								<Switch
@@ -419,15 +423,14 @@ export function RoomModelSettingsShell({
 								<AlertDialogTrigger asChild>
 									<Button variant="outline">
 										<RotateCcw className="h-4 w-4" />
-										Reset model settings
+										{t("resetModelSettingsButton")}
 									</Button>
 								</AlertDialogTrigger>
 								<AlertDialogContent>
 									<AlertDialogHeader>
 										<AlertDialogTitle>{t("resetSettings")}</AlertDialogTitle>
 										<AlertDialogDescription>
-											This will restore this model to its default provider,
-											display name, enabled state, and room parameters.
+											{t("resetModelSettingsDescription")}
 										</AlertDialogDescription>
 									</AlertDialogHeader>
 									<AlertDialogFooter>
@@ -438,7 +441,7 @@ export function RoomModelSettingsShell({
 												setResetConfirmOpen(false);
 											}}
 										>
-											Reset settings
+											{t("resetSettingsAction")}
 										</AlertDialogAction>
 									</AlertDialogFooter>
 								</AlertDialogContent>

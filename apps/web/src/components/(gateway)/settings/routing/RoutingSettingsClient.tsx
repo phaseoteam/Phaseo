@@ -17,6 +17,7 @@ import {
 	type RoutingMode,
 } from "@/app/(dashboard)/settings/routing/actions";
 import { useTranslations } from "next-intl";
+import { localizedSettingsError } from "@/i18n/error-messages";
 
 type RoutingOption = {
 	value: RoutingMode;
@@ -31,32 +32,16 @@ type PreviewRow = {
 	kind?: PreviewKind;
 };
 
-const ROUTING_OPTIONS: RoutingOption[] = [
-	{
-		value: "balanced",
-		label: "Balanced",
-		description: "Blend success rate, latency, throughput, and load.",
-	},
-	{
-		value: "price",
-		label: "Lowest cost",
-		description: "Prefer the cheapest compatible provider when possible.",
-	},
-	{
-		value: "latency",
-		label: "Lowest latency",
-		description: "Bias toward the fastest provider for your model.",
-	},
-	{
-		value: "throughput",
-		label: "Highest throughput",
-		description: "Route to providers with the most recent capacity.",
-	},
-];
+const ROUTING_OPTION_COPY = [
+	{ value: "balanced", labelKey: "credits.Balanced", descriptionKey: "routingModeDescriptions.balanced" },
+	{ value: "price", labelKey: "credits.Lowest cost", descriptionKey: "routingModeDescriptions.price" },
+	{ value: "latency", labelKey: "credits.Lowest latency", descriptionKey: "routingModeDescriptions.latency" },
+	{ value: "throughput", labelKey: "credits.Highest throughput", descriptionKey: "routingModeDescriptions.throughput" },
+] as const;
 
-const RESPONSE_HEALING_OPTIONS = [
-	{ value: "safe", label: "Safe" },
-	{ value: "strict", label: "Strict" },
+const RESPONSE_HEALING_OPTION_COPY = [
+	{ value: "safe", labelKey: "strings.Safe" },
+	{ value: "strict", labelKey: "strings.Strict" },
 ] as const;
 
 type Props = {
@@ -130,6 +115,15 @@ export default function RoutingSettingsClient({
 	teamName,
 }: Props) {
 	const t = useTranslations("SettingsUI");
+	const routingOptions: RoutingOption[] = ROUTING_OPTION_COPY.map((option) => ({
+		value: option.value,
+		label: t(option.labelKey as never),
+		description: t(option.descriptionKey as never),
+	}));
+	const responseHealingOptions = RESPONSE_HEALING_OPTION_COPY.map((option) => ({
+		value: option.value,
+		label: t(option.labelKey as never),
+	}));
 	const defaultMode = initialMode ?? "balanced";
 	const defaultBeta = Boolean(initialBetaChannelEnabled);
 	const defaultAlpha = defaultBeta && Boolean(initialAlphaChannelEnabled);
@@ -166,10 +160,7 @@ export default function RoutingSettingsClient({
 	const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 	const saveSequenceRef = useRef(0);
 
-	const activeOption = useMemo(
-		() => ROUTING_OPTIONS.find((opt) => opt.value === mode),
-		[mode]
-	);
+	const activeOption = routingOptions.find((option) => option.value === mode);
 	const previewRows = useMemo(
 		() =>
 			withCanaryTraffic(
@@ -221,9 +212,7 @@ export default function RoutingSettingsClient({
 							? t("strings.Routing policy updated" as never)
 							: t("strings.Routing policy updated; gateway cache refresh pending" as never),
 						error: (error) =>
-							error instanceof Error && error.message
-								? `${t("strings.Failed to update routing policy" as never)}: ${error.message}`
-								: t("strings.Failed to update routing policy" as never),
+							localizedSettingsError(error, t, "Failed to update routing policy"),
 					},
 				);
 				if (saveSequence === saveSequenceRef.current) {
@@ -321,14 +310,14 @@ export default function RoutingSettingsClient({
 						</div>
 					<Select
 						value={mode}
-						items={ROUTING_OPTIONS}
+						items={routingOptions}
 						onValueChange={(value) => setMode(value as RoutingMode)}
 					>
 						<SelectTrigger id="routing-mode" className="w-full rounded-md">
 							<SelectValue placeholder={t("strings.Select a routing mode" as never)} />
 						</SelectTrigger>
 						<SelectContent>
-							{ROUTING_OPTIONS.map((option) => (
+							{routingOptions.map((option) => (
 								<SelectItem
 									key={option.value}
 									value={option.value}
@@ -404,7 +393,7 @@ export default function RoutingSettingsClient({
 						</div>
 						<Select
 							value={responseHealingMode}
-							items={RESPONSE_HEALING_OPTIONS}
+							items={responseHealingOptions}
 							onValueChange={(value) =>
 								setResponseHealingMode(value as "safe" | "strict")
 							}
@@ -413,7 +402,7 @@ export default function RoutingSettingsClient({
 							<SelectValue placeholder={t("strings.Select a healing mode" as never)} />
 							</SelectTrigger>
 							<SelectContent>
-								{RESPONSE_HEALING_OPTIONS.map((option) => (
+								{responseHealingOptions.map((option) => (
 									<SelectItem
 										key={option.value}
 										value={option.value}

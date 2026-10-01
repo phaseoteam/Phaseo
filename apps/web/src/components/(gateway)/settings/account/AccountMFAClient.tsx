@@ -9,6 +9,7 @@ import {
 	unenrollMFAAction,
 	cleanupUnverifiedMFAAction,
 } from "@/app/(dashboard)/settings/account/actions";
+import { localizedSettingsError } from "@/i18n/error-messages";
 
 import { MFAEnrollmentFlow } from "./MFAEnrollmentFlow";
 import { PasskeyManager } from "./PasskeyManager";
@@ -55,7 +56,8 @@ export default function AccountMFAClient({
 			await toast.promise(unenrollMFAAction(mfaFactorId), {
 				loading: s("Disabling MFA..."),
 				success: s("Two-factor authentication disabled"),
-				error: (err: any) => err?.message || s("Could not disable MFA"),
+				error: (error: unknown) =>
+					localizedSettingsError(error, t, "Could not disable MFA"),
 			});
 			router.refresh();
 		} catch (e) {

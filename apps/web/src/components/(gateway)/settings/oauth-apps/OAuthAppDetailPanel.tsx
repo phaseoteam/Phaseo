@@ -45,6 +45,7 @@ import DeleteOAuthAppDialog from "./DeleteOAuthAppDialog";
 import OAuthScopeSelector from "./OAuthScopeSelector";
 import { normalizeOAuthScopes } from "@/lib/oauth/scopes";
 import { updateOAuthAppScopesAction } from "@/app/(dashboard)/settings/oauth-apps/actions";
+import { localizedSettingsError } from "@/i18n/error-messages";
 
 interface OAuthAppDetailPanelProps {
 	oauthApp: any;
@@ -195,8 +196,10 @@ export default function OAuthAppDetailPanel({
 			if (result.error) throw new Error(result.error);
 		toast.success(t("strings.OAuth scopes updated" as never));
 			router.refresh();
-		} catch (error: any) {
-		toast.error(error?.message || t("strings.Failed to update OAuth scopes" as never));
+		} catch (error: unknown) {
+			toast.error(
+				localizedSettingsError(error, translate, "Failed to update OAuth scopes"),
+			);
 		} finally {
 			setSavingScopes(false);
 		}
@@ -575,7 +578,10 @@ export default function OAuthAppDetailPanel({
 											const identity = request.oauth_user_id
 												? userDirectoryMap.get(request.oauth_user_id)
 												: null;
-											const userLabel = identity?.email || request.oauth_user_id || "Unknown";
+										const userLabel =
+											identity?.email ||
+											request.oauth_user_id ||
+											t("strings.Unknown");
 											return (
 												<TableRow key={`${request.request_id}-${request.created_at}`}>
 													<TableCell className="whitespace-nowrap text-xs text-muted-foreground">
@@ -634,16 +640,16 @@ export default function OAuthAppDetailPanel({
 				<CardHeader>
 					<CardTitle className="text-lg text-red-600 dark:text-red-400 flex items-center gap-2">
 						<Trash2 className="size-5" />
-						Danger Zone
+						{translate("strings.Danger Zone" as never)}
 					</CardTitle>
 					<CardDescription>
-						Irreversible actions that will affect all users
+						{translate("oauthCopy.irreversibleActionsDescription")}
 					</CardDescription>
 				</CardHeader>
 				<CardContent>
 					<div className="flex items-center justify-between">
 						<div>
-							<div className="font-medium text-sm">Delete OAuth App</div>
+							<div className="font-medium text-sm">{translate("oauthDetail.deleteApp")}</div>
 							<div className="text-xs text-muted-foreground">
 												{t("oauthDetail.deleteDescription")}
 							</div>

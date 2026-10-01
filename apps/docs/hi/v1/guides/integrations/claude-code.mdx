@@ -1,0 +1,54 @@
+---
+title: "Claude Code"
+icon: "terminal"
+description: "Anthropic-संगत API के ज़रिए Claude Code को Phaseo Gateway से कनेक्ट करें。"
+---
+
+Claude Code पर्यावरण वेरिएबल के ज़रिए तृतीय-पक्ष LLM गेटवे का समर्थन करता है। Phaseo `/v1/messages` पर Anthropic-संगत इंटरफ़ेस देता है, इसलिए आप प्रॉम्प्ट बदले बिना Claude Code को Phaseo से जोड़ सकते हैं।
+
+अगर आप चाहते हैं कि Claude Code सत्र के दौरान Phaseo के लाइव दस्तावेज़ पढ़े, तो [Docs MCP](./docs-mcp.mdx) सर्वर भी जोड़ें。
+
+## Phaseo CLI से सेट अप करें
+
+```bash
+phaseo login
+phaseo claude
+claude
+```
+
+पहले Claude Code की आधिकारिक रिलीज़ इंस्टॉल करें। सेटअप बिना समाप्ति वाली `Phaseo CLI: Claude Code API Key` बनाता है, उसे OS क्रेडेंशियल स्टोर में रखता है और Claude Code का गेटवे व API-की हेल्पर कॉन्फ़िगर करता है। Claude Code सेटिंग में कोई सादा टेक्स्ट कुंजी नहीं लिखी जाती।
+
+## मैन्युअल कॉन्फ़िगरेशन
+
+```bash
+export ANTHROPIC_BASE_URL="https://api.phaseo.app"
+export ANTHROPIC_AUTH_TOKEN="your_phaseo_api_key"
+export ANTHROPIC_API_KEY=""
+```
+
+```powershell
+$env:ANTHROPIC_BASE_URL = "https://api.phaseo.app"
+$env:ANTHROPIC_AUTH_TOKEN = "your_phaseo_api_key"
+$env:ANTHROPIC_API_KEY = ""
+```
+
+## मॉडल चुनें (वैकल्पिक)
+
+अगर आप एक तय डिफ़ॉल्ट चाहते हैं, तो `ANTHROPIC_MODEL` सेट करें。[Models](../../api-reference/endpoint/models.mdx) में दिए गए मॉडल ID इस्तेमाल करें।
+
+## Claude Code शुरू करें
+
+```bash
+claude
+```
+
+## एंडपॉइंट मैपिंग
+
+- Claude Code Anthropic-शैली के एंडपॉइंट (`/v1/messages`) कॉल करता है।
+- Phaseo उन अनुरोधों को [Anthropic Messages](../../api-reference/endpoint/anthropic-messages.mdx) के ज़रिए संभालता है।
+
+## संगतता नोट
+
+- `ANTHROPIC_AUTH_TOKEN` को `Authorization` हेडर में भेजा जाता है, जिसे Phaseo स्वीकार करता है。
+- Claude Code में एक ही डिफ़ॉल्ट मॉडल इस्तेमाल कराने के लिए `ANTHROPIC_MODEL` को Phaseo मॉडल ID पर सेट कर सकते हैं।
+- मौजूदा सीमा: Anthropic Messages में streaming और tools साथ इस्तेमाल करने पर `400 invalid_request` लौट सकता है। अगर आपका वर्कफ़्लो streamed tool loops पर निर्भर है, तो व्यापक रोलआउट से पहले इस पथ को जाँचें।

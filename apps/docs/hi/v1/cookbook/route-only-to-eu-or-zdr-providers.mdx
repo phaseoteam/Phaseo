@@ -1,0 +1,126 @@
+---
+title: "केवल EU या ZDR-सक्षम प्रदाताओं को रूट करें"
+icon: "globe-2"
+description: "किसी अनुरोध पर डेटा रेज़िडेंसी और शून्य डेटा-रिटेंशन की शर्तें लागू करें, ताकि वह केवल अनुपालन करने वाले प्रदाता ऑफ़र तक रूट हो।"
+---
+
+जब किसी एक अनुरोध के लिए अनुपालन या डेटा प्रबंधन के कारण प्रदाताओं को फ़िल्टर करना हो, लेकिन पूरे workspace की नीति नहीं बदलनी हो, तब यह तरीका अपनाएँ।
+
+## लक्ष्य
+
+- EU में निष्पादन अनिवार्य करें।
+- EU में डेटा रेज़िडेंसी अनिवार्य करें।
+- शून्य डेटा-रिटेंशन का समर्थन करने वाले प्रदाता अनिवार्य करें।
+
+## 1. अनुरोध में रेज़िडेंसी की शर्तें जोड़ें
+
+प्रदाता की शर्तें सीधे अनुरोध के बॉडी में सेट करें।
+
+<CodeGroup>
+```bash cURL
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "google/gemini-3.1-flash-lite",
+    "input": "Summarize the ticket in one line.",
+    "provider": {
+      "required_execution_region": "eu",
+      "required_data_region": "eu",
+      "require_zero_data_retention": true
+    }
+  }'
+```
+
+```typescript TypeScript SDK
+import Phaseo from "@phaseo/sdk";
+
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
+
+const response = await client.generateResponse({
+  model: "google/gemini-3.1-flash-lite",
+  input: "Summarize the ticket in one line.",
+  provider: {
+    required_execution_region: "eu",
+    required_data_region: "eu",
+    require_zero_data_retention: true,
+  },
+});
+
+console.log(response.output_text);
+```
+
+```python Python SDK
+from phaseo import Phaseo
+
+client = Phaseo(api_key="YOUR_API_KEY")
+
+response = client.generate_response(
+    {
+        "model": "google/gemini-3.1-flash-lite",
+        "input": "Summarize the ticket in one line.",
+        "provider": {
+            "required_execution_region": "eu",
+            "required_data_region": "eu",
+            "require_zero_data_retention": True,
+        },
+    }
+)
+
+print(response.get("output_text"))
+```
+</CodeGroup>
+
+इस प्रवाह के लिए अनुरोध-स्तर पर समर्थित फ़िल्टर:
+
+- `required_execution_region`
+- `required_data_region`
+- `require_zero_data_retention`
+
+## 2. नीति के अनुरूप सबसे कम नियम इस्तेमाल करें
+
+केवल वही शर्तें अनिवार्य करें जिनकी वर्कलोड को वास्तव में ज़रूरत है।
+
+उदाहरण:
+
+- केवल निष्पादन का स्थान:
+  - `required_execution_region: "eu"`
+- केवल डेटा का स्थान:
+  - `required_data_region: "eu"`
+- केवल ZDR-सक्षम प्रदाता:
+  - `require_zero_data_retention: true`
+
+## 3. उम्मीदवार प्रदाताओं की संख्या घटने की अपेक्षा रखें
+
+ये फ़िल्टर प्रदाताओं की रैंकिंग से पहले लागू होते हैं, इसलिए कुछ प्रदाता पूरी तरह हट सकते हैं।
+
+इसका अर्थ है:
+
+- अनुरोध किसी महँगे क्षेत्रीय ऑफ़र पर रूट हो सकता है
+- प्रदाताओं की सूची बहुत छोटी हो सकती है
+- यदि उस मॉडल का कोई प्रदाता शर्तें पूरी नहीं करता, तो अनुरोध विफल हो सकता है
+
+## 4. संभव हो तो पहले मॉडल पेज पर जाँचें
+
+अनुरोध को लागू करने से पहले, मॉडल पेज पर प्रदाता कार्ड में ये चीज़ें देखें:
+
+- क्षेत्रीय ऑफ़र, जैसे `OpenAI EU` या `Google Vertex EU`
+- ZDR समर्थन
+- प्रदाताओं की डेटा नीति से जुड़े नोट और स्रोत
+
+इससे उत्पादन ट्रैफ़िक पर शर्त लागू करने से पहले कम से कम एक पात्र प्रदाता की पुष्टि हो जाती है।
+
+## 5. workspace की गोपनीयता सेटिंग को डिफ़ॉल्ट के रूप में इस्तेमाल करें
+
+यदि नीति workspace के सभी अनुरोधों पर लागू होनी चाहिए, तो हर अनुरोध में फ़िल्टर दोहराने के बजाय उसे **सेटिंग -> गोपनीयता** में सेट करें।
+
+अनुरोध फ़ील्ड तब इस्तेमाल करें जब नियम लागू हो:
+
+- किसी वर्कफ़्लो पर
+- किसी ग्राहक पर
+- किसी अनुरोध पर
+
+## संबंधित गाइड
+
+- [रूटिंग और फ़ॉलबैक](../guides/routing-and-fallbacks.mdx)
+- [प्रीसेट](../guides/presets.mdx)

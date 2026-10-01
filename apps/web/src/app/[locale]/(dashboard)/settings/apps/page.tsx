@@ -1,3 +1,4 @@
+import { getLocale, getTranslations } from "next-intl/server";
 import AppsPanel from "@/components/(gateway)/settings/apps/AppsPanel";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -6,15 +7,21 @@ import { Suspense } from "react";
 import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
 import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHeader";
 import { fetchSettingsAppsInitialData } from "@/lib/fetchers/internal/fetchSettingsAppsInitialData";
+import { getLocalizedDocsHref } from "@/lib/docs";
 
 const ATTRIBUTION_DOCS_HREF =
 	"https://phaseo.app/docs/v1/guides/app-attribution";
 
-export const metadata = {
-	title: "Apps - Settings",
-};
+export async function generateMetadata() {
+	const t = await getTranslations("SettingsUI");
+	return { title: `${t("headers.apps")} - ${t("headers.settings")}` };
+}
 
-export default function AppsSettingsPage() {
+export default async function AppsSettingsPage() {
+	const [t, locale] = await Promise.all([
+		getTranslations("SettingsUI.settingsRouteCopy"),
+		getLocale(),
+	]);
 	return (
 		<div className="space-y-6">
 			<SettingsPageHeader
@@ -30,11 +37,11 @@ export default function AppsSettingsPage() {
 						className="h-10 rounded-md"
 					>
 						<Link
-							href={ATTRIBUTION_DOCS_HREF}
+							href={getLocalizedDocsHref(locale, ATTRIBUTION_DOCS_HREF)}
 							target="_blank"
 							rel="noreferrer"
 						>
-							Request Attribution Docs
+							{t("requestAttributionDocs")}
 							<ArrowUpRight className="ml-1 h-4 w-4" />
 						</Link>
 					</Button>

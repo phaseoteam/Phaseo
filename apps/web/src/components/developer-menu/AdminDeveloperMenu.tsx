@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
+import { useTranslations } from "next-intl";
 import {
 	ChevronDown,
 	ExternalLink,
@@ -38,6 +39,7 @@ import {
 } from "./cacheRoute";
 
 export default function AdminDeveloperMenu({ onDismiss }: { onDismiss: () => void }) {
+	const t = useTranslations("Product.developerMenu");
 	const [authorized, setAuthorized] = useState(false);
 	const [collapsed, setCollapsed] = useState(false);
 
@@ -65,7 +67,7 @@ export default function AdminDeveloperMenu({ onDismiss }: { onDismiss: () => voi
 				size="icon"
 				className="fixed right-4 top-20 z-40 rounded-full shadow-xl"
 				onClick={() => setCollapsed(false)}
-				aria-label="Expand admin developer menu"
+				aria-label={t("expandMenu")}
 			>
 				<Wrench className="size-4" />
 			</Button>
@@ -82,6 +84,7 @@ function DeveloperPanel({
 	onCollapse: () => void;
 	onDismiss: () => void;
 }) {
+	const t = useTranslations("Product.developerMenu");
 	const pathname = usePathname() ?? "/";
 	const target = getPageCacheTarget(pathname);
 	const targetKey = target ? `${target.scope}:${target.targetId ?? "global"}` : pathname;
@@ -92,16 +95,16 @@ function DeveloperPanel({
 				<div className="flex items-start justify-between gap-3">
 					<div className="space-y-1">
 						<div className="flex items-center gap-2">
-							<CardTitle className="text-base">Developer menu</CardTitle>
-							<Badge variant="secondary"><ShieldCheck className="size-3" /> Admin</Badge>
+							<CardTitle className="text-base">{t("title")}</CardTitle>
+							<Badge variant="secondary"><ShieldCheck className="size-3" /> {t("admin")}</Badge>
 						</div>
 						<CardDescription className="break-all font-mono text-[11px]">{pathname}</CardDescription>
 					</div>
 					<div className="flex gap-1">
-						<Button type="button" variant="ghost" size="icon-sm" onClick={onCollapse} aria-label="Collapse developer menu">
+						<Button type="button" variant="ghost" size="icon-sm" onClick={onCollapse} aria-label={t("collapseMenu")}>
 							<ChevronDown className="size-4" />
 						</Button>
-						<Button type="button" variant="ghost" size="icon-sm" onClick={onDismiss} aria-label="Close developer menu">
+						<Button type="button" variant="ghost" size="icon-sm" onClick={onDismiss} aria-label={t("closeMenu")}>
 							<X className="size-4" />
 						</Button>
 					</div>
@@ -112,7 +115,7 @@ function DeveloperPanel({
 				<div className="flex items-center justify-between border-t pt-3">
 					<Button variant="ghost" size="sm" asChild>
 						<Link href={getCacheControlHref(target)}>
-							Cache Control Centre <ExternalLink className="size-3.5" />
+							{t("cacheControlCentre")} <ExternalLink className="size-3.5" />
 						</Link>
 					</Button>
 					<kbd className="rounded border bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">Ctrl ⇧ .</kbd>
@@ -123,6 +126,7 @@ function DeveloperPanel({
 }
 
 function RouteCacheAction({ target }: { target: PageCacheTarget | null }) {
+	const t = useTranslations("Product.developerMenu");
 	const [confirming, setConfirming] = useState(false);
 	const [refreshBrowsers, setRefreshBrowsers] = useState(target?.affectsSearch ?? false);
 	const [lastResult, setLastResult] = useState<CachePurgeResult | null>(null);
@@ -131,8 +135,8 @@ function RouteCacheAction({ target }: { target: PageCacheTarget | null }) {
 	if (!target) {
 		return (
 			<div className="rounded-xl border border-dashed p-3">
-				<div className="text-sm font-medium">No page cache mapping</div>
-				<p className="mt-1 text-xs text-muted-foreground">Use the full Cache Control Centre for this route.</p>
+				<div className="text-sm font-medium">{t("noPageCacheMapping")}</div>
+				<p className="mt-1 text-xs text-muted-foreground">{t("useFullCacheControlCentre")}</p>
 			</div>
 		);
 	}
@@ -148,9 +152,10 @@ function RouteCacheAction({ target }: { target: PageCacheTarget | null }) {
 				});
 				setLastResult(result);
 				setConfirming(false);
-				toast.success(`${resolvedTarget.label} cache revalidated`);
+				toast.success(t("cacheRevalidated", { label: t(resolvedTarget.labelKey as never) }));
 			} catch (error) {
-				toast.error(error instanceof Error ? error.message : String(error));
+				console.error("[AdminDeveloperMenu] Cache revalidation failed", error);
+				toast.error(t("revalidationFailed"));
 			}
 		});
 	}
@@ -160,42 +165,46 @@ function RouteCacheAction({ target }: { target: PageCacheTarget | null }) {
 			<div className="rounded-xl border bg-muted/30 p-3">
 				<div className="flex items-start justify-between gap-3">
 					<div>
-						<div className="text-sm font-medium">{target.label}</div>
-						<p className="mt-1 break-all text-xs text-muted-foreground">{target.description}</p>
+						<div className="text-sm font-medium">{t(target.labelKey as never)}</div>
+						<p className="mt-1 break-all text-xs text-muted-foreground">
+							{target.descriptionKey ? t(target.descriptionKey as never) : target.description}
+						</p>
 					</div>
-					<Badge variant="outline">{target.scope}</Badge>
+					<Badge variant="outline">{t(`scopes.${target.scope}` as never)}</Badge>
 				</div>
 				{target.affectsSearch ? (
 					<label className="mt-3 flex items-start gap-2 text-xs">
 						<Checkbox checked={refreshBrowsers} onCheckedChange={(checked) => setRefreshBrowsers(checked === true)} />
-						<span><span className="font-medium">Refresh returning browser tabs</span><br /><span className="text-muted-foreground">Advance the search generation after the edge purge.</span></span>
+						<span><span className="font-medium">{t("refreshReturningBrowserTabs")}</span><br /><span className="text-muted-foreground">{t("advanceSearchGeneration")}</span></span>
 					</label>
 				) : null}
 			</div>
 
 			<Button type="button" className="w-full" onClick={() => setConfirming(true)} disabled={isPending}>
 				<RefreshCw className={isPending ? "size-4 animate-spin" : "size-4"} />
-				{isPending ? "Revalidating…" : "Revalidate this page"}
+				{isPending ? t("revalidating") : t("revalidateThisPage")}
 			</Button>
 			{lastResult ? (
 				<p className="text-xs text-emerald-700 dark:text-emerald-400">
-					Purged {lastResult.tags.length} tags
-					{lastResult.generation ? ` · search generation ${lastResult.generation}` : ""}.
+					{t("purgedTags", { count: lastResult.tags.length })}
+					{lastResult.generation ? ` · ${t("searchGeneration", { generation: lastResult.generation })}` : ""}.
 				</p>
 			) : null}
 
 			<AlertDialog open={confirming} onOpenChange={(open) => { if (!open && !isPending) setConfirming(false); }}>
 				<AlertDialogContent>
 					<AlertDialogHeader>
-						<AlertDialogTitle>Revalidate {target.label.toLowerCase()}?</AlertDialogTitle>
+						<AlertDialogTitle>{t("confirmTitle")}</AlertDialogTitle>
 						<AlertDialogDescription>
-							This purges the named Cloudflare Worker scope for {target.description}. The next request in each region may rebuild it.
+							{t("confirmDescription", {
+								description: target.descriptionKey ? t(target.descriptionKey as never) : target.description ?? "",
+							})}
 						</AlertDialogDescription>
 					</AlertDialogHeader>
 					<AlertDialogFooter>
-						<AlertDialogCancel disabled={isPending}>Cancel</AlertDialogCancel>
+						<AlertDialogCancel disabled={isPending}>{t("cancel")}</AlertDialogCancel>
 						<AlertDialogAction disabled={isPending} onClick={confirmRevalidation}>
-							Confirm revalidation
+							{t("confirmRevalidation")}
 						</AlertDialogAction>
 					</AlertDialogFooter>
 				</AlertDialogContent>

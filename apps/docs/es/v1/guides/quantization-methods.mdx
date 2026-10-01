@@ -1,0 +1,47 @@
+---
+icon: "settings-2"
+title: "Métodos de cuantización"
+description: "En qué se diferencian los métodos de cuantización de los formatos numéricos y por qué importa elegir el método adecuado."
+---
+
+El formato numérico (`FP8`, `INT8`, `INT4`) indica la precisión.
+
+El método de cuantización indica **cómo** se aplicó esa precisión.
+
+## Por qué importan los métodos
+
+Dos variantes `INT4` pueden comportarse de forma muy distinta porque la elección del método afecta a:
+
+- Conservación de la precisión
+- Compatibilidad con el entorno de ejecución
+- Organización de la memoria y rendimiento al servir modelos
+- Requisitos de calibración
+
+## Familias de métodos habituales
+
+| Familia de métodos | Uso habitual | Notas |
+| --- | --- | --- |
+| `AWQ` | Conserva los pesos más sensibles a las activaciones | Frecuente para equilibrar la calidad y la eficiencia en inferencia |
+| `GPTQ` | Cuantización posterior al entrenamiento que minimiza el error | Popular en variantes compactas para inferencia local |
+| `GGUF` | Formato de empaquetado usado por el ecosistema de llama.cpp | Suele combinarse con distintos niveles de cuantización (`Q4`, `Q5`, etc.) |
+| `EXL2` | Variantes agresivas de pocos bits en el ecosistema ExLlama | Prioriza el alto rendimiento, con limitaciones de arquitectura y entorno de ejecución |
+
+## Ejemplo: método y formato
+
+`INT4` es el objetivo de precisión.  
+`AWQ INT4` y `GPTQ INT4` son dos formas distintas de alcanzar ese objetivo.
+
+## Recomendaciones prácticas
+
+1. Elige primero el entorno de ejecución (el que puedas implementar de forma fiable).
+2. Filtra las familias de métodos compatibles con ese entorno.
+3. Compara varios métodos de cuantización con el mismo objetivo de precisión.
+4. Registra los modos de fallo, no solo las puntuaciones medias de las pruebas.
+
+## Lista de comprobación para la evaluación
+
+- Corrección de las salidas estructuradas
+- Fidelidad en contextos largos
+- Fiabilidad de las llamadas a herramientas
+- Comportamiento de seguridad y moderación
+- Latencia de cola bajo carga

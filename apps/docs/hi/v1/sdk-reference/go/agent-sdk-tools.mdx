@@ -1,0 +1,21 @@
+---
+icon: "wrench"
+title: "टूल"
+description: "जाँचे गए, approval-gated, manual और progress देने वाले Go tools परिभाषित करें।"
+---
+
+`Tool` वैल्यू बनाएँ और उन्हें `DefineTool(...)` के ज़रिए दें। Tools में ये शामिल हो सकते हैं:
+
+- मॉडल को दिखाए जाने वाले JSON `Parameters`
+- `InputSchema`, `OutputSchema` और `EventSchema` validator
+- `Timeout` और `Execute(input, RuntimeContext)` फ़ंक्शन
+- बिना शर्त `RequireApproval` या शर्त वाला `Approval` predicate
+- interactive काम के लिए `OnToolCalled` और `OnResponseReceived`
+- `NextTurn` override और `OnError: "return-to-model"`
+
+`RuntimeContext.EmitProgress`, `SetContext` और दिए गए `context.Context` का उपयोग करें। `ToolExecutionConfig{Concurrency: ...}` स्वतंत्र tools को साथ में चलाता है और परिणामों का क्रम बनाए रखता है।
+
+## संबंधित विषय
+
+- [स्थिति और अनुमोदन](./agent-sdk-state-and-approval.mdx)
+- [रन कंट्रोल](./agent-sdk-run-controls.mdx)

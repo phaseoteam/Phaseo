@@ -34,8 +34,6 @@ describe("groupConsentScopes", () => {
 		expect(groups).toEqual([
 			{
 				key: "other:custom_tools",
-				label: "Custom Tools",
-				description: "Permissions related to custom tools.",
 				scopes: ["custom_tools:read", "custom_tools:write"],
 			},
 		]);

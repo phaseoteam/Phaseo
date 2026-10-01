@@ -1,0 +1,32 @@
+---
+icon: "binary"
+title: "Vetores de incorporação"
+description: "Chame /embeddings com o SDK C#."
+---
+
+**Método**: `client.CreateEmbedding(...)`
+
+### Exemplo
+
+```csharp
+using PhaseoSdk;
+
+var client = new Phaseo(apiKey);
+var response = await client.CreateEmbedding(new Dictionary<string, object>
+{
+    ["model"] = "openai/text-embedding-3-large",
+    ["input"] = "Sample text"
+});
+```
+
+### Parâmetros principais
+
+-   `model` (obrigatório): ID do modelo de embeddings (por exemplo, `openai/text-embedding-3-large`).
+-   `input` (obrigatório): uma string ou um array de strings.
+-   `encoding_format`: `float` (padrão) ou `base64`.
+-   `dimensions`: inteiro opcional para truncar o tamanho do embedding (depende do modelo).
+-   `user`: identificador opcional do usuário final.
+
+### Retorno
+
+Payload de embeddings (JSON)

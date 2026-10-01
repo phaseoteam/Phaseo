@@ -1,0 +1,77 @@
+---
+icon: "database"
+title: "状態と承認"
+description: "実行状態を保存し、ツール呼び出しを承認して、一時停止中のエージェントを再開します。"
+---
+
+人、外部ジョブ、またはアプリケーション管理のツールを待ってから続行するエージェントには、継続実行を使用します。Agent SDK は後で続行するために必要な実行状態全体を返します。
+
+<Note>
+Phaseo はホスト型エージェントサービスに Agent SDK の実行を保存しません。リクエストやプロセスの再起動後も続行する必要がある場合は、再開可能な状態をアプリケーションで保存してください。
+</Note>
+
+## ツール呼び出しを承認する
+
+承認が必要な呼び出しにだけ承認を求めます。
+
+```typescript
+const deploy = defineTool({
+  id: "deploy",
+  requireApproval: ({ environment }) => environment === "production",
+  async execute(input: { environment: string }) {
+    return deployRelease(input.environment);
+  },
+});
+```
+
+実行は保留中の呼び出しを `run.pause.pendingToolCalls` に保持して一時停止します。同時実行中の呼び出しを取り違えないよう、正確な呼び出し ID を指定して再開します。
+
+```typescript
+const resumed = await agent.continueRun({
+  run: paused,
+  client,
+  approvals: [{ toolCallId: "call_deploy_42" }],
+  rejections: [
+    { toolCallId: "call_delete_17", reason: "Not authorized" },
+  ],
+});
+```
+
+## 人によるレビューのために一時停止する
+
+次のターンを開始する前にモデルの応答全体を確認する場合は、`humanReview` を使用します。
+
+```typescript
+const agent = createAgent({
+  id: "support-agent",
+  humanReview: ({ response }) =>
+    response.message.content.includes("needs approval")
+      ? {
+          reason: "approval_required",
+          payload: { draft: response.message.content },
+        }
+      : null,
+});
+```
+
+人が明示的に入力して続行します。
+
+```typescript
+const continued = await agent.continueRun({
+  run: pausedResult,
+  client,
+  humanInput: "Approved. Continue and return the final answer.",
+});
+```
+
+## 実行状態を保存する
+
+返された `AgentRunResult` を直接保存するか、非同期の `load(runId)` と `save(result)` メソッドを備えた `state` アクセサーを指定します。続行後は、シリアライズ済みレコードを各レイヤーに渡さずに `runId` を使用できます。
+
+SDK には永続化アダプターやホスト型の状態バックエンドは含まれません。単発の実行はプロセス内に置き、一時停止または未完了の実行だけを保存できます。
+
+## 関連ガイド
+
+- [ツールを定義して実行する](./agent-sdk-tools.mdx)
+- [エージェントの実行を制御する](./agent-sdk-run-controls.mdx)
+- [永続的なエージェントループを作成する](../../cookbook/agent-sdk-durable-loop.mdx)

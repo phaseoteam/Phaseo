@@ -1,0 +1,100 @@
+---
+title: "Phaseo の仕組み"
+description: "エンドポイント、SDK、ルーティング、本番環境の設定を選ぶ前に、Phaseo Gateway の仕組みを理解しましょう。"
+icon: "terminal"
+---
+
+Gateway を使った開発を始める前に、全体像を把握するための説明です。
+
+Phaseo は、モデル、プロバイダー、ルーティング、料金、非同期 AI ワークフローに対応する単一の API を提供します。
+
+これにより、次のことができます。
+
+-   一貫した API で複数のプロバイダーを呼び出す
+-   リクエストとレスポンスの処理を簡素化する
+-   使用量、レイテンシ、料金を一か所で追跡する
+-   アプリを作り直さずにモデルやルーティング戦略を変更する
+
+<Note>
+クレジットを入金せずに `:free` モデルを利用できます。有料モデルにはウォレット残高が必要です。
+</Note>
+
+---
+
+## Gateway を使う理由
+
+複数のプロバイダー、モデル、エンドポイント群、デプロイ環境を扱う必要が出ると、AI 統合はすぐに複雑になります。
+
+Phaseo はアプリに安定した統合レイヤーを提供します。まずプロダクトの機能を公開し、その後、呼び出し元を書き換えずにモデル、プロバイダー、ルーティング、料金戦略を調整できます。
+
+---
+
+## 基本概念
+
+<Columns cols={2}>
+	<Card
+		title="統一されたエンドポイント"
+		icon="terminal"
+		href="../api-reference/introduction.mdx"
+	>
+		テキスト、画像、モデレーション、音声、動画、プロバイダー互換ルートで共通の API 形式を使用します。
+	</Card>
+	<Card title="ルーティング制御" icon="git-branch" href="../guides/routing-and-fallbacks.mdx">
+		可用性、コスト、レイテンシ、リージョン、ポリシーに応じたリクエストの振り分け方法を選択できます。
+	</Card>
+	<Card title="使用量とコストの追跡" icon="chart-column-increasing">
+		リクエスト数、トークン使用量、レイテンシ、料金を追跡し、本番環境の動作を把握できます。
+	</Card>
+	<Card title="BYOK（独自のキーを使用）" icon="key">
+		Gateway の同じインターフェースを保ちながら、プロバイダー独自の請求や制限を利用する場合は、その API キーを接続します。
+	</Card>
+</Columns>
+
+---
+
+## おすすめの手順
+
+1. Phaseo アカウントに**[登録](https://phaseo.app/ja/sign-up)**します。
+2. ダッシュボードで**[API キーを作成](https://phaseo.app/ja/gateway/keys)**します。
+3. `/v1/responses` エンドポイントに**最初のリクエストを送信**します。
+4. SDK、ルーティング、可観測性、デプロイを含む**本番環境への移行方法を選択**します。
+
+<Card
+	title="クイックスタート"
+	icon="rocket"
+	href="../quickstart.mdx"
+	horizontal
+>
+	無料モデルを使って、最初の API 呼び出しを成功させましょう。
+</Card>
+
+---
+
+## 次のステップ
+
+<Columns cols={2}>
+	<Card
+		title="認証"
+		icon="lock"
+		href="./authentication.mdx"
+	>
+		個人用またはチーム用の API キーを使って安全に認証する方法を確認します。
+	</Card>
+	<Card title="API リファレンス" icon="code" href="../api-reference/introduction.mdx">
+		エンドポイント、パラメーター、レスポンススキーマを含む API ドキュメント全体を確認します。
+	</Card>
+	<Card
+		title="ベストプラクティス"
+		icon="shield-check"
+		href="./best-practices.mdx"
+	>
+		Phaseo Gateway を最大限に活用するためのガイドです。
+	</Card>
+	<Card title="サンプル" icon="terminal" href="../guides/examples.mdx">
+		Next.js、Node.js のストリーミング、Python、curl ですぐに使えるコードをコピーできます。
+	</Card>
+</Columns>
+
+---
+
+実装を中心に進めたい場合は、[Gateway の統合](./integrating-with-the-gateway.mdx)を読み、利用規模に応じて[各種連携](../guides/integrations/index.mdx)や[レート制限](./rate-limits.mdx)も確認してください。

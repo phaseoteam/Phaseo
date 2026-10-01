@@ -1,3 +1,4 @@
+import { getTranslations } from "next-intl/server";
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import AutoRoutingSettingsClient from "@/components/(gateway)/settings/routing/AutoRoutingSettingsClient";
@@ -8,11 +9,13 @@ import { Badge } from "@/components/ui/badge";
 import { fetchSettingsAutoRoutingInitialData } from "@/lib/fetchers/internal/fetchSettingsAutoRoutingInitialData";
 import { autoRoutingFlag } from "@/lib/flags";
 
-export const metadata = {
-	title: "Auto Routing - Settings",
-};
+export async function generateMetadata() {
+	const t = await getTranslations("SettingsUI");
+	return { title: `${t("headers.autoRouting")} - ${t("headers.settings")}` };
+}
 
 export default async function AutoRoutingSettingsPage() {
+	const t = await getTranslations("SettingsUI");
 	if (!(await autoRoutingFlag())) notFound();
 
 	return (
@@ -22,11 +25,11 @@ export default async function AutoRoutingSettingsPage() {
 			titleKey="headers.autoRouting"
 			description="Control how phaseo/auto balances model quality, cost, and speed for this workspace."
 			descriptionKey="headers.autoRoutingDescription"
-				meta={<Badge variant="outline">Alpha</Badge>}
+				meta={<Badge variant="outline">{t("alphaBadge")}</Badge>}
 				actions={
 					<ProductFeedbackButton
 						surface="settings_auto_routing"
-						prompt="Tell us what is missing or confusing about Auto Routing."
+						prompt={t("settingsPageCopy.autoRoutingFeedback")}
 					/>
 				}
 			/>
@@ -38,11 +41,11 @@ export default async function AutoRoutingSettingsPage() {
 }
 
 async function AutoRoutingContent() {
-	const initialData = await fetchSettingsAutoRoutingInitialData();
+	const [initialData, t] = await Promise.all([fetchSettingsAutoRoutingInitialData(), getTranslations("SettingsUI")]);
 	if (!initialData.workspaceId) {
 		return (
 			<div className="rounded-lg border border-border/60 bg-muted/20 p-4 text-sm text-muted-foreground">
-				Select a workspace to configure Auto Routing.
+				{t("settingsPageCopy.autoRoutingWorkspace")}
 			</div>
 		);
 	}

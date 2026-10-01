@@ -12,7 +12,7 @@ import {
 	DialogTitle,
 	DialogTrigger,
 } from "@/components/ui/dialog";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 
 export type PresetFeedbackDetail = {
 	id: string;
@@ -54,6 +54,7 @@ export function PresetFeedbackDetailDialog({
 }: {
 	feedback: PresetFeedbackDetail;
 }) {
+	const locale = useLocale();
 	const t = useTranslations("SettingsUI");
 	const metadataEntries = Object.entries(feedback.metadataDimensions);
 
@@ -68,13 +69,11 @@ export function PresetFeedbackDetailDialog({
 			<DialogContent className="max-h-[85vh] max-w-3xl overflow-y-auto">
 				<DialogHeader>
 				<DialogTitle>{t("strings.Feedback detail" as never)}</DialogTitle>
-					<DialogDescription>
-						{feedback.presetName} feedback captured {feedback.createdAtLabel}.
-					</DialogDescription>
+					<DialogDescription>{t("strings.presetFeedbackDetailTimestamp" as never, { createdAt: feedback.createdAtLabel } as never)}</DialogDescription>
 				</DialogHeader>
 
 				<dl className="divide-y divide-border/70">
-					<DetailRow label="Feedback">
+					<DetailRow label={t("strings.presetFeedbackLabel" as never)}>
 						<div className="flex flex-wrap items-center gap-2">
 							<Badge variant="outline">{feedback.rating}</Badge>
 							{feedback.scoreRaw !== null ? (
@@ -84,12 +83,12 @@ export function PresetFeedbackDetailDialog({
 							) : null}
 							{feedback.scoreRaw !== null ? (
 								<span className="text-muted-foreground">
-									{t("strings.raw" as never)} {feedback.scoreRaw.toFixed(3)}
+									{t("strings.raw" as never)} {new Intl.NumberFormat(locale, { minimumFractionDigits: 3, maximumFractionDigits: 3 }).format(feedback.scoreRaw)}
 								</span>
 							) : null}
 						</div>
 					</DetailRow>
-					<DetailRow label="Preset">
+					<DetailRow label={t("strings.Preset" as never)}>
 						<div className="space-y-1">
 							<p>{feedback.presetName}</p>
 							{feedback.presetSlug ? (
@@ -99,12 +98,12 @@ export function PresetFeedbackDetailDialog({
 							) : null}
 						</div>
 					</DetailRow>
-					<DetailRow label="Comment">
+					<DetailRow label={t("strings.presetFeedbackComment" as never)}>
 						<p className="whitespace-pre-wrap">
 							{feedback.comment ?? feedback.reason ?? t("strings.No comment provided" as never)}
 						</p>
 					</DetailRow>
-					<DetailRow label="Reason tags">
+					<DetailRow label={t("strings.presetFeedbackReasonTags" as never)}>
 						{feedback.reasonTags.length > 0 ? (
 							<div className="flex flex-wrap gap-2">
 								{Array.from(new Set(feedback.reasonTags)).map((tag) => (
@@ -117,28 +116,28 @@ export function PresetFeedbackDetailDialog({
 							<span className="text-muted-foreground">{t("strings.None" as never)}</span>
 						)}
 					</DetailRow>
-					<DetailRow label="Request">
+					<DetailRow label={t("strings.presetFeedbackRequest" as never)}>
 						{feedback.requestId ? (
 							<code className="break-all text-xs">{feedback.requestId}</code>
 						) : (
 							<span className="text-muted-foreground">{t("strings.No request id" as never)}</span>
 						)}
 					</DetailRow>
-					<DetailRow label="Session">
+					<DetailRow label={t("strings.Session" as never)}>
 						{feedback.sessionId ? (
 							<code className="break-all text-xs">{feedback.sessionId}</code>
 						) : (
 							<span className="text-muted-foreground">{t("strings.No session id" as never)}</span>
 						)}
 					</DetailRow>
-					<DetailRow label="End user">
+					<DetailRow label={t("strings.presetFeedbackEndUser" as never)}>
 						{feedback.endUserId ? (
 							<code className="break-all text-xs">{feedback.endUserId}</code>
 						) : (
 							<span className="text-muted-foreground">{t("strings.Not supplied" as never)}</span>
 						)}
 					</DetailRow>
-					<DetailRow label="Metadata">
+					<DetailRow label={t("strings.Metadata" as never)}>
 						{metadataEntries.length > 0 ? (
 							<div className="overflow-hidden rounded-md border border-border/70">
 								{metadataEntries.map(([key, value]) => (
@@ -155,7 +154,7 @@ export function PresetFeedbackDetailDialog({
 							<span className="text-muted-foreground">{t("strings.No metadata" as never)}</span>
 						)}
 					</DetailRow>
-					<DetailRow label="Created">
+					<DetailRow label={t("strings.Created" as never)}>
 						<div className="space-y-1">
 							<p>{feedback.createdAtLabel}</p>
 							{feedback.createdAt ? (

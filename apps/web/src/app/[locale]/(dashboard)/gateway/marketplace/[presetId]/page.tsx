@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { ArrowLeft, BadgeCheck, Box, CalendarDays, GitFork, Layers3, Route, ShieldCheck, Sparkles } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -15,12 +15,20 @@ type Props = { params: Promise<{ presetId: string }>; searchParams: Promise<{ ve
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
 	const { presetId } = await params;
-	return buildMetadata({ title: "Preset Details - Gateway Marketplace", description: "Inspect and fork a public Phaseo Gateway preset.", path: `/gateway/marketplace/${presetId}` });
+	const t = await getTranslations("Product.gateway");
+	return buildMetadata({
+		title: `${t("publicPreset")} - ${t("marketplaceTitle")}`,
+		description: t("marketplaceDescription"),
+		path: `/gateway/marketplace/${presetId}`,
+	});
 }
 
 export default async function PresetMarketplaceDetailPage({ params, searchParams }: Props) {
 	const [{ presetId }, query] = await Promise.all([params, searchParams]);
-	const t = await getTranslations("Product.gateway");
+	const [t, locale] = await Promise.all([
+		getTranslations("Product.gateway"),
+		getLocale(),
+	]);
 	const requestedVersion = Number(query.version);
 	const detail = await fetchFrontendMarketplacePresetDetail(presetId, Number.isInteger(requestedVersion) && requestedVersion > 0 ? requestedVersion : undefined);
 	if (!detail) return <main className="mx-auto min-h-[60vh] max-w-6xl px-5 py-12 sm:px-8"><Link href="/gateway/marketplace" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"><ArrowLeft className="size-4" />{t("backToMarketplace")}</Link><div className="mt-8 rounded-lg border border-dashed p-12 text-center"><h1 className="font-heading text-2xl font-semibold">{t("presetNotAvailable")}</h1><p className="mt-2 text-sm text-muted-foreground">{t("privatePresetDescription")}</p></div></main>;
@@ -51,7 +59,7 @@ export default async function PresetMarketplaceDetailPage({ params, searchParams
 							<div className="border-b pb-3"><h2 className="font-heading text-xl font-semibold">{t("whatsIncluded")}</h2><p className="mt-1 text-sm text-muted-foreground">{t("includedDescription")}</p></div>
 							<div className="grid gap-px overflow-hidden rounded-lg border bg-border sm:grid-cols-2">
 								<Feature icon={Layers3} label={t("models")} value={models.length ? `${models.length} ${t("configured")}` : t("workspaceDefault")} />
-								<Feature icon={Route} label="Routing" value={humanize(config.routing_mode ?? "balanced")} />
+								<Feature icon={Route} label={t("routing")} value={humanize(config.routing_mode ?? "balanced")} />
 								<Feature icon={Box} label={t("providers")} value={providers.length ? `${providers.length} ${t("prioritized")}` : t("anyEligibleProvider")} />
 								<Feature icon={ShieldCheck} label={t("responseCache")} value={config.response_caching?.enabled ? `${t("enabled")} · ${config.response_caching.ttl_seconds ?? 300}s` : t("disabled")} />
 							</div>
@@ -59,7 +67,7 @@ export default async function PresetMarketplaceDetailPage({ params, searchParams
 
 						{models.length ? <section className="space-y-4"><h2 className="font-heading text-xl font-semibold">{t("modelCoverage")}</h2><div className="divide-y overflow-hidden rounded-lg border">{models.map((model, index) => <div key={model} className="flex items-center gap-3 px-4 py-3"><span className="flex size-7 items-center justify-center rounded-md border bg-muted/30 text-xs font-medium">{index + 1}</span><span className="font-mono text-sm">{model}</span>{index === 0 ? <Badge variant="secondary" className="ml-auto rounded-md">{t("default")}</Badge> : null}</div>)}</div></section> : null}
 
-						<section className="space-y-4"><div className="flex flex-wrap items-end justify-between gap-3"><div><h2 className="font-heading text-xl font-semibold">{t("versionHistory")}</h2><p className="mt-1 text-sm text-muted-foreground">{t("versionDescription")}</p></div></div><div className="flex flex-wrap gap-2">{versions.map((version) => <Button key={version.id} size="sm" variant={resolvedVersion?.id === version.id ? "default" : "outline"} className="rounded-md" asChild><Link href={`/gateway/marketplace/${presetId}?version=${version.version_number}`}>{version.version_label}</Link></Button>)}</div>{resolvedVersion ? <div className="flex flex-col gap-2 rounded-lg border px-4 py-3 text-sm sm:flex-row sm:items-center sm:justify-between"><div><span className="font-medium">{resolvedVersion.version_label}</span>{resolvedVersion.release_notes ? <p className="mt-1 text-muted-foreground">{resolvedVersion.release_notes}</p> : <p className="mt-1 text-muted-foreground">{t("noReleaseNotes")}</p>}</div><span className="flex shrink-0 items-center gap-1.5 text-xs text-muted-foreground"><CalendarDays className="size-3.5" />{new Intl.DateTimeFormat("en", { dateStyle: "medium" }).format(new Date(resolvedVersion.created_at))}</span></div> : null}</section>
+						<section className="space-y-4"><div className="flex flex-wrap items-end justify-between gap-3"><div><h2 className="font-heading text-xl font-semibold">{t("versionHistory")}</h2><p className="mt-1 text-sm text-muted-foreground">{t("versionDescription")}</p></div></div><div className="flex flex-wrap gap-2">{versions.map((version) => <Button key={version.id} size="sm" variant={resolvedVersion?.id === version.id ? "default" : "outline"} className="rounded-md" asChild><Link href={`/gateway/marketplace/${presetId}?version=${version.version_number}`}>{version.version_label}</Link></Button>)}</div>{resolvedVersion ? <div className="flex flex-col gap-2 rounded-lg border px-4 py-3 text-sm sm:flex-row sm:items-center sm:justify-between"><div><span className="font-medium">{resolvedVersion.version_label}</span>{resolvedVersion.release_notes ? <p className="mt-1 text-muted-foreground">{resolvedVersion.release_notes}</p> : <p className="mt-1 text-muted-foreground">{t("noReleaseNotes")}</p>}</div><span className="flex shrink-0 items-center gap-1.5 text-xs text-muted-foreground"><CalendarDays className="size-3.5" />{new Intl.DateTimeFormat(locale, { dateStyle: "medium" }).format(new Date(resolvedVersion.created_at))}</span></div> : null}</section>
 
 						<details className="rounded-lg border"><summary className="cursor-pointer px-4 py-3 text-sm font-medium">{t("technicalConfiguration")}</summary><Separator /><pre className="max-h-[32rem] overflow-auto p-4 text-xs leading-5 text-muted-foreground">{JSON.stringify(config, null, 2)}</pre></details>
 					</div>

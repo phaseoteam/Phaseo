@@ -1,0 +1,80 @@
+---
+title: "Google Gemini 3.1"
+description: "Wichtige Hinweise zur Einführung von Gemini 3.1, einschließlich Reasoning-Steuerung, multimodaler Verarbeitung und Thought Signatures."
+icon: "/icons/brands/google.svg"
+---
+
+# Google Gemini 3.1
+
+Mit diesem Leitfaden führen Sie die Gemini-3.1-Familie sicher in der Produktion ein:
+
+- `google/gemini-3-pro-preview`
+- `google/gemini-3-flash-preview`
+- `google/gemini-3.1-pro-preview`
+- `google/gemini-3.1-flash-lite-preview`
+
+Gemini 3 brachte tatsächliche API-Änderungen für Reasoning-Steuerung und multimodale Verarbeitung. Gemini 3.1 hob den Ausgangspunkt erneut an, besonders bei komplexen, reasoning-intensiven Aufgaben.
+
+## Neuerungen
+
+- Gemini 3 führte `thinking_level` als wichtigste Steuerung der Reasoning-Tiefe ein.
+- Gemini 3 ergänzte `media_resolution` für multimodale Bildverarbeitung.
+- Gemini 3 verwendet Thought Signatures, um Reasoning-Kontext über Aufrufe hinweg zu erhalten.
+- In strengeren Workflows können fehlende Thought Signatures die Qualität mindern oder `400`-Fehler verursachen.
+- Gemini 3.1 Pro bietet ein stärkeres Reasoning-Modell für komplexe Aufgaben und agentische Workflows.
+
+## Schnelleinstieg für die Migration
+
+### 1. Reasoning-Steuerung neu zuordnen
+
+Wenn Ihre Anwendung einen allgemeinen Reasoning-Regler anbietet, ordnen Sie ihn für Gemini-3-Routen sorgfältig zu. In OpenAI-kompatiblen Abläufen entspricht `reasoning_effort` konzeptionell `thinking_level`, das Verhalten ist jedoch nicht identisch und muss erneut getestet werden.
+
+### 2. Thought Signatures korrekt behandeln
+
+Bei den offiziellen Gemini-SDKs und einem üblichen Chatverlauf werden Signaturen normalerweise automatisch verarbeitet. Wenn Sie niedrigere Request-Ebenen verwenden, insbesondere bei Funktionsaufrufen oder Bildgenerierung und -bearbeitung, müssen Sie die zurückgegebenen Signaturen unverändert speichern und wie erforderlich zurücksenden.
+
+### 3. Prompt-Stil überprüfen
+
+Die Gemini-3-Empfehlungen setzen eher auf direkte Prompts und parameterbasierte Steuerung als auf lange Prompt-Gerüste. Wenn Ihre Prompts noch stark das Verhalten älterer Modelle ausgleichen, vereinfachen und bewerten Sie sie erneut.
+
+### 4. Multimodale Einstellungen abstimmen
+
+Wenn Ihre Routen Bilder, Dokumente oder gemischte Medien enthalten, testen Sie `media_resolution` erneut, statt von passenden alten Standardwerten auszugehen.
+
+## Was Sie testen sollten
+
+### Prompt- und Reasoning-Verhalten
+
+- knappe Prompts im Vergleich zu stark strukturierten Prompts
+- schrittweise Reasoning-Aufgaben
+- Synthese langer Kontexte
+- Agenten-Workflows, die Reasoning-Kontinuität benötigen
+
+### Antwortverarbeitung
+
+- Erhalt von Signaturen über mehrere Turns
+- Erfolgsrate von Funktionsaufrufen
+- Schema-Erfolgsrate
+- leere, unvollständige oder fehlerhafte Ausgaben nach Änderungen an der Thinking-Steuerung
+
+### Produktionsmetriken
+
+- Latenz je `thinking_level`
+- Tokenverbrauch und Kosten
+- Leistung multimodaler Routen mit verschiedenen `media_resolution`-Einstellungen
+- Aufgabenerfolg im Vergleich zwischen Gemini 3 und Gemini 3.1 Pro
+
+## Rollout-Empfehlungen
+
+Behandeln Sie Gemini 3 und Gemini 3.1 als getrennte Migrationen.
+
+1. Migrieren Sie zuerst das Anfrageformat und den Umgang mit Signaturen.
+2. Wiederholen Sie anschließend Prompt- und Schema-Auswertungen mit Gemini 3.
+3. Führen Sie Gemini 3.1 Pro separat für Routen ein, die tieferes Reasoning benötigen.
+4. Halten Sie für hohe Workloads einen einfacheren oder günstigeren Fallback bereit.
+
+## Quellen
+
+- [Gemini-3-Entwicklerleitfaden](https://ai.google.dev/gemini-api/docs/gemini-3)
+- [Neue Gemini-API-Updates für Gemini 3](https://developers.googleblog.com/en/new-gemini-api-updates-for-gemini-3/)
+- [Ankündigung von Gemini 3.1 Pro](https://blog.google/innovation-and-ai/models-and-research/gemini-models/gemini-3-1-pro/)

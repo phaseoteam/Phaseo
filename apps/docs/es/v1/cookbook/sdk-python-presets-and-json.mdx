@@ -1,0 +1,132 @@
+---
+title: "Publicar JSON estructurado con el SDK de Python y ajustes predefinidos"
+icon: "braces"
+description: "Usa el SDK oficial de Python con ajustes predefinidos, salidas estructuradas y depuración por solicitud sin recurrir a llamadas HTTP sin procesar."
+---
+
+Usa esta receta cuando un servicio de Python deba usar valores predeterminados gestionados desde el panel en lugar de repetir la configuración de prompts, enrutamiento y parámetros en cada solicitud.
+
+## Objetivo
+
+- mantener pequeño el código de Python que hace la llamada
+- usar el identificador de un ajuste predefinido para enrutar, en vez de fijar un modelo en el código
+- solicitar una salida estructurada estricta
+- conservar suficientes metadatos de respuesta para depurar el enrutamiento o el comportamiento de los plugins
+
+## 1. Empieza con un cliente compartido
+
+```python
+import os
+
+from phaseo import Phaseo
+
+gateway = Phaseo(api_key=os.environ["PHASEO_API_KEY"])
+```
+
+Comparte el cliente en lugar de crear uno para cada solicitud.
+
+## 2. Traslada los valores predeterminados estables a un ajuste predefinido
+
+Crea un ajuste predefinido en **Panel -> Configuración -> Ajustes predefinidos** cuando debas mantener estables estos valores para varios clientes:
+
+- el prompt del sistema
+- el modelo o la lista de modelos permitidos
+- las preferencias de proveedores
+- la configuración de razonamiento
+- la temperatura y otros parámetros de generación relacionados
+- la política de caché de respuestas cuando sea importante repetir resultados deterministas
+
+Una vez creado el ajuste predefinido, el código de Python que hace la llamada puede mantenerse acotado.
+
+## 3. Solicita una forma JSON estricta
+
+```python
+response = gateway.generate_response(
+    {
+        "preset": "release-summary",
+        "input": "Summarize the last 24 hours of deployment activity.",
+        "response_format": {
+            "type": "json_schema",
+            "name": "release_summary",
+            "schema": {
+                "type": "object",
+                "required": ["summary", "risk_level"],
+                "properties": {
+                    "summary": {"type": "string"},
+                    "risk_level": {
+                        "type": "string",
+                        "enum": ["low", "medium", "high"],
+                    },
+                },
+                "additionalProperties": False,
+            },
+        },
+        "plugins": [{"id": "response-healing"}],
+        "meta": True,
+    }
+)
+```
+
+Por qué funciona bien esta estructura:
+
+- `preset` mantiene el enrutamiento y los prompts predeterminados fuera del código de la aplicación
+- `response_format` hace explícito el contrato
+- `plugins` puede recuperar JSON mal formado pero casi válido si el flujo de trabajo lo permite
+- `meta` conserva detalles de enrutamiento y ejecución de plugins para depurar
+
+## 4. Analiza el JSON y registra los identificadores operativos
+
+```python
+import json
+
+message_text = ""
+for item in response.get("output", []):
+    if item.get("type") != "message":
+        continue
+    for part in item.get("content", []):
+        if part.get("type") == "output_text":
+            message_text = part.get("text", "")
+            break
+
+payload = json.loads(message_text)
+
+print("response_id:", response.get("id"))
+print("selected_provider:", response.get("meta", {}).get("routing", {}).get("selected_provider"))
+print("plugin_executions:", response.get("meta", {}).get("plugin_executions"))
+print(payload)
+```
+
+Para los workers de Python, esto suele bastar para relacionar una línea de registro de la aplicación con:
+
+- el diálogo de detalles de la solicitud en el panel
+- los diagnósticos de enrutamiento
+- los metadatos de ejecución de plugins
+
+## 5. Depura antes de añadir excepciones
+
+Si una solicitud se enruta de forma distinta a la esperada:
+
+1. abre la solicitud en **Gateway -> Uso**
+2. revisa los diagnósticos de enrutamiento y los proveedores candidatos
+3. revisa los metadatos de ejecución de plugins si la solicitud incluía JSON estructurado
+4. modifica el ajuste predefinido solo después de que los registros muestren lo que ocurrió
+
+No intentes corregir una solicitud problemática añadiendo muchas excepciones en línea. Eso suele anular las ventajas de usar ajustes predefinidos.
+
+## 6. Mantén la compatibilidad con la caché si quieres reutilizar resultados
+
+Si el ajuste predefinido activa la caché de respuestas:
+
+- mantén estable la redacción del prompt
+- mantén estable el esquema de respuesta
+- evita excepciones innecesarias de proveedores en cada solicitud
+- evita listas de herramientas que cambien constantemente
+
+Si un cliente realmente necesita un comportamiento distinto, asígnale otro ajuste predefinido en vez de reducir la reutilización de caché del flujo compartido.
+
+## Guías relacionadas
+
+- [Desplegar ajustes predefinidos y depurar el enrutamiento](./preset-rollout-and-routing-debug.mdx)
+- [Usar caché de respuestas con ajustes predefinidos](./response-caching-with-presets.mdx)
+- [Usar la reparación de respuestas para JSON estructurado](./response-healing-for-structured-json.mdx)
+- [Descripción general del SDK de Python](../sdk-reference/python/overview.mdx)

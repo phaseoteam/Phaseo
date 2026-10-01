@@ -12,14 +12,18 @@ export function flagEmojiFromIso(iso: string) {
 	return String.fromCodePoint(...codePoints);
 }
 
-export function formatCountryDate(value: string | null | undefined) {
-	if (!value) return "Unknown";
+export function formatCountryDate(
+	value: string | null | undefined,
+	locale = "en-US",
+	unknownLabel = "Unknown",
+) {
+	if (!value) return unknownLabel;
 	const parsed = new Date(value);
-	if (Number.isNaN(parsed.getTime())) return "Unknown";
-	return parsed.toLocaleString("en-US", {
+	if (Number.isNaN(parsed.getTime())) return unknownLabel;
+	return new Intl.DateTimeFormat(locale, {
 		month: "short",
 		year: "numeric",
-	});
+	}).format(parsed);
 }
 
 export function normaliseIso(isoInput: string | undefined) {

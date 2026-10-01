@@ -1,0 +1,63 @@
+---
+title: "Cline"
+description: "Conecta Cline a Phaseo mediante su proveedor compatible con OpenAI."
+---
+
+Phaseo CLI crea y administra una clave dedicada para Cline. Cline guarda las credenciales en el almacén seguro de VS Code, por lo que la entrada final se realiza en la interfaz de la extensión.
+
+## Crear la credencial
+
+```bash
+phaseo login
+phaseo integrations setup cline --model anthropic/claude-sonnet-4.6
+```
+
+## Configurar Cline
+
+1. Abre el panel de Cline en VS Code.
+2. Selecciona el icono de configuración o el proveedor que aparece debajo del cuadro de chat.
+3. Elige **OpenAI Compatible**.
+4. Introduce estos valores:
+
+| Campo de Cline | Valor |
+| --- | --- |
+| Base URL | `https://api.phaseo.app/v1` |
+| API Key | Salida de `phaseo integrations credential cline` |
+| Model ID | `anthropic/claude-sonnet-4.6` o el modelo que indique la configuración |
+
+5. Guarda el proveedor. Si tu versión muestra **Verify**, selecciónalo.
+6. Selecciona el modelo configurado para la siguiente tarea.
+
+## Verificar
+
+Pídele a Cline que responda `PHASEO_CLINE_OK` y confirma que la solicitud aparece en la actividad de Phaseo.
+
+## Eliminar
+
+Elimina o cambia el proveedor de Phaseo en Cline y luego ejecuta:
+
+```bash
+phaseo integrations remove cline
+```
+
+La CLI no puede borrar el almacenamiento privado de extensiones de VS Code, pero la eliminación revoca la clave almacenada.
+
+## Solución de problemas
+
+### Falla la verificación
+
+Mantén la URL base exactamente como se muestra, incluido `/v1`, y pega una clave recién recuperada sin comillas ni espacios en blanco.
+
+### La lista de modelos está vacía
+
+Introduce manualmente el ID del modelo de Phaseo. No es necesario descubrir modelos.
+
+### El chat funciona, pero las herramientas fallan
+
+Elige un modelo de Phaseo compatible con llamadas a herramientas. La conectividad y la compatibilidad del modelo con herramientas son comprobaciones independientes.
+
+## Relacionado
+
+- [Configuración de Cline para OpenAI compatible](https://docs.cline.bot/enterprise-solutions/configuration/remote-configuration/openai-compatible/member-configuration)
+- [Asistentes de programación](./coding-assistants.mdx)
+- [Modelos](../../api-reference/endpoint/models.mdx)

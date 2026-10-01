@@ -1,0 +1,58 @@
+---
+title: "Buenas prácticas"
+description: "Publica funciones de IA fiables con estas pautas de arquitectura, seguridad y observabilidad."
+icon: "clipboard-check"
+---
+
+Integrar Gateway en cargas de producción es sencillo si estableces una buena base. Sigue estas recomendaciones para mejorar la resiliencia, la seguridad y el mantenimiento.
+
+---
+
+## Arquitectura
+
+-   **Aísla la lógica de los proveedores.** Encapsula las llamadas a Gateway en un servicio o SDK específico para limitar los cambios.
+-   **Transmite las respuestas cuando sea posible.** Reduce la latencia de los asistentes enviando tokens a la interfaz a medida que llegan.
+-   **Agrupa los trabajos no críticos.** Pon en cola las generaciones o evaluaciones en segundo plano para suavizar los picos de tráfico.
+
+---
+
+## Seguridad
+
+-   En producción, guarda las claves de API en gestores de secretos (AWS Secrets Manager, Doppler o 1Password), no en archivos `.env`.
+-   Firma las solicitudes a tus propias API para que las aplicaciones cliente nunca expongan las claves de Gateway.
+-   Registra las claves solo de forma truncada (por ejemplo, `sk_prod_abcd...`) para evitar revelar credenciales.
+
+---
+
+## Fiabilidad
+
+-   Implementa retroceso exponencial con variación aleatoria para todos los errores reintentables (HTTP 429 o 5xx).
+-   Antes de volver a intentar solicitudes limitadas, respeta el encabezado [`Retry-After`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Retry-After).
+-   Supervisa los metadatos de los proveedores para detectar cambios automáticos de un proveedor a otro.
+
+---
+
+## Observabilidad
+
+| Señal        | Acción recomendada                                                |
+| ------------- | ----------------------------------------------------------------- |
+| Latencia       | Supervisa los tiempos p95 y p99 para detectar regresiones cuanto antes.             |
+| Uso de tokens   | Relaciona los costes con las métricas de negocio para evaluar el retorno de la inversión.            |
+| Tasa de errores   | Activa una alerta si los fallos superan el 1 % durante un periodo sostenido.             |
+| Distribución de proveedores  | Comprueba que el tráfico se distribuya entre proveedores como esperas.         |
+
+---
+
+## Colaboración
+
+-   Documenta las plantillas de instrucciones, los parámetros de entrada y el tratamiento de resultados en la wiki interna.
+-   Comparte paneles que destaquen los cambios en las evaluaciones comparativas y su impacto en el producto.
+-   Fomenta revisiones periódicas con los equipos de producto, investigación y soporte para mantener el comportamiento alineado.
+
+---
+
+## Lecturas adicionales
+
+-   Aprende a [gestionar errores](./error-handling.mdx) correctamente.
+-   Consulta los [límites de frecuencia](./rate-limits.mdx) para planificar la escala.
+-   Revisa los [ejemplos](../guides/examples.mdx) de referencia.

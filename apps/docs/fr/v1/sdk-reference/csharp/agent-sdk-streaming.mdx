@@ -1,0 +1,25 @@
+---
+icon: "radio"
+title: "Flux"
+description: "Diffusez le texte et les événements du cycle de vie d’un agent avec des séquences asynchrones réitérables."
+---
+
+`Agent.Stream(...)` exécute la même machine à états que `Run(...)` et renvoie `AgentStreamResult` :
+
+```csharp
+var stream = agent.Stream(new RunOptions { Input = input, Client = client });
+
+await foreach (var delta in stream.TextStream())
+{
+    Console.Write(delta);
+}
+
+var completed = await stream.GetResult();
+```
+
+Utilisez `FullStream()` pour obtenir les événements du modèle, des outils, des étapes et de l’exécution. Les consommateurs peuvent relire indépendamment la séquence asynchrone capturée. Appelez `Cancel()` lorsque le produit doit arrêter l’exécution en cours ; l’annulation est transmise aux requêtes du modèle et aux outils locaux.
+
+## À lire aussi
+
+- [Outils](./agent-sdk-tools.mdx)
+- [Observabilité et DevTools](./agent-sdk-observability.mdx)

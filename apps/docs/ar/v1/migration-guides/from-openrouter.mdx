@@ -1,0 +1,209 @@
+---
+title: "الترحيل من OpenRouter إلى Phaseo"
+sidebarTitle: "OpenRouter"
+description: "استخدم Phaseo بديلًا لـ OpenRouter عبر تغيير عنوان URL للبوابة ومفتاح API والتحقق من النماذج واختبار الطرح التدريجي."
+icon: "arrow-right-left"
+---
+
+Phaseo بديل متوافق مع OpenAI لـ OpenRouter. إذا كان تطبيقك يستخدم OpenRouter عبر OpenAI SDK أو طلبات HTTP مباشرة، فعادةً يمكنك الترحيل عند حدّ العميل دون إعادة كتابة المطالبات أو منطق التطبيق.
+
+## ما الذي سيتغير
+
+| الإعداد | OpenRouter | Phaseo |
+| --- | --- | --- |
+| عنوان URL الأساسي | `https://openrouter.ai/api/v1` | `https://api.phaseo.app/v1` |
+| متغير مفتاح API | `OPENROUTER_API_KEY` | `PHASEO_API_KEY` |
+| المصادقة | `Authorization: Bearer <key>` | `Authorization: Bearer <key>` |
+| حمولة الطلب | متوافقة مع OpenAI | اتركها كما هي في المرحلة الأولى |
+| معرّفات النماذج | كتالوج OpenRouter | تحقّق من كل معرّف عبر `GET /v1/models` |
+
+يتكوّن الترحيل من أربع خطوات:
+
+1. أبقِ شكل الحمولة كما هو.
+2. بدّل عنوان URL الأساسي ومصدر مفتاح API.
+3. تحقّق من معرّفات النماذج والعناوين الخاصة بـ OpenRouter.
+4. حوّل حركة المرور تدريجيًا وقارن زمن الاستجابة والمخرجات والتكلفة.
+
+## قبل البدء
+
+- الوصول إلى رمز تكامل OpenRouter الحالي وإعدادات النشر.
+- إتاحة `PHASEO_API_KEY` في التطوير والاختبار والإنتاج.
+- قائمة قصيرة بمعرّفات نماذج الإنتاج ومطالبات ممثلة.
+
+## 1) احصر استخدام OpenRouter الحالي
+
+ابحث عن كل موضع يذكر OpenRouter: عناوين URL والمفاتيح ومعرّفات النماذج والعناوين الخاصة بالمزوّد.
+
+- ابحث عن نقاط النهاية `openrouter.ai`.
+- ابحث عن `OPENROUTER_API_KEY` في الرمز وCI ومتغيرات بيئة الاستضافة.
+- ابحث عن العناوين الخاصة مثل `HTTP-Referer` و`X-Title`.
+- وثّق معرّفات النماذج النشطة ومنطق البدائل.
+- حدّد القيم المشتركة للمطالبات أو المزوّد أو المعلمات التي ينبغي نقلها إلى إعدادات Gateway مسبقة بدل تكرارها في رمز التطبيق.
+
+## 2) بدّل عنوان URL الأساسي وبيانات الاعتماد
+
+أبقِ حمولة الطلب كما هي أولًا، وتحقّق من تطابق السلوك قبل التحسين.
+
+<CodeGroup>
+```typescript TypeScript
+// Before
+import OpenAI from "openai";
+
+const before = new OpenAI({
+  apiKey: process.env.OPENROUTER_API_KEY,
+  baseURL: "https://openrouter.ai/api/v1",
+});
+
+const response = await before.chat.completions.create({
+  model: "openai/gpt-4.1-mini",
+  messages: [{ role: "user", content: "Summarize our migration plan." }],
+});
+```
+
+```typescript TypeScript
+// After
+import OpenAI from "openai";
+
+const after = new OpenAI({
+  apiKey: process.env.PHASEO_API_KEY,
+  baseURL: "https://api.phaseo.app/v1",
+});
+
+const response = await after.chat.completions.create({
+  model: "openai/gpt-4.1-mini",
+  messages: [{ role: "user", content: "Summarize our migration plan." }],
+});
+```
+
+```bash cURL
+# Before
+curl -s "https://openrouter.ai/api/v1/chat/completions" \
+  -H "Authorization: Bearer $OPENROUTER_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-4.1-mini",
+    "messages": [{"role":"user","content":"Say hello"}]
+  }'
+
+# After
+curl -s "https://api.phaseo.app/v1/chat/completions" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-4.1-mini",
+    "messages": [{"role":"user","content":"Say hello"}]
+  }'
+```
+</CodeGroup>
+
+## 3) تحقّق من معرّفات النماذج ومواءمة السلوك الخاص بـ OpenRouter
+
+لا تفترض أن كل الأسماء المستعارة السابقة صالحة. استعلم عن `/v1/models` وتحقّق من كل معرّف نموذج في الإنتاج. تتضمن الاستجابة الافتراضية النماذج المتاحة حاليًا للتوجيه العام فقط؛ استخدم `availability=all` فقط عند الحاجة إلى مراجعة التعيينات غير النشطة أو القادمة.
+
+<CodeGroup>
+```bash cURL
+curl -s "https://api.phaseo.app/v1/models" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" | jq '.data[0:10] | map(.id)'
+```
+</CodeGroup>
+
+- أبقِ تنسيق `Authorization: Bearer` دون تغيير.
+- احتفظ بـ `HTTP-Referer` و`X-Title` إذا كانا يعرّفان التطبيق المستدعي. يقبل Phaseo أيضًا الصيغتين بأحرف صغيرة `http-referer` و`x-title`.
+- إذا كان المستدعون يعتمدون على حقول استجابة خاصة بـ OpenRouter، فكيّفها في طبقة توافق واحدة.
+- انقل قوائم السماح/الرفض للمزوّدين وإعدادات التوجيه الافتراضية إلى [الإعدادات المسبقة](../guides/presets.mdx) و[التوجيه والبدائل](../guides/routing-and-fallbacks.mdx).
+
+لا تكرر تفضيلات مزوّدي OpenRouter أو حقول الاستجابة الخاصة به في كل استدعاء. اجمع الاختلافات في محوّل واحد كي يقتصر التراجع على تبديل URL وبيانات الاعتماد.
+
+### مواءمة عناصر التحكم بالمزوّدين
+
+| الحقل الحالي | حقل Phaseo | ملاحظات |
+| --- | --- | --- |
+| `provider.order` | `provider.order` | جرّب المزوّدين بالترتيب المفضّل. |
+| `provider.only` | `provider.only` | قصّر الطلب على مجموعة معتمدة. |
+| `provider.ignore` | `provider.ignore` | استبعد مزوّدين من الاختيار. |
+| `provider.sort` | `provider.sort` | يدعم `price` و`latency` و`throughput`. |
+| `provider.zdr` | `provider.require_zero_data_retention` | اشترط مسارًا يدعم عدم الاحتفاظ بالبيانات. |
+
+يدعم Phaseo أيضًا `provider.required_execution_region` و`provider.required_data_region` للأحمال التي تتطلب ضوابط إقليمية. راجع [تثبيت المزوّدين أو تجاهلهم](../cookbook/pin-or-ignore-providers-per-request.mdx) و[التوجيه إلى مزوّدي الاتحاد الأوروبي أو ZDR فقط](../cookbook/route-only-to-eu-or-zdr-providers.mdx) للاطلاع على طلبات كاملة.
+
+## 4) قائمة التحقق من التكافؤ مع OpenRouter
+
+قبل تحويل حركة مرور كبيرة، تحقّق من الآتي:
+
+- تحديث عنوان URL الأساسي إلى `https://api.phaseo.app/v1`.
+- استبدال `OPENROUTER_API_KEY` بـ `PHASEO_API_KEY` في كل البيئات.
+- التحقق من جميع معرّفات نماذج الإنتاج عبر `/v1/models`.
+- نجاح طلب دون بث عبر `/v1/chat/completions` أو `/v1/responses`.
+- نجاح طلب بث عبر مسار تكامل التطبيق المستخدم في الإنتاج.
+- إعادة التحقق من `GET /v1/generations?id=<request_id>` لإعادة تشغيل الإخفاقات من `replay_request` المخزّن عندما تكون `replay_supported=true`.
+- إعادة اختبار استدعاء الأدوات والمخرجات المنظّمة بمطالبات حقيقية.
+- التحقق في الاختبار من أخطاء المفتاح والنموذج غير الصالحين.
+- إزالة العناوين وحقول الاستجابة الخاصة بـ OpenRouter أو توحيدها صراحةً.
+- نقل القيم المشتركة للمطالبات والتوجيه إلى الإعدادات المسبقة عند الاقتضاء.
+
+### قائمة ترحيل لوكيل برمجي
+
+أعطِ وكيل البرمجة هذا التسلسل المحدد:
+
+1. ابحث في رمز التشغيل وإعدادات النشر عن `openrouter.ai` و`OPENROUTER_API_KEY` و`sk-or-v1` و`HTTP-Referer` و`X-Title`.
+2. غيّر حد العميل إلى `https://api.phaseo.app/v1` و`PHASEO_API_KEY` دون إضافة سر إلى نظام التحكم بالمصدر.
+3. استعلم عن `GET /v1/models` وسجّل كل مواءمة بين النماذج القديمة والجديدة.
+4. كيّف خيارات التوجيه أو حقول الاستجابة الخاصة بـ OpenRouter في وحدة توافق واحدة.
+5. نفّذ فحوص الصحة والنماذج والطلبات والبث ومسارات الفشل أدناه.
+6. أبلغ عن الملفات المعدلة وتغييرات أسماء الأسرار ومواءمات النماذج وأدلة الاختبار وفجوات التكافؤ وخيار التراجع.
+
+لسير عمل قابل لإعادة الاستخدام، راجع [دليل الترحيل من OpenRouter إلى Phaseo](https://github.com/phaseoteam/Phaseo/tree/main/.agents/skills/openrouter-to-phaseo-migration)، الذي يجمع متطلبات الحصر والمواءمة والتحقق والتقرير والتراجع.
+
+## 5) أطلق التغيير بأمان
+
+نفّذ الطرح على مراحل: التطوير أولًا، ثم نسبة صغيرة من الإنتاج، ثم كل الحركة بعد استقرار المقاييس.
+
+1. ابدأ بحركة المرور الداخلية فقط.
+2. انتقل إلى 5–10٪ من حركة الإنتاج وقارن الجودة وزمن الاستجابة والتكلفة.
+3. ارفعها إلى 100٪ بعد تأكيد التكافؤ.
+4. أبقِ التراجع مقتصرًا على تبديل URL والمفتاح حتى يستقر الانتقال.
+
+## أوامر التحقق
+
+```bash
+curl -s "https://api.phaseo.app/v1/health"
+curl -s "https://api.phaseo.app/v1/models" -H "Authorization: Bearer $PHASEO_API_KEY"
+curl -s "https://api.phaseo.app/v1/chat/completions" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -d '{"model":"openai/gpt-4.1-mini","messages":[{"role":"user","content":"Say hello"}]}'
+```
+
+اختبر البث منفصلًا عبر نقطة النهاية نفسها:
+
+```bash
+curl -N "https://api.phaseo.app/v1/chat/completions" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -d '{"model":"openai/gpt-4.1-mini","stream":true,"messages":[{"role":"user","content":"Reply with: stream works"}]}'
+```
+
+وتأكّد من أن التطبيق يتعامل مع نموذج غير صالح دون كشف بيانات الاعتماد:
+
+```bash
+curl -s "https://api.phaseo.app/v1/chat/completions" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -d '{"model":"invalid/migration-test","messages":[{"role":"user","content":"test"}]}'
+```
+
+بعد ذلك:
+
+- نفّذ طلب بث عبر اختبار تكامل التطبيق.
+- نفّذ اختبارًا سلبيًا لمفتاح أو نموذج غير صالح.
+- أعد تشغيل مجموعة صغيرة من المطالبات المرجعية وقارن المخرجات.
+
+## الخطوات التالية
+
+- [احصل على مساعدة مجانية لترحيل تكامل OpenRouter](https://phaseo.app/contact)
+- [افتح دليل الترحيل التفاعلي لـ OpenRouter](https://phaseo.app/migrate/openrouter)
+- [قارن Phaseo وOpenRouter](https://phaseo.app/compare/openrouter)
+- [البدء السريع](../quickstart.mdx)
+- [مرجع API: النماذج](../api-reference/endpoint/models.mdx)
+- [أمثلة](../guides/examples.mdx)
+- [معالجة الأخطاء](../developers/error-handling.mdx)

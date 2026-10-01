@@ -1,0 +1,86 @@
+---
+icon: "square-terminal"
+title: "Uso del SDK de Go"
+description: "Métodos de wrapper disponibles actualmente en el SDK de Go."
+---
+
+## Configuración
+
+```go
+import (
+  "context"
+  phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v2"
+)
+
+client := phaseo.New("<API_KEY>", "https://api.phaseo.app/v1")
+ctx := context.Background()
+```
+
+## Finalizaciones de chat
+
+```go
+chatReq := phaseo.ChatCompletionsRequest{
+  Model: "openai/gpt-5-nano",
+  Messages: []map[string]interface{}{
+    {"role": "user", "content": "Hello"},
+  },
+}
+chatResp, err := client.GenerateText(ctx, chatReq)
+```
+
+## Respuestas
+
+```go
+input := map[string]interface{}{
+  "role": "user",
+  "content": []map[string]interface{}{
+    {"type": "input_text", "text": "Reply with: go sdk works"},
+  },
+}
+resp, err := client.GenerateResponse(ctx, phaseo.ResponsesRequest{
+  Model: "openai/gpt-5-nano",
+  Input: &input,
+})
+```
+
+## Incrustaciones
+
+```go
+embedding, err := client.GenerateEmbedding(ctx, map[string]interface{}{
+  "model": "openai/text-embedding-3-large",
+  "input": "Sample text",
+})
+```
+
+## Moderaciones
+
+```go
+moderation, err := client.GenerateModeration(ctx, map[string]interface{}{
+  "model": "openai/omni-moderation-latest",
+  "input": "Some text to check",
+})
+```
+
+## Imágenes y audio
+
+```go
+image, err := client.CreateImage(ctx, map[string]interface{}{
+  "model": "openai/gpt-image-1",
+  "prompt": "A lighthouse at golden hour",
+})
+
+speech, err := client.CreateSpeech(ctx, map[string]interface{}{
+  "model": "openai/gpt-4o-mini-tts",
+  "input": "Hello from Go",
+})
+```
+
+## Modelos
+
+```go
+models, err := client.GetModels(ctx, map[string]string{"limit": "10"})
+```
+
+## Límites actuales
+
+El wrapper de Go ahora cubre chat, responses, imágenes, audio, embeddings, moderaciones, modelos, proveedores, lotes, archivos, consulta de generaciones, estado y utilidades de video. Las operaciones generadas de nivel inferior siguen disponibles para los endpoints que todavía no se han incorporado al wrapper escrito a mano, pero los tipos de solicitud comunes se vuelven a exportar desde el paquete del wrapper.

@@ -2,8 +2,11 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
+import type { SubscriptionPlansMessages } from "@/i18n/subscription-plans";
 
 interface RotatingPricingProps {
+	locale: string;
+	messages: Pick<SubscriptionPlansMessages["detail"], "usageBased" | "customPricing" | "monthlySuffix" | "quarterlySuffix" | "yearlySuffix" | "weeklySuffix" | "dailySuffix">;
 	prices?: {
 		price: number;
 		currency: string;
@@ -11,7 +14,7 @@ interface RotatingPricingProps {
 	}[];
 }
 
-export default function RotatingPricing({ prices }: RotatingPricingProps) {
+export default function RotatingPricing({ prices, locale, messages }: RotatingPricingProps) {
 	const [currentIndex, setCurrentIndex] = useState(0);
 	const priceCount = prices?.length ?? 0;
 
@@ -36,15 +39,31 @@ export default function RotatingPricing({ prices }: RotatingPricingProps) {
 		currency: string,
 		frequency: string
 	) => {
-		const normalizedFrequency = frequency.toLowerCase();
+		const frequencyAliases: Record<string, string> = {
+			mo: "monthly",
+			month: "monthly",
+			monthly: "monthly",
+			qtr: "quarterly",
+			quarter: "quarterly",
+			quarterly: "quarterly",
+			yr: "yearly",
+			year: "yearly",
+			annual: "yearly",
+			yearly: "yearly",
+			week: "weekly",
+			weekly: "weekly",
+			day: "daily",
+			daily: "daily",
+		};
+		const normalizedFrequency = frequencyAliases[frequency.trim().toLowerCase()] ?? frequency.trim().toLowerCase();
 		if (normalizedFrequency === "usage") {
-			return "Usage-based";
+			return messages.usageBased;
 		}
 		if (normalizedFrequency === "custom") {
-			return "Custom pricing";
+			return messages.customPricing;
 		}
 
-		const formatter = new Intl.NumberFormat("en-US", {
+		const formatter = new Intl.NumberFormat(locale, {
 			style: "currency",
 			currency: currency,
 			minimumFractionDigits: 0,
@@ -53,14 +72,18 @@ export default function RotatingPricing({ prices }: RotatingPricingProps) {
 
 		const period =
 			normalizedFrequency === "monthly"
-				? "/mo"
+				? messages.monthlySuffix
+				: normalizedFrequency === "quarterly"
+				? messages.quarterlySuffix
 				: normalizedFrequency === "yearly"
-				? "/yr"
+				? messages.yearlySuffix
+				: normalizedFrequency === "weekly"
+				? messages.weeklySuffix
 				: normalizedFrequency === "daily"
-				? "/day"
+				? messages.dailySuffix
 				: "";
 
-		return `${formatter.format(price)}${period}`;
+		return `${formatter.format(price)}${period ? ` ${period}` : ""}`;
 	};
 
 	return (

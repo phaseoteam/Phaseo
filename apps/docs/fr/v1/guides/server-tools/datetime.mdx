@@ -1,0 +1,84 @@
+---
+icon: "clock-3"
+title: "Outil de date et heure"
+description: "Fournissez aux modèles la date et l’heure actuelles dans un ou plusieurs fuseaux horaires."
+---
+
+Utilisez `phaseo:datetime` lorsque votre requête dépend de la date actuelle, du jour de la semaine, de l’heure ou du fuseau horaire.
+
+Le modèle décide quand appeler l’outil. Phaseo renvoie au modèle les fuseaux horaires résolus et les horodatages actuels, puis le modèle rédige la réponse finale.
+
+## Démarrage rapide
+
+```bash
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-5-nano",
+    "messages": [
+      { "role": "user", "content": "What day of the week is it in Tokyo?" }
+    ],
+    "tools": [
+      {
+        "type": "phaseo:datetime",
+        "parameters": {
+          "timezones": ["Asia/Tokyo", "UTC"]
+        }
+      }
+    ]
+  }'
+```
+
+## Configuration
+
+```json
+{
+  "type": "phaseo:datetime",
+  "parameters": {
+    "timezones": ["Europe/London", "UTC"]
+  }
+}
+```
+
+| Paramètre | Type | Valeur par défaut | Description |
+| --- | --- | --- | --- |
+| `timezones` | string[] | `["UTC"]` | Jusqu’à 5 noms de fuseaux horaires IANA à renvoyer dans un appel d’outil, par exemple `["Europe/London", "UTC"]`. |
+
+## Résultat de l’outil
+
+Le résultat de l’outil contient une entrée pour chaque fuseau horaire demandé.
+
+```json
+{
+  "timezones": [
+    {
+      "timezone": "Europe/London",
+      "datetime": "2026-07-03T10:00:00.123+01:00"
+    },
+    {
+      "timezone": "UTC",
+      "datetime": "2026-07-03T09:00:00.123+00:00"
+    }
+  ]
+}
+```
+
+## Utilisation
+
+Les appels Datetime incrémentent :
+
+```json
+{
+  "usage": {
+    "server_tool_use": {
+      "datetime_requests": 1
+    }
+  }
+}
+```
+
+## Pages associées
+
+- [Outils serveur](./index.mdx)
+- [Appels d’outils](../tool-calling.mdx)

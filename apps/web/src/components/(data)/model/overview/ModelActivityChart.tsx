@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import { useQueryState } from "nuqs";
 import { Bar, BarChart, CartesianGrid, Cell, XAxis, YAxis } from "recharts";
 import {
@@ -44,30 +45,30 @@ type RequestsActivityShapeProps = {
 const TOKEN_SERIES = [
 	{
 		key: "inputTokens",
-		label: "Prompt",
+		label: "prompt",
 		color: "hsl(199 89% 48%)",
-		description: "Prompt tokens measure input size.",
+		description: "promptDescription",
 	},
 	{
 		key: "reasoningTokens",
-		label: "Reasoning",
+		label: "reasoning",
 		color: "hsl(38 92% 50%)",
-		description: "Reasoning tokens show internal thinking before a response.",
+		description: "reasoningDescription",
 	},
 	{
 		key: "outputTokens",
-		label: "Completion",
+		label: "completion",
 		color: "hsl(158 64% 42%)",
-		description: "Completion tokens reflect total output length.",
+		description: "completionDescription",
 	},
 ] as const;
 
 const REQUEST_SERIES = [
 	{
 		key: "requestCount",
-		label: "Requests",
+		label: "requests",
 		color: "hsl(350 68% 48%)",
-		description: "Requests measure successful gateway calls for this model.",
+		description: "requestsDescription",
 	},
 ] as const;
 
@@ -92,10 +93,10 @@ function formatPaceGain(value: number): string {
 	return `+${safeValue.toFixed(0)}`;
 }
 
-function formatDayLabel(value: string): string {
+function formatDayLabel(value: string, locale: string): string {
 	const date = new Date(`${value}T00:00:00.000Z`);
 	if (!Number.isFinite(date.getTime())) return value;
-	return date.toLocaleDateString("en-GB", {
+	return date.toLocaleDateString(locale, {
 		day: "2-digit",
 		month: "short",
 	});
@@ -163,8 +164,27 @@ function RequestsActivityShape({
 export default function ModelActivityChart({
 	rows,
 	showHeading = false,
-	description = "Daily gateway activity over the last 30 days, with current UTC-day pace projection.",
+	description: suppliedDescription,
 }: ModelActivityChartProps) {
+	const locale = useLocale();
+	const t = useTranslations("Catalogue.models.detail.activityChart");
+	const description = suppliedDescription ?? t("description");
+	const tokenSeries = useMemo(
+		() => TOKEN_SERIES.map((series) => ({
+			...series,
+			label: t(series.label),
+			description: t(series.description),
+		})),
+		[t],
+	);
+	const requestSeries = useMemo(
+		() => REQUEST_SERIES.map((series) => ({
+			...series,
+			label: t(series.label),
+			description: t(series.description),
+		})),
+		[t],
+	);
 	const [modeParam, setModeParam] = useQueryState("activityMetric", {
 		defaultValue: "tokens",
 	});
@@ -260,26 +280,26 @@ export default function ModelActivityChart({
 
 		const chartConfig = Object.fromEntries(
 			[
-				...TOKEN_SERIES,
-				...REQUEST_SERIES,
+				...tokenSeries,
+				...requestSeries,
 				{
 					key: "projectedPace",
-					label: "Projected pace",
+					label: t("projectedPace"),
 					color: "hsl(0 0% 70% / 0.5)",
 				},
 				{
 					key: "projectedOverlayTotal",
-					label: "Projected total",
+					label: t("projectedTotal"),
 					color: "hsl(0 0% 70% / 0.5)",
 				},
 			].map((series) => [series.key, { label: series.label, color: series.color }]),
 		) as ChartConfig;
 
 		return { chartData, chartConfig };
-	}, [mode, rows]);
+	}, [mode, requestSeries, rows, t, tokenSeries]);
 
-	const activeSeries = mode === "tokens" ? TOKEN_SERIES : REQUEST_SERIES;
-	const legendSeries = mode === "tokens" ? TOKEN_SERIES : REQUEST_SERIES;
+	const activeSeries = mode === "tokens" ? tokenSeries : requestSeries;
+	const legendSeries = mode === "tokens" ? tokenSeries : requestSeries;
 	const getSeriesOpacity = (seriesKey: string) =>
 		hoveredSeriesKey && hoveredSeriesKey !== seriesKey
 			? INACTIVE_SERIES_OPACITY
@@ -290,7 +310,7 @@ export default function ModelActivityChart({
 			{showHeading ? (
 				<div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
 					<div className="space-y-1">
-						<h2 className="text-xl font-semibold tracking-tight">Activity</h2>
+						<h2 className="text-xl font-semibold tracking-tight">{t("title")}</h2>
 						<p className="text-sm text-muted-foreground">
 							{description}
 						</p>
@@ -300,13 +320,13 @@ export default function ModelActivityChart({
 						onValueChange={(value) => setModeParam(value as ActivityMode)}
 					>
 						<SelectTrigger className="h-8 w-[140px] rounded-lg text-xs sm:mt-0.5">
-							<SelectValue placeholder="Metric">
-								{mode === "requests" ? "Requests" : "Tokens"}
+							<SelectValue placeholder={t("metric")}>
+								{mode === "requests" ? t("requests") : t("tokens")}
 							</SelectValue>
 						</SelectTrigger>
 						<SelectContent align="end">
-							<SelectItem value="tokens">Tokens</SelectItem>
-							<SelectItem value="requests">Requests</SelectItem>
+							<SelectItem value="tokens">{t("tokens")}</SelectItem>
+							<SelectItem value="requests">{t("requests")}</SelectItem>
 						</SelectContent>
 					</Select>
 				</div>
@@ -336,7 +356,7 @@ export default function ModelActivityChart({
 					<CartesianGrid vertical={false} className="stroke-muted" />
 					<XAxis
 						dataKey="day"
-						tickFormatter={(value) => formatDayLabel(String(value))}
+						tickFormatter={(value) => formatDayLabel(String(value), locale)}
 						tickLine={false}
 						axisLine={false}
 						minTickGap={20}
@@ -375,7 +395,7 @@ export default function ModelActivityChart({
 							return (
 								<div className="grid min-w-[12.5rem] items-start gap-1.5 rounded-lg border border-zinc-200/50 bg-white px-2.5 py-1.5 text-xs shadow-xl dark:border-zinc-800/50 dark:bg-zinc-950">
 									<p className="font-medium text-foreground">
-										{formatDayLabel(String(label ?? ""))}
+										{formatDayLabel(String(label ?? ""), locale)}
 									</p>
 									<div className="space-y-1">
 										{mode === "requests" && actualValue > 0 ? (
@@ -385,7 +405,7 @@ export default function ModelActivityChart({
 														className="size-2 rounded-[2px]"
 														style={{ backgroundColor: REQUEST_SERIES[0].color }}
 													/>
-													<span>Requests</span>
+												<span>{t("requests")}</span>
 												</div>
 												<span className="font-medium tabular-nums">
 													{formatCompactNumber(actualValue)}
@@ -415,7 +435,7 @@ export default function ModelActivityChart({
 									<div className="space-y-0.5 border-t border-border/60 pt-1.5 text-xs">
 										<div className="flex items-center justify-between gap-4">
 											<span className="text-muted-foreground">
-												{isCurrentDay ? "So far" : "Total"}
+											{isCurrentDay ? t("soFar") : t("total")}
 											</span>
 											<span className="whitespace-nowrap tabular-nums">
 												{formatCompactNumber(actualValue)}
@@ -424,7 +444,7 @@ export default function ModelActivityChart({
 										{isCurrentDay ? (
 											<>
 												<div className="flex items-center justify-between gap-4">
-													<span className="text-muted-foreground">Daily pace</span>
+													<span className="text-muted-foreground">{t("dailyPace")}</span>
 													<span className="whitespace-nowrap tabular-nums">
 														{formatCompactNumber(projectedTotal)} ({formatPaceGain(projectedAdditional)})
 													</span>

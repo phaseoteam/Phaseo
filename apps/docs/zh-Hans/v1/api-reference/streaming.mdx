@@ -1,0 +1,68 @@
+---
+title: "流式传输"
+description: "在核心文本端点上通过 SSE 实时传输模型输出。"
+icon: "radio"
+---
+
+流式传输可让界面随着模型生成逐个显示 token，无需等待完整响应。
+
+## 支持的端点
+
+- `POST /v1/responses`
+- `POST /v1/chat/completions`
+- `POST /v1/messages`
+
+## 启用流式传输
+
+在请求正文中设置 `stream: true`。
+
+```bash
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-5-nano",
+    "input": "Write a short greeting.",
+    "stream": true
+  }'
+```
+
+## SSE 帧格式
+
+流会以 SSE 帧的形式返回：
+
+```text
+data: {"id":"resp_...","status":"in_progress",...}
+data: {"type":"response.output_text.delta","delta":"Hello"}
+data: {"type":"response.completed",...}
+data: [DONE]
+```
+
+## 处理流式传输期间的错误
+
+- 如果请求在流开始前失败，你会收到常规 JSON 错误响应。
+- 如果在部分输出后失败，请将流视为未完成，并在界面中提供重试方式。
+- 如果响应中包含 `generation_id`，请务必记录，以便支持和问题追踪。
+
+## 取消
+
+使用取消控制（JavaScript 中的 `AbortController`，或后端 worker 中的请求超时），避免已放弃的流继续消耗资源。
+
+## 已知限制
+
+Gateway 当前的请求验证层会拒绝 `stream: true` 与工具调用同时使用。工具调用循环请使用非流式模式。
+
+## 相关页面
+
+- [Responses 端点](./endpoint/responses.mdx)
+- [Chat Completions 端点](./endpoint/chat-completions.mdx)
+- [Messages 端点](./endpoint/anthropic-messages.mdx)
+- [错误与调试](./errors.mdx)
+
+<Visibility for="agents">
+如果你以智能体的身份实现流式传输：
+
+- 使用仓库技能处理 SSE、重试和取消。
+- 添加提供商特有的假设前，先查看对应端点的 schema。
+- 将增量输出展示与最终状态持久化分开处理。
+</Visibility>

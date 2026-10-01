@@ -1,0 +1,163 @@
+---
+title: "स्ट्रक्चर्ड आउटपुट और वेब सर्च से रिसर्च करें"
+icon: "telescope"
+description: "वेब सर्च इस्तेमाल करने वाला और Agent SDK के ज़रिए सख्त JSON लौटाने वाला TypeScript एजेंट बनाएँ।"
+---
+
+जब किसी एजेंट workflow को यह करना हो, तब यह तरीका अपनाएँ:
+
+- TypeScript Agent SDK से चलना
+- मैनेज्ड वेब सर्च का उपयोग करना
+- सख्त स्ट्रक्चर्ड JSON लौटाना
+- लगभग सही लेकिन गलत फ़ॉर्मैट वाले JSON को नियतात्मक तरीके से रिकवर करना
+
+## 1. SDK इंस्टॉल करें
+
+<CodeGroup>
+```bash npm
+npm install @phaseo/sdk @phaseo/agent-sdk
+```
+
+```bash pnpm
+pnpm add @phaseo/sdk @phaseo/agent-sdk
+```
+
+```bash yarn
+yarn add @phaseo/sdk @phaseo/agent-sdk
+```
+
+```bash bun
+bun add @phaseo/sdk @phaseo/agent-sdk
+```
+</CodeGroup>
+
+## 2. सीमित आउटपुट कॉन्ट्रैक्ट तय करें
+
+पहला रिसर्च नतीजा इतना छोटा रखें कि ऑपरेटर उसे लॉग में आसानी से जाँच सकें।
+
+```ts
+type ResearchBrief = {
+  topic: string;
+  summary: string;
+  sources: Array<{
+    title: string;
+    url: string;
+  }>;
+};
+```
+
+## 3. एजेंट बनाएँ
+
+`parseOutput` इस्तेमाल करें ताकि runtime कच्चे टेक्स्ट के बजाय typed डेटा लौटाए।
+
+```ts
+import { createAgent } from "@phaseo/agent-sdk";
+
+export const researchBriefAgent = createAgent<string, ResearchBrief>({
+  id: "research-brief-agent",
+  model: "phaseo/free",
+  instructions:
+    "Research the user's topic with web search when needed and return a concise JSON brief with cited sources.",
+  parseOutput(text) {
+    return JSON.parse(text) as ResearchBrief;
+  },
+});
+```
+
+## 4. Gateway adapter को एक बार कॉन्फ़िगर करें
+
+इस हिस्से पर ध्यान दें:
+
+- `responseFormat` आउटपुट स्कीमा स्पष्ट रखता है
+- `plugins` लगभग सही JSON के लिए रिस्पॉन्स सुधार चालू करता है
+- `gatewayTools` मॉडल को मैनेज्ड वेब सर्च उपलब्ध कराता है
+- जब workflow को हमेशा स्रोतों पर आधारित होना चाहिए, तो `toolChoice` सर्च टूल को अनिवार्य करता है
+
+```ts
+import {
+  createGatewayAgentClient,
+} from "@phaseo/agent-sdk";
+
+const client = createGatewayAgentClient({
+  clientOptions: {
+    apiKey: process.env.PHASEO_API_KEY!,
+  },
+  responseFormat: {
+    type: "json_schema",
+    name: "research_brief",
+    schema: {
+      type: "object",
+      properties: {
+        topic: { type: "string" },
+        summary: { type: "string" },
+        sources: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              title: { type: "string" },
+              url: { type: "string" },
+            },
+            required: ["title", "url"],
+            additionalProperties: false,
+          },
+          minItems: 1,
+        },
+      },
+      required: ["topic", "summary", "sources"],
+      additionalProperties: false,
+    },
+  },
+  plugins: [{ id: "response-healing" }],
+  gatewayTools: [
+    { type: "phaseo:web_search", parameters: { max_results: 5 } },
+  ],
+  toolChoice: "phaseo:web_search",
+  webSearchOptions: { search_context_size: "high" },
+});
+```
+
+## 5. Workflow चलाएँ
+
+```ts
+const result = await researchBriefAgent.run({
+  input: "Summarize the latest browser automation support patterns for coding agents.",
+  client,
+  onEvent(event) {
+    console.log(event.type, event.runId);
+  },
+});
+
+console.log(result.output);
+```
+
+## 6. लॉग में क्या जाँचें
+
+एक सफल रन के बाद अनुरोध विवरण खोलें और पुष्टि करें:
+
+- माँगे गए नेटिव वेब सर्च टूल या मैनेज्ड सर्च गतिविधि दिखाई देती है
+- सर्च नतीजे और उद्धरण सेव किए गए हैं
+- plugin रन में `response-healing` तभी दिखता है जब रिकवरी की ज़रूरत पड़ी
+- अंतिम आउटपुट माँगे गए JSON स्कीमा से मेल खाता है
+
+## 7. यह तरीका कब इस्तेमाल करें
+
+यह तरीका तब अपनाएँ जब:
+
+- workflow मुख्य रूप से एक बार की रिसर्च हो, न कि स्थानीय टूल का गहरा लूप
+- जवाब देने से पहले मॉडल को स्रोत देखने चाहिए
+- आगे के कॉलर को prosa के बजाय typed JSON चाहिए
+
+यह तरीका तब न अपनाएँ जब:
+
+- workflow को सटीक URL पहले से पता हों और `phaseo:web_fetch` पर्याप्त हो
+- एजेंट को प्रोवाइडर के नेटिव टूल से ज़्यादा उन्नत स्थानीय टूल चाहिए
+- आउटपुट कॉन्ट्रैक्ट इतना ढीला हो कि सख्त JSON से मिलने वाले लाभ से ज़्यादा काम बढ़े
+
+## संबंधित गाइड
+
+- [TypeScript Agent SDK](../sdk-reference/typescript/agent-sdk.mdx)
+- [स्ट्रक्चर्ड आउटपुट](../guides/structured-outputs.mdx)
+- [स्ट्रक्चर्ड आउटपुट की पुष्टि करें](../guides/structured-outputs-validation.mdx)
+- [वेब सर्च अनुरोध डीबग करें](./web-search-debugging.mdx)
+- [गलत फ़ॉर्मैट वाले स्ट्रक्चर्ड JSON को रिकवर करें](./response-healing-for-structured-json.mdx)

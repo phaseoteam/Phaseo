@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import NumberFlow from "@number-flow/react";
 import { Check } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -57,8 +57,22 @@ function Included() {
 }
 
 export function EnterpriseSeatCalculator() {
+	const locale = useLocale();
 	const t = useTranslations("Site.pricing");
 	const translate = t as unknown as (key: string, values?: Record<string, unknown>) => string;
+	const formatNumber = (value: number) => new Intl.NumberFormat(locale, {
+		numberingSystem: "latn",
+	}).format(value);
+	const formatUsd = (value: number) => new Intl.NumberFormat(locale, {
+		style: "currency",
+		currency: "USD",
+		maximumFractionDigits: 2,
+	}).format(value);
+	const minimumCreditFee = new Intl.NumberFormat(locale, {
+		style: "currency",
+		currency: "USD",
+		maximumFractionDigits: 0,
+	}).format(1);
 	const [members, setMembers] = useState(100);
 	const pricing = enterpriseTierForMembers(members);
 
@@ -80,7 +94,7 @@ export function EnterpriseSeatCalculator() {
 								id="enterprise-members"
 								type="text"
 								inputMode="numeric"
-								value={members.toLocaleString("en-US")}
+								value={formatNumber(members)}
 								onChange={(event) => updateMembers(Number(event.target.value.replace(/\D/g, "")) || 1)}
 								className="h-10 pr-12 text-right font-medium tabular-nums"
 							/>
@@ -88,8 +102,8 @@ export function EnterpriseSeatCalculator() {
 						</div>
 					</div>
 					<Slider
-						aria-label="Active members"
-						aria-valuetext={`${members.toLocaleString("en-US")} active members`}
+						aria-label={t("activeMembers")}
+						aria-valuetext={t("activeMembersValue", { count: members })}
 						className="mt-5"
 						min={0}
 						max={MEMBER_STEPS.length - 1}
@@ -98,19 +112,19 @@ export function EnterpriseSeatCalculator() {
 						onValueChange={(value) => updateMembers(MEMBER_STEPS[value[0] ?? 0] ?? 1)}
 					/>
 					<div className="relative mt-1 h-4 text-[11px] tabular-nums text-muted-foreground">
-						<span className="absolute left-0">100</span>
-						<span className="absolute -translate-x-1/2" style={{ left: tickPosition(1_000) }}>1,000</span>
-						<span className="absolute -translate-x-1/2" style={{ left: tickPosition(2_500) }}>2,500</span>
-						<span className="absolute -translate-x-1/2" style={{ left: tickPosition(10_000) }}>10,000</span>
-						<span className="absolute -translate-x-1/2" style={{ left: tickPosition(25_000) }}>25,000</span>
-						<span className="absolute right-0">100,000</span>
+						<span className="absolute left-0">{formatNumber(100)}</span>
+						<span className="absolute -translate-x-1/2" style={{ left: tickPosition(1_000) }}>{formatNumber(1_000)}</span>
+						<span className="absolute -translate-x-1/2" style={{ left: tickPosition(2_500) }}>{formatNumber(2_500)}</span>
+						<span className="absolute -translate-x-1/2" style={{ left: tickPosition(10_000) }}>{formatNumber(10_000)}</span>
+						<span className="absolute -translate-x-1/2" style={{ left: tickPosition(25_000) }}>{formatNumber(25_000)}</span>
+						<span className="absolute right-0">{formatNumber(100_000)}</span>
 					</div>
 				</div>
 
 				<div className="border-l border-border pl-6">
 					<p className="text-xs font-medium text-muted-foreground">{t("enterpriseSubscription")}</p>
 					<p className="mt-1 text-3xl font-semibold tracking-tight tabular-nums">$<NumberFlow value={estimatedMonthlyUsd} format={{ maximumFractionDigits: 2 }} /><span className="text-sm font-normal text-muted-foreground">{t("monthEstimated")}</span></p>
-					{overageMembers > 0 ? <p className="mt-2 text-xs text-muted-foreground">$1,999 base plus {overageMembers.toLocaleString("en-US")} additional members at ${ENTERPRISE_MEMBER_OVERAGE_USD}/member/month.</p> : null}
+					{overageMembers > 0 ? <p className="mt-2 text-xs text-muted-foreground">{t("memberOverageSummary", { base: formatUsd(1_999), count: formatNumber(overageMembers), rate: formatUsd(ENTERPRISE_MEMBER_OVERAGE_USD) })}</p> : null}
 				</div>
 			</div>
 
@@ -118,7 +132,7 @@ export function EnterpriseSeatCalculator() {
 				<TableHeader>
 					<TableRow className="hover:bg-transparent">
 						<TableHead className="w-[62%] pl-0">{t("whatYouGet")}</TableHead>
-						<TableHead>Self Serve Enterprise</TableHead>
+						<TableHead>{t("selfServeEnterprise")}</TableHead>
 					</TableRow>
 				</TableHeader>
 				<TableBody>
@@ -129,12 +143,14 @@ export function EnterpriseSeatCalculator() {
 						</TableRow>
 					))}
 					<TableRow>
-						<TableCell className="py-3 pl-0 font-medium text-foreground">Members above 100,000</TableCell>
-						<TableCell className="py-3">${ENTERPRISE_MEMBER_OVERAGE_USD} per unique member / month</TableCell>
+						<TableCell className="py-3 pl-0 font-medium text-foreground">{t("membersAboveLimit", { limit: formatNumber(ENTERPRISE_MAX_SELF_SERVE_MEMBERS) })}</TableCell>
+						<TableCell className="py-3">{t("overageRate", { rate: formatUsd(ENTERPRISE_MEMBER_OVERAGE_USD) })}</TableCell>
 					</TableRow>
 					<TableRow>
 						<TableCell className="py-3 pl-0 font-medium text-foreground">{t("creditTopUpFee")}</TableCell>
-						<TableCell className="py-3">5% ($1 minimum)</TableCell>
+						<TableCell className="py-3">
+							{translate("matrix.enterpriseCreditPurchaseFee", { minimum: minimumCreditFee })}
+						</TableCell>
 					</TableRow>
 					<TableRow>
 						<TableCell className="py-3 pl-0 font-medium text-foreground">{t("modelUsageCredits")}</TableCell>

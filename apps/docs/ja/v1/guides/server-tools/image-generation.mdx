@@ -1,0 +1,92 @@
+---
+icon: "image"
+title: "画像生成"
+description: "Phaseoのサーバーツールを使ってモデルに画像を作成させます。"
+---
+
+回答中にモデルが画像を作成する必要がある場合は、`phaseo:image_generation`を使います。Phaseoは管理されたツールをモデルに公開し、サーバー側で画像リクエストを実行して、その結果をモデルループに返します。
+
+## リクエスト
+
+```bash
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-5-nano",
+    "input": "Design a wide product concept image for a compact desktop synthesizer.",
+    "tools": [
+      {
+        "type": "phaseo:image_generation",
+        "parameters": {
+          "model": "openai/gpt-image-2",
+          "quality": "high",
+          "aspect_ratio": "16:9",
+          "output_format": "png"
+        }
+      }
+    ]
+  }'
+```
+
+## パラメーター
+
+| パラメーター | 型 | 説明 |
+| --- | --- | --- |
+| `model` | string | 画像対応モデルの任意のID。ツールまたはツール呼び出しでモデルが指定されない場合、デフォルトは`openai/gpt-image-2`です。 |
+| `quality` | string | `low`、`medium`、`high`などの任意の品質ヒントをプロバイダーに渡します。 |
+| `size` | string | 任意の画像サイズヒント。 |
+| `aspect_ratio` | string | `1:1`、`16:9`、`9:16`などの任意のアスペクト比。 |
+| `background` | string | 任意の背景モードヒント。 |
+| `output_format` | string | `png`、`jpeg`、`webp`などの任意の出力形式。 |
+| `output_compression` | integer | 任意のプロバイダー圧縮ヒント。 |
+| `moderation` | string | 任意のプロバイダーモデレーションヒント。 |
+
+ツール呼び出し時にモデルが最終的な`prompt`を指定します。ツールレベルのパラメーターは、その呼び出しのデフォルト値と制約を設定します。
+
+ツール呼び出しでは`prompt`の代わりに`description`を送ることもできます。モデル生成の画像説明との互換性を保つため、Phaseoは`description`をpromptの別名として扱います。
+
+## ツールの結果
+
+結果はJSONとしてモデルに返されます。
+
+```json
+{
+  "status": "ok",
+  "model": "openai/gpt-image-2",
+  "imageUrl": "https://...",
+  "mime_type": "image/png"
+}
+```
+
+プロバイダーによっては、代わりにbase64画像データを返します。
+
+```json
+{
+  "status": "ok",
+  "model": "openai/gpt-image-2",
+  "b64_json": "...",
+  "mime_type": "image/png"
+}
+```
+
+## 使用量と料金
+
+画像モデルがトークン使用量を報告する場合、画像生成の使用量は親レスポンスの使用量に含まれます。Phaseoは次の値も記録します。
+
+```json
+{
+  "usage": {
+    "server_tool_use": {
+      "image_generation_requests": 1
+    }
+  }
+}
+```
+
+料金カードでは`server_tool_image_generation_requests`メーターで課金できます。基盤となる画像モデルの使用量も通常のモデル料金で課金される場合があります。
+
+## 関連項目
+
+- [サーバーツール](./index.mdx)
+- [ツール呼び出し](../tool-calling.mdx)

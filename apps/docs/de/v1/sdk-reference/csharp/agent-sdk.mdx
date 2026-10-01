@@ -1,0 +1,49 @@
+---
+title: "Verwendung"
+description: "Führe Tool-Schleifen, menschliche Prüfungen, Wiederholungen und fortsetzbare Agents mit dem C# Agent SDK aus."
+---
+
+## Laufzeitumgebung vorbereiten
+
+Das Agent-SDK-Paket ist noch nicht auf NuGet verfügbar. Folge der [Installationsanleitung für den Quellcode](./agent-sdk-installation.mdx).
+
+## Schnellstart
+
+```csharp
+using PhaseoAgentSdk;
+
+var agent = AgentSdk.CreateAgent(new AgentDefinition
+{
+    Id = "quickstart-agent",
+    Model = "openai/gpt-5.4-nano",
+    Instructions = "Answer concisely and helpfully."
+});
+
+var result = await agent.Run(new RunOptions
+{
+    Input = "Give me one fun fact about cURL.",
+    Client = AgentSdk.CreateGatewayAgentClient(),
+});
+
+Console.WriteLine(result.Output);
+```
+
+## Enthaltene Funktionen
+
+- `AgentSdk.CreateAgent(...)`
+- `AgentSdk.DefineTool(...)`
+- `AgentSdk.CreateGatewayAgentClient(...)`
+- eine begrenzte Tool-Schleife über die Phaseo-API `responses`
+
+## Erweiterte Laufzeitumgebung
+
+C# unterstützt Delegates für Validierung und Freigabe, HITL- und manuelle Tools, Fortschrittsmeldungen, behebbare Fehler, erneut abspielbare asynchrone Enumerables, Helfer zum Beenden, dynamische Turns, persistierte `NextTurnParams`, normalisierte Nutzung und Kosten sowie `IStateAccessor`.
+
+## Streaming und Abbruch
+
+`Agent.Stream(...)` und `Agent.ContinueStream(...)` verwenden `IAsyncEnumerable` für den Responses-SSE-Stream des Gateways. Verarbeite `TextStream()` oder `FullStream()` und rufe `Cancel()` auf, um das verknüpfte Request-Token abzubrechen. Abgeschlossene Schritte behalten Request-IDs, Provider-Metadaten, Beendigungsgründe, Warnungen, Nutzung und Kosten.
+
+## Verwandte Seiten
+
+- [Überblick über das Agent SDK](../agent-sdk/overview.mdx)
+- [Agent SDK für TypeScript](../typescript/agent-sdk.mdx)

@@ -1,0 +1,62 @@
+---
+icon: "database"
+title: "構造化出力のスキーマ"
+description: "モデル出力に使う実用的なJSONスキーマの設計方法です。"
+---
+
+信頼できる構造化出力には、モデル選びよりスキーマ設計が重要です。
+
+## シンプルに始める
+
+- 深くネストした構造より、フラットなオブジェクトを使います。
+- 必要なフィールドはすべて`required`に指定します。
+- 構造を厳密に制御する場合は、`additionalProperties: false`を設定します。
+
+## リクエスト
+
+```json
+{
+  "model": "openai/gpt-5-nano",
+  "messages": [
+    { "role": "user", "content": "Return a purchase summary for order 42." }
+  ],
+  "response_format": {
+    "type": "json_schema",
+    "json_schema": {
+      "name": "purchase_summary",
+      "strict": true,
+      "schema": {
+        "type": "object",
+        "properties": {
+          "order_id": { "type": "string" },
+          "total_usd": { "type": "number" },
+          "status": { "type": "string", "enum": ["pending", "paid", "failed"] }
+        },
+        "required": ["order_id", "total_usd", "status"],
+        "additionalProperties": false
+      }
+    }
+  }
+}
+```
+
+## レスポンス
+
+```json
+{
+  "choices": [
+    {
+      "message": {
+        "content": "{\"order_id\":\"42\",\"total_usd\":19.99,\"status\":\"paid\"}"
+      }
+    }
+  ]
+}
+```
+
+## よくある間違い
+
+- 必須にすべきフィールドを任意のままにする。
+- `enum`で制限せず、範囲が広すぎる文字列フィールドを使う。
+- ドキュメントのスキーマとサーバー側バリデーターの内容を食い違わせる。
+

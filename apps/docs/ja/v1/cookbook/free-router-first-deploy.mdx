@@ -1,0 +1,156 @@
+---
+title: "無料ルーターで始める"
+icon: "rocket"
+description: "まずphaseo/freeを使うことで、最初の統合時に無料モデルを一つ選び切らなくても実行できます。"
+---
+
+有料モデルをまだ選ばずに、最初のPhaseo連携を動かすための手順です。
+
+自分で無料モデルを選ぶ代わりに、リクエストを`phaseo/free`へ送信します。Phaseoが、そのリクエストに対応する利用可能な無料モデルを選択します。
+## リクエスト例
+<CodeGroup>
+```bash cURL
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "phaseo/free",
+    "input": "Summarize why provider-aware free routing helps prototypes.",
+    "temperature": 0.2
+  }'
+```
+
+```typescript TypeScript SDK
+import Phaseo from "@phaseo/sdk";
+
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
+
+const response = await client.generateResponse({
+  model: "phaseo/free",
+  input: "Summarize why provider-aware free routing helps prototypes.",
+  temperature: 0.2,
+});
+
+console.log(response.output_text);
+```
+
+```python Python SDK
+from phaseo import Phaseo
+
+client = Phaseo(api_key="YOUR_API_KEY")
+
+response = client.generate_response(
+    {
+        "model": "phaseo/free",
+        "input": "Summarize why provider-aware free routing helps prototypes.",
+        "temperature": 0.2,
+    }
+)
+
+print(response.get("output_text"))
+```
+
+```go Go SDK
+package main
+
+import (
+  "context"
+  "fmt"
+
+  phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v2"
+)
+
+func main() {
+  client := phaseo.New("YOUR_API_KEY", "https://api.phaseo.app/v1")
+
+  response, err := client.GenerateResponse(context.Background(), phaseo.ResponsesRequest{
+    Model: "phaseo/free",
+    Input: map[string]interface{}{
+      "role": "user",
+      "content": []map[string]string{
+        {
+          "type": "input_text",
+          "text": "Summarize why provider-aware free routing helps prototypes.",
+        },
+      },
+    },
+  })
+  if err != nil {
+    panic(err)
+  }
+
+  fmt.Println(response)
+}
+```
+
+```csharp C# SDK
+using PhaseoSdk;
+using System.Collections.Generic;
+
+var client = new Phaseo("YOUR_API_KEY");
+
+var response = await client.GenerateResponse(new Dictionary<string, object>
+{
+    ["model"] = "phaseo/free",
+    ["input"] = "Summarize why provider-aware free routing helps prototypes.",
+    ["temperature"] = 0.2
+});
+
+Console.WriteLine(response);
+```
+
+```php PHP SDK
+<?php
+require 'vendor/autoload.php';
+
+use Phaseo\Sdk\Phaseo;
+
+$client = new Phaseo(getenv('PHASEO_API_KEY') ?: 'YOUR_API_KEY');
+
+$response = $client->generateResponse([
+    'model' => 'phaseo/free',
+    'input' => 'Summarize why provider-aware free routing helps prototypes.',
+    'temperature' => 0.2,
+]);
+
+print_r($response);
+```
+
+```ruby Ruby SDK
+require 'phaseo_sdk'
+
+client = PhaseoSdk::Phaseo.new(api_key: ENV.fetch('PHASEO_API_KEY', 'YOUR_API_KEY'))
+
+response = client.generate_response(
+  model: 'phaseo/free',
+  input: 'Summarize why provider-aware free routing helps prototypes.',
+  temperature: 0.2
+)
+
+puts response
+```
+</CodeGroup>
+## 内部で行われる処理
+
+1. リクエストは共有エイリアス`phaseo/free`に送られます。
+2. Phaseoは、そのリクエストを処理できる無料モデルを確認します。
+3. 利用可能な無料モデルを1つ選び、応答に使用します。
+4. 後で確認やデバッグができるよう、実際に実行されたモデルはリクエストの詳細に表示されます。
+
+## 最初のリクエストの後に行うこと
+
+- **Gateway -> 使用状況**でリクエスト詳細を開き、使用されたモデルを確認します。
+- Workspaceポリシーによってブロックされた場合は、詳細を確認してどの設定が原因かを調べます。
+- 必要な機能に対応する無料モデルがなければ、同じリクエストを再試行せず、`phaseo/free`から特定の有料モデルに切り替えます。
+
+## 本番環境での注意
+
+- `phaseo/free`はプロトタイプ、デモ、重要度の低いトラフィックに使用します。
+- レイテンシ、出力スタイル、プロバイダーを予測可能にしたい場合は、最適なモデルが分かった時点で特定のモデルに切り替えます。
+- サービス間でプロンプトの動作を安定させたい場合は、この手順を[プリセット](../guides/presets.mdx)と組み合わせます。
+
+## 関連ガイド
+
+- [クイックスタート](../quickstart.mdx)
+- [ルーティングとフォールバック](../guides/routing-and-fallbacks.mdx)
+- [APIエラー](../api-reference/errors.mdx)

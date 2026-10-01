@@ -1,0 +1,193 @@
+---
+title: "构建 OAuth Next.js 工作台"
+icon: "key-round"
+description: "通过完整的 OAuth Next.js 示例，了解如何构建带统一代理的已登录 Gateway 应用。"
+---
+
+如果产品需要登录、基于会话的 Gateway 访问和多个聊天路由，请使用本页。
+
+**目标：** 运行已登录的工作台，并通过一个受保护的服务器端代理向 Phaseo 发送请求。
+
+**结果：** 获得一个本地应用，包含 OAuth 登录、基于会话的 token、模型发现、聊天和端点测试器。
+
+<Prompt
+  description="构建一个带 OAuth 和 Phaseo 统一代理的 **Next.js 登录工作台**。"
+  icon="shield-user"
+  actions={["copy", "cursor"]}
+>
+{`你正在基于 Phaseo Gateway 构建已登录的 Next.js 应用。
+
+创建一个工作台式应用，包含：
+- OAuth 2.1 + PKCE 登录
+- 基于会话的 token 存储
+- 一个统一的服务器端 Gateway 代理路由
+- 模型发现
+- 一个使用 Responses API 的聊天流程
+- 一个用于测试其他 Phaseo 端点的通用工具
+
+要求：
+- 仅在服务器端保留 Gateway 凭据和访问 token。
+- 为了安全，使用代理允许列表。
+- 支持 token 刷新。
+- 保持工作台易于理解，避免过度设计。
+- 添加一份简短的 README，说明设置、环境变量和运行步骤。
+
+验证：
+- 尽可能运行应用
+- 根据本地配置情况验证登录流程
+- 至少验证一条经过代理的 Gateway 请求流程
+- 准确报告已验证的内容以及仍依赖外部 OAuth 配置的部分。`}
+</Prompt>
+
+## 示例项目
+
+- GitHub: [examples/oauth-client-nextjs](https://github.com/phaseoteam/Phaseo/tree/main/examples/oauth-client-nextjs)
+- 仓库本地路径： `examples/oauth-client-nextjs`
+
+## 此应用涵盖的功能
+
+- OAuth 2.1 + PKCE 登录
+- 基于会话的 token 存储和刷新
+- 用于控制和生成路由的统一代理
+- 模型发现
+- 基于以下接口的聊天流程 `/responses`
+- 用于其他 Gateway 路由的通用端点测试器
+
+## 何时从此示例开始
+
+适用于以下情况：
+
+- 终端用户需要通过委托访问登录
+- 你需要的不只是简单的聊天页面
+- 你希望通过一条安全的服务器路由访问多个 Phaseo 端点
+
+以下情况不适合从此示例开始：
+
+- 你只需要一个简单的 API 密钥聊天界面
+- 你想先构建脚本或 CLI
+
+## 关键文件
+
+- `app/page.tsx`
+- `app/dashboard/page.tsx`
+- `app/dashboard/GatewayWorkbench.tsx`
+- `app/api/gateway/[...surface]/route.ts`
+- `lib/oauth.ts`
+- `lib/session.ts`
+
+## 采用此结构的原因
+
+### 1. OAuth 与 Gateway 逻辑分离
+
+应用将以下逻辑分开：
+
+- 身份验证启动和回调逻辑
+- 加密会话处理
+- token 刷新
+
+这样可以简化 AI 集成代码，也更容易调试登录问题。
+
+### 2. 使用一条代理路由处理 Gateway 调用
+
+catch-all 代理路由会：
+
+- 检查端点允许列表
+- 注入当前 bearer token
+- 在需要时刷新 token
+- 转发请求正文和响应正文
+
+如果要使用多个 Phaseo 端点，又不想在每条路由中重复身份验证逻辑，这种模式很实用。
+
+### 3. 控制台同时作为内部工作台
+
+工作台页面不只有聊天功能：
+
+- 发现模型
+- 测试 `/responses`
+- 也可以测试非聊天端点
+
+在构建更完善的用户界面之前，它可用于入门引导、QA 和内部调试。
+
+## 前置条件
+
+- - Node.js 和受支持的包管理器
+- - 已配置本地回调 URL 的 OAuth 客户端
+- - 强度足够的会话密钥
+
+## 运行示例
+
+<CodeGroup>
+```bash npm
+cd examples/oauth-client-nextjs
+npm install
+cp .env.example .env.local
+```
+
+```bash pnpm
+cd examples/oauth-client-nextjs
+pnpm install
+cp .env.example .env.local
+```
+
+```bash yarn
+cd examples/oauth-client-nextjs
+yarn install
+cp .env.example .env.local
+```
+
+```bash bun
+cd examples/oauth-client-nextjs
+bun install
+cp .env.example .env.local
+```
+</CodeGroup>
+
+设置：
+
+- `NEXT_PUBLIC_OAUTH_CLIENT_ID`
+- `OAUTH_CLIENT_SECRET`
+- `NEXT_PUBLIC_PHASEO_URL`
+- `NEXT_PUBLIC_REDIRECT_URI`
+- `SESSION_SECRET`
+- `NEXT_PUBLIC_GATEWAY_URL`
+
+然后运行：
+
+<CodeGroup>
+```bash npm
+npm run dev
+```
+
+```bash pnpm
+pnpm dev
+```
+
+```bash yarn
+yarn dev
+```
+
+```bash bun
+bun run dev
+```
+</CodeGroup>
+
+打开 `http://localhost:3000`.
+
+## 检查结果
+
+- 登录后会返回已配置的回调地址并创建会话。
+- 控制台可以通过代理发现模型。
+- 一次 Responses API 请求能够完成，且不会向浏览器暴露访问 token。
+- 代理允许列表之外的端点会被拒绝。
+
+## 根据需要修改示例
+
+- - 将代理允许列表精简为产品真正需要的端点
+- - 在此基础上构建更清晰的用户界面，同时将工作台保留供内部使用
+- - 集成稳定后，将通用测试器替换为专门的产品流程
+
+## 相关指南
+
+- [使用 Next.js 构建 Web 聊天应用](./build-a-nextjs-web-chat-app.mdx)
+- [迷你应用起步提示词](./mini-app-starter-prompts.mdx)
+- [示例](../guides/examples.mdx)

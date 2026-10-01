@@ -1,0 +1,34 @@
+---
+icon: "square-terminal"
+title: "Exemples"
+description: "Reprenez des exemples Go ciblés pour les outils, les approbations, le streaming et les exécutions limitées."
+---
+
+## Déploiement soumis à approbation
+
+```go
+deploy := phaseoagent.Tool{
+  ID: "deploy",
+  Description: "Deploy the selected release",
+  RequireApproval: true,
+  Execute: func(input any, runtime phaseoagent.RuntimeContext) (any, error) {
+    return deploymentService.Deploy(runtime.Context, input)
+  },
+}
+```
+
+Lancez l’agent et enregistrez le journal renvoyé lorsque son état devient `waiting_for_human`. Reprenez-le avec une décision associée à l’identifiant de l’appel d’outil en attente.
+
+## Diffuser dans un terminal
+
+```go
+stream := agent.Stream(ctx, phaseoagent.RunOptions{Input: prompt, Client: client})
+for delta := range stream.Text() { fmt.Print(delta) }
+result, err := stream.Result()
+```
+
+## Limiter la recherche autonome
+
+Combinez `StepCountIs`, `MaxTokensUsed`, `MaxCost` et `MaxDuration` pour qu’un agent de longue durée ne dépasse pas le budget du produit, même s’il continue à trouver des tâches utiles.
+
+Consultez [les outils](./agent-sdk-tools.mdx), [l’état et l’approbation](./agent-sdk-state-and-approval.mdx) et [les conditions d’arrêt](./agent-sdk-stop-conditions.mdx) pour connaître tous les détails.

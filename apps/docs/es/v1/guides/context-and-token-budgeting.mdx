@@ -1,0 +1,47 @@
+---
+icon: "calculator"
+title: "Contexto y presupuesto de tokens"
+description: "Cómo distribuir los tokens de entrada y salida para equilibrar calidad, velocidad y coste."
+---
+
+La gestión del presupuesto de tokens es una habilidad esencial para producción. Afecta directamente a la latencia, el gasto y la fiabilidad.
+
+## Componentes del presupuesto de tokens
+
+La carga total de una solicitud suele incluir:
+
+- Instrucciones del sistema o del desarrollador
+- Prompt o entrada del usuario
+- Contexto recuperado (RAG, documentación y herramientas)
+- Esquemas de herramientas o definiciones de funciones
+- Tokens de salida del modelo
+
+## Por qué importan los presupuestos
+
+- Los prompts más largos aumentan la latencia y el coste.
+- Los prompts demasiado largos pueden reducir la relevancia cuando la calidad del contexto es baja.
+- Un presupuesto de salida demasiado pequeño puede truncar la respuesta y generar salidas estructuradas no válidas.
+
+## Estrategia de presupuestación
+
+1. Define un objetivo máximo de tokens de entrada para cada ruta.
+2. Reserva margen de salida para las respuestas más largas previstas.
+3. Elimina de forma agresiva el contexto de poco valor.
+4. Supervisa a lo largo del tiempo la distribución real del uso de tokens.
+
+## Medidas de protección prácticas
+
+- Aplica límites estrictos a los tokens de entrada y salida.
+- Añade reglas previas para truncar o resumir contextos extensos.
+- Usa límites específicos para cada ruta (respuesta de búsqueda frente a generación extensa).
+- Valida que las salidas no tengan marcadores de truncamiento ni JSON parcial.
+
+## Errores habituales
+
+- Copiar el mismo límite de tokens en todos los endpoints.
+- Mantener prompts de sistema extensos para todos los tipos de solicitud.
+- No tener en cuenta los tokens adicionales de los esquemas de herramientas.
+
+## Recomendación
+
+Trata los presupuestos de tokens como una configuración que requiere supervisión continua, no como una tarea que se hace una sola vez.

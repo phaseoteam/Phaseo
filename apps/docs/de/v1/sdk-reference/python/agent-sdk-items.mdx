@@ -1,0 +1,22 @@
+---
+icon: "layers"
+title: "Mit Ergebnissen und Elementen arbeiten"
+description: "Erstelle Python-Laufzeitachsen aus Nachrichten, Schritten, Tools und gestreamten Elementen."
+---
+
+`AgentRunResult` enthält den dauerhaften Laufzustand, Nachrichten, Schritte, Verbrauch und Kosten, Warnungen, Beendigungsgründe und die endgültige Ausgabe.
+
+Verwende `text_stream()` für den Antworttext und `item_stream()` für Provider- und Runtime-Elemente. Python-Elemente sind derzeit dictionary-förmig und keine diskriminierte TypeScript-Union `AgentItem`.
+
+```python
+for item in stream.item_stream():
+    item_type = item.get("type")
+    render_timeline_item(item_type, item)
+```
+
+Kapsle den Zugriff auf anbieterspezifische Dictionaries in einem Anwendungsadapter und speichere anschließend das abgeschlossene Ergebnis, damit es später rekonstruiert werden kann.
+
+## Weiterführende Themen
+
+- [Datenstrom](./agent-sdk-streaming.mdx)
+- [Lifecycle-Hooks](./agent-sdk-lifecycle-hooks.mdx)

@@ -1,0 +1,47 @@
+---
+icon: "calculator"
+title: "Contexte et budget de jetons"
+description: "Comment répartir les jetons d’entrée et de sortie pour optimiser la qualité, la vitesse et le coût."
+---
+
+La gestion du budget de jetons est une compétence essentielle en production. Elle influe directement sur la latence, les dépenses et la fiabilité.
+
+## Éléments du budget de jetons
+
+La taille totale d’une requête comprend généralement :
+
+- Instructions système ou développeur
+- Prompt ou entrée utilisateur
+- Contexte récupéré (RAG, documentation et outils)
+- Schémas d’outils ou définitions de fonctions
+- Jetons générés par le modèle
+
+## Pourquoi les budgets sont importants
+
+- Les prompts plus longs augmentent la latence et le coût.
+- Des prompts trop longs peuvent réduire la pertinence lorsque le contexte est de mauvaise qualité.
+- Un budget de sortie trop faible peut tronquer la réponse et produire des sorties structurées non valides.
+
+## Stratégie de budgétisation
+
+1. Définissez une cible maximale de jetons d’entrée pour chaque route.
+2. Réservez une marge de sortie pour les réponses les plus longues prévues.
+3. Supprimez sans hésiter le contexte de faible valeur.
+4. Surveillez l’évolution de la distribution réelle de l’utilisation des jetons.
+
+## Garde-fous pratiques
+
+- Imposer des limites strictes aux jetons d’entrée et de sortie.
+- Ajoutez des règles préalables de troncature ou de résumé des contextes volumineux.
+- Utilisez des limites propres à chaque route (réponse de recherche ou génération longue).
+- Vérifiez que les sorties ne contiennent pas de marqueurs de troncature ni de JSON partiel.
+
+## Erreurs fréquentes
+
+- Copier la même limite de jetons sur tous les endpoints.
+- Conserver de longs prompts système pour tous les types de requête.
+- Ignorer le coût en jetons des schémas d’outils.
+
+## Recommandation
+
+Considérez les budgets de jetons comme une configuration à surveiller en continu, et non comme un réglage ponctuel.

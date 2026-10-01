@@ -39,6 +39,7 @@ interface RequestConfig {
 	apiKey: string;
 	model: string;
 	prompt: string;
+	errorMessage: string;
 }
 
 interface SavedConfig {
@@ -50,8 +51,8 @@ interface SavedConfig {
 	createdAt: number;
 }
 
-function formatTime(ms: number | null): string {
-	if (ms === null || ms === undefined) return "N/A";
+function formatTime(ms: number | null, notAvailable: string): string {
+	if (ms === null || ms === undefined) return notAvailable;
 	if (ms < 1000) return `${ms.toFixed(0)}ms`;
 	if (ms < 60000) return `${(ms / 1000).toFixed(2)}s`;
 	return `${(ms / 1000).toFixed(2)}s`;
@@ -89,13 +90,10 @@ async function streamRequest(
 			}),
 		});
 
-		if (!response.ok) {
-			const errorText = await response.text();
-			throw new Error(`HTTP ${response.status}: ${errorText}`);
-		}
+		if (!response.ok) throw new Error(config.errorMessage);
 
 		if (!response.body) {
-			throw new Error("No response body");
+			throw new Error(config.errorMessage);
 		}
 
 		const reader = response.body.getReader();
@@ -156,8 +154,8 @@ async function streamRequest(
 			firstTokenTime: firstChunkTime,
 			throughput: finalThroughput,
 		});
-	} catch (error) {
-		const errorMessage = error instanceof Error ? error.message : "Unknown error";
+	} catch {
+		const errorMessage = config.errorMessage;
 		onError(errorMessage);
 		onComplete({
 			ttft: null,
@@ -199,13 +197,10 @@ function OpenAIStreamRequest(
 			}),
 		})
 			.then(async (response) => {
-				if (!response.ok) {
-					const errorText = await response.text();
-					throw new Error(`HTTP ${response.status}: ${errorText}`);
-				}
+				if (!response.ok) throw new Error(config.errorMessage);
 
 				if (!response.body) {
-					throw new Error("No response body");
+					throw new Error(config.errorMessage);
 				}
 
 				const reader = response.body.getReader();
@@ -272,8 +267,8 @@ function OpenAIStreamRequest(
 				let buffer = "";
 				return readLoop();
 			})
-			.catch((error) => {
-				const errorMessage = error instanceof Error ? error.message : "Unknown error";
+			.catch(() => {
+				const errorMessage = config.errorMessage;
 				onError(errorMessage);
 				const totalTime = performance.now() - startTime;
 				onComplete({
@@ -349,6 +344,7 @@ function exportToJSON(results: RunResult[]): string {
 }
 
 function TimelineChart({ gatewayTimes, openaiTimes }: { gatewayTimes: number[]; openaiTimes: number[] }) {
+	const t = useTranslations("Product.latency");
 	const maxTime = Math.max(...gatewayTimes, ...openaiTimes, 1);
 	const width = 400;
 	const height = 100;
@@ -365,7 +361,7 @@ function TimelineChart({ gatewayTimes, openaiTimes }: { gatewayTimes: number[]; 
 		return (
 			<svg width={width} height={height} className="w-full h-24">
 				<text x={width / 2} y={height / 2} textAnchor="middle" className="text-sm fill-muted-foreground">
-					No data yet
+					{t("noData")}
 				</text>
 			</svg>
 		);
@@ -390,11 +386,15 @@ function TimelineChart({ gatewayTimes, openaiTimes }: { gatewayTimes: number[]; 
 			{openaiTimes.map((t, i) => (
 				<circle key={`openai-${i}`} cx={getX(i, openaiTimes.length)} cy={getY(t)} r={3} fill="#3b82f6" />
 			))}
-			<text x={padding} y={padding - 5} className="text-xs fill-muted-foreground">{formatTime(maxTime)}</text>
+			<text x={padding} y={padding - 5} className="text-xs fill-muted-foreground">{formatTime(maxTime, t("nA"))}</text>
 			<text x={padding} y={height - 5} className="text-xs fill-muted-foreground">0</text>
 			<g className="flex justify-between text-xs">
-				<text x={padding} y={height - 5} className="fill-muted-foreground">Run 1</text>
-				<text x={width - padding} y={height - 5} className="fill-muted-foreground">Run {gatewayTimes.length}</text>
+				<text x={padding} y={height - 5} className="fill-muted-foreground">
+					{t("runNumber", { number: 1 })}
+				</text>
+				<text x={width - padding} y={height - 5} className="fill-muted-foreground">
+					{t("runNumber", { number: gatewayTimes.length })}
+				</text>
 			</g>
 		</svg>
 	);
@@ -403,10 +403,11 @@ function TimelineChart({ gatewayTimes, openaiTimes }: { gatewayTimes: number[]; 
 export default function LatencyComparisonClient() {
 	const t = useTranslations("Product.latency");
 	const extrasT = useTranslations("Product.latencyExtras");
+	const formatLocalizedTime = (ms: number | null) => formatTime(ms, t("nA"));
 	const [gatewayUrl, setGatewayUrl] = useState("");
 	const [gatewayApiKey, setGatewayApiKey] = useState("");
 	const [openaiApiKey, setOpenaiApiKey] = useState("");
-	const [prompts, setPrompts] = useState<string[]>(["Write a short haiku about coding."]);
+	const [prompts, setPrompts] = useState<string[]>([t("defaultPrompt")]);
 	const [numRuns, setNumRuns] = useState(3);
 
 	const gatewayModel = "openai/gpt-5-nano";
@@ -484,7 +485,7 @@ export default function LatencyComparisonClient() {
 	}, [isRunning]);
 
 	const addPrompt = () => {
-		setPrompts([...prompts, "Write a haiku about AI."]);
+		setPrompts([...prompts, t("addedPromptDefault")]);
 	};
 
 	const removePrompt = (index: number) => {
@@ -518,7 +519,7 @@ export default function LatencyComparisonClient() {
 
 	const loadConfig = (config: SavedConfig) => {
 		setGatewayUrl(config.gatewayUrl);
-		setPrompts(config.prompts.length > 0 ? config.prompts : ["Write a short haiku about coding."]);
+		setPrompts(config.prompts.length > 0 ? config.prompts : [t("defaultPrompt")]);
 		setNumRuns(config.numRuns);
 	};
 
@@ -530,7 +531,7 @@ export default function LatencyComparisonClient() {
 
 	const handleRun = useCallback(async () => {
 		if (!gatewayUrl || !gatewayApiKey || !openaiApiKey) {
-			alert("Please fill in all API credentials");
+			alert(t("missingCredentials"));
 			return;
 		}
 
@@ -562,6 +563,7 @@ export default function LatencyComparisonClient() {
 					apiKey: gatewayApiKey,
 					model: gatewayModel,
 					prompt,
+					errorMessage: t("requestFailed"),
 				};
 
 				const openaiConfig: RequestConfig = {
@@ -569,6 +571,7 @@ export default function LatencyComparisonClient() {
 					apiKey: openaiApiKey,
 					model: openaiModel,
 					prompt,
+					errorMessage: t("requestFailed"),
 				};
 
 				let gatewayRes: TimingResult | null = null;
@@ -650,7 +653,7 @@ export default function LatencyComparisonClient() {
 
 		stopTimer();
 		setCurrentRun(totalRunsCount);
-	}, [gatewayUrl, gatewayApiKey, openaiApiKey, prompts, numRuns, startTimer, stopTimer]);
+	}, [gatewayUrl, gatewayApiKey, openaiApiKey, prompts, numRuns, startTimer, stopTimer, t]);
 
 	const handleStop = useCallback(() => {
 		setGatewayState("idle");
@@ -735,8 +738,7 @@ export default function LatencyComparisonClient() {
 					<div>
 						<h1 className="text-3xl font-bold mb-2">{t("title")}</h1>
 						<p className="text-muted-foreground">
-							Compare response times between your gateway and OpenAI API using parallel
-							streaming requests. Run multiple iterations for more reliable results.
+							{t("description")}
 						</p>
 					</div>
 					<div className="flex gap-2">
@@ -754,7 +756,7 @@ export default function LatencyComparisonClient() {
 						)}
 						<Button variant="outline" size="sm" onClick={() => setShowSaveDialog(true)} className="flex items-center gap-2">
 							<Save className="h-4 w-4" />
-							Save Config
+							{t("saveConfig")}
 						</Button>
 					</div>
 				</div>
@@ -763,8 +765,13 @@ export default function LatencyComparisonClient() {
 					<Card>
 						<CardHeader>
 							<CardTitle className="flex items-center justify-between">
-								Save Configuration
-								<Button variant="ghost" size="icon" onClick={() => setShowSaveDialog(false)}>
+								{t("saveConfiguration")}
+				<Button
+					variant="ghost"
+					size="icon"
+					aria-label={t("closeSaveDialog")}
+					onClick={() => setShowSaveDialog(false)}
+				>
 									<X className="h-4 w-4" />
 								</Button>
 							</CardTitle>
@@ -795,7 +802,13 @@ export default function LatencyComparisonClient() {
 										<Button variant="ghost" size="sm" onClick={() => loadConfig(config)}>
 											{config.name}
 										</Button>
-										<Button variant="ghost" size="icon" className="h-4 w-4" onClick={() => deleteConfig(config.id)}>
+						<Button
+							variant="ghost"
+							size="icon"
+							className="h-4 w-4"
+							aria-label={t("deleteSavedConfig")}
+							onClick={() => deleteConfig(config.id)}
+						>
 											<X className="h-3 w-3" />
 										</Button>
 									</div>
@@ -808,8 +821,7 @@ export default function LatencyComparisonClient() {
 				<Alert>
 					<Zap className="h-4 w-4" />
 					<AlertDescription>
-						This tool sends parallel requests to both endpoints. Times are measured from
-						request start to first token (TTFT), total response completion, and throughput.
+						{t("parallelRequestsDescription")}
 					</AlertDescription>
 				</Alert>
 
@@ -817,7 +829,7 @@ export default function LatencyComparisonClient() {
 					<CardHeader>
 						<CardTitle>{t("configuration")}</CardTitle>
 						<CardDescription>
-							Enter your gateway and OpenAI API credentials to run the comparison.
+							{t("credentialsDescription")}
 						</CardDescription>
 					</CardHeader>
 					<CardContent>
@@ -880,7 +892,7 @@ export default function LatencyComparisonClient() {
 									<Label>{t("prompts")}</Label>
 									<Button variant="outline" size="sm" onClick={addPrompt} className="flex items-center gap-1">
 										<Plus className="h-3 w-3" />
-										Add Prompt
+										{t("addPrompt")}
 									</Button>
 								</div>
 								<div className="space-y-2">
@@ -889,10 +901,15 @@ export default function LatencyComparisonClient() {
 											<Input
 												value={prompt}
 												onChange={(e) => updatePrompt(index, e.target.value)}
-												placeholder={`Prompt ${index + 1}`}
+												placeholder={t("promptPlaceholder", { number: index + 1 })}
 											/>
 											{prompts.length > 1 && (
-												<Button variant="ghost" size="icon" onClick={() => removePrompt(index)}>
+								<Button
+									variant="ghost"
+									size="icon"
+									aria-label={t("removePrompt")}
+									onClick={() => removePrompt(index)}
+								>
 													<X className="h-4 w-4" />
 												</Button>
 											)}
@@ -915,7 +932,10 @@ export default function LatencyComparisonClient() {
 											className="w-24"
 										/>
 										<span className="text-sm text-muted-foreground">
-											({prompts.length} prompt(s) = {prompts.length * numRuns} total runs)
+										{t("promptRunSummary", {
+											promptCount: prompts.length,
+											runCount: prompts.length * numRuns,
+										})}
 										</span>
 									</div>
 								</div>
@@ -932,7 +952,9 @@ export default function LatencyComparisonClient() {
 									) : (
 										<Play className="h-4 w-4" />
 									)}
-									{isRunning ? `Run ${currentRun}/${totalRuns}...` : "Run Comparison"}
+									{isRunning
+										? t("runningCount", { currentRun, totalRuns })
+										: t("runComparison")}
 								</Button>
 								<Button
 									variant="outline"
@@ -941,7 +963,7 @@ export default function LatencyComparisonClient() {
 									className="flex items-center gap-2"
 								>
 									<Square className="h-4 w-4" />
-									Stop
+									{t("stop")}
 								</Button>
 							</div>
 						</div>
@@ -954,9 +976,11 @@ export default function LatencyComparisonClient() {
 							<div className="flex items-center justify-center gap-4">
 								<div className="text-center">
 									<div className="text-4xl font-mono font-bold text-primary">
-										{formatTime(elapsedTime)}
+										{formatLocalizedTime(elapsedTime)}
 									</div>
-									<div className="text-sm text-muted-foreground">Elapsed Time (Run {currentRun}/{totalRuns})</div>
+									<div className="text-sm text-muted-foreground">
+										{t("elapsedRun", { currentRun, totalRuns })}
+									</div>
 								</div>
 							</div>
 							<div className="mt-4 flex justify-center gap-8">
@@ -979,12 +1003,12 @@ export default function LatencyComparisonClient() {
 							<div className="flex items-center justify-between">
 								<CardTitle className="flex items-center gap-2">
 									<BarChart3 className="h-5 w-5" />
-									Aggregated Results ({runResults.length}/{totalRuns} runs)
+										{t("aggregatedResults", { completedRuns: runResults.length, totalRuns })}
 								</CardTitle>
 								<div className="flex gap-2">
 									{runResults.length === totalRuns && totalRuns > 1 && (
 										<Button variant="ghost" size="sm" onClick={() => setShowAllRuns(!showAllRuns)}>
-											{showAllRuns ? "Hide" : "Show"} All Runs
+											{showAllRuns ? t("hideAllRuns") : t("showAllRuns")}
 										</Button>
 									)}
 								</div>
@@ -992,7 +1016,7 @@ export default function LatencyComparisonClient() {
 						</CardHeader>
 						<CardContent>
 							<div className="mb-6">
-								<h4 className="font-medium mb-2 text-sm text-muted-foreground">Response Times Over Runs</h4>
+								<h4 className="font-medium mb-2 text-sm text-muted-foreground">{t("responseTimes")}</h4>
 								<TimelineChart gatewayTimes={gatewayTimes} openaiTimes={openaiTimes} />
 								<div className="flex justify-center gap-4 mt-2 text-xs">
 									<div className="flex items-center gap-1">
@@ -1019,28 +1043,28 @@ export default function LatencyComparisonClient() {
 										<div>
 											<h3 className="font-medium mb-3 flex items-center gap-2">
 												<Server className="h-4 w-4" />
-												Your Gateway
+												{t("yourGateway")}
 											</h3>
 											<div className="space-y-2 text-sm">
 												<div className="flex justify-between">
 									<span className="text-muted-foreground">{t("average")}</span>
-													<span className="font-mono">{formatTime(gatewayStats.avg)}</span>
+													<span className="font-mono">{formatLocalizedTime(gatewayStats.avg)}</span>
 												</div>
 												<div className="flex justify-between">
 									<span className="text-muted-foreground">{t("median")}</span>
-													<span className="font-mono">{formatTime(gatewayStats.median)}</span>
+													<span className="font-mono">{formatLocalizedTime(gatewayStats.median)}</span>
 												</div>
 												<div className="flex justify-between">
 									<span className="text-muted-foreground">{t("stdDev")}</span>
-													<span className="font-mono">{formatTime(gatewayStats.stdDev)}</span>
+													<span className="font-mono">{formatLocalizedTime(gatewayStats.stdDev)}</span>
 												</div>
 												<div className="flex justify-between">
 									<span className="text-muted-foreground">{t("minBest")}</span>
-													<span className="font-mono text-green-500">{formatTime(gatewayStats.min)}</span>
+													<span className="font-mono text-green-500">{formatLocalizedTime(gatewayStats.min)}</span>
 												</div>
 												<div className="flex justify-between">
 									<span className="text-muted-foreground">{t("maxWorst")}</span>
-													<span className="font-mono text-red-500">{formatTime(gatewayStats.max)}</span>
+													<span className="font-mono text-red-500">{formatLocalizedTime(gatewayStats.max)}</span>
 												</div>
 											</div>
 										</div>
@@ -1051,24 +1075,24 @@ export default function LatencyComparisonClient() {
 											</h3>
 											<div className="space-y-2 text-sm">
 												<div className="flex justify-between">
-													<span className="text-muted-foreground">Average</span>
-													<span className="font-mono">{formatTime(openphaseo.avg)}</span>
+													<span className="text-muted-foreground">{t("average")}</span>
+													<span className="font-mono">{formatLocalizedTime(openphaseo.avg)}</span>
 												</div>
 												<div className="flex justify-between">
-													<span className="text-muted-foreground">Median</span>
-													<span className="font-mono">{formatTime(openphaseo.median)}</span>
+													<span className="text-muted-foreground">{t("median")}</span>
+													<span className="font-mono">{formatLocalizedTime(openphaseo.median)}</span>
 												</div>
 												<div className="flex justify-between">
-													<span className="text-muted-foreground">Std Dev</span>
-													<span className="font-mono">{formatTime(openphaseo.stdDev)}</span>
+													<span className="text-muted-foreground">{t("stdDev")}</span>
+													<span className="font-mono">{formatLocalizedTime(openphaseo.stdDev)}</span>
 												</div>
 												<div className="flex justify-between">
-													<span className="text-muted-foreground">Min (Best)</span>
-													<span className="font-mono text-green-500">{formatTime(openphaseo.min)}</span>
+													<span className="text-muted-foreground">{t("minBest")}</span>
+													<span className="font-mono text-green-500">{formatLocalizedTime(openphaseo.min)}</span>
 												</div>
 												<div className="flex justify-between">
-													<span className="text-muted-foreground">Max (Worst)</span>
-													<span className="font-mono text-red-500">{formatTime(openphaseo.max)}</span>
+													<span className="text-muted-foreground">{t("maxWorst")}</span>
+													<span className="font-mono text-red-500">{formatLocalizedTime(openphaseo.max)}</span>
 												</div>
 											</div>
 										</div>
@@ -1080,28 +1104,28 @@ export default function LatencyComparisonClient() {
 										<div>
 											<h3 className="font-medium mb-3 flex items-center gap-2">
 												<Server className="h-4 w-4" />
-												Your Gateway (TTFT)
+												{t("yourGatewayTtft")}
 											</h3>
 											<div className="space-y-2 text-sm">
 												<div className="flex justify-between">
-													<span className="text-muted-foreground">Average TTFT</span>
-													<span className="font-mono">{formatTime(gatewayTTFTStats.avg)}</span>
+													<span className="text-muted-foreground">{t("averageTtft")}</span>
+													<span className="font-mono">{formatLocalizedTime(gatewayTTFTStats.avg)}</span>
 												</div>
 												<div className="flex justify-between">
-													<span className="text-muted-foreground">Median TTFT</span>
-													<span className="font-mono">{formatTime(gatewayTTFTStats.median)}</span>
+													<span className="text-muted-foreground">{t("medianTtft")}</span>
+													<span className="font-mono">{formatLocalizedTime(gatewayTTFTStats.median)}</span>
 												</div>
 												<div className="flex justify-between">
-													<span className="text-muted-foreground">Std Dev</span>
-													<span className="font-mono">{formatTime(gatewayTTFTStats.stdDev)}</span>
+													<span className="text-muted-foreground">{t("stdDev")}</span>
+													<span className="font-mono">{formatLocalizedTime(gatewayTTFTStats.stdDev)}</span>
 												</div>
 												<div className="flex justify-between">
-													<span className="text-muted-foreground">Min TTFT</span>
-													<span className="font-mono text-green-500">{formatTime(gatewayTTFTStats.min)}</span>
+													<span className="text-muted-foreground">{t("minTtft")}</span>
+													<span className="font-mono text-green-500">{formatLocalizedTime(gatewayTTFTStats.min)}</span>
 												</div>
 												<div className="flex justify-between">
-													<span className="text-muted-foreground">Max TTFT</span>
-													<span className="font-mono text-red-500">{formatTime(gatewayTTFTStats.max)}</span>
+													<span className="text-muted-foreground">{t("maxTtft")}</span>
+													<span className="font-mono text-red-500">{formatLocalizedTime(gatewayTTFTStats.max)}</span>
 												</div>
 											</div>
 										</div>
@@ -1112,24 +1136,24 @@ export default function LatencyComparisonClient() {
 											</h3>
 											<div className="space-y-2 text-sm">
 												<div className="flex justify-between">
-													<span className="text-muted-foreground">Average TTFT</span>
-													<span className="font-mono">{formatTime(openaiTTFTStats.avg)}</span>
+													<span className="text-muted-foreground">{t("averageTtft")}</span>
+													<span className="font-mono">{formatLocalizedTime(openaiTTFTStats.avg)}</span>
 												</div>
 												<div className="flex justify-between">
-													<span className="text-muted-foreground">Median TTFT</span>
-													<span className="font-mono">{formatTime(openaiTTFTStats.median)}</span>
+													<span className="text-muted-foreground">{t("medianTtft")}</span>
+													<span className="font-mono">{formatLocalizedTime(openaiTTFTStats.median)}</span>
 												</div>
 												<div className="flex justify-between">
-													<span className="text-muted-foreground">Std Dev</span>
-													<span className="font-mono">{formatTime(openaiTTFTStats.stdDev)}</span>
+													<span className="text-muted-foreground">{t("stdDev")}</span>
+													<span className="font-mono">{formatLocalizedTime(openaiTTFTStats.stdDev)}</span>
 												</div>
 												<div className="flex justify-between">
-													<span className="text-muted-foreground">Min TTFT</span>
-													<span className="font-mono text-green-500">{formatTime(openaiTTFTStats.min)}</span>
+													<span className="text-muted-foreground">{t("minTtft")}</span>
+													<span className="font-mono text-green-500">{formatLocalizedTime(openaiTTFTStats.min)}</span>
 												</div>
 												<div className="flex justify-between">
-													<span className="text-muted-foreground">Max TTFT</span>
-													<span className="font-mono text-red-500">{formatTime(openaiTTFTStats.max)}</span>
+													<span className="text-muted-foreground">{t("maxTtft")}</span>
+													<span className="font-mono text-red-500">{formatLocalizedTime(openaiTTFTStats.max)}</span>
 												</div>
 											</div>
 										</div>
@@ -1141,27 +1165,27 @@ export default function LatencyComparisonClient() {
 										<div>
 											<h3 className="font-medium mb-3 flex items-center gap-2">
 												<Server className="h-4 w-4" />
-												Your Gateway (tokens/sec)
+												{t("yourGatewayThroughput")}
 											</h3>
 											<div className="space-y-2 text-sm">
 												<div className="flex justify-between">
-													<span className="text-muted-foreground">Avg Throughput</span>
+													<span className="text-muted-foreground">{t("avgThroughput")}</span>
 													<span className="font-mono">{formatNumber(gatewayThroughputStats.avg)}</span>
 												</div>
 												<div className="flex justify-between">
-													<span className="text-muted-foreground">Median Throughput</span>
+													<span className="text-muted-foreground">{t("medianThroughput")}</span>
 													<span className="font-mono">{formatNumber(gatewayThroughputStats.median)}</span>
 												</div>
 												<div className="flex justify-between">
-													<span className="text-muted-foreground">Std Dev</span>
+													<span className="text-muted-foreground">{t("stdDev")}</span>
 													<span className="font-mono">{formatNumber(gatewayThroughputStats.stdDev)}</span>
 												</div>
 												<div className="flex justify-between">
-													<span className="text-muted-foreground">Max Throughput</span>
+													<span className="text-muted-foreground">{t("maxThroughput")}</span>
 													<span className="font-mono text-green-500">{formatNumber(gatewayThroughputStats.max)}</span>
 												</div>
 												<div className="flex justify-between">
-													<span className="text-muted-foreground">Min Throughput</span>
+													<span className="text-muted-foreground">{t("minThroughput")}</span>
 													<span className="font-mono text-red-500">{formatNumber(gatewayThroughputStats.min)}</span>
 												</div>
 											</div>
@@ -1173,23 +1197,23 @@ export default function LatencyComparisonClient() {
 											</h3>
 											<div className="space-y-2 text-sm">
 												<div className="flex justify-between">
-													<span className="text-muted-foreground">Avg Throughput</span>
+													<span className="text-muted-foreground">{t("avgThroughput")}</span>
 													<span className="font-mono">{formatNumber(openaiThroughputStats.avg)}</span>
 												</div>
 												<div className="flex justify-between">
-													<span className="text-muted-foreground">Median Throughput</span>
+													<span className="text-muted-foreground">{t("medianThroughput")}</span>
 													<span className="font-mono">{formatNumber(openaiThroughputStats.median)}</span>
 												</div>
 												<div className="flex justify-between">
-													<span className="text-muted-foreground">Std Dev</span>
+													<span className="text-muted-foreground">{t("stdDev")}</span>
 													<span className="font-mono">{formatNumber(openaiThroughputStats.stdDev)}</span>
 												</div>
 												<div className="flex justify-between">
-													<span className="text-muted-foreground">Max Throughput</span>
+													<span className="text-muted-foreground">{t("maxThroughput")}</span>
 													<span className="font-mono text-green-500">{formatNumber(openaiThroughputStats.max)}</span>
 												</div>
 												<div className="flex justify-between">
-													<span className="text-muted-foreground">Min Throughput</span>
+													<span className="text-muted-foreground">{t("minThroughput")}</span>
 													<span className="font-mono text-red-500">{formatNumber(openaiThroughputStats.min)}</span>
 												</div>
 											</div>
@@ -1200,15 +1224,15 @@ export default function LatencyComparisonClient() {
 								<TabsContent value="differences" className="mt-4">
 									<div className="space-y-6">
 										<div>
-											<h4 className="font-medium mb-3">Difference (Gateway vs OpenAI)</h4>
+											<h4 className="font-medium mb-3">{t("differenceGatewayOpenai")}</h4>
 											<div className="grid grid-cols-2 gap-4 text-sm">
 												<div className="flex justify-between">
-													<span className="text-muted-foreground">Avg Difference</span>
-													<span className="font-mono">{formatTime(diffStats.avgDiff)}</span>
+													<span className="text-muted-foreground">{t("avgDifference")}</span>
+													<span className="font-mono">{formatLocalizedTime(diffStats.avgDiff)}</span>
 												</div>
 												<div className="flex justify-between">
-													<span className="text-muted-foreground">Median Difference</span>
-													<span className="font-mono">{formatTime(diffStats.medianDiff)}</span>
+													<span className="text-muted-foreground">{t("medianDifference")}</span>
+													<span className="font-mono">{formatLocalizedTime(diffStats.medianDiff)}</span>
 												</div>
 											</div>
 										</div>
@@ -1217,15 +1241,15 @@ export default function LatencyComparisonClient() {
 											<div className="flex justify-center gap-6 text-sm">
 												<div className="flex items-center gap-2">
 													<TrendingUp className="h-4 w-4 text-green-500" />
-													<span>Gateway wins: <strong>{gatewayWins}</strong> ({gatewayWins > 0 ? formatNumber((gatewayWins / successfulRuns.length) * 100) : 0}%)</span>
+													<span>{t("gatewayWins")}: <strong>{gatewayWins}</strong> ({gatewayWins > 0 ? formatNumber((gatewayWins / successfulRuns.length) * 100) : 0}%)</span>
 												</div>
 												<div className="flex items-center gap-2">
 													<TrendingUp className="h-4 w-4 text-blue-500" />
-													<span>OpenAI wins: <strong>{openaiWins}</strong> ({openaiWins > 0 ? formatNumber((openaiWins / successfulRuns.length) * 100) : 0}%)</span>
+													<span>{t("openaiWins")}: <strong>{openaiWins}</strong> ({openaiWins > 0 ? formatNumber((openaiWins / successfulRuns.length) * 100) : 0}%)</span>
 												</div>
 												{ties > 0 && (
 													<div className="flex items-center gap-2">
-														<span>Ties: <strong>{ties}</strong></span>
+														<span>{t("ties")}: <strong>{ties}</strong></span>
 													</div>
 												)}
 											</div>
@@ -1237,8 +1261,8 @@ export default function LatencyComparisonClient() {
 													>
 														{overallWinner === "gateway" ? "✓" : "△"}{" "}
 														{overallWinner === "gateway"
-															? "Gateway wins overall"
-															: "OpenAI wins overall"}
+															? t("gatewayWinsOverall")
+															: t("openaiWinsOverall")}
 													</Badge>
 												</div>
 											)}
@@ -1253,19 +1277,19 @@ export default function LatencyComparisonClient() {
 				{showAllRuns && runResults.length > 0 && (
 					<Card>
 						<CardHeader>
-							<CardTitle>All Runs</CardTitle>
-							<CardDescription>Detailed results for each run</CardDescription>
+							<CardTitle>{t("allRuns")}</CardTitle>
+							<CardDescription>{t("detailedResults")}</CardDescription>
 						</CardHeader>
 						<CardContent>
 							<div className="space-y-3">
 								{runResults.map((result) => (
 									<div key={result.runNumber} className="p-4 border rounded-lg space-y-2">
 										<div className="flex items-center justify-between">
-											<span className="font-medium">Run {result.runNumber}</span>
+											<span className="font-medium">{t("runNumber", { number: result.runNumber })}</span>
 											<Badge
 												variant={result.gatewayWinner === "gateway" ? "default" : result.gatewayWinner === "openai" ? "secondary" : "outline"}
 											>
-												{result.gatewayWinner === "gateway" ? "✓ Gateway" : result.gatewayWinner === "openai" ? "✓ OpenAI" : "Tie"}
+												{result.gatewayWinner === "gateway" ? "✓ Gateway" : result.gatewayWinner === "openai" ? "✓ OpenAI" : t("tie")}
 											</Badge>
 										</div>
 										<p className="text-sm text-muted-foreground truncate">{result.prompt}</p>
@@ -1279,10 +1303,10 @@ export default function LatencyComparisonClient() {
 													<span className="text-red-500 text-xs">{result.gateway.error}</span>
 												) : (
 													<div className="space-y-1 text-xs">
-														<div>TTFT: {formatTime(result.gateway.ttft)}</div>
-														<div>Total: {formatTime(result.gateway.totalTime)}</div>
-														<div>Chunks: {result.gateway.chunks}</div>
-														<div>Throughput: {result.gateway.throughput ? formatNumber(result.gateway.throughput) + "/s" : "N/A"}</div>
+														<div>TTFT: {formatLocalizedTime(result.gateway.ttft)}</div>
+														<div>{t("totalTime")}: {formatLocalizedTime(result.gateway.totalTime)}</div>
+														<div>{t("chunks")}: {result.gateway.chunks}</div>
+														<div>{extrasT("throughput")}: {result.gateway.throughput ? formatNumber(result.gateway.throughput) + "/s" : t("nA")}</div>
 													</div>
 												)}
 											</div>
@@ -1295,10 +1319,10 @@ export default function LatencyComparisonClient() {
 													<span className="text-red-500 text-xs">{result.openai.error}</span>
 												) : (
 													<div className="space-y-1 text-xs">
-														<div>TTFT: {formatTime(result.openai.ttft)}</div>
-														<div>Total: {formatTime(result.openai.totalTime)}</div>
-														<div>Chunks: {result.openai.chunks}</div>
-														<div>Throughput: {result.openai.throughput ? formatNumber(result.openai.throughput) + "/s" : "N/A"}</div>
+														<div>TTFT: {formatLocalizedTime(result.openai.ttft)}</div>
+														<div>{t("totalTime")}: {formatLocalizedTime(result.openai.totalTime)}</div>
+														<div>{t("chunks")}: {result.openai.chunks}</div>
+														<div>{extrasT("throughput")}: {result.openai.throughput ? formatNumber(result.openai.throughput) + "/s" : t("nA")}</div>
 													</div>
 												)}
 											</div>
@@ -1316,7 +1340,7 @@ export default function LatencyComparisonClient() {
 							<CardHeader>
 								<CardTitle className="flex items-center gap-2">
 									<Server className="h-5 w-5" />
-									Latest: Gateway
+									{t("latestProvider", { provider: "Gateway" })}
 								</CardTitle>
 							</CardHeader>
 							<CardContent>
@@ -1324,25 +1348,25 @@ export default function LatencyComparisonClient() {
 									<>
 										{latestResult.gateway.error ? (
 											<div className="p-3 bg-red-500/10 border border-red-500 rounded text-sm text-red-500">
-												<strong>Error:</strong> {latestResult.gateway.error}
+												<strong>{t("error")}:</strong> {latestResult.gateway.error}
 											</div>
 										) : (
 											<div className="space-y-2 mb-4">
 												<div className="flex justify-between text-sm">
 													<span className="text-muted-foreground">TTFT</span>
-													<span className="font-mono">{formatTime(latestResult.gateway.ttft)}</span>
+													<span className="font-mono">{formatLocalizedTime(latestResult.gateway.ttft)}</span>
 												</div>
 												<div className="flex justify-between text-sm">
-													<span className="text-muted-foreground">Total Time</span>
-													<span className="font-mono">{formatTime(latestResult.gateway.totalTime)}</span>
+													<span className="text-muted-foreground">{t("totalTime")}</span>
+													<span className="font-mono">{formatLocalizedTime(latestResult.gateway.totalTime)}</span>
 												</div>
 												<div className="flex justify-between text-sm">
-													<span className="text-muted-foreground">Chunks</span>
+													<span className="text-muted-foreground">{t("chunks")}</span>
 													<span className="font-mono">{latestResult.gateway.chunks}</span>
 												</div>
 												<div className="flex justify-between text-sm">
-													<span className="text-muted-foreground">Throughput</span>
-													<span className="font-mono">{latestResult.gateway.throughput ? formatNumber(latestResult.gateway.throughput) + "/s" : "N/A"}</span>
+													<span className="text-muted-foreground">{extrasT("throughput")}</span>
+													<span className="font-mono">{latestResult.gateway.throughput ? formatNumber(latestResult.gateway.throughput) + "/s" : t("nA")}</span>
 												</div>
 											</div>
 										)}
@@ -1360,7 +1384,7 @@ export default function LatencyComparisonClient() {
 							<CardHeader>
 								<CardTitle className="flex items-center gap-2">
 									<Logo id="openai" className="h-5 w-5" width={20} height={20} />
-									Latest: OpenAI API
+									{t("latestProvider", { provider: "OpenAI API" })}
 								</CardTitle>
 							</CardHeader>
 							<CardContent>
@@ -1368,25 +1392,25 @@ export default function LatencyComparisonClient() {
 									<>
 										{latestResult.openai.error ? (
 											<div className="p-3 bg-red-500/10 border border-red-500 rounded text-sm text-red-500">
-												<strong>Error:</strong> {latestResult.openai.error}
+												<strong>{t("error")}:</strong> {latestResult.openai.error}
 											</div>
 										) : (
 											<div className="space-y-2 mb-4">
 												<div className="flex justify-between text-sm">
 													<span className="text-muted-foreground">TTFT</span>
-													<span className="font-mono">{formatTime(latestResult.openai.ttft)}</span>
+													<span className="font-mono">{formatLocalizedTime(latestResult.openai.ttft)}</span>
 												</div>
 												<div className="flex justify-between text-sm">
-													<span className="text-muted-foreground">Total Time</span>
-													<span className="font-mono">{formatTime(latestResult.openai.totalTime)}</span>
+													<span className="text-muted-foreground">{t("totalTime")}</span>
+													<span className="font-mono">{formatLocalizedTime(latestResult.openai.totalTime)}</span>
 												</div>
 												<div className="flex justify-between text-sm">
-													<span className="text-muted-foreground">Chunks</span>
+													<span className="text-muted-foreground">{t("chunks")}</span>
 													<span className="font-mono">{latestResult.openai.chunks}</span>
 												</div>
 												<div className="flex justify-between text-sm">
-													<span className="text-muted-foreground">Throughput</span>
-													<span className="font-mono">{latestResult.openai.throughput ? formatNumber(latestResult.openai.throughput) + "/s" : "N/A"}</span>
+													<span className="text-muted-foreground">{extrasT("throughput")}</span>
+													<span className="font-mono">{latestResult.openai.throughput ? formatNumber(latestResult.openai.throughput) + "/s" : t("nA")}</span>
 												</div>
 											</div>
 										)}

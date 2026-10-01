@@ -1,0 +1,33 @@
+---
+icon: "triangle-alert"
+title: "Erreurs et dépannage"
+description: "Gérez les erreurs de modèle, d’outil, de validation, d’annulation et de reprise dans les agents Go."
+---
+
+Les échecs d’un agent proviennent généralement de la requête au modèle, d’un outil local, de la validation du schéma, d’une annulation ou d’une décision humaine incomplète. Rendez ces cas visibles dans les journaux et renvoyez des erreurs sûres aux appelants.
+
+## Récupérer après une erreur d’outil
+
+Définissez `OnError: "return-to-model"` sur un outil lorsque le modèle peut raisonnablement récupérer de l’échec. Le SDK convertit l’erreur en résultat d’outil et laisse le tour suivant choisir une autre action. Conservez le comportement par défaut qui échoue l’exécution pour les échecs dangereux ou irrécupérables.
+
+## Respecter l’annulation
+
+Transmettez le contexte de la requête à `Run`, `Continue` ou `Stream`. Son annulation arrête le flux du modèle et empêche le démarrage de nouvelles tâches d’outil.
+
+```go
+ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+defer cancel()
+
+result, err := agent.Run(ctx, options)
+if errors.Is(err, context.DeadlineExceeded) {
+  // Persist enough application state to retry or report the timeout.
+}
+```
+
+## Diagnostiquer les erreurs de reprise
+
+Lorsqu’une exécution attend une personne, chaque appel en attente doit recevoir une approbation, un refus ou un résultat fourni par un système externe, associé à l’identifiant de l’appel d’outil. Enregistrez l’intégralité de l’exécution renvoyée ; un simple message humain ne remplace pas ces décisions.
+
+## Consigner le contexte utile
+
+Consignez l’identifiant d’exécution, l’index de l’étape, l’identifiant de requête, le fournisseur, le modèle, le motif de fin, l’identifiant d’appel d’outil et le motif d’arrêt. Les hooks de cycle de vie et DevTools exposent ces champs sans journaliser la couche de transport.

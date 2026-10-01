@@ -1,0 +1,69 @@
+---
+title: "Générer de la musique"
+sidebarTitle: "Générer de la musique"
+badge: "Beta"
+openapi: "/fr/openapi/v1/openapi.localized.yaml POST /music/generate"
+---
+
+Générez de la musique avec une API indépendante des fournisseurs. Phaseo gère les réponses synchrones et interroge les files des fournisseurs en arrière-plan.
+
+Une fois la génération terminée, la réponse inclut `audio_url` ou `audio_base64`. Si un fournisseur renvoie une tâche non terminée, utilisez le même `id` de réponse avec `GET /music/generate/{music_id}`.
+
+## Structure de la requête
+
+```json
+{
+  "model": "minimax/music-3.0:free",
+  "prompt": "Warm jazz trio with brushed drums",
+  "format": "mp3"
+}
+```
+
+## Options Suno
+
+- `suno.customMode` (booléen, valeur par défaut : `false`)
+- `suno.instrumental` (booléen, valeur par défaut : `false`)
+- `suno.prompt` (remplacement facultatif de `prompt` au niveau supérieur)
+- `suno.style`, `suno.title` (obligatoire lorsque `customMode = true`)
+- `suno.personaId`, `suno.personaModel`
+- `suno.negativeTags`, `suno.vocalGender`
+- `suno.styleWeight`, `suno.weirdnessConstraint`, `suno.audioWeight`
+
+## Règles de validation
+
+- Lorsque `customMode = false`, `prompt` est obligatoire.
+- Lorsque `customMode = true`, `style` et `title` sont tous deux obligatoires.
+- Lorsque `customMode = true` et `instrumental = false`, `prompt` est obligatoire.
+
+Les erreurs de validation renvoient `400` avec :
+
+```json
+{
+  "error": "validation_error",
+  "reason": "..."
+}
+```
+
+## Réponse
+
+```json
+{
+  "id": "req_01JY6MUSIC123",
+  "object": "music",
+  "status": "completed",
+  "provider": "gmicloud",
+  "model": "minimax/music-3.0:free",
+  "nativeResponseId": "5c30b275-d669-4a25-8151-de6d60214853",
+  "audio_url": "https://.../generated-music.mp3",
+  "usage": {
+    "requests": 1,
+    "output_audio_seconds": 25.364
+  }
+}
+```
+
+- Le champ `id` est la clé stable de requête Phaseo. Utilisez-le pour récupérer la requête via `GET /music/generate/{music_id}`.
+- La valeur de `nativeResponseId` correspond au fournisseur en amont et permet de retrouver sa requête et de contacter son assistance.
+- `status` peut être `queued`, `in_progress`, `completed` ou `failed`.
+- `usage` peut inclure `output_audio_seconds` lorsque le fournisseur indique la durée générée.
+

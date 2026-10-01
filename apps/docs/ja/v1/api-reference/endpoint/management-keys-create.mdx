@@ -1,0 +1,11 @@
+---
+title: "管理キーを作成"
+sidebarTitle: "管理キーを作成"
+badge: "Beta"
+openapi: "/ja/openapi/v1/openapi.localized.yaml POST /management-keys"
+description: "コントロールプレーンの自動化に使う、スコープ付き管理キーを作成します。"
+---
+<Note>このエンドポイントには、オーナーまたは管理者のIDと`management_keys:write`が必要です。</Note>
+
+機能テンプレートを選ぶか、スコープの一覧を明示してください。生の`key`は作成レスポンスでのみ返されるため、すぐにサーバー側のシークレットストレージへ保存してください。
+

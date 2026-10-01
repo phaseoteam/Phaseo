@@ -1,0 +1,199 @@
+---
+title: "Modelle auflisten"
+sidebarTitle: "Modelle auflisten"
+badge: "Beta"
+openapi: "/de/openapi/v1/openapi.localized.yaml GET /models"
+description: "Gateway-native Modelle über das Phaseo Gateway durchsuchen, einschließlich optionaler Verfügbarkeitsdetails für nicht routbare Modelle."
+---
+
+Standardmäßig gibt dieser Endpunkt nur Modelle zurück, die aktuell geroutet werden können. Setzen Sie `availability=all`, um bekannte, derzeit aber nicht verfügbare Modelle einzuschließen.
+
+`GET /models/me` ist für eine künftige Filterung nach den Guardrails des aktuellen Aufrufers vorgesehen. Der Endpunkt gibt derzeit `501 not implemented` zurück. Verwenden Sie deshalb vorerst `GET /models` für den gemeinsamen Gateway-Katalog.
+
+## Nützliche Filter
+
+- `endpoints` verwendet öffentliche Namen wie `chat.completions`, `responses` und `messages`
+- `status` filtert nach dem Lebenszyklus eines Modells, etwa `active`, `deprecated` oder `retired`
+- `provider` filtert nach der öffentlichen Anbieter-ID, etwa `openai`, `anthropic` oder `google_vertex`
+- `provider_status` filtert nach der Rollout-Stufe eines Anbieters, etwa `active`, `beta`, `alpha` oder `not_ready`
+- `provider_routing_status` filtert nach dem Routing-Status eines Anbieters
+- `model_routing_status` filtert nach dem Routing-Status eines Modells
+- `capability_status` filtert nach dem Status der Anbieterfunktion für die angeforderte Endpunktzuordnung
+- `provider_availability_status` filtert nach der Verfügbarkeit des Anbieters, etwa `active`, `coming_soon` oder `inactive`
+- `provider_availability_reason` filtert nach dem Verfügbarkeitsgrund des Anbieters, etwa `preview_only`, `provider_not_ready`, `gated`, `access_limited` oder `region_limited`
+- `organisation` filtert nach dem Präfix der öffentlichen Modell-ID, etwa `anthropic` in `anthropic/claude-3-haiku`
+- `availability=active` ist der Standardwert
+- `availability=all` umfasst Modelle oder Anbieter mit `coming_soon`, `inactive` oder ohne öffentliche Routing-Freigabe
+- `input_modalities` ist ein Alias für `input_types`
+- `output_modalities` ist ein Alias für `output_types`
+- `supported_parameters` ist ein Alias für `params`
+
+Rufen Sie `GET /models/{author}/{slug}/endpoints` auf, um den Endpunktvertrag für ein Modell abzurufen. Die Antwort trennt die Anbieter-Routen und enthält für jede Zeile den öffentlichen Pfad, Modalitäten, Details zu unterstützten Parametern, Verfügbarkeit, Routing-Status, den Modell-Slug des Anbieters und eine Preisübersicht.
+
+Anbietereinträge können außerdem Folgendes enthalten:
+
+- `availability_status`
+- `availability_reason`
+- `provider_status`
+- `provider_routing_status`
+- `model_routing_status`
+- `capability_status`
+
+### Antwort
+
+```json
+{
+  "ok": true,
+  "privacy_scope": "shared",
+  "availability_mode": "all",
+  "limit": 50,
+  "offset": 0,
+  "total": 99,
+  "models": [
+    {
+      "id": "anthropic/claude-3-haiku",
+      "canonical_slug": "anthropic/claude-3-haiku",
+      "model_id": "anthropic/claude-3-haiku",
+      "name": "anthropic/claude-3-haiku",
+      "description": "anthropic/claude-3-haiku via Phaseo Gateway. Supports chat.completions, messages, responses.",
+      "created": null,
+      "release_date": null,
+      "deprecation_date": null,
+      "retirement_date": null,
+      "status": "active",
+      "availability": {
+        "status": "coming_soon",
+        "provider_count": 1,
+        "active_provider_count": 0,
+        "inactive_provider_count": 0
+      },
+      "organisation_id": "anthropic",
+      "organisation_name": null,
+      "organisation_colour": null,
+      "aliases": [],
+      "endpoints": ["chat.completions", "messages", "responses"],
+      "input_types": ["text"],
+      "output_types": ["text"],
+      "architecture": {
+        "modality": "text->text",
+        "input_modalities": ["text"],
+        "output_modalities": ["text"],
+        "tokenizer": null,
+        "instruct_type": "chat"
+      },
+      "providers": [
+        {
+          "api_provider_id": "anthropic",
+          "api_provider_name": "Anthropic",
+          "provider_model_slug": "claude-3-haiku-20240307",
+          "is_active_gateway": false,
+          "availability_status": "coming_soon",
+          "availability_reason": "preview_only",
+          "provider_status": "beta",
+          "provider_routing_status": "active",
+          "model_routing_status": "active",
+          "capability_status": "coming_soon",
+          "effective_from": "2026-06-01T00:00:00Z",
+          "effective_to": null,
+          "endpoints": ["responses"],
+          "input_modalities": ["text"],
+          "output_modalities": ["text"],
+          "params": [
+            "max_tokens",
+            "response_format",
+            "stop",
+            "structured_outputs",
+            "temperature",
+            "tool_choice",
+            "tools",
+            "top_k",
+            "top_p"
+          ],
+          "supported_parameters": [
+            "max_tokens",
+            "response_format",
+            "stop",
+            "structured_outputs",
+            "temperature",
+            "tool_choice",
+            "tools",
+            "top_k",
+            "top_p"
+          ],
+          "supported_parameters_detail": {
+            "temperature": {
+              "supported": true,
+              "type": "number",
+              "minimum": 0,
+              "maximum": 2
+            }
+          }
+        }
+      ],
+      "supported_params": [
+        "max_tokens",
+        "response_format",
+        "stop",
+        "structured_outputs",
+        "temperature",
+        "tool_choice",
+        "tools",
+        "top_k",
+        "top_p"
+      ],
+      "supported_params_detail": {
+        "temperature": {
+          "supported": true,
+          "type": "number",
+          "minimum": 0,
+          "maximum": 2,
+          "providers": ["openai"]
+        }
+      },
+      "supported_parameters": [
+        "max_tokens",
+        "response_format",
+        "stop",
+        "structured_outputs",
+        "temperature",
+        "tool_choice",
+        "tools",
+        "top_k",
+        "top_p"
+      ],
+      "supported_parameters_detail": {
+        "temperature": {
+          "supported": true,
+          "type": "number",
+          "minimum": 0,
+          "maximum": 2,
+          "providers": ["openai"]
+        }
+      },
+      "top_provider_id": null,
+      "top_provider": {
+        "context_length": null,
+        "max_completion_tokens": null,
+        "is_moderated": false
+      },
+      "pricing": {
+        "prompt": null,
+        "completion": null,
+        "request": null,
+        "image": null,
+        "input_cache_read": null,
+        "input_cache_write": null,
+        "web_search": null
+      },
+      "pricing_detail": {
+        "pricing_plan": "standard",
+        "meters": {}
+      },
+      "per_request_limits": null
+    }
+  ]
+}
+```
+
+`availability_reason` ist das einzelne Feld, das erklärt, warum ein Anbietereintrag aktiv, nur als Vorschau verfügbar oder inaktiv ist.
+

@@ -1,0 +1,24 @@
+---
+icon: "arrow-right-left"
+title: "Traduções"
+description: "Chame `/audio/translations` usando o SDK Java."
+---
+
+**Método**: `client.createTranslation(...)`
+
+```java
+import app.phaseo.sdk.Phaseo;
+
+Phaseo client = new Phaseo(System.getenv("PHASEO_API_KEY"));
+
+String body = """
+{
+  "model": "openai/whisper-1",
+  "file": "data:audio/mpeg;base64,..."
+}
+""";
+
+Object response = client.createTranslation(body);
+System.out.println(String.valueOf(response));
+```
+

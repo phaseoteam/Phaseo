@@ -1,0 +1,120 @@
+---
+title: "错过了？回顾： 2026 年 6 月发布内容"
+shortTitle: "错过了？回顾： 2026 年 6 月"
+description: 6 月改进了模型发现、生命周期提示、监控、引导流程和提供商覆盖范围。
+publishedAt: 2026-06-30
+author: Phaseo Team
+category: data
+pinned: false
+coverImage: /blog-images/recap-june-2026.png
+tags:
+  - 月度回顾
+  - 月度回顾
+  - 产品
+  - 模型
+draft: false
+---
+
+6 月的重点是在模型市场快速变化时继续让 Phaseo 保持实用。目录方面完成了许多工作，但更重要的主题是可靠性：更好的模型发现、更清晰的生命周期提示、更完善的监控页面，以及更广的提供商覆盖范围。
+
+本回顾涵盖 **2026 年 6 月 1 日至 6 月 30 日** 发布的内容，依据当月的发布记录、提交记录和目录数据整理而成。
+
+## 本月发布
+
+### 模型发现更加可靠
+
+6 月，我们围绕模型发现、提供商检查和目录导入完成了大量工作。模型发现改用 Cloudflare 定时任务，恢复能力得到提升，工单同步重新启用，导入时也会清理过时的模型通知。
+
+因此，目录不再那么依赖人工检查，提供商更新也能更稳定地通过系统处理。
+
+这不仅是内部维护。如果提供商新增模型、调整价格、停用别名或更改可用状态，Phaseo 就需要及时发现。6 月的改进减少了这些变化一直无人注意、直到有人手动检查才被发现的可能性。
+
+### 模型页面更清楚地展示生命周期信息
+
+我们在模型页面添加了通知和用于显示生命周期日期相对时间的卡片，调整了日期排序，并修复了模型详情页的滚动行为。快速开始流程中的模型选择也得到改进，整个流程更加简洁。
+
+我们的目标是让用户一眼就能信任模型页面：了解哪些模型可用、发生了什么变化、哪些模型已停用，以及接下来可以使用什么。
+
+这很重要，因为模型页面不是静态着陆页，而是持续更新的记录。模型可能从传闻变成预览版，从预览版变为已启用，再从已启用变为弃用；也可能从仅由一家提供商提供，扩展到多家提供商。6 月的改进让产品更容易说明这些变化。
+
+### 监控和使用情况视图得到改进
+
+监控历史信息流迁移到了 Supabase，监控卡片得到完善，状态日期和链接也更醒目。我们还升级了设置中的可观测性，并为 Gateway 增加了更多 API 路由和使用指标。
+
+这样，团队无需先翻查原始日志，也能更清楚地了解当前运行情况。
+
+6 月还增强了 Playground 路由的可观测性，并确保 Axiom 中的早期错误信息持续可见。这些改进缩短了从“请求失败了”到“我们知道它为什么失败”的距离。
+
+### 引导流程和 CLI 基础继续推进
+
+6 月新增了交互式引导流程，并为 OAuth 测试版 CLI 的后续工作打下基础。我们也修正了首页快速开始区域的响应式布局，并继续完善账户和计费的边界情况。
+
+这些改进让首次使用更加顺畅，也让未来的本地开发流程更容易构建。
+
+OAuth CLI 的工作很好地说明了这些改进的意义。如果开发者能连接本地工具、顺利完成身份验证，并从首次测试进入可重复的工作流程，而不必到处复制零散的配置步骤，Gateway 就更容易被采用。
+
+### 提供商覆盖范围持续扩大
+
+6 月的提供商覆盖变化很快。目录新增或更新了 Alibaba Cloud、Cloudflare Workers AI、DigitalOcean、Fireworks、Together、Bedrock、xAI、Moonshot、Z.AI、CrofAI、ByteDance、Venice、AtlasCloud、AkashML、GMICloud 等提供商的信息。
+
+我们还为多个重要发布补充了价格、路由和基准测试更新，包括 Kimi K2.7 Code、GLM 5.2、Claude Fable 5、Claude Sonnet 5 和 LongCat 2.0。
+
+Phaseo 必须发挥基础设施的作用，而不只是一份列表。用户需要了解哪些提供商支持某个模型、各条路由的价格、模型是否已启用，以及它与相近替代方案的差异。
+
+## 其他更新
+
+- 将更新日志整合到一条时间线上。
+- 模型发现工单迁移到 Cloudflare 定时任务。
+- 更新了订阅套餐目录数据。
+- 在页脚添加了 Monitor 链接。
+- 修复了模型观察任务的调度与恢复流程。
+- 模型页面通知改为从目录数据导入。
+- 首页测试版快速开始区域更适配不同屏幕尺寸。
+- 有价格信息时，会显示即将推出模型的价格。
+- 更新了界面组件包、Actions 配置工具和运行时库中的依赖。
+
+## 模型亮点
+
+6 月推出了多款重要模型。Kimi K2.7 Code 增加了目录支持、Hugging Face 链接、提供商价格和生成式 SDK 更新。GLM 5.2 增加了提供商可用性、价格、推理强度支持、路由修复和发布准备工作。Claude Fable 5 和 Claude Mythos 5 则持续完善发布记录、通知、价格、提供商部署和基准测试数据。
+
+6 月 30 日迎来了一批密集发布：Claude Sonnet 5、Gemini Omni Flash Preview、Leanstral 1.5 和 OCR 4。LongCat 2.0 也在月底发布，观察任务支持在发布前就已加入。
+
+查看最新发布数据：
+
+- [查看近期更新](/updates)
+
+## 本月概览
+
+本地 Git 历史记录显示，6 月共有 **163 次提交**。本月工作重点是提高模型发现的可靠性、扩大提供商覆盖范围、完善监控和使用情况视图、改进引导流程与 Gateway 工具，并跟进密集的模型发布。
+
+## 2026 年 6 月发布的模型
+
+目录中以下模型的发布日期为 2026 年 6 月：
+
+- 6 月 1 日：MiniMax M3 (`minimax/minimax-m3`)
+- 6 月 1 日：Nemotron 3 Ultra (`nvidia/nemotron-3-ultra-550b-a55b`)
+- 6 月 1 日：Qwen 3.7 Plus (`qwen/qwen3.7-plus`)
+- 6 月 3 日：Gemma 4 12B (`google/gemma-4-12b`)
+- 6 月 5 日：Nex N2 Mini (`nex-agi/nex-n2-mini`)
+- 6 月 5 日：Nex N2 Pro (`nex-agi/nex-n2-pro`)
+- 6 月 9 日：Claude Fable 5 (`anthropic/claude-fable-5`)
+- 6 月 9 日：Claude Mythos 5 (`anthropic/claude-mythos-5`)
+- 6 月 9 日：Gemini 3.5 Live Translate Preview (`google/gemini-3.5-live-translate-preview`)
+- 6 月 10 日：DiffusionGemma 26B A4B IT (`google/diffusiongemma-26b-a4b-it`)
+- 6 月 12 日：Kimi K2.7 Code (`moonshotai/kimi-k2.7-code`)
+- 6 月 14 日：Greg 2 Super (`crofai/greg-2-super`)
+- 6 月 14 日：Greg 2 Ultra (`crofai/greg-2-ultra`)
+- 6 月 15 日：Seedance 2.0 Mini (2026-06-15) (`bytedance/seedance-2.0-mini-260615`)
+- 6 月 16 日：GLM 5.2 (`z-ai/glm-5.2`)
+- 6 月 17 日：Grok Imagine Video 1.5 (`x-ai/grok-imagine-video-1.5`)
+- 6 月 23 日：Gemini 3.1 Flash Lite image (Nano Banana 2 Lite) (`google/gemini-3.1-flash-lite-image`)
+- 6 月 29 日：LongCat 2.0 (`meituan/longcat-2.0`)
+- 6 月 30 日：Claude Sonnet 5 (`anthropic/claude-sonnet-5`)
+- 6 月 30 日：Gemini Omni Flash Preview (`google/gemini-omni-flash-preview`)
+- 6 月 30 日：Leanstral 1.5 (`mistral/leanstral-1.5`)
+- 6 月 30 日：OCR 4 (`mistral/ocr-4`)
+
+## 接下来
+
+6 月的工作直接衔接 Phaseo 的迁移：品牌形象更加清晰，博客内容更加完善，网站结构也可以在同一处展示产品更新、模型发布说明、指南和数据文章。
+

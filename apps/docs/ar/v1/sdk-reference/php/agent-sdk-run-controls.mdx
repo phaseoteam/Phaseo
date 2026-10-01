@@ -1,0 +1,41 @@
+---
+icon: "rotate"
+title: "المخرجات وإعادة المحاولة"
+description: "تحقّق من المخرجات النهائية، وأعِد طلبات النموذج، وافحص عمليات تشغيل PHP المكتملة."
+---
+
+استخدم التحقق من المخرجات عندما يحتاج كود PHP اللاحق إلى بنية متوقعة. تعالج محاولات النموذج إخفاقات الطلب المؤقتة؛ أما الأدوات ذات الآثار الجانبية فيجب أن تعيد المحاولة داخل تنفيذ الأداة نفسه وأن تكون متكررة بأمان.
+
+## إعداد إعادة المحاولة
+
+```php
+$agent = AgentSdk::createAgent(new AgentDefinition(
+    id: "research-agent",
+    model: "openai/gpt-5.4-nano",
+    modelRetry: new ModelRetryConfig(
+        maxRetries: 3,
+        baseDelayMs: 500,
+        maxDelayMs: 4000
+    )
+));
+```
+
+يتضمن ناتج التشغيل الحالة والخطوات والرسائل والاستخدام الموحّد وسبب الإيقاف والمخرجات النهائية. افحص هذه الحقول بدلًا من اعتبار النص النهائي سجل التشغيل الكامل.
+
+## التحقق من النتيجة النهائية
+```php
+$result = $agent->run(input: $prompt, client: $client);
+
+echo $result->output;
+echo $result->run->status;
+echo $result->usage["total_tokens"];
+echo $result->usage["cost"];
+```$result = $agent->run(input: $prompt, client: $client);
+
+echo $result->output;
+echo $result->run->status;
+echo $result->usage["total_tokens"];
+echo $result->usage["cost"];
+```
+
+استخدم [شروط الإيقاف](./agent-sdk-stop-conditions) لفرض الحدود، و[الأخطاء واستكشاف المشكلات وإصلاحها](./agent-sdk-observability) لاختيار سلوك الإخفاقات القابلة للتعافي.

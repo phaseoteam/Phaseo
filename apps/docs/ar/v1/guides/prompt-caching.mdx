@@ -1,0 +1,275 @@
+---
+title: "تخزين المطالبات مؤقتًا"
+description: "أعِد استخدام سياق المطالبة الثابت عبر طلبات Chat Completions وResponses وAnthropic Messages."
+icon: "database-zap"
+---
+
+استخدم تخزين المطالبات مؤقتًا عندما يتكرر السياق الكبير نفسه في طلبات عديدة. حدّد التعليمات والمستندات والأمثلة ونتائج الأدوات وتعريفاتها الثابتة كمحتوى قابل للتخزين، ليتمكن المزوّدون المدعومون من إعادة استخدامه في الاستدعاءات اللاحقة.
+
+يختلف تخزين المطالبات مؤقتًا عن [تخزين الردود مؤقتًا](../cookbook/response-caching-with-presets.mdx). يظل الاستدلال يعمل، لكن تخزين المطالبات قد يقلّل تكلفة معالجة الإدخال المتكرر وزمن الاستجابة. أما تخزين الردود فيعيد إجابة سبق إنشاؤها لطلب مطابق.
+
+<Note>
+يعتمد دعم تخزين المطالبات مؤقتًا على المزوّد والنموذج. يتجاهل المزوّد غير المدعوم تلميحات التخزين أو يوجّه الطلب دون تسعير التخزين المؤقت. راجع جدول الأسعار في صفحة النموذج لمعرفة أسعار القراءة والكتابة.
+</Note>
+
+## ما الذي ينبغي تخزينه مؤقتًا
+
+خزّن المحتوى الذي يظل ثابتًا بين الطلبات:
+
+- تعليمات النظام الطويلة
+- مستندات RAG المعاد استخدامها
+- أمثلة few-shot
+- تعريفات الأدوات
+- نتائج الأدوات الكبيرة التي يعاد استخدامها في الدور التالي
+
+تجنب تخزين المحتوى الذي يتغير في كل طلب أو مدخلات المستخدم القصيرة لمرة واحدة أو البيانات الحساسة التي تمنع سياستك تخزينها لدى المزوّد المحدد.
+
+## عناصر التحكم في التخزين المؤقت
+
+تقبل Phaseo تلميح التوافق `cache_control` على المستوى الأعلى في طلبات Chat Completions وResponses وAnthropic Messages:
+
+```json
+{
+  "cache_control": {
+    "type": "ephemeral",
+    "ttl": "5m"
+  }
+}
+```
+
+استخدم `ttl: "5m"` للسياق المشترك قصير الأجل، و`ttl: "1h"` عندما يدعم المزوّد والنموذج إدخالات تخزين أطول. يتعامل المزوّدون المدعومون مع التحكم الأعلى مستوى كسياسة تلقائية أو افتراضية.
+
+يمكنك أيضًا وضع `cache_control` مباشرةً على كتل النصوص والصور ونتائج الأدوات وتعريفاتها المدعومة لتحديد نقاط توقف صريحة للتخزين المؤقت:
+
+```json
+{
+  "type": "text",
+  "text": "Large stable reference text...",
+  "cache_control": {
+    "type": "ephemeral",
+    "ttl": "1h"
+  }
+}
+```
+
+تظل الأسماء البديلة الخاصة بالمزوّد مدعومة. مثلًا، يمكنك تطبيق سياسة تخزين افتراضية لـ Anthropic عبر `provider_options`:
+
+```json
+{
+  "provider_options": {
+    "anthropic": {
+      "cache_control": {
+        "type": "ephemeral",
+        "ttl": "5m",
+        "scope": "last_user_message"
+      }
+    }
+  }
+}
+```
+
+قيم `scope` المدعومة:
+
+| النطاق | السلوك |
+| --- | --- |
+| `all_text` | أضف التحكم بالتخزين المؤقت إلى نص النظام وكتل نصوص المستخدم وصوره التي لا تحتوي عليه بالفعل. |
+| `last_user_message` | أضف التحكم بالتخزين المؤقت إلى أحدث رسالة للمستخدم فقط. |
+| `none` | لا تطبّق سياسة تخزين افتراضية. |
+
+يتقدّم `cache_control` المحدد لكل كتلة على السياسة الافتراضية.
+
+## Chat Completions
+
+استخدم `/v1/chat/completions` مع عملاء الدردشة المتوافقين مع OpenAI.
+
+```bash
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "anthropic/claude-sonnet-4",
+    "messages": [
+      {
+        "role": "system",
+        "content": [
+          {
+            "type": "text",
+            "text": "You are a support assistant. Follow the company policy exactly.",
+            "cache_control": { "type": "ephemeral", "ttl": "1h" }
+          }
+        ]
+      },
+      {
+        "role": "user",
+        "content": "Summarise the latest ticket."
+      }
+    ]
+  }'
+```
+
+في الطلبات الموجّهة إلى OpenAI، مرّر خيارات الاحتفاظ بالتخزين المؤقت عبر الحقل الأعلى مستوى المتوافق مع OpenAI:
+
+```json
+{
+  "prompt_cache_retention": "24h"
+}
+```
+
+يُقبل أيضًا الاسم البديل الخاص بالمزوّد:
+
+```json
+{
+  "provider_options": {
+    "openai": {
+      "prompt_cache_retention": "24h"
+    }
+  }
+}
+```
+
+## Responses
+
+استخدم `/v1/responses` للتكاملات النصية الجديدة المتوافقة مع OpenAI وتدفقات الوكلاء.
+
+```bash
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "anthropic/claude-sonnet-4",
+    "input": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "input_text",
+            "text": "Reference document: Refunds are available for 30 days when...",
+            "cache_control": { "type": "ephemeral", "ttl": "5m" }
+          },
+          {
+            "type": "input_text",
+            "text": "Answer this customer: Can I return an item after 20 days?"
+          }
+        ]
+      }
+    ]
+  }'
+```
+
+إذا كان لديك مورد محتوى مخزّن مؤقتًا في Google Gemini، فمرّره عبر `provider_options.google.cached_content`:
+
+```json
+{
+  "provider_options": {
+    "google": {
+      "cached_content": "cachedContents/abc123"
+    }
+  }
+}
+```
+
+## Anthropic Messages
+
+استخدم `/v1/messages` عندما يكون العميل متوافقًا مع Anthropic.
+
+```bash
+curl https://api.phaseo.app/v1/messages \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "anthropic/claude-sonnet-4",
+    "max_tokens": 512,
+    "system": [
+      {
+        "type": "text",
+        "text": "You are a careful support assistant. Use the policy below.",
+        "cache_control": { "type": "ephemeral", "ttl": "1h" }
+      }
+    ],
+    "messages": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "Policy: refunds are available for 30 days when...",
+            "cache_control": { "type": "ephemeral", "ttl": "5m" }
+          },
+          {
+            "type": "text",
+            "text": "Can this customer return an item after 20 days?"
+          }
+        ]
+      }
+    ],
+    "tools": [
+      {
+        "name": "lookup_order",
+        "description": "Look up order status.",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "order_id": { "type": "string" }
+          },
+          "required": ["order_id"]
+        },
+        "cache_control": { "type": "ephemeral", "ttl": "5m" }
+      }
+    ]
+  }'
+```
+
+يدعم Anthropic Messages التحكم بالتخزين المؤقت في:
+
+- كتل النص `system`
+- كتل نصوص الرسائل والصور
+- كتل نتائج الأدوات
+- تعريفات الأدوات
+
+## حقول الاستخدام والتسعير
+
+عندما يعيد المزوّد بيانات استخدام التخزين المؤقت، توحّدها Phaseo في حقول الاستخدام المشتركة.
+
+| الحقل | المعنى |
+| --- | --- |
+| `input_tokens_details.cached_tokens` | رموز الإدخال المقروءة من ذاكرة المطالبات المؤقتة لدى المزوّد. |
+| `output_tokens_details.cached_tokens` | رموز الإدخال المكتوبة في ذاكرة المطالبات المؤقتة لدى المزوّد. |
+| `cached_read_text_tokens` | عداد تسعير لقراءات التخزين المؤقت. وهو نص إدخال مخزّن أعيد استخدامه من ذاكرة المزوّد. |
+| `cached_write_text_tokens` | عداد تسعير لكتابات التخزين المؤقت عندما يفرض المزوّد سعرًا واحدًا لها. |
+| `cached_write_text_tokens_5m` | رموز كتابة التخزين المؤقت لمدة 5 دقائق عندما يبلّغ المزوّد عن الكتابات حسب مدة الصلاحية. |
+| `cached_write_text_tokens_1h` | رموز كتابة التخزين المؤقت لمدة ساعة عندما يبلّغ المزوّد عن الكتابات حسب مدة الصلاحية. |
+
+تكون كتابة المحتوى في التخزين المؤقت أغلى عادةً من رموز الإدخال العادية، وتكون القراءة أرخص. يعتمد السعر الدقيق على المزوّد والنموذج ومدة الصلاحية.
+
+## فحوصات عملية
+
+بعد إضافة تخزين المطالبات مؤقتًا:
+
+1. أرسل طلبًا لإنشاء التخزين المؤقت أو تهيئته.
+2. أرسل طلبًا ثانيًا يتضمن المحتوى نفسه القابل للتخزين المؤقت.
+3. تحقق من حقول القراءة والكتابة في بيانات الاستخدام وتفاصيل الطلب.
+4. قارن زمن الاستجابة والتكلفة عبر استدعاءات متكررة، لا الاستدعاء الأول فقط.
+
+## ارتباط بالمزوّد
+
+تستخدم Phaseo افتراضيًا استخدام ذاكرة المطالبات المؤقتة لدى المزوّد كإشارة للتوجيه. عندما يعيد مزوّد
+رموز إدخال مخزّنة، تُفضّل الطلبات التي تحمل مفتاح التخزين نفسه أو سياقًا افتتاحيًا ثابتًا
+المزوّد نفسه لمدة 15 دقيقة. وهذا يجنبك الدفع لمزوّد آخر لإعادة بناء
+ذاكرة المطالبات المؤقتة نفسها.
+
+إذا أدرجت `session_id`، ينشئ رصد قراءة للتخزين المؤقت ارتباطًا بالجلسة أيضًا.
+وتحتفظ Phaseo بهذا الارتباط طوال نافذة الجلسة النشطة مع السماح
+بالتحويل عند تعطل المزوّد أو خروجه من نطاق السياسات المسموح بها.
+
+لإيقافه في طلب واحد، اضبط `provider.cache_aware_routing` على `false`. واضبط
+`routing.session_affinity` على `false` عندما يتضمن الطلب `session_id`
+مع استخدام التوجيه المعتاد المستند إلى السياق فقط.
+
+## صفحات ذات صلة
+
+- [Chat Completions](../api-reference/endpoint/chat-completions.mdx)
+- [Responses](../api-reference/endpoint/responses.mdx)
+- [Anthropic Messages](../api-reference/endpoint/anthropic-messages.mdx)
+- [المعلمات](../api-reference/parameters.mdx)
+- [السياق وتخصيص الرموز](./context-and-token-budgeting.mdx)
+- [استخدام التخزين المؤقت للردود مع الإعدادات المسبقة](../cookbook/response-caching-with-presets.mdx)

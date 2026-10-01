@@ -112,7 +112,7 @@ export function AudioModelSettingsDialog({
 							<div className="grid gap-1.5">
 								<Label>{t("format")}</Label>
 								<div className="rounded-md border border-border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
-									{CHAT_AUDIO_SPEECH_FORMAT} (fixed in chat)
+									{t("audioFormatFixedInChat", { format: CHAT_AUDIO_SPEECH_FORMAT })}
 								</div>
 							</div>
 							{schema.supportsSpeechSpeed ? (

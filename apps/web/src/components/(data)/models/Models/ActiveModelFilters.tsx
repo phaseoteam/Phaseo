@@ -1,4 +1,5 @@
 import { X } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 
 export type ActiveModelFilter = {
@@ -14,6 +15,7 @@ export function ActiveModelFilters({
 	filters: ActiveModelFilter[];
 	onClear: () => void;
 }) {
+	const tFilters = useTranslations("Catalogue.models.filtersUi");
 	if (filters.length === 0) return null;
 
 	return (
@@ -27,7 +29,7 @@ export function ActiveModelFilters({
 						size="sm"
 						className="h-7 shrink-0 gap-1 rounded-md bg-muted/35 px-2 text-xs font-medium"
 						onClick={filter.onRemove}
-						aria-label={`Remove ${filter.label} filter`}
+						aria-label={tFilters("removeFilter", { filter: filter.label })}
 					>
 						<span className="max-w-44 truncate">{filter.label}</span>
 						<X className="size-3 text-muted-foreground" aria-hidden="true" />
@@ -41,7 +43,7 @@ export function ActiveModelFilters({
 				className="h-7 shrink-0 rounded-md px-2 text-xs"
 				onClick={onClear}
 			>
-				Clear all
+				{tFilters("clearAll")}
 			</Button>
 		</div>
 	);

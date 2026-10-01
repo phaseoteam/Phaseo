@@ -1,0 +1,275 @@
+---
+title: "Zwischenspeicherung von Prompts"
+description: "Verwende stabilen Prompt-Kontext über Chat-Completions-, Responses- und Anthropic-Messages-Anfragen hinweg erneut."
+icon: "database-zap"
+---
+
+Nutze Prompt-Caching, wenn derselbe umfangreiche Kontext in vielen Anfragen vorkommt. Markiere stabile Anweisungen, Dokumente, Beispiele, Tool-Ergebnisse oder Tool-Definitionen als cachefähig, damit unterstützte Provider sie bei späteren Aufrufen wiederverwenden können.
+
+Prompt-Caching unterscheidet sich vom [Response-Caching](../cookbook/response-caching-with-presets.mdx). Die Inferenz wird weiterhin ausgeführt, aber Prompt-Caching kann Kosten und Latenz bei wiederholter Eingabeverarbeitung reduzieren. Response-Caching gibt eine zuvor generierte Antwort für eine identische Anfrage zurück.
+
+<Note>
+Prompt-Caching hängt vom Provider und Modell ab. Nicht unterstützte Provider ignorieren Cache-Hinweise oder routen ohne Cache-Abrechnung. Die Modellseite zeigt in der Preistabelle die Preise für Cache-Lese- und Schreibvorgänge.
+</Note>
+
+## Was gecacht werden soll
+
+Cach Inhalte, die über mehrere Anfragen hinweg stabil bleiben:
+
+- lange Systemanweisungen
+- wiederverwendete RAG-Dokumente
+- Few-Shot-Beispiele
+- Tool-Definitionen
+- umfangreiche Tool-Ergebnisse, die im nächsten Zug wiederverwendet werden
+
+Cach keine Inhalte, die sich mit jeder Anfrage ändern, kurze einmalige Nutzereingaben enthalten oder sensible Daten umfassen, die laut Richtlinie nicht beim ausgewählten Provider gespeichert werden dürfen.
+
+## Cache-Steuerung
+
+Phaseo akzeptiert bei Chat-Completions-, Responses- und Anthropic-Messages-Anfragen einen Kompatibilitätshinweis `cache_control` auf oberster Ebene:
+
+```json
+{
+  "cache_control": {
+    "type": "ephemeral",
+    "ttl": "5m"
+  }
+}
+```
+
+Verwende `ttl: "5m"` für kurzlebigen gemeinsamen Kontext und `ttl: "1h"`, wenn Provider und Modell länger gültige Prompt-Cache-Einträge unterstützen. Unterstützte Provider behandeln die Cache-Steuerung auf oberster Ebene als automatische Standardrichtlinie.
+
+Du kannst `cache_control` auch direkt in unterstützten Text-, Bild-, Tool-Ergebnis- und Tool-Definitionsblöcken platzieren, um explizite Cache-Grenzen festzulegen:
+
+```json
+{
+  "type": "text",
+  "text": "Large stable reference text...",
+  "cache_control": {
+    "type": "ephemeral",
+    "ttl": "1h"
+  }
+}
+```
+
+Providerspezifische Aliase werden weiterhin unterstützt. Beispielsweise kannst du über `provider_options` eine standardmäßige Anthropic-Cache-Richtlinie festlegen:
+
+```json
+{
+  "provider_options": {
+    "anthropic": {
+      "cache_control": {
+        "type": "ephemeral",
+        "ttl": "5m",
+        "scope": "last_user_message"
+      }
+    }
+  }
+}
+```
+
+Unterstützte Werte für `scope`:
+
+| Geltungsbereich | Verhalten |
+| --- | --- |
+| `all_text` | Fügt dem Systemtext sowie Nutzer-Text- und Bildblöcken eine Cache-Steuerung hinzu, sofern sie noch keine haben. |
+| `last_user_message` | Fügt nur der letzten Nutzernachricht eine Cache-Steuerung hinzu. |
+| `none` | Wende keine standardmäßige Cache-Richtlinie an. |
+
+`cache_control` auf Blockebene hat Vorrang vor der Standardrichtlinie.
+
+## Chat Completions
+
+Nutze `/v1/chat/completions` mit OpenAI-kompatiblen Chat-Clients.
+
+```bash
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "anthropic/claude-sonnet-4",
+    "messages": [
+      {
+        "role": "system",
+        "content": [
+          {
+            "type": "text",
+            "text": "You are a support assistant. Follow the company policy exactly.",
+            "cache_control": { "type": "ephemeral", "ttl": "1h" }
+          }
+        ]
+      },
+      {
+        "role": "user",
+        "content": "Summarise the latest ticket."
+      }
+    ]
+  }'
+```
+
+Übermittle bei OpenAI-gerouteten Anfragen die Cache-Aufbewahrungsoptionen von OpenAI über das kompatible Feld auf oberster Ebene:
+
+```json
+{
+  "prompt_cache_retention": "24h"
+}
+```
+
+Der providerspezifische Alias wird ebenfalls akzeptiert:
+
+```json
+{
+  "provider_options": {
+    "openai": {
+      "prompt_cache_retention": "24h"
+    }
+  }
+}
+```
+
+## Responses
+
+Nutze `/v1/responses` für neue OpenAI-kompatible Textintegrationen und Agentenabläufe.
+
+```bash
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "anthropic/claude-sonnet-4",
+    "input": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "input_text",
+            "text": "Reference document: Refunds are available for 30 days when...",
+            "cache_control": { "type": "ephemeral", "ttl": "5m" }
+          },
+          {
+            "type": "input_text",
+            "text": "Answer this customer: Can I return an item after 20 days?"
+          }
+        ]
+      }
+    ]
+  }'
+```
+
+Wenn du bereits eine gecachte Inhaltsressource von Google Gemini hast, übermittle sie über `provider_options.google.cached_content`:
+
+```json
+{
+  "provider_options": {
+    "google": {
+      "cached_content": "cachedContents/abc123"
+    }
+  }
+}
+```
+
+## Anthropic Messages
+
+Nutze `/v1/messages`, wenn dein Client Anthropic-kompatibel ist.
+
+```bash
+curl https://api.phaseo.app/v1/messages \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "anthropic/claude-sonnet-4",
+    "max_tokens": 512,
+    "system": [
+      {
+        "type": "text",
+        "text": "You are a careful support assistant. Use the policy below.",
+        "cache_control": { "type": "ephemeral", "ttl": "1h" }
+      }
+    ],
+    "messages": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "Policy: refunds are available for 30 days when...",
+            "cache_control": { "type": "ephemeral", "ttl": "5m" }
+          },
+          {
+            "type": "text",
+            "text": "Can this customer return an item after 20 days?"
+          }
+        ]
+      }
+    ],
+    "tools": [
+      {
+        "name": "lookup_order",
+        "description": "Look up order status.",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "order_id": { "type": "string" }
+          },
+          "required": ["order_id"]
+        },
+        "cache_control": { "type": "ephemeral", "ttl": "5m" }
+      }
+    ]
+  }'
+```
+
+Anthropic Messages unterstützt Cache-Steuerung für:
+
+- `system`-Textblöcke
+- Text- und Bildblöcke von Nachrichten
+- Tool-Ergebnisblöcke
+- Tool-Definitionen
+
+## Nutzungs- und Abrechnungsfelder
+
+Wenn ein Provider Cache-Nutzungsdaten zurückgibt, vereinheitlicht Phaseo sie in gemeinsamen Nutzungsfeldern.
+
+| Feld | Bedeutung |
+| --- | --- |
+| `input_tokens_details.cached_tokens` | Aus einem Provider-Prompt-Cache gelesene Eingabetoken. |
+| `output_tokens_details.cached_tokens` | In einen Provider-Prompt-Cache geschriebene Eingabetoken. |
+| `cached_read_text_tokens` | Abrechnungs-Meter für Cache-Lesevorgänge. Dabei wird zwischengespeicherter Eingabetext aus einem Provider-Cache wiederverwendet. |
+| `cached_write_text_tokens` | Abrechnungs-Meter für Cache-Schreibvorgänge, wenn der Provider einen einheitlichen Schreibpreis hat. |
+| `cached_write_text_tokens_5m` | Cache-Schreibtoken für eine TTL von fünf Minuten, wenn der Provider TTL-spezifische Schreibvorgänge meldet. |
+| `cached_write_text_tokens_1h` | Cache-Schreibtoken für eine TTL von einer Stunde, wenn der Provider TTL-spezifische Schreibvorgänge meldet. |
+
+Cache-Schreibvorgänge sind meist teurer als normale Eingabetoken, Lesevorgänge meist günstiger. Die genauen Preise hängen vom Provider, Modell und TTL ab.
+
+## Praktische Prüfungen
+
+Nach dem Einrichten von Prompt-Caching:
+
+1. Sende eine Anfrage, um den Cache zu erstellen oder aufzuwärmen.
+2. Sende eine zweite Anfrage mit denselben cachefähigen Inhalten.
+3. Prüfe in den Nutzungsdaten der Antwort und den Anfragedetails die Cache-Lese- und Schreibfelder.
+4. Vergleiche Latenz und Kosten über mehrere Aufrufe hinweg, nicht nur beim ersten.
+
+## Provider-Affinität
+
+Phaseo verwendet den Prompt-Cache-Verbrauch des Providers standardmäßig als Routing-Signal. Sobald ein
+Provider gecachte Eingabetoken zurückgibt, werden Anfragen mit demselben Cache-Schlüssel oder stabilem
+Anfangskontext 15 Minuten lang bevorzugt an diesen Provider geleitet. So muss kein anderer Provider für den erneuten
+Aufbau desselben Prompt-Caches bezahlt werden.
+
+Wenn du `session_id` angibst, sorgt ein erkanntes Cache-Lesen zusätzlich für Session-Affinität.
+Phaseo behält diese Affinität während des aktiven Sitzungsfensters bei und ermöglicht weiterhin
+Failover, wenn der Provider gestört ist oder nicht mehr den Richtlinien entspricht.
+
+Setze `provider.cache_aware_routing` auf `false`, um es für eine Anfrage zu deaktivieren. Setze
+`routing.session_affinity` auf `false`, wenn die Anfrage eine `session_id` enthält
+aber weiterhin nur normales kontextbasiertes Routing verwenden soll.
+
+## Verwandte Seiten
+
+- [Chat Completions](../api-reference/endpoint/chat-completions.mdx)
+- [Responses](../api-reference/endpoint/responses.mdx)
+- [Anthropic Messages](../api-reference/endpoint/anthropic-messages.mdx)
+- [Parameter](../api-reference/parameters.mdx)
+- Kontext und Token-Budgetierung(./context-and-token-budgeting.mdx)
+- [Response-Caching mit Presets verwenden](../cookbook/response-caching-with-presets.mdx)

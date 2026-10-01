@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { updateByokFallbackAction } from "@/app/(dashboard)/settings/byok/actions";
+import { localizedSettingsError } from "@/i18n/error-messages";
 
 export default function ByokFallbackToggle({
 	initialEnabled,
@@ -23,7 +24,8 @@ export default function ByokFallbackToggle({
 			await toast.promise(updateByokFallbackAction(next), {
 				loading: s("Saving fallback setting..."),
 				success: s("Fallback setting updated"),
-				error: (err) => err?.message ?? s("Failed to update setting"),
+				error: (err) =>
+					localizedSettingsError(err, t, "Failed to update setting"),
 			});
 		} finally {
 			setSaving(false);

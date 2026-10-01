@@ -11,12 +11,12 @@
       "expand": "展開設定侧边欄",
       "collapse": "収起設定侧边欄",
       "toggle": "切り替え {label} 導航",
-      "external": "{label}（で新標署页中開く）"
+      "external": "{label}（新しいタブで開く）"
     },
     "headings": {
       "general": "常规",
       "workspace": "ワークスペース",
-      "observe": "观察",
+      "observe": "観察",
       "gateway": "Gateway",
       "developer": "開発者",
       "internal": "内部"
@@ -40,7 +40,7 @@
       "access": "アクセス権限",
       "notifications": "通知",
       "guardrails": "ガードレール",
-      "enterprise": "Enterprise",
+      "enterprise": "エンタープライズ",
       "overview": "概要",
       "directory": "ディレクトリ",
       "departments": "部署",
@@ -86,7 +86,7 @@
     "paymentMethods": "支払い方法",
     "featurePreview": "功能プレビュー",
     "workspaces": "ワークスペース",
-    "organisations": "AI Labs",
+    "organisations": "AI ラボ",
     "onboarding": "開発者オンボーディング",
     "redeem": "兌换クレジット",
     "subscriptionPlans": "サブスクリプションプラン"

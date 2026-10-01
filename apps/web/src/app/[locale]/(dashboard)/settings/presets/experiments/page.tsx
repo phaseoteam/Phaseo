@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { connection } from "next/server";
+import { getLocalizedDocsHref } from "@/lib/docs";
 import { Suspense } from "react";
 import {
 	BarChart3,
@@ -48,10 +49,12 @@ import {
 	requireWorkspaceMembership,
 } from "@/utils/serverActionAuth";
 import { getWorkspaceIdFromCookie } from "@/utils/workspaceCookie";
+import { getLocale, getTranslations } from "next-intl/server";
 
-export const metadata: Metadata = {
-	title: "Preset Feedback - Settings",
-};
+export async function generateMetadata(): Promise<Metadata> {
+	const t = await getTranslations("SettingsUI");
+	return { title: `${t("headers.presetFeedback")} - ${t("headers.settings")}` };
+}
 
 type SearchParams = Record<string, string | string[] | undefined>;
 
@@ -302,39 +305,42 @@ function buildCohorts(rows: FeedbackRow[], metadataKey: string): CohortSummary[]
 		.slice(0, 30);
 }
 
-function formatDate(value: string | null | undefined): string {
-	if (!value) return "Never";
+function formatDate(value: string | null | undefined, locale: string, neverLabel: string): string {
+	if (!value) return neverLabel;
 	const date = new Date(value);
-	if (Number.isNaN(date.getTime())) return "Never";
-	return new Intl.DateTimeFormat("en-GB", {
+	if (Number.isNaN(date.getTime())) return neverLabel;
+	return new Intl.DateTimeFormat(locale, { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }).format(date);
+}
+
+function formatDateInput(value: string, locale: string): string {
+	const date = new Date(value + "T00:00:00.000Z");
+	return new Intl.DateTimeFormat(locale, {
 		day: "numeric",
 		month: "short",
 		year: "numeric",
-		hour: "2-digit",
-		minute: "2-digit",
+		timeZone: "UTC",
 	}).format(date);
 }
-
-function formatScore(value: number | null): string {
-	if (value === null || !Number.isFinite(value)) return "n/a";
-	return `${Math.round(value * 100)}%`;
+function formatScore(value: number | null, locale: string, notAvailableLabel: string): string {
+	if (value === null || !Number.isFinite(value)) return notAvailableLabel;
+	return new Intl.NumberFormat(locale, { style: "percent", maximumFractionDigits: 0 }).format(value);
 }
 
-function formatRate(numerator: number, denominator: number): string {
-	if (denominator === 0) return "n/a";
-	return `${Math.round((numerator / denominator) * 100)}%`;
+function formatRate(numerator: number, denominator: number, locale: string, notAvailableLabel: string): string {
+	if (denominator === 0) return notAvailableLabel;
+	return new Intl.NumberFormat(locale, { style: "percent", maximumFractionDigits: 0 }).format(numerator / denominator);
 }
 
-function formatDelta(value: number | null, baseline: number | null): string {
-	if (value === null || baseline === null) return "n/a";
+function formatDelta(value: number | null, baseline: number | null, locale: string, notAvailableLabel: string, percentagePointsLabel: string): string {
+	if (value === null || baseline === null) return notAvailableLabel;
 	const delta = Math.round((value - baseline) * 100);
-	return `${delta > 0 ? "+" : ""}${delta} pp`;
+	return (delta > 0 ? "+" : "") + new Intl.NumberFormat(locale).format(delta) + " " + percentagePointsLabel;
 }
 
-function compactDimensions(value: unknown): string {
+function compactDimensions(value: unknown, noMetadataLabel: string): string {
 	const dimensions = getDimensions(value);
 	const entries = Object.entries(dimensions).slice(0, 3);
-	if (entries.length === 0) return "No metadata";
+	if (entries.length === 0) return noMetadataLabel;
 	return entries.map(([key, val]) => `${key}: ${val}`).join(", ");
 }
 
@@ -520,6 +526,8 @@ async function PresetFeedbackContent({
 	searchParams?: Promise<SearchParams>;
 }) {
 	await connection();
+	const [t, locale] = await Promise.all([getTranslations("SettingsUI"), getLocale()]);
+	const tStr = (key: string, values?: Record<string, string | number>) => t(`strings.${key}` as never, values as never);
 	const resolvedSearchParams = await searchParams;
 	const parsedFilters = parseFilters(resolvedSearchParams);
 	const data = await loadPresetFeedbackData(parsedFilters).catch((error) => {
@@ -532,21 +540,21 @@ async function PresetFeedbackContent({
 		return (
 			<div className="space-y-6">
 				<SettingsPageHeader
-					title="Preset Feedback"
+					title={t("headers.presetFeedback")}
 					titleKey="headers.presetFeedback"
-					description="Compare preset quality from feedback API events, date windows, and metadata cohorts."
+					description={t("headers.presetFeedbackCompareDescription")}
 					descriptionKey="headers.presetFeedbackCompareDescription"
-					meta={<Badge variant="outline">Alpha</Badge>}
+					meta={<Badge variant="outline">{t("oauthAppsPage.alphaLabel")}</Badge>}
 					actions={
 						<ProductFeedbackButton
 							surface="settings_preset_feedback"
-							prompt="Tell us what would make preset feedback analysis more useful."
+							prompt={tStr("presetFeedbackPrompt")}
 						/>
 					}
 				/>
 				<div className="border-y border-border/70 py-8">
 					<p className="text-sm text-muted-foreground">
-						Select a workspace to view preset feedback.
+						{tStr("presetFeedbackSelectWorkspace")}
 					</p>
 				</div>
 			</div>
@@ -586,29 +594,29 @@ async function PresetFeedbackContent({
 	return (
 		<div className="min-w-0 max-w-full space-y-7 overflow-hidden lg:max-w-[calc(100vw-18rem)]">
 			<SettingsPageHeader
-				title="Preset Feedback"
+				title={t("headers.presetFeedback")}
 				titleKey="headers.presetFeedback"
-				description="Measure how each preset performs using ratings and outcome signals from your application."
+				description={t("headers.presetFeedbackMeasureDescription")}
 				descriptionKey="headers.presetFeedbackMeasureDescription"
-				meta={<Badge variant="outline">Alpha</Badge>}
+				meta={<Badge variant="outline">{t("oauthAppsPage.alphaLabel")}</Badge>}
 				className="sm:flex-col sm:items-stretch xl:flex-row xl:items-start"
 				actions={
 					<div className="flex flex-wrap items-center justify-start gap-2 xl:justify-end">
 						<Button asChild size="sm" variant="ghost" className="rounded-md">
-							<a href="https://phaseo.app/docs/v1/guides/preset-feedback" target="_blank" rel="noreferrer">
+							<a href={getLocalizedDocsHref(locale, "https://phaseo.app/docs/v1/guides/preset-feedback")} target="_blank" rel="noreferrer">
 								<BookOpen className="h-4 w-4" />
-								Documentation
+								{t("oauthAppsPage.viewDocs")}
 							</a>
 						</Button>
 						<Button asChild size="sm" variant="outline" className="rounded-md">
 							<Link href="/settings/presets/new">
 								<Plus className="h-4 w-4" />
-								Create preset
+								{t("headers.createNewPreset")}
 							</Link>
 						</Button>
 						<ProductFeedbackButton
 							surface="settings_preset_feedback"
-							prompt="Tell us what would make preset feedback analysis more useful."
+							prompt={tStr("presetFeedbackPrompt")}
 						/>
 					</div>
 				}
@@ -620,16 +628,16 @@ async function PresetFeedbackContent({
 						<EmptyMedia variant="icon">
 							<GitCompareArrows className="h-5 w-5" />
 						</EmptyMedia>
-						<EmptyTitle>No presets yet</EmptyTitle>
+						<EmptyTitle>{t("credits.No presets yet" as never)}</EmptyTitle>
 						<EmptyDescription>
-							Create presets first, then log feedback with preset IDs to compare quality over time.
+							{tStr("presetFeedbackNoPresetsDescription")}
 						</EmptyDescription>
 					</EmptyHeader>
 					<EmptyContent>
 						<Button asChild>
 							<Link href="/settings/presets/new">
 								<Plus className="h-4 w-4" />
-								Create preset
+								{t("headers.createNewPreset")}
 							</Link>
 						</Button>
 					</EmptyContent>
@@ -659,25 +667,25 @@ async function PresetFeedbackContent({
 
 					<div className={cn("grid border-y border-border/70 md:divide-x md:divide-border/70", baseline ? "md:grid-cols-4" : "md:grid-cols-3")}>
 						<MetricStat
-							title="Feedback"
-							value={String(totalFeedback)}
-							detail={`${parsedFilters.from} to ${parsedFilters.to}`}
+							title={tStr("presetFeedbackLabel")}
+							value={new Intl.NumberFormat(locale).format(totalFeedback)}
+							detail={tStr("presetFeedbackDateRange", { from: formatDateInput(parsedFilters.from, locale), to: formatDateInput(parsedFilters.to, locale) })}
 						/>
 						<MetricStat
-							title="Positive Rate"
-							value={formatRate(totalPositive, totalFeedback)}
-							detail="Thumbs up or correct"
+							title={tStr("presetFeedbackPositiveRate")}
+							value={formatRate(totalPositive, totalFeedback, locale, tStr("presetFeedbackNotAvailable"))}
+							detail={tStr("presetFeedbackPositiveDetail")}
 						/>
 						<MetricStat
-							title="Negative Rate"
-							value={formatRate(totalNegative, totalFeedback)}
-							detail="Thumbs down, incorrect, unsafe"
+							title={tStr("presetFeedbackNegativeRate")}
+							value={formatRate(totalNegative, totalFeedback, locale, tStr("presetFeedbackNotAvailable"))}
+							detail={tStr("presetFeedbackNegativeDetail")}
 						/>
 						{baseline ? (
 							<MetricStat
-								title="Baseline"
+								title={tStr("presetFeedbackBaseline")}
 								value={presetDisplayName(baseline.preset)}
-								detail={baseline.count > 0 ? `${formatRate(baseline.positive, baseline.count)} positive` : "No feedback"}
+								detail={baseline.count > 0 ? `${formatRate(baseline.positive, baseline.count, locale, tStr("presetFeedbackNotAvailable"))} ${tStr("presetFeedbackPositive")}` : tStr("presetFeedbackNoFeedback")}
 							/>
 						) : null}
 					</div>
@@ -687,12 +695,12 @@ async function PresetFeedbackContent({
 							<div className="space-y-1">
 								<h2 className="flex items-center gap-2 text-base font-semibold">
 									<BarChart3 className="h-4 w-4" />
-									Preset Comparison
+									{tStr("presetFeedbackComparisonHeading")}
 								</h2>
 								<p className="max-w-3xl text-sm text-muted-foreground">
 									{baseline
-										? "Sort presets by explicit ratings and compare positive-rate percentage points with the selected baseline."
-										: "Sort presets by explicit ratings. Select an optional baseline above only when you have a deliberate control preset."}
+										? tStr("presetFeedbackCompareBaselineDescription")
+										: tStr("presetFeedbackCompareNoBaselineDescription")}
 								</p>
 							</div>
 						</div>
@@ -701,50 +709,50 @@ async function PresetFeedbackContent({
 							<Table wrapInContainer={false} className="min-w-[980px]">
 								<TableHeader className="bg-muted/30">
 									<TableRow>
-										<SortableComparisonHead
-											label="Preset"
+										<SortableComparisonHead translate={tStr}
+											label={tStr("Preset")}
 											sortKey="preset"
 											filters={parsedFilters}
 										/>
-										<SortableComparisonHead
-											label="Feedback"
+										<SortableComparisonHead translate={tStr}
+											label={tStr("presetFeedbackLabel")}
 											sortKey="feedback"
 											filters={parsedFilters}
 											className="text-right"
 										/>
-						{baseline ? <SortableComparisonHead label="Vs Baseline" sortKey="delta" filters={parsedFilters} className="text-right" /> : null}
-										<SortableComparisonHead
-											label="Positive"
+						{baseline ? <SortableComparisonHead translate={tStr} label={tStr("presetFeedbackVsBaseline")} sortKey="delta" filters={parsedFilters} className="text-right" /> : null}
+										<SortableComparisonHead translate={tStr}
+											label={tStr("presetFeedbackPositiveColumn")}
 											sortKey="positive"
 											filters={parsedFilters}
 											className="text-right"
 										/>
-										<SortableComparisonHead
-											label="Negative"
+										<SortableComparisonHead translate={tStr}
+											label={tStr("presetFeedbackNegativeColumn")}
 											sortKey="negative"
 											filters={parsedFilters}
 											className="text-right"
 										/>
-										<SortableComparisonHead
-											label="Partial"
+										<SortableComparisonHead translate={tStr}
+											label={tStr("presetFeedbackPartialColumn")}
 											sortKey="partial"
 											filters={parsedFilters}
 											className="text-right"
 										/>
-										<SortableComparisonHead
-											label="Requests"
+										<SortableComparisonHead translate={tStr}
+											label={tStr("Requests")}
 											sortKey="requests"
 											filters={parsedFilters}
 											className="text-right"
 										/>
-										<SortableComparisonHead
-											label="Sessions"
+										<SortableComparisonHead translate={tStr}
+											label={tStr("Sessions")}
 											sortKey="sessions"
 											filters={parsedFilters}
 											className="text-right"
 										/>
-										<SortableComparisonHead
-											label="Last Feedback"
+										<SortableComparisonHead translate={tStr}
+											label={tStr("presetFeedbackLastFeedback")}
 											sortKey="last_feedback"
 											filters={parsedFilters}
 											className="text-right"
@@ -755,7 +763,7 @@ async function PresetFeedbackContent({
 									{summaries.length === 0 ? (
 										<TableRow>
 											<TableCell colSpan={baseline ? 9 : 8} className="h-24 text-center text-muted-foreground">
-												No presets match the active filters.
+												{tStr("presetFeedbackNoPresetsMatch")}
 											</TableCell>
 										</TableRow>
 									) : (
@@ -766,7 +774,7 @@ async function PresetFeedbackContent({
 														<div className="flex flex-wrap items-center gap-2">
 													<p className="font-medium">{presetDisplayName(summary.preset)}</p>
 															{summary.preset.id === baselineId ? (
-																<Badge variant="secondary">Baseline</Badge>
+																<Badge variant="secondary">{tStr("presetFeedbackBaseline")}</Badge>
 															) : null}
 														</div>
 														<p className="font-mono text-xs text-muted-foreground">
@@ -774,25 +782,25 @@ async function PresetFeedbackContent({
 														</p>
 													</div>
 												</TableCell>
-												<TableCell className="text-right">{summary.count}</TableCell>
+												<TableCell className="text-right">{new Intl.NumberFormat(locale).format(summary.count)}</TableCell>
 											{baseline ? <TableCell className="text-right">
 												{summary.preset.id === baselineId
-													? "Baseline"
-													: formatDelta(positiveRate(summary), baseline ? positiveRate(baseline) : null)}
+													? tStr("presetFeedbackBaseline")
+													: formatDelta(positiveRate(summary), baseline ? positiveRate(baseline) : null, locale, tStr("presetFeedbackNotAvailable"), tStr("presetFeedbackPercentagePoints"))}
 											</TableCell> : null}
 												<TableCell className="text-right">
-													{formatRate(summary.positive, summary.count)}
+													{formatRate(summary.positive, summary.count, locale, tStr("presetFeedbackNotAvailable"))}
 												</TableCell>
 												<TableCell className="text-right">
-													{formatRate(summary.negative, summary.count)}
+													{formatRate(summary.negative, summary.count, locale, tStr("presetFeedbackNotAvailable"))}
 												</TableCell>
 												<TableCell className="text-right">
-													{formatRate(summary.partial, summary.count)}
+													{formatRate(summary.partial, summary.count, locale, tStr("presetFeedbackNotAvailable"))}
 												</TableCell>
-												<TableCell className="text-right">{summary.requestIds.size}</TableCell>
-												<TableCell className="text-right">{summary.sessionIds.size}</TableCell>
+												<TableCell className="text-right">{new Intl.NumberFormat(locale).format(summary.requestIds.size)}</TableCell>
+												<TableCell className="text-right">{new Intl.NumberFormat(locale).format(summary.sessionIds.size)}</TableCell>
 												<TableCell className="text-right text-muted-foreground">
-													{formatDate(summary.latestFeedbackAt)}
+													{formatDate(summary.latestFeedbackAt, locale, tStr("presetFeedbackNever"))}
 												</TableCell>
 											</TableRow>
 										))
@@ -808,42 +816,41 @@ async function PresetFeedbackContent({
 							<div className="space-y-1">
 								<h2 className="flex items-center gap-2 text-base font-semibold">
 									<SlidersHorizontal className="h-4 w-4" />
-									Cohort Breakdown
+									{tStr("presetFeedbackCohortHeading")}
 								</h2>
 								<p className="text-sm text-muted-foreground">
-									Grouped by <span className="font-mono">{parsedFilters.metadataKey}</span>
-									{parsedFilters.metadataValue ? ` = ${parsedFilters.metadataValue}` : ""}.
+									{tStr("presetFeedbackGroupedByDimension", { dimension: parsedFilters.metadataKey, valueSuffix: parsedFilters.metadataValue ? ` = ${parsedFilters.metadataValue}` : "" })}
 								</p>
 							</div>
 							<ScrollArea className="min-w-0 w-full border-y border-border/70" scrollBarOrientation="horizontal">
 								{cohorts.length === 0 ? (
 									<div className="px-4 py-8 text-sm text-muted-foreground">
-										No feedback in this window includes that metadata dimension.
+										{tStr("presetFeedbackNoMetadataMatches")}
 									</div>
 								) : (
 									<Table wrapInContainer={false} className="min-w-[720px]">
 										<TableHeader className="bg-muted/30">
 											<TableRow>
-												<TableHead>Value</TableHead>
-												<TableHead className="text-right">Feedback</TableHead>
-												<TableHead className="text-right">Positive</TableHead>
-												<TableHead className="text-right">Partial</TableHead>
-												<TableHead className="text-right">Negative</TableHead>
+												<TableHead>{tStr("presetFeedbackValue")}</TableHead>
+												<TableHead className="text-right">{tStr("presetFeedbackLabel")}</TableHead>
+												<TableHead className="text-right">{tStr("presetFeedbackPositiveColumn")}</TableHead>
+												<TableHead className="text-right">{tStr("presetFeedbackPartialColumn")}</TableHead>
+												<TableHead className="text-right">{tStr("presetFeedbackNegativeColumn")}</TableHead>
 											</TableRow>
 										</TableHeader>
 										<TableBody>
 											{cohorts.map((cohort) => (
 												<TableRow key={cohort.value}>
 													<TableCell>{cohort.value}</TableCell>
-													<TableCell className="text-right">{cohort.count}</TableCell>
+													<TableCell className="text-right">{new Intl.NumberFormat(locale).format(cohort.count)}</TableCell>
 													<TableCell className="text-right">
-														{formatRate(cohort.positive, cohort.count)}
+														{formatRate(cohort.positive, cohort.count, locale, tStr("presetFeedbackNotAvailable"))}
 													</TableCell>
 													<TableCell className="text-right">
-														{formatRate(cohort.partial, cohort.count)}
+														{formatRate(cohort.partial, cohort.count, locale, tStr("presetFeedbackNotAvailable"))}
 													</TableCell>
 													<TableCell className="text-right">
-														{formatRate(cohort.negative, cohort.count)}
+														{formatRate(cohort.negative, cohort.count, locale, tStr("presetFeedbackNotAvailable"))}
 													</TableCell>
 												</TableRow>
 											))}
@@ -858,20 +865,19 @@ async function PresetFeedbackContent({
 						<div className="space-y-1">
 							<h2 className="flex items-center gap-2 text-base font-semibold">
 								<MessageSquareText className="h-4 w-4" />
-								Feedback Events
+								{tStr("presetFeedbackEventsHeading")}
 							</h2>
 							<p className="text-sm text-muted-foreground">
-								Showing the {Math.min(visibleFeedback.length, 50)} most recent of {totalFeedback} loaded rows. Open a row to inspect request, session, cohort metadata, comments, and tags.
-								{data.feedbackTruncated ? " Analysis is capped at the 10,000 most recent matching rows." : ""}
+								{tStr("presetFeedbackEventsDescription", { shown: new Intl.NumberFormat(locale).format(Math.min(visibleFeedback.length, 50)), total: new Intl.NumberFormat(locale).format(totalFeedback) })}{data.feedbackTruncated ? " " + tStr("presetFeedbackTruncatedNotice") : ""}
 							</p>
 						</div>
 						<ScrollArea className="min-w-0 w-full border-y border-border/70" scrollBarOrientation="horizontal">
 							{visibleFeedback.length === 0 ? (
 								<Empty size="compact" className="py-10">
 									<EmptyHeader>
-										<EmptyTitle>No feedback in this window</EmptyTitle>
+										<EmptyTitle>{tStr("presetFeedbackEmptyHeading")}</EmptyTitle>
 										<EmptyDescription>
-											Log feedback with a preset ID, then use date and metadata filters to compare results.
+											{tStr("presetFeedbackEmptyDescription")}
 										</EmptyDescription>
 									</EmptyHeader>
 								</Empty>
@@ -879,12 +885,12 @@ async function PresetFeedbackContent({
 								<Table wrapInContainer={false} className="min-w-[980px]">
 									<TableHeader className="bg-muted/30">
 										<TableRow>
-											<TableHead>Feedback</TableHead>
-											<TableHead>Preset</TableHead>
-											<TableHead>Metadata</TableHead>
-											<TableHead>Request/session</TableHead>
-											<TableHead className="text-right">Created</TableHead>
-											<TableHead className="w-[92px] text-right">Detail</TableHead>
+											<TableHead>{tStr("presetFeedbackLabel")}</TableHead>
+											<TableHead>{tStr("Preset")}</TableHead>
+											<TableHead>{tStr("Metadata")}</TableHead>
+											<TableHead>{tStr("presetFeedbackRequestSession")}</TableHead>
+											<TableHead className="text-right">{tStr("Created")}</TableHead>
+											<TableHead className="w-[92px] text-right">{tStr("presetFeedbackDetail")}</TableHead>
 										</TableRow>
 									</TableHeader>
 									<TableBody>
@@ -892,16 +898,16 @@ async function PresetFeedbackContent({
 											const preset = row.preset_id
 												? summariesByPreset.get(row.preset_id)?.preset
 												: null;
-											const detail = toFeedbackDetail(row, preset);
+											const detail = toFeedbackDetail(row, preset, locale, tStr);
 											return (
 												<TableRow key={row.id}>
 													<TableCell>
 														<div className="space-y-1">
 															<div className="flex flex-wrap items-center gap-2">
-																<Badge variant="outline">{row.rating ?? "unrated"}</Badge>
+																<Badge variant="outline">{translateRating(row.rating, tStr)}</Badge>
 															</div>
 															<p className="line-clamp-2 text-xs text-muted-foreground">
-																{row.comment ?? row.reason ?? "No comment"}
+																{row.comment ?? row.reason ?? tStr("presetFeedbackNoComment")}
 															</p>
 														</div>
 													</TableCell>
@@ -911,10 +917,10 @@ async function PresetFeedbackContent({
 															<p className="truncate font-medium">{presetDisplayName(preset)}</p>
 															{preset.slug ? <p className="truncate font-mono text-xs text-muted-foreground">@{preset.slug.replace(/^@/, "")}</p> : null}
 														</div>
-													) : "Unknown Preset"}
+													) : tStr("presetFeedbackUnknownPreset")}
 												</TableCell>
 													<TableCell className="max-w-xs truncate text-xs text-muted-foreground">
-														{compactDimensions(row.metadata_dimensions)}
+														{compactDimensions(row.metadata_dimensions, tStr("strings.No metadata"))}
 													</TableCell>
 													<TableCell className="max-w-[220px]">
 														{row.request_id ? (
@@ -922,11 +928,11 @@ async function PresetFeedbackContent({
 														) : row.session_id ? (
 															<span className="break-all font-mono text-xs">{row.session_id}</span>
 														) : (
-															<span className="text-muted-foreground">Preset-level</span>
+															<span className="text-muted-foreground">{tStr("presetFeedbackPresetLevel")}</span>
 														)}
 													</TableCell>
 													<TableCell className="text-right text-muted-foreground">
-														{formatDate(row.created_at)}
+														{formatDate(row.created_at, locale, t("strings.presetFeedbackNever" as never))}
 													</TableCell>
 													<TableCell className="text-right">
 														<PresetFeedbackDetailDialog feedback={detail} />
@@ -950,11 +956,13 @@ function SortableComparisonHead({
 	sortKey,
 	filters,
 	className,
+	translate,
 }: {
 	label: string;
 	sortKey: SortKey;
 	filters: Filters;
 	className?: string;
+	translate: (key: string, values?: Record<string, string | number>) => string;
 }) {
 	const active = filters.sort === sortKey;
 	const nextDirection: SortDirection =
@@ -974,7 +982,7 @@ function SortableComparisonHead({
 					sort: sortKey,
 					direction: nextDirection,
 				})}
-				aria-label={`${label}, sort ${nextDirection === "asc" ? "ascending" : "descending"}`}
+				aria-label={translate("presetFeedbackSortAria", { label, direction: translate(nextDirection === "asc" ? "presetFeedbackAscending" : "presetFeedbackDescending") })}
 				className={cn(
 					"inline-flex w-full items-center gap-1 text-left",
 					className?.includes("text-right") ? "justify-end" : "justify-start",
@@ -1013,17 +1021,27 @@ function MetricStat({
 	);
 }
 
+function translateRating(rating: string | null, t: (key: string) => string): string {
+	const labels: Record<string, string> = {
+		thumbs_up: "Thumbs up", thumbs_down: "Thumbs down", correct: "Correct",
+		partly_correct: "Partly correct", incorrect: "Incorrect", unsafe: "Unsafe", unrated: "Unrated",
+	};
+	return rating ? (labels[rating] ? t(labels[rating]) : rating) : t("Unrated");
+}
+
 function toFeedbackDetail(
 	row: FeedbackRow,
 	preset: PresetRow | null | undefined,
+	locale: string,
+	t: (key: string) => string,
 ): PresetFeedbackDetail {
 	const score = toFiniteScore(row.score);
 	return {
 		id: row.id,
-		presetName: preset?.name ?? "Unknown preset",
+		presetName: preset?.name ?? t("presetFeedbackUnknownPreset"),
 		presetSlug: preset?.slug ?? null,
-		rating: row.rating ?? "unrated",
-		scoreLabel: formatScore(score),
+		rating: translateRating(row.rating, t),
+		scoreLabel: formatScore(score, locale, t("presetFeedbackNotAvailable")),
 		scoreRaw: score,
 		comment: row.comment,
 		reason: row.reason,
@@ -1033,7 +1051,7 @@ function toFeedbackDetail(
 		requestId: row.request_id,
 		sessionId: row.session_id,
 		endUserId: row.end_user_id,
-		createdAtLabel: formatDate(row.created_at),
+		createdAtLabel: formatDate(row.created_at, locale, t("presetFeedbackNever")),
 		createdAt: row.created_at,
 		metadataDimensions: getDimensions(row.metadata_dimensions),
 	};

@@ -1,0 +1,184 @@
+---
+icon: "folder-open"
+title: "仓库结构"
+description: "了解 Phaseo 仓库的组织方式，以及数据、文档和配置文件的位置。"
+---
+
+为 Phaseo 做贡献前，先了解**仓库布局**很重要。
+项目将数据、文档和应用逻辑分开，便于查找所需内容，也方便清晰地扩展。
+
+---
+
+## 概览
+
+仓库的根目录结构如下：
+
+```bash
+Phaseo/
++-- apps/
+¦   +-- web/ # The main Phaseo Next.js website (contains data)
+¦   +-- api/ # The Phaseo Gateway API (Hono/Cloudflare Workers)
+¦   +-- docs/ # The Mintlify-powered documentation site
+¦
++-- packages/ # SDKs and shared tooling
+¦   +-- sdk-ts/
+¦   +-- sdk-py/
+¦   +-- sdk-go/
+¦   +-- sdk-csharp/
+¦   +-- sdk-php/
+¦   +-- sdk-ruby/
+¦   +-- sdk-java/
+¦   +-- sdk-rust/
+¦   +-- sdk-cpp/
+¦   +-- ai-sdk-phaseo/
+¦
++-- scripts/ # Automation scripts and utilities
++-- .changeset/ # Release metadata
++-- turbo.json # Turborepo configuration
++-- package.json # Global scripts and dependencies
++-- README.md # Root readme file
+```
+
+---
+
+## 数据文件夹
+
+Phaseo 将结构化数据存储在 `/packages/data/catalog/src/data` 目录下的 **JSON 文件**中。
+这些文件是模型、基准测试和价格数据的权威来源。
+
+### `/packages/data/catalog/src/data/models`
+
+每个模型对应一个 JSON 文件。
+每个文件都描述模型的元数据、价格、基准测试和能力。
+
+示例：
+`/packages/data/catalog/src/data/models/openai/gpt-5-2025-08-07/model.json`
+
+---
+
+### `/packages/data/catalog/src/data/organisations`
+
+描述模型背后的公司或研究团队。
+每个 JSON 文件都包含名称、描述、成立日期、网站和国家/地区。
+
+示例：
+`/packages/data/catalog/src/data/organisations/openai.json`
+
+---
+
+### `/packages/data/catalog/src/data/benchmarks`
+
+包含基准测试元数据以及跨模型汇总的结果。
+每个基准测试都包含 ID、名称、描述、类别和指标。
+
+示例：
+`/packages/data/catalog/src/data/benchmarks/mmlu.json`
+
+---
+
+### `/packages/data/catalog/src/data/api_providers`
+
+列出所有受支持的 API 供应商及其模型。
+这些数据同时关联模型和组织。
+
+示例：
+`/packages/data/catalog/src/data/api_providers/openai.json`
+
+---
+
+### `/packages/data/catalog/src/data/pricing`
+
+按时间记录历史价格数据，以便分析趋势。
+文件带有时间戳，通常按供应商汇总。
+
+---
+
+## 文档文件夹
+
+文档使用 **MDX** 编写，存放在 `/apps/docs/v1/` 中。
+每个文件夹都直接对应 Mintlify 配置中的一个分组。
+
+| 文件夹 | 用途 |
+| ----------------------------- | ------------------------------------------------------- |
+| `/apps/docs/v1/exploring`     | 介绍数据概念（模型、基准测试、供应商）。 |
+| `/apps/docs/v1/contributing`  | 面向贡献者的分步指南。                   |
+| `/apps/docs/v1/developers`    | 集成和 API 使用指南。                       |
+| `/apps/docs/v1/api-reference` | 每个端点的详细参考资料。                  |
+| `/apps/docs/v1/community`     | 支持、常见问题和社区页面。                      |
+
+---
+
+## 应用文件夹
+
+| 路径 | 说明 |
+| ------------ | ------------------------------------------------------------------------------------------------- |
+| `/apps/web`  | Phaseo 主网站使用 Next.js 15 和 TailwindCSS 构建，从 `packages/data/catalog/src/data` 读取权威数据。 |
+| `/apps/api`  | API 网关：路由、缓存和模型代理逻辑。                                         |
+| `/apps/docs` | 你正在阅读的 Mintlify 文档项目。                                           |
+
+每个应用都可独立运行，同时通过 `/packages` 共享类型和配置。
+
+---
+
+## SDK 包
+
+`/packages` 目录包含多种编程语言的 SDK，可用于调用 Phaseo API。
+
+| SDK | 说明 |
+| ------------ | ------------------------------------------------ |
+| `sdk-ts`     | 适用于 Node.js 和 Web 应用的 TypeScript SDK。 |
+| `sdk-py`     | Python SDK。                                      |
+| `sdk-go`     | Go SDK。                                          |
+| `sdk-csharp` | C# SDK。                                          |
+| `sdk-php`    | PHP SDK。                                         |
+| `sdk-ruby`   | Ruby SDK。                                        |
+| `sdk-java`   | Java SDK。                                        |
+| `sdk-rust`   | Rust SDK。                                        |
+| `sdk-cpp`    | C++ SDK。                                         |
+| `ai-sdk-phaseo` | Vercel AI SDK 提供程序。                      |
+
+---
+
+## 自动化和脚本
+
+Phaseo 使用自动化流程来保持数据更新：
+
+-   **导入器**：从 Hugging Face 或供应商 API 等来源获取新数据。
+-   **监视器**：通过 GitHub Actions 定时运行，检测并提交更新。
+-   **实用工具**：负责验证、架构检查和 JSON 格式化。
+
+你可以在 `/scripts/` 中查看这些内容。
+
+---
+
+## 从哪里开始
+
+如果你要贡献代码或数据：
+
+-   **数据：**在 `/packages/data/catalog/src/data/` 中查找 JSON 文件。
+-   **文档：**在 `/apps/docs/v1/` 中查找 MDX 文件。
+-   **代码：**查看 `/apps/web` 或 `/apps/api`。
+-   **自动化：**修改或检查 `/scripts/`。
+-   **SDK：**在 `/packages/` 中查找各语言对应的 SDK。
+
+---
+
+## 相关页面
+
+<Columns cols={2}>
+	<Card
+		title="编辑模型"
+		icon="brain"
+		href="./editing-a-model.mdx"
+	>
+		了解如何更新或添加模型数据。
+	</Card>
+	<Card
+		title="编辑组织"
+		icon="building"
+		href="./editing-an-organisation.mdx"
+	>
+		了解如何安全地修改组织数据。
+	</Card>
+</Columns>
+

@@ -1,0 +1,10 @@
+---
+title: "Lister les espaces de travail"
+sidebarTitle: "Lister les espaces de travail"
+badge: "Bêta"
+openapi: "/fr/openapi/v1/openapi.localized.yaml GET /workspaces"
+description: "Liste les espaces de travail appartenant au propriétaire de la clé de gestion authentifiée."
+---
+<Note>Ce point de terminaison nécessite une clé API de gestion. Les clés API Gateway standard ne sont pas acceptées.</Note>
+
+Renvoie les espaces de travail visibles dans le contexte de gestion authentifié avec pagination par `offset` et `limit`.

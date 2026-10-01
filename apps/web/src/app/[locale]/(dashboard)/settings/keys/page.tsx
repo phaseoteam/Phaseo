@@ -7,12 +7,15 @@ import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSec
 import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHeader";
 import { Button } from "@/components/ui/button";
 import { fetchSettingsKeysInitialData } from "@/lib/fetchers/internal/fetchSettingsKeysInitialData";
+import { getLocale, getTranslations } from "next-intl/server";
+import { getLocalizedDocsHref } from "@/lib/docs";
 
 const QUICKSTART_DOCS_HREF = "https://phaseo.app/docs/v1/quickstart";
 
-export const metadata = {
-	title: "API Keys - Settings",
-};
+export async function generateMetadata() {
+	const t = await getTranslations("SettingsUI");
+	return { title: t("headers.apiKeys") + " - " + t("headers.settings") };
+}
 
 export default function KeysPage(props: {
 	searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -31,7 +34,11 @@ async function KeysContent({
 }: {
 	searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-	const sp = await searchParams;
+const [sp, t, locale] = await Promise.all([
+		searchParams,
+		getTranslations("SettingsUI"),
+		getLocale(),
+	]);
 	const preferredWorkspaceId =
 		typeof sp?.workspace_id === "string"
 			? sp.workspace_id
@@ -56,11 +63,11 @@ async function KeysContent({
 					<div className="flex flex-wrap items-center gap-2">
 						<Button asChild variant="outline" size="sm">
 							<Link
-								href={QUICKSTART_DOCS_HREF}
+								href={getLocalizedDocsHref(locale, QUICKSTART_DOCS_HREF)}
 								target="_blank"
 								rel="noreferrer"
 							>
-								Quick start
+								{t("settingsPageCopy.quickStart")}
 								<ArrowUpRight className="ml-1 h-4 w-4" />
 							</Link>
 						</Button>

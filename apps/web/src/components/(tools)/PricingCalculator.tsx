@@ -424,15 +424,15 @@ export default function PricingCalculator({
 					<div className="flex flex-wrap justify-center gap-2 text-xs text-muted-foreground">
 						<span className="inline-flex items-center gap-1 rounded-full border bg-background/70 px-2.5 py-1">
 							<CheckCircle2 className="h-3.5 w-3.5 text-green-600" />
-							{totalModelsCount.toLocaleString()} models
+							{t("modelCount", { count: totalModelsCount })}
 						</span>
 						<span className="inline-flex items-center gap-1 rounded-full border bg-background/70 px-2.5 py-1">
 							<CheckCircle2 className="h-3.5 w-3.5 text-green-600" />
-							{providersCount.toLocaleString()} providers
+							{t("providerCount", { count: providersCount })}
 						</span>
 						<span className="inline-flex items-center gap-1 rounded-full border bg-background/70 px-2.5 py-1">
 							<CheckCircle2 className="h-3.5 w-3.5 text-green-600" />
-							Time-window aware
+							{t("timeWindowAware")}
 						</span>
 					</div>
 			</ToolPageHeader>

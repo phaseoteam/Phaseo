@@ -1,0 +1,621 @@
+---
+title: "पैरामीटर"
+description: "Phaseo के टेक्स्ट, रूटिंग और डिबग नियंत्रणों के अनुरोध पैरामीटर का फ़ील्ड-दर-फ़ील्ड संदर्भ।"
+icon: "sliders-horizontal"
+---
+
+यह पेज Phaseo द्वारा उपलब्ध कराए गए अनुरोध पैरामीटर का फ़ील्ड-दर-फ़ील्ड संदर्भ है।
+
+इसका उपयोग तब करें जब आप जानना चाहें:
+
+- कोई पैरामीटर क्या करता है
+- उसे किस प्रकार का मान चाहिए
+- सामान्य सीमा या स्वीकार्य मान
+- क्या यह गुणवत्ता, लागत, विलंबता या रूटिंग व्यवहार बदलता है
+
+फ़ील्ड परिभाषाओं के बजाय ट्यूनिंग सलाह चाहिए, तो [इन्फ़रेंस पैरामीटर](../guides/inference-parameters.mdx) और [सैंपलिंग और डिकोडिंग](../guides/sampling-and-decoding.mdx) देखें।
+
+पैरामीटर का समर्थन अब भी endpoint, model और provider के अनुसार अलग होता है। मॉडल की क्विकस्टार्ट तालिका किसी खास रूट के लिए सक्रिय प्रदाताओं के समर्थन को एक साथ दिखाती है।
+
+## त्वरित संदर्भ
+
+| पैरामीटर | प्रकार | उपयोग |
+| --- | --- | --- |
+| [`model`](#model) | `string` | चलाने के लिए gateway model ID चुनना। |
+| [`stream`](#stream) | `boolean` | एक अंतिम payload के बजाय SSE आउटपुट क्रमशः लौटाना। |
+| [`temperature`](#temperature) | `number` | यादृच्छिकता बढ़ाना या घटाना। |
+| [`top_p`](#top_p) | `number` | nucleus sampling candidate pool को संकरा या चौड़ा करना। |
+| [`top_k`](#top_k) | `integer` | sampling को शीर्ष k candidate tokens तक सीमित करना। |
+| [`max_tokens`](#max_tokens) | `integer` |उन routes पर आउटपुट लंबाई सीमित करना जो अब भी यह field name उपयोग करते हैं। |
+| [`max_output_tokens`](#max_output_tokens) | `integer` | नए field name का उपयोग करने वाले routes पर आउटपुट लंबाई सीमित करना। |
+| [`max_completion_tokens`](#max_completion_tokens) | `integer` | नई OpenAI-style टेक्स्ट API पर आउटपुट लंबाई सीमित करना। |
+| [`frequency_penalty`](#frequency_penalty) | `number` | tokens और phrases की पुनरावृत्ति कम करना। |
+| [`presence_penalty`](#presence_penalty) | `number` | विषय या शब्दावली में बदलाव को प्रोत्साहित करना। |
+| [`repetition_penalty`](#repetition_penalty) | `number` | provider-विशिष्ट repetition नियंत्रण। |
+| [`seed`](#seed) | `integer` | upstream provider समर्थन करे तो पुनरुत्पादन क्षमता बेहतर करना। |
+| [`stop`](#stop) | `string` or `string[]` | स्पष्ट stop sequences तय करना। |
+| [`logprobs`](#logprobs) / [`top_logprobs`](#top_logprobs) | `boolean` / `integer` | token probability डेटा माँगना। |
+| [`tools`](#tools), [`tool_choice`](#tool_choice) | `array`, `string`, `object` | tool calling और function execution नियंत्रण। |
+| [`parallel_tool_calls`](#parallel_tool_calls) | `boolean` | tools के sequential execution व्यवहार की अनुमति देना या उसे बाध्य करना। |
+| [`response_format`](#response_format) | `string` or `object` | सादा टेक्स्ट, JSON या schema-सीमित आउटपुट। |
+| [`json_schema`](#json_schema) | `object` | structured output workflows के लिए schema तय करना। |
+| [`structured_outputs`](#structured_outputs) | `boolean` | विश्वसनीय schema-सीमित आउटपुट की क्षमता का संकेत। |
+| [`reasoning`](#reasoning) | `object` | provider-विशिष्ट reasoning कॉन्फ़िगरेशन। |
+| [`reasoning_effort`](#reasoning_effort) | `string` | reasoning budget घटाना या बढ़ाना। |
+| [`reasoning_tokens`](#reasoning_tokens) | `integer` | reasoning-विशिष्ट token सीमा या लेखांकन फ़ील्ड। |
+| [`include_reasoning`](#include_reasoning) | `boolean` | समर्थन होने पर reasoning content या summaries लौटाना। |
+| [`service_tier`](#service_tier) | `string` | `priority` या `flex` जैसा समर्थित request tier चुनना; OpenAI `fast` को alias के रूप में भी स्वीकार करता है। |
+| [`prompt_cache_key`](#prompt_cache_key) | `string` | संबंधित requests के लिए cache-aware routing को sticky रखना। |
+| [`cache_control`](#cache_control) | `object` | provider-neutral prompt cache संकेत या breakpoints लागू करना। |
+| [`prompt_cache_retention`](#prompt_cache_retention) | `string` | OpenAI-compatible prompt cache retention सेट करना। |
+| [`provider`](#provider) | `object` | रूटिंग और provider चयन को प्रभावित करना। |
+| [`provider_options`](#provider_options) | `object` | gateway के माध्यम से provider-native settings भेजना। |
+| [`meta`](#meta) / [`usage`](#usage) | `boolean` | response में अतिरिक्त metadata या usage accounting लौटाना। |
+| [`debug`](#debug) | `object` | routing traces और diagnostic payloads माँगना। |
+
+## एंडपॉइंट संबंधी नोट
+
+`service_tier` मुख्य टेक्स्ट अनुरोध इंटरफ़ेस पर समर्थित है:
+
+- [Anthropic Messages](./endpoint/anthropic-messages.mdx)
+- [Chat Completions](./endpoint/chat-completions.mdx)
+- [Responses](./endpoint/responses.mdx)
+
+चुने गए model और provider के संयोजन द्वारा समर्थित होने पर ही `priority` या `flex` का उपयोग करें। Phaseo `priority` को मानक प्रीमियम टियर रखता है; OpenAI रूट `fast` को alias के रूप में भी स्वीकार करते हैं। `service_tier` छोड़ने पर `standard` डिफ़ॉल्ट होता है।
+
+`Batch`, `service_tier` का मान नहीं है। Batch अनुरोध अलग Batch API का उपयोग करते हैं।
+
+Anthropic-संगत Messages अनुरोधों के लिए Anthropic के मूल upstream मान `auto` और `standard_only` हैं। Phaseo प्रदाताओं के बीच इन मानों को सामान्यीकृत या मैप कर सकता है, साथ ही `/v1/messages` पर Anthropic-संगत व्यवहार बनाए रखता है।
+
+यदि Phaseo पर इंगित कस्टम base URL के साथ आधिकारिक Anthropic SDK का उपयोग कर रहे हैं, तो `/v1/messages` पर Anthropic के मूल मान चुनें। `priority` और `flex` जैसे प्रदाता-पार सामान्यीकृत टियर नियंत्रण या OpenAI alias `fast` के लिए raw HTTP अनुरोध या gateway-native/OpenAI-style टेक्स्ट API चुनें।
+
+## पैरामीटर संदर्भ
+
+<span id="model"></span>
+<h3 id="parameter-model"><code>model</code></h3>
+
+अनुरोध के लिए gateway model ID चुनता है।
+
+| फ़ील्ड | मान |
+| --- | --- |
+| प्रकार | `string` |
+| आवश्यक | हाँ |
+| उदाहरण | `openai/gpt-5-nano` |
+
+स्वीकार किए गए alias का उपयोग जानबूझकर करना हो तभी ऐसा करें; अन्यथा हर मॉडल पेज के quickstart में दिखाया गया canonical model ID उपयोग करें। उदाहरणों, ऑटोमेशन और लंबे समय तक चलने वाले इंटीग्रेशन के लिए canonical ID सबसे सुरक्षित विकल्प हैं।
+
+<span id="stream"></span>
+<h3 id="parameter-stream"><code>stream</code></h3>
+
+एक अंतिम response body की प्रतीक्षा करने के बजाय Server-Sent Events के ज़रिए आउटपुट क्रमशः लौटाता है।
+
+| फ़ील्ड | मान |
+| --- | --- |
+| प्रकार | `boolean` |
+| डिफ़ॉल्ट | `false` |
+| सामान्य मान | `true`, `false` |
+
+इसे chat UI, token-by-token rendering या ऐसे लंबे उत्तरों के लिए चालू करें जिनमें जल्दी आउटपुट मिलने से UX बेहतर होता है। एक पूरा JSON response, आसान retries या सरल structured parsing चाहिए तो इसे बंद रखें।
+
+नोट:
+
+Streaming का समर्थन endpoint के अनुसार बदलता है।
+Streaming आमतौर पर transport का विकल्प है, quality control नहीं।
+Tool-calling या structured-output flows में भी provider के अनुसार streaming का व्यवहार अलग हो सकता है।
+
+<span id="temperature"></span>
+<h3 id="parameter-temperature"><code>temperature</code></h3>
+
+यह नियंत्रित करता है कि token चयन कितना यादृच्छिक हो।
+
+| फ़ील्ड | मान |
+| --- | --- |
+| प्रकार | `number` |
+| सामान्य सीमा | समर्थन होने पर `0.0` से `2.0` तक |
+| डिफ़ॉल्ट | provider और model के अनुसार अलग |
+| अच्छी शुरुआती सीमा | `0.2` to `0.7` |
+
+कम मान आउटपुट को अधिक संयमित और दोहराने योग्य बनाते हैं। अधिक मान विविधता बढ़ाते हैं, जो brainstorming या creative writing में सहायक हो सकती है, लेकिन consistency और schema adherence घटा सकती है।
+
+उपयुक्त उपयोग:
+
+- डेटा निकालना
+- वर्गीकरण
+- JSON या schema आउटपुट
+- रचनात्मक निर्माण
+
+व्यावहारिक सुझाव:
+
+Structured tasks के लिए कम मान से शुरू करें।
+पहले `temperature` या `top_p` में से किसी एक को बदलें, दोनों को नहीं।
+High temperature और aggressive quantization से अस्थिरता बढ़ सकती है।
+
+<span id="top_p"></span>
+<h3 id="parameter-top_p"><code>top_p</code></h3>
+
+यह न्यूक्लियस सैंपलिंग लागू करता है और उम्मीदवारों को ऐसे सबसे छोटे टोकन समूह तक सीमित करता है जिसकी संचयी प्रायिकता `top_p` तक पहुँचती है।
+
+| फ़ील्ड | मान |
+| --- | --- |
+| प्रकार | `number` |
+| सामान्य सीमा | समर्थन होने पर `0.0` से `1.0` तक |
+| डिफ़ॉल्ट | provider और model के अनुसार अलग |
+| अच्छी शुरुआती सीमा | `0.9` to `1.0` |
+
+कम मान मॉडल के चयन को संकीर्ण संभाव्यता दायरे तक सीमित करते हैं, जिससे आमतौर पर अधिक सुरक्षित और केंद्रित आउटपुट मिलता है。 अधिक मान व्यापक token समूह पर विचार करने देते हैं。
+
+नोट:
+
+temperature को सीधे बदले बिना खोज क्षेत्र संकरा या चौड़ा करना हो तो `top_p` समायोजित करें।
+अधिकांश अनुप्रयोगों के लिए मध्यम `temperature` और 1.0 के करीब `top_p` उचित शुरुआती आधार हैं।
+
+<span id="top_k"></span>
+<h3 id="parameter-top_k"><code>top_k</code></h3>
+
+इसे उपलब्ध कराने वाले provider पर हर चरण में sampling को शीर्ष k candidate tokens तक सीमित करता है।
+
+| फ़ील्ड | मान |
+| --- | --- |
+| प्रकार | `integer` |
+| सामान्य सीमा | `>= 1` जहाँ समर्थित हो |
+| डिफ़ॉल्ट | provider और model के अनुसार अलग |
+
+`top_k` के कम मान मॉडल के विकल्प घटाकर आउटपुट को अधिक अनुमानित बना सकते हैं। अधिक मान candidate pool बढ़ाते हैं।
+
+नोट:
+
+`top_k` हर provider पर उपलब्ध नहीं है।
+इसे `top_p` से अधिक स्पष्ट token-pool सीमा मानें।
+
+<span id="max_tokens"></span>
+<h3 id="parameter-max_tokens"><code>max_tokens</code></h3>
+
+उन endpoints और providers पर आउटपुट लंबाई सीमित करता है जो अब भी `max_tokens` फ़ील्ड नाम उपयोग करते हैं।
+
+| फ़ील्ड | मान |
+| --- | --- |
+| प्रकार | `integer` |
+| सामान्य सीमा | `>= 1` |
+| डिफ़ॉल्ट | provider और model के अनुसार अलग |
+
+लागत, विलंबता और आउटपुट कटने के जोखिम को नियंत्रित करने के लिए इसका उपयोग करें। मान बहुत कम होने पर मॉडल सही काम करने के बावजूद आउटपुट अधूरा दिख सकता है।
+
+<span id="max_output_tokens"></span>
+<h3 id="parameter-max_output_tokens"><code>max_output_tokens</code></h3>
+
+उन routes पर आउटपुट लंबाई सीमित करता है जो `max_tokens` के बजाय `max_output_tokens` का उपयोग करते हैं।
+
+| फ़ील्ड | मान |
+| --- | --- |
+| प्रकार | `integer` |
+| सामान्य सीमा | `>= 1` |
+| डिफ़ॉल्ट | provider और model के अनुसार अलग |
+
+यह अर्थ की दृष्टि से `max_tokens` जैसा ही नियंत्रण है, लेकिन चुने गए endpoint या SDK surface के लिए अपेक्षित फ़ील्ड नाम भेजें।
+
+<span id="max_completion_tokens"></span>
+<h3 id="parameter-max_completion_tokens"><code>max_completion_tokens</code></h3>
+
+नई OpenAI-style टेक्स्ट API पर आउटपुट लंबाई सीमित करता है जो `max_completion_tokens` उपयोग करती हैं।
+
+| फ़ील्ड | मान |
+| --- | --- |
+| प्रकार | `integer` |
+| सामान्य सीमा | `>= 1` |
+| डिफ़ॉल्ट | provider और model के अनुसार अलग |
+
+यह आउटपुट token budget का एक और फ़ील्ड है। एक ही request shape में आउटपुट लंबाई के alias मिलाने के बजाय endpoint का अपेक्षित नाम उपयोग करें।
+
+<span id="frequency_penalty"></span>
+<h3 id="parameter-frequency_penalty"><code>frequency_penalty</code></h3>
+
+token पहले कितनी बार आया है, उसी अनुपात में उसका दोहराव घटाता है।
+
+| फ़ील्ड | मान |
+| --- | --- |
+| प्रकार | `number` |
+| सामान्य सीमा | समर्थन होने पर सामान्यतः `-2.0` से `2.0` तक |
+| डिफ़ॉल्ट | आमतौर पर `0` |
+
+मॉडल loop करे, वाक्यांश दोहराए या वही शब्द बहुत इस्तेमाल करे तो इसे बढ़ाएँ।
+
+<span id="presence_penalty"></span>
+<h3 id="parameter-presence_penalty"><code>presence_penalty</code></h3>
+
+किसी token के एक बार आते ही उसके पुनः उपयोग को घटाता है, जिससे मॉडल नए विषय या शब्दावली खोज सकता है।
+
+| फ़ील्ड | मान |
+| --- | --- |
+| प्रकार | `number` |
+| सामान्य सीमा | समर्थन होने पर सामान्यतः `-2.0` से `2.0` तक |
+| डिफ़ॉल्ट | आमतौर पर `0` |
+
+`frequency_penalty` की तुलना में यह आमतौर पर दोहराव गिनने के बजाय नवीनता पर व्यापक नियंत्रण देता है।
+
+<span id="repetition_penalty"></span>
+<h3 id="parameter-repetition_penalty"><code>repetition_penalty</code></h3>
+
+यह OpenAI-style के पारंपरिक penalty fields से अलग provider-specific repetition नियंत्रण लागू करता है।
+
+| फ़ील्ड | मान |
+| --- | --- |
+| प्रकार | `number` |
+| सामान्य सीमा | प्रदाता और मॉडल के अनुसार अलग; आम तौर पर `0.0` से `2.0` के बीच |
+| डिफ़ॉल्ट | provider और model के अनुसार अलग |
+
+इसका उद्देश्य `frequency_penalty` और `presence_penalty` जैसा है, लेकिन इसका अर्थ provider के अनुसार अधिक बदलता है। इसे हर जगह समान नियंत्रण के बजाय provider-native व्यवहार मानें।
+
+<span id="seed"></span>
+<h3 id="parameter-seed"><code>seed</code></h3>
+
+upstream provider seed-आधारित generation का समर्थन करे तो deterministic sampling माँगता है।
+
+| फ़ील्ड | मान |
+| --- | --- |
+| प्रकार | `integer` |
+| डिफ़ॉल्ट | सेट नहीं है |
+
+इसे debugging, regression testing और upstream platform की अनुमति के अनुसार व्यवहार को दोहराने के लिए उपयोग करें। Seeded generation reproducibility बढ़ाती है, लेकिन सभी providers या infrastructure बदलावों में सटीक determinism की गारंटी नहीं है।
+
+<span id="stop"></span>
+<h3 id="parameter-stop"><code>stop</code></h3>
+
+एक या अधिक sequences तय करता है जो generation को जल्दी समाप्त करती हैं।
+
+| फ़ील्ड | मान |
+| --- | --- |
+| प्रकार | `string` or `string[]` |
+| डिफ़ॉल्ट | सेट नहीं है |
+| सामान्य उपयोग | पार्सर की सीमाएँ, टेम्पलेट के अंत और प्रोटोकॉल मार्कर |
+
+जब footer, tool delimiter या अगले generated section से पहले रुकने जैसी सख्त output boundaries चाहिए हों तो यह उपयोगी है।
+
+<span id="logprobs"></span>
+<h3 id="parameter-logprobs"><code>logprobs</code></h3>
+
+उपलब्ध होने पर token-स्तरीय probability metadata माँगता है।
+
+| फ़ील्ड | मान |
+| --- | --- |
+| प्रकार | `boolean` |
+| डिफ़ॉल्ट | `false` |
+
+यह मुख्यतः analysis, evaluation, ranking, debugging और confidence-संबंधी workflows में उपयोगी है। सामान्य product responses के लिए आमतौर पर इसकी ज़रूरत नहीं होती।
+
+<span id="top_logprobs"></span>
+<h3 id="parameter-top_logprobs"><code>top_logprobs</code></h3>
+
+हर output position के लिए शीर्ष वैकल्पिक candidate tokens और उनकी log probabilities माँगता है।
+
+| फ़ील्ड | मान |
+| --- | --- |
+| प्रकार | `integer` |
+| सामान्य सीमा | provider-विशिष्ट, अक्सर `0` से `20` |
+| आवश्यक | `logprobs: true` |
+
+चुने गए output token के बजाय वैकल्पिक token branches की जाँच करनी हो तो इसका उपयोग करें।
+
+<span id="tools"></span>
+<h3 id="parameter-tools"><code>tools</code></h3>
+
+tool-using model workflows के लिए callable tools या functions घोषित करता है।
+
+| फ़ील्ड | मान |
+| --- | --- |
+| प्रकार | `array` |
+| डिफ़ॉल्ट | सेट नहीं है |
+
+endpoint docs में कुछ और न कहा हो तो OpenAI-style tool schema उपयोग करें। Tool declarations बताती हैं कि मॉडल क्या call कर सकता है, यह नहीं कि उसे call करना ही होगा।
+
+<span id="tool_choice"></span>
+<h3 id="parameter-tool_choice"><code>tool_choice</code></h3>
+
+यह तय करता है कि मॉडल tools अपने-आप call कर सकता है, tools call नहीं करना चाहिए, या किसी खास tool का उपयोग करना चाहिए।
+
+| फ़ील्ड | मान |
+| --- | --- |
+| प्रकार | `string` or `object` |
+| सामान्य मान | `none`, `auto`, `required` |
+
+केवल content चाहिए तो `none`, मॉडल को निर्णय लेने देना हो तो `auto`, और downstream orchestration को tool call चाहिए तो अधिक सख्त मान उपयोग करें।
+
+<span id="parallel_tool_calls"></span>
+<h3 id="parameter-parallel_tool_calls"><code>parallel_tool_calls</code></h3>
+
+compatible tool-calling APIs पर concurrent tool calls की अनुमति देता है या रोकता है।
+
+| फ़ील्ड | मान |
+| --- | --- |
+| प्रकार | `boolean` |
+| डिफ़ॉल्ट | endpoint और provider के अनुसार अलग |
+
+downstream systems को सख्त sequential execution, ordered side effects या सरल agent traces चाहिए हों तो इसे बंद करें।
+
+<span id="response_format"></span>
+<h3 id="parameter-response_format"><code>response_format</code></h3>
+
+सादा टेक्स्ट, JSON या schema-सीमित response जैसे खास आउटपुट फ़ॉर्मैट का अनुरोध करता है।
+
+| फ़ील्ड | मान |
+| --- | --- |
+| प्रकार | `string` or `object` |
+| डिफ़ॉल्ट | endpoint और provider के अनुसार अलग |
+
+स्वीकृत सटीक संरचनाएँ endpoint और provider adapter पर निर्भर करती हैं। Free-form text से अधिक चाहिए हो, खासकर JSON responses और structured extraction workflows के लिए, तो इसका उपयोग करें।
+
+<span id="structured_outputs"></span>
+<h3 id="parameter-structured_outputs"><code>structured_outputs</code></h3>
+
+चुने गए route और provider set पर विश्वसनीय structured या schema-सीमित responses का समर्थन दर्शाता है।
+
+| फ़ील्ड | मान |
+| --- | --- |
+| प्रकार | `boolean` |
+| अर्थ | सीधे tuning knob के बजाय क्षमता का संकेत |
+
+Quickstart tables में यह बताता है कि चुना गया endpoint और सक्रिय providers structured-output workflows को विश्वसनीय रूप से support कर सकते हैं या नहीं। इसे support metadata के रूप में समझना बेहतर है।
+
+<span id="json_schema"></span>
+<h3 id="parameter-json_schema"><code>json_schema</code></h3>
+
+compatible models और endpoints पर structured output लागू करने के लिए उपयोग किया जाने वाला JSON schema देता है।
+
+| फ़ील्ड | मान |
+| --- | --- |
+| प्रकार | `object` |
+| इसके साथ उपयोग | structured output या schema-सीमित response flows |
+
+जब आपके application को guaranteed fields, typed extraction या सख्त response contract चाहिए तो इसका उपयोग करें। बेहतर adherence के लिए schema संक्षिप्त और task-specific रखें।
+
+<span id="reasoning"></span>
+<h3 id="parameter-reasoning"><code>reasoning</code></h3>
+
+reasoning-सक्षम APIs के लिए provider-specific reasoning कॉन्फ़िगरेशन रखता है।
+
+| फ़ील्ड | मान |
+| --- | --- |
+| प्रकार | `object` |
+| डिफ़ॉल्ट | सेट नहीं है |
+
+route के अनुसार इसमें enablement, effort, token budget, verbosity या reasoning content लौटाना शामिल हो सकता है।
+
+<span id="reasoning_effort"></span>
+<h3 id="parameter-reasoning_effort"><code>reasoning_effort</code></h3>
+
+जब endpoint और model यह नियंत्रण देते हैं, तो कम या अधिक reasoning budget माँगता है।
+
+| फ़ील्ड | मान |
+| --- | --- |
+| प्रकार | `string` |
+| सामान्य मान | provider-विशिष्ट; सामान्य मान `minimal`, `low`, `medium`, `high` और `none` जैसे हैं |
+| डिफ़ॉल्ट | provider और model के अनुसार अलग |
+
+अधिक effort कठिन reasoning tasks को बेहतर कर सकता है, लेकिन latency और token usage बढ़ते हैं। कम effort अक्सर तेज़ और सस्ते requests के लिए बेहतर होता है।
+
+<span id="reasoning_tokens"></span>
+<h3 id="parameter-reasoning_tokens"><code>reasoning_tokens</code></h3>
+
+समर्थित होने पर यह reasoning-विशिष्ट token field दर्शाता है।
+
+| फ़ील्ड | मान |
+| --- | --- |
+| प्रकार | `integer` |
+| डिफ़ॉल्ट | provider और model के अनुसार अलग |
+
+route के अनुसार यह request control, सीमा या response accounting field हो सकता है; यह हर जगह समर्थित request parameter नहीं है।
+
+<span id="include_reasoning"></span>
+<h3 id="parameter-include_reasoning"><code>include_reasoning</code></h3>
+
+समर्थन होने पर response में reasoning content या summaries माँगता है।
+
+| फ़ील्ड | मान |
+| --- | --- |
+| प्रकार | `boolean` |
+| डिफ़ॉल्ट | `false` |
+
+इसे सावधानी से उपयोग करें। Reasoning payload बड़े हो सकते हैं, हर model पर उपलब्ध नहीं होते और ऐसे production responses के लिए अनुपयुक्त हो सकते हैं जिन्हें अतिरिक्त diagnostic विवरण नहीं चाहिए।
+
+<span id="service_tier"></span>
+<h3 id="parameter-service_tier"><code>service_tier</code></h3>
+
+compatible टेक्स्ट APIs पर समर्थित routing या pricing tier चुनता है।
+
+| फ़ील्ड | मान |
+| --- | --- |
+| प्रकार | `string` |
+| समर्थित मान | `standard`, `fast`, `priority`, `flex` |
+| डिफ़ॉल्ट | `standard` |
+
+चुनी गई model-provider जोड़ी के समर्थन पर ही `priority` या `flex` उपयोग करें। Phaseo `priority` को मानक premium tier रखता है; समर्थित OpenAI routes समान routing और pricing वाले alias `fast` को भी स्वीकार करते हैं। डिफ़ॉल्ट standard tier रखने के लिए यह फ़ील्ड छोड़ दें।
+
+Phaseo इन gateway-normalized tier मानों को आंतरिक रूप से provider-native controls में map करता है, ताकि callers सभी समर्थित टेक्स्ट surfaces पर समान `service_tier` मान उपयोग कर सकें।
+
+नोट:
+
+`Batch` एक अलग API flow है, service-tier मान नहीं।
+समर्थन endpoint और provider के अनुसार बदलता है।
+
+<span id="prompt_cache_key"></span>
+<h3 id="parameter-prompt_cache_key"><code>prompt_cache_key</code></h3>
+
+prompt-cache-aware routing के लिए स्थिर cache affinity key देता है।
+
+| फ़ील्ड | मान |
+| --- | --- |
+| प्रकार | `string` |
+| उपयोग | संबंधित cached prompts के लिए sticky routing |
+
+जब कई requests स्थिर prompt prefixes साझा करते हों और संभव हो तो समान upstream provider या region को प्राथमिकता देनी हो, तब इसका उपयोग करें। Phaseo request context से cache affinity निकाल सकता है, लेकिन लंबी बातचीत, agent sessions और दोहराए जाने वाले workflows के लिए स्पष्ट key बेहतर है।
+
+<span id="cache_control"></span>
+<h3 id="parameter-cache_control"><code>cache_control</code></h3>
+
+समर्थित टेक्स्ट request surfaces पर provider-neutral prompt cache policy लागू करता है।
+
+| फ़ील्ड | मान |
+| --- | --- |
+| प्रकार | `object` |
+| सामान्य फ़ील्ड | `type`, `ttl`, `scope` |
+| उपयोग | स्वचालित prompt caching और स्पष्ट cache breakpoints |
+
+एक ही कैश संकेत को गेटवे की साझा स्कीमा से भेजने के लिए, `cache_control` को Chat Completions, Responses और Anthropic Messages अनुरोधों के शीर्ष स्तर पर उपयोग करें। कैश कहाँ टूटे, यह तय करना हो तो समर्थित कंटेंट ब्लॉक्स पर भी इसे रखें।
+
+provider और model के समर्थन के अनुसार सामान्य TTL मान `5m` और `1h` हैं। Native integrations के लिए `provider_options.anthropic.cache_control` और `provider_options.google.cache_control` जैसे provider-specific aliases अब भी स्वीकार किए जाते हैं。
+
+<span id="prompt_cache_retention"></span>
+<h3 id="parameter-prompt_cache_retention"><code>prompt_cache_retention</code></h3>
+
+OpenAI के माध्यम से भेजे जाने वाले समर्थित अनुरोधों के लिए यह OpenAI-संगत प्रॉम्प्ट-कैश प्रतिधारण नीति सेट करता है।
+
+| फ़ील्ड | मान |
+| --- | --- |
+| प्रकार | `string` |
+| उदाहरण | `24h` |
+| उपयोग | OpenAI prompt cache retention |
+
+OpenAI cache-retention options को provider-specific options में nested किए बिना भेजने के लिए इसका उपयोग करें। Provider-specific alias `provider_options.openai.prompt_cache_retention` अब भी स्वीकार किया जाता है। दोनों मौजूद हों तो top-level `prompt_cache_retention` को प्राथमिकता मिलती है।
+
+<span id="provider"></span>
+<h3 id="parameter-provider"><code>provider</code></h3>
+
+routing constraints और provider preferences रखता है।
+
+| फ़ील्ड | मान |
+| --- | --- |
+| प्रकार | `object` |
+| उपयोग | रूटिंग नियम, provider चयन और compliance constraints |
+
+यह तय करने के लिए उपयोग करें कि कौन से upstream providers request चला सकते हैं, उन्हें कैसे rank करना है और कौन सी compliance requirements पूरी होनी चाहिए।
+
+सामान्य fields में शामिल हैं:
+
+| फ़ील्ड | प्रकार | उद्देश्य |
+| --- | --- | --- |
+| `order` | `string[]` | पसंदीदा provider क्रम। |
+| `only` | `string[]` | रूटिंग को विशिष्ट providers तक सीमित करता है। |
+| `ignore` | `string[]` | विशिष्ट providers को बाहर करता है। |
+| `include_alpha` | `boolean` | routing निर्णयों में alpha providers की अनुमति देता है। |
+| `sort` | `string` or `object` | अक्सर `price`, `latency` या `throughput` के आधार पर providers को rank करता है। |
+| `required_execution_region` | `string` | execution को आवश्यक region तक सीमित करता है। |
+| `required_data_region` | `string` | data handling को आवश्यक region तक सीमित करता है। |
+| `require_zero_data_retention` | `boolean` | zero-data-retention शर्तें पूरी करने वाले providers आवश्यक करता है। |
+| `max_price` | `object` | prompt, completion, image, audio या request लागत की सीमा तय करता है। |
+| `quantizations` | `string[]` | ऐसी योग्य offer आवश्यक करता है जिसकी catalogue quantization इनमें से किसी मान से मेल खाए। |
+
+`quantizations` OpenRouter-संगत provider-routing शब्दावली का पालन करता है और `provider` या `routing` के अंतर्गत स्वीकार किया जाता है। मिलान case-insensitive है और spaces, hyphens तथा underscores को अनदेखा करता है; `float8`/`FP8` और `bfloat16`/`BF16` जैसे स्पष्ट नाम aliases हैं। यह filter मौजूद होने पर quantization metadata के बिना offers हटाए जाते हैं। कोई योग्य offer मेल न खाए तो Gateway चुपचाप किसी दूसरे variant पर routing करने के बजाय अनुरोधित और उपलब्ध quantizations वाला error लौटाता है।
+
+<span id="provider_options"></span>
+<h3 id="parameter-provider_options"><code>provider_options</code></h3>
+
+provider-specific passthrough settings रखता है जिन्हें gateway की साझा request shape में normalize नहीं करना चाहिए।
+
+| फ़ील्ड | मान |
+| --- | --- |
+| प्रकार | `object` |
+| उपयोग | provider-native controls |
+
+उदाहरण:
+
+- `openai.context_management`
+- `openai.prompt_cache_retention`
+- `anthropic.cache_control`
+- `google.cache_control`
+- `google.cached_content`
+
+जब provider-native feature चाहिए, लेकिन request का बाकी हिस्सा gateway के common schema में रखना हो, तब इसका उपयोग करें। सामान्य cache hints के लिए top-level `cache_control` और OpenAI-compatible retention के लिए top-level `prompt_cache_retention` चुनें।
+
+Chat Completions, Responses और Anthropic Messages में प्रदाता की प्रॉम्प्ट-कैशिंग के उदाहरणों के लिए [Prompt Caching](../guides/prompt-caching.mdx) देखें।
+
+<span id="meta"></span>
+<h3 id="parameter-meta"><code>meta</code></h3>
+
+समर्थन होने पर response में अतिरिक्त metadata माँगता है।
+
+| फ़ील्ड | मान |
+| --- | --- |
+| प्रकार | `boolean` |
+| डिफ़ॉल्ट | endpoint के अनुसार अलग |
+
+debugging, analytics या downstream inspection के लिए अतिरिक्त गैर-मुख्य response metadata चाहिए तो इसका उपयोग करें。
+
+<span id="usage"></span>
+<h3 id="parameter-usage"><code>usage</code></h3>
+
+समर्थन होने पर usage accounting विवरण माँगता है।
+
+| फ़ील्ड | मान |
+| --- | --- |
+| प्रकार | `boolean` |
+| डिफ़ॉल्ट | endpoint के अनुसार अलग |
+
+headers या dashboards पर निर्भर रहने के बजाय response body में token या usage accounting स्पष्ट रूप से चाहिए तो यह उपयोगी है।
+
+<span id="debug"></span>
+<h3 id="parameter-debug"><code>debug</code></h3>
+
+नियंत्रित request और routing diagnostics सक्षम करता है।
+
+| फ़ील्ड | मान |
+| --- | --- |
+| प्रकार | `object` |
+| उपयोग | केवल development और troubleshooting के लिए |
+
+समर्थित debug fields में शामिल हैं:
+
+| फ़ील्ड | प्रकार | उद्देश्य |
+| --- | --- | --- |
+| `enabled` | `boolean` | request के लिए debug mode सक्षम करता है। |
+| `return_upstream_request` | `boolean` | transformed upstream request payload शामिल करता है। |
+| `return_upstream_response` | `boolean` | उपलब्ध होने पर upstream response payload शामिल करता है। |
+| `trace` | `boolean` | routing या debug traces लौटाता है। |
+| `trace_level` | `summary` or `full` | trace की verbosity नियंत्रित करता है। |
+
+Debug payloads में संवेदनशील request context हो सकता है। इनका उपयोग केवल development या कड़े नियंत्रण वाले environments में करें।
+
+## अनुरोध का उदाहरण
+
+```json
+{
+  "model": "openai/gpt-5-nano",
+  "input": "Summarize this changelog.",
+  "stream": false,
+  "temperature": 0.3,
+  "max_output_tokens": 300,
+  "provider": {
+    "order": ["openai", "anthropic"],
+    "ignore": ["some-provider"],
+    "sort": "latency",
+    "required_execution_region": "eu",
+    "require_zero_data_retention": true
+  },
+  "debug": {
+    "enabled": true,
+    "trace": true,
+    "trace_level": "summary"
+  }
+}
+```
+
+## विस्तृत व्याख्या
+
+फ़ील्ड संदर्भ के बजाय गहराई से tuning सलाह चाहिए तो आगे ये देखें:
+
+- [इन्फ़रेंस पैरामीटर](../guides/inference-parameters.mdx) में temperature, top_p, top_k, max token limits, stop sequences और tuning workflow पर व्यावहारिक सलाह
+- [Sampling and Decoding](../guides/sampling-and-decoding.mdx) में randomness, penalties और decoding controls का मॉडल व्यवहार पर प्रभाव
+
+## संबंधित पृष्ठ
+
+- [इन्फ़रेंस पैरामीटर](../guides/inference-parameters.mdx)
+- [Sampling and Decoding](../guides/sampling-and-decoding.mdx)
+- [स्ट्रीमिंग](./streaming.mdx)
+- [Limits](./limits.mdx)
+- [त्रुटियाँ और डिबगिंग](./errors.mdx)
+
+<Visibility for="agents">
+यदि आप agent के रूप में parameter handling लागू कर रहे हैं:
+
+- schema validation और request-shape जाँच के लिए repository skills उपयोग करें
+- अनुमति होने पर passthrough flows में अज्ञात provider-specific keys सुरक्षित रखें
+- tools, streaming या debug जैसे उन्नत fields को साथ सेट करने से पहले endpoint compatibility जाँचें
+</Visibility>

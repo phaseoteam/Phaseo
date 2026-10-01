@@ -1,0 +1,59 @@
+---
+title: "Grenzwerte"
+description: "Verstehe providerabhängige Ratenlimits und entwickle robuste Wiederholungslogik."
+icon: "gauge"
+---
+
+Das Gateway erzwingt derzeit kein separates plattformweites Anfragelimit. Die meisten Drosselungen kommen von Upstream-Anbietern.
+
+## So funktionieren Limits
+
+- Der für das Modell ausgewählte Anbieter kann die Anfragerate begrenzen.
+- BYOK-Anfragen unterliegen den Limits deines Anbieterkontos.
+- Gateway-Routing und Fallbacks können Fehler reduzieren, aber `429`-Antworten sind weiterhin möglich.
+
+## `429`-Antworten behandeln
+
+- Beachte `Retry-After`, wenn der Header vorhanden ist.
+- Verwende exponentielles Backoff mit Jitter.
+- Lege eine maximale Anzahl an Versuchen fest und behandle endgültige Fehler kontrolliert.
+
+Phaseo leitet einen validierten `Retry-After`-Wert weiter, wenn der geroutete Anbieter einen bereitstellt. Bei BYOK-Anfragen können zusätzlich Informationen zu Anbieterlimits über `X-Phaseo-Upstream-RateLimit-*`-Header zurückgegeben werden. Bei Anfragen über verwaltete Anbieter werden diese Limit-Header bewusst weggelassen: Sie beschreiben die gemeinsam genutzte Phaseo-Kapazität und nicht das Kontingent eines einzelnen Kunden. Andere Upstream-Header werden nicht weitergeleitet.
+
+```ts
+async function retryWithBackoff(run: () => Promise<Response>, maxRetries = 4) {
+  for (let attempt = 0; attempt <= maxRetries; attempt += 1) {
+    const response = await run();
+    if (response.status !== 429) return response;
+
+    const retryAfterHeader = response.headers.get("retry-after");
+    const retryAfterMs = retryAfterHeader
+      ? Number(retryAfterHeader) * 1000
+      : Math.min(1000 * 2 ** attempt, 8000);
+
+    await new Promise((resolve) => setTimeout(resolve, retryAfterMs));
+  }
+
+  throw new Error("Rate limit retries exhausted");
+}
+```
+
+## Überwachung
+
+- Erfasse die `429`-Rate nach Endpunkt und Modell.
+- Beobachte die Fallback-Häufigkeit, um Druck auf Anbieter zu erkennen.
+- Nutze Dashboard-Metriken und App-Protokolle gemeinsam zur Untersuchung von Vorfällen.
+
+## Verwandte Seiten
+
+- [Authentifizierung](./authentication.mdx)
+- [Parameter](./parameters.mdx)
+- [Fehler und Debugging](./errors.mdx)
+
+<Visibility for="agents">
+Wenn du als Agent Wiederholungen implementierst:
+
+- Nutze Repository-Skills für sichere Wiederholungsschleifen und die Kontrolle von Timeouts.
+- Bündele die Wiederholungskonfiguration (Versuchszahl, Basisverzögerung und maximale Verzögerung) zentral.
+- Wiederhole nicht-idempotente Anfragen niemals ohne ausdrückliche Produktfreigabe.
+</Visibility>

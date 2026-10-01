@@ -1,0 +1,39 @@
+---
+icon: "sliders-horizontal"
+title: "Paramètres d’inférence"
+description: "Comment les principaux paramètres de requête influent sur la qualité, la détermination, la latence et le coût."
+---
+
+La quantification représente une moitié du comportement du modèle.  
+Les paramètres d’inférence en représentent l’autre moitié.
+
+## Paramètres principaux
+
+| Paramètre | Contrôle | Effet typique |
+| --- | --- | --- |
+| `temperature` | Aléatoire dans le choix des tokens | Une valeur élevée rend les réponses plus créatives et variables ; une valeur faible les rend plus déterministes |
+| `top_p` | Seuil de l’échantillonnage par noyau | Une valeur faible produit des réponses plus sûres et ciblées |
+| `top_k` | Taille de l’ensemble des tokens candidats (si pris en charge) | Une valeur faible produit des réponses plus resserrées et prévisibles |
+| `max_tokens` / `max_output_tokens` | Longueur maximale de la réponse générée | Limite le coût et la latence, mais peut tronquer les réponses |
+| `stop` | Séquences d’arrêt explicites | Améliore le cadrage de la sortie et la fiabilité de l’analyse |
+| `seed` | Graine aléatoire (si prise en charge) | Améliore la reproductibilité du débogage et des tests |
+
+## Interactions à surveiller
+
+- `temperature` et `top_p` influent tous deux sur l’aléatoire. Ne modifiez qu’un paramètre à la fois pendant le réglage.
+- Une quantification agressive à faible nombre de bits combinée à un aléatoire élevé peut amplifier l’instabilité des réponses.
+- Une valeur faible de `max_tokens` peut donner l’impression d’un échec du modèle alors que la réponse est simplement tronquée.
+
+## Valeurs de départ recommandées
+
+- `temperature` : de `0.2` à `0.7`, selon le niveau de créativité recherché
+- `top_p` : de `0.9` à `1.0`
+- `max_tokens` : dimensionnez-le selon la longueur de sortie attendue, plutôt que d’utiliser une valeur énorme partout
+
+## Processus de réglage
+
+1. Réglez d’abord la quantification.
+2. Figez un jeu d’évaluation.
+3. Faites varier un paramètre à la fois.
+4. Comparez la qualité, la latence et l’utilisation des tokens.
+5. Utilisez des préréglages distincts par endpoint et par cas d’usage.

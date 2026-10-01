@@ -1,0 +1,161 @@
+---
+title: "OpenAI GPT-5.6"
+description: "GPT-5.6 Sol、Terra、Luna を本番ワークロードに導入する際に知っておくべきこと"
+icon: "/icons/brands/openai.svg"
+---
+
+# OpenAI GPT-5.6
+
+このガイドでは、GPT-5.6 ファミリーを本番環境へ安全に導入する方法を説明します。
+
+GPT-5.6 は、複雑な本番ワークフロー向けの OpenAI の現行 GPT ファミリーです。AI Stats では、固定のティア ID が OpenAI のモデル ID `gpt-5.6-sol`、`gpt-5.6-terra`、`gpt-5.6-luna` に対応します。
+
+## 移行クイックスタート
+
+1. ワークロードに合う固定モデル Sol、Terra、Luna を選びます。
+2. モデル ID だけを置き換え、リクエストの他の部分は変えないでください。
+3. 推論の強さ、構造化出力、ツール、レイテンシ、タスクあたりのコストを再テストします。
+4. 以前の GPT-5 モデルをフォールバックとして残し、新しいルートをカナリアリリースします。
+
+## モデルを選ぶ
+
+| モデル | 用途 | 推論レベル |
+| --- | --- | --- |
+| `openai/gpt-5.6-sol` | 最高性能の推論、エージェント型コーディング、科学的分析、複雑な専門業務 | `none`, `low`, `medium`, `high`, `xhigh`, `max` |
+| `openai/gpt-5.6-terra` | 推論、コーディング、アシスタントワークフローを含む日常業務全般 | `none`, `low`, `medium`, `high`, `xhigh`, `max` |
+| `openai/gpt-5.6-luna` | 低レイテンシとコストを重視する GPT-5.6 ワークロード | `none`, `low`, `medium`, `high`, `xhigh`, `max` |
+
+OpenAI の `gpt-5.6` エイリアスは `gpt-5.6-sol` にルーティングされます。AI Stats で Sol ティアを既定にするには `openai/gpt-5.6` または `openai/gpt-sol-latest` を使い、ルーティングを制御する場合は固定ティア ID を使います。
+
+AI Stats は各ティアの最新モデルを指すティアエイリアスも追跡します: `openai/gpt-sol-latest`、`openai/gpt-terra-latest`、`openai/gpt-luna-latest`。制御された移行には固定 GPT-5.6 ID を使い、将来の Sol、Terra、Luna リリースも同じルートで順次使いたい場合に限りティアエイリアスを使います。
+
+## 新機能
+
+- GPT-5.6 では、GPT の既定ルート 1 つではなく、Sol/Terra/Luna に分かれました。
+- GPT-5.6 の 3 つのティアはすべて、最大の推論予算として `reasoning.effort: "max"` に対応します。
+- GPT-5.6 は、別個の Pro モデルスラッグに切り替えずに `reasoning.mode: "pro"` をサポートします。
+- GPT-5.6 は `reasoning.context` による推論制御の永続化に対応します。
+- GPT-5.6 は、対象となるツール多用型ワークフロー向けに、マルチエージェントと Programmatic Tool Calling のベータサポートを追加します。
+- プロンプトキャッシュでは、非キャッシュ入力、キャッシュ読み取り、キャッシュ書き込み、出力が別々に課金されます。
+- 明示的なプロンプトキャッシュは `prompt_cache_options` で利用できます。OpenAI は現在、`prompt_cache_retention` より `prompt_cache_options.ttl` を推奨しています。
+
+## リクエストを更新する
+
+まずモデル ID だけを置き換え、リクエストの他の部分は変えないでください。
+
+最初の例では Responses API 形式の `input` 構造を使います。Chat Completions のトラフィックを移行する場合は、ルートが対応していれば `messages` とフラットな `reasoning_effort` フィールドを使い続けてください。
+
+```json
+{
+  "model": "openai/gpt-5.6-terra",
+  "input": "Summarize the rollout risks in this migration plan.",
+  "reasoning": {
+    "effort": "medium"
+  }
+}
+```
+
+追加の推論予算にレイテンシとコストに見合う価値があるルートでのみ、`max` を使ってください。
+
+```json
+{
+  "model": "openai/gpt-5.6-sol",
+  "input": "Review this multi-service incident report and propose a rollback plan.",
+  "reasoning": {
+    "effort": "max"
+  }
+}
+```
+
+OpenAI互換のフラットフィールドを引き続き送信する統合では、ルートが対応している場合、AI Statsは`reasoning_effort`も受け付けます:
+
+```json
+{
+  "model": "openai/gpt-5.6-sol",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Design a test plan for this agent workflow."
+    }
+  ],
+  "reasoning_effort": "max"
+}
+```
+
+## 料金を確認する
+
+カタログでは GPT-5.6 の料金を 100 万トークン単位で記録しています。
+
+| モデル | 入力 | キャッシュ読み取り | キャッシュ書き込み | 出力 |
+| --- | ---: | ---: | ---: | ---: |
+| Sol | $5.00 | $0.50 | $6.25 | $30.00 |
+| Terra | $2.50 | $0.25 | $3.125 | $15.00 |
+| Luna | $1.00 | $0.10 | $1.25 | $6.00 |
+
+キャッシュの読み取りと書き込みには別々の料金が適用されます。現在のカタログでは、読み取りはキャッシュなしの入力より90%割引、書き込みはキャッシュなしの入力料金の1.25倍です。
+
+## プロンプトキャッシュを意図的に使う
+
+コンテキストを繰り返し使う場合は、プロンプトの固定部分をキャッシュ可能なブロックにし、リクエスト固有のテキストはキャッシュしないでください。
+
+```json
+{
+  "model": "openai/gpt-5.6-sol",
+  "input": [
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "input_text",
+          "text": "Stable policy document...",
+          "cache_control": {
+            "type": "ephemeral",
+            "ttl": "1h"
+          }
+        },
+        {
+          "type": "input_text",
+          "text": "Apply the policy to this new customer request."
+        }
+      ]
+    }
+  ],
+  "prompt_cache_options": {
+    "mode": "explicit",
+    "ttl": "24h"
+  }
+}
+```
+
+プロバイダーに依存しないキャッシュヒントや明示的なキャッシュ境界には `cache_control` を使います。OpenAI のキャッシュモードと TTL オプションを直接渡すには `prompt_cache_options` を使います。
+
+## テスト項目
+
+### 推論と出力品質
+
+- Sol、Terra、Lunaで、ユーザーに提供する予定の推論レベルを確認します。品質優先のワークフローでは`max`も試してください
+- 品質がレイテンシより重要な難しいタスクで、standardモードと`reasoning.mode: "pro"`を比較します
+- 各推論レベルで構造化出力とスキーマ適合率を確認します
+- ツール呼び出しの選択と引数の品質を確認します
+
+### コストとレイテンシ
+
+- 推論レベルごとのレイテンシを確認します
+- 現在の本番環境の基準と比べた出力トークンの増加を確認します
+- プロンプトを繰り返したときのキャッシュ読み取りと書き込みの割合を確認します
+- トークン単価だけでなく、タスク成功あたりのコストを確認します
+
+### ロールバック
+
+- 以前のGPT-5.xルートをフォールバックとして利用できる状態にします
+- 本番環境に近いプロンプトで検証されるまで、`max`は設定フラグまたはプリセットの背後で管理します
+- キャッシュへの書き込み量と読み取り量を分けて監視します
+- タスクの成功率、コスト、レイテンシを自社の評価で確認してから、GPT-5.6をデフォルトルーティングに追加します
+
+## 参考資料
+
+- [OpenAI GPT-5.6 プレビューの発表](https://openai.com/index/previewing-gpt-5-6-sol/)
+- [OpenAI GPT-5.6 モデルガイド](https://developers.openai.com/api/docs/guides/latest-model)
+- [OpenAI model catalog](https://developers.openai.com/api/docs/models)
+- [GPT-5.6 プレビューのシステムカード](https://deploymentsafety.openai.com/gpt-5-6-preview)
+- [AI Stats のプロンプトキャッシュガイド](../guides/prompt-caching.mdx)

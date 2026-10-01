@@ -1,0 +1,97 @@
+---
+title: "AI SDK"
+icon: "bolt"
+description: "Vercel AI SDK 用の Phaseo 公式プロバイダーを使います。"
+---
+
+Phaseo は `@phaseo/ai-sdk-provider` パッケージで Vercel AI SDK 用の公式プロバイダーを提供しています。
+
+## インストール
+
+新しいプロジェクトでは AI SDK 7 と Phaseo のネイティブ `ProviderV4` 実装が既定です。
+
+```bash
+npm install @phaseo/ai-sdk-provider
+```
+
+バージョン指定のない Phaseo パッケージは npm の `latest` タグに従い、現在の AI SDK 7 対応プロバイダーを選択します。このパッケージは AI SDK 7 をピア依存関係として宣言しており、npm が自動でインストールします。
+
+### AI SDK 6 のメンテナンス版
+
+AI SDK 6 は旧 `ProviderV3` コントラクトを使います。タグ付きの互換バージョンをインストールしてください。
+
+```bash
+npm install @phaseo/ai-sdk-provider@ai-sdk-v6
+```
+
+AI SDK 7 が現行バージョンである間、Phaseo provider 1.x はメンテナンス対象です。AI SDK 8 が安定版になると、Phaseo は npm で1.x 系列を非推奨にします。既存のリリースが削除されることはありません。今後サポートを終了する場合は、別途お知らせします。
+
+### AI SDK 5 との互換性
+
+AI SDK 5 は旧 `ProviderV2` コントラクトに対応しています。Phaseo 専用の互換バージョンをインストールしてください。
+
+```bash
+npm install @phaseo/ai-sdk-provider@ai-sdk-v5
+```
+
+パッケージマネージャーでピア依存関係の自動インストールが無効になっている場合は、対応するメジャーバージョンの `ai` (`ai@^7`、`ai@^6`、または `ai@^5`) を別途インストールしてください。
+
+```ts
+import { phaseo } from "@phaseo/ai-sdk-provider";
+import { generateText } from "ai";
+
+const result = await generateText({
+	model: phaseo("openai/gpt-4o"),
+	prompt: "Summarize this in one sentence.",
+});
+```
+
+v5 系列では、テキストの生成とストリーミング、ツール、構造化出力、Embeddings、画像、文字起こし、音声に対応しています。標準化された再ランキングは AI SDK 6 と 7 のプロバイダーコントラクトで利用できます。
+
+## 基本的な使い方
+
+```ts
+import { phaseo } from "@phaseo/ai-sdk-provider";
+import { generateText } from "ai";
+
+const result = await generateText({
+	model: phaseo("openai/gpt-4o"),
+	prompt: "Summarize this in one sentence.",
+});
+```
+
+## AI SDK 7 で対応する機能
+
+Provider 2.x は AI SDK 7 のネイティブ v4 コントラクトを実装し、次の機能をテストしています。
+
+- テキストの生成とストリーミング
+- プロバイダーに依存しない推論設定と推論出力
+- 標準の関数ツール、ストリーミングされるツール入力、ツール結果の往復処理
+- JSON と JSON Schema による構造化出力
+- V7 のタグ付きファイルデータ形式によるテキストファイルと画像ファイルの入力
+- URL 引用のソース
+- Embeddings と画像生成
+- 再ランキング
+- 文字起こしと音声生成
+- プロバイダーメタデータ、使用量、リクエストヘッダー、中断シグナル、生のストリームチャンク
+
+[Models エンドポイント](../../api-reference/endpoint/models.mdx)のモデル ID を使ってください。個別の機能は選択したモデルと上流プロバイダーにも依存します。
+
+## 再ランキングと機能の境界
+
+再ランキングは AI SDK の `rerank()` ヘルパーと `phaseo.rerankingModel(modelId)` で利用できます。Phaseo API でまだ公開されていない機能が必要な ProviderV4 機能は、対応対象として案内していません。これには管理対象ファイルのアップロードと参照、スキル、プロバイダー側で実行されるツールの定義・結果・承認応答が含まれます。アプリケーション側で実行する関数ツールは、通常の AI SDK 実行・承認フローを使います。未対応のプロバイダー固有またはカスタムプロンプトの部分は、黙って破棄されず、明確なエラーになります。
+
+```typescript
+import { rerank } from "ai";
+import { phaseo } from "@phaseo/ai-sdk-provider";
+
+const result = await rerank({
+  model: phaseo.rerankingModel("voyage/rerank-2"),
+  query: "Which document is about TypeScript?",
+  documents: [
+    "TypeScript adds static types to JavaScript.",
+    "Rust is a systems programming language.",
+  ],
+  topN: 1,
+});
+```

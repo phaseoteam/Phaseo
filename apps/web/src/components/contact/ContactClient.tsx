@@ -32,7 +32,7 @@ import {
 } from "@/components/ui/tooltip";
 import { Logo } from "@/components/Logo";
 import { ProductFeedbackButton } from "@/components/feedback/ProductFeedbackButton";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 
 type ContactMethod = {
 	key: string;
@@ -202,6 +202,7 @@ function MethodIcon({ method }: { method: ContactMethod }) {
 }
 
 function SupportTimeHint({ londonTimeLabel }: { londonTimeLabel?: string }) {
+	const locale = useLocale();
 	const t = useTranslations("Site.contact");
 	const [now, setNow] = useState<Date | null>(null);
 
@@ -214,22 +215,22 @@ function SupportTimeHint({ londonTimeLabel }: { londonTimeLabel?: string }) {
 
 	const localTimeLabel = useMemo(() => {
 		if (!now) return null;
-		return new Intl.DateTimeFormat(undefined, {
+		return new Intl.DateTimeFormat(locale, {
 			hour: "2-digit",
 			minute: "2-digit",
 			timeZoneName: "short",
 		}).format(now);
-	}, [now]);
+	}, [locale, now]);
 
 	const liveLondonTimeLabel = useMemo(() => {
 		if (!now) return londonTimeLabel || "Europe/London";
-		return new Intl.DateTimeFormat("en-GB", {
+		return new Intl.DateTimeFormat(locale, {
 			hour: "2-digit",
 			minute: "2-digit",
 			timeZone: "Europe/London",
 			timeZoneName: "short",
 		}).format(now);
-	}, [londonTimeLabel, now]);
+	}, [londonTimeLabel, locale, now]);
 
 	return (
 		<Tooltip>
@@ -271,28 +272,30 @@ function TawkSupportLauncher({
 		: "";
 	const emailHref = useMemo(() => {
 		const subject = issueLabel
-			? `[Phaseo Support] ${issueLabel}`
-			: "[Phaseo Support] Support request";
+			? t("emailTemplate.subjectWithIssue", { issue: issueLabel })
+			: t("emailTemplate.subjectDefault");
 		const body = [
-			"Hi Phaseo team,",
+			t("emailTemplate.greeting"),
 			"",
-			"I need help with:",
+			t("emailTemplate.opening"),
 			"",
-			"Summary:",
+			t("emailTemplate.summary"),
 			"",
-			"Details:",
+			t("emailTemplate.details"),
 			"",
-			"Useful context:",
-			`- Issue type: ${issueLabel ?? "Not selected"}`,
-			`- Account email: ${userEmail ?? ""}`,
-			`- Workspace: ${defaultInternalId ?? ""}`,
-			`- Plan: ${tierLabel ?? ""}`,
-			"- Page URL:",
-			"- Request ID:",
-			"- Model ID / provider:",
-			"- Time observed:",
+			t("emailTemplate.usefulContext"),
+			t("emailTemplate.issueType", {
+				value: issueLabel ?? t("emailTemplate.notSelected"),
+			}),
+			t("emailTemplate.accountEmail", { value: userEmail ?? "" }),
+			t("emailTemplate.workspace", { value: defaultInternalId ?? "" }),
+			t("emailTemplate.plan", { value: tierLabel ?? "" }),
+			t("emailTemplate.pageUrl"),
+			t("emailTemplate.requestId"),
+			t("emailTemplate.modelProvider"),
+			t("emailTemplate.timeObserved"),
 			"",
-			"Attachments/screenshots:",
+			t("emailTemplate.attachments"),
 			"",
 		].join("\n");
 

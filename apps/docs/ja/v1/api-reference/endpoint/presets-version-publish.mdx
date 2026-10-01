@@ -1,0 +1,11 @@
+---
+title: "プリセットのバージョンを公開"
+sidebarTitle: "バージョンを公開"
+badge: "Beta"
+openapi: "/ja/openapi/v1/openapi.localized.yaml POST /presets/{id}/versions"
+description: "現在のプリセットドラフトを変更できないバージョンとして公開します。"
+---
+<Note>このエンドポイントには、`presets:write`を持つ管理APIキーと、関連付けられたユーザーIDが必要です。</Note>
+
+preset のバージョニング方式によって、デフォルトのバージョンラベルが決まります。SemVer を使用する preset では、`version_label` を明示的に指定できます。
+

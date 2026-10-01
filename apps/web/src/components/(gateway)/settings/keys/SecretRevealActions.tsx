@@ -11,6 +11,7 @@ import {
 	TestTube2,
 } from "lucide-react";
 import { toast } from "sonner";
+import { localizedSettingsError } from "@/i18n/error-messages";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -134,9 +135,7 @@ export function SecretRevealActions({
 			toast.success(t("strings.Key works" as never));
 		} catch (error) {
 			setTestState("error");
-			toast.error(
-				error instanceof Error ? error.message : t("strings.Could not test API key" as never),
-			);
+			toast.error(localizedSettingsError(error, t, "Could not test API key"));
 		}
 	}
 

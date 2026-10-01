@@ -1,0 +1,63 @@
+---
+title: "Workflow-Automatisierung"
+icon: "workflow"
+description: "Verwende Phaseo mit Zapier, n8n, Pipedream und anderen Automatisierungsplattformen."
+---
+
+Phaseo funktioniert bereits mit Automatisierungsprodukten, die authentifizierte HTTP-Anfragen senden können. Native Marketplace-Apps können später eine stärker geführte Nutzung bieten.
+
+## Gemeinsame Anfrage
+
+Verwende diese Einstellungen in einer HTTP-, Webhook- oder Code-Aktion:
+
+| Einstellung | Wert |
+| --- | --- |
+| Methode | `POST` |
+| URL | `https://api.phaseo.app/v1/responses` |
+| Header | `Authorization: Bearer <PHASEO_API_KEY>` |
+| Header | `Content-Type: application/json` |
+
+```json
+{
+  "model": "openai/gpt-5-nano",
+  "input": "Summarise the supplied workflow data in one paragraph."
+}
+```
+
+Speichere den Phaseo-API-Schlüssel im Anmeldedaten- oder Secret-Speicher der Plattform. Trage ihn nicht direkt in eine gemeinsam genutzte Workflow-Definition ein.
+
+## Zapier
+
+Verwende **Webhooks by Zapier → Custom Request**:
+
+1. Wähle `POST` aus.
+2. Gib `https://api.phaseo.app/v1/responses` ein.
+3. Füge die Bearer- und Content-Type-Header hinzu.
+4. Weise Felder aus vorherigen Zap-Schritten `input` zu.
+5. Teste den Zap mit nicht sensiblen Daten.
+
+Eine native Phaseo-Zapier-App könnte Modellauswahl, Aktionen für strukturierte Ausgaben und Phaseo-spezifische Authentifizierung bieten. Dafür müsste sie jedoch über die Entwicklerplattform von Zapier veröffentlicht werden.
+
+## n8n
+
+Verwende den **HTTP Request**-Knoten mit Bearer-Authentifizierung und einem JSON-Body. Weise bei strukturierten Workflow-Daten das vorherige Element mit einem n8n-Ausdruck dem Feld `input` zu.
+
+Ein offizieller n8n-Community-Node könnte später Aktionen wie Generate Response, List Models, Get Model Pricing und Create Embedding ohne manuelle HTTP-Konfiguration bereitstellen.
+
+## Pipedream
+
+Verwende einen HTTP-Anfrageschritt oder einen Node.js-Code-Schritt. Speichere `PHASEO_API_KEY` als Pipedream-Secret und lies ihn aus der Schrittumgebung aus.
+
+## Hinweise für den Produktivbetrieb
+
+- Lege für den Gateway-API-Schlüssel jeder Automatisierung ein Ausgabenlimit fest.
+- Verwende pro Automatisierung einen eigenen Schlüssel, damit Nutzung und Widerruf getrennt bleiben.
+- Verwende strukturierte Ausgaben, wenn nachfolgende Schritte maschinenlesbare Felder erwarten.
+- Implementiere Wiederholungen für `429`-Antworten und behebbare `5xx`-Fehler.
+- Wiederhole nicht idempotente externe Aktionen nicht allein deshalb, weil ein Modellschritt erneut ausgeführt wurde.
+
+## Weiterführende Themen
+
+- [Antworten](../../api-reference/endpoint/responses.mdx)
+- [Strukturierte Ausgaben](../structured-outputs.mdx)
+- [Fehlerbehandlung](../../developers/error-handling.mdx)

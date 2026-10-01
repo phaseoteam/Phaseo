@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { BlogRecentPosts } from "./BlogRecentPosts";
 import {
 	formatAnnouncementDate,
-	formatAnnouncementReadingTime,
 	getAnnouncementPosts,
 	isAnnouncementPublished,
 	type AnnouncementCategory,
@@ -49,19 +48,14 @@ const CATEGORY_FILTERS: Array<{
 	},
 ];
 
-export const metadata: Metadata = buildMetadata({
-	title: "Blog",
-	description:
-		"Phaseo product announcements, implementation guides, model data updates, and release notes.",
-	path: "/blog",
-	keywords: [
-		"Phaseo blog",
-		"Phaseo announcements",
-		"model data updates",
-		"AI model guides",
-		"product release notes",
-	],
-});
+export async function generateMetadata(): Promise<Metadata> {
+	const t = await getTranslations("Content.blog");
+	return buildMetadata({
+		title: t("title"),
+		description: t("journalDescription"),
+		path: "/blog",
+	});
+}
 
 function normalizeCategory(value: string | string[] | undefined): BlogCategoryFilter {
 	const raw = Array.isArray(value) ? value[0] : value;
@@ -86,10 +80,10 @@ function isPreviewPost(post: AnnouncementSummary): boolean {
 	return !isAnnouncementPublished(post.publishedAt);
 }
 
-function PreviewBadge() {
+function PreviewBadge({ label }: { label: string }) {
 	return (
 		<Badge className="rounded-full border-amber-300 bg-amber-100 text-[11px] font-semibold text-amber-900 hover:bg-amber-100 dark:border-amber-500/40 dark:bg-amber-500/15 dark:text-amber-200">
-			Preview
+			{label}
 		</Badge>
 	);
 }
@@ -111,18 +105,20 @@ function PostImage({
 	);
 }
 
-function PostDate({ post }: { post: AnnouncementSummary }) {
-	return <span>{formatAnnouncementDate(post.publishedAt)}</span>;
+function PostDate({ post, locale }: { post: AnnouncementSummary; locale: string }) {
+	return <span>{formatAnnouncementDate(post.publishedAt, locale)}</span>;
 }
 
 function PinnedPostCard({
 	post,
 	previewLabel,
 	categoryLabel,
+	locale,
 }: {
 	post: AnnouncementSummary;
 	previewLabel: string;
 	categoryLabel: string;
+	locale: string;
 }) {
 	const preview = isPreviewPost(post);
 
@@ -138,14 +134,14 @@ function PinnedPostCard({
 				/>
 				{preview ? (
 					<div className="absolute left-3 top-3">
-						<PreviewBadge />
+						<PreviewBadge label={previewLabel} />
 					</div>
 				) : null}
 			</div>
 			<div className="flex flex-1 flex-col gap-4 p-5">
 				<div className="flex items-center justify-between gap-3 text-xs text-zinc-500 dark:text-zinc-400">
-									<span>{preview ? previewLabel : categoryLabel}</span>
-					<PostDate post={post} />
+					<span>{preview ? previewLabel : categoryLabel}</span>
+					<PostDate post={post} locale={locale} />
 				</div>
 				<div className="space-y-2">
 					<h2 className="text-lg font-semibold leading-tight tracking-tight text-zinc-950 transition group-hover:text-zinc-700 dark:text-zinc-50 dark:group-hover:text-zinc-200">
@@ -179,7 +175,7 @@ export default async function AnnouncementsPage({
 	const t = await getTranslations({ locale, namespace: "Content.blog" });
 	const [posts, resolvedSearchParams] = await Promise.all([
 		canPreviewFutureBlogPosts().then((canPreviewFuturePosts) =>
-			getAnnouncementPosts({ includeFuture: canPreviewFuturePosts })
+			getAnnouncementPosts({ includeFuture: canPreviewFuturePosts, locale })
 		),
 		searchParams,
 	]);
@@ -198,8 +194,8 @@ export default async function AnnouncementsPage({
 		isPreview: isPreviewPost(post),
 		metaParts: [
 			post.author,
-			formatAnnouncementDate(post.publishedAt),
-			formatAnnouncementReadingTime(post.readingTimeMinutes),
+			formatAnnouncementDate(post.publishedAt, locale),
+			t("readingTime", { minutes: post.readingTimeMinutes }),
 		].filter((part): part is string => Boolean(part)),
 	}));
 
@@ -262,6 +258,7 @@ export default async function AnnouncementsPage({
 										post={post}
 										previewLabel={t("preview")}
 										categoryLabel={t(`categories.${post.category}`)}
+										locale={locale}
 									/>
 								))}
 							</div>

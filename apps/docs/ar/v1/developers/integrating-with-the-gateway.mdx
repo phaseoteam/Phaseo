@@ -1,0 +1,230 @@
+---
+title: "التكامل مع Gateway"
+description: "اربط تطبيقاً بـ Phaseo Gateway، واختر نقطة نهاية، وجهّز التكامل لبيئة الإنتاج."
+sidebarTitle: "تكامل Gateway"
+icon: "plug-zap"
+---
+
+استخدم هذا الدليل بعد البدء السريع، عندما تكون مستعداً لإضافة Phaseo إلى ميزة فعلية في التطبيق.
+
+عند الانتهاء، سيكون لديك:
+- مفتاح API مخزّن بأمان
+- نقطة نهاية مناسبة
+- طلب يعمل داخل تطبيقك
+- روابط إلى أدلة الإنتاج الخاصة بالتوجيه وحزم SDK والتشغيل
+
+---
+
+## قبل البدء
+
+تأكد من توفر ما يلي قبل البدء:
+
+- حساب Phaseo لديه صلاحية الوصول إلى Gateway.
+- مفتاح API من [لوحة التحكم](https://phaseo.app/gateway/keys).
+- عميل HTTP أو حزمة SDK متوافقة مع OpenAI أو حزمة SDK الخاصة بـ Phaseo.
+- معرّف نموذج مدعوم، مثل `google/gemma-3-27b:free` للبدء دون إنفاق رصيد.
+
+---
+
+## 1. خزّن مفتاح API
+
+1. افتح **Gateway → مفاتيح API** في لوحة تحكم Phaseo.
+2. أنشئ مفتاحاً باسم يحدد التطبيق والبيئة.
+3. خزّن القيمة في مدير أسرار أو ملف بيئة محلي:
+
+```bash
+# .env
+PHASEO_API_KEY="phaseo_v1_sk_<kid>_<secret>"
+```
+
+<Tip>
+استخدم مفاتيح منفصلة للتطوير المحلي وعمليات النشر التجريبية والإنتاج. يسهل ذلك تدوير المفاتيح ومراجعة الاستخدام.
+</Tip>
+
+---
+
+## 2. اختر نقطة النهاية
+
+اختر نقطة النهاية الأنسب للمهمة التي تنفذها:
+
+| نقطة النهاية                 | متى تستخدمها                                     |
+| ------------------------ | -------------------------------------------------- |
+| `/v1/responses`          | ميزات النص الجديدة والمخرجات المنظّمة وسير العمل متعدد الخطوات. |
+| `/v1/chat/completions`   | واجهات المحادثة والمساعدات والتكاملات بأسلوب OpenAI. |
+| `/v1/messages`           | التكاملات المتوافقة مع Anthropic.                         |
+| `/v1/moderations`        | فحوصات السلامة وسياسات المحتوى.                  |
+| `/v1/images/generations` | توليد الصور من المطالبات النصية.                |
+
+راجع [مرجع API](../api-reference/introduction.mdx) للاطلاع على قائمة المعلمات والاستجابات المدعومة كاملةً.
+
+<Note>
+تنتهي معرّفات النماذج المجانية بـ `:free` ويمكن استدعاؤها دون إيداع رصيد. تتطلب النماذج المدفوعة رصيداً متاحاً في المحفظة.
+</Note>
+
+---
+
+## 3. أرسل طلب التطبيق
+
+ابدأ بتنسيق الطلب الذي يُرجّح أن يظل مستخدماً في تطبيقك. يستخدم هذا المثال Chat Completions لأنه يعمل جيداً مع العملاء المتوافقين مع OpenAI.
+
+<CodeGroup>
+```bash cURL
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "google/gemma-3-27b:free",
+    "messages": [
+      { "role": "system", "content": "You are a helpful assistant." },
+      { "role": "user", "content": "Explain the benefits of AI." }
+    ]
+  }'
+```
+
+```typescript TypeScript
+import OpenAI from "openai";
+
+const client = new OpenAI({
+  apiKey: process.env.PHASEO_API_KEY,
+  baseURL: "https://api.phaseo.app/v1",
+});
+
+const response = await client.chat.completions.create({
+  model: "google/gemma-3-27b:free",
+  messages: [
+    { role: "system", content: "You are a helpful assistant." },
+    { role: "user", content: "Explain the benefits of AI." },
+  ],
+});
+
+console.log(response.choices[0]?.message?.content);
+```
+
+```python Python
+from openai import OpenAI
+
+client = OpenAI(
+    api_key="YOUR_API_KEY",
+    base_url="https://api.phaseo.app/v1",
+)
+
+response = client.chat.completions.create(
+    model="google/gemma-3-27b:free",
+    messages=[
+        {"role": "system", "content": "You are a helpful assistant."},
+        {"role": "user", "content": "Explain the benefits of AI."},
+    ],
+)
+
+print(response.choices[0].message.content)
+```
+
+```go Go
+package main
+
+import (
+  "context"
+  "fmt"
+
+  phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v2"
+)
+
+func main() {
+  client := phaseo.New("YOUR_API_KEY", "https://api.phaseo.app/v1")
+
+  response, err := client.ChatCompletions(context.Background(), map[string]interface{}{
+    "model": "google/gemma-3-27b:free",
+    "messages": []map[string]string{
+      {"role": "system", "content": "You are a helpful assistant."},
+      {"role": "user", "content": "Explain the benefits of AI."},
+    },
+  })
+  if err != nil {
+    panic(err)
+  }
+
+  fmt.Println(response)
+}
+```
+
+```csharp C#
+using PhaseoSdk;
+using System.Collections.Generic;
+
+var client = new Phaseo("YOUR_API_KEY");
+
+var response = await client.ChatCompletions(new Dictionary<string, object>
+{
+    ["model"] = "google/gemma-3-27b:free",
+    ["messages"] = new object[]
+    {
+        new Dictionary<string, object> { ["role"] = "system", ["content"] = "You are a helpful assistant." },
+        new Dictionary<string, object> { ["role"] = "user", ["content"] = "Explain the benefits of AI." }
+    }
+});
+
+Console.WriteLine(response);
+```
+
+```php PHP
+<?php
+require 'vendor/autoload.php';
+
+use Phaseo\Sdk\Phaseo;
+
+$client = new Phaseo(getenv('PHASEO_API_KEY') ?: 'YOUR_API_KEY');
+
+$response = $client->chatCompletions([
+    'model' => 'google/gemma-3-27b:free',
+    'messages' => [
+        ['role' => 'system', 'content' => 'You are a helpful assistant.'],
+        ['role' => 'user', 'content' => 'Explain the benefits of AI.'],
+    ],
+]);
+
+print_r($response);
+```
+
+```ruby Ruby
+require 'phaseo_sdk'
+
+client = PhaseoSdk::Phaseo.new(api_key: ENV.fetch('PHASEO_API_KEY', 'YOUR_API_KEY'))
+
+response = client.chat_completions(
+  model: 'google/gemma-3-27b:free',
+  messages: [
+    { role: 'system', content: 'You are a helpful assistant.' },
+    { role: 'user', content: 'Explain the benefits of AI.' }
+  ]
+)
+
+puts response
+```
+</CodeGroup>
+
+---
+
+## 4. أعدّ البيئات
+
+خزّن مفتاح API في متغيرات بيئة منفصلة لكل بيئة:
+
+```bash
+# .env.local
+PHASEO_API_KEY="phaseo_v1_sk_<kid>_<secret>"
+PHASEO_BASE_URL="https://api.phaseo.app/v1"
+```
+
+عند إرسال الطلبات، أضف المفتاح إلى ترويسة `Authorization`:
+
+```http
+Authorization: Bearer $PHASEO_API_KEY
+```
+
+---
+
+## 5. الخطوات التالية للإنتاج
+
+- راجع [المصادقة](./authentication.mdx) لمعرفة إدارة المفاتيح وأخطاء المصادقة الشائعة.
+- تعرّف على [التوجيه والبدائل الاحتياطية](../guides/routing-and-fallbacks.mdx) قبل إرسال حركة مرور مهمة.
+- تصفّح [الأمثلة](../guides/examples.mdx) للاطلاع على أنماط تطبيقات وبرامج نصية كاملة.
+- استكشف [مرجع SDK](../sdk-reference/typescript/overview.mdx) لاختيار العميل المناسب لكل لغة.

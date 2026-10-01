@@ -1,0 +1,174 @@
+---
+title: "Next.jsでWebチャットアプリを作成する"
+icon: "messages-square"
+description: "既存のNext.jsサンプルチャットアプリを使って、冒頭にコピー可能な作成プロンプトを含む手順を紹介します。"
+---
+
+Phaseo APIキーをサーバーに保持したまま、実用的な小規模Next.jsチャットアプリを作りたい場合は、このページを参考にしてください。
+
+**目標:** モデルを検出し、サーバー側のルートを通じて応答を送信するブラウザーチャットアプリを実行します。
+
+**成果:** Phaseoの認証情報をブラウザーに公開しない、ローカルで動作するチャットUIを作成します。
+
+<Prompt
+  description="Phaseo Gatewayを使った**Next.js Webチャットアプリ**を作成します。"
+  icon="message-square"
+  actions={["copy", "cursor"]}
+>
+{`Phaseo Gatewayを使って、本番運用を意識した小規模なチャットアプリを作成します。
+
+次の機能を持つNext.jsアプリを作成します。
+- チャットUI
+- GET /v1/modelsを使ったモデル選択
+- POST /v1/responsesを呼び出すサーバー側ルート
+- PHASEO_API_KEYを使ったサーバー側のAPIキー管理
+- 読み込み、成功、エラーの各状態
+
+アプリは意図的に小規模に保ち、確認しやすくしてください。
+
+実装要件:
+- モデル検出用にローカルAPIルートを1つ使います。
+- 応答生成用にローカルAPIルートを1つ使います。
+- シークレットはサーバー側だけに保持します。
+- リクエストとレスポンスの流れをコードで明確に示します。
+- セットアップと実行手順を記載した短いREADMEを追加します。
+
+確認項目:
+- 可能であればアプリを実行します。
+- チャットのやり取りが1回正常に完了することを確認します。
+- 変更したファイル、検証内容、残っている前提を正確に報告します。`}
+</Prompt>
+
+## サンプルプロジェクト
+
+- GitHub: [examples/web-chat-nextjs](https://github.com/phaseoteam/Phaseo/tree/main/examples/web-chat-nextjs)
+- リポジトリ内のパス: `examples/web-chat-nextjs`
+
+## このアプリの機能
+
+- - 利用可能なモデルを取得 `GET /v1/models`
+- - チャットのやり取りを送信 `POST /v1/responses`
+- APIキーをサーバー上に保持
+- OAuthの複雑さを避けて実際の製品開発を始めるためのシンプルな土台を提供
+
+## 主なファイル
+
+- `app/api/models/route.ts`
+- `app/api/responses/route.ts`
+- `app/components/ChatClient.tsx`
+- `lib/gateway.ts`
+
+## この構成を採用している理由
+
+### 1. ブラウザーからPhaseoを直接呼び出さない
+
+UIはまず独自のNext.jsルートに接続し、そのルートがサーバーからPhaseoを呼び出します。
+
+これにより、次のことが可能になります。
+
+- サーバー側でシークレットを管理する
+- ヘッダーとリクエスト本文を一か所で管理する
+- 後から認証、レート制限、ログ記録を追加しやすくする
+
+### 2. モデルの検出と生成を分離する
+
+モデル一覧とチャット生成のルートを分け、それぞれの役割を分かりやすくします。
+
+- モデル一覧を返すルート
+- チャットリクエストを実行するルート
+
+### 3. UIは操作状態のみを管理する
+
+Reactクライアントが管理するのは次の状態です。
+
+- 入力状態
+- 読み込み状態
+- エラー表示
+- レンダリングするメッセージ
+
+AIの呼び出しはサーバールートが処理し、ブラウザーはユーザー体験のみを管理します。
+
+## 前提条件
+
+- - Node.jsと対応するパッケージマネージャー
+- Phaseo APIキー
+
+## サンプルを実行する
+
+<CodeGroup>
+```bash npm
+cd examples/web-chat-nextjs
+npm install
+cp .env.example .env.local
+```
+
+```bash pnpm
+cd examples/web-chat-nextjs
+pnpm install
+cp .env.example .env.local
+```
+
+```bash yarn
+cd examples/web-chat-nextjs
+yarn install
+cp .env.example .env.local
+```
+
+```bash bun
+cd examples/web-chat-nextjs
+bun install
+cp .env.example .env.local
+```
+</CodeGroup>
+
+次の値を設定します。
+
+- `PHASEO_API_KEY`
+- `NEXT_PUBLIC_GATEWAY_URL`
+
+次に実行します。
+
+<CodeGroup>
+```bash npm
+npm run dev
+```
+
+```bash pnpm
+pnpm dev
+```
+
+```bash yarn
+yarn dev
+```
+
+```bash bun
+bun run dev
+```
+</CodeGroup>
+
+次を開きます: `http://localhost:3000`.
+
+## 動作を確認する
+
+- モデル選択欄にサーバールート経由でモデルが表示されます。
+- メッセージを送信するとアシスタントから応答が返ります。
+- ブラウザーのネットワークパネルに `PHASEO_API_KEY`.
+- Gatewayリクエストが失敗すると、UIに役立つエラー状態が表示されます。
+
+## アプリをカスタマイズする
+
+- デフォルトモデルを本番環境で使用するモデルに変更する
+- トークンごとの出力が必要なUXではストリーミングを追加する
+- 複数ユーザー向けのアプリになった段階で認証を追加する
+- より高レベルなクライアントが必要な場合は、後でサーバールートの内部実装をTypeScript SDKに置き換える
+
+## 別の開始方法を選ぶ場合
+
+- UIではなくスクリプトやバックエンドの疎通確認が必要なら、Nodeクイックスタートを使います。
+- 最初の統合先がworker、CLI、バックエンドサービスならPythonクイックスタートを使います。
+
+## 関連ガイド
+
+- [ミニアプリ用の開始プロンプト](./mini-app-starter-prompts.mdx)
+- [サンプル](../guides/examples.mdx)
+- [クイックスタート](../quickstart.mdx)

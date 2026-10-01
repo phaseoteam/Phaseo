@@ -1,0 +1,25 @@
+---
+title: "Java-SDK (in Entwicklung)"
+description: "Baue den Java-Client, der sich noch in Entwicklung befindet, aus dem Quellcode."
+---
+
+<Note type="warning">
+  Das Java-SDK befindet sich noch in Entwicklung und wurde noch nicht auf Maven Central veröffentlicht. Verwende den Quellcode-Build nur zur Evaluierung.
+</Note>
+
+Das Java-SDK enthält jetzt einen schlanken, handgeschriebenen Wrapper für den generierten Client:
+
+- `app.phaseo.sdk.Phaseo` bietet Hilfen für Chat, Responses, Anthropic-Nachrichten, Bilder, Embeddings, Moderation, Sprache/Transkription/Übersetzung, Batch-Jobs, Dateien, Video, Modelle/Provider/Endpunkte/Organisationen/Preise, das Auffinden und Verwalten des Lebenszyklus von API-Schlüsseln, Workspace- und Schlüsselverwaltung, Preisberechnung, Aktivität/Credits/Analysen, das Nachschlagen von Generierungen, Lebenszyklusvalidierung, WebSocket-URLs asynchroner Jobs über direkte Hilfen oder `client.asyncJobs.websocketUrl(...)` sowie Devtools-kompatible Telemetrie.
+- `app.phaseo.gen.Client` und `app.phaseo.gen.Operations` stehen weiterhin für eine vollständige Abdeckung der Low-Level-Operationen zur Verfügung.
+
+## Aktueller Stand
+
+- In Entwicklung; noch nicht auf Maven Central veröffentlicht.
+- Der Quellcode befindet sich unter `packages/sdk/sdk-java`.
+- Der generierte Low-Level-Code befindet sich unter `packages/sdk/sdk-java/src/gen`.
+- Der handgeschriebene Wrapper befindet sich unter `packages/sdk/sdk-java/src/app/phaseo/sdk`.
+
+## Nächste Schritte
+
+- [Installation](./installation.mdx)
+- [Verwendung](./usage.mdx)

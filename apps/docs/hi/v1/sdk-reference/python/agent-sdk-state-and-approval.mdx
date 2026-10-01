@@ -1,0 +1,29 @@
+---
+icon: "database"
+title: "स्थिति और अनुमोदन"
+description: "मानवीय निर्णय के लिए Python agents को रोकें और application-managed state से जारी रखें।"
+---
+
+सामान्य checkpoint के लिए `human_review` उपयोग करें। अनुमोदन-आवश्यक और manual tools के सटीक call IDs `paused.run.pause.pending_tool_calls` में रखे जाते हैं।
+
+```python
+from phaseo_agent import AgentToolDecision, AgentToolOutput
+
+pending = paused.run.pause.pending_tool_calls
+
+continued = agent.continue_run(
+    run=paused,
+    client=client,
+    approvals=[AgentToolDecision(pending[0].call.id)],
+    tool_outputs=[AgentToolOutput(pending[1].call.id, {"status": "complete"})],
+)
+```
+
+अस्वीकृत calls के लिए `rejections` और सामान्य समीक्षा-विराम के लिए `human_input` दें। निर्णय tool name के बजाय call ID से मेल खाते हैं।
+
+अगर runs को requests या process restarts के बाद भी बनाए रखना हो, तो `AgentStateAccessor.load(run_id)` और `save(result)` implement करें। इसके बाद continuation `run_id` से state load कर सकता है।
+
+## संबंधित विषय
+
+- [टूल](./agent-sdk-tools.mdx)
+- [रन कंट्रोल](./agent-sdk-run-controls.mdx)

@@ -1,0 +1,20 @@
+---
+icon: "radio-tower"
+title: "Lebenszyklus-Hooks"
+description: "Reagiere auf Python-Ereignisse zu Runs, Modellen, Schritten, Tools und Checkpoints."
+---
+
+Übergib `on_event`, um Produktzeitachsen, Audit-Einträge oder ein vorhandenes Telemetriesystem zu aktualisieren:
+
+```python
+def on_event(event):
+    logger.info("%s %s", event.type, event.run_id)
+```
+
+Die Ereignisse umfassen Run-Status, Modellaufrufe, Schritte, Checkpoints, Tool-Ausführung und -Fortschritt, Wartezeiten auf Menschen, Abbrüche und Fehler. Halte den Callback kurz und lagere langsame Arbeit in eine externe Warteschlange aus.
+
+## Verwandte Themen
+
+- [Datenstrom](./agent-sdk-streaming.mdx)
+- [Entwicklertools](./agent-sdk-devtools.mdx)
+

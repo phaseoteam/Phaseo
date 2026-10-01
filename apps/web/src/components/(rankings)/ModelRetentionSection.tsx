@@ -6,19 +6,22 @@ import { RankingsEmptyState } from "@/components/(rankings)/RankingsEmptyState";
 import { Logo } from "@/components/Logo";
 import { getModelDetailsHref } from "@/lib/models/modelHref";
 import { fetchFrontendModelRetentionRankings } from "@/lib/fetchers/frontend/fetchRankingSections";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 
 function numeric(value: number | string) {
 	const parsed = Number(value);
 	return Number.isFinite(parsed) ? parsed : 0;
 }
 
-function percent(value: number | string) {
-	return `${numeric(value).toFixed(1)}%`;
+function percent(value: number | string, locale: string) {
+	return `${new Intl.NumberFormat(locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(numeric(value))}%`;
 }
 
 export async function ModelRetentionSection() {
-	const t = await getTranslations("Catalogue.rankings");
+	const [t, locale] = await Promise.all([
+		getTranslations("Catalogue.rankings"),
+		getLocale(),
+	]);
 	const result = await fetchFrontendModelRetentionRankings(20).catch(() => ({
 		data: [],
 		methodology: {
@@ -33,7 +36,7 @@ export async function ModelRetentionSection() {
 		return (
 			<section id="retention" className="scroll-mt-32 space-y-6 border-t border-border pt-12">
 				<SectionHeader />
-				<RankingsEmptyState title="Not enough return data yet" description="Return rankings appear after models have enough activity across consecutive completed weeks." />
+				<RankingsEmptyState title={t("notEnoughReturnData")} description={t("returnDataEmptyDescription")} />
 			</section>
 		);
 	}
@@ -47,21 +50,21 @@ export async function ModelRetentionSection() {
 		<section id="retention" className="scroll-mt-32 space-y-8 border-t border-border pt-12">
 			<SectionHeader />
 			<div className="grid overflow-hidden rounded-xl border border-border/80 bg-card sm:grid-cols-3">
-				<SummaryMetric label={t("leadingModel")} value={percent(rows[0].retention_rate)} detail={rows[0].model_name} />
-				<SummaryMetric label={t("observedReturnRate")} value={`${weightedReturnRate.toFixed(1)}%`} detail={`${totalWorkspaceWeeks.toLocaleString()} ${t("workspaceWeeks")}`} />
-				<SummaryMetric label={t("observationWindow")} value={`${maxWeeks} weeks`} detail={t("completedTransitions")} last />
+				<SummaryMetric label={t("leadingModel")} value={percent(rows[0].retention_rate, locale)} detail={rows[0].model_name} />
+				<SummaryMetric label={t("observedReturnRate")} value={percent(weightedReturnRate, locale)} detail={`${new Intl.NumberFormat(locale).format(totalWorkspaceWeeks)} ${t("workspaceWeeks")}`} />
+				<SummaryMetric label={t("observationWindow")} value={t("observedWeeks", { count: new Intl.NumberFormat(locale).format(maxWeeks) })} detail={t("completedTransitions")} last />
 			</div>
 			<div className="space-y-3">
 				<div className="flex items-baseline justify-between gap-4">
 					<div>
-						<h3 className="text-lg font-semibold">Models users return to</h3>
-						<p className="text-xs text-muted-foreground">Higher is better · {result.methodology.minimumWorkspaceWeeks}+ eligible workspace-weeks</p>
+						<h3 className="text-lg font-semibold">{t("modelsUsersReturnTo")}</h3>
+						<p className="text-xs text-muted-foreground">{t("higherIsBetter")} · {new Intl.NumberFormat(locale).format(result.methodology.minimumWorkspaceWeeks)}+ {t("workspaceWeeks")}</p>
 					</div>
-					<span className="hidden text-xs text-muted-foreground sm:inline">Last {result.methodology.cohortWeeks} completed transitions</span>
+					<span className="hidden text-xs text-muted-foreground sm:inline">{t("lastCompletedTransitions", { count: new Intl.NumberFormat(locale).format(result.methodology.cohortWeeks) })}</span>
 				</div>
 				<HorizontalRankingChart entries={rows.slice(0, 10).map((row) => ({
 					key: row.model_id, label: row.model_name, value: numeric(row.retention_rate),
-					valueLabel: percent(row.retention_rate), logoId: row.organisation_id ?? row.model_id,
+					valueLabel: percent(row.retention_rate, locale), logoId: row.organisation_id ?? row.model_id,
 				}))} />
 			</div>
 			<div className="grid gap-x-16 md:grid-cols-2">
@@ -73,11 +76,11 @@ export async function ModelRetentionSection() {
 							<span className="relative size-6"><Logo id={row.organisation_id ?? row.model_id} alt="" fill className="object-contain" /></span>
 							<div className="min-w-0">
 								{modelHref ? <Link href={modelHref} className="block truncate text-sm font-medium underline decoration-transparent underline-offset-2 transition-colors hover:decoration-current">{row.model_name}</Link> : <span className="block truncate text-sm font-medium">{row.model_name}</span>}
-								<p className="truncate text-xs text-muted-foreground">{numeric(row.workspace_weeks).toLocaleString()} workspace-weeks · {numeric(row.weeks_observed)} cohorts</p>
+								<p className="truncate text-xs text-muted-foreground">{new Intl.NumberFormat(locale).format(numeric(row.workspace_weeks))} {t("workspaceWeeks")} · {new Intl.NumberFormat(locale).format(numeric(row.weeks_observed))} {t("cohorts")}</p>
 							</div>
 							<div className="pl-3 text-right">
-								<div className="text-sm font-semibold tabular-nums">{percent(row.retention_rate)}</div>
-								<div className="text-[11px] tabular-nums text-muted-foreground">{percent(row.confidence_low)}–{percent(row.confidence_high)}</div>
+								<div className="text-sm font-semibold tabular-nums">{percent(row.retention_rate, locale)}</div>
+								<div className="text-[11px] tabular-nums text-muted-foreground">{percent(row.confidence_low, locale)}–{percent(row.confidence_high, locale)}</div>
 							</div>
 						</div>
 					);
@@ -98,11 +101,11 @@ async function SectionHeader() {
 				</div>
 				<p className="max-w-3xl text-sm text-muted-foreground">
 					{t("returnDescription")} {" "}
-					<InlineInfoTooltip label="How return rate is calculated" description="Each active model-workspace week is eligible once its following UTC week is complete. A return is counted when that privacy-safe workspace uses the same canonical model in the next week. Rates are pooled across up to 10 transitions; the smaller range below each score is an approximate 95% confidence interval." />
+					<InlineInfoTooltip label={t("returnRateTooltipLabel")} description={t("returnRateTooltipDescription")} />
 				</p>
 			</div>
 			<Link href="https://x.com/thdxr/status/2092595257170944266" target="_blank" rel="noreferrer" className="inline-flex h-9 shrink-0 items-center gap-1.5 self-start rounded-md px-3 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
-				Inspiration <ArrowUpRight className="size-3.5" />
+				{t("inspiration")} <ArrowUpRight className="size-3.5" />
 			</Link>
 		</div>
 	);

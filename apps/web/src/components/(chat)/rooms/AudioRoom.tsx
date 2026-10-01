@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { createPortal } from "react-dom";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { Logo } from "@/components/Logo";
 import type { GatewaySupportedModel } from "@/lib/fetchers/gateway/getGatewaySupportedModelIds";
 import { filterModelsForRoom } from "@/lib/chat/rooms";
@@ -213,32 +213,25 @@ function truncateTitle(value: string, max = 72): string {
 	return `${trimmed.slice(0, max - 3).trimEnd()}...`;
 }
 
-function modeLabel(mode: AudioMode): string {
-	if (mode === "speech") return "Text to Speech";
-	if (mode === "music") return "Music";
-	if (mode === "transcription") return "Transcription";
-	return "Translation";
+function modeLabelKey(mode: AudioMode) {
+	if (mode === "speech") return "modeSpeech" as const;
+	if (mode === "music") return "modeMusic" as const;
+	if (mode === "transcription") return "modeTranscription" as const;
+	return "modeTranslation" as const;
 }
 
-function modeBusyLabel(mode: AudioMode): string {
-	if (mode === "speech") return "Converting to speech...";
-	if (mode === "music") return "Generating music...";
-	if (mode === "transcription") return "Transcribing audio...";
-	return "Translating audio...";
+function modeActionKey(mode: AudioMode) {
+	if (mode === "speech") return "actionSpeech" as const;
+	if (mode === "music") return "actionMusic" as const;
+	if (mode === "transcription") return "actionTranscribe" as const;
+	return "actionTranslate" as const;
 }
 
-function modeActionLabel(mode: AudioMode): string {
-	if (mode === "speech") return "Generate speech";
-	if (mode === "music") return "Generate music";
-	if (mode === "transcription") return "Transcribe";
-	return "Translate";
-}
-
-function modeEmptyDescription(mode: AudioMode): string {
-	if (mode === "speech") return "Type text to generate spoken audio.";
-	if (mode === "music") return "Describe the track you want to generate.";
-	if (mode === "transcription") return "Upload audio to produce a transcript.";
-	return "Upload audio to translate it into English.";
+function modeEmptyDescriptionKey(mode: AudioMode) {
+	if (mode === "speech") return "generateSpeech" as const;
+	if (mode === "music") return "generateMusic" as const;
+	if (mode === "transcription") return "addAudioToTranscribe" as const;
+	return "addAudioToTranslate" as const;
 }
 
 function readFileAsBase64(file: File): Promise<string> {
@@ -586,7 +579,13 @@ function extractMusicErrorMessage(payload: unknown): string | null {
 	return null;
 }
 
-async function pollMusicGeneration(resourceId: string): Promise<{
+async function pollMusicGeneration(
+	resourceId: string,
+	fallbackMessages: {
+		statusRequestFailed: (status: number) => string;
+		generationFailed: string;
+	},
+): Promise<{
 	payload: unknown;
 	audioSrc: string | undefined;
 	status: "queued" | "in_progress" | "completed" | "failed" | null;
@@ -613,7 +612,7 @@ async function pollMusicGeneration(resourceId: string): Promise<{
 			const message =
 				extractMusicErrorMessage(payload) ||
 				rawText.trim() ||
-				`Music status request failed (${response.status}).`;
+				fallbackMessages.statusRequestFailed(response.status);
 			throw new Error(message);
 		}
 
@@ -625,7 +624,9 @@ async function pollMusicGeneration(resourceId: string): Promise<{
 		const status = extractMusicStatus(payload);
 		latestStatus = status;
 		if (status === "failed") {
-			throw new Error(extractMusicErrorMessage(payload) ?? "Music generation failed.");
+			throw new Error(
+				extractMusicErrorMessage(payload) ?? fallbackMessages.generationFailed,
+			);
 		}
 		if (status === "completed") {
 			return { payload, audioSrc: undefined, status };
@@ -984,6 +985,10 @@ export function AudioRoom({
 	allowedModes = ["speech"],
 }: AudioRoomProps) {
 	const t = useTranslations("Product.chatRooms");
+	const tChat = useTranslations("Product.chat");
+	const tUi = useTranslations("Common.ui");
+	const tSearch = useTranslations("Common.search");
+	const locale = useLocale();
 	const { toggleSidebar, state: sidebarState, isMobile } = useSidebar();
 	const collapsed = sidebarState === "collapsed" && !isMobile;
 	const normalizedAllowedModes = useMemo(
@@ -1370,7 +1375,7 @@ export function AudioRoom({
 	const deleteConversation = async (conversation: AudioConversation) => {
 		if (typeof window === "undefined") return;
 		const confirmed = window.confirm(
-			`Delete "${conversation.title}" and all generations inside it?`,
+			t("deleteConversationConfirm", { title: conversation.title }),
 		);
 		if (!confirmed) return;
 		const entriesToDelete = entries.filter(
@@ -1488,7 +1493,7 @@ export function AudioRoom({
 	const downloadAudio = async (entry: AudioEntry) => {
 		const source = entry.audioSrc?.trim();
 		if (!source) {
-			setError("No audio available to download.");
+			setError(t("downloadAudioUnavailable"));
 			return;
 		}
 
@@ -1544,7 +1549,7 @@ export function AudioRoom({
 			}
 			triggerDownload(source);
 		} catch {
-			setError("Could not download audio.");
+			setError(t("downloadAudioFailed"));
 		}
 	};
 
@@ -1605,7 +1610,7 @@ export function AudioRoom({
 		const existingTitle = activeConversation?.title?.trim() ?? "";
 		const candidateTitle = promptText
 			? truncateTitle(promptText)
-			: `${modeLabel(targetMode)} ${new Date().toLocaleDateString()}`;
+			: `${t(modeLabelKey(targetMode))} ${new Date().toLocaleDateString(locale)}`;
 		const conversationTitle =
 			overrides?.forcedConversationTitle ||
 			(temporaryMode ? "Temporary chat" : existingTitle || candidateTitle);
@@ -1772,20 +1777,24 @@ export function AudioRoom({
 						(resourceId?.startsWith("mmxmus_") ?? false);
 					if (resourceId && !isMiniMaxMusicResponse) {
 						try {
-							const polled = await pollMusicGeneration(resourceId);
+							const polled = await pollMusicGeneration(resourceId, {
+								statusRequestFailed: (status) =>
+									t("musicStatusRequestFailed", { status }),
+								generationFailed: t("musicGenerationFailed"),
+							});
 							if (polled.payload) {
 								payload = polled.payload;
 							}
 							audioSrc = polled.audioSrc ?? extractAudioFromPayload(payload);
 							if (!audioSrc && (polled.status === "queued" || polled.status === "in_progress")) {
-								musicPollingNotice = `Music generation is still processing (id: ${resourceId}).`;
+								musicPollingNotice = t("musicStillProcessing", { id: resourceId });
 							}
 						} catch (pollError) {
 							const message =
 								pollError instanceof Error && pollError.message.trim()
 									? pollError.message.trim()
-									: "Music status polling failed.";
-							musicPollingNotice = `Music generation started but polling failed: ${message}`;
+									: t("musicStatusPollingFailed");
+							musicPollingNotice = t("musicPollingFailed", { error: message });
 						}
 					}
 				}
@@ -1849,7 +1858,7 @@ export function AudioRoom({
 				setAudioFile(null);
 			}
 		} catch (err) {
-			const errorMessage = err instanceof Error ? err.message : "Audio request failed";
+			const errorMessage = err instanceof Error ? err.message : t("requestFailed");
 			if (pendingEntryId) {
 				await updateEntry(pendingEntryId, (entry) => ({
 					...entry,
@@ -1900,7 +1909,7 @@ export function AudioRoom({
 									}}
 								>
 									<PencilLine className="mr-2 h-4 w-4" />
-									Rename
+							{tUi("actions.rename")}
 								</DropdownMenuItem>
 								<DropdownMenuItem
 									onClick={() => toggleConversationPin(conversation)}
@@ -1910,7 +1919,7 @@ export function AudioRoom({
 									) : (
 										<Pin className="mr-2 h-4 w-4" />
 									)}
-									{conversation.pinned ? "Unpin" : "Pin"}
+{conversation.pinned ? tUi("actions.unpin") : tUi("actions.pin")}
 								</DropdownMenuItem>
 								<DropdownMenuSeparator />
 								<DropdownMenuItem
@@ -1920,7 +1929,7 @@ export function AudioRoom({
 									className="group text-foreground focus:text-destructive data-highlighted:text-destructive"
 								>
 									<Trash2 className="mr-2 h-4 w-4 text-muted-foreground group-data-highlighted:text-destructive" />
-									Delete
+							{tUi("actions.delete")}
 								</DropdownMenuItem>
 							</DropdownMenuContent>
 						</DropdownMenu>
@@ -1945,7 +1954,7 @@ export function AudioRoom({
 												: "flex-1 justify-start gap-2 px-2"
 										}`}
 										onClick={startNewConversation}
-										aria-label="New Chat"
+										aria-label={t("newChat")}
 									>
 										<SquarePen className="h-4 w-4 shrink-0" />
 										{collapsed ? null : (
@@ -1954,7 +1963,7 @@ export function AudioRoom({
 									</Button>
 								</TooltipTrigger>
 								<TooltipContent side="right" align="center" sideOffset={10}>
-									New Chat
+										{t("newChat")}
 								</TooltipContent>
 							</Tooltip>
 						) : (
@@ -1962,10 +1971,10 @@ export function AudioRoom({
 								variant="ghost"
 								className="h-8 min-w-0 w-full flex-1 justify-start gap-2 px-2 text-sm font-medium"
 								onClick={startNewConversation}
-								aria-label="New Chat"
+								aria-label={t("newChat")}
 							>
 								<SquarePen className="h-4 w-4 shrink-0" />
-								<span className="truncate text-left">New Chat</span>
+								<span className="truncate text-left">{t("newChat")}</span>
 							</Button>
 						)}
 						{collapsed ? (
@@ -1975,7 +1984,7 @@ export function AudioRoom({
 										variant="ghost"
 										className="h-8 min-w-0 w-full justify-start px-2 text-sm font-medium"
 										asChild
-										aria-label="Database"
+										aria-label={t("database")}
 									>
 										<Link
 											href="/"
@@ -1986,7 +1995,7 @@ export function AudioRoom({
 									</Button>
 								</TooltipTrigger>
 								<TooltipContent side="right" align="center" sideOffset={10}>
-									Database
+									{t("database")}
 								</TooltipContent>
 							</Tooltip>
 						) : (
@@ -1994,7 +2003,7 @@ export function AudioRoom({
 								variant="ghost"
 								className="h-8 min-w-0 w-full flex-1 justify-start gap-0 px-2 text-sm font-medium"
 								asChild
-								aria-label="Database"
+								aria-label={t("database")}
 							>
 								<Link href="/" className="group/db flex w-full min-w-0 items-center gap-2">
 									<Database className="h-4 w-4 shrink-0" />
@@ -2010,13 +2019,13 @@ export function AudioRoom({
 										variant="ghost"
 										className="h-8 min-w-0 w-full justify-start px-2 text-sm font-medium"
 										onClick={() => setConversationSearchOpen(true)}
-										aria-label="Search Chats"
+										aria-label={t("searchChats")}
 									>
 										<Search className="h-4 w-4 shrink-0" />
 									</Button>
 								</TooltipTrigger>
 								<TooltipContent side="right" align="center" sideOffset={10}>
-									Search Chats
+									{t("searchChats")}
 								</TooltipContent>
 							</Tooltip>
 						) : (
@@ -2024,7 +2033,7 @@ export function AudioRoom({
 								variant="ghost"
 								className="h-8 min-w-0 w-full flex-1 justify-start gap-2 px-2 text-sm font-medium"
 								onClick={() => setConversationSearchOpen(true)}
-								aria-label="Search Chats"
+								aria-label={t("searchChats")}
 							>
 								<Search className="h-4 w-4 shrink-0" />
 									<span className="truncate text-left">{t("searchChats")}</span>
@@ -2037,21 +2046,21 @@ export function AudioRoom({
 							<SidebarGroupLabel>{t("chats")}</SidebarGroupLabel>
 							<SidebarGroupContent className="overflow-hidden">
 								<SidebarMenu>
-									{renderConversationSection("Pinned", groupedConversations.pinned)}
-									{renderConversationSection("Today", groupedConversations.today)}
+{renderConversationSection(tSearch("pinned"), groupedConversations.pinned)}
+									{renderConversationSection(t("today"), groupedConversations.today)}
 									{renderConversationSection(
-										"Yesterday",
+										t("yesterday"),
 										groupedConversations.yesterday,
 									)}
-									{renderConversationSection("This week", groupedConversations.week)}
+									{renderConversationSection(t("thisWeek"), groupedConversations.week)}
 									{renderConversationSection(
-										"This month",
+										t("thisMonth"),
 										groupedConversations.month,
 									)}
-									{renderConversationSection("Older", groupedConversations.older)}
+									{renderConversationSection(t("older"), groupedConversations.older)}
 									{conversations.length === 0 ? (
 										<p className="px-2 py-3 text-xs text-muted-foreground">
-											No chats found.
+											{tChat("noChatsFound")}
 										</p>
 									) : null}
 								</SidebarMenu>
@@ -2071,15 +2080,15 @@ export function AudioRoom({
 	);
 	const hasEligibleModels = filteredModels.length > 0;
 	const emptyStateTitle: string | undefined = modelsLoadFailed
-		? "Music models couldn't load"
+		? t("musicModelsLoadFailed")
 		: mode === "music" && !hasEligibleModels
-			? "No music models available"
+			? t("noMusicModelsAvailable")
 			: undefined;
 	const emptyStateDescription = modelsLoadFailed
-		? "Refresh the page to try loading the model catalogue again."
+		? t("refreshModels")
 		: mode === "music" && !hasEligibleModels
-			? "No routable music providers are available right now."
-			: modeEmptyDescription(mode);
+			? t("noRoutableMusicProviders")
+			: t(modeEmptyDescriptionKey(mode));
 
 	return (
 		<div className="flex min-h-0 flex-1 flex-col overflow-hidden">
@@ -2094,7 +2103,7 @@ export function AudioRoom({
 									size="icon"
 								className="-ml-1 h-8 w-8"
 								onClick={toggleSidebar}
-								aria-label={sidebarState === "expanded" ? "Collapse sidebar" : "Open sidebar"}
+aria-label={sidebarState === "expanded" ? t("collapseSidebar") : t("openSidebar")}
 								>
 								{sidebarState === "expanded" ? (
 									<PanelLeftClose className="h-4 w-4" />
@@ -2158,17 +2167,17 @@ export function AudioRoom({
 									? []
 									: mode === "speech"
 									? [
-											{ label: "Narrate an introduction", prompt: "Welcome. Today, we're exploring an idea that could change how we work." },
-											{ label: "Read a calm reflection", prompt: "Take a slow breath, settle into the moment, and let the day unfold." },
-											{ label: "Voice a product update", prompt: "Here's what we've shipped this week, and why it matters." },
-											{ label: "Tell a short story", prompt: "At the edge of the city, one light remained on long after midnight." },
+											{ label: t("speechNarrateLabel"), prompt: t("speechNarratePrompt") },
+											{ label: t("speechReflectionLabel"), prompt: t("speechReflectionPrompt") },
+											{ label: t("speechUpdateLabel"), prompt: t("speechUpdatePrompt") },
+											{ label: t("speechStoryLabel"), prompt: t("speechStoryPrompt") },
 										]
 									: mode === "music"
 										? [
-												{ label: "Ambient focus", prompt: "Warm ambient electronic music for deep focus, gentle pulse, no vocals" },
-												{ label: "Cinematic opening", prompt: "A restrained cinematic opening that gradually builds with strings and piano" },
-												{ label: "Late-night jazz", prompt: "Intimate late-night jazz with brushed drums, upright bass, and soft piano" },
-												{ label: "Bright indie theme", prompt: "An optimistic indie theme with crisp guitars and an energetic rhythm" },
+												{ label: t("musicAmbientLabel"), prompt: t("musicAmbientPrompt") },
+												{ label: t("musicCinematicLabel"), prompt: t("musicCinematicPrompt") },
+												{ label: t("musicJazzLabel"), prompt: t("musicJazzPrompt") },
+												{ label: t("musicIndieLabel"), prompt: t("musicIndiePrompt") },
 											]
 										: []
 							}
@@ -2237,7 +2246,7 @@ export function AudioRoom({
 															onClick={cancelEditPrompt}
 														>
 															<X className="mr-1 h-4 w-4" />
-															Cancel
+											{tChat("cancel")}
 														</Button>
 														<Button
 															size="sm"
@@ -2247,7 +2256,7 @@ export function AudioRoom({
 															}}
 														>
 															<Save className="mr-1 h-4 w-4" />
-															Save
+										{tChat("save")}
 														</Button>
 													</div>
 												</div>
@@ -2257,7 +2266,7 @@ export function AudioRoom({
 													{entry.mode === "music" && entry.musicLyrics ? (
 														<div className="mt-3 border-t border-white/20 pt-3">
 															<p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-white/70">
-																Lyrics
+										{t("lyrics")}
 															</p>
 															<p className="whitespace-pre-wrap">{entry.musicLyrics}</p>
 														</div>
@@ -2287,7 +2296,7 @@ export function AudioRoom({
 														</Button>
 													</TooltipTrigger>
 													<TooltipContent side="top">
-														{promptCopied ? "Copied" : "Copy prompt"}
+{promptCopied ? tChat("copied") : tChat("copy")}
 													</TooltipContent>
 												</Tooltip>
 												<Tooltip>
@@ -2347,10 +2356,10 @@ export function AudioRoom({
 													</MediaPlayerControls>
 												</MediaPlayer>
 											) : pendingEntry ? (
-												<RoomWorkingIndicator label={modeBusyLabel(entry.mode)} />
+<RoomWorkingIndicator label={t("generating")} />
 											) : entry.text ? null : (
 												<p className="text-xs text-muted-foreground">
-													No playable audio returned by this response.
+								{t("noPlayableAudio")}
 												</p>
 											)}
 											{entry.text ? (
@@ -2498,7 +2507,7 @@ export function AudioRoom({
 								{showMusicLyricsInput || musicLyricsInput.trim() ? (
 								<div className="grid gap-1 px-1 pb-1">
 									<p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-										Lyrics (Optional)
+														{t("lyricsOptional")}
 									</p>
 									<Textarea
 										value={musicLyricsInput}
@@ -2532,15 +2541,15 @@ export function AudioRoom({
 								>
 									{audioFile?.name || audioUrlInput.trim() ||
 										(mode === "transcription"
-											? "Add audio to transcribe..."
-											: "Add audio to translate...")}
+										? t("addAudioToTranscribe")
+										: t("addAudioToTranslate"))}
 								</div>
 								{showAudioUrlInput ? (
 									<div className="px-1 pb-1">
 										<Input
 											value={audioUrlInput}
 											onChange={(event) => setAudioUrlInput(event.target.value)}
-											placeholder="Audio URL"
+										placeholder={t("audioUrl")}
 											className="h-8"
 										/>
 									</div>
@@ -2583,7 +2592,7 @@ export function AudioRoom({
 									tools={[
 										{
 											id: "lyrics",
-											label: "Add lyrics",
+											label: t("addLyrics"),
 											icon: FileText,
 											active: Boolean(showMusicLyricsInput || musicLyricsInput.trim()),
 											onSelect: () => setShowMusicLyricsInput((prev) => !prev),
@@ -2595,14 +2604,14 @@ export function AudioRoom({
 									tools={[
 										{
 											id: "audio-url",
-											label: "Add audio URL",
+											label: t("addAudioUrl"),
 											icon: Link2,
 											active: Boolean(showAudioUrlInput || audioUrlInput.trim()),
 											onSelect: () => setShowAudioUrlInput((prev) => !prev),
 										},
 										{
 											id: "upload-audio",
-											label: "Upload audio",
+											label: t("uploadAudio"),
 											icon: Paperclip,
 											active: Boolean(audioFile),
 											onSelect: () => audioFileInputRef.current?.click(),
@@ -2618,8 +2627,8 @@ export function AudioRoom({
 								disabled={isLoading || !modelId || !selectedModelEnabled}
 							>
 								{isLoading ? (
-									<RoomWorkingIndicator label={modeBusyLabel(mode)} />
-								) : modeActionLabel(mode)}
+									<RoomWorkingIndicator label={t("generating")} />
+								) : t(modeActionKey(mode))}
 							</Button>
 						</div>
 					</RoomComposerSurface>

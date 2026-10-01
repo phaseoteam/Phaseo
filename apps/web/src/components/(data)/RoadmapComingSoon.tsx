@@ -5,6 +5,9 @@ import ComingSoon, { type ComingSoonProps } from "./ComingSoon";
 import { getMilestone } from "@/lib/roadmap";
 import { Infinity as InfinityIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
+import type { SourceContentMessages } from "@/i18n/default-messages";
+
+type RoadmapMilestoneKey = keyof SourceContentMessages["roadmap"]["milestones"];
 
 type RoadmapComingSoonProps = {
 	milestoneKey: string;
@@ -31,10 +34,16 @@ export default function RoadmapComingSoon({
 			/>
 		);
 	}
+	const localizedTitleKey = `milestones.${m.key}.title` as `milestones.${RoadmapMilestoneKey}.title`;
+	const localizedDescriptionKey = `milestones.${m.key}.description` as `milestones.${RoadmapMilestoneKey}.description`;
+	const localizedTitle = t(localizedTitleKey);
+	const localizedDescription = m.description
+		? t(localizedDescriptionKey)
+		: undefined;
 
 	// Adapt roadmap fields to ComingSoon props
 	const base: ComingSoonProps = {
-		title: m.title,
+		title: localizedTitle,
 		subtitle:
 			m.status === "Ongoing"
 				? t("continuousImprovements")
@@ -43,7 +52,7 @@ export default function RoadmapComingSoon({
 				: m.status === "Beta"
 				? t("availableBeta")
 				: t("plannedFeature"),
-		description: m.description,
+		description: localizedDescription,
 		eta: m.due, // strings like "Nov 2025" render nicely in ComingSoon
 		icon:
 			m.icon === "Infinity" ? (
@@ -55,7 +64,7 @@ export default function RoadmapComingSoon({
 		breadcrumb: [
 			{ label: "Phaseo", href: "/" },
 			{ label: t("title"), href: "/roadmap" },
-			{ label: m.title },
+				{ label: localizedTitle },
 		],
 		primaryAction: {
 			label: t("seeRoadmapItem"),

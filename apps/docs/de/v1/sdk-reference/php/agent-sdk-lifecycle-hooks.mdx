@@ -1,0 +1,25 @@
+---
+icon: "radio-tower"
+title: "Lebenszyklus-Hooks"
+description: "Beobachte PHP-Agent-Läufe, Modellzüge, Tools, Pausen und den Abschluss."
+---
+
+Übergib einen `onEvent`-Callback, um während des Laufs strukturierte Lifecycle-Ereignisse zu erhalten.
+
+```php
+$result = $agent->run(
+    input: $prompt,
+    client: $client,
+    onEvent: function (array $event): void {
+        $logger->info("agent event", [
+            "type" => $event["type"],
+            "run_id" => $event["run_id"],
+            "details" => $event["details"] ?? [],
+        ]);
+    }
+);
+```
+
+Nützliche Ereignisse umfassen Start, Abschluss und Fehler eines Laufs, Modellversuche, Text- und Reasoning-Änderungen sowie Start, Fortschritt, Abschluss und Fehler von Tools und menschliche Prüfpunkte.
+
+Halte Callbacks kurz. Stelle langsame Speicherarbeiten in eine Warteschlange und schwärze sensible Tool-Eingaben, bevor du Ereignisse an externe Telemetrie weiterleitest.

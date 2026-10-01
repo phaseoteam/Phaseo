@@ -1,0 +1,75 @@
+---
+title: "OpenCode"
+icon: "git-branch"
+description: "Verbinde OpenCode über einen benutzerdefinierten OpenAI-kompatiblen Provider mit dem Phaseo Gateway."
+---
+
+OpenCode kann Phaseo über einen benutzerdefinierten OpenAI-kompatiblen Provider aufrufen. Verwende diese Einrichtung, wenn Modellauswahl, Nutzung und Routing von OpenCode über einen einzigen Phaseo-API-Schlüssel laufen sollen.
+
+## 1) OpenCode konfigurieren
+
+Installiere OpenCode aus der offiziellen Version. Verwende anschließend die Phaseo-CLI, um einen globalen Provider hinzuzufügen, alle kompatiblen Phaseo-Modelle zu synchronisieren und einen eigenen Schlüssel im Anmeldedatenspeicher von OpenCode abzulegen:
+
+```bash
+phaseo opencode --model openai/gpt-5.6-terra
+```
+
+Der Befehl erstellt einen nicht ablaufenden `Phaseo CLI: OpenCode API Key`, behält andere OpenCode-Einstellungen und Zugangsdaten bei und unterstützt `--dry-run`. Eine vorhandene globale `opencode.jsonc` wird aktualisiert; andernfalls wird `~/.config/opencode/opencode.json` verwendet.
+
+Verwende `--catalog default`, um nur das ausgewählte Modell einzurichten.
+
+Die CLI speichert außerdem eine eigene Kopie im Anmeldedatenspeicher des Betriebssystems und widerruft den Schlüssel, wenn du `phaseo integrations remove opencode` ausführst.
+
+## Manuelle Konfiguration
+
+Erstelle oder aktualisiere `opencode.json` in deinem Projekt oder in der globalen OpenCode-Konfiguration:
+
+```json
+{
+  "$schema": "https://opencode.ai/config.json",
+  "model": "phaseo/openai/gpt-5.5",
+  "provider": {
+    "phaseo": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "Phaseo",
+      "options": {
+        "baseURL": "https://api.phaseo.app/v1",
+        "apiKey": "{env:PHASEO_API_KEY}"
+      },
+      "models": {
+        "openai/gpt-5.5": {
+          "name": "GPT-5.5"
+        },
+        "openai/gpt-5.4-mini": {
+          "name": "GPT-5.4 Mini"
+        },
+        "anthropic/claude-sonnet-4.5": {
+          "name": "Claude Sonnet 4.5"
+        }
+      }
+    }
+  }
+}
+```
+
+Füge dem Objekt `models` Modelle hinzu oder entferne sie, damit es den Phaseo-Modell-IDs entspricht, die du in OpenCode verwenden möchtest.
+
+## 2) OpenCode starten
+
+Starte OpenCode nach der Konfigurationsänderung neu und wähle das Phaseo-Modell unter `/models` aus.
+
+Entferne später nur den Phaseo-Provider mit:
+
+```bash
+phaseo integrations remove opencode
+```
+
+## Überprüfung
+
+- Führe eine einfache Anfrage aus, bevor du Abläufe zum Bearbeiten von Dateien verwendest.
+- Wird ein Modell abgelehnt, prüfe die genaue ID über den [Models-Endpunkt](../../api-reference/endpoint/models.mdx).
+- Wenn die Authentifizierung fehlschlägt, führe `phaseo opencode` erneut aus und prüfe `opencode auth list`.
+
+## Dokumentationskontext hinzufügen
+
+Damit OpenCode während einer Sitzung die Phaseo-Dokumentation lesen kann, füge auch den [Docs-MCP](./docs-mcp.mdx)-Server hinzu.

@@ -1,0 +1,30 @@
+---
+icon: "files"
+title: "ファイル"
+description: "Java SDKでファイルをアップロードし、メタデータや内容を取得します。"
+---
+
+**メソッド**: `Phaseo#uploadFile(...)`、`Phaseo#listFiles(...)`、`Phaseo#retrieveFile(...)`、`Phaseo#retrieveFileContent(...)`
+
+```java
+import app.phaseo.sdk.Phaseo;
+import java.util.HashMap;
+import java.util.Map;
+
+Phaseo client = new Phaseo(apiKey, "https://api.phaseo.app/v1");
+
+Object uploaded = client.uploadFile("""
+  {"purpose":"batch","file":"data:application/json;base64,eyJ0ZXN0Ijp0cnVlfQ=="}
+  """);
+
+Object file = client.retrieveFile("file_123");
+byte[] content = client.retrieveFileContent("file_123");
+
+System.out.println(String.valueOf(file));
+System.out.println(new String(content));
+```
+
+<Note>
+`listFiles(...)`はSDKで利用できますが、共有ゲートウェイキーでは現在`GET /files`が`file_list_not_supported_with_shared_gateway_key`を返します。
+アップロードしたファイルのIDを保存し、個別に取得してください。
+</Note>

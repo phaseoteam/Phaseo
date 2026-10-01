@@ -1,0 +1,33 @@
+---
+icon: "triangle-alert"
+title: "Fehler und Fehlerbehebung"
+description: "Behandle Modell-, Tool-, Validierungs-, Abbruch- und Fortsetzungsfehler in Go-Agents."
+---
+
+Fehler von Agents entstehen meist durch Modellanfragen, lokale Tools, Schema-Validierung, Abbruch oder eine unvollständige menschliche Entscheidung. Mache diese Fälle in Logs sichtbar und gib sichere Fehler an Aufrufer zurück.
+
+## Tool-Fehler behandeln
+
+Setze bei einem Tool `OnError: "return-to-model"`, wenn das Modell den Fehler voraussichtlich beheben kann. Das SDK wandelt den Fehler in ein Tool-Ergebnis um, sodass der nächste Durchlauf eine andere Aktion wählen kann. Behalte für unsichere oder nicht behebbare Fehler das Standardverhalten bei, das die Ausführung abbricht.
+
+## Abbruch berücksichtigen
+
+Übergib den Request-Kontext an `Run`, `Continue` oder `Stream`. Wird er abgebrochen, stoppt das Modell-Streaming und es starten keine neuen Tool-Aufgaben.
+
+```go
+ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+defer cancel()
+
+result, err := agent.Run(ctx, options)
+if errors.Is(err, context.DeadlineExceeded) {
+  // Persist enough application state to retry or report the timeout.
+}
+```
+
+## Fehler beim Fortsetzen untersuchen
+
+Wenn ein Lauf auf eine Person wartet, benötigt jeder ausstehende Aufruf eine Freigabe, Ablehnung oder ein extern geliefertes Ergebnis, zugeordnet über die Tool-Aufruf-ID. Speichere den vollständigen zurückgegebenen Laufdatensatz; eine menschliche Nachricht allein ersetzt diese Entscheidungen nicht.
+
+## Nützlichen Kontext erfassen
+
+Erfasse Lauf-ID, Schrittindex, Request-ID, Provider, Modell, Abschlussgrund, Tool-Aufruf-ID und Stoppgrund. Lifecycle-Hooks und DevTools stellen diese Felder ohne Transport-Logging bereit.

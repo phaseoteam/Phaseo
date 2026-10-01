@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import Image from "next/image";
+import { useLocale, useTranslations } from "next-intl";
 import { ChevronsUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -36,12 +37,18 @@ export function CountryCombobox({
 	value,
 	onValueChange,
 	disabled = false,
-	placeholder = "Select a country",
+	placeholder,
 }: CountryComboboxProps) {
+	const locale = useLocale();
+	const t = useTranslations("Common.ui.accessibility");
+	const displayNames = new Intl.DisplayNames([locale], { type: "region" });
 	const [open, setOpen] = React.useState(false);
 	const searchInputRef = React.useRef<HTMLInputElement>(null);
 	const listViewportRef = React.useRef<HTMLDivElement>(null);
 	const selected = COUNTRY_OPTIONS.find((country) => country.code === value);
+	const selectedName = selected
+		? displayNames.of(selected.code) ?? selected.name
+		: undefined;
 
 	React.useEffect(() => {
 		if (!open) return;
@@ -72,7 +79,7 @@ export function CountryCombobox({
 					variant="outline"
 					role="combobox"
 					aria-expanded={open}
-					aria-label="Select country"
+					aria-label={t("selectCountry")}
 					disabled={disabled}
 					className={cn("h-10 w-full justify-between rounded-md px-3 font-normal", className)}
 				>
@@ -88,7 +95,7 @@ export function CountryCombobox({
 							/>
 						) : null}
 						<span className={cn("truncate", !selected && "text-muted-foreground")}>
-							{selected?.name ?? placeholder}
+							{selectedName ?? placeholder ?? t("selectCountry")}
 						</span>
 					</span>
 					<ChevronsUpDown className="ml-2 size-4 shrink-0 opacity-50" />
@@ -102,7 +109,7 @@ export function CountryCombobox({
 				<Command>
 					<CommandInput
 						ref={searchInputRef}
-						placeholder="Search country, ISO-2 or ISO-3…"
+						placeholder={t("searchCountry")}
 						wrapperClassName="pb-1"
 					/>
 					<ScrollArea
@@ -111,12 +118,12 @@ export function CountryCombobox({
 						viewportRef={listViewportRef}
 					>
 						<CommandList className="max-h-none overflow-visible">
-							<CommandEmpty>No country found.</CommandEmpty>
+						<CommandEmpty>{t("countryNotFound")}</CommandEmpty>
 							<CommandGroup>
 								{COUNTRY_OPTIONS.map((country) => (
 									<CommandItem
 										key={country.code}
-										value={`${country.name} ${country.code} ${country.alpha3}`}
+										value={`${displayNames.of(country.code) ?? country.name} ${country.name} ${country.code} ${country.alpha3}`}
 										data-checked={country.code === value}
 										onSelect={() => {
 											onValueChange(country.code);
@@ -132,7 +139,7 @@ export function CountryCombobox({
 											className="h-3.5 w-5 shrink-0 rounded-[2px] object-cover"
 										/>
 										<span className="min-w-0 flex-1 truncate">
-											{country.name}
+											{displayNames.of(country.code) ?? country.name}
 										</span>
 										<span className="text-xs text-muted-foreground">
 											{country.code}

@@ -1,0 +1,66 @@
+---
+icon: "shuffle"
+title: "الجولات الديناميكية"
+description: "غيّر النماذج والتعليمات وأخذ العينات والأدوات بين جولات الوكيل."
+---
+
+استخدم القيم الديناميكية عندما ينبغي أن تستجيب جولات النموذج اللاحقة لسياق التطبيق أو نتائج الأدوات السابقة. يمكن تثبيت القيمة أو حسابها للجولة الحالية.
+
+## اختيار نموذج وقت التشغيل
+
+```typescript
+type ResearchContext = {
+  fast: boolean;
+};
+
+const agent = createAgent<string, string, ResearchContext>({
+  id: "research-agent",
+  model: ({ context }) =>
+    context?.fast ? "phaseo/free" : "anthropic/claude-sonnet-4",
+  instructions: ({ numberOfTurns }) =>
+    `Research turn ${numberOfTurns}. Cite the evidence you use.`,
+});
+```
+
+يقبل تعريف الوكيل قيما ديناميكية لـ `model` و`models` و`instructions` و`temperature` و`maxOutputTokens` و`topP`.
+
+## تحديث سياق التطبيق من أداة
+
+يمكن للأدوات حفظ معلومات للجولات اللاحقة باستخدام `context.setContext()`:
+
+```typescript
+const chooseMode = defineTool({
+  id: "choose-mode",
+  async execute(input: { fast: boolean }, context) {
+    context.setContext({ fast: input.fast });
+    return { selected: input.fast ? "fast" : "thorough" };
+  },
+});
+```
+
+اجعل السياق صغيرا وقابلا للتسلسل إذا أمكن حفظ التشغيل واستئنافه لاحقا.
+
+## تجاوز الجولة التالية فقط
+
+استخدم `nextTurnParams` عندما تحتاج أداة إلى تغيير الطلب التالي دون تغيير تعريف الوكيل بشكل دائم:
+
+```typescript
+const broadenSearch = defineTool({
+  id: "broaden-search",
+  nextTurnParams: {
+    temperature: 0.3,
+    maxOutputTokens: 2_000,
+  },
+  async execute() {
+    return { broadened: true };
+  },
+});
+```
+
+يمكن لقيم الجولة التالية تغيير النموذج والتعليمات ودرجة الحرارة والحد الأقصى لرموز الإخراج وأخذ عينات top-p أو الأدوات المتاحة.
+
+## أدلة ذات صلة
+
+- [شروط الإيقاف](./agent-sdk-stop-conditions.mdx)
+- [الحالة والموافقة](./agent-sdk-state-and-approval.mdx)
+- [المخرجات وإعادة المحاولة](./agent-sdk-run-controls.mdx)

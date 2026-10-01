@@ -1,0 +1,27 @@
+---
+title: "多模态"
+description: "通过网关使用文本、图像、音频、视频和其他模态。"
+icon: "shapes"
+---
+
+网关通过统一 API 提供多种模态。每个端点对应不同能力，模型支持情况因供应商而异。
+
+## 模态与端点
+
+| 模态 | 主要端点 | 说明 |
+| --- | --- | --- |
+| 文本 | `/v1/responses`、`/v1/chat/completions`、`/v1/messages` | 结构化和对话式输出。 |
+| 图像 | `/v1/images/generations`、`/v1/images/edits` | 文生图和图像编辑。 |
+| 音频（TTS/STT/翻译） | `/v1/audio/speech`、`/v1/audio/transcriptions`、`/v1/audio/translations` | 文字转语音、语音转文字和语音翻译。 |
+| 视频 | `/v1/videos`、`/v1/videos/{video_id}`、`/v1/videos/{video_id}/content`、`/v1/videos/{video_id}`（DELETE） | 创建异步视频任务、轮询状态、获取内容并删除任务。 |
+| 音乐 | `/v1/music/generate` | 通过受支持的供应商生成音乐。 |
+| OCR | `/v1/ocr` | 在支持的情况下从图像中提取文本。 |
+
+## 检查模型支持情况
+
+使用[模型端点](../api-reference/endpoint/models.mdx)查看可用模型及其支持的端点。供应商覆盖情况可通过[供应商端点](../api-reference/endpoint/providers.mdx)查询。
+
+## 最佳实践
+
+- 即使不同模态共用模型名称，也要根据所需模态选择端点。
+- 发布前请根据 [API 参考](../api-reference/introduction.mdx)验证载荷。

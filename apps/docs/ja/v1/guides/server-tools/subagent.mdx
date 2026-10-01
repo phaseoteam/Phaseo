@@ -1,0 +1,108 @@
+---
+icon: "bot"
+title: "Subagentサーバーツール"
+description: "メインモデルからワーカーモデルに特定のタスクを委任できます。"
+---
+
+同じリクエスト中に、メインモデルから小型または高速なワーカーモデルへ独立したタスクを委任する場合は、`phaseo:subagent`を使います。
+
+メインモデルはタスクの説明とともにSubagentツールを呼び出します。Phaseoはサーバー側でワーカーモデルを実行し、その結果をツールコンテキストとして返すため、メインモデルが回答を完成できます。
+
+## クイックスタート
+
+```bash
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-5-nano",
+    "messages": [
+      { "role": "user", "content": "Compare these release notes and summarize the breaking changes." }
+    ],
+    "tools": [
+      {
+        "type": "phaseo:subagent",
+        "parameters": {
+          "model": "openai/gpt-5-nano",
+          "instructions": "Return concise findings for the main model. Do not address the end user directly.",
+          "max_uses": 3,
+          "max_completion_tokens": 1200
+        }
+      }
+    ]
+  }'
+```
+
+## パラメーター
+
+```json
+{
+  "type": "phaseo:subagent",
+  "parameters": {
+    "model": "openai/gpt-5-nano",
+    "instructions": "You are a fast, focused worker. Complete only the delegated task.",
+    "max_uses": 3,
+    "max_completion_tokens": 1200,
+    "reasoning": { "effort": "low" },
+    "temperature": 0.2
+  }
+}
+```
+
+| パラメーター | 型 | 既定値 | 説明 |
+| --- | --- | --- | --- |
+| `model` | string | `openai/gpt-5-nano` | 呼び出すワーカーモデルです。 |
+| `instructions` | string | ワーカー向けの具体的な指示 | Subagentの既定の動作に追加する指示です。 |
+| `max_uses` | integer | `10` | サーバーツールループでのSubagent呼び出しの最大数です。 |
+| `max_completion_tokens` | integer | Advisorの既定値 | 各ワーカー応答の最大出力トークン数です。 |
+| `max_tokens` | integer | Advisorの既定値 | `max_completion_tokens`の旧エイリアスです。 |
+| `reasoning` | object | プロバイダーの既定値 | サポートされる場合、ワーカー呼び出しに渡す推論設定です。 |
+| `temperature` | number | プロバイダーの既定値 | ワーカー呼び出しのサンプリング温度です。 |
+
+## ツール呼び出しの引数
+
+通常、モデルは`task_description`を指定してSubagentを呼び出します。
+
+```json
+{
+  "task_description": "Extract the three highest-risk migration steps from the supplied plan."
+}
+```
+
+モデルが異なる引数名を出力した場合、Phaseoは`task`、`prompt`、`input`もエイリアスとして受け付けます。
+
+## ツールの戻り値
+
+Subagentはツールの結果としてJSONを返します。
+
+```json
+{
+  "status": "ok",
+  "model": "openai/gpt-5-nano",
+  "result": "The highest-risk steps are schema migration, traffic cutover, and rollback verification."
+}
+```
+
+ワーカーへのリクエストを実行できない場合、Phaseoは次のようなツールエラーを返します。 `subagent_invalid_request`, `subagent_max_uses_exceeded`, or `subagent_request_failed`.
+
+## 使用量と料金
+
+Subagent呼び出しにより次が加算されます。
+
+```json
+{
+  "usage": {
+    "server_tool_use": {
+      "subagent_requests": 1
+    }
+  }
+}
+```
+
+ワーカーモデルのトークンは合計使用量に含まれ、選択したモデルの料金で課金されます。
+
+## 関連項目
+
+- [Advisor](./advisor.mdx)
+- [Fusion](./fusion.mdx)
+- [サーバーツール](./index.mdx)

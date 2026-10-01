@@ -1,0 +1,68 @@
+---
+icon: "brain-circuit"
+title: "モデル"
+description: "Ruby SDKでモデルを一覧表示します。"
+---
+
+**メソッド**：`client.list_models(...)`。
+
+### 例
+```ruby
+require 'phaseo_sdk'
+
+client = PhaseoSdk::Phaseo.new(api_key: ENV.fetch("PHASEO_API_KEY"))
+models = client.list_models(
+  limit: "5",
+  provider: "anthropic",
+  provider_status: "beta,not_ready",
+  provider_availability_reason: "preview_only,provider_not_ready",
+  capability_status: "coming_soon,internal_testing",
+  availability: "all",
+)
+```
+
+### 主なパラメーター
+- `provider`（任意）：プロバイダーで絞り込む
+- `provider_status`／`provider_routing_status`／`model_routing_status`（任意）：公開状況とルーティング状態で絞り込む
+- `capability_status`／`provider_availability_status`／`provider_availability_reason`（任意）：機能と利用可能状況で絞り込む
+- `availability: "all"`と併用する`provider_availability_reason`は、`preview_only`、`provider_not_ready`、`gated`、`access_limited`、`region_limited`、`project_limited`、`paused`、`soft_blocked`などの公開状態を調べるのに便利です。
+- `availability: "all"`と併用する`capability_status`は、`coming_soon`や`internal_testing`など、ルーティングできないエンドポイントの割り当てを調べるのに便利です。
+- `status`（任意）：モデルのライフサイクル状態で絞り込む
+- `organisation`（任意）：組織で絞り込む
+- `endpoints`（任意）：エンドポイントの配列
+- `input_types`／`output_types`／`params`（任意）：機能のフィルター
+- `availability`（任意）：`active`または`all`
+- `limit`（任意）：件数
+- `offset`（任意）：スキップする項目数
+
+### 戻り値
+`ModelListResponse`
+
+```json
+{
+  "ok": true,
+  "limit": 50,
+  "offset": 0,
+  "total": 123,
+  "models": [
+    {
+      "model_id": "openai/gpt-4o-mini",
+      "name": "GPT-4o Mini",
+      "release_date": "2024-07-18",
+      "status": "active",
+      "organisation_id": "openai",
+      "aliases": ["gpt-4o-mini"],
+      "endpoints": ["chat/completions", "responses"],
+      "input_types": ["text"],
+      "output_types": ["text"],
+      "providers": [
+        {
+          "api_provider_id": "openai",
+          "params": ["temperature", "max_tokens"]
+        }
+      ]
+    }
+  ]
+}
+```
+

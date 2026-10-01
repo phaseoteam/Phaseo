@@ -1,0 +1,292 @@
+---
+title: "## استدعاء الأدوات"
+description: "استخدم استدعاءات الوظائف التي يوجّهها النموذج بأمان عبر Gateway."
+icon: "wrench"
+---
+
+تتيح استدعاءات الأدوات للنماذج طلب إجراءات منظّمة، مثل البحث في قاعدة بيانات أو التحقق من الطقس أو استدعاء API داخلية، بدلًا من تخمين الإجابات.
+
+يدعم Gateway بيانات الأدوات على نقاط نهاية النص التالية:
+
+- `/v1/chat/completions` (حقلا `tools` و`tool_calls` بصيغة OpenAI)
+- `/v1/responses` (عناصر إخراج `function_call` بصيغة الاستجابةs)
+- `/v1/messages` (كتل `tool_use` بصيغة Anthropic)
+
+## الطلب
+
+```bash
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-5-nano",
+    "messages": [
+      { "role": "user", "content": "What is the weather in London?" }
+    ],
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "get_weather",
+          "description": "Get current weather by city",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "city": { "type": "string" }
+            },
+            "required": ["city"]
+          }
+        }
+      }
+    ],
+    "tool_choice": {
+      "type": "function",
+      "function": { "name": "get_weather" }
+    },
+    "stream": false
+  }'
+```
+
+## الاستجابة
+
+```json
+{
+  "id": "chatcmpl_...",
+  "object": "chat.completion",
+  "choices": [
+    {
+      "index": 0,
+      "finish_reason": "tool_calls",
+      "message": {
+        "role": "assistant",
+        "content": null,
+        "tool_calls": [
+          {
+            "id": "call_123",
+            "type": "function",
+            "function": {
+              "name": "get_weather",
+              "arguments": "{\"city\":\"London\"}"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}
+```
+
+شغّل أداتك، ثم أرسل نتيجتها في الطلب التالي كي يتمكن المساعد من إكمال الإجابة.
+
+## أدوات الخادم المضمنة
+
+يتيح Gateway حاليًا أدوات الخادم المضمنة التالية:
+
+- `gateway:datetime`
+- `phaseo:web_search`
+- `phaseo:web_fetch`
+- `phaseo:advisor`
+- `phaseo:image_generation`
+- `phaseo:apply_patch`
+
+تعمل هذه الأداة على Gateway من دون الحاجة إلى منفّذ لدى العميل. يعيد Gateway كتابتها كاستدعاء أداة أو وظيفة upstream، وينفذها، ثم يعيد النتيجة إلى دورة النموذج.
+
+للاطلاع على تفاصيل الإعداد والاستخدام والتسعير، راجع [أدوات الخادم](./server-tools/index.mdx).
+
+بنية الطلب المدعومة:
+
+```json
+{
+  "tools": [
+    {
+      "type": "gateway:datetime",
+      "parameters": {
+        "timezones": ["Europe/London", "UTC"]
+      }
+    }
+  ]
+}
+```
+
+ملاحظات:
+
+- `parameters.timezones` اختياري، ويمكنه طلب ما يصل إلى 5 مناطق زمنية صالحة وفق IANA في استدعاء واحد.
+- تتضمن النتيجة مصفوفة `timezones` مع التاريخ والوقت بصيغة ISO والمنطقة الزمنية المحلولة لكل منطقة مطلوبة.
+- يتضمن الاستخدام `usage.server_tool_use.datetime_requests`.
+- فضّل `tool_choice: "auto"` ليقرّر النموذج متى يستدعي الأداة.
+
+### مثال البحث على الويب
+
+```json
+{
+  "tools": [
+    {
+      "type": "phaseo:web_search",
+      "parameters": {
+        "engine": "exa",
+        "max_results": 5,
+        "max_total_results": 15,
+        "search_context_size": "medium",
+        "max_characters": 2048,
+        "allowed_domains": ["arxiv.org", "nature.com"],
+        "include_highlights": true
+      }
+    }
+  ]
+}
+```
+
+ملاحظات:
+
+- يوفّر النموذج استعلام البحث عند استدعاء الأداة.
+- يُحلّ `engine: "auto"` إلى بحث Exa المُدار. وتشغّل القيم `engine: "exa"` و`engine: "parallel"` و`engine: "firecrawl"` بحثًا تديره البوابة عند إعداد مفتاح المزوّد المطابق.
+- يتحوّل `engine: "native"` في `phaseo:web_search` إلى أداة بحث ويب أصلية للمزوّد وفق واجهة الطلب، مثل `web_search_preview` من OpenAI أو `web_search_20250305` من Anthropic.
+- يحدّ `max_results` نتائج كل استدعاء بحث، بينما يحدّ `max_total_results` إجمالي النتائج عبر دورة أدوات الخادم.
+- يدعم البحث المُدار `allowed_domains` و`excluded_domains` و`search_context_size` و`max_characters` عندما يوفّر المحرك المحدد عناصر التحكم المناسبة.
+- يتضمن الاستخدام `usage.server_tool_use.web_search_requests` و`usage.server_tool_use.web_search_results` و`usage.server_tool_use.web_search_extra_results`.
+- يمكن فوترة بحث Exa المُدار باستخدام عدادي `server_tool_web_search_requests` و`server_tool_web_search_extra_results`.
+
+### مثال جلب صفحات الويب
+
+```json
+{
+  "tools": [
+    {
+      "type": "phaseo:web_fetch",
+      "parameters": {
+        "engine": "direct",
+        "max_chars": 12000,
+        "allowed_domains": ["docs.example.com"],
+        "blocked_domains": ["internal.example.com"]
+      }
+    }
+  ]
+}
+```
+
+ملاحظات:
+
+- يحدّد النموذج عنوان `url` المستهدف عند استدعاء الأداة.
+- تُدعم عناوين URL من نوع HTTP(S) وأنواع المحتوى النصية فقط.
+- يستخدم `engine: "auto"` الجلب الأصلي على واجهة Anthropic Messages، وإلا يستخدم Exa عند إعداد `EXA_API_KEY`، ثم الجلب المباشر عبر HTTP من البوابة.
+- يجلب `engine: "direct"` المحتوى مباشرةً عبر HTTP من البوابة. ويستخدم `engine: "exa"` استخراج المحتوى من Exa عند إعداد `EXA_API_KEY`.
+- يستخدم `engine: "parallel"` خدمة Parallel Extract عند إعداد `PARALLEL_API_KEY`، ويستخدم `engine: "firecrawl"` خدمة Firecrawl Scrape عند إعداد `FIRECRAWL_API_KEY`.
+- على واجهة Anthropic Messages، يتحول `engine: "native"` إلى أداة Anthropic الأصلية `web_fetch_20260209`. استخدم `engine: "direct"` أو محرك استخراج مُدار على واجهات الطلب الأخرى.
+- يُقبل `max_content_tokens` كاسم بديل لحجم جلب محدود بالرموز عند حذف `max_chars`.
+- يقيّد `allowed_domains` و`blocked_domains` عناوين URL التي يمكن جلبها.
+- يُختزل محتوى HTML إلى نص عادي محدود الحجم قبل إعادته إلى دورة النموذج.
+- يتضمن الاستخدام `usage.server_tool_use.web_fetch_requests`.
+- يمكن فوترة الجلب المُدار عبر العداد `server_tool_web_fetch_requests`. ويُسعّر الجلب أو البحث الأصلي للمزوّد باستخدام `native_web_fetch_requests` و`native_web_search_requests`، ويمكن لبطاقات أسعار النماذج تجاوز إعدادات المزوّد الافتراضية.
+
+مثال الجلب الأصلي من Anthropic:
+
+```json
+{
+  "tools": [
+    {
+      "type": "phaseo:web_fetch",
+      "parameters": {
+        "engine": "native",
+        "max_content_tokens": 9000,
+        "allowed_domains": ["docs.example.com"]
+      }
+    }
+  ],
+  "tool_choice": "phaseo:web_fetch"
+}
+```
+
+### مثال Advisor
+
+```json
+{
+  "tools": [
+    {
+      "type": "phaseo:advisor",
+      "parameters": {
+        "name": "reviewer",
+        "model": "claude-opus-5",
+        "instructions": "Review plans for correctness, missing edge cases, and implementation risk.",
+        "forward_transcript": true,
+        "max_uses": 2,
+        "max_completion_tokens": 1400,
+        "temperature": 0.2
+      }
+    }
+  ],
+  "tool_choice": "phaseo:advisor"
+}
+```
+
+ملاحظات:
+
+- يدير Gateway أداة Advisor وتعمل عبر نماذج النص المدعومة. يتلقى النموذج المستدعي أداة `phaseo_advisor` أو نسخة مسماة مثل `phaseo_advisor_reviewer`، وينفّذ Gateway طلب Advisor.
+- `parameters.name` اختياري. استخدم أسماء فريدة لإتاحة عدة مستشارين؛ ويمكن أن تحتوي الأسماء على أحرف وأرقام ومسافات وشرطات سفلية وواصلات.
+- يثبّت `parameters.model` نموذج Advisor. إذا حُذف، يمكن لاستدعاء الأداة تقديم `model`؛ وإلا يستخدم Gateway نموذج الطلب الخارجي.
+- القيمة الافتراضية لـ `parameters.forward_transcript` هي `false`. اضبطها على `true` عندما تريد أن يتلقى Advisor سجل المحادثة الحالي.
+- يقدّم النموذج عادةً `prompt` الخاص بـ Advisor عند استدعاء الأداة. إذا كانت `forward_transcript` بقيمة `true` ولم يُقدّم prompt، يمكن لـ Gateway استدعاء Advisor بسجل المحادثة فقط. ويُقبل `max_tokens` اسمًا بديلًا قديمًا لـ `max_completion_tokens`.
+- يتضمن الاستخدام `usage.server_tool_use.advisor_requests`.
+
+### مثال إنشاء الصور
+
+```json
+{
+  "tools": [
+    {
+      "type": "phaseo:image_generation",
+      "parameters": {
+        "model": "openai/gpt-image-2",
+        "quality": "high",
+        "aspect_ratio": "16:9",
+        "output_format": "png"
+      }
+    }
+  ]
+}
+```
+
+ملاحظات:
+
+- يقدّم النموذج `prompt` للصورة عند استدعاء الأداة. ويُقبل `description` أيضًا اسمًا بديلًا للمطالبة.
+- يثبّت `parameters.model` نموذج الصورة. إذا حُذف، يمكن لاستدعاء الأداة تقديم `model`؛ وإلا تستخدم Phaseo نموذج الصور الافتراضي.
+- تحتوي نتيجة الأداة على `imageUrl` أو بيانات صورة بصيغة base64 حسب استجابة المزوّد.
+- يتضمن الاستخدام `usage.server_tool_use.image_generation_requests`، وتُدمج رموز نموذج الصورة ضمن الطلب الأصلي.
+
+### مثال تطبيق الرقعة
+
+```json
+{
+  "tools": [
+    {
+      "type": "phaseo:apply_patch"
+    }
+  ],
+  "tool_choice": "auto"
+}
+```
+
+ملاحظات:
+
+- تدعم Responses API الدالة `phaseo:apply_patch`.
+- تتحقق Phaseo من عمليات الرقعة وتعيدها ضمن نتيجة الأداة. ويقرّر العميل تطبيق الرقعة أو رفضها.
+- أنواع العمليات المدعومة هي `create_file` و`update_file` و`delete_file`.
+- يتضمن الاستخدام `usage.server_tool_use.apply_patch_requests`.
+
+## سلوك البث
+
+يمكن لطلبات استدعاء الأدوات استخدام `stream: true` أيضًا.
+
+قد ينفّذ Gateway الخطوات التالية عند إدارة أدوات الخادم:
+
+- إنشاء دور استدعاء الأداة الوارد
+- تنفيذ أداة الخادم
+- متابعة دورة النموذج
+- إعادة إصدار تدفق اصطناعي إلى العميل
+
+وهذا يحافظ على توافق واجهة العميل مع البث حتى عندما ينفّذ Gateway جزءًا من دورة الأدوات بنفسه.
+
+## الأدلة التالية
+
+1. [## استدعاء الأدوات Patterns](./tool-calling-patterns.mdx)
+2. [## استدعاء الأدوات Safety and Validation](./tool-calling-safety.mdx)
+3. [المخرجات المنظّمة](./structured-outputs.mdx)

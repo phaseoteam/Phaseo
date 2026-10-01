@@ -3,7 +3,7 @@ import { fetchFrontendRankingGeography } from "@/lib/fetchers/frontend/fetchRank
 import { getTranslations } from "next-intl/server";
 
 export async function PublicGeography() {
-	const t = await getTranslations("Catalogue.countries");
+	const t = await getTranslations("Catalogue.rankings");
 	const result = await fetchFrontendRankingGeography(30).catch(() => ({ data: [], days: 30 }));
 	const rows = (result.data ?? []).map((row) => ({
 		countryCode: row.country_code,
@@ -20,7 +20,7 @@ export async function PublicGeography() {
 			<div>
 				<h2 className="text-2xl font-semibold leading-8">{t("title")}</h2>
 				<p className="mt-1 max-w-3xl text-sm text-muted-foreground">
-					Where Phaseo gateway traffic originated over the last 30 days, based on the country recorded at the gateway edge.
+					{t("geographyDescription")}
 				</p>
 			</div>
 			<GeographyUsage rows={rows} publicView />

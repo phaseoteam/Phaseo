@@ -1,0 +1,26 @@
+---
+icon: "files"
+title: "Fichiers"
+description: "Utilisez le SDK C# pour importer des fichiers, consulter leurs métadonnées et récupérer leur contenu."
+---
+
+**Méthodes** : `client.UploadFile()`, `client.ListFiles()`, `client.RetrieveFile()`, `client.RetrieveFileContent()`.
+
+### Exemple
+```csharp
+var client = new Phaseo(apiKey: apiKey);
+
+var uploaded = await client.UploadFile(new Dictionary<string, object>
+{
+    ["purpose"] = "batch",
+    ["file"] = "data:application/json;base64,eyJ0ZXN0Ijp0cnVlfQ=="
+});
+
+var file = await client.RetrieveFile("file_123");
+var content = await client.RetrieveFileContent("file_123");
+```
+
+<Note>
+`ListFiles()` est disponible dans le SDK, mais `GET /files` renvoie actuellement `file_list_not_supported_with_shared_gateway_key` avec la clé de passerelle partagée
+Conservez les identifiants des fichiers importés et récupérez-les directement.
+</Note>

@@ -1,0 +1,139 @@
+---
+icon: "search-check"
+title: "वेब खोज सर्वर टूल"
+description: "अनुरोध के दौरान मॉडल को वेब खोजने दें।"
+---
+
+जब मॉडल को नवीनतम या स्रोत-आधारित जानकारी चाहिए, तब `phaseo:web_search` उपयोग करें। मॉडल तय करता है कि कब खोजना है, query लिखता है और एक अनुरोध में कई बार खोज सकता है।
+
+Phaseo मॉडल को URLs, titles, snippets, highlights और वैकल्पिक page text देता है, ताकि वह स्रोत-आधारित उत्तर लिख सके।
+
+<Note>
+Phaseo के सर्वर टूल में Google की मूल वेब खोज अभी सक्षम नहीं है। समर्थित OpenAI और Anthropic रूट पर प्रबंधित खोज या प्रदाता की मूल खोज का उपयोग करें।
+</Note>
+
+## यह कैसे काम करता है
+
+1. `{ "type": "phaseo:web_search" }` को `tools` में जोड़ें।
+2. मॉडल तय करता है कि खोज करनी है या नहीं और query भेजता है।
+3. Phaseo configured engine से खोज करता है।
+4. परिणाम tool context के रूप में मॉडल को लौटाए जाते हैं।
+5. मॉडल अंतिम उत्तर लिखता है और ज़रूरत पड़ने पर फिर खोज सकता है।
+
+## त्वरित शुरुआत
+
+```bash
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-5-nano",
+    "messages": [
+      { "role": "user", "content": "What were the major AI announcements this week?" }
+    ],
+    "tools": [
+      { "type": "phaseo:web_search" }
+    ]
+  }'
+```
+
+## कॉन्फ़िगरेशन
+
+```json
+{
+  "type": "phaseo:web_search",
+  "parameters": {
+    "engine": "exa",
+    "max_results": 5,
+    "max_total_results": 15,
+    "search_context_size": "medium",
+    "max_characters": 2048,
+    "allowed_domains": ["arxiv.org", "nature.com"],
+    "excluded_domains": ["reddit.com"],
+    "include_highlights": true,
+    "include_text": false
+  }
+}
+```
+
+| पैरामीटर | प्रकार | डिफ़ॉल्ट | विवरण |
+| --- | --- | --- | --- |
+| `engine` | string | `exa` | खोज इंजन: `auto`, `native`, `exa`, `parallel`, `firecrawl` या `perplexity`। |
+| `max_results` | integer | `5` | हर खोज कॉल में लौटाए जाने वाले परिणामों की अधिकतम संख्या। |
+| `max_total_results` | integer | `10` | पूरे सर्वर-टूल लूप में परिणामों की कुल अधिकतम संख्या। |
+| `max_uses` | integer | `10` | पूरे सर्वर-टूल लूप में खोज कॉल की अधिकतम संख्या। |
+| `search_context_size` | string | `medium` | जिन इंजनों में highlights का आकार तय किया जा सकता है, उनके लिए संदर्भ आकार: `low`, `medium` या `high`। |
+| `max_characters` | integer | engine default | टेक्स्ट शामिल होने पर हर परिणाम में अधिकतम टेक्स्ट वर्ण। |
+| `allowed_domains` | string[] | none | केवल इन डोमेन से परिणाम लौटाएँ। इसका alias `include_domains` है। |
+| `excluded_domains` | string[] | none | इन domains के results हटाएँ। Alias: `exclude_domains`। |
+| `include_highlights` | boolean | `true` | उपलब्ध होने पर engine द्वारा दिए गए highlights/snippets शामिल करें। |
+| `include_text` | boolean | `false` | Engine support करे तो result का अधिक विस्तृत text शामिल करें। |
+| `user_location` | object | none | Localized search support करने वाले engines के लिए वैकल्पिक location hint। |
+
+## सर्च इंजन चुनें
+
+| Engine | व्यवहार |
+| --- | --- |
+| `exa` | Managed Exa search। Gateway runtime के लिए Phaseo में Exa configure होना चाहिए। |
+| `auto` | Configured managed default, अभी Exa, उपयोग करता है। |
+| `parallel` | Configure होने पर Parallel search उपयोग करता है। |
+| `firecrawl` | Configure होने पर Firecrawl search उपयोग करता है। |
+| `perplexity` | Configure होने पर first-party Perplexity Search API उपयोग करता है। Ranked results, `search_context_size`, `user_location.country` से regional search और allowed या excluded domains समर्थित हैं। |
+| `native` | Request surface support करने पर upstream model call से पहले declaration को provider-native web-search tool में बदलता है। |
+
+`engine: "native"` केवल tool declaration में उपयोग करें। पहले से जारी gateway search call में मॉडल `engine: "native"` भेजे, तो Phaseo tool error देता है, क्योंकि upstream request भेजने से पहले native tools चुनने होते हैं।
+
+## डोमेन फ़िल्टरिंग
+
+उत्तर को नियंत्रित स्रोतों से ही लेना हो, तो `allowed_domains` उपयोग करें:
+
+```json
+{
+  "type": "phaseo:web_search",
+  "parameters": {
+    "allowed_domains": ["phaseo.app", "github.com"]
+  }
+}
+```
+
+Broad web search allowed हो, लेकिन कुछ domains को results से हटाना हो, तो `excluded_domains` उपयोग करें।
+
+Perplexity और Firecrawl एक search call में `allowed_domains` या `excluded_domains` में से एक स्वीकार करते हैं, दोनों नहीं। Perplexity हर request में अधिकतम 20 domain filters स्वीकार करता है और excluded domains को denylist format में बदलता है।
+
+## Responses API
+
+यही tool shape `/v1/responses` के साथ भी काम करता है:
+
+```json
+{
+  "model": "openai/gpt-5-nano",
+  "input": "Find the latest release notes for Phaseo.",
+  "tools": [
+    { "type": "phaseo:web_search", "parameters": { "max_results": 4 } }
+  ]
+}
+```
+
+## उपयोग और मूल्य निर्धारण
+
+Web search calls इनकी गिनती बढ़ाते हैं:
+
+```json
+{
+  "usage": {
+    "server_tool_use": {
+      "web_search_requests": 1,
+      "web_search_results": 5,
+      "web_search_extra_results": 0
+    }
+  }
+}
+```
+
+Managed search pricing में `server_tool_web_search_requests` और `server_tool_web_search_extra_results` meters उपयोग हो सकते हैं। Model price card में meter तय होने पर provider-native search में `native_web_search_requests` उपयोग हो सकता है।
+
+## संबंधित
+
+- [Web Fetch](./web-fetch.mdx)
+- [सर्वर टूल](./index.mdx)
+- [Web fetch के साथ उत्तरों को स्रोत-आधारित बनाना](../../cookbook/tool-grounding-with-web-fetch.mdx)

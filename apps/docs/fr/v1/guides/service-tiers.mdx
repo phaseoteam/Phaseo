@@ -1,0 +1,172 @@
+---
+title: "Niveaux de service"
+description: "Fonctionnement des modes tarifaires Standard, Fast, Flex et Batch dans Phaseo Gateway."
+icon: "gauge"
+---
+
+Les niveaux de service permettent de choisir entre différents modes de tarification et de traitement lorsque le fournisseur les prend en charge.
+
+La disponibilité varie selon le fournisseur et le modèle. Si le modèle demandé ne prend pas en charge un niveau, la passerelle ne l’utilisera pas pour le routage.
+
+<Note type="warning">
+Les niveaux de service sont actuellement disponibles uniquement pour les modèles texte et fournisseurs pris en charge.
+</Note>
+
+`service_tier` est pris en charge sur les trois surfaces de requête texte :
+
+- Messages compatible avec Anthropic sur `/v1/messages`
+- Chat Completions compatible avec OpenAI sur `/v1/chat/completions`
+- Responses compatible avec OpenAI sur `/v1/responses`
+
+## Présentation des niveaux
+
+| Niveau | Comment le demander | Utilisation courante |
+| --- | --- | --- |
+| `Standard` | Comportement par défaut. Aucun champ supplémentaire n’est nécessaire. | Trafic général en production. |
+| `Fast` | Définissez `service_tier: "fast"` dans la requête. | Routage plus rapide ou premium lorsque cette option est prise en charge. OpenAI accepte également `priority`. |
+| `Flex` | Définissez `service_tier: "flex"` dans la requête. | Routage à moindre coût lorsque cette option est prise en charge. |
+| `Batch` | Utilisez l’API Batch plutôt que `service_tier`. | Charges de travail volumineuses et différées pour lesquelles la latence est moins importante. |
+
+## Compatibilité de l’API
+
+Utilisez le même champ `service_tier` avec toutes les API texte synchrones prises en charge :
+
+- [Référence de l’API Messages d’Anthropic](../api-reference/endpoint/anthropic-messages.mdx)
+- [Référence de l’API Chat Completions](../api-reference/endpoint/chat-completions.mdx)
+- [Référence de l’API Responses](../api-reference/endpoint/responses.mdx)
+- [Référence des paramètres communs](../api-reference/parameters.mdx)
+
+Les valeurs acceptées de `service_tier` sont `standard`, `fast`, `priority`, `flex` et `batch`. `Standard` est le comportement par défaut si `service_tier` est omis. Phaseo utilise `Fast` comme nom canonique du niveau premium. Sur les routes OpenAI, `priority` est accepté comme alias compatible avec le fournisseur et utilise le même routage et la même tarification. `Batch` relève de l’API Batch, et non des requêtes texte synchrones.
+
+<Note>
+Phaseo convertit en interne les valeurs normalisées de la passerelle en paramètres natifs du fournisseur. Une route Anthropic peut recevoir des champs de niveau propres à Anthropic en amont, tandis que la requête du client conserve les valeurs de passerelle indiquées ici.
+</Note>
+
+## Standard
+
+`Standard` est le mode de routage par défaut. Le champ `service_tier` est facultatif dans ce mode.
+
+```json
+{
+  "model": "openai/gpt-5.5",
+  "input": "Summarise this incident report."
+}
+```
+
+## Fast
+
+Utilisez `Fast` pour bénéficier de l’offre premium ou prioritaire du fournisseur. Phaseo emploie `fast` comme nom neutre. OpenAI appelle ce mode Fast et accepte `fast` et `priority` pour les modèles pris en charge.
+
+```json
+{
+  "model": "openai/gpt-5.5",
+  "input": "Summarise this incident report.",
+  "service_tier": "fast"
+}
+```
+
+### Exemple Anthropic Messages
+
+```json
+{
+  "model": "anthropic/claude-sonnet-4",
+  "max_tokens": 512,
+  "messages": [
+    { "role": "user", "content": "Summarise this incident report." }
+  ],
+  "service_tier": "fast"
+}
+```
+
+Lors du routage vers Anthropic, Phaseo le convertit en paramètre natif approprié du fournisseur.
+
+### Priorité Mistral et routage dans l’UE
+
+Mistral Priority Tier nécessite un compte d’entreprise Mistral éligible. Phaseo associe
+`priority` au mode de priorité automatique de Mistral et facture le niveau indiqué par Mistral ;
+si Mistral revient à Standard, le tarif Standard s’applique.
+
+GLM 5.2 peut être associé au point de terminaison régional de Mistral dans l’UE avec l’offre `mistral-eu`
+du fournisseur :
+
+```json
+{
+  "model": "z-ai/glm-5.2",
+  "messages": [
+    { "role": "user", "content": "Summarise this incident report." }
+  ],
+  "service_tier": "priority",
+  "provider": {
+    "only": ["mistral-eu"],
+    "required_execution_region": "eu"
+  }
+}
+```
+
+L’inférence régionale de Mistral entraîne une majoration de 10 %. Le tarif Batch est disponible
+sur l’offre Mistral mondiale, mais Mistral ne prend pas en charge Batch sur ses points de terminaison régionaux.
+
+Phaseo enregistre séparément les tarifs de référence publiés par Mistral pour Batch et Priority
+de leur disponibilité à l’exécution. La présence d’un tarif dans le catalogue ne rend pas le niveau
+routable : Priority reste désactivé tant que la route Mistral concernée n’annonce pas
+sa prise en charge, et Batch doit utiliser l’API Batch mondiale de Mistral. L’éligibilité à Priority
+dépend toujours du compte et du modèle Mistral.
+
+## Flex
+
+Utilisez `Flex` lorsque le fournisseur propose un niveau moins coûteux et que ses compromis vous conviennent.
+
+```json
+{
+  "model": "openai/gpt-5.5",
+  "input": "Summarise this incident report.",
+  "service_tier": "flex"
+}
+```
+
+### Exemple Chat Completions
+
+```json
+{
+  "model": "openai/gpt-5.5",
+  "messages": [
+    { "role": "user", "content": "Summarise this incident report." }
+  ],
+  "service_tier": "flex"
+}
+```
+
+### Exemple Responses
+
+```json
+{
+  "model": "openai/gpt-5.5",
+  "input": [
+    { "role": "user", "content": "Summarise this incident report." }
+  ],
+  "service_tier": "flex"
+}
+```
+
+## Batch
+
+`batch` est une valeur reconnue pour l’exécution par lots, mais les API texte synchrones rejettent `service_tier: "batch"` avec une erreur de validation qui renvoie vers l’API Batch.
+
+Utilisez l’API Batch ou le processus de tâches par lots : cette tarification s’applique à l’exécution différée, et non aux requêtes synchrones classiques.
+
+## Remarques
+
+- La prise en charge des niveaux dépend du fournisseur et du modèle.
+- Les fiches tarifaires des pages de modèles affichent les tarifs propres à chaque niveau lorsque ces données sont disponibles.
+- Certains fournisseurs proposent des offres spécialisées en amont que Phaseo regroupe dans une expérience unifiée par niveaux au sein du catalogue.
+- Les valeurs `service_tier` exposées au client sont uniformisées sur les surfaces texte prises en charge ; la passerelle gère les noms natifs des fournisseurs.
+
+## Pages associées
+
+- [Référence de l’API Messages d’Anthropic](../api-reference/endpoint/anthropic-messages.mdx)
+- [Référence de l’API Chat Completions](../api-reference/endpoint/chat-completions.mdx)
+- [Référence de l’API Responses](../api-reference/endpoint/responses.mdx)
+- [Paramètres](../api-reference/parameters.mdx)
+- [Routage et solutions de repli](./routing-and-fallbacks.mdx)
+- [Chat completions (SDK TypeScript)](../sdk-reference/typescript/chat-completions.mdx)
+- [Responses (SDK TypeScript)](../sdk-reference/typescript/responses.mdx)

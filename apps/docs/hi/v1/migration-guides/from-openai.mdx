@@ -1,0 +1,110 @@
+---
+title: "OpenAI SDK से माइग्रेट करें"
+sidebarTitle: "OpenAI SDK"
+description: "क्लाइंट कॉन्फ़िगरेशन बदलकर, मॉडल ID सत्यापित करके और ऐप के वर्कफ़्लो जाँचकर मौजूदा OpenAI SDK इंटीग्रेशन को Phaseo पर माइग्रेट करें।"
+icon: "/icons/brands/openai.svg"
+---
+
+बाकी एप्लिकेशन को दोबारा लिखे बिना मौजूदा OpenAI SDK इंटीग्रेशन को Phaseo पर लाने के लिए यह गाइड अपनाएँ। पहले base URL और API कुंजी बदलें, अनुरोध को वैसा ही रखें, फिर प्रोडक्शन ट्रैफ़िक बदलने से पहले हर मॉडल और एंडपॉइंट जाँचें।
+
+## क्या बदलेगा
+
+| सेटिंग | पहले | बाद में |
+| --- | --- | --- |
+| Base URL | OpenAI का डिफ़ॉल्ट | `https://api.phaseo.app/v1` |
+| API कुंजी | OpenAI कुंजी | `PHASEO_API_KEY` |
+| मॉडल | OpenAI मॉडल का नाम | `GET /v1/models` से मिला मॉडल ID |
+| अनुरोध कोड | मौजूदा SDK कॉल | आम तौर पर अपरिवर्तित |
+
+<Steps>
+<Step title="Phaseo API कुंजी बनाएँ">
+
+[Gateway Keys](https://phaseo.app/gateway/keys) में कुंजी बनाएँ और उसे ऐप चलाने वाले हर परिवेश में जोड़ें।
+
+```bash
+PHASEO_API_KEY=phaseo_v1_sk_...
+```
+
+</Step>
+
+<Step title="क्लाइंट को Phaseo से जोड़ें">
+
+OpenAI SDK को बनाए रखें और पहले केवल उसकी क्रेडेंशियल व base URL बदलें।
+
+<CodeGroup>
+```typescript TypeScript
+import OpenAI from "openai";
+
+const client = new OpenAI({
+  apiKey: process.env.PHASEO_API_KEY,
+  baseURL: "https://api.phaseo.app/v1",
+});
+
+const response = await client.chat.completions.create({
+  model: "openai/gpt-4.1-mini",
+  messages: [{ role: "user", content: "Reply with: migration ready" }],
+});
+```
+
+```python Python
+import os
+from openai import OpenAI
+
+client = OpenAI(
+    api_key=os.environ["PHASEO_API_KEY"],
+    base_url="https://api.phaseo.app/v1",
+)
+
+response = client.chat.completions.create(
+    model="openai/gpt-4.1-mini",
+    messages=[{"role": "user", "content": "Reply with: migration ready"}],
+)
+```
+
+```bash cURL
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-4.1-mini",
+    "messages": [{"role": "user", "content": "Reply with: migration ready"}]
+  }'
+```
+</CodeGroup>
+
+</Step>
+
+<Step title="मॉडल ID और एंडपॉइंट कवरेज सत्यापित करें">
+
+यह मानने के बजाय कि पुराने सभी alias वैसे ही काम करेंगे, Phaseo के उपलब्ध मॉडल सूचीबद्ध करें।
+
+```bash
+curl https://api.phaseo.app/v1/models \
+  -H "Authorization: Bearer $PHASEO_API_KEY"
+```
+
+स्ट्रीमिंग, टूल, संरचित आउटपुट, इमेज, ऑडियो, फ़ाइल और बैच सहित हर प्रोडक्शन वर्कफ़्लो जाँचें। संबंधित एंडपॉइंट की पुष्टि के लिए [API संदर्भ](../api-reference/introduction.mdx) देखें।
+
+</Step>
+
+<Step title="परीक्षण करें और रोलआउट करें">
+
+पुराने और नए कॉन्फ़िगरेशन पर समान प्रतिनिधि prompts चलाएँ। ट्रैफ़िक धीरे-धीरे बदलने से पहले आउटपुट स्वरूप, विलंबता, टोकन उपयोग, त्रुटियाँ और लागत की तुलना करें।
+
+</Step>
+</Steps>
+
+## माइग्रेशन चेकलिस्ट
+
+- डेवलपमेंट, स्टेजिंग और प्रोडक्शन में Phaseo कुंजी कॉन्फ़िगर है।
+- क्लाइंट base URL `https://api.phaseo.app/v1` है।
+- हर प्रोडक्शन मॉडल ID `GET /v1/models` में मौजूद है।
+- स्टेजिंग में streaming और गैर-streaming अनुरोध सफल हैं।
+- ऐप में इस्तेमाल होने पर टूल कॉल और संरचित आउटपुट सफल हैं।
+- रोलबैक के लिए कॉन्फ़िगरेशन में कुंजी और एंडपॉइंट बदलना ही काफ़ी है।
+
+## अगले चरण
+
+- [रूटिंग और फ़ॉलबैक](../guides/routing-and-fallbacks.mdx)
+- [मॉडल](../exploring/models.mdx)
+- [त्रुटि प्रबंधन](../developers/error-handling.mdx)

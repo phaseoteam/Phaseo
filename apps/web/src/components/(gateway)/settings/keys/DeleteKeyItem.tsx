@@ -76,14 +76,13 @@ export default function DeleteKeyItem({
 				<DialogHeader>
 					<DialogTitle>{t("keys.deleteApiKey")}</DialogTitle>
 					<DialogDescription>
-						This action is permanent.
+						{t("settingsCopy.keyDelete.permanent")}
 					</DialogDescription>
 				</DialogHeader>
 				<form onSubmit={onDelete} className="space-y-4">
 					<div className="space-y-2">
 						<p className="text-sm">
-							To confirm, type the key name{" "}
-							<strong>{k.name}</strong> below.
+							{t("settingsCopy.keyDelete.confirmName", { name: k.name })}
 						</p>
 						<Input
 							value={confirm}

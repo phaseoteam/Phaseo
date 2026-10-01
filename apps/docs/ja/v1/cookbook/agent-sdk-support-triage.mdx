@@ -1,0 +1,193 @@
+---
+title: "プリセットとガードレール対応エラーによるサポートトリアージ"
+icon: "life-buoy"
+description: "厳密な JSON を返し、高リスクのケースをレビューのために保留し、ガードレールによる失敗を確認できるプリセット駆動のサポートトリアージエージェントを実行します。"
+---
+
+次の要件を満たすサポートワークフローを作る場合は、このレシピを使います。
+
+- ダッシュボードのプリセットからルーティングとプロンプトの既定値を引き継ぐ
+- 厳密に構造化された出力を返す
+- リスクの高いケースを人による確認のために保留する
+- ゲートウェイの失敗をエージェントコード内に隠さず、ログで確認できるようにする
+
+## 1. プリセットから始める
+
+`support-triage` のようなプリセットを作成し、次の項目を管理します。
+
+- 既定のルーティングモデルまたはルーターの対象
+- プロバイダーの優先設定
+- サポート用システムプロンプト
+- 安定したデコードパラメーター
+
+これにより、リクエストポリシーを重複させず、エージェントコードをワークフロー制御に集中できます。
+
+## 2. 明確なトリアージ契約を定義する
+
+```ts
+type SupportTriageDecision = {
+  queue: "billing" | "reliability" | "product" | "security";
+  severity: "low" | "medium" | "high";
+  needsHumanReview: boolean;
+  summary: string;
+};
+```
+
+運用担当者がすぐ確認できるよう、最初の出力形式は小さく保ちます。
+
+## 3. プリセット駆動のエージェントを作成する
+
+```ts
+import { createAgent } from "@phaseo/agent-sdk";
+
+const supportTriageAgent = createAgent<string, SupportTriageDecision>({
+  id: "support-triage-agent",
+  preset: "support-triage",
+  parseOutput(text) {
+    return JSON.parse(text) as SupportTriageDecision;
+  },
+  humanReview: ({ parsedOutput }) =>
+    parsedOutput?.needsHumanReview
+      ? {
+          reason: "support_triage_review_required",
+          payload: parsedOutput,
+        }
+      : null,
+});
+```
+
+SDK は `preset: "support-triage"` をゲートウェイのエイリアス形式 `@support-triage` に解決します。
+
+## 4. ゲートウェイ接続アダプターを設定する
+
+トリアージ実行ごとに固定する項目には、アダプターの既定値を使います。
+
+```ts
+import {
+  createGatewayAgentClient,
+} from "@phaseo/agent-sdk";
+
+const client = createGatewayAgentClient({
+  clientOptions: {
+    apiKey: process.env.PHASEO_API_KEY!,
+  },
+  responseFormat: {
+    type: "json_schema",
+    name: "support_triage_decision",
+    schema: {
+      type: "object",
+      properties: {
+        queue: {
+          type: "string",
+          enum: ["billing", "reliability", "product", "security"],
+        },
+        severity: {
+          type: "string",
+          enum: ["low", "medium", "high"],
+        },
+        needsHumanReview: { type: "boolean" },
+        summary: { type: "string" },
+      },
+      required: ["queue", "severity", "needsHumanReview", "summary"],
+      additionalProperties: false,
+    },
+  },
+  plugins: [{ id: "response-healing", mode: "strict" }],
+});
+```
+
+## 5. 再試行回数を制限してワークフローを実行する
+
+```ts
+const result = await supportTriageAgent.run({
+  input: "Customer says webhook deliveries failed overnight and asks whether data was lost.",
+  client,
+  modelRetry: {
+    maxRetries: 2,
+    backoffMs: 250,
+  },
+  onEvent(event) {
+    console.log(event.type, event.runId, event.attempt);
+  },
+});
+```
+
+レビューのために実行が一時停止したら、明示的に再開します:
+
+```ts
+if (result.run.status === "waiting_for_human") {
+  const continued = await supportTriageAgent.continueRun({
+    run: result,
+    client,
+    humanInput: "Approved. Finalize the triage decision.",
+  });
+
+  console.log(continued.output);
+}
+```
+
+## 6. ゲートウェイの失敗を運用イベントとして扱う
+
+エージェントのコールバックチェーン内で失敗を握りつぶして隠さないでください。
+
+代わりに、`AgentGatewayError` を明示的にキャッチします。
+
+```ts
+import { AgentGatewayError } from "@phaseo/agent-sdk";
+
+try {
+  await supportTriageAgent.run({
+    input: "Customer says webhook deliveries failed overnight and asks whether data was lost.",
+    client,
+    store,
+  });
+} catch (error) {
+  if (error instanceof AgentGatewayError) {
+    console.error("Gateway request failed", {
+      status: error.status,
+      requestId: error.requestId,
+      generationId: error.generationId,
+      reason: error.reason,
+      providerFailureDiagnostics: error.providerFailureDiagnostics,
+      routingDiagnostics: error.routingDiagnostics,
+    });
+  }
+  throw error;
+}
+```
+
+次に、以下を行います。
+
+1. ランタイムに `failed` の実行状態とステップ状態を保存させます。
+2. 元の例外がメモリ上にない後続の復旧処理では、`loaded.run.errorDetails` または `loaded.steps[n].errorDetails` を確認します。
+3. リクエストの詳細で次を確認します。
+   - ガードレールの適用
+   - ルーティングの詳細
+   - プラグインの実行
+   - リクエスト ID とプロバイダーデータ
+
+特に次の場合は重要です。
+
+- ガードレールがリクエストをブロックする
+- プリセットの許可リストが要求されたモデルを拒否する
+- プロバイダーの認証情報や有効化フィルターによって、ルーティング候補が除外される
+- response healing でスキーマに適合する JSON を復元できない
+
+## 7. 確認すること
+
+成功した実行と、意図的にリスクのある実行をそれぞれ 1 回行い、次を確認します。
+
+- リクエスト詳細画面にプリセットで指定されたリクエスト対象が表示される
+- 高リスクのケースが `waiting_for_human` で保留される
+- モデルステップの再試行で `modelAttempts` が保存される
+- ガードレールまたはプリセットによる失敗がエージェントの例外内に隠されず、リクエスト詳細に表示される
+
+## 関連ガイド
+
+- [TypeScript Agent SDK](../sdk-reference/typescript/agent-sdk.mdx)
+- [プリセット](../guides/presets.mdx)
+- [ルーティングとフォールバック](../guides/routing-and-fallbacks.mdx)
+- [構造化出力を検証する](../guides/structured-outputs-validation.mdx)
+- [プリセットを展開してルーティングをデバッグする](./preset-rollout-and-routing-debug.mdx)
+- [形式が不正な構造化 JSON を復元する](./response-healing-for-structured-json.mdx)
+- [TypeScript で永続的なエージェントループを構築する](./agent-sdk-durable-loop.mdx)

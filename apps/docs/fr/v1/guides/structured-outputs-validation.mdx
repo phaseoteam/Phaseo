@@ -1,0 +1,45 @@
+---
+icon: "circle-check"
+title: "Validation des sorties structurées"
+description: "Validation côté serveur, nouvelles tentatives et stratégies de repli pour les sorties structurées."
+---
+
+Même si la génération est contrainte par un schéma, validez toujours la sortie sur votre serveur.
+
+## Processus recommandé
+
+1. Demandez une sortie contrainte par un schéma.
+2. Analysez le JSON.
+3. Validez-le avec le schéma de votre serveur.
+4. En cas d’échec, réessayez une fois avec un prompt correctif.
+5. Si la sortie reste invalide, adoptez un mécanisme de repli sûr.
+
+## Exemple de validation (TypeScript)
+
+```typescript
+import { z } from "zod";
+
+const Summary = z.object({
+  order_id: z.string(),
+  total_usd: z.number(),
+  status: z.enum(["pending", "paid", "failed"]),
+});
+
+function parseStructuredContent(content: string) {
+  const data = JSON.parse(content);
+  return Summary.parse(data);
+}
+```
+
+## Prompt correctif pour une nouvelle tentative
+
+En cas d’échec de la validation, envoyez une courte instruction corrective :
+
+`Votre sortie précédente ne respectait pas le schéma. Renvoyez uniquement du JSON valide, avec les champs requis et sans clé supplémentaire.`
+
+## Conseils pour la production
+
+- Conservez un schéma par cas d’utilisation et versionnez-le.
+- Suivez les taux d’échec de validation par identifiant de modèle.
+- Déclenchez une alerte si les échecs de schéma augmentent soudainement après une modification du modèle.
+

@@ -1,0 +1,63 @@
+---
+title: "मॉडल एंडपॉइंट क्षमताएँ सूचीबद्ध करें"
+badge: "Beta"
+openapi: "/hi/openapi/v1/openapi.localized.yaml GET /models/{author}/{slug}/endpoints"
+description: "किसी मॉडल के लिए उपलब्ध प्रदाता रूट, मोडैलिटी, पैरामीटर, उपलब्धता और कीमत देखें।"
+---
+
+यदि आपके ऐप को मॉडल, प्रदाता, एंडपॉइंट और पैरामीटर संयोजन की उपलब्धता की पुष्टि करनी है, तो अनुरोध भेजने से पहले इस एंडपॉइंट का उपयोग करें।
+
+`openai/gpt-5.4-mini` के लिए यह उपयोग करें:
+
+```bash
+curl "https://api.phaseo.app/v1/models/openai/gpt-5.4-mini/endpoints" \
+  -H "Authorization: Bearer $PHASEO_API_KEY"
+```
+
+हर पंक्ति एक प्रदाता और एंडपॉइंट क्षमता दर्शाती है। इसमें शामिल हैं:
+
+- मानक क्षमता ID और सार्वजनिक API पथ
+- प्रदाता ID, नाम और प्रदाता मॉडल स्लग
+- इनपुट और आउटपुट मोडैलिटी
+- समर्थित पैरामीटर नाम और संरचित पैरामीटर विवरण
+- प्रदाता, मॉडल, क्षमता, रूटिंग और उपलब्धता की स्थिति
+- रूट निर्धारित या समय-सीमित होने पर प्रभावी तारीखें
+- एंडपॉइंट मूल्य सारांश
+
+## नियोजित और निष्क्रिय रूट शामिल करें
+
+डिफ़ॉल्ट `availability=active` केवल सार्वजनिक रूप से रूट किए जा सकने वाले रिकॉर्ड लौटाता है। आने वाले और निष्क्रिय रूट देखने के लिए `availability=all` उपयोग करें:
+
+```bash
+curl "https://api.phaseo.app/v1/models/openai/gpt-5.4-mini/endpoints?availability=all" \
+  -H "Authorization: Bearer $PHASEO_API_KEY"
+```
+
+जब तक `availability_status` `active` और `is_active_gateway` `true` न हो, तब तक प्रोडक्शन ट्रैफ़िक उस रिकॉर्ड पर रूट न करें।
+
+## रूट फ़िल्टर करें
+
+इनके लिए दोहराए जा सकने वाले या कॉमा से अलग किए गए फ़िल्टर उपयोग करें:
+
+- `provider`
+- `provider_status`
+- `provider_routing_status`
+- `model_routing_status`
+- `capability_status`
+- `provider_availability_status`
+- `provider_availability_reason`
+- `status`
+- `supported_parameters`
+
+उदाहरण के लिए, यह `temperature` समर्थित OpenAI रूट लौटाता है:
+
+```bash
+curl "https://api.phaseo.app/v1/models/openai/gpt-5.4-mini/endpoints?provider=openai&supported_parameters=temperature" \
+  -H "Authorization: Bearer $PHASEO_API_KEY"
+```
+
+## संबंधित एंडपॉइंट
+
+- [मॉडल सूचीबद्ध करें](./models.mdx)
+- [एंडपॉइंट सूचीबद्ध करें](./endpoints.mdx)
+

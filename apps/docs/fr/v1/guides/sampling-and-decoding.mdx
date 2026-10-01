@@ -1,0 +1,38 @@
+---
+icon: "shuffle"
+title: "Échantillonnage et décodage"
+description: "Comment les stratégies de décodage et les pénalités façonnent les sorties du modèle."
+---
+
+Le décodage détermine comment choisir le jeton suivant à partir des probabilités du modèle.
+
+## Paramètres courants
+
+| Paramètre | Rôle | Remarques |
+| --- | --- | --- |
+| `temperature` | Contrôle global du caractère aléatoire | Le paramètre le plus souvent réglé en premier |
+| `top_p` | Limite la masse de probabilité cumulée | Souvent associé à une température modérée |
+| `top_k` | Limite le choix aux jetons les plus probables | Pas disponible chez tous les fournisseurs |
+| `frequency_penalty` | Décourage la répétition de jetons ou d’expressions | Aide à réduire les boucles répétitives |
+| `presence_penalty` | Encourage l’introduction de nouveaux jetons ou sujets | Utile pour explorer plus largement |
+| `repetition_penalty` | Pénalise les motifs de texte répétés (selon le fournisseur et le modèle) | Objectif similaire, mais sémantique d’implémentation différente |
+
+## Préréglages courants
+
+| Cas d’utilisation | Profil suggéré |
+| --- | --- |
+| Extraction/classification déterministe | `temperature` basse (`0.0` à `0.2`), échantillonnage restreint |
+| Réponse équilibrée de l’assistant | `temperature` moyenne (`0.3` à `0.7`), `top_p` proche de `0.9` à `1.0` |
+| Génération créative | `temperature` plus élevée et échantillonnage plus large, avec une évaluation plus stricte |
+
+## Échecs courants
+
+- Trop aléatoire : faits incohérents et sorties structurées instables.
+- Trop déterministe : réponses répétitives ou fades.
+- Pénalités excessives : formulation maladroite et dérive du sujet.
+
+## Conseils pratiques
+
+1. Réglez le décodage pour chaque tâche, et non globalement.
+2. Gardez des paramètres prudents pour l’extraction et les tâches JSON.
+3. Pour les tâches créatives, augmentez progressivement l’aléatoire et évaluez les résultats avec une revue humaine.

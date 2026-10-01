@@ -18,6 +18,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertTriangle, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslations } from "next-intl";
+import { localizedSettingsError } from "@/i18n/error-messages";
 
 interface DeleteOAuthAppDialogProps {
 	clientId: string;
@@ -52,7 +53,7 @@ export default function DeleteOAuthAppDialog({
 			const result = await deleteOAuthAppAction(clientId);
 
 			if (result.error) {
-				setError(result.error);
+				setError(localizedSettingsError(result.error, t, "Failed to delete OAuth app"));
 				return;
 			}
 
@@ -62,7 +63,7 @@ export default function DeleteOAuthAppDialog({
 			router.push("/settings/oauth-apps");
 			router.refresh();
 		} catch (err: any) {
-			setError(err.message || t("strings.Failed to delete OAuth app" as never));
+			setError(localizedSettingsError(err, t, "Failed to delete OAuth app"));
 		} finally {
 			setLoading(false);
 		}
@@ -79,7 +80,7 @@ export default function DeleteOAuthAppDialog({
 			<DialogTrigger asChild>
 				<Button variant="destructive" size="sm">
 					<Trash2 className="h-4 w-4 mr-2" />
-					{t("strings.Delete App" as never)}
+					{t("oauthCardCopy.deleteApp" as never)}
 				</Button>
 			</DialogTrigger>
 			<DialogContent>
@@ -120,14 +121,14 @@ export default function DeleteOAuthAppDialog({
 
 				<DialogFooter>
 					<Button variant="outline" onClick={handleClose}>
-						Cancel
+						{t("strings.Cancel" as never)}
 					</Button>
 					<Button
 						variant="destructive"
 						onClick={handleDelete}
 						disabled={loading || confirmation !== appName}
 					>
-						{loading ? "Deleting..." : "Delete App"}
+						{loading ? t("strings.Deleting..." as never) : t("oauthCardCopy.deleteApp" as never)}
 					</Button>
 				</DialogFooter>
 			</DialogContent>

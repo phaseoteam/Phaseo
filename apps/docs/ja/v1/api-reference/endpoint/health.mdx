@@ -1,0 +1,14 @@
+---
+title: "ゲートウェイの状態を確認"
+sidebarTitle: "ヘルスチェック"
+badge: "Beta"
+openapi: "/ja/openapi/v1/openapi.localized.yaml GET /health"
+description: "Phaseo Gatewayの最小限のヘルス状態を返します。"
+---
+
+認証なしで使えるこのエンドポイントで、簡単な到達確認を行えます。現在のインシデントと履歴は[Phaseoステータスページ](https://status.phaseo.app)で確認してください。
+
+<Note>
+ヘルスチェックが成功しても、すべてのプロバイダーやモデルのルートが利用可能とは限りません。現在利用できるルートは、既定の`GET /v1/models`レスポンスで確認してください。
+</Note>
+

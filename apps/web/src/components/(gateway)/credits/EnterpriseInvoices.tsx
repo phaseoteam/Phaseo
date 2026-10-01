@@ -33,6 +33,7 @@ import {
 } from "@/components/ui/pagination";
 import { cn } from "@/lib/utils";
 import { useTranslations } from "next-intl";
+import { localizedSettingsError } from "@/i18n/error-messages";
 
 type InvoiceStatus = "draft" | "open" | "paid" | "void" | "uncollectible";
 
@@ -131,6 +132,7 @@ export default function EnterpriseInvoices(props: {
 }) {
 	const { invoices, pageSize = 10 } = props;
 	const t = useTranslations("SettingsUI.credits");
+	const settingsT = useTranslations("SettingsUI");
 	const [page, setPage] = React.useState(0);
 	const [selectedInvoice, setSelectedInvoice] = React.useState<InvoiceRow | null>(null);
 	const [busyInvoiceId, setBusyInvoiceId] = React.useState<string | null>(null);
@@ -162,8 +164,10 @@ export default function EnterpriseInvoices(props: {
 				throw new Error(payload?.error ?? t("unableLoadInvoice"));
 			}
 			window.open(String(payload.url), "_blank", "noopener,noreferrer");
-		} catch (err: any) {
-			toast.error(err?.message ?? t("failedOpenInvoice"));
+		} catch (err: unknown) {
+			toast.error(
+				localizedSettingsError(err, settingsT, "Action failed", t("failedOpenInvoice")),
+			);
 		} finally {
 			setBusyInvoiceId(null);
 		}

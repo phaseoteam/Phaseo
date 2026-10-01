@@ -1,0 +1,69 @@
+---
+title: "工作区"
+description: "无需更改 Phaseo 定价方案，即可整理 API 密钥、设置和管理访问权限。"
+icon: "building-2"
+---
+
+工作区可围绕团队、产品或环境整理 API 密钥、路由设置、预设、护栏和管理访问权限。
+
+工作区已包含在 Phaseo 标准按量付费服务中。创建或使用工作区无需单独购买方案。
+
+## 何时创建工作区
+
+如果希望实现以下目标，请使用独立工作区：
+
+- 隔离开发、预发布和生产凭据
+- 分开不同产品或客户项目
+- 让管理集成仅访问所需资源
+- 应用不同的路由、预设或护栏策略
+
+对于小型集成，默认工作区可能已经够用。
+
+## 管理工作区
+
+你可以通过 Phaseo 控制台或管理 API 管理工作区。
+
+工作区 API 使用[管理 API 密钥](../developers/management-api-keys.mdx)。标准 Gateway API 密钥用于推理请求，不能调用工作区管理端点。
+
+| 任务 | 端点 |
+| --- | --- |
+| 列出工作区 | [`GET /workspaces`](../api-reference/endpoint/workspaces-list.mdx) |
+| 创建工作区 | [`POST /workspaces`](../api-reference/endpoint/workspaces-create.mdx) |
+| 读取工作区 | [`GET /workspaces/{id}`](../api-reference/endpoint/workspaces-get.mdx) |
+| 更新工作区 | [`PATCH /workspaces/{id}`](../api-reference/endpoint/workspaces-update.mdx) |
+| 删除工作区 | [`DELETE /workspaces/{id}`](../api-reference/endpoint/workspaces-delete.mdx) |
+
+<Note>
+工作区管理端点目前标记为 Beta。请确保管理自动化易于重试，并在应用后续更改前检查 API 响应。
+</Note>
+
+## 选择合适的访问权限
+
+创建管理密钥时，仅授予集成所需的工作区权限：
+
+- 列出和查看工作区使用 `workspaces:read`
+- 创建或更新工作区使用 `workspaces:write`
+- 删除工作区使用 `workspaces:delete`
+
+Phaseo 还会检查工作区成员身份和角色。单凭某项权限并不能访问其他工作区。
+
+请将管理密钥存储在服务器端密钥库中。不要将其暴露在浏览器代码、桌面日志、源代码管理或聊天中。
+
+## 删除工作区
+
+默认工作区无法删除。删除其他工作区前，请移除或迁移其有效 API 密钥，避免请求仍指向已不存在的工作区。
+
+## 计费
+
+工作区不会创建单独的定价层级。用量仍按[定价与账单](../pricing/tiers.mdx)中所述的标准按量付费模式计费。
+
+## 后续步骤
+
+<CardGroup cols={2}>
+	<Card title="管理 API 密钥" icon="key-round" href="../developers/management-api-keys.mdx">
+		创建权限受限的服务器端凭据，用于管理工作区。
+	</Card>
+	<Card title="身份验证" icon="key" href="../developers/authentication.mdx">
+		模型和生成请求请使用 Gateway API 密钥。
+	</Card>
+</CardGroup>

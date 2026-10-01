@@ -1,0 +1,83 @@
+---
+title: "Criar uma mensagem"
+sidebarTitle: "Criar uma mensagem"
+openapi: "/pt-BR/openapi/v1/openapi.localized.yaml POST /messages"
+description: "Endpoint Messages compatível com Anthropic em `/v1/messages`."
+---
+`/v1/messages` aceita payloads da API Anthropic Messages e retorna respostas no formato Anthropic.
+
+## Transmissão contínua
+
+Defina `stream: true` para receber eventos enviados pelo servidor no formato Anthropic (`message_start`, `content_block_*`, `message_delta`, `message_stop`).
+
+## Observações
+
+- Os campos de uso de ferramentas do Anthropic são compatíveis.
+- `stream: true` também funciona em loops de ferramentas. Para ferramentas de servidor gerenciadas pelo Gateway, a Phaseo pode materializar o turno upstream, continuar o loop e emitir novamente um stream sintético.
+- O formato nativo da ferramenta de busca na web do Anthropic também é aceito diretamente em `tools`, por exemplo `type: "web_search_20250305"`.
+- O cabeçalho `X-Phaseo-Strictness` controla o tratamento de parâmetros não compatíveis.
+
+## Ferramentas do servidor
+
+`/v1/messages` também aceita estas ferramentas de servidor gerenciadas pelo Gateway:
+
+- `gateway:datetime`
+- `phaseo:web_search`
+- `phaseo:web_fetch`
+- `phaseo:advisor`
+- `phaseo:image_generation`
+
+A Phaseo converte essas ferramentas para o formato compatível com Anthropic no provedor upstream, executa-as no servidor e continua o loop de ferramentas.
+
+## Busca na web nativa do provedor
+
+Quando um par compatível de modelo/provedor Anthropic oferece busca na web nativa, você também pode enviar diretamente a definição nativa da ferramenta:
+
+```bash
+curl https://api.phaseo.app/v1/messages \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "anthropic/claude-sonnet-4",
+    "max_tokens": 512,
+    "messages": [
+      { "role": "user", "content": "Find the latest Anthropic web search guidance." }
+    ],
+    "tools": [
+      {
+        "type": "web_search_20250305",
+        "name": "web_search",
+        "max_uses": 3,
+        "allowed_domains": ["docs.anthropic.com"]
+      }
+    ],
+    "tool_choice": { "type": "tool", "name": "web_search" }
+  }'
+```
+
+O roteamento do provedor ainda verifica o suporte a `web_search_options` antes da execução.
+
+### Exemplo de data e hora
+
+```bash
+curl https://api.phaseo.app/v1/messages \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "anthropic/claude-sonnet-4",
+    "max_tokens": 512,
+    "stream": false,
+    "messages": [
+      { "role": "user", "content": "What time is it in America/New_York right now?" }
+    ],
+    "tools": [
+      {
+        "type": "gateway:datetime",
+        "parameters": { "timezone": "America/New_York" }
+      }
+    ],
+    "tool_choice": { "type": "auto" }
+  }'
+```
+
+Quando usadas, as chamadas às ferramentas do servidor aparecem nos contadores `usage.server_tool_use.*`.

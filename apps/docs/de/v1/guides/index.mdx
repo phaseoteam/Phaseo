@@ -1,0 +1,66 @@
+---
+title: "Leitfäden"
+description: "Finde den passenden Phaseo-Leitfaden für die Ersteinrichtung, die Entwicklung von Funktionen, Integrationen und den Produktionsbetrieb."
+icon: "book-open"
+---
+
+Wenn du weißt, was du tun möchtest, und schnell zum passenden Leitfaden willst, bist du hier richtig.
+
+## Erste Integration
+
+Wenn du Phaseo zum ersten Mal integrierst, gehe diese Schritte der Reihe nach durch:
+
+1. [Schnellstart](../quickstart.mdx): Sende eine erfolgreiche Anfrage.
+2. [Authentifizierung](../developers/authentication.mdx): Speichere und übermittle Schlüssel sicher.
+3. [Beispiele](./examples.mdx): Übernimm Anfragevorlagen in deine App.
+
+<Note>
+Modelle mit `:free` kannst du ohne Guthabenaufladung aufrufen. Für kostenpflichtige Modelle muss ausreichend Guthaben im Wallet vorhanden sein.
+</Note>
+
+## App-Funktionen entwickeln
+
+Nutze diese Leitfäden, wenn eine einfache Anfrage bereits funktioniert und du Produktfunktionen ergänzen möchtest.
+
+<Columns cols={2}>
+	<Card title="Rezeptsammlung" icon="chef-hat" href="../cookbook/index.mdx">
+		Praxisnahe Rezepte für kostenloses Routing, Presets, asynchrone Jobs und die Einrichtung von Coding-Agents.
+	</Card>
+	<Card title="Routing und Fallbacks" icon="git-branch" href="./routing-and-fallbacks.mdx">
+		Steuere die Provider-Reihenfolge, das Failover-Verhalten und die Abwägungen bei der Zuverlässigkeit.
+	</Card>
+	<Card title="Tool-Aufrufe" icon="wrench" href="./tool-calling.mdx">
+		Implementiere Funktionstools, Sicherheitsprüfungen und stabile Tool-Schleifen.
+	</Card>
+	<Card title="Server-Tools" icon="sparkles" href="./server-tools/index.mdx">
+		Nutze die von Phaseo betriebenen Tools für Datum und Uhrzeit, Websuche, Webabruf und Advisor.
+	</Card>
+	<Card title="Strukturierte Ausgaben" icon="braces" href="./structured-outputs.mdx">
+		Nutze Schemas für vorhersehbare, maschinenlesbare Antworten.
+	</Card>
+	<Card title="Streaming" icon="radio" href="./streaming.mdx">
+		Stelle Antworten mit geringer Latenz über SSE und mit Schutzmaßnahmen für den Produktionsbetrieb bereit.
+	</Card>
+	<Card title="Prompt-Caching" icon="database-zap" href="./prompt-caching.mdx">
+		Verwende stabilen Prompt-Kontext in Chat Completions, Responses und Anthropic Messages wieder.
+	</Card>
+</Columns>
+
+## Im Produktionsbetrieb arbeiten
+
+Nutze diese Leitfäden, wenn Traffic, Zuverlässigkeit, Sicherheit und der Lebenszyklus von Schlüsseln wichtig werden.
+
+<Columns cols={2}>
+	<Card title="Fehlerbehandlung" icon="triangle-alert" href="../developers/error-handling.mdx">
+		Analysiere Fehler anhand von Statuscode, Fehlerformat und Wiederholungsstrategie.
+	</Card>
+	<Card title="Ratenbegrenzungen" icon="gauge" href="../developers/rate-limits.mdx">
+		Plane den Durchsatz und exponentielles Backoff unter Last.
+	</Card>
+	<Card title="Bewährte Vorgehensweisen" icon="shield-check" href="../developers/best-practices.mdx">
+		Checkliste zur Verbesserung von Zuverlässigkeit und Sicherheit.
+	</Card>
+	<Card title="Management-API-Schlüssel" icon="key-round" href="../developers/management-api-keys.mdx">
+		Automatisiere den Lebenszyklus von Schlüsseln und die Trennung von Umgebungen.
+	</Card>
+</Columns>

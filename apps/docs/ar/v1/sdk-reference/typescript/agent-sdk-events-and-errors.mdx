@@ -1,0 +1,66 @@
+---
+icon: "triangle-alert"
+title: "الأخطاء واستكشاف المشكلات وإصلاحها"
+description: "تعامل مع إخفاقات البوابة وأخطاء التحقق وعمليات تشغيل الوكيل الفاشلة."
+---
+
+استخدم أخطاء Agent SDK المنظّمة عندما يحتاج تطبيقك إلى تحديد ما إذا كان سيعيد المحاولة أو يطلب إدخالًا مختلفًا من المستخدم أو يعرض تفاصيل الطلب للمشغّل.
+
+## معالجة إخفاقات البوابة
+
+تُعاد أخطاء البوابة على شكل `AgentGatewayError`:
+
+```typescript
+import { AgentGatewayError } from "@phaseo/agent-sdk";
+
+try {
+  await agent.run({ input, client });
+} catch (error) {
+  if (error instanceof AgentGatewayError) {
+    console.error(error.status, error.requestId, error.reason);
+  }
+  throw error;
+}
+```
+
+تحتفظ عمليات التشغيل والخطوات الفاشلة بتفاصيل خطأ البوابة عند توفرها.
+
+## معالجة أخطاء المخطط
+
+يحدد `AgentSchemaValidationError` مدخلات أو مخرجات أدوات غير صالحة، أو أحداث تقدم، أو مخرجات نهائية. تعامل معها كإخفاقات في العقد لا كأعطال مؤقتة للنموذج.
+
+```typescript
+import { AgentSchemaValidationError } from "@phaseo/agent-sdk";
+
+try {
+  await agent.run({ input, client });
+} catch (error) {
+  if (error instanceof AgentSchemaValidationError) {
+    console.error(error.target, error.message);
+  }
+  throw error;
+}
+```
+
+## فحص عملية التشغيل الفاشلة
+
+عندما تتمكن بيئة التشغيل من حفظ نقطة تحقق للإخفاق، افحص ما يلي:
+
+- `result.run.status`
+- `result.run.error`
+- `status` و`error` و`modelAttempts` الخاصة بأحدث خطوة
+- `requestId` و`nativeResponseId` لمطابقتهما مع سجلات البوابة
+
+## عمليات التحقق الشائعة
+
+- تأكد من إتاحة `PHASEO_API_KEY` لعملية الخادم.
+- امنح كل أداة `id` فريدًا وثابتًا.
+- استخدم معرّفات استدعاء الأداة الدقيقة عند الموافقة أو الرفض أو تقديم مخرجات يدوية.
+- حدّد عدد محاولات النموذج؛ ولا تُعِد المحاولة عشوائيًا عند فشل التحقق أو الموافقة.
+- احفظ حالة التشغيل المتوقفة مؤقتًا قبل إعادة التحكم إلى المتصفح أو عامل قائمة الانتظار.
+
+## أدلة ذات صلة
+
+- [خطافات دورة الحياة](./agent-sdk-lifecycle-hooks.mdx)
+- [أدوات التطوير](./agent-sdk-devtools.mdx)
+- [الحالة والموافقة](./agent-sdk-state-and-approval.mdx)

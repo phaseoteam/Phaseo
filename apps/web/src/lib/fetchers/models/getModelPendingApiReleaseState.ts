@@ -59,7 +59,6 @@ export async function getModelPendingApiReleaseState(
 
 	return {
 		isPendingApiRelease,
-		modelName: model?.name ?? "This model",
+		modelName: model?.name ?? modelId,
 	};
 }
-

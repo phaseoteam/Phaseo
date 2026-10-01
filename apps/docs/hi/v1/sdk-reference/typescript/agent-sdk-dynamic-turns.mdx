@@ -1,0 +1,66 @@
+---
+icon: "shuffle"
+title: "गतिशील संवाद चरण"
+description: "Agent turns के बीच models, instructions, sampling और tools बदलें।"
+---
+
+आगे के model turns को app context या पिछले tool results के अनुसार जवाब देना हो, तो dynamic values उपयोग करें। value fixed हो सकती है या current turn से calculate हो सकती है।
+
+## रनटाइम पर मॉडल चुनें
+
+```typescript
+type ResearchContext = {
+  fast: boolean;
+};
+
+const agent = createAgent<string, string, ResearchContext>({
+  id: "research-agent",
+  model: ({ context }) =>
+    context?.fast ? "phaseo/free" : "anthropic/claude-sonnet-4",
+  instructions: ({ numberOfTurns }) =>
+    `Research turn ${numberOfTurns}. Cite the evidence you use.`,
+});
+```
+
+Agent definition में `model`, `models`, `instructions`, `temperature`, `maxOutputTokens` और `topP` के dynamic values दिए जा सकते हैं।
+
+## टूल से ऐप्लिकेशन संदर्भ अपडेट करें
+
+Tools `context.setContext()` से आगे के turns के लिए जानकारी सहेज सकते हैं:
+
+```typescript
+const chooseMode = defineTool({
+  id: "choose-mode",
+  async execute(input: { fast: boolean }, context) {
+    context.setContext({ fast: input.fast });
+    return { selected: input.fast ? "fast" : "thorough" };
+  },
+});
+```
+
+Run को बाद में persist और continue करना हो, तो context छोटा और serializable रखें।
+
+## केवल अगले टर्न को बदलें
+
+Agent definition को permanently बदले बिना अगली request बदलने के लिए `nextTurnParams` उपयोग करें:
+
+```typescript
+const broadenSearch = defineTool({
+  id: "broaden-search",
+  nextTurnParams: {
+    temperature: 0.3,
+    maxOutputTokens: 2_000,
+  },
+  async execute() {
+    return { broadened: true };
+  },
+});
+```
+
+अगली बारी के मान मॉडल, निर्देश, तापमान, अधिकतम आउटपुट टोकन, `top_p` सैंपलिंग या उपलब्ध टूल बदल सकते हैं।
+
+## संबंधित गाइड
+
+- [रोकने की शर्तें](./agent-sdk-stop-conditions.mdx)
+- [स्थिति और अनुमोदन](./agent-sdk-state-and-approval.mdx)
+- [आउटपुट और पुनः प्रयास](./agent-sdk-run-controls.mdx)

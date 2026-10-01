@@ -1,0 +1,42 @@
+---
+icon: "blocks"
+title: "ツール呼び出し（AI SDK）"
+description: "Vercel AI SDKとPhaseoプロバイダーを使った関数/ツール呼び出し。"
+---
+
+型付きパラメーターを使った関数実行には、`generateText`で`tools`を指定します。
+
+```ts
+import { phaseo } from "@phaseo/ai-sdk-provider";
+import { generateText } from "ai";
+import { z } from "zod";
+
+const result = await generateText({
+  model: phaseo("openai/gpt-5-nano"),
+  prompt: "What is 17 + 25? Use the calculator tool.",
+  tools: {
+    calculator: {
+      description: "Perform basic arithmetic",
+      parameters: z.object({
+        operation: z.enum(["add", "subtract", "multiply", "divide"]),
+        a: z.number(),
+        b: z.number(),
+      }),
+      execute: async ({ operation, a, b }) => {
+        if (operation === "add") return a + b;
+        if (operation === "subtract") return a - b;
+        if (operation === "multiply") return a * b;
+        return a / b;
+      },
+    },
+  },
+});
+
+console.log(result.text);
+```
+
+## 注意事項
+
+- ツールの説明は正確にし、パラメーターは厳密に定義します。
+- 外部への副作用は`execute`内で検証します。
+- 必要に応じて、後続のツールAPI向けに再試行とバックオフを追加します。

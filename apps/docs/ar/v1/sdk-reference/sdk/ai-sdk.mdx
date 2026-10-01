@@ -1,0 +1,116 @@
+---
+icon: "package"
+title: "AI SDK من Vercel"
+description: "أنشئ النصوص، وابثّ الاستجابات، واستخدم الأدوات مع موفّر Phaseo لـ AI SDK 7."
+---
+
+استخدم موفّر Phaseo الرسمي لاستدعاء نماذج Phaseo عبر Vercel AI SDK 7. ابدأ من هنا إذا كان تطبيقك يستخدم بالفعل `generateText` أو `streamText` أو دالة أخرى من AI SDK.
+
+## التثبيت
+
+<CodeGroup>
+
+```bash title="npm"
+npm install @phaseo/ai-sdk-provider
+```
+
+```bash title="pnpm"
+pnpm add @phaseo/ai-sdk-provider
+```
+
+```bash title="yarn"
+yarn add @phaseo/ai-sdk-provider
+```
+
+```bash title="bun"
+bun add @phaseo/ai-sdk-provider
+```
+
+</CodeGroup>
+
+تتبع حزمة Phaseo التي لا يتضمن اسمها رقم إصدار وسم `latest` في npm، وتختار إصدار الموفّر الحالي المتوافق مع AI SDK 7. وتعلن عن AI SDK 7 كاعتمادية نظيرة، لذلك تثبّت مدراء الحزم التي تفعّل التثبيت التلقائي للاعتماديات النظيرة بيئة التشغيل المتوافقة أيضًا.
+
+عيّن `PHASEO_API_KEY` في بيئة الخادم، ثم أرسل طلبك الأول:
+
+```typescript
+import { phaseo } from "@phaseo/ai-sdk-provider";
+import { generateText } from "ai";
+
+const result = await generateText({
+  model: phaseo("openai/gpt-5.6-sol"),
+  prompt: "Reply with: AI SDK works",
+});
+
+console.log(result.text);
+console.log(result.providerMetadata);
+```
+
+استخدم معرّف نموذج حديثًا من [نقطة نهاية النماذج](../../api-reference/endpoint/models.mdx).
+
+## بث النص
+
+```typescript
+import { phaseo } from "@phaseo/ai-sdk-provider";
+import { streamText } from "ai";
+
+const result = streamText({
+  model: phaseo("openai/gpt-5.6-sol"),
+  prompt: "Stream a short greeting.",
+});
+
+for await (const chunk of result.textStream) {
+  process.stdout.write(chunk);
+}
+
+console.log(await result.providerMetadata);
+```
+
+## إضافة بيانات تعريف التطبيق
+
+أنشئ نسخة من الموفّر إذا أردت أن تتضمن تفاصيل طلب Phaseo معلومات تحدد تطبيقك:
+
+```typescript
+import { createPhaseo } from "@phaseo/ai-sdk-provider";
+
+const phaseo = createPhaseo({
+  apiKey: process.env.PHASEO_API_KEY,
+  headers: {
+    "x-title": "My App",
+    "http-referer": "https://example.com",
+  },
+});
+```
+
+إن `PHASEO_BASE_URL` اختياري، وقيمته الافتراضية هي `https://api.phaseo.app/v1`.
+
+## الميزات المدعومة في AI SDK 7
+
+- إنشاء النصوص وبثّها
+- مخرجات الاستدلال وإعداداته
+- أدوات الوظائف ومدخلات الأدوات المبثوثة
+- مخرجات JSON وJSON Schema
+- مدخلات الملفات النصية والصورية
+- مصادر الاستشهاد بعناوين URL
+- التضمينات وإنشاء الصور
+- إعادة الترتيب
+- النسخ الصوتي وتوليد الكلام
+- بيانات الموفّر الوصفية والاستخدام وإشارات الإلغاء ومقاطع البث الخام
+
+تتوفّر إعادة الترتيب عبر `rerank()` باستخدام `phaseo.rerankingModel(modelId)`. وتظل القدرات مختلفة بين النماذج والمزودين. لا يعلن الموفّر حاليًا دعم مراجع الملفات المُدارة أو المهارات أو تعريفات الأدوات ونتائجها واستجابات الموافقة التي ينفذها الموفّر. ويمكن لأدوات الوظائف التي ينفذها التطبيق استخدام مسار التنفيذ والموافقة المعتاد في AI SDK.
+
+## إصدارات AI SDK الأقدم
+
+- AI SDK 6: ثبّت `@phaseo/ai-sdk-provider@ai-sdk-v6`.
+- AI SDK 5: ثبّت `@phaseo/ai-sdk-provider@ai-sdk-v5`.
+
+إذا كان التثبيت التلقائي للاعتماديات النظيرة معطلًا، فثبّت الإصدار الرئيسي المطابق من `ai` بشكل منفصل (`ai@^7` أو `ai@^6` أو `ai@^5`).
+
+## أدلة ذات صلة
+
+- [إنشاء النصوص](./generate-text/index.mdx)
+- [بث النصوص](./stream-text/index.mdx)
+- [استدعاء الأدوات](./tool-calling/index.mdx)
+- [المخرجات المنظّمة](./structured-output/index.mdx)
+- [التضمينات](./embeddings/index.mdx)
+- [الصور](./images/index.mdx)
+- [الصوت](./audio/index.mdx)

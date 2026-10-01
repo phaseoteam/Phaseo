@@ -1,0 +1,64 @@
+---
+icon: "upload"
+title: "Enviar pontuações"
+description: "Compartilhe novos resultados de benchmark com a comunidade Phaseo de forma estruturada e fácil de revisar."
+---
+
+Aceitamos contribuições de provedores, pesquisadores e usuários avançados. Siga o fluxo abaixo para agilizar o processamento do envio.
+
+---
+
+## 1. Prepare os dados
+
+- Confirme se o benchmark existe em `/data/benchmarks`. Caso não exista, abra uma issue para propô-lo.
+- Reúna os resultados brutos, incluindo formato dos prompts, sistema de avaliação e detalhes do hardware.
+- Quando disponível, forneça uma referência pública (artigo, publicação ou repositório do conjunto de dados).
+
+> ✅ **Dica**
+> Compartilhar um script ou notebook reproduzível agiliza bastante a verificação.
+
+---
+
+## 2. Faça um fork do repositório
+
+1. Faça um fork de [github.com/phaseoteam/data](https://github.com/phaseoteam/data).
+2. Crie uma nova branch (por exemplo, `add-claude-3.5-sonnet-mmlu`).
+3. Atualize o JSON do benchmark correspondente com suas pontuações e metadados.
+
+---
+
+## 3. Execute a validação
+
+Use as ferramentas do repositório para verificar se a estrutura e os intervalos estão corretos:
+
+```bash
+pnpm install
+pnpm run validate:benchmarks
+```
+
+Corrija os problemas apontados antes de enviar o pull request.
+
+---
+
+## 4. Abra um pull request
+
+Inclua o seguinte na descrição do PR:
+
+- Nome e divisão do benchmark (por exemplo, `GSM8K test`).
+- ID do modelo e provedor.
+- Links para referências ou registros de avaliação.
+- Resumo de como a pontuação foi produzida.
+
+Os mantenedores vão revisar o envio, pedir esclarecimentos se necessário e fazer o merge após a aprovação.
+
+---
+
+## 5. Acompanhe a publicação
+
+Após o merge, a pontuação aparecerá na próxima sincronização de dados programada. Acompanhe o progresso no canal #data-updates do Discord ou no changelog público.
+
+---
+
+## Precisa de ajuda?
+
+Fale conosco no [Discord da comunidade](https://discord.gg/aQyywCvgZ5) ou envie um e-mail para o [suporte](mailto:daniel@phaseo.app). Podemos colaborar em importações grandes ou pesquisas feitas com parceiros.

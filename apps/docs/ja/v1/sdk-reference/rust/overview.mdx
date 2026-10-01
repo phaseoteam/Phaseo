@@ -1,0 +1,57 @@
+---
+icon: "compass"
+title: "Rust SDK"
+description: "公式crateのphaseoを使って、RustからPhaseo Gatewayにリクエストを送信します。"
+---
+
+公開済みcrateの[`phaseo`](https://crates.io/crates/phaseo)を使うと、RustアプリケーションからPhaseo Gatewayを呼び出せます。
+
+高レベルクライアントが対応する機能：
+
+- `Phaseo::responses(...)`によるResponses APIリクエスト
+- `Phaseo::chat_completions(...)`によるChat Completionsリクエスト
+- `Phaseo::post(...)`によるその他のJSONエンドポイント
+- `Phaseo::from_env()`による環境変数ベースの設定
+- カスタムHTTPSエンドポイントとループバック開発サーバー
+- 構造化されたステータス、JSON本文、リクエストID、エラー詳細
+
+```rust
+use phaseo::Phaseo;
+use serde_json::json;
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let client = Phaseo::from_env()?;
+    let response = client.responses(&json!({
+        "model": "openai/gpt-5.6-sol",
+        "input": "Reply with exactly: Rust SDK works"
+    }))?;
+
+    println!("{}", response.body);
+    Ok(())
+}
+```
+
+<Note>
+  バージョン`0.1`はサポート対象として公開されていますが、`1.0`まではRust APIが変更される可能性があります。本番環境では互換性のあるマイナーバージョンに固定してください。
+</Note>
+
+## 現在の対応範囲
+
+使いやすいクライアントは同期型で、`serde_json::Value`のリクエスト本文を受け付けます。生成された低レベルモジュールは`phaseo::gen`から利用でき、`phaseo::client`、`phaseo::models`、`phaseo::operations`から便利な再エクスポートも使えます。
+
+Rustクライアントは現在、非同期トランスポートや高レベルのストリーミングヘルパーを提供していません。それらが追加される前にストリーミングが必要な場合は、生のHTTP APIを使います。
+
+<Columns cols={2}>
+  <Card title="Rust SDKをインストールする" icon="package" href="./installation.mdx">
+    crateを追加してAPIキーを設定します。
+  </Card>
+  <Card title="リクエストを送信する" icon="play" href="./usage.mdx">
+    Responses、Chat Completions、その他のJSONエンドポイントを呼び出します。
+  </Card>
+  <Card title="Rust APIリファレンス" icon="book-open" href="./api-reference.mdx">
+    `phaseo 0.1`の公開型とメソッドの詳細を確認できます。
+  </Card>
+  <Card title="docs.rs" icon="arrow-up-right-from-square" href="https://docs.rs/phaseo">
+    生成されたRust APIドキュメントを確認してください。
+  </Card>
+</Columns>

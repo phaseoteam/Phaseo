@@ -1,0 +1,74 @@
+---
+title: "Gateway-API-Übersicht"
+sidebarTitle: "Übersicht"
+description: "Basis-URL, Authentifizierung und Endpunktfamilien des Phaseo Gateway."
+icon: "map"
+---
+
+Auf dieser Seite finden Sie den passenden API-Pfad, bevor Sie eine Endpunktreferenz öffnen. Alle Phaseo-Gateway-Endpunkte verwenden dieselbe Basis-URL und Bearer-Authentifizierung.
+
+## Pfad auswählen
+
+| Wenn Sie Folgendes möchten | Beginnen Sie mit |
+| --- | --- |
+| Ihre erste Anfrage senden | [Schnellstart](../quickstart.mdx) |
+| Text generieren oder Tools verwenden | `POST /responses` |
+| Eine bestehende OpenAI-kompatible Integration beibehalten | `POST /chat/completions` |
+| Modelle und Anbieter durchsuchen | `GET /models` und `GET /providers` |
+| Musik erstellen oder Dateien verwalten | `POST /music/generations` und `POST /files` |
+
+## Basis-URL
+
+Produktions-Basis-URL:
+
+```http
+https://api.phaseo.app/v1
+```
+
+Alle Endpunktpfade in dieser Referenz beziehen sich auf die Basis-URL `/v1`.
+
+## OpenAPI
+
+Verwenden Sie die OpenAPI-Datei, um die API in Postman, Hoppscotch oder einen SDK-Generator zu importieren.
+
+<Card
+  title="Phaseo-Gateway-OpenAPI"
+  icon="list-bullet"
+  href="https://github.com/phaseoteam/Phaseo/blob/main/apps/docs/openapi/v1/openapi.public.yaml"
+>
+  Spezifikationsdatei anzeigen
+</Card>
+
+## Authentifizierung
+
+Die meisten Endpunkte benötigen einen regulären Gateway-API-Schlüssel. Für Management-Endpunkte benötigen Sie einen im Dashboard erstellten Management-API-Schlüssel.
+
+```http
+Authorization: Bearer phaseo_v1_sk_<kid>_<secret>
+```
+
+Bei fehlgeschlagener Authentifizierung gibt die API `401` zurück.
+
+## API-Ressourcen
+
+| Ressource | Funktion |
+| --- | --- |
+| Responses API | Modellantworten mit Tools, strukturierter Ausgabe und multimodalen Eingaben erzeugen. |
+| Chat Completions | Eine bestehende OpenAI-kompatible Chat-Integration beibehalten. |
+| Anthropic Messages | Eine Anthropic-kompatible Messages-Integration beibehalten. |
+| Embeddings | Vektorrepräsentationen für Suche, Abruf und Klassifizierung erstellen. |
+| Images | Bilder erzeugen oder bearbeiten. |
+| Text-to-Speech | Gesprochene Audiodaten aus Text erzeugen. |
+| Speech-to-Text | Audiodaten transkribieren oder übersetzen. |
+| Music Generation | Musikaufträge erstellen und ihren Status abrufen. |
+| Files | Eingaben für unterstützte API-Workflows hochladen und abrufen. |
+| Modelle, Anbieter und Endpunkte | Verfügbare Ressourcen über das Gateway entdecken. |
+| Preise, Aktivitäten und Generierungen | Kosten schätzen und Anfrageergebnisse prüfen. |
+| API-Schlüssel und Workspaces | Programmatischen Zugriff und Workspace-Ressourcen verwalten. |
+
+## Abrechnung und Ratenbegrenzungen
+
+- Phaseo setzt keine eigenen Ratenbegrenzungen durch. Diese werden von den Upstream-Anbietern festgelegt.
+- Für kostenpflichtige Anfragen ist ein ausreichendes Wallet-Guthaben erforderlich, damit die Vorabprüfung des Guthabens erfolgreich ist.
+- Kostenlose Modelle mit `:free` benötigen kein eingezahltes Guthaben.
+

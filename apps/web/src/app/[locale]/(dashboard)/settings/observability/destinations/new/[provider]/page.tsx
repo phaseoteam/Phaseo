@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import BroadcastDestinationCreateClient from "@/components/(gateway)/settings/observability/BroadcastDestinationCreateClient";
 import { getDestinationById } from "@/components/(gateway)/settings/observability/destinationCatalog";
 import { fetchSettingsObservabilityDestinationNewInitialData } from "@/lib/fetchers/internal/fetchSettingsObservabilityDestinationNewInitialData";
+import { getTranslations } from "next-intl/server";
 
 export async function generateMetadata({
 	params,
@@ -10,10 +11,11 @@ export async function generateMetadata({
 }) {
 	const { provider } = await params;
 	const destination = getDestinationById(provider);
+	const t = await getTranslations("SettingsUI");
 	return {
 		title: destination
-			? `New ${destination.label} Destination - Broadcast`
-			: "New Destination - Broadcast",
+			? t("settingsPageCopy.newDestinationTitle", { destination: destination.label })
+			: t("settingsPageCopy.newDestinationFallbackTitle"),
 	};
 }
 
@@ -24,6 +26,7 @@ export default async function NewBroadcastDestinationPage({
 }) {
 	const { provider } = await params;
 	const destination = getDestinationById(provider);
+	const t = await getTranslations("SettingsUI");
 	if (!destination) notFound();
 
 	const initialData =
@@ -33,7 +36,7 @@ export default async function NewBroadcastDestinationPage({
 	if (!initialData.workspaceId) {
 		return (
 			<div className="rounded-lg border border-border/60 bg-muted/20 p-4 text-sm text-muted-foreground">
-				Select a workspace to add a destination.
+				{t("settingsPageCopy.destinationWorkspace")}
 			</div>
 		);
 	}

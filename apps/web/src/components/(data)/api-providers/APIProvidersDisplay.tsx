@@ -3,8 +3,8 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import { debounce, parseAsArrayOf, parseAsString, useQueryState } from "nuqs";
 import {
 	Activity,
@@ -92,33 +92,19 @@ type ProviderTableSortField =
 
 type FilterOption = { value: string; label: string; count: number; icon?: LucideIcon };
 
-const SORT_OPTION_LABELS: Record<ProviderSortOption, string> = {
-	daily_tokens_desc: "Most Used",
-	total_models_desc: "Most Models",
-	free_models_desc: "Most Free Models",
-	a_z: "Name (A–Z)",
-};
+const SORT_OPTIONS: ProviderSortOption[] = ["daily_tokens_desc", "total_models_desc", "free_models_desc", "a_z"];
 
-const MODALITIES: Array<{ value: ProviderModalityKey; label: string; icon: LucideIcon }> = [
-	{ value: "text", label: "Text", icon: Type },
-	{ value: "image", label: "Image", icon: ImageIcon },
-	{ value: "video", label: "Video", icon: Video },
-	{ value: "audio", label: "Audio", icon: AudioLines },
-	{ value: "embedding", label: "Embeddings", icon: Binary },
-	{ value: "moderation", label: "Moderation", icon: BadgeAlert },
+const MODALITIES: Array<{ value: ProviderModalityKey; icon: LucideIcon }> = [
+	{ value: "text", icon: Type },
+	{ value: "image", icon: ImageIcon },
+	{ value: "video", icon: Video },
+	{ value: "audio", icon: AudioLines },
+	{ value: "embedding", icon: Binary },
+	{ value: "moderation", icon: BadgeAlert },
 ];
 
-const DATA_POLICY_LABELS: Record<string, string> = {
-	private: "Private",
-	logs: "Logs",
-	trains: "Trains",
-	unknown: "Unknown",
-};
-
-const ZDR_LABELS: Record<string, string> = { true: "True", false: "False" };
-
-function policyLabel(value: string | null, labels: Record<string, string>): string {
-	return value ? labels[value] ?? value.split("_").map((part) => part.charAt(0).toUpperCase() + part.slice(1)).join(" ") : "Unknown";
+function policyLabel(value: string | null, labels: Record<string, string>, unknownLabel: string): string {
+	return value ? labels[value] ?? value.split("_").map((part) => part.charAt(0).toUpperCase() + part.slice(1)).join(" ") : unknownLabel;
 }
 
 const arrayParser = parseAsArrayOf(parseAsString).withDefault([]).withOptions({
@@ -157,48 +143,8 @@ function supportsModality(provider: APIProviderCardType, modality: ProviderModal
 	return Number(support?.input ?? 0) + Number(support?.output ?? 0) > 0;
 }
 
-function countryLabel(code: string) {
-	if (!code) return "Unknown";
-	try {
-		return new Intl.DisplayNames(["en"], { type: "region" }).of(code.toUpperCase()) ?? code.toUpperCase();
-	} catch {
-		return code.toUpperCase();
-	}
-}
-
 function normalizeRegion(value: string) {
 	return value.trim().toLowerCase();
-}
-
-function datacenterLabel(value: string) {
-	const normalized = normalizeRegion(value);
-	const labels: Record<string, string> = {
-		global: "Global",
-		us: "US",
-		eu: "EU",
-		uk: "UK",
-		apac: "APAC",
-		au: "Australia",
-		ca: "Canada",
-		jp: "Japan",
-		kr: "South Korea",
-		sg: "Singapore",
-	};
-	if (labels[normalized]) return labels[normalized];
-	return value.trim().replace(/[-_]+/g, " ").replace(/\b\w/g, (character) => character.toUpperCase());
-}
-
-function formatTokens(value: number) {
-	if (!Number.isFinite(value) || value <= 0) return "0";
-	for (const unit of [
-		{ value: 1_000_000_000_000, suffix: "T" },
-		{ value: 1_000_000_000, suffix: "B" },
-		{ value: 1_000_000, suffix: "M" },
-		{ value: 1_000, suffix: "K" },
-	]) {
-		if (value >= unit.value) return `${(value / unit.value).toFixed(value / unit.value >= 100 ? 0 : 1).replace(/\.0$/, "")}${unit.suffix}`;
-	}
-	return Math.round(value).toLocaleString("en-US");
 }
 
 function ProviderFilterList({ options, selected, onToggle, showFlags = false }: {
@@ -239,6 +185,48 @@ function ProviderFilterList({ options, selected, onToggle, showFlags = false }: 
 
 export default function APIProvidersDisplay({ providers, showPrimaryHeader = true }: APIProvidersDisplayProps) {
 	const t = useTranslations("Catalogue.providers");
+	const locale = useLocale();
+	const modalityLabels = useMemo<Record<ProviderModalityKey, string>>(() => ({
+		text: t("modalityText"),
+		image: t("modalityImage"),
+		video: t("modalityVideo"),
+		audio: t("modalityAudio"),
+		embedding: t("modalityEmbeddings"),
+		moderation: t("modalityModeration"),
+	}), [t]);
+	const sortLabels = useMemo<Record<ProviderSortOption, string>>(() => ({
+		daily_tokens_desc: t("sortMostUsed"),
+		total_models_desc: t("sortMostModels"),
+		free_models_desc: t("sortMostFreeModels"),
+		a_z: t("sortNameAscending"),
+	}), [t]);
+	const dataPolicyLabels = useMemo<Record<string, string>>(() => ({
+		private: t("dataPolicyPrivate"),
+		logs: t("dataPolicyLogs"),
+		trains: t("dataPolicyTrains"),
+		unknown: t("unknown"),
+	}), [t]);
+	const zdrLabels = useMemo<Record<string, string>>(() => ({
+		true: t("yes"),
+		false: t("no"),
+		unknown: t("unknown"),
+	}), [t]);
+	const formatTokens = (value: number) => new Intl.NumberFormat(locale, { notation: "compact", maximumFractionDigits: 1 }).format(value || 0);
+	const countryLabel = useCallback((code: string) => {
+		if (!code) return t("unknown");
+		try {
+			return new Intl.DisplayNames([locale], { type: "region" }).of(code.toUpperCase()) ?? code.toUpperCase();
+		} catch {
+			return code.toUpperCase();
+		}
+	}, [locale, t]);
+	const datacenterLabel = useCallback((value: string) => {
+		const normalized = normalizeRegion(value);
+		if (normalized === "global") return t("regionGlobal");
+		if (["us", "eu", "uk", "apac"].includes(normalized)) return normalized.toUpperCase();
+		if (["au", "ca", "jp", "kr", "sg"].includes(normalized)) return countryLabel(normalized);
+		return value.trim().replace(/[-_]+/g, " ").replace(/\b\w/g, (character) => character.toUpperCase());
+	}, [countryLabel, t]);
 	const pathname = usePathname();
 	const isTable = pathname.endsWith("/table");
 	const [search, setSearch] = useQueryState("search", { defaultValue: "", shallow: true });
@@ -265,9 +253,9 @@ export default function APIProvidersDisplay({ providers, showPrimaryHeader = tru
 			const code = provider.country_code?.trim().toLowerCase() || "unknown";
 			counts.set(code, (counts.get(code) ?? 0) + 1);
 		}
-		return Array.from(counts, ([value, count]) => ({ value, count, label: value === "unknown" ? "Unknown" : countryLabel(value) }))
+		return Array.from(counts, ([value, count]) => ({ value, count, label: value === "unknown" ? t("unknown") : countryLabel(value) }))
 			.sort((a, b) => a.label.localeCompare(b.label));
-	}, [providers]);
+	}, [countryLabel, providers, t]);
 
 	const datacenterOptions = useMemo<FilterOption[]>(() => {
 		const counts = new Map<string, number>();
@@ -284,39 +272,40 @@ export default function APIProvidersDisplay({ providers, showPrimaryHeader = tru
 		return Array.from(counts, ([value, count]) => ({
 			value,
 			count,
-			label: value === "unknown" ? "Unknown" : datacenterLabel(value),
+			label: value === "unknown" ? t("unknown") : datacenterLabel(value),
 			icon: Server,
 		})).sort((a, b) => a.label.localeCompare(b.label));
-	}, [providers]);
+	}, [datacenterLabel, providers, t]);
 
 	const modalityOptions = useMemo<FilterOption[]>(() => MODALITIES.map((item) => ({
 		...item,
+		label: modalityLabels[item.value],
 		count: providers.filter((provider) => supportsModality(provider, item.value)).length,
-	})).filter((item) => item.count > 0), [providers]);
+	})).filter((item) => item.count > 0), [modalityLabels, providers]);
 
 	const coverageOptions = useMemo<FilterOption[]>(() => [
-		{ value: "active", label: "Gateway Providers", count: providers.filter((provider) => provider.is_gateway_provider).length, icon: Activity },
-		{ value: "free", label: "Has Free Models", count: providers.filter((provider) => provider.free_models > 0).length, icon: CircleDollarSign },
-		{ value: "inactive", label: "Inactive Providers", count: providers.filter((provider) => matchesProviderCoverage(provider, "inactive")).length, icon: CircleOff },
-	], [providers]);
+		{ value: "active", label: t("gatewayProvidersFilter"), count: providers.filter((provider) => provider.is_gateway_provider).length, icon: Activity },
+		{ value: "free", label: t("hasFreeModelsFilter"), count: providers.filter((provider) => provider.free_models > 0).length, icon: CircleDollarSign },
+		{ value: "inactive", label: t("inactiveProvidersFilter"), count: providers.filter((provider) => matchesProviderCoverage(provider, "inactive")).length, icon: CircleOff },
+	], [providers, t]);
 
 	const policyOptions = useMemo<FilterOption[]>(() => [
-		{ value: "byok", label: "BYOK Available", count: providers.filter((provider) => matchesProviderPolicy(provider, "byok")).length, icon: KeyRound },
-		{ value: "privacy", label: "Privacy Policy", count: providers.filter((provider) => matchesProviderPolicy(provider, "privacy")).length, icon: ShieldCheck },
-		{ value: "terms", label: "Terms of Service", count: providers.filter((provider) => matchesProviderPolicy(provider, "terms")).length, icon: ScrollText },
-	].filter((option) => option.count > 0), [providers]);
+		{ value: "byok", label: t("byokAvailable"), count: providers.filter((provider) => matchesProviderPolicy(provider, "byok")).length, icon: KeyRound },
+		{ value: "privacy", label: t("privacyPolicy"), count: providers.filter((provider) => matchesProviderPolicy(provider, "privacy")).length, icon: ShieldCheck },
+		{ value: "terms", label: t("termsOfService"), count: providers.filter((provider) => matchesProviderPolicy(provider, "terms")).length, icon: ScrollText },
+	].filter((option) => option.count > 0), [providers, t]);
 
 	const dataPolicyOptions = useMemo<FilterOption[]>(() => [
-		{ value: "data_policy:private", label: "Private", count: providers.filter((provider) => matchesProviderPolicy(provider, "data_policy:private")).length },
-		{ value: "data_policy:logs", label: "Logs", count: providers.filter((provider) => matchesProviderPolicy(provider, "data_policy:logs")).length },
-		{ value: "data_policy:trains", label: "Trains", count: providers.filter((provider) => matchesProviderPolicy(provider, "data_policy:trains")).length },
-		{ value: "data_policy:unknown", label: "Unknown", count: providers.filter((provider) => matchesProviderPolicy(provider, "data_policy:unknown")).length },
-	].filter((option) => option.count > 0), [providers]);
+		{ value: "data_policy:private", label: t("dataPolicyPrivate"), count: providers.filter((provider) => matchesProviderPolicy(provider, "data_policy:private")).length },
+		{ value: "data_policy:logs", label: t("dataPolicyLogs"), count: providers.filter((provider) => matchesProviderPolicy(provider, "data_policy:logs")).length },
+		{ value: "data_policy:trains", label: t("dataPolicyTrains"), count: providers.filter((provider) => matchesProviderPolicy(provider, "data_policy:trains")).length },
+		{ value: "data_policy:unknown", label: t("unknown"), count: providers.filter((provider) => matchesProviderPolicy(provider, "data_policy:unknown")).length },
+	].filter((option) => option.count > 0), [providers, t]);
 
 	const zdrOptions = useMemo<FilterOption[]>(() => [
-		{ value: "zdr:true", label: "True", count: providers.filter((provider) => matchesProviderPolicy(provider, "zdr:true")).length },
-		{ value: "zdr:false", label: "False", count: providers.filter((provider) => matchesProviderPolicy(provider, "zdr:false")).length },
-	].filter((option) => option.count > 0), [providers]);
+		{ value: "zdr:true", label: t("yes"), count: providers.filter((provider) => matchesProviderPolicy(provider, "zdr:true")).length },
+		{ value: "zdr:false", label: t("no"), count: providers.filter((provider) => matchesProviderPolicy(provider, "zdr:false")).length },
+	].filter((option) => option.count > 0), [providers, t]);
 
 	const filteredProviders = useMemo(() => {
 		const query = deferredSearch.trim().toLowerCase();
@@ -337,7 +326,7 @@ export default function APIProvidersDisplay({ providers, showPrimaryHeader = tru
 							delta = a.api_provider_name.localeCompare(b.api_provider_name);
 							break;
 						case "headquarters":
-							delta = countryLabel(a.country_code).localeCompare(countryLabel(b.country_code));
+							delta = countryLabel(a.country_code ?? "").localeCompare(countryLabel(b.country_code ?? ""));
 							break;
 						case "models":
 							delta = Number(a.total_models ?? 0) - Number(b.total_models ?? 0);
@@ -355,10 +344,10 @@ export default function APIProvidersDisplay({ providers, showPrimaryHeader = tru
 							delta = Number(a.total_monthly_tokens ?? 0) - Number(b.total_monthly_tokens ?? 0);
 							break;
 						case "data_policy":
-							delta = policyLabel(a.data_policy_tier, DATA_POLICY_LABELS).localeCompare(policyLabel(b.data_policy_tier, DATA_POLICY_LABELS));
+							delta = policyLabel(a.data_policy_tier, dataPolicyLabels, t("unknown")).localeCompare(policyLabel(b.data_policy_tier, dataPolicyLabels, t("unknown")));
 							break;
 						case "zdr":
-							delta = policyLabel(String(a.zero_data_retention), ZDR_LABELS).localeCompare(policyLabel(String(b.zero_data_retention), ZDR_LABELS));
+							delta = policyLabel(a.zero_data_retention == null ? "unknown" : String(a.zero_data_retention), zdrLabels, t("unknown")).localeCompare(policyLabel(b.zero_data_retention == null ? "unknown" : String(b.zero_data_retention), zdrLabels, t("unknown")));
 							break;
 					}
 					if (delta) return normalizedTableSortDirection === "asc" ? delta : -delta;
@@ -379,7 +368,7 @@ export default function APIProvidersDisplay({ providers, showPrimaryHeader = tru
 				}
 				return a.api_provider_name.localeCompare(b.api_provider_name);
 			});
-	}, [countries, coverage, datacenters, dataPolicy, deferredSearch, modalities, normalizedTableSortDirection, policies, providers, sortOption, tableSortField, zdr]);
+	}, [countries, countryLabel, coverage, datacenters, dataPolicy, dataPolicyLabels, deferredSearch, modalities, normalizedTableSortDirection, policies, providers, sortOption, tableSortField, t, zdr, zdrLabels]);
 
 	const customCoverageCount = coverage.length === 1 && coverage[0] === "active" ? 0 : coverage.length;
 	const activeFilterCount = modalities.length + customCoverageCount + countries.length + datacenters.length + policies.length + dataPolicy.length + zdr.length;
@@ -387,19 +376,19 @@ export default function APIProvidersDisplay({ providers, showPrimaryHeader = tru
 	const filtersContent = (
 		<Accordion type="multiple" value={openSections} onValueChange={setOpenSections}>
 			<AccordionItem value="coverage" className="border-border/70">
-				<AccordionTrigger className="px-2 py-3 text-sm no-underline hover:no-underline"><span className="flex items-center gap-2"><Activity className="size-4 text-muted-foreground" />Gateway Coverage</span></AccordionTrigger>
+				<AccordionTrigger className="px-2 py-3 text-sm no-underline hover:no-underline"><span className="flex items-center gap-2"><Activity className="size-4 text-muted-foreground" />{t("filterGatewayCoverage")}</span></AccordionTrigger>
 				<AccordionContent className="pt-1" disableAnimation><ProviderFilterList options={coverageOptions} selected={coverage} onToggle={(value) => void setCoverage(toggleProviderCoverage(coverage, value))} /></AccordionContent>
 			</AccordionItem>
 			<AccordionItem value="modalities" className="border-border/70">
-				<AccordionTrigger className="px-2 py-3 text-sm no-underline hover:no-underline"><span className="flex items-center gap-2"><Layers3 className="size-4 text-muted-foreground" />Modalities</span></AccordionTrigger>
+				<AccordionTrigger className="px-2 py-3 text-sm no-underline hover:no-underline"><span className="flex items-center gap-2"><Layers3 className="size-4 text-muted-foreground" />{t("filterModalities")}</span></AccordionTrigger>
 				<AccordionContent className="pt-1" disableAnimation><ProviderFilterList options={modalityOptions} selected={modalities} onToggle={(value) => void setModalities(toggleValue(modalities, value))} /></AccordionContent>
 			</AccordionItem>
 			<AccordionItem value="policies" className="border-border/70">
-				<AccordionTrigger className="px-2 py-3 text-sm no-underline hover:no-underline"><span className="flex items-center gap-2"><ShieldCheck className="size-4 text-muted-foreground" />Policies</span></AccordionTrigger>
+				<AccordionTrigger className="px-2 py-3 text-sm no-underline hover:no-underline"><span className="flex items-center gap-2"><ShieldCheck className="size-4 text-muted-foreground" />{t("filterPolicies")}</span></AccordionTrigger>
 				<AccordionContent className="pt-1" disableAnimation><ProviderFilterList options={policyOptions} selected={policies} onToggle={(value) => void setPolicies(toggleValue(policies, value))} /></AccordionContent>
 			</AccordionItem>
 			<AccordionItem value="dataPolicy" className="border-border/70">
-				<AccordionTrigger className="px-2 py-3 text-sm no-underline hover:no-underline"><span className="flex items-center gap-2"><ShieldCheck className="size-4 text-muted-foreground" />Data Policy</span></AccordionTrigger>
+				<AccordionTrigger className="px-2 py-3 text-sm no-underline hover:no-underline"><span className="flex items-center gap-2"><ShieldCheck className="size-4 text-muted-foreground" />{t("filterDataPolicy")}</span></AccordionTrigger>
 				<AccordionContent className="pt-1" disableAnimation><ProviderFilterList options={dataPolicyOptions} selected={dataPolicy} onToggle={(value) => void setDataPolicy(toggleValue(dataPolicy, value))} /></AccordionContent>
 			</AccordionItem>
 			<AccordionItem value="zdr" className="border-border/70">
@@ -407,11 +396,11 @@ export default function APIProvidersDisplay({ providers, showPrimaryHeader = tru
 				<AccordionContent className="pt-1" disableAnimation><ProviderFilterList options={zdrOptions} selected={zdr} onToggle={(value) => void setZdr(toggleValue(zdr, value))} /></AccordionContent>
 			</AccordionItem>
 			<AccordionItem value="headquarters" className="border-border/70">
-				<AccordionTrigger className="px-2 py-3 text-sm no-underline hover:no-underline"><span className="flex items-center gap-2"><Globe2 className="size-4 text-muted-foreground" />Headquarters</span></AccordionTrigger>
+				<AccordionTrigger className="px-2 py-3 text-sm no-underline hover:no-underline"><span className="flex items-center gap-2"><Globe2 className="size-4 text-muted-foreground" />{t("filterHeadquarters")}</span></AccordionTrigger>
 				<AccordionContent className="pt-1" disableAnimation><ProviderFilterList options={countryOptions} selected={countries} onToggle={(value) => void setCountries(toggleValue(countries, value))} showFlags /></AccordionContent>
 			</AccordionItem>
 			<AccordionItem value="datacenters" className="border-border/70">
-				<AccordionTrigger className="px-2 py-3 text-sm no-underline hover:no-underline"><span className="flex items-center gap-2"><Server className="size-4 text-muted-foreground" />Datacenters</span></AccordionTrigger>
+				<AccordionTrigger className="px-2 py-3 text-sm no-underline hover:no-underline"><span className="flex items-center gap-2"><Server className="size-4 text-muted-foreground" />{t("filterDatacentres")}</span></AccordionTrigger>
 				<AccordionContent className="pt-1" disableAnimation><ProviderFilterList options={datacenterOptions} selected={datacenters} onToggle={(value) => void setDatacenters(toggleValue(datacenters, value))} /></AccordionContent>
 			</AccordionItem>
 		</Accordion>
@@ -466,8 +455,8 @@ export default function APIProvidersDisplay({ providers, showPrimaryHeader = tru
 			void setTableSort(null);
 			void setTableSortDirection(null);
 		}}>
-		<SelectTrigger className={cn("rounded-md border-border", className)} aria-label={t("sort")}><span className="flex min-w-0 items-center gap-2"><ArrowUpDown className="size-3.5 shrink-0 text-muted-foreground" /><span className="truncate">{SORT_OPTION_LABELS[sortOption]}</span></span></SelectTrigger>
-			<SelectContent align="end">{(Object.keys(SORT_OPTION_LABELS) as ProviderSortOption[]).map((option) => <SelectItem key={option} value={option}>{SORT_OPTION_LABELS[option]}</SelectItem>)}</SelectContent>
+		<SelectTrigger className={cn("rounded-md border-border", className)} aria-label={t("sort")}><span className="flex min-w-0 items-center gap-2"><ArrowUpDown className="size-3.5 shrink-0 text-muted-foreground" /><span className="truncate">{sortLabels[sortOption]}</span></span></SelectTrigger>
+			<SelectContent align="end">{SORT_OPTIONS.map((option) => <SelectItem key={option} value={option}>{sortLabels[option]}</SelectItem>)}</SelectContent>
 		</Select>
 	);
 	const filterButton = () => (
@@ -497,7 +486,7 @@ export default function APIProvidersDisplay({ providers, showPrimaryHeader = tru
 		return normalizedTableSortDirection === "asc" ? <ArrowUp className="size-3.5" /> : <ArrowDown className="size-3.5" />;
 	};
 	const renderTableSortHead = (label: string, field: ProviderTableSortField, align: "left" | "center" = "left") => (
-		<button type="button" onClick={() => handleTableSort(field)} className={cn("group inline-flex w-full items-center gap-1.5 text-xs font-medium transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40", align === "center" ? "justify-center text-center" : "justify-start text-left", tableSortField === field ? "text-foreground" : "text-muted-foreground")} aria-label={`Sort providers by ${label.toLowerCase()}`}>
+		<button type="button" onClick={() => handleTableSort(field)} className={cn("group inline-flex w-full items-center gap-1.5 text-xs font-medium transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40", align === "center" ? "justify-center text-center" : "justify-start text-left", tableSortField === field ? "text-foreground" : "text-muted-foreground")} aria-label={t("sortProvidersBy", { metric: label.toLowerCase() })}>
 			<span>{label}</span>
 			{tableSortIcon(field)}
 		</button>
@@ -510,17 +499,17 @@ export default function APIProvidersDisplay({ providers, showPrimaryHeader = tru
 	const providerTableHeader = () => (
 		<TableHeader>
 			<TableRow className="bg-background hover:bg-background">
-				<TableHead className="bg-background">{renderTableSortHead("Provider", "provider")}</TableHead>
-				<TableHead className="bg-background">{renderTableSortHead("Headquarters", "headquarters")}</TableHead>
-				<TableHead className="bg-background text-center">{renderTableSortHead("Models", "models", "center")}</TableHead>
-				<TableHead className="bg-background text-center">{renderTableSortHead("Free Models", "free_models", "center")}</TableHead>
-				<TableHead className="bg-background">{renderTableSortHead("Modalities", "modalities")}</TableHead>
-				<TableHead className="bg-background text-center">{renderTableSortHead("Daily Tokens", "daily_tokens", "center")}</TableHead>
-				<TableHead className="bg-background text-center">{renderTableSortHead("Monthly Tokens", "monthly_tokens", "center")}</TableHead>
-				<TableHead className="bg-background">{renderTableSortHead("Data policy", "data_policy")}</TableHead>
+				<TableHead className="bg-background">{renderTableSortHead(t("providerColumn"), "provider")}</TableHead>
+				<TableHead className="bg-background">{renderTableSortHead(t("filterHeadquarters"), "headquarters")}</TableHead>
+				<TableHead className="bg-background text-center">{renderTableSortHead(t("models"), "models", "center")}</TableHead>
+				<TableHead className="bg-background text-center">{renderTableSortHead(t("freeModels"), "free_models", "center")}</TableHead>
+				<TableHead className="bg-background">{renderTableSortHead(t("filterModalities"), "modalities")}</TableHead>
+				<TableHead className="bg-background text-center">{renderTableSortHead(t("dailyTokens"), "daily_tokens", "center")}</TableHead>
+				<TableHead className="bg-background text-center">{renderTableSortHead(t("monthlyTokens"), "monthly_tokens", "center")}</TableHead>
+				<TableHead className="bg-background">{renderTableSortHead(t("filterDataPolicy"), "data_policy")}</TableHead>
 				<TableHead className="bg-background">{renderTableSortHead("ZDR", "zdr")}</TableHead>
-				<TableHead className="bg-background">Privacy</TableHead>
-				<TableHead className="bg-background">Terms</TableHead>
+				<TableHead className="bg-background">{t("privacyPolicy")}</TableHead>
+				<TableHead className="bg-background">{t("termsOfService")}</TableHead>
 			</TableRow>
 		</TableHeader>
 	);
@@ -558,7 +547,7 @@ export default function APIProvidersDisplay({ providers, showPrimaryHeader = tru
 									</div>
 									{sortSelect("h-8 w-[12.5rem] bg-background text-sm 2xl:w-[13.5rem]")}
 									{showPrimaryHeader ? viewSwitcher : null}
-									<Button asChild variant="outline" size="sm" className="h-8 rounded-md px-2.5"><Link href="/api-providers/compare" prefetch={false}><Scale className="size-3.5" /><span className="hidden sm:inline">Compare</span></Link></Button>
+									<Button asChild variant="outline" size="sm" className="h-8 rounded-md px-2.5"><Link href="/api-providers/compare" prefetch={false}><Scale className="size-3.5" /><span className="hidden sm:inline">{t("compareButton")}</span></Link></Button>
 								</div>
 							</div>
 						</div>
@@ -585,30 +574,30 @@ export default function APIProvidersDisplay({ providers, showPrimaryHeader = tru
 							<div className="relative">
 								<div className="sticky z-30 w-full overflow-hidden bg-background" style={{ top: `${stickyOffsets.tableHeaderTop}px` }}>
 									<div ref={tableHeaderTrackRef} className="will-change-transform" style={{ width: "1560px", minWidth: "1560px" }}>
-										<Table wrapInContainer={false} aria-label="Providers table column headers" className="table-fixed w-max bg-background text-xs" style={{ width: "1560px", minWidth: "1560px" }}>
+										<Table wrapInContainer={false} aria-label={t("providerTableColumnHeadersAria")} className="table-fixed w-max bg-background text-xs" style={{ width: "1560px", minWidth: "1560px" }}>
 											{providerTableColgroup()}
 											{providerTableHeader()}
 										</Table>
 									</div>
 								</div>
 								<div ref={tableContainerRef} className="relative overflow-x-auto overflow-y-clip">
-									<Table wrapInContainer={false} aria-label="Providers table rows" className="table-fixed w-max bg-background text-xs" style={{ width: "1560px", minWidth: "1560px" }}>
+					<Table wrapInContainer={false} aria-label={t("providerTableRowsAria")} className="table-fixed w-max bg-background text-xs" style={{ width: "1560px", minWidth: "1560px" }}>
 										{providerTableColgroup()}
 										<TableBody className="bg-background">{filteredProviders.map((provider) => {
 										const supported = MODALITIES.filter((modality) => supportsModality(provider, modality.value));
 										const isExternal = String(provider.provider_status ?? "").trim().toLowerCase() === "external";
 										return <TableRow key={provider.api_provider_id} className="hover:bg-muted/35">
-											<TableCell className="py-0"><Link href={`/api-providers/${provider.api_provider_id}`} prefetch={false} className="inline-flex h-11 min-w-0 items-center gap-2 font-medium leading-none hover:underline hover:underline-offset-4"><span className="relative size-6 shrink-0"><Logo id={provider.api_provider_id} alt={provider.api_provider_name} fill className="object-contain" /></span><span className="flex min-w-0 items-center gap-1.5"><span className="truncate">{provider.api_provider_name}</span>{isExternal ? <span className="inline-flex shrink-0 items-center gap-1 rounded-md border border-violet-200 bg-violet-50 px-1.5 py-0.5 text-[10px] font-medium text-violet-700 dark:border-violet-900/60 dark:bg-violet-950/40 dark:text-violet-300"><ArrowUpRight className="size-3" />External</span> : null}</span></Link></TableCell>
+											<TableCell className="py-0"><Link href={`/api-providers/${provider.api_provider_id}`} prefetch={false} className="inline-flex h-11 min-w-0 items-center gap-2 font-medium leading-none hover:underline hover:underline-offset-4"><span className="relative size-6 shrink-0"><Logo id={provider.api_provider_id} alt={provider.api_provider_name} fill className="object-contain" /></span><span className="flex min-w-0 items-center gap-1.5"><span className="truncate">{provider.api_provider_name}</span>{isExternal ? <span className="inline-flex shrink-0 items-center gap-1 rounded-md border border-violet-200 bg-violet-50 px-1.5 py-0.5 text-[10px] font-medium text-violet-700 dark:border-violet-900/60 dark:bg-violet-950/40 dark:text-violet-300"><ArrowUpRight className="size-3" />{t("external")}</span> : null}</span></Link></TableCell>
 											<TableCell>{provider.country_code ? <Link href={`/countries/${provider.country_code.toLowerCase()}`} prefetch={false} className="inline-flex items-center gap-2 hover:underline hover:underline-offset-4"><Image src={`/flags/${provider.country_code.toLowerCase()}.svg`} alt="" width={16} height={12} className="h-3 w-4 object-cover" />{countryLabel(provider.country_code)}</Link> : "—"}</TableCell>
-											<TableCell className="text-center tabular-nums">{provider.total_models.toLocaleString()}</TableCell>
-											<TableCell className="text-center tabular-nums">{provider.free_models ? provider.free_models.toLocaleString() : "—"}</TableCell>
-											<TableCell><div className="flex items-center gap-1.5">{supported.map(({ value, icon: Icon, label }) => <ProviderModalityBadge key={value} label={label} modality={value} icon={Icon} inputCount={provider.modality_support[value]?.input ?? 0} outputCount={provider.modality_support[value]?.output ?? 0} />)}</div></TableCell>
+											<TableCell className="text-center tabular-nums">{provider.total_models.toLocaleString(locale)}</TableCell>
+											<TableCell className="text-center tabular-nums">{provider.free_models ? provider.free_models.toLocaleString(locale) : "—"}</TableCell>
+											<TableCell><div className="flex items-center gap-1.5">{supported.map(({ value, icon: Icon }) => <ProviderModalityBadge key={value} label={modalityLabels[value]} modality={value} icon={Icon} inputCount={provider.modality_support[value]?.input ?? 0} outputCount={provider.modality_support[value]?.output ?? 0} />)}</div></TableCell>
 											<TableCell className="text-center font-medium tabular-nums">{formatTokens(Number(provider.total_daily_tokens))}</TableCell>
 											<TableCell className="text-center font-medium tabular-nums">{formatTokens(Number(provider.total_monthly_tokens))}</TableCell>
-											<TableCell className={cn("whitespace-nowrap", !provider.data_policy_tier && "text-muted-foreground")}>{policyLabel(provider.data_policy_tier, DATA_POLICY_LABELS)}</TableCell>
-			<TableCell className="whitespace-nowrap">{policyLabel(String(provider.zero_data_retention), ZDR_LABELS)}</TableCell>
-											<TableCell>{provider.privacy_policy_url ? <a href={provider.privacy_policy_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 font-medium hover:underline hover:underline-offset-4">Privacy <ExternalLink className="size-3 text-muted-foreground" /></a> : <span className="text-muted-foreground">—</span>}</TableCell>
-											<TableCell>{provider.terms_of_service_url ? <a href={provider.terms_of_service_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 font-medium hover:underline hover:underline-offset-4">Terms <ExternalLink className="size-3 text-muted-foreground" /></a> : <span className="text-muted-foreground">—</span>}</TableCell>
+							<TableCell className={cn("whitespace-nowrap", !provider.data_policy_tier && "text-muted-foreground")}>{policyLabel(provider.data_policy_tier, dataPolicyLabels, t("unknown"))}</TableCell>
+			<TableCell className="whitespace-nowrap">{policyLabel(provider.zero_data_retention == null ? "unknown" : String(provider.zero_data_retention), zdrLabels, t("unknown"))}</TableCell>
+							<TableCell>{provider.privacy_policy_url ? <a href={provider.privacy_policy_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 font-medium hover:underline hover:underline-offset-4">{t("privacyPolicy")} <ExternalLink className="size-3 text-muted-foreground" /></a> : <span className="text-muted-foreground">—</span>}</TableCell>
+							<TableCell>{provider.terms_of_service_url ? <a href={provider.terms_of_service_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 font-medium hover:underline hover:underline-offset-4">{t("termsOfService")} <ExternalLink className="size-3 text-muted-foreground" /></a> : <span className="text-muted-foreground">—</span>}</TableCell>
 										</TableRow>;
 										})}</TableBody>
 									</Table>

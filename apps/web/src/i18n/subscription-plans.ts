@@ -9,7 +9,19 @@ import pt from "../../messages/pt-BR/subscription-plans.json";
 import ja from "../../messages/ja/subscription-plans.json";
 import ar from "../../messages/ar-SA/subscription-plans.json";
 import { mergeCatalogMessages } from "./message-overlays";
-import type { PublicLocale } from "./routing";
+import { isPublicLocale, type PublicLocale } from "./routing";
 export type SubscriptionPlansMessages = typeof en;
 const catalogs: Record<PublicLocale, SubscriptionPlansMessages> = { "en-GB": en, "en-US": mergeCatalogMessages(en, enUsOverlay), "zh-Hans": zhHans as SubscriptionPlansMessages, hi: hi as SubscriptionPlansMessages, "es-ES": es as SubscriptionPlansMessages, "fr-FR": fr as SubscriptionPlansMessages, "de-DE": de as SubscriptionPlansMessages, "pt-BR": pt as SubscriptionPlansMessages, ja: ja as SubscriptionPlansMessages, "ar-SA": ar as SubscriptionPlansMessages };
 export function getSubscriptionPlansMessages(locale: PublicLocale): SubscriptionPlansMessages { return catalogs[locale]; }
+export function getSubscriptionPlansMessagesFor(locale: string): SubscriptionPlansMessages {
+	return isPublicLocale(locale) ? catalogs[locale] : catalogs["en-GB"];
+}
+
+export function formatSubscriptionPlanMessage(
+	message: string,
+	values: Record<string, string | number>,
+): string {
+	return message.replace(/\{([^}]+)\}/g, (placeholder, key: string) =>
+		key in values ? String(values[key]) : placeholder,
+	);
+}

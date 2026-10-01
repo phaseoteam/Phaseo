@@ -2,6 +2,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -53,6 +54,8 @@ export default function TeamSwitcher({
 	initialActiveTeamId,
 	userRole,
 }: TeamSwitcherProps) {
+	const tNav = useTranslations("Common.nav");
+	const tUi = useTranslations("Common.ui");
 	const router = useRouter();
 	const pathname = usePathname();
 	const { theme, setTheme } = useTheme();
@@ -75,9 +78,9 @@ export default function TeamSwitcher({
 			? theme
 			: "system";
 	const themeMeta = {
-		light: { label: "Light", icon: Sun },
-		dark: { label: "Dark", icon: Moon },
-		system: { label: "System", icon: Monitor },
+		light: { icon: Sun },
+		dark: { icon: Moon },
+		system: { icon: Monitor },
 	} as const;
 	const { isOpen: supportIsOpen, minutesUntilNextWindow } =
 		getSupportAvailability();
@@ -109,7 +112,7 @@ export default function TeamSwitcher({
 				<DropdownMenuTrigger asChild>
 					<Button
 						variant="ghost"
-						aria-label="Open workspace switcher"
+						aria-label={tNav("openWorkspaceSwitcher")}
 						className={cn(
 							"inline-flex h-[var(--site-header-control-h,2.25rem)] items-center gap-2 rounded-lg px-3 leading-none cursor-pointer",
 							"border border-transparent text-[13px] font-medium text-foreground",
@@ -121,7 +124,7 @@ export default function TeamSwitcher({
 							className="max-w-32 truncate text-sm font-medium select-none"
 							title={activeTeam ? activeTeam.name : undefined}
 						>
-							{activeTeam ? activeTeam.name : "Personal Workspace"}
+							{activeTeam ? activeTeam.name : tNav("personalWorkspace")}
 						</span>
 						<ChevronDown
 							className={cn(
@@ -153,7 +156,7 @@ export default function TeamSwitcher({
 												typeof navigator === "undefined" ||
 												!navigator?.clipboard?.writeText
 											) {
-												toast.error("Clipboard is not available.", {
+												toast.error(tUi("workspaceSwitcher.clipboardUnavailable"), {
 													position: "bottom-right",
 												});
 												return;
@@ -161,12 +164,12 @@ export default function TeamSwitcher({
 											void navigator.clipboard
 												.writeText(t.id)
 												.then(() => {
-													toast.success("Workspace UUID copied to clipboard.", {
+													toast.success(tUi("workspaceSwitcher.workspaceCopied"), {
 														position: "bottom-right",
 													});
 												})
 												.catch(() => {
-													toast.error("Failed to copy workspace UUID.", {
+													toast.error(tUi("workspaceSwitcher.workspaceCopyFailed"), {
 														position: "bottom-right",
 													});
 												});
@@ -175,23 +178,23 @@ export default function TeamSwitcher({
 										const previous = activeWorkspaceId;
 										setActiveTeamId(t.id);
 										toast.promise(SwapTeam(t.id), {
-											loading: "Switching workspace...",
+											loading: tUi("workspaceSwitcher.switching"),
 											success: (res) => {
 												if (res?.ok) {
 													router.refresh();
-													return `Switched to ${t.name} workspace`;
+													return tUi("workspaceSwitcher.switched", { workspace: t.name });
 												} else {
 													setActiveTeamId(
 														previous
 													);
 													throw new Error(
-														"Failed to switch workspace"
+														tUi("workspaceSwitcher.switchFailed", { workspace: t.name })
 													);
 												}
 											},
 											error: () => {
 												setActiveTeamId(previous);
-												return `Failed to switch to ${t.name} workspace, please try again`;
+												return tUi("workspaceSwitcher.switchFailed", { workspace: t.name });
 											},
 										});
 									}}
@@ -222,7 +225,7 @@ export default function TeamSwitcher({
 								className="flex w-full items-center"
 							>
 								<Users className="mr-2 h-4 w-4" />
-								<span>Manage Workspaces</span>
+								<span>{tNav("manageWorkspaces")}</span>
 							</Link>
 						</DropdownMenuItem>
 					</div>
@@ -239,7 +242,7 @@ export default function TeamSwitcher({
 						type="button"
 						variant="ghost"
 						size="icon"
-						aria-label="Open profile menu"
+						aria-label={tNav("openProfile")}
 						className={cn(
 							"size-[var(--site-header-control-h,2.25rem)] rounded-full p-0",
 							"bg-transparent hover:bg-zinc-100/70 dark:hover:bg-zinc-900/60",
@@ -266,7 +269,7 @@ export default function TeamSwitcher({
 									href="/internal"
 								>
 									<Lock className="h-4 w-4" />
-									<span>Internal</span>
+									<span>{tNav("internal")}</span>
 								</Link>
 							</DropdownMenuItem>
 							<DropdownMenuSeparator />
@@ -276,11 +279,11 @@ export default function TeamSwitcher({
 					<div className="px-1 py-1.5">
 						<div className="flex items-center gap-2">
 							<span className="min-w-12 px-1 text-sm text-foreground">
-								Theme
+								{tUi("theme.label")}
 							</span>
 							<div
 								role="radiogroup"
-								aria-label="Theme mode"
+							aria-label={tUi("theme.mode")}
 								className="inline-flex flex-1 items-center justify-center gap-1 rounded-lg bg-muted/60 p-0.5"
 							>
 								{(["light", "dark", "system"] as const).map((mode) => {
@@ -292,7 +295,7 @@ export default function TeamSwitcher({
 											type="button"
 											role="radio"
 											aria-checked={selected}
-											aria-label={`Set theme: ${themeMeta[mode].label}`}
+											aria-label={tUi("theme.setMode", { theme: tUi(`theme.${mode}`) })}
 											onClick={() => setTheme(mode)}
 											className={cn(
 												"relative flex h-7 flex-1 items-center justify-center rounded-md text-muted-foreground transition-colors",
@@ -301,7 +304,7 @@ export default function TeamSwitcher({
 													? "bg-background text-foreground shadow-xs"
 													: "bg-transparent"
 											)}
-											title={themeMeta[mode].label}
+											title={tUi(`theme.${mode}`)}
 										>
 											<Icon className="h-4 w-4" />
 										</button>
@@ -321,7 +324,7 @@ export default function TeamSwitcher({
 							href="/experiments"
 						>
 							<FlaskConical className="h-4 w-4" />
-							<span>Experiments</span>
+							<span>{tNav("experiments")}</span>
 						</Link>
 					</DropdownMenuItem>
 
@@ -333,7 +336,7 @@ export default function TeamSwitcher({
 							href="/settings/workspaces/settings"
 						>
 							<Users className="h-4 w-4" />
-							<span>Workspaces</span>
+							<span>{tNav("workspaces")}</span>
 						</Link>
 					</DropdownMenuItem>
 
@@ -345,7 +348,7 @@ export default function TeamSwitcher({
 							href="/settings/account"
 						>
 							<Settings className="h-4 w-4" />
-							<span>Settings</span>
+							<span>{tNav("settings")}</span>
 						</Link>
 					</DropdownMenuItem>
 
@@ -358,7 +361,7 @@ export default function TeamSwitcher({
 							)}`}
 						>
 							<Activity className="h-4 w-4" />
-							<span>Activity</span>
+							<span>{tNav("activity")}</span>
 						</Link>
 					</DropdownMenuItem>
 
@@ -369,7 +372,7 @@ export default function TeamSwitcher({
 							)}`}
 						>
 							<ScrollText className="h-4 w-4" />
-							<span>Logs</span>
+							<span>{tNav("logs")}</span>
 						</Link>
 					</DropdownMenuItem>
 
@@ -381,7 +384,7 @@ export default function TeamSwitcher({
 							href="/settings/credits"
 						>
 							<CreditCard className="h-4 w-4" />
-							<span>Credits</span>
+							<span>{tNav("credits")}</span>
 						</Link>
 					</DropdownMenuItem>
 
@@ -393,7 +396,7 @@ export default function TeamSwitcher({
 							href="/settings/keys"
 						>
 							<KeyIcon className="h-4 w-4" />
-							<span>Keys</span>
+							<span>{tNav("keys")}</span>
 						</Link>
 					</DropdownMenuItem>
 
@@ -401,7 +404,7 @@ export default function TeamSwitcher({
 						<Link href="/contact" className="flex w-full items-center justify-between">
 							<div className="flex items-center gap-2">
 								<LifeBuoy className="h-4 w-4" />
-								<span>Support</span>
+								<span>{tNav("support")}</span>
 							</div>
 							<span
 								className="relative flex h-2.5 w-2.5"
@@ -439,7 +442,7 @@ export default function TeamSwitcher({
 						}}
 					>
 						<MessageSquareMore className="h-4 w-4" />
-						<span>Send Feedback</span>
+						<span>{tNav("sendFeedback")}</span>
 					</DropdownMenuItem>
 
 					<DropdownMenuSeparator />
@@ -453,7 +456,7 @@ export default function TeamSwitcher({
 						}}
 					>
 						<LogOut className="h-4 w-4" />
-						Sign out
+						{tNav("signOut")}
 					</DropdownMenuItem>
 				</DropdownMenuContent>
 			</DropdownMenu>
@@ -461,7 +464,7 @@ export default function TeamSwitcher({
 				open={isFeedbackOpen}
 				onOpenChange={setIsFeedbackOpen}
 				surface="profile_menu"
-				prompt="Tell us what should be clearer, faster, or more useful across Phaseo."
+				prompt={tUi("feedbackPrompt")}
 			/>
 		</div>
 	);

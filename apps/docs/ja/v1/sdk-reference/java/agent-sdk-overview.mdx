@@ -1,0 +1,24 @@
+---
+title: "Java Agent SDK（開発中）"
+description: "開発中のJava Agent SDKランタイムについて説明します。"
+---
+
+<Note type="warning">
+  Java Client SDKとAgent SDKは開発中で、Maven Centralからはまだ入手できません。
+</Note>
+
+Java Agent SDKはJava Client SDKを基盤とするソースコードのみのランタイムです。TypeScript Agent SDKと同じ基本契約を提供します。
+
+- 上限付きの複数ステップツールループ
+- ツールごとのタイムアウトを設定した並行ツール
+- モデル再試行とバックオフ
+- 人によるレビューの一時停止と再開可能な実行レコード
+- ライフサイクルイベントとPhaseo DevToolsのJSONL記録
+- Java Client SDKを基盤とするゲートウェイアダプター
+
+実行はアプリケーション内に留まります。Phaseoはモデルリクエストを処理し、永続化、キュー、認可、レビューUIはサービス側で管理します。
+
+## 次のステップ
+
+- [インストール](./agent-sdk-installation.mdx)
+- [使い方](./agent-sdk.mdx)

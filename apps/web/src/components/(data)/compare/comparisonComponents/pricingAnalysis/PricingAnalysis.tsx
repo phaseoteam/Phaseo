@@ -21,6 +21,7 @@ import {
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { useLocale, useTranslations } from "next-intl";
 
 interface PricingAnalysisProps {
 	selectedModels: ExtendedModel[];
@@ -106,12 +107,14 @@ function normalizePricePerMillion(
 	return (pricePerUnit * 1_000_000) / normalizedUnitSize;
 }
 
-function formatUsd(value: number | null | undefined): string {
+function formatUsd(value: number | null | undefined, locale: string): string {
 	if (value == null || !Number.isFinite(value)) return "-";
-	return `$${value.toLocaleString("en-US", {
+	return new Intl.NumberFormat(locale, {
+		style: "currency",
+		currency: "USD",
 		minimumFractionDigits: 2,
 		maximumFractionDigits: 2,
-	})}`;
+	}).format(value);
 }
 
 function meterMatchesInput(meter: string): boolean {
@@ -228,7 +231,8 @@ function getEffectivePricesForProvider(
 
 function buildPricingSummary(
 	model: ExtendedModel,
-	selectedProviderId: string
+	selectedProviderId: string,
+	bestOptionLabel: string
 ): ModelPricingSummary {
 	const providers = getPricingProviders(model);
 	const selectedProvider =
@@ -248,11 +252,14 @@ function buildPricingSummary(
 		selectedProviderId:
 			selectedProvider?.id ?? BEST_PROVIDER_OPTION,
 		selectedProviderLabel:
-			selectedProvider?.name ?? "Best option",
+			selectedProvider?.name ?? bestOptionLabel,
 	};
 }
 
-function getCheapestBadge(summaries: ModelPricingSummary[]) {
+function getCheapestBadge(
+	summaries: ModelPricingSummary[],
+	t: ReturnType<typeof useTranslations<"Catalogue.compare">>
+) {
 	const priced = summaries.filter(
 		(summary) =>
 			summary.blendedPerMillion != null && Number.isFinite(summary.blendedPerMillion)
@@ -270,7 +277,7 @@ function getCheapestBadge(summaries: ModelPricingSummary[]) {
 				variant="default"
 				className="bg-green-100 text-green-800 border border-green-300 hover:bg-green-200 hover:text-green-900 hover:border-green-400 transition-colors"
 			>
-				{cheapest[0].model.name} is cheapest
+				{t("cheapestModel", { name: cheapest[0].model.name })}
 			</Badge>
 		);
 	}
@@ -280,7 +287,9 @@ function getCheapestBadge(summaries: ModelPricingSummary[]) {
 			variant="secondary"
 			className="bg-blue-100 text-blue-800 border border-blue-300"
 		>
-			Tied: {cheapest.map((summary) => summary.model.name).join(", ")}
+			{t("tiedModels", {
+				models: cheapest.map((summary) => summary.model.name).join(", "),
+			})}
 		</Badge>
 	);
 }
@@ -288,7 +297,9 @@ function getCheapestBadge(summaries: ModelPricingSummary[]) {
 function getStatCards(
 	summaries: ModelPricingSummary[],
 	providerSelectionByModel: ProviderSelectionByModel,
-	onProviderSelectionChange: (modelId: string, providerId: string) => void
+	onProviderSelectionChange: (modelId: string, providerId: string) => void,
+	t: ReturnType<typeof useTranslations<"Catalogue.compare">>,
+	locale: string
 ) {
 	return (
 		<div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2 gap-3">
@@ -320,10 +331,10 @@ function getStatCards(
 							<div className="grid grid-cols-3 gap-3">
 								<div className="space-y-0.5">
 									<div className="text-[11px] font-medium text-muted-foreground">
-										Input $/M
+										{t("inputPricePerMillion")}
 									</div>
 									<div className="font-mono text-foreground">
-										{formatUsd(summary.input.valuePerMillion)}
+										{formatUsd(summary.input.valuePerMillion, locale)}
 									</div>
 									<div className="text-[10px] text-muted-foreground truncate">
 										{summary.input.provider?.name ?? "-"}
@@ -331,10 +342,10 @@ function getStatCards(
 								</div>
 								<div className="space-y-0.5">
 									<div className="text-[11px] font-medium text-muted-foreground">
-										Output $/M
+										{t("outputPricePerMillion")}
 									</div>
 									<div className="font-mono text-foreground">
-										{formatUsd(summary.output.valuePerMillion)}
+										{formatUsd(summary.output.valuePerMillion, locale)}
 									</div>
 									<div className="text-[10px] text-muted-foreground truncate">
 										{summary.output.provider?.name ?? "-"}
@@ -342,13 +353,13 @@ function getStatCards(
 								</div>
 								<div className="space-y-0.5">
 									<div className="text-[11px] font-medium text-muted-foreground">
-										Blended $/M
+										{t("blendedPricePerMillion")}
 									</div>
 									<div className="font-mono text-foreground">
-										{formatUsd(summary.blendedPerMillion)}
+										{formatUsd(summary.blendedPerMillion, locale)}
 									</div>
 									<div className="text-[10px] text-muted-foreground">
-										90/10 input-output
+										{t("blended9010")}
 									</div>
 								</div>
 							</div>
@@ -383,7 +394,7 @@ function getStatCards(
 										))}
 									</div>
 								) : (
-									<p className="text-xs text-muted-foreground">No providers found yet.</p>
+									<p className="text-xs text-muted-foreground">{t("noProvidersFound")}</p>
 								)}
 							</div>
 						</CardContent>
@@ -406,6 +417,8 @@ function toChartData(summaries: ModelPricingSummary[]): PricingChartDatum[] {
 }
 
 function BarChartTooltip({ active, payload, label }: any) {
+	const t = useTranslations("Catalogue.compare");
+	const locale = useLocale();
 	if (!active || !payload || payload.length === 0) return null;
 	const point = payload[0]?.payload as PricingChartDatum | undefined;
 	if (!point) return null;
@@ -417,22 +430,22 @@ function BarChartTooltip({ active, payload, label }: any) {
 			</CardHeader>
 			<CardContent className="p-0 space-y-1 text-xs">
 				<div className="flex justify-between gap-3">
-					<span>Input</span>
-					<span className="font-mono">{formatUsd(point.input)}</span>
+					<span>{t("input")}</span>
+					<span className="font-mono">{formatUsd(point.input, locale)}</span>
 				</div>
 				<div className="text-[10px] text-muted-foreground truncate">
-					Provider: {point.inputProvider ?? "-"}
+					{t("provider")}: {point.inputProvider ?? "-"}
 				</div>
 				<div className="flex justify-between gap-3">
-					<span>Output</span>
-					<span className="font-mono">{formatUsd(point.output)}</span>
+					<span>{t("output")}</span>
+					<span className="font-mono">{formatUsd(point.output, locale)}</span>
 				</div>
 				<div className="text-[10px] text-muted-foreground truncate">
-					Provider: {point.outputProvider ?? "-"}
+					{t("provider")}: {point.outputProvider ?? "-"}
 				</div>
 				<div className="flex justify-between gap-3 pt-1 border-t border-border/60">
-					<span>Blended (90/10)</span>
-					<span className="font-mono">{formatUsd(point.blended)}</span>
+					<span>{t("blended9010")}</span>
+					<span className="font-mono">{formatUsd(point.blended, locale)}</span>
 				</div>
 			</CardContent>
 		</Card>
@@ -448,27 +461,30 @@ type MeterComparisonRow = {
 	}[];
 };
 
-function formatMeterLabel(meter: string): string {
+function formatMeterLabel(
+	meter: string,
+	t: ReturnType<typeof useTranslations<"Catalogue.compare">>
+): string {
 	const key = meter.trim().toLowerCase();
 
 	const overrides: Record<string, string> = {
-		input_token: "Input Tokens",
-		output_token: "Output Tokens",
-		cached_input_token: "Cached Input Tokens",
-		input_text_tokens: "Input Text Tokens",
-		output_text_tokens: "Output Text Tokens",
-		cached_input_read_tokens: "Cached Read Tokens",
-		cached_input_write_tokens: "Cached Write Tokens",
-		input_text: "Input Text",
-		output_text: "Output Text",
-		input_image: "Input Image",
-		output_image: "Output Image",
-		input_audio: "Input Audio",
-		output_audio: "Output Audio",
-		input_video: "Input Video",
-		output_video: "Output Video",
-		per_request: "Per Request",
-		request: "Per Request",
+		input_token: t("meterInputTokens"),
+		output_token: t("meterOutputTokens"),
+		cached_input_token: t("meterCachedInputTokens"),
+		input_text_tokens: t("meterInputTextTokens"),
+		output_text_tokens: t("meterOutputTextTokens"),
+		cached_input_read_tokens: t("meterCachedReadTokens"),
+		cached_input_write_tokens: t("meterCachedWriteTokens"),
+		input_text: t("meterInputText"),
+		output_text: t("meterOutputText"),
+		input_image: t("meterInputImage"),
+		output_image: t("meterOutputImage"),
+		input_audio: t("meterInputAudio"),
+		output_audio: t("meterOutputAudio"),
+		input_video: t("meterInputVideo"),
+		output_video: t("meterOutputVideo"),
+		per_request: t("meterPerRequest"),
+		request: t("meterPerRequest"),
 	};
 
 	if (overrides[key]) return overrides[key];
@@ -564,6 +580,8 @@ function buildMeterComparisonRows(
 }
 
 export default function PricingAnalysis({ selectedModels }: PricingAnalysisProps) {
+	const t = useTranslations("Catalogue.compare");
+	const locale = useLocale();
 	const [chartScale, setChartScale] = React.useState<"linear" | "log">("linear");
 	const [providerSelectionByModel, setProviderSelectionByModel] =
 		React.useState<ProviderSelectionByModel>({});
@@ -590,7 +608,8 @@ export default function PricingAnalysis({ selectedModels }: PricingAnalysisProps
 	const summaries = selectedModels.map((model) =>
 		buildPricingSummary(
 			model,
-			providerSelectionByModel[model.id] ?? BEST_PROVIDER_OPTION
+			providerSelectionByModel[model.id] ?? BEST_PROVIDER_OPTION,
+			t("bestOption")
 		)
 	);
 	const chartData = toChartData(summaries);
@@ -617,12 +636,12 @@ export default function PricingAnalysis({ selectedModels }: PricingAnalysisProps
 		<section className="space-y-3">
 			<header className="flex items-start justify-between gap-4">
 				<div className="space-y-1">
-					<h2 className="text-lg font-semibold">Pricing</h2>
+					<h2 className="text-lg font-semibold">{t("pricing")}</h2>
 					<p className="text-sm text-muted-foreground">
-						Per-1M normalized pricing from observed provider tiers. Blended total uses 90% input + 10% output.
+						{t("pricingDescription")}
 					</p>
 				</div>
-				{getCheapestBadge(summaries)}
+				{getCheapestBadge(summaries, t)}
 			</header>
 
 			<div className="space-y-4">
@@ -631,7 +650,9 @@ export default function PricingAnalysis({ selectedModels }: PricingAnalysisProps
 						{getStatCards(
 							summaries,
 							providerSelectionByModel,
-							handleProviderSelectionChange
+							handleProviderSelectionChange,
+							t,
+							locale
 						)}
 					</div>
 					<Card className="border border-border/60 bg-background/60 shadow-none">
@@ -639,20 +660,20 @@ export default function PricingAnalysis({ selectedModels }: PricingAnalysisProps
 							<div className="flex items-start justify-between gap-3">
 								<div>
 									<CardTitle className="text-sm font-semibold">
-										{chartScale === "log" ? "Pricing (Log)" : "Pricing"}
+										{chartScale === "log" ? t("pricingLog") : t("pricing")}
 									</CardTitle>
 									<div className="mt-1.5 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
 										<span className="inline-flex items-center gap-1 rounded-full border border-border/70 bg-background px-2 py-0.5">
 											<span className="h-2 w-2 rounded-full bg-[#f59e0b]" />
-											Blended (90/10)
+											{t("blended9010")}
 										</span>
 										<span className="inline-flex items-center gap-1 rounded-full border border-border/70 bg-background px-2 py-0.5">
 											<span className="h-2 w-2 rounded-full bg-[#0ea5e9]" />
-											Input $/M
+											{t("inputPricePerMillion")}
 										</span>
 										<span className="inline-flex items-center gap-1 rounded-full border border-border/70 bg-background px-2 py-0.5">
 											<span className="h-2 w-2 rounded-full bg-[#10b981]" />
-											Output $/M
+											{t("outputPricePerMillion")}
 										</span>
 									</div>
 								</div>
@@ -666,13 +687,13 @@ export default function PricingAnalysis({ selectedModels }: PricingAnalysisProps
 													variant={chartScale === "linear" ? "default" : "outline"}
 													onClick={() => setChartScale("linear")}
 													className="h-7 w-7"
-													aria-label="Linear scale"
+											aria-label={t("linearScale")}
 													aria-pressed={chartScale === "linear"}
 												>
 													<LinearScaleIcon />
 												</Button>
 											</TooltipTrigger>
-											<TooltipContent>Linear scale</TooltipContent>
+							<TooltipContent>{t("linearScale")}</TooltipContent>
 										</Tooltip>
 										<Tooltip>
 											<TooltipTrigger asChild>
@@ -682,24 +703,28 @@ export default function PricingAnalysis({ selectedModels }: PricingAnalysisProps
 													variant={chartScale === "log" ? "default" : "outline"}
 													onClick={() => setChartScale("log")}
 													className="h-7 w-7"
-													aria-label="Log scale"
+											aria-label={t("logScale")}
 													aria-pressed={chartScale === "log"}
 												>
 													<LogScaleIcon />
 												</Button>
 											</TooltipTrigger>
-											<TooltipContent>Log scale</TooltipContent>
+							<TooltipContent>{t("logScale")}</TooltipContent>
 										</Tooltip>
 									</TooltipProvider>
 								</div>
 							</div>
 						</CardHeader>
 						<CardContent className="pt-0">
-							<PricingBarChart
-								data={chartData}
-								scaleMode={chartScale}
-								CustomTooltip={BarChartTooltip}
-							/>
+			<PricingBarChart
+				data={chartData}
+				scaleMode={chartScale}
+				CustomTooltip={BarChartTooltip}
+				locale={locale}
+				inputLabel={t("input")}
+				outputLabel={t("output")}
+				blendedLabel={t("blended9010")}
+			/>
 						</CardContent>
 					</Card>
 				</div>
@@ -708,9 +733,9 @@ export default function PricingAnalysis({ selectedModels }: PricingAnalysisProps
 					<div className="mt-6 space-y-2">
 						<div className="flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-1">
 							<div>
-								<div className="text-sm font-semibold">Pricing by meter</div>
+								<div className="text-sm font-semibold">{t("pricingByMeter")}</div>
 								<p className="text-xs text-muted-foreground">
-									All unique meters observed across the selected models.
+									{t("pricingByMeterDescription")}
 								</p>
 							</div>
 						</div>
@@ -724,7 +749,7 @@ export default function PricingAnalysis({ selectedModels }: PricingAnalysisProps
 								</colgroup>
 								<thead>
 									<tr className="border-b border-border bg-muted/60">
-										<th className="px-3 py-2 text-left font-medium">Meter</th>
+										<th className="px-3 py-2 text-left font-medium">{t("meter")}</th>
 										{selectedModels.map((model) => (
 											<th
 												key={model.id}
@@ -733,7 +758,7 @@ export default function PricingAnalysis({ selectedModels }: PricingAnalysisProps
 												<div className="truncate">{model.name}</div>
 												<div className="text-[10px] font-normal text-muted-foreground truncate">
 													{summaryByModelId.get(model.id)?.selectedProviderLabel ??
-														"Best option"}
+												t("bestOption")}
 												</div>
 											</th>
 										))}
@@ -748,7 +773,7 @@ export default function PricingAnalysis({ selectedModels }: PricingAnalysisProps
 											}`}
 										>
 											<td className="px-3 py-2 text-left text-[11px] font-medium whitespace-nowrap">
-												{formatMeterLabel(row.meter)}
+												{formatMeterLabel(row.meter, t)}
 											</td>
 											{row.perModel.map((entry, idx) => {
 												const value = entry.pricePerMillion;
@@ -768,7 +793,7 @@ export default function PricingAnalysis({ selectedModels }: PricingAnalysisProps
 															<span
 																className={isBest ? "text-emerald-600 dark:text-emerald-400" : ""}
 															>
-																{formatUsd(value)}
+												{formatUsd(value, locale)}
 															</span>
 														) : (
 															<span className="text-muted-foreground">-</span>
@@ -787,4 +812,3 @@ export default function PricingAnalysis({ selectedModels }: PricingAnalysisProps
 		</section>
 	);
 }
-

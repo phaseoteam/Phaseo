@@ -1,0 +1,50 @@
+---
+title: "Eine Antwort erstellen"
+sidebarTitle: "Eine Antwort erstellen"
+openapi: "/de/openapi/v1/openapi.localized.yaml POST /responses"
+---
+## Servertools
+
+`/v1/responses` unterstützt reguläre Funktionstools sowie diese vom Gateway verwalteten Servertools:
+
+- `gateway:datetime`
+- `phaseo:web_search`
+- `phaseo:web_fetch`
+- `phaseo:advisor`
+- `phaseo:image_generation`
+- `phaseo:apply_patch`
+
+### Beispiel für Datum und Uhrzeit
+
+```bash
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-5-nano",
+    "stream": false,
+    "input": [
+      { "role": "user", "content": "Give me the current datetime in Asia/Tokyo." }
+    ],
+    "tools": [
+      {
+        "type": "gateway:datetime",
+        "parameters": { "timezone": "Asia/Tokyo" }
+      }
+    ],
+    "tool_choice": "auto"
+  }'
+```
+
+Bei Verwendung eines Servertools enthält die Nutzungsübersicht die passenden `usage.server_tool_use.*`-Zähler.
+
+- `gateway:datetime` -> `datetime_requests`
+- `phaseo:web_search` -> `web_search_requests`, `web_search_results`, `web_search_extra_results`
+- `phaseo:web_fetch` -> `web_fetch_requests`
+- `phaseo:advisor` -> `advisor_requests`
+- `phaseo:image_generation` -> `image_generation_requests`
+- `phaseo:apply_patch` -> `apply_patch_requests`
+
+## Hinweis zu Streaming
+
+`stream: true` wird ebenfalls unterstützt. Bei vom Gateway verwalteten Servertools kann Phaseo den Upstream-Tool-Aufruf-Zug materialisieren, die Schleife fortsetzen und anschließend einen synthetischen Stream erneut ausgeben.

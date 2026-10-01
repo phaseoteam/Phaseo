@@ -1,0 +1,34 @@
+---
+icon: "package"
+title: "Installation"
+description: "Installiere und konfiguriere das Phaseo C# Agent SDK."
+---
+
+Das Agent-SDK wird auf NuGet als [`Phaseo.AgentSdk`](https://www.nuget.org/packages/Phaseo.AgentSdk) veröffentlicht.
+
+## Voraussetzungen
+
+- .NET 8 oder höher
+- ein Phaseo-API-Schlüssel
+
+## Installationation
+
+```bash
+dotnet add package Phaseo.AgentSdk
+```
+
+Das Kernpaket `Phaseo.Sdk` wird automatisch als Abhängigkeit installiert.
+
+## Umgebung
+
+Setze deinen Gateway-API-Schlüssel, bevor du Beispiele ausführst:
+
+```bash
+set PHASEO_API_KEY=phaseo_v1_sk_...
+```
+
+## Weiter
+
+- [Übersicht](./agent-sdk-overview.mdx)
+- [Mit dem Agent-SDK entwickeln](./agent-sdk.mdx)
+

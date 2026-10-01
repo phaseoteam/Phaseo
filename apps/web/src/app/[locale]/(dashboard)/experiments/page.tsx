@@ -11,16 +11,22 @@ import {
 	CardTitle,
 } from "@/components/ui/card";
 import { useTranslations } from "next-intl";
+import { getTranslations } from "next-intl/server";
+import type { PublicLocale } from "@/i18n/routing";
 
-export const metadata: Metadata = {
-	title: "Experiments - Phaseo",
-	description:
-		"Experiments is where we test and iterate on early Phaseo product experiments.",
-	keywords: ["Experiments", "Labs", "Phaseo"],
-	alternates: {
-		canonical: "/experiments",
-	},
-};
+export async function generateMetadata({
+	params,
+}: {
+	params: Promise<{ locale: PublicLocale }>;
+}): Promise<Metadata> {
+	const { locale } = await params;
+	const t = await getTranslations({ locale, namespace: "Product.experiments" });
+	return {
+		title: `${t("title")} - Phaseo`,
+		description: t("description"),
+		alternates: { canonical: "/experiments" },
+	};
+}
 
 export default function ExperimentsPage() {
 	const t = useTranslations("Product.experiments");

@@ -1,0 +1,100 @@
+---
+title: "Commencer ici"
+description: "Choisissez le parcours Phaseo adapté à votre première requête, à une migration, à la configuration d’un SDK ou à un déploiement en production."
+icon: "house"
+---
+
+Utilisez cette page si vous savez ce que vous voulez créer, mais pas quelle page de documentation Phaseo consulter en premier.
+
+Phaseo propose une API unique pour accéder aux modèles, router les requêtes vers les fournisseurs, consulter les tarifs, suivre l’utilisation et exécuter des workflows d’IA asynchrones.
+
+Si vous découvrez Phaseo, commencez par envoyer une requête qui fonctionne. Si vous avez déjà une intégration IA, passez directement au guide de migration ou du SDK adapté à votre application.
+
+## Réussir votre première requête
+
+Pour une nouvelle intégration, suivez ces étapes :
+
+1. Créez une clé API dans le tableau de bord.
+2. Envoyez une requête à un modèle de texte disponible.
+3. Lisez le texte généré dans la réponse.
+4. Poursuivez avec le guide SDK, routage ou production qui correspond à votre besoin.
+
+## Première requête
+
+<CodeGroup>
+```bash cURL
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-5.6-sol",
+    "input": "Reply with: docs ready",
+    "temperature": 0
+  }'
+```
+
+```typescript TypeScript SDK
+import Phaseo from "@phaseo/sdk";
+
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
+
+const response = await client.generateResponse({
+  model: "openai/gpt-5.6-sol",
+  input: "Reply with: docs ready",
+  temperature: 0,
+});
+
+console.log(response.output_text);
+```
+
+```python Python SDK
+from phaseo import Phaseo
+
+client = Phaseo(api_key="YOUR_API_KEY")
+
+response = client.generate_response(
+    {
+        "model": "openai/gpt-5.6-sol",
+        "input": "Reply with: docs ready",
+        "temperature": 0,
+    }
+)
+
+print(response.get("output_text"))
+```
+</CodeGroup>
+
+Si cela fonctionne, poursuivez avec le [guide de démarrage rapide](./quickstart.mdx) pour suivre le parcours complet de première requête.
+
+---
+
+## Choisir votre parcours
+
+Si vous avez déjà une intégration ou une chaîne d’outils, commencez par le parcours le plus proche de votre situation plutôt que de lire toute la documentation depuis le début.
+
+<Columns cols={2}>
+	<Card title="Je viens d’OpenAI" icon="arrow-right-left" href="./migration-guides/from-openai.mdx">
+		Gardez le format compatible avec OpenAI, remplacez l’URL de base et vérifiez la compatibilité des modèles.
+	</Card>
+	<Card title="Je viens d’OpenRouter" icon="arrow-right-left" href="./migration-guides/from-openrouter.mdx">
+		Migrez votre configuration de routage avec des vérifications de parité et un déploiement progressif.
+	</Card>
+	<Card title="J’envoie des requêtes HTTP brutes" icon="globe" href="./quickstart.mdx">
+		Commencez avec cURL et l’API Responses, puis consultez la référence de l’endpoint si nécessaire.
+	</Card>
+	<Card title="J’utilise le SDK TypeScript" icon="file-code-2" href="./sdk-reference/typescript/overview.mdx">
+		Utilisez le client TypeScript pour Responses, le chat, les images, l’audio et bien plus.
+	</Card>
+	<Card title="J’utilise le SDK Python" icon="snake" href="./sdk-reference/python/overview.mdx">
+		Commencez avec le client Python si votre intégration s’exécute dans des scripts, des workers, des backends ou des notebooks.
+	</Card>
+	<Card title="J’utilise AI SDK" icon="sparkles" href="./sdk-reference/sdk/ai-sdk.mdx">
+		Connectez vos applications Vercel AI SDK à Phaseo sans reconstruire vos instructions ni votre flux de modèle.
+	</Card>
+	<Card title="J’utilise Codex ou Claude Code" icon="bot" href="./guides/integrations/index.mdx">
+		Configurez le gateway, Docs MCP et les intégrations d’assistants de programmation au même endroit.
+	</Card>
+	<Card title="Je cherche seulement des exemples" icon="code" href="./guides/examples.mdx">
+		Accédez directement à des requêtes à copier-coller et à des projets d’exemple si vous connaissez déjà les bases.
+	</Card>
+</Columns>

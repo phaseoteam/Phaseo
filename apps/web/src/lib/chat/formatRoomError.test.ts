@@ -1,6 +1,112 @@
+import { createTranslator } from "next-intl";
+import { getPublicMessages } from "@/i18n/messages";
 import { formatRoomError } from "./formatRoomError";
 
 describe("formatRoomError", () => {
+	test("localizes gateway error titles and curated hints", async () => {
+		const messages = await getPublicMessages("es-ES");
+		const translate = createTranslator({
+			locale: "es-ES",
+			messages,
+			namespace: "Product.chatRooms",
+		} as never);
+		const formatted = formatRoomError(
+			JSON.stringify({
+				error: "unsupported_model_or_endpoint",
+				description: "Unsupported model or endpoint.",
+				provider_candidate_diagnostics: {
+					totalProviders: 2,
+					supportsEndpointCount: 0,
+					candidateCount: 0,
+				},
+			}),
+			translate as never,
+		);
+
+		expect(formatted.title).toBe("Modelo o endpoint no compatible");
+		expect(formatted.hint).toBe(
+			"El modelo está registrado en la pasarela, pero ningún proveedor admite este endpoint de sala. Prueba un modelo adecuado para este tipo de sala.",
+		);
+	});
+
+	test("localizes structured provider categories instead of showing the API hint", async () => {
+		const messages = await getPublicMessages("es-ES");
+		const translate = createTranslator({
+			locale: "es-ES",
+			messages,
+			namespace: "Product.chatRooms",
+		} as never);
+		const formatted = formatRoomError(
+			JSON.stringify({
+				error: "upstream_error",
+				description: "Provider error.",
+				provider_failure_diagnostics: {
+					category: "credentials_not_configured",
+					hint: "Provider credentials are not configured for this route.",
+					provider: "example-provider",
+				},
+			}),
+			translate as never,
+		);
+
+		expect(formatted.hint).toBe(
+			"Faltan credenciales o configuración del proveedor para esta ruta. Comprueba las claves de la pasarela, el secreto BYOK seleccionado y los ajustes del proveedor.",
+		);
+	});
+
+	test("uses localized provider hints in every supported locale", async () => {
+		const locales = ["ar-SA", "de-DE", "es-ES", "fr-FR", "hi", "ja", "pt-BR", "zh-Hans"] as const;
+		const upstreamHint = "The provider is rate limiting this request. Retry with backoff or another provider.";
+
+		for (const locale of locales) {
+			const messages = await getPublicMessages(locale);
+			const translate = createTranslator({
+				locale,
+				messages,
+				namespace: "Product.chatRooms",
+			} as never);
+			const formatted = formatRoomError(
+				JSON.stringify({
+					error: "rate_limited",
+					description: "Provider error.",
+					provider_failure_diagnostics: {
+						category: "rate_limited",
+						hint: upstreamHint,
+						provider: "example-provider",
+					},
+				}),
+				translate as never,
+			);
+
+			expect(formatted.title).not.toBe("Rate limited");
+			expect(formatted.hint).not.toBe(upstreamHint);
+		}
+	});
+
+	test("localizes interpolated API key limit hints", async () => {
+		const messages = await getPublicMessages("es-ES");
+		const translate = createTranslator({
+			locale: "es-ES",
+			messages,
+			namespace: "Product.chatRooms",
+		} as never);
+		const formatted = formatRoomError(
+			JSON.stringify({
+				error: "key_limit_exceeded",
+				limit_window: "daily",
+				limit_metric: "requests",
+				current_value: 7,
+				limit_value: 5,
+			}),
+			translate as never,
+		);
+
+		expect(formatted.title).toBe("Se ha superado el límite de la clave API");
+		expect(formatted.hint).toBe(
+			"Esta clave API ha alcanzado su límite diario de solicitudes (7/5). Espera a que se restablezca o aumenta el límite.",
+		);
+	});
+
 	test("explains unsupported endpoint when the model exists but no provider supports the room", () => {
 		const formatted = formatRoomError(
 			JSON.stringify({

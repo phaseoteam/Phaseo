@@ -23,6 +23,7 @@ import {
 import { ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslations } from "next-intl";
+import { localizedSettingsError } from "@/i18n/error-messages";
 import {
 	API_KEY_LIMIT_PRESETS,
 	getApiKeyPreset,
@@ -68,7 +69,7 @@ export default function CreateKeyDialog({
 			// surface an error so users understand why nothing happens
 			setPlainKey(null);
 			setLoading(false);
-			alert("Missing user or workspace context. Make sure you are signed in.");
+			alert(t("strings.Sign in and select a workspace before creating an API key." as never));
 			return;
 		}
 		try {
@@ -88,10 +89,8 @@ export default function CreateKeyDialog({
 				preset: selectedPresetId,
 				surface: "settings",
 			});
-		} catch (err: any) {
-			const message =
-				err?.message ?? "Could not create API key right now. Please try again.";
-			toast.error(message);
+		} catch (err: unknown) {
+			toast.error(localizedSettingsError(err, t, "Action failed"));
 		} finally {
 			setLoading(false);
 		}
@@ -198,10 +197,10 @@ export default function CreateKeyDialog({
 											].join(" ")}
 										>
 											<div className="text-sm font-medium">
-												{preset.label}
+												{t(`keys.presets.${preset.id}.title` as never)}
 											</div>
 											<div className="mt-1 text-xs leading-5 text-muted-foreground">
-												{preset.description}
+												{t(`keys.presets.${preset.id}.description` as never)}
 											</div>
 										</button>
 									);

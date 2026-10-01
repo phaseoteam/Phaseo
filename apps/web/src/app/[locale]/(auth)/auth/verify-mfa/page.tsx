@@ -21,6 +21,7 @@ import { createClient } from '@/utils/supabase/client'
 import { toast } from 'sonner'
 import { Loader2, ShieldCheck, LogOut } from 'lucide-react'
 import { localizeAuthPath, resolveAuthLocale } from '@/lib/auth/localized-paths'
+import { useTranslations } from 'next-intl'
 
 export default function VerifyMFAPage() {
     return (
@@ -33,7 +34,8 @@ export default function VerifyMFAPage() {
 function VerifyMFAContent() {
     const router = useRouter()
     const searchParams = useSearchParams()
-	const locale = resolveAuthLocale(searchParams.get('locale'))
+    const locale = resolveAuthLocale(searchParams.get('locale'))
+    const t = useTranslations('Common.authFlows.mfa')
     const [code, setCode] = React.useState('')
     const [loading, setLoading] = React.useState(false)
 
@@ -41,7 +43,7 @@ function VerifyMFAContent() {
         const finalCode = codeToVerify || code
 
         if (!finalCode) {
-            toast.error('Please enter a code')
+            toast.error(t('enterCode'))
             return
         }
 
@@ -53,13 +55,13 @@ function VerifyMFAContent() {
                 ? requestedReturnUrl
                 : '/'
             const result = await verifyMFALoginAction(finalCode, returnUrl)
-            toast.success('Verification successful!')
+            toast.success(t('success'))
 
             setTimeout(() => {
                 router.replace(result.redirectPath)
             }, 500)
         } catch (error: any) {
-            toast.error(error.message || 'Invalid code. Please try again.')
+            toast.error(t('failure'))
             setCode('')
         } finally {
             setLoading(false)
@@ -79,9 +81,9 @@ function VerifyMFAContent() {
                     <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
                         <ShieldCheck className="h-6 w-6 text-primary" />
                     </div>
-                    <CardTitle>Two-factor authentication</CardTitle>
+                    <CardTitle>{t('title')}</CardTitle>
                     <CardDescription>
-                        Enter the 6-digit code from your authenticator app
+                        {t('description')}
                     </CardDescription>
                 </CardHeader>
 
@@ -108,8 +110,7 @@ function VerifyMFAContent() {
                             </div>
 
                             <p className="text-center text-xs text-muted-foreground">
-                                The code will auto-verify when you enter all 6
-                                digits
+                                {t('autoVerify')}
                             </p>
 
                         </CardContent>
@@ -123,10 +124,10 @@ function VerifyMFAContent() {
                                 {loading ? (
                                     <>
                                         <Loader2 className="me-2 h-4 w-4 animate-spin" />
-                                        Verifying...
+                                        {t('verifying')}
                                     </>
                                 ) : (
-                                    'Verify'
+                                    t('verify')
                                 )}
                             </Button>
 
@@ -137,7 +138,7 @@ function VerifyMFAContent() {
                                 disabled={loading}
                             >
                                 <LogOut className="me-2 h-4 w-4" />
-                                Sign out
+                                {t('signOut')}
                             </Button>
                         </CardFooter>
                 </>

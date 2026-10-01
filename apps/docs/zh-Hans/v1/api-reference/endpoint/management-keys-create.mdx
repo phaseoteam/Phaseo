@@ -1,0 +1,11 @@
+---
+title: "创建管理密钥"
+sidebarTitle: "创建管理密钥"
+badge: "Beta"
+openapi: "/zh-Hans/openapi/v1/openapi.localized.yaml POST /management-keys"
+description: "创建具有指定权限范围的管理密钥，用于自动化控制平面。"
+---
+<Note>此端点需要所有者或管理员身份以及 `management_keys:write` 权限。</Note>
+
+选择能力模板或提供明确的权限范围列表。原始 `key` 仅在创建响应中返回；请立即将其存入服务器端密钥存储。
+

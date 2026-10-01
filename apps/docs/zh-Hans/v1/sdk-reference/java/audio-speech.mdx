@@ -1,0 +1,26 @@
+---
+icon: "music"
+title: "TTS（文字转语音）"
+description: "使用 Java SDK 调用 `/audio/speech`。"
+---
+
+**方法**: `client.createSpeech(...)`
+
+```java
+import app.phaseo.sdk.Phaseo;
+
+Phaseo client = new Phaseo(System.getenv("PHASEO_API_KEY"));
+
+String body = """
+{
+  "model": "openai/gpt-4o-mini-tts",
+  "input": "Hello from Java",
+  "voice": "alloy",
+  "format": "mp3"
+}
+""";
+
+Object response = client.createSpeech(body);
+System.out.println(String.valueOf(response));
+```
+

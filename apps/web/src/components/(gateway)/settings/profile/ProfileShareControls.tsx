@@ -86,14 +86,14 @@ export default function ProfileShareControls({ payload }: Props) {
 					</Button>
 
 					<Button asChild variant="outline" className="h-9 justify-center rounded-lg">
-						<a href={twitterIntentUrl} target="_blank" rel="noreferrer" aria-label="Post share card on X">
+						<a href={twitterIntentUrl} target="_blank" rel="noreferrer" aria-label={t("settingsCopy.profileShare.postOnX")}>
 							<XBrandIcon className="h-4 w-4" />
 											{s("Post")}
 						</a>
 					</Button>
 
 					<Button asChild variant="outline" className="h-9 justify-center rounded-lg">
-						<a href={linkedInIntentUrl} target="_blank" rel="noreferrer" aria-label="Share card on LinkedIn">
+						<a href={linkedInIntentUrl} target="_blank" rel="noreferrer" aria-label={t("settingsCopy.profileShare.shareOnLinkedIn")}>
 							<LinkedInBrandIcon className="h-4 w-4" />
 											{s("Share")}
 						</a>

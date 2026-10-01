@@ -1,0 +1,87 @@
+---
+title: "Patch लागू करें"
+description: "Responses models से validated patch operations लौटाएँ।"
+icon: "file-pen-line"
+---
+
+जब Responses workflow में file changes को structured patch operations के रूप में लौटाना हो, तो `phaseo:apply_patch` उपयोग करें। Phaseo operation validate करके client को लौटाता है; यह filesystem या repository को नहीं बदलता।
+
+<Note>
+`phaseo:apply_patch` is available on `/v1/responses`.
+</Note>
+
+## अनुरोध
+
+```bash
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-5-nano",
+    "input": "Create a small README patch for this project.",
+    "tools": [
+      { "type": "phaseo:apply_patch" }
+    ]
+  }'
+```
+
+## ऑपरेशन की संरचना
+
+जब model tool call करता है, तो operation object भेजता है:
+
+```json
+{
+  "operation": {
+    "type": "update_file",
+    "path": "/README.md",
+    "diff": "@@ ...\n-Old text\n+New text\n"
+  }
+}
+```
+
+Supported operation types:
+
+| Type | Required fields |
+| --- | --- |
+| `create_file` | `path`, `diff` |
+| `update_file` | `path`, `diff` |
+| `delete_file` | `path` |
+
+## टूल का परिणाम
+
+Phaseo validated operation को model loop में लौटाता है:
+
+```json
+{
+  "status": "completed",
+  "operation": {
+    "type": "update_file",
+    "path": "/README.md",
+    "diff": "@@ ...\n-Old text\n+New text\n"
+  },
+  "message": "Patch operation validated. The client must apply or reject this patch and report the result."
+}
+```
+
+Patch लागू करना, user को दिखाना, reject करना या model से संशोधित operation माँगना आपकी application की ज़िम्मेदारी है।
+
+## उपयोग और मूल्य निर्धारण
+
+Phaseo यह दर्ज करता है:
+
+```json
+{
+  "usage": {
+    "server_tool_use": {
+      "apply_patch_requests": 1
+    }
+  }
+}
+```
+
+Pricing cards इसे `server_tool_apply_patch_requests` meter से bill कर सकते हैं।
+
+## संबंधित
+
+- [Server tools](./index.mdx)
+- [Responses API](../../api-reference/endpoint/responses.mdx)

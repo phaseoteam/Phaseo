@@ -1,0 +1,24 @@
+---
+icon: "circle-check"
+title: "Condiciones de detención"
+description: "Limita ejecuciones de agentes PHP por pasos, tokens, coste, duración, herramientas o motivo de finalización."
+---
+
+Combina funciones de detención para aplicar límites de producto con independencia de que el modelo decida continuar.
+
+```php
+$agent = AgentSdk::createAgent(new AgentDefinition(
+    id: "bounded-research",
+    model: "openai/gpt-5.4-nano",
+    stopWhen: [
+        AgentSdk::stepCountIs(12),
+        AgentSdk::maxTokensUsed(40000),
+        AgentSdk::maxCost(2.50),
+        AgentSdk::maxDuration(120000),
+    ]
+));
+```
+
+El SDK también ofrece condiciones para llamadas a herramientas y motivos de finalización. Inspecciona `$result->run->stopReason` y el uso normalizado tras completarse la ejecución para que la aplicación pueda distinguir una detención por presupuesto de una finalización normal del modelo.
+
+Detenerse es un resultado acotado, no una excepción automática. Decide qué motivos de detención trata tu producto como satisfactorios, reintentables o visibles para el usuario.

@@ -91,7 +91,7 @@ function SidebarSkeleton() {
 	);
 }
 
-export function APIProvidersPageSkeleton() {
+export function APIProvidersPageSkeleton({ title }: { title: string }) {
 	return (
 		<div className="flex w-full flex-1">
 			<aside className="hidden w-[20rem] shrink-0 border-r border-border/70 bg-background/95 lg:block">
@@ -105,7 +105,7 @@ export function APIProvidersPageSkeleton() {
 			<section className="min-w-0 flex flex-1 flex-col">
 				<div className="shrink-0 border-b border-border/70 bg-background/95 px-4 pb-1 pt-2.5 backdrop-blur lg:px-8">
 					<div className="flex h-8 items-center justify-between gap-3">
-						<h1 className="text-xl font-bold leading-8">Providers</h1>
+						<h1 className="text-xl font-bold leading-8">{title}</h1>
 						<div className="flex w-full items-center gap-2 md:w-auto">
 							<Skeleton className="h-8 w-full rounded-md md:w-[15rem]" />
 							<Skeleton className="hidden h-8 w-40 rounded-md md:block" />

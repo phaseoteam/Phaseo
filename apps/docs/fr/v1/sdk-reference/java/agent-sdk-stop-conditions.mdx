@@ -1,0 +1,25 @@
+---
+icon: "circle-check"
+title: "Conditions d’arrêt"
+description: "Limitez le travail des agents Java par nombre d’étapes, jetons, coût, durée, outils ou motif de fin."
+---
+
+Combinez les fonctions d’arrêt dans `AgentDefinition.stopWhen` :
+
+```java
+var stopWhen = List.of(
+    AgentSdk.stepCountIs(12),
+    AgentSdk.maxTokensUsed(40_000),
+    AgentSdk.maxCost(2),
+    AgentSdk.maxDuration(Duration.ofMinutes(1))
+);
+```
+
+D’autres helpers incluent `hasToolCall(...)` et `finishReasonIs(...)`. La première condition correspondante consigne un motif d’arrêt et renvoie une exécution arrêtée au lieu de continuer silencieusement.
+
+Utilisez les limites de coût et de jetons uniquement si la route de modèle sélectionnée fournit ces informations. Conservez toujours une limite d’étapes ou de durée comme borne d’exécution de secours.
+
+## À lire aussi
+
+- [Tours dynamiques](./agent-sdk-dynamic-turns.mdx)
+- [Sorties et nouvelles tentatives](./agent-sdk-run-controls.mdx)

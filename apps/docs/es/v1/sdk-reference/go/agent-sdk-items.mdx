@@ -1,0 +1,32 @@
+---
+icon: "layers"
+title: "Elementos de flujo"
+description: "Consume eventos de texto, razonamiento, herramientas y elementos del proveedor en las ejecuciones de agentes de Go."
+---
+
+`Stream` proporciona una secuencia de eventos reproducible para interfaces de agentes en tiempo real. Los cambios de texto son los más sencillos de consumir; el flujo completo también incluye razonamiento, elementos del proveedor, progreso de herramientas, cambios del ciclo de vida y la respuesta final.
+
+```go
+stream := agent.Stream(ctx, phaseoagent.RunOptions{Input: prompt, Client: client})
+
+for event := range stream.Events() {
+  switch event.Type {
+  case "response.output_text.delta":
+    fmt.Print(event.Details["delta"])
+  case "response.reasoning.delta":
+    renderReasoning(event.Details)
+  case "response.item":
+    renderItem(event.Details["item"])
+  case "tool.preliminary_result":
+    renderProgress(event.Details)
+  }
+}
+
+result, err := stream.Result()
+```
+
+<Note>
+Go expone actualmente los elementos del proveedor mediante el mapa genérico de detalles de `AgentEvent`, no mediante una unión cerrada de tipos. Evalúa `event.Type`, valida los datos del elemento en el límite de la interfaz y conserva una alternativa para eventos desconocidos que permita mantener la compatibilidad futura.
+</Note>
+
+El historial de eventos se puede reproducir tras completar la ejecución. Así, distintos consumidores pueden mostrar el texto, guardar eventos y crear una cronología de auditoría sin iniciar otra solicitud al modelo.

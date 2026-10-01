@@ -1,0 +1,29 @@
+---
+title: "安装 Java Agent SDK（开发中）"
+description: "从源代码构建仍在开发中的 Java Agent SDK。"
+---
+
+<Note type="warning">
+  Java Agent SDK 尚未发布到 Maven Central。此源代码工作流仅供评估使用。
+</Note>
+
+## 要求
+
+- Java 17 或更高版本
+- Maven
+
+## 从源代码构建
+
+```bash
+git clone https://github.com/phaseoteam/Phaseo.git
+cd Phaseo
+mvn -f packages/sdk/agent-sdk-java/pom.xml package
+```
+
+运行示例前，请在应用环境中设置 `PHASEO_API_KEY`。
+
+## 下一步
+
+- [概览](./agent-sdk-overview.mdx)
+- [用法](./agent-sdk.mdx)
+

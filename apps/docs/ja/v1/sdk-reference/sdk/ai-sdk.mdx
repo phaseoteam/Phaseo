@@ -1,0 +1,116 @@
+---
+icon: "package"
+title: "Vercel AI SDK"
+description: "Phaseo の AI SDK 7 用プロバイダーを使って、テキストの生成、応答のストリーミング、ツールの利用を行います。"
+---
+
+Phaseo 公式プロバイダーを使うと、Vercel AI SDK 7 経由で Phaseo のモデルを呼び出せます。アプリケーションがすでに `generateText`、`streamText`、または別の AI SDK 関数を使っている場合は、ここから始めてください。
+
+## インストール
+
+<CodeGroup>
+
+```bash title="npm"
+npm install @phaseo/ai-sdk-provider
+```
+
+```bash title="pnpm"
+pnpm add @phaseo/ai-sdk-provider
+```
+
+```bash title="yarn"
+yarn add @phaseo/ai-sdk-provider
+```
+
+```bash title="bun"
+bun add @phaseo/ai-sdk-provider
+```
+
+</CodeGroup>
+
+バージョン指定のない Phaseo パッケージは npm の `latest` タグに従い、現在の AI SDK 7 対応プロバイダーを選択します。AI SDK 7 をピア依存関係として宣言しているため、ピア依存関係を自動インストールするパッケージマネージャーは、互換性のあるランタイムも自動でインストールします。
+
+サーバー環境に `PHASEO_API_KEY` を設定して、最初のリクエストを送信します。
+
+```typescript
+import { phaseo } from "@phaseo/ai-sdk-provider";
+import { generateText } from "ai";
+
+const result = await generateText({
+  model: phaseo("openai/gpt-5.6-sol"),
+  prompt: "Reply with: AI SDK works",
+});
+
+console.log(result.text);
+console.log(result.providerMetadata);
+```
+
+[Models エンドポイント](../../api-reference/endpoint/models.mdx)から最新のモデル ID を指定してください。
+
+## テキストをストリーミングする
+
+```typescript
+import { phaseo } from "@phaseo/ai-sdk-provider";
+import { streamText } from "ai";
+
+const result = streamText({
+  model: phaseo("openai/gpt-5.6-sol"),
+  prompt: "Stream a short greeting.",
+});
+
+for await (const chunk of result.textStream) {
+  process.stdout.write(chunk);
+}
+
+console.log(await result.providerMetadata);
+```
+
+## アプリケーションの情報を付与する
+
+Phaseo のリクエスト詳細にアプリケーションの情報を含める場合は、プロバイダーのインスタンスを作成します。
+
+```typescript
+import { createPhaseo } from "@phaseo/ai-sdk-provider";
+
+const phaseo = createPhaseo({
+  apiKey: process.env.PHASEO_API_KEY,
+  headers: {
+    "x-title": "My App",
+    "http-referer": "https://example.com",
+  },
+});
+```
+
+`PHASEO_BASE_URL` は省略可能です。既定値は `https://api.phaseo.app/v1` です。
+
+## AI SDK 7 でサポートされる機能
+
+- テキストの生成とストリーミング
+- 推論の出力と設定
+- 関数ツールとストリーミングされるツール入力
+- JSON と JSON Schema の出力
+- テキストファイルと画像ファイルの入力
+- URL 引用のソース
+- Embeddings と画像生成
+- 再ランキング
+- 文字起こしと音声生成
+- プロバイダーメタデータ、使用量、中断シグナル、生のストリームチャンク
+
+`rerank()` と `phaseo.rerankingModel(modelId)` を使って再ランキングを実行できます。利用できる機能はモデルやプロバイダーによって異なります。このプロバイダーは現在、管理対象ファイルの参照、スキル、プロバイダー側で実行されるツールの定義・結果・承認応答をサポート対象として案内していません。アプリケーション側で実行する関数ツールは、AI SDK の通常の実行および承認フローを利用できます。
+
+## 以前の AI SDK バージョン
+
+- AI SDK 6: `@phaseo/ai-sdk-provider@ai-sdk-v6` をインストールします。
+- AI SDK 5: `@phaseo/ai-sdk-provider@ai-sdk-v5` をインストールします。
+
+ピア依存関係の自動インストールを無効にしている場合は、対応するメジャーバージョンの `ai` (`ai@^7`、`ai@^6`、または `ai@^5`) を別途インストールしてください。
+
+## 関連ガイド
+
+- [テキストを生成する](./generate-text/index.mdx)
+- [テキストをストリーミングする](./stream-text/index.mdx)
+- [ツール呼び出し](./tool-calling/index.mdx)
+- [構造化出力](./structured-output/index.mdx)
+- [Embeddings](./embeddings/index.mdx)
+- [画像](./images/index.mdx)
+- [音声](./audio/index.mdx)

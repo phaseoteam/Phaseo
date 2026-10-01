@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import { useQueryState } from "nuqs";
 import {
 	Pagination,
@@ -56,8 +57,6 @@ import {
 	DialogTitle,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-import { getCreditTransactionKindLabel } from "@/lib/credits/promoCodes";
-import { formatRelativeToNow } from "@/lib/formatRelative";
 import { toast } from "sonner";
 
 type Transaction = {
@@ -87,13 +86,13 @@ const REFUND_WINDOW_MS = 24 * 60 * 60 * 1000;
 const TOP_UP_KINDS = new Set(["top_up", "top_up_one_off", "auto_top_up"]);
 const PAID_STATUSES = new Set(["paid", "succeeded"]);
 const REFUND_REASON_OPTIONS = [
-	{ value: "no_comment", label: "No comment" },
-	{ value: "accidental_purchase", label: "Accidental purchase" },
-	{ value: "duplicate_purchase", label: "Duplicate purchase" },
-	{ value: "wrong_amount", label: "Wrong amount selected" },
-	{ value: "testing_only", label: "Testing / sandbox use" },
-	{ value: "no_longer_needed", label: "No longer needed" },
-	{ value: "other", label: "Other" },
+	{ value: "no_comment" },
+	{ value: "accidental_purchase" },
+	{ value: "duplicate_purchase" },
+	{ value: "wrong_amount" },
+	{ value: "testing_only" },
+	{ value: "no_longer_needed" },
+	{ value: "other" },
 ] as const;
 type RefundReasonValue = (typeof REFUND_REASON_OPTIONS)[number]["value"];
 
@@ -116,10 +115,10 @@ const TRANSACTION_CHIP_TONES = {
 	neutral: "border-border bg-muted/50 text-muted-foreground",
 } as const;
 
-function formatNanos(nanos?: number | null, currency = "USD") {
+function formatNanos(nanos: number | null | undefined, currency: string, locale: string) {
 	const val = (nanos ?? 0) / 1_000_000_000;
 	try {
-		return new Intl.NumberFormat("en-US", {
+		return new Intl.NumberFormat(locale, {
 			style: "currency",
 			currency,
 			currencyDisplay: "symbol",
@@ -128,12 +127,12 @@ function formatNanos(nanos?: number | null, currency = "USD") {
 		}).format(val);
 	} catch {
 		// fallback if unknown currency code
-		return `${val.toFixed(2)} ${currency}`;
+		return `${new Intl.NumberFormat(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(val)} ${currency}`;
 	}
 }
 
-function formatDateTime(date: Date, timeZone: string): string {
-	return new Intl.DateTimeFormat("en-US", {
+function formatDateTime(date: Date, timeZone: string, locale: string): string {
+	return new Intl.DateTimeFormat(locale, {
 		year: "numeric",
 		month: "short",
 		day: "2-digit",
@@ -145,13 +144,36 @@ function formatDateTime(date: Date, timeZone: string): string {
 	}).format(date);
 }
 
-function formatSignedNanos(nanos?: number | null, currency = "USD") {
+function formatSignedNanos(nanos: number | null | undefined, currency: string, locale: string) {
 	const value = nanos ?? 0;
-	if (value === 0) return formatNanos(0, currency);
-	return `${value > 0 ? "+" : "-"}${formatNanos(Math.abs(value), currency)}`;
+	if (value === 0) return formatNanos(0, currency, locale);
+	return `${value > 0 ? "+" : "-"}${formatNanos(Math.abs(value), currency, locale)}`;
 }
 
-function statusChip(status?: string | null, kind?: string | null) {
+function formatRelativeDate(date: Date, nowMs: number, locale: string): string {
+	const formatter = new Intl.RelativeTimeFormat(locale, { numeric: "auto" });
+	const seconds = (date.getTime() - nowMs) / 1000;
+	const units = [
+		["year", 31_536_000],
+		["month", 2_592_000],
+		["week", 604_800],
+		["day", 86_400],
+		["hour", 3_600],
+		["minute", 60],
+		["second", 1],
+	] as const;
+	const [unit, size] = units.find(([, size]) => Math.abs(seconds) >= size) ?? units[units.length - 1];
+	return formatter.format(Math.round(seconds / size), unit);
+}
+
+type TransactionStatusKey = "succeeded" | "failed" | "pending" | "cancelled" | "processing" | "paid";
+type TransactionKindKey = "promoCredit" | "goodwillCredit" | "oneOff" | "topUp" | "autoTopUp" | "refund" | "adjustment" | "usage";
+
+function statusChip(
+	status: string | null | undefined,
+	kind: string | null | undefined,
+	labelFor: (key: TransactionStatusKey) => string,
+) {
 	// Use verbatim DB status values when they match the allowed set per kind.
 	const raw = (status ?? "").toLowerCase();
 	const k = (kind ?? "").toLowerCase();
@@ -162,32 +184,32 @@ function statusChip(status?: string | null, kind?: string | null) {
 	if (isRefundKind) {
 		if (raw === "succeeded")
 			return {
-				label: "succeeded",
+				label: labelFor("succeeded"),
 				className: cn("capitalize", TRANSACTION_CHIP_TONES.success),
 				icon: <CheckCircle className="h-3.5 w-3.5" aria-hidden />,
 			};
 		if (raw === "failed")
 			return {
-				label: "failed",
+				label: labelFor("failed"),
 				className: cn("capitalize", TRANSACTION_CHIP_TONES.danger),
 				icon: <XCircle className="h-3.5 w-3.5" aria-hidden />,
 			};
 		if (raw === "pending")
 			return {
-				label: "pending",
+				label: labelFor("pending"),
 				className: cn("capitalize", TRANSACTION_CHIP_TONES.warning),
 				icon: <Clock className="h-3.5 w-3.5" aria-hidden />,
 			};
 		if (raw === "cancelled" || raw === "canceled")
 			return {
-				label: "cancelled",
+				label: labelFor("cancelled"),
 				className: cn("capitalize", TRANSACTION_CHIP_TONES.neutral),
 				icon: <Ban className="h-3.5 w-3.5" aria-hidden />,
 			};
 
 		// Unknown -> default to 'processing'
 		return {
-			label: "processing",
+			label: labelFor("processing"),
 			className: cn("capitalize", TRANSACTION_CHIP_TONES.info),
 			icon: <Clock className="h-3.5 w-3.5" aria-hidden />,
 		};
@@ -196,33 +218,32 @@ function statusChip(status?: string | null, kind?: string | null) {
 	// Non-refund events: allowed statuses (verbatim): cancelled, processing, succeeded
 	if (raw === "cancelled" || raw === "canceled")
 		return {
-			label: "cancelled",
+			label: labelFor("cancelled"),
 			className: cn("capitalize", TRANSACTION_CHIP_TONES.neutral),
 			icon: <Ban className="h-3.5 w-3.5" aria-hidden />,
 		};
 	if (raw === "processing")
 		return {
-			label: "processing",
+			label: labelFor("processing"),
 			className: cn("capitalize", TRANSACTION_CHIP_TONES.info),
 			icon: <Clock className="h-3.5 w-3.5" aria-hidden />,
 		};
 	if (raw === "paid")
 		return {
-			label: "paid",
+			label: labelFor("paid"),
 			className: cn("capitalize", TRANSACTION_CHIP_TONES.success),
 			icon: <CheckCircle className="h-3.5 w-3.5" aria-hidden />,
 		};
 
 	// Unknown -> default to 'processing'
 	return {
-		label: "processing",
+		label: labelFor("processing"),
 		className: cn("capitalize", TRANSACTION_CHIP_TONES.neutral),
 		icon: <Clock className="h-3.5 w-3.5" aria-hidden />,
 	};
 }
 
-function kindBadge(kind?: string | null) {
-	const label = getCreditTransactionKindLabel(kind);
+function kindBadge(kind: string | null | undefined, labelFor: (key: TransactionKindKey) => string) {
 
 	if (kind === "promo_code")
 		return (
@@ -231,7 +252,7 @@ function kindBadge(kind?: string | null) {
 				className={cn(TRANSACTION_CHIP_BASE, TRANSACTION_CHIP_TONES.warning)}
 			>
 				<Zap className="h-3 w-3" aria-hidden />
-				{label ?? "Promo"}
+				{labelFor("promoCredit")}
 			</Badge>
 		);
 
@@ -242,7 +263,7 @@ function kindBadge(kind?: string | null) {
 				className={cn(TRANSACTION_CHIP_BASE, TRANSACTION_CHIP_TONES.teal)}
 			>
 				<Gift className="h-3 w-3" aria-hidden />
-				{label ?? "Goodwill Credit"}
+				{labelFor("goodwillCredit")}
 			</Badge>
 		);
 
@@ -254,7 +275,7 @@ function kindBadge(kind?: string | null) {
 				className={cn(TRANSACTION_CHIP_BASE, TRANSACTION_CHIP_TONES.success)}
 			>
 				<DollarSign className="h-3 w-3" aria-hidden />
-				{label ?? "One-Off"}
+				{labelFor("oneOff")}
 			</Badge>
 		);
 
@@ -265,7 +286,7 @@ function kindBadge(kind?: string | null) {
 				className={cn(TRANSACTION_CHIP_BASE, TRANSACTION_CHIP_TONES.success)}
 			>
 				<DollarSign className="h-3 w-3" aria-hidden />
-				{label ?? "Top Up"}
+				{labelFor("topUp")}
 			</Badge>
 		);
 
@@ -276,7 +297,7 @@ function kindBadge(kind?: string | null) {
 				className={cn(TRANSACTION_CHIP_BASE, TRANSACTION_CHIP_TONES.teal)}
 			>
 				<Repeat className="h-3 w-3" aria-hidden />
-				{label ?? "Auto Top Up"}
+				{labelFor("autoTopUp")}
 			</Badge>
 		);
 
@@ -287,7 +308,7 @@ function kindBadge(kind?: string | null) {
 				className={cn(TRANSACTION_CHIP_BASE, TRANSACTION_CHIP_TONES.danger)}
 			>
 				<ArrowUpCircle className="h-3 w-3" aria-hidden />
-				{label ?? "Refund"}
+				{labelFor("refund")}
 			</Badge>
 		);
 
@@ -298,7 +319,7 @@ function kindBadge(kind?: string | null) {
 				className={cn(TRANSACTION_CHIP_BASE, TRANSACTION_CHIP_TONES.neutral)}
 			>
 				<Zap className="h-3 w-3" aria-hidden />
-				{label ?? "Adjustment"}
+				{labelFor("adjustment")}
 			</Badge>
 		);
 
@@ -309,23 +330,11 @@ function kindBadge(kind?: string | null) {
 				className={cn(TRANSACTION_CHIP_BASE, TRANSACTION_CHIP_TONES.indigo)}
 			>
 				<CreditCard className="h-3 w-3" aria-hidden />
-				{label ?? "Usage"}
+				{labelFor("usage")}
 			</Badge>
 		);
 
 	return kind ? <Badge variant="secondary">{kind}</Badge> : null;
-}
-
-/** Credit is amount > 0, Debit is amount < 0 */
-function amountPill(nanos?: number | null, currency = "USD") {
-	const n = nanos ?? 0;
-	const prefix = n > 0 ? "+" : n < 0 ? "-" : "";
-	return (
-		<span className="inline-flex items-center font-medium tabular-nums text-foreground">
-			{prefix}
-			{formatNanos(Math.abs(n), currency)}
-		</span>
-	);
 }
 
 function parsePaymentIntentId(tx: Transaction): string | null {
@@ -336,28 +345,30 @@ function parsePaymentIntentId(tx: Transaction): string | null {
 	return id.startsWith("pi_") ? id : null;
 }
 
-function isRefundEligible(tx: Transaction): { ok: boolean; reason?: string } {
+type RefundEligibilityReason = "onlyTopUps" | "notPaid" | "missingPaymentIntent" | "missingTimestamp" | "windowExpired" | "refundInProgress";
+
+function isRefundEligible(tx: Transaction): { ok: boolean; reason?: RefundEligibilityReason } {
 	const kind = String(tx.kind ?? "").toLowerCase();
 	if (!TOP_UP_KINDS.has(kind)) {
-		return { ok: false, reason: "Only top-ups are refundable." };
+		return { ok: false, reason: "onlyTopUps" };
 	}
 
 	const status = String(tx.status ?? "").toLowerCase();
 	if (!PAID_STATUSES.has(status)) {
-		return { ok: false, reason: "This purchase is not in a paid state." };
+		return { ok: false, reason: "notPaid" };
 	}
 
 	if (!parsePaymentIntentId(tx)) {
-		return { ok: false, reason: "Missing payment intent." };
+		return { ok: false, reason: "missingPaymentIntent" };
 	}
 
 	const createdAt = tx.created_at ? new Date(tx.created_at).getTime() : NaN;
 	if (!Number.isFinite(createdAt)) {
-		return { ok: false, reason: "Missing purchase timestamp." };
+		return { ok: false, reason: "missingTimestamp" };
 	}
 
 	if (Date.now() - createdAt > REFUND_WINDOW_MS) {
-		return { ok: false, reason: "Refund window (24h) has expired." };
+		return { ok: false, reason: "windowExpired" };
 	}
 
 	return { ok: true };
@@ -369,6 +380,11 @@ export default function RecentTransactions({
 	stripeCustomerId,
 	currency = "USD",
 }: Props) {
+	const locale = useLocale();
+	const t = useTranslations("SettingsUI");
+	const transactionText = (key: string) => t(`credits.transactions.${key}` as never);
+	const statusLabel = (key: TransactionStatusKey) => transactionText(`status.${key}`);
+	const kindLabel = (key: TransactionKindKey) => transactionText(`kind.${key}`);
 	const userTimeZone =
 		typeof Intl !== "undefined"
 			? Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"
@@ -441,7 +457,7 @@ export default function RecentTransactions({
 	async function openDocument(tx: Transaction) {
 		const paymentIntentId = parsePaymentIntentId(tx);
 		if (!paymentIntentId) {
-			toast.error("No invoice or receipt is available for this row.");
+			toast.error(transactionText("documentUnavailable"));
 			return;
 		}
 		setBusy(tx.id, true);
@@ -453,12 +469,12 @@ export default function RecentTransactions({
 			});
 			const payload = await response.json().catch(() => ({}));
 			if (!response.ok || !payload?.url) {
-				throw new Error(payload?.error ?? "Document lookup failed");
+				throw new Error("document_lookup_failed");
 			}
 			window.open(String(payload.url), "_blank", "noopener,noreferrer");
-			toast.success(payload?.message ?? "Opened document");
-		} catch (error: any) {
-			toast.error(error?.message ?? "Failed to fetch document");
+			toast.success(transactionText("documentOpened"));
+		} catch {
+			toast.error(transactionText("documentFailed"));
 		} finally {
 			setBusy(tx.id, false);
 		}
@@ -467,7 +483,7 @@ export default function RecentTransactions({
 	async function requestRefund(tx: Transaction, reason: string): Promise<boolean> {
 		const paymentIntentId = parsePaymentIntentId(tx);
 		if (!paymentIntentId) {
-			toast.error("No payment intent found for this purchase.");
+			toast.error(transactionText("paymentIntentMissing"));
 			return false;
 		}
 		setBusy(tx.id, true);
@@ -480,19 +496,13 @@ export default function RecentTransactions({
 						body: JSON.stringify({ paymentIntentId, reason }),
 					});
 					const payload = await response.json().catch(() => ({}));
-					if (!response.ok) {
-						throw new Error(
-							payload?.error ?? "Refund request failed",
-						);
-					}
+					if (!response.ok) throw new Error("refund_request_failed");
 					return payload;
 				})(),
 				{
-					loading: "Submitting refund request...",
-					success: (result) =>
-						result?.message ?? "Refund request submitted",
-					error: (err) =>
-						err?.message ?? "Failed to submit refund request",
+					loading: transactionText("refundSubmitting"),
+					success: transactionText("refundSubmitted"),
+					error: transactionText("refundRequestFailed"),
 				},
 			);
 			const params = new URLSearchParams(Array.from(searchParams.entries()));
@@ -517,10 +527,9 @@ export default function RecentTransactions({
 		<section className="space-y-3">
 			<div className="w-full flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 				<div>
-					<h3 className="text-xl font-semibold">Recent Transactions</h3>
+					<h3 className="text-xl font-semibold">{transactionText("title")}</h3>
 					<p className="mt-1 text-xs text-muted-foreground">
-						Self-serve refunds are available for eligible top-ups within
-						24 hours if that purchased credit lot has not been used.
+						{transactionText("description")}
 					</p>
 				</div>
 				<Button
@@ -544,7 +553,7 @@ export default function RecentTransactions({
 						}
 					}}
 				>
-					Manage Payment Methods
+					{transactionText("managePaymentMethods")}
 					<ExternalLink className="h-4 w-4 ml-1" />
 				</Button>
 			</div>
@@ -554,12 +563,12 @@ export default function RecentTransactions({
 					<Table className="text-xs">
 						<TableHeader>
 							<TableRow className="h-9">
-								<TableHead className="w-[220px]">Timestamp</TableHead>
-								<TableHead className="w-[130px]">Amount</TableHead>
-								<TableHead className="w-[170px]">Reason</TableHead>
-								<TableHead className="w-[140px]">Status</TableHead>
-								<TableHead className="w-[150px]">Balance</TableHead>
-								<TableHead className="w-[120px]">Actions</TableHead>
+								<TableHead className="w-[220px]">{transactionText("timestamp")}</TableHead>
+								<TableHead className="w-[130px]">{transactionText("amount")}</TableHead>
+								<TableHead className="w-[170px]">{transactionText("reason")}</TableHead>
+								<TableHead className="w-[140px]">{transactionText("status")}</TableHead>
+								<TableHead className="w-[150px]">{transactionText("balance")}</TableHead>
+								<TableHead className="w-[120px]">{transactionText("actions")}</TableHead>
 							</TableRow>
 						</TableHeader>
 						<TableBody>
@@ -569,12 +578,12 @@ export default function RecentTransactions({
 										colSpan={6}
 										className="py-8 text-center text-sm text-muted-foreground"
 									>
-										No credits purchased
+										{transactionText("noCreditsPurchased")}
 									</TableCell>
 								</TableRow>
 							) : (
 								pageItems.map((t) => {
-									const { label, className, icon } = statusChip(t.status, t.kind);
+										const { label, className, icon } = statusChip(t.status, t.kind, statusLabel);
 									const createdAtDate = t.created_at ? new Date(t.created_at) : null;
 									const amountNanos =
 										typeof t.amount_nanos === "number" ? t.amount_nanos : null;
@@ -604,7 +613,7 @@ export default function RecentTransactions({
 										activeRefundSourceIds.has(paymentIntentId)
 											? {
 													ok: false,
-													reason: "A refund for this purchase is already in progress or completed.",
+												reason: "refundInProgress",
 												}
 											: baseEligibility;
 									const busy = Boolean(actionBusy[t.id]);
@@ -616,7 +625,7 @@ export default function RecentTransactions({
 													<HoverCard>
 														<HoverCardTrigger asChild>
 																	<span className="cursor-help underline decoration-dotted underline-offset-2">
-																{createdAtDate.toLocaleString()}
+																{new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeStyle: "medium" }).format(createdAtDate)}
 															</span>
 														</HoverCardTrigger>
 														<HoverCardContent align="start" className="w-auto">
@@ -624,20 +633,20 @@ export default function RecentTransactions({
 																<div className="grid grid-cols-[120px_1fr] gap-2">
 																	<div className="text-muted-foreground">{userTimeZone}</div>
 																	<div className="font-mono">
-																		{formatDateTime(createdAtDate, userTimeZone)}
+																		{formatDateTime(createdAtDate, userTimeZone, locale)}
 																	</div>
 																</div>
 																<div className="grid grid-cols-[120px_1fr] gap-2">
 																	<div className="text-muted-foreground">UTC</div>
 																	<div className="font-mono">
-																		{formatDateTime(createdAtDate, "UTC")}
+																		{formatDateTime(createdAtDate, "UTC", locale)}
 																	</div>
 																</div>
 																<div className="grid grid-cols-[120px_1fr] gap-2">
-																	<div className="text-muted-foreground">Relative</div>
+																	<div className="text-muted-foreground">{transactionText("relative")}</div>
 																	<div className="font-mono">
 																		{relativeNowMs
-																			? formatRelativeToNow(createdAtDate, relativeNowMs)
+																			? formatRelativeDate(createdAtDate, relativeNowMs, locale)
 																			: "-"}
 																	</div>
 																</div>
@@ -649,9 +658,9 @@ export default function RecentTransactions({
 												)}
 											</TableCell>
 											<TableCell className="py-2 font-medium tabular-nums">
-												{amountPill(t.amount_nanos ?? 0, currency)}
+												{formatSignedNanos(t.amount_nanos ?? 0, currency, locale)}
 											</TableCell>
-											<TableCell className="py-2">{kindBadge(t.kind)}</TableCell>
+											<TableCell className="py-2">{kindBadge(t.kind, kindLabel)}</TableCell>
 											<TableCell className="py-2">
 												<Badge
 													variant="outline"
@@ -669,28 +678,28 @@ export default function RecentTransactions({
 													<HoverCard>
 														<HoverCardTrigger asChild>
 															<span className="cursor-default font-medium tabular-nums">
-																{formatNanos(after, currency)}
+																			{formatNanos(after, currency, locale)}
 															</span>
 														</HoverCardTrigger>
 														<HoverCardContent align="start" className="w-64">
 															<div className="space-y-3 text-xs">
 																<div>
 																	<div className="font-medium text-foreground">
-																		Balance movement
+																{transactionText("balanceMovement")}
 																	</div>
 																	<p className="mt-0.5 text-muted-foreground">
-																		Balance after this transaction settled.
+																	{transactionText("balanceAfterSettlement")}
 																	</p>
 																</div>
 																<div className="grid gap-2">
 																	<div className="flex items-center justify-between gap-4">
-																		<span className="text-muted-foreground">Before</span>
+																		<span className="text-muted-foreground">{transactionText("before")}</span>
 																		<span className="font-mono font-medium tabular-nums">
-																			{before !== null ? formatNanos(before, currency) : "-"}
+																			{before !== null ? formatNanos(before, currency, locale) : "-"}
 																		</span>
 																	</div>
 																	<div className="flex items-center justify-between gap-4">
-																		<span className="text-muted-foreground">Change</span>
+																		<span className="text-muted-foreground">{transactionText("change")}</span>
 																		<span
 																			className={cn(
 																				"font-mono font-medium tabular-nums",
@@ -701,13 +710,13 @@ export default function RecentTransactions({
 																						: "text-muted-foreground"
 																			)}
 																		>
-																			{formatSignedNanos(amountNanos, currency)}
+																			{formatSignedNanos(amountNanos, currency, locale)}
 																		</span>
 																	</div>
 																	<div className="flex items-center justify-between gap-4 border-t pt-2">
-																		<span className="text-muted-foreground">After</span>
+																		<span className="text-muted-foreground">{transactionText("after")}</span>
 																		<span className="font-mono font-semibold tabular-nums text-foreground">
-																			{formatNanos(after, currency)}
+																			{formatNanos(after, currency, locale)}
 																		</span>
 																	</div>
 																</div>
@@ -728,24 +737,24 @@ export default function RecentTransactions({
 															disabled={busy}
 															onClick={() => openDocument(t)}
 														>
-															Invoice
+															{transactionText("invoice")}
 														</Button>
 														<Button
 															size="sm"
 															variant="link"
 																	className="h-auto p-0 text-xs text-foreground underline underline-offset-2 hover:text-foreground"
 															disabled={busy || !refundEligibility.ok}
-															title={
-																refundEligibility.ok
-																	? "Refund this purchase"
+																title={refundEligibility.ok
+																	? transactionText("refundThisPurchase")
 																	: refundEligibility.reason
-															}
+																		? transactionText(`refundEligibility.${refundEligibility.reason}`)
+																		: undefined}
 															onClick={() => {
 																setRefundDialogTx(t);
 																setRefundReason("no_comment");
 															}}
 														>
-															Refund
+															{transactionText("refund")}
 														</Button>
 													</div>
 												) : (
@@ -838,14 +847,14 @@ export default function RecentTransactions({
 			>
 				<DialogContent>
 					<DialogHeader>
-						<DialogTitle>Request refund?</DialogTitle>
+						<DialogTitle>{transactionText("requestTitle")}</DialogTitle>
 						<DialogDescription>
-							Select an optional reason for this self-serve refund request.
+							{transactionText("requestDescription")}
 						</DialogDescription>
 					</DialogHeader>
 					<div className="space-y-2">
 						<p className="text-xs text-muted-foreground">
-							Reason is optional and logged for audit.
+							{transactionText("optionalReason")}
 						</p>
 						<Select
 							value={refundReason}
@@ -855,12 +864,12 @@ export default function RecentTransactions({
 							disabled={Boolean(refundDialogTx && actionBusy[refundDialogTx.id])}
 						>
 							<SelectTrigger>
-								<SelectValue placeholder="No comment" />
+								<SelectValue placeholder={transactionText("refundReason.no_comment")} />
 							</SelectTrigger>
 							<SelectContent>
 								{REFUND_REASON_OPTIONS.map((option) => (
 									<SelectItem key={option.value} value={option.value}>
-										{option.label}
+										{transactionText(`refundReason.${option.value}`)}
 									</SelectItem>
 								))}
 							</SelectContent>
@@ -876,7 +885,7 @@ export default function RecentTransactions({
 							}}
 							disabled={Boolean(refundDialogTx && actionBusy[refundDialogTx.id])}
 						>
-							Cancel
+							{transactionText("cancel")}
 						</Button>
 						<Button
 							type="button"
@@ -898,8 +907,8 @@ export default function RecentTransactions({
 							}}
 						>
 							{refundDialogTx && actionBusy[refundDialogTx.id]
-								? "Submitting..."
-								: "Submit Refund"}
+								? transactionText("submitting")
+								: transactionText("submitRefund")}
 						</Button>
 					</DialogFooter>
 				</DialogContent>
@@ -907,4 +916,3 @@ export default function RecentTransactions({
 		</section>
 	);
 }
-

@@ -1,0 +1,27 @@
+---
+icon: "braces"
+title: "Ausgaben und Wiederholungsversuche"
+description: "Validiere .NET-Agent-Ausgaben und wiederhole begrenzte Modellfehler."
+---
+
+Validiere die finale Ausgabe, wenn nachgelagerter .NET-Code einen strukturierten Wert erwartet. Behandle Validierungsfehler als Vertragsfehler und nicht als vorübergehende Transportfehler.
+
+Konfiguriere begrenzte Wiederholungen mit `ModelRetryConfig`:
+
+```csharp
+ModelRetry = new ModelRetryConfig
+{
+    MaxRetries = 2,
+    Backoff = TimeSpan.FromMilliseconds(250),
+}
+```
+
+Der abgeschlossene Schritt enthält weiterhin die endgültige Anzahl der Modellversuche. Lokale Tool-Fehler werden getrennt behandelt und nicht als Modellanfragen wiederholt.
+
+`GatewayAgentClientOptions` enthält Optionen für strukturierte Antworten, Routing, Provider, Reasoning, Tool-Auswahl, Prompt-Cache und weitere Anfrageparameter.
+
+## Weiterführende Themen
+
+- [Dynamische Turns](./agent-sdk-dynamic-turns.mdx)
+- [Abbruchbedingungen](./agent-sdk-stop-conditions.mdx)
+- [Fehler und Fehlerbehebung](./agent-sdk-observability.mdx)

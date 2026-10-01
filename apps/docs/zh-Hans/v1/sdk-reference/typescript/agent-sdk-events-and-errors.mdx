@@ -1,0 +1,66 @@
+---
+icon: "triangle-alert"
+title: "错误与故障排查"
+description: "处理网关故障、验证错误和 Agent 运行失败。"
+---
+
+当应用需要决定是否重试、要求用户更改输入，或向操作人员显示请求详情时，请使用 Agent SDK 结构化错误。
+
+## 处理网关故障
+
+网关故障会以 `AgentGatewayError` 的形式重新抛出：
+
+```typescript
+import { AgentGatewayError } from "@phaseo/agent-sdk";
+
+try {
+  await agent.run({ input, client });
+} catch (error) {
+  if (error instanceof AgentGatewayError) {
+    console.error(error.status, error.requestId, error.reason);
+  }
+  throw error;
+}
+```
+
+运行或步骤失败时，会保留可用的网关错误详情。
+
+## 处理 schema 错误
+
+`AgentSchemaValidationError` 用于标识无效的工具输入/输出、进度事件或最终输出。应将其视为契约错误，而不是暂时性模型故障。
+
+```typescript
+import { AgentSchemaValidationError } from "@phaseo/agent-sdk";
+
+try {
+  await agent.run({ input, client });
+} catch (error) {
+  if (error instanceof AgentSchemaValidationError) {
+    console.error(error.target, error.message);
+  }
+  throw error;
+}
+```
+
+## 检查失败的运行
+
+如果运行时可以为失败保存检查点，请检查：
+
+- `result.run.status`
+- `result.run.error`
+- 最新步骤的 `status`、`error` 和 `modelAttempts`
+- 用于关联网关日志的 `requestId` 和 `nativeResponseId`
+
+## 常见检查项
+
+- 确认服务器进程可以读取 `PHASEO_API_KEY`。
+- 为每个工具分配唯一且稳定的 `id`。
+- 批准、拒绝或提供手动输出时，请使用精确的工具调用 ID。
+- 限制模型重试次数；验证或审批失败时不要盲目重试。
+- 将控制权交还浏览器或队列工作进程前，请先持久化暂停运行的状态。
+
+## 相关指南
+
+- [生命周期钩子](./agent-sdk-lifecycle-hooks.mdx)
+- [开发工具](./agent-sdk-devtools.mdx)
+- [状态与审批](./agent-sdk-state-and-approval.mdx)

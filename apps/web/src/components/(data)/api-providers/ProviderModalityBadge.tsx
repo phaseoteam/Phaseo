@@ -1,4 +1,7 @@
+"use client";
+
 import type { LucideIcon } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import { getModalityTone } from "@/lib/models/modalityStyles";
 import { cn } from "@/lib/utils";
@@ -19,6 +22,9 @@ export function ProviderModalityBadge({
 	outputCount,
 }: ProviderModalityBadgeProps) {
 	const tone = getModalityTone(modality);
+	const locale = useLocale();
+	const t = useTranslations("Catalogue.providerModelList");
+	const formatCount = (count: number) => new Intl.NumberFormat(locale).format(count);
 
 	return (
 		<HoverCard>
@@ -44,8 +50,8 @@ export function ProviderModalityBadge({
 					</div>
 				</div>
 				<div className="mt-3 grid grid-cols-2 gap-2 border-t border-border/60 pt-3">
-					<div><p className="text-xs text-muted-foreground">Input</p><p className="font-medium tabular-nums">{inputCount.toLocaleString()}</p></div>
-					<div><p className="text-xs text-muted-foreground">Output</p><p className="font-medium tabular-nums">{outputCount.toLocaleString()}</p></div>
+					<div><p className="text-xs text-muted-foreground">{t("input")}</p><p className="font-medium tabular-nums">{formatCount(inputCount)}</p></div>
+					<div><p className="text-xs text-muted-foreground">{t("output")}</p><p className="font-medium tabular-nums">{formatCount(outputCount)}</p></div>
 				</div>
 			</HoverCardContent>
 		</HoverCard>

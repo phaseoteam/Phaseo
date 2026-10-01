@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Pencil } from "lucide-react";
 import { fetchInternalAuthStatus } from "@/lib/fetchers/internal/fetchInternalAuthStatus";
+import { getTranslations } from "next-intl/server";
 
 interface ModelEditButtonProps {
 	modelId: string;
@@ -47,6 +48,7 @@ export default async function ModelEditButton({
 	}
 
 	const editorTab = mapPageTabToEditorTab(tab);
+	const tEditor = await getTranslations("Common.ui.modelEditor");
 	const href = editorTab
 		? `/internal/data/models/edit/${modelId}?tab=${encodeURIComponent(editorTab)}`
 		: `/internal/data/models/edit/${modelId}`;
@@ -58,7 +60,7 @@ export default async function ModelEditButton({
 			className="mt-1 h-6 w-6 shrink-0 rounded-sm p-0 text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900"
 			asChild
 		>
-			<Link href={href} aria-label="Edit model">
+			<Link href={href} aria-label={tEditor("dialogTitle")}>
 				<Pencil className="h-2.5 w-2.5" />
 			</Link>
 		</Button>

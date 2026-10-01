@@ -1,0 +1,13 @@
+---
+title: "创建 API 密钥"
+sidebarTitle: "创建 API 密钥"
+badge: "Beta"
+openapi: "/zh-Hans/openapi/v1/openapi.localized.yaml POST /keys"
+description: "在已验证的工作区中创建新的 API 密钥。"
+---
+<Note>
+此端点需要管理 API 密钥。不接受标准 Gateway API 密钥。
+</Note>
+
+创建时仅返回一次明文 API 密钥。请求可以包含兼容字段 `limit`、`limit_reset` 和 `include_byok_in_limit`；Phaseo 目前仅为兼容性保留 `include_byok_in_limit`，并始终将 BYOK 排除在此密钥的限额之外。
+

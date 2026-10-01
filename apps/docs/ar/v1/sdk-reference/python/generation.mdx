@@ -1,0 +1,14 @@
+---
+icon: "search-check"
+title: "البحث عن عملية إنشاء"
+description: "استدعِ البحث /generations باستخدام Python SDK."
+---
+
+```python
+record = client.get_generation("G-01ABC...")
+
+print(record)
+```
+
+عند حفظ تفاصيل الطلب، يتضمن السجل المعاد أيضًا `replay_supported` و`replay_request` لإعادة إرسال الحمولة الملتقطة إلى نقطة النهاية الأصلية.
+

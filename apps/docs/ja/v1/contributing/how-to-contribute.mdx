@@ -1,0 +1,192 @@
+---
+icon: "users-round"
+title: "貢献方法"
+description: "環境の準備からプルリクエストの送信まで、Phaseoへの初めての貢献方法を順を追って説明します。"
+---
+
+**Phaseo**への貢献は、簡単で透明性が高く、誰にでも開かれています。
+モデル情報の編集、ベンチマークデータの更新、ドキュメントの改善、新しいアイデアの提案など、貢献の全手順を説明します。
+
+---
+
+## 始める前に
+
+次の基本ツールをインストールしてください:
+
+| ツール | 用途 | インストール |
+| ------------------ | ---------------------------------------------- | -------------------------------------------------- |
+| **Git**            | 変更をクローンしてプッシュするためのバージョン管理ツール。     | [Gitをインストール](https://git-scm.com/downloads)       |
+| **Node.js (v20+)** | Phaseoのサイトをローカルで実行します（Next.js）。      | [Node.jsをダウンロード](https://nodejs.org/en/download) |
+| **pnpm**           | このプロジェクトで使用するパッケージマネージャー。          | `npm install -g pnpm`                              |
+| **GitHubアカウント** | フォーク、Issue、プルリクエストに必要です。 | [こちらから登録](https://github.com/signup)          |
+
+**データ**または**Markdownドキュメント**だけを編集する場合は、ローカル環境を用意せずにGitHub上で直接変更できます。
+
+---
+
+## 1. リポジトリをフォークする
+
+[PhaseoのGitHubリポジトリ](https://github.com/phaseoteam/Phaseo)を開き、右上の **Fork** をクリックします。
+これで自由に編集できる自分用のプロジェクトコピーが作成されます。
+
+---
+
+## 2. フォークをクローンする
+
+```bash
+git clone https://github.com/yourusername/Phaseo.git
+cd Phaseo
+```
+
+これでフォークがローカルマシンにダウンロードされます。
+
+---
+
+## 3. 新しいブランチを作成する
+
+変更ごとに新しいブランチを作成することをおすすめします:
+
+```bash
+git checkout -b update-benchmark-data
+```
+
+変更内容が分かり、レビューしやすい説明的なブランチ名を付けてください。
+
+例:
+
+-   `fix-{model-name}`
+-   `add-new-organisation`
+-   `improve-docs`
+-   `update-pricing-for-{model-name}`
+
+---
+
+## 4. 変更を加える
+
+編集する内容に応じて、次の場所を確認してください:
+
+| 対象 | ファイル | 説明 |
+| --------------------- | --------------------------------------------- | ----------------------------------------------------- |
+| **モデルデータ**        | `/packages/data/catalog/src/data/models/**/model.json`     | モデルのメタデータ、料金、ベンチマークを追加または更新します。 |
+| **組織データ** | `/packages/data/catalog/src/data/organisations/*.json`     | 企業や研究グループの情報を更新します。    |
+| **ベンチマークデータ**    | `/packages/data/catalog/src/data/benchmarks/**/*.json`     | 新しい評価結果や修正を提出します。         |
+| **ドキュメント**     | `/apps/docs/v1/**/*.mdx`                      | ガイド、リファレンス、ドキュメントページを改善または拡充します。 |
+| **ゲートウェイ**           | `/apps/api/*`                                 | APIゲートウェイを変更します。                      |
+
+データを編集する場合は、[リポジトリ構成](./repo-structure.mdx)に記載されたスキーマとフィールド形式に従ってください。
+
+---
+
+## 5. 変更をプレビューする（任意）
+
+変更をローカルでプレビューする場合:
+
+```bash
+pnpm install
+pnpm dev
+```
+
+ウェブの変更には[http://localhost:3100](http://localhost:3100)、ドキュメントの変更には[http://localhost:3101](http://localhost:3101)を使います。ウェブアプリはデータベースからデータを取得するため、データの変更はPR作成後にプレビューできます。
+
+---
+
+## 6. 変更をコミットする
+
+変更内容を確認したら、コミットします:
+
+```bash
+git add .
+git commit -m "Updated benchmark data for Claude 3.5 Sonnet"
+```
+
+レビュー担当者が変更内容を理解できるよう、コミットメッセージを具体的にしてください。
+
+---
+
+## 7. ブランチをプッシュする
+
+```bash
+git push origin update-benchmark-data
+```
+
+---
+
+## 8. プルリクエスト（PR）を作成する
+
+1. GitHubで自分のフォークを開きます。
+2. PRを作成する案内が表示されたら、**Compare & Pull Request**をクリックします。
+3. 変更内容に必要な情報をPRテンプレートに記入します。
+4. PRを送信します。
+
+PRがレビューされ承認されると、Phaseoのメインリポジトリにマージされます。
+
+---
+
+## 9. お祝い
+
+マージされると貢献内容が公開されます。ここまで進めてくださり、ありがとうございます。
+
+<Card
+	title="貢献者を見る"
+	icon="users"
+	href="https://phaseo.app/contribute"
+	horizontal
+>
+	Phaseoの開発に協力した人々を紹介します。
+</Card>
+
+---
+
+## 貢献のヒント
+
+-   PRは**小さく、目的を絞って**ください。1つのPRにつき、関連する変更を1つにまとめます。
+-   可能であれば[Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/)に従い、`fix:`、`add:`、`chore:`などの**明確なプレフィックス**を使ってください。
+-   データの正確性に関わる変更には、**出典や参考資料**を添えてください。
+-   大きなアイデアや不確かな案は、実装を始める前に **GitHub Discussions** またはDiscordで相談してください。
+-   常に敬意を持って接し、[行動規範](../community/code-of-conduct.mdx)を守ってください。
+
+---
+
+## 作業手順の例
+
+```bash
+# 1. Fork and clone
+
+git clone https://github.com/yourusername/Phaseo.git
+cd Phaseo
+
+# 2. Create branch
+git checkout -b add-openai-new-model
+
+# 3. Make changes
+# e.g., update packages/data/catalog/src/data/models/openai/new-model/model.json
+
+# 4. Commit and push
+git add .
+git commit -m "Add new OpenAI model entry"
+git push origin add-new-openai-model
+
+# 5. Create a Pull Request on GitHub
+```
+
+---
+
+## 次のステップ
+
+<Columns cols={2}>
+	<Card
+		title="リポジトリ構成"
+		icon="folder-tree"
+		href="./repo-structure.mdx"
+	>
+		フォルダー構成と主要なデータファイルの場所を確認できます。
+	</Card>
+	<Card
+		title="モデルを編集"
+		icon="brain"
+		href="./editing-a-model.mdx"
+	>
+		モデル情報の追加や更新を例に、実践的な手順を確認します。
+	</Card>
+</Columns>
+

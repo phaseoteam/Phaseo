@@ -1,0 +1,25 @@
+---
+title: "SDK Java (em desenvolvimento)"
+description: "Compile o cliente Java, ainda em desenvolvimento, a partir do código-fonte."
+---
+
+<Note type="warning">
+  O SDK Java está em desenvolvimento e ainda não foi publicado no Maven Central. Use a compilação a partir do código-fonte apenas para avaliação.
+</Note>
+
+O SDK Java agora inclui um wrapper leve, escrito à mão, sobre o cliente gerado:
+
+- `app.phaseo.sdk.Phaseo` oferece helpers para chat, respostas, mensagens Anthropic, imagens, embeddings, moderação, voz/transcrição/tradução, lotes, arquivos, vídeo, modelos/provedores/endpoints/organizações/preços, descoberta e alterações do ciclo de vida de chaves de API, ciclo de vida do workspace e da chave atual, cálculo de preços, atividade/créditos/análises, consulta de gerações, validação do ciclo de vida, URLs WebSocket de tarefas assíncronas por helpers diretos ou por `client.asyncJobs.websocketUrl(...)`, além de telemetria compatível com devtools.
+- `app.phaseo.gen.Client` e `app.phaseo.gen.Operations` continuam disponíveis na camada inferior para oferecer cobertura completa das operações de baixo nível quando necessário.
+
+## Status atual
+
+- Em desenvolvimento; ainda não publicado no Maven Central.
+- O código-fonte fica em `packages/sdk/sdk-java`.
+- O código gerado de baixo nível fica em `packages/sdk/sdk-java/src/gen`.
+- O wrapper escrito à mão fica em `packages/sdk/sdk-java/src/app/phaseo/sdk`.
+
+## Próximas etapas
+
+- [Instalação](./installation.mdx)
+- [Uso](./usage.mdx)

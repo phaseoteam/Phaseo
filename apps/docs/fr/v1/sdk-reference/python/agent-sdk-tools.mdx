@@ -1,0 +1,23 @@
+---
+icon: "wrench"
+title: "Outils"
+description: "Définissez des outils Python validés, soumis à approbation, manuels et capables de produire des événements de progression."
+---
+
+Créez des valeurs `AgentTool` et transmettez-les via `define_tool(...)`. Les outils peuvent définir :
+
+- des `parameters` JSON présentés au modèle
+- des validateurs appelables `input_schema`, `output_schema` et `event_schema`
+- `timeout_ms` et `execute(input, runtime)`
+- `require_approval` booléen ou appelable
+- `on_tool_called` et `on_response_received` pour le travail interactif
+- `next_turn_params` et `on_error="return-to-model"`
+
+Appelez `runtime.emit_progress(value)` pour communiquer des résultats préliminaires et `runtime.set_context(value)` lorsque les tours suivants ont besoin d’un contexte applicatif actualisé.
+
+Utilisez `AgentToolExecutionConfig(tool_concurrency=...)` pour les outils indépendants. Les résultats enregistrés conservent l’ordre des appels du modèle, même lorsque les exécutions se chevauchent.
+
+## À lire aussi
+
+- [État et approbation](./agent-sdk-state-and-approval.mdx)
+- [Contrôles d’exécution](./agent-sdk-run-controls.mdx)

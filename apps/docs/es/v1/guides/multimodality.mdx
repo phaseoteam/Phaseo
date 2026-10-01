@@ -1,0 +1,27 @@
+---
+title: "Multimodalidad"
+description: "Usa texto, imágenes, audio, vídeo y otras modalidades a través del gateway."
+icon: "shapes"
+---
+
+El gateway ofrece varias modalidades a través de una API unificada. Cada endpoint corresponde a una capacidad distinta y la compatibilidad de modelos varía según el proveedor.
+
+## Modalidades y endpoints
+
+| Modalidad | Endpoints principales | Notas |
+| --- | --- | --- |
+| Texto | `/v1/responses`, `/v1/chat/completions`, `/v1/messages` | Salidas estructuradas y conversacionales. |
+| Imágenes | `/v1/images/generations`, `/v1/images/edits` | Generación de imágenes a partir de texto y edición de imágenes. |
+| Audio (TTS/STT/traducciones) | `/v1/audio/speech`, `/v1/audio/transcriptions`, `/v1/audio/translations` | Texto a voz, voz a texto y traducción de audio hablado. |
+| Vídeo | `/v1/videos`, `/v1/videos/{video_id}`, `/v1/videos/{video_id}/content`, `/v1/videos/{video_id}` (DELETE) | Crea trabajos de vídeo asíncronos, consulta su estado, recupera contenido y elimina trabajos. |
+| Música | `/v1/music/generate` | Generación musical mediante proveedores compatibles. |
+| OCR | `/v1/ocr` | Extrae texto de imágenes cuando sea compatible. |
+
+## Comprobar la compatibilidad de los modelos
+
+Usa el [endpoint de modelos](../api-reference/endpoint/models.mdx) para consultar los modelos disponibles y los endpoints que admiten. La cobertura de proveedores está disponible en el [endpoint de proveedores](../api-reference/endpoint/providers.mdx).
+
+## Buenas prácticas
+
+- Elige el endpoint según la modalidad que necesites, aunque el nombre del modelo se comparta entre modalidades.
+- Antes de publicar, valida las cargas con la [referencia de la API](../api-reference/introduction.mdx).

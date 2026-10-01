@@ -3,6 +3,7 @@ import SubscriptionPlanOverview from "@/components/(data)/subscription-plans/Sub
 import { fetchFrontendSubscriptionPlan } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import type { Metadata } from "next";
 import { buildMetadata } from "@/lib/seo";
+import { formatSubscriptionPlanMessage, getSubscriptionPlansMessagesFor } from "@/i18n/subscription-plans";
 
 async function fetchPlan(baseId: string) {
 	try {
@@ -17,9 +18,10 @@ async function fetchPlan(baseId: string) {
 }
 
 export async function generateMetadata(props: {
-	params: Promise<{ planId: string }>;
+	params: Promise<{ locale: string; planId: string }>;
 }): Promise<Metadata> {
-	const { planId } = await props.params;
+	const { planId, locale } = await props.params;
+	const messages = getSubscriptionPlansMessagesFor(locale);
 	const plan = await fetchPlan(planId);
 	const path = `/subscription-plans/${planId}`;
 	const imagePath = `/og/subscription-plans/${planId}`;
@@ -27,61 +29,69 @@ export async function generateMetadata(props: {
 	// Fallback if we can't load the plan
 	if (!plan) {
 		return buildMetadata({
-			title: "AI Subscription Plan Details",
-			description:
-				"Explore AI subscription plans and pricing for leading AI tools on Phaseo, including model access, usage limits, feature differences, and practical upgrade paths.",
+			title: messages.metadata.fallbackTitle,
+			description: messages.metadata.fallbackDescription,
 			path,
-			keywords: [
-				"AI subscription plan",
-				"AI pricing",
-				"LLM subscription",
-				"Phaseo",
-			],
+			keywords: ["Phaseo"],
 			imagePath,
 		});
 	}
 
-	const providerName = plan.organisation?.name ?? "AI provider";
+	const providerName = plan.organisation?.name ?? messages.detail.unknownProvider;
 
 	// Try to pull out one representative price (e.g. primary monthly plan)
 	const primaryPrice = plan.prices?.[0];
 	let priceSnippet: string | undefined;
 	if (primaryPrice) {
-		const frequency =
-			primaryPrice.frequency === "monthly"
-				? "per month"
-				: primaryPrice.frequency === "yearly"
-				? "per year"
-				: primaryPrice.frequency;
+		const frequencyAliases: Record<string, string> = {
+			mo: "monthly", month: "monthly", monthly: "monthly",
+			qtr: "quarterly", quarter: "quarterly", quarterly: "quarterly",
+			yr: "yearly", year: "yearly", annual: "yearly", yearly: "yearly",
+			week: "weekly", weekly: "weekly", day: "daily", daily: "daily",
+		};
+		const normalizedFrequency = frequencyAliases[primaryPrice.frequency.trim().toLowerCase()] ?? primaryPrice.frequency;
+		const frequencyLabels: Record<string, string> = {
+			monthly: messages.detail.monthlyFrequency,
+			quarterly: messages.detail.quarterlyFrequency,
+			yearly: messages.detail.yearlyFrequency,
+			weekly: messages.detail.weeklyFrequency,
+			daily: messages.detail.dailyFrequency,
+		};
+		const frequency = frequencyLabels[normalizedFrequency] ?? primaryPrice.frequency;
 		priceSnippet =
 			primaryPrice.frequency === "usage"
-				? "Typical pricing is usage-based."
+				? messages.metadata.usagePricing
 				: primaryPrice.frequency === "custom"
-				? "Typical pricing is custom; contact sales."
-				: `Typical pricing from ${primaryPrice.currency} ${primaryPrice.price} ${frequency}.`;
+					? messages.metadata.customPricing
+					: formatSubscriptionPlanMessage(messages.metadata.fromPricing, {
+							currency: primaryPrice.currency,
+							price: primaryPrice.price,
+							frequency,
+						});
 	}
 
 	const descriptionParts = [
-		`${plan.name} subscription from ${providerName} on Phaseo.`,
+		formatSubscriptionPlanMessage(messages.metadata.planLead, {
+			plan: plan.name,
+			provider: providerName,
+		}),
 		plan.description
 			? plan.description.length > 180
 				? `${plan.description.slice(0, 177)}…`
 				: plan.description
 			: undefined,
 		priceSnippet,
-		"Compare features, limits, and model access against other AI subscription plans.",
+		messages.metadata.comparePlans,
 	].filter(Boolean);
 
 	return buildMetadata({
-		title: `${plan.name} Plan`,
+		title: formatSubscriptionPlanMessage(messages.metadata.planTitle, { plan: plan.name }),
 		description: descriptionParts.join(" "),
 		path,
 		keywords: [
 			plan.name,
 			`${plan.name} pricing`,
 			providerName,
-			"AI subscription plan",
-			"AI pricing",
 			"Phaseo",
 		],
 		imagePath,
@@ -91,9 +101,10 @@ export async function generateMetadata(props: {
 export default async function Page({
 	params,
 }: {
-	params: Promise<{ planId: string }>;
+	params: Promise<{ locale: string; planId: string }>;
 }) {
-	const { planId } = await params;
+	const { planId, locale } = await params;
+	const messages = getSubscriptionPlansMessagesFor(locale);
 
 	const plan = await fetchFrontendSubscriptionPlan(planId);
 
@@ -106,11 +117,10 @@ export default async function Page({
 							<span className="text-xl">💰</span>
 						</div>
 						<p className="text-base font-medium">
-							Subscription plan not found
+							{messages.detail.unknownPlan}
 						</p>
 						<p className="mt-1 text-sm text-muted-foreground">
-							This subscription plan may have been removed or is
-							no longer available.
+							{messages.detail.unknownPlanDescription}
 						</p>
 					</div>
 				</div>
@@ -119,8 +129,8 @@ export default async function Page({
 	}
 
 	return (
-		<SubscriptionPlanDetailShell planId={planId} tocItems={[{ id: "main-features", label: "Main Features" }, { id: "included-models", label: "Included Models" }]}>
-			<SubscriptionPlanOverview plan={plan} />
+		<SubscriptionPlanDetailShell planId={planId} tocItems={[{ id: "main-features", label: messages.detail.mainFeatures }, { id: "included-models", label: messages.detail.includedModels }]}>
+			<SubscriptionPlanOverview plan={plan} messages={messages.detail} />
 		</SubscriptionPlanDetailShell>
 	);
 }

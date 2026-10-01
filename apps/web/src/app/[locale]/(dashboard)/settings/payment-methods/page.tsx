@@ -6,11 +6,16 @@ import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSec
 import { fetchSettingsPaymentMethodsInitialData } from "@/lib/fetchers/internal/fetchSettingsPaymentMethodsInitialData";
 import { getPaymentMethodsMessages } from "@/i18n/payment-methods";
 import { isPublicLocale, type PublicLocale } from "@/i18n/routing";
+import { getTranslations } from "next-intl/server";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
 	const { locale } = await params;
-	const messages = getPaymentMethodsMessages((isPublicLocale(locale) ? locale : "en-GB") as PublicLocale);
-	return { title: `${messages.title} - Settings` };
+	const publicLocale = (isPublicLocale(locale) ? locale : "en-GB") as PublicLocale;
+	const [messages, t] = await Promise.all([
+		Promise.resolve(getPaymentMethodsMessages(publicLocale)),
+		getTranslations({ locale: publicLocale, namespace: "SettingsUI" }),
+	]);
+	return { title: `${messages.title} - ${t("headers.settings" as never)}` };
 }
 
 export default async function Page({ params }: { params: Promise<{ locale: string }> }) {

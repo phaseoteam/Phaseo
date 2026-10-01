@@ -1,0 +1,164 @@
+---
+title: "Phaseo CLI"
+icon: "terminal"
+description: "安装官方 Phaseo CLI，配置编程环境，并通过终端管理 Phaseo。"
+---
+
+Phaseo CLI 以 `@phaseo/cli` 的形式发布。它将编程环境连接到 Phaseo，并提供官方终端工作流来管理 Phaseo 控制平面。
+
+在以下场景中使用：
+
+- 从本地或远程 shell、代理运行环境以真实 Phaseo 用户身份登录
+- 创建并轮换 API 密钥或管理密钥
+- 管理工作区、预设、设置和护栏
+- 在用户创建的 OAuth 应用仍处于私有测试期间使用官方 CLI OAuth
+- 查看模型、提供商、价格、额度、活动、分析和生成记录
+
+## 安装
+
+<CodeGroup>
+
+```bash title="npm"
+npm install -g @phaseo/cli
+```
+
+```bash title="pnpm"
+pnpm add -g @phaseo/cli
+```
+
+```bash title="yarn"
+yarn global add @phaseo/cli
+```
+
+```bash title="bun"
+bun add -g @phaseo/cli
+```
+
+</CodeGroup>
+
+## 检查已安装的版本
+
+```bash
+phaseo --version
+phaseo version
+phaseo version --json
+```
+
+- `phaseo --version` 会显示已安装的版本。
+- `phaseo version` 会显示版本以及当前包管理器推荐的更新命令。
+- 有更新版本发布时，交互式运行也会显示更新提示。
+
+旧版 `phaseo` 命令仍作为兼容别名提供。
+
+## 登录
+
+首先运行：
+
+```bash
+phaseo login
+```
+
+CLI 支持两种官方登录流程：
+
+- **使用 Phaseo 登录**：通过浏览器 OAuth 使用授权码和 PKCE
+- **使用设备代码登录**：适用于 SSH、CI、无头 shell 和代理环境
+
+你可以强制选择其中一种方式：
+
+```bash
+phaseo login --browser
+phaseo login --device-code
+```
+
+远程和非交互式环境会自动优先使用设备代码。
+
+## 终端输出
+
+交互式终端会使用 Phaseo 的配色和视觉层级，并在设置期间显示临时旋转指示器。指示器写入 `stderr`，任务完成后会清除该行。非 TTY 的 `stderr` 和 `TERM=dumb` 会禁用动画；`NO_COLOR` 会禁用颜色。使用 `--json` 的命令始终返回无装饰的结构化输出，供代理和自动化使用。只有当终端包装器支持颜色但未报告为 TTY 时，才使用 `FORCE_COLOR=1`。
+
+## 确认身份
+
+```bash
+phaseo whoami
+phaseo whoami --json
+```
+
+此命令会返回当前 Phaseo 用户、作用域、活动工作区和可用工作区。
+
+## 创建密钥
+
+```bash
+phaseo keys create --name "Local CLI Key"
+phaseo keys create --name "Agent Sandbox Key" --json
+phaseo keys current
+```
+
+代理或自动化需要一次性获取新创建的原始密钥时，请使用 `--json`。
+
+## 管理工作区和护栏
+
+```bash
+phaseo workspaces list
+phaseo workspaces members <workspace-id-or-slug>
+
+phaseo guardrails list
+phaseo guardrails create --name "Production Safety" --body-json '{"enabled":true}'
+```
+
+CLI 可在终端中使用 Phaseo 控制台和管理 API 的常用功能。
+
+## OAuth 应用
+
+Phaseo 为官方 CLI、用户创建的应用和动态注册的 MCP 客户端使用同一个 OAuth 授权服务器。CLI 使用浏览器或设备代码登录，并轮换刷新令牌。第三方客户端使用带 PKCE 的授权码流程、显式作用域和工作区同意、可撤销的委托访问令牌，并可选择绑定受保护资源。
+
+托管的 Phaseo API 会启用第三方 OAuth。自托管或预览版 API 部署默认禁用此功能，除非将 `PHASEO_THIRD_PARTY_OAUTH_ENABLED` 设置为真值。接受 `1`、`true`、`yes` 和 `on`，会先去除空格并忽略大小写。启用后，用户创建的 OAuth 应用管理和动态客户端注册将开放，因此应配套审查重定向 URI、同意、客户端密钥、速率限制和工作区授权配置。
+
+```bash title=".env"
+PHASEO_THIRD_PARTY_OAUTH_ENABLED=true
+```
+
+```bash title="Docker"
+docker run -e PHASEO_THIRD_PARTY_OAUTH_ENABLED=true phaseo
+```
+
+```yaml title="Kubernetes"
+env:
+  - name: PHASEO_THIRD_PARTY_OAUTH_ENABLED
+    value: "true"
+```
+
+## 安全模型
+
+CLI 会话默认要求使用操作系统提供的安全存储。只有在系统凭据库不可用时才显式设置 `PHASEO_SESSION_BACKEND=file`；刷新令牌会存储在权限受限的明文文件中。
+- `phaseo logout` 会先撤销已存储的刷新令牌，再清除本地状态。
+- 管理密钥需要显式指定能力。
+- 普通推理密钥依赖护栏、路由策略和工作区设置，而非单独的作用域模型。
+
+## 更新
+
+<CodeGroup>
+
+```bash title="npm"
+npm install -g @phaseo/cli@latest
+```
+
+```bash title="pnpm"
+pnpm add -g @phaseo/cli@latest
+```
+
+```bash title="yarn"
+yarn global add @phaseo/cli@latest
+```
+
+```bash title="bun"
+bun add -g @phaseo/cli@latest
+```
+
+</CodeGroup>
+
+## 后续步骤
+
+- [管理 API 密钥](../../developers/management-api-keys.mdx)
+- [身份验证](../../developers/authentication.mdx)
+- [Codex](./codex.mdx)
+- [Claude Code](./claude-code.mdx)

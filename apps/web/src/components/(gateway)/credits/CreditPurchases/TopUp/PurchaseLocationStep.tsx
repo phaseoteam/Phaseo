@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import { AlertTriangle, CheckCircle2 } from "lucide-react";
 import { useReducedMotion } from "motion/react";
 import { Button } from "@/components/ui/button";
@@ -57,6 +58,9 @@ function groupModelsByOrganisation(models: RestrictedModel[]): ModelGroup[] {
 }
 
 function ModelList({ models, tone }: { models: RestrictedModel[]; tone: "warning" | "neutral" }) {
+	const locale = useLocale();
+	const t = useTranslations("SettingsUI");
+	const text = (key: string) => t(`credits.purchaseFlow.${key}` as never);
 	const groups = groupModelsByOrganisation(models);
 
 	return (
@@ -64,7 +68,7 @@ function ModelList({ models, tone }: { models: RestrictedModel[]; tone: "warning
 			className={`mt-2.5 rounded-md border bg-background/65 ${tone === "warning" ? "h-44" : "h-36"}`}
 			viewportClassName="pr-2"
 		>
-			<div className="divide-y" aria-label="Affected models">
+			<div className="divide-y" aria-label={text("affectedModels")}>
 				{groups.map((group) => (
 					<section key={group.key} className="px-3 py-2.5" aria-label={group.name}>
 						<div className="flex items-center gap-2">
@@ -78,8 +82,8 @@ function ModelList({ models, tone }: { models: RestrictedModel[]; tone: "warning
 								className="object-contain p-1"
 							/>
 							</div>
-							<div className="min-w-0 flex-1 truncate text-xs font-semibold">{group.name}</div>
-							<div className="text-[11px] tabular-nums text-muted-foreground">{group.models.length}</div>
+							<div className="min-w-0 flex-1 truncate text-xs font-semibold">{group.name === "Other" ? text("otherProvider") : group.name}</div>
+							<div className="text-[11px] tabular-nums text-muted-foreground">{new Intl.NumberFormat(locale).format(group.models.length)}</div>
 						</div>
 						<ul className="mt-1 ml-8 space-y-0.5">
 							{group.models.map((model) => (
@@ -112,6 +116,15 @@ export function PurchaseLocationStep({
 	onReview,
 	preview,
 }: PurchaseLocationStepProps) {
+	const locale = useLocale();
+	const t = useTranslations("SettingsUI");
+	const text = (key: string, values?: Record<string, string>) => {
+		let message = t(`credits.purchaseFlow.${key}` as never);
+		for (const [name, value] of Object.entries(values ?? {})) {
+			message = message.replace(`{${name}}`, value);
+		}
+		return message;
+	};
 	const [acknowledgementAttempts, setAcknowledgementAttempts] = useState(0);
 	const acknowledgementRef = useRef<HTMLDivElement>(null);
 	const shouldReduceMotion = useReducedMotion();
@@ -145,23 +158,24 @@ export function PurchaseLocationStep({
 		<>
 			<div className="px-6 pt-6">
 				<DialogHeader className="space-y-1">
-					<h2 aria-hidden="true" className="font-heading text-xl leading-none font-medium">Confirm your location</h2>
+					<h2 aria-hidden="true" className="font-heading text-xl leading-none font-medium">{text("confirmLocation")}</h2>
 					<p aria-hidden="true" className="text-sm text-muted-foreground">
-						Provider rules mean some models are unavailable in certain countries or regions. Review what applies before purchasing credits.
+						{text("locationDescription")}
 					</p>
 				</DialogHeader>
 			</div>
 			<div className="space-y-3.5 px-6 pb-4">
 				<div className="space-y-2">
-					<label htmlFor="purchase-country" className="text-sm font-medium">Country or region</label>
+					<label htmlFor="purchase-country" className="text-sm font-medium">{text("countryOrRegion")}</label>
 					<CountryCombobox
 						id="purchase-country"
 						value={countryCode}
 						onValueChange={onCountryChange}
 						disabled={isReviewing}
+						placeholder={text("countryPlaceholder")}
 					/>
 					<p className="text-xs leading-5 text-muted-foreground">
-						Choose where you live. New-card checkout will separately collect your billing address. Model access is enforced from each API request&apos;s network location.
+						{text("locationInstruction")}
 					</p>
 				</div>
 
@@ -170,26 +184,31 @@ export function PurchaseLocationStep({
 						{preview.restrictedModels.length === 0 && preview.regionRestrictedModels.length === 0 ? (
 							<div className="flex gap-2 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-900 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-100">
 								<CheckCircle2 className="mt-0.5 size-4 shrink-0" />
-								<span>No current model restrictions were found for {countryName}.</span>
+								<span>{text("noRestrictions", { country: countryName })}</span>
 							</div>
 						) : null}
 						{preview.restrictedModels.length > 0 ? (
 							<section className="rounded-lg border border-amber-200 bg-amber-50 p-2.5 dark:border-amber-800 dark:bg-amber-950/25">
 								<div className="flex gap-2 text-sm font-medium text-amber-950 dark:text-amber-100">
 									<AlertTriangle className="mt-0.5 size-4 shrink-0" />
-									<span>{preview.restrictedModels.length} {preview.restrictedModels.length === 1 ? "model is" : "models are"} unavailable in {countryName}</span>
+									<span>{preview.restrictedModels.length === 1
+										? text("restrictedOne", { country: countryName })
+										: text("restrictedMany", {
+											count: new Intl.NumberFormat(locale).format(preview.restrictedModels.length),
+											country: countryName,
+										})}</span>
 								</div>
 								<ModelList models={preview.restrictedModels} tone="warning" />
 							</section>
 						) : null}
 						{preview.regionRestrictedModels.length > 0 ? (
 							<section className="rounded-lg border bg-muted/40 p-2.5 text-sm">
-								<div className="font-medium">Restricted in parts of {countryName}</div>
-								<p className="mt-1 text-xs leading-5 text-muted-foreground">These models remain available nationally, but every current route has provider restrictions in particular subdivisions.</p>
+								<div className="font-medium">{text("restrictedParts", { country: countryName })}</div>
+								<p className="mt-1 text-xs leading-5 text-muted-foreground">{text("regionalRestrictions")}</p>
 								<ModelList models={preview.regionRestrictedModels} tone="neutral" />
 							</section>
 						) : null}
-						<p className="text-xs leading-5 text-muted-foreground">Availability can change when upstream provider policies change. Credits are shared across the models that remain available to your workspace.</p>
+						<p className="text-xs leading-5 text-muted-foreground">{text("availabilityMayChange")}</p>
 						<div ref={acknowledgementRef}>
 							<label className={cn(
 								"flex cursor-pointer items-start gap-2.5 rounded-lg border bg-muted/35 p-2.5 text-sm leading-5 transition-colors",
@@ -198,10 +217,10 @@ export function PurchaseLocationStep({
 								<Checkbox
 									checked={isAcknowledged}
 									onCheckedChange={(checked) => onAcknowledgedChange(checked === true)}
-									aria-label="Acknowledge model availability restrictions"
+									aria-label={text("acknowledgeRestrictions")}
 									className="mt-0.5"
 								/>
-								<span>I have reviewed this information and understand that model access depends on my location.</span>
+								<span>{text("reviewedAndUnderstand")}</span>
 							</label>
 						</div>
 					</div>
@@ -211,7 +230,7 @@ export function PurchaseLocationStep({
 			</div>
 			<div className="border-t bg-background/95 px-6 py-3 backdrop-blur supports-backdrop-filter:bg-background/90">
 				<div className="flex justify-end gap-2">
-					<DialogClose asChild><Button className="rounded-md" variant="secondary">Cancel</Button></DialogClose>
+					<DialogClose asChild><Button className="rounded-md" variant="secondary">{text("cancel")}</Button></DialogClose>
 					{preview ? (
 						<Button
 							className={cn(
@@ -221,11 +240,11 @@ export function PurchaseLocationStep({
 							aria-disabled={!isAcknowledged}
 							onClick={handleContinue}
 						>
-							Continue to top-up
+							{text("continueTopUp")}
 						</Button>
 					) : (
 						<Button className="rounded-md" onClick={onReview} disabled={!countryCode || isReviewing}>
-							{isReviewing ? <><Spinner className="mr-2 size-4" />Reviewing...</> : "Review availability"}
+							{isReviewing ? <><Spinner className="mr-2 size-4" />{text("reviewing")}</> : text("reviewAvailability")}
 						</Button>
 					)}
 				</div>

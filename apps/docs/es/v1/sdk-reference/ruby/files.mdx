@@ -1,0 +1,27 @@
+---
+icon: "files"
+title: "Archivos"
+description: "Usa el SDK de Ruby para subir archivos, consultar sus metadatos y recuperar su contenido."
+---
+
+**Métodos**: `upload_file`, `list_files`, `retrieve_file`, `retrieve_file_content`.
+
+### Ejemplo
+```ruby
+require 'phaseo_sdk'
+
+client = PhaseoSdk::Phaseo.new(api_key: ENV.fetch('PHASEO_API_KEY'))
+
+uploaded = client.upload_file(
+  'purpose' => 'batch',
+  'file' => 'data:application/json;base64,eyJ0ZXN0Ijp0cnVlfQ=='
+)
+
+file = client.retrieve_file('file_123')
+content = client.retrieve_file_content('file_123')
+```
+
+<Note>
+`list_files` está disponible en el SDK, pero actualmente `GET /files` devuelve `file_list_not_supported_with_shared_gateway_key` cuando se usa la clave compartida del gateway
+Guarda los IDs de los archivos subidos y recupéralos directamente.
+</Note>

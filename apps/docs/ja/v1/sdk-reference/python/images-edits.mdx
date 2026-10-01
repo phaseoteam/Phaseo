@@ -1,0 +1,18 @@
+---
+icon: "wand-sparkles"
+title: "画像編集"
+description: "Python SDKで/images/editsを呼び出します。"
+---
+
+**メソッド**: `client.generate_image_edit()`
+
+```python
+result = client.generate_image_edit({
+    "model": "openai/gpt-image-1",
+    "prompt": "Make it sunset",
+    "image": "data:image/png;base64,...",
+})
+
+print(result)
+```
+

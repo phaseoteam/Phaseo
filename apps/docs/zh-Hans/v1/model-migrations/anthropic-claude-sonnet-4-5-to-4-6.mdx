@@ -1,0 +1,69 @@
+---
+title: "Anthropic Claude Sonnet 4.6"
+description: "介绍如何将 Claude Sonnet 4.6 用于编程、计算机操作和代理规划。"
+icon: "/icons/brands/anthropic.svg"
+---
+
+# Anthropic Claude Sonnet 4.6
+
+使用本指南，在生产环境中安全采用 `anthropic/claude-sonnet-4.6`。
+
+Sonnet 4.6 的迁移方式与 Claude 4.6 系列基本相同，但其性能特点变化明显，因此需要重新验证提示词和路由方面的假设。
+
+## 新功能
+
+- Claude 4.6 模型不再支持助手预填充内容，并会返回 `400`。
+- 结构化输出从 `output_format` 改为 `output_config.format`。
+- 自适应思考现在通过 `output_config.effort` 配置。
+- 应移除过时的 Beta 请求头。
+- Sonnet 4.6 在编程、计算机操作、长上下文推理、代理规划和指令遵循方面均有提升。
+- Sonnet 4.6 在 Beta 阶段新增 100 万 token 上下文窗口。
+
+## 迁移快速入门
+
+### 1. 停止使用助手预填充内容
+
+如果现有 Sonnet 4.5 提示词以 JSON 前缀、XML 标签或格式模板开始助手轮次，请在发布前移除这种模式。
+
+### 2. 更新结构化输出配置
+
+将 `output_format` 替换为 `output_config.format`，然后重新运行 Schema 和解析器测试。
+
+### 3. 重新调整强度和延迟预期
+
+如果 Sonnet 用于交互式路由，请先比较不同 `effort` 级别，再将 4.6 设为默认模型。模型能力更强，但最佳设置取决于延迟预算。
+
+## 测试内容
+
+### 输出行为
+
+- 对格式敏感的提示词中的指令遵循情况。
+- 多步骤任务的代理规划质量。
+- 编程、重构和审查提示词。
+- 长上下文检索与摘要。
+
+### 接口约定稳定性
+
+- JSON 和 Schema 验证通过率。
+- 工具参数完整性。
+- 结束原因和空输出处理。
+- 之前依靠预填充内容保持格式稳定的路由。
+
+### 生产指标
+
+- 不同强度级别下的延迟。
+- 与 Sonnet 4.5 相比的任务成功率。
+- 超时和重试率。
+- 每个成功任务的成本。
+
+## 安全发布
+
+1. 先移除预填充内容并更新结构化输出配置。
+2. 使用当前生产提示词集评估 Sonnet 4.6。
+3. 保留 Sonnet 4.5 或其他稳定路由作为回退，逐步切换流量。
+4. 只有在质量和接口约定稳定后才增加流量。
+
+## 来源
+
+- [Anthropic 迁移指南](https://platform.claude.com/docs/en/about-claude/models/migration-guide)
+- [Claude Sonnet 4.6 发布介绍](https://www.anthropic.com/news/claude-sonnet-4-6)

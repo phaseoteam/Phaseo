@@ -1,8 +1,9 @@
 import type { SettingsAuthorizedAppsInitialData } from "@/lib/fetchers/internal/settingsTypes";
 import { getServerAccountContext } from "@/lib/fetchers/internal/serverAccountContext";
 import { fetchAccountWebApi } from "@/lib/web-api/client";
+import { getLocalizedDocsHref } from "@/lib/docs";
 
-export async function fetchSettingsAuthorizedAppsInitialData(): Promise<SettingsAuthorizedAppsInitialData> {
+export async function fetchSettingsAuthorizedAppsInitialData(locale: string): Promise<SettingsAuthorizedAppsInitialData> {
 	const { accessToken } = await getServerAccountContext();
 	const data = await fetchAccountWebApi<SettingsAuthorizedAppsInitialData>(
 		"/api/account/settings/authorized-apps",
@@ -27,7 +28,7 @@ export async function fetchSettingsAuthorizedAppsInitialData(): Promise<Settings
 				? "The official Phaseo command-line interface."
 				: app.app_description,
 			app_homepage_url: isPhaseoCli
-				? "https://phaseo.app/docs/v1/developers/cli-and-mcp"
+				? getLocalizedDocsHref(locale, "/v1/developers/cli-and-mcp")
 				: app.app_homepage_url,
 			app_is_identified: isPhaseoCli,
 		};

@@ -3,6 +3,7 @@
 import React from "react";
 import { Check, ExternalLink, Infinity, X } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
 import { toast } from "sonner";
 
 import TeamInviteDialog from "./TeamInviteDialog";
@@ -51,14 +52,14 @@ interface Props {
 	canManageWorkspace?: boolean;
 }
 
-function formatDate(value?: string | null) {
+function formatDate(value: string | null | undefined, locale: string) {
 	if (!value) return "—";
 	try {
-		return new Date(value).toLocaleDateString(undefined, {
+		return new Intl.DateTimeFormat(locale, {
 			day: "2-digit",
 			month: "short",
 			year: "numeric",
-		});
+		}).format(new Date(value));
 	} catch {
 		return "—";
 	}
@@ -73,6 +74,8 @@ export default function TeamsAccessPanel({
 	currentUserId,
 	canManageWorkspace,
 }: Props) {
+	const t = useTranslations("SettingsUI");
+	const locale = useLocale();
 	const router = useRouter();
 	const [selectedInvite, setSelectedInvite] = React.useState<Invite | null>(null);
 	const [busyRequestId, setBusyRequestId] = React.useState<string | null>(null);
@@ -119,6 +122,19 @@ export default function TeamsAccessPanel({
 		return role === "owner" || role === "admin";
 	}, [selectedInvite, currentUserId, membersByTeam]);
 
+	function roleLabel(role: string) {
+		switch (role.toLowerCase()) {
+			case "owner":
+				return t("labels.owner");
+			case "admin":
+				return t("labels.admin");
+			case "member":
+				return t("labels.member");
+			default:
+				return role;
+		}
+	}
+
 	const handleRequestAction = async (
 		requestId: string,
 		action: "approve" | "reject"
@@ -127,15 +143,15 @@ export default function TeamsAccessPanel({
 		try {
 			if (action === "approve") {
 				await toast.promise(approveJoinRequest(requestId), {
-					loading: "Approving request...",
-					success: "Request approved",
-					error: (error) => `Failed: ${error?.message || error}`,
+					loading: t("teams.approvingRequest"),
+					success: t("teams.requestApproved"),
+					error: () => t("teams.requestActionFailed"),
 				});
 			} else {
 				await toast.promise(rejectJoinRequest(requestId), {
-					loading: "Rejecting request...",
-					success: "Request rejected",
-					error: (error) => `Failed: ${error?.message || error}`,
+					loading: t("teams.rejectingRequest"),
+					success: t("teams.requestRejected"),
+					error: () => t("teams.requestActionFailed"),
 				});
 			}
 			router.refresh();
@@ -147,7 +163,7 @@ export default function TeamsAccessPanel({
 	if (!activeWorkspaceId) {
 		return (
 			<div className="rounded-lg border border-dashed px-4 py-6 text-sm text-muted-foreground">
-				No workspace is currently selected.
+				{t("strings.No workspace is currently selected." as never)}
 			</div>
 		);
 	}
@@ -155,11 +171,9 @@ export default function TeamsAccessPanel({
 	if (!canManageWorkspace) {
 		return (
 			<div className="rounded-lg border border-dashed px-4 py-6 text-sm text-muted-foreground">
-				You need owner or admin access on{" "}
-				<span className="font-medium text-foreground">
-					{activeWorkspaceName ?? "this workspace"}
-				</span>{" "}
-				to review join requests and manage invites.
+				{t("teams.ownerAdminWorkspaceAccess", {
+					workspace: activeWorkspaceName ?? t("labels.workspace"),
+				})}
 			</div>
 		);
 	}
@@ -169,27 +183,29 @@ export default function TeamsAccessPanel({
 			<section className="space-y-4">
 				<div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
 					<div className="min-w-0">
-						<h2 className="text-sm font-medium">Join Requests</h2>
+						<h2 className="text-sm font-medium">{t("teams.joinRequests")}</h2>
 						<p className="mt-0.5 text-sm text-muted-foreground">
-							Approve or reject requests to join this workspace.
+							{t("teams.joinRequestsDescription")}
 						</p>
 					</div>
 					<Badge variant="secondary">
-						{requests.length} pending request{requests.length === 1 ? "" : "s"}
+						{t("teams.pendingRequests", { count: requests.length })}
 					</Badge>
 				</div>
 				{requests.length === 0 ? (
 					<div className="rounded-lg border border-dashed px-4 py-6 text-sm text-muted-foreground">
-						No pending requests for {activeWorkspaceName ?? "this workspace"}.
+						{t("teams.noPendingRequests", {
+							workspace: activeWorkspaceName ?? t("labels.workspace"),
+						})}
 					</div>
 				) : (
 					<div className="overflow-hidden rounded-xl border bg-background">
 						<Table className="min-w-[680px]">
 							<TableHeader className="bg-muted/30">
 								<TableRow>
-									<TableHead className="px-4">Requester</TableHead>
-									<TableHead className="px-4">Requested</TableHead>
-									<TableHead className="px-4 text-right">Actions</TableHead>
+									<TableHead className="px-4">{t("teams.requester")}</TableHead>
+									<TableHead className="px-4">{t("teams.requested")}</TableHead>
+									<TableHead className="px-4 text-right">{t("labels.actions")}</TableHead>
 								</TableRow>
 							</TableHeader>
 							<TableBody>
@@ -207,7 +223,7 @@ export default function TeamsAccessPanel({
 											</div>
 										</TableCell>
 										<TableCell className="px-4 py-3 text-sm text-muted-foreground">
-											{formatDate(request.created_at)}
+											{formatDate(request.created_at, locale)}
 										</TableCell>
 										<TableCell className="px-4 py-3">
 											<div className="flex justify-end gap-2">
@@ -220,7 +236,7 @@ export default function TeamsAccessPanel({
 													}
 												>
 													<X className="mr-1.5 h-4 w-4" />
-													Reject
+													{t("teams.reject")}
 												</Button>
 												<Button
 													size="sm"
@@ -230,7 +246,7 @@ export default function TeamsAccessPanel({
 													}
 												>
 													<Check className="mr-1.5 h-4 w-4" />
-													Approve
+													{t("teams.approve")}
 												</Button>
 											</div>
 										</TableCell>
@@ -245,31 +261,33 @@ export default function TeamsAccessPanel({
 			<section className="space-y-4">
 				<div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
 					<div className="min-w-0">
-						<h2 className="text-sm font-medium">Invites</h2>
+						<h2 className="text-sm font-medium">{t("teams.invites")}</h2>
 						<p className="mt-0.5 text-sm text-muted-foreground">
-							Reveal, copy, or revoke invite codes for this workspace.
+							{t("teams.invitesDescription")}
 						</p>
 					</div>
 					<div className="flex flex-wrap items-center gap-2">
-						<Badge variant="outline">{inviteCounts.total} total</Badge>
-						<Badge variant="secondary">{inviteCounts.active} active</Badge>
+						<Badge variant="outline">{t("teams.total", { count: inviteCounts.total })}</Badge>
+						<Badge variant="secondary">{t("teams.active", { count: inviteCounts.active })}</Badge>
 					</div>
 				</div>
 				{invites.length === 0 ? (
 					<div className="rounded-lg border border-dashed px-4 py-6 text-sm text-muted-foreground">
-						No invites for {activeWorkspaceName ?? "this workspace"} yet.
+						{t("teams.noInvites", {
+							workspace: activeWorkspaceName ?? t("labels.workspace"),
+						})}
 					</div>
 				) : (
 					<div className="overflow-hidden rounded-xl border bg-background">
 						<Table className="min-w-[760px]">
 							<TableHeader className="bg-muted/30">
 								<TableRow>
-									<TableHead className="px-4">Created by</TableHead>
-									<TableHead className="px-4">Role</TableHead>
-									<TableHead className="px-4">Expiry</TableHead>
-									<TableHead className="px-4">Uses</TableHead>
-									<TableHead className="px-4">Status</TableHead>
-									<TableHead className="px-4 text-right">Actions</TableHead>
+									<TableHead className="px-4">{t("teams.createdBy")}</TableHead>
+									<TableHead className="px-4">{t("teams.role")}</TableHead>
+									<TableHead className="px-4">{t("teams.expiry")}</TableHead>
+									<TableHead className="px-4">{t("teams.uses")}</TableHead>
+									<TableHead className="px-4">{t("teams.status")}</TableHead>
+									<TableHead className="px-4 text-right">{t("labels.actions")}</TableHead>
 								</TableRow>
 							</TableHeader>
 							<TableBody>
@@ -282,10 +300,10 @@ export default function TeamsAccessPanel({
 											<TableCell className="px-4 py-3">
 												<div className="min-w-0">
 													<div className="truncate font-medium">
-														{invite.users?.display_name ?? "Unknown"}
+														{invite.users?.display_name ?? t("teams.unknown")}
 													</div>
 													<div className="text-xs text-muted-foreground">
-														{formatDate(invite.created_at)}
+														{formatDate(invite.created_at, locale)}
 													</div>
 												</div>
 											</TableCell>
@@ -300,13 +318,13 @@ export default function TeamsAccessPanel({
 													}
 													className="capitalize"
 												>
-													{invite.role}
+													{roleLabel(invite.role)}
 												</Badge>
 											</TableCell>
 											<TableCell className="px-4 py-3 text-sm text-muted-foreground">
 												{invite.expires_at
-													? formatDate(invite.expires_at)
-													: "No expiry"}
+													? formatDate(invite.expires_at, locale)
+													: t("labels.noExpiry")}
 											</TableCell>
 											<TableCell className="px-4 py-3 text-sm text-muted-foreground">
 												{invite.uses_count ?? 0}
@@ -327,7 +345,7 @@ export default function TeamsAccessPanel({
 															: "border-emerald-200 bg-emerald-100 text-emerald-800 dark:border-emerald-900/70 dark:bg-emerald-950 dark:text-emerald-300"
 													}
 												>
-													{expired ? "Expired" : "Active"}
+													{expired ? t("teams.statusExpired") : t("teams.statusActive")}
 												</Badge>
 											</TableCell>
 											<TableCell className="px-4 py-3 text-right">
@@ -337,7 +355,7 @@ export default function TeamsAccessPanel({
 													onClick={() => setSelectedInvite(invite)}
 												>
 													<ExternalLink className="mr-1.5 h-4 w-4" />
-													Open
+													{t("teams.openInvite")}
 												</Button>
 											</TableCell>
 										</TableRow>

@@ -1,0 +1,139 @@
+---
+icon: "search-check"
+title: "Websuche-Server-Tool"
+description: "Lass Modelle während einer Anfrage im Web suchen."
+---
+
+Nutze `phaseo:web_search`, wenn das Modell aktuelle oder durch Quellen belegte Informationen benötigt. Das Modell entscheidet, wann es sucht, formuliert die Suchanfrage und kann innerhalb einer Anfrage mehrfach suchen.
+
+Phaseo stellt dem Modell URLs, Titel, Snippets, hervorgehobene Passagen und optional Seitentext bereit, damit es eine fundierte Antwort formulieren kann.
+
+<Note>
+Die native Google-Websuche ist in den Phaseo-Server-Tools noch nicht aktiviert. Nutze die verwaltete Suche oder die native Suche des Providers auf unterstützten OpenAI- und Anthropic-Routen.
+</Note>
+
+## Funktionsweise
+
+1. Füge `{ "type": "phaseo:web_search" }` zu `tools` hinzu.
+2. Das Modell entscheidet, ob es suchen muss, und gibt eine Suchanfrage aus.
+3. Phaseo führt die Suche mit der konfigurierten Suchmaschine aus.
+4. Die Ergebnisse werden dem Modell als Tool-Kontext zurückgegeben.
+5. Das Modell formuliert die endgültige Antwort und kann bei Bedarf erneut suchen.
+
+## Schnellstart
+
+```bash
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-5-nano",
+    "messages": [
+      { "role": "user", "content": "What were the major AI announcements this week?" }
+    ],
+    "tools": [
+      { "type": "phaseo:web_search" }
+    ]
+  }'
+```
+
+## Konfiguration
+
+```json
+{
+  "type": "phaseo:web_search",
+  "parameters": {
+    "engine": "exa",
+    "max_results": 5,
+    "max_total_results": 15,
+    "search_context_size": "medium",
+    "max_characters": 2048,
+    "allowed_domains": ["arxiv.org", "nature.com"],
+    "excluded_domains": ["reddit.com"],
+    "include_highlights": true,
+    "include_text": false
+  }
+}
+```
+
+| Parameter | Typ | Standard | Beschreibung |
+| --- | --- | --- | --- |
+| `engine` | string | `exa` | Suchmaschine: `auto`, `native`, `exa`, `parallel`, `firecrawl` oder `perplexity`. |
+| `max_results` | integer | `5` | Maximale Anzahl der Ergebnisse pro Suchaufruf. |
+| `max_total_results` | integer | `10` | Maximale Gesamtzahl der Ergebnisse über den gesamten Server-Tool-Ablauf. |
+| `max_uses` | integer | `10` | Maximale Anzahl von Suchaufrufen im Server-Tool-Ablauf. |
+| `search_context_size` | string | `medium` | Kontextgröße für Suchmaschinen mit einstellbarem Umfang der Hervorhebungen: `low`, `medium` oder `high`. |
+| `max_characters` | integer | engine default | Maximale Textlänge pro Ergebnis, wenn Text enthalten ist. |
+| `allowed_domains` | string[] | none | Nur Ergebnisse aus diesen Domains zurückgeben. Alias: `include_domains`. |
+| `excluded_domains` | string[] | none | Ergebnisse aus diesen Domains ausschließen. Alias: `exclude_domains`. |
+| `include_highlights` | boolean | `true` | Von der Suchmaschine bereitgestellte Hervorhebungen oder Snippets einbeziehen, sofern verfügbar. |
+| `include_text` | boolean | `false` | Vollständigeren Ergebnistextext einbeziehen, wenn die Suchmaschine dies unterstützt. |
+| `user_location` | object | none | Optionaler Standort-Hinweis für Suchmaschinen mit standortbezogener Suche. |
+
+## Suchmaschinenauswahl
+
+| Engine | Verhalten |
+| --- | --- |
+| `exa` | Verwaltete Exa-Suche. Exa muss von Phaseo für die Gateway-Laufzeit konfiguriert sein. |
+| `auto` | Verwendet die konfigurierte verwaltete Standardsuchmaschine, derzeit Exa. |
+| `parallel` | Verwendet Parallel Search, wenn es konfiguriert ist. |
+| `firecrawl` | Verwendet Firecrawl Search, wenn es konfiguriert ist. |
+| `perplexity` | Verwendet bei entsprechender Konfiguration die offizielle Perplexity Search API. Unterstützt sortierte Ergebnisse, `search_context_size`, regionale Suche anhand von `user_location.country` sowie erlaubte oder ausgeschlossene Domains. |
+| `native` | Wandelt die Deklaration vor dem Aufruf des vorgelagerten Modells in ein natives Websuch-Tool des Providers um, sofern die Anfrageoberfläche dies unterstützt. |
+
+Verwende `engine: "native"` nur in der Tool-Deklaration. Versucht ein Modell, `engine: "native"` in einem bereits ausgegebenen Gateway-Suchaufruf zu übergeben, gibt Phaseo einen Tool-Fehler zurück, da native Tools vor dem Senden der vorgelagerten Anfrage ausgewählt werden müssen.
+
+## Domainfilter
+
+Verwende `allowed_domains`, wenn die Antwort aus einer festgelegten Quellenauswahl stammen muss:
+
+```json
+{
+  "type": "phaseo:web_search",
+  "parameters": {
+    "allowed_domains": ["phaseo.app", "github.com"]
+  }
+}
+```
+
+Verwende `excluded_domains`, wenn eine breite Websuche zulässig ist, bestimmte Domains aber aus den Ergebnissen ausgeschlossen werden sollen.
+
+Perplexity und Firecrawl akzeptieren pro Suchaufruf entweder `allowed_domains` oder `excluded_domains`, aber nicht beides. Perplexity erlaubt bis zu 20 Domainfilter pro Anfrage und überträgt ausgeschlossene Domains in sein Denylist-Format.
+
+## Responses-API
+
+Dieselbe Tool-Struktur funktioniert mit `/v1/responses`:
+
+```json
+{
+  "model": "openai/gpt-5-nano",
+  "input": "Find the latest release notes for Phaseo.",
+  "tools": [
+    { "type": "phaseo:web_search", "parameters": { "max_results": 4 } }
+  ]
+}
+```
+
+## Nutzung und Abrechnung
+
+Websuchaufrufe erhöhen:
+
+```json
+{
+  "usage": {
+    "server_tool_use": {
+      "web_search_requests": 1,
+      "web_search_results": 5,
+      "web_search_extra_results": 0
+    }
+  }
+}
+```
+
+Für die verwaltete Suche können die Meter `server_tool_web_search_requests` und `server_tool_web_search_extra_results` verwendet werden. Bei nativer Providersuche kann `native_web_search_requests` genutzt werden, wenn dieser Meter in der Modellpreiskarte festgelegt ist.
+
+## Verwandte Seiten
+
+- [Webabruf](./web-fetch.mdx)
+- [Server-Tools](./index.mdx)
+- [Antworten mit Websuche und Webabruf belegen](../../cookbook/tool-grounding-with-web-fetch.mdx)

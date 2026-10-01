@@ -1,0 +1,25 @@
+---
+icon: "radio"
+title: "Flux"
+description: "Diffusez le texte, le raisonnement, les éléments, les outils et les événements de cycle de vie des agents Python."
+---
+
+`Agent.stream(...)` exécute la même machine à états que `run(...)` et renvoie un `AgentStreamResult` pouvant être relu :
+
+```python
+stream = agent.stream(input="Research this topic", client=client)
+
+for delta in stream.text_stream():
+    print(delta, end="", flush=True)
+
+completed = stream.result()
+```
+
+Utilisez `reasoning_stream()`, `item_stream()`, `tool_stream()` ou `full_stream()` pour obtenir d’autres projections. Les éléments Python sont actuellement des dictionnaires, et non une union discriminée native.
+
+Appelez `cancel()` pour arrêter le flux actif du modèle et transmettre l’annulation au travail du runtime local.
+
+## À lire aussi
+
+- [Outils](./agent-sdk-tools.mdx)
+- [Observabilité et DevTools](./agent-sdk-observability.mdx)

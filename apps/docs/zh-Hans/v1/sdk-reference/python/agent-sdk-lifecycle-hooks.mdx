@@ -1,0 +1,20 @@
+---
+icon: "radio-tower"
+title: "生命周期钩子"
+description: "响应 Python 运行、模型、步骤、工具和检查点事件。"
+---
+
+传入 `on_event`，以更新产品时间线、审计记录或现有遥测系统：
+
+```python
+def on_event(event):
+    logger.info("%s %s", event.type, event.run_id)
+```
+
+事件涵盖运行状态、模型调用、步骤、检查点、工具执行与进度、等待人工处理、取消和失败。请保持回调快速，并将耗时工作放入外部队列。
+
+## 相关内容
+
+- [流式传输](./agent-sdk-streaming.mdx)
+- [开发工具](./agent-sdk-devtools.mdx)
+

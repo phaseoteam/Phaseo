@@ -1,0 +1,51 @@
+---
+title: "Utilisation"
+description: "Gérez des boucles d’outils, la révision humaine, les nouvelles tentatives et des agents reprenables avec le SDK Agent pour PHP."
+---
+
+## Préparer l’environnement d’exécution
+
+Le package Agent SDK n’est pas encore disponible sur Packagist. Suivez les [instructions d’installation depuis les sources](./agent-sdk-installation.mdx).
+
+## Démarrage rapide
+
+```php
+<?php
+require "vendor/autoload.php";
+
+use Phaseo\AgentSdk\AgentDefinition;
+use Phaseo\AgentSdk\AgentSdk;
+
+$agent = AgentSdk::createAgent(new AgentDefinition(
+    id: "quickstart-agent",
+    model: "openai/gpt-5.4-nano",
+    instructions: "Answer concisely and helpfully."
+));
+
+$result = $agent->run(
+    input: "Give me one fun fact about cURL.",
+    client: AgentSdk::createGatewayAgentClient()
+);
+
+echo $result->output . PHP_EOL;
+```
+
+## Fonctionnalités fournies
+
+- `AgentSdk::createAgent(...)`
+- `AgentSdk::defineTool(...)`
+- `AgentSdk::createGatewayAgentClient(...)`
+- une boucle d’outils limitée utilisant l’API `responses` de Phaseo
+
+## Environnement d’exécution avancé
+
+PHP prend en charge la validation et les fonctions d’approbation, les outils avec intervention humaine et manuels, la progression, les erreurs récupérables, les itérateurs rejouables, les fonctions d’arrêt, les tours dynamiques, les paramètres persistants du tour suivant, l’utilisation et le coût normalisés, ainsi que `StateAccessor`.
+
+## Streaming et annulation
+
+`Agent::stream(...)` et `Agent::continueStream(...)` pilotent le flux SSE Responses de la passerelle via un Fiber lorsque l’itérateur renvoyé est consommé. Utilisez `textStream()`, `reasoningStream()`, `itemStream()` ou `fullStream()` ; appelez `cancel()` pour arrêter le Fiber et fermer le générateur. Les étapes terminées conservent les ID de requête, les métadonnées du fournisseur, les motifs de fin, les avertissements, l’utilisation et le coût.
+
+## Ressources associées
+
+- [Présentation du SDK Agent](../agent-sdk/overview.mdx)
+- [SDK Agent pour TypeScript](../typescript/agent-sdk.mdx)

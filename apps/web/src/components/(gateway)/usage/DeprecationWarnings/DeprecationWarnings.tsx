@@ -206,6 +206,11 @@ function CardsBlock({
 	title: string;
 	collapsible?: boolean;
 }) {
+	const t = useTranslations("SettingsUI");
+	const tWithCount = t as unknown as (
+		key: string,
+		values: { count: number },
+	) => string;
 	if (!rows.length) return null;
 
 	const visibleRows = collapsible ? rows.slice(0, 4) : rows;
@@ -223,7 +228,7 @@ function CardsBlock({
 			{collapsible && hiddenRows.length > 0 ? (
 				<details className="rounded-md border">
 					<summary className="cursor-pointer px-3 py-2 text-xs text-muted-foreground hover:text-foreground">
-						Show {hiddenRows.length} more
+						{tWithCount("strings.Show {count} more", { count: hiddenRows.length })}
 					</summary>
 					<div className="grid gap-2 border-t p-2 md:grid-cols-2">
 						{hiddenRows.map((row) => (
@@ -249,6 +254,11 @@ function SectionBlock({
 	rows: DeprecationWarning[];
 	mode: AlertCardMode;
 }) {
+	const t = useTranslations("SettingsUI");
+	const tWithCount = t as unknown as (
+		key: string,
+		values: { count: number },
+	) => string;
 	if (!rows.length) return null;
 
 	const visibleRows = rows.slice(0, 4);
@@ -272,7 +282,7 @@ function SectionBlock({
 			{hiddenRows.length > 0 ? (
 				<details className="rounded-md border">
 					<summary className="cursor-pointer px-3 py-2 text-xs text-muted-foreground hover:text-foreground">
-						Show {hiddenRows.length} more
+						{tWithCount("strings.Show {count} more", { count: hiddenRows.length })}
 					</summary>
 					<div className="grid gap-2 border-t p-2 md:grid-cols-2">
 						{hiddenRows.map((row) => (

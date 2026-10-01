@@ -1,0 +1,23 @@
+---
+icon: "radio"
+title: "流式传输"
+description: "使用 Ruby Agent 的文本、推理、项目和生命周期流。"
+---
+
+`Agent#stream` 会返回可重放的 `StreamResult`：
+
+```ruby
+stream = agent.stream(input: "Research this topic", client: client)
+
+stream.text_stream.each { |delta| print delta }
+completed = stream.result
+```
+
+如需其他视图，请使用 `reasoning_stream`、`item_stream` 或 `full_stream`。Ruby 会同步读取供应商流，然后提供可供其他消费者重放的序列。
+
+项目值目前是哈希，而不是 TypeScript 的判别联合类型。
+
+## 相关内容
+
+- [工具](./agent-sdk-tools.mdx)
+- [可观测性与 DevTools](./agent-sdk-observability.mdx)

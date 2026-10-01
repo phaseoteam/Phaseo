@@ -1,0 +1,49 @@
+---
+title: "उपयोग"
+description: "Python Agent SDK से tool loops, human review, retries और resumable agents चलाएँ।"
+---
+
+## रनटाइम तैयार करें
+
+Standalone package अभी PyPI पर उपलब्ध नहीं है। [Source से install करने के निर्देश](./agent-sdk-installation.mdx) देखें।
+
+## त्वरित शुरुआत
+
+```python
+from phaseo_agent import create_agent, create_gateway_agent_client
+
+agent = create_agent({
+    "id": "quickstart-agent",
+    "model": "openai/gpt-5.4-nano",
+    "instructions": "Answer concisely and helpfully.",
+})
+
+result = agent.run(
+    input="Give me one fun fact about cURL.",
+    client=create_gateway_agent_client(),
+)
+
+print(result.output)
+```
+
+## इसमें शामिल सुविधाएँ
+
+- `create_agent(...)`
+- `define_tool(...)`
+- `create_gateway_agent_client(...)`
+- पुनःप्रयास, समवर्ती टूल, समय-सीमाएँ और जीवनचक्र इवेंट
+- मानवीय समीक्षा के लिए `continue_run(...)` से रन रोकना
+- क्रमबद्ध की जा सकने वाली स्थिति और Phaseo DevTools कैप्चर
+
+## उन्नत रनटाइम
+
+Python में कॉल किए जा सकने वाले स्कीमा और अनुमोदन, HITL और मैन्युअल टूल, प्रगति, फिर से संभाली जा सकने वाली त्रुटियाँ, दोबारा पढ़ी जा सकने वाली स्ट्रीम, रोकने के सहायक फ़ंक्शन, गतिशील टर्न, अगले टर्न के सहेजे गए ओवरराइड, सामान्यीकृत उपयोग/लागत और ऐप द्वारा नियंत्रित स्थिति एक्सेसर समर्थित हैं।
+
+## स्ट्रीमिंग और रद्द करना
+
+`agent.stream(...)` और `agent.continue_stream(...)` Gateway की Responses SSE स्ट्रीम का उपयोग करते हैं। आउटपुट पढ़ने के लिए `text_stream()`, `reasoning_stream()`, `item_stream()`, `tool_stream()` या `full_stream()` का उपयोग करें; सक्रिय अनुरोध बंद करने के लिए `cancel()` कॉल करें। पूरे हुए चरणों में अनुरोध ID, प्रदाता मेटाडेटा, समाप्ति कारण, चेतावनियाँ, उपयोग और लागत सुरक्षित रहती हैं।
+
+## संबंधित पेज
+
+- [Agent SDK का परिचय](../agent-sdk/overview.mdx)
+- [TypeScript Agent SDK](../typescript/agent-sdk.mdx)

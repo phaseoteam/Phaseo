@@ -1,0 +1,23 @@
+---
+icon: "shuffle"
+title: "Turnos dinâmicos"
+description: "Altere o roteamento, as instruções, as ferramentas e as configurações de amostragem entre os turnos de um agente Ruby."
+---
+
+Campos chamáveis do agente recalculam os parâmetros da solicitação com base no estado atual da execução antes de cada turno do modelo.
+
+```ruby
+agent = PhaseoAgentSdk.create_agent(
+  id: "support-agent",
+  model: ->(turn) {
+    turn.run.step_count > 3 ? "openai/gpt-5.4" : "openai/gpt-5.4-nano"
+  },
+  instructions: ->(turn) {
+    "Resolve the request using the current context."
+  }
+)
+```
+
+Ferramentas dinâmicas e valores de amostragem podem seguir o mesmo padrão. Uma ferramenta pode definir `next_turn_params` para modificar somente a solicitação imediatamente seguinte. Essas substituições sobrevivem a um ponto de aprovação e expiram após o próximo turno.
+
+Use funções chamáveis para políticas que precisam ser recalculadas a cada turno. Use `next_turn_params` para transferir um ajuste específico de uma ferramenta.

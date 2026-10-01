@@ -1,0 +1,34 @@
+---
+title: "إنشاء كلام"
+sidebarTitle: "إنشاء كلام"
+badge: "Beta"
+openapi: "/ar/openapi/v1/openapi.localized.yaml POST /audio/speech"
+description: "إنشاء صوت TTS من النص باستخدام الصوت والتنسيق المحددين."
+---
+
+## مطابقة الأصوات
+
+تُوحّد قيمة `voice` حسب المزوّد باستخدام خريطة أسماء بديلة داخلية:
+
+- `openai`: أصوات شائعة (مثل `alloy`, `ash`, `ballad`, `coral`, `echo`, `fable`, `onyx`, `nova`, `sage`, `shimmer`, `verse`, `cedar`, `marin`).
+- `google` (AI Studio / Gemini TTS): الأصوات الجاهزة المعتمدة:
+  `Zephyr`, `Puck`, `Charon`, `Kore`, `Fenrir`, `Leda`, `Orus`, `Aoede`, `Callirrhoe`, `Autonoe`, `Enceladus`, `Iapetus`, `Umbriel`, `Algieba`, `Despina`, `Erinome`, `Algenib`, `Rasalgethi`, `Laomedeia`, `Achernar`, `Alnilam`, `Schedar`, `Gacrux`, `Pulcherrima`, `Achird`, `Zubenelgenubi`, `Vindemiatrix`, `Sadachbia`, `Sadaltager`, `Sulafat`.
+- `elevenlabs`: تُطابق أصوات البداية العامة الشائعة (مثل `rachel`, `domi`, `bella`, `antoni`, `elli`, `josh`, `arnold`, `adam`, `sam`).
+
+إذا لم تكن قيمة `voice` صالحة لمزيج المزوّد والنموذج المحدد للمسار، فسيُرجع الطلب `400 invalid_request_error` مع `param: "voice"`.
+
+## تجاوزات المزوّد
+
+يمكنك أيضًا تمرير إعدادات الصوت الخاصة بالمزوّد:
+
+- ElevenLabs: `config.elevenlabs.voice_id` / `config.elevenlabs.voice` / `config.elevenlabs.voiceName`
+- Google: `config.google.voice_name` / `config.google.voiceName`
+
+اجعل `voice` في المستوى الأعلى هو القيمة الافتراضية لتسهيل النقل.
+
+## عينات الأصوات
+
+- OpenAI: [openai.fm](https://www.openai.fm/)
+- أمثلة على أصوات Google TTS: [مستندات Gemini لتحويل النص إلى كلام](https://ai.google.dev/gemini-api/docs/speech-generation#voices)
+- مكتبة أصوات ElevenLabs: [ElevenLabs Voice Library](https://elevenlabs.io/voice-library)
+

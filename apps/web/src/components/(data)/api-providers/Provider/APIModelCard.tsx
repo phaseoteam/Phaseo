@@ -2,6 +2,7 @@
 "use client";
 
 import React, { useMemo } from "react";
+import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -107,16 +108,6 @@ function normalizeModality(value: string): string {
 	return normalized.replace(/\s+/g, "_");
 }
 
-function formatModalityLabel(value: string): string {
-	if (value === "audio_stt") return "Transcription";
-	if (value === "audio_tts") return "Speech";
-	if (value === "audio_music") return "Music";
-	return value
-		.replace(/[_-]+/g, " ")
-		.trim()
-		.replace(/\b\w/g, (char) => char.toUpperCase());
-}
-
 function toList(v?: string[] | string | null) {
 	if (!v) return [] as string[];
 	const values = Array.isArray(v) ? v.map((s) => String(s)) : String(v).split(/[,\s]+/);
@@ -213,14 +204,14 @@ const ENDPOINT_META: Record<
 	},
 };
 
-function getEndpointMeta(endpoint?: string | null): {
+function getEndpointMeta(endpoint?: string | null, fallbackLabel = "Endpoint"): {
 	label: string;
 	icon: React.ElementType;
 	className: string;
 } {
 	if (!endpoint) {
 		return {
-			label: "Endpoint",
+			label: fallbackLabel,
 			icon: Link2,
 			className: "bg-neutral-50 text-neutral-700 ring-1 ring-neutral-200",
 		};
@@ -234,8 +225,8 @@ function getEndpointMeta(endpoint?: string | null): {
 	};
 }
 
-function EndpointPill({ endpoint }: { endpoint?: string | null }) {
-	const meta = getEndpointMeta(endpoint);
+function EndpointPill({ endpoint, fallbackLabel }: { endpoint?: string | null; fallbackLabel: string }) {
+	const meta = getEndpointMeta(endpoint, fallbackLabel);
 	const Icon = meta.icon;
 	return (
 		<span
@@ -253,6 +244,26 @@ function EndpointPill({ endpoint }: { endpoint?: string | null }) {
 // --- main card ---------------------------------------------------------------
 
 export default function APIModelCard({ model }: { model: APIProviderModels }) {
+	const t = useTranslations("Catalogue.apiModelCard");
+	const tProviderModelList = useTranslations("Catalogue.providerModelList");
+	const tModelMetadata = useTranslations("Catalogue.modelDetail.metadata");
+	const formatModalityLabel = (value: string) => {
+		if (value === "audio_stt") return tModelMetadata("modalityTranscription");
+		if (value === "audio_tts") return tModelMetadata("modalitySpeech");
+		if (value === "audio_music") return tModelMetadata("modalityMusic");
+		if (value === "text") return tModelMetadata("modalityText");
+		if (value === "image") return tModelMetadata("modalityImage");
+		if (value === "audio") return tModelMetadata("modalityAudio");
+		if (value === "video") return tModelMetadata("modalityVideo");
+		if (value === "embeddings") return tProviderModelList("capabilities.embeddings");
+		if (value === "rerank") return tProviderModelList("capabilities.rerank");
+		if (value === "moderation") return tModelMetadata("modalityModeration");
+		if (value === "tool") return t("modalityTool");
+		return value
+			.replace(/[_-]+/g, " ")
+			.trim()
+			.replace(/\b\w/g, (char) => char.toUpperCase());
+	};
 	const inputs = useMemo(
 		() => toList(model.input_modalities),
 		[model.input_modalities]
@@ -308,7 +319,7 @@ export default function APIModelCard({ model }: { model: APIProviderModels }) {
 						</div>
 					</TooltipTrigger>
 					<TooltipContent>
-						{model.is_active_gateway ? "Gateway: Active" : "Gateway: Inactive"}
+						{model.is_active_gateway ? t("gatewayActive") : t("gatewayInactive")}
 					</TooltipContent>
 				</Tooltip>
 			</div>
@@ -330,7 +341,7 @@ export default function APIModelCard({ model }: { model: APIProviderModels }) {
 					variant="ghost"
 					size="sm"
 					className="shrink-0 opacity-0 transition-opacity group-hover:opacity-100"
-					onCopy={() => toast.success("Copied model ID")}
+					onCopy={() => toast.success(t("copiedModelId"))}
 				/>
 			</div>
 
@@ -344,22 +355,22 @@ export default function APIModelCard({ model }: { model: APIProviderModels }) {
 						<button className="flex items-center gap-1.5 text-neutral-600 hover:text-neutral-900 transition-colors">
 							<Link2 className="h-3.5 w-3.5" />
 							<span className="font-medium">
-								{endpoints.length === 1 ? "1 endpoint" : `${endpoints.length} endpoints`}
+								{t("endpointsCount", { count: endpoints.length })}
 							</span>
 						</button>
 					</HoverCardTrigger>
 					<HoverCardContent className="w-80 text-xs">
 						<div className="space-y-2">
 							<div className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
-								Supported endpoints
+								{t("supportedEndpoints")}
 							</div>
 							<div className="flex flex-wrap gap-1.5">
 								{endpoints.length > 0 ? (
 									endpoints.map((ep) => (
-										<EndpointPill key={ep} endpoint={ep} />
+										<EndpointPill key={ep} endpoint={ep} fallbackLabel={t("endpoint")} />
 									))
 								) : (
-									<EndpointPill endpoint={null} />
+										<EndpointPill endpoint={null} fallbackLabel={t("endpoint")} />
 								)}
 							</div>
 						</div>
@@ -372,12 +383,12 @@ export default function APIModelCard({ model }: { model: APIProviderModels }) {
 						<HoverCardTrigger asChild>
 							<button className="flex items-center gap-1.5 text-neutral-600 hover:text-neutral-900 transition-colors">
 								<Bot className="h-3.5 w-3.5" />
-								<span className="font-medium">Alias</span>
+								<span className="font-medium">{t("alias")}</span>
 							</button>
 						</HoverCardTrigger>
 						<HoverCardContent className="w-80 text-xs">
 							<div className="space-y-2">
-								<div className="text-xs font-medium">Provider alias</div>
+								<div className="text-xs font-medium">{t("providerAlias")}</div>
 								<div className="flex items-center gap-2">
 									<code className="font-mono text-xs break-all flex-1">
 										{model.provider_model_slug}
@@ -387,12 +398,11 @@ export default function APIModelCard({ model }: { model: APIProviderModels }) {
 										variant="outline"
 										size="sm"
 										className="shrink-0"
-										onCopy={() => toast.success("Copied provider alias")}
+										onCopy={() => toast.success(t("copiedProviderAlias"))}
 									/>
 								</div>
 								<p className="text-xs text-neutral-500">
-									This is what the provider calls this model. Use it when
-									calling their native API.
+									{t("providerAliasDescription")}
 								</p>
 							</div>
 						</HoverCardContent>
@@ -407,7 +417,7 @@ export default function APIModelCard({ model }: { model: APIProviderModels }) {
 				{/* Input modalities */}
 				<div className="space-y-2">
 					<span className="text-[11px] font-semibold uppercase tracking-wide text-neutral-500">
-						Input
+						{tProviderModelList("input")}
 					</span>
 					<div className="flex flex-wrap gap-1.5">
 						{availableInputsOrdered.map((mod) => {
@@ -437,7 +447,7 @@ export default function APIModelCard({ model }: { model: APIProviderModels }) {
 				{/* Output modalities */}
 				<div className="space-y-2">
 					<span className="text-[11px] font-semibold uppercase tracking-wide text-neutral-500">
-						Output
+						{tProviderModelList("output")}
 					</span>
 					<div className="flex flex-wrap gap-1.5">
 						{availableOutputsOrdered.map((mod) => {

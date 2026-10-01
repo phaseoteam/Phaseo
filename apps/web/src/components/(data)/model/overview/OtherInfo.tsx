@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { ExternalLink } from "lucide-react";
+import { getLocale, getTranslations } from "next-intl/server";
 
 interface ModelDetail {
 	detail_name: string;
@@ -20,13 +21,15 @@ interface OtherInfoProps {
 	}>;
 }
 
-export default function OtherInfo({
+export default async function OtherInfo({
 	details,
 	showHeading = true,
 	showEmpty = false,
 	licenseUrl,
 	extraItems = [],
 }: OtherInfoProps) {
+	const locale = await getLocale();
+	const t = await getTranslations("Catalogue.modelDetail.metadata");
 	const detailsMap: Record<string, string> = {};
 	if (Array.isArray(details)) {
 		for (const d of details) {
@@ -54,22 +57,27 @@ export default function OtherInfo({
 		if (value === "" || value == null || value === 0) return null;
 		const num = Number(value);
 		if (!Number.isFinite(num)) return null;
-		return num.toLocaleString();
+		return num.toLocaleString(locale);
 	};
 
 	const parameterCount = resolve("parameter_count");
-	const license = resolve("license");
+	const rawLicense = resolve("license");
+	const normalizedLicense = rawLicense?.trim().toLowerCase();
+	const license =
+		normalizedLicense === "proprietary" || normalizedLicense === "proprietary license"
+			? t("proprietaryLicense")
+			: rawLicense;
 	const trainingTokens = resolve("training_tokens");
 
 	const items = [
 		{
 			key: "parameters",
-			label: "Parameters",
+			label: t("parameters"),
 			value: formatCount(parameterCount),
 		},
 		{
 			key: "license",
-			label: "License",
+			label: t("license"),
 			value:
 				license && license.trim().length > 0 && licenseUrl ? (
 					<Link
@@ -87,7 +95,7 @@ export default function OtherInfo({
 		},
 		{
 			key: "training_tokens",
-			label: "Training Tokens",
+			label: t("trainingTokens"),
 			value: formatCount(trainingTokens),
 		},
 		...extraItems,
@@ -127,7 +135,7 @@ export default function OtherInfo({
 					<p className="text-xs text-muted-foreground">{item.label}</p>
 					{typeof item.value === "string" || typeof item.value === "number" || item.value == null ? (
 						<p className={isEmpty ? "mt-1 text-sm font-medium text-muted-foreground" : "mt-1 text-sm font-semibold"}>
-							{item.value ?? "Not listed"}
+							{item.value ?? t("notListed")}
 						</p>
 					) : (
 						item.value
@@ -140,7 +148,7 @@ export default function OtherInfo({
 
 	return (
 		<section className="space-y-2">
-			{showHeading ? <h3 className="text-base font-semibold">Other Info</h3> : null}
+			{showHeading ? <h3 className="text-base font-semibold">{t("otherInfo")}</h3> : null}
 			<div className="space-y-2 xl:grid xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] xl:gap-2 xl:space-y-0">
 				{renderGrid(primaryItems, "sm:grid-cols-3")}
 				{secondaryItems.length > 0

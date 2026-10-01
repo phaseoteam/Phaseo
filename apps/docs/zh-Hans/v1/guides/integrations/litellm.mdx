@@ -1,0 +1,56 @@
+---
+title: "LiteLLM"
+icon: "route"
+description: "在 LiteLLM 后端使用 Phaseo，或通过 Phaseo 路由 LiteLLM 调用。"
+---
+
+如果你已依赖 LiteLLM 的代理、预算或本地路由器，但希望使用 Phaseo 的模型、分析和服务器工具，请通过 LiteLLM 接入 Phaseo。
+
+## 直接使用 Python 调用
+
+```bash
+pip install litellm
+```
+
+```python
+import os
+from litellm import completion
+
+response = completion(
+    model="openai/openai/gpt-5-nano",
+    api_key=os.environ["PHASEO_API_KEY"],
+    api_base="https://api.phaseo.app/v1",
+    messages=[{"role": "user", "content": "Reply with only: ok"}],
+)
+
+print(response.choices[0].message.content)
+```
+
+LiteLLM 通常会为 OpenAI 兼容端点使用供应商前缀 `openai/`。Phaseo 模型 ID 仍为 `openai/gpt-5-nano`，因此 LiteLLM 中的模型字符串可能是 `openai/openai/gpt-5-nano`。
+
+## 配置代理
+
+如果不想在应用代码中写入 LiteLLM 供应商前缀，请使用模型别名：
+
+```yaml
+model_list:
+  - model_name: phaseo-gpt-5-nano
+    litellm_params:
+      model: openai/openai/gpt-5-nano
+      api_key: os.environ/PHASEO_API_KEY
+      api_base: https://api.phaseo.app/v1
+```
+
+然后使用 `model: "phaseo-gpt-5-nano"` 调用 LiteLLM 代理。
+
+## 说明
+
+- 在生产环境中，建议使用 LiteLLM 别名，让模型名称更易读。
+- 如果使用 Phaseo 服务器工具，请测试 LiteLLM 的具体路由，因为某些代理层会规范化或丢弃未知工具类型。
+- 明确由 LiteLLM、Phaseo 还是两者共同作为计价记录来源。
+
+## 相关内容
+
+- [OpenAI SDK](./openai-sdk.mdx)
+- [服务器工具](../server-tools/index.mdx)
+- [定价](../../api-reference/endpoint/pricing-calculate.mdx)

@@ -22,6 +22,7 @@ import {
 } from '@/app/(dashboard)/settings/account/actions'
 import { toast } from 'sonner'
 import { useTranslations } from 'next-intl'
+import { localizedSettingsError } from '@/i18n/error-messages'
 import { Loader2, QrCode, Key, CheckCircle2, Copy } from 'lucide-react'
 import Image from 'next/image'
 
@@ -72,8 +73,8 @@ export function MFAEnrollmentFlow({
             setSecret(result.secret)
             setFactorId(result.factorId)
 			setStep('qr-code')
-        } catch (error: any) {
-            toast.error(error.message || s('Failed to start MFA setup'))
+        } catch (error: unknown) {
+            toast.error(localizedSettingsError(error, t, 'Failed to start MFA setup'))
         } finally {
             setLoading(false)
         }
@@ -105,8 +106,8 @@ export function MFAEnrollmentFlow({
 				currentPassword || undefined
             )
             setStep('success')
-        } catch (error: any) {
-            toast.error(error.message || s('Invalid code. Please try again.'))
+        } catch (error: unknown) {
+            toast.error(localizedSettingsError(error, t, 'Invalid code. Please try again.'))
             setVerificationCode('')
         } finally {
             setLoading(false)
@@ -307,7 +308,7 @@ export function MFAEnrollmentFlow({
 
                             <div className="flex justify-end">
                                 <Button onClick={handleComplete}>
-                                    Done
+                                    {s('Done')}
                                 </Button>
                             </div>
                         </div>

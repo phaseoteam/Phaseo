@@ -127,14 +127,24 @@ export default function ContentProvenanceTool() {
 				signal: controller.signal,
 			});
 			const payload = await response.json().catch(() => null) as (ProvenanceResponse & { message?: string }) | null;
-			if (!response.ok) throw new Error(payload?.message || t("verificationFailed"));
+			if (!response.ok) {
+				console.error("Content provenance verification failed:", payload?.message);
+				throw new Error("verificationFailed");
+			}
 			if (!payload || payload.object !== "content_provenance_check" || !Array.isArray(payload.results)) {
 				throw new Error(t("invalidResponse"));
 			}
 			setResult(payload);
 		} catch (caught) {
 			if (controller.signal.aborted) return;
-			setError(caught instanceof Error ? caught.message : t("verificationFailed"));
+			if (caught instanceof Error && caught.message === t("invalidResponse")) {
+				setError(caught.message);
+			} else {
+				if (caught instanceof Error && caught.message !== "verificationFailed") {
+					console.error("Content provenance verification failed:", caught);
+				}
+				setError(t("verificationFailed"));
+			}
 		} finally {
 			if (requestControllerRef.current === controller) {
 				requestControllerRef.current = null;

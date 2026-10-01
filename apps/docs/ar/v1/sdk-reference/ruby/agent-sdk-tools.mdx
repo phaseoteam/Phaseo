@@ -1,0 +1,21 @@
+---
+icon: "wrench"
+title: "الأدوات"
+description: "عرّف أدوات Ruby متحققة وتتطلب موافقة أو تُنفذ يدويًا أو تُصدر تحديثات التقدم."
+---
+
+أنشئ قيم `PhaseoAgentSdk::Tool` ومرّرها عبر `define_tool`. ويمكن أن تتضمن الأدوات:
+
+- `parameters` بصيغة JSON تُعرض على النموذج
+- استدعاءات تحقق لـ`input_schema` و`output_schema` و`event_schema`
+- `timeout_ms` واستدعاء رد النداء `execute`
+- `require_approval` بقيمة منطقية أو قابلة للاستدعاء
+- `on_tool_called` و`on_response_received` للعمل التفاعلي
+- `next_turn_params` و`on_error: "return-to-model"`
+
+استخدم `runtime.emit_progress` للنتائج الأولية و`set_context` لسياق التطبيق. ويمكن لعدد محدود من سلاسل التنفيذ تشغيل الأدوات المستقلة بالتوازي مع حفظ النتائج بترتيب استدعاءات النموذج.
+
+## مواضيع ذات صلة
+
+- [الحالة والموافقة](./agent-sdk-state-and-approval.mdx)
+- [عناصر التحكم في التشغيل](./agent-sdk-run-controls.mdx)

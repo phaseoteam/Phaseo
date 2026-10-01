@@ -1,0 +1,14 @@
+---
+title: "Lister les événements d’audit de l’espace de travail"
+sidebarTitle: "Événements d’audit"
+badge: "Beta"
+openapi: "/fr/openapi/v1/openapi.localized.yaml GET /audit-events"
+description: "Lister les modifications sensibles à la sécurité du plan de contrôle de l’espace de travail authentifié."
+---
+
+<Note>
+Ce point de terminaison nécessite la capacité de gestion `activity:read`. Les utilisateurs OAuth doivent également avoir le rôle de propriétaire ou d’administrateur de l’espace de travail.
+</Note>
+
+Les événements ne contiennent que des métadonnées nettoyées. Les identifiants en clair, leurs empreintes, les en-têtes d’autorisation, les listes complètes de portées et les corps de requête ne sont jamais renvoyés.
+

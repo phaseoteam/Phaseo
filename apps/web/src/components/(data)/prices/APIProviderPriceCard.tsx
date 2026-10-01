@@ -2,12 +2,23 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 import { ExtendedModel, Price, APIProvider } from "@/data/types";
+import { useLocale, useTranslations } from "next-intl";
 
 interface ModelPriceCardProps {
 	model: ExtendedModel;
 }
 
 export default function ModelPriceCard({ model }: ModelPriceCardProps) {
+	const locale = useLocale();
+	const tPricing = useTranslations("Catalogue.modelDetail.pricing");
+	const tPerformance = useTranslations("Catalogue.modelDetail.performance");
+	const currencyFormatter = new Intl.NumberFormat(locale, {
+		style: "currency",
+		currency: "USD",
+		minimumFractionDigits: 2,
+		maximumFractionDigits: 2,
+	});
+
 	// Defensive: if no prices, show nothing
 	if (!model.prices || model.prices.length === 0) return null;
 
@@ -106,8 +117,8 @@ export default function ModelPriceCard({ model }: ModelPriceCardProps) {
 
 				const Money = (n: number | null, suffix = "/1M") =>
 					n === null || isNaN(n)
-						? "N/A"
-						: `$${n.toFixed(2)}${suffix}`;
+						? tPricing("notAvailable")
+						: `${currencyFormatter.format(n)}${suffix}`;
 
 				return (
 					<Card
@@ -124,17 +135,18 @@ export default function ModelPriceCard({ model }: ModelPriceCardProps) {
 										height={28}
 										className="w-7 h-7 rounded shrink-0"
 									/>
-									<Link
-										href={`prices/${apiProviderId}`}
-										className="group/provider flex items-center gap-1 truncate font-semibold capitalize focus:outline-hidden"
+					<Link
+						href={`prices/${apiProviderId}`}
+						aria-label={tPricing("openProviderDetails", { provider: apiProviderName })}
+						className="group/provider flex items-center gap-1 truncate font-semibold capitalize focus:outline-hidden"
 									>
 										<span className="truncate font-semibold relative underline decoration-transparent hover:decoration-current transition-colors duration-200">
 											{apiProviderName}
 										</span>
-										<ArrowUpRight
-											size={18}
-											className="ml-0.5 opacity-0 group-hover/provider:opacity-100 transition-opacity"
-											aria-label="Open provider link"
+						<ArrowUpRight
+							size={18}
+							className="ml-0.5 opacity-0 group-hover/provider:opacity-100 transition-opacity"
+							aria-hidden="true"
 										/>
 									</Link>
 								</div>
@@ -144,30 +156,30 @@ export default function ModelPriceCard({ model }: ModelPriceCardProps) {
 						<CardContent className="flex flex-col gap-4 p-4 sm:p-5">
 							{/* Pricing stats */}
 							<div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-								<Stat
-									label="Input Price"
+				<Stat
+					label={tPricing("inputPrice")}
 									value={Money(
 										inputPrice !== null
 											? inputPrice * 1_000_000
 											: null
 									)}
-									tooltip="Price per 1M input tokens"
+					tooltip={tPricing("inputPriceTooltip")}
 									accent="border-b-2 border-b-blue-500 dark:border-b-blue-400"
 								/>
-								<Stat
-									label="Output Price"
+				<Stat
+					label={tPricing("outputPrice")}
 									value={Money(
 										outputPrice !== null
 											? outputPrice * 1_000_000
 											: null
 									)}
-									tooltip="Price per 1M output tokens"
+					tooltip={tPricing("outputPriceTooltip")}
 									accent="border-b-2 border-b-green-500 dark:border-b-green-400"
 								/>
-								<Stat
-									label="Blended Price"
-									value={Money(blendedPrice)}
-									tooltip="Blended price (3:1) is the average cost per 1M tokens assuming 75% are input tokens and 25% are output, reflecting typical usage patterns."
+				<Stat
+					label={tPricing("blendedPrice")}
+					value={Money(blendedPrice)}
+					tooltip={tPricing("blendedPriceTooltip")}
 									accent="border-b-2 border-b-orange-500 dark:border-b-orange-400"
 								/>
 							</div>
@@ -176,7 +188,7 @@ export default function ModelPriceCard({ model }: ModelPriceCardProps) {
 							<div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
 								<div className="flex items-center justify-between rounded-lg bg-zinc-50 dark:bg-zinc-900/40 border border-zinc-200/70 dark:border-zinc-800 px-3 py-2.5">
 									<span className="text-xs font-medium text-zinc-600 dark:text-zinc-400">
-										Throughput
+										{tPerformance("throughput")}
 									</span>
 									<span className="text-sm tabular-nums font-semibold">
 										{throughput !== null &&
@@ -188,7 +200,7 @@ export default function ModelPriceCard({ model }: ModelPriceCardProps) {
 								</div>
 								<div className="flex items-center justify-between rounded-lg bg-zinc-50 dark:bg-zinc-900/40 border border-zinc-200/70 dark:border-zinc-800 px-3 py-2.5">
 									<span className="text-xs font-medium text-zinc-600 dark:text-zinc-400">
-										Latency
+										{tPerformance("latency")}
 									</span>
 									<span className="text-sm tabular-nums font-semibold">
 										{latency !== null &&

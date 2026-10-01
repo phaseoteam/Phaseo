@@ -1,0 +1,41 @@
+---
+icon: "rotate"
+title: "Sorties et nouvelles tentatives"
+description: "Validez les sorties finales, réessayez les requêtes au modèle et examinez les exécutions PHP terminées."
+---
+
+Utilisez la validation de sortie lorsque le code PHP en aval exige une structure prévisible. Les nouvelles tentatives du modèle couvrent les échecs transitoires des requêtes ; celles des outils produisant des effets secondaires doivent être gérées dans l’outil et être idempotentes.
+
+## Configurer les tentatives
+
+```php
+$agent = AgentSdk::createAgent(new AgentDefinition(
+    id: "research-agent",
+    model: "openai/gpt-5.4-nano",
+    modelRetry: new ModelRetryConfig(
+        maxRetries: 3,
+        baseDelayMs: 500,
+        maxDelayMs: 4000
+    )
+));
+```
+
+Le résultat d’exécution contient le statut, les étapes, les messages, l’utilisation normalisée, le motif d’arrêt et la sortie finale. Consultez ces champs au lieu de considérer le texte final comme le journal complet de l’exécution.
+
+## Valider le résultat final
+```php
+$result = $agent->run(input: $prompt, client: $client);
+
+echo $result->output;
+echo $result->run->status;
+echo $result->usage["total_tokens"];
+echo $result->usage["cost"];
+```$result = $agent->run(input: $prompt, client: $client);
+
+echo $result->output;
+echo $result->run->status;
+echo $result->usage["total_tokens"];
+echo $result->usage["cost"];
+```
+
+Utilisez les [conditions d’arrêt](./agent-sdk-stop-conditions) pour imposer des limites et la page [erreurs et dépannage](./agent-sdk-observability) pour choisir le comportement en cas d’échec récupérable.

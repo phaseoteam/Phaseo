@@ -1,0 +1,19 @@
+---
+icon: "search-check"
+title: "Consulta de generaciones"
+description: "Llama a `/generations` para recuperar un registro de generación anterior."
+---
+
+**Método**: `client.getGeneration(...)`
+
+```java
+import app.phaseo.sdk.Phaseo;
+
+Phaseo client = new Phaseo(System.getenv("PHASEO_API_KEY"));
+
+Object generation = client.getGeneration("G-01ABC123");
+System.out.println(String.valueOf(generation));
+```
+
+Si se guardaron los detalles de la solicitud, el registro de generación devuelto también incluye `replay_supported` y `replay_request`, para que puedas volver a enviar el payload capturado al endpoint original.
+

@@ -1,0 +1,214 @@
+---
+title: "हर अनुरोध के लिए प्रदाता पिन या अनदेखा करें"
+icon: "pin"
+description: "प्राथमिकता क्रम तय करने, विकल्प सीमित करने या किसी प्रदाता को हटाने के लिए अनुरोध-स्तरीय प्रदाता नियंत्रण का उपयोग करें।"
+---
+
+जब किसी एक अनुरोध में पूरे वर्कस्पेस के रूटिंग डिफ़ॉल्ट बदले बिना खास प्रदाता पथ को प्राथमिकता देनी हो, तब यह रेसिपी उपयोग करें।
+
+## लक्ष्य
+
+- प्रदाताओं को पसंदीदा क्रम में आज़माएँ।
+- अनुरोध को स्वीकृत प्रदाताओं के उपसमूह तक सीमित करें।
+- प्रीसेट में बदलाव किए बिना किसी प्रदाता को अस्थायी रूप से अनदेखा करें।
+
+## 1. प्रदाताओं को खास क्रम में आज़माएँ
+
+पसंदीदा रूट क्रम पहले से पता हो, तो `provider.order` का उपयोग करें।
+
+<CodeGroup>
+```bash cURL
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "anthropic/claude-opus-4.6",
+    "input": "Write a concise launch summary.",
+    "provider": {
+      "order": ["anthropic-us", "anthropic"]
+    }
+  }'
+```
+
+```typescript TypeScript SDK
+import Phaseo from "@phaseo/sdk";
+
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
+
+const response = await client.generateResponse({
+  model: "anthropic/claude-opus-4.6",
+  input: "Write a concise launch summary.",
+  provider: {
+    order: ["anthropic-us", "anthropic"],
+  },
+});
+
+console.log(response.output_text);
+```
+
+```python Python SDK
+from phaseo import Phaseo
+
+client = Phaseo(api_key="YOUR_API_KEY")
+
+response = client.generate_response(
+    {
+        "model": "anthropic/claude-opus-4.6",
+        "input": "Write a concise launch summary.",
+        "provider": {
+            "order": ["anthropic-us", "anthropic"],
+        },
+    }
+)
+
+print(response.get("output_text"))
+```
+</CodeGroup>
+
+सूचीबद्ध प्रदाता पहले उम्मीदवार क्रम में आते हैं, फिर बाकी योग्य विकल्प आते हैं।
+
+## 2. अनुरोध को प्रदाताओं के तय उपसमूह तक सीमित करें
+
+अनुरोध को छोटी अनुमति सूची तक सीमित रखना हो, तो `provider.only` का उपयोग करें।
+
+<CodeGroup>
+```bash cURL
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-5.4-nano",
+    "input": "Extract the action items.",
+    "provider": {
+      "only": ["openai", "openai-eu"],
+      "sort": "price"
+    }
+  }'
+```
+
+```typescript TypeScript SDK
+import Phaseo from "@phaseo/sdk";
+
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
+
+const response = await client.generateResponse({
+  model: "openai/gpt-5.4-nano",
+  input: "Extract the action items.",
+  provider: {
+    only: ["openai", "openai-eu"],
+    sort: "price",
+  },
+});
+
+console.log(response.output_text);
+```
+
+```python Python SDK
+from phaseo import Phaseo
+
+client = Phaseo(api_key="YOUR_API_KEY")
+
+response = client.generate_response(
+    {
+        "model": "openai/gpt-5.4-nano",
+        "input": "Extract the action items.",
+        "provider": {
+            "only": ["openai", "openai-eu"],
+            "sort": "price",
+        },
+    }
+)
+
+print(response.get("output_text"))
+```
+</CodeGroup>
+
+इससे अनुरोध उन्हीं प्रदाताओं तक सीमित रहता है और उस उपसमूह में चुनी गई रैंकिंग लागू होती है।
+
+## 3. किसी प्रदाता को विकल्पों से हटाएँ
+
+किसी अनुरोध या थोड़े समय के रोलआउट के लिए प्रदाता छोड़ना हो, तो `provider.ignore` का उपयोग करें।
+
+<CodeGroup>
+```bash cURL
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "meta/llama-4-maverick",
+    "input": "Summarize the transcript.",
+    "provider": {
+      "ignore": ["deepinfra"]
+    }
+  }'
+```
+
+```typescript TypeScript SDK
+import Phaseo from "@phaseo/sdk";
+
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
+
+const response = await client.generateResponse({
+  model: "meta/llama-4-maverick",
+  input: "Summarize the transcript.",
+  provider: {
+    ignore: ["deepinfra"],
+  },
+});
+
+console.log(response.output_text);
+```
+
+```python Python SDK
+from phaseo import Phaseo
+
+client = Phaseo(api_key="YOUR_API_KEY")
+
+response = client.generate_response(
+    {
+        "model": "meta/llama-4-maverick",
+        "input": "Summarize the transcript.",
+        "provider": {
+            "ignore": ["deepinfra"],
+        },
+    }
+)
+
+print(response.get("output_text"))
+```
+</CodeGroup>
+
+यह तब उपयोगी है जब:
+
+- किसी प्रदाता का प्रदर्शन प्रभावित हो
+- आप किसी अन्य प्रदाता पथ की जाँच कर रहे हों
+- आप प्रीसेट संपादित किए बिना रूटिंग परिणामों की तुलना करना चाहते हों
+
+## 4. नियंत्रणों को सावधानी से मिलाएँ
+
+आप इन नियंत्रणों को मिला सकते हैं, लेकिन उद्देश्य स्पष्ट रखें:
+
+- पसंद बताने के लिए `order` का उपयोग करें
+- उम्मीदवारों का समूह तय करने के लिए `only` का उपयोग करें
+- किसी प्रदाता को हटाने के लिए `ignore` का उपयोग करें
+
+एक व्यावहारिक तरीका इनका संयोजन है:
+
+- `only` से अनुरोध को `google-vertex` और `google-vertex-eu` तक सीमित करें
+- `order` से `google-vertex-eu` को पहले प्राथमिकता दें
+- उस अनुमत समूह में रैंक करने के लिए `sort: "latency"`
+
+## 5. इसे प्रीसेट में कब ले जाएँ
+
+अगर कई सेवाओं में प्रदाता के वही नियम हों, तो उन्हें हर अनुरोध में कॉपी करने के बजाय प्रीसेट में ले जाएँ।
+
+अनुरोध-स्तरीय रूटिंग तब उपयोग करें जब ओवरराइड:
+
+- अस्थायी हो
+- कॉलर-विशिष्ट हो
+- किसी एक उपयोगकर्ता प्रवाह से जुड़ा हो
+
+## संबंधित गाइड
+
+- [रूटिंग और फ़ॉलबैक](../guides/routing-and-fallbacks.mdx)
+- [प्रीसेट रोल आउट करें और रूटिंग डीबग करें](./preset-rollout-and-routing-debug.mdx)

@@ -1,0 +1,41 @@
+---
+icon: "compass"
+title: "Présentation du SDK TypeScript"
+description: "Client TypeScript officiel pour l’API Phaseo Gateway"
+---
+
+Installez depuis npm le package publié [~@phaseo/sdk~](https://www.npmjs.com/package/@phaseo/sdk).
+
+Le SDK TypeScript de Phaseo offre un moyen pratique et sûr du point de vue des types d’interagir avec l’API Phaseo Gateway. Fondé sur la spécification OpenAPI, il fournit une prise en charge complète de TypeScript, des types générés et une interface client simple.
+
+## Fonctionnalités
+
+-   **Typage sûr** : prise en charge complète de TypeScript et types générés à partir de la spécification OpenAPI
+-   **API simple** : client facile à utiliser avec une interface claire
+-   **Code généré** : généré automatiquement à partir de la spécification canonique de l’API
+-   **Complet** : couvre tous les endpoints de Gateway API
+
+## Exemple rapide
+
+```typescript
+import Phaseo from "@phaseo/sdk";
+
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
+
+const response = await client.generateText({
+	model: "openai/gpt-4o-mini",
+	messages: [{ role: "user", content: "Hello, how are you?" }],
+});
+
+console.log(response.choices[0].message.content);
+```
+
+## Contenu du package
+
+-   Classe cliente `Phaseo` pour toutes les interactions avec l’API
+-   Des méthodes d’assistance organisées par ressource, telles que `client.models`, `client.batches`, `client.videos`, and `client.asyncJobs`
+-   Des méthodes de découverte et de tarification, telles que `client.getModels()`, `client.listProviders()`, `client.getCredits()`, `client.getActivity()`, `client.getAnalytics()`, `client.listEndpoints()`, `client.listOrganisations()`, `client.listPricingModels()`, `client.calculatePricing()`, `client.listApiKeys()`, `client.createApiKey()`, `client.getApiKey(id)`, `client.updateApiKey(id, ...)`, `client.deleteApiKey(id)`, `client.listWorkspaces()`, `client.getWorkspace(id)`, `client.createWorkspace(...)`, `client.updateWorkspace(id, ...)`, `client.deleteWorkspace(id)`, and `client.getCurrentApiKey()`
+-   Des méthodes pour créer les URL WebSocket des flux de cycle de vie des tâches asynchrones, des lots et des vidéos
+-   Types générés pour tous les objets de requête et de réponse
+-   Couverture complète de l’API, notamment les complétions de chat, les modèles, les crédits et bien plus
+-   Définitions TypeScript pour une meilleure expérience de développement

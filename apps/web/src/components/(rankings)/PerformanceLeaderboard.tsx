@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/Logo";
@@ -26,11 +27,9 @@ type PerformanceLeaderboardProps = {
 	maxExpanded?: number;
 };
 
-function formatThroughput(value: number) {
+function formatThroughput(value: number, locale: string) {
 	if (!Number.isFinite(value)) return "--";
-	if (value >= 1e6) return `${(value / 1e6).toFixed(1).replace(/\.0$/, "")}M`;
-	if (value >= 1e3) return `${(value / 1e3).toFixed(1).replace(/\.0$/, "")}K`;
-	return value.toFixed(1);
+	return new Intl.NumberFormat(locale, { notation: "compact", maximumFractionDigits: 1 }).format(value);
 }
 
 function getModelHref(entry: PerformanceLeaderboardEntry) {
@@ -42,13 +41,15 @@ export function PerformanceLeaderboard({
 	maxCollapsed = 10,
 	maxExpanded = 20,
 }: PerformanceLeaderboardProps) {
+	const t = useTranslations("Catalogue.rankings");
+	const locale = useLocale();
 	const [showAll, setShowAll] = useState(false);
 
 	if (!data.length) {
 		return (
 			<EmptyLeaderboardPreview
-				title="No performance data yet"
-				description="Performance stats appear once enough requests are aggregated."
+				title={t("notEnoughData")}
+				description={t("performanceDataEmptyDescription")}
 			/>
 		);
 	}
@@ -116,8 +117,7 @@ export function PerformanceLeaderboard({
 				</div>
 				<div className="text-right">
 					<div className="whitespace-nowrap text-sm tabular-nums text-muted-foreground">
-						{formatThroughput(entry.throughput)}{" "}
-						<span className="text-xs text-muted-foreground">tok/s</span>
+						{t("throughputValue", { value: formatThroughput(entry.throughput, locale) })}
 					</div>
 				</div>
 			</div>
@@ -151,7 +151,7 @@ export function PerformanceLeaderboard({
 						className="text-muted-foreground"
 					>
 						<span className="flex items-center gap-2">
-							{showAll ? "Show less" : "Show more"}
+							{showAll ? t("usageShowLess") : t("usageShowMore")}
 							<ChevronDown
 								className={[
 									"h-4 w-4 transition-transform",

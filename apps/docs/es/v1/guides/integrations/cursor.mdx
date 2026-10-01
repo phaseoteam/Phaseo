@@ -1,0 +1,86 @@
+---
+title: "Cursor"
+description: "Conecta Cursor a Phaseo mediante la clave de API de OpenAI y la configuración de URL base personalizada."
+---
+
+Usa esta guía para enrutar a Phaseo los modelos de chat compatibles de Cursor. Cursor guarda las claves de API en su almacenamiento seguro, por lo que Phaseo CLI crea y revoca la clave dedicada y Cursor se encarga de introducir las credenciales.
+
+## Crear la credencial de Cursor
+
+```bash
+phaseo login
+phaseo integrations setup cursor --model openai/gpt-5.6-terra
+```
+
+La configuración crea una clave `Phaseo CLI: Cursor API Key` sin vencimiento e imprime los valores siguientes. No modifica el almacén privado de credenciales de Cursor.
+
+## Configurar Cursor
+
+1. Abre **Cursor Settings**.
+2. Selecciona **Models**.
+3. Busca la sección **OpenAI API Key** y actívala.
+4. Copia la clave dedicada:
+
+```bash
+phaseo integrations credential cursor
+```
+
+5. Pega la clave en el campo de clave de API de OpenAI de Cursor.
+6. Activa **Override OpenAI Base URL**.
+7. Introduce `https://api.phaseo.app/v1` sin barra al final.
+8. Añade o activa el modelo de Phaseo que quieras usar.
+
+| Campo de Cursor | Valor |
+| --- | --- |
+| OpenAI API Key | Generado por `phaseo integrations credential cursor` |
+| Override OpenAI Base URL | `https://api.phaseo.app/v1` |
+| Model | Un ID de modelo de Phaseo compatible con el campo de Cursor |
+
+Los controles actuales de proveedores personalizados de Cursor son globales, no específicos de cada proveedor. El nombre del modelo se reenvía al endpoint configurado, mientras que la clave de API y la URL base activas determinan adónde se envía la solicitud.
+
+<Warning>
+Cursor aplica actualmente el reemplazo de URL base de OpenAI de forma amplia. Desactívalo antes de volver a los modelos alojados en Cursor si dejan de funcionar mientras Phaseo está habilitado. Cursor también puede rechazar IDs personalizados que coincidan con nombres de modelos integrados o que no encajen en su enrutamiento de la familia OpenAI.
+</Warning>
+
+## Verificar
+
+1. Mantén habilitados la clave de Phaseo y el reemplazo de URL base.
+2. Selecciona el modelo configurado en el selector de modelos de Cursor.
+3. Inicia un chat nuevo y pídele que responda `PHASEO_CURSOR_OK`.
+4. Confirma que la solicitud aparece en la actividad o los registros de Phaseo.
+
+La ruta de chat estándar de Cursor es el objetivo de compatibilidad relevante. Las funciones que usan modelos especializados de Cursor, como la finalización de tabulaciones, pueden seguir utilizando la infraestructura propia de Cursor.
+
+## Eliminar
+
+Primero, desactiva la clave de API de OpenAI y el reemplazo de URL base en **Cursor Settings → Models**. Después, revoca la clave dedicada de Phaseo:
+
+```bash
+phaseo integrations remove cursor
+```
+
+La eliminación no puede borrar automáticamente el almacenamiento seguro de credenciales de Cursor. Si la clave sigue configurada, elimínala desde la configuración de Models de Cursor.
+
+## Solución de problemas
+
+### Los modelos alojados en Cursor dejan de funcionar
+
+Desactiva **Override OpenAI Base URL** antes de seleccionar un modelo alojado en Cursor. Actualmente, Cursor no aísla una URL base personalizada por modelo.
+
+### Se rechaza el modelo
+
+Prueba un modelo de Phaseo que Cursor acepte como modelo personalizado de la familia OpenAI. Cursor puede rechazar IDs que coincidan con su catálogo integrado, y algunas versiones quizá no acepten IDs con prefijos de proveedor.
+
+### No aparece el botón Verify
+
+Algunas versiones de Cursor guardan la clave sin una acción Verify independiente. Introduce la clave y la URL base y pruébalas en un chat nuevo.
+
+### Falla la autenticación
+
+Vuelve a ejecutar `phaseo integrations credential cursor`, reemplaza el valor guardado en Cursor y asegúrate de que la URL base sea exactamente `https://api.phaseo.app/v1`.
+
+## Relacionado
+
+- [Documentación de la clave de API de Cursor](https://docs.cursor.com/settings/api-keys)
+- [Asistentes de programación](./coding-assistants.mdx)
+- [Modelos](../../api-reference/endpoint/models.mdx)

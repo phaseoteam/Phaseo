@@ -1,0 +1,44 @@
+---
+icon: "file-code-2"
+title: "Formats de quantification"
+description: "BF16, FP16, FP8, FP4, INT8, INT4 et la signification concrète de chaque format."
+---
+
+Ce guide présente les formats de précision courants dans les variantes de modèles et les environnements d’inférence.
+
+## Référence rapide
+
+| Format | Usage courant | Avantage principal | Risque principal |
+| --- | --- | --- | --- |
+| `FP32` | Référence en précision complète | Stabilité numérique maximale | Coût mémoire et calcul le plus élevé |
+| `BF16` | Entraînement et inférence de haute qualité | Bonne qualité avec une meilleure efficacité que `FP32` | Reste plus lourd que le 8 bits et le 4 bits |
+| `FP16` | Parcours courants d’inférence et d’entraînement | Bonne vitesse et réduction de la mémoire | Plage dynamique inférieure à celle de `BF16` |
+| `FP8` | Inférence/entraînement axés sur le débit | Gains importants en vitesse et mémoire | Baisse de qualité notable sur les prompts difficiles |
+| `FP4` | Modes d’efficacité agressifs | Très forte densité et faible coût | Risque accru de dégradation des sorties |
+| `INT8` | Quantification d’inférence largement prise en charge | Bonne efficacité avec un impact modéré sur la qualité | Problèmes d’étalonnage ou de sensibilité pour certains modèles |
+| `INT4` | Déploiement sensible au coût | Très faible consommation mémoire et débit élevé | Compromis plus importants en qualité et robustesse |
+
+## `BF16` ou `FP16`
+
+- `BF16` conserve une plage d’exposants plus étendue, ce qui améliore la stabilité.
+- `FP16` reste courant et souvent rapide, mais peut être moins stable pour certaines charges de travail.
+- Pour les traitements de production où la qualité est critique, `BF16` est souvent le choix par défaut le plus sûr lorsqu’il est disponible.
+
+## `FP8` et `FP4`
+
+- `FP8` offre généralement un gain d’efficacité important tout en conservant une qualité exploitable pour de nombreuses tâches.
+- `FP4` améliore encore l’efficacité, mais le risque de dégradation augmente, notamment pour le raisonnement nuancé, les longs contextes et les sorties structurées strictes.
+
+## Formats entiers (`INT8` / `INT4`)
+
+- Généralement optimisés pour le débit d’inférence et l’utilisation mémoire.
+- La qualité dépend fortement de la méthode de quantification, de l’étalonnage et de l’architecture du modèle.
+- En général, `INT8` est plus facile à déployer en toute sécurité que `INT4`.
+
+## Lire les libellés des modèles
+
+Vous pouvez rencontrer des libellés comme :
+
+- `bf16`, `fp16`, `fp8`, `int8`, `q4`, `4bit`, `8bit`
+
+La nomenclature n’est pas entièrement normalisée entre les fournisseurs. Vérifiez toujours les détails précis de chaque variante dans la documentation du modèle ou du fournisseur.

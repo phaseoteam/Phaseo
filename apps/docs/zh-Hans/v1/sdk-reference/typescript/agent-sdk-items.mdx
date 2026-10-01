@@ -1,0 +1,77 @@
+---
+icon: "layers"
+title: "使用条目"
+description: "呈现类型化消息、推理、工具活动、错误和最终输出。"
+---
+
+使用条目构建结构化的代理时间线，无需解析特定提供商的事件。流式运行和已完成运行使用相同的有序 `AgentItem<TOutput>` 契约。
+
+## 条目类型
+
+`AgentItem<TOutput>` 是一个判别联合：
+
+| 类型 | 重要字段 | 含义 |
+| --- | --- | --- |
+| `message` | `role`, `content` | 助手或对话文本 |
+| `reasoning` | `text` | 模型提供的推理 |
+| `tool_call` | `toolCallId`, `name`, `input` | 拟议的工具调用 |
+| `tool_result` | `toolCallId`, `name`, `output` | 已完成的工具调用 |
+| `error` | `message`、可选的工具详情 | 提供商或工具错误 |
+| `output` | `value` | 解析后的代理最终输出 |
+
+## 呈现流式时间线
+
+TypeScript 会根据每个条目的 `type` 属性缩窄其类型：
+
+```typescript
+const stream = agent.stream({ input, client });
+
+for await (const item of stream.getItemsStream()) {
+  switch (item.type) {
+    case "message":
+      renderAssistantMessage(item.content);
+      break;
+    case "reasoning":
+      renderReasoning(item.text);
+      break;
+    case "tool_call":
+      renderToolCall(item.toolCallId, item.name, item.input);
+      break;
+    case "tool_result":
+      renderToolResult(item.toolCallId, item.output);
+      break;
+    case "error":
+      renderError(item.message);
+      break;
+    case "output":
+      renderFinalOutput(item.value);
+      break;
+  }
+}
+```
+
+## 完成后读取条目
+
+已完成的结果包含相同且顺序一致的条目类型：
+
+```typescript
+const completed = await stream.getResult();
+
+for (const item of completed.items) {
+  saveTimelineItem(completed.run.id, item);
+}
+```
+
+因此，产品既可以实时展示活动，也可以在之后从持久化的运行状态重建相同的时间线。
+
+## 访问提供商特有的数据
+
+提供商输出会规范化为可移植的条目类型。如果集成仍需要提供商特有字段，规范化后的条目会在 `rawProviderItem` 中保留原始负载。
+
+尽可能让产品逻辑使用可移植字段。将 `rawProviderItem` 视为提供商特定集成的备用接口，而不是应用的默认契约。
+
+## 相关指南
+
+- [流式传输](./agent-sdk-streaming.mdx)
+- [工具](./agent-sdk-tools.mdx)
+- [生命周期钩子](./agent-sdk-lifecycle-hooks.mdx)

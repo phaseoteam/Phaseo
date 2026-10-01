@@ -10,11 +10,14 @@ import { fetchFrontendMarketplacePresets } from "@/lib/fetchers/frontend/fetchPu
 import type { MarketplacePreset } from "@/lib/fetchers/gateway/marketplaceTypes";
 import { buildMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = buildMetadata({
-	title: "Gateway Marketplace",
-	description: "Discover and fork public Phaseo Gateway presets.",
-	path: "/gateway/marketplace",
-});
+export async function generateMetadata(): Promise<Metadata> {
+	const t = await getTranslations("Product.gateway");
+	return buildMetadata({
+		title: t("marketplaceTitle"),
+		description: t("marketplaceDescription"),
+		path: "/gateway/marketplace",
+	});
+}
 
 export default async function GatewayMarketplacePage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
 	const [{ q }, presets] = await Promise.all([searchParams, fetchFrontendMarketplacePresets()]);

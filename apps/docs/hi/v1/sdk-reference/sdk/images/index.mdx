@@ -1,0 +1,29 @@
+---
+icon: "image"
+title: "छवियाँ (AI SDK)"
+description: "Vercel AI SDK और Phaseo provider से images बनाएँ।"
+---
+
+`phaseo.imageModel(...)` के साथ `generateImage` का उपयोग करें।
+
+```ts
+import { phaseo } from "@phaseo/ai-sdk-provider";
+import { generateImage } from "ai";
+
+const result = await generateImage({
+  model: phaseo.imageModel("openai/gpt-image-1"),
+  prompt: "A minimalist poster of a lighthouse at dawn.",
+  size: "1024x1024",
+});
+
+console.log(result.images[0].mediaType);
+console.log(result.images[0].uint8Array.length);
+console.log(result.providerMetadata);
+```
+
+## नोट्स
+
+- उपलब्ध `size` values चुने गए model पर निर्भर करते हैं।
+- URL-आधारित gateway image responses को AI SDK file output format में normalize किया जाता है, इसलिए पहले स्थिर `uint8Array` और `mediaType` fields पढ़ें।
+- Deterministic workflows के लिए prompt, model और parameters को साथ में सहेजें।
+- लौटाए गए image metadata को asset references के साथ सहेजें।

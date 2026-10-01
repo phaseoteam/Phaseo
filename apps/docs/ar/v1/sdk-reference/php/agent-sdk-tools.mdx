@@ -1,0 +1,25 @@
+---
+icon: "wrench"
+title: "الأدوات"
+description: "عرّف أدوات PHP معتمدة ومتحققًا منها، يدوية، وتُبلغ عن التقدم."
+---
+
+أنشئ قيم `Tool` ومرّرها عبر `AgentSdk::defineTool(...)`. ويمكن أن تتضمن الأدوات:
+
+- معاملات JSON `parameters` المعروضة على النموذج
+- دوال التحقق من `inputSchema` و`outputSchema` و`eventSchema`
+- `timeoutMs` ودالة رد النداء `execute`
+- `requireApproval` كقيمة منطقية أو دالة رد نداء
+- `onToolCalled` و`onResponseReceived` للأعمال التفاعلية
+- `nextTurnParams` و`onError: "return-to-model"`
+
+استخدم `RuntimeContext::$emitProgress` للنتائج الأولية و`$setContext` لسياق التطبيق.
+
+<Note>
+تُنفذ دوال رد نداء الأدوات بشكل متزامن في بيئة PHP القياسية. لذلك يعتمد التوازي والمقاطعة على إمكانات عملية PHP التي تستضيف SDK.
+</Note>
+
+## مواضيع ذات صلة
+
+- [الحالة والموافقة](./agent-sdk-state-and-approval.mdx)
+- [عناصر التحكم في التشغيل](./agent-sdk-run-controls.mdx)

@@ -2,8 +2,16 @@ import { Metadata } from "next";
 import { buildMetadata } from "@/lib/seo";
 import ToolsGrid from "@/components/(tools)/ToolsGrid";
 import { useTranslations } from "next-intl";
+import { getTranslations } from "next-intl/server";
 
-export const metadata: Metadata = buildMetadata({ title: "AI & Developer Tools", description: "Browse free Phaseo tools for checking AI content provenance, estimating model costs, building API requests, and working with JSON and Markdown.", path: "/tools", keywords: ["AI tools", "developer tools", "LLM tools", "Phaseo"] });
+export async function generateMetadata(): Promise<Metadata> {
+	const t = await getTranslations("Product.tools");
+	return buildMetadata({
+		title: t("title"),
+		description: t("description"),
+		path: "/tools",
+	});
+}
 
 export default function ToolsPage() {
 	const t = useTranslations("Product.tools");

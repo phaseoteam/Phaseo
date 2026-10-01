@@ -1,10 +1,12 @@
+import { getTranslations } from "next-intl/server";
 import { redirect } from "next/navigation";
 import { localizePublicPath } from "@/lib/auth/localized-paths";
 import { isPublicLocale, type PublicLocale } from "@/i18n/routing";
 
-export const metadata = {
-	title: "Account - Settings",
-};
+export async function generateMetadata() {
+	const t = await getTranslations("SettingsUI.settingsPageMetadata");
+	return { title: t("account") };
+}
 
 export default async function AccountSettingsPage({ params }: { params: Promise<{ locale: string }> }) {
 	const { locale } = await params;

@@ -4,12 +4,14 @@ import { ToolPageHeader } from "@/components/(tools)/ToolPageHeader";
 import { buildMetadata } from "@/lib/seo";
 import { getTranslations } from "next-intl/server";
 
-export const metadata: Metadata = buildMetadata({
-	title: "Content Provenance Checker",
-	description: "Check images and audio for known OpenAI C2PA and SynthID provenance signals without storing your upload on Phaseo.",
-	path: "/tools/content-provenance",
-	keywords: ["content provenance", "C2PA checker", "SynthID checker", "AI image verification", "AI audio verification", "OpenAI provenance"],
-});
+export async function generateMetadata(): Promise<Metadata> {
+	const t = await getTranslations("Product.tools.provenance");
+	return buildMetadata({
+		title: t("checkFile"),
+		description: t("description"),
+		path: "/tools/content-provenance",
+	});
+}
 
 export default async function ContentProvenancePage() {
 	const t = await getTranslations("Product.tools.provenance");

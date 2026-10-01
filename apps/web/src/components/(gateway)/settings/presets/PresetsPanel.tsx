@@ -22,6 +22,7 @@ import {
 	EmptyTitle,
 } from "@/components/ui/empty";
 import { useTranslations } from "next-intl";
+import { localizedSettingsError } from "@/i18n/error-messages";
 
 interface PresetsPanelProps {
 	teamsWithPresets: any[];
@@ -63,12 +64,12 @@ export default function PresetsPanel({
 		if (preset.versioning_method === "semver" && !versionLabel) return;
 		setPublishingPresetId(preset.id);
 		try { const result = await publishPresetVersionAction(preset.id, releaseNotes, versionLabel); toast.success(`${t("strings.Published" as never)} ${result.version?.version_label ?? `${t("strings.release" as never)} ${result.version?.version_number ?? t("strings.next" as never)}`}`); window.location.reload(); }
-		catch (error) { toast.error(error instanceof Error ? error.message : t("strings.Failed to publish version" as never)); setPublishingPresetId(null); }
+		catch (error) { toast.error(localizedSettingsError(error, t, "Failed to publish version")); setPublishingPresetId(null); }
 	}
 
 	async function onApplyUpstream(id: string, versionId: string, versionNumber: number) {
 		try { await applyPresetUpstreamVersionAction(id, versionId); toast.success(`${t("strings.Upstream" as never)} v${versionNumber} ${t("strings.applied to your draft" as never)}`); window.location.reload(); }
-		catch (error) { toast.error(error instanceof Error ? error.message : t("strings.Failed to apply upstream update" as never)); }
+		catch (error) { toast.error(localizedSettingsError(error, t, "Failed to apply upstream update")); }
 	}
 
 	if (!sortedTeams || sortedTeams.length === 0) {

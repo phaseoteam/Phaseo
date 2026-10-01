@@ -3,7 +3,7 @@
 import * as React from "react";
 import { z } from "zod";
 import { toast } from "sonner";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -54,11 +54,12 @@ const DEFAULTS: Settings = {
 	publisherHandle: "",
 };
 
-const schema = z.object({
-	teamName: z.string().trim().min(1, "Workspace name is required").max(60),
-	publisherHandle: z.string().trim().regex(/^[a-z0-9][a-z0-9_-]{2,39}$/, "Use 3–40 lowercase letters, numbers, underscores, or hyphens."),
-});
-
+function createSettingsSchema(requiredName: string, maxLength: string, handleFormat: string) {
+	return z.object({
+		teamName: z.string().trim().min(1, requiredName).max(60, maxLength),
+		publisherHandle: z.string().trim().regex(/^[a-z0-9][a-z0-9_-]{2,39}$/, handleFormat),
+	});
+}
 export default function TeamSettingsPanel({
 	teams,
 	membersByTeam,
@@ -118,14 +119,14 @@ export default function TeamSettingsPanel({
 
 	async function handleSave() {
 		if (!workspaceId) return;
-		const parsed = schema.safeParse({
+		const parsed = createSettingsSchema(t("workspace.teamNameRequired"), t("workspace.teamNameMaxLength"), t("workspace.publisherHandleFormat")).safeParse({
 			teamName: settings.teamName,
 			publisherHandle: settings.publisherHandle,
 		});
 
 		if (!parsed.success) {
 			toast.error(
-				parsed.error.issues[0]?.message ?? "Please check your inputs.",
+				parsed.error.issues[0]?.message ?? t("workspace.inputValidationFallback"),
 			);
 			return;
 		}
@@ -149,10 +150,9 @@ export default function TeamSettingsPanel({
 					setInitial(normalized);
 				})(),
 				{
-					loading: "Saving workspace settings...",
-					success: "Saved.",
-					error: (error: any) =>
-						error?.message || "Could not save settings",
+					loading: t("workspace.savingSettings"),
+					success: t("workspace.savedSettings"),
+					error: () => t("strings.Could not save settings" as never),
 				},
 			);
 		} finally {
@@ -173,9 +173,9 @@ export default function TeamSettingsPanel({
 		setDeleting(true);
 		try {
 			await toast.promise(deleteTeamAction(workspaceId), {
-				loading: "Deleting workspace...",
-				success: "Workspace deleted",
-				error: (error: any) => error?.message || "Could not delete workspace",
+				loading: t("workspace.deletingWorkspace"),
+				success: t("workspace.workspaceDeleted"),
+				error: () => t("workspace.deleteError"),
 			});
 			setDeleteDialogOpen(false);
 		} finally {
@@ -197,10 +197,10 @@ export default function TeamSettingsPanel({
 				<div className="flex flex-col gap-3 px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
 					<div className="min-w-0">
 						<Label htmlFor="teamName" className="text-sm font-medium">
-							Workspace Name
+							{t("workspace.name")}
 						</Label>
 						<p className="mt-0.5 text-sm text-muted-foreground">
-							Used throughout the dashboard, API keys, and invitations.
+							{t("workspace.teamNameHelp")}
 						</p>
 					</div>
 					<div className="w-full shrink-0 sm:w-[min(32rem,55%)]">
@@ -217,7 +217,7 @@ export default function TeamSettingsPanel({
 				<div className="flex flex-col gap-3 border-t px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
 					<div className="min-w-0">
 						<Label htmlFor="publisherHandle" className="text-sm font-medium">{t("workspace.publisherHandle")}</Label>
-						<p className="mt-0.5 text-sm text-muted-foreground">Used in public preset names such as @{settings.publisherHandle || "workspace"}/preset.</p>
+						<p className="mt-0.5 text-sm text-muted-foreground">{t("workspace.publisherHandleHelp", { example: "@" + (settings.publisherHandle || "workspace") + "/preset" })}</p>
 					</div>
 					<div className="w-full shrink-0 sm:w-[min(32rem,55%)]">
 						<Input id="publisherHandle" value={settings.publisherHandle} onChange={(event) => update("publisherHandle", event.target.value.toLowerCase())} disabled={!hasTeamControl} placeholder={t("workspace.handlePlaceholder")} maxLength={40} />
@@ -227,10 +227,10 @@ export default function TeamSettingsPanel({
 				<div className="flex flex-col gap-3 border-t bg-muted/10 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
 					<p className="text-xs text-muted-foreground">
 						{isPersonalTeam
-							? "Your personal workspace is permanent; its publisher handle can still be changed."
+							? t("workspace.personalWorkspacePermanent")
 							: canEdit
-								? "Changes apply everywhere this workspace name is shown."
-								: "Owner or admin access is required to change this workspace."}
+								? t("workspace.workspaceNameChangeHelp")
+								: t("workspace.workspaceChangePermissionHelp")}
 					</p>
 					<div className="flex items-center justify-end gap-2">
 						<Button
@@ -239,7 +239,7 @@ export default function TeamSettingsPanel({
 							onClick={handleReset}
 							disabled={!hasChanges || saving}
 						>
-							Reset
+							{t("strings.Reset" as never)}
 						</Button>
 						<Button
 							type="submit"
@@ -248,10 +248,10 @@ export default function TeamSettingsPanel({
 							{saving ? (
 								<>
 									<Loader2 className="mr-2 h-4 w-4 animate-spin" />
-									Saving...
+									{t("strings.Saving..." as never)}
 								</>
 							) : (
-								"Save changes"
+								t("strings.Save" as never)
 							)}
 						</Button>
 					</div>
@@ -277,7 +277,7 @@ export default function TeamSettingsPanel({
 					id="workspace-danger-zone-title"
 					className="font-heading text-base font-medium"
 				>
-					Danger Zone
+					{t("strings.Danger Zone" as never)}
 				</h3>
 				<div className="overflow-hidden rounded-xl border border-destructive/30 bg-background/40">
 					<div className="flex flex-col gap-3 px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
@@ -285,8 +285,8 @@ export default function TeamSettingsPanel({
 							<p className="text-sm font-medium">{t("workspace.deleteWorkspace")}</p>
 							<p className="mt-0.5 text-sm text-muted-foreground">
 								{isPersonalTeam
-									? "Personal workspaces cannot be deleted."
-									: "Permanently remove this workspace and all related data."}
+									? t("workspace.personalCannotDelete")
+									: t("workspace.deleteWorkspaceHelp")}
 							</p>
 						</div>
 						<AlertDialog
@@ -300,23 +300,21 @@ export default function TeamSettingsPanel({
 									className="shrink-0"
 								>
 									<Trash2 className="mr-2 h-4 w-4" />
-									Delete Workspace
+									{t("workspace.deleteWorkspace")}
 								</Button>
 							</AlertDialogTrigger>
 							<AlertDialogContent>
 								<AlertDialogHeader>
 									<AlertDialogTitle>{t("workspace.deleteWorkspaceQuestion")}</AlertDialogTitle>
 									<AlertDialogDescription>
-										This will permanently remove the workspace and all related data.
-										Type <span className="font-semibold">DELETE WORKSPACE</span> to
-										confirm.
+										{t("workspace.deleteConfirmationDescription", { phrase: t("workspace.deleteConfirmationPhrase") })}
 									</AlertDialogDescription>
 								</AlertDialogHeader>
 								<ConfirmDeleteTeam
 									onConfirm={handleDeleteTeam}
 									deleting={deleting}
 									remainingBalance={currentTeamBalance}
-									translate={(key) => t(key as never)}
+									translate={(key, values) => t(key as never, values as never)}
 								/>
 							</AlertDialogContent>
 						</AlertDialog>
@@ -336,17 +334,19 @@ function ConfirmDeleteTeam({
 	onConfirm: () => void;
 	deleting: boolean;
 	remainingBalance?: number;
-	translate: (key: string) => string;
+	translate: (key: string, values?: Record<string, string | number>) => string;
 }) {
+	const locale = useLocale();
 	const t = translate;
 	const [text, setText] = React.useState("");
 	const [ackCredits, setAckCredits] = React.useState(false);
-	const ok = text.trim().toUpperCase() === "DELETE WORKSPACE";
+	const phrase = t("workspace.deleteConfirmationPhrase");
+	const ok = text.trim() === phrase;
 	const balance =
 		typeof remainingBalance === "number" ? Math.max(remainingBalance, 0) : 0;
 	const hasCredits = balance > 0.001;
 	const formattedBalance = hasCredits
-		? new Intl.NumberFormat("en-US", {
+		? new Intl.NumberFormat(locale, {
 				style: "currency",
 				currency: "USD",
 				maximumFractionDigits: 2,
@@ -359,7 +359,7 @@ function ConfirmDeleteTeam({
 				<Label htmlFor="confirmDeleteTeam">{t("workspace.confirmation")}</Label>
 				<Input
 					id="confirmDeleteTeam"
-					placeholder={t("workspace.typeDeleteWorkspace")}
+					placeholder={t("workspace.typeDeleteWorkspacePrompt", { phrase })}
 					value={text}
 					onChange={(event) => setText(event.target.value)}
 					autoFocus
@@ -367,11 +367,7 @@ function ConfirmDeleteTeam({
 			</div>
 			{hasCredits ? (
 				<div className="space-y-3 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-800/60 dark:bg-amber-950 dark:text-amber-200">
-					<p>
-						This workspace still has{" "}
-						<span className="font-semibold">{formattedBalance}</span> in credits.
-						Deleting the workspace will permanently forfeit this balance.
-					</p>
+					<div><p>{t("workspace.deleteCreditsWarning", { balance: formattedBalance ?? "" })}</p><p className="mt-1">{t("workspace.deleteCreditsForfeit")}</p></div>
 					<label className="flex items-center gap-2 text-xs font-medium">
 						<input
 							type="checkbox"
@@ -381,14 +377,14 @@ function ConfirmDeleteTeam({
 								setAckCredits(event.target.checked)
 							}
 						/>
-						I understand these credits can&apos;t be recovered.
+						{t("workspace.deleteCreditsAcknowledgement")}
 					</label>
 				</div>
 			) : null}
 			<AlertDialogFooter>
 				<div className="flex w-full items-center justify-end gap-2">
 					<AlertDialogCancel className="w-auto" disabled={deleting}>
-						Cancel
+						{t("strings.Cancel" as never)}
 					</AlertDialogCancel>
 					<Button
 						variant="destructive"
@@ -398,10 +394,10 @@ function ConfirmDeleteTeam({
 						{deleting ? (
 							<>
 								<Loader2 className="mr-2 h-4 w-4 animate-spin" />
-								Deleting...
+								{t("strings.Deleting..." as never)}
 							</>
 						) : (
-							"Yes, delete this workspace"
+							t("workspace.confirmDeleteWorkspaceButton")
 						)}
 					</Button>
 					<AlertDialogAction className="hidden" />

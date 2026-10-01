@@ -19,23 +19,23 @@ import type { AutoRoutingObjective, AutoRoutingSpendProfile, SettingsAutoRouting
 import { publicSWRKeys } from "@/lib/swr/keys";
 import { publicSWRFetcher } from "@/lib/swr/publicFetcher";
 import { cn } from "@/lib/utils";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 
 type ModelOption = { id: string; label: string; organisationId: string; organisationName: string; releaseDate: string | null; releaseTimestamp: number | null; providerCount: number; inputPrice: number | null; outputPrice: number | null };
 const TEXT_CAPABILITIES = new Set(["responses", "chat/completions", "chat.completions", "messages", "text.generate"]);
 const PATTERN_RE = /^[a-z0-9*][a-z0-9._:/*-]*$/;
 const MODEL_SORT_COLLATOR = new Intl.Collator("en", { numeric: true, sensitivity: "base" });
-const OBJECTIVES: Array<{ value: AutoRoutingObjective; label: string; description: string; icon: typeof Sparkles }> = [
-	{ value: "balanced", label: "Balanced", description: "Blend quality, reliability, speed, and price.", icon: Layers3 },
-	{ value: "quality", label: "Quality", description: "Weight relevant benchmark performance most heavily.", icon: Sparkles },
-	{ value: "cost", label: "Cost", description: "Prefer the lowest estimated token cost inside your limit.", icon: DollarSign },
-	{ value: "latency", label: "Latency", description: "Prefer models with faster recent provider response times.", icon: Zap },
+const OBJECTIVES: Array<{ value: AutoRoutingObjective; icon: typeof Sparkles }> = [
+	{ value: "balanced", icon: Layers3 },
+	{ value: "quality", icon: Sparkles },
+	{ value: "cost", icon: DollarSign },
+	{ value: "latency", icon: Zap },
 ];
-const SPEND_PROFILES: Array<{ value: Exclude<AutoRoutingSpendProfile, "custom">; label: string; description: string; inputCap: number | null; outputCap: number | null }> = [
-	{ value: "economy", label: "Economy", description: "For high-volume, cost-sensitive work.", inputCap: 0.1, outputCap: 0.5 },
-	{ value: "standard", label: "Standard", description: "Balanced coverage for everyday production work.", inputCap: 0.3, outputCap: 1.5 },
-	{ value: "premium", label: "Premium", description: "Broader access to higher-cost models.", inputCap: 1, outputCap: 5 },
-	{ value: "unrestricted", label: "Any price", description: "No price ceiling. Workspace policy still applies.", inputCap: null, outputCap: null },
+const SPEND_PROFILES: Array<{ value: Exclude<AutoRoutingSpendProfile, "custom">; inputCap: number | null; outputCap: number | null }> = [
+	{ value: "economy", inputCap: 0.1, outputCap: 0.5 },
+	{ value: "standard", inputCap: 0.3, outputCap: 1.5 },
+	{ value: "premium", inputCap: 1, outputCap: 5 },
+	{ value: "unrestricted", inputCap: null, outputCap: null },
 ];
 
 function fallbackModelLabel(modelId: string): string { const leaf = modelId.split("/").pop() ?? modelId; return leaf.split(/[-_]/g).filter(Boolean).map((part) => part.charAt(0).toUpperCase() + part.slice(1)).join(" "); }
@@ -62,10 +62,17 @@ function buildModelOptions(models: GatewaySupportedModel[]): ModelOption[] {
 	return [...byId.values()].toSorted(compareModelOptions);
 }
 function matchesPattern(modelId: string, patterns: string[]): boolean { if (!patterns.length) return true; return patterns.some((pattern) => { const escaped = pattern.replace(/[.+?^${}()|[\]\\]/g, "\\$&").replaceAll("*", ".*"); return new RegExp(`^${escaped}$`, "i").test(modelId); }); }
-function priceLabel(value: number | null): string { return value === null ? "No limit" : `$${new Intl.NumberFormat("en", { maximumFractionDigits: 2 }).format(value)}`; }
+function priceLabel(value: number | null, locale: string): string {
+	return value === null
+		? "—"
+		: `$${new Intl.NumberFormat(locale, { maximumFractionDigits: 2 }).format(value)}`;
+}
 function configurationFingerprint(value: { allowedPatterns: string[]; spendProfile: AutoRoutingSpendProfile; maxInputPricePerMillion: number | null; maxOutputPricePerMillion: number | null; objective: AutoRoutingObjective; allowFallbacks: boolean }) { return JSON.stringify([value.allowedPatterns, value.spendProfile, value.maxInputPricePerMillion, value.maxOutputPricePerMillion, value.objective, value.allowFallbacks]); }
 
 function EligibleModelList({ models, loading, error }: { models: ModelOption[]; loading: boolean; error: unknown }) {
+	const t = useTranslations("SettingsUI");
+	const s = (key: string) => t(`autoRouting.${key}` as never);
+	const locale = useLocale();
 	const viewportRef = useRef<HTMLDivElement>(null);
 	// TanStack Virtual intentionally exposes imperative functions tied to the scroll viewport.
 	// eslint-disable-next-line react-hooks/incompatible-library
@@ -76,13 +83,13 @@ function EligibleModelList({ models, loading, error }: { models: ModelOption[]; 
 		overscan: 8,
 	});
 
-	if (loading) return <div className="flex h-[360px] items-center justify-center gap-2 rounded-lg border text-sm text-muted-foreground"><Loader2 className="size-4 animate-spin" />Loading model pricing…</div>;
-	if (error) return <div className="grid h-[360px] place-items-center rounded-lg border p-6 text-center text-sm text-destructive">The eligible-model list could not be loaded.</div>;
-	if (!models.length) return <div className="grid h-[360px] place-items-center rounded-lg border p-6 text-center"><div><p className="text-sm font-medium">No eligible models</p><p className="mt-1 text-xs text-muted-foreground">Raise the spend ceiling or broaden the model patterns.</p></div></div>;
+	if (loading) return <div className="flex h-[360px] items-center justify-center gap-2 rounded-lg border text-sm text-muted-foreground"><Loader2 className="size-4 animate-spin" />{s("modelPricingLoading")}</div>;
+	if (error) return <div className="grid h-[360px] place-items-center rounded-lg border p-6 text-center text-sm text-destructive">{s("eligibleModelLoadError")}</div>;
+	if (!models.length) return <div className="grid h-[360px] place-items-center rounded-lg border p-6 text-center"><div><p className="text-sm font-medium">{s("noEligibleModelsTitle")}</p><p className="mt-1 text-xs text-muted-foreground">{s("noEligibleModelsDescription")}</p></div></div>;
 
 	return (
 		<ScrollArea className="h-[360px] rounded-lg border bg-background" viewportRef={viewportRef} keepScrollbarMounted>
-			<ul aria-label="Eligible models" className="relative" style={{ height: rowVirtualizer.getTotalSize() }}>
+			<ul aria-label={s("eligibleModelsAriaLabel")} className="relative" style={{ height: rowVirtualizer.getTotalSize() }}>
 				{rowVirtualizer.getVirtualItems().map((virtualRow) => {
 					const model = models[virtualRow.index];
 					if (!model) return null;
@@ -90,7 +97,7 @@ function EligibleModelList({ models, loading, error }: { models: ModelOption[]; 
 						<li key={model.id} className="absolute left-0 top-0 flex h-[58px] w-full items-center gap-3 border-b px-3 last:border-b-0" style={{ transform: `translateY(${virtualRow.start}px)` }}>
 							<Logo id={model.organisationId} alt={model.organisationName} width={20} height={20} className="size-5 shrink-0 object-contain" />
 							<div className="min-w-0 flex-1"><p className="truncate text-sm font-medium">{model.label}</p><p className="truncate font-mono text-[10px] text-muted-foreground">{model.id}</p></div>
-							<div className="shrink-0 text-right"><p className="text-[11px] tabular-nums">{priceLabel(model.inputPrice)} / {priceLabel(model.outputPrice)}</p><p className="text-[10px] text-muted-foreground">input / output</p></div>
+							<div className="shrink-0 text-right"><p className="text-[11px] tabular-nums">{priceLabel(model.inputPrice, locale)} / {priceLabel(model.outputPrice, locale)}</p><p className="text-[10px] text-muted-foreground">{s("inputOutput")}</p></div>
 						</li>
 					);
 				})}
@@ -101,6 +108,10 @@ function EligibleModelList({ models, loading, error }: { models: ModelOption[]; 
 
 export default function AutoRoutingSettingsClient({ initialData }: { initialData: SettingsAutoRoutingInitialData }) {
 	const t = useTranslations("SettingsUI");
+	const s = (key: string) => t(`autoRouting.${key}` as never);
+	const m = (key: string, values: Record<string, string | number>) =>
+		t(`autoRouting.${key}` as never, values as never);
+	const locale = useLocale();
 	const initial = initialData.autoRouting;
 	const [objective, setObjective] = useState<AutoRoutingObjective>(initial.objective);
 	const [spendProfile, setSpendProfile] = useState<AutoRoutingSpendProfile>(initial.spendProfile);
@@ -119,6 +130,9 @@ export default function AutoRoutingSettingsClient({ initialData }: { initialData
 	const modelOptions = useMemo(() => buildModelOptions(modelCatalog?.models ?? []), [modelCatalog?.models]);
 	const selectedProfileIndex = SPEND_PROFILES.findIndex((profile) => profile.value === spendProfile);
 	const selectedProfile = selectedProfileIndex >= 0 ? SPEND_PROFILES[selectedProfileIndex] : null;
+	const selectedProfileLabel = selectedProfile
+		? s(`profiles.${selectedProfile.value}.label`)
+		: undefined;
 	const inputCap = spendProfile === "custom" ? maxInputPricePerMillion : selectedProfile?.inputCap ?? null;
 	const outputCap = spendProfile === "custom" ? maxOutputPricePerMillion : selectedProfile?.outputCap ?? null;
 	const eligibleModels = useMemo(() => modelOptions.filter((model) => model.inputPrice !== null && model.outputPrice !== null && (inputCap === null || model.inputPrice <= inputCap) && (outputCap === null || model.outputPrice <= outputCap) && matchesPattern(model.id, allowedPatterns)), [allowedPatterns, inputCap, modelOptions, outputCap]);
@@ -127,24 +141,33 @@ export default function AutoRoutingSettingsClient({ initialData }: { initialData
 	const validCustomLimits = spendProfile !== "custom" || (maxInputPricePerMillion !== null && maxOutputPricePerMillion !== null && maxInputPricePerMillion >= 0 && maxOutputPricePerMillion >= 0);
 	const valid = validCustomLimits && (modelCatalogLoading || Boolean(modelCatalogError) || eligibleModels.length > 0);
 	const canEdit = initialData.canManage && !isPending;
+	const formatPrice = (value: number | null) =>
+		value === null ? s("noLimit") : priceLabel(value, locale);
 
 	function addPattern(value = patternDraft) {
 		const pattern = value.trim().toLowerCase();
-		if (!pattern || pattern.length > 200 || !pattern.includes("/") || !PATTERN_RE.test(pattern)) { setPatternError("Use a canonical model pattern such as anthropic/* or openai/gpt-5.*"); return; }
-		if (allowedPatterns.includes(pattern)) { setPatternError("That pattern is already included."); return; }
-		if (allowedPatterns.length >= 16) { setPatternError("Use no more than 16 patterns."); return; }
+		if (!pattern || pattern.length > 200 || !pattern.includes("/") || !PATTERN_RE.test(pattern)) { setPatternError(m("invalidPattern", { examples: "anthropic/* or openai/gpt-5.*" })); return; }
+		if (allowedPatterns.includes(pattern)) { setPatternError(s("duplicatePattern")); return; }
+		if (allowedPatterns.length >= 16) { setPatternError(s("maximumPatterns")); return; }
 		setAllowedPatterns((patterns) => [...patterns, pattern]); setPatternDraft(""); setPatternError(null);
 	}
 
 	function save() {
-		if (!validCustomLimits) { toast.error(t("strings.Enter both custom price limits." as never)); return; }
-		if (!modelCatalogLoading && !modelCatalogError && !eligibleModels.length) { toast.error(t("strings.These limits and patterns do not leave any eligible text models." as never)); return; }
+		if (!validCustomLimits) { toast.error(s("enterBothPriceLimits")); return; }
+		if (!modelCatalogLoading && !modelCatalogError && !eligibleModels.length) { toast.error(s("noEligibleTextModels")); return; }
 		startTransition(async () => {
 			const result = await updateAutoRoutingSettings(current);
-			if (!result.ok) { toast.error(result.error); return; }
+			if (!result.ok) {
+				toast.error(
+					result.error.code === "serviceRejected"
+						? m("errors.serviceRejected", { status: result.error.status })
+						: s(`errors.${result.error.code}`),
+				);
+				return;
+			}
 			const saved = result.autoRouting;
 			setAllowedPatterns(saved.allowedPatterns); setSpendProfile(saved.spendProfile); setMaxInputPricePerMillion(saved.maxInputPricePerMillion); setMaxOutputPricePerMillion(saved.maxOutputPricePerMillion); setObjective(saved.objective); setAllowFallbacks(saved.allowFallbacks); setRevision(saved.revision); setUpdatedAt(saved.updatedAt); setSavedFingerprint(configurationFingerprint(saved));
-			toast.success(result.gatewayCacheInvalidated ? t("strings.Auto Routing updated" as never) : t("strings.Auto Routing updated; gateway cache refresh pending" as never));
+			toast.success(s(result.gatewayCacheInvalidated ? "updateSuccess" : "cacheRefreshPending"));
 		});
 	}
 
@@ -152,37 +175,37 @@ export default function AutoRoutingSettingsClient({ initialData }: { initialData
 		<div className="space-y-8">
 			<section>
 				<div>
-					<h2 className="text-base font-semibold">Optimize for</h2>
-					<p className="mt-1 max-w-2xl text-sm leading-6 text-muted-foreground">Choose what the router should prioritize when it scores eligible models.</p>
+					<h2 className="text-base font-semibold">{s("optimizeFor")}</h2>
+					<p className="mt-1 max-w-2xl text-sm leading-6 text-muted-foreground">{s("optimizeDescription")}</p>
 				</div>
-				<div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">{OBJECTIVES.map((option) => { const Icon = option.icon; const selected = objective === option.value; return <button key={option.value} type="button" disabled={!canEdit} onClick={() => setObjective(option.value)} className={cn("rounded-lg border p-4 text-left transition-[border-color,background-color,box-shadow]", selected ? "border-foreground/35 bg-foreground/[0.035] shadow-xs" : "hover:border-foreground/20 hover:bg-muted/20", !canEdit && "cursor-not-allowed opacity-60")}><div className="flex items-center gap-2"><Icon className="size-4" /><span className="text-sm font-semibold">{option.label}</span>{selected ? <Check className="ml-auto size-3.5" /> : null}</div><p className="mt-2 text-xs leading-5 text-muted-foreground">{option.description}</p></button>; })}</div>
+				<div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">{OBJECTIVES.map((option) => { const Icon = option.icon; const selected = objective === option.value; return <button key={option.value} type="button" disabled={!canEdit} onClick={() => setObjective(option.value)} className={cn("rounded-lg border p-4 text-left transition-[border-color,background-color,box-shadow]", selected ? "border-foreground/35 bg-foreground/[0.035] shadow-xs" : "hover:border-foreground/20 hover:bg-muted/20", !canEdit && "cursor-not-allowed opacity-60")}><div className="flex items-center gap-2"><Icon className="size-4" /><span className="text-sm font-semibold">{s(`objectives.${option.value}.label`)}</span>{selected ? <Check className="ml-auto size-3.5" /> : null}</div><p className="mt-2 text-xs leading-5 text-muted-foreground">{s(`objectives.${option.value}.description`)}</p></button>; })}</div>
 			</section>
 
 			<section>
-				<div className="flex flex-wrap items-start justify-between gap-4"><div><h2 className="text-base font-semibold">Spend profile</h2><p className="mt-1 text-sm text-muted-foreground">Set the generation-model price ceiling. Classification is billed as a separate gateway request.</p></div><Badge variant="outline" className="gap-1.5 px-2.5 py-1"><DollarSign className="size-3.5" />{spendProfile === "custom" ? "Custom limits" : selectedProfile?.label}</Badge></div>
+				<div className="flex flex-wrap items-start justify-between gap-4"><div><h2 className="text-base font-semibold">{s("spendProfile")}</h2><p className="mt-1 text-sm text-muted-foreground">{s("spendProfileDescription")} {s("classificationRequestNote")}</p></div><Badge variant="outline" className="gap-1.5 px-2.5 py-1"><DollarSign className="size-3.5" />{spendProfile === "custom" ? s("customLimits") : selectedProfileLabel}</Badge></div>
 				<div className="mt-4 rounded-xl bg-muted/25 px-5 pb-5 pt-6">
 					<div className="px-8">
-						<Slider value={selectedProfileIndex >= 0 ? [selectedProfileIndex] : []} min={0} max={SPEND_PROFILES.length - 1} step={1} disabled={!canEdit} aria-label="Spend profile" aria-valuetext={spendProfile === "custom" ? "Custom limits" : selectedProfile?.label} onValueChange={([index]) => setSpendProfile(SPEND_PROFILES[index]?.value ?? "standard")} />
-						<div className="relative mt-4 h-5">{SPEND_PROFILES.map((profile, index) => <button key={profile.value} type="button" disabled={!canEdit} onClick={() => setSpendProfile(profile.value)} style={{ left: `${(index / (SPEND_PROFILES.length - 1)) * 100}%` }} className={cn("absolute -translate-x-1/2 text-[11px] font-medium whitespace-nowrap transition-colors sm:text-xs", spendProfile === profile.value ? "text-foreground" : "text-muted-foreground hover:text-foreground", !canEdit && "cursor-not-allowed")}>{profile.label}</button>)}</div>
+						<Slider value={selectedProfileIndex >= 0 ? [selectedProfileIndex] : []} min={0} max={SPEND_PROFILES.length - 1} step={1} disabled={!canEdit} aria-label={s("spendProfileAriaLabel")} aria-valuetext={spendProfile === "custom" ? s("customLimits") : selectedProfileLabel} onValueChange={([index]) => setSpendProfile(SPEND_PROFILES[index]?.value ?? "standard")} />
+						<div className="relative mt-4 h-5">{SPEND_PROFILES.map((profile, index) => <button key={profile.value} type="button" disabled={!canEdit} onClick={() => setSpendProfile(profile.value)} style={{ left: `${(index / (SPEND_PROFILES.length - 1)) * 100}%` }} className={cn("absolute -translate-x-1/2 text-[11px] font-medium whitespace-nowrap transition-colors sm:text-xs", spendProfile === profile.value ? "text-foreground" : "text-muted-foreground hover:text-foreground", !canEdit && "cursor-not-allowed")}>{s(`profiles.${profile.value}.label`)}</button>)}</div>
 					</div>
-					<div className="mt-5 flex flex-col gap-4 border-t pt-4 sm:flex-row sm:items-center sm:justify-between"><div><p className="text-sm font-medium">{spendProfile === "custom" ? "Custom price ceiling" : selectedProfile?.description}</p><p className="mt-1 text-xs text-muted-foreground">Input {priceLabel(inputCap)} / 1M · Output {priceLabel(outputCap)} / 1M</p></div><div className="text-left sm:text-right"><p className="text-2xl font-semibold tabular-nums">{modelCatalogLoading ? "—" : eligibleModels.length}</p><p className="text-[11px] text-muted-foreground">eligible models now</p></div></div>
-					{spendProfile === "custom" ? <div className="mt-5 grid gap-3 border-t pt-5 sm:grid-cols-2"><label className="space-y-1.5 text-xs font-medium">Maximum input price / 1M tokens<Input type="number" min="0" step="0.01" value={maxInputPricePerMillion ?? ""} disabled={!canEdit} onChange={(event) => setMaxInputPricePerMillion(event.target.value === "" ? null : Number(event.target.value))} /></label><label className="space-y-1.5 text-xs font-medium">Maximum output price / 1M tokens<Input type="number" min="0" step="0.01" value={maxOutputPricePerMillion ?? ""} disabled={!canEdit} onChange={(event) => setMaxOutputPricePerMillion(event.target.value === "" ? null : Number(event.target.value))} /></label></div> : null}
-					<div className="mt-4"><Button type="button" variant="link" className="h-auto px-0 text-xs" disabled={!canEdit} onClick={() => { setSpendProfile("custom"); setAdvancedOpen(true); }}>Use exact monetary limits</Button></div>
+					<div className="mt-5 flex flex-col gap-4 border-t pt-4 sm:flex-row sm:items-center sm:justify-between"><div><p className="text-sm font-medium">{spendProfile === "custom" ? s("customPriceCeiling") : s(`profiles.${spendProfile}.description`)}</p><p className="mt-1 text-xs text-muted-foreground">{m("priceSummary", { inputPrice: formatPrice(inputCap), outputPrice: formatPrice(outputCap) })}</p></div><div className="text-left sm:text-right"><p className="text-2xl font-semibold tabular-nums">{modelCatalogLoading ? "—" : eligibleModels.length}</p><p className="text-[11px] text-muted-foreground">{m("eligibleModelsNow", { count: eligibleModels.length })}</p></div></div>
+					{spendProfile === "custom" ? <div className="mt-5 grid gap-3 border-t pt-5 sm:grid-cols-2"><label className="space-y-1.5 text-xs font-medium">{s("maximumInputPrice")}<Input type="number" min="0" step="0.01" value={maxInputPricePerMillion ?? ""} disabled={!canEdit} onChange={(event) => setMaxInputPricePerMillion(event.target.value === "" ? null : Number(event.target.value))} /></label><label className="space-y-1.5 text-xs font-medium">{s("maximumOutputPrice")}<Input type="number" min="0" step="0.01" value={maxOutputPricePerMillion ?? ""} disabled={!canEdit} onChange={(event) => setMaxOutputPricePerMillion(event.target.value === "" ? null : Number(event.target.value))} /></label></div> : null}
+					<div className="mt-4"><Button type="button" variant="link" className="h-auto px-0 text-xs" disabled={!canEdit} onClick={() => { setSpendProfile("custom"); setAdvancedOpen(true); }}>{s("useExactMonetaryLimits")}</Button></div>
 				</div>
 			</section>
 
 			<section>
-				<div><h2 className="text-base font-semibold">Model access</h2><p className="mt-1 max-w-2xl text-sm leading-6 text-muted-foreground">Phaseo considers every active text model that fits your price ceiling unless you narrow the eligible model families.</p></div>
+				<div><h2 className="text-base font-semibold">{s("modelAccess")}</h2><p className="mt-1 max-w-2xl text-sm leading-6 text-muted-foreground">{s("modelAccessDescription")}</p></div>
 				<div className="mt-5 grid gap-8 lg:grid-cols-[minmax(0,0.9fr)_minmax(360px,1.1fr)] lg:gap-12">
 				<div>
-					<div className="mt-5 flex items-start justify-between gap-4 border-t pt-5"><div className="flex gap-3"><Gauge className="mt-0.5 size-4 shrink-0" /><div><p className="text-sm font-medium">Model fallbacks</p><p className="mt-1 text-xs leading-5 text-muted-foreground">Try the remaining ranked shortlist after retryable provider failures.</p></div></div><Switch checked={allowFallbacks} disabled={!canEdit} onCheckedChange={setAllowFallbacks} aria-label="Enable model fallbacks" /></div>
-					<Collapsible open={advancedOpen} onOpenChange={setAdvancedOpen} className="mt-6 border-t pt-5"><CollapsibleTrigger asChild><Button type="button" variant="ghost" className="h-auto w-full justify-between px-3 py-2 text-sm font-medium"><span>Restrict eligible models <span className="font-normal text-muted-foreground">· Optional</span></span><ChevronDown className={cn("size-4 transition-transform", advancedOpen && "rotate-180")} /></Button></CollapsibleTrigger><CollapsibleContent className="pt-4"><p className="text-xs leading-5 text-muted-foreground">Patterns are inclusive. Leave this empty to let Phaseo consider every eligible model.</p><div className="mt-3 flex gap-2"><Input value={patternDraft} disabled={!canEdit} placeholder="anthropic/*" onChange={(event) => { setPatternDraft(event.target.value); setPatternError(null); }} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); addPattern(); } }} /><Button type="button" variant="outline" disabled={!canEdit || !patternDraft.trim()} onClick={() => addPattern()}><Plus className="size-4" />Add</Button></div>{patternError ? <p className="mt-2 text-xs text-destructive">{patternError}</p> : null}<div className="mt-3 flex flex-wrap gap-2">{allowedPatterns.length ? allowedPatterns.map((pattern) => <Badge key={pattern} variant="secondary" className="gap-1.5 font-mono font-normal">{pattern}<button type="button" disabled={!canEdit} onClick={() => setAllowedPatterns((patterns) => patterns.filter((item) => item !== pattern))} aria-label={`Remove ${pattern}`} className="rounded-sm text-muted-foreground hover:text-foreground"><Trash2 className="size-3" /></button></Badge>) : <span className="text-xs text-muted-foreground">All eligible model families</span>}</div>{!allowedPatterns.length ? <div className="mt-3 flex flex-wrap gap-2">{["anthropic/*", "openai/gpt-*", "google/gemini-*"].map((pattern) => <Button key={pattern} type="button" size="sm" variant="outline" className="h-7 font-mono text-[11px]" disabled={!canEdit} onClick={() => addPattern(pattern)}>{pattern}</Button>)}</div> : null}</CollapsibleContent></Collapsible>
+					<div className="mt-5 flex items-start justify-between gap-4 border-t pt-5"><div className="flex gap-3"><Gauge className="mt-0.5 size-4 shrink-0" /><div><p className="text-sm font-medium">{s("modelFallbacks")}</p><p className="mt-1 text-xs leading-5 text-muted-foreground">{s("modelFallbacksDescription")}</p></div></div><Switch checked={allowFallbacks} disabled={!canEdit} onCheckedChange={setAllowFallbacks} aria-label={s("enableModelFallbacks")} /></div>
+					<Collapsible open={advancedOpen} onOpenChange={setAdvancedOpen} className="mt-6 border-t pt-5"><CollapsibleTrigger asChild><Button type="button" variant="ghost" className="h-auto w-full justify-between px-3 py-2 text-sm font-medium"><span>{s("restrictEligibleModels")} <span className="font-normal text-muted-foreground">· {s("optional")}</span></span><ChevronDown className={cn("size-4 transition-transform", advancedOpen && "rotate-180")} /></Button></CollapsibleTrigger><CollapsibleContent className="pt-4"><p className="text-xs leading-5 text-muted-foreground">{s("patternsDescription")}</p><div className="mt-3 flex gap-2"><Input value={patternDraft} disabled={!canEdit} placeholder="anthropic/*" onChange={(event) => { setPatternDraft(event.target.value); setPatternError(null); }} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); addPattern(); } }} /><Button type="button" variant="outline" disabled={!canEdit || !patternDraft.trim()} onClick={() => addPattern()}><Plus className="size-4" />{s("addPattern")}</Button></div>{patternError ? <p className="mt-2 text-xs text-destructive">{patternError}</p> : null}<div className="mt-3 flex flex-wrap gap-2">{allowedPatterns.length ? allowedPatterns.map((pattern) => <Badge key={pattern} variant="secondary" className="gap-1.5 font-mono font-normal">{pattern}<button type="button" disabled={!canEdit} onClick={() => setAllowedPatterns((patterns) => patterns.filter((item) => item !== pattern))} aria-label={m("removePattern", { pattern })} className="rounded-sm text-muted-foreground hover:text-foreground"><Trash2 className="size-3" /></button></Badge>) : <span className="text-xs text-muted-foreground">{s("allEligibleModelFamilies")}</span>}</div>{!allowedPatterns.length ? <div className="mt-3 flex flex-wrap gap-2">{["anthropic/*", "openai/gpt-*", "google/gemini-*"].map((pattern) => <Button key={pattern} type="button" size="sm" variant="outline" className="h-7 font-mono text-[11px]" disabled={!canEdit} onClick={() => addPattern(pattern)}>{pattern}</Button>)}</div> : null}</CollapsibleContent></Collapsible>
 				</div>
-				<div><div className="flex items-center justify-between gap-3"><p className="text-sm font-medium">Eligible models</p><span className="text-xs text-muted-foreground">{eligibleModels.length} total</span></div><div className="mt-3"><EligibleModelList key={`${spendProfile}:${inputCap ?? "none"}:${outputCap ?? "none"}:${allowedPatterns.join(",")}`} models={eligibleModels} loading={modelCatalogLoading} error={modelCatalogError} /></div></div>
+				<div><div className="flex items-center justify-between gap-3"><p className="text-sm font-medium">{s("eligibleModels")}</p><span className="text-xs text-muted-foreground">{m("eligibleModelsTotal", { count: eligibleModels.length })}</span></div><div className="mt-3"><EligibleModelList key={`${spendProfile}:${inputCap ?? "none"}:${outputCap ?? "none"}:${allowedPatterns.join(",")}`} models={eligibleModels} loading={modelCatalogLoading} error={modelCatalogError} /></div></div>
 				</div>
 			</section>
 
-			<section className="grid gap-6 pt-2 lg:grid-cols-[1fr_320px] lg:items-start"><div className="text-xs leading-5 text-muted-foreground"><p>{revision ? <>Revision <span className="font-mono text-foreground">{revision.slice(0, 8)}</span></> : "Using workspace defaults"}{updatedAt ? <> · Updated {new Intl.DateTimeFormat("en", { dateStyle: "medium", timeStyle: "short" }).format(new Date(updatedAt))}</> : null}</p>{!initialData.canManage ? <p className="mt-1">Only workspace owners and admins can make changes.</p> : null}</div><div className="space-y-3"><div className="rounded-lg border bg-zinc-950 p-4 text-zinc-100"><div className="flex items-center gap-2 text-xs font-medium text-zinc-300"><ShieldCheck className="size-3.5" />Request contract</div><pre className="mt-3 overflow-x-auto font-mono text-[11px] leading-5 text-zinc-300"><code>{`{\n  "model": "phaseo/auto",\n  "input": "Your prompt"\n}`}</code></pre></div><Button className="w-full" onClick={save} disabled={!initialData.canManage || !dirty || !valid || isPending}>{isPending ? <Loader2 className="size-4 animate-spin" /> : null}Save configuration</Button></div></section>
+			<section className="grid gap-6 pt-2 lg:grid-cols-[1fr_320px] lg:items-start"><div className="text-xs leading-5 text-muted-foreground"><p>{revision ? <>{s("revision")} <span className="font-mono text-foreground">{revision.slice(0, 8)}</span></> : s("usingWorkspaceDefaults")}{updatedAt ? <> · {m("updatedAt", { date: new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeStyle: "short" }).format(new Date(updatedAt)) })}</> : null}</p>{!initialData.canManage ? <p className="mt-1">{s("ownersAdminsOnly")}</p> : null}</div><div className="space-y-3"><div className="rounded-lg border bg-zinc-950 p-4 text-zinc-100"><div className="flex items-center gap-2 text-xs font-medium text-zinc-300"><ShieldCheck className="size-3.5" />{s("requestContract")}</div><pre className="mt-3 overflow-x-auto font-mono text-[11px] leading-5 text-zinc-300"><code>{`{\n  "model": "phaseo/auto",\n  "input": "Your prompt"\n}`}</code></pre></div><Button className="w-full" onClick={save} disabled={!initialData.canManage || !dirty || !valid || isPending}>{isPending ? <Loader2 className="size-4 animate-spin" /> : null}{isPending ? s("saving") : s("saveConfiguration")}</Button></div></section>
 		</div>
 	);
 }

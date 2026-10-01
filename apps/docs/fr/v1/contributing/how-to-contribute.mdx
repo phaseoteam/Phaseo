@@ -1,0 +1,192 @@
+---
+icon: "users-round"
+title: "Comment contribuer"
+description: "Guide étape par étape pour apporter votre première contribution à Phaseo, de la préparation de votre environnement à l’envoi d’une pull request."
+---
+
+La contribution à **Phaseo** est simple, transparente et ouverte à tous.
+Ce guide présente toutes les étapes, que vous modifiiez une fiche de modèle, mettiez à jour des données de benchmark, amélioriez la documentation ou proposiez des idées.
+
+---
+
+## Avant de commencer
+
+Vous devez installer quelques outils de base :
+
+| Outil | Utilité | Installation |
+| ------------------ | ---------------------------------------------- | -------------------------------------------------- |
+| **Git**            | Gestion de versions pour cloner et envoyer des modifications.     | [Installer Git](https://git-scm.com/downloads)       |
+| **Node.js (v20+)** | Permet d’exécuter le site Phaseo en local (Next.js).      | [Télécharger Node.js](https://nodejs.org/en/download) |
+| **pnpm**           | Gestionnaire de paquets utilisé dans ce projet.          | `npm install -g pnpm`                              |
+| **compte GitHub** | Nécessaire pour créer des forks, des tickets et des pull requests. | [Inscrivez-vous ici](https://github.com/signup)          |
+
+Si vous souhaitez uniquement modifier des **données** ou la **documentation Markdown**, vous pouvez le faire directement sur GitHub sans configurer d’environnement local.
+
+---
+
+## 1. Forker le dépôt
+
+Accédez au [dépôt Phaseo sur GitHub](https://github.com/phaseoteam/Phaseo), puis cliquez sur **Fork** dans le coin supérieur droit.
+Vous créez ainsi votre propre copie du projet, que vous pouvez modifier librement.
+
+---
+
+## 2. Cloner votre fork
+
+```bash
+git clone https://github.com/yourusername/Phaseo.git
+cd Phaseo
+```
+
+Cette commande télécharge votre fork sur votre ordinateur.
+
+---
+
+## 3. Créer une nouvelle branche
+
+Il est recommandé de créer une branche pour chaque modification :
+
+```bash
+git checkout -b update-benchmark-data
+```
+
+Choisissez un nom de branche explicite qui décrit la modification afin d’en faciliter la revue.
+
+Exemples :
+
+-   `fix-{model-name}`
+-   `add-new-organisation`
+-   `improve-docs`
+-   `update-pricing-for-{model-name}`
+
+---
+
+## 4. Effectuer les modifications
+
+Selon les éléments que vous souhaitez modifier :
+
+| Domaine | Fichiers | Description |
+| --------------------- | --------------------------------------------- | ----------------------------------------------------- |
+| **Données des modèles**        | `/packages/data/catalog/src/data/models/**/model.json`     | Ajoutez ou mettez à jour les métadonnées, les tarifs ou les benchmarks des modèles. |
+| **Données des organisations** | `/packages/data/catalog/src/data/organisations/*.json`     | Mettez à jour les informations sur les entreprises ou les équipes de recherche.    |
+| **Données de benchmark**    | `/packages/data/catalog/src/data/benchmarks/**/*.json`     | Soumettez de nouveaux résultats d’évaluation ou des corrections.         |
+| **Documentation**     | `/apps/docs/v1/**/*.mdx`                      | Améliorez ou développez les guides, références et pages de documentation. |
+| **Passerelle**           | `/apps/api/*`                                 | Modifiez la passerelle API.                      |
+
+Si vous modifiez des données, respectez les schémas et formats de champs décrits dans [Structure du dépôt](./repo-structure.mdx).
+
+---
+
+## 5. Prévisualiser vos modifications (facultatif)
+
+Si vous souhaitez prévisualiser vos modifications en local :
+
+```bash
+pnpm install
+pnpm dev
+```
+
+Utilisez [http://localhost:3100](http://localhost:3100) pour les modifications du site et [http://localhost:3101](http://localhost:3101) pour celles de la documentation. Les modifications des données ne peuvent être prévisualisées qu’après la création d’une PR, car l’application web récupère les données depuis la base de données.
+
+---
+
+## 6. Valider vos modifications
+
+Lorsque vos modifications vous conviennent, validez-les :
+
+```bash
+git add .
+git commit -m "Updated benchmark data for Claude 3.5 Sonnet"
+```
+
+Rédigez un message de commit explicite afin que les personnes chargées de la revue comprennent votre contribution.
+
+---
+
+## 7. Envoyer votre branche
+
+```bash
+git push origin update-benchmark-data
+```
+
+---
+
+## 8. Créer une pull request (PR)
+
+1. Accédez à votre fork sur GitHub.
+2. Un message vous proposera de créer une PR : cliquez sur **Compare & Pull Request**.
+3. Remplissez le modèle de PR avec les informations utiles sur vos modifications.
+4. Envoyez la PR.
+
+Après revue et approbation, votre PR sera fusionnée dans le dépôt principal de Phaseo.
+
+---
+
+## 9. Célébrer
+
+Votre contribution sera publiée après sa fusion. Merci pour vos efforts et votre soutien.
+
+<Card
+	title="Voir les contributeurs"
+	icon="users"
+	href="https://phaseo.app/contribute"
+	horizontal
+>
+	Découvrez toutes les personnes qui ont contribué à Phaseo.
+</Card>
+
+---
+
+## Conseils pour contribuer
+
+-   Gardez les PR **courtes et ciblées** : une seule modification cohérente par PR.
+-   Dans la mesure du possible, suivez la convention [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/). Utilisez des **préfixes explicites** comme `fix:`, `add:` ou `chore:`.
+-   Si votre modification touche à l’exactitude des données, ajoutez des **sources ou références**.
+-   Pour une idée importante ou encore incertaine, ouvrez une **discussion GitHub** ou contactez la communauté sur Discord avant de commencer à coder.
+-   Restez toujours respectueux et suivez notre [code de conduite](../community/code-of-conduct.mdx).
+
+---
+
+## Résumé du processus type
+
+```bash
+# 1. Fork and clone
+
+git clone https://github.com/yourusername/Phaseo.git
+cd Phaseo
+
+# 2. Create branch
+git checkout -b add-openai-new-model
+
+# 3. Make changes
+# e.g., update packages/data/catalog/src/data/models/openai/new-model/model.json
+
+# 4. Commit and push
+git add .
+git commit -m "Add new OpenAI model entry"
+git push origin add-new-openai-model
+
+# 5. Create a Pull Request on GitHub
+```
+
+---
+
+## Étapes suivantes
+
+<Columns cols={2}>
+	<Card
+		title="Structure du dépôt"
+		icon="folder-tree"
+		href="./repo-structure.mdx"
+	>
+		Découvrez l’organisation des dossiers et où trouver les principaux fichiers de données.
+	</Card>
+	<Card
+		title="Modifier un modèle"
+		icon="brain"
+		href="./editing-a-model.mdx"
+	>
+		Commencez par un exemple pratique : mettre à jour ou ajouter une fiche de modèle.
+	</Card>
+</Columns>
+

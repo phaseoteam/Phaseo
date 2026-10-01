@@ -1,0 +1,153 @@
+---
+icon: "server-cog"
+title: "服务器工具"
+description: "让模型在请求期间调用由 Phaseo 托管的工具。"
+---
+
+服务器工具是 Phaseo 在模型请求期间代为运行的工具。模型决定何时调用，Phaseo 在服务器端执行，并将结果返回模型处理流程。
+
+如果模型需要当前时间、网页内容、抓取的页面文本或另一个模型的建议，可使用服务器工具，无需自行添加工具执行器。
+
+<Note>
+服务器工具处于测试阶段。随着供应商支持变化，请求格式和结果内容也可能调整。
+</Note>
+
+## 可用工具
+
+| 工具 | 类型 | 用途 |
+| --- | --- | --- |
+| 日期和时间 | `phaseo:datetime` | 最多可获取 5 个时区的当前日期和时间 |
+| 网页搜索 | `phaseo:web_search` | 请求期间由模型发起的网页搜索 |
+| 网页抓取 | `phaseo:web_fetch` | 抓取指定 URL 并提取文本 |
+| 顾问 | `phaseo:advisor` | 在生成过程中咨询另一个模型 |
+| 子代理 | `phaseo:subagent` | 将专门任务委派给工作模型 |
+| Fusion | `phaseo:fusion` | 并行分析，再由模型汇总 |
+| 搜索模型 | `phaseo:search_models` | 从实时目录中查找合适的模型 |
+| 图像生成 | `phaseo:image_generation` | 通过模型工具循环生成图像 |
+| 应用补丁 | `phaseo:apply_patch` | 在 Responses API 上生成经过验证的文件补丁 |
+
+## 服务器工具的工作方式
+
+1. 将一个或多个服务器工具添加到 `tools` 数组中。
+2. 模型判断是否需要工具，并发出工具调用。
+3. Phaseo 拦截服务器工具调用、执行工具，然后将结果发回模型。
+4. 模型继续处理并生成最终回复。
+
+服务器工具可与自定义函数工具一起使用。Phaseo 只执行服务器工具；常规 `function` 调用仍由你的应用处理。
+
+## 快速开始
+
+```bash
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-5-nano",
+    "messages": [
+      { "role": "user", "content": "What are the latest AI policy updates this week?" }
+    ],
+    "tools": [
+      { "type": "phaseo:web_search" },
+      { "type": "phaseo:datetime", "parameters": { "timezones": ["Europe/London", "UTC"] } }
+    ]
+  }'
+```
+
+## 与函数工具结合使用
+
+```json
+{
+  "model": "openai/gpt-5-nano",
+  "messages": [
+    { "role": "user", "content": "Find recent funding news and save the best item." }
+  ],
+  "tools": [
+    { "type": "phaseo:web_search", "parameters": { "max_results": 3 } },
+    {
+      "type": "function",
+      "function": {
+        "name": "save_research_item",
+        "description": "Save a selected research item",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "title": { "type": "string" },
+            "url": { "type": "string" }
+          },
+          "required": ["title", "url"]
+        }
+      }
+    }
+  ]
+}
+```
+
+如果模型调用 `phaseo:web_search`，Phaseo 会自动执行该调用。如果它调用 `save_research_item`，你的应用会收到函数调用，并须在后续请求中返回函数结果。
+
+## 支持的端点
+
+服务器工具支持以下接口：
+
+- `/v1/chat/completions`
+- `/v1/responses`
+- `/v1/messages`
+
+支持流式请求。对于由网关管理的服务器工具，Phaseo 可能会展开上游工具调用轮次、执行工具、继续处理流程，并为最终回复输出合成流。
+
+## 用量跟踪
+
+服务器工具用量会记录在 `usage.server_tool_use` 中：
+
+```json
+{
+  "usage": {
+    "input_tokens": 105,
+    "output_tokens": 250,
+    "server_tool_use": {
+      "datetime_requests": 1,
+      "web_search_requests": 2,
+      "web_search_results": 8,
+      "web_fetch_requests": 1,
+      "advisor_requests": 1,
+      "subagent_requests": 1,
+      "fusion_requests": 1,
+      "search_models_requests": 1,
+      "image_generation_requests": 1
+    }
+  }
+}
+```
+
+如果模型价格卡中已配置，也可以使用服务器工具计量项进行计费，例如 `server_tool_web_search_requests`、`server_tool_web_search_extra_results`、`server_tool_web_fetch_requests`、`server_tool_advisor_requests`、`server_tool_image_generation_requests`、`native_web_search_requests` 和 `native_web_fetch_requests`。
+
+## 工具页面
+
+<Columns cols={2}>
+  <Card title="日期和时间" icon="clock" href="./datetime.mdx">
+    向模型提供当前日期和时间。
+  </Card>
+  <Card title="网页搜索" icon="search" href="./web-search.mdx">
+    让模型在需要最新信息时搜索网页。
+  </Card>
+  <Card title="网页抓取" icon="file-search" href="./web-fetch.mdx">
+    让模型抓取并阅读指定 URL。
+  </Card>
+  <Card title="顾问" icon="message-square" href="./advisor.mdx">
+    让一个模型在生成过程中向另一个模型寻求建议。
+  </Card>
+  <Card title="子代理" icon="cpu" href="./subagent.mdx">
+    让模型将特定任务委派给工作模型。
+  </Card>
+  <Card title="Fusion" icon="sparkles" href="./fusion.mdx">
+	并行运行多个模型进行分析，并综合其结果。
+  </Card>
+	<Card title="搜索模型" icon="list-filter" href="./search-models.mdx">
+		让模型在 Phaseo 实时目录中查找合适的模型。
+	</Card>
+  <Card title="图像生成" icon="image" href="./image-generation.mdx">
+    让模型在回答时生成图像。
+  </Card>
+	<Card title="应用补丁" icon="file-diff" href="./apply-patch.mdx">
+		生成经过验证的创建、更新或删除补丁。
+	</Card>
+</Columns>

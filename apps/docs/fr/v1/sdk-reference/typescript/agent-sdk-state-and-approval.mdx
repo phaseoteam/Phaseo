@@ -1,0 +1,77 @@
+---
+icon: "database"
+title: "État et approbation"
+description: "Enregistrez l’état d’exécution, approuvez des appels d’outils et reprenez les agents suspendus."
+---
+
+Utilisez la continuation lorsqu’un agent doit attendre une personne, une tâche externe ou un outil géré par l’application avant de poursuivre. L’Agent SDK renvoie l’état complet nécessaire pour continuer plus tard.
+
+<Note>
+Phaseo ne conserve pas les exécutions de l’Agent SDK dans un service d’agents hébergé. Stockez l’état reprenable dans votre application s’il doit survivre à une requête ou au redémarrage d’un processus.
+</Note>
+
+## Approuver un appel d’outil
+
+N’exigez une approbation que pour les appels concernés :
+
+```typescript
+const deploy = defineTool({
+  id: "deploy",
+  requireApproval: ({ environment }) => environment === "production",
+  async execute(input: { environment: string }) {
+    return deployRelease(input.environment);
+  },
+});
+```
+
+L’exécution est suspendue avec les appels en attente dans `run.pause.pendingToolCalls`. Reprenez-la avec l’ID exact de l’appel pour éviter toute confusion entre appels simultanés :
+
+```typescript
+const resumed = await agent.continueRun({
+  run: paused,
+  client,
+  approvals: [{ toolCallId: "call_deploy_42" }],
+  rejections: [
+    { toolCallId: "call_delete_17", reason: "Not authorized" },
+  ],
+});
+```
+
+## Suspendre pour une revue humaine
+
+Utilisez `humanReview` lorsque la réponse complète du modèle doit être vérifiée avant le tour suivant :
+
+```typescript
+const agent = createAgent({
+  id: "support-agent",
+  humanReview: ({ response }) =>
+    response.message.content.includes("needs approval")
+      ? {
+          reason: "approval_required",
+          payload: { draft: response.message.content },
+        }
+      : null,
+});
+```
+
+Continuez avec une saisie explicite de la personne :
+
+```typescript
+const continued = await agent.continueRun({
+  run: pausedResult,
+  client,
+  humanInput: "Approved. Continue and return the final answer.",
+});
+```
+
+## Enregistrer l’état d’exécution
+
+Enregistrez directement le `AgentRunResult` renvoyé, ou fournissez un accès `state` avec les méthodes asynchrones `load(runId)` et `save(result)`. Une exécution reprise peut alors utiliser `runId` au lieu de transmettre l’enregistrement sérialisé à chaque couche.
+
+Le SDK ne fournit ni adaptateur de persistance ni backend d’état hébergé. Votre application peut garder en mémoire les exécutions ponctuelles et n’enregistrer que celles suspendues ou incomplètes.
+
+## Guides associés
+
+- [Définir et exécuter des outils](./agent-sdk-tools.mdx)
+- [Contrôler les exécutions des agents](./agent-sdk-run-controls.mdx)
+- [Créer une boucle d’agent durable](../../cookbook/agent-sdk-durable-loop.mdx)

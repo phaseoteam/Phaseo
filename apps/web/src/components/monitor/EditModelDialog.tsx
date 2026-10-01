@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition, useEffect } from "react";
+import { useTranslations } from "next-intl";
 import {
 	Dialog,
 	DialogContent,
@@ -56,6 +57,9 @@ export function EditModelDialog({
 	onOpenChange,
 }: EditModelDialogProps) {
 	const router = useRouter();
+	const tEditor = useTranslations("Common.ui.modelEditor");
+	const tModel = useTranslations("Common.ui.modelCreation");
+	const tActions = useTranslations("Common.ui.actions");
 	const [isPending, startTransition] = useTransition();
 	const [error, setError] = useState<string | null>(null);
 
@@ -110,7 +114,7 @@ export function EditModelDialog({
 				onOpenChange(false);
 				router.refresh();
 			} else {
-				setError(result.error || "Failed to update model");
+				setError(tEditor("saveFailed"));
 			}
 		});
 	};
@@ -133,10 +137,9 @@ export function EditModelDialog({
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			<DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
 				<DialogHeader>
-					<DialogTitle>Edit Model</DialogTitle>
+					<DialogTitle>{tEditor("dialogTitle")}</DialogTitle>
 					<DialogDescription>
-						Update model information. Changes will be saved directly
-						to the database.
+						{tEditor("editModelDescription")}
 					</DialogDescription>
 				</DialogHeader>
 
@@ -149,7 +152,7 @@ export function EditModelDialog({
 
 					{/* Model ID (read-only) */}
 					<div className="space-y-2">
-						<Label htmlFor="model-id">Model ID</Label>
+						<Label htmlFor="model-id">{tModel("modelId")}</Label>
 						<Input
 							id="model-id"
 							value={model.modelId}
@@ -157,47 +160,46 @@ export function EditModelDialog({
 							className="bg-muted"
 						/>
 						<p className="text-xs text-muted-foreground">
-							Model ID cannot be changed
+							{tEditor("modelIdCannotChange")}
 						</p>
 					</div>
 
 					{/* Organization (read-only) */}
 					<div className="space-y-2">
-						<Label htmlFor="organisation">Organization</Label>
+						<Label htmlFor="organisation">{tModel("organization")}</Label>
 						<Input
 							id="organisation"
-							value={model.organisationName || "None"}
+							value={model.organisationName || tEditor("none")}
 							disabled
 							className="bg-muted"
 						/>
 						<p className="text-xs text-muted-foreground">
-							Organization cannot be changed
+							{tEditor("organisationCannotChange")}
 						</p>
 					</div>
 
 					{/* Name */}
 					<div className="space-y-2">
-						<Label htmlFor="name">Display Name *</Label>
+						<Label htmlFor="name">{tModel("displayName")} *</Label>
 						<Input
 							id="name"
 							value={name}
 							onChange={(e) => setName(e.target.value)}
-							placeholder="e.g., GPT-4 Turbo"
+							placeholder={tModel("displayNameExample")}
 						/>
 					</div>
 
 					{/* Status */}
 					<div className="space-y-2">
-						<Label htmlFor="status">Status</Label>
+						<Label htmlFor="status">{tModel("status")}</Label>
 						<Select value={status || "active"} onValueChange={setStatus}>
 							<SelectTrigger id="status">
-								<SelectValue placeholder="Select status" />
+								<SelectValue placeholder={tModel("selectStatus")} />
 							</SelectTrigger>
 							<SelectContent>
 								{STATUS_OPTIONS.map((opt) => (
 									<SelectItem key={opt} value={opt}>
-										{opt.charAt(0).toUpperCase() +
-											opt.slice(1)}
+										{tEditor(`modelStatuses.${opt === "active" || opt === "beta" ? opt : opt === "preview" ? "preview" : opt}` as never)}
 									</SelectItem>
 								))}
 							</SelectContent>
@@ -217,13 +219,13 @@ export function EditModelDialog({
 							htmlFor="hidden"
 							className="cursor-pointer font-normal"
 						>
-							Hidden (model won't appear in public listings)
+							{tEditor("advanced.hidden")}
 						</Label>
 					</div>
 
 					{/* Release Date */}
 					<div className="space-y-2">
-						<Label htmlFor="release-date">Release Date</Label>
+						<Label htmlFor="release-date">{tModel("releaseDate")}</Label>
 						<Input
 							id="release-date"
 							type="date"
@@ -235,7 +237,7 @@ export function EditModelDialog({
 					{/* Retirement Date */}
 					<div className="space-y-2">
 						<Label htmlFor="retirement-date">
-							Retirement Date
+							{tModel("retirementDate")}
 						</Label>
 						<Input
 							id="retirement-date"
@@ -247,7 +249,7 @@ export function EditModelDialog({
 
 					{/* Input Modalities */}
 					<div className="space-y-2">
-						<Label>Input Modalities</Label>
+						<Label>{tModel("inputModalities")}</Label>
 						<div className="flex flex-wrap gap-2">
 							{MODALITY_OPTIONS.map((modality) => (
 								<Badge
@@ -260,7 +262,7 @@ export function EditModelDialog({
 									className="cursor-pointer"
 									onClick={() => toggleInputType(modality)}
 								>
-									{modality}
+									{tModel(`modalities.${modality === "audio_stt" ? "audioStt" : modality === "audio_tts" ? "audioTts" : modality === "audio_music" ? "audioMusic" : modality}` as never)}
 									{inputTypes.includes(modality) && (
 										<X className="ml-1 h-3 w-3" />
 									)}
@@ -268,13 +270,13 @@ export function EditModelDialog({
 							))}
 						</div>
 						<p className="text-xs text-muted-foreground">
-							Click to toggle input modalities
+							{tModel("toggleInputModalities")}
 						</p>
 					</div>
 
 					{/* Output Modalities */}
 					<div className="space-y-2">
-						<Label>Output Modalities</Label>
+						<Label>{tModel("outputModalities")}</Label>
 						<div className="flex flex-wrap gap-2">
 							{MODALITY_OPTIONS.map((modality) => (
 								<Badge
@@ -287,7 +289,7 @@ export function EditModelDialog({
 									className="cursor-pointer"
 									onClick={() => toggleOutputType(modality)}
 								>
-									{modality}
+									{tModel(`modalities.${modality === "audio_stt" ? "audioStt" : modality === "audio_tts" ? "audioTts" : modality === "audio_music" ? "audioMusic" : modality}` as never)}
 									{outputTypes.includes(modality) && (
 										<X className="ml-1 h-3 w-3" />
 									)}
@@ -295,7 +297,7 @@ export function EditModelDialog({
 							))}
 						</div>
 						<p className="text-xs text-muted-foreground">
-							Click to toggle output modalities
+							{tModel("toggleOutputModalities")}
 						</p>
 					</div>
 				</div>
@@ -306,13 +308,13 @@ export function EditModelDialog({
 						onClick={() => onOpenChange(false)}
 						disabled={isPending}
 					>
-						Cancel
+						{tEditor("cancel")}
 					</Button>
 					<Button onClick={handleSave} disabled={isPending || !name}>
 						{isPending && (
 							<Loader2 className="mr-2 h-4 w-4 animate-spin" />
 						)}
-						Save Changes
+						{tActions("save")}
 					</Button>
 				</DialogFooter>
 			</DialogContent>

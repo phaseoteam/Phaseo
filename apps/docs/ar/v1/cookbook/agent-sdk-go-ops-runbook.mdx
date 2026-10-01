@@ -1,0 +1,64 @@
+---
+title: "أنشئ وكيل دليل تشغيل للعمليات بلغة Go"
+icon: "clipboard-check"
+description: "استخدم Go Agent SDK لدمج عدد قليل من الأدوات المحلية الحتمية في دورة محدودة لاستكشاف الأعطال وإصلاحها."
+---
+
+استخدم هذه الوصفة عندما تحتاج خدمة Go إلى الإجابة عن أسئلة تشغيلية باستخدام سياق محلي.
+
+## 1. جهّز حزم SDK
+
+<Note type="warning">لا يتوفر إصدار عام من وحدة Go Agent SDK بعد. اتبع [تعليمات التثبيت من المصدر](../sdk-reference/go/agent-sdk-installation.mdx).</Note>
+
+## 2. عرّف أدوات صغيرة لبيئة التشغيل
+
+```go
+statusTool := phaseoagent.DefineTool(phaseoagent.Tool{
+  ID:          "read-status",
+  Description: "Read the current service status page summary.",
+  Execute: func(input any, ctx phaseoagent.RuntimeContext) (any, error) {
+    return map[string]any{
+      "status": "degraded",
+      "summary": "Latency is elevated on one provider route.",
+    }, nil
+  },
+})
+```
+
+## 3. أنشئ الوكيل
+
+```go
+agent := phaseoagent.CreateAgent(phaseoagent.AgentDefinition{
+  ID:           "ops-runbook-agent",
+  Model:        "openai/gpt-5.4-nano",
+  Instructions: "Use tools when helpful and answer briefly.",
+  Tools:        []phaseoagent.Tool{statusTool},
+})
+```
+
+## 4. نفّذ جولة محدودة لاستكشاف الأعطال وإصلاحها
+
+```go
+client, _ := phaseoagent.CreateGatewayAgentClient(phaseoagent.GatewayAgentClientOptions{})
+
+result, err := agent.Run(context.Background(), phaseoagent.RunOptions{
+  Input:  "What is happening with provider latency right now?",
+  Client: client,
+})
+if err != nil {
+  panic(err)
+}
+
+fmt.Println(result.Output)
+```
+
+## متى تناسب هذه الوصفة
+
+- ينتمي سير العمل إلى خدمة Go واحدة
+- يكون السياق المساند متاحًا بالفعل عبر استدعاءات محلية أو داخلية
+- تريد دورة وكيل دون إدخال نظام مهام أوسع في الوقت الحالي
+
+## مواضيع ذات صلة
+
+- [Go Agent SDK](../sdk-reference/go/agent-sdk.mdx)
+- [استند في الاستخراج إلى web fetch](./tool-grounding-with-web-fetch.mdx)

@@ -1,0 +1,10 @@
+---
+title: "ワークスペース参加リクエストを一覧表示"
+sidebarTitle: "参加リクエストを一覧表示"
+badge: "ベータ"
+openapi: "/ja/openapi/v1/openapi.localized.yaml GET /workspaces/{id}/join-requests"
+description: "ワークスペースへの参加リクエストを一覧表示して絞り込みます。"
+---
+<Note>このエンドポイントには `workspaces:read` 権限を持つ管理APIキーが必要です。</Note>
+
+`status` フィルターで保留中、承認済み、拒否済みのリクエストを選択します。

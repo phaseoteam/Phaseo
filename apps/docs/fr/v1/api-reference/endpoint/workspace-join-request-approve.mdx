@@ -1,0 +1,11 @@
+---
+title: "Approuver une demande d’accès à l’espace de travail"
+sidebarTitle: "Approuver la demande d’accès"
+badge: "Beta"
+openapi: "/fr/openapi/v1/openapi.localized.yaml POST /workspaces/{id}/join-requests/{request_id}/approve"
+description: "Approuver de façon atomique une demande d’accès en attente."
+---
+<Note>Ce point de terminaison nécessite une clé API de gestion avec `workspaces:write`.</Note>
+
+L’approbation vérifie l’expiration de l’invitation et le nombre d’utilisations restantes, applique le rôle de l’invitation et enregistre la décision dans une seule transaction.
+

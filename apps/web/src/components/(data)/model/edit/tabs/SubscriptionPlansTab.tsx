@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useRef, useState } from "react"
+import { useTranslations } from "next-intl"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
@@ -45,6 +46,7 @@ export default function SubscriptionPlansTab({
   modelId,
   onSubscriptionPlanModelsChange,
 }: SubscriptionPlansTabProps) {
+  const t = useTranslations("Common.ui.modelEditor")
   const [plans, setPlans] = useState<PlanOption[]>([])
   const [modelOrganisationId, setModelOrganisationId] = useState<string | null>(null)
   const [loaded, setLoaded] = useState(false)
@@ -176,15 +178,15 @@ export default function SubscriptionPlansTab({
   return (
     <div className="space-y-4">
       <div>
-        <Label className="text-sm font-semibold">Subscription Plans</Label>
+        <Label className="text-sm font-semibold">{t("subscriptionPlansTitle")}</Label>
         <p className="text-xs text-muted-foreground">
-          Attach or detach this model from subscription plans.
+          {t("subscriptionPlansDescription")}
         </p>
       </div>
 
       <div className="space-y-2 rounded-lg border p-3">
         {plans.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No subscription plans found.</p>
+          <p className="text-sm text-muted-foreground">{t("noSubscriptionPlans")}</p>
         ) : null}
         {plans.map((plan) => {
           const checked = Boolean(selectedRows[plan.plan_uuid])
@@ -204,7 +206,7 @@ export default function SubscriptionPlansTab({
       </div>
 
       <div className="space-y-2 rounded-lg border p-3">
-        <Label className="text-sm font-semibold">Create and Attach Plan</Label>
+        <Label className="text-sm font-semibold">{t("createAndAttachPlan")}</Label>
         <div className="grid gap-2 sm:grid-cols-2">
           <Input
             value={newPlanId}
@@ -214,7 +216,7 @@ export default function SubscriptionPlansTab({
           <Input
             value={newPlanName}
             onChange={(event) => setNewPlanName(event.target.value)}
-            placeholder="Plan name"
+            placeholder={t("planName")}
           />
         </div>
         <div className="grid gap-2 sm:grid-cols-3">
@@ -244,7 +246,7 @@ export default function SubscriptionPlansTab({
             onClick={handleCreatePlan}
             disabled={creatingPlan || !newPlanId.trim() || !newPlanName.trim()}
           >
-            {creatingPlan ? "Creating..." : "Create and attach"}
+            {creatingPlan ? t("creating") : t("createAndAttach")}
           </Button>
         </div>
       </div>

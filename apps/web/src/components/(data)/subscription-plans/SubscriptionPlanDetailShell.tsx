@@ -7,6 +7,8 @@ import EntityStickyHeader from "@/components/(data)/EntityStickyHeader";
 import ModelPageToc, { type ModelPageTocItem } from "@/components/(data)/model/ModelPageToc";
 import { Button } from "@/components/ui/button";
 import RotatingPricing from "@/components/(data)/subscription-plans/RotatingPricing";
+import { getLocale } from "next-intl/server";
+import { getSubscriptionPlansMessagesFor } from "@/i18n/subscription-plans";
 
 interface SubscriptionPlanDetailShellProps {
 	planId: string;
@@ -22,6 +24,8 @@ export default async function SubscriptionPlanDetailShell({
 	tab = "overview",
 }: SubscriptionPlanDetailShellProps) {
 	const plan = await fetchFrontendSubscriptionPlan(planId);
+	const locale = await getLocale();
+	const messages = getSubscriptionPlansMessagesFor(locale);
 
 	if (!plan) {
 		return (
@@ -32,11 +36,10 @@ export default async function SubscriptionPlanDetailShell({
 							<span className="text-xl">💰</span>
 						</div>
 						<p className="text-base font-medium">
-							Subscription plan not found
+							{messages.detail.unknownPlan}
 						</p>
 						<p className="mt-1 text-sm text-muted-foreground">
-							This subscription plan may have been removed or is
-							no longer available.
+							{messages.detail.unknownPlanDescription}
 						</p>
 					</div>
 				</div>
@@ -47,9 +50,9 @@ export default async function SubscriptionPlanDetailShell({
 	const organisationId = plan.organisation?.organisation_id ?? planId;
 	const baseHref = `/subscription-plans/${planId}`;
 	const navigation = [
-		{ label: "Overview", href: baseHref },
-		{ label: "Features", href: `${baseHref}/features` },
-		{ label: "Models", href: `${baseHref}/models` },
+		{ label: messages.detail.overview, href: baseHref },
+		{ label: messages.detail.features, href: `${baseHref}/features` },
+		{ label: messages.detail.models, href: `${baseHref}/models` },
 	];
 
 	return (
@@ -82,17 +85,17 @@ export default async function SubscriptionPlanDetailShell({
 							>
 								<span className="mt-1.5 inline-flex text-sm font-medium text-muted-foreground underline decoration-transparent underline-offset-4 transition-colors hover:text-foreground hover:decoration-current">
 									{plan.organisation?.name ??
-										"Unknown Provider"}
+										messages.detail.unknownProvider}
 								</span>
 							</Link>
 						</div>
 					</div>
 
 					<div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
-						<RotatingPricing prices={plan.prices} />
-						{tab !== "overview" ? <Button asChild variant="outline" size="sm" className="rounded-lg"><Link href={baseHref}><PanelsTopLeft className="size-4" />Overview</Link></Button> : null}
-						{tab !== "features" ? <Button asChild variant="outline" size="sm" className="rounded-lg"><Link href={`${baseHref}/features`}><Sparkles className="size-4" />Features</Link></Button> : null}
-						{tab !== "models" ? <Button asChild variant="outline" size="sm" className="rounded-lg"><Link href={`${baseHref}/models`}><List className="size-4" />Models</Link></Button> : null}
+						<RotatingPricing prices={plan.prices} locale={locale} messages={messages.detail} />
+						{tab !== "overview" ? <Button asChild variant="outline" size="sm" className="rounded-lg"><Link href={baseHref}><PanelsTopLeft className="size-4" />{messages.detail.overview}</Link></Button> : null}
+						{tab !== "features" ? <Button asChild variant="outline" size="sm" className="rounded-lg"><Link href={`${baseHref}/features`}><Sparkles className="size-4" />{messages.detail.features}</Link></Button> : null}
+						{tab !== "models" ? <Button asChild variant="outline" size="sm" className="rounded-lg"><Link href={`${baseHref}/models`}><List className="size-4" />{messages.detail.models}</Link></Button> : null}
 					</div>
 				</div>
 				<div className="mt-6 min-h-full">{tocItems.length ? <div className="flex flex-col gap-6 lg:flex-row lg:items-start"><ModelPageToc items={tocItems} className="lg:h-full lg:w-40 lg:shrink-0 xl:w-44" /><div className="min-w-0 flex-1">{children}</div></div> : children}</div>

@@ -1,0 +1,174 @@
+---
+title: "Eine Web-Chat-App mit Next.js erstellen"
+icon: "messages-square"
+description: "Nutze die vorhandene Next.js-Beispiel-Chat-App als vollständige Anleitung mit einem kopierbaren Erstellungs-Prompt am Anfang."
+---
+
+Diese Seite hilft dir, eine kleine, realistische Next.js-Chat-App zu erstellen, während dein Phaseo-API-Schlüssel auf dem Server bleibt.
+
+**Ziel:** Eine Browser-Chat-App ausführen, die Modelle ermittelt und Antworten über serverseitige Routen sendet.
+
+**Ergebnis:** Eine funktionsfähige lokale Chat-Oberfläche, die deine Phaseo-Zugangsdaten nicht dem Browser offenlegt.
+
+<Prompt
+  description="Erstelle eine **Next.js-Web-Chat-App** mit Phaseo Gateway."
+  icon="message-square"
+  actions={["copy", "cursor"]}
+>
+{`Du erstellst eine kleine, produktionsnahe Chat-App mit Phaseo Gateway.
+
+Erstelle eine Next.js-App mit:
+- eine Chat-Oberfläche
+- eine Modellauswahl auf Basis von GET /v1/models
+- eine serverseitige Route, die POST /v1/responses aufruft
+- serverseitige Verwaltung des API-Schlüssels mit PHASEO_API_KEY
+- Lade-, Erfolgs- und Fehlerzustände
+
+Halte die App bewusst klein und leicht zu überblicken.
+
+Anforderungen an die Implementierung:
+- Verwende eine lokale API-Route zur Modellerkennung.
+- Verwende eine lokale API-Route zur Antwortgenerierung.
+- Belasse Geheimnisse ausschließlich auf dem Server.
+- Zeige den Ablauf von Anfrage und Antwort klar im Code.
+- Ergänze eine kurze README mit Einrichtungs- und Ausführungsschritten.
+
+Überprüfung:
+- Führe die App nach Möglichkeit aus.
+- Prüfe einen erfolgreichen Chat-Turn.
+- Berichte die genau geänderten Dateien, deine Prüfungen und verbleibende Annahmen.`}
+</Prompt>
+
+## Beispielprojekt
+
+- GitHub: [examples/web-chat-nextjs](https://github.com/phaseoteam/Phaseo/tree/main/examples/web-chat-nextjs)
+- Lokaler Repository-Pfad: `examples/web-chat-nextjs`
+
+## Was die App macht
+
+- - ruft verfügbare Modelle über `GET /v1/models`
+- - sendet Chat-Beiträge über `POST /v1/responses`
+- bewahrt den API-Schlüssel auf dem Server auf
+- bietet einen einfachen Startpunkt für ein echtes Produkt ohne OAuth-Komplexität
+
+## Wichtige Dateien
+
+- `app/api/models/route.ts`
+- `app/api/responses/route.ts`
+- `app/components/ChatClient.tsx`
+- `lib/gateway.ts`
+
+## Warum das Beispiel so aufgebaut ist
+
+### 1. Der Browser ruft Phaseo nicht direkt auf
+
+Die Oberfläche kommuniziert zuerst mit deinen eigenen Next.js-Routen. Diese Routen rufen Phaseo auf dem Server auf.
+
+Dadurch erhältst du:
+
+- serverseitige Verwaltung von Geheimnissen
+- einen zentralen Ort für Header und Request-Payloads
+- einen einfacheren Weg für spätere Erweiterungen wie Authentifizierung, Ratenlimits oder Protokollierung
+
+### 2. Modellerkennung und Generierung sind getrennt
+
+Halte die Routen für Modelllisten und Chat-Generierung getrennt, damit jeder Teil verständlich bleibt:
+
+- eine Route zum Auflisten von Modellen
+- eine Route zum Ausführen der Chat-Anfrage
+
+### 3. Die UI verwaltet nur den Interaktionsstatus
+
+Der React-Client verwaltet:
+
+- den Eingabestatus
+- den Ladestatus
+- die Fehleranzeige
+- die gerenderten Nachrichten
+
+Die Serverroute übernimmt den KI-Aufruf. Der Browser kümmert sich nur um das Nutzungserlebnis.
+
+## Voraussetzungen
+
+- - Node.js und ein unterstützter Paketmanager
+- ein Phaseo-API-Schlüssel
+
+## Beispiel ausführen
+
+<CodeGroup>
+```bash npm
+cd examples/web-chat-nextjs
+npm install
+cp .env.example .env.local
+```
+
+```bash pnpm
+cd examples/web-chat-nextjs
+pnpm install
+cp .env.example .env.local
+```
+
+```bash yarn
+cd examples/web-chat-nextjs
+yarn install
+cp .env.example .env.local
+```
+
+```bash bun
+cd examples/web-chat-nextjs
+bun install
+cp .env.example .env.local
+```
+</CodeGroup>
+
+Setze folgende Variablen:
+
+- `PHASEO_API_KEY`
+- `NEXT_PUBLIC_GATEWAY_URL`
+
+Starte dann:
+
+<CodeGroup>
+```bash npm
+npm run dev
+```
+
+```bash pnpm
+pnpm dev
+```
+
+```bash yarn
+yarn dev
+```
+
+```bash bun
+bun run dev
+```
+</CodeGroup>
+
+Öffne `http://localhost:3000`.
+
+## Ergebnis prüfen
+
+- Der Modellauswahlschalter lädt Modelle über die Serverroute.
+- Eine gesendete Nachricht erzeugt eine Antwort des Assistenten.
+- Das Netzwerk-Panel des Browsers legt `PHASEO_API_KEY`.
+- Eine fehlgeschlagene Gateway-Anfrage wird in der UI als hilfreicher Fehler angezeigt.
+
+## Die App anpassen
+
+- ändere das Standardmodell auf dein gewünschtes Produktionsmodell
+- füge Streaming hinzu, wenn deine Oberfläche Token für Token anzeigen soll
+- ergänze später Authentifizierung, falls die App mehrere Nutzer unterstützt
+- ersetze die interne Implementierung der Serverroute später durch das TypeScript-SDK, wenn du einen Client mit höherer Abstraktion möchtest
+
+## Wann ein anderer Startpunkt sinnvoll ist
+
+- nutze den Node-Schnellstart für ein Skript oder einen Backend-Test statt einer UI
+- nutze den Python-Schnellstart, wenn die erste Integration in einem Worker, einer CLI oder einem Backend-Dienst liegt
+
+## Verwandte Anleitungen
+
+- [Prompts für den Einstieg mit einer Mini-App](./mini-app-starter-prompts.mdx)
+- [Beispiele](../guides/examples.mdx)
+- [Schnellstart](../quickstart.mdx)

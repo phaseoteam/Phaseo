@@ -1,0 +1,32 @@
+---
+icon: "square-terminal"
+title: "Beispiele"
+description: "Übernimm kompakte PHP-Beispiele für Tools, Freigaben, Streaming und begrenzte Ausführungen."
+---
+
+## Bereitstellung mit Freigabe
+
+```php
+$deploy = new Tool(
+    id: "deploy",
+    description: "Deploy the selected release",
+    requireApproval: true,
+    execute: fn (array $input, $runtime) => $deployments->deploy($input)
+);
+```
+
+Speichere die zurückgegebene Ausführung, wenn sie `waiting_for_human` erreicht, und setze sie anschließend mit einer Entscheidung fort, die der ID des ausstehenden Aufrufs zugeordnet ist.
+
+## Text streamen
+
+```php
+$stream = $agent->stream(input: $prompt, client: $client);
+foreach ($stream->textStream() as $delta) { echo $delta; }
+$result = $stream->getResult();
+```
+
+## Autonome Arbeit begrenzen
+
+Kombiniere Schritt-, Token-, Kosten- und Zeitlimits, damit der Agent das Anwendungsbudget auch dann nicht überschreitet, wenn er weiterhin sinnvolle Aufgaben findet.
+
+Alle Details findest du unter [Tools](./agent-sdk-tools.mdx), [Zustand und Freigabe](./agent-sdk-state-and-approval.mdx) sowie [Abbruchbedingungen](./agent-sdk-stop-conditions.mdx).

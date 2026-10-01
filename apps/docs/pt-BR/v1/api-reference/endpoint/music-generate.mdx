@@ -1,0 +1,69 @@
+---
+title: "Gerar música"
+sidebarTitle: "Gerar música"
+badge: "Beta"
+openapi: "/pt-BR/openapi/v1/openapi.localized.yaml POST /music/generate"
+---
+
+Gere música por meio de uma API independente do provedor. O Phaseo gerencia respostas síncronas e consulta as filas dos provedores em segundo plano.
+
+Quando a geração for concluída, a resposta incluirá `audio_url` ou `audio_base64`. Se um provedor retornar um trabalho ainda não finalizado, use o mesmo `id` da resposta com `GET /music/generate/{music_id}`.
+
+## Formato da solicitação
+
+```json
+{
+  "model": "minimax/music-3.0:free",
+  "prompt": "Warm jazz trio with brushed drums",
+  "format": "mp3"
+}
+```
+
+## Opções do Suno
+
+- `suno.customMode` (booleano; padrão: `false`)
+- `suno.instrumental` (booleano; padrão: `false`)
+- `suno.prompt` (substituição opcional de `prompt` no nível superior)
+- `suno.style`, `suno.title` (obrigatório quando `customMode = true`)
+- `suno.personaId`, `suno.personaModel`
+- `suno.negativeTags`, `suno.vocalGender`
+- `suno.styleWeight`, `suno.weirdnessConstraint`, `suno.audioWeight`
+
+## Regras de validação
+
+- Quando `customMode = false`, `prompt` é obrigatório.
+- Quando `customMode = true`, `style` e `title` são obrigatórios.
+- Quando `customMode = true` e `instrumental = false`, `prompt` é obrigatório.
+
+Erros de validação retornam `400` com:
+
+```json
+{
+  "error": "validation_error",
+  "reason": "..."
+}
+```
+
+## Resposta
+
+```json
+{
+  "id": "req_01JY6MUSIC123",
+  "object": "music",
+  "status": "completed",
+  "provider": "gmicloud",
+  "model": "minimax/music-3.0:free",
+  "nativeResponseId": "5c30b275-d669-4a25-8151-de6d60214853",
+  "audio_url": "https://.../generated-music.mp3",
+  "usage": {
+    "requests": 1,
+    "output_audio_seconds": 25.364
+  }
+}
+```
+
+- `id` é o ID estável da solicitação no Phaseo. Use-o para recuperar a solicitação por meio de `GET /music/generate/{music_id}`.
+- `nativeResponseId` é o identificador do provedor de origem e serve para correlacionar a solicitação com o provedor e acionar o suporte.
+- `status` pode ser `queued`, `in_progress`, `completed` ou `failed`.
+- `usage` pode incluir `output_audio_seconds` quando o provedor informar a duração gerada.
+

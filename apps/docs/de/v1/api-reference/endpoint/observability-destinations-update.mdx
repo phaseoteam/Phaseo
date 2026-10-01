@@ -1,0 +1,11 @@
+---
+title: "Observability-Ziel aktualisieren"
+sidebarTitle: "Ziel aktualisieren"
+badge: "Beta"
+openapi: "/de/openapi/v1/openapi.localized.yaml PATCH /observability/destinations/{id}"
+description: "Ziel aktualisieren policy, filters, or credentials."
+---
+<Note>Für diesen Endpunkt ist ein Management-API-Schlüssel mit `settings:write` erforderlich.</Note>
+
+Lasse `config` weg, um die vorhandene verschlüsselte Konfiguration beizubehalten. Wenn du den Wert angibst, wird die Konfiguration des Zieleintrags atomar ersetzt.
+

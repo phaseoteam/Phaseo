@@ -1,0 +1,78 @@
+---
+icon: "messages-square"
+title: "إكمال المحادثات"
+description: "استدعِ /chat/completions باستخدام حزمة TypeScript SDK."
+---
+
+**الطريقة**: `client.generateText()` (لبث الأجزاء التي جرى تحليلها استخدم `client.streamChat()`).
+
+### مثال
+```typescript
+const chat = await client.generateText({
+  model: "openai/gpt-4o-mini",
+  messages: [
+    { role: "system", content: "You are helpful." },
+    { role: "user", content: "Write a limerick about lighthouses." },
+  ],
+  temperature: 0.5,
+});
+```
+
+### البث
+```typescript
+for await (const chunk of client.streamChat({
+  model: "openai/gpt-4o-mini",
+  messages: [{ role: "user", content: "Stream a story" }],
+})) {
+  if (chunk.text) process.stdout.write(chunk.text);
+}
+```
+
+### المعلمات الأساسية
+- `model` (required): معرّف النموذج المستهدف.
+- `messages` (required): رسائل مرتبة بأدوار `system|user|assistant|tool`؛ ويمكن أن يكون المحتوى سلاسل نصية أو أجزاء.
+- أخذ العينات: `temperature` (0–2), `top_p` (0–1), `top_k` (>=1), `seed` (int, optional).
+- الطول/العقوبات: `max_output_tokens` (int), `presence_penalty` and `frequency_penalty` (-2 to 2), `stop` (string|string[]).
+- الأدوات: `tools` (التعريفات), `tool_choice` (`auto`/`none`/أداة محددة), `max_tool_calls` (int), `parallel_tool_calls` (bool).
+- Logprobs: `logprobs` (bool), `top_logprobs` (0–20).
+- الإخراج: `response_format` (json/text), `metadata` (object passthrough), `stream` (bool), `service_tier`.
+- خيارات Gateway الإضافية: `usage` (قيمة منطقية لطلب الاستخدام)، و`meta` (قيمة منطقية لتضمين كتلة البيانات الوصفية).
+
+### القيمة المعادة
+`ChatCompletionsResponse`
+
+```json
+{
+  "id": "chatcmpl-123",
+  "object": "chat.completion",
+  "created": 1677652288,
+  "model": "gpt-3.5-turbo-0125",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "Hello there, how may I assist you today?"
+      },
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 9,
+    "completion_tokens": 12,
+    "total_tokens": 21
+  }
+}
+```
+
+أو إطارات SSE عند ضبط `stream: true`:
+
+```
+data: {"id":"chatcmpl-123","object":"chat.completion.chunk","created":1677652288,"model":"gpt-3.5-turbo-0125","choices":[{"index":0,"delta":{"role":"assistant","content":""},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-123","object":"chat.completion.chunk","created":1677652288,"model":"gpt-3.5-turbo-0125","choices":[{"index":0,"delta":{"content":"Hello"},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-123","object":"chat.completion.chunk","created":1677652288,"model":"gpt-3.5-turbo-0125","choices":[{"index":0,"delta":{},"finish_reason":"stop"}],"usage":{"prompt_tokens":9,"completion_tokens":12,"total_tokens":21}}
+
+data: [DONE]
+```

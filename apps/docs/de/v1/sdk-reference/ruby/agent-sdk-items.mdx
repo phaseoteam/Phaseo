@@ -1,0 +1,25 @@
+---
+icon: "layers"
+title: "Stream-Elemente"
+description: "Konsumiere Text-, Reasoning-, Tool- und Provider-Elementereignisse aus Ruby-Agent-Läufen."
+---
+
+Das Stream-Ergebnis stellt erneut durchlaufbare Consumer für Text und Provider-Elemente bereit.
+
+```ruby
+stream = agent.stream(input: prompt, client: client)
+
+stream.item_stream.each do |item|
+  render_item(item)
+end
+
+result = stream.result
+```
+
+Verwende `full_stream`, wenn die Oberfläche auch Reasoning-Änderungen, Tool-Fortschritt, Genehmigungsprüfpunkte oder Lifecycle-Ereignisse benötigt.
+
+<Note>
+Ruby-Elementwerte sind generische Hashes und keine abgeschlossene Union typisierter Elemente. Validiere die von deiner Oberfläche verwendeten Felder und behalte einen Fallback für unbekannte Elemente und künftige Provider-Ereignisse bei.
+</Note>
+
+Ruby konsumiert den Provider-Stream synchron und macht die gesammelte Sequenz erneut durchlaufbar. Ein Hintergrund-Push-Dienst wird dadurch nicht erstellt.

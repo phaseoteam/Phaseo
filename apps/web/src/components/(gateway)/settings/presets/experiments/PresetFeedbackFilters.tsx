@@ -44,18 +44,18 @@ const RANGE_VALUES = new Set<PresetFeedbackFilterValues["range"]>([
 ]);
 
 const RANGE_LABELS: Record<PresetFeedbackFilterValues["range"], string> = {
-	"7d": "Last 7 Days",
-	"30d": "Last 30 Days",
-	"90d": "Last 90 Days",
-	custom: "Custom Range",
+	"7d": "Last 7 days",
+	"30d": "Last 30 days",
+	"90d": "Last 90 days",
+	custom: "Custom",
 };
 
 const RATING_LABELS: Record<string, string> = {
-	all: "All Ratings",
-	thumbs_up: "Thumbs Up",
-	thumbs_down: "Thumbs Down",
+	all: "All ratings",
+	thumbs_up: "Thumbs up",
+	thumbs_down: "Thumbs down",
 	correct: "Correct",
-	partly_correct: "Partly Correct",
+	partly_correct: "Partly correct",
 	incorrect: "Incorrect",
 	unsafe: "Unsafe",
 	unrated: "Unrated",

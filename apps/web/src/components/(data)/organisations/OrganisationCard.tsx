@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import type { OrganisationCard as OrganisationTypeCard } from "@/lib/fetchers/organisations/getAllOrganisations";
 import Image from "next/image";
 import { Logo } from "@/components/Logo";
+import { useTranslations } from "next-intl";
 
 export default function OrganisationCard({
 	organisation,
@@ -13,6 +14,7 @@ export default function OrganisationCard({
 	// organisation: OrganisationCard;
 	organisation: OrganisationTypeCard;
 }) {
+	const t = useTranslations("Catalogue.organisations");
 	return (
 		<Card
 			style={{ borderColor: organisation.colour || undefined }}
@@ -32,7 +34,7 @@ export default function OrganisationCard({
 								id={organisation.organisation_id}
 								alt={
 									organisation.organisation_name ||
-									"Lab logo"
+								t("labLogoAlt")
 								}
 								className="object-contain"
 								fill
@@ -81,7 +83,7 @@ export default function OrganisationCard({
 					>
 						<Link
 							href={`/organisations/${organisation.organisation_id}`}
-							aria-label={`Open ${organisation.organisation_name} lab`}
+							aria-label={t("openLab", { name: organisation.organisation_name ?? t("title") })}
 							tabIndex={-1}
 						>
 							<ArrowRight className="w-5 h-5 transition-colors group-hover:text-(--provider-color)" />

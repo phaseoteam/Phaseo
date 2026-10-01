@@ -1,0 +1,39 @@
+---
+icon: "sliders-horizontal"
+title: "Inferenzparameter"
+description: "Wie zentrale Anfrageparameter Qualität, Determinismus, Latenz und Kosten beeinflussen."
+---
+
+Quantisierung ist eine Hälfte des Modellverhaltens.  
+Inferenzparameter sind die andere Hälfte.
+
+## Zentrale Parameter
+
+| Parameter | Steuerung | Typische Auswirkung |
+| --- | --- | --- |
+| `temperature` | Zufälligkeit bei der Token-Auswahl | Höher bedeutet kreativere, variablere Antworten; niedriger bedeutet mehr Determinismus |
+| `top_p` | Grenzwert für Nucleus-Sampling | Niedriger ergibt sicherere und stärker fokussierte Ausgaben |
+| `top_k` | Größe des Kandidatenpools (sofern unterstützt) | Niedriger ergibt engere und besser vorhersehbare Ausgaben |
+| `max_tokens` / `max_output_tokens` | Maximale Länge der generierten Ausgabe | Begrenzt Kosten und Latenz, kann Antworten aber abschneiden |
+| `stop` | Explizite Stoppsequenzen | Verbessert die Ausgabeformatierung und die Zuverlässigkeit der Auswertung |
+| `seed` | Zufalls-Seed (sofern unterstützt) | Verbessert die Reproduzierbarkeit beim Debuggen und Testen |
+
+## Zu beachtende Wechselwirkungen
+
+- Sowohl `temperature` als auch `top_p` beeinflussen die Zufälligkeit. Ändere beim Abstimmen jeweils nur einen Wert.
+- Aggressive Quantisierung mit wenigen Bits und hohe Zufälligkeit können die Instabilität der Ausgabe verstärken.
+- Ein niedriger Wert für `max_tokens` kann wie ein Modellfehler wirken, obwohl die Antwort nur abgeschnitten wurde.
+
+## Empfohlene Ausgangswerte
+
+- `temperature`: `0.2` bis `0.7`, je nach gewünschter Kreativität
+- `top_p`: `0.9` bis `1.0`
+- `max_tokens`: passend zur erwarteten Ausgabelänge statt als pauschal sehr hoher Wert
+
+## Abstimmungsablauf
+
+1. Lege zuerst die Quantisierung fest.
+2. Fixiere einen Evaluierungssatz.
+3. Variiere jeweils nur einen Parameter.
+4. Vergleiche Qualität, Latenz und Token-Verbrauch.
+5. Verwende getrennte Presets für unterschiedliche Endpoints und Anwendungsfälle.

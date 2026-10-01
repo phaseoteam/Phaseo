@@ -243,7 +243,7 @@ function projectPayload(payload: any): {
 
 function truncateInlineText(value: string, max = 72): string {
 	const text = value.trim();
-	if (!text) return "No source text";
+	if (!text) return "";
 	if (text.length <= max) return text;
 	return `${text.slice(0, max - 3).trimEnd()}...`;
 }
@@ -254,23 +254,34 @@ function buildEmbeddingResultCopyText(args: {
 	dimensions: number;
 	rows: EmbeddingRow[];
 	rowLabelByIndex: Map<number, string>;
+	labels: {
+		resultTitle: string;
+		model: string;
+		vectors: string;
+		dimensions: string;
+		items: string;
+		preview: string;
+		noSourceText: string;
+	};
 }): string {
 	const lines = [
-		"Embedding Result",
-		`Model: ${args.modelLabel}`,
-		`Vectors: ${args.vectorCount}`,
-		`Dimensions: ${args.dimensions}`,
+		args.labels.resultTitle,
+		`${args.labels.model}: ${args.modelLabel}`,
+		`${args.labels.vectors}: ${args.vectorCount}`,
+		`${args.labels.dimensions}: ${args.dimensions}`,
 		"",
-		"Items:",
+		`${args.labels.items}:`,
 	];
 	for (const row of args.rows) {
-		const label = truncateInlineText(args.rowLabelByIndex.get(row.index) ?? "", 120);
+		const label =
+			truncateInlineText(args.rowLabelByIndex.get(row.index) ?? "", 120) ||
+			args.labels.noSourceText;
 		const preview = row.vector
 			.slice(0, 8)
 			.map((value) => value.toFixed(4))
 			.join(", ");
 		lines.push(`- #${row.index + 1}: ${label}`);
-		lines.push(`  Preview: ${preview}`);
+		lines.push(`  ${args.labels.preview}: ${preview}`);
 	}
 	return lines.join("\n");
 }
@@ -426,6 +437,9 @@ function safeParsePinned(value: string | null): Record<string, boolean> {
 
 export function EmbeddingsRoom({ models }: { models: GatewaySupportedModel[] }) {
 	const t = useTranslations("Product.chatRooms");
+	const tChat = useTranslations("Product.chat");
+	const tUi = useTranslations("Common.ui");
+	const tSearch = useTranslations("Common.search");
 	const { toggleSidebar, state: sidebarState, isMobile } = useSidebar();
 	const collapsed = sidebarState === "collapsed" && !isMobile;
 	const filteredModels = useMemo(
@@ -911,7 +925,7 @@ export function EmbeddingsRoom({ models }: { models: GatewaySupportedModel[] }) 
 			if (!overrides?.inputOverride) {
 				setTextInput((current) => current || submittedTextInput);
 			}
-			setError(err instanceof Error ? err.message : "Embeddings request failed");
+			setError(err instanceof Error ? err.message : t("requestFailed"));
 		} finally {
 			if (pendingEntryId) {
 				setEntries((prev) => prev.filter((item) => item.id !== pendingEntryId));
@@ -1132,7 +1146,7 @@ export function EmbeddingsRoom({ models }: { models: GatewaySupportedModel[] }) 
 									}}
 								>
 									<PencilLine className="mr-2 h-4 w-4" />
-									Rename
+							{tUi("actions.rename")}
 								</DropdownMenuItem>
 								<DropdownMenuItem onClick={() => toggleConversationPin(conversation)}>
 									{conversation.pinned ? (
@@ -1140,7 +1154,7 @@ export function EmbeddingsRoom({ models }: { models: GatewaySupportedModel[] }) 
 									) : (
 										<Pin className="mr-2 h-4 w-4" />
 									)}
-									{conversation.pinned ? "Unpin" : "Pin"}
+{conversation.pinned ? tUi("actions.unpin") : tUi("actions.pin")}
 								</DropdownMenuItem>
 								<DropdownMenuSeparator />
 								<DropdownMenuItem
@@ -1150,7 +1164,7 @@ export function EmbeddingsRoom({ models }: { models: GatewaySupportedModel[] }) 
 									className="group text-foreground focus:text-destructive data-highlighted:text-destructive"
 								>
 									<Trash2 className="mr-2 h-4 w-4 text-muted-foreground group-data-highlighted:text-destructive" />
-									Delete
+							{tUi("actions.delete")}
 								</DropdownMenuItem>
 							</DropdownMenuContent>
 						</DropdownMenu>
@@ -1171,13 +1185,13 @@ export function EmbeddingsRoom({ models }: { models: GatewaySupportedModel[] }) 
 										variant="ghost"
 										className="h-8 min-w-0 w-full justify-start px-2 text-sm font-medium"
 										onClick={startNewConversation}
-										aria-label="New Chat"
+									aria-label={t("newChat")}
 									>
 										<SquarePen className="h-4 w-4 shrink-0" />
 									</Button>
 								</TooltipTrigger>
 								<TooltipContent side="right" align="center" sideOffset={10}>
-									New Chat
+								{t("newChat")}
 								</TooltipContent>
 							</Tooltip>
 						) : (
@@ -1185,7 +1199,7 @@ export function EmbeddingsRoom({ models }: { models: GatewaySupportedModel[] }) 
 								variant="ghost"
 								className="h-8 min-w-0 w-full flex-1 justify-start gap-2 px-2 text-sm font-medium"
 								onClick={startNewConversation}
-								aria-label="New Chat"
+								aria-label={t("newChat")}
 							>
 								<SquarePen className="h-4 w-4 shrink-0" />
 								<span className="truncate text-left">{t("newChat")}</span>
@@ -1198,7 +1212,7 @@ export function EmbeddingsRoom({ models }: { models: GatewaySupportedModel[] }) 
 										variant="ghost"
 										className="h-8 min-w-0 w-full justify-start px-2 text-sm font-medium"
 										asChild
-										aria-label="Database"
+									aria-label={t("database")}
 									>
 										<Link
 											href="/"
@@ -1209,7 +1223,7 @@ export function EmbeddingsRoom({ models }: { models: GatewaySupportedModel[] }) 
 									</Button>
 								</TooltipTrigger>
 								<TooltipContent side="right" align="center" sideOffset={10}>
-									Database
+								{t("database")}
 								</TooltipContent>
 							</Tooltip>
 						) : (
@@ -1217,7 +1231,7 @@ export function EmbeddingsRoom({ models }: { models: GatewaySupportedModel[] }) 
 								variant="ghost"
 								className="h-8 min-w-0 w-full flex-1 justify-start gap-0 px-2 text-sm font-medium"
 								asChild
-								aria-label="Database"
+								aria-label={t("database")}
 							>
 								<Link href="/" className="group/db flex w-full min-w-0 items-center gap-2">
 									<Database className="h-4 w-4 shrink-0" />
@@ -1233,13 +1247,13 @@ export function EmbeddingsRoom({ models }: { models: GatewaySupportedModel[] }) 
 										variant="ghost"
 										className="h-8 min-w-0 w-full justify-start px-2 text-sm font-medium"
 										onClick={() => setConversationSearchOpen(true)}
-										aria-label="Search Chats"
+									aria-label={t("searchChats")}
 									>
 										<Search className="h-4 w-4 shrink-0" />
 									</Button>
 								</TooltipTrigger>
 								<TooltipContent side="right" align="center" sideOffset={10}>
-									Search Chats
+								{t("searchChats")}
 								</TooltipContent>
 							</Tooltip>
 						) : (
@@ -1247,7 +1261,7 @@ export function EmbeddingsRoom({ models }: { models: GatewaySupportedModel[] }) 
 								variant="ghost"
 								className="h-8 min-w-0 w-full flex-1 justify-start gap-2 px-2 text-sm font-medium"
 								onClick={() => setConversationSearchOpen(true)}
-								aria-label="Search Chats"
+								aria-label={t("searchChats")}
 							>
 								<Search className="h-4 w-4 shrink-0" />
 								<span className="truncate text-left">{t("searchChats")}</span>
@@ -1260,15 +1274,15 @@ export function EmbeddingsRoom({ models }: { models: GatewaySupportedModel[] }) 
 						<SidebarGroupLabel>{t("chats")}</SidebarGroupLabel>
 							<SidebarGroupContent className="overflow-hidden">
 								<SidebarMenu>
-									{renderConversationSection("Pinned", groupedConversations.pinned)}
-									{renderConversationSection("Today", groupedConversations.today)}
-									{renderConversationSection("Yesterday", groupedConversations.yesterday)}
-									{renderConversationSection("This week", groupedConversations.week)}
-									{renderConversationSection("This month", groupedConversations.month)}
-									{renderConversationSection("Older", groupedConversations.older)}
+{renderConversationSection(tSearch("pinned"), groupedConversations.pinned)}
+										{renderConversationSection(t("today"), groupedConversations.today)}
+										{renderConversationSection(t("yesterday"), groupedConversations.yesterday)}
+										{renderConversationSection(t("thisWeek"), groupedConversations.week)}
+										{renderConversationSection(t("thisMonth"), groupedConversations.month)}
+										{renderConversationSection(t("older"), groupedConversations.older)}
 									{conversations.length === 0 ? (
 										<p className="px-2 py-3 text-xs text-muted-foreground">
-											No chats found.
+										{tChat("noChatsFound")}
 										</p>
 									) : null}
 								</SidebarMenu>
@@ -1293,7 +1307,7 @@ export function EmbeddingsRoom({ models }: { models: GatewaySupportedModel[] }) 
 								size="icon"
 							className="-ml-1 h-8 w-8"
 							onClick={toggleSidebar}
-							aria-label={sidebarState === "expanded" ? "Collapse sidebar" : "Open sidebar"}
+							aria-label={sidebarState === "expanded" ? t("collapseSidebar") : t("openSidebar")}
 							>
 							{sidebarState === "expanded" ? (
 								<PanelLeftClose className="h-4 w-4" />
@@ -1350,12 +1364,12 @@ export function EmbeddingsRoom({ models }: { models: GatewaySupportedModel[] }) 
 				<div className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-5">
 					{activeEntries.length === 0 ? (
 						<RoomEmptyState
-							description="What would you like to turn into embeddings?"
+							description={t("embeddingsEmptyDescription")}
 							suggestions={[
-							{ label: "Compare two ideas", prompt: "Remote work improves focus\nWorking from home increases concentration" },
-							{ label: "Embed product copy", prompt: "A fast, reliable AI gateway for every model and provider." },
-							{ label: "Explore semantic similarity", prompt: "Machine learning\nArtificial intelligence\nDeep neural networks" },
-							{ label: "Test a search query", prompt: "How do I reduce latency in an AI application?" },
+							{ label: t("embeddingCompareLabel"), prompt: t("embeddingComparePrompt") },
+							{ label: t("embeddingProductLabel"), prompt: t("embeddingProductPrompt") },
+							{ label: t("embeddingSimilarityLabel"), prompt: t("embeddingSimilarityPrompt") },
+							{ label: t("embeddingSearchLabel"), prompt: t("embeddingSearchPrompt") },
 						]}
 						onSelectPrompt={setTextInput}
 					/>
@@ -1427,7 +1441,7 @@ export function EmbeddingsRoom({ models }: { models: GatewaySupportedModel[] }) 
 								}),
 							);
 							const activeLabel =
-								activeRow ? rowLabelByIndex.get(activeRow.index) ?? "No source text" : null;
+								activeRow ? rowLabelByIndex.get(activeRow.index) ?? t("noSourceText") : null;
 							if (entry.isPending) {
 								return (
 									<div key={entry.id} className="group/response space-y-3">
@@ -1444,7 +1458,7 @@ export function EmbeddingsRoom({ models }: { models: GatewaySupportedModel[] }) 
 												<Logo id={logoId} alt={logoAlt} width={18} height={18} className="shrink-0 rounded-none" />
 												<span className="truncate">{modelLabel}</span>
 											</Link>
-											<RoomWorkingIndicator label="Generating embeddings..." />
+											<RoomWorkingIndicator label={t("generatingEmbeddings")} />
 										</div>
 									</div>
 								);
@@ -1482,7 +1496,7 @@ export function EmbeddingsRoom({ models }: { models: GatewaySupportedModel[] }) 
 													</Button>
 												</TooltipTrigger>
 												<TooltipContent side="top">
-													{promptCopied ? "Copied" : "Copy prompt"}
+{promptCopied ? tChat("copied") : tChat("copy")}
 												</TooltipContent>
 											</Tooltip>
 											<Tooltip>
@@ -1526,12 +1540,12 @@ export function EmbeddingsRoom({ models }: { models: GatewaySupportedModel[] }) 
 										</Link>
 										<div className="space-y-3 py-1">
 											<div className="flex flex-wrap items-center gap-2">
-												<h2 className="text-sm font-semibold">2D projection (PCA)</h2>
+												<h2 className="text-sm font-semibold">{t("projection2d")}</h2>
 												<span className="rounded-full border border-border bg-muted px-2 py-0.5 text-[11px] text-muted-foreground">
-													{vectorCount} vectors
+													{t("vectorCount", { count: vectorCount })}
 												</span>
 												<span className="rounded-full border border-border bg-muted px-2 py-0.5 text-[11px] text-muted-foreground">
-													{dimensions} dims
+													{t("dimensionCount", { count: dimensions })}
 												</span>
 											</div>
 											<svg
@@ -1591,10 +1605,10 @@ export function EmbeddingsRoom({ models }: { models: GatewaySupportedModel[] }) 
 											{activeRow ? (
 												<div className="rounded-md border border-border bg-muted/30 p-2 text-xs">
 													<p className="font-medium text-foreground">
-														Selected #{activeRow.index + 1}
+														{t("selectedIndex", { index: activeRow.index + 1 })}
 													</p>
 													<p className="text-muted-foreground">
-														{truncateInlineText(activeLabel ?? "")}
+														{activeLabel ? truncateInlineText(activeLabel) : t("noSourceText")}
 													</p>
 												</div>
 											) : null}
@@ -1603,9 +1617,9 @@ export function EmbeddingsRoom({ models }: { models: GatewaySupportedModel[] }) 
 													<thead className="sticky top-0 bg-muted/60">
 														<tr>
 															<th className="px-2 py-1 text-left">#</th>
-															<th className="px-2 py-1 text-left">Input</th>
-															<th className="px-2 py-1 text-left">Preview</th>
-															<th className="px-2 py-1 text-left">Dims</th>
+													<th className="px-2 py-1 text-left">{t("input")}</th>
+													<th className="px-2 py-1 text-left">{t("preview")}</th>
+													<th className="px-2 py-1 text-left">{t("dims")}</th>
 														</tr>
 													</thead>
 													<tbody>
@@ -1673,9 +1687,18 @@ export function EmbeddingsRoom({ models }: { models: GatewaySupportedModel[] }) 
 																	modelLabel,
 																	vectorCount,
 																	dimensions,
-																	rows: entryProjection.rows,
-																	rowLabelByIndex,
-																}),
+													rows: entryProjection.rows,
+													rowLabelByIndex,
+													labels: {
+														resultTitle: t("embeddingResultTitle"),
+														model: t("model"),
+														vectors: t("vectors"),
+														dimensions: t("dims"),
+														items: t("results"),
+														preview: t("preview"),
+														noSourceText: t("noSourceText"),
+													},
+												}),
 															);
 															if (copied) {
 																markResultCopied(entry.id);
@@ -1690,7 +1713,7 @@ export function EmbeddingsRoom({ models }: { models: GatewaySupportedModel[] }) 
 													</Button>
 												</TooltipTrigger>
 												<TooltipContent side="top">
-													{resultCopied ? "Copied" : "Copy result"}
+{resultCopied ? tChat("copied") : tChat("copy")}
 												</TooltipContent>
 											</Tooltip>
 											<Popover
@@ -1779,7 +1802,7 @@ export function EmbeddingsRoom({ models }: { models: GatewaySupportedModel[] }) 
 						/>
 						{splitTextModeActive ? (
 							<p className="px-1 pb-1 text-[11px] text-muted-foreground">
-								Embedding {splitTextEntries.length} text entries (one per line).
+								{t("embeddingEntries", { count: splitTextEntries.length })}
 							</p>
 						) : null}
 						{showImageUrlInput || showAudioUrlInput || showVideoUrlInput ? (
@@ -1869,28 +1892,28 @@ export function EmbeddingsRoom({ models }: { models: GatewaySupportedModel[] }) 
 									tools={[
 										{
 											id: "image-url",
-											label: "Add image URL",
+											label: t("addImageUrl"),
 											icon: ImagePlus,
 											active: Boolean(showImageUrlInput || imageUrl.trim()),
 											onSelect: () => setShowImageUrlInput((prev) => !prev),
 										},
 										{
 											id: "audio-url",
-											label: "Add audio URL",
+											label: t("addAudioUrl"),
 											icon: AudioLines,
 											active: Boolean(showAudioUrlInput || audioUrl.trim()),
 											onSelect: () => setShowAudioUrlInput((prev) => !prev),
 										},
 										{
 											id: "video-url",
-											label: "Add video URL",
+											label: t("addVideoUrl"),
 											icon: Clapperboard,
 											active: Boolean(showVideoUrlInput || videoUrl.trim()),
 											onSelect: () => setShowVideoUrlInput((prev) => !prev),
 										},
 										{
 											id: "upload-files",
-											label: "Upload files",
+											label: t("uploadFiles"),
 											icon: Paperclip,
 											active: files.length > 0,
 											onSelect: () => fileInputRef.current?.click(),

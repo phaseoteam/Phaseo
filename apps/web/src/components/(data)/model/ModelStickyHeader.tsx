@@ -6,6 +6,7 @@ import { MessageSquare, Scale } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useTranslations } from "next-intl";
 import type { ModelGatewayMetadata } from "@/lib/fetchers/models/getModelGatewayMetadata";
 import { UseModelSheet } from "./UseModelSheet";
 
@@ -62,6 +63,7 @@ export default function ModelStickyHeader({
 	gatewayMetadata?: ModelGatewayMetadata | null;
 }) {
 	const visible = useStickyHeaderVisibility(observeId);
+	const t = useTranslations("Catalogue.models.detail.actions");
 
 	return (
 		<div className="h-0">
@@ -77,7 +79,7 @@ export default function ModelStickyHeader({
 							<Link
 								href={`/organisations/${organisationId}`}
 								className="relative flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-md border bg-background transition-opacity hover:opacity-80"
-								aria-label={`View ${organisationName}`}
+								aria-label={t("viewOrganisation", { organisation: organisationName })}
 							>
 								<div className="relative h-6 w-6">
 									<Logo
@@ -105,25 +107,25 @@ export default function ModelStickyHeader({
 								<Button asChild variant="outline" size="sm" className="hidden h-8 rounded-lg px-2.5 text-[13px] sm:inline-flex">
 									<Link href={`/chat?model=${modelId}`}>
 										<MessageSquare className="h-4 w-4" />
-										Chat
+										{t("chat")}
 									</Link>
 								</Button>
 							) : null}
 							<Button asChild variant="outline" size="sm" className="hidden h-8 rounded-lg px-2.5 text-[13px] sm:inline-flex">
 								<Link href={`/compare?models=${modelId}`}>
 									<Scale className="h-4 w-4" />
-									Compare
+									{t("compare")}
 								</Link>
 							</Button>
 							{canChat ? (
 								<Button asChild variant="outline" size="icon-sm" className="rounded-lg sm:hidden">
-									<Link href={`/chat?model=${modelId}`} aria-label="Chat about this model">
+									<Link href={`/chat?model=${modelId}`} aria-label={t("chatAbout")}>
 										<MessageSquare className="h-4 w-4" />
 									</Link>
 								</Button>
 							) : null}
 							<Button asChild variant="outline" size="icon-sm" className="rounded-lg sm:hidden">
-								<Link href={`/compare?models=${modelId}`} aria-label="Compare this model">
+								<Link href={`/compare?models=${modelId}`} aria-label={t("compareThis")}>
 									<Scale className="h-4 w-4" />
 								</Link>
 							</Button>

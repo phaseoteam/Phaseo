@@ -1,0 +1,72 @@
+---
+title: "Vérifier que la migration est prête"
+description: "Déterminez si une charge de travail utilisant une passerelle existante est prête à migrer vers Phaseo."
+---
+
+Utilisez cette vérification avant de planifier le basculement de votre passerelle. Elle porte sur les comportements susceptibles de changer, même si les deux plateformes acceptent des requêtes compatibles avec OpenAI.
+
+## 1. Inventoriez les points d’intégration
+
+Notez tous les endroits où apparaît la passerelle actuelle :
+
+- URL de base et variables d’environnement des clés API
+- Initialisation du SDK et en-têtes personnalisés
+- Identifiants des modèles et modèles de secours
+- Ordre des fournisseurs, listes d’autorisation et exigences de confidentialité
+- Code de streaming, appels d’outils et sorties structurées
+- Tâches par lots, fichiers, webhooks et interrogation asynchrone des statuts
+- Attribution des requêtes et métadonnées d’utilisateur ou de session
+
+Conservez cet inventaire avec le plan de déploiement pour que les personnes chargées de la revue puissent vérifier que la migration ne laisse pas de second chemin de configuration caché.
+
+## 2. Classez chaque fonctionnalité
+
+Attribuez un statut à chaque comportement utilisé en production :
+
+| Statut | Signification |
+| --- | --- |
+| Inchangé | Le même champ de requête et le même comportement de réponse ont été vérifiés. |
+| Mappé | Phaseo fournit le même résultat au moyen d’un autre champ ou d’une autre configuration. |
+| Adapté | Une couche de compatibilité traduit la requête ou la réponse. |
+| Non pris en charge | La charge de travail doit supprimer cette dépendance ou conserver son chemin actuel. |
+| Non vérifié | La prise en charge est peut-être disponible, mais il manque encore des preuves proches des conditions de production. |
+
+Utilisez la [liste de contrôle des fonctionnalités de migration](./feature-parity-matrix.mdx) pour couvrir les requêtes principales, le routage, l’attribution, les tâches asynchrones et l’exploitation.
+
+## 3. Validez un trafic représentatif
+
+Créez un petit jeu de tests à partir des schémas réels de la charge de travail, sans copier de données de production sensibles.
+
+Testez :
+
+1. Une requête normale pour chaque point de terminaison utilisé.
+2. Le streaming avec le même chemin client qu’en production.
+3. Les appels d’outils et les sorties structurées avec des schémas réalistes.
+4. Chaque contrainte de fournisseur ou de confidentialité.
+5. Les clés ou modèles invalides, les limites de débit et les erreurs de fournisseur indisponible.
+6. Les tâches par lots ou asynchrones jusqu’à leur état final de réussite, d’échec ou d’annulation.
+
+Comparez la qualité des réponses, la latence, l’utilisation des jetons, le fournisseur sélectionné et le coût final. Notez l’ID de requête de chaque résultat pour pouvoir le consulter dans l’utilisation de Gateway.
+
+## 4. Préservez l’attribution et l’observabilité
+
+Conservez les en-têtes d’attribution de l’application lorsqu’ils identifient l’application à l’origine de l’appel. Phaseo prend en charge des identifiants, noms, URL et catégories d’application stables. Les supprimer pendant la migration complique la comparaison des coûts et de l’utilisation.
+
+Consultez [Attribution des applications](../guides/app-attribution.mdx) pour connaître les en-têtes et les valeurs de catégorie pris en charge.
+
+## 5. Déployez avec une option de retour arrière
+
+Commencez par le trafic de développement et le trafic interne. Ne redirigez qu’une faible part du trafic de production après la réussite du jeu de tests, et limitez le retour arrière à la configuration du point de terminaison et des identifiants jusqu’à la stabilisation des résultats.
+
+Ne combinez pas le basculement initial avec des optimisations sans rapport concernant les prompts, les modèles ou le routage. Effectuez ces changements une fois la passerelle vérifiée.
+
+## Guides propres à chaque plateforme
+
+- [SDK OpenAI](./from-openai.mdx)
+- [SDK Anthropic](./from-anthropic.mdx)
+- [OpenRouter](./from-openrouter.mdx)
+- [Vercel AI Gateway](./from-vercel.mdx)
+- [LLMGateway](./from-llmgateway.mdx)
+- [LiteLLM](./from-litellm.mdx)
+- [Cloudflare AI Gateway](./from-cloudflare.mdx)
+- [Helicone AI Gateway](./from-helicone.mdx)

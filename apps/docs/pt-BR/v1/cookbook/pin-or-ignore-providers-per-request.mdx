@@ -1,0 +1,214 @@
+---
+title: "Fixar ou ignorar provedores por solicitação"
+icon: "pin"
+description: "Use os controles de provedor por solicitação para definir uma ordem de preferência, limitar as opções ou remover um provedor da seleção."
+---
+
+Use esta receita quando uma solicitação precisar priorizar uma rota de provedor específica sem alterar os padrões de roteamento de todo o workspace.
+
+## Objetivo
+
+- Tente os provedores na ordem preferida.
+- Restrinja uma solicitação a um subconjunto aprovado de provedores.
+- Ignore um provedor temporariamente sem editar presets.
+
+## 1. Tente os provedores em uma ordem específica
+
+Use `provider.order` quando já souber a ordem de rotas preferida.
+
+<CodeGroup>
+```bash cURL
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "anthropic/claude-opus-4.6",
+    "input": "Write a concise launch summary.",
+    "provider": {
+      "order": ["anthropic-us", "anthropic"]
+    }
+  }'
+```
+
+```typescript TypeScript SDK
+import Phaseo from "@phaseo/sdk";
+
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
+
+const response = await client.generateResponse({
+  model: "anthropic/claude-opus-4.6",
+  input: "Write a concise launch summary.",
+  provider: {
+    order: ["anthropic-us", "anthropic"],
+  },
+});
+
+console.log(response.output_text);
+```
+
+```python Python SDK
+from phaseo import Phaseo
+
+client = Phaseo(api_key="YOUR_API_KEY")
+
+response = client.generate_response(
+    {
+        "model": "anthropic/claude-opus-4.6",
+        "input": "Write a concise launch summary.",
+        "provider": {
+            "order": ["anthropic-us", "anthropic"],
+        },
+    }
+)
+
+print(response.get("output_text"))
+```
+</CodeGroup>
+
+Isso coloca os provedores listados no início da ordem de candidatos, antes do restante do conjunto elegível.
+
+## 2. Restrinja a solicitação a um subconjunto fixo de provedores
+
+Use `provider.only` quando a solicitação precisar permanecer dentro de uma pequena lista de permissões.
+
+<CodeGroup>
+```bash cURL
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-5.4-nano",
+    "input": "Extract the action items.",
+    "provider": {
+      "only": ["openai", "openai-eu"],
+      "sort": "price"
+    }
+  }'
+```
+
+```typescript TypeScript SDK
+import Phaseo from "@phaseo/sdk";
+
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
+
+const response = await client.generateResponse({
+  model: "openai/gpt-5.4-nano",
+  input: "Extract the action items.",
+  provider: {
+    only: ["openai", "openai-eu"],
+    sort: "price",
+  },
+});
+
+console.log(response.output_text);
+```
+
+```python Python SDK
+from phaseo import Phaseo
+
+client = Phaseo(api_key="YOUR_API_KEY")
+
+response = client.generate_response(
+    {
+        "model": "openai/gpt-5.4-nano",
+        "input": "Extract the action items.",
+        "provider": {
+            "only": ["openai", "openai-eu"],
+            "sort": "price",
+        },
+    }
+)
+
+print(response.get("output_text"))
+```
+</CodeGroup>
+
+Isso mantém a solicitação dentro desses provedores e aplica o modo de classificação escolhido nesse subconjunto.
+
+## 3. Remova um provedor da seleção
+
+Use `provider.ignore` quando um provedor precisar ser ignorado em uma solicitação ou implantação de curta duração.
+
+<CodeGroup>
+```bash cURL
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "meta/llama-4-maverick",
+    "input": "Summarize the transcript.",
+    "provider": {
+      "ignore": ["deepinfra"]
+    }
+  }'
+```
+
+```typescript TypeScript SDK
+import Phaseo from "@phaseo/sdk";
+
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
+
+const response = await client.generateResponse({
+  model: "meta/llama-4-maverick",
+  input: "Summarize the transcript.",
+  provider: {
+    ignore: ["deepinfra"],
+  },
+});
+
+console.log(response.output_text);
+```
+
+```python Python SDK
+from phaseo import Phaseo
+
+client = Phaseo(api_key="YOUR_API_KEY")
+
+response = client.generate_response(
+    {
+        "model": "meta/llama-4-maverick",
+        "input": "Summarize the transcript.",
+        "provider": {
+            "ignore": ["deepinfra"],
+        },
+    }
+)
+
+print(response.get("output_text"))
+```
+</CodeGroup>
+
+Isso é útil quando:
+
+- um provedor está degradado
+- você está validando outra rota de provedor
+- você quer comparar resultados de roteamento sem editar um preset
+
+## 4. Combine os controles com cuidado
+
+Você pode combinar esses controles, mas mantenha a intenção simples:
+
+- use `order` para expressar preferência
+- use `only` para restringir o conjunto de candidatos
+- use `ignore` para excluir um provedor
+
+Um padrão prático combina:
+
+- `only` para manter a solicitação dentro de `google-vertex` e `google-vertex-eu`
+- `order` para priorizar `google-vertex-eu` primeiro
+- `sort: "latency"` para classificar esse conjunto permitido
+
+## 5. Quando mover isso para um preset
+
+Se as mesmas regras de provedor aparecem em vários serviços, pare de copiá-las por solicitação e mova-as para um preset.
+
+Use o roteamento por solicitação quando a substituição for:
+
+- temporária
+- específica do chamador
+- vinculada a um fluxo de usuário
+
+## Guias relacionados
+
+- [Roteamento e alternativas](../guides/routing-and-fallbacks.mdx)
+- [Implantar presets e depurar o roteamento](./preset-rollout-and-routing-debug.mdx)

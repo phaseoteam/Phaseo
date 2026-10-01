@@ -1,0 +1,76 @@
+---
+icon: "package"
+title: "Rust SDK のインストール"
+description: "crates.io から phaseo をインストールし、Phaseo Gateway の認証を設定します。"
+---
+
+このガイドでは、サポート対象の Rust クライアントを追加してアプリケーションで利用できるようにします。
+
+## 要件
+
+- Rust 1.86 以降
+- Phaseo Gateway API キー
+
+## インストール
+
+クライアントと JSON 依存関係を追加します。
+
+```toml
+[dependencies]
+phaseo = "0.1"
+serde_json = "1"
+```
+
+または、次を実行します。
+
+```bash
+cargo add phaseo@0.1 serde_json
+```
+
+## API キーを設定
+
+`Phaseo::from_env()` は `PHASEO_API_KEY` を読み取ります。
+
+```bash
+export PHASEO_API_KEY="phaseo_v1_sk_..."
+```
+
+PowerShell の場合：
+
+```powershell
+$env:PHASEO_API_KEY = "phaseo_v1_sk_..."
+```
+
+キーはサーバー上で管理してください。デスクトップ、モバイル、ブラウザーなどの配布クライアントに埋め込まないでください。
+
+## インストールを確認
+
+```rust
+use phaseo::Phaseo;
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let _client = Phaseo::from_env()?;
+    println!("Phaseo Rust client configured");
+    Ok(())
+}
+```
+
+```bash
+cargo run
+```
+
+## カスタムエンドポイント
+
+開発用またはプロキシのエンドポイントで `https://api.phaseo.app/v1` を置き換える場合は、`PHASEO_BASE_URL` を設定します。
+
+```bash
+export PHASEO_BASE_URL="http://localhost:8787/v1"
+```
+
+リモートエンドポイントでは HTTPS が必要です。解析後のホストが `localhost` またはループバック IP アドレスと完全一致する場合に限り、平文 HTTP を使用できます。
+
+## 次の手順
+
+- [リクエストを送信](./usage.mdx)
+- [Responses API](./responses.mdx)
+- [Rust API リファレンス](./api-reference.mdx)

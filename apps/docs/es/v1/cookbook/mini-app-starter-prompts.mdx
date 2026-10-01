@@ -1,0 +1,231 @@
+---
+title: "Prompts iniciales para miniaplicaciones"
+icon: "sparkles"
+description: "Prompts listos para copiar que permiten a agentes de programación crear aplicaciones pequeñas de Phaseo con HTTP directo, SDK o runtimes de agentes."
+---
+
+Usa esta página cuando quieras dar a un agente de programación un prompt concreto para crear una aplicación pequeña y funcional, en lugar de un plan de integración impreciso.
+
+<Tip>
+Estos prompts se centran en los resultados y especifican la implementación para funcionar mejor en Cursor, Claude Code, Codex y herramientas similares.
+</Tip>
+
+## Cómo usar estos prompts
+
+<Steps>
+  <Step title="Elige la superficie de integración">
+    Elige el prompt que corresponda a cómo quieres que la aplicación invoque Phaseo:
+
+    - HTTP directo
+    - un SDK oficial
+    - Vercel AI SDK
+    - SDK de agentes
+  </Step>
+  <Step title="Sustituye las variables entre corchetes">
+    Antes de pegar el prompt en el agente de programación, completa valores como `[IDEA DE LA APLICACIÓN]`, `[MARCO DE TRABAJO]`, `[MODELO]` y `[LANGUAGE]`.
+  </Step>
+  <Step title="Pide verificaciones, no solo código">
+    Mantén las líneas de verificación en el prompt. Así, el agente tendrá que indicar qué ejecutó realmente, qué supuso y qué queda por configurar manualmente.
+  </Step>
+</Steps>
+
+## Paquetes de prompts
+
+<AccordionGroup>
+  <Accordion title="Miniapp con HTTP directo" icon="globe">
+    <Prompt
+      description="Crea una aplicación pequeña que use **HTTP directo** con Phaseo, en lugar de un SDK."
+      icon="globe"
+      actions={["copy", "cursor"]}
+    >
+{`Estás implementando una aplicación de demostración pequeña, con calidad de producción, usando Phaseo Gateway.
+
+Crea una miniaplicación con [MARCO DE TRABAJO] para [IDEA DE LA APLICACIÓN].
+
+Requisitos:
+- Usa solicitudes HTTP directas, no un SDK de Phaseo.
+- Usa el endpoint de Phaseo [ENDPOINT].
+- Usa el modelo [MODELO].
+- Lee la clave de API desde una variable de entorno llamada PHASEO_API_KEY.
+- Mantén la aplicación deliberadamente pequeña: una página principal, una ruta o controlador del servidor y estilos mínimos.
+- Muestra la entrada del usuario, el estado de envío, la salida del modelo y cualquier estado de error del gateway.
+- Añade un ejemplo de carga útil de solicitud en comentarios o documentación para facilitar la auditoría posterior de la integración.
+
+Detalles de implementación:
+- Usa fetch.
+- Mantén explícito el cuerpo de la solicitud en lugar de ocultar campos tras abstracciones.
+- Antes de realizar la solicitud a la API, añade una validación básica para detectar entradas vacías.
+- Gestiona correctamente las respuestas que no sean 200 y muestra el cuerpo de la respuesta cuando resulte útil.
+- Mantén los secretos únicamente en el servidor.
+
+Entregables:
+- El código de la aplicación.
+- Una sección breve en el README que explique cómo ejecutarla.
+- Una entrada para PHASEO_API_KEY en .env.example.
+
+Verificación:
+- Ejecuta la aplicación local si es posible.
+- Verifica una ruta de solicitud correcta.
+- Indica exactamente qué verificaste, qué no pudiste verificar y qué suposiciones siguen pendientes.`}
+    </Prompt>
+  </Accordion>
+
+  <Accordion title="Miniaplicación con el SDK de TypeScript" icon="file-code-2">
+    <Prompt
+      description="Crea una miniaplicación con el **SDK de TypeScript** y una integración pequeña y fácil de inspeccionar."
+      icon="file-code-2"
+      actions={["copy", "cursor"]}
+    >
+{`Estás creando una aplicación pequeña sobre el SDK de TypeScript de Phaseo.
+
+Crea una miniaplicación con [MARCO DE TRABAJO] para [IDEA DE LA APLICACIÓN].
+
+Requisitos:
+- Usa @phaseo/sdk.
+- Usa el modelo [MODELO].
+- Prefiere la API de Responses, salvo que exista una razón de peso para usar otro endpoint.
+- Lee la clave de API desde PHASEO_API_KEY.
+- Mantén el código compacto y fácil de entender para una primera integración.
+- Muestra en la interfaz los estados de carga, éxito y error.
+
+Detalles de implementación:
+- Usa un único límite de integración en el servidor, en lugar de repartir las llamadas al SDK por muchos archivos.
+- Mantén explícita la estructura de la solicitud, incluidos el modelo, la entrada y las opciones importantes.
+- Incluye un ejemplo de análisis de respuesta que extraiga de forma segura el texto final del asistente.
+- Añade solo los comentarios imprescindibles para aclarar partes de la estructura de respuesta del SDK que podrían resultar confusas.
+
+Entregables:
+- Código funcional de la aplicación.
+- Instrucciones breves de configuración.
+- Una explicación breve de por qué el SDK de TypeScript es mejor que HTTP directo para esta miniaplicación.
+
+Verificación:
+- Ejecuta la aplicación si es posible.
+- Prueba una solicitud completa de principio a fin.
+- Indica los archivos modificados y la configuración que aún debe realizar el usuario.`}
+    </Prompt>
+  </Accordion>
+
+  <Accordion title="Miniaplicación con el SDK de Python" icon="snake">
+    <Prompt
+      description="Crea una aplicación o servicio pequeño de Python con el **SDK oficial de Python**."
+      icon="snake"
+      actions={["copy", "cursor"]}
+    >
+{`Estás implementando una pequeña aplicación de Python con IA mediante Phaseo Gateway.
+
+Crea una aplicación de [MARCO O TIPO DE APLICACIÓN PYTHON] para [IDEA DE LA APLICACIÓN].
+
+Requisitos:
+- Usa el SDK oficial de Python phaseo.
+- Usa el modelo [MODELO].
+- Lee las credenciales desde PHASEO_API_KEY.
+- Mantén el código lo bastante pequeño para que un nuevo integrante del equipo lo entienda rápidamente.
+- Incluye un flujo de entrada del usuario y otro de salida del modelo.
+- Añade un manejo de errores claro para entradas no válidas y fallos del gateway ascendente.
+
+Detalles de implementación:
+- Prefiere un único módulo de integración que se encargue de crear el cliente de Phaseo.
+- Usa directamente la estructura de respuesta del SDK en lugar de envolverla en abstracciones innecesarias.
+- Si la aplicación se beneficia de una salida estructurada, úsala y valida la estructura recibida.
+- Añade una sección breve en el README con los pasos de instalación y ejecución.
+
+Entregables:
+- Código de la aplicación.
+- Cualquier actualización de dependencias.
+- Instrucciones de uso breves.
+
+Verificación:
+- Ejecuta el comando correspondiente si es posible.
+- Verifica una ruta de solicitud correcta o explica por qué no pudiste hacerlo.
+- Indica las variables de entorno o los servicios locales que el usuario aún debe configurar.`}
+    </Prompt>
+  </Accordion>
+
+  <Accordion title="Miniaplicación con Vercel AI SDK" icon="sparkles">
+    <Prompt
+      description="Crea una aplicación pequeña que use **Phaseo mediante Vercel AI SDK**."
+      icon="sparkles"
+      actions={["copy", "cursor"]}
+    >
+{`Estás creando una miniaplicación que usa Phaseo mediante el proveedor de Vercel AI SDK.
+
+Crea una aplicación con [MARCO DE TRABAJO] para [IDEA DE LA APLICACIÓN].
+
+Requisitos:
+- Usa el proveedor de Vercel AI SDK de Phaseo.
+- Usa el modelo [MODELO].
+- Lee la clave de API de Phaseo desde PHASEO_API_KEY.
+- Mantén una experiencia sencilla y centrada en una tarea clara del usuario.
+- Si la aplicación tiene formato de chat, admite la salida en streaming; de lo contrario, explica por qué aquí es más sencillo no usar streaming.
+
+Detalles de implementación:
+- Mantén explícita la configuración del proveedor.
+- Usa las primitivas de AI SDK de forma estándar y adecuada al framework.
+- Evita añadir gestión de estado innecesaria en la primera versión.
+- Añade una explicación breve de cómo se elige el ID de modelo del proveedor.
+
+Entregables:
+- Código de la aplicación.
+- Pasos de configuración.
+- Una nota breve sobre cómo cambiar a otro modelo más adelante.
+
+Verificación:
+- Ejecuta la aplicación si es posible.
+- Verifica el flujo principal del usuario.
+- Indica por separado las partes que no se hayan verificado.`}
+    </Prompt>
+  </Accordion>
+
+  <Accordion title="Miniaplicación con Agent SDK" icon="bot">
+    <Prompt
+      description="Crea una aplicación pequeña con **Phaseo Agent SDK** y un bucle de herramientas acotado."
+      icon="bot"
+      actions={["copy", "cursor"]}
+    >
+{`Estás creando una aplicación pequeña con agentes sobre Phaseo Gateway.
+
+Crea una miniaplicación en [LANGUAGE] para [IDEA DE LA APLICACIÓN] con Phaseo Agent SDK.
+
+Requisitos:
+- Usa Phaseo Agent SDK para [LANGUAGE].
+- Usa el modelo [MODELO].
+- Incluye solo una o dos herramientas locales deterministas.
+- Mantén el bucle de herramientas acotado y fácil de depurar.
+- Lee la clave de API desde PHASEO_API_KEY.
+- Muestra la salida final y, cuando corresponda, la actividad de las herramientas o el estado intermedio del razonamiento.
+
+Detalles de implementación:
+- Mantén la definición del agente en un único lugar.
+- Mantén las definiciones de herramientas pequeñas y deterministas.
+- Evita crear un framework de agentes generalista y enorme en la primera versión.
+- Añade una nota sobre dónde se guardaría el estado de ejecución si más adelante la aplicación permite reanudarla.
+
+Entregables:
+- Código de la aplicación.
+- Instrucciones de configuración.
+- Una explicación breve de por qué Agent SDK es mejor que una única llamada de completado para este flujo de trabajo.
+
+Verificación:
+- Ejecuta el flujo principal si es posible.
+- Verifica una ejecución completa del agente.
+- Indica las suposiciones pendientes, especialmente las relacionadas con el entorno o las dependencias de herramientas locales.`}
+    </Prompt>
+  </Accordion>
+</AccordionGroup>
+
+## Cómo mejorar estos prompts
+
+- Sustituye `[IDEA DE LA APLICACIÓN]` por una tarea concreta y acotada del usuario, no por una descripción general del producto.
+- Sustituye `[MODELO]` por el ID exacto del modelo que quieres que use el agente.
+- Indica si la salida debe ser texto libre, JSON estricto, chat o un único recurso generado.
+- Si los conoces, menciona el framework de interfaz y el destino del despliegue.
+- Añade una o dos restricciones importantes, como `solo proveedores de la UE`, `usar streaming` o `mantener todos los secretos en el servidor`.
+
+## Guías relacionadas
+
+- [Guía de inicio rápido](../quickstart.mdx)
+- [Ejemplos](../guides/examples.mdx)
+- [Descripción general del SDK de TypeScript](../sdk-reference/typescript/overview.mdx)
+- [Descripción general del SDK de Python](../sdk-reference/python/overview.mdx)
+- [Descripción general de Agent SDK](../sdk-reference/agent-sdk/overview.mdx)

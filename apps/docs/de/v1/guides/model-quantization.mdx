@@ -1,0 +1,38 @@
+---
+icon: "binary"
+title: "Modellquantisierung"
+description: "Überblick zur Quantisierung und Wegweiser durch die Reihe zu Quantisierung und Parametern."
+---
+
+Diese Seite ist der Einstieg in eine vollständige Reihe zu Quantisierung und Inferenzparametern.
+
+Wenn du Modellvarianten auswählst (z. B. `BF16` oder `FP8`) oder Request-Einstellungen wie `temperature`, `top_p` und Token-Budgets abstimmst, beginne hier und arbeite die verlinkten Anleitungen durch.
+
+## Was ist Quantisierung?
+
+Bei der Quantisierung werden Modellgewichte und Aktivierungen mit Zahlen geringerer Präzision dargestellt, um den Speicherbedarf zu senken und die Inferenz zu beschleunigen.
+
+Allgemein gilt:
+
+- Höhere Präzision: bessere Qualität und Stabilität, aber höhere Kosten.
+- Geringere Präzision: höherer Durchsatz und niedrigere Kosten, aber größeres Qualitätsrisiko.
+
+## Anleitungen dieser Reihe
+
+1. [Quantisierungsformate](./quantization-formats.mdx)
+2. [Quantisierungsmethoden](./quantization-methods.mdx)
+3. [Eine Quantisierungsstrategie auswählen](./quantization-selection.mdx)
+4. [Inferenzparameter](./inference-parameters.mdx)
+5. [Sampling- und Decoding-Parameter](./sampling-and-decoding.mdx)
+6. [Kontext- und Token-Budgetierung](./context-and-token-budgeting.mdx)
+
+## Empfohlene Reihenfolge
+
+1. Lies zuerst die Formate und Methoden.
+2. Nutze die Auswahlhilfe, um eine erste Variante festzulegen.
+3. Stimme die Inferenzparameter auf dieser Ausgangsbasis ab.
+4. Lege Token-Budgets anhand von Prompt-Traces aus der Produktion endgültig fest.
+
+## Praxishinweis
+
+Quantisierung und Parameterabstimmung müssen stets mit echten Prompts und Akzeptanzkriterien validiert werden, nicht nur mit synthetischen Mikrobenchmarks.

@@ -9,19 +9,16 @@ const AUDIO_RECORDING_MIME_CANDIDATES = [
 	"audio/ogg",
 ] as const;
 
-export const DEFAULT_CHAT_PLACEHOLDER = "Ask anything";
-
 export const REASONING_OPTIONS: Array<{
 	value: NonNullable<ChatSettings["reasoningEffort"]>;
-	label: string;
 }> = [
-	{ value: "none", label: "None" },
-	{ value: "minimal", label: "Minimal" },
-	{ value: "low", label: "Low" },
-	{ value: "medium", label: "Medium" },
-	{ value: "high", label: "High" },
-	{ value: "xhigh", label: "Extra High" },
-	{ value: "max", label: "Max" },
+	{ value: "none" },
+	{ value: "minimal" },
+	{ value: "low" },
+	{ value: "medium" },
+	{ value: "high" },
+	{ value: "xhigh" },
+	{ value: "max" },
 ];
 
 export type InlineAttachmentPreview = {
@@ -359,8 +356,4 @@ export function getInlineAttachmentPreviewsFromMeta(
 			} satisfies InlineAttachmentPreview;
 		})
 		.filter((entry): entry is InlineAttachmentPreview => Boolean(entry));
-}
-
-export function getRandomPlaceholder() {
-	return DEFAULT_CHAT_PLACEHOLDER;
 }

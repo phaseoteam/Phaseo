@@ -1,0 +1,26 @@
+---
+icon: "radio"
+title: "ストリーミング"
+description: "PHPエージェントのテキスト、推論、項目、ライフサイクルの各ストリームを利用します。"
+---
+
+`Agent::stream(...)`は`AgentStreamResult`を返します。
+
+```php
+$stream = $agent->stream($input, $client);
+
+foreach ($stream->textStream() as $delta) {
+    echo $delta;
+}
+
+$completed = $stream->result;
+```
+
+別の形式で取得するには`reasoningStream()`、`itemStream()`、または`fullStream()`を使います。プロバイダーの同期ストリームからイベントを読み取った後も、各イテラブルを再走査できます。
+
+PHPの項目値は引き続き汎用の配列やオブジェクトであり、TypeScriptの判別可能な項目ユニオンではありません。
+
+## 関連項目
+
+- [ツール](./agent-sdk-tools.mdx)
+- [オブザーバビリティとDevTools](./agent-sdk-observability.mdx)

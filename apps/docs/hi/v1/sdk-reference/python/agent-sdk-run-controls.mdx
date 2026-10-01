@@ -1,0 +1,23 @@
+---
+icon: "braces"
+title: "आउटपुट और रीट्राई"
+description: "Python एजेंट आउटपुट को validate करें और सीमित model failures को फिर से आज़माएँ।"
+---
+
+जब downstream Python code को structured data चाहिए, तो final output validation उपयोग करें। Validation callback deterministic होने चाहिए और अंतिम मान ऐप के contract पर खरा न उतरने पर error दें।
+
+`AgentModelRetryConfig` से सीमित retry सेट करें:
+
+```python
+retry = AgentModelRetryConfig(max_retries=2, backoff_ms=250)
+```
+
+पूरा हुआ step अंतिम model-attempt count रखता है। Tool errors की अपनी policy होती है; उन्हें model request की तरह retry नहीं किया जाता।
+
+गेटवे क्लाइंट संरचित आउटपुट, रूटिंग, प्रदाता, तर्क-विचार, प्रबंधित टूल, प्लगइन, प्रॉम्प्ट कैश और अतिरिक्त अनुरोध विकल्प स्वीकार करता है।
+
+## संबंधित विषय
+
+- [डायनेमिक टर्न](./agent-sdk-dynamic-turns.mdx)
+- [रोकने की शर्तें](./agent-sdk-stop-conditions.mdx)
+- [त्रुटियाँ और समस्या निवारण](./agent-sdk-observability.mdx)

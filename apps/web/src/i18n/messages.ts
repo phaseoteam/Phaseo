@@ -11,7 +11,7 @@ import {
 	type SourceMessages,
 	type AuthMessages,
 } from "./default-messages";
-import { mergeCatalogMessages, mergeMessages } from "./message-overlays";
+import { mergeCatalogMessages, mergeMessages, nestDottedMessageKeys } from "./message-overlays";
 import type { PublicLocale } from "./routing";
 
 type PublicMessageLoader = () => Promise<AuthMessages>;
@@ -114,5 +114,5 @@ export async function getPublicMessages(locale: PublicLocale): Promise<SourceMes
 		publicMessageLoaders[locale](), commonMessageLoaders[locale](), siteMessageLoaders[locale](),
 		catalogueMessageLoaders[locale](), contentMessageLoaders[locale](), productMessageLoaders[locale](), settingsUiMessageLoaders[locale](),
 	]);
-	return { ...messages, Common: common, Site: site, Catalogue: catalogue, Content: content, Product: product, SettingsUI: settingsUI } as SourceMessages;
+	return { ...messages, Common: common, Site: site, Catalogue: catalogue, Content: content, Product: product, SettingsUI: nestDottedMessageKeys(settingsUI) } as SourceMessages;
 }

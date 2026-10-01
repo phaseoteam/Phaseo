@@ -1,0 +1,29 @@
+---
+title: "Java Agent SDK installieren (in Arbeit)"
+description: "Erstelle das noch in Arbeit befindliche Java Agent SDK aus dem Quellcode."
+---
+
+<Note type="warning">
+  Das Java Agent SDK wurde noch nicht auf Maven Central veröffentlicht. Verwende diesen Ablauf aus dem Quellcode nur zur Evaluierung.
+</Note>
+
+## Voraussetzungen
+
+- Java 17 oder höher
+- Maven
+
+## Aus dem Quellcode erstellen
+
+```bash
+git clone https://github.com/phaseoteam/Phaseo.git
+cd Phaseo
+mvn -f packages/sdk/agent-sdk-java/pom.xml package
+```
+
+Setze `PHASEO_API_KEY` in der Anwendungsumgebung, bevor du ein Beispiel ausführst.
+
+## Weiter
+
+- [Übersicht](./agent-sdk-overview.mdx)
+- [Verwendung](./agent-sdk.mdx)
+

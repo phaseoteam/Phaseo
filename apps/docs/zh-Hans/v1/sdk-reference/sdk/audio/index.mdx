@@ -1,0 +1,40 @@
+---
+icon: "audio-lines"
+title: "语音合成 / 语音转文字（AI SDK）"
+description: "使用 Phaseo 供应商模型进行语音转文字（STT）和文字转语音（TTS）。"
+---
+
+将 `experimental_transcribe` 与 `transcriptionModel` 配合使用，将 `experimental_generateSpeech` 与 `speechModel` 配合使用。
+
+```ts
+import { readFileSync, writeFileSync } from "node:fs";
+import { phaseo } from "@phaseo/ai-sdk-provider";
+import { experimental_generateSpeech, experimental_transcribe } from "ai";
+
+const audioInput = readFileSync("./audio.mp3");
+
+const transcription = await experimental_transcribe({
+  model: phaseo.transcriptionModel("openai/whisper-1"),
+  audioData: new Blob([audioInput], { type: "audio/mpeg" }),
+});
+
+console.log(transcription.text);
+console.log(transcription.providerMetadata);
+
+const speech = await experimental_generateSpeech({
+  model: phaseo.speechModel("openai/tts-1"),
+  text: "Hello from Phaseo audio.",
+  voice: "alloy",
+  outputFormat: "mp3",
+});
+
+writeFileSync("./speech.mp3", Buffer.from(speech.audio.uint8Array));
+console.log(speech.providerMetadata);
+```
+
+## 说明
+
+- 当前 AI SDK 音频辅助方法仍处于实验阶段；上游稳定版 API 发布后，名称可能会发生变化。
+- 音频输入/输出格式因模型而异。
+- 根据长文件调整载荷大小和超时时间。
+- 对暂时性的 `429` 和 `5xx` 响应执行重试。

@@ -1,0 +1,70 @@
+---
+icon: "package"
+title: "Instalação do SDK TypeScript"
+description: "Como instalar e configurar o SDK TypeScript da Phaseo."
+---
+
+O SDK é publicado como [`@phaseo/sdk`](https://www.npmjs.com/package/@phaseo/sdk) no npm.
+
+## Instalação
+
+Instale o SDK usando seu gerenciador de pacotes preferido:
+
+<CodeGroup>
+
+    ```bash title="npm"
+    npm install @phaseo/sdk
+    ```
+
+    ```bash title="pnpm"
+    pnpm add @phaseo/sdk
+    ```
+
+    ```bash title="yarn"
+    yarn add @phaseo/sdk
+    ```
+
+    </CodeGroup>
+
+## Requisitos
+
+- Node.js 18+
+- TypeScript 4.5+ (para definições de tipos)
+
+## Configuração
+
+### Chave de API
+
+Você precisa de uma chave de API da Phaseo para usar o SDK. Crie uma em [Chaves do gateway](https://phaseo.app/gateway/keys).
+
+### Variáveis de ambiente
+
+Defina sua chave de API como uma variável de ambiente:
+
+```bash
+export PHASEO_API_KEY="phaseo_v1_sk_<kid>_<secret>"
+```
+
+### Uso básico
+
+```typescript
+import Phaseo from "@phaseo/sdk";
+
+// Initialize the client
+const client = new Phaseo({
+	apiKey: process.env.PHASEO_API_KEY!,
+});
+
+// Make your first request
+const response = await client.generateText({
+	model: "openai/gpt-4o-mini",
+	messages: [{ role: "user", content: "Hello!" }],
+});
+
+console.log(response.choices[0].message.content);
+```
+
+## Próximas etapas
+
+- Confira o [guia de uso](./usage.mdx) para ver exemplos detalhados
+- Consulte a [referência da API](../../api-reference/introduction.mdx) para ver a documentação dos endpoints

@@ -1,0 +1,96 @@
+---
+title: "Estados del proveedor y de Phaseo"
+description: "Diferencias entre la disponibilidad del proveedor, la preparación de la integración de Phaseo y la salud del enrutamiento."
+icon: "activity"
+---
+
+La oferta de un modelo en un proveedor tiene estados independientes para el proveedor y para Phaseo. Esto importa cuando un proveedor publica un modelo que Phaseo todavía no ha implementado o habilitado en el endpoint correspondiente.
+
+Verás estos campos en las páginas de modelos, las tarjetas de precios de los proveedores y las vistas de disponibilidad relacionadas.
+
+## Disponibilidad del proveedor
+
+La disponibilidad del proveedor describe la oferta en el proveedor original.
+
+| Estado | Significado |
+| --- | --- |
+| `Available` | El proveedor acepta solicitudes para esta oferta. |
+| `Preview` | El proveedor ofrece la oferta en versión preliminar. |
+| `Limited Access` | La oferta existe, pero el acceso depende de la cuenta, la región, una lista permitida o la capacidad disponible. |
+| `Coming Soon` | El proveedor anunció o publicó la oferta, pero todavía no se puede usar. |
+| `Deprecated` | La oferta sigue disponible, aunque el proveedor recomienda migrar. |
+| `Removed` | El proveedor ya no ofrece la oferta. |
+| `Unknown` | Phaseo aún no ha verificado la disponibilidad en el proveedor original. |
+
+La disponibilidad del proveedor no significa que Phaseo pueda enrutar la solicitud.
+
+## Estado de integración de Phaseo
+
+El estado de Phaseo describe nuestra implementación y su despliegue.
+
+| Estado | Significado | Enrutamiento de Phaseo |
+| --- | --- | --- |
+| `Unsupported` | Phaseo no tiene una integración compatible para esta oferta. | No se puede enrutar. |
+| `Planned` | Se aceptó el trabajo de integración, pero aún no ha comenzado. | No se puede enrutar. |
+| `Implementing` | El trabajo de integración está en curso. | No se puede enrutar. |
+| `Testing` | Está implementada y en pruebas de contrato, staging o canary. | No se puede enrutar públicamente. |
+| `Enabled` | Está admitida y habilitada para producción. | Se puede enrutar si los controles de enrutamiento y el estado de salud lo permiten. |
+| `Disabled` | Phaseo desactivó deliberadamente la integración. | No se puede enrutar. |
+| `Blocked` | Una dependencia externa o sin resolver impide el despliegue. | No se puede enrutar. |
+
+Solo se puede habilitar el enrutamiento público para integraciones con estado `Enabled`.
+
+## Acceso interno
+
+El ámbito de acceso es independiente del estado de integración de Phaseo:
+
+| Ámbito | Significado |
+| --- | --- |
+| `Public` | Las solicitudes normales de clientes pueden usar la ruta si pasan todos los controles de enrutamiento. |
+| `Internal` | Solo el tráfico de pruebas autenticado de Phaseo puede usar la ruta. |
+
+Una ruta interna requiere el token interno de alta entropía y una solicitud explícita en modo de prueba. Un cliente no puede habilitarla usando solo el encabezado de prueba. Las solicitudes normales no consultan la base de datos para buscar rutas internas; utilizan la caché de contexto predeterminada existente. Las pruebas internas usan un segmento de caché independiente y solo consideran rutas marcadas explícitamente como internas, cuya oferta original se pueda usar y cuyo estado de Phaseo sea `Testing` o `Enabled`.
+
+## Estado de salud del enrutamiento
+
+La salud del enrutamiento es una tercera señal operativa. Indica cómo se debe seleccionar una ruta habilitada en este momento.
+
+| Estado | Significado | Comportamiento del enrutamiento |
+| --- | --- | --- |
+| `Active` | La ruta está lo bastante sana para seleccionarse normalmente. | Se puede enrutar ahora. |
+| `Deranked L1` | La salud reciente le asignó una prioridad ligeramente menor. | Se puede enrutar ahora. |
+| `Deranked L2` | La salud reciente redujo claramente su prioridad. | Se puede enrutar ahora, detrás de rutas más sanas. |
+| `Deranked L3` | La salud reciente redujo mucho su prioridad. | Se puede enrutar ahora, con una prioridad muy baja. |
+| `Disabled` | El control de enrutamiento está desactivado. | No se enruta. |
+
+La degradación de prioridad no cambia la disponibilidad del proveedor ni el ciclo de vida de la integración de Phaseo. Las observaciones de salud en tiempo real tampoco modifican esos estados del ciclo de vida.
+
+## Ejemplos
+
+Una oferta de proveedor recién publicada puede tener estos estados:
+
+- disponibilidad del proveedor: `Available`
+- estado de Phaseo: `Implementing`
+- salud del enrutamiento: no corresponde porque el enrutamiento está desactivado
+
+Una ruta estable que está experimentando una degradación temporal puede tener estos estados:
+
+- disponibilidad del proveedor: `Available`
+- estado de Phaseo: `Enabled`
+- salud del enrutamiento: `Deranked L2`
+
+Un anuncio de un proveedor puede tener estos estados:
+
+- disponibilidad del proveedor: `Coming Soon`
+- estado de Phaseo: `Planned`
+- salud del enrutamiento: no corresponde
+
+## Compatibilidad
+
+Los campos de API existentes, como `availability_status`, `routing_status`, `is_active_gateway` y `routable`, seguirán disponibles durante el despliegue aditivo. Las nuevas integraciones deben usar los campos explícitos del proveedor y de Phaseo.
+
+## Páginas relacionadas
+
+- [Enrutamiento y alternativas](./routing-and-fallbacks.mdx)
+- [Niveles de servicio](./service-tiers.mdx)
+- [Referencia de la API de modelos](../api-reference/endpoint/models.mdx)

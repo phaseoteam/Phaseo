@@ -1,0 +1,25 @@
+---
+icon: "braces"
+title: "API 参考"
+description: "C# Agent SDK 主要类型和方法参考。"
+---
+
+| API | 用途 |
+| --- | --- |
+| `AgentSdk.CreateAgent(...)` | 定义 Agent |
+| `AgentSdk.DefineTool(...)` | 定义本地或手动工具 |
+| `AgentSdk.CreateGatewayAgentClient(...)` | 将模型轮次连接到 Phaseo |
+| `Agent.Run(...)` | 运行至终止或暂停状态 |
+| `Agent.Stream(...)` | 使用可重放的异步流运行 |
+| `Agent.ContinueRun(...)` | 继续已保存或已暂停的状态 |
+| `AgentStreamResult.GetResult()` | 等待运行完成 |
+| `AgentStreamResult.TextStream()` | 读取文本增量 |
+| `AgentStreamResult.FullStream()` | 读取所有生命周期事件 |
+| `AgentStreamResult.Cancel()` | 取消当前运行 |
+
+重要记录和接口包括 `AgentDefinition`、`RunOptions`、`RunResult`、`RunRecord`、`RunStep`、`Tool`、`ToolDecision`、`ToolOutput`、`RuntimeContext`、`IStateAccessor`、`ModelRetryConfig` 和 `ToolExecutionConfig`。
+
+## 相关内容
+
+- [构建你的第一个 Agent](./agent-sdk.mdx)
+- [错误与网关详情](./agent-sdk-observability.mdx)

@@ -1,0 +1,122 @@
+---
+title: "إنشاء حلقة وكيل مستدامة باستخدام TypeScript"
+icon: "repeat-2"
+description: "شغّل حلقة وكيل قابلة للاستئناف باستخدام حزمة TypeScript Agent SDK فوق Phaseo Gateway."
+---
+
+استخدم هذه الوصفة عندما تحتاج إلى أكثر من طلب نصي لمرة واحدة:
+
+- حلقات أدوات متعددة الخطوات
+- أدوات وقت تشغيل محلية
+- عمليات تشغيل قابلة للاستئناف
+- نقطة دخول واحدة عبر Gateway لعمل الوكيل
+
+## 1. تثبيت حزم SDK
+
+<CodeGroup>
+```bash npm
+npm install @phaseo/sdk @phaseo/agent-sdk
+```
+
+```bash pnpm
+pnpm add @phaseo/sdk @phaseo/agent-sdk
+```
+
+```bash yarn
+yarn add @phaseo/sdk @phaseo/agent-sdk
+```
+
+```bash bun
+bun add @phaseo/sdk @phaseo/agent-sdk
+```
+</CodeGroup>
+
+## 2. تعريف أداة صغيرة لوقت التشغيل
+
+اجعل الأداة الأولى حتمية وسهلة الفحص.
+
+```ts
+import { defineTool } from "@phaseo/agent-sdk";
+
+export const lookupDocs = defineTool({
+  id: "lookup-docs",
+  description: "Look up internal docs by slug.",
+  async execute(input: { slug: string }) {
+    return {
+      slug: input.slug,
+      url: `https://phaseo.app/docs/v1/${input.slug}`,
+    };
+  },
+});
+```
+
+## 3. إنشاء الوكيل
+
+```ts
+import { createAgent } from "@phaseo/agent-sdk";
+import { lookupDocs } from "./tools";
+
+export const supportDocsAgent = createAgent({
+  id: "support-docs-agent",
+  model: "phaseo/free",
+  instructions: "Use tools when helpful and finish with a concise answer.",
+  tools: [lookupDocs],
+});
+```
+
+## 4. استخدام المحوّل المتصل بـ Gateway
+
+```ts
+import {
+  createGatewayAgentClient,
+} from "@phaseo/agent-sdk";
+import { supportDocsAgent } from "./agent";
+
+const result = await supportDocsAgent.run({
+  input: "Find the docs page for presets and explain when to use them.",
+  client: createGatewayAgentClient({
+    clientOptions: {
+      apiKey: process.env.PHASEO_API_KEY!,
+    },
+  }),
+});
+
+console.log(result.output);
+```
+
+## 5. ما الذي يبقى محفوظًا بين الخطوات
+
+تحدّث كل خطوة مكتملة حالة التشغيل المُعادة لتشمل:
+
+- معرّف التشغيل
+- سجل الرسائل
+- أي استدعاءات أدوات مُعادة
+- أي نتائج للأدوات المحلية
+- الناتج النهائي عند اكتمال التشغيل
+
+لاستئناف التشغيل بين الطلبات أو العمليات، احفظ القيمة المُعادة في تطبيقك ومرّرها لاحقًا إلى `continueRun()`.
+
+## 6. متى ينبغي إبقاء الإصدار الأول بسيطًا
+
+- وكيل واحد لكل سير عمل
+- تسلسل تديره التطبيقات قبل أي استئناف عبر الطلبات
+- قائمة أدوات صغيرة قبل إنشاء سجل أدوات عام
+- سطر سجل واحد لكل تشغيل يتضمن معرّف التشغيل ومعرّف طلب Gateway
+
+## 7. متى تتجاوز هذه الوصفة
+
+وسّع الحلقة المستدامة الأولى عندما تحتاج إلى:
+
+- إيقافات مؤقتة للموافقة
+- تخزين حالة التشغيل المُعادة تحت إدارة التطبيق
+- تعريفات متعددة للوكلاء تشترك في أدوات وقت التشغيل
+
+عندئذٍ، احتفظ بالمحوّل نفسه المتصل بـ Gateway وطوّر التخزين والتنسيق حوله.
+
+## أدلة ذات صلة
+
+- [حزمة TypeScript Agent SDK](../sdk-reference/typescript/agent-sdk.mdx)
+- [الإعدادات المسبقة](../guides/presets.mdx)
+- [التوجيه والبدائل الاحتياطية](../guides/routing-and-fallbacks.mdx)
+- [إعداد وكلاء البرمجة باستخدام SKILL.md](./coding-agents-skill-md.mdx)
+- [الإطلاق على الموجّه المجاني](./free-router-first-deploy.mdx)

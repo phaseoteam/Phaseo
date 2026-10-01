@@ -1,0 +1,41 @@
+---
+icon: "files"
+title: "फ़ाइलें"
+description: "Go SDK से file metadata देखें और file content प्राप्त करें।"
+---
+
+**तरीके**: `client.ListFiles()`, `client.RetrieveFile()`, `client.RetrieveFileContent()`।
+
+```go
+import (
+  "fmt"
+  "context"
+  phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v2"
+)
+
+client := phaseo.New(apiKey, "https://api.phaseo.app/v1")
+
+file, err := client.RetrieveFile(context.Background(), "file_123")
+if err != nil {
+  panic(err)
+}
+
+content, err := client.RetrieveFileContent(context.Background(), "file_123")
+if err != nil {
+  panic(err)
+}
+
+fmt.Println(file)
+fmt.Println(string(content))
+```
+
+<Note>
+Wrapper में `ListFiles()` उपलब्ध है, लेकिन `GET /files` अभी `file_list_not_supported_with_shared_gateway_key` लौटाता है।
+shared gateway key उपयोग करने पर। अपलोड की गई files के IDs सहेजें और उन्हें सीधे प्राप्त करें।
+</Note>
+
+<Note>
+Go wrapper में `POST /files` के लिए dedicated multipart upload helper अभी उपलब्ध नहीं है। सीधे REST या generated client
+का उपयोग करें यदि upload wiring का प्रयोग करना हो।
+</Note>
+

@@ -1,0 +1,198 @@
+---
+title: "मॉडल सूची"
+sidebarTitle: "मॉडल सूची"
+badge: "Beta"
+openapi: "/hi/openapi/v1/openapi.localized.yaml GET /models"
+description: "Phaseo Gateway पर Gateway-native मॉडल देखें; इसमें वैकल्पिक रूप से उन मॉडलों की उपलब्धता जानकारी भी शामिल है जिन्हें अभी रूट नहीं किया जा सकता।"
+---
+
+डिफ़ॉल्ट रूप से यह endpoint केवल वही मॉडल लौटाता है जिन्हें अभी रूट किया जा सकता है। ज्ञात लेकिन फिलहाल अनुपलब्ध मॉडल भी शामिल करने के लिए `availability=all` सेट करें।
+
+`GET /models/me` भविष्य में मौजूदा caller के guardrail के आधार पर मॉडल फ़िल्टर करने के लिए आरक्षित है। अभी यह `501 not implemented` लौटाता है, इसलिए साझा Gateway catalogue के लिए फिलहाल `GET /models` उपयोग करें।
+
+## उपयोगी फ़िल्टर
+
+- `endpoints` में `chat.completions`, `responses` और `messages` जैसे सार्वजनिक नाम आते हैं
+- `status` मॉडल जीवनचक्र के आधार पर फ़िल्टर करता है, जैसे `active`, `deprecated` या `retired`
+- `provider` सार्वजनिक provider ID से फ़िल्टर करता है, जैसे `openai`, `anthropic` या `google_vertex`
+- `provider_status` provider rollout tier से फ़िल्टर करता है, जैसे `active`, `beta`, `alpha` या `not_ready`
+- `provider_routing_status` provider-स्तर की routing स्थिति से फ़िल्टर करता है
+- `model_routing_status` model-स्तर की routing स्थिति से फ़िल्टर करता है
+- `capability_status` अनुरोधित endpoint mapping के लिए provider capability स्थिति से फ़िल्टर करता है
+- `provider_availability_status` provider उपलब्धता से फ़िल्टर करता है, जैसे `active`, `coming_soon` या `inactive`
+- `provider_availability_reason` provider उपलब्धता के कारण से फ़िल्टर करता है, जैसे `preview_only`, `provider_not_ready`, `gated`, `access_limited` या `region_limited`
+- `organisation` सार्वजनिक model ID के prefix से फ़िल्टर करता है, जैसे `anthropic/claude-3-haiku` में `anthropic`
+- `availability=active` डिफ़ॉल्ट है
+- `availability=all` में `coming_soon`, `inactive` या अभी सार्वजनिक रूप से रूट न किए जा सकने वाले मॉडल और प्रोवाइडर भी आते हैं
+- `input_modalities`, `input_types` का alias है
+- `output_modalities`, `output_types` का alias है
+- `supported_parameters`, `params` का alias है
+
+किसी मॉडल का एंडपॉइंट अनुबंध देखने के लिए `GET /models/{author}/{slug}/endpoints` कॉल करें। प्रतिक्रिया में हर प्रदाता रूट अलग रहता है और प्रत्येक पंक्ति में सार्वजनिक पथ, समर्थित मोडैलिटी और पैरामीटर का विवरण, उपलब्धता, रूटिंग स्थिति, प्रदाता मॉडल स्लग और मूल्य सारांश दिया जाता है।
+
+Provider entries में ये फ़ील्ड भी हो सकते हैं:
+
+- `availability_status`
+- `availability_reason`
+- `provider_status`
+- `provider_routing_status`
+- `model_routing_status`
+- `capability_status`
+
+### रिस्पॉन्स
+
+```json
+{
+  "ok": true,
+  "privacy_scope": "shared",
+  "availability_mode": "all",
+  "limit": 50,
+  "offset": 0,
+  "total": 99,
+  "models": [
+    {
+      "id": "anthropic/claude-3-haiku",
+      "canonical_slug": "anthropic/claude-3-haiku",
+      "model_id": "anthropic/claude-3-haiku",
+      "name": "anthropic/claude-3-haiku",
+      "description": "anthropic/claude-3-haiku via Phaseo Gateway. Supports chat.completions, messages, responses.",
+      "created": null,
+      "release_date": null,
+      "deprecation_date": null,
+      "retirement_date": null,
+      "status": "active",
+      "availability": {
+        "status": "coming_soon",
+        "provider_count": 1,
+        "active_provider_count": 0,
+        "inactive_provider_count": 0
+      },
+      "organisation_id": "anthropic",
+      "organisation_name": null,
+      "organisation_colour": null,
+      "aliases": [],
+      "endpoints": ["chat.completions", "messages", "responses"],
+      "input_types": ["text"],
+      "output_types": ["text"],
+      "architecture": {
+        "modality": "text->text",
+        "input_modalities": ["text"],
+        "output_modalities": ["text"],
+        "tokenizer": null,
+        "instruct_type": "chat"
+      },
+      "providers": [
+        {
+          "api_provider_id": "anthropic",
+          "api_provider_name": "Anthropic",
+          "provider_model_slug": "claude-3-haiku-20240307",
+          "is_active_gateway": false,
+          "availability_status": "coming_soon",
+          "availability_reason": "preview_only",
+          "provider_status": "beta",
+          "provider_routing_status": "active",
+          "model_routing_status": "active",
+          "capability_status": "coming_soon",
+          "effective_from": "2026-06-01T00:00:00Z",
+          "effective_to": null,
+          "endpoints": ["responses"],
+          "input_modalities": ["text"],
+          "output_modalities": ["text"],
+          "params": [
+            "max_tokens",
+            "response_format",
+            "stop",
+            "structured_outputs",
+            "temperature",
+            "tool_choice",
+            "tools",
+            "top_k",
+            "top_p"
+          ],
+          "supported_parameters": [
+            "max_tokens",
+            "response_format",
+            "stop",
+            "structured_outputs",
+            "temperature",
+            "tool_choice",
+            "tools",
+            "top_k",
+            "top_p"
+          ],
+          "supported_parameters_detail": {
+            "temperature": {
+              "supported": true,
+              "type": "number",
+              "minimum": 0,
+              "maximum": 2
+            }
+          }
+        }
+      ],
+      "supported_params": [
+        "max_tokens",
+        "response_format",
+        "stop",
+        "structured_outputs",
+        "temperature",
+        "tool_choice",
+        "tools",
+        "top_k",
+        "top_p"
+      ],
+      "supported_params_detail": {
+        "temperature": {
+          "supported": true,
+          "type": "number",
+          "minimum": 0,
+          "maximum": 2,
+          "providers": ["openai"]
+        }
+      },
+      "supported_parameters": [
+        "max_tokens",
+        "response_format",
+        "stop",
+        "structured_outputs",
+        "temperature",
+        "tool_choice",
+        "tools",
+        "top_k",
+        "top_p"
+      ],
+      "supported_parameters_detail": {
+        "temperature": {
+          "supported": true,
+          "type": "number",
+          "minimum": 0,
+          "maximum": 2,
+          "providers": ["openai"]
+        }
+      },
+      "top_provider_id": null,
+      "top_provider": {
+        "context_length": null,
+        "max_completion_tokens": null,
+        "is_moderated": false
+      },
+      "pricing": {
+        "prompt": null,
+        "completion": null,
+        "request": null,
+        "image": null,
+        "input_cache_read": null,
+        "input_cache_write": null,
+        "web_search": null
+      },
+      "pricing_detail": {
+        "pricing_plan": "standard",
+        "meters": {}
+      },
+      "per_request_limits": null
+    }
+  ]
+}
+```
+
+`availability_reason` एकल फ़ील्ड है जो बताता है कि provider entry active, केवल preview के लिए या inactive क्यों है।

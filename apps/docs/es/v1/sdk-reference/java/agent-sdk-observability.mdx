@@ -1,0 +1,24 @@
+---
+icon: "triangle-alert"
+title: "Errores y solución de problemas"
+description: "Diagnostica errores de agentes Java, datos de herramientas no válidos y ejecuciones interrumpidas."
+---
+
+Separa los errores de transporte y de pasarela de los datos no válidos de herramientas o salidas. Una ejecución fallida conserva su estado, paso activo, recuento de reintentos, ID de solicitud, ID de respuesta nativo y detalles disponibles de la pasarela.
+
+## Comprobaciones habituales
+
+- Confirma que el proceso Java tiene acceso a `PHASEO_API_KEY`.
+- Asigna a cada herramienta un ID único y estable.
+- Proporciona aprobaciones, rechazos y resultados manuales mediante los ID exactos de llamadas a herramientas.
+- Guarda un `RunResult` pausado antes de devolver el control a otra solicitud o proceso de trabajo.
+- Mantén los validadores deterministas y sin efectos secundarios.
+- Trata las excepciones de cancelación y tiempo de espera como terminales, salvo que la aplicación inicie explícitamente una nueva ejecución.
+
+Usa hooks del ciclo de vida para la telemetría de la aplicación y DevTools para obtener un registro local de las ejecuciones, en lugar de depender únicamente de la salida de la consola.
+
+## Relacionado
+
+- [Hooks del ciclo de vida](./agent-sdk-lifecycle-hooks.mdx)
+- [DevTools](./agent-sdk-devtools.mdx)
+- [Estado y aprobación](./agent-sdk-state-and-approval.mdx)

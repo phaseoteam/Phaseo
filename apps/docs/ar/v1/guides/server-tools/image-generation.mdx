@@ -1,0 +1,92 @@
+---
+icon: "image"
+title: "إنشاء الصور"
+description: "اسمح للنماذج بإنشاء الصور عبر أداة خادم من Phaseo."
+---
+
+استخدم `phaseo:image_generation` عندما يحتاج النموذج إلى إنشاء صورة أثناء الرد. يوفّر Phaseo أداة مُدارة للنموذج، وينفّذ طلب الصورة من جهة الخادم، ثم يعيد النتيجة إلى حلقة النموذج.
+
+## الطلب
+
+```bash
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-5-nano",
+    "input": "Design a wide product concept image for a compact desktop synthesizer.",
+    "tools": [
+      {
+        "type": "phaseo:image_generation",
+        "parameters": {
+          "model": "openai/gpt-image-2",
+          "quality": "high",
+          "aspect_ratio": "16:9",
+          "output_format": "png"
+        }
+      }
+    ]
+  }'
+```
+
+## المعلمات
+
+| المعلمة | النوع | الوصف |
+| --- | --- | --- |
+| `model` | string | معرّف اختياري لنموذج قادر على إنشاء الصور. تكون القيمة الافتراضية `openai/gpt-image-2` إذا لم تحدد الأداة أو استدعاؤها نموذجًا. |
+| `quality` | string | تلميح اختياري لجودة المزوّد مثل `low` أو `medium` أو `high`. |
+| `size` | string | تلميح اختياري لحجم الصورة. |
+| `aspect_ratio` | string | نسبة أبعاد اختيارية مثل `1:1` أو `16:9` أو `9:16`. |
+| `background` | string | تلميح اختياري لوضع الخلفية. |
+| `output_format` | string | تنسيق إخراج اختياري مثل `png` أو `jpeg` أو `webp`. |
+| `output_compression` | integer | تلميح اختياري لضغط المزوّد. |
+| `moderation` | string | تلميح اختياري للإشراف على المحتوى من المزوّد. |
+
+يوفّر النموذج `prompt` النهائي عند استدعاء الأداة. تحدد معلمات الأداة القيم الافتراضية والقيود لهذا الاستدعاء.
+
+يمكن لاستدعاء الأداة إرسال `description` بدلًا من `prompt`. وللتوافق مع أوصاف الصور التي تنشئها النماذج، يتعامل Phaseo مع `description` كاسم بديل للمطالبة.
+
+## نتيجة الأداة
+
+تُعاد النتيجة إلى النموذج بصيغة JSON:
+
+```json
+{
+  "status": "ok",
+  "model": "openai/gpt-image-2",
+  "imageUrl": "https://...",
+  "mime_type": "image/png"
+}
+```
+
+يعيد بعض المزوّدين بيانات الصورة بترميز base64 بدلًا من ذلك:
+
+```json
+{
+  "status": "ok",
+  "model": "openai/gpt-image-2",
+  "b64_json": "...",
+  "mime_type": "image/png"
+}
+```
+
+## الاستخدام والأسعار
+
+يُدرج استخدام إنشاء الصور ضمن استخدام الرد الأصلي عندما يبلّغ نموذج الصور عن استهلاك الرموز. ويسجّل Phaseo أيضًا:
+
+```json
+{
+  "usage": {
+    "server_tool_use": {
+      "image_generation_requests": 1
+    }
+  }
+}
+```
+
+يمكن لبطاقات الأسعار احتساب ذلك باستخدام مقياس `server_tool_image_generation_requests`. وقد تُحاسب أيضًا عن استخدام نموذج الصور الأساسي وفق أسعاره المعتادة.
+
+## صفحات ذات صلة
+
+- [أدوات الخادم](./index.mdx)
+- [استدعاء الأدوات](../tool-calling.mdx)

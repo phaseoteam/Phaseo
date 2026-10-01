@@ -1,0 +1,117 @@
+---
+title: "错过了？回顾： 2026 年 5 月发布内容"
+shortTitle: "错过了？回顾： 2026 年 5 月"
+description: "5 月，我们继续完善视频、异步任务、提供商启用和生产环境可观测性。"
+publishedAt: 2026-05-31
+author: Phaseo Team
+category: data
+pinned: true
+coverImage: /blog-images/recap-may-2026.png
+tags:
+  - 月度回顾
+  - 月度回顾
+  - 产品
+  - 模型
+draft: false
+---
+
+5 月是 Phaseo 迄今发布最密集的月份之一。产品不再局限于模型目录，而是进一步融入 Gateway 工作流：视频、异步任务、可观测性、提供商启用和 SDK 都取得了进展。
+
+这篇回顾汇总了 **2026 年 5 月 1 日至 31 日**发布的内容，依据该月的版本记录、提交历史和目录数据整理而成。
+
+## 发布内容
+
+### 视频和异步任务更加完善
+
+5 月发布了大型 Gateway 更新，涵盖视频上线、使用情况可见性、请求诊断，以及批处理和视频异步任务的生命周期。
+
+更新包括状态查询、取消任务、获取和下载内容，以及更清晰的使用详情。简单来说，长时间运行的任务现在更容易启动、跟踪、检查和调试。
+
+这是产品的一次重要变化。视频和批处理任务的行为与简单的聊天请求不同：它们耗时更长，失败方式也更多，需要更好的进度跟踪方式。5 月让这些工作流成为 Gateway 中更完整的一部分。
+
+### 可观测性更贴近生产环境
+
+5 月的请求诊断功能更加实用。Gateway 提供了更清晰的请求详情、更及时的错误提示、提供商启用状态，以及更可靠的使用数据刷新路径。
+
+对于运行实际工作负载的团队，这减少了猜测。如果请求失败、路由结果与预期不同，或使用了意外的提供商，产品就应该帮助解释发生了什么。
+
+这就是演示用 Gateway 和团队真正能运营的产品之间的区别。可观测性不只是图表，还要提供足够的上下文，帮助修复下一个请求。
+
+### 提供商启用状态和价格更加清晰
+
+现在，在目录页面和内部数据中都更容易了解提供商的可用性。提供商启用状态的展示更加一致，价格摘要和悬浮卡片也有所改进，实时每分钟价格的问题得到修正。
+
+5 月还更新了 Google、Anthropic、Baseten、Venice、Novita、CrofAI、AWS 等提供商的数据。单独来看，有些更新幅度不大，但合在一起让目录更加及时、可靠。
+
+同一个模型由多个提供商提供时，这一点尤其有用。用户不仅要知道模型存在，还需要了解可以通过哪些提供商运行、价格是多少，以及路由是否已启用。
+
+### TypeScript Agent SDK 正式发布
+
+5 月，Phaseo 发布了首批公开的 TypeScript Agent SDK 工作成果。此次发布包括 SDK 代码和示例、文档、与开发工具的协同改进，以及围绕 Gateway 契约构建的迁移工具。
+
+目标是让长时间运行的 Agent 工作流更容易构建，避免每个团队都从头拼装自己的循环、工具、遥测和重试机制。
+
+首批示例聚焦实用工作流：代码审查、研究、支持请求分类，以及并行的本地工具。这让开发者获得了比单纯 API 参考更清晰的起点。
+
+### 模型发现流程更加自动化
+
+我们新增了针对提供商模型变化的 GitHub issue 同步、可控通知，以及更清晰的模型发现处理流程。我们还刷新了 benchmark 数据，改进了日期排序和模型系列的处理方式。
+
+这些工作帮助目录跟上提供商的快速变化，而不必每次更新都靠人工查找。它们也让我们更容易区分真实的提供商变化与模型发现结果中的噪声。
+
+目录只有保持更新才有价值。5 月的重点之一就是减少维护目录所需的人工工作。
+
+## 其他发布内容
+
+- 延后加载页眉搜索，让主页可以先于搜索索引加载。
+- 修正了主页的月度 token 统计。
+- 修复了媒体重试设置和重复项处理。
+- 修正了 benchmark 排名顺序。
+- 为组织社交链接添加了 URL 验证。
+- 加强了免费模型的额度限制和工作区策略执行。
+- 更新了 Next.js、Mintlify、Hono、Zod、PostHog 和 CI 工具的依赖。
+
+## 模型亮点
+
+5 月新增了多种模型。OpenAI 添加了 `chat-latest` 和多个实时模型。Google 推进了 Gemini 3.1 Flash-Lite 和 Gemini 3.5 Flash，并在月底前后增加了图像模型版本。xAI 添加了 Grok Imagine Image Quality、Grok Build 0.1，以及 Grok Imagine Video 1.5 Preview 条目。
+
+本月还包括 Claude Opus 4.8、Command A+、Qwen 3.7 Max 的多个变体、Cursor Composer 2.5、Step 3.7 Flash、CrofAI Greg RP 和 NVIDIA Cosmos3 Super Reasoner。
+
+在这里查看最新发布数据：
+
+- [浏览近期更新](/updates)
+
+## 发布概览
+
+本地 Git 历史显示，5 月共有 **77 次提交**。本月主要围绕视频和异步任务、提供商启用、可观测性、SDK 发布、价格修复、模型发现自动化，以及持续发布目录更新展开。
+
+## 2026 年 5 月发布的模型
+
+目录中以下模型的发布日期位于 2026 年 5 月：
+
+- 5 月 5 日：chat-latest (`openai/chat-latest`)
+- 5 月 6 日：Grok Imagine Image Quality (`x-ai/grok-imagine-image-quality`)
+- 5 月 7 日：Gemini 3.1 Flash-Lite (`google/gemini-3.1-flash-lite`)
+- 5 月 7 日：GPT Realtime 2 (`openai/gpt-realtime-2`)
+- 5 月 7 日：GPT Realtime Translate (`openai/gpt-realtime-translate`)
+- 5 月 7 日：GPT Realtime Whisper (`openai/gpt-realtime-whisper`)
+- 5 月 15 日：Grok Build 0.1 (`x-ai/grok-build-0.1`)
+- 5 月 18 日：Composer 2.5 (`cursor/composer-2.5`)
+- 5 月 19 日：Gemini 3.5 Flash (`google/gemini-3.5-flash`)
+- 5 月 19 日：Qwen 3.5 LiveTranslate Flash Realtime (2026-05-19) (`qwen/qwen3.5-livetranslate-flash-realtime-2026-05-19`)
+- 5 月 20 日：Command A+ (`cohere/command-a-plus`)
+- 5 月 21 日：Qwen 3.7 Max (`qwen/qwen3.7-max`)
+- 5 月 25 日：Qwen 3.7 Max (2026-05-17) (`qwen/qwen3.7-max-2026-05-17`)
+- 5 月 25 日：Qwen 3.7 Max Preview (`qwen/qwen3.7-max-preview`)
+- 5 月 26 日：Qwen 3.7 Plus (2026-05-26) (`qwen/qwen3.7-plus-2026-05-26`)
+- 5 月 28 日：Claude Opus 4.8 (`anthropic/claude-opus-4.8`)
+- 5 月 28 日：Greg RP (`crofai/greg-rp`)
+- 5 月 28 日：Gemini 3.1 Flash Image (Nano Banana 2) (`google/gemini-3.1-flash-image`)
+- 5 月 28 日：Gemini 3 Pro Image (Nano Banana Pro) (`google/gemini-3-pro-image`)
+- 5 月 29 日：Step 3.7 Flash (`stepfun/step-3.7-flash`)
+- 5 月 30 日：Grok Imagine Video 1.5 Preview (`x-ai/grok-imagine-video-1.5-preview`)
+- 5 月 31 日：Cosmos3 Super Reasoner (`nvidia/cosmos3-super-reasoner`)
+
+## 后续计划
+
+5 月为 6 月的工作打下基础，后续将继续推进目录自动化、扩大提供商覆盖、改进监控页面，并完善新手引导和本地开发工作流。

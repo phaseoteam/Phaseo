@@ -2,7 +2,7 @@
 "use client";
 
 import { Link, usePathname, useRouter } from "@/i18n/navigation";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import {
 	Activity,
@@ -48,6 +48,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { CurrentUserAvatar } from "@/components/ui/current-user-avatar";
 import { getSupportAvailability } from "@/lib/support/schedule";
 import { ProductFeedbackDialog } from "@/components/feedback/ProductFeedbackButton";
+import { getLocalizedDocsHref } from "@/lib/docs";
 
 interface HeaderProps {
 	isLoggedIn: boolean;
@@ -68,6 +69,7 @@ export default function HeaderClient({
 }: HeaderProps) {
 	const router = useRouter();
 	const pathname = usePathname() ?? "/";
+	const locale = useLocale();
 	const t = useTranslations("Common.nav");
 	const tSearch = useTranslations("Common.search");
 	const tTheme = useTranslations("Common.theme");
@@ -141,7 +143,7 @@ export default function HeaderClient({
 		{ href: "/apps", label: t("apps"), icon: AppWindow },
 		{ href: "/rankings", label: t("rankings"), icon: Trophy },
 	];
-	const docsHref = "https://phaseo.app/docs/v1";
+	const docsHref = getLocalizedDocsHref(locale, "/v1");
 
 	if (variant === "mobile") {
 		if (!isLoggedIn) {

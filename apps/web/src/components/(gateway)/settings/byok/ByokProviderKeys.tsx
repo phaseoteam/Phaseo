@@ -34,6 +34,7 @@ import DeleteKeyButton from "@/components/(gateway)/settings/byok/DeleteKeyButto
 import { reorderByokKeyAction, updateByokKeyAction } from "@/app/(dashboard)/settings/byok/actions";
 import { MAX_BYOK_KEYS_PER_MODE } from "@/lib/byok/constants";
 import { useTranslations } from "next-intl";
+import { localizedSettingsError } from "@/i18n/error-messages";
 
 export type ByokKeyEntry = {
 	id: string;
@@ -225,7 +226,7 @@ export default function ByokProviderKeys({ provider, entries, modelOptions, apiK
 			router.refresh();
 		} catch (error) {
 			setEntries(before);
-			toast.error(error instanceof Error ? error.message : t("byokControls.failedReorder"));
+			toast.error(localizedSettingsError(error, t, "Action failed", t("byokControls.failedReorder")));
 		} finally { setSaving(false); }
 	}
 

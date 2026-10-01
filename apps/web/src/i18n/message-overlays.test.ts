@@ -1,6 +1,6 @@
 import englishUsAuthOverrides from "../../messages/en-US/auth.overrides.json";
 import { englishAuthMessages } from "./default-messages";
-import { mergeMessages } from "./message-overlays";
+import { mergeMessages, nestDottedMessageKeys } from "./message-overlays";
 
 describe("mergeMessages", () => {
 	it("applies a sparse regional overlay without mutating its fallback", () => {
@@ -16,5 +16,25 @@ describe("mergeMessages", () => {
 		expect(englishAuthMessages.Auth.signIn.passkeyCancelled).toBe(
 			"Passkey sign-in cancelled.",
 		);
+	});
+});
+
+describe("nestDottedMessageKeys", () => {
+	it("preserves punctuation in phrase keys while nesting dotted namespaces", () => {
+		expect(
+			nestDottedMessageKeys({
+				"routing.reasoning": "Reasoning",
+				strings: {
+					"Saving...": "Guardando...",
+					Saving: "Guardando",
+				},
+			}),
+		).toEqual({
+			routing: { reasoning: "Reasoning" },
+			strings: {
+				"Saving...": "Guardando...",
+				Saving: "Guardando",
+			},
+		});
 	});
 });

@@ -1,0 +1,100 @@
+---
+title: "まずはこちらから"
+description: "最初のリクエスト、移行、SDK の設定、本番環境への導入に適した Phaseo ドキュメントの進め方を選べます。"
+icon: "house"
+---
+
+作りたいものは決まっているものの、Phaseo のどのドキュメントを最初に読むべきか分からない場合は、このページを使ってください。
+
+Phaseo は、モデルへのアクセス、プロバイダーへのルーティング、料金の確認、利用状況の追跡、非同期 AI ワークフローを 1 つの API で提供します。
+
+Phaseo を初めて使う場合は、まずリクエストを 1 つ成功させましょう。すでに AI を組み込んでいる場合は、アプリに合った移行ガイドまたは SDK ガイドに進んでください。
+
+## 最初のリクエストを成功させる
+
+新しい連携では、次の手順で進めます。
+
+1. ダッシュボードで API キーを作成します。
+2. 現行のテキストモデルにリクエストを送信します。
+3. レスポンスから生成されたテキストを読み取ります。
+4. 次の作業に合った SDK、ルーティング、本番運用のガイドに進みます。
+
+## 最初のリクエスト
+
+<CodeGroup>
+```bash cURL
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-5.6-sol",
+    "input": "Reply with: docs ready",
+    "temperature": 0
+  }'
+```
+
+```typescript TypeScript SDK
+import Phaseo from "@phaseo/sdk";
+
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
+
+const response = await client.generateResponse({
+  model: "openai/gpt-5.6-sol",
+  input: "Reply with: docs ready",
+  temperature: 0,
+});
+
+console.log(response.output_text);
+```
+
+```python Python SDK
+from phaseo import Phaseo
+
+client = Phaseo(api_key="YOUR_API_KEY")
+
+response = client.generate_response(
+    {
+        "model": "openai/gpt-5.6-sol",
+        "input": "Reply with: docs ready",
+        "temperature": 0,
+    }
+)
+
+print(response.get("output_text"))
+```
+</CodeGroup>
+
+動作したら、[クイックスタート](./quickstart.mdx)に進み、最初のリクエストの手順を最後まで確認してください。
+
+---
+
+## 目的に合ったガイドを選ぶ
+
+すでに連携やツールチェーンがある場合は、最初から読むのではなく、状況に近いガイドから始めてください。
+
+<Columns cols={2}>
+	<Card title="OpenAI から移行する" icon="arrow-right-left" href="./migration-guides/from-openai.mdx">
+		OpenAI 互換の形式を保ち、ベース URL を変更してモデルの対応状況を確認します。
+	</Card>
+	<Card title="OpenRouter から移行する" icon="arrow-right-left" href="./migration-guides/from-openrouter.mdx">
+		同等性を確認しながら、ルーティング設定を段階的に移行します。
+	</Card>
+	<Card title="HTTP リクエストを直接送信する" icon="globe" href="./quickstart.mdx">
+		cURL と Responses API から始め、必要に応じてエンドポイントのリファレンスを確認します。
+	</Card>
+	<Card title="TypeScript SDK を使う" icon="file-code-2" href="./sdk-reference/typescript/overview.mdx">
+		Responses、チャット、画像、音声などに TypeScript クライアントを使います。
+	</Card>
+	<Card title="Python SDK を使う" icon="snake" href="./sdk-reference/python/overview.mdx">
+		スクリプト、ワーカー、バックエンド、ノートブックで連携する場合は Python クライアントから始めます。
+	</Card>
+	<Card title="AI SDK を使う" icon="sparkles" href="./sdk-reference/sdk/ai-sdk.mdx">
+		プロンプトやモデルの処理を作り直さずに、Vercel AI SDK アプリを Phaseo に接続します。
+	</Card>
+	<Card title="Codex または Claude Code を使う" icon="bot" href="./guides/integrations/index.mdx">
+		ゲートウェイ、Docs MCP、コーディングアシスタント連携をまとめて設定します。
+	</Card>
+	<Card title="サンプルだけを見たい" icon="code" href="./guides/examples.mdx">
+		基本を理解している場合は、コピーして使えるリクエストやサンプルプロジェクトに進んでください。
+	</Card>
+</Columns>

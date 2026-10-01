@@ -1,0 +1,25 @@
+---
+icon: "radio-tower"
+title: "Lebenszyklus-Hooks"
+description: "Beobachte Go-Agent-Läufe, Modellzüge, Tools, Pausen und den Abschluss in Echtzeit."
+---
+
+Setze `OnEvent` in `RunOptions` oder `ContinueOptions`, um strukturierte Lifecycle-Ereignisse zu erhalten, ohne deine Anwendung an den Modelltransport zu koppeln.
+
+```go
+result, err := agent.Run(ctx, phaseoagent.RunOptions{
+  Input: prompt,
+  Client: client,
+  OnEvent: func(event phaseoagent.AgentEvent) {
+    logger.Info("agent event",
+      "type", event.Type,
+      "run_id", event.RunID,
+      "details", event.Details,
+    )
+  },
+})
+```
+
+Nützliche Ereignisgruppen umfassen Start, Abschluss und Fehler eines Laufs, Modellversuche, Text- und Reasoning-Änderungen sowie Start, Fortschritt, Abschluss und Fehler von Tools und menschliche Prüfpunkte.
+
+Halte Handler schnell und nicht blockierend. Sende Ereignisse an eine eigene Warteschlange oder Telemetrieebene, wenn das Speichern länger dauern kann, und schwärze sensible Tool-Eingaben vor der externen Weitergabe.

@@ -1,0 +1,231 @@
+---
+title: "迷你应用入门提示"
+icon: "sparkles"
+description: "可复制的提示，可让编程代理使用原始 HTTP、SDK 或代理运行时构建小型 Phaseo 应用。"
+---
+
+当你想给编程代理一个具体提示，让它构建小型可运行应用，而不是给出模糊的集成计划时，请使用此页面。
+
+<Tip>
+这些提示以结果为导向，并明确实现细节，因此在 Cursor、Claude Code、Codex 等工具中效果更好。
+</Tip>
+
+## 如何使用这些提示
+
+<Steps>
+  <Step title="选择集成方式">
+    选择与你希望应用调用 Phaseo 的方式相匹配的提示：
+
+    - 原始 HTTP
+    - 一个官方 SDK
+    - Vercel AI SDK
+    - Agent SDK
+  </Step>
+  <Step title="替换方括号中的变量">
+    将提示粘贴到编程代理之前，请先填写 `[应用创意]`、`[框架]`、`[模型]` 和 `[LANGUAGE]` 等值。
+  </Step>
+  <Step title="要求验证，而不只是代码">
+    保留提示中的验证要求，以便代理报告实际运行了什么、做了哪些假设，以及还需要哪些手动设置。
+  </Step>
+</Steps>
+
+## 提示包
+
+<AccordionGroup>
+  <Accordion title="原始 HTTP 迷你应用" icon="globe">
+    <Prompt
+      description="构建一个使用**原始 HTTP** 而非 SDK 调用 Phaseo 的小型应用。"
+      icon="globe"
+      actions={["copy", "cursor"]}
+    >
+{`你正在使用 Phaseo Gateway 实现一个小型、接近生产质量的演示应用。
+
+为 [应用创意] 构建一个 [框架] 迷你应用。
+
+要求：
+- 使用原始 HTTP 请求，不要使用 Phaseo SDK。
+- 使用 Phaseo 端点 [ENDPOINT]。
+- 使用模型 [模型]。
+- 从名为 PHASEO_API_KEY 的环境变量读取 API 密钥。
+- 有意保持应用精简：一个主页、一个服务器路由或处理器，以及最少的样式。
+- 显示用户输入、请求提交状态、模型输出以及任何网关错误状态。
+- 在注释或文档中添加一个请求负载示例，以便之后轻松审查集成。
+
+实现细节：
+- 使用 fetch。
+- 明确写出请求正文，不要将字段隐藏在抽象层后面。
+- 发起 API 请求前，添加对空输入的基本验证。
+- 妥善处理非 200 响应，并在有用时显示响应正文。
+- 仅在服务器端保留机密信息。
+
+交付内容：
+- 应用代码。
+- 简短的 README 部分，说明如何运行应用。
+- 在 .env.example 中添加 PHASEO_API_KEY 项。
+
+验证：
+- 如果可以，请运行本地应用。
+- 验证一条成功的请求路径。
+- 准确报告已验证的内容、无法验证的内容以及仍需确认的假设。`}
+    </Prompt>
+  </Accordion>
+
+  <Accordion title="TypeScript SDK 迷你应用" icon="file-code-2">
+    <Prompt
+      description="使用 **TypeScript SDK** 构建一个集成简单、便于检查的迷你应用。"
+      icon="file-code-2"
+      actions={["copy", "cursor"]}
+    >
+{`你正在基于 Phaseo TypeScript SDK 构建一个小型应用。
+
+为 [应用创意] 构建一个 [框架] 迷你应用。
+
+要求：
+- 使用 @phaseo/sdk。
+- 使用模型 [模型]。
+- 除非有充分理由使用其他端点，否则优先使用 Responses API。
+- 从 PHASEO_API_KEY 读取 API 密钥。
+- 保持代码精简易懂，便于首次集成。
+- 在 UI 中显示加载、成功和失败状态。
+
+实现细节：
+- 通过一个服务器端集成边界处理调用，不要将 SDK 调用分散到多个文件中。
+- 明确写出请求结构，包括模型、输入和重要选项。
+- 添加一个安全提取助手最终文本的响应解析示例。
+- 只在 SDK 响应结构难以理解时添加少量注释。
+
+交付内容：
+- 可运行的应用代码。
+- 简短的设置说明。
+- 简要说明为什么此迷你应用使用 TypeScript SDK 比使用原始 HTTP 更合适。
+
+验证：
+- 如果可以，请运行应用。
+- 端到端执行一次请求。
+- 准确报告更改的文件，以及用户仍需完成的设置。`}
+    </Prompt>
+  </Accordion>
+
+  <Accordion title="Python SDK 迷你应用" icon="snake">
+    <Prompt
+      description="使用**官方 Python SDK** 构建一个小型 Python 应用或服务。"
+      icon="snake"
+      actions={["copy", "cursor"]}
+    >
+{`你正在使用 Phaseo Gateway 实现一个小型 AI Python 应用。
+
+为 [应用创意] 构建一个 [Python 框架或应用类型] 应用。
+
+要求：
+- 使用官方 Python SDK phaseo。
+- 使用模型 [模型]。
+- 从 PHASEO_API_KEY 读取凭证。
+- 保持代码精简，让新团队成员能够快速理解。
+- 包含一条用户输入路径和一条模型输出路径。
+- 妥善处理无效输入和上游网关失败。
+
+实现细节：
+- 优先使用一个专门负责创建 Phaseo 客户端的集成模块。
+- 直接使用 SDK 响应结构，不要用不必要的抽象层包装。
+- 如果结构化输出对应用有帮助，请使用它并验证返回的结构。
+- 在 README 中添加简短的安装和运行步骤。
+
+交付内容：
+- 应用代码。
+- 任何依赖项更新。
+- 简短的使用说明。
+
+验证：
+- 如果可以，请运行相关命令。
+- 验证一条成功的请求路径，或者说明无法验证的原因。
+- 指出用户仍需配置的环境变量或本地服务。`}
+    </Prompt>
+  </Accordion>
+
+  <Accordion title="Vercel AI SDK 迷你应用" icon="sparkles">
+    <Prompt
+      description="构建一个通过 **Vercel AI SDK 使用 Phaseo** 的小型应用。"
+      icon="sparkles"
+      actions={["copy", "cursor"]}
+    >
+{`你正在构建一个通过 Vercel AI SDK 提供商使用 Phaseo 的迷你应用。
+
+为 [应用创意] 构建一个 [框架] 应用。
+
+要求：
+- 使用 Phaseo Vercel AI SDK 提供商。
+- 使用模型 [模型]。
+- 从 PHASEO_API_KEY 读取 Phaseo API 密钥。
+- 保持轻量的用户体验，并围绕一项明确的用户任务设计。
+- 如果应用类似聊天，请支持流式输出；否则说明此处采用非流式处理为何更简单。
+
+实现细节：
+- 明确写出提供商的连接配置。
+- 以标准且符合框架惯例的方式使用 AI SDK 原语。
+- 首个版本中避免不必要的额外状态管理。
+- 简要说明如何选择提供商模型 ID。
+
+交付内容：
+- 应用代码。
+- 设置步骤。
+- 简要说明之后如何切换到其他模型。
+
+验证：
+- 如果可以，请运行应用。
+- 验证主要用户流程。
+- 单独报告尚未验证的部分。`}
+    </Prompt>
+  </Accordion>
+
+  <Accordion title="Agent SDK 迷你应用" icon="bot">
+    <Prompt
+      description="使用 **Phaseo Agent SDK** 和有限工具循环构建一个小型应用。"
+      icon="bot"
+      actions={["copy", "cursor"]}
+    >
+{`你正在基于 Phaseo Gateway 构建一个小型代理应用。
+
+使用 Phaseo Agent SDK 为 [应用创意] 构建一个 [LANGUAGE] 迷你应用。
+
+要求：
+- 使用适用于 [LANGUAGE] 的 Phaseo Agent SDK。
+- 使用模型 [模型]。
+- 只包含一到两个确定性的本地工具。
+- 限制工具循环范围，并确保易于调试。
+- 从 PHASEO_API_KEY 读取 API 密钥。
+- 显示最终输出，并在适当时展示工具活动或中间推理状态。
+
+实现细节：
+- 将代理定义集中在一个位置。
+- 保持工具定义精简且确定。
+- 首个版本避免使用庞大、通用型代理框架。
+- 添加说明，指出如果应用之后支持恢复运行，运行状态应持久化到哪里。
+
+交付内容：
+- 应用代码。
+- 设置说明。
+- 简要说明为什么此工作流使用 Agent SDK 比单次补全更合适。
+
+验证：
+- 如果可以，请运行主要流程。
+- 端到端验证一次代理运行。
+- 报告所有剩余假设，尤其是环境设置或本地工具依赖方面。`}
+    </Prompt>
+  </Accordion>
+</AccordionGroup>
+
+## 如何让提示效果更好
+
+- 将 `[应用创意]` 替换为一项具体的用户任务，而不是宽泛的产品构想。
+- 将 `[模型]` 替换为你希望代理使用的确切模型 ID。
+- 说明输出应为自由文本、严格 JSON、聊天内容还是单个生成资产。
+- 如果已知，请注明 UI 框架和部署目标。
+- 添加一两项重要约束，例如 `仅限欧盟提供商`、`使用流式输出` 或 `所有密钥仅保留在服务器端`。
+
+## 相关指南
+
+- [快速入门](../quickstart.mdx)
+- [示例](../guides/examples.mdx)
+- [TypeScript SDK 概览](../sdk-reference/typescript/overview.mdx)
+- [Python SDK 概览](../sdk-reference/python/overview.mdx)
+- [Agent SDK 概览](../sdk-reference/agent-sdk/overview.mdx)

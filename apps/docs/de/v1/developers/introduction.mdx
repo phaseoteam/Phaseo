@@ -1,0 +1,100 @@
+---
+title: "So funktioniert Phaseo"
+description: "Lerne Phaseo Gateway kennen, bevor du Endpunkte, SDKs, Routing oder Produktionseinstellungen auswählst."
+icon: "terminal"
+---
+
+Hier erfährst du, wie Gateway grundsätzlich funktioniert, bevor du deine Integration erstellst.
+
+Phaseo bietet dir eine API für Modelle, Anbieter, Routing, Preise und asynchrone KI-Workflows.
+
+Damit kannst du:
+
+-   mehrere Anbieter über eine einheitliche API ansprechen
+-   Anfrage- und Antwortverarbeitung vereinfachen
+-   Nutzung, Latenz und Kosten an einem Ort verfolgen
+-   Modelle oder Routing-Strategien wechseln, ohne deine App neu zu entwickeln
+
+<Note>
+Mit `:free`-Modellen kannst du ohne eingezahltes Guthaben starten. Für kostenpflichtige Modelle ist ein verfügbares Wallet-Guthaben erforderlich.
+</Note>
+
+---
+
+## Warum ein Gateway verwenden
+
+KI-Integrationen werden schwieriger, sobald du mehr als einen Anbieter, ein Modell, eine Endpunktfamilie oder eine Bereitstellungsumgebung benötigst.
+
+Phaseo bietet deiner App eine stabile Integrationsschicht. Du kannst zuerst den Produktablauf veröffentlichen und danach Modelle, Anbieter, Routing und Preise anpassen, ohne jeden Aufrufer neu zu schreiben.
+
+---
+
+## Grundlegende Konzepte
+
+<Columns cols={2}>
+	<Card
+		title="Einheitliche Endpunkte"
+		icon="terminal"
+		href="../api-reference/introduction.mdx"
+	>
+		Verwende ein API-Format für Text, Bilder, Moderation, Audio, Video und anbieterkompatible Routen.
+	</Card>
+	<Card title="Routing-Steuerung" icon="git-branch" href="../guides/routing-and-fallbacks.mdx">
+		Lege fest, wie Anfragen je nach Verfügbarkeit, Kosten, Latenz, Region und Richtlinien auf Anbieter verteilt werden.
+	</Card>
+	<Card title="Nutzungs- und Kostenverfolgung" icon="chart-column-increasing">
+		Verfolge Anfragevolumen, Tokenverbrauch, Latenz und Preis, damit das Verhalten im Produktivbetrieb sichtbar wird.
+	</Card>
+	<Card title="BYOK (Bring Your Own Key)" icon="key">
+		Verbinde Anbieter-Schlüssel, wenn du deren Abrechnung und Limits nutzen, aber dieselbe Gateway-Schnittstelle beibehalten möchtest.
+	</Card>
+</Columns>
+
+---
+
+## Empfohlener Ablauf
+
+1. **[Melde dich an](https://phaseo.app/de-DE/sign-up)** und erstelle ein Phaseo-Konto.
+2. **[Erstelle einen API-Schlüssel](https://phaseo.app/de-DE/gateway/keys)** in deinem Dashboard.
+3. **Sende deine erste Anfrage** an den Endpunkt `/v1/responses`.
+4. **Wähle deinen Weg in den Produktivbetrieb** mit SDKs, Routing, Observability und Rollout.
+
+<Card
+	title="Schnellstart"
+	icon="rocket"
+	href="../quickstart.mdx"
+	horizontal
+>
+	Führe deinen ersten erfolgreichen API-Aufruf mit einem kostenlosen Modell aus.
+</Card>
+
+---
+
+## Nächste Schritte
+
+<Columns cols={2}>
+	<Card
+		title="Authentifizierung"
+		icon="lock"
+		href="./authentication.mdx"
+	>
+		Hier erfährst du, wie du dich sicher mit deinem persönlichen oder Team-API-Schlüssel authentifizierst.
+	</Card>
+	<Card title="API-Referenz" icon="code" href="../api-reference/introduction.mdx">
+		Hier findest du die vollständige API-Dokumentation mit Endpunkten, Parametern und Antwortschemata.
+	</Card>
+	<Card
+		title="Bewährte Vorgehensweisen"
+		icon="shield-check"
+		href="./best-practices.mdx"
+	>
+		So holst du mehr aus Phaseo Gateway heraus.
+	</Card>
+	<Card title="Beispiele" icon="terminal" href="../guides/examples.mdx">
+		Kopiere sofort ausführbare Beispiele für Next.js, Node.js-Streaming, Python und curl.
+	</Card>
+</Columns>
+
+---
+
+Du möchtest einen praxisorientierten Einstieg? Fahre mit [Gateway integrieren](./integrating-with-the-gateway.mdx) fort und entdecke anschließend [Integrationen](../guides/integrations/index.mdx) oder [Rate Limits](./rate-limits.mdx), wenn dein Einsatz wächst.

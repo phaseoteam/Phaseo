@@ -15,27 +15,14 @@ import {
 } from '@/components/ui/card'
 import { createClient } from '@/utils/supabase/client'
 import { toast } from 'sonner'
-import { Loader2, Lock, CheckCircle2 } from 'lucide-react'
+import { Loader2, Lock } from 'lucide-react'
 import { PasswordStrengthIndicator } from '@/components/(gateway)/settings/account/PasswordStrengthIndicator'
 import { z } from 'zod'
-
-const passwordSchema = z
-    .object({
-        password: z
-            .string()
-            .min(8, 'Password must be at least 8 characters')
-            .regex(/[A-Z]/, 'Must contain an uppercase letter')
-            .regex(/[a-z]/, 'Must contain a lowercase letter')
-            .regex(/[0-9]/, 'Must contain a number'),
-        confirmPassword: z.string(),
-    })
-    .refine((data) => data.password === data.confirmPassword, {
-        message: "Passwords don't match",
-        path: ['confirmPassword'],
-    })
+import { useTranslations } from 'next-intl'
 
 export default function ResetPasswordPage() {
     const router = useRouter()
+    const t = useTranslations('Common.authFlows.passwordReset')
     const [password, setPassword] = React.useState('')
     const [confirmPassword, setConfirmPassword] = React.useState('')
     const [loading, setLoading] = React.useState(false)
@@ -61,11 +48,25 @@ export default function ResetPasswordPage() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
 
+        const passwordSchema = z
+            .object({
+                password: z
+                    .string()
+                    .min(8, t('minLength'))
+                    .regex(/[A-Z]/, t('uppercase'))
+                    .regex(/[a-z]/, t('lowercase'))
+                    .regex(/[0-9]/, t('number')),
+                confirmPassword: z.string(),
+            })
+            .refine((data) => data.password === data.confirmPassword, {
+                message: t('mismatch'),
+                path: ['confirmPassword'],
+            })
         const parsed = passwordSchema.safeParse({ password, confirmPassword })
 
         if (!parsed.success) {
             const msg =
-                parsed.error.issues[0]?.message ?? 'Please check your inputs.'
+                parsed.error.issues[0]?.message ?? t('checkInputs')
             toast.error(msg)
             return
         }
@@ -83,14 +84,14 @@ export default function ResetPasswordPage() {
                 throw error
             }
 
-            toast.success('Password reset successfully!')
+            toast.success(t('success'))
 
             // Redirect to home or settings page
             setTimeout(() => {
                 router.push('/settings/account')
             }, 1500)
         } catch (error: any) {
-            toast.error(error.message || 'Failed to reset password')
+            toast.error(t('failure'))
         } finally {
             setLoading(false)
         }
@@ -103,10 +104,10 @@ export default function ResetPasswordPage() {
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
                             <Lock className="h-5 w-5" />
-                            Reset password
+                            {t('title')}
                         </CardTitle>
                         <CardDescription>
-                            Loading password reset session...
+                            {t('loading')}
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -114,10 +115,9 @@ export default function ResetPasswordPage() {
                             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
                         </div>
                         <p className="text-center text-sm text-muted-foreground">
-                            If this takes too long, the reset link may have
-                            expired.
+                            {t('expiredLink')}
                             <br />
-                            Please request a new password reset.
+                            {t('requestNew')}
                         </p>
                     </CardContent>
                 </Card>
@@ -131,18 +131,17 @@ export default function ResetPasswordPage() {
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                         <Lock className="h-5 w-5" />
-                        Set new password
+                            {t('setTitle')}
                     </CardTitle>
                     <CardDescription>
-                        Enter your new password below. Make sure it's strong and
-                        secure.
+                        {t('description')}
                     </CardDescription>
                 </CardHeader>
 
                 <form onSubmit={handleSubmit}>
                     <CardContent className="space-y-4">
                         <div className="space-y-2">
-                            <Label htmlFor="password">New password</Label>
+                            <Label htmlFor="password">{t('newPassword')}</Label>
                             <Input
                                 id="password"
                                 type="password"
@@ -150,7 +149,7 @@ export default function ResetPasswordPage() {
                                 autoComplete="new-password"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
-                                placeholder="Enter your new password"
+                                placeholder={t('newPasswordPlaceholder')}
                                 disabled={loading}
                                 autoFocus
                             />
@@ -161,7 +160,7 @@ export default function ResetPasswordPage() {
 
                         <div className="space-y-2">
                             <Label htmlFor="confirmPassword">
-                                Confirm new password
+                                {t('confirmPassword')}
                             </Label>
                             <Input
                                 id="confirmPassword"
@@ -172,7 +171,7 @@ export default function ResetPasswordPage() {
                                 onChange={(e) =>
                                     setConfirmPassword(e.target.value)
                                 }
-                                placeholder="Confirm your new password"
+                                placeholder={t('confirmPasswordPlaceholder')}
                                 disabled={loading}
                             />
                         </div>
@@ -187,10 +186,10 @@ export default function ResetPasswordPage() {
                             {loading ? (
                                 <>
                                     <Loader2 className="me-2 h-4 w-4 animate-spin" />
-                                    Resetting password...
+                                    {t('resetting')}
                                 </>
                             ) : (
-                                'Reset password'
+                                t('submit')
                             )}
                         </Button>
                     </CardFooter>

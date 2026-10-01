@@ -1,0 +1,63 @@
+---
+icon: "sparkles"
+title: "生成文本（AI SDK）"
+description: "使用 Vercel AI SDK 和 Phaseo 非流式生成文本。"
+---
+
+使用 `generateText` 和 `phaseo(modelId)` 执行单次生成。
+
+```ts
+import { phaseo } from "@phaseo/ai-sdk-provider";
+import { generateText } from "ai";
+
+const result = await generateText({
+  model: phaseo("openai/gpt-5-nano"),
+  prompt: "Write a concise summary of Phaseo Gateway.",
+});
+
+console.log(result.text);
+console.log(result.providerMetadata);
+```
+
+## 使用聊天历史
+
+```ts
+import { phaseo } from "@phaseo/ai-sdk-provider";
+import { generateText } from "ai";
+
+const result = await generateText({
+  model: phaseo("openai/gpt-5-nano"),
+  messages: [
+    { role: "system", content: "You are a terse assistant." },
+    { role: "user", content: "Give me three bullet points on retrieval augmentation." },
+  ],
+});
+
+console.log(result.text);
+console.log(result.providerMetadata);
+```
+
+## 按模型设置
+
+```ts
+import { phaseo } from "@phaseo/ai-sdk-provider";
+import { generateText } from "ai";
+
+const result = await generateText({
+  model: phaseo("openai/gpt-5-nano", {
+    temperature: 0.2,
+    topP: 0.9,
+    maxTokens: 300,
+  }),
+  prompt: "Draft a release note for an API update.",
+});
+
+console.log(result.text);
+console.log(result.providerMetadata);
+```
+
+## Prompt 与 messages
+
+- 单轮快速请求使用 `prompt`。
+- 多轮上下文和角色控制使用 `messages`。
+- 查询 `/v1/models` 以获取最新模型 ID（参见[模型发现](../get-models/index.mdx)）。

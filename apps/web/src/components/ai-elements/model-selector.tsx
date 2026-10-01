@@ -1,3 +1,5 @@
+"use client";
+
 import {
   Command,
   CommandDialog,
@@ -19,6 +21,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
+import { useTranslations } from "next-intl";
 import { XIcon } from "lucide-react";
 import type { ComponentProps, ReactNode } from "react";
 
@@ -42,35 +45,39 @@ export type ModelSelectorContentProps = ComponentProps<typeof DialogContent> & {
 export const ModelSelectorContent = ({
   className,
   children,
-  title = "Model Selector",
+  title,
   commandProps,
   ...props
-}: ModelSelectorContentProps) => (
-  <DialogContent
-    className={cn("p-0", className)}
-    showCloseButton={false}
-    {...props}
-  >
-    <DialogTitle className="sr-only">{title}</DialogTitle>
-    <DialogClose asChild>
-      <Button
-        type="button"
-        variant="ghost"
-        size="icon-sm"
-        className="absolute right-4 top-2.5 z-10 bg-secondary"
-      >
-        <XIcon />
-        <span className="sr-only">Close</span>
-      </Button>
-    </DialogClose>
-    <Command
-      className="**:data-[slot=command-input-wrapper]:h-auto **:data-[slot=command-input-wrapper]:pr-11"
-      {...commandProps}
+}: ModelSelectorContentProps) => {
+  const t = useTranslations("Product.chatRooms.aiElements");
+
+  return (
+    <DialogContent
+      className={cn("p-0", className)}
+      showCloseButton={false}
+      {...props}
     >
-      {children}
-    </Command>
-  </DialogContent>
-);
+      <DialogTitle className="sr-only">{title ?? t("modelSelector")}</DialogTitle>
+      <DialogClose asChild>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-sm"
+          className="absolute right-4 top-2.5 z-10 bg-secondary"
+        >
+          <XIcon />
+          <span className="sr-only">{t("close")}</span>
+        </Button>
+      </DialogClose>
+      <Command
+        className="**:data-[slot=command-input-wrapper]:h-auto **:data-[slot=command-input-wrapper]:pr-11"
+        {...commandProps}
+      >
+        {children}
+      </Command>
+    </DialogContent>
+  );
+};
 
 export type ModelSelectorDialogProps = ComponentProps<typeof CommandDialog>;
 
@@ -203,16 +210,20 @@ export const ModelSelectorLogo = ({
   provider,
   className,
   ...props
-}: ModelSelectorLogoProps) => (
-  <img
-    {...props}
-    alt={`${provider} logo`}
-    className={cn("size-3 dark:invert", className)}
-    height={12}
-    src={`https://models.dev/logos/${provider}.svg`}
-    width={12}
-  />
-);
+}: ModelSelectorLogoProps) => {
+  const t = useTranslations("Product.chatRooms.aiElements");
+
+  return (
+    <img
+      {...props}
+      alt={t("providerLogo", { provider })}
+      className={cn("size-3 dark:invert", className)}
+      height={12}
+      src={`https://models.dev/logos/${provider}.svg`}
+      width={12}
+    />
+  );
+};
 
 export type ModelSelectorLogoGroupProps = ComponentProps<"div">;
 

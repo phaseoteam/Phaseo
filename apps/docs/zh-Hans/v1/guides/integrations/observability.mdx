@@ -1,0 +1,59 @@
+---
+title: "可观测性"
+icon: "activity"
+description: "使用 Langfuse、LangSmith、OpenTelemetry 等工具跟踪 Phaseo 请求。"
+---
+
+大多数可观测性工具位于模型客户端之上。保留现有跟踪配置，并将底层兼容 OpenAI 或 Anthropic 的客户端指向 Phaseo。
+
+## 使用 OpenAI SDK 和 Langfuse
+
+```bash
+pip install langfuse openai
+```
+
+```python
+import os
+from langfuse.openai import openai
+
+client = openai.OpenAI(
+    api_key=os.environ["PHASEO_API_KEY"],
+    base_url="https://api.phaseo.app/v1",
+)
+
+response = client.responses.create(
+    model="openai/gpt-5-nano",
+    input="Reply with only: ok",
+)
+```
+
+## 使用 LangChain 和 LangSmith
+
+按照 [LangChain](./langchain.mdx) 的配置方式，通过常用的 LangChain 环境变量启用 LangSmith：
+
+```bash
+export LANGSMITH_TRACING=true
+export LANGSMITH_API_KEY="your_langsmith_key"
+export PHASEO_API_KEY="your_phaseo_key"
+```
+
+## OpenTelemetry
+
+如果你的框架会发送 OpenTelemetry span，Phaseo 无需专用导出器。请自行添加有用的请求上下文：
+
+- 模型 ID
+- 端点，例如 `responses` 或 `chat.completions`
+- 从响应元数据或日志中获取的 Phaseo 请求 ID
+- 启用响应元数据时所选的提供商
+
+## 注意事项
+
+- 不要将 Phaseo API 密钥作为属性发送给可观测性工具。
+- 如果可观测性库包装了 OpenAI SDK，请为包装后的客户端配置 `base_url: "https://api.phaseo.app/v1"`。
+- 对于 LangChain 跟踪，请将跟踪回调与 Phaseo 的 `ChatOpenAI` 配置搭配使用。
+
+## 相关页面
+
+- [OpenAI SDK](./openai-sdk.mdx)
+- [LangChain](./langchain.mdx)
+- [活动](../../api-reference/endpoint/activity.mdx)

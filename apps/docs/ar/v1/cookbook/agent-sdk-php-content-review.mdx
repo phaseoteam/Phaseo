@@ -1,0 +1,67 @@
+---
+title: "راجع محتوى CMS باستخدام PHP Agent SDK"
+icon: "file-check"
+description: "استخدم PHP Agent SDK لإدراج أداة محلية للبحث عن المحتوى ضمن دورة مراجعة محدودة."
+---
+
+استخدم هذه الوصفة عندما يحتاج تطبيق PHP أو لوحة الإدارة إلى مراجعة المحتوى بسرعة دون نقل التنسيق إلى نظام آخر.
+
+## 1. جهّز حزم SDK
+
+<Note type="warning">لم تُنشر حزمة PHP Agent SDK على Packagist بعد. اتبع [تعليمات التثبيت من المصدر](../sdk-reference/php/agent-sdk-installation.mdx).</Note>
+
+## 2. عرّف أداة للبحث عن المحتوى
+
+```php
+<?php
+use Phaseo\AgentSdk\AgentSdk;
+use Phaseo\AgentSdk\Tool;
+
+$loadDraft = AgentSdk::defineTool(new Tool(
+    id: "load-draft",
+    description: "Load one CMS draft by slug.",
+    parameters: [
+        "type" => "object",
+        "properties" => [
+            "slug" => ["type" => "string"],
+        ],
+        "required" => ["slug"],
+    ],
+    execute: static fn (mixed $input, $context) => [
+        "slug" => $input["slug"] ?? "homepage",
+        "headline" => "Phaseo makes gateway routing visible.",
+    ]
+));
+```
+
+## 3. أنشئ الوكيل وشغّله
+
+```php
+<?php
+use Phaseo\AgentSdk\AgentDefinition;
+
+$agent = AgentSdk::createAgent(new AgentDefinition(
+    id: "content-review-agent",
+    model: "openai/gpt-5.4-nano",
+    instructions: "Use tools when helpful and return concise editorial feedback.",
+    tools: [$loadDraft]
+));
+
+$result = $agent->run(
+    input: "Review the homepage draft and suggest one headline improvement.",
+    client: AgentSdk::createGatewayAgentClient()
+);
+
+echo $result->output . PHP_EOL;
+```
+
+## متى تناسب هذه الوصفة
+
+- يكون تطبيق PHP مسؤولًا بالفعل عن مصدر المحتوى
+- تكفي أداة محلية واحدة أو اثنتان
+- تريد دورة محدودة بدلًا من منصة تنسيق أوسع
+
+## مواضيع ذات صلة
+
+- [PHP Agent SDK](../sdk-reference/php/agent-sdk.mdx)
+- [إصلاح JSON منظّم بتنسيق غير صالح](./response-healing-for-structured-json.mdx)

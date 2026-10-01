@@ -1,0 +1,45 @@
+---
+title: "Présentation"
+description: "À quoi sert le SDK Agent TypeScript et quand l’utiliser."
+---
+
+Utilisez le SDK Agent TypeScript lorsque votre application a besoin de plus qu’une génération ponctuelle :
+
+- boucles locales d’outils en plusieurs étapes
+- état d’exécution reprenable
+- tours de modèle gérés par la passerelle
+- sorties structurées validées, progression en streaming et routage compatible avec les plugins
+
+Il s’appuie sur `@phaseo/sdk` et définit le contrat d’exécution de référence commun aux autres langages du SDK Agent.
+
+## Matrice des capacités du runtime
+
+| Capacité | Prise en charge par le SDK |
+| --- | --- |
+| Outils exécutables et simultanés | Intégrés, avec ordre déterministe des résultats et délai d’attente par outil |
+| Validation à l’exécution | Schémas d’entrée, de sortie, d’événement et de résultat final via `parse`, `safeParse` ou des fonctions de validation |
+| Approbation humaine | Par outil ou appel, avec validation par ID d’appel exact et rejet lors de la reprise |
+| Outils avec intervention humaine | Mise en pause avec `onToolCalled` et transformation avec `onResponseReceived` |
+| Outils manuels | `execute: false` avec `toolOutputs` fourni de l’extérieur |
+| Outils produisant une progression | Outils générateurs asynchrones et événements `tool.preliminary_result` |
+| Récupération après une erreur d’outil | Échec de l’exécution ou renvoi d’une erreur d’outil structurée au modèle |
+| Streaming | Différentiels du modèle et consommateurs rejouables pour le texte, le raisonnement, les éléments, les outils et tous les événements |
+| Contrôles d’arrêt | Étapes, durée, jetons, coût, appels d’outils, motif de fin et prédicats personnalisés |
+| Tours dynamiques | Modèle, instructions, valeurs d’échantillonnage, ensembles d’outils, modification du contexte et `nextTurnParams` dynamiques |
+| Reprise durable | Résultats d’exécution sérialisables ou accesseur `state` dont le chargement et l’enregistrement sont gérés par l’application |
+| Observabilité | Données normalisées sur l’utilisation et le coût, avertissements, motifs de fin, résultats d’étapes, événements de cycle de vie et outils de développement locaux |
+
+## Fonctionnalités incluses
+
+- `createAgent()`
+- `defineTool()`
+- `createGatewayAgentClient()`
+- `run()`, `stream()`, `continueRun()` et `continueStream()`
+- outils exécutables, manuels, soumis à approbation et avec intervention humaine
+- schémas d’entrée et de sortie à l’exécution, progression des générateurs, conditions d’arrêt combinables et récapitulatifs d’utilisation et de coût
+- accesseurs d’état facultatifs gérés par l’application et événements de cycle de vie pour les outils de développement
+
+## Étapes suivantes
+
+- [Installation](./agent-sdk-installation.mdx)
+- [Utilisation](./agent-sdk.mdx)

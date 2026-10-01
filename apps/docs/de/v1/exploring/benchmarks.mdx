@@ -1,0 +1,144 @@
+---
+title: "Benchmarks erkunden"
+description: "Erfahre, wie KI-Modellbenchmarks auf Phaseo gesammelt, vereinheitlicht und visualisiert werden."
+sidebarTitle: "Benchmarks"
+icon: "chart-no-axes-column"
+---
+
+Benchmarks sind ein zentraler Bestandteil davon, wie Phaseo Modellqualität und Fortschritt misst.
+Sie liefern **objektive, reproduzierbare Messwerte**, mit denen du Modellleistungen über Aufgaben, Bereiche und Anbieter hinweg vergleichen kannst – von Schlussfolgern und Programmierung bis zu Sprachverständnis und Bilderkennung.
+
+---
+
+## Was sind Benchmarks?
+
+Ein **Benchmark** ist ein Datensatz oder eine Auswertung, mit der die Leistung eines Modells bei einer bestimmten Aufgabe getestet wird.
+Indem wir mehrere Modelle mit demselben Datensatz ausführen, können wir ihre relativen Stärken und Schwächen messen.
+
+Häufige Beispiele sind:
+
+-   🧠 **MMLU (Massive Multitask Language Understanding)** – prüft Allgemeinwissen und logisches Schlussfolgern.
+-   🔢 **GSM8K** – prüft mathematisches Denken und Problemlösungsfähigkeiten.
+-   💬 **HellaSwag** – bewertet Alltagswissen und Kontextverständnis.
+-   🧮 **ARC-Challenge** – misst wissenschaftliches Denken und Logik.
+-   💡 **HumanEval** – bewertet Programmier- und Codegenerierungsfähigkeiten.
+
+---
+
+## So geht Phaseo mit Benchmarks um
+
+Phaseo sammelt Benchmark-Daten aus **mehreren öffentlichen Quellen** und **offiziellen Berichten** und bringt sie anschließend in ein einheitliches Format.
+
+Der Benchmark-Abschnitt jedes Modells enthält:
+
+-   **Punktzahl** – meist als Prozentwert oder auf einer normalisierten Skala angegeben.
+-   **Datensatzquelle** – z. B. MMLU, GSM8K usw.
+-   **Evaluierungsmethode** – gibt an, wie die Punktzahl ermittelt wurde (offizieller Bericht, Bewertung durch Dritte oder Community-Beitrag).
+-   **Zuletzt aktualisiert** – zeigt, wann die Benchmark-Daten zuletzt aktualisiert wurden.
+
+---
+
+## Beispiel für eine Benchmark-Seite
+
+---
+
+## Benchmark-Kategorien
+
+Benchmarks werden nach der geprüften Fähigkeit kategorisiert:
+
+| Kategorie                   | Beispiele               | Beschreibung                                                           |
+| -------------------------- | ---------------------- | --------------------------------------------------------------------- |
+| **Schlussfolgern**              | MMLU, GSM8K, ARC       | Prüft allgemeine Logik, mehrstufiges Schlussfolgern und Problemlösung.       |
+| **Sprachverständnis** | HellaSwag, BoolQ, PIQA | Misst Leseverständnis, Allgemeinwissen und Sprachfähigkeit. |
+| **Codegenerierung**        | HumanEval, MBPP        | Bewertet Programmierung und Genauigkeit bei der Codesynthese.                    |
+| **Mathematik und Naturwissenschaften**         | GSM8K, MATH, SciQ      | Konzentriert sich auf numerisches und wissenschaftliches Denken.                        |
+| **Multimodal**             | MathVista, MMMU        | Kombiniert Aufgaben zum Verständnis von Text und Bild.                         |
+
+---
+
+## Punktzahlen interpretieren
+
+| Wertebereich | Interpretation                                                    |
+| ----------- | ----------------------------------------------------------------- |
+| **90-100%** | Außergewöhnlich – nahezu Spitzenleistung.                  |
+| **80-89%**  | Hervorragend – für die meisten Produktionsanwendungen geeignet.                |
+| **60-79%**  | Gut – zuverlässig bei allgemeinen Aufgaben, kann aber bei Sonderfällen Schwierigkeiten haben. |
+| **< 60%**   | In Entwicklung – am besten für Experimente oder Forschung geeignet.         |
+
+Beachte, dass manche Benchmarks **unterschiedliche Bewertungssysteme** verwenden.
+Phaseo normalisiert diese nach Möglichkeit, damit Vergleiche aussagekräftiger sind.
+
+---
+
+## Benchmarks auf Phaseo visualisieren
+
+Benchmark-Ergebnisse werden wie folgt visualisiert:
+
+-   📊 **Balkendiagramme** zum Vergleich von Modellen innerhalb desselben Datensatzes.
+-   📈 **Trenddiagramme** zeigen, wie sich Modelle im Laufe der Zeit verbessern.
+-   🧮 **Gesamtpunktzahlen** fassen die Leistung über mehrere Datensätze hinweg zusammen.
+
+Jeder Benchmark-Datensatz auf Phaseo bietet Filter für:
+
+-   Modelltyp (Chat, Code, Embeddings usw.)
+-   Anbieter
+-   Veröffentlichungsjahr
+-   Datensatzkategorie
+
+So erkennst du schnell Muster, etwa welche Modellfamilien bei Reasoning- oder Programmieraufgaben führend sind.
+
+---
+
+## Datenquellen und Methodik
+
+Phaseo führt Benchmark-Daten aus folgenden Quellen zusammen:
+
+-   Offizielle Forschungsarbeiten und Modellberichte.
+-   Evaluierungsseiten von Anbietern (OpenAI Evals, Anthropic Reports usw.).
+-   Offene Community-Datensätze (z. B. Hugging-Face-Bestenlisten).
+-   Direkte Einreichungen von Nutzern über GitHub.
+
+Alle Daten werden vor der Veröffentlichung vereinheitlicht und geprüft.
+Weitere Informationen findest du unter [Forschung und Methodik → Benchmark-Methodik](../research/benchmark-methodology.mdx).
+
+---
+
+## Beispiele für Anwendungsfälle
+
+| Ziel                                 | Beispiel                                                              |
+| ------------------------------------ | -------------------------------------------------------------------- |
+| Reasoning-Modelle vergleichen             | „Welches Modell erzielt bei GSM8K die höchste Punktzahl?“                               |
+| Kosten und Leistung gegeneinander abwägen | „Rechtfertigt GPT-4o die höheren Kosten im Vergleich zu Claude 3.5 Sonnet?“ |
+| Jährliche Fortschritte verfolgen                | „Wie stark hat sich die Genauigkeit bei MMLU seit 2022 verbessert?“                    |
+| Benchmarks nach Kategorie untersuchen      | „Welche Modelle sind beim multimodalen Reasoning führend?“                         |
+
+---
+
+## Benchmark-Daten beitragen
+
+Du kannst neue oder korrigierte Benchmark-Ergebnisse einreichen und so Phaseo aktuell halten.
+Jede Einreichung wird vor der Aufnahme auf Einheitlichkeit und Genauigkeit geprüft.
+
+<Card
+	title="Benchmark-Daten beitragen"
+	icon="github"
+	href="../research/submitting-scores.mdx"
+	horizontal
+>
+	Erfahre, wie du Benchmark-Informationen sicher hinzufügst oder bearbeitest.
+</Card>
+
+---
+
+## Nächste Schritte
+
+Wenn du die Benchmark-Daten verstanden hast, kannst du die **API-Anbieter** erkunden, über die diese Modelle programmatisch verfügbar sind.
+
+<Card
+	title="API-Anbieter erkunden"
+	icon="network"
+	href="./api-providers.mdx"
+	horizontal
+>
+	Sieh dir an, wo und wie Modelle gehostet, bepreist und bereitgestellt werden.
+</Card>

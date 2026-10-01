@@ -1,0 +1,49 @@
+---
+title: "Workspace सूचनाएँ"
+description: "Workspace alerts को email, chat channels या HTTPS webhook पर भेजें।"
+icon: "bell-ring"
+---
+
+Notification destinations से workspace के enabled alerts उन tools पर भेजें जिन्हें आपकी team पहले से monitor करती है। Destinations पूरे workspace में shared होते हैं; operational alerts के लिए इस्तेमाल करने से पहले इन्हें test कर सकते हैं।
+
+## गंतव्य जोड़ें
+
+1. **Gateway → सेटिंग्स → सूचनाएँ** खोलें।
+2. **Destination जोड़ें** चुनें।
+3. नाम दर्ज करें और एक या अधिक channels चुनें।
+4. गंतव्य की जानकारी और वैकल्पिक उल्लेख जोड़ें।
+5. हर कॉन्फ़िगर किए गए चैनल के लिए **टेस्ट भेजें** चुनें।
+6. सभी tests सफल होने के बाद destinations बनाएँ।
+
+Phaseo इन विकल्पों का समर्थन करता है:
+
+- ईमेल पते और वितरण सूचियाँ
+- bot token के ज़रिए Discord चैनल
+- Discord webhooks
+- Slack incoming webhooks
+- Microsoft Teams वर्कफ़्लो URLs
+- कस्टम HTTPS webhooks
+
+क्रेडेंशियल और webhook URL सहेजने से पहले एन्क्रिप्ट किए जाते हैं। चैनल क्रेडेंशियल को सूचना भेजने तक सीमित रखें और उजागर होने पर बदल दें।
+
+## उत्पाद सूचनाएँ चालू करें
+
+Notifications page पर आपके workspace के लिए उपलब्ध alert types दिखते हैं। Workspace में इस्तेमाल होने वाला model retire होने से पहले सूचना पाने के लिए **Model Deprecation Alerts** चालू करें।
+
+Dashboard में दिखने वाले built-in recipients के अलावा, alerts configured destinations पर भी भेजे जाते हैं।
+
+## उल्लेख
+
+Optional mention fields से alert खास recipients को notify कर सकता है:
+
+- Discord user IDs और role IDs स्वीकार करता है।
+- Slack user IDs और user-group IDs स्वीकार करता है।
+- Microsoft Teams में Microsoft 365 email addresses या Entra object IDs दिए जा सकते हैं।
+
+Mentions का सीमित उपयोग करें। Workspace के high-volume alerts आम तौर पर किसी monitored channel पर भेजें, बड़े group को page न करें।
+
+## गंतव्यों की जाँच करें और हटाएँ
+
+Credentials rotate करने या channel configuration बदलने के बाद मौजूदा destination के पास **टेस्ट भेजें** इस्तेमाल करें। जिन destinations को अब monitor नहीं किया जाता, उन्हें हटा दें ताकि alerts किसी छोड़े हुए channel पर भेजे हुए न लगें।
+
+Custom webhooks में HTTPS उपयोग करें और process करने से पहले request validate करें। तुरंत successful response लौटाएँ और धीमे काम को background job में भेजें।

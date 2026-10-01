@@ -1,0 +1,29 @@
+---
+icon: "wand-sparkles"
+title: "Modification d’images"
+description: "Appelez /images/edits avec le SDK Java."
+---
+
+**Méthode**: `client.createImageEdit(...)`
+
+```java
+import app.phaseo.sdk.Phaseo;
+
+Phaseo client = new Phaseo(System.getenv("PHASEO_API_KEY"));
+
+String body = """
+{
+  "model": "openai/gpt-image-1",
+  "prompt": "Make this image warmer",
+  "image": "data:image/png;base64,..."
+}
+""";
+
+Object response = client.createImageEdit(body);
+System.out.println(String.valueOf(response));
+```
+
+<Note>
+Le client Java en cours de développement envoie directement des corps de requête JSON. Pour les opérations multipart avancées,
+utilisez des appels REST directs jusqu’à l’ajout d’assistants de plus haut niveau.
+</Note>

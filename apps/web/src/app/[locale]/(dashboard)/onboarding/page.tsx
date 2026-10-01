@@ -1,4 +1,6 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import NoFooterStyle from "@/components/layout/NoFooterStyle";
 import InteractiveOnboarding, {
 	type OnboardingModel,
@@ -14,13 +16,14 @@ import { fetchFrontendGatewayModels } from "@/lib/fetchers/frontend/fetchFronten
 import { getWorkspaceIdFromCookie } from "@/utils/workspaceCookie";
 import { fetchOnboardingInitialData } from "@/lib/fetchers/internal/fetchOnboardingInitialData";
 
-export const metadata = {
-	title: "Developer onboarding - Phaseo",
-	robots: {
-		index: false,
-		follow: false,
-	},
-};
+export async function generateMetadata(): Promise<Metadata> {
+	const t = await getTranslations("Product.interactiveOnboarding");
+	return {
+		title: t("pageTitle"),
+		description: t("pageDescription"),
+		robots: { index: false, follow: false },
+	};
+}
 
 const ONBOARDING_MODEL_IDS = [
 	"anthropic/claude-fable-5",

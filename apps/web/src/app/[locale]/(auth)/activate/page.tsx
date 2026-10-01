@@ -1,5 +1,7 @@
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
+import type { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
 import { ShieldCheck, Terminal } from "lucide-react";
 import { approveDeviceAction, denyDeviceAction, lookupDeviceRequest } from "./actions";
 import { createClient } from "@/utils/supabase/server";
@@ -10,10 +12,10 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { AuthSuspenseFallback } from "../AuthSuspenseFallback";
 import { WorkspaceSelectField } from "./WorkspaceSelectField";
 
-export const metadata = {
-	title: "Activate Phaseo CLI",
-	description: "Approve a device login request for the Phaseo CLI.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+	const t = await getTranslations("Common.authFlows.deviceActivation");
+	return { title: t("metaTitle"), description: t("metaDescription") };
+}
 
 type ActivatePageProps = {
 	searchParams: Promise<{
@@ -32,6 +34,7 @@ export default function ActivatePage({ searchParams }: ActivatePageProps) {
 }
 
 async function ActivatePageContent({ searchParams }: ActivatePageProps) {
+	const t = await getTranslations("Common.authFlows.deviceActivation");
 	const params = await searchParams;
 	const supabase = await createClient();
 	const {
@@ -44,14 +47,14 @@ async function ActivatePageContent({ searchParams }: ActivatePageProps) {
 	}
 
 	if (params.approved) {
-		return <ActivationResult title="CLI login approved" description="You can return to your terminal now." />;
+		return <ActivationResult title={t("approvedTitle")} description={t("approvedDescription")} />;
 	}
 	if (params.denied) {
-		return <ActivationResult title="CLI login denied" description="The device login request was denied." />;
+		return <ActivationResult title={t("deniedTitle")} description={t("deniedDescription")} />;
 	}
 
 	const userCode = String(params.user_code ?? "").trim();
-	const request = userCode ? await lookupDeviceRequest(userCode).catch((error) => ({ error: String(error?.message ?? error) })) : null;
+	const request = userCode ? await lookupDeviceRequest(userCode).catch(() => ({ error: true })) : null;
 	const { data: sessionData } = await supabase.auth.getSession();
 	const { workspaces } = await fetchAccountWebApi<{
 		workspaces: Array<{ id: string; name: string; role: string }>;
@@ -65,9 +68,9 @@ async function ActivatePageContent({ searchParams }: ActivatePageProps) {
 						<Terminal className="size-7 text-primary" />
 					</div>
 					<div>
-						<CardTitle className="text-2xl">Activate Phaseo CLI</CardTitle>
+						<CardTitle className="text-2xl">{t("title")}</CardTitle>
 						<CardDescription>
-							Approve this request only if the code matches the one shown in your terminal.
+							{t("description")}
 						</CardDescription>
 					</div>
 				</CardHeader>
@@ -75,18 +78,18 @@ async function ActivatePageContent({ searchParams }: ActivatePageProps) {
 					{!userCode ? (
 						<Alert>
 							<AlertDescription>
-								Open the full verification link from your terminal, or add the code with
+								{t("missingCode")}
 								<code className="mx-1 rounded bg-muted px-1 py-0.5">?user_code=XXXX-XXXX</code>.
 							</AlertDescription>
 						</Alert>
 					) : request && "error" in request ? (
 						<Alert variant="destructive">
-							<AlertDescription>{request.error}</AlertDescription>
+							<AlertDescription>{t("requestError")}</AlertDescription>
 						</Alert>
 					) : (
 						<>
 							<div className="rounded-xl border bg-muted/40 p-4">
-								<div className="text-sm text-muted-foreground">Device code</div>
+								<div className="text-sm text-muted-foreground">{t("deviceCode")}</div>
 								<div className="mt-1 font-mono text-2xl font-semibold tracking-widest">{userCode}</div>
 							</div>
 							<div className="rounded-xl border p-4">
@@ -95,7 +98,7 @@ async function ActivatePageContent({ searchParams }: ActivatePageProps) {
 									<div>
 										<div className="font-medium">{request?.client?.name ?? "Phaseo CLI"}</div>
 										<div className="text-sm text-muted-foreground">
-											Requested scopes: {(request?.scopes ?? []).join(", ")}
+											{t("requestedScopes")}: {(request?.scopes ?? []).join(", ")}
 										</div>
 									</div>
 								</div>
@@ -111,11 +114,11 @@ async function ActivatePageContent({ searchParams }: ActivatePageProps) {
 					<form action={denyDeviceAction} className="flex-1">
 						<input type="hidden" name="user_code" value={userCode} />
 						<Button variant="outline" className="w-full" disabled={!userCode}>
-							Deny
+							{t("deny")}
 						</Button>
 					</form>
 					<Button type="submit" form="approve-device" className="flex-1" disabled={!userCode || Boolean(request && "error" in request)}>
-						Approve CLI
+						{t("approve")}
 					</Button>
 				</CardFooter>
 			</Card>

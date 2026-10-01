@@ -1,0 +1,23 @@
+---
+icon: "triangle-alert"
+title: "Erreurs et dépannage"
+description: "Gérez les échecs de modèle, d’outil, de validation, de délai d’attente et de reprise dans les agents PHP."
+---
+
+Les échecs des agents proviennent généralement d’une requête au modèle, d’un outil local, de la validation du schéma, d’un délai d’attente ou d’une décision humaine manquante.
+
+## Récupérer après une erreur d’outil
+
+Définissez `onError: "return-to-model"` lorsque le modèle peut récupérer d’une erreur d’outil. L’erreur devient un résultat d’outil structuré et l’agent peut choisir une autre action. Conservez le comportement fail-run pour les opérations dangereuses ou irrécupérables.
+
+## Comprendre l’exécution de PHP
+
+Les callbacks d’outils PHP s’exécutent de manière synchrone. La concurrence des outils et leur interruption sont donc limitées par le runtime PHP et le client d’E/S sous-jacent. Définissez des délais d’attente explicites pour les outils réseau et les processus, et ne partez pas du principe qu’un callback expiré peut toujours être interrompu de force.
+
+## Diagnostiquer les erreurs de reprise
+
+Chaque appel en attente nécessite une approbation, un rejet ou un résultat externe associé à l’identifiant de l’appel d’outil. Enregistrez l’état d’exécution complet renvoyé avant d’afficher une interface d’approbation.
+
+## Consigner les champs utiles
+
+Enregistrez l’identifiant d’exécution, l’index d’étape, l’identifiant de requête, le fournisseur, le modèle, le motif de fin, l’identifiant d’appel d’outil et le motif d’arrêt. Utilisez les hooks de cycle de vie ou DevTools au lieu de journaliser des prompts et identifiants bruts.

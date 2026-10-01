@@ -1,0 +1,111 @@
+---
+title: "Presets ausrollen und Routing untersuchen"
+icon: "route"
+description: "Verwende Presets, um Prompt- und Routing-Standardwerte zu vereinheitlichen. Prüfe anschließend die Anfragedetails, um Phaseos Routing-Entscheidung nachzuvollziehen."
+---
+
+Nutze dieses Rezept, wenn du ein Preset für mehrere Dienste wiederverwenden möchtest, statt überall dieselben Prompts, Modelle und Routing-Standardwerte zu kopieren.
+
+## Ziel
+
+- Prompt- und Parameter-Standardwerte vereinheitlichen.
+- Festlegen, welche Anbieter bei einem Rollout oder aus Compliance-Gründen verwendet werden dürfen.
+- Genügend Anfragekontext behalten, um die Routing-Entscheidung erklären zu können.
+
+## 1. Preset erstellen
+
+Erstelle unter **Dashboard -> Einstellungen -> Presets** ein Preset mit:
+
+- einen eindeutigen Namen und Slug
+- einen System-Prompt
+- freigegebene Modelle
+- Anbieterpräferenzen
+- Parameter-Standardwerte wie `temperature`
+
+Verwende den Preset-Slug in deinem aufrufenden Code, damit dieselbe Anfragerichtlinie in mehreren Umgebungen genutzt werden kann.
+
+## 2. Request-Body klein halten
+
+Der Hauptvorteil von Presets ist, dass der Aufrufer nicht mehr bei jeder Anfrage dieselben Routing- und Prompt-Standardwerte wiederholen muss.
+
+<CodeGroup>
+```bash cURL
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "anthropic/claude-sonnet-4-5",
+    "input": "Generate a release summary for the last 24 hours.",
+    "preset": "release-summary"
+  }'
+```
+
+```typescript TypeScript SDK
+import Phaseo from "@phaseo/sdk";
+
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
+
+const response = await client.generateResponse({
+  model: "anthropic/claude-sonnet-4-5",
+  input: "Generate a release summary for the last 24 hours.",
+  preset: "release-summary",
+});
+
+console.log(response.output_text);
+```
+
+```python Python SDK
+from phaseo import Phaseo
+
+client = Phaseo(api_key="YOUR_API_KEY")
+
+response = client.generate_response(
+    {
+        "model": "anthropic/claude-sonnet-4-5",
+        "input": "Generate a release summary for the last 24 hours.",
+        "preset": "release-summary",
+    }
+)
+
+print(response.get("output_text"))
+```
+</CodeGroup>
+
+## 3. Änderungen durch das Preset verstehen
+
+Das Preset wird vor dem Provider-Routing angewendet:
+
+- fehlende Anfrageparameter werden aus dem Preset ergänzt
+- der Preset-Prompt wird der Systemebene vorangestellt
+- Anbieterpräferenzen verkleinern die Liste verfügbarer Anbieter, bevor sie sortiert wird
+- Modellbeschränkungen werden früh geprüft, statt unbemerkt auf eine andere Route auszuweichen
+
+## 4. Routing-Ergebnis untersuchen
+
+Wenn eine Anfrage anders als erwartet geroutet wird, öffne sie unter **Gateway -> Nutzung** und prüfe:
+
+- berücksichtigte Anbieter
+- gerankte Kandidaten
+- Routing-Faktoren der einzelnen Kandidaten
+- Sperren durch Workspace-Richtlinien oder Guardrails
+
+So findest du am schnellsten heraus:
+
+- warum ein Anbieter übersprungen wurde
+- warum eine Anfrage blockiert wurde
+- warum ein günstigeres oder latenzärmeres Ziel den Zuschlag erhielt
+
+## 5. Betriebsmuster
+
+Nutze beim Ändern des Routing-Verhaltens dieses Rollout-Muster:
+
+1. Erstelle einen neuen Preset-Slug für die neue Richtlinie.
+2. Stelle einen Aufrufer mit geringem Risiko auf das neue Preset um.
+3. Prüfe Anfragedetails und Aktivitätstrends.
+4. Weite den Rollout erst aus, wenn die Routing-Ergebnisse den Erwartungen entsprechen.
+
+## Zugehörige Anleitungen
+
+- [Presets](../guides/presets.mdx)
+- [Routing und Fallbacks](../guides/routing-and-fallbacks.mdx)
+- [Fehlerbehandlung](../developers/error-handling.mdx)

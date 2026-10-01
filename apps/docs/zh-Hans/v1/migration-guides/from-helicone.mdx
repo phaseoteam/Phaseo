@@ -1,0 +1,93 @@
+---
+title: "从 Helicone AI Gateway 迁移"
+sidebarTitle: "Helicone"
+description: "将兼容 OpenAI 的 Helicone 代理集成迁移到 Phaseo，并移除不再需要的可观测性请求头。"
+icon: "activity"
+---
+
+如果 Helicone 位于你的应用与 AI 提供商之间，请使用本指南。请求本身通常只需少量更改，但可观测性切换也要像端点切换一样认真规划。
+
+## 变更内容
+
+| 设置 | 之前 | 之后 |
+| --- | --- | --- |
+| 基础 URL | Helicone 代理 URL | `https://api.phaseo.app/v1` |
+| 身份验证 | 提供商密钥和 Helicone 身份验证 | `PHASEO_API_KEY` |
+| Helicone 请求头 | 添加到请求中 | 移除 |
+| 请求可见性 | Helicone 控制台 | Phaseo 活动和请求详情 |
+
+<Steps>
+<Step title="列出你依赖的 Helicone 功能">
+
+记录会影响生产运维的自定义属性、会话、用户标识、缓存、速率限制、告警和控制面板。不要假设移除代理后，这些工作流会自动在其他位置重现。
+
+</Step>
+
+<Step title="替换代理配置">
+
+将兼容 OpenAI 的客户端指向 Phaseo，并移除 `Helicone-Auth` 及其他 Helicone 专用请求头。
+
+<CodeGroup>
+```typescript TypeScript
+import OpenAI from "openai";
+
+const client = new OpenAI({
+  apiKey: process.env.PHASEO_API_KEY,
+  baseURL: "https://api.phaseo.app/v1",
+});
+
+const response = await client.chat.completions.create({
+  model: "openai/gpt-4.1-mini",
+  messages: [{ role: "user", content: "Reply with: migration ready" }],
+});
+```
+
+```python Python
+import os
+from openai import OpenAI
+
+client = OpenAI(
+    api_key=os.environ["PHASEO_API_KEY"],
+    base_url="https://api.phaseo.app/v1",
+)
+```
+
+```bash cURL
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-4.1-mini",
+    "messages": [{"role": "user", "content": "Reply with: migration ready"}]
+  }'
+```
+</CodeGroup>
+
+</Step>
+
+<Step title="迁移请求可见性">
+
+使用 Phaseo 活动、请求 ID、提供商尝试记录和定价详情进行运维排查。如果团队会将遥测数据导出到其他位置，请在切换前配置相应的[可观测性](../guides/integrations/observability.mdx)集成。
+
+</Step>
+
+<Step title="测试并逐步发布">
+
+确认请求在没有 Helicone 请求头的情况下也能完成，并确保团队在事件处理期间仍能回答所需的运维问题。推理和可观测性检查都通过后，再逐步切换流量。
+
+</Step>
+</Steps>
+
+## 迁移检查清单
+
+- 已移除 Helicone 代理 URL 和身份验证请求头。
+- 已通过 `GET /v1/models` 验证生产模型 ID。
+- 必要的请求元数据仍可在 Phaseo 或遥测技术栈中查看。
+- 必要时已为告警和控制面板安排替代方案。
+- 回滚仍只需更改端点和密钥配置。
+
+## 后续步骤
+
+- [可观测性](../guides/integrations/observability.mdx)
+- [提供商状态](../guides/provider-statuses.mdx)
+- [错误处理](../developers/error-handling.mdx)

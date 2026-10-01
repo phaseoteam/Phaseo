@@ -1,0 +1,67 @@
+---
+title: "Mistral Small 4"
+description: "Aspectos clave para adoptar Mistral Small 4, incluidos los controles de razonamiento y los campos de respuesta normalizados."
+icon: "/icons/brands/mistral.svg"
+---
+
+# Mistral Small 4
+
+Usa esta guía para incorporar Mistral Small 4 de forma segura a través de Phaseo Gateway:
+
+- `mistral/mistral-small-4-2026-03-16`
+
+## Novedades
+
+- Mistral Small 4 permite controlar el modo de razonamiento mediante `reasoning_effort`.
+- Gateway solo envía dos valores al proveedor para esta ruta:
+  - `none` (razonamiento desactivado)
+  - `high` (razonamiento activado)
+- Gateway normaliza los bloques de pensamiento de Mistral a campos de respuesta estándar:
+  - `message.content` para el texto visible del asistente
+  - `message.reasoning_content` y `message.reasoning_details` para el texto de razonamiento
+
+## Inicio rápido de la migración
+
+El razonamiento está desactivado de forma predeterminada en esta ruta.
+
+Reglas de mapeo de Gateway:
+
+- Si omites los controles de razonamiento, Gateway envía `reasoning_effort: "none"`.
+- Si pasas `reasoning.enabled: true`, Gateway envía `reasoning_effort: "high"`.
+- Si pasas `reasoning.effort: "none"`, Gateway envía `reasoning_effort: "none"`.
+- Si pasas cualquier otro valor en `reasoning.effort`, Gateway envía `reasoning_effort: "high"`.
+
+Uso recomendado:
+
+- Usa `reasoning.effort: "none"` para tareas ligeras.
+- Usa `reasoning.effort: "high"` para razonamiento profundo.
+
+Ejemplo:
+
+```json
+{
+  "model": "mistral/mistral-small-4-2026-03-16",
+  "messages": [
+    { "role": "user", "content": "Why is fast inference important?" }
+  ],
+  "reasoning": {
+    "effort": "high"
+  }
+}
+```
+
+## Notas sobre el manejo de respuestas
+
+Mistral puede devolver bloques de contenido mixtos del asistente (por ejemplo, `thinking` y `text`). Gateway los convierte en una estructura estable:
+
+- Respuesta final visible para el usuario en `choices[0].message.content`.
+- Texto de razonamiento en `choices[0].message.reasoning_content`.
+
+Así se conserva el comportamiento posterior que espera campos de finalización de chat al estilo OpenAI.
+
+## Lista de comprobación del despliegue
+
+1. Actualiza el ID a `mistral/mistral-small-4-2026-03-16`.
+2. Valida los controles de razonamiento usando solo `none` y `high`.
+3. Vuelve a ejecutar las pruebas de calidad y esquemas en las rutas de alto esfuerzo.
+4. Compara latencia y coste con `none` y `high` antes del cambio completo.

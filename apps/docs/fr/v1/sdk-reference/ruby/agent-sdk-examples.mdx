@@ -1,0 +1,32 @@
+---
+icon: "square-terminal"
+title: "Exemples"
+description: "Reprenez des exemples Ruby ciblés pour les outils, les approbations, le streaming et les exécutions limitées."
+---
+
+## Déploiement soumis à approbation
+
+```ruby
+deploy = PhaseoAgentSdk.define_tool(
+  id: "deploy",
+  description: "Deploy the selected release",
+  require_approval: true,
+  execute: ->(input, runtime) { deployments.deploy(input) }
+)
+```
+
+Conservez l’exécution renvoyée lorsqu’elle passe à `waiting_for_human`, puis reprenez-la avec une décision associée à l’identifiant de l’appel en attente.
+
+## Diffuser le texte
+
+```ruby
+stream = agent.stream(input: prompt, client: client)
+stream.text_stream.each { |delta| print delta }
+result = stream.result
+```
+
+## Limiter le travail autonome
+
+Combinez des limites de nombre d’étapes, de tokens, de coût et de durée afin que l’agent ne dépasse pas le budget de l’application, même s’il continue à trouver des tâches utiles.
+
+Consultez [les outils](./agent-sdk-tools.mdx), [l’état et l’approbation](./agent-sdk-state-and-approval.mdx) et [les conditions d’arrêt](./agent-sdk-stop-conditions.mdx) pour connaître tous les détails.

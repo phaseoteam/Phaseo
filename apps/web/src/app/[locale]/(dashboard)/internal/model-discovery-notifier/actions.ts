@@ -11,7 +11,7 @@ import { fetchInternalAuthStatus } from "@/lib/fetchers/internal/fetchInternalAu
 
 type NotifierTestResult = {
 	ok: boolean;
-	message: string;
+	messageKey: "modelsRequired" | "previewGenerated" | "missingWebhook" | "sent" | "testFailed";
 	payloadPreview: string;
 	modelCount: number;
 };
@@ -198,7 +198,7 @@ export async function testInternalModelDiscoveryNotifierAction(
 		if (models.length === 0) {
 			return {
 				ok: false,
-				message: "Add at least one model line. Use `provider/slug`, full model URL, or `Name | URL`.",
+				messageKey: "modelsRequired",
 				payloadPreview: "",
 				modelCount: 0,
 			};
@@ -215,7 +215,7 @@ export async function testInternalModelDiscoveryNotifierAction(
 		if (!input.send) {
 			return {
 				ok: true,
-				message: `Payload preview generated for ${models.length} model${models.length === 1 ? "" : "s"}.`,
+				messageKey: "previewGenerated",
 				payloadPreview,
 				modelCount: models.length,
 			};
@@ -228,7 +228,7 @@ export async function testInternalModelDiscoveryNotifierAction(
 		if (!webhookUrl) {
 			return {
 				ok: false,
-				message: "Webhook URL missing. Provide one in the form or set DISCORD_WEBHOOK_NEW_MODELS_PUBLIC.",
+				messageKey: "missingWebhook",
 				payloadPreview,
 				modelCount: models.length,
 			};
@@ -243,15 +243,15 @@ export async function testInternalModelDiscoveryNotifierAction(
 
 		return {
 			ok: true,
-			message: `Sent test Discord embed notification for ${models.length} model${models.length === 1 ? "" : "s"}.`,
+			messageKey: "sent",
 			payloadPreview,
 			modelCount: models.length,
 		};
 	} catch (error) {
-		const message = error instanceof Error ? error.message : "Unknown error";
+		console.error("Model discovery notifier test failed", error);
 		return {
 			ok: false,
-			message: `Notifier test failed: ${message}`,
+			messageKey: "testFailed",
 			payloadPreview: "",
 			modelCount: 0,
 		};

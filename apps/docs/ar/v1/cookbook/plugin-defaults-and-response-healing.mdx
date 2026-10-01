@@ -1,0 +1,173 @@
+---
+title: "تعيين الإعدادات الافتراضية للمكوّنات الإضافية لسير عمل JSON المنظم"
+icon: "puzzle"
+description: "استخدم سياسات المكوّنات الإضافية على مستوى مساحة العمل والإعداد المسبق والطلب للحفاظ على اتساق إصلاح الردود."
+---
+
+استخدم هذا الدليل عندما تحتاج الطلبات ذات المخرجات المنظمة إلى سياسة ثابتة للمكوّنات الإضافية بدلًا من إعدادات مختلفة لكل طلب.
+
+## 1. فهم الأولوية
+
+تُحل سياسة المكوّنات الإضافية في Gateway بهذا الترتيب:
+
+1. الإعدادات الافتراضية لمساحة العمل
+2. الإعدادات الافتراضية للإعدادات المسبقة
+3. المكوّنات الإضافية على مستوى الطلب
+
+يمكن للطبقات الأقل أولوية تجاوز الطبقات الأعلى، ما لم يتم قفل الإعداد الافتراضي لمساحة العمل صراحةً.
+
+## 2. تعيين الإعداد الافتراضي لمساحة العمل
+
+استخدم إعدادات التوجيه عندما تريد لمساحة عمل تفعيل إصلاح الردود افتراضيًا لطلبات JSON المنظمة.
+
+هذا هو المكان المناسب لما يلي:
+
+- الإعدادات التشغيلية العامة
+- السلوك المشترك لمفاتيح API
+- منع اختلاف الإعدادات بين الخدمات
+
+## 3. قفل السياسة إذا كانت إلزامية
+
+إذا كان يجب إبقاء إصلاح الردود مفعّلًا دائمًا في مساحة عمل، فقفل هذا الإعداد الافتراضي.
+
+عند قفل الإعداد الافتراضي لمساحة العمل:
+
+- لا يمكن للإعدادات المسبقة تعطيله
+- لا يمكن لمحتوى الطلب تعطيله
+- تظل السجلات توضح ما إذا كان المكوّن الإضافي قد طُبّق أو تم تخطيه أو فشل
+
+## 4. استخدام الإعدادات المسبقة للقيم الافتراضية الخاصة بسير العمل
+
+تُعد الإعدادات المسبقة الطبقة المناسبة عندما تحتاج مجموعة من الطلبات إلى الجمع بين:
+
+- إعدادات المخرجات المنظمة
+- الإعدادات الافتراضية لمكوّن إصلاح الردود الإضافي
+
+يمكن لهذه الطبقة أيضًا اختيار وضع إصلاح الردود:
+
+- `safe` للتنظيف النحوي المحدود
+- `strict` للسلوك الذي يزيل الأغلفة الخارجية فقط
+
+يؤدي ذلك إلى تقليل محتوى الطلب وتسهيل إعادة استخدام التوجيه وسلوك المخرجات بين الخدمات.
+
+## 5. تجاوز الإعداد على مستوى الطلب فقط إذا سمحت مساحة العمل
+
+إذا لم يكن الإعداد الافتراضي لمساحة العمل مقفولًا، فيمكن للطلب تجاوز إعداد المكوّن الإضافي مباشرةً:
+
+## مثال على طلب
+<CodeGroup>
+```bash cURL
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "phaseo/free",
+    "input": "Return valid JSON",
+    "response_format": {
+      "type": "json_schema",
+      "json_schema": {
+        "name": "answer",
+        "schema": {
+          "type": "object",
+          "properties": {
+            "summary": { "type": "string" }
+          },
+          "required": ["summary"],
+          "additionalProperties": false
+        }
+      }
+    },
+    "plugins": [
+      { "id": "response-healing", "enabled": true }
+    ]
+  }'
+```
+
+```typescript TypeScript SDK
+import Phaseo from "@phaseo/sdk";
+
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
+
+const response = await client.generateResponse({
+  model: "phaseo/free",
+  input: "Return valid JSON",
+  response_format: {
+    type: "json_schema",
+    json_schema: {
+      name: "answer",
+      schema: {
+        type: "object",
+        properties: {
+          summary: { type: "string" },
+        },
+        required: ["summary"],
+        additionalProperties: false,
+      },
+    },
+  },
+  plugins: [{ id: "response-healing", enabled: true }],
+});
+
+console.log(response.output_text);
+```
+
+```python Python SDK
+from phaseo import Phaseo
+
+client = Phaseo(api_key="YOUR_API_KEY")
+
+response = client.generate_response(
+    {
+        "model": "phaseo/free",
+        "input": "Return valid JSON",
+        "response_format": {
+            "type": "json_schema",
+            "json_schema": {
+                "name": "answer",
+                "schema": {
+                    "type": "object",
+                    "properties": {
+                        "summary": {"type": "string"}
+                    },
+                    "required": ["summary"],
+                    "additionalProperties": False,
+                },
+            },
+        },
+        "plugins": [
+            {"id": "response-healing", "enabled": True}
+        ],
+    }
+)
+
+print(response.get("output_text"))
+```
+</CodeGroup>
+## 6. التحقق من السلوك في السجلات
+
+بعد إرسال طلب، افتح عرض تفاصيله وتحقق مما يلي:
+
+- يتضمن `plugin_executions` القيمة `response-healing`
+- الحالة إحدى القيم التالية:
+  - `applied`
+  - `skipped`
+  - `failed`
+- يظهر وضع المكوّن الإضافي الفعلي
+- تظهر أخطاء التحقق عندما يرفض فرض المخطط محتوى مرشحًا تم إصلاحه
+
+## 7. ما العمل عند اختلاف السلوك بين الخدمات
+
+إذا اختلف سلوك خدمتين، فقارن ما يلي:
+
+- إعدادات التوجيه لمساحة العمل
+- الإعدادات الافتراضية للمكوّنات الإضافية في الإعدادات المسبقة
+- `plugins` على مستوى الطلب
+- ما إذا كان الإعداد الافتراضي لمساحة العمل مقفولًا
+
+لا تحقق في ذلك بوصفه مشكلة في جودة النموذج قبل تطابق طبقات السياسة هذه.
+
+## محتوى ذو صلة
+
+- [استعادة JSON منظم ذي تنسيق غير صالح](./response-healing-for-structured-json.mdx)
+- [استخدام تخزين الردود المؤقت مع الإعدادات المسبقة](./response-caching-with-presets.mdx)
+- [Agent SDK لـ TypeScript](../sdk-reference/typescript/agent-sdk.mdx)

@@ -4,6 +4,7 @@ import Image from "next/image";
 import type { CountrySummary } from "@/lib/fetchers/countries/types";
 import ModelPageToc, { type ModelPageTocItem } from "@/components/(data)/model/ModelPageToc";
 import EntityStickyHeader from "@/components/(data)/EntityStickyHeader";
+import { useTranslations } from "next-intl";
 
 interface CountryDetailShellProps {
 	country?: CountrySummary;
@@ -18,7 +19,8 @@ export default function CountryDetailShell({
 	children,
 	tocItems = [],
 }: CountryDetailShellProps) {
-	const countryName = country?.countryName ?? "Unknown country";
+	const t = useTranslations("Catalogue.countryDetail");
+	const countryName = country?.countryName ?? t("unknownCountry");
 	const isoLabel = country?.iso ?? iso.toUpperCase();
 	const flagIso = isoLabel.toLowerCase();
 	const hasFlag = flagIso.length === 2;
@@ -33,7 +35,7 @@ export default function CountryDetailShell({
 							{hasFlag ? (
 								<Image
 									src={`/flags/${flagIso}.svg`}
-									alt={`${isoLabel} flag`}
+									alt={t("countryFlagAlt", { country: isoLabel })}
 									width={64}
 									height={48}
 									className="h-full w-full object-cover"
@@ -48,7 +50,7 @@ export default function CountryDetailShell({
 							<h1 className="text-3xl font-bold leading-tight tracking-tight text-zinc-950 dark:text-zinc-50">
 								{countryName}
 							</h1>
-							<p className="text-sm text-muted-foreground">AI organisations and models from {countryName}</p>
+							<p className="text-sm text-muted-foreground">{t("countryPageIntro", { country: countryName })}</p>
 						</div>
 					</div>
 				</div>

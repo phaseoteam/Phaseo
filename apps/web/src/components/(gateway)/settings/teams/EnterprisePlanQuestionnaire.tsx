@@ -4,6 +4,7 @@ import * as React from "react";
 import { ArrowRight, Check, Loader2, MessagesSquare, ShieldCheck, Users } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslations } from "next-intl";
+import { localizedSettingsError } from "@/i18n/error-messages";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -59,7 +60,7 @@ export default function EnterprisePlanQuestionnaire({ canEdit, workspaceId }: Pr
 			}), s("Enterprise pricing is unavailable"));
 			setQuote(result);
 		} catch (error) {
-			toast.error(error instanceof Error ? error.message : s("Could not calculate pricing"));
+			toast.error(localizedSettingsError(error, t, "Action failed", s("Could not calculate pricing")));
 		} finally {
 			setWorking(false);
 		}
@@ -76,7 +77,7 @@ export default function EnterprisePlanQuestionnaire({ canEdit, workspaceId }: Pr
 			}), s("Enterprise pricing is unavailable"));
 			window.location.assign(result.url);
 		} catch (error) {
-			toast.error(error instanceof Error ? error.message : s("Could not start checkout"));
+			toast.error(localizedSettingsError(error, t, "Action failed", s("Could not start checkout")));
 			setWorking(false);
 		}
 	}

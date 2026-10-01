@@ -1,3 +1,4 @@
+import { useTranslations } from "next-intl";
 import ModelUpdateCard, { type EventTypeOption } from "./ModelUpdateCard";
 import type { ModelEvent } from "@/lib/fetchers/updates/types";
 import type React from "react";
@@ -17,6 +18,7 @@ export default function ModelUpdatesRecentReleases({
 	emptyMessage,
 	headerActions,
 }: ModelUpdatesRecentReleasesProps) {
+	const t = useTranslations("Catalogue.updates.models");
 	if (events.length === 0) {
 		return (
 			<div className="mb-6">
@@ -25,7 +27,7 @@ export default function ModelUpdatesRecentReleases({
 					{headerActions ? <div className="shrink-0">{headerActions}</div> : null}
 				</div>
 				<p className="text-sm text-zinc-500 dark:text-zinc-400">
-					{emptyMessage ?? "No updates available right now."}
+					{emptyMessage ?? t("noUpdates")}
 				</p>
 			</div>
 		);

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { useTranslations } from "next-intl";
 import type { ComponentType } from "react";
 import Link from "next/link";
 import Image from "next/image";
@@ -20,7 +21,7 @@ import {
 	MessageSquare,
 } from "lucide-react";
 import {
-	formatSupportWait,
+	getSupportWaitParts,
 	getSupportAvailability,
 	getLondonInfo,
 } from "@/lib/support/schedule";
@@ -90,14 +91,16 @@ function BrandIcon({
 }
 
 export default function Support() {
+	const t = useTranslations("Catalogue.models.detail.quickstart.support");
 	const { isOpen, minutesUntilNextWindow } = getSupportAvailability();
+	const supportWait = getSupportWaitParts(minutesUntilNextWindow);
 	const availabilityText = isOpen
-		? "Live chat is available now."
-		: minutesUntilNextWindow
-		? `Live chat replies resume in ${formatSupportWait(
-				minutesUntilNextWindow
-		  )}.`
-		: "Live chat replies resume soon.";
+		? t("liveChatAvailable")
+		: supportWait?.unit === "minutes"
+			? t("liveChatResumesInMinutes", { count: supportWait.count })
+			: supportWait?.unit === "hours"
+				? t("liveChatResumesInHours", { count: supportWait.count })
+				: t("liveChatResumesSoon");
 	useEffect(() => {
 		const { isoLike, day, minutes } = getLondonInfo();
 		console.log(
@@ -113,48 +116,46 @@ export default function Support() {
 	const availabilityDotRing = isOpen
 		? "ring-emerald-400/60"
 		: "ring-amber-400/60";
-	const availabilityBadge = isOpen ? "Available" : "Outside hours";
+	const availabilityBadge = isOpen ? t("available") : t("outsideHours");
 
-	const supportDescription =
-		"This is a direct line of contact to me, and I will reply as soon as I can!";
 	const supportItem: Item = {
 		key: "contact",
-		title: "Contact Support",
+		title: t("contactSupportTitle"),
 		href: "/contact",
-		description: supportDescription,
+		description: t("contactSupportDescription"),
 		icon: MessageSquare,
-		badge: "Fastest",
+		badge: t("fastest"),
 	};
 	const otherItems: Item[] = [
 		{
 			key: "discord",
 			title: "Discord",
 			href: "/discord",
-			description: "Quick answers from the community.",
+			description: t("discordDescription"),
 			iconSrc: "/social/discord.svg",
-			badge: "Faster",
+			badge: t("faster"),
 		},
 		{
 			key: "email",
-			title: "Email",
+			title: t("emailTitle"),
 			href: "mailto:support@phaseo.app",
-			description: "Private support for billing or account issues.",
+			description: t("emailDescription"),
 			icon: Mail,
-			badge: "Tracked",
+			badge: t("tracked"),
 			external: true,
 		},
 		{
 			key: "docs",
-			title: "Docs",
+			title: t("documentationTitle"),
 			href: "/docs",
-			description: "Guides, API reference, quick starts.",
+			description: t("documentationDescription"),
 			icon: BookOpen,
 		},
 		{
 			key: "x",
 			title: "X (Twitter)",
 			href: "/x",
-			description: "Product updates and release notes.",
+			description: t("xDescription"),
 			iconPair: {
 				light: "/social/x_light.svg",
 				dark: "/social/x_dark.svg",
@@ -164,8 +165,7 @@ export default function Support() {
 			key: "github",
 			title: "GitHub",
 			href: "/github",
-			description:
-				"Open issues for any problems you face with the API and view the changelog.",
+			description: t("githubDescription"),
 			iconPair: {
 				light: "/social/github_light.svg",
 				dark: "/social/github_dark.svg",
@@ -197,15 +197,14 @@ export default function Support() {
 					</span>
 					<CardTitle className="flex items-center gap-2">
 						<LifeBuoy className="h-5 w-5 text-primary" />
-						Support
+						{t("title")}
 						<Badge variant="outline" className="text-[10px]">
 							{availabilityBadge}
 						</Badge>
 					</CardTitle>
 				</div>
 				<CardDescription>
-					We are here to help. Whatever you need. Whenever you need
-					it.
+					{t("description")}
 				</CardDescription>
 				<div className="mt-1 text-xs text-muted-foreground">
 					{availabilityText}
@@ -220,9 +219,9 @@ export default function Support() {
 							href,
 							description,
 							icon,
-							iconSrc,
-							iconPair,
-							badge,
+										iconSrc,
+										iconPair,
+										badge,
 							external,
 							onClick,
 						}) => (
@@ -234,7 +233,7 @@ export default function Support() {
 											icon={icon}
 											iconSrc={iconSrc}
 											iconPair={iconPair}
-											alt={`${title} logo`}
+											alt={t("optionLogoAlt", { name: title })}
 										/>
 										<div className="min-w-0">
 											<div className="flex items-center gap-2">

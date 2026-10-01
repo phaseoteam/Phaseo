@@ -1,0 +1,32 @@
+---
+icon: "binary"
+title: "埋め込み（AI SDK）"
+description: "Vercel AI SDKでPhaseoプロバイダーモデルを使って埋め込みを作成します。"
+---
+
+`embed`と`embedMany`で`phaseo.textEmbeddingModel(...)`（または`embeddingModel`）を使います。
+
+```ts
+import { phaseo } from "@phaseo/ai-sdk-provider";
+import { embed, embedMany } from "ai";
+
+const single = await embed({
+  model: phaseo.textEmbeddingModel("google/gemini-embedding-001"),
+  value: "Embeddings power semantic search.",
+});
+
+console.log(single.embedding.length);
+
+const batch = await embedMany({
+  model: phaseo.textEmbeddingModel("google/gemini-embedding-001"),
+  values: ["pricing", "latency", "quality"],
+});
+
+console.log(batch.embeddings.length);
+```
+
+## 注意事項
+
+- クエリとコーパスの埋め込みには、同じモデルバージョンを使います。
+- 類似度を計算する前に、ベクトルを一貫した方法で正規化します。
+- 繰り返し使用するコンテンツの安定した埋め込みをキャッシュします。

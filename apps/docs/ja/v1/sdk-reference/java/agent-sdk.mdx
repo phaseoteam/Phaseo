@@ -1,0 +1,62 @@
+---
+title: "使い方"
+description: "ツールを定義してJavaエージェントを実行し、人によるレビュー後に再開します。"
+---
+
+## ツールループ
+
+```java
+import app.phaseo.agent.AgentSdk;
+import java.util.List;
+import java.util.Map;
+
+var lookup = AgentSdk.defineTool(new AgentSdk.Tool(
+    "lookup_docs",
+    (input, context) -> Map.of("article", "Presets keep routing stable."),
+    "Look up a documentation article",
+    Map.of("type", "object"),
+    java.time.Duration.ofSeconds(10)
+));
+
+var agent = AgentSdk.createAgent(new AgentSdk.AgentDefinition(
+    "support-agent",
+    "openai/gpt-5.4-nano",
+    null,
+    "Use tools when useful and answer concisely.",
+    List.of(lookup),
+    12,
+    null,
+    null,
+    new AgentSdk.ModelRetryConfig(2, java.time.Duration.ofMillis(250)),
+    new AgentSdk.ToolExecutionConfig(4)
+));
+
+var result = agent.run(new AgentSdk.RunOptions(
+    "Explain presets",
+    AgentSdk.createGatewayAgentClient(),
+    null, null, null, null, null, null,
+    event -> System.out.println(event.type()),
+    AgentSdk.createAgentDevtools(".phaseo-devtools")
+));
+```
+
+## 人によるレビュー
+
+実行をチェックポイント化するには、`AgentDefinition.humanReview`から`HumanReviewRequest`を返します。返された`RunResult`を永続化し、アプリ内で判断を集めてから`humanInput`を指定して`continueRun(...)`を呼び出します。Agent SDKは非公開のホスト状態に依存しません。
+
+## Responses APIのオプション
+
+追加のResponses APIフィールドは`GatewayOptions.requestOptions`で渡します。アダプターがエージェント管理の`model`、`input`、`instructions`、ローカル関数ツールを適用します。
+
+## 高度なランタイム機能
+
+Javaは検証・承認インターフェース、HITL・手動ツール、進捗、回復可能なエラー、再生可能なIterable、停止ヘルパー、動的ターン、永続化された`NextTurnParams`、正規化された使用量とコスト、`StateAccessor`に対応します。
+
+## ストリーミングとキャンセル
+
+`Agent.stream(...)`と`Agent.continueStream(...)`はゲートウェイのResponses SSEストリームを消費します。再生可能な結果には`textStream()`または`fullStream()`を使い、`cancel()`でアクティブなワーカーとHTTP読み込みを中断します。完了したステップには、リクエストID、プロバイダーメタデータ、終了理由、警告、使用量、コストが保持されます。
+
+## 関連情報
+
+- [Agent SDKの概要](../agent-sdk/overview.mdx)
+- [JavaクライアントSDK](./overview.mdx)

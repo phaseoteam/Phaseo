@@ -7,6 +7,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Plus, Trash2, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslations } from "next-intl";
+import { localizedSettingsError } from "@/i18n/error-messages";
 import {
 	Empty,
 	EmptyDescription,
@@ -63,10 +64,14 @@ export default function RedirectUriManager({
 				throw new Error(result.error);
 			}
 			toast.success(successMessage);
-		} catch (err: any) {
+		} catch (err: unknown) {
 			setRedirectUris(previous);
 			const message =
-				 err?.message || t("strings.Failed to update redirect URIs. Please try again." as never);
+				localizedSettingsError(
+					err,
+					translate,
+					"Failed to update redirect URIs. Please try again.",
+				);
 			setError(message);
 			toast.error(message);
 		} finally {

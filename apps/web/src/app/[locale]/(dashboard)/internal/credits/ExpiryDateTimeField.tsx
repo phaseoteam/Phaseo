@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import { DatePickerInput } from "@/components/ui/date-picker-input";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,6 +18,8 @@ type Props = {
 export default function ExpiryDateTimeField({
 	defaultTime = "23:59",
 }: Props) {
+	const locale = useLocale();
+	const t = useTranslations("Product.internalTools.promoCredits");
 	const [dateValue, setDateValue] = useState("");
 	const [timeValue, setTimeValue] = useState(defaultTime);
 
@@ -24,18 +27,18 @@ export default function ExpiryDateTimeField({
 		return buildExpiryUtcIso(dateValue, timeValue, defaultTime);
 	}, [dateValue, timeValue, defaultTime]);
 	const expiryPreview = useMemo(() => {
-		return buildExpirySelectionPreview(dateValue, timeValue, defaultTime);
-	}, [dateValue, timeValue, defaultTime]);
+		return buildExpirySelectionPreview(dateValue, timeValue, defaultTime, locale);
+	}, [dateValue, timeValue, defaultTime, locale]);
 	const browserTimeZone = useMemo(() => getBrowserTimeZone(), []);
 
 	return (
 		<div className="space-y-2">
-			<Label htmlFor="promo-expires-at-time">Expires At (optional)</Label>
+			<Label htmlFor="promo-expires-at-time">{t("expiresAtOptional")}</Label>
 			<div className="flex flex-col gap-2 sm:flex-row">
 				<DatePickerInput
 					value={dateValue}
 					onChange={setDateValue}
-					placeholder="Pick expiry date"
+					placeholder={t("pickExpiryDate")}
 					className="w-full"
 				/>
 				<Input
@@ -49,14 +52,14 @@ export default function ExpiryDateTimeField({
 			{expiryPreview ? (
 				<div className="rounded-md border border-dashed bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
 					<p>
-						Timezone:{" "}
+						{t("timeZone")}:{" "}
 						<span className="font-medium text-foreground">
 							{expiryPreview.timezoneDisplay}
 						</span>
 					</p>
-					<p>Local expiry: {expiryPreview.localDisplay}</p>
+				<p>{t("localExpiry")}: {expiryPreview.localDisplay}</p>
 					<p>
-						Stored as UTC:{" "}
+						{t("storedUtc")}:{" "}
 						<span className="font-mono text-foreground">
 							{expiryPreview.utcDisplay}
 						</span>
@@ -64,8 +67,7 @@ export default function ExpiryDateTimeField({
 				</div>
 			) : (
 				<p className="text-xs text-muted-foreground">
-					Uses your browser timezone ({browserTimeZone}). Pick a date/time to
-					preview the UTC value that will be stored.
+					{t("timeZoneHelp", { timezone: browserTimeZone })}
 				</p>
 			)}
 			<input type="hidden" name="expires_at" value={hiddenExpiresAt} />

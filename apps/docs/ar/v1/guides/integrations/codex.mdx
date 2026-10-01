@@ -1,0 +1,73 @@
+---
+title: "Codex"
+icon: "code-2"
+description: "استخدم Phaseo Gateway كمزوّد مخصّص لـ Codex CLI وCodex App وامتداد Codex لـ IDE."
+---
+يدعم Codex المزوّدين المخصّصين للنماذج عبر `config.toml`. وبذلك يمكنك توجيه طلبات Codex عبر Phaseo مع الاحتفاظ بسير العمل نفسه في CLI أو التطبيق أو IDE.
+
+إذا أردت أن يطّلع Codex أيضًا على أحدث وثائق Phaseo أثناء العمل، فأضف خادم [Docs MCP](./docs-mcp.mdx) كذلك.
+
+<Visibility for="humans">
+<Note>
+هل تحتاج إلى مساعدة في إعداد وكلاء قابلة لإعادة الاستخدام إلى جانب توصيل المزوّد؟ ثبّت مهارات Phaseo العامة من [`phaseoteam/skills`](https://github.com/phaseoteam/skills):
+
+```bash
+npx skills add phaseoteam/skills --agent codex --skill '*'
+```
+</Note>
+</Visibility>
+
+<Visibility for="agents">
+<Note>
+هل تحتاج إلى مساعدة في إعداد وكلاء قابلة لإعادة الاستخدام إلى جانب توصيل المزوّد؟ ثبّت مهارات Phaseo العامة من [`phaseoteam/skills`](https://github.com/phaseoteam/skills):
+
+```bash
+npx skills add phaseoteam/skills --agent codex --skill '*'
+```
+</Note>
+</Visibility>
+
+## الإعداد باستخدام Phaseo CLI
+
+```bash
+phaseo login
+phaseo codex --model openai/gpt-5.6-terra
+```
+
+ثبّت Codex أولًا من إصداره الرسمي. ينشئ الإعداد مفتاحًا دائمًا باسم `Phaseo CLI: Codex API Key`، ويحفظه في مخزن بيانات الاعتماد بنظام التشغيل، ويكتب ملف تعريف مخصصًا لـ Phaseo. يسترجع Codex المفتاح عبر مساعد CLI، لذلك لا يُكتب كنص صريح في `config.toml`.
+
+### ابدأ Codex باستخدام:
+
+```bash
+codex --profile phaseo
+```
+
+## الإعداد اليدوي
+
+أنشئ إعدادات المستخدم أو حدّثها في `~/.codex/config.toml`. وفي مشروع موثوق، يمكنك وضع الإعدادات نفسها في `.codex/config.toml` داخل المستودع.
+
+```toml
+model = "openai/gpt-5.5"
+model_provider = "phaseo"
+
+[model_providers.phaseo]
+name = "Phaseo"
+base_url = "https://api.phaseo.app/v1"
+env_key = "PHASEO_API_KEY"
+wire_api = "responses"
+```
+
+يستخدم Codex حاليًا بروتوكول Responses wire للمزوّدين المخصّصين. أبقِ `wire_api = "responses"` أو احذف الإعداد لاستخدام القيمة الافتراضية.
+
+تشترك Codex App وإضافة IDE في طبقات الإعداد نفسها. وفي إضافة IDE، افتح الملف عبر `Codex Settings > Open config.toml`.
+
+## التحقق
+
+- تأكد من وجود معرّف النموذج في [النماذج](../../api-reference/endpoint/models.mdx) قبل التشغيل.
+- استخدم [Responses](../../api-reference/endpoint/responses.mdx) لتدفق Codex الافتراضي.
+
+## استكشاف الأخطاء وإصلاحها
+
+- `401 Unauthorized`: شغّل `phaseo whoami` ثم أعد تشغيل `phaseo codex`.
+- `model_not_found`: احصل على معرّف حديث من [النماذج](../../api-reference/endpoint/models.mdx) وحدّث `model`.
+- مشكلات خاصة بالمزوّد: راجع [التوجيه والبدائل](../routing-and-fallbacks.mdx) لمعرفة سلوك التحويل عند الإخفاق.

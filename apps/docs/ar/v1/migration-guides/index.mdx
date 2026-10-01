@@ -1,0 +1,77 @@
+---
+title: "أدلة الترحيل"
+description: "أدلة لتغيير المنصة أو اعتماد إصدار محدد من نموذج."
+icon: "compass"
+---
+
+# أدلة الترحيل
+
+تغطي أدلة Phaseo نوعين من التغييرات:
+
+- الانتقال من منصة أو بوابة أخرى إلى Phaseo
+- اعتماد إصدار جديد من نموذج على المنصة نفسها
+
+<Columns cols={2}>
+	<Card title="ترحيل النماذج" icon="brain-circuit" href="../model-migrations/index.mdx">
+		حدّث النموذج مع إبقاء التكامل المحيط به كما هو إلى حد كبير.
+	</Card>
+	<Card title="ترحيل المنصة" icon="arrow-right-left" href="./assistant.mdx">
+		غيّر SDK أو المزوّد أو البوابة، وكيّف تكاملك الحالي مع Phaseo.
+	</Card>
+</Columns>
+
+## ترحيل النماذج
+
+استخدم هذه الأدلة عندما يبقى التكامل على حاله تقريبًا ويتغير النموذج المستخدم.
+
+تتناول هذه الأدلة:
+
+- تغييرات معلمات الطلب
+- اختلافات سلوك المطالبات والاستدلال
+- اختلافات المخرجات المنظّمة واستدعاء الأدوات
+- استراتيجيات الطرح التدريجي والبدائل والتراجع
+
+أدلة ترحيل النماذج الحالية:
+
+- [Anthropic Claude Opus 5](../model-migrations/anthropic-claude-opus-5.mdx)
+- [OpenAI GPT-5.6](../model-migrations/openai-migrating-to-gpt-5-6.mdx)
+- [Anthropic Claude Opus 4.8](../model-migrations/anthropic-claude-opus-4-1-to-4-8.mdx)
+- [Anthropic Claude Opus 4.7](../model-migrations/anthropic-claude-opus-4-6-to-4-7.mdx)
+- [Mistral Small 4](../model-migrations/mistral-small-3-2-to-mistral-small-4.mdx)
+- [OpenAI GPT-5.4](../model-migrations/openai-migrating-to-gpt-5-4.mdx)
+- [Google Nano Banana 2](../model-migrations/google-nano-banana-1-to-nano-banana-2.mdx)
+- [Google Gemini 3.1](../model-migrations/google-migrating-to-gemini-3-and-3-1.mdx)
+- [Anthropic Claude Sonnet 4.6](../model-migrations/anthropic-claude-sonnet-4-5-to-4-6.mdx)
+- [SpaceXAI Grok 4.20](../model-migrations/xai-grok-4-20.mdx)
+- [Anthropic Claude Opus 4.6](../model-migrations/anthropic-claude-opus-4-5-to-4-6.mdx)
+
+## ترحيل المنصات
+
+استخدم هذه الأدلة عند تغيير SDK أو المزوّد أو البوابة ومواءمة تكاملك الحالي مع Phaseo.
+
+<Card title="أنشئ قائمة تحقق للترحيل" icon="wand-sparkles" href="./assistant.mdx">
+	اختر التكامل الحالي وافتح مساعد الترحيل التفاعلي.
+</Card>
+
+أدلة ترحيل المنصات الحالية:
+
+- [الترحيل من OpenAI SDK](./from-openai.mdx)
+- [الترحيل من Anthropic SDK](./from-anthropic.mdx)
+- [الترحيل من OpenRouter](./from-openrouter.mdx): بدّل نقطة النهاية والمفتاح، وتحقّق من النماذج واختبر البث والتراجع.
+- [الترحيل من Vercel AI Gateway](./from-vercel.mdx)
+- [الترحيل من LLMGateway](./from-llmgateway.mdx)
+- [الترحيل من LiteLLM](./from-litellm.mdx)
+- [الترحيل من Cloudflare AI Gateway](./from-cloudflare.mdx)
+- [الترحيل من Helicone AI Gateway](./from-helicone.mdx)
+
+خطّط للطرح وتحقّق منه:
+
+- [مراجعة الجاهزية للترحيل](./gateway-parity-review.mdx)
+- [قائمة ميزات الترحيل](./feature-parity-matrix.mdx)
+
+## كيفية استخدام هذه الأدلة
+
+1. حدّد ما إذا كنت تغيّر المنصة أو النموذج أو كليهما.
+2. ابدأ بالدليل الذي يغطي الجزء الأعلى مخاطرة في الترحيل.
+3. تحقّق من معلمات الطلب وسلوك نقطة النهاية قبل مقارنة جودة المخرجات.
+4. شغّل تقييمات تحاكي الإنتاج قبل تحويل حركة المرور الفعلية.

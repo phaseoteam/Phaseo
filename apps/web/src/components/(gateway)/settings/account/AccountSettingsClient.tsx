@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { toast } from "sonner";
 import {
 	updateAccount,
@@ -91,7 +91,7 @@ function WorkspaceCombobox({
 					className="w-full justify-between rounded-md font-normal"
 				>
 					<span className="truncate">
-						{selectedTeam?.name ?? "Select default workspace"}
+						{selectedTeam?.name ?? s("Select default workspace")}
 					</span>
 					<ChevronsUpDown className="size-4 shrink-0 text-muted-foreground" />
 				</Button>
@@ -130,7 +130,12 @@ const schema = z.object({
 		.max(60, "Display name must be 60 characters or fewer.")
 		.optional()
 		.nullable(),
-	declared_country_code: z.string().length(2).regex(/^[A-Z]{2}$/).nullable().optional(),
+	declared_country_code: z
+		.string()
+		.length(2, "Enter a two-letter country code.")
+		.regex(/^[A-Z]{2}$/, "Enter a valid two-letter country code.")
+		.nullable()
+		.optional(),
 	default_workspace_id: z
 		.string()
 		.trim()
@@ -168,6 +173,9 @@ export default function AccountSettingsClient({
 }: Props) {
 	const t = useTranslations("SettingsUI");
 	const s = (key: string) => t(`strings.${key}` as never);
+	const m = (key: string, values: Record<string, string | number>) =>
+		t(`strings.${key}` as never, values as never);
+	const locale = useLocale();
 	const [displayName, setDisplayName] = React.useState<string | null>(
 		user.displayName ?? null
 	);
@@ -264,9 +272,8 @@ export default function AccountSettingsClient({
 		e?.preventDefault();
 		const parsed = schema.safeParse(current);
 		if (!parsed.success) {
-			const msg =
-				parsed.error.issues[0]?.message ?? "Please check your inputs.";
-			toast.error(msg);
+			const message = parsed.error.issues[0]?.message ?? "Please check your inputs.";
+			toast.error(s(message));
 			return;
 		}
 
@@ -278,9 +285,9 @@ export default function AccountSettingsClient({
 		setSaving(true);
 		try {
 			await toast.promise(updateAccount(updatePayload), {
-				loading: "Saving your settings...",
-				success: "Saved [PASS]",
-				error: (err: any) => err?.message || "Could not save settings",
+				loading: s("Saving your settings..."),
+				success: s("Settings saved."),
+				error: () => s("Could not save settings"),
 			});
 			applyObfuscationMode(Boolean(parsed.data.obfuscate_info));
 		} catch (e) {
@@ -304,8 +311,8 @@ export default function AccountSettingsClient({
 				setChatNotifyOnComplete(false);
 				toast.error(
 					result.reason === "unsupported"
-						? "Browser notifications are not supported here."
-						: "Allow notifications in your browser to enable chat alerts.",
+						? s("Browser notifications are not supported here.")
+						: s("Allow notifications in your browser to enable chat alerts."),
 				);
 				return;
 			}
@@ -343,9 +350,8 @@ export default function AccountSettingsClient({
 		});
 
 		if (!parsed.success) {
-			const msg =
-				parsed.error.issues[0]?.message ?? "Please check your inputs.";
-			toast.error(msg);
+			const message = parsed.error.issues[0]?.message ?? "Please check your inputs.";
+			toast.error(s(message));
 			return;
 		}
 
@@ -354,10 +360,9 @@ export default function AccountSettingsClient({
 			await toast.promise(
 				changePasswordAction(currentPassword, newPassword),
 				{
-					loading: "Changing your password...",
-					success: "Password changed successfully!",
-					error: (err: any) =>
-						err?.message || "Could not change password",
+					loading: s("Changing your password..."),
+					success: s("Password changed successfully!"),
+					error: () => s("Could not change password."),
 				}
 			);
 			// Reset form
@@ -380,9 +385,8 @@ export default function AccountSettingsClient({
 		});
 
 		if (!parsed.success) {
-			const msg =
-				parsed.error.issues[0]?.message ?? "Please check your inputs.";
-			toast.error(msg);
+			const message = parsed.error.issues[0]?.message ?? "Please check your inputs.";
+			toast.error(s(message));
 			return;
 		}
 
@@ -391,10 +395,9 @@ export default function AccountSettingsClient({
 			const result = await toast.promise(
 				changeEmailAction(newEmail, emailPassword),
 				{
-					loading: "Changing your email...",
-					success:
-						"Email change initiated. Check both email addresses for confirmation.",
-					error: (err: any) => err?.message || "Could not change email",
+					loading: s("Changing your email..."),
+					success: s("Email change initiated. Check both email addresses for confirmation."),
+					error: () => s("Could not change email."),
 				}
 			);
 			// Reset form
@@ -471,10 +474,10 @@ export default function AccountSettingsClient({
 					<div className="flex flex-col gap-3 px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
 						<div className="min-w-0">
 							<Label htmlFor="displayName" className="text-sm font-medium">
-								Display Name
+								{s("Display Name")}
 							</Label>
 							<p className="mt-0.5 text-sm text-muted-foreground">
-								This is how your name appears to other people.
+								{s("This is how your name appears to other people.")}
 							</p>
 						</div>
 						<div className="w-full shrink-0 sm:w-[min(32rem,55%)]">
@@ -495,7 +498,7 @@ export default function AccountSettingsClient({
 							<div className="min-w-0">
 								<Label className="text-sm font-medium">{s("Email")}</Label>
 								<p className="mt-0.5 text-sm text-muted-foreground">
-									Contact support to change your sign-in email.
+									{s("Contact support to change your sign-in email.")}
 								</p>
 							</div>
 							<div className="w-full shrink-0 sm:w-[min(32rem,55%)]">
@@ -508,10 +511,10 @@ export default function AccountSettingsClient({
 						<div className="flex flex-col gap-3 border-t px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
 							<div className="min-w-0">
 								<Label htmlFor="account-country" className="text-sm font-medium">
-									Country
+									{s("Country")}
 								</Label>
 								<p className="mt-0.5 text-sm text-muted-foreground">
-									Used to determine provider and service availability. Billing addresses are managed separately.
+									{s("Used to determine provider and service availability. Billing addresses are managed separately.")}
 								</p>
 							</div>
 							<div className="w-full shrink-0 sm:w-[min(32rem,55%)]">
@@ -528,10 +531,10 @@ export default function AccountSettingsClient({
 					<div className="flex flex-col gap-3 border-t px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
 						<div className="min-w-0">
 							<Label htmlFor="defaultTeam" className="text-sm font-medium">
-								Default Workspace
+								{s("Default Workspace")}
 							</Label>
 							<p className="mt-0.5 text-sm text-muted-foreground">
-								Set the workspace shown by default.
+								{s("Set the workspace shown by default.")}
 							</p>
 						</div>
 						<div className="w-full shrink-0 sm:w-[min(32rem,55%)]">
@@ -543,7 +546,7 @@ export default function AccountSettingsClient({
 										translate={s}
 									/>
 								) : (
-									<Input id="defaultTeam" value={"Personal"} readOnly disabled />
+									<Input id="defaultTeam" value={s("Personal")} readOnly disabled />
 								)}
 						</div>
 					</div>
@@ -552,7 +555,7 @@ export default function AccountSettingsClient({
 						<div className="min-w-0">
 							<Label className="text-sm font-medium">{s("Analytics Cookies")}</Label>
 							<p className="mt-0.5 text-sm text-muted-foreground">
-								Allow analytics cookies to improve the product.
+								{s("Allow analytics cookies to improve the product.")}
 							</p>
 						</div>
 								<Switch
@@ -572,7 +575,7 @@ export default function AccountSettingsClient({
 						<div className="min-w-0">
 							<Label className="text-sm font-medium">{s("Obfuscate Info")}</Label>
 							<p className="mt-0.5 text-sm text-muted-foreground">
-								Blur sensitive information across the website.
+								{s("Blur sensitive information across the website.")}
 							</p>
 						</div>
 								<Switch
@@ -585,7 +588,11 @@ export default function AccountSettingsClient({
 					<div className="flex flex-col gap-3 border-t bg-muted/10 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
 						<div className="flex min-w-0 items-center gap-2">
 							<p className="text-xs text-muted-foreground">
-								Member since {new Date(user.createdAt).toLocaleDateString()}.
+								{m("Member since {date}", {
+									date: new Intl.DateTimeFormat(locale, { dateStyle: "medium" }).format(
+										new Date(user.createdAt),
+									),
+								})}
 							</p>
 							{hasChanges ? <Badge variant="secondary">{s("Unsaved changes")}</Badge> : null}
 						</div>
@@ -601,16 +608,16 @@ export default function AccountSettingsClient({
 								}}
 								disabled={!hasChanges || saving}
 							>
-								Reset
+								{s("Reset")}
 							</Button>
 							<Button type="submit" disabled={!hasChanges || saving}>
 								{saving ? (
 									<>
 										<Loader2 className="mr-2 h-4 w-4 animate-spin" />
-										Saving...
+										{s("Saving your settings...")}
 									</>
 								) : (
-									"Save changes"
+									s("Save changes")
 								)}
 							</Button>
 						</div>
@@ -623,7 +630,7 @@ export default function AccountSettingsClient({
 					id="account-notifications-title"
 					className="font-heading text-base font-medium"
 				>
-					Notifications
+					{s("Notifications")}
 				</h3>
 				<div className="overflow-hidden rounded-xl border bg-background/40">
 					<div className="flex items-center justify-between gap-4 px-4 py-3.5">
@@ -631,8 +638,8 @@ export default function AccountSettingsClient({
 							<h4 className="text-sm font-medium">{s("Chat Completion")}</h4>
 							<p className="mt-0.5 text-sm text-muted-foreground">
 								{chatNotificationsSupported
-									? "Show a browser notification when a text chat response finishes while this tab is unfocused."
-									: "Browser notifications are not supported in this browser."}
+									? s("Show a browser notification when a text chat response finishes while this tab is unfocused.")
+									: s("Browser notifications are not supported in this browser.")}
 							</p>
 						</div>
 						<Switch
@@ -650,10 +657,10 @@ export default function AccountSettingsClient({
 					<div className="min-w-0">
 						<h3 className="text-sm font-medium flex items-center gap-2">
 							<Lock className="h-4 w-4" />
-							Change password
+							{s("Change password")}
 						</h3>
 						<p className="text-xs text-muted-foreground mt-0.5">
-							Update your password to keep your account secure.
+							{s("Update your password to keep your account secure.")}
 						</p>
 					</div>
 
@@ -661,7 +668,7 @@ export default function AccountSettingsClient({
 						<div className="grid gap-3">
 							<div className="grid gap-2 sm:grid-cols-[160px_1fr] sm:items-start">
 								<Label htmlFor="currentPassword" className="sm:pt-2">
-									Current password
+									{s("Current password")}
 								</Label>
 								<div className="max-w-lg">
 									<Input
@@ -676,7 +683,7 @@ export default function AccountSettingsClient({
 
 							<div className="grid gap-2 sm:grid-cols-[160px_1fr] sm:items-start">
 								<Label htmlFor="newPassword" className="sm:pt-2">
-									New password
+									{s("New password")}
 								</Label>
 								<div className="grid gap-2 max-w-lg">
 									<Input
@@ -694,7 +701,7 @@ export default function AccountSettingsClient({
 
 							<div className="grid gap-2 sm:grid-cols-[160px_1fr] sm:items-start">
 								<Label htmlFor="confirmPassword" className="sm:pt-2">
-									Confirm password
+									{s("Confirm password")}
 								</Label>
 								<div className="max-w-lg">
 									<Input
@@ -719,7 +726,7 @@ export default function AccountSettingsClient({
 								}}
 								disabled={!currentPassword && !newPassword && !confirmPassword}
 							>
-								Clear
+								{s("Clear")}
 							</Button>
 							<Button
 								type="submit"
@@ -733,10 +740,10 @@ export default function AccountSettingsClient({
 								{changingPassword ? (
 									<>
 										<Loader2 className="mr-2 h-4 w-4 animate-spin" />
-										Changing password...
+											{s("Changing your password...")}
 									</>
 								) : (
-									"Change password"
+									s("Change password")
 								)}
 							</Button>
 						</div>
@@ -749,10 +756,10 @@ export default function AccountSettingsClient({
 					<div className="min-w-0">
 						<h3 className="text-sm font-medium flex items-center gap-2">
 							<Mail className="h-4 w-4" />
-							Change email
+							{s("Change email")}
 						</h3>
 						<p className="text-xs text-muted-foreground mt-0.5">
-							Confirm the change in both your old and new inbox.
+							{s("Confirm the change in both your old and new inbox.")}
 						</p>
 					</div>
 
@@ -767,7 +774,7 @@ export default function AccountSettingsClient({
 
 							<div className="grid gap-2 sm:grid-cols-[160px_1fr] sm:items-start">
 								<Label htmlFor="newEmail" className="sm:pt-2">
-									New email
+									{s("New email")}
 								</Label>
 								<div className="max-w-lg">
 									<Input
@@ -783,7 +790,7 @@ export default function AccountSettingsClient({
 
 							<div className="grid gap-2 sm:grid-cols-[160px_1fr] sm:items-start">
 								<Label htmlFor="emailPassword" className="sm:pt-2">
-									Confirm with password
+									{s("Confirm with password")}
 								</Label>
 								<div className="grid gap-1 max-w-lg">
 									<Input
@@ -794,7 +801,7 @@ export default function AccountSettingsClient({
 									placeholder={s("Enter your password to confirm")}
 									/>
 									<p className="text-xs text-muted-foreground">
-										For security, we need your password to change your email.
+										{s("For security, we need your password to change your email.")}
 									</p>
 								</div>
 							</div>
@@ -810,7 +817,7 @@ export default function AccountSettingsClient({
 								}}
 								disabled={!newEmail && !emailPassword}
 							>
-								Clear
+								{s("Clear")}
 							</Button>
 							<Button
 								type="submit"
@@ -819,10 +826,10 @@ export default function AccountSettingsClient({
 								{changingEmail ? (
 									<>
 										<Loader2 className="mr-2 h-4 w-4 animate-spin" />
-										Changing email...
+											{s("Changing your email...")}
 									</>
 								) : (
-									"Change email"
+									s("Change email")
 								)}
 							</Button>
 						</div>

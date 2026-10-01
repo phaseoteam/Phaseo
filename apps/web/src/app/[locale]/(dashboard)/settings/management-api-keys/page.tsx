@@ -6,10 +6,12 @@ import { Badge } from "@/components/ui/badge";
 import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
 import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHeader";
 import { fetchSettingsManagementApiKeysInitialData } from "@/lib/fetchers/internal/fetchSettingsManagementApiKeysInitialData";
+import { getTranslations } from "next-intl/server";
 
-export const metadata = {
-	title: "Management API Keys - Settings",
-};
+export async function generateMetadata() {
+	const t = await getTranslations("SettingsUI");
+	return { title: t("headers.managementApiKeys") + " - " + t("headers.settings") };
+}
 
 export default function ManagementApiKeysPage(props: {
 	searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -29,6 +31,7 @@ async function ManagementApiKeysContent({
 	searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
 	await searchParams;
+	const t = await getTranslations("SettingsUI");
 	const initialData = await fetchSettingsManagementApiKeysInitialData();
 
 	if (!initialData.workspace) {
@@ -37,14 +40,14 @@ async function ManagementApiKeysContent({
 				<SettingsPageHeader
 					title="Management API Keys"
 					titleKey="headers.managementApiKeys"
-					meta={<Badge variant="outline">Beta</Badge>}
+					meta={<Badge variant="outline">{t("settingsPageCopy.beta")}</Badge>}
 					description="Manage elevated keys for automated workspace and key management."
 					descriptionKey="headers.managementApiKeysDescription"
 				/>
 				<Alert>
-					<AlertTitle>No workspace selected</AlertTitle>
+					<AlertTitle>{t("settingsPageCopy.managementKeysTitle")}</AlertTitle>
 					<AlertDescription>
-						Select a workspace in the header to view and manage its management API keys.
+						{t("settingsPageCopy.managementKeysBody")}
 					</AlertDescription>
 				</Alert>
 			</div>
@@ -56,7 +59,7 @@ async function ManagementApiKeysContent({
 			<SettingsPageHeader
 				title="Management API Keys"
 				titleKey="headers.managementApiKeys"
-				meta={<Badge variant="outline">Beta</Badge>}
+				meta={<Badge variant="outline">{t("settingsPageCopy.beta")}</Badge>}
 				description="Manage elevated keys for automated workspace and key management."
 				descriptionKey="headers.managementApiKeysDescription"
 				actions={

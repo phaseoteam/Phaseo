@@ -6,6 +6,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { parseAsArrayOf, parseAsString, useQueryState } from "nuqs";
 import { toast } from "sonner";
+import { localizedSettingsError } from "@/i18n/error-messages";
 import { useTranslations } from "next-intl";
 import { Logo } from "@/components/Logo";
 import {
@@ -167,17 +168,21 @@ function getHandlingState(args: {
 function getRestrictionModeLabel(
 	mode: ProviderRestrictionMode,
 	subject: "providers" | "models",
+	translate: (key: string) => string,
 ): string {
-	if (mode === "allowlist") return `Only allow selected ${subject}`;
-	if (mode === "blocklist") return `Allow all except selected ${subject}`;
-	return `Allow all ${subject}`;
+	if (mode === "allowlist") return translate(`Only allow selected ${subject}`);
+	if (mode === "blocklist") return translate(`Allow all except selected ${subject}`);
+	return translate(`Allow all ${subject}`);
 }
 
-function getHandlingLabel(value: GuardrailHandlingState): string {
-	if (value === "disabled") return "Disabled";
-	if (value === "flag") return "Flag matches";
-	if (value === "redact") return "Redact matches";
-	return "Block requests";
+function getHandlingLabel(
+	value: GuardrailHandlingState,
+	translate: (key: string) => string,
+): string {
+	if (value === "disabled") return translate("Disabled");
+	if (value === "flag") return translate("Flag");
+	if (value === "redact") return translate("Redact");
+	return translate("Block");
 }
 
 function buildModelAvailabilityReason(args: {
@@ -185,6 +190,7 @@ function buildModelAvailabilityReason(args: {
 	modelMode: ProviderRestrictionMode;
 	selectedModelIds: string[];
 	providerStates: PreviewModelProviderState[];
+	translate: (key: string) => string;
 }): string | null {
 	if (args.modelAllowed && args.providerStates.some((state) => state.accessible)) {
 		return null;
@@ -192,28 +198,27 @@ function buildModelAvailabilityReason(args: {
 	if (!args.modelAllowed) {
 		if (args.modelMode === "allowlist") {
 			return args.selectedModelIds.length > 0
-				? "Excluded by the model allowlist"
-				: "No models selected in the allowlist";
+				? args.translate("availabilityExcludedModelAllowlist")
+				: args.translate("availabilityNoModelAllowlistSelection");
 		}
 		if (args.modelMode === "blocklist") {
-			return "Excluded by the model blocklist";
+			return args.translate("availabilityExcludedModelBlocklist");
 		}
 	}
 	const reasonCodes = new Set(args.providerStates.map((state) => state.reasonCode));
 	if (reasonCodes.size === 1) {
 		const [reasonCode] = reasonCodes;
-		if (reasonCode === "zdr_required") return "ZDR eligibility is not verified";
-		if (reasonCode === "data_policy_unknown") return "Data policy is unknown";
-		if (reasonCode === "data_policy_unverified") return "Data policy is not confirmed";
-		if (reasonCode === "logging_disabled") return "Prompt or output retention is not allowed";
-		if (reasonCode === "training_disabled") return "Training on prompts or outputs is not allowed";
-		if (reasonCode === "provider_restriction") return "Excluded by provider access rules";
+		if (reasonCode === "zdr_required") return args.translate("availabilityZdrNotVerified");
+		if (reasonCode === "data_policy_unknown") return args.translate("availabilityDataPolicyUnknown");
+		if (reasonCode === "data_policy_unverified") return args.translate("availabilityDataPolicyUnverified");
+		if (reasonCode === "logging_disabled") return args.translate("availabilityLoggingDisabled");
+		if (reasonCode === "training_disabled") return args.translate("availabilityTrainingDisabled");
+		if (reasonCode === "provider_restriction") return args.translate("availabilityProviderRestriction");
 	}
-	const uniqueReasons = uniqStrings(args.providerStates.map((state) => state.reason));
-	if (uniqueReasons.length === 1) {
-		return uniqueReasons[0] ?? "No provider remains routable";
+	if (reasonCodes.size === 1 && reasonCodes.has("available")) {
+		return args.translate("availabilityNoProviderRoutable");
 	}
-	return "No provider meets every active rule";
+	return args.translate("availabilityNoProviderMatches");
 }
 
 function normalizePromptInjectionAction(value: unknown): PromptInjectionAction {
@@ -287,8 +292,12 @@ function getProviderLogoId(providerId: string): string {
 	return normalized;
 }
 
-function formatProviderIdVariant(providerId: string, familyId: string): string {
-	if (providerId === familyId) return "Standard";
+function formatProviderIdVariant(
+	providerId: string,
+	familyId: string,
+	standardLabel: string,
+): string {
+	if (providerId === familyId) return standardLabel;
 	const suffix = providerId.startsWith(`${familyId}-`)
 		? providerId.slice(familyId.length + 1)
 		: providerId;
@@ -300,7 +309,7 @@ function formatProviderIdVariant(providerId: string, familyId: string): string {
 			if (["aws", "eu", "us"].includes(normalized)) return normalized.toUpperCase();
 			return normalized.charAt(0).toUpperCase() + normalized.slice(1);
 		})
-		.join(" ") || "Standard";
+		.join(" ") || standardLabel;
 }
 
 function formatModelPreviewTitle(args: {
@@ -359,6 +368,7 @@ function SelectionCombobox(props: {
 	groupActions?: boolean;
 }) {
 	const t = useTranslations("SettingsUI");
+	const g = useTranslations("SettingsUI.guardrailEditorCopy");
 	const [open, setOpen] = useState(false);
 	const [query, setQuery] = useState("");
 
@@ -411,13 +421,15 @@ function SelectionCombobox(props: {
 				<PopoverHeader className="border-b px-3 py-2.5">
 					<div className="flex items-center justify-between gap-3">
 						<PopoverTitle className="text-sm font-medium">{props.title}</PopoverTitle>
-						<span className="text-xs tabular-nums text-muted-foreground">{props.selected.length} selected</span>
+						<span className="text-xs tabular-nums text-muted-foreground">
+							{g("selectedCount", { count: props.selected.length })}
+						</span>
 					</div>
 					{props.description ? <PopoverDescription className="sr-only">{props.description}</PopoverDescription> : null}
 				</PopoverHeader>
 				<Command className="rounded-none p-0" shouldFilter={!props.inlineGroups}>
 					<CommandInput
-						placeholder={`Search ${props.title.toLowerCase().replace("select ", "")}...`}
+						placeholder={t("guardrailsControls.search" as never)}
 						value={query}
 						onValueChange={setQuery}
 						wrapperClassName="border-b p-2"
@@ -475,7 +487,7 @@ function SelectionCombobox(props: {
 													onClick={() => props.onChange(uniqStrings([...props.selected, ...groupValues]))}
 													className="h-5 rounded-md px-1.5 text-[11px] font-medium text-foreground hover:bg-muted disabled:opacity-35"
 												>
-													All
+										{t("guardrailsControls.all" as never)}
 												</button>
 												<button
 													type="button"
@@ -484,7 +496,7 @@ function SelectionCombobox(props: {
 													onClick={() => props.onChange(props.selected.filter((value) => !groupValues.includes(value)))}
 													className="h-5 rounded-md px-1.5 text-[11px] font-medium text-foreground hover:bg-muted disabled:opacity-35"
 												>
-													Clear
+										{t("strings.Clear" as never)}
 												</button>
 											</span>
 										) : null}
@@ -519,11 +531,13 @@ function SelectionCombobox(props: {
 				</Command>
 				<div className="flex items-center justify-between gap-2 border-t px-2 py-1.5">
 					<Button type="button" variant="ghost" size="sm" className="h-7 px-2 text-xs" disabled={!props.selected.length} onClick={() => props.onChange([])}>
-						Clear
+						{t("strings.Clear" as never)}
 					</Button>
 					{filteredValues.length ? (
 						<Button type="button" variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => props.onChange(allFilteredSelected ? props.selected.filter((value) => !filteredValues.includes(value)) : uniqStrings([...props.selected, ...filteredValues]))}>
-							{allFilteredSelected ? "Deselect matches" : "Select matches"}
+											{allFilteredSelected
+											? g("deselectMatches")
+											: g("selectMatches")}
 						</Button>
 					) : null}
 				</div>
@@ -771,7 +785,7 @@ function capabilityPrivacyDecision(args: {
 	privacyEnableInputOutputLogging: boolean;
 	privacyEnablePaidMayTrain: boolean;
 	privacyEnableFreeMayTrain: boolean;
-}): { accessible: boolean; reason: string; reasonCode: PreviewModelProviderState["reasonCode"] } {
+}): { accessible: boolean; reasonCode: PreviewModelProviderState["reasonCode"] } {
 	const policy = args.capability.dataPolicy;
 	const stateful = ["batch", "files.upload", "files.list", "files.retrieve"].includes(args.capability.id);
 	const tier = String(policy?.tier ?? (stateful ? "logs" : args.row.providerPolicy?.dataPolicyTier ?? "unknown"));
@@ -785,71 +799,47 @@ function capabilityPrivacyDecision(args: {
 	));
 
 	if (args.privacyZdrOnly && zdrEligibility !== "eligible") {
-		return {
-			accessible: false,
-			reasonCode: "zdr_required",
-			reason: `${args.capability.id} is not verified as ZDR eligible (${zdrEligibility}).`,
-		};
+		return { accessible: false, reasonCode: "zdr_required" };
 	}
 	const privacyRestricted = args.privacyZdrOnly || !args.privacyEnableInputOutputLogging || !args.privacyEnablePaidMayTrain || !args.privacyEnableFreeMayTrain;
 	if (privacyRestricted && tier === "unknown") {
-		return { accessible: false, reasonCode: "data_policy_unknown", reason: `${args.capability.id} has no confirmed data policy.` };
+		return { accessible: false, reasonCode: "data_policy_unknown" };
 	}
 	if (privacyRestricted && confidence !== "confirmed") {
-		return { accessible: false, reasonCode: "data_policy_unverified", reason: `${args.capability.id} data policy is ${confidence}, not confirmed.` };
+		return { accessible: false, reasonCode: "data_policy_unverified" };
 	}
 	if (!args.privacyEnableInputOutputLogging && tier === "logs") {
-		return { accessible: false, reasonCode: "logging_disabled", reason: `${args.capability.id} may retain prompts or outputs.` };
+		return { accessible: false, reasonCode: "logging_disabled" };
 	}
 	if ((!args.privacyEnablePaidMayTrain && !args.privacyEnableFreeMayTrain) && tier === "trains") {
-		return { accessible: false, reasonCode: "training_disabled", reason: `${args.capability.id} may train on prompts or outputs.` };
+		return { accessible: false, reasonCode: "training_disabled" };
 	}
-	return { accessible: true, reasonCode: "available", reason: `${args.capability.id} meets the current privacy settings.` };
+	return { accessible: true, reasonCode: "available" };
 }
 
 function buildProviderReason(args: {
 	row: ActiveProviderModel;
-	providerId: string;
 	providerAllowed: boolean;
 	modelAllowed: boolean;
-	providerMode: ProviderRestrictionMode;
-	selectedProviderIds: string[];
-	selectedModelIds: string[];
 	privacyZdrOnly: boolean;
 	privacyEnableInputOutputLogging: boolean;
 	privacyEnablePaidMayTrain: boolean;
 	privacyEnableFreeMayTrain: boolean;
 	accountProviderAllowed: boolean;
 	accountModelAllowed: boolean;
-}) {
-	if (!args.accountProviderAllowed) return { reasonCode: "provider_restriction" as const, reason: "Blocked by the account provider rule." };
-	if (!args.accountModelAllowed) return { reasonCode: "model_restriction" as const, reason: "Blocked by the account model rule." };
+}): { reasonCode: PreviewModelProviderState["reasonCode"] } {
+	if (!args.accountProviderAllowed) return { reasonCode: "provider_restriction" };
+	if (!args.accountModelAllowed) return { reasonCode: "model_restriction" };
 	if (!args.providerAllowed) {
-		if (args.providerMode === "allowlist") {
-			return { reasonCode: "provider_restriction" as const, reason: args.selectedProviderIds.length
-				? "Blocked because this provider is outside the provider allowlist."
-				: "Blocked because no providers were selected in the provider allowlist." };
-		}
-		if (args.providerMode === "blocklist") {
-			return { reasonCode: "provider_restriction" as const, reason: "Blocked because this provider is included in the provider blocklist." };
-		}
+		return { reasonCode: "provider_restriction" };
 	}
-	if (!args.modelAllowed) {
-		return { reasonCode: "model_restriction" as const, reason: args.selectedModelIds.length
-			? "Blocked because this model is outside the selected model allowlist."
-			: "Blocked by the current model restriction." };
-	}
+	if (!args.modelAllowed) return { reasonCode: "model_restriction" };
 	const capabilities = args.row?.capabilities?.length ? args.row.capabilities : [{ id: "inference", dataPolicy: null }];
 	const decisions = capabilities.map((capability) => capabilityPrivacyDecision({ ...args, capability }));
-	const available = decisions.filter((decision) => decision.accessible);
-	if (available.length) {
-		const blocked = decisions.length - available.length;
-		return {
-			reasonCode: "available" as const,
-			reason: blocked ? `Reachable for ${available.length} capabilities; ${blocked} excluded by privacy settings.` : "Reachable with the current settings.",
-		};
+	if (decisions.some((decision) => decision.accessible)) {
+		return { reasonCode: "available" };
 	}
-	return decisions[0] ?? { reasonCode: "data_policy_unknown" as const, reason: "No capability has a confirmed compatible data policy." };
+	return { reasonCode: decisions[0]!.reasonCode };
 }
 
 export default function GuardrailEditorPageClient(props: {
@@ -867,6 +857,12 @@ export default function GuardrailEditorPageClient(props: {
 	backHref: string;
 }) {
 	const t = useTranslations("SettingsUI");
+	const s = (key: string) => t(`strings.${key}` as never);
+	const tGuardrail = useTranslations("SettingsUI.guardrailEditorCopy");
+	const standardProviderVariant = tGuardrail("standardVariant");
+	const modelOrganisationLabel = s("Organisation");
+	const otherProviderLabel = s("Other");
+	const tEligibility = useTranslations("Common.ui.privacyEligibility");
 	const router = useRouter();
 	const [expandedSections, setExpandedSections] = useQueryState(
 		"sections",
@@ -880,20 +876,20 @@ export default function GuardrailEditorPageClient(props: {
 	const activeSectionDetails = activeSection
 		? {
 			access: {
-				title: "Access",
-				description: "Control data handling, provider access, and model access.",
+				title: s("Access"),
+				description: s("Control privacy, provider access, and model access."),
 			},
 			"prompt-injection": {
-				title: "Prompt Injection",
-				description: "Detect and handle prompt injection before a request reaches a model.",
+				title: s("Prompt Injection"),
+				description: s("Scan user-supplied request content for common prompt injection patterns before it reaches the model."),
 			},
 			"sensitive-info": {
-				title: "Sensitive Info Detection",
-				description: "Detect and handle sensitive data before it leaves Phaseo.",
+				title: s("Sensitive Info Detection"),
+				description: s("Detect and handle sensitive data before requests leave Phaseo."),
 			},
 			budgets: {
-				title: "Budget Policies",
-				description: "Set request and spend limits for this guardrail.",
+				title: s("Budget Policies"),
+				description: s("Set request and spend ceilings by time window."),
 			},
 		}[activeSection]
 		: null;
@@ -957,13 +953,13 @@ export default function GuardrailEditorPageClient(props: {
 						offerLabel: provider.offerLabel,
 						offerScope: provider.offerScope,
 					})
-					: formatProviderIdVariant(provider.id, provider.familyId);
+					: formatProviderIdVariant(provider.id, provider.familyId, standardProviderVariant);
 				return {
 					value: provider.id,
 					label: hasVariants ? `${familyName} — ${variant}` : provider.name,
 					group: hasVariants ? familyName : undefined,
 					variant,
-					variantOrder: variant === "Standard" ? 0 : 1,
+					variantOrder: provider.id === provider.familyId ? 0 : 1,
 				};
 			})
 			.sort((a, b) =>
@@ -971,7 +967,7 @@ export default function GuardrailEditorPageClient(props: {
 				a.variantOrder - b.variantOrder ||
 				a.label.localeCompare(b.label),
 			);
-	}, [normalizedProviders, providerFamilyNameById]);
+	}, [normalizedProviders, providerFamilyNameById, standardProviderVariant]);
 
 	const modelLabelById = useMemo(() => {
 		const map = new Map<string, string>();
@@ -995,7 +991,7 @@ export default function GuardrailEditorPageClient(props: {
 		const options = new Map<string, SelectionOption>();
 		for (const row of props.activeProviderModels) {
 			if (options.has(row.apiModelId)) continue;
-			const group = row.organisationName?.trim() || row.organisationId?.trim() || "Other";
+			const group = row.organisationName?.trim() || row.organisationId?.trim() || otherProviderLabel;
 			options.set(row.apiModelId, {
 				value: row.apiModelId,
 				label: formatModelPreviewTitle({
@@ -1011,7 +1007,7 @@ export default function GuardrailEditorPageClient(props: {
 		return Array.from(options.values()).sort((a, b) =>
 			(a.group ?? "").localeCompare(b.group ?? "") || a.label.localeCompare(b.label),
 		);
-	}, [props.activeProviderModels]);
+	}, [props.activeProviderModels, otherProviderLabel]);
 
 	const keyOptions = useMemo(() => {
 		return props.keys.map((k) => ({
@@ -1170,14 +1166,14 @@ export default function GuardrailEditorPageClient(props: {
 	}, [form.providerRestrictionProviderIds, providerById, providerLabelById]);
 	const selectedModelItems = useMemo(() => {
 		return form.allowedApiModelIds.map((modelId) => {
-			const organisation = modelOrganisationByModelId.get(modelId) ?? { id: "cloudflare", name: "Model organisation" };
+			const organisation = modelOrganisationByModelId.get(modelId) ?? { id: "cloudflare", name: s("Organisation") };
 			return {
 				id: modelId,
 				title: modelLabelById.get(modelId) ?? modelId,
 				leading: (
 					<Logo
 						id={getProviderLogoId(organisation.id)}
-						alt={`${organisation.name} logo`}
+						alt={tGuardrail("logoAlt", { name: organisation.name })}
 						width={14}
 						height={14}
 						className="h-3.5 w-3.5 rounded-sm"
@@ -1223,12 +1219,8 @@ export default function GuardrailEditorPageClient(props: {
 								: true;
 						const decision = buildProviderReason({
 							row,
-							providerId: row.providerId,
 							providerAllowed,
 							modelAllowed,
-							providerMode: form.providerRestrictionMode,
-							selectedProviderIds: form.providerRestrictionProviderIds,
-							selectedModelIds: form.allowedApiModelIds,
 							privacyZdrOnly: form.privacyZdrOnly,
 							privacyEnableInputOutputLogging: form.privacyEnableInputOutputLogging,
 							privacyEnablePaidMayTrain: form.privacyEnablePaidMayTrain,
@@ -1239,7 +1231,18 @@ export default function GuardrailEditorPageClient(props: {
 						return {
 							providerId: row.providerId,
 							accessible: providerAllowed && modelAllowed && decision.reasonCode === "available",
-							reason: decision.reason,
+							reason: tGuardrail(
+								({
+									available: "availabilityPassesCurrentRules",
+									provider_restriction: "availabilityProviderRestriction",
+									model_restriction: "availabilityModelRestriction",
+									zdr_required: "availabilityZdrNotVerified",
+									data_policy_unknown: "availabilityDataPolicyUnknown",
+									data_policy_unverified: "availabilityDataPolicyUnverified",
+									logging_disabled: "availabilityLoggingDisabled",
+									training_disabled: "availabilityTrainingDisabled",
+								} as const)[decision.reasonCode] as never,
+							),
 							reasonCode: decision.reasonCode,
 						};
 					})
@@ -1251,10 +1254,11 @@ export default function GuardrailEditorPageClient(props: {
 					modelMode: form.modelRestrictionMode,
 					selectedModelIds: form.allowedApiModelIds,
 					providerStates,
+					translate: (key) => tGuardrail(key as never),
 				});
 				return {
 					id: modelId,
-					organisationLabel: primary?.organisationName ?? primary?.organisationId ?? "Other",
+					organisationLabel: primary?.organisationName ?? primary?.organisationId ?? s("Other"),
 					modelLabel: primary?.internalModelName ?? primary?.internalModelId ?? modelId,
 					title: formatModelPreviewTitle({
 						organisationName: primary?.organisationName ?? null,
@@ -1268,7 +1272,7 @@ export default function GuardrailEditorPageClient(props: {
 					leading: (
 						<Logo
 							id={getProviderLogoId(primary?.organisationId ?? modelId.split("/")[0] ?? "cloudflare")}
-							alt={`${primary?.organisationName ?? primary?.organisationId ?? "Model organisation"} logo`}
+							alt={tGuardrail("logoAlt", { name: primary?.organisationName ?? primary?.organisationId ?? s("Organisation") })}
 							width={18}
 							height={18}
 							className="h-[18px] w-[18px] rounded-sm"
@@ -1371,13 +1375,16 @@ export default function GuardrailEditorPageClient(props: {
 	const sensitiveInfoRuleIssues = useMemo(() => {
 		const issues = new Map<string, string>();
 		for (const rule of form.sensitiveInfoRules) {
-			const issue = validateSensitiveInfoRulePayload(rule);
+			const issue = validateSensitiveInfoRulePayload(
+				rule,
+				(key, values) => tGuardrail(key as never, values as never),
+			);
 			if (issue) {
 				issues.set(rule.id, issue);
 			}
 		}
 		return issues;
-	}, [form.sensitiveInfoRules]);
+	}, [form.sensitiveInfoRules, tGuardrail]);
 	const enabledSensitiveInfoRuleCount = useMemo(
 		() => form.sensitiveInfoRules.filter((rule) => rule.enabled).length,
 		[form.sensitiveInfoRules],
@@ -1575,7 +1582,12 @@ export default function GuardrailEditorPageClient(props: {
 			return;
 		}
 		const firstSensitiveInfoIssue = form.sensitiveInfoRules
-			.map((rule) => validateSensitiveInfoRulePayload(rule))
+			.map((rule) =>
+				validateSensitiveInfoRulePayload(
+					rule,
+					(key, values) => tGuardrail(key as never, values as never),
+				),
+			)
 			.find((issue): issue is string => Boolean(issue));
 		if (firstSensitiveInfoIssue) {
 			toast.error(firstSensitiveInfoIssue);
@@ -1648,8 +1660,7 @@ export default function GuardrailEditorPageClient(props: {
 			router.push(props.backHref);
 			router.refresh();
 		} catch (err) {
-				const message =
-					err instanceof Error ? err.message : t("strings.Failed to save guardrail." as never);
+				const message = localizedSettingsError(err, t, "Failed to save guardrail.");
 			toast.error(message, { id: toastId });
 		} finally {
 			setSaving(false);
@@ -1666,8 +1677,7 @@ export default function GuardrailEditorPageClient(props: {
 			router.push(props.backHref);
 			router.refresh();
 		} catch (err) {
-				const message =
-					err instanceof Error ? err.message : t("strings.Failed to delete guardrail." as never);
+				const message = localizedSettingsError(err, t, "Failed to delete guardrail.");
 			toast.error(message, { id: toastId });
 		} finally {
 			setDeleting(false);
@@ -1901,7 +1911,7 @@ export default function GuardrailEditorPageClient(props: {
 												}
 											>
 											<SelectTrigger className="w-full">
-												<SelectValue>{getRestrictionModeLabel(form.providerRestrictionMode, "providers")}</SelectValue>
+												<SelectValue>{getRestrictionModeLabel(form.providerRestrictionMode, "providers", s)}</SelectValue>
 												</SelectTrigger>
 												<SelectContent>
 															<SelectItem value="none">{t("strings.Allow all providers" as never)}</SelectItem>
@@ -1915,8 +1925,8 @@ export default function GuardrailEditorPageClient(props: {
 										<SelectionField
 																	label={t("strings.Providers" as never)}
 																description={t("strings.Choose the providers this guardrail allows or blocks." as never)}
-										pickerTitle="Select providers"
-										pickerDescription="Choose providers for this guardrail."
+										pickerTitle={t("strings.Select Providers" as never)}
+										pickerDescription={tGuardrail("selectProvidersDescription")}
 											options={providerOptions}
 											selected={form.providerRestrictionProviderIds}
 											onChange={(next) => set("providerRestrictionProviderIds", next)}
@@ -1924,15 +1934,15 @@ export default function GuardrailEditorPageClient(props: {
 											onRemove={removeSelectedProvider}
 										empty={
 											form.providerRestrictionMode === "none"
-												? "No providers restricted."
-												: "No providers selected yet."
+													? tGuardrail("noProvidersRestricted")
+													: tGuardrail("noProvidersSelected")
 											}
 											triggerLabel={
 												form.providerRestrictionMode === "none"
-													? "Choose providers"
+												? tGuardrail("chooseProviders")
 													: form.providerRestrictionProviderIds.length
-														? `${form.providerRestrictionProviderIds.length} selected`
-														: "Choose providers"
+														? tGuardrail("selectedCount", { count: form.providerRestrictionProviderIds.length })
+														: tGuardrail("chooseProviders")
 											}
 										renderLeading={(opt) => (
 												<Logo
@@ -1940,7 +1950,7 @@ export default function GuardrailEditorPageClient(props: {
 												providerId: opt.value,
 												providerFamilyId: providerById.get(opt.value)?.familyId,
 											})}
-													alt={`${opt.label} logo`}
+													alt={tGuardrail("logoAlt", { name: opt.label })}
 													width={18}
 													height={18}
 													className="h-[18px] w-[18px] rounded-sm"
@@ -1951,7 +1961,7 @@ export default function GuardrailEditorPageClient(props: {
 												form.providerRestrictionMode === "allowlist" ? (
 													<div className="flex items-center gap-2 rounded-lg border border-dashed px-3 py-2">
 														<span className="text-xs text-muted-foreground">
-															Always enforce this allowlist
+														{tGuardrail("enforceThisAllowlist")}
 														</span>
 														<Switch
 															checked={form.providerRestrictionEnforceAllowed}
@@ -1974,7 +1984,7 @@ export default function GuardrailEditorPageClient(props: {
 												}
 											>
 											<SelectTrigger className="w-full">
-												<SelectValue>{getRestrictionModeLabel(form.modelRestrictionMode, "models")}</SelectValue>
+											<SelectValue>{getRestrictionModeLabel(form.modelRestrictionMode, "models", s)}</SelectValue>
 												</SelectTrigger>
 												<SelectContent>
 															<SelectItem value="none">{t("strings.Allow all models" as never)}</SelectItem>
@@ -1988,8 +1998,8 @@ export default function GuardrailEditorPageClient(props: {
 										<SelectionField
 																	label={t("strings.Models" as never)}
 																description={t("strings.Choose the models this guardrail allows or blocks after provider filtering." as never)}
-										pickerTitle="Select models"
-										pickerDescription="Choose models for this guardrail after provider filtering."
+										pickerTitle={s("Models")}
+										pickerDescription={tGuardrail("selectModelsDescription")}
 											options={modelOptions}
 											selected={form.allowedApiModelIds}
 											onChange={(next) => set("allowedApiModelIds", next)}
@@ -1997,22 +2007,22 @@ export default function GuardrailEditorPageClient(props: {
 											onRemove={removeSelectedModel}
 										empty={
 											form.modelRestrictionMode === "none"
-												? "No models restricted."
-												: "No models selected yet."
+													? tGuardrail("noModelsRestricted")
+												: s("No models selected yet.")
 											}
 											triggerLabel={
 												form.modelRestrictionMode === "none"
-													? "Choose models"
+												? tGuardrail("chooseModels")
 													: form.allowedApiModelIds.length
-														? `${form.allowedApiModelIds.length} selected`
-														: "Choose models"
+														? tGuardrail("selectedCount", { count: form.allowedApiModelIds.length })
+													: tGuardrail("chooseModels")
 											}
 										renderLeading={(opt) => {
-											const organisation = modelOrganisationByModelId.get(opt.value) ?? { id: "cloudflare", name: "Model organisation" };
+											const organisation = modelOrganisationByModelId.get(opt.value) ?? { id: "cloudflare", name: s("Organisation") };
 											return (
 												<Logo
 													id={getProviderLogoId(organisation.id)}
-													alt={`${organisation.name} logo`}
+													alt={tGuardrail("logoAlt", { name: organisation.name })}
 														width={18}
 														height={18}
 														className="h-[18px] w-[18px] rounded-sm"
@@ -2030,15 +2040,18 @@ export default function GuardrailEditorPageClient(props: {
 									<div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
 										<div>
 											<div className="text-sm font-medium text-muted-foreground">
-												Effective availability
+												{tEligibility("effectiveAvailability")}
 											</div>
 											<div className="mt-1 text-2xl font-semibold tracking-tight">
-												{modelCoverageCounts.available} of {modelCoverageItems.length} models routable
+												{tEligibility("routableSummary", {
+													available: modelCoverageCounts.available,
+													total: modelCoverageItems.length,
+												})}
 											</div>
 										</div>
 										<div className="text-xs text-muted-foreground sm:text-right">
-											<div>{restrictionPreview.reachableModelIds.length} passed access rules</div>
-											<div>{modelCoverageCounts.unavailable} excluded after all checks</div>
+												<div>{tGuardrail("passedAccessRules", { count: restrictionPreview.reachableModelIds.length })}</div>
+												<div>{tEligibility("excludedCount", { count: modelCoverageCounts.unavailable })}</div>
 										</div>
 									</div>
 								</div>
@@ -2057,7 +2070,7 @@ export default function GuardrailEditorPageClient(props: {
 												}`}
 												onClick={() => setModelCoverageFilter("all")}
 											>
-											All ({modelCoverageItems.length})
+										{tEligibility("allCount", { count: modelCoverageItems.length })}
 											</Button>
 											<Button
 												type="button"
@@ -2070,7 +2083,7 @@ export default function GuardrailEditorPageClient(props: {
 												}`}
 												onClick={() => setModelCoverageFilter("available")}
 											>
-											Available ({modelCoverageCounts.available})
+										{tEligibility("availableCount", { count: modelCoverageCounts.available })}
 											</Button>
 											<Button
 												type="button"
@@ -2083,7 +2096,7 @@ export default function GuardrailEditorPageClient(props: {
 												}`}
 												onClick={() => setModelCoverageFilter("unavailable")}
 											>
-											Unavailable ({modelCoverageCounts.unavailable})
+										{tEligibility("unavailableCount", { count: modelCoverageCounts.unavailable })}
 											</Button>
 										</div>
 									</div>
@@ -2091,10 +2104,10 @@ export default function GuardrailEditorPageClient(props: {
 										items={filteredModelCoverageItems}
 										empty={
 											modelCoverageFilter === "available"
-												? "No models are currently available."
-												: modelCoverageFilter === "unavailable"
-													? "No models are currently unavailable."
-													: "No active models are available."
+											? tGuardrail("noModelsCurrentlyAvailable")
+											: modelCoverageFilter === "unavailable"
+												? tGuardrail("noModelsCurrentlyUnavailable")
+												: tGuardrail("noActiveModelsAvailable")
 										}
 										heightClassName="h-[36rem]"
 										compact
@@ -2112,7 +2125,7 @@ export default function GuardrailEditorPageClient(props: {
 								<p className="mt-1 text-sm font-normal text-muted-foreground">{t("strings.Scan request content before routing." as never)}</p>
 							</div>
 							<span className="hidden shrink-0 text-sm font-normal capitalize text-muted-foreground md:block">
-								{form.promptInjectionEnabled ? form.promptInjectionAction : "Disabled"}
+								{form.promptInjectionEnabled ? getHandlingLabel(form.promptInjectionAction, s) : s("Disabled")}
 							</span>
 						</AccordionTrigger>
 						<AccordionContent disableAnimation className="pb-2 pt-0">
@@ -2134,7 +2147,7 @@ export default function GuardrailEditorPageClient(props: {
 									}
 								>
 									<SelectTrigger>
-									<SelectValue>{getHandlingLabel(getHandlingState({ enabled: form.promptInjectionEnabled, action: form.promptInjectionAction }))}</SelectValue>
+									<SelectValue>{getHandlingLabel(getHandlingState({ enabled: form.promptInjectionEnabled, action: form.promptInjectionAction }), s)}</SelectValue>
 									</SelectTrigger>
 									<SelectContent>
 										<SelectItem value="disabled">{t("strings.Disabled" as never)}</SelectItem>
@@ -2144,8 +2157,7 @@ export default function GuardrailEditorPageClient(props: {
 									</SelectContent>
 								</Select>
 								<p className="text-xs text-muted-foreground">
-									If multiple guardrails apply to the same key, the most restrictive
-									action wins: Block, then Redact, then Flag.
+									{tGuardrail("mostRestrictiveActionDescription")}
 								</p>
 							</div>
 						</EditorSection>
@@ -2159,7 +2171,7 @@ export default function GuardrailEditorPageClient(props: {
 								<p className="mt-1 text-sm font-normal text-muted-foreground">{t("strings.Detect and handle sensitive data before requests leave Phaseo." as never)}</p>
 							</div>
 							<span className="hidden shrink-0 text-sm font-normal text-muted-foreground md:block">
-								{form.sensitiveInfoEnabled ? `${enabledSensitiveInfoRuleCount} rules enabled` : "Disabled"}
+								{form.sensitiveInfoEnabled ? tGuardrail("sensitiveInfoRulesEnabled", { count: enabledSensitiveInfoRuleCount }) : s("Disabled")}
 							</span>
 						</AccordionTrigger>
 						<AccordionContent disableAnimation className="pb-2 pt-0">
@@ -2191,7 +2203,7 @@ export default function GuardrailEditorPageClient(props: {
 										}}
 									>
 										<SelectTrigger>
-										<SelectValue>{getHandlingLabel(getHandlingState({ enabled: form.sensitiveInfoEnabled, action: form.sensitiveInfoDefaultAction }))}</SelectValue>
+										<SelectValue>{getHandlingLabel(getHandlingState({ enabled: form.sensitiveInfoEnabled, action: form.sensitiveInfoDefaultAction }), s)}</SelectValue>
 										</SelectTrigger>
 										<SelectContent>
 											<SelectItem value="disabled">{t("strings.Disabled" as never)}</SelectItem>
@@ -2206,7 +2218,7 @@ export default function GuardrailEditorPageClient(props: {
 										<div>
 										<p className="text-sm font-medium">{t("strings.Patterns" as never)}</p>
 											<p className="text-xs text-muted-foreground">
-												Identify and handle common sensitive data before a request is sent.
+												{tGuardrail("sensitiveInfoPatternsDescription")}
 											</p>
 										</div>
 										<Button
@@ -2215,7 +2227,7 @@ export default function GuardrailEditorPageClient(props: {
 											size="sm"
 											onClick={enableAllSensitiveInfoBuiltinRules}
 										>
-											Enable all
+											{t("credits.Enable all" as never)}
 										</Button>
 									</div>
 									<div className="divide-y">
@@ -2258,7 +2270,7 @@ export default function GuardrailEditorPageClient(props: {
 															}
 														>
 															<SelectTrigger className="w-[140px]">
-														<SelectValue>{getHandlingLabel(getHandlingState({ enabled: form.sensitiveInfoEnabled && currentRule.enabled, action: currentRule.action }))}</SelectValue>
+														<SelectValue>{getHandlingLabel(getHandlingState({ enabled: form.sensitiveInfoEnabled && currentRule.enabled, action: currentRule.action }), s)}</SelectValue>
 															</SelectTrigger>
 															<SelectContent>
 																<SelectItem value="disabled">{t("strings.Disabled" as never)}</SelectItem>
@@ -2278,8 +2290,7 @@ export default function GuardrailEditorPageClient(props: {
 										<div>
 										<p className="text-sm font-medium">{t("strings.Custom patterns" as never)}</p>
 											<p className="text-xs text-muted-foreground">
-												Add regex-based patterns to flag, redact, or block
-												workspace-specific sensitive content.
+												{tGuardrail("customPatternsDescription")}
 											</p>
 										</div>
 										<Button
@@ -2289,7 +2300,7 @@ export default function GuardrailEditorPageClient(props: {
 											onClick={addCustomSensitiveInfoRule}
 											disabled={!form.sensitiveInfoEnabled}
 										>
-											Add pattern
+											{t("credits.Add pattern" as never)}
 										</Button>
 									</div>
 									{customSensitiveInfoRules.length > 0 ? (
@@ -2303,7 +2314,7 @@ export default function GuardrailEditorPageClient(props: {
 													>
 														<div className="flex flex-wrap items-center justify-between gap-2">
 															<div className="text-sm font-medium">
-																Pattern {index + 1}
+																{tGuardrail("patternLabel")} {index + 1}
 															</div>
 															<div className="flex items-center gap-2">
 																<Button
@@ -2315,14 +2326,14 @@ export default function GuardrailEditorPageClient(props: {
 																	}
 																>
 																	<Trash2 className="mr-2 h-4 w-4" />
-																	Remove
+																	{s("Delete")}
 																</Button>
 															</div>
 														</div>
 														<div className="grid gap-3 md:grid-cols-2">
 															<div className="space-y-2">
 																<Label htmlFor={`custom-rule-name-${rule.id}`}>
-																	Name
+																	{s("Name")}
 																</Label>
 																<Input
 																	id={`custom-rule-name-${rule.id}`}
@@ -2338,7 +2349,7 @@ export default function GuardrailEditorPageClient(props: {
 															</div>
 															<div className="space-y-2">
 																<Label htmlFor={`custom-rule-flags-${rule.id}`}>
-																	Flags
+																	{t("credits.Flags" as never)}
 																</Label>
 																<Input
 																	id={`custom-rule-flags-${rule.id}`}
@@ -2352,15 +2363,14 @@ export default function GuardrailEditorPageClient(props: {
 																		placeholder={t("strings.e.g. i" as never)}
 																/>
 																<p className="text-xs text-muted-foreground">
-																	Supported: g, i, m, s, u. Global matching is always
-																	applied automatically.
+																	{tGuardrail("regexFlagsDescription")}
 																</p>
 															</div>
 														</div>
 														<div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_180px]">
 															<div className="space-y-2">
 																<Label htmlFor={`custom-rule-pattern-${rule.id}`}>
-																	Regex pattern
+																	{tGuardrail("regexPattern")}
 																</Label>
 																<Input
 																	id={`custom-rule-pattern-${rule.id}`}
@@ -2390,7 +2400,7 @@ export default function GuardrailEditorPageClient(props: {
 																	}
 																>
 																	<SelectTrigger>
-																		<SelectValue>{getHandlingLabel(getHandlingState({ enabled: form.sensitiveInfoEnabled && rule.enabled, action: rule.action }))}</SelectValue>
+																		<SelectValue>{getHandlingLabel(getHandlingState({ enabled: form.sensitiveInfoEnabled && rule.enabled, action: rule.action }), s)}</SelectValue>
 																	</SelectTrigger>
 																	<SelectContent>
 																		<SelectItem value="disabled">{t("strings.Disabled" as never)}</SelectItem>
@@ -2405,8 +2415,7 @@ export default function GuardrailEditorPageClient(props: {
 															<p className="text-xs text-destructive">{issue}</p>
 														) : (
 															<p className="text-xs text-muted-foreground">
-																Matches will redact to a placeholder derived from the
-																pattern name.
+																{tGuardrail("redactionPlaceholderDescription")}
 															</p>
 														)}
 													</div>
@@ -2415,7 +2424,7 @@ export default function GuardrailEditorPageClient(props: {
 										</div>
 									) : (
 										<div className="rounded-lg border border-dashed bg-background p-4 text-sm text-muted-foreground">
-											No custom patterns configured yet.
+											{tGuardrail("noCustomPatterns")}
 										</div>
 									)}
 								</div>
@@ -2423,7 +2432,7 @@ export default function GuardrailEditorPageClient(props: {
 									<div>
 										<p className="text-sm font-medium">{t("strings.Preview" as never)}</p>
 										<p className="text-xs text-muted-foreground">
-											Test sample text to see what would be flagged, redacted, or blocked.
+											{tGuardrail("previewSampleDescription")}
 										</p>
 									</div>
 									<Textarea
@@ -2434,20 +2443,20 @@ export default function GuardrailEditorPageClient(props: {
 									<div className="grid gap-3 lg:grid-cols-[0.9fr_1.1fr]">
 										<div className="rounded-lg border bg-background p-3">
 											<div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-												Result
+												{t("credits.Result" as never)}
 											</div>
 											<div className="mt-2 text-sm font-medium">
 												{!form.sensitiveInfoPreviewInput.trim()
-													? "Enter sample text"
+													? tGuardrail("enterSampleText")
 													: !form.sensitiveInfoEnabled
-														? "Detection disabled"
+														? s("Disabled")
 														: !sensitiveInfoPreview.action
-															? "No matches"
+															? t("guardrailsControls.noMatches" as never)
 															: sensitiveInfoPreview.action === "block"
-																? "Would block"
+																? tGuardrail("wouldBlock")
 																: sensitiveInfoPreview.action === "redact"
-																	? "Would redact"
-																	: "Would flag"}
+																	? tGuardrail("wouldRedact")
+																	: tGuardrail("wouldFlag")}
 											</div>
 											{form.sensitiveInfoEnabled &&
 											sensitiveInfoPreview.matches.length > 0 ? (
@@ -2457,7 +2466,7 @@ export default function GuardrailEditorPageClient(props: {
 															key={`${match.ruleId}-${match.start}-${index}`}
 															variant="outline"
 														>
-															{match.label}: {match.action}
+															{match.label}: {getHandlingLabel(match.action as GuardrailHandlingState, s)}
 														</Badge>
 													))}
 												</div>
@@ -2465,19 +2474,18 @@ export default function GuardrailEditorPageClient(props: {
 										</div>
 										<div className="rounded-lg border bg-background p-3">
 											<div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-												Transformed text
+												{t("credits.Transformed text" as never)}
 											</div>
 											<div className="mt-2 whitespace-pre-wrap break-words text-sm">
 												{form.sensitiveInfoEnabled &&
 												sensitiveInfoPreview.action === "redact"
 													? sensitiveInfoPreview.redactedText
-													: form.sensitiveInfoPreviewInput || "Nothing to preview yet."}
+													: form.sensitiveInfoPreviewInput || tGuardrail("nothingToPreview")}
 											</div>
 										</div>
 									</div>
 									<p className="text-xs text-muted-foreground">
-										Names and physical addresses use contextual alpha heuristics and may
-										add latency or require tuning before broad rollout.
+										{tGuardrail("heuristicsNote")}
 									</p>
 								</div>
 							</div>
@@ -2492,7 +2500,7 @@ export default function GuardrailEditorPageClient(props: {
 								<p className="mt-1 text-sm font-normal text-muted-foreground">{t("strings.Set request and spend ceilings by time window." as never)}</p>
 							</div>
 							<span className="hidden shrink-0 text-sm font-normal text-muted-foreground md:block">
-								{configuredBudgetCount ? `${configuredBudgetCount} limits configured` : "No limits"}
+								{configuredBudgetCount ? tGuardrail("limitsConfigured", { count: configuredBudgetCount }) : t("credits.No limits" as never)}
 							</span>
 						</AccordionTrigger>
 						<AccordionContent disableAnimation className="pb-2 pt-0">
@@ -2508,7 +2516,7 @@ export default function GuardrailEditorPageClient(props: {
 									<div>
 										<AlertTitle>{t("strings.Aggregate guardrail budgets are not yet enforced" as never)}</AlertTitle>
 										<AlertDescription>
-											Use API key limits for hard request and spend enforcement while member and workspace aggregation is completed.
+											{t("credits.Use API key limits for hard request and spend enforcement while member and workspace aggregation is completed." as never)}
 										</AlertDescription>
 									</div>
 								</Alert>
@@ -2528,7 +2536,7 @@ export default function GuardrailEditorPageClient(props: {
 										<Input
 											type="number"
 											min="0"
-											placeholder="Unlimited"
+											placeholder={t("strings.Unlimited" as never)}
 											value={form.weeklyRequests}
 											onChange={(e) => set("weeklyRequests", e.target.value)}
 										/>
@@ -2538,7 +2546,7 @@ export default function GuardrailEditorPageClient(props: {
 										<Input
 											type="number"
 											min="0"
-											placeholder="Unlimited"
+											placeholder={t("strings.Unlimited" as never)}
 											value={form.monthlyRequests}
 											onChange={(e) => set("monthlyRequests", e.target.value)}
 										/>
@@ -2551,7 +2559,7 @@ export default function GuardrailEditorPageClient(props: {
 											type="number"
 											min="0"
 											step="0.01"
-											placeholder="Unlimited"
+											placeholder={t("strings.Unlimited" as never)}
 											value={form.dailyCostUsd}
 											onChange={(e) => set("dailyCostUsd", e.target.value)}
 										/>
@@ -2562,7 +2570,7 @@ export default function GuardrailEditorPageClient(props: {
 											type="number"
 											min="0"
 											step="0.01"
-											placeholder="Unlimited"
+											placeholder={t("strings.Unlimited" as never)}
 											value={form.weeklyCostUsd}
 											onChange={(e) => set("weeklyCostUsd", e.target.value)}
 										/>
@@ -2573,7 +2581,7 @@ export default function GuardrailEditorPageClient(props: {
 											type="number"
 											min="0"
 											step="0.01"
-											placeholder="Unlimited"
+											placeholder={t("strings.Unlimited" as never)}
 											value={form.monthlyCostUsd}
 											onChange={(e) => set("monthlyCostUsd", e.target.value)}
 										/>

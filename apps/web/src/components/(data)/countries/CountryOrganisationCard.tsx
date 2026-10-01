@@ -3,6 +3,7 @@ import type { CountryOrganisationSummary } from "@/lib/fetchers/countries/types"
 import { Logo } from "@/components/Logo";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 interface CountryOrganisationCardProps {
 	organisation: CountryOrganisationSummary;
@@ -11,6 +12,7 @@ interface CountryOrganisationCardProps {
 export default function CountryOrganisationCard({
 	organisation,
 }: CountryOrganisationCardProps) {
+	const t = useTranslations("Catalogue.countryDetail");
 	const organisationPath = `/organisations/${organisation.organisation_id}`;
 	const cardBorder =
 		organisation.colour && organisation.colour.startsWith("#")
@@ -29,7 +31,7 @@ export default function CountryOrganisationCard({
 								id={organisation.organisation_id}
 								alt={
 									organisation.organisation_name ??
-									"Organisation logo"
+									t("organisationLogoAlt")
 								}
 								width={26}
 								height={26}
@@ -42,8 +44,7 @@ export default function CountryOrganisationCard({
 										organisation.organisation_id}
 						</span>
 							<p className="text-xs text-muted-foreground">
-								{organisation.modelCount} model
-								{organisation.modelCount === 1 ? "" : "s"}
+								{t("modelsCount", { count: organisation.modelCount.toLocaleString() })}
 							</p>
 					</div>
 					<ArrowRight className="size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-foreground" />

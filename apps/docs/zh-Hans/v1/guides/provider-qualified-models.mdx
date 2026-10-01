@@ -1,0 +1,207 @@
+---
+title: "提供商限定的模型 ID"
+description: "使用单个模型标识符，将请求路由到精确的提供商和模型。"
+icon: "route"
+---
+
+提供商限定的模型 ID 可让你在 `model` 字段中指定确切的提供商和规范模型。如果提供商选择属于请求契约的一部分，而不仅仅是路由偏好，请使用这种方式。
+
+## 语法
+
+```text
+<provider-id>:<canonical-model-id>
+```
+
+例如：
+
+```text
+baseten:thinking-machines/inkling-small
+deepinfra:deepseek/deepseek-v3
+crofai:moonshotai/kimi-k3
+```
+
+第一个冒号用于分隔提供商和规范模型 ID。模型命名空间之后的冒号仍属于模型后缀，因此不会产生歧义：
+
+```text
+baseten:google/gemma-4-26b-a4b:free
+```
+
+在此示例中：
+
+- `baseten` 是所请求的提供商
+- `google/gemma-4-26b-a4b:free` 是 Phaseo 的规范模型 ID
+
+## 发送请求
+
+在任何接受模型 ID 的端点中使用限定标识符。
+
+<CodeGroup>
+
+```bash cURL
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "baseten:thinking-machines/inkling-small",
+    "input": "Explain mixture-of-experts routing in two sentences."
+  }'
+```
+
+```javascript JavaScript
+const response = await fetch("https://api.phaseo.app/v1/responses", {
+  method: "POST",
+  headers: {
+    Authorization: "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    model: "baseten:thinking-machines/inkling-small",
+    input: "Explain mixture-of-experts routing in two sentences.",
+  }),
+});
+
+const result = await response.json();
+```
+
+```python Python
+import os
+import requests
+
+response = requests.post(
+    "https://api.phaseo.app/v1/responses",
+    headers={
+        "Authorization": f"Bearer {os.environ['PHASEO_API_KEY']}",
+        "Content-Type": "application/json",
+    },
+    json={
+        "model": "baseten:thinking-machines/inkling-small",
+        "input": "Explain mixture-of-experts routing in two sentences.",
+    },
+)
+
+result = response.json()
+```
+
+</CodeGroup>
+
+## 精确路由行为
+
+提供商限定符是一项精确约束。Phaseo 会将合格提供商范围缩小到所请求的提供商，并且不会在该请求中回退到其他提供商。
+
+限定符不会绕过其他控制。提供商仍必须：
+
+- 在所请求的端点上提供该规范模型
+- 为端点能力启用
+- 满足工作区和 API 密钥策略
+- 满足预设和隐私限制
+- 支持所请求的服务层级和参数
+- 配置有效价格
+
+如果任一检查失败，Phaseo 会拒绝请求，而不会悄悄选择其他提供商。
+
+## 与路由字段的交互
+
+限定的提供商必须与显式路由字段一致。
+
+```json
+{
+  "model": "baseten:thinking-machines/inkling-small",
+  "provider": {
+    "only": ["baseten"]
+  }
+}
+```
+
+匹配的 `provider.only` 或 `routing.only` 值会被接受。若允许列表冲突，或忽略列表包含该限定提供商，则会返回验证错误。
+
+例如，以下请求自相矛盾，会被拒绝：
+
+```json
+{
+  "model": "baseten:thinking-machines/inkling-small",
+  "provider": {
+    "only": ["deepinfra"]
+  }
+}
+```
+
+如果提供商只是一个偏好，并且允许跨提供商回退，请继续使用未限定的规范模型 ID，并使用常规的[路由与回退控制](./routing-and-fallbacks.mdx)。
+
+## 提供商限定的免费模型
+
+只有当该确切提供商为规范模型和端点提供合格的免费路由时，带有 `:free` 的限定请求才会被接受。
+
+```json
+{
+  "model": "baseten:google/gemma-4-26b-a4b:free",
+  "input": "Hello"
+}
+```
+
+除非所选路由具有非空价格表，且每条当前价格规则都满足以下条件，否则 Phaseo 会拒绝请求：
+
+- 明确标记为 `free`
+- 价格恰好为零
+
+如果缺少价格、存在付费价格、混合价格、负价格，或零价格规则未明确标记为免费，请求会在提供商执行之前被拒绝。
+
+<Note>
+存在规范的 `:free` 模型，并不表示所有提供底层模型的提供商都提供免费路由。
+</Note>
+
+## 提供商标识符和别名
+
+请使用 Phaseo 提供商目录中公开的提供商标识符。标识符会统一转换为小写，受支持的旧别名或品牌别名会映射到规范提供商 ID。
+
+例如，`NovitaAI` 和 `novita-ai` 目前都会转换为 `novita`。
+
+格式错误或未知的标识符会在选择提供商前被拒绝。Phaseo 不会将它们作为模型名称的一部分发送给上游。
+
+## 验证错误
+
+提供商限定 ID 错误使用 HTTP `400`，顶层错误代码为 `validation_error`。请查看 `reason` 或 `details[].keyword` 了解具体原因。
+
+| 原因 | 含义 |
+| --- | --- |
+| `invalid_provider_slug` | 提供商部分为空或包含不受支持的字符。 |
+| `unknown_provider_slug` | 标识符格式正确，但不是 Phaseo 识别的提供商。 |
+| `invalid_provider_qualified_model` | 组合标识符不符合 `<provider>:<publisher>/<model>` 格式。 |
+| `provider_qualified_model_conflict` | `provider.only`、`provider.ignore`、`routing.only` 或 `routing.ignore` 与限定符冲突。 |
+| `qualified_provider_unavailable` | 提供商可识别，但未在所请求的端点提供该模型。 |
+| `qualified_free_provider_unavailable` | 尚未验证该精确提供商路由是否所有价格均为零且明确免费。 |
+
+错误示例：
+
+```json
+{
+  "error": "validation_error",
+  "status_code": 400,
+  "reason": "unknown_provider_slug",
+  "description": "Unknown provider slug \"not-a-provider\" in provider-qualified model \"not-a-provider:publisher/model\". Use a provider slug returned by Phaseo's provider catalogue.",
+  "provider": "not-a-provider",
+  "model": "publisher/model",
+  "details": [
+    {
+      "path": ["model"],
+      "keyword": "unknown_provider_slug"
+    }
+  ]
+}
+```
+
+## 在两种格式之间选择
+
+| 需求 | 建议的模型值 |
+| --- | --- |
+| 让 Phaseo 选择提供商并在提供商之间回退 | `thinking-machines/inkling-small` |
+| 指定 Baseten，且不允许跨提供商回退 | `baseten:thinking-machines/inkling-small` |
+| 要求使用已验证的提供商免费路由 | `baseten:google/gemma-4-26b-a4b:free` |
+
+## 相关指南
+
+- [路由与回退](./routing-and-fallbacks.mdx)
+- [API 提供商](../exploring/api-providers.mdx)
+- [模型](../exploring/models.mdx)
+- [错误处理](../developers/error-handling.mdx)
+- [预设](./presets.mdx)
+

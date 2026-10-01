@@ -1,0 +1,122 @@
+---
+title: "Crea un ciclo de agente persistente en TypeScript"
+icon: "repeat-2"
+description: "Ejecuta un ciclo de agente reanudable sobre Phaseo Gateway con el Agent SDK de TypeScript."
+---
+
+Usa esta receta cuando necesites algo más que una solicitud de texto puntual:
+
+- ciclos de herramientas con varios pasos
+- herramientas locales del entorno de ejecución
+- ejecuciones reanudables
+- un único punto de entrada de Gateway para el trabajo del agente
+
+## 1. Instala los SDK
+
+<CodeGroup>
+```bash npm
+npm install @phaseo/sdk @phaseo/agent-sdk
+```
+
+```bash pnpm
+pnpm add @phaseo/sdk @phaseo/agent-sdk
+```
+
+```bash yarn
+yarn add @phaseo/sdk @phaseo/agent-sdk
+```
+
+```bash bun
+bun add @phaseo/sdk @phaseo/agent-sdk
+```
+</CodeGroup>
+
+## 2. Define una herramienta pequeña del entorno de ejecución
+
+Procura que la primera herramienta sea determinista y fácil de inspeccionar.
+
+```ts
+import { defineTool } from "@phaseo/agent-sdk";
+
+export const lookupDocs = defineTool({
+  id: "lookup-docs",
+  description: "Look up internal docs by slug.",
+  async execute(input: { slug: string }) {
+    return {
+      slug: input.slug,
+      url: `https://phaseo.app/docs/v1/${input.slug}`,
+    };
+  },
+});
+```
+
+## 3. Crea el agente
+
+```ts
+import { createAgent } from "@phaseo/agent-sdk";
+import { lookupDocs } from "./tools";
+
+export const supportDocsAgent = createAgent({
+  id: "support-docs-agent",
+  model: "phaseo/free",
+  instructions: "Use tools when helpful and finish with a concise answer.",
+  tools: [lookupDocs],
+});
+```
+
+## 4. Usa el adaptador conectado a Gateway
+
+```ts
+import {
+  createGatewayAgentClient,
+} from "@phaseo/agent-sdk";
+import { supportDocsAgent } from "./agent";
+
+const result = await supportDocsAgent.run({
+  input: "Find the docs page for presets and explain when to use them.",
+  client: createGatewayAgentClient({
+    clientOptions: {
+      apiKey: process.env.PHASEO_API_KEY!,
+    },
+  }),
+});
+
+console.log(result.output);
+```
+
+## 5. Qué se conserva entre pasos
+
+Cada paso completado actualiza el estado devuelto de la ejecución con:
+
+- el ID de ejecución
+- el historial de mensajes
+- las llamadas a herramientas devueltas
+- los resultados de herramientas locales
+- la salida final cuando termina la ejecución
+
+Para reanudar la ejecución entre solicitudes o procesos, guarda ese valor devuelto en tu aplicación y pásalo más adelante a `continueRun()`.
+
+## 6. Cuándo conviene mantener simple la primera versión
+
+- un agente por flujo de trabajo
+- serialización a cargo de la aplicación antes de reanudar entre solicitudes
+- una lista reducida de herramientas antes de crear registros genéricos
+- una línea de registro por ejecución con su ID y el ID de solicitud de Gateway
+
+## 7. Cuándo ampliar este enfoque
+
+Amplía este primer ciclo persistente cuando necesites:
+
+- pausas para aprobación
+- persistencia del estado devuelto a cargo de la aplicación
+- varias definiciones de agente con herramientas compartidas del entorno de ejecución
+
+En ese momento, conserva el mismo adaptador conectado a Gateway y amplía el almacenamiento y la orquestación a su alrededor.
+
+## Guías relacionadas
+
+- [Agent SDK de TypeScript](../sdk-reference/typescript/agent-sdk.mdx)
+- [Presets](../guides/presets.mdx)
+- [Enrutamiento y alternativas](../guides/routing-and-fallbacks.mdx)
+- [Configura agentes de programación con SKILL.md](./coding-agents-skill-md.mdx)
+- [Despliega en el enrutador gratuito](./free-router-first-deploy.mdx)

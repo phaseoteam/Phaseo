@@ -1,0 +1,134 @@
+---
+title: "工具与审批"
+description: "在 Rust Agent SDK 中定义本地、外部以及需要审批的工具。"
+---
+
+## 本地工具
+
+如果 Rust 进程可以执行操作，请使用 `Tool::new(...)`：
+
+```rust
+use phaseo_agent::Tool;
+use serde_json::json;
+
+let get_status = Tool::new(
+    "get_status",
+    "Get the current service status",
+    json!({
+        "type": "object",
+        "properties": {
+            "service": { "type": "string" }
+        },
+        "required": ["service"]
+    }),
+    |input, _context| {
+        Ok(json!({
+            "service": input["service"],
+            "status": "healthy"
+        }))
+    },
+);
+```
+
+`parameters` 的值会以 JSON Schema 的形式发送给模型。工具的输入和输出类型为 `serde_json::Value`。如果需要更严格的运行时保证，请在执行器中验证不可信参数。
+
+## 需要审批的工具
+
+添加 `require_approval()`，即可在执行操作前暂停：
+
+```rust
+let deploy = Tool::new(
+    "deploy",
+    "Deploy an application environment",
+    json!({
+        "type": "object",
+        "properties": {
+            "environment": { "type": "string" }
+        },
+        "required": ["environment"]
+    }),
+    |input, _context| {
+        Ok(json!({
+            "environment": input["environment"],
+            "deployed": true
+        }))
+    },
+)
+.require_approval();
+```
+
+模型调用此工具时，本次运行会返回 `run.status == "waiting_for_human"` 和 `run.pause.kind == "tool_approval"`。
+
+使用准确的调用 ID 恢复运行：
+
+```rust
+use phaseo_agent::{ContinueOptions, ToolDecision};
+
+let approvals = paused.run.pause.as_ref().unwrap()
+    .pending_tool_calls
+    .iter()
+    .map(|pending| ToolDecision {
+        tool_call_id: pending.call.id.clone(),
+        reason: Some("Approved by the release operator".to_string()),
+    })
+    .collect();
+
+let mut options = ContinueOptions::new(paused);
+options.approvals = approvals;
+
+let completed = agent.continue_run(&mut client, options)?;
+```
+
+Rust `0.1` API 未提供单独的拒绝类型。对于未获批准的调用，可以保持暂停状态，也可以在恢复之前应用应用自身的拒绝策略。
+
+## 外部工具
+
+如果由其他进程执行操作，请使用 `Tool::external(...)`：
+
+```rust
+let ticket_lookup = Tool::external(
+    "ticket_lookup",
+    "Load one support ticket",
+    json!({
+        "type": "object",
+        "properties": {
+            "ticket_id": { "type": "string" }
+        },
+        "required": ["ticket_id"]
+    }),
+);
+```
+
+如果每个待处理调用都需要外部结果，暂停类型将为 `external_output`。请按调用 ID 提供每个结果：
+
+```rust
+use phaseo_agent::{ContinueOptions, ToolOutput};
+
+let outputs = paused.run.pause.as_ref().unwrap()
+    .pending_tool_calls
+    .iter()
+    .map(|pending| ToolOutput {
+        tool_call_id: pending.call.id.clone(),
+        output: json!({
+            "subject": "Provider latency increased",
+            "priority": "high"
+        }),
+    })
+    .collect();
+
+let mut options = ContinueOptions::new(paused);
+options.tool_outputs = outputs;
+
+let completed = agent.continue_run(&mut client, options)?;
+```
+
+如果模型的一轮响应同时包含自动执行的工具和待处理调用，运行时会先执行自动工具，再返回暂停状态。
+
+## 工具错误
+
+本地执行器返回的 `AgentError` 会转换为结构化工具错误消息并发送给模型。工具名称未知，或缺少审批或输出时，继续运行会返回 `AgentError`。
+
+## 相关内容
+
+- [保存并恢复运行](./agent-sdk-state-and-approval.mdx)
+- [Agent API 参考](./agent-sdk-api-reference.mdx)

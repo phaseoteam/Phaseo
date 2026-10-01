@@ -31,11 +31,11 @@ export async function ImageInputsSection() {
 				<div className="space-y-0.5">
 					<h2 className="text-2xl font-semibold leading-8">{t("imageInputs")}</h2>
 					<p className="max-w-3xl text-sm text-muted-foreground">
-						Images processed by multimodal models, rather than images generated.
+						{t("imageInputsDescription")}
 					</p>
 				</div>
 				<Link href="/rankings/image" className="text-sm font-medium underline decoration-transparent underline-offset-4 hover:decoration-current">
-					View Image Rankings
+					{t("viewImageRankings")}
 				</Link>
 			</div>
 			{result.data.length ? (
@@ -45,14 +45,14 @@ export async function ImageInputsSection() {
 					nameMap={nameMap}
 					logoIdMap={logoIdMap}
 					organisationNameMap={organisationNameMap}
-					leaderboardTitle="Image Input Leaderboard"
-					leaderboardDescription="Compare models by images processed over the selected period."
-					valueUnit="images"
+					leaderboardTitle={t("imageInputLeaderboardTitle")}
+					leaderboardDescription={t("imageInputLeaderboardDescription")}
+					valueUnit={t("usageImagesUnit")}
 				/>
 			) : (
 				<EmptyChartPreview
-					title="No public image-input ranking yet"
-					description="Image-input counts will appear once providers return normalized multimodal usage consistently."
+					title={t("noPublicImageInputRanking")}
+					description={t("imageInputCountsAvailability")}
 					heightClassName="h-[220px]"
 				/>
 			)}

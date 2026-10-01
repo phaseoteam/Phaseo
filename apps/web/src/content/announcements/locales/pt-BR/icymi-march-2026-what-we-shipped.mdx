@@ -1,0 +1,115 @@
+---
+title: "Caso você tenha perdido: O que lançamos em março de 2026"
+shortTitle: "Caso você tenha perdido: março de 2026"
+description: Março preparou a base para embeddings, descoberta multimodal, cobrança mais clara e novas versões dos SDKs.
+publishedAt: 2026-03-31
+author: Phaseo Team
+category: data
+pinned: false
+coverImage: /blog-images/recap-march-2026.png
+tags:
+  - Resumo mensal
+  - Resumo mensal
+  - Produto
+  - Modelos
+draft: false
+---
+
+Março foi um mês de preparação para a Phaseo. Grande parte do trabalho buscou tornar o produto mais confiável antes das versões maiores do Gateway e do catálogo, que chegaram depois na primavera.
+
+Este resumo cobre o que foi lançado entre **1º e 31 de março de 2026**, com base no histórico de lançamentos, no histórico de commits e nos dados do catálogo do mês.
+
+## O que lançamos
+
+### Ficou mais fácil usar embeddings
+
+Em março, o suporte a embeddings deixou de ser apenas uma possibilidade e passou a ficar muito mais visível. Melhoramos o produto, a API, os exemplos dos SDKs e a documentação para que as equipes encontrassem modelos de embeddings, entendessem como eles se encaixam no catálogo e pudessem desenvolver com eles sem precisar procurar em várias partes do produto.
+
+Isso importa porque embeddings costumam ser o primeiro componente de fluxos de busca, recuperação, classificação, memória e recomendação. Eles nem sempre são os lançamentos de modelos mais visíveis, mas sustentam muitos recursos úteis de IA.
+
+O catálogo também recebeu Gemini Embedding 2 Preview durante o mês, junto com atualizações mais amplas de metadados de modelos. Em conjunto, essas mudanças tornaram a Phaseo mais útil para equipes que desenvolvem fluxos de recuperação, e não apenas interfaces de chat.
+
+Explore o catálogo:
+
+- [Explorar modelos](/models)
+
+### As páginas de modelos ficaram mais leves e fáceis de navegar
+
+Em março, as páginas de modelos receberam várias melhorias práticas. O carregamento da linha do tempo passou a buscar os itens anterior e seguinte de forma mais direta, as rotas de provedores e modelos foram organizadas e os dados de modelos foram atualizados no app web, na API, na documentação e nos SDKs.
+
+O resultado foi uma melhoria discreta, mas importante: as páginas de modelos passaram a fazer menos trabalho desnecessário e o produto ficou melhor em mostrar as informações certas no lugar certo.
+
+A busca também melhorou. A busca no cabeçalho passou a priorizar correspondências diretas com nomes de modelos, e os links do chat foram corrigidos para apontar para as páginas de modelos certas. Isso faz diferença quando o catálogo cresce rapidamente e as pessoas querem acessar uma versão específica sem demora.
+
+### A cobertura multimodal avançou
+
+Março incluiu um conjunto amplo de mudanças que alinhou SDKs, exemplos multimodais, documentação e páginas do produto. As áreas de áudio, vídeo e chat também receberam melhorias relacionadas ao longo do mês.
+
+Nem tudo chegou como um único recurso de destaque. Esse trabalho formou a base para um produto que atende a mais do que modelos de texto. O principal foi a consistência: os tipos de modelos, a documentação, os exemplos e as páginas do produto começaram a combinar melhor.
+
+Essa consistência é importante para desenvolvedores. Se um modelo oferece áudio ou vídeo, o produto precisa deixar isso claro, a documentação deve explicar como usá-lo e os exemplos dos SDKs devem acompanhar o produto.
+
+### Cobrança e créditos ficaram mais claros
+
+Em março, adicionamos um fluxo para resgatar códigos promocionais, aprimoramos transações e criamos uma visualização interna dos totais de créditos promocionais pendentes. O Gateway também padronizou o uso de cobrança e os identificadores do início rápido.
+
+Essas mudanças não são do tipo que as pessoas costumam registrar em uma captura de tela, mas reduzem a confusão. Quem está experimentando a Phaseo pela primeira vez precisa entender o básico: quanto crédito tem, o que já foi usado e a qual conta ou workspace pertence.
+
+Esse trabalho também preparou o produto para as mudanças maiores de conta e workspace lançadas em abril.
+
+### SDKs e ferramentas de lançamento continuaram alinhados
+
+O mês incluiu lançamentos de pacotes, validação dos SDKs, verificações de versão e atualizações de clientes gerados. Isso manteve os pacotes públicos alinhados à API e ao catálogo de modelos conforme novas versões eram lançadas.
+
+Isso é especialmente importante para um produto baseado em catálogo. Novos dados de modelos só são úteis quando chegam aos lugares em que desenvolvedores realmente os usam: IDs de modelos, SDKs gerados, documentação, exemplos e respostas da API.
+
+## Também lançamos
+
+- Aprimoramos a navegação móvel, incluindo a largura dos menus suspensos, separadores e controles de tema, além de unificar o menu móvel.
+- As falhas de cadastro ficaram mais fáceis de investigar com efeitos colaterais mais seguros e registros melhores por etapa.
+- Removemos registros temporários de erros de chat upstream após concluir a depuração.
+- Atualizamos dependências em todo o repositório, incluindo correções relacionadas a avisos de segurança.
+- Melhoramos alertas de descoberta de modelos e notificações do Hugging Face e internas para facilitar o acompanhamento do trabalho no catálogo.
+
+## Destaques de modelos
+
+Março trouxe várias novidades importantes. OpenAI GPT 5.4, GPT 5.4 Pro, GPT 5.4 Mini e GPT 5.4 Nano ampliaram a parte da OpenAI no catálogo. Gemini 3.1 Flash Lite Preview e Gemini Embedding 2 Preview ampliaram a cobertura do Google. Mistral Small 4, Mistral Moderation 2, Leanstral e Voxtral TTS expandiram a cobertura da Mistral em texto, moderação e fala.
+
+O mês também incluiu GLM 5 Turbo, Nemotron 3 Super, MiniMax M2.7, vários modelos Xiaomi MiMo V2 e o primeiro registro de Veo 3.1 Lite Preview no fim do mês.
+
+## Resumo do mês
+
+O histórico local do Git registra **74 commits** em março. O mês incluiu lançamentos de dados de modelos e pacotes de SDK, correções de cobrança, melhorias na navegação móvel e atualizações de catálogo para OpenAI, Anthropic, Google, Mistral, Xiaomi, MiniMax, Qwen e outros.
+
+## Modelos lançados em março de 2026
+
+O catálogo inclui os seguintes modelos com datas de lançamento em março de 2026:
+
+- 2 de março: Qwen 3.5 0.8B (`qwen/qwen3.5-0.8b`)
+- 2 de março: Qwen 3.5 2B (`qwen/qwen3.5-2b`)
+- 2 de março: Qwen 3.5 4B (`qwen/qwen3.5-4b`)
+- 2 de março: Qwen 3.5 9B (`qwen/qwen3.5-9b`)
+- 3 de março: Gemini 3.1 Flash Lite Preview (`google/gemini-3.1-flash-lite-preview`)
+- 3 de março: GPT 5.3 Chat (`openai/gpt-5.3-chat`)
+- 5 de março: GPT 5.4 (`openai/gpt-5.4`)
+- 5 de março: GPT 5.4 Pro (`openai/gpt-5.4-pro`)
+- 10 de março: Aion 2.5 (`aion-labs/aion-2.5`)
+- 10 de março: Gemini Embedding 2 Preview (`google/gemini-embedding-2-preview`)
+- 11 de março: Nemotron 3 Super (`nvidia/nemotron-3-super-120b-a12b`)
+- 15 de março: GLM 5 Turbo (`z-ai/glm-5-turbo`)
+- 16 de março: Leanstral (`mistral/leanstral`)
+- 16 de março: Mistral Small 4 (`mistral/mistral-small-4`)
+- 17 de março: Mistral Moderation 2 (`mistral/mistral-moderation-2`)
+- 17 de março: GPT 5.4 Mini (`openai/gpt-5.4-mini`)
+- 17 de março: GPT 5.4 Nano (`openai/gpt-5.4-nano`)
+- 18 de março: MiniMax M2.7 (`minimax/minimax-m2.7`)
+- 18 de março: MiMo V2 Omni (`xiaomi/mimo-v2-omni`)
+- 18 de março: MiMo V2 Pro (`xiaomi/mimo-v2-pro`)
+- 18 de março: MiMo V2 TTS (`xiaomi/mimo-v2-tts`)
+- 23 de março: Voxtral TTS (`mistral/voxtral-tts`)
+- 31 de março: Veo 3.1 Lite Preview (`google/veo-3.1-lite-preview`)
+
+## Próximos passos
+
+Março preparou o produto para um abril mais acelerado: páginas de preços melhores, mudanças nos workspaces, mais melhorias nas páginas de modelos e uma sequência maior de lançamentos.
+

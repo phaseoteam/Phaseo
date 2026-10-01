@@ -1,0 +1,90 @@
+---
+icon: "braces"
+title: "مرجع API"
+description: "ارجع إلى نقاط الدخول والأساليب والخيارات وأنواع النتائج في TypeScript Agent SDK."
+---
+
+استخدم هذه الصفحة إذا كنت تعرف سير عمل Agent SDK وتحتاج إلى نقطة الدخول العامة أو الخيار المحدد المناسب.
+
+## نقاط الدخول
+
+| التصدير | الغرض |
+| --- | --- |
+| `createAgent(definition)` | تعريف وكيل وسلوك وقت التشغيل الافتراضي له |
+| `defineTool(definition)` | تعريف أداة محلية تم التحقق منها أو يدوية أو تتطلب موافقة أو تعرض التقدم |
+| `tool(definition)` | اسم مستعار موجز لـ `defineTool()` |
+| `createGatewayAgentClient(options)` | تشغيل أدوار النموذج عبر Phaseo Gateway |
+| `createAgentDevtools(options)` | تفعيل تسجيل التشغيل المحلي |
+
+## أساليب الوكيل
+
+| الأسلوب | القيمة المعادة | الغرض |
+| --- | --- | --- |
+| `agent.run(options)` | `Promise<AgentRunResult>` | التشغيل حتى الاكتمال أو الإيقاف المؤقت أو التوقف أو الإلغاء أو الإخفاق |
+| `agent.stream(options)` | `AgentStreamResult` | بدء الحلقة نفسها باستخدام مستهلكي تدفق قابلين لإعادة التشغيل |
+| `agent.continueRun(options)` | `Promise<AgentRunResult>` | متابعة حالة محفوظة أو متوقفة مؤقتًا باستخدام قرارات أو إدخال بشري |
+
+## مستهلكو التدفق
+
+| الأسلوب | القيمة |
+| --- | --- |
+| `getResult()` | `AgentRunResult` مكتمل |
+| `getText()` | النص النهائي كاملًا |
+| `getTextStream()` | تغييرات النص |
+| `getReasoningStream()` | تغييرات الاستدلال عند توفيرها من النموذج |
+| `getItemsStream()` | قيم `AgentItem<TOutput>` محددة النوع |
+| `getToolStream()` | أحداث دورة حياة الأداة |
+| `getFullStream()` | تدفق أحداث Agent SDK كامل |
+| `cancel(reason?)` | يلغي التشغيل النشط |
+
+## خيارات التعريف
+
+يتضمن `AgentDefinition`:
+
+- `id`
+- `model` أو `models`
+- `preset`
+- `instructions`
+- `tools`
+- `maxSteps` و`stopWhen`
+- `modelRetry` و`toolExecution`
+- `temperature`، و`maxOutputTokens` و`topP`
+- `parseOutput` و`outputSchema`
+- `requireApproval` و`humanReview`
+
+يمكن لحقول النموذج والتعليمات وأخذ العينات استخدام قيم ثابتة أو ديناميكية.
+
+## خيارات التشغيل والمتابعة
+
+يوفر `AgentRunOptions` الإدخال وعميل النموذج وسياق التطبيق والتجاوزات الاختيارية والإلغاء وخطافات دورة الحياة وDevTools وأداة وصول إلى الحالة يديرها التطبيق.
+
+يقبل `AgentContinueOptions` أيضًا:
+
+- قيمة `run` أو `runId` سابقة
+- `humanInput`
+- الموافقات والرفض باستخدام معرّف استدعاء الأداة المحدد
+- قيم `toolOutputs` التي أُنتجت خارجيًا
+
+## سجلات النتائج
+
+يتضمن `AgentRunResult`:
+
+- `run`: حالة تشغيل دائمة وسياق وتفاصيل الإيقاف المؤقت وسبب التوقف
+- `steps`: سجلات خطوات النموذج والأدوات المحفوظة
+- `stepResults`: نتائج الخطوات الموحّدة عند توفرها
+- `usage`: إجمالي الرموز والتكلفة المُبلغ عنها
+- `output`: الناتج النهائي الذي جرى تحليله
+- `messages`: المحادثة الكاملة التي استخدمتها الحلقة
+- `items`: الرسائل المحددة النوع بترتيبها والاستدلال ونشاط الأدوات والأخطاء والناتج النهائي
+
+## أنواع الأخطاء
+
+- `AgentGatewayError` يصف إخفاقات الطلبات إلى Gateway أو المزوّد الأعلى.
+- `AgentSchemaValidationError` يصف بيانات الأدوات أو التقدم أو الناتج النهائي غير الصالحة.
+
+## أدلة ذات صلة
+
+- [إنشاء وكيلك الأول](./agent-sdk.mdx)
+- [البث](./agent-sdk-streaming.mdx)
+- [العمل مع العناصر](./agent-sdk-items.mdx)
+- [الأخطاء واستكشافها وإصلاحها](./agent-sdk-events-and-errors.mdx)

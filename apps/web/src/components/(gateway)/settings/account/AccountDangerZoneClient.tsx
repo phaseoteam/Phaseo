@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { useTranslations } from "next-intl";
 
 import { deleteAccount } from "@/app/(dashboard)/settings/account/actions";
+import { localizedSettingsError } from "@/i18n/error-messages";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,7 +36,8 @@ export default function AccountDangerZoneClient() {
 			await toast.promise(deleteAccount(confirmation, currentPassword || undefined), {
 				loading: s("Starting account deletion..."),
 				success: s("Account access removed. Deletion is in progress."),
-				error: (err: any) => err?.message || s("Could not delete account"),
+				error: (error: unknown) =>
+					localizedSettingsError(error, t, "Could not delete account"),
 			});
 			router.replace("/");
 			router.refresh();
@@ -51,12 +53,10 @@ export default function AccountDangerZoneClient() {
 			<div className="min-w-0">
 				<h3 className="text-sm font-medium flex items-center gap-2 text-destructive">
 					<ShieldAlert className="h-4 w-4" />
-					Danger Zone
+					{s("Danger Zone")}
 				</h3>
 				<p className="text-sm text-muted-foreground mt-1">
-					Deleting your account immediately removes access and starts permanent
-					deletion from Phaseo&apos;s active systems. The process must complete within
-					30 days and cannot be undone.
+					{s("Deleting your account immediately removes access and starts permanent deletion from Phaseo's active systems. The process must complete within 30 days and cannot be undone.")}
 				</p>
 			</div>
 
@@ -65,18 +65,14 @@ export default function AccountDangerZoneClient() {
 					<AlertDialogTrigger asChild>
 						<Button variant="destructive">
 							<Trash2 className="mr-2 h-4 w-4" />
-							Delete account
+							{s("Delete account")}
 						</Button>
 					</AlertDialogTrigger>
 					<AlertDialogContent>
 						<AlertDialogHeader>
 							<AlertDialogTitle>{s("Delete account?")}</AlertDialogTitle>
 							<AlertDialogDescription>
-								This removes your account, owned workspaces, keys, stored Gateway data,
-								and linked Stripe customer records. Other members will lose access to any
-								workspace you own. Database backups expire through the seven-day backup
-								cycle. Records that must be retained by law and data held by customer-directed
-								providers are handled separately. Type{" "}
+								{s("This removes your account, owned workspaces, keys, stored Gateway data, and linked Stripe customer records. Other members will lose access to any workspace you own. Database backups expire through the seven-day backup cycle. Records that must be retained by law and data held by customer-directed providers are handled separately. Type")}{" "}
 						<span className="font-semibold">DELETE</span> {s("to confirm.")}
 							</AlertDialogDescription>
 						</AlertDialogHeader>
@@ -122,17 +118,17 @@ function ConfirmDelete({
 			<AlertDialogFooter>
 				<div className="flex w-full items-center justify-end gap-2">
 					<AlertDialogCancel className="w-auto" disabled={deleting}>
-						Cancel
+						{s("Cancel")}
 					</AlertDialogCancel>
 
 					<Button variant="destructive" onClick={() => onConfirm(text, currentPassword)} disabled={!ok || deleting}>
 						{deleting ? (
 							<>
 								<Loader2 className="mr-2 h-4 w-4 animate-spin" />
-								Deleting...
+								{s("Deleting...")}
 							</>
 						) : (
-							"Yes, delete my account"
+							s("Yes, delete my account")
 						)}
 					</Button>
 

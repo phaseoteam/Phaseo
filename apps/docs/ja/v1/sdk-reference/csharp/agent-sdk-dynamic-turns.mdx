@@ -1,0 +1,17 @@
+---
+icon: "shuffle"
+title: "動的なターン"
+description: "エージェントのターン間で.NETのモデル設定やツールを変更します。"
+---
+
+後続ターンでコンテキストや前のツール結果に応じた応答が必要な場合は、`DynamicModel`、`DynamicInstructions`、`Temperature`、`MaxOutputTokens`、`TopP`、`DynamicTools`を使います。
+
+ツールは`RuntimeContext.SetContext`でアプリケーションコンテキストを更新し、直後のリクエストに適用する`NextTurnParams`を指定できます。これらの上書き値は、承認後に実行を再開しても一時停止中の状態に保持されます。
+
+実行状態を`IStateAccessor`経由で保存する可能性がある場合は、アプリケーションコンテキストをシリアライズ可能にしてください。
+
+## 関連項目
+
+- [ツール](./agent-sdk-tools.mdx)
+- [状態と承認](./agent-sdk-state-and-approval.mdx)
+- [停止条件](./agent-sdk-stop-conditions.mdx)

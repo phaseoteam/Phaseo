@@ -1,0 +1,100 @@
+---
+title: "यहाँ से शुरू करें"
+description: "पहली API अनुरोध, माइग्रेशन, SDK सेटअप या प्रोडक्शन रोलआउट के लिए सही Phaseo दस्तावेज़ चुनें।"
+icon: "house"
+---
+
+अगर आपको पता है कि क्या बनाना है, लेकिन यह तय नहीं है कि Phaseo के किस दस्तावेज़ से शुरू करें, तो इस पेज का उपयोग करें।
+
+Phaseo मॉडल एक्सेस, प्रोवाइडर रूटिंग, कीमत, उपयोग ट्रैकिंग और एसिंक्रोनस AI वर्कफ़्लो के लिए एक ही API देता है।
+
+अगर आप Phaseo पर नए हैं, तो पहले एक अनुरोध सफलतापूर्वक भेजें। अगर आपके पास पहले से AI इंटीग्रेशन है, तो अपने ऐप के लिए उपयुक्त माइग्रेशन या SDK गाइड खोलें।
+
+## पहला अनुरोध सफलतापूर्वक भेजें
+
+नई इंटीग्रेशन के लिए यह तरीका अपनाएँ:
+
+1. डैशबोर्ड में API कुंजी बनाएँ।
+2. किसी मौजूदा टेक्स्ट मॉडल को अनुरोध भेजें।
+3. जवाब से जनरेट किया गया टेक्स्ट पढ़ें।
+4. अगले कदम के अनुसार SDK, रूटिंग या प्रोडक्शन गाइड पढ़ें।
+
+## पहला अनुरोध
+
+<CodeGroup>
+```bash cURL
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-5.6-sol",
+    "input": "Reply with: docs ready",
+    "temperature": 0
+  }'
+```
+
+```typescript TypeScript SDK
+import Phaseo from "@phaseo/sdk";
+
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
+
+const response = await client.generateResponse({
+  model: "openai/gpt-5.6-sol",
+  input: "Reply with: docs ready",
+  temperature: 0,
+});
+
+console.log(response.output_text);
+```
+
+```python Python SDK
+from phaseo import Phaseo
+
+client = Phaseo(api_key="YOUR_API_KEY")
+
+response = client.generate_response(
+    {
+        "model": "openai/gpt-5.6-sol",
+        "input": "Reply with: docs ready",
+        "temperature": 0,
+    }
+)
+
+print(response.get("output_text"))
+```
+</CodeGroup>
+
+अगर यह काम करता है, तो पहली अनुरोध प्रक्रिया पूरी करने के लिए [क्विकस्टार्ट](./quickstart.mdx) पढ़ें।
+
+---
+
+## अपना रास्ता चुनें
+
+अगर आपके पास पहले से इंटीग्रेशन या टूलचेन है, तो पूरी डॉक्यूमेंटेशन शुरू से पढ़ने के बजाय अपने काम से मिलता-जुलता विषय चुनें।
+
+<Columns cols={2}>
+	<Card title="OpenAI से आ रहा हूँ" icon="arrow-right-left" href="./migration-guides/from-openai.mdx">
+		OpenAI-संगत फ़ॉर्मैट बनाए रखें, बेस URL बदलें और मॉडल सपोर्ट की पुष्टि करें।
+	</Card>
+	<Card title="OpenRouter से आ रहा हूँ" icon="arrow-right-left" href="./migration-guides/from-openrouter.mdx">
+		पैरिटी जाँच और चरणबद्ध रोलआउट के साथ अपनी रूटिंग सेटअप माइग्रेट करें।
+	</Card>
+	<Card title="सीधे HTTP अनुरोध भेजता हूँ" icon="globe" href="./quickstart.mdx">
+		cURL और Responses API से शुरू करें; ज़रूरत पड़ने पर endpoint reference देखें।
+	</Card>
+	<Card title="TypeScript SDK का उपयोग करता हूँ" icon="file-code-2" href="./sdk-reference/typescript/overview.mdx">
+		Responses, चैट, इमेज, ऑडियो और अन्य सुविधाओं के लिए TypeScript क्लाइंट इस्तेमाल करें।
+	</Card>
+	<Card title="Python SDK का उपयोग करता हूँ" icon="snake" href="./sdk-reference/python/overview.mdx">
+		अगर आपकी इंटीग्रेशन scripts, workers, backends या notebooks में है, तो Python क्लाइंट से शुरू करें।
+	</Card>
+	<Card title="AI SDK का उपयोग करता हूँ" icon="sparkles" href="./sdk-reference/sdk/ai-sdk.mdx">
+		प्रॉम्प्ट या मॉडल फ़्लो दोबारा बनाए बिना Vercel AI SDK ऐप को Phaseo से जोड़ें।
+	</Card>
+	<Card title="Codex या Claude Code का उपयोग करता हूँ" icon="bot" href="./guides/integrations/index.mdx">
+		Gateway, Docs MCP और कोडिंग असिस्टेंट इंटीग्रेशन एक ही जगह सेट करें।
+	</Card>
+	<Card title="मुझे केवल उदाहरण चाहिए" icon="code" href="./guides/examples.mdx">
+		अगर मूल बातें पता हैं, तो सीधे कॉपी करने योग्य अनुरोध और उदाहरण प्रोजेक्ट देखें।
+	</Card>
+</Columns>

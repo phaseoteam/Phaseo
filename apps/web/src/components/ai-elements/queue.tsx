@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/collapsible";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
+import { useTranslations } from "next-intl";
 import { ChevronDownIcon, PaperclipIcon } from "lucide-react";
 import type { ComponentProps } from "react";
 
@@ -124,18 +125,23 @@ export type QueueItemActionProps = Omit<
 export const QueueItemAction = ({
   className,
   ...props
-}: QueueItemActionProps) => (
-  <Button
-    className={cn(
-      "size-auto rounded p-1 text-neutral-500 opacity-0 transition-opacity hover:bg-neutral-500/10 hover:text-neutral-950 group-hover:opacity-100 dark:text-neutral-400 dark:hover:bg-neutral-400/10 dark:hover:text-neutral-50",
-      className
-    )}
-    size="icon"
-    type="button"
-    variant="ghost"
-    {...props}
-  />
-);
+}: QueueItemActionProps) => {
+  const t = useTranslations("Product.chatRooms.aiElements");
+
+  return (
+    <Button
+      className={cn(
+        "size-auto rounded p-1 text-neutral-500 opacity-0 transition-opacity hover:bg-neutral-500/10 hover:text-neutral-950 group-hover:opacity-100 dark:text-neutral-400 dark:hover:bg-neutral-400/10 dark:hover:text-neutral-50",
+        className
+      )}
+      aria-label={t("action")}
+      size="icon"
+      type="button"
+      variant="ghost"
+      {...props}
+    />
+  );
+};
 
 export type QueueItemAttachmentProps = ComponentProps<"div">;
 

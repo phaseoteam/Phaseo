@@ -1,0 +1,59 @@
+---
+title: "限额"
+description: "了解由提供商决定的速率限制，并构建可靠的重试策略。"
+icon: "gauge"
+---
+
+Gateway 目前不会额外施加平台级请求上限。大多数流量限制来自上游提供商。
+
+## 限额如何运作
+
+- 路由到所选模型的提供商可能会限制请求频率。
+- BYOK 流量遵循你在提供商账户上的限额。
+- Gateway 路由和回退机制可以减少失败，但仍可能收到 `429` 响应。
+
+## 处理 `429` 响应
+
+- 如果响应包含 `Retry-After`，请遵循该值。
+- 使用带随机抖动的指数退避。
+- 设置最大重试次数，并在重试失败后妥善处理。
+
+如果路由到的提供商返回了 `Retry-After`，Phaseo 会转发经过验证的值。对于 BYOK 请求，提供商配额详情也可能通过 `X-Phaseo-Upstream-RateLimit-*` 标头返回。对于使用托管提供商的请求，系统会有意省略这些配额标头，因为它们描述的是 Phaseo 共享容量，而不是单个客户的额度。其他上游标头不会转发。
+
+```ts
+async function retryWithBackoff(run: () => Promise<Response>, maxRetries = 4) {
+  for (let attempt = 0; attempt <= maxRetries; attempt += 1) {
+    const response = await run();
+    if (response.status !== 429) return response;
+
+    const retryAfterHeader = response.headers.get("retry-after");
+    const retryAfterMs = retryAfterHeader
+      ? Number(retryAfterHeader) * 1000
+      : Math.min(1000 * 2 ** attempt, 8000);
+
+    await new Promise((resolve) => setTimeout(resolve, retryAfterMs));
+  }
+
+  throw new Error("Rate limit retries exhausted");
+}
+```
+
+## 监控
+
+- 按端点和模型跟踪 `429` 的发生率。
+- 关注回退频率，以发现提供商压力。
+- 排查事件时结合使用控制台指标和应用日志。
+
+## 相关页面
+
+- [身份验证](./authentication.mdx)
+- [参数](./parameters.mdx)
+- [错误与调试](./errors.mdx)
+
+<Visibility for="agents">
+如果你以智能体的身份实现重试：
+
+- 使用仓库技能实现安全的重试循环和超时控制。
+- 集中管理重试策略（次数、基础延迟和最大延迟）。
+- 未经产品明确批准，不要重试非幂等请求。
+</Visibility>

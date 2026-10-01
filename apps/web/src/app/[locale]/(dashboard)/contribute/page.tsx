@@ -45,8 +45,8 @@ function getInitials(name: string) {
 	return `${parts[0]}${parts[parts.length - 1]}`.toUpperCase();
 }
 
-function getDisplayName(contributor: StaticContributor) {
-	return contributor.name ?? contributor.login ?? "Community contributor";
+function getDisplayName(contributor: StaticContributor, fallback: string) {
+	return contributor.name ?? contributor.login ?? fallback;
 }
 
 function getContributorProfileUrl(contributor: StaticContributor) {
@@ -124,8 +124,7 @@ export default async function Page({ params }: { params: Promise<{ locale: Publi
 					<CardContent className="pt-0">
 						{!sortedContributors.length ? (
 							<p className="text-sm text-zinc-500 dark:text-zinc-400">
-								Contributor data is still building. Trigger the
-								export workflow or check back soon.
+								{t("contributorExportPending")}
 							</p>
 						) : (
 							<div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-7">
@@ -133,7 +132,7 @@ export default async function Page({ params }: { params: Promise<{ locale: Publi
 									const profileUrl =
 										getContributorProfileUrl(contributor);
 									const displayName =
-										getDisplayName(contributor);
+										getDisplayName(contributor, t("communityContributor"));
 									const isBot =
 										isBotIdentity(displayName) ||
 										isBotIdentity(contributor.login);
@@ -192,11 +191,7 @@ export default async function Page({ params }: { params: Promise<{ locale: Publi
 													variant="outline"
 													className="h-5 shrink-0 px-2 text-[10px]"
 												>
-													{(
-														contributor.contributions ??
-														0
-													).toLocaleString()}{" "}
-													commits
+													{t("commitCount", { count: contributor.contributions ?? 0 })}
 												</Badge>
 											</CardContent>
 										</Card>
@@ -221,8 +216,7 @@ export default async function Page({ params }: { params: Promise<{ locale: Publi
 					<CardContent className="pt-0">
 						{!sponsors.length ? (
 							<p className="text-sm text-zinc-500 dark:text-zinc-400">
-								No sponsors recorded yet; join the community and
-								your name will appear here soon!
+								{t("sponsorListEmpty")}
 							</p>
 						) : (
 							<div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-7">
@@ -275,11 +269,11 @@ export default async function Page({ params }: { params: Promise<{ locale: Publi
 														rel="noreferrer"
 														className="text-[10px] font-medium text-blue-600 transition-colors hover:text-blue-500 dark:text-blue-400"
 													>
-														View profile
+														{t("viewProfile")}
 													</a>
 												) : (
 													<span className="text-[10px] text-zinc-500 dark:text-zinc-400">
-														Link unavailable
+														{t("linkUnavailable")}
 													</span>
 												)}
 											</CardContent>

@@ -1,0 +1,12 @@
+---
+title: "Modellpreise auflisten"
+sidebarTitle: "Modellpreise auflisten"
+badge: "Beta"
+openapi: "/de/openapi/v1/openapi.localized.yaml GET /pricing/models"
+description: "Die aktuell aktiven, über das Gateway verfügbaren Preiskarten des Katalogs auflisten."
+---
+
+- `models`: ein Eintrag pro sichtbarer Kombination aus Anbieter, Modell und Endpunkt
+- `meters`: die aktiven Abrechnungsposten für diesen Eintrag, einschließlich Einheit, Einheitengröße, Währung und Preis pro Einheit
+- `display_name`: der sichtbare öffentliche Modellname, wenn die Preisregel einem kanonischen öffentlichen Modell zugeordnet ist
+

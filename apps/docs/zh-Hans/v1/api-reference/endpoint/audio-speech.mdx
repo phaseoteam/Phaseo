@@ -1,0 +1,34 @@
+---
+title: "生成语音"
+sidebarTitle: "生成语音"
+badge: "Beta"
+openapi: "/zh-Hans/openapi/v1/openapi.localized.yaml POST /audio/speech"
+description: "使用指定的语音和格式将文本转换为 TTS 音频。"
+---
+
+## 语音映射
+
+`voice` 会根据供应商通过内部别名映射进行规范化：
+
+- `openai`: 常用语音（例如 `alloy`, `ash`, `ballad`, `coral`, `echo`, `fable`, `onyx`, `nova`, `sage`, `shimmer`, `verse`, `cedar`, `marin`).
+- `google` (AI Studio / Gemini TTS): 规范的预置语音：
+  `Zephyr`, `Puck`, `Charon`, `Kore`, `Fenrir`, `Leda`, `Orus`, `Aoede`, `Callirrhoe`, `Autonoe`, `Enceladus`, `Iapetus`, `Umbriel`, `Algieba`, `Despina`, `Erinome`, `Algenib`, `Rasalgethi`, `Laomedeia`, `Achernar`, `Alnilam`, `Schedar`, `Gacrux`, `Pulcherrima`, `Achird`, `Zubenelgenubi`, `Vindemiatrix`, `Sadachbia`, `Sadaltager`, `Sulafat`.
+- `elevenlabs`: 常见的公开入门语音会进行映射（例如 `rachel`, `domi`, `bella`, `antoni`, `elli`, `josh`, `arnold`, `adam`, `sam`).
+
+如果提供的 `voice` 对路由对应的供应商/模型无效，请求会返回 `400 invalid_request_error`，并附带 `param: "voice"`。
+
+## 供应商覆盖项
+
+你仍可以传入供应商原生语音设置：
+
+- ElevenLabs: `config.elevenlabs.voice_id` / `config.elevenlabs.voice` / `config.elevenlabs.voiceName`
+- Google: `config.google.voice_name` / `config.google.voiceName`
+
+为便于移植，建议将顶层 `voice` 作为默认值。
+
+## 语音示例
+
+- OpenAI: [openai.fm](https://www.openai.fm/)
+- Google TTS 语音示例： [Gemini 文字转语音文档](https://ai.google.dev/gemini-api/docs/speech-generation#voices)
+- ElevenLabs 语音库: [ElevenLabs Voice Library](https://elevenlabs.io/voice-library)
+

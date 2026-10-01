@@ -1,0 +1,164 @@
+---
+title: "واجهة Phaseo CLI"
+icon: "terminal"
+description: "ثبّت واجهة Phaseo CLI الرسمية، واضبط بيئات البرمجة، وأدر Phaseo من الطرفية."
+---
+
+تُوزّع Phaseo CLI ضمن الحزمة `@phaseo/cli`. وهي تربط بيئات البرمجة بـ Phaseo وتوفّر سير عمل رسميًا من الطرفية لإدارة مستوى التحكم في Phaseo.
+
+استخدمها عندما تريد:
+
+- تسجيل الدخول كمستخدم Phaseo من shell محلية أو بعيدة أو من بيئة وكيل
+- إنشاء مفاتيح API أو مفاتيح الإدارة وتدويرها
+- إدارة مساحات العمل والإعدادات المسبقة والضوابط والإعدادات
+- استخدام OAuth الرسمي في CLI بينما تظل تطبيقات OAuth التي ينشئها المستخدمون قيد الاختبار الخاص
+- استعراض النماذج والمزوّدين والأسعار والأرصدة والنشاط والتحليلات وعمليات الإنشاء
+
+## التثبيت
+
+<CodeGroup>
+
+```bash title="npm"
+npm install -g @phaseo/cli
+```
+
+```bash title="pnpm"
+pnpm add -g @phaseo/cli
+```
+
+```bash title="yarn"
+yarn global add @phaseo/cli
+```
+
+```bash title="bun"
+bun add -g @phaseo/cli
+```
+
+</CodeGroup>
+
+## التحقق من الإصدار المثبّت
+
+```bash
+phaseo --version
+phaseo version
+phaseo version --json
+```
+
+- يعرض `phaseo --version` الإصدار المثبّت.
+- يعرض `phaseo version` الإصدار وأمر التحديث الموصى به لمدير الحزم الحالي.
+- تعرض عمليات التشغيل التفاعلية أيضًا تلميحًا بالتحديث عند توفر إصدار أحدث منشور.
+
+يظل الأمر السابق `phaseo` متاحًا كاسم مستعار للتوافق.
+
+## تسجيل الدخول
+
+ابدأ باستخدام:
+
+```bash
+phaseo login
+```
+
+تدعم CLI مسارين رسميين:
+
+- **تسجيل الدخول باستخدام Phaseo**: OAuth عبر المتصفح باستخدام رمز التفويض وPKCE
+- **تسجيل الدخول برمز الجهاز**: الأنسب لـ SSH وCI وبيئات shell غير التفاعلية والوكلاء
+
+يمكنك فرض استخدام أي من المسارين:
+
+```bash
+phaseo login --browser
+phaseo login --device-code
+```
+
+تفضّل البيئات البعيدة وغير التفاعلية رمز الجهاز تلقائيًا.
+
+## مخرجات الطرفية
+
+تعرض الطرفيات التفاعلية ألوان Phaseo وتسلسله المرئي ومؤشرات إعداد مؤقتة. تستخدم المؤشرات `stderr` وتمسح سطرها عند اكتمال العمل. يعطّل `stderr` غير التفاعلي و`TERM=dumb` الحركة، بينما يعطّل `NO_COLOR` الألوان. تعيد الأوامر التي تستخدم `--json` دائمًا مخرجات منظّمة بلا زخرفة للوكلاء والأتمتة. استخدم `FORCE_COLOR=1` فقط عندما يدعم غلاف الطرفية الألوان لكنه لا يعرّف نفسه كـ TTY.
+
+## تأكيد هويتك
+
+```bash
+phaseo whoami
+phaseo whoami --json
+```
+
+يعرض هذا المستخدم الحالي في Phaseo والنطاقات ومساحة العمل النشطة ومساحات العمل المتاحة.
+
+## إنشاء المفاتيح
+
+```bash
+phaseo keys create --name "Local CLI Key"
+phaseo keys create --name "Agent Sandbox Key" --json
+phaseo keys current
+```
+
+استخدم `--json` عندما يحتاج وكيل أو إجراء آلي إلى المفتاح المُنشأ بصيغته الخام لمرة واحدة.
+
+## إدارة مساحات العمل والضوابط
+
+```bash
+phaseo workspaces list
+phaseo workspaces members <workspace-id-or-slug>
+
+phaseo guardrails list
+phaseo guardrails create --name "Production Safety" --body-json '{"enabled":true}'
+```
+
+تهدف CLI إلى إتاحة الوظائف المفيدة في لوحة Phaseo وواجهات الإدارة من الطرفية.
+
+## تطبيقات OAuth
+
+يستخدم Phaseo خادم تفويض OAuth واحدًا لواجهة CLI الرسمية والتطبيقات التي ينشئها المستخدمون وعملاء MCP المسجّلين ديناميكيًا. تستخدم CLI تسجيل الدخول عبر المتصفح أو رمز الجهاز مع تدوير رموز التحديث. وتستخدم العملاء الخارجية رمز التفويض مع PKCE ونطاقات صريحة وموافقة مساحة العمل ورموز وصول مفوّضة قابلة للإلغاء وربطًا اختياريًا بمورد محمي.
+
+تفعّل واجهة Phaseo API المستضافة OAuth للجهات الخارجية. وتبقيه عمليات النشر ذاتية الاستضافة أو التجريبية معطّلًا ما لم تُضبط `PHASEO_THIRD_PARTY_OAUTH_ENABLED` على قيمة صحيحة. القيم المقبولة هي `1` و`true` و`yes` و`on`، مع تجاهل حالة الأحرف بعد حذف المسافات. يؤدي التفعيل إلى إتاحة إدارة تطبيقات OAuth التي ينشئها المستخدمون والتسجيل الديناميكي للعملاء، لذا راجع إعدادات URI لإعادة التوجيه والموافقة وأسرار العملاء وحدود المعدل وتفويض مساحة العمل.
+
+```bash title=".env"
+PHASEO_THIRD_PARTY_OAUTH_ENABLED=true
+```
+
+```bash title="Docker"
+docker run -e PHASEO_THIRD_PARTY_OAUTH_ENABLED=true phaseo
+```
+
+```yaml title="Kubernetes"
+env:
+  - name: PHASEO_THIRD_PARTY_OAUTH_ENABLED
+    value: "true"
+```
+
+## نموذج الأمان
+
+تتطلب جلسات CLI افتراضيًا تخزينًا آمنًا يوفره نظام التشغيل. اضبط `PHASEO_SESSION_BACKEND=file` صراحةً فقط عند عدم توفر مخزن بيانات اعتماد للنظام؛ إذ يحفظ رموز التحديث في ملف نصي عادي بصلاحيات مقيّدة.
+- يُبطل `phaseo logout` رمز التحديث المخزّن قبل مسح الحالة المحلية.
+- تتطلب مفاتيح الإدارة إمكانات محددة صراحةً.
+- تعتمد مفاتيح الاستدلال العادية على الضوابط وسياسات التوجيه وإعدادات مساحة العمل بدلًا من نموذج نطاقات منفصل.
+
+## التحديث
+
+<CodeGroup>
+
+```bash title="npm"
+npm install -g @phaseo/cli@latest
+```
+
+```bash title="pnpm"
+pnpm add -g @phaseo/cli@latest
+```
+
+```bash title="yarn"
+yarn global add @phaseo/cli@latest
+```
+
+```bash title="bun"
+bun add -g @phaseo/cli@latest
+```
+
+</CodeGroup>
+
+## الخطوات التالية
+
+- [مفاتيح إدارة API](../../developers/management-api-keys.mdx)
+- [المصادقة](../../developers/authentication.mdx)
+- [Codex](./codex.mdx)
+- [Claude Code](./claude-code.mdx)

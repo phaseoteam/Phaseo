@@ -3,7 +3,9 @@ import { fetchFrontendOrganisation } from "@/lib/fetchers/frontend/fetchPublicCa
 import Image from "next/image";
 import OrganisationDetailShell from "@/components/(data)/organisation/OrganisationDetailShell";
 import type { Metadata } from "next";
-import { absoluteUrl, buildMetadata } from "@/lib/seo";
+import { absoluteUrl } from "@/lib/seo";
+import { getLocale, getTranslations } from "next-intl/server";
+import { buildLocalizedPageMetadata } from "@/lib/auth/localized-metadata";
 import { JsonLdScript } from "@/components/seo/JsonLdScript";
 import { notFound } from "next/navigation";
 
@@ -23,6 +25,8 @@ async function fetchOrganisation(organisationId: string) {
 export async function generateMetadata(props: {
 	params: Promise<{ organisationId: string }>;
 }): Promise<Metadata> {
+	const locale = await getLocale();
+	const t = await getTranslations("Catalogue.organisations");
 	const { organisationId } = await props.params;
 	const organisation = await fetchOrganisation(organisationId);
 	const path = `/organisations/${organisationId}`;
@@ -30,47 +34,35 @@ export async function generateMetadata(props: {
 
 	// Fallback SEO if the organisation can't be loaded
 	if (!organisation) {
-		return buildMetadata({
-			title: "AI Lab Overview",
-			description:
-				"Discover AI labs, their latest models, and gateway availability with profile-level insights, release timelines, and ecosystem context across the Phaseo directory.",
-			path,
+		return buildLocalizedPageMetadata({
+			locale: locale as never,
+			pathname: path,
+			title: t("title"),
+			description: t("description"),
 			keywords: [
-				"AI lab",
-				"AI provider",
-				"AI models",
+				t("title"),
+				t("keywordAiModels"),
+				t("keywordAiGateway"),
 				"Phaseo",
 			],
 			imagePath,
 		});
 	}
 
-	const launchedModels = organisation.recent_models?.length ?? 0;
-
 	const description = [
-		`${organisation.name} on Phaseo - lab overview, AI models, and gateway coverage.`,
+		t("metadataDetailDescription", { name: organisation.name }),
 		organisation.description?.slice(0, 180) ?? undefined,
-		launchedModels
-			? `Explore ${launchedModels} recent models, gateway availability, and pricing coverage.`
-			: undefined,
 	]
 		.filter(Boolean)
 		.join(" ");
 
-	const keywords = [
-		organisation.name,
-		`${organisation.name} AI`,
-		`${organisation.name} AI lab`,
-		"AI lab",
-		"AI models",
-		"AI gateway",
-		"Phaseo",
-	];
+	const keywords = [organisation.name, t("keywordAiModels"), t("keywordAiGateway"), "Phaseo"];
 
-	return buildMetadata({
-		title: `${organisation.name} Models`,
+	return buildLocalizedPageMetadata({
+		locale: locale as never,
+		pathname: path,
+		title: t("metadataDetailTitle", { name: organisation.name }),
 		description,
-		path,
 		keywords,
 		imagePath,
 	});
@@ -81,6 +73,8 @@ export default async function Page({
 }: {
 	params: Promise<{ organisationId: string }>;
 }) {
+	const t = await getTranslations("Catalogue.organisations");
+	const tNav = await getTranslations("Common.nav");
 	const { organisationId } = await params;
 
 	const organisation = await fetchFrontendOrganisation(organisationId, 12).catch(() => null);
@@ -89,8 +83,8 @@ export default async function Page({
 	const generateStructuredData = () => {
 		if (!organisation) return null;
 
-		const orgName = organisation.name || "AI Organization";
-		const description = organisation.description || `${orgName} is an AI organization tracked on Phaseo.`;
+		const orgName = organisation.name || t("title");
+		const description = organisation.description || t("metadataDetailDescription", { name: orgName });
 
 		// Organization Schema
 		const organizationSchema = {
@@ -109,13 +103,13 @@ export default async function Page({
 				{
 					"@type": "ListItem",
 					"position": 1,
-					"name": "Home",
+					"name": tNav("home"),
 					"item": absoluteUrl("/"),
 				},
 				{
 					"@type": "ListItem",
 					"position": 2,
-					"name": "Labs",
+					"name": t("title"),
 					"item": absoluteUrl("/organisations"),
 				},
 				{
@@ -142,11 +136,10 @@ export default async function Page({
 							<span className="text-xl">🏢</span>
 						</div>
 						<p className="text-base font-medium">
-							Lab not found
+							{t("unknownLabTitle")}
 						</p>
 						<p className="mt-1 text-sm text-muted-foreground">
-							We&apos;re continuously adding new labs.
-							Got one to suggest?
+							{t("unknownLabDescription")}
 						</p>
 						<div className="mt-3">
 							<a
@@ -155,17 +148,17 @@ export default async function Page({
 								rel="noopener noreferrer"
 								className="inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors"
 							>
-								Suggest a Model
+								{t("contributeGitHub")}
 								<Image
 									src="/social/github_light.svg"
-									alt="GitHub Logo"
+									alt={t("githubLogoAlt")}
 									width={16}
 									height={16}
 									className="inline dark:hidden"
 								/>
 								<Image
 									src="/social/github_dark.svg"
-									alt="GitHub Logo"
+									alt={t("githubLogoAlt")}
 									width={16}
 									height={16}
 									className="hidden dark:inline"
@@ -192,12 +185,12 @@ export default async function Page({
 				organisationId={organisationId}
 				tocItems={[
 					...(organisation.description
-						? [{ id: "about", label: "About" }]
+						? [{ id: "about", label: t("aboutHeading", { name: organisation.name }) }]
 						: []),
-					{ id: "performance", label: "Performance" },
-					{ id: "latest-models", label: "Latest Models" },
+					{ id: "performance", label: t("performanceTitle") },
+					{ id: "latest-models", label: t("latestModelsTitle") },
 					...(organisation.organisation_links?.length
-						? [{ id: "links", label: "Links" }]
+						? [{ id: "links", label: t("aroundWebTitle") }]
 						: []),
 				]}
 			>

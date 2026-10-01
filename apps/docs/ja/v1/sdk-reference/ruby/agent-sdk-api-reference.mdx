@@ -1,0 +1,24 @@
+---
+icon: "braces"
+title: "APIリファレンス"
+description: "Ruby Agent SDKの主なクラスとメソッドを参照できます。"
+---
+
+| API | 目的 |
+| --- | --- |
+| `PhaseoAgentSdk.create_agent(...)` | エージェントを定義 |
+| `PhaseoAgentSdk.define_tool(...)` | ローカルまたは手動ツールを定義 |
+| `PhaseoAgentSdk.create_gateway_agent_client(...)` | モデルターンをPhaseoに接続 |
+| `Agent#run` | 完了または一時停止まで実行 |
+| `Agent#stream` | 再走査可能なシーケンスを使って実行 |
+| `Agent#continue_run` | 保存済みまたは一時停止中の状態から続行 |
+| `StreamResult#result` | 完了した実行を読み取る |
+| `StreamResult#text_stream` | テキスト差分を読み取る |
+| `StreamResult#full_stream` | すべてのイベントを読み取る |
+
+主なクラスと値は、`Tool`、`ToolDecision`、`ToolOutput`、`RuntimeContext`、`RunResult`、再試行設定、ツール実行設定、状態アクセサーです。
+
+## 関連項目
+
+- [最初のエージェントを作成する](./agent-sdk.mdx)
+- [オブザーバビリティとDevTools](./agent-sdk-observability.mdx)

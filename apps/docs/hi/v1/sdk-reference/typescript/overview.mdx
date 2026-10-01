@@ -1,0 +1,41 @@
+---
+icon: "compass"
+title: "TypeScript SDK का परिचय"
+description: "Phaseo Gateway API के लिए आधिकारिक TypeScript क्लाइंट"
+---
+
+npm से प्रकाशित [~@phaseo/sdk~](https://www.npmjs.com/package/@phaseo/sdk) पैकेज इंस्टॉल करें।
+
+Phaseo TypeScript SDK, Phaseo Gateway API के साथ काम करने का सुविधाजनक और टाइप-सुरक्षित तरीका देता है। OpenAPI स्पेसिफ़िकेशन पर आधारित यह जनरेट किए गए टाइप और सरल क्लाइंट इंटरफ़ेस के साथ पूर्ण TypeScript समर्थन देता है।
+
+## सुविधाएँ
+
+-   **टाइप-सुरक्षित**: OpenAPI स्पेसिफ़िकेशन से जनरेट किए गए टाइप के साथ पूर्ण TypeScript समर्थन
+-   **सरल API**: साफ़ इंटरफ़ेस वाला इस्तेमाल में आसान क्लाइंट
+-   **जनरेट किया गया कोड**: आधिकारिक API स्पेसिफ़िकेशन से अपने-आप जनरेट होता है
+-   **व्यापक**: Gateway API के सभी एंडपॉइंट शामिल हैं
+
+## त्वरित उदाहरण
+
+```typescript
+import Phaseo from "@phaseo/sdk";
+
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
+
+const response = await client.generateText({
+	model: "openai/gpt-4o-mini",
+	messages: [{ role: "user", content: "Hello, how are you?" }],
+});
+
+console.log(response.choices[0].message.content);
+```
+
+## इसमें क्या शामिल है
+
+-   सभी API इंटरैक्शन के लिए `Phaseo` क्लाइंट क्लास
+-   संसाधन-आधारित हेल्पर, जैसे `client.models`, `client.batches`, `client.videos`, and `client.asyncJobs`
+-   खोज और मूल्य निर्धारण के हेल्पर, जैसे `client.getModels()`, `client.listProviders()`, `client.getCredits()`, `client.getActivity()`, `client.getAnalytics()`, `client.listEndpoints()`, `client.listOrganisations()`, `client.listPricingModels()`, `client.calculatePricing()`, `client.listApiKeys()`, `client.createApiKey()`, `client.getApiKey(id)`, `client.updateApiKey(id, ...)`, `client.deleteApiKey(id)`, `client.listWorkspaces()`, `client.getWorkspace(id)`, `client.createWorkspace(...)`, `client.updateWorkspace(id, ...)`, `client.deleteWorkspace(id)`, and `client.getCurrentApiKey()`
+-   बैच और वीडियो लाइफ़साइकल स्ट्रीम के लिए async-job WebSocket URL हेल्पर
+-   सभी अनुरोध/प्रतिक्रिया ऑब्जेक्ट के लिए जनरेट किए गए टाइप
+-   Chat Completions, मॉडल, क्रेडिट आदि सहित पूर्ण API कवरेज
+-   बेहतर डेवलपर अनुभव के लिए TypeScript परिभाषाएँ

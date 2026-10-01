@@ -54,6 +54,7 @@ function shellEscape(value: string): string {
 
 export default function SpawnClient() {
 	const t = useTranslations("Product.experiments");
+	const tUi = useTranslations("Common.ui");
 	const defaultMatrix = getDefaultSpawnMatrixEntry();
 	const [selectedAgentId, setSelectedAgentId] = useState<SpawnAgentId>(
 		SPAWN_MANIFEST.defaultAgentId,
@@ -179,7 +180,7 @@ export default function SpawnClient() {
 			<div className="space-y-3">
 				<div className="inline-flex items-center gap-2 rounded-full border border-zinc-200 px-3 py-1 text-xs text-zinc-600 dark:border-zinc-800 dark:text-zinc-300">
 					<FlaskConical className="h-3.5 w-3.5" />
-					Experiment
+					{t("experimentTag")}
 				</div>
 				<div className="space-y-2">
 					<h1 className="text-3xl font-semibold tracking-tight">{t("spawnTitle")}</h1>
@@ -188,9 +189,9 @@ export default function SpawnClient() {
 					</p>
 				</div>
 				<div className="flex flex-wrap gap-2">
-					<Badge variant="outline">BYOC Infra</Badge>
-					<Badge variant="outline">CLI + Scripts</Badge>
-					<Badge variant="outline">No Provisioning API</Badge>
+					<Badge variant="outline">{t("byocInfrastructure")}</Badge>
+					<Badge variant="outline">{t("cliAndScripts")}</Badge>
+					<Badge variant="outline">{t("noProvisioningApi")}</Badge>
 				</div>
 			</div>
 
@@ -208,8 +209,7 @@ export default function SpawnClient() {
 							{t("yourCloudAccount")}
 						</p>
 						<p className="text-sm text-zinc-600 dark:text-zinc-300">
-							You own and pay for VM/GPU resources, networking, storage, and egress directly with
-							your cloud provider.
+							{t("cloudDescription")}
 						</p>
 					</div>
 					<div className="rounded-xl border border-zinc-200 bg-zinc-50/70 p-4 dark:border-zinc-800 dark:bg-zinc-900/40">
@@ -218,8 +218,7 @@ export default function SpawnClient() {
 							{t("phaseoBilling")}
 						</p>
 						<p className="text-sm text-zinc-600 dark:text-zinc-300">
-							Phaseo only bills for Gateway usage routed with your API key. No cloud resource
-							markup, no hidden infrastructure hosting.
+							{t("phaseoBillingDescription")}
 						</p>
 					</div>
 				</CardContent>
@@ -233,7 +232,7 @@ export default function SpawnClient() {
 							{t("buildCommand")}
 						</CardTitle>
 						<CardDescription>
-							Pick an agent and cloud, then optionally pin model, region, and size.
+							{t("buildCommandDescription")}
 						</CardDescription>
 					</CardHeader>
 					<CardContent className="space-y-6">
@@ -245,7 +244,7 @@ export default function SpawnClient() {
 									onValueChange={(value) => setSelectedAgentId(value as SpawnAgentId)}
 								>
 									<SelectTrigger id="spawn-agent">
-										<SelectValue placeholder="Select agent" />
+										<SelectValue placeholder={t("selectAgent")} />
 									</SelectTrigger>
 									<SelectContent>
 										{SPAWN_MANIFEST.agents.map((agent) => (
@@ -265,7 +264,7 @@ export default function SpawnClient() {
 									onValueChange={(value) => setSelectedCloudId(value as SpawnCloudId)}
 								>
 									<SelectTrigger id="spawn-cloud">
-										<SelectValue placeholder="Select cloud" />
+										<SelectValue placeholder={t("selectCloud")} />
 									</SelectTrigger>
 									<SelectContent>
 										{cloudOptions.map((cloud) => (
@@ -285,7 +284,9 @@ export default function SpawnClient() {
 										<SelectValue />
 									</SelectTrigger>
 									<SelectContent>
-										<SelectItem value="auto">Auto (default: {matrix.defaults.model})</SelectItem>
+						<SelectItem value="auto">
+							{tUi("requestBuilder.autoDefault", { model: matrix.defaults.model })}
+						</SelectItem>
 										{matrix.models.map((model) => (
 											<SelectItem key={model} value={model}>
 												{model}
@@ -302,7 +303,9 @@ export default function SpawnClient() {
 										<SelectValue />
 									</SelectTrigger>
 									<SelectContent>
-										<SelectItem value="auto">Auto (default: {matrix.defaults.region})</SelectItem>
+						<SelectItem value="auto">
+							{tUi("requestBuilder.autoDefault", { model: matrix.defaults.region })}
+						</SelectItem>
 										{matrix.regions.map((region) => (
 											<SelectItem key={region} value={region}>
 												{region}
@@ -320,10 +323,11 @@ export default function SpawnClient() {
 									</SelectTrigger>
 									<SelectContent>
 										<SelectItem value="auto">
-											Auto (default:{" "}
-											{matrix.sizes.find((size) => size.id === matrix.defaults.size)?.label ??
-												matrix.defaults.size}
-											)
+							{tUi("requestBuilder.autoDefault", {
+								model:
+									matrix.sizes.find((size) => size.id === matrix.defaults.size)?.label ??
+									matrix.defaults.size,
+							})}
 										</SelectItem>
 										{matrix.sizes.map((size) => (
 											<SelectItem key={size.id} value={size.id}>
@@ -423,10 +427,10 @@ export default function SpawnClient() {
 						</CardHeader>
 						<CardContent>
 							<ul className="list-disc space-y-2 pl-5 text-sm text-zinc-600 dark:text-zinc-300">
-								<li>Cloud CLI auth configured in your local shell session.</li>
-								<li>IAM/role permissions to create, update, and destroy compute resources.</li>
-								<li>Gateway API key exported as an environment variable before launch.</li>
-								<li>Region quotas checked for the selected machine size.</li>
+								<li>{t("prerequisiteCloudCliAuth")}</li>
+								<li>{t("prerequisiteIamPermissions")}</li>
+								<li>{t("prerequisiteGatewayApiKey")}</li>
+								<li>{t("prerequisiteRegionQuota")}</li>
 							</ul>
 						</CardContent>
 					</Card>
@@ -440,10 +444,10 @@ export default function SpawnClient() {
 						</CardHeader>
 						<CardContent>
 							<ul className="list-disc space-y-2 pl-5 text-sm text-zinc-600 dark:text-zinc-300">
-								<li>Permission failures: verify active cloud profile and role assumptions.</li>
-								<li>Capacity failures: switch region or downsize from large to medium.</li>
-								<li>Model route issues: pin a specific model instead of auto-selection.</li>
-								<li>Bootstrap failures: inspect the script URL and run with shell debug flags.</li>
+								<li>{t("troubleshootPermissions")}</li>
+								<li>{t("troubleshootCapacity")}</li>
+								<li>{t("troubleshootModelRoute")}</li>
+								<li>{t("troubleshootBootstrap")}</li>
 							</ul>
 						</CardContent>
 					</Card>
@@ -457,10 +461,10 @@ export default function SpawnClient() {
 						</CardHeader>
 						<CardContent>
 							<ul className="list-disc space-y-2 pl-5 text-sm text-zinc-600 dark:text-zinc-300">
-								<li>Destroy compute and networking resources after each experiment run.</li>
-								<li>Revoke temporary credentials and rotate cloud keys used for provisioning.</li>
-								<li>Review cloud billing dashboards for idle disks, IPs, and instances.</li>
-								<li>Phaseo billing remains scoped to Gateway API usage only.</li>
+								<li>{t("teardownResources")}</li>
+								<li>{t("teardownCredentials")}</li>
+								<li>{t("teardownBillingReview")}</li>
+								<li>{t("teardownGatewayBilling")}</li>
 							</ul>
 						</CardContent>
 					</Card>

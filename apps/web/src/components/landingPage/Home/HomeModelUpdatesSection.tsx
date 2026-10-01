@@ -3,6 +3,7 @@ import { ChevronRight } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { fetchFrontendModelUpdateCards } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import { LatestModelsCarousel } from "./LatestModelsCarousel";
+import { getLocale, getTranslations } from "next-intl/server";
 
 const CARD_LIMIT = 10;
 
@@ -27,7 +28,11 @@ export function HomeModelUpdatesSectionFallback() {
 }
 
 export default async function HomeModelUpdatesSection() {
-	const modelCards = await fetchFrontendModelUpdateCards(CARD_LIMIT, false);
+	const locale = await getLocale();
+	const [modelCards, t] = await Promise.all([
+		fetchFrontendModelUpdateCards(CARD_LIMIT, false),
+		getTranslations({ locale, namespace: "Site.home" }),
+	]);
 
 	return (
 		<section className="w-full">
@@ -38,7 +43,7 @@ export default async function HomeModelUpdatesSection() {
 							href="/models"
 							className="group inline-flex items-center gap-1 text-center text-2xl font-semibold tracking-[-0.04em] text-zinc-950 dark:text-zinc-50 sm:text-3xl"
 						>
-							<span>Latest Models</span>
+							<span>{t("latestModels")}</span>
 							<ChevronRight className="h-5 w-5 shrink-0 translate-y-px opacity-0 transition-all duration-200 group-hover:translate-x-0.5 group-hover:opacity-100" />
 						</Link>
 					</h2>
@@ -49,7 +54,7 @@ export default async function HomeModelUpdatesSection() {
 					{modelCards.length === 0 ? (
 						<Card className="border border-dashed border-zinc-200 bg-white/70 text-center text-sm text-zinc-500 dark:border-zinc-800 dark:bg-zinc-950/60 dark:text-zinc-400">
 							<CardContent className="py-12">
-								No model updates to display yet. Check back soon.
+								{t("noModelUpdates")}
 							</CardContent>
 						</Card>
 					) : null}

@@ -1,0 +1,25 @@
+---
+icon: "braces"
+title: "API-Referenz"
+description: "Referenz der wichtigsten Typen und Methoden des C# Agent SDK."
+---
+
+| API | Zweck |
+| --- | --- |
+| `AgentSdk.CreateAgent(...)` | Einen Agent definieren |
+| `AgentSdk.DefineTool(...)` | Ein lokales oder manuelles Tool definieren |
+| `AgentSdk.CreateGatewayAgentClient(...)` | Modellrunden mit Phaseo verbinden |
+| `Agent.Run(...)` | Bis zu einem End- oder Pausenzustand ausführen |
+| `Agent.Stream(...)` | Mit erneut abspielbaren asynchronen Streams ausführen |
+| `Agent.ContinueRun(...)` | Einen gespeicherten oder pausierten Zustand fortsetzen |
+| `AgentStreamResult.GetResult()` | Auf den abgeschlossenen Lauf warten |
+| `AgentStreamResult.TextStream()` | Text-Deltas lesen |
+| `AgentStreamResult.FullStream()` | Alle Lifecycle-Ereignisse lesen |
+| `AgentStreamResult.Cancel()` | Den aktiven Lauf abbrechen |
+
+Zu den wichtigen Records und Schnittstellen gehören `AgentDefinition`, `RunOptions`, `RunResult`, `RunRecord`, `RunStep`, `Tool`, `ToolDecision`, `ToolOutput`, `RuntimeContext`, `IStateAccessor`, `ModelRetryConfig` und `ToolExecutionConfig`.
+
+## Weiterführende Themen
+
+- [Den ersten Agent erstellen](./agent-sdk.mdx)
+- [Fehler und Gateway-Details](./agent-sdk-observability.mdx)

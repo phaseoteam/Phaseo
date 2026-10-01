@@ -1,0 +1,42 @@
+---
+icon: "square-terminal"
+title: "Ejemplos"
+description: "Empieza con patrones completos del Agent SDK para investigación, soporte, programación y herramientas en paralelo."
+---
+
+Elige el ejemplo más sencillo que se ajuste al producto que estás creando. Cada patrón deja la persistencia y la interfaz de usuario en tu aplicación y usa Phaseo para los turnos del modelo.
+
+## Ejemplos incluidos en el paquete
+
+| Ejemplo | Uso |
+| --- | --- |
+| `research-brief-agent.ts` | Investigar con búsqueda administrada y un resumen final tipado |
+| `support-triage-agent.ts` | Enrutar y clasificar solicitudes de soporte con un preset administrado |
+| `coding-review-agent.ts` | Revisar código con herramientas locales de ejecución |
+| `parallel-tool-agent.ts` | Ejecutar herramientas locales independientes en paralelo |
+
+## Guías del recetario
+
+<CardGroup cols={2}>
+  <Card title="Bucle de agente persistente" icon="database" href="../../cookbook/agent-sdk-durable-loop.mdx">
+    Guarda una ejecución devuelta y continúa en una solicitud posterior.
+  </Card>
+  <Card title="Resumen de investigación" icon="search-check" href="../../cookbook/agent-sdk-research-brief.mdx">
+    Combina un agente con investigación web fundamentada.
+  </Card>
+  <Card title="Clasificación de solicitudes de soporte" icon="life-buoy" href="../../cookbook/agent-sdk-support-triage.mdx">
+    Mantén el enrutamiento y los valores predeterminados de los prompts en un preset administrado.
+  </Card>
+  <Card title="Revisión de código" icon="code-2" href="../../cookbook/agent-sdk-coding-review.mdx">
+    Conecta herramientas locales específicas a un flujo de trabajo de programación.
+  </Card>
+  <Card title="Herramientas en paralelo" icon="waypoints" href="../../cookbook/agent-sdk-parallel-tools.mdx">
+    Distribuye llamadas independientes a herramientas sin cambiar el orden de los resultados.
+  </Card>
+</CardGroup>
+
+## Referencias relacionadas
+
+- [Crea tu primer agente](./agent-sdk.mdx)
+- [Herramientas](./agent-sdk-tools.mdx)
+- [Estado y aprobación](./agent-sdk-state-and-approval.mdx)

@@ -1,0 +1,40 @@
+---
+icon: "binary"
+title: "التضمينات"
+description: "استدعِ /embeddings باستخدام SDK Python."
+---
+
+**الطريقة**: `client.generate_embedding()`.
+
+### مثال
+```python
+embedding = client.generate_embedding({
+  "model": "openai/text-embedding-3-large",
+  "input": "Sample text",
+});
+```
+
+### المعلمات الأساسية
+- `model` (مطلوب): معرّف نموذج التضمينات (مثل `openai/text-embedding-3-large`).
+- `input` (مطلوب): سلسلة نصية أو مصفوفة من السلاسل.
+- `encoding_format`: `float` (الافتراضي) أو `base64`.
+- `dimensions`: عدد صحيح اختياري لاقتطاع طول التضمين (يعتمد على النموذج).
+- `user`: وسم اختياري للمستخدم النهائي.
+
+### القيمة المعادة
+محتوى التضمينات (JSON)
+
+```json
+{
+  "data": [
+    {
+      "embedding": [0.1, 0.2, 0.3],
+      "index": 0
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 5,
+    "total_tokens": 5
+  }
+}
+```

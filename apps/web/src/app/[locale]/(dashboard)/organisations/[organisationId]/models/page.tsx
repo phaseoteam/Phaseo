@@ -1,7 +1,8 @@
 import ModelsDisplay from "@/components/(data)/organisation/ModelsDisplay";
 import OrganisationDetailShell from "@/components/(data)/organisation/OrganisationDetailShell";
 import type { Metadata } from "next";
-import { buildMetadata } from "@/lib/seo";
+import { getLocale, getTranslations } from "next-intl/server";
+import { buildLocalizedPageMetadata } from "@/lib/auth/localized-metadata";
 import {
 	fetchFrontendOrganisation,
 	fetchFrontendOrganisationModels,
@@ -24,6 +25,8 @@ async function fetchOrganisation(organisationId: string) {
 export async function generateMetadata(props: {
 	params: Promise<{ organisationId: string }>;
 }): Promise<Metadata> {
+	const locale = await getLocale();
+	const t = await getTranslations("Catalogue.organisations");
 	const { organisationId } = await props.params;
 	const organisation = await fetchOrganisation(organisationId);
 	const path = `/organisations/${organisationId}/models`;
@@ -31,15 +34,15 @@ export async function generateMetadata(props: {
 
 	// Fallback if the organisation data can't be loaded
 	if (!organisation) {
-		return buildMetadata({
-			title: "AI Models by Lab",
-			description:
-				"Discover AI models from leading labs and review gateway availability, pricing coverage, release visibility, and model lifecycle context inside Phaseo.",
-			path,
+		return buildLocalizedPageMetadata({
+			locale: locale as never,
+			pathname: path,
+			title: t("title"),
+			description: t("description"),
 			keywords: [
-				"AI models",
-				"AI lab",
-				"AI providers",
+				t("title"),
+				t("keywordAiModels"),
+				t("keywordAiGateway"),
 				"Phaseo",
 			],
 			imagePath,
@@ -47,26 +50,19 @@ export async function generateMetadata(props: {
 	}
 
 	const description = [
-		`Explore all AI models from ${organisation.name} on Phaseo.`,
+		t("metadataModelsDescription", { name: organisation.name }),
 		organisation.description?.slice(0, 180) ?? undefined,
-		"View gateway availability, pricing coverage, and model details in one place.",
 	]
 		.filter(Boolean)
 		.join(" ");
 
-	const keywords = [
-		organisation.name,
-		`${organisation.name} AI models`,
-		`${organisation.name} models`,
-		"AI models",
-		"AI gateway",
-		"Phaseo",
-	];
+	const keywords = [organisation.name, t("keywordAiModels"), t("keywordAiGateway"), "Phaseo"];
 
-	return buildMetadata({
-		title: `${organisation.name} Models - Catalogue & Gateway Coverage`,
+	return buildLocalizedPageMetadata({
+		locale: locale as never,
+		pathname: path,
+		title: t("metadataModelsTitle", { name: organisation.name }),
 		description,
-		path,
 		keywords,
 		imagePath,
 	});

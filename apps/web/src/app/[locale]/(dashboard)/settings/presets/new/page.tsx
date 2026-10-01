@@ -12,9 +12,10 @@ import { fetchSettingsPresetsInitialData } from "@/lib/fetchers/internal/fetchSe
 import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
 import { getTranslations } from "next-intl/server";
 
-export const metadata = {
-	title: "Create Preset - Settings",
-};
+export async function generateMetadata() {
+	const t = await getTranslations("SettingsUI.settingsPageMetadata");
+	return { title: t("createPreset") };
+}
 
 export default async function NewPresetPage() {
 	const t = await getTranslations("SettingsUI");
@@ -42,7 +43,7 @@ export default async function NewPresetPage() {
 				<div>
 					<div className="flex items-center gap-2">
 						<h1 className="text-2xl font-bold">{t("headers.newPreset")}</h1>
-						<Badge variant="outline">Beta</Badge>
+						<Badge variant="outline">{t("settingsPageCopy.beta")}</Badge>
 					</div>
 					<p className="text-sm text-muted-foreground mt-1">
 						{t("headers.newPresetDescription")}

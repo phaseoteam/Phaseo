@@ -1,0 +1,115 @@
+---
+title: "À retenir : nos livraisons de mars 2026"
+shortTitle: "À retenir : mars 2026"
+description: Mars a posé les bases des embeddings, de la découverte multimodale, d’une facturation plus claire et de nouvelles versions des SDK.
+publishedAt: 2026-03-31
+author: Phaseo Team
+category: data
+pinned: false
+coverImage: /blog-images/recap-march-2026.png
+tags:
+  - Récapitulatif
+  - Récapitulatif mensuel
+  - Produit
+  - Modèles
+draft: false
+---
+
+Mars a posé les fondations de Phaseo. Une grande partie du travail visait à rendre le produit plus fiable avant les versions plus importantes de Gateway et du catalogue, arrivées plus tard au printemps.
+
+Ce récapitulatif couvre les changements livrés du **1er au 31 mars 2026**, d’après l’historique des versions, celui des commits et les données du catalogue pour le mois.
+
+## Ce qui a été livré
+
+### Les embeddings sont plus faciles à utiliser
+
+En mars, la prise en charge des embeddings est devenue bien plus visible. Le produit, l’API, les exemples des SDK et la documentation ont été améliorés afin que les équipes puissent trouver des modèles d’embeddings, comprendre leur place dans le catalogue et les utiliser sans devoir chercher dans différentes parties du produit.
+
+C’est important, car les embeddings constituent souvent la première brique des parcours de recherche, de récupération, de classement, de mémoire et de recommandation. Ce ne sont pas toujours les sorties de modèles les plus visibles, mais ils rendent possibles de nombreuses fonctions d’IA utiles.
+
+Le catalogue a également accueilli Gemini Embedding 2 Preview dans le courant du mois, ainsi que des mises à jour plus larges des métadonnées des modèles. Ensemble, ces changements ont rendu Phaseo plus utile aux équipes qui créent des parcours de récupération, et pas seulement des interfaces de chat.
+
+Explorez le catalogue :
+
+- [Découvrir les modèles](/models)
+
+### Les pages des modèles sont plus légères et plus faciles à parcourir
+
+En mars, les pages des modèles ont reçu plusieurs améliorations pratiques. Le chargement de la chronologie s’appuie davantage sur une recherche directe des éléments précédent et suivant, les routes des fournisseurs et des modèles ont été simplifiées, et les données des modèles ont été actualisées dans l’application web, l’API, la documentation et les SDK.
+
+Le résultat est une amélioration discrète mais importante : les pages des modèles effectuent moins de tâches inutiles et le produit affiche mieux les bonnes informations au bon endroit.
+
+La recherche a également progressé. La recherche de l’en-tête donne désormais la priorité aux correspondances exactes des noms de modèles, et les liens du chat ont été corrigés pour pointer vers les bonnes pages de modèles. Cela compte lorsque le catalogue évolue rapidement et que les utilisateurs veulent accéder directement à une sortie précise.
+
+### La couverture multimodale a progressé
+
+Mars a apporté une série d’améliorations qui a harmonisé les SDK, les exemples multimodaux, la documentation et les pages du produit. Des travaux connexes ont également été menés dans les sections audio, vidéo et chat au fil du mois.
+
+Tout n’a pas été livré sous la forme d’une seule fonctionnalité phare. Il s’agissait plutôt des fondations nécessaires pour que le produit couvre davantage que les modèles de texte. L’essentiel était la cohérence : les types de modèles, la documentation, les exemples et les pages du produit ont commencé à mieux correspondre.
+
+Cette cohérence est importante pour les développeurs. Si un modèle prend en charge l’audio ou la vidéo, le produit doit le préciser, la documentation doit expliquer comment l’utiliser et les exemples des SDK doivent suivre.
+
+### La facturation et les crédits sont plus clairs
+
+En mars, nous avons ajouté un parcours d’utilisation des codes promotionnels, peaufiné les transactions et créé une vue interne des totaux de crédits promotionnels en attente. Gateway a également normalisé l’utilisation pour la facturation et les identifiants du démarrage rapide.
+
+Ce ne sont pas des changements que les utilisateurs prennent en photo, mais ils réduisent les risques de confusion. Lorsqu’une personne essaie Phaseo pour la première fois, les bases doivent être claires : le crédit dont elle dispose, ce qu’elle a utilisé et le compte ou l’espace de travail concerné.
+
+Ce travail a aussi préparé le produit aux changements plus importants des comptes et des espaces de travail livrés en avril.
+
+### Les SDK et les outils de publication sont restés synchronisés
+
+Le mois a comporté des publications de paquets, des travaux de validation des SDK, des vérifications de versions et des mises à jour des clients générés. Les paquets publics sont ainsi restés alignés sur l’API et le catalogue de modèles au fil des sorties.
+
+C’est particulièrement important pour un produit fondé sur un catalogue. Les nouvelles données de modèles ne sont utiles que si elles atteignent les endroits où les développeurs s’en servent réellement : identifiants de modèles, SDK générés, documentation, exemples et réponses de l’API.
+
+## Autres nouveautés
+
+- La navigation mobile a été améliorée : largeur des menus déroulants, séparateurs, commandes de thème et menu mobile plus cohérent.
+- Les échecs d’inscription sont plus faciles à isoler grâce à des effets secondaires plus sûrs et à des journaux plus détaillés par étape.
+- Les journaux temporaires d’erreurs du chat en amont ont été supprimés après la fin du débogage.
+- Des dépendances ont été mises à jour dans tout le dépôt, y compris pour traiter des avis de sécurité.
+- Les alertes de découverte des modèles et les notifications de Hugging Face ou internes ont été améliorées pour mieux suivre les nouveautés du catalogue.
+
+## Modèles à retenir
+
+Mars a apporté plusieurs ajouts importants. GPT 5.4, GPT 5.4 Pro, GPT 5.4 Mini et GPT 5.4 Nano d’OpenAI ont élargi la partie OpenAI du catalogue. Gemini 3.1 Flash Lite Preview et Gemini Embedding 2 Preview ont enrichi l’offre Google. Mistral Small 4, Mistral Moderation 2, Leanstral et Voxtral TTS ont étendu la couverture de Mistral au texte, à la modération et à la parole.
+
+Le mois a également vu arriver GLM 5 Turbo, Nemotron 3 Super, MiniMax M2.7, plusieurs modèles Xiaomi MiMo V2 et la première fiche Veo 3.1 Lite Preview à la fin du mois.
+
+## Bilan du mois
+
+L’historique Git local recense **74 commits** en mars. Le mois a comporté des sorties de données de modèles et de paquets SDK, des corrections de facturation, des améliorations de la navigation mobile et des mises à jour du catalogue pour OpenAI, Anthropic, Google, Mistral, Xiaomi, MiniMax, Qwen et d’autres.
+
+## Modèles sortis en mars 2026
+
+Le catalogue comprend les modèles suivants, dont la date de sortie se situe en mars 2026 :
+
+- 2 mars : Qwen 3.5 0.8B (`qwen/qwen3.5-0.8b`)
+- 2 mars : Qwen 3.5 2B (`qwen/qwen3.5-2b`)
+- 2 mars : Qwen 3.5 4B (`qwen/qwen3.5-4b`)
+- 2 mars : Qwen 3.5 9B (`qwen/qwen3.5-9b`)
+- 3 mars : Gemini 3.1 Flash Lite Preview (`google/gemini-3.1-flash-lite-preview`)
+- 3 mars : GPT 5.3 Chat (`openai/gpt-5.3-chat`)
+- 5 mars : GPT 5.4 (`openai/gpt-5.4`)
+- 5 mars : GPT 5.4 Pro (`openai/gpt-5.4-pro`)
+- 10 mars : Aion 2.5 (`aion-labs/aion-2.5`)
+- 10 mars : Gemini Embedding 2 Preview (`google/gemini-embedding-2-preview`)
+- 11 mars : Nemotron 3 Super (`nvidia/nemotron-3-super-120b-a12b`)
+- 15 mars : GLM 5 Turbo (`z-ai/glm-5-turbo`)
+- 16 mars : Leanstral (`mistral/leanstral`)
+- 16 mars : Mistral Small 4 (`mistral/mistral-small-4`)
+- 17 mars : Mistral Moderation 2 (`mistral/mistral-moderation-2`)
+- 17 mars : GPT 5.4 Mini (`openai/gpt-5.4-mini`)
+- 17 mars : GPT 5.4 Nano (`openai/gpt-5.4-nano`)
+- 18 mars : MiniMax M2.7 (`minimax/minimax-m2.7`)
+- 18 mars : MiMo V2 Omni (`xiaomi/mimo-v2-omni`)
+- 18 mars : MiMo V2 Pro (`xiaomi/mimo-v2-pro`)
+- 18 mars : MiMo V2 TTS (`xiaomi/mimo-v2-tts`)
+- 23 mars : Voxtral TTS (`mistral/voxtral-tts`)
+- 31 mars : Veo 3.1 Lite Preview (`google/veo-3.1-lite-preview`)
+
+## Prochainement
+
+Mars a préparé le produit à un mois d’avril plus rapide : de meilleures pages de tarifs, des changements pour les espaces de travail, d’autres améliorations aux pages des modèles et une série plus importante de sorties de modèles.
+

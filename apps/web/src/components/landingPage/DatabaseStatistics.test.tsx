@@ -25,6 +25,18 @@ jest.mock("next/link", () => ({
 	}) => React.createElement("a", { ...props, href }, children),
 }));
 
+jest.mock("next-intl/server", () => ({
+	getTranslations: jest.fn(async () => {
+		const labels: Record<string, string> = {
+			"statistics.catalogModels": "Catalog models",
+			"statistics.routableModels": "Routable models",
+			"statistics.catalogProviders": "Catalog providers",
+			"statistics.monthlyTokensRouted": "Monthly tokens routed",
+		};
+		return (key: string) => labels[key] ?? key;
+	}),
+}));
+
 const mockFetchFrontendLandingStats = jest.mocked(fetchFrontendLandingStats);
 const mockFetchFrontendSignInSupportedModelsStats = jest.mocked(
 	fetchFrontendSignInSupportedModelsStats,

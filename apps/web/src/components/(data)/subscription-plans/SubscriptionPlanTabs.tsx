@@ -12,14 +12,20 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import type { SubscriptionPlansMessages } from "@/i18n/subscription-plans";
 
-const tabs = [
-	{ label: "Overview", key: "overview" },
-	{ label: "Features", key: "features" },
-	{ label: "Models", key: "models" },
-];
-
-export default function SubscriptionPlanTabs({ planId }: { planId: string }) {
+export default function SubscriptionPlanTabs({
+	planId,
+	labels,
+}: {
+	planId: string;
+	labels: Pick<SubscriptionPlansMessages["detail"], "overview" | "features" | "models">;
+}) {
+	const tabs = [
+		{ label: labels.overview, key: "overview" },
+		{ label: labels.features, key: "features" },
+		{ label: labels.models, key: "models" },
+	];
 	const pathname = usePathname();
 	const pathnameSegments = pathname
 		? pathname.split("/").filter(Boolean)
@@ -115,7 +121,7 @@ export default function SubscriptionPlanTabs({ planId }: { planId: string }) {
 					<DropdownMenuTrigger render={<Button className="w-full p-2 border rounded text-base bg-background text-foreground flex justify-between items-center" />}>
 
 							{tabs.find((t) => t.key === activeKey)?.label ??
-								"Overview"}
+								labels.overview}
 							<ChevronDown className="ml-2 h-4 w-4" />
 
 					</DropdownMenuTrigger>

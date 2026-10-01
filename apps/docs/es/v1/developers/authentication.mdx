@@ -1,0 +1,75 @@
+---
+title: "Autenticación"
+description: "Usa claves de API para autenticar cada solicitud a Phaseo Gateway."
+icon: "key-round"
+---
+
+Consulta esta referencia para enviar solicitudes autenticadas o decidir cómo guardar y rotar las claves.
+
+Phaseo Gateway usa tokens de tipo bearer. Todas las solicitudes a la API deben incluir una clave válida de tu espacio de trabajo.
+
+---
+
+## Tipos de claves
+
+- **Claves de API de Gateway**: permiten llamar a los endpoints de modelos, proveedores y generaciones disponibles en tu espacio de trabajo.
+- **Claves de API de administración**: permiten llamar a las API de administración. Consulta [Claves de API de administración](./management-api-keys.mdx).
+- **Claves rotadas**: puedes crearlas en cualquier momento y sustituir la clave anterior en tu aplicación antes de eliminarla.
+
+Las claves tienen el formato `phaseo_v1_sk_<kid>_<secret>`. Trátalas como contraseñas y no las guardes en código del lado del cliente ni en repositorios públicos.
+
+<Note>
+Puedes llamar a modelos `:free` sin ingresar créditos. Los modelos de pago requieren saldo disponible en la cartera.
+</Note>
+
+---
+
+## Formato del encabezado
+
+Incluye la clave en el encabezado `Authorization` de cada solicitud:
+
+```http
+Authorization: Bearer phaseo_v1_sk_<kid>_<secret>
+```
+
+La mayoría de los clientes HTTP permiten configurar esto una sola vez. Por ejemplo, con `fetch`:
+
+```ts
+const response = await fetch("https://api.phaseo.app/v1/chat/completions", {
+	method: "POST",
+	headers: {
+		Authorization: `Bearer ${process.env.PHASEO_API_KEY}`,
+		"Content-Type": "application/json",
+	},
+	body: JSON.stringify({
+		model: "gpt-5-nano-2025-08-07",
+		messages: [
+			{ role: "system", content: "You are a helpful assistant." },
+			{
+				role: "user",
+				content: "Summarize the drawbacks to AI.",
+			},
+		],
+	}),
+});
+```
+
+---
+
+## Lista de comprobación para gestionar claves
+
+| Práctica            | Por qué importa                                                           |
+| ------------------- | ------------------------------------------------------------------------ |
+| Usa una clave por aplicación | Así podrás rotarla sin afectar a otros servicios.                |
+| Guarda las claves de forma segura | Los gestores de secretos evitan que se expongan accidentalmente en registros o herramientas de seguimiento de errores.  |
+| Supervisa el uso       | El panel muestra métricas por clave para que puedas detectar anomalías rápidamente. |
+| Elimina las claves que no uses  | Eliminar las claves obsoletas reduce la superficie de posibles abusos.        |
+
+---
+
+## Errores habituales de autenticación
+
+- **401 No autorizado**: falta la clave, no es válida o pertenece a un espacio de trabajo deshabilitado.
+- **403 Prohibido**: la clave existe, pero no puede acceder al proveedor o modelo solicitado.
+- **429 Demasiadas solicitudes**: la clave o el espacio de trabajo superó un límite. Consulta los [límites de frecuencia](./rate-limits.mdx).
+- **Errores 5xx**: vuelve a intentarlo con retroceso exponencial y contacta con [soporte](https://phaseo.app/help) si el problema persiste.

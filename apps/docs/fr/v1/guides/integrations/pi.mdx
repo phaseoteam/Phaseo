@@ -1,0 +1,47 @@
+---
+title: "Pi"
+icon: "terminal"
+description: "Connectez le catalogue de modèles Pi installé à Phaseo Gateway."
+---
+
+## Configurer avec la CLI Phaseo
+
+Ces commandes prêtes pour la production nécessitent un compte Phaseo ; la CLI crée l’identifiant dédié à la passerelle lors de la connexion et de la configuration.
+
+```bash
+phaseo login
+phaseo pi
+```
+
+Installez d’abord Pi depuis sa version officielle. La configuration écrit une extension fournisseur gérée dans `~/.pi/agent/extensions/phaseo.ts`. Cette extension expose tous les modèles texte Phaseo actifs compatibles avec Chat Completions et récupère leur clé API dédiée auprès de la CLI Phaseo au moment de chaque requête.
+
+Choisissez un modèle initial ou configurez un seul modèle si nécessaire :
+
+```bash
+phaseo pi --model anthropic/claude-sonnet-4.6
+phaseo pi --catalog default
+```
+
+Utilisez `--dry-run` pour prévisualiser les modifications de fichiers.
+
+## Démarrer et vérifier
+
+```bash
+pi
+```
+
+Ouvrez `/model`, choisissez le fournisseur `phaseo` et envoyez une requête simple. Pour supprimer uniquement l’extension gérée et révoquer sa clé dédiée, exécutez :
+
+```bash
+phaseo integrations remove pi
+```
+
+## Accès manuel aux identifiants
+
+L’extension générée utilise la syntaxe de clé de Pi basée sur une commande :
+
+```text
+!phaseo integrations credential pi
+```
+
+Aucune clé en texte brut n’est écrite dans l’extension.

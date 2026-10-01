@@ -1,0 +1,34 @@
+---
+icon: "square-terminal"
+title: "Beispiele"
+description: "Übernimm kompakte Go-Beispiele für Tools, Freigaben, Streaming und begrenzte Ausführungen."
+---
+
+## Bereitstellung mit Freigabe
+
+```go
+deploy := phaseoagent.Tool{
+  ID: "deploy",
+  Description: "Deploy the selected release",
+  RequireApproval: true,
+  Execute: func(input any, runtime phaseoagent.RuntimeContext) (any, error) {
+    return deploymentService.Deploy(runtime.Context, input)
+  },
+}
+```
+
+Führe den Agent aus und speichere den zurückgegebenen Datensatz, sobald sein Status `waiting_for_human` lautet. Setze ihn mit einer Entscheidung fort, die der ID des ausstehenden Tool-Aufrufs zugeordnet ist.
+
+## In ein Terminal streamen
+
+```go
+stream := agent.Stream(ctx, phaseoagent.RunOptions{Input: prompt, Client: client})
+for delta := range stream.Text() { fmt.Print(delta) }
+result, err := stream.Result()
+```
+
+## Autonome Recherche begrenzen
+
+Kombiniere `StepCountIs`, `MaxTokensUsed`, `MaxCost` und `MaxDuration`, damit ein lang laufender Agent das Produktbudget auch dann nicht überschreitet, wenn er weiterhin sinnvolle Aufgaben findet.
+
+Alle Details findest du unter [Tools](./agent-sdk-tools.mdx), [Zustand und Freigabe](./agent-sdk-state-and-approval.mdx) sowie [Abbruchbedingungen](./agent-sdk-stop-conditions.mdx).

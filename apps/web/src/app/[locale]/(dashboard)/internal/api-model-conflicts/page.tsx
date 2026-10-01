@@ -1,12 +1,17 @@
+import type { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
 import { requireInternalAdmin } from "@/lib/auth/requireInternalAdmin";
 import { buildApiModelConflictsSnapshot } from "@/lib/internal/apiModelConflicts";
 import ApiModelConflictsClient from "./ApiModelConflictsClient";
 
-export const metadata = {
-	title: "API Model Conflicts - Internal",
-	description:
-		"Inspect provider API model IDs, detect likely alias conflicts, and find pricing mismatches between model IDs and pricing directories.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+	const t = await getTranslations("SettingsUI.internalTools");
+	return {
+		title: t("apiModelConflictsTitle"),
+		description: t("apiModelConflictsDescription"),
+		robots: { index: false, follow: false },
+	};
+}
 
 export default async function ApiModelConflictsPage() {
 	await requireInternalAdmin("/internal");

@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import {
 	revealTeamInviteAction,
@@ -77,6 +77,7 @@ export default function TeamInviteDialog({
 	appBaseUrl,
 }: Props) {
 	const t = useTranslations("SettingsUI");
+	const locale = useLocale();
 	const router = useRouter();
 	const isCreator = !!currentUserId && currentUserId === invite.creator_user_id;
 	const canManage = canManageInvite || isCreator;
@@ -102,12 +103,10 @@ export default function TeamInviteDialog({
 
 	function formatDate(d: Date | null) {
 		if (!d) return null;
-		const day = String(d.getDate()).padStart(2, "0");
-		const month = d.toLocaleString(undefined, { month: "short" });
-		const year = d.getFullYear();
-		const hours = String(d.getHours()).padStart(2, "0");
-		const minutes = String(d.getMinutes()).padStart(2, "0");
-		return `${day} ${month} ${year}, ${hours}:${minutes}`;
+		return new Intl.DateTimeFormat(locale, {
+			dateStyle: "medium",
+			timeStyle: "short",
+		}).format(d);
 	}
 
 	const now = useMemo(() => new Date(), []);
@@ -117,17 +116,21 @@ export default function TeamInviteDialog({
 		invite.max_uses !== null && (invite.uses_count ?? 0) >= invite.max_uses;
 
 	const timeLeft = useMemo(() => {
-		if (!expiresAt) return "No expiry";
+		if (!expiresAt) return t("labels.noExpiry");
 		const ms = expiresAt.getTime() - now.getTime();
-		if (ms <= 0) return "Expired";
+		if (ms <= 0) return t("teams.statusExpired");
+		const relative = new Intl.RelativeTimeFormat(locale, {
+			numeric: "always",
+			style: "short",
+		});
 		const days = Math.floor(ms / 86_400_000);
-		const hours = Math.floor((ms % 86_400_000) / 3_600_000);
-		if (days > 0) return `${days}d ${hours}h remaining`;
-		const minutes = Math.floor((ms % 3_600_000) / 60_000);
-		if (hours > 0) return `${hours}h ${minutes}m remaining`;
-		const seconds = Math.floor((ms % 60_000) / 1000);
-		return `${minutes}m ${seconds}s remaining`;
-	}, [expiresAt, now]);
+		if (days > 0) return relative.format(days, "day");
+		const hours = Math.floor(ms / 3_600_000);
+		if (hours > 0) return relative.format(hours, "hour");
+		const minutes = Math.floor(ms / 60_000);
+		if (minutes > 0) return relative.format(minutes, "minute");
+		return relative.format(Math.max(1, Math.ceil(ms / 1000)), "second");
+	}, [expiresAt, locale, now, t]);
 
 	const usesText = useMemo(() => {
 		const used = invite.uses_count ?? 0;
@@ -145,19 +148,19 @@ export default function TeamInviteDialog({
 
 	const statusChip = isRevoked ? (
 		<span className="inline-flex items-center gap-1 rounded-full border border-red-200 bg-red-100 px-2.5 py-1 text-xs font-medium text-red-800">
-			<XCircle className="h-3.5 w-3.5" /> Revoked
+			<XCircle className="h-3.5 w-3.5" /> {t("teams.statusRevoked")}
 		</span>
 	) : isExpired ? (
 		<span className="inline-flex items-center gap-1 rounded-full border border-zinc-200 bg-zinc-100 px-2.5 py-1 text-xs font-medium text-zinc-800">
-			<XCircle className="h-3.5 w-3.5" /> Expired
+			<XCircle className="h-3.5 w-3.5" /> {t("teams.statusExpired")}
 		</span>
 	) : isMaxed ? (
 		<span className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-100 px-2.5 py-1 text-xs font-medium text-amber-800">
-			<XCircle className="h-3.5 w-3.5" /> Maxed
+			<XCircle className="h-3.5 w-3.5" /> {t("teams.statusMaxed")}
 		</span>
 	) : (
 		<span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-100 px-2.5 py-1 text-xs font-medium text-emerald-800">
-			<CheckCircle2 className="h-3.5 w-3.5" /> Active
+			<CheckCircle2 className="h-3.5 w-3.5" /> {t("teams.statusActive")}
 		</span>
 	);
 
@@ -170,7 +173,7 @@ export default function TeamInviteDialog({
 
 	async function handleReveal() {
 		if (!canManage) {
-			setRevealError("Only workspace owners or admins can reveal this invite.");
+			setRevealError(t("teams.revealAccessError"));
 			return;
 		}
 		if (revealed) {
@@ -181,11 +184,14 @@ export default function TeamInviteDialog({
 		setRevealing(true);
 		try {
 			const result = await revealTeamInviteAction(invite.id);
-			if (!result?.token) throw new Error("No token returned");
+			if (!result?.token) {
+				setRevealError(t("teams.revealFailed"));
+				return;
+			}
 			setRevealed(result.token);
 			setShowPlain(true);
-		} catch (err: any) {
-			setRevealError(err?.message ?? String(err));
+		} catch {
+			setRevealError(t("teams.revealFailed"));
 		} finally {
 			setRevealing(false);
 		}
@@ -197,7 +203,7 @@ export default function TeamInviteDialog({
 				<DialogHeader>
 					<DialogTitle className="flex items-center justify-between gap-2 mt-4">
 						<span className="flex items-center gap-2">
-							Invite Details
+							{t("teams.inviteDetails")}
 						</span>
 						<div className="flex items-center gap-2">
 							{statusChip}
@@ -205,11 +211,17 @@ export default function TeamInviteDialog({
 								className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium ${roleColour} capitalize`}
 							>
 								<Shield className="h-3.5 w-3.5" />
-								{invite.role}
+								{invite.role === "owner"
+									? t("labels.owner")
+									: invite.role === "admin"
+										? t("labels.admin")
+										: invite.role === "member"
+											? t("labels.member")
+											: invite.role}
 							</span>
 							<span className="inline-flex items-center gap-1 rounded-full border border-zinc-200 bg-white px-2.5 py-1 text-xs font-medium text-zinc-700">
 								<Clock className="h-3.5 w-3.5" />
-								{expiresAt ? timeLeft : "No expiry"}
+								{expiresAt ? timeLeft : t("labels.noExpiry")}
 							</span>
 						</div>
 					</DialogTitle>
@@ -219,31 +231,31 @@ export default function TeamInviteDialog({
 					{/* Stats */}
 					<div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
 						<Stat
-							label="Created by"
+							label={t("teams.createdBy")}
 							value={
 								invite.users?.display_name ??
 								invite.creator_user_id
 							}
 						/>
 						<Stat
-							label="Created"
+							label={t("teams.created")}
 							value={formatDate(createdAt) ?? ""}
 						/>
 						<Stat
-							label="Expiry"
+							label={t("teams.expiry")}
 							value={
-								expiresAt ? formatDate(expiresAt) : "No expiry"
+								expiresAt ? formatDate(expiresAt) : t("labels.noExpiry")
 							}
 						/>
 					</div>
 
 					<div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-						<Stat label="Uses">
+						<Stat label={t("teams.uses")}>
 							<span className="text-sm">
 								{invite.uses_count ?? 0}
 							</span>
 						</Stat>
-						<Stat label="Max uses">
+						<Stat label={t("teams.maxUses")}>
 							{invite.max_uses === null ? (
 								<span className="inline-flex items-center gap-1 align-baseline leading-none">
 									<span className="sr-only">{t("teams.unlimited")}</span>
@@ -259,7 +271,7 @@ export default function TeamInviteDialog({
 								</span>
 							)}
 						</Stat>
-						<Stat label="Usage" value={usesText} />
+						<Stat label={t("teams.usage")} value={usesText} />
 					</div>
 
 					<Separator />
@@ -273,8 +285,8 @@ export default function TeamInviteDialog({
 								className="font-mono text-sm bg-muted px-3 py-2 rounded-md w-full sm:max-w-xl border focus-within:ring-2 focus-within:ring-offset-0 focus-within:ring-ring"
 							>
 								<span className="select-all break-all">
-									{revealing
-										? "Revealing…"
+										{revealing
+										? t("teams.revealing")
 										: revealed
 										? showPlain
 											? revealed
@@ -297,6 +309,11 @@ export default function TeamInviteDialog({
 												variant="outline"
 												onClick={handleReveal}
 												disabled={revealing || !canManage}
+												aria-label={revealed
+													? showPlain
+														? t("teams.hideCodeAria")
+														: t("teams.showCodeAria")
+													: t("teams.revealCodeAria")}
 											>
 												{revealed ? (
 													<>
@@ -314,13 +331,13 @@ export default function TeamInviteDialog({
 											</Button>
 										</TooltipTrigger>
 										<TooltipContent side="top">
-											Click to{" "}
-											{revealed
-												? showPlain
-													? "hide"
-													: "show"
-												: "reveal"}{" "}
-											the full code
+											{t("teams.clickToAction", {
+												action: revealed
+													? showPlain
+														? t("teams.hideCode")
+														: t("teams.showCode")
+													: t("teams.revealCode"),
+											})}
 										</TooltipContent>
 									</Tooltip>
 								</TooltipProvider>
@@ -338,19 +355,14 @@ export default function TeamInviteDialog({
 														await revealTeamInviteAction(
 															invite.id
 														);
-													if (!res?.token)
-														throw new Error(
-															"No token returned"
-														);
+													if (!res?.token) throw new Error();
 													return res.token;
 												})());
 											await navigator.clipboard.writeText(
 												tokenToCopy
 											);
-										} catch (err: any) {
-											setCopyError(
-												err?.message ?? String(err)
-											);
+										} catch {
+											setCopyError(t("teams.copyFailed"));
 										} finally {
 											setCopying(false);
 										}
@@ -377,7 +389,7 @@ export default function TeamInviteDialog({
 										}
 									>
 										<LinkIcon className="mr-2 h-4 w-4" />
-										Copy link
+										{t("teams.copyLink")}
 									</Button>
 								)}
 							</div>
@@ -386,7 +398,7 @@ export default function TeamInviteDialog({
 						{revealError && (
 							<Alert variant="destructive" className="mt-2">
 								<AlertTitle>
-									Couldn’t reveal the code
+								{t("teams.revealFailedTitle")}
 								</AlertTitle>
 								<AlertDescription>
 									{revealError}
@@ -398,7 +410,7 @@ export default function TeamInviteDialog({
 					{revokeError && (
 						<Alert variant="destructive">
 							<AlertTitle>{t("teams.deleteFailed")}</AlertTitle>
-							<AlertDescription>{revokeError}</AlertDescription>
+									<AlertDescription>{t("teams.revokeFailedDescription")}</AlertDescription>
 						</Alert>
 					)}
 				</div>
@@ -417,18 +429,16 @@ export default function TeamInviteDialog({
 											type="button"
 										>
 											<Trash2 className="mr-2 h-4 w-4" />
-											Delete
+											{t("labels.delete")}
 										</Button>
 									</PopoverTrigger>
 									<PopoverContent className="w-72">
 										<div className="space-y-2">
 											<p className="text-sm font-medium">
-												Delete this invite?
+												{t("teams.deleteInviteConfirmTitle")}
 											</p>
 											<p className="text-sm text-muted-foreground">
-												This will revoke the code
-												immediately. This action can’t
-												be undone.
+												{t("teams.deleteInviteConfirmDescription")}
 											</p>
 											<div className="flex justify-end gap-2">
 												<Button
@@ -437,7 +447,7 @@ export default function TeamInviteDialog({
 														setConfirmOpen(false)
 													}
 												>
-													Cancel
+													{t("labels.cancel")}
 												</Button>
 												<Button
 													variant="destructive"
@@ -453,11 +463,8 @@ export default function TeamInviteDialog({
 															);
 															onOpenChange(false);
 															router.refresh();
-														} catch (err: any) {
-															setRevokeError(
-																err?.message ??
-																	String(err)
-															);
+														} catch {
+															setRevokeError(t("teams.revokeFailedDescription"));
 														} finally {
 															setRevoking(false);
 														}
@@ -465,8 +472,8 @@ export default function TeamInviteDialog({
 													disabled={revoking}
 												>
 													{revoking
-														? "Deleting…"
-														: "Delete"}
+														? t("labels.deleting")
+														: t("labels.delete")}
 												</Button>
 											</div>
 										</div>
@@ -480,7 +487,7 @@ export default function TeamInviteDialog({
 								variant="ghost"
 								onClick={() => onOpenChange(false)}
 							>
-								Close
+								{t("labels.close")}
 							</Button>
 						</div>
 					</div>

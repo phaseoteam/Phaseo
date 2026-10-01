@@ -1,0 +1,184 @@
+---
+icon: "folder-open"
+title: "Repositorystruktur"
+description: "Erfahre, wie das Phaseo-Repository aufgebaut ist und wo du Daten, Dokumentation und Konfigurationsdateien findest."
+---
+
+Bevor du zu Phaseo beiträgst, solltest du den **Aufbau des Repositorys** verstehen.
+Das Projekt trennt Daten, Dokumentation und Anwendungslogik, damit du Gesuchtes schnell findest und die Struktur übersichtlich wachsen kann.
+
+---
+
+## Überblick
+
+So sieht das Stammverzeichnis des Repositorys aus:
+
+```bash
+Phaseo/
++-- apps/
+¦   +-- web/ # The main Phaseo Next.js website (contains data)
+¦   +-- api/ # The Phaseo Gateway API (Hono/Cloudflare Workers)
+¦   +-- docs/ # The Mintlify-powered documentation site
+¦
++-- packages/ # SDKs and shared tooling
+¦   +-- sdk-ts/
+¦   +-- sdk-py/
+¦   +-- sdk-go/
+¦   +-- sdk-csharp/
+¦   +-- sdk-php/
+¦   +-- sdk-ruby/
+¦   +-- sdk-java/
+¦   +-- sdk-rust/
+¦   +-- sdk-cpp/
+¦   +-- ai-sdk-phaseo/
+¦
++-- scripts/ # Automation scripts and utilities
++-- .changeset/ # Release metadata
++-- turbo.json # Turborepo configuration
++-- package.json # Global scripts and dependencies
++-- README.md # Root readme file
+```
+
+---
+
+## Datenordner
+
+Phaseo speichert strukturierte Daten in **JSON-Dateien** im Verzeichnis `/packages/data/catalog/src/data`.
+Diese Dateien sind die maßgebliche Quelle für Modelle, Benchmarks und Preise.
+
+### `/packages/data/catalog/src/data/models`
+
+Enthält eine JSON-Datei pro Modell.
+Jede Datei beschreibt Metadaten, Preise, Benchmarks und Fähigkeiten des Modells.
+
+Beispiel:
+`/packages/data/catalog/src/data/models/openai/gpt-5-2025-08-07/model.json`
+
+---
+
+### `/packages/data/catalog/src/data/organisations`
+
+Beschreibt Unternehmen oder Forschungsgruppen hinter den Modellen.
+Jede JSON-Datei enthält Name, Beschreibung, Gründungsdatum, Website und Land.
+
+Beispiel:
+`/packages/data/catalog/src/data/organisations/openai.json`
+
+---
+
+### `/packages/data/catalog/src/data/benchmarks`
+
+Enthält Benchmark-Metadaten und aggregierte Ergebnisse für verschiedene Modelle.
+Jeder Benchmark hat eine ID, einen Namen, eine Beschreibung, eine Kategorie und Messwerte.
+
+Beispiel:
+`/packages/data/catalog/src/data/benchmarks/mmlu.json`
+
+---
+
+### `/packages/data/catalog/src/data/api_providers`
+
+Listet alle unterstützten API-Anbieter und deren Modelle auf.
+Diese Einträge verknüpfen Modelle und Organisationen.
+
+Beispiel:
+`/packages/data/catalog/src/data/api_providers/openai.json`
+
+---
+
+### `/packages/data/catalog/src/data/pricing`
+
+Erfasst historische Preisdaten im Zeitverlauf zur Trendanalyse.
+Die Dateien sind mit Zeitstempeln versehen und häufig nach Anbieter gruppiert.
+
+---
+
+## Dokumentationsordner
+
+Die Dokumentation ist in **MDX** geschrieben und befindet sich unter `/apps/docs/v1/`.
+Jeder Ordner entspricht einer Gruppe in der Mintlify-Konfiguration.
+
+| Ordner | Zweck |
+| ----------------------------- | ------------------------------------------------------- |
+| `/apps/docs/v1/exploring`     | Erklärt Datenkonzepte wie Modelle, Benchmarks und Anbieter. |
+| `/apps/docs/v1/contributing`  | Schritt-für-Schritt-Anleitungen für Mitwirkende.                   |
+| `/apps/docs/v1/developers`    | Anleitungen zur Integration und API-Nutzung.                       |
+| `/apps/docs/v1/api-reference` | Detaillierte Referenz zu allen Endpunkten.                  |
+| `/apps/docs/v1/community`     | Seiten zu Support, FAQ und Community.                      |
+
+---
+
+## Anwendungsordner
+
+| Pfad | Beschreibung |
+| ------------ | ------------------------------------------------------------------------------------------------- |
+| `/apps/web`  | Phaseo-Hauptwebsite mit Next.js 15 und TailwindCSS. Liest die maßgeblichen Daten aus `packages/data/catalog/src/data`. |
+| `/apps/api`  | Das API-Gateway: Routing, Caching und Modell-Proxy-Logik.                                         |
+| `/apps/docs` | Das Mintlify-Dokumentationsprojekt, das du gerade liest.                                           |
+
+Jede Anwendung läuft eigenständig, nutzt aber gemeinsame Typen und Konfigurationen aus `/packages`.
+
+---
+
+## SDK-Pakete
+
+Das Verzeichnis `/packages` enthält SDKs für verschiedene Programmiersprachen zur Nutzung der Phaseo-API.
+
+| SDK | Beschreibung |
+| ------------ | ------------------------------------------------ |
+| `sdk-ts`     | TypeScript-SDK für Node.js und Webanwendungen. |
+| `sdk-py`     | Python-SDK.                                      |
+| `sdk-go`     | Go-SDK.                                          |
+| `sdk-csharp` | C#-SDK.                                          |
+| `sdk-php`    | PHP-SDK.                                         |
+| `sdk-ruby`   | Ruby-SDK.                                        |
+| `sdk-java`   | Java-SDK.                                        |
+| `sdk-rust`   | Rust-SDK.                                        |
+| `sdk-cpp`    | C++-SDK.                                         |
+| `ai-sdk-phaseo` | Anbieter für das Vercel AI SDK.                      |
+
+---
+
+## Automatisierung und Skripte
+
+Phaseo verwendet Automatisierungen, um Daten aktuell zu halten:
+
+-   **Importer** rufen neue Daten aus Quellen wie Hugging Face oder Anbieter-APIs ab.
+-   **Watcher** laufen nach Zeitplan (über GitHub Actions), um Aktualisierungen zu erkennen und zu committen.
+-   **Dienstprogramme** übernehmen Validierung, Schema-Prüfung und JSON-Formatierung.
+
+Du findest diese unter `/scripts/`.
+
+---
+
+## Erste Schritte
+
+Wenn du etwas beitragen möchtest:
+
+-   **Daten:** Sieh dir die JSON-Dateien unter `/packages/data/catalog/src/data/` an.
+-   **Dokumentation:** Sieh dir die MDX-Dateien unter `/apps/docs/v1/` an.
+-   **Code:** Sieh dir `/apps/web` oder `/apps/api` an.
+-   **Automatisierung:** Bearbeite oder prüfe `/scripts/`.
+-   **SDKs:** Die sprachspezifischen SDKs findest du unter `/packages/`.
+
+---
+
+## Verwandte Seiten
+
+<Columns cols={2}>
+	<Card
+		title="Ein Modell bearbeiten"
+		icon="brain"
+		href="./editing-a-model.mdx"
+	>
+		Erfahre, wie du Modelldaten aktualisierst oder ergänzt.
+	</Card>
+	<Card
+		title="Eine Organisation bearbeiten"
+		icon="building"
+		href="./editing-an-organisation.mdx"
+	>
+		Erfahre, wie du Organisationsdaten sicher bearbeitest.
+	</Card>
+</Columns>
+

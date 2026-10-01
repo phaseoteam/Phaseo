@@ -1,0 +1,25 @@
+---
+title: "Java SDK (विकासाधीन)"
+description: "अभी विकासाधीन Java client को source से build करें।"
+---
+
+<Note type="warning">
+  Java SDK अभी विकासाधीन है और Maven Central पर प्रकाशित नहीं हुआ है। source build का उपयोग केवल मूल्यांकन के लिए करें।
+</Note>
+
+Java SDK में अब generated client के ऊपर एक हल्का, हाथ से लिखा wrapper शामिल है:
+
+- `app.phaseo.sdk.Phaseo` चैट, Responses, Anthropic Messages, इमेज, एम्बेडिंग, मॉडरेशन, वाणी/प्रतिलेखन/अनुवाद, बैच, फ़ाइल, वीडियो, मॉडल/प्रदाता/एंडपॉइंट/संगठन/मूल्य निर्धारण, API कुंजी खोज व जीवनचक्र प्रबंधन, वर्कस्पेस/वर्तमान कुंजी प्रबंधन, मूल्य गणना, गतिविधि/क्रेडिट/विश्लेषण, जनरेशन खोज, जीवनचक्र सत्यापन, सीधे हेल्पर, `client.asyncJobs.websocketUrl(...)` से एसिंक्रोनस जॉब WebSocket URL और DevTools-सक्षम टेलीमेट्री के लिए हेल्पर देता है।
+- ज़रूरत पड़ने पर सभी low-level operations के लिए नीचे `app.phaseo.gen.Client` और `app.phaseo.gen.Operations` उपलब्ध रहते हैं।
+
+## मौजूदा स्थिति
+
+- विकासाधीन; अभी Maven Central पर प्रकाशित नहीं हुआ है।
+- Source code `packages/sdk/sdk-java` में है।
+- Generated low-level code `packages/sdk/sdk-java/src/gen` में है।
+- हाथ से लिखा wrapper `packages/sdk/sdk-java/src/app/phaseo/sdk` में है।
+
+## अगले चरण
+
+- [इंस्टॉलेशन](./installation.mdx)
+- [उपयोग](./usage.mdx)

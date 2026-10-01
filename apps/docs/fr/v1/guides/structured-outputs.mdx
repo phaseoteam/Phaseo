@@ -1,0 +1,74 @@
+---
+icon: "shapes"
+title: "Sorties structurées"
+description: "Renvoyez du JSON prévisible avec les formats de sortie json_object ou json_schema."
+---
+
+Les sorties structurées permettent d’imposer un format lisible par machine plutôt qu’un texte libre.
+
+## Compatibilité des points de terminaison
+
+Utilisez les sorties structurées sur :
+
+- `/v1/chat/completions` avec `response_format`
+- `/v1/responses` avec `text.format`
+- `/v1/messages` peut toujours renvoyer du texte JSON, mais n’utilise pas le même contrat `response_format`.
+
+## Requête
+
+```bash
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-5-nano",
+    "messages": [
+      { "role": "user", "content": "Return a JSON object with city and weather for London." }
+    ],
+    "response_format": {
+      "type": "json_schema",
+      "json_schema": {
+        "name": "weather_schema",
+        "strict": true,
+        "schema": {
+          "type": "object",
+          "properties": {
+            "city": { "type": "string" },
+            "weather": { "type": "string" }
+          },
+          "required": ["city", "weather"],
+          "additionalProperties": false
+        }
+      }
+    }
+  }'
+```
+
+## Réponse
+
+```json
+{
+  "id": "chatcmpl_...",
+  "choices": [
+    {
+      "index": 0,
+      "finish_reason": "stop",
+      "message": {
+        "role": "assistant",
+        "content": "{\"city\":\"London\",\"weather\":\"Cloudy\"}"
+      }
+    }
+  ]
+}
+```
+
+## Remarques sur le contrat
+
+- `response_format.type` doit être `text`, `json_object` ou `json_schema`.
+- Pour `json_schema`, incluez un objet de schéma (`response_format.json_schema.schema` dans les requêtes de type chat ou `text.format.schema` dans celles de type Responses).
+- Validez le JSON sur votre serveur avant de l’utiliser en aval.
+
+## Guides suivants
+
+1. [Schémas de sortie structurée](./structured-outputs-schemas.mdx)
+2. [Validation et solutions de repli](./structured-outputs-validation.mdx)

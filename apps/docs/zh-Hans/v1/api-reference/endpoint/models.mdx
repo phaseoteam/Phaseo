@@ -1,0 +1,199 @@
+---
+title: "列出模型"
+sidebarTitle: "列出模型"
+badge: "Beta"
+openapi: "/zh-Hans/openapi/v1/openapi.localized.yaml GET /models"
+description: "通过 Phaseo Gateway 浏览 Gateway 原生模型，并可选择查看不可路由模型的可用性详情。"
+---
+
+默认情况下，此端点仅返回当前可路由的模型。设置 `availability=all` 可同时包含已知但当前不可用的模型。
+
+`GET /models/me` 为未来根据当前调用方的护栏筛选模型而保留。目前该接口会返回 `501 not implemented`，因此现在请使用 `GET /models` 查询共享的 Gateway 目录。
+
+## 常用筛选条件
+
+- `endpoints` 使用公开名称，例如 `chat.completions`、`responses` 和 `messages`
+- `status` 按模型生命周期筛选，例如 `active`、`deprecated` 或 `retired`
+- `provider` 按提供商公开 ID 筛选，例如 `openai`、`anthropic` 或 `google_vertex`
+- `provider_status` 按提供商发布阶段筛选，例如 `active`、`beta`、`alpha` 或 `not_ready`
+- `provider_routing_status` 按提供商级路由状态筛选
+- `model_routing_status` 按模型级路由状态筛选
+- `capability_status` 按提供商对所请求端点映射的能力状态筛选
+- `provider_availability_status` 按提供商可用性筛选，例如 `active`、`coming_soon` 或 `inactive`
+- `provider_availability_reason` 按提供商可用性原因筛选，例如 `preview_only`、`provider_not_ready`、`gated`、`access_limited` 或 `region_limited`
+- `organisation` 按公开模型 ID 前缀筛选，例如 `anthropic/claude-3-haiku` 中的 `anthropic`
+- `availability=active` 是默认值
+- `availability=all` 包含状态为 `coming_soon`、`inactive` 或尚未公开路由的模型或提供商
+- `input_modalities` 是 `input_types` 的别名
+- `output_modalities` 是 `output_types` 的别名
+- `supported_parameters` 是 `params` 的别名
+
+如需查看某个模型的端点契约，请调用 `GET /models/{author}/{slug}/endpoints`。响应会按提供商区分路由，并在每一行中列出公开路径、模态、受支持参数详情、可用性、路由状态、提供商模型标识和价格摘要。
+
+提供商条目还可能包括：
+
+- `availability_status`
+- `availability_reason`
+- `provider_status`
+- `provider_routing_status`
+- `model_routing_status`
+- `capability_status`
+
+### 响应
+
+```json
+{
+  "ok": true,
+  "privacy_scope": "shared",
+  "availability_mode": "all",
+  "limit": 50,
+  "offset": 0,
+  "total": 99,
+  "models": [
+    {
+      "id": "anthropic/claude-3-haiku",
+      "canonical_slug": "anthropic/claude-3-haiku",
+      "model_id": "anthropic/claude-3-haiku",
+      "name": "anthropic/claude-3-haiku",
+      "description": "anthropic/claude-3-haiku via Phaseo Gateway. Supports chat.completions, messages, responses.",
+      "created": null,
+      "release_date": null,
+      "deprecation_date": null,
+      "retirement_date": null,
+      "status": "active",
+      "availability": {
+        "status": "coming_soon",
+        "provider_count": 1,
+        "active_provider_count": 0,
+        "inactive_provider_count": 0
+      },
+      "organisation_id": "anthropic",
+      "organisation_name": null,
+      "organisation_colour": null,
+      "aliases": [],
+      "endpoints": ["chat.completions", "messages", "responses"],
+      "input_types": ["text"],
+      "output_types": ["text"],
+      "architecture": {
+        "modality": "text->text",
+        "input_modalities": ["text"],
+        "output_modalities": ["text"],
+        "tokenizer": null,
+        "instruct_type": "chat"
+      },
+      "providers": [
+        {
+          "api_provider_id": "anthropic",
+          "api_provider_name": "Anthropic",
+          "provider_model_slug": "claude-3-haiku-20240307",
+          "is_active_gateway": false,
+          "availability_status": "coming_soon",
+          "availability_reason": "preview_only",
+          "provider_status": "beta",
+          "provider_routing_status": "active",
+          "model_routing_status": "active",
+          "capability_status": "coming_soon",
+          "effective_from": "2026-06-01T00:00:00Z",
+          "effective_to": null,
+          "endpoints": ["responses"],
+          "input_modalities": ["text"],
+          "output_modalities": ["text"],
+          "params": [
+            "max_tokens",
+            "response_format",
+            "stop",
+            "structured_outputs",
+            "temperature",
+            "tool_choice",
+            "tools",
+            "top_k",
+            "top_p"
+          ],
+          "supported_parameters": [
+            "max_tokens",
+            "response_format",
+            "stop",
+            "structured_outputs",
+            "temperature",
+            "tool_choice",
+            "tools",
+            "top_k",
+            "top_p"
+          ],
+          "supported_parameters_detail": {
+            "temperature": {
+              "supported": true,
+              "type": "number",
+              "minimum": 0,
+              "maximum": 2
+            }
+          }
+        }
+      ],
+      "supported_params": [
+        "max_tokens",
+        "response_format",
+        "stop",
+        "structured_outputs",
+        "temperature",
+        "tool_choice",
+        "tools",
+        "top_k",
+        "top_p"
+      ],
+      "supported_params_detail": {
+        "temperature": {
+          "supported": true,
+          "type": "number",
+          "minimum": 0,
+          "maximum": 2,
+          "providers": ["openai"]
+        }
+      },
+      "supported_parameters": [
+        "max_tokens",
+        "response_format",
+        "stop",
+        "structured_outputs",
+        "temperature",
+        "tool_choice",
+        "tools",
+        "top_k",
+        "top_p"
+      ],
+      "supported_parameters_detail": {
+        "temperature": {
+          "supported": true,
+          "type": "number",
+          "minimum": 0,
+          "maximum": 2,
+          "providers": ["openai"]
+        }
+      },
+      "top_provider_id": null,
+      "top_provider": {
+        "context_length": null,
+        "max_completion_tokens": null,
+        "is_moderated": false
+      },
+      "pricing": {
+        "prompt": null,
+        "completion": null,
+        "request": null,
+        "image": null,
+        "input_cache_read": null,
+        "input_cache_write": null,
+        "web_search": null
+      },
+      "pricing_detail": {
+        "pricing_plan": "standard",
+        "meters": {}
+      },
+      "per_request_limits": null
+    }
+  ]
+}
+```
+
+`availability_reason` 是用于说明提供商条目为何处于活动、仅预览或非活动状态的单一字段。
+

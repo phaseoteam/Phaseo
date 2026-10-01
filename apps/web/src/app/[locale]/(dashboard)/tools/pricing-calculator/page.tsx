@@ -1,5 +1,7 @@
-import { Metadata } from "next";
+import type { Metadata } from "next";
 import { Suspense } from "react";
+import { getTranslations } from "next-intl/server";
+import type { PublicLocale } from "@/i18n/routing";
 import { buildMetadata } from "@/lib/seo";
 import PricingCalculator from "@/components/(tools)/PricingCalculator";
 import { fetchFrontendModels } from "@/lib/fetchers/frontend/fetchPublicCatalog";
@@ -9,21 +11,19 @@ import type { PricingModel } from "@/lib/fetchers/pricing/getPricingModels";
 import { loadPricingCalculatorSearchParams } from "./search-params";
 import { sanitizeModelSelections } from "@/components/(tools)/pricing-calculator/calculatorState";
 
-export const metadata: Metadata = buildMetadata({
-	title: "AI Pricing Calculator: Compare LLM API Costs",
-	description:
-		"Estimate token costs and compare LLM API pricing across major providers using daily pricing data.",
-	path: "/tools/pricing-calculator",
-	keywords: [
-		"AI pricing calculator",
-		"LLM pricing calculator",
-		"token cost calculator",
-		"LLM cost comparison",
-		"compare AI model prices",
-		"AI API pricing",
-		"AI model pricing",
-	],
-});
+export async function generateMetadata({
+	params,
+}: {
+	params: Promise<{ locale: PublicLocale }>;
+}): Promise<Metadata> {
+	const { locale } = await params;
+	const t = await getTranslations({ locale, namespace: "Product.tools.pricing" });
+	return buildMetadata({
+		title: t("title"),
+		description: t("description"),
+		path: "/tools/pricing-calculator",
+	});
+}
 
 export default async function PricingCalculatorPage({
 	searchParams,
@@ -47,6 +47,7 @@ async function PricingCalculatorPageContent({
 		fetchFrontendGatewayModels().catch(() => []),
 		searchParams,
 	]);
+	const tCountry = await getTranslations("Catalogue.countryDetail");
 	const parsedParams =
 		loadPricingCalculatorSearchParams(resolvedSearchParams);
 	const selectedModelIds = sanitizeModelSelections(parsedParams.selections).map(
@@ -65,7 +66,10 @@ async function PricingCalculatorPageContent({
 		modelId: model.model_id,
 		displayName: model.name || model.model_id,
 		organisationId: model.organisation_id || model.model_id.split("/")[0] || "unknown",
-		organisationName: model.organisation_name || model.organisation_id || "Unknown",
+		organisationName:
+			model.organisation_name ||
+			model.organisation_id ||
+			tCountry("unknownOrganisation"),
 		releaseDate: model.release_date,
 		announcementDate: model.announcement_date,
 	}));

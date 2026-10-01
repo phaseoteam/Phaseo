@@ -1,0 +1,49 @@
+---
+title: "Notifications de l’espace de travail"
+description: "Envoyez les alertes de l’espace de travail par e-mail, dans des canaux de discussion ou via un webhook HTTPS."
+icon: "bell-ring"
+---
+
+Utilisez les destinations de notification pour envoyer les alertes activées de l’espace de travail vers les outils déjà surveillés par votre équipe. Les destinations sont partagées dans l’espace de travail et peuvent être testées avant de leur confier des alertes opérationnelles.
+
+## Ajouter une destination
+
+1. Ouvrez **Gateway → Paramètres → Notifications**.
+2. Sélectionnez **Ajouter une destination**.
+3. Saisissez un nom et choisissez un ou plusieurs canaux.
+4. Ajoutez les informations de la destination et, si besoin, les mentions.
+5. Sélectionnez **Envoyer un test** pour chaque canal configuré.
+6. Créez les destinations lorsque tous les tests ont réussi.
+
+Phaseo prend en charge :
+
+- adresses e-mail et listes de diffusion
+- canaux Discord via un jeton de bot
+- webhooks Discord
+- webhooks entrants Slack
+- URL de workflows Microsoft Teams
+- webhooks HTTPS personnalisés
+
+Les identifiants et les URL de webhook sont chiffrés avant leur enregistrement. Limitez les identifiants de canal à l’envoi de notifications et renouvelez-les en cas d’exposition.
+
+## Activer les alertes produit
+
+La page Notifications répertorie les types d’alertes disponibles pour votre espace de travail. Activez **Alertes de retrait de modèles** pour être averti avant le retrait d’un modèle utilisé dans l’espace de travail.
+
+Les alertes sont envoyées aux destinations configurées, en plus des destinataires intégrés éventuellement affichés dans le tableau de bord.
+
+## Mentions
+
+Les champs de mention facultatifs permettent à une alerte de prévenir des destinataires précis :
+
+- Discord accepte les ID utilisateur et les ID de rôle.
+- Slack accepte les ID utilisateur et les ID de groupes d’utilisateurs.
+- Microsoft Teams accepte les adresses e-mail Microsoft 365 ou les ID d’objet Entra.
+
+Utilisez les mentions avec parcimonie. Les alertes fréquentes d’un espace de travail devraient généralement être envoyées à un canal surveillé plutôt que de solliciter un groupe étendu.
+
+## Tester et supprimer des destinations
+
+Utilisez **Envoyer un test** à côté d’une destination existante après avoir renouvelé les identifiants ou modifié la configuration du canal. Supprimez les destinations qui ne sont plus surveillées afin que les alertes ne semblent pas être envoyées à un canal abandonné.
+
+Les webhooks personnalisés doivent utiliser HTTPS et valider la requête avant de la traiter. Renvoyez rapidement une réponse de réussite et confiez les tâches plus longues à un traitement en arrière-plan.

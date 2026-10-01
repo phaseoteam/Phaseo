@@ -8,25 +8,29 @@ import { TrendingUp, Flame } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import type { TrendingModel } from "@/lib/fetchers/rankings/getRankingsData";
 import { RankingsEmptyState } from "@/components/(rankings)/RankingsEmptyState";
+import { useLocale, useTranslations } from "next-intl";
 
 interface TrendingModelsProps {
     data: TrendingModel[];
 }
 
 export function TrendingModels({ data }: TrendingModelsProps) {
+	const locale = useLocale();
+	const t = useTranslations("Catalogue.rankings");
     if (!data.length) {
         return (
             <RankingsEmptyState
-                title="No trending data yet"
-                description="Trending models appear once weekly usage clears privacy thresholds."
+                title={t("trendingEmptyTitle")}
+                description={t("trendingEmptyDescription")}
             />
         );
     }
 
     const formatRequests = (num: number) => {
-        if (num >= 1e6) return `${(num / 1e6).toFixed(1)}M`;
-        if (num >= 1e3) return `${(num / 1e3).toFixed(1)}K`;
-        return num.toString();
+        return new Intl.NumberFormat(locale, {
+            notation: "compact",
+            maximumFractionDigits: 1,
+        }).format(num);
     };
 
     const getMomentumBadge = (score: number, idx: number) => {
@@ -34,7 +38,7 @@ export function TrendingModels({ data }: TrendingModelsProps) {
             return (
                 <Badge variant="destructive" className="gap-1">
                     <Flame className="h-3 w-3" />
-                    Hot
+                    {t("hot")}
                 </Badge>
             );
         }
@@ -42,14 +46,14 @@ export function TrendingModels({ data }: TrendingModelsProps) {
             return (
                 <Badge variant="default" className="gap-1">
                     <TrendingUp className="h-3 w-3" />
-                    Rising
+                    {t("rising")}
                 </Badge>
             );
         }
         return (
             <Badge variant="secondary" className="gap-1">
                 <TrendingUp className="h-3 w-3" />
-                Trending
+                {t("trendingBadge")}
             </Badge>
         );
     };
@@ -60,10 +64,13 @@ export function TrendingModels({ data }: TrendingModelsProps) {
                 const currentWeek = Number(model.current_week_requests ?? 0);
                 const previousWeek = Number(model.previous_week_requests ?? 0);
                 const growth = currentWeek - previousWeek;
-                const growthPercent =
-                    previousWeek > 0
-                        ? ((growth / previousWeek) * 100).toFixed(0)
-                        : "inf";
+				const growthPercent =
+					previousWeek > 0
+						? new Intl.NumberFormat(locale, {
+								maximumFractionDigits: 0,
+								signDisplay: "always",
+							}).format((growth / previousWeek) * 100)
+						: "∞";
 
                 return (
                     <Card key={`${model.model_id}-${model.provider}`} className="hover:shadow-md transition-shadow">
@@ -79,16 +86,16 @@ export function TrendingModels({ data }: TrendingModelsProps) {
                                     </p>
                                     <div className="flex items-center gap-3 mt-2 text-xs">
                                         <span className="text-green-600 font-medium">
-                                            +{growthPercent}% this week
+                                            {t("growthThisWeek", { growth: growthPercent })}
                                         </span>
                                         <span className="text-muted-foreground">
-                                            {formatRequests(currentWeek)} requests
+                                            {formatRequests(currentWeek)} {t("requestsLabel")}
                                         </span>
                                     </div>
                                 </div>
                                 <div className="text-right">
                                     <div className="text-sm tabular-nums text-muted-foreground">
-                                        Velocity: {Number(model.velocity ?? 0).toFixed(0)}
+										{t("velocityLabel")}: {new Intl.NumberFormat(locale, { maximumFractionDigits: 0 }).format(Number(model.velocity ?? 0))}
                                     </div>
                                 </div>
                             </div>

@@ -1,0 +1,31 @@
+---
+icon: "wand-sparkles"
+title: "Geração de imagens"
+description: "Gere imagens com o SDK Go."
+---
+
+Use o método wrapper:
+
+- `client.CreateImage(ctx, req)`
+
+```go
+import (
+  "context"
+  "fmt"
+  phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v2"
+)
+
+client := phaseo.New(apiKey, "https://api.phaseo.app/v1")
+
+resp, err := client.CreateImage(context.Background(), map[string]interface{}{
+  "model": "openai/gpt-image-1",
+  "prompt": "A lighthouse at sunset",
+})
+if err != nil {
+  panic(err)
+}
+
+fmt.Println(resp)
+```
+
+

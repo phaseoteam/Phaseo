@@ -24,6 +24,8 @@ import {
 import { RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslations } from "next-intl";
+import { localizedSettingsError } from "@/i18n/error-messages";
+import { useLocale } from "next-intl";
 import { rotateApiKeyAction } from "@/app/(dashboard)/settings/keys/actions";
 import { SecretRevealActions } from "./SecretRevealActions";
 
@@ -37,19 +39,23 @@ function toIsoFromMode(mode: ExpiryMode, customValue: string): string | null {
 	if (mode === "24h") return new Date(now + 24 * 60 * 60 * 1000).toISOString();
 	if (mode === "7d") return new Date(now + 7 * 24 * 60 * 60 * 1000).toISOString();
 	if (mode === "custom") {
-		if (!customValue.trim()) throw new Error("Select a custom expiry date/time");
+		if (!customValue.trim()) throw new Error("custom-expiry-required");
 		const parsed = new Date(customValue);
-		if (Number.isNaN(parsed.getTime())) throw new Error("Invalid custom expiry date/time");
+		if (Number.isNaN(parsed.getTime())) throw new Error("invalid-custom-expiry");
 		return parsed.toISOString();
 	}
 	return null;
 }
 
-function formatExpiryLabel(iso: string | null | undefined): string {
-	if (!iso) return "Never";
+function formatExpiryLabel(
+	iso: string | null | undefined,
+	locale: string,
+	neverLabel: string,
+): string {
+	if (!iso) return neverLabel;
 	const parsed = new Date(iso);
-	if (Number.isNaN(parsed.getTime())) return "Never";
-	return parsed.toLocaleString();
+	if (Number.isNaN(parsed.getTime())) return neverLabel;
+	return parsed.toLocaleString(locale);
 }
 
 export default function RotateKeyItem({
@@ -68,6 +74,7 @@ export default function RotateKeyItem({
 	const setOpen = onOpenChange ?? setInternalOpen;
 	const [loading, setLoading] = useState(false);
 	const t = useTranslations("SettingsUI");
+	const locale = useLocale();
 	const [newName, setNewName] = useState(String(k?.name ?? ""));
 	const [expiryMode, setExpiryMode] = useState<ExpiryMode>("24h");
 	const [customExpiry, setCustomExpiry] = useState("");
@@ -97,7 +104,13 @@ export default function RotateKeyItem({
 		try {
 			expiresAtIso = toIsoFromMode(expiryMode, customExpiry);
 		} catch (error) {
-			const message = error instanceof Error ? error.message : "Invalid expiry settings";
+			const errorCode = error instanceof Error ? error.message : "";
+			const message =
+				errorCode === "custom-expiry-required"
+					? t("keys.customExpiryRequired")
+					: errorCode === "invalid-custom-expiry"
+						? t("keys.invalidCustomExpiry")
+						: t("keys.invalidExpirySettings");
 			toast.error(message);
 			return;
 		}
@@ -114,7 +127,7 @@ export default function RotateKeyItem({
 			setOldExpiryApplied(result?.previousKeyExpiresAt ?? expiresAtIso);
 			toast.success(t("keys.rotated"), { id: toastId });
 		} catch (error) {
-			const message = error instanceof Error ? error.message : t("keys.failedRotate");
+			const message = localizedSettingsError(error, t, "Action failed", t("keys.failedRotate"));
 			toast.error(message, { id: toastId });
 		} finally {
 			setLoading(false);
@@ -137,7 +150,7 @@ export default function RotateKeyItem({
 						}} />}>
 
 						<RefreshCw className="mr-2 h-4 w-4" />
-						Rotate
+						{t("keys.rotate")}
 
 				</DropdownMenuItem>
 			) : null}
@@ -145,7 +158,7 @@ export default function RotateKeyItem({
 				<DialogHeader>
 					<DialogTitle>{t("keys.rotateApiKey")}</DialogTitle>
 					<DialogDescription>
-						Create a replacement key and choose when the current key expires.
+						{t("keys.rotateDescription")}
 					</DialogDescription>
 				</DialogHeader>
 
@@ -162,7 +175,7 @@ export default function RotateKeyItem({
 						</div>
 
 						<div className="space-y-2">
-			<Label htmlFor="rotate-old-expiry">{t("strings.Previous key expiry" as never)}</Label>
+			<Label htmlFor="rotate-old-expiry">{t("keys.previousKeyExpiry")}</Label>
 							<Select
 								value={expiryMode}
 								onValueChange={(value) => setExpiryMode(value as ExpiryMode)}
@@ -194,13 +207,13 @@ export default function RotateKeyItem({
 						) : null}
 
 						<div className="text-xs text-muted-foreground">
-							The new key is shown once. Copy and update your clients before the previous key expires.
+							{t("keys.updateClientsBeforeExpiry")}
 						</div>
 
 						<DialogFooter>
 							<DialogClose asChild>
 								<Button type="button" variant="ghost">
-									Cancel
+									{t("labels.cancel")}
 								</Button>
 							</DialogClose>
 							<Button type="submit" disabled={!canSubmit}>
@@ -214,14 +227,14 @@ export default function RotateKeyItem({
 							{newPlaintext}
 						</div>
 						<div className="text-sm text-muted-foreground">
-							Previous key expiry: {formatExpiryLabel(oldExpiryApplied)}
+							{t("keys.previousKeyExpiry")}: {formatExpiryLabel(oldExpiryApplied, locale, t("labels.never"))}
 						</div>
 						<div className="text-sm text-muted-foreground font-semibold">
-							Store this key now. It will not be shown again.
+							{t("keys.storeThisKeyNow")}
 						</div>
 						<SecretRevealActions
 							secret={newPlaintext}
-							name={newName || "AI Stats rotated API key"}
+							name={newName || t("keys.rotatedKeyDefaultName")}
 							kind="api-key"
 						/>
 						<DialogFooter>

@@ -1,0 +1,18 @@
+---
+icon: "wand-sparkles"
+title: "Edição de imagens"
+description: "Chame /images/edits com o SDK Python."
+---
+
+**Método**: `client.generate_image_edit()`
+
+```python
+result = client.generate_image_edit({
+    "model": "openai/gpt-image-1",
+    "prompt": "Make it sunset",
+    "image": "data:image/png;base64,...",
+})
+
+print(result)
+```
+

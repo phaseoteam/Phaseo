@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { useMemo, useState, type ReactElement } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -182,6 +183,10 @@ export function ChatSidebar({
 	activeTagId,
 	onTagFilterChange,
 }: ChatSidebarProps) {
+	const tUi = useTranslations("Common.ui");
+	const tChat = useTranslations("Product.chat");
+	const tSearch = useTranslations("Common.search");
+	const tCalendar = useTranslations("Catalogue.updatesCalendar.weekdayAnalysis");
 	const { state: sidebarState, isMobile } = useSidebar();
 	const [tagsOpen, setTagsOpen] = useState(true);
 	const [chatEditMode, setChatEditMode] = useState(false);
@@ -282,7 +287,7 @@ export function ChatSidebar({
 					<DropdownMenuContent side="right" className="rounded-md [&_[data-slot=dropdown-menu-item]]:rounded-md">
 						<DropdownMenuItem onClick={() => onRenameThread(thread)}>
 							<PencilLine className="mr-2 h-4 w-4" />
-							Rename
+							{tUi("actions.rename")}
 						</DropdownMenuItem>
 						<DropdownMenuItem onClick={() => onPinToggle(thread)}>
 							{pinned ? (
@@ -290,11 +295,11 @@ export function ChatSidebar({
 							) : (
 								<Pin className="mr-2 h-4 w-4" />
 							)}
-							{pinned ? "Unpin" : "Pin"}
+							{pinned ? tUi("actions.unpin") : tUi("actions.pin")}
 						</DropdownMenuItem>
 						<DropdownMenuItem onClick={() => onEditTags(thread)}>
 							<Tag className="mr-2 h-4 w-4" />
-							Tags
+							{tUi("actions.tags")}
 						</DropdownMenuItem>
 						<DropdownMenuSeparator />
 						<DropdownMenuItem
@@ -303,7 +308,7 @@ export function ChatSidebar({
 							onClick={() => onRequestDelete(thread)}
 						>
 							<Trash2 className="mr-2 h-4 w-4" />
-							Delete
+							{tUi("actions.delete")}
 						</DropdownMenuItem>
 					</DropdownMenuContent>
 				</DropdownMenu>
@@ -324,7 +329,7 @@ export function ChatSidebar({
 			<SidebarContent className="gap-0">
 				<div data-chat-sidebar-actions="true" className={CHAT_SIDEBAR_ACTIONS_CLASS}>
 					{withCollapsedTooltip(
-						"New Chat",
+						tChat("newChat"),
 						<Button
 							variant="ghost"
 							className={cn(
@@ -334,16 +339,16 @@ export function ChatSidebar({
 									: "w-full flex-1 justify-start px-2",
 							)}
 							onClick={onCreateThread}
-							aria-label="New Chat"
+							aria-label={tChat("newChat")}
 						>
 							<SquarePen className="h-4 w-4 shrink-0" />
 							{collapsed ? null : (
-								<span className="truncate text-left">New Chat</span>
+								<span className="truncate text-left">{tChat("newChat")}</span>
 							)}
 						</Button>,
 					)}
 					{withCollapsedTooltip(
-						"Search Chats",
+						tChat("searchChats"),
 						<Button
 							variant="ghost"
 							className={cn(
@@ -353,11 +358,11 @@ export function ChatSidebar({
 									: "w-full flex-1 justify-start px-2",
 							)}
 							onClick={onSearch}
-							aria-label="Search Chats"
+							aria-label={tChat("searchChats")}
 						>
 							<Search className="h-4 w-4 shrink-0" />
 							{collapsed ? null : (
-								<span className="truncate text-left">Search Chats</span>
+								<span className="truncate text-left">{tChat("searchChats")}</span>
 							)}
 						</Button>,
 					)}
@@ -377,7 +382,7 @@ export function ChatSidebar({
 											type="button"
 											className="flex h-7 min-w-0 flex-1 items-center justify-between rounded-md text-[13px] font-semibold leading-none text-foreground/80 outline-none transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
 										>
-											<span className="truncate">Tags</span>
+							<span className="truncate">{tUi("actions.tags")}</span>
 											<ChevronRight
 												className={cn(
 													"h-3.5 w-3.5 shrink-0 transition-transform",
@@ -394,7 +399,7 @@ export function ChatSidebar({
 											className="h-6 px-1.5 text-xs text-muted-foreground"
 											onClick={() => onTagFilterChange(null)}
 										>
-											All
+							{tUi("filters.all")}
 										</Button>
 									) : null}
 								</div>
@@ -433,7 +438,7 @@ export function ChatSidebar({
 														setVisibleTagCount((count) => count + 5)
 													}
 												>
-													Show more
+									{tCalendar("showMore")}
 												</Button>
 											</div>
 										) : null}
@@ -452,7 +457,7 @@ export function ChatSidebar({
 										<span className="truncate">{activeTag.name}</span>
 									</span>
 								) : (
-									"Chats"
+					tChat("chats")
 								)}
 							</div>
 							{threads.length > 0 ? (
@@ -466,7 +471,7 @@ export function ChatSidebar({
 										setSelectedThreadIds(new Set());
 									}}
 								>
-									{chatEditMode ? "Done" : "Edit"}
+					{chatEditMode ? tUi("actions.done") : tUi("actions.edit")}
 								</Button>
 							) : null}
 						</div>
@@ -481,7 +486,7 @@ export function ChatSidebar({
 									onClick={() => onEditSelectedTags(selectedThreads)}
 								>
 									<Tag className="mr-1 h-3.5 w-3.5" />
-									Tags
+					{tUi("actions.tags")}
 								</Button>
 								<Button
 									type="button"
@@ -492,7 +497,7 @@ export function ChatSidebar({
 									onClick={() => onRequestDeleteSelected(selectedThreads)}
 								>
 									<Trash2 className="mr-1 h-3.5 w-3.5" />
-									Delete
+					{tUi("actions.delete")}
 								</Button>
 							</div>
 						) : null}
@@ -501,7 +506,7 @@ export function ChatSidebar({
 								{groupedThreads.pinned.length > 0 && (
 									<div className="pb-1">
 										<p className="px-3 pb-1.5 pt-2 text-xs font-semibold text-muted-foreground">
-											Pinned
+							{tSearch("pinned")}
 										</p>
 										{groupedThreads.pinned.map((thread) =>
 											renderThreadItem(thread, true),

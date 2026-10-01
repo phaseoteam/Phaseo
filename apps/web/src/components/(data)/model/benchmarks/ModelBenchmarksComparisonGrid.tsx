@@ -19,6 +19,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useTranslations } from "next-intl";
 import {
 	Select,
 	SelectContent,
@@ -75,12 +76,12 @@ const PROVIDER_FALLBACK_COLOURS = [
 	"#22d3ee",
 ];
 
-function createColourPalette(models: BenchmarkComparisonModel[]) {
+function createColourPalette(models: BenchmarkComparisonModel[], unknownProvider: string) {
 	const map: Record<string, string> = {};
 	let fallbackIndex = 0;
 
 	for (const model of models) {
-		const provider = model.organisation?.name ?? "Unknown";
+		const provider = model.organisation?.name ?? unknownProvider;
 		if (map[provider]) continue;
 
 		map[provider] =
@@ -97,7 +98,8 @@ function createColourPalette(models: BenchmarkComparisonModel[]) {
 function buildChartRows(
 	models: BenchmarkComparisonModel[],
 	palette: Record<string, string>,
-	isLowerBetter: boolean
+	isLowerBetter: boolean,
+	unknownProvider: string,
 ): ChartRow[] {
 	const validModels = models.filter(
 		(
@@ -112,7 +114,7 @@ function buildChartRows(
 	}
 
 	return validModels.map((model) => {
-		const provider = model.organisation?.name ?? "Unknown";
+		const provider = model.organisation?.name ?? unknownProvider;
 		const originalScore = model.topScore as number;
 		const transformedScore = originalScore;
 
@@ -215,6 +217,7 @@ function BenchmarkTooltip({
 	active,
 	payload,
 }: RechartsTooltipContentProps) {
+	const tUi = useTranslations("Common.ui");
 	if (!active || !payload || !payload.length) return null;
 	const data = payload[0].payload as ChartRow;
 	const sortedDetails = [...data.details].sort((a, b) => {
@@ -251,7 +254,7 @@ function BenchmarkTooltip({
 							) : null}
 							{detail.isSelfReported ? (
 								<span className="ml-1 text-amber-500">
-									Self-reported
+									{tUi("benchmarkComparison.selfReported")}
 								</span>
 							) : null}
 						</div>
@@ -264,7 +267,7 @@ function BenchmarkTooltip({
 			) : null}
 			{data.isCurrent && (
 				<div className="mt-1 text-xs font-semibold text-indigo-600">
-					Selected model
+					{tUi("benchmarkComparison.selectedModel")}
 				</div>
 			)}
 		</div>
@@ -294,6 +297,8 @@ function sliceAroundIndex<T>(items: T[], index: number, before = 5, after = 5) {
 export function ModelBenchmarksComparisonGrid({
 	comparisons,
 }: ModelBenchmarksComparisonGridProps) {
+	const tUi = useTranslations("Common.ui");
+	const unknownProvider = tUi("benchmarkComparison.unknownProvider");
 	const isMobile = useIsMobile();
 	const [selectedBenchmarkId, setSelectedBenchmarkId] = React.useState<
 		string | null
@@ -343,8 +348,8 @@ export function ModelBenchmarksComparisonGrid({
 		[selectedComparison]
 	);
 	const palette = React.useMemo(
-		() => createColourPalette(allModels),
-		[allModels]
+		() => createColourPalette(allModels, unknownProvider),
+		[allModels, unknownProvider]
 	);
 	const chartModels = React.useMemo(() => {
 		const currentIndex = allModels.findIndex((model) => model.isCurrent);
@@ -359,9 +364,10 @@ export function ModelBenchmarksComparisonGrid({
 			buildChartRows(
 				chartModels,
 				palette,
-				selectedComparison.isLowerBetter
+				selectedComparison.isLowerBetter,
+				unknownProvider
 			),
-		[chartModels, palette, selectedComparison.isLowerBetter]
+		[chartModels, palette, selectedComparison.isLowerBetter, unknownProvider]
 	);
 
 	const visibleRows = Math.min(MAX_CHART_ROWS, rows.length);
@@ -417,13 +423,12 @@ export function ModelBenchmarksComparisonGrid({
 							{selectedComparison.benchmarkName}
 						</h4>
 						<p className="text-sm text-muted-foreground">
-							Compare this model with the leading peers for the
-							selected benchmark.
+							{tUi("benchmarkComparison.description")}
 						</p>
 					</div>
 					<div className="flex w-full flex-col gap-2 sm:w-72">
 						<span className="text-xs font-semibold uppercase text-muted-foreground">
-							Benchmark
+											{tUi("benchmarkComparison.benchmark")}
 						</span>
 						<Select
 							value={selectedComparison.benchmarkId}
@@ -431,8 +436,8 @@ export function ModelBenchmarksComparisonGrid({
 								setSelectedBenchmarkId(value)
 							}
 						>
-							<SelectTrigger aria-label="Select benchmark">
-								<SelectValue placeholder="Select benchmark" />
+							<SelectTrigger aria-label={tUi("benchmarkComparison.selectBenchmark")}>
+								<SelectValue placeholder={tUi("select.benchmark")} />
 							</SelectTrigger>
 							<SelectContent>
 								{[...comparisons]
@@ -454,7 +459,7 @@ export function ModelBenchmarksComparisonGrid({
 												<span className="text-xs text-muted-foreground text-left">
 													{comparison.current
 														.scoreDisplay ??
-														"No score recorded yet"}
+														 tUi("benchmarkComparison.noScore")}
 												</span>
 											</span>
 										</SelectItem>
@@ -469,21 +474,21 @@ export function ModelBenchmarksComparisonGrid({
 						<Badge variant="secondary">{currentScoreDisplay}</Badge>
 					) : null}
 					{totalModels != null ? (
-						<Badge variant="secondary">{totalModels} models</Badge>
+						<Badge variant="secondary">{tUi("apps.models", { count: totalModels })}</Badge>
 					) : null}
 					{isLowerBetter ? (
 						<Badge
 							variant="outline"
 							className="text-xs text-blue-600"
 						>
-							Lower is better
+							{tUi("benchmarkComparison.lowerIsBetter")}
 						</Badge>
 					) : null}
 				</div>
 
 				{isLowerBetter ? (
 					<p className="text-xs text-muted-foreground">
-						Lower scores indicate stronger performance.
+						{tUi("benchmarkComparison.lowerScoresDescription")}
 					</p>
 				) : null}
 
@@ -548,8 +553,7 @@ export function ModelBenchmarksComparisonGrid({
 							</ResponsiveContainer>
 						) : (
 							<div className="flex h-full items-center justify-center rounded-md border border-dashed border-zinc-300 px-4 text-sm text-muted-foreground dark:border-zinc-700">
-								No numeric benchmark data available yet for this
-								selection.
+								{tUi("benchmarkComparison.noNumericData")}
 							</div>
 						)}
 					</div>
@@ -558,14 +562,15 @@ export function ModelBenchmarksComparisonGrid({
 				<div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
 					<span>
 						{hasRows
-							? `Showing ${
-									rows.length
-							  } models around the selected model${
-									totalModels != null
-										? ` (out of ${totalModels} total)`
-										: ""
-							  }.`
-							: "Charts will appear once comparable scores are available."}
+							? totalModels != null
+								? tUi("benchmarkComparison.showingCountWithTotal", {
+										count: rows.length,
+										total: totalModels,
+								  })
+								: tUi("benchmarkComparison.showingCount", {
+										count: rows.length,
+								  })
+							: tUi("benchmarkComparison.chartsUnavailable")}
 					</span>
 					<div className="flex items-center gap-2">
 						<Button
@@ -577,7 +582,7 @@ export function ModelBenchmarksComparisonGrid({
 							<Link
 								href={`/benchmarks/${selectedComparison.benchmarkId}`}
 							>
-								View benchmark page
+								{tUi("benchmarkComparison.viewBenchmarkPage")}
 							</Link>
 						</Button>
 						<Button
@@ -588,19 +593,20 @@ export function ModelBenchmarksComparisonGrid({
 							className="gap-1.5"
 						>
 							<Expand className="h-4 w-4" />
-							<span>Full ranking</span>
+							<span>{tUi("benchmarkComparison.fullRanking")}</span>
 						</Button>
 					</div>
 				</div>
 			</Card>
 
-			<BenchmarkDialog
+							<BenchmarkDialog
 				open={dialogOpen}
 				onOpenChange={setDialogOpen}
 				benchmarkName={selectedComparison.benchmarkName}
-				models={allModels}
-				isLowerBetter={isLowerBetter}
-				currentScoreDisplay={currentScoreDisplay}
+								models={allModels}
+								isLowerBetter={isLowerBetter}
+								currentScoreDisplay={currentScoreDisplay}
+								unknownProvider={unknownProvider}
 			/>
 		</div>
 	);

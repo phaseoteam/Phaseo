@@ -1,0 +1,59 @@
+---
+title: "सीमाएँ"
+description: "प्रदाता द्वारा तय दर सीमाएँ समझें और भरोसेमंद retry व्यवहार बनाएँ।"
+icon: "gauge"
+---
+
+Gateway फिलहाल प्लेटफ़ॉर्म-स्तर पर कोई अलग request cap लागू नहीं करता। अधिकतर throttling upstream providers से आती है।
+
+## सीमाएँ कैसे काम करती हैं
+
+- चुने गए मॉडल के लिए route किया गया provider अनुरोधों की दर सीमित कर सकता है।
+- BYOK ट्रैफ़िक पर आपके provider खाते की सीमाएँ लागू होती हैं।
+- Gateway routing और fallback विफलताएँ कम कर सकते हैं, लेकिन `429` प्रतिक्रियाएँ फिर भी आ सकती हैं।
+
+## `429` प्रतिक्रियाओं को संभालना
+
+- `Retry-After` मौजूद हो तो उसका पालन करें।
+- jitter के साथ exponential backoff का उपयोग करें।
+- अधिकतम retry संख्या तय करें और अंततः विफल होने पर उसे शालीनता से संभालें।
+
+यदि routed provider `Retry-After` मान भेजता है, तो Phaseo सत्यापित मान को आगे भेजता है। BYOK अनुरोधों में provider quota विवरण `X-Phaseo-Upstream-RateLimit-*` हेडर के ज़रिए भी मिल सकता है। Managed-provider अनुरोधों के लिए ये quota headers जानबूझकर हटाए जाते हैं, क्योंकि वे Phaseo की साझा क्षमता बताते हैं, किसी एक ग्राहक की सीमा नहीं। अन्य upstream headers आगे नहीं भेजे जाते।
+
+```ts
+async function retryWithBackoff(run: () => Promise<Response>, maxRetries = 4) {
+  for (let attempt = 0; attempt <= maxRetries; attempt += 1) {
+    const response = await run();
+    if (response.status !== 429) return response;
+
+    const retryAfterHeader = response.headers.get("retry-after");
+    const retryAfterMs = retryAfterHeader
+      ? Number(retryAfterHeader) * 1000
+      : Math.min(1000 * 2 ** attempt, 8000);
+
+    await new Promise((resolve) => setTimeout(resolve, retryAfterMs));
+  }
+
+  throw new Error("Rate limit retries exhausted");
+}
+```
+
+## निगरानी
+
+- endpoint और मॉडल के अनुसार `429` दर ट्रैक करें।
+- provider पर दबाव पहचानने के लिए fallback की आवृत्ति देखें।
+- incident की जाँच में डैशबोर्ड metrics और ऐप logs दोनों का उपयोग करें।
+
+## संबंधित पृष्ठ
+
+- [प्रमाणीकरण](./authentication.mdx)
+- [पैरामीटर](./parameters.mdx)
+- [त्रुटियाँ और डीबगिंग](./errors.mdx)
+
+<Visibility for="agents">
+यदि आप agent के रूप में retries लागू कर रहे हैं:
+
+- सुरक्षित retry loops और timeout नियंत्रण के लिए repository skills का उपयोग करें।
+- retry नीति (प्रयासों की संख्या, शुरुआती विलंब, अधिकतम विलंब) को एक जगह कॉन्फ़िगर करें।
+- उत्पाद की स्पष्ट मंज़ूरी के बिना non-idempotent अनुरोधों को दोबारा न भेजें।
+</Visibility>

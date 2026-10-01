@@ -1,0 +1,26 @@
+---
+icon: "radio-tower"
+title: "जीवनचक्र हुक"
+description: "Ruby agent runs, model turns, tools, pauses और completion देखें।"
+---
+
+Run के दौरान structured lifecycle events पाने के लिए `on_event` दें।
+
+```ruby
+result = agent.run(
+  input: prompt,
+  client: client,
+  on_event: ->(event) {
+    logger.info(
+      "agent event",
+      type: event[:type],
+      run_id: event[:run_id],
+      details: event[:details]
+    )
+  }
+)
+```
+
+उपयोगी घटनाओं में रन शुरू/पूरा/विफल होना, मॉडल प्रयास, टेक्स्ट और तर्क-विचार डेल्टा, टूल शुरू/प्रगति/पूरा/विफल होना तथा मानव समीक्षा पड़ाव शामिल हैं।
+
+Handlers तेज़ रखें। धीमे persistence कामों को queue करें और events बाहर भेजने से पहले sensitive tool inputs redact करें।

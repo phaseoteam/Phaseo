@@ -1,0 +1,75 @@
+---
+title: "OpenCode"
+icon: "git-branch"
+description: "カスタムのOpenAI互換プロバイダーを使ってOpenCodeをPhaseo Gatewayに接続します。"
+---
+
+OpenCodeはカスタムのOpenAI互換プロバイダー経由でPhaseoを呼び出せます。OpenCodeのモデル選択、利用状況、ルーティングを1つのPhaseo APIキーに集約する場合は、この設定を使います。
+
+## 1) OpenCodeを設定する
+
+OpenCodeの公式リリースをインストールし、Phaseo CLIでグローバルプロバイダーを追加して、互換性のあるPhaseoモデルをすべて同期します。専用キーはOpenCodeの資格情報ストアに保存されます。
+
+```bash
+phaseo opencode --model openai/gpt-5.6-terra
+```
+
+このコマンドは有効期限のない`Phaseo CLI: OpenCode API Key`を作成し、OpenCodeの無関係な設定や資格情報を保持したまま`--dry-run`にも対応します。既存のグローバル`opencode.jsonc`があれば更新し、なければ`~/.config/opencode/opencode.json`を使います。
+
+選択したモデルだけを設定するには`--catalog default`を使います。
+
+CLIはOSの資格情報ストアにも独自のコピーを保持し、`phaseo integrations remove opencode`を実行するとキーを失効させます。
+
+## 手動設定
+
+プロジェクト内またはOpenCodeのグローバル設定にある`opencode.json`を作成または更新します。
+
+```json
+{
+  "$schema": "https://opencode.ai/config.json",
+  "model": "phaseo/openai/gpt-5.5",
+  "provider": {
+    "phaseo": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "Phaseo",
+      "options": {
+        "baseURL": "https://api.phaseo.app/v1",
+        "apiKey": "{env:PHASEO_API_KEY}"
+      },
+      "models": {
+        "openai/gpt-5.5": {
+          "name": "GPT-5.5"
+        },
+        "openai/gpt-5.4-mini": {
+          "name": "GPT-5.4 Mini"
+        },
+        "anthropic/claude-sonnet-4.5": {
+          "name": "Claude Sonnet 4.5"
+        }
+      }
+    }
+  }
+}
+```
+
+OpenCodeで使うPhaseoモデルIDに合わせて、`models`オブジェクトのモデルを追加または削除します。
+
+## 2) OpenCodeを起動する
+
+設定を編集した後にOpenCodeを再起動し、`/models`からPhaseoモデルを選びます。
+
+後でPhaseoプロバイダーだけを削除するには、次を実行します。
+
+```bash
+phaseo integrations remove opencode
+```
+
+## 動作確認
+
+- ファイル編集ワークフローを使う前に、簡単なプロンプトを実行します。
+- モデルが拒否された場合は、[Modelsエンドポイント](../../api-reference/endpoint/models.mdx)で正確なIDを確認します。
+- 認証に失敗した場合は`phaseo opencode`を再実行し、`opencode auth list`を確認します。
+
+## ドキュメントのコンテキストを追加する
+
+セッション中にOpenCodeがPhaseoのドキュメントを読めるようにするには、[Docs MCP](./docs-mcp.mdx)サーバーも追加します。

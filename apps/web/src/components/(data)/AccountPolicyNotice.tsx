@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { ShieldBan } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { fetchSettingsPrivacyInitialData } from "@/lib/fetchers/internal/fetchSettingsPrivacyInitialData";
@@ -10,6 +11,7 @@ function isBlocked(mode: string | null | undefined, selected: string[], id: stri
 }
 
 export default async function AccountPolicyNotice({ kind, id }: { kind: "model" | "provider"; id: string }) {
+	const t = await getTranslations("SettingsUI");
 	const workspaceData = await fetchSettingsPrivacyInitialData().catch(() => null);
 	const workspaceRestriction = kind === "model"
 		? { mode: workspaceData?.initialGlobal?.model_restriction_mode, selected: workspaceData?.initialGlobal?.model_restriction_model_ids ?? [] }
@@ -18,10 +20,14 @@ export default async function AccountPolicyNotice({ kind, id }: { kind: "model" 
 	if (!workspaceBlocked) return null;
 	return <Alert className="mb-6 border-destructive/40 bg-destructive/5">
 		<ShieldBan className="size-4 text-destructive" />
-		<AlertTitle>Blocked by workspace Privacy</AlertTitle>
+		<AlertTitle>{t("policyNoticeCopy.blockedByWorkspacePrivacy")}</AlertTitle>
 		<AlertDescription>
-			Requests in this workspace cannot route to this {kind}.{" "}
-			<Link href="/settings/privacy" className="font-medium text-foreground underline underline-offset-4">Review Privacy</Link>
+			{kind === "model"
+				? t("policyNoticeCopy.modelBlocked")
+				: t("policyNoticeCopy.providerBlocked")} {" "}
+			<Link href="/settings/privacy" className="font-medium text-foreground underline underline-offset-4">
+				{t("policyNoticeCopy.reviewPrivacy")}
+			</Link>
 		</AlertDescription>
 	</Alert>;
 }

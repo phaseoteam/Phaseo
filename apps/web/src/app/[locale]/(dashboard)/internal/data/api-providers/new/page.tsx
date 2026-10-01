@@ -1,48 +1,49 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { createAPIProviderAction } from "../../actions";
 import {
-	PROVIDER_PROMPT_TRAINING_POLICY_LABELS,
 	PROVIDER_PROMPT_TRAINING_POLICY_VALUES,
 } from "@/lib/providers/promptTrainingPolicy";
 
-export default function NewAPIProviderPage() {
+export default async function NewAPIProviderPage() {
+	const t = await getTranslations("Product.internalTools.dataEditor");
 	return (
 		<div className="container mx-auto space-y-8 py-8">
 			<div>
-				<h1 className="text-2xl font-semibold">Create API provider</h1>
+				<h1 className="text-2xl font-semibold">{t("providerCreateTitle")}</h1>
 			</div>
 			<form action={createAPIProviderAction} className="space-y-4 rounded-lg border p-4">
 				<div className="grid gap-4 lg:grid-cols-2">
 					<label className="text-sm">
-						<div className="mb-1 text-muted-foreground">Provider ID</div>
+						<div className="mb-1 text-muted-foreground">{t("providerId")}</div>
 						<input name="api_provider_id" required className="w-full rounded-md border px-3 py-2 text-sm" />
 					</label>
 					<label className="text-sm">
-						<div className="mb-1 text-muted-foreground">Provider name</div>
+						<div className="mb-1 text-muted-foreground">{t("providerName")}</div>
 						<input name="api_provider_name" required className="w-full rounded-md border px-3 py-2 text-sm" />
 					</label>
 					<label className="text-sm lg:col-span-2">
-						<div className="mb-1 text-muted-foreground">Description</div>
+						<div className="mb-1 text-muted-foreground">{t("description")}</div>
 						<textarea name="description" className="w-full rounded-md border px-3 py-2 text-sm min-h-24" />
 					</label>
 					<label className="text-sm">
-						<div className="mb-1 text-muted-foreground">Website link</div>
+						<div className="mb-1 text-muted-foreground">{t("websiteLink")}</div>
 						<input name="link" type="url" className="w-full rounded-md border px-3 py-2 text-sm" />
 					</label>
 					<label className="text-sm">
-						<div className="mb-1 text-muted-foreground">Country code</div>
+						<div className="mb-1 text-muted-foreground">{t("countryCode")}</div>
 						<input name="country_code" className="w-full rounded-md border px-3 py-2 text-sm" />
 					</label>
 					<label className="text-sm">
-						<div className="mb-1 text-muted-foreground">Datacenters</div>
+						<div className="mb-1 text-muted-foreground">{t("dataCenters")}</div>
 						<input name="default_execution_regions" placeholder="US, EU, APAC" className="w-full rounded-md border px-3 py-2 text-sm" />
 					</label>
 					<label className="flex items-center gap-2 self-end pb-2 text-sm">
 						<input name="byok_available" type="checkbox" className="size-4 rounded border" />
-						<span>BYOK available</span>
+						<span>{t("byokAvailable")}</span>
 					</label>
 					<label className="text-sm">
-						<div className="mb-1 text-muted-foreground">Prompt training policy</div>
+						<div className="mb-1 text-muted-foreground">{t("promptTrainingPolicy")}</div>
 						<select
 							name="prompt_training_policy"
 							defaultValue="unknown"
@@ -50,13 +51,13 @@ export default function NewAPIProviderPage() {
 						>
 							{PROVIDER_PROMPT_TRAINING_POLICY_VALUES.map((value) => (
 								<option key={value} value={value}>
-									{PROVIDER_PROMPT_TRAINING_POLICY_LABELS[value]}
+									{t(`policy${value.replace(/(^|_)([a-z])/g, (_, __, letter: string) => letter.toUpperCase())}` as never)}
 								</option>
 							))}
 						</select>
 					</label>
 					<label className="text-sm">
-						<div className="mb-1 text-muted-foreground">Policy source URL</div>
+						<div className="mb-1 text-muted-foreground">{t("policySourceUrl")}</div>
 						<input
 							name="prompt_training_source_url"
 							type="url"
@@ -65,7 +66,7 @@ export default function NewAPIProviderPage() {
 						/>
 					</label>
 					<label className="text-sm lg:col-span-2">
-						<div className="mb-1 text-muted-foreground">Policy notes</div>
+						<div className="mb-1 text-muted-foreground">{t("policyNotes")}</div>
 						<textarea
 							name="prompt_training_notes"
 							className="w-full rounded-md border px-3 py-2 text-sm min-h-20"
@@ -74,10 +75,10 @@ export default function NewAPIProviderPage() {
 				</div>
 				<div className="flex gap-2">
 					<button type="submit" className="rounded-md bg-primary px-3 py-2 text-sm text-primary-foreground">
-						Create
+						{t("actionCreate")}
 					</button>
 					<Link href="/internal/data/api-providers" className="rounded-md border px-3 py-2 text-sm">
-						Cancel
+						{t("actionCancel")}
 					</Link>
 				</div>
 			</form>

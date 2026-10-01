@@ -1,370 +1,2448 @@
 {
-  "home": {
-    "title": "Phaseo: AI Gateway and Open Model Catalog",
-    "description": "Discover trusted model data, route requests through one open-source AI gateway, and observe cost, reliability, usage, and performance across providers.",
-    "heroTitle": "One Platform for Every AI Model",
-    "heroDescription": "Discover trusted model data, route requests through one OpenAI-compatible gateway, and observe cost, reliability, usage, and performance across supported providers.",
-    "explore": "Explore",
-    "models": "Models",
-    "getApiKey": "Get API Key",
-    "viewGithub": "View GitHub",
-    "openModelDatabase": "Open model database, unified gateway",
-    "openModelDatabaseDescription": "Explore the broader model catalog, then filter to models with an active Gateway route before you ship.",
-    "transparentPricing": "Transparent pricing",
-    "viewPricing": "View pricing",
-    "usePricingCalculator": "Use pricing calculator",
-    "pricingPoints": {
-      "payAsYouGo": "Pay as you go, full stop",
-      "payAsYouGoBody": "No enterprise plan, contract, subscription, minimum spend, or monthly or annual commitment.",
-      "creditFee": "{fee}% credit purchase fee",
-      "creditFeeBody": "Applied when you purchase credits, with a $1 minimum. Usage follows the model prices shown in the catalog.",
-      "managedCredits": "Managed credits or BYOK",
-      "managedCreditsBody": "BYOK includes one million fee-free requests each month, then a 2.5% service fee on provider-equivalent cost."
-    }
-  },
-  "about": {
-    "badge": "Company",
-    "title": "One unified, open layer to access models across providers and ship reliably.",
-    "intro": "Phaseo is built around practical openness: broad model and provider access, explicit release, deprecation, and retirement tracking, and clear observability so teams can run production workloads with low surprise.",
-    "exploreModels": "Explore models",
-    "pricing": "Phaseo Pricing",
-    "documentation": "Documentation",
-    "howItWorks": "How It Works",
-    "howItWorksTitle": "A clear path from exploration to production operations.",
-    "howItWorksDescription": "Research models, execute through one API layer, stay current on lifecycle changes, and monitor behavior over time.",
-    "whatWeBuild": "What We Build",
-    "whatWeBuildTitle": "Durable product surfaces that stay useful as AI changes.",
-    "whatWeBuildDescription": "Our goal is simple: keep access broad, interfaces stable, and operations understandable.",
-    "open": "Open",
-    "step": "Step {number}"
-  },
-  "mission": {
-    "title": "Our Mission",
-    "intro": "Phaseo's mission is to make access to AI models broad, affordable, transparent, portable, and open.",
-    "principles": "Our principles",
-    "broadAccess": "Broad access",
-    "broadAccessBody": "Support as many useful models, providers, modalities, and capabilities as we responsibly can through one consistent interface.",
-    "lowestPrice": "The lowest sustainable price",
-    "lowestPriceBody": "Keep improving routing, infrastructure, and software efficiency, then use those gains to reduce prices and improve the service.",
-    "openByDefault": "Open by default",
-    "openByDefaultBody": "Keep Phaseo open source so the gateway can be inspected, extended, challenged, and improved by the people who depend on it.",
-    "usersFirst": "Users before investors",
-    "usersFirstBody": "Make decisions around long-term user benefit, product quality, and fair access rather than pressure for short-term financial returns.",
-    "transparency": "Transparency without lock-in",
-    "transparencyBody": "Make pricing, routing, availability, lifecycle changes, and operational behaviour understandable while keeping data and integrations portable.",
-    "technicalExcellence": "Technical excellence",
-    "technicalExcellenceBody": "Compete through accurate data, reliable routing, strong compatibility, useful observability, and a developer experience that feels simple.",
-    "builtWithEveryone": "Built with everyone",
-    "builtWithEveryoneBody": "Give users, contributors, model creators, and providers meaningful ways to shape the platform and the standards around it.",
-    "principlesTitle": "The commitments that guide how we build.",
-    "principlesDescription": "These principles are intended to guide product, pricing, partnership, and business decisions as Phaseo grows.",
-    "exploreModels": "Explore models",
-    "viewSource": "View the source",
-    "roadmap": "Read the roadmap"
-  },
-  "faq": {
-    "title": "AI model database and gateway FAQ",
-    "intro": "Practical answers for comparing models, understanding the data, and using the gateway. Cannot find an answer? <support>Reach out to our team</support>.",
-    "items": [
-      {
-        "question": "How can I compare AI models on Phaseo?",
-        "answer": "Start in the <models>model directory</models>, then open a model page to compare its pricing, providers, benchmark results, latency signals, and compatibility details. The information shown varies with the data available for that model."
-      },
-      {
-        "question": "What does a model page tell me?",
-        "answer": "A model page brings together the useful facts for a specific model: who created it, which providers offer it, the listed prices, benchmark coverage, and gateway availability. Use the page tabs to go deeper into pricing, providers, performance, and quickstart details."
-      },
-      {
-        "question": "How does Phaseo calculate model pricing?",
-        "answer": "Phaseo stores each provider route's meter, unit size, currency, plan, and effective dates. Input and output rates remain separate, and token prices are normalised per 1M tokens for comparison; they are not combined into a blended headline price. Read the <pricingMethodology>pricing methodology</pricingMethodology> or enter your own token volumes in the <calculator>pricing calculator</calculator>."
-      },
-      {
-        "question": "What does gateway availability mean?",
-        "answer": "Gateway availability describes whether Phaseo currently has an eligible route for a model. It is separate from a model's quality or benchmark performance. Provider status can change, so check the model's providers and availability information before relying on a route in production."
-      },
-      {
-        "question": "Can I use Phaseo as an AI gateway?",
-        "answer": "Yes. Phaseo Gateway provides one OpenAI-compatible interface for supported models and providers. Create an API key, choose a model, and use the same integration surface while retaining model and provider choice."
-      },
-      {
-        "question": "Can I use my own provider API keys?",
-        "answer": "Yes. Bring your own provider keys when you want to retain the provider relationship and billing directly, while still using Phaseo's routing, health, and policy layer."
-      },
-      {
-        "question": "Which providers and model types can I explore?",
-        "answer": "Browse the <providers>provider directory</providers> for provider coverage, or filter the model directory by capabilities such as chat, embeddings, image, audio, video, and moderation. A provider page is the best place to check its currently listed model catalogue."
-      },
-      {
-        "question": "How are benchmarks and performance data handled?",
-        "answer": "Benchmark scores are shown alongside the benchmark and its methodology so that comparisons retain their context. Read <benchmarkMethodology>how Phaseo normalises AI benchmarks</benchmarkMethodology> and <performanceMethodology>how it measures latency and throughput</performanceMethodology> before making a production decision from a single score."
-      },
-      {
-        "question": "What should I do if a listing looks wrong or incomplete?",
-        "answer": "Use the <contribute>contribution page</contribute> to report a correction or add missing information. Accurate, source-backed reports help keep the directory useful as providers change their catalogues and pricing."
-      }
-    ]
-  },
-  "methodology": {
-    "label": "Methodology",
-    "title": "How Phaseo measures what it publishes",
-    "description": "Four reference pages covering how pricing, performance, benchmarks, and provider coverage are defined across the public catalog.",
-    "lastUpdated": "Last updated {date}",
-    "readPage": "Read page",
-    "relatedPages": "Related pages",
-    "articleLastUpdated": "Last updated: {date}",
-    "entries": {
-      "how-phaseo-calculates-model-pricing": {
-        "shortTitle": "Model pricing",
-        "title": "How Phaseo calculates model pricing",
-        "description": "How Phaseo maps provider price sheets, meters, and routing rules into the public model pricing shown across the catalog.",
-        "intro": "This page explains how Phaseo turns provider pricing sources into the public pricing values shown on model and provider pages.",
-        "sections": {
-          "what": "What we are measuring",
-          "inputs": "Primary inputs",
-          "normalised": "How prices are normalised",
-          "dates": "Effective dates and change handling",
-          "caveats": "Caveats"
-        },
-        "related": {
-          "gateway": "Gateway pricing",
-          "calculator": "Pricing calculator",
-          "models": "Model database"
-        }
-      },
-      "how-phaseo-measures-latency-throughput": {
-        "shortTitle": "Latency and throughput",
-        "title": "How Phaseo measures latency and throughput",
-        "description": "How Phaseo defines the latency, throughput, and request-performance metrics shown in rankings and model or provider performance pages.",
-        "intro": "This page explains what Phaseo counts as latency and throughput, how those metrics are aggregated, and why results can vary by route and timeframe.",
-        "sections": {
-          "what": "What we are measuring",
-          "windows": "Aggregation windows",
-          "eligibility": "Filtering and eligibility",
-          "move": "Why values can move",
-          "caveats": "Caveats"
-        },
-        "related": {
-          "rankings": "Rankings",
-          "models": "Models",
-          "providers": "Providers"
-        }
-      },
-      "how-phaseo-normalises-ai-benchmarks": {
-        "shortTitle": "Benchmark normalisation",
-        "title": "How Phaseo normalises AI benchmarks",
-        "description": "How Phaseo stores benchmark scores, variants, and sort direction while keeping benchmark displays aligned across different sources.",
-        "intro": "This page explains how Phaseo treats benchmark data from different sources without pretending that every benchmark is directly comparable.",
-        "sections": {
-          "what": "What we store",
-          "normalised": "What normalisation means here",
-          "ranking": "Ranking logic",
-          "source": "Source quality and disclosure",
-          "caveats": "Caveats"
-        },
-        "related": {
-          "benchmarks": "Benchmarks",
-          "models": "Models",
-          "compare": "Compare models"
-        }
-      },
-      "how-phaseo-tracks-provider-availability": {
-        "shortTitle": "Provider availability",
-        "title": "How Phaseo tracks provider availability",
-        "description": "How Phaseo maps models to providers, tracks gateway availability, and interprets provider-specific coverage on public catalog pages.",
-        "intro": "This page explains how Phaseo decides whether a model is available on a provider and what the public provider coverage views are intended to mean.",
-        "sections": {
-          "what": "What availability means on Phaseo",
-          "mappings": "How mappings are stored",
-          "active": "Gateway-active versus catalog-visible",
-          "changes": "When provider pages change",
-          "caveats": "Caveats"
-        },
-        "related": {
-          "providers": "Provider database",
-          "models": "Models",
-          "rankings": "Rankings"
-        }
-      }
-    }
-  },
-  "contact": {
-    "title": "Contact Phaseo support",
-    "intro": "Tell us what you need, and we will route you to the right place. Private account issues become support tickets. Public bugs, feature requests, and quick questions go to the channel that fits.",
-    "sendFeedback": "Send Product Feedback",
-    "stepOne": "Step 1",
-    "stepTwo": "Step 2",
-    "whatHelp": "What do you need help with?",
-    "chooseIssue": "Choose an issue type",
-    "pickClosest": "Pick the closest option and we will show the next step below.",
-    "recommended": "Recommended: {method}",
-    "privateReply": "Prefer a private reply?",
-    "switchPrivate": "Switch to private ticket",
-    "otherMethods": "Other support methods",
-    "otherMethodsBody": "Use another channel if it fits your issue better.",
-    "yourTime": "Your time {time}",
-    "checking": "checking...",
-    "supportTime": "Phaseo support time: {time}",
-    "support": "Support",
-    "liveChatTitle": "Live chat or email",
-    "liveChatDescription": "Start a live chat from this page, or open a prefilled email with the context we need.",
-    "signedInAs": "Signed in as {email}",
-    "chatNotConfigured": "Live chat is not configured for this deployment.",
-    "chatOutsideHours": "Live chat is available during support hours. Email is still open.",
-    "chatOffline": "Live chat offline",
-    "loadingChat": "Loading chat...",
-    "startLiveChat": "Start live chat",
-    "chatUnavailable": "Live chat unavailable",
-    "sendEmail": "Send email",
-    "createTicket": "Create ticket",
-    "openChatNewTab": "Open chat in new tab",
-    "privateReplyBody": "If this includes account details, billing information, request IDs, or screenshots, choose a private support ticket instead.",
-    "repliesResumeSoon": "Support replies resume soon.",
-    "feedbackPrompt": "Tell us what should be clearer, faster, or more useful across Phaseo. For account or billing help, use the support options below.",
-    "methods": {
-      "support": {
-        "title": "Private support ticket",
-        "description": "Best for account, billing, data, or implementation issues.",
-        "cta": "Create ticket"
-      },
-      "github": {
-        "title": "GitHub",
-        "description": "Best for reproducible bugs, feature requests, and public tracking.",
-        "cta": "Open GitHub"
-      },
-      "discord": {
-        "title": "Discord",
-        "description": "Best for quick setup questions and lightweight community feedback.",
-        "cta": "Join Discord"
-      },
-      "docs": {
-        "title": "Docs",
-        "description": "Best for gateway guides, SDK examples, model references, and quick starts.",
-        "cta": "Read docs"
-      }
-    },
-    "issues": {
-      "billing": {
-        "label": "Billing or account issue",
-        "helper": "Create a private support ticket and we will reply to the email address you provide."
-      },
-      "bug": {
-        "label": "Bug or outage",
-        "helper": "Use GitHub when the issue is reproducible and useful for other users to track."
-      },
-      "data": {
-        "label": "Data or metrics issue",
-        "helper": "Create a private ticket with model IDs, provider names, URLs, and timestamps."
-      },
-      "docs": {
-        "label": "Docs or integration question",
-        "helper": "Start with the docs. If the answer is missing, send a ticket with the exact page."
-      },
-      "feature": {
-        "label": "Feature request",
-        "helper": "Open a GitHub issue with the workflow, expected behavior, and why it matters."
-      },
-      "general": {
-        "label": "General question",
-        "helper": "Create a private support ticket and include enough context for a direct reply."
-      },
-      "community": {
-        "label": "Community or quick feedback",
-        "helper": "Use Discord when you want a lightweight answer or discussion with other users."
-      }
-    }
-  },
-  "profileShare": {
-    "titleSuffix": "Phaseo Share Card",
-    "description": "A lightweight snapshot generated from personal workspace activity.",
-    "shareCard": "{name}’s share card",
-    "downloadImage": "Download image",
-    "openPhaseo": "Open Phaseo",
-    "imageAlt": "{name} Phaseo share card"
-  },
-  "profile": {
-    "title": "Shared Profile",
-    "loading": "Loading profile..."
-  },
-  "trust": {
-    "trustCentre": "Trust Centre",
-    "phaseoTrustCentre": "Phaseo Trust Centre",
-    "lastReviewed": "Last reviewed {date}",
-    "privacyPolicy": "Privacy Policy",
-    "termsOfService": "Terms of Service",
-    "privacyQuestions": "Privacy questions",
-    "securityAndTrust": "Security and trust at Phaseo",
-    "currentSafeguards": "Current product safeguards, data practices, and assurance status. Claims on this page are limited to what Phaseo can support today.",
-    "assurance": "Assurance",
-    "sections": "Trust Centre sections",
-    "claimLabels": "Claim labels",
-    "trustDocuments": "Trust documents",
-    "trustDocumentsBody": "Use the detailed material for security review, vendor assessment, or DPA discussion.",
-    "security": "Security",
-    "securityBody": "Product and operational safeguards supported by current code and documentation.",
-    "dataHandling": "Data handling",
-    "dataHandlingBody": "How gateway content is handled by default, where exceptions apply, and what remains provider-dependent.",
-    "serviceProviders": "Service providers",
-    "serviceProvidersBody": "Categories disclosed in Phaseo's current privacy policy.",
-    "availability": "Availability and incidents",
-    "compliance": "Compliance",
-    "responsibleDisclosure": "Responsible disclosure",
-    "emailSecurity": "Email security",
-    "privateGithubReport": "Private GitHub report",
-    "reviewedEvidence": "Reviewed against repository evidence"
-  },
-  "pricing": {
-    "title": "Pricing",
-    "description": "Simple pay-as-you-go AI gateway pricing with optional self-serve Enterprise identity, governance, and included-payment plans.",
-    "everythingIncluded": "Everything included",
-    "everythingIncludedBody": "Explore the model catalog, rankings, SDKs, and free model chat before spending anything. Add credits when you need paid model usage without changing plans.",
-    "swipeCompare": "Swipe horizontally to compare providers.",
-    "showFreeAccess": "Show free access",
-    "compareCompetitors": "Compare competitors",
-    "competitorNote": "Competitor details reflect published documentation checked 26 July 2026. ‘Not advertised’ means the feature could not be verified in public product or pricing documentation.",
-    "selfServeEnterprise": "Self Serve Enterprise",
-    "selfServeEnterpriseBody": "Configure Enterprise for teams from 100 to 100,000 members, see the exact monthly price, and subscribe without a sales call or committed model spend.",
-    "buildPlan": "Build my plan",
-    "activeMembers": "Active members",
-    "users": "users",
-    "enterpriseSubscription": "Enterprise subscription",
-    "monthEstimated": "/month estimated",
-    "whatYouGet": "What you get",
-    "included": "Included",
-    "creditTopUpFee": "Credit top-up fee",
-    "modelUsageCredits": "Model usage credits",
-    "purchasedSeparately": "Purchased separately",
-    "committedModelSpend": "Committed model spend",
-    "none": "None",
-    "usdNote": "USD monthly subscription. Credit purchases remain separate and use the standard 5% top-up fee across supported payment methods. Spend as much or as little on model usage as you need—the same subscription price applies.",
-    "features": {
-      "sso": "SAML SSO and enforced sign-in",
-      "scim": "SCIM users, groups and bulk operations",
-      "departments": "Departments and workspace roles",
-      "audit": "Audit and governance controls",
-      "priority": "Priority support"
-    },
-    "paygHeadline": "Pay as you go by default. Add Enterprise when your team needs it.",
-    "paygBody": "Buy credits when you need them and pay for what you use. Enterprise identity and payment benefits are optional, priced openly, and activated without a sales call.",
-    "manageCredits": "Manage Credits",
-    "manageProviderKeys": "Manage Provider Keys",
-    "modelPricingCalculator": "Model Pricing Calculator",
-    "payg": "Pay as you go",
-    "paygBodyShort": "Top up credits only when you need them.",
-    "enterpriseOptional": "Enterprise is optional",
-    "enterpriseOptionalBody": "Add SSO, SCIM and governance without changing usage pricing.",
-    "pricesPublic": "Prices stay public",
-    "pricesPublicBody": "Answer a short questionnaire and subscribe immediately.",
-    "faqTitle": "Frequently Asked Questions",
-    "ready": "Ready to get started?",
-    "readyBody": "Start free, add credits when you need them, and keep the same pay-as-you-go terms as you grow.",
-    "openPlatform": "Open Platform",
-    "askPricing": "Ask a pricing question"
-  },
-  "legal": {
-    "lastUpdated": "Last updated: {date}",
-    "privacyTitle": "Privacy Policy",
-    "privacyIntro": "This Privacy Policy explains how Daniel Butler operating under the name Phaseo (\"Phaseo\", \"we\", \"us\" or \"our\") collects, uses and protects personal data when you use our websites, dashboards and API gateway (together, the \"Service\").",
-    "termsTitle": "Terms of Service",
-    "termsIntro": "These Terms of Service (\"Terms\") govern your use of the Phaseo website, data directory and unified API gateway (collectively, the \"Service\")."
-  }
+	"home": {
+		"title": "Phaseo: AI Gateway and Open Model Catalog",
+		"description": "Discover trusted model data, route requests through one open-source AI gateway, and observe cost, reliability, usage, and performance across providers.",
+		"heroTitle": "One Platform for Every AI Model",
+		"heroDescription": "Discover trusted model data, route requests through one OpenAI-compatible gateway, and observe cost, reliability, usage, and performance across supported providers.",
+		"explore": "Explore",
+		"models": "Models",
+		"getApiKey": "Get API Key",
+		"viewGithub": "View GitHub",
+		"openModelDatabase": "Open model database, unified gateway",
+		"openModelDatabaseDescription": "Explore the broader model catalog, then filter to models with an active Gateway route before you ship.",
+		"transparentPricing": "Transparent pricing",
+		"viewPricing": "View pricing",
+		"usePricingCalculator": "Use pricing calculator",
+		"latestModels": "Latest models",
+		"statistics": {
+			"catalogModels": "Catalog models",
+			"routableModels": "Routable models",
+			"catalogProviders": "Catalog providers",
+			"monthlyTokensRouted": "Monthly tokens routed"
+		},
+		"noModelUpdates": "No model updates to display yet. Check back soon.",
+		"gatewaySection": {
+			"title": "One API for the models teams build with.",
+			"description": "Route production traffic through one gateway, keep the OpenAI-style SDK experience, and switch between leading model families without rewriting your app every sprint.",
+			"singleApiTitle": "One API surface",
+			"singleApiBody": "Use OpenAI-compatible requests to reach GPT, Claude, Gemini, DeepSeek, and the rest of the catalogue.",
+			"modelDatabaseTitle": "Model database included",
+			"modelDatabaseBody": "Compare models, releases, pricing, and provider coverage before shipping a change to production.",
+			"reliableTitle": "Reliable by default",
+			"reliableBody": "Routing, failover, telemetry, and policy controls live in the same gateway your apps already call.",
+			"searchModels": "Search gateway models…",
+			"noModelsFound": "No models found.",
+			"startBuilding": "Start building",
+			"readQuickstart": "Read the quickstart"
+		},
+		"familyForecast": {
+			"title": "Upcoming model family releases",
+			"description": "Median cadence based on the past four launches per family",
+			"family": "Family",
+			"medianGap": "Median gap",
+			"lastRelease": "Last release",
+			"predictedNext": "Predicted next",
+			"daysUnit": "days",
+			"predictionNotice": "Predictions update automatically when the watcher records a new family release."
+		},
+		"trends": {
+			"eyebrow": "Signal deck",
+			"title": "Trends and live analysis",
+			"description": "Macro signals derived from our model and benchmark database (sample data shown). Updated continuously as new events land."
+		},
+		"pricingPoints": {
+			"payAsYouGo": "Pay as you go, full stop",
+			"payAsYouGoBody": "No enterprise plan, contract, subscription, minimum spend, or monthly or annual commitment.",
+			"creditFee": "{fee}% credit purchase fee",
+			"creditFeeBody": "Applied when you purchase credits, with a $1 minimum. Usage follows the model prices shown in the catalog.",
+			"managedCredits": "Managed credits or BYOK",
+			"managedCreditsBody": "BYOK includes one million fee-free requests each month, then a 2.5% service fee on provider-equivalent cost."
+		},
+		"reliability": {
+			"title": "Reliability for production AI.",
+			"description": "Use one gateway layer to keep model access stable as providers shift, degrade, and evolve.",
+			"smartRoutingTitle": "Smart routing",
+			"smartRoutingBody": "Route by latency, price, geography, or your own policy layer without forcing app teams to understand every provider quirk.",
+			"failoverTitle": "Health-aware failover",
+			"failoverBody": "Shift traffic automatically when a provider slows down, errors spike, or a model rollout creates instability.",
+			"migrationsTitle": "Predictable migrations",
+			"migrationsBody": "Track model releases, deprecations, and replacements in the same platform you use to make routing decisions.",
+			"controlsTitle": "Controls for production teams",
+			"controlsBody": "Layer scopes, keys, policies, and auditability into the gateway so reliability does not depend on tribal knowledge."
+		},
+		"observability": {
+			"title": "Visibility when you need it.",
+			"description": "Most provider instability should be absorbed by routing and failover. When something still needs attention, the gateway gives teams one place to inspect what changed.",
+			"dashboard": "View gateway dashboard",
+			"traceTitle": "Trace issues",
+			"traceBody": "See which model, provider, key, and app produced a failure or slowdown.",
+			"routingTitle": "Review routing",
+			"routingBody": "Understand how the gateway rerouted traffic when provider health changed.",
+			"regressionsTitle": "Spot regressions early",
+			"regressionsBody": "Compare model and provider changes before they become user-facing incidents."
+		}
+	},
+	"about": {
+		"badge": "Company",
+		"title": "One unified, open layer to access models across providers and ship reliably.",
+		"intro": "Phaseo is built around practical openness: broad model and provider access, explicit release, deprecation, and retirement tracking, and clear observability so teams can run production workloads with low surprise.",
+		"exploreModels": "Explore models",
+		"pricing": "Phaseo Pricing",
+		"documentation": "Documentation",
+		"howItWorks": "How It Works",
+		"howItWorksTitle": "A clear path from exploration to production operations.",
+		"howItWorksDescription": "Research models, execute through one API layer, stay current on lifecycle changes, and monitor behavior over time.",
+		"whatWeBuild": "What We Build",
+		"whatWeBuildTitle": "Durable product surfaces that stay useful as AI changes.",
+		"whatWeBuildDescription": "Our goal is simple: keep access broad, interfaces stable, and operations understandable.",
+		"open": "Open",
+		"step": "Step {number}",
+		"metadataTitle": "About Phaseo",
+		"metadataDescription": "Learn what Phaseo does, how the gateway and model directory work together, and where to find updates, pricing, and platform policies.",
+		"metadataKeywords": [
+			"Phaseo",
+			"about",
+			"AI gateway",
+			"model directory",
+			"pricing"
+		],
+		"heroTags": [
+			"AI models",
+			"Gateway",
+			"Observability"
+		],
+		"openItem": "Open {title}",
+		"platformFlow": [
+			{
+				"title": "Unified model access",
+				"description": "Browse and compare model capabilities and pricing across providers in one place.",
+				"points": [
+					"Access as many models and providers as possible from one place.",
+					"Compare capabilities, benchmarks, and cost using a consistent structure."
+				]
+			},
+			{
+				"title": "Gateway execution",
+				"description": "Route requests across providers with an OpenAI-compatible API layer.",
+				"points": [
+					"Keep integration code stable while provider offerings evolve.",
+					"Apply practical routing and control policies without lock-in."
+				]
+			},
+			{
+				"title": "Release intelligence",
+				"description": "Stay current on launches, deprecations, and retirements as they happen.",
+				"points": [
+					"Track release events without manual monitoring.",
+					"See what changed, what is sunsetting, and what to migrate to."
+				]
+			},
+			{
+				"title": "Request observability",
+				"description": "Get clear signals on request behavior, reliability, and provider performance.",
+				"points": [
+					"Inspect usage, errors, latency, and model/provider distribution.",
+					"Audit behavior over time and spot drift quickly."
+				]
+			}
+		],
+		"offerings": [
+			{
+				"title": "Model directory",
+				"description": "Decision-ready model data with benchmarks, pricing, and provider coverage.",
+				"badges": [
+					"Coverage",
+					"Benchmarks",
+					"Pricing"
+				]
+			},
+			{
+				"title": "Gateway",
+				"description": "An OpenAI-compatible API for running requests across many providers.",
+				"badges": [
+					"Compatibility",
+					"Routing",
+					"Controls"
+				]
+			},
+			{
+				"title": "Release intelligence",
+				"description": "Track new releases, deprecations, and retirements in one feed.",
+				"badges": [
+					"Releases",
+					"Deprecations",
+					"Retirements"
+				]
+			},
+			{
+				"title": "Gateway observability",
+				"description": "Clear operational insight into requests, latency, errors, and changes in behavior.",
+				"badges": [
+					"Usage",
+					"Reliability",
+					"Auditability"
+				]
+			}
+		],
+		"pricingSection": {
+			"eyebrow": "Pricing",
+			"title": "Platform pricing and model pricing are separate.",
+			"description": "Use Phaseo Pricing for our platform and service pricing, and the Pricing Calculator for model-level estimates.",
+			"platformDescription": "See platform pricing details, including credit purchase fee tiers and billing coverage.",
+			"modelToolsTitle": "Model pricing tools",
+			"modelToolsDescription": "Use model pricing references and cost estimation tools to plan scenarios.",
+			"calculator": "Pricing Calculator"
+		},
+		"company": {
+			"sectionLabel": "Company",
+			"title": "Open by default, explicit in behavior, clear in operations.",
+			"description": "We prioritize transparent coverage and public documentation over vague claims. Compatibility, lifecycle updates, and observability are first-class.",
+			"openTitle": "Open by default",
+			"openDescription": "Access should be broad and practical, with consistent naming and clear documentation.",
+			"lifecycleTitle": "Clear lifecycle signals",
+			"lifecycleDescription": "New releases, deprecations, and retirements are tracked so migration work is predictable.",
+			"operationsTitle": "Operational clarity",
+			"operationsDescription": "Request-level observability keeps behavior auditable and easier to debug in production.",
+			"resourcesTitle": "Where to find things",
+			"resourcesDescription": "Company, product, and policy information in one place."
+		},
+		"resources": {
+			"announcements": "Announcements",
+			"modelUpdates": "Model updates",
+			"gatewayUsage": "Gateway usage",
+			"mission": "Our mission",
+			"roadmap": "Roadmap",
+			"contact": "Contact",
+			"terms": "Terms",
+			"privacy": "Privacy"
+		}
+	},
+	"mission": {
+		"title": "Our Mission",
+		"intro": "Phaseo's mission is to make access to AI models broad, affordable, transparent, portable, and open.",
+		"principles": "Our principles",
+		"broadAccess": "Broad access",
+		"broadAccessBody": "Support as many useful models, providers, modalities, and capabilities as we responsibly can through one consistent interface.",
+		"lowestPrice": "The lowest sustainable price",
+		"lowestPriceBody": "Keep improving routing, infrastructure, and software efficiency, then use those gains to reduce prices and improve the service.",
+		"openByDefault": "Open by default",
+		"openByDefaultBody": "Keep Phaseo open source so the gateway can be inspected, extended, challenged, and improved by the people who depend on it.",
+		"usersFirst": "Users before investors",
+		"usersFirstBody": "Make decisions around long-term user benefit, product quality, and fair access rather than pressure for short-term financial returns.",
+		"transparency": "Transparency without lock-in",
+		"transparencyBody": "Make pricing, routing, availability, lifecycle changes, and operational behaviour understandable while keeping data and integrations portable.",
+		"technicalExcellence": "Technical excellence",
+		"technicalExcellenceBody": "Compete through accurate data, reliable routing, strong compatibility, useful observability, and a developer experience that feels simple.",
+		"builtWithEveryone": "Built with everyone",
+		"builtWithEveryoneBody": "Give users, contributors, model creators, and providers meaningful ways to shape the platform and the standards around it.",
+		"principlesTitle": "The commitments that guide how we build.",
+		"principlesDescription": "These principles are intended to guide product, pricing, partnership, and business decisions as Phaseo grows.",
+		"exploreModels": "Explore models",
+		"viewSource": "View the source",
+		"roadmap": "Read the roadmap",
+		"metadataKeywords": [
+			"Phaseo mission",
+			"open-source AI gateway",
+			"affordable AI",
+			"AI model access",
+			"AI gateway principles"
+		],
+		"heroBadges": [
+			"Open source",
+			"Users first"
+		],
+		"why": {
+			"eyebrow": "Why Phaseo exists",
+			"title": "Access to AI should not require choosing a permanent gatekeeper.",
+			"description": "The model ecosystem is fragmented across research labs, inference providers, clouds, prices, interfaces, and policies. Phaseo makes that complexity understandable and usable without hiding it behind another closed platform.",
+			"successTitle": "What success means",
+			"successFirst": "We want to build the best possible gateway with the people who use it. Success means people can reach the right model through the right provider at a fair price, with a clear understanding of what happened.",
+			"successSecond": "The mission also succeeds when Phaseo’s open-source work, public data, or standards help other products make AI more accessible—even when a request never passes through Phaseo."
+		},
+		"independence": {
+			"eyebrow": "Independent by design",
+			"title": "A sustainable business that remains accountable to its users.",
+			"description": "Phaseo is not being built around conventional venture capital or pressure to maximise investor returns.",
+			"noVcTitle": "No planned venture-capital dependency",
+			"noVcDescription": "Phaseo does not plan to pursue conventional venture capital. We want to grow through sustainable revenue, careful spending, and a product people choose because it serves them well.",
+			"revenueTitle": "Revenue serves the product",
+			"revenueDescription": "Revenue matters because Phaseo must remain reliable and keep improving. It sustains the mission; it is not a reason to compromise fair pricing, openness, or the user experience.",
+			"financingTitle": "Only mission-aligned financing",
+			"financingDescription": "If we ever consider financing, it must preserve Phaseo’s independence, open-source commitment, fair treatment of users, and freedom to make long-term product decisions."
+		},
+		"partners": {
+			"eyebrow": "Working with partners",
+			"title": "Lower prices require cooperation across the whole service.",
+			"description": "Phaseo relies on model creators, inference providers, cloud and network platforms, deployment hosts, data services, observability tools, and payment providers to operate every day.",
+			"first": "We work directly with operational and infrastructure partners to reduce the cost of inference, compute, delivery, storage, observability, and payments while improving reliability.",
+			"second": "Better commercial terms, shared technical work, credits, more efficient software, and smarter routing can all lower the cost of serving a request. We use those gains to make Phaseo more affordable and better for its users.",
+			"testTitle": "Our partnership test",
+			"testDescription": "A partnership should improve at least one of price, access, reliability, privacy, portability, or developer experience without undermining the others.",
+			"contact": "Work with Phaseo"
+		},
+		"progress": {
+			"eyebrow": "Measuring progress",
+			"title": "The product should reflect the mission.",
+			"description": "We judge progress using evidence that users can see, question, and help improve."
+		},
+		"measures": [
+			"Models, providers, modalities, and regions covered",
+			"Routes available through more than one provider",
+			"Price reductions and efficiency gains delivered to users",
+			"Gateway reliability, latency, and Phaseo overhead",
+			"Open-source contributors and community-led improvements",
+			"Time to publish releases, corrections, and lifecycle changes"
+		],
+		"closing": {
+			"title": "Built in public, improved together.",
+			"description": "This mission is a living commitment. If Phaseo falls short, open an issue, propose a change, or help us build a better version.",
+			"openIssue": "Open an issue",
+			"aboutPhaseo": "About Phaseo"
+		}
+	},
+	"faq": {
+		"title": "AI model database and gateway FAQ",
+		"intro": "Practical answers for comparing models, understanding the data, and using the gateway. Cannot find an answer? <support>Reach out to our team</support>.",
+		"metadataDescription": "Answers about exploring AI models and providers, comparing prices and benchmarks, and using the Phaseo Gateway.",
+		"items": [
+			{
+				"question": "How can I compare AI models on Phaseo?",
+				"answer": "Start in the <models>model directory</models>, then open a model page to compare its pricing, providers, benchmark results, latency signals, and compatibility details. The information shown varies with the data available for that model."
+			},
+			{
+				"question": "What does a model page tell me?",
+				"answer": "A model page brings together the useful facts for a specific model: who created it, which providers offer it, the listed prices, benchmark coverage, and gateway availability. Use the page tabs to go deeper into pricing, providers, performance, and quickstart details."
+			},
+			{
+				"question": "How does Phaseo calculate model pricing?",
+				"answer": "Phaseo stores each provider route's meter, unit size, currency, plan, and effective dates. Input and output rates remain separate, and token prices are normalised per 1M tokens for comparison; they are not combined into a blended headline price. Read the <pricingMethodology>pricing methodology</pricingMethodology> or enter your own token volumes in the <calculator>pricing calculator</calculator>."
+			},
+			{
+				"question": "What does gateway availability mean?",
+				"answer": "Gateway availability describes whether Phaseo currently has an eligible route for a model. It is separate from a model's quality or benchmark performance. Provider status can change, so check the model's providers and availability information before relying on a route in production."
+			},
+			{
+				"question": "Can I use Phaseo as an AI gateway?",
+				"answer": "Yes. Phaseo Gateway provides one OpenAI-compatible interface for supported models and providers. Create an API key, choose a model, and use the same integration surface while retaining model and provider choice."
+			},
+			{
+				"question": "Can I use my own provider API keys?",
+				"answer": "Yes. Bring your own provider keys when you want to retain the provider relationship and billing directly, while still using Phaseo's routing, health, and policy layer."
+			},
+			{
+				"question": "Which providers and model types can I explore?",
+				"answer": "Browse the <providers>provider directory</providers> for provider coverage, or filter the model directory by capabilities such as chat, embeddings, image, audio, video, and moderation. A provider page is the best place to check its currently listed model catalogue."
+			},
+			{
+				"question": "How are benchmarks and performance data handled?",
+				"answer": "Benchmark scores are shown alongside the benchmark and its methodology so that comparisons retain their context. Read <benchmarkMethodology>how Phaseo normalises AI benchmarks</benchmarkMethodology> and <performanceMethodology>how it measures latency and throughput</performanceMethodology> before making a production decision from a single score."
+			},
+			{
+				"question": "What should I do if a listing looks wrong or incomplete?",
+				"answer": "Use the <contribute>contribution page</contribute> to report a correction or add missing information. Accurate, source-backed reports help keep the directory useful as providers change their catalogues and pricing."
+			}
+		]
+	},
+	"methodology": {
+		"label": "Methodology",
+		"title": "How Phaseo measures what it publishes",
+		"description": "Four reference pages covering how pricing, performance, benchmarks, and provider coverage are defined across the public catalog.",
+		"lastUpdated": "Last updated {date}",
+		"readPage": "Read page",
+		"relatedPages": "Related pages",
+		"articleLastUpdated": "Last updated: {date}",
+		"entries": {
+			"how-phaseo-calculates-model-pricing": {
+				"shortTitle": "Model pricing",
+				"title": "How Phaseo calculates model pricing",
+				"description": "How Phaseo maps provider price sheets, meters, and routing rules into the public model pricing shown across the catalog.",
+				"intro": "This page explains how Phaseo turns provider pricing sources into the public pricing values shown on model and provider pages.",
+				"sections": {
+					"what": "What we are measuring",
+					"inputs": "Primary inputs",
+					"normalised": "How prices are normalised",
+					"dates": "Effective dates and change handling",
+					"caveats": "Caveats"
+				},
+				"related": {
+					"gateway": "Gateway pricing",
+					"calculator": "Pricing calculator",
+					"models": "Model database"
+				}
+			},
+			"how-phaseo-measures-latency-throughput": {
+				"shortTitle": "Latency and throughput",
+				"title": "How Phaseo measures latency and throughput",
+				"description": "How Phaseo defines the latency, throughput, and request-performance metrics shown in rankings and model or provider performance pages.",
+				"intro": "This page explains what Phaseo counts as latency and throughput, how those metrics are aggregated, and why results can vary by route and timeframe.",
+				"sections": {
+					"what": "What we are measuring",
+					"windows": "Aggregation windows",
+					"eligibility": "Filtering and eligibility",
+					"move": "Why values can move",
+					"caveats": "Caveats"
+				},
+				"related": {
+					"rankings": "Rankings",
+					"models": "Models",
+					"providers": "Providers"
+				}
+			},
+			"how-phaseo-normalises-ai-benchmarks": {
+				"shortTitle": "Benchmark normalisation",
+				"title": "How Phaseo normalises AI benchmarks",
+				"description": "How Phaseo stores benchmark scores, variants, and sort direction while keeping benchmark displays aligned across different sources.",
+				"intro": "This page explains how Phaseo treats benchmark data from different sources without pretending that every benchmark is directly comparable.",
+				"sections": {
+					"what": "What we store",
+					"normalised": "What normalisation means here",
+					"ranking": "Ranking logic",
+					"source": "Source quality and disclosure",
+					"caveats": "Caveats"
+				},
+				"related": {
+					"benchmarks": "Benchmarks",
+					"models": "Models",
+					"compare": "Compare models"
+				}
+			},
+			"how-phaseo-tracks-provider-availability": {
+				"shortTitle": "Provider availability",
+				"title": "How Phaseo tracks provider availability",
+				"description": "How Phaseo maps models to providers, tracks gateway availability, and interprets provider-specific coverage on public catalog pages.",
+				"intro": "This page explains how Phaseo decides whether a model is available on a provider and what the public provider coverage views are intended to mean.",
+				"sections": {
+					"what": "What availability means on Phaseo",
+					"mappings": "How mappings are stored",
+					"active": "Gateway-active versus catalog-visible",
+					"changes": "When provider pages change",
+					"caveats": "Caveats"
+				},
+				"related": {
+					"providers": "Provider database",
+					"models": "Models",
+					"rankings": "Rankings"
+				}
+			}
+		}
+	},
+	"contact": {
+		"title": "Contact Phaseo support",
+		"intro": "Tell us what you need, and we will route you to the right place. Private account issues become support tickets. Public bugs, feature requests, and quick questions go to the channel that fits.",
+		"sendFeedback": "Send Product Feedback",
+		"stepOne": "Step 1",
+		"stepTwo": "Step 2",
+		"whatHelp": "What do you need help with?",
+		"chooseIssue": "Choose an issue type",
+		"pickClosest": "Pick the closest option and we will show the next step below.",
+		"recommended": "Recommended: {method}",
+		"privateReply": "Prefer a private reply?",
+		"switchPrivate": "Switch to private ticket",
+		"otherMethods": "Other support methods",
+		"otherMethodsBody": "Use another channel if it fits your issue better.",
+		"yourTime": "Your time {time}",
+		"checking": "checking...",
+		"supportTime": "Phaseo support time: {time}",
+		"support": "Support",
+		"liveChatTitle": "Live chat or email",
+		"liveChatDescription": "Start a live chat from this page, or open a prefilled email with the context we need.",
+		"signedInAs": "Signed in as {email}",
+		"chatNotConfigured": "Live chat is not configured for this deployment.",
+		"chatOutsideHours": "Live chat is available during support hours. Email is still open.",
+		"chatOffline": "Live chat offline",
+		"loadingChat": "Loading chat...",
+		"startLiveChat": "Start live chat",
+		"chatUnavailable": "Live chat unavailable",
+		"sendEmail": "Send email",
+		"createTicket": "Create ticket",
+		"openChatNewTab": "Open chat in new tab",
+		"privateReplyBody": "If this includes account details, billing information, request IDs, or screenshots, choose a private support ticket instead.",
+		"repliesResumeSoon": "Support replies resume soon.",
+		"availableNow": "Available now",
+		"outsideHours": "Outside support hours",
+		"backIn": "Back in {time}",
+		"availableReplyNotice": "I’m available right now. Expect a direct human reply within 30 minutes.",
+		"supportBackInNotice": "Support will be back online in {time}. Replies may be delayed, but you will still get a direct human response as soon as possible.",
+		"supportAwayNotice": "I’m away right now. Replies may be delayed, but you will still get a direct human response as soon as possible.",
+		"resumeAfterMinutes": "{count, plural, one {# minute} other {# minutes}}",
+		"resumeAfterHours": "{count, plural, one {# hour} other {# hours}}",
+		"feedbackPrompt": "Tell us what should be clearer, faster, or more useful across Phaseo. For account or billing help, use the support options below.",
+		"emailTemplate": {
+			"subjectWithIssue": "[Phaseo Support] {issue}",
+			"subjectDefault": "[Phaseo Support] Support request",
+			"greeting": "Hi Phaseo team,",
+			"opening": "I need help with:",
+			"summary": "Summary:",
+			"details": "Details:",
+			"usefulContext": "Useful context:",
+			"issueType": "- Issue type: {value}",
+			"accountEmail": "- Account email: {value}",
+			"workspace": "- Workspace: {value}",
+			"plan": "- Plan: {value}",
+			"pageUrl": "- Page URL:",
+			"requestId": "- Request ID:",
+			"modelProvider": "- Model ID / provider:",
+			"timeObserved": "- Time observed:",
+			"attachments": "Attachments/screenshots:",
+			"notSelected": "Not selected"
+		},
+		"methods": {
+			"support": {
+				"title": "Private support ticket",
+				"description": "Best for account, billing, data, or implementation issues.",
+				"cta": "Create ticket"
+			},
+			"github": {
+				"title": "GitHub",
+				"description": "Best for reproducible bugs, feature requests, and public tracking.",
+				"cta": "Open GitHub"
+			},
+			"discord": {
+				"title": "Discord",
+				"description": "Best for quick setup questions and lightweight community feedback.",
+				"cta": "Join Discord"
+			},
+			"docs": {
+				"title": "Docs",
+				"description": "Best for gateway guides, SDK examples, model references, and quick starts.",
+				"cta": "Read docs"
+			}
+		},
+		"issues": {
+			"billing": {
+				"label": "Billing or account issue",
+				"helper": "Create a private support ticket and we will reply to the email address you provide."
+			},
+			"bug": {
+				"label": "Bug or outage",
+				"helper": "Use GitHub when the issue is reproducible and useful for other users to track."
+			},
+			"data": {
+				"label": "Data or metrics issue",
+				"helper": "Create a private ticket with model IDs, provider names, URLs, and timestamps."
+			},
+			"docs": {
+				"label": "Docs or integration question",
+				"helper": "Start with the docs. If the answer is missing, send a ticket with the exact page."
+			},
+			"feature": {
+				"label": "Feature request",
+				"helper": "Open a GitHub issue with the workflow, expected behavior, and why it matters."
+			},
+			"general": {
+				"label": "General question",
+				"helper": "Create a private support ticket and include enough context for a direct reply."
+			},
+			"community": {
+				"label": "Community or quick feedback",
+				"helper": "Use Discord when you want a lightweight answer or discussion with other users."
+			}
+		},
+		"loadingSupportHours": "Loading current support hours…"
+	},
+	"profileShare": {
+		"titleSuffix": "Phaseo Share Card",
+		"description": "A lightweight snapshot generated from personal workspace activity.",
+		"shareCard": "{name}’s share card",
+		"downloadImage": "Download image",
+		"openPhaseo": "Open Phaseo",
+		"imageAlt": "{name} Phaseo share card"
+	},
+	"profile": {
+		"title": "Shared Profile",
+		"loading": "Loading profile..."
+	},
+	"gatewayHero": {
+		"startFree": "Start free",
+		"viewDocumentation": "View documentation",
+		"classicTitle": "The Unified AI Gateway for",
+		"classicRotatingWords": [
+			"AI Models",
+			"LLMs",
+			"Vision Models",
+			"Audio Models",
+			"Embeddings",
+			"Agents"
+		],
+		"classicDescription": "Keep your existing SDK shape, route across providers, and control latency, pricing, and failover from one OpenAI-compatible surface.",
+		"monthlyTokens": "Monthly tokens",
+		"models": "Models",
+		"providers": "Providers",
+		"experimentalBadge": "Experimental Gateway Hero",
+		"experimentalTitle": "Routing Infrastructure For",
+		"experimentalRotatingWords": [
+			"Production AI",
+			"Latency SLAs",
+			"Multi-Cloud Failover",
+			"Cost Controls"
+		],
+		"experimentalDescription": "Keep your current model stack, remove provider lock-in, and ship with tighter control over routing, reliability, and spend under one unified API contract.",
+		"routingCockpit": "Routing cockpit",
+		"policyDrivenRouting": "Policy-driven routing",
+		"policyDrivenRoutingDescription": "Route by latency budget, model quality, and provider health in real time.",
+		"modelPortability": "Model portability",
+		"modelPortabilityDescription": "Swap providers without rewriting your SDK integration layer.",
+		"productionGuardrails": "Production guardrails",
+		"productionGuardrailsDescription": "Enforce rate limits, spending boundaries, and fallback rules with one control plane.",
+		"liveRequestEfficiency": "Live request efficiency",
+		"stable": "Stable"
+	},
+	"gatewayMarketing": {
+		"hero": {
+			"title": "The world’s largest unified AI gateway.",
+			"openSourceTitle": "Fully open source.",
+			"description": "One API for chat, vision, audio, and embeddings with live telemetry, compliance controls, and provider failover built in.",
+			"startBuilding": "Start building",
+			"viewQuickstart": "View quickstart",
+			"uptime24h": "Uptime (24h)",
+			"supportedProviders": "Supported providers",
+			"supportedModels": "Supported models",
+			"tokens24h": "Tokens (24h)",
+			"pricingCommitmentTitle": "Working to lower prices and expand model choice",
+			"pricingCommitmentDescription": "I am working hard to lower prices whenever possible. I am a solo developer, and I am actively working to expand the gateway as soon as I can."
+		},
+		"cta": {
+			"eyebrow": "Ready to ship",
+			"title": "Bring your product and routing layer onto one system.",
+			"description": "Use the open database to choose models, then send live traffic through a gateway built for latency, failover, and clearer cost controls.",
+			"benefitOne": "Keep the same request format while changing providers underneath.",
+			"benefitTwo": "Choose models in the database, then route live traffic through the gateway.",
+			"createAccount": "Create a free account",
+			"quickstart": "Quickstart"
+		},
+		"why": {
+			"title": "Why teams choose Phaseo Gateway",
+			"description": "We provide open-source routing, telemetry, and compliance tools so teams can move faster without rebuilding the plumbing.",
+			"healthPoint": "Health signals and failover rules adjust traffic across providers in seconds.",
+			"communityPoint": "Community contributions deliver adapters faster, with every change public and open for review.",
+			"transparencyPoint": "Open-source code makes security, compliance, and routing logic available for inspection.",
+			"cards": {
+				"openSourceTitle": "Open source and trust",
+				"openSourceDescription": "Audit the code behind our security, compliance, and routing decisions.",
+				"latencyTitle": "Latency-aware routing",
+				"latencyDescription": "EWMA and percentile health signals shift traffic before incidents affect your SLAs.",
+				"observabilityTitle": "Observability first",
+				"observabilityDescription": "Request costs, tokens, latency, success codes, and traces are captured automatically.",
+				"communityTitle": "Community-led development",
+				"communityDescription": "Community contributions and a transparent roadmap accelerate adapters, features, and open access to AI."
+			}
+		},
+		"reliability": {
+			"title": "Reliability you can trust. Openness you can verify.",
+			"description": "Latency, uptime, and throughput telemetry feed directly into routing. Every adapter, health probe, and ingestion script lives under an open source licence.",
+			"last24Hours": "Last 24 hours",
+			"uptime": "Uptime",
+			"medianLatency": "Median latency",
+			"tokensServed": "Tokens served",
+			"modelsSupported": "Models supported",
+			"tokensPerHour": "Gateway tokens per hour (24h)",
+			"chartDescription": "Healthy token volume and stability driven by community contributions and enterprise adoption.",
+			"tokens": "Tokens",
+			"perHour": "per hour",
+			"now": "Now",
+			"hourAbbreviation": "h",
+			"hoursAgo": "{count, plural, one {# hour ago} other {# hours ago}}"
+		}
+	},
+	"gatewayQuickstart": {
+		"title": "Quickstart: key, endpoint, request",
+		"description": "Pick the endpoint you need, choose a sample model, and copy a working request for the Gateway, SDKs, or OpenAI-compatible clients.",
+		"setupHeading": "Setup steps",
+		"fromZeroHeading": "From zero to first call",
+		"step1Title": "Create or copy an API key",
+		"step1Description": "Use a server-side workspace key, then expose it to your runtime as",
+		"apiKeys": "API Keys",
+		"step2Title": "Choose an endpoint and model",
+		"step2Description": "The endpoint selector updates the path, payload, and supported example models together.",
+		"step3Title": "Copy the request",
+		"step3Description": "Switch language or SDK style, then copy the compact snippet into your app or agent instructions.",
+		"copyCode": "Copy code",
+		"copied": "Copied",
+		"openAiBetaNotice": "OpenAI options (Beta) may change as adapters mature.",
+		"baseUrl": "Base URL",
+		"model": "Model",
+		"modelPayloadHelp": "Every model uses the same base request payload—swap the <model>model</model> value.",
+		"endpoints": {
+			"completions": {
+				"label": "Chat",
+				"summary": "Chat, reasoning, and tool-calling with instant provider failover."
+			},
+			"images": {
+				"label": "Image generation",
+				"summary": "Generate high-fidelity images with routing that accounts for provider differences."
+			},
+			"video": {
+				"label": "Video generation",
+				"summary": "Create product teasers or walkthroughs without juggling separate video APIs."
+			},
+			"audio": {
+				"label": "Audio generation",
+				"summary": "Generate voices programmatically with unified input and format parameters."
+			},
+			"embeddings": {
+				"label": "Embeddings",
+				"summary": "Get vector representations from any provider with consistent batching."
+			},
+			"moderations": {
+				"label": "Moderation",
+				"summary": "Run safety checks without reshaping payloads for each moderation API."
+			}
+		}
+	},
+	"homeOpenSourceMarketing": {
+		"title": "Build on the world’s largest open-source AI gateway",
+		"description": "Ship with one OpenAI-compatible integration, broad provider coverage, and production-grade reliability, without lock-in or black-box infrastructure.",
+		"firstRequest": "Send your first request in under five minutes.",
+		"modelIdDescription": "Change only the <code>model</code> value to route requests to any supported model through the same API.",
+		"explore": "Explore",
+		"models": "models",
+		"readDocs": "Read the docs",
+		"getApiKey": "Get an API key",
+		"viewGitHub": "View on GitHub",
+		"migrationGuide": "Migration guide",
+		"notReadyTitle": "Not ready to integrate an API?",
+		"notReadyDescription": "Use Chat to try models in your browser and compare their responses without writing code.",
+		"tryChat": "Try Chat",
+		"more": "More",
+		"copy": "Copy",
+		"copied": "Copied",
+		"providerAria": "{provider} provider",
+		"migrationSourceAria": "Migrate from {provider}"
+	},
+	"homeQuickstart": {
+		"benefits": {
+			"database": {
+				"title": "Open Model Intelligence",
+				"body": "Explore benchmarks, pricing, and provider coverage to make better build decisions.",
+				"cta": "Explore database"
+			},
+			"gateway": {
+				"title": "Unified AI Gateway",
+				"body": "Integrate once and access hundreds of models through one OpenAI-compatible API.",
+				"cta": "Browse models"
+			},
+			"modalities": {
+				"title": "Every AI Workload",
+				"body": "Build with text, images, video, audio, moderation, embeddings, and more through one API.",
+				"cta": "Explore Gateway"
+			},
+			"observability": {
+				"title": "Request Observability",
+				"body": "Monitor pricing, reliability, usage, and performance for every request in one place.",
+				"cta": "View activity"
+			}
+		},
+		"workloads": {
+			"text": {
+				"label": "Text",
+				"detail": "Chat and responses"
+			},
+			"images": {
+				"label": "Images",
+				"detail": "Generate and edit"
+			},
+			"video": {
+				"label": "Video",
+				"detail": "Prompt to video"
+			},
+			"textToSpeech": {
+				"label": "Text to speech",
+				"detail": "Natural voice"
+			},
+			"transcription": {
+				"label": "Transcription",
+				"detail": "Speech to text"
+			},
+			"music": {
+				"label": "Music",
+				"detail": "Generate audio"
+			},
+			"moderation": {
+				"label": "Moderation",
+				"detail": "Text and images"
+			},
+			"embeddings": {
+				"label": "Embeddings",
+				"detail": "Vector search"
+			},
+			"realtime": {
+				"label": "Realtime",
+				"detail": "Live interactions"
+			},
+			"batch": {
+				"label": "Batch",
+				"detail": "Async processing"
+			}
+		},
+		"gatewayCapabilities": "Gateway capabilities",
+		"workloadsCount": "{count} workloads",
+		"healthAwareRouting": "Health-aware routing with automatic failover",
+		"latency": "Latency",
+		"throughput": "Throughput",
+		"cost": "Cost",
+		"gpqaScore": "GPQA score",
+		"rank": "Rank",
+		"rankOverall": "#7 overall",
+		"pricingPerMillionTokens": "Pricing / 1M tokens",
+		"model": "Model",
+		"appLabel": "App",
+		"providersLabel": "Providers",
+		"tokensLabel": "Tokens"
+	},
+	"trust": {
+		"trustCentre": "Trust Centre",
+		"phaseoTrustCentre": "Phaseo Trust Centre",
+		"lastReviewed": "Last reviewed {date}",
+		"privacyPolicy": "Privacy Policy",
+		"termsOfService": "Terms of Service",
+		"privacyQuestions": "Privacy questions",
+		"securityAndTrust": "Security and trust at Phaseo",
+		"currentSafeguards": "Current product safeguards, data practices, and assurance status. Claims on this page are limited to what Phaseo can support today.",
+		"assurance": "Assurance",
+		"sections": "Trust Centre sections",
+		"claimLabels": "Claim labels",
+		"trustDocuments": "Trust documents",
+		"trustDocumentsBody": "Use the detailed material for security review, vendor assessment, or DPA discussion.",
+		"security": "Security",
+		"securityBody": "Product and operational safeguards supported by current code and documentation.",
+		"securityPage": {
+			"metadataTitle": "Security whitepaper",
+			"metadataDescription": "Review Phaseo's architecture, data flows, current security controls, limitations, and shared responsibilities.",
+			"keywords": [
+				"Phaseo security whitepaper",
+				"Phaseo security",
+				"AI gateway security"
+			],
+			"title": "Security whitepaper",
+			"description": "A self-attested overview of how Phaseo protects its website, dashboard, API gateway, and customer data. It describes current implementation evidence, not an independent audit.",
+			"status": "Self-attested · version 1.0",
+			"assurance": {
+				"title": "Assurance boundary",
+				"body": "Phaseo is not SOC 2 or ISO 27001 certified and has not completed an independent penetration test. This paper is not a certification, warranty, or substitute for your own risk assessment."
+			},
+			"sections": {
+				"scope": "1. Scope and service model",
+				"flow": "2. Gateway data flow",
+				"storage": "3. Content-storage choices and exceptions",
+				"controls": "4. Current technical controls",
+				"development": "5. Software and change management",
+				"availability": "6. Availability and incident handling",
+				"responsibilities": "7. Customer responsibilities",
+				"gaps": "8. Known assurance gaps",
+				"contact": "9. Contact"
+			},
+			"scope": {
+				"introduction": "Phaseo provides a public AI model directory, a customer dashboard, and an API gateway that forwards requests to third-party AI providers. This paper covers the Phaseo-controlled application, gateway, data stores, and operational integrations. It does not attest to controls operated by an AI provider or a customer-configured destination.",
+				"services": "The public website runs as a Next.js application hosted by Vercel and delivered behind Cloudflare. The gateway runs on Cloudflare Workers. Supabase provides authentication and the primary relational database. Additional services are listed in the <subprocessors>subprocessor schedule</subprocessors>."
+			},
+			"flow": {
+				"stage": "Stage",
+				"data": "Data",
+				"handling": "Handling",
+				"rows": [
+					{
+						"stage": "Client to Phaseo",
+						"data": "Request content, credentials, routing options, and network metadata",
+						"handling": "Sent over HTTPS to Cloudflare and processed by the Gateway Worker."
+					},
+					{
+						"stage": "Phaseo metadata",
+						"data": "Request ID, model and provider IDs, usage, cost, latency, status, errors, and coarse location",
+						"handling": "Stored in Supabase for billing, usage views, reliability, abuse prevention, and support. Raw prompts and full outputs are excluded from the primary request record."
+					},
+					{
+						"stage": "Response cache",
+						"data": "Workspace-scoped cache key, response body, and response metadata",
+						"handling": "Eligible non-streaming text responses may be stored in Upstash Redis for five minutes by default. A preset may configure 30 seconds to 24 hours. The request body contributes to a SHA-256 cache-key digest but is not stored in the cached record."
+					},
+					{
+						"stage": "AI provider",
+						"data": "Request content and metadata necessary to fulfil the selected model call",
+						"handling": "Sent over HTTPS to the provider selected directly or by the customer's routing policy. Provider retention, training, and residency terms apply."
+					},
+					{
+						"stage": "Client response",
+						"data": "Provider output and Phaseo response metadata",
+						"handling": "Returned to the client over HTTPS. Streaming data is processed in memory while the connection is active."
+					}
+				]
+			},
+			"storage": {
+				"introduction": "Phaseo does not make a universal zero-data-retention claim. In addition to the short-lived response cache, the following customer choices can extend content storage:",
+				"options": [
+					{
+						"title": "Private I/O logging",
+						"description": "A feature-gated workspace setting can store request, response, and optional provider payloads in private Cloudflare R2 for 90, 180, or 365 days. It is off by default."
+					},
+					{
+						"title": "Data contribution",
+						"description": "An explicit opt-in can capture successful non-BYOK prompts and completions in private Cloudflare R2 for no more than 30 days. Phaseo applies best-effort redaction, but customers must not treat redaction as a guarantee. A configured sample is sent to OpenAI with API storage disabled for asynchronous task classification."
+					},
+					{
+						"title": "Observability exports and notifications",
+						"description": "Customer-configured destinations may receive prompts, outputs, metadata, or alert content according to the customer's settings."
+					},
+					{
+						"title": "Asynchronous and media APIs",
+						"description": "Providers may retain job state, files, inputs, or generated assets for their own documented periods. Phaseo stores job and billing metadata needed to reconcile those requests."
+					}
+				],
+				"conclusion": "Disabling a Phaseo storage feature stops new capture subject to propagation and in-flight work. It does not delete data already received by an AI provider or customer-configured destination."
+			},
+			"controls": {
+				"transport": {
+					"title": "Transport and secrets",
+					"items": [
+						"The public service and upstream provider connections use HTTPS.",
+						"Bring-your-own provider credentials are encrypted with AES-256-GCM before database storage.",
+						"API and management keys use keyed one-way derivation; OAuth secrets use one-way password-based or keyed derivation.",
+						"Webhook and notification credentials use encrypted storage where the feature supports stored secrets."
+					]
+				},
+				"identity": {
+					"title": "Identity and access",
+					"items": [
+						"Workspace roles and database policies constrain account and workspace records.",
+						"OAuth consent screens display requested scopes; grants and tokens can be revoked.",
+						"SAML single sign-on and SCIM provisioning are gated enterprise capabilities, not universal controls.",
+						"Management and gateway keys can be scoped and rotated."
+					]
+				},
+				"safeguards": {
+					"title": "Application safeguards",
+					"items": [
+						"Rate limits protect sensitive OAuth and realtime routes.",
+						"Security headers include content-type, frame, referrer, and permissions restrictions; the OAuth consent route has a stricter content security policy.",
+						"Structured validation is used at API and configuration boundaries.",
+						"Billing operations use idempotency and database transaction controls in security-sensitive paths.",
+						"Verified account deletion hard-deletes the Auth account and active database data, then uses a retryable scheduled job to purge private R2 and Gateway KV data within 30 days."
+					]
+				},
+				"monitoring": {
+					"title": "Monitoring and disclosure",
+					"items": [
+						"Cloudflare invocation logging and request metadata support operational monitoring.",
+						"Provider health and routing state help contain upstream failures."
+					],
+					"statusPublication": "Service health and incidents are published at <status>status.phaseo.app</status>.",
+					"vulnerabilityReports": "Private vulnerability reports are accepted through <advisories>GitHub Security Advisories</advisories> or <email>security@phaseo.app</email>."
+				}
+			},
+			"development": {
+				"paragraphs": [
+					"Phaseo's main repository is public. Changes use version control, dependency lockfiles, automated linting and type checks, and targeted automated tests. Security-focused validations cover selected secret boundaries, database policies, authentication flows, and gateway contracts.",
+					"These practices reduce risk but do not prove that every change receives a formal security review or that the service is free of vulnerabilities. Phaseo does not currently publish a secure-development certification or an independently audited change-management control."
+				]
+			},
+			"availability": {
+				"paragraphs": [
+					"Phaseo uses managed infrastructure and provider-health routing to limit some failures. The public status page is hosted by incident.io. Phaseo does not offer a contractual uptime SLA for the public service and does not claim that its incident-response or business-continuity process has been independently tested.",
+					"Security incidents involving personal data are assessed against applicable notification duties. The public vulnerability policy targets acknowledgement of a good-faith report within three business days; this is an operational target, not a contractual resolution deadline."
+				]
+			},
+			"responsibilities": {
+				"items": [
+					"Do not send sensitive or regulated data unless your chosen Phaseo and AI-provider configuration is appropriate for that data.",
+					"Review provider retention, training, residency, and acceptable-use terms before enabling a route.",
+					"Use provider allowlists and privacy routing controls where route selection matters.",
+					"Protect and rotate account, API, management, BYOK, webhook, and OAuth credentials.",
+					"Limit workspace membership and OAuth scopes to what each person or application needs.",
+					"Review private I/O logging, data contribution, response caching, observability, and notification settings before production use."
+				]
+			},
+			"gaps": {
+				"items": [
+					"No SOC 2, ISO 27001, PCI DSS, HIPAA, or comparable Phaseo certification is claimed.",
+					"No completed independent penetration test or public audit report is claimed.",
+					"No universal zero-data-retention or no-training guarantee applies across all providers.",
+					"No end-to-end regional residency guarantee applies across all routes.",
+					"General retention periods for every account, metadata, backup, support, and operational-log category have not yet been consolidated into one public schedule."
+				]
+			},
+			"contact": {
+				"security": "Send security reports to <email>security@phaseo.app</email>.",
+				"privacy": "Send privacy, DPA, and subprocessor questions to <email>privacy@phaseo.app</email>."
+			}
+		},
+		"dataHandling": "Data handling",
+		"dataHandlingBody": "How gateway content is handled by default, where exceptions apply, and what remains provider-dependent.",
+		"serviceProviders": "Service providers",
+		"serviceProvidersBody": "Categories disclosed in Phaseo's current privacy policy.",
+		"availability": "Availability and incidents",
+		"compliance": "Compliance",
+		"responsibleDisclosure": "Responsible disclosure",
+		"emailSecurity": "Email security",
+		"privateGithubReport": "Private GitHub report",
+		"reviewedEvidence": "Reviewed against repository evidence",
+		"overview": {
+			"states": [
+				{
+					"id": "available",
+					"label": "Available",
+					"description": "In the product today."
+				},
+				{
+					"id": "gated",
+					"label": "Gated",
+					"description": "Available only to eligible workspaces or configurations."
+				},
+				{
+					"id": "self-attested",
+					"label": "Self-attested",
+					"description": "Described from Phaseo's own code, policy, and operations; not independently audited."
+				},
+				{
+					"id": "planned",
+					"label": "Planned",
+					"description": "Intended work, with no delivery date promised."
+				},
+				{
+					"id": "independently-certified",
+					"label": "Independently certified",
+					"description": "Verified by an external certification body. Phaseo has none today."
+				}
+			],
+			"documents": [
+				{
+					"id": "security",
+					"title": "Security whitepaper",
+					"description": "Architecture, data flows, current safeguards, limitations, and customer responsibilities.",
+					"status": "Self-attested"
+				},
+				{
+					"id": "subprocessors",
+					"title": "Subprocessors",
+					"description": "Core infrastructure, conditional processors, and customer-directed third parties.",
+					"status": "Public schedule"
+				},
+				{
+					"id": "dpa",
+					"title": "Data Processing Addendum",
+					"description": "A non-binding first draft for UK and EU controller-to-processor review.",
+					"status": "Legal review required"
+				}
+			],
+			"securityPractices": [
+				{
+					"id": "encryptedTransport",
+					"state": "self-attested",
+					"title": "Encrypted transport",
+					"description": "Phaseo's public service is delivered over HTTPS. Requests are forwarded to model providers over encrypted HTTPS connections."
+				},
+				{
+					"id": "providerKeyProtection",
+					"state": "self-attested",
+					"title": "Provider key protection",
+					"description": "Bring-your-own provider credentials are encrypted with AES-256-GCM before storage. API, management, and OAuth secrets use one-way HMAC or password-based derivation before storage."
+				},
+				{
+					"id": "scopedAccessOAuth",
+					"state": "available",
+					"title": "Scoped access and OAuth",
+					"description": "Workspace roles and scoped API or OAuth permissions limit access. OAuth connections show their requested permissions during consent and can be revoked."
+				},
+				{
+					"id": "enterpriseIdentity",
+					"state": "gated",
+					"title": "Enterprise identity",
+					"description": "SAML single sign-on and SCIM user and group provisioning are gated by workspace entitlements and feature flags; they are not available to every account."
+				},
+				{
+					"id": "privateVulnerabilityReporting",
+					"state": "available",
+					"title": "Private vulnerability reporting",
+					"description": "Reports can be submitted through GitHub Security Advisories or security@phaseo.app. Phaseo targets acknowledgement within three business days."
+				}
+			],
+			"dataPractices": [
+				{
+					"id": "gatewayContent",
+					"state": "self-attested",
+					"title": "Gateway content by default",
+					"description": "Raw prompts and full outputs are excluded from Phaseo's primary request database and analytics. Eligible non-streaming outputs may be cached in Upstash for five minutes by default, or up to 24 hours under a configured cache policy."
+				},
+				{
+					"id": "privateIoLogging",
+					"state": "gated",
+					"title": "Private I/O logging",
+					"description": "A feature-gated workspace setting can store requests, responses, and optional provider payloads in private Cloudflare R2 for 90, 180, or 365 days. It is off by default."
+				},
+				{
+					"id": "optionalDataContribution",
+					"state": "available",
+					"title": "Optional data contribution",
+					"description": "This is opt-in. Eligible prompts and completions may be redacted and retained for no more than 30 days. Revoking consent stops new capture and queues previous captures for deletion."
+				},
+				{
+					"id": "providerRetentionTraining",
+					"state": "self-attested",
+					"title": "Provider retention and training",
+					"description": "Phaseo cannot promise zero data retention across every model provider. Downstream handling follows the provider and route you use; review the provider policy before sending sensitive data."
+				},
+				{
+					"id": "regionalRouting",
+					"state": "gated",
+					"title": "Regional routing",
+					"description": "Provider and geography controls can constrain eligible routes, but Phaseo does not currently promise end-to-end data residency for every request."
+				}
+			],
+			"providers": [
+				{
+					"id": "hosting",
+					"name": "Cloudflare and Vercel",
+					"purpose": "Host, secure, and deliver the service",
+					"data": "Service traffic, request content in transit, and operational metadata needed to run Phaseo"
+				},
+				{
+					"id": "database",
+					"name": "Supabase",
+					"purpose": "Database and account infrastructure",
+					"data": "Account, workspace, configuration, and request metadata"
+				},
+				{
+					"id": "cache",
+					"name": "Upstash",
+					"purpose": "Short-lived response caching",
+					"data": "Cached model outputs, workspace-scoped cache keys, and response metadata"
+				},
+				{
+					"id": "billing",
+					"name": "Stripe",
+					"purpose": "Payments and billing",
+					"data": "Billing identity and transaction records; Phaseo does not store full card details"
+				},
+				{
+					"id": "analytics",
+					"name": "Analytics and feature providers",
+					"purpose": "Product analytics, feature delivery, and error diagnosis",
+					"data": "Page, device, identity, and usage telemetry; raw gateway prompts and outputs are excluded"
+				},
+				{
+					"id": "support",
+					"name": "Email and support providers",
+					"purpose": "Service communications and customer support",
+					"data": "Contact details, message or ticket contents, and related account context"
+				},
+				{
+					"id": "models",
+					"name": "Model providers",
+					"purpose": "Process the inference request you route",
+					"data": "Inputs, outputs, and necessary request metadata; provider terms and retention apply"
+				},
+				{
+					"id": "assistants",
+					"name": "Connected assistant providers",
+					"purpose": "Return authorised OAuth tool results",
+					"data": "Only the read-only result and scopes approved through the consent flow"
+				}
+			],
+			"unclaimed": [
+				"SOC 2, ISO 27001, PCI DSS, HIPAA, or another independent Phaseo certification",
+				"A completed independent penetration test or published audit report",
+				"A contractual uptime SLA for the public service",
+				"Universal zero data retention or a guarantee that providers do not train on request data",
+				"Guaranteed regional data residency for every provider and route",
+				"A legal opinion or automatically executed DPA from the public first draft"
+			],
+			"assuranceSummary": "Phaseo is not SOC 2 or ISO 27001 certified. Its security programme has not been independently audited.",
+			"providerHeader": "Provider",
+			"purposeHeader": "Purpose",
+			"dataHeader": "Data involved",
+			"subprocessorNoteLead": "See the dated ",
+			"scheduleText": "subprocessor schedule",
+			"subprocessorNoteTail": " for named vendors, conditions, location gaps, and the separate treatment of customer-selected AI providers.",
+			"serviceStatus": "Service status",
+			"serviceStatusBodyLead": "Current health and incidents are published at ",
+			"statusLinkText": "status.phaseo.app",
+			"serviceStatusBodyTail": ". Phaseo does not claim a contractual public uptime SLA.",
+			"incidentResponse": "Incident response",
+			"incidentResponseBody": "Operational code includes incident notification and outreach paths. Internal playbooks are not public, and the process has not been independently tested.",
+			"complianceBody": "Phaseo does not currently hold an independent security certification. The public DPA is a non-binding first draft and the security whitepaper is self-attested. A formal assurance programme may be considered when customer need and budget justify it; no framework or date is committed.",
+			"responsibleDisclosureBody": "Report security issues privately. Do not access other people's data, run denial-of-service tests, or disclose a vulnerability before a fix is available.",
+			"lastReviewed": "Last reviewed",
+			"contact": "Contact"
+		},
+		"subprocessorsPage": {
+			"metadataTitle": "Subprocessors",
+			"metadataDescription": "Review the infrastructure, AI processing, and other third parties Phaseo uses to deliver the service.",
+			"keywords": [
+				"Phaseo subprocessors",
+				"Phaseo service providers",
+				"AI gateway subprocessors"
+			],
+			"title": "Subprocessors and third-party processing",
+			"description": "A dated schedule of the services Phaseo uses, the data they may receive, and the conditions that apply. The legal role of an AI provider can vary by route and contract.",
+			"status": "Public schedule · factual and legal review noted",
+			"calloutTitle": "How to read this schedule",
+			"calloutBody": "The first table identifies services that can process Customer Data on Phaseo's behalf under a customer DPA. Later sections distinguish customer-selected AI providers and services Phaseo mainly uses for its own controller operations. Inclusion does not mean every service receives every customer's data.",
+			"sections": {
+				"core": "1. Core and conditional subprocessors",
+				"managedAi": "2. Phaseo-managed AI providers",
+				"customerAi": "3. Customer-selected AI providers",
+				"operations": "4. Other service providers",
+				"destinations": "5. Customer-directed destinations",
+				"changes": "6. Changes and objections",
+				"history": "7. Change history"
+			},
+			"headers": {
+				"provider": "Provider",
+				"purpose": "Purpose",
+				"data": "Data",
+				"location": "Processing location",
+				"whenUsed": "When used",
+				"role": "Role"
+			},
+			"coreProcessors": {
+				"cloudflare": {
+					"purpose": "Public edge, DNS, Gateway Worker execution, logs, KV, Durable Objects, and private R2 object storage",
+					"data": "Network and request data; gateway content in transit; optional I/O logs and data contributions; operational metadata",
+					"location": "Workers execute on Cloudflare's global network. Phaseo's private R2 buckets are located in Western Europe (WEUR); they do not currently have an EU jurisdictional restriction.",
+					"condition": "Core"
+				},
+				"vercel": {
+					"purpose": "Host and deliver the Phaseo web application",
+					"data": "Website and dashboard traffic, account-facing requests, device and operational metadata",
+					"location": "Global delivery network; deployment processing locations require factual confirmation",
+					"condition": "Core"
+				},
+				"supabase": {
+					"purpose": "Authentication and primary relational database",
+					"data": "Account, workspace, configuration, billing reference, request, usage, security, and support metadata",
+					"location": "AWS eu-west-2 (London), verified against the production project on 30 August 2026",
+					"condition": "Core"
+				},
+				"upstash": {
+					"purpose": "Redis-backed response caching and cache-related routing data",
+					"data": "Workspace-scoped cache keys, model outputs, response metadata, and short-lived routing/cache records",
+					"location": "Production database region requires factual confirmation",
+					"condition": "When the Redis binding is enabled"
+				},
+				"openai": {
+					"purpose": "Classify a configured sample of opted-in data contributions",
+					"data": "Best-effort-redacted prompt and response content and classifier instructions",
+					"location": "According to the Phaseo OpenAI API account and applicable transfer terms; factual confirmation required",
+					"condition": "Only when data contribution and upstream classification are enabled"
+				}
+			},
+			"managedAi": {
+				"introduction": "On {date}, Phaseo compared active production Gateway routes with the production Worker's managed credential bindings. Thirty-eight provider families met both conditions. The legal role depends on the API recipient and its contract, not the developer of a model available through that API.",
+				"termsHeading": "Processor terms located",
+				"termsBody": "Current processor terms or a DPA were located for the relevant business service. Account configuration, contracting entity, transfers, and feature-specific terms still require confirmation.",
+				"pendingHeading": "Processor contract pending",
+				"pendingBody": "Phaseo intends these providers to act only as subprocessors, but has not yet recorded sufficient Article 28 contract evidence. They are provisional for personal-data processing.",
+				"restrictedHeading": "Restricted review",
+				"restrictedBody": "Training, opt-out-dependent, or unclear own-purpose terms remain. These providers should not receive unrestricted Customer Personal Data through the managed pool until the issue is resolved.",
+				"conclusion": "This is a preliminary role register, not a representation that every listed managed route is approved for personal data. Phaseo must complete outstanding contract and configuration checks or remove the affected provider from the managed pool before executing the DPA."
+			},
+			"customerAi": {
+				"directory": "Phaseo sends request content and necessary metadata to the provider selected by the customer, the requested model, or the customer's routing configuration. The available set changes as routes are added, disabled, or degraded. The live <directory>provider directory</directory> is the maintainable source for currently available providers.",
+				"ownAccount": "When Phaseo uses its own provider account, the provider is intended to be Phaseo's subprocessor for inference and must satisfy the managed-provider review above. When the customer supplies credentials or holds the provider contract, the provider is normally a customer-directed recipient or the customer's own processor. A provider may separately act as a controller where it processes data for its own purposes, including training where its terms permit it."
+			},
+			"operations": {
+				"introduction": "These vendors support Phaseo's billing, communications, product operations, documentation, or support. They may process personal data for Phaseo when Phaseo acts as a controller, but are not automatically subprocessors for all Customer Data under the DPA."
+			},
+			"operationalProviders": {
+				"stripe": {
+					"role": "Billing and payment processing",
+					"data": "Billing identity, transaction, invoice, refund, and payment-method data"
+				},
+				"resend": {
+					"role": "Transactional and operational email",
+					"data": "Recipient contact details, email content, and delivery events"
+				},
+				"statsig": {
+					"role": "Feature flags and experiments",
+					"data": "Stable user, workspace, environment, and feature-evaluation identifiers; authenticated email where configured"
+				},
+				"googleAnalytics": {
+					"role": "Consent-based website analytics",
+					"data": "Page, device, referrer, event, and coarse location data"
+				},
+				"vercelAnalytics": {
+					"role": "Consent-based website analytics",
+					"data": "Page, device, referrer, and performance telemetry"
+				},
+				"posthog": {
+					"role": "Product analytics where the production key is enabled",
+					"data": "Product events, page, device, and usage telemetry; raw gateway content is excluded by design"
+				},
+				"axiom": {
+					"role": "Operational observability where the production key is enabled",
+					"data": "Workspace and request telemetry; sampled best-effort-redacted request details where configured"
+				},
+				"mintlify": {
+					"role": "Documentation hosting",
+					"data": "Documentation requests, network data, and documentation analytics"
+				},
+				"incidentIo": {
+					"role": "Public status page and incident communications",
+					"data": "Status-page traffic and incident-subscription contact details when supplied"
+				},
+				"tawkTo": {
+					"role": "Optional live support chat",
+					"data": "Contact details, chat content, device, and page context"
+				},
+				"notion": {
+					"role": "Support ticket and internal workflow management",
+					"data": "Contact details, ticket content, and related account context"
+				},
+				"discord": {
+					"role": "Internal operational notifications and customer-configured alert delivery",
+					"data": "Masked contact data, operational or billing summaries, and customer-selected alert content"
+				}
+			},
+			"customerDestinations": {
+				"introduction": "When a customer configures an observability endpoint, webhook, email recipient, Slack workspace, Microsoft Teams channel, Discord destination, OAuth application, or compatible AI assistant, Phaseo sends the selected data there on the customer's instruction. Those recipients are not Phaseo-appointed subprocessors merely because Phaseo provides the connection."
+			},
+			"changes": {
+				"introduction": "Phaseo publishes material changes to this page with a new review date. Under the DPA review draft, Phaseo will notify the customer's account email at least 30 days before a new Subprocessor begins processing Customer Personal Data and will accept written objections during that period.",
+				"contact": "The public product does not yet offer a general subprocessor-change subscription. Customers reviewing an execution copy should confirm the notice contact at <email>privacy@phaseo.app</email>."
+			},
+			"history": {
+				"initialEntry": "Initial evidence-backed schedule. Added the short-lived Upstash response cache, optional OpenAI data-contribution classification, and separate customer-directed and controller-operation categories."
+			}
+		},
+		"dpaPage": {
+			"metadataTitle": "Data Processing Addendum",
+			"metadataDescription": "Review Phaseo's draft Data Processing Addendum for UK and EU controller-to-processor use.",
+			"keywords": [
+				"Phaseo DPA",
+				"Phaseo data processing addendum",
+				"AI gateway DPA"
+			],
+			"title": "Data Processing Addendum",
+			"description": "Terms for processing personal data through Phaseo on a customer's behalf. This public version is a review draft. It does not bind either party until it is signed or expressly incorporated into an agreement.",
+			"status": "Review draft · legal approval required",
+			"calloutTitle": "Review draft",
+			"calloutBody": "This draft is written to cover the mandatory controller-processor terms in Article 28 of the UK GDPR and EU GDPR. It still needs Phaseo's service address, confirmed transfer terms, a final approved list of Phaseo-managed AI Subprocessors, and qualified legal approval. Request an execution copy from <email>privacy@phaseo.app</email>.",
+			"sections": {
+				"parties": "Parties and effective date",
+				"definitions": "1. Definitions",
+				"scope": "2. Scope, roles, and instructions",
+				"customer": "3. Customer's responsibilities",
+				"confidentiality": "4. Confidentiality and security",
+				"subprocessors": "5. Subprocessors and AI Providers",
+				"assistance": "6. Assistance and regulatory duties",
+				"breach": "7. Personal Data Breach",
+				"transfers": "8. International transfers",
+				"deletion": "9. Return and deletion",
+				"audit": "10. Information and audits",
+				"term": "11. Term, liability, and general terms",
+				"annex1": "Annex 1: Details of processing",
+				"annex2": "Annex 2: Technical and organisational measures",
+				"annex3": "Annex 3: Subprocessors",
+				"annex4": "Annex 4: Restricted-transfer terms",
+				"sources": "Drafting basis",
+				"signature": "Signature block"
+			},
+			"content": {
+				"parties": {
+					"introduction": "This Data Processing Addendum (<dpa>DPA</dpa>) forms part of the agreement that governs the Customer's use of the Services (<agreement>Agreement</agreement>) once it has been signed or expressly incorporated into that Agreement.",
+					"customer": "<customer>Customer</customer> is the person or organisation identified in the Agreement, order form, or signature block.",
+					"phaseo": "<phaseo>Phaseo</phaseo> is Daniel Butler, trading as Phaseo, of [insert service address and any required tax or registration details].",
+					"effectiveDate": "The <effectiveDate>Effective Date</effectiveDate> is the date on which this DPA is last signed or validly incorporated into the Agreement.",
+					"conflict": "If this DPA conflicts with the Agreement on the processing of Customer Personal Data, this DPA controls. The Agreement otherwise remains unchanged."
+				},
+				"definitions": [
+					{
+						"term": "Applicable Data Protection Law",
+						"definition": "means the privacy and data-protection law that applies to the processing under this DPA. It includes the UK GDPR, the Data Protection Act 2018, the Data (Use and Access) Act 2025 to the extent it amends UK data-protection law, the EU GDPR, and applicable national legislation that implements or supplements them."
+					},
+					{
+						"term": "Customer Data",
+						"definition": "means data submitted to the Services by or for Customer, or data that Customer directs Phaseo to process through the Services."
+					},
+					{
+						"term": "Customer Personal Data",
+						"definition": "means personal data contained in Customer Data that Phaseo processes on Customer's behalf."
+					},
+					{
+						"term": "AI Provider",
+						"definition": "means a third party that receives a request to run an AI model or related service."
+					},
+					{
+						"term": "Services",
+						"definition": "means the Phaseo services covered by the Agreement."
+					},
+					{
+						"term": "Subprocessor",
+						"definition": "means another processor engaged by Phaseo to process Customer Personal Data for the Services."
+					},
+					{
+						"term": "Controller, Processor, Data Subject, Personal Data Breach, and Process",
+						"definition": "have the meanings given by Applicable Data Protection Law."
+					}
+				],
+				"scope": [
+					"Customer is the Controller of Customer Personal Data and Phaseo is its Processor. If Customer is itself a Processor, Phaseo is Customer's Subprocessor and Customer confirms that its instructions are authorised by the relevant Controller.",
+					"Phaseo will process Customer Personal Data only on Customer's documented instructions. The Agreement, this DPA, Customer's API requests, selected models and providers, routing rules, product settings, and written support requests are documented instructions. These instructions include transfers needed to provide the Services.",
+					"If UK or EU law requires Phaseo to process Customer Personal Data without Customer's instruction, Phaseo will tell Customer before processing unless that law prohibits notice.",
+					"Phaseo will tell Customer if it believes an instruction infringes Applicable Data Protection Law. Phaseo may suspend the affected processing until the parties resolve the issue.",
+					"Annex 1 states the subject matter, duration, nature, purpose, personal-data types, Data Subject categories, and the parties' relevant rights and duties."
+				],
+				"customerResponsibilities": [
+					"Customer will comply with Applicable Data Protection Law, provide all required notices, and have a valid legal basis for its instructions and Customer Personal Data.",
+					"Customer will not submit special-category data, criminal-offence data, full payment-card data, or other highly sensitive data unless the Agreement expressly permits it and Customer has assessed the selected settings and AI Providers.",
+					"Customer is responsible for its AI Provider restrictions, retention and logging settings, credentials, and customer-directed destinations.",
+					"Customer will limit access to the Services, protect its credentials, and notify Phaseo promptly if it suspects unauthorised access or unlawful processing."
+				],
+				"confidentiality": [
+					"Phaseo will limit access to Customer Personal Data to people who need access to provide, secure, or support the Services or to comply with law.",
+					"Anyone authorised by Phaseo to process Customer Personal Data must be bound by a contractual duty of confidentiality or an appropriate statutory duty.",
+					"Phaseo will maintain the technical and organisational measures in Annex 2. Those measures must provide a level of security appropriate to the risk, taking account of the factors listed in Article 32 of the UK GDPR and EU GDPR.",
+					"Phaseo may change individual measures as the Services develop, but will not materially reduce the overall protection of Customer Personal Data during the term of the Agreement."
+				],
+				"scopeIndependentController": "Phaseo acts as an independent Controller where it determines its own purposes and means of processing, including account administration, billing, fraud prevention, legal compliance, and security of the Services. The <privacyPolicy>Privacy Policy</privacyPolicy> applies to that processing. Phaseo will not treat gateway content as independent-controller data merely because it passes through the Services.",
+				"assistance": [
+					"Taking account of the nature of the processing, Phaseo will use appropriate technical and organisational measures to help Customer respond to requests made by Data Subjects under Applicable Data Protection Law.",
+					"If Phaseo receives a request about Customer Personal Data directly from a Data Subject, Phaseo will refer the request to Customer. Phaseo will not respond on Customer's behalf unless Customer instructs it to do so or law requires a response.",
+					"Taking account of the nature of processing and information available to Phaseo, Phaseo will help Customer meet its obligations concerning security, Personal Data Breach notifications, data-protection impact assessments, and prior consultation with a supervisory authority.",
+					"Phaseo will maintain records and cooperate with supervisory authorities where Applicable Data Protection Law requires it to do so.",
+					"If Customer asks for substantial assistance beyond standard product features, Phaseo may charge reasonable, agreed costs unless the work is needed because Phaseo breached this DPA."
+				],
+				"breach": [
+					"Phaseo will notify Customer without undue delay after becoming aware of a Personal Data Breach affecting Customer Personal Data.",
+					"To the extent known at the time, the notice will describe the nature of the breach, the categories and approximate number of affected Data Subjects and records, likely consequences, measures taken or proposed, and a contact for further information. Phaseo may provide this information in stages.",
+					"Phaseo will take appropriate steps to contain, investigate, mitigate, and remediate the breach. It will provide the information and assistance Customer reasonably needs to make any notification required by law.",
+					"Phaseo's notice is not an admission of fault or liability. Customer remains responsible for deciding whether it must notify a supervisory authority or affected Data Subjects."
+				],
+				"transfers": [
+					"Phaseo will not make a restricted transfer of Customer Personal Data except on Customer's documented instructions and in compliance with Applicable Data Protection Law.",
+					"The parties may rely on an applicable adequacy decision or regulation. Where that is unavailable, they will enter into and complete the European Commission's 2021 Standard Contractual Clauses for international transfers, the UK International Data Transfer Agreement, the UK Addendum to those EU clauses, or another valid safeguard.",
+					"Where a transfer safeguard requires a transfer risk assessment or UK data protection test, Phaseo will provide information reasonably available to it and implement any supplementary measure agreed by the parties.",
+					"If a transfer mechanism no longer provides a lawful basis for the transfer, the parties will adopt another lawful mechanism or stop the affected processing.",
+					"Before execution, Annex 4 must identify the exporter and importer, relevant SCC module, governing law, supervisory authority, optional clauses, UK mechanism, and processing locations for any transfer not covered by adequacy."
+				],
+				"deletion": [
+					"Customer may retrieve or delete supported Customer Data using available product controls during the term of the Agreement.",
+					"At the end of the Services, Phaseo will, at Customer's choice, return or delete Customer Personal Data and delete existing copies unless applicable law requires retention. Customer must communicate its choice before termination or within 30 days afterward. If Customer makes no choice, Phaseo will delete the data.",
+					"Phaseo will complete deletion of Customer Personal Data from its active systems without undue delay and no later than 30 days after the applicable instruction or termination date. The self-service workflow removes the Auth account and active database records, deletes linked Stripe customer profiles, and queues private R2 objects and Gateway KV entries for a retryable scheduled purge. Completion records retain no user or workspace identifier.",
+					"Copies in backups remain protected and isolated from ordinary use until deleted through the backup cycle. The production Supabase project currently has seven days of daily database restore points and point-in-time recovery is disabled. Phaseo will recheck this window before execution and after a backup-plan change.",
+					"Phaseo's deletion does not remove data held by an independent Controller or customer-directed recipient. Customer must direct those parties separately."
+				],
+				"audit": [
+					"Phaseo will provide information reasonably necessary to show compliance with this DPA and Article 28, subject to duties of confidentiality and security.",
+					"Customer will normally review Phaseo's current trust materials and written responses before requesting an inspection. This does not limit an audit required by Applicable Data Protection Law or a supervisory authority.",
+					"Customer may audit Phaseo once in any 12-month period and after a Personal Data Breach or credible evidence of material non-compliance. Customer must give at least 30 days' notice unless the matter is urgent or a supervisory authority requires shorter notice.",
+					"An audit must be conducted by Customer or an independent qualified auditor bound by confidentiality. It must avoid access to other customers' data, source code, and systems unrelated to the processing. Phaseo will contribute to the audit and may provide equivalent evidence where direct access would create a security risk.",
+					"Customer will bear its audit costs and Phaseo's reasonable costs unless the audit finds a material breach of this DPA by Phaseo.",
+					"Phaseo does not currently have a SOC 2 report, ISO 27001 certificate, or independent penetration-test report."
+				],
+				"term": [
+					"This DPA remains in force while Phaseo processes Customer Personal Data under the Agreement.",
+					"Nothing in this DPA relieves either party of duties or liability imposed directly on it by Applicable Data Protection Law.",
+					"The liability limits and exclusions in the Agreement apply to this DPA to the extent permitted by law.",
+					"The Agreement's governing-law and dispute terms apply unless Applicable Data Protection Law or an incorporated transfer mechanism requires otherwise."
+				],
+				"annex1": [
+					{
+						"label": "Subject matter",
+						"value": "Providing the dashboard, API gateway, model routing, usage and billing records, configured logging, optional data contribution, observability exports, notifications, and support covered by the Agreement."
+					},
+					{
+						"label": "Duration",
+						"value": "The term of the Agreement and the deletion period in Section 9."
+					},
+					{
+						"label": "Nature and purpose",
+						"value": "Receive, transmit, route, secure, cache, record, retrieve, classify when Customer opts in, export when Customer configures a destination, support, return, and delete data to provide and secure the Services."
+					},
+					{
+						"label": "Frequency",
+						"value": "Continuous or intermittent, depending on Customer's use of the Services."
+					},
+					{
+						"label": "Data Subjects",
+						"value": "Customer's users, personnel, contractors, end users, customers, suppliers, and other people whose data Customer submits through the Services."
+					},
+					{
+						"label": "Personal-data types",
+						"value": "Prompt, message, document, image, audio, video, tool, and model-output content; identifiers; account and workspace references; device, IP, coarse location, authentication, routing, provider, usage, cost, latency, error, security, and support metadata."
+					},
+					{
+						"label": "Sensitive data",
+						"value": "The Services do not require special-category or criminal-offence data. Phaseo cannot reliably determine whether Customer has included such data in free-form content. The restriction in Section 3 applies."
+					},
+					{
+						"label": "Retention",
+						"value": "Response cache: five minutes by default and no more than 24 hours when configured. Optional private I/O logs: 90, 180, or 365 days. Optional data contributions: no more than 30 days. Other Customer Personal Data follows Section 9 and the Agreement."
+					},
+					{
+						"label": "Controller rights and duties",
+						"value": "Customer may give lawful instructions, configure the Services, exercise audit and assistance rights under this DPA, and require return or deletion. Customer must meet the obligations in Section 3."
+					}
+				],
+				"annex2": [
+					"HTTPS for public service delivery and connections from Phaseo to AI Providers.",
+					"AES-256-GCM encryption before storage for bring-your-own-provider credentials. Supported webhook and notification secrets also use encrypted storage.",
+					"One-way keyed or password-based derivation for API, management, and OAuth secrets.",
+					"Workspace roles, database access policies, scoped API and OAuth permissions, consent screens, and revocation controls.",
+					"Rate limits on sensitive authentication and realtime routes, plus structured validation at request and configuration boundaries.",
+					"Managed infrastructure logs, request metadata, provider-health signals, and a public incident status page.",
+					"Version control, dependency lockfiles, automated linting, type checking, targeted tests, and private vulnerability reporting."
+				],
+				"annex2Security": "Exclusion of raw gateway content from the primary request database and analytics, subject to the response-cache, I/O-logging, data-contribution, AI Provider, and customer-directed destination paths described in the <securityWhitepaper>security whitepaper</securityWhitepaper>.",
+				"annex2Summary": "These measures are self-attested. Phaseo does not claim an independently audited security programme, tested disaster-recovery programme, or formal certification.",
+				"annex3Introduction": "The dated <subprocessorSchedule>subprocessor schedule</subprocessorSchedule> forms Annex 3 when this DPA is executed. Section 5 governs additions and replacements.",
+				"annex3Review": "Phaseo has completed a preliminary classification of the active Phaseo-managed AI Providers. Before execution, Phaseo must complete the outstanding processor-contract, account-setting, transfer, and retention checks identified in the schedule, and must remove or restrict any managed provider that is not approved for Customer Personal Data. Customer-directed providers used under Customer's own credentials or agreement remain identified separately.",
+				"annex4": "Complete this annex before execution if Customer Personal Data will be transferred without an applicable adequacy decision or regulation. Identify the transfer mechanism, exporter and importer, countries, categories of data and Data Subjects, frequency, purpose, retention, competent supervisory authority, governing law, optional SCC clauses, and any supplementary measures.",
+				"sourcesIntroduction": "This draft follows the current processor-contract checklist published by the UK Information Commissioner's Office and the European Commission's Article 28 and international-transfer materials. The ICO notes that parts of its processor-contract guidance are being reviewed following the Data (Use and Access) Act 2025. Qualified counsel should check the final execution copy against the law and guidance then in force.",
+				"sourceLinks": [
+					"ICO: required controller-processor contract terms",
+					"ICO: international transfers",
+					"European Commission: controller-processor standard clauses"
+				],
+				"signature": {
+					"customer": "Customer",
+					"phaseoParty": "Daniel Butler, trading as Phaseo",
+					"customerFields": [
+						"Name",
+						"Title",
+						"Signature",
+						"Date"
+					],
+					"phaseoNameLabel": "Name",
+					"phaseoName": "Daniel Butler",
+					"capacityLabel": "Capacity",
+					"capacity": "Sole trader",
+					"signatureLabel": "Signature",
+					"dateLabel": "Date",
+					"insertPlaceholder": "[insert]"
+				},
+				"subprocessorsIntroduction": "Customer gives general written authorisation for Phaseo to use the Subprocessors on the <subprocessorSchedule>subprocessor schedule</subprocessorSchedule>.",
+				"subprocessorsClauses": [
+					"Phaseo will give Customer at least 30 days' notice before a new Subprocessor begins processing Customer Personal Data. Notice will be sent to the account email address and recorded on the subprocessor schedule. If urgent security or service-continuity needs make advance notice impracticable, Phaseo will give notice as soon as practicable.",
+					"Customer may object in writing during the notice period on reasonable data-protection grounds. The parties will try in good faith to resolve the objection. If they cannot, Phaseo may avoid the Subprocessor, offer a reasonable service change, or permit Customer to stop using the affected part of the Services under the Agreement.",
+					"Phaseo will bind each Subprocessor by written terms that provide no less protection for Customer Personal Data than the applicable terms of this DPA. Phaseo remains responsible for the Subprocessor's performance to the extent required by Applicable Data Protection Law.",
+					"An AI Provider used through a Phaseo-managed route is a Subprocessor where it processes Customer Personal Data on Phaseo's behalf. If Customer supplies its own provider credentials or has a direct agreement with the AI Provider, that provider is a customer-directed recipient unless the subprocessor schedule says otherwise. A provider's legal role depends on the actual processing and applicable law, not the label used in this DPA.",
+					"Customer instructs Phaseo to disclose Customer Data to the AI Providers allowed by Customer's routing configuration. Customer may use available provider restrictions where provider identity, location, retention, or training policy matters."
+				]
+			}
+		}
+	},
+	"pricing": {
+		"title": "Pricing",
+		"description": "Simple pay-as-you-go AI gateway pricing with optional self-serve Enterprise identity, governance, and included-payment plans.",
+		"everythingIncluded": "Everything included",
+		"everythingIncludedBody": "Explore the model catalog, rankings, SDKs, and free model chat before spending anything. Add credits when you need paid model usage without changing plans.",
+		"swipeCompare": "Swipe horizontally to compare providers.",
+		"showFreeAccess": "Show free access",
+		"compareCompetitors": "Compare competitors",
+		"competitorNote": "Competitor details reflect published documentation checked 26 July 2026. ‘Not advertised’ means the feature could not be verified in public product or pricing documentation.",
+		"selfServeEnterprise": "Self Serve Enterprise",
+		"selfServeEnterpriseBody": "Configure Enterprise for teams from 100 to 100,000 members, see the exact monthly price, and subscribe without a sales call or committed model spend.",
+		"buildPlan": "Build my plan",
+		"activeMembers": "Active members",
+		"users": "users",
+		"enterpriseSubscription": "Enterprise subscription",
+		"monthEstimated": "/month estimated",
+		"whatYouGet": "What you get",
+		"included": "Included",
+		"creditTopUpFee": "Credit top-up fee",
+		"modelUsageCredits": "Model usage credits",
+		"purchasedSeparately": "Purchased separately",
+		"committedModelSpend": "Committed model spend",
+		"none": "None",
+		"usdNote": "USD monthly subscription. Credit purchases remain separate and use the standard 5% top-up fee across supported payment methods. Spend as much or as little on model usage as you need—the same subscription price applies.",
+		"features": {
+			"sso": "SAML SSO and enforced sign-in",
+			"scim": "SCIM users, groups and bulk operations",
+			"departments": "Departments and workspace roles",
+			"audit": "Audit and governance controls",
+			"priority": "Priority support"
+		},
+		"paygHeadline": "Pay as you go by default. Add Enterprise when your team needs it.",
+		"paygBody": "Buy credits when you need them and pay for what you use. Enterprise identity and payment benefits are optional, priced openly, and activated without a sales call.",
+		"manageCredits": "Manage Credits",
+		"manageProviderKeys": "Manage Provider Keys",
+		"modelPricingCalculator": "Model Pricing Calculator",
+		"payg": "Pay as you go",
+		"paygBodyShort": "Top up credits only when you need them.",
+		"enterpriseOptional": "Enterprise is optional",
+		"enterpriseOptionalBody": "Add SSO, SCIM and governance without changing usage pricing.",
+		"pricesPublic": "Prices stay public",
+		"pricesPublicBody": "Answer a short questionnaire and subscribe immediately.",
+		"faqTitle": "Frequently Asked Questions",
+		"ready": "Ready to get started?",
+		"readyBody": "Start free, add credits when you need them, and keep the same pay-as-you-go terms as you grow.",
+		"openPlatform": "Open Platform",
+		"askPricing": "Ask a pricing question",
+		"andReview": "and review",
+		"modelPricingGuide": "how Phaseo calculates model pricing",
+		"whatPhaseoCharges": "What Phaseo charges",
+		"usageAndFeeDetails": "Model usage and Phaseo fees are shown separately so you can see what is charged, by whom, and when.",
+		"managedModelUsage": "Managed model usage",
+		"catalogModelPrice": "Catalog model price",
+		"managedModelUsageDetails": "Deducted from your prepaid credits after successful usage. No additional Phaseo request markup.",
+		"creditPurchase": "Credit purchase",
+		"creditTopUpValue": "{feePercent}% top-up fee ($1 minimum)",
+		"creditPurchaseDetails": "Charged when you purchase credits. It is not charged again for each managed request.",
+		"bringYourOwnKey": "Bring Your Own Key (BYOK)",
+		"byokUsageValue": "{freeRequests, number} requests included, then {feePercent}% of provider-equivalent cost.",
+		"byokUsageDetails": "Your provider bills model usage directly. The allowance resets at the start of each UTC month.",
+		"featureColumn": "Feature",
+		"freeAccessColumn": "Free access",
+		"activeMembersValue": "{count, plural, one {# active member} other {# active members}}",
+		"memberOverageSummary": "{base} base plus {count} additional members at {rate} per member/month.",
+		"membersAboveLimit": "Members above {limit}",
+		"overageRate": "{rate} per unique member/month",
+		"buyCredits": "Buy credits",
+		"addCredits": "Add credits",
+		"viewUsage": "View usage",
+		"gotACode": "Got a code?",
+		"billingInviteMessageWithLink": "You have been invited to set up invoiced billing. <link>Get started here</link>.",
+		"billingInviteOnlyWithContact": "Invoiced billing is currently invite-only. <link>Get in touch</link> to request access.",
+		"billingInviteOnly": "Invoiced billing is currently invite-only.",
+		"faq": {
+			"sectionTitles": {
+				"billing-pricing": "Charges and Billing",
+				"enterprise": "Enterprise",
+				"byok": "Bring Your Own Key",
+				"usage-controls": "Usage and Controls",
+				"routing-reliability": "Routing and Reliability",
+				"apis-features": "APIs and Features",
+				"privacy-data": "Privacy and Data",
+				"support-status": "Support and Status"
+			},
+			"questions": {
+				"how-are-tokens-billed": "How is managed model usage billed?",
+				"what-does-phaseo-charge": "What does Phaseo charge?",
+				"is-top-up-fee-per-request": "Is the {fee, number}% credit fee charged on every request?",
+				"how-is-billing-structured": "How is billing structured?",
+				"are-sdks-priced-separately": "Do SDKs or integrations cost extra?",
+				"contracts-commitments": "Do I need a contract or monthly commitment?",
+				"are-failed-or-fallback-attempts-billed": "Are failed or fallback attempts billed?",
+				"streaming-pricing": "Are streaming responses billed differently?",
+				"data-api-free": "Is Data API access free?",
+				"payment-methods": "What payment methods do you accept?",
+				"refunds": "Can I refund a credit purchase?",
+				"invoices": "Can I download an invoice?",
+				"enterprise-plan": "What is Self Serve Enterprise?",
+				"enterprise-credit-fees": "Does Enterprise change credit top-up fees?",
+				"enterprise-team-sizes": "How does pricing change as my team grows?",
+				"enterprise-usage-billing": "Does Enterprise include model usage?",
+				"enterprise-bank-transfer": "Do USD bank transfers use different pricing?",
+				"how-does-byok-work": "How is BYOK billed?",
+				"what-is-included-with-byok": "What is included with BYOK?",
+				"provider-equivalent-cost": "What does provider-equivalent cost mean?",
+				"can-i-control-byok-fallback": "Can I control when Phaseo uses my provider keys?",
+				"do-you-enforce-rate-limits": "Do you enforce platform rate limits?",
+				"can-i-separate-environments": "Can I separate development, staging, and production?",
+				"can-i-set-budgets": "Can I set budgets and spend controls?",
+				"provider-unavailable": "What happens if a provider is unavailable?",
+				"routing-mode": "Can I optimise routing for price or latency?",
+				"region-privacy-routing": "Can I restrict regions or require zero data retention?",
+				"model-pricing-changes": "What happens when a model is deprecated or its price changes?",
+				"openai-anthropic-migration": "Can I migrate from OpenAI, Anthropic, or another gateway?",
+				"tools-structured-output": "Do you support tools and structured output?",
+				"multimodal-endpoints": "Which modalities can I use?",
+				"training-data": "Does Phaseo train on my prompts or responses?",
+				"request-logging": "What request data does Phaseo store?",
+				"service-status": "Where can I check incidents and uptime?",
+				"contact-support": "How do I contact support?"
+			},
+			"answers": {
+				"how-are-tokens-billed": "Input, output, and other billable usage is deducted from your Phaseo credit balance at the model prices shown in the catalog. Phaseo does not add a separate markup to each managed request.",
+				"what-does-phaseo-charge": "For managed usage, Phaseo charges a {fee, number}% fee, with a {minimum} minimum, when you purchase credits. For BYOK, the first {freeRequests, number} requests each UTC calendar month have no Phaseo service fee. After that, the fee is {serviceFee, number}% of provider-equivalent cost.",
+				"is-top-up-fee-per-request": "No. The {fee, number}% fee, subject to a {minimum} minimum, is charged once when credits are purchased. Managed model usage then draws down those credits at the catalog price without another Phaseo request markup.",
+				"how-is-billing-structured": "Free access includes supported free models, public data, SDKs, and integrations. Paid model usage draws down prepaid credits. Teams that need SSO, SCIM, governance, or included payment benefits can add a separate monthly Enterprise subscription without changing how model usage is metered.",
+				"are-sdks-priced-separately": "No. Phaseo client SDKs, Agent SDKs, compatibility layers, and documented integrations do not require a separate plan or subscription. Requests made through them follow the same managed usage or BYOK pricing shown on this page.",
+				"contracts-commitments": "Pay As You Go has no contract, subscription, or minimum monthly spend. Enterprise is an optional monthly subscription that can be activated self-serve; it does not require a negotiated enterprise agreement.",
+				"are-failed-or-fallback-attempts-billed": "Phaseo records managed charges for successful model usage. A failed attempt does not add a successful-usage charge. If a fallback provider completes the request, the usage served by that provider is billed normally. BYOK providers may apply their own billing rules to work processed before an error.",
+				"streaming-pricing": "No. Streaming changes how the response is delivered, not the Phaseo pricing model. The measured input, output, and other billable usage is charged at the same catalog price as a non-streaming request.",
+				"data-api-free": "Yes. Data API access is available to everyone. You do not need to purchase gateway credits to query public model, provider, pricing, benchmark, or ranking data.",
+				"payment-methods": "Phaseo accepts credit and debit cards for credit top-ups. Supported Enterprise workspaces can also fund credits by USD bank transfer as that payment method is enabled for their Stripe customer. The standard 5% top-up fee applies across supported payment methods.",
+				"refunds": "A credit purchase is eligible for a self-serve refund within 24 hours if none of the purchased credits have been used. You can review eligibility and request the refund from Settings → Credits.",
+				"invoices": "Yes. PDF invoices are available for completed credit purchases from Settings → Credits. If an invoice is missing for a successful payment, contact support with the payment ID and date.",
+				"enterprise-plan": "It is a monthly workspace subscription for teams that need SAML SSO, SCIM provisioning, departments and roles, audit and governance controls, and priority support. Exact self-serve pricing is available for teams from 100 to 100,000 active members.",
+				"enterprise-credit-fees": "No. Self Serve Enterprise is a subscription for identity, governance and support. Credit purchases remain separate and use the standard 5% top-up fee, with a {minimum} minimum, across supported payment methods.",
+				"enterprise-team-sizes": "Enterprise is priced for your exact active-member count, with lower marginal per-member rates at larger volumes. The calculator shows an immediate self-serve monthly price for teams up to 100,000 members.",
+				"enterprise-usage-billing": "No. The Enterprise subscription pays for identity, governance and support. Managed model usage still draws from the workspace credit balance at catalog prices. There is no committed model spend: use as much or as little as you need and the same subscription price applies.",
+				"enterprise-bank-transfer": "Not currently. Supported USD bank transfers use the same 5% credit top-up fee as card funding. Any exceptional wire, refund or banking fee is shown separately when applicable.",
+				"how-does-byok-work": "Your provider bills model usage directly to your provider account. Phaseo does not charge a service fee for your first {freeRequests, number} BYOK requests each UTC calendar month. After that allowance, Phaseo charges {serviceFee, number}% of provider-equivalent cost.",
+				"what-is-included-with-byok": "Secure provider-key storage, gateway routing, request logs, provider selection, and priority or fallback key ordering are included. Provider-side quotas, negotiated rates, and billing remain attached to your provider account.",
+				"provider-equivalent-cost": "It is the catalog cost of the same model, provider route, and measured usage if Phaseo-managed credentials had served the request. After the monthly free allowance, the {serviceFee, number}% BYOK service fee is calculated from that reference amount, not from the amount you top up or the balance in your provider account.",
+				"can-i-control-byok-fallback": "Yes. Priority keys are tried before Phaseo-managed providers. You can also enable fallback BYOK keys that are tried after managed providers.",
+				"do-you-enforce-rate-limits": "No. Phaseo does not apply platform-level rate limits. Upstream providers may still apply their own limits.",
+				"can-i-separate-environments": "Yes. Create separate API keys and policies for each environment so usage, controls, and logs remain isolated.",
+				"can-i-set-budgets": "Yes. Pay As You Go includes API-key and team-level limits and spend controls. Free-model usage does not require spend controls.",
+				"provider-unavailable": "Phaseo can retry or route to another provider that supports the selected model when a provider is rate-limited or returns an error. Presets, provider restrictions, and BYOK fallback settings determine which alternatives are available.",
+				"routing-mode": "Yes. Workspace routing modes can rank compatible providers by balanced performance, price, latency, or throughput. You can also use presets to restrict the provider set before routing begins.",
+				"region-privacy-routing": "Yes, when matching provider offers are available. Requests can specify required execution and data regions or require zero-data-retention support. Phaseo returns an error rather than silently using a route that does not meet those requirements.",
+				"model-pricing-changes": "Phaseo tracks model lifecycle and provider availability in the catalog. Current catalog pricing is applied when a request is served. Use exact model IDs, availability data, and fallback presets when you need controlled migrations between model versions.",
+				"openai-anthropic-migration": "Yes. Phaseo provides OpenAI-compatible Chat Completions and Responses APIs, an Anthropic-compatible Messages API, SDK compatibility, and migration guides. Most integrations begin by changing the base URL, API key, and model ID.",
+				"tools-structured-output": "Yes. Tool calling, structured-output schemas, server tools, and optional response healing are available where the selected model and endpoint support them. Model capability data is available through the catalog and Data API.",
+				"multimodal-endpoints": "Phaseo supports text, image, video, audio, speech, transcription, music, embeddings, moderation, reranking, OCR, and realtime workflows across supported models and providers. Availability and billing units vary by model.",
+				"training-data": "No. Phaseo does not use gateway prompts or responses to train its own models. Requests are sent to the provider that serves them, so that provider’s data and training policies still apply unless your routing requirements exclude that provider.",
+				"request-logging": "Phaseo stores operational and billing metadata such as model, provider, token counts, latency, and errors. Raw prompts and responses are not persistently stored by default. If workspace I/O logging is enabled, payload retention follows the workspace privacy and retention settings.",
+				"service-status": "Current service status and incident history are published at status.phaseo.app. Request IDs and activity logs can help support trace a specific failure.",
+				"contact-support": "Use the contact page or email support@phaseo.app for account, billing, and technical questions. Bug reports and feature requests can also be filed through the public GitHub repository."
+			}
+		},
+		"matrix": {
+			"copy": {
+				"ai-gateway": "AI gateway",
+				"gateway-usage": "Gateway usage",
+				"limited-execution-on-supported-free-models": "Limited execution on supported free models",
+				"production-execution-traffic": "Production execution traffic",
+				"credit-purchase-fee": "Credit purchase fee",
+				"no-top-up-required": "No top-up required",
+				"5-1-minimum-when-credits-are-purchased": "5% ($1 minimum) when credits are purchased",
+				"models": "Models",
+				"includes-free-models-count-varies": "Includes free models (count varies)",
+				"execute-across-gateway-enabled-models": "Execute across gateway-enabled models",
+				"providers": "Providers",
+				"gateway-api-access": "Gateway API access",
+				"responses-api": "Responses API",
+				"chat-completions-api": "Chat Completions API",
+				"anthropic-messages-api": "Anthropic Messages API",
+				"available-where-a-supported-free-model-route-exists": "Available where a supported free model route exists.",
+				"text-generation": "Text generation",
+				"image-generation": "Image generation",
+				"video-generation": "Video generation",
+				"audio-generation": "Audio generation",
+				"music-generation": "Music generation",
+				"embeddings": "Embeddings",
+				"support-depends-on-the-selected-model-and-provider": "Support depends on the selected model and provider.",
+				"structured-outputs-and-tool-calling": "Structured outputs and tool calling",
+				"model-support-varies": "Model support varies.",
+				"built-in-server-tools": "Built-in server tools",
+				"the-datetime-tool-is-free-metered-tools-require-credits": "The datetime tool is free. Metered tools require credits.",
+				"tool-costs-shown-separately": "Tool costs shown separately",
+				"request-activity-logs-and-export": "Request activity logs and export",
+				"view-logs-only-no-export": "View logs only (no export)",
+				"operational-logs-with-export": "Operational logs with export",
+				"smart-auto-routing": "Smart auto-routing",
+				"within-the-supported-free-model-set": "Within the supported free model set",
+				"preferred-provider-selection": "Preferred provider selection",
+				"routing-presets-fallbacks-and-service-tiers": "Routing presets, fallbacks, and service tiers",
+				"routing-is-limited-to-supported-free-model-routes": "Routing is limited to supported free model routes.",
+				"response-healing": "Response healing",
+				"repairs-supported-structured-responses": "Repairs supported structured responses.",
+				"guardrails": "Guardrails",
+				"any-underlying-model-usage-is-billed-normally": "Any underlying model usage is billed normally.",
+				"asynchronous-jobs": "Asynchronous jobs",
+				"batch-api": "Batch API",
+				"files-api": "Files API",
+				"video-generation-api": "Video generation API",
+				"webhooks": "Webhooks",
+				"availability-depends-on-the-selected-model-and-provider": "Availability depends on the selected model and provider.",
+				"budgets-and-spend-controls": "Budgets and spend controls",
+				"not-required-for-free-model-usage": "Not required for free-model usage",
+				"prompt-caching": "Prompt caching",
+				"automatic-only-when-a-free-model-supports-caching": "Automatic only when a free model supports caching",
+				"management-api": "Management API",
+				"team-workspaces": "Team workspaces",
+				"single-team": "Single team",
+				"multi-team": "Multi-team",
+				"managed-workspace-controls": "Managed workspace controls",
+				"payment-method": "Payment method",
+				"none-required": "None required",
+				"credit-or-debit-card": "Credit or debit card",
+				"card-supported-usd-bank-transfer-with-included-payments": "Card; supported USD bank transfer with Included Payments",
+				"billing-method": "Billing method",
+				"no-charge": "No charge",
+				"prepaid-credits": "Prepaid credits",
+				"monthly-subscription-prepaid-credits": "Monthly subscription + prepaid credits",
+				"bring-your-own-provider-keys": "Bring your own provider keys",
+				"add-provider-credentials-and-route-through-your-own-provider-account": "Add provider credentials and route through your own provider account.",
+				"priority-and-fallback-byok-routing-are-included": "Priority and fallback BYOK routing are included.",
+				"byok-service-fee": "BYOK service fee",
+				"250k-requests-month-included-then-2-5-of-provider-equivalent-cost": "250K requests/month included, then 2.5% of provider-equivalent cost",
+				"usage-limits-management": "Usage limits management",
+				"rate-limits": "Rate limits",
+				"no-platform-limits": "No platform limits",
+				"upstream-provider-limits-may-still-apply": "Upstream provider limits may still apply.",
+				"support": "Support",
+				"docs": "Docs",
+				"included": "Included",
+				"priority-support": "Priority support",
+				"enterprise-identity-and-governance": "Enterprise identity and governance",
+				"enterprise": "Enterprise",
+				"saml-single-sign-on": "SAML single sign-on",
+				"configure-a-workspace-identity-provider-without-a-sales-led-setup": "Configure a workspace identity provider without a sales-led setup.",
+				"scim-users-groups-and-bulk-operations": "SCIM users, groups, and bulk operations",
+				"provision-users-and-organisational-groups-from-a-compatible-identity-provider": "Provision users and organisational groups from a compatible identity provider.",
+				"departments-and-workspace-roles": "Departments and workspace roles",
+				"keep-member-permissions-separate-from-department-structure": "Keep member permissions separate from department structure.",
+				"enterprise-audit-and-governance-controls": "Enterprise audit and governance controls",
+				"volume-discounted-member-pricing": "Volume-discounted member pricing",
+				"lower-marginal-member-rates-are-applied-automatically-as-the-workspace-grows": "Lower marginal member rates are applied automatically as the workspace grows.",
+				"chat-and-media-studios": "Chat and media studios",
+				"free-model-chat": "Free model chat",
+				"chat-with-supported-free-model-routes-without-a-credit-balance": "Chat with supported free model routes without a credit balance.",
+				"use-paid-and-free-models-from-the-same-chat": "Use paid and free models from the same chat.",
+				"side-by-side-model-comparison": "Side-by-side model comparison",
+				"multimodal-chat-and-parameter-controls": "Multimodal chat and parameter controls",
+				"model-capabilities-vary": "Model capabilities vary.",
+				"image-video-audio-and-music-studios": "Image, video, audio, and music studios",
+				"use-a-supported-free-route-or-byok-your-provider-charges-still-apply-with-byok": "Use a supported free route or BYOK. Your provider charges still apply with BYOK.",
+				"realtime-voice-speech-and-transcription": "Realtime voice, speech, and transcription",
+				"local-chat-history": "Local chat history",
+				"sdks-and-integrations": "SDKs and integrations",
+				"client-sdks": "Client SDKs",
+				"typescript-python-go-java-c-php-ruby-rust-c": "TypeScript, Python, Go, Java, C#, PHP, Ruby, Rust, C++",
+				"agent-sdks": "Agent SDKs",
+				"typescript-python-go-c-php-ruby": "TypeScript, Python, Go, C#, PHP, Ruby",
+				"vercel-ai-sdk-provider": "Vercel AI SDK provider",
+				"openai-and-anthropic-sdk-compatibility": "OpenAI and Anthropic SDK compatibility",
+				"framework-and-coding-assistant-integrations": "Framework and coding assistant integrations",
+				"model-data-and-discovery": "Model data and discovery",
+				"database-usage": "Database usage",
+				"public-model-and-pricing-data": "Public model and pricing data",
+				"public-provider-metadata": "Public provider metadata",
+				"provider-data-explorer": "Provider data explorer",
+				"token-pricing-visibility": "Token pricing visibility",
+				"multimodal-rankings": "Multimodal rankings",
+				"text-image-embeddings-rerank-audio-video-speech-transcription": "Text, image, embeddings, rerank, audio, video, speech, transcription",
+				"benchmarks-and-performance-comparisons": "Benchmarks and performance comparisons",
+				"pricing-calculator-and-request-builder": "Pricing calculator and request builder",
+				"data-api-access": "Data API access",
+				"0-gateway-markup-payment-processing-fees-may-apply": "0% gateway markup; payment processing fees may apply",
+				"1m-requests-month-free-then-5": "1M requests/month free, then 5%",
+				"200-requests-60-sec-with-unified-billing": "200 requests/60 sec with Unified Billing",
+				"5-1-5-non-us-cards": "5% (+1.5% non-US cards)",
+				"5-5-0-80-minimum": "5.5% ($0.80 minimum)",
+				"5-with-unified-billing": "5% with Unified Billing",
+				"50-free-requests-day-high-paid-limits": "50 free requests/day; high paid limits",
+				"ai-sdk-interface": "AI SDK interface",
+				"available-at-the-openai-compatible-v1-responses-endpoint": "Available at the OpenAI-compatible /v1/responses endpoint.",
+				"available-through-cloudflare-s-openai-compatible-rest-api": "Available through Cloudflare's OpenAI-compatible REST API.",
+				"byok-or-unified-billing-credits": "BYOK or Unified Billing credits",
+				"card": "Card",
+				"card-crypto-and-more": "Card, crypto, and more",
+				"card-enterprise-invoicing": "Card; enterprise invoicing",
+				"chat-model-selection": "Chat model selection",
+				"cloudflare-billing-account": "Cloudflare billing account",
+				"community-or-email": "Community or email",
+				"community-sla-on-enterprise": "Community; SLA on enterprise",
+				"credits-byok-or-subscription": "Credits, BYOK, or subscription",
+				"credits-or-enterprise-invoice": "Credits or enterprise invoice",
+				"dedicated-asynchronous-video-api": "Dedicated asynchronous video API.",
+				"docs-and-community": "Docs and community",
+				"docs-and-vercel-support": "Docs and Vercel support",
+				"enterprise-feature": "Enterprise feature",
+				"gateway-and-provider-limits": "Gateway and provider limits",
+				"includes-provider-and-gateway-server-tools": "Includes provider and gateway server tools.",
+				"includes-provider-tools-and-ai-sdk-tooling": "Includes provider tools and AI SDK tooling.",
+				"includes-web-search-and-provider-tools": "Includes web search and provider tools.",
+				"model-catalog": "Model catalog",
+				"model-dependent": "Model dependent",
+				"model-pricing": "Model pricing",
+				"no-fee": "No fee",
+				"no-gateway-markup": "No gateway markup",
+				"no-hosted-chat": "No hosted chat",
+				"no-hosted-studio": "No hosted studio",
+				"no-paid-model-rate-limit": "No paid-model rate limit",
+				"no-unified-billing-fee": "No Unified Billing fee",
+				"openrouter-documents-a-beta-responses-api": "OpenRouter documents a beta Responses API.",
+				"openrouter-publishes-rankings-and-usage-based-model-lists-across-multiple-modalities": "OpenRouter publishes rankings and usage-based model lists across multiple modalities.",
+				"persistent-logs-are-included-logpush-requires-workers-paid": "Persistent logs are included. Logpush requires Workers Paid.",
+				"pricing-data": "Pricing data",
+				"project-apis": "Project APIs",
+				"provider-dependent": "Provider dependent",
+				"provider-performance-data": "Provider performance data",
+				"public-guardrails-include-budgets-allowlists-zdr-prompt-injection-and-sensitive-data-policies": "Public guardrails include budgets, allowlists, ZDR, prompt-injection, and sensitive-data policies.",
+				"repairs-malformed-structured-json-on-supported-non-streaming-requests": "Repairs malformed structured JSON on supported non-streaming requests.",
+				"speech-and-transcription-are-publicly-documented": "Speech and transcription are publicly documented.",
+				"speech-generation-is-publicly-documented": "Speech generation is publicly documented.",
+				"supported-through-the-ai-sdk-video-generation-interface": "Supported through the AI SDK video generation interface.",
+				"text-image-audio-video-more": "Text, image, audio, video + more",
+				"text-image-video": "Text, image, video",
+				"tts-and-asr-are-available-through-ai-run": "TTS and ASR are available through /ai/run.",
+				"typescript": "TypeScript",
+				"typescript-agents-sdk": "TypeScript Agents SDK",
+				"typescript-ai-sdk-agent-tooling": "TypeScript AI SDK agent tooling",
+				"typescript-ai-sdk-provider-openai-compatible-sdks": "TypeScript AI SDK provider; OpenAI-compatible SDKs",
+				"typescript-ai-sdk-python-via-compatible-sdks": "TypeScript AI SDK; Python via compatible SDKs",
+				"typescript-python-go": "TypeScript, Python, Go",
+				"typescript-workers-bindings-rest-in-any-language": "TypeScript Workers bindings; REST in any language",
+				"vercel-ai-gateway-leaderboards-are-filterable-by-modality": "Vercel AI Gateway leaderboards are filterable by modality.",
+				"vercel-documents-a-dedicated-responses-api": "Vercel documents a dedicated Responses API.",
+				"video-jobs": "Video jobs",
+				"workers-ai-usage-charges-apply": "Workers AI usage charges apply."
+			},
+			"notApplicable": "Not applicable",
+			"notIncluded": "Not included",
+			"included": "Included",
+			"notAdvertised": "Not advertised",
+			"detailsAriaLabel": "{label}: {status}. View details",
+			"cellLabel": "{feature}, {plan}",
+			"paygCreditPurchaseFee": "{fee, number}% ({minimum} minimum) when credits are purchased",
+			"enterpriseCreditPurchaseFee": "5% ({minimum} minimum) when credits are purchased",
+			"byokServiceFee": "{freeRequests, number} requests/month included, then {serviceFee, number}% of provider-equivalent cost"
+		}
+	},
+	"gatewayComparison": {
+		"title": "Phaseo vs {name}",
+		"metadataTitle": "Phaseo vs {name}: AI gateway comparison",
+		"metadataDescription": "Compare {name} and Phaseo for model routing, pricing, BYOK, model information, and observability.",
+		"eyebrow": "AI gateway comparison",
+		"tryPhaseo": "Try Phaseo",
+		"migrationGuide": "Migration guide",
+		"phaseoStandsOut": "Where Phaseo stands out",
+		"competitorStandsOut": "Where {name} stands out",
+		"capabilityComparison": "Capability comparison",
+		"capability": "Capability",
+		"phaseo": "Phaseo",
+		"whichShouldYouChoose": "Which should you choose?",
+		"officialSources": "Official {name} sources",
+		"lastReviewed": "Last reviewed {date}. Product features and pricing can change; verify purchasing decisions with each provider.",
+		"otherComparisons": "Other gateway comparisons",
+		"moreComparisons": "More gateway comparisons",
+		"content": {
+			"openrouter": {
+				"intro": "Compare two independent, OpenAI-compatible platforms for accessing and routing models across providers.",
+				"bestFor": "Choose OpenRouter when its broad catalogue, established routing controls, or existing ecosystem fit is the deciding factor. Choose Phaseo when you want model intelligence, gateway routing, and request observability in one open-source platform.",
+				"phaseoAdvantage": "Phaseo combines an open model database with provider pricing, availability, benchmarks, routing, and observability instead of treating the catalogue as only an API picker.",
+				"competitorAdvantage": "OpenRouter offers a mature multi-provider routing surface with extensive provider filters and a broad existing model ecosystem.",
+				"rows": [
+					{
+						"capability": "Primary product shape",
+						"phaseo": "Model database, gateway, and observability platform",
+						"competitor": "Unified model API and provider router"
+					},
+					{
+						"capability": "Source availability",
+						"phaseo": "Open-source platform and public catalogue",
+						"competitor": "Hosted platform with public documentation"
+					},
+					{
+						"capability": "Provider routing",
+						"phaseo": "Policies, fallbacks, presets, and provider compatibility",
+						"competitor": "Provider ordering, filtering, fallbacks, and price/latency/throughput sorting"
+					},
+					{
+						"capability": "BYOK",
+						"phaseo": "First 1M requests monthly fee-free, then a service fee",
+						"competitor": "First 1M requests monthly fee-free, then 5% of equivalent inference cost"
+					},
+					{
+						"capability": "Managed usage fees",
+						"phaseo": "Credit-purchase fee; catalogue model rates remain separate",
+						"competitor": "5.5% credit-purchase fee on pay-as-you-go"
+					},
+					{
+						"capability": "Model research",
+						"phaseo": "Pricing, providers, lifecycle, capabilities, benchmarks, and related models",
+						"competitor": "Model catalogue, pricing, rankings, and provider availability"
+					}
+				],
+				"sources": [
+					"OpenRouter pricing",
+					"OpenRouter provider routing",
+					"OpenRouter BYOK"
+				]
+			},
+			"vercel-ai-gateway": {
+				"intro": "Compare Phaseo with Vercel's gateway for unified model access, routing, billing, and usage visibility.",
+				"bestFor": "Choose Vercel AI Gateway when your stack is already centred on Vercel and the AI SDK. Choose Phaseo when you want an infrastructure-independent, open-source gateway joined to a deeper public model database.",
+				"phaseoAdvantage": "Phaseo is built around an open model-intelligence layer that connects research, provider routes, pricing, operational signals, and gateway usage.",
+				"competitorAdvantage": "Vercel AI Gateway integrates closely with Vercel projects and the AI SDK, and currently documents zero token markup including BYOK.",
+				"rows": [
+					{
+						"capability": "Primary product shape",
+						"phaseo": "Model database, gateway, and observability platform",
+						"competitor": "Managed gateway integrated with the Vercel platform"
+					},
+					{
+						"capability": "Framework compatibility",
+						"phaseo": "OpenAI-compatible API and Phaseo SDKs",
+						"competitor": "AI SDK, OpenAI Chat Completions, Responses, and Anthropic Messages"
+					},
+					{
+						"capability": "Routing",
+						"phaseo": "Provider policies, fallbacks, presets, and compatibility-aware routes",
+						"competitor": "Dynamic provider selection, load balancing, retries, and fallbacks"
+					},
+					{
+						"capability": "BYOK",
+						"phaseo": "Workspace provider keys with routing controls",
+						"competitor": "Provider credentials with BYOK-first fallback behaviour"
+					},
+					{
+						"capability": "Pricing model",
+						"phaseo": "Pay as you go with an explicit credit-purchase fee",
+						"competitor": "Provider list rates with zero token markup"
+					},
+					{
+						"capability": "Model research",
+						"phaseo": "Public lifecycle, pricing, availability, benchmark, and provider intelligence",
+						"competitor": "Public model list plus gateway pricing and provider variations"
+					}
+				],
+				"sources": [
+					"Vercel AI Gateway overview",
+					"Vercel AI Gateway pricing",
+					"Vercel provider options"
+				]
+			},
+			"cloudflare-ai-gateway": {
+				"intro": "Compare Phaseo's unified model platform with Cloudflare's control plane for observing and controlling AI application traffic.",
+				"bestFor": "Choose Cloudflare AI Gateway when edge caching, rate limiting, and the wider Cloudflare platform are central requirements. Choose Phaseo when model discovery, managed model access, routing, and observability need to live together.",
+				"phaseoAdvantage": "Phaseo provides a public model database and managed multi-provider model access alongside gateway routing and observability.",
+				"competitorAdvantage": "Cloudflare brings gateway analytics, logging, caching, and rate limiting into its global developer platform, with core gateway features currently offered free.",
+				"rows": [
+					{
+						"capability": "Primary product shape",
+						"phaseo": "Model database, managed gateway, and observability platform",
+						"competitor": "AI traffic control plane in the Cloudflare platform"
+					},
+					{
+						"capability": "Traffic controls",
+						"phaseo": "Routing policies, fallbacks, guardrails, and provider controls",
+						"competitor": "Caching, rate limiting, retries, model fallback, and routing"
+					},
+					{
+						"capability": "Managed model access",
+						"phaseo": "Managed credits or BYOK through one model API",
+						"competitor": "Unified billing and provider integrations, plus BYOK-style provider connections"
+					},
+					{
+						"capability": "Observability",
+						"phaseo": "Request, cost, model, provider, reliability, and usage views",
+						"competitor": "Request, token, cost analytics, and persistent logs"
+					},
+					{
+						"capability": "Pricing model",
+						"phaseo": "Pay as you go with an explicit credit-purchase fee",
+						"competitor": "Core gateway features free; provider inference passed through without markup"
+					},
+					{
+						"capability": "Model research",
+						"phaseo": "Lifecycle, price, providers, benchmarks, capabilities, and related models",
+						"competitor": "Gateway model catalogue and provider integration documentation"
+					}
+				],
+				"sources": [
+					"Cloudflare AI Gateway overview",
+					"Cloudflare AI Gateway pricing"
+				]
+			}
+		}
+	},
+	"legal": {
+		"lastUpdated": "Last updated: {date}",
+		"privacyTitle": "Privacy Policy",
+		"privacyIntro": "This Privacy Policy explains how Daniel Butler operating under the name Phaseo (\"Phaseo\", \"we\", \"us\" or \"our\") collects, uses and protects personal data when you use our websites, dashboards and API gateway (together, the \"Service\").",
+		"termsTitle": "Terms of Service",
+		"termsIntro": "These Terms of Service (\"Terms\") govern your use of the Phaseo website, data directory and unified API gateway (collectively, the \"Service\").",
+		"privacyHeadings": {
+			"scope": "1. Who we are and how this Policy applies",
+			"dataCollected": "2. Data we collect",
+			"provided": "2.1 Information you provide to us",
+			"gatewayIO": "2.2 Inputs and Outputs sent through the Gateway",
+			"telemetry": "2.3 Telemetry and technical data",
+			"connectedAssistants": "2.4 Connected AI assistants and MCP clients",
+			"cookies": "2.5 Cookies and similar technologies",
+			"analytics": "2.6 Analytics and product telemetry",
+			"legalBases": "3. How we use personal data (and our legal bases)",
+			"sharing": "4. How we share personal data",
+			"transfers": "5. International transfers",
+			"retention": "6. How long we keep your data",
+			"rights": "7. Your rights and choices",
+			"children": "8. Children",
+			"security": "9. How we protect your data",
+			"thirdParties": "10. Third-party sites and services",
+			"changes": "11. Changes to this Privacy Policy",
+			"contact": "12. Contact and complaints"
+		},
+		"termsHeadings": {
+			"serviceOverview": "1. Service overview",
+			"eligibilityAccounts": "2. Eligibility and accounts",
+			"feesCreditsPayment": "3. Fees, credits and payment",
+			"creditsWallet": "3.1 Credits and wallet",
+			"paymentProcessing": "3.2 Payment processing (Stripe)",
+			"autoTopUp": "3.3 Auto top-up",
+			"refundsExpiry": "3.4 Refunds and expiry",
+			"pricingChanges": "3.5 Pricing changes and billing errors",
+			"content": "4. Inputs, outputs and your content",
+			"handling": "4.1 How we handle prompts and outputs",
+			"providerTerms": "4.2 Third-party provider terms",
+			"userResponsibilities": "4.3 Your responsibilities for User Content",
+			"prohibitedUse": "5. Prohibited use",
+			"suspensionTermination": "6. Suspension and termination",
+			"privacy": "7. Privacy",
+			"changes": "8. Changes to the Service and these Terms",
+			"intellectualProperty": "9. Intellectual property and open-source components",
+			"feedback": "10. Feedback",
+			"indemnity": "11. Indemnity (for business users)",
+			"disclaimers": "12. Disclaimers",
+			"liability": "13. Limitation of liability",
+			"governingLaw": "14. Governing law and jurisdiction",
+			"general": "15. General",
+			"contact": "16. Contact"
+		},
+		"privacyBody": {
+			"notice": "This page is a high-level description of how we handle personal data. It is not legal advice. Capitalised terms not defined here have the meaning given in our <terms>Terms of Service</terms>.",
+			"consent": "By using the Service, you agree that we may process your personal data as described in this Privacy Policy and the Terms of Service. If you do not agree, you should not use the Service.",
+			"controller": "For the purposes of UK and EU data protection law, <person>Daniel Butler</person>, trading as <brand>Phaseo</brand>, is the <controller>data controller</controller> responsible for personal data collected through Phaseo.",
+			"appliesIntro": "This Privacy Policy applies when you:",
+			"appliesItems": [
+				"browse the Phaseo website or documentation;",
+				"create and use a Phaseo account;",
+				"use the Phaseo Gateway to route requests to third-party model providers;",
+				"connect Phaseo to ChatGPT, Codex, or another compatible MCP client;",
+				"interact with us via email, support channels or other communications."
+			],
+			"providerRoles": "Third-party model providers have their own privacy and data handling practices. A provider used through Phaseo-managed credentials is intended to act as our subprocessor for inference where the applicable contract supports that role. A provider used with your credentials or direct agreement is normally a customer-directed recipient or your processor. A provider may separately act as a controller where it processes data for its own purposes, such as training where its terms permit that use. Our current role review is published in the Phaseo subprocessor schedule.",
+			"providedIntro": "We collect information that you choose to provide directly, such as:",
+			"dataItems": [
+				{
+					"label": "Account details",
+					"text": "for example your name, email address, organisation name, and password (stored as a hashed value) when you register."
+				},
+				{
+					"label": "Profile and team information",
+					"text": "details you add to your account or team profile, such as display names or project labels."
+				},
+				{
+					"label": "Billing information",
+					"text": "records relating to your purchases of Credits or subscriptions (for example currency, amount paid, timestamps). Card details are handled by our payment providers (such as Stripe) and are not stored in full on our servers."
+				},
+				{
+					"label": "Support and communication",
+					"text": "emails, messages and other communications you send to us (for example bug reports, feedback, or feature requests)."
+				},
+				{
+					"label": "Optional public data",
+					"text": "if you opt in to sharing certain usage or app information publicly (for example, public app-usage pages or sponsor listings), we will process and display that information in accordance with your choices."
+				}
+			],
+			"gatewayIntro": "When you call models through Phaseo Gateway, you send requests (“Inputs”) and receive responses (“Outputs”). These may contain personal information, depending on what you choose to send.",
+			"gatewayStorageGoal": "We aim to store as little as possible:",
+			"gatewayStorageItems": [
+				"We do not persistently store the raw text of prompts or full model Outputs in our primary database or analytics tools.",
+				"Eligible non-streaming text Outputs may be kept in a workspace-scoped response cache for five minutes by default. A configured preset can set a period from 30 seconds to 24 hours. The request contributes to a one-way cache-key digest; the cache record stores the Output and response metadata, not the raw request body.",
+				"If you enable private I/O logging, we may keep Inputs, Outputs and optional provider payloads for 90, 180 or 365 days. If you opt into data contribution, we may apply best-effort redaction and keep eligible Inputs and Outputs for no more than 30 days. These features are separate from provider retention.",
+				"We send the necessary request content to the relevant third-party provider so it can generate an Output. Those providers may log or store the data under their own policies."
+			],
+			"sensitiveDataWarning": "Because you control what you send, avoid including sensitive personal data in prompts or Outputs unless it is strictly necessary and you are satisfied with the relevant model providers’ privacy practices.",
+			"telemetryIntro": "We automatically collect certain technical and usage information when you use the Service, including:",
+			"telemetryItems": [
+				{
+					"label": "Log and device data",
+					"text": "IP address, browser type, operating system, device identifiers, pages visited, features used, timestamps and referrer URLs."
+				},
+				{
+					"label": "Gateway metrics",
+					"text": "model and provider identifiers, request and response timestamps, token usage, latency, error codes and similar metadata needed for billing and health checks."
+				},
+				{
+					"label": "Location indicators",
+					"text": "a rough geographic estimate, such as country or region, derived from your IP address or other signals for analytics and abuse prevention."
+				},
+				{
+					"label": "Configuration data",
+					"text": "your selected theme or appearance, feature flags and other preferences stored in local storage or cookies."
+				}
+			],
+			"telemetryUse": "We use this telemetry to operate, secure and improve the Service, calculate usage and pricing, and provide analytics and observability dashboards. We design telemetry to exclude raw prompt and Output text.",
+			"assistantIntro": "If you connect the Phaseo plugin to ChatGPT, Codex or another compatible MCP client, you authorize that client through OAuth to request the read-only Phaseo information shown on its consent screen. Depending on the tool used, Phaseo may return:",
+			"assistantItems": [
+				"model, provider, capability and pricing information;",
+				"credit balance and aggregated usage analytics; or",
+				"request metadata such as request identifiers, timestamps, models, providers, token usage, cost, latency, status and error codes."
+			],
+			"assistantPrivacy": "The public Phaseo plugin does not return passwords, API key values, OAuth secrets, raw prompt or model Output content, workspace or user identifiers, storage details or replay payloads. The connected client receives only the result of a tool it invokes within the permissions you approved. The client provider’s privacy policy and retention practices apply to information it receives.",
+			"cookiesIntro": "We use cookies and similar technologies, such as local storage, pixels and scripts, to make our site work and understand how it is used. These may include:",
+			"cookieItems": [
+				{
+					"label": "Strictly necessary cookies",
+					"text": "required for security and core features such as login and CSRF protection."
+				},
+				{
+					"label": "Preference cookies",
+					"text": "used to remember settings such as dark mode or your most recently selected filters."
+				},
+				{
+					"label": "Analytics cookies",
+					"text": "used to measure usage, performance and errors, for example through Google Analytics or PostHog."
+				}
+			],
+			"cookieControl": "You can control cookies in your browser settings. Blocking some types may affect your experience or prevent certain features from working.",
+			"analyticsIntro": "We may use third-party analytics and error-tracking tools, such as Google Analytics, PostHog or similar services, to understand how people use Phaseo and where we can improve it.",
+			"analyticsDetails": "These tools collect information such as pages visited, actions taken, device and browser information, and approximate location such as country. We configure them so they are not used to store raw prompts, Outputs or other highly sensitive content sent through Gateway.",
+			"legalBasesIntro": "We use personal data for the following purposes, under these legal bases (for UK/EU users):",
+			"legalBasesItems": [
+				{
+					"label": "To provide and operate the Service",
+					"text": "including account creation, Gateway routing, usage dashboards, billing and customer support.",
+					"basis": "Lawful basis: performance of a contract; legitimate interests."
+				},
+				{
+					"label": "To personalise and improve the Service",
+					"text": "for example, by understanding which features are used most, testing new functionality and adjusting the UI.",
+					"basis": "Lawful basis: legitimate interests."
+				},
+				{
+					"label": "To communicate with you",
+					"text": "for example, by sending service announcements, responding to support requests and informing you about changes to our terms or policies.",
+					"basis": "Lawful basis: performance of a contract; legitimate interests; legal obligations."
+				},
+				{
+					"label": "To send optional updates or product news",
+					"text": "where you have signed up to receive them or local law allows us to do so.",
+					"basis": "Lawful basis: consent (or legitimate interests, where permitted)."
+				},
+				{
+					"label": "To prevent abuse, enforce our Terms and protect the Service",
+					"text": "for example, by monitoring high-risk usage patterns, attempts to bypass rate limits or fraud.",
+					"basis": "Lawful basis: legitimate interests; legal obligations."
+				},
+				{
+					"label": "To comply with legal obligations",
+					"text": "such as keeping records for tax and accounting or responding to legitimate requests from authorities.",
+					"basis": "Lawful basis: legal obligations."
+				}
+			],
+			"aggregatedStats": "We may also create aggregated, anonymised statistics about model adoption, benchmark results or API performance. These statistics do not identify individual users.",
+			"sharingIntro": "We do not sell your personal data. We may share personal data in these limited situations:",
+			"sharingItems": [
+				{
+					"label": "Service providers",
+					"text": "We use trusted third parties to help operate the Service, such as hosting and database providers (including Supabase), analytics platforms, payment processors (including Stripe), email providers and customer support tools. They may access personal data only to perform services for us and must protect it under contract."
+				},
+				{
+					"label": "Third-party model providers",
+					"text": "When you send requests through Gateway, we share your Inputs and necessary metadata with the model providers you choose or to which we route requests. Those providers process the data under the applicable provider contract, terms and privacy policy. A provider’s role depends on whether Phaseo or the customer supplies the provider account and whether the provider processes data for an independent purpose."
+				},
+				{
+					"label": "Connected AI assistant or MCP providers",
+					"text": "When you connect Phaseo and ask a connected client to use a Phaseo tool, we return the requested read-only tool result to that provider, such as OpenAI for ChatGPT or Codex. The provider processes the result under its own terms and privacy policy."
+				},
+				{
+					"label": "Public data you choose to share",
+					"text": "If you opt into public usage pages, share integrations or otherwise choose to publish information through AI Stats, we display it according to your settings."
+				},
+				{
+					"label": "Legal and safety reasons",
+					"text": "We may disclose data if we reasonably believe this is necessary to comply with a law, court order or other legal request, or to protect our rights, property or safety, or those of our users or others."
+				},
+				{
+					"label": "Business transfers",
+					"text": "If we explore or undertake a merger, acquisition, reorganisation or sale of assets, personal data may be transferred as part of that process. We will take reasonable steps to ensure the recipient continues to protect your data in line with this Policy."
+				},
+				{
+					"label": "With your consent",
+					"text": "We may share your information for other purposes if you explicitly ask us to or consent to it."
+				}
+			],
+			"transferIntro": "We are based in the United Kingdom, but use service providers and infrastructure in other countries, including the European Economic Area and the United States. Your personal data may therefore be transferred to and processed in countries whose data protection laws differ from those in your home jurisdiction.",
+			"transferOutsideIntro": "When we transfer personal data outside the UK or EEA, we take steps to ensure an appropriate level of protection, for example by relying on:",
+			"transferMethods": [
+				"countries that the UK or EU has deemed adequate;",
+				"standard contractual clauses or equivalent safeguards approved by the UK or EU; or",
+				"other lawful transfer mechanisms as they become available."
+			],
+			"retentionIntro": "We retain personal data for as long as reasonably necessary to fulfil the purposes described in this Policy, including:",
+			"retentionReasons": [
+				"Request-level metadata for BYOK Gateway calls is kept for up to 90 days. Aggregated, non-content usage totals may be kept longer for billing, reliability and statistical purposes.",
+				"operating and maintaining your account and any paid features;",
+				"complying with our legal and regulatory obligations, such as keeping tax and accounting records; and",
+				"resolving disputes and enforcing our agreements."
+			],
+			"retentionDelete": "When we no longer need personal data, we will delete it or irreversibly anonymise it. Aggregated and fully anonymised telemetry may be kept longer for statistical purposes.",
+			"retentionDetails": [
+				"Verified account-deletion requests remove account access and active database records immediately. Private object-storage and Gateway cache data are then purged through a retryable workflow that must finish within 30 days.",
+				"Eligible cached model Outputs are kept for five minutes by default and no more than 24 hours under a configured cache policy.",
+				"Private I/O logs, when enabled, are configured for 90, 180 or 365 days.",
+				"Raw data contributions that you opt into are kept for no more than 30 days; aggregate classification statistics may be kept longer.",
+				"AI providers and destinations configured by customers apply their own retention terms."
+			],
+			"retentionSchedule": "We have not yet consolidated every account, request-metadata, billing, support, backup and operational-log category into one fixed retention schedule. See <security>the Security whitepaper</security> for the currently verified content-handling periods and their limitations.",
+			"pluginRetention": "Using the Phaseo plugin does not create a separate long-term copy of your Gateway records within Phaseo. Tool requests read or compute against Phaseo data available to the authorised service, including already-retained account and Gateway records where applicable. A connected client may retain tool results under its own retention policy.",
+			"rightsIntro": "Depending on where you live, you may have certain rights relating to your personal data. Subject to limits and exceptions under applicable law, these may include:",
+			"rightsItems": [
+				{
+					"label": "Access",
+					"text": "ask whether we process your personal data and request a copy."
+				},
+				{
+					"label": "Correction",
+					"text": "ask us to correct inaccurate or incomplete personal data."
+				},
+				{
+					"label": "Deletion",
+					"text": "ask us to delete certain personal data."
+				},
+				{
+					"label": "Restriction",
+					"text": "ask us to restrict how we process your data in certain circumstances."
+				},
+				{
+					"label": "Portability",
+					"text": "receive your personal data in a structured, commonly used, machine-readable format and, where technically feasible, have it sent to another controller."
+				},
+				{
+					"label": "Objection",
+					"text": "object to certain types of processing, including direct marketing or processing based on legitimate interests."
+				},
+				{
+					"label": "Withdraw consent",
+					"text": "where we rely on consent, withdraw it at any time without affecting the lawfulness of processing before withdrawal."
+				}
+			],
+			"rightsExercise": "You can exercise many of these rights by signing in to your account (settings, profile and API keys), or by contacting us at <email>privacy@phaseo.app</email>. We may ask you to verify your identity before responding.",
+			"emailOptOut": "You can opt out of non-essential emails using the unsubscribe link in the message or by contacting us. We may still send administrative messages about your account or important changes to the Service.",
+			"children": "The Service is intended for users aged 13 and over. We do not knowingly collect personal data from children under 13. If you believe a child has provided us with personal data without appropriate consent, contact us and we will take steps to delete it.",
+			"securityMeasures": "We use technical, organisational and administrative security measures to protect personal data, including encryption in transit, role-based access controls and monitoring for unusual activity.",
+			"securityLimits": "However, no online service can be completely secure. You are responsible for keeping your password, API keys and other credentials confidential, and for rotating keys if you suspect they have been compromised. If you believe your account has been compromised, contact us immediately at <email>support@phaseo.app</email>.",
+			"thirdParties": "The Service may contain links to third-party websites or integrations, including AI model providers, documentation, payment, analytics and developer-tool providers. We are not responsible for their privacy practices. We recommend reviewing their privacy policies before providing personal data to them.",
+			"policyUpdates": "We may update this Privacy Policy from time to time. If changes materially affect your rights or how we use personal data, we will take reasonable steps to notify you, for example by email, a notice on the site or in-app messages.",
+			"continuedUse": "If you continue to use the Service after changes take effect, you accept the updated Policy.",
+			"contactIntro": "If you have questions about this Privacy Policy or how we handle personal data, contact us:",
+			"emailLabel": "Email",
+			"supportLabel": "Support",
+			"regulatorComplaint": "If you are in the UK, you also have the right to lodge a complaint with the Information Commissioner’s Office (ICO), or with your local data protection authority if you are in the EU. We would appreciate the chance to address your concerns first, so please consider contacting us before doing so."
+		},
+		"termsBody": {
+			"operator": "The Service is operated by <person>Daniel Butler</person> under the name <brand>Phaseo</brand> (“Phaseo”, “we”, “us” or “our”).",
+			"acceptance": "By accessing or using the Service, you agree to be bound by these Terms and our <privacy>Privacy Policy</privacy>. If you do not agree, you must not use the Service.",
+			"serviceIntro": "Phaseo provides:",
+			"features": [
+				"a public directory of AI models, providers, benchmarks, pricing and other metadata; and",
+				"an optional API gateway that lets you send requests to certain third-party AI providers through a unified interface."
+			],
+			"availability": "We may add, change or remove models, providers, endpoints or other features at any time. Availability of specific models or providers depends on those third parties and is not guaranteed.",
+			"changeNotice": "Where reasonably possible, we will give advance notice of material changes to the Service, including the removal of models or providers from the directory or gateway. However, we may sometimes need to make immediate changes (for example, for security, legal or provider reasons), and we cannot guarantee uninterrupted availability.",
+			"accountAge": "You must be at least 13 years old to use the Service. If you are under 18, you should use the Service only with permission from a parent or legal guardian.",
+			"accountBusiness": "If you use the Service on behalf of a company or organisation, you confirm that you are authorised to bind that entity to these Terms.",
+			"accountRegistration": "We store and use this information as described in our <privacy>Privacy Policy</privacy>.",
+			"accountResponsibilitiesIntro": "You are responsible for:",
+			"accountResponsibilities": [
+				"keeping your account information accurate and up to date;",
+				"keeping your password, API keys and other credentials confidential; and",
+				"all activity under your account, including Gateway usage through your keys."
+			],
+			"accountCompromise": "If you believe your account or keys have been compromised, notify us promptly at <email>support@phaseo.app</email>. You should also rotate any affected keys in your own systems immediately. We are not responsible for losses caused by your failure to keep your credentials secure.",
+			"credits": "Some parts of the Service, such as routing requests through Phaseo Gateway, may require payment through a prepaid, deposit-based wallet or credit balance (“Credits”). We show applicable prices in advance, and currently state them in US dollars (USD).",
+			"creditsPurchase": "When you purchase Credits, you buy a balance that can be used to pay for eligible use of the Service. You are responsible for all usage that consumes Credits from your account.",
+			"paymentProcessing": "Third-party payment providers such as Stripe process all payments for Credits. By providing a payment method, you authorise us and our payment processors to charge the amounts shown at checkout.",
+			"cardStorage": "We do not store your full card details on our servers. Stripe handles the storage and processing of card details under its security standards and terms.",
+			"autoTopUpIntro": "You can enable automatic wallet top-ups (“Auto Top-Up”). If you do, you:",
+			"autoTopUpActions": [
+				"authorise us and our payment processor to charge your saved payment method automatically for an amount in USD that you specify whenever your balance falls below a threshold you set; and",
+				"remain responsible for charges until you turn off Auto Top-Up in your account settings."
+			],
+			"autoTopUpCard": "We do not store full card details on our servers, even when Auto Top-Up is enabled.",
+			"refundIntro": "To the extent the law allows:",
+			"refundRules": [
+				"Credits that have been used are non-refundable;",
+				"we may choose to set an expiry period for unused Credits, such as 12 months from purchase. If we introduce one, we will tell you in advance; and",
+				"if you contact us within 24 hours of purchasing Credits, we will normally refund all unused Credits, provided we can verify the transaction and your usage."
+			],
+			"refundRequest": "To request a refund of unused Credits within the 24-hour period, email <email>support@phaseo.app</email>. This voluntary policy does not affect any mandatory consumer rights you may have under applicable law.",
+			"pricingChanges": "We may change our prices from time to time. If a material change affects you, we will give reasonable notice, for example by email or an in-product notification. Continuing to use paid features after the change takes effect means you accept the new prices.",
+			"billingCorrections": "If we find a billing error, such as an incorrect rate or token count, we may correct it by adjusting your Credits balance. Contact us as soon as possible if you believe you were charged incorrectly. If we confirm an error in your favour, we will credit or refund the overcharged amount.",
+			"contentIntro": "When you use the Service, you may submit text, prompts, data or other material (“Inputs”) and receive model-generated responses (“Outputs”). Together, Inputs and Outputs are called “User Content”.",
+			"contentOwnershipIntro": "You retain ownership of your User Content, subject to:",
+			"contentOwnershipConditions": [
+				"any licences you grant us under these Terms; and",
+				"any terms imposed by the underlying third-party model providers, such as OpenAI, Anthropic, Google or SpaceXAI."
+			],
+			"contentHandling": "We route your Inputs to third-party providers through Gateway and return Outputs to you. We exclude raw Inputs and full Outputs from our primary request database and analytics, subject to limited storage exceptions: eligible non-streaming Outputs may be cached for five minutes by default and up to 24 hours when configured; private I/O logging may retain Inputs and Outputs for 90–365 days when enabled; and data contributions you opt into may be retained for up to 30 days.",
+			"contentTelemetryIntro": "We store high-level telemetry and billing metadata to support analytics and keep the Service running. This telemetry may include:",
+			"contentTelemetryItems": [
+				"timestamps, model identifiers and provider identifiers;",
+				"request metrics such as token counts, latency, throughput and error codes; and",
+				"aggregated or anonymised usage statistics for performance and product improvement."
+			],
+			"contentTelemetryUse": "We use this telemetry to operate, maintain and improve the Service and provide usage insights. We do not train our own models on your prompts or Outputs. If you opt into data contribution, a configured sample may be sent to a third-party model for classification as described in the <privacy>Privacy Policy</privacy>.",
+			"providerTermsIntro": "When you use Gateway to call a model, the relevant third-party provider processes your request. By using those models through the Service, you also agree to follow the applicable terms, policies and acceptable-use rules of each provider you access.",
+			"providerTermsResponsibility": "You are responsible for reviewing and following those third-party terms. We are not responsible for how those providers handle your data or for changes they make to their services or prices.",
+			"userResponsibilityIntro": "You are responsible for your Inputs and your use of Outputs. You confirm that:",
+			"userResponsibilityItems": [
+				"you have all rights, permissions and consents needed to submit the Inputs and use the Outputs; and",
+				"your Inputs and use of the Service will not infringe intellectual property, privacy or other rights, or cause us to breach any law or third-party terms."
+			],
+			"contentModeration": "We are not required to monitor User Content. However, we may remove User Content or restrict access to it if we reasonably believe it breaches these Terms or applicable law.",
+			"prohibitedIntro": "You must not:",
+			"prohibitedActions": [
+				"use the Service unlawfully or in breach of applicable law, regulation or third-party provider terms;",
+				"use the Service to create or distribute harmful, abusive, discriminatory, fraudulent or otherwise inappropriate content;",
+				"interfere with or disrupt the Service, including by introducing malware, overloading our infrastructure or trying to bypass rate limits or security controls;",
+				"access or scrape the Service with automated tools, such as bots, scripts or crawlers, without our prior written permission, except where documented APIs expressly allow it;",
+				"reverse engineer, decompile or otherwise try to derive the Service's source code, except where the law prohibits that restriction;",
+				"use another user's account or share your credentials with anyone else; or",
+				"try to circumvent these Terms or help anyone else do so."
+			],
+			"accountClosure": "You may stop using the Service at any time. To close your account, contact us at <email>support@phaseo.app</email>.",
+			"suspensionIntro": "We may suspend or end your access to all or part of the Service if:",
+			"suspensionConditions": [
+				"you materially or repeatedly breach these Terms;",
+				"the law or a third-party provider requires us to do so; or",
+				"we decide to discontinue all or part of the Service for technical, business or legal reasons."
+			],
+			"suspensionNotice": "Where reasonable, we will give you advance notice of suspension or termination. If we permanently discontinue the Service, we will make reasonable efforts to let you export important data before it shuts down.",
+			"suspensionRefund": "To the fullest extent permitted by law, we are not required to refund fees or unused Credits if we suspend or end your access because you breached these Terms.",
+			"privacyClause": "For information about how we collect, use and share personal data, see our <privacy>Privacy Policy</privacy>. The Privacy Policy forms part of these Terms.",
+			"serviceImprovements": "We are continually improving Phaseo and may change, add or remove features from time to time.",
+			"termsUpdates": "We may also update these Terms occasionally. If we make material changes, we will try to give you reasonable notice, for example by email, a site banner or in-app message. If you continue using the Service after the updated Terms take effect, we will treat that as your acceptance of the changes.",
+			"ipOwnership": "The Service, including its design, content, documentation and software, belongs to us or our licensors and is protected by intellectual property laws.",
+			"openSourceLicense": "We also use and publish open-source software. Use of our open-source repositories is governed by the licences included in those repositories, such as MIT or Apache licences, not these Terms. If an open-source licence conflicts with these Terms, the open-source licence takes precedence for that component.",
+			"trademarks": "Nothing in these Terms gives you the right to use our trade names, logos or trademarks without our prior written permission.",
+			"feedback": "If you provide feedback, ideas or suggestions about the Service (“Feedback”), you agree that we may use them without restriction or obligation to you. You grant us a perpetual, irrevocable, worldwide, royalty-free licence to use, copy, modify and exploit the Feedback for any purpose connected with our products and services.",
+			"indemnityIntro": "If you use the Service on behalf of a business, you agree to indemnify and hold harmless Daniel Butler (trading as Phaseo) against claims, losses, damages, liabilities, costs and expenses (including reasonable legal fees) arising from or relating to:",
+			"indemnityItems": [
+				"your use of the Service;",
+				"your User Content; or",
+				"your breach of these Terms or applicable law."
+			],
+			"consumerIndemnity": "If you are a consumer, this clause applies only to the extent permitted by applicable law.",
+			"disclaimerIntro": "The Service is provided “as is” and “as available”. To the fullest extent permitted by law, we make no express or implied promises or warranties about:",
+			"disclaimerItems": [
+				"the accuracy or completeness of any model Outputs;",
+				"the availability, reliability or performance of the Service or any third-party provider; or",
+				"whether the Service will be free from errors, bugs, vulnerabilities or interruptions."
+			],
+			"aiGenerated": "AI-generated content may be inaccurate, incomplete or misleading. Before relying on Outputs or other information shown through the Service, you are responsible for assessing it independently.",
+			"catalogAccuracy": "We maintain a comprehensive database of models, providers, benchmarks and prices, and aim to keep it reasonably accurate and current. However, the AI ecosystem changes quickly, so we cannot guarantee that every entry, price or benchmark is correct, current or complete. Do not rely only on the Site for critical decisions, such as procurement or compliance; check primary sources yourself.",
+			"mandatoryRights": "Nothing in these Terms excludes or limits warranties or rights that cannot be excluded or limited under applicable law, including certain consumer rights.",
+			"liabilityIntro": "Nothing in these Terms excludes or limits liability for:",
+			"liabilityExceptions": [
+				"death or personal injury caused by negligence;",
+				"fraud or fraudulent misrepresentation; or",
+				"any other liability that cannot be excluded or limited under applicable law."
+			],
+			"liabilityLimitIntro": "Subject to the above, and to the fullest extent permitted by law:",
+			"liabilityLoss": "we are not liable for loss of profits, business, data or goodwill, or any indirect or consequential loss arising from or connected with your use of or inability to use the Service. This includes Service failures, database errors, or your failure to protect your keys, passwords or other credentials; and",
+			"liabilityCapIntro": "our total combined liability for all claims relating to the Service or these Terms is limited to the greater of:",
+			"liabilityCaps": [
+				"the total amount you paid us for the Service in the 12 months before the event giving rise to the claim; or",
+				"£100."
+			],
+			"liabilityPricing": "For a specific pricing or billing issue, such as an incorrect rate applied by our systems, your main remedy is an appropriate correction, credit or refund of the affected amount, as described in Section 3.5.",
+			"governingLawIntro": "These Terms and any dispute or claim relating to them or the Service are governed by the laws of England and Wales.",
+			"businessCourt": "If you are a business user, you and we agree that the courts of England and Wales have exclusive jurisdiction.",
+			"consumerCourt": "If you are a consumer, you may also be entitled to bring proceedings in your country of residence under applicable consumer laws. These Terms do not limit any mandatory rights you have under those laws.",
+			"severability": "If any part of these Terms is found to be invalid or unenforceable, the rest remains in full force and effect.",
+			"assignment": "You may not assign or transfer your rights or obligations under these Terms without our prior written consent. We may transfer our rights and obligations to another organisation as part of a business reorganisation or sale.",
+			"waiver": "If we do not enforce a right or provision of these Terms, that does not mean we waive it.",
+			"survival": "When your access to the Service ends, Sections 2, 3, 4, 5 and 8–15 continue to apply.",
+			"contactQuestions": "If you have questions about these Terms, contact us:",
+			"contactEmailLabel": "Email",
+			"operatorDetails": "The Service is offered by <person>Daniel Butler</person>, trading as <brand>Phaseo</brand>."
+		}
+	},
+	"brandMenu": {
+		"logoPreviewMode": "Logo preview mode",
+		"useLightLogo": "Use light logo",
+		"lightLogo": "Light logo",
+		"useDarkLogo": "Use dark logo",
+		"darkLogo": "Dark logo",
+		"assets": {
+			"wordmark": "Wordmark",
+			"logo": "Logo"
+		},
+		"copyMenuLabel": "Copy {asset} as SVG or PNG",
+		"downloadMenuLabel": "Download {asset} as SVG or PNG",
+		"copyFormatLabel": "Copy {format}",
+		"downloadFormatLabel": "Download {format}",
+		"assetAlt": "Phaseo {asset}",
+		"copySuccess": "{asset} {format} copied to clipboard",
+		"copyFailure": "Could not copy {asset} as {format}",
+		"downloadSuccess": "{asset} {format} downloaded",
+		"downloadFailure": "Could not download {asset} as {format}"
+	}
 }

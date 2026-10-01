@@ -1,0 +1,64 @@
+---
+title: "Roo Code"
+description: "اربط Roo Code بـ Phaseo عبر ملف تعريف متوافق مع OpenAI."
+---
+
+تنشئ CLI الخاصة بـ Phaseo المفتاح المخصص لـ Roo Code وتديره. ويحتفظ Roo Code ببيانات الاعتماد في التخزين الآمن لـ VS Code، لذا أكمل إعداد الملف التعريفي داخل الإضافة.
+
+## إنشاء بيانات الاعتماد
+
+```bash
+phaseo login
+phaseo integrations setup roo-code --model anthropic/claude-sonnet-4.6
+```
+
+## إعداد Roo Code
+
+1. افتح Roo Code في VS Code.
+2. افتح **Settings** ثم **Providers**.
+3. أنشئ ملف إعداد للمزوّد واختر **OpenAI Compatible**.
+4. أدخل القيم التالية:
+
+| حقل Roo Code | القيمة |
+| --- | --- |
+| Base URL | `https://api.phaseo.app/v1` |
+| API Key | ناتج الأمر `phaseo integrations credential roo-code` |
+| Model | `anthropic/claude-sonnet-4.6` أو النموذج الذي يعرضه الإعداد |
+
+5. احفظ الملف التعريفي واجعله نشطًا.
+
+قد تختلف تسميات الحقول قليلًا بين الإصدارات، لكن الملف التعريفي يحتاج إلى نقطة النهاية والمفتاح ومعرّف النموذج الدقيق.
+
+## التحقق
+
+اطلب من Roo Code الرد بـ `PHASEO_ROO_OK`، ثم تحقق من ظهور الطلب في نشاط Phaseo.
+
+## الإزالة
+
+احذف ملف Phaseo التعريفي أو بدّل إلى ملف آخر، ثم شغّل:
+
+```bash
+phaseo integrations remove roo-code
+```
+
+لا تستطيع CLI حذف القيم من التخزين الخاص بإضافة VS Code، لكن الإزالة تلغي المفتاح.
+
+## استكشاف الأخطاء وإصلاحها
+
+### فشل المصادقة
+
+استرجع المفتاح مجددًا باستخدام `phaseo integrations credential roo-code`. وتأكد من أن عنوان URL الأساسي ينتهي بـ `/v1`.
+
+### لا يعثر Roo Code على النموذج
+
+أدخل يدويًا معرّف نموذج Phaseo الدقيق، بما في ذلك بادئة المزوّد.
+
+### تعمل المحادثة لكن الأدوات تفشل
+
+انتقل إلى نموذج يدعم استدعاء الأدوات.
+
+## مواضيع ذات صلة
+
+- [موفّرو نماذج Roo Code](https://docs.roocode.com/providers/)
+- [مساعدو البرمجة](./coding-assistants.mdx)
+- [النماذج](../../api-reference/endpoint/models.mdx)

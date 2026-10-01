@@ -1,0 +1,80 @@
+---
+icon: "search-check"
+title: "Como escolher uma estratégia de quantização"
+description: "Guia prático para escolher variantes BF16/FP8/INT8/INT4 conforme a carga de trabalho."
+---
+
+Siga este fluxo de trabalho para escolher variantes de quantização com segurança.
+
+Para aplicar a escolha no Phaseo Gateway, envie um filtro de roteamento compatível com OpenRouter:
+
+```json
+{
+  "model": "meta/llama-3.3-70b-instruct",
+  "messages": [{ "role": "user", "content": "Hello" }],
+  "provider": {
+    "quantizations": ["FP8"]
+  }
+}
+```
+
+O filtro se aplica às ofertas de modelos de cada provedor, não apenas aos nomes dos provedores. A correspondência não diferencia maiúsculas de minúsculas e aceita aliases inequívocos, como `float8` para `FP8` e `bfloat16` para `BF16`. Ofertas sem metadados de quantização não são elegíveis. Se nenhuma oferta elegível corresponder, a solicitação falha com diagnósticos de roteamento; o Phaseo não usa uma quantização não verificada como alternativa. A estrutura equivalente `routing.quantizations` também é aceita.
+
+## Etapa 1: defina seus critérios de sucesso
+
+Antes de escolher uma quantização:
+
+- Defina limites de qualidade (precisão da tarefa, taxas de aprovação e validade das saídas estruturadas).
+- Defina metas de latência e custo.
+- Defina os modos de falha inaceitáveis.
+
+## Etapa 2: escolha uma referência de alta qualidade
+
+Comece com uma referência de maior qualidade (geralmente `BF16` ou `FP16`) e meça:
+
+- Qualidade da saída
+- Latência mediana e de cauda
+- Perfil de tokens e custos
+
+Ela será sua referência para comparação.
+
+## Etapa 3: reduza a precisão gradualmente
+
+Avalie gradualmente formatos de menor precisão:
+
+1. `FP8` or `INT8`
+2. Use `FP4` ou `INT4` somente se precisar reduzir custos ou aumentar o throughput.
+
+Não passe diretamente para a menor variante sem evidências sólidas de que ela funciona para sua carga de trabalho.
+
+## Etapa 4: avalie cargas de trabalho reais
+
+Use prompts semelhantes aos de produção:
+
+- Prompts longos
+- Raciocínio em várias etapas
+- Chamadas de ferramentas
+- Casos extremos de tickets de suporte
+
+## Etapa 5: decida por endpoint ou caso de uso
+
+Uma única quantização não precisa atender a todos os casos.
+
+Exemplos:
+
+- Atendimento ao cliente e decisões críticas: alta precisão.
+- Classificação ou resumo de alto volume: uma precisão menor pode ser aceitável.
+
+## Sugestões para começar
+
+| Tipo de carga de trabalho | Quantização inicial recomendada |
+| --- | --- |
+| Raciocínio crítico para a qualidade | `BF16` / `FP16` |
+| Equilíbrio entre custo e qualidade | `FP8` / `INT8` |
+| Alto throughput com custo reduzido | `INT4` / `FP4` (após validação) |
+
+## Política de implantação
+
+- Configure um modelo ou uma quantização de fallback.
+- Monitore a variação de qualidade após a implantação.
+- Teste novamente quando o runtime do provedor ou a versão do modelo mudar.

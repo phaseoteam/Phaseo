@@ -1,0 +1,41 @@
+---
+icon: "rotate"
+title: "Saídas e novas tentativas"
+description: "Valide saídas finais, repita solicitações ao modelo e inspecione execuções concluídas em PHP."
+---
+
+Use a validação de saída quando o código PHP seguinte precisar de uma estrutura previsível. As novas tentativas do modelo cobrem falhas transitórias de solicitações; as tentativas de ferramentas com efeitos colaterais devem ocorrer dentro da própria ferramenta e ser idempotentes.
+
+## Configurar novas tentativas
+
+```php
+$agent = AgentSdk::createAgent(new AgentDefinition(
+    id: "research-agent",
+    model: "openai/gpt-5.4-nano",
+    modelRetry: new ModelRetryConfig(
+        maxRetries: 3,
+        baseDelayMs: 500,
+        maxDelayMs: 4000
+    )
+));
+```
+
+O resultado da execução contém status, etapas, mensagens, uso normalizado, motivo da parada e saída final. Consulte esses campos em vez de tratar o texto final como registro completo da execução.
+
+## Validar o resultado final
+```php
+$result = $agent->run(input: $prompt, client: $client);
+
+echo $result->output;
+echo $result->run->status;
+echo $result->usage["total_tokens"];
+echo $result->usage["cost"];
+```$result = $agent->run(input: $prompt, client: $client);
+
+echo $result->output;
+echo $result->run->status;
+echo $result->usage["total_tokens"];
+echo $result->usage["cost"];
+```
+
+Use [condições de parada](./agent-sdk-stop-conditions) para impor limites e [erros e solução de problemas](./agent-sdk-observability) para escolher o comportamento em falhas recuperáveis.

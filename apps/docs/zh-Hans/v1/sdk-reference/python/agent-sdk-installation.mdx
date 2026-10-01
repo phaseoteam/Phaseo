@@ -1,0 +1,43 @@
+---
+icon: "package"
+title: "安装"
+description: "安装和配置 Phaseo Python Agent SDK。"
+---
+
+Agent SDK 在 PyPI 上以 [`phaseo-agent-sdk`](https://pypi.org/project/phaseo-agent-sdk/) 发布。
+
+## 要求
+
+- Python 3.10 或更高版本
+- Phaseo API 密钥
+
+## 安装
+
+使用你偏好的 Python 包管理器安装 Agent SDK：
+
+<CodeGroup>
+
+    ```bash title="pip"
+    pip install phaseo-agent-sdk
+    ```
+
+    ```bash title="uv"
+    uv add phaseo-agent-sdk
+    ```
+
+</CodeGroup>
+
+核心客户端 `phaseo` 会作为依赖自动安装。
+
+## 环境变量
+
+运行示例之前，请先设置网关 API 密钥：
+
+```bash
+export PHASEO_API_KEY="phaseo_v1_sk_..."
+```
+
+## 下一步
+
+- [概览](./agent-sdk-overview.mdx)
+- [使用 Agent SDK 构建](./agent-sdk.mdx)

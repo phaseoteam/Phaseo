@@ -28,9 +28,10 @@ import RouteRequestDetailDialog, {
 import { investigateGeneration, type RequestRow } from "@/app/(dashboard)/gateway/usage/server-actions";
 import { fetchSettingsUsageLogsInitialData } from "@/lib/fetchers/internal/fetchSettingsUsageLogsInitialData";
 
-export const metadata: Metadata = {
-	title: "Logs - Settings",
-};
+export async function generateMetadata(): Promise<Metadata> {
+	const t = await getTranslations("SettingsUI");
+	return { title: t("strings.Logs" as never) };
+}
 
 function parseView(view?: string | null): UsageLogsViewKey {
 	const v = (view ?? "").toLowerCase();
@@ -273,9 +274,9 @@ export async function UsageLogsContent({
 		content = (
 			<AsyncJobsPanel
 				initialJobs={data.recentJobs}
-				title="Async jobs"
-				description="Recent long-running video and batch jobs, including status, billing, and webhook delivery history."
-				emptyMessage="No async jobs found in this workspace yet."
+				title={t("settingsPageCopy.asyncJobsTitle" as never)}
+				description={t("settingsPageCopy.asyncJobsDescription" as never)}
+				emptyMessage={t("settingsPageCopy.asyncJobsEmpty" as never)}
 				refreshLimit={50}
 				includeWithoutWebhook
 				providerNames={providerNames}

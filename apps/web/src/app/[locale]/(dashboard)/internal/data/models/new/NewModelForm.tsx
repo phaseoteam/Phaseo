@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { type FormEvent, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
 import { Plus, Trash2 } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
@@ -167,33 +168,23 @@ const METER_DEFAULTS: Record<string, { unit: string; unit_size: number }> = {
 const MODEL_DETAIL_FIELDS = [
 	{
 		key: "input_context_length",
-		label: "Input context length",
 		inputType: "number",
-		placeholder: "e.g., 128000",
 	},
 	{
 		key: "output_context_length",
-		label: "Output context length",
 		inputType: "number",
-		placeholder: "e.g., 8192",
 	},
 	{
 		key: "knowledge_cutoff",
-		label: "Knowledge cutoff",
 		inputType: "date",
-		placeholder: "Knowledge cutoff date",
 	},
 	{
 		key: "parameter_count",
-		label: "Parameter count",
 		inputType: "text",
-		placeholder: "e.g., 70000000000",
 	},
 	{
 		key: "training_tokens",
-		label: "Training tokens",
 		inputType: "text",
-		placeholder: "e.g., 13000000000000",
 	},
 ] as const;
 
@@ -210,24 +201,19 @@ const MODEL_LINK_FIELDS = [
 type DetailFieldKey = (typeof MODEL_DETAIL_FIELDS)[number]["key"];
 type LinkFieldKey = (typeof MODEL_LINK_FIELDS)[number]["key"];
 
-const COMPACT_NUMBER_FORMATTER = new Intl.NumberFormat("en-US", {
-	notation: "compact",
-	maximumFractionDigits: 2,
-});
-
 const COMPACT_DETAIL_FIELDS = new Set<DetailFieldKey>(["parameter_count", "training_tokens"]);
 
 function sanitizeDigitInput(value: string): string {
 	return value.replace(/[^\d]/g, "");
 }
 
-function formatCompactNumberLabel(value: string): string {
+function formatCompactNumberLabel(value: string, formatter: Intl.NumberFormat): string {
 	if (!value) return "";
 	const normalized = value.replace(/^0+(?=\d)/, "");
 	const safe = normalized || "0";
 	const numeric = Number(safe);
 	if (!Number.isFinite(numeric)) return "";
-	return COMPACT_NUMBER_FORMATTER.format(numeric);
+	return formatter.format(numeric);
 }
 
 function defaultCapability(): CapabilityDraft {
@@ -257,12 +243,16 @@ function defaultProvider(providerId: string, modelId: string): ProviderDraft {
 	};
 }
 
-function formatSubscriptionPlanOption(plan: SubscriptionPlanOption): string {
+function formatSubscriptionPlanOption(
+	plan: SubscriptionPlanOption,
+	locale: string,
+	formatFrequency: (frequency: string | null | undefined) => string
+): string {
 	const name = plan.name?.trim() || plan.plan_id?.trim() || plan.plan_uuid;
-	const frequency = plan.frequency?.trim();
+	const frequency = formatFrequency(plan.frequency);
 	const price =
 		typeof plan.price === "number" && Number.isFinite(plan.price)
-			? `${plan.price}${plan.currency ? ` ${plan.currency}` : ""}`
+			? `${new Intl.NumberFormat(locale, { maximumFractionDigits: 2 }).format(plan.price)}${plan.currency ? ` ${plan.currency}` : ""}`
 			: null;
 	const detail = [frequency, price].filter(Boolean).join(" | ");
 	return detail ? `${name} (${detail})` : name;
@@ -286,6 +276,75 @@ export default function NewModelForm({
 	createAction: (formData: FormData) => void | Promise<void>;
 }) {
 	const router = useRouter();
+	const locale = useLocale();
+	const t = useTranslations("Common.ui");
+	const tPricing = useTranslations("Catalogue.modelDetail.pricing");
+	const compactNumberFormatter = useMemo(
+		() => new Intl.NumberFormat(locale, { notation: "compact", maximumFractionDigits: 2 }),
+		[locale]
+	);
+	const modelStatusLabels: Record<string, string> = {
+		Rumoured: t("modelEditor.modelStatuses.rumoured"),
+		Announced: t("modelEditor.modelStatuses.announced"),
+		Preview: t("modelEditor.modelStatuses.preview"),
+		"Limited Access": t("modelEditor.modelStatuses.limitedAccess"),
+		Withheld: t("modelEditor.modelStatuses.withheld"),
+		Released: t("modelEditor.modelStatuses.released"),
+		Deprecated: t("modelEditor.modelStatuses.deprecated"),
+		Retired: t("modelEditor.modelStatuses.retired"),
+	};
+	const modalityLabels: Record<string, string> = {
+		text: t("modelCreation.modalities.text"),
+		image: t("modelCreation.modalities.image"),
+		audio: t("modelCreation.modalities.audio"),
+		audio_stt: t("modelCreation.modalities.audioStt"),
+		audio_tts: t("modelCreation.modalities.audioTts"),
+		audio_music: t("modelCreation.modalities.audioMusic"),
+		video: t("modelCreation.modalities.video"),
+		embedding: t("modelCreation.modalities.embedding"),
+		rerank: t("modelCreation.modalities.rerank"),
+		moderation: t("modelCreation.modalities.moderation"),
+	};
+	const capabilityStatusLabels: Record<string, string> = {
+		active: t("modelEditor.capabilityStatuses.active"),
+		deranked_lvl1: t("modelEditor.capabilityStatuses.derankedLvl1"),
+		deranked_lvl2: t("modelEditor.capabilityStatuses.derankedLvl2"),
+		deranked_lvl3: t("modelEditor.capabilityStatuses.derankedLvl3"),
+		disabled: t("modelEditor.capabilityStatuses.disabled"),
+	};
+	const detailFieldLabels: Record<DetailFieldKey, string> = {
+		input_context_length: t("modelCreation.form.detailFields.inputContextLength"),
+		output_context_length: t("modelCreation.form.detailFields.outputContextLength"),
+		knowledge_cutoff: t("modelCreation.form.detailFields.knowledgeCutoff"),
+		parameter_count: t("modelCreation.form.detailFields.parameterCount"),
+		training_tokens: t("modelCreation.form.detailFields.trainingTokens"),
+	};
+	const detailFieldPlaceholders: Record<DetailFieldKey, string> = {
+		input_context_length: t("modelCreation.form.detailExamples.inputContextLength"),
+		output_context_length: t("modelCreation.form.detailExamples.outputContextLength"),
+		knowledge_cutoff: t("modelCreation.form.detailFields.knowledgeCutoff"),
+		parameter_count: t("modelCreation.form.detailExamples.parameterCount"),
+		training_tokens: t("modelCreation.form.detailExamples.trainingTokens"),
+	};
+	const linkFieldLabels: Record<LinkFieldKey, string> = {
+		announcement: t("linkTypes.announcement"),
+		api_reference: t("linkTypes.apiReference"),
+		model_card: t("modelCreation.form.linkTypes.modelCard"),
+		paper: t("linkTypes.researchPaper"),
+		playground: t("modelCreation.form.linkTypes.playground"),
+		repository: t("modelCreation.form.linkTypes.repository"),
+		weights: t("modelCreation.form.linkTypes.weights"),
+	};
+	const pricingMeterLabel = (meter: string, fallback: string) => {
+		const key = `meters.${meter}`;
+		return tPricing.has(key as never) ? tPricing(key as never) : fallback;
+	};
+	const pricingFrequencyLabel = (frequency: string | null | undefined) => {
+		const value = frequency?.trim();
+		if (!value) return "";
+		const key = `sections.${value}`;
+		return tPricing.has(key as never) ? tPricing(key as never) : value;
+	};
 	const [modelId, setModelId] = useState("");
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [selectedFamilyId, setSelectedFamilyId] = useState("");
@@ -410,7 +469,7 @@ export default function NewModelForm({
 
 	const addPricingRows = (meters: string[]) => {
 		if (!pricingProviderOptions.length) {
-			toast.error("Select at least one provider before adding pricing rules.")
+			toast.error(t("modelCreation.form.selectProviderBeforePricing"));
 			return;
 		}
 		setPricingRows((prev) => [
@@ -683,10 +742,9 @@ export default function NewModelForm({
 
 		setIsSubmitting(true);
 		toast.promise(promise, {
-			loading: "Creating model...",
-			success: "Model created",
-			error: (error) =>
-				error instanceof Error ? error.message : "Failed to create model",
+			loading: t("modelCreation.form.creatingModel"),
+			success: t("modelCreation.form.modelCreated"),
+			error: () => t("modelCreation.failedCreate"),
 		});
 
 		void promise
@@ -712,18 +770,18 @@ export default function NewModelForm({
 			<input type="hidden" name="output_types" value={outputTypes.join(",")} />
 
 			<section className="space-y-3">
-				<h2 className="text-sm font-medium">Core</h2>
+				<h2 className="text-sm font-medium">{t("modelCreation.form.core")}</h2>
 				<div className="grid gap-4 lg:grid-cols-2">
 					<label htmlFor="new-model-model-id" className="text-sm">
-						<div className="mb-1 text-muted-foreground">Model ID</div>
+						<div className="mb-1 text-muted-foreground">{t("modelCreation.modelId")}</div>
 						<Input id="new-model-model-id" name="model_id" value={modelId} onChange={(event) => setModelId(event.target.value)} required />
 					</label>
 					<label htmlFor="new-model-name" className="text-sm">
-						<div className="mb-1 text-muted-foreground">Name</div>
+						<div className="mb-1 text-muted-foreground">{t("chatComposer.name")}</div>
 						<Input id="new-model-name" name="name" required />
 					</label>
 					<label htmlFor="new-model-organisation" className="text-sm lg:col-span-2">
-						<div className="mb-1 text-muted-foreground">Organisation</div>
+						<div className="mb-1 text-muted-foreground">{t("modelCreation.organization")}</div>
 						<select
 							id="new-model-organisation"
 							name="organisation_id"
@@ -732,7 +790,7 @@ export default function NewModelForm({
 							className="w-full rounded-md border px-3 py-2 text-sm"
 						>
 							<option value="" disabled>
-								Select organisation
+								{t("modelCreation.selectOrganization")}
 							</option>
 							{organisations.map((org) => (
 								<option key={org.organisation_id} value={org.organisation_id}>
@@ -742,19 +800,19 @@ export default function NewModelForm({
 						</select>
 					</label>
 					<label htmlFor="new-model-status" className="text-sm">
-						<div className="mb-1 text-muted-foreground">Status</div>
+						<div className="mb-1 text-muted-foreground">{t("modelCreation.status")}</div>
 						<select id="new-model-status" name="status" defaultValue="Released" className="w-full rounded-md border px-3 py-2 text-sm">
 							{STATUS_OPTIONS.map((status) => (
 								<option key={status} value={status}>
-									{status}
+									{modelStatusLabels[status] ?? status}
 								</option>
 							))}
 						</select>
 					</label>
 					<label htmlFor="new-model-previous-model" className="text-sm">
-						<div className="mb-1 text-muted-foreground">Previous model</div>
+						<div className="mb-1 text-muted-foreground">{t("modelEditor.previousModel")}</div>
 						<select id="new-model-previous-model" name="previous_model_id" className="w-full rounded-md border px-3 py-2 text-sm">
-							<option value="">None</option>
+							<option value="">{t("auditDataTable.none")}</option>
 							{previousModels.map((previousModel) => (
 								<option key={previousModel.model_id} value={previousModel.model_id}>
 									{previousModel.name ?? previousModel.model_id}
@@ -764,56 +822,56 @@ export default function NewModelForm({
 					</label>
 					<label className="text-sm flex items-center gap-2 self-end">
 						<input type="checkbox" name="hidden" />
-						<span>Hidden</span>
+						<span>{t("modelCreation.hidden")}</span>
 					</label>
 					<label htmlFor="new-model-release-date" className="text-sm">
-						<div className="mb-1 text-muted-foreground">Release date</div>
+						<div className="mb-1 text-muted-foreground">{t("modelCreation.releaseDate")}</div>
 						<DatePickerInput
 							id="new-model-release-date"
 							name="release_date"
 							value={releaseDate}
 							onChange={setReleaseDate}
-							placeholder="Release date"
+							placeholder={t("modelCreation.releaseDate")}
 						/>
 					</label>
 					<label htmlFor="new-model-announcement-date" className="text-sm">
-						<div className="mb-1 text-muted-foreground">Announcement date</div>
+						<div className="mb-1 text-muted-foreground">{t("modelEditor.announcementDate")}</div>
 						<DatePickerInput
 							id="new-model-announcement-date"
 							name="announcement_date"
 							value={announcementDate}
 							onChange={setAnnouncementDate}
-							placeholder="Announcement date"
+							placeholder={t("modelEditor.announcementDate")}
 						/>
 					</label>
 					<label htmlFor="new-model-deprecation-date" className="text-sm">
-						<div className="mb-1 text-muted-foreground">Deprecation date</div>
+						<div className="mb-1 text-muted-foreground">{t("modelEditor.deprecationDate")}</div>
 						<DatePickerInput
 							id="new-model-deprecation-date"
 							name="deprecation_date"
 							value={deprecationDate}
 							onChange={setDeprecationDate}
-							placeholder="Deprecation date"
+							placeholder={t("modelEditor.deprecationDate")}
 						/>
 					</label>
 					<label htmlFor="new-model-retirement-date" className="text-sm">
-						<div className="mb-1 text-muted-foreground">Retirement date</div>
+						<div className="mb-1 text-muted-foreground">{t("modelCreation.retirementDate")}</div>
 						<DatePickerInput
 							id="new-model-retirement-date"
 							name="retirement_date"
 							value={retirementDate}
 							onChange={setRetirementDate}
-							placeholder="Retirement date"
+							placeholder={t("modelCreation.retirementDate")}
 						/>
 					</label>
 					<div className="text-sm">
 						<Label htmlFor="new-model-license" className="mb-1 block text-muted-foreground">
-							License
+							{t("modelEditor.license")}
 						</Label>
-						<Input id="new-model-license" name="license" placeholder="e.g., Apache-2.0" />
+						<Input id="new-model-license" name="license" placeholder={t("modelEditor.licenseExample")} />
 					</div>
 					<div className="text-sm">
-						<div className="mb-1 text-muted-foreground">Input types</div>
+								<div className="mb-1 text-muted-foreground">{t("modelEditor.inputTypes")}</div>
 						<div className="flex flex-wrap gap-2">
 							{MODALITY_OPTIONS.map((type) => {
 								const active = inputTypes.includes(type);
@@ -826,14 +884,14 @@ export default function NewModelForm({
 										onClick={() => toggleCoreType("input", type)}
 										className={cn(active && "border-primary bg-primary/10")}
 									>
-										{type}
+										{modalityLabels[type] ?? type}
 									</Button>
 								);
 							})}
 						</div>
 					</div>
 					<div className="text-sm">
-						<div className="mb-1 text-muted-foreground">Output types</div>
+								<div className="mb-1 text-muted-foreground">{t("modelEditor.outputTypes")}</div>
 						<div className="flex flex-wrap gap-2">
 							{MODALITY_OPTIONS.map((type) => {
 								const active = outputTypes.includes(type);
@@ -846,7 +904,7 @@ export default function NewModelForm({
 										onClick={() => toggleCoreType("output", type)}
 										className={cn(active && "border-primary bg-primary/10")}
 									>
-										{type}
+										{modalityLabels[type] ?? type}
 									</Button>
 								);
 							})}
@@ -857,15 +915,15 @@ export default function NewModelForm({
 
 			<section className="space-y-3 rounded-lg border p-3">
 				<div className="flex items-center justify-between">
-					<h2 className="text-sm font-medium">Subscription plans</h2>
+					<h2 className="text-sm font-medium">{t("modelCreation.form.subscriptionPlans")}</h2>
 				</div>
 				<p className="text-xs text-muted-foreground">
-					Attach existing plans, or create new ones and attach them on save.
+					{t("modelCreation.form.attachExistingPlans")}
 				</p>
 
 				<div className="space-y-2 rounded-md border p-2">
 					{subscriptionPlans.length === 0 ? (
-						<p className="text-xs text-muted-foreground">No existing plans available.</p>
+						<p className="text-xs text-muted-foreground">{t("modelCreation.form.noExistingPlans")}</p>
 					) : null}
 					{subscriptionPlans.map((plan) => {
 						const checked = selectedPlanUuids.includes(plan.plan_uuid);
@@ -874,7 +932,7 @@ export default function NewModelForm({
 								key={plan.plan_uuid}
 								className="flex items-center justify-between gap-3 rounded-md border px-2 py-1.5 text-xs"
 							>
-								<span className="truncate">{formatSubscriptionPlanOption(plan)}</span>
+								<span className="truncate">{formatSubscriptionPlanOption(plan, locale, pricingFrequencyLabel)}</span>
 								<Checkbox
 									checked={checked}
 									onCheckedChange={(value) =>
@@ -895,7 +953,7 @@ export default function NewModelForm({
 
 				<div className="space-y-2 rounded-md border p-2">
 					<div className="flex items-center justify-between">
-						<h3 className="text-xs font-medium">Create plan inline</h3>
+						<h3 className="text-xs font-medium">{t("modelCreation.form.createPlanInline")}</h3>
 						<Button
 							type="button"
 							variant="outline"
@@ -914,13 +972,13 @@ export default function NewModelForm({
 							}
 						>
 							<Plus className="mr-1 h-3 w-3" />
-							New plan
+							{t("modelCreation.form.newPlan")}
 						</Button>
 					</div>
 					{newSubscriptionPlanRows.map((row, index) => (
 						<div key={`new-plan-${index}`} className="grid gap-2 rounded-md border p-2 lg:grid-cols-12">
 							<label htmlFor={`new-plan-id-${index}`} className="text-xs lg:col-span-3">
-								<div className="mb-1 text-muted-foreground">Plan ID</div>
+								<div className="mb-1 text-muted-foreground">{t("modelCreation.form.planId")}</div>
 								<Input
 									id={`new-plan-id-${index}`}
 									value={row.plan_id}
@@ -936,7 +994,7 @@ export default function NewModelForm({
 								/>
 							</label>
 							<label htmlFor={`new-plan-name-${index}`} className="text-xs lg:col-span-3">
-								<div className="mb-1 text-muted-foreground">Name</div>
+								<div className="mb-1 text-muted-foreground">{t("chatComposer.name")}</div>
 								<Input
 									id={`new-plan-name-${index}`}
 									value={row.name}
@@ -948,11 +1006,11 @@ export default function NewModelForm({
 										)
 									}
 									className="h-8 text-xs"
-									placeholder="Starter"
+									placeholder={t("modelCreation.form.planNameExample")}
 								/>
 							</label>
 							<label htmlFor={`new-plan-frequency-${index}`} className="text-xs lg:col-span-2">
-								<div className="mb-1 text-muted-foreground">Frequency</div>
+								<div className="mb-1 text-muted-foreground">{t("modelCreation.form.frequency")}</div>
 								<Input
 									id={`new-plan-frequency-${index}`}
 									value={row.frequency}
@@ -968,7 +1026,7 @@ export default function NewModelForm({
 								/>
 							</label>
 							<label htmlFor={`new-plan-price-${index}`} className="text-xs lg:col-span-2">
-								<div className="mb-1 text-muted-foreground">Price</div>
+								<div className="mb-1 text-muted-foreground">{t("versionedPricing.price")}</div>
 								<Input
 									id={`new-plan-price-${index}`}
 									type="number"
@@ -987,7 +1045,7 @@ export default function NewModelForm({
 							</label>
 							<div className="flex items-end gap-2 lg:col-span-2">
 								<label htmlFor={`new-plan-currency-${index}`} className="w-full text-xs">
-									<div className="mb-1 text-muted-foreground">Currency</div>
+									<div className="mb-1 text-muted-foreground">{t("versionedPricing.currency")}</div>
 									<Input
 										id={`new-plan-currency-${index}`}
 										value={row.currency}
@@ -1006,10 +1064,11 @@ export default function NewModelForm({
 								</label>
 								<Button
 									type="button"
-									variant="ghost"
-									size="icon"
-									onClick={() =>
-										setNewSubscriptionPlanRows((prev) =>
+								variant="ghost"
+								size="icon"
+								aria-label={t("actions.remove")}
+								onClick={() =>
+									setNewSubscriptionPlanRows((prev) =>
 											prev.filter((_, innerIndex) => innerIndex !== index)
 										)
 									}
@@ -1023,17 +1082,17 @@ export default function NewModelForm({
 			</section>
 
 			<section className="space-y-3 rounded-lg border p-3">
-				<h2 className="text-sm font-medium">Family</h2>
+				<h2 className="text-sm font-medium">{t("modelCreation.form.family")}</h2>
 				<div className="grid gap-3 lg:grid-cols-2">
 					<label className="text-sm">
-						<div className="mb-1 text-muted-foreground">Existing family</div>
+						<div className="mb-1 text-muted-foreground">{t("modelCreation.form.existingFamily")}</div>
 						<select
 							name="family_id"
 							value={selectedFamilyId}
 							onChange={(event) => setSelectedFamilyId(event.target.value)}
 							className="w-full rounded-md border px-3 py-2 text-sm"
 						>
-							<option value="">None</option>
+							<option value="">{t("auditDataTable.none")}</option>
 							{families.map((family) => (
 								<option key={family.family_id} value={family.family_id}>
 									{family.family_name ?? family.family_id}
@@ -1043,7 +1102,7 @@ export default function NewModelForm({
 					</label>
 					<div className="text-sm">
 						<Label htmlFor="new-family-name" className="mb-1 block text-muted-foreground">
-							New family name
+							{t("modelCreation.form.newFamilyName")}
 						</Label>
 						<Input
 							id="new-family-name"
@@ -1052,12 +1111,12 @@ export default function NewModelForm({
 								setNewFamilyName(event.target.value);
 								if (event.target.value.trim()) setSelectedFamilyId("");
 							}}
-							placeholder="e.g., GPT-4"
+											placeholder={t("modelCreation.displayNameExample")}
 						/>
 					</div>
 					<div className="text-sm">
 						<Label htmlFor="new-family-id" className="mb-1 block text-muted-foreground">
-							New family ID (optional)
+							{t("modelCreation.form.newFamilyIdOptional")}
 						</Label>
 						<Input
 							id="new-family-id"
@@ -1068,11 +1127,11 @@ export default function NewModelForm({
 					</div>
 					<div className="text-sm lg:col-span-2">
 						<Label htmlFor="new-family-description" className="mb-1 block text-muted-foreground">
-							New family description
+							{t("modelCreation.form.newFamilyDescription")}
 						</Label>
 						<textarea
 							id="new-family-description"
-							aria-label="New family description"
+							aria-label={t("modelCreation.form.newFamilyDescription")}
 							value={newFamilyDescription}
 							onChange={(event) => setNewFamilyDescription(event.target.value)}
 							className="min-h-20 w-full rounded-md border px-3 py-2 text-sm"
@@ -1082,20 +1141,20 @@ export default function NewModelForm({
 			</section>
 
 			<section className="space-y-3 rounded-lg border p-3">
-				<h2 className="text-sm font-medium">Details and Links</h2>
+				<h2 className="text-sm font-medium">{t("modelCreation.form.detailsAndLinks")}</h2>
 				<div className="space-y-4">
 					<div className="space-y-2">
-						<Label className="text-xs uppercase tracking-wide text-muted-foreground">Model details</Label>
+						<Label className="text-xs uppercase tracking-wide text-muted-foreground">{t("editorTabs.details")}</Label>
 						<div className="grid gap-3 lg:grid-cols-2">
 							{MODEL_DETAIL_FIELDS.map((field) => {
 								const isCompactField = COMPACT_DETAIL_FIELDS.has(field.key);
 								const compactLabel = isCompactField
-									? formatCompactNumberLabel(detailValues[field.key])
+									? formatCompactNumberLabel(detailValues[field.key], compactNumberFormatter)
 									: "";
 
 								return (
 									<label key={field.key} className="text-sm">
-										<div className="mb-1 text-muted-foreground">{field.label}</div>
+										<div className="mb-1 text-muted-foreground">{detailFieldLabels[field.key]}</div>
 										{field.inputType === "date" ? (
 											<DatePickerInput
 												value={detailValues[field.key]}
@@ -1105,7 +1164,7 @@ export default function NewModelForm({
 														[field.key]: value,
 													}))
 												}
-												placeholder={field.placeholder}
+												placeholder={detailFieldPlaceholders[field.key]}
 											/>
 										) : isCompactField ? (
 											<div className="relative">
@@ -1119,7 +1178,7 @@ export default function NewModelForm({
 															[field.key]: sanitizeDigitInput(event.target.value),
 														}))
 													}
-													placeholder={field.placeholder}
+													placeholder={detailFieldPlaceholders[field.key]}
 													className={compactLabel ? "pr-16" : undefined}
 												/>
 												{compactLabel ? (
@@ -1138,7 +1197,7 @@ export default function NewModelForm({
 														[field.key]: event.target.value,
 													}))
 												}
-												placeholder={field.placeholder}
+												placeholder={detailFieldPlaceholders[field.key]}
 											/>
 										)}
 									</label>
@@ -1148,11 +1207,11 @@ export default function NewModelForm({
 					</div>
 
 					<div className="space-y-2 border-t pt-3">
-						<Label className="text-xs uppercase tracking-wide text-muted-foreground">Model links</Label>
+						<Label className="text-xs uppercase tracking-wide text-muted-foreground">{t("editorTabs.links")}</Label>
 						<div className="grid gap-3 lg:grid-cols-2">
 							{MODEL_LINK_FIELDS.map((field) => (
 								<label key={field.key} className="text-sm">
-									<div className="mb-1 text-muted-foreground">{field.label}</div>
+									<div className="mb-1 text-muted-foreground">{linkFieldLabels[field.key]}</div>
 									<Input
 										type="url"
 										value={linkValues[field.key]}
@@ -1173,8 +1232,8 @@ export default function NewModelForm({
 
 			<section className="space-y-3 rounded-lg border p-3">
 				<div className="flex items-center justify-between">
-					<h2 className="text-sm font-medium">Provider availability and capabilities</h2>
-					<p className="text-xs text-muted-foreground">Click logos to toggle availability.</p>
+					<h2 className="text-sm font-medium">{t("modelCreation.form.providerAvailabilityAndCapabilities")}</h2>
+					<p className="text-xs text-muted-foreground">{t("modelCreation.form.toggleAvailability")}</p>
 				</div>
 				<div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
 					{sortedProviders.map((provider) => {
@@ -1205,7 +1264,7 @@ export default function NewModelForm({
 						<div key={providerRow.id} className="space-y-3 rounded-md border p-3">
 							<div className="grid gap-2 lg:grid-cols-5">
 								<label className="text-xs">
-									<div className="mb-1 text-muted-foreground">Provider</div>
+									<div className="mb-1 text-muted-foreground">{t("versionedPricing.provider")}</div>
 									<select
 										value={providerRow.provider_id}
 										onChange={(event) =>
@@ -1226,7 +1285,7 @@ export default function NewModelForm({
 								</label>
 								<div className="text-xs">
 									<Label htmlFor={`provider-public-model-${providerRow.id}`} className="mb-1 block text-muted-foreground">
-										Public model ID
+										{t("modelEditor.publicModelId")}
 									</Label>
 									<Input
 										id={`provider-public-model-${providerRow.id}`}
@@ -1244,7 +1303,7 @@ export default function NewModelForm({
 								</div>
 								<div className="text-xs">
 									<Label htmlFor={`provider-model-id-${providerRow.id}`} className="mb-1 block text-muted-foreground">
-										Provider model ID
+										{t("modelEditor.providerModelId")}
 									</Label>
 									<Input
 										id={`provider-model-id-${providerRow.id}`}
@@ -1261,7 +1320,7 @@ export default function NewModelForm({
 								</div>
 								<div className="text-xs">
 									<Label htmlFor={`provider-internal-model-${providerRow.id}`} className="mb-1 block text-muted-foreground">
-										Internal model ID
+										{t("modelEditor.internalModelId")}
 									</Label>
 									<Input id={`provider-internal-model-${providerRow.id}`} value={modelId} readOnly disabled className="h-8 text-xs" />
 								</div>
@@ -1280,12 +1339,13 @@ export default function NewModelForm({
 												)
 											}
 										/>
-										Gateway active
+										{t("modelEditor.gatewayActive")}
 									</label>
 									<Button
 										type="button"
 										variant="ghost"
 										size="icon"
+										aria-label={t("actions.remove")}
 										onClick={() => setProviderRows((prev) => prev.filter((row) => row.id !== providerRow.id))}
 									>
 										<Trash2 className="h-4 w-4" />
@@ -1295,7 +1355,7 @@ export default function NewModelForm({
 
 							<div className="grid gap-2 lg:grid-cols-3">
 								<label htmlFor={`provider-quant-${providerRow.id}`} className="text-xs">
-									<div className="mb-1 text-muted-foreground">Quantisation</div>
+									<div className="mb-1 text-muted-foreground">{t("modelEditor.quantizationScheme")}</div>
 									<Input
 										id={`provider-quant-${providerRow.id}`}
 										value={providerRow.quantization_scheme}
@@ -1309,11 +1369,11 @@ export default function NewModelForm({
 											)
 										}
 										className="h-8 text-xs"
-										placeholder="FP16, INT8, etc."
+										placeholder={t("modelEditor.quantizationExample")}
 									/>
 								</label>
 								<label htmlFor={`provider-context-${providerRow.id}`} className="text-xs">
-									<div className="mb-1 text-muted-foreground">Input context</div>
+									<div className="mb-1 text-muted-foreground">{t("modelEditor.inputContextLength")}</div>
 									<Input
 										id={`provider-context-${providerRow.id}`}
 										type="number"
@@ -1328,11 +1388,11 @@ export default function NewModelForm({
 											)
 										}
 										className="h-8 text-xs"
-										placeholder="e.g. 200000"
+										placeholder={t("modelCreation.form.detailExamples.providerContextLength")}
 									/>
 								</label>
 								<label htmlFor={`provider-max-output-${providerRow.id}`} className="text-xs">
-									<div className="mb-1 text-muted-foreground">Max output</div>
+									<div className="mb-1 text-muted-foreground">{t("modelEditor.maxOutputTokens")}</div>
 									<Input
 										id={`provider-max-output-${providerRow.id}`}
 										type="number"
@@ -1347,14 +1407,14 @@ export default function NewModelForm({
 											)
 										}
 										className="h-8 text-xs"
-										placeholder="e.g. 32000"
+										placeholder={t("modelCreation.form.detailExamples.providerMaxOutput")}
 									/>
 								</label>
 							</div>
 
 							<div className="grid gap-2 lg:grid-cols-2">
 								<div>
-									<Label className="mb-1 block text-xs text-muted-foreground">Input modalities</Label>
+									<Label className="mb-1 block text-xs text-muted-foreground">{t("modelCreation.inputModalities")}</Label>
 									<div className="flex flex-wrap gap-2">
 										{MODALITY_OPTIONS.map((modality) => (
 											<label key={`${providerRow.id}-in-${modality}`} className="flex items-center gap-1 text-xs">
@@ -1364,13 +1424,13 @@ export default function NewModelForm({
 														toggleModality(providerRow.id, "input_modalities", modality, checked === true)
 													}
 												/>
-												{modality}
+												{modalityLabels[modality] ?? modality}
 											</label>
 										))}
 									</div>
 								</div>
 								<div>
-									<Label className="mb-1 block text-xs text-muted-foreground">Output modalities</Label>
+									<Label className="mb-1 block text-xs text-muted-foreground">{t("modelCreation.outputModalities")}</Label>
 									<div className="flex flex-wrap gap-2">
 										{MODALITY_OPTIONS.map((modality) => (
 											<label key={`${providerRow.id}-out-${modality}`} className="flex items-center gap-1 text-xs">
@@ -1380,7 +1440,7 @@ export default function NewModelForm({
 														toggleModality(providerRow.id, "output_modalities", modality, checked === true)
 													}
 												/>
-												{modality}
+												{modalityLabels[modality] ?? modality}
 											</label>
 										))}
 									</div>
@@ -1389,7 +1449,7 @@ export default function NewModelForm({
 
 							<div className="space-y-2 rounded-md border p-2">
 								<div className="flex items-center justify-between">
-									<h3 className="text-xs font-medium">Capabilities</h3>
+									<h3 className="text-xs font-medium">{t("modelEditor.capabilities")}</h3>
 									<Button
 										type="button"
 										variant="outline"
@@ -1405,7 +1465,7 @@ export default function NewModelForm({
 										}
 									>
 										<Plus className="mr-1 h-3 w-3" />
-										Add capability
+										{t("modelEditor.addCapability")}
 									</Button>
 								</div>
 
@@ -1413,7 +1473,7 @@ export default function NewModelForm({
 									<div key={capability.id} className="space-y-2 rounded-md border p-2">
 										<div className="grid gap-2 lg:grid-cols-4">
 											<label className="text-xs">
-												<div className="mb-1 text-muted-foreground">Endpoint</div>
+												<div className="mb-1 text-muted-foreground">{t("modelCreation.form.endpoint")}</div>
 												<select
 													value={capability.capability_id}
 													onChange={(event) =>
@@ -1442,7 +1502,7 @@ export default function NewModelForm({
 												</select>
 											</label>
 											<label className="text-xs">
-												<div className="mb-1 text-muted-foreground">Status</div>
+												<div className="mb-1 text-muted-foreground">{t("modelCreation.status")}</div>
 												<select
 													value={capability.status}
 													onChange={(event) =>
@@ -1468,7 +1528,7 @@ export default function NewModelForm({
 												>
 													{CAPABILITY_STATUS_OPTIONS.map((status) => (
 														<option key={status} value={status}>
-															{status}
+															{capabilityStatusLabels[status] ?? status}
 														</option>
 													))}
 												</select>
@@ -1476,10 +1536,11 @@ export default function NewModelForm({
 											<div className="flex items-end justify-between gap-2">
 												<Button
 													type="button"
-													variant="ghost"
-													size="icon"
-													onClick={() =>
-														setProviderRows((prev) =>
+										variant="ghost"
+										size="icon"
+										aria-label={t("actions.remove")}
+										onClick={() =>
+										setProviderRows((prev) =>
 															prev.map((row) =>
 																row.id === providerRow.id
 																	? {
@@ -1498,7 +1559,7 @@ export default function NewModelForm({
 											</div>
 										</div>
 										<div>
-											<Label className="mb-1 block text-xs text-muted-foreground">Supported params</Label>
+										<Label className="mb-1 block text-xs text-muted-foreground">{t("modelEditor.supportedParams")}</Label>
 											<div className="flex flex-wrap gap-2">
 												{PARAMETER_FLAGS.map((param) => (
 													<label key={`${capability.id}-${param}`} className="flex items-center gap-1 text-xs">
@@ -1542,7 +1603,7 @@ export default function NewModelForm({
 
 			<section className="space-y-3 rounded-lg border p-3">
 				<div className="flex items-center justify-between">
-					<h2 className="text-sm font-medium">Benchmarks</h2>
+				<h2 className="text-sm font-medium">{t("auditDataTable.benchmarks")}</h2>
 					<Button
 						type="button"
 						variant="outline"
@@ -1563,14 +1624,14 @@ export default function NewModelForm({
 						}
 					>
 						<Plus className="mr-1 h-4 w-4" />
-						Add benchmark result
+						{t("modelEditor.advanced.benchmarks.addResult")}
 					</Button>
 				</div>
 				{benchmarkRows.map((row) => (
 					<div key={row.id} className="space-y-2 rounded-md border p-2">
 						<div className="grid gap-2 lg:grid-cols-12">
 							<label htmlFor={`benchmark-select-${row.id}`} className="text-xs lg:col-span-5">
-								<div className="mb-1 text-muted-foreground">Benchmark</div>
+								<div className="mb-1 text-muted-foreground">{t("benchmarkComparison.benchmark")}</div>
 								<select
 									id={`benchmark-select-${row.id}`}
 									value={row.benchmark_id}
@@ -1581,7 +1642,7 @@ export default function NewModelForm({
 									}
 									className="w-full rounded-md border px-2 py-1.5 text-xs"
 								>
-									<option value="">Select benchmark</option>
+					<option value="">{t("benchmarkComparison.selectBenchmark")}</option>
 									{benchmarkOptions.map((option) => (
 										<option key={option.id} value={option.id}>
 											{option.name}
@@ -1590,7 +1651,7 @@ export default function NewModelForm({
 								</select>
 							</label>
 							<label htmlFor={`benchmark-score-${row.id}`} className="text-xs lg:col-span-2">
-								<div className="mb-1 text-muted-foreground">Score</div>
+								<div className="mb-1 text-muted-foreground">{t("modelEditor.advanced.benchmarks.score")}</div>
 								<Input
 									id={`benchmark-score-${row.id}`}
 									value={row.score}
@@ -1599,16 +1660,17 @@ export default function NewModelForm({
 											prev.map((inner) => (inner.id === row.id ? { ...inner, score: event.target.value } : inner))
 										)
 									}
-									placeholder="Score"
+					placeholder={t("modelEditor.advanced.benchmarks.score")}
 									className="h-8 text-xs"
 								/>
 							</label>
 							<div className="flex items-end justify-end lg:col-span-3">
 								<Button
 									type="button"
-									variant="ghost"
-									size="icon"
-									onClick={() => setBenchmarkRows((prev) => prev.filter((inner) => inner.id !== row.id))}
+								variant="ghost"
+								size="icon"
+								aria-label={t("actions.remove")}
+								onClick={() => setBenchmarkRows((prev) => prev.filter((inner) => inner.id !== row.id))}
 								>
 									<Trash2 className="h-4 w-4" />
 								</Button>
@@ -1617,7 +1679,7 @@ export default function NewModelForm({
 
 						<div className="grid gap-2 lg:grid-cols-12">
 							<label htmlFor={`benchmark-source-${row.id}`} className="text-xs lg:col-span-6">
-								<div className="mb-1 text-muted-foreground">Source link</div>
+								<div className="mb-1 text-muted-foreground">{t("modelEditor.advanced.benchmarks.sourceLink")}</div>
 								<Input
 									id={`benchmark-source-${row.id}`}
 									value={row.source_link}
@@ -1631,7 +1693,7 @@ export default function NewModelForm({
 								/>
 							</label>
 							<label htmlFor={`benchmark-variant-${row.id}`} className="text-xs lg:col-span-3">
-								<div className="mb-1 text-muted-foreground">Variant</div>
+								<div className="mb-1 text-muted-foreground">{t("modelCreation.form.variant")}</div>
 								<Input
 									id={`benchmark-variant-${row.id}`}
 									value={row.variant}
@@ -1640,7 +1702,7 @@ export default function NewModelForm({
 											prev.map((inner) => (inner.id === row.id ? { ...inner, variant: event.target.value } : inner))
 										)
 									}
-									placeholder="e.g., Max"
+										placeholder={t("modelCreation.form.detailExamples.benchmarkVariant")}
 									className="h-8 text-xs"
 								/>
 							</label>
@@ -1657,7 +1719,7 @@ export default function NewModelForm({
 											)
 										}
 									/>
-									Self-reported
+									{t("benchmarkComparison.selfReported")}
 								</label>
 							</div>
 						</div>
@@ -1666,7 +1728,7 @@ export default function NewModelForm({
 
 				<div className="space-y-2 rounded-md border p-2">
 					<div className="flex items-center justify-between">
-						<h3 className="text-xs font-medium">Create benchmark inline</h3>
+						<h3 className="text-xs font-medium">{t("modelCreation.form.createBenchmarkInline")}</h3>
 						<Button
 							type="button"
 							variant="outline"
@@ -1685,7 +1747,7 @@ export default function NewModelForm({
 							}
 						>
 							<Plus className="mr-1 h-3 w-3" />
-							New benchmark
+							{t("modelCreation.form.newBenchmark")}
 						</Button>
 					</div>
 					{newBenchmarkRows.map((row, index) => (
@@ -1693,7 +1755,7 @@ export default function NewModelForm({
 							<div className="grid gap-2 lg:grid-cols-12">
 								<div className="text-xs lg:col-span-3">
 									<Label htmlFor={`new-benchmark-id-${row.id}`} className="mb-1 block text-muted-foreground">
-										Benchmark ID
+										{t("modelCreation.form.benchmarkId")}
 									</Label>
 									<Input
 										id={`new-benchmark-id-${row.id}`}
@@ -1711,7 +1773,7 @@ export default function NewModelForm({
 								</div>
 								<div className="text-xs lg:col-span-3">
 									<Label htmlFor={`new-benchmark-name-${row.id}`} className="mb-1 block text-muted-foreground">
-										Name
+									{t("chatComposer.name")}
 									</Label>
 									<Input
 										id={`new-benchmark-name-${row.id}`}
@@ -1723,13 +1785,13 @@ export default function NewModelForm({
 												)
 											)
 										}
-										placeholder="Name"
+										placeholder={t("chatComposer.name")}
 										className="h-8 text-xs"
 									/>
 								</div>
 								<div className="text-xs lg:col-span-3">
 									<Label htmlFor={`new-benchmark-category-${row.id}`} className="mb-1 block text-muted-foreground">
-										Category
+									{t("modelCreation.form.category")}
 									</Label>
 									<Input
 										id={`new-benchmark-category-${row.id}`}
@@ -1741,13 +1803,13 @@ export default function NewModelForm({
 												)
 											)
 										}
-										placeholder="Category"
+										placeholder={t("modelCreation.form.category")}
 										className="h-8 text-xs"
 									/>
 								</div>
 								<div className="text-xs lg:col-span-3">
 									<Label htmlFor={`new-benchmark-direction-${row.id}`} className="mb-1 block text-muted-foreground">
-										Direction
+									{t("modelCreation.form.direction")}
 									</Label>
 									<select
 										id={`new-benchmark-direction-${row.id}`}
@@ -1766,16 +1828,16 @@ export default function NewModelForm({
 										}
 										className="w-full rounded-md border px-2 py-1.5 text-xs"
 									>
-										<option value="">No direction</option>
-										<option value="higher">Higher is better</option>
-										<option value="lower">Lower is better</option>
+										<option value="">{t("modelCreation.form.noDirection")}</option>
+										<option value="higher">{t("modelCreation.form.higherIsBetter")}</option>
+										<option value="lower">{t("benchmarkComparison.lowerIsBetter")}</option>
 									</select>
 								</div>
 							</div>
 							<div className="grid gap-2 lg:grid-cols-12">
 								<div className="text-xs lg:col-span-11">
 									<Label htmlFor={`new-benchmark-link-${row.id}`} className="mb-1 block text-muted-foreground">
-										Link
+										{t("modelCreation.form.link")}
 									</Label>
 									<Input
 										id={`new-benchmark-link-${row.id}`}
@@ -1796,8 +1858,9 @@ export default function NewModelForm({
 										type="button"
 										variant="ghost"
 										size="icon"
+										aria-label={t("actions.remove")}
 										onClick={() =>
-											setNewBenchmarkRows((prev) =>
+										setNewBenchmarkRows((prev) =>
 												prev.filter((_, innerIndex) => innerIndex !== index)
 											)
 										}
@@ -1813,14 +1876,14 @@ export default function NewModelForm({
 
 			<section className="space-y-3 rounded-lg border p-3">
 				<div className="flex items-center justify-between">
-					<h2 className="text-sm font-medium">Pricing rules</h2>
+					<h2 className="text-sm font-medium">{t("modelEditor.pricingRules")}</h2>
 					<Button type="button" variant="outline" size="sm" onClick={() => addPricingRows([PRICING_METER_OPTIONS[0]?.value ?? "input_text_tokens"])}>
 						<Plus className="mr-1 h-4 w-4" />
-						Add pricing row
+						{t("modelCreation.form.addPricingRow")}
 					</Button>
 				</div>
 				<p className="text-xs text-muted-foreground">
-					Pricing rules are grouped by provider so it is easier to see each provider's current meter set. Picking a meter auto-fills unit and unit size defaults.
+					{t("modelCreation.form.pricingRulesDescription")}
 				</p>
 				<div className="space-y-4">
 					{groupedPricingRows.providerGroups.map((group) => (
@@ -1829,19 +1892,19 @@ export default function NewModelForm({
 								<div>
 									<div className="text-sm font-medium">{group.providerName}</div>
 									<p className="text-xs text-muted-foreground">
-										{group.rows.length} pricing {group.rows.length === 1 ? "row" : "rows"}
+										{t("modelCreation.form.pricingRowCount", { count: group.rows.length })}
 									</p>
 								</div>
 								<div className="flex flex-wrap items-center gap-2">
 									<Button type="button" variant="outline" size="sm" onClick={() => addPricingRowsForProvider(group.providerId, [PRICING_METER_OPTIONS[0]?.value ?? "input_text_tokens"])}>
 										<Plus className="mr-1 h-4 w-4" />
-										Add row
+										{t("modelCreation.form.addRow")}
 									</Button>
 									<Button type="button" variant="outline" size="sm" onClick={() => addPricingRowsForProvider(group.providerId, ["input_text_tokens", "output_text_tokens", "cached_read_text_tokens"])}>
-										Add text bundle
+										{t("modelCreation.form.addTextBundle")}
 									</Button>
 									<Button type="button" variant="outline" size="sm" onClick={() => addPricingRowsForProvider(group.providerId, ["input_image_tokens", "output_image_tokens", "cached_read_image_tokens"])}>
-										Add image bundle
+										{t("modelCreation.form.addImageBundle")}
 									</Button>
 								</div>
 							</div>
@@ -1849,12 +1912,12 @@ export default function NewModelForm({
 								{group.rows.map((row) => (
 									<div key={row.id} className="grid gap-2 rounded-md border bg-background p-2 lg:grid-cols-8">
 									<select
-										aria-label="Pricing provider"
+										aria-label={t("versionedPricing.provider")}
 										value={row.provider_id}
 										onChange={(event) => setPricingField(row.id, "provider_id", event.target.value)}
 										className="rounded-md border px-2 py-1.5 text-xs"
 									>
-											<option value="">Provider</option>
+											<option value="">{t("versionedPricing.provider")}</option>
 											{pricingProviderOptions.map((provider) => (
 												<option key={provider.api_provider_id} value={provider.api_provider_id}>
 													{provider.api_provider_name ?? provider.api_provider_id}
@@ -1862,14 +1925,14 @@ export default function NewModelForm({
 											))}
 										</select>
 									<Input
-										aria-label="Pricing model ID"
+										aria-label={t("modelEditor.publicModelId")}
 										value={row.api_model_id}
 										onChange={(event) => setPricingField(row.id, "api_model_id", event.target.value)}
 										placeholder="api_model_id"
 										className="h-8 text-xs"
 									/>
 									<select
-										aria-label="Pricing capability"
+										aria-label={t("modelEditor.capability")}
 										value={row.capability_id}
 										onChange={(event) => setPricingField(row.id, "capability_id", event.target.value)}
 										className="rounded-md border px-2 py-1.5 text-xs"
@@ -1881,41 +1944,41 @@ export default function NewModelForm({
 											))}
 										</select>
 									<select
-										aria-label="Pricing meter"
+										aria-label={t("modelEditor.meter")}
 										value={row.meter}
 										onChange={(event) => setPricingField(row.id, "meter", event.target.value)}
 										className="rounded-md border px-2 py-1.5 text-xs"
 									>
 											{PRICING_METER_OPTIONS.map((meter) => (
 												<option key={meter.value} value={meter.value}>
-													{meter.label}
+													{pricingMeterLabel(meter.value, meter.label)}
 												</option>
 											))}
 										</select>
 									<Input
-										aria-label="Pricing price per unit"
+										aria-label={t("modelEditor.pricePerUnit")}
 										value={row.price_per_unit}
 										onChange={(event) => setPricingField(row.id, "price_per_unit", event.target.value)}
-										placeholder="Price"
+										placeholder={t("versionedPricing.price")}
 										className="h-8 text-xs"
 									/>
 									<Input
-										aria-label="Pricing unit"
+										aria-label={t("versionedPricing.unit")}
 										value={row.unit}
 										onChange={(event) => setPricingField(row.id, "unit", event.target.value)}
-										placeholder="Unit"
+										placeholder={t("versionedPricing.unit")}
 										className="h-8 text-xs"
 									/>
 									<Input
-										aria-label="Pricing unit size"
+										aria-label={t("modelEditor.unitSize")}
 										value={row.unit_size}
 										onChange={(event) => setPricingField(row.id, "unit_size", event.target.value)}
-										placeholder="Unit size"
+										placeholder={t("modelEditor.unitSize")}
 										className="h-8 text-xs"
 									/>
 									<div className="flex items-center justify-between gap-2">
 										<Input
-											aria-label="Pricing currency"
+											aria-label={t("versionedPricing.currency")}
 											value={row.currency}
 											onChange={(event) => setPricingField(row.id, "currency", event.target.value)}
 											placeholder="USD"
@@ -1923,9 +1986,10 @@ export default function NewModelForm({
 										/>
 											<Button
 												type="button"
-												variant="ghost"
-												size="icon"
-												onClick={() => setPricingRows((prev) => prev.filter((inner) => inner.id !== row.id))}
+									variant="ghost"
+									size="icon"
+									aria-label={t("actions.remove")}
+									onClick={() => setPricingRows((prev) => prev.filter((inner) => inner.id !== row.id))}
 											>
 												<Trash2 className="h-4 w-4" />
 											</Button>
@@ -1937,16 +2001,16 @@ export default function NewModelForm({
 					))}
 					{groupedPricingRows.unassignedRows.length > 0 ? (
 						<div className="space-y-2 rounded-xl border border-dashed p-3">
-							<div className="text-sm font-medium">Unassigned provider</div>
+							<div className="text-sm font-medium">{t("modelCreation.form.unassignedProvider")}</div>
 							{groupedPricingRows.unassignedRows.map((row) => (
 								<div key={row.id} className="grid gap-2 rounded-md border bg-background p-2 lg:grid-cols-8">
 									<select
-										aria-label="Pricing provider"
+										aria-label={t("versionedPricing.provider")}
 										value={row.provider_id}
 										onChange={(event) => setPricingField(row.id, "provider_id", event.target.value)}
 										className="rounded-md border px-2 py-1.5 text-xs"
 									>
-										<option value="">Provider</option>
+										<option value="">{t("versionedPricing.provider")}</option>
 										{pricingProviderOptions.map((provider) => (
 											<option key={provider.api_provider_id} value={provider.api_provider_id}>
 												{provider.api_provider_name ?? provider.api_provider_id}
@@ -1954,14 +2018,14 @@ export default function NewModelForm({
 										))}
 									</select>
 									<Input
-										aria-label="Pricing model ID"
+										aria-label={t("modelEditor.publicModelId")}
 										value={row.api_model_id}
 										onChange={(event) => setPricingField(row.id, "api_model_id", event.target.value)}
 										placeholder="api_model_id"
 										className="h-8 text-xs"
 									/>
 									<select
-										aria-label="Pricing capability"
+										aria-label={t("modelEditor.capability")}
 										value={row.capability_id}
 										onChange={(event) => setPricingField(row.id, "capability_id", event.target.value)}
 										className="rounded-md border px-2 py-1.5 text-xs"
@@ -1973,41 +2037,41 @@ export default function NewModelForm({
 										))}
 									</select>
 									<select
-										aria-label="Pricing meter"
+										aria-label={t("modelEditor.meter")}
 										value={row.meter}
 										onChange={(event) => setPricingField(row.id, "meter", event.target.value)}
 										className="rounded-md border px-2 py-1.5 text-xs"
 									>
 										{PRICING_METER_OPTIONS.map((meter) => (
 											<option key={meter.value} value={meter.value}>
-												{meter.label}
+												{pricingMeterLabel(meter.value, meter.label)}
 											</option>
 										))}
 									</select>
 									<Input
-										aria-label="Pricing price per unit"
+										aria-label={t("modelEditor.pricePerUnit")}
 										value={row.price_per_unit}
 										onChange={(event) => setPricingField(row.id, "price_per_unit", event.target.value)}
-										placeholder="Price"
+										placeholder={t("versionedPricing.price")}
 										className="h-8 text-xs"
 									/>
 									<Input
-										aria-label="Pricing unit"
+										aria-label={t("versionedPricing.unit")}
 										value={row.unit}
 										onChange={(event) => setPricingField(row.id, "unit", event.target.value)}
-										placeholder="Unit"
+										placeholder={t("versionedPricing.unit")}
 										className="h-8 text-xs"
 									/>
 									<Input
-										aria-label="Pricing unit size"
+										aria-label={t("modelEditor.unitSize")}
 										value={row.unit_size}
 										onChange={(event) => setPricingField(row.id, "unit_size", event.target.value)}
-										placeholder="Unit size"
+										placeholder={t("modelEditor.unitSize")}
 										className="h-8 text-xs"
 									/>
 									<div className="flex items-center justify-between gap-2">
 										<Input
-											aria-label="Pricing currency"
+											aria-label={t("versionedPricing.currency")}
 											value={row.currency}
 											onChange={(event) => setPricingField(row.id, "currency", event.target.value)}
 											placeholder="USD"
@@ -2015,9 +2079,10 @@ export default function NewModelForm({
 										/>
 										<Button
 											type="button"
-											variant="ghost"
-											size="icon"
-											onClick={() => setPricingRows((prev) => prev.filter((inner) => inner.id !== row.id))}
+								variant="ghost"
+								size="icon"
+								aria-label={t("actions.remove")}
+								onClick={() => setPricingRows((prev) => prev.filter((inner) => inner.id !== row.id))}
 										>
 											<Trash2 className="h-4 w-4" />
 										</Button>
@@ -2031,10 +2096,10 @@ export default function NewModelForm({
 
 			<div className="flex flex-wrap gap-2">
 				<Button type="submit" className="w-full sm:w-auto" disabled={isSubmitting}>
-					{isSubmitting ? "Creating..." : "Create model"}
+					{isSubmitting ? t("modelCreation.form.creatingModel") : t("modelCreation.title")}
 				</Button>
 				<Link href="/internal/data/models" className="w-full rounded-md border px-3 py-2 text-center text-sm sm:w-auto">
-					Cancel
+					{t("modelCreation.cancel")}
 				</Link>
 			</div>
 		</form>

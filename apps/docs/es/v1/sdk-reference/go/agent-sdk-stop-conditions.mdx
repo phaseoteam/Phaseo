@@ -1,0 +1,24 @@
+---
+icon: "circle-check"
+title: "Condiciones de detención"
+description: "Limita el trabajo de agentes Go por pasos, tokens, coste, duración, herramientas o motivo de finalización."
+---
+
+`MaxSteps` es un límite de seguridad útil. `StopWhen` añade límites de producto combinables que se evalúan a medida que avanza la ejecución.
+
+```go
+agent := phaseoagent.CreateAgent(phaseoagent.AgentDefinition{
+  ID: "bounded-research",
+  Model: "openai/gpt-5.4-nano",
+  StopWhen: []phaseoagent.StopCondition{
+    phaseoagent.StepCountIs(12),
+    phaseoagent.MaxTokensUsed(40_000),
+    phaseoagent.MaxCost(2.50),
+    phaseoagent.MaxDuration(2 * time.Minute),
+  },
+})
+```
+
+Entre otras funciones se incluyen `HasToolCall("publish_report")` y `FinishReasonIs("content_filter")`. También puedes proporcionar una condición `StopCondition` personalizada cuando la decisión dependa del contexto de la aplicación.
+
+Cuando se cumpla una condición, inspecciona `result.Run.StopReason`, los totales de uso normalizados y el último paso completado. La detención es un resultado satisfactorio y acotado, a menos que la aplicación decida tratar ese motivo como un error.

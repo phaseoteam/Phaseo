@@ -2,9 +2,10 @@
 
 import { useRouter } from "next/navigation";
 import { FormEvent, useMemo, useState, useTransition } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { CheckCircle2, Copy, MoreHorizontal, Plus, RotateCw, Trash2, Webhook } from "lucide-react";
 import { toast } from "sonner";
+import { localizedSettingsError } from "@/i18n/error-messages";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -51,11 +52,11 @@ type EndpointActionResult = {
 	signingSecret?: string;
 };
 
-function formatDate(value: string | null) {
-	if (!value) return "Never";
+function formatDate(value: string | null, locale: string, neverLabel: string) {
+	if (!value) return neverLabel;
 	const date = new Date(value);
-	if (Number.isNaN(date.getTime())) return "Never";
-	return date.toLocaleDateString();
+	if (Number.isNaN(date.getTime())) return neverLabel;
+	return date.toLocaleDateString(locale);
 }
 
 function parseEvents(value: string): string[] {
@@ -68,8 +69,9 @@ function parseEvents(value: string): string[] {
 
 export default function WebhooksSettingsClient({ endpoints }: Props) {
 	const t = useTranslations("SettingsUI");
+	const locale = useLocale();
 	const router = useRouter();
-	const [name, setName] = useState("Async webhooks");
+	const [name, setName] = useState(() => t("settingsPageCopy.webhookDefaultName" as never));
 	const [url, setUrl] = useState("");
 	const [events, setEvents] = useState(DEFAULT_EVENTS.join(", "));
 	const [revealedSecret, setRevealedSecret] = useState<{ id: string; secret: string } | null>(null);
@@ -101,7 +103,7 @@ export default function WebhooksSettingsClient({ endpoints }: Props) {
 				toast.success(t("strings.Webhook endpoint created" as never));
 				router.refresh();
 			} catch (error) {
-				toast.error(error instanceof Error ? error.message : t("strings.Failed to create webhook" as never));
+				toast.error(localizedSettingsError(error, t, "Failed to create webhook"));
 			}
 		});
 	}
@@ -119,7 +121,7 @@ export default function WebhooksSettingsClient({ endpoints }: Props) {
 				}
 				router.refresh();
 			} catch (error) {
-				toast.error(error instanceof Error ? error.message : t("strings.Action failed" as never));
+				toast.error(localizedSettingsError(error, t, "Action failed"));
 			} finally {
 				setPendingEndpointId(null);
 			}
@@ -214,14 +216,18 @@ export default function WebhooksSettingsClient({ endpoints }: Props) {
 									</div>
 								</div>
 								<div className="text-xs text-muted-foreground">
-					{t("strings.Updated" as never)} {formatDate(endpoint.updatedAt ?? endpoint.createdAt)}
+					{t("strings.Updated" as never)} {formatDate(endpoint.updatedAt ?? endpoint.createdAt, locale, t("settingsPageCopy.webhookNever" as never))}
 								</div>
 								<div>
 									<Badge variant={endpoint.status === "active" ? "default" : "outline"}>
 										{endpoint.status === "active" ? (
 											<CheckCircle2 className="mr-1 h-3 w-3" />
 										) : null}
-										{endpoint.status}
+										{endpoint.status === "active"
+											? t("strings.Active" as never)
+											: endpoint.status === "disabled"
+												? t("strings.Disabled" as never)
+												: t("settingsPageCopy.webhookDeleted" as never)}
 									</Badge>
 								</div>
 								<div className="flex justify-end">

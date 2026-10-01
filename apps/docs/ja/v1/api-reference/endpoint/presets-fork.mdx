@@ -1,0 +1,10 @@
+---
+title: "公開プリセットをフォーク"
+sidebarTitle: "プリセットをフォーク"
+badge: "ベータ"
+openapi: "/ja/openapi/v1/openapi.localized.yaml POST /presets/{id}/fork"
+description: "公開プリセットを管理ワークスペースにフォークします。"
+---
+<Note>このエンドポイントには `presets:write` 権限を持つ管理APIキーと、関連付けられたユーザーIDが必要です。</Note>
+
+アクティブなバージョンをフォークする場合は `source_version_id` を省略してください。新しいプリセットは非公開で、上流の系譜を維持します。

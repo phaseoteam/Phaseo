@@ -1,0 +1,82 @@
+---
+title: "Agent SDK का परिचय"
+description: "Agent SDK की समर्थित भाषाओं में Phaseo Gateway पर स्थानीय और फिर से शुरू किए जा सकने वाले एजेंट लूप बनाएं।"
+---
+
+जब आपके ऐप को एक बार के जनरेशन से अधिक चाहिए, तब Phaseo Agent SDK का उपयोग करें:
+
+- कई चरणों वाले टूल लूप
+- स्थानीय runtime टूल
+- Gateway से जुड़े मॉडल टर्न
+- ऐप द्वारा नियंत्रित, फिर से शुरू किया जा सकने वाला रन स्टेट
+- सटीक कॉल के लिए अनुमोदन, मानव भागीदारी वाले टूल, मैन्युअल टूल और फिर से शुरू होने वाला निष्पादन
+- runtime validation, प्रगति बताने वाले टूल और सुधार योग्य टूल त्रुटियां
+- दोबारा चलाए जा सकने वाले event consumers के साथ मॉडल आउटपुट streaming
+- dynamic turn configuration, संयोजित stop conditions और सामान्यीकृत उपयोग/लागत
+- मॉडल retries, टूल timeouts, सीमित टूल concurrency और lifecycle events
+- Phaseo Devtools के साथ स्थानीय capture
+- मुख्य client SDK जैसी भाषाओं में एकसमान अनुरोध routing
+
+## समर्थित भाषाएं
+
+वर्तमान Agent SDK की भाषाएं Phaseo quickstart में दिए गए मुख्य client SDK के भाषा सेट से मेल खाती हैं:
+
+- [TypeScript](../typescript/agent-sdk.mdx)
+- [Python](../python/agent-sdk.mdx)
+- [Go](../go/agent-sdk.mdx)
+- [C#](../csharp/agent-sdk.mdx)
+- [PHP](../php/agent-sdk.mdx)
+- [Ruby](../ruby/agent-sdk.mdx)
+- [Rust](../rust/agent-sdk.mdx)
+
+## सामान्य मॉडल
+
+हर Agent SDK एक ही runtime मॉडल रखता है:
+
+- एक agent परिभाषित करें
+- शून्य या अधिक स्थानीय टूल परिभाषित करें
+- Gateway से जुड़ा मॉडल client बनाएं
+- `responses` API पर सीमित लूप चलाएं
+- lifecycle events या Devtools trace देखें
+- लौटे हुए रन को सहेजें और मानव निर्णय के बाद फिर से शुरू करें
+
+TypeScript API डिज़ाइन का संदर्भ है। Python, Go, C#, PHP और Ruby concurrency, timeout और cancellation के लिए अपनी भाषा के callbacks और primitives के साथ व्यापक cross-language contract देते हैं। Rust एक समर्थित synchronous runtime है, जिसमें स्थानीय और बाहरी टूल, exact-ID approvals, मानव समीक्षा, model retries, serializable run state, lifecycle callbacks और usage aggregation शामिल हैं। Java और C++ का काम जारी है।
+
+<Note>
+  Rust Agent SDK को `phaseo-agent` के रूप में प्रकाशित किया जाता है। इसमें अभी streaming, async execution, concurrent local tools, runtime schema validation या Devtools capture शामिल नहीं हैं।
+</Note>
+
+## भाषाओं के बीच क्षमता अनुबंध
+
+| क्षमता | TypeScript | Python | Go | C# | PHP | Ruby | Rust |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| चलाए जा सकने वाले टूल और सुधारी जा सकने वाली टूल त्रुटियां | हाँ | हाँ | हाँ | हाँ | हाँ | हाँ | Synchronous |
+| Exact-ID approvals, HITL और manual outputs | हाँ | हाँ | हाँ | हाँ | हाँ | हाँ | हाँ |
+| टूल की शुरुआती प्रगति | Async generator | Iterator या callback | Callback | Callback | Callback | Callback | अभी नहीं |
+| मॉडल streaming और replayable consumers | Async iterable | Iterator | Channel | Async enumerable | Iterable | Enumerator | अभी नहीं |
+| संयोजित stop conditions | हाँ | हाँ | हाँ | हाँ | हाँ | हाँ | चरण सीमा |
+| Dynamic turns और mutable context | हाँ | हाँ | हाँ | हाँ | हाँ | हाँ | प्रत्येक run का मॉडल, चरण सीमा और संदर्भ |
+| ऐप द्वारा सहेजा गया run state | हाँ | हाँ | हाँ | हाँ | हाँ | हाँ | Serializable `RunResult` |
+| सामान्यीकृत usage और cost | हाँ | हाँ | हाँ | हाँ | हाँ | हाँ | Tokens; custom-client cost केवल `0.1` में |
+
+PHP और Ruby provider stream events को अपने सामान्य synchronous iteration API के ज़रिए दिखाते हैं। इनके लिए hosted runtime या Phaseo की background service आवश्यक नहीं है।
+
+## क्लाइंट SDK, Agent SDK और API
+
+| उपयोग | चुनें | इसकी ज़िम्मेदारी |
+| --- | --- | --- |
+| एक API अनुरोध या सभी endpoints का पूरा कवरेज | Client SDK | जनरेट किए गए API प्रकार और transport |
+| टूल वाला, कई चरणों का app logic | Agent SDK | स्थानीय लूप, टूल, checkpoints, समीक्षा, events और Devtools |
+| custom transport या असमर्थित भाषा | Raw API | HTTP अनुरोध और जवाब संभालना |
+
+Agent SDK के Gateway adapters मॉडल टर्न संबंधित Client SDK को सौंपते हैं। `requestOptions` hook या इसके समकक्ष सुविधा वाली भाषाएं Responses API के अतिरिक्त fields भेज सकती हैं, जबकि Agent SDK `model`, `input`, `instructions` और स्थानीय function tools को नियंत्रित करता है। Rust `0.1` adapter अभी अतिरिक्त request-options hook के बिना सामान्यीकृत agent fields भेजता है।
+
+## रेसिपी
+
+Cookbook में TypeScript workflows और हर भाषा के लिए शुरुआती उदाहरण शामिल हैं:
+
+- [टिकाऊ agent loop बनाएं](../../cookbook/agent-sdk-durable-loop.mdx)
+- [Agent-आधारित web search से शोध करें](../../cookbook/agent-sdk-research-brief.mdx)
+- [Preset-आधारित agents से support triage करें](../../cookbook/agent-sdk-support-triage.mdx)
+- [स्थानीय runtime टूल से code की समीक्षा करें](../../cookbook/agent-sdk-coding-review.mdx)
+- [स्थानीय टूल समानांतर चलाएं](../../cookbook/agent-sdk-parallel-tools.mdx)

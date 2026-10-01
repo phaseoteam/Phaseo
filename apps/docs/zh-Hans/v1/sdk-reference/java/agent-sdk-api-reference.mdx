@@ -1,0 +1,25 @@
+---
+icon: "braces"
+title: "API 参考"
+description: "查阅 Java Agent SDK 的主要记录类型和方法。"
+---
+
+| API | 用途 |
+| --- | --- |
+| `AgentSdk.createAgent(...)` | 定义 Agent |
+| `AgentSdk.defineTool(...)` | 定义本地或手动工具 |
+| `AgentSdk.createGatewayAgentClient(...)` | 将模型轮次连接到 Phaseo |
+| `Agent.run(...)` | 运行至结束或暂停状态 |
+| `Agent.stream(...)` | 运行并提供可重放流消费者 |
+| `Agent.continueRun(...)` | 继续已保存或暂停的状态 |
+| `StreamResult.getResult()` | 读取已完成的运行结果 |
+| `StreamResult.textStream()` | 读取文本增量 |
+| `StreamResult.fullStream()` | 读取所有事件 |
+| `StreamResult.cancel()` | 取消当前运行 |
+
+重要记录类型和接口包括 `AgentDefinition`、`RunOptions`、`RunResult`、`RunRecord`、`RunStep`、`Tool`、`ToolDecision`、`ToolOutput`、`RuntimeContext`、`StateAccessor`、`ModelRetryConfig` 和 `ToolExecutionConfig`。
+
+## 相关内容
+
+- [构建你的第一个 Agent](./agent-sdk.mdx)
+- [可观测性与 DevTools](./agent-sdk-observability.mdx)

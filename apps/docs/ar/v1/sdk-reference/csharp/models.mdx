@@ -1,0 +1,59 @@
+---
+icon: "brain-circuit"
+title: "النماذج"
+description: "اعرض قائمة النماذج باستخدام SDK الخاص بـ C#."
+---
+
+**الطريقة**: `client.ListModels(...)`
+
+### مثال
+```csharp
+using PhaseoSdk;
+
+var client = new Phaseo(apiKey);
+var models = await client.ListModels(new Dictionary<string, string>
+{
+    ["provider"] = "anthropic",
+    ["provider_status"] = "beta,not_ready",
+    ["provider_availability_reason"] = "preview_only,provider_not_ready",
+    ["capability_status"] = "coming_soon,internal_testing",
+    ["availability"] = "all",
+    ["limit"] = "10"
+});
+```
+
+### المعلمات
+- عوامل تصفية اختيارية: `provider` و`provider_status` و`provider_routing_status` و`model_routing_status` و`capability_status` و`provider_availability_status` و`provider_availability_reason` و`status` و`organisation` و`endpoints` و`input_types` و`output_types` و`params` و`availability` و`limit` و`offset`.
+- يفيد `provider_availability_reason` مع `availability = "all"` عند طلب حالات الإطلاق مثل `preview_only` أو `provider_not_ready` أو `gated` أو `access_limited` أو `region_limited` أو `project_limited` أو `paused` أو `soft_blocked`.
+- يفيد `capability_status` مع `availability = "all"` عند طلب تعيينات نقاط نهاية غير قابلة للتوجيه مثل `coming_soon` أو `internal_testing`.
+
+### القيمة المعادة
+`ModelListResponse`
+
+```json
+{
+  "ok": true,
+  "limit": 50,
+  "offset": 0,
+  "total": 123,
+  "models": [
+    {
+      "model_id": "openai/gpt-4o-mini",
+      "name": "GPT-4o Mini",
+      "release_date": "2024-07-18",
+      "status": "active",
+      "organisation_id": "openai",
+      "aliases": ["gpt-4o-mini"],
+      "endpoints": ["chat/completions", "responses"],
+      "input_types": ["text"],
+      "output_types": ["text"],
+      "providers": [
+        {
+          "api_provider_id": "openai",
+          "params": ["temperature", "max_tokens"]
+        }
+      ]
+    }
+  ]
+}
+```

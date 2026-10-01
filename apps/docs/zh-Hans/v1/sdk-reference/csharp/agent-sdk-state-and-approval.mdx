@@ -1,0 +1,23 @@
+---
+icon: "database"
+title: "状态与审批"
+description: "暂停 C# Agent 以等待人工决策，并从应用管理的状态继续运行。"
+---
+
+如需通用检查点，请使用 `AgentDefinition.HumanReview`。需要审批或手动执行的工具会将确切的调用 ID 填入 `Run.Pause.PendingToolCalls`。
+
+使用 `Agent.ContinueRun(...)` 继续，并提供：
+
+- `Approvals` 或 `Rejections` 中的 `ToolDecision` 记录
+- 用于应用已完成工作的 `ToolOutput` 记录
+- 用于通用审核暂停的 `HumanInput`
+- 上一个 `RunResult`，或 `RunId` 与 `IStateAccessor`
+
+决策按调用 ID 匹配，因此对同一工具的并发调用仍能区分。
+
+如果运行需要跨请求或进程重启保留，请实现 `IStateAccessor.Load(...)` 和 `Save(...)`。Phaseo 不托管 Agent SDK 运行状态。
+
+## 相关内容
+
+- [工具](./agent-sdk-tools.mdx)
+- [运行控制](./agent-sdk-run-controls.mdx)

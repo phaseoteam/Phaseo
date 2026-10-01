@@ -1,0 +1,66 @@
+---
+icon: "shuffle"
+title: "动态轮次"
+description: "在 Agent 各轮次之间更改模型、指令、采样和工具。"
+---
+
+如果后续模型轮次需要根据应用上下文或之前的工具结果作出响应，可使用动态值。值可以固定，也可以按当前轮次计算。
+
+## 在运行时选择模型
+
+```typescript
+type ResearchContext = {
+  fast: boolean;
+};
+
+const agent = createAgent<string, string, ResearchContext>({
+  id: "research-agent",
+  model: ({ context }) =>
+    context?.fast ? "phaseo/free" : "anthropic/claude-sonnet-4",
+  instructions: ({ numberOfTurns }) =>
+    `Research turn ${numberOfTurns}. Cite the evidence you use.`,
+});
+```
+
+Agent 定义支持为 `model`、`models`、`instructions`、`temperature`、`maxOutputTokens` 和 `topP` 设置动态值。
+
+## 从工具更新应用上下文
+
+工具可通过 `context.setContext()` 为后续轮次保存信息：
+
+```typescript
+const chooseMode = defineTool({
+  id: "choose-mode",
+  async execute(input: { fast: boolean }, context) {
+    context.setContext({ fast: input.fast });
+    return { selected: input.fast ? "fast" : "thorough" };
+  },
+});
+```
+
+如果运行可能需要持久化并在稍后继续，请保持上下文精简且可序列化。
+
+## 仅覆盖下一轮
+
+如果工具需要更改下一次请求，但不永久修改 Agent 定义，请使用 `nextTurnParams`：
+
+```typescript
+const broadenSearch = defineTool({
+  id: "broaden-search",
+  nextTurnParams: {
+    temperature: 0.3,
+    maxOutputTokens: 2_000,
+  },
+  async execute() {
+    return { broadened: true };
+  },
+});
+```
+
+下一轮参数可更改模型、指令、温度、最大输出 token 数、top-p 采样或可用工具。
+
+## 相关指南
+
+- [停止条件](./agent-sdk-stop-conditions.mdx)
+- [状态与审批](./agent-sdk-state-and-approval.mdx)
+- [输出与重试](./agent-sdk-run-controls.mdx)

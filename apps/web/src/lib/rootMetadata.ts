@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { getPublicMessages } from "@/i18n/messages";
 import type { PublicLocale } from "@/i18n/routing";
 import {
 	METADATA_BASE,
@@ -68,9 +69,25 @@ export const siteRootMetadata: Metadata = {
 	},
 };
 
-export function buildLocalizedRootMetadata(locale: PublicLocale): Metadata {
+export async function buildLocalizedRootMetadata(
+	locale: PublicLocale,
+): Promise<Metadata> {
+	const messages = await getPublicMessages(locale);
+	const title = messages.Site.home.title;
+	const description = messages.Site.home.description;
+
 	return {
 		...sharedRootMetadata,
+		title: {
+			default: title,
+			template: `%s | ${SITE_NAME}`,
+		},
+		description,
+		twitter: {
+			...sharedRootMetadata.twitter,
+			title,
+			description,
+		},
 		openGraph: {
 			type: "website",
 			locale: openGraphLocales[locale],
@@ -78,14 +95,14 @@ export function buildLocalizedRootMetadata(locale: PublicLocale): Metadata {
 				.filter(([candidate]) => candidate !== locale)
 				.map(([, openGraphLocale]) => openGraphLocale),
 			siteName: PREFERRED_SITE_NAME,
-			title: rootTitle,
-			description: socialDescription,
+			title,
+			description,
 			images: [
 				{
 					url: absoluteUrl("/og.png"),
 					width: 1200,
 					height: 630,
-					alt: "Phaseo",
+					alt: title,
 				},
 			],
 		},

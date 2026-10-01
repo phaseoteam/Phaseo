@@ -1,0 +1,63 @@
+---
+title: "Cline"
+description: "通过其 OpenAI 兼容供应商将 Cline 连接到 Phaseo。"
+---
+
+Phaseo CLI 会创建并管理 Cline 专用密钥。Cline 将凭据存储在 VS Code 的安全密钥存储中，因此最后一步需要在扩展界面中完成。
+
+## 创建凭据
+
+```bash
+phaseo login
+phaseo integrations setup cline --model anthropic/claude-sonnet-4.6
+```
+
+## 配置 Cline
+
+1. 在 VS Code 中打开 Cline 面板。
+2. 选择设置图标，或选择聊天框下方的供应商。
+3. 选择 **OpenAI Compatible**。
+4. 输入以下值：
+
+| Cline 字段 | 值 |
+| --- | --- |
+| Base URL | `https://api.phaseo.app/v1` |
+| API Key | 以下命令的输出 `phaseo integrations credential cline` |
+| Model ID | `anthropic/claude-sonnet-4.6` 或设置过程中显示的模型 |
+
+5. 保存供应商。如果你的版本显示 **Verify**，请点击。
+6. 为下一个任务选择已配置的模型。
+
+## 验证
+
+让 Cline 回复 `PHASEO_CLINE_OK`，并确认请求出现在 Phaseo 活动记录中。
+
+## 移除
+
+在 Cline 中删除或切换 Phaseo 供应商，然后运行：
+
+```bash
+phaseo integrations remove cline
+```
+
+CLI 无法清除 VS Code 的扩展私有存储，但移除操作会撤销已保存的密钥。
+
+## 故障排查
+
+### 验证失败
+
+Base URL 必须与显示内容完全一致，包括 `/v1`；请粘贴新获取的密钥，且不要带引号或空格。
+
+### 模型列表为空
+
+手动输入 Phaseo 模型 ID。无需进行模型发现。
+
+### 聊天正常，但工具失败
+
+选择支持工具调用的 Phaseo 模型。连通性和模型的工具支持需要分别检查。
+
+## 相关内容
+
+- [Cline OpenAI 兼容配置](https://docs.cline.bot/enterprise-solutions/configuration/remote-configuration/openai-compatible/member-configuration)
+- [编程助手](./coding-assistants.mdx)
+- [模型](../../api-reference/endpoint/models.mdx)

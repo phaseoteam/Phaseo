@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useTranslations } from "next-intl";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -47,41 +48,23 @@ const SECTION_ORDER = [
 
 type EditorSection = (typeof SECTION_ORDER)[number];
 
-const SECTION_META: Record<
-	EditorSection,
-	{ label: string; description: string; saveLabel: string }
-> = {
-	basic: {
-		label: "Basic",
-		description: "Edit core model fields and lifecycle metadata.",
-		saveLabel: "Save Basic",
-	},
-	details: {
-		label: "Details",
-		description: "Edit detail rows and model links.",
-		saveLabel: "Save Details",
-	},
-	benchmarks: {
-		label: "Benchmarks",
-		description: "Edit benchmark scores and source data.",
-		saveLabel: "Save Benchmarks",
-	},
-	plans: {
-		label: "Plans",
-		description: "Attach or detach subscription plans for this model.",
-		saveLabel: "Save Plans",
-	},
-	providers: {
-		label: "Providers",
-		description: "Edit provider mappings, capability status, and params.",
-		saveLabel: "Save Providers",
-	},
-	pricing: {
-		label: "Pricing",
-		description: "Edit pricing rules for provider-model capabilities.",
-		saveLabel: "Save Pricing",
-	},
-};
+const SECTION_LABEL_KEYS = {
+	basic: "tabs.basic",
+	details: "tabs.details",
+	benchmarks: "tabs.benchmarks",
+	plans: "subscriptionPlansTitle",
+	providers: "tabs.providers",
+	pricing: "tabs.pricing",
+} as const satisfies Record<EditorSection, string>;
+
+const SECTION_DESCRIPTION_KEYS = {
+	basic: "tabHelpers.basic",
+	details: "tabHelpers.details",
+	benchmarks: "tabHelpers.benchmarks",
+	plans: "subscriptionPlansDescription",
+	providers: "tabHelpers.providers",
+	pricing: "tabHelpers.pricing",
+} as const satisfies Record<EditorSection, string>;
 
 function normalizeSection(value: string | undefined): EditorSection {
 	if (!value) return "basic";
@@ -137,6 +120,8 @@ export default function ModelLegacyEditor({
 	initialTab?: string;
 	focusProviderId?: string;
 }) {
+	const t = useTranslations("Common.ui.modelEditor");
+	const tActions = useTranslations("Common.ui.actions");
 	const activeSection = useMemo(
 		() => normalizeSection(initialTab),
 		[initialTab]
@@ -315,17 +300,17 @@ export default function ModelLegacyEditor({
 		})();
 
 		toast.promise(savePromise, {
-			loading: `Saving ${SECTION_META[activeSection].label.toLowerCase()}...`,
-			success: `Saved ${SECTION_META[activeSection].label.toLowerCase()}.`,
-			error: (saveError) =>
-				saveError instanceof Error ? saveError.message : "Failed to save.",
+			loading: t("savingModel"),
+			success: t("modelSaved"),
+			error: t("saveFailed"),
 		});
 
 		try {
 			await savePromise;
-			setSavedMessage(`Saved ${SECTION_META[activeSection].label.toLowerCase()}.`);
+			setSavedMessage(t("modelSaved"));
 		} catch (saveError) {
-			setError(saveError instanceof Error ? saveError.message : "Failed to save.");
+			console.error("Failed to save model editor section", saveError);
+			setError(t("saveFailed"));
 		} finally {
 			setSaving(false);
 		}
@@ -342,19 +327,20 @@ export default function ModelLegacyEditor({
 	if (!model) {
 		return (
 			<p className="py-8 text-center text-sm text-muted-foreground">
-				Failed to load model data.
+				{t("loadingError")}
 			</p>
 		);
 	}
 
-	const currentSectionMeta = SECTION_META[activeSection];
+	const currentSectionMeta = {
+		label: t(SECTION_LABEL_KEYS[activeSection]),
+		description: t(SECTION_DESCRIPTION_KEYS[activeSection]),
+	};
 
 	return (
 		<div className="min-w-0 space-y-3 sm:space-y-4">
 			<div className="rounded-lg border p-3 sm:p-4">
-				<div className="text-sm font-medium">
-					Editing: {currentSectionMeta.label}
-				</div>
+				<div className="text-sm font-medium">{currentSectionMeta.label}</div>
 				<p className="mt-1 text-sm text-muted-foreground">
 					{currentSectionMeta.description}
 				</p>
@@ -375,7 +361,7 @@ export default function ModelLegacyEditor({
 									: "hover:bg-muted/40"
 							}`}
 						>
-							{SECTION_META[section].label}
+							{t(SECTION_LABEL_KEYS[section])}
 						</Link>
 					))}
 				</div>
@@ -440,7 +426,7 @@ export default function ModelLegacyEditor({
 
 			{activeSection !== "pricing" ? <div className="flex justify-end pt-2">
 				<Button onClick={handleSaveCurrentSection} disabled={saving}>
-					{saving ? "Saving..." : currentSectionMeta.saveLabel}
+					{saving ? t("savingModel") : tActions("save")}
 				</Button>
 			</div> : null}
 		</div>

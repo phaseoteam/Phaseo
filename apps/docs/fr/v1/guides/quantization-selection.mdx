@@ -1,0 +1,80 @@
+---
+icon: "search-check"
+title: "Choisir une stratégie de quantification"
+description: "Guide pratique pour choisir des variantes BF16/FP8/INT8/INT4 selon la charge de travail."
+---
+
+Suivez ce workflow pour choisir des variantes de quantification en toute sécurité.
+
+Pour appliquer ce choix dans Phaseo Gateway, envoyez un filtre de routage compatible avec OpenRouter :
+
+```json
+{
+  "model": "meta/llama-3.3-70b-instruct",
+  "messages": [{ "role": "user", "content": "Hello" }],
+  "provider": {
+    "quantizations": ["FP8"]
+  }
+}
+```
+
+Le filtre s’applique aux offres de modèles de chaque fournisseur, et pas seulement aux noms des fournisseurs. La correspondance ne tient pas compte de la casse et accepte les alias sans ambiguïté, comme `float8` pour `FP8` et `bfloat16` pour `BF16`. Une offre sans métadonnées de quantification n’est pas admissible. Si aucune offre admissible ne correspond, la requête échoue avec des diagnostics de routage ; Phaseo ne se rabat pas sur une quantification non vérifiée. La structure équivalente `routing.quantizations` est également acceptée.
+
+## Étape 1 : définissez vos critères de réussite
+
+Avant de choisir une quantification :
+
+- Définissez des seuils de qualité (précision de la tâche, taux de réussite et validité des sorties structurées).
+- Définissez des objectifs de latence et de coût.
+- Définissez les modes d’échec inacceptables.
+
+## Étape 2 : choisissez une référence de haute qualité
+
+Commencez par une référence plus précise (souvent `BF16` ou `FP16`) et mesurez :
+
+- Qualité de la sortie
+- Latence médiane et de queue
+- Profil de jetons et de coûts
+
+Elle servira de référence pour les comparaisons.
+
+## Étape 3 : réduisez progressivement la précision
+
+Évaluez progressivement des formats de précision inférieure :
+
+1. `FP8` or `INT8`
+2. N’utilisez `FP4` ou `INT4` que si vous devez réduire les coûts ou augmenter le débit.
+
+Ne passez pas directement à la variante la plus petite sans preuves solides qu’elle convient à votre charge de travail.
+
+## Étape 4 : évaluez des charges de travail réelles
+
+Utilisez des prompts proches de ceux de la production :
+
+- Prompts longs
+- Raisonnement en plusieurs étapes
+- Appels d’outils
+- Cas limites issus des tickets d’assistance
+
+## Étape 5 : décidez selon l’endpoint ou le cas d’usage
+
+Une seule quantification ne doit pas nécessairement convenir à tous les cas.
+
+Exemples :
+
+- Service client et décisions critiques : précision élevée.
+- Classification ou résumé à grand volume : une précision plus faible peut convenir.
+
+## Points de départ recommandés
+
+| Type de charge de travail | Quantification de départ recommandée |
+| --- | --- |
+| Raisonnement critique pour la qualité | `BF16` / `FP16` |
+| Équilibre coût/qualité | `FP8` / `INT8` |
+| Débit élevé et coût maîtrisé | `INT4` / `FP4` (après validation) |
+
+## Politique de déploiement
+
+- Configurez un modèle ou une quantification de secours.
+- Surveillez toute dérive de qualité après le déploiement.
+- Recommencez les tests si l’environnement d’exécution du fournisseur ou la version du modèle change.

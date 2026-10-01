@@ -1,0 +1,173 @@
+---
+title: "Rust Agent SDK API リファレンス"
+description: "phaseo-agent 0.1 の公開 struct、trait、メソッドを説明します。"
+---
+
+このページでは、[`phaseo-agent 0.1`](https://docs.rs/phaseo-agent/0.1.0/phaseo_agent/) の公開 API を説明します。
+
+## エージェントの定義
+
+| API | 用途 |
+| --- | --- |
+| `AgentDefinition::new(id, model)` | 既定のステップ数上限を8に設定したエージェント定義を作成します。 |
+| `.instructions(text)` | モデルへの指示を設定します。 |
+| `.tool(tool)` | ツールを追加します。 |
+| `.max_steps(limit)` | モデルターン数の上限を設定します。最小値は1です。 |
+| `.model_retries(count, backoff)` | 固定の `Duration` 間隔で失敗したモデルリクエストを再試行します。 |
+| `.human_review(callback)` | コールバック関数が `Some(HumanReviewRequest)` を返した場合、モデル応答の後に実行を一時停止します。 |
+| `create_agent(definition)` | `Agent` を作成します。 |
+
+## 実行と続行
+
+| メソッド | 用途 |
+| --- | --- |
+| `Agent::run(client, options)` | イベントコールバックなしで同期的に実行します。 |
+| `Agent::run_with_events(client, options, callback)` | 同期的に実行し、`AgentEvent` の値を出力します。 |
+| `Agent::continue_run(client, options)` | 一時停止した実行を続行します。 |
+| `Agent::continue_with_events(client, options, callback)` | 実行を続行してイベントを出力します。 |
+
+`RunOptions` のフィールド:
+
+- `input: Value`
+- `context: Value`
+- `model: Option<String>`
+- `max_steps: Option<usize>`
+
+`RunOptions::new(input)` で既定値を作成します。
+
+`ContinueOptions` のフィールド:
+
+- `result: RunResult`
+- `human_input: Option<String>`
+- `approvals: Vec<ToolDecision>`
+- `tool_outputs: Vec<ToolOutput>`
+
+`ContinueOptions::new(result)` で既定値を作成します。
+
+## ツール
+
+| API | 用途 |
+| --- | --- |
+| `Tool::new(id, description, parameters, executor)` | ローカルで同期実行するツールを定義します。 |
+| `Tool::external(id, description, parameters)` | 一時停止後にアプリケーションが実行結果を渡すツールを定義します。 |
+| `Tool::require_approval()` | ローカル実行の前に、正確な ID を指定した承認を必須にします。 |
+| `define_tool(tool)` | 定義スタイルを統一するため、指定された `Tool` をそのまま返します。 |
+
+executor のシグネチャ:
+
+```rust
+Fn(
+    serde_json::Value,
+    &RuntimeContext,
+) -> Result<serde_json::Value, AgentError>
+    + Send
+    + Sync
+    + 'static
+```
+
+`Tool` は `id`、`description`、`parameters`、`execute`、`require_approval` を公開します。executor の型と既定値を統一するため、コンストラクターとビルダーメソッドを優先して使ってください。
+
+executor に渡される `RuntimeContext` には次の内容が含まれます。
+
+- `run_id`
+- `agent_id`
+- `step_index`
+- `context`
+- `tool_call`
+
+## メッセージとツール呼び出し
+
+`Message` には `role`、`content`、`tool_calls`、省略可能な `tool_call_id`、省略可能な `name`、`is_error` が含まれます。通常のメッセージは次のメソッドで作成します。
+
+- `Message::user(content)`
+- `Message::assistant(content)`
+
+`ToolCall` には呼び出し ID `id`、ツール名 `name`、JSON 入力 `input` が含まれます。
+
+`ToolSpec` にはツール ID `id`、説明 `description`、モデルクライアントに送信される JSON Schema のパラメーター `parameters` が含まれます。
+
+## モデルクライアント
+
+別のモデル通信方式を使うには、`ModelClient` を実装します。
+
+```rust
+pub trait ModelClient {
+    fn generate(
+        &mut self,
+        request: &ModelRequest,
+    ) -> Result<ModelResponse, AgentError>;
+}
+```
+
+組み込み Gateway アダプターは次の方法で利用できます。
+
+- `GatewayAgentClient::new(phaseo_client, model)`
+- `GatewayAgentClient::from_env(model)`
+- `create_gateway_agent_client(model)`
+
+`ModelRequest` の値を `POST /responses` に送信し、出力テキスト、関数呼び出し、リクエストメタデータ、使用量を正規化します。
+
+`ModelRequest` には、エージェント ID、有効なモデル、指示、現在のメッセージ、ツール仕様、アプリケーションのコンテキストが含まれます。
+
+`ModelResponse` には次の情報が含まれます。
+
+- `message: Message`
+- `usage: UsageSummary`
+- `request_id: Option<String>`
+- `provider: Option<String>`
+- `model: Option<String>`
+- `finish_reason: Option<String>`
+
+## レビューと一時停止の型
+
+`HumanReviewContext` には実行 ID とエージェント ID、ステップインデックス、現在のメッセージ、正規化されたモデル応答、アプリケーションのコンテキストが含まれます。
+
+レビューコールバックから `HumanReviewRequest { reason, payload }` を返すと、実行が一時停止します。
+
+`HumanPause` には次の情報が含まれます。
+
+- `reason`
+- JSON ペイロード `payload`
+- `kind`
+- `pending_tool_calls`
+
+各 `PendingToolCall` には、元の `ToolCall`、必要な入力の種類 `kind`、人が読める理由が含まれます。
+
+`ToolDecision` は承認済みの `tool_call_id` と省略可能な理由を指定します。`ToolOutput` は `tool_call_id` と JSON 出力を指定します。
+
+## 実行レコード
+
+`RunResult` には次の情報が含まれます。
+
+- `run: RunRecord`
+- `steps: Vec<RunStep>`
+- `output: Value`
+- `messages: Vec<Message>`
+- `usage: UsageSummary`
+
+`RunRecord` には、実行 ID とエージェント ID、有効なモデルとステップ数上限、状態、元の入力、アプリケーションコンテキスト、ステップ数、省略可能な一時停止情報、省略可能な停止理由、タイムスタンプが含まれます。
+
+`RunStep` には、インデックス、状態、モデルの試行回数、ツール呼び出し、リクエスト ID、プロバイダー、モデル、終了理由、省略可能なエラー、使用量が含まれます。
+
+`UsageSummary` には `input_tokens`、`output_tokens`、`cached_tokens`、`total_tokens`、`cost` が含まれます。
+
+`cost` はモデルクライアントから提供されます。組み込みの Gateway 0.1 アダプターは現在、Gateway の `cost_nanos` または `cost_cents` をこのフィールドに割り当てません。
+
+`RunResult`、`RunRecord`、`RunStep`、`Message`、`ToolCall`、`HumanPause`、`PendingToolCall`、`ToolDecision`、`ToolOutput`、`UsageSummary` は、定義に `Serialize` と `Deserialize` が導出されている場合に Serde シリアライズをサポートします。
+
+## イベントとエラー
+
+`AgentEvent` のフィールド:
+
+- `event_type`
+- `run_id`
+- `agent_id`
+- `timestamp_ms`
+- `details`
+
+`AgentError` は `std::error::Error` と `Display` を実装します。`AgentError::new(...)` で作成し、`message()` でメッセージを読み取ります。
+
+## 外部リファレンス
+
+- [crates.io の `phaseo-agent`](https://crates.io/crates/phaseo-agent)
+- [docs.rs の `phaseo-agent`](https://docs.rs/phaseo-agent)

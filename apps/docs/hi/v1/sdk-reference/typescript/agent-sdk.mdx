@@ -1,0 +1,473 @@
+---
+title: "उपयोग"
+description: "Phaseo Gateway के साथ TypeScript Agent SDK पर अपने agentic applications बनाएँ।"
+---
+
+जब आपके application को एक बार के text generation से अधिक चाहिए, तब `@phaseo/agent-sdk` उपयोग करें:
+
+- कई चरणों वाले tool loops
+- local runtime tools
+- SDK द्वारा लौटाए गए state से resumable runs
+- स्पष्ट human approval pauses
+- typed final outputs
+- मौजूदा TypeScript SDK के ज़रिए Gateway मॉडल टर्न
+
+यह पैकेज installable SDK है, hosted agent platform नहीं। लौटाए गए run state के लिए application, deployment model और persistence strategy आपको स्वयं देनी होगी।
+
+## स्थिति मॉडल
+
+Agent SDK runs को किसी भी Phaseo-hosted service में persist नहीं करता।
+
+- `run()` बाद में जारी रखने के लिए आवश्यक पूरा state लौटाता है।
+- यदि application को requests के बीच या process restart के बाद run फिर से शुरू करना हो, तो लौटाया गया state अपने application store में persist करें।
+- `continueRun()` उस पिछले run state को सीधे स्वीकार करता है।
+
+Phaseo आपके application के बाहर कुछ भी persist नहीं करता।
+
+## इंस्टॉल करें
+
+```bash
+pnpm add @phaseo/sdk @phaseo/agent-sdk
+```
+
+## SDK में शामिल सुविधाएँ
+
+- `createAgent()`
+- `defineTool()`
+- `createGatewayAgentClient()`
+- पहले लौटाए गए run state से जारी रखने के लिए `continueRun()`
+- incremental और replayable results के लिए `stream()` और `continueStream()`
+- `stepCountIs()`, `maxCost()` और `hasToolCall()` जैसे stop-condition helpers
+
+## पहला agent
+
+```typescript
+import {
+  createAgent,
+  createGatewayAgentClient,
+  defineTool,
+} from "@phaseo/agent-sdk";
+
+const lookupDocs = defineTool({
+  id: "lookup-docs",
+  description: "Look up an internal docs page by slug.",
+  parameters: {
+    type: "object",
+    properties: {
+      slug: { type: "string" },
+    },
+    required: ["slug"],
+    additionalProperties: false,
+  },
+  async execute(input: { slug: string }) {
+    return {
+      slug: input.slug,
+      url: `https://phaseo.app/docs/v1/${input.slug}`,
+    };
+  },
+});
+
+const agent = createAgent({
+  id: "support-docs-agent",
+  model: "phaseo/free",
+  instructions: "Use tools when helpful and finish with a concise answer.",
+  tools: [lookupDocs],
+});
+
+const result = await agent.run({
+  input: "Find the docs page for presets and explain when to use them.",
+  client: createGatewayAgentClient({
+    clientOptions: {
+      apiKey: process.env.PHASEO_API_KEY!,
+    },
+  }),
+});
+
+console.log(result.output);
+```
+
+## मानसिक मॉडल
+
+runtime loop चार काम करता है:
+
+1. मौजूदा message state को model client को भेजता है
+2. लौटाए गए local tool calls को चलाता है
+3. tool results को अगले turn में जोड़ता है
+4. हर step boundary पूरा होने पर updated run state लौटाता है
+
+इससे hosted orchestration product पर निर्भर हुए बिना application को resumable loop मिलता है।
+
+## मुख्य primitives
+
+### `createAgent()`
+
+`createAgent()` से ये परिभाषित करें:
+
+- एक स्थिर `id`
+- instructions
+- एक model या preset
+- tools की एक छोटी सूची
+- वैकल्पिक output parsing
+- वैकल्पिक human review नियम
+- वैकल्पिक retry और tool-execution controls
+
+पहले agent का दायरा छोटा रखें। आमतौर पर एक workflow और एक या दो tools पर्याप्त हैं।
+
+### `defineTool()`
+
+स्थानीय runtime tools को इनसे परिभाषित करें:
+
+- `id`
+- `description`
+- वैकल्पिक JSON `parameters`
+- वैकल्पिक `timeoutMs`
+- `inputSchema` और `outputSchema` runtime validators
+- `execute()`, `execute: false` या मानवीय समीक्षा के कॉलबैक
+- `requireApproval`, `onError`, `nextTurnParams` और progress events
+
+```typescript
+const fetchTicket = defineTool({
+  id: "fetch-ticket",
+  description: "Load one internal support ticket.",
+  parameters: {
+    type: "object",
+    properties: {
+      ticketId: { type: "string" },
+    },
+    required: ["ticketId"],
+    additionalProperties: false,
+  },
+  timeoutMs: 3_000,
+  async execute(input: { ticketId: string }, context) {
+    const response = await fetch(`https://internal.example/tickets/${input.ticketId}`, {
+      signal: context.signal,
+    });
+
+    return await response.json();
+  },
+});
+```
+
+timeout होने पर runtime `context.signal` abort करता है, run को `failed` mark करता है और timeout error फिर से throw करता है।
+
+Schemas function या `parse()`/`safeParse()` देने वाले किसी भी object के रूप में हो सकते हैं। गलत model arguments और tool results, tool boundary पार करने से पहले fail होते हैं।
+
+## अनुमोदन, HITL और मैन्युअल टूल
+
+side effects वाले tool को हर call पर gate करें:
+
+```typescript
+const deploy = defineTool({
+  id: "deploy",
+  requireApproval: ({ environment }) => environment === "production",
+  async execute(input: { environment: string }) {
+    return deployRelease(input.environment);
+  },
+});
+```
+
+run `run.pause.pendingToolCalls` पर pause होता है। concurrent calls को अलग पहचानने के लिए exact call ID से resume करें:
+
+```typescript
+const resumed = await agent.continueRun({
+  run: paused,
+  client,
+  approvals: [{ toolCallId: "call_deploy_42" }],
+  rejections: [{ toolCallId: "call_delete_17", reason: "Not authorized" }],
+});
+```
+
+application द्वारा किए जाने वाले काम के लिए `execute: false` रखें और उसका परिणाम `toolOutputs` से दें। Interactive tool के लिए `onToolCalled` से `null` लौटाएँ; जारी रखने के बाद `onResponseReceived` मानव response को validate या transform कर सकता है।
+
+## प्रगति देने वाले tools
+
+एक async generator शुरुआती नतीजे प्रकाशित करके एक अंतिम परिणाम लौटा सकता है:
+
+```typescript
+const indexRepository = defineTool({
+  id: "index-repository",
+  async *execute(input: { path: string }) {
+    yield { phase: "scan" };
+    yield { phase: "embed" };
+    return { indexed: 248 };
+  },
+});
+```
+
+Progress `tool.preliminary_result` events और step के `preliminaryResults` में दिखता है।
+
+## स्ट्रीमिंग परिणाम
+
+`stream()` streaming model client के साथ वही state machine शुरू करता है। इसके consumers को replay किया जा सकता है, इसलिए UI, telemetry और persistence code एक साथ पढ़ सकते हैं:
+
+```typescript
+const result = agent.stream({ input, client });
+
+for await (const delta of result.getTextStream()) {
+  process.stdout.write(delta);
+}
+
+const [text, completed] = await Promise.all([result.getText(), result.getResult()]);
+```
+
+विशिष्ट consumers के लिए `getReasoningStream()`, `getItemsStream()`, `getToolStream()` या `getFullStream()` उपयोग करें। `cancel()` run को abort करता है।
+
+### टाइप किए गए रन आइटम रेंडर करें
+
+`getItemsStream()` `AgentItem<TOutput>` देता है, एक discriminated union जिसे `switch` में सुरक्षित रूप से उपयोग किया जा सकता है:
+
+```typescript
+for await (const item of result.getItemsStream()) {
+  switch (item.type) {
+    case "message":
+      renderAssistantMessage(item.content);
+      break;
+    case "reasoning":
+      renderReasoning(item.text);
+      break;
+    case "tool_call":
+      renderToolCall(item.toolCallId, item.name, item.input);
+      break;
+    case "tool_result":
+      renderToolResult(item.toolCallId, item.output);
+      break;
+    case "error":
+      renderError(item.message);
+      break;
+    case "output":
+      renderFinalOutput(item.value);
+      break;
+  }
+}
+```
+
+`run()` या `stream()` के बाद वही क्रमबद्ध आइटम अनुबंध `completed.items` में मिलता है। प्रदाता का आउटपुट संदेश, तर्क-विचार, टूल-कॉल, टूल-परिणाम, त्रुटि और अंतिम-आउटपुट आइटम में सामान्यीकृत होता है। सामान्यीकृत प्रदाता आइटम के प्रदाता-विशिष्ट फ़ील्ड `rawProviderItem` से मिलते हैं।
+
+## रोकने की शर्तें और डायनामिक टर्न
+
+Stop conditions array के रूप में जुड़ती हैं; पहली matching condition कारण दर्ज करती है और `stopped` run लौटाती है:
+
+```typescript
+import { maxCost, maxTokensUsed, stepCountIs } from "@phaseo/agent-sdk";
+
+const agent = createAgent({
+  id: "bounded-research",
+  stopWhen: [stepCountIs(12), maxTokensUsed(40_000), maxCost(2)],
+  model: ({ context }) => context.fast ? "phaseo/free" : "anthropic/claude-sonnet-4",
+  instructions: ({ numberOfTurns }) => `Research turn ${numberOfTurns}`,
+});
+```
+
+Tools `context.setContext()` से application context सेट कर सकते हैं और तुरंत अगले turn को `nextTurnParams` से override कर सकते हैं।
+
+### `createGatewayAgentClient()`
+
+जब model turns को Phaseo Gateway के ज़रिए चलना चाहिए, तब gateway-backed adapter उपयोग करें।
+
+यह gateway-native controls जैसे इन विकल्पों को ले जा सकता है:
+
+- `responseFormat`
+- `plugins`
+- `gatewayTools`
+- `toolChoice`
+- `webSearchOptions`
+- `providerOptions`
+- `promptCacheKey`
+- `includeMeta`
+
+इससे हर run पर raw request payload दोबारा बनाने के बजाय routing, search, structured outputs और plugin defaults को model client के पास रखा जा सकता है।
+
+## एप्लिकेशन द्वारा प्रबंधित स्थायित्व
+
+अगर application को resumability चाहिए, तो लौटाया गया `AgentRunResult` सीधे persist करें या asynchronous `load(runId)` और `save(result)` methods वाला `state` accessor दें। फिर जारी run हर layer से serialized record गुज़ारे बिना `runId` उपयोग कर सकता है।
+
+SDK जानबूझकर persistence adapters या hosted state backend शामिल नहीं करता।
+
+इसका मतलब है कि आप:
+
+- one-shot runs को पूरी तरह process में रखना
+- paused या incomplete runs को अपने application records में serialize करना
+- बाद में saved run state फिर लोड करके `continueRun()` को देना
+
+## मानवीय समीक्षा और आगे जारी रखना
+
+जब run को checkpoint बनाकर approval की प्रतीक्षा करनी हो, तब `humanReview` उपयोग करें:
+
+```typescript
+const agent = createAgent({
+  id: "support-agent",
+  humanReview: ({ response }) =>
+    response.message.content.includes("needs approval")
+      ? {
+          reason: "approval_required",
+          payload: { draft: response.message.content },
+        }
+      : null,
+});
+```
+
+स्पष्ट human input के साथ जारी रखें:
+
+```typescript
+const continued = await agent.continueRun({
+  run: pausedResult,
+  client,
+  humanInput: "Approved. Continue and return the final answer.",
+});
+```
+
+## प्रकारित आउटपुट
+
+जब app को typed final value चाहिए, तब `parseOutput` उपयोग करें:
+
+```typescript
+const agent = createAgent<string, { summary: string }>({
+  id: "summary-agent",
+  parseOutput(text) {
+    return JSON.parse(text) as { summary: string };
+  },
+});
+```
+
+अधिक सख्त model behavior के लिए इसे gateway adapter के structured outputs के साथ जोड़ें:
+
+```typescript
+const client = createGatewayAgentClient({
+  clientOptions: {
+    apiKey: process.env.PHASEO_API_KEY!,
+  },
+  responseFormat: {
+    type: "json_schema",
+    name: "agent_answer",
+    schema: {
+      type: "object",
+      properties: {
+        summary: { type: "string" },
+      },
+      required: ["summary"],
+      additionalProperties: false,
+    },
+  },
+  plugins: [{ id: "response-healing" }],
+});
+```
+
+## रनटाइम नियंत्रण
+
+### मॉडल पुनः प्रयास
+
+जब अस्थायी model failures पर run को `failed` persist करने से पहले retry करना हो, तब `modelRetry` उपयोग करें:
+
+```typescript
+const agent = createAgent({
+  id: "support-agent",
+  modelRetry: {
+    maxRetries: 2,
+    backoffMs: 250,
+  },
+});
+```
+
+पहली model request के बाद के अतिरिक्त प्रयास `maxRetries` में गिने जाते हैं।
+Persist किए गए step record में अंतिम retry count `modelAttempts` के रूप में रखा जाता है।
+
+### समवर्ती स्थानीय टूल
+
+एक model turn कई independent tools को सुरक्षित रूप से call कर सकता हो तो `toolExecution.toolConcurrency` सेट करें:
+
+```typescript
+const agent = createAgent({
+  id: "research-agent",
+  toolExecution: {
+    toolConcurrency: 3,
+  },
+  tools: [fetchDocs, fetchStatus, fetchIncidents],
+});
+```
+
+runtime अब भी tool-result messages का क्रम बनाए रखता है।
+
+### प्रीसेट-आधारित रूटिंग
+
+routing, prompt या parameter defaults को app code में hard-code करने के बजाय dashboard में manage करना हो तो `preset` उपयोग करें:
+
+```typescript
+const agent = createAgent({
+  id: "support-triage-agent",
+  preset: "support-triage",
+});
+```
+
+## इवेंट हुक
+
+logs, telemetry या internal workflows के lifecycle hooks चाहिए हों तो `onEvent` उपयोग करें।
+
+मौजूदा events में शामिल हैं:
+
+- `run.started`
+- `run.resumed`
+- `step.started`
+- `step.completed`
+- `step.failed`
+- `step.cancelled`
+- `model.requested`
+- `model.completed`
+- `model.failed`
+- `tool.started`
+- `tool.completed`
+- `tool.failed`
+- `checkpoint.saved`
+- `run.waiting_for_human`
+- `run.cancelled`
+- `run.completed`
+- `run.failed`
+
+एक step सफल होने पर, checkpoint वाला step persist होने के बाद runtime `step.completed` emit करता है।
+
+## त्रुटि प्रबंधन
+
+Gateway failures को `AgentGatewayError` के रूप में फिर throw किया जाता है:
+
+```typescript
+import { AgentGatewayError } from "@phaseo/agent-sdk";
+
+try {
+  await agent.run({ input, client });
+} catch (error) {
+  if (error instanceof AgentGatewayError) {
+    console.error(error.status, error.requestId, error.reason);
+  }
+  throw error;
+}
+```
+
+Failure gateway से आई हो तो failed runs और steps में `errorDetails` भी persist होता है।
+
+## शामिल उदाहरण
+
+पैकेज में अभी ये उदाहरण शामिल हैं:
+
+- `examples/research-brief-agent.ts`
+- `examples/support-triage-agent.ts`
+- `examples/coding-review-agent.ts`
+- `examples/parallel-tool-agent.ts`
+
+## मौजूदा दायरा
+
+SDK जानबूझकर application-building primitives पर केंद्रित है:
+
+- स्थानीय या ऐप-प्रबंधित चेकपॉइंट सहेजना
+- Gateway के ज़रिए मॉडल टर्न
+- स्थानीय टूल
+- फिर से शुरू किए जा सकने वाले एजेंट लूप
+- हर चरण का सामान्यीकृत टोकन उपयोग, लागत, चेतावनियाँ, समाप्ति कारण और टूल परिणाम
+
+यह होस्टेड ऑर्केस्ट्रेशन प्लेटफ़ॉर्म बनने या कोई तयशुदा दूरस्थ डेटा-संग्रह बैकएंड देने का प्रयास नहीं करता।
+
+## संबंधित मार्गदर्शिकाएँ
+
+- [TypeScript में टिकाऊ agent loop बनाएँ](../../cookbook/agent-sdk-durable-loop.mdx)
+- [agent-backed web search से शोध करें](../../cookbook/agent-sdk-research-brief.mdx)
+- [preset-driven agents से support triage करें](../../cookbook/agent-sdk-support-triage.mdx)
+- [स्थानीय runtime tools से code review करें](../../cookbook/agent-sdk-coding-review.mdx)
+- [local tools को एक साथ चलाएँ](../../cookbook/agent-sdk-parallel-tools.mdx)

@@ -55,70 +55,38 @@ function providerLabel(providerId: string, providerNames?: Map<string, string>):
 	return providerNames?.get(providerId) ?? label(providerId);
 }
 
-const METRIC_DESCRIPTIONS: Record<string, string> = {
-	seed: "Makes the random parts of this routing decision repeatable.",
-	priority: "The routing preset used for this request.",
-	candidatePool: "Providers left after filtering.",
-	partialTrace: "This older request has scores, but it does not have the full routing record.",
-	formula: "The formula used to score this provider.",
-	baseScore: "The score before weights and multipliers.",
-	finalScore: "The score used to rank this provider.",
-	baseWeight: "The provider's configured weight. Higher values raise its score.",
-	base_weight: "The provider's configured weight. Higher values raise its score.",
-	priceScore: "Compares this provider's price with the others. Higher is cheaper.",
-	price_score: "Compares this provider's price with the others. Higher is cheaper.",
-	successRate: "The recent success rate after ignoring user errors, rate limits, and geographic blocks. It feeds the reliability sample but is not scored again.",
-	success_rate: "The recent success rate after ignoring user errors, rate limits, and geographic blocks. It feeds the reliability sample but is not scored again.",
-	latencyScore: "Compares recent response time. Higher is faster.",
-	latency_score: "Compares recent response time. Higher is faster.",
-	tailLatencyScore: "Compares the provider's slowest recent responses. Higher is better.",
-	tail_latency_score: "Compares the provider's slowest recent responses. Higher is better.",
-	throughputScore: "Compares recent output speed in tokens per second. Higher is faster.",
-	throughput_score: "Compares recent output speed in tokens per second. Higher is faster.",
-	tokenAffinity: "How closely the provider's token limit fits this request.",
-	token_affinity: "How closely the provider's token limit fits this request.",
-	reliabilitySample: "A sampled estimate based on the success rate and how much recent data exists. This value affects routing.",
-	reliability_sample: "A sampled estimate based on the success rate and how much recent data exists. This value affects routing.",
-	reliability: "How much the reliability estimate adds to the score.",
-	success: "How much recent success adds to the score.",
-	latency: "How much response time adds to the score.",
-	tailLatency: "How much slow response time adds to the score.",
-	throughput: "How much output speed adds to the score.",
-	price: "How much price adds to the score.",
-	reliabilityObservations: "How much recent data supports the reliability estimate.",
-	reliability_observations: "How much recent data supports the reliability estimate.",
-	rolloutMultiplier: "Limits traffic to alpha and beta providers. Active providers get 1.",
-	rollout_multiplier: "Limits traffic to alpha and beta providers. Active providers get 1.",
-	routingMultiplier: "Lowers the score when the provider, model, or capability is deranked.",
-	routing_multiplier: "Lowers the score when the provider, model, or capability is deranked.",
-	cacheBoostMultiplier: "Raises the score when reusing this provider may preserve cache hits.",
-	cache_boost_multiplier: "Raises the score when reusing this provider may preserve cache hits.",
-	latencyPreferenceMultiplier: "Lowers the score if the provider misses the preferred response time.",
-	latency_preference_multiplier: "Lowers the score if the provider misses the preferred response time.",
-	throughputPreferenceMultiplier: "Lowers the score if the provider misses the preferred output speed.",
-	throughput_preference_multiplier: "Lowers the score if the provider misses the preferred output speed.",
-	recentOutageMultiplier: "Moves a provider to the back when it has a recent outage.",
-	wSucc: "How much recent success affects the score.",
-	wP50: "How much typical response time affects the score.",
-	wTail: "How much slow response time affects the score.",
-	wTPS: "How much output speed affects the score.",
-	wPrice: "How much price affects the score.",
-	noise: "A small random value that lets other providers get traffic.",
-	L0: "The response time used as the midpoint of the latency score.",
-	stage: "The filter that removed this provider.",
-	reason: "Why the provider was removed.",
-	providerStatus: "The provider's routing status when this request was handled.",
-	modelStatus: "The model's routing status when this request was handled.",
-	capabilityStatus: "The capability's routing status when this request was handled.",
-};
+const ROUTING_TRACE_METRICS = [
+	"seed", "priority", "candidate_pool", "partial_trace", "formula", "base_score", "final_score",
+	"base_weight", "price_score", "success_rate", "latency_score", "tail_latency_score",
+	"throughput_score", "token_affinity", "reliability_sample", "reliability", "success", "latency",
+	"tail_latency", "throughput", "price", "reliability_observations", "rollout_multiplier",
+	"routing_multiplier", "cache_boost_multiplier", "latency_preference_multiplier",
+	"throughput_preference_multiplier", "recent_outage_multiplier", "w_succ", "w_p50", "w_tail",
+	"w_tps", "w_price", "noise", "l0", "stage", "reason", "provider_status", "model_status",
+	"capability_status",
+] as const;
+
+function routingMetricKey(metric: string): string {
+	return metric.replace(/([a-z0-9])([A-Z])/g, "$1_$2").replace(/-/g, "_").toLowerCase();
+}
+
+function isKnownRoutingMetric(metric: string): boolean {
+	return ROUTING_TRACE_METRICS.includes(routingMetricKey(metric) as (typeof ROUTING_TRACE_METRICS)[number]);
+}
 
 function MetricInfo({ metric }: { metric: string }) {
 	const t = useTranslations("SettingsUI");
-	const description = METRIC_DESCRIPTIONS[metric] ?? "A value recorded during routing.";
+	const metricKey = routingMetricKey(metric);
+	const metricLabel = isKnownRoutingMetric(metric)
+		? t(`routingTrace.metricLabels.${metricKey}` as never)
+		: label(metric);
+	const description = isKnownRoutingMetric(metric)
+		? t(`routingTrace.metricDescriptions.${metricKey}` as never)
+		: t("routingTrace.unknownMetricDescription" as never);
 	return (
 		<Tooltip>
 			<TooltipTrigger asChild>
-				<button type="button" aria-label={`${t("strings.About" as never)} ${label(metric)}`} onClick={(event) => event.stopPropagation()} className="inline-flex size-3.5 shrink-0 items-center justify-center text-muted-foreground/60 hover:text-muted-foreground">
+				<button type="button" aria-label={`${t("strings.About" as never)} ${metricLabel}`} onClick={(event) => event.stopPropagation()} className="inline-flex size-3.5 shrink-0 items-center justify-center text-muted-foreground/60 hover:text-muted-foreground">
 					<CircleHelp className="size-3" />
 				</button>
 			</TooltipTrigger>
@@ -128,12 +96,17 @@ function MetricInfo({ metric }: { metric: string }) {
 }
 
 function MetricGrid({ values }: { values: Record<string, unknown> }) {
+	const t = useTranslations("SettingsUI");
 	return (
 		<div className="grid gap-x-6 gap-y-2 sm:grid-cols-2 xl:grid-cols-3">
 			{Object.entries(values).map(([key, value]) => (
 				<div key={key} className="flex min-w-0 items-center justify-between gap-3">
 					<span className="flex min-w-0 items-center gap-1 text-[11px] text-muted-foreground">
-						<span className="truncate">{label(key)}</span>
+						<span className="truncate">
+							{isKnownRoutingMetric(key)
+								? t(`routingTrace.metricLabels.${routingMetricKey(key)}` as never)
+								: label(key)}
+						</span>
 						<MetricInfo metric={key} />
 					</span>
 					<code className="shrink-0 text-[11px] font-medium tabular-nums text-foreground">
@@ -284,14 +257,21 @@ export function RoutingTracePanel({
 	providerNames?: Map<string, string>;
 }) {
 	const t = useTranslations("SettingsUI");
+	const translateWithValues = t as unknown as (
+		key: string,
+		values: Record<string, string | number>,
+	) => string;
 	const ranked = (decisions ?? []).filter((decision) => decision.decision === "ranked");
 	const excluded = (decisions ?? []).filter((decision) => decision.decision === "excluded");
 	if (!trace && ranked.length === 0 && excluded.length === 0) return null;
 
 	const maxScore = Math.max(0, ...ranked.map((decision) => number(decision.score) ?? 0));
 	const selected = ranked.find((decision) => decision.selected) ?? ranked[0];
-	const algorithm = trace?.algorithm_version ? String(trace.algorithm_version) : "Partial trace";
+	const algorithm = trace?.algorithm_version ? String(trace.algorithm_version) : t("routingTrace.partialTrace" as never);
 	const mode = trace ? String(trace.routing_mode ?? "balanced") : "balanced";
+	const summary = selected
+		? `${translateWithValues("routingTrace.selectedFromCandidates", { provider: providerLabel(selected.provider_slug ?? "unknown", providerNames), count: ranked.length })}${excluded.length > 0 ? ` · ${translateWithValues("routingTrace.excludedCount", { count: excluded.length })}` : ""}`
+		: t("routingTrace.noCandidateSelected" as never);
 
 	return (
 		<details className="group mt-3 border-t border-border/70 pt-1">
@@ -300,7 +280,7 @@ export function RoutingTracePanel({
 					<div className="min-w-0">
 						<div className="text-xs font-medium text-foreground">{t("strings.Routing observability" as never)}</div>
 						<div className="mt-0.5 truncate text-[11px] text-muted-foreground">
-							{selected ? `${providerLabel(selected.provider_slug ?? "unknown", providerNames)} selected from ${ranked.length} scored candidate${ranked.length === 1 ? "" : "s"}${excluded.length > 0 ? ` · ${excluded.length} excluded` : ""}` : "No candidate was selected"}
+							{summary}
 						</div>
 					</div>
 					<div className="flex shrink-0 items-center gap-2 text-[11px] text-muted-foreground">

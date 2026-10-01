@@ -1,0 +1,57 @@
+---
+icon: "music"
+title: "TTS (पाठ से वाणी)"
+description: "TypeScript SDK से /audio/speech call करें।"
+---
+
+**Method**: `client.generateSpeech()`।
+
+### उदाहरण
+```typescript
+const audio = await client.generateSpeech({
+  model: "openai/gpt-4o-mini-tts",
+  input: "Hello world",
+  voice: "alloy",
+  response_format: "mp3",
+});
+```
+
+### मुख्य parameters
+- `model` (आवश्यक): TTS-सक्षम मॉडल ID।
+- `input` (आवश्यक): संश्लेषित किया जाने वाला पाठ।
+- `voice`: प्रदाता द्वारा सामान्यीकृत वॉइस उपनाम (अनुशंसित) या प्रदाता की मूल वॉइस वैल्यू।
+- `response_format`: `mp3`, `wav`, `flac` आदि।
+- `speed`: playback speed multiplier (आमतौर पर 0.25–4)।
+
+यदि रूट किए गए प्रदाता/मॉडल संयोजन में `voice` मान्य न हो, तो API `param: "voice"` और `400` स्थिति के साथ त्रुटि लौटाती है।
+
+### प्रोवाइडर कॉन्फ़िगरेशन के उदाहरण
+
+```typescript
+// ElevenLabs explicit override
+await client.generateSpeech({
+  model: "eleven-labs/eleven-v3",
+  input: "Hello from ElevenLabs",
+  voice: "rachel",
+  config: {
+    elevenlabs: {
+      voice_id: "21m00Tcm4TlvDq8ikWAM"
+    }
+  }
+});
+
+// Google explicit override
+await client.generateSpeech({
+  model: "google/gemini-2.5-flash-preview-tts",
+  input: "Hello from Gemini",
+  voice: "kore",
+  config: {
+    google: {
+      voice_name: "Kore"
+    }
+  }
+});
+```
+
+### रिटर्न मान
+Audio binary (Blob)

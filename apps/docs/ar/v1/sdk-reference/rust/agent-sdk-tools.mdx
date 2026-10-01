@@ -1,0 +1,134 @@
+---
+title: "الأدوات والموافقات"
+description: "عرّف الأدوات المحلية والخارجية والأدوات التي تتطلب موافقة في Rust Agent SDK."
+---
+
+## الأدوات المحلية
+
+استخدم `Tool::new(...)` عندما تستطيع عملية Rust تنفيذ العملية:
+
+```rust
+use phaseo_agent::Tool;
+use serde_json::json;
+
+let get_status = Tool::new(
+    "get_status",
+    "Get the current service status",
+    json!({
+        "type": "object",
+        "properties": {
+            "service": { "type": "string" }
+        },
+        "required": ["service"]
+    }),
+    |input, _context| {
+        Ok(json!({
+            "service": input["service"],
+            "status": "healthy"
+        }))
+    },
+);
+```
+
+تُرسل قيمة `parameters` إلى النموذج بصيغة JSON Schema. تكون مدخلات الأدوات ومخرجاتها من النوع `serde_json::Value`. تحقّق من الوسائط غير الموثوقة داخل المنفّذ إذا كنت بحاجة إلى ضمانات أقوى أثناء التشغيل.
+
+## الأدوات التي تتطلب موافقة
+
+أضف `require_approval()` لإيقاف التنفيذ مؤقتًا قبل إجراء العملية:
+
+```rust
+let deploy = Tool::new(
+    "deploy",
+    "Deploy an application environment",
+    json!({
+        "type": "object",
+        "properties": {
+            "environment": { "type": "string" }
+        },
+        "required": ["environment"]
+    }),
+    |input, _context| {
+        Ok(json!({
+            "environment": input["environment"],
+            "deployed": true
+        }))
+    },
+)
+.require_approval();
+```
+
+عندما يستدعي النموذج هذه الأداة، تعود الجولة بالقيمتين `run.status == "waiting_for_human"` و`run.pause.kind == "tool_approval"`.
+
+استأنف الجولة باستخدام معرّف الاستدعاء نفسه تمامًا:
+
+```rust
+use phaseo_agent::{ContinueOptions, ToolDecision};
+
+let approvals = paused.run.pause.as_ref().unwrap()
+    .pending_tool_calls
+    .iter()
+    .map(|pending| ToolDecision {
+        tool_call_id: pending.call.id.clone(),
+        reason: Some("Approved by the release operator".to_string()),
+    })
+    .collect();
+
+let mut options = ContinueOptions::new(paused);
+options.approvals = approvals;
+
+let completed = agent.continue_run(&mut client, options)?;
+```
+
+لا توفّر واجهة Rust `0.1` نوعًا منفصلًا للرفض. اترك الاستدعاء غير الموافق عليه في حالة إيقاف مؤقت أو طبّق سياسة الرفض الخاصة بتطبيقك قبل الاستئناف.
+
+## الأدوات الخارجية
+
+استخدم `Tool::external(...)` عندما تنفّذ عملية أخرى العملية المطلوبة:
+
+```rust
+let ticket_lookup = Tool::external(
+    "ticket_lookup",
+    "Load one support ticket",
+    json!({
+        "type": "object",
+        "properties": {
+            "ticket_id": { "type": "string" }
+        },
+        "required": ["ticket_id"]
+    }),
+);
+```
+
+يكون نوع الإيقاف المؤقت `external_output` عندما يحتاج كل استدعاء معلّق إلى نتيجة خارجية. قدّم كل نتيجة باستخدام معرّف الاستدعاء:
+
+```rust
+use phaseo_agent::{ContinueOptions, ToolOutput};
+
+let outputs = paused.run.pause.as_ref().unwrap()
+    .pending_tool_calls
+    .iter()
+    .map(|pending| ToolOutput {
+        tool_call_id: pending.call.id.clone(),
+        output: json!({
+            "subject": "Provider latency increased",
+            "priority": "high"
+        }),
+    })
+    .collect();
+
+let mut options = ContinueOptions::new(paused);
+options.tool_outputs = outputs;
+
+let completed = agent.continue_run(&mut client, options)?;
+```
+
+إذا جمعت جولة واحدة للنموذج بين أدوات تلقائية واستدعاءات معلّقة، تنفّذ بيئة التشغيل الأدوات التلقائية قبل إعادة حالة الإيقاف المؤقت.
+
+## أخطاء الأدوات
+
+يتحوّل خطأ `AgentError` الذي يعيده منفّذ محلي إلى رسالة خطأ منظّمة للأداة ثم يُرسل إلى النموذج. ويؤدي اسم أداة غير معروف أو غياب الموافقة أو المخرجات المطلوبة إلى فشل الاستئناف مع `AgentError`.
+
+## محتوى ذو صلة
+
+- [حفظ الجولات واستئنافها](./agent-sdk-state-and-approval.mdx)
+- [مرجع Agent API](./agent-sdk-api-reference.mdx)

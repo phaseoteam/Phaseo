@@ -2,6 +2,7 @@
 
 import React, { useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
+import { localizedSettingsError } from "@/i18n/error-messages";
 import { Edit2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -194,7 +195,7 @@ export default function EditKeyItem({
 				{
 					loading: t("strings.Saving key..." as never),
 					success: t("strings.Key updated" as never),
-					error: (error) => error instanceof Error ? error.message : t("strings.Failed to update key" as never),
+					error: (error) => localizedSettingsError(error, t, "Failed to update key"),
 				},
 			);
 			setOpen(false);
@@ -242,14 +243,14 @@ export default function EditKeyItem({
 							<div className="text-xs text-muted-foreground">{t("strings.Leave a field blank for unlimited." as never)}</div>
 						</div>
 						<div className="grid gap-4 md:grid-cols-3">
-							<LimitInput id="edit-key-daily-requests" label="Daily Requests" value={limits.dailyRequests} onChange={(value) => updateLimit("dailyRequests", value)} kind="requests" />
-							<LimitInput id="edit-key-weekly-requests" label="Weekly Requests" value={limits.weeklyRequests} onChange={(value) => updateLimit("weeklyRequests", value)} kind="requests" />
-							<LimitInput id="edit-key-monthly-requests" label="Monthly Requests" value={limits.monthlyRequests} onChange={(value) => updateLimit("monthlyRequests", value)} kind="requests" />
+							<LimitInput id="edit-key-daily-requests" label={t("keys.dailyRequests")} value={limits.dailyRequests} onChange={(value) => updateLimit("dailyRequests", value)} kind="requests" />
+							<LimitInput id="edit-key-weekly-requests" label={t("keys.weeklyRequests")} value={limits.weeklyRequests} onChange={(value) => updateLimit("weeklyRequests", value)} kind="requests" />
+							<LimitInput id="edit-key-monthly-requests" label={t("keys.monthlyRequests")} value={limits.monthlyRequests} onChange={(value) => updateLimit("monthlyRequests", value)} kind="requests" />
 						</div>
 						<div className="grid gap-4 md:grid-cols-3">
-							<LimitInput id="edit-key-daily-spend" label="Daily Spend" value={limits.dailyCostUsd} onChange={(value) => updateLimit("dailyCostUsd", value)} kind="spend" />
-							<LimitInput id="edit-key-weekly-spend" label="Weekly Spend" value={limits.weeklyCostUsd} onChange={(value) => updateLimit("weeklyCostUsd", value)} kind="spend" />
-							<LimitInput id="edit-key-monthly-spend" label="Monthly Spend" value={limits.monthlyCostUsd} onChange={(value) => updateLimit("monthlyCostUsd", value)} kind="spend" />
+							<LimitInput id="edit-key-daily-spend" label={t("keys.dailySpend")} value={limits.dailyCostUsd} onChange={(value) => updateLimit("dailyCostUsd", value)} kind="spend" />
+							<LimitInput id="edit-key-weekly-spend" label={t("keys.weeklySpend")} value={limits.weeklyCostUsd} onChange={(value) => updateLimit("weeklyCostUsd", value)} kind="spend" />
+							<LimitInput id="edit-key-monthly-spend" label={t("keys.monthlySpend")} value={limits.monthlyCostUsd} onChange={(value) => updateLimit("monthlyCostUsd", value)} kind="spend" />
 						</div>
 					</section>
 

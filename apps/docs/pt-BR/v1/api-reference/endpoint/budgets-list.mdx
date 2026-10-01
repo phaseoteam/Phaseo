@@ -1,0 +1,12 @@
+---
+title: "Listar orçamentos do espaço de trabalho"
+sidebarTitle: "Listar orçamentos"
+badge: "Beta"
+openapi: "/pt-BR/openapi/v1/openapi.localized.yaml GET /budgets"
+description: "Listar os limites de gastos aplicados ao espaço de trabalho, com o uso atual e o saldo restante."
+---
+
+Requer `budgets:read`. Chamadas OAuth devem ter a função de proprietário ou administrador do espaço de trabalho.
+
+O uso é calculado com base nas solicitações bem-sucedidas do gateway. Trabalhos assíncronos reservados são incluídos enquanto a reserva estiver ativa, para que o valor restante retornado corresponda ao limite aplicado.
+

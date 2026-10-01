@@ -1,5 +1,6 @@
 "use client"
 
+import { useTranslations } from "next-intl"
 import { type ReactNode, useEffect, useMemo, useRef, useState } from "react"
 import { Plus, Trash2 } from "lucide-react"
 import { Logo } from "@/components/Logo"
@@ -203,6 +204,9 @@ export default function ProvidersTab({
   onProviderModelsChange,
   onProviderCapabilitiesChange,
 }: ProvidersTabProps) {
+  const tUi = useTranslations("Common.ui")
+  const tEditor = useTranslations("Common.ui.modelEditor")
+  const tModel = useTranslations("Common.ui.modelCreation")
   const [providerModels, setProviderModels] = useState<ProviderModelRow[]>([])
   const [providerCapabilities, setProviderCapabilities] = useState<ProviderCapabilityRow[]>([])
   const [availableModelIds, setAvailableModelIds] = useState<string[]>([])
@@ -457,11 +461,11 @@ export default function ProvidersTab({
     <div className="space-y-5">
       <section className="space-y-3 rounded-lg border p-4">
         <div className="flex items-center justify-between">
-          <Label className="text-sm font-semibold">Provider Availability</Label>
+          <Label className="text-sm font-semibold">{tEditor("providerAvailability")}</Label>
           <span className="text-xs text-muted-foreground">
             {focusProviderId
-              ? `Focused on provider: ${focusProviderId}`
-              : "A-Z ordered. Grey logos are inactive."}
+              ? tEditor("focusedProvider", { provider: focusProviderId })
+              : tEditor("providerOrder")}
           </span>
         </div>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
@@ -491,8 +495,8 @@ export default function ProvidersTab({
         {visibleProviderModels.length === 0 ? (
           <div className="rounded-md border border-dashed p-4 text-sm text-muted-foreground">
             {focusProviderId
-              ? "This provider is not attached yet. Click the provider above to add it."
-              : "Select one or more providers above to attach availability and capabilities."}
+              ? tEditor("providerNotAttached")
+              : tEditor("selectProviders")}
           </div>
         ) : null}
 
@@ -517,15 +521,15 @@ export default function ProvidersTab({
                   variant="ghost"
                   size="icon"
                   onClick={() => toggleProvider(providerModel.provider_id)}
-                  aria-label={`Remove ${providerName}`}
+                  aria-label={tEditor("removeProvider", { provider: providerName })}
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>
               </div>
 
               <FieldRow
-                label="Public model ID"
-                description="Select from known model IDs or enter one manually."
+                label={tEditor("publicModelId")}
+                description={tEditor("publicModelIdDescription")}
               >
                 <div>
                   <Input
@@ -548,7 +552,7 @@ export default function ProvidersTab({
                 </div>
               </FieldRow>
 
-              <FieldRow label="Provider model ID">
+              <FieldRow label={tEditor("providerModelId")}>
                 <Input
                   value={providerModel.provider_model_slug ?? ""}
                   onChange={(event) =>
@@ -558,15 +562,15 @@ export default function ProvidersTab({
                       event.target.value || null
                     )
                   }
-                  placeholder="Provider-specific model id/slug"
+                  placeholder={tEditor("providerModelIdPlaceholder")}
                 />
               </FieldRow>
 
-              <FieldRow label="Internal model ID">
+              <FieldRow label={tEditor("internalModelId")}>
                 <Input value={modelId} readOnly disabled />
               </FieldRow>
 
-              <FieldRow label="Gateway active">
+              <FieldRow label={tEditor("gatewayActive")}>
                 <label className="inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
                   <Checkbox
                     checked={providerModel.is_active_gateway}
@@ -578,11 +582,11 @@ export default function ProvidersTab({
                       )
                     }
                   />
-                  Active on gateway
+                  {tEditor("activeOnGateway")}
                 </label>
               </FieldRow>
 
-              <FieldRow label="Quantization scheme">
+              <FieldRow label={tEditor("quantizationScheme")}>
                 <Input
                   value={providerModel.quantization_scheme ?? ""}
                   onChange={(event) =>
@@ -592,11 +596,11 @@ export default function ProvidersTab({
                       event.target.value || null
                     )
                   }
-                  placeholder="FP16, INT8, etc."
+                  placeholder={tEditor("quantizationExample")}
                 />
               </FieldRow>
 
-              <FieldRow label="Context and output limits">
+              <FieldRow label={tEditor("contextOutputLimits")}>
                 <div className="grid gap-2 sm:grid-cols-2">
                   <Input
                     type="number"
@@ -608,7 +612,7 @@ export default function ProvidersTab({
                         event.target.value ? Number(event.target.value) : null
                       )
                     }
-                    placeholder="Input context length"
+                    placeholder={tEditor("inputContextLength")}
                   />
                   <Input
                     type="number"
@@ -620,14 +624,14 @@ export default function ProvidersTab({
                         event.target.value ? Number(event.target.value) : null
                       )
                     }
-                    placeholder="Max output tokens"
+                    placeholder={tEditor("maxOutputTokens")}
                   />
                 </div>
               </FieldRow>
 
               <FieldRow
-                label="Prompt training override"
-                description="Leave as Provider default unless this model/provider mapping differs."
+                label={tEditor("promptTrainingOverride")}
+                description={tEditor("promptTrainingOverrideDescription")}
               >
                 <Select
                   value={providerModel.prompt_training_policy_override ?? "__provider_default"}
@@ -640,10 +644,10 @@ export default function ProvidersTab({
                   }
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Provider default" />
+                    <SelectValue placeholder={tUi("select.providerDefault")} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="__provider_default">Provider default</SelectItem>
+                    <SelectItem value="__provider_default">{tUi("select.providerDefault")}</SelectItem>
                     {PROVIDER_PROMPT_TRAINING_POLICY_VALUES.map((value) => (
                       <SelectItem key={value} value={value}>
                         {PROVIDER_PROMPT_TRAINING_POLICY_LABELS[value]}
@@ -653,7 +657,7 @@ export default function ProvidersTab({
                 </Select>
               </FieldRow>
 
-              <FieldRow label="Effective window">
+              <FieldRow label={tEditor("effectiveWindow")}>
                 <div className="grid gap-2 sm:grid-cols-2">
                   <DatePickerInput
                     value={formatDateForPicker(providerModel.effective_from)}
@@ -664,7 +668,7 @@ export default function ProvidersTab({
                         nextValue || null
                       )
                     }
-                    placeholder="Effective from"
+                    placeholder={tEditor("effectiveFrom")}
                   />
                   <DatePickerInput
                     value={formatDateForPicker(providerModel.effective_to)}
@@ -675,12 +679,12 @@ export default function ProvidersTab({
                         nextValue || null
                       )
                     }
-                    placeholder="Effective to"
+                    placeholder={tEditor("effectiveTo")}
                   />
                 </div>
               </FieldRow>
 
-              <FieldRow label="Input modalities">
+              <FieldRow label={tModel("inputModalities")}>
                 <div className="flex flex-wrap gap-2">
                   {MODALITY_OPTIONS.map((modality) => {
                     const enabled = parseTypes(providerModel.input_modalities).includes(modality)
@@ -703,14 +707,14 @@ export default function ProvidersTab({
                             )
                           }
                         />
-                        {modality}
+                        {tModel(`modalities.${modality.replace(/_([a-z])/g, (_, letter: string) => letter.toUpperCase())}` as never)}
                       </label>
                     )
                   })}
                 </div>
               </FieldRow>
 
-              <FieldRow label="Output modalities">
+              <FieldRow label={tModel("outputModalities")}>
                 <div className="flex flex-wrap gap-2">
                   {MODALITY_OPTIONS.map((modality) => {
                     const enabled = parseTypes(providerModel.output_modalities).includes(modality)
@@ -733,7 +737,7 @@ export default function ProvidersTab({
                             )
                           }
                         />
-                        {modality}
+                        {tModel(`modalities.${modality.replace(/_([a-z])/g, (_, letter: string) => letter.toUpperCase())}` as never)}
                       </label>
                     )
                   })}
@@ -742,7 +746,7 @@ export default function ProvidersTab({
 
               <div className="space-y-3 rounded-md border p-3">
                 <div className="flex items-center justify-between">
-                  <Label className="text-sm font-semibold">Capabilities</Label>
+                  <Label className="text-sm font-semibold">{tEditor("capabilities")}</Label>
                   <Button
                     type="button"
                     variant="outline"
@@ -750,13 +754,13 @@ export default function ProvidersTab({
                     onClick={() => addCapability(providerModel)}
                   >
                     <Plus className="mr-1 h-3 w-3" />
-                    Add capability
+                    {tEditor("addCapability")}
                   </Button>
                 </div>
 
                 {capabilityRows.length === 0 ? (
                   <p className="text-xs text-muted-foreground">
-                    No capabilities yet for this provider model.
+                    {tEditor("noCapabilities")}
                   </p>
                 ) : null}
 
@@ -774,20 +778,20 @@ export default function ProvidersTab({
                     <div key={capability.id} className="space-y-3 rounded-md border p-3">
                       <div className="flex items-center justify-between">
                         <div className="text-xs font-medium text-muted-foreground">
-                          Capability {index + 1}
+                          {tEditor("capabilityIndex", { index: index + 1 })}
                         </div>
                         <Button
                           type="button"
                           variant="ghost"
                           size="icon"
                           onClick={() => removeCapability(capability.id)}
-                          aria-label="Remove capability"
+                          aria-label={tEditor("removeCapability")}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
 
-                      <FieldRow label="Capability">
+                      <FieldRow label={tEditor("capability")}>
                         <Select
                           value={capability.capability_id}
                           onValueChange={(value) => {
@@ -799,7 +803,7 @@ export default function ProvidersTab({
                           }}
                         >
                           <SelectTrigger>
-                            <SelectValue placeholder="Select capability" />
+                            <SelectValue placeholder={tEditor("selectCapability")} />
                           </SelectTrigger>
                           <SelectContent>
                             {capabilityOptions.map((option) => (
@@ -815,7 +819,7 @@ export default function ProvidersTab({
                         </Select>
                       </FieldRow>
 
-                      <FieldRow label="Status">
+                      <FieldRow label={tModel("status")}>
                         <Select
                           value={capability.status}
                           onValueChange={(value) =>
@@ -831,7 +835,9 @@ export default function ProvidersTab({
                           <SelectContent>
                             {CAPABILITY_STATUS_OPTIONS.map((status) => (
                               <SelectItem key={status} value={status}>
-                                {status}
+                                {tEditor(
+										`capabilityStatuses.${status.replace(/_([a-z0-9])/g, (_, letter: string) => letter.toUpperCase())}` as never
+									)}
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -839,8 +845,8 @@ export default function ProvidersTab({
                       </FieldRow>
 
                       <FieldRow
-                        label="Supported params"
-                        description="Toggle known request parameters supported by this capability."
+                        label={tEditor("supportedParams")}
+                        description={tEditor("supportedParamsDescription")}
                       >
                         <div className="flex flex-wrap gap-2">
                           {PARAMETER_FLAGS.map((param) => {

@@ -351,7 +351,7 @@ export async function updateAccount(payload: {
     return { ok: true }
 }
 export async function deleteAccount(confirmation: string, currentPassword?: string) {
-    if (confirmation.trim().toUpperCase() !== 'DELETE') throw new Error('Type DELETE to confirm account deletion')
+    if (confirmation.trim().toUpperCase() !== 'DELETE') throw new Error('Type "DELETE" to confirm')
     const supabase = await createClient()
     const authUser = await requireSensitiveAccountStepUp(supabase, currentPassword)
     const admin = createAdminClient()

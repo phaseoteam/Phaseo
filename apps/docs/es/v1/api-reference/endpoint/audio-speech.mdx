@@ -1,0 +1,34 @@
+---
+title: "Crear voz"
+sidebarTitle: "Crear voz"
+badge: "Beta"
+openapi: "/es/openapi/v1/openapi.localized.yaml POST /audio/speech"
+description: "Genera audio TTS a partir de texto con la voz y el formato especificados."
+---
+
+## Asignación de voces
+
+`voice` se normaliza según el proveedor mediante un mapa interno de alias:
+
+- `openai`: voces habituales (por ejemplo `alloy`, `ash`, `ballad`, `coral`, `echo`, `fable`, `onyx`, `nova`, `sage`, `shimmer`, `verse`, `cedar`, `marin`).
+- `google` (AI Studio / Gemini TTS): voces predefinidas canónicas:
+  `Zephyr`, `Puck`, `Charon`, `Kore`, `Fenrir`, `Leda`, `Orus`, `Aoede`, `Callirrhoe`, `Autonoe`, `Enceladus`, `Iapetus`, `Umbriel`, `Algieba`, `Despina`, `Erinome`, `Algenib`, `Rasalgethi`, `Laomedeia`, `Achernar`, `Alnilam`, `Schedar`, `Gacrux`, `Pulcherrima`, `Achird`, `Zubenelgenubi`, `Vindemiatrix`, `Sadachbia`, `Sadaltager`, `Sulafat`.
+- `elevenlabs`: se asignan voces públicas de uso frecuente (por ejemplo `rachel`, `domi`, `bella`, `antoni`, `elli`, `josh`, `arnold`, `adam`, `sam`).
+
+Si `voice` no es válido para la combinación de proveedor y modelo de la ruta, la solicitud devuelve `400 invalid_request_error` con `param: "voice"`.
+
+## Anulaciones del proveedor
+
+También puedes enviar ajustes de voz propios del proveedor:
+
+- ElevenLabs: `config.elevenlabs.voice_id` / `config.elevenlabs.voice` / `config.elevenlabs.voiceName`
+- Google: `config.google.voice_name` / `config.google.voiceName`
+
+Usa `voice` en el nivel superior como valor predeterminado para facilitar la portabilidad.
+
+## Muestras de voz
+
+- OpenAI: [openai.fm](https://www.openai.fm/)
+- Ejemplos de voces de Google TTS: [documentación de Gemini sobre conversión de texto a voz](https://ai.google.dev/gemini-api/docs/speech-generation#voices)
+- Biblioteca de voces de ElevenLabs: [ElevenLabs Voice Library](https://elevenlabs.io/voice-library)
+

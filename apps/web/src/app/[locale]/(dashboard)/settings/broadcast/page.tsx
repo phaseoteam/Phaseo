@@ -5,9 +5,10 @@ import { ProductFeedbackButton } from "@/components/feedback/ProductFeedbackButt
 import { fetchSettingsBroadcastInitialData } from "@/lib/fetchers/internal/fetchSettingsBroadcastInitialData";
 import { getTranslations } from "next-intl/server";
 
-export const metadata = {
-	title: "Broadcast - Settings",
-};
+export async function generateMetadata() {
+	const t = await getTranslations("SettingsUI.settingsPageMetadata");
+	return { title: t("broadcast") };
+}
 
 export default async function BroadcastSettingsPage() {
 	const t = await getTranslations("SettingsUI");
@@ -20,7 +21,7 @@ export default async function BroadcastSettingsPage() {
 					</h1>
 					<ProductFeedbackButton
 						surface="settings_broadcast"
-						prompt="Tell us what is missing or confusing about Broadcast destinations."
+						prompt={t("headers.feedbackBroadcastPrompt")}
 					/>
 				</div>
 			</section>

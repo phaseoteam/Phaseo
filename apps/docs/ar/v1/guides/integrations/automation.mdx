@@ -1,0 +1,63 @@
+---
+title: "أتمتة سير العمل"
+icon: "workflow"
+description: "استخدم Phaseo من Zapier وn8n وPipedream ومنصات الأتمتة الأخرى."
+---
+
+يعمل Phaseo حاليًا مع منتجات الأتمتة القادرة على إرسال طلبات HTTP موثّقة. ويمكن لتطبيقات السوق الأصلية تقديم تجربة أكثر إرشادًا لاحقًا.
+
+## الطلب المشترك
+
+استخدم هذه الإعدادات في إجراء HTTP أو webhook أو إجراء برمجي:
+
+| الإعداد | القيمة |
+| --- | --- |
+| الطريقة | `POST` |
+| URL | `https://api.phaseo.app/v1/responses` |
+| الترويسة | `Authorization: Bearer <PHASEO_API_KEY>` |
+| الترويسة | `Content-Type: application/json` |
+
+```json
+{
+  "model": "openai/gpt-5-nano",
+  "input": "Summarise the supplied workflow data in one paragraph."
+}
+```
+
+خزّن مفتاح API الخاص بـ Phaseo في مخزن بيانات الاعتماد أو الأسرار للمنصة. لا تضعه مباشرة في تعريف سير عمل مشترك.
+
+## Zapier
+
+استخدم **Webhooks by Zapier → Custom Request**:
+
+1. اختر `POST`.
+2. أدخل `https://api.phaseo.app/v1/responses`.
+3. أضف ترويستي bearer وcontent-type.
+4. اربط الحقول من خطوات Zap السابقة بحقل `input`.
+5. اختبر Zap باستخدام بيانات غير حساسة.
+
+سيضيف تطبيق Phaseo أصلي لـ Zapier اختيار النماذج وإجراءات المخرجات المنظّمة والمصادقة الخاصة بـ Phaseo، لكنه يتطلب النشر عبر منصة المطورين في Zapier.
+
+## n8n
+
+استخدم عقدة **HTTP Request** مع مصادقة bearer وجسم JSON. ولبيانات سير العمل المنظّمة، اربط العنصر السابق بحقل `input` باستخدام تعبير n8n.
+
+قد توفر عقدة n8n رسمية من المجتمع لاحقًا إجراءات مثل Generate Response وList Models وGet Model Pricing وCreate Embedding دون إعداد HTTP يدويًا.
+
+## Pipedream
+
+استخدم خطوة طلب HTTP أو خطوة برمجية بـ Node.js. خزّن `PHASEO_API_KEY` كسر في Pipedream واقرأه من بيئة الخطوة.
+
+## إرشادات الإنتاج
+
+- عيّن حدًا للإنفاق على مفتاح Gateway API الذي تستخدمه كل عملية أتمتة.
+- استخدم مفتاحًا مستقلًا لكل عملية أتمتة لعزل الاستخدام والإلغاء.
+- استخدم مخرجات منظّمة عندما تتوقع الخطوات اللاحقة حقولًا قابلة للقراءة آليًا.
+- أضف معالجة لإعادة المحاولة عند استجابات `429` وأخطاء `5xx` القابلة للتعافي.
+- لا تكرر الإجراءات الخارجية غير المتكررة لمجرد إعادة محاولة خطوة النموذج.
+
+## مواضيع ذات صلة
+
+- [الاستجابات](../../api-reference/endpoint/responses.mdx)
+- [المخرجات المنظّمة](../structured-outputs.mdx)
+- [معالجة الأخطاء](../../developers/error-handling.mdx)

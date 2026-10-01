@@ -38,6 +38,7 @@ import {
 	type DestinationId,
 } from "@/components/(gateway)/settings/observability/destinationCatalog";
 import { useTranslations } from "next-intl";
+import { localizedSettingsError } from "@/i18n/error-messages";
 
 type ConfiguredDestination = {
 	id: string;
@@ -66,6 +67,7 @@ function defaultConnectionStatus(destination: ConfiguredDestination) {
 
 export default function BroadcastSettingsClient(props: BroadcastSettingsClientProps) {
 	const t = useTranslations("SettingsUI");
+	const tUi = useTranslations("Common.ui");
 	const { configuredDestinations, teamName } = props;
 	const router = useRouter();
 	const availableDestinations = Array.isArray(AVAILABLE_DESTINATIONS)
@@ -108,8 +110,7 @@ export default function BroadcastSettingsClient(props: BroadcastSettingsClientPr
 					router.refresh();
 				}
 			} catch (error) {
-				const message =
-					error instanceof Error ? error.message : "Action failed";
+				const message = localizedSettingsError(error, t, "Action failed");
 				toast.error(message);
 			} finally {
 				setPendingDestinationId(null);
@@ -165,7 +166,7 @@ export default function BroadcastSettingsClient(props: BroadcastSettingsClientPr
 									</div>
 
 									<div className="text-xs text-muted-foreground">
-										Sampling: {formatSamplingRate(destination.samplingRate)}
+										{t("broadcastControls.sampling")}: {formatSamplingRate(destination.samplingRate)}
 									</div>
 
 									<div>
@@ -189,11 +190,11 @@ export default function BroadcastSettingsClient(props: BroadcastSettingsClientPr
 																);
 															setStatus(destination.id, result.status);
 															if (result.ok) toast.success(result.status);
-															else toast.error(result.status);
+									else toast.error(localizedSettingsError(result.status, t, "Action failed"));
 														}, { refreshAfter: false })
 													}
 												>
-													Refresh Connection Status
+													{tUi("actions.refreshConnectionStatus")}
 												</DropdownMenuItem>
 												<DropdownMenuItem
 													onClick={() =>
@@ -209,7 +210,7 @@ export default function BroadcastSettingsClient(props: BroadcastSettingsClientPr
 													}
 												>
 													<SendHorizontal className="mr-2 h-3.5 w-3.5" />
-													Send Sample Trace
+													{tUi("actions.sendSampleTrace")}
 												</DropdownMenuItem>
 												<DropdownMenuItem
 													onClick={() =>
@@ -226,14 +227,16 @@ export default function BroadcastSettingsClient(props: BroadcastSettingsClientPr
 														})
 													}
 												>
-													{destination.enabled ? "Disable Connection" : "Enable Connection"}
+											{destination.enabled
+												? tUi("actions.disableConnection")
+												: tUi("actions.enableConnection")}
 												</DropdownMenuItem>
 												<DropdownMenuSeparator />
 												<DropdownMenuItem
 													className="text-destructive focus:text-destructive"
 													onClick={() => setDeleteTarget(destination)}
 												>
-													Delete Destination
+												{tUi("actions.deleteDestination")}
 												</DropdownMenuItem>
 											</DropdownMenuContent>
 										</DropdownMenu>
@@ -279,7 +282,7 @@ export default function BroadcastSettingsClient(props: BroadcastSettingsClientPr
 							</div>
 							<div className="inline-flex items-center gap-1 text-xs font-medium text-white">
 								<Plus className="h-3.5 w-3.5" />
-								Add Destination
+									{t("broadcastControls.addDestination")}
 							</div>
 						</Link>
 					))}
@@ -332,7 +335,7 @@ export default function BroadcastSettingsClient(props: BroadcastSettingsClientPr
 					<AlertDialogHeader>
 						<AlertDialogTitle>{t("strings.Delete destination?" as never)}</AlertDialogTitle>
 						<AlertDialogDescription>
-							This permanently removes the destination connection and its key/rule mappings.
+							{t("broadcastControls.deleteDestinationDescription")}
 						</AlertDialogDescription>
 					</AlertDialogHeader>
 					<AlertDialogFooter>
@@ -350,7 +353,7 @@ export default function BroadcastSettingsClient(props: BroadcastSettingsClientPr
 								});
 							}}
 						>
-							Delete
+							{t("labels.delete")}
 						</AlertDialogAction>
 					</AlertDialogFooter>
 				</AlertDialogContent>

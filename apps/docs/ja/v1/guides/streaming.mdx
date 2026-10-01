@@ -1,0 +1,50 @@
+---
+title: "ストリーミング"
+description: "サーバー送信イベント（SSE）を使って低レイテンシでトークンを配信します。"
+icon: "radio"
+---
+
+ストリーミングではSSEフレームで出力を順次返すため、ユーザーはより早くレスポンスを確認できます。
+
+## 対応エンドポイント
+
+- `/v1/responses`
+- `/v1/chat/completions`
+- `/v1/messages`
+
+## リクエスト
+
+```bash
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-5-nano",
+    "input": "Stream a short hello message.",
+    "stream": true
+  }'
+```
+
+## レスポンス
+
+```text
+data: {"id":"resp_...","object":"response","status":"in_progress",...}
+data: {"type":"response.output_text.delta","delta":"Hello"}
+data: {"type":"response.completed",...}
+data: [DONE]
+```
+
+## SDKのオプション
+
+- TypeScript SDK: `client.streamResponses()`、`client.streamChat()`、`client.streamMessages()`
+- Python SDK: `client.stream_responses()`、`client.stream_chat()`、`client.stream_message()`
+- Vercel AI SDK: `streamText(...)` と `@phaseo/ai-sdk-provider` を使用
+
+## 重要な制限事項
+
+現在のゲートウェイのリクエスト検証では、ツールと`stream: true`の併用は拒否されます（`400 invalid_request`）。ツール呼び出しループでは非ストリーミングを使ってください。
+
+## 次のガイド
+
+1. [SSEイベントリファレンス](./streaming-sse.mdx)
+2. [本番環境でのストリーミング](./streaming-production.mdx)

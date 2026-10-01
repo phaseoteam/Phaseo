@@ -1,0 +1,32 @@
+---
+icon: "binary"
+title: "嵌入（AI SDK）"
+description: "使用 Vercel AI SDK 和 Phaseo 供应商模型创建嵌入。"
+---
+
+将 `phaseo.textEmbeddingModel(...)`（或 `embeddingModel`）与 `embed` 和 `embedMany` 配合使用。
+
+```ts
+import { phaseo } from "@phaseo/ai-sdk-provider";
+import { embed, embedMany } from "ai";
+
+const single = await embed({
+  model: phaseo.textEmbeddingModel("google/gemini-embedding-001"),
+  value: "Embeddings power semantic search.",
+});
+
+console.log(single.embedding.length);
+
+const batch = await embedMany({
+  model: phaseo.textEmbeddingModel("google/gemini-embedding-001"),
+  values: ["pricing", "latency", "quality"],
+});
+
+console.log(batch.embeddings.length);
+```
+
+## 说明
+
+- 查询和语料嵌入应使用相同的模型版本。
+- 在计算相似度分数前，统一对向量进行归一化。
+- 对重复内容的稳定嵌入进行缓存。

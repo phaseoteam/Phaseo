@@ -14,24 +14,31 @@ interface ContextWindowBarChartProps {
 	chartData: { [key: string]: string | number | null }[];
 	models: { name: string; provider: string }[];
 	CustomTooltip: React.FC<any>;
+	locale: string;
+	inputLabel: string;
+	outputLabel: string;
 	barGap?: number;
 }
 
 // Helper to format numbers as K/M/B
-function formatTokens(val: number | null | undefined): string {
+function formatTokens(val: number | null | undefined, locale: string): string {
 	if (val == null) return "-";
 	if (val >= 1_000_000_000)
-		return (val / 1_000_000_000).toFixed(1).replace(/\.0$/, "") + "B";
+		return `${(val / 1_000_000_000).toLocaleString(locale, { maximumFractionDigits: 1 })}B`;
 	if (val >= 1_000_000)
-		return (val / 1_000_000).toFixed(1).replace(/\.0$/, "") + "M";
-	if (val >= 1_000) return (val / 1_000).toFixed(1).replace(/\.0$/, "") + "K";
-	return val.toLocaleString();
+		return `${(val / 1_000_000).toLocaleString(locale, { maximumFractionDigits: 1 })}M`;
+	if (val >= 1_000)
+		return `${(val / 1_000).toLocaleString(locale, { maximumFractionDigits: 1 })}K`;
+	return val.toLocaleString(locale);
 }
 
 export default function ContextWindowBarChart({
 	chartData,
 	models,
 	CustomTooltip,
+	locale,
+	inputLabel,
+	outputLabel,
 	barGap = 32,
 }: ContextWindowBarChartProps) {
 	const data = models.map((model) => ({
@@ -88,7 +95,7 @@ export default function ContextWindowBarChart({
 					tickLine={false}
 					domain={[0, niceMax]}
 					ticks={ticks}
-					tickFormatter={formatTokens}
+					tickFormatter={(value) => formatTokens(Number(value), locale)}
 					allowDecimals={false}
 				/>
 				<YAxis
@@ -110,7 +117,7 @@ export default function ContextWindowBarChart({
 				/>
 				<Bar
 					dataKey="input"
-					name="Input Context"
+					name={inputLabel}
 					fill={COLORS.input}
 					barSize={36}
 					radius={[0, 10, 10, 0]}
@@ -118,7 +125,7 @@ export default function ContextWindowBarChart({
 				/>
 				<Bar
 					dataKey="output"
-					name="Output Context"
+					name={outputLabel}
 					fill={COLORS.output}
 					barSize={36}
 					radius={[0, 10, 10, 0]}

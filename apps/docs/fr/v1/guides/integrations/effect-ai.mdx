@@ -1,0 +1,76 @@
+---
+title: "Effect AI SDK"
+icon: "function-square"
+description: "Utilisez Phaseo depuis des applications TypeScript basées sur Effect."
+---
+
+Utilisez ce guide si votre application utilise déjà Effect et que vous souhaitez accéder à Phaseo depuis un service ou workflow Effect.
+
+## État
+
+Phaseo expose des endpoints HTTP compatibles avec OpenAI. Les packages fournisseur officiels d’Effect sont utiles lorsqu’ils prennent directement en charge le fournisseur souhaité ; si votre package OpenAI pour Effect ne propose pas d’option d’URL de base, appelez Phaseo via le client HTTP d’Effect ou enveloppez le [SDK OpenAI](./openai-sdk.mdx) dans votre propre couche Effect.
+
+## Installer
+
+```bash
+npm install effect @effect/platform
+```
+
+## Appeler Phaseo avec Effect HTTP
+
+```ts
+import { FetchHttpClient, HttpClient, HttpClientRequest } from "@effect/platform";
+import { Config, Effect, Redacted } from "effect";
+
+const generate = Effect.gen(function* () {
+	const apiKey = yield* Config.redacted("PHASEO_API_KEY");
+	const client = yield* HttpClient.HttpClient;
+
+	const request = HttpClientRequest.post(
+		"https://api.phaseo.app/v1/chat/completions",
+	).pipe(
+		HttpClientRequest.bearerToken(Redacted.value(apiKey)),
+		HttpClientRequest.jsonBody({
+			model: "openai/gpt-5-nano",
+			messages: [{ role: "user", content: "Reply with only: ok" }],
+		}),
+	);
+
+	return yield* client.execute(request).pipe(
+		Effect.flatMap((response) => response.json),
+	);
+});
+
+const runnable = generate.pipe(Effect.provide(FetchHttpClient.layer));
+```
+
+## Intégrer le SDK OpenAI dans un service Effect
+
+Si vous utilisez déjà le SDK OpenAI officiel ailleurs, centralisez la configuration Phaseo dans une seule couche :
+
+```ts
+import OpenAI from "openai";
+import { Config, Effect } from "effect";
+
+const makeClient = Effect.gen(function* () {
+	const apiKey = yield* Config.string("PHASEO_API_KEY");
+
+	return new OpenAI({
+		apiKey,
+		baseURL: "https://api.phaseo.app/v1",
+	});
+});
+```
+
+## Remarques
+
+- Utilisez `https://api.phaseo.app/v1` pour les appels compatibles avec OpenAI.
+- Conservez les identifiants de modèle au format Phaseo, par exemple `openai/gpt-5-nano`.
+- Utilisez une couche Effect personnalisée si vous souhaitez une abstraction de fournisseur commune au reste de l’application.
+- Testez le streaming et les appels d’outils avec les versions exactes de vos packages Effect avant le déploiement en production.
+
+## À lire aussi
+
+- [SDK OpenAI](./openai-sdk.mdx)
+- [SDK AI](./ai-sdk.mdx)
+- [Diffusion en continu](../streaming.mdx)

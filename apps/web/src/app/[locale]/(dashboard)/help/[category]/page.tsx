@@ -24,26 +24,21 @@ export async function generateStaticParams(): Promise<Array<{ category: string }
 export async function generateMetadata(props: PageProps): Promise<Metadata> {
 	const { locale, category } = await props.params;
 	const categoryData = await getLocalizedHelpCategory(locale, category);
+	const t = await getTranslations({ locale, namespace: "Content.help" });
 	const path = `/help/${category}`;
 
 	if (!categoryData) {
 		return buildMetadata({
-			title: "Help Category",
-			description:
-				"Explore help articles in this Phaseo support category, including setup guides, troubleshooting steps, policy references, and practical workflows for day-to-day usage.",
+			title: t("title"),
+			description: t("description"),
 			path,
 		});
 	}
 
 	return buildMetadata({
-		title: `${categoryData.title} Help`,
-		description: `${categoryData.description} Browse practical guides, troubleshooting steps, and implementation tips for this area of Phaseo.`,
+		title: `${categoryData.title} | ${t("title")}`,
+		description: categoryData.description,
 		path,
-		keywords: [
-			`${categoryData.title} help`,
-			"Phaseo help center",
-			"AI gateway support",
-		],
 	});
 }
 

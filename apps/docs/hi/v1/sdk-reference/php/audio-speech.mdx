@@ -1,0 +1,38 @@
+---
+icon: "music"
+title: "TTS (पाठ से वाणी)"
+description: "PHP SDK के साथ /audio/speech call करें।"
+---
+
+**Method**: `$client->createSpeech(...)`
+
+### उदाहरण
+
+```php
+<?php
+
+require 'vendor/autoload.php';
+
+use Phaseo\Sdk\Phaseo;
+
+$client = new Phaseo(getenv('PHASEO_API_KEY'));
+$audioFile = $client->createSpeech([
+    'model' => 'openai/gpt-4o-mini-tts',
+    'input' => 'Hello world',
+    'voice' => 'alloy',
+    'format' => 'mp3'
+]);
+file_put_contents('output.mp3', $audioFile->fread($audioFile->getSize()));
+```
+
+### मुख्य पैरामीटर
+
+-   `model` (ज़रूरी): TTS-सक्षम model ID।
+-   `input` (ज़रूरी): synthesize करने के लिए text।
+-   `voice`: voice preset (model पर निर्भर, जैसे `alloy`)।
+-   `format`: `mp3`, `wav`, `flac` आदि।
+-   `speed`: playback speed multiplier (आमतौर पर 0.25–4)।
+
+### लौटाया गया मान
+
+Audio binary (`\SplFileObject`)

@@ -3,6 +3,7 @@ import {
 	fetchFrontendLandingStats,
 	fetchFrontendSignInSupportedModelsStats,
 } from "@/lib/fetchers/frontend/fetchPublicCatalog";
+import { getTranslations } from "next-intl/server";
 
 function roundDisplayValue(raw: number, bucket: number) {
 	if (bucket <= 0) return raw;
@@ -30,29 +31,30 @@ function formatCompact(value: number) {
 }
 
 export default async function DatabaseStats() {
-	const [{ db: data, monthlyTokenTotal }, gatewayStats] = await Promise.all([
+	const [{ db: data, monthlyTokenTotal }, gatewayStats, t] = await Promise.all([
 		fetchFrontendLandingStats(),
 		fetchFrontendSignInSupportedModelsStats(),
+		getTranslations("Site.home"),
 	]);
 
 	const stats = [
 		{
-			label: "Catalog models",
+			label: t("statistics.catalogModels"),
 			value: formatStat(roundDisplayValue(data.models ?? 0, 25)),
 			route: "/models",
 		},
 		{
-			label: "Routable models",
+			label: t("statistics.routableModels"),
 			value: formatStat(roundDisplayValue(gatewayStats.apiCount ?? 0, 25)),
 			route: "/models",
 		},
 		{
-			label: "Catalog providers",
+			label: t("statistics.catalogProviders"),
 			value: formatStat(roundDisplayValue(data.api_providers ?? 0, 5)),
 			route: "/api-providers",
 		},
 		{
-			label: "Monthly tokens routed",
+			label: t("statistics.monthlyTokensRouted"),
 			value: `${formatCompact(monthlyTokenTotal ?? 0)}+`,
 			route: "/rankings",
 		},

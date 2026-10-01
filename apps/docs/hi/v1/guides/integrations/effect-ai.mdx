@@ -1,0 +1,76 @@
+---
+title: "Effect AI SDK"
+icon: "function-square"
+description: "Effect वाली TypeScript applications से Phaseo उपयोग करें।"
+---
+
+आपका app पहले से Effect उपयोग करता हो और Effect service या workflow से Phaseo चाहिए, तो यह गाइड उपयोग करें।
+
+## स्थिति
+
+Phaseo OpenAI-संगत HTTP endpoints देता है। Effect के first-party provider packages तब उपयोगी हैं जब वे आवश्यक provider को सीधे support करते हों; installed Effect OpenAI package में Base URL option न हो, तो Effect HTTP client से Phaseo call करें या [OpenAI SDK](./openai-sdk.mdx) को अपनी Effect layer में wrap करें।
+
+## इंस्टॉल करें
+
+```bash
+npm install effect @effect/platform
+```
+
+## Effect HTTP से Phaseo को कॉल करें
+
+```ts
+import { FetchHttpClient, HttpClient, HttpClientRequest } from "@effect/platform";
+import { Config, Effect, Redacted } from "effect";
+
+const generate = Effect.gen(function* () {
+	const apiKey = yield* Config.redacted("PHASEO_API_KEY");
+	const client = yield* HttpClient.HttpClient;
+
+	const request = HttpClientRequest.post(
+		"https://api.phaseo.app/v1/chat/completions",
+	).pipe(
+		HttpClientRequest.bearerToken(Redacted.value(apiKey)),
+		HttpClientRequest.jsonBody({
+			model: "openai/gpt-5-nano",
+			messages: [{ role: "user", content: "Reply with only: ok" }],
+		}),
+	);
+
+	return yield* client.execute(request).pipe(
+		Effect.flatMap((response) => response.json),
+	);
+});
+
+const runnable = generate.pipe(Effect.provide(FetchHttpClient.layer));
+```
+
+## OpenAI SDK को Effect सेवा में लपेटें
+
+कहीं और official OpenAI SDK उपयोग करते हों, तो Phaseo configuration एक ही layer में रखें:
+
+```ts
+import OpenAI from "openai";
+import { Config, Effect } from "effect";
+
+const makeClient = Effect.gen(function* () {
+	const apiKey = yield* Config.string("PHASEO_API_KEY");
+
+	return new OpenAI({
+		apiKey,
+		baseURL: "https://api.phaseo.app/v1",
+	});
+});
+```
+
+## नोट्स
+
+- OpenAI-संगत calls के लिए `https://api.phaseo.app/v1` उपयोग करें।
+- Model IDs को Phaseo format में रखें, जैसे `openai/gpt-5-nano`।
+- पूरे app में साझा provider abstraction चाहिए, तो custom Effect layer उपयोग करें।
+- उत्पादन में लागू करने से पहले, अपने Effect पैकेज के सटीक संस्करणों के साथ स्ट्रीमिंग और टूल कॉल की जाँच करें।
+
+## संबंधित विषय
+
+- [OpenAI SDK](./openai-sdk.mdx)
+- [AI SDK](./ai-sdk.mdx)
+- [स्ट्रीमिंग](../streaming.mdx)

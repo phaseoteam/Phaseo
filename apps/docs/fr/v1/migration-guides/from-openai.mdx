@@ -1,0 +1,110 @@
+---
+title: "Migrer depuis le SDK OpenAI"
+sidebarTitle: "SDK OpenAI"
+description: "Migrez une intégration SDK OpenAI existante vers Phaseo en modifiant la configuration du client, en vérifiant les identifiants de modèle et en testant les workflows utilisés par votre application."
+icon: "/icons/brands/openai.svg"
+---
+
+Suivez ce guide pour migrer une intégration SDK OpenAI existante vers Phaseo sans réécrire le reste de votre application. Commencez par l’URL de base et la clé API, conservez la requête telle quelle, puis vérifiez chaque modèle et endpoint avant de transférer le trafic de production.
+
+## Modifications à apporter
+
+| Paramètre | Avant | Après |
+| --- | --- | --- |
+| URL de base | Valeur OpenAI par défaut | `https://api.phaseo.app/v1` |
+| Clé API | Clé OpenAI | `PHASEO_API_KEY` |
+| Modèle | Nom du modèle OpenAI | Un identifiant renvoyé par `GET /v1/models` |
+| Code de la requête | Appel SDK existant | Généralement inchangé |
+
+<Steps>
+<Step title="Créer une clé API Phaseo">
+
+Créez une clé dans [Clés Gateway](https://phaseo.app/gateway/keys), puis ajoutez-la à chaque environnement qui exécute votre application.
+
+```bash
+PHASEO_API_KEY=phaseo_v1_sk_...
+```
+
+</Step>
+
+<Step title="Configurer le client pour Phaseo">
+
+Conservez le SDK OpenAI et commencez par modifier uniquement ses identifiants et son URL de base.
+
+<CodeGroup>
+```typescript TypeScript
+import OpenAI from "openai";
+
+const client = new OpenAI({
+  apiKey: process.env.PHASEO_API_KEY,
+  baseURL: "https://api.phaseo.app/v1",
+});
+
+const response = await client.chat.completions.create({
+  model: "openai/gpt-4.1-mini",
+  messages: [{ role: "user", content: "Reply with: migration ready" }],
+});
+```
+
+```python Python
+import os
+from openai import OpenAI
+
+client = OpenAI(
+    api_key=os.environ["PHASEO_API_KEY"],
+    base_url="https://api.phaseo.app/v1",
+)
+
+response = client.chat.completions.create(
+    model="openai/gpt-4.1-mini",
+    messages=[{"role": "user", "content": "Reply with: migration ready"}],
+)
+```
+
+```bash cURL
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-4.1-mini",
+    "messages": [{"role": "user", "content": "Reply with: migration ready"}]
+  }'
+```
+</CodeGroup>
+
+</Step>
+
+<Step title="Vérifier les identifiants de modèle et la couverture des endpoints">
+
+Listez les modèles disponibles via Phaseo au lieu de supposer que tous les anciens alias fonctionnent encore de la même manière.
+
+```bash
+curl https://api.phaseo.app/v1/models \
+  -H "Authorization: Bearer $PHASEO_API_KEY"
+```
+
+Vérifiez chaque workflow de production utilisé, notamment le streaming, les outils, les sorties structurées, les images, l’audio, les fichiers et les lots. Consultez la [référence API](../api-reference/introduction.mdx) pour confirmer l’endpoint correspondant.
+
+</Step>
+
+<Step title="Tester et déployer">
+
+Exécutez les mêmes prompts représentatifs avec vos anciennes et nouvelles configurations. Comparez la forme des réponses, la latence, l’utilisation des tokens, les erreurs et le coût avant de transférer progressivement le trafic.
+
+</Step>
+</Steps>
+
+## Liste de contrôle de migration
+
+- La clé Phaseo est configurée en développement, en préproduction et en production.
+- L’URL de base du client est `https://api.phaseo.app/v1`.
+- Chaque identifiant de modèle de production apparaît dans `GET /v1/models`.
+- Les requêtes en streaming et sans streaming passent en préproduction.
+- Les appels d’outils et les sorties structurées fonctionnent si votre application les utilise.
+- Le retour arrière se limite toujours à un changement de clé et d’endpoint dans la configuration.
+
+## Étapes suivantes
+
+- [Routage et solutions de repli](../guides/routing-and-fallbacks.mdx)
+- [Modèles](../exploring/models.mdx)
+- [Gestion des erreurs](../developers/error-handling.mdx)

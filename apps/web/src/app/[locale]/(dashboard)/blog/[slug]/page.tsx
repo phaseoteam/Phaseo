@@ -10,7 +10,6 @@ import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import {
 	formatAnnouncementDate,
-	formatAnnouncementReadingTime,
 	getAnnouncementParams,
 	getAnnouncementPost,
 	isAnnouncementPublished,
@@ -36,36 +35,36 @@ export async function generateStaticParams(): Promise<Array<{ slug: string }>> {
 export async function generateMetadata(
 	props: AnnouncementPageProps
 ): Promise<Metadata> {
-	const { slug } = await props.params;
+	const { locale, slug } = await props.params;
 	const canPreviewFuturePosts = await canPreviewFutureBlogPosts();
 	const post = await getAnnouncementPost(slug, {
 		includeFuture: canPreviewFuturePosts,
+		locale,
 	});
+	const t = await getTranslations({ locale, namespace: "Content.blog" });
 	const path = `/blog/${slug}`;
 
 	if (!post) {
 		return buildMetadata({
-			title: "Blog",
-			description:
-				"Phaseo blog post with release notes, product details, model data, and rollout guidance.",
+			title: t("title"),
+			description: t("journalDescription"),
 			path,
 		});
 	}
 
 	if (!canPreviewFuturePosts && !isAnnouncementPublished(post.publishedAt)) {
 		return buildMetadata({
-			title: "Blog",
-			description:
-				"Phaseo blog post with release notes, product details, model data, and rollout guidance.",
+			title: t("title"),
+			description: t("journalDescription"),
 			path,
 		});
 	}
 
 	return buildMetadata({
-		title: `${post.title} | Blog`,
+		title: `${post.title} | ${t("title")}`,
 		description: post.description,
 		path,
-		keywords: ["Phaseo blog", ...post.tags],
+		keywords: [t("title"), ...post.tags],
 	});
 }
 
@@ -77,12 +76,14 @@ export default async function AnnouncementPostPage({
 	const canPreviewFuturePosts = await canPreviewFutureBlogPosts();
 	const post = await getAnnouncementPost(slug, {
 		includeFuture: canPreviewFuturePosts,
+		locale,
 	});
 
 	if (!post) {
 		if (!canPreviewFuturePosts) {
 			const previewPost = await getAnnouncementPost(slug, {
 				includeFuture: true,
+				locale,
 			});
 
 			if (previewPost && !isAnnouncementPublished(previewPost.publishedAt)) {
@@ -100,8 +101,8 @@ export default async function AnnouncementPostPage({
 	const isPreview = !isAnnouncementPublished(post.publishedAt);
 	const metaParts = [
 		post.author,
-		formatAnnouncementDate(post.publishedAt),
-		formatAnnouncementReadingTime(post.readingTimeMinutes),
+		formatAnnouncementDate(post.publishedAt, locale),
+		t("readingTime", { minutes: post.readingTimeMinutes }),
 	].filter(Boolean);
 
 	const tocItems: BlogTocItem[] = [];
@@ -137,7 +138,7 @@ export default async function AnnouncementPostPage({
 						{isPreview ? (
 							<div className="flex justify-center">
 								<Badge className="rounded-full border-amber-300 bg-amber-100 text-xs font-semibold text-amber-900 hover:bg-amber-100 dark:border-amber-500/40 dark:bg-amber-500/15 dark:text-amber-200">
-									Preview
+									{t("preview")}
 								</Badge>
 							</div>
 						) : null}
@@ -174,7 +175,7 @@ export default async function AnnouncementPostPage({
 
 					<hr className="border-zinc-200 dark:border-zinc-800" />
 
-					{locale !== "en-GB" ? (
+					{!locale.startsWith("en-") && post.contentLocale !== locale ? (
 						<div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-950 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-100">
 							{t("englishBodyNotice")}
 						</div>

@@ -1,0 +1,91 @@
+---
+title: "Ancrer une extraction complémentaire avec web fetch"
+icon: "file-search"
+description: "Utilisez `phaseo:web_fetch` pour intégrer un texte de page limité à la boucle d’outils et effectuer une extraction complémentaire et une vérification déterministes."
+---
+
+Utilisez cette recette lorsqu’un workflow doit récupérer une page et la convertir en texte limité avant que le modèle n’en extraie, résume ou classe le contenu.
+
+## 1. Utilisez `phaseo:web_fetch` pour ancrer une seule page
+
+`phaseo:web_fetch` est un outil serveur géré par Gateway.
+
+Utilisez-le lorsque vous avez besoin de :
+
+- récupérer directement une URL avec Gateway
+- renvoyer un texte limité dans la boucle d’outils
+- suivre l’utilisation par requête
+- voir la page récupérée dans les journaux de requête
+
+C’est plus adapté qu’une recherche générale si vous connaissez déjà l’URL.
+
+## 2. Formulez la requête explicitement
+
+Schéma courant :
+
+1. demander au modèle d’appeler `phaseo:web_fetch`
+2. laisser Gateway récupérer et normaliser la page
+3. laisser le modèle poursuivre l’extraction à partir du texte renvoyé
+
+Précisez dans le prompt la tâche à effectuer après la récupération :
+
+- extraire des champs
+- résumer une section
+- classer le document
+- vérifier une affirmation
+
+## 3. Limitez volontairement la taille récupérée
+
+Utilisez `max_chars` lorsque la limite par défaut est trop élevée ou trop faible pour la tâche.
+
+Schéma recommandé :
+
+- limite réduite pour extraire un titre ou un résumé
+- limite plus élevée pour extraire des champs structurés
+
+Si la page est très longue, préférez une extraction plus ciblée plutôt qu’une récupération sans limite de taille.
+
+## 4. Vérifiez les journaux, pas seulement la réponse finale
+
+Les détails de la requête doivent indiquer :
+
+- l’URL récupérée
+- l’URL finale après les redirections
+- le titre de la page, s’il est disponible
+- le statut HTTP
+- le type de contenu
+- le nombre de caractères renvoyés
+- l’indicateur de troncature
+
+Utilisez cette vue pour vérifier que le modèle s’est appuyé sur la page attendue.
+
+## 5. Connaissez les limites de l’outil
+
+`phaseo:web_fetch` est volontairement limité.
+
+Il convient pour :
+
+- les pages HTML
+- le texte brut
+- les réponses JSON ou XML simples
+
+Ce n’est pas l’outil adapté pour :
+
+- les fichiers binaires
+- les explorations à grande échelle
+- les vérifications de rendu nécessitant JavaScript
+
+Pour vérifier un rendu navigateur, utilisez un workflow de navigation plutôt que de vous fier uniquement au texte récupéré.
+
+## 6. Déploiement recommandé
+
+1. commencez par un preset ou un chemin d’endpoint
+2. vérifiez les métadonnées de récupération et la troncature dans les journaux
+3. réduisez la portée du prompt si le contenu récupéré est trop large
+4. élargissez-la uniquement une fois l’extraction ancrée stabilisée
+
+## Pages associées
+
+- [Déboguer les requêtes de recherche Web](./web-search-debugging.mdx)
+- [Appels d’outils](../guides/tool-calling.mdx)
+- [Réparer les réponses JSON structurées](./response-healing-for-structured-json.mdx)

@@ -16,15 +16,15 @@ export function generateStaticParams(): Array<{ slug: string }> {
 }
 
 export async function generateMetadata(props: PageProps): Promise<Metadata> {
-	const { slug } = await props.params;
-	const post = getMigrationPost(slug);
+	const { locale, slug } = await props.params;
+	const t = await getTranslations({ locale, namespace: "Content.migrate" });
+	const post = getMigrationPost(slug, locale);
 	const path = `/migrate/${slug}`;
 
 	if (!post) {
 		return buildMetadata({
-			title: "AI Gateway Migration Guide",
-			description:
-				"Step-by-step migration guidance for moving from existing AI providers and gateways to Phaseo Gateway.",
+			title: t("title"),
+			description: t("description"),
 			path,
 		});
 	}
@@ -40,7 +40,8 @@ export async function generateMetadata(props: PageProps): Promise<Metadata> {
 export default async function MigrationPostPage({ params }: PageProps) {
 	const { locale, slug } = await params;
 	const t = await getTranslations({ locale, namespace: "Content.migrate" });
-	const post = getMigrationPost(slug);
+	const tNav = await getTranslations({ locale, namespace: "Common.nav" });
+	const post = getMigrationPost(slug, locale);
 
 	if (!post) {
 		notFound();
@@ -77,23 +78,18 @@ export default async function MigrationPostPage({ params }: PageProps) {
 		"@context": "https://schema.org",
 		"@type": "BreadcrumbList",
 		itemListElement: [
-			{ "@type": "ListItem", position: 1, name: "Home", item: absoluteUrl("/") },
-			{ "@type": "ListItem", position: 2, name: "Migration guides", item: absoluteUrl("/migrate") },
+			{ "@type": "ListItem", position: 1, name: tNav("home"), item: absoluteUrl("/") },
+			{ "@type": "ListItem", position: 2, name: t("title"), item: absoluteUrl("/migrate") },
 			{ "@type": "ListItem", position: 3, name: post.sourceLabel, item: pageUrl },
 		],
 	};
 
 	return (
 		<>
-			{locale !== "en-GB" ? (
-				<div className="container mx-auto mt-6 max-w-5xl px-4 text-sm leading-6 text-amber-900 dark:text-amber-100">
-					<div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-900/60 dark:bg-amber-950/30">{t("englishBodyNotice")}</div>
-				</div>
-			) : null}
 			<JsonLdScript id={`migration-howto-${post.slug}`} data={howTo} />
 			<JsonLdScript id={`migration-faq-${post.slug}`} data={faq} />
 			<JsonLdScript id={`migration-breadcrumbs-${post.slug}`} data={breadcrumbs} />
-			<MigrationPostView post={post} />
+			<MigrationPostView post={post} locale={locale} />
 		</>
 	);
 }

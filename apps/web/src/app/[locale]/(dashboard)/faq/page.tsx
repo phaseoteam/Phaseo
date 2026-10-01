@@ -10,7 +10,7 @@ export async function generateMetadata({ params }: LayoutProps<"/[locale]">): Pr
 	const t = await getTranslations({ locale: locale as PublicLocale, namespace: "Site.faq" });
 	return buildMetadata({
 		title: t("title"),
-		description: t("intro"),
+		description: t("metadataDescription"),
 		path: "/faq",
 		keywords: ["AI model comparison FAQ", "AI model pricing FAQ", "AI benchmarks FAQ", "AI gateway FAQ", "BYOK FAQ"],
 	});

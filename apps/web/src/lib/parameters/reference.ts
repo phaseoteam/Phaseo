@@ -179,3 +179,7 @@ export function getParameterReference(paramId: string): ParameterReference {
 		}
 	);
 }
+
+export function getParameterReferenceTranslationKey(paramId: string): string {
+	return Object.hasOwn(PARAMETER_REFERENCE, paramId) ? paramId : "other";
+}

@@ -294,8 +294,7 @@ export default async function Page() {
 		applicationCategory: "DeveloperApplication",
 		operatingSystem: "Web",
 		url: absoluteUrl("/"),
-		description:
-			"Open-source AI gateway and model intelligence database for comparing AI models, providers, pricing, benchmarks, and reliability.",
+		description: t("description"),
 	};
 	const websiteSchema = {
 		"@context": "https://schema.org",
@@ -303,8 +302,7 @@ export default async function Page() {
 		name: PREFERRED_SITE_NAME,
 		alternateName: SITE_ALTERNATE_NAME,
 		url: absoluteUrl("/"),
-		description:
-			"Compare AI models, providers, pricing, benchmarks, and gateway reliability data.",
+		description: t("description"),
 		potentialAction: {
 			"@type": "SearchAction",
 			target: `${absoluteUrl("/models")}?q={search_term_string}`,

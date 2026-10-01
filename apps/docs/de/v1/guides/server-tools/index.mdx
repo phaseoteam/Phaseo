@@ -1,0 +1,153 @@
+---
+icon: "server-cog"
+title: "Serverwerkzeuge"
+description: "Lass Modelle während einer Anfrage von Phaseo betriebene Tools aufrufen."
+---
+
+Server-Tools werden während einer Modellanfrage von Phaseo ausgeführt. Das Modell entscheidet, wann es sie aufruft; Phaseo führt sie serverseitig aus und gibt das Ergebnis an den Modellablauf zurück.
+
+Nutze Server-Tools, wenn das Modell die aktuelle Uhrzeit, Webkontext, abgerufenen Seitentext oder den Rat eines zweiten Modells benötigt, ohne einen eigenen Tool-Executor hinzuzufügen.
+
+<Note>
+Server-Tools befinden sich in der Beta. Anfrageformate und Ergebnisdaten können sich ändern, wenn sich die Provider-Unterstützung weiterentwickelt.
+</Note>
+
+## Verfügbare Tools
+
+| Tool | Typ | Verwendung |
+| --- | --- | --- |
+| Datum und Uhrzeit | `phaseo:datetime` | Aktuelles Datum und Uhrzeit in bis zu 5 Zeitzonen |
+| Websuche | `phaseo:web_search` | Modellgesteuerte Websuchen während einer Anfrage |
+| Webabruf | `phaseo:web_fetch` | Abrufen und Extrahieren von Text bestimmter URLs |
+| Advisor | `phaseo:advisor` | Ein weiteres Modell während der Generierung konsultieren |
+| Subagent | `phaseo:subagent` | Gezielte Aufgaben an ein Arbeitsmodell delegieren |
+| Fusion | `phaseo:fusion` | Parallele Analyse mit anschließender Synthese durch das Modell |
+| Modelle suchen | `phaseo:search_models` | Geeignete Modelle im aktuellen Katalog finden |
+| Bildgenerierung | `phaseo:image_generation` | Bilder über den Tool-Ablauf des Modells erstellen |
+| Patch anwenden | `phaseo:apply_patch` | Validierte Datei-Patches über die Responses-API erstellen |
+
+## Funktionsweise der Server-Tools
+
+1. Füge dem Array `tools` ein oder mehrere Server-Tools hinzu.
+2. Das Modell entscheidet, ob es ein Tool benötigt, und gibt einen Tool-Aufruf aus.
+3. Phaseo fängt den Aufruf des Server-Tools ab, führt es aus und sendet das Ergebnis an das Modell zurück.
+4. Das Modell fährt fort und formuliert die endgültige Antwort.
+
+Server-Tools lassen sich mit eigenen Funktionstools kombinieren. Phaseo führt nur die Server-Tools aus; reguläre `function`-Aufrufe verarbeitet weiterhin deine Anwendung.
+
+## Schnellstart
+
+```bash
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-5-nano",
+    "messages": [
+      { "role": "user", "content": "What are the latest AI policy updates this week?" }
+    ],
+    "tools": [
+      { "type": "phaseo:web_search" },
+      { "type": "phaseo:datetime", "parameters": { "timezones": ["Europe/London", "UTC"] } }
+    ]
+  }'
+```
+
+## Mit Funktionstools kombinieren
+
+```json
+{
+  "model": "openai/gpt-5-nano",
+  "messages": [
+    { "role": "user", "content": "Find recent funding news and save the best item." }
+  ],
+  "tools": [
+    { "type": "phaseo:web_search", "parameters": { "max_results": 3 } },
+    {
+      "type": "function",
+      "function": {
+        "name": "save_research_item",
+        "description": "Save a selected research item",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "title": { "type": "string" },
+            "url": { "type": "string" }
+          },
+          "required": ["title", "url"]
+        }
+      }
+    }
+  ]
+}
+```
+
+Ruft das Modell `phaseo:web_search` auf, führt Phaseo diesen Aufruf automatisch aus. Bei `save_research_item` empfängt deine Anwendung den Funktionsaufruf und muss das Funktionsergebnis in einer Folgeanfrage zurückgeben.
+
+## Unterstützte Endpunkte
+
+Server-Tools werden unterstützt unter:
+
+- `/v1/chat/completions`
+- `/v1/responses`
+- `/v1/messages`
+
+Streaming-Anfragen werden unterstützt. Bei gatewayverwalteten Server-Tools kann Phaseo den vorgelagerten Tool-Aufruf-Zug materialisieren, das Tool ausführen, den Ablauf fortsetzen und einen synthetischen Stream für die endgültige Antwort ausgeben.
+
+## Nutzungsverfolgung
+
+Die Nutzung von Server-Tools wird unter `usage.server_tool_use` gemeldet:
+
+```json
+{
+  "usage": {
+    "input_tokens": 105,
+    "output_tokens": 250,
+    "server_tool_use": {
+      "datetime_requests": 1,
+      "web_search_requests": 2,
+      "web_search_results": 8,
+      "web_fetch_requests": 1,
+      "advisor_requests": 1,
+      "subagent_requests": 1,
+      "fusion_requests": 1,
+      "search_models_requests": 1,
+      "image_generation_requests": 1
+    }
+  }
+}
+```
+
+Wenn sie in den Modellpreiskarten konfiguriert sind, können für die Abrechnung auch Server-Tool-Meter wie `server_tool_web_search_requests`, `server_tool_web_search_extra_results`, `server_tool_web_fetch_requests`, `server_tool_advisor_requests`, `server_tool_image_generation_requests`, `native_web_search_requests` und `native_web_fetch_requests` verwendet werden.
+
+## Tool-Seiten
+
+<Columns cols={2}>
+  <Card title="Datum und Uhrzeit" icon="clock" href="./datetime.mdx">
+    Gib dem Modell das aktuelle Datum und die Uhrzeit.
+  </Card>
+  <Card title="Websuche" icon="search" href="./web-search.mdx">
+    Lass das Modell im Web suchen, wenn es aktuelle Informationen benötigt.
+  </Card>
+  <Card title="Webabruf" icon="file-search" href="./web-fetch.mdx">
+    Lass das Modell bestimmte URLs abrufen und lesen.
+  </Card>
+  <Card title="Advisor" icon="message-square" href="./advisor.mdx">
+    Lass ein Modell während der Generierung ein anderes Modell um Rat fragen.
+  </Card>
+  <Card title="Subagent" icon="cpu" href="./subagent.mdx">
+    Lass das Modell gezielte Aufgaben an ein Arbeitsmodell delegieren.
+  </Card>
+  <Card title="Fusion" icon="sparkles" href="./fusion.mdx">
+	Führe parallele Modellanalysen durch und fasse die Ergebnisse zusammen.
+  </Card>
+	<Card title="Modelle suchen" icon="list-filter" href="./search-models.mdx">
+		Lass das Modell im aktuellen Phaseo-Katalog nach einem passenden Modell suchen.
+	</Card>
+  <Card title="Bildgenerierung" icon="image" href="./image-generation.mdx">
+    Lass das Modell während der Antwort Bilder erstellen.
+  </Card>
+	<Card title="Patch anwenden" icon="file-diff" href="./apply-patch.mdx">
+		Erstelle einen validierten Patch zum Anlegen, Ändern oder Löschen.
+	</Card>
+</Columns>

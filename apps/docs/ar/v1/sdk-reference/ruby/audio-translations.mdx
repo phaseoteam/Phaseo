@@ -1,0 +1,29 @@
+---
+icon: "arrow-right-left"
+title: "الترجمات"
+description: "استدعِ /audio/translations باستخدام SDK Ruby."
+---
+
+**الطرق**: `client.generate_translation(...)` أو `client.create_translation(...)`.
+
+### مثال
+```ruby
+require 'phaseo_sdk'
+
+client = PhaseoSdk::Phaseo.new(api_key: ENV.fetch("PHASEO_API_KEY"))
+translated = client.generate_translation(
+  model: 'openai/gpt-4o-translate',
+  audio_b64: 'base64_audio_data'
+)
+```
+
+### المعلمات الأساسية
+- `model` (مطلوب): معرّف نموذج يدعم الترجمة.
+- `audio_url` أو `audio_b64` (مطلوب): بيانات الصوت المطلوب ترجمتها.
+- `prompt`: سياق اختياري لتوجيه الترجمة.
+- `temperature` (0–2): عشوائية أخذ العينات.
+- `response_format`: ‏`json` و`text` و`srt` و`verbose_json` وغيرها.
+
+### القيمة المعادة
+`AudioTranscriptionResponse`
+

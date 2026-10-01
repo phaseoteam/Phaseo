@@ -1,0 +1,64 @@
+---
+title: "Ruby Agent SDK से आंतरिक नोट्स का सार बनाएँ"
+icon: "notebook-tabs"
+description: "स्थानीय notes खोजकर Phaseo Gateway के ज़रिए सीमित सार लौटाने के लिए Ruby Agent SDK उपयोग करें।"
+---
+
+किसी Ruby सेवा को orchestration कहीं और भेजे बिना छोटा आंतरिक-notes assistant चाहिए, तो यह रेसिपी उपयोग करें।
+
+## 1. SDK तैयार करें
+
+<Note type="warning">Ruby Agent SDK पैकेज अभी RubyGems पर उपलब्ध नहीं है।[सोर्स से इंस्टॉल करने के निर्देश](../sdk-reference/ruby/agent-sdk-installation.mdx) देखें।</Note>
+
+## 2. नोट्स खोजने का टूल तय करें
+
+```ruby
+lookup_note = PhaseoAgentSdk.define_tool(
+  PhaseoAgentSdk::Tool.new(
+    id: "lookup-note",
+    description: "Look up one internal note by topic.",
+    parameters: {
+      type: "object",
+      properties: {
+        topic: { type: "string" },
+      },
+      required: ["topic"],
+    },
+    execute: lambda do |input, _context|
+      {
+        topic: input["topic"],
+        summary: "Presets centralize routing defaults so app code stays smaller.",
+      }
+    end
+  )
+)
+```
+
+## 3. एजेंट बनाएँ और चलाएँ
+
+```ruby
+agent = PhaseoAgentSdk.create_agent(
+  id: "notes-agent",
+  model: "openai/gpt-5.4-nano",
+  instructions: "Use tools when helpful and answer in one short paragraph.",
+  tools: [lookup_note]
+)
+
+result = agent.run(
+  input: "Summarize our note about presets.",
+  client: PhaseoAgentSdk.create_gateway_agent_client
+)
+
+puts result.output
+```
+
+## यह रेसिपी कब उपयुक्त है
+
+- tool input सरल और नियतात्मक हों
+- Ruby ऐप पहले से डेटा स्रोत का स्वामी हो
+- सीमित workflow के लिए आसान local-tool pattern चाहिए
+
+## संबंधित विषय
+
+- [Ruby Agent SDK](../sdk-reference/ruby/agent-sdk.mdx)
+- [टिकाऊ एजेंट loop बनाएँ](./agent-sdk-durable-loop.mdx)

@@ -1,6 +1,7 @@
 "use client"
 
 import { type ReactNode, useEffect, useState } from "react"
+import { useTranslations } from "next-intl"
 import { Plus, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -47,6 +48,7 @@ function FieldRow({
 }
 
 export default function BenchmarksTab({ modelId, onBenchmarksChange }: BenchmarksTabProps) {
+  const t = useTranslations("Common.ui.modelEditor")
   const [benchmarks, setBenchmarks] = useState<BenchmarkResult[]>([])
   const [availableBenchmarks, setAvailableBenchmarks] = useState<Array<{ id: string; name: string }>>([])
   const [newBenchmarkId, setNewBenchmarkId] = useState("")
@@ -130,9 +132,9 @@ export default function BenchmarksTab({ modelId, onBenchmarksChange }: Benchmark
     <div className="space-y-5">
       <div className="flex items-center justify-between">
         <div>
-          <Label className="text-sm font-semibold">Benchmark Results</Label>
+          <Label className="text-sm font-semibold">{t("benchmarkResults")}</Label>
           <p className="text-xs text-muted-foreground">
-            Changes are staged locally and saved when you click Save Benchmarks.
+            {t("benchmarkResultsDescription")}
           </p>
         </div>
         <Button
@@ -145,12 +147,12 @@ export default function BenchmarksTab({ modelId, onBenchmarksChange }: Benchmark
             ])
           }
         >
-          <Plus className="h-4 w-4 mr-1" /> Add
+          <Plus className="h-4 w-4 mr-1" /> {t("add")}
         </Button>
       </div>
 
       <div className="rounded-lg border p-3 space-y-2">
-        <Label className="text-sm font-semibold">Create and Attach Benchmark</Label>
+        <Label className="text-sm font-semibold">{t("createAndAttachBenchmark")}</Label>
         <div className="grid gap-2 sm:grid-cols-2">
           <Input
             value={newBenchmarkId}
@@ -160,7 +162,7 @@ export default function BenchmarksTab({ modelId, onBenchmarksChange }: Benchmark
           <Input
             value={newBenchmarkName}
             onChange={(event) => setNewBenchmarkName(event.target.value)}
-            placeholder="Benchmark name"
+            placeholder={t("benchmarkName")}
           />
         </div>
         <div className="flex justify-end">
@@ -171,14 +173,14 @@ export default function BenchmarksTab({ modelId, onBenchmarksChange }: Benchmark
             onClick={handleCreateBenchmark}
             disabled={creatingBenchmark || !newBenchmarkId.trim() || !newBenchmarkName.trim()}
           >
-            {creatingBenchmark ? "Creating..." : "Create and attach"}
+            {creatingBenchmark ? t("creating") : t("createAndAttach")}
           </Button>
         </div>
       </div>
 
       {benchmarks.length === 0 ? (
         <div className="rounded-md border border-dashed p-4 text-sm text-muted-foreground">
-          No benchmark entries yet.
+          {t("noBenchmarkEntries")}
         </div>
       ) : null}
 
@@ -186,19 +188,19 @@ export default function BenchmarksTab({ modelId, onBenchmarksChange }: Benchmark
         {benchmarks.map((benchmark, index) => (
           <div key={benchmark.id} className="border rounded-lg p-4 space-y-3">
             <div className="flex items-center justify-between">
-              <div className="text-sm font-medium">Entry {index + 1}</div>
-              <Button variant="ghost" size="icon" onClick={() => removeBenchmark(benchmark.id)}>
+              <div className="text-sm font-medium">{t("entry", { index: index + 1 })}</div>
+              <Button variant="ghost" size="icon" aria-label={t("removeBenchmark", { index: index + 1 })} onClick={() => removeBenchmark(benchmark.id)}>
                 <Trash2 className="h-4 w-4" />
               </Button>
             </div>
 
-            <FieldRow label="Benchmark">
+            <FieldRow label={t("benchmark")}>
               <Select
                 value={benchmark.benchmark_id}
                 onValueChange={(value) => updateBenchmark(benchmark.id, "benchmark_id", value)}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select benchmark" />
+                  <SelectValue placeholder={t("selectBenchmark")} />
                 </SelectTrigger>
                 <SelectContent>
                   {availableBenchmarks.map((b) => (
@@ -210,15 +212,15 @@ export default function BenchmarksTab({ modelId, onBenchmarksChange }: Benchmark
               </Select>
             </FieldRow>
 
-            <FieldRow label="Score">
+            <FieldRow label={t("score")}>
               <Input
                 value={benchmark.score}
                 onChange={(e) => updateBenchmark(benchmark.id, "score", e.target.value)}
-                placeholder="Score"
+                placeholder={t("score")}
               />
             </FieldRow>
 
-            <FieldRow label="Source link">
+            <FieldRow label={t("sourceLink")}>
               <Input
                 value={benchmark.source_link || ""}
                 onChange={(e) => updateBenchmark(benchmark.id, "source_link", e.target.value)}
@@ -226,21 +228,21 @@ export default function BenchmarksTab({ modelId, onBenchmarksChange }: Benchmark
               />
             </FieldRow>
 
-            <FieldRow label="Variant">
+            <FieldRow label={t("variant")}>
               <Input
                 value={benchmark.variant || ""}
                 onChange={(e) => updateBenchmark(benchmark.id, "variant", e.target.value)}
-                placeholder="e.g., Max"
+                placeholder={t("exampleMax")}
               />
             </FieldRow>
 
-            <FieldRow label="Self-reported">
+            <FieldRow label={t("selfReported")}>
               <label className="flex items-center gap-2 text-sm">
                 <Checkbox
                   checked={benchmark.is_self_reported}
                   onCheckedChange={(checked) => updateBenchmark(benchmark.id, "is_self_reported", checked === true)}
                 />
-                <span>Benchmark result is self-reported</span>
+                <span>{t("benchmarkSelfReported")}</span>
               </label>
             </FieldRow>
           </div>

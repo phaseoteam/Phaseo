@@ -14,24 +14,14 @@ import {
 	YAxis,
 } from "recharts";
 import type { ModelSuccessPoint } from "@/lib/fetchers/models/getModelPerformance";
+import { useLocale, useTranslations } from "next-intl";
 
-const successChartConfig: ChartConfig = {
-	overall: {
-		label: "Model uptime",
-		color: "hsl(142, 76%, 36%)",
-	},
-	worst: {
-		label: "Least stable provider",
-		color: "hsl(340, 82%, 52%)",
-	},
-};
-
-function formatBucketLabel(bucket: string) {
+function formatBucketLabel(bucket: string, locale: string) {
 	const date = new Date(bucket);
 	if (!Number.isFinite(date.getTime())) {
 		return bucket;
 	}
-	return date.toLocaleTimeString("en-GB", {
+	return date.toLocaleTimeString(locale, {
 		hour: "2-digit",
 		minute: "2-digit",
 		hour12: false,
@@ -57,6 +47,7 @@ function formatUptime(value: number | null | undefined) {
 export function buildUptimeChartData(
 	successSeries: ModelSuccessPoint[],
 	now = new Date(),
+	locale = "en-GB",
 ) {
 	const pointsByBucket = new Map(
 		successSeries.map((point) => [toHourlyBucket(point.bucket), point]),
@@ -71,7 +62,7 @@ export function buildUptimeChartData(
 		const requests = point?.requests ?? 0;
 
 		return {
-			time: formatBucketLabel(bucket),
+			time: formatBucketLabel(bucket, locale),
 			overall: getDisplayedUptime(point?.overallSuccessPct, requests),
 			worst: point
 				? getDisplayedUptime(point.worstProviderSuccessPct, requests)
@@ -93,7 +84,19 @@ export default function ModelSuccessChart({
 	showLeastStableProvider = true,
 	showTitle = true,
 }: ModelSuccessChartProps) {
-	const chartData = buildUptimeChartData(successSeries).map((point) => ({
+	const locale = useLocale();
+	const t = useTranslations("Catalogue.modelDetail.uptime");
+	const successChartConfig: ChartConfig = {
+		overall: {
+			label: t("title"),
+			color: "hsl(142, 76%, 36%)",
+		},
+		worst: {
+			label: t("leastStableProviderLabel"),
+			color: "hsl(340, 82%, 52%)",
+		},
+	};
+	const chartData = buildUptimeChartData(successSeries, new Date(), locale).map((point) => ({
 		...point,
 		worst: showLeastStableProvider ? point.worst : null,
 	}));
@@ -119,27 +122,31 @@ export default function ModelSuccessChart({
 		<div className="grid gap-4 rounded-lg border border-border/70 bg-background p-4 sm:grid-cols-[10rem_minmax(0,1fr)] sm:items-center">
 			<div className="min-w-0">
 				{showTitle ? (
-					<h3 className="text-sm font-medium text-foreground">Model uptime</h3>
+					<h3 className="text-sm font-medium text-foreground">{t("title")}</h3>
 				) : null}
 				<p className="mt-1 text-3xl font-semibold tracking-tight text-emerald-600 tabular-nums dark:text-emerald-400">
 					{formatUptime(summaryUptime)}
 				</p>
-				<p className="mt-1 text-xs text-muted-foreground">Last 24 hours</p>
+				<p className="mt-1 text-xs text-muted-foreground">{t("last24Hours")}</p>
 				<p className="mt-0.5 text-xs text-muted-foreground">
 					{totalRequests > 0
-						? `${totalRequests.toLocaleString()} request${totalRequests === 1 ? "" : "s"} observed`
-						: "No requests observed"}
+						? t("requestsObserved", { count: totalRequests.toLocaleString(locale) })
+						: t("noRequests")}
 				</p>
 			</div>
 			<div className="min-w-0">
 				<div className="mb-1 flex items-center gap-1.5 text-[11px] text-muted-foreground">
 					<span className="size-1.5 rounded-full bg-emerald-500" aria-hidden="true" />
-					Uptime per hour
+					{t("perHour")}
 				</div>
 				<div
 					className="h-[112px] w-full"
 					role="img"
-					aria-label={`Hourly model uptime over the last 24 hours. ${formatUptime(summaryUptime)} uptime from ${totalRequests.toLocaleString()} requests.`}
+					aria-label={t("chartLabel", {
+						hours: 24,
+						uptime: formatUptime(summaryUptime),
+						count: totalRequests.toLocaleString(locale),
+					})}
 				>
 				<ChartContainer
 					config={successChartConfig}
@@ -177,14 +184,14 @@ export default function ModelSuccessChart({
 											</p>
 											<p className="text-sm">
 												<span className="font-semibold">
-													Uptime:
+													{t("tooltipUptime")}
 												</span>{" "}
 												{formatUptime(payload[0].payload.overall)}
 											</p>
 											{showLeastStableProvider ? (
 												<p className="text-sm">
 													<span className="font-semibold">
-														Worst provider:
+													{t("tooltipWorstProvider")}
 													</span>{" "}
 													{formatUptime(payload[0].payload.worst)}
 												</p>

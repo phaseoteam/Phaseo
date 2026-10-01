@@ -1,0 +1,70 @@
+---
+icon: "search-check"
+title: "Consulta de geração"
+description: "Chame /generations para recuperar uma geração anterior."
+---
+
+**Método**: `client.get_generation(...)`
+
+### Exemplo
+
+```ruby
+require 'phaseo_sdk'
+
+client = PhaseoSdk::Phaseo.new(api_key: ENV.fetch("PHASEO_API_KEY"))
+
+record = client.get_generation('G-01ABC...')
+```
+
+### Parâmetros
+
+- `id` (string, obrigatório): ID da solicitação retornado por uma chamada anterior.
+
+### Retorna
+
+Registro de geração (JSON)
+
+Se o gateway armazenou os detalhes completos da solicitação, o registro retornado também inclui `replay_supported` e `replay_request`, permitindo reenviar a carga capturada ao endpoint original para uma nova execução controlada.
+
+Os campos de tempo seguem a semântica compartilhada do gateway:
+
+- `latency_ms`: tempo até o primeiro token ou o primeiro byte/quadro de saída, quando registrado
+- `generation_ms`: tempo de geração após a latência, quando registrado
+
+```json
+{
+  "created_at": "2026-05-05T12:00:00.000Z",
+  "request_id": "G-01ABC123",
+  "team_id": "team-123",
+  "app_id": "app-123",
+  "endpoint": "chat/completions",
+  "model_id": "openai/gpt-4o-mini",
+  "provider": "openai",
+  "native_response_id": "chatcmpl-123",
+  "stream": false,
+  "byok": false,
+  "status_code": 200,
+  "success": true,
+  "error_code": null,
+  "error_message": null,
+  "latency_ms": 1500,
+  "generation_ms": 1400,
+  "usage": {
+    "prompt_tokens": 9,
+    "completion_tokens": 9,
+    "total_tokens": 18
+  },
+  "cost_nanos": 1000000,
+  "currency": "USD",
+  "pricing_lines": [],
+  "key_id": "key-123",
+  "throughput": null,
+  "replay_supported": true,
+  "replay_request": {
+    "model": "openai/gpt-4o-mini",
+    "messages": [
+      { "role": "user", "content": "Say hello" }
+    ]
+  }
+}
+```

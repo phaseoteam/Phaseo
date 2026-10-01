@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useTranslations } from "next-intl";
 import {
 	CartesianGrid,
 	ResponsiveContainer,
@@ -22,36 +23,33 @@ type MetricKey = "throughput" | "latency" | "generation";
 const METRIC_CONFIG: Record<
 	MetricKey,
 	{
-		label: string;
+		labelKey: string;
 		unit: string;
 		valueKey: keyof ModelTimeOfDayPoint;
 		color: string;
-		format: (value: number | null) => string;
+		format: (value: number | null) => string | null;
 	}
 > = {
 	throughput: {
-		label: "Throughput",
+		labelKey: "throughput",
 		unit: "t/s",
 		valueKey: "avgThroughput",
 		color: "hsl(189, 90%, 45%)",
-		format: (value) =>
-			value != null ? `${value.toFixed(2)} t/s` : "No data",
+		format: (value) => value != null ? `${value.toFixed(2)} t/s` : null,
 	},
 	latency: {
-		label: "Latency",
+		labelKey: "latency",
 		unit: "ms",
 		valueKey: "avgLatencyMs",
 		color: "hsl(32, 95%, 44%)",
-		format: (value) =>
-			value != null ? `${Math.round(value)} ms` : "No data",
+		format: (value) => value != null ? `${Math.round(value)} ms` : null,
 	},
 	generation: {
-		label: "E2E latency",
+		labelKey: "endToEndLatency",
 		unit: "ms",
 		valueKey: "avgGenerationMs",
 		color: "hsl(262, 83%, 58%)",
-		format: (value) =>
-			value != null ? `${Math.round(value)} ms` : "No data",
+		format: (value) => value != null ? `${Math.round(value)} ms` : null,
 	},
 };
 
@@ -66,6 +64,7 @@ interface ModelTimeOfDayChartProps {
 export default function ModelTimeOfDayChart({
 	timeOfDay,
 }: ModelTimeOfDayChartProps) {
+	const t = useTranslations("Catalogue.modelDetail.performance");
 	const [selectedMetric, setSelectedMetric] =
 		useState<MetricKey>("throughput");
 
@@ -93,6 +92,7 @@ export default function ModelTimeOfDayChart({
 	);
 	const hasValues = valueCount > 0;
 	const shouldShowDot = valueCount === 1;
+	const metricLabel = t(METRIC_CONFIG[selectedMetric].labelKey as never);
 
 	if (!timeOfDay.length) {
 		return null;
@@ -103,10 +103,10 @@ export default function ModelTimeOfDayChart({
 			<div className="flex flex-wrap items-center justify-between gap-3">
 				<div>
 					<p className="text-xs uppercase tracking-wide text-muted-foreground">
-						Time-of-day performance
+						{t("timeOfDay.title")}
 					</p>
 					<h3 className="text-lg font-semibold text-foreground">
-						{metricConfig.label} by hour
+						{t("timeOfDay.metricByHour", { metric: metricLabel } as never)}
 					</h3>
 				</div>
 				<div className="flex gap-2">
@@ -122,7 +122,7 @@ export default function ModelTimeOfDayChart({
 								size="sm"
 								onClick={() => setSelectedMetric(option)}
 							>
-								{METRIC_CONFIG[option].label}
+								{t(METRIC_CONFIG[option].labelKey as never)}
 							</Button>
 						)
 					)}
@@ -134,7 +134,7 @@ export default function ModelTimeOfDayChart({
 					<ChartContainer
 						config={{
 							value: {
-								label: metricConfig.label,
+								label: metricLabel,
 								color: metricConfig.color,
 							},
 						}}
@@ -184,9 +184,9 @@ export default function ModelTimeOfDayChart({
 													)}
 												</p>
 												<p className="text-sm font-medium">
-													{metricConfig.format(
-														point.payload.value
-													)}
+											{metricConfig.format(
+												point.payload.value
+											) ?? t("noData")}
 												</p>
 											</div>
 										);
@@ -200,10 +200,10 @@ export default function ModelTimeOfDayChart({
 									dot={
 										shouldShowDot
 											? {
-													stroke: metricConfig.color,
-													fill: metricConfig.color,
-													r: 3,
-											  }
+												stroke: metricConfig.color,
+												fill: metricConfig.color,
+												r: 3,
+											}
 											: false
 									}
 									connectNulls
@@ -213,13 +213,12 @@ export default function ModelTimeOfDayChart({
 					</ChartContainer>
 				) : (
 					<div className="flex h-full items-center justify-center rounded-lg border border-dashed border-border text-sm text-muted-foreground">
-						No time-of-day samples captured for the selected range.
+						{t("timeOfDay.noSamples")}
 					</div>
 				)}
 			</div>
 			<p className="mt-3 text-xs text-muted-foreground">
-				All times in UTC. Aggregated from hourly medians captured during
-				the selected reporting window.
+				{t("timeOfDay.footer")}
 			</p>
 		</Card>
 	);

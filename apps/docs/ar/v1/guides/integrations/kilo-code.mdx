@@ -1,0 +1,66 @@
+---
+title: "Kilo Code"
+description: "اربط Kilo Code بـ Phaseo باستخدام مزوّد مخصص متوافق مع OpenAI."
+---
+
+تنشئ Phaseo CLI مفتاحًا مخصصًا لـ Kilo Code وتديره. أضفه كمزوّد مخصص في الإضافة.
+
+## إنشاء بيانات الاعتماد
+
+```bash
+phaseo login
+phaseo integrations setup kilo-code --model anthropic/claude-sonnet-4.6
+```
+
+## تهيئة Kilo Code
+
+1. افتح Kilo Code في VS Code.
+2. اختر رمز الإعدادات، وافتح **Providers**، ثم اختر **Add custom provider**.
+3. أدخل القيم التالية:
+
+| حقل Kilo Code | القيمة |
+| --- | --- |
+| Provider ID | `phaseo` |
+| Display name | `Phaseo` |
+| Provider API | **OpenAI Compatible** |
+| Base URL | `https://api.phaseo.app/v1` |
+| API key | ناتج الأمر `phaseo integrations credential kilo-code` |
+
+4. إذا لم يُكتشف أي نموذج، فأضف المعرّف `anthropic/claude-sonnet-4.6` يدويًا.
+5. اختر **Submit**، ثم اختر نموذج Phaseo.
+
+يعرض Kilo الاختيار بالشكل `phaseo/anthropic/claude-sonnet-4.6`: تمثل `phaseo` معرّف المزوّد المحلي، ويُرسل الباقي إلى Phaseo باعتباره معرّف النموذج.
+
+## التحقق
+
+اطلب من Kilo Code الرد بـ `PHASEO_KILO_OK` وتحقق من ظهور الطلب في نشاط Phaseo.
+
+## الإزالة
+
+احذف المزوّد المخصص في Kilo Code، ثم شغّل:
+
+```bash
+phaseo integrations remove kilo-code
+```
+
+لا تستطيع CLI مسح مساحة التخزين الخاصة بالإضافة، لكن الإزالة تلغي المفتاح.
+
+## استكشاف الأخطاء وإصلاحها
+
+### لم يتم اكتشاف أي نماذج
+
+أضف النموذج يدويًا. لا يلزم اكتشافه عبر `/models`.
+
+### فشل المصادقة
+
+استبدل القيمة المحفوظة بالناتج من `phaseo integrations credential kilo-code` وأبقِ عنوان URL الأساسي كما هو تمامًا.
+
+### يبدو اسم النموذج مختلفًا
+
+اختر `phaseo/<Phaseo model ID>` في Kilo، لكن لا تضف `phaseo/` إلى حقل معرّف النموذج.
+
+## مواضيع ذات صلة
+
+- [النماذج المخصصة في Kilo Code](https://kilo.ai/docs/code-with-ai/agents/custom-models)
+- [مساعدو البرمجة](./coding-assistants.mdx)
+- [النماذج](../../api-reference/endpoint/models.mdx)

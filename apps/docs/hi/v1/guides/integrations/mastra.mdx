@@ -1,0 +1,44 @@
+---
+title: "Mastra"
+icon: "workflow"
+description: "Mastra agents और workflows में Phaseo models उपयोग करें।"
+---
+
+Mastra AI SDK providers के साथ काम करता है, इसलिए Phaseo पर point करने वाला OpenAI-संगत provider बनाना सबसे आसान है।
+
+## इंस्टॉल करें
+
+```bash
+npm install @mastra/core @ai-sdk/openai ai
+```
+
+## एजेंट कॉन्फ़िगर करें
+
+```ts
+import { Agent } from "@mastra/core/agent";
+import { createOpenAI } from "@ai-sdk/openai";
+
+const phaseo = createOpenAI({
+	apiKey: process.env.PHASEO_API_KEY,
+	baseURL: "https://api.phaseo.app/v1",
+	compatibility: "compatible",
+});
+
+export const agent = new Agent({
+	name: "support-agent",
+	instructions: "Answer in two short paragraphs.",
+	model: phaseo("openai/gpt-5-nano"),
+});
+```
+
+## नोट्स
+
+- केवल Base URL उपयोग करें, `/chat/completions` या `/responses` नहीं।
+- Mastra agent behavior AI SDK provider path पर निर्भर है। Production से पहले tools और streaming जाँचें।
+- Provider preference चाहिए, तो request level या presets के ज़रिए Phaseo routing controls उपयोग करें।
+
+## संबंधित विषय
+
+- [AI SDK](./ai-sdk.mdx)
+- [Presets](../presets.mdx)
+- [टूल कॉलिंग](../tool-calling.mdx)

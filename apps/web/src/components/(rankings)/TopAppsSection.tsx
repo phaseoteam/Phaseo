@@ -1,7 +1,9 @@
 import { AppsUsageList } from "@/components/(rankings)/AppsUsageList";
 import { fetchFrontendRankingTopApps } from "@/lib/fetchers/frontend/fetchRankingSections";
+import { getTranslations } from "next-intl/server";
 
 export async function TopAppsSection() {
+	const t = await getTranslations("Catalogue.rankings");
 	const [today, week, month] = await Promise.all([
 		fetchFrontendRankingTopApps("today", 20).catch(() => ({ data: [] })),
 		fetchFrontendRankingTopApps("week", 20).catch(() => ({ data: [] })),
@@ -20,8 +22,8 @@ export async function TopAppsSection() {
 				}}
 				defaultRange="week"
 				showHeader
-				title="Top Apps"
-				subtitle="Public applications ranked by model-token usage through Phaseo."
+				title={t("topApps")}
+				subtitle={t("topAppsSubtitle")}
 			/>
 		</section>
 	);

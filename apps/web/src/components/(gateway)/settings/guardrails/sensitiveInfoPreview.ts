@@ -161,23 +161,41 @@ function buildCustomRulePlaceholder(name: string): string {
 	return `[${token || "CUSTOM_PATTERN"}]`;
 }
 
+export type SensitiveInfoRuleIssueKey =
+	| "customPatternNameRequired"
+	| "customPatternRegexRequired"
+	| "customPatternInvalidRegex";
+
+export type SensitiveInfoRuleIssueTranslator = (
+	key: SensitiveInfoRuleIssueKey,
+	values?: { name: string },
+) => string;
+
 export function validateSensitiveInfoRulePayload(
 	rule: SensitiveInfoRulePayload,
+	translate: SensitiveInfoRuleIssueTranslator = (key, values) => {
+		if (key === "customPatternNameRequired") {
+			return "Custom patterns must include a name.";
+		}
+		if (key === "customPatternRegexRequired") {
+			return `Custom pattern "${values?.name ?? ""}" must include a regex pattern.`;
+		}
+		return `Custom pattern "${values?.name ?? ""}" has an invalid regex.`;
+	},
 ): string | null {
 	if (rule.kind !== "custom") return null;
 
 	const name = String(rule.name ?? "").trim();
-	if (!name) return "Custom patterns must include a name.";
+	if (!name) return translate("customPatternNameRequired");
 	const pattern = String(rule.pattern ?? "").trim();
-	if (!pattern) return `Custom pattern "${name}" must include a regex pattern.`;
+	if (!pattern) return translate("customPatternRegexRequired", { name });
 
 	try {
 		const flags = normalizeCustomRuleFlags(rule.flags);
 		new RegExp(pattern, flags.includes("g") ? flags : `${flags}g`);
 		return null;
-	} catch (error) {
-		if (error instanceof Error && error.message) return error.message;
-		return `Custom pattern "${name}" has an invalid regex.`;
+	} catch {
+		return translate("customPatternInvalidRegex", { name });
 	}
 }
 

@@ -22,6 +22,7 @@ import {
 import { toast } from "sonner";
 import { mergeAppsAction } from "@/app/(dashboard)/settings/apps/actions";
 import { useTranslations } from "next-intl";
+import { localizedSettingsError } from "@/i18n/error-messages";
 
 type AppItem = {
 	id: string;
@@ -77,7 +78,8 @@ export default function MergeAppDialog({
 			await toast.promise(mergeAppsAction(app.id, targetId), {
 				loading: t("strings.Merging apps..." as never),
 				success: t("strings.Apps merged" as never),
-				error: (err) => err?.message ?? t("strings.Failed to merge apps" as never),
+				error: (err) =>
+					localizedSettingsError(err, t, "Failed to merge apps"),
 			});
 			onMerged();
 			setOpen(false);

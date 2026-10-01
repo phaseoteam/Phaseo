@@ -1,0 +1,77 @@
+---
+title: "文書画像を解析する"
+description: "Cohere Parse v5.0で、文書画像から順序付きテキスト、表、画像、レイアウトメタデータを抽出します。"
+---
+
+単純なOCR以上の処理が必要な場合はParseエンドポイントを使います。ページ順を保持し、Markdownまたはテキスト・画像・表の構造化ブロックを返せます。
+
+<Warning>
+  Cohereの公開Parse APIが現在受け付けるのは、画像URLとbase64画像データURIのみです。PDFページは送信前に画像へ変換してください。各画像は20 MB以下、5,000万ピクセル以下、デコード後200 MB以下である必要があります。
+</Warning>
+
+## Markdownとして解析する
+
+Markdownでは読み取り順が保たれ、表はHTMLとして埋め込まれ、検出された画像はページ上のメタデータにリンクされます。
+
+<CodeGroup>
+```bash cURL
+curl https://api.phaseo.app/v1/parse \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "cohere/parse-v5.0",
+    "document": {
+      "type": "image_url",
+      "image_url": "https://example.com/invoice.png"
+    },
+    "output_format": "markdown"
+  }'
+```
+
+```ts TypeScript
+const response = await fetch("https://api.phaseo.app/v1/parse", {
+  method: "POST",
+  headers: {
+    Authorization: `Bearer ${process.env.PHASEO_API_KEY}`,
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    model: "cohere/parse-v5.0",
+    document: {
+      type: "image_url",
+      image_url: "https://example.com/invoice.png",
+    },
+    output_format: "markdown",
+  }),
+});
+
+const parsed = await response.json();
+console.log(parsed.pages[0].markdown.content);
+```
+
+```python Python
+import os
+import requests
+
+response = requests.post(
+    "https://api.phaseo.app/v1/parse",
+    headers={"Authorization": f"Bearer {os.environ['PHASEO_API_KEY']}"},
+    json={
+        "model": "cohere/parse-v5.0",
+        "document": {
+            "type": "image_url",
+            "image_url": "https://example.com/invoice.png",
+        },
+        "output_format": "markdown",
+    },
+)
+response.raise_for_status()
+print(response.json()["pages"][0]["markdown"]["content"])
+```
+</CodeGroup>
+
+## 構造化ブロックを返す
+
+`output_format`を`blocks`に設定すると、順序付きのテキスト・画像・表領域が返されます。画像ブロックと表ブロックには、利用可能な場合、ピクセル単位と正規化された境界ボックスが含まれます。
+
+Parseの使用量はページ単位で計測されます。レスポンスにはCohereのメタデータと、プロバイダーが課金対象ページを報告する場合は正規化された`usage.input_pages`値が含まれます。Cohereは現在、レート制限付きの評価用APIを無料で提供しており、Parseの本番料金はまだ公開していません。

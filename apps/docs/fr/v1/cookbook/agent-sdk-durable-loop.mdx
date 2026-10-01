@@ -1,0 +1,122 @@
+---
+title: "Créer une boucle d’agent durable en TypeScript"
+icon: "repeat-2"
+description: "Exécutez une boucle d’agent reprenable avec Phaseo Gateway et l’Agent SDK TypeScript."
+---
+
+Utilisez cette recette si vous avez besoin de plus qu’une requête textuelle ponctuelle :
+
+- boucles d’outils en plusieurs étapes
+- outils locaux du runtime
+- exécutions reprenables
+- un point d’entrée Gateway unique pour le travail de l’agent
+
+## 1. Installer les SDK
+
+<CodeGroup>
+```bash npm
+npm install @phaseo/sdk @phaseo/agent-sdk
+```
+
+```bash pnpm
+pnpm add @phaseo/sdk @phaseo/agent-sdk
+```
+
+```bash yarn
+yarn add @phaseo/sdk @phaseo/agent-sdk
+```
+
+```bash bun
+bun add @phaseo/sdk @phaseo/agent-sdk
+```
+</CodeGroup>
+
+## 2. Définir un outil simple pour le runtime
+
+Veillez à ce que le premier outil soit déterministe et facile à inspecter.
+
+```ts
+import { defineTool } from "@phaseo/agent-sdk";
+
+export const lookupDocs = defineTool({
+  id: "lookup-docs",
+  description: "Look up internal docs by slug.",
+  async execute(input: { slug: string }) {
+    return {
+      slug: input.slug,
+      url: `https://phaseo.app/docs/v1/${input.slug}`,
+    };
+  },
+});
+```
+
+## 3. Créer l’agent
+
+```ts
+import { createAgent } from "@phaseo/agent-sdk";
+import { lookupDocs } from "./tools";
+
+export const supportDocsAgent = createAgent({
+  id: "support-docs-agent",
+  model: "phaseo/free",
+  instructions: "Use tools when helpful and finish with a concise answer.",
+  tools: [lookupDocs],
+});
+```
+
+## 4. Utiliser l’adaptateur connecté à Gateway
+
+```ts
+import {
+  createGatewayAgentClient,
+} from "@phaseo/agent-sdk";
+import { supportDocsAgent } from "./agent";
+
+const result = await supportDocsAgent.run({
+  input: "Find the docs page for presets and explain when to use them.",
+  client: createGatewayAgentClient({
+    clientOptions: {
+      apiKey: process.env.PHASEO_API_KEY!,
+    },
+  }),
+});
+
+console.log(result.output);
+```
+
+## 5. Données conservées entre les étapes
+
+Chaque étape terminée met à jour l’état renvoyé de l’exécution avec :
+
+- l’ID de l’exécution
+- l’historique des messages
+- les appels d’outils renvoyés
+- les résultats des outils locaux
+- le résultat final lorsque l’exécution se termine
+
+Pour reprendre l’exécution entre plusieurs requêtes ou processus, enregistrez cette valeur dans votre application et transmettez-la ultérieurement à `continueRun()`.
+
+## 6. Quand garder une première version simple
+
+- un agent par workflow
+- sérialisation par l’application avant toute reprise entre requêtes
+- une courte liste d’outils avant de créer un registre générique
+- une ligne de journal par exécution avec son ID et l’ID de requête Gateway
+
+## 7. Quand aller plus loin
+
+Faites évoluer cette première boucle durable lorsque vous avez besoin de :
+
+- pauses pour approbation
+- persistance de l’état renvoyé gérée par l’application
+- plusieurs définitions d’agent partageant les outils du runtime
+
+Conservez alors le même adaptateur Gateway et faites évoluer le stockage et l’orchestration autour de celui-ci.
+
+## Guides associés
+
+- [Agent SDK TypeScript](../sdk-reference/typescript/agent-sdk.mdx)
+- [Presets](../guides/presets.mdx)
+- [Routage et solutions de repli](../guides/routing-and-fallbacks.mdx)
+- [Configurer des agents de programmation avec SKILL.md](./coding-agents-skill-md.mdx)
+- [Déployer sur le routeur gratuit](./free-router-first-deploy.mdx)

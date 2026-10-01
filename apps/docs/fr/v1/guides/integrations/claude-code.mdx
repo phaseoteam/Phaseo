@@ -1,0 +1,54 @@
+---
+title: "Claude Code"
+icon: "terminal"
+description: "Connectez Claude Code à Phaseo Gateway via l’API compatible avec Anthropic."
+---
+
+Claude Code prend en charge les passerelles LLM tierces via des variables d’environnement. Phaseo expose une interface compatible avec Anthropic sur `/v1/messages` ; vous pouvez donc connecter Claude Code à Phaseo sans modifier vos prompts.
+
+Si vous souhaitez que Claude Code consulte la documentation Phaseo à jour pendant une session, ajoutez aussi le serveur [Docs MCP](./docs-mcp.mdx).
+
+## Configurer avec Phaseo CLI
+
+```bash
+phaseo login
+phaseo claude
+claude
+```
+
+Installez d’abord la version officielle de Claude Code. La configuration crée une `Phaseo CLI: Claude Code API Key` sans expiration, la stocke dans le trousseau du système et configure la passerelle et l’assistant de clé API de Claude Code. Aucune clé en clair n’est écrite dans les paramètres de Claude Code.
+
+## Configuration manuelle
+
+```bash
+export ANTHROPIC_BASE_URL="https://api.phaseo.app"
+export ANTHROPIC_AUTH_TOKEN="your_phaseo_api_key"
+export ANTHROPIC_API_KEY=""
+```
+
+```powershell
+$env:ANTHROPIC_BASE_URL = "https://api.phaseo.app"
+$env:ANTHROPIC_AUTH_TOKEN = "your_phaseo_api_key"
+$env:ANTHROPIC_API_KEY = ""
+```
+
+## Choisir un modèle (facultatif)
+
+Définissez `ANTHROPIC_MODEL` pour choisir une valeur par défaut fixe. Utilisez les identifiants répertoriés dans [Modèles](../../api-reference/endpoint/models.mdx).
+
+## Lancer Claude Code
+
+```bash
+claude
+```
+
+## Correspondance des endpoints
+
+- Claude Code appelle des endpoints de type Anthropic (`/v1/messages`).
+- Phaseo traite ces requêtes via [Anthropic Messages](../../api-reference/endpoint/anthropic-messages.mdx).
+
+## Notes de compatibilité
+
+- `ANTHROPIC_AUTH_TOKEN` est envoyé dans l’en-tête `Authorization`, accepté par Phaseo.
+- Vous pouvez aussi définir `ANTHROPIC_MODEL` avec l’identifiant d’un modèle Phaseo pour que Claude Code utilise toujours le même modèle par défaut.
+- Limite actuelle : le streaming avec outils sur Anthropic Messages peut renvoyer `400 invalid_request`. Si votre flux dépend de boucles d’outils en streaming, testez ce parcours avant un déploiement à grande échelle.

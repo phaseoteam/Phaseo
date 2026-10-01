@@ -1,0 +1,9 @@
+---
+title: "ワークスペース予算を更新"
+sidebarTitle: "予算を更新"
+badge: "ベータ"
+openapi: "/ja/openapi/v1/openapi.localized.yaml PATCH /budgets/{id}"
+description: "ワークスペース予算の期間または支出上限を変更します。"
+---
+
+`budgets:write` が必要です。上限を現在の使用量より低くすると、新しいリクエストはすぐにブロックされます。

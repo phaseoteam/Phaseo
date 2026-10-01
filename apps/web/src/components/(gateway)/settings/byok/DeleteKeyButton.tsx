@@ -16,6 +16,7 @@ import {
 import { toast } from "sonner";
 import { useTranslations } from "next-intl";
 import { deleteByokKeyAction } from "@/app/(dashboard)/settings/byok/actions";
+import { localizedSettingsError } from "@/i18n/error-messages";
 
 export default function DeleteKeyButton({ id }: { id: string }) {
 	const t = useTranslations("SettingsUI");
@@ -30,7 +31,14 @@ export default function DeleteKeyButton({ id }: { id: string }) {
 			setOpen(false);
 		} catch (err: any) {
 			console.error(err);
-		toast.error(err?.message || t("keys.failedDelete"));
+			toast.error(
+				localizedSettingsError(
+					err,
+					t,
+					"Action failed",
+					t("keys.failedDelete" as never),
+				),
+			);
 		} finally {
 			setLoading(false);
 		}
@@ -40,6 +48,7 @@ export default function DeleteKeyButton({ id }: { id: string }) {
 		<AlertDialog open={open} onOpenChange={(v) => setOpen(v)}>
 			<AlertDialogTrigger asChild>
 				<Button
+					aria-label={t("settingsCopy.byok.deleteAccessibleLabel")}
 					variant="ghost"
 					size="sm"
 					className="rounded-full p-1 hover:text-red-600"
@@ -52,8 +61,7 @@ export default function DeleteKeyButton({ id }: { id: string }) {
 				<AlertDialogHeader>
 				<AlertDialogTitle>{t("strings.Delete key?" as never)}</AlertDialogTitle>
 					<AlertDialogDescription>
-						Deleting this key cannot be undone. Are you sure you
-						want to delete it?
+						{t("settingsCopy.byok.deleteConfirmation")}
 					</AlertDialogDescription>
 				</AlertDialogHeader>
 
@@ -64,7 +72,7 @@ export default function DeleteKeyButton({ id }: { id: string }) {
 						disabled={loading}
 						className="bg-red-600 hover:bg-red-700"
 					>
-						{loading ? "Deleting..." : "Confirm delete"}
+						{loading ? t("keys.deletingKey") : t("keys.deleteKey")}
 					</AlertDialogAction>
 				</div>
 			</AlertDialogContent>

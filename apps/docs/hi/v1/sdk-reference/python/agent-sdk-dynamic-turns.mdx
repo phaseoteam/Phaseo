@@ -1,0 +1,19 @@
+---
+icon: "shuffle"
+title: "डायनेमिक टर्न"
+description: "एजेंट टर्न के बीच Python मॉडल सेटिंग और टूल बदलें।"
+---
+
+मॉडल, fallback मॉडल, instructions, temperature, अधिकतम output tokens, top-p और tools fixed values या हर टर्न पर evaluate होने वाले callbacks हो सकते हैं।
+
+जब कोई टूल आगे काम आने वाली जानकारी पाए, तो `runtime.set_context(value)` उपयोग करें। केवल तुरंत अगले model request पर लागू override के लिए `next_turn_params` उपयोग करें।
+
+अगले टर्न के override paused state के साथ सहेजे जाते हैं, इसलिए approval checkpoint routing या sampling के निर्णय को नहीं हटाता।
+
+जब `AgentStateAccessor` उपयोग करें, तो context को serializable रखें।
+
+## संबंधित विषय
+
+- [टूल](./agent-sdk-tools.mdx)
+- [स्थिति और अनुमोदन](./agent-sdk-state-and-approval.mdx)
+- [रोकने की शर्तें](./agent-sdk-stop-conditions.mdx)

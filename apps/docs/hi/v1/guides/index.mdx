@@ -1,0 +1,66 @@
+---
+title: "गाइड"
+description: "पहली setup, feature work, integrations और production operations के लिए सही Phaseo guide पाएँ।"
+icon: "book-open"
+---
+
+आपको काम का प्रकार पता है और सही guide तक जल्दी पहुँचना चाहते हैं, तो यहाँ से शुरू करें।
+
+## पहला integration
+
+Phaseo के साथ पहला integration कर रहे हैं, तो ये steps क्रम से अपनाएँ:
+
+1. [त्वरित शुरुआत](../quickstart.mdx): एक सफल request भेजें।
+2. [प्रमाणीकरण](../developers/authentication.mdx): keys सुरक्षित रूप से store और भेजें।
+3. [उदाहरण](./examples.mdx): request patterns को अपनी app में copy करें।
+
+<Note>
+Credits जमा किए बिना `:free` models call कर सकते हैं। Paid models के लिए wallet में उपलब्ध balance ज़रूरी है।
+</Note>
+
+## ऐप की सुविधाएँ बनाएँ
+
+जब basic request काम कर रही हो और आप product behavior जोड़ना चाहें, तब ये guides देखें।
+
+<Columns cols={2}>
+	<Card title="Cookbook" icon="chef-hat" href="../cookbook/index.mdx">
+		मुफ़्त रूटिंग, प्रीसेट, एसिंक्रोनस जॉब और कोडिंग एजेंट सेटअप के लिए परिदृश्य-आधारित उदाहरण।
+	</Card>
+	<Card title="Routing और fallback" icon="git-branch" href="./routing-and-fallbacks.mdx">
+		Provider order, failover behavior और reliability trade-offs नियंत्रित करें।
+	</Card>
+	<Card title="Tool calling" icon="wrench" href="./tool-calling.mdx">
+		फ़ंक्शन टूल, सुरक्षा जाँच और स्थिर टूल चक्र लागू करें।
+	</Card>
+	<Card title="Server tools" icon="sparkles" href="./server-tools/index.mdx">
+		Phaseo द्वारा संचालित तारीख़/समय, वेब खोज, वेब फ़ेच और Advisor टूल उपयोग करें।
+	</Card>
+	<Card title="Structured outputs" icon="braces" href="./structured-outputs.mdx">
+		Predictable, machine-readable responses के लिए schemas उपयोग करें।
+	</Card>
+	<Card title="Streaming" icon="radio" href="./streaming.mdx">
+		SSE और प्रोडक्शन सुरक्षा उपायों के साथ कम विलंब वाले जवाब दें।
+	</Card>
+	<Card title="Prompt caching" icon="database-zap" href="./prompt-caching.mdx">
+		Chat Completions, Responses और Anthropic Messages में stable prompt context दोबारा उपयोग करें।
+	</Card>
+</Columns>
+
+## प्रोडक्शन में काम करें
+
+जब traffic, reliability, security और key lifecycle मायने रखने लगें, तब ये guides उपयोग करें।
+
+<Columns cols={2}>
+	<Card title="Error handling" icon="triangle-alert" href="../developers/error-handling.mdx">
+		Status code, error shape और retry strategy के आधार पर debug करें।
+	</Card>
+	<Card title="Rate limits" icon="gauge" href="../developers/rate-limits.mdx">
+		Load के दौरान throughput और backoff की योजना बनाएँ।
+	</Card>
+	<Card title="Best practices" icon="shield-check" href="../developers/best-practices.mdx">
+		Reliability और safety मज़बूत करने के लिए checklist।
+	</Card>
+	<Card title="Management API keys" icon="key-round" href="../developers/management-api-keys.mdx">
+		Key lifecycle और environment isolation automate करें।
+	</Card>
+</Columns>

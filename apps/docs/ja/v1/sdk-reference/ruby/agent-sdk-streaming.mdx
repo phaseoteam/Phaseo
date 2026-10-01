@@ -1,0 +1,23 @@
+---
+icon: "radio"
+title: "ストリーミング"
+description: "Rubyエージェントのテキスト、推論、項目、ライフサイクルの各ストリームを利用します。"
+---
+
+`Agent#stream`は再走査可能な`StreamResult`を返します。
+
+```ruby
+stream = agent.stream(input: "Research this topic", client: client)
+
+stream.text_stream.each { |delta| print delta }
+completed = stream.result
+```
+
+別の形式で取得するには`reasoning_stream`、`item_stream`、または`full_stream`を使います。Rubyはプロバイダーのストリームを同期的に読み取り、その後、ほかのコンシューマーが再走査できるシーケンスを公開します。
+
+項目値は現在ハッシュであり、TypeScriptの判別可能な項目ユニオンではありません。
+
+## 関連項目
+
+- [ツール](./agent-sdk-tools.mdx)
+- [オブザーバビリティとDevTools](./agent-sdk-observability.mdx)

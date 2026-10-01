@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import {
 	ChevronLeft,
 	ChevronRight,
@@ -34,21 +35,26 @@ function formatMetric(
 	return suffix ? `${value}${suffix}` : `${value}`;
 }
 
-function formatTimingLabel(value: number) {
+
+function formatTimingLabel(value: number, locale: string) {
 	if (!Number.isFinite(value)) return "-";
+	const formatNumber = (number: number, digits: number) =>
+		new Intl.NumberFormat(locale, {
+			maximumFractionDigits: digits,
+		}).format(number);
 	if (value < 1000) return `${Math.max(0, Math.round(value))} ms`;
 	const seconds = value / 1000;
 	if (seconds < 10) {
-		return `${seconds.toFixed(2).replace(/\.?0+$/, "")} s`;
+		return `${formatNumber(seconds, 2)} s`;
 	}
 	if (seconds < 60) {
-		return `${seconds.toFixed(1).replace(/\.0$/, "")} s`;
+		return `${formatNumber(seconds, 1)} s`;
 	}
 	const minutes = seconds / 60;
 	if (minutes < 10) {
-		return `${minutes.toFixed(2).replace(/\.?0+$/, "")} min`;
+		return `${formatNumber(minutes, 2)} min`;
 	}
-	return `${minutes.toFixed(1).replace(/\.0$/, "")} min`;
+	return `${formatNumber(minutes, 1)} min`;
 }
 
 function MetadataSection({
@@ -75,6 +81,7 @@ function TimingMetricRow({
 	label: string;
 	valueMs: number | null;
 }) {
+	const locale = useLocale();
 	if (typeof valueMs !== "number" || !Number.isFinite(valueMs)) {
 		return (
 			<MetadataRow label={label}>
@@ -87,7 +94,7 @@ function TimingMetricRow({
 	return (
 		<MetadataRow label={label}>
 			<NumericValue>
-				{formatTimingLabel(normalizedValue)}
+				{formatTimingLabel(normalizedValue, locale)}
 			</NumericValue>
 		</MetadataRow>
 	);
@@ -131,6 +138,8 @@ export function UserMessageFooter({
 	onCopy,
 	onEdit,
 }: UserMessageFooterProps) {
+	const t = useTranslations("Product.chat.messageActions");
+
 	return (
 		<MessageFooter className="mt-0 flex items-center gap-2 px-0 text-xs text-muted-foreground">
 			{sentAtLabel ? (
@@ -145,7 +154,7 @@ export function UserMessageFooter({
 						variant="ghost"
 						className="h-7 w-7"
 						onClick={onCopy}
-						aria-label={copied ? "Message copied" : "Copy message"}
+						aria-label={copied ? t("messageCopied") : t("copyMessage")}
 					>
 						{copied ? (
 							<Check className="h-3.5 w-3.5" />
@@ -155,7 +164,7 @@ export function UserMessageFooter({
 					</Button>
 				</TooltipTrigger>
 				<TooltipContent side="top">
-					{copied ? "Copied" : "Copy"}
+					{copied ? t("copied") : t("copy")}
 				</TooltipContent>
 			</Tooltip>
 			<Tooltip>
@@ -165,12 +174,12 @@ export function UserMessageFooter({
 						variant="ghost"
 						className="h-7 w-7"
 						onClick={onEdit}
-						aria-label="Edit message"
+						aria-label={t("editMessage")}
 					>
 						<Pencil className="h-3.5 w-3.5" />
 					</Button>
 				</TooltipTrigger>
-				<TooltipContent side="top">Edit</TooltipContent>
+				<TooltipContent side="top">{t("edit")}</TooltipContent>
 			</Tooltip>
 		</MessageFooter>
 	);
@@ -204,7 +213,6 @@ export function AssistantMessageFooter({
 	assistantCopied,
 	costLabel,
 	endToEndDisplay,
-	endToEndMs,
 	generationMs,
 	isPendingAssistant,
 	latencyMs,
@@ -221,6 +229,7 @@ export function AssistantMessageFooter({
 	totalTokens,
 	variantCount,
 }: AssistantMessageFooterProps) {
+	const t = useTranslations("Product.chat.messageActions");
 	const providerHref = metadataProviderId && metadataProviderId !== "auto"
 		? `/api-providers/${encodeURIComponent(metadataProviderId)}`
 		: null;
@@ -248,8 +257,8 @@ export function AssistantMessageFooter({
 								onClick={onCopy}
 								aria-label={
 									assistantCopied
-										? "Assistant response copied"
-										: "Copy assistant response"
+										? t("assistantResponseCopied")
+										: t("copyAssistantResponse")
 								}
 							>
 								{assistantCopied ? (
@@ -260,7 +269,7 @@ export function AssistantMessageFooter({
 							</Button>
 						</TooltipTrigger>
 						<TooltipContent side="top">
-							{assistantCopied ? "Copied" : "Copy"}
+							{assistantCopied ? t("copied") : t("copy")}
 						</TooltipContent>
 					</Tooltip>
 					<Tooltip>
@@ -270,12 +279,12 @@ export function AssistantMessageFooter({
 								variant="ghost"
 								className="h-7 w-7"
 								onClick={onRetry}
-								aria-label="Retry assistant response"
+								aria-label={t("retryAssistantResponse")}
 							>
 								<RotateCcw className="h-3.5 w-3.5" />
 							</Button>
 						</TooltipTrigger>
-						<TooltipContent side="top">Retry</TooltipContent>
+						<TooltipContent side="top">{t("retryAssistantResponse")}</TooltipContent>
 					</Tooltip>
 					<Tooltip>
 						<TooltipTrigger asChild>
@@ -284,12 +293,12 @@ export function AssistantMessageFooter({
 								variant="ghost"
 								className="h-7 w-7"
 								onClick={onBranch}
-								aria-label="Branch from assistant response"
+								aria-label={t("branchFromAssistantResponse")}
 							>
 								<GitBranch className="h-3.5 w-3.5" />
 							</Button>
 						</TooltipTrigger>
-						<TooltipContent side="top">Branch</TooltipContent>
+						<TooltipContent side="top">{t("branch")}</TooltipContent>
 					</Tooltip>
 					<Popover
 						open={metadataOpen}
@@ -302,20 +311,20 @@ export function AssistantMessageFooter({
 										size="icon"
 										variant="ghost"
 										className="h-7 w-7"
-										aria-label="Show response metadata"
+										aria-label={t("showResponseMetadata")}
 									>
 										<Info className="h-3.5 w-3.5" />
 									</Button>
 								</PopoverTrigger>
 							</TooltipTrigger>
-							<TooltipContent side="top">Metadata</TooltipContent>
+							<TooltipContent side="top">{t("metadata")}</TooltipContent>
 						</Tooltip>
 						<PopoverContent
 							align="start"
 							className="w-72 max-w-[calc(100vw-2rem)]"
 						>
 							<div className="grid gap-3 text-sm">
-								<MetadataRow label="Provider">
+								<MetadataRow label={t("provider")}>
 									{providerHref && metadataProviderId ? (
 										<Link
 											href={providerHref}
@@ -339,32 +348,32 @@ export function AssistantMessageFooter({
 									)}
 								</MetadataRow>
 								<div className="h-px bg-border" />
-								<MetadataSection title="Usage">
-									<MetadataRow label="Total tokens">
+								<MetadataSection title={t("usage")}>
+									<MetadataRow label={t("totalTokens")}>
 										<NumericValue>
 											{formatMetric(totalTokens)}
 										</NumericValue>
 									</MetadataRow>
-									<MetadataRow label="Total cost">
+									<MetadataRow label={t("totalCost")}>
 										<NumericValue>{costLabel ?? "-"}</NumericValue>
 									</MetadataRow>
 								</MetadataSection>
 								<div className="h-px bg-border" />
-								<MetadataSection title="Timing">
+								<MetadataSection title={t("timing")}>
 									<TimingMetricRow
-										label="Latency"
+										label={t("latency")}
 										valueMs={latencyMetricMs}
 									/>
 									<TimingMetricRow
-										label="Generation time"
+										label={t("generationTime")}
 										valueMs={generationMetricMs}
 									/>
-									<MetadataRow label="End-to-end time">
+									<MetadataRow label={t("endToEndTime")}>
 										<NumericValue>
 											{formatMetric(endToEndDisplay)}
 										</NumericValue>
 									</MetadataRow>
-									<MetadataRow label="Throughput">
+									<MetadataRow label={t("throughput")}>
 										<NumericValue>
 											{formatMetric(throughputDisplay, " tps")}
 										</NumericValue>
@@ -389,7 +398,7 @@ export function AssistantMessageFooter({
 							onSelectVariant(Math.max(0, activeVariantIndex - 1))
 						}
 						disabled={activeVariantIndex <= 0}
-						aria-label="Previous response variant"
+						aria-label={t("previousResponseVariant")}
 					>
 						<ChevronLeft className="h-4 w-4" />
 					</Button>
@@ -405,7 +414,7 @@ export function AssistantMessageFooter({
 							)
 						}
 						disabled={activeVariantIndex >= variantCount - 1}
-						aria-label="Next response variant"
+						aria-label={t("nextResponseVariant")}
 					>
 						<ChevronRight className="h-4 w-4" />
 					</Button>

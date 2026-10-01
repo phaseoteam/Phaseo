@@ -1,0 +1,14 @@
+---
+title: "列出工作区审计事件"
+sidebarTitle: "审计事件"
+badge: "Beta"
+openapi: "/zh-Hans/openapi/v1/openapi.localized.yaml GET /audit-events"
+description: "列出已验证工作区中与安全相关的控制平面更改。"
+---
+
+<Note>
+此端点需要 `activity:read` 管理权限。OAuth 调用方还必须具有工作区所有者或管理员角色。
+</Note>
+
+事件仅包含经过清理的元数据。不会返回明文凭据、凭据哈希、授权标头、完整权限范围列表或请求正文。
+

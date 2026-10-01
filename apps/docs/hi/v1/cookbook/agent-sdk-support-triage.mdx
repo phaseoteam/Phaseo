@@ -1,0 +1,193 @@
+---
+title: "प्रीसेट और गार्डरेल-सचेत विफलताओं के साथ सहायता ट्रायेज"
+icon: "life-buoy"
+description: "प्रीसेट-आधारित सहायता ट्रायेज एजेंट चलाएँ, जो सख्त JSON लौटाए, उच्च-जोखिम मामलों को समीक्षा के लिए रोके और गार्डरेल विफलताओं को दिखाए।"
+---
+
+जब किसी सहायता वर्कफ़्लो को ये काम करने हों, तब इस रेसिपी का उपयोग करें:
+
+- डैशबोर्ड प्रीसेट से रूटिंग और प्रॉम्प्ट के डिफ़ॉल्ट मान लेना
+- सख्त संरचित आउटपुट लौटाना
+- जोखिम वाले मामलों को मानवीय समीक्षा के लिए रोकना
+- गेटवे विफलताओं को एजेंट कोड में छिपाने के बजाय लॉग में दिखाना
+
+## 1. प्रीसेट से शुरुआत करें
+
+`support-triage` जैसा प्रीसेट बनाएँ, जो इन बातों को नियंत्रित करे:
+
+- डिफ़ॉल्ट रूट किया गया मॉडल या राउटर लक्ष्य
+- प्रदाता की प्राथमिकताएँ
+- सहायता सिस्टम प्रॉम्प्ट
+- स्थिर डिकोडिंग पैरामीटर
+
+इससे एजेंट कोड अनुरोध नीतियों को दोहराने के बजाय वर्कफ़्लो नियंत्रण पर केंद्रित रहता है।
+
+## 2. सीमित ट्रायेज अनुबंध तय करें
+
+```ts
+type SupportTriageDecision = {
+  queue: "billing" | "reliability" | "product" | "security";
+  severity: "low" | "medium" | "high";
+  needsHumanReview: boolean;
+  summary: string;
+};
+```
+
+पहले आउटपुट का आकार इतना छोटा रखें कि ऑपरेटर उसे जल्दी देख सकें।
+
+## 3. प्रीसेट-आधारित एजेंट बनाएँ
+
+```ts
+import { createAgent } from "@phaseo/agent-sdk";
+
+const supportTriageAgent = createAgent<string, SupportTriageDecision>({
+  id: "support-triage-agent",
+  preset: "support-triage",
+  parseOutput(text) {
+    return JSON.parse(text) as SupportTriageDecision;
+  },
+  humanReview: ({ parsedOutput }) =>
+    parsedOutput?.needsHumanReview
+      ? {
+          reason: "support_triage_review_required",
+          payload: parsedOutput,
+        }
+      : null,
+});
+```
+
+SDK `preset: "support-triage"` को गेटवे एलियास फ़ॉर्म `@support-triage` में रिज़ॉल्व करता है।
+
+## 4. गेटवे-आधारित अडैप्टर कॉन्फ़िगर करें
+
+हर ट्रायेज रन में स्थिर रहने वाली बातों के लिए अडैप्टर डिफ़ॉल्ट का उपयोग करें:
+
+```ts
+import {
+  createGatewayAgentClient,
+} from "@phaseo/agent-sdk";
+
+const client = createGatewayAgentClient({
+  clientOptions: {
+    apiKey: process.env.PHASEO_API_KEY!,
+  },
+  responseFormat: {
+    type: "json_schema",
+    name: "support_triage_decision",
+    schema: {
+      type: "object",
+      properties: {
+        queue: {
+          type: "string",
+          enum: ["billing", "reliability", "product", "security"],
+        },
+        severity: {
+          type: "string",
+          enum: ["low", "medium", "high"],
+        },
+        needsHumanReview: { type: "boolean" },
+        summary: { type: "string" },
+      },
+      required: ["queue", "severity", "needsHumanReview", "summary"],
+      additionalProperties: false,
+    },
+  },
+  plugins: [{ id: "response-healing", mode: "strict" }],
+});
+```
+
+## 5. सीमित रीट्राई के साथ वर्कफ़्लो चलाएँ
+
+```ts
+const result = await supportTriageAgent.run({
+  input: "Customer says webhook deliveries failed overnight and asks whether data was lost.",
+  client,
+  modelRetry: {
+    maxRetries: 2,
+    backoffMs: 250,
+  },
+  onEvent(event) {
+    console.log(event.type, event.runId, event.attempt);
+  },
+});
+```
+
+run review के लिए pause हो तो उसे स्पष्ट रूप से resume करें:
+
+```ts
+if (result.run.status === "waiting_for_human") {
+  const continued = await supportTriageAgent.continueRun({
+    run: result,
+    client,
+    humanInput: "Approved. Finalize the triage decision.",
+  });
+
+  console.log(continued.output);
+}
+```
+
+## 6. गेटवे विफलताओं को परिचालन घटनाओं की तरह लें
+
+एजेंट कॉलबैक चेन में विफलताओं को दबाकर न छिपाएँ।
+
+इसके बजाय, `AgentGatewayError` को स्पष्ट रूप से पकड़ें:
+
+```ts
+import { AgentGatewayError } from "@phaseo/agent-sdk";
+
+try {
+  await supportTriageAgent.run({
+    input: "Customer says webhook deliveries failed overnight and asks whether data was lost.",
+    client,
+    store,
+  });
+} catch (error) {
+  if (error instanceof AgentGatewayError) {
+    console.error("Gateway request failed", {
+      status: error.status,
+      requestId: error.requestId,
+      generationId: error.generationId,
+      reason: error.reason,
+      providerFailureDiagnostics: error.providerFailureDiagnostics,
+      routingDiagnostics: error.routingDiagnostics,
+    });
+  }
+  throw error;
+}
+```
+
+इसके बाद:
+
+1. रन और स्टेप की `failed` स्थिति को runtime में सहेजने दें
+2. बाद की रिकवरी में, जब मूल अपवाद मेमोरी में न हो, तब `loaded.run.errorDetails` या `loaded.steps[n].errorDetails` देखें
+3. अनुरोध विवरण में ये चीज़ें देखें:
+   - गार्डरेल लागू होने की स्थिति
+   - रूटिंग विवरण
+   - प्लगइन निष्पादन
+   - अनुरोध ID और प्रदाता डेटा
+
+यह इन स्थितियों में विशेष रूप से महत्वपूर्ण है:
+
+- गार्डरेल अनुरोध को रोकता है
+- प्रीसेट की अनुमति सूची अनुरोधित मॉडल को अस्वीकार करती है
+- प्रदाता क्रेडेंशियल या सक्षम करने वाले फ़िल्टर रूट किए गए उम्मीदवारों को हटा देते हैं
+- response healing स्कीमा के अनुसार वैध JSON बहाल नहीं कर पाता
+
+## 7. क्या सत्यापित करें
+
+एक सफल रन और जानबूझकर जोखिम वाला रन करने के बाद पुष्टि करें:
+
+- अनुरोध विवरण दृश्य में प्रीसेट-आधारित अनुरोध लक्ष्य दिखे
+- उच्च-जोखिम मामले `waiting_for_human` पर रुकें
+- मॉडल स्टेप रीट्राई होने पर `modelAttempts` सहेजे जाएँ
+- गार्डरेल या प्रीसेट की विफलताएँ एजेंट अपवादों में छिपने के बजाय अनुरोध विवरण में दिखें
+
+## संबंधित गाइड
+
+- [TypeScript Agent SDK](../sdk-reference/typescript/agent-sdk.mdx)
+- [प्रीसेट](../guides/presets.mdx)
+- [रूटिंग और फ़ॉलबैक](../guides/routing-and-fallbacks.mdx)
+- [संरचित आउटपुट मान्य करें](../guides/structured-outputs-validation.mdx)
+- [प्रीसेट रोल आउट करें और रूटिंग डीबग करें](./preset-rollout-and-routing-debug.mdx)
+- [गलत फ़ॉर्मेट वाले संरचित JSON को ठीक करें](./response-healing-for-structured-json.mdx)
+- [TypeScript में टिकाऊ एजेंट लूप बनाएँ](./agent-sdk-durable-loop.mdx)

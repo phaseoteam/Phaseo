@@ -1,0 +1,43 @@
+---
+title: "Java SDKのインストール（開発中）"
+description: "開発中のJava SDKをソースからビルドします。"
+---
+
+<Note type="warning">Java SDKは開発中で、Maven Centralにはまだ公開されていません。</Note>
+
+## 必要条件
+
+- Java 17+
+- Maven 3.8+
+
+## ローカルでビルドする
+
+```bash
+cd packages/sdk/sdk-java
+mvn -DskipTests package
+```
+
+これにより`target/sdk-java-0.0.0-local.jar`が生成されます。
+
+## プロジェクトで使う
+
+生成されたJARをローカルのMavenキャッシュにインストールします。
+
+```bash
+mvn install:install-file \
+  -Dfile=target/sdk-java-0.0.0-local.jar \
+  -DgroupId=app.phaseo \
+  -DartifactId=sdk-java \
+  -Dversion=0.0.0-local \
+  -Dpackaging=jar
+```
+
+次に、アプリケーションの`pom.xml`に依存関係として追加します。
+
+```xml
+<dependency>
+  <groupId>app.phaseo</groupId>
+  <artifactId>sdk-java</artifactId>
+  <version>0.0.0-local</version>
+</dependency>
+```

@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { useLocale, useTranslations } from "next-intl";
 import {
 	ResponsiveContainer,
 	ScatterChart,
@@ -48,7 +49,7 @@ const ColoredDot = (props: any) => {
 	);
 };
 
-const CustomTooltip = ({ active, payload, tooltipValueFormatter }: any) => {
+const CustomTooltip = ({ active, payload, tooltipValueFormatter, labels }: any) => {
 	if (!active || !payload || !payload.length) return null;
 
 	const data = payload[0].payload;
@@ -73,10 +74,10 @@ const CustomTooltip = ({ active, payload, tooltipValueFormatter }: any) => {
 				<span className="font-medium text-sm">{modelName}</span>
 			</div>
 			<div className="space-y-1 text-xs text-muted-foreground">
-				<div>Organization: {orgName}</div>
-				<div>Released: {date}</div>
+				<div>{labels.organization}: {orgName}</div>
+				<div>{labels.released}: {date}</div>
 				<div className="font-medium text-foreground">
-					Score: {tooltipValueFormatter(y)}
+					{labels.score}: {tooltipValueFormatter(y)}
 				</div>
 			</div>
 		</div>
@@ -98,14 +99,12 @@ type ScatterPoint = {
 	modelId?: string;
 };
 
-const monthFormatter = new Intl.DateTimeFormat("en-GB", {
-	month: "short",
-	year: "numeric",
-});
-
 function buildScatterData(
 	benchmark: BenchmarkPage,
-	hasPercentage: boolean
+	hasPercentage: boolean,
+	locale: string,
+	unknownModel: string,
+	unknownOrganization: string,
 ): ScatterPoint[] {
 	const results: any[] = benchmark?.results ?? [];
 
@@ -129,10 +128,10 @@ function buildScatterData(
 			result.model?.name ??
 			result.model_id ??
 			result.id ??
-			"Unknown model";
+			unknownModel;
 
 		const color = result.model?.organisation?.colour || "#8884d8"; // default color if no org color
-		const orgName = result.model?.organisation?.name || "Unknown";
+		const orgName = result.model?.organisation?.name || unknownOrganization;
 		const orgId = result.model?.organisation?.organisation_id || "";
 		const modelId = result.model_id || result.id || "";
 
@@ -140,7 +139,7 @@ function buildScatterData(
 			x: date.getTime(),
 			y: numericScore,
 			modelName,
-			date: date.toLocaleDateString(),
+			date: date.toLocaleDateString(locale),
 			color,
 			orgName,
 			orgId,
@@ -154,16 +153,11 @@ function buildScatterData(
 	return points;
 }
 
-const chartConfig: ChartConfig = {
-	score: {
-		label: "Score",
-		color: "hsl(222 89% 53%)",
-	},
-};
-
 export default function BenchmarkProgressChart({
 	benchmark,
 }: BenchmarkProgressChartProps) {
+	const locale = useLocale();
+	const t = useTranslations("Catalogue.benchmarks");
 	const hasPercentage = React.useMemo(
 		() => resolveBenchmarkIsPercentage({
 			benchmarkType: benchmark?.type,
@@ -177,9 +171,19 @@ export default function BenchmarkProgressChart({
 	);
 
 	const scatterData = React.useMemo(
-		() => buildScatterData(benchmark, hasPercentage),
-		[benchmark, hasPercentage]
+		() => buildScatterData(benchmark, hasPercentage, locale, t("unknownModel"), t("unknownOrganization")),
+		[benchmark, hasPercentage, locale, t]
 	);
+	const monthFormatter = React.useMemo(
+		() => new Intl.DateTimeFormat(locale, { month: "short", year: "numeric" }),
+		[locale]
+	);
+	const chartConfig: ChartConfig = {
+		score: {
+			label: t("score"),
+			color: "hsl(222 89% 53%)",
+		},
+	};
 
 	const tooltipValueFormatter = React.useCallback(
 		(value: number | string | Array<number | string> | undefined) => {
@@ -202,10 +206,10 @@ export default function BenchmarkProgressChart({
 					</div>
 					<div>
 						<CardTitle className="text-lg font-semibold">
-							Scores Over Time
+							{t("progressTitle")}
 						</CardTitle>
 						<p className="text-sm text-muted-foreground">
-							Individual benchmark scores plotted by date.
+							{t("progressDescription")}
 						</p>
 					</div>
 				</div>
@@ -252,11 +256,16 @@ export default function BenchmarkProgressChart({
 								<ChartTooltip
 									cursor={{ strokeDasharray: "4 4" }}
 									content={
-										<CustomTooltip
-											tooltipValueFormatter={
-												tooltipValueFormatter
-											}
-										/>
+						<CustomTooltip
+							tooltipValueFormatter={
+								tooltipValueFormatter
+							}
+							labels={{
+								organization: t("tooltipOrganization"),
+								released: t("tooltipReleased"),
+				score: t("score"),
+							}}
+						/>
 									}
 								/>
 								<Scatter dataKey="y" shape={ColoredDot} />
@@ -265,7 +274,7 @@ export default function BenchmarkProgressChart({
 					</ChartContainer>
 				) : (
 					<div className="flex h-full flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-zinc-300 text-center text-sm text-muted-foreground dark:border-zinc-700">
-						No scores available to display.
+						{t("noScores")}
 					</div>
 				)}
 			</CardContent>

@@ -1,0 +1,139 @@
+---
+icon: "search-check"
+title: "Web検索サーバーツール"
+description: "リクエスト中にモデルがWebを検索できるようにします。"
+---
+
+最新情報や出典に基づく情報が必要な場合は`phaseo:web_search`を使います。モデルが検索のタイミングとクエリを決め、1回のリクエスト中に複数回検索できます。
+
+PhaseoはURL、タイトル、スニペット、ハイライト、必要に応じてページ本文をモデルに返し、根拠のある回答を作成できるようにします。
+
+<Note>
+GoogleネイティブのWeb検索は、Phaseoサーバーツールではまだ有効になっていません。対応するOpenAIおよびAnthropicのルートでは、管理型検索またはプロバイダーのネイティブ検索を使ってください。
+</Note>
+
+## 仕組み
+
+1. `{ "type": "phaseo:web_search" }`を`tools`に追加します。
+2. モデルが検索の必要性を判断し、クエリを出力します。
+3. Phaseoが設定された検索エンジンで検索を実行します。
+4. 検索結果がツールのコンテキストとしてモデルに返されます。
+5. モデルが最終回答を作成し、必要であれば再度検索します。
+
+## クイックスタート
+
+```bash
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-5-nano",
+    "messages": [
+      { "role": "user", "content": "What were the major AI announcements this week?" }
+    ],
+    "tools": [
+      { "type": "phaseo:web_search" }
+    ]
+  }'
+```
+
+## 設定
+
+```json
+{
+  "type": "phaseo:web_search",
+  "parameters": {
+    "engine": "exa",
+    "max_results": 5,
+    "max_total_results": 15,
+    "search_context_size": "medium",
+    "max_characters": 2048,
+    "allowed_domains": ["arxiv.org", "nature.com"],
+    "excluded_domains": ["reddit.com"],
+    "include_highlights": true,
+    "include_text": false
+  }
+}
+```
+
+| パラメーター | 型 | 既定値 | 説明 |
+| --- | --- | --- | --- |
+| `engine` | string | `exa` | 検索エンジン: `auto`、`native`、`exa`、`parallel`、`firecrawl`、`perplexity`のいずれか。 |
+| `max_results` | integer | `5` | 1回の検索呼び出しで返される結果の最大数。 |
+| `max_total_results` | integer | `10` | サーバーツールループ全体で返される結果の累積最大数。 |
+| `max_uses` | integer | `10` | サーバーツールループ全体での検索呼び出しの最大数。 |
+| `search_context_size` | string | `medium` | ハイライト量を調整できる検索エンジン向けのコンテキストサイズ: `low`、`medium`、`high`。 |
+| `max_characters` | integer | engine default | テキストを含める場合に、結果ごとに含まれるテキストの最大文字数。 |
+| `allowed_domains` | string[] | none | これらのドメインの結果のみを返します。エイリアス: `include_domains`。 |
+| `excluded_domains` | string[] | none | これらのドメインの結果を除外します。エイリアス: `exclude_domains`。 |
+| `include_highlights` | boolean | `true` | 検索エンジンが提供するハイライトやスニペットがあれば含めます。 |
+| `include_text` | boolean | `false` | 検索エンジンが対応している場合、結果のより詳細なテキストを含めます。 |
+| `user_location` | object | none | ローカライズ検索に対応する検索エンジン向けの任意の地域情報。 |
+
+## 検索エンジンの選択
+
+| Engine | 動作 |
+| --- | --- |
+| `exa` | Exaの管理型検索。ゲートウェイのランタイムでPhaseoにExaが設定されている必要があります。 |
+| `auto` | 設定済みの管理型デフォルトを使用します。現在はExaです。 |
+| `parallel` | 設定されている場合はParallel検索を使います。 |
+| `firecrawl` | 設定されている場合はFirecrawl検索を使います。 |
+| `perplexity` | 設定されている場合、Perplexity公式のSearch APIを使います。順位付きの結果、`search_context_size`、`user_location.country`に基づく地域検索、許可または除外ドメインに対応しています。 |
+| `native` | リクエストの形式が対応している場合、上流モデルを呼び出す前に、宣言をプロバイダー固有のネイティブWeb検索ツールへ変換します。 |
+
+`engine: "native"`はツールの宣言内でのみ使用してください。モデルが出力済みのゲートウェイ検索呼び出し内で`engine: "native"`を指定すると、上流リクエストの送信前にネイティブツールを選択する必要があるため、Phaseoはツールエラーを返します。
+
+## ドメインの絞り込み
+
+回答の情報源を指定した範囲に限定する場合は、`allowed_domains`を使います。
+
+```json
+{
+  "type": "phaseo:web_search",
+  "parameters": {
+    "allowed_domains": ["phaseo.app", "github.com"]
+  }
+}
+```
+
+幅広いWeb検索は許可しつつ、特定のドメインを結果から除外する場合は`excluded_domains`を使います。
+
+PerplexityとFirecrawlは、1回の検索で`allowed_domains`または`excluded_domains`のどちらか一方を受け付けます。Perplexityは1リクエストにつき最大20個のドメインフィルターを受け付け、除外ドメインを拒否リスト形式に変換します。
+
+## Responses API
+
+同じツール形式を`/v1/responses`でも使えます。
+
+```json
+{
+  "model": "openai/gpt-5-nano",
+  "input": "Find the latest release notes for Phaseo.",
+  "tools": [
+    { "type": "phaseo:web_search", "parameters": { "max_results": 4 } }
+  ]
+}
+```
+
+## 使用量と料金
+
+Web検索呼び出しでは次の値が増加します。
+
+```json
+{
+  "usage": {
+    "server_tool_use": {
+      "web_search_requests": 1,
+      "web_search_results": 5,
+      "web_search_extra_results": 0
+    }
+  }
+}
+```
+
+管理型検索の料金には`server_tool_web_search_requests`と`server_tool_web_search_extra_results`を使用できます。プロバイダーのネイティブ検索では、モデルの料金カードで設定されている場合に`native_web_search_requests`を使用できます。
+
+## 関連ページ
+
+- [Web Fetch](./web-fetch.mdx)
+- [サーバーツール](./index.mdx)
+- [Web検索とページ取得による根拠の提示](../../cookbook/tool-grounding-with-web-fetch.mdx)

@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { useTranslations } from "next-intl";
+import { localizedSettingsError } from "@/i18n/error-messages";
 import { CheckCircle2, Copy, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { updateTeamSsoSettingsAction } from "@/app/(dashboard)/settings/teams/actions";
@@ -79,9 +80,7 @@ export default function WorkspaceSamlSettingsCard({
 			await updateTeamSsoSettingsAction(workspaceId, normalized);
 			toast.success(t("saml.saved"));
 		} catch (error) {
-			toast.error(
-				error instanceof Error ? error.message : t("saml.saveFailed"),
-			);
+			toast.error(localizedSettingsError(error, t, "Action failed", t("saml.saveFailed")));
 		} finally {
 			setSaving(false);
 		}

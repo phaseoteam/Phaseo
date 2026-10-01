@@ -16,9 +16,10 @@ import {
 	parseUsageRangePreset,
 } from "@/lib/gateway/usage/timeRange";
 
-export const metadata: Metadata = {
-	title: "Lifecycle Alerts - Settings",
-};
+export async function generateMetadata(): Promise<Metadata> {
+	const t = await getTranslations("SettingsUI.settingsPageMetadata");
+	return { title: t("lifecycleAlerts") };
+}
 
 type SearchParams = Record<string, string | string[] | undefined>;
 

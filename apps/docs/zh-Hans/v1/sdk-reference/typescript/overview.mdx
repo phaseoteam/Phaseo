@@ -1,0 +1,41 @@
+---
+icon: "compass"
+title: "TypeScript SDK 概览"
+description: "Phaseo Gateway API 的官方 TypeScript 客户端"
+---
+
+从 npm 安装已发布的 [~@phaseo/sdk~](https://www.npmjs.com/package/@phaseo/sdk) 软件包。
+
+Phaseo TypeScript SDK 提供了类型安全且便捷的 Phaseo Gateway API 交互方式。它基于 OpenAPI 规范构建，提供完整的 TypeScript 支持、生成的类型和简洁的客户端接口。
+
+## 功能
+
+-   **类型安全**：基于 OpenAPI 规范生成类型，完整支持 TypeScript
+-   **简洁的 API**：易于使用的客户端和清晰的接口
+-   **生成代码**：根据规范 API 定义自动生成
+-   **覆盖全面**：涵盖所有 Gateway API 端点
+
+## 快速示例
+
+```typescript
+import Phaseo from "@phaseo/sdk";
+
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
+
+const response = await client.generateText({
+	model: "openai/gpt-4o-mini",
+	messages: [{ role: "user", content: "Hello, how are you?" }],
+});
+
+console.log(response.choices[0].message.content);
+```
+
+## 包含内容
+
+-   用于所有 API 交互的 `Phaseo` 客户端类
+-   按资源组织的辅助方法，例如 `client.models`, `client.batches`, `client.videos`, and `client.asyncJobs`
+-   用于发现和查询价格的辅助方法，例如 `client.getModels()`, `client.listProviders()`, `client.getCredits()`, `client.getActivity()`, `client.getAnalytics()`, `client.listEndpoints()`, `client.listOrganisations()`, `client.listPricingModels()`, `client.calculatePricing()`, `client.listApiKeys()`, `client.createApiKey()`, `client.getApiKey(id)`, `client.updateApiKey(id, ...)`, `client.deleteApiKey(id)`, `client.listWorkspaces()`, `client.getWorkspace(id)`, `client.createWorkspace(...)`, `client.updateWorkspace(id, ...)`, `client.deleteWorkspace(id)`, and `client.getCurrentApiKey()`
+-   用于批处理和视频生命周期流的异步任务 WebSocket URL 辅助方法
+-   为所有请求和响应对象生成的类型
+-   全面覆盖 API，包括 Chat Completions、模型、额度等
+-   改善开发体验的 TypeScript 定义

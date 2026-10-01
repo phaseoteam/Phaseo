@@ -1,12 +1,14 @@
+import { getTranslations } from "next-intl/server";
 import { Suspense } from "react";
 import RoutingSettingsClient from "@/components/(gateway)/settings/routing/RoutingSettingsClient";
 import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
 import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHeader";
 import { fetchSettingsRoutingInitialData } from "@/lib/fetchers/internal/fetchSettingsRoutingInitialData";
 
-export const metadata = {
-	title: "Routing - Settings",
-};
+export async function generateMetadata() {
+	const t = await getTranslations("SettingsUI");
+	return { title: `${t("headers.routing")} - ${t("headers.settings")}` };
+}
 
 export default function RoutingSettingsPage() {
 	return (
@@ -25,12 +27,12 @@ export default function RoutingSettingsPage() {
 }
 
 async function RoutingSettingsContent() {
-	const initialData = await fetchSettingsRoutingInitialData();
+	const [initialData, t] = await Promise.all([fetchSettingsRoutingInitialData(), getTranslations("SettingsUI")]);
 
 	if (!initialData.workspaceId) {
 		return (
 			<div className="rounded-lg border border-border/60 bg-muted/20 p-4 text-sm text-muted-foreground">
-				Select a workspace to manage routing preferences.
+				{t("settingsPageCopy.routingWorkspace")}
 			</div>
 		);
 	}

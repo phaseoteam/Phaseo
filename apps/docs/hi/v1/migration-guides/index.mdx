@@ -1,0 +1,77 @@
+---
+title: "माइग्रेशन गाइड"
+description: "प्लेटफ़ॉर्म बदलने या model के किसी खास संस्करण को अपनाने की गाइड।"
+icon: "compass"
+---
+
+# माइग्रेशन गाइड
+
+Phaseo की माइग्रेशन गाइड दो तरह के बदलावों को कवर करती हैं:
+
+- किसी दूसरे platform या gateway से Phaseo पर जाना
+- उसी platform पर model का नया version अपनाना
+
+<Columns cols={2}>
+	<Card title="Model migrations" icon="brain-circuit" href="../model-migrations/index.mdx">
+		आसपास का integration लगभग वैसा रखते हुए model upgrade करें।
+	</Card>
+	<Card title="Platform migrations" icon="arrow-right-left" href="./assistant.mdx">
+		SDK, provider या gateway बदलकर मौजूदा integration को Phaseo के लिए अनुकूल करें।
+	</Card>
+</Columns>
+
+## मॉडल माइग्रेशन
+
+जब integration लगभग वैसा ही रहे, लेकिन इस्तेमाल होने वाला model बदले, तब इन गाइड का उपयोग करें।
+
+इनमें शामिल हैं:
+
+- request parameters में बदलाव
+- prompts और reasoning के व्यवहार में अंतर
+- structured output और tool-calling में अंतर
+- rollout, fallback और rollback की रणनीति
+
+मौजूदा model migration गाइड:
+
+- [Anthropic Claude Opus 5](../model-migrations/anthropic-claude-opus-5.mdx)
+- [OpenAI GPT-5.6](../model-migrations/openai-migrating-to-gpt-5-6.mdx)
+- [Anthropic Claude Opus 4.8](../model-migrations/anthropic-claude-opus-4-1-to-4-8.mdx)
+- [Anthropic Claude Opus 4.7](../model-migrations/anthropic-claude-opus-4-6-to-4-7.mdx)
+- [Mistral Small 4](../model-migrations/mistral-small-3-2-to-mistral-small-4.mdx)
+- [OpenAI GPT-5.4](../model-migrations/openai-migrating-to-gpt-5-4.mdx)
+- [Google Nano Banana 2](../model-migrations/google-nano-banana-1-to-nano-banana-2.mdx)
+- [Google Gemini 3.1](../model-migrations/google-migrating-to-gemini-3-and-3-1.mdx)
+- [Anthropic Claude Sonnet 4.6](../model-migrations/anthropic-claude-sonnet-4-5-to-4-6.mdx)
+- [SpaceXAI Grok 4.20](../model-migrations/xai-grok-4-20.mdx)
+- [Anthropic Claude Opus 4.6](../model-migrations/anthropic-claude-opus-4-5-to-4-6.mdx)
+
+## प्लेटफ़ॉर्म माइग्रेशन
+
+अगर आप SDK, provider या gateway बदल रहे हैं और मौजूदा integration को Phaseo से जोड़ना चाहते हैं, तो इन गाइड का उपयोग करें।
+
+<Card title="माइग्रेशन checklist बनाएँ" icon="wand-sparkles" href="./assistant.mdx">
+	मौजूदा integration चुनें और इंटरैक्टिव माइग्रेशन सहायक खोलें।
+</Card>
+
+मौजूदा platform migration गाइड:
+
+- [OpenAI SDK से माइग्रेशन](./from-openai.mdx)
+- [Anthropic SDK से माइग्रेशन](./from-anthropic.mdx)
+- [OpenRouter से माइग्रेशन](./from-openrouter.mdx): endpoint और key बदलें, models जाँचें और streaming व rollback परखें।
+- [Vercel AI Gateway से माइग्रेशन](./from-vercel.mdx)
+- [LLMGateway से माइग्रेशन](./from-llmgateway.mdx)
+- [LiteLLM से माइग्रेशन](./from-litellm.mdx)
+- [Cloudflare AI Gateway से माइग्रेशन](./from-cloudflare.mdx)
+- [Helicone AI Gateway से माइग्रेशन](./from-helicone.mdx)
+
+Rollout की योजना बनाएँ और उसे validate करें:
+
+- [माइग्रेशन तैयारी की समीक्षा](./gateway-parity-review.mdx)
+- [माइग्रेशन feature checklist](./feature-parity-matrix.mdx)
+
+## इन गाइड का उपयोग कैसे करें
+
+1. तय करें कि platform, model या दोनों बदल रहे हैं।
+2. माइग्रेशन के सबसे जोखिम वाले हिस्से वाली गाइड से शुरू करें।
+3. output quality की तुलना से पहले request parameters और endpoint behavior जाँचें।
+4. live traffic बदलने से पहले production-जैसे evaluations चलाएँ।

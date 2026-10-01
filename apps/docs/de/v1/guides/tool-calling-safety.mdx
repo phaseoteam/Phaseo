@@ -1,0 +1,47 @@
+---
+icon: "shield-check"
+title: "Sicherheit und Validierung bei Tool-Aufrufen"
+description: "Validiere Tool-Argumente, sichere die Ausführung ab und verhindere unsichere Modellaktionen."
+---
+
+Behandle vom Modell erzeugte Tool-Argumente als nicht vertrauenswürdige Eingaben.
+
+## Sicherheits-Checkliste
+
+Halte Tool-Schemas knapp und eindeutig.
+Validiere geparste Argumente vor der Ausführung des Tools.
+Lass nur freigegebene Tool-Namen zu und lehne unbekannte ab.
+Füge für externe Aufrufe Timeouts und Wiederholungen hinzu.
+Protokolliere Call-ID, Tool-Name und Validierungsfehler.
+
+## Beispiel für Request-Validierung (TypeScript + Zod)
+
+```typescript
+import { z } from "zod";
+
+const WeatherArgs = z.object({
+  city: z.string().min(1),
+});
+
+function executeToolCall(name: string, rawArgs: string) {
+  if (name !== "get_weather") {
+    throw new Error(`Unsupported tool: ${name}`);
+  }
+
+  const parsed = WeatherArgs.parse(JSON.parse(rawArgs));
+  return getWeather(parsed.city);
+}
+```
+
+## Vorgehen bei Fehlern
+
+Wenn die Validierung fehlschlägt:
+
+1. Führe das Tool nicht aus.
+2. Gib im nächsten Modell-Turn eine kontrollierte Fehlermeldung zurück.
+3. Bitte das Modell, es mit korrigierten Argumenten erneut zu versuchen.
+
+## Hinweis zu Streaming
+
+Verwende Tool-Aufruf-Requests vorerst ohne Streaming (`stream: false`), damit sie die Gateway-Request-Validierung erfüllen.
+

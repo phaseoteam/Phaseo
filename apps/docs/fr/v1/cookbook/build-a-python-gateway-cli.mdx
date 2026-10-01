@@ -1,0 +1,117 @@
+---
+title: "Créer une CLI de gateway en Python"
+icon: "terminal"
+description: "Suivez l’exemple de démarrage rapide Python pour créer une CLI ou une intégration backend orientée Python."
+---
+
+Consultez cette page si votre première intégration Phaseo concrète est en Python et que vous cherchez un point de départ pratique pour une CLI, un worker ou un service backend.
+
+**Objectif :** Exécuter les routes de contrôle et de génération de Phaseo depuis une petite application en ligne de commande écrite en Python.
+
+**Résultat :** Une CLI avec peu de dépendances, que vous pouvez adapter à un worker, un script ou une intégration backend.
+
+<Prompt
+  description="Créez une **CLI de gateway en Python** autour des routes Phaseo."
+  icon="terminal-square"
+  actions={["copy", "cursor"]}
+>
+{`Vous créez une CLI Python ou une intégration côté serveur pour Phaseo Gateway.
+
+Créez une petite application Python qui :
+- lit PHASEO_API_KEY depuis l’environnement
+- propose un mode de test rapide de la route de contrôle
+- propose une commande de génération de texte
+- limite le nombre de dépendances
+
+Exigences :
+- Privilégiez la bibliothèque standard de Python, sauf raison valable de faire autrement.
+- Rendez le contenu des requêtes explicite.
+- Affichez clairement les réussites et les erreurs.
+- Incluez une ou deux commandes utiles au lieu d’une CLI généraliste volumineuse.
+- Ajoutez un README concis avec des exemples.
+
+Livrables :
+- Le code de l’application Python
+- Des commandes d’utilisation simples
+- Un fichier .env.example ou une documentation équivalente sur les variables d’environnement
+
+Vérification :
+- Exécutez le test rapide de la route si possible.
+- Effectuez une génération de texte réussie si possible.
+- Indiquez précisément ce que vous avez vérifié et ce qui reste à vérifier.`}
+</Prompt>
+
+## Projet d’exemple
+
+- GitHub : [examples/gateway-python-quickstart](https://github.com/phaseoteam/Phaseo/tree/main/examples/gateway-python-quickstart)
+- Chemin local dans le dépôt : `examples/gateway-python-quickstart`
+
+## Fonctionnement de l’application
+
+- prend en charge des routes de contrôle telles que :
+  - `GET /v1/health`
+  - `GET /v1/models`
+  - `GET /v1/providers`
+- prend en charge des routes de génération telles que :
+  - `POST /v1/responses`
+  - `POST /v1/chat/completions`
+  - `POST /v1/embeddings`
+  - ainsi que plusieurs autres points de terminaison
+
+## Pourquoi cet exemple est utile
+
+Il fournit :
+
+- une référence orientée Python sans dépendances tierces
+- des corps de requête et un traitement des réponses explicites
+- un modèle pratique pour les workers, les scripts et les outils internes
+
+## Prérequis
+
+- Python 3
+- une clé API Phaseo
+
+## Exécuter l’exemple
+
+```bash
+cd examples/gateway-python-quickstart
+cp .env.example .env.local
+```
+
+Définissez :
+
+- `PHASEO_API_KEY`
+
+Puis essayez :
+
+```bash
+python quickstart.py smoke
+python quickstart.py responses --prompt "Return exactly: integration_ok"
+python quickstart.py --help
+```
+
+## Vérifier le résultat
+
+- Le mode de test rapide confirme que l’API est accessible.
+- La commande Responses affiche `integration_ok`.
+- `--help` répertorie les commandes disponibles sans envoyer de requête.
+- Les erreurs d’authentification et de l’API sont clairement affichées dans le terminal.
+
+## Éléments à examiner dans le code
+
+- le chargement des variables d’environnement
+- la façon dont la CLI distribue les commandes
+- la construction des différents corps de requête
+- la gestion séparée des routes asynchrones de vidéo et de musique et des routes de texte à réponse unique
+
+## Adapter l’exemple
+
+- supprimez les points de terminaison dont votre service n’a pas besoin
+- conservez un seul utilitaire de requête au lieu de dupliquer les en-têtes
+- passez au SDK Python si vous souhaitez ensuite utiliser un client de plus haut niveau
+
+## Guides associés
+
+- [Prompts de démarrage pour mini-applications](./mini-app-starter-prompts.mdx)
+- [Produire du JSON structuré depuis Python](./sdk-python-presets-and-json.mdx)
+- [Exemples](../guides/examples.mdx)

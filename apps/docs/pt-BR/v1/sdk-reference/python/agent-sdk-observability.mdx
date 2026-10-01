@@ -1,0 +1,23 @@
+---
+icon: "triangle-alert"
+title: "Erros e solução de problemas"
+description: "Diagnostique falhas de agentes Python, dados inválidos de ferramentas e execuções interrompidas."
+---
+
+Um resultado com falha mantém a etapa ativa, a contagem de tentativas, o ID da solicitação, o ID de resposta nativo, os metadados do provedor e os detalhes disponíveis do gateway.
+
+Verifique se:
+
+- o processo tem acesso a `PHASEO_API_KEY`
+- os IDs das ferramentas são exclusivos
+- as decisões de aprovação usam os IDs exatos das chamadas
+- o estado pausado é salvo antes de continuar outra solicitação
+- os validadores não produzem efeitos colaterais
+- o cancelamento alcança operações de rede ou armazenamento dentro das ferramentas
+
+Use eventos do ciclo de vida para a telemetria da aplicação e o DevTools para inspecionar execuções localmente.
+
+## Relacionados
+
+- [Hooks de ciclo de vida](./agent-sdk-lifecycle-hooks.mdx)
+- [DevTools](./agent-sdk-devtools.mdx)

@@ -1,0 +1,95 @@
+---
+title: "الترحيل من Cloudflare AI Gateway"
+sidebarTitle: "Cloudflare AI Gateway"
+description: "استبدل مسار Cloudflare AI Gateway بـ Phaseo مع الحفاظ على تدفق الطلبات في تطبيقك."
+icon: "/icons/brands/cloudflare.svg"
+---
+
+استخدم هذا الدليل إذا كان تطبيقك يرسل بالفعل طلبات متوافقة مع OpenAI عبر Cloudflare AI Gateway. بدّل حد البوابة أولًا، ثم أعد إنشاء التوجيه والتخزين المؤقت وقابلية الرصد التي تحتاج إليها حركة مرور الإنتاج فعليًا فقط.
+
+## ما الذي سيتغير
+
+| الإعداد | قبل | بعد |
+| --- | --- | --- |
+| عنوان URL لـ Gateway | عنوان Cloudflare مخصص للحساب والبوابة | `https://api.phaseo.app/v1` |
+| المصادقة | بيانات اعتماد Cloudflare والمزوّد | `PHASEO_API_KEY` |
+| سياسة التوجيه | إعداد Cloudflare Gateway | إعدادات التوجيه والإعدادات المسبقة في Phaseo |
+| الاطلاع على الطلبات | تحليلات Cloudflare | نشاط Phaseo وتفاصيل الطلبات |
+
+<Steps>
+<Step title="احصر إعداد البوابة الحالي">
+
+سجّل عنوان Cloudflare Gateway ومسارات المزوّدين والرؤوس المخصصة وقواعد التخزين المؤقت وسلوك إعادة المحاولة والتحليلات التي يعتمد عليها تطبيقك. يساعدك ذلك على فصل السلوك المطلوب عن الإعدادات التي لم تعد بحاجة إلى نقلها.
+
+</Step>
+
+<Step title="استبدل نقطة النهاية وبيانات الاعتماد">
+
+أبقِ محتوى الطلب كما هو قدر الإمكان، وحدّث حد اتصال العميل المتوافق مع OpenAI.
+
+<CodeGroup>
+```typescript TypeScript
+import OpenAI from "openai";
+
+const client = new OpenAI({
+  apiKey: process.env.PHASEO_API_KEY,
+  baseURL: "https://api.phaseo.app/v1",
+});
+
+const response = await client.chat.completions.create({
+  model: "openai/gpt-4.1-mini",
+  messages: [{ role: "user", content: "Reply with: migration ready" }],
+});
+```
+
+```python Python
+import os
+from openai import OpenAI
+
+client = OpenAI(
+    api_key=os.environ["PHASEO_API_KEY"],
+    base_url="https://api.phaseo.app/v1",
+)
+```
+
+```bash cURL
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-4.1-mini",
+    "messages": [{"role": "user", "content": "Reply with: migration ready"}]
+  }'
+```
+</CodeGroup>
+
+</Step>
+
+<Step title="أعد إنشاء التوجيه والإعدادات الافتراضية المشتركة">
+
+انقل قيود المزوّد الثابتة والقيم الافتراضية للمطالبات ومعلمات التوليد إلى [الإعدادات المسبقة](../guides/presets.mdx). واضبط ترتيب المزوّدين والرجوع الاحتياطي عبر [التوجيه والرجوع الاحتياطي](../guides/routing-and-fallbacks.mdx).
+
+لا تنتقل إعدادات التخزين المؤقت والتحليلات في Cloudflare تلقائيًا. حدّد صراحةً ما إذا كان كل سلوك يجب أن يكون في Phaseo أو تطبيقك أو طبقة الحافة.
+
+</Step>
+
+<Step title="تحقّق قبل التحويل">
+
+اختبر، حسب الحاجة، الطلبات غير المتدفقة والبث والأخطاء والأدوات والمخرجات المنظّمة. قارن زمن الاستجابة والمخرجات واستخدام الرموز والتكلفة قبل نقل حركة المرور تدريجيًا.
+
+</Step>
+</Steps>
+
+## قائمة التحقق من الترحيل
+
+- أُزيلت عناوين Cloudflare Gateway ورؤوسها الخاصة.
+- تم التحقق من معرّفات نماذج الإنتاج باستخدام `GET /v1/models`.
+- أُعيد إنشاء سلوك التخزين المؤقت المطلوب أو أُلغي عن قصد.
+- يوفر نشاط Phaseo وتفاصيل الطلبات مستوى الاطلاع الذي يحتاج إليه فريقك.
+- يظل التراجع مقتصرًا على تغيير إعداد نقطة النهاية والمفتاح.
+
+## الخطوات التالية
+
+- [الإعدادات المسبقة](../guides/presets.mdx)
+- [التوجيه والرجوع الاحتياطي](../guides/routing-and-fallbacks.mdx)
+- [قابلية الرصد](../guides/integrations/observability.mdx)

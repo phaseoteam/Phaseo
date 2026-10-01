@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { useTranslations } from "next-intl";
+import { localizedSettingsError } from "@/i18n/error-messages";
 import { Check, Clipboard, KeyRound, Loader2, RefreshCw, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -32,7 +33,7 @@ export default function WorkspaceScimSettingsCard({ workspaceId, canEdit, previe
 	React.useEffect(() => {
 		if (preview) return;
 		let cancelled = false;
-		void loadSettings().then((result) => { if (!cancelled) setSettings(result); }).catch((error) => toast.error(error instanceof Error ? error.message : t("scim.settingsUnavailable"))).finally(() => { if (!cancelled) setLoading(false); });
+		void loadSettings().then((result) => { if (!cancelled) setSettings(result); }).catch((error) => toast.error(localizedSettingsError(error, t, "Action failed", t("scim.settingsUnavailable")))).finally(() => { if (!cancelled) setLoading(false); });
 		return () => { cancelled = true; };
 	}, [loadSettings, preview]);
 
@@ -47,7 +48,7 @@ export default function WorkspaceScimSettingsCard({ workspaceId, canEdit, previe
 			await refresh();
 			toast.success(enabled ? t("scim.enabled") : t("scim.disabled"));
 		} catch (error) {
-			toast.error(error instanceof Error ? error.message : t("scim.updateFailed"));
+			toast.error(localizedSettingsError(error, t, "Action failed", t("scim.updateFailed")));
 		} finally { setWorking(false); }
 	}
 
@@ -59,7 +60,7 @@ export default function WorkspaceScimSettingsCard({ workspaceId, canEdit, previe
 			await refresh();
 			toast.success(t("scim.tokenCreated"));
 		} catch (error) {
-			toast.error(error instanceof Error ? error.message : t("scim.tokenCreateFailed"));
+			toast.error(localizedSettingsError(error, t, "Action failed", t("scim.tokenCreateFailed")));
 		} finally { setWorking(false); }
 	}
 
@@ -71,7 +72,7 @@ export default function WorkspaceScimSettingsCard({ workspaceId, canEdit, previe
 			await refresh();
 			toast.success(t("scim.tokenRevoked"));
 		} catch (error) {
-			toast.error(error instanceof Error ? error.message : t("scim.tokenRevokeFailed"));
+			toast.error(localizedSettingsError(error, t, "Action failed", t("scim.tokenRevokeFailed")));
 		} finally { setWorking(false); }
 	}
 

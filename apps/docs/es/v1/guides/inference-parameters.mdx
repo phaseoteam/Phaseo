@@ -1,0 +1,39 @@
+---
+icon: "sliders-horizontal"
+title: "Parámetros de inferencia"
+description: "Cómo afectan los parámetros principales de las solicitudes a la calidad, la determinación, la latencia y el coste."
+---
+
+La cuantización es una mitad del comportamiento del modelo.  
+Los parámetros de inferencia son la otra mitad.
+
+## Parámetros principales
+
+| Parámetro | Qué controla | Efecto habitual |
+| --- | --- | --- |
+| `temperature` | Aleatoriedad al seleccionar tokens | Un valor alto genera respuestas más creativas y variables; uno bajo, respuestas más deterministas |
+| `top_p` | Límite del muestreo de núcleo | Un valor bajo produce resultados más seguros y centrados |
+| `top_k` | Tamaño del conjunto de tokens candidatos (si es compatible) | Un valor bajo produce resultados más acotados y predecibles |
+| `max_tokens` / `max_output_tokens` | Longitud máxima de la respuesta generada | Limita el coste y la latencia; puede truncar respuestas |
+| `stop` | Secuencias explícitas de parada | Mejora el formato de salida y la fiabilidad del análisis |
+| `seed` | Semilla aleatoria (si es compatible) | Mejora la reproducibilidad al depurar o probar |
+
+## Interacciones que conviene vigilar
+
+- `temperature` y `top_p` afectan a la aleatoriedad. Cambia un parámetro cada vez al ajustar el resultado.
+- La cuantización agresiva a pocos bits junto con una aleatoriedad alta puede aumentar la inestabilidad de la salida.
+- Un valor bajo de `max_tokens` puede parecer un fallo del modelo cuando solo se ha truncado la respuesta.
+
+## Valores iniciales recomendados
+
+- `temperature`: entre `0.2` y `0.7`, según el nivel de creatividad que necesites
+- `top_p`: entre `0.9` y `1.0`
+- `max_tokens`: ajústalo a la longitud esperada de la respuesta; evita un valor enorme para todos los casos
+
+## Flujo de ajuste
+
+1. Ajusta primero la cuantización.
+2. Fija un conjunto de evaluación.
+3. Varía un parámetro cada vez.
+4. Compara la calidad, la latencia y el uso de tokens.
+5. Mantén preajustes distintos para cada endpoint o caso de uso.

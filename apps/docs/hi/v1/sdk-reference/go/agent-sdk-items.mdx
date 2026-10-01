@@ -1,0 +1,32 @@
+---
+icon: "layers"
+title: "स्ट्रीम आइटम"
+description: "Go agent runs से text, reasoning, tool और provider item events प्राप्त करें।"
+---
+
+Live agent interfaces के लिए `Stream` replay की जा सकने वाली event sequence देता है। Text deltas सबसे आसान हैं; पूरी event stream में reasoning, provider items, tool progress, lifecycle changes और final response भी शामिल हैं।
+
+```go
+stream := agent.Stream(ctx, phaseoagent.RunOptions{Input: prompt, Client: client})
+
+for event := range stream.Events() {
+  switch event.Type {
+  case "response.output_text.delta":
+    fmt.Print(event.Details["delta"])
+  case "response.reasoning.delta":
+    renderReasoning(event.Details)
+  case "response.item":
+    renderItem(event.Details["item"])
+  case "tool.preliminary_result":
+    renderProgress(event.Details)
+  }
+}
+
+result, err := stream.Result()
+```
+
+<Note>
+Go अभी provider items को बंद typed union के बजाय `AgentEvent` के generic details map से दिखाता है। `event.Type` के आधार पर switch करें, UI boundary पर item payload validate करें और future compatibility के लिए unknown-event fallback रखें।
+</Note>
+
+Run पूरा होने के बाद event history दोबारा चलाया जा सकता है। इससे अलग consumers text दिखा सकते हैं, events सहेज सकते हैं और दूसरा model request किए बिना audit timeline बना सकते हैं।

@@ -1,0 +1,14 @@
+---
+title: "Vérifier l’état de la passerelle"
+sidebarTitle: "Vérification de l’état"
+badge: "Beta"
+openapi: "/fr/openapi/v1/openapi.localized.yaml GET /health"
+description: "Renvoyer un état de santé minimal de Phaseo Gateway."
+---
+
+Utilisez ce point de terminaison sans authentification pour vérifier rapidement la disponibilité. Pour connaître les incidents en cours et leur historique, consultez la [page d’état de Phaseo](https://status.phaseo.app).
+
+<Note>
+Une réponse de santé positive ne garantit pas la disponibilité de toutes les routes de fournisseurs ou de modèles. Utilisez la réponse par défaut de `GET /v1/models` pour vérifier les routes actuellement accessibles.
+</Note>
+

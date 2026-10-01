@@ -1,0 +1,26 @@
+---
+icon: "radio-tower"
+title: "ライフサイクルフック"
+description: "Rubyエージェントの実行、モデルターン、ツール、休止、完了を監視します。"
+---
+
+実行中にライフサイクルイベントを構造化データで受け取るには、`on_event`を渡します。
+
+```ruby
+result = agent.run(
+  input: prompt,
+  client: client,
+  on_event: ->(event) {
+    logger.info(
+      "agent event",
+      type: event[:type],
+      run_id: event[:run_id],
+      details: event[:details]
+    )
+  }
+)
+```
+
+有用なイベントには、実行の開始・完了・失敗、モデルの試行、テキストや推論の差分、ツールの開始・進捗・完了・失敗、人によるチェックポイントが含まれます。
+
+ハンドラーは高速に保ちます。時間のかかる永続化処理はキューに入れ、イベントを外部に転送する前にツール入力の機密情報をマスキングします。

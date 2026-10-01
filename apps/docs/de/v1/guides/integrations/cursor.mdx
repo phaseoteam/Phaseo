@@ -1,0 +1,86 @@
+---
+title: "Cursor"
+description: "Verbinde Cursor über den OpenAI-API-Schlüssel und die benutzerdefinierte Basis-URL mit Phaseo."
+---
+
+Nutze diese Anleitung, um unterstützte Cursor-Chatmodelle über Phaseo zu leiten. Cursor speichert API-Schlüssel sicher; daher erstellt und widerruft die Phaseo-CLI den eigenen Schlüssel, während Cursor die Eingabe der Anmeldedaten übernimmt.
+
+## Cursor-Anmeldedaten erstellen
+
+```bash
+phaseo login
+phaseo integrations setup cursor --model openai/gpt-5.6-terra
+```
+
+Das Setup erstellt einen nicht ablaufenden Schlüssel `Phaseo CLI: Cursor API Key` und gibt die folgenden Einstellungen aus. Der private Anmeldedatenspeicher von Cursor wird nicht geändert.
+
+## Cursor konfigurieren
+
+1. Öffne **Cursor Settings**.
+2. Wähle **Models** aus.
+3. Suche den Bereich **OpenAI API Key** und aktiviere ihn.
+4. Kopiere den eigenen Schlüssel:
+
+```bash
+phaseo integrations credential cursor
+```
+
+5. Füge den Schlüssel in das Feld für den OpenAI-API-Schlüssel in Cursor ein.
+6. Aktiviere **Override OpenAI Base URL**.
+7. Gib `https://api.phaseo.app/v1` ohne abschließenden Schrägstrich ein.
+8. Füge das gewünschte Phaseo-Modell hinzu oder aktiviere es.
+
+| Cursor-Feld | Wert |
+| --- | --- |
+| OpenAI API Key | Ausgabe von `phaseo integrations credential cursor` |
+| Override OpenAI Base URL | `https://api.phaseo.app/v1` |
+| Model | Eine Phaseo-Modell-ID, die vom Cursor-Feld unterstützt wird |
+
+Die aktuellen Einstellungen für benutzerdefinierte Provider in Cursor gelten global und nicht pro Provider. Der Modellname wird an den konfigurierten Endpunkt weitergeleitet; der aktivierte API-Schlüssel und die Basis-URL bestimmen das Ziel der Anfrage.
+
+<Warning>
+Cursor wendet die OpenAI-Basis-URL-Überschreibung derzeit umfassend an. Deaktiviere sie, bevor du wieder zu Cursor-gehosteten Modellen wechselst, falls diese bei aktiviertem Phaseo nicht funktionieren. Cursor kann auch benutzerdefinierte IDs ablehnen, die integrierten Modellnamen entsprechen oder nicht in das Routing der OpenAI-Modellfamilie passen.
+</Warning>
+
+## Überprüfen
+
+1. Lasse den Phaseo-Schlüssel und die Basis-URL-Überschreibung aktiviert.
+2. Wähle das konfigurierte Modell in der Cursor-Modellauswahl aus.
+3. Starte einen neuen Chat und bitte um die Antwort `PHASEO_CURSOR_OK`.
+4. Prüfe, ob die Anfrage in den Phaseo-Aktivitäten oder -Protokollen erscheint.
+
+Der normale Cursor-Chatpfad ist das maßgebliche Kompatibilitätsziel. Funktionen mit spezialisierten Cursor-Modellen, etwa die Tab-Vervollständigung, können weiterhin die eigene Infrastruktur von Cursor verwenden.
+
+## Entfernen
+
+Deaktiviere zunächst den OpenAI-API-Schlüssel und die Basis-URL-Überschreibung unter **Cursor Settings → Models**. Widerrufe anschließend den eigenen Phaseo-Schlüssel:
+
+```bash
+phaseo integrations remove cursor
+```
+
+Beim Entfernen kann der sichere Anmeldedatenspeicher von Cursor nicht automatisch geleert werden. Falls der Schlüssel weiterhin konfiguriert ist, entferne ihn in den Cursor-Einstellungen für Models.
+
+## Fehlerbehebung
+
+### Cursor-gehostete Modelle funktionieren nicht mehr
+
+Deaktiviere **Override OpenAI Base URL**, bevor du ein Cursor-gehostetes Modell auswählst. Cursor isoliert benutzerdefinierte Basis-URLs derzeit nicht pro Modell.
+
+### Das Modell wird abgelehnt
+
+Verwende ein Phaseo-Modell, das Cursor als benutzerdefiniertes Modell der OpenAI-Familie akzeptiert. Cursor kann IDs ablehnen, die mit dem integrierten Katalog kollidieren; Modell-IDs mit Provider-Präfix werden möglicherweise nicht von jeder Version unterstützt.
+
+### Die Schaltfläche Verify wird nicht angezeigt
+
+Einige Cursor-Versionen speichern den Schlüssel ohne separate Verify-Aktion. Gib den Schlüssel und die Basis-URL ein und teste sie in einem neuen Chat.
+
+### Authentifizierung schlägt fehl
+
+Führe `phaseo integrations credential cursor` erneut aus, ersetze den in Cursor gespeicherten Wert und stelle sicher, dass die Basis-URL exakt `https://api.phaseo.app/v1` lautet.
+
+## Weiterführende Themen
+
+- [Dokumentation zum Cursor-API-Schlüssel](https://docs.cursor.com/settings/api-keys)
+- [Coding-Assistenten](./coding-assistants.mdx)
+- [Modelle](../../api-reference/endpoint/models.mdx)

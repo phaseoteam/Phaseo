@@ -1,0 +1,80 @@
+---
+title: "Google Gemini 3.1"
+description: "Gemini 3.1 अपनाने के लिए तर्क नियंत्रण, बहु-माध्यम प्रसंस्करण और Thought Signatures की जानकारी।"
+icon: "/icons/brands/google.svg"
+---
+
+# Google Gemini 3.1
+
+Production में Gemini 3.1 family को सुरक्षित रूप से अपनाने के लिए यह गाइड इस्तेमाल करें:
+
+- `google/gemini-3-pro-preview`
+- `google/gemini-3-flash-preview`
+- `google/gemini-3.1-pro-preview`
+- `google/gemini-3.1-flash-lite-preview`
+
+Gemini 3 ने तर्क नियंत्रण और बहु-माध्यम प्रसंस्करण से जुड़े API स्तर के बदलाव किए। Gemini 3.1 ने विशेष रूप से जटिल, गहन तर्क वाले कार्यों के लिए आधार स्तर को और बेहतर बनाया।
+
+## नया क्या है
+
+- Gemini 3 ने तर्क की गहराई के मुख्य नियंत्रण के रूप में `thinking_level` जोड़ा।
+- Multimodal vision handling के लिए `media_resolution` जोड़ा गया।
+- Gemini 3 API कॉल के बीच तर्क संदर्भ बनाए रखने के लिए Thought Signatures का उपयोग करता है।
+- सख्त workflows में Thought Signatures न होने से quality घट सकती है या `400` errors आ सकते हैं।
+- Gemini 3.1 Pro जटिल कार्यों और एजेंट आधारित कार्यप्रवाहों के लिए तर्क क्षमता में एक बड़ा सुधार है।
+
+## माइग्रेशन quickstart
+
+### 1. तर्क नियंत्रणों को फिर से मैप करें
+
+यदि आपका ऐप सामान्य तर्क नियंत्रण देता है, तो उसे Gemini 3 के रूटों के लिए सावधानी से मैप करें। OpenAI-संगत प्रवाह में `reasoning_effort` संकल्पनात्मक रूप से Gemini `thinking_level` से मेल खाता है, लेकिन दोनों का व्यवहार पूरी तरह समान नहीं है; इसलिए दोबारा परीक्षण करें।
+
+### 2. Thought Signatures सही तरह संभालें
+
+आधिकारिक Gemini SDK और सामान्य चैट इतिहास में signatures आमतौर पर अपने-आप संभलते हैं। यदि आप निम्न-स्तरीय अनुरोध प्रवाह बनाते हैं, खासकर function calling या छवि जनरेशन और संपादन के लिए, तो लौटे हुए signatures को यथावत सुरक्षित रखें और वापस भेजें।
+
+### 3. Prompt style पर फिर विचार करें
+
+Gemini 3 guidance लंबे prompt scaffolding के बजाय सीधे prompts और parameter-based controls को प्राथमिकता देती है। पुराने model behavior की भरपाई के लिए prompts बहुत जटिल हों तो उन्हें सरल करके दोबारा evaluate करें।
+
+### 4. Multimodal settings tune करें
+
+Images, documents या mixed media वाली routes पर `media_resolution` फिर test करें; पुराने defaults को सही न मानें।
+
+## क्या जाँचें
+
+### प्रॉम्प्ट और तर्क व्यवहार
+
+- संक्षिप्त और बहुत संरचित prompts की तुलना
+- चरण-दर-चरण तर्क वाले कार्य
+- लंबे संदर्भ का संश्लेषण
+- ऐसे एजेंट कार्यप्रवाह जिन्हें तर्क की निरंतरता चाहिए
+
+### जवाब संभालना
+
+- चरणों के बीच signatures सुरक्षित रहना
+- फ़ंक्शन कॉलिंग की सफलता दर
+- स्कीमा की सफलता दर
+- thinking controls बदलने के बाद खाली, अधूरे या अमान्य आउटपुट
+
+### प्रोडक्शन मेट्रिक्स
+
+- हर `thinking_level` पर प्रतिक्रिया समय
+- token usage और लागत
+- अलग `media_resolution` settings पर multimodal route performance
+- Gemini 3 बनाम Gemini 3.1 Pro में task success
+
+## रिलीज़ संबंधी सुझाव
+
+Gemini 3 और Gemini 3.1 को अलग migrations मानें।
+
+1. पहले request format और signature handling माइग्रेट करें।
+2. फिर Gemini 3 पर prompt और schema evaluations दोबारा चलाएँ।
+3. गहन तर्क की आवश्यकता वाले रूटों के लिए Gemini 3.1 Pro को अलग से जारी करें।
+4. high-volume workloads के लिए सरल या कम खर्चीला fallback रखें।
+
+## स्रोत
+
+- [Gemini 3 डेवलपर गाइड](https://ai.google.dev/gemini-api/docs/gemini-3)
+- [Gemini 3 के लिए Gemini API के नए अपडेट](https://developers.googleblog.com/en/new-gemini-api-updates-for-gemini-3/)
+- [Gemini 3.1 Pro की घोषणा](https://blog.google/innovation-and-ai/models-and-research/gemini-models/gemini-3-1-pro/)

@@ -1,0 +1,17 @@
+---
+icon: "shuffle"
+title: "डायनेमिक टर्न"
+description: "एजेंट टर्न के बीच .NET मॉडल सेटिंग और टूल बदलें।"
+---
+
+जब अगले टर्न को context या पहले के tool results के अनुसार जवाब देना हो, तो `DynamicModel`, `DynamicInstructions`, `Temperature`, `MaxOutputTokens`, `TopP` और `DynamicTools` उपयोग करें।
+
+टूल `RuntimeContext.SetContext` से ऐप context अपडेट कर सकते हैं और तुरंत अगले request के लिए `NextTurnParams` दे सकते हैं। approval के बाद रन जारी करते समय ये override paused run state के साथ बने रहते हैं।
+
+यदि रन state को `IStateAccessor` के ज़रिए सहेजा जा सकता है, तो ऐप context को serializable रखें।
+
+## संबंधित विषय
+
+- [टूल](./agent-sdk-tools.mdx)
+- [स्थिति और अनुमोदन](./agent-sdk-state-and-approval.mdx)
+- [रोकने की शर्तें](./agent-sdk-stop-conditions.mdx)

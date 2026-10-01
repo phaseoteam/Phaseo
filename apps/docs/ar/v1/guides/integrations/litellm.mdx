@@ -1,0 +1,56 @@
+---
+title: "LiteLLM"
+icon: "route"
+description: "استخدم Phaseo خلف LiteLLM أو وجّه استدعاءات LiteLLM عبر Phaseo."
+---
+
+استخدم LiteLLM مع Phaseo إذا كنت تعتمد بالفعل على الوكيل أو الميزانيات أو الموجّه المحلي لديه، وتريد الاستفادة من نماذج Phaseo وتحليلاته وأدوات الخادم.
+
+## استدعاء مباشر من Python
+
+```bash
+pip install litellm
+```
+
+```python
+import os
+from litellm import completion
+
+response = completion(
+    model="openai/openai/gpt-5-nano",
+    api_key=os.environ["PHASEO_API_KEY"],
+    api_base="https://api.phaseo.app/v1",
+    messages=[{"role": "user", "content": "Reply with only: ok"}],
+)
+
+print(response.choices[0].message.content)
+```
+
+يستخدم LiteLLM عادةً بادئة المزوّد `openai/` لنقاط النهاية المتوافقة مع OpenAI. يظل معرّف نموذج Phaseo هو `openai/gpt-5-nano`، لذا قد تظهر سلسلة النموذج في LiteLLM بالشكل `openai/openai/gpt-5-nano`.
+
+## إعداد الوكيل
+
+استخدم اسمًا مستعارًا للنموذج إذا لم ترغب في تضمين بادئة مزوّد LiteLLM في كود التطبيق:
+
+```yaml
+model_list:
+  - model_name: phaseo-gpt-5-nano
+    litellm_params:
+      model: openai/openai/gpt-5-nano
+      api_key: os.environ/PHASEO_API_KEY
+      api_base: https://api.phaseo.app/v1
+```
+
+بعد ذلك، استدعِ وكيل LiteLLM باستخدام `model: "phaseo-gpt-5-nano"`.
+
+## ملاحظات
+
+- فضّل أسماء LiteLLM المستعارة في بيئة الإنتاج للحفاظ على وضوح أسماء النماذج.
+- إذا كنت تستخدم أدوات خادم Phaseo، فاختبر مسار LiteLLM المحدد لأن بعض طبقات الوكيل توحّد أنواع الأدوات غير المعروفة أو تحذفها.
+- حدّد ما إذا كان LiteLLM أو Phaseo أو كلاهما هو المصدر المعتمد لتسجيل الأسعار.
+
+## صفحات ذات صلة
+
+- [SDK الخاص بـ OpenAI](./openai-sdk.mdx)
+- [أدوات الخادم](../server-tools/index.mdx)
+- [الأسعار](../../api-reference/endpoint/pricing-calculate.mdx)

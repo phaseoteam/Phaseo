@@ -1,0 +1,19 @@
+---
+icon: "chart-spline"
+title: "Ferramentas de desenvolvimento"
+description: "Capture execuções do Go Agent SDK no formato local de eventos do Phaseo DevTools."
+---
+
+A captura do DevTools grava um registro JSONL estruturado para cada execução e continuação. Ela é útil ao criar cronologias, interfaces de aprovação e visualizações de chamadas de ferramentas.
+
+```go
+result, err := agent.Run(ctx, phaseoagent.RunOptions{
+  Input: prompt,
+  Client: client,
+  Devtools: phaseoagent.CreateAgentDevtools(".phaseo-devtools"),
+})
+```
+
+O registro inclui status da execução, uso, tentativas de modelo, chamadas de ferramentas, pausas, metadados da solicitação e erros. As continuações são vinculadas pela mesma identidade de execução.
+
+Não use a captura local como armazenamento de auditoria em produção. Antes de persistir prompts ou resultados de ferramentas sensíveis, aplique suas próprias regras de retenção, controle de acesso, redação e criptografia.

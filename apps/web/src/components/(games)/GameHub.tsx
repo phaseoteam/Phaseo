@@ -56,9 +56,9 @@ export function GameHub() {
                     <div className="mb-3 flex size-10 items-center justify-center rounded-lg bg-foreground text-background">
                       <Icon className="size-5" />
                     </div>
-                    <CardTitle className="text-xl">{info.title}</CardTitle>
+                    <CardTitle className="text-xl">{t(info.titleKey)}</CardTitle>
                     <CardDescription className="leading-6">
-                      {info.description}
+                      {t(info.descriptionKey)}
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="mt-auto flex items-center gap-2 font-medium">

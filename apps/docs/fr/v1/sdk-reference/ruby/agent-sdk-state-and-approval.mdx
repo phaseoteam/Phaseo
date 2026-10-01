@@ -1,0 +1,21 @@
+---
+icon: "database"
+title: "État et approbation"
+description: "Mettez les agents Ruby en pause pour obtenir une décision humaine et reprendre l’état géré par l’application."
+---
+
+Utilisez `human_review` pour créer un point de contrôle général. Les outils soumis à approbation ou exécutés manuellement renseignent `run.pause.pending_tool_calls` avec les identifiants exacts des appels.
+
+Continuez avec `Agent#continue_run` et fournissez :
+
+- des valeurs `ToolDecision` pour approuver ou rejeter
+- des valeurs `ToolOutput` pour le travail manuel
+- `human_input` pour une pause de révision générale
+- l’exécution précédente, ou `run_id` avec un accesseur d’état
+
+Les décisions utilisent les identifiants exacts des appels : les appels simultanés au même outil restent donc distincts. Un objet d’état compatible implémente `load(run_id)` et `save(result)`.
+
+## À lire aussi
+
+- [Outils](./agent-sdk-tools.mdx)
+- [Contrôles d’exécution](./agent-sdk-run-controls.mdx)

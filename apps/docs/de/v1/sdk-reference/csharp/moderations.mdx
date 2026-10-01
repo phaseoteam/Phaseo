@@ -1,0 +1,28 @@
+---
+icon: "shield-check"
+title: "Moderation"
+description: "Rufe `/moderations` mit dem C#-SDK auf."
+---
+
+**Methode**: `client.GenerateModeration(...)` oder `client.CreateModeration(...)`
+
+### Beispiel
+```csharp
+using PhaseoSdk;
+
+var client = new Phaseo(apiKey);
+var response = await client.GenerateModeration(new Dictionary<string, object>
+{
+    ["model"] = "openai/omni-moderation-latest",
+    ["input"] = "Text to classify"
+});
+```
+
+### Wichtige Parameter
+- `model` (erforderlich): ID des Moderationsmodells (z. B. `openai/omni-moderation-latest`).
+- `input` (erforderlich): Zeichenfolge oder Array mit Inhaltselementen (Text oder `image_url`).
+- Optional: `categories`-/`severity`-Filter (sofern unterstützt) und `user`-Tag.
+
+### Rückgabe
+`ModerationResponse`
+

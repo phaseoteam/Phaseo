@@ -1,0 +1,34 @@
+---
+icon: "wand-sparkles"
+title: "تحرير الصور"
+description: "استدعِ /images/edits باستخدام SDK Ruby."
+---
+
+**الطرق**: `client.generate_image_edit(...)` أو `client.create_image_edit(...)`.
+
+### مثال
+```ruby
+require 'phaseo_sdk'
+
+client = PhaseoSdk::Phaseo.new(api_key: ENV.fetch("PHASEO_API_KEY"))
+edited = client.generate_image_edit(
+  model: 'openai/gpt-image-1',
+  prompt: 'Make it sunset',
+  image: 'data:image/png;base64,...',
+  mask: 'data:image/png;base64,...'
+)
+```
+
+### المعلمات الأساسية
+- `model` (مطلوب): معرّف نموذج يدعم تحرير الصور.
+- `image` (مطلوب): عنوان URL لبيانات base64 أو عنوان URL للصورة المصدر.
+- `prompt`: تعليمات جديدة اختيارية للتحرير.
+- `mask`: قناع اختياري (تُحرّر المناطق الشفافة).
+- `n` (1–10): عدد النسخ المعدّلة.
+- `size`: مثل `1024x1024` أو `1024x1792` أو `1792x1024`.
+- `response_format`: `url` أو `b64_json`.
+- `user`: وسم اختياري للمستخدم النهائي.
+
+### القيمة المعادة
+`ImageGenerationResponse`
+

@@ -1,13 +1,13 @@
 import { Card } from "@/components/ui/card";
 
 type RankingsEmptyStateProps = {
-	title?: string;
-	description?: string;
+	title: string;
+	description: string;
 };
 
 export function RankingsEmptyState({
-	title = "No data yet",
-	description = "Usage data will appear once privacy thresholds are met.",
+	title,
+	description,
 }: RankingsEmptyStateProps) {
 	return (
 		<Card className="p-6 text-center">

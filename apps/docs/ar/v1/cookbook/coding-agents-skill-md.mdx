@@ -1,0 +1,127 @@
+---
+title: "إعداد وكلاء البرمجة باستخدام SKILL.md"
+icon: "file-code-2"
+description: "اربط SDK بملف SKILL.md حتى تستخدم وكلاء البرمجة المحليون تكامل Phaseo باتساق."
+---
+
+هذا الدليل مخصص للفرق التي تنشئ أدوات داخلية أو واجهات سطر أوامر أو تدفقات عمل لوكلاء البرمجة باستخدام SDKs الخاصة بـ Gateway.
+
+<Visibility for="humans">
+<Note>
+إذا أردت نقطة بداية قابلة لإعادة الاستخدام بدل كتابة كل مهارة من الصفر، فثبّت مهارات Phaseo العامة من [phaseoteam/skills](https://github.com/phaseoteam/skills):
+
+```bash
+npx skills add phaseoteam/skills --agent codex --skill '*'
+```
+
+ثم احتفظ بالتعليمات الخاصة بالمشروع في ملف `SKILL.md` المحلي.
+</Note>
+</Visibility>
+
+<Visibility for="agents">
+<Note>
+توجد مهارات Phaseo القابلة لإعادة الاستخدام في [phaseoteam/skills](https://github.com/phaseoteam/skills). ثبّتها أولًا باستخدام:
+
+```bash
+npx skills add phaseoteam/skills --agent codex --skill '*'
+```
+
+بعد ذلك، أضف تعليمات المشروع المحلية إلى ملف `SKILL.md` في المستودع.
+</Note>
+</Visibility>
+
+الفكرة الأساسية بسيطة:
+
+- احتفظ بإعداد SDK داخل المستودع
+- أضف ملف `SKILL.md` يوضح للوكيل الطريقة التي يتوقع المشروع إرسال الطلبات بها
+- وجّه الوكيل إلى هذا الملف أثناء الإعداد حتى تظل أنماط الطلبات متسقة
+
+## 1. تثبيت SDK
+
+إذا كنت تستخدم TypeScript أو JavaScript:
+
+<CodeGroup>
+
+```bash npm
+npm install @phaseo/sdk
+```
+
+```bash pnpm
+pnpm add @phaseo/sdk
+```
+
+```bash yarn
+yarn add @phaseo/sdk
+```
+
+```bash bun
+bun add @phaseo/sdk
+```
+
+</CodeGroup>
+
+إذا كنت تستخدم Python:
+
+```bash
+pip install phaseo
+```
+
+## 2. إضافة ملف مهارة خاص بالمشروع
+
+أنشئ `SKILL.md` في جذر المستودع أو في موقع مهارات الوكلاء الذي يستخدمه فريقك.
+
+```md
+# Phaseo Gateway
+
+- Use `https://api.phaseo.app/v1` as the gateway base URL.
+- Read the API key from `PHASEO_API_KEY`.
+- Prefer the Responses API for new text integrations.
+- Use preset slugs when the repository defines shared request defaults.
+- Log request ids and model ids for debugging.
+- For async video jobs, store the returned id and poll status until terminal.
+```
+
+## 3. إبقاء التكامل الأول صغيرًا
+
+يسهل على وكلاء البرمجة إعادة استخدام مساعدات الطلب الصغيرة مقارنةً بالأغلفة الكبيرة.
+
+```ts
+import Phaseo from "@phaseo/sdk";
+
+export const gateway = new Phaseo({
+  apiKey: process.env.PHASEO_API_KEY!,
+});
+```
+
+بعد ذلك، احتفظ بمسار استدعاء واضح لكل واجهة:
+
+- توليد النص
+- الفيديو غير المتزامن
+- التضمينات
+- توليد الصور
+
+## 4. ما ينبغي أن توضحه المهارة
+
+ينبغي أن يجيب ملف `SKILL.md` عن الأسئلة التي تهدر معظم وقت الوكيل:
+
+- عائلة نقاط النهاية التي ينبغي تفضيلها
+- متغير البيئة الذي يحتوي على بيانات الاعتماد
+- معرّفات النماذج أو معرّفات الإعدادات المسبقة المعتمدة
+- طريقة تسجيل معرّفات الطلبات
+- طريقة تتبع المهام غير المتزامنة
+
+## 5. نمط المستودع الموصى به
+
+- وحدة مشتركة لمساعدات SDK
+- ملف `SKILL.md` بجوار كود التكامل أو في جذر المستودع
+- مثال قصير لكل نقطة نهاية رئيسية
+- ملاحظة عن تسجيل الطلبات ومعالجة الأخطاء
+
+يوفر ذلك للبشر ووكلاء البرمجة نقطة دخول تشغيلية واحدة.
+
+## أدلة ذات صلة
+
+- [Codex](../guides/integrations/codex.mdx)
+- [تكامل AI SDK](../guides/integrations/ai-sdk.mdx)
+- [أمثلة](../guides/examples.mdx)
+

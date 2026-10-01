@@ -1,0 +1,77 @@
+---
+title: "Anthropic Claude Opus 4.6"
+description: "Claude Opus 4.6 अपनाने के लिए structured output, adaptive thinking और prefills की जानकारी।"
+icon: "/icons/brands/anthropic.svg"
+---
+
+# Anthropic Claude Opus 4.6
+
+Production में `anthropic/claude-opus-4.6` सुरक्षित रूप से अपनाने के लिए यह गाइड इस्तेमाल करें।
+
+Claude Opus 4.6 migration सिर्फ़ model ID बदलना नहीं है। Anthropic के निर्देशों में request changes, हटाए गए beta flags और prefills के लिए सख्त व्यवहार शामिल हैं।
+
+## नया क्या है
+
+- Claude 4.6 models अब assistant prefills सपोर्ट नहीं करते और `400` लौटाते हैं।
+- Structured output अब `output_format` के बजाय `output_config.format` इस्तेमाल करता है।
+- Adaptive thinking अब `output_config.effort` से सेट होती है।
+- पुराने beta headers हटाएँ।
+- Opus 4.6 को `interleaved-thinking-2025-05-14` beta header की ज़रूरत नहीं है।
+- Opus 4.6 beta में 1M-token context window जोड़ता है और लंबे coding व agent tasks बेहतर करता है।
+
+## माइग्रेशन quickstart
+
+### 1. Assistant prefills हटाएँ
+
+अगर assistant turn का कुछ हिस्सा पहले से भरकर JSON या response prefix लागू करते थे, तो यह तरीका 4.6 पर विफल होगा। इसके बजाय नियंत्रण यहाँ ले जाएँ:
+
+- स्पष्ट system instructions
+- user या system prompt में examples
+- `output_config.format` के ज़रिए structured output
+
+### 2. Structured output माइग्रेट करें
+
+अगर अभी `output_format` भेजते हैं, तो request body को `output_config.format` पर अपडेट करें।
+
+### 3. Thinking config की समीक्षा करें
+
+पुराने thinking betas पर निर्भर होने पर `output_config` के मौजूदा `effort` setting पर माइग्रेट करें और latency-sensitive routes फिर जाँचें।
+
+### 4. पुराने beta flags हटाएँ
+
+SDK wrappers, middleware और Gateway presets में hard-coded beta headers की जाँच करें। पुराने flags rollout में अनावश्यक errors पैदा करते हैं।
+
+## क्या जाँचें
+
+### प्रॉम्प्ट का व्यवहार
+
+- लंबे coding और refactor prompts।
+- कई चरण वाले research या document workflows।
+- वे prompts जो पहले assistant prefills पर निर्भर थे।
+- 1M-token beta window इस्तेमाल करनी हो तो long-context tasks।
+
+### कॉन्ट्रैक्ट और टूल
+
+- `output_config.format` पर जाने के बाद schema pass rate।
+- multi-step agent tasks में tool arguments की गुणवत्ता।
+- model के मना करने या output reformat करने पर retry behavior।
+- code review और debugging workflows में regressions का प्रबंधन।
+
+### संचालन
+
+- नई thinking settings पर median और p95 latency।
+- लंबे runs में token consumption।
+- बड़े context वाले tasks पर timeout rate।
+- production eval set में Opus 4.5 की तुलना में success rate।
+
+## सुरक्षित rollout
+
+1. ट्रैफ़िक बदलने से पहले प्रीफ़िल हटाएँ और संरचित-आउटपुट कॉन्फ़िगरेशन माइग्रेट करें।
+2. ज़रूरी प्रोडक्शन प्रॉम्प्ट पर Opus 4.6 को छाया-मोड में चलाएँ।
+3. Opus 4.5 को फ़ॉलबैक रखते हुए ट्रैफ़िक को चरणबद्ध रूप से आज़माएँ।
+4. Schema pass rate, latency और task completion स्थिर होने पर ही traffic बढ़ाएँ।
+
+## स्रोत
+
+- [Anthropic माइग्रेशन गाइड](https://platform.claude.com/docs/en/about-claude/models/migration-guide)
+- [Claude Opus 4.6 का परिचय](https://www.anthropic.com/news/claude-opus-4-6)

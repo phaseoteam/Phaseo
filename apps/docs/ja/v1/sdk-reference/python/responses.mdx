@@ -1,0 +1,83 @@
+---
+icon: "sparkles"
+title: "応答"
+description: "Python SDKでResponses APIを呼び出します。"
+---
+
+**メソッド**：`client.generate_response()`（`client.stream_responses()`で解析済みチャンクをストリーミングします）。
+
+### 例
+```python
+resp = client.generate_response({
+    "model": "openai/gpt-4.1",
+    "input": [{"role": "user", "content": [{"type": "input_text", "text": "Summarise this"}]}],
+    "temperature": 0.7,
+})
+```
+
+### ストリーミング
+```python
+for chunk in client.stream_responses({
+    "model": "openai/gpt-4.1",
+    "input": [{"role": "user", "content": [{"type": "input_text", "text": "Stream this"}]}],
+    "stream": True,
+}):
+    if chunk.get("text"):
+        print(chunk["text"], end="", flush=True)
+```
+
+### 主なパラメーター
+- `model`（必須）：対象モデルのID。
+- `input`（必須）：入力項目（メッセージ、ツール呼び出しなど）の順序付き配列。
+- `temperature`（0～2）：値が大きいほど、出力はよりランダムになります。
+- `top_p`（0～1）/ `top_k`（>=1）：Nucleusサンプリングと上位k候補の制御。
+- `max_output_tokens`（整数）：応答ごとに生成するトークン数の上限。
+- ツール：`tools`（定義）、`tool_choice`（auto/none/特定のツール）、`max_tool_calls`（整数）、`parallel_tool_calls`（真偽値）。
+- Logprobs：`logprobs`（真偽値）、`top_logprobs`（0～20）。トークンごとのlogprobsを返します。
+- 出力：`response_format`（json/text）、`service_tier`、`store`（真偽値）、`stream`（真偽値）。
+- メタデータ：`metadata`（そのまま渡すオブジェクト）、`reasoning`（推論の強度を指定するオブジェクト）。
+- ゲートウェイ拡張：`usage`（使用量を要求する真偽値）、`meta`（metaブロックを含める真偽値）。
+
+### 戻り値
+`ResponsesResponse`
+
+```json
+{
+  "id": "resp_123",
+  "object": "response",
+  "created_at": 1677652288,
+  "status": "completed",
+  "model": "gpt-4.1",
+  "output": [
+    {
+      "type": "message",
+      "id": "msg_123",
+      "status": "completed",
+      "role": "assistant",
+      "content": [
+        {
+          "type": "output_text",
+          "text": "Hello there, how may I assist you today?"
+        }
+      ]
+    }
+  ],
+  "usage": {
+    "input_tokens": 9,
+    "output_tokens": 12,
+    "total_tokens": 21
+  }
+}
+```
+
+`stream: true`の場合の、改行区切りSSEフレーム：
+
+```
+data: {"id":"resp_123","object":"response","created_at":1677652288,"status":"in_progress","model":"gpt-4.1","output":[{"type":"message","id":"msg_123","status":"in_progress","role":"assistant","content":[]}]}
+
+data: {"id":"resp_123","object":"response","created_at":1677652288,"status":"in_progress","model":"gpt-4.1","output":[{"type":"message","id":"msg_123","status":"in_progress","role":"assistant","content":[{"type":"output_text","text":"Hello"}]}]}
+
+data: {"id":"resp_123","object":"response","created_at":1677652288,"status":"completed","model":"gpt-4.1","output":[{"type":"message","id":"msg_123","status":"completed","role":"assistant","content":[{"type":"output_text","text":"Hello there, how may I assist you today?"}]}],"usage":{"input_tokens":9,"output_tokens":12,"total_tokens":21}}
+
+data: [DONE]
+```

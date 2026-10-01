@@ -1,0 +1,80 @@
+---
+title: "Extraia JSON estruturado com o Agent SDK para Python"
+icon: "file-json"
+description: "Use o Agent SDK para Python em um loop limitado com ferramenta local que retorna JSON estrito pelo Phaseo Gateway."
+---
+
+Use esta receita quando um fluxo de trabalho em Python precisar de:
+
+- uma ferramenta de consulta local
+- um loop de agente limitado
+- um formato estrito de saída JSON
+
+## 1. Prepare os SDKs
+
+<Note type="warning">O pacote Python Agent SDK ainda não está disponível no PyPI. Siga as [instruções de instalação a partir do código-fonte](../sdk-reference/python/agent-sdk-installation.mdx).</Note>
+
+## 2. Defina uma ferramenta local
+
+```python
+from phaseo_agent import AgentTool, define_tool
+
+lookup_policy = define_tool(
+    AgentTool(
+        id="lookup-policy",
+        description="Look up one internal policy by slug.",
+        parameters={
+            "type": "object",
+            "properties": {
+                "slug": {"type": "string"},
+            },
+            "required": ["slug"],
+            "additionalProperties": False,
+        },
+        execute=lambda input, ctx: {
+            "slug": input["slug"],
+            "summary": "Presets centralize routing, prompts, and caching defaults.",
+        },
+    )
+)
+```
+
+## 3. Crie o agente
+
+```python
+from phaseo_agent import create_agent
+
+agent = create_agent(
+    {
+        "id": "policy-extractor",
+        "model": "openai/gpt-5.4-nano",
+        "instructions": "Use tools when needed and return concise JSON.",
+        "tools": [lookup_policy],
+        "parse_output": lambda text: text,
+    }
+)
+```
+
+## 4. Execute pelo cliente conectado ao gateway
+
+```python
+from phaseo_agent import create_gateway_agent_client
+
+result = agent.run(
+    input="Look up presets and return JSON with keys summary and recommendation.",
+    client=create_gateway_agent_client(),
+)
+
+print(result.output)
+```
+
+## 5. Quando esta receita é adequada
+
+- um worker Python controla a orquestração
+- as ferramentas são locais e determinísticas
+- você quer uma saída estrita antes de criar uma camada de orquestração maior
+
+## Relacionados
+
+- [Agent SDK para Python](../sdk-reference/python/agent-sdk.mdx)
+- [Gere JSON estruturado com Python](./sdk-python-presets-and-json.mdx)

@@ -5,12 +5,16 @@ import { fetchFrontendAPIProviders } from "@/lib/fetchers/frontend/fetchPublicCa
 import APIProvidersDisplay from "@/components/(data)/api-providers/APIProvidersDisplay";
 import { Skeleton } from "@/components/ui/skeleton";
 import { buildMetadata } from "@/lib/seo";
+import { getTranslations } from "next-intl/server";
 
-export const metadata: Metadata = buildMetadata({
-	title: "Provider Table",
-	description: "Compare AI API providers, gateway model coverage and usage in a compact table.",
-	path: "/api-providers/table",
-});
+export async function generateMetadata(): Promise<Metadata> {
+	const t = await getTranslations("Catalogue.providers");
+	return buildMetadata({
+		title: t("browseProviders"),
+		description: t("compareProvidersDescription"),
+		path: "/api-providers/table",
+	});
+}
 
 async function ProviderTable() {
 	const providers = await fetchFrontendAPIProviders() as APIProviderCard[];

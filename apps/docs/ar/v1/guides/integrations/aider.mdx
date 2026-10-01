@@ -1,0 +1,70 @@
+---
+title: "Aider"
+description: "اربط Aider بـ Phaseo باستخدام إعداد تتم إدارته تلقائيًا."
+---
+
+يمكن لـ Phaseo CLI إنشاء مفتاح API مخصص وتهيئة Aider لاستخدام Phaseo في كل جلسة جديدة.
+
+## إعداد Aider
+
+```bash
+phaseo login
+phaseo integrations setup aider --model anthropic/claude-sonnet-4.6
+```
+
+إذا لم يكن الملف `~/.aider.conf.yml` موجودًا، فسينشئ الإعداد ملفًا تديره Phaseo ويتضمن:
+
+```yaml
+model: openai/anthropic/claude-sonnet-4.6
+openai-api-base: https://api.phaseo.app/v1
+openai-api-key: <dedicated Phaseo key>
+```
+
+يتطلب Aider البادئة `openai/` لتوجيه نموذج مخصص عبر المحوّل المتوافق مع OpenAI. ويظل النموذج المُرسل إلى Phaseo هو `anthropic/claude-sonnet-4.6`.
+
+<Warning>
+يُخزن مفتاح API كنص عادي لأن `.aider.conf.yml` أحد المواقع المعتمدة لحفظ بيانات الاعتماد في Aider. احمِ الملف بأذونات حساب المستخدم المعتادة ولا ترفعه إلى المستودع مطلقًا.
+</Warning>
+
+إذا كان لديك إعداد Aider مسبقًا، فستتوقف CLI دون تغييره. أضف القيم الثلاث أعلاه إلى الإعداد الذي تريد أن يحمّله Aider. يتحقق Aider من المجلد الرئيسي وجذر المستودع والمجلد الحالي، وتكون الأولوية للملفات التي تُحمّل لاحقًا.
+
+## التحقق
+
+افتح مستودعًا وشغّل Aider:
+
+```bash
+aider
+```
+
+تحقق من ظهور `openai/anthropic/claude-sonnet-4.6` في مخرجات البدء، ثم اطلب من Aider الرد بـ `PHASEO_AIDER_OK`. وينبغي أن يظهر الطلب أيضًا في نشاط Phaseo.
+
+لا يمنع تحذير النموذج غير المعروف إرسال الطلبات. أضف بيانات تعريف النموذج إلى Aider فقط إذا كنت تحتاج إلى تقديرات دقيقة لحدود الرموز أو التكاليف.
+
+## الإزالة
+
+```bash
+phaseo integrations remove aider
+```
+
+تلغي الإزالة المفتاح المخصص وتحذف `~/.aider.conf.yml` فقط إذا ظل الملف يحمل علامة الملكية الخاصة بـ Phaseo CLI. إذا أضفت إعداد Phaseo يدويًا إلى ملف موجود، فاحذف قيم Phaseo الثلاث يدويًا.
+
+## استكشاف الأخطاء وإصلاحها
+
+### يستخدم Aider نقطة نهاية أو نموذجًا آخر
+
+تحقق من وجود `.aider.conf.yml` في جذر المستودع والمجلد الحالي. تتجاوز هذه الملفات إعداد المجلد الرئيسي. ويمكن لمتغيرات البيئة وخيارات سطر الأوامر أيضًا تجاوز القيم المحفوظة.
+
+### فشل المصادقة
+
+شغّل `phaseo integrations credential aider` وقارن الناتج بـ `openai-api-key`. أبقِ `openai-api-base` كما هو تمامًا: `https://api.phaseo.app/v1`.
+
+### تعذّر تحديد النموذج
+
+أبقِ بادئة `openai/` الخاصة بـ Aider. فعلى سبيل المثال، يصبح نموذج Phaseo `openai/gpt-5.6-terra` في Aider بالشكل `openai/openai/gpt-5.6-terra`.
+
+## مواضيع ذات صلة
+
+- [توثيق Aider لواجهة API المتوافقة مع OpenAI](https://aider.chat/docs/llms/openai-compat.html)
+- [إعداد Aider بصيغة YAML](https://aider.chat/docs/config/aider_conf.html)
+- [مساعدو البرمجة](./coding-assistants.mdx)
+- [النماذج](../../api-reference/endpoint/models.mdx)

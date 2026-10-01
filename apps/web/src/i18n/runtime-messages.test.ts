@@ -1,4 +1,5 @@
 import { getPublicMessages } from "./messages";
+import { createTranslator } from "next-intl";
 import { publicLocales, type PublicLocale } from "./routing";
 import { getSettingsMessages } from "./settings";
 import { getProfileMessages } from "./profile";
@@ -36,6 +37,18 @@ describe("runtime locale message loading", () => {
 			else expect(localizedSentinel).not.toBe(sourceSentinel);
 		},
 	);
+
+	it("resolves dotted settings sentence IDs as valid next-intl paths", async () => {
+		const messages = await getPublicMessages("es-ES");
+		const translate = createTranslator({ locale: "es-ES", messages } as never);
+
+		expect(translate("SettingsUI.strings.Please try again." as never)).not.toBe(
+			"Please try again.",
+		);
+		expect(
+			translate("SettingsUI.strings.Invalid code. Please try again." as never),
+		).not.toBe("Invalid code. Please try again.");
+	});
 
 	it("uses the en-GB help tree for en-US while localized trees remain available", async () => {
 		const [source, us] = await Promise.all([

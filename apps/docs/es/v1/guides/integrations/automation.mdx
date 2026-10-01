@@ -1,0 +1,63 @@
+---
+title: "Automatización de flujos de trabajo"
+icon: "workflow"
+description: "Usa Phaseo desde Zapier, n8n, Pipedream y otras plataformas de automatización."
+---
+
+Phaseo ya funciona en productos de automatización que pueden enviar solicitudes HTTP autenticadas. Más adelante, las aplicaciones nativas de los marketplaces podrán ofrecer una experiencia más guiada.
+
+## Solicitud compartida
+
+Usa estos ajustes en una acción HTTP, webhook o de código:
+
+| Configuración | Valor |
+| --- | --- |
+| Método | `POST` |
+| URL | `https://api.phaseo.app/v1/responses` |
+| Encabezado | `Authorization: Bearer <PHASEO_API_KEY>` |
+| Encabezado | `Content-Type: application/json` |
+
+```json
+{
+  "model": "openai/gpt-5-nano",
+  "input": "Summarise the supplied workflow data in one paragraph."
+}
+```
+
+Guarda la clave de API de Phaseo en el almacén de credenciales o secretos de la plataforma. No la incluyas directamente en una definición de flujo de trabajo compartida.
+
+## Zapier
+
+Usa **Webhooks by Zapier → Custom Request**:
+
+1. Selecciona `POST`.
+2. Introduce `https://api.phaseo.app/v1/responses`.
+3. Añade los encabezados bearer y content-type.
+4. Asigna los campos de pasos anteriores de Zap a `input`.
+5. Prueba el Zap con datos no sensibles.
+
+Una aplicación nativa de Phaseo para Zapier añadiría selección de modelos, acciones de salida estructurada y autenticación específica de Phaseo, pero habría que publicarla mediante la plataforma para desarrolladores de Zapier.
+
+## n8n
+
+Usa el nodo **HTTP Request** con autenticación bearer y un cuerpo JSON. Para datos de flujo de trabajo estructurados, asigna el elemento anterior al campo `input` con una expresión de n8n.
+
+Más adelante, un nodo comunitario oficial de n8n podría ofrecer acciones como Generate Response, List Models, Get Model Pricing y Create Embedding sin configurar HTTP manualmente.
+
+## Pipedream
+
+Usa un paso de solicitud HTTP o un paso de código Node.js. Guarda `PHASEO_API_KEY` como secreto de Pipedream y léelo desde el entorno del paso.
+
+## Recomendaciones para producción
+
+- Establece un límite de gasto para la clave de Gateway API que use cada automatización.
+- Asigna una clave propia a cada automatización para mantener aislados el uso y la revocación.
+- Usa salidas estructuradas cuando los pasos posteriores esperen campos legibles por máquina.
+- Añade gestión de reintentos para respuestas `429` y errores `5xx` recuperables.
+- No repitas acciones externas no idempotentes solo porque se haya reintentado un paso del modelo.
+
+## Relacionado
+
+- [Respuestas](../../api-reference/endpoint/responses.mdx)
+- [Salidas estructuradas](../structured-outputs.mdx)
+- [Gestión de errores](../../developers/error-handling.mdx)

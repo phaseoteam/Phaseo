@@ -1,0 +1,73 @@
+---
+title: "Google Nano Banana 2"
+description: "O que considerar ao adotar Nano Banana 2 para geração e edição de imagens em produção."
+icon: "/icons/brands/google.svg"
+---
+
+# Google Nano Banana 2
+
+Use este guia para adotar Nano Banana 2 com segurança nos fluxos de imagem em produção.
+
+Nano Banana 2 não é apenas uma melhoria de qualidade. O Google o posiciona como um modelo de imagem pronto para produção, com mais controle sobre formato, resolução e fidelidade de saída.
+
+## Novidades
+
+- Nano Banana 2 oferece controle explícito da proporção da imagem.
+- As resoluções de saída vão de `512px` a `4K`.
+- A consistência dos elementos melhora entre gerações e edições.
+- O seguimento de instruções é mais preciso.
+- A renderização e a tradução de texto dentro das imagens melhoraram.
+- A fidelidade visual é maior sem deixar a geração lenta.
+
+## Início rápido da migração
+
+### 1. Revise as premissas sobre as saídas
+
+Se o código downstream presume tamanho, proporção ou recorte fixos, atualize-o antes do rollout. A maior flexibilidade do Nano Banana 2 torna mais fácil invalidar essas premissas antigas.
+
+### 2. Atualize as predefinições do produto
+
+Revise:
+
+- predefinições de proporção para redes sociais
+- resoluções padrão
+- fluxos de edição e preenchimento
+- rótulos da interface que descrevem os tamanhos de imagem disponíveis
+
+### 3. Ajuste prompts de edição de imagem
+
+Como o seguimento de instruções melhorou, prompts que especificavam demais composição, texto ou estilo podem ficar rígidos sem necessidade. Teste novamente com prompts mais curtos e compare os resultados.
+
+## O que testar
+
+### Qualidade da saída
+
+- proporções vertical, quadrada e widescreen
+- saídas em baixa e alta resolução
+- consistência dos elementos em edições sucessivas
+- texto, placas, legendas e traduções dentro das imagens
+
+### Compatibilidade do fluxo
+
+- tratamento de arquivos em resoluções maiores
+- timeouts em gerações de maior fidelidade
+- taxa de aprovação na moderação ou revisão humana
+- premissas de redimensionamento e processamento posterior dos assets
+
+### Métricas do produto
+
+- latência total de geração
+- taxa de saídas utilizáveis
+- taxa de novas tentativas
+- custo por asset aprovado
+
+## Recomendações de rollout
+
+1. Separe os testes por proporção e resolução, em vez de tratar tudo como uma única migração.
+2. Valide o pipeline de assets no maior tamanho de saída que pretende suportar.
+3. Teste prompts reais de produção, especialmente edições e pedidos de texto dentro da imagem.
+4. Se a interface oferecer opções de imagem, publique alterações nas predefinições padrão separadamente da troca do modelo.
+
+## Fontes
+
+- [Nano Banana 2](https://blog.google/innovation-and-ai/technology/ai/nano-banana-2/)

@@ -1,0 +1,17 @@
+---
+icon: "shuffle"
+title: "Turnos dinâmicos"
+description: "Altere as configurações de modelo e as ferramentas do .NET entre os turnos do agente."
+---
+
+Use `DynamicModel`, `DynamicInstructions`, `Temperature`, `MaxOutputTokens`, `TopP` e `DynamicTools` quando os próximos turnos precisarem responder ao contexto ou aos resultados de ferramentas anteriores.
+
+As ferramentas podem atualizar o contexto da aplicação por meio de `RuntimeContext.SetContext` e fornecer `NextTurnParams` para a solicitação imediatamente seguinte. Essas substituições permanecem no estado pausado da execução durante a continuação após a aprovação.
+
+Mantenha o contexto da aplicação serializável se o estado da execução puder ser armazenado por meio de `IStateAccessor`.
+
+## Relacionados
+
+- [Ferramentas](./agent-sdk-tools.mdx)
+- [Estado e aprovação](./agent-sdk-state-and-approval.mdx)
+- [Condições de parada](./agent-sdk-stop-conditions.mdx)

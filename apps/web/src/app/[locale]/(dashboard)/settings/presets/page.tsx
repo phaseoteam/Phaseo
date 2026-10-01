@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { getTranslations } from "next-intl/server";
 import PresetsPanel from "@/components/(gateway)/settings/presets/PresetsPanel";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -13,48 +14,46 @@ import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSec
 import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHeader";
 import { ProductFeedbackButton } from "@/components/feedback/ProductFeedbackButton";
 
-export const metadata = {
-	title: "Presets - Settings",
-};
+export async function generateMetadata() {
+	const t = await getTranslations("SettingsUI.presetPage");
+	return { title: t("metadataTitle") };
+}
 
 export default async function PresetsPage() {
+	const t = await getTranslations("SettingsUI.presetPage");
 	return (
 		<div className="space-y-7">
 			<Alert className="border-border/80 bg-muted/25">
 				<Sparkles className="h-4 w-4 text-muted-foreground" />
 				<AlertTitle className="text-foreground">
-					Presets for request configuration
+					{t("introTitle")}
 				</AlertTitle>
 				<AlertDescription className="max-w-4xl text-muted-foreground">
-					Presets are named configurations starting with @ that you can reference
-					in your API calls. Save your preferred model, temperature, system
-					prompts, and other settings to create reusable request templates.
+					{t("introBody")}
 				</AlertDescription>
 			</Alert>
 
 			<SettingsPageHeader
-			title="Presets"
-			titleKey="headers.presets"
-			description="Manage reusable request configurations for your API calls."
-			descriptionKey="headers.presetsDescription"
-				meta={<Badge variant="outline">Beta</Badge>}
+			title={t("settingsTitle")}
+				description={t("settingsDescription")}
+				meta={<Badge variant="outline">{t("betaBadge")}</Badge>}
 				actions={
 					<div className="flex flex-wrap items-center justify-end gap-2">
 						<Button asChild variant="default" size="sm" className="h-9 gap-2 rounded-md px-3">
 							<Link href="/settings/presets/new">
 								<Plus className="h-4 w-4" />
-								Create preset
+								{t("createButton")}
 							</Link>
 						</Button>
 						<Button asChild variant="outline" size="sm" className="h-9 gap-2 rounded-md px-3">
 							<Link href="/gateway/marketplace" target="_blank" rel="noreferrer">
 								<Store className="h-4 w-4" />
-								Marketplace
+								{t("marketplaceButton")}
 							</Link>
 						</Button>
 						<ProductFeedbackButton
 							surface="settings_presets"
-							prompt="Tell us what would make presets more useful for your workflow."
+							prompt={t("feedbackPrompt")}
 						/>
 					</div>
 				}

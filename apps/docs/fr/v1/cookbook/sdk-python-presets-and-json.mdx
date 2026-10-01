@@ -1,0 +1,132 @@
+---
+title: "Produire du JSON structuré avec le SDK Python et des préréglages"
+icon: "braces"
+description: "Utilisez le SDK Python officiel avec des préréglages, des sorties structurées et le débogage par requête sans recourir aux appels HTTP bruts."
+---
+
+Utilisez cette recette lorsqu’un service Python doit s’appuyer sur des valeurs par défaut gérées dans le tableau de bord au lieu de répéter la configuration des prompts, du routage et des paramètres dans chaque requête.
+
+## Objectif
+
+- limiter la taille du code Python appelant
+- router à l’aide d’un slug de préréglage plutôt que d’un modèle codé en dur
+- demander une sortie JSON stricte et structurée
+- conserver suffisamment de métadonnées de réponse pour déboguer le routage ou le comportement des plugins
+
+## 1. Commencer avec un client partagé
+
+```python
+import os
+
+from phaseo import Phaseo
+
+gateway = Phaseo(api_key=os.environ["PHASEO_API_KEY"])
+```
+
+Partagez le client au lieu d’en créer un par requête.
+
+## 2. Placer les valeurs par défaut stables dans un préréglage
+
+Créez un préréglage dans **Tableau de bord -> Paramètres -> Préréglages** si les valeurs suivantes doivent rester stables entre plusieurs appelants :
+
+- le prompt système
+- le modèle ou la liste de modèles autorisés
+- les préférences de fournisseur
+- la configuration du raisonnement
+- la température et les paramètres de génération associés
+- la politique de mise en cache des réponses si la répétition déterministe est importante
+
+Une fois le préréglage créé, le code Python appelant peut rester concis.
+
+## 3. Demander une forme JSON stricte
+
+```python
+response = gateway.generate_response(
+    {
+        "preset": "release-summary",
+        "input": "Summarize the last 24 hours of deployment activity.",
+        "response_format": {
+            "type": "json_schema",
+            "name": "release_summary",
+            "schema": {
+                "type": "object",
+                "required": ["summary", "risk_level"],
+                "properties": {
+                    "summary": {"type": "string"},
+                    "risk_level": {
+                        "type": "string",
+                        "enum": ["low", "medium", "high"],
+                    },
+                },
+                "additionalProperties": False,
+            },
+        },
+        "plugins": [{"id": "response-healing"}],
+        "meta": True,
+    }
+)
+```
+
+Pourquoi cette structure fonctionne bien :
+
+- `preset` garde le routage et les prompts par défaut hors du code de l’application
+- `response_format` rend le contrat explicite
+- `plugins` peut récupérer un JSON mal formé mais presque valide si le flux de travail le permet
+- `meta` conserve les détails de routage et d’exécution des plugins pour le débogage
+
+## 4. Analyser le JSON et enregistrer les identifiants opérationnels
+
+```python
+import json
+
+message_text = ""
+for item in response.get("output", []):
+    if item.get("type") != "message":
+        continue
+    for part in item.get("content", []):
+        if part.get("type") == "output_text":
+            message_text = part.get("text", "")
+            break
+
+payload = json.loads(message_text)
+
+print("response_id:", response.get("id"))
+print("selected_provider:", response.get("meta", {}).get("routing", {}).get("selected_provider"))
+print("plugin_executions:", response.get("meta", {}).get("plugin_executions"))
+print(payload)
+```
+
+Pour les workers Python, cela suffit généralement pour faire le lien entre une ligne de journal de l’application et :
+
+- la fenêtre des détails de la requête dans le tableau de bord
+- les diagnostics de routage
+- les métadonnées d’exécution des plugins
+
+## 5. Déboguer avant d’ajouter des exceptions
+
+Si le routage d’une requête diffère de vos attentes :
+
+1. ouvrez la requête sous **Gateway -> Utilisation**
+2. consultez les diagnostics de routage et les fournisseurs candidats
+3. examinez les métadonnées d’exécution des plugins si la requête utilisait du JSON structuré
+4. ne modifiez le préréglage qu’après avoir compris ce qui s’est passé dans les journaux
+
+Évitez de corriger une requête problématique en ajoutant de nombreux remplacements intégrés à la requête. Cela annule généralement l’intérêt des préréglages.
+
+## 6. Préserver la compatibilité du cache pour réutiliser les résultats
+
+Si le préréglage active la mise en cache des réponses :
+
+- gardez le prompt stable
+- gardez le schéma de réponse stable
+- évitez les remplacements de fournisseur inutiles par requête
+- évitez les listes d’outils qui changent souvent
+
+Si un appelant a réellement besoin d’un comportement différent, utilisez un autre préréglage plutôt que de réduire la réutilisation du cache du flux partagé.
+
+## Guides associés
+
+- [Déployer des préréglages et déboguer le routage](./preset-rollout-and-routing-debug.mdx)
+- [Utiliser le cache de réponses avec des préréglages](./response-caching-with-presets.mdx)
+- [Réparer les réponses JSON structurées](./response-healing-for-structured-json.mdx)
+- [Présentation du SDK Python](../sdk-reference/python/overview.mdx)

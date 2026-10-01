@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { useLocale, useTranslations } from "next-intl";
 import Link from "next/link";
 import { ChevronRight, ChevronDown, ExternalLink } from "lucide-react";
 import { Logo } from "@/components/Logo";
@@ -18,17 +19,15 @@ interface ClientProps {
 	isLowerBetter: boolean;
 }
 
-const reportedDateFormatter = new Intl.DateTimeFormat("en-GB", {
-	day: "2-digit",
-	month: "short",
-	year: "numeric",
-});
-
-function formatReportedDate(value?: string | null) {
+function formatReportedDate(value: string | null | undefined, locale: string) {
 	if (!value) return "-";
 	const parsed = new Date(value);
 	if (Number.isNaN(parsed.getTime())) return "-";
-	return reportedDateFormatter.format(parsed);
+	return new Intl.DateTimeFormat(locale, {
+		day: "2-digit",
+		month: "short",
+		year: "numeric",
+	}).format(parsed);
 }
 
 export default function ModelsUsingBenchmarkClient({
@@ -37,6 +36,8 @@ export default function ModelsUsingBenchmarkClient({
 	benchmarkType,
 	isLowerBetter,
 }: ClientProps) {
+	const locale = useLocale();
+	const t = useTranslations("Catalogue.benchmarks");
 	const [openRows, setOpenRows] = React.useState<Record<string, boolean>>({});
 
 	function formatScoreDisplay(r: any) {
@@ -95,7 +96,7 @@ export default function ModelsUsingBenchmarkClient({
 		<div className="space-y-4">
 			<div>
 				<h3 className="text-lg font-semibold">
-					Models Using This Benchmark
+					{t("modelsUsingTitle")}
 				</h3>
 			</div>
 			{models.length > 0 ? (
@@ -104,20 +105,20 @@ export default function ModelsUsingBenchmarkClient({
 						<thead className="bg-zinc-100 dark:bg-zinc-800">
 							<tr>
 								<th className="px-4 py-2 text-left">
-									Organisation
+									{t("columnOrganization")}
 								</th>
-								<th className="px-4 py-2 text-left">Model</th>
+								<th className="px-4 py-2 text-left">{t("models")}</th>
 								<th className="px-4 py-2 text-left">
-									Reported
+									{t("columnReported")}
 								</th>
 								<th className="px-4 py-2 text-left">
-									Top Score
+									{t("columnTopScore")}
 								</th>
-								<th className="px-4 py-2 text-left">Info</th>
+								<th className="px-4 py-2 text-left">{t("columnInfo")}</th>
 								<th className="px-4 py-2 text-center">
-									Self Reported
+									{t("columnSelfReported")}
 								</th>
-								<th className="px-4 py-2 text-left">Source</th>
+								<th className="px-4 py-2 text-left">{t("columnSource")}</th>
 							</tr>
 						</thead>
 						<tbody>
@@ -180,7 +181,7 @@ export default function ModelsUsingBenchmarkClient({
 																	model
 																		.organisation
 																		?.name ||
-																	"Organisation logo"
+												t("organizationLogoAlt")
 																}
 																width={24}
 																height={24}
@@ -228,8 +229,8 @@ export default function ModelsUsingBenchmarkClient({
 														}
 														aria-label={
 															isOpen
-																? "Hide scores"
-																: "Show scores"
+										? t("hideScores")
+										: t("showScores")
 														}
 													>
 														{isOpen ? (
@@ -250,10 +251,11 @@ export default function ModelsUsingBenchmarkClient({
 													</span>
 												</Link>
 											</td>
-											<td className="px-4 py-2 text-left">
-												{formatReportedDate(
-													model.reported_date
-												)}
+							<td className="px-4 py-2 text-left">
+								{formatReportedDate(
+									model.reported_date,
+									locale
+								)}
 											</td>
 											<td className="px-4 py-2 font-mono">
 												{top
@@ -271,7 +273,7 @@ export default function ModelsUsingBenchmarkClient({
 															: "rounded bg-green-100 px-2 py-1 text-xs font-semibold text-green-800 dark:bg-green-900 dark:text-green-200"
 													}
 												>
-													{anySelf ? "Yes" : "No"}
+									{anySelf ? t("yes") : t("no")}
 												</span>
 											</td>
 											<td className="px-4 py-2 text-left">
@@ -283,7 +285,7 @@ export default function ModelsUsingBenchmarkClient({
 														className="group inline-flex items-center text-indigo-600 dark:text-indigo-400"
 													>
 														<span className="relative inline-block align-middle truncate text-sm font-normal underline decoration-transparent group-hover:decoration-current transition-colors duration-200">
-															Source
+															{t("columnSource")}
 														</span>
 														<ExternalLink className="ml-1 h-3 w-3 text-indigo-500 opacity-0 transition-all group-hover:opacity-100 group-hover:text-indigo-700 dark:text-indigo-400 dark:group-hover:text-indigo-300" />
 													</a>
@@ -329,13 +331,13 @@ export default function ModelsUsingBenchmarkClient({
 																}
 																title={
 																	item.is_self_reported
-																		? "Self-reported (may be less reliable)"
-																		: "Not self-reported (more reliable)"
+											? t("selfReportedTitle")
+											: t("notSelfReportedTitle")
 																}
 															>
 																{item.is_self_reported
-																	? "Yes"
-																	: "No"}
+											? t("yes")
+											: t("no")}
 															</span>
 														</td>
 														<td className="px-4 py-2">
@@ -349,7 +351,7 @@ export default function ModelsUsingBenchmarkClient({
 																	className="group inline-flex items-center text-indigo-600 dark:text-indigo-400"
 																>
 																	<span className="relative inline-block align-middle truncate text-sm font-normal underline decoration-transparent group-hover:decoration-current transition-colors duration-200">
-																		Source
+																		{t("columnSource")}
 																	</span>
 																	<ExternalLink className="ml-1 h-3 w-3 text-indigo-500 opacity-0 transition-all group-hover:opacity-100 group-hover:text-indigo-700 dark:text-indigo-400 dark:group-hover:text-indigo-300" />
 																</a>
@@ -368,10 +370,9 @@ export default function ModelsUsingBenchmarkClient({
 				</div>
 			) : (
 				<p className="text-muted-foreground">
-					No models currently using this benchmark in our database.
+					{t("noModelsUsing")}
 				</p>
 			)}
 		</div>
 	);
 }
-

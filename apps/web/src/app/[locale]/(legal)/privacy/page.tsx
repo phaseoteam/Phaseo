@@ -2,7 +2,7 @@
 import { Link } from "@/i18n/navigation";
 import type { Metadata } from "next";
 import { buildMetadata } from "@/lib/seo";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import type { PublicLocale } from "@/i18n/routing";
 
 export async function generateMetadata({ params }: LayoutProps<"/[locale]">): Promise<Metadata> {
@@ -13,11 +13,28 @@ export async function generateMetadata({ params }: LayoutProps<"/[locale]">): Pr
 
 export default async function PrivacyPage() {
 	const t = await getTranslations("Site.legal");
+	const locale = await getLocale();
+	const lastUpdatedDate = new Intl.DateTimeFormat(locale, {
+		dateStyle: "long",
+		timeZone: "UTC",
+	}).format(new Date("2026-08-30T00:00:00Z"));
+	const appliesItems = t.raw("privacyBody.appliesItems") as string[];
+	const dataItems = t.raw("privacyBody.dataItems") as Array<{ label: string; text: string }>;
+	const gatewayStorageItems = t.raw("privacyBody.gatewayStorageItems") as string[];
+	const telemetryItems = t.raw("privacyBody.telemetryItems") as Array<{ label: string; text: string }>;
+	const assistantItems = t.raw("privacyBody.assistantItems") as string[];
+	const cookieItems = t.raw("privacyBody.cookieItems") as Array<{ label: string; text: string }>;
+	const legalBasesItems = t.raw("privacyBody.legalBasesItems") as Array<{ label: string; text: string; basis: string }>;
+	const sharingItems = t.raw("privacyBody.sharingItems") as Array<{ label: string; text: string }>;
+	const transferMethods = t.raw("privacyBody.transferMethods") as string[];
+	const retentionReasons = t.raw("privacyBody.retentionReasons") as string[];
+	const retentionDetails = t.raw("privacyBody.retentionDetails") as string[];
+	const rightsItems = t.raw("privacyBody.rightsItems") as Array<{ label: string; text: string }>;
 	return (
 		<main className="container mx-auto space-y-8 px-4 py-10 text-sm leading-relaxed text-muted-foreground">
 			<header className="space-y-3">
 				<p className="text-xs text-muted-foreground/80">
-					{t("lastUpdated", { date: "30 August 2026" })}
+					{t("lastUpdated", { date: lastUpdatedDate })}
 				</p>
 				<h1 className="text-3xl font-semibold text-foreground">
 					{t("privacyTitle")}
@@ -27,20 +44,15 @@ export default async function PrivacyPage() {
 				</p>
 
 				<p className="text-foreground/80">
-					This page is a high-level description of how we handle
-					personal data. It is not legal advice. Capitalised terms not
-					defined here have the meaning given in our{" "}
-					<Link href="/terms" className="text-primary underline">
-						Terms of Service
-					</Link>
-					.
+					{t.rich("privacyBody.notice", {
+						terms: (chunks) => (
+							<Link href="/terms" className="text-primary underline">
+								{chunks}
+							</Link>
+						),
+					})}
 				</p>
-				<p className="text-foreground/80">
-					By using the Service, you agree that we may process your
-					personal data as described in this Privacy Policy and the
-					Terms of Service. If you do not agree, you should not use
-					the Service.
-				</p>
+				<p className="text-foreground/80">{t("privacyBody.consent")}</p>
 			</header>
 
 			<section aria-labelledby="privacy-scope">
@@ -48,46 +60,22 @@ export default async function PrivacyPage() {
 					id="privacy-scope"
 					className="text-xl font-semibold text-foreground/90"
 				>
-					1. Who we are and how this Policy applies
+					{t("privacyHeadings.scope")}
 				</h2>
 				<p className="mt-2 text-foreground/80">
-					For the purposes of UK and EU data protection law,{" "}
-					<span className="font-medium">Daniel Butler</span>, trading
-					as <span className="font-medium">Phaseo</span>, is the
-					&quot;data controller&quot; responsible for personal data
-					collected through Phaseo.
+					{t.rich("privacyBody.controller", {
+						person: (chunks) => <span className="font-medium">{chunks}</span>,
+						brand: (chunks) => <span className="font-medium">{chunks}</span>,
+						controller: (chunks) => <span className="font-medium">{chunks}</span>,
+					})}
 				</p>
 				<p className="mt-2 text-foreground/80">
-					This Privacy Policy applies when you:
+					{t("privacyBody.appliesIntro")}
 				</p>
 				<ul className="mt-2 list-disc space-y-1 pl-5 text-foreground/80">
-					<li>browse the Phaseo website or documentation;</li>
-					<li>create and use A Phaseo account;</li>
-					<li>
-						use the Phaseo Gateway to route requests to
-						third-party model providers; or
-					</li>
-					<li>
-						connect Phaseo to ChatGPT, Codex, or another
-						compatible MCP client; or
-					</li>
-					<li>
-						interact with us via email, support channels or other
-						communications.
-					</li>
+					{appliesItems.map((item, index) => <li key={index}>{item}</li>)}
 				</ul>
-				<p className="mt-2 text-foreground/80">
-					Third-party model providers have their own privacy and data
-					handling practices. A provider used through Phaseo-managed
-					credentials is intended to act as our subprocessor for
-					inference where the applicable contract supports that role. A
-					provider used with your credentials or direct agreement is
-					normally a customer-directed recipient or your processor. A
-					provider may separately act as a controller where it processes
-					data for its own purposes, such as training where its terms
-					permit that use. Our current role review is published in the
-					Phaseo subprocessor schedule.
-				</p>
+				<p className="mt-2 text-foreground/80">{t("privacyBody.providerRoles")}</p>
 			</section>
 
 			<section aria-labelledby="privacy-data-we-collect">
@@ -95,216 +83,71 @@ export default async function PrivacyPage() {
 					id="privacy-data-we-collect"
 					className="text-xl font-semibold text-foreground/90"
 				>
-					2. Data we collect
+					{t("privacyHeadings.dataCollected")}
 				</h2>
 
 				<h3 className="mt-3 text-lg font-semibold text-foreground/80">
-					2.1 Information you provide to us
+					{t("privacyHeadings.provided")}
 				</h3>
-				<p className="mt-1 text-foreground/80">
-					We collect information that you choose to provide directly,
-					such as:
-				</p>
+				<p className="mt-1 text-foreground/80">{t("privacyBody.providedIntro")}</p>
 				<ul className="mt-2 list-disc space-y-1 pl-5 text-foreground/80">
-					<li>
-						<strong>Account details</strong> – for example your
-						name, email address, organisation name, and password
-						(stored as a hashed value) when you register.
-					</li>
-					<li>
-						<strong>Profile and team information</strong> – details
-						you add to your account or team profile, such as display
-						names or project labels.
-					</li>
-					<li>
-						<strong>Billing information</strong> – records relating
-						to your purchases of Credits or subscriptions (for
-						example currency, amount paid, timestamps). Card details
-						are handled by our payment providers (such as Stripe)
-						and are not stored in full on our servers.
-					</li>
-					<li>
-						<strong>Support and communication</strong> – emails,
-						messages and other communications you send to us (for
-						example bug reports, feedback, or feature requests).
-					</li>
-					<li>
-						<strong>Optional public data</strong> – if you opt in to
-						sharing certain usage or app information publicly (for
-						example, public app-usage pages or sponsor listings), we
-						will process and display that information in accordance
-						with your choices.
-					</li>
+					{dataItems.map((item) => (
+						<li key={item.label}>
+							<strong>{item.label}</strong> – {item.text}
+						</li>
+					))}
 				</ul>
 
 				<h3 className="mt-4 text-lg font-semibold text-foreground/80">
-					2.2 Inputs and Outputs sent through the Gateway
+					{t("privacyHeadings.gatewayIO")}
 				</h3>
-				<p className="mt-1 text-foreground/80">
-					When you call models via the Phaseo Gateway, you send
-					requests (&quot;Inputs&quot;) and receive responses
-					(&quot;Outputs&quot;). These may include text or other data
-					that could contain personal information, depending on what
-					you choose to send.
-				</p>
-				<p className="mt-1 text-foreground/80">
-					Our design goal is to minimise what we store:
-				</p>
+				<p className="mt-1 text-foreground/80">{t("privacyBody.gatewayIntro")}</p>
+				<p className="mt-1 text-foreground/80">{t("privacyBody.gatewayStorageGoal")}</p>
 				<ul className="mt-2 list-disc space-y-1 pl-5 text-foreground/80">
-					<li>
-						We{" "}
-						<span className="font-medium">
-							do not persistently store
-						</span>{" "}
-						the raw text of your prompts or the full text of model
-						Outputs in our primary database or analytics tools.
-					</li>
-					<li>
-						Eligible non-streaming text Outputs may be stored in a
-						workspace-scoped response cache for five minutes by
-						default. A configured preset may set a period between 30
-						seconds and 24 hours. The request contributes to a
-						one-way cache-key digest; the cache record stores the
-						Output and response metadata, not the raw request body.
-					</li>
-					<li>
-						If you enable private I/O logging, we may store Inputs,
-						Outputs and optional provider payloads for 90, 180 or 365
-						days. If you opt into data contribution, we may apply
-						best-effort redaction and retain eligible Inputs and
-						Outputs for no more than 30 days. These features are
-						separate from provider retention.
-					</li>
-					<li>
-						We send the necessary content from your request to the
-						relevant third-party provider(s) so they can generate an
-						Output. Those providers may log or store the data in
-						line with their own policies.
-					</li>
+					{gatewayStorageItems.map((item, index) => <li key={index}>{item}</li>)}
 				</ul>
-				<p className="mt-1 text-foreground/80">
-					Because you control what you send, you should avoid
-					including sensitive personal data in prompts or outputs
-					unless it is strictly necessary and you are satisfied with
-					the privacy practices of the relevant model providers.
-				</p>
+				<p className="mt-1 text-foreground/80">{t("privacyBody.sensitiveDataWarning")}</p>
 
 				<h3 className="mt-4 text-lg font-semibold text-foreground/80">
-					2.3 Telemetry and technical data
+					{t("privacyHeadings.telemetry")}
 				</h3>
-				<p className="mt-1 text-foreground/80">
-					We automatically collect certain technical and usage
-					information when you use the Service, such as:
-				</p>
+				<p className="mt-1 text-foreground/80">{t("privacyBody.telemetryIntro")}</p>
 				<ul className="mt-2 list-disc space-y-1 pl-5 text-foreground/80">
-					<li>
-						<strong>Log and device data</strong> – IP address,
-						browser type, operating system, device identifiers, the
-						pages you visit, the features you use, timestamps, and
-						referrer URLs.
-					</li>
-					<li>
-						<strong>Gateway metrics</strong> – model and provider
-						identifiers, request and response timestamps, token
-						usage (input, output and other meters), latency, error
-						codes, and similar metadata needed to run billing and
-						health checks.
-					</li>
-					<li>
-						<strong>Location indicators</strong> – a rough
-						geographic approximation (such as country or region)
-						derived from your IP address or other signals, used for
-						analytics and abuse prevention.
-					</li>
-					<li>
-						<strong>Configuration data</strong> – such as your
-						chosen theme/appearance, feature flags, and other
-						preferences stored in local storage or cookies.
-					</li>
+					{telemetryItems.map((item) => (
+						<li key={item.label}>
+							<strong>{item.label}</strong> – {item.text}
+						</li>
+					))}
 				</ul>
-				<p className="mt-1 text-foreground/80">
-					We use this telemetry to operate, secure, and improve the
-					Service, to calculate usage and pricing, and to give you
-					analytics and observability dashboards. We design our
-					telemetry to avoid including raw prompt or output text.
-				</p>
+				<p className="mt-1 text-foreground/80">{t("privacyBody.telemetryUse")}</p>
 
 				<h3 className="mt-4 text-lg font-semibold text-foreground/80">
-					2.4 Connected AI assistants and MCP clients
+					{t("privacyHeadings.connectedAssistants")}
 				</h3>
-				<p className="mt-1 text-foreground/80">
-					If you connect the Phaseo plugin to ChatGPT, Codex, or
-					another compatible MCP client, you authorize that client
-					through OAuth to request the read-only Phaseo information
-					shown in its consent screen. Depending on the tool you ask
-					the client to use, Phaseo may return:
-				</p>
+				<p className="mt-1 text-foreground/80">{t("privacyBody.assistantIntro")}</p>
 				<ul className="mt-2 list-disc space-y-1 pl-5 text-foreground/80">
-					<li>model, provider, capability, and pricing information;</li>
-					<li>credit balance and aggregated usage analytics; or</li>
-					<li>
-						request metadata such as request identifiers, timestamps,
-						models, providers, token usage, cost, latency, status, and
-						error codes.
-					</li>
+					{assistantItems.map((item, index) => <li key={index}>{item}</li>)}
 				</ul>
-				<p className="mt-1 text-foreground/80">
-					The public Phaseo plugin does not return passwords, API-key
-					values, OAuth secrets, raw prompt or model-output content,
-					workspace or user identifiers, storage details, or replay
-					payloads. The connected client receives only the result of a
-					tool you or the client invokes within the permissions you
-					approved. Information already received by that client is
-					handled under the client provider&apos;s privacy policy and
-					retention practices.
-				</p>
+				<p className="mt-1 text-foreground/80">{t("privacyBody.assistantPrivacy")}</p>
 
 				<h3 className="mt-4 text-lg font-semibold text-foreground/80">
-					2.5 Cookies and similar technologies
+					{t("privacyHeadings.cookies")}
 				</h3>
-				<p className="mt-1 text-foreground/80">
-					We use cookies and similar technologies (such as local
-					storage, pixels, and scripts) to help our site function and
-					to understand how it is used. These may include:
-				</p>
+				<p className="mt-1 text-foreground/80">{t("privacyBody.cookiesIntro")}</p>
 				<ul className="mt-2 list-disc space-y-1 pl-5 text-foreground/80">
-					<li>
-						<strong>Strictly necessary cookies</strong> – required
-						for security and core features such as login and CSRF
-						protection.
-					</li>
-					<li>
-						<strong>Preference cookies</strong> – to remember
-						settings like dark mode or your last selected filters.
-					</li>
-					<li>
-						<strong>Analytics cookies</strong> – to measure usage,
-						performance and errors, for example via tools like
-						Google Analytics or PostHog.
-					</li>
+					{cookieItems.map((item) => (
+						<li key={item.label}>
+							<strong>{item.label}</strong> – {item.text}
+						</li>
+					))}
 				</ul>
-				<p className="mt-1 text-foreground/80">
-					You can control cookies through your browser settings.
-					Blocking some types of cookies may impact your experience or
-					prevent certain features from working.
-				</p>
+				<p className="mt-1 text-foreground/80">{t("privacyBody.cookieControl")}</p>
 
 				<h3 className="mt-4 text-lg font-semibold text-foreground/80">
-					2.6 Analytics and product telemetry
+					{t("privacyHeadings.analytics")}
 				</h3>
-				<p className="mt-1 text-foreground/80">
-					We may use third-party analytics and error tracking tools
-					(for example, Google Analytics, PostHog, or similar
-					services) to help us understand how people use Phaseo and
-					to identify where the product can be improved.
-				</p>
-				<p className="mt-1 text-foreground/80">
-					These tools collect information such as pages visited,
-					actions taken, device and browser information, and rough
-					location data (such as country). We configure these tools so
-					that they are not used to store raw prompts, Outputs, or
-					other highly sensitive content flowing through the Gateway.
-				</p>
+				<p className="mt-1 text-foreground/80">{t("privacyBody.analyticsIntro")}</p>
+				<p className="mt-1 text-foreground/80">{t("privacyBody.analyticsDetails")}</p>
 			</section>
 
 			<section aria-labelledby="privacy-how-we-use">
@@ -312,83 +155,19 @@ export default async function PrivacyPage() {
 					id="privacy-how-we-use"
 					className="text-xl font-semibold text-foreground/90"
 				>
-					3. How we use personal data (and our legal bases)
+					{t("privacyHeadings.legalBases")}
 				</h2>
-				<p className="mt-2 text-foreground/80">
-					We use personal data for the following purposes, under these
-					legal bases (for UK/EU users):
-				</p>
+				<p className="mt-2 text-foreground/80">{t("privacyBody.legalBasesIntro")}</p>
 				<ul className="mt-2 list-disc space-y-2 pl-5 text-foreground/80">
-					<li>
-						<strong>To provide and operate the Service</strong> –
-						including account creation, gateway routing, usage
-						dashboards, billing, and customer support.
-						<br />
-						<span className="text-xs text-foreground/70">
-							Lawful basis: performance of a contract; legitimate
-							interests.
-						</span>
-					</li>
-					<li>
-						<strong>To personalise and improve the Service</strong>{" "}
-						– such as understanding which features are used most,
-						testing new functionality, and adjusting the UI.
-						<br />
-						<span className="text-xs text-foreground/70">
-							Lawful basis: legitimate interests.
-						</span>
-					</li>
-					<li>
-						<strong>To communicate with you</strong> – for example,
-						sending service announcements, responding to support
-						requests, and informing you about changes to our terms
-						or policies.
-						<br />
-						<span className="text-xs text-foreground/70">
-							Lawful basis: performance of a contract; legitimate
-							interests; legal obligations.
-						</span>
-					</li>
-					<li>
-						<strong>
-							To send optional updates or product news
-						</strong>{" "}
-						– where you have signed up to receive them or where
-						local law allows us to do so.
-						<br />
-						<span className="text-xs text-foreground/70">
-							Lawful basis: consent (or legitimate interests,
-							where permitted).
-						</span>
-					</li>
-					<li>
-						<strong>
-							To prevent abuse, enforce our Terms, and protect the
-							Service
-						</strong>{" "}
-						– for example by monitoring high-risk patterns of usage,
-						rate limit bypass attempts, or fraud.
-						<br />
-						<span className="text-xs text-foreground/70">
-							Lawful basis: legitimate interests; legal
-							obligations.
-						</span>
-					</li>
-					<li>
-						<strong>To comply with legal obligations</strong> – such
-						as keeping records for tax, accounting, or responding to
-						legitimate requests from authorities.
-						<br />
-						<span className="text-xs text-foreground/70">
-							Lawful basis: legal obligations.
-						</span>
-					</li>
+					{legalBasesItems.map((item) => (
+						<li key={item.label}>
+							<strong>{item.label}</strong> – {item.text}
+							<br />
+							<span className="text-xs text-foreground/70">{item.basis}</span>
+						</li>
+					))}
 				</ul>
-				<p className="mt-2 text-foreground/80">
-					We may also create aggregated, anonymised statistics about
-					model adoption, benchmark results, or API performance. These
-					statistics do not identify individual users.
-				</p>
+				<p className="mt-2 text-foreground/80">{t("privacyBody.aggregatedStats")}</p>
 			</section>
 
 			<section aria-labelledby="privacy-sharing">
@@ -396,68 +175,15 @@ export default async function PrivacyPage() {
 					id="privacy-sharing"
 					className="text-xl font-semibold text-foreground/90"
 				>
-					4. How we share personal data
+					{t("privacyHeadings.sharing")}
 				</h2>
-				<p className="mt-2 text-foreground/80">
-					We do <span className="font-medium">not</span> sell your
-					personal data. We may share personal data in the following
-					limited situations:
-				</p>
+				<p className="mt-2 text-foreground/80">{t("privacyBody.sharingIntro")}</p>
 				<ul className="mt-2 list-disc space-y-2 pl-5 text-foreground/80">
-					<li>
-						<strong>Service providers</strong> – We use trusted
-						third parties to help us operate the Service (for
-						example, hosting providers, database providers such as
-						Supabase, analytics platforms, payment processors such
-						as Stripe, email providers, and customer support tools).
-						They may access personal data only to perform services
-						for us and are contractually required to protect it.
-					</li>
-					<li>
-						<strong>Third-party model providers</strong> – When you
-						send requests through the Gateway, we share your Inputs
-						and necessary metadata with the model provider(s) you
-						choose or that we route to. Those providers process the
-						data under the applicable provider contract, terms, and
-						privacy policy. The provider&apos;s role depends on whether Phaseo
-						or the customer supplies the provider account and whether the
-						provider processes data for any independent purpose.
-					</li>
-					<li>
-						<strong>Connected AI-assistant or MCP providers</strong> –
-						When you connect Phaseo and ask a connected client to use a
-						Phaseo tool, we return the requested read-only tool result to
-						that provider, such as OpenAI for ChatGPT or Codex. The
-						provider processes the result under its own terms and privacy
-						policy.
-					</li>
-					<li>
-						<strong>Public data you choose to share</strong> – If
-						you opt into public usage pages, share integrations, or
-						otherwise choose to publish certain information via AI
-						Stats, we will display that information according to
-						your settings.
-					</li>
-					<li>
-						<strong>Legal and safety reasons</strong> – We may
-						disclose data if we reasonably believe it is necessary
-						to comply with a law, court order, or other legal
-						request, or to protect the rights, property or safety of
-						ourselves, our users, or others.
-					</li>
-					<li>
-						<strong>Business transfers</strong> – If we explore or
-						undertake a merger, acquisition, reorganisation or sale
-						of assets, personal data may be transferred as part of
-						that process. We will take reasonable steps to ensure
-						the recipient continues to protect your data in line
-						with this Policy.
-					</li>
-					<li>
-						<strong>With your consent</strong> – We may share your
-						information for other purposes if you explicitly ask us
-						to or consent to it.
-					</li>
+					{sharingItems.map((item) => (
+						<li key={item.label}>
+							<strong>{item.label}</strong> – {item.text}
+						</li>
+					))}
 				</ul>
 			</section>
 
@@ -466,34 +192,12 @@ export default async function PrivacyPage() {
 					id="privacy-international"
 					className="text-xl font-semibold text-foreground/90"
 				>
-					5. International transfers
+					{t("privacyHeadings.transfers")}
 				</h2>
-				<p className="mt-2 text-foreground/80">
-					We are based in the United Kingdom, but we use service
-					providers and infrastructure located in other countries (for
-					example, within the European Economic Area and the United
-					States). This means your personal data may be transferred to
-					and processed in countries that may have different data
-					protection laws to those in your home jurisdiction.
-				</p>
-				<p className="mt-2 text-foreground/80">
-					Where we transfer personal data outside of the UK or EEA, we
-					take steps to ensure an appropriate level of protection,
-					such as relying on:
-				</p>
+				<p className="mt-2 text-foreground/80">{t("privacyBody.transferIntro")}</p>
+				<p className="mt-2 text-foreground/80">{t("privacyBody.transferOutsideIntro")}</p>
 				<ul className="mt-2 list-disc space-y-1 pl-5 text-foreground/80">
-					<li>
-						countries that the UK or EU has deemed
-						&quot;adequate&quot;;
-					</li>
-					<li>
-						standard contractual clauses or equivalent safeguards
-						approved by the UK/EU; or
-					</li>
-					<li>
-						other lawful transfer mechanisms as they become
-						available.
-					</li>
+					{transferMethods.map((item, index) => <li key={index}>{item}</li>)}
 				</ul>
 			</section>
 
@@ -502,59 +206,26 @@ export default async function PrivacyPage() {
 					id="privacy-retention"
 					className="text-xl font-semibold text-foreground/90"
 				>
-					6. How long we keep your data
+					{t("privacyHeadings.retention")}
 				</h2>
-				<p className="mt-2 text-foreground/80">
-					We retain personal data for as long as reasonably necessary
-					to fulfil the purposes described in this Policy, including:
-				</p>
+				<p className="mt-2 text-foreground/80">{t("privacyBody.retentionIntro")}</p>
 				<ul className="mt-2 list-disc space-y-1 pl-5 text-foreground/80">
-					<li>
-						Request-level metadata for BYOK gateway calls is kept for
-						up to 90 days. Aggregated, non-content usage totals may be
-						kept longer for billing, reliability, and statistical purposes.
-					</li>
-					<li>
-						to operate and maintain your account and any paid
-						features;
-					</li>
-					<li>
-						to comply with our legal and regulatory obligations (for
-						example, record-keeping for tax and accounting); and
-					</li>
-					<li>to resolve disputes and enforce our agreements.</li>
+					{retentionReasons.map((item, index) => <li key={index}>{item}</li>)}
+				</ul>
+				<p className="mt-2 text-foreground/80">{t("privacyBody.retentionDelete")}</p>
+				<ul className="mt-2 list-disc space-y-1 pl-5 text-foreground/80">
+					{retentionDetails.map((item, index) => <li key={index}>{item}</li>)}
 				</ul>
 				<p className="mt-2 text-foreground/80">
-					When we no longer need personal data, we will either delete
-					it or irreversibly anonymise it. Telemetry that has been
-					aggregated and fully anonymised may be kept for longer for
-					statistical purposes.
+					{t.rich("privacyBody.retentionSchedule", {
+						security: (chunks) => (
+							<Link href="/trust/security" className="text-primary underline">
+								{chunks}
+							</Link>
+						),
+					})}
 				</p>
-				<ul className="mt-2 list-disc space-y-1 pl-5 text-foreground/80">
-					<li>verified account-deletion requests remove account access and active database records immediately, then purge private object-storage and Gateway cache data through a retryable workflow that must complete within 30 days;</li>
-					<li>eligible cached model Outputs are kept for five minutes by default and no more than 24 hours under a configured cache policy;</li>
-					<li>private I/O logs, when enabled, are configured for 90, 180 or 365 days;</li>
-					<li>opted-in raw data contributions are kept for no more than 30 days, while aggregate classification statistics may be kept longer; and</li>
-					<li>AI providers and customer-configured destinations apply their own retention terms.</li>
-				</ul>
-				<p className="mt-2 text-foreground/80">
-					We have not yet consolidated every account, request-metadata,
-					billing, support, backup and operational-log category into one
-					fixed retention schedule. See the{" "}
-					<Link href="/trust/security" className="text-primary underline">
-						Security whitepaper
-					</Link>{" "}
-					for the currently verified content-handling periods and their
-					limitations.
-				</p>
-				<p className="mt-2 text-foreground/80">
-					Using the Phaseo plugin does not create a separate long-term
-					copy of your Gateway records within Phaseo. Tool requests read
-					or compute against Phaseo data available to the authorized
-					service, including already-retained account and Gateway records
-					where applicable. A connected client may retain tool results
-					under its own retention policy.
-				</p>
+				<p className="mt-2 text-foreground/80">{t("privacyBody.pluginRetention")}</p>
 			</section>
 
 			<section aria-labelledby="privacy-rights">
@@ -562,67 +233,26 @@ export default async function PrivacyPage() {
 					id="privacy-rights"
 					className="text-xl font-semibold text-foreground/90"
 				>
-					7. Your rights and choices
+					{t("privacyHeadings.rights")}
 				</h2>
-				<p className="mt-2 text-foreground/80">
-					Depending on where you live, you may have certain rights in
-					relation to your personal data. Subject to limits and
-					exceptions under applicable law, these may include:
-				</p>
+				<p className="mt-2 text-foreground/80">{t("privacyBody.rightsIntro")}</p>
 				<ul className="mt-2 list-disc space-y-1 pl-5 text-foreground/80">
-					<li>
-						<strong>Access</strong> – to ask whether we process your
-						personal data and to request a copy.
-					</li>
-					<li>
-						<strong>Correction</strong> – to ask us to correct
-						inaccurate or incomplete personal data.
-					</li>
-					<li>
-						<strong>Deletion</strong> – to request that we delete
-						certain personal data.
-					</li>
-					<li>
-						<strong>Restriction</strong> – to ask us to restrict how
-						we process your data in certain circumstances.
-					</li>
-					<li>
-						<strong>Portability</strong> – to receive your personal
-						data in a structured, commonly used, machine-readable
-						format and (where technically feasible) to have it
-						transmitted to another controller.
-					</li>
-					<li>
-						<strong>Objection</strong> – to object to certain types
-						of processing, including direct marketing or processing
-						based on legitimate interests.
-					</li>
-					<li>
-						<strong>Withdraw consent</strong> – where we rely on
-						consent, you can withdraw it at any time without
-						affecting the lawfulness of processing before
-						withdrawal.
-					</li>
+					{rightsItems.map((item) => (
+						<li key={item.label}>
+							<strong>{item.label}</strong> – {item.text}
+						</li>
+					))}
 				</ul>
 				<p className="mt-2 text-foreground/80">
-					You can exercise many of these rights by logging into your
-					account (settings, profile and API keys), or by contacting
-					us at{" "}
-					<a
-						href="mailto:privacy@phaseo.app"
-						className="text-primary underline"
-					>
-						privacy@phaseo.app
-					</a>
-					. We may ask you to verify your identity before responding
-					to a request.
+					{t.rich("privacyBody.rightsExercise", {
+						email: (chunks) => (
+							<a href="mailto:privacy@phaseo.app" className="text-primary underline">
+								{chunks}
+							</a>
+						),
+					})}
 				</p>
-				<p className="mt-2 text-foreground/80">
-					You can opt out of non-essential emails by using the
-					unsubscribe link in the message or by contacting us. We may
-					still send you administrative messages about your account or
-					important changes to the Service.
-				</p>
+				<p className="mt-2 text-foreground/80">{t("privacyBody.emailOptOut")}</p>
 			</section>
 
 			<section aria-labelledby="privacy-children">
@@ -630,16 +260,9 @@ export default async function PrivacyPage() {
 					id="privacy-children"
 					className="text-xl font-semibold text-foreground/90"
 				>
-					8. Children
+					{t("privacyHeadings.children")}
 				</h2>
-				<p className="mt-2 text-foreground/80">
-					The Service is intended for users aged{" "}
-					<span className="font-medium">13 and over</span>. We do not
-					knowingly collect personal data from children under 13. If
-					you believe a child has provided us with personal data
-					without appropriate consent, please contact us and we will
-					take steps to delete that information.
-				</p>
+				<p className="mt-2 text-foreground/80">{t("privacyBody.children")}</p>
 			</section>
 
 			<section aria-labelledby="privacy-security">
@@ -647,27 +270,17 @@ export default async function PrivacyPage() {
 					id="privacy-security"
 					className="text-xl font-semibold text-foreground/90"
 				>
-					9. How we protect your data
+					{t("privacyHeadings.security")}
 				</h2>
+				<p className="mt-2 text-foreground/80">{t("privacyBody.securityMeasures")}</p>
 				<p className="mt-2 text-foreground/80">
-					We use a combination of technical, organisational and
-					administrative security measures to protect personal data,
-					including encryption in transit, role-based access controls,
-					and monitoring for unusual activity.
-				</p>
-				<p className="mt-2 text-foreground/80">
-					However, no online service can be completely secure. You are
-					responsible for keeping your password, API keys and other
-					credentials confidential, and for rotating keys if you
-					suspect compromise. If you believe your account has been
-					compromised, please contact us immediately at{" "}
-					<a
-						href="mailto:support@phaseo.app"
-						className="text-primary underline"
-					>
-						support@phaseo.app
-					</a>
-					.
+					{t.rich("privacyBody.securityLimits", {
+						email: (chunks) => (
+							<a href="mailto:support@phaseo.app" className="text-primary underline">
+								{chunks}
+							</a>
+						),
+					})}
 				</p>
 			</section>
 
@@ -676,16 +289,9 @@ export default async function PrivacyPage() {
 					id="privacy-third-parties"
 					className="text-xl font-semibold text-foreground/90"
 				>
-					10. Third-party sites and services
+					{t("privacyHeadings.thirdParties")}
 				</h2>
-				<p className="mt-2 text-foreground/80">
-					The Service may contain links to third-party websites or
-					integrations, including providers of AI models,
-					documentation, payments, analytics and developer tools. We
-					are not responsible for the privacy practices of those third
-					parties. We recommend you review their privacy policies
-					before providing personal data to them.
-				</p>
+				<p className="mt-2 text-foreground/80">{t("privacyBody.thirdParties")}</p>
 			</section>
 
 			<section aria-labelledby="privacy-changes">
@@ -693,19 +299,10 @@ export default async function PrivacyPage() {
 					id="privacy-changes"
 					className="text-xl font-semibold text-foreground/90"
 				>
-					11. Changes to this Privacy Policy
+					{t("privacyHeadings.changes")}
 				</h2>
-				<p className="mt-2 text-foreground/80">
-					We may update this Privacy Policy from time to time. If we
-					make changes that materially affect your rights or how we
-					use personal data, we will take reasonable steps to notify
-					you (for example by email, a notice on the site, or in-app
-					messages).
-				</p>
-				<p className="mt-2 text-foreground/80">
-					Your continued use of the Service after any changes take
-					effect will mean you accept the updated Policy.
-				</p>
+				<p className="mt-2 text-foreground/80">{t("privacyBody.policyUpdates")}</p>
+				<p className="mt-2 text-foreground/80">{t("privacyBody.continuedUse")}</p>
 			</section>
 
 			<section aria-labelledby="privacy-contact">
@@ -713,15 +310,12 @@ export default async function PrivacyPage() {
 					id="privacy-contact"
 					className="text-xl font-semibold text-foreground/90"
 				>
-					12. Contact and complaints
+					{t("privacyHeadings.contact")}
 				</h2>
-				<p className="mt-2 text-foreground/80">
-					If you have any questions about this Privacy Policy or how
-					we handle personal data, you can contact us at:
-				</p>
+				<p className="mt-2 text-foreground/80">{t("privacyBody.contactIntro")}</p>
 				<ul className="mt-2 list-disc space-y-1 pl-5 text-foreground/80">
 					<li>
-						Email:{" "}
+						{t("privacyBody.emailLabel")}:{" "}
 						<a
 							href="mailto:privacy@phaseo.app"
 							className="text-primary underline"
@@ -730,7 +324,7 @@ export default async function PrivacyPage() {
 						</a>
 					</li>
 					<li>
-						Support:{" "}
+						{t("privacyBody.supportLabel")}:{" "}
 						<a
 							href="mailto:support@phaseo.app"
 							className="text-primary underline"
@@ -739,14 +333,7 @@ export default async function PrivacyPage() {
 						</a>
 					</li>
 				</ul>
-				<p className="mt-2 text-foreground/80">
-					If you are in the UK, you also have the right to lodge a
-					complaint with the Information Commissioner&apos;s Office
-					(ICO) or with your local data protection authority if you
-					are in the EU. We would, however, appreciate the chance to
-					address your concerns first, so please consider contacting
-					us in the first instance.
-				</p>
+				<p className="mt-2 text-foreground/80">{t("privacyBody.regulatorComplaint")}</p>
 			</section>
 		</main>
 	);

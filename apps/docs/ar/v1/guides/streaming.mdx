@@ -1,0 +1,50 @@
+---
+title: "البث"
+description: "استخدم الأحداث المرسلة من الخادم (SSE) لتسليم الرموز بزمن استجابة منخفض."
+icon: "radio"
+---
+
+يعيد البث المخرجات تدريجيًا عبر إطارات SSE ليتمكن المستخدمون من رؤية الرد مبكرًا.
+
+## نقاط النهاية المدعومة
+
+- `/v1/responses`
+- `/v1/chat/completions`
+- `/v1/messages`
+
+## الطلب
+
+```bash
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-5-nano",
+    "input": "Stream a short hello message.",
+    "stream": true
+  }'
+```
+
+## الرد
+
+```text
+data: {"id":"resp_...","object":"response","status":"in_progress",...}
+data: {"type":"response.output_text.delta","delta":"Hello"}
+data: {"type":"response.completed",...}
+data: [DONE]
+```
+
+## خيارات SDK
+
+- TypeScript SDK: `client.streamResponses()` و`client.streamChat()` و`client.streamMessages()`
+- Python SDK: `client.stream_responses()` و`client.stream_chat()` و`client.stream_message()`
+- Vercel AI SDK: `streamText(...)` مع `@phaseo/ai-sdk-provider`
+
+## قيد مهم
+
+في مستوى التحقق الحالي من طلبات البوابة، يُرفض الجمع بين الأدوات و`stream: true` (`400 invalid_request`). استخدم الوضع غير المتدفق لحلقات استدعاء الأدوات.
+
+## الأدلة التالية
+
+1. [مرجع أحداث SSE](./streaming-sse.mdx)
+2. [البث في بيئة الإنتاج](./streaming-production.mdx)

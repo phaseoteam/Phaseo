@@ -1,0 +1,43 @@
+---
+title: "Prime Agent"
+icon: "terminal"
+description: "Connectez le catalogue de modèles Prime Agent installé à Phaseo."
+---
+
+## Configurer avec la CLI Phaseo
+
+Ces commandes prêtes pour la production nécessitent un compte Phaseo ; la CLI crée l’identifiant dédié à la passerelle lors de la connexion et de la configuration.
+
+```bash
+phaseo login
+phaseo prime-agent
+```
+
+Installez d’abord Prime Agent depuis sa version officielle. La configuration écrit un fournisseur `phaseo` géré dans `~/.prime/agent/models.json`. Il expose tous les modèles texte Phaseo actifs compatibles avec Chat Completions et récupère leur clé API dédiée auprès de la CLI Phaseo au moment de chaque requête.
+
+Prime Agent est actuellement compatible avec macOS et Linux. Sous Windows, exécutez la configuration dans WSL après y avoir installé l’exécutable.
+
+Choisissez une entrée initiale du catalogue ou configurez un seul modèle si nécessaire :
+
+```bash
+phaseo prime-agent --model anthropic/claude-sonnet-4.6
+phaseo prime-agent --catalog default
+```
+
+## Démarrer et vérifier
+
+```bash
+prime-agent
+```
+
+Ouvrez `/model`, sélectionnez le fournisseur `phaseo` et envoyez une requête simple. Le fournisseur généré utilise le format de clé basé sur une commande pris en charge par Prime Agent :
+
+```text
+!phaseo integrations credential prime-agent
+```
+
+Supprimez uniquement le fournisseur géré par Phaseo et révoquez sa clé dédiée avec :
+
+```bash
+phaseo integrations remove prime-agent
+```

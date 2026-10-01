@@ -33,10 +33,10 @@ import type { ProfileMessages } from "@/i18n/profile"
 
 type Props = {
 	profile: ProfileSnapshot
+	locale: string
+	labels: ProfileMessages
 	publicView?: boolean
 	actions?: ReactNode
-	locale?: string
-	labels?: ProfileMessages
 }
 
 type TimeRange = "today" | "7d" | "30d" | "1y" | "all"
@@ -49,8 +49,6 @@ const METRIC_HSL: Record<Metric, string> = {
 }
 
 const HEATMAP_LEVEL_OPACITIES = [0, 0.16, 0.32, 0.58, 1]
-
-const WEEKDAY_LABELS = ["M", "T", "W", "T", "F", "S", "S"]
 
 function getMetricColor(metric: Metric, opacity = 1): string {
 	return `hsl(${METRIC_HSL[metric]} / ${opacity})`
@@ -65,16 +63,16 @@ function getInitials(name: string): string {
 		.join("")
 }
 
-function formatShortDate(date: string): string {
-	return new Date(`${date}T00:00:00.000Z`).toLocaleDateString("en", {
+function formatShortDate(date: string, locale: string): string {
+	return new Date(`${date}T00:00:00.000Z`).toLocaleDateString(locale, {
 		month: "numeric",
 		day: "numeric",
 		timeZone: "UTC",
 	})
 }
 
-function formatLongDate(date: string): string {
-	return new Date(`${date}T00:00:00.000Z`).toLocaleDateString("en", {
+function formatLongDate(date: string, locale: string): string {
+	return new Date(`${date}T00:00:00.000Z`).toLocaleDateString(locale, {
 		weekday: "short",
 		month: "short",
 		day: "numeric",
@@ -83,11 +81,21 @@ function formatLongDate(date: string): string {
 	})
 }
 
-function formatWeekday(date: string): string {
-	return new Date(`${date}T00:00:00.000Z`).toLocaleDateString("en", {
+function formatWeekday(date: string, locale: string): string {
+	return new Date(`${date}T00:00:00.000Z`).toLocaleDateString(locale, {
 		weekday: "long",
 		timeZone: "UTC",
 	})
+}
+
+function getWeekdayLabels(locale: string): string[] {
+	const formatter = new Intl.DateTimeFormat(locale, {
+		weekday: "narrow",
+		timeZone: "UTC",
+	})
+	return Array.from({ length: 7 }, (_, index) =>
+		formatter.format(new Date(Date.UTC(2024, 0, index + 1))),
+	)
 }
 
 function getSeriesForRange(
@@ -153,9 +161,14 @@ function getLongestStreak(points: ProfileSnapshot["activitySeries30"]): number {
 	return longest
 }
 
-function formatMetricValue(metric: Metric, value: number, compact = true): string {
+function formatMetricValue(
+	metric: Metric,
+	value: number,
+	locale: string,
+	compact = true,
+): string {
 	if (metric === "spend") {
-		return new Intl.NumberFormat("en-US", {
+		return new Intl.NumberFormat(locale, {
 			style: "currency",
 			currency: "USD",
 			notation: value >= 1000 && compact ? "compact" : "standard",
@@ -163,7 +176,17 @@ function formatMetricValue(metric: Metric, value: number, compact = true): strin
 		}).format(value)
 	}
 
-	return compact ? formatCompactNumber(value) : value.toLocaleString()
+	return compact
+		? formatCompactNumber(value, locale)
+		: value.toLocaleString(locale)
+}
+
+function formatChangePercent(value: number, locale: string): string {
+	return new Intl.NumberFormat(locale, {
+		style: "percent",
+		maximumFractionDigits: 0,
+		signDisplay: "exceptZero",
+	}).format(value / 100)
 }
 
 function getProviderFromModelId(id: string): string {
@@ -227,10 +250,12 @@ function getHeatmapLevel(value: number, max: number): number {
 
 function ActivityHeatmap({
 	profile,
+	locale,
 	metric,
 	labels,
 }: {
 	profile: ProfileSnapshot
+	locale: string
 	metric: Metric
 	labels: ProfileMessages
 }) {
@@ -252,7 +277,7 @@ function ActivityHeatmap({
 		return best
 	}, null)
 	const weekdayTotals = activeDays.reduce<Record<string, number>>((acc, day) => {
-		const weekday = formatWeekday(day.date)
+		const weekday = formatWeekday(day.date, locale)
 		acc[weekday] = (acc[weekday] ?? 0) + getMetricValue(day, metric)
 		return acc
 	}, {})
@@ -268,9 +293,19 @@ function ActivityHeatmap({
 		: 0
 	const topModelShare = total > 0 ? Math.round((topModelValue / total) * 100) : 0
 
-	const monthLabels = days
-		.map((day, index) => (day.monthLabel ? { index, label: day.monthLabel } : null))
-		.filter(Boolean) as Array<{ index: number; label: string }>
+	let previousMonth = ""
+	const monthLabels = days.flatMap((day, index) => {
+		const date = new Date(`${day.date}T00:00:00.000Z`)
+		const monthKey = `${date.getUTCFullYear()}-${date.getUTCMonth()}`
+		const label = date.toLocaleDateString(locale, {
+			month: "short",
+			timeZone: "UTC",
+		})
+		const isMonthAnchor = date.getUTCDate() <= 7 && monthKey !== previousMonth
+		previousMonth = monthKey
+		return isMonthAnchor ? [{ index, label }] : []
+	})
+	const weekdayLabels = getWeekdayLabels(locale)
 
 	return (
 		<section className="min-w-0 border-t border-border pt-6">
@@ -290,28 +325,28 @@ function ActivityHeatmap({
 						<span>{labels.streak}</span>
 					</div>
 					<div className="mt-1 text-base font-semibold text-foreground">
-						{profile.currentStreak.toLocaleString()} {labels.days}
+						{profile.currentStreak.toLocaleString(locale)} {labels.days}
 					</div>
 					<div className="mt-0.5 text-xs text-muted-foreground">
-						{labels.best} {profile.longestStreak.toLocaleString()}
+						{labels.best} {profile.longestStreak.toLocaleString(locale)}
 					</div>
 				</div>
 				<div className="pl-4 sm:px-6">
 						<div className="text-muted-foreground">{labels.avgDay}</div>
 						<div className="mt-1 text-base font-semibold text-foreground">
-							{formatMetricValue(metric, avgDay)}
+							{formatMetricValue(metric, avgDay, locale)}
 						</div>
 				</div>
 				<div className="pr-4 sm:px-6">
 						<div className="text-muted-foreground">{labels.avgWeek}</div>
 					<div className="mt-1 text-base font-semibold text-foreground">
-						{formatMetricValue(metric, avgWeek)}
+						{formatMetricValue(metric, avgWeek, locale)}
 					</div>
 				</div>
 				<div className="pl-4 sm:pl-6">
 						<div className="text-muted-foreground">{labels.total}</div>
 					<div className="mt-1 text-base font-semibold text-foreground">
-						{formatMetricValue(metric, total)}
+						{formatMetricValue(metric, total, locale)}
 					</div>
 				</div>
 			</div>
@@ -335,7 +370,7 @@ function ActivityHeatmap({
 
 					<div className="mt-1 grid grid-cols-[0.75rem_minmax(0,1fr)] gap-2">
 						<div className="grid grid-rows-7 gap-1 text-[10px] text-muted-foreground">
-							{WEEKDAY_LABELS.map((label, index) => (
+						{weekdayLabels.map((label, index) => (
 								<div key={`${label}-${index}`} className="flex h-3.5 items-center">
 									{label}
 								</div>
@@ -356,13 +391,13 @@ function ActivityHeatmap({
 													day.isFuture ? "opacity-40" : ""
 												}`}
 												style={level === 0 ? undefined : { backgroundColor: getMetricColor(metric, HEATMAP_LEVEL_OPACITIES[level]) }}
-												aria-label={`${formatLongDate(day.date)} ${formatMetricValue(metric, value)}`}
+												aria-label={`${formatLongDate(day.date, locale)} ${formatMetricValue(metric, value, locale)}`}
 											/>
 										</TooltipTrigger>
 										<TooltipContent>
 											<div className="space-y-1">
-												<p className="font-medium">{formatLongDate(day.date)}</p>
-												<p>{formatMetricValue(metric, value, false)}</p>
+									<p className="font-medium">{formatLongDate(day.date, locale)}</p>
+									<p>{formatMetricValue(metric, value, locale, false)}</p>
 											</div>
 										</TooltipContent>
 									</Tooltip>
@@ -381,7 +416,7 @@ function ActivityHeatmap({
 							key={opacity}
 							className={`h-2.5 w-2.5 rounded-xs ${index === 0 ? "bg-muted" : ""}`}
 							style={index === 0 ? undefined : { backgroundColor: getMetricColor(metric, opacity) }}
-							aria-label={`Activity level ${index}`}
+							aria-label={labels.activityLevel.replace("{level}", String(index))}
 						/>
 					))}
 				</div>
@@ -396,9 +431,10 @@ function ActivityHeatmap({
 							<span className="text-muted-foreground">{labels.biggestDay}</span>
 							<span className="text-right font-medium text-foreground">
 								{biggestDay
-									? `${formatLongDate(biggestDay.date)} · ${formatMetricValue(
+									? `${formatLongDate(biggestDay.date, locale)} · ${formatMetricValue(
 											metric,
 											biggestDay.metricValue,
+											locale,
 										)}`
 									: labels.noActivityYet}
 							</span>
@@ -410,13 +446,15 @@ function ActivityHeatmap({
 						<div className="flex items-center justify-between gap-6">
 							<span className="text-muted-foreground">{labels.activeDays}</span>
 							<span className="font-medium text-foreground">
-								{nonZeroDays.length.toLocaleString()} of {activeDays.length.toLocaleString()}
+								{labels.activeDaysCount
+									.replace("{active}", nonZeroDays.length.toLocaleString(locale))
+									.replace("{total}", activeDays.length.toLocaleString(locale))}
 							</span>
 						</div>
 						<div className="flex items-center justify-between gap-6">
 							<span className="text-muted-foreground">{labels.quietDays}</span>
 							<span className="font-medium text-foreground">
-								{Math.max(0, activeDays.length - nonZeroDays.length).toLocaleString()}
+								{Math.max(0, activeDays.length - nonZeroDays.length).toLocaleString(locale)}
 							</span>
 						</div>
 					</div>
@@ -440,7 +478,7 @@ function ActivityHeatmap({
 						<div className="flex items-center justify-between gap-6">
 							<span className="text-muted-foreground">{labels.modelsUsed}</span>
 							<span className="font-medium text-foreground">
-								{profile.topModels.length.toLocaleString()}
+								{profile.topModels.length.toLocaleString(locale)}
 							</span>
 						</div>
 					</div>
@@ -452,11 +490,10 @@ function ActivityHeatmap({
 
 export default function ProfileDashboard({
 	profile,
+	locale,
+	labels,
 	publicView = false,
 	actions,
-	labels = {
-		usageSummary: "Usage Summary", topModels: "Top Models", openWorkspaceUsage: "Open workspace usage", by: "by", noModelActivity: "No model activity recorded yet.", activity: "Activity", streak: "Streak", days: "days", best: "Best", avgDay: "Avg / day", avgWeek: "Avg / week", total: "Total", less: "Less", more: "More", activityInsights: "Activity Insights", biggestDay: "Biggest day", mostActiveWeekday: "Most active weekday", activeDays: "Active days", quietDays: "Quiet days", usageNotes: "Usage Notes", mostUsedModel: "Most used model", topModelShare: "Top model share", modelsUsed: "Models used", noActivityYet: "No activity yet", noPriorData: "No prior data", vsPrior: "vs prior", changePhoto: "Change profile photo", uploadingPhoto: "Uploading profile photo", photoTooLarge: "Profile photos must be 5 MB or smaller.", invalidPhoto: "Choose a valid JPG, PNG, or WebP image.", photoUpdated: "Profile photo updated", updatePhotoFailed: "Could not update profile photo", periodToday: "Today", period7d: "Last 7 Days", period30d: "Last 30 Days", period1y: "Last Year", periodAll: "All Time", tokens: "Tokens", spend: "Spend", requests: "Requests"
-	},
 }: Props) {
 	const rangeLabels = useMemo<Record<TimeRange, string>>(() => ({ today: labels.periodToday, "7d": labels.period7d, "30d": labels.period30d, "1y": labels.period1y, all: labels.periodAll }), [labels])
 	const router = useRouter()
@@ -657,15 +694,15 @@ export default function ProfileDashboard({
 						<div className="w-fit">
 							<div className="text-xs text-muted-foreground">
 								{metric === "tokens" ? labels.tokens : metric === "spend" ? labels.spend : labels.requests} ·{" "}
-								{rangeLabels[range].toLowerCase()}
+								{rangeLabels[range]}
 							</div>
 							<div className="mt-1 text-4xl font-semibold tracking-tight text-foreground">
-								{formatMetricValue(metric, total)}
+								{formatMetricValue(metric, total, locale)}
 							</div>
 							<div className="mt-1 text-sm text-muted-foreground">
 								{previous == null
 									? labels.noPriorData
-									: `${previous > 0 ? "+" : ""}${Math.round(previous)}% vs prior`}
+									: labels.changeVsPrior.replace("{change}", formatChangePercent(previous, locale))}
 							</div>
 						</div>
 
@@ -691,23 +728,23 @@ export default function ProfileDashboard({
 									axisLine={false}
 									minTickGap={28}
 									tickMargin={8}
-									tickFormatter={(value) => formatShortDate(String(value))}
+									tickFormatter={(value) => formatShortDate(String(value), locale)}
 								/>
 								<YAxis
 									tickLine={false}
 									axisLine={false}
 									width={52}
-									tickFormatter={(value) => formatMetricValue(metric, Number(value))}
+									tickFormatter={(value) => formatMetricValue(metric, Number(value), locale)}
 								/>
 								<ChartTooltip
 									cursor={{ fill: "rgba(24,24,27,0.06)" }}
 									content={
 										<ChartTooltipContent
 											hideIndicator
-											labelFormatter={(label) => formatLongDate(String(label))}
+											labelFormatter={(label) => formatLongDate(String(label), locale)}
 											formatter={(value) => (
 												<span className="font-mono font-semibold tabular-nums text-foreground">
-													{formatMetricValue(metric, Number(value), false)}
+											{formatMetricValue(metric, Number(value), locale, false)}
 												</span>
 											)}
 										/>
@@ -732,7 +769,10 @@ export default function ProfileDashboard({
 							)}
 						</div>
 						<div className="mt-0.5 text-sm text-muted-foreground">
-					{labels.by} {metric === "tokens" ? labels.tokens.toLowerCase() : metric === "spend" ? labels.spend.toLowerCase() : labels.requests.toLowerCase()}
+							{labels.topModelsByMetric.replace(
+								"{metric}",
+								(metric === "tokens" ? labels.tokens : metric === "spend" ? labels.spend : labels.requests).toLocaleLowerCase(locale),
+							)}
 						</div>
 					</div>
 
@@ -765,8 +805,8 @@ export default function ProfileDashboard({
 										</div>
 										<div className="text-sm font-semibold tabular-nums text-foreground">
 											{metric === "spend"
-												? formatUsdFromNanos(model.spendNanos)
-												: formatCompactNumber(value)}
+												? formatUsdFromNanos(model.spendNanos, locale)
+												: formatCompactNumber(value, locale)}
 										</div>
 									</div>
 								)
@@ -790,7 +830,7 @@ export default function ProfileDashboard({
 				</aside>
 			</section>
 
-			<ActivityHeatmap profile={profile} metric={metric} labels={labels} />
+			<ActivityHeatmap profile={profile} locale={locale} metric={metric} labels={labels} />
 		</div>
 	)
 }

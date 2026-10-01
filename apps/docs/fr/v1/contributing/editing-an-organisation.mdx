@@ -1,0 +1,36 @@
+---
+icon: "building-2"
+title: "Modifier une organisation"
+description: "Mettez à jour les fiches des organisations dans le jeu de données Phaseo."
+---
+
+Les données des organisations se trouvent dans des fichiers JSON sous `packages/data/catalog/src/data/organisations`.
+
+## 1. Trouver l’organisation
+
+Chaque organisation est définie dans un seul fichier JSON. Par exemple :
+
+`packages/data/catalog/src/data/organisations/openai.json`
+
+## 2. Effectuer les modifications
+
+Les modifications courantes comprennent :
+
+- Nom, description et site web
+- Code pays ou champs de métadonnées
+- Liens vers les modèles ou les fournisseurs associés
+
+Respectez le format et l’ordre des champs des fichiers voisins.
+
+## 3. Valider les données
+
+Exécutez le script de validation des données avant d’ouvrir une PR :
+
+```bash
+pnpm validate:data
+```
+
+## 4. Ouvrir une PR
+
+Citez vos sources pour toute modification factuelle.
+

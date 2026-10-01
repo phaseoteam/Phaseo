@@ -1,0 +1,46 @@
+---
+title: "Récupérer une génération musicale"
+sidebarTitle: "Récupérer une génération musicale"
+badge: "Beta"
+openapi: "/fr/openapi/v1/openapi.localized.yaml GET /music/generate/{music_id}"
+description: "Récupérez une génération musicale à l’aide de son identifiant de requête Phaseo."
+---
+
+Récupérez un résultat musical créé avec `POST /music/generate`. Ce point de terminaison renvoie le résultat normalisé stocké lorsque le fournisseur a terminé et interroge le fournisseur amont si la tâche est encore asynchrone.
+
+## Structure de la réponse
+
+```json
+{
+  "id": "req_01JY6MUSIC123",
+  "object": "music",
+  "status": "completed",
+  "provider": "suno",
+  "model": "V4_5PLUS",
+  "nativeResponseId": "task_123",
+  "output": [
+    {
+      "index": 0,
+      "id": "clip_1",
+      "audio_url": "https://...",
+      "stream_audio_url": "https://...",
+      "image_url": "https://...",
+      "title": "Midnight Blue",
+      "tags": "jazz, piano",
+      "duration": 8
+    }
+  ],
+  "usage": {
+    "output_audio_count": 1,
+    "output_audio_seconds": 8
+  }
+}
+```
+
+## Remarques
+
+- `status` peut prendre les valeurs `queued`, `in_progress`, `completed` ou `failed`.
+- `usage` est inclus lorsque la génération est terminée.
+- Transmettez l’`id` Phaseo renvoyé par `POST /music/generate`, et non `nativeResponseId`.
+- Ce point de terminaison gère en interne les API d’état et de récupération propres aux fournisseurs.
+

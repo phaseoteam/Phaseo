@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useTranslations } from "next-intl";
 import { Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -60,6 +61,7 @@ export default function OrganisationLinksFieldset({
 }: {
 	initialLinks?: Array<{ platform: string; url: string }>;
 }) {
+	const t = useTranslations("Product.internalTools.dataEditor");
 	const [links, setLinks] = useState<LinkRow[]>(initialLinks.map(toRow).filter((link) => link.platform));
 	const usedPlatforms = useMemo(() => new Set(links.map((link) => link.platform)), [links]);
 	const canAddMore = usedPlatforms.size < PLATFORM_OPTIONS.length;
@@ -92,8 +94,8 @@ export default function OrganisationLinksFieldset({
 		<div className="space-y-3 rounded-lg border p-3">
 			<div className="flex items-center justify-between">
 				<div>
-					<h3 className="text-sm font-medium">Social links</h3>
-					<p className="text-xs text-muted-foreground">Add organisation profiles and website links.</p>
+					<h3 className="text-sm font-medium">{t("socialLinks")}</h3>
+					<p className="text-xs text-muted-foreground">{t("socialLinksDescription")}</p>
 				</div>
 				<Button
 					type="button"
@@ -110,20 +112,20 @@ export default function OrganisationLinksFieldset({
 					disabled={!canAddMore}
 				>
 					<Plus className="mr-1 h-4 w-4" />
-					Add link
+					{t("addLink")}
 				</Button>
 			</div>
 
 			<input type="hidden" name="social_links_payload" value={payload} />
 
 			{links.length === 0 ? (
-				<p className="text-xs text-muted-foreground">No social links yet.</p>
+				<p className="text-xs text-muted-foreground">{t("noSocialLinks")}</p>
 			) : (
 				<div className="space-y-2">
 					{links.map((link) => (
 						<div key={link.id} className="grid grid-cols-1 gap-2 md:grid-cols-[180px_1fr_auto]">
 							<div>
-								<Label className="mb-1 block text-xs text-muted-foreground">Platform</Label>
+								<Label className="mb-1 block text-xs text-muted-foreground">{t("platform")}</Label>
 								<Select
 									value={link.platform}
 									onValueChange={(value) =>
@@ -141,7 +143,7 @@ export default function OrganisationLinksFieldset({
 									}
 								>
 									<SelectTrigger className="w-full text-sm">
-										<SelectValue placeholder="Select platform" />
+										<SelectValue placeholder={t("selectPlatform")} />
 									</SelectTrigger>
 									<SelectContent>
 										{PLATFORM_OPTIONS.map((option) => {
@@ -150,7 +152,7 @@ export default function OrganisationLinksFieldset({
 											);
 											return (
 											<SelectItem key={option.value} value={option.value} disabled={usedByOther}>
-												{option.label}
+												{option.value === "website" ? t("websiteLink") : option.label}
 											</SelectItem>
 											);
 										})}
@@ -158,7 +160,7 @@ export default function OrganisationLinksFieldset({
 								</Select>
 							</div>
 							<div>
-								<Label className="mb-1 block text-xs text-muted-foreground">URL</Label>
+								<Label className="mb-1 block text-xs text-muted-foreground">{t("url")}</Label>
 								<Input
 									type="url"
 									value={link.url}
@@ -178,7 +180,7 @@ export default function OrganisationLinksFieldset({
 									variant="ghost"
 									size="icon"
 									onClick={() => setLinks((prev) => prev.filter((row) => row.id !== link.id))}
-									aria-label="Remove social link"
+									aria-label={t("removeSocialLink")}
 								>
 									<Trash2 className="h-4 w-4" />
 								</Button>

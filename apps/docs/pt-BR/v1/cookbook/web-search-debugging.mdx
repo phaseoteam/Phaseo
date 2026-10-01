@@ -1,0 +1,81 @@
+---
+title: "Depurar solicitações de busca na Web"
+icon: "bug"
+description: "Verifique solicitações de busca na Web, confirme o suporte do provedor e analise os resultados e as citações retornados."
+---
+
+Use esta receita quando uma solicitação de busca na Web não se comportar como esperado e você quiser confirmar se a Phaseo a aceitou, roteou corretamente e retornou resultados adequados.
+
+## 1. Deixe explícita a intenção de busca
+
+Não dependa apenas do texto do prompt. Inclua as configurações de busca diretamente na solicitação para que a Phaseo saiba que você quer usar a busca na Web.
+
+Confira se há:
+
+- ferramentas nativas de busca em `tools`
+- `web_search_options` quando o endpoint oferecer suporte
+
+## 2. Confirme se havia um provedor compatível
+
+Se a solicitação for bloqueada ou roteada de forma diferente do esperado, examine os detalhes da solicitação:
+
+- detalhes dos provedores candidatos
+- detalhes de habilitação do provedor
+- explicação do roteamento
+
+Isso mostra se a lista de provedores foi reduzida por falta de suporte à busca.
+
+## 3. Inspecione os contadores de uso
+
+Solicitações bem-sucedidas que usam busca devem exibir indicadores de uso relacionados, como:
+
+- ferramentas nativas de busca na Web solicitadas
+- resultados de busca na Web
+- citações
+
+Esse é o sinal mais rápido de que a solicitação realmente fez uma busca.
+
+## 4. Inspecione a seção de resultados
+
+Para solicitações bem-sucedidas, abra o diálogo de detalhes e procure a seção de observabilidade da busca na Web.
+
+Ela mostra:
+
+- se a busca nativa foi usada
+- quantidade de resultados normalizados
+- quantidade de citações normalizadas
+- registros de resultados extraídos
+- registros de citações extraídas
+
+Use essas informações para comparar o comportamento dos provedores sem ler payloads brutos.
+
+## 5. Analise estes casos separadamente
+
+A busca nativa e a verificação dos recursos do provedor estão disponíveis. O planejamento de fallback da busca é separado.
+
+Durante a depuração, diferencie estes casos:
+
+1. A solicitação de busca nativa foi aceita e roteada.
+2. A solicitação foi aceita, mas nenhum provedor compatível permaneceu disponível.
+3. A solicitação foi bem-sucedida, mas retornou citações fracas ou escassas.
+
+São problemas diferentes e devem ser investigados de maneiras distintas.
+
+## 6. O que comparar quando os resultados parecem incorretos
+
+Compare entre as solicitações:
+
+- ID do modelo
+- provedor efetivamente selecionado
+- opções de busca da solicitação
+- quantidade de resultados
+- quantidade de citações
+- detalhes do roteamento
+
+Se a qualidade dos resultados variar por provedor, os registros normalizados ainda devem deixar isso visível.
+
+## Conteúdo relacionado
+
+- [Roteamento e fallbacks](../guides/routing-and-fallbacks.mdx)
+- [Exemplos](../guides/examples.mdx)
+- [SDK TypeScript](../sdk-reference/typescript/overview.mdx)

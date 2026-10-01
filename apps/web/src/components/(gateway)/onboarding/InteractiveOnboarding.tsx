@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import {
 	Check,
@@ -57,47 +58,21 @@ type RestCodeExample = {
 };
 type PromptOption = {
 	id: string;
-	label: string;
-	message: string;
-	response: string;
+	codeMessage: string;
 };
 type ResponseView = "parsed" | "object";
 
-const STEPS: Array<{ id: StepId; title: string }> = [
-	{ id: "api-key", title: "Create a Key" },
-	{ id: "models", title: "Choose a Model" },
-	{ id: "request", title: "Create a Request" },
+const STEPS: Array<{ id: StepId; titleKey: string }> = [
+	{ id: "api-key", titleKey: "steps.createKey" },
+	{ id: "models", titleKey: "steps.chooseModel" },
+	{ id: "request", titleKey: "steps.createRequest" },
 ];
 
 const PROMPT_OPTIONS: PromptOption[] = [
-	{
-		id: "summary",
-		label: "One sentence summary",
-		message: "Explain what Phaseo does in one sentence.",
-		response:
-			"Phaseo helps developers discover, compare, and call AI models through one gateway with consistent pricing, routing, and observability.",
-	},
-	{
-		id: "welcome",
-		label: "Welcome message",
-		message: "Write a friendly welcome message for a developer.",
-		response:
-			"Welcome to Phaseo. Create a key, choose a model, and send your first request whenever you are ready.",
-	},
-	{
-		id: "compare",
-		label: "Compare models",
-		message: "Suggest three ways to compare AI models.",
-		response:
-			"Compare models by capability fit, latency and reliability, and total cost for your expected traffic pattern.",
-	},
-	{
-		id: "json",
-		label: "JSON draft",
-		message: "Draft a JSON object with a project name and next action.",
-		response:
-			'{\n  "project": "Phaseo onboarding",\n  "next_action": "Send a test chat completion request"\n}',
-	},
+	{ id: "summary", codeMessage: "Explain what Phaseo does in one sentence." },
+	{ id: "welcome", codeMessage: "Write a friendly welcome message for a developer." },
+	{ id: "compare", codeMessage: "Suggest three ways to compare AI models." },
+	{ id: "json", codeMessage: "Draft a JSON object with a project name and next action." },
 ];
 
 function safeString(value: unknown) {
@@ -218,15 +193,21 @@ function SimulatedResponse({
 	onViewChange: (view: ResponseView) => void;
 	objectJson: string;
 }) {
+	const t = useTranslations("Product.interactiveOnboarding");
+	const locale = useLocale();
 	if (!value && !isStreaming) return null;
+	const seconds = new Intl.NumberFormat(locale, {
+		minimumFractionDigits: 1,
+		maximumFractionDigits: 1,
+	}).format(elapsedMs / 1000);
 
 	return (
 		<div className="rounded-md border bg-background">
 			<div className="flex min-h-10 flex-wrap items-center justify-between gap-2 border-b px-3 py-2">
 				<div className="flex items-center gap-2">
-					<span className="text-sm font-medium">Response</span>
+					<span className="text-sm font-medium">{t("responseTitle")}</span>
 					<span className="font-mono text-xs text-muted-foreground">
-						{(elapsedMs / 1000).toFixed(1)}s - {streamedTokens} tokens
+						{t("responseStats", { seconds, count: streamedTokens } as never)}
 					</span>
 				</div>
 				<div className="flex items-center gap-1">
@@ -240,7 +221,7 @@ function SimulatedResponse({
 								: "text-muted-foreground hover:bg-muted hover:text-foreground",
 						)}
 					>
-						Parsed
+						{t("parsedView")}
 					</button>
 					<button
 						type="button"
@@ -252,7 +233,7 @@ function SimulatedResponse({
 								: "text-muted-foreground hover:bg-muted hover:text-foreground",
 						)}
 					>
-						Full object
+						{t("fullObjectView")}
 					</button>
 				</div>
 			</div>
@@ -273,6 +254,7 @@ function SimulatedResponse({
 }
 
 function RestCodeBlock({ example }: { example: RestCodeExample }) {
+	const t = useTranslations("Product.interactiveOnboarding");
 	return (
 		<div className="overflow-hidden rounded-md border bg-background">
 			<div className="flex min-h-11 items-center justify-between gap-3 border-b px-3 py-2">
@@ -295,8 +277,8 @@ function RestCodeBlock({ example }: { example: RestCodeExample }) {
 					content={example.code}
 					variant="ghost"
 					size="sm"
-					aria-label="Copy code"
-					onCopy={() => toast.success("Copied")}
+				aria-label={t("copyCode")}
+				onCopy={() => toast.success(t("copied"))}
 				/>
 			</div>
 			<HighlightedCodeBlock
@@ -309,6 +291,7 @@ function RestCodeBlock({ example }: { example: RestCodeExample }) {
 }
 
 function MobileCodeDrawer({ example }: { example: RestCodeExample }) {
+	const t = useTranslations("Product.interactiveOnboarding");
 	return (
 		<Drawer>
 			<DrawerTrigger asChild>
@@ -318,14 +301,14 @@ function MobileCodeDrawer({ example }: { example: RestCodeExample }) {
 					className="fixed bottom-4 right-4 z-40 shadow-lg lg:hidden"
 				>
 					<Code2 className="mr-1.5 h-4 w-4" />
-					View code
+					{t("viewCode")}
 				</Button>
 			</DrawerTrigger>
 			<DrawerContent className="lg:hidden max-h-[82dvh] gap-0 overflow-hidden p-0">
 				<DrawerHeader className="border-b px-4 py-3 text-left">
-					<DrawerTitle>Code</DrawerTitle>
+					<DrawerTitle>{t("codeTitle")}</DrawerTitle>
 					<DrawerDescription>
-						The REST request for the current step.
+						{t("restRequestDescription")}
 					</DrawerDescription>
 				</DrawerHeader>
 				<div className="overflow-auto p-4">
@@ -353,6 +336,7 @@ export default function InteractiveOnboarding({
 	models: OnboardingModel[];
 	workspaces: OnboardingWorkspace[];
 }) {
+	const t = useTranslations("Product.interactiveOnboarding");
 	const initialSteps = Array.isArray(initialState.completedSteps)
 		? initialState.completedSteps.map((step) => String(step))
 		: [];
@@ -382,10 +366,9 @@ export default function InteractiveOnboarding({
 	const [createdKeyPrefix, setCreatedKeyPrefix] = React.useState(
 		safeString(initialState.keyPrefix),
 	);
-	const [keyName, setKeyName] = React.useState("Onboarding key");
+	const [keyName, setKeyName] = React.useState(() => t("defaultKeyName"));
 	const [isCreatingKey, setIsCreatingKey] = React.useState(false);
 	const [keyError, setKeyError] = React.useState("");
-	const [keyStatus, setKeyStatus] = React.useState("");
 	const [isSaving, setIsSaving] = React.useState(false);
 	const [selectedPromptId, setSelectedPromptId] = React.useState(
 		PROMPT_OPTIONS[0]?.id ?? "",
@@ -402,16 +385,24 @@ export default function InteractiveOnboarding({
 
 	const selectedModel =
 		models.find((model) => model.id === selectedModelId) ?? models[0] ?? null;
-	const selectedPrompt =
+	const selectedPromptOption =
 		PROMPT_OPTIONS.find((prompt) => prompt.id === selectedPromptId) ??
 		PROMPT_OPTIONS[0];
+	const selectedPrompt = selectedPromptOption
+		? {
+				...selectedPromptOption,
+				label: t(`prompts.${selectedPromptOption.id}.label` as never),
+				message: t(`prompts.${selectedPromptOption.id}.message` as never),
+				response: t(`prompts.${selectedPromptOption.id}.response` as never),
+			}
+		: null;
 	const keyPreview =
 		createdPlaintextKey ||
 		(createdKeyPrefix ? `phaseo_v1_sk_...${createdKeyPrefix}` : "") ||
 		"$PHASEO_API_KEY";
 	const simulatedResponseObject = buildSimulatedChatCompletionResponse({
 		modelId: selectedModel?.id ?? selectedModelId,
-		prompt: selectedPrompt?.message ?? "",
+		prompt: selectedPromptOption?.codeMessage ?? "Explain what Phaseo does in one sentence.",
 		response: simulatedResponse,
 		completionTokens: streamedTokenCount,
 	});
@@ -423,9 +414,9 @@ export default function InteractiveOnboarding({
 			: activeStep === "models"
 				? buildModelsCode()
 				: buildRequestCode(
-						selectedModel?.id ?? selectedModelId,
+					selectedModel?.id ?? selectedModelId,
 						keyPreview,
-						selectedPrompt?.message ?? "Hello from Phaseo",
+						selectedPromptOption?.codeMessage ?? "Explain what Phaseo does in one sentence.",
 					);
 
 	const clearStreamTimeouts = React.useCallback(() => {
@@ -539,7 +530,6 @@ export default function InteractiveOnboarding({
 		try {
 			setIsCreatingKey(true);
 			setKeyError("");
-			setKeyStatus("Creating key...");
 			const result = await createOnboardingApiKeyAction({
 				name: keyName,
 				workspaceId,
@@ -557,12 +547,10 @@ export default function InteractiveOnboarding({
 			const nextCompleted = new Set(completedSteps);
 			nextCompleted.add("api-key");
 			setCompletedSteps(nextCompleted);
-			setKeyStatus("");
-			toast.success("API key created");
+			toast.success(t("toasts.apiKeyCreated"));
 		} catch (error) {
-			const message =
-				error instanceof Error ? error.message : "Could not create API key";
-			setKeyStatus("");
+			void error;
+			const message = t("errors.apiKeyCreate");
 			setKeyError(message);
 			toast.error(message);
 		} finally {
@@ -617,15 +605,12 @@ export default function InteractiveOnboarding({
 					status === "completed" ? 3 : completedSteps.size,
 				outcome: status,
 			});
-			toast.success(
-				status === "completed" ? "Onboarding complete" : "Onboarding skipped",
-			);
+			toast.success(status === "completed" ? t("toasts.completed") : t("toasts.skipped"));
 			router.replace("/");
 			router.refresh();
 		} catch (error) {
-			toast.error(
-				error instanceof Error ? error.message : "Could not save onboarding",
-			);
+			void error;
+			toast.error(t("errors.saveProgress"));
 		} finally {
 			setIsSaving(false);
 		}
@@ -641,9 +626,10 @@ export default function InteractiveOnboarding({
 				status: "started",
 			});
 			setDeclaredCountryCode(countryCode);
-			toast.success("Country saved");
+			toast.success(t("toasts.countrySaved"));
 		} catch (error) {
-			toast.error(error instanceof Error ? error.message : "Could not save country");
+			void error;
+			toast.error(t("errors.saveCountry"));
 		} finally {
 			setIsSavingCountry(false);
 		}
@@ -687,12 +673,12 @@ export default function InteractiveOnboarding({
 		return (
 			<div className="min-h-[calc(100dvh-var(--site-header-height,4rem))] bg-background px-4 py-10 text-foreground sm:px-6">
 				<div className="mx-auto max-w-lg rounded-xl border bg-card p-6 sm:p-8">
-					<h1 className="text-2xl font-semibold tracking-tight">Select your country</h1>
-					<p className="mt-2 text-sm leading-6 text-muted-foreground">
-						Choose the country where you live. We use this to determine which providers and services are available to your account. This is kept separate from request-location analytics.
-					</p>
-					<div className="mt-6 space-y-2">
-						<label htmlFor="onboarding-country" className="text-sm font-medium">Country</label>
+						<h1 className="text-2xl font-semibold tracking-tight">{t("country.title")}</h1>
+						<p className="mt-2 text-sm leading-6 text-muted-foreground">
+							{t("country.description")}
+						</p>
+						<div className="mt-6 space-y-2">
+							<label htmlFor="onboarding-country" className="text-sm font-medium">{t("country.label")}</label>
 						<CountryCombobox
 							id="onboarding-country"
 							value={countryCode}
@@ -702,10 +688,10 @@ export default function InteractiveOnboarding({
 					</div>
 					<Button className="mt-6 w-full" onClick={saveCountry} disabled={!countryCode || isSavingCountry}>
 						{isSavingCountry ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : null}
-						Continue
+						{t("continue")}
 					</Button>
 					<p className="mt-4 text-xs leading-5 text-muted-foreground">
-						Select your actual country. Request access may also be checked against network location where required for security or provider compliance.
+						{t("country.privacyNote")}
 					</p>
 				</div>
 			</div>
@@ -718,11 +704,10 @@ export default function InteractiveOnboarding({
 				<div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
 					<div>
 						<h1 className="text-2xl font-semibold tracking-normal">
-							Get started with Phaseo
+							{t("pageTitle")}
 						</h1>
 						<p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-							Choose a model, preview the API flow, and create a key when you
-							are ready.
+							{t("pageDescription")}
 						</p>
 					</div>
 					<Button
@@ -732,7 +717,7 @@ export default function InteractiveOnboarding({
 						disabled={isSaving}
 					>
 						<X className="mr-1.5 h-4 w-4" />
-						Skip
+						{t("skip")}
 					</Button>
 				</div>
 
@@ -765,7 +750,7 @@ export default function InteractiveOnboarding({
 												{index + 1}
 											</span>
 										</span>
-										<span className="font-medium">{step.title}</span>
+											<span className="font-medium">{t(step.titleKey as never)}</span>
 									</button>
 								);
 							})}
@@ -775,7 +760,7 @@ export default function InteractiveOnboarding({
 							<div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 								{initialCompletedAt ? (
 									<p className="text-sm text-muted-foreground">
-										You have completed onboarding before.
+										{t("completedPreviously")}
 									</p>
 								) : null}
 							</div>
@@ -784,18 +769,16 @@ export default function InteractiveOnboarding({
 								<div className="space-y-5">
 									<div>
 										<h2 className="text-xl font-semibold tracking-normal">
-											Create a Key
+											{t("steps.createKey")}
 										</h2>
 										<p className="mt-2 text-sm leading-6 text-muted-foreground">
-											Create a key now if you want to copy a ready-to-run
-											request. You can also continue without one and come back to
-											keys later.
+											{t("keyStepDescription")}
 										</p>
 									</div>
 
 									<div className="max-w-md space-y-3">
 										<label className="text-sm font-medium" htmlFor="key-name">
-											Key name
+											{t("keyName")}
 										</label>
 										<input
 											id="key-name"
@@ -814,7 +797,7 @@ export default function InteractiveOnboarding({
 												) : (
 													<KeyRound className="mr-1.5 h-4 w-4" />
 												)}
-												Create key
+												{isCreatingKey ? t("creatingKey") : t("createKey")}
 											</Button>
 											<Button
 												type="button"
@@ -822,16 +805,11 @@ export default function InteractiveOnboarding({
 												onClick={continueWithoutKey}
 												disabled={isCreatingKey}
 											>
-												Continue without key
+												{t("continueWithoutKey")}
 											</Button>
 										</div>
 										{keyError ? (
 											<p className="text-sm text-destructive">{keyError}</p>
-										) : null}
-										{keyStatus ? (
-											<p className="text-sm text-muted-foreground">
-												{keyStatus}
-											</p>
 										) : null}
 									</div>
 
@@ -839,10 +817,10 @@ export default function InteractiveOnboarding({
 										<div className="space-y-3">
 											<div className="rounded-md border p-4">
 												<p className="text-sm font-medium">
-													Copy your new key now
+													{t("copyNewKey")}
 												</p>
 												<p className="mt-1 text-sm text-muted-foreground">
-													It will not be shown again.
+													{t("keyShownOnce")}
 												</p>
 												<div className="mt-3 flex items-center gap-2 rounded-md border bg-muted p-2">
 													<code className="min-w-0 flex-1 overflow-auto whitespace-nowrap text-sm">
@@ -852,19 +830,19 @@ export default function InteractiveOnboarding({
 												<div className="mt-3">
 													<SecretRevealActions
 														secret={createdPlaintextKey}
-														name={keyName || "AI Stats onboarding key"}
+														name={keyName || t("defaultKeyName")}
 														kind="api-key"
 													/>
 												</div>
 											</div>
 											<p className="mt-1 text-sm text-muted-foreground">
-												Once you have copied it, continue to choose a model.
+												{t("continueAfterCopy")}
 											</p>
 											<Button
 												type="button"
 												onClick={() => saveProgress("api-key", "models")}
 											>
-												Continue
+												{t("continue")}
 											</Button>
 										</div>
 									) : null}
@@ -875,16 +853,15 @@ export default function InteractiveOnboarding({
 								<div className="space-y-5">
 									<div>
 										<h2 className="text-xl font-semibold tracking-normal">
-											Choose a Model
+											{t("steps.chooseModel")}
 										</h2>
 										<p className="mt-2 text-sm leading-6 text-muted-foreground">
-											This list is based on the gateway model catalogue. Choose
-											one model for your first request.
+											{t("modelStepDescription")}
 										</p>
 									</div>
 
 									<div className="space-y-3">
-										<h3 className="text-sm font-medium">Models</h3>
+										<h3 className="text-sm font-medium">{t("models")}</h3>
 										<div className="grid gap-2 md:grid-cols-2">
 											{models.map((model) => renderModelButton(model))}
 										</div>
@@ -896,11 +873,10 @@ export default function InteractiveOnboarding({
 								<div className="space-y-5">
 									<div>
 										<h2 className="text-xl font-semibold tracking-normal">
-											Create a Request
+										{t("steps.createRequest")}
 										</h2>
 										<p className="mt-2 text-sm leading-6 text-muted-foreground">
-											Choose a message, then simulate the first response. This
-											does not send a request to a model.
+											{t("requestStepDescription")}
 										</p>
 									</div>
 
@@ -920,7 +896,7 @@ export default function InteractiveOnboarding({
 												) : null}
 												<div className="min-w-0">
 													<p className="text-sm font-medium">
-														{selectedModel?.name ?? "Selected model"}
+															{selectedModel?.name ?? t("selectedModel")}
 													</p>
 													<p className="mt-1 break-words font-mono text-sm text-muted-foreground">
 														{selectedModel?.id ?? selectedModelId}
@@ -935,13 +911,13 @@ export default function InteractiveOnboarding({
 												onClick={() => setActiveStep("models")}
 											>
 												<RefreshCw className="mr-1.5 h-4 w-4" />
-												Change model
+												{t("changeModel")}
 											</Button>
 										</div>
 									</div>
 
 									<div className="space-y-3">
-										<p className="text-sm font-medium">Message</p>
+										<p className="text-sm font-medium">{t("message")}</p>
 										<div className="grid gap-2 sm:grid-cols-2">
 											{PROMPT_OPTIONS.map((prompt) => (
 												<button
@@ -958,10 +934,12 @@ export default function InteractiveOnboarding({
 															: "border-border hover:border-foreground/40",
 													)}
 												>
-													<span className="font-medium">{prompt.label}</span>
-													<span className="mt-1 block text-muted-foreground">
-														{prompt.message}
-													</span>
+										<span className="font-medium">
+											{t(`prompts.${prompt.id}.label` as never)}
+										</span>
+										<span className="mt-1 block text-muted-foreground">
+											{t(`prompts.${prompt.id}.message` as never)}
+										</span>
 												</button>
 											))}
 										</div>
@@ -978,7 +956,7 @@ export default function InteractiveOnboarding({
 											) : (
 												<Send className="mr-1.5 h-4 w-4" />
 											)}
-											Send request
+											{t("sendRequest")}
 										</Button>
 									</div>
 
@@ -1009,7 +987,7 @@ export default function InteractiveOnboarding({
 												) : (
 													<Check className="mr-1.5 h-4 w-4" />
 												)}
-												Complete onboarding
+												{t("completeOnboarding")}
 											</Button>
 										</div>
 									) : null}

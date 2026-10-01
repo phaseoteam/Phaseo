@@ -26,14 +26,12 @@ async function APIProvidersSection() {
 	return <APIProvidersDisplay providers={apiProviders} />;
 }
 
-function APIProvidersFallback() {
-	return <APIProvidersPageSkeleton />;
-}
+export default async function Page() {
+	const t = await getTranslations("Catalogue.providers");
 
-export default function Page() {
 	return (
 		<main className="flex min-h-0 flex-1 flex-col">
-			<Suspense fallback={<APIProvidersFallback />}>
+			<Suspense fallback={<APIProvidersPageSkeleton title={t("title")} />}>
 				<APIProvidersSection />
 			</Suspense>
 		</main>

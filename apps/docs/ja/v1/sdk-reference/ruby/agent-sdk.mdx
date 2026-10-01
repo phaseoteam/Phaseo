@@ -1,0 +1,47 @@
+---
+title: "使い方"
+description: "Ruby Agent SDKでツールループ、人によるレビュー、再試行、再開可能なエージェントを実行します。"
+---
+
+## ランタイムを準備する
+
+Agent SDKのgemはまだRubyGemsに公開されていません。[ソースからのインストール手順](./agent-sdk-installation.mdx)を参照してください。
+
+## クイックスタート
+
+```ruby
+require "phaseo_agent_sdk"
+
+agent = PhaseoAgentSdk.create_agent(
+  id: "quickstart-agent",
+  model: "openai/gpt-5.4-nano",
+  instructions: "Answer concisely and helpfully."
+)
+
+result = agent.run(
+  input: "Give me one fun fact about cURL.",
+  client: PhaseoAgentSdk.create_gateway_agent_client
+)
+
+puts result.output
+```
+
+## 提供される機能
+
+- `PhaseoAgentSdk.create_agent(...)`
+- `PhaseoAgentSdk.define_tool(...)`
+- `PhaseoAgentSdk.create_gateway_agent_client(...)`
+- Phaseoの`responses` API上で動作する、上限付きのツールループ
+
+## 高度なランタイム
+
+Rubyは、検証/承認コールバック、HITLと手動ツール、進捗、回復可能なエラー、再生可能な列挙子、停止ヘルパー、動的ターン、永続化された次ターン用パラメーター、正規化された使用量/コスト、duck typingに対応した状態アクセサーをサポートします。
+
+## ストリーミングとキャンセル
+
+`Agent#stream(...)`と`Agent#continue_stream(...)`は、ワーカースレッドでゲートウェイのResponses SSEストリームを読み取ります。`text_stream`、`reasoning_stream`、`item_stream`、`full_stream`を使い、`cancel`を呼び出すとワーカーを停止してHTTPストリームを閉じます。完了したステップにはリクエストID、プロバイダーメタデータ、終了理由、警告、使用量、コストが保持されます。
+
+## 関連項目
+
+- [Agent SDKの概要](../agent-sdk/overview.mdx)
+- [TypeScript Agent SDK](../typescript/agent-sdk.mdx)

@@ -12,8 +12,9 @@ export type DeveloperCacheScope =
 
 export type PageCacheTarget = {
 	scope: DeveloperCacheScope;
-	label: string;
-	description: string;
+	labelKey: string;
+	descriptionKey?: string;
+	description?: string;
 	targetId?: string;
 	affectsSearch: boolean;
 };
@@ -34,8 +35,8 @@ export function getPageCacheTarget(pathname: string): PageCacheTarget | null {
 	if (segments.length === 0) {
 		return {
 			scope: "landing",
-			label: "Landing pages",
-			description: "Homepage metrics and model highlights",
+			labelKey: "landingPages",
+			descriptionKey: "homepageMetricsAndHighlights",
 			affectsSearch: false,
 		};
 	}
@@ -48,7 +49,7 @@ export function getPageCacheTarget(pathname: string): PageCacheTarget | null {
 		return {
 			scope: "model",
 			targetId,
-			label: "This model",
+			labelKey: "thisModel",
 			description: targetId,
 			affectsSearch: true,
 		};
@@ -60,7 +61,7 @@ export function getPageCacheTarget(pathname: string): PageCacheTarget | null {
 		return {
 			scope: "provider",
 			targetId,
-			label: "This API provider",
+			labelKey: "thisApiProvider",
 			description: targetId,
 			affectsSearch: true,
 		};
@@ -72,7 +73,7 @@ export function getPageCacheTarget(pathname: string): PageCacheTarget | null {
 		return {
 			scope: "organisation",
 			targetId,
-			label: "This organisation",
+			labelKey: "thisOrganisation",
 			description: targetId,
 			affectsSearch: true,
 		};
@@ -83,8 +84,9 @@ export function getPageCacheTarget(pathname: string): PageCacheTarget | null {
 		return {
 			scope: "benchmark",
 			targetId,
-			label: targetId ? "This benchmark" : "All benchmarks",
-			description: targetId ?? "Benchmark catalogue and model scores",
+			labelKey: targetId ? "thisBenchmark" : "allBenchmarks",
+			descriptionKey: targetId ? undefined : "benchmarkCatalogueAndScores",
+			description: targetId,
 			affectsSearch: true,
 		};
 	}
@@ -94,26 +96,27 @@ export function getPageCacheTarget(pathname: string): PageCacheTarget | null {
 		return {
 			scope: "apps",
 			targetId,
-			label: targetId ? "This app" : "All apps",
-			description: targetId ?? "App data, rankings, images, and usage",
+			labelKey: targetId ? "thisApp" : "allApps",
+			descriptionKey: targetId ? undefined : "appDataRankingsImagesUsage",
+			description: targetId,
 			affectsSearch: false,
 		};
 	}
 
 	if (section === "rankings") {
-		return { scope: "rankings", label: "Rankings", description: "Model and app rankings", affectsSearch: false };
+		return { scope: "rankings", labelKey: "rankings", descriptionKey: "modelAndAppRankings", affectsSearch: false };
 	}
 	if (section === "updates") {
-		return { scope: "updates", label: "Updates", description: "Model update feeds", affectsSearch: false };
+		return { scope: "updates", labelKey: "updates", descriptionKey: "modelUpdateFeeds", affectsSearch: false };
 	}
 	if (section === "pricing") {
-		return { scope: "pricing", label: "Pricing", description: "Public pricing projections", affectsSearch: false };
+		return { scope: "pricing", labelKey: "pricing", descriptionKey: "publicPricingProjections", affectsSearch: false };
 	}
 	if (["models", "api-providers", "organisations", "families", "countries", "subscription-plans", "compare"].includes(section ?? "")) {
 		return {
 			scope: "catalogue",
-			label: "Models and providers",
-			description: "Catalogue, reference data, compare, and search",
+			labelKey: "modelsAndProviders",
+			descriptionKey: "catalogueReferenceCompareSearch",
 			affectsSearch: true,
 		};
 	}

@@ -1,0 +1,89 @@
+---
+title: "Salvar e retomar execuções"
+description: "Armazene o estado de execução do Agent SDK para Rust e continue após ferramentas ou revisão humana."
+---
+
+`RunResult` pode ser serializado com Serde. Salve-o no seu banco de dados, armazenamento de objetos ou registro de tarefas quando uma pausa precisar sobreviver à reinicialização de um processo.
+
+## Salvar o estado pausado
+
+```rust
+let paused_json = serde_json::to_string_pretty(&paused)?;
+std::fs::write("paused-run.json", paused_json)?;
+```
+
+## Restaurar o estado
+
+```rust
+use phaseo_agent::RunResult;
+
+let saved = std::fs::read_to_string("paused-run.json")?;
+let paused: RunResult = serde_json::from_str(&saved)?;
+```
+
+Recrie a mesma definição de agente e as mesmas ferramentas antes de continuar. Closures e `AgentDefinition` não fazem parte da execução serializada.
+
+O modelo efetivo e o número máximo de etapas ficam em `RunRecord`, então substituições por execução continuam valendo após a retomada.
+
+## Revisão humana
+
+Use `human_review(...)` para inspecionar um turno completo do modelo e solicitar uma entrada humana:
+
+```rust
+use phaseo_agent::{AgentDefinition, HumanReviewRequest};
+use serde_json::json;
+
+let definition = AgentDefinition::new(
+    "review-agent",
+    "openai/gpt-5.6-sol",
+)
+.human_review(|context| {
+    if context.response.message.content.contains("needs approval") {
+        Some(HumanReviewRequest {
+            reason: "Review the proposed action".to_string(),
+            payload: json!({
+                "draft": context.response.message.content
+            }),
+        })
+    } else {
+        None
+    }
+});
+```
+
+Retome com uma entrada humana:
+
+```rust
+use phaseo_agent::ContinueOptions;
+
+let mut options = ContinueOptions::new(paused);
+options.human_input = Some(
+    "Approved. Continue and return the final result.".to_string(),
+);
+
+let completed = agent.continue_run(&mut client, options)?;
+```
+
+## Tipos de pausa
+
+| `pause.kind` | Valor necessário para continuar |
+| --- | --- |
+| `human_review` | `ContinueOptions.human_input` não vazio |
+| `tool_approval` | Itens `ToolDecision` pelo ID da chamada da ferramenta |
+| `external_output` | Itens `ToolOutput` pelo ID da chamada da ferramenta |
+| `tool_input` | Uma combinação de aprovações e saídas externas |
+
+
+## Persistência controlada pelo aplicativo
+
+O SDK de agentes para Rust não fornece backend de estado hospedado nem adaptador de persistência. Seu aplicativo controla:
+
+- criptografia e retenção das execuções salvas
+- autorização para aprovações e entradas humanas
+- recriação dos executores de ferramentas
+- idempotência dos efeitos colaterais após a retomada
+
+## Conteúdo relacionado
+
+- [Ferramentas e aprovações](./agent-sdk-tools.mdx)
+- [Eventos, novas tentativas e erros](./agent-sdk-events-and-errors.mdx)

@@ -1,0 +1,77 @@
+---
+title: "移行ガイド"
+description: "プラットフォームの変更や特定モデルの新バージョンへの移行に関するガイドです。"
+icon: "compass"
+---
+
+# 移行ガイド
+
+Phaseo の移行ガイドでは、次の 2 種類の移行を扱います。
+
+- 別のプラットフォームや Gateway から Phaseo への移行
+- 同じプラットフォームでのモデルバージョンの更新
+
+<Columns cols={2}>
+	<Card title="モデルの移行" icon="brain-circuit" href="../model-migrations/index.mdx">
+		周辺の連携をほぼそのまま保ってモデルを更新します。
+	</Card>
+	<Card title="プラットフォームの移行" icon="arrow-right-left" href="./assistant.mdx">
+		SDK、プロバイダー、Gateway を切り替えて、既存の連携を Phaseo に対応させます。
+	</Card>
+</Columns>
+
+## モデルの移行
+
+連携方法はほぼ変えず、使用するモデルだけを変更する場合に利用します。
+
+次の内容を扱います。
+
+- リクエストパラメーターの変更
+- プロンプトや推論の動作の違い
+- 構造化出力やツール呼び出しの違い
+- 段階的な展開、フォールバック、ロールバックの方法
+
+利用できるモデル移行ガイド：
+
+- [Anthropic Claude Opus 5](../model-migrations/anthropic-claude-opus-5.mdx)
+- [OpenAI GPT-5.6](../model-migrations/openai-migrating-to-gpt-5-6.mdx)
+- [Anthropic Claude Opus 4.8](../model-migrations/anthropic-claude-opus-4-1-to-4-8.mdx)
+- [Anthropic Claude Opus 4.7](../model-migrations/anthropic-claude-opus-4-6-to-4-7.mdx)
+- [Mistral Small 4](../model-migrations/mistral-small-3-2-to-mistral-small-4.mdx)
+- [OpenAI GPT-5.4](../model-migrations/openai-migrating-to-gpt-5-4.mdx)
+- [Google Nano Banana 2](../model-migrations/google-nano-banana-1-to-nano-banana-2.mdx)
+- [Google Gemini 3.1](../model-migrations/google-migrating-to-gemini-3-and-3-1.mdx)
+- [Anthropic Claude Sonnet 4.6](../model-migrations/anthropic-claude-sonnet-4-5-to-4-6.mdx)
+- [SpaceXAI Grok 4.20](../model-migrations/xai-grok-4-20.mdx)
+- [Anthropic Claude Opus 4.6](../model-migrations/anthropic-claude-opus-4-5-to-4-6.mdx)
+
+## プラットフォームの移行
+
+SDK、プロバイダー、Gateway を変更し、現在の連携を Phaseo に対応させる場合に利用します。
+
+<Card title="移行チェックリストを作成" icon="wand-sparkles" href="./assistant.mdx">
+	現在の連携を選択し、対話型移行アシスタントを開きます。
+</Card>
+
+利用できるプラットフォーム移行ガイド：
+
+- [OpenAI SDK からの移行](./from-openai.mdx)
+- [Anthropic SDK からの移行](./from-anthropic.mdx)
+- [OpenRouter からの移行](./from-openrouter.mdx)：endpoint とキーを切り替え、モデルを確認し、streaming とロールバックを検証します。
+- [Vercel AI Gateway からの移行](./from-vercel.mdx)
+- [LLMGateway からの移行](./from-llmgateway.mdx)
+- [LiteLLM からの移行](./from-litellm.mdx)
+- [Cloudflare AI Gateway からの移行](./from-cloudflare.mdx)
+- [Helicone AI Gateway からの移行](./from-helicone.mdx)
+
+展開を計画して検証します。
+
+- [移行準備状況のレビュー](./gateway-parity-review.mdx)
+- [移行機能チェックリスト](./feature-parity-matrix.mdx)
+
+## ガイドの使い方
+
+1. 変更対象がプラットフォーム、モデル、またはその両方かを確認します。
+2. 移行で最もリスクの高い部分に合うガイドから始めます。
+3. 出力品質を比べる前に、リクエストパラメーターと endpoint の動作を確認します。
+4. 本番トラフィックを切り替える前に、本番に近い評価を実行します。

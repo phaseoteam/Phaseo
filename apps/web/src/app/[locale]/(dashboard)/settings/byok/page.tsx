@@ -9,9 +9,13 @@ import { Button } from "@/components/ui/button";
 import { fetchFrontendAPIProviders } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import { fetchSettingsByokInitialData } from "@/lib/fetchers/internal/fetchSettingsByokInitialData";
 import { MAX_BYOK_KEYS_PER_PROVIDER } from "@/lib/byok/constants";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
+import { getLocalizedDocsHref } from "@/lib/docs";
 
-export const metadata = { title: "BYOK - Settings" };
+export async function generateMetadata() {
+	const t = await getTranslations("SettingsUI");
+	return { title: `${t("headers.byok")} - ${t("headers.settings")}` };
+}
 
 const BYOK_MONTHLY_FREE_REQUESTS = 250_000;
 const BYOK_FEE_PERCENT = 2.5;
@@ -68,8 +72,8 @@ const FALLBACK_PROVIDERS: ProviderItem[] = [
 	{ id: "spacex-ai", name: "SpaceXAI", logoId: "spacex-ai" },
 ];
 
-function fmtCompactInt(value: number) {
-	return new Intl.NumberFormat("en-US", { notation: "compact" }).format(value);
+function fmtCompactInt(value: number, locale: string) {
+	return new Intl.NumberFormat(locale, { notation: "compact" }).format(value);
 }
 
 function toTitleCaseFromId(providerId: string) {
@@ -80,10 +84,10 @@ function toTitleCaseFromId(providerId: string) {
 		.join(" ");
 }
 
-function formatUtcDateTime(iso: string) {
+function formatUtcDateTime(iso: string, locale: string) {
 	const date = new Date(iso);
-	if (Number.isNaN(date.getTime())) return "Unknown";
-	return new Intl.DateTimeFormat("en-US", {
+	if (Number.isNaN(date.getTime())) return null;
+	return new Intl.DateTimeFormat(locale, {
 		timeZone: "UTC",
 		year: "numeric",
 		month: "short",
@@ -95,6 +99,10 @@ function formatUtcDateTime(iso: string) {
 }
 
 export default async function BYOKPage() {
+	const [t, locale] = await Promise.all([
+		getTranslations("SettingsUI"),
+		getLocale(),
+	]);
 	return (
 		<div className="mx-auto space-y-6">
 			<SettingsPageHeader
@@ -104,8 +112,8 @@ export default async function BYOKPage() {
 				descriptionKey="headers.byokDescription"
 				actions={
 					<Button asChild variant="outline" size="sm" className="w-full sm:w-auto">
-						<Link href={BYOK_GUIDE_HREF} target="_blank" rel="noreferrer">
-							Routing guide
+						<Link href={getLocalizedDocsHref(locale, BYOK_GUIDE_HREF)} target="_blank" rel="noreferrer">
+							{t("settingsRouteCopy.routingGuide")}
 							<ArrowUpRight className="ml-1 h-4 w-4" />
 						</Link>
 					</Button>
@@ -120,7 +128,7 @@ export default async function BYOKPage() {
 }
 
 async function ByokProvidersSection() {
-	const t = await getTranslations("SettingsUI");
+	const [t, locale] = await Promise.all([getTranslations("SettingsUI"), getLocale()]);
 	const [initialData, providerCatalogData] = await Promise.all([
 		fetchSettingsByokInitialData(),
 		fetchFrontendAPIProviders(),
@@ -163,6 +171,7 @@ async function ByokProvidersSection() {
 			logoId: providerId,
 		}));
 	const providerRows = [...baseProviders, ...unknownProviders];
+	const resetAtText = formatUtcDateTime(initialData.nextMonthStartIso, locale) ?? t("byokPageCopy.unknownDate");
 
 	return (
 		<div className="space-y-4">
@@ -170,27 +179,27 @@ async function ByokProvidersSection() {
 				<div>
 					<h2 className="text-base font-semibold">{t("byok.monthlyUsage")}</h2>
 					<p className="mt-1 text-sm text-muted-foreground">
-						{fmtCompactInt(BYOK_MONTHLY_FREE_REQUESTS)} requests per month with no service fee, then {BYOK_FEE_PERCENT}% of provider-equivalent cost.
+						{t("byokPageCopy.monthlyUsageDescription", { freeRequests: fmtCompactInt(BYOK_MONTHLY_FREE_REQUESTS, locale), feePercent: new Intl.NumberFormat(locale).format(BYOK_FEE_PERCENT) })}
 					</p>
 				</div>
 				<div className="grid grid-cols-1 gap-5 sm:grid-cols-3 sm:gap-8">
 					<div>
 						<div className="text-sm text-muted-foreground">{t("byok.usedRequests")}</div>
-						<div className="mt-1 text-2xl font-semibold">{fmtCompactInt(initialData.monthlyRequestCount)}</div>
+						<div className="mt-1 text-2xl font-semibold">{fmtCompactInt(initialData.monthlyRequestCount, locale)}</div>
 					</div>
 					<div>
 						<div className="text-sm text-muted-foreground">{t("byok.freeRemaining")}</div>
-						<div className="mt-1 text-2xl font-semibold">{fmtCompactInt(initialData.freeRemaining)}</div>
+						<div className="mt-1 text-2xl font-semibold">{fmtCompactInt(initialData.freeRemaining, locale)}</div>
 					</div>
 					<div>
 						<div className="text-sm text-muted-foreground">{t("byok.paidTierRequests")}</div>
-						<div className="mt-1 text-2xl font-semibold">{fmtCompactInt(initialData.paidTierRequests)}</div>
+						<div className="mt-1 text-2xl font-semibold">{fmtCompactInt(initialData.paidTierRequests, locale)}</div>
 					</div>
 					<div className="sm:col-span-3 text-xs text-muted-foreground">
-						Usage resets at{" "}
+						{t("byokPageCopy.usageResetsAt")}{" "}
 						<ResetWindowHover
 							iso={initialData.nextMonthStartIso}
-							triggerText={`${formatUtcDateTime(initialData.nextMonthStartIso)} UTC`}
+							triggerText={resetAtText + " UTC"}
 						/>
 						.
 					</div>
@@ -201,10 +210,10 @@ async function ByokProvidersSection() {
 				<div className="px-1">
 					<h2 className="text-base font-semibold">{t("byok.providerKeys")}</h2>
 					<p className="mt-1 text-xs text-muted-foreground">
-						Store and deterministically order up to {MAX_BYOK_KEYS_PER_PROVIDER} credentials per provider. Each request can attempt up to {MAX_BYOK_KEYS_PER_PROVIDER} BYOK credentials across its route.
+						{t("byokPageCopy.providerKeysDescription", { maxKeys: new Intl.NumberFormat(locale).format(MAX_BYOK_KEYS_PER_PROVIDER) })}
 					</p>
 					<p className="mt-1 text-xs text-muted-foreground">
-						Batch jobs currently use Phaseo-managed credentials and do not use BYOK keys.
+						{t("byokPageCopy.batchJobsNote")}
 					</p>
 				</div>
 

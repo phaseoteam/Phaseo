@@ -4,6 +4,7 @@ import { useState, type ReactNode } from "react";
 import { useTranslations } from "next-intl";
 import { Loader2, Plus, RefreshCcw, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { localizedSettingsError } from "@/i18n/error-messages";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -90,9 +91,9 @@ export function PaymentMethodsManager({
                 throw new Error(payload?.error || t("strings.Failed to refresh payment methods" as never));
             }
             setData(payload);
-        } catch (error: any) {
-            toast.error(t("strings.Failed to refresh" as never), {
-                description: error?.message ?? t("strings.Please try again." as never),
+		} catch (error: any) {
+			toast.error(t("strings.Failed to refresh" as never), {
+				description: localizedSettingsError(error, t, "Please try again."),
             });
         } finally {
             setRefreshing(false);
@@ -113,9 +114,9 @@ export function PaymentMethodsManager({
             }
             setData(payload);
             toast.success(t("strings.Default payment method updated" as never));
-        } catch (error: any) {
-            toast.error(t("strings.Update failed" as never), {
-                description: error?.message ?? t("strings.Please try again." as never),
+		} catch (error: any) {
+			toast.error(t("strings.Update failed" as never), {
+				description: localizedSettingsError(error, t, "Please try again."),
             });
         } finally {
             setDefaultPendingId(null);
@@ -136,9 +137,9 @@ export function PaymentMethodsManager({
             }
             setData(payload);
             toast.success(t("strings.Payment method removed" as never));
-        } catch (error: any) {
-            toast.error(t("strings.Removal failed" as never), {
-                description: error?.message ?? t("strings.Please try again." as never),
+		} catch (error: any) {
+			toast.error(t("strings.Removal failed" as never), {
+				description: localizedSettingsError(error, t, "Please try again."),
             });
         } finally {
             setRemovePendingId(null);
@@ -165,9 +166,9 @@ export function PaymentMethodsManager({
                 throw new Error(payload?.error || "Failed to start card setup");
             }
             window.location.href = payload.url;
-        } catch (error: any) {
-            toast.error(t("strings.Unable to add card" as never), {
-                description: error?.message ?? t("strings.Please try again." as never),
+		} catch (error: any) {
+			toast.error(t("strings.Unable to add card" as never), {
+				description: localizedSettingsError(error, t, "Please try again."),
             });
             setAdding(false);
         }

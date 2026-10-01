@@ -85,21 +85,33 @@ export function VideoModelSettingsDialog({
 		const changes: string[] = [];
 		if (settings.params.size !== normalizedParams.size) {
 			patch.size = normalizedParams.size;
-			changes.push(`resolution ${settings.params.size} -> ${normalizedParams.size}`);
+			changes.push(
+				t("mediaStudio.resolutionChange", {
+					from: settings.params.size,
+					to: normalizedParams.size,
+				}),
+			);
 		}
 		if (settings.params.duration !== normalizedParams.duration) {
 			patch.duration = normalizedParams.duration;
 			changes.push(
-				`duration ${settings.params.duration}s -> ${normalizedParams.duration}s`,
+				t("mediaStudio.durationChange", {
+					from: settings.params.duration,
+					to: normalizedParams.duration,
+				}),
 			);
 		}
 		if (Object.keys(patch).length > 0) {
 			onUpdateParams(patch);
 			if (onAutoAdjustParams && changes.length > 0) {
-				onAutoAdjustParams(`Adjusted unsupported settings: ${changes.join(", ")}.`);
+				onAutoAdjustParams(
+					t("mediaStudio.unsupportedSettingsAdjusted", {
+						changes: changes.join(", "),
+					}),
+				);
 			}
 		}
-	}, [normalizedParams, onAutoAdjustParams, onUpdateParams, settings.params]);
+	}, [normalizedParams, onAutoAdjustParams, onUpdateParams, settings.params, t]);
 
 	return (
 		<RoomModelSettingsShell

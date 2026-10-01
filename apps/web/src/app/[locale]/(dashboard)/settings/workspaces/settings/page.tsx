@@ -1,10 +1,12 @@
+import { getTranslations } from "next-intl/server";
 import TeamsSettingsContainer from "@/components/(gateway)/settings/teams/TeamsSettingsContainer";
 import { fetchSettingsTeamsInitialData } from "@/lib/fetchers/internal/fetchSettingsTeamsInitialData";
 import { enterpriseSelfServePreviewEnabled } from "@/lib/flags";
 
-export const metadata = {
-	title: "Workspace Settings - Settings",
-};
+export async function generateMetadata() {
+	const t = await getTranslations("SettingsUI.settingsPageMetadata");
+	return { title: t("teamSettings") };
+}
 
 type SearchParams = Record<string, string | string[] | undefined>;
 

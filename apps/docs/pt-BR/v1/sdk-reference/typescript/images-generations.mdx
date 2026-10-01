@@ -1,0 +1,41 @@
+---
+icon: "wand-sparkles"
+title: "Geração de imagens"
+description: "Chame /images/generations com o SDK TypeScript."
+---
+
+**Método**: `client.generateImage()`.
+
+### Exemplo
+```typescript
+const image = await client.generateImage({
+  model: "openai/gpt-image-1",
+  prompt: "A lighthouse at golden hour",
+  size: "1024x1024",
+  n: 1,
+  response_format: "url",
+});
+```
+
+### Parâmetros principais
+- `model` (obrigatório): ID de um modelo compatível com imagens (por exemplo, `openai/gpt-image-1`).
+- `prompt` (obrigatório): texto da instrução.
+- `n` (1–10): número de imagens a gerar.
+- `size`: por exemplo, `1024x1024`, `1024x1792` ou `1792x1024`.
+- `quality`: `standard` ou `hd` (depende do modelo).
+- `style`: por exemplo, `vivid` ou `natural` (depende do modelo).
+- `response_format`: `url` ou `b64_json`.
+- `user`: identificador opcional do usuário final para acompanhamento de segurança e abuso.
+
+### Retorno
+`ImageGenerationResponse`
+
+```json
+{
+  "data": [
+    {
+      "url": "https://example.com/generated_image.png"
+    }
+  ]
+}
+```

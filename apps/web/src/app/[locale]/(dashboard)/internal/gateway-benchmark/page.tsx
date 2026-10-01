@@ -1,11 +1,19 @@
+import type { Metadata } from "next";
+import { getLocale, getTranslations } from "next-intl/server";
+import { buildLocalizedPageMetadata } from "@/lib/auth/localized-metadata";
 import { requireInternalAdmin } from "@/lib/auth/requireInternalAdmin";
 import GatewayBenchmarkClient from "./GatewayBenchmarkClient";
 
-export const metadata = {
-	title: "Gateway Benchmark - Internal",
-	description:
-		"Run side-by-side visual comparisons of Phaseo Gateway and OpenRouter using public client-visible streaming metrics.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+	const locale = await getLocale();
+	const t = await getTranslations("Product.gatewayBenchmark");
+	return buildLocalizedPageMetadata({
+		locale: locale as never,
+		pathname: "/internal/gateway-benchmark",
+		title: t("metadataTitle"),
+		description: t("metadataDescription"),
+	});
+}
 
 export default async function GatewayBenchmarkPage() {
 	await requireInternalAdmin();

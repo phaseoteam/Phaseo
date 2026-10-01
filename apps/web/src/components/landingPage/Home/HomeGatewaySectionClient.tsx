@@ -32,9 +32,10 @@ import {
 	PopoverTrigger,
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+import { useLocale, useTranslations } from "next-intl";
+import { getLocalizedDocsHref } from "@/lib/docs";
 
 const BASE_URL = "https://api.phaseo.app/v1";
-const DOCS_HREF = "https://phaseo.app/docs/v1/quickstart";
 
 const FALLBACK_MODEL_OPTIONS = [
 	{
@@ -88,21 +89,9 @@ type TokenLine = CodeTokensWithThemesResult[number];
 type Token = TokenLine[number];
 
 const PROOF_POINTS = [
-	{
-		title: "One API surface",
-		body: "Use OpenAI-compatible requests to reach GPT, Claude, Gemini, DeepSeek, and the rest of the catalog.",
-		icon: Layers3,
-	},
-	{
-		title: "Model database included",
-		body: "Compare models, releases, pricing, and provider coverage before you ship a change to production.",
-		icon: Code2,
-	},
-	{
-		title: "Reliable by default",
-		body: "Routing, failover, telemetry, and policy controls live in the same gateway your apps already call.",
-		icon: ShieldCheck,
-	},
+	{ title: "singleApiTitle", body: "singleApiBody", icon: Layers3 },
+	{ title: "modelDatabaseTitle", body: "modelDatabaseBody", icon: Code2 },
+	{ title: "reliableTitle", body: "reliableBody", icon: ShieldCheck },
 ] as const;
 
 function buildSnippet(language: LanguageId, model: ModelOption) {
@@ -210,6 +199,7 @@ function ModelBadge({
 	modelOptions: readonly ModelOption[];
 	onSelectModel: (modelId: string) => void;
 }) {
+	const t = useTranslations("Site.home.gatewaySection");
 	const [open, setOpen] = useState(false);
 
 	return (
@@ -233,9 +223,9 @@ function ModelBadge({
 				className="w-[min(34rem,calc(100vw-2rem))] p-0"
 			>
 				<Command className="rounded-[24px]">
-					<CommandInput placeholder="Search gateway models..." />
+					<CommandInput placeholder={t("searchModels")} />
 					<CommandList className="max-h-[26rem] p-1">
-						<CommandEmpty>No models found.</CommandEmpty>
+						<CommandEmpty>{t("noModelsFound")}</CommandEmpty>
 						{modelOptions.map((option) => (
 							<CommandItem
 								key={option.id}
@@ -448,6 +438,9 @@ export default function HomeGatewaySectionClient({
 }: {
 	modelOptions: readonly HomeGatewayModelOption[];
 }) {
+	const t = useTranslations("Site.home.gatewaySection");
+	const locale = useLocale();
+	const docsHref = getLocalizedDocsHref(locale, "/v1/quickstart");
 	const availableModels =
 		modelOptions.length > 0 ? modelOptions : FALLBACK_MODEL_OPTIONS;
 	const [languageId, setLanguageId] = useState<LanguageId>("typescript");
@@ -479,10 +472,10 @@ export default function HomeGatewaySectionClient({
 				</Badge>
 				<div className="space-y-4">
 					<h2 className="text-3xl font-semibold tracking-[-0.04em] text-zinc-950 dark:text-zinc-50 sm:text-5xl">
-						One API for the models teams actually build with.
+					{t("title")}
 					</h2>
 					<p className="max-w-4xl text-base leading-7 text-zinc-600 dark:text-zinc-300 md:text-lg">
-						Route production traffic through one gateway, keep your OpenAI-style SDK ergonomics, and swap between leading model families without rewriting your app every sprint.
+						{t("description")}
 					</p>
 				</div>
 				<div className="grid gap-3 md:grid-cols-3">
@@ -497,10 +490,10 @@ export default function HomeGatewaySectionClient({
 									<Icon className="h-4 w-4 text-zinc-700 dark:text-zinc-200" />
 								</div>
 								<h3 className="text-sm font-semibold text-zinc-950 dark:text-zinc-50">
-									{point.title}
+									{t(point.title)}
 								</h3>
 								<p className="mt-2 text-sm leading-6 text-zinc-600 dark:text-zinc-300">
-									{point.body}
+									{t(point.body)}
 								</p>
 							</div>
 						);
@@ -509,12 +502,12 @@ export default function HomeGatewaySectionClient({
 				<div className="flex flex-wrap gap-3">
 					<Button asChild size="lg" className="h-11 rounded-full px-6 text-sm font-semibold">
 						<Link href="/sign-up">
-							Start building
+							{t("startBuilding")}
 							<ArrowRight className="h-4 w-4" />
 						</Link>
 					</Button>
 					<Button asChild size="lg" variant="outline" className="h-11 rounded-full px-6 text-sm font-semibold">
-						<Link href={DOCS_HREF}>Read the quickstart</Link>
+						<Link href={docsHref}>{t("readQuickstart")}</Link>
 					</Button>
 				</div>
 			</div>

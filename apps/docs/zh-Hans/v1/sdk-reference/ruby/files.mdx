@@ -1,0 +1,27 @@
+---
+icon: "files"
+title: "文件"
+description: "使用 Ruby SDK 上传文件、查看元数据并获取文件内容。"
+---
+
+**方法**：`upload_file`、`list_files`、`retrieve_file`、`retrieve_file_content`。
+
+### 示例
+```ruby
+require 'phaseo_sdk'
+
+client = PhaseoSdk::Phaseo.new(api_key: ENV.fetch('PHASEO_API_KEY'))
+
+uploaded = client.upload_file(
+  'purpose' => 'batch',
+  'file' => 'data:application/json;base64,eyJ0ZXN0Ijp0cnVlfQ=='
+)
+
+file = client.retrieve_file('file_123')
+content = client.retrieve_file_content('file_123')
+```
+
+<Note>
+`list_files` 已接入 SDK，但使用共享网关密钥时，`GET /files` 当前会返回 `file_list_not_supported_with_shared_gateway_key`
+保存已上传文件的 ID，并直接获取文件。
+</Note>

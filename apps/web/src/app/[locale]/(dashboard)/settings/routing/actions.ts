@@ -68,11 +68,11 @@ export async function updateAutoRoutingSettings(input: {
 }) {
 	try {
 		if (!(await autoRoutingFlag())) {
-			return { ok: false as const, error: "Auto Routing is not enabled for this workspace." };
+			return { ok: false as const, error: { code: "featureDisabled" as const } };
 		}
 		const context = await getServerAccountContext();
 		if (!context.accessToken || !context.workspaceId) {
-			return { ok: false as const, error: "Select a workspace before changing Auto Routing." };
+			return { ok: false as const, error: { code: "workspaceRequired" as const } };
 		}
 		const response = await fetchAccountWebApi<{
 			autoRouting: AutoRoutingConfiguration;
@@ -91,11 +91,10 @@ export async function updateAutoRoutingSettings(input: {
 	} catch (error) {
 		return {
 			ok: false as const,
-			error: error instanceof WebApiError
-				? `${error.detail ?? "The routing service rejected the update."} (${error.status})`
-				: error instanceof Error
-					? error.message
-					: "Auto Routing could not be updated.",
+			error:
+				error instanceof WebApiError
+					? { code: "serviceRejected" as const, status: error.status }
+					: { code: "updateFailed" as const },
 		};
 	}
 }

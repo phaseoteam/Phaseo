@@ -1,0 +1,22 @@
+---
+icon: "chart-spline"
+title: "डेवलपर टूल"
+description: "विकास और debugging के लिए Java Agent SDK रन स्थानीय रूप से कैप्चर करें।"
+---
+
+`AgentSdk.createAgentDevtools(...)` से स्थानीय रन कैप्चर चालू करें:
+
+```java
+var devtools = AgentSdk.createAgentDevtools(".phaseo-devtools");
+```
+
+`RunOptions` से यह value दें। कैप्चर किए गए JSONL entry में रन status और अवधि, मॉडल व provider विवरण, request ID, मैसेज, स्टेप, tool activity, usage, लागत और structured errors शामिल होते हैं।
+
+<Warning>
+Agent input, message, context और tool result में संवेदनशील डेटा हो सकता है। DevTools directory को source control और production image से बाहर रखें।
+</Warning>
+
+## संबंधित विषय
+
+- [लाइफ़साइकल हुक](./agent-sdk-lifecycle-hooks.mdx)
+- [त्रुटियाँ और समस्या निवारण](./agent-sdk-observability.mdx)

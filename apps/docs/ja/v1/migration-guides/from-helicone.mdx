@@ -1,0 +1,93 @@
+---
+title: "Helicone AI Gateway からの移行"
+sidebarTitle: "Helicone"
+description: "OpenAI互換のHeliconeプロキシ連携をPhaseoに移行し、不要になった可観測性ヘッダーを削除します。"
+icon: "activity"
+---
+
+アプリケーションとAIプロバイダーの間にHeliconeを配置している場合は、このガイドを使ってください。リクエストの変更自体は小さいことが多いですが、エンドポイントの切り替えと同じように可観測性の移行も慎重に計画してください。
+
+## 変更点
+
+| 設定 | 変更前 | 変更後 |
+| --- | --- | --- |
+| ベースURL | HeliconeプロキシURL | `https://api.phaseo.app/v1` |
+| 認証 | プロバイダーキーとHelicone認証 | `PHASEO_API_KEY` |
+| Heliconeヘッダー | リクエストに追加 | 削除 |
+| リクエストの可視性 | Heliconeダッシュボード | Phaseoのアクティビティとリクエスト詳細 |
+
+<Steps>
+<Step title="利用しているHeliconeの機能を確認する">
+
+本番運用に関わるカスタムプロパティ、セッション、ユーザー識別子、キャッシュ、レート制限、アラート、ダッシュボードを記録します。プロキシを削除すれば、それらのワークフローが別の場所に自動で再現されるとは限りません。
+
+</Step>
+
+<Step title="プロキシ設定を置き換える">
+
+OpenAI互換クライアントの接続先をPhaseoに変更し、`Helicone-Auth`とその他のHelicone固有ヘッダーを削除します。
+
+<CodeGroup>
+```typescript TypeScript
+import OpenAI from "openai";
+
+const client = new OpenAI({
+  apiKey: process.env.PHASEO_API_KEY,
+  baseURL: "https://api.phaseo.app/v1",
+});
+
+const response = await client.chat.completions.create({
+  model: "openai/gpt-4.1-mini",
+  messages: [{ role: "user", content: "Reply with: migration ready" }],
+});
+```
+
+```python Python
+import os
+from openai import OpenAI
+
+client = OpenAI(
+    api_key=os.environ["PHASEO_API_KEY"],
+    base_url="https://api.phaseo.app/v1",
+)
+```
+
+```bash cURL
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-4.1-mini",
+    "messages": [{"role": "user", "content": "Reply with: migration ready"}]
+  }'
+```
+</CodeGroup>
+
+</Step>
+
+<Step title="リクエストの可視性を移行する">
+
+運用上の調査には、Phaseoのアクティビティ、リクエストID、プロバイダーへの試行、価格の詳細を使ってください。テレメトリを別の場所にエクスポートしている場合は、切り替え前に対応する[可観測性](../guides/integrations/observability.mdx)連携を設定します。
+
+</Step>
+
+<Step title="テストして段階的に切り替える">
+
+Heliconeヘッダーなしでリクエストが完了し、インシデント対応に必要な運用上の情報をチームが引き続き確認できることを検証します。推論と可観測性の両方の確認に合格したら、トラフィックを段階的に移行してください。
+
+</Step>
+</Steps>
+
+## 移行チェックリスト
+
+- HeliconeプロキシURLと認証ヘッダーを削除した。
+- 本番モデルIDを`GET /v1/models`で確認した。
+- 必要なリクエストメタデータをPhaseoまたはテレメトリ基盤で引き続き確認できる。
+- 必要に応じて、アラートとダッシュボードの代替手段を決めた。
+- ロールバックは引き続きエンドポイントとキーの設定変更だけで行える。
+
+## 次のステップ
+
+- [可観測性](../guides/integrations/observability.mdx)
+- [プロバイダーのステータス](../guides/provider-statuses.mdx)
+- [エラー処理](../developers/error-handling.mdx)

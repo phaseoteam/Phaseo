@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState, useTransition, useEffect } from "react";
 import {
 	Dialog,
@@ -56,6 +57,8 @@ interface AdvancedModelEditorProps {
 }
 
 export function AdvancedModelEditor({ model }: AdvancedModelEditorProps) {
+	const tUi = useTranslations("Common.ui");
+	const tEditor = useTranslations("Common.ui.modelEditor.advanced");
 	const router = useRouter();
 	const [open, setOpen] = useState(false);
 	const [isPending, startTransition] = useTransition();
@@ -129,7 +132,7 @@ export function AdvancedModelEditor({ model }: AdvancedModelEditorProps) {
 				router.refresh();
 				setError(null);
 			} else {
-				setError(result.error || "Failed to update details");
+				setError(tEditor("errors.updateDetails"));
 			}
 		});
 	};
@@ -146,7 +149,7 @@ export function AdvancedModelEditor({ model }: AdvancedModelEditorProps) {
 				router.refresh();
 				setError(null);
 			} else {
-				setError(result.error || "Failed to update links");
+				setError(tEditor("errors.updateLinks"));
 			}
 		});
 	};
@@ -163,7 +166,7 @@ export function AdvancedModelEditor({ model }: AdvancedModelEditorProps) {
 				router.refresh();
 				setError(null);
 			} else {
-				setError(result.error || "Failed to update aliases");
+				setError(tEditor("errors.updateAliases"));
 			}
 		});
 	};
@@ -180,7 +183,7 @@ export function AdvancedModelEditor({ model }: AdvancedModelEditorProps) {
 				router.refresh();
 				setError(null);
 			} else {
-				setError(result.error || "Failed to update organization");
+				setError(tEditor("errors.updateOrganization"));
 			}
 		});
 	};
@@ -194,7 +197,7 @@ export function AdvancedModelEditor({ model }: AdvancedModelEditorProps) {
 				setOpen(false);
 				router.refresh();
 			} else {
-				setError(result.error || "Failed to delete model");
+				setError(tEditor("errors.deleteModel"));
 			}
 		});
 	};
@@ -203,15 +206,15 @@ export function AdvancedModelEditor({ model }: AdvancedModelEditorProps) {
 		<>
 			<Dialog open={open} onOpenChange={setOpen}>
 				<DialogTrigger asChild>
-					<Button variant="ghost" size="sm">
+					<Button variant="ghost" size="sm" aria-label={tEditor("openEditor", { modelName: model.modelName })}>
 						<Settings className="h-4 w-4" />
 					</Button>
 				</DialogTrigger>
 				<DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
 					<DialogHeader>
-						<DialogTitle>Advanced Model Editor</DialogTitle>
+						<DialogTitle>{tEditor("title")}</DialogTitle>
 						<DialogDescription>
-							Advanced configuration for {model.modelName}
+							{tEditor("description", { modelName: model.modelName })}
 						</DialogDescription>
 					</DialogHeader>
 
@@ -223,24 +226,24 @@ export function AdvancedModelEditor({ model }: AdvancedModelEditorProps) {
 
 					<Tabs defaultValue="details" className="w-full">
 						<TabsList className="grid w-full grid-cols-5">
-							<TabsTrigger value="details">Details</TabsTrigger>
-							<TabsTrigger value="links">Links</TabsTrigger>
-							<TabsTrigger value="aliases">Aliases</TabsTrigger>
-							<TabsTrigger value="organization">Organization</TabsTrigger>
-							<TabsTrigger value="danger">Danger Zone</TabsTrigger>
+							<TabsTrigger value="details">{tUi("editorTabs.details")}</TabsTrigger>
+							<TabsTrigger value="links">{tUi("editorTabs.links")}</TabsTrigger>
+							<TabsTrigger value="aliases">{tUi("editorTabs.aliases")}</TabsTrigger>
+							<TabsTrigger value="organization">{tUi("editorTabs.organization")}</TabsTrigger>
+							<TabsTrigger value="danger">{tUi("editorTabs.dangerZone")}</TabsTrigger>
 						</TabsList>
 
 						{/* MODEL DETAILS */}
 						<TabsContent value="details" className="space-y-4">
 							<div>
 								<p className="text-sm text-muted-foreground mb-4">
-									Add custom key-value details for this model
+									{tEditor("detailsHelp")}
 								</p>
 
 								{details.map((detail, idx) => (
 									<div key={idx} className="flex gap-2 mb-2">
 										<Input
-											placeholder="Detail name"
+											placeholder={tEditor("detailName")}
 											value={detail.name}
 											onChange={(e) => {
 												const newDetails = [...details];
@@ -249,7 +252,7 @@ export function AdvancedModelEditor({ model }: AdvancedModelEditorProps) {
 											}}
 										/>
 										<Input
-											placeholder="Detail value"
+											placeholder={tEditor("detailValue")}
 											value={detail.value}
 											onChange={(e) => {
 												const newDetails = [...details];
@@ -263,6 +266,7 @@ export function AdvancedModelEditor({ model }: AdvancedModelEditorProps) {
 											onClick={() => {
 												setDetails(details.filter((_, i) => i !== idx));
 											}}
+											aria-label={tEditor("removeDetail")}
 										>
 											<X className="h-4 w-4" />
 										</Button>
@@ -277,13 +281,13 @@ export function AdvancedModelEditor({ model }: AdvancedModelEditorProps) {
 									}
 								>
 									<Plus className="h-4 w-4 mr-2" />
-									Add Detail
+									{tEditor("addDetail")}
 								</Button>
 							</div>
 
 							<Button onClick={handleSaveDetails} disabled={isPending}>
 								{isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-								Save Details
+								{tEditor("saveDetails")}
 							</Button>
 						</TabsContent>
 
@@ -291,7 +295,7 @@ export function AdvancedModelEditor({ model }: AdvancedModelEditorProps) {
 						<TabsContent value="links" className="space-y-4">
 							<div>
 								<p className="text-sm text-muted-foreground mb-4">
-									Add external links for documentation, blog posts, etc.
+									{tEditor("linksHelp")}
 								</p>
 
 								{links.map((link, idx) => (
@@ -305,19 +309,19 @@ export function AdvancedModelEditor({ model }: AdvancedModelEditorProps) {
 											}}
 										>
 											<SelectTrigger className="w-[180px]">
-												<SelectValue placeholder="Link type" />
+												<SelectValue placeholder={tEditor("linkType")} />
 											</SelectTrigger>
 											<SelectContent>
-												<SelectItem value="documentation">Documentation</SelectItem>
-												<SelectItem value="blog">Blog Post</SelectItem>
-												<SelectItem value="paper">Research Paper</SelectItem>
+												<SelectItem value="documentation">{tUi("linkTypes.documentation")}</SelectItem>
+												<SelectItem value="blog">{tUi("linkTypes.blogPost")}</SelectItem>
+												<SelectItem value="paper">{tUi("linkTypes.researchPaper")}</SelectItem>
 												<SelectItem value="github">GitHub</SelectItem>
-												<SelectItem value="pricing">Pricing Page</SelectItem>
-												<SelectItem value="api">API Reference</SelectItem>
+												<SelectItem value="pricing">{tUi("linkTypes.pricingPage")}</SelectItem>
+												<SelectItem value="api">{tUi("linkTypes.apiReference")}</SelectItem>
 											</SelectContent>
 										</Select>
 										<Input
-											placeholder="URL"
+											placeholder={tEditor("url")}
 											value={link.url}
 											onChange={(e) => {
 												const newLinks = [...links];
@@ -331,6 +335,7 @@ export function AdvancedModelEditor({ model }: AdvancedModelEditorProps) {
 											onClick={() => {
 												setLinks(links.filter((_, i) => i !== idx));
 											}}
+											aria-label={tEditor("removeLink")}
 										>
 											<X className="h-4 w-4" />
 										</Button>
@@ -343,13 +348,13 @@ export function AdvancedModelEditor({ model }: AdvancedModelEditorProps) {
 									onClick={() => setLinks([...links, { type: "", url: "" }])}
 								>
 									<Plus className="h-4 w-4 mr-2" />
-									Add Link
+									{tEditor("addLink")}
 								</Button>
 							</div>
 
 							<Button onClick={handleSaveLinks} disabled={isPending}>
 								{isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-								Save Links
+								{tEditor("saveLinks")}
 							</Button>
 						</TabsContent>
 
@@ -357,13 +362,13 @@ export function AdvancedModelEditor({ model }: AdvancedModelEditorProps) {
 						<TabsContent value="aliases" className="space-y-4">
 							<div>
 								<p className="text-sm text-muted-foreground mb-4">
-									Manage alternative names/identifiers for this model
+									{tEditor("aliasesHelp")}
 								</p>
 
 								{aliases.map((alias, idx) => (
 									<div key={idx} className="flex gap-2 mb-2 items-center">
 										<Input
-											placeholder="Alias name"
+											placeholder={tEditor("aliasName")}
 											value={alias.alias}
 											onChange={(e) => {
 												const newAliases = [...aliases];
@@ -385,7 +390,7 @@ export function AdvancedModelEditor({ model }: AdvancedModelEditorProps) {
 												htmlFor={`enabled-${idx}`}
 												className="cursor-pointer font-normal"
 											>
-												Enabled
+												{tEditor("enabled")}
 											</Label>
 										</div>
 										<Button
@@ -394,6 +399,7 @@ export function AdvancedModelEditor({ model }: AdvancedModelEditorProps) {
 											onClick={() => {
 												setAliases(aliases.filter((_, i) => i !== idx));
 											}}
+											aria-label={tEditor("removeAlias")}
 										>
 											<X className="h-4 w-4" />
 										</Button>
@@ -408,29 +414,29 @@ export function AdvancedModelEditor({ model }: AdvancedModelEditorProps) {
 									}
 								>
 									<Plus className="h-4 w-4 mr-2" />
-									Add Alias
+									{tEditor("addAlias")}
 								</Button>
 							</div>
 
 							<Button onClick={handleSaveAliases} disabled={isPending}>
 								{isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-								Save Aliases
+								{tEditor("saveAliases")}
 							</Button>
 						</TabsContent>
 
 						{/* ORGANIZATION */}
 						<TabsContent value="organization" className="space-y-4">
 							<div>
-								<Label htmlFor="organisation-select">Organization</Label>
+								<Label htmlFor="organisation-select">{tEditor("organization")}</Label>
 								<Select
 									value={selectedOrg}
 									onValueChange={setSelectedOrg}
 								>
 									<SelectTrigger id="organisation-select">
-										<SelectValue placeholder="Select organization" />
+										<SelectValue placeholder={tEditor("selectOrganization")} />
 									</SelectTrigger>
 									<SelectContent>
-										<SelectItem value="">None</SelectItem>
+										<SelectItem value="">{tUi("select.none")}</SelectItem>
 										{organisations.map((org) => (
 											<SelectItem key={org.id} value={org.id}>
 												{org.name}
@@ -439,13 +445,13 @@ export function AdvancedModelEditor({ model }: AdvancedModelEditorProps) {
 									</SelectContent>
 								</Select>
 								<p className="text-xs text-muted-foreground mt-2">
-									Current: {model.organisationName || "None"}
+									{tEditor("currentOrganization", { organization: model.organisationName || tUi("select.none") })}
 								</p>
 							</div>
 
 							<Button onClick={handleSaveOrganization} disabled={isPending}>
 								{isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-								Update Organization
+								{tEditor("updateOrganization")}
 							</Button>
 						</TabsContent>
 
@@ -453,11 +459,10 @@ export function AdvancedModelEditor({ model }: AdvancedModelEditorProps) {
 						<TabsContent value="danger" className="space-y-4">
 							<div className="border border-red-200 rounded-lg p-4 bg-red-50">
 								<h3 className="text-lg font-semibold text-red-900 mb-2">
-									Danger Zone
+									{tEditor("dangerZone")}
 								</h3>
 								<p className="text-sm text-red-800 mb-4">
-									These actions are irreversible. Please be certain before
-									proceeding.
+									{tEditor("dangerZoneDescription")}
 								</p>
 
 								<Button
@@ -466,7 +471,7 @@ export function AdvancedModelEditor({ model }: AdvancedModelEditorProps) {
 									disabled={isPending}
 								>
 									<Trash2 className="mr-2 h-4 w-4" />
-									Delete Model
+									{tEditor("deleteModel")}
 								</Button>
 							</div>
 						</TabsContent>
@@ -477,20 +482,18 @@ export function AdvancedModelEditor({ model }: AdvancedModelEditorProps) {
 			<AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
 				<AlertDialogContent>
 					<AlertDialogHeader>
-						<AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+						<AlertDialogTitle>{tEditor("deleteConfirmationTitle")}</AlertDialogTitle>
 						<AlertDialogDescription>
-							This will permanently delete <strong>{model.modelName}</strong> and
-							all associated data (provider models, pricing rules, benchmarks,
-							etc). This action cannot be undone.
+							{tEditor("deleteConfirmationDescription", { modelName: model.modelName })}
 						</AlertDialogDescription>
 					</AlertDialogHeader>
 					<AlertDialogFooter>
-						<AlertDialogCancel>Cancel</AlertDialogCancel>
+						<AlertDialogCancel>{tEditor("cancel")}</AlertDialogCancel>
 						<AlertDialogAction
 							onClick={handleDeleteModel}
 							className="bg-red-600 hover:bg-red-700"
 						>
-							Delete Permanently
+							{tEditor("deletePermanently")}
 						</AlertDialogAction>
 					</AlertDialogFooter>
 				</AlertDialogContent>

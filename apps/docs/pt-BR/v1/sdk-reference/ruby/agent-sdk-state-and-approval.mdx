@@ -1,0 +1,21 @@
+---
+icon: "database"
+title: "Estado e aprovação"
+description: "Pause agentes Ruby para obter decisões humanas e continuar o estado gerenciado pela aplicação."
+---
+
+Use `human_review` para criar um ponto de revisão geral. Ferramentas que exigem aprovação ou são manuais preenchem `run.pause.pending_tool_calls` com os IDs exatos das chamadas.
+
+Continue com `Agent#continue_run` usando:
+
+- valores `ToolDecision` para aprovações ou rejeições
+- valores `ToolOutput` para tarefas manuais
+- `human_input` para uma pausa de revisão geral
+- a execução anterior ou `run_id` com um state accessor
+
+As decisões usam os IDs exatos das chamadas, portanto chamadas simultâneas à mesma ferramenta continuam distintas. Um objeto de estado compatível implementa `load(run_id)` e `save(result)`.
+
+## Relacionados
+
+- [Ferramentas](./agent-sdk-tools.mdx)
+- [Controles da execução](./agent-sdk-run-controls.mdx)

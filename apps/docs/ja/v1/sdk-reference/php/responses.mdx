@@ -1,0 +1,55 @@
+---
+icon: "sparkles"
+title: "応答"
+description: "PHP SDKでResponses APIを呼び出します。"
+---
+
+**メソッド**：`generateResponse()`、`createResponse()`
+
+### 例
+
+```php
+<?php
+
+require 'vendor/autoload.php';
+
+use Phaseo\Sdk\Phaseo;
+
+$apiKey = getenv('PHASEO_API_KEY');
+$client = new Phaseo(apiKey: $apiKey);
+
+$response = $client->createResponse([
+    'model' => 'openai/gpt-4.1',
+    'input' => [
+        [
+            'role' => 'user',
+            'content' => [
+                [
+                    'type' => 'output_text',
+                    'text' => 'Summarise this text'
+                ]
+            ]
+        ]
+    ],
+    'temperature' => 0.7,
+    'stream' => false
+]);
+echo $response['output'][0]['content'][0]['text'];
+```
+
+### 主なパラメーター
+
+- `model`（必須）：対象モデルのID。
+- `input`（必須）：入力項目（メッセージ、ツール呼び出しなど）の順序付き配列。
+- `temperature`（0～2）：値が大きいほど、出力はよりランダムになります。
+- `top_p`（0～1）：Nucleusサンプリングの制御。
+- `max_output_tokens`（整数）：応答ごとに生成するトークン数の上限。
+- ツール：`tools`（定義）、`tool_choice`（auto/none/特定のツール）、`max_tool_calls`（整数）、`parallel_tool_calls`（真偽値）。
+- Logprobs：`top_logprobs`（0～20）。トークンごとのlogprobsを返します。
+- 出力：`service_tier`、`store`（真偽値）、`stream`（真偽値）。
+- メタデータ：`metadata`（そのまま渡すオブジェクト）、`reasoning`（推論の強度を指定するオブジェクト）。
+- ゲートウェイ拡張：`usage`（使用量を要求する真偽値）、`meta`（metaブロックを含める真偽値）。
+
+### 戻り値
+
+`ResponsesResponse` JSONオブジェクト。

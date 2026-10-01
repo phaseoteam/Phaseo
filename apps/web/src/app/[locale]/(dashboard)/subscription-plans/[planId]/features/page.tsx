@@ -3,6 +3,7 @@ import { fetchFrontendSubscriptionPlan } from "@/lib/fetchers/frontend/fetchPubl
 import SubscriptionPlanFeaturesTable from "@/components/(data)/subscription-plans/SubscriptionPlanFeaturesTable";
 import type { Metadata } from "next";
 import { buildMetadata } from "@/lib/seo";
+import { formatSubscriptionPlanMessage, getSubscriptionPlansMessagesFor } from "@/i18n/subscription-plans";
 
 async function fetchPlanForFeatures(planId: string) {
 	try {
@@ -20,38 +21,36 @@ async function fetchPlanForFeatures(planId: string) {
 }
 
 export async function generateMetadata(props: {
-	params: Promise<{ planId: string }>;
+	params: Promise<{ locale: string; planId: string }>;
 }): Promise<Metadata> {
-	const { planId } = await props.params;
+	const { planId, locale } = await props.params;
+	const messages = getSubscriptionPlansMessagesFor(locale);
 	const plan = await fetchPlanForFeatures(planId);
 	const path = `/subscription-plans/${planId}/features`;
 	const imagePath = `/og/subscription-plans/${planId}`;
 
 	if (!plan) {
 		return buildMetadata({
-			title: "AI Subscription Plan Features",
-			description:
-				"Compare features included in AI subscription plans on Phaseo, including request limits, tool availability, support tiers, and other plan-level capabilities.",
+			title: messages.metadata.fallbackTitle,
+			description: messages.metadata.fallbackDescription,
 			path,
-			keywords: [
-				"AI subscription features",
-				"AI plan limits",
-				"AI tools access",
-				"Phaseo",
-			],
+			keywords: ["Phaseo"],
 			imagePath,
 		});
 	}
 
-	const providerName = plan.organisation?.name ?? "AI provider";
+	const providerName = plan.organisation?.name ?? messages.detail.unknownProvider;
 
 	const description = [
-		`Features included in the ${plan.name} subscription from ${providerName}.`,
-		"Review usage limits, priority access, tools, context window sizes, and other benefits compared to alternative plans.",
+		formatSubscriptionPlanMessage(messages.metadata.featuresLead, {
+			plan: plan.name,
+			provider: providerName,
+		}),
+		messages.metadata.featuresDescription,
 	].join(" ");
 
 	return buildMetadata({
-		title: `${plan.name} - Features, Limits & Benefits`,
+		title: formatSubscriptionPlanMessage(messages.metadata.featuresTitle, { plan: plan.name }),
 		description,
 		path,
 		keywords: [
@@ -59,7 +58,6 @@ export async function generateMetadata(props: {
 			`${plan.name} features`,
 			`${plan.name} limits`,
 			providerName,
-			"AI subscription features",
 			"Phaseo",
 		],
 		imagePath,
@@ -69,9 +67,10 @@ export async function generateMetadata(props: {
 export default async function Page({
 	params,
 }: {
-	params: Promise<{ planId: string }>;
+	params: Promise<{ locale: string; planId: string }>;
 }) {
-	const { planId } = await params;
+	const { planId, locale } = await params;
+	const messages = getSubscriptionPlansMessagesFor(locale);
 
 	const plan = await fetchFrontendSubscriptionPlan(planId);
 
@@ -82,14 +81,15 @@ export default async function Page({
 	return (
 		<SubscriptionPlanDetailShell planId={planId} tab="features">
 			<section className="space-y-4">
-				<h2 className="text-xl font-semibold">All Features</h2>
+				<h2 className="text-xl font-semibold">{messages.detail.allFeatures}</h2>
 					{plan.features && plan.features.length > 0 ? (
 						<SubscriptionPlanFeaturesTable
 							features={plan.features}
+							messages={messages.detail}
 						/>
 					) : (
 						<p className="text-muted-foreground">
-							No features information available.
+							{messages.detail.noFeatures}
 						</p>
 					)}
 			</section>

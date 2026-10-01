@@ -1,0 +1,66 @@
+---
+icon: "book-open"
+title: "引用方法"
+description: "Phaseo のデータ、ベンチマーク、ゲートウェイツールを利用したことを論文などで示す方法。"
+---
+
+Phaseo は、モデルプロバイダーや評価プロジェクトが公開する情報とベンチマーク結果を集約します。
+Phaseo でモデルを検索、比較、監視した場合は、簡単に言及することで他の人にもプラットフォームを知ってもらえます。
+
+---
+
+## 簡単な記載例
+
+Phaseo が役立った場合は、適切な場所（方法、脚注、謝辞など）にリンクを記載してください。
+
+> 本研究では、[Phaseo](https://phaseo.app) のモデルメタデータと集約済みベンチマーク結果を使用しました。
+
+---
+
+## 推奨引用形式（任意）
+
+より正式な引用には、次の形式を使用できます。
+
+```text
+Phaseo. (2025). Phaseo: Aggregated benchmarks and gateway for AI models. https://phaseo.app
+```
+
+BibTeX（任意）：
+
+```bibtex
+@misc{phaseo-2025,
+    title  = {Phaseo: Aggregated benchmarks and gateway for AI models},
+    author = {{Phaseo Team}},
+    year   = {2025},
+    url    = {https://phaseo.app}
+}
+```
+
+---
+
+## ベンチマークデータ
+
+Phaseo **自体はベンチマークを実行しません**。ベンチマークの作成者やモデルプロバイダーが報告したスコアを掲載し、形式を統一しています。
+
+Phaseo 経由で取得したベンチマーク結果を使う場合：
+
+1. 元のベンチマークと論文を主要な出典として引用します。
+2. スコアを取得または比較した場所として、必要に応じて Phaseo に言及します。
+3. 次の情報を記載します。
+
+- ベンチマーク名と分割（例：`MMLU test`）。
+- モデル識別子とプロバイダー。
+- 該当する Phaseo ページまたは API の URL。
+- 参照日。
+
+記載例：
+
+> ベンチマークスコアは 2025 年 3 月 3 日に Phaseo 経由で取得しました（MMLU test 分割）。モデル：`openai-gpt-4o`、プロバイダー：OpenAI。
+
+## Gateway とツール
+
+統合について説明する場合、Phaseo は研究ベンチマークの情報源ではなく、Gateway 層として紹介できます。
+
+> Phaseo Gateway を使い、単一の API から OpenAI、Anthropic、Google のモデルにアクセスしました。
+
+読者が詳細を確認できるよう、[API リファレンス](../api-reference/introduction.mdx)に直接リンクしてください。

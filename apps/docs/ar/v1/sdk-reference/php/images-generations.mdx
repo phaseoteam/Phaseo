@@ -1,0 +1,42 @@
+---
+icon: "wand-sparkles"
+title: "إنشاء الصور"
+description: "استدعِ /images/generations باستخدام SDK PHP."
+---
+
+**الطريقة**: `$client->generateImage(...)`
+
+### مثال
+
+```php
+<?php
+
+require 'vendor/autoload.php';
+
+use Phaseo\Sdk\Phaseo;
+
+$client = new Phaseo(getenv('PHASEO_API_KEY'));
+$response = $client->generateImage([
+    'model' => 'openai/gpt-image-1',
+    'prompt' => 'A lighthouse at golden hour',
+    'size' => '1024x1024',
+    'n' => 1,
+    'response_format' => 'url'
+]);
+echo $response['data'][0]['url'] ?? '';
+```
+
+### المعلمات الأساسية
+
+- `model` (مطلوب): معرّف نموذج يدعم الصور (مثل `openai/gpt-image-1`).
+- `prompt` (مطلوب): نص المطالبة.
+- `n` (1–10): عدد الصور المطلوب إنشاؤها.
+- `size`: مثل `1024x1024` أو `1024x1792` أو `1792x1024`.
+- `quality`: `standard` أو `hd` (يعتمد على النموذج).
+- `style`: مثل `vivid` أو `natural` (يعتمد على النموذج).
+- `response_format`: `url` أو `b64_json`.
+- `user`: وسم اختياري للمستخدم النهائي لتتبّع السلامة وإساءة الاستخدام.
+
+### القيمة المعادة
+
+ImageGenerationResponse

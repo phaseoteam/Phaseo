@@ -1,0 +1,23 @@
+---
+icon: "wrench"
+title: "ツール"
+description: "検証、承認ゲート、手動実行、進捗通知に対応するJavaツールを定義します。"
+---
+
+`AgentSdk.Tool`がサポートする内容:
+
+- モデルに提示するJSONの`parameters`
+- 入力、出力、進捗イベントを検証する`Validator`関数
+- ツールごとの`Duration`タイムアウト
+- 無条件または条件付きの承認
+- アプリケーション側で完了させる手動ツール
+- `RuntimeContext.emitProgress()`による暫定的な進捗
+- `fail-run`または`return-to-model`によるエラー処理
+- ツール実行の成功後に適用する次ターンへの上書き
+
+ツールレコードは`AgentSdk.defineTool(...)`に渡します。副作用を伴う操作には、明示的な承認またはアプリケーション管理の手動実行を必須にしてください。
+
+## 関連項目
+
+- [状態と承認](./agent-sdk-state-and-approval.mdx)
+- [実行制御](./agent-sdk-run-controls.mdx)

@@ -1,0 +1,40 @@
+---
+title: "Gestión de errores"
+description: "Conoce los tipos de errores y cómo recuperarte para crear integraciones fiables con Gateway."
+icon: "triangle-alert"
+---
+
+Hasta los mejores modelos fallan de vez en cuando. Esta guía explica cómo informa Gateway de los errores y cómo responder.
+
+---
+
+## Categorías de errores
+
+Los errores pueden proceder de Gateway, del proveedor o de tu solicitud. La respuesta incluirá metadatos que te ayudarán a diagnosticar el problema.
+
+| Rango de estados | Significado                                  | Acción habitual                        |
+| ----------- | ---------------------------------------- | ------------------------------------- |
+| 400-499     | Solicitud no válida o problemas de autenticación | Corrige el contenido de la solicitud o las credenciales.       |
+| 429         | Límite de frecuencia alcanzado                             | Vuelve a intentarlo con espera y respeta los límites. |
+| 500-599     | Error de Gateway o del proveedor              | Vuelve a intentarlo con espera y registra los detalles.    |
+
+---
+
+## Comportamiento de los reintentos
+
+- Implementa retroceso exponencial con variación aleatoria.
+- Si aparece el encabezado `Retry-After`, respétalo.
+- Evita los reintentos infinitos estableciendo un número máximo.
+
+---
+
+## Errores del proveedor
+
+A veces los errores se originan en el proveedor. Intentaremos indicarlo en la respuesta. Si persisten, el router debería intentar desviar las solicitudes de ese proveedor cuando sea posible.
+
+---
+
+## Siguientes pasos
+
+- Consulta los [límites de frecuencia](./rate-limits.mdx) para planificar cómo gestionar las limitaciones.
+- Descubre cómo funcionan el [enrutamiento y las alternativas](../guides/routing-and-fallbacks.mdx).

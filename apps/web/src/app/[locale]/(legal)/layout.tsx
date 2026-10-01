@@ -1,12 +1,14 @@
 import Link from "next/link";
 import LegalHeaderShell from "@/components/header/LegalHeaderShell";
 import LegalBackButton from "@/components/header/LegalBackButton";
+import { getTranslations } from "next-intl/server";
 
-export default function LegalLayout({
+export default async function LegalLayout({
 	children,
 }: {
 	children: React.ReactNode;
 }) {
+	const t = await getTranslations("Common.nav");
 	return (
 		<div className="min-h-screen bg-background">
 			<header className="sticky top-0 z-50 border-b bg-white/80 dark:bg-zinc-950/80 backdrop-blur">
@@ -15,7 +17,7 @@ export default function LegalLayout({
 						<LegalBackButton />
 						<Link
 							href="/"
-							aria-label="Phaseo home"
+							aria-label={`Phaseo ${t("home")}`}
 							className="inline-flex items-center transition-opacity hover:opacity-80"
 						>
 							<img

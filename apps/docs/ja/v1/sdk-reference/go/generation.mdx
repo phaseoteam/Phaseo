@@ -1,0 +1,28 @@
+---
+icon: "search-check"
+title: "生成履歴の検索"
+description: "Go SDKで保存済みの生成履歴を検索します。"
+---
+
+ラッパーメソッドを使います:
+
+- `client.GetGeneration(ctx, generationID)`
+
+```go
+import (
+  "context"
+  "fmt"
+  phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v2"
+)
+
+client := phaseo.New(apiKey, "https://api.phaseo.app/v1")
+record, err := client.GetGeneration(context.Background(), "G-01ABC...")
+if err != nil {
+  panic(err)
+}
+
+fmt.Println(record)
+```
+
+リクエストの詳細が保存されている場合、返されるレコードには次の情報も含まれます `replay_supported` と `replay_request` 保存されたペイロードを元のエンドポイントに再送信できます。
+

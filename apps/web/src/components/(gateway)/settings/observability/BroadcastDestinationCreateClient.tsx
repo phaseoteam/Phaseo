@@ -49,6 +49,7 @@ import { getBrowserAccessToken } from "@/lib/fetchers/internal/accountAuthClient
 import { fetchAccountWebApi } from "@/lib/web-api/client";
 import type { DestinationDefinition } from "@/components/(gateway)/settings/observability/destinationCatalog";
 import { useTranslations } from "next-intl";
+import { localizedSettingsError } from "@/i18n/error-messages";
 
 type KeyOption = {
 	id: string;
@@ -296,7 +297,7 @@ function KeyMultiCombobox(props: {
 				<PopoverTrigger asChild>
 					<Button variant="outline" role="combobox" aria-expanded={open} className="h-10 w-full justify-between rounded-md px-3 font-normal">
 						<span className={props.selected.length ? "text-foreground" : "text-muted-foreground"}>
-							{props.selected.length ? t("broadcastControls.selectedKeys", { count: String(props.selected.length), suffix: props.selected.length === 1 ? "" : "s" }) : t("broadcastControls.selectApiKeys")}
+							{props.selected.length ? t("broadcastControls.selectedKeys", { count: props.selected.length }) : t("broadcastControls.selectApiKeys")}
 						</span>
 						<ChevronsUpDown className="h-4 w-4 text-muted-foreground" />
 					</Button>
@@ -431,7 +432,7 @@ export default function BroadcastDestinationCreateClient(props: {
 			router.push("/settings/broadcast");
 			router.refresh();
 		} catch (error) {
-			const message = error instanceof Error ? error.message : t("broadcastControls.failedSave");
+			const message = localizedSettingsError(error, t, "Action failed", t("broadcastControls.failedSave"));
 			toast.error(message);
 		} finally {
 			setIsSaving(false);
@@ -453,9 +454,9 @@ export default function BroadcastDestinationCreateClient(props: {
 				toast.success(result.status || t("strings.Connected" as never));
 				return;
 			}
-				toast.error(result.status || t("strings.Connection check failed" as never));
+			toast.error(localizedSettingsError(result.status, t, "Connection check failed"));
 		} catch (error) {
-			const message = error instanceof Error ? error.message : t("broadcastControls.connectionCheckFailed");
+			const message = localizedSettingsError(error, t, "Action failed", t("broadcastControls.connectionCheckFailed"));
 			toast.error(message);
 		} finally {
 			setIsTestingConnection(false);
@@ -649,7 +650,7 @@ export default function BroadcastDestinationCreateClient(props: {
 							<h3 className="text-sm font-semibold">{t("strings.Privacy" as never)}</h3>
 						</div>
 						<p className="text-xs text-muted-foreground">
-							Control what data is sent to this destination.
+							{t("broadcastControls.privacyDescription")}
 						</p>
 					</div>
 					<div className="space-y-2">
@@ -674,7 +675,7 @@ export default function BroadcastDestinationCreateClient(props: {
 							<h3 className="text-sm font-semibold">{t("strings.Sampling" as never)}</h3>
 						</div>
 						<p className="text-xs text-muted-foreground">
-							Set the probability that an eligible trace is sent to this destination.
+							{t("broadcastControls.samplingDescription")}
 						</p>
 					</div>
 					<div className="space-y-2">
@@ -701,7 +702,7 @@ export default function BroadcastDestinationCreateClient(props: {
 							<h3 className="text-sm font-semibold">{t("strings.API Key Filter" as never)}</h3>
 						</div>
 						<p className="text-xs text-muted-foreground">
-							Optionally filter traces by API key.
+							{t("broadcastControls.apiKeyFilterDescription")}
 						</p>
 					</div>
 					{keys.length ? (
@@ -720,10 +721,10 @@ export default function BroadcastDestinationCreateClient(props: {
 					<div>
 						<h3 className="inline-flex items-center gap-1.5 text-sm font-medium">
 							<Filter className="h-4 w-4" />
-							Filter Rules
+							{t("broadcastControls.filterRules")}
 						</h3>
 						<p className="text-xs text-muted-foreground">
-							Only traces matching these rule groups will be sent.
+							{t("broadcastControls.filterRulesDescription")}
 						</p>
 					</div>
 					<div className="flex items-center gap-2">

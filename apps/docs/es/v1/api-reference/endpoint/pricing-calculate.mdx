@@ -1,0 +1,19 @@
+---
+title: "Calcular precios"
+sidebarTitle: "Calcular precios"
+badge: "Beta"
+openapi: "/es/openapi/v1/openapi.localized.yaml POST /pricing/calculate"
+description: "Estimar el coste de una carga útil de uso concreta de proveedor, modelo y endpoint."
+---
+
+Calcula el precio de una carga útil de uso según las reglas de precios activas de la pasarela.
+
+Proporciona:
+
+- `provider`: ID del proveedor, por ejemplo `openai`
+- `model`: ID del modelo de la ruta
+- `endpoint`: familia de endpoint, por ejemplo `responses` o `chat.completions`
+- `usage`: el objeto de uso que se va a calcular, como el recuento de tokens u otros datos de medición
+
+Usa esta ruta si ya conoces el proveedor, modelo y endpoint y quieres estimar el coste de una carga útil concreta. En cambio, `GET /pricing/models` lista las tarifas públicas actuales del catálogo.
+

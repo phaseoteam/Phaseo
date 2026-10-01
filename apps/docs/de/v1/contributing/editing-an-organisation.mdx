@@ -1,0 +1,36 @@
+---
+icon: "building-2"
+title: "Eine Organisation bearbeiten"
+description: "Aktualisiere Organisationseinträge im Phaseo-Datensatz."
+---
+
+Organisationsdaten liegen in JSON-Dateien unter `packages/data/catalog/src/data/organisations`.
+
+## 1. Organisation finden
+
+Jede Organisation ist in einer einzelnen JSON-Datei gespeichert, zum Beispiel:
+
+`packages/data/catalog/src/data/organisations/openai.json`
+
+## 2. Änderungen vornehmen
+
+Häufige Änderungen sind:
+
+- Name, Beschreibung und Website
+- Ländercode oder Metadatenfelder
+- Verknüpfungen zu Modellen oder Anbietern
+
+Achte auf einheitliche Formatierung und Feldreihenfolge wie in benachbarten Dateien.
+
+## 3. Daten prüfen
+
+Führe vor dem Erstellen einer PR das Datenvalidierungsskript aus:
+
+```bash
+pnpm validate:data
+```
+
+## 4. PR erstellen
+
+Gib für alle sachlichen Änderungen Quellen oder Belege an.
+

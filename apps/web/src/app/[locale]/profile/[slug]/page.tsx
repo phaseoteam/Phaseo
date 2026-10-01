@@ -5,19 +5,21 @@ import { connection } from "next/server"
 
 import ProfileDashboard from "@/components/(gateway)/settings/profile/ProfileDashboard"
 import { fetchFrontendPublicProfile } from "@/lib/fetchers/frontend/fetchPublicCatalog"
+import { getProfileMessages } from "@/i18n/profile"
+import { isPublicLocale, type PublicLocale } from "@/i18n/routing"
 import { useTranslations } from "next-intl"
+import { getTranslations } from "next-intl/server"
 
 type PageProps = {
-	params: Promise<{ slug: string }>
+	params: Promise<{ locale: string; slug: string }>
 }
 
-export const metadata: Metadata = {
-	title: "Profile",
-	description: "Public Phaseo usage profile.",
-	robots: {
-		index: false,
-		follow: false,
-	},
+export async function generateMetadata(): Promise<Metadata> {
+	const t = await getTranslations("Site.profile")
+	return {
+		title: t("title"),
+		robots: { index: false, follow: false },
+	}
 }
 
 function PublicProfileShell({
@@ -49,19 +51,21 @@ function PublicProfileShell({
 async function PublicProfileContent({
 	params,
 }: {
-	params: Promise<{ slug: string }>
+	params: Promise<{ locale: string; slug: string }>
 }) {
 	await connection()
-	const { slug } = await params
+	const { locale, slug } = await params
 	const profile = await fetchFrontendPublicProfile(slug)
 
 	if (!profile || !profile.publicProfileEnabled) {
 		notFound()
 	}
+	const publicLocale = (isPublicLocale(locale) ? locale : "en-GB") as PublicLocale
+	const profileMessages = getProfileMessages(publicLocale)
 
 	return (
 		<PublicProfileShell>
-			<ProfileDashboard profile={profile} publicView />
+			<ProfileDashboard profile={profile} locale={publicLocale} labels={profileMessages} publicView />
 		</PublicProfileShell>
 	)
 }

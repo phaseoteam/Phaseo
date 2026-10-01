@@ -1,14 +1,18 @@
 import Link from "next/link";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { ArrowRight, Gamepad2, Trophy } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import type { ProfileGameSummary } from "@/lib/fetchers/profile/types";
 import { GAME_INFO, GAME_KEYS } from "@/lib/games/types";
 
-function formatLastPlayed(value: string | null, translate: (key: string) => string): string {
+function formatLastPlayed(
+	value: string | null,
+	translate: (key: string) => string,
+	locale: string,
+): string {
 	if (!value) return translate("Not played yet");
-	return `${translate("Last played")} ${new Date(value).toLocaleDateString("en", {
+	return `${translate("Last played")} ${new Date(value).toLocaleDateString(locale, {
 		month: "short",
 		day: "numeric",
 		year: "numeric",
@@ -17,6 +21,8 @@ function formatLastPlayed(value: string | null, translate: (key: string) => stri
 
 export function ProfileGames({ summary }: { summary: ProfileGameSummary | null }) {
 	const t = useTranslations("SettingsUI");
+	const gamesT = useTranslations("Product.games");
+	const locale = useLocale();
 	const s = (key: string) => t(`strings.${key}` as never);
 	const gameResults = new Map((summary?.games ?? []).map((game) => [game.game, game]));
 	const metrics = [
@@ -65,11 +71,11 @@ export function ProfileGames({ summary }: { summary: ProfileGameSummary | null }
 							>
 								<div className="min-w-0">
 									<div className="flex items-center gap-2 font-medium text-foreground">
-										{info.title}
+										{gamesT(info.titleKey)}
 										<ArrowRight className="size-3.5 text-muted-foreground transition-transform group-hover:translate-x-1" />
 									</div>
-									<p className="mt-1 text-sm text-muted-foreground">{info.description}</p>
-										<p className="mt-1 text-xs text-muted-foreground">{formatLastPlayed(result?.lastPlayedAt ?? null, s)}</p>
+									<p className="mt-1 text-sm text-muted-foreground">{gamesT(info.descriptionKey)}</p>
+										<p className="mt-1 text-xs text-muted-foreground">{formatLastPlayed(result?.lastPlayedAt ?? null, s, locale)}</p>
 								</div>
 								<div className="grid grid-cols-3 gap-5 text-sm sm:min-w-64">
 									<div>

@@ -1,0 +1,89 @@
+---
+title: "Läufe speichern und fortsetzen"
+description: "Speichere den Status von Rust-Agent-SDK-Läufen und setze sie nach Tools oder menschlicher Überprüfung fort."
+---
+
+`RunResult` kann mit Serde serialisiert werden. Speichere es in deiner Datenbank, deinem Objektspeicher oder einem Auftragsdatensatz, wenn eine Pause einen Prozessneustart überstehen muss.
+
+## Pausierten Status speichern
+
+```rust
+let paused_json = serde_json::to_string_pretty(&paused)?;
+std::fs::write("paused-run.json", paused_json)?;
+```
+
+## Status wiederherstellen
+
+```rust
+use phaseo_agent::RunResult;
+
+let saved = std::fs::read_to_string("paused-run.json")?;
+let paused: RunResult = serde_json::from_str(&saved)?;
+```
+
+Erstelle vor der Fortsetzung dieselbe Agent-Definition und dieselben Tools erneut. Closures und `AgentDefinition` sind nicht Teil des serialisierten Laufs.
+
+Das effektive Modell und die maximale Schrittzahl sind in `RunRecord` gespeichert. Überschreibungen pro Lauf bleiben daher nach der Fortsetzung aktiv.
+
+## Menschliche Überprüfung
+
+Verwende `human_review(...)`, um einen abgeschlossenen Modellschritt zu prüfen und menschliche Eingaben anzufordern:
+
+```rust
+use phaseo_agent::{AgentDefinition, HumanReviewRequest};
+use serde_json::json;
+
+let definition = AgentDefinition::new(
+    "review-agent",
+    "openai/gpt-5.6-sol",
+)
+.human_review(|context| {
+    if context.response.message.content.contains("needs approval") {
+        Some(HumanReviewRequest {
+            reason: "Review the proposed action".to_string(),
+            payload: json!({
+                "draft": context.response.message.content
+            }),
+        })
+    } else {
+        None
+    }
+});
+```
+
+Mit menschlicher Eingabe fortsetzen:
+
+```rust
+use phaseo_agent::ContinueOptions;
+
+let mut options = ContinueOptions::new(paused);
+options.human_input = Some(
+    "Approved. Continue and return the final result.".to_string(),
+);
+
+let completed = agent.continue_run(&mut client, options)?;
+```
+
+## Pausentypen
+
+| `pause.kind` | Erforderlicher Fortsetzungswert |
+| --- | --- |
+| `human_review` | Nicht leeres `ContinueOptions.human_input` |
+| `tool_approval` | `ToolDecision`-Einträge anhand der Tool-Aufruf-ID |
+| `external_output` | `ToolOutput`-Einträge anhand der Tool-Aufruf-ID |
+| `tool_input` | Kombination aus Freigaben und externen Ergebnissen |
+
+
+## Anwendungseigene Persistenz
+
+Das Rust Agent SDK bietet weder ein gehostetes Status-Backend noch einen Persistenzadapter. Deine Anwendung verwaltet:
+
+- Verschlüsselung und Aufbewahrungsdauer gespeicherter Läufe
+- Autorisierung für Freigaben und menschliche Eingaben
+- Neuerstellung von Tool-Ausführern
+- Idempotenz für Nebenwirkungen beim Fortsetzen
+
+## Weiterführende Themen
+
+- [Tools und Freigaben](./agent-sdk-tools.mdx)
+- [Ereignisse, Wiederholungen und Fehler](./agent-sdk-events-and-errors.mdx)

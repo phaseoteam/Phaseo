@@ -1,0 +1,68 @@
+---
+icon: "brain-circuit"
+title: "Modelos"
+description: "Liste modelos com o SDK Ruby."
+---
+
+**Método**: `client.list_models(...)`.
+
+### Exemplo
+```ruby
+require 'phaseo_sdk'
+
+client = PhaseoSdk::Phaseo.new(api_key: ENV.fetch("PHASEO_API_KEY"))
+models = client.list_models(
+  limit: "5",
+  provider: "anthropic",
+  provider_status: "beta,not_ready",
+  provider_availability_reason: "preview_only,provider_not_ready",
+  capability_status: "coming_soon,internal_testing",
+  availability: "all",
+)
+```
+
+### Parâmetros principais
+- `provider` (opcional): filtrar por provedor
+- `provider_status` / `provider_routing_status` / `model_routing_status` (opcional): filtrar por estado de lançamento e roteamento
+- `capability_status` / `provider_availability_status` / `provider_availability_reason` (opcional): filtrar por capacidade e disponibilidade
+- `provider_availability_reason` é útil com `availability: "all"` para consultar estados de lançamento como `preview_only`, `provider_not_ready`, `gated`, `access_limited`, `region_limited`, `project_limited`, `paused` ou `soft_blocked`
+- `capability_status` é útil com `availability: "all"` para consultar mapeamentos de endpoints não roteáveis, como `coming_soon` ou `internal_testing`
+- `status` (opcional): filtrar por estado do ciclo de vida do modelo
+- `organisation` (opcional): filtrar por organização
+- `endpoints` (opcional): matriz de endpoints
+- `input_types` / `output_types` / `params` (opcional): filtros de capacidade
+- `availability` (opcional): `active` ou `all`
+- `limit` (opcional): quantidade
+- `offset` (opcional): quantidade de itens a ignorar
+
+### Retorna
+`ModelListResponse`
+
+```json
+{
+  "ok": true,
+  "limit": 50,
+  "offset": 0,
+  "total": 123,
+  "models": [
+    {
+      "model_id": "openai/gpt-4o-mini",
+      "name": "GPT-4o Mini",
+      "release_date": "2024-07-18",
+      "status": "active",
+      "organisation_id": "openai",
+      "aliases": ["gpt-4o-mini"],
+      "endpoints": ["chat/completions", "responses"],
+      "input_types": ["text"],
+      "output_types": ["text"],
+      "providers": [
+        {
+          "api_provider_id": "openai",
+          "params": ["temperature", "max_tokens"]
+        }
+      ]
+    }
+  ]
+}
+```
+

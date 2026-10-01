@@ -1,0 +1,28 @@
+---
+icon: "braces"
+title: "Ausgaben und Wiederholungen"
+description: "Validiere Java-Agent-Ausgaben und wiederhole vorübergehende Modellfehler mit einer Begrenzung."
+---
+
+Verwende die Validierung der endgültigen Ausgabe, wenn nachgelagerter Java-Code einen strukturierten Wert statt ungeprüften Modelltext erwartet. Füge der Agent-Definition einen abschließenden Validator hinzu und behandle Validierungsfehler als Vertragsfehler.
+
+Verwende `ModelRetryConfig` bei vorübergehenden Fehlern des Modells oder Providers:
+
+```java
+var retry = new AgentSdk.ModelRetryConfig(
+    2,
+    Duration.ofMillis(250)
+);
+```
+
+Die Anzahl der Wiederholungen zählt zusätzliche Versuche nach der ersten Anfrage. Abgeschlossene Schritte behalten die endgültige Anzahl der Modellversuche für Debugging und Telemetrie.
+
+Verwende `ToolExecutionConfig` separat, um die Parallelität lokaler Tools zu steuern. Modellwiederholungen wiederholen keine fehlgeschlagenen Seiteneffekte innerhalb von Tools.
+
+Zusätzliche Optionen der Responses API kannst du über `GatewayOptions.requestOptions` übergeben; der Adapter verwaltet weiterhin Modell, Eingabe, Anweisungen und lokale Funktions-Tools.
+
+## Weiterführende Themen
+
+- [Dynamische Durchläufe](./agent-sdk-dynamic-turns.mdx)
+- [Abbruchbedingungen](./agent-sdk-stop-conditions.mdx)
+- [Fehler und Fehlerbehebung](./agent-sdk-observability.mdx)

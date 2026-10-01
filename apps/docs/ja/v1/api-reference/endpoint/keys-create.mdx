@@ -1,0 +1,13 @@
+---
+title: "APIキーを作成"
+sidebarTitle: "APIキーを作成"
+badge: "Beta"
+openapi: "/ja/openapi/v1/openapi.localized.yaml POST /keys"
+description: "認証済みワークスペースに新しいAPIキーを作成します。"
+---
+<Note>
+このエンドポイントには管理APIキーが必要です。標準のGateway APIキーは使用できません。
+</Note>
+
+APIキーの平文は作成時に一度だけ返されます。互換性フィールド`limit`、`limit_reset`、`include_byok_in_limit`を受け付けます。Phaseoでは現在、`include_byok_in_limit`は互換性のためだけに扱われ、このキーの上限にはBYOKが常に含まれません。
+

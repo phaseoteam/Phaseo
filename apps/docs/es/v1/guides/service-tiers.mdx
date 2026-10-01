@@ -1,0 +1,172 @@
+---
+title: "Niveles de servicio"
+description: "Cómo funcionan los modos de precio Standard, Fast, Flex y Batch en Phaseo Gateway."
+icon: "gauge"
+---
+
+Los niveles de servicio permiten elegir entre distintos modos de precio y entrega cuando el proveedor los admite.
+
+La disponibilidad depende del proveedor y del modelo. Si el modelo solicitado no admite un nivel, el Gateway no lo utilizará para enrutar la solicitud.
+
+<Note type="warning">
+Por ahora, los niveles de servicio solo están disponibles para modelos de texto y proveedores compatibles.
+</Note>
+
+`service_tier` es compatible con las tres interfaces de solicitudes de texto:
+
+- Messages compatibles con Anthropic en `/v1/messages`
+- Chat Completions compatibles con OpenAI en `/v1/chat/completions`
+- Responses compatibles con OpenAI en `/v1/responses`
+
+## Resumen de niveles
+
+| Nivel | Cómo solicitarlo | Uso habitual |
+| --- | --- | --- |
+| `Standard` | Comportamiento predeterminado. No hace falta ningún campo adicional. | Tráfico general de producción. |
+| `Fast` | Añade `service_tier: "fast"` a la solicitud. | Enrutamiento más rápido o premium cuando esté disponible. OpenAI también acepta `priority`. |
+| `Flex` | Añade `service_tier: "flex"` a la solicitud. | Enrutamiento de menor coste cuando esté disponible. |
+| `Batch` | Usa la API Batch en lugar de `service_tier`. | Cargas de trabajo grandes y diferidas en las que la latencia es menos importante. |
+
+## Compatibilidad de la API
+
+Usa el mismo campo `service_tier` al llamar a cualquiera de las API de texto síncronas compatibles:
+
+- [Referencia de la API Messages de Anthropic](../api-reference/endpoint/anthropic-messages.mdx)
+- [Referencia de la API Chat Completions](../api-reference/endpoint/chat-completions.mdx)
+- [Referencia de la API Responses](../api-reference/endpoint/responses.mdx)
+- [Referencia de parámetros compartidos](../api-reference/parameters.mdx)
+
+Los valores admitidos de `service_tier` son `standard`, `fast`, `priority`, `flex` y `batch`. `Standard` es el comportamiento predeterminado si se omite `service_tier`. Phaseo usa `Fast` como nombre canónico del nivel premium. En las rutas de OpenAI, `priority` se acepta como alias compatible y utiliza el mismo enrutamiento y precio. `Batch` se gestiona mediante la API Batch, no con solicitudes síncronas.
+
+<Note>
+Phaseo convierte internamente los valores normalizados del gateway en controles nativos del proveedor. Por ejemplo, una ruta de Anthropic puede recibir campos de nivel nativos de Anthropic, pero la solicitud del cliente sigue usando los valores del gateway indicados aquí.
+</Note>
+
+## Standard
+
+`Standard` es el modo de enrutamiento predeterminado. No hace falta establecer `service_tier` para usarlo.
+
+```json
+{
+  "model": "openai/gpt-5.5",
+  "input": "Summarise this incident report."
+}
+```
+
+## Fast
+
+Usa `Fast` cuando quieras la opción premium o de mayor prioridad del proveedor. Phaseo utiliza `fast` como nombre neutral respecto al proveedor. OpenAI llama a esta opción Fast y acepta `fast` y `priority` en los modelos compatibles.
+
+```json
+{
+  "model": "openai/gpt-5.5",
+  "input": "Summarise this incident report.",
+  "service_tier": "fast"
+}
+```
+
+### Ejemplo de Anthropic Messages
+
+```json
+{
+  "model": "anthropic/claude-sonnet-4",
+  "max_tokens": 512,
+  "messages": [
+    { "role": "user", "content": "Summarise this incident report." }
+  ],
+  "service_tier": "fast"
+}
+```
+
+Al enrutar a Anthropic, Phaseo lo convierte en el control nativo adecuado del proveedor.
+
+### Prioridad de Mistral y enrutamiento en la UE
+
+Mistral Priority Tier requiere una cuenta empresarial de Mistral que cumpla los requisitos. Phaseo asigna
+`priority` al modo de prioridad automática de Mistral y cobra el nivel que indique Mistral;
+si Mistral vuelve a Standard, se aplica el precio de Standard.
+
+GLM 5.2 puede fijarse al endpoint regional de la UE de Mistral con la oferta `mistral-eu`
+de proveedor:
+
+```json
+{
+  "model": "z-ai/glm-5.2",
+  "messages": [
+    { "role": "user", "content": "Summarise this incident report." }
+  ],
+  "service_tier": "priority",
+  "provider": {
+    "only": ["mistral-eu"],
+    "required_execution_region": "eu"
+  }
+}
+```
+
+La inferencia regional de Mistral tiene un recargo del 10 %. El precio Batch está disponible
+en la oferta global de Mistral, pero Mistral no admite Batch en los endpoints regionales.
+
+Phaseo registra por separado las tarifas de referencia publicadas por Mistral para Batch y Priority
+de su disponibilidad en tiempo de ejecución. Que el catálogo muestre un precio no significa que el nivel
+se pueda enrutar: Priority seguirá deshabilitado salvo que la ruta concreta de Mistral indique
+que lo admite, y Batch debe usar la API Batch global de Mistral. La elegibilidad para Priority
+sigue dependiendo de la cuenta y el modelo de Mistral.
+
+## Flex
+
+Usa `Flex` cuando el proveedor ofrezca un nivel de servicio más barato y aceptes las contrapartidas de ese modo de precio.
+
+```json
+{
+  "model": "openai/gpt-5.5",
+  "input": "Summarise this incident report.",
+  "service_tier": "flex"
+}
+```
+
+### Ejemplo de Chat Completions
+
+```json
+{
+  "model": "openai/gpt-5.5",
+  "messages": [
+    { "role": "user", "content": "Summarise this incident report." }
+  ],
+  "service_tier": "flex"
+}
+```
+
+### Ejemplo de Responses
+
+```json
+{
+  "model": "openai/gpt-5.5",
+  "input": [
+    { "role": "user", "content": "Summarise this incident report." }
+  ],
+  "service_tier": "flex"
+}
+```
+
+## Batch
+
+`batch` es un valor de nivel reconocido para la ejecución por lotes, pero las API de texto síncronas rechazan `service_tier: "batch"` con un error de validación que remite a la API Batch.
+
+Usa la API Batch o el flujo de trabajos por lotes, ya que este precio se aplica a ejecuciones diferidas y no a solicitudes síncronas normales.
+
+## Notas
+
+- La compatibilidad con cada nivel depende del proveedor y del modelo.
+- Las tarjetas de precios de las páginas de modelos muestran las tarifas de cada nivel cuando disponemos de esos datos.
+- Algunos proveedores ofrecen opciones especializadas en el upstream que Phaseo integra en una experiencia de niveles unificada en el catálogo.
+- Los valores de `service_tier` visibles para el cliente están normalizados en las interfaces de texto compatibles; el gateway gestiona los nombres nativos de cada proveedor.
+
+## Páginas relacionadas
+
+- [Referencia de la API Messages de Anthropic](../api-reference/endpoint/anthropic-messages.mdx)
+- [Referencia de la API Chat Completions](../api-reference/endpoint/chat-completions.mdx)
+- [Referencia de la API Responses](../api-reference/endpoint/responses.mdx)
+- [Parámetros](../api-reference/parameters.mdx)
+- [Enrutamiento y alternativas](./routing-and-fallbacks.mdx)
+- [Chat completions (SDK de TypeScript)](../sdk-reference/typescript/chat-completions.mdx)
+- [Responses (SDK de TypeScript)](../sdk-reference/typescript/responses.mdx)

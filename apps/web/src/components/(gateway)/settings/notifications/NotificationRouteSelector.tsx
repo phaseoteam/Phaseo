@@ -4,6 +4,7 @@ import * as React from "react";
 import { BellRing, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslations } from "next-intl";
+import { localizedSettingsError } from "@/i18n/error-messages";
 
 import { setNotificationRoute } from "@/app/(dashboard)/settings/credits/actions";
 import { Button } from "@/components/ui/button";
@@ -38,7 +39,7 @@ function NotificationRouteSelectorState({ destinations, eventKind, initialDestin
 		setSelectedIds(next);
 		startSaving(async () => {
 			try { await setNotificationRoute(eventKind, next); }
-			catch (error) { setSelectedIds(previous); toast.error(error instanceof Error ? error.message : s("Could not update destinations")); }
+			catch (error) { setSelectedIds(previous); toast.error(localizedSettingsError(error, t, "Action failed", s("Could not update destinations"))); }
 		});
 	}
 

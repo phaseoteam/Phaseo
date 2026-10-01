@@ -1,0 +1,64 @@
+---
+icon: "upload"
+title: "Scores einreichen"
+description: "Teile neue Benchmark-Ergebnisse strukturiert und nachvollziehbar mit der Phaseo-Community."
+---
+
+Wir freuen uns über Beiträge von Anbietern, Forschenden und erfahrenen Nutzern. Folge dem Ablauf unten, damit wir deinen Beitrag schnell bearbeiten können.
+
+---
+
+## 1. Daten vorbereiten
+
+- Prüfe, ob der Benchmark unter `/data/benchmarks` vorhanden ist. Falls nicht, erstelle ein Issue mit dem Vorschlag.
+- Sammle die Rohdaten einschließlich Prompt-Format, Evaluierungssystem und Hardware-Details.
+- Füge, sofern vorhanden, einen öffentlichen Beleg hinzu (Blogbeitrag, Paper oder Dataset-Repository).
+
+> ✅ **Tipp**
+> Ein reproduzierbares Skript oder Notebook beschleunigt die Überprüfung erheblich.
+
+---
+
+## 2. Repository forken
+
+1. Forke [github.com/phaseoteam/data](https://github.com/phaseoteam/data).
+2. Erstelle einen neuen Branch (zum Beispiel `add-claude-3.5-sonnet-mmlu`).
+3. Ergänze die JSON-Datei des betreffenden Benchmarks um deine Scores und Metadaten.
+
+---
+
+## 3. Validierung ausführen
+
+Prüfe mit den Repository-Tools, ob Struktur und Wertebereiche stimmen:
+
+```bash
+pnpm install
+pnpm run validate:benchmarks
+```
+
+Behebe alle gemeldeten Probleme, bevor du deinen Pull Request einreichst.
+
+---
+
+## 4. Pull Request öffnen
+
+Nimm Folgendes in die Beschreibung deines PRs auf:
+
+- Benchmark-Name und Split (zum Beispiel `GSM8K test`).
+- Modell-ID und Anbieter.
+- Links zu Quellen oder Evaluierungsprotokollen.
+- Zusammenfassung, wie der Score ermittelt wurde.
+
+Maintainer prüfen den Beitrag, bitten bei Bedarf um Klarstellungen und mergen ihn nach der Freigabe.
+
+---
+
+## 5. Veröffentlichung verfolgen
+
+Nach dem Merge erscheint der Score beim nächsten geplanten Datensync. Verfolge den Fortschritt im Discord-Kanal #data-updates oder im öffentlichen Changelog.
+
+---
+
+## Brauchst du Hilfe?
+
+Melde dich im [Community-Discord](https://discord.gg/aQyywCvgZ5) oder per E-Mail beim [Support](mailto:daniel@phaseo.app). Bei umfangreichen Imports oder gemeinsamer Forschung helfen wir gern.

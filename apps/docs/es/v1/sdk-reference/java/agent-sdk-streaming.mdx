@@ -1,0 +1,26 @@
+---
+icon: "radio"
+title: "Transmisión"
+description: "Transmite texto y eventos de agentes Java con consumidores que pueden volver a recorrer el flujo."
+---
+
+`Agent.stream(...)` devuelve `StreamResult`:
+
+```java
+var stream = agent.stream(options);
+
+for (var delta : stream.textStream()) {
+  System.out.print(delta);
+}
+
+var completed = stream.getResult();
+```
+
+`textStream()` y `fullStream()` se pueden volver a recorrer, por lo que la interfaz del producto y el código de telemetría pueden consumir la misma ejecución por separado. Llama a `cancel()` para interrumpir el worker de flujo activo.
+
+Los eventos de elementos de Java siguen siendo objetos genéricos, no la unión discriminada `AgentItem` de TypeScript.
+
+## Relacionado
+
+- [Herramientas](./agent-sdk-tools.mdx)
+- [Observabilidad y DevTools](./agent-sdk-observability.mdx)

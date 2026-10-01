@@ -1,0 +1,100 @@
+---
+title: "Implemente guardrails em chaves de API"
+icon: "shield-check"
+description: "Aplique guardrails a chaves de API, teste a aplicação antes do rollout e verifique bloqueios, redações e sinalizações na atividade."
+---
+
+Use este guia quando precisar proteger uma ou mais chaves de API com limites de orçamento, restrições de roteamento, verificações de injeção de prompt ou regras para informações confidenciais.
+
+## 1. Crie o guardrail no espaço de trabalho
+
+Crie os guardrails primeiro no nível do espaço de trabalho para poder reutilizar a mesma política em várias chaves.
+
+Para começar:
+
+- adicione restrições de modelos e provedores antes das verificações de conteúdo
+- limite o primeiro rollout a uma chave ou a um ambiente
+- dê ao guardrail um nome que descreva o resultado da política, não o nome da equipe
+
+## 2. Associe o guardrail a uma chave de API
+
+Na página de configurações da chave de API, associe o guardrail à chave que deve aplicar a política.
+
+Siga esta sequência:
+
+1. comece com uma chave de staging ou de baixo risco
+2. sempre que possível, associe um guardrail por vez
+3. confirme se o diálogo de detalhes da chave mostra o guardrail aplicado
+
+## 3. Defina a política de orçamento e as restrições de roteamento
+
+Combinação comum:
+
+- limite diário de custo
+- lista de bloqueio de provedores com baixo nível de confiança
+- lista de modelos permitidos com os modelos exatos de produção que devem continuar disponíveis para roteamento
+
+Use a prévia ao vivo do editor de guardrails para verificar:
+
+- quais provedores continuam permitidos
+- quais modelos são bloqueados
+- se `Only allow` é mais restritivo do que o esperado
+
+## 4. Adicione regras contra injeção de prompt e para informações confidenciais
+
+Para um rollout prático:
+
+- comece com `flag` ou `redact` para injeção de prompt
+- use `block` somente depois de revisar os falsos positivos
+- primeiro, use regras determinísticas para informações confidenciais:
+  - e-mail
+  - telefone
+  - SSN
+  - cartão de crédito
+  - endereço IP
+
+Se precisar de padrões personalizados, adicione-os como regras regex explícitas e teste-os no campo de prévia antes de salvar.
+
+## 5. Teste a política antes de ampliar o rollout
+
+Use a prévia do guardrail com:
+
+- uma entrada inofensiva
+- uma entrada claramente proibida
+- um prompt realista, semelhante aos usados em produção
+
+Confira se há:
+
+- texto de redação correto
+- comportamento correto de bloqueio e permissão
+- ausência de correspondências acidentais em conteúdo não relacionado
+
+## 6. Verifique a aplicação na atividade e nos logs
+
+Depois de enviar solicitações reais pela chave protegida, verifique:
+
+- o painel **Aplicação de guardrails** na página de atividade
+- os diálogos de detalhes das solicitações bloqueadas ou redigidas
+- a atividade de guardrail por chave no diálogo de detalhes da chave de API
+
+Você deverá ver:
+
+- a contagem de solicitações bloqueadas
+- a contagem de solicitações redigidas
+- a contagem de solicitações sinalizadas
+- os detalhes do guardrail e do detector específicos quando a aplicação ocorrer
+
+## 7. Amplie o rollout com segurança
+
+Quando a primeira chave funcionar corretamente:
+
+1. associe o mesmo guardrail a mais chaves
+2. aumente a ação de `flag` para `redact` ou `block`
+3. adicione detecção de nomes e endereços, que tem maior latência, somente onde essa troca for aceitável
+
+## Guias relacionados
+
+- [Predefinições](../guides/presets.mdx)
+- [Início rápido](../quickstart.mdx)
+- [Agentes de programação com `SKILL.md`](./coding-agents-skill-md.mdx)
+

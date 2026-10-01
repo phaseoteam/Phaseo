@@ -28,6 +28,7 @@ import {
 	Wrench,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import {
 	Select,
 	SelectContent,
@@ -272,6 +273,7 @@ export default function ModelPageToc({
 	items: ModelPageTocItem[];
 	className?: string;
 }) {
+	const t = useTranslations("Common.dropdown");
 	const filteredItems = useMemo(
 		() => items.filter((item) => item.id && item.label),
 		[items],
@@ -331,7 +333,7 @@ export default function ModelPageToc({
 									return <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />;
 								})()}
 								<SelectValue
-									placeholder="Jump to section"
+									placeholder={t("jumpToSection")}
 									className="min-w-0"
 								>
 									<span className="truncate text-sm font-medium text-foreground">
@@ -340,7 +342,7 @@ export default function ModelPageToc({
 								</SelectValue>
 							</>
 						) : (
-							<SelectValue placeholder="Jump to section" />
+							<SelectValue placeholder={t("jumpToSection")} />
 						)}
 					</div>
 				</SelectTrigger>

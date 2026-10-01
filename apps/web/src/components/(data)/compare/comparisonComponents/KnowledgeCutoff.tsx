@@ -1,3 +1,5 @@
+"use client";
+
 import * as React from "react";
 import {
 	Card,
@@ -11,6 +13,7 @@ import { Book } from "lucide-react";
 import type { ExtendedModel } from "@/data/types";
 import Link from "next/link";
 import { ProviderLogoName } from "../ProviderLogoName";
+import { useLocale, useTranslations } from "next-intl";
 
 function getMonthDiff(date1: Date, date2: Date) {
 	const years = date1.getFullYear() - date2.getFullYear();
@@ -18,15 +21,37 @@ function getMonthDiff(date1: Date, date2: Date) {
 	return years * 12 + months;
 }
 
-function formatDate(dateStr: string | null | undefined) {
+function formatDate(dateStr: string | null | undefined, locale: string) {
 	if (!dateStr) return "-";
 	const date = new Date(dateStr);
 	if (isNaN(date.getTime())) return "-";
-	return date.toLocaleDateString("en-GB", {
+	return date.toLocaleDateString(locale, {
 		day: "2-digit",
 		month: "short",
 		year: "numeric",
 	});
+}
+
+function formatMonthSpan(months: number, locale: string): string {
+	const totalMonths = Math.abs(months);
+	const years = Math.floor(totalMonths / 12);
+	const remainingMonths = totalMonths % 12;
+	const parts: string[] = [];
+	if (years > 0) {
+		parts.push(new Intl.NumberFormat(locale, { style: "unit", unit: "year", unitDisplay: "short" }).format(years));
+	}
+	if (remainingMonths > 0 || parts.length === 0) {
+		parts.push(new Intl.NumberFormat(locale, { style: "unit", unit: "month", unitDisplay: "short" }).format(remainingMonths || 0));
+	}
+	return parts.join(" ");
+}
+
+function formatMonthDifference(months: number, locale: string): string {
+	return new Intl.NumberFormat(locale, {
+		style: "unit",
+		unit: "month",
+		unitDisplay: "long",
+	}).format(Math.abs(months));
 }
 
 function positionStyle(idx: number, total: number): React.CSSProperties {
@@ -44,6 +69,8 @@ export default function KnowledgeCutoffTimeline({
 }: {
 	selectedModels: ExtendedModel[];
 }) {
+	const t = useTranslations("Catalogue.compare");
+	const locale = useLocale();
 	const modelsWithCutoff = selectedModels.filter((m) => m.knowledge_cutoff);
 	if (modelsWithCutoff.length < 1) return null;
 
@@ -68,18 +95,17 @@ export default function KnowledgeCutoffTimeline({
 		new Date(newest.knowledge_cutoff!),
 		new Date(oldest.knowledge_cutoff!)
 	);
-	const spanYears = Math.floor(spanMonths / 12);
-	const spanRemMonths = Math.abs(spanMonths % 12);
-	const spanString =
-		[
-			spanYears > 0 ? `${spanYears}y` : null,
-			spanRemMonths > 0 ? `${spanRemMonths}m` : null,
-		]
-			.filter(Boolean)
-			.join(" ") || "0m";
+	const spanString = formatMonthSpan(spanMonths, locale);
 
-	const oldestDate = formatDate(oldest.knowledge_cutoff);
-	const newestDate = formatDate(newest.knowledge_cutoff);
+	const oldestDate = formatDate(oldest.knowledge_cutoff, locale);
+	const newestDate = formatDate(newest.knowledge_cutoff, locale);
+	const linkedModel = (model: ExtendedModel) => (chunks: React.ReactNode) => (
+		<Link href={`/models/${model.id}`} className="group">
+			<span className="relative underline decoration-transparent group-hover:decoration-current transition-colors duration-200 font-semibold">
+				{chunks}
+			</span>
+		</Link>
+	);
 
 	const summarySection = (
 		<Card className="mb-4 border border-border/60 bg-background/60 shadow-none">
@@ -90,73 +116,28 @@ export default function KnowledgeCutoffTimeline({
 				</span>
 				<div className="text-sm">
 					{modelsWithCutoff.length === 1 ? (
-						<>
-							<span className="block font-medium">
-								<Link
-									href={`/models/${
-										oldest.id
-									}`}
-									className="group"
-								>
-									<span className="relative underline decoration-transparent group-hover:decoration-current transition-colors duration-200 font-semibold">
-										{oldest.name}
-									</span>
-								</Link>{" "}
-								has knowledge cutoff at {oldestDate}.
-							</span>
-						</>
+						<span className="block font-medium">
+							{t.rich("knowledgeCutoffSingle", {
+								model: linkedModel(oldest),
+								date: oldestDate,
+							})}
+						</span>
 					) : (
 						<>
 							<span className="block font-medium">
-								<Link
-									href={`/models/${
-										newest.id
-									}`}
-									className="group"
-								>
-									<span className="relative underline decoration-transparent group-hover:decoration-current transition-colors duration-200 font-semibold">
-										{newest.name}
-									</span>
-								</Link>{" "}
-								has knowledge up to {newestDate}, while{" "}
-								<Link
-									href={`/models/${
-										oldest.id
-									}`}
-									className="group"
-								>
-									<span className="relative underline decoration-transparent group-hover:decoration-current transition-colors duration-200 font-semibold">
-										{oldest.name}
-									</span>
-								</Link>{" "}
-								stops at {oldestDate}.
+								{t.rich("knowledgeCutoffMultiple", {
+									newest: linkedModel(newest),
+									newestDate,
+									oldest: linkedModel(oldest),
+									oldestDate,
+								})}
 							</span>
 							<span className="block text-xs text-muted-foreground mt-1">
-								<Link
-									href={`/models/${
-										newest.id
-									}`}
-									className="group"
-								>
-									<span className="relative underline decoration-transparent group-hover:decoration-current transition-colors duration-200 font-semibold">
-										{newest.name}
-									</span>
-								</Link>
-								&apos;s knowledge is {Math.abs(diffMonths)}{" "}
-								month
-								{Math.abs(diffMonths) !== 1 ? "s" : ""} more
-								recent than{" "}
-								<Link
-									href={`/models/${
-										oldest.id
-									}`}
-									className="group"
-								>
-									<span className="relative underline decoration-transparent group-hover:decoration-current transition-colors duration-200 font-semibold">
-										{oldest.name}
-									</span>
-								</Link>
-								&apos;s.
+								{t.rich("knowledgeCutoffDifference", {
+									newest: linkedModel(newest),
+									oldest: linkedModel(oldest),
+									duration: formatMonthDifference(diffMonths, locale),
+								})}
 							</span>
 						</>
 					)}
@@ -169,9 +150,9 @@ export default function KnowledgeCutoffTimeline({
 		<section className="space-y-3">
 			<header className="flex items-start justify-between gap-4">
 				<div className="space-y-1">
-					<h2 className="text-lg font-semibold">Knowledge cutoff</h2>
+					<h2 className="text-lg font-semibold">{t("knowledgeCutoff")}</h2>
 					<p className="text-sm text-muted-foreground">
-						Most recent training data date (when available).
+						{t("knowledgeCutoffDescription")}
 					</p>
 				</div>
 				{modelsWithCutoff.length > 1 ? (
@@ -182,7 +163,7 @@ export default function KnowledgeCutoffTimeline({
 							" px-3 py-1 text-xs font-semibold mt-1 transition-colors duration-150 hover:bg-blue-200 hover:text-blue-900 hover:border-blue-400 dark:hover:bg-blue-900 dark:hover:text-blue-100"
 						}
 					>
-						{spanString} span
+						{t("dateSpan", { duration: spanString })}
 					</Badge>
 				) : null}
 			</header>
@@ -208,7 +189,7 @@ export default function KnowledgeCutoffTimeline({
 														: "text-center"
 											}`}
 										>
-											{formatDate(model.knowledge_cutoff)}
+											{formatDate(model.knowledge_cutoff, locale)}
 										</span>
 									</div>
 								))}
@@ -224,8 +205,8 @@ export default function KnowledgeCutoffTimeline({
 										model.provider?.provider_id ??
 										model.provider?.name ??
 										"unknown";
-									const providerName =
-										model.provider?.name ?? providerId ?? "Unknown";
+								const providerName =
+									model.provider?.name ?? providerId;
 									const isNewest = idx === modelsSorted.length - 1;
 									return (
 										<div
@@ -289,4 +270,3 @@ export default function KnowledgeCutoffTimeline({
 		</section>
 	);
 }
-

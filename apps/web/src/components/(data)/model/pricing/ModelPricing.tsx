@@ -13,6 +13,7 @@ import ModelPendingApiReleaseBanner from "@/components/(data)/model/overview/Mod
 import { fetchWorkspacePrivacySettings } from "@/lib/fetchers/internal/fetchWorkspacePrivacySettings";
 import type { WorkspacePrivacySettings } from "@/lib/fetchers/internal/settingsTypes";
 import { isAdminViewer } from "@/lib/auth/getViewerRole";
+import { getTranslations } from "next-intl/server";
 import {
 	Empty,
 	EmptyContent,
@@ -64,6 +65,10 @@ export default async function ModelPricing({
 	modelName?: string | null;
 	creatorOrganisationId?: string | null;
 }) {
+	const tProvider = await getTranslations("Catalogue.modelDetail.providerTable");
+	const tPricing = await getTranslations("Catalogue.modelDetail.pricing");
+	const tModel = await getTranslations("Catalogue.models.detail");
+	const tActions = await getTranslations("Common.ui.actions");
 	const [providers, identity, showAdminPricingControls] = await Promise.all([
 		fetchFrontendModelPricing(modelId),
 		modelStatus !== undefined
@@ -144,20 +149,20 @@ export default async function ModelPricing({
 						<Button asChild size="sm" variant="outline">
 							<Link href={`/internal/data/models/edit/${modelId}?tab=pricing`}>
 								<Pencil className="mr-1 h-3.5 w-3.5" />
-								Add pricing
+								{tActions("addPricing")}
 							</Link>
 						</Button>
 					</div>
 				) : null}
 				{showHeader ? (
 					<h2 className="text-2xl font-semibold tracking-tight text-foreground">
-						Providers
+						{tProvider("heading")}
 					</h2>
 				) : null}
 				{showPendingApiBanner ? (
 					<div>
 						<ModelPendingApiReleaseBanner
-							modelName={identity.name ?? "This model"}
+							modelName={identity.name ?? tModel("sections.thisModel")}
 							surface="providers"
 						/>
 					</div>
@@ -167,23 +172,18 @@ export default async function ModelPricing({
 						<EmptyMedia variant="icon">
 							<CircleAlert className="size-4" />
 						</EmptyMedia>
-						<EmptyTitle>No pricing data available yet</EmptyTitle>
-						<EmptyDescription>
-							No API provider pricing or availability is available for this model yet.
-						</EmptyDescription>
+						<EmptyTitle>{tPricing("noProviderPricing")}</EmptyTitle>
 					</EmptyHeader>
 					<EmptyContent>
 						<EmptyDescription>
-							If you know providers we can integrate, please tell us on
-							Discord or open an issue on GitHub so we can add pricing
-							data.
+							{tPricing("suggestProvider")}
 							<a
 								className="ml-1 text-primary underline"
 								href="https://github.com/phaseoteam/Phaseo/issues"
 								target="_blank"
 								rel="noopener noreferrer"
 							>
-								Open an issue
+								{tPricing("openIssue")}
 							</a>
 						</EmptyDescription>
 					</EmptyContent>
@@ -199,14 +199,14 @@ export default async function ModelPricing({
 					<Button asChild size="sm" variant="outline">
 						<Link href={`/internal/data/models/edit/${modelId}?tab=pricing`}>
 							<Pencil className="mr-1 h-3.5 w-3.5" />
-							Edit pricing
+							{tActions("editPricing")}
 						</Link>
 					</Button>
 				</div>
 			) : null}
 			{showPendingApiBanner ? (
 				<ModelPendingApiReleaseBanner
-					modelName={identity.name ?? "This model"}
+					modelName={identity.name ?? tModel("sections.thisModel")}
 					surface="providers"
 				/>
 			) : null}

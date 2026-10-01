@@ -3,12 +3,10 @@ import BenchmarkOverview from "@/components/(data)/benchmark/BenchmarkOverview";
 import { fetchFrontendBenchmark } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { absoluteUrl, buildMetadata } from "@/lib/seo";
+import { absoluteUrl } from "@/lib/seo";
+import { getLocale, getTranslations } from "next-intl/server";
+import { buildLocalizedPageMetadata } from "@/lib/auth/localized-metadata";
 import { JsonLdScript } from "@/components/seo/JsonLdScript";
-import {
-	buildBenchmarkMetadataDescription,
-	buildBenchmarkMetadataTitle,
-} from "@/lib/benchmarks/metadata";
 
 async function fetchBenchmark(benchmarkId: string) {
 	try {
@@ -25,6 +23,8 @@ async function fetchBenchmark(benchmarkId: string) {
 export async function generateMetadata(props: {
 	params: Promise<{ benchmarkId: string }>;
 }): Promise<Metadata> {
+	const locale = await getLocale();
+	const t = await getTranslations("Catalogue.benchmarks");
 	const { benchmarkId } = await props.params;
 	const benchmark = await fetchBenchmark(benchmarkId);
 	const path = `/benchmarks/${benchmarkId}`;
@@ -32,36 +32,36 @@ export async function generateMetadata(props: {
 
 	// Fallback if the benchmark can't be loaded
 	if (!benchmark) {
-		return buildMetadata({
-			title: "AI Benchmark Leaderboard",
-			description:
-				"Explore AI benchmark leaderboards on Phaseo to compare model performance across tasks, datasets, methodology details, and historical score movement.",
-			path,
+		return buildLocalizedPageMetadata({
+			locale: locale as never,
+			pathname: path,
+			title: t("metadataFallbackTitle"),
+			description: t("metadataFallbackDescription"),
 			keywords: [
-				"AI benchmark",
-				"AI benchmark leaderboard",
-				"model evaluation",
-				"AI model performance",
+				t("keywordAiBenchmark"),
+				t("keywordBenchmarkLeaderboard"),
+				t("keywordModelEvaluation"),
+				t("keywordModelPerformance"),
 				"Phaseo",
 			],
 			imagePath,
 		});
 	}
 
-	const cleanName: string = benchmark.name ?? "AI benchmark";
+	const cleanName: string = benchmark.name ?? t("keywordAiBenchmark");
 	const modelCount = benchmark.results?.length ?? 0;
 
-	return buildMetadata({
-		title: buildBenchmarkMetadataTitle(cleanName),
-		description: buildBenchmarkMetadataDescription(cleanName, modelCount),
-		path,
+	return buildLocalizedPageMetadata({
+		locale: locale as never,
+		pathname: path,
+		title: t("detailMetadataTitle", { name: cleanName }),
+		description: t("detailMetadataDescription", { name: cleanName, count: modelCount }),
 		keywords: [
 			cleanName,
-			`${cleanName} benchmark`,
-			`${cleanName} leaderboard`,
-			"AI benchmark",
-			"model evaluation",
-			"AI model performance",
+			t("keywordAiBenchmark"),
+			t("keywordBenchmarkLeaderboard"),
+			t("keywordModelEvaluation"),
+			t("keywordModelPerformance"),
 			"Phaseo",
 		],
 		imagePath,
@@ -73,6 +73,8 @@ export default async function Page({
 }: {
 	params: Promise<{ benchmarkId: string }>;
 }) {
+	const t = await getTranslations("Catalogue.benchmarks");
+	const tNav = await getTranslations("Common.nav");
 	const { benchmarkId } = await params;
 	const benchmark = await fetchFrontendBenchmark(benchmarkId);
 
@@ -82,15 +84,18 @@ export default async function Page({
 
 	// Generate structured data for the benchmark page.
 	const generateStructuredData = () => {
-		const benchmarkName = benchmark.name || "Benchmark";
+		const benchmarkName = benchmark.name || t("keywordAiBenchmark");
 
 		// Dataset Schema
 		const datasetSchema = {
 			"@context": "https://schema.org",
 			"@type": "Dataset",
 			"name": benchmarkName,
-			"description": `${benchmarkName} is an AI benchmark leaderboard tracked on Phaseo. Compare model performance, view historical results, and understand evaluation methodology.`,
-			"keywords": `${benchmarkName}, AI benchmark, model evaluation, leaderboard, AI performance`,
+			"description": t("detailMetadataDescription", {
+				name: benchmarkName,
+				count: benchmark.results?.length ?? 0,
+			}),
+			"keywords": `${benchmarkName}, ${t("keywordAiBenchmark")}, ${t("keywordModelEvaluation")}, ${t("keywordBenchmarkLeaderboard")}, ${t("keywordModelPerformance")}`,
 		};
 
 		// Breadcrumb Schema
@@ -101,13 +106,13 @@ export default async function Page({
 				{
 					"@type": "ListItem",
 					"position": 1,
-					"name": "Home",
+					"name": tNav("home"),
 					"item": absoluteUrl("/"),
 				},
 				{
 					"@type": "ListItem",
 					"position": 2,
-					"name": "Benchmarks",
+					"name": t("title"),
 					"item": absoluteUrl("/benchmarks"),
 				},
 				{
@@ -132,7 +137,7 @@ export default async function Page({
 					<JsonLdScript id="benchmark-breadcrumb-schema" data={structuredData.breadcrumbSchema} />
 				</>
 			)}
-			<BenchmarkDetailShell benchmark={benchmark} tocItems={[{ id: "summary", label: "Summary" }, { id: "progress", label: "Progress" }, { id: "model-results", label: "Model Results" }]}>
+			<BenchmarkDetailShell benchmark={benchmark} tocItems={[{ id: "summary", label: t("tocSummary") }, { id: "progress", label: t("tocProgress") }, { id: "model-results", label: t("tocModelResults") }]}>
 				<BenchmarkOverview benchmark={benchmark} />
 			</BenchmarkDetailShell>
 		</>

@@ -1,0 +1,104 @@
+---
+title: "并发执行本地智能体工具"
+icon: "network"
+description: "在 TypeScript Agent SDK 中限制本地工具并发数，让模型在一个轮次内收集互不依赖的信息，无需将每个工具调用串行执行。"
+---
+
+当一个智能体轮次可以安全地调用多个互不依赖的本地工具，并且你希望运行时并发执行、同时保留确定的结果顺序时，请使用此方案。
+
+## 适用场景
+
+在以下情况下使用 `toolExecution.toolConcurrency`：
+
+- 模型可在一个轮次中发出多个本地工具调用
+- 这些工具的输出互不依赖
+- 串行执行会浪费工作线程时间
+- 仍希望保存的工具结果消息保持原始调用顺序
+
+如果某个工具会修改共享状态，或后续工具依赖前面工具的结果，请勿设置过高的并发数。
+
+## 示例
+
+```ts
+import {
+  createAgent,
+  createGatewayAgentClient,
+  defineTool,
+} from "@phaseo/agent-sdk";
+
+const fetchDocs = defineTool({
+  id: "fetch-docs",
+  async execute(input: { slug: string }) {
+    return {
+      slug: input.slug,
+      summary: `Docs summary for ${input.slug}`,
+    };
+  },
+});
+
+const fetchStatus = defineTool({
+  id: "fetch-status",
+  async execute(input: { component: string }) {
+    return {
+      component: input.component,
+      status: "operational",
+    };
+  },
+});
+
+const fetchIncidents = defineTool({
+  id: "fetch-incidents",
+  async execute(input: { service: string }) {
+    return {
+      service: input.service,
+      openIncidents: 0,
+    };
+  },
+});
+
+const agent = createAgent({
+  id: "parallel-tool-agent",
+  model: "phaseo/free",
+  instructions:
+    "Use the available tools to gather context, then return one concise operational summary.",
+  tools: [fetchDocs, fetchStatus, fetchIncidents],
+  toolExecution: {
+    toolConcurrency: 3,
+  },
+});
+
+const result = await agent.run({
+  input:
+    "Fetch the presets docs, the gateway status component, and the async-jobs incident digest, then summarize the current state.",
+  client: createGatewayAgentClient({
+    clientOptions: {
+      apiKey: process.env.PHASEO_API_KEY!,
+    },
+  }),
+});
+```
+
+请参阅以下打包示例： `packages/sdk/agent-sdk-ts/examples/parallel-tool-agent.ts`.
+
+## 运行时保证
+
+- 本地工具可并发执行，数量不超过配置的 `toolConcurrency`
+- 每个工具仍会触发 `tool.started` 和 `tool.completed` 事件
+- 已保存的工具结果消息仍保持原始调用顺序
+- 工具阶段完成后仍会创建检查点
+- `timeoutMs` 超时仍分别应用于每个工具
+
+## 操作建议
+
+- 从较小的并发值开始，例如 `2` 或 `3`
+- 确保本地工具幂等且副作用较少
+- 设置 `timeoutMs`，避免一个依赖卡住并占用所有工作线程
+- 仅当应用确实需要恢复运行或远程协调时才添加 `store`
+
+## 验证
+
+启用此模式后：
+
+- 运行涵盖多工具轮次的智能体循环测试
+- 确认工作流仍按顺序生成工具结果消息
+- 确认操作日志仍包含预期的 `tool.started` 和 `tool.completed` 事件

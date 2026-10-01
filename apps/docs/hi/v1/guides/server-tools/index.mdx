@@ -1,0 +1,153 @@
+---
+icon: "server-cog"
+title: "सर्वर टूल"
+description: "अनुरोध के दौरान मॉडल को Phaseo द्वारा संचालित टूल इस्तेमाल करने दें।"
+---
+
+सर्वर टूल वे टूल हैं जिन्हें मॉडल अनुरोध के दौरान Phaseo आपके लिए चलाता है। मॉडल तय करता है कि उन्हें कब कॉल करना है; Phaseo सर्वर पर टूल चलाकर उसका परिणाम मॉडल के अगले चरण को देता है।
+
+जब मॉडल को वर्तमान समय, वेब संदर्भ, प्राप्त पेज का पाठ या दूसरे मॉडल की सलाह चाहिए और आप अपना टूल एक्ज़ीक्यूटर नहीं जोड़ना चाहते, तब सर्वर टूल उपयोग करें।
+
+<Note>
+सर्वर टूल बीटा में हैं। प्रदाता समर्थन बदलने के साथ अनुरोध प्रारूप और परिणाम डेटा भी बदल सकते हैं।
+</Note>
+
+## उपलब्ध टूल
+
+| टूल | प्रकार | उपयोग |
+| --- | --- | --- |
+| तारीख़ और समय | `phaseo:datetime` | अधिकतम 5 टाइमज़ोन में वर्तमान तारीख़ और समय |
+| वेब खोज | `phaseo:web_search` | अनुरोध के दौरान मॉडल द्वारा की गई वेब खोजें |
+| वेब फ़ेच | `phaseo:web_fetch` | दिए गए URL से पेज लाना और पाठ निकालना |
+| Advisor | `phaseo:advisor` | जनरेशन के दौरान दूसरे मॉडल से सलाह लेना |
+| सबएजेंट | `phaseo:subagent` | केंद्रित कार्य को worker model को सौंपना |
+| Fusion | `phaseo:fusion` | समानांतर विश्लेषण के बाद मॉडल द्वारा संश्लेषण |
+| मॉडल खोजें | `phaseo:search_models` | लाइव कैटलॉग में उपयुक्त मॉडल ढूँढना |
+| इमेज जनरेशन | `phaseo:image_generation` | मॉडल के टूल लूप से इमेज बनाना |
+| पैच लागू करें | `phaseo:apply_patch` | Responses API पर सत्यापित फ़ाइल पैच बनाना |
+
+## सर्वर टूल कैसे काम करते हैं
+
+1. `tools` array में एक या अधिक सर्वर टूल जोड़ें।
+2. मॉडल तय करता है कि उसे टूल चाहिए या नहीं और टूल कॉल जारी करता है।
+3. Phaseo सर्वर टूल कॉल को संभालता है, उसे चलाता है और परिणाम मॉडल को लौटाता है।
+4. मॉडल आगे बढ़ता है और अंतिम उत्तर लिखता है।
+
+सर्वर टूल को अपने function tools के साथ इस्तेमाल किया जा सकता है। Phaseo केवल server tools चलाता है; सामान्य `function` tool calls आपकी application संभालती है।
+
+## त्वरित शुरुआत
+
+```bash
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-5-nano",
+    "messages": [
+      { "role": "user", "content": "What are the latest AI policy updates this week?" }
+    ],
+    "tools": [
+      { "type": "phaseo:web_search" },
+      { "type": "phaseo:datetime", "parameters": { "timezones": ["Europe/London", "UTC"] } }
+    ]
+  }'
+```
+
+## फ़ंक्शन टूल के साथ उपयोग
+
+```json
+{
+  "model": "openai/gpt-5-nano",
+  "messages": [
+    { "role": "user", "content": "Find recent funding news and save the best item." }
+  ],
+  "tools": [
+    { "type": "phaseo:web_search", "parameters": { "max_results": 3 } },
+    {
+      "type": "function",
+      "function": {
+        "name": "save_research_item",
+        "description": "Save a selected research item",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "title": { "type": "string" },
+            "url": { "type": "string" }
+          },
+          "required": ["title", "url"]
+        }
+      }
+    }
+  ]
+}
+```
+
+मॉडल `phaseo:web_search` को कॉल करे, तो Phaseo वह कॉल अपने-आप चलाता है। `save_research_item` कॉल होने पर आपकी application को function call मिलता है और अगले अनुरोध में उसका परिणाम लौटाना होता है।
+
+## समर्थित endpoints
+
+सर्वर टूल इन endpoints पर समर्थित हैं:
+
+- `/v1/chat/completions`
+- `/v1/responses`
+- `/v1/messages`
+
+Streaming requests भी supported हैं। Gateway-managed server tools के लिए Phaseo upstream tool-call turn को materialize करके टूल चला सकता है, loop जारी रख सकता है और final response के लिए synthetic stream भेज सकता है।
+
+## उपयोग ट्रैकिंग
+
+Server-tool usage `usage.server_tool_use` में रिपोर्ट होता है:
+
+```json
+{
+  "usage": {
+    "input_tokens": 105,
+    "output_tokens": 250,
+    "server_tool_use": {
+      "datetime_requests": 1,
+      "web_search_requests": 2,
+      "web_search_results": 8,
+      "web_fetch_requests": 1,
+      "advisor_requests": 1,
+      "subagent_requests": 1,
+      "fusion_requests": 1,
+      "search_models_requests": 1,
+      "image_generation_requests": 1
+    }
+  }
+}
+```
+
+Model price cards में configure किए जाने पर pricing server-tool meters जैसे `server_tool_web_search_requests`, `server_tool_web_search_extra_results`, `server_tool_web_fetch_requests`, `server_tool_advisor_requests`, `server_tool_image_generation_requests`, `native_web_search_requests` और `native_web_fetch_requests` का भी उपयोग कर सकती है।
+
+## टूल पेज
+
+<Columns cols={2}>
+  <Card title="तारीख़ और समय" icon="clock" href="./datetime.mdx">
+    मॉडल को वर्तमान तारीख़ और समय दें।
+  </Card>
+  <Card title="वेब खोज" icon="search" href="./web-search.mdx">
+    मॉडल को नवीनतम जानकारी के लिए वेब खोजने दें।
+  </Card>
+  <Card title="वेब फ़ेच" icon="file-search" href="./web-fetch.mdx">
+    मॉडल को दिए गए URL प्राप्त करके पढ़ने दें।
+  </Card>
+  <Card title="Advisor" icon="message-square" href="./advisor.mdx">
+    एक मॉडल को जनरेशन के दौरान दूसरे मॉडल से सलाह लेने दें।
+  </Card>
+  <Card title="सबएजेंट" icon="cpu" href="./subagent.mdx">
+    मॉडल को केंद्रित काम worker model को सौंपने दें।
+  </Card>
+  <Card title="Fusion" icon="sparkles" href="./fusion.mdx">
+	समानांतर model analysis चलाएँ और निष्कर्षों का संश्लेषण करें।
+  </Card>
+	<Card title="मॉडल खोजें" icon="list-filter" href="./search-models.mdx">
+		मॉडल को लाइव Phaseo catalogue में उपयुक्त मॉडल खोजने दें।
+	</Card>
+  <Card title="इमेज जनरेशन" icon="image" href="./image-generation.mdx">
+    मॉडल को जवाब देते समय इमेज बनाने दें।
+  </Card>
+	<Card title="पैच लागू करें" icon="file-diff" href="./apply-patch.mdx">
+		Create, update या delete के लिए validated patch बनाएँ।
+	</Card>
+</Columns>

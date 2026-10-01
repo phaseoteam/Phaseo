@@ -1,0 +1,74 @@
+---
+title: "Présentation de l’API Gateway"
+sidebarTitle: "Présentation"
+description: "URL de base, authentification et familles de points de terminaison de Phaseo Gateway."
+icon: "map"
+---
+
+Utilisez cette page pour trouver le chemin d’API adapté avant d’ouvrir la référence d’un point de terminaison. Tous les points de terminaison Phaseo Gateway partagent la même URL de base et utilisent l’authentification Bearer.
+
+## Choisir un chemin
+
+| Pour | Commencez par |
+| --- | --- |
+| Envoyer votre première requête | [Guide de démarrage rapide](../quickstart.mdx) |
+| Générer du texte ou utiliser des outils | `POST /responses` |
+| Conserver une intégration OpenAI compatible existante | `POST /chat/completions` |
+| Parcourir les modèles et les fournisseurs | `GET /models` et `GET /providers` |
+| Créer de la musique ou gérer des fichiers | `POST /music/generations` et `POST /files` |
+
+## URL de base
+
+URL de base de production :
+
+```http
+https://api.phaseo.app/v1
+```
+
+Tous les chemins de points de terminaison de cette référence sont relatifs à cette URL de base `/v1`.
+
+## OpenAPI
+
+Utilisez le fichier OpenAPI pour importer l’API dans Postman, Hoppscotch ou un générateur de SDK.
+
+<Card
+  title="OpenAPI Phaseo Gateway"
+  icon="list-bullet"
+  href="https://github.com/phaseoteam/Phaseo/blob/main/apps/docs/openapi/v1/openapi.public.yaml"
+>
+  Afficher le fichier de spécification
+</Card>
+
+## Authentification
+
+La plupart des points de terminaison nécessitent une clé d’API Gateway standard. Les points de terminaison de gestion nécessitent une clé d’API de gestion créée dans le tableau de bord.
+
+```http
+Authorization: Bearer phaseo_v1_sk_<kid>_<secret>
+```
+
+En cas d’échec de l’authentification, l’API renvoie `401`.
+
+## Ressources de l’API
+
+| Ressource | Fonction |
+| --- | --- |
+| API Responses | Générer des réponses de modèle avec des outils, une sortie structurée et des entrées multimodales. |
+| Chat Completions | Conserver une intégration de chat compatible OpenAI existante. |
+| Messages Anthropic | Conserver une intégration Messages compatible avec Anthropic. |
+| Embeddings | Créer des représentations vectorielles pour la recherche, la récupération et la classification. |
+| Images | Générer ou modifier des images. |
+| Synthèse vocale | Générer de l’audio parlé à partir de texte. |
+| Reconnaissance vocale | Transcrire ou traduire de l’audio. |
+| Génération de musique | Créer des tâches de génération musicale et consulter leur état. |
+| Fichiers | Téléverser et récupérer les entrées des flux de travail d’API pris en charge. |
+| Modèles, fournisseurs et points de terminaison | Découvrir les ressources disponibles via Gateway. |
+| Tarifs, activité et générations | Estimer les coûts et examiner les résultats des requêtes. |
+| Clés d’API et espaces de travail | Gérer les accès programmatiques et les ressources de l’espace de travail. |
+
+## Facturation et limites de débit
+
+- Phaseo n’applique pas ses propres limites de débit. Elles sont imposées par les fournisseurs en amont.
+- Les requêtes payantes nécessitent un solde de portefeuille suffisant pour réussir la vérification préalable des crédits.
+- Les modèles gratuits avec `:free` ne nécessitent pas de crédits déposés.
+

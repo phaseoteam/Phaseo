@@ -1,0 +1,41 @@
+---
+icon: "files"
+title: "Dateien"
+description: "Rufe Dateimetadaten ab und lade Dateiinhalt mit dem Go-SDK herunter."
+---
+
+**Methoden**: `client.ListFiles()`, `client.RetrieveFile()`, `client.RetrieveFileContent()`.
+
+```go
+import (
+  "fmt"
+  "context"
+  phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v2"
+)
+
+client := phaseo.New(apiKey, "https://api.phaseo.app/v1")
+
+file, err := client.RetrieveFile(context.Background(), "file_123")
+if err != nil {
+  panic(err)
+}
+
+content, err := client.RetrieveFileContent(context.Background(), "file_123")
+if err != nil {
+  panic(err)
+}
+
+fmt.Println(file)
+fmt.Println(string(content))
+```
+
+<Note>
+`ListFiles()` ist im Wrapper verfügbar, aber `GET /files` gibt derzeit `file_list_not_supported_with_shared_gateway_key` zurück,
+wenn du den gemeinsam genutzten Gateway-Schlüssel verwendest. Speichere die IDs hochgeladener Dateien und rufe sie direkt ab.
+</Note>
+
+<Note>
+Der Go-Wrapper bietet noch keine eigene Multipart-Upload-Hilfe für `POST /files`. Verwende direkt REST oder den generierten Client,
+wenn du den Upload-Ablauf testen möchtest.
+</Note>
+

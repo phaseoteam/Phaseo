@@ -1,0 +1,117 @@
+---
+title: "Eine Python-Gateway-CLI erstellen"
+icon: "terminal"
+description: "Nutze das Python-Schnellstartbeispiel als vollständige Anleitung für eine Python-basierte CLI oder Backend-Integration."
+---
+
+Diese Seite ist ein guter Ausgangspunkt, wenn deine erste echte Phaseo-Integration in Python entsteht und du eine CLI, einen Worker oder einen Backend-Dienst entwickeln möchtest.
+
+**Ziel:** Phaseo-Steuerungs- und Generierungsrouten über eine kleine Python-Kommandozeilenanwendung ausführen.
+
+**Ergebnis:** Eine CLI mit wenigen Abhängigkeiten, die du für einen Worker, ein Skript oder eine Backend-Integration anpassen kannst.
+
+<Prompt
+  description="Erstelle eine **Python-Gateway-CLI** für Phaseo-Routen."
+  icon="terminal-square"
+  actions={["copy", "cursor"]}
+>
+{`Du entwickelst ein Python-Kommandozeilenprogramm oder eine serverseitige Integration für Phaseo Gateway.
+
+Erstelle eine kleine Python-Anwendung, die:
+- PHASEO_API_KEY aus der Umgebung liest
+- einen Schnelltestmodus für die Kontrollroute unterstützt
+- einen Befehl zur Textgenerierung unterstützt
+- mit möglichst wenigen Abhängigkeiten auskommt
+
+Anforderungen:
+- Verwende nach Möglichkeit die Python-Standardbibliothek, sofern nichts dagegen spricht.
+- Gestalte die Anfrageinhalte nachvollziehbar.
+- Gib klare Erfolgs- und Fehlermeldungen aus.
+- Ergänze ein oder zwei nützliche Befehle statt eines umfangreichen, allgemein gehaltenen Kommandozeilenprogramms.
+- Füge eine kurze README-Datei mit Beispielen hinzu.
+
+Ergebnisse:
+- Python-Anwendungscode
+- Einfache Befehle zur Verwendung
+- Eine .env.example-Datei oder eine gleichwertige Dokumentation der Umgebungsvariablen
+
+Überprüfung:
+- Führe nach Möglichkeit den Schnelltest der Route aus.
+- Führe nach Möglichkeit eine erfolgreiche Textgenerierung aus.
+- Halte genau fest, was du überprüft hast und was noch ungeprüft ist.`}
+</Prompt>
+
+## Beispielprojekt
+
+- GitHub: [examples/gateway-python-quickstart](https://github.com/phaseoteam/Phaseo/tree/main/examples/gateway-python-quickstart)
+- Lokaler Repository-Pfad: `examples/gateway-python-quickstart`
+
+## Was diese Anwendung macht
+
+- unterstützt Steuerungsrouten wie:
+  - `GET /v1/health`
+  - `GET /v1/models`
+  - `GET /v1/providers`
+- unterstützt Generierungsrouten wie:
+  - `POST /v1/responses`
+  - `POST /v1/chat/completions`
+  - `POST /v1/embeddings`
+  - sowie weitere Endpunkte
+
+## Warum dieses Beispiel hilfreich ist
+
+Es bietet:
+
+- eine Python-Referenz ohne Abhängigkeiten von Drittanbietern
+- explizite Anfrageinhalte und Antwortverarbeitung
+- ein praktisches Muster für Worker, Skripte und interne Tools
+
+## Voraussetzungen
+
+- Python 3
+- einen Phaseo-API-Schlüssel
+
+## Beispiel ausführen
+
+```bash
+cd examples/gateway-python-quickstart
+cp .env.example .env.local
+```
+
+Lege Folgendes fest:
+
+- `PHASEO_API_KEY`
+
+Probiere anschließend:
+
+```bash
+python quickstart.py smoke
+python quickstart.py responses --prompt "Return exactly: integration_ok"
+python quickstart.py --help
+```
+
+## Ergebnis prüfen
+
+- Der Schnelltest bestätigt, dass die API erreichbar ist.
+- Der Responses-Befehl gibt `integration_ok` aus.
+- `--help` listet die verfügbaren Befehle auf, ohne eine Anfrage zu senden.
+- Authentifizierungs- und API-Fehler werden im Terminal verständlich ausgegeben.
+
+## Was du im Code ansehen solltest
+
+- wie die Umgebungsvariablen geladen werden
+- wie die CLI die Befehle verteilt
+- wie die verschiedenen Anfrageinhalte erstellt werden
+- wie asynchrone Video- und Musikrouten getrennt von einmaligen Textrouten behandelt werden
+
+## Das Beispiel anpassen
+
+- entferne die Endpunkte, die dein Dienst nicht benötigt
+- verwende eine gemeinsame Hilfsfunktion für Anfragen, statt Header überall zu duplizieren
+- wechsle später zum Python-SDK, wenn du einen Client mit höherer Abstraktion möchtest
+
+## Verwandte Anleitungen
+
+- [Einstiegsprompts für Mini-Apps](./mini-app-starter-prompts.mdx)
+- [Strukturiertes JSON mit Python ausgeben](./sdk-python-presets-and-json.mdx)
+- [Beispiele](../guides/examples.mdx)

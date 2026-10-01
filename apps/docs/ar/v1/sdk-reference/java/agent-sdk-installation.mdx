@@ -1,0 +1,29 @@
+---
+title: "تثبيت Java Agent SDK (قيد التطوير)"
+description: "ابنِ Java Agent SDK قيد التطوير من المصدر."
+---
+
+<Note type="warning">
+  لم تُنشر Java Agent SDK بعد في Maven Central. استخدم خطوات البناء من المصدر للتقييم فقط.
+</Note>
+
+## المتطلبات
+
+- Java 17 أو أحدث
+- Maven
+
+## البناء من المصدر
+
+```bash
+git clone https://github.com/phaseoteam/Phaseo.git
+cd Phaseo
+mvn -f packages/sdk/agent-sdk-java/pom.xml package
+```
+
+اضبط `PHASEO_API_KEY` في بيئة التطبيق قبل تشغيل المثال.
+
+## التالي
+
+- [نظرة عامة](./agent-sdk-overview.mdx)
+- [الاستخدام](./agent-sdk.mdx)
+

@@ -184,7 +184,7 @@ function GuardrailSummary({
 	if (items.length === 0) {
 		return (
 			<div className={`${className} text-[11px] text-muted-foreground`}>
-				No guardrails
+				{t("keys.noGuardrails")}
 			</div>
 		);
 	}
@@ -1048,7 +1048,7 @@ export default function KeysPanel({ teamsWithKeys }: any) {
 					))}
 					{selectedKeys.length > 8 ? (
 						<div className="text-muted-foreground">
-							+{selectedKeys.length - 8} more
+							+{t("settingsPageCopy.moreKeys" as never, { count: selectedKeys.length - 8 } as never)}
 						</div>
 					) : null}
 				</div>

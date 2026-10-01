@@ -1,0 +1,25 @@
+---
+icon: "layers"
+title: "Éléments du flux"
+description: "Consommez les événements de texte, de raisonnement, d’outil et d’élément fournisseur des agents Ruby."
+---
+
+Le résultat du flux expose des consommateurs réutilisables pour le texte et les éléments du fournisseur.
+
+```ruby
+stream = agent.stream(input: prompt, client: client)
+
+stream.item_stream.each do |item|
+  render_item(item)
+end
+
+result = stream.result
+```
+
+Utilisez `full_stream` si l’interface a également besoin des fragments de raisonnement, de la progression des outils, des points de contrôle d’approbation ou des événements du cycle de vie.
+
+<Note>
+Les valeurs d’élément Ruby sont des hashes génériques, et non une union fermée d’éléments typés. Validez les champs utilisés par votre interface et prévoyez un traitement de secours pour les éléments inconnus et les futurs événements du fournisseur.
+</Note>
+
+Ruby consomme le flux du fournisseur de façon synchrone et permet de relire la séquence collectée. Il ne crée pas à lui seul un service d’envoi en arrière-plan.

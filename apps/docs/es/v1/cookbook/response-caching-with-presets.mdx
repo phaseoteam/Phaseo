@@ -1,0 +1,92 @@
+---
+title: "Usar el almacenamiento en caché de respuestas con presets"
+icon: "database"
+description: "Combina los valores predeterminados de un preset con el almacenamiento en caché determinista para que las solicitudes repetidas respondan rápido y de forma predecible."
+---
+
+Usa esta receta si tienes solicitudes repetidas con prompts estables y quieres reducir la latencia y el costo de inferencia repetida.
+
+## 1. Empieza con un preset, no con solicitudes aisladas
+
+Crea un preset cuando deban mantenerse estables estos elementos:
+
+- modelo de destino
+- preferencias de proveedor
+- temperatura y otros parámetros de generación
+- configuración de razonamiento
+- prompt del sistema
+
+Así la clave de caché permanece estable porque la solicitud no cambia.
+
+## 2. Activa el almacenamiento en caché de respuestas en el preset
+
+Configura:
+
+- `response_caching.enabled = true`
+- un valor práctico para `ttl_seconds`
+
+Valores predeterminados recomendados:
+
+- TTL corto para prompts informativos que cambian rápidamente
+- TTL más largo para salidas estructuradas estables
+
+## 3. Mantén la solicitud determinista
+
+El almacenamiento en caché funciona mejor si evitas cambios innecesarios en las solicitudes.
+
+Evita cambiar:
+
+- la redacción del prompt del sistema
+- la temperatura
+- las anulaciones de proveedor
+- la configuración de razonamiento
+- las listas de herramientas
+
+Si una persona que llama cambia estos valores constantemente, asígnala a otro preset en lugar de impedir que los demás reutilicen la caché.
+
+## 4. Comprueba el comportamiento de la caché en los detalles de la solicitud
+
+Los detalles de las solicitudes que pasan por la caché deben mostrar información sobre ella.
+
+Comprueba:
+
+- acierto o fallo de caché
+- comportamiento del TTL
+- contexto del proveedor cuando se sirve una respuesta almacenada
+
+## 5. Combina el almacenamiento en caché y el enrutamiento de forma intencional
+
+Patrones recomendados:
+
+1. usa un preset para salidas estructuradas deterministas con la caché activada
+2. usa otro preset para solicitudes exploratorias o con mayor temperatura y la caché desactivada
+
+Así la caché conserva información útil y no mezcla tráfico incompatible.
+
+## 6. Investiga los fallos antes de ampliar el TTL
+
+Si esperas aciertos, pero sigues obteniendo fallos, compara:
+
+- texto del prompt
+- ID del modelo
+- opciones del proveedor
+- formato de respuesta
+- herramientas y selección de herramientas
+- slug y configuración del preset
+
+Ampliar el TTL no corregirá una discrepancia de huella.
+
+## 7. Cuándo evitar el almacenamiento en caché
+
+No lo actives de forma predeterminada para:
+
+- prompts que dependen de información externa en tiempo real
+- respuestas específicas de una persona cuyo contexto cambia con rapidez
+- solicitudes con resultados de herramientas volátiles
+- generaciones muy estocásticas cuyo replay exacto no sea conveniente
+
+## Relacionado
+
+- [Implementar presets y depurar el enrutamiento](./preset-rollout-and-routing-debug.mdx)
+- [Ejemplos](../guides/examples.mdx)
+- [SDK de TypeScript](../sdk-reference/typescript/overview.mdx)

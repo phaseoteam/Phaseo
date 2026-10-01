@@ -1,0 +1,32 @@
+---
+icon: "music"
+title: "TTS (تحويل النص إلى كلام)"
+description: "استدعِ `/audio/speech` باستخدام SDK C#."
+---
+
+**الطريقة**: `client.CreateSpeech(...)`
+
+### مثال
+```csharp
+using PhaseoSdk;
+
+var client = new Phaseo(apiKey);
+var response = await client.CreateSpeech(new Dictionary<string, object>
+{
+    ["model"] = "openai/gpt-4o-mini-tts",
+    ["input"] = "Hello world",
+    ["voice"] = "alloy",
+    ["format"] = "mp3"
+});
+```
+
+### المعلمات الرئيسية
+- `model` (مطلوب): معرّف نموذج يدعم TTS.
+- `input` (مطلوب): النص المراد تحويله إلى كلام.
+- `voice`: إعداد صوت مسبق (يعتمد على النموذج، مثل `alloy`).
+- `format`: `mp3` و`wav` و`flac` وغيرها.
+- `speed`: معامل سرعة التشغيل (عادةً من 0.25 إلى 4).
+
+### القيمة المُعادة
+بيانات صوتية ثنائية
+

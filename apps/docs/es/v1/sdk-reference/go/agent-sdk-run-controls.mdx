@@ -1,0 +1,41 @@
+---
+icon: "rotate"
+title: "Salidas y reintentos"
+description: "Valida las salidas finales, reintenta solicitudes al modelo y consulta ejecuciones completadas de Go."
+---
+
+Valida la salida para mantener el valor devuelto por el agente dentro del contrato que espera tu aplicación. Los reintentos del modelo se aplican a solicitudes fallidas; los reintentos de herramientas deben seguir siendo explícitos en su implementación y usarse solo cuando sean seguros.
+
+## Configurar los reintentos del modelo
+
+```go
+agent := phaseoagent.CreateAgent(phaseoagent.AgentDefinition{
+  ID: "research-agent",
+  Model: "openai/gpt-5.4-nano",
+  ModelRetry: phaseoagent.ModelRetryConfig{
+    MaxRetries: 3,
+    BaseDelay:  500 * time.Millisecond,
+    MaxDelay:   4 * time.Second,
+  },
+})
+```
+
+El registro de ejecución conserva el número de intentos del modelo para cada paso. Al reintentar, no se descartan los resultados de herramientas que ya se hayan completado.
+
+## Validar el resultado final
+
+Configura `OutputSchema` en `AgentDefinition` cuando el código posterior necesite un resultado estructurado. La validación se ejecuta antes de marcar el resultado como completo, por lo que una salida no válida falla en el límite del agente y no más tarde dentro de la aplicación.
+
+## Consultar el resultado
+
+```go
+result, err := agent.Run(ctx, phaseoagent.RunOptions{Input: prompt, Client: client})
+if err != nil { return err }
+
+fmt.Println(result.Output)
+fmt.Println(result.Run.Status)
+fmt.Println(result.Usage.TotalTokens)
+fmt.Println(result.Usage.Cost)
+```
+
+Usa las [condiciones de detención](./agent-sdk-stop-conditions.mdx) para aplicar presupuestos y límites estrictos, y [errores y solución de problemas](./agent-sdk-observability.mdx) para gestionar los fallos.

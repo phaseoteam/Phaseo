@@ -1,0 +1,292 @@
+---
+title: "Llamadas a herramientas"
+description: "Usa de forma segura las llamadas a funciones dirigidas por el modelo a través del Gateway."
+icon: "wrench"
+---
+
+Las llamadas a herramientas permiten que los modelos soliciten acciones estructuradas (por ejemplo, consultas a bases de datos, comprobaciones meteorológicas o llamadas a API internas) en lugar de adivinar respuestas.
+
+El Gateway admite cargas de herramientas en estos endpoints de texto:
+
+- `/v1/chat/completions` (`tools` y `tool_calls` al estilo de OpenAI)
+- `/v1/responses` (elementos de salida `function_call` al estilo de Respuestas)
+- `/v1/messages` (bloques `tool_use` al estilo de Anthropic)
+
+## Solicitud
+
+```bash
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-5-nano",
+    "messages": [
+      { "role": "user", "content": "What is the weather in London?" }
+    ],
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "get_weather",
+          "description": "Get current weather by city",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "city": { "type": "string" }
+            },
+            "required": ["city"]
+          }
+        }
+      }
+    ],
+    "tool_choice": {
+      "type": "function",
+      "function": { "name": "get_weather" }
+    },
+    "stream": false
+  }'
+```
+
+## Respuesta
+
+```json
+{
+  "id": "chatcmpl_...",
+  "object": "chat.completion",
+  "choices": [
+    {
+      "index": 0,
+      "finish_reason": "tool_calls",
+      "message": {
+        "role": "assistant",
+        "content": null,
+        "tool_calls": [
+          {
+            "id": "call_123",
+            "type": "function",
+            "function": {
+              "name": "get_weather",
+              "arguments": "{\"city\":\"London\"}"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}
+```
+
+Ejecuta tu herramienta y, en la siguiente solicitud, envía el resultado para que el asistente pueda completar la respuesta.
+
+## Herramientas de servidor integradas
+
+El gateway ofrece actualmente estas herramientas de servidor integradas:
+
+- `gateway:datetime`
+- `phaseo:web_search`
+- `phaseo:web_fetch`
+- `phaseo:advisor`
+- `phaseo:image_generation`
+- `phaseo:apply_patch`
+
+Esta herramienta se ejecuta en el gateway, sin necesidad de un ejecutor en el cliente. El gateway la convierte en una llamada a herramienta o función upstream, la ejecuta y devuelve el resultado al ciclo del modelo.
+
+Para ver la configuración completa y los detalles de uso y precios, consulta [Herramientas del servidor](./server-tools/index.mdx).
+
+Formato de solicitud compatible:
+
+```json
+{
+  "tools": [
+    {
+      "type": "gateway:datetime",
+      "parameters": {
+        "timezones": ["Europe/London", "UTC"]
+      }
+    }
+  ]
+}
+```
+
+Notas:
+
+- `parameters.timezones` es opcional y permite solicitar hasta 5 zonas horarias IANA válidas en una llamada.
+- El resultado contiene un arreglo `timezones` con la fecha y hora ISO y la zona horaria resuelta de cada zona solicitada.
+- El uso incluye `usage.server_tool_use.datetime_requests`.
+- Se recomienda `tool_choice: "auto"` para que el modelo decida cuándo llamarla.
+
+### Ejemplo de búsqueda web
+
+```json
+{
+  "tools": [
+    {
+      "type": "phaseo:web_search",
+      "parameters": {
+        "engine": "exa",
+        "max_results": 5,
+        "max_total_results": 15,
+        "search_context_size": "medium",
+        "max_characters": 2048,
+        "allowed_domains": ["arxiv.org", "nature.com"],
+        "include_highlights": true
+      }
+    }
+  ]
+}
+```
+
+Notas:
+
+- El modelo proporciona la consulta de búsqueda al llamar a la herramienta.
+- `engine: "auto"` se resuelve en la búsqueda gestionada de Exa. `engine: "exa"`, `engine: "parallel"` y `engine: "firecrawl"` ejecutan la búsqueda gestionada del gateway cuando está configurada la clave del proveedor correspondiente.
+- `engine: "native"` en `phaseo:web_search` se convierte en la herramienta de búsqueda web nativa del proveedor para esa interfaz de solicitud, como `web_search_preview` de OpenAI o `web_search_20250305` de Anthropic.
+- `max_results` limita cada búsqueda; `max_total_results` limita los resultados acumulados durante el ciclo de herramientas del servidor.
+- La búsqueda gestionada admite `allowed_domains`/`excluded_domains`, `search_context_size` y `max_characters` cuando el motor seleccionado ofrece esos controles.
+- El uso incluye `usage.server_tool_use.web_search_requests`, `usage.server_tool_use.web_search_results` y `usage.server_tool_use.web_search_extra_results`.
+- La búsqueda gestionada de Exa puede facturarse con los medidores `server_tool_web_search_requests` y `server_tool_web_search_extra_results`.
+
+### Ejemplo de obtención web
+
+```json
+{
+  "tools": [
+    {
+      "type": "phaseo:web_fetch",
+      "parameters": {
+        "engine": "direct",
+        "max_chars": 12000,
+        "allowed_domains": ["docs.example.com"],
+        "blocked_domains": ["internal.example.com"]
+      }
+    }
+  ]
+}
+```
+
+Notas:
+
+- El modelo proporciona la `url` de destino al llamar a la herramienta.
+- Solo se admiten URL HTTP(S) y tipos de contenido basados en texto.
+- `engine: "auto"` usa la obtención nativa en la interfaz Anthropic Messages; en las demás, usa Exa si `EXA_API_KEY` está configurada y, si no, la obtención HTTP directa del gateway.
+- `engine: "direct"` usa la obtención HTTP directa del gateway. `engine: "exa"` usa la extracción de contenido de Exa cuando `EXA_API_KEY` está configurada.
+- `engine: "parallel"` usa Parallel Extract cuando está configurada `PARALLEL_API_KEY`. `engine: "firecrawl"` usa Firecrawl Scrape cuando está configurada `FIRECRAWL_API_KEY`.
+- En la interfaz Anthropic Messages, `engine: "native"` se convierte en la herramienta nativa de Anthropic `web_fetch_20260209`. En las demás interfaces, usa `engine: "direct"` o un motor de extracción gestionado.
+- Si se omite `max_chars`, se admite `max_content_tokens` como alias para limitar el tamaño de la obtención en tokens.
+- `allowed_domains` y `blocked_domains` limitan las URL que se pueden obtener.
+- El contenido HTML se reduce a texto plano de longitud limitada antes de devolverlo al ciclo del modelo.
+- El uso incluye `usage.server_tool_use.web_fetch_requests`.
+- La obtención gestionada puede facturarse con el medidor `server_tool_web_fetch_requests`. El uso de obtención o búsqueda nativa del proveedor se cobra con `native_web_fetch_requests` y `native_web_search_requests`; las tarjetas de precios del modelo pueden sustituir los valores predeterminados del proveedor.
+
+Ejemplo de obtención nativa de Anthropic:
+
+```json
+{
+  "tools": [
+    {
+      "type": "phaseo:web_fetch",
+      "parameters": {
+        "engine": "native",
+        "max_content_tokens": 9000,
+        "allowed_domains": ["docs.example.com"]
+      }
+    }
+  ],
+  "tool_choice": "phaseo:web_fetch"
+}
+```
+
+### Ejemplo de Advisor
+
+```json
+{
+  "tools": [
+    {
+      "type": "phaseo:advisor",
+      "parameters": {
+        "name": "reviewer",
+        "model": "claude-opus-5",
+        "instructions": "Review plans for correctness, missing edge cases, and implementation risk.",
+        "forward_transcript": true,
+        "max_uses": 2,
+        "max_completion_tokens": 1400,
+        "temperature": 0.2
+      }
+    }
+  ],
+  "tool_choice": "phaseo:advisor"
+}
+```
+
+Notas:
+
+- Advisor lo gestiona el gateway y funciona con los modelos de texto compatibles. El modelo que llama recibe una herramienta `phaseo_advisor` o una variante con nombre, como `phaseo_advisor_reviewer`, y el gateway ejecuta la solicitud a Advisor.
+- `parameters.name` es opcional. Usa nombres únicos para exponer varios asesores; pueden contener letras, números, espacios, guiones bajos y guiones.
+- `parameters.model` fija el modelo Advisor. Si se omite, la llamada a la herramienta puede incluir `model`; de lo contrario, el gateway usa el modelo de la solicitud externa.
+- `parameters.forward_transcript` es `false` de forma predeterminada. Cámbialo a `true` si Advisor debe recibir la transcripción actual de la conversación.
+- Normalmente, el modelo proporciona el `prompt` de Advisor al llamar a la herramienta. Si `forward_transcript` es `true`, el gateway puede ejecutar una llamada a Advisor que solo incluya la transcripción cuando no se proporcione un prompt. `max_tokens` se admite como alias heredado de `max_completion_tokens`.
+- El uso incluye `usage.server_tool_use.advisor_requests`.
+
+### Ejemplo de generación de imágenes
+
+```json
+{
+  "tools": [
+    {
+      "type": "phaseo:image_generation",
+      "parameters": {
+        "model": "openai/gpt-image-2",
+        "quality": "high",
+        "aspect_ratio": "16:9",
+        "output_format": "png"
+      }
+    }
+  ]
+}
+```
+
+Notas:
+
+- El modelo proporciona el `prompt` de la imagen al llamar a la herramienta. También se acepta `description` como alias de prompt.
+- `parameters.model` fija el modelo de imagen. Si se omite, la llamada puede incluir `model`; de lo contrario, Phaseo usa el modelo de imagen predeterminado.
+- El resultado de la herramienta contiene `imageUrl` o datos de imagen en base64, según la respuesta del proveedor.
+- El uso incluye `usage.server_tool_use.image_generation_requests`; los tokens del modelo de imagen se suman a la solicitud principal.
+
+### Ejemplo de aplicación de parches
+
+```json
+{
+  "tools": [
+    {
+      "type": "phaseo:apply_patch"
+    }
+  ],
+  "tool_choice": "auto"
+}
+```
+
+Notas:
+
+- La Responses API admite `phaseo:apply_patch`.
+- Phaseo valida las operaciones del parche y las devuelve en el resultado de la herramienta. Tu cliente decide si lo aplica o lo rechaza.
+- Los tipos de operación admitidos son `create_file`, `update_file` y `delete_file`.
+- El uso incluye `usage.server_tool_use.apply_patch_requests`.
+
+## Comportamiento del streaming
+
+Las solicitudes con llamadas a herramientas también pueden usar `stream: true`.
+
+Para las herramientas del servidor gestionadas por el gateway, el gateway puede:
+
+- materializar el turno de llamada a la herramienta upstream
+- ejecutar la herramienta del servidor
+- continuar el ciclo del modelo
+- volver a emitir un stream sintético al cliente
+
+Así se mantiene un contrato compatible con streaming en el cliente, aunque el gateway ejecute parte del ciclo de herramientas.
+
+## Siguientes guías
+
+1. [Patrones de llamadas a herramientas](./tool-calling-patterns.mdx)
+2. [Seguridad y validación de llamadas a herramientas](./tool-calling-safety.mdx)
+3. [Salidas estructuradas](./structured-outputs.mdx)

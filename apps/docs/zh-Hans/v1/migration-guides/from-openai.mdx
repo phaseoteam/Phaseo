@@ -1,0 +1,110 @@
+---
+title: "从 OpenAI SDK 迁移"
+sidebarTitle: "OpenAI SDK"
+description: "通过更改客户端配置、验证模型 ID 并测试应用使用的工作流，将现有 OpenAI SDK 集成迁移到 Phaseo。"
+icon: "/icons/brands/openai.svg"
+---
+
+使用本指南可将现有 OpenAI SDK 集成迁移到 Phaseo，无需重写应用的其他部分。先更改基础 URL 和 API 密钥，保持请求内容不变，然后在切换生产流量前验证每个模型和端点。
+
+## 变更内容
+
+| 设置项 | 之前 | 之后 |
+| --- | --- | --- |
+| 基础 URL | OpenAI 默认值 | `https://api.phaseo.app/v1` |
+| API 密钥 | OpenAI 密钥 | `PHASEO_API_KEY` |
+| 模型 | OpenAI 模型名称 | `GET /v1/models` 返回的模型 ID |
+| 请求代码 | 现有 SDK 调用 | 通常无需更改 |
+
+<Steps>
+<Step title="创建 Phaseo API 密钥">
+
+在 [Gateway 密钥](https://phaseo.app/gateway/keys) 中创建密钥，然后将其添加到运行应用的每个环境。
+
+```bash
+PHASEO_API_KEY=phaseo_v1_sk_...
+```
+
+</Step>
+
+<Step title="将客户端指向 Phaseo">
+
+保留 OpenAI SDK，首先只更改凭据和基础 URL。
+
+<CodeGroup>
+```typescript TypeScript
+import OpenAI from "openai";
+
+const client = new OpenAI({
+  apiKey: process.env.PHASEO_API_KEY,
+  baseURL: "https://api.phaseo.app/v1",
+});
+
+const response = await client.chat.completions.create({
+  model: "openai/gpt-4.1-mini",
+  messages: [{ role: "user", content: "Reply with: migration ready" }],
+});
+```
+
+```python Python
+import os
+from openai import OpenAI
+
+client = OpenAI(
+    api_key=os.environ["PHASEO_API_KEY"],
+    base_url="https://api.phaseo.app/v1",
+)
+
+response = client.chat.completions.create(
+    model="openai/gpt-4.1-mini",
+    messages=[{"role": "user", "content": "Reply with: migration ready"}],
+)
+```
+
+```bash cURL
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-4.1-mini",
+    "messages": [{"role": "user", "content": "Reply with: migration ready"}]
+  }'
+```
+</CodeGroup>
+
+</Step>
+
+<Step title="验证模型 ID 和端点覆盖情况">
+
+请列出 Phaseo 当前可用的模型，不要假设之前的所有别名都保持不变。
+
+```bash
+curl https://api.phaseo.app/v1/models \
+  -H "Authorization: Bearer $PHASEO_API_KEY"
+```
+
+检查依赖的所有生产工作流，包括流式传输、工具、结构化输出、图像、音频、文件和批处理。请通过 [API 参考](../api-reference/introduction.mdx) 确认对应端点。
+
+</Step>
+
+<Step title="测试并逐步上线">
+
+在旧配置和新配置上运行相同的代表性提示词。在逐步切换流量前，比较输出格式、延迟、token 用量、错误和成本。
+
+</Step>
+</Steps>
+
+## 迁移检查清单
+
+- 已在开发、预发布和生产环境配置 Phaseo 密钥。
+- 客户端基础 URL 为 `https://api.phaseo.app/v1`。
+- 所有生产模型 ID 均出现在 `GET /v1/models` 中。
+- 流式和非流式请求均通过预发布环境验证。
+- 如果应用使用工具调用和结构化输出，它们均通过验证。
+- 回滚仍只需更改配置中的密钥和端点。
+
+## 后续步骤
+
+- [路由与回退](../guides/routing-and-fallbacks.mdx)
+- [模型](../exploring/models.mdx)
+- [错误处理](../developers/error-handling.mdx)

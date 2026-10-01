@@ -1,20 +1,21 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { ArrowRight } from "lucide-react";
 import Link from "next/link";
-import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { SubscriptionPlanSummary } from "@/lib/fetchers/subscription-plans/types";
 import { Logo } from "@/components/Logo";
+import type { SubscriptionPlansMessages } from "@/i18n/subscription-plans";
 
 type Props = {
 	plan: SubscriptionPlanSummary;
+	messages: Pick<SubscriptionPlansMessages["detail"], "unknownProvider" | "goToDetails">;
 };
 
-export default function SubscriptionPlanCard({ plan }: Props) {
+export default function SubscriptionPlanCard({ plan, messages }: Props) {
 	const id = plan.plan_id;
 	const name = plan.name;
-	const providerName = plan.organisation?.name ?? "Unknown Provider";
+	const providerName = plan.organisation?.name ?? messages.unknownProvider;
 	const providerId = plan.organisation_id;
 
 	if (!providerId) {
@@ -78,7 +79,7 @@ export default function SubscriptionPlanCard({ plan }: Props) {
 					>
 						<Link
 							href={`/subscription-plans/${id}`}
-							aria-label={`Go to ${name} details`}
+							aria-label={messages.goToDetails.replace("{name}", name)}
 							tabIndex={-1}
 						>
 							<ArrowRight className="w-5 h-5 transition-colors group-hover:text-primary" />

@@ -1,0 +1,36 @@
+---
+icon: "building-2"
+title: "組織を編集"
+description: "Phaseoのデータセットで組織のレコードを更新します。"
+---
+
+組織データは `packages/data/catalog/src/data/organisations` 以下のJSONファイルにあります。
+
+## 1. 組織を探す
+
+各組織は1つのJSONファイルで管理されます。例:
+
+`packages/data/catalog/src/data/organisations/openai.json`
+
+## 2. 変更する
+
+よくある更新内容:
+
+- 名前、説明、ウェブサイト
+- 国コードやメタデータ項目
+- モデルやプロバイダーとの関連リンク
+
+近くのファイルと同じ形式、フィールド順序を保ってください。
+
+## 3. データを検証
+
+PRを作成する前に、データ検証スクリプトを実行してください:
+
+```bash
+pnpm validate:data
+```
+
+## 4. PRを作成
+
+事実に関する変更には、情報源や参考資料を記載してください。
+

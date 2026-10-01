@@ -1,0 +1,117 @@
+---
+title: "Migrar desde LLM Gateway"
+sidebarTitle: "LLM Gateway"
+description: "Migra de LLMGateway a Phaseo Gateway con un cambio de endpoint compatible con OpenAI, verificación de modelos y validación gradual."
+icon: "/icons/brands/llmgateway.svg"
+---
+
+Si tu aplicación ya usa LLM Gateway mediante un cliente compatible con OpenAI, normalmente puedes conservar las solicitudes y empezar sustituyendo únicamente el límite del gateway.
+
+## Qué cambia
+
+| Configuración | Antes | Después |
+| --- | --- | --- |
+| URL base | `https://api.llmgateway.io/v1` | `https://api.phaseo.app/v1` |
+| Clave de API | `LLM_GATEWAY_API_KEY` | `PHASEO_API_KEY` |
+| Alias de modelos | Alias actuales del gateway | Verifícalos con `GET /v1/models` o normalízalos en un único límite |
+| Contenido de la solicitud | Solicitud compatible con OpenAI actual | Consérvalo sin cambios en la primera fase |
+
+## Antes de empezar
+
+- La configuración actual del endpoint y la clave de API de LLM Gateway.
+- `PHASEO_API_KEY` en los entornos local, staging y producción.
+- Una muestra de referencia de calidad de respuesta, latencia y tasa de errores.
+
+## 1) Inventaría los puntos de integración
+
+Identifica los archivos exactos que crean y configuran el cliente de LLM Gateway.
+
+- Busca dónde se usan las variables de entorno `LLM_GATEWAY_*`.
+- Localiza todas las referencias a la URL base en la configuración de ejecución.
+- Registra los ID de modelos activos y sus cadenas de alternativas.
+- Anota los valores predeterminados de prompts compartidos, la lógica de permitir o bloquear proveedores y los preajustes de parámetros que deberían trasladarse a los preajustes de Gateway.
+
+## 2) Cambia el endpoint y las credenciales
+
+Primero conserva el contenido de las solicitudes. Empieza cambiando únicamente el endpoint y la clave para reducir el riesgo.
+
+<CodeGroup>
+```typescript TypeScript
+// Before
+import OpenAI from "openai";
+
+const before = new OpenAI({
+  apiKey: process.env.LLM_GATEWAY_API_KEY,
+  baseURL: "https://api.llmgateway.io/v1",
+});
+```
+
+```typescript TypeScript
+// After
+import OpenAI from "openai";
+
+const after = new OpenAI({
+  apiKey: process.env.PHASEO_API_KEY,
+  baseURL: "https://api.phaseo.app/v1",
+});
+```
+
+```bash cURL
+curl -s "https://api.phaseo.app/v1/chat/completions" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-4.1-mini",
+    "messages": [{"role":"user","content":"Hello"}]
+  }'
+```
+</CodeGroup>
+
+## 3) Valida la compatibilidad de los modelos
+
+Consulta el catálogo de modelos de Phaseo y verifica cada modelo utilizado en producción.
+
+Si la configuración actual usa alias sin prefijo, como `gpt-4o`, normalízalos en un único límite en lugar de cambiarlos en cada cliente.
+
+Si la capa del gateway también centraliza los valores predeterminados de las solicitudes o las restricciones de proveedores, asigna ese comportamiento a [Preajustes](../guides/presets.mdx) y [Enrutamiento y alternativas](../guides/routing-and-fallbacks.mdx) durante la migración, en vez de volver a implementarlo para cada cliente.
+
+```bash
+curl -s "https://api.phaseo.app/v1/models" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" | jq '.data | length'
+```
+
+## 4) Lista de comprobación de la migración de LLMGateway
+
+- Se han asignado o eliminado todas las variables `LLM_GATEWAY_*`.
+- La URL base se ha actualizado a `https://api.phaseo.app/v1`.
+- `PHASEO_API_KEY` está configurada en todos los entornos de despliegue.
+- Los ID de modelos de producción se han verificado con `/v1/models`.
+- En staging se han validado una solicitud sin streaming y otra con streaming.
+- Se ha vuelto a comprobar el tratamiento de errores para claves y modelos no válidos.
+- Los valores predeterminados compartidos de prompts y enrutamiento se han trasladado a preajustes cuando corresponde.
+- Se han vuelto a comprobar las consultas de generación mediante `GET /v1/generations?id=<request_id>` para poder reproducir solicitudes fallidas desde el contenido almacenado de `replay_request` cuando `replay_supported=true`.
+
+## 5) Valida y despliega
+
+1. Ejecuta tu conjunto de prompts de referencia y compara calidad, latencia y coste con la línea base.
+2. Confirma que puedes recuperar las solicitudes fallidas de staging mediante el contenido de reproducción devuelto por `GET /v1/generations`.
+3. Despliega con una bandera canary y aumenta el tráfico desde un porcentaje bajo hasta el total cuando los resultados sean estables.
+4. Observa las métricas de producción durante al menos un ciclo de lanzamiento antes de retirar la configuración anterior.
+
+## Comandos de validación
+
+```bash
+curl -s "https://api.phaseo.app/v1/health"
+curl -s "https://api.phaseo.app/v1/models" -H "Authorization: Bearer $PHASEO_API_KEY"
+```
+
+Después:
+
+- Ejecuta en staging una solicitud sin streaming y otra con streaming.
+- Reproduce tus prompts de referencia y compara los resultados con la línea base.
+
+## Próximos pasos
+
+- [Migrar desde OpenRouter](./from-openrouter.mdx)
+- [Migrar desde Vercel AI Gateway](./from-vercel.mdx)
+- [Inicio rápido](../quickstart.mdx)

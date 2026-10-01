@@ -1,0 +1,44 @@
+---
+title: "PHP SDK"
+description: "Phaseo Gateway के लिए आधिकारिक PHP client।"
+---
+
+Packagist से प्रकाशित package [`phaseo/sdk`](https://packagist.org/packages/phaseo/sdk) install करें।
+
+`packages/sdk/sdk-php/src/index.php` का local wrapper अभी ये methods देता है:
+
+- `generateText(...)`
+- `generateResponse(...)`
+- `createAnthropicMessage(...)`
+- `generateImage(...)`
+- `generateImageEdit(...)`
+- `generateVideo(...)`, `getVideo(...)`, `cancelVideo(...)`, `deleteVideo(...)`, `listVideoModels(...)`, `listVideos(...)`
+- `generateEmbedding(...)`
+- `generateModeration(...)`
+- `createSpeech(...)`
+- `generateTranscription(...)`
+- `generateTranslation(...)`
+- `createBatch(...)`, `retrieveBatch(...)`, `cancelBatch(...)`
+- `getAsyncJobWebSocketUrl(...)`, `getBatchWebSocketUrl(...)`, `getVideoWebSocketUrl(...)`, `asyncJobs()->websocketUrl(...)`
+- `listFiles(...)`, `retrieveFile(...)`, `retrieveFileContent(...)`, `retrieveVideoContent(...)`, `getVideoDownloadUrl(...)`, `uploadFile(...)`
+- `listModels(...)`
+- `listApiKeys(...)`, `createApiKey(...)`, `updateApiKey(...)`, `deleteApiKey(...)`
+- `getApiKey(...)`
+- `listWorkspaces(...)`, `getWorkspace(...)`, `createWorkspace(...)`, `updateWorkspace(...)`, `deleteWorkspace(...)`
+- `listEndpoints()`
+- `listOrganisations(...)`
+- `listPricingModels(...)`
+- `calculatePricing(...)`
+- `getCurrentApiKey()`
+- `listProviders(...)`, `getAnalytics(...)`, `getCredits(...)`, `getActivity(...)`
+- `getGeneration(...)`
+- `health()`, `healthz()`
+
+```php
+require 'vendor/autoload.php';
+
+use Phaseo\Sdk\Phaseo;
+
+$client = new Phaseo('YOUR_KEY');
+$models = $client->listModels(['limit' => 5]);
+```

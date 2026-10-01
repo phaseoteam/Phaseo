@@ -1,0 +1,35 @@
+---
+icon: "wand-sparkles"
+title: "تحرير الصور"
+description: "استدعِ /images/edits باستخدام SDK C#."
+---
+
+**الطريقة**: `client.CreateImageEdit(...)`
+
+### مثال
+```csharp
+using PhaseoSdk;
+
+var client = new Phaseo(apiKey);
+var response = await client.CreateImageEdit(new Dictionary<string, object>
+{
+    ["model"] = "openai/gpt-image-1",
+    ["prompt"] = "Make it sunset",
+    ["image"] = "data:image/png;base64,...",
+    ["mask"] = "data:image/png;base64,..."
+});
+```
+
+### المعلمات الأساسية
+- `model` (مطلوب): معرّف نموذج يدعم تحرير الصور.
+- `image` (مطلوب): تدفق الصورة المصدر أو ملفها.
+- `prompt`: تعليمات جديدة اختيارية للتحرير.
+- `mask`: قناع اختياري (تُحرّر المناطق الشفافة).
+- `n` (1–10): عدد النسخ المعدّلة.
+- `size`: مثل `1024x1024` أو `1024x1792` أو `1792x1024`.
+- `response_format`: `url` أو `b64_json`.
+- `user`: وسم اختياري للمستخدم النهائي.
+
+### القيمة المعادة
+`ImageGenerationResponse`
+

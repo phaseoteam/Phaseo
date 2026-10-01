@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import dynamic from "next/dynamic";
 import {
         fetchAppMetadata,
@@ -68,7 +68,7 @@ import {
 	formatWordyDateTime,
 } from "@/lib/gateway/usage/timeFormatting";
 import { formatAsyncJobFailureSummary } from "@/lib/gateway/usage/asyncJobFailureSummary";
-import { formatRoomError } from "@/lib/chat/formatRoomError";
+import { formatRoomError, type RoomErrorTranslator } from "@/lib/chat/formatRoomError";
 import { getModelDisplayName, type ModelMetadataMap } from "./model-display";
 import Link from "next/link";
 import {
@@ -88,6 +88,11 @@ function AsyncJobHeader({
 	modelMetadata: ModelMetadataMap;
 	providerNames: Map<string, string>;
 }) {
+	const t = useTranslations("SettingsUI");
+	const s = (key: string) => t(`strings.${key}` as never);
+	const locale = useLocale();
+	const formatTimestamp = (value: string | null | undefined) =>
+		formatLocalizedTimestamp(value, locale);
 	const modelHref = getModelDetailsHref(job.model ?? null);
 	const modelLabel = getModelDisplayName(job.model ?? null, modelMetadata);
 	const modelLogoId = getModelLogoId(job.model ?? null, modelMetadata);
@@ -118,11 +123,11 @@ function AsyncJobHeader({
 								href={modelHref}
 								className="min-w-0 truncate underline decoration-transparent transition-colors duration-200 hover:text-primary hover:decoration-current"
 							>
-								{job.model ? modelLabel : "Async job"}
+				{job.model ? modelLabel : s("Async job")}
 							</Link>
 						) : (
 							<span className="min-w-0 truncate">
-								{job.model ? modelLabel : "Async job"}
+								{job.model ? modelLabel : s("Async job")}
 							</span>
 						)}
 			</ProviderInspectorSheetTitle>
@@ -131,11 +136,14 @@ function AsyncJobHeader({
 	);
 }
 
-function formatTimestamp(value: string | null | undefined): string {
+function formatLocalizedTimestamp(
+	value: string | null | undefined,
+	locale: string,
+): string {
 	if (!value) return "-";
 	const parsed = Date.parse(value);
 	if (!Number.isFinite(parsed)) return value;
-	return formatWordyDateTime(new Date(parsed), { includeTime: true });
+	return formatWordyDateTime(new Date(parsed), { includeTime: true, locale });
 }
 
 function stopRowClick(event: React.MouseEvent<HTMLElement>) {
@@ -483,7 +491,12 @@ function AsyncJobDetailSheet({
 	isInspectingRequest: boolean;
 }) {
 	const t = useTranslations("SettingsUI");
+	const roomErrorT = useTranslations("Product.chatRooms");
+	const roomErrorTranslator = roomErrorT as unknown as RoomErrorTranslator;
 	const s = (key: string) => t(`strings.${key}` as never);
+	const locale = useLocale();
+	const formatTimestamp = (value: string | null | undefined) =>
+		formatLocalizedTimestamp(value, locale);
 	const requestFilterHref = job?.request_id
 		? buildUsageLogsFilterHref({
 				view: "logs",
@@ -502,9 +515,9 @@ function AsyncJobDetailSheet({
 			? appMetadata.get(job.app_id)?.title?.trim() || job.app_id
 			: null;
 	const formattedRequestError = job?.request_error_payload
-		? formatRoomError(JSON.stringify(job.request_error_payload))
+		? formatRoomError(JSON.stringify(job.request_error_payload), roomErrorTranslator)
 		: job?.request_error_message?.trim()
-			? formatRoomError(job.request_error_message)
+			? formatRoomError(job.request_error_message, roomErrorTranslator)
 			: null;
 	const failedRequestProviders = formattedRequestError?.failedProviders ?? [];
 	const failedRequestStatuses = formattedRequestError?.failedStatuses ?? [];
@@ -751,7 +764,7 @@ function AsyncJobDetailSheet({
 										},
 									{
 										label: s("Source"),
-										value: job.client_source_name ?? job.client_source_id ?? "Direct HTTP",
+											value: job.client_source_name ?? job.client_source_id ?? s("Direct HTTP"),
 									},
 									{
 										label: s("App"),
@@ -1389,17 +1402,19 @@ function AsyncJobDetailSheet({
 														className="rounded-lg border border-border/60 bg-muted/30 px-3 py-2 text-sm"
 													>
 														<div className="font-medium">
-															{sample.provider ?? "Unknown provider"}
+										{sample.provider ?? s("Unknown provider")}
 															{sample.type ? ` · ${sample.type}` : ""}
 															{sample.status != null ? ` · ${sample.status}` : ""}
 														</div>
 														<div className="mt-1 space-y-1 text-muted-foreground">
 															{sample.retryable != null ? (
-																<div>Retryable: {sample.retryable ? "true" : "false"}</div>
+										<div>
+											{t("credits.Retryable")}: {sample.retryable ? "true" : "false"}
+										</div>
 															) : null}
 															{sample.upstream_error_code ? (
 																<div>
-																	Code:{" "}
+											{s("Code:")}{" "}
 																	<code className="font-mono text-xs">
 																		{sample.upstream_error_code}
 																	</code>
@@ -1414,7 +1429,7 @@ function AsyncJobDetailSheet({
 															) : null}
 															{sample.upstream_error_param ? (
 																<div>
-																	Param:{" "}
+											{s("Param:")}{" "}
 																	<code className="font-mono text-xs">
 																		{sample.upstream_error_param}
 																	</code>
@@ -1546,7 +1561,7 @@ function AsyncJobDetailSheet({
 										items={[
 											{
 													label: s("Webhook URL"),
-												value: job.webhook.url ?? "No webhook configured",
+												value: job.webhook.url ?? s("No webhook configured"),
 											},
 											{
 													label: s("Subscribed events"),
@@ -1559,8 +1574,8 @@ function AsyncJobDetailSheet({
 													label: s("Signing"),
 												value: job.webhook.configured
 													? job.webhook.has_secret
-														? "Enabled"
-														: "Disabled"
+													? s("Enabled")
+													: s("Disabled")
 													: "-",
 											},
 											{
@@ -1644,7 +1659,7 @@ function AsyncJobDetailSheet({
 							<DetailSection title={s("Webhook attempts")}>
 								{job.webhook_attempts.length === 0 ? (
 									<div className="rounded-lg border border-dashed px-4 py-6 text-sm text-muted-foreground">
-										No webhook attempts recorded yet.
+										{t("credits.No webhook attempts recorded yet.")}
 									</div>
 								) : (
 									<ScrollArea
@@ -1727,6 +1742,10 @@ export default function AsyncJobsPanel({
 }) {
 	const t = useTranslations("SettingsUI");
 	const s = (key: string) => t(`strings.${key}` as never);
+	const locale = useLocale();
+	const formatTimestamp = (value: string | null | undefined) =>
+		formatLocalizedTimestamp(value, locale);
+	const tTime = useTranslations("Common.ui.time");
 	const resolvedTitle = title ?? s("Async job webhooks");
 	const resolvedDescription = description ?? s("Recent video and batch jobs with webhook delivery history, pending retries, and failures.");
 	const resolvedEmptyMessage = emptyMessage ?? s("No async jobs with webhook activity yet.");
@@ -2111,20 +2130,20 @@ export default function AsyncJobsPanel({
 																		{userTimeZone}
 																	</div>
 																	<div className="font-mono">
-																		{formatDateTime(date, userTimeZone)}
+																{formatDateTime(date, userTimeZone, locale)}
 																	</div>
 																</div>
 																<div className="grid grid-cols-[120px_1fr] gap-2">
 																	<div className="text-muted-foreground">
-																		UTC
+												UTC
 																	</div>
 																	<div className="font-mono">
-																		{formatDateTime(date, "UTC")}
+																	{formatDateTime(date, "UTC", locale)}
 																	</div>
 																</div>
 																<div className="grid grid-cols-[120px_1fr] gap-2">
 																	<div className="text-muted-foreground">
-																		Relative
+												{tTime("relative")}
 																	</div>
 																	<div className="font-mono">
 																		{relativeNowMs
@@ -2134,7 +2153,7 @@ export default function AsyncJobsPanel({
 																</div>
 																<div className="grid grid-cols-[120px_1fr] gap-2">
 																	<div className="text-muted-foreground">
-																		Timestamp
+												{tTime("timestamp")}
 																	</div>
 																	<div className="font-mono">
 																		{unixSeconds}
@@ -2191,7 +2210,7 @@ export default function AsyncJobsPanel({
 												<span className="font-mono text-xs text-muted-foreground">{job.internal_id}</span>
 											</div>
 											<div className="text-xs text-muted-foreground">
-												{job.provider ?? "Unknown provider"}
+												{job.provider ?? s("Unknown provider")}
 												{job.model ? ` · ${job.model}` : ""}
 											</div>
 											{failureSummary ? (
@@ -2266,16 +2285,18 @@ export default function AsyncJobsPanel({
 								</TableCell>
 								{variant === "logs" ? null : (
 									<TableCell>
-										<div className="space-y-1 text-xs">
-											<div>{job.webhook.delivered_events} delivered</div>
-											<div className="text-muted-foreground">
-												{job.webhook.pending_retries > 0
-													? `${job.webhook.pending_retries} pending retry`
-													: job.webhook.configured
-														? "No pending retries"
-														: "No webhook configured"}
-											</div>
-										</div>
+						<div className="space-y-1 text-xs">
+							<div>
+								{s("Delivered events")}: {job.webhook.delivered_events.toLocaleString(locale)}
+							</div>
+							<div className="text-muted-foreground">
+								{job.webhook.pending_retries > 0
+									? `${s("Pending retries")}: ${job.webhook.pending_retries.toLocaleString(locale)}`
+									: job.webhook.configured
+										? s("No pending retries")
+										: s("No webhook configured")}
+							</div>
+						</div>
 									</TableCell>
 								)}
 								{variant === "logs" ? null : (
@@ -2324,7 +2345,7 @@ export default function AsyncJobsPanel({
 						{showRefreshButton ? (
 							<Button type="button" variant="outline" size="sm" onClick={refresh} disabled={isRefreshing}>
 								<RefreshCw className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
-								Refresh
+								{s("Refresh")}
 							</Button>
 						) : null}
 					</CardHeader>
@@ -2392,8 +2413,8 @@ export default function AsyncJobsPanel({
 			{isLoadingDetail || isLoadingRequestDetail ? (
 				<div className="sr-only">
 					{isLoadingDetail
-						? "Loading async job details..."
-						: "Loading request details..."}
+						? t("strings.Loading async job details..." as never)
+						: t("strings.Loading request details" as never)}
 				</div>
 			) : null}
 		</>

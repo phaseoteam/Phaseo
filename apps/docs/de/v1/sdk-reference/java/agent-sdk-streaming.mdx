@@ -1,0 +1,26 @@
+---
+icon: "radio"
+title: "Datenstromübertragung"
+description: "Übertrage Java-Agent-Text und -Ereignisse mit erneut durchlaufbaren Konsumenten."
+---
+
+`Agent.stream(...)` gibt ein `StreamResult` zurück:
+
+```java
+var stream = agent.stream(options);
+
+for (var delta : stream.textStream()) {
+  System.out.print(delta);
+}
+
+var completed = stream.getResult();
+```
+
+`textStream()` und `fullStream()` lassen sich erneut durchlaufen. Dadurch können Produktoberfläche und Telemetriecode denselben Lauf unabhängig voneinander konsumieren. Rufe `cancel()` auf, um den aktiven Stream-Worker zu unterbrechen.
+
+Java-Elementereignisse bleiben generische Objekte und sind keine diskriminierte TypeScript-Union `AgentItem`.
+
+## Weiterführende Themen
+
+- [Werkzeuge](./agent-sdk-tools.mdx)
+- [Observability und DevTools](./agent-sdk-observability.mdx)

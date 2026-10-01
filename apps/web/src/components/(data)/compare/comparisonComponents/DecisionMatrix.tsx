@@ -28,6 +28,7 @@ import { ExternalLink, Info, MessageSquare } from "lucide-react";
 import { ProviderLogo } from "../ProviderLogo";
 import ModelCombobox from "../ModelCombobox";
 import type { CompareGatewayUsageByModel } from "../types";
+import { useLocale, useTranslations } from "next-intl";
 import {
 	ColumnGrid,
 	CompareSection,
@@ -94,73 +95,70 @@ type CapabilityChip = {
 	active: boolean;
 };
 
-const DEFAULT_PROMPT =
-	"Summarize the tradeoffs between these models for a coding-heavy support workflow.";
 const BEST_TONE =
 	"border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900/70 dark:bg-emerald-950/40 dark:text-emerald-300";
 
-function formatMonthYear(value: string | null | undefined): string {
+function formatMonthYear(value: string | null | undefined, locale: string): string {
 	if (!value) return "-";
 	const d = new Date(value);
 	if (Number.isNaN(d.getTime())) return "-";
-	return d.toLocaleDateString("en-US", { month: "short", year: "numeric" });
+	return d.toLocaleDateString(locale, { month: "short", year: "numeric" });
 }
 
-function formatInteger(value: number | null | undefined): string {
+function formatInteger(value: number | null | undefined, locale: string): string {
 	if (value == null || !Number.isFinite(value)) return "-";
-	return value.toLocaleString("en-US", { maximumFractionDigits: 0 });
+	return value.toLocaleString(locale, { maximumFractionDigits: 0 });
 }
 
-function formatCompact(value: number | null | undefined): string {
+function formatCompact(value: number | null | undefined, locale: string): string {
 	if (value == null || !Number.isFinite(value)) return "-";
-	return Intl.NumberFormat("en-US", {
+	return Intl.NumberFormat(locale, {
 		notation: "compact",
 		maximumFractionDigits: 1,
 	}).format(value);
 }
 
-function formatUsd(value: number | null | undefined): string {
+function formatUsd(value: number | null | undefined, locale: string): string {
 	if (value == null || !Number.isFinite(value)) return "-";
 	const maximumFractionDigits = value > 0 && value < 0.01 ? 4 : 2;
-	return `$${value.toLocaleString("en-US", {
+	return new Intl.NumberFormat(locale, {
+		style: "currency",
+		currency: "USD",
 		minimumFractionDigits: Math.min(2, maximumFractionDigits),
 		maximumFractionDigits,
-	})}`;
+	}).format(value);
 }
 
-function formatRequestCost(value: number | null | undefined): string {
+function formatRequestCost(value: number | null | undefined, locale: string): string {
 	if (value == null || !Number.isFinite(value)) return "-";
-	if (value > 0 && value < 0.01) {
-		return `$${value.toLocaleString("en-US", {
-			minimumFractionDigits: 4,
-			maximumFractionDigits: 4,
-		})}`;
-	}
-	return `$${value.toLocaleString("en-US", {
-		minimumFractionDigits: 2,
-		maximumFractionDigits: 2,
-	})}`;
+	const maximumFractionDigits = value > 0 && value < 0.01 ? 4 : 2;
+	return new Intl.NumberFormat(locale, {
+		style: "currency",
+		currency: "USD",
+		minimumFractionDigits: maximumFractionDigits,
+		maximumFractionDigits,
+	}).format(value);
 }
 
-function formatLatency(value: number | null | undefined): string {
+function formatLatency(value: number | null | undefined, locale: string): string {
 	if (value == null || !Number.isFinite(value)) return "-";
 	if (value >= 1000) {
-		return `${(value / 1000).toLocaleString("en-US", {
+		return `${(value / 1000).toLocaleString(locale, {
 			maximumFractionDigits: 2,
 		})} s`;
 	}
-	return `${Math.round(value).toLocaleString("en-US")} ms`;
+	return `${Math.round(value).toLocaleString(locale)} ms`;
 }
 
-function formatThroughput(value: number | null | undefined): string {
+function formatThroughput(value: number | null | undefined, locale: string): string {
 	if (value == null || !Number.isFinite(value)) return "-";
-	return `${value.toLocaleString("en-US", { maximumFractionDigits: 1 })} tok/s`;
+	return `${value.toLocaleString(locale, { maximumFractionDigits: 1 })} tok/s`;
 }
 
-function formatDuration(valueMs: number | null | undefined): string {
+function formatDuration(valueMs: number | null | undefined, locale: string): string {
 	if (valueMs == null || !Number.isFinite(valueMs)) return "-";
 	if (valueMs < 1000) return `${Math.round(valueMs)} ms`;
-	return `${(valueMs / 1000).toLocaleString("en-US", {
+	return `${(valueMs / 1000).toLocaleString(locale, {
 		maximumFractionDigits: 1,
 	})} s`;
 }
@@ -551,6 +549,8 @@ export default function DecisionMatrix({
 	selectedIds,
 	onSelectedIdsChange,
 }: DecisionMatrixProps) {
+	const t = useTranslations("Catalogue.compare");
+	const locale = useLocale();
 	const [highlightBest, setHighlightBest] = React.useState(true);
 	const [selectedProviderByModel, setSelectedProviderByModel] = React.useState<
 		Record<string, string>
@@ -558,7 +558,7 @@ export default function DecisionMatrix({
 	const [selectedTierByModel, setSelectedTierByModel] = React.useState<
 		Record<string, string>
 	>({});
-	const [prompt, setPrompt] = React.useState(DEFAULT_PROMPT);
+	const [prompt, setPrompt] = React.useState(t("defaultSimulationPrompt"));
 	const [outputTokens, setOutputTokens] = React.useState(800);
 	const [useCache, setUseCache] = React.useState(false);
 	const modelBarRef = React.useRef<HTMLDivElement | null>(null);
@@ -723,20 +723,21 @@ export default function DecisionMatrix({
 			<div className="mb-3 flex flex-wrap items-center justify-end gap-2">
 				<label className="flex items-center gap-2 text-sm text-muted-foreground">
 					<Switch checked={highlightBest} onCheckedChange={setHighlightBest} />
-					<span>Highlight best</span>
+					<span>{t("highlightBest")}</span>
 				</label>
 				<ModelCombobox
 					models={models}
 					selected={selectedIds}
 					setSelected={onSelectedIdsChange}
-					labelWhenSelected={selectedIds.length >= 4 ? "Edit models" : "Add model"}
+					labelWhenEmpty={t("addModel")}
+					labelWhenSelected={selectedIds.length >= 4 ? t("editModels") : t("addModel")}
 					showSelectionCount={false}
 					className="h-9 border border-zinc-800 bg-black px-3 text-white hover:bg-zinc-900 hover:text-white dark:border-zinc-700"
 				/>
 				<Button asChild variant="outline" size="sm">
 					<Link href="/chat">
 						<MessageSquare className="size-4" />
-						Chat
+						{t("chat")}
 					</Link>
 				</Button>
 			</div>
@@ -780,7 +781,7 @@ export default function DecisionMatrix({
 									>
 										<Link
 											href={`/models/${model.id}`}
-											aria-label={`View ${model.name} details`}
+											aria-label={`${t("viewDetail")}: ${model.name}`}
 										>
 											<Info className="size-3.5" />
 										</Link>
@@ -796,7 +797,7 @@ export default function DecisionMatrix({
 												href={model.api_reference_link}
 												target="_blank"
 												rel="noreferrer"
-												aria-label={`Open ${model.name} API reference`}
+											aria-label={`${t("apiReference")}: ${model.name}`}
 											>
 												<ExternalLink className="size-3.5" />
 											</a>
@@ -816,7 +817,7 @@ export default function DecisionMatrix({
 								}}
 							>
 								<SelectTrigger
-									aria-label={`Select provider for ${model.name}`}
+									aria-label={`${t("provider")}: ${model.name}`}
 									className="h-8 w-full rounded-md bg-background px-2 text-xs"
 								>
 									{selectedProviderId ? (
@@ -828,13 +829,13 @@ export default function DecisionMatrix({
 										/>
 									) : null}
 									<SelectValue
-										placeholder={selectedProvider?.name ?? "No priced providers"}
+										placeholder={selectedProvider?.name ?? t("noPricedProviders")}
 									/>
 								</SelectTrigger>
 								<SelectContent>
 									{!options.length ? (
 										<SelectItem value="__none__" disabled>
-											No priced providers
+											{t("noPricedProviders")}
 										</SelectItem>
 									) : null}
 									{options.map((option) => (
@@ -854,8 +855,8 @@ export default function DecisionMatrix({
 										setSelectedTierByModel((current) => ({ ...current, [model.id]: value }))
 									}
 								>
-									<SelectTrigger aria-label={`Select service tier for ${model.name}`} className="h-8 w-full rounded-md bg-background px-2 text-xs">
-										<SelectValue placeholder="Select service tier" />
+									<SelectTrigger aria-label={`${t("selectServiceTier")}: ${model.name}`} className="h-8 w-full rounded-md bg-background px-2 text-xs">
+										<SelectValue placeholder={t("selectServiceTier")} />
 									</SelectTrigger>
 									<SelectContent>
 										{serviceTiers.map((tier) => (
@@ -884,7 +885,7 @@ export default function DecisionMatrix({
 				</div>
 			) : null}
 
-			<CompareSection title="Overview" selectedModels={selectedModels}>
+			<CompareSection title={t("overview")} selectedModels={selectedModels}>
 				{selectedModels.map((model) => {
 					const inputTypes = toTypeList(model.input_types);
 					const outputTypes = toTypeList(model.output_types);
@@ -892,13 +893,13 @@ export default function DecisionMatrix({
 
 					return (
 						<div key={`${model.id}-overview`} className="px-4">
-							<MetricRow label="Input modalities">
+							<MetricRow label={t("inputModalities")}>
 								<TypeBadges values={inputTypes} />
 							</MetricRow>
-							<MetricRow label="Output modalities">
+							<MetricRow label={t("outputModalities")}>
 								<TypeBadges values={outputTypes} />
 							</MetricRow>
-							<MetricRow label="Providers">
+							<MetricRow label={t("providers")}>
 								<a
 									href="#compare-availability"
 									className={cn(
@@ -908,11 +909,11 @@ export default function DecisionMatrix({
 									)}
 								>
 									{options.length
-										? `${options.length} provider${options.length === 1 ? "" : "s"}`
-										: "None"}
+										? t("providerCount", { count: options.length })
+										: t("noPricedProviders")}
 								</a>
 							</MetricRow>
-							<MetricRow label="Input context">
+							<MetricRow label={t("inputContext")}>
 								<Highlight
 									active={isBest(
 										model.input_context_length,
@@ -920,10 +921,10 @@ export default function DecisionMatrix({
 										highlightBest
 									)}
 								>
-									{formatInteger(model.input_context_length)}
+									{formatInteger(model.input_context_length, locale)}
 								</Highlight>
 							</MetricRow>
-							<MetricRow label="Max output">
+							<MetricRow label={t("maxOutput")}>
 								<Highlight
 									active={isBest(
 										model.output_context_length,
@@ -931,13 +932,13 @@ export default function DecisionMatrix({
 										highlightBest
 									)}
 								>
-									{formatInteger(model.output_context_length)}
+									{formatInteger(model.output_context_length, locale)}
 								</Highlight>
 							</MetricRow>
-							<MetricRow label="Release">
-								{formatMonthYear(model.release_date)}
+							<MetricRow label={t("release")}>
+								{formatMonthYear(model.release_date, locale)}
 							</MetricRow>
-							<MetricRow label="Capabilities">
+							<MetricRow label={t("capabilities")}>
 								<div className="flex flex-wrap justify-end gap-1">
 									{buildCapabilityChips(model).map((chip) => (
 										<Badge
@@ -958,7 +959,7 @@ export default function DecisionMatrix({
 				})}
 			</CompareSection>
 
-			<CompareSection title="Pricing" selectedModels={selectedModels}>
+			<CompareSection title={t("pricing")} selectedModels={selectedModels}>
 				{selectedModels.map((model) => {
 					const prices = priceByModel.get(model.id);
 					const selectedProviderId = selectedProviderIds.get(model.id);
@@ -974,7 +975,7 @@ export default function DecisionMatrix({
 
 					return (
 						<div key={`${model.id}-pricing`} className="px-4">
-							<MetricRow label="Provider">
+							<MetricRow label={t("provider")}>
 								<div className="flex items-center justify-end gap-2">
 									{selectedProviderId ? (
 										<ProviderLogo
@@ -984,11 +985,11 @@ export default function DecisionMatrix({
 										/>
 									) : null}
 									<span className="truncate">
-										{selectedProvider?.name ?? "No provider selected"}
+										{selectedProvider?.name ?? t("noProviderSelected")}
 									</span>
 								</div>
 							</MetricRow>
-							<MetricRow label="Input">
+							<MetricRow label={t("input")}>
 								<Highlight
 									active={isBest(
 										prices?.input.valuePerMillion,
@@ -996,10 +997,10 @@ export default function DecisionMatrix({
 										highlightBest
 									)}
 								>
-									{formatUsd(prices?.input.valuePerMillion)} / M tokens
+									{formatUsd(prices?.input.valuePerMillion, locale)} / M {t("tokenUnit")}
 								</Highlight>
 							</MetricRow>
-							<MetricRow label="Output">
+							<MetricRow label={t("output")}>
 								<Highlight
 									active={isBest(
 										prices?.output.valuePerMillion,
@@ -1007,10 +1008,10 @@ export default function DecisionMatrix({
 										highlightBest
 									)}
 								>
-									{formatUsd(prices?.output.valuePerMillion)} / M tokens
+									{formatUsd(prices?.output.valuePerMillion, locale)} / M {t("tokenUnit")}
 								</Highlight>
 							</MetricRow>
-							<MetricRow label="Cached input">
+							<MetricRow label={t("cachedInput")}>
 								<Highlight
 									active={isBest(
 										prices?.cached.valuePerMillion,
@@ -1018,10 +1019,10 @@ export default function DecisionMatrix({
 										highlightBest
 									)}
 								>
-									{formatUsd(prices?.cached.valuePerMillion)} / M tokens
+									{formatUsd(prices?.cached.valuePerMillion, locale)} / M {t("tokenUnit")}
 								</Highlight>
 							</MetricRow>
-							<MetricRow label="Plan">
+							<MetricRow label={t("plan")}>
 								{plan && PlanIcon && planMeta ? (
 									<span className="inline-flex items-center justify-end gap-1.5 truncate capitalize">
 										<PlanIcon
@@ -1041,7 +1042,7 @@ export default function DecisionMatrix({
 				})}
 			</CompareSection>
 
-			<CompareSection title="Performance" selectedModels={selectedModels}>
+			<CompareSection title={t("performance")} selectedModels={selectedModels}>
 				{selectedModels.map((model) => {
 					const usage = usageByModel[model.id];
 					const prices = priceByModel.get(model.id);
@@ -1056,7 +1057,7 @@ export default function DecisionMatrix({
 
 					return (
 						<div key={`${model.id}-performance`} className="px-4">
-							<MetricRow label="Latency (p50)">
+							<MetricRow label={t("latencyP50")}>
 								<Highlight
 									active={isBest(
 										usage?.latencyP50Ms30m,
@@ -1064,10 +1065,10 @@ export default function DecisionMatrix({
 										highlightBest
 									)}
 								>
-									{formatLatency(usage?.latencyP50Ms30m)}
+									{formatLatency(usage?.latencyP50Ms30m, locale)}
 								</Highlight>
 							</MetricRow>
-							<MetricRow label="Throughput (p50)">
+							<MetricRow label={t("throughputP50")}>
 								<Highlight
 									active={isBest(
 										usage?.throughputP50TokPerSec30m,
@@ -1075,21 +1076,21 @@ export default function DecisionMatrix({
 										highlightBest
 									)}
 								>
-									{formatThroughput(usage?.throughputP50TokPerSec30m)}
+									{formatThroughput(usage?.throughputP50TokPerSec30m, locale)}
 								</Highlight>
 							</MetricRow>
-							<MetricRow label="Provider latency">
+							<MetricRow label={t("providerLatency")}>
 								{providerLatency ?? "-"}
 							</MetricRow>
-							<MetricRow label="Provider throughput">
+							<MetricRow label={t("providerThroughput")}>
 								{providerThroughput ?? "-"}
 							</MetricRow>
-							<MetricRow label="Visualize performance">
+							<MetricRow label={t("visualisePerformance")}>
 								<a
 									href="#compare-benchmarks"
 									className="underline underline-offset-2"
 								>
-									View charts
+									{t("viewCharts")}
 								</a>
 							</MetricRow>
 						</div>
@@ -1097,40 +1098,40 @@ export default function DecisionMatrix({
 				})}
 			</CompareSection>
 
-			<CompareSection title="Activity" selectedModels={selectedModels}>
+			<CompareSection title={t("activity")} selectedModels={selectedModels}>
 				{selectedModels.map((model) => {
 					const usage = usageByModel[model.id];
 
 					return (
 						<div key={`${model.id}-activity`} className="px-4">
-							<MetricRow label="30d tokens">
+							<MetricRow label={t("tokens30d")}>
 								<Highlight
 									active={isBest(usage?.tokens30d, bestTokens30d, highlightBest)}
 								>
-									{formatCompact(usage?.tokens30d)}
+									{formatCompact(usage?.tokens30d, locale)}
 								</Highlight>
 							</MetricRow>
 							<div className="border-b border-border/60 py-3">
 								<MiniBars modelId={model.id} points={usage?.points30d ?? []} />
 							</div>
-							<MetricRow label="Total requests">
-								{formatCompact(usage?.totalRequests)}
+							<MetricRow label={t("totalRequests")}>
+								{formatCompact(usage?.totalRequests, locale)}
 							</MetricRow>
-							<MetricRow label="Requests in 30m">
-								{formatCompact(usage?.requests30m)}
+							<MetricRow label={t("requests30m")}>
+								{formatCompact(usage?.requests30m, locale)}
 							</MetricRow>
 						</div>
 					);
 				})}
 			</CompareSection>
 
-			<CompareSection title="Benchmarks" selectedModels={selectedModels}>
+			<CompareSection title={t("benchmarks")} selectedModels={selectedModels}>
 				{selectedModels.map((model) => {
 					const summary = benchmarkSummaryByModel.get(model.id);
 
 					return (
 						<div key={`${model.id}-benchmarks`} className="px-4">
-							<MetricRow label="Shared wins">
+							<MetricRow label={t("sharedWins")}>
 								<Highlight
 									active={isBest(
 										summary?.wins,
@@ -1141,18 +1142,18 @@ export default function DecisionMatrix({
 									{summary?.wins ?? 0}
 								</Highlight>
 							</MetricRow>
-							<MetricRow label="Comparable tests">
+							<MetricRow label={t("comparableTests")}>
 								{summary?.sharedCount ?? 0}
 							</MetricRow>
-							<MetricRow label="Total results">
+							<MetricRow label={t("totalResults")}>
 								{summary?.coverage ?? 0}
 							</MetricRow>
-							<MetricRow label="Benchmark charts">
+							<MetricRow label={t("benchmarks")}>
 								<a
 									href="#compare-benchmarks"
 									className="underline underline-offset-2"
 								>
-									View detail
+									{t("viewDetail")}
 								</a>
 							</MetricRow>
 						</div>
@@ -1160,7 +1161,7 @@ export default function DecisionMatrix({
 				})}
 			</CompareSection>
 
-			<CompareSection title="Simulate a response" selectedModels={selectedModels}>
+			<CompareSection title={t("simulateResponse")} selectedModels={selectedModels}>
 				{selectedModels.map((model) => {
 					const row = simulationRows.find((item) => item.model.id === model.id);
 
@@ -1171,12 +1172,12 @@ export default function DecisionMatrix({
 									value={prompt}
 									onChange={(event) => setPrompt(event.target.value)}
 									className="min-h-24 resize-y bg-background text-xs"
-									aria-label="Prompt for response simulation"
+									aria-label={t("promptForSimulation")}
 								/>
 							</div>
 							<div className="grid grid-cols-[minmax(0,1fr)_112px] items-end gap-2 border-b border-border/60 py-3">
 								<label className="space-y-1 text-xs text-muted-foreground">
-									<span>Expected output tokens</span>
+									<span>{t("expectedOutputTokens")}</span>
 									<Input
 										type="number"
 										min={0}
@@ -1192,13 +1193,13 @@ export default function DecisionMatrix({
 								</label>
 								<label className="flex h-8 items-center justify-end gap-2 text-xs text-muted-foreground">
 									<Switch checked={useCache} onCheckedChange={setUseCache} />
-									<span>Cache</span>
+									<span>{t("cache")}</span>
 								</label>
 							</div>
-							<MetricRow label="Estimated input">
-								{formatInteger(inputTokens)} tokens
+							<MetricRow label={t("estimatedInput")}>
+								{formatInteger(inputTokens, locale)} {t("tokenUnit")}
 							</MetricRow>
-							<MetricRow label="Context fit">
+							<MetricRow label={t("contextFit")}>
 								<Badge
 									variant="outline"
 									className={cn(
@@ -1208,10 +1209,10 @@ export default function DecisionMatrix({
 											: "border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-900/70 dark:bg-amber-950/40 dark:text-amber-300"
 									)}
 								>
-									{row?.context.fits ? "Fits" : "Check limits"}
+									{row?.context.fits ? t("fits") : t("checkLimits")}
 								</Badge>
 							</MetricRow>
-							<MetricRow label="Estimated cost">
+							<MetricRow label={t("estimatedCost")}>
 								<Highlight
 									active={isBest(
 										row?.totalCost,
@@ -1219,10 +1220,10 @@ export default function DecisionMatrix({
 										highlightBest
 									)}
 								>
-									{formatRequestCost(row?.totalCost)}
+									{formatRequestCost(row?.totalCost, locale)}
 								</Highlight>
 							</MetricRow>
-							<MetricRow label="Est. response time">
+							<MetricRow label={t("estimatedResponseTime")}>
 								<Highlight
 									active={isBest(
 										row?.estimatedTimeMs,
@@ -1230,13 +1231,13 @@ export default function DecisionMatrix({
 										highlightBest
 									)}
 								>
-									{formatDuration(row?.estimatedTimeMs)}
+									{formatDuration(row?.estimatedTimeMs, locale)}
 								</Highlight>
 							</MetricRow>
-							<MetricRow label="Pricing basis">
+							<MetricRow label={t("pricingBasis")}>
 								<span className="truncate">
-									{formatUsd(row?.inputPrice?.valuePerMillion)} in /{" "}
-									{formatUsd(row?.outputPrice?.valuePerMillion)} out
+									{formatUsd(row?.inputPrice?.valuePerMillion, locale)} {t("input")} /{" "}
+									{formatUsd(row?.outputPrice?.valuePerMillion, locale)} {t("output")}
 								</span>
 							</MetricRow>
 						</div>

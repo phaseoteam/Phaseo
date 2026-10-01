@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ExternalLink } from "lucide-react";
+import { getLocale, getTranslations } from "next-intl/server";
 import { Logo } from "@/components/Logo";
 import type { PublicBenchmarkRanking } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import { HorizontalRankingChart } from "@/components/(rankings)/HorizontalRankingChart";
@@ -8,16 +9,20 @@ function scoreValue(score: number, type: string | null) {
 	return type === "percentage" && Math.abs(score) <= 1 ? score * 100 : score;
 }
 
-function scoreLabel(score: number, type: string | null) {
+function scoreLabel(score: number, type: string | null, locale: string) {
 	const value = scoreValue(score, type);
-	const formatted = value.toLocaleString("en-GB", {
+	const formatted = value.toLocaleString(locale, {
 		minimumFractionDigits: 1,
 		maximumFractionDigits: 2,
 	});
 	return type === "percentage" ? `${formatted}%` : formatted;
 }
 
-export function BenchmarkRankingsSection({ benchmark }: { benchmark: PublicBenchmarkRanking }) {
+export async function BenchmarkRankingsSection({ benchmark }: { benchmark: PublicBenchmarkRanking }) {
+	const [t, locale] = await Promise.all([
+		getTranslations("Catalogue.rankings"),
+		getLocale(),
+	]);
 	const chartEntries = benchmark.entries.slice(0, 20);
 	const tableEntries = benchmark.entries.slice(0, 20);
 
@@ -25,9 +30,9 @@ export function BenchmarkRankingsSection({ benchmark }: { benchmark: PublicBench
 		<section id="benchmarks" className="scroll-mt-32 space-y-6 border-t border-border pt-12">
 			<div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
 				<div className="space-y-0.5">
-					<h2 className="text-2xl font-semibold leading-8">Intelligence Index</h2>
+					<h2 className="text-2xl font-semibold leading-8">{t("intelligenceIndex")}</h2>
 					<p className="max-w-3xl text-sm text-muted-foreground">
-						Independent model intelligence scores from Artificial Analysis.
+						{t("benchmarkSectionDescription")}
 					</p>
 				</div>
 				<Link
@@ -36,7 +41,7 @@ export function BenchmarkRankingsSection({ benchmark }: { benchmark: PublicBench
 					rel="noreferrer"
 					className="inline-flex h-9 shrink-0 items-center gap-1.5 self-start rounded-md px-3 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
 				>
-					View methodology
+					{t("viewBenchmarkMethodology")}
 					<ExternalLink className="size-3.5" />
 				</Link>
 			</div>
@@ -46,17 +51,17 @@ export function BenchmarkRankingsSection({ benchmark }: { benchmark: PublicBench
 					<div>
 						<h3 className="text-lg font-semibold">{benchmark.name}</h3>
 						<p className="text-xs text-muted-foreground">
-							{benchmark.entries.length} matched Phaseo models · Higher is better
+							{t("matchedPhaseoModels", { count: new Intl.NumberFormat(locale).format(benchmark.entries.length) })} · {t("higherIsBetter")}
 						</p>
 					</div>
-					<span className="text-xs text-muted-foreground">Source: Artificial Analysis</span>
+					<span className="text-xs text-muted-foreground">{t("sourceLabel")}: Artificial Analysis</span>
 				</div>
 				<HorizontalRankingChart
 					entries={chartEntries.map((entry) => ({
 						key: entry.model_id,
 						label: entry.model_name,
 						value: scoreValue(entry.score, benchmark.benchmark_type),
-						valueLabel: scoreLabel(entry.score, benchmark.benchmark_type),
+						valueLabel: scoreLabel(entry.score, benchmark.benchmark_type, locale),
 						logoId: entry.organisation_id ?? entry.model_id,
 					}))}
 				/>
@@ -75,11 +80,11 @@ export function BenchmarkRankingsSection({ benchmark }: { benchmark: PublicBench
 										</Link>
 										{entry.organisation_id ? (
 											<Link href={`/organisations/${entry.organisation_id}`} className="text-xs text-muted-foreground underline decoration-transparent underline-offset-2 hover:decoration-current">
-												by {entry.organisation_name ?? entry.organisation_id}
+												{t("modelByOrganisation", { name: entry.organisation_name ?? entry.organisation_id })}
 											</Link>
 										) : null}
 									</div>
-									<span className="text-sm font-medium tabular-nums">{scoreLabel(entry.score, benchmark.benchmark_type)}</span>
+								<span className="text-sm font-medium tabular-nums">{scoreLabel(entry.score, benchmark.benchmark_type, locale)}</span>
 								</div>
 					))}
 			</div>

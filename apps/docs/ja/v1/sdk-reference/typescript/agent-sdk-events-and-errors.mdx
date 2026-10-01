@@ -1,0 +1,66 @@
+---
+icon: "triangle-alert"
+title: "エラーとトラブルシューティング"
+description: "ゲートウェイ障害、検証エラー、エージェント実行の失敗を処理します。"
+---
+
+再試行するか、ユーザーに別の入力を求めるか、オペレーターにリクエストの詳細を表示するかをアプリで判断する場合は、Agent SDKの構造化エラーを使います。
+
+## ゲートウェイ障害を処理する
+
+ゲートウェイ障害は`AgentGatewayError`として再スローされます。
+
+```typescript
+import { AgentGatewayError } from "@phaseo/agent-sdk";
+
+try {
+  await agent.run({ input, client });
+} catch (error) {
+  if (error instanceof AgentGatewayError) {
+    console.error(error.status, error.requestId, error.reason);
+  }
+  throw error;
+}
+```
+
+失敗した実行やステップには、取得できる場合はゲートウェイエラーの詳細が保持されます。
+
+## スキーマエラーを処理する
+
+`AgentSchemaValidationError`は、無効なツール入力・出力、進捗イベント、最終出力を示します。一時的なモデル障害ではなく、契約違反として扱います。
+
+```typescript
+import { AgentSchemaValidationError } from "@phaseo/agent-sdk";
+
+try {
+  await agent.run({ input, client });
+} catch (error) {
+  if (error instanceof AgentSchemaValidationError) {
+    console.error(error.target, error.message);
+  }
+  throw error;
+}
+```
+
+## 失敗した実行を調べる
+
+ランタイムが失敗をチェックポイントとして保存できる場合は、次の項目を確認します。
+
+- `result.run.status`
+- `result.run.error`
+- 最新ステップの`status`、`error`、`modelAttempts`
+- ゲートウェイログとの照合に使う`requestId`と`nativeResponseId`
+
+## よくある確認事項
+
+- サーバープロセスから`PHASEO_API_KEY`を参照できることを確認します。
+- 各ツールに一意で安定した`id`を割り当てます。
+- 承認、拒否、手動出力の指定には、正確なツール呼び出しIDを使います。
+- モデルの再試行回数を制限し、検証や承認の失敗を無条件に再試行しないでください。
+- 一時停止した実行の状態は、ブラウザーやキューワーカーに制御を戻す前に保存します。
+
+## 関連ガイド
+
+- [ライフサイクルフック](./agent-sdk-lifecycle-hooks.mdx)
+- [DevTools](./agent-sdk-devtools.mdx)
+- [状態と承認](./agent-sdk-state-and-approval.mdx)

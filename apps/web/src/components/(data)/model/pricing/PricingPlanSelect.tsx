@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useTranslations } from "next-intl";
 import { Check, ChevronDown } from "lucide-react";
 import {
 	DropdownMenu,
@@ -26,18 +27,19 @@ export default function PricingPlanSelect({
 	compact?: boolean;
 	variant?: "tabs" | "dropdown";
 }) {
+	const t = useTranslations("Catalogue.models.detail.quickstart");
 	const labelForPlan = (plan: string) => {
 		switch (plan) {
 			case "standard":
-				return "Standard";
+				return t("tierStandard");
 			case "free":
-				return "Free";
+				return t("tierFree");
 			case "batch":
-				return "Batch";
+				return t("tierBatch");
 			case "flex":
-				return "Flex";
+				return t("tierFlex");
 			case "priority":
-				return "Fast";
+				return t("tierFast");
 			default:
 				return plan ? plan.charAt(0).toUpperCase() + plan.slice(1) : plan;
 		}
@@ -80,16 +82,16 @@ export default function PricingPlanSelect({
 	const descriptionForPlan = (plan: string) => {
 		switch (plan) {
 			case "free":
-				return "Free routes where available.";
+				return t("planDescriptionFree");
 			case "batch":
-				return "Queued or batch-oriented capacity.";
+				return t("planDescriptionBatch");
 			case "flex":
-				return "Flexible routing for best-effort capacity.";
+				return t("planDescriptionFlex");
 			case "priority":
-				return "Fast routing when available.";
+				return t("planDescriptionFast");
 			case "standard":
 			default:
-				return "Default balanced provider routing.";
+				return t("planDescriptionStandard");
 		}
 	};
 
@@ -101,7 +103,7 @@ export default function PricingPlanSelect({
 				<DropdownMenuTrigger render={<button
 						type="button"
 						className="inline-flex h-9 min-w-[178px] items-center justify-between gap-3 rounded-md border border-zinc-200 bg-background px-3 text-sm font-medium text-foreground shadow-xs transition-colors hover:bg-zinc-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 dark:border-zinc-800 dark:hover:bg-zinc-900"
-						aria-label="Select service tier" />}>
+						aria-label={t("serviceTier")} />}>
 
 						<span className="inline-flex min-w-0 items-center gap-2">
 							{renderPlanIcon(value, "h-3.5 w-3.5 shrink-0 text-muted-foreground")}
@@ -165,7 +167,7 @@ export default function PricingPlanSelect({
     return (
         <div
             role="tablist"
-            aria-label="Pricing plan"
+            aria-label={t("serviceTier")}
             className={cn(
 				"inline-flex flex-wrap items-center rounded-lg border border-zinc-200/80 bg-zinc-50/70 dark:border-zinc-800 dark:bg-zinc-900/40",
 				compact ? "gap-0.5 p-0.5" : "gap-1 p-1",

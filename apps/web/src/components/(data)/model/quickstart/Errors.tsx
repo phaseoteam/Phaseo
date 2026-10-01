@@ -1,4 +1,5 @@
 // src/components/gateway/Errors.tsx
+import { getTranslations } from "next-intl/server";
 import {
 	Card,
 	CardContent,
@@ -62,6 +63,7 @@ const InlineCode: React.FC<React.PropsWithChildren> = ({ children }) => (
 );
 
 export default async function Errors() {
+	const tUi = await getTranslations("Common.ui");
 	const clientErrorExample = `HTTP/1.1 402 Payment Required
 {
   "error": {
@@ -86,43 +88,43 @@ export default async function Errors() {
 		{
 			http: "400",
 			type: "bad_request",
-			when: "Malformed JSON, unknown model, or invalid parameters.",
-			action: "Validate against schema; check model ID and docs; correct formatting.",
+			when: tUi("quickstart.errors.badRequestWhen"),
+			action: tUi("quickstart.errors.badRequestAction"),
 			icon: AlertTriangle,
 		},
 		{
 			http: "401",
 			type: "authentication_error",
-			when: "Missing/invalid API key, or key lacks required scope.",
-			action: "Use the correct key and ensure scopes/permissions include this endpoint.",
+			when: tUi("quickstart.errors.authenticationWhen"),
+			action: tUi("quickstart.errors.authenticationAction"),
 			icon: KeyRound,
 		},
 		{
 			http: "402",
 			type: "payment_error",
-			when: "Insufficient funds/credit for the request.",
-			action: "Top up your wallet or reduce request cost (tokens/options).",
+			when: tUi("quickstart.errors.paymentWhen"),
+			action: tUi("quickstart.errors.paymentAction"),
 			icon: CreditCard,
 		},
 		{
 			http: "403",
 			type: "permission_error",
-			when: "Key is valid but not allowed to access this resource/model.",
-			action: "Update access policy or choose an allowed model/endpoint.",
+			when: tUi("quickstart.errors.permissionWhen"),
+			action: tUi("quickstart.errors.permissionAction"),
 			icon: Lock,
 		},
 		{
 			http: "404",
 			type: "not_found",
-			when: "Resource or model ID does not exist.",
-			action: "Double-check IDs and the available models list.",
+			when: tUi("quickstart.errors.notFoundWhen"),
+			action: tUi("quickstart.errors.notFoundAction"),
 			icon: Search,
 		},
 		{
 			http: "429",
 			type: "rate_limit_error",
-			when: "Too many requests or token throughput exceeded.",
-			action: "Back off with jitter, respect headers, and retry (see guidance below).",
+			when: tUi("quickstart.errors.rateLimitWhen"),
+			action: tUi("quickstart.errors.rateLimitAction"),
 			icon: Timer,
 		},
 	];
@@ -131,29 +133,29 @@ export default async function Errors() {
 		{
 			http: "500",
 			type: "server_error",
-			when: "Unexpected error while processing your request.",
-			action: "Retry with exponential backoff; contact support if persistent.",
+			when: tUi("quickstart.errors.serverWhen"),
+			action: tUi("quickstart.errors.serverAction"),
 			icon: Server,
 		},
 		{
 			http: "502",
 			type: "bad_gateway",
-			when: "Upstream model provider returned an error.",
-			action: "Retry; if frequent, check our status page or contact support.",
+			when: tUi("quickstart.errors.badGatewayWhen"),
+			action: tUi("quickstart.errors.badGatewayAction"),
 			icon: Server,
 		},
 		{
 			http: "503",
 			type: "service_unavailable",
-			when: "Temporary overload or maintenance.",
-			action: "Retry later with exponential backoff.",
+			when: tUi("quickstart.errors.unavailableWhen"),
+			action: tUi("quickstart.errors.unavailableAction"),
 			icon: Server,
 		},
 		{
 			http: "504",
 			type: "gateway_timeout",
-			when: "Upstream took too long to respond.",
-			action: "Retry; consider smaller requests or streaming if applicable.",
+			when: tUi("quickstart.errors.timeoutWhen"),
+			action: tUi("quickstart.errors.timeoutAction"),
 			icon: Server,
 		},
 	];
@@ -161,18 +163,9 @@ export default async function Errors() {
 	return (
 		<Card>
 			<CardHeader>
-				<CardTitle>Errors & rate limits</CardTitle>
+				<CardTitle>{tUi("quickstart.errors.title")}</CardTitle>
 				<CardDescription>
-					Two simple buckets:{" "}
-					<span className="font-medium">
-						4xx = your request needs attention
-					</span>
-					,{" "}
-					<span className="font-medium">
-						5xx = our service or an upstream provider
-					</span>
-					. We return descriptive messages to help you resolve issues
-					quickly.
+					{tUi("quickstart.errors.bucketsDescription")}
 				</CardDescription>
 			</CardHeader>
 
@@ -180,19 +173,19 @@ export default async function Errors() {
 				{/* Bucket chips */}
 				<div className="flex flex-wrap gap-2">
 					<Badge variant="secondary">
-						4xx — Request needs attention
+						{tUi("quickstart.error4xx")}
 					</Badge>
-					<Badge>5xx — Service or upstream</Badge>
+					<Badge>{tUi("quickstart.error5xx")}</Badge>
 				</div>
 
 				{/* Tabs, not tables */}
 				<Tabs defaultValue="4xx" className="w-full">
 					<TabsList className="grid w-full grid-cols-2">
 						<TabsTrigger value="4xx">
-							4xx · Request needs attention
+							{tUi("quickstart.error4xx")}
 						</TabsTrigger>
 						<TabsTrigger value="5xx">
-							5xx · Service or upstream
+							{tUi("quickstart.error5xx")}
 						</TabsTrigger>
 					</TabsList>
 
@@ -218,56 +211,39 @@ export default async function Errors() {
 					<CodeBlock
 						code={clientErrorExample}
 						lang="json"
-						label="4xx example"
+						label={tUi("quickstart.errors.example4xx")}
 					/>
 					<CodeBlock
 						code={serverErrorExample}
 						lang="json"
-						label="5xx example"
+						label={tUi("quickstart.errors.example5xx")}
 					/>
 				</div>
 
 				{/* Retry guidance (compact, no odd wrapping) */}
 				<Alert className="leading-6">
 					<Shield className="h-4 w-4" />
-					<AlertTitle>Retry guidance</AlertTitle>
+					<AlertTitle>{tUi("quickstart.errors.retryTitle")}</AlertTitle>
 					<AlertDescription className="text-sm">
-						<p>
-							For <InlineCode>429</InlineCode> and transient{" "}
-							<InlineCode>5xx</InlineCode>, use exponential
-							backoff with jitter (e.g. randomised
-							100-1500&nbsp;ms, doubling on repeats). Include an{" "}
-							<InlineCode>Idempotency-Key</InlineCode> header on
-							write-like operations to avoid duplicates.
-						</p>
+						<p>{tUi("quickstart.errors.retryDescription")}</p>
 					</AlertDescription>
 				</Alert>
 
 				{/* Support CTA */}
 				<Alert className="leading-6">
 					<LifeBuoy className="h-4 w-4" />
-					<AlertTitle>Need a hand?</AlertTitle>
+					<AlertTitle>{tUi("quickstart.errors.helpTitle")}</AlertTitle>
 					<AlertDescription className="text-sm space-y-3">
-						<p>
-							If you’re consistently seeing{" "}
-							<InlineCode>4xx</InlineCode>, something in the
-							request likely needs adjusting. If you’re seeing{" "}
-							<InlineCode>5xx</InlineCode>, it may be our services
-							or an upstream provider. We always include clear
-							messages and a{" "}
-							<InlineCode>generation_id</InlineCode> to help you
-							diagnose fast.
-						</p>
+						<p>{tUi("quickstart.errors.helpDescription")}</p>
 
 						{/* Callout */}
 						<div className="rounded-xl border border-primary/25 bg-primary/5 px-3 py-2">
 							<div className="flex flex-wrap items-center gap-2">
 								<span className="font-medium">
-									If you’re stuck, we’re here.
+									{tUi("quickstart.errors.helpCalloutTitle")}
 								</span>
 								<span className="text-muted-foreground">
-									Reach us on your preferred channel below and
-									we’ll get you up and running.
+									{tUi("quickstart.errors.helpCalloutDescription")}
 								</span>
 							</div>
 						</div>

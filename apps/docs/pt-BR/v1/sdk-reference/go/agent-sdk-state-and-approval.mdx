@@ -1,0 +1,21 @@
+---
+icon: "database"
+title: "Estado e aprovação"
+description: "Pause agentes Go para obter decisões humanas e continuar o estado gerenciado pela aplicação."
+---
+
+Use `HumanReview` para criar um ponto de revisão geral. Ferramentas que exigem aprovação ou são manuais preenchem `Run.Pause.PendingToolCalls` com os IDs exatos das chamadas.
+
+Continue com `Agent.Continue(...)` usando:
+
+- entradas `ToolDecision` em `Approvals` ou `Rejections`
+- entradas `ToolOutput` para tarefas manuais
+- `HumanInput` para uma pausa de revisão geral
+- o `RunResult` anterior ou `RunID` com um `StateAccessor`
+
+As decisões usam os IDs exatos das chamadas, portanto chamadas simultâneas à mesma ferramenta continuam distintas. Implemente `StateAccessor.Load(...)` e `Save(...)` se as execuções precisarem sobreviver a solicitações ou reinicializações.
+
+## Relacionados
+
+- [Ferramentas](./agent-sdk-tools.mdx)
+- [Controles da execução](./agent-sdk-run-controls.mdx)

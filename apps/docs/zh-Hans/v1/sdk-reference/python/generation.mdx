@@ -1,0 +1,14 @@
+---
+icon: "search-check"
+title: "生成记录查询"
+description: "使用 Python SDK 查询 /generations。"
+---
+
+```python
+record = client.get_generation("G-01ABC...")
+
+print(record)
+```
+
+如果已保存请求详情，返回的记录还会包含 `replay_supported` 和 `replay_request`，以便将捕获的负载重新提交到原始端点。
+

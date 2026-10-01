@@ -3,6 +3,8 @@
 import React, { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { resolveEnforcedZdr } from "@/components/(data)/model/pricing/zdr";
 import Link from "next/link";
+import { useLocale, useTranslations } from "next-intl";
+import { getLocalizedDocsHref } from "@/lib/docs";
 import { motion, useReducedMotion } from "motion/react";
 import {
 	AlertTriangle,
@@ -73,6 +75,7 @@ import PricingPlanSelect from "@/components/(data)/model/pricing/PricingPlanSele
 import {
 	getParameterDocsHref,
 	getParameterReference,
+	getParameterReferenceTranslationKey,
 } from "@/lib/parameters/reference";
 import {
 	getProviderModelScopeForPlan,
@@ -191,20 +194,20 @@ function formatPercent(value: number | null | undefined): string {
 	return `${value.toFixed(1)}%`;
 }
 
-function getPricingPlanLabel(plan: string): string {
+function getPricingPlanTranslationKey(plan: string): string | null {
 	switch (plan) {
 		case "standard":
-			return "Standard";
+			return "tierStandard";
 		case "free":
-			return "Free";
+			return "tierFree";
 		case "batch":
-			return "Batch";
+			return "tierBatch";
 		case "flex":
-			return "Flex";
+			return "tierFlex";
 		case "priority":
-			return "Fast";
+			return "tierFast";
 		default:
-			return plan ? plan.charAt(0).toUpperCase() + plan.slice(1) : plan;
+			return null;
 	}
 }
 
@@ -232,6 +235,14 @@ function getUptimeTrendPoints(
 	return [2, 1, 0].map((dayOffset) => pointsByDay.get(dayOffset as 0 | 1 | 2) ?? null);
 }
 
+function formatUptimeDayLabel(dayOffset: number, locale: string, todayLabel: string): string {
+	if (dayOffset === 0) return todayLabel;
+	return new Intl.RelativeTimeFormat(locale, { numeric: "always", style: "short" }).format(
+		-dayOffset,
+		"day",
+	);
+}
+
 function UptimeHoverContent({
 	uptimePct,
 	runtimeStats,
@@ -239,13 +250,16 @@ function UptimeHoverContent({
 	uptimePct: number | null;
 	runtimeStats: ProviderRuntimeStats | null | undefined;
 }) {
+	const t = useTranslations("Catalogue.modelDetail.providerTable");
+	const tSections = useTranslations("Catalogue.modelDetail.sections");
+	const locale = useLocale();
 	const dailyPoints = (runtimeStats?.uptimeDaily3d ?? [])
 		.slice()
 		.sort((a, b) => b.dayOffset - a.dayOffset);
 	return (
 		<div className="space-y-2.5">
 			<div className="flex items-center justify-between gap-4">
-				<p className="text-sm font-medium text-foreground">3-day uptime</p>
+				<p className="text-sm font-medium text-foreground">{t("threeDayUptime")}</p>
 				<span className={cn("font-medium tabular-nums", uptimeValueClass(uptimePct))}>
 					{formatPercent(uptimePct)}
 				</span>
@@ -272,7 +286,7 @@ function UptimeHoverContent({
 								aria-hidden="true"
 							/>
 							<span className="text-[10px] text-muted-foreground">
-								{point.dayOffset === 0 ? "Today" : `-${point.dayOffset}d`}
+								{formatUptimeDayLabel(point.dayOffset, locale, tSections("today"))}
 							</span>
 						</div>
 					);
@@ -303,6 +317,8 @@ function UptimeSparkline({
 	points: Array<number | null>;
 	className?: string;
 }) {
+	const t = useTranslations("Catalogue.modelDetail.sections");
+	const locale = useLocale();
 	const values = points.filter(
 		(value): value is number => value != null && Number.isFinite(value),
 	);
@@ -322,7 +338,7 @@ function UptimeSparkline({
 		<svg
 			viewBox={`0 0 ${width} ${height}`}
 			className={cn("h-3.5 w-8 shrink-0 overflow-visible", className)}
-			aria-label="Daily uptime"
+			aria-label={t("dailyUptime")}
 			role="img"
 		>
 			{points.map((value, index) => {
@@ -333,10 +349,11 @@ function UptimeSparkline({
 						? 0.45
 						: 1;
 
-				const day =
-					index === points.length - 1
-						? "Today"
-						: `-${points.length - 1 - index}d`;
+				const day = formatUptimeDayLabel(
+					points.length - 1 - index,
+					locale,
+					t("today"),
+				);
 
 				return (
 					<Tooltip key={`${index}-${value ?? "null"}`}>
@@ -555,11 +572,6 @@ function formatPriceRange(values: number[]): string {
 	return `${fmtUSD(min)}-${fmtUSD(max)}`;
 }
 
-function formatCountLabel(count: number, singular: string, plural = `${singular}s`): string | null {
-	if (count <= 0) return null;
-	return `${count} ${count === 1 ? singular : plural}`;
-}
-
 type AdditionalMeterSummary = {
 	key: string;
 	label: string;
@@ -570,22 +582,24 @@ type AdditionalMeterSummary = {
 
 function getRoutingHealthSummary(
 	routingStatus: ProviderRoutingStatus | null | undefined,
+	labels: {
+		limited: string;
+		limitedDescription: (count: number) => string;
+		recovering: string;
+		recoveringDescription: (count: number) => string;
+	},
 ): { label: string; description: string } | null {
 	if (!routingStatus) return null;
 	if (routingStatus.deranked) {
 		return {
-			label: "Temporarily limited",
-			description: `Routing health has temporarily deranked this provider (${routingStatus.openCount} affected route pair${
-				routingStatus.openCount === 1 ? "" : "s"
-			}).`,
+			label: labels.limited,
+			description: labels.limitedDescription(routingStatus.openCount),
 		};
 	}
 	if (routingStatus.recovering) {
 		return {
-			label: "Recovering",
-			description: `Routing health is probing recovery now (${routingStatus.halfOpenCount} route pair${
-				routingStatus.halfOpenCount === 1 ? "" : "s"
-			} in half-open state).`,
+			label: labels.recovering,
+			description: labels.recoveringDescription(routingStatus.halfOpenCount),
 		};
 	}
 	return null;
@@ -608,10 +622,13 @@ function formatTokenLimit1dp(value: number | null | undefined): string {
 }
 
 
-function formatPolicyValue(value: string | boolean | null | undefined): string {
-	if (typeof value === "boolean") return value ? "True" : "False";
+function formatPolicyValue(
+	value: string | boolean | null | undefined,
+	labels: { yes: string; no: string; unknown: string },
+): string {
+	if (typeof value === "boolean") return value ? labels.yes : labels.no;
 	const normalized = String(value ?? "").trim();
-	if (!normalized) return "Unknown";
+	if (!normalized || normalized.toLowerCase() === "unknown") return labels.unknown;
 	return normalized
 		.replace(/[_-]+/g, " ")
 		.replace(/\b\w/g, (char) => char.toUpperCase());
@@ -683,16 +700,19 @@ function formatMeterLabel(meter: string): string {
 		.replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
-function formatBillingTimestampBasis(value: string | null | undefined): string {
+function getBillingTimestampBasisMessageKey(value: string | null | undefined):
+	| "billingProviderAccept"
+	| "billingCompletion"
+	| "billingRequestStart" {
 	switch (value) {
 		case "provider_accept":
-			return "Provider accept";
+			return "billingProviderAccept";
 		case "completion":
-			return "Completion";
+			return "billingCompletion";
 		case "request_start":
-			return "Request start";
+			return "billingRequestStart";
 		default:
-			return "Request start";
+			return "billingRequestStart";
 	}
 }
 
@@ -720,12 +740,15 @@ function formatRequestMeterTitle(meter: string | null | undefined): string {
 		.join(" ");
 }
 
-function formatRequestMeterUnit(unitLabel: string | null | undefined): string {
-	if (!unitLabel) return "/ request";
-	if (/^per request$/i.test(unitLabel)) return "/ request";
+function formatRequestMeterUnit(
+	unitLabel: string | null | undefined,
+	requestLabels: { singular: string; plural: string },
+): string {
+	if (!unitLabel) return `/ ${requestLabels.singular}`;
+	if (/^per request$/i.test(unitLabel)) return `/ ${requestLabels.singular}`;
 	const match = unitLabel.match(/^per\s+([\d,]+)\s+requests?$/i);
 	if (!match) return unitLabel.replace(/^per\s+/i, "/ ");
-	return `/ ${fmtCompact(Number(match[1].replace(/,/g, "")))} req`;
+	return `/ ${fmtCompact(Number(match[1].replace(/,/g, "")))} ${requestLabels.plural}`;
 }
 
 function parseUtcClockMinutes(value: string | null | undefined): number | null {
@@ -757,16 +780,6 @@ type PricingTimezoneMode = "local" | "utc";
 const PRICING_TIMEZONE_MODE_KEY = "phaseo:pricing-timezone-mode:v1";
 const PRICING_TIMEZONE_MODE_EVENT = "phaseo:pricing-timezone-mode-change";
 const PRICING_UTC_DAY_KEYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"] as const;
-const PRICING_DAY_LABELS: Record<string, string> = {
-	mon: "Mon",
-	tue: "Tue",
-	wed: "Wed",
-	thu: "Thu",
-	fri: "Fri",
-	sat: "Sat",
-	sun: "Sun",
-};
-
 function getPricingTimezoneModeSnapshot(): PricingTimezoneMode {
 	const mode = window.localStorage.getItem(PRICING_TIMEZONE_MODE_KEY);
 	return mode === "utc" ? "utc" : "local";
@@ -785,17 +798,32 @@ function subscribeToPricingTimezoneMode(onChange: () => void): () => void {
 	};
 }
 
-function formatPricingWindowDays(days: string[] | undefined): string {
-	if (!days?.length) return "Every day";
-	if (days.join(",") === "mon,tue,wed,thu,fri") return "Mon–Fri";
-	if (days.join(",") === "sat,sun") return "Sat–Sun";
-	return days.map((day) => PRICING_DAY_LABELS[day] ?? day).join(", ");
+function formatPricingWindowDays(days: string[] | undefined, locale: string, everyDay: string): string {
+	if (!days?.length) return everyDay;
+	const dayIndex: Record<string, number> = {
+		mon: 0,
+		tue: 1,
+		wed: 2,
+		thu: 3,
+		fri: 4,
+		sat: 5,
+		sun: 6,
+	};
+	return days
+		.map((day) => {
+			const index = dayIndex[day];
+			if (index == null) return day;
+			const date = new Date(Date.UTC(2024, 0, index + 1));
+			return new Intl.DateTimeFormat(locale, { weekday: "short", timeZone: "UTC" }).format(date);
+		})
+		.join(", ");
 }
 
 function formatPricingWindowRange(
 	window: NonNullable<ProviderPricing["pricing_rules"][number]["time_windows"]>[number],
 	mode: PricingTimezoneMode,
 	now: Date,
+	locale: string,
 ): string {
 	if (mode === "utc") return `${window.start_time}–${window.end_time} UTC`;
 	const start = parseUtcClockMinutes(window.start_time);
@@ -809,8 +837,8 @@ function formatPricingWindowRange(
 		if (allowedDays && !allowedDays.has(PRICING_UTC_DAY_KEYS[candidateDay.getUTCDay()])) continue;
 		const startAt = new Date(candidateDay.getTime() + start * 60_000);
 		const endAt = new Date(candidateDay.getTime() + end * 60_000 + (end <= start ? 86_400_000 : 0));
-		const weekday = new Intl.DateTimeFormat(undefined, { weekday: "short" }).format(startAt);
-		const timeFormatter = new Intl.DateTimeFormat(undefined, { hour: "2-digit", minute: "2-digit", hour12: false });
+		const weekday = new Intl.DateTimeFormat(locale, { weekday: "short" }).format(startAt);
+		const timeFormatter = new Intl.DateTimeFormat(locale, { hour: "2-digit", minute: "2-digit" });
 		return `${weekday} ${timeFormatter.format(startAt)}–${timeFormatter.format(endAt)}`;
 	}
 	return `${window.start_time}–${window.end_time} UTC`;
@@ -1200,10 +1228,10 @@ function formatPlanMultiplierLabel(value: DerivedPlanMultiplier | null): string 
 	return `${formatMultiplierValue(value.multiplier)}x`;
 }
 
-function formatLeavingDate(value: string, now: Date): string {
+function formatLeavingDate(value: string, now: Date, locale: string): string {
 	const to = new Date(value);
 	const includeYear = to.getFullYear() !== now.getFullYear();
-	return to.toLocaleDateString("en-GB", {
+	return to.toLocaleDateString(locale, {
 		day: "2-digit",
 		month: "long",
 		...(includeYear ? { year: "numeric" as const } : {}),
@@ -1234,24 +1262,24 @@ function parseRuleConditionValues(value: unknown): string[] {
 	return [];
 }
 
-function formatDiscountCountdown(value: string | null | undefined): string | null {
+function formatDiscountTimeRemaining(
+	value: string | null | undefined,
+	labels: {
+		endingNow: string;
+		endsInDaysHours: (days: number, hours: number) => string;
+		endsInHours: (hours: number) => string;
+	},
+): string | null {
 	if (!value) return null;
 	const end = new Date(value).getTime();
 	if (Number.isNaN(end)) return null;
 	const diff = end - Date.now();
-	if (diff <= 0) return "Discount ending now";
+	if (diff <= 0) return labels.endingNow;
 	const hours = Math.floor(diff / (1000 * 60 * 60));
 	const days = Math.floor(hours / 24);
 	const remHours = hours % 24;
-	if (days > 0) return `Discount ends in ${days}d ${remHours}h`;
-	return `Discount ends in ${Math.max(remHours, 1)}h`;
-}
-
-function formatDiscountTimeRemaining(value: string | null | undefined): string | null {
-	const countdown = formatDiscountCountdown(value);
-	if (!countdown) return null;
-	if (countdown === "Discount ending now") return "Ending now";
-	return countdown.replace(/^Discount ends/i, "Ends");
+	if (days > 0) return labels.endsInDaysHours(days, remHours);
+	return labels.endsInHours(Math.max(remHours, 1));
 }
 
 type ActiveDiscountEntry = {
@@ -1270,18 +1298,21 @@ function getPercentOff(basePrice: number | null | undefined, discountedPrice: nu
 	return Number.isFinite(percent) && percent > 0 ? percent : null;
 }
 
-function formatDiscountBadge(entries: ActiveDiscountEntry[]): string | null {
+function formatDiscountBadge(
+	entries: ActiveDiscountEntry[],
+	labels: { discount: string; off: string; upToDiscount: (percent: number) => string },
+): string | null {
 	const roundedPercents = entries
 		.map((entry) => entry.percentOff)
 		.filter((value): value is number => value != null && Number.isFinite(value) && value > 0)
 		.map((value) => Math.max(1, Math.round(value)));
 
-	if (!roundedPercents.length) return entries.length ? "Discount" : null;
+	if (!roundedPercents.length) return entries.length ? labels.discount : null;
 
 	const min = Math.min(...roundedPercents);
 	const max = Math.max(...roundedPercents);
-	if (min === max) return `${max}% Off`;
-	return `Up to ${max}% Off`;
+	if (min === max) return `${max}% ${labels.off}`;
+	return labels.upToDiscount(max);
 }
 
 function collectDiscountEntriesFromTiers(tiers?: TokenTier[] | null): ActiveDiscountEntry[] {
@@ -1299,67 +1330,30 @@ function collectDiscountEntriesFromTiers(tiers?: TokenTier[] | null): ActiveDisc
 		.filter((entry) => entry.percentOff != null);
 }
 
+type PrivacyReasonMessageKey =
+	| "privacyAccountBlocked"
+	| "privacyAccountAllowlist"
+	| "privacyWorkspaceBlocked"
+	| "privacyWorkspaceAllowlist"
+	| "privacyZdrRequired"
+	| "privacyFreeTrainingDisabled"
+	| "privacyPaidTrainingDisabled";
+
 function getPrivacyReasonMeta(reason: string): {
-	label: string;
+	messageKey: PrivacyReasonMessageKey;
 	href: string;
-	linkLabel: string;
 } | null {
-	if (reason === "Blocked by account provider restrictions") {
-		return {
-			label: "Unavailable because of workspace privacy or an assigned guardrail.",
-			href: "/settings/privacy",
-			linkLabel: "Review workspace privacy",
-		};
-	}
-	if (reason === "Not in account provider allowlist") {
-		return {
-			label: "Unavailable because it is outside the workspace or assigned guardrail allowlist.",
-			href: "/settings/privacy",
-			linkLabel: "Review workspace privacy",
-		};
-	}
-	if (reason === "Blocked by workspace provider restrictions") {
-		return {
-			label: "Blocked by your workspace provider restrictions.",
-			href: "/settings/privacy",
-			linkLabel: "Review privacy settings",
-		};
-	}
-	if (reason === "Not in workspace provider allowlist") {
-		return {
-			label: "This provider is outside your workspace allowlist.",
-			href: "/settings/privacy",
-			linkLabel: "Review privacy settings",
-		};
-	}
-	if (reason === "Does not meet workspace ZDR-only requirement") {
-		return {
-			label: "This provider does not meet your workspace ZDR-only requirement.",
-			href: "/settings/privacy",
-			linkLabel: "Review privacy settings",
-		};
-	}
-	if (
-		reason ===
-		"Free training-on-inputs endpoints are disabled in workspace privacy settings"
-	) {
-		return {
-			label: "Free providers that may train on inputs are disabled in your workspace.",
-			href: "/settings/privacy",
-			linkLabel: "Review privacy settings",
-		};
-	}
-	if (
-		reason ===
-		"Paid training-on-inputs endpoints are disabled in workspace privacy settings"
-	) {
-		return {
-			label: "Paid providers that may train on inputs are disabled in your workspace.",
-			href: "/settings/privacy",
-			linkLabel: "Review privacy settings",
-		};
-	}
-	return null;
+	const messageKeyByReason: Record<string, PrivacyReasonMessageKey> = {
+		"Blocked by account provider restrictions": "privacyAccountBlocked",
+		"Not in account provider allowlist": "privacyAccountAllowlist",
+		"Blocked by workspace provider restrictions": "privacyWorkspaceBlocked",
+		"Not in workspace provider allowlist": "privacyWorkspaceAllowlist",
+		"Does not meet workspace ZDR-only requirement": "privacyZdrRequired",
+		"Free training-on-inputs endpoints are disabled in workspace privacy settings": "privacyFreeTrainingDisabled",
+		"Paid training-on-inputs endpoints are disabled in workspace privacy settings": "privacyPaidTrainingDisabled",
+	};
+	const messageKey = messageKeyByReason[reason];
+	return messageKey ? { messageKey, href: "/settings/privacy" } : null;
 }
 
 function collectDiscountEntriesFromTriple(triple?: TokenTriple | null): ActiveDiscountEntry[] {
@@ -1534,29 +1528,51 @@ function ProviderLifecycleDetails({
 }: {
 	providerModels: ProviderLifecycleStatusInput[];
 }) {
+	const tProvider = useTranslations("Catalogue.modelDetail.providerTable");
+	const tSections = useTranslations("Catalogue.modelDetail.sections");
 	const lifecycle = summarizeProviderLifecycle(providerModels);
+	const providerAvailability = lifecycle.providerAvailability
+		? {
+				label: tSections(
+					`providerLifecycle.availability.${lifecycle.providerAvailability.key}.label` as never,
+				),
+				description: tSections(
+					`providerLifecycle.availability.${lifecycle.providerAvailability.key}.description` as never,
+				),
+			}
+		: null;
+	const phaseoIntegration = lifecycle.phaseo
+		? {
+				label: tSections(
+					`providerLifecycle.phaseo.${lifecycle.phaseo.key}.label` as never,
+				),
+				description: tSections(
+					`providerLifecycle.phaseo.${lifecycle.phaseo.key}.description` as never,
+				),
+			}
+		: null;
 	return (
 		<div className="mt-2 space-y-1 border-t border-zinc-200/70 pt-2 dark:border-zinc-800">
-			{lifecycle.providerAvailability ? (
+			{providerAvailability ? (
 				<div className="grid grid-cols-[auto_1fr] gap-x-3">
-					<span className="text-muted-foreground">Provider</span>
-					<span className="text-right font-medium" title={lifecycle.providerAvailability.description}>
-						{lifecycle.providerAvailability.label}
+					<span className="text-muted-foreground">{tProvider("provider")}</span>
+					<span className="text-right font-medium" title={providerAvailability.description}>
+						{providerAvailability.label}
 					</span>
 				</div>
 			) : null}
-			{lifecycle.phaseo ? (
+			{phaseoIntegration ? (
 				<div className="grid grid-cols-[auto_1fr] gap-x-3">
 					<span className="text-muted-foreground">Phaseo</span>
-					<span className="text-right font-medium" title={lifecycle.phaseo.description}>
-						{lifecycle.phaseo.label}
+					<span className="text-right font-medium" title={phaseoIntegration.description}>
+						{phaseoIntegration.label}
 					</span>
 				</div>
 			) : null}
 			<div className="grid grid-cols-[auto_1fr] gap-x-3">
-				<span className="text-muted-foreground">Access</span>
+				<span className="text-muted-foreground">{tSections("access")}</span>
 				<span className="text-right font-medium">
-					{lifecycle.accessScope === "internal" ? "Internal only" : "Public"}
+					{lifecycle.accessScope === "internal" ? tSections("internalOnly") : tSections("public")}
 				</span>
 			</div>
 		</div>
@@ -1596,6 +1612,16 @@ export default function ProviderCard({
 	serviceTiersExpanded?: boolean;
 	onToggleServiceTiers?: () => void;
 }) {
+	const tProvider = useTranslations("Catalogue.modelDetail.providerTable");
+	const tQuickstart = useTranslations("Catalogue.models.detail.quickstart");
+	const tSections = useTranslations("Catalogue.modelDetail.sections");
+	const tPerformance = useTranslations("Catalogue.modelDetail.performance");
+	const tPricing = useTranslations("Catalogue.modelDetail.pricing");
+	const locale = useLocale();
+	const localizePricingMeter = (meter: string | null | undefined, fallback: string) => {
+		const key = `meters.${String(meter ?? "").trim()}`;
+		return tPricing.has(key as never) ? tPricing(key as never) : fallback;
+	};
 	const [selectedPlan, setSelectedPlan] = useState(defaultPlan);
 	const [expanded, setExpanded] = useState(false);
 	const reduceMotion = useReducedMotion();
@@ -1755,6 +1781,26 @@ export default function ProviderCard({
 		selectedPlan,
 	);
 	const lifecycleStatus = summarizeProviderLifecycle(providerModelsInScope);
+	const providerAvailability = lifecycleStatus.providerAvailability
+		? {
+				label: tSections(
+					`providerLifecycle.availability.${lifecycleStatus.providerAvailability.key}.label` as never,
+				),
+				description: tSections(
+					`providerLifecycle.availability.${lifecycleStatus.providerAvailability.key}.description` as never,
+				),
+			}
+		: null;
+	const phaseoIntegration = lifecycleStatus.phaseo
+		? {
+				label: tSections(
+					`providerLifecycle.phaseo.${lifecycleStatus.phaseo.key}.label` as never,
+				),
+				description: tSections(
+					`providerLifecycle.phaseo.${lifecycleStatus.phaseo.key}.description` as never,
+				),
+			}
+		: null;
 	const tableProviderModelsInScope = getProviderModelScopeForPlan(
 		provider,
 		tablePlan,
@@ -1790,12 +1836,29 @@ export default function ProviderCard({
 	const statusMeta = PROVIDER_STATUS_META[statusKey] ?? PROVIDER_STATUS_META.not_listed;
 	const statusIcon = statusMeta.icon;
 	const statusClass = cn("h-3.5 w-3.5", statusMeta.iconClass);
-	const statusLabel = statusMeta.label;
-	const routingHealthSummary = getRoutingHealthSummary(routingStatus);
-	const statusDetail =
-		statusKey === "active" && leavingSoonProviderModel?.effective_to
-			? `${statusMeta.description} Provider availability ends on ${formatLeavingDate(leavingSoonProviderModel.effective_to, now)}`
-			: statusMeta.description;
+	const statusTranslationKeys: Record<CanonicalGatewayStatus, { label: string; description: string }> = {
+		active: { label: "statuses.active", description: "statusDescriptions.active" },
+		coming_soon: { label: "statuses.comingSoon", description: "statusDescriptions.comingSoon" },
+		external: { label: "statuses.external", description: "statusDescriptions.external" },
+		internal_testing: { label: "statuses.internalTesting", description: "statusDescriptions.internalTesting" },
+		deranked_lvl1: { label: "statuses.rateLimited", description: "statusDescriptions.rateLimited" },
+		deranked_lvl2: { label: "statuses.rateLimited", description: "statusDescriptions.rateLimited" },
+		deranked_lvl3: { label: "statuses.rateLimited", description: "statusDescriptions.rateLimited" },
+		inactive: { label: "statuses.inactive", description: "statusDescriptions.inactive" },
+		disabled: { label: "statuses.disabled", description: "statusDescriptions.disabled" },
+		not_listed: { label: "statuses.inactive", description: "statusDescriptions.inactive" },
+	};
+	const statusLabel = tProvider(statusTranslationKeys[statusKey].label as never);
+	const routingHealthSummary = getRoutingHealthSummary(routingStatus, {
+		limited: tSections("routingHealthLimited"),
+		limitedDescription: (count) => tSections("routingHealthLimitedDescription", { count }),
+		recovering: tSections("routingHealthRecovering"),
+		recoveringDescription: (count) => tSections("routingHealthRecoveringDescription", { count }),
+	});
+	const statusDescription = tProvider(statusTranslationKeys[statusKey].description as never);
+	const statusDetail = statusKey === "active" && leavingSoonProviderModel?.effective_to
+		? `${statusDescription} ${tProvider("availabilityEndsOn", { date: formatLeavingDate(leavingSoonProviderModel.effective_to, now, locale) })}`
+		: statusDescription;
 	const isComingSoonProvider = statusKey === "coming_soon";
 	const isInternalTestingProvider = statusKey === "internal_testing";
 	const tableLeavingSoonProviderModel = tableProviderModelsInScope
@@ -1828,15 +1891,24 @@ export default function ProviderCard({
 		PROVIDER_STATUS_META[tableStatusKey] ?? PROVIDER_STATUS_META.not_listed;
 	const tableStatusIcon = tableStatusMeta.icon;
 	const tableStatusClass = cn("h-3.5 w-3.5", tableStatusMeta.iconClass);
-	const tableStatusLabel = tableStatusMeta.label;
-	const tableStatusDetail =
-		tableStatusKey === "active" && tableLeavingSoonProviderModel?.effective_to
-			? `${tableStatusMeta.description} Provider availability ends on ${formatLeavingDate(tableLeavingSoonProviderModel.effective_to, now)}`
-			: tableStatusMeta.description;
-	const privacyReasonMeta = (privacyIgnoredReasons ?? []).map((reason) => ({
-		reason,
-		meta: getPrivacyReasonMeta(reason),
-	}));
+	const tableStatusLabel = tProvider(statusTranslationKeys[tableStatusKey].label as never);
+	const tableStatusDescription = tProvider(statusTranslationKeys[tableStatusKey].description as never);
+	const tableStatusDetail = tableStatusKey === "active" && tableLeavingSoonProviderModel?.effective_to
+		? `${tableStatusDescription} ${tProvider("availabilityEndsOn", { date: formatLeavingDate(tableLeavingSoonProviderModel.effective_to, now, locale) })}`
+		: tableStatusDescription;
+	const privacyReasonMeta = (privacyIgnoredReasons ?? []).map((reason) => {
+		const reasonMeta = getPrivacyReasonMeta(reason);
+		return {
+			reason,
+			meta: reasonMeta
+				? {
+						label: tSections(reasonMeta.messageKey),
+						href: reasonMeta.href,
+						linkLabel: tSections("reviewPrivacySettings"),
+					}
+				: null,
+		};
+	});
 	const isWorkspacePrivacyBlocked = (privacyIgnoredReasons ?? []).some((reason) =>
 		reason.includes("workspace") || reason.includes("ZDR-only"),
 	);
@@ -1876,13 +1948,15 @@ export default function ProviderCard({
 	const capacityMetrics = [
 			maxContextTokens !== null
 				? {
-						label: "Total Context",
+						key: "totalContext",
+						label: tSections("totalContext"),
 						value: formatTokenLimit1dp(maxContextTokens),
 				}
 				: null,
 			maxOutputTokens !== null
 				? {
-						label: "Max Output",
+						key: "maxOutput",
+						label: tSections("maxOutput"),
 						value: formatTokenLimit(maxOutputTokens),
 				}
 				: null,
@@ -1890,6 +1964,7 @@ export default function ProviderCard({
 			(
 				metric
 			): metric is {
+				key: string;
 				label: string;
 				value: string;
 			} => Boolean(metric)
@@ -1902,7 +1977,7 @@ export default function ProviderCard({
 		unitLabel?: string;
 	};
 	const createTokenTiles = (
-		modalityLabel: "Text" | "Audio" | "Image" | "Video",
+		modalityLabel: string,
 		modalityKey: "text" | "audio" | "image" | "video",
 		triple: TokenTriple | undefined,
 	): TokenMetricTile[] => {
@@ -1914,22 +1989,22 @@ export default function ProviderCard({
 		}> = [
 			{
 				key: `${modalityKey}-input`,
-				title: `${modalityLabel} Input`,
+				title: `${modalityLabel} ${tSections("input")}`,
 				tiers: triple.in,
 			},
 			{
 				key: `${modalityKey}-output`,
-				title: `${modalityLabel} Output`,
+				title: `${modalityLabel} ${tSections("output")}`,
 				tiers: triple.out,
 			},
 			{
 				key: `${modalityKey}-cache-read`,
-				title: `${modalityLabel} Cache Reads`,
+				title: `${modalityLabel} ${tSections("cacheReads")}`,
 				tiers: triple.cached,
 			},
 			{
 				key: `${modalityKey}-cache-write`,
-				title: `${modalityLabel} Cache Writes`,
+				title: `${modalityLabel} ${tSections("cacheWrites")}`,
 				tiers: triple.write,
 			},
 		];
@@ -1940,37 +2015,37 @@ export default function ProviderCard({
 				title: section.title.replace(`${modalityLabel} `, ""),
 				groupTitle: modalityLabel,
 				tiers: section.tiers,
-				unitLabel: "Per 1M tokens",
+				unitLabel: tPricing("perMillionTokens"),
 			}));
 	};
 	const createEmbeddingTiles = (triple: TokenTriple | undefined): TokenMetricTile[] => {
 		if (!triple) return [];
 		const directions = [
-			{ key: "input", suffix: " Input", tiers: triple.in },
-			{ key: "output", suffix: " Output", tiers: triple.out },
-			{ key: "cache-read", suffix: " Cache Reads", tiers: triple.cached },
-			{ key: "cache-write", suffix: " Cache Writes", tiers: triple.write },
+			{ key: "input", suffix: ` ${tSections("input")}`, tiers: triple.in },
+			{ key: "output", suffix: ` ${tSections("output")}`, tiers: triple.out },
+			{ key: "cache-read", suffix: ` ${tSections("cacheReads")}`, tiers: triple.cached },
+			{ key: "cache-write", suffix: ` ${tSections("cacheWrites")}`, tiers: triple.write },
 		] as const;
 
 		return directions.flatMap((direction) =>
 			direction.tiers.map((tier, index) => {
-				const source = tier.label && tier.label !== "All usage" ? tier.label : "Embedding";
+				const source = tier.label && tier.label !== "All usage" ? tier.label : tSections("embedding");
 				return {
 					key: `embeddings-${direction.key}-${source}-${index}`,
 					title: `${source}${direction.suffix}`,
-					groupTitle: "Embeddings",
+					groupTitle: tSections("embeddings"),
 					tiers: [{ ...tier, label: "All usage" }],
-					unitLabel: "Per 1M tokens",
+					unitLabel: tPricing("perMillionTokens"),
 				};
 			}),
 		);
 	};
 	const tokenMetricTiles = [
-		...createTokenTiles("Text", "text", sec.textTokens),
+		...createTokenTiles(tSections("text"), "text", sec.textTokens),
 		...createEmbeddingTiles(sec.embeddingTokens),
-		...createTokenTiles("Audio", "audio", sec.audioTokens),
-		...createTokenTiles("Image", "image", sec.imageTokens),
-		...createTokenTiles("Video", "video", sec.videoTokens),
+		...createTokenTiles(tSections("audio"), "audio", sec.audioTokens),
+		...createTokenTiles(tSections("image"), "image", sec.imageTokens),
+		...createTokenTiles(tSections("video"), "video", sec.videoTokens),
 	];
 	const allTokenMetricGroups = Array.from(
 		tokenMetricTiles.reduce((groups, tile) => {
@@ -2128,25 +2203,41 @@ export default function ProviderCard({
 	const tableActiveDiscountEntries = collectDiscountEntriesFromSections(tableSec);
 	const discountCount = activePromotionEntries.length;
 	const tableDiscountCount = tableActiveDiscountEntries.length;
+	const discountLabels = {
+		discount: tSections("discount"),
+		off: tSections("off"),
+		upToDiscount: (percent: number) => tSections("upToDiscount", { percent }),
+	};
+	const discountCountdownLabels = {
+		endingNow: tSections("endingNow"),
+		endsInDaysHours: (days: number, hours: number) =>
+			tSections("discountEndsInDaysHours", { days, hours }),
+		endsInHours: (hours: number) => tSections("discountEndsInHours", { hours }),
+	};
 	const soonestDiscountEnd = activePromotionEntries
 		.map((entry) => entry.endsAt)
 		.filter((value): value is string => Boolean(value))
 		.sort((a, b) => new Date(a).getTime() - new Date(b).getTime())[0];
-	const discountBadge = discountCount ? formatDiscountBadge(activePromotionEntries) : null;
+	const discountBadge = discountCount
+		? formatDiscountBadge(activePromotionEntries, discountLabels)
+		: null;
 	const tableDiscountBadge = tableDiscountCount
-		? formatDiscountBadge(tableActiveDiscountEntries)
+		? formatDiscountBadge(tableActiveDiscountEntries, discountLabels)
 		: null;
 	const discountTimeRemaining =
 		discountCount && soonestDiscountEnd
-			? formatDiscountTimeRemaining(soonestDiscountEnd)
+			? formatDiscountTimeRemaining(soonestDiscountEnd, discountCountdownLabels)
 			: null;
-	const selectedPlanLabel = getPricingPlanLabel(selectedPlan);
+	const selectedPlanTranslationKey = getPricingPlanTranslationKey(selectedPlan);
+	const selectedPlanLabel = selectedPlanTranslationKey
+		? tQuickstart(selectedPlanTranslationKey as never)
+		: selectedPlan ? selectedPlan.charAt(0).toUpperCase() + selectedPlan.slice(1) : selectedPlan;
 	const selectedPlanTheme = getPlanTheme(selectedPlan);
 	const tablePlanTheme = getPlanTheme(tablePlan);
 	const performanceMetrics = [
 		{
 			key: "latency",
-			label: "Latency",
+			label: tProvider("latency"),
 			value:
 				runtimeStats?.latencyMs30m != null
 					? formatLatencySeconds(runtimeStats.latencyMs30m)
@@ -2158,13 +2249,13 @@ export default function ProviderCard({
 		},
 		{
 			key: "throughput",
-			label: "Throughput",
+			label: tProvider("throughput"),
 			value: throughputValue ? `${throughputValue} tps` : "--",
 			valueClassName: selectedPlanTheme.accent,
 		},
 		{
 			key: "uptime",
-			label: "Uptime",
+			label: tProvider("uptime"),
 			value: formatPercent(uptimePct),
 			valueClassName: selectedPlanTheme.accent,
 		},
@@ -2495,9 +2586,9 @@ export default function ProviderCard({
 		],
 	};
 	const contextLengthValue =
-		capacityMetrics.find((metric) => metric.label === "Total Context")?.value ?? "--";
+		capacityMetrics.find((metric) => metric.key === "totalContext")?.value ?? "--";
 	const maxOutputValue =
-		capacityMetrics.find((metric) => metric.label === "Max Output")?.value ?? "--";
+		capacityMetrics.find((metric) => metric.key === "maxOutput")?.value ?? "--";
 	const parameterSupport = buildParameterSupportSummary(infoScope);
 	const supportedParameters = parameterSupport.parameters;
 	const displayProviderModelIds = Array.from(
@@ -2515,32 +2606,31 @@ export default function ProviderCard({
 			<div className="rounded-xl border border-sky-200/80 bg-sky-50/60 px-3 py-2.5 text-xs text-sky-900 dark:border-sky-900/70 dark:bg-sky-950/30 dark:text-sky-100">
 				<div className="inline-flex items-center gap-1.5 font-semibold">
 					<FlaskConical className="h-3.5 w-3.5" />
-					Internal Testing
+										{tProvider("statuses.internalTesting")}
 				</div>
 				<p className="mt-1 text-[11px] leading-snug text-sky-800/90 dark:text-sky-200/90">
-					This provider/model capability is visible to admins for testing before public rollout.
+								{tProvider("statusDescriptions.internalTesting")}
 				</p>
 			</div>
 		) : isComingSoonProvider ? (
 			<div className="rounded-xl border border-blue-200/80 bg-blue-50/60 px-3 py-2.5 text-xs text-blue-900 dark:border-blue-900/70 dark:bg-blue-950/30 dark:text-blue-100">
 				<div className="inline-flex items-center gap-1.5 font-semibold">
 					<Clock3 className="h-3.5 w-3.5" />
-					Coming Soon
+										{tProvider("statuses.comingSoon")}
 				</div>
 				<p className="mt-1 text-[11px] leading-snug text-blue-800/90 dark:text-blue-200/90">
-					This provider is not live for the selected tier yet. Pricing will appear once
-					availability starts.
+								{tProvider("comingSoonTierPricingDescription")}
 				</p>
 			</div>
 		) : (
 			<div className="rounded-xl border border-dashed border-zinc-200/80 bg-zinc-50/60 px-3 py-2.5 text-xs text-muted-foreground dark:border-zinc-800 dark:bg-zinc-900/30">
-				Pricing is not available for the selected tier on this provider.
+				{tProvider("noPricingForSelectedTier")}
 			</div>
 		)
 	) : isFreePlan ? (
 		<div className="py-3">
 			<div>
-				<div className="text-[11px] text-muted-foreground">Input and output</div>
+				<div className="text-[11px] text-muted-foreground">{tSections("inputAndOutput")}</div>
 				<div
 					className={cn(
 						"mt-0.5 text-lg font-semibold tabular-nums",
@@ -2550,7 +2640,7 @@ export default function ProviderCard({
 					{fmtUSD(0)}
 				</div>
 				<div className="mt-0.5 text-[10px] text-muted-foreground">
-					Per 1M tokens
+					{tPricing("perMillionTokens")}
 				</div>
 			</div>
 		</div>
@@ -2598,34 +2688,38 @@ export default function ProviderCard({
 		imageInputs.length > 0
 			? {
 					key: "image-inputs",
-					label: "Image inputs",
+					label: tSections("imageInputs"),
 					value: formatPriceRange(imageInputs.map((row) => row.price)),
 					unit:
 						new Set(imageInputs.map((row) => row.unitLabel)).size === 1
-							? imageInputs[0]?.unitLabel ?? "Usage"
-							: "Mixed units",
-					detail: formatCountLabel(new Set(imageInputs.map((row) => row.label)).size, "condition"),
+							? imageInputs[0]?.unitLabel ?? tSections("usage")
+							: tSections("mixedUnits"),
+					detail: new Set(imageInputs.map((row) => row.label)).size
+						? tSections("conditionsCount", { count: new Set(imageInputs.map((row) => row.label)).size })
+						: null,
 				}
 			: null,
 		videoInputs.length > 0
 			? {
 					key: "video-inputs",
-					label: "Video inputs",
+					label: tSections("videoInputs"),
 					value: formatPriceRange(videoInputs.map((row) => row.price)),
 					unit:
 						new Set(videoInputs.map((row) => row.unitLabel)).size === 1
-							? videoInputs[0]?.unitLabel ?? "Usage"
-							: "Mixed units",
-					detail: formatCountLabel(new Set(videoInputs.map((row) => row.label)).size, "condition"),
+							? videoInputs[0]?.unitLabel ?? tSections("usage")
+							: tSections("mixedUnits"),
+					detail: new Set(videoInputs.map((row) => row.label)).size
+						? tSections("conditionsCount", { count: new Set(videoInputs.map((row) => row.label)).size })
+						: null,
 				}
 			: null,
 		sec.otherRules.length > 0
 			? {
 					key: "conditional",
-					label: "Conditional meters",
+					label: tSections("conditionalMeters"),
 					value: formatPriceRange(sec.otherRules.map((row) => row.price)),
-					unit: "See rules",
-					detail: formatCountLabel(sec.otherRules.length, "rule"),
+					unit: tSections("seeRules"),
+					detail: tSections("rulesCount", { count: sec.otherRules.length }),
 				}
 			: null,
 	].filter((summary): summary is AdditionalMeterSummary => Boolean(summary));
@@ -2643,7 +2737,7 @@ export default function ProviderCard({
 					/>
 				) : null}
 				{upcomingFor("imageGen").length > 0 ? (
-					<UpcomingPricingSection rows={upcomingFor("imageGen")} title="Upcoming" compact />
+					<UpcomingPricingSection rows={upcomingFor("imageGen")} title={tSections("upcoming")} compact />
 				) : null}
 				{sec.videoGen ? (
 					<VideoGenSection
@@ -2658,7 +2752,7 @@ export default function ProviderCard({
 					/>
 				) : null}
 				{upcomingFor("videoGen").length > 0 ? (
-					<UpcomingPricingSection rows={upcomingFor("videoGen")} title="Upcoming" compact />
+					<UpcomingPricingSection rows={upcomingFor("videoGen")} title={tSections("upcoming")} compact />
 				) : null}
 			</div>
 		) : null;
@@ -2721,7 +2815,7 @@ export default function ProviderCard({
 										className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-4"
 									>
 										<div className="text-[11px] text-muted-foreground">
-											{formatRequestMeterTitle(tier.meter)}
+															{localizePricingMeter(tier.meter, formatRequestMeterTitle(tier.meter))}
 										</div>
 										<div className="flex items-baseline justify-end gap-2 text-right">
 											{hasComparison ? (
@@ -2738,7 +2832,10 @@ export default function ProviderCard({
 												{fmtUSD(tier.price)}
 											</span>
 											<span className="text-[10px] text-muted-foreground">
-												{formatRequestMeterUnit(tier.unitLabel)}
+												{formatRequestMeterUnit(tier.unitLabel, {
+													singular: tPricing("unitsSingular.request"),
+													plural: tPricing("units.request"),
+												})}
 											</span>
 										</div>
 									</div>
@@ -2748,27 +2845,27 @@ export default function ProviderCard({
 					) : null}
 				<div className="space-y-2.5">
 					{upcomingFor("requests").length > 0 ? (
-						<UpcomingPricingSection rows={upcomingFor("requests")} title="Upcoming" compact />
+						<UpcomingPricingSection rows={upcomingFor("requests")} title={tSections("upcoming")} compact />
 					) : null}
 					{imageInputs.length > 0 ? (
 						<InputsSection
-							title="Image Inputs"
+							title={tSections("imageInputs")}
 							rows={imageInputs}
 							comparisonAccent={pricingComparisonAccent}
 						/>
 					) : null}
 					{upcomingFor("imageInputs").length > 0 ? (
-						<UpcomingPricingSection rows={upcomingFor("imageInputs")} title="Upcoming" compact />
+						<UpcomingPricingSection rows={upcomingFor("imageInputs")} title={tSections("upcoming")} compact />
 					) : null}
 					{videoInputs.length > 0 ? (
 						<InputsSection
-							title="Video Inputs"
+							title={tSections("videoInputs")}
 							rows={videoInputs}
 							comparisonAccent={pricingComparisonAccent}
 						/>
 					) : null}
 					{upcomingFor("videoInputs").length > 0 ? (
-						<UpcomingPricingSection rows={upcomingFor("videoInputs")} title="Upcoming" compact />
+						<UpcomingPricingSection rows={upcomingFor("videoInputs")} title={tSections("upcoming")} compact />
 					) : null}
 					{sec.otherRules.length > 0 ? (
 						<div>
@@ -2778,7 +2875,7 @@ export default function ProviderCard({
 					{upcomingFor("other").length > 0 ? (
 						<UpcomingPricingSection
 							rows={upcomingFor("other")}
-							title="Other Upcoming Pricing"
+							title={tSections("otherUpcomingPricing")}
 							compact
 						/>
 					) : null}
@@ -2831,6 +2928,11 @@ export default function ProviderCard({
 	const selectedDataPolicyTier = hasMixedCapabilityPolicies
 		? null
 		: selectedDataPolicy?.tier ?? provider.provider.data_policy_tier;
+	const policyValueLabels = {
+		yes: tSections("yes"),
+		no: tSections("no"),
+		unknown: tSections("unknown"),
+	};
 	const selectedZdr = hasMixedCapabilityPolicies
 		? null
 		: selectedDataPolicy?.zdrEligibility === "eligible" && provider.provider.zero_data_retention === true
@@ -2840,20 +2942,20 @@ export default function ProviderCard({
 				: provider.provider.zero_data_retention;
 	const dataPolicySummary = [
 		{
-			label: "Data Policy",
-			value: formatPolicyValue(selectedDataPolicyTier),
+			label: tProvider("dataPolicy"),
+			value: formatPolicyValue(selectedDataPolicyTier, policyValueLabels),
 		},
 		{
 			label: "ZDR",
-			value: formatPolicyValue(selectedZdr),
+			value: formatPolicyValue(selectedZdr, policyValueLabels),
 		},
 		{
-			label: "Processing",
-			value: provider.provider.default_execution_regions?.join(", ") || formatPolicyValue(provider.provider.residency_mode),
+			label: tSections("processing"),
+			value: provider.provider.default_execution_regions?.join(", ") || formatPolicyValue(provider.provider.residency_mode, policyValueLabels),
 		},
 		{
-			label: "Data centres",
-			value: provider.provider.default_data_regions?.join(", ") || "Unknown",
+			label: tSections("dataCenters"),
+			value: provider.provider.default_data_regions?.join(", ") || tSections("unknown"),
 		},
 	];
 
@@ -2892,7 +2994,10 @@ export default function ProviderCard({
 							<button
 								type="button"
 								aria-expanded={serviceTiersExpanded}
-								aria-label={`${serviceTiersExpanded ? "Collapse" : "Expand"} ${displayName} service tiers`}
+								aria-label={tProvider(
+									serviceTiersExpanded ? "collapseServiceTiers" : "expandServiceTiers",
+									{ provider: displayName },
+								)}
 								onClick={onToggleServiceTiers}
 								className="inline-flex size-6 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
 							>
@@ -2926,7 +3031,7 @@ export default function ProviderCard({
 									<HoverCardTrigger asChild>
 										<button
 											type="button"
-											aria-label={`Provider status: ${tableStatusLabel}`}
+								aria-label={tProvider("providerStatus", { status: tableStatusLabel })}
 										className="inline-flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
 										>
 											{React.createElement(tableStatusIcon, {
@@ -2948,12 +3053,12 @@ export default function ProviderCard({
 										) : null}
 										<div className="mt-2 border-t border-zinc-200/70 pt-2 dark:border-zinc-800">
 											<Link
-												href={PROVIDER_STATUSES_DOCS_HREF}
+								href={getLocalizedDocsHref(locale, PROVIDER_STATUSES_DOCS_HREF)}
 												target="_blank"
 												rel="noopener noreferrer"
 												className="text-zinc-500 underline-offset-2 transition-colors hover:text-zinc-700 hover:underline dark:text-zinc-400 dark:hover:text-zinc-200"
 											>
-												Learn more about provider statuses
+												{tProvider("learnMoreProviderStatuses")}
 											</Link>
 										</div>
 									</HoverCardContent>
@@ -2963,16 +3068,16 @@ export default function ProviderCard({
 										<HoverCardTrigger asChild>
 											<button
 												type="button"
-											aria-label={isWorkspacePrivacyBlocked ? "Blocked by workspace Data Controls" : "Unavailable in Phaseo Chat"}
+											aria-label={isWorkspacePrivacyBlocked ? tSections("blockedByWorkspaceDataControls") : tSections("unavailableInPhaseoChat")}
 											className="inline-flex h-6 w-6 items-center justify-center rounded-sm text-red-600 transition-colors hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
 											>
 											{isWorkspacePrivacyBlocked ? <Ban className="h-3.5 w-3.5" /> : <ShieldBan className="h-3.5 w-3.5" />}
 											</button>
 										</HoverCardTrigger>
 										<HoverCardContent align="start" className="w-80 p-2 text-xs">
-											<p className="font-semibold text-foreground">{isWorkspacePrivacyBlocked ? "Workspace blocked" : "Chat unavailable"}</p>
+											<p className="font-semibold text-foreground">{isWorkspacePrivacyBlocked ? tSections("workspaceBlocked") : tSections("chatUnavailable")}</p>
 											<p className="mt-1 text-muted-foreground">
-												{isWorkspacePrivacyBlocked ? "Workspace privacy prevents API and Chat traffic from using this provider." : "An assigned guardrail prevents this request from using the provider."}
+												{isWorkspacePrivacyBlocked ? tSections("workspacePrivacyPreventsProvider") : tSections("assignedGuardrailPreventsProvider")}
 											</p>
 											<div className="mt-2 space-y-1 border-t border-zinc-200/70 pt-2 dark:border-zinc-800">
 												{privacyReasonMeta.map(({ reason, meta }) => (
@@ -2993,13 +3098,13 @@ export default function ProviderCard({
 											</div>
 											<div className="mt-2 border-t border-zinc-200/70 pt-2 dark:border-zinc-800">
 												<p className="text-muted-foreground">
-													API key guardrails can also affect live routing separately from these workspace settings.
+													{tSections("apiKeyGuardrailsMayAffectRouting")}
 												</p>
 												<Link
 													href="/settings/guardrails"
 													className="mt-1 inline-flex text-[11px] font-medium text-primary hover:underline"
 												>
-													Review guardrails
+													{tSections("reviewGuardrails")}
 												</Link>
 											</div>
 										</HoverCardContent>
@@ -3079,8 +3184,8 @@ export default function ProviderCard({
 										disabled={!previousProviderNavigationItem}
 										aria-label={
 											previousProviderNavigationItem
-												? `Open ${previousProviderNavigationItem.name}`
-												: "No previous provider"
+												? tPricing("openProviderDetails", { provider: previousProviderNavigationItem.name })
+												: tSections("noPreviousProvider")
 										}
 										onClick={() => {
 											if (previousProviderNavigationItem) {
@@ -3099,8 +3204,8 @@ export default function ProviderCard({
 										disabled={!nextProviderNavigationItem}
 										aria-label={
 											nextProviderNavigationItem
-												? `Open ${nextProviderNavigationItem.name}`
-												: "No next provider"
+												? tPricing("openProviderDetails", { provider: nextProviderNavigationItem.name })
+												: tSections("noNextProvider")
 										}
 										onClick={() => {
 											if (nextProviderNavigationItem) {
@@ -3115,7 +3220,7 @@ export default function ProviderCard({
 								</div>
 								{currentProviderNavigationIndex >= 0 ? (
 									<span
-										aria-label={`Provider ${currentProviderNavigationIndex + 1} of ${providerNavigationItems.length}`}
+										aria-label={tSections("providerIndex", { current: currentProviderNavigationIndex + 1, total: providerNavigationItems.length })}
 										className="min-w-8 text-right font-sans text-[10px] font-medium tabular-nums text-muted-foreground"
 									>
 										{currentProviderNavigationIndex + 1} / {providerNavigationItems.length}
@@ -3149,7 +3254,7 @@ export default function ProviderCard({
 										<HoverCardTrigger asChild>
 											<button
 												type="button"
-												aria-label={`Provider status: ${statusLabel}`}
+								aria-label={tProvider("providerStatus", { status: statusLabel })}
 												className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
 											>
 												{React.createElement(statusIcon, {
@@ -3171,12 +3276,12 @@ export default function ProviderCard({
 											) : null}
 											<div className="mt-2 border-t border-zinc-200/70 pt-2 dark:border-zinc-800">
 												<Link
-													href={PROVIDER_STATUSES_DOCS_HREF}
+								href={getLocalizedDocsHref(locale, PROVIDER_STATUSES_DOCS_HREF)}
 													target="_blank"
 													rel="noopener noreferrer"
 													className="text-zinc-500 underline-offset-2 transition-colors hover:text-zinc-700 hover:underline dark:text-zinc-400 dark:hover:text-zinc-200"
 												>
-													Learn more about provider statuses
+												{tProvider("learnMoreProviderStatuses")}
 												</Link>
 											</div>
 										</HoverCardContent>
@@ -3191,12 +3296,12 @@ export default function ProviderCard({
 										className="min-w-0 truncate rounded-sm text-left text-muted-foreground underline-offset-2 transition-colors hover:text-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
 										title={
 											providerQualifiedModelId
-												? "Copy provider-qualified model ID"
-												: "Copy provider ID"
+												? tSections("copyProviderModelId")
+												: tSections("copyProviderModelId")
 										}
 									>
 										{copiedInspectorValue === (providerQualifiedModelId ?? sec.providerId)
-											? "Copied"
+											? tSections("copied")
 											: providerQualifiedModelId ?? sec.providerId}
 									</button>
 									{providerQualifiedModelId ? (
@@ -3204,7 +3309,7 @@ export default function ProviderCard({
 											<HoverCardTrigger asChild>
 												<button
 													type="button"
-													aria-label="About provider-qualified routing"
+													aria-label={tSections("providerQualifiedRouting")}
 													className="inline-flex size-4 shrink-0 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
 												>
 													<Info aria-hidden="true" className="size-3" />
@@ -3212,17 +3317,16 @@ export default function ProviderCard({
 											</HoverCardTrigger>
 											<HoverCardContent align="start" className="w-72 p-3 font-sans">
 												<p className="text-xs font-semibold text-foreground">
-													Provider-qualified routing
+													{tSections("providerQualifiedRouting")}
 												</p>
 												<p className="mt-1 text-xs leading-5 text-muted-foreground">
-													Use this slug as the model ID to route only to {displayName} for this
-													model. Phaseo will fail instead of falling back to another provider.
+													{tSections("providerQualifiedRoutingDescription", { provider: displayName })}
 												</p>
-												<ProviderSheetSectionLink
-													href={PROVIDER_SHEET_DOCS.providerQualifiedRouting}
-													className="mt-2 text-xs font-medium"
-												>
-													Read the routing docs
+													<ProviderSheetSectionLink
+									href={getLocalizedDocsHref(locale, PROVIDER_SHEET_DOCS.providerQualifiedRouting)}
+														className="mt-2 text-xs font-medium"
+													>
+														{tSections("readRoutingDocs")}
 												</ProviderSheetSectionLink>
 											</HoverCardContent>
 										</HoverCard>
@@ -3247,12 +3351,12 @@ export default function ProviderCard({
 							<div className="border-b border-zinc-200/80 px-5 py-2.5 dark:border-zinc-800">
 								<div className="flex flex-wrap items-center justify-between gap-2">
 									<ProviderSheetSectionLink
-										href={PROVIDER_SHEET_DOCS.serviceTier}
+									href={getLocalizedDocsHref(locale, PROVIDER_SHEET_DOCS.serviceTier)}
 										className="text-xs font-medium text-muted-foreground"
 									>
-										Service tier
+										{tQuickstart("serviceTier")}
 									</ProviderSheetSectionLink>
-									<PricingPlanSelect
+										<PricingPlanSelect
 										value={selectedPlan}
 										onChange={setSelectedPlan}
 										plans={availablePlans}
@@ -3264,14 +3368,14 @@ export default function ProviderCard({
 						) : null}
 						<div className="px-5">
 							{availablePlans.length > 0 ? (
-								<div className="sr-only">Selected service tier: {selectedPlanLabel}</div>
+								<div className="sr-only">{tSections("selectedServiceTier", { tier: selectedPlanLabel })}</div>
 							) : null}
 
 							<section id={pricingSectionId} className="scroll-mt-5 space-y-1 py-2">
 								<div className="flex flex-wrap items-center gap-2">
 									<h3 className="text-[15px] font-semibold text-foreground">
-										<ProviderSheetSectionLink href={PROVIDER_SHEET_DOCS.pricing}>
-											Pricing
+									<ProviderSheetSectionLink href={getLocalizedDocsHref(locale, PROVIDER_SHEET_DOCS.pricing)}>
+											{tPricing("title")}
 										</ProviderSheetSectionLink>
 									</h3>
 									{discountBadge ? (
@@ -3284,7 +3388,7 @@ export default function ProviderCard({
 											<span className={cn("font-semibold", selectedPlanTheme.discountStrong)}>
 												{discountBadge}
 											</span>
-											<span className={selectedPlanTheme.discountMuted}>Promotion</span>
+											<span className={selectedPlanTheme.discountMuted}>{tSections("promotion")}</span>
 											{discountTimeRemaining ? (
 												<span className={selectedPlanTheme.discountMuted}>
 													{discountTimeRemaining}
@@ -3299,12 +3403,12 @@ export default function ProviderCard({
 							<div className="py-3">
 								<div className="flex items-start justify-between gap-3">
 									<div>
-										<div className="text-xs font-semibold text-foreground">Scheduled pricing</div>
+										<div className="text-xs font-semibold text-foreground">{tSections("scheduledPricing")}</div>
 										<div className="mt-0.5 text-[11px] leading-4 text-muted-foreground">
-											Selected by {formatBillingTimestampBasis(timeWindowPricingRules[0]?.rule.billing_timestamp_basis)} time.
+											{tSections("selectedByTime", { basis: tSections(getBillingTimestampBasisMessageKey(timeWindowPricingRules[0]?.rule.billing_timestamp_basis)) })}
 										</div>
 									</div>
-									<div className="inline-flex shrink-0 rounded-md border border-zinc-200 p-0.5 text-[11px] dark:border-zinc-800" aria-label="Pricing schedule timezone">
+										<div className="inline-flex shrink-0 rounded-md border border-zinc-200 p-0.5 text-[11px] dark:border-zinc-800" aria-label={tSections("pricingScheduleTimezone")}>
 										{(["local", "utc"] as const).map((mode) => (
 											<button
 												key={mode}
@@ -3316,7 +3420,7 @@ export default function ProviderCard({
 													pricingTimezoneMode === mode ? "bg-muted text-foreground" : "text-muted-foreground hover:text-foreground",
 												)}
 											>
-												{mode === "local" ? "Your time" : "UTC"}
+												{mode === "local" ? tSections("yourTime") : "UTC"}
 											</button>
 										))}
 									</div>
@@ -3326,48 +3430,48 @@ export default function ProviderCard({
 									<div className="grid grid-cols-[1fr_auto] gap-3 border-b border-zinc-200/80 px-3 py-2.5 dark:border-zinc-800">
 										<div>
 											<div className="flex items-center gap-2 text-xs font-semibold text-foreground">
-												Off Peak
-												{!peakPricingActiveNow ? <span className={selectedPlanTheme.accent}>Active now</span> : null}
+												{tSections("offPeak")}
+												{!peakPricingActiveNow ? <span className={selectedPlanTheme.accent}>{tSections("activeNow")}</span> : null}
 											</div>
 											<div className="mt-0.5 text-[11px] leading-4 text-muted-foreground">
 												{weekdayOnlyPricing
-													? "Weekends all day and outside the weekday periods below."
-													: "Outside the periods below."}
+													? tSections("weekendsOutsidePeriods")
+													: tSections("outsidePeriods")}
 											</div>
 										</div>
 									</div>
 									<div className="border-b border-zinc-200/80 px-3 py-2.5 dark:border-zinc-800">
 										<div className="flex items-center gap-2 text-xs font-semibold text-foreground">
-											Peak · {formatPricingWindowDays(representativePricingWindows[0]?.days_of_week)}
-											{peakPricingActiveNow ? <span className={selectedPlanTheme.accent}>Active now</span> : null}
+										{tSections("peak")} · {formatPricingWindowDays(representativePricingWindows[0]?.days_of_week, locale, tSections("everyDay"))}
+											{peakPricingActiveNow ? <span className={selectedPlanTheme.accent}>{tSections("activeNow")}</span> : null}
 										</div>
 										<div className="mt-1 space-y-0.5 text-[11px] tabular-nums text-muted-foreground">
 											{representativePricingWindows.map((window, index) => (
 												<div key={`${window.start_time}-${window.end_time}-${index}`}>
-													{formatPricingWindowRange(window, pricingTimezoneMode, now)}
+													{formatPricingWindowRange(window, pricingTimezoneMode, now, locale)}
 												</div>
 											))}
 										</div>
 										<div className="mt-1 text-[10px] text-muted-foreground">
-											{pricingTimezoneMode === "local" ? localTimezone : "Coordinated Universal Time"}
+												{pricingTimezoneMode === "local" ? localTimezone : tSections("coordinatedUniversalTime")}
 										</div>
 									</div>
 									<div className="divide-y divide-zinc-200/70 px-3 dark:divide-zinc-800">
 										{timeWindowPricingRules.map(({ rule, windows }) => (
 											<div key={rule.id} className="py-2.5">
 												<div className="flex items-baseline justify-between gap-3">
-													<div className="min-w-0 text-xs font-medium text-foreground">{formatMeterLabel(rule.meter)}</div>
+									<div className="min-w-0 text-xs font-medium text-foreground">{localizePricingMeter(rule.meter, formatMeterLabel(rule.meter))}</div>
 													<div className="shrink-0 text-[10px] text-muted-foreground">{formatRuleUnitLabel(rule).replace(/^\//, "per")}</div>
 												</div>
 												<div className="mt-1.5 grid grid-cols-2 gap-2">
 													<div>
-														<div className="text-[10px] font-medium text-muted-foreground">Off Peak</div>
+															<div className="text-[10px] font-medium text-muted-foreground">{tSections("offPeak")}</div>
 														<div className={cn("mt-0.5 text-xs font-semibold tabular-nums", !peakPricingActiveNow ? selectedPlanTheme.accent : "text-foreground")}>
 															{fmtUSD(Number(rule.price_per_unit))}
 														</div>
 													</div>
 													<div>
-														<div className="text-[10px] font-medium text-muted-foreground">Peak</div>
+															<div className="text-[10px] font-medium text-muted-foreground">{tSections("peak")}</div>
 														<div className={cn("mt-0.5 text-xs font-semibold tabular-nums", peakPricingActiveNow ? selectedPlanTheme.accent : "text-foreground")}>
 															{fmtUSD(Number(windows[0]?.price_per_unit))}
 														</div>
@@ -3388,8 +3492,8 @@ export default function ProviderCard({
 							>
 								<div>
 									<h3 className="text-[15px] font-semibold text-foreground">
-										<ProviderSheetSectionLink href={PROVIDER_SHEET_DOCS.performance}>
-											Performance
+									<ProviderSheetSectionLink href={getLocalizedDocsHref(locale, PROVIDER_SHEET_DOCS.performance)}>
+													{tPerformance("title")}
 										</ProviderSheetSectionLink>
 									</h3>
 								</div>
@@ -3406,7 +3510,7 @@ export default function ProviderCard({
 														<HoverCardTrigger asChild>
 															<button
 																type="button"
-																aria-label="About uptime"
+											aria-label={tProvider("uptime")}
 																className="inline-flex size-3.5 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
 															>
 																<Info className="size-3" />
@@ -3453,21 +3557,21 @@ export default function ProviderCard({
 							>
 								<div>
 									<h3 className="text-[15px] font-semibold text-foreground">
-										<ProviderSheetSectionLink href={PROVIDER_SHEET_DOCS.routing}>
-											Routing details
+									<ProviderSheetSectionLink href={getLocalizedDocsHref(locale, PROVIDER_SHEET_DOCS.routing)}>
+											{tSections("routingDetails")}
 										</ProviderSheetSectionLink>
 									</h3>
 								</div>
 								<div className="space-y-2">
 									<div className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-4">
-										<div className="text-[11px] text-muted-foreground">Gateway status</div>
+										<div className="text-[11px] text-muted-foreground">{tSections("gatewayStatus")}</div>
 										<div className="flex items-center justify-end gap-2 text-sm font-medium text-foreground">
 												{React.createElement(statusIcon, { className: statusClass })}
 												<span>{statusLabel}</span>
 											</div>
 									</div>
 									<div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4">
-										<div className="text-[11px] text-muted-foreground">Provider model IDs</div>
+										<div className="text-[11px] text-muted-foreground">{tSections("providerModelIds")}</div>
 										<div className="flex max-w-[18rem] flex-wrap justify-end gap-1.5">
 											{displayProviderModelIds.map((modelId) => (
 												<button
@@ -3475,38 +3579,38 @@ export default function ProviderCard({
 													type="button"
 													onClick={() => void copyInspectorValue(modelId)}
 													className="min-w-0 max-w-full rounded-md bg-muted px-2 py-1 font-mono text-xs text-foreground transition-colors hover:bg-zinc-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 dark:hover:bg-zinc-800"
-													title="Copy provider model ID"
+													title={tSections("copyProviderModelId")}
 												>
 													<span className="block truncate">
-														{copiedInspectorValue === modelId ? "Copied" : modelId}
+														{copiedInspectorValue === modelId ? tSections("copied") : modelId}
 													</span>
 												</button>
 											))}
 											{displayProviderModelIds.length === 0 ? (
-												<span className="text-xs text-muted-foreground">No provider model IDs listed.</span>
+												<span className="text-xs text-muted-foreground">{tSections("noProviderModelIds")}</span>
 											) : null}
 										</div>
 									</div>
-									{lifecycleStatus.providerAvailability ? (
+					{providerAvailability ? (
 										<div className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-4">
-											<div className="text-[11px] text-muted-foreground">Provider availability</div>
-											<div className="text-sm font-medium text-foreground" title={lifecycleStatus.providerAvailability.description}>
-												{lifecycleStatus.providerAvailability.label}
+											<div className="text-[11px] text-muted-foreground">{tSections("providerAvailability")}</div>
+							<div className="text-sm font-medium text-foreground" title={providerAvailability.description}>
+								{providerAvailability.label}
 											</div>
 										</div>
 									) : null}
-									{lifecycleStatus.phaseo ? (
+					{phaseoIntegration ? (
 										<div className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-4">
-											<div className="text-[11px] text-muted-foreground">Phaseo integration</div>
-											<div className="text-sm font-medium text-foreground" title={lifecycleStatus.phaseo.description}>
-												{lifecycleStatus.phaseo.label}
+											<div className="text-[11px] text-muted-foreground">{tSections("phaseoIntegration")}</div>
+							<div className="text-sm font-medium text-foreground" title={phaseoIntegration.description}>
+								{phaseoIntegration.label}
 											</div>
 										</div>
 									) : null}
 									<div className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-4">
-										<div className="text-[11px] text-muted-foreground">Access</div>
+										<div className="text-[11px] text-muted-foreground">{tSections("access")}</div>
 										<div className="text-sm font-medium text-foreground">
-											{lifecycleStatus.accessScope === "internal" ? "Internal only" : "Public"}
+											{lifecycleStatus.accessScope === "internal" ? tSections("internalOnly") : tSections("public")}
 										</div>
 									</div>
 								</div>
@@ -3518,8 +3622,8 @@ export default function ProviderCard({
 							>
 								<div>
 									<h3 className="text-[15px] font-semibold text-foreground">
-										<ProviderSheetSectionLink href={PROVIDER_SHEET_DOCS.dataRetention}>
-											Data Policy
+										<ProviderSheetSectionLink href={getLocalizedDocsHref(locale, PROVIDER_SHEET_DOCS.dataRetention)}>
+											{tProvider("dataPolicy")}
 										</ProviderSheetSectionLink>
 									</h3>
 								</div>
@@ -3536,7 +3640,7 @@ export default function ProviderCard({
 				</div>
 								{privacyReasonMeta.length > 0 ? (
 									<div className="border-l-2 border-red-400 pl-3 text-xs text-red-900 dark:text-red-100">
-										<div className="font-semibold">{isWorkspacePrivacyBlocked ? "Blocked by workspace Data Controls" : "Unavailable in Phaseo Chat"}</div>
+										<div className="font-semibold">{isWorkspacePrivacyBlocked ? tSections("blockedByWorkspaceDataControls") : tSections("unavailableInPhaseoChat")}</div>
 										<ul className="mt-1 list-inside list-disc space-y-1">
 											{privacyReasonMeta.map(({ reason, meta }) => (
 												<li key={reason}>{meta?.label ?? reason}</li>
@@ -3548,13 +3652,13 @@ export default function ProviderCard({
 
 							<section className="scroll-mt-5 space-y-1 border-t border-zinc-200/80 py-2 dark:border-zinc-800">
 								<div>
-									<h3 className="text-[15px] font-semibold text-foreground">Technical Details</h3>
+										<h3 className="text-[15px] font-semibold text-foreground">{tQuickstart("technicalDetails")}</h3>
 								</div>
 								<div className="space-y-2">
 									{[
-										["Quantization", summaryQuantization ?? "--"],
-										["Context", contextLengthValue],
-										["Max output", maxOutputValue],
+										[tQuickstart("quantization"), summaryQuantization ?? "--"],
+										[tQuickstart("context"), contextLengthValue],
+										[tQuickstart("maximumOutput"), maxOutputValue],
 									].map(([label, value]) => (
 										<div key={label} className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-4">
 											<div className="text-[11px] text-muted-foreground">{label}</div>
@@ -3569,10 +3673,10 @@ export default function ProviderCard({
 								className="scroll-mt-5 space-y-1 border-t border-zinc-200/80 py-2 dark:border-zinc-800"
 							>
 								<div className="flex items-center justify-between gap-3">
-									<h3 className="text-[15px] font-semibold text-foreground">Parameter support</h3>
+										<h3 className="text-[15px] font-semibold text-foreground">{tQuickstart("parameterSupport")}</h3>
 									{parameterSupport.status !== "documented" ? (
 										<span className="rounded-full border border-amber-300/70 bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-800 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
-											{parameterSupport.status === "partial" ? "Partial" : "Unknown"}
+											{parameterSupport.status === "partial" ? tQuickstart("partial") : tQuickstart("unknown")}
 										</span>
 									) : null}
 								</div>
@@ -3580,13 +3684,13 @@ export default function ProviderCard({
 									<div className="space-y-2">
 										{parameterSupport.status === "partial" ? (
 											<p className="text-xs leading-relaxed text-muted-foreground">
-												Listed parameters are documented. Other selected routes do not publish
-												parameter metadata, so additional support may vary.
+												{tQuickstart("partialParameterSupport")}
 											</p>
 										) : null}
 										<div className="flex flex-wrap items-start gap-1.5">
 											{supportedParameters.map((param) => {
 												const reference = getParameterReference(param);
+												const descriptionKey = getParameterReferenceTranslationKey(param);
 												return (
 													<HoverCard key={param} openDelay={120} closeDelay={80}>
 													<HoverCardTrigger asChild>
@@ -3607,27 +3711,27 @@ export default function ProviderCard({
 																		{param}
 																	</code>
 																	<Link
-																		href={getParameterDocsHref(param)}
+												href={getLocalizedDocsHref(locale, getParameterDocsHref(param))}
 																		target="_blank"
 																		rel="noopener noreferrer"
 																		className="text-[11px] text-muted-foreground underline underline-offset-4 hover:text-foreground"
 																	>
-																		Docs
+																		{tQuickstart("docsLabel")}
 																	</Link>
 																</div>
 																<p className="leading-relaxed text-muted-foreground">
-																	{reference.description}
+																	{tQuickstart(`parameterDescriptions.${descriptionKey}` as never)}
 																</p>
 															</div>
 															<div className="flex items-center gap-4 border-t border-zinc-200/70 pt-2 text-[11px] text-muted-foreground dark:border-zinc-800">
 																<span>
-																	Type:{" "}
+																	{tQuickstart("typeLabel")}{" "}
 																	<span className="text-foreground">{reference.type}</span>
 																</span>
 																<span>
-																	Default:{" "}
+																	{tQuickstart("defaultLabel")}{" "}
 																	<span className="text-foreground">
-																		{reference.defaultValue}
+																		{reference.defaultValue === "Provider specific" ? tQuickstart("defaultProviderSpecific") : reference.defaultValue === "Unset" ? tQuickstart("defaultUnset") : reference.defaultValue}
 																	</span>
 																</span>
 															</div>
@@ -3643,10 +3747,9 @@ export default function ProviderCard({
 										<div className="flex items-start gap-2">
 											<Info aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-amber-700 dark:text-amber-300" />
 											<div>
-												<p className="text-sm font-medium text-foreground">Support not documented</p>
+												<p className="text-sm font-medium text-foreground">{tQuickstart("supportNotDocumented")}</p>
 												<p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-													Phaseo has no verified parameter list for this route. Recognized API
-													parameters may still be sent, but the provider can reject unsupported values.
+													{tQuickstart("supportNotDocumentedDescription")}
 												</p>
 											</div>
 										</div>

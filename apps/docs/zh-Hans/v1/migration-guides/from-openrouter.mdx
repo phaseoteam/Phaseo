@@ -1,0 +1,209 @@
+---
+title: "从 OpenRouter 迁移到 Phaseo"
+sidebarTitle: "OpenRouter"
+description: "通过更换 Gateway URL 和 API 密钥、验证模型 ID 并测试分阶段切换，让 Phaseo 成为 OpenRouter 的替代方案。"
+icon: "arrow-right-left"
+---
+
+Phaseo 是兼容 OpenAI 的 OpenRouter 替代方案。如果应用已通过 OpenAI SDK 或直接 HTTP 调用使用 OpenRouter，通常只需在客户端接入层迁移，无需重写提示词或应用逻辑。
+
+## 变更内容
+
+| 设置 | OpenRouter | Phaseo |
+| --- | --- | --- |
+| 基础 URL | `https://openrouter.ai/api/v1` | `https://api.phaseo.app/v1` |
+| API 密钥变量 | `OPENROUTER_API_KEY` | `PHASEO_API_KEY` |
+| 身份验证 | `Authorization: Bearer <key>` | `Authorization: Bearer <key>` |
+| 请求负载 | 兼容 OpenAI | 首次迁移时保持不变 |
+| 模型 ID | OpenRouter 目录 | 使用 `GET /v1/models` 验证每个 ID |
+
+迁移分为四步：
+
+1. 保持负载结构不变。
+2. 替换基础 URL 和 API 密钥来源。
+3. 验证模型 ID 和 OpenRouter 专属请求头。
+4. 逐步切换流量，并比较延迟、输出和成本。
+
+## 开始之前
+
+- 能访问当前 OpenRouter 集成代码和部署配置。
+- 在开发、预发布和生产环境中配置 `PHASEO_API_KEY`。
+- 准备一份生产模型 ID 和代表性提示词的简短清单。
+
+## 1) 清点当前 OpenRouter 用法
+
+找出所有 OpenRouter 引用：端点、密钥、模型 ID 和提供商专属请求头。
+
+- 搜索 `openrouter.ai` 端点。
+- 在代码、CI 和托管环境变量中搜索 `OPENROUTER_API_KEY`。
+- 搜索 `HTTP-Referer`、`X-Title` 等 OpenRouter 专属请求头。
+- 记录当前启用的模型 ID 和备用路由逻辑。
+- 找出适合移入 Gateway 预设的可复用提示词、提供商或参数默认值，避免在应用代码中重复。
+
+## 2) 替换基础 URL 和凭据
+
+先保持请求负载不变，在优化之前验证行为一致。
+
+<CodeGroup>
+```typescript TypeScript
+// Before
+import OpenAI from "openai";
+
+const before = new OpenAI({
+  apiKey: process.env.OPENROUTER_API_KEY,
+  baseURL: "https://openrouter.ai/api/v1",
+});
+
+const response = await before.chat.completions.create({
+  model: "openai/gpt-4.1-mini",
+  messages: [{ role: "user", content: "Summarize our migration plan." }],
+});
+```
+
+```typescript TypeScript
+// After
+import OpenAI from "openai";
+
+const after = new OpenAI({
+  apiKey: process.env.PHASEO_API_KEY,
+  baseURL: "https://api.phaseo.app/v1",
+});
+
+const response = await after.chat.completions.create({
+  model: "openai/gpt-4.1-mini",
+  messages: [{ role: "user", content: "Summarize our migration plan." }],
+});
+```
+
+```bash cURL
+# Before
+curl -s "https://openrouter.ai/api/v1/chat/completions" \
+  -H "Authorization: Bearer $OPENROUTER_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-4.1-mini",
+    "messages": [{"role":"user","content":"Say hello"}]
+  }'
+
+# After
+curl -s "https://api.phaseo.app/v1/chat/completions" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-4.1-mini",
+    "messages": [{"role":"user","content":"Say hello"}]
+  }'
+```
+</CodeGroup>
+
+## 3) 验证模型 ID 并映射 OpenRouter 专属行为
+
+不要假设之前的所有别名都有效。查询 `/v1/models` 并验证每个生产模型 ID。默认响应只包含当前可公开路由的模型；仅在确实需要检查非活跃或即将提供的映射时使用 `availability=all`。
+
+<CodeGroup>
+```bash cURL
+curl -s "https://api.phaseo.app/v1/models" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" | jq '.data[0:10] | map(.id)'
+```
+</CodeGroup>
+
+- 保持 `Authorization: Bearer` 格式不变。
+- 如果 `HTTP-Referer` 和 `X-Title` 用于标识调用应用，请保留。Phaseo 也接受小写形式 `http-referer` 和 `x-title`。
+- 如果调用方依赖 OpenRouter 专属响应字段，请在单一兼容层中适配。
+- 如果 OpenRouter 配置使用提供商允许/拒绝列表或路由默认值，请将它们移到[预设](../guides/presets.mdx)和[路由与回退](../guides/routing-and-fallbacks.mdx)。
+
+不要在每个调用点复制 OpenRouter 的提供商偏好或响应专属字段。将差异集中在一个适配器中，这样回滚时只需更换 URL 和凭据。
+
+### 映射提供商控制项
+
+| 现有字段 | Phaseo 字段 | 说明 |
+| --- | --- | --- |
+| `provider.order` | `provider.order` | 按优先顺序尝试提供商。 |
+| `provider.only` | `provider.only` | 将请求限制在获批列表中。 |
+| `provider.ignore` | `provider.ignore` | 排除指定提供商。 |
+| `provider.sort` | `provider.sort` | 支持 `price`、`latency` 和 `throughput`。 |
+| `provider.zdr` | `provider.require_zero_data_retention` | 要求使用支持零数据保留的路由。 |
+
+如果工作负载需要区域限制，Phaseo 还支持 `provider.required_execution_region` 和 `provider.required_data_region`。完整请求示例参见[固定或忽略提供商](../cookbook/pin-or-ignore-providers-per-request.mdx)和[仅路由到欧盟或支持 ZDR 的提供商](../cookbook/route-only-to-eu-or-zdr-providers.mdx)。
+
+## 4) OpenRouter 行为一致性检查清单
+
+切换重要流量前，请确认：
+
+- 基础 URL 已更新为 `https://api.phaseo.app/v1`。
+- 所有环境中的 `OPENROUTER_API_KEY` 已替换为 `PHASEO_API_KEY`。
+- 已通过 `/v1/models` 验证所有生产模型 ID。
+- 已通过 `/v1/chat/completions` 或 `/v1/responses` 验证一项非流式请求。
+- 已通过生产应用使用的同一集成路径验证一项流式请求。
+- 已重新检查 `GET /v1/generations?id=<request_id>`；当 `replay_supported=true` 时，可从已存储的 `replay_request` 重放失败请求。
+- 已使用真实提示词重新检查工具调用和结构化输出。
+- 已在预发布环境验证无效密钥和无效模型错误。
+- 已删除或明确规范化 OpenRouter 专属请求头和响应字段。
+- 在适用时，已将共享提示词和路由默认值移入预设。
+
+### 代理迁移清单
+
+为编码代理分配以下限定步骤：
+
+1. 在运行时代码和部署配置中搜索 `openrouter.ai`、`OPENROUTER_API_KEY`、`sk-or-v1`、`HTTP-Referer` 和 `X-Title`。
+2. 将客户端接入点改为 `https://api.phaseo.app/v1` 和 `PHASEO_API_KEY`，不要将密钥写入源码管理。
+3. 查询 `GET /v1/models` 并记录每个新旧模型映射。
+4. 在一个兼容模块中适配 OpenRouter 专属路由选项或响应字段。
+5. 执行下方的健康检查、模型查询、请求、流式和失败路径验证。
+6. 汇报改动文件、密钥名称变化、模型映射、测试证据、行为差异和回滚方式。
+
+可复用流程请参阅[OpenRouter 迁移到 Phaseo 指南](https://github.com/phaseoteam/Phaseo/tree/main/.agents/skills/openrouter-to-phaseo-migration)，其中整理了清点、映射、验证、报告和回滚要求。
+
+## 5) 安全地逐步发布
+
+分阶段切换：先开发环境，再少量生产流量，指标稳定后再切换全部流量。
+
+1. 首先只使用内部流量。
+2. 切换到 5–10% 的生产流量，比较质量、延迟和成本。
+3. 确认行为一致后再提升到 100%。
+4. 完全稳定前，确保只需切换 URL 和密钥即可回滚。
+
+## 验证命令
+
+```bash
+curl -s "https://api.phaseo.app/v1/health"
+curl -s "https://api.phaseo.app/v1/models" -H "Authorization: Bearer $PHASEO_API_KEY"
+curl -s "https://api.phaseo.app/v1/chat/completions" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -d '{"model":"openai/gpt-4.1-mini","messages":[{"role":"user","content":"Say hello"}]}'
+```
+
+使用同一端点单独测试流式请求：
+
+```bash
+curl -N "https://api.phaseo.app/v1/chat/completions" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -d '{"model":"openai/gpt-4.1-mini","stream":true,"messages":[{"role":"user","content":"Reply with: stream works"}]}'
+```
+
+还要确认应用可以处理无效模型，同时不会暴露凭据：
+
+```bash
+curl -s "https://api.phaseo.app/v1/chat/completions" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -d '{"model":"invalid/migration-test","messages":[{"role":"user","content":"test"}]}'
+```
+
+然后：
+
+- 通过应用级集成测试运行一项流式请求。
+- 对无效密钥或模型运行一项负向测试。
+- 重放一小组基准提示词并比较输出。
+
+## 后续步骤
+
+- [免费获取 OpenRouter 集成迁移帮助](https://phaseo.app/contact)
+- [打开 OpenRouter 交互式迁移指南](https://phaseo.app/migrate/openrouter)
+- [比较 Phaseo 和 OpenRouter](https://phaseo.app/compare/openrouter)
+- [快速入门](../quickstart.mdx)
+- [API 参考：模型](../api-reference/endpoint/models.mdx)
+- [示例](../guides/examples.mdx)
+- [错误处理](../developers/error-handling.mdx)

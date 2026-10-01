@@ -1,0 +1,10 @@
+---
+title: "Management-Schlüssel auflisten"
+sidebarTitle: "Management-Schlüssel auflisten"
+badge: "Beta"
+openapi: "/de/openapi/v1/openapi.localized.yaml GET /management-keys"
+description: "Listet Metadaten zu Management-Schlüsseln des authentifizierten Workspaces auf."
+---
+<Note>Für diesen Endpunkt sind eine Inhaber- oder Admin-Identität und `management_keys:read` erforderlich.</Note>
+
+Die tatsächlichen Schlüsselwerte werden niemals ausgegeben. Verwende `limit` und `offset`, um die Ergebnisse zu paginieren.

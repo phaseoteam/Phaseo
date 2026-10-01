@@ -1,0 +1,67 @@
+---
+title: "Replit"
+icon: "box"
+description: "Replit applications और deployments से Phaseo को call करें।"
+---
+
+Replit से Phaseo उपयोग करने के लिए official OpenAI SDK या AI SDK का first-party Phaseo provider लें। API key को source code के बजाय Replit Secrets में रखें।
+
+## गोपनीय कुंजी जोड़ें
+
+अपने Replit workspace में **Tools → Secrets** खोलें और यह जोड़ें:
+
+```text
+PHASEO_API_KEY=phaseo_v1_sk_...
+```
+
+यह secret आपकी application को environment variable के रूप में उपलब्ध होगा।
+
+## OpenAI SDK के साथ TypeScript
+
+```bash
+npm install openai
+```
+
+```ts
+import OpenAI from "openai";
+
+const client = new OpenAI({
+	apiKey: process.env.PHASEO_API_KEY,
+	baseURL: "https://api.phaseo.app/v1",
+});
+
+const response = await client.responses.create({
+	model: "openai/gpt-5-nano",
+	input: "Reply with only: ok",
+});
+
+console.log(response.output_text);
+```
+
+## AI SDK के साथ TypeScript
+
+```bash
+npm install @phaseo/ai-sdk-provider
+```
+
+```ts
+import { phaseo } from "@phaseo/ai-sdk-provider";
+import { generateText } from "ai";
+
+const { text } = await generateText({
+	model: phaseo("openai/gpt-5-nano"),
+	prompt: "Reply with only: ok",
+});
+
+console.log(text);
+```
+
+## डिप्लॉयमेंट
+
+Development workspace के साथ deployment secrets में भी `PHASEO_API_KEY` जोड़ें। जाँचें कि deployment environment variables या request headers को logs में न लिखे।
+
+## संबंधित विषय
+
+- [OpenAI SDK](./openai-sdk.mdx)
+- [AI SDK](./ai-sdk.mdx)
+- [प्रमाणीकरण](../../developers/authentication.mdx)

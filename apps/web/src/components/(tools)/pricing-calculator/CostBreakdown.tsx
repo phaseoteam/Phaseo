@@ -20,7 +20,7 @@ import {
 	type PricingMeter,
 } from "@/components/(data)/model/pricing/pricingHelpers";
 import { sanitizeRequestMultiplier } from "./calculatorState";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import {
 	MeterLabel,
 	PricingModelHeader,
@@ -57,14 +57,20 @@ export function CostBreakdown({
 	pricingTimeUtc,
 	comparisonModels,
 }: CostBreakdownProps) {
+	const locale = useLocale();
 	const t = useTranslations("Product.tools.pricing");
+	const translateMeter = useTranslations("Catalogue.modelDetail.pricing.meters");
+	const getMeterLabel = (meterName: string) =>
+		translateMeter.has(meterName as never)
+			? translateMeter(meterName as never)
+			: formatSentenceLabel(formatMeterName(meterName));
 	const safeRequestMultiplier = sanitizeRequestMultiplier(requestMultiplier);
 	const activeModels = useMemo<ComparisonPricingModel[]>(
 		() =>
 			comparisonModels && comparisonModels.length > 0
 				? comparisonModels
-				: [{ key: "primary", label: "Selected Model", provider: "selected", pricingPlan: "standard", meters }],
-		[comparisonModels, meters]
+				: [{ key: "primary", label: t("selectedModel"), provider: "selected", pricingPlan: "standard", meters }],
+		[comparisonModels, meters, t]
 	);
 	const activeMeterNames = useMemo(() => {
 		const names = new Set<string>();
@@ -94,7 +100,7 @@ export function CostBreakdown({
 				<CardTitle className="flex items-center justify-between gap-3">
 					<span>{t("estimatedCost")}</span>
 					<span className="text-xs font-normal text-muted-foreground">
-						{activeModels.length} model{activeModels.length === 1 ? "" : "s"}
+						{t("modelCount", { count: activeModels.length })}
 					</span>
 				</CardTitle>
 			</CardHeader>
@@ -103,7 +109,7 @@ export function CostBreakdown({
 					<Table>
 						<TableHeader>
 							<TableRow className="bg-muted/20 hover:bg-muted/20">
-								<TableHead className="sticky left-0 z-10 min-w-[250px] bg-muted/20">Usage</TableHead>
+								<TableHead className="sticky left-0 z-10 min-w-[250px] bg-muted/20">{t("usage")}</TableHead>
 								{activeModels.map((model) => (
 									<TableHead key={`estimate-head-${model.key}`} className="min-w-[240px]">
 										<PricingModelHeader model={model} />
@@ -130,20 +136,25 @@ export function CostBreakdown({
 										<TableCell className="sticky left-0 z-10 bg-background">
 											<MeterLabel
 												meterName={meterName}
-												label={formatSentenceLabel(formatMeterName(meterName))}
-												description={`${formatQuantity(multipliedValue)} total usage`}
+												label={getMeterLabel(meterName)}
+												description={t("totalUsage", { quantity: formatQuantity(multipliedValue, t("unlimited")) })}
 											/>
 										</TableCell>
 										{activeModels.map((model) => {
 											const meter = model.meters.find((item) => item.meter === meterName);
-											if (!meter) return <TableCell key={`estimate-${model.key}-${meterName}`} className="text-muted-foreground">Not priced</TableCell>;
+											if (!meter) return <TableCell key={`estimate-${model.key}-${meterName}`} className="text-muted-foreground">{t("notPriced")}</TableCell>;
 											const resolvedPrice = resolvePricingMeterPrice(meter, pricingTimeUtc);
 											const lineCost = calculateLineCost(meter, meterInputs, safeRequestMultiplier, pricingTimeUtc);
 											return (
 												<TableCell key={`estimate-${model.key}-${meterName}`}>
 													<p className="font-semibold tabular-nums">{fmtUSD(lineCost)}</p>
 													<p className="mt-1 text-xs text-muted-foreground">
-														{fmtUSD(resolvedPrice.pricePerUnit)} per {meter.unit_size.toLocaleString()} {meter.unit}
+													{t("unitPrice", {
+														price: fmtUSD(resolvedPrice.pricePerUnit),
+														currency: meter.currency,
+														count: meter.unit_size.toLocaleString(locale),
+														unit: meter.unit,
+													})}
 													</p>
 													{resolvedPrice.timeWindow ? <p className="mt-1 text-xs text-muted-foreground">{formatPricingTimeWindow(resolvedPrice.timeWindow)}</p> : null}
 												</TableCell>
@@ -156,7 +167,7 @@ export function CostBreakdown({
 					</Table>
 				</ScrollArea>
 				<p className="text-xs text-muted-foreground">
-					Inputs are multiplied by {safeRequestMultiplier.toLocaleString()} request{safeRequestMultiplier === 1 ? "" : "s"} before costs are calculated.
+					{t("requestCostSummary", { count: safeRequestMultiplier })}
 				</p>
 			</CardContent>
 		</Card>
