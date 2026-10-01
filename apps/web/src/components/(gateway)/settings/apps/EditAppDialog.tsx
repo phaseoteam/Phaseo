@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useInvalidatePrivateSettings } from "../PrivateSettingsQuery";
 import NextImage from "next/image";
 import { BookOpen, CheckCircle2, ChevronDown, Folder, ImageOff, LoaderCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -79,6 +80,7 @@ export default function EditAppDialog({
 }: EditAppDialogProps) {
 	const t = useTranslations("SettingsUI");
 	const s = (key: string) => t(`strings.${key}` as never);
+	const invalidateSettings = useInvalidatePrivateSettings();
 	const [internalOpen, setInternalOpen] = useState(false);
 	const [title, setTitle] = useState(app.title);
 	const [url, setUrl] = useState(app.url && app.url !== "about:blank" ? app.url : "");
@@ -227,6 +229,7 @@ export default function EditAppDialog({
 					localizedSettingsError(err, t, "Failed to update app"),
 			});
 			await updatePromise;
+			void invalidateSettings();
 			onUpdated({
 				title: title.trim(),
 				url: normalizedUrl,

@@ -128,8 +128,11 @@ describe("resolveTextServiceTier", () => {
 
 	it("returns undefined when neither value is usable", () => {
 		expect(resolveTextServiceTier({})).toBeUndefined();
-		expect(resolveTextServiceTier({ service_tier: "default" })).toBeUndefined();
 		expect(resolveTextServiceTier({ service_tier: "auto" })).toBeUndefined();
+	});
+
+	it("normalizes an explicit default tier to standard", () => {
+		expect(resolveTextServiceTier({ service_tier: "default" })).toBe("standard");
 	});
 });
 

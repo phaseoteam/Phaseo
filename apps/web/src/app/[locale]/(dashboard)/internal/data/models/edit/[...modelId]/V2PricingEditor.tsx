@@ -1,16 +1,26 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+import { parseAsStringLiteral, useQueryState } from "nuqs";
+import { RegionSelection, ProviderResidencySummary } from "@/app/(dashboard)/internal/data/models/edit/[...modelId]/RegionalRoutingFields";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useLocale, useTranslations } from "next-intl";
-import Link from "next/link";
-import { Eye, ExternalLink, GitBranch, Plus, Save, Search, Trash2 } from "lucide-react";
+import { UnsavedChangesGuard } from "@/components/(data)/UnsavedChangesGuard";
+import { ArrowRight, Plus, Save, Search, Settings2, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { SearchableSelect } from "@/components/ui/searchable-select";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from "@/components/ui/sheet";
+import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
+import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
+import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import { PricingChoice, PricingDate } from "@/app/(dashboard)/internal/data/models/edit/[...modelId]/PricingFields";
+import { billingUnit, formatPrice, readablePricingLabel, rebasePrice, validatePriceAmounts } from "@/app/(dashboard)/internal/data/models/edit/[...modelId]/pricingPresentation";
 import { Logo } from "@/components/Logo";
 import {
-	deleteAdminPricingSku,
+	endDateAdminPricingSku,
 	fetchAdminPricingEditorSource,
 	saveAdminPricingSku,
 	saveAdminProviderRoute,
@@ -60,35 +70,44 @@ type PricingCondition = {
 
 const PRICING_OPERATION_OPTIONS = [
 	"text.generate", "text.embed", "text.rerank", "text.moderate",
+	"decisions.make",
 	"image.generate", "image.edit", "audio.generate", "audio.speech",
 	"audio.transcribe", "audio.transcription", "audio.translations", "audio.realtime",
 	"music.generate", "video.generate", "video.edit", "voice.design", "ocr",
 ] as const;
 
 const CONDITION_PATH_OPTIONS = [
-	{ value: "input_tokens", key: "inputTokens" },
-	{ value: "output_tokens", key: "outputTokens" },
-	{ value: "total_tokens", key: "totalTokens" },
-	{ value: "cache_duration_seconds", key: "cacheDuration" },
-	{ value: "request_count", key: "requestCount" },
+	{ value: "input_tokens", label: "Input tokens" },
+	{ value: "output_tokens", label: "Output tokens" },
+	{ value: "total_tokens", label: "Total tokens" },
+	{ value: "cache_duration_seconds", label: "Cache duration" },
+	{ value: "request_count", label: "Request count" },
 ] as const;
 
 const CONDITION_OPERATOR_OPTIONS = [
-	{ value: "lt", key: "lessThan" },
-	{ value: "lte", key: "atMost" },
-	{ value: "gte", key: "atLeast" },
-	{ value: "gt", key: "greaterThan" },
-	{ value: "eq", key: "equals" },
-	{ value: "neq", key: "notEquals" },
+	{ value: "lt", label: "is less than" },
+	{ value: "lte", label: "is at most" },
+	{ value: "gte", label: "is at least" },
+	{ value: "gt", label: "is greater than" },
+	{ value: "eq", label: "equals" },
+	{ value: "neq", label: "does not equal" },
 ] as const;
 
 const toLocalInput = (date: Date) => new Date(date.getTime() - date.getTimezoneOffset() * 60_000).toISOString().slice(0, 16);
 const nowInput = () => toLocalInput(new Date());
 const toInputDate = (value: unknown) => typeof value === "string" && value ? toLocalInput(new Date(value)) : "";
-const formatOfferDate = (value: string, locale: string) => value ? new Intl.DateTimeFormat(locale, { day: "numeric", month: "short", year: "numeric" }).format(new Date(value)) : null;
+const formatOfferDate = (value: string) => value && Number.isFinite(new Date(value).getTime()) ? new Intl.DateTimeFormat(undefined, { day: "numeric", month: "short", year: "numeric" }).format(new Date(value)) : null;
+const formatOfferWindow = (from: string, to: string) => {
+	const fromLabel = formatOfferDate(from);
+	const toLabel = formatOfferDate(to);
+	if (fromLabel && toLabel) return `${fromLabel} – ${toLabel}`;
+	if (fromLabel) return `From ${fromLabel}`;
+	if (toLabel) return `Until ${toLabel}`;
+	return "No date window";
+};
 
 function emptyMeter(): MeterDraft {
-	return { meter_key: "input_tokens", modality: "text", direction: "input", unit: "token", unit_quantity: "1000000", price_usd: "0", display_label: "", display_unit: "", billable: true, meter_order: "100", metadata: {} };
+	return { meter_key: "input_text_tokens", modality: "text", direction: "input", unit: "token", unit_quantity: "1000000", price_usd: "", display_label: "Input text tokens", display_unit: "1M tokens", billable: true, meter_order: "100", metadata: {} };
 }
 
 function automaticSkuCode(draft: Pick<SkuDraft, "operation" | "service_tier_slug" | "region" | "effective_from" | "metadata">) {
@@ -121,13 +140,13 @@ function offerDateState(draft: Pick<SkuDraft, "effective_from" | "effective_to">
 	const now = Date.now();
 	const from = draft.effective_from ? new Date(draft.effective_from).getTime() : null;
 	const to = draft.effective_to ? new Date(draft.effective_to).getTime() : null;
-	if (from && from > now) return "scheduled";
-	if (to && to <= now) return "expired";
-	return "current";
+	if (from && from > now) return "Scheduled";
+	if (to && to <= now) return "Expired";
+	return "Current";
 }
 
-function formatTokenLimit(value: number | null | undefined, notSetLabel: string) {
-	if (!value) return notSetLabel;
+function formatTokenLimit(value: number | null | undefined) {
+	if (!value) return "Not set";
 	if (value >= 1_000_000) return `${Number((value / 1_000_000).toFixed(2))}M`;
 	if (value >= 1_000) return `${Number((value / 1_000).toFixed(1))}K`;
 	return value.toLocaleString();
@@ -149,8 +168,26 @@ function pricingConditions(metadata: Record<string, unknown>): PricingCondition[
 	});
 }
 
+function conditionLabel(condition: PricingCondition) {
+	const path = CONDITION_PATH_OPTIONS.find((option) => option.value === condition.path)?.label ?? condition.path.replaceAll("_", " ");
+	const operator = CONDITION_OPERATOR_OPTIONS.find((option) => option.value === condition.op)?.label ?? condition.op;
+	const value = typeof condition.value === "number" && condition.path.includes("tokens") ? `${formatTokenLimit(condition.value)} tokens` : String(condition.value);
+	return `${path} ${operator} ${value}`;
+}
+
+function pricingConditionLabel(metadata: Record<string, unknown>) {
+	const conditions = pricingConditions(metadata);
+	if (!conditions.length) return "All requests";
+	const groups = new Map<number, PricingCondition[]>();
+	for (const condition of conditions) {
+		const key = condition.or_group ?? 1;
+		groups.set(key, [...(groups.get(key) ?? []), condition]);
+	}
+	return [...groups.values()].map((group) => group.map(conditionLabel).join(" and ")).join(" or ");
+}
+
 function emptySku(providerModelId: string, operation = "text.generate"): SkuDraft {
-	const draft = { provider_model_id: providerModelId, sku_code: "", version: "1", operation, status: "active" as const, region: "", service_tier_slug: "standard", display_name: "", description: "", currency: "USD", effective_from: nowInput(), effective_to: "", metadata: {}, meters: [emptyMeter()] };
+	const draft = { provider_model_id: providerModelId, sku_code: "", version: "1", operation, status: "active" as const, region: "", service_tier_slug: "standard", display_name: "", description: "", currency: "USD", effective_from: nowInput(), effective_to: "", metadata: {}, meters: operation.startsWith("text.") ? [emptyMeter()] : [] };
 	return { ...draft, sku_code: automaticSkuCode(draft), display_name: automaticOfferLabel(draft) };
 }
 
@@ -171,7 +208,7 @@ function buildSkuDraft(sku: Record<string, any>, meters: Array<Record<string, an
 		effective_to: toInputDate(sku.effective_to),
 		metadata: sku.metadata && typeof sku.metadata === "object" ? sku.metadata : {},
 		meters: meters.map((meter) => ({
-			meter_key: String(meter.meter_key), modality: String(meter.modality ?? "text"), direction: meter.direction === "input" || meter.direction === "output" ? meter.direction : "", unit: String(meter.unit ?? "unit"), unit_quantity: String(meter.unit_quantity ?? 1), price_usd: String(Number(meter.price_nanos ?? 0) / 1_000_000_000), display_label: String(meter.display_label ?? ""), display_unit: String(meter.display_unit ?? ""), billable: meter.billable !== false, meter_order: String(meter.meter_order ?? 100), metadata: meter.metadata && typeof meter.metadata === "object" ? meter.metadata : {},
+			meter_key: String(meter.meter_key), modality: String(meter.modality ?? "text"), direction: meter.direction === "input" || meter.direction === "output" ? meter.direction : "", unit: String(meter.unit ?? "unit"), unit_quantity: String(meter.unit_quantity ?? 1), price_usd: String(Number(meter.price_nanos ?? 0) / 1_000_000_000), display_label: String(meter.display_label ?? meter.meter_key), display_unit: String(meter.display_unit ?? meter.unit), billable: meter.billable !== false, meter_order: String(meter.meter_order ?? 100), metadata: meter.metadata && typeof meter.metadata === "object" ? meter.metadata : {},
 		})),
 	};
 }
@@ -181,55 +218,47 @@ function buildDrafts(source: AdminPricingEditorSource): SkuDraft[] {
 }
 
 export default function V2PricingEditor({ modelId, focusProviderId }: { modelId: string; focusProviderId?: string }) {
-	const tUi = useTranslations("Common.ui");
-	const tPricing = useTranslations("Common.ui.versionedPricing");
-	const locale = useLocale();
+ const tx = useTranslations();
+
 	const [source, setSource] = useState<AdminPricingEditorSource | null>(null);
 	const [drafts, setDrafts] = useState<SkuDraft[]>([]);
 	const [routeDrafts, setRouteDrafts] = useState<AdminPricingEditorSource["routes"]>([]);
 	const [busyKey, setBusyKey] = useState<string | null>(null);
-	const [selectedSkuIndex, setSelectedSkuIndex] = useState(0);
+	const [selectedSkuIndex, setSelectedSkuIndex] = useState<number | null>(null);
+	const [savedDrafts, setSavedDrafts] = useState<Record<string, string>>({});
+	const [deleteIndex, setDeleteIndex] = useState<number | null>(null);
+	const [endDate, setEndDate] = useState(nowInput);
+	const [revisionStarts, setRevisionStarts] = useState(nowInput);
+	const [showHistory, setShowHistory] = useState(false);
+	const [routing, setRouting] = useQueryState(
+		"routing",
+		parseAsStringLiteral(["1"]).withOptions({ shallow: true, history: "replace", scroll: false }),
+	);
+	const routeSettingsOpen = routing === "1";
+	const [loadError, setLoadError] = useState<string | null>(null);
 	const [skuQuery, setSkuQuery] = useState("");
-	const [providerQuery, setProviderQuery] = useState("");
+	const [showAllProviders, setShowAllProviders] = useState(false);
 	const [activeProviderSlug, setActiveProviderSlug] = useState(focusProviderId ?? "");
-	const [connectingProviderSlug, setConnectingProviderSlug] = useState<string | null>(null);
+
 	const [providerModelSlug, setProviderModelSlug] = useState(modelId);
-	const conditionLabel = (condition: PricingCondition) => {
-		const pathOption = CONDITION_PATH_OPTIONS.find((option) => option.value === condition.path);
-		const operatorOption = CONDITION_OPERATOR_OPTIONS.find((option) => option.value === condition.op);
-		const path = pathOption ? tPricing(`conditionPaths.${pathOption.key}` as never) : condition.path.replaceAll("_", " ");
-		const operator = operatorOption ? tPricing(`conditionOperators.${operatorOption.key}` as never) : condition.op;
-		const value = typeof condition.value === "number" && condition.path.includes("tokens")
-			? `${formatTokenLimit(condition.value, tPricing("notSet"))} ${tPricing("tokens")}`
-			: String(condition.value);
-		return `${path} ${operator} ${value}`;
-	};
-	const pricingConditionLabel = (metadata: Record<string, unknown>) => {
-		const conditions = pricingConditions(metadata);
-		return conditions.length ? conditions.map(conditionLabel).join(` ${tPricing("and")} `) : tPricing("allRequests");
-	};
-	const formatOfferWindow = (from: string, to: string) => {
-		const fromLabel = formatOfferDate(from, locale);
-		const toLabel = formatOfferDate(to, locale);
-		if (fromLabel && toLabel) return tPricing("dateWindow.range", { from: fromLabel, to: toLabel });
-		if (fromLabel) return tPricing("dateWindow.from", { date: fromLabel });
-		if (toLabel) return tPricing("dateWindow.until", { date: toLabel });
-		return tPricing("dateWindow.none");
-	};
+	const [addingRoute, setAddingRoute] = useState(false);
+	const [stealthProvider, setStealthProvider] = useState(modelId.startsWith("stealth/"));
 
 	const load = useCallback(async () => {
 		const next = await fetchAdminPricingEditorSource(modelId);
 		setSource(next);
 		setDrafts(buildDrafts(next));
+		setSavedDrafts(Object.fromEntries(buildDrafts(next).map((draft) => [draft.sku_id!, JSON.stringify(draft)])));
 		setRouteDrafts(next.routes);
-		setSelectedSkuIndex(0);
-		setActiveProviderSlug((current) => current || focusProviderId || next.routes[0]?.provider_slug || next.providers[0]?.provider_slug || "");
+		setSelectedSkuIndex(null);
+		setLoadError(null);
+		setActiveProviderSlug((current) => current || focusProviderId || next.routes.find((route) => next.skus.some((sku) => sku.provider_model_id === route.provider_model_id))?.provider_slug || next.routes[0]?.provider_slug || next.providers[0]?.provider_slug || "");
 	}, [focusProviderId, modelId]);
 
 	useEffect(() => {
 		// eslint-disable-next-line react-hooks/set-state-in-effect -- load resolves asynchronously before updating editor state.
-		void load().catch(() => toast.error(tPricing("loadFailed")));
-	}, [load, tPricing]);
+		void load().catch((error) => setLoadError(error instanceof Error ? error.message : "Failed to load pricing"));
+	}, [load]);
 
 	const routes = useMemo(() => {
 		const rows = source?.routes ?? [];
@@ -237,7 +266,10 @@ export default function V2PricingEditor({ modelId, focusProviderId }: { modelId:
 	}, [focusProviderId, source]);
 	const activeProviderRoutes = routeDrafts.filter((route) => route.provider_slug === activeProviderSlug);
 	const visibleProviders = (source?.providers ?? [])
-		.filter((provider) => `${provider.name} ${provider.provider_slug}`.toLowerCase().includes(providerQuery.trim().toLowerCase()))
+		.filter((provider) => {
+			const isConnected = routes.some((route) => route.provider_slug === provider.provider_slug);
+			return showAllProviders || isConnected;
+		})
 		.sort((a, b) => {
 			const routesForA = routes.filter((route) => route.provider_slug === a.provider_slug);
 			const routesForB = routes.filter((route) => route.provider_slug === b.provider_slug);
@@ -258,16 +290,23 @@ export default function V2PricingEditor({ modelId, focusProviderId }: { modelId:
 		const next = { ...row, metadata: { ...row.metadata, match: conditions } };
 		return row.sku_id ? next : { ...next, sku_code: automaticSkuCode(next) };
 	}));
-	const updateRoute = (providerModelId: string, patch: Partial<AdminPricingEditorSource["routes"][number]>) => setRouteDrafts((rows) => rows.map((route) => route.provider_model_id === providerModelId ? { ...route, ...patch } : route));
+	const updateRoute = (providerModelId: string, patch: Partial<AdminPricingEditorSource["routes"][number]>) => setRouteDrafts((rows) => rows.map((route) => {
+		if (route.provider_model_id !== providerModelId) return route;
+		const next = { ...route, ...patch };
+		if (next.phaseo_status !== "enabled" || next.access_scope !== "public" || !["available", "preview", "limited_access"].includes(next.provider_availability_status)) next.routing_enabled = false;
+		return next;
+	}));
 	const saveRoute = async (providerModelId: string) => {
 		const route = routeDrafts.find((item) => item.provider_model_id === providerModelId);
 		if (!route) return;
 		setBusyKey(`route-${providerModelId}`);
 		try {
-			await saveAdminProviderRoute(modelId, { provider_model_id: route.provider_model_id, provider_slug: route.provider_slug, provider_model_slug: route.provider_model_slug, status: route.status, routing_enabled: route.routing_enabled, input_modalities: route.input_modalities ?? [], output_modalities: route.output_modalities ?? [], regions: route.regions ?? [], context_length: route.context_length, max_output_tokens: route.max_output_tokens, effective_from: route.effective_from, effective_to: route.effective_to });
-			await load();
-			toast.success(tPricing("routeSaved"));
-		} catch { toast.error(tPricing("routeSaveFailed")); }
+			await saveAdminProviderRoute(modelId, { provider_model_id: route.provider_model_id, provider_slug: route.provider_slug, provider_model_slug: route.provider_model_slug, status: route.status, is_stealth: route.is_stealth, provider_availability_status: route.provider_availability_status, phaseo_status: route.phaseo_status, access_scope: route.access_scope, routing_enabled: route.routing_enabled, input_modalities: route.input_modalities ?? [], output_modalities: route.output_modalities ?? [], regions: route.regions ?? [], context_length: route.context_length, max_output_tokens: route.max_output_tokens, effective_from: route.effective_from, effective_to: route.effective_to, metadata: route.metadata ?? {} });
+			const next = await fetchAdminPricingEditorSource(modelId);
+			setSource(next);
+			setRouteDrafts(next.routes);
+			toast.success(tx("Common.ui.versionedPricing.routeSaved" as never));
+		} catch (error) { toast.error(error instanceof Error ? error.message : "Provider route save failed"); }
 		finally { setBusyKey(null); }
 	};
 	const addOffer = (providerModelId: string) => {
@@ -276,15 +315,17 @@ export default function V2PricingEditor({ modelId, focusProviderId }: { modelId:
 		setSelectedSkuIndex(drafts.length);
 	};
 	const connectProvider = async () => {
-		if (!connectingProviderSlug || !providerModelSlug.trim()) return;
-		setBusyKey(`provider-${connectingProviderSlug}`);
+		if (!activeProviderSlug || !providerModelSlug.trim()) return;
+		setBusyKey(`provider-${activeProviderSlug}`);
 		try {
-			await saveAdminProviderRoute(modelId, { provider_slug: connectingProviderSlug, provider_model_slug: providerModelSlug.trim(), status: "active", routing_enabled: false, input_modalities: [], output_modalities: [], regions: [] });
-			await load();
-			setActiveProviderSlug(connectingProviderSlug);
-			setConnectingProviderSlug(null);
-			toast.success(tPricing("providerConnected"));
-		} catch { toast.error(tPricing("providerConnectionFailed")); }
+			await saveAdminProviderRoute(modelId, { provider_slug: activeProviderSlug, provider_model_slug: providerModelSlug.trim(), is_stealth: stealthProvider, status: "active", provider_availability_status: "unknown", phaseo_status: "disabled", access_scope: "public", routing_enabled: false, input_modalities: [], output_modalities: [], regions: [], metadata: {} });
+			const next = await fetchAdminPricingEditorSource(modelId);
+			setSource(next);
+			setRouteDrafts(next.routes);
+
+			setAddingRoute(false);
+			toast.success(tx("Common.ui.versionedPricing.providerConnected" as never));
+		} catch (error) { toast.error(error instanceof Error ? error.message : "Provider connection failed"); }
 		finally { setBusyKey(null); }
 	};
 
@@ -293,139 +334,192 @@ export default function V2PricingEditor({ modelId, focusProviderId }: { modelId:
 		const key = draft.sku_id ?? `new-${index}`;
 		setBusyKey(key);
 		try {
-			const metadata = { ...draft.metadata, match: pricingConditions(draft.metadata).filter((condition) => condition.value !== "") };
+			validatePriceAmounts(draft.meters);
+			if (pricingConditions(draft.metadata).some((condition) => condition.value === "")) throw new Error("Enter a value for every condition, or remove the unused condition.");
+			const metadata = { ...draft.metadata };
 			const result = await saveAdminPricingSku(modelId, {
 				...draft,
 				metadata,
 				version: Number(draft.version),
 				region: draft.region || null,
 				description: draft.description || null,
-				effective_from: new Date(draft.effective_from).toISOString(),
+				effective_from: new Date(draft.sku_id ? revisionStarts : draft.effective_from).toISOString(),
 				effective_to: draft.effective_to ? new Date(draft.effective_to).toISOString() : null,
 				meters: draft.meters.map((meter) => ({ ...meter, direction: meter.direction || null, unit_quantity: Number(meter.unit_quantity), price_nanos: Math.round(Number(meter.price_usd) * 1_000_000_000), meter_order: Number(meter.meter_order), metadata: meter.metadata })),
 			});
 			await revalidateSingleModelApiInfoAction(modelId);
 			const saved = result.pricing as { sku?: Record<string, any>; meters?: Array<Record<string, any>> };
-			if (saved.sku) setDrafts((rows) => rows.map((row, rowIndex) => rowIndex === index ? buildSkuDraft(saved.sku!, saved.meters ?? []) : row));
-			toast.success(tPricing("pricingSaved"));
-		} catch { toast.error(tPricing("pricingSaveFailed")); } finally { setBusyKey(null); }
+			if (!saved.sku) throw new Error("The server did not return the saved price. Reload to verify before retrying.");
+			const savedDraft = buildSkuDraft(saved.sku, saved.meters ?? []);
+			const previous = draft.sku_id && savedDrafts[draft.sku_id] ? { ...JSON.parse(savedDrafts[draft.sku_id]) as SkuDraft, effective_to: savedDraft.effective_from } : null;
+			setDrafts((rows) => [...rows.map((row, rowIndex) => rowIndex === index ? savedDraft : row), ...(previous ? [previous] : [])]);
+			if (previous?.sku_id) setSavedDrafts((rows) => ({ ...rows, [previous.sku_id!]: JSON.stringify(previous) }));
+			setSavedDrafts((rows) => ({ ...rows, [savedDraft.sku_id!]: JSON.stringify(savedDraft) }));
+			setSelectedSkuIndex(null);
+			toast.success(tx("Common.ui.versionedPricing.pricingSaved" as never));
+		} catch (error) { toast.error(error instanceof Error ? error.message : "Pricing save failed"); } finally { setBusyKey(null); }
 	};
 
 	const remove = async (index: number) => {
 		const draft = drafts[index];
-		if (!draft.sku_id) { setDrafts((rows) => rows.filter((_, rowIndex) => rowIndex !== index)); setSelectedSkuIndex((current) => Math.max(0, Math.min(current, drafts.length - 2))); return; }
-		if (!window.confirm(tPricing("confirmDelete", { offer: draft.display_name || draft.sku_code }))) return;
+		if (!draft.sku_id) { setDrafts((rows) => rows.filter((_, rowIndex) => rowIndex !== index)); setSelectedSkuIndex(null); setDeleteIndex(null); return; }
 		setBusyKey(draft.sku_id);
-		try { await deleteAdminPricingSku(modelId, draft.sku_id); await revalidateSingleModelApiInfoAction(modelId); setDrafts((rows) => rows.filter((_, rowIndex) => rowIndex !== index)); setSelectedSkuIndex((current) => Math.max(0, Math.min(current, drafts.length - 2))); toast.success(tPricing("skuDeleted")); }
-		catch { toast.error(tPricing("deleteFailed")); }
+		try {
+            const result = await endDateAdminPricingSku(modelId, draft.sku_id, new Date(endDate).toISOString());
+            const saved = result.pricing as { sku: Record<string, any>; meters: Array<Record<string, any>> };
+            const ended = buildSkuDraft(saved.sku, saved.meters);
+            setDrafts((rows) => rows.map((row, rowIndex) => rowIndex === index ? ended : row));
+            setSavedDrafts((rows) => ({ ...rows, [ended.sku_id!]: JSON.stringify(ended) }));
+            setSelectedSkuIndex(null); setDeleteIndex(null);
+            await revalidateSingleModelApiInfoAction(modelId);
+            toast.success("Price group end-dated");
+        } catch (error) { toast.error(error instanceof Error ? error.message : "End date failed"); }
 		finally { setBusyKey(null); }
 	};
 
-	if (!source) return <div className="rounded-md border p-4 text-sm text-muted-foreground sm:p-6">{tPricing("loading")}</div>;
+		const isDirty = (draft: SkuDraft) => !draft.sku_id || savedDrafts[draft.sku_id] !== JSON.stringify(draft);
+	const unsavedCount = drafts.filter(isDirty).length;
+
+	if (loadError) return <div role="alert" className="space-y-3 rounded-lg border p-5"><p>{loadError}</p><Button variant="outline" onClick={() => void load().catch((error) => setLoadError(error.message))}>Retry loading prices</Button></div>;
+	if (!source) return <p role="status" className="p-6 text-sm text-muted-foreground">Loading prices…</p>;
+
 	const activeRouteIds = new Set(activeProviderRoutes.map((route) => route.provider_model_id));
-	const providerOfferIndexes = drafts.map((draft, index) => ({ draft, index })).filter(({ draft }) => activeRouteIds.has(draft.provider_model_id));
-	const matchingSkuIndexes = drafts.map((draft, index) => ({ draft, index })).filter(({ draft }) => {
-		const route = routes.find((item) => item.provider_model_id === draft.provider_model_id);
-		const haystack = `${route?.provider_slug ?? ""} ${draft.display_name} ${draft.sku_code} ${draft.operation} ${draft.service_tier_slug} ${pricingConditionLabel(draft.metadata)}`.toLowerCase();
-		return route?.provider_slug === activeProviderSlug && haystack.includes(skuQuery.trim().toLowerCase());
-	});
-	const selectProvider = (providerSlug: string) => {
-		setActiveProviderSlug(providerSlug);
-		setConnectingProviderSlug(null);
-		const routeIds = new Set(routes.filter((route) => route.provider_slug === providerSlug).map((route) => route.provider_model_id));
-		const firstOffer = drafts.findIndex((draft) => routeIds.has(draft.provider_model_id));
-		if (firstOffer >= 0) setSelectedSkuIndex(firstOffer);
+	const providerOffers = drafts.map((draft, index) => ({ draft, index })).filter(({ draft }) => activeRouteIds.has(draft.provider_model_id));
+	const matchingOffers = providerOffers.filter(({ draft }) => (showHistory || offerDateState(draft) !== "Expired") && (draft.display_name + " " + draft.operation + " " + draft.service_tier_slug + " " + pricingConditionLabel(draft.metadata)).toLowerCase().includes(skuQuery.trim().toLowerCase()));
+	const draft = selectedSkuIndex === null ? null : drafts[selectedSkuIndex];
+	const selectedRoute = draft ? routes.find((route) => route.provider_model_id === draft.provider_model_id) : null;
+	const providerName = source.providers.find((provider) => provider.provider_slug === activeProviderSlug)?.name ?? activeProviderSlug;
+	const conditions = draft ? pricingConditions(draft.metadata) : [];
+	const choices = (values: readonly string[]) => values.map((value) => ({ value, label: readablePricingLabel(value) }));
+	const changeDraft = (patch: Partial<SkuDraft>) => { if (selectedSkuIndex !== null) updateSku(selectedSkuIndex, patch); };
+	const discardChanges = () => {
+		if (selectedSkuIndex === null || !draft) return;
+		const baseline = draft.sku_id ? savedDrafts[draft.sku_id] : null;
+		setDrafts((rows) => baseline ? rows.map((row, index) => index === selectedSkuIndex ? JSON.parse(baseline) as SkuDraft : row) : rows.filter((_, index) => index !== selectedSkuIndex));
+		if (!baseline) setSelectedSkuIndex(null);
+	};
+	const selectProvider = (value: string) => { setActiveProviderSlug(value); setAddingRoute(false); setSkuQuery(""); setSelectedSkuIndex(null);  };
+	const addCharge = (meterKey: string) => {
+		if (!draft) return;
+		const definition = source.meterDefinitions.find((item) => item.meter_key === meterKey);
+		if (!definition) return;
+		const quantity = definition.unit === "token" ? 1_000_000 : definition.default_unit_quantity;
+		changeDraft({ meters: [...draft.meters, { ...emptyMeter(), meter_key: definition.meter_key, display_label: readablePricingLabel(definition.display_name), modality: definition.modality, direction: definition.direction ?? "", unit: definition.unit, unit_quantity: String(quantity), display_unit: billingUnit(quantity, definition.unit), price_usd: "", meter_order: String((draft.meters.length + 1) * 100) }] });
 	};
 
-	return <div className="space-y-4 sm:space-y-5">
-		<div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-start sm:justify-between">
-			<div><h2 className="font-semibold">{tPricing("title")}</h2><p className="text-sm text-muted-foreground">{tPricing("description")}</p></div>
-			<Button className="w-full sm:w-auto" type="button" variant="outline" disabled={!activeProviderRoutes.length} onClick={() => addOffer(activeProviderRoutes[0].provider_model_id)}><Plus className="mr-1 h-4 w-4" />{tPricing("addOffer")}</Button>
+	return <div className="space-y-5">
+		<UnsavedChangesGuard dirty={unsavedCount > 0 || JSON.stringify(routeDrafts) !== JSON.stringify(source.routes)} saving={busyKey !== null} />
+		<div className="flex flex-wrap items-end justify-between gap-4">
+			<div><h2 className="text-xl font-semibold">Prices by provider</h2><p className="mt-1 text-sm text-muted-foreground">Review the rates, then select a price to edit.</p></div>
+			{unsavedCount > 0 ? <Badge variant="secondary">{unsavedCount} unsaved price {unsavedCount === 1 ? tx("SettingsUI.strings.group" as never) : tx("SettingsUI.strings.groups" as never)}</Badge> : null}
 		</div>
-		<section className="overflow-hidden rounded-xl border bg-background">
-			<div className="flex flex-col gap-3 border-b p-3 sm:flex-row sm:items-center sm:justify-between sm:p-4"><div><h3 className="text-sm font-semibold">{tPricing("chooseProviderHeading")}</h3><p className="text-xs text-muted-foreground">{tPricing("providersDescription")}</p></div><div className="flex flex-col gap-2 sm:flex-row"><label className="relative block sm:w-64"><Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" /><Input className="pl-9" value={providerQuery} onChange={(event) => setProviderQuery(event.target.value)} placeholder={tPricing("searchProviders")} /></label><Button asChild type="button" variant="outline"><Link href="/internal/data/api-providers/new"><Plus className="mr-1.5 h-4 w-4" />{tPricing("newProvider")}</Link></Button>{activeProviderSlug ? <Button asChild type="button" variant="ghost" size="icon"><Link aria-label={tPricing("editProviderAria")} href={`/internal/data/api-providers/${activeProviderSlug}/edit`}><ExternalLink className="h-4 w-4" /></Link></Button> : null}</div></div>
-			<div className="flex gap-2 overflow-x-auto p-3 sm:p-4">{visibleProviders.map((provider) => { const providerRoutes = routes.filter((route) => route.provider_slug === provider.provider_slug); const offerCount = drafts.filter((draft) => providerRoutes.some((route) => route.provider_model_id === draft.provider_model_id)).length; const selected = provider.provider_slug === activeProviderSlug; return <button key={provider.provider_slug} type="button" onClick={() => selectProvider(provider.provider_slug)} className={`min-w-52 rounded-xl border p-3 text-left transition-colors ${selected ? "border-primary bg-primary/5 ring-1 ring-primary/20" : "hover:bg-muted/30"}`}><div className="flex items-start justify-between gap-3"><div className="flex min-w-0 items-center gap-2.5"><div className="flex size-9 shrink-0 items-center justify-center rounded-lg border bg-muted/20"><Logo id={provider.provider_slug} width={22} height={22} className="size-5.5" /></div><div className="min-w-0"><div className="truncate text-sm font-semibold">{provider.name}</div><div className="truncate font-mono text-[10px] text-muted-foreground">{provider.provider_slug}</div></div></div><span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] ${providerRoutes.length ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300" : "bg-muted text-muted-foreground"}`}>{providerRoutes.length ? tPricing("connected") : tPricing("available")}</span></div><div className="mt-3 flex gap-3 border-t pt-2 text-[11px] text-muted-foreground"><span>{tPricing("routeCount", { count: providerRoutes.length })}</span><span>{tPricing("offerCount", { count: offerCount })}</span>{!provider.routable ? <span>{tPricing("external")}</span> : null}</div></button>; })}</div>
-		</section>
-		{!activeProviderRoutes.length && activeProviderSlug ? <section className="rounded-xl border border-dashed bg-muted/10 p-4 sm:p-5"><div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"><div><h3 className="font-medium">{tPricing("connectHeading", { provider: source.providers.find((provider) => provider.provider_slug === activeProviderSlug)?.name ?? activeProviderSlug })}</h3><p className="mt-1 max-w-xl text-sm text-muted-foreground">{tPricing("connectDescription")}</p></div><Button asChild type="button" variant="ghost" size="sm"><Link href={`/internal/data/api-providers/${activeProviderSlug}/edit`}><ExternalLink className="mr-1.5 h-3.5 w-3.5" />{tPricing("editProvider")}</Link></Button></div>{connectingProviderSlug === activeProviderSlug ? <div className="mt-4 grid gap-3 rounded-lg border bg-background p-3 sm:grid-cols-[minmax(0,1fr)_auto]"><label className="text-xs">{tPricing("providerModelIdentifier")}<Input className="mt-1" value={providerModelSlug} onChange={(event) => setProviderModelSlug(event.target.value)} placeholder={modelId} /></label><Button className="self-end" type="button" disabled={busyKey === `provider-${activeProviderSlug}`} onClick={() => void connectProvider()}>{busyKey === `provider-${activeProviderSlug}` ? tPricing("connecting") : tPricing("createRoute")}</Button></div> : <Button className="mt-4 w-full sm:w-auto" type="button" onClick={() => { setConnectingProviderSlug(activeProviderSlug); setProviderModelSlug(modelId); }}><Plus className="mr-1.5 h-4 w-4" />{tPricing("connectProvider")}</Button>}</section> : null}
-		{activeProviderRoutes.length ? <section className="rounded-xl border bg-background"><div className="border-b p-3 sm:p-4"><h3 className="text-sm font-semibold">{tPricing("configureRoutes")}</h3><p className="text-xs text-muted-foreground">{tPricing("routeLimitsDescription")}</p></div><div className="grid gap-3 p-3 sm:p-4">{activeProviderRoutes.map((route) => <div key={route.provider_model_id} className="rounded-lg border bg-muted/10 p-3"><div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"><div className="min-w-0"><div className="truncate text-sm font-medium">{route.provider_model_slug}</div><div className="truncate font-mono text-[10px] text-muted-foreground">{route.provider_model_id}</div></div><div className="flex gap-2"><span className="rounded-full bg-muted px-2 py-1 text-[10px] text-muted-foreground">{tPricing("context")} {formatTokenLimit(route.context_length, tPricing("notSet"))}</span><span className="rounded-full bg-muted px-2 py-1 text-[10px] text-muted-foreground">{tPricing("output")} {formatTokenLimit(route.max_output_tokens, tPricing("notSet"))}</span></div></div><div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4"><label className="text-xs">{tPricing("contextLength")}<Input className="mt-1" type="number" min="1" inputMode="numeric" value={route.context_length ?? ""} onChange={(event) => updateRoute(route.provider_model_id, { context_length: event.target.value ? Number(event.target.value) : null })} placeholder="400000" /></label><label className="text-xs">{tPricing("maxOutputTokens")}<Input className="mt-1" type="number" min="1" inputMode="numeric" value={route.max_output_tokens ?? ""} onChange={(event) => updateRoute(route.provider_model_id, { max_output_tokens: event.target.value ? Number(event.target.value) : null })} placeholder="128000" /></label><label className="text-xs">{tPricing("routeLifecycle")}<Select value={route.status} onValueChange={(value) => updateRoute(route.provider_model_id, { status: value })}><SelectTrigger className="mt-1 h-9 w-full rounded-md"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="active">{tUi("status.active")}</SelectItem><SelectItem value="degraded">{tUi("status.degraded")}</SelectItem><SelectItem value="disabled">{tUi("status.disabled")}</SelectItem><SelectItem value="retired">{tUi("status.retired")}</SelectItem></SelectContent></Select></label><Button className="self-end" type="button" disabled={busyKey === `route-${route.provider_model_id}`} onClick={() => void saveRoute(route.provider_model_id)}><Save className="mr-1.5 h-4 w-4" />{busyKey === `route-${route.provider_model_id}` ? tPricing("saving") : tPricing("saveRoute")}</Button></div></div>)}</div></section> : null}
-		{activeProviderRoutes.length && providerOfferIndexes.length ? <>
-		<section className="overflow-hidden rounded-xl border bg-muted/10">
-			<div className="flex flex-col gap-3 border-b p-3 sm:flex-row sm:items-start sm:justify-between sm:p-4"><div className="flex items-start gap-3"><Eye className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" /><div><h3 className="text-sm font-medium">{tPricing("websitePreview")}</h3><p className="text-xs text-muted-foreground">{tPricing("websitePreviewDescription")}</p></div></div>{drafts[selectedSkuIndex] ? <div className="flex shrink-0 items-center gap-1.5 rounded-full border border-amber-500/20 bg-amber-500/10 px-2.5 py-1 text-[11px] font-medium text-amber-700 dark:text-amber-300"><GitBranch className="h-3 w-3" />{pricingConditionLabel(drafts[selectedSkuIndex].metadata)}</div> : null}</div>
-			<div className="overflow-x-auto">
-				<table className="w-full min-w-[680px] text-left text-sm">
-					<thead className="bg-muted/30 text-xs text-muted-foreground"><tr><th className="px-4 py-2 font-medium">{tPricing("provider")}</th><th className="px-4 py-2 font-medium">{tPricing("offer")}</th><th className="px-4 py-2 font-medium">{tPricing("operation")}</th><th className="px-4 py-2 font-medium">{tPricing("meter")}</th><th className="px-4 py-2 text-right font-medium">{tPricing("price")}</th></tr></thead>
-					<tbody>{drafts[selectedSkuIndex] ? drafts[selectedSkuIndex].meters.map((meter, meterIndex) => { const draft = drafts[selectedSkuIndex]; const route = routeDrafts.find((item) => item.provider_model_id === draft.provider_model_id); return <tr key={`preview-${selectedSkuIndex}-${meterIndex}`} className="border-t"><td className="px-4 py-2.5"><div className="flex items-center gap-2 font-medium"><Logo id={route?.provider_slug ?? "unknown"} width={20} height={20} className="size-5 rounded-sm" /><span>{route?.provider_slug ?? tPricing("unknownProvider")}</span></div><div className="mt-1 text-[10px] text-muted-foreground">{tPricing("contextOutputSummary", { context: formatTokenLimit(route?.context_length, tPricing("notSet")), output: formatTokenLimit(route?.max_output_tokens, tPricing("notSet")) })}</div></td><td className="px-4 py-2.5"><div>{draft.display_name || draft.sku_code}</div><div className="text-xs text-muted-foreground">{draft.service_tier_slug}{draft.region ? ` · ${draft.region}` : ""}</div><div className="mt-0.5 text-[11px] font-medium text-foreground/70">{formatOfferWindow(draft.effective_from, draft.effective_to)}</div></td><td className="px-4 py-2.5 font-mono text-xs">{draft.operation}</td><td className="px-4 py-2.5"><div>{meter.display_label || (meter.meter_key === "input_tokens" ? tPricing("inputTokensExample") : meter.meter_key)}</div><div className="text-xs text-muted-foreground">{tPricing("perUnit", { unit: meter.display_unit || (meter.meter_key === "input_tokens" ? tPricing("oneMillionTokens") : meter.unit_quantity + " " + meter.unit) })}</div></td><td className="px-4 py-2.5 text-right font-mono">${Number(meter.price_usd || 0).toLocaleString(locale, { maximumFractionDigits: 8 })}</td></tr>; }) : null}</tbody>
-				</table>
+		<div className="flex flex-col gap-3 rounded-xl border bg-background p-4 sm:flex-row sm:items-end">
+			<div className="min-w-0 flex-1"><PricingChoice label={tx("Common.ui.versionedPricing.provider" as never)} value={activeProviderSlug} onChange={selectProvider}
+				options={visibleProviders.map((provider) => ({ value: provider.provider_slug, label: provider.name + " · " + routes.filter((route) => route.provider_slug === provider.provider_slug).length + " routes", icon: <Logo id={provider.provider_slug} alt="" width={20} height={20} className="size-5 shrink-0 object-contain" /> }))} /></div>
+			<Button variant="outline" className="min-h-11" onClick={() => setShowAllProviders((value) => !value)}>{showAllProviders ? "Connected providers" : "Find another provider"}</Button>
+			<Button variant="outline" className="min-h-11" onClick={() => setAddingRoute((value) => !value)}><Plus className="size-4" />Add route</Button>
+			<Button variant="outline" className="min-h-11" disabled={!activeProviderRoutes.length} onClick={() => void setRouting("1")}><Settings2 className="size-4" />Routing & regions</Button>
+		</div>
+		{(!activeProviderRoutes.length || addingRoute) ? <div className="space-y-4 rounded-xl border border-dashed p-5"><h3 className="font-medium">Connect {providerName || "a provider"}</h3><p className="text-sm text-muted-foreground">Enter the model ID used by this provider. The new route starts with gateway routing disabled.</p><Input aria-label={tx("Common.ui.modelEditor.providerModelId" as never)} value={providerModelSlug} onChange={(event) => setProviderModelSlug(event.target.value)} /><div className="space-y-2"><div className="flex items-center gap-2"><Checkbox id="new-stealth-provider" checked={stealthProvider} onCheckedChange={setStealthProvider} /><Label htmlFor="new-stealth-provider">Stealth provider</Label></div><p className="text-xs text-muted-foreground">Show the provider as Stealth publicly. The real provider and upstream model ID stay private.</p></div><Button disabled={!activeProviderSlug || !providerModelSlug.trim() || busyKey !== null} onClick={() => void connectProvider()}>{tx("Common.ui.versionedPricing.connectProvider" as never)}</Button></div> : null}
+		{activeProviderRoutes.length ? <>
+			<div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+				<div className="flex items-center gap-3"><Logo id={activeProviderSlug} width={28} height={28} className="size-7" /><div><h3 className="font-medium">{providerName}</h3><p className="text-xs text-muted-foreground">{providerOffers.length} price groups · {activeProviderRoutes.length} routes</p></div></div>
+				<div className="flex gap-2"><div className="relative min-w-0 flex-1"><Search className="absolute left-3 top-3.5 size-4 text-muted-foreground" /><Input aria-label="Filter prices" className="min-h-11 pl-9" placeholder="Filter by tier or condition" value={skuQuery} onChange={(event) => setSkuQuery(event.target.value)} /></div><Button className="min-h-11" onClick={() => addOffer(activeProviderRoutes[0].provider_model_id)}><Plus className="size-4" />Add prices</Button></div>
 			</div>
-		</section>
-		<div className="grid min-w-0 gap-4 lg:grid-cols-[240px_minmax(0,1fr)]">
-			<aside className="min-w-0 space-y-2 rounded-xl border p-2 lg:sticky lg:top-4 lg:self-start">
-				<label className="relative block"><Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" /><Input className="pl-9" value={skuQuery} onChange={(event) => setSkuQuery(event.target.value)} placeholder={tPricing("findOffer")} /></label>
-				<div className="flex gap-2 overflow-x-auto pb-1 lg:max-h-[65vh] lg:flex-col lg:overflow-y-auto lg:pb-0">{matchingSkuIndexes.map(({ draft, index }) => { const route = routes.find((item) => item.provider_model_id === draft.provider_model_id); return <button key={draft.sku_id ?? `nav-${index}`} type="button" onClick={() => setSelectedSkuIndex(index)} className={`min-w-56 rounded-lg border p-3 text-left transition-colors lg:min-w-0 ${selectedSkuIndex === index ? "border-primary bg-primary/5" : "hover:bg-muted/40"}`}><div className="flex items-center justify-between gap-2"><div className="flex min-w-0 items-center gap-2"><Logo id={route?.provider_slug ?? "unknown"} width={20} height={20} className="size-5 shrink-0 rounded-sm" /><div className="truncate text-sm font-medium">{route?.provider_slug ?? tPricing("provider")}</div></div><span className="shrink-0 rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">v{draft.version}</span></div><div className="mt-2 truncate text-xs font-medium">{draft.display_name || draft.sku_code}</div><div className="mt-1 truncate font-mono text-[10px] text-muted-foreground">{draft.operation} · {draft.service_tier_slug}</div><div className="mt-2 flex items-start gap-1 border-t pt-2 text-[11px] font-medium text-amber-700 dark:text-amber-300"><GitBranch className="mt-0.5 h-3 w-3 shrink-0" /><span className="line-clamp-2">{pricingConditionLabel(draft.metadata)}</span></div><div className="mt-1 text-[11px] font-medium text-foreground/75">{formatOfferWindow(draft.effective_from, draft.effective_to)}</div></button>; })}</div>
-				{!matchingSkuIndexes.length ? <p className="p-3 text-center text-xs text-muted-foreground">{tPricing("noMatchingOffers")}</p> : null}
-			</aside>
-			<div className="min-w-0">
-		{drafts.map((draft, skuIndex) => {
-			if (skuIndex !== selectedSkuIndex) return null;
-			const route = routes.find((item) => item.provider_model_id === draft.provider_model_id);
-			const tierOptions = source.serviceTiers.some((tier) => tier.service_tier_slug === draft.service_tier_slug)
-				? source.serviceTiers
-				: [{ service_tier_slug: draft.service_tier_slug, display_name: `${draft.service_tier_slug} (legacy)`, status: "disabled" }, ...source.serviceTiers];
-			const operationOptions = [...new Set([
-				...PRICING_OPERATION_OPTIONS,
-				...source.capabilities.filter((capability) => capability.provider_model_id === draft.provider_model_id && capability.capability_id.includes(".")).map((capability) => capability.capability_id),
-				draft.operation,
-			].filter(Boolean))];
-			const regionOptions = source.regions.filter((region) => region.provider_slug === route?.provider_slug);
-			const currentRegionIsKnown = !draft.region || regionOptions.some((region) => region.region_code === draft.region);
-			const key = draft.sku_id ?? `new-${skuIndex}`;
-			const conditions = pricingConditions(draft.metadata);
-			return <section key={key} className="space-y-5 overflow-hidden rounded-xl border bg-background p-3 sm:p-5">
-				<div className="flex min-w-0 items-start justify-between gap-2 border-b pb-4"><div className="flex min-w-0 items-center gap-3"><div className="flex size-10 shrink-0 items-center justify-center rounded-lg border bg-muted/30"><Logo id={route?.provider_slug ?? "unknown"} width={24} height={24} className="size-6" /></div><div className="min-w-0"><div className="truncate font-medium">{route?.provider_slug ?? tPricing("provider")} · {draft.display_name || draft.sku_code}</div><div className="truncate font-mono text-[11px] text-muted-foreground sm:text-xs">{draft.provider_model_id}</div><div className="mt-1 truncate font-mono text-[10px] text-muted-foreground">{tPricing("skuLabel")} {draft.sku_code}</div></div></div><Button aria-label={tPricing("deleteSku")} className="shrink-0" type="button" variant="ghost" size="icon" disabled={busyKey === key} onClick={() => void remove(skuIndex)}><Trash2 className="h-4 w-4" /></Button></div>
-				<div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-					<label className="text-xs sm:col-span-2 xl:col-span-1">{tPricing("providerRoute")}<Select value={draft.provider_model_id} onValueChange={(value) => updateSku(skuIndex, { provider_model_id: value })}><SelectTrigger className="mt-1 h-10 w-full rounded-md sm:h-9"><SelectValue /></SelectTrigger><SelectContent>{routes.map((item) => <SelectItem key={item.provider_model_id} value={item.provider_model_id}>{item.provider_slug} / {item.provider_model_slug}</SelectItem>)}</SelectContent></Select></label>
-					<label className="text-xs">{tPricing("offerLabel")}<Input className="mt-1" value={draft.display_name} onChange={(e) => updateSku(skuIndex, { display_name: e.target.value })} /><span className="mt-1 block text-[10px] text-muted-foreground">{tPricing("offerLabelDescription")}</span></label>
-					<label className="text-xs">{tPricing("serviceTier")}<Select value={draft.service_tier_slug} onValueChange={(value) => updateSku(skuIndex, { service_tier_slug: value })}><SelectTrigger className="mt-1 h-10 w-full rounded-md sm:h-9"><SelectValue /></SelectTrigger><SelectContent>{tierOptions.map((tier) => <SelectItem key={tier.service_tier_slug} value={tier.service_tier_slug} disabled={tier.status === "disabled"}>{tier.display_name}</SelectItem>)}</SelectContent></Select></label>
-					<label className="text-xs">{tPricing("operation")}<Select value={draft.operation} onValueChange={(value) => updateSku(skuIndex, { operation: value })}><SelectTrigger className="mt-1 h-10 w-full rounded-md sm:h-9"><SelectValue /></SelectTrigger><SelectContent>{operationOptions.map((operation) => <SelectItem key={operation} value={operation}>{operation}</SelectItem>)}</SelectContent></Select></label>
-					<label className="text-xs">{tPricing("version")}<Input className="mt-1" type="number" min="1" value={draft.version} onChange={(e) => updateSku(skuIndex, { version: e.target.value })} /></label>
-					<label className="text-xs">{tPricing("currency")}<Input className="mt-1" maxLength={3} value={draft.currency} onChange={(e) => updateSku(skuIndex, { currency: e.target.value.toUpperCase() })} /></label>
-					<label className="text-xs">{tPricing("region")}<Select value={draft.region || "global"} onValueChange={(value) => updateSku(skuIndex, { region: value === "global" ? "" : value })}><SelectTrigger className="mt-1 h-10 w-full rounded-md sm:h-9"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="global">{tUi("status.global")}</SelectItem>{!currentRegionIsKnown ? <SelectItem value={draft.region}>{draft.region}</SelectItem> : null}{regionOptions.filter((region) => region.region_code !== "global").map((region) => <SelectItem key={region.region_code} value={region.region_code}>{region.display_name || region.region_code}</SelectItem>)}</SelectContent></Select></label>
-					<label className="text-xs">{tPricing("lifecycle")}<Select value={draft.status} onValueChange={(value) => updateSku(skuIndex, { status: value as SkuDraft["status"] })}><SelectTrigger className="mt-1 h-10 w-full rounded-md sm:h-9"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="active">{tUi("status.active")}</SelectItem><SelectItem value="deprecated">{tUi("status.deprecated")}</SelectItem><SelectItem value="disabled">{tUi("status.disabled")}</SelectItem>{draft.status === "draft" ? <SelectItem value="draft" disabled>{tUi("status.draftLegacy")}</SelectItem> : null}</SelectContent></Select><span className="mt-1 block text-[10px] text-muted-foreground">{tPricing("dateStateLabel")} {tPricing(offerDateState(draft) === "scheduled" ? "offerStates.scheduled" : offerDateState(draft) === "expired" ? "offerStates.expired" : "offerStates.current")}</span></label>
-					<label className="text-xs">{tPricing("effectiveFrom")}<Input className="mt-1" type="datetime-local" value={draft.effective_from} onChange={(e) => updateSku(skuIndex, { effective_from: e.target.value })} /></label>
-					<label className="text-xs">{tPricing("effectiveTo")}<Input className="mt-1" type="datetime-local" value={draft.effective_to} onChange={(e) => updateSku(skuIndex, { effective_to: e.target.value })} /></label>
-				</div>
-					<div className="space-y-3 rounded-lg border border-amber-500/20 bg-amber-500/5 p-3 sm:p-4">
-						<div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"><div><div className="flex items-center gap-2 text-sm font-medium"><GitBranch className="h-4 w-4 text-amber-600" />{tPricing("appliesWhen")}</div><p className="mt-1 text-xs text-muted-foreground">{tPricing("conditionDescription")}</p></div><Button type="button" size="sm" variant="outline" onClick={() => updateConditions(skuIndex, [...conditions, { path: "input_tokens", op: "gte", value: 272000, or_group: 1, and_index: conditions.length + 1 }])}><Plus className="mr-1 h-3.5 w-3.5" />{tPricing("addCondition")}</Button></div>
-						{conditions.length ? <div className="space-y-2">{conditions.map((condition, conditionIndex) => {
-							const pathOptions = CONDITION_PATH_OPTIONS.some((option) => option.value === condition.path) ? CONDITION_PATH_OPTIONS.map((option) => ({ value: option.value, label: tPricing(("conditionPaths." + option.key) as never) })) : [{ value: condition.path, label: condition.path }, ...CONDITION_PATH_OPTIONS.map((option) => ({ value: option.value, label: tPricing(("conditionPaths." + option.key) as never) }))];
-							const operatorOptions = CONDITION_OPERATOR_OPTIONS.some((option) => option.value === condition.op) ? CONDITION_OPERATOR_OPTIONS.map((option) => ({ value: option.value, label: tPricing(("conditionOperators." + option.key) as never) })) : [{ value: condition.op, label: condition.op }, ...CONDITION_OPERATOR_OPTIONS.map((option) => ({ value: option.value, label: tPricing(("conditionOperators." + option.key) as never) }))];
-							return <div key={`${key}-condition-${conditionIndex}`} className="grid grid-cols-1 gap-2 rounded-md border bg-background p-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(120px,0.7fr)_auto]">
-								<label className="text-xs">{tPricing("field")}<Select value={condition.path} onValueChange={(value) => updateConditions(skuIndex, conditions.map((row, index) => index === conditionIndex ? { ...row, path: value } : row))}><SelectTrigger className="mt-1 h-9 w-full"><SelectValue /></SelectTrigger><SelectContent>{pathOptions.map((option) => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}</SelectContent></Select></label>
-								<label className="text-xs">{tPricing("comparison")}<Select value={condition.op} onValueChange={(value) => updateConditions(skuIndex, conditions.map((row, index) => index === conditionIndex ? { ...row, op: value } : row))}><SelectTrigger className="mt-1 h-9 w-full"><SelectValue /></SelectTrigger><SelectContent>{operatorOptions.map((option) => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}</SelectContent></Select></label>
-								<label className="text-xs">{tPricing("value")}<Input className="mt-1 font-mono" type="number" inputMode="numeric" value={String(condition.value)} onChange={(event) => updateConditions(skuIndex, conditions.map((row, index) => index === conditionIndex ? { ...row, value: event.target.value === "" ? "" : Number(event.target.value) } : row))} /></label>
-								<div className="flex items-end"><Button aria-label={tPricing("deleteCondition")} className="w-full sm:w-9" type="button" variant="outline" size="icon" onClick={() => updateConditions(skuIndex, conditions.filter((_, index) => index !== conditionIndex))}><Trash2 className="h-4 w-4" /><span className="ml-2 sm:hidden">{tPricing("deleteCondition")}</span></Button></div>
-							</div>;
-						})}</div> : <div className="rounded-md border border-dashed bg-background/60 px-3 py-4 text-center text-xs text-muted-foreground">{tPricing("allRequestsUseOffer")}</div>}
+			<div className="flex items-center gap-2"><Checkbox id="show-price-history" checked={showHistory} onCheckedChange={setShowHistory} /><Label htmlFor="show-price-history">Show ended prices</Label></div>
+            <div className="space-y-3">
+				{matchingOffers.map(({ draft: offer, index }) => <Button key={offer.sku_id ?? "new-" + index} variant="outline" className="h-auto w-full justify-start whitespace-normal rounded-xl p-4 text-left" onClick={() => { setRevisionStarts(nowInput()); setSelectedSkuIndex(index); }}>
+					<div className="w-full min-w-0">
+						<div className="flex items-start justify-between gap-3"><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><span className="font-semibold">{source.serviceTiers.find((tier) => tier.service_tier_slug === offer.service_tier_slug)?.display_name ?? readablePricingLabel(offer.service_tier_slug)}</span><Badge variant={isDirty(offer) ? "secondary" : "outline"}>{isDirty(offer) ? "Unsaved" : offer.status === "active" ? offerDateState(offer) : readablePricingLabel(offer.status)}</Badge></div><div className="mt-1 text-xs font-normal text-muted-foreground">{operationLabel(offer.operation)} · {offer.region || "Global"} · {pricingConditionLabel(offer.metadata)}</div></div><span className="inline-flex shrink-0 items-center gap-1 text-sm">{tx("Common.ui.actions.edit" as never)}<ArrowRight className="size-4" /></span></div>
+						<div className="mt-4 grid grid-cols-2 gap-x-5 gap-y-3 border-t pt-3 md:grid-cols-4">
+							{offer.meters.map((meter, index) => <div key={index} className="min-w-0"><div className="text-xs font-normal text-muted-foreground">{readablePricingLabel(meter.display_label || meter.meter_key)}</div><div className="mt-1 font-semibold tabular-nums">{formatPrice(meter.price_usd, offer.currency)} <span className="text-xs font-normal text-muted-foreground">/ {billingUnit(meter.unit_quantity, meter.unit)}</span></div></div>)}
+						</div>
+						{offer.effective_to || offerDateState(offer) === "Scheduled" ? <p className="mt-3 text-xs font-normal text-muted-foreground">{formatOfferWindow(offer.effective_from, offer.effective_to)}</p> : null}
 					</div>
-					<div className="space-y-3"><div className="flex items-center justify-between gap-3"><h3 className="text-sm font-medium">{tPricing("priceMeters")}</h3><Button type="button" size="sm" variant="outline" onClick={() => updateSku(skuIndex, { meters: [...draft.meters, emptyMeter()] })}><Plus className="mr-1 h-3.5 w-3.5" />{tPricing("addMeter")}</Button></div>
-					{draft.meters.map((meter, meterIndex) => <div key={`${key}-${meterIndex}`} className="grid grid-cols-2 gap-3 rounded-lg border bg-muted/20 p-3 sm:grid-cols-3 xl:grid-cols-10">
-						<label className="col-span-2 text-xs sm:col-span-1">{tPricing("meterKey")}<Select value={meter.meter_key} onValueChange={(value) => { const definition = source.meterDefinitions.find((item) => item.meter_key === value); updateMeter(skuIndex, meterIndex, definition ? { meter_key: definition.meter_key, display_label: definition.display_name, modality: definition.modality, direction: definition.direction ?? "", unit: definition.unit, unit_quantity: String(definition.default_unit_quantity) } : { meter_key: value }); }}><SelectTrigger className="mt-1 h-9 w-full rounded-md"><SelectValue /></SelectTrigger><SelectContent>{source.meterDefinitions.map((definition) => <SelectItem key={definition.meter_key} value={definition.meter_key}>{definition.display_name}</SelectItem>)}</SelectContent></Select></label>
-						<label className="col-span-2 text-xs sm:col-span-1">{tPricing("label")}<Input className="mt-1" value={meter.display_label} onChange={(e) => updateMeter(skuIndex, meterIndex, { display_label: e.target.value })} placeholder={tPricing("inputTokensExample")} /></label>
-						<label className="text-xs">{tPricing("modality")}<Input className="mt-1" value={meter.modality} onChange={(e) => updateMeter(skuIndex, meterIndex, { modality: e.target.value.toLowerCase() })} placeholder="text" /></label>
-						<label className="text-xs">{tPricing("direction")}<Select value={meter.direction || "none"} onValueChange={(value) => updateMeter(skuIndex, meterIndex, { direction: value === "none" ? "" : value as MeterDraft["direction"] })}><SelectTrigger className="mt-1 h-9 w-full rounded-md"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="none">{tUi("select.neither")}</SelectItem><SelectItem value="input">{tUi("select.input")}</SelectItem><SelectItem value="output">{tUi("select.output")}</SelectItem></SelectContent></Select></label>
-						<label className="text-xs">{tPricing("unit")}<Input className="mt-1" value={meter.unit} onChange={(e) => updateMeter(skuIndex, meterIndex, { unit: e.target.value })} placeholder="token" /></label>
-						<label className="text-xs">{tPricing("quantity")}<Input className="mt-1" type="number" value={meter.unit_quantity} onChange={(e) => updateMeter(skuIndex, meterIndex, { unit_quantity: e.target.value })} placeholder="1000000" /></label>
-						<label className="col-span-2 text-xs sm:col-span-1">{tPricing("priceUsd")}<Input className="mt-1 font-mono" type="number" step="any" inputMode="decimal" value={meter.price_usd} onChange={(e) => updateMeter(skuIndex, meterIndex, { price_usd: e.target.value })} placeholder="0.00" /></label>
-						<label className="text-xs">{tPricing("displayUnit")}<Input className="mt-1" value={meter.display_unit} onChange={(e) => updateMeter(skuIndex, meterIndex, { display_unit: e.target.value })} placeholder={tPricing("displayUnitExample")} /></label>
-						<label className="text-xs">{tPricing("order")}<Input className="mt-1" type="number" min="0" value={meter.meter_order} onChange={(e) => updateMeter(skuIndex, meterIndex, { meter_order: e.target.value })} placeholder="100" /></label>
-						<div className="col-span-2 flex items-end justify-end sm:col-span-1"><Button aria-label={tPricing("deleteMeter")} className="w-full sm:w-9" type="button" variant="outline" size="icon" disabled={draft.meters.length === 1} onClick={() => updateSku(skuIndex, { meters: draft.meters.filter((_, index) => index !== meterIndex) })}><Trash2 className="h-4 w-4" /><span className="ml-2 sm:hidden">{tPricing("deleteMeter")}</span></Button></div>
-					</div>)}
-				</div>
-				<div className="sticky bottom-2 z-10 -mx-1 flex rounded-lg border bg-background/95 p-2 shadow-lg backdrop-blur sm:static sm:mx-0 sm:justify-end sm:border-0 sm:bg-transparent sm:p-0 sm:shadow-none"><Button className="w-full sm:w-auto" type="button" disabled={busyKey === key} onClick={() => void save(skuIndex)}><Save className="mr-2 h-4 w-4" />{busyKey === key ? tPricing("saving") : tPricing("saveSku")}</Button></div>
-			</section>;
-		})}
+				</Button>)}
+				{!matchingOffers.length ? <div className="rounded-xl border border-dashed py-12 text-center"><h3 className="font-medium">{providerOffers.length ? "No matching prices" : "No prices yet"}</h3><p className="mt-2 text-sm text-muted-foreground">{providerOffers.length ? "Try a different tier or clear the filter." : "Add a price group for this provider to get started."}</p></div> : null}
 			</div>
-		</div>
-		</> : activeProviderRoutes.length ? <section className="rounded-xl border border-dashed p-6 text-center"><h3 className="font-medium">{tPricing("noOffersForProvider")}</h3><p className="mt-1 text-sm text-muted-foreground">{tPricing("connectedRouteDescription")}</p><Button className="mt-4" type="button" onClick={() => addOffer(activeProviderRoutes[0].provider_model_id)}><Plus className="mr-1.5 h-4 w-4" />{tPricing("addFirstOffer")}</Button></section> : null}
+		</> : null}
+
+		<Sheet open={draft !== null && draft !== undefined} onOpenChange={(open) => { if (!open && !busyKey) setSelectedSkuIndex(null); }}>
+			<SheetContent inert={busyKey !== null} className="data-[side=right]:w-full data-[side=right]:sm:max-w-2xl" showCloseButton={!busyKey}>
+				{draft && selectedSkuIndex !== null ? <>
+					<SheetHeader className="border-b pr-14"><SheetTitle>{draft.sku_id ? draft.effective_to ? tx("Catalogue.modelDetail.pricing.historyTitle" as never) : "Revise prices" : "Add prices"} · {providerName}</SheetTitle><SheetDescription>{operationLabel(draft.operation)} · {pricingConditionLabel(draft.metadata)}</SheetDescription></SheetHeader>
+					<fieldset disabled={busyKey !== null || Boolean(draft.sku_id && draft.effective_to)} className="min-h-0 flex-1 space-y-6 overflow-y-auto p-5 disabled:opacity-70 [&_input]:text-base sm:[&_input]:text-sm">
+						{draft.sku_id ? <div className="space-y-3"><p className="text-sm text-muted-foreground">{tx("Common.ui.versionedPricing.version" as never)}{draft.version} · {formatOfferWindow(draft.effective_from, draft.effective_to)}. {draft.effective_to ? "This version is retained for history." : "Saving creates a new version and ends the previous rates at the same time."}</p>{!draft.effective_to ? <PricingDate label="New rates start" value={revisionStarts} onChange={setRevisionStarts} /> : null}</div> : null}
+                        <div className="grid gap-4 sm:grid-cols-2">
+							<PricingChoice label={tx("Common.ui.versionedPricing.serviceTier" as never)} value={draft.service_tier_slug} options={source.serviceTiers.map((tier) => ({ value: tier.service_tier_slug, label: tier.display_name, disabled: tier.status === "disabled" }))} onChange={(value) => changeDraft({ service_tier_slug: value })} />
+							<PricingChoice label={tx("Common.ui.versionedPricing.operation" as never)} value={draft.operation} options={choices([...new Set([...source.capabilities.filter((item) => item.provider_model_id === draft.provider_model_id).map((item) => item.capability_id), ...PRICING_OPERATION_OPTIONS])])} onChange={(value) => changeDraft({ operation: value })} />
+						</div>
+						<section aria-label="Charges" className="space-y-3">
+							<div className="flex items-center justify-between"><h3 className="font-semibold">Charges</h3><span className="text-xs text-muted-foreground">{draft.currency} per billing unit</span></div>
+							{draft.meters.map((meter, meterIndex) => <div key={meterIndex} className="space-y-3 rounded-lg border p-4">
+								<div className="flex items-start justify-between gap-2"><div className="min-w-0 flex-1"><PricingChoice label="Charge for" value={meter.meter_key} options={source.meterDefinitions.map((item) => ({ value: item.meter_key, label: readablePricingLabel(item.display_name) }))} onChange={(value) => {
+									const definition = source.meterDefinitions.find((item) => item.meter_key === value);
+									if (!definition) return;
+									const quantity = definition.unit === "token" ? 1_000_000 : definition.default_unit_quantity;
+									updateMeter(selectedSkuIndex, meterIndex, { meter_key: value, display_label: readablePricingLabel(definition.display_name), modality: definition.modality, direction: definition.direction ?? "", unit: definition.unit, unit_quantity: String(quantity), display_unit: billingUnit(quantity, definition.unit), price_usd: "" });
+								}} /></div><Button className="mt-6 min-h-11" variant="ghost" size="icon" aria-label={"Remove " + readablePricingLabel(meter.meter_key)} disabled={draft.meters.length === 1} onClick={() => changeDraft({ meters: draft.meters.filter((_, index) => index !== meterIndex) })}><Trash2 className="size-4" /></Button></div>
+								<div className="grid gap-3 sm:grid-cols-2"><div className="space-y-2"><Label htmlFor={"price-" + meterIndex}>Price ({draft.currency})</Label><Input id={"price-" + meterIndex} className="min-h-11 font-mono" type="number" min="0" step="any" inputMode="decimal" value={meter.price_usd} placeholder="Enter amount" onChange={(event) => updateMeter(selectedSkuIndex, meterIndex, { price_usd: event.target.value })} /></div>
+									<PricingChoice label="Per" value={meter.unit_quantity} options={[...new Set([meter.unit_quantity, ...(meter.unit === "token" || meter.unit === "character" ? ["1000000", "1000", "1"] : ["1", "60", "1000"])])].map((value) => ({ value, label: billingUnit(value, meter.unit) }))} onChange={(value) => updateMeter(selectedSkuIndex, meterIndex, { unit_quantity: value, price_usd: rebasePrice(meter.price_usd, meter.unit_quantity, value), display_unit: billingUnit(value, meter.unit) })} />
+								</div>
+								<p className="text-xs text-muted-foreground">{formatPrice(meter.price_usd, draft.currency)} per {billingUnit(meter.unit_quantity, meter.unit)}</p>
+							</div>)}
+							<SearchableSelect label="Add a charge" value="" placeholder="Add a charge…" onValueChange={addCharge} options={source.meterDefinitions.filter((item) => !draft.meters.some((meter) => meter.meter_key === item.meter_key)).map((item) => ({ value: item.meter_key, label: readablePricingLabel(item.display_name) }))} />
+							<p className="text-xs text-muted-foreground">Changing the billing quantity converts the amount to preserve the same rate.</p>
+						</section>
+						<Accordion type="multiple">
+							<AccordionItem value="conditions"><AccordionTrigger>Conditions · {pricingConditionLabel(draft.metadata)}</AccordionTrigger><AccordionContent className="space-y-4 pb-4">
+								<p className="text-sm text-muted-foreground">Use conditions for long-context pricing or other request-dependent rates.</p>
+								{conditions.map((condition, conditionIndex) => <div className="space-y-3 rounded-lg border p-3" key={conditionIndex}>
+									<div className="grid gap-3 sm:grid-cols-2"><PricingChoice label="Request field" value={condition.path} options={[...CONDITION_PATH_OPTIONS]} onChange={(value) => updateConditions(selectedSkuIndex, conditions.map((row, index) => index === conditionIndex ? { ...row, path: value } : row))} /><PricingChoice label={tx("Common.ui.versionedPricing.comparison" as never)} value={condition.op} options={[...CONDITION_OPERATOR_OPTIONS]} onChange={(value) => updateConditions(selectedSkuIndex, conditions.map((row, index) => index === conditionIndex ? { ...row, op: value } : row))} /></div>
+									<div className="flex items-end gap-2"><div className="flex-1 space-y-2"><Label htmlFor={"condition-" + conditionIndex}>{tx("Common.ui.versionedPricing.value" as never)}</Label><Input id={"condition-" + conditionIndex} value={String(condition.value)} onChange={(event) => updateConditions(selectedSkuIndex, conditions.map((row, index) => index === conditionIndex ? { ...row, value: event.target.value === "" ? "" : typeof row.value === "boolean" ? event.target.value === "true" : Number.isFinite(Number(event.target.value)) ? Number(event.target.value) : event.target.value } : row))} /></div><Button variant="ghost" size="icon" aria-label="Remove condition" onClick={() => updateConditions(selectedSkuIndex, conditions.filter((_, index) => index !== conditionIndex))}><Trash2 className="size-4" /></Button></div>
+								</div>)}
+								<Button variant="outline" onClick={() => updateConditions(selectedSkuIndex, [...conditions, { path: "input_tokens", op: "gte", value: "", or_group: 1, and_index: conditions.length + 1 }])}><Plus className="size-4" />{tx("Common.ui.versionedPricing.addCondition" as never)}</Button>
+							</AccordionContent></AccordionItem>
+							<AccordionItem value="schedule"><AccordionTrigger>Schedule and availability · {readablePricingLabel(draft.status)}</AccordionTrigger><AccordionContent className="space-y-4 pb-4">
+								<PricingChoice label={tx("Common.ui.modelCreation.status" as never)} value={draft.status} options={choices(["active", "deprecated", "disabled"])} onChange={(value) => changeDraft({ status: value as SkuDraft["status"] })} />
+								{!draft.sku_id ? <PricingDate label="Starts" value={draft.effective_from} onChange={(value) => changeDraft({ effective_from: value })} /> : null}
+								<PricingDate label={tx("Common.ui.modelEditor.ends" as never)} value={draft.effective_to} onChange={(value) => changeDraft({ effective_to: value })} optional />
+								<p className="text-xs text-muted-foreground">Times use your local timezone ({Intl.DateTimeFormat().resolvedOptions().timeZone}).</p>
+								<PricingChoice label={tx("Common.ui.versionedPricing.region" as never)} value={draft.region || "global"} options={[{ value: "global", label: tx("Common.ui.status.global" as never) }, ...source.regions.filter((item) => item.provider_slug === selectedRoute?.provider_slug && item.region_code !== "global").map((item) => ({ value: item.region_code, label: item.display_name || item.region_code }))]} onChange={(value) => changeDraft({ region: value === "global" ? "" : value })} />
+							</AccordionContent></AccordionItem>
+							<AccordionItem value="advanced"><AccordionTrigger>Advanced settings</AccordionTrigger><AccordionContent className="space-y-4 pb-4">
+								<PricingChoice label={tx("Common.ui.versionedPricing.providerRoute" as never)} value={draft.provider_model_id} options={activeProviderRoutes.map((route) => ({ value: route.provider_model_id, label: route.provider_model_slug + (route.is_stealth ? " (Stealth)" : "") }))} onChange={(value) => changeDraft({ provider_model_id: value })} />
+								<Label>{tx("Common.ui.modelCreation.displayName" as never)}<Input value={draft.display_name} onChange={(event) => changeDraft({ display_name: event.target.value })} /></Label>
+								<div className="grid gap-4 sm:grid-cols-2"><PricingChoice label={tx("Common.ui.versionedPricing.currency" as never)} value={draft.currency} options={choices(["USD", "EUR", "GBP", "CNY", "JPY", "CAD", "AUD"])} onChange={(value) => changeDraft({ currency: value })} /><p className="self-end pb-2 text-sm text-muted-foreground">Version assigned automatically</p></div>
+								<p className="text-xs text-muted-foreground">Changing currency does not convert the amounts. Review every charge before saving.</p>
+								{draft.meters.map((meter, index) => <div className="space-y-3 rounded-lg border p-3" key={index}><h4 className="text-sm font-medium">{readablePricingLabel(meter.meter_key)}</h4><Label>Display label<Input value={meter.display_label} onChange={(event) => updateMeter(selectedSkuIndex, index, { display_label: event.target.value })} /></Label><Label>Custom billing quantity<Input type="number" min="0" step="any" value={meter.unit_quantity} onChange={(event) => updateMeter(selectedSkuIndex, index, { unit_quantity: event.target.value, display_unit: billingUnit(event.target.value, meter.unit) })} /></Label><div className="flex items-center gap-2"><Checkbox checked={meter.billable} onCheckedChange={(checked) => updateMeter(selectedSkuIndex, index, { billable: checked })} id={"billable-" + index} /><Label htmlFor={"billable-" + index}>Billable</Label></div></div>)}
+								<p className="break-all font-mono text-xs text-muted-foreground">ID: {draft.sku_code}</p>
+
+							</AccordionContent></AccordionItem>
+						</Accordion>
+					</fieldset>
+					<SheetFooter className="border-t p-4">
+                        {draft.sku_id && offerDateState(draft) !== "Expired" ? <Button variant="outline" disabled={busyKey !== null} onClick={() => { setEndDate(nowInput()); setDeleteIndex(selectedSkuIndex); }}>End-date prices</Button> : null}
+						{isDirty(draft) ? <Button variant="ghost" disabled={busyKey !== null} onClick={discardChanges}>Discard changes</Button> : null}
+						<div className="flex items-center justify-between gap-3"><p role="status" className="text-xs text-muted-foreground">{isDirty(draft) ? tx("SettingsUI.strings.Unsaved changes" as never) : "Saved to database"}</p><Button className="min-h-11" disabled={busyKey !== null || !isDirty(draft) || Boolean(draft.sku_id && draft.effective_to)} onClick={() => void save(selectedSkuIndex)}><Save className="size-4" />{busyKey ? tx("Common.ui.versionedPricing.saving" as never) : draft.sku_id ? "Save new version" : "Save prices"}</Button></div>
+					</SheetFooter>
+				</> : null}
+			</SheetContent>
+		</Sheet>
+
+		<Sheet open={routeSettingsOpen} onOpenChange={(open) => void setRouting(open ? "1" : null)}>
+			<SheetContent inert={busyKey !== null} className="data-[side=right]:w-full data-[side=right]:sm:max-w-xl">
+				<SheetHeader><SheetTitle>{providerName} route settings</SheetTitle><SheetDescription>Regional routing, availability and token limits.</SheetDescription></SheetHeader>
+				<div className="min-h-0 flex-1 space-y-6 overflow-y-auto px-5 pb-5">{source.providers.filter((provider) => provider.provider_slug === activeProviderSlug).map((provider) => <ProviderResidencySummary key={provider.provider_slug} provider={provider} />)}{activeProviderRoutes.map((route) => <fieldset disabled={busyKey !== null} key={route.provider_model_id} className="space-y-4 border-b pb-6">
+					<div className="flex items-center justify-between gap-2"><h3 className="text-sm font-medium">{tx("Common.ui.versionedPricing.providerRoute" as never)}</h3><Badge variant="outline">{route.is_stealth ? "Stealth" : "Public identity"}</Badge></div><Label className="block space-y-2">{tx("Common.ui.modelEditor.providerModelId" as never)}<Input value={route.provider_model_slug} onChange={(event) => updateRoute(route.provider_model_id, { provider_model_slug: event.target.value })} /></Label><RegionSelection label="Model availability regions" value={route.regions ?? []} options={source.regions.filter((region) => region.provider_slug === route.provider_slug)} onChange={(regions) => updateRoute(route.provider_model_id, { regions })} /><p className="text-xs text-muted-foreground">Catalog availability for this model route. Gateway residency filtering uses the provider’s regions.</p>
+					<div className="grid gap-4 sm:grid-cols-2"><Label>{tx("Common.ui.versionedPricing.contextLength" as never)}<Input type="number" min="1" value={route.context_length ?? ""} onChange={(event) => updateRoute(route.provider_model_id, { context_length: event.target.value ? Number(event.target.value) : null })} /></Label><Label>{tx("Catalogue.models.detail.quickstart.maximumOutput" as never)}<Input type="number" min="1" value={route.max_output_tokens ?? ""} onChange={(event) => updateRoute(route.provider_model_id, { max_output_tokens: event.target.value ? Number(event.target.value) : null })} /></Label></div>
+					<PricingChoice label={tx("Common.ui.versionedPricing.routeLifecycle" as never)} value={route.status} options={choices(["active", "degraded", "disabled", "retired"])} onChange={(value) => updateRoute(route.provider_model_id, { status: value })} />
+					<PricingChoice label={tx("Common.ui.modelEditor.providerAvailability" as never)} value={route.provider_availability_status} options={choices(["unknown", "coming_soon", "preview", "available", "limited_access", "deprecated", "removed"])} onChange={(value) => updateRoute(route.provider_model_id, { provider_availability_status: value as typeof route.provider_availability_status })} />
+					<PricingChoice label="Phaseo status" value={route.phaseo_status} options={choices(["unsupported", "planned", "implementing", "testing", "enabled", "disabled", "blocked"])} onChange={(value) => updateRoute(route.provider_model_id, { phaseo_status: value as typeof route.phaseo_status })} />
+					<div className="space-y-2"><div className="flex items-center gap-2"><Checkbox id={"stealth-" + route.provider_model_id} checked={route.is_stealth} disabled={!route.provider_model_id.startsWith("stealth:")} onCheckedChange={(checked) => updateRoute(route.provider_model_id, { is_stealth: checked })} /><Label htmlFor={"stealth-" + route.provider_model_id}>Stealth provider</Label></div><p className="text-xs text-muted-foreground">{route.provider_model_id.startsWith("stealth:") ? "When enabled, the public catalog hides the real provider and upstream model ID. Turning this off makes them public." : "This route has a public identity. Connect a new stealth provider route to keep its upstream identity private."}</p></div>
+					<PricingChoice label={tx("Catalogue.modelDetail.sections.access" as never)} value={route.access_scope} options={choices(["public", "internal"])} onChange={(value) => updateRoute(route.provider_model_id, { access_scope: value as typeof route.access_scope })} />
+					<div className="flex items-center gap-2"><Checkbox id={"routing-" + route.provider_model_id} checked={route.routing_enabled} disabled={route.phaseo_status !== "enabled" || route.access_scope !== "public" || !["available", "preview", "limited_access"].includes(route.provider_availability_status)} onCheckedChange={(checked) => updateRoute(route.provider_model_id, { routing_enabled: checked })} /><Label htmlFor={"routing-" + route.provider_model_id}>Gateway routing enabled</Label></div>
+					<Button onClick={() => void saveRoute(route.provider_model_id)} disabled={busyKey !== null}>{tx("Common.ui.versionedPricing.saveRoute" as never)}</Button>
+				</fieldset>)}</div>
+			</SheetContent>
+		</Sheet>
+		<AlertDialog open={deleteIndex !== null} onOpenChange={(open) => { if (!open) setDeleteIndex(null); }}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>End-date this price group</AlertDialogTitle><AlertDialogDescription>The rates and charges stay in history. They stop applying at the selected time.</AlertDialogDescription></AlertDialogHeader><PricingDate label="Prices end" value={endDate} onChange={setEndDate} /><AlertDialogFooter><AlertDialogCancel>{tx("Common.ui.modelEditor.cancel" as never)}</AlertDialogCancel><AlertDialogAction disabled={busyKey !== null || !endDate} onClick={(event) => { event.preventDefault(); if (deleteIndex !== null) void remove(deleteIndex); }}>Save end date</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
 	</div>;
 }

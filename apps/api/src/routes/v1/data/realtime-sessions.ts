@@ -12,6 +12,8 @@ import { err, json } from "@pipeline/before/http";
 import { applyWorkspacePolicy, fetchWorkspacePolicy } from "@pipeline/before/workspacePolicy";
 import { getRealtimeVoiceFeatureGateName, isRealtimeVoiceAccessEnabled } from "@core/feature-flags";
 import { withRuntime } from "../../utils";
+import { LIVE_BACKENDS, LIVE_MODEL, LIVE_VOICES, isLiveModel, livePolicyCandidates } from "@core/live-sessions";
+import { liveBackendSettingsSchema } from "@core/live-settings";
 import {
 	createRealtimeSession,
 	extendRealtimeSessionHold,
@@ -51,15 +53,28 @@ async function deterministicBase62(seed: string, length: number): Promise<string
 	return output.slice(0, length);
 }
 
-export const createRealtimeSessionSchema = z.object({
-	type: z.literal("realtime").optional(),
+const realtimeSessionBaseSchema = z.object({
 	model: z.string().trim().min(1).max(160),
 	provider: z.string().trim().min(1).max(80).optional(),
 	voice: z.string().trim().min(1).max(80).optional(),
 	instructions: z.string().trim().max(4000).optional(),
+	thinking_level: z.enum(["low", "medium", "high"]).optional(),
 	source: z.enum(["api", "chat"]).optional(),
 	metadata: z.record(z.string(), z.unknown()).optional(),
 }).strict();
+
+export const createRealtimeSessionSchema = realtimeSessionBaseSchema.extend({
+	type: z.literal("realtime").optional(),
+}).superRefine((value, context) => {
+	if (!value.thinking_level) return;
+	if (value.model.replace(/^google\//, "") !== "gemini-3.8-live-extended-thinking") {
+		context.addIssue({
+			code: "custom",
+			message: "thinking_level is only supported by gemini-3.8-live-extended-thinking",
+			path: ["thinking_level"],
+		});
+	}
+});
 
 const MAX_METADATA_BYTES = 16_384;
 const MAX_METADATA_KEYS = 32;
@@ -107,6 +122,13 @@ const finalizeSessionSchema = z.object({
 });
 
 export const realtimeSessionsRoutes = new Hono<Env>();
+export const liveSessionsRoutes = new Hono<Env>();
+export const createLiveSessionSchema = realtimeSessionBaseSchema.omit({ thinking_level: true }).extend({
+	type: z.literal("live").optional(), model: z.literal(LIVE_MODEL), provider: z.literal("openai"),
+	voice: z.enum(LIVE_VOICES).default("marin"), source: z.literal("chat"),
+	backend_model: z.enum(LIVE_BACKENDS).default(LIVE_BACKENDS[0]),
+	backend_settings: liveBackendSettingsSchema.optional(),
+}).strict();
 
 function toAuthContext(value: RouteAuthValue): RealtimeAuthContext {
 	return {
@@ -180,6 +202,15 @@ function errorMessage(error: unknown): string {
 
 function responseForError(error: unknown, requestId?: string, workspaceId?: string): Response {
 	const message = errorMessage(error);
+	if (message.includes("realtime_billing_review_required")) {
+		return err("key_limit_exceeded", { reason: "realtime_billing_review_required",
+			message: "Realtime access is paused while a previous session's billing is reviewed. Please contact support.",
+			request_id: requestId, workspace_id: workspaceId });
+	}
+	if (message === "live_backend_price_card_missing") {
+		return err("unsupported_model_or_endpoint", { reason: message,
+			message: "The selected Live backend needs complete pricing before a session can start.", request_id: requestId, workspace_id: workspaceId });
+	}
 	if (
 		message.includes("realtime_creation_rate_limit") ||
 		(message.includes("realtime_") && message.includes("concurrency_limit"))
@@ -274,7 +305,7 @@ function providerFromModel(model: string): string | null {
 	return ["openai", "spacex-ai", "google-ai-studio"].includes(prefix) ? prefix : null;
 }
 
-async function authorizeRealtimeSource(args: {
+export async function authorizeRealtimeSource(args: {
 	auth: RouteAuthValue;
 	source: "api" | "chat";
 	metadata?: Record<string, unknown>;
@@ -288,18 +319,18 @@ async function authorizeRealtimeSource(args: {
 	if (!seed || args.auth.authMethod !== "api_key") {
 		throw new Error("realtime_chat_source_forbidden");
 	}
-	const expectedKid = await deterministicBase62(`${seed}:kid:${args.auth.workspaceId}`, 12);
-	if (args.auth.apiKeyKid !== expectedKid) {
-		throw new Error("realtime_chat_source_forbidden");
-	}
 	const metadataUserId = typeof args.metadata?.userId === "string" ? args.metadata.userId.trim() : "";
 	if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(metadataUserId)) {
 		throw new Error("realtime_chat_user_missing");
 	}
+	const expectedKid = await deterministicBase62(`${seed}:kid:${args.auth.workspaceId}:${metadataUserId}`, 12);
+	if (args.auth.apiKeyKid !== expectedKid) {
+		throw new Error("realtime_chat_source_forbidden");
+	}
 	return metadataUserId;
 }
 
-realtimeSessionsRoutes.post("/", withRuntime(async (req) => {
+async function createSessionRequest(req: Request, live = false): Promise<Response> {
 	const auth = await guardAuth(req);
 	if (auth.ok !== true) return auth.response;
 	if (auth.value.authMethod === "oauth") {
@@ -311,7 +342,7 @@ realtimeSessionsRoutes.post("/", withRuntime(async (req) => {
 	}
 	const body = await guardJson(req, auth.value.workspaceId, auth.value.requestId);
 	if (body.ok !== true) return body.response;
-	const parsed = createRealtimeSessionSchema.safeParse(body.value);
+	const parsed = (live ? createLiveSessionSchema : createRealtimeSessionSchema).safeParse(body.value);
 	if (!parsed.success) {
 		return err("validation_error", {
 			details: parsed.error.flatten(),
@@ -326,12 +357,14 @@ realtimeSessionsRoutes.post("/", withRuntime(async (req) => {
 			workspace_id: auth.value.workspaceId,
 		});
 	}
+	if (!live && isLiveModel(parsed.data.model)) return err("unsupported_model_or_endpoint", { reason: "live_playground_only" });
+	const backendModel = "backend_model" in parsed.data ? String(parsed.data.backend_model) : undefined;
 	const context = await guardContext({
 		workspaceId: auth.value.workspaceId,
 		apiKeyId: auth.value.apiKeyId,
-		endpoint: "audio.realtime",
-		capability: "audio.realtime",
-		model: parsed.data.model,
+		endpoint: live ? "responses" : "audio.realtime",
+		capability: live ? "text.generate" : "audio.realtime",
+		model: backendModel ?? parsed.data.model,
 		requestId: auth.value.requestId,
 		internal: auth.value.internal,
 	});
@@ -394,6 +427,11 @@ realtimeSessionsRoutes.post("/", withRuntime(async (req) => {
 			workspace_id: auth.value.workspaceId,
 		});
 	}
+	if (live && !applyWorkspacePolicy({ providers: livePolicyCandidates(context.value.providers), resolvedModel: LIVE_MODEL,
+		body: { model: LIVE_MODEL, provider: "openai" }, workspacePolicy,
+		teamSettings: context.value.context.teamSettings ?? null }).ok) {
+		return err("guardrail_blocked", { reason: "workspace_model_not_allowed" });
+	}
 	const selectedProvider = requestedProvider ?? policyResult.providers[0]?.providerId ?? null;
 	if (!selectedProvider || !policyResult.providers.some((candidate: { providerId?: string }) => candidate.providerId === selectedProvider)) {
 		return err("unsupported_model_or_endpoint", {
@@ -411,10 +449,13 @@ realtimeSessionsRoutes.post("/", withRuntime(async (req) => {
 				...toAuthContext(auth.value),
 				userId: trustedUserId,
 			},
-			model: resolvedModel,
+			model: live ? LIVE_MODEL : resolvedModel,
+			liveBackendModel: backendModel,
+			liveBackendSettings: "backend_settings" in parsed.data ? parsed.data.backend_settings : undefined,
 			provider: selectedProvider,
 			voice: parsed.data.voice,
 			instructions: parsed.data.instructions,
+			thinkingLevel: "thinking_level" in parsed.data ? parsed.data.thinking_level : undefined,
 			source,
 			metadata: parsed.data.metadata,
 			otelTraceContext: parseW3cTraceContext(
@@ -427,9 +468,12 @@ realtimeSessionsRoutes.post("/", withRuntime(async (req) => {
 	} catch (error) {
 		return responseForError(error, auth.value.requestId, auth.value.workspaceId);
 	}
-}));
+}
+realtimeSessionsRoutes.post("/", withRuntime((req) => createSessionRequest(req)));
+liveSessionsRoutes.post("/", withRuntime((req) => createSessionRequest(req, true)));
 
-realtimeSessionsRoutes.get("/:sessionId/relay", async (c) => {
+const relayRoutes = new Hono<Env>();
+relayRoutes.get("/:sessionId/relay", async (c) => {
 	const upgrade = c.req.header("Upgrade");
 	if (upgrade?.toLowerCase() !== "websocket") {
 		return err("validation_error", { reason: "websocket_upgrade_required" });
@@ -451,6 +495,8 @@ realtimeSessionsRoutes.get("/:sessionId/relay", async (c) => {
 	const id = binding.idFromName(sessionId);
 	return binding.get(id).fetch(c.req.raw);
 });
+realtimeSessionsRoutes.route("/", relayRoutes);
+liveSessionsRoutes.route("/", relayRoutes);
 
 realtimeSessionsRoutes.post("/:sessionId/connected", withRuntime(async (req) => {
 	const auth = await guardAuth(req);

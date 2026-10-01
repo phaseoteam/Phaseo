@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import CodeBlock from "@/components/(data)/model/quickstart/CodeBlock";
+import { jsonToPythonLiteral } from "@/components/(data)/model/quickstart/quickstartPayloads";
 import type { GatewayMarketingMetrics } from "@/lib/fetchers/gateway/getMarketingMetrics";
 import { BASE_URL } from "@/components/(data)/model/quickstart/config";
 import type { ShikiLang } from "@/components/(data)/model/quickstart/shiki";
@@ -61,6 +62,7 @@ const LANGUAGE_TO_SHIKI: Record<Language, ShikiLang> = {
 
 const SDK_METHODS: Record<EndpointId, { js: string; py: string }> = {
 	completions: { js: "generateText", py: "generate_text" },
+	decisions: { js: "decisions.make", py: "decisions.make" },
 	images: { js: "generateImage", py: "generate_image" },
 	video: { js: "generateVideo", py: "generate_video" },
 	audio: { js: "generateSpeech", py: "generate_speech" },
@@ -70,6 +72,7 @@ const SDK_METHODS: Record<EndpointId, { js: string; py: string }> = {
 
 type EndpointId =
 	| "completions"
+	| "decisions"
 	| "images"
 	| "video"
 	| "audio"
@@ -108,6 +111,47 @@ const ENDPOINT_CONFIGS: EndpointConfig[] = [
 						"Summarise the last 24 hours of latency and throughput for our release notes.",
 				},
 			],
+		}),
+	},
+	{
+		id: "decisions",
+		path: "/decisions",
+		body: (model) => ({
+			model,
+			state: {
+				customer_message: "I was charged twice and need help with a refund.",
+				account_tier: "pro",
+				days_waiting: 3,
+			},
+			questions: {
+				department: {
+					type: "choice",
+					instructions: "Which team should handle this request?",
+					criteria: {
+						billing: "Payments, invoices, refunds, and duplicate charges.",
+						support: "Product usage questions and troubleshooting.",
+						sales: "Upgrades and new accounts.",
+					},
+				},
+				is_urgent: {
+					type: "noul",
+					instructions: "Does this request require urgent handling?",
+					criteria: {
+						true: "The customer is blocked or the issue is time-sensitive.",
+						false: "The request can follow the normal support queue.",
+					},
+				},
+				customer_impact: {
+					type: "score",
+					instructions: "How severe is the customer impact?",
+					criteria: [
+						"No impact",
+						"Minor inconvenience",
+						"Significant impact",
+						"Service blocked",
+					],
+				},
+			},
 		}),
 	},
 	{
@@ -163,14 +207,15 @@ const ENDPOINT_CONFIGS: EndpointConfig[] = [
 
 const FALLBACK_MODELS: Record<EndpointId, string[]> = {
 	completions: [
-		"openai/gpt-5.6-sol",
-		"anthropic/claude-fable-5",
-		"google/gemini-3.1-pro-preview",
-		"spacex-ai/grok-4.5",
-		"moonshotai/kimi-k2.7-code",
-		"deepseek/deepseek-v4-pro",
+		"openai/gpt-6-astra",
+		"anthropic/claude-fable-5.1",
+		"google/gemini-3.8-flash",
+		"spacex-ai/grok-4.6",
+		"moonshotai/kimi-k3",
+		"deepseek/deepseek-v4.1-flash",
 		"minimax/minimax-m3",
 	],
+	decisions: ["typesafe/jev-1.13.0"],
 	images: [
 		"openai/gpt-image-2",
 		"openai/gpt-image-1.5",
@@ -196,14 +241,15 @@ const FALLBACK_MODELS: Record<EndpointId, string[]> = {
 
 const PROMOTED_MODELS: Record<EndpointId, string[]> = {
 	completions: [
-		"openai/gpt-5.6-sol",
-		"anthropic/claude-fable-5",
-		"google/gemini-3.1-pro-preview",
-		"spacex-ai/grok-4.5",
-		"moonshotai/kimi-k2.7-code",
-		"deepseek/deepseek-v4-pro",
+		"openai/gpt-6-astra",
+		"anthropic/claude-fable-5.1",
+		"google/gemini-3.8-flash",
+		"spacex-ai/grok-4.6",
+		"moonshotai/kimi-k3",
+		"deepseek/deepseek-v4.1-flash",
 		"minimax/minimax-m3",
 	],
+	decisions: ["typesafe/jev-1.13.0"],
 	images: [
 		"openai/gpt-image-2",
 		"openai/gpt-image-1.5",
@@ -227,7 +273,7 @@ const PROMOTED_MODELS: Record<EndpointId, string[]> = {
 	],
 };
 
-const OPENAI_CLIENT_METHODS: Record<EndpointId, string> = {
+const OPENAI_CLIENT_METHODS: Partial<Record<EndpointId, string>> = {
 	completions: "chat.completions.create",
 	images: "images.generate",
 	video: "videos.create",
@@ -300,13 +346,6 @@ function formatHoursAgoTooltip(
 	return hours === 0 ? "Now" : `${hours}h ago`;
 }
 
-function jsonToPythonLiteral(json: string): string {
-	return json
-		.replace(/true/g, "True")
-		.replace(/false/g, "False")
-		.replace(/null/g, "None");
-}
-
 function indentBlock(block: string, indent: string): string {
 	return block
 		.split("\n")
@@ -352,8 +391,7 @@ function buildSnippets(
 	const sdkMethods = SDK_METHODS[config.id];
 	const jsMethod = sdkMethods?.js ?? config.id;
 	const pyMethod = sdkMethods?.py ?? config.id;
-	const openAiMethod =
-		OPENAI_CLIENT_METHODS[config.id] ?? "chat.completions.create";
+	const openAiMethod = OPENAI_CLIENT_METHODS[config.id];
 
 	return {
 		curl: `curl -s -X POST "${BASE_URL}${config.path}" \\
@@ -401,18 +439,17 @@ ${tsLiteral}
 );
 
 console.log(response);`,
-		"python-sdk": `from phaseo import Phaseo
+		"python-sdk": `import os
+from phaseo import Phaseo
 
-async def main():
-    async with Phaseo(api_key="YOUR_API_KEY") as client:
-        response = await client.${pyMethod}(
+client = Phaseo(api_key=os.getenv("PHASEO_API_KEY", "YOUR_API_KEY"))
+response = client.${pyMethod}(
 ${pythonLiteral}
-        )
-        print(response)
+)
 
-import asyncio
-asyncio.run(main())`,
-		"typescript-openai": `// Beta: OpenAI client
+print(response)`,
+		"typescript-openai": openAiMethod
+			? `// Beta: OpenAI client
 import OpenAI from "openai";
 
 const client = new OpenAI({
@@ -423,8 +460,10 @@ const response = await client.${openAiMethod}(
 ${tsJson}
 );
 
-console.log(response);`,
-		"python-openai": `# Beta: OpenAI client
+console.log(response);`
+			: "// This endpoint uses the native Phaseo SDK; the OpenAI client is not compatible.",
+		"python-openai": openAiMethod
+			? `# Beta: OpenAI client
 from openai import OpenAI
 import os
 
@@ -434,7 +473,8 @@ response = client.${openAiMethod}(
 ${pythonJson}
 )
 
-print(response)`,
+print(response)`
+			: "# This endpoint uses the native Phaseo SDK; the OpenAI client is not compatible.",
 	};
 }
 
@@ -458,6 +498,7 @@ function buildModelOptions(modelIds: string[]): Record<EndpointId, string[]> {
 			[/gpt/, /claude/, /mixtral/, /command/, /grok/, /sonnet/, /llama/],
 			FALLBACK_MODELS.completions
 		),
+		decisions: pick([/decision/, /jev/, /typesafe/], FALLBACK_MODELS.decisions),
 		images: pick(
 			[/image/, /vision/, /diffusion/, /dream/, /imagine/, /sd[.\d]/],
 			FALLBACK_MODELS.images
@@ -501,6 +542,7 @@ export function QuickstartSection({ metrics }: QuickstartSectionProps) {
 	>(() => {
 		const initial: Record<EndpointId, string> = {
 			completions: modelOptionsByEndpoint.completions[0],
+			decisions: modelOptionsByEndpoint.decisions[0],
 			images: modelOptionsByEndpoint.images[0],
 			video: modelOptionsByEndpoint.video[0],
 			audio: modelOptionsByEndpoint.audio[0],
@@ -538,6 +580,23 @@ export function QuickstartSection({ metrics }: QuickstartSectionProps) {
 	const currentModel =
 		selectedModels[selectedEndpoint] ||
 		modelOptionsByEndpoint[selectedEndpoint][0];
+	const availableLanguageOptions = useMemo<readonly Language[]>(
+		() =>
+			currentConfig.id === "decisions"
+				? LANGUAGE_OPTIONS.filter(
+						(option) =>
+							option !== "typescript-openai" && option !== "python-openai",
+					  )
+				: LANGUAGE_OPTIONS,
+		[currentConfig.id],
+	);
+
+	useEffect(() => {
+		if (!availableLanguageOptions.includes(selectedLanguage)) {
+			setSelectedLanguage("curl");
+		}
+	}, [availableLanguageOptions, selectedLanguage]);
+
 	const codeSnippets = useMemo(
 		() => buildSnippets(currentConfig, currentModel),
 		[currentConfig, currentModel]
@@ -704,7 +763,7 @@ export function QuickstartSection({ metrics }: QuickstartSectionProps) {
 
 								</DropdownMenuTrigger>
 								<DropdownMenuContent className="rounded-lg">
-									{LANGUAGE_OPTIONS.map((option) => (
+									{availableLanguageOptions.map((option) => (
 										<DropdownMenuItem
 											key={option}
 											onClick={() =>
@@ -741,9 +800,14 @@ export function QuickstartSection({ metrics }: QuickstartSectionProps) {
 								<Copy className="h-4 w-4" />
 									{copied ? t("copied") : t("copyCode")}
 							</Button>
-							<p className="text-xs text-slate-500 dark:text-slate-300">
-								{t("openAiBetaNotice")}
-							</p>
+							{availableLanguageOptions.some(
+								(option) =>
+									option === "typescript-openai" || option === "python-openai",
+							) ? (
+								<p className="text-xs text-slate-500 dark:text-slate-300">
+									{t("openAiBetaNotice")}
+								</p>
+							) : null}
 							<p className="text-xs text-slate-500 dark:text-slate-300">
 								{t("baseUrl")}: {BASE_URL}
 								{currentConfig.path}
@@ -766,7 +830,7 @@ export function QuickstartSection({ metrics }: QuickstartSectionProps) {
 								selectedModels[currentConfig.id] ??
 								availableModels[0] ??
 								baseModels[0] ??
-								"openai/gpt-5.6-sol";
+								"openai/gpt-6-astra";
 
 							return (
 								<div className="space-y-3">

@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/table-sort-button";
 import { formatProviderDuration } from "@/components/(data)/models/modelPerformanceFormatting";
 import { ModelMetricInfo } from "./ModelMetricInfo";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 
 export type MetricKey =
 	| "throughput"
@@ -67,6 +68,22 @@ export function getSeriesEmphasis(
 	};
 }
 
+export function getPerformanceXAxisDomain(pointCount: number): [number, number] {
+	return [-0.5, Math.max(0.5, pointCount - 0.5)];
+}
+
+export function getPerformancePointerIndex(
+	relativeX: number,
+	plotWidth: number,
+	pointCount: number,
+) {
+	if (pointCount <= 1 || plotWidth <= 0) return 0;
+	const [domainStart, domainEnd] = getPerformanceXAxisDomain(pointCount);
+	const clampedX = Math.max(0, Math.min(relativeX, plotWidth));
+	const domainValue = domainStart + (clampedX / plotWidth) * (domainEnd - domainStart);
+	return Math.max(0, Math.min(pointCount - 1, Math.round(domainValue)));
+}
+
 export function isUsableMetricValue(
 	metric: MetricKey,
 	value: number | null | undefined,
@@ -78,6 +95,17 @@ export function isUsableMetricValue(
 export function calculateCachedInputAverage(
 	points: ModelProviderMetricPoint[],
 ): number | null {
+	const cachePoints = points.filter(
+		(point) => point.cachedInputPct != null && Number.isFinite(point.cachedInputPct),
+	);
+	const hasCompleteTokenTotals = cachePoints.length > 0 && cachePoints.every(
+		(point) =>
+			point.cachedInputTokens != null &&
+			point.effectiveInputTokens != null &&
+			Number.isFinite(point.cachedInputTokens) &&
+			Number.isFinite(point.effectiveInputTokens) &&
+			point.effectiveInputTokens > 0,
+	);
 	const totals = points.reduce(
 		(accumulator, point) => {
 			if (
@@ -93,16 +121,21 @@ export function calculateCachedInputAverage(
 		},
 		{ cached: 0, effective: 0 },
 	);
-	if (totals.effective > 0) {
+	if (hasCompleteTokenTotals && totals.effective > 0) {
 		return Math.min(100, (totals.cached * 100) / totals.effective);
 	}
-	const percentages = points
-		.map((point) => point.cachedInputPct)
-		.filter(
-			(value): value is number => value != null && Number.isFinite(value),
-		);
-	return percentages.length > 0
-		? percentages.reduce((sum, value) => sum + value, 0) / percentages.length
+	const requestWeight = cachePoints.reduce(
+		(sum, point) => sum + Math.max(0, point.requests),
+		0,
+	);
+	if (requestWeight > 0) {
+		return cachePoints.reduce(
+			(sum, point) => sum + (point.cachedInputPct ?? 0) * Math.max(0, point.requests),
+			0,
+		) / requestWeight;
+	}
+	return cachePoints.length > 0
+		? cachePoints.reduce((sum, point) => sum + (point.cachedInputPct ?? 0), 0) / cachePoints.length
 		: null;
 }
 
@@ -130,8 +163,6 @@ type MetricConfig = {
 		| "avgTpotMs"
 		| "avgItlMs"
 		| "cachedInputPct";
-	formatValue: (value: number | null) => string;
-	formatAxisTick?: (value: number) => string;
 };
 
 const METRICS: Record<MetricKey, MetricConfig> = {
@@ -140,66 +171,54 @@ const METRICS: Record<MetricKey, MetricConfig> = {
 		descriptionKey: "metricDescriptions.throughput",
 		axisLabelKey: "axisTokensPerSecond",
 		valueKey: "avgThroughput",
-		formatValue: (value) => (value != null ? `${value.toFixed(2)} t/s` : "-"),
 	},
 	outputSpeed: {
 		labelKey: "outputSpeed",
 		descriptionKey: "metricDescriptions.outputSpeed",
 		axisLabelKey: "axisTokensPerSecond",
 		valueKey: "avgOutputSpeed",
-		formatValue: (value) => (value != null ? `${value.toFixed(2)} t/s` : "-"),
 	},
 	latency: {
 		labelKey: "latency",
 		descriptionKey: "metricDescriptions.latency",
 		axisLabelKey: "axisMilliseconds",
 		valueKey: "avgLatencyMs",
-		formatValue: (value) => (value != null ? `${Math.round(value)} ms` : "-"),
 	},
 	endToEnd: {
 		labelKey: "endToEndLatency",
 		descriptionKey: "metricDescriptions.endToEnd",
 		axisLabelKey: "axisDuration",
 		valueKey: "avgEndToEndMs",
-		formatValue: formatProviderDuration,
-		formatAxisTick: (value) => formatProviderDuration(value),
 	},
 	generation: {
 		labelKey: "providerDuration",
 		descriptionKey: "metricDescriptions.generation",
 		axisLabelKey: "axisDuration",
 		valueKey: "avgGenerationMs",
-		formatValue: formatProviderDuration,
-		formatAxisTick: (value) => formatProviderDuration(value),
 	},
 	overhead: {
 		labelKey: "phaseoOverhead",
 		descriptionKey: "metricDescriptions.overhead",
 		axisLabelKey: "axisMilliseconds",
 		valueKey: "avgPhaseoOverheadMs",
-		formatValue: (value) => (value != null ? `${Math.round(value)} ms` : "-"),
 	},
 	tpot: {
 		labelKey: "tpot",
 		descriptionKey: "metricDescriptions.tpot",
 		axisLabelKey: "axisMilliseconds",
 		valueKey: "avgTpotMs",
-		formatValue: (value) => (value != null ? `${value.toFixed(2)} ms` : "-"),
 	},
 	itl: {
 		labelKey: "itl",
 		descriptionKey: "metricDescriptions.itl",
 		axisLabelKey: "axisMilliseconds",
 		valueKey: "avgItlMs",
-		formatValue: (value) => (value != null ? `${value.toFixed(2)} ms` : "-"),
 	},
 	cachedInput: {
 		labelKey: "cachedInput",
 		descriptionKey: "metricDescriptions.cachedInput",
 		axisLabelKey: "axisCachedInput",
 		valueKey: "cachedInputPct",
-		formatValue: (value) => (value != null ? `${value.toFixed(1)}%` : "-"),
-		formatAxisTick: (value) => `${Math.round(value)}%`,
 	},
 };
 
@@ -310,6 +329,7 @@ export default function ModelProviderTrendChart({
 }: ModelProviderTrendChartProps) {
 	const locale = useLocale();
 	const t = useTranslations("Catalogue.modelDetail.performance");
+	const format = useDisplayFormatters();
 	const isPercentileData = data.some(
 		(point) => getPercentile(point.provider) != null,
 	);
@@ -325,11 +345,30 @@ export default function ModelProviderTrendChart({
 		setActiveTime(time);
 	};
 	const metricDefinition = METRICS[metric];
-	const metricConfig = {
-		...metricDefinition,
-		label: t(metricDefinition.labelKey as never),
-		description: t(metricDefinition.descriptionKey as never),
-		axisLabel: metricAxisLabel ?? t(metricDefinition.axisLabelKey as never),
+	const metricConfig = { ...metricDefinition, label: t(metricDefinition.labelKey as never), description: t(metricDefinition.descriptionKey as never), axisLabel: metricAxisLabel ?? t(metricDefinition.axisLabelKey as never) };
+	const formatMetricValue = (value: number | null) => {
+		if (value == null || !Number.isFinite(value)) return "-";
+		if (metric === "throughput" || metric === "outputSpeed") {
+			return `${format.number(value, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} t/s`;
+		}
+		if (metric === "endToEnd" || metric === "generation") {
+			return formatProviderDuration(value, format.number);
+		}
+		if (metric === "cachedInput") {
+			return `${format.number(value, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%`;
+		}
+		return `${format.number(value, {
+			maximumFractionDigits: metric === "tpot" || metric === "itl" ? 2 : 0,
+		})} ms`;
+	};
+	const formatMetricAxisValue = (value: number) => {
+		if (metric === "cachedInput") {
+			return `${format.number(value, { maximumFractionDigits: 0 })}%`;
+		}
+		if (metric === "endToEnd" || metric === "generation") {
+			return formatProviderDuration(value, format.number);
+		}
+		return format.number(value, { maximumFractionDigits: 2 });
 	};
 	const observedData = data.filter(
 		(point) =>
@@ -514,7 +553,7 @@ export default function ModelProviderTrendChart({
 							/>
 							<span className="truncate font-medium">{provider.name}</span>
 							<span className="pl-3 text-right font-medium tabular-nums">
-								{metricConfig.formatValue(value)}
+								{formatMetricValue(value)}
 							</span>
 						</div>
 					))}
@@ -577,17 +616,11 @@ export default function ModelProviderTrendChart({
 									? (() => {
 											const relativeX =
 												state.activeCoordinate.x - state.offset.left;
-											const clampedX = Math.max(
-												0,
-												Math.min(relativeX, state.offset.width),
+											const index = getPerformancePointerIndex(
+												relativeX,
+												state.offset.width,
+												chartData.length,
 											);
-											const index =
-												chartData.length === 1
-													? 0
-													: Math.round(
-															(clampedX / state.offset.width) *
-																(chartData.length - 1),
-														);
 											return String(chartData[index]?.time ?? "");
 										})()
 									: null;
@@ -634,7 +667,7 @@ export default function ModelProviderTrendChart({
 						<XAxis
 							dataKey="index"
 							type="number"
-							domain={chartData.length === 1 ? [-0.5, 0.5] : [0, chartData.length - 1]}
+								domain={getPerformanceXAxisDomain(chartData.length)}
 							ticks={getPerformanceAxisTickIndexes(chartData.length, timeResolution)}
 							allowDataOverflow
 							hide={!detailed}
@@ -656,7 +689,7 @@ export default function ModelProviderTrendChart({
 							tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
 							tickLine={false}
 							axisLine={false}
-							tickFormatter={metricConfig.formatAxisTick}
+							tickFormatter={formatMetricAxisValue}
 							label={detailed ? { value: metricConfig.axisLabel, angle: -90, position: "insideLeft", offset: -10, fill: "var(--muted-foreground)", fontSize: 11 } : undefined}
 						/>
 						{detailed ? (
@@ -689,6 +722,9 @@ export default function ModelProviderTrendChart({
 								activeSeriesKey,
 								provider.seriesKey,
 							);
+							const providerPointCount = filtered.filter(
+								(point) => point.provider === provider.provider,
+							).length;
 							return (
 								<Line
 									key={provider.seriesKey}
@@ -699,7 +735,7 @@ export default function ModelProviderTrendChart({
 									strokeOpacity={isDimmed ? 0.18 : 1}
 									strokeLinecap="round"
 									strokeLinejoin="round"
-									dot={chartData.length === 1 ? { r: 3, strokeWidth: 2, fill: provider.color, stroke: provider.color } : false}
+									dot={providerPointCount === 1 ? { r: 3, strokeWidth: 2, fill: provider.color, stroke: provider.color } : false}
 									activeDot={{ r: 4, strokeWidth: 1, fill: provider.color, stroke: "var(--background)" }}
 									connectNulls
 									isAnimationActive={false}
@@ -794,15 +830,15 @@ export default function ModelProviderTrendChart({
 									/>
 								) : null}
 							</span>
-							<span role="cell" className="text-right tabular-nums text-muted-foreground">{metricConfig.formatValue(provider.minimum)}</span>
-							<span role="cell" className="text-right tabular-nums text-muted-foreground">{metricConfig.formatValue(provider.maximum)}</span>
-							<span role="cell" className="text-right font-medium tabular-nums">{metricConfig.formatValue(provider.average)}</span>
+							<span role="cell" className="text-right tabular-nums text-muted-foreground">{formatMetricValue(provider.minimum)}</span>
+							<span role="cell" className="text-right tabular-nums text-muted-foreground">{formatMetricValue(provider.maximum)}</span>
+							<span role="cell" className="text-right font-medium tabular-nums">{formatMetricValue(provider.average)}</span>
 						</div>;
 						})}
 					</div>
 				</ScrollArea>
 			) : (
-			<div className="min-h-16 space-y-1.5 pt-1">
+			<div className="space-y-1.5 pt-1">
 				{providerRows.map((provider) => {
 					const { isActive, isDimmed } = getSeriesEmphasis(
 						activeSeriesKey,
@@ -839,11 +875,11 @@ export default function ModelProviderTrendChart({
 							</span>
 							<span className="shrink-0 tabular-nums text-foreground">
 								{isHovering ? (
-									metricConfig.formatValue(provider.hoveredValue)
+									formatMetricValue(provider.hoveredValue)
 								) : (
 									<>
-								<span className="text-muted-foreground">{t("averageShort")} </span>
-										{metricConfig.formatValue(provider.average)}
+										<span className="text-muted-foreground">{t("averageShort")} </span>
+										{formatMetricValue(provider.average)}
 									</>
 								)}
 							</span>

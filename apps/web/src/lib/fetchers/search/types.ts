@@ -53,7 +53,6 @@ export interface SearchData {
 	apiProviders: SearchableAPIProvider[];
 	subscriptionPlans: SearchableSubscriptionPlan[];
 	countries: SearchableCountry[];
-	cacheGeneration?: number;
 }
 
 type SearchModelTuple = [string, string, string | null, string, string, string | null];
@@ -69,5 +68,4 @@ export interface CompactSearchData {
 	p: SearchLogoTuple[];
 	s: SearchNullableLogoTuple[];
 	c: SearchCountryTuple[];
-	v?: number;
 }

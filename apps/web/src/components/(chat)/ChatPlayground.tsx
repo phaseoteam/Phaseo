@@ -1,5 +1,6 @@
 "use client";
 
+import { chatLocalStorage } from "@/lib/chat/userStorage";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import {
@@ -12,6 +13,7 @@ import { BASE_URL } from "@/components/(data)/model/quickstart/config";
 import { fetchChatWebApi } from "@/lib/web-api/client";
 import { showChatCompletionNotification } from "@/lib/chat/completionNotifications";
 import type { GatewaySupportedModel } from "@/lib/fetchers/gateway/getGatewaySupportedModelIds";
+import { REASONING_OPTIONS } from "@/components/(chat)/chatConversationHelpers";
 import type {
 	ChatMessage,
 	ChatModelSettings,
@@ -82,6 +84,7 @@ import {
 	generateId,
 	getChangedSettings,
 	getEffectiveModelSettings,
+	getRequestedChatServiceTier,
 	getOrgId,
 	isGeneratedDefaultSystemPrompt,
 	normalizeServerTools,
@@ -113,6 +116,19 @@ import {
 	ChatSidebar,
 } from "@/components/(chat)/ChatSidebar";
 import { ChatShortcutHelpDialog } from "@/components/(chat)/ChatShortcutReference";
+import { getChatPayloadRequestId } from "@/components/(chat)/chatMessageMetadata";
+import {
+	combineReasoningEffortSupports,
+	filterReasoningEffortOptions,
+	getModelReasoningEffortSupport,
+	resolveChatReasoningEffort,
+} from "@/components/(chat)/playground/reasoningEffortSupport";
+import {
+	getModelServiceTierSupport,
+	getServiceTierOptions,
+	resolveChatServiceTier,
+	assertChatServiceTierSupported,
+} from "@/components/(chat)/playground/serviceTierSupport";
 
 type ChatPlaygroundProps = {
 	models: GatewaySupportedModel[];
@@ -131,6 +147,40 @@ const CHAT_SHORTCUT_OVERLAY_SELECTOR = [
 const isChatShortcutOverlayOpen = () => {
 	if (typeof document === "undefined") return false;
 	return Boolean(document.querySelector(CHAT_SHORTCUT_OVERLAY_SELECTOR));
+};
+
+const normalizeChatServiceTier = (value: unknown): string | null => {
+	if (typeof value !== "string") return null;
+	const normalized = value.trim().toLowerCase();
+	if (!normalized) return null;
+	if (normalized === "default") return "standard";
+	if (normalized === "fast") return "priority";
+	return normalized;
+};
+
+const resolvePayloadServiceTier = (payload: any): string | null => {
+	for (const candidate of [
+		payload?.service_tier,
+		payload?.serviceTier,
+		payload?.meta?.service_tier,
+		payload?.meta?.serviceTier,
+		payload?.response?.service_tier,
+		payload?.response?.serviceTier,
+		payload?.response?.meta?.service_tier,
+		payload?.response?.meta?.serviceTier,
+		payload?.response?.metadata?.service_tier,
+		payload?.response?.metadata?.serviceTier,
+		payload?.usage?.service_tier,
+		payload?.usage?.serviceTier,
+		payload?.response?.usage?.service_tier,
+		payload?.response?.usage?.serviceTier,
+		payload?.response?.output?.usage?.service_tier,
+		payload?.response?.output?.usage?.serviceTier,
+	]) {
+		const normalized = normalizeChatServiceTier(candidate);
+		if (normalized) return normalized;
+	}
+	return null;
 };
 
 const focusChatModelPickerSearch = () => {
@@ -456,7 +506,7 @@ function ChatPlaygroundContent({
 	} = useChatAuth();
 	const [debugEnabled, setDebugEnabled] = useState(() => {
 		if (typeof window === "undefined") return false;
-		return window.localStorage.getItem(STORAGE_KEYS.debugMode) === "true";
+		return chatLocalStorage.getItem(STORAGE_KEYS.debugMode) === "true";
 	});
 	const [settingsOpen, setSettingsOpen] = useState(false);
 	const [modelSettingsOpen, setModelSettingsOpen] = useState(false);
@@ -488,7 +538,7 @@ function ChatPlaygroundContent({
 		useState(false);
 	const [responseLayout, setResponseLayout] = useState<ChatResponseLayout>(() => {
 		if (typeof window === "undefined") return "sequential";
-		return window.localStorage.getItem(STORAGE_KEYS.responseLayout) ===
+		return chatLocalStorage.getItem(STORAGE_KEYS.responseLayout) ===
 			"side-by-side"
 			? "side-by-side"
 			: "sequential";
@@ -540,7 +590,7 @@ function ChatPlaygroundContent({
 	const handleDebugChange = useCallback((value: boolean) => {
 		setDebugEnabled(value);
 		if (typeof window !== "undefined") {
-			window.localStorage.setItem(
+			chatLocalStorage.setItem(
 				STORAGE_KEYS.debugMode,
 				value ? "true" : "false",
 			);
@@ -551,7 +601,7 @@ function ChatPlaygroundContent({
 		(value: ChatResponseLayout) => {
 			setResponseLayout(value);
 			if (typeof window !== "undefined") {
-				window.localStorage.setItem(STORAGE_KEYS.responseLayout, value);
+				chatLocalStorage.setItem(STORAGE_KEYS.responseLayout, value);
 			}
 		},
 		[],
@@ -629,7 +679,7 @@ function ChatPlaygroundContent({
 			setTemporaryThread(null);
 			setActiveId(thread.id);
 			if (typeof window !== "undefined") {
-				window.localStorage.setItem(
+				chatLocalStorage.setItem(
 					STORAGE_KEYS.activeChatId,
 					thread.id,
 				);
@@ -665,33 +715,35 @@ function ChatPlaygroundContent({
 	useEffect(() => {
 		let mounted = true;
 		(async () => {
-			const storedBase = window.localStorage.getItem(STORAGE_KEYS.baseUrl);
+			const storedBase = chatLocalStorage.getItem(STORAGE_KEYS.baseUrl);
 			const storedApiTarget = inferChatApiTarget(
-				window.localStorage.getItem(STORAGE_KEYS.apiTarget),
+				chatLocalStorage.getItem(STORAGE_KEYS.apiTarget),
 				storedBase,
 			);
-			const storedActive = window.localStorage.getItem(
+			const storedActive = chatLocalStorage.getItem(
 				STORAGE_KEYS.activeChatId,
 			);
 			const storedPersonalName =
-				window.localStorage.getItem(STORAGE_KEYS.personalizationName) ??
+				chatLocalStorage.getItem(STORAGE_KEYS.personalizationName) ??
 				"";
 			const storedPersonalRole =
-				window.localStorage.getItem(STORAGE_KEYS.personalizationRole) ??
+				chatLocalStorage.getItem(STORAGE_KEYS.personalizationRole) ??
 				"";
 			const storedPersonalNotes =
-				window.localStorage.getItem(
+				chatLocalStorage.getItem(
 					STORAGE_KEYS.personalizationNotes,
 				) ?? "";
 			const storedAccent =
-				window.localStorage.getItem(
+				chatLocalStorage.getItem(
 					STORAGE_KEYS.personalizationAccent,
 				) ?? "#111111";
-			const storedNewChatModelPreference = window.localStorage.getItem(
+			const storedNewChatModelPreference = chatLocalStorage.getItem(
 				STORAGE_KEYS.newChatModelPreference,
 			);
 			if (!mounted) return;
+			// Remove the obsolete, unscoped credential too; never import it.
 			window.localStorage.removeItem(STORAGE_KEYS.apiKey);
+			chatLocalStorage.removeItem(STORAGE_KEYS.apiKey);
 			setApiTarget(storedApiTarget);
 			setBaseUrl(
 				storedApiTarget === "custom"
@@ -739,7 +791,7 @@ function ChatPlaygroundContent({
 	useEffect(() => {
 		if (!activeThread?.modelId) return;
 		if (typeof window !== "undefined") {
-			window.localStorage.setItem(
+			chatLocalStorage.setItem(
 				STORAGE_KEYS.lastModelId,
 				activeThread.modelId,
 			);
@@ -748,19 +800,19 @@ function ChatPlaygroundContent({
 
 	useEffect(() => {
 		if (typeof window === "undefined") return;
-		window.localStorage.setItem(
+		chatLocalStorage.setItem(
 			STORAGE_KEYS.personalizationName,
 			personalization.name,
 		);
-		window.localStorage.setItem(
+		chatLocalStorage.setItem(
 			STORAGE_KEYS.personalizationRole,
 			personalization.role,
 		);
-		window.localStorage.setItem(
+		chatLocalStorage.setItem(
 			STORAGE_KEYS.personalizationNotes,
 			personalization.notes,
 		);
-		window.localStorage.setItem(
+		chatLocalStorage.setItem(
 			STORAGE_KEYS.personalizationAccent,
 			personalization.accentColor,
 		);
@@ -816,15 +868,15 @@ function ChatPlaygroundContent({
 				);
 				if (
 					typeof window !== "undefined" &&
-					window.localStorage.getItem(STORAGE_KEYS.activeChatId) === id
+					chatLocalStorage.getItem(STORAGE_KEYS.activeChatId) === id
 				) {
 					if (previousActiveId) {
-						window.localStorage.setItem(
+						chatLocalStorage.setItem(
 							STORAGE_KEYS.activeChatId,
 							previousActiveId,
 						);
 					} else {
-						window.localStorage.removeItem(STORAGE_KEYS.activeChatId);
+						chatLocalStorage.removeItem(STORAGE_KEYS.activeChatId);
 					}
 				}
 				throw error;
@@ -856,6 +908,9 @@ function ChatPlaygroundContent({
 		};
 		if (activeThread) {
 			const comparisonModelId = activeThread.modelId || selectedModel;
+			const comparisonSettings = comparisonModelId
+				? { ...activeThread.settings, ...getEffectiveModelSettings(activeThread, comparisonModelId) }
+				: activeThread.settings;
 			const comparisonModelDisplayName =
 				comparisonModelId
 					? activeThread.settings.modelOverridesById?.[
@@ -863,11 +918,11 @@ function ChatPlaygroundContent({
 						]?.displayName?.trim() ||
 						modelDisplayNameById[comparisonModelId]
 					: undefined;
-			const comparisonProviderLabel = activeThread.settings.providerId
-				? providerNameById.get(activeThread.settings.providerId)
+			const comparisonProviderLabel = comparisonSettings.providerId
+				? providerNameById.get(comparisonSettings.providerId)
 				: undefined;
 			const changes = getChangedSettings(
-				activeThread.settings,
+				comparisonSettings,
 				comparisonModelId,
 				comparisonModelDisplayName,
 				comparisonProviderLabel,
@@ -913,7 +968,7 @@ function ChatPlaygroundContent({
 		(value: NewChatModelPreference) => {
 			setNewChatModelPreference(value);
 			if (typeof window !== "undefined") {
-				window.localStorage.setItem(
+				chatLocalStorage.setItem(
 					STORAGE_KEYS.newChatModelPreference,
 					value,
 				);
@@ -1092,16 +1147,16 @@ function ChatPlaygroundContent({
 	);
 
 	const handleSaveSettings = useCallback(() => {
-		window.localStorage.setItem(STORAGE_KEYS.apiTarget, apiTarget);
+		chatLocalStorage.setItem(STORAGE_KEYS.apiTarget, apiTarget);
 		if (apiTarget === "custom") {
 			const customBaseUrl = normalizeStoredBaseUrl(baseUrl);
 			if (customBaseUrl) {
-				window.localStorage.setItem(STORAGE_KEYS.baseUrl, customBaseUrl);
+				chatLocalStorage.setItem(STORAGE_KEYS.baseUrl, customBaseUrl);
 			} else {
-				window.localStorage.removeItem(STORAGE_KEYS.baseUrl);
+				chatLocalStorage.removeItem(STORAGE_KEYS.baseUrl);
 			}
 		} else {
-			window.localStorage.removeItem(STORAGE_KEYS.baseUrl);
+			chatLocalStorage.removeItem(STORAGE_KEYS.baseUrl);
 		}
 		setSettingsOpen(false);
 	}, [apiTarget, baseUrl]);
@@ -1166,6 +1221,28 @@ function ChatPlaygroundContent({
 				selectedModelId,
 				effectiveProviderId,
 			);
+			const reasoningEffortSupport = getModelReasoningEffortSupport({
+				models,
+				modelId: selectedModelId,
+				providerId: effectiveProviderId,
+				requestModelId:
+					effectiveProviderId === "auto" ? null : requestExecutionModelId,
+			});
+			const resolvedReasoningEffort = resolveChatReasoningEffort(
+				effectiveModelSettings.reasoningEffort ?? "medium",
+				reasoningEffortSupport,
+			);
+			const serviceTierSupport = getModelServiceTierSupport({
+				models,
+				modelId: selectedModelId,
+				providerId: effectiveProviderId,
+				requestModelId:
+					effectiveProviderId === "auto" ? null : requestExecutionModelId,
+			});
+			const resolvedServiceTier = resolveChatServiceTier(
+				effectiveModelSettings.serviceTier ?? "standard",
+			);
+			assertChatServiceTierSupported(resolvedServiceTier, serviceTierSupport);
 			const wantsImageModalities =
 				endpoint === "responses" &&
 				(effectiveModelSettings.imageOutputEnabled ||
@@ -1277,6 +1354,10 @@ function ChatPlaygroundContent({
 				effectiveModelSettings.repetitionPenalty,
 			);
 			setOptionalRequestNumber("seed", effectiveModelSettings.seed);
+			const requestedServiceTier = getRequestedChatServiceTier({
+				serviceTier: resolvedServiceTier,
+			});
+			requestBody.service_tier = requestedServiceTier;
 			if (endpoint === "responses") {
 				requestBody.input = input;
 				requestBody.meta = true;
@@ -1316,7 +1397,7 @@ function ChatPlaygroundContent({
 			}
 			if (endpoint === "responses" && effectiveModelSettings.reasoningEnabled) {
 				requestBody.reasoning = {
-					effort: effectiveModelSettings.reasoningEffort ?? "medium",
+					effort: resolvedReasoningEffort,
 					summary: resolveChatReasoningSummary(selectedModelId),
 				};
 			}
@@ -1333,6 +1414,8 @@ function ChatPlaygroundContent({
 			let firstTokenAt: number | null = null;
 			let finalUsage: Record<string, unknown> | null = null;
 			let finalMeta: Record<string, unknown> | null = null;
+			let finalServiceTier: string | null =
+				normalizeChatServiceTier(requestedServiceTier) ?? "standard";
 			let finalProviderId: string | null =
 				effectiveProviderId && effectiveProviderId !== "auto"
 					? effectiveProviderId
@@ -1394,9 +1477,16 @@ function ChatPlaygroundContent({
 					payload?.response?.meta ??
 					payload?.response?.metadata ??
 					null;
-				return meta && typeof meta === "object" && !Array.isArray(meta)
-					? (meta as Record<string, unknown>)
-					: null;
+				const normalizedMeta =
+					meta && typeof meta === "object" && !Array.isArray(meta)
+						? (meta as Record<string, unknown>)
+						: null;
+				const requestId = getChatPayloadRequestId(payload, endpoint);
+				if (!normalizedMeta && !requestId) return null;
+				return {
+					...(normalizedMeta ?? {}),
+					...(requestId ? { request_id: requestId } : {}),
+				};
 			};
 
 			if (targetAssistantId) {
@@ -1449,40 +1539,15 @@ function ChatPlaygroundContent({
 				void updateThreadState(latestThread, false);
 			}
 
-			const getUsageNumber = (...keys: string[]) => {
-				if (!finalUsage) return null;
-				for (const key of keys) {
-					const value = finalUsage[key];
-					if (typeof value === "number" && Number.isFinite(value)) {
-						return value;
-					}
-				}
-				return null;
-			};
 			const buildClientMeta = (endAt: number) => {
 				const firstResponseAt = firstTokenAt ?? responseHeadersAt ?? endAt;
 				const latencyMs = Math.max(0, firstResponseAt - requestStartedAt);
 				const generationMs = Math.max(0, endAt - firstResponseAt);
 				const endToEndMs = Math.max(0, endAt - requestStartedAt);
-				const totalTokens =
-					getUsageNumber("total_tokens", "totalTokens") ??
-					getUsageNumber(
-						"output_text_tokens",
-						"output_tokens",
-						"outputTokens",
-						"completion_tokens",
-						"completionTokens",
-					) ??
-					null;
-				const throughputTokensPerSecond =
-					totalTokens && generationMs > 0
-						? totalTokens / (generationMs / 1000)
-						: null;
 				return {
 					latencyMs,
 					generationMs,
 					endToEndMs,
-					throughputTokensPerSecond,
 				};
 			};
 
@@ -1499,6 +1564,9 @@ function ChatPlaygroundContent({
 					...(compareMeta ?? {}),
 					...(finalMeta ?? {}),
 					...(providerId ? { provider: providerId } : {}),
+					...(finalServiceTier
+						? { service_tier: finalServiceTier }
+						: {}),
 					client: clientMeta,
 				};
 			};
@@ -1554,6 +1622,8 @@ function ChatPlaygroundContent({
 							data?.response?.output?.usage ??
 							null;
 						finalMeta = extractPayloadMeta(data);
+						finalServiceTier =
+							resolvePayloadServiceTier(data) ?? finalServiceTier;
 						finalProviderId =
 							resolvePayloadProviderId(data) ?? finalProviderId;
 						const clientMeta = buildClientMeta(performance.now());
@@ -1953,6 +2023,9 @@ function ChatPlaygroundContent({
 					return {
 						...(compareMeta ?? {}),
 						...(finalMeta ?? {}),
+						...(finalServiceTier
+							? { service_tier: finalServiceTier }
+							: {}),
 						...(reasoningContent
 							? { reasoning_text: reasoningContent }
 							: {}),
@@ -2027,8 +2100,13 @@ function ChatPlaygroundContent({
 								}
 								const parsedMeta = extractPayloadMeta(parsed);
 								if (parsedMeta) {
-									finalMeta = parsedMeta;
+									finalMeta = {
+										...(finalMeta ?? {}),
+										...parsedMeta,
+									};
 								}
+								finalServiceTier =
+									resolvePayloadServiceTier(parsed) ?? finalServiceTier;
 								finalProviderId =
 									resolvePayloadProviderId(parsed) ??
 									finalProviderId;
@@ -2499,6 +2577,9 @@ function ChatPlaygroundContent({
 								finalUsage;
 							finalMeta =
 								extractPayloadMeta(continuationData) ?? finalMeta;
+							finalServiceTier =
+								resolvePayloadServiceTier(continuationData) ??
+								finalServiceTier;
 							finalProviderId =
 								resolvePayloadProviderId(continuationData) ??
 								finalProviderId;
@@ -2598,6 +2679,7 @@ function ChatPlaygroundContent({
 				if (latestThread) {
 					const errorMeta = {
 						...(compareMeta ?? {}),
+						...(finalMeta ?? {}),
 						client: buildClientMeta(performance.now()),
 						chat_request_error: nextRequestError,
 					};
@@ -2886,6 +2968,31 @@ function ChatPlaygroundContent({
 				setModelPickerOpen(true);
 				return false;
 			}
+			const effectiveModelSettings = getEffectiveModelSettings(
+				activeThread,
+				activeThread.modelId,
+			);
+			const effectiveProviderId = isProviderSupportedForModel(
+				activeThread.modelId,
+				effectiveModelSettings.providerId,
+			)
+				? effectiveModelSettings.providerId
+				: "auto";
+			const requestExecutionModelId = resolveRequestModelIdForProvider(
+				activeThread.modelId,
+				effectiveProviderId,
+			);
+			const reasoningEffortSupport = getModelReasoningEffortSupport({
+				models,
+				modelId: activeThread.modelId,
+				providerId: effectiveProviderId,
+				requestModelId:
+					effectiveProviderId === "auto" ? null : requestExecutionModelId,
+			});
+			const resolvedReasoningEffort = resolveChatReasoningEffort(
+				effectiveModelSettings.reasoningEffort ?? "medium",
+				reasoningEffortSupport,
+			);
 			let inlineAttachmentPreviews: Awaited<
 				ReturnType<typeof prepareInlineAttachmentPreviews>
 			> = [];
@@ -2904,7 +3011,7 @@ function ChatPlaygroundContent({
 					model_id: activeThread.modelId,
 					compare_model_ids: activeThread.settings.compareModelIds ?? [],
 					reasoning_enabled: Boolean(activeThread.settings.reasoningEnabled),
-					reasoning_effort: activeThread.settings.reasoningEffort ?? "medium",
+					reasoning_effort: resolvedReasoningEffort,
 					web_search_enabled: payload.webSearchEnabled,
 					api_server_tools_enabled: payload.apiServerToolsEnabled,
 					server_tools: payload.serverTools,
@@ -3058,10 +3165,13 @@ function ChatPlaygroundContent({
 			activeThread,
 			buildThreadForModel,
 			executeCompletion,
+			isProviderSupportedForModel,
 			isModelCapabilityCompatible,
 			isUnified,
 			isSending,
 			isAuthenticated,
+			models,
+			resolveRequestModelIdForProvider,
 			supportsModelAudioInput,
 			tChat,
 			temporaryMode,
@@ -3321,6 +3431,16 @@ function ChatPlaygroundContent({
 
 	const updateActiveModel = useCallback(
 		(modelId: string) => {
+			const requiredCapability = getPrimaryCapabilityForModel(modelId);
+			if (
+				!isModelSelectableForContext(
+					modelId,
+					requiredCapability,
+					composerRequiresAudioInput,
+				)
+			) {
+				return;
+			}
 			if (!activeThread) {
 				const defaults: ChatSettings = {
 					...DEFAULT_SETTINGS,
@@ -3329,7 +3449,7 @@ function ChatPlaygroundContent({
 				void createThreadWithSettings(modelId, defaults)
 					.then(() => {
 						if (typeof window !== "undefined") {
-							window.localStorage.setItem(
+							chatLocalStorage.setItem(
 								STORAGE_KEYS.lastModelId,
 								modelId,
 							);
@@ -3340,7 +3460,6 @@ function ChatPlaygroundContent({
 					});
 				return;
 			}
-			const requiredCapability = getPrimaryCapabilityForModel(modelId);
 			const currentModelDisplayName =
 				activeThread.settings.modelOverridesById?.[
 					activeThread.modelId
@@ -3409,7 +3528,7 @@ function ChatPlaygroundContent({
 				};
 			}
 			if (typeof window !== "undefined") {
-				window.localStorage.setItem(STORAGE_KEYS.lastModelId, modelId);
+				chatLocalStorage.setItem(STORAGE_KEYS.lastModelId, modelId);
 			}
 			updateThreadState(nextThread, !temporaryMode);
 		},
@@ -3464,7 +3583,7 @@ function ChatPlaygroundContent({
 				updatedAt: nowIso(),
 			};
 			if (typeof window !== "undefined") {
-				window.localStorage.setItem(
+				chatLocalStorage.setItem(
 					STORAGE_KEYS.lastModelId,
 					nextPrimary,
 				);
@@ -3591,7 +3710,7 @@ function ChatPlaygroundContent({
 				updatedAt: nowIso(),
 			};
 			if (typeof window !== "undefined") {
-				window.localStorage.setItem(
+				chatLocalStorage.setItem(
 					STORAGE_KEYS.lastModelId,
 					nextPrimaryModelId,
 				);
@@ -3616,6 +3735,15 @@ function ChatPlaygroundContent({
 			if (!nextPrimaryModelId) return;
 			const requiredCapability =
 				getPrimaryCapabilityForModel(nextPrimaryModelId);
+			if (
+				!isModelSelectableForContext(
+					nextPrimaryModelId,
+					requiredCapability,
+					composerRequiresAudioInput,
+				)
+			) {
+				return;
+			}
 			const nextCompareModelIds = candidateCompareIds.filter((id) =>
 				isModelSelectableForContext(
 					id,
@@ -3660,7 +3788,7 @@ function ChatPlaygroundContent({
 				updatedAt: nowIso(),
 			};
 			if (typeof window !== "undefined") {
-				window.localStorage.setItem(
+				chatLocalStorage.setItem(
 					STORAGE_KEYS.lastModelId,
 					nextPrimaryModelId,
 				);
@@ -4041,6 +4169,65 @@ function ChatPlaygroundContent({
 		}
 		return Array.from(new Set(ids));
 	}, [activeCompareModelIds, activeModelId]);
+	const selectedModelReasoningSupports = useMemo(
+		() =>
+			selectedModelIds.map((modelId) => {
+				const modelSettings = activeThread
+					? getEffectiveModelSettings(activeThread, modelId)
+					: DEFAULT_SETTINGS;
+				const providerId = isProviderSupportedForModel(
+					modelId,
+					modelSettings.providerId,
+				)
+					? modelSettings.providerId
+					: "auto";
+				return {
+					modelId,
+					support: getModelReasoningEffortSupport({
+						models,
+						modelId,
+						providerId,
+						requestModelId:
+							providerId === "auto"
+								? null
+								: resolveRequestModelIdForProvider(modelId, providerId),
+					}),
+				};
+			}),
+		[
+			activeThread,
+			isProviderSupportedForModel,
+			models,
+			resolveRequestModelIdForProvider,
+			selectedModelIds,
+		],
+	);
+	const selectedReasoningEffortSupport = useMemo(() => {
+		const combined = combineReasoningEffortSupports(
+			selectedModelReasoningSupports.map((entry) => entry.support),
+		);
+		if (combined?.supportedValues.length) return combined;
+		const primaryModelId = activeThread?.modelId ?? selectedModelIds[0];
+		return (
+			selectedModelReasoningSupports.find(
+				(entry) => entry.modelId === primaryModelId,
+			)?.support ??
+			selectedModelReasoningSupports.find((entry) => entry.support)?.support ??
+			null
+		);
+	}, [activeThread?.modelId, selectedModelIds, selectedModelReasoningSupports]);
+	const reasoningOptions = useMemo(() => {
+		return filterReasoningEffortOptions(
+			REASONING_OPTIONS,
+			selectedReasoningEffortSupport,
+		);
+	}, [selectedReasoningEffortSupport]);
+	const selectedReasoningEffort = resolveChatReasoningEffort(
+		activeThread?.settings.reasoningEffort ??
+			DEFAULT_SETTINGS.reasoningEffort ??
+			"medium",
+		selectedReasoningEffortSupport,
+	);
 	const selectedModelDisplayNameById = useMemo(() => {
 		const labels: Record<string, string> = {};
 		for (const modelId of selectedModelIds) {
@@ -4075,6 +4262,7 @@ function ChatPlaygroundContent({
 					orgId: string;
 					orgName: string;
 					releaseDate: string | null;
+					disabled: boolean;
 				}
 			>();
 			const orderedOptions = [
@@ -4108,6 +4296,9 @@ function ChatPlaygroundContent({
 					orgId: model.orgId,
 					orgName: model.orgName,
 					releaseDate: model.releaseDate,
+					disabled:
+						model.gatewayStatus === "inactive" ||
+						model.chatBlockedReasons.length > 0,
 				});
 			}
 			return Array.from(byId.values());
@@ -4183,6 +4374,7 @@ function ChatPlaygroundContent({
 			),
 			stream: DEFAULT_SETTINGS.stream,
 			providerId: DEFAULT_SETTINGS.providerId,
+			serviceTier: DEFAULT_SETTINGS.serviceTier,
 			reasoningEnabled: DEFAULT_SETTINGS.reasoningEnabled,
 			reasoningEffort: DEFAULT_SETTINGS.reasoningEffort,
 			endpoint: DEFAULT_SETTINGS.endpoint,
@@ -4200,6 +4392,62 @@ function ChatPlaygroundContent({
 		activeModelOverrides,
 		modelSettingsModelId,
 	]);
+	const dialogReasoningEffortSupport = useMemo(() => {
+		if (!modelSettingsModelId) return null;
+		const providerId = isProviderSupportedForModel(
+			modelSettingsModelId,
+			dialogModelSettings.providerId,
+		)
+			? dialogModelSettings.providerId
+			: "auto";
+		return getModelReasoningEffortSupport({
+			models,
+			modelId: modelSettingsModelId,
+			providerId,
+			requestModelId:
+				providerId === "auto"
+					? null
+					: resolveRequestModelIdForProvider(modelSettingsModelId, providerId),
+		});
+	}, [
+		dialogModelSettings.providerId,
+		isProviderSupportedForModel,
+		modelSettingsModelId,
+		models,
+		resolveRequestModelIdForProvider,
+	]);
+	const dialogReasoningEffort = resolveChatReasoningEffort(
+		dialogModelSettings.reasoningEffort ?? "medium",
+		dialogReasoningEffortSupport,
+	);
+	const dialogServiceTierSupport = useMemo(() => {
+		if (!modelSettingsModelId) return null;
+		const providerId = isProviderSupportedForModel(
+			modelSettingsModelId,
+			dialogModelSettings.providerId,
+		)
+			? dialogModelSettings.providerId
+			: "auto";
+		return getModelServiceTierSupport({
+			models,
+			modelId: modelSettingsModelId,
+			providerId,
+			requestModelId:
+				providerId === "auto"
+					? null
+					: resolveRequestModelIdForProvider(modelSettingsModelId, providerId),
+		});
+	}, [
+		dialogModelSettings.providerId,
+		isProviderSupportedForModel,
+		modelSettingsModelId,
+		models,
+		resolveRequestModelIdForProvider,
+	]);
+	const dialogServiceTier = resolveChatServiceTier(
+		dialogModelSettings.serviceTier ?? "standard",
+	);
+	const dialogServiceTierOptions = getServiceTierOptions(dialogServiceTierSupport);
 	const temperatureValue = activeModelSettings?.temperature ?? 0.7;
 	const maxTokensValue = activeModelSettings?.maxOutputTokens ?? 800;
 	const topPValue = activeModelSettings?.topP ?? 1;
@@ -4452,8 +4700,9 @@ function ChatPlaygroundContent({
 						activeThread?.settings.reasoningEnabled ?? false
 					}
 					reasoningEffort={
-						activeThread?.settings.reasoningEffort ?? "medium"
+						selectedReasoningEffort
 					}
+					reasoningOptions={reasoningOptions}
 					onReasoningEnabledChange={(enabled) =>
 						updateActiveSettings({ reasoningEnabled: enabled })
 					}
@@ -4514,6 +4763,10 @@ function ChatPlaygroundContent({
 						? getSupportedProviderIdsForModel(modelSettingsModelId)
 						: undefined
 				}
+				serviceTierOptions={dialogServiceTierOptions}
+				serviceTier={dialogServiceTier}
+				reasoningSupport={dialogReasoningEffortSupport}
+				reasoningEffort={dialogReasoningEffort}
 				temperatureValue={temperatureValue}
 				maxTokensValue={maxTokensValue}
 				topPValue={topPValue}

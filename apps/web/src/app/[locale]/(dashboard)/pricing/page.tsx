@@ -785,7 +785,7 @@ const FAQ_SECTIONS: FAQSection[] = [
 		"how-are-tokens-billed", "what-does-phaseo-charge", "is-top-up-fee-per-request",
 		"how-is-billing-structured", "are-sdks-priced-separately", "contracts-commitments",
 		"are-failed-or-fallback-attempts-billed", "streaming-pricing", "data-api-free",
-		"payment-methods", "refunds", "invoices",
+		"payment-methods", "refunds", "receipts",
 	].map((id) => ({ id })) },
 	{ id: "enterprise", items: [
 		"enterprise-plan", "enterprise-credit-fees", "enterprise-team-sizes",
@@ -828,10 +828,10 @@ export default async function PricingPage() {
 			<div className="container mx-auto max-w-7xl px-4 py-12 sm:py-16">
 				<section className="space-y-7">
 					<h1 className="max-w-4xl text-4xl font-semibold tracking-tight text-foreground sm:text-5xl">
-						{t("paygHeadline")}
+						{t(showEnterprisePreview ? "paygHeadline" : "paygHeadlinePreview")}
 					</h1>
 					<p className="max-w-3xl text-base leading-7 text-muted-foreground">
-						{t("paygBody")} {" "}
+						{t(showEnterprisePreview ? "paygBody" : "paygBodyPreview")} {" "}
 						<Link className="underline underline-offset-4" href="/tools/pricing-calculator">
 										{t("modelPricingCalculator")}
 						</Link>
@@ -873,13 +873,13 @@ export default async function PricingPage() {
 							},
 							{
 								icon: ShieldCheck,
-								title: "enterpriseOptional",
-								body: "enterpriseOptionalBody",
+								title: showEnterprisePreview ? "enterpriseOptional" : "enterprisePreview",
+								body: showEnterprisePreview ? "enterpriseOptionalBody" : "enterprisePreviewBody",
 							},
 							{
 								icon: ReceiptText,
-								title: "pricesPublic",
-								body: "pricesPublicBody",
+								title: showEnterprisePreview ? "pricesPublic" : "pricesPublicPreview",
+								body: showEnterprisePreview ? "pricesPublicBody" : "pricesPublicPreviewBody",
 							},
 						].map((item) => {
 							const Icon = item.icon;
@@ -909,7 +909,7 @@ export default async function PricingPage() {
 							{t("usageAndFeeDetails")}
 						</p>
 					</div>
-					<dl className="grid border-y border-zinc-200/80 dark:border-zinc-800/80 lg:grid-cols-3 lg:divide-x lg:divide-zinc-200/80 lg:dark:divide-zinc-800/80">
+					<dl className="grid border-y border-zinc-200/80 dark:border-zinc-800/80 lg:grid-cols-4 lg:divide-x lg:divide-zinc-200/80 lg:dark:divide-zinc-800/80">
 						{[
 							{
 								icon: Coins,
@@ -931,6 +931,14 @@ export default async function PricingPage() {
 								feePercent: new Intl.NumberFormat(locale, { maximumFractionDigits: 2 }).format(BYOK_SERVICE_FEE_PERCENT),
 								}),
 								detail: t("byokUsageDetails"),
+							},
+							{
+								icon: ShieldCheck,
+								term: showEnterprisePreview ? "Self-serve Enterprise" : "Enterprise preview",
+								value: showEnterprisePreview ? "Separate monthly subscription" : "Availability is expanding",
+								detail: showEnterprisePreview
+									? "Workspace identity, governance, and priority support. Model usage and credit fees remain separate."
+									: "Workspace identity, governance, and priority support are being prepared for eligible workspaces.",
 							},
 						].map((item) => {
 							const Icon = item.icon;
@@ -980,7 +988,7 @@ export default async function PricingPage() {
 											</span>
 										</span>
 									</th>
-									<th className="enterprise-column px-4 py-3 text-center font-bold text-foreground">{t("matrix.copy.enterprise")}</th>
+									<th className="enterprise-column px-4 py-3 text-center font-bold text-foreground">{t(showEnterprisePreview ? "matrix.copy.enterprise" : "enterprisePreview")}</th>
 									{COMPETITORS.map((competitor) => (
 										<th key={competitor.key} className="competitor-cell hidden px-4 py-3 text-center font-semibold text-foreground">
 											<a href={competitor.href} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 underline decoration-transparent underline-offset-4 hover:decoration-current">
@@ -1060,7 +1068,7 @@ export default async function PricingPage() {
 						</h2>
 					</div>
 					<div className="space-y-8">
-						{FAQ_SECTIONS.map((section) => (
+						{FAQ_SECTIONS.filter((section) => showEnterprisePreview || section.id !== "enterprise").map((section) => (
 							<div key={section.id} className="space-y-2">
 								<h3 className="text-base font-semibold text-zinc-700 dark:text-zinc-200">
 									{translate(`faq.sectionTitles.${section.id}`)}

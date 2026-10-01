@@ -33,7 +33,7 @@ export type UnifiedStreamEvent =
 			payload?: any;
 	  }
 	| { type: "usage"; usage: any; payload?: any }
-	| { type: "stop"; finishReason?: string | null; payload?: any }
+	| { type: "stop"; finishReason?: string | null; choiceIndex?: number; payload?: any }
 	| { type: "error"; message?: string; payload?: any }
 	| { type: "snapshot"; isFinal: boolean; payload: any };
 
@@ -341,6 +341,7 @@ function extractOpenAIChatEvents(frame: any): UnifiedStreamEvent[] {
 				events.push({
 					type: "stop",
 					finishReason: String(choice.finish_reason),
+					choiceIndex,
 					payload: choice,
 				});
 			}

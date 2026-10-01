@@ -2,9 +2,10 @@
 
 import React from "react";
 import { Check, ExternalLink, Infinity, X } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { useLocale, useTranslations } from "next-intl";
+import { useSettingsRouter as useRouter } from "../PrivateSettingsQuery";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 
 import TeamInviteDialog from "./TeamInviteDialog";
 import { approveJoinRequest, rejectJoinRequest } from "@/app/(dashboard)/settings/teams/actions";
@@ -52,19 +53,6 @@ interface Props {
 	canManageWorkspace?: boolean;
 }
 
-function formatDate(value: string | null | undefined, locale: string) {
-	if (!value) return "—";
-	try {
-		return new Intl.DateTimeFormat(locale, {
-			day: "2-digit",
-			month: "short",
-			year: "numeric",
-		}).format(new Date(value));
-	} catch {
-		return "—";
-	}
-}
-
 export default function TeamsAccessPanel({
 	requestsByTeam,
 	invitesByTeam,
@@ -74,8 +62,9 @@ export default function TeamsAccessPanel({
 	currentUserId,
 	canManageWorkspace,
 }: Props) {
+	const format = useDisplayFormatters();
+	const formatDate = (value?: string | null) => format.date(value, "—");
 	const t = useTranslations("SettingsUI");
-	const locale = useLocale();
 	const router = useRouter();
 	const [selectedInvite, setSelectedInvite] = React.useState<Invite | null>(null);
 	const [busyRequestId, setBusyRequestId] = React.useState<string | null>(null);
@@ -142,19 +131,18 @@ export default function TeamsAccessPanel({
 		setBusyRequestId(requestId);
 		try {
 			if (action === "approve") {
-				await toast.promise(approveJoinRequest(requestId), {
+				await toast.promise(approveJoinRequest(requestId).then(() => router.refresh()), {
 					loading: t("teams.approvingRequest"),
 					success: t("teams.requestApproved"),
 					error: () => t("teams.requestActionFailed"),
 				});
 			} else {
-				await toast.promise(rejectJoinRequest(requestId), {
+				await toast.promise(rejectJoinRequest(requestId).then(() => router.refresh()), {
 					loading: t("teams.rejectingRequest"),
 					success: t("teams.requestRejected"),
 					error: () => t("teams.requestActionFailed"),
 				});
 			}
-			router.refresh();
 		} finally {
 			setBusyRequestId(null);
 		}
@@ -223,7 +211,7 @@ export default function TeamsAccessPanel({
 											</div>
 										</TableCell>
 										<TableCell className="px-4 py-3 text-sm text-muted-foreground">
-											{formatDate(request.created_at, locale)}
+											{formatDate(request.created_at)}
 										</TableCell>
 										<TableCell className="px-4 py-3">
 											<div className="flex justify-end gap-2">
@@ -303,7 +291,7 @@ export default function TeamsAccessPanel({
 														{invite.users?.display_name ?? t("teams.unknown")}
 													</div>
 													<div className="text-xs text-muted-foreground">
-														{formatDate(invite.created_at, locale)}
+														{formatDate(invite.created_at)}
 													</div>
 												</div>
 											</TableCell>
@@ -323,7 +311,7 @@ export default function TeamsAccessPanel({
 											</TableCell>
 											<TableCell className="px-4 py-3 text-sm text-muted-foreground">
 												{invite.expires_at
-													? formatDate(invite.expires_at, locale)
+													? formatDate(invite.expires_at)
 													: t("labels.noExpiry")}
 											</TableCell>
 											<TableCell className="px-4 py-3 text-sm text-muted-foreground">

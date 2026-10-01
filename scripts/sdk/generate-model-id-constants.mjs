@@ -6,8 +6,14 @@ import yaml from "js-yaml";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const repoRoot = path.resolve(__dirname, "../..");
+const goOnly = process.argv.includes("--go-only");
+const cppOnly = process.argv.includes("--cpp-only");
+if (goOnly && cppOnly) throw new Error("Choose only one language-specific output flag.");
 const specPath = path.join(repoRoot, "apps/docs/openapi/v1/openapi.yaml");
 const websiteBase = "https://phaseo.app";
+const goMod = await fs.readFile(path.join(repoRoot, "packages/sdk/sdk-go/go.mod"), "utf8");
+const goModule = goMod.match(/^module\s+(\S+)/m)?.[1];
+if (!goModule) throw new Error("Missing Go SDK module path");
 
 const specRaw = await fs.readFile(specPath, "utf8");
 const spec = yaml.load(specRaw);
@@ -27,6 +33,13 @@ const legacyModelAliases = [
 		removeIn: "the next major SDK release",
 	},
 ];
+
+const retiredCallableModelIds = new Set([
+	"crofai/greg-1-mini",
+	"crofai/greg-2-super",
+	"crofai/greg-2-ultra",
+	"crofai/greg-rp",
+]);
 
 /** @type {Array<{id: string; upper: string; pascal: string; url: string}>} */
 const entries = [];
@@ -48,6 +61,7 @@ for (const rawId of modelIds) {
 		upper,
 		pascal,
 		url: modelPageUrl(id),
+		retired: retiredCallableModelIds.has(id),
 	});
 }
 
@@ -159,6 +173,8 @@ function enrichAliasEntry(id, usedUpperRegistry, usedPascalRegistry) {
 }
 
 async function writeFile(relativePath, contents) {
+	if (goOnly && relativePath !== "packages/sdk/sdk-go/model_ids.go") return;
+	if (cppOnly && relativePath !== "packages/sdk/sdk-cpp/src/gen/model_ids.hpp") return;
 	const fullPath = path.join(repoRoot, relativePath);
 	await fs.mkdir(path.dirname(fullPath), { recursive: true });
 	await fs.writeFile(fullPath, contents, "utf8");
@@ -176,6 +192,9 @@ function renderTs(items, aliases) {
 	const lines = [renderHeader("//").trimEnd(), "", "/** Known callable model ID constants for editor autocomplete and hover docs. */", "export const ModelIds = {",];
 
 	for (const item of items) {
+		if (item.retired) {
+			lines.push("  /** @deprecated CrofAI is retired; retained for compatibility only. */");
+		}
 		lines.push(
 			`  /** Model ID: \`${item.id}\`. Model page: ${item.url} */`,
 			`  ${item.upper}: "${item.id}",`
@@ -202,6 +221,9 @@ function renderPy(items, aliases) {
 	const lines = [renderHeader("#").trimEnd(), "", "from __future__ import annotations", "", "from typing import Final", "", '"""Known model ID constants for editor autocomplete and hover docs."""', "", "class ModelIds:", '    """Known model ID constants for editor autocomplete and hover docs."""', "",];
 
 	for (const item of items) {
+		if (item.retired) {
+			lines.push("    # Deprecated: CrofAI is retired; retained for compatibility only.");
+		}
 		lines.push(
 			`    # Model ID: ${item.id}`,
 			`    # Model page: ${item.url}`,
@@ -236,8 +258,11 @@ function renderPy(items, aliases) {
 }
 
 function renderGo(items, aliases) {
-	const lines = [renderHeader("//").trimEnd(), "", "package phaseo", "", "import gen \"github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v2/src/gen\"", "", "// ModelIds contains known model IDs for editor autocomplete and hover docs.", "const (",];
+	const lines = [renderHeader("//").trimEnd(), "", "package phaseo", "", `import gen "${goModule}/src/gen"`, "", "// ModelIds contains known model IDs for editor autocomplete and hover docs.", "const (",];
 	for (const item of items) {
+		if (item.retired) {
+			lines.push("\t// Deprecated: CrofAI is retired; retained for compatibility only.");
+		}
 		lines.push(
 			`	// Model ID: ${item.id}`,
 			`	// Model page: ${item.url}`,
@@ -261,6 +286,12 @@ function renderGo(items, aliases) {
 function renderCsharp(items, aliases) {
 	const lines = [renderHeader("//").trimEnd(), "", "namespace PhaseoSdk", "{", "    /// <summary>Known model ID constants for editor autocomplete and hover docs.</summary>", "    public static class ModelIds", "    {",];
 	for (const item of items) {
+		if (item.retired) {
+			lines.push(
+				"        /// <summary>Deprecated: CrofAI is retired; retained for compatibility only.</summary>",
+				"        [System.Obsolete(\"CrofAI is retired; retained for compatibility only.\")]",
+			);
+		}
 		lines.push(
 			`        /// <summary>Model ID: <c>${item.id}</c>. Model page: ${item.url}</summary>`,
 			`        public const string ${item.pascal} = "${escapeCsharp(item.id)}";`,
@@ -280,6 +311,12 @@ function renderCsharp(items, aliases) {
 function renderJava(items, aliases) {
 	const lines = [renderHeader("//").trimEnd(), "", "package app.phaseo.sdk;", "", "/** Known model ID constants for editor autocomplete and hover docs. */", "public final class ModelIds {", "    private ModelIds() {}", "",];
 	for (const item of items) {
+		if (item.retired) {
+			lines.push(
+				"    /** @deprecated CrofAI is retired; retained for compatibility only. */",
+				"    @Deprecated",
+			);
+		}
 		lines.push(
 			`    /** Model ID: <code>${item.id}</code>. Model page: ${item.url} */`,
 			`    public static final String ${item.upper} = "${escapeJava(item.id)}";`,
@@ -301,6 +338,13 @@ function renderJava(items, aliases) {
 function renderPhp(items, aliases) {
 	const lines = ["<?php", "declare(strict_types=1);", "", "// This file is generated by scripts/sdk/generate-model-id-constants.mjs.", "// Do not edit manually.", "", "namespace Phaseo\\Sdk;", "", "final class ModelIds", "{",];
 	for (const item of items) {
+		if (item.retired) {
+			lines.push(
+				"    /**",
+				"     * @deprecated CrofAI is retired; retained for compatibility only.",
+				"     */",
+			);
+		}
 		lines.push(
 			`    /** Model ID: ${item.id}. Model page: ${item.url} */`,
 			`    public const ${item.upper} = '${escapePhp(item.id)}';`,
@@ -323,6 +367,9 @@ function renderPhp(items, aliases) {
 function renderRuby(items, aliases) {
 	const lines = [renderHeader("#").trimEnd(), "", "module PhaseoSdk", "  module ModelIds",];
 	for (const item of items) {
+		if (item.retired) {
+			lines.push("    # Deprecated: CrofAI is retired; retained for compatibility only.");
+		}
 		lines.push(
 			`    # Model ID: ${item.id}`,
 			`    # Model page: ${item.url}`,
@@ -346,6 +393,12 @@ function renderRuby(items, aliases) {
 function renderRust(items, aliases) {
 	const lines = [renderHeader("//").trimEnd(), "", "/// Known model ID constants for editor autocomplete and hover docs.", "pub mod model_ids {",];
 	for (const item of items) {
+		if (item.retired) {
+			lines.push(
+				"    /// Deprecated: CrofAI is retired; retained for compatibility only.",
+				"    #[deprecated(note = \"CrofAI is retired; retained for compatibility only.\")]",
+			);
+		}
 		lines.push(
 			`    /// Model ID: \`${item.id}\`.`,
 			`    /// Model page: ${item.url}`,
@@ -359,7 +412,7 @@ function renderRust(items, aliases) {
 			`    pub const ${alias.from.upper}: &str = ${alias.to.upper};`,
 		);
 	}
-	lines.push("", "    pub const ALL: &[&str] = &[");
+	lines.push("", "    #[allow(deprecated)]", "    pub const ALL: &[&str] = &[");
 	for (const item of items) {
 		lines.push(`        ${item.upper},`);
 	}
@@ -370,6 +423,9 @@ function renderRust(items, aliases) {
 function renderCpp(items, aliases) {
 	const lines = [renderHeader("//").trimEnd(), "#pragma once", "", "#include <array>", "#include <string_view>", "", "namespace phaseo::sdk::model_ids {",];
 	for (const item of items) {
+		if (item.retired) {
+			lines.push("// Deprecated: CrofAI is retired; retained for compatibility only.");
+		}
 		lines.push(
 			`// Model ID: ${item.id}`,
 			`// Model page: ${item.url}`,

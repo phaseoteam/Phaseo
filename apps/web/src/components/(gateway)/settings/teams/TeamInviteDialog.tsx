@@ -2,8 +2,8 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
+import { useSettingsRouter as useRouter } from "../PrivateSettingsQuery";
 import { useLocale, useTranslations } from "next-intl";
-import { useRouter } from "next/navigation";
 import {
 	revealTeamInviteAction,
 	revokeTeamInviteAction,
@@ -17,6 +17,7 @@ import {
 	DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { Label } from "@/components/ui/label";
 import {
 	Infinity,
@@ -76,8 +77,9 @@ export default function TeamInviteDialog({
 	canManageInvite = false,
 	appBaseUrl,
 }: Props) {
-	const t = useTranslations("SettingsUI");
+	const format = useDisplayFormatters();
 	const locale = useLocale();
+	const t = useTranslations("SettingsUI");
 	const router = useRouter();
 	const isCreator = !!currentUserId && currentUserId === invite.creator_user_id;
 	const canManage = canManageInvite || isCreator;
@@ -102,11 +104,7 @@ export default function TeamInviteDialog({
 	);
 
 	function formatDate(d: Date | null) {
-		if (!d) return null;
-		return new Intl.DateTimeFormat(locale, {
-			dateStyle: "medium",
-			timeStyle: "short",
-		}).format(d);
+		return d ? format.dateTime(d) : null;
 	}
 
 	const now = useMemo(() => new Date(), []);

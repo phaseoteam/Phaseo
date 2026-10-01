@@ -1,8 +1,9 @@
 "use client"
 
-import { useTranslations } from "next-intl"
+import { useLocale, useTranslations } from "next-intl"
+import { Link } from "@/i18n/navigation"
 import { type ReactNode, useEffect, useMemo, useRef, useState } from "react"
-import { Plus, Trash2 } from "lucide-react"
+import { Plus, ArrowRight } from "lucide-react"
 import { Logo } from "@/components/Logo"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -16,15 +17,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { SearchableSelect } from "@/components/ui/searchable-select"
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from "@/components/ui/sheet"
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
+import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion"
+import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 import { fetchAdminModelEditorSource, fetchAdminModelFormOptions } from "@/lib/fetchers/internal/adminModelEditorClient"
 import {
-  PROVIDER_PROMPT_TRAINING_POLICY_LABELS,
   PROVIDER_PROMPT_TRAINING_POLICY_VALUES,
   type ProviderPromptTrainingPolicy,
 } from "@/lib/providers/promptTrainingPolicy"
 import {
   CAPABILITY_STATUS_OPTIONS,
+  QUANTIZATION_OPTIONS,
   MODEL_CAPABILITY_OPTIONS,
   MODEL_MODALITY_OPTIONS,
   normalizeCapabilityStatus,
@@ -54,6 +60,7 @@ export interface ProviderCapabilityRow {
   provider_id: string
   api_model_id: string
   capability_id: string
+  original_capability_id?: string | null
   status:
     | "active"
     | "deranked_lvl1"
@@ -66,6 +73,10 @@ export interface ProviderCapabilityRow {
 }
 
 interface ProvidersTabProps {
+  onSave?: () => Promise<void>
+  saving?: boolean
+  saveError?: string | null
+  savedMessage?: string | null
   modelId: string
   providers: Array<{ id: string; name: string }>
   focusProviderId?: string
@@ -141,6 +152,12 @@ function formatDateForPicker(value: string | null): string {
   return `${year}-${month}-${day}`
 }
 
+function isCapabilityEnded(value: string | null): boolean {
+  if (!value) return false
+  const timestamp = new Date(value).getTime()
+  return Number.isFinite(timestamp) && timestamp <= Date.now()
+}
+
 function createCapabilityId() {
   return `cap-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
 }
@@ -163,11 +180,12 @@ function dedupeCapabilities(rows: ProviderCapabilityRow[]): ProviderCapabilityRo
 
 function defaultCapability(providerRowId: string, providerId: string, apiModelId: string): ProviderCapabilityRow {
   return {
-    id: createCapabilityId(),
+    id: `new-${createCapabilityId()}`,
     provider_row_id: providerRowId,
     provider_id: providerId,
     api_model_id: apiModelId,
     capability_id: "text.generate",
+    original_capability_id: null,
     status: "active",
     effective_from: null,
     effective_to: null,
@@ -185,7 +203,7 @@ function FieldRow({
   children: ReactNode
 }) {
   return (
-    <div className="grid gap-2 md:grid-cols-[220px_minmax(0,1fr)] md:items-start">
+    <div className="grid gap-2 sm:grid-cols-[150px_minmax(0,1fr)] md:items-start">
       <div className="space-y-0.5">
         <Label className="text-sm font-medium">{label}</Label>
         {description ? (
@@ -199,16 +217,26 @@ function FieldRow({
 
 export default function ProvidersTab({
   modelId,
+  onSave, saving = false, saveError, savedMessage,
   providers,
   focusProviderId,
   onProviderModelsChange,
   onProviderCapabilitiesChange,
 }: ProvidersTabProps) {
+  const locale = useLocale()
+  const tControls = useTranslations("Common.ui.modelEditor.providerControls")
+  const tPolicy = useTranslations("Product.internalTools.dataEditor")
   const tUi = useTranslations("Common.ui")
   const tEditor = useTranslations("Common.ui.modelEditor")
   const tModel = useTranslations("Common.ui.modelCreation")
+  const policyLabel = (value: ProviderPromptTrainingPolicy) => tPolicy(({ unknown: "policyUnknown", may_train: "policyMayTrain", no_train: "policyNoTrain", opt_out_available: "policyOptOut", enterprise_no_train: "policyEnterpriseNoTrain" } as const)[value])
+  const [selectedRowId, setSelectedRowId] = useState<string | null>(null)
+  const [routeQuery, setRouteQuery] = useState("")
+  const [loadError, setLoadError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
   const [providerModels, setProviderModels] = useState<ProviderModelRow[]>([])
   const [providerCapabilities, setProviderCapabilities] = useState<ProviderCapabilityRow[]>([])
+  const [modelNames, setModelNames] = useState<Record<string, string>>({})
   const [availableModelIds, setAvailableModelIds] = useState<string[]>([])
   const onProviderModelsChangeRef = useRef(onProviderModelsChange)
   const onProviderCapabilitiesChangeRef = useRef(onProviderCapabilitiesChange)
@@ -243,6 +271,7 @@ export default function ProvidersTab({
     return providerModels.filter((row) => row.provider_id === focusProviderId)
   }, [providerModels, focusProviderId])
 
+  const matchingProviderModels = visibleProviderModels.filter((row) => `${providerNameById.get(row.provider_id)} ${row.provider_id} ${row.provider_model_slug || ""}`.toLowerCase().includes(routeQuery.trim().toLowerCase()))
   const selectableModelIds = useMemo(() => {
     const merged = new Set<string>([modelId])
     for (const value of availableModelIds) merged.add(value)
@@ -258,6 +287,7 @@ export default function ProvidersTab({
       const providerModelData = source.providerRows ?? []
       const modelRows = options.previousModels ?? []
 
+      setModelNames(Object.fromEntries([...modelRows.map((row: any) => [row.model_id, row.name || row.model_id.split("/").pop()]), [modelId, source.model?.name || modelId.split("/").pop()]]))
       setAvailableModelIds(
         (modelRows ?? [])
           .map((row: any) => (typeof row?.model_id === "string" ? row.model_id.trim() : ""))
@@ -295,7 +325,7 @@ export default function ProvidersTab({
 
       const capabilityRows = providerModelData.flatMap((row: any) =>
         (row.data_api_provider_model_capabilities ?? []).map((capability: any) => ({ ...capability, provider_api_model_id: row.provider_api_model_id }))
-	  )
+      )
 
       const providerById = new Map(mappedProviderModels.map((row) => [row.id, row]))
       const mappedCapabilities: ProviderCapabilityRow[] = (capabilityRows ?? []).flatMap((capability: any) => {
@@ -308,6 +338,7 @@ export default function ProvidersTab({
           provider_id: providerRow.provider_id,
           api_model_id: providerRow.api_model_id,
           capability_id: capability.capability_id,
+          original_capability_id: capability.capability_id,
           status: normalizeCapabilityStatus(capability.status),
           effective_from: capability.effective_from ?? null,
           effective_to: capability.effective_to ?? null,
@@ -319,7 +350,7 @@ export default function ProvidersTab({
       setProviderCapabilities(dedupeCapabilities(mappedCapabilities))
     }
 
-    void fetchData()
+    void fetchData().catch((error) => setLoadError(error instanceof Error ? error.message : tControls("loadFailed"))).finally(() => setLoading(false))
   }, [modelId])
 
   useEffect(() => {
@@ -331,25 +362,16 @@ export default function ProvidersTab({
   }, [onProviderCapabilitiesChange])
 
   useEffect(() => {
-    onProviderModelsChangeRef.current?.(providerModels)
-  }, [providerModels])
+    if (!loading && !loadError) onProviderModelsChangeRef.current?.(providerModels)
+  }, [providerModels, loading, loadError])
 
   useEffect(() => {
-    onProviderCapabilitiesChangeRef.current?.(providerCapabilities)
-  }, [providerCapabilities])
+    if (!loading && !loadError) onProviderCapabilitiesChangeRef.current?.(providerCapabilities)
+  }, [providerCapabilities, loading, loadError])
 
   const toggleProvider = (providerId: string) => {
-    setProviderModels((prev) => {
-      if (prev.some((row) => row.provider_id === providerId)) {
-        const remaining = prev.filter((row) => row.provider_id !== providerId)
-        const removedIds = new Set(
-          prev.filter((row) => row.provider_id === providerId).map((row) => row.id)
-        )
-        setProviderCapabilities((capabilities) =>
-          capabilities.filter((capability) => !removedIds.has(capability.provider_row_id))
-        )
-        return remaining
-      }
+    const prev = providerModels
+      if (prev.some((row) => row.provider_id === providerId)) return
 
       const newRow: ProviderModelRow = {
         id: `new-${providerId}-${Date.now()}`,
@@ -372,8 +394,8 @@ export default function ProvidersTab({
         ...prevCapabilities,
         defaultCapability(newRow.id, providerId, newRow.api_model_id),
       ])
-      return [...prev, newRow]
-    })
+      setProviderModels((rows) => [...rows, newRow])
+      setSelectedRowId(newRow.id)
   }
 
   const updateProviderModel = (providerRowId: string, field: keyof ProviderModelRow, value: any) => {
@@ -451,105 +473,48 @@ export default function ProvidersTab({
   }
 
   const removeCapability = (capabilityId: string) => {
-    setProviderCapabilities((prev) => {
-      const next = prev.filter((row) => row.id !== capabilityId)
-      return next.length === prev.length ? prev : next
-    })
+    setProviderCapabilities((rows) => rows.flatMap((row) => {
+      if (row.id !== capabilityId) return [row]
+      if (row.id.startsWith("new-")) return []
+      return [{ ...row, effective_to: new Date().toISOString() }]
+    }))
   }
 
   return (
     <div className="space-y-5">
-      <section className="space-y-3 rounded-lg border p-4">
-        <div className="flex items-center justify-between">
-          <Label className="text-sm font-semibold">{tEditor("providerAvailability")}</Label>
-          <span className="text-xs text-muted-foreground">
-            {focusProviderId
-              ? tEditor("focusedProvider", { provider: focusProviderId })
-              : tEditor("providerOrder")}
-          </span>
-        </div>
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
-          {visibleProviderOptions.map((provider) => {
-            const active = selectedProviderIds.has(provider.id)
-            return (
-              <button
-                key={provider.id}
-                type="button"
-                onClick={() => toggleProvider(provider.id)}
-                className={cn(
-                  "rounded-md border px-3 py-2 text-left transition",
-                  active ? "border-primary bg-primary/5" : "bg-muted/40"
-                )}
-              >
-                <div className={cn("flex items-center gap-2", !active && "grayscale opacity-50")}>
-                  <Logo id={provider.id} alt={provider.name} width={18} height={18} />
-                  <span className="truncate text-xs">{provider.name}</span>
-                </div>
-              </button>
-            )
-          })}
-        </div>
-      </section>
-
-      <div className="space-y-4">
-        {visibleProviderModels.length === 0 ? (
-          <div className="rounded-md border border-dashed p-4 text-sm text-muted-foreground">
-            {focusProviderId
-              ? tEditor("providerNotAttached")
-              : tEditor("selectProviders")}
-          </div>
-        ) : null}
-
-        {visibleProviderModels.map((providerModel) => {
+      <div className="flex flex-col gap-3 sm:flex-row">
+        <Input aria-label={tControls("filterConnected")} placeholder={tControls("findConnected")} className="min-h-11 sm:flex-1" value={routeQuery} onChange={(event) => setRouteQuery(event.target.value)} />
+        <div className="sm:w-64"><SearchableSelect label={tControls("addProvider")} placeholder={tControls("addProvider")} value="" disabled={loading || saving} options={visibleProviderOptions.filter((provider) => !selectedProviderIds.has(provider.id)).map((provider) => ({ value: provider.id, label: provider.name, icon: <Logo id={provider.id} alt="" width={20} height={20} className="size-5 shrink-0 object-contain" /> }))} onValueChange={toggleProvider} /></div>
+      </div>
+      {loading ? <p role="status">{tControls("loading")}</p> : loadError ? <p role="alert">{loadError}</p> : <div className="divide-y border-y">
+        {matchingProviderModels.map((row) => <Button type="button" key={row.id} variant="ghost" className="h-auto min-h-20 w-full justify-start whitespace-normal rounded-none px-2 py-4 text-left" onClick={() => setSelectedRowId(row.id)}>
+          <Logo id={row.provider_id} width={24} height={24} />
+          <div className="min-w-0 flex-1"><div className="font-medium">{providerNameById.get(row.provider_id) || row.provider_id}</div><p className="mt-1 break-all text-xs font-normal text-muted-foreground">{row.provider_model_slug || row.api_model_id}</p><p className="mt-1 text-xs font-normal text-muted-foreground">{tControls("capabilityCount", { count: providerCapabilities.filter((capability) => capability.provider_row_id === row.id).length })}{row.context_length ? ` · ${tControls("contextCount", { count: row.context_length.toLocaleString(locale) })}` : ""}</p></div>
+          <Badge variant="outline">{row.is_active_gateway ? tControls("gatewayOn") : tControls("gatewayOff")}</Badge><ArrowRight className="size-4 shrink-0" />
+        </Button>)}
+        {visibleProviderModels.length > 0 && !matchingProviderModels.length ? <p className="py-8 text-center text-sm text-muted-foreground">{tControls("noMatches")}</p> : null}
+        {!visibleProviderModels.length ? <p className="py-8 text-center text-sm text-muted-foreground">{tControls("noConnected")}</p> : null}
+      </div>}
+      <Sheet open={selectedRowId !== null} onOpenChange={(open) => { if (!open && !saving) setSelectedRowId(null); }}>
+        <SheetContent inert={saving} className="data-[side=right]:w-full data-[side=right]:sm:max-w-2xl" showCloseButton={!saving}>
+        {visibleProviderModels.filter((row) => row.id === selectedRowId).map((providerModel) => {
           const providerName = providerNameById.get(providerModel.provider_id) ?? providerModel.provider_id
           const capabilityRows = providerCapabilities.filter(
             (row) => row.provider_row_id === providerModel.id
           )
 
           return (
-            <section key={providerModel.id} className="space-y-4 rounded-lg border p-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Logo id={providerModel.provider_id} alt={providerName} width={18} height={18} />
-                  <div>
-                    <div className="text-sm font-semibold">{providerName}</div>
-                    <div className="text-xs text-muted-foreground">{providerModel.provider_id}</div>
-                  </div>
-                </div>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => toggleProvider(providerModel.provider_id)}
-                  aria-label={tEditor("removeProvider", { provider: providerName })}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
-
+            <div key={providerModel.id} className="flex min-h-0 flex-1 flex-col">
+              <SheetHeader className="border-b pr-14"><SheetTitle className="flex items-center gap-3"><Logo id={providerModel.provider_id} alt="" width={24} height={24} className="size-6 object-contain" />{providerName}</SheetTitle><SheetDescription>{providerModel.provider_model_slug || providerModel.api_model_id}</SheetDescription><Link className="text-sm text-primary hover:underline" href={`/internal/data/models/edit/${modelId}?tab=pricing&provider=${encodeURIComponent(providerModel.provider_id)}&routing=1`}>{tControls("regionalRouting")}</Link></SheetHeader>
+              <fieldset disabled={saving} className="min-h-0 flex-1 overflow-y-auto p-5 [&_input]:min-h-11">
+              <Tabs defaultValue="route">
+                <TabsList className="mb-4 w-full"><TabsTrigger value="route">{tControls("route")}</TabsTrigger><TabsTrigger value="capabilities">{tEditor("capabilities")}</TabsTrigger><TabsTrigger value="policy">{tControls("dataPolicy")}</TabsTrigger></TabsList>
+                <TabsContent value="route" className="space-y-5">
               <FieldRow
-                label={tEditor("publicModelId")}
-                description={tEditor("publicModelIdDescription")}
+                label={tControls("publicModel")}
+                description={tControls("chooseModel")}
               >
-                <div>
-                  <Input
-                    list={`model-id-options-${providerModel.id}`}
-                    value={providerModel.api_model_id}
-                    onChange={(event) =>
-                      updateProviderModel(
-                        providerModel.id,
-                        "api_model_id",
-                        event.target.value.trim()
-                      )
-                    }
-                    placeholder="organisation/model-id"
-                  />
-                  <datalist id={`model-id-options-${providerModel.id}`}>
-                    {selectableModelIds.map((candidateModelId) => (
-                      <option key={`${providerModel.id}-${candidateModelId}`} value={candidateModelId} />
-                    ))}
-                  </datalist>
-                </div>
+                <SearchableSelect label={tControls("publicModel")} value={providerModel.api_model_id} options={selectableModelIds.map((value) => ({ value, label: modelNames[value] || value.split("/").pop() || tEditor("none"), icon: <Logo id={value.split("/")[0]} alt="" width={20} height={20} className="size-5 shrink-0 object-contain" /> }))} onValueChange={(value) => updateProviderModel(providerModel.id, "api_model_id", value)} />
               </FieldRow>
 
               <FieldRow label={tEditor("providerModelId")}>
@@ -587,17 +552,7 @@ export default function ProvidersTab({
               </FieldRow>
 
               <FieldRow label={tEditor("quantizationScheme")}>
-                <Input
-                  value={providerModel.quantization_scheme ?? ""}
-                  onChange={(event) =>
-                    updateProviderModel(
-                      providerModel.id,
-                      "quantization_scheme",
-                      event.target.value || null
-                    )
-                  }
-                  placeholder={tEditor("quantizationExample")}
-                />
+                <SearchableSelect label={tEditor("quantizationScheme")} value={providerModel.quantization_scheme || "__unknown__"} options={[{ value: "__unknown__", label: tEditor("notSpecified") }, ...Array.from(new Set([...QUANTIZATION_OPTIONS, ...(providerModel.quantization_scheme ? [providerModel.quantization_scheme] : [])])).map((value) => ({ value, label: value.toUpperCase() }))]} onValueChange={(value) => updateProviderModel(providerModel.id, "quantization_scheme", value === "__unknown__" ? null : value)} />
               </FieldRow>
 
               <FieldRow label={tEditor("contextOutputLimits")}>
@@ -627,34 +582,6 @@ export default function ProvidersTab({
                     placeholder={tEditor("maxOutputTokens")}
                   />
                 </div>
-              </FieldRow>
-
-              <FieldRow
-                label={tEditor("promptTrainingOverride")}
-                description={tEditor("promptTrainingOverrideDescription")}
-              >
-                <Select
-                  value={providerModel.prompt_training_policy_override ?? "__provider_default"}
-                  onValueChange={(value) =>
-                    updateProviderModel(
-                      providerModel.id,
-                      "prompt_training_policy_override",
-                      value === "__provider_default" ? null : value
-                    )
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder={tUi("select.providerDefault")} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="__provider_default">{tUi("select.providerDefault")}</SelectItem>
-                    {PROVIDER_PROMPT_TRAINING_POLICY_VALUES.map((value) => (
-                      <SelectItem key={value} value={value}>
-                        {PROVIDER_PROMPT_TRAINING_POLICY_LABELS[value]}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
               </FieldRow>
 
               <FieldRow label={tEditor("effectiveWindow")}>
@@ -744,7 +671,39 @@ export default function ProvidersTab({
                 </div>
               </FieldRow>
 
-              <div className="space-y-3 rounded-md border p-3">
+                </TabsContent>
+                <TabsContent value="policy" className="space-y-5">
+              <FieldRow
+                label={tEditor("promptTrainingOverride")}
+                description={tEditor("promptTrainingOverrideDescription")}
+              >
+                <Select
+                  value={providerModel.prompt_training_policy_override ?? "__provider_default"}
+                  onValueChange={(value) =>
+                    updateProviderModel(
+                      providerModel.id,
+                      "prompt_training_policy_override",
+                      value === "__provider_default" ? null : value
+                    )
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue>{providerModel.prompt_training_policy_override ? policyLabel(providerModel.prompt_training_policy_override) : tUi("select.providerDefault")}</SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__provider_default">{tUi("select.providerDefault")}</SelectItem>
+                    {PROVIDER_PROMPT_TRAINING_POLICY_VALUES.map((value) => (
+                      <SelectItem key={value} value={value}>
+                        {policyLabel(value)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </FieldRow>
+
+                </TabsContent>
+                <TabsContent value="capabilities" className="space-y-4">
+
                 <div className="flex items-center justify-between">
                   <Label className="text-sm font-semibold">{tEditor("capabilities")}</Label>
                   <Button
@@ -764,7 +723,8 @@ export default function ProvidersTab({
                   </p>
                 ) : null}
 
-                {capabilityRows.map((capability, index) => {
+                <Accordion type="single" collapsible>
+                {capabilityRows.map((capability) => {
                   const capabilityOptions = Array.from(
                     new Set([...CAPABILITY_OPTIONS, capability.capability_id])
                   )
@@ -775,50 +735,27 @@ export default function ProvidersTab({
                   )
 
                   return (
-                    <div key={capability.id} className="space-y-3 rounded-md border p-3">
+                    <AccordionItem value={capability.id} key={capability.id}><AccordionTrigger>{capability.capability_id} · {capability.effective_to ? tEditor("endDated") : tEditor(`capabilityStatuses.${capability.status.replace(/_([a-z0-9])/g, (_, letter: string) => letter.toUpperCase())}` as never)}</AccordionTrigger><AccordionContent><fieldset disabled={isCapabilityEnded(capability.effective_to)} className="m-0 min-w-0 space-y-4 border-0 p-0">
                       <div className="flex items-center justify-between">
                         <div className="text-xs font-medium text-muted-foreground">
-                          {tEditor("capabilityIndex", { index: index + 1 })}
+                          {tControls("editCapability")}
                         </div>
                         <Button
                           type="button"
                           variant="ghost"
-                          size="icon"
+                          disabled={Boolean(capability.effective_to)}
                           onClick={() => removeCapability(capability.id)}
-                          aria-label={tEditor("removeCapability")}
+                          aria-label={tControls("endCapability")}
                         >
-                          <Trash2 className="h-4 w-4" />
+                          End now
                         </Button>
                       </div>
 
                       <FieldRow label={tEditor("capability")}>
-                        <Select
-                          value={capability.capability_id}
-                          onValueChange={(value) => {
-                            if (usedByOther.has(value.trim().toLowerCase())) return
-                            updateCapability(capability.id, (row) => ({
-                              ...row,
-                              capability_id: value,
-                            }))
-                          }}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder={tEditor("selectCapability")} />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {capabilityOptions.map((option) => (
-                              <SelectItem
-                                key={option}
-                                value={option}
-                                disabled={usedByOther.has(option.trim().toLowerCase())}
-                              >
-                                {option}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <SearchableSelect label={tEditor("capability")} disabled={isCapabilityEnded(capability.effective_to)} value={capability.capability_id} options={capabilityOptions.map((value) => ({ value, label: value, disabled: usedByOther.has(value.trim().toLowerCase()) }))} onValueChange={(value) => updateCapability(capability.id, (row) => ({ ...row, capability_id: value }))} />
                       </FieldRow>
 
+                      <FieldRow label={tControls("supportDates")}><div className="grid gap-2 sm:grid-cols-2"><DatePickerInput value={formatDateForPicker(capability.effective_from)} onChange={(value) => updateCapability(capability.id, (row) => ({ ...row, effective_from: value || null }))} placeholder={tEditor("effectiveFrom")} /><DatePickerInput value={formatDateForPicker(capability.effective_to)} onChange={(value) => updateCapability(capability.id, (row) => ({ ...row, effective_to: value || null }))} placeholder={tEditor("ends")} /></div></FieldRow>
                       <FieldRow label={tModel("status")}>
                         <Select
                           value={capability.status}
@@ -830,7 +767,7 @@ export default function ProvidersTab({
                           }
                         >
                           <SelectTrigger>
-                            <SelectValue />
+                            <SelectValue>{tEditor(`capabilityStatuses.${capability.status.replace(/_([a-z0-9])/g, (_, letter: string) => letter.toUpperCase())}` as never)}</SelectValue>
                           </SelectTrigger>
                           <SelectContent>
                             {CAPABILITY_STATUS_OPTIONS.map((status) => (
@@ -878,14 +815,22 @@ export default function ProvidersTab({
                         </div>
                       </FieldRow>
 
-                    </div>
+                    </fieldset></AccordionContent></AccordionItem>
                   )
                 })}
-              </div>
-            </section>
+                </Accordion>
+                </TabsContent>
+              </Tabs>
+              </fieldset>
+              <SheetFooter className="border-t p-4">
+                {saveError ? <p role="alert" className="text-sm text-destructive">{saveError}</p> : savedMessage ? <p role="status" className="text-sm text-muted-foreground">{savedMessage}</p> : <p className="text-xs text-muted-foreground">{tControls("saveDescription")}</p>}
+                <div className="flex justify-between gap-2"><Button type="button" variant="ghost" disabled={saving} onClick={() => { updateProviderModel(providerModel.id, "effective_to", new Date().toISOString()); }}>{tControls("endSupport")}</Button><Button type="button" disabled={saving} onClick={() => void onSave?.()}>{saving ? tEditor("savingModel") : tControls("saveProviders")}</Button></div>
+              </SheetFooter>
+            </div>
           )
         })}
-      </div>
+        </SheetContent>
+      </Sheet>
     </div>
   )
 }

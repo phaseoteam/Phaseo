@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { fetchFrontendRecentAppRequests } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import { Clock, Zap } from "lucide-react";
 import { getLocale, getTranslations } from "next-intl/server";
+import { DisplayDateTime, DisplayNumber } from "@/components/display/DisplayValue";
 
 type RangeKey = "1h" | "1d" | "1w" | "4w" | "1m" | "1y";
 
@@ -58,14 +59,14 @@ export default async function RecentRequestsForApp({
 									<div className="font-medium">{request.model_id}</div>
 									<div className="text-sm text-muted-foreground flex items-center gap-1">
 										<Clock className="h-3 w-3" />
-										{new Intl.DateTimeFormat(locale, { dateStyle: "short", timeStyle: "short" }).format(new Date(request.created_at))}
+										<DisplayDateTime value={request.created_at} />
 									</div>
 								</div>
 							</div>
 							<div className="text-right space-y-1">
 								<div className="flex items-center gap-1 text-sm">
 									<Zap className="h-3 w-3" />
-									{new Intl.NumberFormat(locale).format(request.usage?.total_tokens ? Number(request.usage.total_tokens) : 0)} {t("tokensUnit")}
+									<DisplayNumber value={Number(request.usage?.total_tokens ?? 0)} /> {t("tokensUnit")}
 								</div>
 							</div>
 						</div>

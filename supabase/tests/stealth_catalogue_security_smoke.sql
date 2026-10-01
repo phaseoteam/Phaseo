@@ -6,7 +6,9 @@ declare
   route_policy text;
   models_page_definition text;
   pricing_definition text;
+  raw_pricing_definition text;
   overview_definition text;
+  rpc_signature text;
 begin
   if not exists (
     select 1
@@ -57,13 +59,21 @@ begin
     raise exception 'pre_lifecycle_models_page_rpc_executable_by_anon';
   end if;
 
-  if not has_function_privilege(
-    'anon',
+  -- Public HTTP routes call these RPCs through the service-role web API.
+  -- The database functions themselves must remain inaccessible to browser roles.
+  foreach rpc_signature in array array[
     'public.get_v2_public_models_page_rows(text,text)',
-    'execute'
-  ) then
-    raise exception 'redacted_models_page_rpc_not_executable_by_anon';
-  end if;
+    'public.get_v2_model_pricing(text,text,text)',
+    'public.get_v2_model_overview(text,text,text)'
+  ] loop
+    if has_function_privilege('anon', rpc_signature, 'execute')
+      or has_function_privilege('authenticated', rpc_signature, 'execute') then
+      raise exception 'service_catalogue_rpc_executable_by_browser_role: %', rpc_signature;
+    end if;
+    if not has_function_privilege('service_role', rpc_signature, 'execute') then
+      raise exception 'service_catalogue_rpc_not_executable_by_service_role: %', rpc_signature;
+    end if;
+  end loop;
 
   if has_function_privilege(
     'anon',
@@ -73,28 +83,12 @@ begin
     raise exception 'raw_model_pricing_rpc_executable_by_anon';
   end if;
 
-  if not has_function_privilege(
-    'anon',
-    'public.get_v2_model_pricing(text,text,text)',
-    'execute'
-  ) then
-    raise exception 'redacted_model_pricing_rpc_not_executable_by_anon';
-  end if;
-
   if has_function_privilege(
     'anon',
     'public.get_v2_model_overview_without_stealth_redaction(text,text,text)',
     'execute'
   ) then
     raise exception 'raw_model_overview_rpc_executable_by_anon';
-  end if;
-
-  if not has_function_privilege(
-    'anon',
-    'public.get_v2_model_overview(text,text,text)',
-    'execute'
-  ) then
-    raise exception 'redacted_model_overview_rpc_not_executable_by_anon';
   end if;
 
   if has_function_privilege(
@@ -140,6 +134,16 @@ begin
   if position('''execution_region'', null' in lower(pricing_definition)) = 0
     or position('''data_region'', null' in lower(pricing_definition)) = 0 then
     raise exception 'pricing_provider_model_regions_not_redacted';
+  end if;
+
+  select pg_get_functiondef(
+    'public.get_v2_model_pricing_without_stealth_redaction(text,text,text)'::regprocedure
+  ) into raw_pricing_definition;
+  if position('where variant.status <> ''disabled''' in raw_pricing_definition) > 0
+    or position('and route.status <> ''disabled''' in raw_pricing_definition) > 0
+    or position('variant.status as variant_status' in raw_pricing_definition) = 0
+    or position('and model.variant_routing_enabled' in raw_pricing_definition) = 0 then
+    raise exception 'public_pricing_hides_inactive_provider_routes';
   end if;
 
   select pg_get_functiondef('public.get_v2_model_overview(text,text,text)'::regprocedure)

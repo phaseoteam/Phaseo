@@ -4,27 +4,33 @@ import Link from "next/link";
 import { MapPin, Scale } from "lucide-react";
 
 import { fetchFrontendAPIProviderHeader } from "@/lib/fetchers/frontend/fetchPublicCatalog";
+import type { APIProviderHeader } from "@/lib/fetchers/api-providers/types";
 import { notFound } from "next/navigation";
 import { Logo } from "@/components/Logo";
 import APIProviderEditButton from "./edit/APIProviderEditButton";
-import AccountPolicyNotice from "../AccountPolicyNotice";
+import WorkspacePolicyNotice from "../WorkspacePolicyNotice";
 import ModelPageToc, { type ModelPageTocItem } from "../model/ModelPageToc";
 import EntityStickyHeader from "../EntityStickyHeader";
 import { Button } from "@/components/ui/button";
 import { getLocale, getTranslations } from "next-intl/server";
+import { formatLocation } from "@/lib/locations";
 
 interface APIProviderDetailShellProps {
 	apiProviderId: string;
 	children: ReactNode;
 	tocItems?: ModelPageTocItem[];
+	prefetchedHeader?: APIProviderHeader | null;
 }
 
 export default async function APIProviderDetailShell({
 	apiProviderId,
 	children,
 	tocItems = [],
+	prefetchedHeader,
 }: APIProviderDetailShellProps) {
-	const header = await fetchFrontendAPIProviderHeader(apiProviderId).catch(() => null);
+	const header = prefetchedHeader !== undefined
+		? prefetchedHeader
+		: await fetchFrontendAPIProviderHeader(apiProviderId).catch(() => null);
 	const locale = await getLocale();
 	const t = await getTranslations("Catalogue.providers");
 
@@ -72,15 +78,13 @@ export default async function APIProviderDetailShell({
 			</main>
 		);
 	}
-	const countryName = header.country_code
-		? new Intl.DisplayNames([locale], { type: "region" }).of(header.country_code.toUpperCase()) ?? header.country_code
-		: null;
+	const location = formatLocation(header.country_code, header.subdivision_code, locale);
 
 	return (
 		<main className="flex flex-col">
 			<EntityStickyHeader kind="provider" id={apiProviderId} name={header.api_provider_name} observeId="provider-detail-primary-header" baseHref={`/api-providers/${apiProviderId}`} navigation={[]} />
 			<div className="container mx-auto px-4 py-6 md:py-8">
-				<AccountPolicyNotice kind="provider" id={apiProviderId} />
+				<WorkspacePolicyNotice kind="provider" id={apiProviderId} />
 				<div id="provider-detail-primary-header" className="mb-6 flex w-full flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
 					<div className="flex min-w-0 items-center gap-4">
 						<div className="relative flex size-14 shrink-0 items-center justify-center rounded-md border border-border/70 bg-card/40">
@@ -97,11 +101,16 @@ export default async function APIProviderDetailShell({
 							<h1 className="truncate text-3xl font-bold tracking-tight">
 								{header.api_provider_name}
 							</h1>
-							{countryName ? (
+							{location ? header.country_code ? (
 								<Link href={`/countries/${header.country_code.toLowerCase()}`} className="mt-1.5 inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground hover:underline hover:underline-offset-4">
 									<MapPin className="size-3.5" />
-									{countryName}
+									{location}
 								</Link>
+							) : (
+								<span className="mt-1.5 inline-flex items-center gap-1.5 text-sm text-muted-foreground">
+									<MapPin className="size-3.5" />
+									{location}
+								</span>
 							) : null}
 						</div>
 					</div>

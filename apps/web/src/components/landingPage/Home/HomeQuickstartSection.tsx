@@ -14,6 +14,7 @@ import {
 	ArrowRight,
 	AudioLines,
 	BadgeCheck,
+	Scale,
 	ImageIcon,
 	MessageSquareText,
 	Mic,
@@ -27,6 +28,10 @@ import {
 import NumberFlow from "@number-flow/react";
 import { Logo } from "@/components/Logo";
 import { getModalityTone } from "@/lib/models/modalityStyles";
+import {
+	useDisplayFormatters,
+	useDisplayPreferences,
+} from "@/components/providers/DisplayPreferencesProvider";
 import {
 	BETA_OPEN_MODEL_INTEL,
 	type HomeModelPrices,
@@ -57,12 +62,24 @@ function HydratedNumberFlow({
 	format?: NumberFlowFormat;
 }) {
 	const isHydrated = useIsHydrated();
+	const display = useDisplayFormatters();
+	const { preferences, formattingPreferences } = useDisplayPreferences();
+	const resolvedFormat = {
+		...format,
+		notation: format?.notation ?? preferences.numberNotation,
+	} as NumberFlowFormat;
 
 	if (!isHydrated) {
-		return <>{new Intl.NumberFormat("en-US", format).format(value)}</>;
+		return <>{display.number(value, resolvedFormat)}</>;
 	}
 
-	return <NumberFlow value={value} format={format} />;
+	return (
+		<NumberFlow
+			value={value}
+			format={resolvedFormat}
+			locales={formattingPreferences.locale}
+		/>
+	);
 }
 
 const BENEFITS_DEFAULT: Benefit[] = [
@@ -382,7 +399,7 @@ function UptimeVisual({ variant = "default" }: { variant?: QuickstartVariant }) 
 									/>
 								</span>
 								<span className="whitespace-nowrap text-[12px] font-semibold leading-none text-zinc-950 dark:text-zinc-50">
-									Claude Fable 5
+									Claude Fable 5.1
 								</span>
 							</div>
 						</div>
@@ -454,7 +471,7 @@ function UptimeVisual({ variant = "default" }: { variant?: QuickstartVariant }) 
 							className="object-contain object-center"
 						/>
 					</span>
-					<span>anthropic/claude-fable-5</span>
+					<span>anthropic/claude-fable-5.1</span>
 				</div>
 				<div className="relative mt-1 h-[98px] w-full max-w-[220px]">
 					<svg viewBox="0 0 220 98" className="absolute inset-0 h-full w-full" aria-hidden="true">
@@ -493,6 +510,7 @@ function UptimeVisual({ variant = "default" }: { variant?: QuickstartVariant }) 
 
 const WORKLOADS = [
 	{ id: "text", icon: MessageSquareText, tone: "text" },
+	{ id: "decisions", icon: Scale, tone: "decisions" },
 	{ id: "images", icon: ImageIcon, tone: "image" },
 	{ id: "video", icon: Video, tone: "video" },
 	{ id: "textToSpeech", icon: Mic, tone: "audio_tts" },
@@ -582,7 +600,7 @@ function ObservabilityVisual() {
 	const requests = [
 		{
 			providerId: "openai",
-			model: "GPT-5.6 Sol",
+			model: "GPT-6 Astra",
 			path: "/v1/responses",
 			latency: "612 ms",
 			throughput: "91 tok/s",
@@ -593,7 +611,7 @@ function ObservabilityVisual() {
 		},
 		{
 			providerId: "anthropic",
-			model: "Claude Fable 5",
+			model: "Claude Fable 5.1",
 			path: "/v1/messages",
 			latency: "958 ms",
 			throughput: "61 tok/s",
@@ -604,7 +622,7 @@ function ObservabilityVisual() {
 		},
 		{
 			providerId: "google",
-			model: "Gemini 3.1 Pro",
+			model: "Gemini 3.8 Flash",
 			path: "/v1/generate",
 			latency: "684 ms",
 			throughput: "88 tok/s",
@@ -615,7 +633,7 @@ function ObservabilityVisual() {
 		},
 		{
 			providerId: "x-ai",
-			model: "Grok 4.5",
+			model: "Grok 4.6",
 			path: "/v1/chat",
 			latency: "488 ms",
 			throughput: "112 tok/s",

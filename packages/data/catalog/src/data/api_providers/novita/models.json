@@ -4392,7 +4392,7 @@
     "api_model_id": "minimax/minimax-m2.5-highspeed",
     "provider_api_model_id": "novita:minimax/minimax-m2.5-highspeed",
     "provider_model_slug": "minimax/minimax-m2.5-highspeed",
-    "internal_model_id": "minimax/minimax-m2.5",
+    "internal_model_id": "minimax/minimax-m2.5-highspeed",
     "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text",
@@ -5381,174 +5381,6 @@
       "status": "verified",
       "checked_at": "2026-08-20T00:00:00Z",
       "notes": "Verified from Novita's first-party pricing catalog and model detail page."
-    },
-    "rate_limits": []
-  },
-  {
-    "api_model_id": "nex-agi/nex-n2-pro",
-    "provider_api_model_id": "novita:nex-agi/nex-n2-pro",
-    "provider_model_slug": "nex-agi/nex-n2-pro",
-    "internal_model_id": "nex-agi/nex-n2-pro",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text,image",
-    "output_modalities": "text",
-    "context_length": 262144,
-    "max_output_tokens": 262144,
-    "effective_from": "2026-06-05T00:00:00",
-    "effective_to": "2026-08-20T00:00:00Z",
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "inactive",
-        "params": [
-          {
-            "param_id": "max_tokens",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          },
-          {
-            "param_id": "seed",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          },
-          {
-            "param_id": "frequency_penalty",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          },
-          {
-            "param_id": "presence_penalty",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          },
-          {
-            "param_id": "repetition_penalty",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          },
-          {
-            "param_id": "stop",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          },
-          {
-            "param_id": "temperature",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          },
-          {
-            "param_id": "top_p",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          },
-          {
-            "param_id": "top_k",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          },
-          {
-            "param_id": "min_p",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          },
-          {
-            "param_id": "logit_bias",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          },
-          {
-            "param_id": "logprobs",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          },
-          {
-            "param_id": "top_logprobs",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          },
-          {
-            "param_id": "tools",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          },
-          {
-            "param_id": "structured_outputs",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          },
-          {
-            "param_id": "include_reasoning",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          }
-        ],
-        "reasoning": null,
-        "tool_call": null,
-        "structured_output": null,
-        "temperature": null,
-        "attachment": null,
-        "input_modalities": null,
-        "output_modalities": null,
-        "modes": []
-      }
-    ],
-    "routing_status": "inactive",
-    "routable": false,
-    "regions": {
-      "execution": null,
-      "data": null
-    },
-    "service_tiers": [],
-    "api": {
-      "formats": [],
-      "endpoint": null,
-      "deployment": null
-    },
-    "sources": [
-      {
-        "kind": "provider_pricing",
-        "url": "https://novita.ai/pricing?de=1",
-        "accessed_at": "2026-08-20T00:00:00Z",
-        "notes": "Not listed in Novita's current serverless LLM catalog during the 2026-08-20 provider audit."
-      }
-    ],
-    "verification": {
-      "status": "verified",
-      "checked_at": "2026-08-20T00:00:00Z",
-      "notes": "Historical Novita route retained but marked inactive because it is absent from the current first-party serverless catalog."
     },
     "rate_limits": []
   },
@@ -11288,5 +11120,199 @@
       "notes": "Verified from Novita's first-party live model payload."
     },
     "rate_limits": []
+  },
+  {
+    "api_model_id": "inclusionai/ling-3.0-flash-sante",
+    "provider_api_model_id": "novita:inclusionai/ling-3.0-flash-sante",
+    "provider_model_slug": "inclusionai/ling-3.0-flash-sante",
+    "internal_model_id": "inclusionai/ling-3.0-flash-sante",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 262144,
+    "max_output_tokens": 32768,
+    "effective_from": "2026-09-03T03:39:27Z",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [
+          "max_tokens",
+          "temperature",
+          "top_p",
+          "stop",
+          "frequency_penalty",
+          "presence_penalty",
+          "seed",
+          "tools",
+          "tool_choice",
+          "reasoning",
+          "include_reasoning"
+        ],
+        "reasoning": true,
+        "tool_call": true,
+        "structured_output": false,
+        "temperature": true,
+        "attachment": false,
+        "input_modalities": [
+          "text"
+        ],
+        "output_modalities": [
+          "text"
+        ],
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": true,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [
+      "standard"
+    ],
+    "api": {
+      "formats": [
+        "openai.chat.completions"
+      ],
+      "endpoint": "https://api.novita.ai/openai/v1/chat/completions",
+      "deployment": "serverless"
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://api.novita.ai/openai/v1/models",
+        "accessed_at": "2026-09-03T03:39:27Z",
+        "notes": "Novita's live model catalogue reports the exact slug, description, 256K context, 32K maximum output, text modalities, function calling, reasoning, serverless chat endpoint, and zero token prices."
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-09-03T03:39:27Z",
+      "notes": "Verified from Novita's first-party OpenAI-compatible model inventory."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "inclusionai/ling-3.0-flash-vl",
+    "provider_api_model_id": "novita:inclusionai/ling-3.0-flash-vl",
+    "provider_model_slug": "inclusionai/ling-3.0-flash-vl",
+    "internal_model_id": "inclusionai/ling-3.0-flash-vl",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text,image,video",
+    "output_modalities": "text",
+    "context_length": 262144,
+    "max_output_tokens": 32768,
+    "effective_from": "2026-09-03T03:37:52Z",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [
+          "max_tokens",
+          "temperature",
+          "top_p",
+          "stop",
+          "frequency_penalty",
+          "presence_penalty",
+          "seed",
+          "tools",
+          "tool_choice",
+          "reasoning",
+          "include_reasoning"
+        ],
+        "reasoning": true,
+        "tool_call": true,
+        "structured_output": false,
+        "temperature": true,
+        "attachment": true,
+        "input_modalities": [
+          "text",
+          "image",
+          "video"
+        ],
+        "output_modalities": [
+          "text"
+        ],
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": true,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [
+      "standard"
+    ],
+    "api": {
+      "formats": [
+        "openai.chat.completions"
+      ],
+      "endpoint": "https://api.novita.ai/openai/v1/chat/completions",
+      "deployment": "serverless"
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://api.novita.ai/openai/v1/models",
+        "accessed_at": "2026-09-03T03:37:52Z",
+        "notes": "Novita's live model catalogue reports the exact slug, description, 256K context, 32K maximum output, text/image/video modalities, function calling, reasoning, serverless chat endpoint, and zero token prices."
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-09-03T03:37:52Z",
+      "notes": "Verified from Novita's first-party OpenAI-compatible model inventory."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "bytedance/seedance-1.5-pro",
+    "provider_api_model_id": "novita:bytedance/seedance-1.5-pro",
+    "provider_model_slug": "seedance-v1.5-pro",
+    "internal_model_id": "bytedance/seedance-1.5-pro",
+    "is_active_gateway": true,
+    "input_modalities": "text,image",
+    "output_modalities": "video",
+    "effective_from": "2026-09-06T00:00:00Z",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "video.generate",
+        "status": "active",
+        "params": [
+          "seconds",
+          "duration",
+          "resolution",
+          "aspect_ratio",
+          "generate_audio",
+          "input_references",
+          "frame_images",
+          "provider_options",
+          "seed"
+        ],
+        "input_modalities": [
+          "text",
+          "image"
+        ],
+        "output_modalities": [
+          "video"
+        ]
+      }
+    ],
+    "sources": [
+      {
+        "url": "https://blogs.novita.ai/seedance-1-5-pro-on-novita-ai-complete-developer-guide/",
+        "accessed_at": "2026-09-06T00:00:00Z",
+        "notes": "Model-specific /v3/async/seedance-v1.5-pro-t2v and -i2v contracts replace the unified endpoint that returned 404. Restricted to published 480p/720p standard-service prices. Request mapping and durable polling covered by deterministic tests; corrected endpoint has not been tested with authenticated inference."
+      }
+    ]
   }
 ]

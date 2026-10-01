@@ -37,6 +37,19 @@ async function encryptedRow(args: { useAad: boolean; workspaceId?: string; provi
 describe("decryptBYOK", () => {
 	beforeEach(() => getByokKeyMock.mockReset());
 
+	it("imports once per version within a hydration and imports anew for the next request", async () => {
+		const row = await encryptedRow({ useAad: true });
+		const importKey = vi.spyOn(crypto.subtle, "importKey");
+		try {
+			const keys = new Map<number, Promise<CryptoKey>>();
+			const decrypted = await Promise.all(Array.from({ length: 12 }, () => decryptBYOK({ ...row, enc_aad_version: 1 }, keys)));
+			expect(decrypted.every((bytes) => bytesToString(bytes) === "sk-test-secret")).toBe(true);
+			expect(importKey).toHaveBeenCalledTimes(1);
+			await decryptBYOK({ ...row, enc_aad_version: 1 }, new Map());
+			expect(importKey).toHaveBeenCalledTimes(2);
+		} finally { importKey.mockRestore(); }
+	});
+
 	it("decrypts context-bound ciphertext and rejects a moved row", async () => {
 		const row = await encryptedRow({ useAad: true });
 		const plaintext = await decryptBYOK({ ...row, enc_aad_version: 1 });

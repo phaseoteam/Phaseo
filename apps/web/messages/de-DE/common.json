@@ -31,7 +31,8 @@
 		"personalWorkspace": "Persönlicher Arbeitsbereich",
 		"releaseAnnouncement": "Phaseo Gateway ist da",
 		"newRelease": "Neue Version",
-		"readDocs": "Dokumentation lesen"
+		"readDocs": "Dokumentation lesen",
+		"manageCatalog": "Katalog verwalten"
 	},
 	"footer": {
 		"models": "Modelle",
@@ -73,7 +74,9 @@
 		"github": "GitHub",
 		"linkedin": "LinkedIn",
 		"reddit": "Reddit",
-		"x": "X"
+		"x": "X",
+		"helpLabel": "Hilfe:",
+		"needHelp": "Brauchst du Hilfe mit Phaseo?"
 	},
 	"search": {
 		"openPalette": "Befehlspalette öffnen",
@@ -261,7 +264,16 @@
 				"nav-contact": "Kontakt"
 			}
 		},
-		"searchDataUnavailable": "Suchdaten konnten nicht geladen werden."
+		"searchDataUnavailable": "Suchdaten konnten nicht geladen werden.",
+		"countries": "Länder",
+		"subscriptionPlans": "Abonnementpläne",
+		"documentation": "Dokumentation",
+		"searchPhaseo": "Phaseo durchsuchen",
+		"recent": "Zuletzt verwendet",
+		"settings": "Einstellungen",
+		"inThisArea": "In diesem Bereich",
+		"clearRecent": "Zuletzt verwendete Einträge löschen",
+		"clear": "Löschen"
 	},
 	"theme": {
 		"group": "Darstellung",
@@ -533,12 +545,18 @@
 				"guardrails": "Leitplanken und Richtlinieneinstellungen",
 				"budgets": "Team-Ausgabenbudgets und Nutzung",
 				"managementKeys": "Metadaten der Verwaltungsschlüssel auf Maschinenebene",
-				"oauthApps": "OAuth-App- und Integrationseinstellungen"
+				"oauthApps": "OAuth-App- und Integrationseinstellungen",
+				"privateModels": "private Modelle des Arbeitsbereichs"
 			},
 			"managePermissions": "Berechtigungen verwalten",
 			"additionalPermissionsDescription": "Diese Anwendung kann jetzt weitere Berechtigungen anfordern. Dein aktueller Zugriff hat sich nicht geändert. Starte oben über „Erneut autorisieren“ eine neue Anfrage in der Anwendung.",
 			"updatePermissionsFailed": "Berechtigungen konnten nicht aktualisiert werden. Versuche es erneut.",
 			"firstPartyDescription": "Offizielle Phaseo-CLI zum Anmelden, Verwalten von Teams und Erstellen von Schlüsseln."
+		},
+		"callback": {
+			"redirecting": "Weiterleitung…",
+			"redirectingToError": "Weiterleitung zur Anmeldefehlerseite…",
+			"continue": "Weiter"
 		}
 	},
 	"dropdown": {
@@ -564,14 +582,18 @@
 				"details": "Details",
 				"benchmarks": "Vergleichstests",
 				"pricing": "Preise",
-				"providers": "Anbieter"
+				"providers": "Anbieter",
+				"identity": "Identität",
+				"notice": "Hinweis"
 			},
 			"tabHelpers": {
 				"basic": "Grundlegende Modellinformationen bearbeiten",
 				"details": "Modalitäten, Details und Links bearbeiten",
 				"benchmarks": "Benchmark-Ergebnisse verwalten",
 				"pricing": "Preisregeln konfigurieren",
-				"providers": "Anbieterzuordnungen und Funktionen konfigurieren"
+				"providers": "Anbieterzuordnungen und Funktionen konfigurieren",
+				"identity": "Verwalte stabile Aliasse und prüfe die Modellhistorie.",
+				"notice": "Veröffentliche eine Information, Warnung oder kritische Meldung auf der Modellseite."
 			},
 			"loadingError": "Modell konnte nicht geladen werden.",
 			"savingModel": "Modell wird gespeichert…",
@@ -830,7 +852,48 @@
 			"editModelDescription": "Modellinformationen aktualisieren. Änderungen werden direkt in der Datenbank gespeichert.",
 			"modelIdCannotChange": "Die Modell-ID kann nicht geändert werden.",
 			"organisationCannotChange": "Die Organisation kann nicht geändert werden.",
-			"none": "Keine"
+			"none": "Keine",
+			"notSpecified": "Nicht angegeben",
+			"proprietary": "Proprietär",
+			"recommendedSuccessor": "Empfohlener Nachfolger",
+			"selectRecommendedSuccessor": "Empfohlenen Nachfolger auswählen",
+			"recommendedSuccessorDescription": "Wird in Abkündigungshinweisen angezeigt; unabhängig von der Modellabstammung.",
+			"endDated": "Enddatum gesetzt",
+			"discardDraft": "Entwurf verwerfen",
+			"endNow": "Jetzt beenden",
+			"ends": "Endet",
+			"noEndDate": "Kein Enddatum",
+			"planMembershipDescription": "Planmitgliedschaft hinzufügen oder deren Enddatum festlegen.",
+			"addPlan": "Plan hinzufügen",
+			"findPlan": "Abonnementplan suchen…",
+			"noPlanMemberships": "Noch keine Planmitgliedschaften.",
+			"oneTime": "Einmalig",
+			"billingFrequency": "Abrechnungshäufigkeit",
+			"providerControls": {
+				"filterConnected": "Verbundene Anbieter filtern",
+				"findConnected": "Verbundenen Anbieter suchen…",
+				"addProvider": "Anbieter hinzufügen",
+				"publicModel": "Öffentliches Modell",
+				"chooseModel": "Wähle ein Modell aus dem Katalog.",
+				"supportDates": "Zeitraum der Unterstützung",
+				"loadFailed": "Anbieter konnten nicht geladen werden",
+				"loading": "Anbieter werden geladen…",
+				"gatewayOn": "Gateway an",
+				"gatewayOff": "Gateway aus",
+				"noMatches": "Keine passenden Anbieter.",
+				"noConnected": "Keine verbundenen Anbieter. Wähle Anbieter hinzufügen, um zu beginnen.",
+				"regionalRouting": "Einstellungen für regionales Routing",
+				"route": "Route",
+				"dataPolicy": "Datenrichtlinie",
+				"editCapability": "Funktion bearbeiten",
+				"endCapability": "Enddatum der Funktion festlegen",
+				"saveDescription": "Änderungen werden mit allen Anbietern für dieses Modell gespeichert.",
+				"endSupport": "Unterstützung jetzt beenden",
+				"saveProviders": "Anbieter speichern",
+				"capabilityCount": "{count, plural, one {# Funktion} other {# Funktionen}}",
+				"contextCount": "{count} Kontext"
+			},
+			"refreshAfterSave": "Erfolgreich gespeichert. Lade die Seite neu, um den Editor vor weiteren Änderungen zu aktualisieren."
 		},
 		"auditDataTable": {
 			"actions": "Aktionen",
@@ -896,7 +959,9 @@
 				"multimodal": "Multimodal",
 				"embedding": "Einbettungen",
 				"rerank": "Reranking",
-				"moderation": "Moderation"
+				"moderation": "Moderation",
+				"structured": "Strukturierte Daten",
+				"decisions": "Decisions"
 			},
 			"form": {
 				"core": "Grunddaten",
@@ -1253,7 +1318,8 @@
 			"moderation": "Moderation",
 			"embeddings": "Embeddings",
 			"ocr": "OCR",
-			"rerank": "Reranking"
+			"rerank": "Reranking",
+			"decisions": "Entscheidungen"
 		},
 		"feedbackPrompt": "Teile uns mit, was bei Phaseo klarer, schneller oder nützlicher sein könnte.",
 		"formTypes": {
@@ -1319,7 +1385,8 @@
 			"auto": "Automatisch",
 			"concise": "Kurz",
 			"detailed": "Ausführlich",
-			"autoDefault": "Automatisch (Standard: {model})"
+			"autoDefault": "Automatisch (Standard: {model})",
+			"instant": "Sofort"
 		},
 		"quickstart": {
 			"error4xx": "4xx · Bei der Anfrage ist eine Aktion erforderlich",
@@ -1545,7 +1612,12 @@
 			"resetConfirmDescription": "Standardanbieter, Prompt-, Streaming- und Sampling-Einstellungen dieses Modells werden wiederhergestellt.",
 			"applyToAll": "Auf alle anwenden",
 			"currentModel": "Aktuelles Modell",
-			"chooseModelSettings": "Wähle das Modell für diese Einstellungen aus"
+			"chooseModelSettings": "Wähle das Modell für diese Einstellungen aus",
+			"reasoningEffort": "Denkaufwand",
+			"selectEffort": "Aufwand auswählen",
+			"noEffortValues": "Dieses Modell meldet keine auswählbaren Denkstufen.",
+			"gatewayDefault": "Gateway-Standard:",
+			"off": "Aus"
 		},
 		"requestsTable": {
 			"loading": "Anfragen werden geladen",
@@ -1652,7 +1724,8 @@
 				"availabilityMayDecrease": "Dadurch können weniger Ausweichrouten verfügbar sein.",
 				"availabilityWarning": "Warnung zur Verfügbarkeit",
 				"availabilityWarningDescription": "Eine Zulassungsliste kann Ausweichrouten entfernen. Lasse für wichtige Abläufe mindestens zwei Anbieter aktiviert."
-			}
+			},
+			"saveWorkspacePolicyFailed": "Die Datenrichtlinie des Arbeitsbereichs konnte nicht gespeichert werden"
 		},
 		"rankings": {
 			"noDataTitle": "Noch keine Ranglistendaten",
@@ -1873,7 +1946,17 @@
 			"workspaceCopyFailed": "Die Arbeitsbereichs-ID konnte nicht kopiert werden.",
 			"switching": "Arbeitsbereich wird gewechselt…",
 			"switched": "Zu {workspace} gewechselt.",
-			"switchFailed": "Wechsel zu {workspace} fehlgeschlagen. Bitte versuchen Sie es erneut."
+			"switchFailed": "Wechsel zu {workspace} fehlgeschlagen. Bitte versuchen Sie es erneut.",
+			"chooseNamed": "Arbeitsbereich auswählen: {workspace}",
+			"searchAll": "Alle Arbeitsbereiche durchsuchen",
+			"searching": "Arbeitsbereiche werden gesucht…",
+			"searchFailed": "Arbeitsbereiche konnten nicht durchsucht werden.",
+			"tryAgain": "Erneut versuchen",
+			"noResults": "Keine Arbeitsbereiche gefunden.",
+			"enterMore": "Gib ein weiteres Zeichen ein, um alle Arbeitsbereiche zu durchsuchen.",
+			"noneAvailable": "Keine Arbeitsbereiche verfügbar.",
+			"searchResults": "Suchergebnisse",
+			"loadingMore": "Weitere werden geladen…"
 		}
 	}
 }

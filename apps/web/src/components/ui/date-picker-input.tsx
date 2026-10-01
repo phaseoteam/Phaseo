@@ -11,6 +11,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider"
 
 function parseDateInput(value: string | null | undefined): Date | undefined {
   if (!value) return undefined
@@ -44,16 +45,6 @@ const DATE_PICKER_LOCALES = {
   "zh-Hans": zhCN,
 } as const
 
-function formatDateLabel(value: string, locale: string): string {
-  const date = parseDateInput(value)
-  if (!date) return value
-  return date.toLocaleDateString(locale, {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  })
-}
-
 interface DatePickerInputProps {
   id?: string
   value: string
@@ -75,6 +66,7 @@ export function DatePickerInput({
 }: DatePickerInputProps) {
   const locale = useLocale()
   const t = useTranslations("Common.ui.datePicker")
+  const format = useDisplayFormatters()
   const selected = parseDateInput(value)
 
   return (
@@ -93,7 +85,7 @@ export function DatePickerInput({
             )}
           >
             <CalendarIcon className="mr-2 h-4 w-4" />
-            {value ? formatDateLabel(value, locale) : placeholder ?? t("pickDate")}
+            {value ? format.calendarDate(`${value}T00:00:00.000Z`, value) : placeholder ?? t("pickDate")}
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-auto p-0" align="start">

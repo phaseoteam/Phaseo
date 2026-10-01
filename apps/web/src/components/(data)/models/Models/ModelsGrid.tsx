@@ -5,7 +5,12 @@ import { ModelCard } from "@/components/(data)/models/Models/ModelCard";
 import type { ModelCard as ModelCardType } from "@/lib/fetchers/models/getAllModels";
 
 type ModelCardLike = Omit<ModelCardType, "gateway_status"> & {
-	gateway_status?: ModelCardType["gateway_status"] | "coming_soon" | null;
+	gateway_status?:
+		| ModelCardType["gateway_status"]
+		| "coming_soon"
+		| "deprecated"
+		| "retired"
+		| null;
 	router_requests_30d?: number | null;
 	router_spend_nanos_30d?: number | null;
 };
@@ -162,6 +167,8 @@ function ModelsGridContent({
 	}, [rows.length, columns]);
 
 	if (virtualRows.length > 0) {
+		// The virtualizer's last stable measurement is an imperative cache, not render state.
+		// eslint-disable-next-line react-hooks/refs
 		lastNonEmptyVirtualRowsRef.current = virtualRows;
 	}
 
@@ -200,7 +207,9 @@ function ModelsGridContent({
 		);
 	}
 
+	// Reading the imperative cache avoids a blank frame while the virtualizer recalculates.
 	const rowsToRender =
+		// eslint-disable-next-line react-hooks/refs
 		virtualRows.length > 0 ? virtualRows : lastNonEmptyVirtualRowsRef.current;
 
 	return (

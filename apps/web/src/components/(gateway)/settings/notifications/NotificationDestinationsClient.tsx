@@ -1,8 +1,8 @@
 "use client";
+import { useSettingsWrite } from "../PrivateSettingsQuery";
 
 import * as React from "react";
-import Image from "next/image";
-import { BellRing, Globe2, Mail, Plus, Trash2, X } from "lucide-react";
+import { BellRing, ChevronDown, Plus, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import { localizedSettingsError } from "@/i18n/error-messages";
 import { useTranslations } from "next-intl";
@@ -21,45 +21,18 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Switch } from "@/components/ui/switch";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import type { NotificationDestination, NotificationEventKind } from "@/lib/fetchers/internal/settingsTypes";
 import { cn } from "@/lib/utils";
-import NotificationRouteSelector from "./NotificationRouteSelector";
+import NotificationRouteSelector from "@/components/(gateway)/settings/notifications/NotificationRouteSelector";
+import { providers } from "@/components/(gateway)/settings/notifications/notificationProviders";
 
 type DestinationType = NotificationDestination["type"];
-type ProviderIconProps = { className?: string };
-type ProviderDefinition = { type: DestinationType; name: string; placeholder: string; icon: React.ComponentType<ProviderIconProps>; color: string };
-type LocalizedProvider = ProviderDefinition & { description: string; field: string };
-
-function DiscordIcon({ className }: ProviderIconProps) {
-	return <Image src="/social/discord.svg" alt="" width={24} height={19} className={className} />;
-}
-
-function SlackIcon({ className }: ProviderIconProps) {
-	return (
-		<svg viewBox="0 0 24 24" aria-hidden="true" className={className}>
-			<path fill="#36C5F0" d="M5.1 14.4a2.1 2.1 0 1 1-2.1-2.1h2.1v2.1Zm1.05 0a2.1 2.1 0 0 1 4.2 0v5.25a2.1 2.1 0 1 1-4.2 0V14.4Z" />
-			<path fill="#2EB67D" d="M9.6 5.1A2.1 2.1 0 1 1 11.7 3v2.1H9.6Zm0 1.05a2.1 2.1 0 0 1 0 4.2H4.35a2.1 2.1 0 1 1 0-4.2H9.6Z" />
-			<path fill="#ECB22E" d="M18.9 9.6a2.1 2.1 0 1 1 2.1 2.1h-2.1V9.6Zm-1.05 0a2.1 2.1 0 0 1-4.2 0V4.35a2.1 2.1 0 1 1 4.2 0V9.6Z" />
-			<path fill="#E01E5A" d="M14.4 18.9a2.1 2.1 0 1 1-2.1 2.1v-2.1h2.1Zm0-1.05a2.1 2.1 0 0 1 0-4.2h5.25a2.1 2.1 0 1 1 0 4.2H14.4Z" />
-		</svg>
-	);
-}
-
-function TeamsIcon({ className }: ProviderIconProps) {
-	return <Image src="/logos/microsoft-teams.svg" alt="" width={24} height={25} className={className} />;
-}
-
-const providers: ProviderDefinition[] = [
-	{ type: "email", name: "Email", placeholder: "alerts@company.com", icon: Mail, color: "text-emerald-500 bg-emerald-500/10" },
-	{ type: "discord", name: "Discord", placeholder: "https://discord.com/channels/…", icon: DiscordIcon, color: "bg-[#5865F2]/10" },
-	{ type: "discord_webhook", name: "Discord Webhook", placeholder: "https://discord.com/api/webhooks/…", icon: DiscordIcon, color: "bg-[#5865F2]/10" },
-	{ type: "slack", name: "Slack", placeholder: "https://hooks.slack.com/services/…", icon: SlackIcon, color: "bg-background" },
-	{ type: "microsoft_teams", name: "Microsoft Teams", placeholder: "https://…webhook.office.com/…", icon: TeamsIcon, color: "bg-[#6264A7]/10" },
-	{ type: "custom_webhook", name: "Custom Webhook", placeholder: "https://api.company.com/phaseo", icon: Globe2, color: "text-cyan-500 bg-cyan-500/10" },
-];
-
+type NotificationTestKind = "notification_test" | "model_deprecation";
+type LocalizedProvider = (typeof providers)[number] & { description: string; field: string };
 
 export default function NotificationDestinationsClient({ initialDestinations, initialModelDeprecationEnabled, initialNotificationRoutes }: { initialDestinations: NotificationDestination[]; initialModelDeprecationEnabled: boolean; initialNotificationRoutes: Partial<Record<NotificationEventKind, string[]>> }) {
+	const write = useSettingsWrite();
 	const t = useTranslations("SettingsUI");
 	const localizedProviders = providers.map((provider) => {
 		const key = "notificationCopy.providers." + provider.type;
@@ -96,7 +69,27 @@ export default function NotificationDestinationsClient({ initialDestinations, in
 	function discordMentionFields(type: "discord" | "discord_webhook") { return <div className="grid gap-3 sm:grid-cols-2"><div className="space-y-2"><Label htmlFor={`${type}-user-ids`}>{s("Ping user IDs")} <span className="font-normal text-muted-foreground">({s("optional")})</span></Label><Input className="rounded-md" id={`${type}-user-ids`} value={discordMentions[type]?.userIds ?? ""} onChange={(event) => setDiscordMentions((current) => ({ ...current, [type]: { userIds: event.target.value, roleIds: current[type]?.roleIds ?? "" } }))} placeholder="123…, 456…" /></div><div className="space-y-2"><Label htmlFor={`${type}-role-ids`}>{s("Ping role IDs")} <span className="font-normal text-muted-foreground">({s("optional")})</span></Label><Input className="rounded-md" id={`${type}-role-ids`} value={discordMentions[type]?.roleIds ?? ""} onChange={(event) => setDiscordMentions((current) => ({ ...current, [type]: { userIds: current[type]?.userIds ?? "", roleIds: event.target.value } }))} placeholder="123…, 456…" /></div></div>; }
 	function slackMentionFields() { return <div className="grid gap-3 sm:grid-cols-2"><div className="space-y-2"><Label htmlFor="slack-user-ids">{s("Ping user IDs")} <span className="font-normal text-muted-foreground">({s("optional")})</span></Label><Input className="rounded-md" id="slack-user-ids" value={slackMentions.userIds} onChange={(event) => setSlackMentions((current) => ({ ...current, userIds: event.target.value }))} placeholder="U012…, U034…" /></div><div className="space-y-2"><Label htmlFor="slack-user-group-ids">{s("Ping user group IDs")} <span className="font-normal text-muted-foreground">({s("optional")})</span></Label><Input className="rounded-md" id="slack-user-group-ids" value={slackMentions.userGroupIds} onChange={(event) => setSlackMentions((current) => ({ ...current, userGroupIds: event.target.value }))} placeholder="S012…, S034…" /></div></div>; }
 	function teamsMentionFields() { return <div className="space-y-2"><Label htmlFor="teams-mention-ids">{s("Ping users")} <span className="font-normal text-muted-foreground">({s("optional")})</span></Label><Input className="rounded-md" id="teams-mention-ids" value={teamsMentionIds} onChange={(event) => setTeamsMentionIds(event.target.value)} placeholder="alex@company.com, 123e4567-e89b-12d3-a456-426614174000" /><p className="text-xs text-muted-foreground">{t("notificationCopy.teamsMentionHelp")}</p></div>; }
-	function sendConfigurationTest(type: DestinationType) { toast.promise(testNotificationConfiguration({ type, target: targetForType(type) }), { loading: `${s("Sending")} ${providerByType.get(type)?.name ?? s("channel")} ${s("test")}…`, success: s("Test notification delivered"), error: (error) => localizedSettingsError(error, t, "Could not send test") }); }
+	async function sendNotificationTest(action: () => Promise<{ ok: true; status?: number } | { ok: false; error: string }>, loadingMessage: string) {
+		const toastId = toast.loading(loadingMessage);
+		try {
+			const result = await action();
+			if (!result.ok) {
+				toast.error(localizedSettingsError(result.error, t, "Could not send test"), { id: toastId });
+				return;
+			}
+			toast.success(s("Test notification delivered"), { id: toastId });
+		} catch (error) {
+			toast.error(localizedSettingsError(error, t, "Could not send test"), { id: toastId });
+		}
+	}
+
+	function sendConfigurationTest(type: DestinationType) {
+		void sendNotificationTest(() => testNotificationConfiguration({ type, target: targetForType(type) }), t("notificationCopy.sendingChannelTest", { channel: providerByType.get(type)?.name ?? s("channel") }));
+	}
+	function sendDestinationTest(destinationId: string, kind: NotificationTestKind) {
+		const isModelDeprecation = kind === "model_deprecation";
+		void sendNotificationTest(() => testNotificationDestination(destinationId, kind), isModelDeprecation ? t("notificationCopy.sendingDeprecationTest") : t("notificationCopy.sendingTest"));
+	}
 	function addEmail() {
 		const email = emailDraft.trim().toLowerCase();
 		if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { if (email) toast.error(s("Enter a valid email address")); return; }
@@ -104,7 +97,7 @@ export default function NotificationDestinationsClient({ initialDestinations, in
 	}
 	async function removeDestination(destinationId: string) {
 		setSaving(true);
-		try { await deleteNotificationDestination(destinationId); setDestinations((current) => current.filter((entry) => entry.id !== destinationId)); toast.success(s("Destination removed")); }
+		try { await write(deleteNotificationDestination(destinationId)); setDestinations((current) => current.filter((entry) => entry.id !== destinationId)); toast.success(s("Destination removed")); }
 		catch (error) { toast.error(localizedSettingsError(error, t, "Could not remove destination")); }
 		finally { setSaving(false); }
 	}
@@ -112,7 +105,7 @@ export default function NotificationDestinationsClient({ initialDestinations, in
 		if (!name.trim()) return;
 		setSaving(true);
 		try {
-			const created = await Promise.all(selectedTypes.map((type) => createNotificationDestination({ name: name.trim(), type, target: targetForType(type) })));
+			const created = await Promise.all(selectedTypes.map((type) => write(createNotificationDestination({ name: name.trim(), type, target: targetForType(type) }))));
 			setDestinations((current) => [...created, ...current]); setOpen(false); resetSheet(); toast.success(created.length === 1 ? s("Destination created") : `${created.length} ${s("destinations created")}`);
 		} catch (error) { toast.error(localizedSettingsError(error, t, "Could not create destination")); }
 		finally { setSaving(false); }
@@ -127,7 +120,7 @@ export default function NotificationDestinationsClient({ initialDestinations, in
 						<div><h3 className="text-sm font-medium">{s("Model Deprecation Alerts")}</h3><p className="mt-0.5 text-sm text-muted-foreground">{s("Get notice before a model your workspace uses is retired.")}</p></div>
 						<div className="flex shrink-0 items-center gap-2 self-end sm:self-auto"><NotificationRouteSelector destinations={destinations} eventKind="model_deprecation" initialDestinationIds={initialNotificationRoutes.model_deprecation ?? []} /><Switch checked={modelDeprecationEnabled} aria-label={s("Enable model deprecation alerts")} onCheckedChange={(checked) => {
 							const next = Boolean(checked); setModelDeprecationEnabled(next);
-							toast.promise(setBillingNotificationPreference({ preference: "modelDeprecationAlerts", enabled: next }), { loading: `${s("Saving")}…`, success: s("Saved"), error: s("Could not save alert") });
+							toast.promise(write(setBillingNotificationPreference({ preference: "modelDeprecationAlerts", enabled: next })), { loading: `${s("Saving")}…`, success: s("Saved"), error: s("Could not save alert") });
 						}} /></div>
 					</div>
 				</div>
@@ -143,7 +136,7 @@ export default function NotificationDestinationsClient({ initialDestinations, in
 						<div className="flex flex-col items-center px-6 py-12 text-center"><div className="mb-4 rounded-md border bg-muted/40 p-3"><BellRing className="size-5 text-muted-foreground" /></div><h3 className="text-sm font-medium">{s("No destinations yet")}</h3><p className="mt-1 max-w-sm text-sm text-muted-foreground">{s("Add a destination to route alerts to the tools your team already watches.")}</p><Button className="mt-5 rounded-md" variant="outline" onClick={() => setOpen(true)}><Plus /> {s("Add destination")}</Button></div>
 					) : destinations.map((destination, index) => {
 						const item = providerByType.get(destination.type)!; const Icon = item.icon;
-					return <div key={destination.id} className={cn("flex items-center gap-3 px-4 py-3.5", index > 0 && "border-t")}><div className={cn("grid size-9 place-items-center rounded-md", item.color)}><Icon className="size-4.5" /></div><div className="min-w-0 flex-1"><p className="truncate text-sm font-medium">{destination.name}</p><p className="truncate text-xs text-muted-foreground">{item.name} · {destination.targetPreview}</p></div><Button className="rounded-md" variant="outline" size="sm" disabled={saving} onClick={() => toast.promise(testNotificationDestination(destination.id), { loading: `${s("Sending")} ${s("test")}…`, success: s("Test notification delivered"), error: (error) => localizedSettingsError(error, t, "Could not send test") })}>{s("Send test")}</Button><Button className="rounded-md" variant="ghost" size="icon-sm" aria-label={s("Delete {name}", { name: destination.name })} disabled={saving} onClick={() => void removeDestination(destination.id)}><Trash2 /></Button></div>;
+						return <div key={destination.id} className={cn("flex items-center gap-3 px-4 py-3.5", index > 0 && "border-t")}><div className={cn("grid size-9 place-items-center rounded-md", item.color)}><Icon className="size-4.5" /></div><div className="min-w-0 flex-1"><p className="truncate text-sm font-medium">{destination.name}</p><p className="truncate text-xs text-muted-foreground">{item.name} · {destination.targetPreview}</p></div><DropdownMenu><DropdownMenuTrigger asChild><Button className="rounded-md" variant="outline" size="sm" disabled={saving}>{s("Send test")} <ChevronDown className="ml-1 size-3.5" /></Button></DropdownMenuTrigger><DropdownMenuContent align="end"><DropdownMenuItem onClick={() => sendDestinationTest(destination.id, "notification_test")}>{t("notificationCopy.connectionTest")}</DropdownMenuItem><DropdownMenuItem onClick={() => sendDestinationTest(destination.id, "model_deprecation")}>{t("notificationCopy.deprecationSample")}</DropdownMenuItem></DropdownMenuContent></DropdownMenu><Button className="rounded-md" variant="ghost" size="icon-sm" aria-label={s("Delete {name}", { name: destination.name })} disabled={saving} onClick={() => void removeDestination(destination.id)}><Trash2 /></Button></div>;
 					})}
 				</div>
 			</section>

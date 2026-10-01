@@ -1,8 +1,8 @@
 import { Suspense } from "react";
-import DynamicRoutesStudio from "@/components/(gateway)/settings/routing/DynamicRoutesStudio";
+import DynamicRoutesContent from "./DynamicRoutesContent";
 import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
+import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHeader";
 import { ProductFeedbackButton } from "@/components/feedback/ProductFeedbackButton";
-import { fetchSettingsDynamicRoutesInitialData } from "@/lib/fetchers/internal/fetchSettingsDynamicRoutesInitialData";
 import { getTranslations } from "next-intl/server";
 
 export async function generateMetadata() {
@@ -13,25 +13,19 @@ export async function generateMetadata() {
 export default async function DynamicRoutingSettingsPage() {
 	const t = await getTranslations("SettingsUI");
 	return (
-		<div className="space-y-6">
-			<header className="space-y-2">
-				<div className="flex flex-wrap items-center justify-between gap-3">
-					<h1 className="text-2xl font-bold">{t("headers.dynamicRouting")}</h1>
+		<div className="flex flex-col gap-3 lg:h-[calc(100dvh-var(--site-header-height,3.75rem)-var(--site-notice-height,0px)-2.5rem)] lg:min-h-[420px]">
+			<SettingsPageHeader
+				title={t("headers.dynamicRouting")}
+				actions={
 					<ProductFeedbackButton
 						surface="settings_dynamic_routes"
 						prompt={t("headers.feedbackDynamicRoutesPrompt")}
 					/>
-				</div>
-				<p className="mt-2 text-sm text-muted-foreground">{t("headers.dynamicRoutingDescription")}</p>
-			</header>
+				}
+			/>
 			<Suspense fallback={<SettingsSectionFallback />}>
 				<DynamicRoutesContent />
 			</Suspense>
 		</div>
 	);
-}
-
-async function DynamicRoutesContent() {
-	const initialData = await fetchSettingsDynamicRoutesInitialData();
-	return <DynamicRoutesStudio initialData={initialData} />;
 }

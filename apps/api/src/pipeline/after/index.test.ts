@@ -1,5 +1,24 @@
 import { describe, expect, it } from "vitest";
-import { attachGatewaySuccessMeta, attachRoutingDiagnosticsToPayload } from "./index";
+import {
+	attachGatewaySuccessMeta,
+	attachRoutingDiagnosticsToPayload,
+	markNonStreamResponseReady,
+} from "./index";
+
+describe("markNonStreamResponseReady", () => {
+	it("measures end-to-end time from gateway receipt and replaces provider-only timing", () => {
+		const ctx = {
+			meta: {
+				startedAtMs: 1_000,
+				end_to_end_ms: 40,
+			},
+		} as any;
+
+		expect(markNonStreamResponseReady(ctx, 1_125)).toBe(125);
+		expect(ctx.meta.completedAtMs).toBe(1_125);
+		expect(ctx.meta.end_to_end_ms).toBe(125);
+	});
+});
 
 describe("attachGatewaySuccessMeta", () => {
 	it("adds routing, response-cache, guardrail, and plugin metadata when meta is enabled", () => {

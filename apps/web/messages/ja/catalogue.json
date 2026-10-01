@@ -440,7 +440,10 @@
 				"aliasIdentifier": "エイリアス",
 				"showFullDescription": "すべて表示",
 				"showLessDescription": "少なく表示",
-				"viewOrganisation": "{organisation}を見る"
+				"viewOrganisation": "{organisation}を見る",
+				"decisions": "判断",
+				"openDecisions": "判断を開く",
+				"openDecisionsPlayground": "判断のプレイグラウンドを開く"
 			},
 			"sections": {
 				"providersDescription": "APIプロバイダー、ルート料金、利用可能状況、最近の信頼性シグナル。",
@@ -863,7 +866,11 @@
 						"label": "提供終了",
 						"description": "このプロバイダーマッピングの有効期間は終了しています。"
 					}
-				}
+				},
+				"tierUltrafast": "超高速",
+				"planDescriptionFlexOnly": "service_tier が flex の場合にのみ使用します。",
+				"planDescriptionFastRouting": "利用可能な場合は高速ルーティング。",
+				"planDescriptionUltrafast": "利用可能な場合は最高速ルーティング。"
 			},
 			"seoTitles": {
 				"titleDefault": "{model}の価格・ベンチマーク・プロバイダー",
@@ -886,7 +893,11 @@
 				"showLess": "表示を減らす",
 				"showMore": "さらに {count} 件表示",
 				"noHighlights": "ベンチマークの注目結果はまだありません。",
-				"tableTitle": "ベンチマーク表"
+				"tableTitle": "ベンチマーク表",
+				"openSource": "{benchmark} の出典を開く",
+				"hideDetailsFor": "{benchmark} の詳細を非表示",
+				"showDetailsFor": "{benchmark} の詳細を表示",
+				"showAll": "すべてのベンチマーク（{count} 件）を表示"
 			},
 			"faqContent": {
 				"title": "よくある質問",
@@ -963,6 +974,11 @@
 				"countFooter": "{count, plural, other {このファミリーのモデル数: #}}",
 				"close": "閉じる",
 				"genericFamily": "モデル"
+			},
+			"privateModel": {
+				"endpoint": "プライベートエンドポイント",
+				"deployment": "プライベートデプロイ",
+				"billingNote": "プロバイダーの請求はワークスペースが直接管理します。"
 			}
 		},
 		"noModelsAvailableForView": "このビューで利用できるモデルはまだありません。",
@@ -1187,7 +1203,14 @@
 				"input_video_seconds": "入力動画の秒数",
 				"total_tokens": "合計トークン数",
 				"requests": "リクエスト数"
-			}
+			},
+			"organisationComingSoon": "{organisation} 近日公開",
+			"announcedPricingDescription": "{organisation} が {model} を発表しました。利用可能になり次第、プロバイダーの提供状況と料金を追加します。",
+			"noProviderAvailability": "このモデルの API プロバイダーの料金と提供状況はまだありません。",
+			"thisModel": "このモデル",
+			"tokenOverviewDescription": "表示価格はプロバイダーの現在の料金です。実効価格は過去30日間に観測されたゲートウェイトラフィックで加重します。概要値は期間ごとの料金設定を平均し、1週間の履歴は UTC での各変更を表示します。",
+			"unitOverviewDescription": "表示価格は比較のために正規化された単位を使用します。概要値は期間ごとの料金設定を平均し、1週間の履歴は UTC での各変更を表示します。",
+			"tierUnavailable": "使用実績がないため、実効価格表示では {provider} {plan} の価格線を表示できません"
 		},
 		"sections": {
 			"apiProvidersAndPricing": "APIプロバイダーと料金",
@@ -1400,18 +1423,23 @@
 			"suggestProviders": "連携すべきプロバイダーをご存じの場合は、Discord でお知らせいただくか、GitHub で Issue を作成してください。料金データを追加します。",
 			"noSubscriptions": "サブスクリプションプランはまだ登録されていません",
 			"noSubscriptionPrice": "価格情報はありません",
-			"noSubscriptionPricingDescription": "このモデルのサブスクリプション価格はありません。"
+			"noSubscriptionPricingDescription": "このモデルのサブスクリプション価格はありません。",
+			"noHistoryTitle": "料金履歴はまだありません",
+			"submittedPrices": "現在提出されているプロバイダー料金は上のプロバイダー表に表示されています。"
 		},
 		"uptime": {
-			"title": "モデル稼働率",
+			"title": "平均稼働率",
 			"last24Hours": "過去24時間",
 			"noRequests": "リクエストは観測されていません",
 			"requestsObserved": "観測されたリクエスト数：{count}",
 			"perHour": "時間ごとの稼働率",
 			"chartLabel": "過去{hours}時間のモデル稼働率（時間ごと）。稼働率：{uptime}。記録されたリクエスト数：{count}。",
-			"leastStableProviderLabel": "最も安定性の低いプロバイダー",
+			"leastStableProviderLabel": "Phaseo Routing なし",
 			"tooltipUptime": "稼働率:",
-			"tooltipWorstProvider": "最も安定性の低いプロバイダー:"
+			"tooltipWorstProvider": "Phaseo Routing なし:",
+			"hourlyAverage": "過去24時間 · 時間別平均",
+			"routingChartLabel": "過去24時間のモデルの時間別稼働率。Phaseo Routing：{uptime}。{comparison}",
+			"routingComparison": " Phaseo Routing なし：{uptime}。"
 		},
 		"providerInfo": {
 			"dataPolicy": "データポリシー",
@@ -1534,7 +1562,9 @@
 			"relativeTime": "相対時間",
 			"elapsed": "経過",
 			"remaining": "残り",
-			"totalDays": "合計{count}日"
+			"totalDays": "合計{count}日",
+			"modalityStructured": "構造化された状態",
+			"modalityDecisions": "判断"
 		},
 		"performance": {
 			"noTelemetry": "過去7日間にGatewayのテレメトリーはありません",
@@ -1641,7 +1671,9 @@
 				"metricByHour": "時間別{metric}",
 				"noSamples": "この時間帯に利用できるサンプルはありません。",
 				"footer": "時刻はすべてUTCです。選択した期間の時間別中央値を集計しています。"
-			}
+			},
+			"observationsShown": "{description} {series}を表示しています。",
+			"requestSuccess": "リクエスト成功率"
 		}
 	},
 	"providers": {
@@ -1779,7 +1811,9 @@
 		"browseModels": "{name}で利用できるモデルを閲覧します。",
 		"missingTitle": "そのAPIプロバイダーはまだ登録されていません。",
 		"missingDescription": "APIプロバイダーが見つからない場合は、GitHubでコントリビュートしてください。",
-		"contribute": "GitHubでコントリビュート"
+		"contribute": "GitHubでコントリビュート",
+		"internalPreview": "プロバイダーの内部プレビュー",
+		"internalPreviewDescription": "このプロバイダーには承認されたカタログ提出がありますが、公開ゲートウェイ分析はまだありません。以下のモデル提出は、プロバイダーのワークスペースと Phaseo 管理者にのみ表示されます。"
 	},
 	"benchmarks": {
 		"title": "ベンチマーク",
@@ -1843,7 +1877,44 @@
 		"tocProgress": "推移",
 		"tocModelResults": "モデル結果",
 		"editBenchmark": "ベンチマークを編集",
-		"ranking": "ランキング"
+		"ranking": "ランキング",
+		"tocIndexComparisons": "インデックス比較",
+		"tocIndexLeaderboard": "インデックスランキング",
+		"independentEvaluations": "{metric} · 独立評価",
+		"noModelsMatchSearch": "検索に一致するモデルはありません。",
+		"noBenchmarkResults": "このベンチマークの結果はまだありません。",
+		"directoryDescription": "独立した評価でモデルの能力を比較できます。",
+		"featuredAnalysis": "注目のArtificial Analysisベンチマーク",
+		"featuredDescription": "知能、コーディング、エージェント、評価コスト",
+		"evaluatedModels": "{count}件の評価済みモデル",
+		"viewResults": "結果を見る",
+		"allBenchmarks": "すべてのベンチマーク",
+		"sortBenchmarks": "ベンチマークの並び順",
+		"mostModels": "モデル数が多い順",
+		"nameAlphabetically": "名前順",
+		"modelCount": "{count}件のモデル",
+		"showMoreBenchmarks": "さらにベンチマークを表示",
+		"showingCount": "{total}件中{shown}件を表示",
+		"metricDescriptions": {
+			"intelligence": "モデルの総合的な能力",
+			"coding": "ソフトウェアエンジニアリング能力",
+			"agentic": "複数ステップのタスクでの性能",
+			"cost": "知能指数の全評価 · USD"
+		},
+		"filteredEmpty": "このフィルターに一致するスコアはありません。",
+		"scoreProgress": "スコアの推移",
+		"releaseDateDescription": "リリース日ごとにモデルのスコアを比較します。",
+		"progressTimeRange": "推移の期間",
+		"filterByModel": "モデルで推移を絞り込む",
+		"filterModels": "モデルを絞り込む",
+		"filterByOrg": "組織で推移を絞り込む",
+		"allOrganisations": "すべての組織",
+		"filterByConfig": "設定で推移を絞り込む",
+		"allConfigurations": "すべての設定",
+		"paretoFrontier": "パレートフロンティア",
+		"all": "すべて",
+		"nonReasoning": "推論なし",
+		"confidenceInterval": "95%信頼区間: {low}–{high}"
 	},
 	"rankings": {
 		"title": "AIモデルランキング",
@@ -2053,7 +2124,29 @@
 			"transcription": "文字起こし"
 		},
 		"shareLabel": "シェア",
-		"tokensLabel": "トークン"
+		"tokensLabel": "トークン",
+		"unavailable": "このランキングは一時的に利用できません。",
+		"retrying": "再試行中…",
+		"tryAgain": "再試行",
+		"benchmarkRankings": "ベンチマークランキング",
+		"independentEvaluations": "Artificial Analysisによる独立した評価",
+		"benchmarkMetric": "ベンチマーク指標",
+		"lowerCostIsBetter": "コストは低いほど良好 · USD",
+		"indexVersion": "指標 v{versions}",
+		"searchRankedModels": "ランキング内のモデルを検索",
+		"searchModels": "モデルを検索",
+		"noSearchMatches": "検索に一致するモデルはありません。",
+		"noMetricResults": "この指標の結果はまだありません。",
+		"allEvaluationResults": "すべての結果と評価の詳細",
+		"resultCount": "{count}件の結果",
+		"benchmarkMetrics": {
+			"intelligence": "知能",
+			"coding": "コーディング",
+			"agentic": "エージェント",
+			"cost": "評価コスト"
+		},
+		"audioTranscribed": "文字起こしされた音声",
+		"recentRequests": "最近のリクエスト{count}件"
 	},
 	"compare": {
 		"title": "モデルを比較",
@@ -2315,7 +2408,7 @@
 		"modelsTab": "モデル",
 		"visitPlatformPage": "{platform}で{name}を見る",
 		"unknownLabTitle": "この研究機関はまだ登録されていません。",
-		"unknownLabDescription": "掲載されていない研究機関があれば、GitHubから追加にご協力ください。",
+		"unknownLabDescription": "ラボが見つからない場合は、データをリクエストしてください。",
 		"contributeGitHub": "GitHubで協力する",
 		"githubLogoAlt": "GitHubのロゴ",
 		"editOrganisation": "組織を編集",
@@ -2345,7 +2438,8 @@
 		"metadataModelsTitle": "{name}のAIモデル",
 		"metadataModelsDescription": "Gatewayの提供状況、リリースステータス、価格を含む{name}のモデルを確認できます。",
 		"keywordAiModels": "AIモデル",
-		"keywordAiGateway": "AI ゲートウェイ"
+		"keywordAiGateway": "AI ゲートウェイ",
+		"requestMissingData": "不足しているデータをリクエスト"
 	},
 	"catalogNotFound": {
 		"modelHeading": "モデル「{id}」が見つかりません。",
@@ -2481,7 +2575,8 @@
 		"waitingForFirstToken": "最初のトークンを待機中",
 		"measuredPace": "標準速度",
 		"fastPace": "高速",
-		"veryFastPace": "超高速"
+		"veryFastPace": "超高速",
+		"tokensPerSecond": "{count} トークン/秒"
 	},
 	"monitor": {
 		"title": "モニター",
@@ -2745,7 +2840,7 @@
 		"visitApp": "アプリを表示",
 		"active": "有効",
 		"inactive": "無効",
-		"lastSeen": "最終利用日：{date}",
+		"lastSeen": "最終利用日：<date></date>",
 		"totalRequests": "リクエスト合計",
 		"allTimeSuccessfulRequests": "これまでの成功したリクエスト",
 		"totalTokens": "トークン合計",

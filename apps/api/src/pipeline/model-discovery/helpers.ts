@@ -1,6 +1,5 @@
 import { getBindings, getSupabaseAdmin } from "@/runtime/env";
 import { resolveVertexAccessToken } from "@providers/google-vertex/auth";
-import { sendDiscordTextMessage } from "./discord";
 import {
 	extractProviderApiModelSnapshot,
 	hasProviderApiSnapshotValue,
@@ -12,6 +11,7 @@ import {
 } from "./watch-snapshot";
 import type { ProviderConfig } from "./providers";
 
+// Shared provider, diff, pricing, and message-section utilities. Notification delivery lives in its workflow module.
 export {
 	extractProviderApiModelSnapshot,
 	hasProviderApiSnapshotValue,
@@ -34,7 +34,7 @@ type RunArgs = {
 	prune?: boolean;
 };
 
-type ProviderChange = {
+export type ProviderChange = {
 	providerId: string;
 	providerName: string;
 	previousCount: number;
@@ -130,7 +130,7 @@ type PricingCursor = {
 	ruleIdsAtTimestamp: string[];
 };
 
-type PricingMonitorSummary = {
+export type PricingMonitorSummary = {
 	enabled: boolean;
 	executed: boolean;
 	baselineInitialized: boolean;
@@ -142,7 +142,7 @@ type PricingMonitorSummary = {
 	error?: string | null;
 };
 
-type ProviderApiPricingMonitorSummary = {
+export type ProviderApiPricingMonitorSummary = {
 	enabled: boolean;
 	executed: boolean;
 	baselineInitialized: boolean;
@@ -153,7 +153,7 @@ type ProviderApiPricingMonitorSummary = {
 	error?: string | null;
 };
 
-type PricingTableMonitorSummary = {
+export type PricingTableMonitorSummary = {
 	enabled: boolean;
 	executed: boolean;
 	sourcesChecked: number;
@@ -171,7 +171,7 @@ type PricingTableMonitorSummary = {
 	error?: string | null;
 };
 
-type ConfiguredModelCoverageMonitorSummary = {
+export type ConfiguredModelCoverageMonitorSummary = {
 	enabled: boolean;
 	executed: boolean;
 	providersChecked: number;
@@ -1625,73 +1625,4 @@ export function buildPricingTableDiscordSection(pricing: PricingTableMonitorSumm
 		}
 	}
 	return lines.join("\n").trim();
-}
-
-const PRIVATE_MODEL_DISCOVERY_USERNAME = "Phaseo Private Model Discovery";
-const PRIVATE_MODEL_DISCOVERY_AVATAR_URL = "https://phaseo.app/png_logo_dark.png";
-
-export function buildDiscordMessage(args: {
-	modelChanges: ProviderChange[];
-	pricing: PricingMonitorSummary;
-	providerApiPricing: ProviderApiPricingMonitorSummary;
-	pricingTable: PricingTableMonitorSummary;
-	configuredModelCoverage: ConfiguredModelCoverageMonitorSummary;
-}): string {
-	const sections: string[] = [];
-	const modelSection = buildModelDiscordSection(args.modelChanges);
-	const pricingSection = buildPricingDiscordSection(args.pricing);
-	const providerApiPricingSection = buildProviderApiPricingDiscordSection(args.providerApiPricing);
-	const pricingTableSection = buildPricingTableDiscordSection(args.pricingTable);
-	if (modelSection) sections.push(modelSection);
-	if (pricingSection) sections.push(pricingSection);
-	if (providerApiPricingSection) sections.push(providerApiPricingSection);
-	if (pricingTableSection) sections.push(pricingTableSection);
-	const text = sections.join("\n\n").trim();
-	if (text.length <= 1900) return text;
-	return `${text.slice(0, 1888)}\n...[truncated]`;
-}
-
-export async function computeDiscordNotificationFingerprint(args: Parameters<typeof buildDiscordMessage>[0]): Promise<string | null> {
-	const message = buildDiscordMessage(args).trim();
-	if (!message) return null;
-	const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(message));
-	return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
-}
-
-export async function sendDiscordNotification(args: {
-	modelChanges: ProviderChange[];
-	pricing: PricingMonitorSummary;
-	providerApiPricing: ProviderApiPricingMonitorSummary;
-	pricingTable: PricingTableMonitorSummary;
-	configuredModelCoverage: ConfiguredModelCoverageMonitorSummary;
-}): Promise<{ delivered: boolean; skipped: boolean; reason?: string | null }> {
-	if (!hasDiscordNotifiableChanges(args)) {
-		return { delivered: false, skipped: true, reason: "no notifiable changes" };
-	}
-	const webhookUrl = readBindingEnv(["DISCORD_WEBHOOK_URL"]);
-	if (!webhookUrl) {
-		return { delivered: false, skipped: true, reason: "missing DISCORD_WEBHOOK_URL" };
-	}
-
-	let parsedUrl: URL;
-	try {
-		parsedUrl = new URL(webhookUrl);
-	} catch {
-		console.warn("[model-discovery] invalid DISCORD_WEBHOOK_URL; skipping notification");
-		return { delivered: false, skipped: true, reason: "invalid DISCORD_WEBHOOK_URL" };
-	}
-
-	const message = buildDiscordMessage(args);
-	if (!message.trim()) {
-		return { delivered: false, skipped: true, reason: "empty Discord message" };
-	}
-	await sendDiscordTextMessage({
-		webhookUrl: parsedUrl.toString(),
-		message,
-		roleId: readBindingEnv(["DISCORD_ROLE_ID"]),
-		userId: readBindingEnv(["DISCORD_USER_ID"]),
-		username: PRIVATE_MODEL_DISCOVERY_USERNAME,
-		avatarUrl: PRIVATE_MODEL_DISCOVERY_AVATAR_URL,
-	});
-	return { delivered: true, skipped: false };
 }

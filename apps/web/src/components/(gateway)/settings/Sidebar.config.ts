@@ -6,6 +6,7 @@ import {
 	BarChart3,
 	Beaker,
 	Building2,
+	Boxes,
 	Code2,
 	CreditCard,
 	FileText,
@@ -22,6 +23,8 @@ import {
 	Webhook,
 	Workflow,
 	ClipboardCheck,
+	Inbox,
+	SlidersHorizontal,
 } from "lucide-react";
 
 export type NavItem = {
@@ -54,7 +57,7 @@ export type NavGroup = {
 	scope: SettingsScope;
 };
 
-export type SettingsScope = "personal" | "workspace";
+export type SettingsScope = "personal" | "workspace" | "provider";
 
 export type ResolvedSettingsNav = {
 	group: NavGroup;
@@ -80,7 +83,6 @@ const BASE_SETTINGS_SIDEBAR: NavGroup[] = [
 				children: [
 					{ href: "/settings/account/details", label: "Details" },
 					{ href: "/settings/account/mfa", label: "MFA" },
-					{ href: "/settings/account/providers", label: "Provider onboarding" },
 					{ href: "/settings/authorized-apps", label: "Connected Apps" },
 					{ href: "/settings/account/danger", label: "Danger Zone" },
 				],
@@ -90,6 +92,12 @@ const BASE_SETTINGS_SIDEBAR: NavGroup[] = [
 				label: "Workspaces",
 				icon: Building2,
 				match: ["/settings/account/workspaces"],
+			},
+			{
+				href: "/settings/preferences",
+				label: "Preferences",
+				icon: SlidersHorizontal,
+				match: ["/settings/preferences"],
 			},
 			{
 				href: "/settings/credits",
@@ -103,7 +111,7 @@ const BASE_SETTINGS_SIDEBAR: NavGroup[] = [
 					"/settings/tiers",
 				],
 				children: [
-					{ href: "/settings/credits", label: "Credits", exactOnly: true },
+					{ href: "/settings/credits", label: "Billing & Credits", exactOnly: true },
 					{ href: "/settings/credits/transactions", label: "Transactions" },
 					{ href: "/settings/payment-methods", label: "Payment Methods" },
 				],
@@ -207,6 +215,7 @@ const BASE_SETTINGS_SIDEBAR: NavGroup[] = [
 					{ href: "/settings/usage/logs/sessions", label: "Sessions" },
 					{ href: "/settings/usage/logs/videos", label: "Videos" },
 					{ href: "/settings/usage/logs/batches", label: "Batches" },
+					{ href: "/settings/usage/logs/realtime", label: "Realtime Sessions" },
 				],
 			},
 		],
@@ -267,6 +276,13 @@ const BASE_SETTINGS_SIDEBAR: NavGroup[] = [
 					{ href: "/settings/presets/experiments", label: "Feedback", badge: "Alpha" },
 				],
 			},
+			{
+				href: "/settings/workspaces/private-models",
+				label: "Private Models",
+				icon: Boxes,
+				badge: "Beta",
+				match: ["/settings/workspaces/private-models"],
+			},
 		],
 	},
 	{
@@ -290,7 +306,10 @@ const BASE_SETTINGS_SIDEBAR: NavGroup[] = [
 	{
 		heading: "Internal",
 		scope: "personal",
-		items: [{ href: "/settings/internal/provider-review", label: "Provider review", icon: ClipboardCheck, match: ["/settings/internal/provider-review"] }],
+		items: [
+			{ href: "/settings/internal/model-discovery", label: "Discovery queue", icon: Inbox, match: ["/settings/internal/model-discovery"] },
+			{ href: "/settings/internal/provider-review", label: "Provider review", icon: ClipboardCheck, match: ["/settings/internal/provider-review"] },
+		],
 	},
 
     // Example external group (remove or edit as needed):
@@ -309,8 +328,9 @@ const WORKSPACE_NAV_ORDER = [
 	"/settings/routing",
 	"/settings/guardrails",
 	"/settings/privacy",
-	"/settings/byok",
 	"/settings/presets",
+	"/settings/workspaces/private-models",
+	"/settings/byok",
 	"/settings/apps",
 	"/settings/management-api-keys",
 	"/settings/broadcast",
@@ -318,7 +338,17 @@ const WORKSPACE_NAV_ORDER = [
 	"/settings/webhooks",
 ] as const;
 
-export function getSettingsSidebar(options?: { showBroadcast?: boolean; showWebhooks?: boolean; showEnterprise?: boolean; showAutoRouting?: boolean; showInternal?: boolean }): NavGroup[] {
+export function getSettingsSidebar(options?: { showBroadcast?: boolean; showWebhooks?: boolean; showEnterprise?: boolean; showAutoRouting?: boolean; showInternal?: boolean; providerMode?: boolean }): NavGroup[] {
+	if (options?.providerMode) {
+		return [
+			{ scope: "personal", items: BASE_SETTINGS_SIDEBAR[0].items.filter((item) => ["/settings/profile", "/settings/account"].includes(item.href)) },
+			{ scope: "provider", items: [
+				{ href: "/settings/provider/models", label: "Your Models", icon: Boxes, match: ["/settings/account/providers"] },
+				{ href: "/settings/provider/review", label: "Provider Review", icon: ClipboardCheck },
+				{ href: "/settings/provider/integrations", label: "Integrations", icon: Webhook },
+			] },
+		];
+	}
 	const showBroadcast = options?.showBroadcast ?? true;
 	const showWebhooks = options?.showWebhooks ?? true;
 	const showEnterprise = options?.showEnterprise ?? true;
@@ -331,7 +361,7 @@ export function getSettingsSidebar(options?: { showBroadcast?: boolean; showWebh
 				(showBroadcast ? true : item.href !== "/settings/broadcast") &&
 				(showWebhooks ? true : item.href !== "/settings/webhooks") &&
 				(showEnterprise ? true : item.href !== "/settings/workspaces/enterprise") &&
-				(showInternal ? true : item.href !== "/settings/internal/provider-review"),
+				(showInternal ? true : !item.href.startsWith("/settings/internal/")),
 			)
 			.map((item) => ({
 				...item,
@@ -372,7 +402,7 @@ export function isSettingsNavChildActive(
 
 export function getActiveSettingsNav(
 	pathname: string,
-	options?: { showBroadcast?: boolean; showWebhooks?: boolean; showAutoRouting?: boolean },
+	options?: { showBroadcast?: boolean; showWebhooks?: boolean; showAutoRouting?: boolean; providerMode?: boolean },
 ): ResolvedSettingsNav | null {
 	const navGroups = getSettingsSidebar(options);
 

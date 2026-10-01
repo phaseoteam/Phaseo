@@ -1,6 +1,6 @@
 ---
-title: "Use Phaseo with DeepSeek Harness"
-icon: "terminal"
+title: "DeepSeek Harness"
+icon: "/icons/brands/deepseek.svg"
 description: "Add Phaseo as a custom OpenAI-compatible provider in DeepSeek Harness."
 ---
 
@@ -20,13 +20,13 @@ Configure the provider, base URL, protocol, model catalog, and default model in 
 
 ```bash
 phaseo login
-phaseo dsh
+phaseo deepseek-harness
 ```
 
 The CLI preserves unrelated entries in `$DSH_HOME/cordis.patch.yml` and marks the Phaseo block so it can update or remove only the settings it owns. It syncs every active Phaseo text model compatible with Chat Completions. Use a different default model when needed:
 
 ```bash
-phaseo dsh --model YOUR_PHASEO_MODEL_ID
+phaseo deepseek-harness --model YOUR_PHASEO_MODEL_ID
 ```
 
 Setup also creates a non-expiring gateway key named `Phaseo CLI: DeepSeek Harness API Key` and writes it directly to Harness's protected `$DSH_HOME/.credentials.yaml` store. Use `--catalog default` to configure only the selected model.

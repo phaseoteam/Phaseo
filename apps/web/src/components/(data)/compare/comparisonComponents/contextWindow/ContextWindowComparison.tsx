@@ -13,6 +13,7 @@ import { Info } from "lucide-react";
 import Link from "next/link";
 import { ProviderLogoName } from "../../ProviderLogoName";
 import { useLocale, useTranslations } from "next-intl";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 
 interface ContextWindowComparisonProps {
 	selectedModels: ExtendedModel[];
@@ -47,7 +48,7 @@ function getBarChartData(models: ExtendedModel[], t: CompareTranslator) {
 	];
 }
 
-function getInfoSentence(models: ExtendedModel[], locale: string, t: CompareTranslator) {
+function getInfoSentence(models: ExtendedModel[], formatNumber: (value: number) => string, t: CompareTranslator) {
 	if (models.length < 2) return null;
 	// Sort by input context length descending
 	const sorted = [...models].sort(
@@ -62,7 +63,7 @@ function getInfoSentence(models: ExtendedModel[], locale: string, t: CompareTran
 		</Link>
 	);
 	const number = (value: number | null | undefined) =>
-		value == null ? "-" : value.toLocaleString(locale);
+		value == null ? "-" : formatNumber(value);
 
 	return t.rich("contextSummary", {
 		first: modelLink(first),
@@ -77,6 +78,7 @@ function getInfoSentence(models: ExtendedModel[], locale: string, t: CompareTran
 function BarChartTooltip({ active, payload, label }: any) {
 	const t = useTranslations("Catalogue.compare");
 	const locale = useLocale();
+	const format = useDisplayFormatters();
 	if (!active || !payload || payload.length === 0) return null;
 	return (
 		<div className="bg-white dark:bg-zinc-900 rounded-lg shadow-lg p-3 border border-zinc-200 dark:border-zinc-800 min-w-[225px]">
@@ -85,7 +87,7 @@ function BarChartTooltip({ active, payload, label }: any) {
 				<div key={p.name} className="flex justify-between text-xs mb-1">
 					<span>{p.name}</span>
 					<span>
-						{p.value != null ? p.value.toLocaleString(locale) : "-"}{" "}
+						{p.value != null ? format.number(Number(p.value)) : "-"}{" "}
 						{t("tokenUnit")}
 					</span>
 				</div>
@@ -125,6 +127,7 @@ export default function ContextWindowComparison({
 }: ContextWindowComparisonProps) {
 	const t = useTranslations("Catalogue.compare");
 	const locale = useLocale();
+	const format = useDisplayFormatters();
 	if (!selectedModels || selectedModels.length === 0) return null;
 
 	const anyContext = selectedModels.some(
@@ -132,7 +135,7 @@ export default function ContextWindowComparison({
 	);
 	if (!anyContext) return null;
 
-	const infoSentence = getInfoSentence(selectedModels, locale, t);
+	const infoSentence = getInfoSentence(selectedModels, format.number, t);
 	return (
 		<section className="space-y-3">
 			<header className="flex items-start justify-between gap-4">
@@ -191,10 +194,7 @@ export default function ContextWindowComparison({
 									</span>
 									<span className="font-mono font-bold mt-1 sm:mt-0">
 										{model.input_context_length != null
-						? formatTokens(
-									model.input_context_length,
-									locale
-											  )
+											? format.number(model.input_context_length)
 											: "-"}
 									</span>
 								</div>
@@ -204,10 +204,7 @@ export default function ContextWindowComparison({
 									</span>
 									<span className="font-mono font-bold mt-1 sm:mt-0">
 										{model.output_context_length != null
-							? formatTokens(
-									model.output_context_length,
-									locale
-											  )
+											? format.number(model.output_context_length)
 											: "-"}
 									</span>
 								</div>
@@ -234,14 +231,3 @@ export default function ContextWindowComparison({
 	);
 }
 
-// Helper for K/M/B formatting
-function formatTokens(val: number | null | undefined, locale: string): string {
-	if (val == null) return "-";
-	if (val >= 1_000_000_000)
-		return `${(val / 1_000_000_000).toLocaleString(locale, { maximumFractionDigits: 1 })}B`;
-	if (val >= 1_000_000)
-		return `${(val / 1_000_000).toLocaleString(locale, { maximumFractionDigits: 1 })}M`;
-	if (val >= 1_000)
-		return `${(val / 1_000).toLocaleString(locale, { maximumFractionDigits: 1 })}K`;
-	return val.toLocaleString(locale);
-}

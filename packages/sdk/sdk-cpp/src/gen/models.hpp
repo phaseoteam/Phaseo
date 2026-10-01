@@ -70,6 +70,7 @@ struct AnthropicMessagesRequest {
 	std::map<std::string, std::any> provider;
 	std::map<std::string, std::any> provider_options;
 	std::map<std::string, std::any> reasoning;
+	std::any service_tier;
 	std::string session_id;
 	std::vector<std::string> stop_sequences;
 	std::optional<bool> stream;
@@ -94,6 +95,7 @@ struct AnthropicMessagesResponse {
 };
 
 struct AnthropicTool {
+	std::optional<bool> async;
 	std::string description;
 	std::map<std::string, std::any> input_schema;
 	std::string name;
@@ -303,10 +305,12 @@ struct AudioContentPart {
 };
 
 struct AudioSpeechRequest {
+	std::map<std::string, std::any> config;
 	std::any format;
 	std::string input;
 	std::string model;
 	std::map<std::string, std::any> provider;
+	std::optional<double> speed;
 	std::string voice;
 };
 
@@ -420,6 +424,7 @@ struct BatchRequest {
 	std::string model;
 	std::vector<std::string> prompts;
 	std::map<std::string, std::any> provider;
+	std::map<std::string, std::any> provider_options;
 	std::vector<std::map<std::string, std::any>> requests;
 	std::string session_id;
 	std::string system;
@@ -498,6 +503,7 @@ struct BatchResponse {
 	std::string provider;
 	std::map<std::string, std::any> request_counts;
 	std::string request_id;
+	std::optional<std::string> results_url;
 	std::string session_id;
 	std::string status;
 	std::map<std::string, std::any> usage;
@@ -695,6 +701,52 @@ struct DebugOptions {
 	std::optional<bool> return_upstream_response;
 	std::optional<bool> trace;
 	std::any trace_level;
+};
+
+struct DecisionChoiceQuestion {
+	std::map<std::string, std::any> criteria;
+	std::any instructions;
+	std::any type;
+};
+
+using DecisionInstructions = std::any;
+
+struct DecisionNoulQuestion {
+	std::map<std::string, std::any> criteria;
+	std::any instructions;
+	std::any type;
+};
+
+struct DecisionScoreQuestion {
+	std::vector<std::string> criteria;
+	std::any instructions;
+	std::any type;
+};
+
+struct DecisionsRequest {
+	std::map<std::string, std::any> debug;
+	std::optional<bool> echo_upstream_request;
+	std::optional<bool> meta;
+	std::map<std::string, std::any> metadata;
+	std::string model;
+	std::map<std::string, std::any> provider;
+	std::map<std::string, std::any> questions;
+	std::map<std::string, std::any> routing;
+	std::any state;
+};
+
+struct DecisionsResponse {
+	std::map<std::string, std::any> answers;
+	std::map<std::string, std::any> meta;
+	std::string model;
+	std::optional<std::string> request_id;
+	std::map<std::string, std::any> usage;
+};
+
+struct DecisionsUsage {
+	std::optional<int> input_tokens;
+	std::optional<int> output_tokens;
+	std::optional<int> total_tokens;
 };
 
 struct DeletedResponse {
@@ -944,6 +996,7 @@ struct FileUploadRequest {
 };
 
 struct FunctionToolDefinition {
+	std::optional<bool> async;
 	std::map<std::string, std::any> function;
 	std::any type;
 };
@@ -1180,9 +1233,12 @@ struct GatewayWebFetchToolDefinition {
 };
 
 struct GatewayWebSearchToolDefinition {
+	std::any engine;
 	std::optional<bool> include_highlights;
 	std::optional<bool> include_text;
+	std::string language;
 	std::optional<int> max_results;
+	std::optional<int> page;
 	std::map<std::string, std::any> parameters;
 	std::any type;
 };
@@ -1418,14 +1474,23 @@ struct ImageModerationInput {
 };
 
 struct ImagesEditRequest {
-	std::string image;
+	std::any background;
+	std::any image;
+	std::any input_fidelity;
 	std::string mask;
 	std::optional<bool> meta;
 	std::string model;
+	std::any moderation;
 	std::optional<int> n;
+	std::optional<int> output_compression;
+	std::any output_format;
+	std::optional<int> partial_images;
 	std::string prompt;
 	std::map<std::string, std::any> provider;
+	std::any quality;
+	std::string resolution;
 	std::string size;
+	std::optional<bool> stream;
 	std::optional<bool> usage;
 	std::string user;
 };
@@ -1436,13 +1501,20 @@ struct ImagesEditResponse {
 };
 
 struct ImagesGenerationRequest {
+	std::any background;
 	std::string model;
+	std::any moderation;
 	std::optional<int> n;
+	std::optional<int> output_compression;
+	std::any output_format;
+	std::optional<int> partial_images;
 	std::string prompt;
 	std::map<std::string, std::any> provider;
 	std::string quality;
+	std::string resolution;
 	std::string response_format;
 	std::string size;
+	std::optional<bool> stream;
 	std::string style;
 	std::string user;
 };
@@ -1985,6 +2057,14 @@ struct OcrRequest {
 struct OcrResponse {
 };
 
+struct OpenAIReasoningConfig {
+	std::any effort;
+	std::optional<bool> enabled;
+	std::optional<int> max_tokens;
+	std::any mode;
+	std::any summary;
+};
+
 using OrganisationId = std::any;
 
 using OrganisationIdList = std::any;
@@ -2192,6 +2272,79 @@ struct PresetVersionResponse {
 };
 
 using PresetVisibility = std::any;
+
+struct PrivateModel {
+	std::string base_url;
+	std::optional<std::string> catalog_model_id;
+	std::optional<int> context_length;
+	std::optional<std::string> created_at;
+	std::optional<std::string> created_by;
+	std::optional<std::string> credential_prefix;
+	std::optional<std::string> credential_suffix;
+	std::optional<std::string> custom_provider_name;
+	std::optional<std::string> custom_provider_url;
+	std::optional<std::string> description;
+	bool enabled;
+	std::optional<std::string> host_provider_id;
+	std::string id;
+	std::vector<std::string> input_modalities;
+	std::string local_slug;
+	std::optional<int> max_output_tokens;
+	std::string model_id;
+	std::string name;
+	std::vector<std::string> output_modalities;
+	std::any routing_policy;
+	bool supports_responses;
+	std::optional<std::string> updated_at;
+	std::string upstream_model_id;
+	std::string workspace_id;
+};
+
+struct PrivateModelCreateRequest {
+	std::string base_url;
+	std::optional<int> context_length;
+	std::string credential;
+	std::optional<std::string> custom_provider_name;
+	std::optional<std::string> custom_provider_url;
+	std::string description;
+	std::optional<bool> enabled;
+	std::optional<std::string> host_provider_id;
+	std::optional<int> max_output_tokens;
+	std::string model_reference;
+	std::string name;
+	std::any routing_policy;
+	std::optional<bool> supports_responses;
+	std::string upstream_model_id;
+};
+
+struct PrivateModelDeleteResponse {
+	bool deleted;
+};
+
+struct PrivateModelListResponse {
+	std::vector<std::map<std::string, std::any>> data;
+};
+
+struct PrivateModelResponse {
+	std::map<std::string, std::any> data;
+};
+
+struct PrivateModelUpdateRequest {
+	std::string base_url;
+	std::optional<int> context_length;
+	std::string credential;
+	std::optional<std::string> custom_provider_name;
+	std::optional<std::string> custom_provider_url;
+	std::optional<std::string> description;
+	std::optional<bool> enabled;
+	std::optional<std::string> host_provider_id;
+	std::optional<int> max_output_tokens;
+	std::string model_reference;
+	std::string name;
+	std::any routing_policy;
+	std::optional<bool> supports_responses;
+	std::string upstream_model_id;
+};
 
 struct Provider {
 	std::string api_provider_id;
@@ -2489,6 +2642,52 @@ struct SubagentToolDefinition {
 struct SupportedParameterDetails {
 };
 
+struct SystemOneChoiceQuestion {
+	std::map<std::string, std::any> criteria;
+	std::any instructions;
+	std::any type;
+};
+
+using SystemOneInstructions = std::any;
+
+struct SystemOneNoulQuestion {
+	std::map<std::string, std::any> criteria;
+	std::any instructions;
+	std::any type;
+};
+
+struct SystemOneRequest {
+	std::map<std::string, std::any> debug;
+	std::optional<bool> echo_upstream_request;
+	std::optional<bool> meta;
+	std::map<std::string, std::any> metadata;
+	std::string model;
+	std::map<std::string, std::any> provider;
+	std::map<std::string, std::any> questions;
+	std::map<std::string, std::any> routing;
+	std::any state;
+};
+
+struct SystemOneResponse {
+	std::map<std::string, std::any> answers;
+	std::map<std::string, std::any> meta;
+	std::string model;
+	std::optional<std::string> request_id;
+	std::map<std::string, std::any> usage;
+};
+
+struct SystemOneScoreQuestion {
+	std::vector<std::string> criteria;
+	std::any instructions;
+	std::any type;
+};
+
+struct SystemOneUsage {
+	std::optional<int> input_tokens;
+	std::optional<int> output_tokens;
+	std::optional<int> total_tokens;
+};
+
 struct TextContentPart {
 	std::string text;
 	std::any type;
@@ -2560,6 +2759,7 @@ struct VideoGenerationRequest {
 	std::optional<int> compression_quality;
 	std::optional<int> duration;
 	std::optional<bool> enhance_prompt;
+	std::vector<std::map<std::string, std::any>> frame_images;
 	std::optional<bool> generate_audio;
 	std::optional<double> input_audio_duration;
 	std::vector<std::any> input_references;
@@ -2570,6 +2770,7 @@ struct VideoGenerationRequest {
 	std::string person_generation;
 	std::string prompt;
 	std::map<std::string, std::any> provider;
+	std::map<std::string, std::any> provider_options;
 	std::map<std::string, std::any> provider_params;
 	std::string resize_mode;
 	std::string resolution;
@@ -2672,7 +2873,7 @@ struct WebhookEndpoint {
 	std::optional<std::string> createdAt;
 	std::optional<std::string> createdBy;
 	std::optional<std::string> deletedAt;
-	std::vector<std::string> events;
+	std::vector<std::any> events;
 	bool hasSecret;
 	std::string id;
 	std::string name;
@@ -2683,7 +2884,7 @@ struct WebhookEndpoint {
 };
 
 struct WebhookEndpointCreateRequest {
-	std::vector<std::string> events;
+	std::vector<std::any> events;
 	std::string name;
 	std::string url;
 };
@@ -2694,8 +2895,10 @@ struct WebhookEndpointDeleteResponse {
 	std::any object;
 };
 
+using WebhookEndpointEvent = std::any;
+
 struct WebhookEndpointInput {
-	std::vector<std::string> events;
+	std::vector<std::any> events;
 	std::string name;
 	std::string url;
 };
@@ -2720,8 +2923,16 @@ struct WebhookEndpointSecretResponse {
 	std::string workspaceId;
 };
 
+struct WebhookEndpointTestResponse {
+	std::optional<std::string> error;
+	std::string event_id;
+	bool ok;
+	std::optional<std::string> response_body_preview;
+	std::optional<int> status_code;
+};
+
 struct WebhookEndpointUpdateRequest {
-	std::vector<std::string> events;
+	std::vector<std::any> events;
 	std::string name;
 	std::any status;
 	std::string url;
@@ -2861,6 +3072,8 @@ struct WorkspaceAutoTopUpUpdate {
 	std::optional<int> amount_nanos;
 	std::optional<int> balance_threshold_nanos;
 	bool enabled;
+	std::optional<bool> mfa_bypass_acknowledged;
+	std::string mfa_bypass_phrase;
 	std::optional<std::string> payment_method_id;
 };
 

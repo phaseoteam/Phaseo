@@ -24,8 +24,7 @@ export function hasUsableIRChatResponse(response: IRChatResponse | undefined): b
 		if (choice.message?.refusal?.trim()) return true;
 		if ((choice.message?.toolCalls?.length ?? 0) > 0) return true;
 		return (choice.message?.content ?? []).some((part) => {
-			if (part.type === "reasoning_text") return false;
-			if (part.type === "text") return part.text.trim().length > 0;
+			if (part.type === "text" || part.type === "reasoning_text") return part.text.trim().length > 0;
 			return part.type === "image" || part.type === "audio" || part.type === "video";
 		});
 	});

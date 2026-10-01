@@ -1045,7 +1045,7 @@
     "internal_model_id": "anthropic/claude-opus-4.8",
     "is_active_gateway": false,
     "quantization_scheme": null,
-    "input_modalities": "text,image,pdf",
+    "input_modalities": "text,image",
     "output_modalities": "text",
     "context_length": 1000000,
     "max_output_tokens": 128000,
@@ -1674,7 +1674,7 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "active",
+        "status": "disabled",
         "params": [],
         "reasoning": null,
         "tool_call": null,
@@ -1686,7 +1686,7 @@
         "modes": []
       }
     ],
-    "routing_status": "active",
+    "routing_status": "disabled",
     "routable": false,
     "regions": {
       "execution": [
@@ -1733,7 +1733,7 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "active",
+        "status": "disabled",
         "params": [],
         "reasoning": null,
         "tool_call": null,
@@ -1745,7 +1745,7 @@
         "modes": []
       }
     ],
-    "routing_status": "active",
+    "routing_status": "disabled",
     "routable": false,
     "regions": {
       "execution": [

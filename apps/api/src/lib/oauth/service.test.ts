@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { clearRuntime, configureRuntime } from "@/runtime/env";
+import { CAPABILITIES, IDENTITY_SCOPES } from "@/lib/authz/capabilities";
 import {
 	assertRedirectAllowed,
 	CLI_DEFAULT_SCOPES,
@@ -99,7 +100,11 @@ describe("OAuth service helpers", () => {
 	});
 
 	it("grants the first-party CLI its supported control-plane scopes by default", () => {
-		expect(CLI_DEFAULT_SCOPES).toHaveLength(34);
+		const expectedScopes = [
+			...IDENTITY_SCOPES,
+			...Object.values(CAPABILITIES).filter((scope) => scope !== "feedback:read" && scope !== "feedback:write"),
+		];
+		expect(CLI_DEFAULT_SCOPES).toEqual(expectedScopes);
 		expect(CLI_DEFAULT_SCOPES).toContain("budgets:read");
 		expect(CLI_DEFAULT_SCOPES).toContain("budgets:write");
 		expect(CLI_DEFAULT_SCOPES).toContain("budgets:delete");

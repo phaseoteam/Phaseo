@@ -30,38 +30,40 @@ import {
 } from "@/components/ui/hover-card";
 import { formatRelativeToNow } from "@/lib/formatRelative";
 import { formatDateTime as formatPreciseDateTime } from "@/lib/gateway/usage/timeFormatting";
+import { useDisplayPreferences } from "@/components/providers/DisplayPreferencesProvider";
+import {
+	formatDisplayDateTime,
+	formatDisplayNumber,
+	formatDisplayTimestamp,
+	type DisplayFormattingPreferences,
+} from "@/lib/displayPreferences";
 import EditKeyItem from "./EditKeyItem";
 import { useTranslations } from "next-intl";
 
 const NANOS_PER_USD = 1_000_000_000;
 
-function formatDateTime(value?: string | null, emptyText = "Never") {
+function formatDateTime(value: string | null | undefined, preferences: DisplayFormattingPreferences, emptyText: string) {
 	if (!value) return emptyText;
 	const date = new Date(value);
 	if (Number.isNaN(date.getTime())) return emptyText;
-	return new Intl.DateTimeFormat("en-GB", {
-		year: "numeric",
-		month: "short",
-		day: "2-digit",
-		hour: "2-digit",
-		minute: "2-digit",
-	}).format(date);
+	return formatDisplayDateTime(date, preferences);
 }
 
-function formatCount(value: unknown) {
+function formatCount(value: unknown, preferences: DisplayFormattingPreferences) {
 	const count = Number(value ?? 0);
 	if (!Number.isFinite(count)) return "0";
-	return new Intl.NumberFormat("en-US").format(count);
+	return formatDisplayNumber(count, preferences);
 }
 
-function formatUsdFromNanos(value: unknown) {
+function formatUsdFromNanos(value: unknown, preferences: DisplayFormattingPreferences) {
 	const nanos = Number(value ?? 0);
 	const usd = Number.isFinite(nanos) ? nanos / NANOS_PER_USD : 0;
-	return new Intl.NumberFormat("en-US", {
+	return formatDisplayNumber(usd, preferences, {
 		style: "currency",
 		currency: "USD",
 		maximumFractionDigits: usd < 10 ? 2 : 0,
-	}).format(usd);
+		notation: "standard",
+	});
 }
 
 function formatKeyReference(prefix?: string | null) {
@@ -82,6 +84,7 @@ function KeyTimeHover({
 	relativeNowMs: number | null;
 	labels: { utc: string; relative: string; timestamp: string };
 }) {
+	const { formattingPreferences: preferences } = useDisplayPreferences();
 	if (!value) return <>{emptyText}</>;
 	const date = new Date(value);
 	if (!Number.isFinite(date.getTime())) return <>{emptyText}</>;
@@ -90,23 +93,25 @@ function KeyTimeHover({
 		<HoverCard>
 			<HoverCardTrigger asChild>
 				<span className="cursor-help underline decoration-dotted underline-offset-2">
-					{formatDateTime(value, emptyText)}
+					{relativeNowMs
+						? formatDisplayTimestamp(value, preferences, new Date(relativeNowMs))
+						: formatDateTime(value, preferences, emptyText)}
 				</span>
 			</HoverCardTrigger>
 			<HoverCardContent align="start" className="w-auto">
 				<div className="grid gap-2 text-xs">
 					<div className="grid grid-cols-[120px_1fr] gap-2">
 						<div className="text-muted-foreground">{userTimeZone}</div>
-						<div className="font-mono">{formatPreciseDateTime(date, userTimeZone)}</div>
+						<div className="font-mono">{formatDisplayDateTime(date, { ...preferences, timeZone: userTimeZone })}</div>
 					</div>
 					<div className="grid grid-cols-[120px_1fr] gap-2">
 						<div className="text-muted-foreground">{labels.utc}</div>
-						<div className="font-mono">{formatPreciseDateTime(date, "UTC")}</div>
+						<div className="font-mono">{formatDisplayDateTime(date, { ...preferences, timeZone: "UTC" })}</div>
 					</div>
 					<div className="grid grid-cols-[120px_1fr] gap-2">
 						<div className="text-muted-foreground">{labels.relative}</div>
 						<div className="font-mono">
-							{relativeNowMs ? formatRelativeToNow(date, relativeNowMs) : "-"}
+							{relativeNowMs ? formatDisplayTimestamp(date, { ...preferences, relativeTime: "relative" }, new Date(relativeNowMs)) : "-"}
 						</div>
 					</div>
 					<div className="grid grid-cols-[120px_1fr] gap-2">
@@ -205,6 +210,7 @@ export default function KeyDetailsItem({
 	onOpenChange?: (open: boolean) => void;
 }) {
 	const t = useTranslations("SettingsUI");
+	const { formattingPreferences: preferences } = useDisplayPreferences();
 	const [internalOpen, setInternalOpen] = useState(false);
 	const [editOpen, setEditOpen] = useState(false);
 	const suppressInspectorDismissRef = useRef(false);
@@ -224,7 +230,9 @@ export default function KeyDetailsItem({
 				? { Icon: Ban, className: "text-amber-600 dark:text-amber-400" }
 				: { Icon: Ban, className: "text-muted-foreground" };
 	const StateIcon = stateVisual.Icon;
-	const userTimeZone = typeof Intl !== "undefined"
+	const userTimeZone = preferences.timeZone !== "system"
+		? preferences.timeZone
+		: typeof Intl !== "undefined"
 		? Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"
 		: "UTC";
 	useEffect(() => {
@@ -308,11 +316,11 @@ export default function KeyDetailsItem({
 							</div>
 							<div className="px-3 sm:border-r sm:border-zinc-200/80 sm:dark:border-zinc-800">
 								<div className="text-xs text-muted-foreground">{t("strings.Requests Today" as never)}</div>
-								<div className="mt-2 text-lg font-semibold">{formatCount(k?.current_usage_daily)}</div>
+								<div className="mt-2 text-lg font-semibold">{formatCount(k?.current_usage_daily, preferences)}</div>
 							</div>
 							<div className="mt-4 border-r border-zinc-200/80 pr-3 dark:border-zinc-800 sm:mt-0 sm:px-3">
 								<div className="text-xs text-muted-foreground">{t("strings.Spend Today" as never)}</div>
-								<div className="mt-2 text-lg font-semibold">{formatUsdFromNanos(k?.current_usage_daily_cost_nanos)}</div>
+								<div className="mt-2 text-lg font-semibold">{formatUsdFromNanos(k?.current_usage_daily_cost_nanos, preferences)}</div>
 							</div>
 							<div className="mt-4 pl-3 sm:mt-0">
 								<div className="text-xs text-muted-foreground">{t("strings.Guardrails" as never)}</div>
@@ -342,12 +350,12 @@ export default function KeyDetailsItem({
 									{t("strings.Limits" as never)}
 								</div>
 								<div className="mt-2">
-									<DetailRow label={t("strings.Daily Requests" as never)} value={limitText(k?.daily_limit_requests, formatCount, t("strings.Unlimited" as never))} />
-									<DetailRow label={t("strings.Weekly Requests" as never)} value={limitText(k?.weekly_limit_requests, formatCount, t("strings.Unlimited" as never))} />
-									<DetailRow label={t("strings.Monthly Requests" as never)} value={limitText(k?.monthly_limit_requests, formatCount, t("strings.Unlimited" as never))} />
-									<DetailRow label={t("strings.Daily Spend" as never)} value={limitText(k?.daily_limit_cost_nanos, formatUsdFromNanos, t("strings.Unlimited" as never))} />
-									<DetailRow label={t("strings.Weekly Spend" as never)} value={limitText(k?.weekly_limit_cost_nanos, formatUsdFromNanos, t("strings.Unlimited" as never))} />
-									<DetailRow label={t("strings.Monthly Spend" as never)} value={limitText(k?.monthly_limit_cost_nanos, formatUsdFromNanos, t("strings.Unlimited" as never))} />
+									<DetailRow label={t("strings.Daily Requests" as never)} value={limitText(k?.daily_limit_requests, (value) => formatCount(value, preferences), t("strings.Unlimited" as never))} />
+									<DetailRow label={t("strings.Weekly Requests" as never)} value={limitText(k?.weekly_limit_requests, (value) => formatCount(value, preferences), t("strings.Unlimited" as never))} />
+									<DetailRow label={t("strings.Monthly Requests" as never)} value={limitText(k?.monthly_limit_requests, (value) => formatCount(value, preferences), t("strings.Unlimited" as never))} />
+									<DetailRow label={t("strings.Daily Spend" as never)} value={limitText(k?.daily_limit_cost_nanos, (value) => formatUsdFromNanos(value, preferences), t("strings.Unlimited" as never))} />
+									<DetailRow label={t("strings.Weekly Spend" as never)} value={limitText(k?.weekly_limit_cost_nanos, (value) => formatUsdFromNanos(value, preferences), t("strings.Unlimited" as never))} />
+									<DetailRow label={t("strings.Monthly Spend" as never)} value={limitText(k?.monthly_limit_cost_nanos, (value) => formatUsdFromNanos(value, preferences), t("strings.Unlimited" as never))} />
 								</div>
 							</section>
 						</div>
@@ -408,7 +416,7 @@ export default function KeyDetailsItem({
 															{t("strings.Blocked" as never)}
 												</div>
 												<div className="mt-2 text-lg font-semibold">
-													{formatCount(guardrailEnforcementSummary.blocked)}
+													{formatCount(guardrailEnforcementSummary.blocked, preferences)}
 												</div>
 											</div>
 											<div className="rounded-lg border border-border/60 bg-muted/30 p-3">
@@ -416,7 +424,7 @@ export default function KeyDetailsItem({
 															{t("strings.Redacted" as never)}
 												</div>
 												<div className="mt-2 text-lg font-semibold">
-													{formatCount(guardrailEnforcementSummary.redacted)}
+													{formatCount(guardrailEnforcementSummary.redacted, preferences)}
 												</div>
 											</div>
 											<div className="rounded-lg border border-border/60 bg-muted/30 p-3">
@@ -424,7 +432,7 @@ export default function KeyDetailsItem({
 															{t("strings.Flagged" as never)}
 												</div>
 												<div className="mt-2 text-lg font-semibold">
-													{formatCount(guardrailEnforcementSummary.flagged)}
+													{formatCount(guardrailEnforcementSummary.flagged, preferences)}
 												</div>
 											</div>
 											<div className="rounded-lg border border-border/60 bg-muted/30 p-3">
@@ -432,9 +440,11 @@ export default function KeyDetailsItem({
 															{t("strings.Last triggered" as never)}
 												</div>
 												<div className="mt-2 text-sm font-semibold">
-													{formatDateTime(
-														guardrailEnforcementSummary.lastTriggeredAt,
-													)}
+											{formatDateTime(
+												guardrailEnforcementSummary.lastTriggeredAt,
+												preferences,
+												t("labels.never"),
+											)}
 												</div>
 											</div>
 										</div>
@@ -459,7 +469,7 @@ export default function KeyDetailsItem({
 															>
 																		{guardrail?.name ?? guardrail?.id ?? t("strings.Guardrail" as never)}
 																<span className="ml-1 text-muted-foreground">
-																	×{formatCount(guardrail?.count)}
+																	×{formatCount(guardrail?.count, preferences)}
 																</span>
 															</Badge>
 														),

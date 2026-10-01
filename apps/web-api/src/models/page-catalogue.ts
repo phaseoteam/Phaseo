@@ -17,7 +17,13 @@ type WeeklyMetricRow = {
 };
 
 export type ModelsPageFacets = {
-	statusCounts: { active: number; coming_soon: number; not_active: number };
+	statusCounts: {
+		active: number;
+		coming_soon: number;
+		not_active: number;
+		deprecated: number;
+		retired: number;
+	};
 	endpointOptions: OptionCount[];
 	inputModalityOptions: OptionCount[];
 	outputModalityOptions: OptionCount[];
@@ -156,8 +162,13 @@ function providerDetails(value: unknown): Row[] {
 }
 
 function withoutExternalProviders(row: Row): Row {
+	const lifecycleStatus = String(row.status ?? "").trim().toLowerCase();
+	if (!Array.isArray(row.gateway_provider_details)) {
+		return lifecycleStatus === "retired" || lifecycleStatus === "deprecated"
+			? { ...row, gateway_status: lifecycleStatus }
+			: row;
+	}
 	const details = providerDetails(row.gateway_provider_details);
-	if (details.length === 0) return row;
 	const visibleDetails = details.filter((detail) => {
 		const status = String(detail.status ?? "").trim().toLowerCase();
 		const accessScope = String(detail.access_scope ?? "public").trim().toLowerCase();
@@ -174,6 +185,15 @@ function withoutExternalProviders(row: Row): Row {
 	const activeProviderNames = strings(
 		visibleDetails.filter((detail) => detail.is_active === true).map((detail) => detail.name),
 	);
+	const gatewayStatus = lifecycleStatus === "retired"
+		? "retired"
+		: lifecycleStatus === "deprecated"
+			? "deprecated"
+			: activeProviderNames.length > 0
+				? "active"
+				: String(row.gateway_status ?? "") === "coming_soon"
+					? "coming_soon"
+					: "not_active";
 	return {
 		...row,
 		gateway_provider_details: visibleDetails,
@@ -181,9 +201,7 @@ function withoutExternalProviders(row: Row): Row {
 		gateway_active_provider_names: activeProviderNames,
 		gateway_provider_count: providerNames.length,
 		gateway_active_provider_count: activeProviderNames.length,
-		gateway_status: activeProviderNames.length > 0
-			? "active"
-			: String(row.gateway_status ?? "") === "coming_soon" ? "coming_soon" : "not_active",
+		gateway_status: gatewayStatus,
 	};
 }
 
@@ -270,11 +288,25 @@ function creator(row: Row): string {
 }
 
 export function buildModelsPageFacets(rows: Row[]): ModelsPageFacets {
-	const statusCounts = { active: 0, coming_soon: 0, not_active: 0 };
+	const statusCounts = {
+		active: 0,
+		coming_soon: 0,
+		not_active: 0,
+		deprecated: 0,
+		retired: 0,
+	};
 	const creatorCounts = new Map<string, number>();
 	const yearCounts = new Map<string, number>();
 	for (const row of rows) {
-		const status = row.gateway_status === "active" ? "active" : row.gateway_status === "coming_soon" ? "coming_soon" : "not_active";
+		const status = row.gateway_status === "active"
+			? "active"
+			: row.gateway_status === "coming_soon"
+				? "coming_soon"
+				: row.gateway_status === "deprecated"
+					? "deprecated"
+					: row.gateway_status === "retired"
+						? "retired"
+						: "not_active";
 		statusCounts[status] += 1;
 		const creatorName = creator(row);
 		if (creatorName) creatorCounts.set(creatorName, (creatorCounts.get(creatorName) ?? 0) + 1);
@@ -307,28 +339,16 @@ export type ModelsPageQuery = {
 };
 
 async function databasePageRows(env: Env, query: ModelsPageQuery = {}): Promise<Row[]> {
-	const rows: Row[] = [];
-	const client = getDataClient(env);
-	for (let offset = 0; ; offset += 1_000) {
-		let request = (
-			query.region || query.serviceTier
-				? client.rpc(
-					"get_v2_public_models_page_rows",
-					{ p_region: query.region ?? null, p_service_tier: query.serviceTier ?? null },
-				)
-				: client.rpc("get_public_models_page_rows")
-		);
-		const result = await request.range(offset, offset + 999);
-		if (result.error) throw result.error;
-		const pageRows = (result.data ?? []) as Row[];
-		rows.push(...(
-			query.organisationId
-				? pageRows.filter((row) => String(row.organisation_id ?? "") === query.organisationId)
-				: pageRows
-		));
-		if ((result.data?.length ?? 0) < 1_000) break;
-	}
-	return rows;
+	const { data, error } = await getDataClient(env).rpc("get_public_models_page_payload", {
+		p_region: query.region || null,
+		p_service_tier: query.serviceTier || null,
+		p_organisation_id: query.organisationId || null,
+	});
+	if (error) throw error;
+	if (!Array.isArray(data)) throw new Error("Invalid models catalogue payload");
+	return query.organisationId
+		? data.filter((row: Row) => String(row.organisation_id ?? "") === query.organisationId)
+		: data;
 }
 
 async function weeklyMetrics(env: Env, modelIds?: string[]): Promise<WeeklyMetricRow[]> {
@@ -376,13 +396,13 @@ export async function fetchModelsPageCatalogue(
 	query: ModelsPageQuery = {},
 	_catalogueVersion: "v1" | "v2" = "v2",
 ): Promise<{ models: Row[]; pricingComplete: boolean }> {
-	const databaseRows = await databasePageRows(env, query);
-	const modelWeeklyMetrics = await weeklyMetrics(
-		env,
-		query.organisationId
-			? databaseRows.map((row) => String(row.model_id ?? "")).filter(Boolean)
-			: undefined,
-	);
+	const rowsPromise = databasePageRows(env, query);
+	const metricsPromise = query.organisationId
+		? rowsPromise.then((rows) => weeklyMetrics(
+			env, rows.map((row) => String(row.model_id ?? "")).filter(Boolean),
+		))
+		: weeklyMetrics(env);
+	const [databaseRows, modelWeeklyMetrics] = await Promise.all([rowsPromise, metricsPromise]);
 	return {
 		models: attachModelsPageVariants(mergeModelWeeklyMetrics(
 		databaseRows

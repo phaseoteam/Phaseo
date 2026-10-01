@@ -1,3 +1,5 @@
+import { sdkExportStore, sdkRequestFromChat } from "@/lib/chat/sdkExport";
+
 const DEFAULT_WEB_API_ORIGIN = "https://phaseo.app";
 
 export class WebApiError extends Error {
@@ -48,10 +50,15 @@ async function readJsonPayload<T>(
  * serving, cache tags, and revalidation are owned by Cloudflare so there is a
  * single cache contract for every web deployment.
  */
-export async function fetchPublicWebApi<T>(path: `/api/_web/${string}`): Promise<T> {
+export async function fetchPublicWebApi<T>(
+	path: `/api/_web/${string}`,
+	options: { signal?: AbortSignal; credentials?: RequestCredentials } = {},
+): Promise<T> {
 	const response = await fetch(`${getWebApiOrigin()}${path}`, {
 		headers: { Accept: "application/json" },
 		cache: "no-store",
+		signal: options.signal,
+		credentials: options.credentials ?? "omit",
 	});
 
 	if (!response.ok) {
@@ -63,9 +70,10 @@ export async function fetchPublicWebApi<T>(path: `/api/_web/${string}`): Promise
 
 export async function fetchOptionalPublicWebApi<T>(
 	path: `/api/_web/${string}`,
+	options: { signal?: AbortSignal } = {},
 ): Promise<T | null> {
 	try {
-		return await fetchPublicWebApi<T>(path);
+		return await fetchPublicWebApi<T>(path, options);
 	} catch (error) {
 		if (error instanceof WebApiError && error.status === 404) return null;
 		throw error;
@@ -131,11 +139,15 @@ export async function fetchInternalWebApiResponse(
 
 /** Authenticated, private chat proxy request owned by the Cloudflare Worker. */
 export async function fetchChatWebApi(path: `/api/chat/${string}`, init: RequestInit = {}): Promise<Response> {
+	const sdkRequest = typeof window === "undefined" ? null : sdkRequestFromChat(path, init);
+	if (sdkRequest) sdkExportStore.set(sdkRequest);
 	const { getBrowserAccessToken } = await import("@/lib/fetchers/internal/accountAuthClient");
 	const accessToken = await getBrowserAccessToken();
-	return fetch(`${getWebApiOrigin()}${path}`, {
+	const response = await fetch(`${getWebApiOrigin()}${path}`, {
 		...init,
 		headers: { ...init.headers, ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}) },
 		cache: "no-store",
 	});
+	if (sdkRequest && sdkExportStore.get() === sdkRequest) sdkExportStore.set({ ...sdkRequest, status: response.status, requestId: response.headers.get("x-request-id") ?? response.headers.get("x-phaseo-request-id") ?? undefined });
+	return response;
 }

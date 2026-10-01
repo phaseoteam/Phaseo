@@ -1992,14 +1992,14 @@
         "provider_api_model_id":  "spacex-ai:spacex-ai/grok-imagine-image-quality",
         "provider_model_slug":  "grok-imagine-image-quality",
         "internal_model_id":  "spacex-ai/grok-imagine-image-quality",
-        "is_active_gateway":  true,
+        "is_active_gateway":  false,
         "quantization_scheme":  null,
         "input_modalities":  "text,image",
         "output_modalities":  "image",
         "context_length":  8000,
         "max_output_tokens":  null,
         "effective_from":  "2026-05-06T00:00:00",
-        "effective_to":  null,
+        "effective_to":  "2026-09-03T00:00:00Z",
         "capabilities":  [
                              {
                                  "capability_id":  "image.generate",
@@ -2036,8 +2036,8 @@
                                            ]
                              }
                          ],
-        "routing_status":  "active",
-        "routable":  true,
+        "routing_status":  null,
+        "routable":  false,
         "regions":  {
                         "execution":  null,
                         "data":  null
@@ -2075,22 +2075,78 @@
         "output_modalities":  "image",
         "context_length":  null,
         "max_output_tokens":  null,
-        "effective_from":  "2026-08-11T00:00:00",
+        "effective_from":  "2026-08-11T00:00:00Z",
         "effective_to":  null,
         "capabilities":  [
                              {
                                  "capability_id":  "image.generate",
                                  "status":  "active",
-                                 "params":  [
-
-                                            ],
-                                 "reasoning":  null,
-                                 "tool_call":  null,
-                                 "structured_output":  null,
-                                 "temperature":  null,
-                                 "attachment":  null,
-                                 "input_modalities":  null,
-                                 "output_modalities":  null,
+                                 "params":  {
+                                             "n":  {
+                                                       "type":  "integer",
+                                                       "min":  1,
+                                                       "max":  10,
+                                                       "default":  1
+                                                   },
+                                             "aspect_ratio":  {
+                                                                   "type":  "enum",
+                                                                   "values":  [
+                                                                                 "1:1",
+                                                                                 "16:9",
+                                                                                 "9:16",
+                                                                                 "4:3",
+                                                                                 "3:4",
+                                                                                 "3:2",
+                                                                                 "2:3",
+                                                                                 "2:1",
+                                                                                 "1:2",
+                                                                                 "19.5:9",
+                                                                                 "9:19.5",
+                                                                                 "20:9",
+                                                                                 "9:20",
+                                                                                 "21:9",
+                                                                                 "5:2",
+                                                                                 "auto"
+                                                                             ],
+                                                                   "default":  "auto"
+                                                               },
+                                             "resolution":  {
+                                                                "type":  "enum",
+                                                                "values":  [
+                                                                              "1k",
+                                                                              "2k"
+                                                                          ],
+                                                                "default":  "1k"
+                                                            },
+                                             "quality":  {
+                                                            "type":  "enum",
+                                                            "values":  [
+                                                                          "low",
+                                                                          "medium",
+                                                                          "auto"
+                                                                      ],
+                                                            "default":  "auto"
+                                                        },
+                                             "response_format":  {
+                                                                    "type":  "enum",
+                                                                    "values":  [
+                                                                                  "url",
+                                                                                  "b64_json"
+                                                                              ],
+                                                                    "default":  "url"
+                                                                }
+                                         },
+                                 "reasoning":  false,
+                                 "tool_call":  false,
+                                 "structured_output":  false,
+                                 "temperature":  false,
+                                 "attachment":  true,
+                                 "input_modalities":  [
+                                                           "text"
+                                                       ],
+                                 "output_modalities":  [
+                                                            "image"
+                                                        ],
                                  "modes":  [
 
                                            ]
@@ -2098,16 +2154,72 @@
                              {
                                  "capability_id":  "image.edit",
                                  "status":  "active",
-                                 "params":  [
-
-                                            ],
-                                 "reasoning":  null,
-                                 "tool_call":  null,
-                                 "structured_output":  null,
-                                 "temperature":  null,
-                                 "attachment":  null,
-                                 "input_modalities":  null,
-                                 "output_modalities":  null,
+                                 "params":  {
+                                             "images":  {
+                                                               "type":  "array",
+                                                               "min_items":  1,
+                                                               "max_items":  5
+                                                           },
+                                             "aspect_ratio":  {
+                                                                   "type":  "enum",
+                                                                   "values":  [
+                                                                                 "1:1",
+                                                                                 "16:9",
+                                                                                 "9:16",
+                                                                                 "4:3",
+                                                                                 "3:4",
+                                                                                 "3:2",
+                                                                                 "2:3",
+                                                                                 "2:1",
+                                                                                 "1:2",
+                                                                                 "19.5:9",
+                                                                                 "9:19.5",
+                                                                                 "20:9",
+                                                                                 "9:20",
+                                                                                 "21:9",
+                                                                                 "5:2",
+                                                                                 "auto"
+                                                                             ],
+                                                                   "default":  "auto"
+                                                               },
+                                             "resolution":  {
+                                                                "type":  "enum",
+                                                                "values":  [
+                                                                              "1k",
+                                                                              "2k"
+                                                                          ],
+                                                                "default":  "1k"
+                                                            },
+                                             "quality":  {
+                                                            "type":  "enum",
+                                                            "values":  [
+                                                                          "low",
+                                                                          "medium",
+                                                                          "auto"
+                                                                      ],
+                                                            "default":  "auto"
+                                                        },
+                                             "response_format":  {
+                                                                    "type":  "enum",
+                                                                    "values":  [
+                                                                                  "url",
+                                                                                  "b64_json"
+                                                                              ],
+                                                                    "default":  "url"
+                                                                }
+                                         },
+                                 "reasoning":  false,
+                                 "tool_call":  false,
+                                 "structured_output":  false,
+                                 "temperature":  false,
+                                 "attachment":  true,
+                                 "input_modalities":  [
+                                                           "text",
+                                                           "image"
+                                                       ],
+                                 "output_modalities":  [
+                                                            "image"
+                                                        ],
                                  "modes":  [
 
                                            ]
@@ -2123,32 +2235,44 @@
                         "data":  null
                     },
         "service_tiers":  [
-
+                              "standard"
                           ],
         "api":  {
                     "formats":  [
-
-                                ],
-                    "endpoint":  null,
+                                  "openai.images"
+                              ],
+                    "endpoint":  "/v1/images/generations",
                     "deployment":  null
                 },
         "sources":  [
                         {
                             "kind":  "api_reference",
                             "url":  "https://docs.x.ai/developers/models/grok-imagine-image-2.0",
-                            "accessed_at":  "2026-08-11T00:00:00",
-                            "notes":  "Official xAI model page."
+                            "accessed_at":  "2026-09-03T00:00:00Z",
+                            "notes":  "Official xAI model page documents regions, batch support, 1K/2K resolution, and pricing."
+                        },
+                        {
+                            "kind":  "documentation",
+                            "url":  "https://docs.x.ai/developers/model-capabilities/images/generation",
+                            "accessed_at":  "2026-09-03T00:00:00Z",
+                            "notes":  "Documents count up to 10, aspect ratios, response formats, and quality behavior."
+                        },
+                        {
+                            "kind":  "documentation",
+                            "url":  "https://docs.x.ai/developers/model-capabilities/images/multi-image-editing",
+                            "accessed_at":  "2026-09-03T00:00:00Z",
+                            "notes":  "Documents up to five source images per edit."
                         }
                     ],
         "verification":  {
                              "status":  "verified",
-                             "checked_at":  "2026-08-11T00:00:00",
-                             "notes":  "API slug, modalities, regions and rate limit verified against xAI documentation."
+                             "checked_at":  "2026-09-03T00:00:00Z",
+                             "notes":  "API slug, modalities, regions, batch support, request controls, multi-image editing, pricing, and rate limit verified against xAI documentation."
                          },
         "rate_limits":  [
                             {
                                 "type":  "requests_per_second",
-                                "limit":  5,
+                                "limit":  6,
                                 "window":  "second",
                                 "scope":  "model",
                                 "notes":  null
@@ -2156,259 +2280,251 @@
                         ]
     },
     {
-        "api_model_id":  "spacex-ai/grok-imagine-video",
-        "provider_api_model_id":  "spacex-ai:spacex-ai/grok-imagine-video",
-        "provider_model_slug":  "grok-imagine-video",
-        "internal_model_id":  "spacex-ai/grok-imagine-video",
-        "is_active_gateway":  false,
-        "quantization_scheme":  null,
-        "input_modalities":  "text,image,video",
-        "output_modalities":  "video",
-        "context_length":  null,
-        "max_output_tokens":  null,
-        "effective_from":  "2026-01-29T00:00:00",
-        "effective_to":  null,
-        "capabilities":  [
-                             {
-                                 "capability_id":  "video.generate",
-                                 "status":  "coming_soon",
-                                 "params":  {
-                                                "prompt":  {
-                                                               "type":  "string"
-                                                           },
-                                                "duration":  {
-                                                                 "type":  "number",
-                                                                 "min":  1,
-                                                                 "aliases":  [
-                                                                                 "seconds",
-                                                                                 "duration_seconds"
-                                                                             ]
-                                                             },
-                                                "size":  {
-                                                             "type":  "enum",
-                                                             "values":  [
-                                                                            "480p",
-                                                                            "720p"
-                                                                        ],
-                                                             "aliases":  [
-                                                                             "resolution"
-                                                                         ]
-                                                         },
-                                                "aspect_ratio":  {
-                                                                     "type":  "string",
-                                                                     "aliases":  [
-                                                                                     "ratio"
-                                                                                 ]
-                                                                 },
-                                                "input_reference":  {
-                                                                        "type":  "string",
-                                                                        "aliases":  [
-                                                                                        "image_url"
-                                                                                    ]
-                                                                    },
-                                                "input_references":  {
-                                                                         "type":  "array"
-                                                                     }
-                                            },
-                                 "reasoning":  null,
-                                 "tool_call":  null,
-                                 "structured_output":  null,
-                                 "temperature":  null,
-                                 "attachment":  null,
-                                 "input_modalities":  null,
-                                 "output_modalities":  null,
-                                 "modes":  [
-
-                                           ]
-                             },
-                             {
-                                 "capability_id":  "video.edit",
-                                 "status":  "coming_soon",
-                                 "params":  {
-                                                "prompt":  {
-                                                               "type":  "string"
-                                                           },
-                                                "duration":  {
-                                                                 "type":  "number",
-                                                                 "min":  1,
-                                                                 "aliases":  [
-                                                                                 "seconds",
-                                                                                 "duration_seconds"
-                                                                             ]
-                                                             },
-                                                "size":  {
-                                                             "type":  "enum",
-                                                             "values":  [
-                                                                            "480p",
-                                                                            "720p"
-                                                                        ],
-                                                             "aliases":  [
-                                                                             "resolution"
-                                                                         ]
-                                                         },
-                                                "quality":  {
-                                                                "type":  "string"
-                                                            },
-                                                "input_reference":  {
-                                                                        "type":  "string",
-                                                                        "aliases":  [
-                                                                                        "image_url"
-                                                                                    ]
-                                                                    }
-                                            },
-                                 "reasoning":  null,
-                                 "tool_call":  null,
-                                 "structured_output":  null,
-                                 "temperature":  null,
-                                 "attachment":  null,
-                                 "input_modalities":  null,
-                                 "output_modalities":  null,
-                                 "modes":  [
-
-                                           ]
-                             }
-                         ],
-        "routing_status":  null,
-        "routable":  false,
-        "regions":  {
-                        "execution":  null,
-                        "data":  null
-                    },
-        "service_tiers":  [
-
-                          ],
-        "api":  {
-                    "formats":  [
-
-                                ],
-                    "endpoint":  null,
-                    "deployment":  null
-                },
-        "sources":  [
-
-                    ],
-        "verification":  {
-                             "status":  "unverified",
-                             "checked_at":  null,
-                             "notes":  null
-                         },
-        "rate_limits":  [
-
-                        ]
+      "api_model_id": "spacex-ai/grok-imagine-video",
+      "provider_api_model_id": "spacex-ai:spacex-ai/grok-imagine-video",
+      "provider_model_slug": "grok-imagine-video",
+      "internal_model_id": "spacex-ai/grok-imagine-video",
+      "is_active_gateway": true,
+      "quantization_scheme": null,
+      "input_modalities": "text,image,video",
+      "output_modalities": "video",
+      "context_length": null,
+      "max_output_tokens": null,
+      "effective_from": "2026-01-29T00:00:00",
+      "effective_to": null,
+      "capabilities": [
+        {
+          "capability_id": "video.generate",
+          "status": "active",
+          "params": {
+            "prompt": {
+              "type": "string"
+            },
+            "duration": {
+              "type": "number",
+              "min": 1,
+              "aliases": [
+                "seconds",
+                "duration_seconds"
+              ]
+            },
+            "size": {
+              "type": "enum",
+              "values": [
+                "480p",
+                "720p"
+              ],
+              "aliases": [
+                "resolution"
+              ]
+            },
+            "aspect_ratio": {
+              "type": "string",
+              "aliases": [
+                "ratio"
+              ]
+            },
+            "input_reference": {
+              "type": "string",
+              "aliases": [
+                "image_url"
+              ]
+            },
+            "input_references": {
+              "type": "array"
+            }
+          },
+          "reasoning": null,
+          "tool_call": null,
+          "structured_output": null,
+          "temperature": null,
+          "attachment": null,
+          "input_modalities": null,
+          "output_modalities": null,
+          "modes": []
+        },
+        {
+          "capability_id": "video.edit",
+          "status": "active",
+          "params": {
+            "prompt": {
+              "type": "string"
+            },
+            "input_references": {
+              "type": "array"
+            },
+            "input_video_duration": {
+              "type": "number",
+              "min": 0,
+              "max": 8.7
+            },
+            "size": {
+              "type": "enum",
+              "values": [
+                "480p",
+                "720p"
+              ],
+              "aliases": [
+                "resolution"
+              ]
+            }
+          },
+          "reasoning": null,
+          "tool_call": null,
+          "structured_output": null,
+          "temperature": null,
+          "attachment": null,
+          "input_modalities": null,
+          "output_modalities": null,
+          "modes": []
+        }
+      ],
+      "routing_status": "active",
+      "routable": true,
+      "regions": {
+        "execution": null,
+        "data": null
+      },
+      "service_tiers": [
+        "standard"
+      ],
+      "api": {
+        "formats": [
+          "xai.async.video"
+        ],
+        "endpoint": "https://api.x.ai/v1/videos/generations",
+        "deployment": "serverless"
+      },
+      "sources": [
+        {
+          "kind": "documentation",
+          "url": "https://docs.x.ai/developers/models/grok-imagine-video",
+          "accessed_at": "2026-09-07T00:00:00Z"
+        }
+      ],
+      "verification": {
+        "status": "verified",
+        "checked_at": "2026-09-07T00:00:00Z",
+        "notes": "Native request mapping, durable submission, polling and resolution/input-media pricing reviewed against official documentation; deterministic adapter tests pass. Authenticated inference has not been run in this audit."
+      },
+      "rate_limits": []
     },
     {
-        "api_model_id":  "spacex-ai/grok-imagine-video-1.5",
-        "provider_api_model_id":  "spacex-ai:spacex-ai/grok-imagine-video-1.5",
-        "provider_model_slug":  "grok-imagine-video-1.5",
-        "internal_model_id":  "spacex-ai/grok-imagine-video-1.5",
-        "is_active_gateway":  false,
-        "quantization_scheme":  null,
-        "input_modalities":  "text,image",
-        "output_modalities":  "video",
-        "context_length":  null,
-        "max_output_tokens":  null,
-        "effective_from":  "2026-06-17T00:00:00",
-        "effective_to":  null,
-        "capabilities":  [
-                             {
-                                 "capability_id":  "video.generate",
-                                 "status":  "coming_soon",
-                                 "params":  {
-                                                "prompt":  {
-                                                               "type":  "string"
-                                                           },
-                                                "duration":  {
-                                                                 "type":  "number",
-                                                                 "min":  1,
-                                                                 "max":  15,
-                                                                 "aliases":  [
-                                                                                 "seconds",
-                                                                                 "duration_seconds"
-                                                                             ]
-                                                             },
-                                                "size":  {
-                                                             "type":  "enum",
-                                                             "values":  [
-                                                                            "480p",
-                                                                            "720p",
-                                                                            "1080p"
-                                                                        ],
-                                                             "default":  "480p",
-                                                             "aliases":  [
-                                                                             "resolution"
-                                                                         ]
-                                                         },
-                                                "aspect_ratio":  {
-                                                                     "type":  "string",
-                                                                     "aliases":  [
-                                                                                     "ratio"
-                                                                                 ]
-                                                                 },
-                                                "input_reference":  {
-                                                                        "type":  "string",
-                                                                        "aliases":  [
-                                                                                        "image_url"
-                                                                                    ]
-                                                                    },
-                                                "input_references":  {
-                                                                         "type":  "array"
-                                                                     }
-                                            },
-                                 "reasoning":  null,
-                                 "tool_call":  null,
-                                 "structured_output":  null,
-                                 "temperature":  null,
-                                 "attachment":  true,
-                                 "input_modalities":  [
-                                                          "text",
-                                                          "image"
-                                                      ],
-                                 "output_modalities":  [
-                                                           "video"
-                                                       ],
-                                 "modes":  [
-                                               "image-to-video"
-                                           ]
-                             }
-                         ],
-        "routing_status":  null,
-        "routable":  false,
-        "regions":  {
-                        "execution":  [
-                                          "us-east-1",
-                                          "us-west-2"
-                                      ],
-                        "data":  [
-                                     "us-east-1",
-                                     "us-west-2"
-                                 ]
-                    },
-        "service_tiers":  [
-                              "standard"
-                          ],
-        "api":  {
-                    "formats":  [
-                                    "xai.async.video"
-                                ],
-                    "endpoint":  "/v1/videos/generations",
-                    "deployment":  "regional"
-                },
-        "sources":  [
-                        {
-                            "kind":  "documentation",
-                            "url":  "https://docs.x.ai/developers/models/grok-imagine-video-1.5",
-                            "accessed_at":  "2026-08-10T00:00:00Z",
-                            "notes":  "Official modalities, aliases, regions, and pricing."
-                        }
-                    ],
-        "verification":  {
-                             "status":  "verified",
-                             "checked_at":  "2026-08-10T00:00:00Z",
-                             "notes":  "Image-to-video request mapping, persistence, polling, content extraction, and pricing are covered by the Gateway adapter. Text is prompt conditioning and the image input remains required; the route is disabled pending authenticated smoke testing."
-                         },
-        "rate_limits":  [
-
-                        ]
+      "api_model_id": "spacex-ai/grok-imagine-video-1.5",
+      "provider_api_model_id": "spacex-ai:spacex-ai/grok-imagine-video-1.5",
+      "provider_model_slug": "grok-imagine-video-1.5",
+      "internal_model_id": "spacex-ai/grok-imagine-video-1.5",
+      "is_active_gateway": true,
+      "quantization_scheme": null,
+      "input_modalities": "text,image",
+      "output_modalities": "video",
+      "context_length": null,
+      "max_output_tokens": null,
+      "effective_from": "2026-06-17T00:00:00",
+      "effective_to": null,
+      "capabilities": [
+        {
+          "capability_id": "video.generate",
+          "status": "active",
+          "params": {
+            "prompt": {
+              "type": "string"
+            },
+            "duration": {
+              "type": "number",
+              "min": 1,
+              "max": 15,
+              "aliases": [
+                "seconds",
+                "duration_seconds"
+              ]
+            },
+            "size": {
+              "type": "enum",
+              "values": [
+                "480p",
+                "720p",
+                "1080p"
+              ],
+              "default": "480p",
+              "aliases": [
+                "resolution"
+              ]
+            },
+            "aspect_ratio": {
+              "type": "string",
+              "aliases": [
+                "ratio"
+              ]
+            },
+            "input_reference": {
+              "type": "string",
+              "aliases": [
+                "image_url"
+              ]
+            },
+            "input_references": {
+              "type": "array"
+            }
+          },
+          "reasoning": null,
+          "tool_call": null,
+          "structured_output": null,
+          "temperature": null,
+          "attachment": true,
+          "input_modalities": [
+            "text",
+            "image"
+          ],
+          "output_modalities": [
+            "video"
+          ],
+          "modes": [
+            "image-to-video"
+          ]
+        }
+      ],
+      "routing_status": "active",
+      "routable": true,
+      "regions": {
+        "execution": [
+          "us-east-1",
+          "us-west-2"
+        ],
+        "data": [
+          "us-east-1",
+          "us-west-2"
+        ]
+      },
+      "service_tiers": [
+        "standard"
+      ],
+      "api": {
+        "formats": [
+          "xai.async.video"
+        ],
+        "endpoint": "/v1/videos/generations",
+        "deployment": "regional"
+      },
+      "sources": [
+        {
+          "kind": "documentation",
+          "url": "https://docs.x.ai/developers/models/grok-imagine-video-1.5",
+          "accessed_at": "2026-08-10T00:00:00Z",
+          "notes": "Official modalities, aliases, regions, and pricing."
+        },
+        {
+          "kind": "documentation",
+          "url": "https://docs.x.ai/developers/models/grok-imagine-video-1.5",
+          "accessed_at": "2026-09-07T00:00:00Z"
+        }
+      ],
+      "verification": {
+        "status": "verified",
+        "checked_at": "2026-09-07T00:00:00Z",
+        "notes": "Native request mapping, durable submission, polling and resolution/input-media pricing reviewed against official documentation; deterministic adapter tests pass. Authenticated inference has not been run in this audit."
+      },
+      "rate_limits": []
     },
     {
         "api_model_id":  "spacex-ai/grok-imagine-video-1.5-preview",
@@ -2587,7 +2703,7 @@
         "provider_api_model_id":  "spacex-ai:x-ai/grok-voice-think-fast-2.0",
         "provider_model_slug":  "grok-voice-think-fast-2.0",
         "internal_model_id":  "spacex-ai/grok-voice-think-fast-2.0",
-        "is_active_gateway":  false,
+        "is_active_gateway":  true,
         "quantization_scheme":  null,
         "input_modalities":  "text,audio",
         "output_modalities":  "text,audio",
@@ -2627,8 +2743,8 @@
                                            ]
                              }
                          ],
-        "routing_status":  null,
-        "routable":  false,
+        "routing_status":  "active",
+        "routable":  true,
         "regions":  {
                         "execution":  [
                                           "us-east-1"
@@ -2663,8 +2779,8 @@
                     ],
         "verification":  {
                              "status":  "verified",
-                             "checked_at":  "2026-07-29T00:00:00Z",
-                             "notes":  "Model slug, endpoint, capabilities and pricing verified against xAI documentation; gateway-disabled pending authenticated realtime validation."
+                             "checked_at":  "2026-09-07T12:00:00Z",
+                             "notes":  "Verified setup, two-turn audio, usage pricing and hold release through the Phaseo relay on 2026-09-07; workspace Realtime preview gate remains required."
                          },
         "rate_limits":  [
 

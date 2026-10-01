@@ -16,17 +16,19 @@ import {
 import { toast } from "sonner";
 import { useTranslations } from "next-intl";
 import { deleteByokKeyAction } from "@/app/(dashboard)/settings/byok/actions";
+import { useSettingsWrite } from "../PrivateSettingsQuery";
 import { localizedSettingsError } from "@/i18n/error-messages";
 
 export default function DeleteKeyButton({ id }: { id: string }) {
 	const t = useTranslations("SettingsUI");
+	const write = useSettingsWrite();
 	const [open, setOpen] = useState(false);
 	const [loading, setLoading] = useState(false);
 
 	async function onConfirmDelete() {
 		try {
 			setLoading(true);
-			await deleteByokKeyAction(id);
+			await write(deleteByokKeyAction(id));
 		toast.success(t("strings.Key deleted" as never));
 			setOpen(false);
 		} catch (err: any) {

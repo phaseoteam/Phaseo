@@ -190,12 +190,21 @@ describe("runBatchReconciliationJob", () => {
 			internalId: "batch_complete_123",
 			phase: "completed",
 		});
-		expect(dispatchAsyncWebhookEventInBackgroundMock).toHaveBeenCalledWith({
-			workspaceId: "ws_1",
-			kind: "batch",
-			internalId: "batch_expired_123",
-			phase: "failed",
-		});
+			expect(dispatchAsyncWebhookEventInBackgroundMock).toHaveBeenCalledWith({
+				workspaceId: "ws_1",
+				kind: "batch",
+				internalId: "batch_expired_123",
+				phase: "expired",
+			});
+			expect(dispatchAsyncWebhookEventInBackgroundMock).toHaveBeenCalledWith({
+				workspaceId: "ws_1",
+				kind: "batch",
+				internalId: "batch_expired_123",
+				phase: "status_changed",
+				previousStatus: "in_progress",
+				currentStatus: "expired",
+				deliveryKey: "batch.status_changed:in_progress:expired",
+			});
 		expect(dispatchAsyncWebhookEventInBackgroundMock).toHaveBeenCalledWith({
 			workspaceId: "ws_1",
 			kind: "batch",
@@ -520,6 +529,7 @@ describe("runBatchReconciliationJob", () => {
 			providerId: "openai",
 			batchId: "batch_public_unknown",
 			requestId: "req_unknown",
+			credentialContext: { workspaceId: "ws_1", keySource: undefined, byokKeyId: undefined },
 		});
 		expect(saveBatchJobMetaMock).toHaveBeenCalledWith("ws_1", "batch_public_unknown", expect.objectContaining({
 			nativeBatchId: "batch_native_recovered",

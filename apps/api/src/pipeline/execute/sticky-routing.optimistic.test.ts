@@ -128,4 +128,59 @@ describe("optimistic sticky routing", () => {
             input_tokens_details: { cached_tokens: 1_024 },
         })).toBe(1_024);
     });
+
+    it.each(["chat.completions", "messages", "responses"] as const)(
+        "ignores later conversation content once %s opening anchors are found",
+        async (endpoint) => {
+            const opening = [
+                { role: "system", content: "System instructions" },
+                { role: "user", content: "Opening question" },
+            ];
+            const expected = await sticky.resolveStickyRoutingContext({
+                endpoint,
+                body: endpoint === "responses" ? { input: opening } : { messages: opening },
+            });
+            const laterContent = vi.fn(() => "Later answer");
+            const history = [...opening, { role: "assistant", get content() { return laterContent(); } }];
+            const actual = await sticky.resolveStickyRoutingContext({
+                endpoint,
+                body: endpoint === "responses" ? { input: history } : { messages: history },
+            });
+            expect(actual).toEqual(expected);
+            expect(laterContent).not.toHaveBeenCalled();
+        },
+    );
+
+    it("uses the first eight meaningful content parts without visiting the rest", async () => {
+        const parts = [null, "", ...Array.from({ length: 8 }, (_, i) => ({ type: "text", text: `Part ${i}` }))];
+        const expected = await sticky.resolveStickyRoutingContext({
+            endpoint: "messages",
+            body: { messages: [{ role: "user", content: parts }] },
+        });
+        const laterText = vi.fn(() => "Ignored");
+        const actual = await sticky.resolveStickyRoutingContext({
+            endpoint: "messages",
+            body: { messages: [{ role: "user", content: [...parts, { type: "text", get text() { return laterText(); } }] }] },
+        });
+        expect(actual).toEqual(expected);
+        expect(laterText).not.toHaveBeenCalled();
+    });
+
+    it("continues looking for a later system anchor and preserves assistant fallback", async () => {
+        const context = await sticky.resolveStickyRoutingContext({
+            endpoint: "chat.completions",
+            body: { messages: [
+                { role: "assistant", content: "Fallback opening" },
+                { role: "system", content: "Late instructions" },
+            ] },
+        });
+        const equivalent = await sticky.resolveStickyRoutingContext({
+            endpoint: "chat.completions",
+            body: { messages: [
+                { role: "system", content: "Late instructions" },
+                { role: "user", content: "Fallback opening" },
+            ] },
+        });
+        expect(context).toEqual(equivalent);
+    });
 });

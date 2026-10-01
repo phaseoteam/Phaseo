@@ -5,29 +5,7 @@ import { HeroProviderMarquee } from "./HeroProviderMarquee";
 import type { GatewayMarketingMetrics } from "@/lib/fetchers/gateway/getMarketingMetrics";
 import { resolveLogo } from "@/lib/logos";
 import { useTranslations } from "next-intl";
-
-function formatPercent(value: number | null | undefined, digits = 2): string {
-	const normalized = value == null || Number.isNaN(value) ? 0 : value;
-	return `${normalized.toFixed(digits)}%`;
-}
-
-function formatAbsoluteNumber(
-	value: number | string | null | undefined
-): string {
-	if (value == null) return "0";
-	const numericValue =
-		typeof value === "number" ? value : Number.parseFloat(String(value));
-	if (!Number.isFinite(numericValue)) return "0";
-	return Intl.NumberFormat("en-US").format(Math.round(numericValue));
-}
-
-function formatCompactNumber(value: number | null | undefined): string {
-	const normalized = value == null || Number.isNaN(value) ? 0 : value;
-	return Intl.NumberFormat("en-US", {
-		notation: "compact",
-		maximumFractionDigits: 1,
-	}).format(normalized);
-}
+import { DisplayNumber } from "@/components/display/DisplayValue";
 
 interface HeroSectionProps {
 	metrics: GatewayMarketingMetrics;
@@ -45,19 +23,19 @@ export function HeroSection({ metrics }: HeroSectionProps) {
 	const statCards = [
 		{
 			label: t("uptime24h"),
-			value: formatPercent(metrics.summary.uptimePct, 2),
+			value: <><DisplayNumber value={metrics.summary.uptimePct ?? 0} options={{ minimumFractionDigits: 2, maximumFractionDigits: 2, notation: "standard" }} />%</>,
 		},
 		{
 			label: t("supportedProviders"),
-			value: formatAbsoluteNumber(metrics.summary.supportedProviders),
+			value: <DisplayNumber value={Number(metrics.summary.supportedProviders ?? 0)} options={{ maximumFractionDigits: 0 }} />,
 		},
 		{
 			label: t("supportedModels"),
-			value: formatAbsoluteNumber(metrics.summary.supportedModels),
+			value: <DisplayNumber value={Number(metrics.summary.supportedModels ?? 0)} options={{ maximumFractionDigits: 0 }} />,
 		},
 		{
 			label: t("tokens24h"),
-			value: formatCompactNumber(metrics.summary.tokens24h),
+			value: <DisplayNumber value={metrics.summary.tokens24h ?? 0} />,
 		},
 	];
 

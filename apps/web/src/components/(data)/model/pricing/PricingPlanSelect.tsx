@@ -40,6 +40,8 @@ export default function PricingPlanSelect({
 				return t("tierFlex");
 			case "priority":
 				return t("tierFast");
+			case "ultrafast":
+				return t("tierUltrafast");
 			default:
 				return plan ? plan.charAt(0).toUpperCase() + plan.slice(1) : plan;
 		}
@@ -59,6 +61,8 @@ export default function PricingPlanSelect({
 				return "bg-orange-50 text-orange-950 dark:bg-orange-950/30 dark:text-orange-100";
 			case "priority":
 				return "bg-violet-50 text-violet-950 dark:bg-violet-950/30 dark:text-violet-100";
+			case "ultrafast":
+				return "bg-fuchsia-50 text-fuchsia-950 dark:bg-fuchsia-950/30 dark:text-fuchsia-100";
 			case "standard":
 			default:
 				return "bg-background text-foreground dark:bg-zinc-950";
@@ -72,6 +76,8 @@ export default function PricingPlanSelect({
 				return "text-sky-700 dark:text-sky-300";
 			case "priority":
 				return "text-violet-700 dark:text-violet-300";
+			case "ultrafast":
+				return "text-fuchsia-700 dark:text-fuchsia-300";
 			case "free":
 				return "text-emerald-700 dark:text-emerald-300";
 			case "standard":
@@ -86,9 +92,11 @@ export default function PricingPlanSelect({
 			case "batch":
 				return t("planDescriptionBatch");
 			case "flex":
-				return t("planDescriptionFlex");
+				return t("planDescriptionFlexOnly");
 			case "priority":
-				return t("planDescriptionFast");
+				return t("planDescriptionFastRouting");
+			case "ultrafast":
+				return t("planDescriptionUltrafast");
 			case "standard":
 			default:
 				return t("planDescriptionStandard");

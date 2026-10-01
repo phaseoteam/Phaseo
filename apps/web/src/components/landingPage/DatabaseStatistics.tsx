@@ -4,30 +4,13 @@ import {
 	fetchFrontendSignInSupportedModelsStats,
 } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import { getTranslations } from "next-intl/server";
+import { DisplayNumber } from "@/components/display/DisplayValue";
+import { formatRoundedCount } from "@/lib/formatRoundedCount";
 
 function roundDisplayValue(raw: number, bucket: number) {
 	if (bucket <= 0) return raw;
 	if (raw > 0 && raw < bucket) return raw;
 	return Math.floor(raw / bucket) * bucket;
-}
-
-function formatStat(num: number) {
-	if (num >= 1_000_000)
-		return `${(num / 1_000_000).toFixed(num % 1_000_000 === 0 ? 0 : 1)}m+`;
-	if (num >= 1_000)
-		return `${(num / 1_000).toFixed(num % 1_000 === 0 ? 0 : 1)}k+`;
-	return `${num}+`;
-}
-
-function formatCompact(value: number) {
-	if (!Number.isFinite(value) || value <= 0) return "0";
-	if (value >= 1_000_000_000)
-		return `${(value / 1_000_000_000).toFixed(1)}B`;
-	if (value >= 1_000_000)
-		return `${(value / 1_000_000).toFixed(1)}M`;
-	if (value >= 1_000)
-		return `${(value / 1_000).toFixed(1)}K`;
-	return value.toLocaleString();
 }
 
 export default async function DatabaseStats() {
@@ -40,22 +23,22 @@ export default async function DatabaseStats() {
 	const stats = [
 		{
 			label: t("statistics.catalogModels"),
-			value: formatStat(roundDisplayValue(data.models ?? 0, 25)),
+			value: <><DisplayNumber value={roundDisplayValue(data.models ?? 0, 25)} />+</>,
 			route: "/models",
 		},
 		{
 			label: t("statistics.routableModels"),
-			value: formatStat(roundDisplayValue(gatewayStats.apiCount ?? 0, 25)),
+			value: <><DisplayNumber value={roundDisplayValue(gatewayStats.apiCount ?? 0, 25)} />+</>,
 			route: "/models",
 		},
 		{
 			label: t("statistics.catalogProviders"),
-			value: formatStat(roundDisplayValue(data.api_providers ?? 0, 5)),
+			value: <><DisplayNumber value={roundDisplayValue(data.api_providers ?? 0, 5)} />+</>,
 			route: "/api-providers",
 		},
 		{
 			label: t("statistics.monthlyTokensRouted"),
-			value: `${formatCompact(monthlyTokenTotal ?? 0)}+`,
+			value: `${formatRoundedCount(monthlyTokenTotal ?? 0)}+`,
 			route: "/rankings",
 		},
 	] as const;

@@ -1,0 +1,59 @@
+{
+  "model_id": "eleven-labs/eleven-v4-turbo",
+  "organisation_id": "eleven-labs",
+  "name": "Eleven v4 Turbo",
+  "status": "Available",
+  "previous_model_id": null,
+  "description": "Eleven v4 Turbo is ElevenLabs' low-latency text-to-speech model for realtime conversations and voice agents, supporting 90+ languages.",
+  "announced_date": "2026-09-28T00:00:00Z",
+  "release_date": "2026-09-28T00:00:00Z",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "text",
+  "output_types": "audio",
+  "api_model_id": "eleven-labs/eleven-v4-turbo",
+  "links": [],
+  "details": [],
+  "benchmarks": [],
+  "family_id": null,
+  "page_notice": null,
+  "model_type": "audio",
+  "knowledge_cutoff": null,
+  "limits": {
+    "context": null,
+    "input": null,
+    "output": null
+  },
+  "modalities": {
+    "input": [
+      "text"
+    ],
+    "output": [
+      "audio/*"
+    ]
+  },
+  "reasoning": {
+    "supported": null,
+    "options": []
+  },
+  "capabilities": {
+    "attachment": null,
+    "tool_call": null,
+    "structured_output": null,
+    "temperature": null,
+    "streaming": null,
+    "web_search": null
+  },
+  "open_weights": null,
+  "sources": [],
+  "verification": {
+    "status": "verified",
+    "checked_at": "2026-09-28T00:00:00Z",
+    "notes": "https://elevenlabs.io/docs/overview/capabilities/text-to-speech/eleven-v4"
+  },
+  "last_updated": "2026-09-28T00:00:00Z",
+  "removal_date": null,
+  "replacement_model_id": null,
+  "license_url": null
+}

@@ -1,0 +1,37 @@
+{
+  "key": "deepinfra:black-forest-labs/flux-1-schnell:image.generate",
+  "api_provider_id": "deepinfra",
+  "provider_slug": "deepinfra",
+  "api_model_id": "black-forest-labs/flux-1-schnell",
+  "capability_id": "image.generate",
+  "rules": [
+    {
+      "meter": "deepinfra_cost_usd",
+      "unit": "USD",
+      "unit_size": 1,
+      "price_per_unit": 1,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "match": [],
+      "priority": 100,
+      "source": "https://api.deepinfra.com/models/black-forest-labs/FLUX-1-schnell/schema/default"
+    }
+  ],
+  "regions": [],
+  "service_tiers": [
+    "standard"
+  ],
+  "sources": [
+    {
+      "kind": "documentation",
+      "url": "https://api.deepinfra.com/models/black-forest-labs/FLUX-1-schnell/schema/default",
+      "accessed_at": "2026-09-07T00:00:00Z",
+      "notes": "The native response reports cost in USD, accounting for model-specific image units, resolution, steps and inputs. This card prices reported native usage, not a flat per-image estimate."
+    }
+  ],
+  "verification": {
+    "status": "verified",
+    "checked_at": "2026-09-07T00:00:00Z",
+    "notes": "Native inference_status.cost meter in USD; missing usage fails closed."
+  }
+}

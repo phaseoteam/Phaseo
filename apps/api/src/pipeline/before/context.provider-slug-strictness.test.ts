@@ -94,6 +94,7 @@ const runtime = vi.hoisted(() => {
 const loadPriceCardMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/runtime/env", () => ({
+    getBindingsIfConfigured: () => null,
 	getCache: () => runtime.cache as unknown as KVNamespace,
 	getSupabaseAdmin: () => runtime.supabase,
 }));

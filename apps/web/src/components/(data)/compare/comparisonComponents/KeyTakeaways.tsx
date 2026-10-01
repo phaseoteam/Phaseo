@@ -1,3 +1,5 @@
+"use client";
+
 import type { ExtendedModel } from "@/data/types";
 import { ProviderLogo } from "../ProviderLogo";
 import {
@@ -6,6 +8,7 @@ import {
 	parseBenchmarkScore,
 	resolveBenchmarkIsPercentage,
 } from "@/lib/benchmarks/scoreFormat";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 
 interface KeyTakeawaysProps {
 	selectedModels: ExtendedModel[];
@@ -28,16 +31,21 @@ function getOutputPrice(model: ExtendedModel): number | null {
 	return prices?.output_token_price ?? null;
 }
 
-function getKeyPoints(model: ExtendedModel, allModels: ExtendedModel[]) {
+function getKeyPoints(
+	model: ExtendedModel,
+	allModels: ExtendedModel[],
+	formatNumber: (value: number) => string,
+	formatDate: (value: string) => string,
+) {
 	const points: string[] = [];
 	// Context window
 	if (model.input_context_length && model.input_context_length >= 128000) {
 		points.push(
-			`Very large input context window (${model.input_context_length.toLocaleString()} tokens)`
+			`Very large input context window (${formatNumber(model.input_context_length)} tokens)`
 		);
 	} else if (model.input_context_length) {
 		points.push(
-			`Input context: ${model.input_context_length.toLocaleString()} tokens`
+			`Input context: ${formatNumber(model.input_context_length)} tokens`
 		);
 	}
 	// Pricing
@@ -116,7 +124,7 @@ function getKeyPoints(model: ExtendedModel, allModels: ExtendedModel[]) {
 		}, model.knowledge_cutoff);
 		if (model.knowledge_cutoff === maxCutoff) {
 			points.push(
-				`Most recent knowledge cutoff (${model.knowledge_cutoff})`
+				`Most recent knowledge cutoff (${formatDate(model.knowledge_cutoff)})`
 			);
 		}
 	}
@@ -124,6 +132,7 @@ function getKeyPoints(model: ExtendedModel, allModels: ExtendedModel[]) {
 }
 
 export default function KeyTakeaways({ selectedModels }: KeyTakeawaysProps) {
+	const format = useDisplayFormatters();
 	if (!selectedModels || selectedModels.length === 0) return null;
 	return (
 		<div className="mb-6">
@@ -149,7 +158,7 @@ export default function KeyTakeaways({ selectedModels }: KeyTakeawaysProps) {
 							</div>
 						</div>
 						<ul className="list-disc pl-5 text-left text-base">
-							{getKeyPoints(model, selectedModels).map(
+							{getKeyPoints(model, selectedModels, format.number, format.calendarDate).map(
 								(point, i) => (
 									<li key={i}>{point}</li>
 								)

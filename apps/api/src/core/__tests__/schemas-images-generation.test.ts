@@ -20,6 +20,45 @@ describe("OpenAI image generation schema", () => {
 		expect(parsed.partial_images).toBe(2);
 	});
 
+	it.each(["openai/gpt-image-2.5-flare", "openai/gpt-image-2.5-sunburst"])(
+		"accepts GPT Image 2.5 flexible sizes and new quality levels for %s",
+		(model) => {
+			expect(ImagesGenerationSchema.safeParse({
+				model,
+				prompt: "A cinematic landscape",
+				size: "2048x1152",
+				quality: "xhigh",
+			}).success).toBe(true);
+			expect(ImagesGenerationSchema.safeParse({
+				model,
+				prompt: "A cinematic landscape",
+				quality: "max",
+			}).success).toBe(true);
+			expect(ImagesGenerationSchema.safeParse({
+				model,
+				prompt: "A cinematic landscape",
+				size: "1025x1024",
+			}).success).toBe(false);
+		},
+	);
+
+	it.each(["xhigh", "max"])("accepts %s quality through the GPT Image latest alias", (quality) => {
+		expect(ImagesGenerationSchema.safeParse({
+			model: "openai/gpt-image-latest",
+			prompt: "A lighthouse in a storm",
+			quality,
+			size: "2048x1152",
+		}).success).toBe(true);
+	});
+
+	it("rejects GPT Image 2.5-only quality levels for earlier GPT Image models", () => {
+		expect(ImagesGenerationSchema.safeParse({
+			model: "openai/gpt-image-2",
+			prompt: "A cinematic landscape",
+			quality: "xhigh",
+		}).success).toBe(false);
+	});
+
 	it("accepts a transparent GPT Image 2 background with a transparency-capable format", () => {
 		const parsed = ImagesGenerationSchema.parse({
 			model: "openai/gpt-image-2",

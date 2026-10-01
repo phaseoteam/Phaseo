@@ -6,6 +6,7 @@ import { ArrowUpRight, Check, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import { useLocale, useTranslations } from "next-intl";
 import { localizedSettingsError } from "@/i18n/error-messages";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -34,6 +35,7 @@ export default function WorkspaceIdentitySettings({ workspaceId, initialSettings
 	const locale = useLocale();
 	const enterprise = (key: string, values?: Record<string, string | number>) =>
 		(t as unknown as (messageKey: string, messageValues?: Record<string, string | number>) => string)(`enterpriseIdentity.${key}`, values);
+	const format = useDisplayFormatters();
 	const [summary, setSummary] = React.useState<IdentityAddonSummary | null>(null);
 	const [loading, setLoading] = React.useState(true);
 	const [working, setWorking] = React.useState(false);
@@ -95,9 +97,7 @@ export default function WorkspaceIdentitySettings({ workspaceId, initialSettings
 	if (!active) return canConfigureEnterprise ? <EnterprisePlanQuestionnaire canEdit={canEdit} workspaceId={workspaceId} /> : null;
 	if (mode === "sso") return <WorkspaceSamlSettingsCard workspaceId={workspaceId} initialSettings={initialSettings} canEdit={canEdit} />;
 	if (mode === "scim") return <WorkspaceScimSettingsCard workspaceId={workspaceId} canEdit={canEdit} />;
-	const periodEnd = summary?.currentPeriodEnd
-		? new Intl.DateTimeFormat(locale, { dateStyle: "medium" }).format(new Date(summary.currentPeriodEnd))
-		: null;
+	const periodEnd = summary?.currentPeriodEnd ? format.date(summary.currentPeriodEnd) : null;
 
 	return (
 		<div className="space-y-6">
@@ -106,15 +106,15 @@ export default function WorkspaceIdentitySettings({ workspaceId, initialSettings
 					{[[enterprise("singleSignOn"), enterprise("singleSignOnDetail")], [enterprise("provisioning"), enterprise("provisioningDetail")], [enterprise("directory"), enterprise("directoryDetail")]].map(([title, detail]) => <div key={title} className="grid gap-1 py-3 sm:grid-cols-[12rem_1fr]"><p className="text-sm font-medium">{title}</p><p className="text-sm text-muted-foreground">{detail}</p></div>)}
 				</div>
 				<div className="grid gap-6 border-b border-border/60 pb-5 sm:grid-cols-2">
-					<div><h3 className="text-sm font-semibold">{enterprise("subscription")}</h3><dl className="mt-3 space-y-2 text-sm"><div className="flex justify-between gap-4"><dt className="text-muted-foreground">{enterprise("plan")}</dt><dd>{enterprise("selfServePlan")}</dd></div><div className="flex justify-between gap-4"><dt className="text-muted-foreground">{enterprise("membersIncluded")}</dt><dd>{summary?.includedMembers == null ? "—" : new Intl.NumberFormat(locale).format(summary.includedMembers)}</dd></div><div className="flex justify-between gap-4"><dt className="text-muted-foreground">{enterprise("creditTopUpFee")}</dt><dd>{summary?.feePolicy === "included_allowance" ? enterprise("includedAllowance") : enterprise("minimumTopUpFee", { percent: new Intl.NumberFormat(locale, { style: "percent", maximumFractionDigits: 1 }).format(0.05), minimum: new Intl.NumberFormat(locale, { style: "currency", currency: "USD" }).format(1) })}</dd></div><div className="flex justify-between gap-4"><dt className="text-muted-foreground">{enterprise("renewal")}</dt><dd>{summary?.grandfathered ? enterprise("includedAllowance") : periodEnd ? (summary?.cancelAtPeriodEnd ? enterprise("cancelsOn", { date: periodEnd }) : enterprise("renewsOn", { date: periodEnd })) : enterprise("active")}</dd></div></dl></div>
+					<div><h3 className="text-sm font-semibold">{enterprise("subscription")}</h3><dl className="mt-3 space-y-2 text-sm"><div className="flex justify-between gap-4"><dt className="text-muted-foreground">{enterprise("plan")}</dt><dd>{enterprise("selfServePlan")}</dd></div><div className="flex justify-between gap-4"><dt className="text-muted-foreground">{enterprise("membersIncluded")}</dt><dd>{summary?.includedMembers == null ? "—" : format.number(summary.includedMembers)}</dd></div><div className="flex justify-between gap-4"><dt className="text-muted-foreground">{enterprise("creditTopUpFee")}</dt><dd>{summary?.feePolicy === "included_allowance" ? enterprise("includedAllowance") : enterprise("minimumTopUpFee", { percent: format.number(0.05, { style: "percent", maximumFractionDigits: 1 }), minimum: format.number(1, { style: "currency", currency: "USD" }) })}</dd></div><div className="flex justify-between gap-4"><dt className="text-muted-foreground">{enterprise("renewal")}</dt><dd>{summary?.grandfathered ? enterprise("includedAllowance") : periodEnd ? (summary?.cancelAtPeriodEnd ? enterprise("cancelsOn", { date: periodEnd }) : enterprise("renewsOn", { date: periodEnd })) : enterprise("active")}</dd></div></dl></div>
 					<div><h3 className="text-sm font-semibold">{enterprise("administration")}</h3><div className="mt-3 flex flex-col items-start gap-2"><Button asChild variant="outline" size="sm"><Link href="/settings/workspaces/enterprise/directory">{enterprise("viewDirectory")}</Link></Button><Button asChild variant="outline" size="sm"><Link href="/settings/workspaces/enterprise/departments">{enterprise("manageDepartments")}</Link></Button></div></div>
 				</div>
 				<div className="flex flex-wrap items-center justify-between gap-3">
 					<div className="text-sm">
 						<p className="flex items-center gap-2"><Check className="h-4 w-4 text-emerald-500" />{summary?.grandfathered ? enterprise("includedForWorkspace") : periodEnd ? (summary?.cancelAtPeriodEnd ? enterprise("cancelsOn", { date: periodEnd }) : enterprise("renewsOn", { date: periodEnd })) : enterprise("subscriptionActive")}</p>
-						{summary?.includedMembers ? <p className="mt-1 text-xs text-muted-foreground">{enterprise("upToMembers", { count: summary.includedMembers })}{summary.feePolicy === "included_allowance" ? " · " + enterprise("feeFreeAllowance", { amount: new Intl.NumberFormat(locale, { style: "currency", currency: "USD" }).format(summary.remainingCardTopUpUsd) }) : " · " + enterprise("standardTopUpFee")}</p> : null}
+						{summary?.includedMembers ? <p className="mt-1 text-xs text-muted-foreground">{enterprise("upToMembers", { count: summary.includedMembers })}{summary.feePolicy === "included_allowance" ? " · " + enterprise("feeFreeAllowance", { amount: format.number(summary.remainingCardTopUpUsd, { style: "currency", currency: "USD" }) }) : " · " + enterprise("standardTopUpFee")}</p> : null}
 					</div>
-				{summary?.provider === "stripe" ? <Button variant="outline" onClick={openPortal} disabled={working || !canEdit}>{enterprise("manageSubscription")} <ArrowUpRight className="ml-2 h-4 w-4" /></Button> : <Button asChild variant="outline"><Link href="/settings/credits">{enterprise("manageSubscription")} <ArrowUpRight className="ml-2 h-4 w-4" /></Link></Button>}
+				{summary?.provider === "stripe" ? <Button variant="outline" onClick={openPortal} disabled={working || !canEdit}>{enterprise("manageSubscription")} <ArrowUpRight className="ml-2 h-4 w-4" /></Button> : <p className="max-w-xs text-right text-xs text-muted-foreground">{enterprise("noSeparateSubscription")}</p>}
 				</div>
 			</section>
 		</div>

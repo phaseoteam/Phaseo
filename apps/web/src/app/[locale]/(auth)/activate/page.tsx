@@ -14,7 +14,7 @@ import { WorkspaceSelectField } from "./WorkspaceSelectField";
 
 export async function generateMetadata(): Promise<Metadata> {
 	const t = await getTranslations("Common.authFlows.deviceActivation");
-	return { title: t("metaTitle"), description: t("metaDescription") };
+	return { title: { absolute: t("metaTitle") }, description: t("metaDescription") };
 }
 
 type ActivatePageProps = {

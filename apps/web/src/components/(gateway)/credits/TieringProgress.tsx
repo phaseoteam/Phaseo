@@ -1,3 +1,4 @@
+import { DisplayMoneyMessage } from "./DisplayMoneyMessage";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -11,15 +12,22 @@ import {
 	type GatewayTier,
 } from "@/components/(gateway)/credits/tiers";
 import { getTranslations } from "next-intl/server";
+import { DisplayNumber } from "@/components/display/DisplayValue";
 
 const HIDE_ENTERPRISE_REFERENCES = true;
 
 function money(amount: number, currency: string) {
-	return new Intl.NumberFormat("en-US", {
-		style: "currency",
-		currency,
-		maximumFractionDigits: 0,
-	}).format(amount);
+	return (
+		<DisplayNumber
+			value={amount}
+			options={{
+				style: "currency",
+				currency,
+				maximumFractionDigits: 0,
+				notation: "standard",
+			}}
+		/>
+	);
 }
 
 interface Props {
@@ -95,7 +103,7 @@ export default async function TieringProgress({
 							/>
 						</div>
 						<p className="text-xs text-muted-foreground">
-							{t("spendMoreToThreshold", { amount: money(Math.max(enterpriseThreshold - mtd, 0), currency) })}.
+							{<DisplayMoneyMessage messageKey={"spendMoreToThreshold"} amount={Math.max(enterpriseThreshold - mtd, 0)} currency={currency} />}.
 						</p>
 					</div>
 				</CardContent>
@@ -136,7 +144,7 @@ export default async function TieringProgress({
 						</p>
 						{projectedSavings > 0 && (
 							<p className="text-xs text-emerald-600 dark:text-emerald-400">
-							{t("savingVsBasic", { amount: money(projectedSavings, currency) })}
+							{<DisplayMoneyMessage messageKey={"savingVsBasic"} amount={projectedSavings} currency={currency} />}
 							</p>
 						)}
 					</div>
@@ -177,7 +185,7 @@ export default async function TieringProgress({
 					<Alert>
 						<TrendingUp className="h-4 w-4" />
 						<AlertDescription>
-							{t("onlyAway", { amount: money(remainingToNext, currency) })} {t("qualifyNextMonth", { amount: money(enterpriseThreshold, currency) })}
+							{<DisplayMoneyMessage messageKey={"onlyAway"} amount={remainingToNext} currency={currency} />} {<DisplayMoneyMessage messageKey={"qualifyNextMonth"} amount={enterpriseThreshold} currency={currency} />}
 						</AlertDescription>
 					</Alert>
 				)}
@@ -187,7 +195,7 @@ export default async function TieringProgress({
 					<Alert variant="destructive">
 						<AlertTriangle className="h-4 w-4" />
 						<AlertDescription>
-							{t("belowThreshold", { amount: money(mtd, currency) })} {t("maintainPricing", { amount: money(enterpriseThreshold, currency) })} {t("downgradeNote")}
+							{<DisplayMoneyMessage messageKey={"belowThreshold"} amount={mtd} currency={currency} />} {<DisplayMoneyMessage messageKey={"maintainPricing"} amount={enterpriseThreshold} currency={currency} />} {t("downgradeNote")}
 						</AlertDescription>
 					</Alert>
 				)}
@@ -196,7 +204,7 @@ export default async function TieringProgress({
 				<div className="space-y-3">
 					<div className="flex items-center justify-between">
 						<span className="text-sm text-muted-foreground">
-							{t("thisMonthAmount", { amount: money(mtd, currency) })}
+							{<DisplayMoneyMessage messageKey={"thisMonthAmount"} amount={mtd} currency={currency} />}
 						</span>
 						{!isEnterprise && (
 							<span className="text-xs text-muted-foreground">
@@ -261,7 +269,7 @@ export default async function TieringProgress({
 								{t("topUpFeePercent", { percent: enterpriseTier.feePct.toFixed(1) })}
 							</div>
 							<div className="mt-1 text-xs text-muted-foreground">
-								{t("perMonth", { amount: money(enterpriseTier.threshold, currency) })}
+								{<DisplayMoneyMessage messageKey={"perMonth"} amount={enterpriseTier.threshold} currency={currency} />}
 							</div>
 							{willUpgradeNextMonth && (
 								<Badge variant="outline" className="mt-2 text-[10px] border-orange-500 text-orange-600">
@@ -281,13 +289,13 @@ export default async function TieringProgress({
 						<div>
 							<div className="font-medium">{t("basicTierFee")}</div>
 							<p className="text-xs text-muted-foreground">
-								{t("basicTierDescription", { amount: money(enterpriseThreshold, currency) })}
+								{<DisplayMoneyMessage messageKey={"basicTierDescription"} amount={enterpriseThreshold} currency={currency} />}
 							</p>
 						</div>
 						<div>
 							<div className="font-medium">{t("enterpriseTierFee")}</div>
 							<p className="text-xs text-muted-foreground">
-								{t("enterpriseTierDescription", { amount: money(enterpriseThreshold, currency) })}
+								{<DisplayMoneyMessage messageKey={"enterpriseTierDescription"} amount={enterpriseThreshold} currency={currency} />}
 							</p>
 						</div>
 					</div>

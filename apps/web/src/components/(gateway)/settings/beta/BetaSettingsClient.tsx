@@ -3,6 +3,7 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { useSettingsWrite } from "../PrivateSettingsQuery";
 import { toast } from "sonner";
 import { localizedSettingsError } from "@/i18n/error-messages";
 
@@ -31,6 +32,7 @@ export default function BetaSettingsClient({
 }) {
 	const router = useRouter();
 	const t = useTranslations("SettingsUI");
+	const write = useSettingsWrite();
 	const [betaFeatures, setBetaFeatures] = React.useState(initialProfile.betaFeatures);
 	const [savingKey, setSavingKey] = React.useState<string | null>(null);
 
@@ -40,11 +42,11 @@ export default function BetaSettingsClient({
 
 	const persistFeatures = React.useCallback(
 		async (nextBetaFeatures: Record<string, boolean>) => {
-			const savePromise = updateBetaPreferences({
+			const savePromise = write(updateBetaPreferences({
 				beta_features: nextBetaFeatures,
-			});
+			}));
 
-			await toast.promise(savePromise, {
+			toast.promise(savePromise, {
 				loading: t("settingsPageCopy.betaSaving"),
 				success: t("settingsPageCopy.betaSaveSuccess"),
 				error: (error: unknown) =>
@@ -61,7 +63,7 @@ export default function BetaSettingsClient({
 			dispatchStoredBetaProfileChanged(result.profile);
 			router.refresh();
 		},
-		[router, t]
+		[router, t, write]
 	);
 
 	const toggleFeature = React.useCallback(

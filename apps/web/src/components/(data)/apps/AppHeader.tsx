@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { ExternalLink, Activity, Zap } from "lucide-react";
 import { fetchFrontendAppDetails } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import { getLocale, getTranslations } from "next-intl/server";
+import { DisplayDate, DisplayNumber } from "@/components/display/DisplayValue";
 
 export default async function AppHeader({ appId }: { appId: string }) {
 	const locale = await getLocale();
@@ -50,8 +51,8 @@ export default async function AppHeader({ appId }: { appId: string }) {
 							</Badge>
 						</div>
 						<div className="text-xs text-muted-foreground">
-							{t("lastSeen", {
-								date: new Intl.DateTimeFormat(locale, { dateStyle: "medium" }).format(new Date(app.last_seen)),
+							{t.rich("lastSeen", {
+								date: () => <DisplayDate value={app.last_seen} />,
 							})}
 						</div>
 					</div>
@@ -68,7 +69,7 @@ export default async function AppHeader({ appId }: { appId: string }) {
 				</CardHeader>
 				<CardContent>
 					<div className="text-2xl font-bold">
-						{new Intl.NumberFormat(locale).format(app.total_requests)}
+						<DisplayNumber value={app.total_requests} />
 					</div>
 					<p className="text-xs text-muted-foreground mt-1">
 						{t("allTimeSuccessfulRequests")}
@@ -86,7 +87,7 @@ export default async function AppHeader({ appId }: { appId: string }) {
 				</CardHeader>
 				<CardContent>
 					<div className="text-2xl font-bold">
-						{new Intl.NumberFormat(locale).format(app.total_tokens)}
+						<DisplayNumber value={app.total_tokens} />
 					</div>
 					<p className="text-xs text-muted-foreground mt-1">
 						{t("tokensConsumedAcrossRequests")}

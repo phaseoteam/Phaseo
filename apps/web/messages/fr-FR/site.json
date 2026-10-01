@@ -1,16 +1,16 @@
 {
 	"home": {
-		"title": "Phaseo : passerelle d'IA et catalogue de modèles ouverts",
-		"description": "Découvrez des données fiables sur les modèles, acheminez vos requêtes via une passerelle d'IA open source unique et suivez les coûts, la fiabilité, l'utilisation et les performances de chaque fournisseur.",
-		"heroTitle": "Une plateforme pour chaque modèle d'IA",
-		"heroDescription": "Découvrez des données fiables sur les modèles, acheminez vos requêtes via une passerelle compatible avec OpenAI et suivez les coûts, la fiabilité, l'utilisation et les performances des fournisseurs pris en charge.",
+		"title": "Phaseo : la passerelle ouverte pour une IA abordable",
+		"description": "Découvrez des modèles, répartissez les requêtes entre fournisseurs et utilisez une passerelle IA open source conçue pour rendre l’inférence accessible, portable et transparente.",
+		"heroTitle": "L’inférence IA doit être ouverte, abordable et vous laisser le choix.",
+		"heroDescription": "Phaseo construit une passerelle IA open source indépendante des fournisseurs. Découvrez des modèles, répartissez les requêtes entre fournisseurs et gardez une intégration portable, tandis que de meilleurs partenariats contribuent à réduire le coût de l’inférence.",
 		"explore": "Explorer",
 		"models": "Modèles",
 		"getApiKey": "Obtenir une clé API",
 		"viewGithub": "Voir sur GitHub",
 		"openModelDatabase": "Base de modèles ouverte, passerelle unifiée",
 		"openModelDatabaseDescription": "Explorez le catalogue complet de modèles, puis filtrez ceux qui disposent d'une route Gateway active avant de les mettre en production.",
-		"transparentPricing": "Tarification transparente",
+		"transparentPricing": "Des prix clairs aujourd’hui. Moins de frais demain.",
 		"viewPricing": "Voir les tarifs",
 		"usePricingCalculator": "Utiliser le calculateur de tarifs",
 		"latestModels": "Modèles récents",
@@ -51,12 +51,14 @@
 			"description": "Signaux globaux issus de notre base de modèles et de benchmarks (données d’exemple affichées). Mise à jour continue à mesure que de nouveaux événements surviennent."
 		},
 		"pricingPoints": {
-			"payAsYouGo": "Payez à l'utilisation, tout simplement",
-			"payAsYouGoBody": "Aucun forfait entreprise, contrat, abonnement, montant minimum ni engagement mensuel ou annuel.",
+			"payAsYouGo": "Payez selon votre utilisation",
+			"payAsYouGoBody": "Aucun contrat, abonnement ni dépense minimale pour l’utilisation des modèles.",
 			"creditFee": "Frais de {fee} % sur l'achat de crédits",
 			"creditFeeBody": "Appliqués lors de l'achat de crédits, avec un minimum de 1 $. L'utilisation suit les tarifs des modèles affichés dans le catalogue.",
 			"managedCredits": "Crédits gérés ou BYOK",
-			"managedCreditsBody": "Le BYOK comprend un million de requêtes sans frais chaque mois, puis des frais de service de 2,5 % sur le coût équivalent du fournisseur."
+			"managedCreditsBody": "Le BYOK comprend un million de requêtes sans frais chaque mois, puis des frais de service de 2,5 % sur le coût équivalent du fournisseur.",
+			"selfServeEnterprise": "Enterprise en libre-service",
+			"selfServeEnterpriseBody": "Un forfait mensuel facultatif par espace de travail pour SSO, SCIM, gouvernance et assistance prioritaire."
 		},
 		"reliability": {
 			"title": "La fiabilité pour l’IA en production.",
@@ -80,6 +82,16 @@
 			"routingBody": "Comprenez comment la passerelle a redirigé le trafic lorsque l’état d’un fournisseur a changé.",
 			"regressionsTitle": "Repérer tôt les régressions",
 			"regressionsBody": "Comparez les changements de modèles et de fournisseurs avant qu’ils ne deviennent des incidents visibles par les utilisateurs."
+		},
+		"transparentPricingDescription": "L’utilisation suit les prix des modèles du catalogue. Les frais actuels d’achat de crédits sont affichés ouvertement ; notre mission est de réduire les coûts évitables de la plateforme dès que les partenariats et l’efficacité opérationnelle le permettent durablement.",
+		"missionLink": "Découvrez ce que nous construisons",
+		"missionProofs": {
+			"openSource": "Open source",
+			"openSourceBody": "Inspectez, étendez et améliorez la passerelle.",
+			"providerNeutral": "Indépendant des fournisseurs",
+			"providerNeutralBody": "Choisissez le fournisseur adapté à votre travail.",
+			"lowerOverhead": "Moins de frais",
+			"lowerOverheadBody": "Réduisez les coûts évitables grâce à l’efficacité et aux partenariats."
 		}
 	},
 	"about": {
@@ -772,6 +784,10 @@
 			"batch": {
 				"label": "Traitement par lots",
 				"detail": "Traitement asynchrone"
+			},
+			"decisions": {
+				"label": "Décisions",
+				"detail": "Réponses typées"
 			}
 		},
 		"gatewayCapabilities": "Fonctionnalités de Gateway",
@@ -1551,15 +1567,15 @@
 			"audit": "Contrôles d'audit et de gouvernance",
 			"priority": "Assistance prioritaire"
 		},
-		"paygHeadline": "Le paiement à l’usage est la formule par défaut. Ajoutez l’offre Entreprise lorsque votre équipe en a besoin.",
-		"paygBody": "Achetez des crédits quand vous en avez besoin et payez ce que vous utilisez. La gestion des identités et les avantages de paiement de l’offre Entreprise sont facultatifs, affichés en toute transparence et activables sans appel commercial.",
+		"paygHeadline": "Le paiement à l’usage par défaut. Enterprise en libre-service quand votre équipe en a besoin.",
+		"paygBody": "Achetez des crédits selon vos besoins et payez ce que vous utilisez. Enterprise est un abonnement mensuel distinct pour l’identité, la gouvernance et l’assistance prioritaire. Il ne modifie pas les tarifs d’utilisation des modèles et s’active sans appel commercial. Pour estimer le coût par modèle, utilisez le",
 		"manageCredits": "Gérer les crédits",
 		"manageProviderKeys": "Gérer les clés de fournisseur",
 		"modelPricingCalculator": "Calculateur de tarifs des modèles",
 		"payg": "Payez à l'utilisation",
 		"paygBodyShort": "Rechargez vos crédits uniquement lorsque vous en avez besoin.",
-		"enterpriseOptional": "L’offre Entreprise est facultative",
-		"enterpriseOptionalBody": "Ajoutez SSO, SCIM et gouvernance sans modifier les tarifs d'utilisation.",
+		"enterpriseOptional": "Enterprise en libre-service",
+		"enterpriseOptionalBody": "Ajoutez SSO, SCIM, gouvernance et assistance prioritaire sans modifier les tarifs d’utilisation.",
 		"pricesPublic": "Les tarifs restent publics",
 		"pricesPublicBody": "Répondez à un court questionnaire et abonnez-vous immédiatement.",
 		"faqTitle": "Questions fréquentes",
@@ -1639,7 +1655,8 @@
 				"training-data": "Phaseo entraîne-t-il ses modèles avec mes prompts ou mes réponses ?",
 				"request-logging": "Quelles données de requête Phaseo stocke-t-il ?",
 				"service-status": "Où consulter les incidents et la disponibilité ?",
-				"contact-support": "Comment contacter l’assistance ?"
+				"contact-support": "Comment contacter l’assistance ?",
+				"receipts": "Puis-je obtenir un reçu pour un achat de crédits ?"
 			},
 			"answers": {
 				"how-are-tokens-billed": "Les entrées, sorties et autres usages facturables sont déduits de votre solde de crédits Phaseo aux tarifs du modèle indiqués dans le catalogue. Phaseo n’ajoute pas de majoration distincte à chaque requête gérée.",
@@ -1676,7 +1693,8 @@
 				"training-data": "Non. Phaseo n’utilise pas les prompts ou réponses du gateway pour entraîner ses propres modèles. Les requêtes sont envoyées au fournisseur qui les traite ; ses politiques de données et d’entraînement continuent de s’appliquer, sauf si vos exigences de routage l’excluent.",
 				"request-logging": "Phaseo stocke des métadonnées opérationnelles et de facturation, comme le modèle, le fournisseur, le nombre de tokens, la latence et les erreurs. Par défaut, les prompts et réponses bruts ne sont pas conservés. Si la journalisation des entrées/sorties est activée, la conservation suit les paramètres de confidentialité et de rétention de l’espace.",
 				"service-status": "L’état actuel du service et l’historique des incidents sont publiés sur status.phaseo.app. Les identifiants de requête et les journaux d’activité aident l’assistance à retracer un incident.",
-				"contact-support": "Utilisez la page de contact ou écrivez à support@phaseo.app pour les questions sur le compte, la facturation ou la technique. Vous pouvez aussi déposer des bugs et demandes de fonctionnalités dans le dépôt GitHub public."
+				"contact-support": "Utilisez la page de contact ou écrivez à support@phaseo.app pour les questions sur le compte, la facturation ou la technique. Vous pouvez aussi déposer des bugs et demandes de fonctionnalités dans le dépôt GitHub public.",
+				"receipts": "Oui. Les reçus hébergés par Stripe pour les achats terminés sont disponibles dans Paramètres → Crédits. Si le reçu d’un paiement réussi manque, contactez l’assistance avec l’identifiant et la date du paiement."
 			}
 		},
 		"matrix": {
@@ -1871,7 +1889,13 @@
 			"paygCreditPurchaseFee": "Des frais de {fee, number}% (minimum {minimum}) s’appliquent à l’achat de crédits",
 			"enterpriseCreditPurchaseFee": "Des frais de 5% (minimum {minimum}) s’appliquent à l’achat de crédits",
 			"byokServiceFee": "{freeRequests, number} requêtes par mois incluses, puis {serviceFee, number}% du coût équivalent fournisseur"
-		}
+		},
+		"paygHeadlinePreview": "Le paiement à l’usage par défaut.",
+		"paygBodyPreview": "Achetez des crédits selon vos besoins et payez ce que vous utilisez. L’identité, la gouvernance et l’assistance prioritaire Enterprise sont en aperçu pour les espaces éligibles. Pour estimer le coût par modèle, utilisez le",
+		"enterprisePreview": "Aperçu Enterprise",
+		"enterprisePreviewBody": "L’identité, la gouvernance et l’assistance prioritaire sont en préparation pour les espaces éligibles.",
+		"pricesPublicPreview": "Tarifs publics",
+		"pricesPublicPreviewBody": "Comparez les tarifs d’utilisation des modèles dans le catalogue et le calculateur."
 	},
 	"gatewayComparison": {
 		"title": "Phaseo face à {name}",
@@ -2422,7 +2446,8 @@
 			"survival": "À la fin de votre accès au Service, les sections 2, 3, 4, 5 et 8 à 15 continuent de s’appliquer.",
 			"contactQuestions": "Pour toute question concernant ces Conditions, contactez-nous :",
 			"contactEmailLabel": "E-mail",
-			"operatorDetails": "Le Service est proposé par <person>Daniel Butler</person>, qui exerce sous le nom de <brand>Phaseo</brand>."
+			"operatorDetails": "Le Service est proposé par <person>Daniel Butler</person>, qui exerce sous le nom de <brand>Phaseo</brand>.",
+			"autoTopUpSecurity": "Pour des raisons de sécurité, nous pouvons exiger une authentification à deux facteurs avant d’activer la recharge automatique. Si nous proposons de continuer sans cette authentification, vous devez effectuer une étape distincte d’acceptation et de confirmation. Ce faisant, vous reconnaissez le risque accru de débits non autorisés et acceptez que tout remboursement ou litige de paiement soit évalué conformément aux présentes Conditions et au droit applicable. Cette section ne limite aucun droit impératif des consommateurs."
 		}
 	},
 	"brandMenu": {

@@ -54,6 +54,14 @@ function makeJob(overrides: Record<string, unknown>) {
 }
 
 describe("runVideoReconciliationJob", () => {
+	it.each(["submitting", "unknown"])("retains %s submissions without inventing a provider task id", async (submissionState) => {
+		listPendingVideoJobsMock.mockResolvedValue([makeJob({ nativeId: null, meta: { provider: "atlascloud", submissionState } })]);
+		const result = await runVideoReconciliationJob();
+		expect(result.jobsErrored).toBe(1);
+		expect(fetchVideoProviderStatusMock).not.toHaveBeenCalled();
+		expect(finalizeVideoJobMock).not.toHaveBeenCalled();
+		expect(updateVideoJobReconciliationMock).toHaveBeenCalled();
+	});
 	beforeEach(() => {
 		fetchVideoProviderStatusMock.mockReset();
 		finalizeVideoJobMock.mockReset();
@@ -132,7 +140,11 @@ describe("runVideoReconciliationJob", () => {
 				reconciledFromStatus: "cancelled",
 			}),
 		}));
-		expect(dispatchVideoWebhookEventInBackgroundMock).not.toHaveBeenCalled();
+		expect(dispatchVideoWebhookEventInBackgroundMock).toHaveBeenCalledWith({
+			workspaceId: "ws_video_reconcile",
+			videoId: "video_cancel_stored",
+			eventType: "video.cancelled",
+		});
 		expect(summary.jobsCancelled).toBe(1);
 	});
 

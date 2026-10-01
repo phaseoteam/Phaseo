@@ -1,3 +1,5 @@
+"use client";
+
 // components/(rankings)/TrendingModels.tsx
 // Purpose: Display trending models with momentum indicators
 // Why: Shows models gaining traction (accelerating growth)
@@ -9,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import type { TrendingModel } from "@/lib/fetchers/rankings/getRankingsData";
 import { RankingsEmptyState } from "@/components/(rankings)/RankingsEmptyState";
 import { useLocale, useTranslations } from "next-intl";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 
 interface TrendingModelsProps {
     data: TrendingModel[];
@@ -17,6 +20,7 @@ interface TrendingModelsProps {
 export function TrendingModels({ data }: TrendingModelsProps) {
 	const locale = useLocale();
 	const t = useTranslations("Catalogue.rankings");
+	const format = useDisplayFormatters();
     if (!data.length) {
         return (
             <RankingsEmptyState
@@ -26,12 +30,10 @@ export function TrendingModels({ data }: TrendingModelsProps) {
         );
     }
 
-    const formatRequests = (num: number) => {
-        return new Intl.NumberFormat(locale, {
-            notation: "compact",
-            maximumFractionDigits: 1,
-        }).format(num);
-    };
+    const formatRequests = (num: number) => format.number(num, {
+        notation: num >= 1_000 ? "compact" : "standard",
+        maximumFractionDigits: 1,
+    });
 
     const getMomentumBadge = (score: number, idx: number) => {
         if (idx === 0) {
@@ -64,13 +66,12 @@ export function TrendingModels({ data }: TrendingModelsProps) {
                 const currentWeek = Number(model.current_week_requests ?? 0);
                 const previousWeek = Number(model.previous_week_requests ?? 0);
                 const growth = currentWeek - previousWeek;
-				const growthPercent =
-					previousWeek > 0
-						? new Intl.NumberFormat(locale, {
-								maximumFractionDigits: 0,
-								signDisplay: "always",
-							}).format((growth / previousWeek) * 100)
-						: "∞";
+                const growthPercent =
+                    previousWeek > 0
+                        ? format.number((growth / previousWeek) * 100, {
+                            maximumFractionDigits: 0,
+                        })
+                        : "∞";
 
                 return (
                     <Card key={`${model.model_id}-${model.provider}`} className="hover:shadow-md transition-shadow">
@@ -95,7 +96,9 @@ export function TrendingModels({ data }: TrendingModelsProps) {
                                 </div>
                                 <div className="text-right">
                                     <div className="text-sm tabular-nums text-muted-foreground">
-										{t("velocityLabel")}: {new Intl.NumberFormat(locale, { maximumFractionDigits: 0 }).format(Number(model.velocity ?? 0))}
+                                        {t("velocityLabel")}: {format.number(Number(model.velocity ?? 0), {
+                                            maximumFractionDigits: 0,
+                                        })}
                                     </div>
                                 </div>
                             </div>

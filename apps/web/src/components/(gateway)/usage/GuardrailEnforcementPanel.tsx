@@ -1,5 +1,8 @@
+"use client";
+
 import { Ban, Flag, Scissors, ShieldAlert } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { GuardrailEnforcementMetricsResult } from "@/lib/gateway/usage/guardrailEnforcementMetrics";
 
@@ -7,14 +10,13 @@ interface GuardrailEnforcementPanelProps {
 	metrics: GuardrailEnforcementMetricsResult;
 }
 
-function formatCount(value: number): string {
-	return value.toLocaleString();
-}
-
 export default function GuardrailEnforcementPanel({
 	metrics,
 }: GuardrailEnforcementPanelProps) {
 	const t = useTranslations("SettingsUI");
+	const format = useDisplayFormatters();
+	const formatCount = (value: number) =>
+		format.number(value, { maximumFractionDigits: 0, notation: "standard" });
 	const trendMax = Math.max(
 		1,
 		...metrics.buckets.map((bucket) => bucket.total),

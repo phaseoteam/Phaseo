@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import ExpiryDateTimeField from "./ExpiryDateTimeField";
 import CreditGrantEditDialog from "./CreditGrantEditDialog";
+import { DisplayDateTime } from "@/components/display/DisplayValue";
 
 export async function generateMetadata() {
 	const t = await getTranslations("Product.internalTools.promoCredits");
@@ -45,13 +46,6 @@ function formatUsdFromNanosBigInt(nanos: bigint, locale: string): string {
 		minimumFractionDigits: 2,
 		maximumFractionDigits: 2,
 	}).format(Number(nanos) / Number(NANOS_PER_USD));
-}
-
-function formatDate(value: string | null | undefined, locale: string): string {
-	if (!value) return "-";
-	const date = new Date(value);
-	if (!Number.isFinite(date.getTime())) return "-";
-	return date.toLocaleString(locale);
 }
 
 export default async function InternalCreditsPage() {
@@ -187,9 +181,9 @@ export default async function InternalCreditsPage() {
 										<td className="py-2 pr-4">
 											{Number(grant.redemptions_count ?? 0)} / {Number(grant.max_redemptions ?? 0)}
 										</td>
-									<td className="py-2 pr-4">{formatDate(grant.expires_at, locale)}</td>
-									<td className="py-2 pr-4">{isActive ? t("active") : t("inactive")}</td>
-									<td className="py-2 pr-4">{formatDate(grant.created_at, locale)}</td>
+										<td className="py-2 pr-4"><DisplayDateTime value={grant.expires_at} /></td>
+										<td className="py-2 pr-4">{isActive ? t("active") : t("inactive")}</td>
+										<td className="py-2 pr-4"><DisplayDateTime value={grant.created_at} /></td>
 										<td className="py-2 pr-4">{String(grant.note ?? "-")}</td>
 										<td className="py-2">
 											<CreditGrantEditDialog

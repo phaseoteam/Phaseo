@@ -2,6 +2,7 @@
   "organisation_id": "google",
   "name": "Google",
   "country_code": "US",
+  "subdivision_code": "US-CA",
   "description": "Google is a technology and AI company within Alphabet, whose headquarters are in Mountain View, California. Their mission is to advance multimodal, generative and agentic AI across vision, language and platforms to support users and creators around the world.",
   "colour": "#4285F4",
   "organisation_links": [

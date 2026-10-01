@@ -1,9 +1,10 @@
 import { Hono } from "hono";
+import { PUBLIC_MODEL_CATALOGUE_CACHE } from "@/cache/catalogue";
 import { getDataClient } from "@/data/supabase";
 import type { Env } from "@/env";
 import { withPublicCache } from "@/http/cache";
 
-const CACHE = { edgeTtlSeconds: 5 * 60, staleWhileRevalidateSeconds: 5 * 60, cacheTags: ["web-api-gateway-models"] } as const;
+const CACHE = PUBLIC_MODEL_CATALOGUE_CACHE;
 export const publicGatewayRouter = new Hono<{ Bindings: Env }>();
 
 function normalizeCapabilityId(value: unknown): string {
@@ -32,9 +33,36 @@ async function gatewayModels(env: Env) {
 	for (let offset = 0; ; offset += 1_000) { const result = await client.from("v2_model_provider_routes").select("provider_api_model_id:provider_model_id,provider_id:provider_slug,api_model_id:model_slug,model_id:model_slug,is_active_gateway:routing_enabled,input_modalities,output_modalities,effective_from,effective_to").eq("is_stealth", false).eq("routing_enabled", true).in("status", ["active", "degraded"]).order("provider_model_id", { ascending: true }).range(offset, offset + 999); if (result.error) throw result.error; providerModels.push(...((result.data ?? []) as Array<Record<string, unknown>>)); if ((result.data?.length ?? 0) < 1_000) break; }
 	const providerModelIds = providerModels.map((row) => String(row.provider_api_model_id ?? "")).filter(Boolean); const capabilities = new Map<string, Set<string>>(); const capabilityParams = new Map<string, Record<string, unknown>>();
 	for (let offset = 0; offset < providerModelIds.length; offset += 200) { const result = await client.from("v2_route_capabilities").select("provider_api_model_id:provider_model_id,capability_id,params,status").in("provider_model_id", providerModelIds.slice(offset, offset + 200)); if (result.error) throw result.error; for (const row of result.data ?? []) { const capabilityId = normalizeCapabilityId(row.capability_id); if (!row.provider_api_model_id || !capabilityId || ["disabled", "internal_testing"].includes(String(row.status ?? "").toLowerCase())) continue; const values = capabilities.get(row.provider_api_model_id) ?? new Set<string>(); values.add(capabilityId); capabilities.set(row.provider_api_model_id, values); const params = capabilityParams.get(row.provider_api_model_id) ?? {}; params[capabilityId] = row.params && typeof row.params === "object" ? row.params : {}; capabilityParams.set(row.provider_api_model_id, params); } }
-	const pricingSkuResults = await Promise.all(Array.from({ length: Math.ceil(providerModelIds.length / 200) }, (_, index) => client.from("v2_pricing_skus").select("sku_id,provider_model_id,service_tier_slug,status,effective_from,effective_to").in("provider_model_id", providerModelIds.slice(index * 200, (index + 1) * 200)).eq("service_tier_slug", "standard").neq("status", "disabled")));
+	const pricingSkuResults = await Promise.all(Array.from({ length: Math.ceil(providerModelIds.length / 200) }, async (_, index) => {
+		const rows: Array<Record<string, unknown>> = [];
+		for (let offset = 0; ; offset += 1_000) {
+			const result = await client.from("v2_pricing_skus")
+				.select("sku_id,provider_model_id,operation,service_tier_slug,status,effective_from,effective_to")
+				.in("provider_model_id", providerModelIds.slice(index * 200, (index + 1) * 200))
+				.in("service_tier_slug", ["standard", "priority", "flex", "ultrafast"])
+				.eq("status", "active")
+				.order("sku_id", { ascending: true })
+				.range(offset, offset + 999);
+			if (result.error) throw result.error;
+			rows.push(...(result.data ?? []));
+			if ((result.data?.length ?? 0) < 1_000) break;
+		}
+		return { data: rows, error: null };
+	}));
 	for (const result of pricingSkuResults) if (result.error) throw result.error;
-	const pricingSkus = pricingSkuResults.flatMap((result) => result.data ?? []).filter((row) => activeAt(row));
+	const activePricingSkus = pricingSkuResults.flatMap((result) => result.data ?? [])
+		.filter((row) => row.status === "active" && activeAt(row));
+	const serviceTiersByProviderModel = new Map<string, Set<string>>();
+	for (const sku of activePricingSkus) {
+		if (sku.operation !== "text.generate") continue;
+		const providerModelId = String(sku.provider_model_id ?? "");
+		const tier = String(sku.service_tier_slug ?? "");
+		if (!["standard", "priority", "flex", "ultrafast"].includes(tier)) continue;
+		const tiers = serviceTiersByProviderModel.get(providerModelId) ?? new Set<string>();
+		tiers.add(tier);
+		serviceTiersByProviderModel.set(providerModelId, tiers);
+	}
+	const pricingSkus = activePricingSkus.filter((row) => row.service_tier_slug === "standard");
 	const skuIds = pricingSkus.map((row) => String(row.sku_id ?? "")).filter(Boolean);
 	const pricingMeterResults = await Promise.all(Array.from({ length: Math.ceil(skuIds.length / 200) }, (_, index) => client.from("v2_pricing_sku_meters").select("sku_id,meter_key,unit_quantity,price_nanos").in("sku_id", skuIds.slice(index * 200, (index + 1) * 200))));
 	for (const result of pricingMeterResults) if (result.error) throw result.error;
@@ -75,7 +103,7 @@ async function gatewayModels(env: Env) {
 	}
 	const labs = new Map(labResults.flatMap((result) => result.data ?? []).map((row) => [row.lab_slug, row]));
 	const now = Date.now(); const seen = new Set<string>(); const output: Array<Record<string, unknown>> = [];
-	for (const row of providerModels) { const providerModelId = String(row.provider_api_model_id ?? ""); const apiModelId = String(row.api_model_id ?? ""); const providerId = String(row.provider_id ?? ""); if (!providerModelId || !apiModelId || !providerId || !capabilities.has(providerModelId)) continue; const key = `${providerId}:${apiModelId}`; if (seen.has(key)) continue; seen.add(key); const model = models.get(String(row.model_id ?? "")); const provider = providers.get(providerId); const from = row.effective_from ? Date.parse(String(row.effective_from)) : Number.NEGATIVE_INFINITY; const to = row.effective_to ? Date.parse(String(row.effective_to)) : Number.POSITIVE_INFINITY; const retirementDate = model?.retirement_date ? Date.parse(String(model.retirement_date)) : Number.POSITIVE_INFINITY; const status = String(model?.status ?? "").toLowerCase(); const isAvailable = Boolean(row.is_active_gateway) && now >= from && now < to && now < retirementDate && status !== "retired"; const internalModelId = model?.model_id ?? null; const selectorModelId = internalModelId || apiModelId; const inputModalities = Array.isArray(row.input_modalities) && row.input_modalities.length > 0 ? row.input_modalities : model?.input_modalities ?? []; const outputModalities = Array.isArray(row.output_modalities) && row.output_modalities.length > 0 ? row.output_modalities : model?.output_modalities ?? []; const prices = pricesByProviderModel.get(providerModelId); output.push({ modelId: apiModelId, internalModelId, selectorModelId, providerId, capabilities: [...(capabilities.get(providerModelId) ?? [])], capabilityParamsById: capabilityParams.get(providerModelId) ?? {}, inputModalities, outputModalities, effectiveFrom: row.effective_from ?? null, effectiveTo: row.effective_to ?? null, providerName: provider?.api_provider_name ?? null, providerFamilyId: provider?.provider_family_id ?? null, providerOfferLabel: provider?.offer_label ?? null, providerOfferScope: provider?.offer_scope ?? null, providerPromptTrainingPolicy: provider?.prompt_training_policy ?? null, modelName: model?.name ?? null, modelStatus: model?.status ?? null, organisationId: model?.organisation_id ?? null, organisationName: labs.get(model?.organisation_id ?? "")?.name ?? null, previousModelId: model?.previous_model_id ?? null, releaseDate: model?.release_date ?? null, announcementDate: model?.announcement_date ?? null, inputPricePerMillion: prices?.input ?? null, outputPricePerMillion: prices?.output ?? null, isAvailable }); }
+	for (const row of providerModels) { const providerModelId = String(row.provider_api_model_id ?? ""); const apiModelId = String(row.api_model_id ?? ""); const providerId = String(row.provider_id ?? ""); if (!providerModelId || !apiModelId || !providerId || !capabilities.has(providerModelId)) continue; const key = `${providerId}:${apiModelId}`; if (seen.has(key)) continue; seen.add(key); const model = models.get(String(row.model_id ?? "")); const provider = providers.get(providerId); const from = row.effective_from ? Date.parse(String(row.effective_from)) : Number.NEGATIVE_INFINITY; const to = row.effective_to ? Date.parse(String(row.effective_to)) : Number.POSITIVE_INFINITY; const retirementDate = model?.retirement_date ? Date.parse(String(model.retirement_date)) : Number.POSITIVE_INFINITY; const status = String(model?.status ?? "").toLowerCase(); const isAvailable = Boolean(row.is_active_gateway) && now >= from && now < to && now < retirementDate && status !== "retired"; const internalModelId = model?.model_id ?? null; const selectorModelId = internalModelId || apiModelId; const inputModalities = Array.isArray(row.input_modalities) && row.input_modalities.length > 0 ? row.input_modalities : model?.input_modalities ?? []; const outputModalities = Array.isArray(row.output_modalities) && row.output_modalities.length > 0 ? row.output_modalities : model?.output_modalities ?? []; const prices = pricesByProviderModel.get(providerModelId); output.push({ modelId: apiModelId, internalModelId, selectorModelId, providerId, capabilities: [...(capabilities.get(providerModelId) ?? [])], capabilityParamsById: capabilityParams.get(providerModelId) ?? {}, serviceTiers: [...(serviceTiersByProviderModel.get(providerModelId) ?? [])].sort(), inputModalities, outputModalities, effectiveFrom: row.effective_from ?? null, effectiveTo: row.effective_to ?? null, providerName: provider?.api_provider_name ?? null, providerFamilyId: provider?.provider_family_id ?? null, providerOfferLabel: provider?.offer_label ?? null, providerOfferScope: provider?.offer_scope ?? null, providerPromptTrainingPolicy: provider?.prompt_training_policy ?? null, modelName: model?.name ?? null, modelStatus: model?.status ?? null, organisationId: model?.organisation_id ?? null, organisationName: labs.get(model?.organisation_id ?? "")?.name ?? null, previousModelId: model?.previous_model_id ?? null, releaseDate: model?.release_date ?? null, announcementDate: model?.announcement_date ?? null, inputPricePerMillion: prices?.input ?? null, outputPricePerMillion: prices?.output ?? null, isAvailable }); }
 	return output.sort((a, b) => String(a.providerId).localeCompare(String(b.providerId)) || String(a.modelId).localeCompare(String(b.modelId)));
 }
 

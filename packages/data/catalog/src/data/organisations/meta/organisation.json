@@ -2,6 +2,7 @@
   "organisation_id": "meta",
   "name": "Meta",
   "country_code": "US",
+  "subdivision_code": "US-CA",
   "description": "Meta is an AI and social-technology company headquartered in Menlo Park, California. Their mission is to develop large-model systems, open-weight research and generative-AI platforms in vision, language and agents to advance how people create and interact.",
   "colour": "#1980e1",
   "organisation_links": [

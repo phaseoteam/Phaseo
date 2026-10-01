@@ -20,7 +20,7 @@ describe("resolveGoogleOAuthTokenUri", () => {
 		expect(googleOAuthTokenRequestInit(body)).toMatchObject({
 			method: "POST",
 			body,
-			redirect: "error",
+			redirect: "manual",
 		});
 	});
 });

@@ -53,6 +53,7 @@ export function buildProviderCandidatesWithDiagnostics(
         const effectiveDataPolicy = resolveEffectiveDataPolicy({ endpoint, provider });
         candidates.push({
             providerId: provider.providerId,
+			credentialMode: provider.credentialMode ?? "managed_and_byok",
             providerFamilyId: provider.providerFamilyId ?? null,
             offerScope: provider.offerScope ?? null,
             offerLabel: provider.offerLabel ?? null,
@@ -60,6 +61,7 @@ export function buildProviderCandidatesWithDiagnostics(
             apiModelId: provider.apiModelId ?? null,
             pricingKey: provider.pricingKey ?? provider.providerId,
             providerStatus: provider.providerStatus ?? "active",
+            externalRoutingOverride: provider.externalRoutingOverride === true,
             providerRoutingStatus: provider.providerRoutingStatus ?? "active",
             modelRoutingStatus: provider.modelRoutingStatus ?? "active",
             capabilityStatus: provider.capabilityStatus ?? "active",
@@ -88,6 +90,7 @@ export function buildProviderCandidatesWithDiagnostics(
             byokMeta: provider.byokMeta,
             pricingCard: ctx.pricing[provider.pricingKey ?? provider.providerId] ?? null,
             providerModelSlug: provider.providerModelSlug,
+            privateEndpoint: provider.privateEndpoint ?? null,
             quantizationScheme: provider.quantizationScheme ?? null,
             inputModalities: provider.inputModalities ?? null,
             outputModalities: provider.outputModalities ?? null,

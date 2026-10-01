@@ -5,7 +5,7 @@
 
   <groupId>app.phaseo</groupId>
   <artifactId>phaseo-sdk</artifactId>
-  <version>2.1.0</version>
+  <version>3.0.0</version>
   <packaging>jar</packaging>
   <name>Phaseo Java SDK</name>
   <description>Official Phaseo Gateway SDK for Java.</description>
@@ -122,7 +122,7 @@
           <plugin>
             <groupId>org.sonatype.central</groupId>
             <artifactId>central-publishing-maven-plugin</artifactId>
-            <version>0.9.0</version>
+            <version>0.11.0</version>
             <extensions>true</extensions>
             <configuration>
               <publishingServerId>central</publishingServerId>

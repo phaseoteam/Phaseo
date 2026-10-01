@@ -158,6 +158,17 @@ describe("internal model discord notifier", () => {
 		expect(embed.timestamp).toBeUndefined();
 	});
 
+	it("adds the deployed model OG route when an image URL is available", () => {
+		const embed = formatSingleModelEmbed({
+			modelId: "openai/gpt-5.6",
+			modelName: "GPT 5.6",
+			modelUrl: "https://phaseo.app/models/openai/gpt-5.6",
+			imageUrl: "https://phaseo.app/og/models/openai/gpt-5.6?discovery=1",
+		});
+
+		expect(embed.image).toEqual({ url: "https://phaseo.app/og/models/openai/gpt-5.6?discovery=1" });
+	});
+
 	it("rejects webhook URLs that are not Discord hosts", () => {
 		expect(() =>
 			validateDiscordWebhookUrl("https://example.com/api/webhooks/123/token")
@@ -173,8 +184,8 @@ describe("internal model discord notifier", () => {
 	it("normalizes allowed Discord hosts to a canonical request endpoint", async () => {
 		const requestMock = jest.fn(async () => {
 			return {
-				status: 204,
-				body: "",
+				status: 200,
+				body: JSON.stringify({ id: "message-1", channel_id: "channel-1" }),
 			};
 		});
 		const payload = buildWebhookPayload(
@@ -201,8 +212,30 @@ describe("internal model discord notifier", () => {
 		expect(firstRequestArg).toBeDefined();
 		if (firstRequestArg) {
 			expect((firstRequestArg as unknown as Array<{ path: string }>)[0]).toMatchObject({
-				path: "/api/webhooks/123456/abcdef",
+				path: "/api/webhooks/123456/abcdef?wait=true",
 			});
 		}
+	});
+
+	it("rejects a successful response that does not contain a saved message", async () => {
+		const payload = buildWebhookPayload(
+			[
+				{
+					modelId: "voyage/voyage-4",
+					modelName: "Voyage 4",
+					modelUrl: "https://phaseo.app/models/voyage/voyage-4",
+				},
+			],
+			null
+		);
+
+		await expect(
+			sendDiscordWebhookPayload("https://discord.com/api/webhooks/123456/abcdef", payload, {
+				requestImpl: async () => ({ status: 204, body: "" }),
+				maxAttempts: 1,
+				retryDelayMs: 0,
+				logger: { info: jest.fn(), warn: jest.fn(), error: jest.fn() },
+			})
+		).rejects.toThrow(/without a saved message/);
 	});
 });

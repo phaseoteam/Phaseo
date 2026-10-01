@@ -9,6 +9,7 @@ import { fetchFrontendOrganisationReleaseEvents } from "@/lib/fetchers/frontend/
 import { buildMetadata } from "@/lib/seo";
 import type { Metadata } from "next";
 import type { RuntimeLocale } from "@/i18n/locales";
+import { DisplayNumber } from "@/components/display/DisplayValue";
 
 type PageProps = {
 	params: Promise<{ locale: RuntimeLocale; organisationId: string }>;

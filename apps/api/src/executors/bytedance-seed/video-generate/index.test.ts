@@ -30,7 +30,7 @@ vi.mock("@core/video-reservations", () => ({
 
 vi.mock("@core/video-jobs", () => ({
 	saveVideoJobMeta: (...args: unknown[]) => {
-		if (state.saveVideoJobMetaError) throw state.saveVideoJobMetaError;
+		if (state.saveVideoJobMetaError && (args[2] as any).submissionState !== "submitting") throw state.saveVideoJobMetaError;
 		return saveVideoJobMetaMock(...args);
 	},
 }));
@@ -82,6 +82,24 @@ afterAll(() => {
 });
 
 describe("bytedance seed video executor", () => {
+	it.each([
+		["1280x720", "720p"], ["720x1280", "720p"], ["720P", "720p"],
+		["1920x1080", "1080p"], ["1080x1920", "1080p"], [" 1080P ", "1080p"],
+		["854x480", "480p"], ["480x854", "480p"],
+	])("normalizes %s to %s for reservations and settlement metadata", async (size, resolution) => {
+		const mock = installFetchMock([{
+			match: (url) => url.endsWith("/api/v3/contents/generations/tasks"),
+			response: jsonResponse({ id: "seedance_resolution_task", status: "queued" }),
+		}]);
+		try {
+			await execute(buildArgs({ model: "bytedance/seedance-2.0", prompt: "A blue square", duration: 6, size }));
+			expect(state.reservationCalls.at(-1)).toMatchObject({ requestOptions: { resolution } });
+			expect(saveVideoJobMetaMock).toHaveBeenCalledWith("team_test", "req_bytedance_video_test",
+				expect.objectContaining({ resolution }), "seedance_resolution_task", "queued");
+		} finally {
+			mock.restore();
+		}
+	});
 	beforeEach(() => {
 		saveVideoJobMetaMock.mockClear();
 		state.reservationResult = null;
@@ -225,11 +243,11 @@ describe("bytedance seed video executor", () => {
 			},
 		});
 		expect(result.ir).toBeUndefined();
-		expect(saveVideoJobMetaMock).not.toHaveBeenCalled();
+		expect(saveVideoJobMetaMock).toHaveBeenCalledTimes(1);
 		expect(state.releaseCalls).toEqual([]);
 	});
 
-	it("releases a held reservation when Bytedance returns success without a task id", async () => {
+	it("retains a held reservation when Bytedance returns success without a task id", async () => {
 		state.reservationResult = {
 			reservationId: "video_hold:req_bytedance_video_test",
 			held: true,
@@ -259,14 +277,8 @@ describe("bytedance seed video executor", () => {
 			},
 		});
 		expect(result.ir).toBeUndefined();
-		expect(saveVideoJobMetaMock).not.toHaveBeenCalled();
-		expect(state.releaseCalls).toEqual([
-			{
-				workspaceId: "team_test",
-				reservationId: "video_hold:req_bytedance_video_test",
-				releaseRefId: "req_bytedance_video_test",
-			},
-		]);
+		expect(saveVideoJobMetaMock).toHaveBeenCalledTimes(1);
+		expect(state.releaseCalls).toEqual([]);
 	});
 
 	it("does not submit upstream when reservation pricing dimensions are missing", async () => {

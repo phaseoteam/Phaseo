@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import Image from "next/image";
 import {
 	CheckCircle2,
@@ -50,6 +51,7 @@ function resultLabel(type: string): string {
 
 export default function ContentProvenanceTool() {
 	const t = useTranslations("Product.tools.provenance");
+	const format = useDisplayFormatters();
 	const inputRef = useRef<HTMLInputElement>(null);
 	const previewUrlRef = useRef<string | null>(null);
 	const requestControllerRef = useRef<AbortController | null>(null);
@@ -254,7 +256,7 @@ export default function ContentProvenanceTool() {
 				<Card className="border-border/80" aria-live="polite">
 					<CardHeader>
 						<div className="flex flex-wrap items-center justify-between gap-3">
-								<div><CardTitle>{detected.length ? t("detectedTitle") : t("notDetectedTitle")}</CardTitle><CardDescription className="mt-1">{t("checked", { date: new Date(result.created_at * 1000).toLocaleString() })}</CardDescription></div>
+								<div><CardTitle>{detected.length ? t("detectedTitle") : t("notDetectedTitle")}</CardTitle><CardDescription className="mt-1">{t("checked", { date: format.dateTime(result.created_at * 1000) })}</CardDescription></div>
 								<Badge variant={detected.length ? "default" : "secondary"}>{detected.length ? t("detected") : t("notDetected")}</Badge>
 						</div>
 					</CardHeader>

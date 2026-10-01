@@ -23,6 +23,7 @@ import { applyDataContributionDiscount } from "../pricing/data-contribution-disc
 import { getBaseModel } from "../execute/utils";
 import { dispatchBackground, ensureRuntimeForBackground, getResponseCache } from "@/runtime/env";
 import { resolveNonStreamLatencyMs } from "./timing";
+import { calculateOutputPerformanceMetrics } from "./performance-metrics";
 import {
     maybeWriteStickyRoutingFromUsage,
     resolveCacheAwareRoutingPreference,
@@ -30,6 +31,7 @@ import {
 import { buildCachedResponseRecord } from "@/core/response-cache";
 import { applyResponsePlugins } from "@/plugins/registry";
 import { applySuccessfulResponseBillingPolicy, suppressFailedResponseBilling } from "./billing-policy";
+import { recordManagedProviderTokensOnce } from "@core/provider-rate-limits";
 
 function shouldAttachRoutingDiagnostics(ctx: PipelineContext): boolean {
 	return Boolean(ctx.meta?.debug?.enabled || ctx.meta?.returnRoutingDiagnostics);
@@ -236,6 +238,13 @@ function dispatchNonStreamSuccessSideEffects(args: {
                 costNanos: totalNanos,
                 endpoint: ctx.endpoint,
             });
+			await recordManagedProviderTokensOnce({
+				ctx,
+				providerId: result.provider,
+				keySource: result.keySource,
+				usage: usageForBilling,
+				reservation: result.providerRateLimitReservation,
+			});
 
             await handleSuccessAudit(
                 ctx,
@@ -307,6 +316,22 @@ export function attachRoutingDiagnosticsToPayload(args: {
 	return args.payload;
 }
 
+export function markNonStreamResponseReady(
+	ctx: PipelineContext,
+	responseReadyAtMs = Date.now(),
+): number | null {
+	ctx.meta.completedAtMs = responseReadyAtMs;
+	const endToEndMs = typeof ctx.meta.startedAtMs === "number"
+		? Math.max(0, responseReadyAtMs - ctx.meta.startedAtMs)
+		: typeof ctx.meta.end_to_end_ms === "number"
+			? ctx.meta.end_to_end_ms
+			: null;
+	if (endToEndMs !== null) {
+		ctx.meta.end_to_end_ms = endToEndMs;
+	}
+	return endToEndMs;
+}
+
 export async function finalizeRequest(args: {
     pre: { ok: true; ctx: PipelineContext };
     exec: { ok: true; result: RequestResult };
@@ -322,7 +347,10 @@ export async function finalizeRequest(args: {
 
     // 2) Handle streaming response
     if (ctx.stream) {
-        const card = await loadProviderPricing(ctx, result);
+        ctx.gatewayTimingTrace?.mark("stream_pricing_start");
+        let card: Awaited<ReturnType<typeof loadProviderPricing>>;
+        try { card = await loadProviderPricing(ctx, result); }
+        finally { ctx.gatewayTimingTrace?.mark("stream_pricing_end"); }
         return await handleStreamResponse(ctx, result, card, args.timingHeader);
     }
 
@@ -495,30 +523,27 @@ async function handleNonStreamResponse(
     payload.usage = shapedUsageFinal;
     const generationMs = ctx.meta.generation_ms ?? null;
     const latencyMs = resolveNonStreamLatencyMs(ctx, generationMs);
-    const endToEndMs =
-        typeof ctx.meta.end_to_end_ms === "number"
-            ? ctx.meta.end_to_end_ms
-			: typeof ctx.meta.completedAtMs === "number" && typeof ctx.meta.startedAtMs === "number"
-				? Math.max(0, ctx.meta.completedAtMs - ctx.meta.startedAtMs)
-				: null;
+	const endToEndMs = markNonStreamResponseReady(ctx);
     const outputTokens = shapedUsageFinal?.output_tokens ?? shapedUsageFinal?.output_text_tokens ?? 0;
-    const throughputTps = generationMs && generationMs > 0
-        ? outputTokens / (generationMs / 1000)
-        : null;
+    const outputPerformance = calculateOutputPerformanceMetrics({
+        outputTokens,
+        providerDurationMs: generationMs,
+		// Non-stream providers do not expose observed TTFT, so post-first-token
+		// output speed is unavailable; full-response throughput remains available.
+        providerTtftMs: null,
+        gatewayE2eMs: endToEndMs,
+    });
     payload.meta = {
         ...payload.meta,
-        throughput_tps: throughputTps,
-        output_speed_tps: null,
+        throughput_tps: outputPerformance.effectiveThroughputTps,
+        output_speed_tps: outputPerformance.outputSpeedTps,
         generation_ms: generationMs,
         latency_ms: latencyMs,
         provider_ttft_ms: null,
         gateway_ttft_ms: null,
         tpot_ms: null,
         itl_ms: null,
-        phaseo_overhead_ms:
-            endToEndMs != null && generationMs != null
-                ? Math.max(0, endToEndMs - generationMs)
-                : null,
+        phaseo_overhead_ms: outputPerformance.phaseoOverheadMs,
         end_to_end_ms: endToEndMs,
     };
     // Update result billing
@@ -609,12 +634,4 @@ async function handleNonStreamResponse(
     const responseStatus = result.upstream.status;
     return ctx.timer.span("after_create_response", () => createResponse(responseBody, responseStatus, headers));
 }
-
-
-
-
-
-
-
-
 

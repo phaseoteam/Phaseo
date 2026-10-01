@@ -490,6 +490,35 @@ function collectResponsesTargets(body: any): TextTarget[] {
 	return targets;
 }
 
+function collectDecisionTargetsFromValue(
+	value: unknown,
+	path: Array<string | number>,
+	targets: TextTarget[],
+): void {
+	if (typeof value === "string" && value.trim()) {
+		targets.push({ path, text: value });
+		return;
+	}
+	if (Array.isArray(value)) {
+		value.forEach((entry, index) =>
+			collectDecisionTargetsFromValue(entry, [...path, index], targets),
+		);
+		return;
+	}
+	if (!value || typeof value !== "object") return;
+
+	for (const [key, child] of Object.entries(value as Record<string, unknown>)) {
+		collectDecisionTargetsFromValue(child, [...path, key], targets);
+	}
+}
+
+function collectDecisionTargets(body: any): TextTarget[] {
+	const targets: TextTarget[] = [];
+	collectDecisionTargetsFromValue(body?.state, ["state"], targets);
+	collectDecisionTargetsFromValue(body?.questions, ["questions"], targets);
+	return targets;
+}
+
 function collectGenericPromptTargets(body: any): TextTarget[] {
 	const targets: TextTarget[] = [];
 	for (const key of ["prompt", "input", "query"]) {
@@ -505,6 +534,7 @@ function collectPromptInjectionTargets(endpoint: Endpoint, body: any): TextTarge
 	if (endpoint === "chat.completions") return collectChatTargets(body);
 	if (endpoint === "messages") return collectAnthropicTargets(body);
 	if (endpoint === "responses") return collectResponsesTargets(body);
+	if (endpoint === "decisions") return collectDecisionTargets(body);
 	return collectGenericPromptTargets(body);
 }
 

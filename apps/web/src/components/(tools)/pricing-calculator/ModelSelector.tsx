@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/select";
 import { Logo } from "@/components/Logo";
 import { cn } from "@/lib/utils";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { getTierFilterMeta } from "@/lib/models/tierFilterStyles";
 import { comparePricingEndpoints } from "./calculatorState";
 import type { CalculatorCatalogModel, CalculatorModelSelection } from "./calculatorState";
@@ -78,23 +79,6 @@ function releaseTimestamp(
 	return Number.isFinite(parsed) ? parsed : Number.NEGATIVE_INFINITY;
 }
 
-function formatReleaseDate(
-	locale: string,
-	unknownLabel: string,
-	releaseDate?: string | null,
-	announcementDate?: string | null
-): string {
-	const value = releaseDate || announcementDate;
-	if (!value) return unknownLabel;
-	const parsed = new Date(value);
-	if (Number.isNaN(parsed.getTime())) return unknownLabel;
-	return new Intl.DateTimeFormat(locale, {
-		day: "numeric",
-		month: "short",
-		year: "numeric",
-	}).format(parsed);
-}
-
 type PricingModel = {
 	provider: string;
 	model: string;
@@ -148,6 +132,7 @@ export function ModelSelector({
 }: ModelSelectorProps) {
 	const locale = useLocale();
 	const t = useTranslations("Product.tools.pricing");
+	const format = useDisplayFormatters();
 	const [open, setOpen] = useState(false);
 	const [query, setQuery] = useState("");
 	const [activeModelId, setActiveModelId] = useState<string | null>(null);
@@ -333,7 +318,7 @@ export function ModelSelector({
 								<span className="min-w-0">
 									<span className="block truncate text-sm font-medium">{t("searchModels")}</span>
 									<span className="block truncate text-xs text-muted-foreground">
-										{t("modelsInCatalogue", { count: modelOptions.length.toLocaleString(locale) })}
+										{t("modelsInCatalogue", { count: format.number(modelOptions.length) })}
 									</span>
 								</span>
 							</span>
@@ -527,7 +512,7 @@ export function ModelSelector({
 								</div>
 
 								<div className="mt-3 flex flex-wrap gap-1.5 text-[11px] text-muted-foreground">
-									<span className="inline-flex items-center gap-1 rounded-md bg-muted px-2 py-1"><CalendarDays className="size-3" />{formatReleaseDate(locale, t("releaseUnknown"), option?.releaseDate, option?.announcementDate)}</span>
+									<span className="inline-flex items-center gap-1 rounded-md bg-muted px-2 py-1"><CalendarDays className="size-3" />{format.calendarDate(option?.releaseDate || option?.announcementDate, t("releaseUnknown"))}</span>
 									<span className="inline-flex items-center gap-1 rounded-md bg-muted px-2 py-1"><DatabaseZap className="size-3" />{t("pricedMeters", { count: option?.meterCount ?? 0 })}</span>
 								</div>
 							</div>

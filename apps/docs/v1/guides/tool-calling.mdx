@@ -139,7 +139,8 @@ Notes:
 Notes:
 
 - The model supplies the search query when it calls the tool.
-- `engine: "auto"` resolves to managed Exa search. `engine: "exa"`, `engine: "parallel"`, and `engine: "firecrawl"` run managed gateway search when the matching provider key is configured.
+- `engine: "auto"` resolves to managed Exa search. `engine: "exa"`, `engine: "parallel"`, `engine: "firecrawl"`, and `engine: "tinyfish"` run managed gateway search when the matching provider key is configured.
+- TinyFish Search supports localized, paginated ranked results and is free on its published plans; use `language` and `page` in the tool parameters when needed.
 - `engine: "native"` on `phaseo:web_search` is converted to the provider-native web search tool for the request surface, such as OpenAI `web_search_preview` or Anthropic `web_search_20250305`.
 - `max_results` caps each search call; `max_total_results` caps cumulative results across the server-tool loop.
 - Managed search supports `allowed_domains` / `excluded_domains`, `search_context_size`, and `max_characters` where the selected engine exposes matching controls.

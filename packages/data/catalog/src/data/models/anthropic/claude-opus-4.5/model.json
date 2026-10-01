@@ -331,11 +331,23 @@
     },
     {
       "benchmark_id": "aa-intelligence-index-v4",
-      "score": 41.9,
+      "score": 33.6,
       "is_self_reported": false,
-      "other_info": "Claude Opus 4.5 (Reasoning); Artificial Analysis Intelligence Index v4.1.1",
+      "updated_at": "2026-09-08T10:38:34.750Z",
+      "variant": "reasoning",
+      "other_info": "Claude Opus 4.5 (Reasoning); Artificial Analysis ID 2660d74f-ce79-48a8-8b53-6e668e2071a2; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/claude-opus-4-5-thinking",
-      "rank": 58
+      "rank": 88
+    },
+    {
+      "benchmark_id": "aa-intelligence-index-v4",
+      "score": 27.8,
+      "is_self_reported": false,
+      "updated_at": "2026-09-08T10:38:34.750Z",
+      "variant": "none",
+      "other_info": "Claude Opus 4.5 (Non-reasoning); Artificial Analysis ID 4077490a-bbfb-404e-979a-a97a20e3b5de; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/claude-opus-4-5",
+      "rank": 138
     }
   ],
   "page_notice": null,

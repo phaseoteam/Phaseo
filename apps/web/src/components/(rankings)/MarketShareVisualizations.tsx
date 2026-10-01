@@ -6,6 +6,7 @@
 "use client";
 
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { Card } from "@/components/ui/card";
 import { useLocale, useTranslations } from "next-intl";
 import type { MarketShareData } from "@/lib/fetchers/rankings/getRankingsData";
@@ -33,6 +34,7 @@ export function MarketShareVisualizations({
     data,
     dimension,
 }: MarketShareVisualizationsProps) {
+	const format = useDisplayFormatters();
 	const locale = useLocale();
 	const t = useTranslations("Catalogue.rankings");
 	const chartData = data.map((row, idx) => ({
@@ -71,14 +73,14 @@ export function MarketShareVisualizations({
                                         <p className="font-semibold">{data.name}</p>
                                         <div className="text-sm space-y-1 pt-2 border-t">
 	                                            <p>{t("shareLabel")}: {data.value.toLocaleString(locale, { maximumFractionDigits: 1 })}%</p>
-	                                            <p>{t("requestsLabel")}: {data.requests.toLocaleString(locale)}</p>
+	                                            <p>{t("requestsLabel")}: {format.number(data.requests)}</p>
 	                                            <p>
 	                                                {t("tokensLabel")}:{" "}
                                                 {data.tokens >= 1e9
                                                     ? `${(data.tokens / 1e9).toFixed(2)}B`
                                                     : data.tokens >= 1e6
                                                     ? `${(data.tokens / 1e6).toFixed(2)}M`
-                                                    : data.tokens.toLocaleString(locale)}
+                                                    : format.number(data.tokens)}
                                             </p>
                                         </div>
                                     </div>

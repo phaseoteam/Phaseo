@@ -1,16 +1,16 @@
 {
 	"home": {
-		"title": "Phaseo：AI Gateway とオープンモデルカタログ",
-		"description": "信頼できるモデルデータを見つけ、1つのオープンソース AI gateway を通じてリクエストをルーティングし、プロバイダー間のコスト、信頼性、利用状況、パフォーマンスを把握できます。",
-		"heroTitle": "あらゆるAIモデルを1つのプラットフォームで",
-		"heroDescription": "信頼できるモデルデータを見つけ、1つの OpenAI 互換 gateway を通じてリクエストをルーティングし、対応プロバイダー間のコスト、信頼性、利用状況、パフォーマンスを把握できます。",
+		"title": "Phaseo: 手頃なAIのためのオープンなゲートウェイ",
+		"description": "モデルを探し、プロバイダー間でリクエストを振り分け、推論の利用しやすさ、移植性、透明性を重視したオープンソースのAIゲートウェイを利用できます。",
+		"heroTitle": "AI推論はオープンで手頃であり、自由に選べるべきです。",
+		"heroDescription": "Phaseoはプロバイダーに依存しないオープンソースのAIゲートウェイを構築しています。モデルを探し、プロバイダー間で振り分け、連携の移植性を保ちながら、より良い提携を通じて推論コストの削減を目指します。",
 		"explore": "探索",
 		"models": "モデル",
 		"getApiKey": "APIキーを取得",
 		"viewGithub": "GitHubを見る",
 		"openModelDatabase": "オープンなモデルデータベースと統合 gateway",
 		"openModelDatabaseDescription": "幅広いモデルカタログを確認し、リリース前に Gateway ルートが有効なモデルへ絞り込みます。",
-		"transparentPricing": "透明な料金体系",
+		"transparentPricing": "今日の明確な価格。明日の低い追加コスト。",
 		"viewPricing": "料金を見る",
 		"usePricingCalculator": "料金計算ツールを使う",
 		"latestModels": "最新モデル",
@@ -51,12 +51,14 @@
 			"description": "モデルおよびベンチマークデータベースから得られた全体的なシグナルです（サンプルデータを表示）。新しいイベントに応じて継続的に更新されます。"
 		},
 		"pricingPoints": {
-			"payAsYouGo": "完全従量課金",
-			"payAsYouGoBody": "エンタープライズプラン、契約、サブスクリプション、最低利用額、月額・年額の契約期間はありません。",
+			"payAsYouGo": "利用した分だけ支払う",
+			"payAsYouGoBody": "モデルの利用に契約、定額制、最低利用額はありません。",
 			"creditFee": "クレジット購入手数料 {fee}%",
 			"creditFeeBody": "クレジット購入時に適用されます。最低手数料は1ドルです。利用料金はカタログに表示されたモデル価格に基づきます。",
 			"managedCredits": "管理クレジットまたはBYOK",
-			"managedCreditsBody": "BYOKでは毎月100万件まで手数料無料でリクエストできます。それ以降は、プロバイダー相当の費用に対して2.5%のサービス手数料がかかります。"
+			"managedCreditsBody": "BYOKでは毎月100万件まで手数料無料でリクエストできます。それ以降は、プロバイダー相当の費用に対して2.5%のサービス手数料がかかります。",
+			"selfServeEnterprise": "セルフサービスのEnterprise",
+			"selfServeEnterpriseBody": "SSO、SCIM、ガバナンス、優先サポートを提供する任意のワークスペース月額プラン。"
 		},
 		"reliability": {
 			"title": "本番環境のAIに信頼性を。",
@@ -80,6 +82,16 @@
 			"routingBody": "プロバイダーの稼働状況が変化した際、ゲートウェイがトラフィックをどう切り替えたかを確認できます。",
 			"regressionsTitle": "早期にリグレッションを発見",
 			"regressionsBody": "ユーザーに影響するインシデントになる前に、モデルやプロバイダーの変更を比較できます。"
+		},
+		"transparentPricingDescription": "利用料金にはカタログのモデル価格が適用されます。現在のクレジット購入手数料は公開されています。プロバイダーとの提携と運用効率の改善により持続可能になるにつれ、回避できるプラットフォームコストを削減することが私たちの使命です。",
+		"missionLink": "私たちが目指す未来を見る",
+		"missionProofs": {
+			"openSource": "オープンソース",
+			"openSourceBody": "ゲートウェイを調査、拡張、改善できます。",
+			"providerNeutral": "プロバイダーに依存しない",
+			"providerNeutralBody": "作業に合ったプロバイダーを選べます。",
+			"lowerOverhead": "追加コストの削減",
+			"lowerOverheadBody": "効率化と提携によって回避できるコストを削減します。"
 		}
 	},
 	"about": {
@@ -760,6 +772,10 @@
 			"batch": {
 				"label": "バッチ",
 				"detail": "非同期処理"
+			},
+			"decisions": {
+				"label": "判断",
+				"detail": "型付きの回答"
 			}
 		},
 		"gatewayCapabilities": "Gatewayの機能",
@@ -1551,15 +1567,15 @@
 			"audit": "監査とガバナンスの管理",
 			"priority": "優先サポート"
 		},
-		"paygHeadline": "標準は従量課金。チームに必要になったらエンタープライズプランを追加できます。",
-		"paygBody": "必要なときにクレジットを購入し、使った分だけ支払います。エンタープライズ向けのID管理と支払い特典は任意で、料金を公開したうえで、営業担当者との通話なしに有効化できます。",
+		"paygHeadline": "標準は従量課金。チームに必要なときはセルフサービスの Enterprise。",
+		"paygBody": "必要なときにクレジットを購入し、使用した分だけ支払います。Enterprise は認証、ガバナンス、優先サポート向けの独立した月額サブスクリプションです。モデル利用料金は変わらず、営業との通話なしで有効化できます。モデル別の費用見積もりには次をご利用ください：",
 		"manageCredits": "クレジットを管理",
 		"manageProviderKeys": "プロバイダーキーを管理",
 		"modelPricingCalculator": "モデル料金計算ツール",
 		"payg": "従量課金",
 		"paygBodyShort": "必要なときだけクレジットを追加します。",
-		"enterpriseOptional": "エンタープライズプランは任意です",
-		"enterpriseOptionalBody": "利用料金を変えずに SSO、SCIM、ガバナンスを追加できます。",
+		"enterpriseOptional": "セルフサービス Enterprise",
+		"enterpriseOptionalBody": "利用料金を変えずに SSO、SCIM、ガバナンス、優先サポートを追加できます。",
 		"pricesPublic": "料金は公開されています",
 		"pricesPublicBody": "簡単な質問に答えるだけで、すぐに申し込めます。",
 		"faqTitle": "よくある質問",
@@ -1639,7 +1655,8 @@
 				"training-data": "Phaseoはプロンプトや応答を学習に使用しますか？",
 				"request-logging": "Phaseoはどのリクエストデータを保存しますか？",
 				"service-status": "障害や稼働状況はどこで確認できますか？",
-				"contact-support": "サポートへの問い合わせ方法を教えてください。"
+				"contact-support": "サポートへの問い合わせ方法を教えてください。",
+				"receipts": "クレジット購入の領収書を取得できますか？"
 			},
 			"answers": {
 				"how-are-tokens-billed": "入力、出力、その他の課金対象の利用分は、カタログに表示されたモデル価格でPhaseoのクレジット残高から差し引かれます。管理対象リクエストごとにPhaseoが別途上乗せすることはありません。",
@@ -1676,7 +1693,8 @@
 				"training-data": "いいえ。Phaseoはゲートウェイのプロンプトや応答を自社モデルの学習に使用しません。リクエストは処理を担当するプロバイダーに送信されるため、ルーティング要件で除外しない限り、そのプロバイダーのデータ・学習ポリシーが適用されます。",
 				"request-logging": "Phaseoはモデル、プロバイダー、トークン数、レイテンシ、エラーなどの運用・請求メタデータを保存します。生のプロンプトや応答は、標準では永続保存されません。ワークスペースでI/Oログを有効にした場合、ペイロードの保存期間はプライバシーと保持設定に従います。",
 				"service-status": "現在のサービス状況と障害履歴はstatus.phaseo.appで公開しています。リクエストIDとアクティビティログは、特定の問題の調査に役立ちます。",
-				"contact-support": "アカウント、請求、技術的な質問は、問い合わせページを使うかsupport@phaseo.appまでメールしてください。バグ報告や機能リクエストは、公開GitHubリポジトリにも登録できます。"
+				"contact-support": "アカウント、請求、技術的な質問は、問い合わせページを使うかsupport@phaseo.appまでメールしてください。バグ報告や機能リクエストは、公開GitHubリポジトリにも登録できます。",
+				"receipts": "はい。完了した購入の Stripe 領収書は設定 → クレジットから確認できます。支払いが成功したのに領収書がない場合は、支払い ID と日付を添えてサポートにお問い合わせください。"
 			}
 		},
 		"matrix": {
@@ -1871,7 +1889,13 @@
 			"paygCreditPurchaseFee": "クレジット購入時に{fee, number}%の手数料（最低{minimum}）がかかります",
 			"enterpriseCreditPurchaseFee": "クレジット購入時に5%の手数料（最低{minimum}）がかかります",
 			"byokServiceFee": "月{freeRequests, number}件まで含む。以降はプロバイダー相当コストの{serviceFee, number}%"
-		}
+		},
+		"paygHeadlinePreview": "標準は従量課金。",
+		"paygBodyPreview": "必要なときにクレジットを購入し、使用した分だけ支払います。Enterprise の認証、ガバナンス、優先サポートは対象ワークスペース向けのプレビューです。モデル別の費用見積もりには次をご利用ください：",
+		"enterprisePreview": "Enterprise プレビュー",
+		"enterprisePreviewBody": "対象ワークスペース向けに認証、ガバナンス、優先サポートを準備しています。",
+		"pricesPublicPreview": "公開料金",
+		"pricesPublicPreviewBody": "カタログと計算ツールでモデル利用料金を比較できます。"
 	},
 	"gatewayComparison": {
 		"title": "Phaseoと{name}の比較",
@@ -2422,7 +2446,8 @@
 			"survival": "Serviceへのアクセス終了後も、Sections 2、3、4、5および8～15は引き続き適用されます。",
 			"contactQuestions": "本規約についてご質問がある場合は、次の方法でご連絡ください。",
 			"contactEmailLabel": "メール",
-			"operatorDetails": "本サービスは、<person>Daniel Butler</person>が<brand>Phaseo</brand>の名で提供しています。"
+			"operatorDetails": "本サービスは、<person>Daniel Butler</person>が<brand>Phaseo</brand>の名で提供しています。",
+			"autoTopUpSecurity": "安全のため、自動チャージの有効化に二要素認証を求める場合があります。二要素認証なしで続行する選択肢を提供する場合は、別途、リスクの承認と確認の手続きを完了する必要があります。これにより、不正な請求のリスクが高まること、および返金や請求に関する紛争が本規約と適用法に基づいて判断されることを認めるものとします。この条項は、法律で保障される消費者の権利を制限するものではありません。"
 		}
 	},
 	"brandMenu": {

@@ -20,6 +20,7 @@
   "data_policy_confidence": "confirmed",
   "data_policy_contract_mode": "customer_agreement",
   "country_code": "FR",
+  "subdivision_code": "FR-IDF",
   "status": "Active",
   "colour": "#E97A35",
   "gateway_kind": "openai_compatible",

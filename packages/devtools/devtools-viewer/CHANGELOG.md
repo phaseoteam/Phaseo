@@ -1,5 +1,13 @@
 # @phaseo/devtools-viewer
 
+## 0.2.3
+
+### Patch Changes
+
+- [#2051](https://github.com/phaseoteam/Phaseo/pull/2051) [`7797801`](https://github.com/phaseoteam/Phaseo/commit/7797801c8ce12ba99e305aa8d44f2d66013e147a) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Harden request validation, provider routing, local tooling, and generated client handling.
+
+- [#2160](https://github.com/phaseoteam/Phaseo/pull/2160) [`c029f44`](https://github.com/phaseoteam/Phaseo/commit/c029f4455b3a2d0fff6948544cbd9108095ed234) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Migrate shared class-name merging from clsx and tailwind-merge to cn.
+
 ## 0.2.2
 
 ### Patch Changes

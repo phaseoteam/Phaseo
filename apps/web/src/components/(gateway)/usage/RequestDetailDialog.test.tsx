@@ -1,4 +1,5 @@
 import { renderToStaticMarkup } from "react-dom/server";
+import React from "react";
 
 import type { RequestRow } from "@/app/(dashboard)/gateway/usage/server-actions";
 import RequestDetailDialog from "./RequestDetailDialog";
@@ -23,6 +24,13 @@ jest.mock("@/components/ui/dialog", () => ({
 	DialogTitle: ({ children }: { children: React.ReactNode }) => <h2>{children}</h2>,
 }));
 
+jest.mock("@/components/(data)/model/pricing/ProviderInspectorSheet", () => ({
+	ProviderInspectorSheet: ({ children, ...props }: { children: React.ReactNode; disablePointerDismissal?: boolean }) => (
+		<div data-disable-pointer-dismissal={String(props.disablePointerDismissal)}>{children}</div>
+	),
+	ProviderInspectorSheetContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+}));
+
 const historicalRequestWithoutCollections = {
 	request_id: "req_historical",
 	created_at: "2026-08-11T12:00:00.000Z",
@@ -41,6 +49,30 @@ const historicalRequestWithoutCollections = {
 } as RequestRow;
 
 describe("RequestDetailDialog", () => {
+	it("shows routing first and non-overlapping streaming intervals", () => {
+		const markup = renderToStaticMarkup(<RequestDetailDialog open onOpenChange={() => {}} request={{
+			...historicalRequestWithoutCollections,
+			stream: true, provider: "openai", latency_ms: 120, generation_ms: 520,
+			detail_metadata: { response_timeline: { version: 1, routing_ms: 15 } },
+			provider_attempts: [{ provider: "openai", attempt_number: 1, outcome: "success", status: 200, duration_ms: 120 }],
+		}} />);
+		expect(markup).toContain("Response Timeline");
+		const timeline = markup.slice(markup.indexOf("Response Timeline"));
+		expect(timeline).toContain("Phaseo routing");
+		expect(timeline.indexOf("Phaseo routing")).toBeLessThan(timeline.indexOf("openai"));
+		expect(timeline).toContain("15 ms");
+		expect(timeline).toContain("120 ms");
+		expect(timeline).toContain("400 ms");
+		expect(timeline).toContain("535 ms");
+		expect(timeline).not.toContain("520 ms");
+	});
+
+	it("marks historical routing timing as unavailable", () => {
+		const markup = renderToStaticMarkup(<RequestDetailDialog open onOpenChange={() => {}} request={historicalRequestWithoutCollections} />);
+		expect(markup).toContain("Phaseo routing");
+		expect(markup).toContain("Not recorded");
+	});
+
 	it("opens a historical request when optional collections are absent", () => {
 		expect(() =>
 			renderToStaticMarkup(
@@ -51,6 +83,21 @@ describe("RequestDetailDialog", () => {
 				/>,
 			),
 		).not.toThrow();
+	});
+
+	it("keeps the loading sheet from dismissing during request transitions", () => {
+		const markup = renderToStaticMarkup(
+			<RequestDetailDialog
+				open
+				loading
+				presentation="sheet"
+				disablePointerDismissal
+				onOpenChange={() => {}}
+				request={historicalRequestWithoutCollections}
+			/>,
+		);
+
+		expect(markup).toContain('data-disable-pointer-dismissal="true"');
 	});
 
 	it("renders a retryable state when a route detail cannot load", () => {

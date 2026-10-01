@@ -1,11 +1,13 @@
 "use client";
 
-import { useLocale } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { Link, usePathname } from "@/i18n/navigation";
 import { Building2, ChevronRight, ExternalLink, PanelLeftClose, PanelLeftOpen, UserRound } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { filterSettingsNavigation } from "@/components/(gateway)/settings/Sidebar.search";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
@@ -15,6 +17,7 @@ import {
 } from "@/components/ui/collapsible";
 import {
 	SidebarContent,
+	SidebarFooter,
 	SidebarGroup,
 	SidebarGroupContent,
 	SidebarHeader,
@@ -44,6 +47,7 @@ export default function SettingsSidebar({
 	showEnterprise = false,
 	showAutoRouting = false,
 	showInternal = false,
+	providerMode = false,
 }: {
 	/**
 	 * Optional slot for lightweight, non-blocking sidebar adornments (e.g. alert counts).
@@ -55,10 +59,14 @@ export default function SettingsSidebar({
 	showEnterprise?: boolean;
 	showAutoRouting?: boolean;
 	showInternal?: boolean;
+	providerMode?: boolean;
 }) {
 	const locale = useLocale();
+	const tNew = useTranslations("SettingsUI.sidebarNew");
 	const settingsMessages = getSettingsMessages((isPublicLocale(locale) ? locale : "en-GB") as PublicLocale);
 	const translateLabel = (label: string) => {
+		const newLabels: Record<string, string> = { Preferences: "preferences", "Billing & Credits": "billingCredits", Activity: "activity", "Realtime Sessions": "realtimeSessions", "Private Models": "privateModels", "Discovery queue": "discoveryQueue", "Your Models": "yourModels", "Provider Review": "providerReview", Integrations: "integrations", Provider: "provider" };
+		if (newLabels[label]) return tNew(newLabels[label] as never);
 		const key = LABEL_KEYS[label as keyof typeof LABEL_KEYS];
 		if (!key) return label;
 		if (key === "workspace") return settingsMessages.sidebar.scope.workspace;
@@ -73,7 +81,9 @@ export default function SettingsSidebar({
 	const pathname = usePathname();
 	const { isMobile, setOpenMobile, state, toggleSidebar } = useSidebar();
 	const isCollapsed = state === "collapsed" && !isMobile;
-	const navGroups = getSettingsSidebar({ showBroadcast, showWebhooks, showEnterprise, showAutoRouting, showInternal });
+	const [search, setSearch] = useState("");
+	const isSearching = search.trim().length > 0 && !isCollapsed;
+	const navGroups = getSettingsSidebar({ showBroadcast, showWebhooks, showEnterprise, showAutoRouting, showInternal, providerMode });
 
 	function matchScore(item: NavItem) {
 		const path = pathname ?? "";
@@ -105,7 +115,7 @@ export default function SettingsSidebar({
 				return b.score!.len - a.score!.len;
 			})[0] ?? null;
 	const activeItem = activeEntry?.item ?? null;
-	const routeScope = activeEntry?.group.scope ?? "personal";
+	const routeScope = providerMode && pathname === "/settings/account/providers" ? "provider" : activeEntry?.group.scope ?? "personal";
 	const [scopeSelection, setScopeSelection] = useState<{
 		routeScope: SettingsScope;
 		selectedScope: SettingsScope;
@@ -133,8 +143,13 @@ export default function SettingsSidebar({
 
 		return () => resizeObserver.disconnect();
 	}, [scrollViewport, selectedScope]);
-	const visibleGroups = navGroups.filter((group) => group.scope === selectedScope);
+	const visibleGroups = isSearching
+		? filterSettingsNavigation(navGroups, search, translateLabel)
+		: navGroups.filter((group) => group.scope === selectedScope);
+	const businessScope = providerMode ? "provider" : "workspace";
+	const businessLabel = providerMode ? tNew("provider") : settingsMessages.sidebar.scope.workspace;
 	const selectScope = (nextScope: SettingsScope) => {
+		setSearch("");
 		setScopeSelection({ routeScope, selectedScope: nextScope });
 	};
 
@@ -146,6 +161,7 @@ export default function SettingsSidebar({
 		const heading = (group.heading ?? "").trim();
 		return (
 			<SidebarGroup className={cn("py-0", !first && "group-data-[collapsible=icon]:pt-2")}>
+				{isSearching ? <p className="px-2 pb-1 pt-3 text-xs font-medium text-muted-foreground">{group.scope === "personal" ? "Account" : "Workspace"}</p> : null}
 				<SidebarGroupContent>
 					<SidebarMenu>
 						{group.items.map((item) =>
@@ -199,7 +215,7 @@ export default function SettingsSidebar({
 		);
 
 		if (item.children?.length) {
-			const sectionOpen = openSections[item.href] ?? active;
+			const sectionOpen = isSearching || (openSections[item.href] ?? active);
 			return (
 				<Collapsible
 					key={`${heading || "group"}-${item.href}`}
@@ -311,7 +327,7 @@ export default function SettingsSidebar({
 			<SidebarHeader className="h-[53px] shrink-0 gap-0 border-b px-2 py-0 group-data-[collapsible=icon]:px-2">
 				<div className="flex h-full items-center gap-2 px-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
 					<div className="text-sm font-semibold text-foreground group-data-[collapsible=icon]:hidden">
-						{settingsMessages.sidebar.settings}
+						Settings
 					</div>
 					<Button
 						variant="ghost"
@@ -330,10 +346,13 @@ export default function SettingsSidebar({
 				</div>
 			</SidebarHeader>
 			<div className="shrink-0 group-data-[collapsible=icon]:hidden">
+				<div className="px-2 pt-3">
+					<Input type="search" aria-label={tNew("search")} placeholder={tNew("searchPlaceholder")} value={search} onChange={(event) => setSearch(event.target.value)} onKeyDown={(event) => { if (event.key === "Escape") { event.stopPropagation(); setSearch(""); } }} className="h-8 text-sm" />
+				</div>
 				<div className="px-2 pb-2 pt-3">
 					<div className="grid grid-cols-2 rounded-lg bg-muted/70 p-1" aria-label={settingsMessages.sidebar.settings}>
 						<button type="button" data-settings-segment aria-pressed={selectedScope === "personal"} onClick={() => selectScope("personal")} className={selectedScope === "personal" ? "flex h-8 items-center justify-center gap-1.5 rounded-md bg-background px-2 text-xs font-medium text-foreground shadow-sm" : "flex h-8 items-center justify-center gap-1.5 rounded-md px-2 text-xs font-medium text-muted-foreground hover:text-foreground"}><UserRound className="size-3.5" />{settingsMessages.sidebar.scope.account}</button>
-						<button type="button" data-settings-segment aria-pressed={selectedScope === "workspace"} onClick={() => selectScope("workspace")} className={selectedScope === "workspace" ? "flex h-8 items-center justify-center gap-1.5 rounded-md bg-background px-2 text-xs font-medium text-foreground shadow-sm" : "flex h-8 items-center justify-center gap-1.5 rounded-md px-2 text-xs font-medium text-muted-foreground hover:text-foreground"}><Building2 className="size-3.5" />{settingsMessages.sidebar.scope.workspace}</button>
+						<button type="button" data-settings-segment aria-pressed={selectedScope === businessScope} onClick={() => selectScope(businessScope)} className={selectedScope === businessScope ? "flex h-8 items-center justify-center gap-1.5 rounded-md bg-background px-2 text-xs font-medium text-foreground shadow-sm" : "flex h-8 items-center justify-center gap-1.5 rounded-md px-2 text-xs font-medium text-muted-foreground hover:text-foreground"}><Building2 className="size-3.5" />{businessLabel}</button>
 					</div>
 				</div>
 			</div>
@@ -345,7 +364,7 @@ export default function SettingsSidebar({
 						</SidebarMenuButton>
 					</SidebarMenuItem>
 					<SidebarMenuItem>
-						<SidebarMenuButton isActive={selectedScope === "workspace"} tooltip={settingsMessages.sidebar.scope.workspace} className="!rounded-lg" aria-label={settingsMessages.sidebar.scope.showWorkspace} onClick={() => selectScope("workspace")}>
+						<SidebarMenuButton isActive={selectedScope === businessScope} tooltip={businessLabel} className="!rounded-lg" aria-label={providerMode ? tNew("showProvider") : settingsMessages.sidebar.scope.showWorkspace} onClick={() => selectScope(businessScope)}>
 							<Building2 className="size-4" />
 						</SidebarMenuButton>
 					</SidebarMenuItem>
@@ -359,6 +378,7 @@ export default function SettingsSidebar({
 					viewportRef={setScrollViewport}
 				>
 					<div>
+						{isSearching && visibleGroups.length === 0 ? <p role="status" className="px-4 py-6 text-sm text-muted-foreground">{tNew("empty")}</p> : null}
 						{visibleGroups.map((group, idx) => (
 							<div key={`${group.heading ?? "group"}-${idx}`} className={idx > 0 ? "group-data-[collapsible=icon]:border-t group-data-[collapsible=icon]:border-sidebar-border" : undefined}>
 								<NavBlock group={group} first={idx === 0} />
@@ -367,6 +387,16 @@ export default function SettingsSidebar({
 					</div>
 				</ScrollArea>
 			</SidebarContent>
+			{!providerMode && <SidebarFooter className="shrink-0 border-t p-2">
+				<SidebarMenu><SidebarMenuItem>
+					<SidebarMenuButton asChild tooltip={tNew("becomeProvider")} isActive={pathname === "/settings/account/providers"} className="!rounded-lg">
+						<Link href="/settings/account/providers" onClick={closeMobile} aria-label={tNew("becomeProvider")}>
+							<Building2 className="size-4" />
+							<span className="group-data-[collapsible=icon]:hidden">{tNew("becomeProvider")}</span>
+						</Link>
+					</SidebarMenuButton>
+				</SidebarMenuItem></SidebarMenu>
+			</SidebarFooter>}
 		</>
 	);
 }

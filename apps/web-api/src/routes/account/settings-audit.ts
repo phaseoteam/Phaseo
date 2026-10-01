@@ -44,12 +44,12 @@ accountSettingsAuditRouter.get("/audit-events", async (c) => {
 	const page = rows.slice(0, limit);
 	const actorIds = Array.from(new Set(page.map((row) => row.actor_user_id).filter(Boolean)));
 	const actorsResult = actorIds.length
-		? await context.client.from("users").select("user_id,display_name,email").in("user_id", actorIds)
+		? await context.client.from("users").select("user_id,display_name").in("user_id", actorIds)
 		: { data: [], error: null };
 	if (actorsResult.error) return c.json({ error: "audit_log_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
 	const actors = new Map((actorsResult.data ?? []).map((actor) => [actor.user_id, {
 		displayName: actor.display_name ?? null,
-		email: actor.email ?? null,
+		email: null,
 	}]));
 
 	return c.json({

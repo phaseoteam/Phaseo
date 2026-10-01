@@ -10,6 +10,7 @@ let normaliseControlPlaneResult: typeof import("../src/index").normaliseControlP
 
 const env = {
 	PHASEO_API_BASE_URL: "https://api.phaseo.app",
+	PHASEO_WEB_BASE_URL: "https://phaseo.app",
 	PHASEO_MCP_RESOURCE_SERVER_SECRET: "s".repeat(64),
 };
 
@@ -45,6 +46,7 @@ describe("Phaseo MCP server metadata", () => {
 		expect(client.getServerVersion()).toMatchObject({
 			name: "Phaseo",
 			title: "Phaseo",
+			version: "0.4.2",
 			websiteUrl: "https://phaseo.app",
 			icons: [
 				{
@@ -61,6 +63,7 @@ describe("Phaseo MCP server metadata", () => {
 		expect(Object.keys(tools)).toEqual([
 			"models_list",
 			"model_get",
+			"benchmark_rankings",
 			"providers_list",
 			"cost_estimate",
 			"credits_get",
@@ -72,8 +75,76 @@ describe("Phaseo MCP server metadata", () => {
 		]);
 		expect(tools.models_list?.outputSchema).toMatchObject({
 			type: "object",
-			properties: { models: { type: "array" } },
+			properties: {
+				models: {
+					type: "array",
+					items: {
+						type: "object",
+						properties: {
+							releaseDate: { anyOf: [{ type: "string" }, { type: "null" }] },
+							inputPricePerMillion: { anyOf: [{ type: "number", minimum: 0 }, { type: "null" }] },
+							outputPricePerMillion: { anyOf: [{ type: "number", minimum: 0 }, { type: "null" }] },
+							inputPriceProviderId: { anyOf: [{ type: "string" }, { type: "null" }] },
+							outputPriceProviderId: { anyOf: [{ type: "string" }, { type: "null" }] },
+							hasFreeProvider: { type: "boolean" },
+							providerSupport: {
+								type: "array",
+								items: {
+									type: "object",
+									properties: {
+										pricing: {
+											type: "object",
+											properties: {
+												inputPricePerToken: { anyOf: [{ type: "string" }, { type: "null" }] },
+												outputPricePerToken: { anyOf: [{ type: "string" }, { type: "null" }] },
+												inputPricePerMillion: { anyOf: [{ type: "number", minimum: 0 }, { type: "null" }] },
+												outputPricePerMillion: { anyOf: [{ type: "number", minimum: 0 }, { type: "null" }] },
+												currency: { anyOf: [{ type: "string" }, { type: "null" }] },
+												isFree: { type: "boolean" },
+											},
+											required: [
+												"inputPricePerToken", "outputPricePerToken",
+												"inputPricePerMillion", "outputPricePerMillion",
+												"currency", "isFree",
+											],
+										},
+									},
+									required: [
+										"providerId", "providerName", "providerModelId", "status",
+										"routable", "supportedParameters", "pricing",
+									],
+								},
+							},
+						},
+						required: expect.arrayContaining(["releaseDate"]),
+					},
+				},
+			},
 			required: ["models"],
+		});
+		expect(tools.model_get?.outputSchema).toMatchObject({
+			type: "object",
+			properties: {
+				model: {
+					type: "object",
+					properties: {
+						releaseDate: { anyOf: [{ type: "string" }, { type: "null" }] },
+						providerSupport: {
+							type: "array",
+							items: {
+								type: "object",
+								properties: { pricing: { type: "object" } },
+								required: [
+									"providerId", "providerName", "providerModelId", "status",
+									"routable", "supportedParameters", "pricing",
+								],
+							},
+						},
+					},
+					required: expect.arrayContaining(["releaseDate"]),
+				},
+			},
+			required: ["model"],
 		});
 		expect(tools.models_list?._meta?.securitySchemes).toEqual([
 			{ type: "oauth2", scopes: ["models:read", "pricing:read"] },
@@ -85,7 +156,7 @@ describe("Phaseo MCP server metadata", () => {
 		});
 		expect(Object.values(tools).every((tool) => tool.annotations?.readOnlyHint === true)).toBe(true);
 		expect(Object.values(tools).every((tool) => tool.annotations?.destructiveHint === false)).toBe(true);
-		expect(Object.values(tools).every((tool) => tool.annotations?.openWorldHint === true)).toBe(true);
+		expect(Object.values(tools).every((tool) => tool.annotations?.openWorldHint === false)).toBe(true);
 		expect(Object.keys(tools).some((name) => /(?:create|update|delete|remove)$/.test(name))).toBe(false);
 	});
 
@@ -169,6 +240,243 @@ describe("Phaseo MCP server metadata", () => {
 		const request = fetchMock.mock.calls[0]?.[0] as Request;
 		expect(request.url).toBe("https://api.phaseo.app/v1/generations?id=req_123");
 		expect(request.headers.get("authorization")).toBe("Bearer upstream-token");
+	});
+
+	it("returns the cheapest matching models in price order with factual Gateway availability", async () => {
+		const model = (id: string, price: string, routable: boolean, releaseDate: string | null) => ({
+			id,
+			name: id,
+			description: null,
+			organization: { id: "lab", name: "Example Lab", color: null },
+			lifecycle: {
+				status: "active", released_at: releaseDate, deprecated_at: null,
+				retires_at: null, replacement_id: null, message: null,
+			},
+			modalities: { input: ["text"], output: ["text"] },
+			limits: { input_tokens: 128_000, output_tokens: 8_000 },
+			capabilities: { endpoints: ["responses"], parameters: ["tools"], parameter_details: {} },
+			availability: { status: "active", provider_count: 1, active_provider_count: 1, coming_soon_provider_count: 0, inactive_provider_count: 0 },
+			pricing: { pricing_plan: "standard", meters: {
+				input_tokens: { unit: "token", unit_size: 1_000_000, price_per_unit: price, currency: "USD", provider_id: "provider" },
+				output_tokens: { unit: "token", unit_size: 1_000_000, price_per_unit: "10", currency: "USD", provider_id: "provider" },
+			} },
+			offers: [{
+				provider: { id: "provider", name: "Provider" }, model: id, status: "active", routable,
+				capabilities: { parameters: [], parameter_details: {} }, pricing: { pricing_plan: "standard", meters: {
+					input_tokens: { unit: "token", unit_size: 1_000_000, price_per_unit: price, currency: "USD", provider_id: "provider" },
+					output_tokens: { unit: "token", unit_size: 1_000_000, price_per_unit: "10", currency: "USD", provider_id: "provider" },
+				} },
+			}, ...(routable ? [{
+				provider: { id: "free-provider", name: "Free Provider" }, model: id, status: "active", routable: true,
+				capabilities: { parameters: [], parameter_details: {} }, pricing: { pricing_plan: "standard", meters: {
+					input_tokens: { unit: "token", unit_size: 1_000_000, price_per_unit: "0", currency: "USD", provider_id: "free-provider" },
+					output_tokens: { unit: "token", unit_size: 1_000_000, price_per_unit: "0", currency: "USD", provider_id: "free-provider" },
+				} },
+			}] : [])],
+		});
+		const models = [
+			model("lab/cheap", "1", false, null),
+			model("lab/expensive", "5", true, "2026-08-25T00:00:00Z"),
+		];
+		const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+			const request = input instanceof Request ? input : new Request(input);
+			return Response.json({
+				ok: true,
+				models: request.url.includes("id=lab%2Fexpensive") ? [models[1]] : models,
+			});
+		});
+		vi.stubGlobal("fetch", fetchMock);
+		const server = createServer({ ...env, PHASEO_WEB_BASE_URL: "https://preview.phaseo.test" }, {
+			accessToken: "upstream-token", workspaceId: "workspace_1", scopes: ["models:read", "pricing:read"],
+		});
+		const client = new Client({ name: "phaseo-mcp-test", version: "1.0.0" });
+		connectedClients.push(client);
+		const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+		await server.connect(serverTransport);
+		await client.connect(clientTransport);
+
+		const result = await client.callTool({ name: "models_list", arguments: { sortBy: "input_price", limit: 2 } });
+		expect(fetchMock).toHaveBeenCalledTimes(1);
+		expect((fetchMock.mock.calls[0]?.[0] as Request).url).toBe(
+			"https://api.phaseo.app/v1/models?limit=250",
+		);
+		expect(result.structuredContent).toMatchObject({ models: [
+			{
+				id: "lab/cheap",
+				releaseDate: null,
+				modelUrl: "https://preview.phaseo.test/models/lab/cheap",
+				gatewayAvailable: false,
+				gatewayModelId: null,
+				providerSupport: [{
+					providerId: "provider",
+					providerName: "Provider",
+					providerModelId: "lab/cheap",
+					status: "active",
+					routable: false,
+					supportedParameters: [],
+				}],
+			},
+			{
+				id: "lab/expensive",
+				releaseDate: "2026-08-25T00:00:00Z",
+				inputPricePerToken: "0.000005",
+				outputPricePerToken: "0.00001",
+				inputPricePerMillion: 5,
+				outputPricePerMillion: 10,
+				inputPriceProviderId: "provider",
+				outputPriceProviderId: "provider",
+				hasFreeProvider: true,
+				modelUrl: "https://preview.phaseo.test/models/lab/expensive",
+				gatewayAvailable: true,
+				gatewayModelId: "lab/expensive",
+				availableProviders: ["provider", "free-provider"],
+				providerSupport: [{
+					providerId: "provider",
+					providerName: "Provider",
+					providerModelId: "lab/expensive",
+					status: "active",
+					routable: true,
+					supportedParameters: [],
+					pricing: {
+						inputPricePerMillion: 5,
+						outputPricePerMillion: 10,
+						isFree: false,
+					},
+				}, {
+					providerId: "free-provider",
+					providerName: "Free Provider",
+					providerModelId: "lab/expensive",
+					status: "active",
+					routable: true,
+					supportedParameters: [],
+					pricing: {
+						inputPricePerMillion: 0,
+						outputPricePerMillion: 0,
+						isFree: true,
+					},
+				}],
+			},
+		] });
+		const priceFiltered = await client.callTool({
+			name: "models_list",
+			arguments: { maximumInputPricePerMillion: 2, sortBy: "input_price", limit: 2 },
+		});
+		expect((priceFiltered.structuredContent as { models: Array<{ id: string }> }).models.map((item) => item.id))
+			.toEqual(["lab/cheap"]);
+		const detail = await client.callTool({ name: "model_get", arguments: { modelId: "lab/expensive" } });
+		expect(detail.structuredContent).toMatchObject({ model: {
+			id: "lab/expensive",
+			releaseDate: "2026-08-25T00:00:00Z",
+		} });
+
+		const estimate = await client.callTool({
+			name: "cost_estimate",
+			arguments: { modelId: "lab/expensive", inputTokens: 1_000_000, cachedInputTokens: 0, outputTokens: 1_000_000 },
+		});
+		expect(estimate.structuredContent).toMatchObject({ estimate: {
+			modelId: "lab/expensive",
+			providerId: "provider",
+			isFree: false,
+			inputCostUSD: 5,
+			outputCostUSD: 10,
+			totalCostUSD: 15,
+		} });
+	});
+
+	it("keeps benchmark order neutral while reporting Gateway availability", async () => {
+		const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+			const request = input instanceof Request ? input : new Request(input);
+			if (request.url.includes("/api/_web/rankings/benchmarks")) return Response.json({ benchmarks: [{
+				benchmark_id: "coding-v1", name: "Coding Index", category: "coding", benchmark_type: "numerical",
+				lower_is_better: false, total_models: 2, entries: [
+					{ model_id: "lab/first", model_name: "First", organisation_id: "lab", organisation_name: "Lab", score: 90, rank: 1, source_link: "https://example.com/source", updated_at: "2026-09-19T00:00:00Z" },
+					{ model_id: "lab/second", model_name: "Second", organisation_id: "lab", organisation_name: "Lab", score: 80, rank: 2, source_link: null, updated_at: null },
+				],
+			}] });
+			return Response.json({ ok: true, models: [{
+				id: "lab/second", name: "Second", description: null,
+				organization: { id: "lab", name: "Lab", color: null },
+				modalities: { input: ["text"], output: ["text"] }, limits: { input_tokens: 1, output_tokens: 1 },
+				capabilities: { endpoints: [], parameters: [], parameter_details: {} },
+				availability: { status: "active", provider_count: 1, active_provider_count: 1, coming_soon_provider_count: 0, inactive_provider_count: 0 },
+				pricing: { pricing_plan: "standard", meters: {} }, offers: [{
+					provider: { id: "provider", name: "Provider" }, model: "lab/second", status: "active", routable: true,
+					capabilities: { parameters: [], parameter_details: {} }, pricing: { pricing_plan: "standard", meters: {} },
+				}],
+			}] });
+		});
+		vi.stubGlobal("fetch", fetchMock);
+		const server = createServer(env, {
+			accessToken: "upstream-token", workspaceId: "workspace_1", scopes: ["models:read", "pricing:read"],
+		});
+		const client = new Client({ name: "phaseo-mcp-test", version: "1.0.0" });
+		connectedClients.push(client);
+		const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+		await server.connect(serverTransport);
+		await client.connect(clientTransport);
+
+		const result = await client.callTool({ name: "benchmark_rankings", arguments: { focus: "coding", limit: 2 } });
+		expect(fetchMock).toHaveBeenCalledTimes(2);
+		const catalogueRequest = fetchMock.mock.calls[1]?.[0] as Request;
+		expect(catalogueRequest.url).toBe(
+			"https://api.phaseo.app/v1/models?model_id=lab%2Ffirst%2Clab%2Fsecond&limit=2",
+		);
+		expect(result.structuredContent).toMatchObject({ benchmark: { entries: [
+			{ rank: 1, modelId: "lab/first", gatewayAvailable: false },
+			{ rank: 2, modelId: "lab/second", gatewayAvailable: true, gatewayModelId: "lab/second" },
+		] } });
+	});
+
+	it("bounds benchmark availability lookup while scanning past the first 250 models", async () => {
+		const entries = Array.from({ length: 501 }, (_, index) => ({
+			model_id: `lab/model-${index}`,
+			model_name: `Model ${index}`,
+			organisation_id: "lab",
+			organisation_name: "Lab",
+			score: 1_000 - index,
+			rank: index + 1,
+			source_link: null,
+			updated_at: null,
+		}));
+		const routableModel = {
+			id: "lab/model-499", name: "Model 499", description: null,
+			organization: { id: "lab", name: "Lab", color: null },
+			modalities: { input: ["text"], output: ["text"] }, limits: { input_tokens: 1, output_tokens: 1 },
+			capabilities: { endpoints: [], parameters: [], parameter_details: {} },
+			availability: { status: "active", provider_count: 1, active_provider_count: 1, coming_soon_provider_count: 0, inactive_provider_count: 0 },
+			pricing: { pricing_plan: "standard", meters: {} }, offers: [{
+				provider: { id: "provider", name: "Provider" }, model: "lab/model-499", status: "active", routable: true,
+				capabilities: { parameters: [], parameter_details: {} }, pricing: { pricing_plan: "standard", meters: {} },
+			}],
+		};
+		const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+			const request = input instanceof Request ? input : new Request(input);
+			if (request.url.includes("/api/_web/rankings/benchmarks")) return Response.json({ benchmarks: [{
+				benchmark_id: "coding-v1", name: "Coding Index", category: "coding", benchmark_type: "numerical",
+				lower_is_better: false, total_models: 501, entries,
+			}] });
+			const ids = new URL(request.url).searchParams.get("model_id")?.split(",") ?? [];
+			return Response.json({ ok: true, models: ids.includes("lab/model-499") ? [routableModel] : [] });
+		});
+		vi.stubGlobal("fetch", fetchMock);
+		const server = createServer(env, {
+			accessToken: "upstream-token", workspaceId: "workspace_1", scopes: ["models:read", "pricing:read"],
+		});
+		const client = new Client({ name: "phaseo-mcp-test", version: "1.0.0" });
+		connectedClients.push(client);
+		const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+		await server.connect(serverTransport);
+		await client.connect(clientTransport);
+
+		const result = await client.callTool({
+			name: "benchmark_rankings",
+			arguments: { focus: "coding", gatewayAvailableOnly: true, limit: 1 },
+		});
+
+		expect(fetchMock).toHaveBeenCalledTimes(3);
+		expect(result.structuredContent).toMatchObject({ benchmark: { entries: [
+			{ rank: 500, modelId: "lab/model-499", gatewayAvailable: true },
+		] } });
 	});
 });
 

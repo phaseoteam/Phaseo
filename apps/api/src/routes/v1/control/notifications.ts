@@ -4,13 +4,14 @@ import { getSupabaseAdmin } from "@/runtime/env";
 import { guardManagementAuth, type GuardErr } from "@/pipeline/before/guards";
 import { CAPABILITIES } from "@/lib/authz/capabilities";
 import { recordWorkspaceAuditEvent } from "@/lib/audit/workspaceAudit";
-import { deliverNotificationTest } from "@/pipeline/notifications/notification-delivery";
+import { deliverNotificationTest, type NotificationTestKind } from "@/pipeline/notifications/notification-delivery";
 import { json, withRuntime } from "@/routes/utils";
 import { isResponse, requireCapability, requireJsonBody, requireOAuthWorkspaceRole } from "./route-helpers";
 import { encryptNotificationTarget, notificationTargetPreview, NOTIFICATION_DESTINATION_TYPES, validateNotificationTarget, type NotificationDestinationType } from "./notification-target";
 
 const NO_STORE = { "Cache-Control": "no-store" };
 const EVENT_KINDS = ["low_balance", "auto_top_up_failed", "payment_method_expiring", "model_deprecation"] as const;
+const NOTIFICATION_TEST_KINDS = ["notification_test", "model_deprecation"] as const;
 
 async function authorize(req: Request, write: boolean) {
 	const auth = await guardManagementAuth(req, { useKvCache: false }); if (!auth.ok) return { response: (auth as GuardErr).response };
@@ -21,7 +22,23 @@ async function authorize(req: Request, write: boolean) {
 async function audit(auth: any, action: string, targetType: string, targetId: string, metadata?: Record<string, unknown>) { await recordWorkspaceAuditEvent(getSupabaseAdmin(), { workspaceId: auth.workspaceId, actorUserId: auth.userId, action, targetType, targetId, metadata, requestId: auth.requestId }); }
 function lastPath(req: Request) { return decodeURIComponent(new URL(req.url).pathname.split("/").filter(Boolean).at(-1) ?? "").trim(); }
 function nanosToUsd(value: unknown) { const nanos = Number(value ?? 0); return Number.isFinite(nanos) ? nanos / 1_000_000_000 : 0; }
+function parseNotificationTestKind(value: unknown): NotificationTestKind | null { const kind = String(value ?? "notification_test"); return (NOTIFICATION_TEST_KINDS as readonly string[]).includes(kind) ? kind as NotificationTestKind : null; }
 export function usdToNanos(value: unknown): number | null { const usd = Number(value); const nanos = Math.round(usd * 1_000_000_000); const cents = Math.abs(usd * 100 - Math.round(usd * 100)) < 1e-8; return Number.isFinite(usd) && usd >= 0 && cents && Number.isSafeInteger(nanos) ? nanos : null; }
+export function hasVerifiedTotpFactor(factors: unknown): boolean {
+	return Array.isArray(factors) && factors.some((factor) =>
+		factor && typeof factor === "object" &&
+			(factor as Record<string, unknown>).factor_type === "totp" &&
+			(factor as Record<string, unknown>).status === "verified",
+	);
+}
+
+async function getMfaStatusForAutoTopUp(auth: { userId?: string | null }): Promise<boolean | Response> {
+	const userId = auth.userId?.trim();
+	if (!userId) return false;
+	const result = await getSupabaseAdmin().auth.admin.getUserById(userId);
+	if (result.error) return json({ error: "mfa_status_unavailable" }, 503, NO_STORE);
+	return hasVerifiedTotpFactor(result.data.user?.factors);
+}
 
 async function getSettings(req: Request) {
 	const access = await authorize(req, false); if ("response" in access) return access.response; const client = getSupabaseAdmin();
@@ -34,19 +51,37 @@ async function getSettings(req: Request) {
 }
 
 async function updateSettings(req: Request) {
-	const access = await authorize(req, true); if ("response" in access) return access.response; const body = await requireJsonBody(req); if (isResponse(body)) return body; const client = getSupabaseAdmin(); const changed: string[] = []; let walletUpdate: Record<string, unknown> | null = null;
+	const access = await authorize(req, true); if ("response" in access) return access.response; const body = await requireJsonBody(req); if (isResponse(body)) return body; const client = getSupabaseAdmin(); const changed: string[] = []; let autoTopUpUpdate: Record<string, unknown> | null = null; let mfaEnabled = false;
 	if (body.auto_top_up && typeof body.auto_top_up === "object" && !Array.isArray(body.auto_top_up)) {
 		const value = body.auto_top_up as Record<string, unknown>; if (typeof value.enabled !== "boolean") return json({ error: "bad_request", message: "auto_top_up.enabled is required" }, 400, NO_STORE);
+		if (value.enabled) { const mfa = await getMfaStatusForAutoTopUp(access.auth); if (isResponse(mfa)) return mfa; mfaEnabled = mfa; }
 		const amount = Number(value.amount_nanos ?? 0); const threshold = Number(value.balance_threshold_nanos ?? 0);
 		if (value.enabled && (!Number.isSafeInteger(amount) || amount < 1_000_000_000 || !Number.isSafeInteger(threshold) || threshold < 0 || !String(value.payment_method_id ?? "").trim())) return json({ error: "bad_request", message: "Enabled auto top-up requires a payment method, non-negative threshold, and amount of at least one credit" }, 400, NO_STORE);
-		walletUpdate = value.enabled ? { auto_top_up_enabled: true, low_balance_threshold: threshold, auto_top_up_amount: amount, auto_top_up_account_id: String(value.payment_method_id), updated_at: new Date().toISOString() } : { auto_top_up_enabled: false, low_balance_threshold: 0, auto_top_up_amount: 0, auto_top_up_account_id: null, updated_at: new Date().toISOString() };
+		autoTopUpUpdate = { enabled: value.enabled, balanceThreshold: value.enabled ? threshold : 0, amount: value.enabled ? amount : 0, paymentMethodId: value.enabled ? String(value.payment_method_id).trim() : null, bypassAcknowledged: value.mfa_bypass_acknowledged === true, bypassPhrase: typeof value.mfa_bypass_phrase === "string" ? value.mfa_bypass_phrase : null };
 		changed.push("auto_top_up");
 	}
 	const settingsUpdate: Record<string, unknown> = { workspace_id: access.auth.workspaceId, updated_at: new Date().toISOString() };
 	if (body.low_balance_email && typeof body.low_balance_email === "object" && !Array.isArray(body.low_balance_email)) { const value = body.low_balance_email as Record<string, unknown>; if (typeof value.enabled !== "boolean") return json({ error: "bad_request", message: "low_balance_email.enabled is required" }, 400, NO_STORE); const nanos = usdToNanos(value.threshold_usd); if (value.enabled && nanos === null) return json({ error: "bad_request", message: "threshold_usd must be non-negative with at most two decimal places" }, 400, NO_STORE); settingsUpdate.low_balance_email_enabled = value.enabled; settingsUpdate.low_balance_email_threshold_nanos = value.enabled ? nanos : 0; changed.push("low_balance_email"); }
 	if (body.email_preferences && typeof body.email_preferences === "object" && !Array.isArray(body.email_preferences)) { const value = body.email_preferences as Record<string, unknown>; const before = Object.keys(settingsUpdate).length; if (typeof value.auto_top_up_failure === "boolean") settingsUpdate.auto_top_up_failure_email_enabled = value.auto_top_up_failure; if (typeof value.payment_method_expiring === "boolean") settingsUpdate.payment_method_expiring_email_enabled = value.payment_method_expiring; if (typeof value.model_deprecation === "boolean") settingsUpdate.model_deprecation_alerts_enabled = value.model_deprecation; if (Object.keys(settingsUpdate).length > before) changed.push("email_preferences"); }
 	if (!changed.length) return json({ error: "bad_request", message: "No notification settings supplied" }, 400, NO_STORE);
-	if (walletUpdate) { const result = await client.from("wallets").update(walletUpdate).eq("workspace_id", access.auth.workspaceId); if (result.error) return json({ error: "notification_settings_update_failed" }, 503, NO_STORE); }
+	if (autoTopUpUpdate) {
+		const result = await client.rpc("update_workspace_auto_top_up", {
+			p_workspace_id: access.auth.workspaceId,
+			p_enabled: autoTopUpUpdate.enabled,
+			p_balance_threshold_nanos: autoTopUpUpdate.balanceThreshold,
+			p_amount_nanos: autoTopUpUpdate.amount,
+			p_payment_method_id: autoTopUpUpdate.paymentMethodId,
+			p_mfa_enabled: mfaEnabled,
+			p_mfa_bypass_acknowledged: autoTopUpUpdate.bypassAcknowledged,
+			p_mfa_bypass_phrase: autoTopUpUpdate.bypassPhrase,
+			p_actor_user_id: access.auth.userId ?? null,
+			p_request_id: access.auth.requestId ?? null,
+		});
+		if (result.error) {
+			if (result.error.message.includes("mfa_required")) return json({ error: "mfa_required", message: "Enable two-factor authentication before enabling Auto Top-Up" }, 400, NO_STORE);
+			return json({ error: "notification_settings_update_failed" }, 503, NO_STORE);
+		}
+	}
 	if (Object.keys(settingsUpdate).length > 2) { const result = await client.from("workspace_settings").upsert(settingsUpdate, { onConflict: "workspace_id" }); if (result.error) return json({ error: "notification_settings_update_failed" }, 503, NO_STORE); }
 	await audit(access.auth, "notifications.settings.updated", "workspace_notification_settings", access.auth.workspaceId, { sections: changed }); return getSettings(req);
 }
@@ -61,8 +96,8 @@ async function createDestination(req: Request) {
 
 async function deleteDestination(req: Request) { const access = await authorize(req, true); if ("response" in access) return access.response; const id = lastPath(req); const client = getSupabaseAdmin(); const { data, error } = await client.from("notification_destinations").update({ status: "deleted", deleted_at: new Date().toISOString(), updated_at: new Date().toISOString() }).eq("id", id).eq("workspace_id", access.auth.workspaceId).neq("status", "deleted").select("id,name,type").maybeSingle(); if (error) return json({ error: "notification_destination_delete_failed" }, 503, NO_STORE); if (!data) return json({ error: "not_found" }, 404, NO_STORE); const routes = await client.from("notification_event_destinations").delete().eq("workspace_id", access.auth.workspaceId).eq("destination_id", id); if (routes.error) return json({ error: "notification_destination_delete_failed" }, 503, NO_STORE); await audit(access.auth, "notifications.destination.deleted", "notification_destination", id, { name: data.name, type: data.type }); return json({ deleted: true }, 200, NO_STORE); }
 
-async function testDestinationConfig(req: Request) { const access = await authorize(req, true); if ("response" in access) return access.response; const body = await requireJsonBody(req); if (isResponse(body)) return body; const type = String(body.type ?? "") as NotificationDestinationType; if (!NOTIFICATION_DESTINATION_TYPES.includes(type)) return json({ error: "bad_request" }, 400, NO_STORE); try { const target = validateNotificationTarget(type, body.target); const status = await deliverNotificationTest({ workspaceId: access.auth.workspaceId, type, target }); return json({ data: { delivered: true, status } }, 200, NO_STORE); } catch (error: any) { return json({ error: "notification_test_failed", message: error.message }, 502, NO_STORE); } }
-async function testSavedDestination(req: Request) { const access = await authorize(req, true); if ("response" in access) return access.response; const parts = new URL(req.url).pathname.split("/").filter(Boolean); const id = decodeURIComponent(parts.at(-2) ?? "").trim(); try { const status = await deliverNotificationTest({ workspaceId: access.auth.workspaceId, destinationId: id }); return json({ data: { delivered: true, status } }, 200, NO_STORE); } catch (error: any) { return json({ error: error.message === "notification_destination_not_found" ? "not_found" : "notification_test_failed", message: error.message }, error.message === "notification_destination_not_found" ? 404 : 502, NO_STORE); } }
+async function testDestinationConfig(req: Request) { const access = await authorize(req, true); if ("response" in access) return access.response; const body = await requireJsonBody(req); if (isResponse(body)) return body; const type = String(body.type ?? "") as NotificationDestinationType; if (!NOTIFICATION_DESTINATION_TYPES.includes(type)) return json({ error: "bad_request" }, 400, NO_STORE); const kind = parseNotificationTestKind(body.kind); if (!kind) return json({ error: "bad_request", message: "Unsupported notification test kind" }, 400, NO_STORE); try { const target = validateNotificationTarget(type, body.target); const status = await deliverNotificationTest({ workspaceId: access.auth.workspaceId, type, target, kind }); return json({ data: { delivered: true, status } }, 200, NO_STORE); } catch (error: any) { return json({ error: "notification_test_failed", message: error.message }, 502, NO_STORE); } }
+async function testSavedDestination(req: Request) { const access = await authorize(req, true); if ("response" in access) return access.response; const parts = new URL(req.url).pathname.split("/").filter(Boolean); const id = decodeURIComponent(parts.at(-2) ?? "").trim(); const body = await req.json().catch(() => ({})); if (!body || typeof body !== "object" || Array.isArray(body)) return json({ error: "bad_request", message: "Invalid notification test body" }, 400, NO_STORE); const kind = parseNotificationTestKind(body.kind); if (!kind) return json({ error: "bad_request", message: "Unsupported notification test kind" }, 400, NO_STORE); try { const status = await deliverNotificationTest({ workspaceId: access.auth.workspaceId, destinationId: id, kind }); return json({ data: { delivered: true, status } }, 200, NO_STORE); } catch (error: any) { return json({ error: error.message === "notification_destination_not_found" ? "not_found" : "notification_test_failed", message: error.message }, error.message === "notification_destination_not_found" ? 404 : 502, NO_STORE); } }
 
 async function listRoutes(req: Request) { const access = await authorize(req, false); if ("response" in access) return access.response; const client = getSupabaseAdmin(); const [links, destinations] = await Promise.all([client.from("notification_event_destinations").select("event_kind,destination_id").eq("workspace_id", access.auth.workspaceId), client.from("notification_destinations").select("id").eq("workspace_id", access.auth.workspaceId).eq("status", "active")]); if (links.error || destinations.error) return json({ error: "notification_routes_unavailable" }, 503, NO_STORE); const activeIds = new Set((destinations.data ?? []).map((row: any) => String(row.id))); const routes = Object.fromEntries(EVENT_KINDS.map((kind) => [kind, (links.data ?? []).filter((row: any) => row.event_kind === kind && activeIds.has(String(row.destination_id))).map((row: any) => row.destination_id)])); return json({ data: routes }, 200, NO_STORE); }
 async function updateRoute(req: Request) { const access = await authorize(req, true); if ("response" in access) return access.response; const body = await requireJsonBody(req); if (isResponse(body)) return body; const kind = lastPath(req); if (!Array.isArray(body.destination_ids)) return json({ error: "bad_request", message: "destination_ids must be an array" }, 400, NO_STORE); const ids = [...new Set(body.destination_ids.map(String))]; if (!EVENT_KINDS.includes(kind as any) || ids.length > 50 || ids.some((id) => !/^[0-9a-f-]{36}$/i.test(id))) return json({ error: "bad_request", message: "Invalid notification route" }, 400, NO_STORE); const result = await getSupabaseAdmin().rpc("set_notification_event_destinations", { p_workspace_id: access.auth.workspaceId, p_event_kind: kind, p_destination_ids: ids }); if (result.error) return json({ error: result.error.message.includes("notification_destination_not_found") ? "not_found" : "notification_route_update_failed" }, result.error.message.includes("notification_destination_not_found") ? 404 : 503, NO_STORE); await audit(access.auth, "notifications.route.updated", "notification_route", kind, { destination_ids: ids }); return json({ data: { event_kind: kind, destination_ids: ids } }, 200, NO_STORE); }

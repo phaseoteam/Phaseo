@@ -1,3 +1,4 @@
+import { collectSessionCounts } from "./sessionCounts";
 import { AsyncLocalStorage } from "node:async_hooks";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Env } from "@/env";
@@ -59,7 +60,7 @@ function toLookupCacheKey(ids: string[]): string {
 }
 
 async function fetchUsageMetadata(args: { models?: string[]; providers?: string[]; apps?: string[] }): Promise<{
-	modelMetadataEntries: Array<[string, { organisationId: string; organisationName: string; organisationColour?: string | null; modelName?: string }]>;
+	modelMetadataEntries: Array<[string, { organisationId: string; organisationName: string; organisationColour?: string | null; canonicalModelId?: string; modelName?: string }]>;
 	providerNameEntries: Array<[string, string]>;
 	providerMetadataEntries: Array<[string, ProviderMetadataEntry]>;
 	appMetadataEntries: Array<[string, AppMetadata]>;
@@ -103,6 +104,7 @@ export interface PaginatedRequestsParams {
 }
 
 export interface RequestDetailMetadata {
+	response_timeline?: { version: number; routing_ms: number | null; first_dispatch_at_ms?: number } | null;
 	provider_candidate_diagnostics?: unknown;
 	provider_enablement_diagnostics?: unknown;
 	routing_diagnostics?: unknown;
@@ -158,6 +160,7 @@ export interface NormalizedRequestUsageColumns {
 }
 
 export interface RequestRow extends NormalizedRequestUsageColumns {
+	response_timeline?: RequestDetailMetadata["response_timeline"];
 	id?: string;
 	request_id: string;
 	created_at: string;
@@ -205,6 +208,7 @@ export interface RequestRow extends NormalizedRequestUsageColumns {
 		status: number | null;
 		status_text: string | null;
 		duration_ms: number | null;
+		started_at_unix_ms?: number | null;
 		latency_ms?: number | null;
 		generation_ms?: number | null;
 		total_ms?: number | null;
@@ -246,6 +250,7 @@ export interface RoutingDecisionRow {
 export type SerializableModelMetadataEntry = {
 	organisationId: string;
 	organisationName: string;
+	canonicalModelId?: string;
 	modelName?: string;
 };
 
@@ -296,7 +301,8 @@ async function fetchGatewayUpstreamRequests(
 			fallback_attempted,
 			error_code,
 			error_message,
-			error_description
+			error_description,
+			metadata
 		`)
 		.eq("workspace_id", workspaceId)
 		.eq("request_id", requestId)
@@ -333,6 +339,7 @@ export function normalizeGatewayUpstreamRows(
 		status: numberOrNull(row.status_code),
 		status_text: stringOrNull(row.status_text),
 		duration_ms: numberOrNull(row.duration_ms),
+		started_at_unix_ms: numberOrNull((row.metadata as Record<string, unknown> | null)?.started_at_unix_ms),
 		latency_ms: numberOrNull(row.latency_ms),
 		generation_ms: numberOrNull(row.generation_ms),
 		total_ms: numberOrNull(row.total_ms),
@@ -444,6 +451,7 @@ function normalizeProviderAttempts(
 ): RequestRow["provider_attempts"] {
 	if (!Array.isArray(value)) return [];
 	return value.map((attempt: any) => ({
+		started_at_unix_ms: numberOrNull(attempt?.started_at_unix_ms),
 		attempt_number:
 			typeof attempt?.attempt_number === "number"
 				? attempt.attempt_number
@@ -624,6 +632,7 @@ export async function fetchPaginatedRequests(
 			cost_nanos,
 			generation_ms,
 			latency_ms,
+			response_timeline:detail_metadata->response_timeline,
 			finish_reason,
                         success,
                         status_code,
@@ -735,6 +744,7 @@ export async function fetchPaginatedRequests(
 				cost_nanos,
 				generation_ms,
 				latency_ms,
+				response_timeline:detail_metadata->response_timeline,
 				finish_reason,
                                 success,
                                 status_code,
@@ -802,6 +812,7 @@ export async function fetchPaginatedRequests(
 					cost_nanos,
 					generation_ms,
 					latency_ms,
+					response_timeline:detail_metadata->response_timeline,
 					finish_reason,
                                         success,
                                         status_code,
@@ -866,6 +877,7 @@ export async function fetchPaginatedRequests(
 						cost_nanos,
 						generation_ms,
 						latency_ms,
+						response_timeline:detail_metadata->response_timeline,
 						finish_reason,
 						success,
 						key_id
@@ -976,7 +988,7 @@ const fetchOrganizationColorsCached = cache(async (
 
 /**
  * Fetch model metadata for filters
- * Returns a map of model_id -> { organisationId, organisationName, modelName? }
+ * Returns a map of model_id -> display metadata plus its canonical catalog ID.
  */
 export async function fetchModelMetadata(
 	modelIds: string[]
@@ -986,6 +998,7 @@ export async function fetchModelMetadata(
 		{
 			organisationId: string;
 			organisationName: string;
+			canonicalModelId?: string;
 			modelName?: string;
 		}
 	>
@@ -1001,6 +1014,7 @@ const fetchModelMetadataCached = cache(async (
 		{
 			organisationId: string;
 			organisationName: string;
+			canonicalModelId?: string;
 			modelName?: string;
 		}
 	>
@@ -1029,6 +1043,7 @@ const fetchModelMetadataCached = cache(async (
 		{
 			organisationId: string;
 			organisationName: string;
+			canonicalModelId?: string;
 			modelName?: string;
 		}
 	>();
@@ -1038,6 +1053,7 @@ const fetchModelMetadataCached = cache(async (
 		value: {
 			organisationId: string;
 			organisationName: string;
+			canonicalModelId?: string;
 			modelName?: string;
 		},
 		source?: string,
@@ -1057,8 +1073,12 @@ const fetchModelMetadataCached = cache(async (
 			});
 			return;
 		}
-		if (!existing.modelName && value.modelName) {
-			metadataMap.set(key, { ...existing, modelName: value.modelName });
+		if ((!existing.modelName && value.modelName) || (!existing.canonicalModelId && value.canonicalModelId)) {
+			metadataMap.set(key, {
+				...existing,
+				...(existing.modelName || !value.modelName ? {} : { modelName: value.modelName }),
+				...(existing.canonicalModelId || !value.canonicalModelId ? {} : { canonicalModelId: value.canonicalModelId }),
+			});
 			metadataDebugLog({
 				stage: "add",
 				source: source ?? "unknown",
@@ -1151,6 +1171,7 @@ const fetchModelMetadataCached = cache(async (
 			const value = {
 				organisationId,
 				organisationName,
+				canonicalModelId: typeof m?.model_id === "string" ? m.model_id : undefined,
 				modelName: typeof m?.name === "string" ? m.name : undefined,
 			};
 
@@ -1210,7 +1231,12 @@ const fetchModelMetadataCached = cache(async (
 			typeof apiModel?.name === "string" && apiModel.name.trim().length > 0
 				? apiModel.name
 				: undefined;
-		const value = { organisationId, organisationName, modelName };
+		const value = {
+			organisationId,
+			organisationName,
+			canonicalModelId: typeof apiModel?.model_id === "string" ? apiModel.model_id : apiModelId,
+			modelName,
+		};
 		for (const variant of normalizeApiId(apiModelId)) {
 			addMetadata(variant, value, `v2_models:model_slug:${apiModelId}`);
 		}
@@ -1420,10 +1446,15 @@ const fetchModelMetadataCached = cache(async (
 				canonicalModel.organisation.name
 					? canonicalModel.organisation.name
 					: matchedMetadata?.organisationName ?? organisationId;
+			const canonicalModelId =
+				typeof canonicalModel?.model_id === "string" && canonicalModel.model_id.trim().length > 0
+					? canonicalModel.model_id
+					: matchedMetadata?.canonicalModelId ?? canonicalId ?? internalModelId ?? apiId ?? undefined;
 
 			const value = {
 				organisationId,
 				organisationName,
+				canonicalModelId,
 				modelName:
 					typeof canonicalModel?.name === "string" && canonicalModel.name.trim().length > 0
 						? canonicalModel.name
@@ -1570,89 +1601,16 @@ export async function fetchFunStats(
 		};
 	}
 
-	const { data: rows } = await supabase
-		.from("v2_web_private_usage_daily")
-		.select(
-			"canonical_model_id, provider, requests, total_cost_nanos, latency_sum_ms, latency_samples",
-		)
-		.eq("workspace_id", workspaceId)
-		.gte("bucket_15m", timeRange.from)
-		.lte("bucket_15m", timeRange.to);
-
-	if (!rows || rows.length === 0) {
-		return {
-			topModel: null,
-			topProvider: null,
-			mostExpensive: null,
-			fastestModel: null,
-		};
+	const { data, error } = await supabase.rpc("get_private_usage_summary", {
+		p_workspace_id: workspaceId,
+		p_from: timeRange.from,
+		p_to: timeRange.to,
+	});
+	if (error) throw error;
+	if (!data || typeof data !== "object" || Array.isArray(data)) {
+		throw new Error("usage_summary_invalid");
 	}
-
-	// Top model by requests
-	const modelCounts = new Map<string, number>();
-	rows.forEach((r: any) => {
-		const model = r.canonical_model_id || "unknown";
-		const requests = Number(r.requests ?? 0) || 0;
-		modelCounts.set(model, (modelCounts.get(model) || 0) + requests);
-	});
-	const topModelEntry = Array.from(modelCounts.entries()).sort((a, b) => b[1] - a[1])[0];
-	const topModel = topModelEntry
-		? { name: topModelEntry[0], requests: topModelEntry[1] }
-		: null;
-
-	// Top provider by requests
-	const providerCounts = new Map<string, number>();
-	rows.forEach((r: any) => {
-		const provider = r.provider || "unknown";
-		const requests = Number(r.requests ?? 0) || 0;
-		providerCounts.set(provider, (providerCounts.get(provider) || 0) + requests);
-	});
-	const topProviderEntry = Array.from(providerCounts.entries()).sort((a, b) => b[1] - a[1])[0];
-	const topProvider = topProviderEntry
-		? { name: topProviderEntry[0], requests: topProviderEntry[1] }
-		: null;
-
-	// Most expensive model
-	const modelCosts = new Map<string, number>();
-	rows.forEach((r: any) => {
-		const model = r.canonical_model_id || "unknown";
-		const cost = Number(r.total_cost_nanos ?? 0) / 1e9;
-		modelCosts.set(model, (modelCosts.get(model) || 0) + cost);
-	});
-	const mostExpensiveEntry = Array.from(modelCosts.entries()).sort((a, b) => b[1] - a[1])[0];
-	const mostExpensive = mostExpensiveEntry
-		? { name: mostExpensiveEntry[0], cost: mostExpensiveEntry[1] }
-		: null;
-
-	// Fastest model (average latency)
-	const modelLatencySums = new Map<string, { sum: number; samples: number }>();
-	rows.forEach((r: any) => {
-		const model = r.canonical_model_id || "unknown";
-		const latencySum = Number(r.latency_sum_ms ?? 0) || 0;
-		const latencySamples = Number(r.latency_samples ?? 0) || 0;
-		if (latencySamples <= 0 || latencySum <= 0) return;
-		const current = modelLatencySums.get(model) ?? { sum: 0, samples: 0 };
-		current.sum += latencySum;
-		current.samples += latencySamples;
-		modelLatencySums.set(model, current);
-	});
-	const modelAvgLatencies = Array.from(modelLatencySums.entries())
-		.map(([model, values]) => ({
-			model,
-			avg: values.samples > 0 ? values.sum / values.samples : Number.POSITIVE_INFINITY,
-		}))
-		.filter((entry) => Number.isFinite(entry.avg) && entry.avg > 0)
-		.sort((a, b) => a.avg - b.avg);
-	const fastestModel = modelAvgLatencies[0]
-		? { name: modelAvgLatencies[0].model, speedMs: Math.round(modelAvgLatencies[0].avg) }
-		: null;
-
-	return {
-		topModel,
-		topProvider,
-		mostExpensive,
-		fastestModel,
-	};
+	return data as FunStatsResult;
 }
 
 /**
@@ -2133,40 +2091,30 @@ export async function fetchChartData(
 		);
 	};
 
-	// Fetch current period data (aggregated)
-	const { data: rows, error: rollupError } = await supabase.rpc(
-		"get_usage_chart_rollup",
-		{
-			p_team: workspaceId,
-			p_from: params.timeRange.from,
-			p_to: params.timeRange.to,
-			p_bucket: bucketKey,
-			p_key_id: params.keyFilter ?? null,
-		},
-	);
-	if (rollupError) {
-		console.error("Error fetching usage rollup:", rollupError);
-	}
-
-	// Fetch previous period for comparison (aggregated)
+	// Both periods are independent; fetch them concurrently.
 	const fromDate = new Date(params.timeRange.from);
 	const toDate = new Date(params.timeRange.to);
 	const windowMs = toDate.getTime() - fromDate.getTime();
 	const prevFrom = new Date(fromDate.getTime() - windowMs).toISOString();
 	const prevTo = fromDate.toISOString();
-	const { data: prevRows, error: prevError } = await supabase.rpc(
-		"get_usage_chart_rollup",
-		{
+	const [{ data: rows, error: rollupError }, { data: prevRows, error: prevError }] = await Promise.all([
+		supabase.rpc("get_usage_chart_rollup", {
+			p_team: workspaceId,
+			p_from: params.timeRange.from,
+			p_to: params.timeRange.to,
+			p_bucket: bucketKey,
+			p_key_id: params.keyFilter ?? null,
+		}),
+		supabase.rpc("get_usage_chart_rollup", {
 			p_team: workspaceId,
 			p_from: prevFrom,
 			p_to: prevTo,
 			p_bucket: bucketKey,
 			p_key_id: params.keyFilter ?? null,
-		},
-	);
-	if (prevError) {
-		console.error("Error fetching usage rollup (prev):", prevError);
-	}
+		}),
+	]);
+	if (rollupError) console.error("Error fetching usage rollup:", rollupError);
+	if (prevError) console.error("Error fetching usage rollup (prev):", prevError);
 	let currentRows = (rows ?? []) as any[];
 	if (params.forceLive) {
 		const liveRows = await fetchGatewayRequestFallbackRows(
@@ -2412,6 +2360,7 @@ export interface SessionRollupRow {
 	end_user_ids: string[] | null;
 	app_counts?: Array<{ app_id: string; request_count: number }>;
 	model_counts?: Array<{ model_id: string; request_count: number }>;
+	model_provider_counts?: Array<{ model_id: string; provider: string; request_count: number }>;
 }
 
 type SessionRollupSourceRow = {
@@ -2561,7 +2510,7 @@ async function enrichSessionRollups(args: {
 
 	const { data, error } = await supabase
 		.from("gateway_requests")
-		.select("session_id, app_id, model_id")
+		.select("session_id, app_id, model_id, provider")
 		.eq("workspace_id", workspaceId)
 		.in("session_id", sessionIds)
 		.gte("created_at", timeRange.from)
@@ -2573,63 +2522,8 @@ async function enrichSessionRollups(args: {
 		return sessions;
 	}
 
-	const appCountsBySession = new Map<string, Map<string, number>>();
-	const modelCountsBySession = new Map<string, Map<string, number>>();
-
-	for (const row of (data ?? []) as Array<{
-		session_id: string | null;
-		app_id: string | null;
-		model_id: string | null;
-	}>) {
-		const sessionId =
-			typeof row.session_id === "string" ? row.session_id.trim() : "";
-		if (!sessionId) continue;
-
-		if (typeof row.app_id === "string" && row.app_id.trim()) {
-			const appId = row.app_id.trim();
-			const appCounts = appCountsBySession.get(sessionId) ?? new Map<string, number>();
-			appCounts.set(appId, (appCounts.get(appId) ?? 0) + 1);
-			appCountsBySession.set(sessionId, appCounts);
-		}
-
-		if (typeof row.model_id === "string" && row.model_id.trim()) {
-			const modelId = row.model_id.trim();
-			const modelCounts =
-				modelCountsBySession.get(sessionId) ?? new Map<string, number>();
-			modelCounts.set(modelId, (modelCounts.get(modelId) ?? 0) + 1);
-			modelCountsBySession.set(sessionId, modelCounts);
-		}
-	}
-
-	const sortCounts = (counts: Map<string, number>) =>
-		Array.from(counts.entries())
-			.map(([id, request_count]) => ({ id, request_count }))
-			.sort((a, b) => {
-				if (b.request_count !== a.request_count) {
-					return b.request_count - a.request_count;
-				}
-				return a.id.localeCompare(b.id);
-			});
-
-	return sessions.map((session) => {
-		const appCounts = appCountsBySession.get(session.session_id);
-		const modelCounts = modelCountsBySession.get(session.session_id);
-		return {
-			...session,
-			app_counts: appCounts
-				? sortCounts(appCounts).map(({ id, request_count }) => ({
-						app_id: id,
-						request_count,
-					}))
-				: [],
-			model_counts: modelCounts
-				? sortCounts(modelCounts).map(({ id, request_count }) => ({
-						model_id: id,
-						request_count,
-					}))
-				: [],
-		};
-	});
+	const counts = collectSessionCounts(data ?? []);
+	return sessions.map((session) => ({ ...session, ...(counts.get(session.session_id) ?? { app_counts: [], model_counts: [], model_provider_counts: [] }) }));
 }
 
 export async function fetchSessionRollups(
@@ -3043,6 +2937,7 @@ export interface AsyncJobRow {
 	settled_cost_usd: number | null;
 	charged: boolean | null;
 	billing_reason: string | null;
+	submission_state: string | null;
 	job_failure_category: string | null;
 	job_failure_provider: string | null;
 	job_failure_hint: string | null;
@@ -3270,7 +3165,7 @@ function buildWebhookSummary(meta: Record<string, unknown> | null | undefined): 
 	};
 }
 
-function toAsyncJobRow(
+export function toAsyncJobRow(
 	row: Record<string, unknown>,
 	options?: { includeWithoutWebhook?: boolean },
 ): AsyncJobRow | null {
@@ -3326,6 +3221,7 @@ function toAsyncJobRow(
 					? ["1", "true", "yes", "on"].includes(meta.charged.toLowerCase())
 					: null,
 		billing_reason: normalizeText(meta?.billingReason ?? meta?.billing_reason),
+		submission_state: normalizeText(meta?.submissionState),
 		job_failure_category:
 			failureDiagnostics.job_provider_failure_diagnostics?.category ?? null,
 		job_failure_provider:

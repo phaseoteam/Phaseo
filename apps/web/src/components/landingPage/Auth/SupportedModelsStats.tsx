@@ -1,15 +1,7 @@
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import Link from "next/link";
 import { fetchFrontendSignInSupportedModelsStats } from "@/lib/fetchers/frontend/fetchPublicCatalog";
-
-function formatWithK(value: number) {
-	if (value >= 1000) {
-		const v = value / 1000;
-		// show one decimal when needed (e.g., 2.5K)
-		return v % 1 === 0 ? `${v.toFixed(0)}K` : `${v.toFixed(1)}K`;
-	}
-	return value.toLocaleString();
-}
+import { DisplayNumber } from "@/components/display/DisplayValue";
 
 export default async function SupportedModelsStats() {
 	// Fetch counts via cached fetcher (falls back to zeros on error)
@@ -64,7 +56,7 @@ export default async function SupportedModelsStats() {
 						<CardHeader className="text-center p-0">
 							<CardTitle className="text-2xl font-bold">
 								<span className="text-2xl font-bold tabular-nums">
-									{formatWithK(stat.raw)}
+									<DisplayNumber value={stat.raw} options={{ maximumFractionDigits: 1 }} />
 								</span>
 							</CardTitle>
 						</CardHeader>

@@ -20,6 +20,7 @@ export type Protocol =
 	| "openai.embeddings"
 	| "openai.moderations"
 	| "openai.rerank"
+	| "phaseo.decisions"
 	| "anthropic.messages";
 
 export type TextProtocol =
@@ -55,6 +56,8 @@ export function detectProtocol(endpoint: Endpoint, requestPath?: string): Protoc
 			return "openai.moderations";
 		case "rerank":
 			return "openai.rerank";
+		case "decisions":
+			return "phaseo.decisions";
 
 		case "chat.completions":
 			return "openai.chat.completions";
@@ -104,6 +107,8 @@ export function getProtocolPath(protocol: Protocol): string {
 			return "/v1/moderations";
 		case "openai.rerank":
 			return "/v1/rerank";
+		case "phaseo.decisions":
+			return "/v1/decisions";
 		case "anthropic.messages":
 			return "/v1/messages";
 	}
@@ -118,12 +123,12 @@ export function protocolSupportsFeature(
 ): boolean {
 	switch (feature) {
 		case "tools":
-			// All protocols support tool calling
-			return true;
+			// Structured decision evaluation is not a tool-calling protocol.
+			return protocol !== "phaseo.decisions";
 
 		case "streaming":
 			// All protocols support streaming
-			return protocol !== "openai.embeddings" && protocol !== "openai.moderations" && protocol !== "openai.rerank";
+			return protocol !== "openai.embeddings" && protocol !== "openai.moderations" && protocol !== "openai.rerank" && protocol !== "phaseo.decisions";
 
 		case "reasoning":
 			// OpenAI Responses API has native reasoning support
@@ -132,8 +137,8 @@ export function protocolSupportsFeature(
 			return protocol === "openai.responses" || protocol === "openai.chat.completions";
 
 		case "multimodal":
-			// All protocols support multimodal content
-			return true;
+			// TypeSafe receives structured state, not multimodal message content.
+			return protocol !== "phaseo.decisions";
 
 		default:
 			return false;
@@ -155,8 +160,9 @@ export function getProtocolDisplayName(protocol: Protocol): string {
 			return "OpenAI Moderations";
 		case "openai.rerank":
 			return "OpenAI Rerank";
+		case "phaseo.decisions":
+			return "Phaseo Decisions";
 		case "anthropic.messages":
 			return "Anthropic Messages";
 	}
 }
-

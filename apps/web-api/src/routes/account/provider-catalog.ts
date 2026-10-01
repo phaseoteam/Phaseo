@@ -12,6 +12,12 @@ export type ProviderCatalogIssue = {
 	message: string;
 };
 
+export type ProviderCatalogPriceCondition = {
+	path: string;
+	op: "eq" | "in" | "gt" | "gte" | "lt" | "lte";
+	value: string | number | boolean | Array<string | number>;
+};
+
 export type ProviderCatalogModelPreview = {
 	id: string;
 	name: string;
@@ -25,7 +31,7 @@ export type ProviderCatalogModelPreview = {
 	availableFrom: string | null;
 	deprecatedAt: string | null;
 	shutdownAt: string | null;
-	pricing: Array<{ meterKey: string; modality: string; direction: string | null; unit: string; unitQuantity: number; priceNanos: number; displayLabel: string; displayUnit: string }>;
+	pricing: Array<{ meterKey: string; modality: string; direction: string | null; unit: string; unitQuantity: number; priceNanos: number; displayLabel: string; displayUnit: string; conditions: ProviderCatalogPriceCondition[] }>;
 	capabilities: Array<{
 		id: string;
 		parameters: string[];
@@ -36,6 +42,7 @@ export const providerCatalogJsonSchema = {
 	$schema: "https://json-schema.org/draft/2020-12/schema",
 	$id: "https://phaseo.app/schemas/provider-catalog.v1.json",
 	title: "Phaseo provider catalog",
+	description: "Serve this Phaseo-specific JSON document from any public HTTPS URL, including URLs with query parameters. Conditional prices are retained for review and cannot be promoted automatically into routing.",
 	type: "object",
 	required: ["data"],
 	additionalProperties: false,
@@ -47,11 +54,33 @@ export const providerCatalogJsonSchema = {
 		model: {
 			type: "object", required: ["id", "capabilities"], additionalProperties: false,
 			properties: {
-				id: { type: "string", maxLength: MAX_STRING_LENGTH, pattern: MODEL_ID.source }, name: { type: "string", maxLength: MAX_STRING_LENGTH }, description: { type: "string", maxLength: MAX_STRING_LENGTH },
+				id: { type: "string", maxLength: MAX_STRING_LENGTH, pattern: MODEL_ID.source }, name: { type: "string", maxLength: MAX_STRING_LENGTH }, description: { type: ["string", "null"], maxLength: MAX_STRING_LENGTH },
 				provider_model_slug: { type: "string", maxLength: MAX_STRING_LENGTH }, input_modalities: { type: "array", maxItems: 32, items: { type: "string" } }, output_modalities: { type: "array", maxItems: 32, items: { type: "string" } },
-				context_length: { type: "integer", minimum: 1 }, max_output_tokens: { type: "integer", minimum: 1 },
-				availability: { enum: ["ready", "not_ready", "degraded", "deprecated", "retired"] }, available_from: { type: "string", format: "date-time" }, deprecated_at: { type: "string", format: "date-time" }, shutdown_at: { type: "string", format: "date-time" },
-				pricing: { type: "array", items: { type: "object", additionalProperties: false, required: ["meter_key", "modality", "unit", "unit_quantity", "price_nanos", "display_label", "display_unit"], properties: { meter_key: { type: "string" }, modality: { type: "string" }, direction: { type: "string" }, unit: { type: "string" }, unit_quantity: { type: "number", exclusiveMinimum: 0 }, price_nanos: { type: "number", minimum: 0 }, display_label: { type: "string" }, display_unit: { type: "string" } } } },
+				context_length: { type: ["integer", "null"], minimum: 1 }, max_output_tokens: { type: ["integer", "null"], minimum: 1 },
+				availability: { enum: ["ready", "not_ready", "degraded", "deprecated", "retired"] }, available_from: { type: ["string", "null"], format: "date-time", description: "RFC 3339 timestamp with an explicit timezone offset." }, deprecated_at: { type: ["string", "null"], format: "date-time" }, shutdown_at: { type: ["string", "null"], format: "date-time" },
+				pricing: {
+					type: "array",
+					items: {
+						type: "object", additionalProperties: false,
+						required: ["meter_key", "modality", "unit", "unit_quantity", "price_nanos", "display_label", "display_unit"],
+						properties: {
+							meter_key: { type: "string" }, modality: { type: "string" }, direction: { type: "string" }, unit: { type: "string" },
+							unit_quantity: { type: "number", exclusiveMinimum: 0 }, price_nanos: { type: "number", minimum: 0 },
+							display_label: { type: "string" }, display_unit: { type: "string" },
+							conditions: {
+								type: "array", maxItems: 8,
+								items: {
+									type: "object", additionalProperties: false, required: ["path", "op", "value"],
+									properties: {
+										path: { type: "string", pattern: "^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)?$" },
+										op: { enum: ["eq", "in", "gt", "gte", "lt", "lte"] },
+										value: { oneOf: [{ type: "string" }, { type: "number" }, { type: "boolean" }, { type: "array", minItems: 1, maxItems: 16, items: { oneOf: [{ type: "string" }, { type: "number" }] } }] },
+									},
+								},
+							},
+						},
+					},
+				},
 				capabilities: { type: "array", minItems: 1, items: { $ref: "#/$defs/capability" } },
 			},
 		},
@@ -78,9 +107,10 @@ export async function validateProviderCatalogPricingMeters(client: any, preview:
 		const seen = new Set<string>();
 		for (const [priceIndex, price] of model.pricing.entries()) {
 			const path = `data[${modelIndex}].pricing[${priceIndex}].meter_key`;
-			if (seen.has(price.meterKey)) issues.push({ path, message: `Duplicate pricing meter: ${price.meterKey}.` });
+			const identity = JSON.stringify([price.meterKey, price.conditions]);
+			if (seen.has(identity)) issues.push({ path, message: `Duplicate pricing meter: ${price.meterKey}.` });
 			else if (!allowed.has(price.meterKey)) issues.push({ path, message: `Unknown pricing meter: ${price.meterKey}.` });
-			seen.add(price.meterKey);
+			seen.add(identity);
 		}
 	}
 	return { ...preview, valid: preview.valid && issues.length === 0, issues: issues.slice(0, 100) };
@@ -119,8 +149,38 @@ function positiveInteger(value: unknown): number | null {
 	return Number.isInteger(number) && number > 0 ? number : null;
 }
 
+function priceConditions(value: unknown, path: string, issues: ProviderCatalogIssue[]): ProviderCatalogPriceCondition[] | null {
+	if (value === undefined) return [];
+	if (!Array.isArray(value) || value.length > 8) {
+		issues.push({ path, message: "Expected up to eight pricing conditions." });
+		return null;
+	}
+	const conditions: ProviderCatalogPriceCondition[] = [];
+	for (const [index, raw] of value.entries()) {
+		const condition = asRecord(raw);
+		const conditionPath = `${path}[${index}]`;
+		if (!condition || Object.keys(condition).some((key) => !["path", "op", "value"].includes(key)) || typeof condition.path !== "string" || !/^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)?$/.test(condition.path)) {
+			issues.push({ path: conditionPath, message: "Condition needs a valid path, operator, and value." });
+			return null;
+		}
+		const op = condition.op;
+		const item = condition.value;
+		const scalar = typeof item === "string" || typeof item === "boolean" || (typeof item === "number" && Number.isFinite(item));
+		const list = Array.isArray(item) && item.length > 0 && item.length <= 16 && item.every((entry) => typeof entry === "string" || (typeof entry === "number" && Number.isFinite(entry)));
+		const valid = op === "eq" ? scalar : op === "in" ? list : ["gt", "gte", "lt", "lte"].includes(String(op)) && typeof item === "number" && Number.isFinite(item);
+		if (!valid) {
+			issues.push({ path: conditionPath, message: "Use a scalar for eq, a non-empty list for in, or a number for range comparisons." });
+			return null;
+		}
+		conditions.push({ path: condition.path, op: op as ProviderCatalogPriceCondition["op"], value: item as ProviderCatalogPriceCondition["value"] });
+	}
+	return conditions;
+}
+
+const RFC3339_EXPLICIT_TIMEZONE = /(?:Z|[+-]\d{2}:\d{2})$/i;
+
 function timestamp(value: unknown): string | null {
-	if (typeof value !== "string" || !value.trim()) return null;
+	if (typeof value !== "string" || !value.trim() || !RFC3339_EXPLICIT_TIMEZONE.test(value.trim())) return null;
 	const date = new Date(value);
 	return Number.isNaN(date.valueOf()) ? null : date.toISOString();
 }
@@ -196,7 +256,7 @@ export function normalizeProviderCatalog(payload: unknown): ProviderCatalogPrevi
 	const body = asRecord(payload);
 	if (!body || Object.keys(body).some((key) => key !== "data")) issues.push({ path: "$", message: "Catalog must be an object containing only the data array." });
 	if (entries.length === 0) {
-		issues.push({ path: "data", message: "Expected a non-empty array in data, models, or the response body." });
+		issues.push({ path: "data", message: "Expected a non-empty data array of models." });
 		return { valid: false, modelCount: 0, models: [], allModels: [], issues, truncated: false };
 	}
 	if (entries.length > MAX_MODELS) {
@@ -215,8 +275,8 @@ export function normalizeProviderCatalog(payload: unknown): ProviderCatalogPrevi
 		const unknownModelKey = Object.keys(model).find((key) => !allowedModelKeys.has(key));
 		if (unknownModelKey) { issues.push({ path: `data[${index}].${unknownModelKey}`, message: "Unknown model field." }); continue; }
 		if (["id", "name", "description", "provider_model_slug"].some((key) => typeof model[key] === "string" && String(model[key]).length > MAX_STRING_LENGTH)) { issues.push({ path: `data[${index}]`, message: `Model strings must not exceed ${MAX_STRING_LENGTH} characters.` }); continue; }
-		for (const key of ["name", "description", "provider_model_slug"] as const) if (model[key] !== undefined && typeof model[key] !== "string") issues.push({ path: `data[${index}].${key}`, message: "Expected a string." });
-		for (const key of ["context_length", "max_output_tokens"] as const) if (model[key] !== undefined && positiveInteger(model[key]) === null) issues.push({ path: `data[${index}].${key}`, message: "Expected a positive integer." });
+		for (const key of ["name", "description", "provider_model_slug"] as const) if (model[key] !== undefined && !(key === "description" && model[key] === null) && typeof model[key] !== "string") issues.push({ path: `data[${index}].${key}`, message: "Expected a string." });
+		for (const key of ["context_length", "max_output_tokens"] as const) if (model[key] != null && positiveInteger(model[key]) === null) issues.push({ path: `data[${index}].${key}`, message: "Expected a positive integer." });
 		if (issues.some((issue) => issue.path.startsWith(`data[${index}].`) && ["Expected a string.", "Expected a positive integer."].includes(issue.message))) continue;
 		const id = stringValue(model.id ?? model.model_id ?? model.model);
 		if (!MODEL_ID.test(id)) {
@@ -261,19 +321,21 @@ export function normalizeProviderCatalog(payload: unknown): ProviderCatalogPrevi
 		const deprecatedAt = timestamp(model.deprecated_at);
 		const shutdownAt = timestamp(model.shutdown_at);
 		for (const [key, rawValue, normalized] of [["available_from", model.available_from, availableFrom], ["deprecated_at", model.deprecated_at, deprecatedAt], ["shutdown_at", model.shutdown_at, shutdownAt]] as const) {
-			if (rawValue !== undefined && normalized === null) issues.push({ path: `data[${index}].${key}`, message: "Expected an ISO 8601 timestamp." });
+			if (rawValue != null && normalized === null) issues.push({ path: `data[${index}].${key}`, message: "Expected an ISO 8601 timestamp with an explicit timezone (Z or ±HH:MM)." });
 		}
 		if ((availableFrom && deprecatedAt && deprecatedAt <= availableFrom) || (deprecatedAt && shutdownAt && shutdownAt <= deprecatedAt) || (availableFrom && shutdownAt && shutdownAt <= availableFrom)) { issues.push({ path: `data[${index}]`, message: "Lifecycle timestamps must be in chronological order." }); continue; }
 		if (issues.some((issue) => issue.path.startsWith(`data[${index}].`) && issue.message.includes("timestamp"))) continue;
 		const pricing = Array.isArray(model.pricing) ? model.pricing.flatMap((rawPrice, priceIndex) => {
 			const price = asRecord(rawPrice);
-			const allowed = ["meter_key", "modality", "direction", "unit", "unit_quantity", "price_nanos", "display_label", "display_unit"];
+			const allowed = ["meter_key", "modality", "direction", "unit", "unit_quantity", "price_nanos", "display_label", "display_unit", "conditions"];
 			if (!price || Object.keys(price).some((key) => !allowed.includes(key))) { issues.push({ path: `data[${index}].pricing[${priceIndex}]`, message: "Invalid pricing meter." }); return []; }
 			const unitQuantity = Number(price.unit_quantity);
 			const priceNanos = Number(price.price_nanos);
 			const meterKey = stringValue(price.meter_key).toLowerCase();
 			if (!/^[a-z0-9][a-z0-9._:-]*$/.test(meterKey) || !Number.isFinite(unitQuantity) || unitQuantity <= 0 || !Number.isFinite(priceNanos) || priceNanos < 0 || !["modality", "unit", "display_label", "display_unit"].every((key) => typeof price[key] === "string" && String(price[key]).trim())) { issues.push({ path: `data[${index}].pricing[${priceIndex}]`, message: "Pricing meter fields are invalid." }); return []; }
-			return [{ meterKey, modality: stringValue(price.modality), direction: stringValue(price.direction) || null, unit: stringValue(price.unit), unitQuantity, priceNanos, displayLabel: stringValue(price.display_label), displayUnit: stringValue(price.display_unit) }];
+			const conditions = priceConditions(price.conditions, `data[${index}].pricing[${priceIndex}].conditions`, issues);
+			if (!conditions) return [];
+			return [{ meterKey, modality: stringValue(price.modality), direction: stringValue(price.direction) || null, unit: stringValue(price.unit), unitQuantity, priceNanos, displayLabel: stringValue(price.display_label), displayUnit: stringValue(price.display_unit), conditions }];
 		}) : [];
 		if (model.pricing !== undefined && !Array.isArray(model.pricing)) { issues.push({ path: `data[${index}].pricing`, message: "Expected an array of pricing meters." }); continue; }
 		models.push({
@@ -317,10 +379,11 @@ export async function fetchAndValidateProviderCatalog(url: string, fetcher: type
 	const response = await fetcher(parsed.url, {
 		method: "GET",
 		headers: { accept: "application/json", ...(validators?.etag ? { "if-none-match": validators.etag } : {}), ...(validators?.lastModified ? { "if-modified-since": validators.lastModified } : {}) },
-		redirect: "error",
+		redirect: "manual",
 		signal: AbortSignal.timeout(15_000),
 	});
 	if (response.status === 304) return { notModified: true, etag: response.headers.get("etag") ?? validators?.etag ?? null, lastModified: response.headers.get("last-modified") ?? validators?.lastModified ?? null };
+	if (response.status >= 300 && response.status < 400) throw new Error("Catalog URL must not redirect.");
 	if (!response.ok) throw new Error(`Catalog returned HTTP ${response.status}.`);
 	const contentLength = Number(response.headers.get("content-length") ?? 0);
 	if (contentLength > MAX_BODY_BYTES) throw new Error("Catalog is larger than the 5 MB limit.");

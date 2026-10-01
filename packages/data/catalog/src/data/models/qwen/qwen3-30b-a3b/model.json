@@ -135,11 +135,23 @@
     },
     {
       "benchmark_id": "aa-intelligence-index-v4",
-      "score": 9.2,
+      "score": 3.6,
       "is_self_reported": false,
-      "other_info": "Qwen3 30B A3B (Reasoning); Artificial Analysis Intelligence Index v4.1.1",
+      "updated_at": "2026-09-08T10:38:34.750Z",
+      "variant": "reasoning",
+      "other_info": "Qwen3 30B A3B (Reasoning); Artificial Analysis ID 3e6cf518-a1f4-42d3-8fcf-827c9bd8e6d5; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/qwen3-30b-a3b-instruct-reasoning",
-      "rank": 391
+      "rank": 439
+    },
+    {
+      "benchmark_id": "aa-intelligence-index-v4",
+      "score": 1.3,
+      "is_self_reported": false,
+      "updated_at": "2026-09-08T10:38:34.750Z",
+      "variant": "none",
+      "other_info": "Qwen3 30B A3B (Non-reasoning); Artificial Analysis ID f3169f25-8c6f-48e4-ae87-0cf872dc0ec1; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/qwen3-30b-a3b-instruct",
+      "rank": 504
     }
   ],
   "family_id": null,

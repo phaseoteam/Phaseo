@@ -5,12 +5,70 @@
   "api_model_id": "z-ai/glm-5.3",
   "capability_id": "text.generate",
   "rules": [
-    {"meter":"input_text_tokens","unit":"token","unit_size":1000000,"price_per_unit":1.4,"currency":"USD","pricing_plan":"standard","note":"Official FriendliAI GLM-5.3 input price.","match":[],"priority":100,"effective_from":"2026-08-28T00:00:00Z","region":null,"cache_duration_seconds":null,"conditions":[],"source":"https://friendli.ai/pricing#model-apis-pricing"},
-    {"meter":"cached_read_text_tokens","unit":"token","unit_size":1000000,"price_per_unit":0.26,"currency":"USD","pricing_plan":"standard","note":"Official FriendliAI GLM-5.3 cached-input price.","match":[],"priority":100,"effective_from":"2026-08-28T00:00:00Z","region":null,"cache_duration_seconds":null,"conditions":[],"source":"https://friendli.ai/pricing#model-apis-pricing"},
-    {"meter":"output_text_tokens","unit":"token","unit_size":1000000,"price_per_unit":4.4,"currency":"USD","pricing_plan":"standard","note":"Official FriendliAI GLM-5.3 output price.","match":[],"priority":100,"effective_from":"2026-08-28T00:00:00Z","region":null,"cache_duration_seconds":null,"conditions":[],"source":"https://friendli.ai/pricing#model-apis-pricing"}
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 1.26,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Published FriendliAI GLM-5.3 rate with the current 10% discount.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-09-07T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": "https://friendli.ai/pricing#model-apis-pricing"
+    },
+    {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.234,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Published FriendliAI GLM-5.3 rate with the current 10% discount.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-09-07T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": "https://friendli.ai/pricing#model-apis-pricing"
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 3.96,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Published FriendliAI GLM-5.3 rate with the current 10% discount.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-09-07T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": "https://friendli.ai/pricing#model-apis-pricing"
+    }
   ],
   "regions": [],
-  "service_tiers": ["standard"],
-  "sources": [{"kind":"pricing","url":"https://friendli.ai/pricing#model-apis-pricing","accessed_at":"2026-08-28T00:00:00Z","notes":"Official FriendliAI rate card lists GLM-5.3 at $1.40 input, $0.26 cached input, and $4.40 output per million tokens."}],
-  "verification": {"status":"verified","checked_at":"2026-08-28T00:00:00Z","notes":"Availability and all token rates verified against FriendliAI's live Model APIs catalog and pricing page."}
+  "service_tiers": [
+    "standard"
+  ],
+  "sources": [
+    {
+      "kind": "pricing",
+      "url": "https://friendli.ai/pricing",
+      "accessed_at": "2026-09-07T21:35:00Z",
+      "notes": "Current public rate card includes a 10% GLM-5.3 discount."
+    }
+  ],
+  "verification": {
+    "status": "verified",
+    "checked_at": "2026-09-07T21:35:00Z",
+    "notes": "Availability and all token rates verified against FriendliAI's live Model APIs catalog and pricing page."
+  }
 }

@@ -19,9 +19,9 @@ export default async function ModelsUsingBenchmark({
 
 	// Build server-serializable modelsByProvider structure
 	const map = new Map<string, any>();
-	for (const r of results) {
+	for (const [resultIndex, r] of results.entries()) {
 		const modelId =
-			r.model?.model_id ?? r.model_id ?? String(Math.random());
+			r.model?.model_id ?? r.model_id ?? `unknown-${resultIndex}`;
 		let m = map.get(modelId);
 		if (!m) {
 			// Map organisation fields into the model.organisation object for the client
@@ -46,7 +46,7 @@ export default async function ModelsUsingBenchmark({
 			map.set(modelId, m);
 		}
 		m.benchmark_results.push({
-			id: r.id ?? String(Math.random()),
+			id: r.id ?? `${modelId}:${benchmark.id}:${resultIndex}`,
 			benchmark_id: benchmark.id,
 			benchmark: {
 				id: benchmark.id,
@@ -62,6 +62,8 @@ export default async function ModelsUsingBenchmark({
 			created_at: r.created_at ?? null,
 			updated_at: r.updated_at ?? null,
 			rank: r.rank ?? null,
+			variant: r.variant ?? null,
+			result_key: r.result_key ?? null,
 		});
 	}
 

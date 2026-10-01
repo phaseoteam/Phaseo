@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useSettingsRouter as useRouter } from "../PrivateSettingsQuery";
 import { useMemo, useState, useTransition } from "react";
 import { MoreHorizontal, Plus, SendHorizontal, Webhook } from "lucide-react";
 import { toast } from "sonner";
@@ -189,8 +189,8 @@ export default function BroadcastSettingsClient(props: BroadcastSettingsClientPr
 																	destination.id,
 																);
 															setStatus(destination.id, result.status);
-															if (result.ok) toast.success(result.status);
-									else toast.error(localizedSettingsError(result.status, t, "Action failed"));
+															if (result.ok) toast.success(t("broadcastControls.connectionStatusRefreshed"));
+															else toast.error(t("broadcastControls.connectionStatusRefreshFailed"));
 														}, { refreshAfter: false })
 													}
 												>

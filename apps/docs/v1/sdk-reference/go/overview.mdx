@@ -1,9 +1,10 @@
 ---
+icon: "book-open"
 title: "Go SDK"
 description: "Official Go client for the Phaseo Gateway."
 ---
 
-Install the published [`sdk-go/v2`](https://pkg.go.dev/github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v2) module.
+Install the published [`sdk-go/v2`](https://pkg.go.dev/github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3) module.
 
 The local wrapper at `packages/sdk/sdk-go/index.go` currently exposes these methods:
 
@@ -14,6 +15,7 @@ The local wrapper at `packages/sdk/sdk-go/index.go` currently exposes these meth
 - `CreateSpeech(...)`, `CreateTranscription(...)`, `CreateTranslation(...)`
 - `CreateAnthropicMessage(...)`
 - `GetModels(...)`
+- `GetModelEndpointCapabilities(...)`, `CheckModelParameters(...)`
 - `ListOrganisations(...)`
 - `ListPricingModels(...)`
 - `CalculatePricing(...)`
@@ -42,7 +44,7 @@ For endpoints that are not yet promoted to the wrapper, use the generated client
 import (
   "context"
   "fmt"
-  phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v2"
+  phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3"
 )
 
 client := phaseo.New("YOUR_KEY", "https://api.phaseo.app/v1")
@@ -52,3 +54,5 @@ if err != nil {
 }
 fmt.Println(models)
 ```
+
+`CheckModelParameters` uses live provider-route metadata to label each parameter as `supported`, `partial`, `unsupported`, or `unknown`, validate advertised values and ranges, and return the routes that accept the complete parameter set.

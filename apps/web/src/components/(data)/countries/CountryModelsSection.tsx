@@ -6,6 +6,7 @@ import { ModelCard } from "@/components/(data)/models/Models/ModelCard";
 import { Input } from "@/components/ui/input";
 import type { ModelCard as ModelCardType } from "@/lib/fetchers/models/getAllModels";
 import { useTranslations } from "next-intl";
+import { DisplayNumber } from "@/components/display/DisplayValue";
 
 type CountryModelsSectionProps = {
 	models: ModelCardType[];
@@ -65,7 +66,7 @@ export default function CountryModelsSection({ models }: CountryModelsSectionPro
 						onChange={(event) => setQuery(event.target.value)}
 						placeholder={t("searchPlaceholder")}
 						aria-label={t("searchLabel")}
-						className="h-9 pl-9"
+						className="h-9 rounded-md pl-9"
 					/>
 				</div>
 				<p className="shrink-0 text-sm tabular-nums text-muted-foreground">

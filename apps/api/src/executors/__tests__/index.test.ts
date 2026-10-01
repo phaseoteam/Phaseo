@@ -4,6 +4,21 @@ import { normalizeProviderId } from "@/lib/config/providerAliases";
 import { OPENAI_COMPAT_CONFIG } from "@providers/openai-compatible/registry";
 
 describe("resolveProviderExecutor", () => {
+	it("resolves the canonical Decisions capability and its System One alias", () => {
+		const executor = EXECUTORS_BY_PROVIDER.typesafe?.["decisions.make"];
+		expect(executor).toBeTruthy();
+		expect(resolveProviderExecutor("typesafe", "decisions.make")).toBe(executor);
+		expect(resolveProviderExecutor("typesafe", "systemone")).toBe(executor);
+		expect(resolveProviderExecutor("siliconflow", "decisions.make")).toBeTruthy();
+	});
+
+	it("resolves Respan Span-01 only for Decisions", () => {
+		const executor = EXECUTORS_BY_PROVIDER.respan?.["decisions.make"];
+		expect(executor).toBeTruthy();
+		expect(resolveProviderExecutor("respan", "decisions.make")).toBe(executor);
+		expect(resolveProviderExecutor("respan", "text.generate")).toBeNull();
+	});
+
 	it("registers every configured OpenAI-wire text provider explicitly", () => {
 		for (const providerId of Object.keys(OPENAI_COMPAT_CONFIG)) {
 			// Voyage uses the shared transport configuration for its native
@@ -86,7 +101,6 @@ describe("resolveProviderExecutor", () => {
 			"zai",
 			// Additional configured compat providers
 			"cohere",
-			"crofai",
 			"crusoe",
 			"nvidia",
 			"qwen",
@@ -139,10 +153,12 @@ describe("resolveProviderExecutor", () => {
 
 	it("does not route Alibaba native media APIs through OpenAI-shaped endpoints", () => {
 		for (const providerId of ["alibaba-cloud", "alibaba", "qwen"]) {
-			for (const capability of ["image.generate", "image.edit", "audio.speech", "audio.transcription", "audio.translations"]) {
+			for (const capability of ["audio.speech", "audio.transcription", "audio.translations"]) {
 				expect(resolveProviderExecutor(providerId, capability)).toBeNull();
 			}
 			expect(resolveProviderExecutor(providerId, "video.generate")).toBeTruthy();
+			expect(resolveProviderExecutor(providerId, "image.generate")).toBe(providerId === "alibaba-cloud" ? EXECUTORS_BY_PROVIDER["alibaba-cloud"]["image.generate"] : null);
+			expect(resolveProviderExecutor(providerId, "image.edit")).toBe(providerId === "alibaba-cloud" ? EXECUTORS_BY_PROVIDER["alibaba-cloud"]["image.edit"] : null);
 		}
 	});
 
@@ -242,7 +258,6 @@ describe("resolveProviderExecutor", () => {
 			"clarifai",
 			"cloudflare",
 			"cohere",
-			"crofai",
 			"crusoe",
 			"featherless",
 			"friendli",
@@ -300,8 +315,8 @@ describe("resolveProviderExecutor", () => {
 		expect(resolveProviderExecutor("xai", "video.generation")).toBeTruthy();
 		expect(resolveProviderExecutor("minimax", "video.generation")).toBeTruthy();
 		expect(resolveProviderExecutor("minimax-lightning", "video.generation")).toBeNull();
-		expect(resolveProviderExecutor("novitaai", "video.generation")).toBeNull();
-		expect(resolveProviderExecutor("novita", "video.generation")).toBeNull();
+		expect(resolveProviderExecutor("novitaai", "video.generation")).toBeTypeOf("function");
+		expect(resolveProviderExecutor("novita", "video.generation")).toBe(resolveProviderExecutor("novitaai", "video.generation"));
 		expect(resolveProviderExecutor("atlas-cloud", "video.generation")).toBeTruthy();
 		expect(resolveProviderExecutor("atlascloud", "video.generation")).toBeTruthy();
 		expect(resolveProviderExecutor("atlas-cloud", "video.generation")).toBe(
@@ -346,7 +361,7 @@ describe("resolveProviderExecutor", () => {
 		}
 		expect(resolveProviderExecutor("novita", "images.generations")).toBeNull();
 		expect(resolveProviderExecutor("novita", "audio.transcription")).toBeNull();
-		expect(resolveProviderExecutor("novita", "video.generation")).toBeNull();
+		expect(resolveProviderExecutor("novita", "video.generation")).toBeTypeOf("function");
 		expect(resolveProviderExecutor("atlascloud", "images.generations")).toBeNull();
 		expect(resolveProviderExecutor("atlascloud", "images.edits")).toBeNull();
 		expect(resolveProviderExecutor("atlascloud", "audio.transcription")).toBeNull();
@@ -369,11 +384,11 @@ describe("resolveProviderExecutor", () => {
 		expect(resolveProviderExecutor("black-forest-labs", "images.edits")).toBeTruthy();
 		expect(resolveProviderExecutor("google-ai-studio", "images.generations")).toBeTruthy();
 		expect(resolveProviderExecutor("google-ai-studio", "images.edits")).toBeNull();
-		expect(resolveProviderExecutor("google-ai-studio", "audio.transcription")).toBeNull();
+		expect(resolveProviderExecutor("google-ai-studio", "audio.transcription")).toBeTruthy();
 		expect(resolveProviderExecutor("google-ai-studio", "music.generate")).toBeTruthy();
 		expect(resolveProviderExecutor("google-ai-studio", "video.generation")).toBeTruthy();
 		expect(resolveProviderExecutor("google-vertex", "images.generations")).toBeNull();
-		expect(resolveProviderExecutor("google-vertex", "audio.transcription")).toBeNull();
+		expect(resolveProviderExecutor("google-vertex", "audio.transcription")).toBeTruthy();
 		expect(resolveProviderExecutor("google-vertex", "video.generation")).toBeTruthy();
 		expect(resolveProviderExecutor("mistral", "ocr")).toBeTruthy();
 		expect(resolveProviderExecutor("cohere", "parse")).toBeTruthy();
@@ -421,7 +436,7 @@ describe("resolveProviderExecutor", () => {
 		expectEnabled("google-ai-studio", "images.generations");
 		expectDisabled("google-ai-studio", "images.edits");
 		expectEnabled("google-ai-studio", "audio.speech");
-		expectDisabled("google-ai-studio", "audio.transcription");
+		expectEnabled("google-ai-studio", "audio.transcription");
 		expectDisabled("google-ai-studio", "audio.translations");
 		expectEnabled("google-ai-studio", "music.generate");
 
@@ -434,12 +449,12 @@ describe("resolveProviderExecutor", () => {
 		expectDisabled("google", "audio.translations");
 		expectDisabled("google", "music.generate");
 
-		// Google Vertex host: only text and native Veo are implemented.
+		// Google Vertex host: text, native transcription and Veo are implemented.
 		expectEnabled("google-vertex", "text.generate");
 		expectDisabled("google-vertex", "images.generations");
 		expectDisabled("google-vertex", "images.edits");
 		expectDisabled("google-vertex", "audio.speech");
-		expectDisabled("google-vertex", "audio.transcription");
+		expectEnabled("google-vertex", "audio.transcription");
 		expectDisabled("google-vertex", "audio.translations");
 		expectEnabled("google-vertex", "video.generation");
 		expectDisabled("google-vertex", "music.generate");
@@ -519,7 +534,7 @@ describe("resolveProviderExecutor", () => {
 		expectEnabled("black-forest-labs", "images.generations");
 		expectEnabled("black-forest-labs", "images.edits");
 		expectDisabled("black-forest-labs", "audio.speech");
-		expectDisabled("black-forest-labs", "video.generation");
+		expectEnabled("black-forest-labs", "video.generation");
 		expectDisabled("black-forest-labs", "music.generate");
 
 		// Fal video generation is wired through its dedicated native executor.

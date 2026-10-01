@@ -19,6 +19,7 @@ import { buildLocalizedPageMetadata } from "@/lib/auth/localized-metadata";
 import { cn } from "@/lib/utils";
 import { getTranslations } from "next-intl/server";
 import type { PublicLocale } from "@/i18n/routing";
+import { DisplayCalendarDate, DisplayNumber } from "@/components/display/DisplayValue";
 
 const STATUS_STYLES: Record<string, string> = {
 	Available:
@@ -61,7 +62,7 @@ function sortMembers(members: FamilyModelItem[]) {
 	});
 }
 
-function getReleaseSpan(members: FamilyModelItem[], locale: string) {
+function getReleaseSpan(members: FamilyModelItem[]) {
 	const dates = members
 		.map(getMemberDate)
 		.filter((date): date is Date => Boolean(date))
@@ -71,13 +72,7 @@ function getReleaseSpan(members: FamilyModelItem[], locale: string) {
 	const first = dates[0];
 	const last = dates[dates.length - 1];
 	if (!first || !last) return null;
-	const formatter = new Intl.DateTimeFormat(locale, {
-		month: "short",
-		year: "numeric",
-	});
-	const firstLabel = formatter.format(first);
-	const lastLabel = formatter.format(last);
-	return { firstLabel, lastLabel };
+	return { first, last };
 }
 
 async function fetchFamily(familyId: string) {
@@ -133,7 +128,7 @@ export default async function Page({
 	const primaryOrganisationId = members[0]?.organisation_id ?? null;
 	const primaryOrganisationName =
 		members[0]?.organisation?.name ?? primaryOrganisationId;
-	const releaseSpan = getReleaseSpan(members, locale);
+	const releaseSpan = getReleaseSpan(members);
 	const dateFormatter = new Intl.DateTimeFormat(locale, {
 		day: "numeric",
 		month: "short",
@@ -196,19 +191,19 @@ export default async function Page({
 
 					<dl className="grid grid-cols-2 border-y border-border/70 lg:border-y-0">
 						{[
-							{ label: t("modelsLabel"), value: String(members.length) },
+							{ label: t("modelsLabel"), value: <DisplayNumber value={members.length} /> },
 							{
 								label: t("releaseSpan"),
 								value: releaseSpan ? (
 									<span className="inline-flex items-center gap-1.5 whitespace-nowrap">
-										{releaseSpan.firstLabel}
-										{releaseSpan.firstLabel !== releaseSpan.lastLabel ? (
+										<DisplayCalendarDate value={releaseSpan.first} />
+										{releaseSpan.first.getTime() !== releaseSpan.last.getTime() ? (
 											<>
 												<ArrowRight
 													className="size-3.5 shrink-0 text-muted-foreground"
 													aria-hidden="true"
 												/>
-												{releaseSpan.lastLabel}
+											<DisplayCalendarDate value={releaseSpan.last} />
 											</>
 										) : null}
 									</span>
@@ -277,7 +272,7 @@ export default async function Page({
 											</div>
 											<div className="flex items-center gap-2 text-sm text-muted-foreground">
 												<CalendarDays className="size-4" />
-												{date ? dateFormatter.format(date) : t("datesPending")}
+												{date ? <DisplayCalendarDate value={date} /> : t("datesPending")}
 											</div>
 											<div>
 												<Badge

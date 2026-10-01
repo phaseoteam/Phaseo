@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "aa-coding-index-v5",
+  "benchmark_name": "Artificial Analysis Coding Index v5",
+  "category": "coding",
+  "ascending_order": true,
+  "type": "numerical",
+  "link": "https://artificialanalysis.ai/data-api/docs",
+  "total_models": 0
+}

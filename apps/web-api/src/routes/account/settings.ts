@@ -6,6 +6,7 @@ import { getAuthenticatedDataClient, getDataClient } from "@/data/supabase";
 import type { Env } from "@/env";
 import { PRIVATE_NO_STORE_HEADERS } from "@/http/cache";
 import { requireAccountWorkspace } from "./context";
+import { isProviderAccount } from "./provider-account";
 import { accountSettingsPolicyRouter } from "./settings-policy";
 import { accountSettingsUsageRouter } from "./settings-usage";
 import { accountSettingsUsageActionsRouter } from "./settings-usage-actions";
@@ -22,10 +23,17 @@ import { accountSettingsWebhooksRouter } from "./settings-webhooks";
 import { accountSettingsDataContributionRouter } from "./settings-data-contribution";
 import { callDataContributionGateway } from "./settings-data-contribution";
 import { accountSettingsDynamicRoutesRouter } from "./settings-dynamic-routes";
-import { accountSettingsAccountPrivacyRouter } from "./settings-account-privacy";
 import { accountSettingsScimRouter } from "./settings-scim";
 import { accountSettingsProviderOnboardingRouter } from "./settings-provider-onboarding";
+import { accountSettingsProviderCatalogRouter } from "./settings-provider-catalog";
 import { purgeWorkerCacheTags } from "@/http/invalidation";
+import { keyDisplayData } from "./settings-key-display";
+import {
+	DISPLAY_PREFERENCE_SELECT,
+	displayPreferencesFromRow,
+	displayPreferencesToRow,
+	parseDisplayPreferences,
+} from "@/lib/displayPreferences";
 
 // Mirrors the first-party CLI allowlist enforced by the gateway OAuth service.
 const PHASEO_CLI_SCOPES = [
@@ -33,7 +41,7 @@ const PHASEO_CLI_SCOPES = [
 	"pricing:read", "credits:read", "activity:read", "analytics:read", "generations:read",
 	"workspaces:read", "workspaces:write", "workspaces:delete", "keys:read", "keys:write",
 	"keys:delete", "presets:read", "presets:write", "presets:delete", "settings:read",
-	"settings:write", "provider_credentials:read", "provider_credentials:write", "provider_credentials:delete",
+	"settings:write", "provider_credentials:read", "provider_credentials:write", "provider_credentials:delete", "private_models:read", "private_models:write", "private_models:delete",
 	"guardrails:read", "guardrails:write", "guardrails:delete",
 	"management_keys:read", "management_keys:write", "management_keys:delete",
 	"oauth_clients:read", "oauth_clients:write", "oauth_clients:delete",
@@ -47,6 +55,16 @@ function normalizeBetaFeatures(value: unknown): Record<string, boolean> {
 			typeof entry[1] === "boolean",
 		),
 	);
+}
+
+function hasTrailingOfferLabel(providerName: string, offerLabel: string): boolean {
+	const normalizedProviderName = providerName.trim().toLowerCase();
+	const normalizedOfferLabel = offerLabel.trim().toLowerCase();
+	if (!normalizedProviderName || !normalizedOfferLabel) return false;
+
+	return normalizedProviderName.endsWith(`(${normalizedOfferLabel})`)
+		|| normalizedProviderName.endsWith(` ${normalizedOfferLabel}`)
+		|| normalizedProviderName.endsWith(`-${normalizedOfferLabel}`);
 }
 
 function providerDisplayName(provider: Record<string, unknown>): string {
@@ -65,8 +83,10 @@ function providerDisplayName(provider: Record<string, unknown>): string {
 		const regional = label.split(/\s+/).filter((word) =>
 			!providerWords.has(word.toLowerCase()),
 		).join(" ").trim() || label;
+		if (hasTrailingOfferLabel(name, regional)) return name;
 		return `${name} (${regional})`;
 	}
+	if (hasTrailingOfferLabel(name, label)) return name;
 	return `${name} ${label}`;
 }
 
@@ -120,9 +140,9 @@ accountSettingsRouter.route("/", accountSettingsBroadcastRouter);
 accountSettingsRouter.route("/", accountSettingsWebhooksRouter);
 accountSettingsRouter.route("/", accountSettingsDataContributionRouter);
 accountSettingsRouter.route("/", accountSettingsDynamicRoutesRouter);
-accountSettingsRouter.route("/", accountSettingsAccountPrivacyRouter);
 accountSettingsRouter.route("/", accountSettingsScimRouter);
 accountSettingsRouter.route("/", accountSettingsProviderOnboardingRouter);
+accountSettingsRouter.route("/", accountSettingsProviderCatalogRouter);
 
 accountSettingsRouter.get("/layout", async (c) => {
 	const user = await requireUser(c.req.raw, c.env);
@@ -144,11 +164,12 @@ accountSettingsRouter.get("/layout", async (c) => {
 	]);
 	if (platformUserResult.error || membershipsResult.error || ownedWorkspacesResult.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
 	const accessibleWorkspaceIds = [...new Set([...(membershipsResult.data ?? []).map((row) => String(row.workspace_id)), ...(ownedWorkspacesResult.data ?? []).map((row) => String(row.id))])];
-	const providerLinksResult = await dataClient.from("provider_account_links").select("provider_slug,workspace_id,role,status").in("workspace_id", accessibleWorkspaceIds.length ? accessibleWorkspaceIds : ["00000000-0000-0000-0000-000000000000"]).in("status", ["pending", "active"]);
+	const providerLinksResult = await dataClient.from("provider_account_links").select("provider_slug,workspace_id,role,status,linked_by").in("workspace_id", accessibleWorkspaceIds.length ? accessibleWorkspaceIds : ["00000000-0000-0000-0000-000000000000"]).in("status", ["pending", "active"]);
 	if (providerLinksResult.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
 	const platformRole = String(platformUserResult.data?.role ?? "user").toLowerCase();
 	const providerSlugs = (providerLinksResult.data ?? []).map((link) => String(link.provider_slug));
 	const baseAccountContext = {
+		providerMode: isProviderAccount(user.id, platformRole, providerLinksResult.data ?? []),
 		platformRole,
 		isInternalAdmin: platformRole === "admin",
 		isProvider: providerSlugs.length > 0,
@@ -204,11 +225,11 @@ accountSettingsRouter.get("/contact-personalization", async (c) => {
 	const context = await requireAccountWorkspace({ request: c.req.raw, env: c.env, workspaceId });
 	if (!context) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
 	const [spendResult, workspaceResult] = await Promise.all([
-		context.client.rpc("monthly_spend_prev_cents", { p_team: workspaceId }).single(),
+		context.userClient.rpc("monthly_spend_prev_cents", { p_workspace_id: workspaceId }),
 		context.client.from("workspaces").select("slug").eq("id", workspaceId).maybeSingle(),
 	]);
 	if (spendResult.error || workspaceResult.error) return c.json(base, 200, PRIVATE_NO_STORE_HEADERS);
-	const lastMonthUsd = Number(spendResult.data ?? 0) / 1_000_000_000;
+	const lastMonthUsd = Number(spendResult.data ?? 0) / 100;
 	return c.json({ ...base, defaultInternalId: workspaceResult.data?.slug ?? workspaceId, tierLabel: lastMonthUsd >= 10_000 ? "Enterprise" : "Basic" }, 200, PRIVATE_NO_STORE_HEADERS);
 });
 
@@ -256,6 +277,44 @@ accountSettingsRouter.put("/beta", async (c) => {
 	const result = await client.from("users").upsert({ user_id: user.id, beta_opt_in: profile.betaOptIn, beta_features: profile.betaFeatures }, { onConflict: "user_id" });
 	if (result.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
 	return c.json({ ok: true, profile }, 200, PRIVATE_NO_STORE_HEADERS);
+});
+
+accountSettingsRouter.get("/preferences", async (c) => {
+	const user = await requireUser(c.req.raw, c.env);
+	if (!user) {
+		return c.json({
+			preferences: displayPreferencesFromRow(null),
+			signedIn: false,
+		}, 200, PRIVATE_NO_STORE_HEADERS);
+	}
+	const { data, error } = await getDataClient(c.env)
+		.from("users")
+		.select(DISPLAY_PREFERENCE_SELECT)
+		.eq("user_id", user.id)
+		.maybeSingle();
+	if (error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
+	return c.json({
+		preferences: displayPreferencesFromRow(data),
+		signedIn: true,
+	}, 200, PRIVATE_NO_STORE_HEADERS);
+});
+
+accountSettingsRouter.put("/preferences", async (c) => {
+	const user = await requireUser(c.req.raw, c.env);
+	if (!user) return c.json({ error: "unauthorized" }, 401, PRIVATE_NO_STORE_HEADERS);
+	const preferences = parseDisplayPreferences(await c.req.json().catch(() => null));
+	if (!preferences) {
+		return c.json({ error: "invalid_display_preferences" }, 400, PRIVATE_NO_STORE_HEADERS);
+	}
+	const result = await getDataClient(c.env)
+		.from("users")
+		.upsert({
+			user_id: user.id,
+			...displayPreferencesToRow(preferences),
+			updated_at: new Date().toISOString(),
+		}, { onConflict: "user_id" });
+	if (result.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
+	return c.json({ ok: true, preferences }, 200, PRIVATE_NO_STORE_HEADERS);
 });
 
 accountSettingsRouter.get("/privacy", async (c) => {
@@ -922,7 +981,7 @@ accountSettingsRouter.get("/management-api-keys", async (c) => {
 	};
 	return c.json({
 		currentUserId: context.user.id,
-		teamsWithKeys: [{ ...workspace, keys: keysResult.data ?? [] }],
+		teamsWithKeys: [{ ...workspace, keys: (keysResult.data ?? []).map(keyDisplayData) }],
 		workspace,
 	}, 200, PRIVATE_NO_STORE_HEADERS);
 });
@@ -1068,7 +1127,7 @@ accountSettingsRouter.get("/keys", async (c) => {
 			const usageLastUsed = usage.usage_last_used_at;
 			const { usage_last_used_at: _ignored, ...usageFields } = usage;
 			return {
-				...key,
+				...keyDisplayData(key),
 				current_usage_daily: 0,
 				current_usage_weekly: 0,
 				current_usage_monthly: 0,
@@ -1186,6 +1245,8 @@ accountSettingsRouter.get("/credits/transactions", async (c) => {
 		context.client.from("wallets").select("stripe_customer_id").eq("workspace_id", workspaceId).maybeSingle(),
 		context.client.from("credit_ledger")
 			.select("id,event_time,kind,amount_nanos,before_balance_nanos,after_balance_nanos,status,ref_type,ref_id,source_ref_type,source_ref_id,created_at")
+			// Usage debits belong in usage logs; filter before the billing history limit.
+			.or("kind.is.null,kind.not.in.(charge,usage)")
 			.eq("workspace_id", workspaceId).order("event_time", { ascending: false }).limit(250),
 	]);
 	if (walletResult.error || transactionsResult.error) {
@@ -1218,6 +1279,7 @@ accountSettingsRouter.get("/credits", async (c) => {
 		declaredCountryCode: null,
 		initialBalance: 0,
 		latestPaymentSuccessAt: null,
+		mfaEnabled: false,
 		autoTopUpFailureEmailEnabled: true,
 		lowBalanceEmailEnabled: false,
 		lowBalanceEmailThresholdUsd: null,
@@ -1266,6 +1328,7 @@ accountSettingsRouter.get("/credits", async (c) => {
 		declaredCountryCode: userResult.data?.declared_country_code ?? null,
 		initialBalance: Number(walletResult.data?.balance_nanos ?? 0) / 1_000_000_000,
 		latestPaymentSuccessAt: latestPaymentResult.data?.event_time ?? null,
+		mfaEnabled: context.user.factors.some((factor) => factor.factor_type === "totp" && factor.status === "verified"),
 		autoTopUpFailureEmailEnabled: settingsResult.data?.auto_top_up_failure_email_enabled !== false,
 		lowBalanceEmailEnabled: Boolean(settingsResult.data?.low_balance_email_enabled),
 		lowBalanceEmailThresholdUsd: thresholdNanos > 0 ? Number((thresholdNanos / 1_000_000_000).toFixed(2)) : null,

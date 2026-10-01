@@ -22,6 +22,47 @@ The gateway lets developers access models from OpenAI, Anthropic, Google, Mistra
 - Logging: Axiom
 - Monitoring: server timing, structured events, and dashboards
 
+## Regional provider routing
+
+The gateway has optional EU and US deployments:
+
+- `https://eu.api.phaseo.app`
+- `https://us.api.phaseo.app`
+
+Their deployment-owned `GATEWAY_ROUTING_REGION` value is applied as both an
+execution-region and data-region requirement after request, preset, and dynamic
+route configuration has been merged. A conflicting request is rejected, and an
+empty compliant provider pool fails closed instead of falling back globally.
+
+These deployments use Cloudflare Workers placement hints and regional provider
+metadata. They are **not end-to-end data residency guarantees**: Supabase, KV,
+Workers logs, provider subrequests, and other dependencies are not yet proven to
+remain in-region. Do not describe this feature as guaranteed residency until the
+complete data path has been audited and Cloudflare Regional Services is enabled.
+
+The regional configs intentionally have no cron triggers, R2 logging buckets,
+data-contribution buckets, or realtime Durable Object binding. Async and
+background surfaces need a separate residency review before being enabled.
+`/v1/models` is filtered by the deployment region and only advertises the three
+text endpoints supported by the regional deployments. The initial regional
+surface accepts text-only Chat Completions, Responses, and Messages requests;
+non-text content, non-text output, hosted tools, and other endpoints fail before
+provider execution.
+
+Validate both deployments without publishing them:
+
+```bash
+pnpm --filter @phaseo/gateway-api build:regional
+```
+
+Before deployment, provision the same required gateway secrets separately for
+`phaseo-gateway-eu` and `phaseo-gateway-us`. Provider credentials must point to
+the regional offers represented by the provider catalog.
+
+See [docs/internal/regional-deployment.md](docs/internal/regional-deployment.md) for the complete
+Cloudflare setup, secret preparation, deployment, and non-inference verification
+runbook.
+
 ## Workspace invite secrets
 
 Workspace invite management requires `INVITE_ENCRYPTION_KEY` and
@@ -73,3 +114,45 @@ Common contribution areas:
 - Tighten type safety and validation.
 - Expand model, provider, and pricing metadata.
 - Improve performance, caching, and reliability.
+
+## Scheduled Worker cutover
+
+`src/jobs.ts` and `wrangler.jobs.toml` prepare a scheduled-only `phaseo-jobs`
+Worker. Its cron starts disabled. The gateway continues scheduling until an
+explicit production cutover. This separates invocation metrics; it does not
+by itself reduce total CPU.
+
+The jobs Worker shares the existing KV and R2 resources and binds to the
+gateway's existing Durable Objects through `script_name`. It creates no new
+Durable Object storage or migrations. Secrets do not transfer between Workers.
+
+The PR is based on current main and preserves its discovery configuration:
+`MODEL_DISCOVERY_SHARDING_ENABLED=false` and `MODEL_DISCOVERY_CONCURRENCY=8`.
+The original investigation checkout was older and always sharded; its gateway
+configuration was not copied into this PR. Sharding changes remain separate
+from provisioning the jobs Worker.
+
+1. Validate with `pnpm --filter @phaseo/gateway-api build:jobs` and the scheduled
+   and model-discovery tests. Review bindings and required secrets for each job.
+2. Provision `phaseo-jobs` with `crons=[]`, supply its required secrets through
+   the established secret-management process, and verify all bindings.
+3. In the reconciled gateway configuration, set `crons=[]` and deploy that
+   gateway change. Keep its scheduled export available during the transition.
+4. Wait for Cloudflare's cron update to propagate (up to 15 minutes according
+   to [Cloudflare's documentation](https://developers.cloudflare.com/workers/configuration/cron-triggers/)) and confirm the gateway no
+   longer receives scheduled invocations before enabling the jobs cron.
+5. Change the jobs configuration to `crons=["* * * * *"]`, deploy it, and
+   verify scheduled execution, notification delivery, and outbox draining.
+   Observe the two Workers separately over a full discovery cadence.
+6. Remove the gateway's scheduled export/import in a follow-up after cutover.
+
+Rollback: disable the jobs cron, confirm it has stopped, then restore the
+gateway cron. Never enable both schedules simultaneously. The handoff can
+delay maintenance; confirm delayed work is recovered from persisted outboxes
+and reconciliation queues.
+
+Pricing-page scraping still runs in the jobs Worker. Moving it to GitHub
+Actions needs a separate change preserving notification deduplication and the
+rule that pricing baselines advance only after notification delivery succeeds.
+Likewise, reducing fingerprints to token prices alone would lose supported
+non-token pricing alerts; the sort optimization preserves those alerts.

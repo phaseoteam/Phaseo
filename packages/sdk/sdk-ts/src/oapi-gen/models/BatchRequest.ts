@@ -60,6 +60,11 @@ export interface BatchRequest {
         };
     zdr?: boolean | null;
   };
+  provider_options?: {
+    [key: string]: {
+      [key: string]: unknown;
+    };
+  };
   requests?: {
     body: {
       [key: string]: unknown;

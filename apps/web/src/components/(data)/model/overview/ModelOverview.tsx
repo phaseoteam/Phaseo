@@ -38,6 +38,7 @@ export default async function ModelOverview({ model }: ModelOverviewProps) {
 			) {
 				return "audio_tts";
 			}
+			if (value.includes("decision")) return "decisions";
 			return value.replace(/\s+/g, "_");
 		};
 

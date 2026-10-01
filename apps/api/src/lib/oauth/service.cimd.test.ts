@@ -45,8 +45,62 @@ describe("OAuth client ID metadata documents", () => {
 		expect(assertRedirectAllowed(client!, "https://client.example/oauth/callback")).toBe(true);
 		expect(fetchMock).toHaveBeenCalledWith(
 			clientId,
-			expect.objectContaining({ redirect: "error" }),
+			expect.objectContaining({ redirect: "manual" }),
 		);
+	});
+
+	it("rejects CIMD metadata redirects instead of following them", async () => {
+		const clientId = "https://client.example/oauth/client.json";
+		const fetchMock = vi.fn().mockResolvedValue(new Response(null, {
+			status: 302,
+			headers: { Location: "https://attacker.example/client.json" },
+		}));
+		vi.stubGlobal("fetch", fetchMock);
+
+		await expect(loadOAuthClient(clientId)).resolves.toBeNull();
+		expect(fetchMock).toHaveBeenCalledWith(
+			clientId,
+			expect.objectContaining({ redirect: "manual" }),
+		);
+	});
+
+	it("negotiates public authentication when ChatGPT prefers private_key_jwt but also supports none", async () => {
+		const clientId = "https://chatgpt.com/oauth/client.json";
+		vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json({
+			client_id: clientId,
+			client_name: "ChatGPT",
+			client_uri: "https://chatgpt.com/",
+			logo_uri: "https://persistent.oaistatic.com/sonic/misc/openai-logo.png",
+			redirect_uris: ["https://chatgpt.com/connector_platform_oauth_redirect"],
+			token_endpoint_auth_method: "private_key_jwt",
+			token_endpoint_auth_methods_supported: ["none", "private_key_jwt"],
+			token_endpoint_auth_signing_alg: "RS256",
+			jwks_uri: "https://chatgpt.com/oauth/jwks.json",
+			grant_types: ["authorization_code", "refresh_token"],
+			response_types: ["code"],
+		})));
+
+		const client = await loadOAuthClient(clientId);
+		expect(client).toMatchObject({
+			id: clientId,
+			name: "ChatGPT",
+			client_type: "public",
+			redirect_uris: ["https://chatgpt.com/connector_platform_oauth_redirect"],
+			registration_source: "cimd",
+		});
+	});
+
+	it("rejects CIMD clients that only support private_key_jwt", async () => {
+		const clientId = "https://private-client.example/client.json";
+		vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json({
+			client_id: clientId,
+			client_name: "Private Client",
+			redirect_uris: ["https://private-client.example/callback"],
+			token_endpoint_auth_method: "private_key_jwt",
+			token_endpoint_auth_methods_supported: ["private_key_jwt"],
+		})));
+
+		await expect(loadOAuthClient(clientId)).resolves.toBeNull();
 	});
 
 	it("allows native CIMD loopback callbacks to use an ephemeral port", async () => {

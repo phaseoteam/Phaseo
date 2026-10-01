@@ -3,7 +3,6 @@
 // How: Tracks per-request charge attempts on pipeline context metadata.
 
 import type { PipelineContext } from "../before/types";
-import { recordUsageAndCharge } from "../pricing/persist";
 
 const CHARGE_RETRY_DELAYS_MS = [0, 100, 500] as const;
 
@@ -24,6 +23,11 @@ export async function recordUsageAndChargeOnce(args: {
 	const meta = ctx.meta as Record<string, unknown>;
 	if (meta.__usageChargeRecorded === true) return;
 
+	// Preserve fill -> debit -> invalidation order without delaying first token.
+	// Fills swallow cache failures, just as synchronous persistence did.
+	await Promise.all(ctx.creditCacheWrites ?? []);
+	const { recordUsageAndCharge } = await import("../pricing/persist");
+
 	let lastError: unknown = null;
 	for (const delayMs of CHARGE_RETRY_DELAYS_MS) {
 		try {
@@ -32,6 +36,7 @@ export async function recordUsageAndChargeOnce(args: {
 				requestId: ctx.billingRequestId,
 				workspaceId: ctx.workspaceId,
 				cost_nanos: costNanos,
+				creditSnapshotBalanceNanos: ctx.gating?.credit?.balanceNanos ?? null,
 			});
 			meta.__usageChargeRecorded = true;
 			return;

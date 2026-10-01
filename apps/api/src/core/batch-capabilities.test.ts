@@ -123,8 +123,8 @@ describe("batch capabilities", () => {
 			"google-ai-studio",
 			"mistral",
 			"moonshotai",
-			"parasail",
 			"together",
+			"parasail",
 		]);
 		expect(resolveBatchPreviewProviderIds("xai,groq,together")).toEqual(["together"]);
 		expect(resolveBatchPreviewProviderIds("unknown")).toEqual([]);

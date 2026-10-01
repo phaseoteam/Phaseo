@@ -1,4 +1,6 @@
 import Link from "next/link";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 import { JsonLdScript } from "@/components/seo/JsonLdScript";
 import type { ModelOverviewPage } from "@/lib/fetchers/models/getModel";
@@ -8,9 +10,12 @@ import type {
 	ProviderPricing,
 } from "@/lib/fetchers/models/getModelPricing";
 import { formatModelLifecycleDate } from "@/lib/dates/modelLifecycleDates";
+import { markdownToPlainText } from "@/lib/models/modelDescription";
 import { PRICING_METER_OPTIONS, PRICING_METER_VALUES } from "@/lib/pricing/meters";
+import { modelMarkdownComponents } from "../modelMarkdown";
 import type { ModelLineageLinks } from "./modelOverviewMetadata";
 import ModelFaqAccordion from "./ModelFaqAccordion";
+import { DisplayCalendarDate, DisplayNumber } from "@/components/display/DisplayValue";
 
 function parseTypes(value: string | null | undefined): string[] {
 	if (!value) return [];
@@ -206,6 +211,22 @@ function getStatusDescription(
 	}
 }
 
+function ensureSentencePunctuation(value: string): string {
+	const trimmed = value.trim();
+	return /[.!?]$/.test(trimmed) ? trimmed : `${trimmed}.`;
+}
+
+function descriptionStartsWithModelName(
+	description: string,
+	modelName: string,
+): boolean {
+	const normalizedDescription = description.toLocaleLowerCase();
+	const normalizedModelName = modelName.trim().toLocaleLowerCase();
+	return Boolean(
+		normalizedModelName && normalizedDescription.startsWith(normalizedModelName),
+	);
+}
+
 type PricingHighlight = {
 	key: string;
 	label: string;
@@ -388,6 +409,7 @@ export default function ModelFaqSection({
 	translateModality,
 	translatePricing,
 	locale = "en-US",
+	showProviders = true,
 }: {
 	model: ModelOverviewPage;
 	benchmarkCount: number;
@@ -400,12 +422,22 @@ export default function ModelFaqSection({
 	translateModality?: (key: string) => string;
 	translatePricing?: ModelFaqTranslate;
 	locale?: string;
+	showProviders?: boolean;
 }) {
 	const modelName = model.name;
 	const statusDescription = getStatusDescription(model.status, translate);
 	const question = (key: string, fallback: string) =>
 		translate ? translate(`questions.${key}`, { model: modelName }) : fallback;
 	const organisationName = model.organisation.name;
+	const modelDescription = model.description?.trim();
+	const plainModelDescription = markdownToPlainText(modelDescription);
+	const descriptionPrefix =
+		plainModelDescription && descriptionStartsWithModelName(plainModelDescription, modelName)
+			? ""
+			: `${modelName} is `;
+	const aboutAnswerText = plainModelDescription
+		? `${descriptionPrefix}${ensureSentencePunctuation(plainModelDescription)}`
+		: `${modelName} is ${getStatusDescription(model.status)} from ${organisationName}.`;
 	const releaseDate = model.release_date ?? model.announcement_date ?? null;
 	const inputTypes = parseTypes(model.input_types);
 	const outputTypes = parseTypes(model.output_types);
@@ -491,7 +523,17 @@ export default function ModelFaqSection({
 	const items = [
 		{
 			question: question("model", `What is ${modelName}?`),
-			answer: (
+			answer: modelDescription && plainModelDescription ? (
+				<>
+					{descriptionPrefix}
+					<ReactMarkdown
+						remarkPlugins={[remarkGfm]}
+						components={modelMarkdownComponents}
+					>
+						{modelDescription}
+					</ReactMarkdown>
+				</>
+			) : (
 				<>
 					{translate
 						? translate("answers.modelPrefix", { model: modelName, status: statusDescription })
@@ -536,6 +578,7 @@ export default function ModelFaqSection({
 					},
 				]
 			: []),
+		...(showProviders ? [
 		{
 			question: question("providers", `What providers serve ${modelName}, and can I use it via API?`),
 			answer: (
@@ -558,6 +601,7 @@ export default function ModelFaqSection({
 				</>
 			),
 		},
+		] : []),
 		{
 			question: question("toolCalling", `Does ${modelName} support tool calling?`),
 			answer: toolCallingAnswer,
@@ -675,7 +719,7 @@ export default function ModelFaqSection({
 				name: question("model", `What is ${modelName}?`),
 				acceptedAnswer: {
 					"@type": "Answer",
-					text: modelAnswerText,
+					text: aboutAnswerText,
 				},
 			},
 			...(inputContextLength || outputContextLength
@@ -688,6 +732,7 @@ export default function ModelFaqSection({
 					},
 				}]
 				: []),
+			...(showProviders ? [
 			{
 				"@type": "Question",
 				name: question("providers", `What providers serve ${modelName}, and can I use it via API?`),
@@ -696,6 +741,7 @@ export default function ModelFaqSection({
 					text: providerAnswerText,
 				},
 			},
+			] : []),
 			{
 				"@type": "Question",
 				name: question("toolCalling", `Does ${modelName} support tool calling?`),

@@ -6,6 +6,7 @@ import { Loader2, LogIn, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslations } from "next-intl";
 import { localizedSettingsError } from "@/i18n/error-messages";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import {
 	deletePasskeyAction,
 	startPasskeyRegistrationAction,
@@ -42,6 +43,7 @@ type PendingPasskeyAction =
 export function PasskeyManager({ hasPassword }: { hasPassword: boolean }) {
 	const t = useTranslations("SettingsUI");
 	const s = (key: string) => t(`strings.${key}` as never);
+	const format = useDisplayFormatters();
 	const router = useRouter();
 	const [passkeys, setPasskeys] = React.useState<Passkey[]>([]);
 	const [loading, setLoading] = React.useState(true);
@@ -220,7 +222,7 @@ export function PasskeyManager({ hasPassword }: { hasPassword: boolean }) {
 										{passkey.friendly_name || s("Passkey")}
 										</p>
 										<p className="mt-0.5 text-xs text-muted-foreground">
-											{s("Added")} {new Date(passkey.created_at).toLocaleDateString()}
+											{s("Added")} {format.date(passkey.created_at)}
 										</p>
 									</div>
 									<Button

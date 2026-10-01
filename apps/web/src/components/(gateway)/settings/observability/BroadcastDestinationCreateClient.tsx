@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useSettingsWrite } from "../PrivateSettingsQuery";
 import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
 	ArrowLeft,
@@ -364,6 +365,7 @@ export default function BroadcastDestinationCreateClient(props: {
 	const router = useRouter();
 	const t = useTranslations("SettingsUI");
 	const ruleFieldOptions = RULE_FIELDS.map((field) => ({ value: field.id, label: t(`broadcastControls.${field.labelKey}` as never) }));
+	const write = useSettingsWrite();
 	const [destinationName, setDestinationName] = useState(destination.label);
 	const [excludePromptsAndOutputs, setExcludePromptsAndOutputs] = useState(
 		destination.id === "otel_collector",
@@ -406,7 +408,7 @@ export default function BroadcastDestinationCreateClient(props: {
 		if (!canSave || isSaving) return;
 		setIsSaving(true);
 		try {
-			await createBroadcastDestinationAction({
+			await write(createBroadcastDestinationAction({
 				destinationId: destination.id,
 				name: destinationName.trim(),
 				config,
@@ -427,7 +429,7 @@ export default function BroadcastDestinationCreateClient(props: {
 						value: rule.value,
 					})),
 				})),
-			});
+			}));
 			toast.success(t("strings.Destination saved" as never));
 			router.push("/settings/broadcast");
 			router.refresh();
@@ -451,10 +453,10 @@ export default function BroadcastDestinationCreateClient(props: {
 				body: JSON.stringify({ destinationId: destination.id, config, workspaceId }),
 			});
 			if (result.ok) {
-				toast.success(result.status || t("strings.Connected" as never));
+				toast.success(t("strings.Connected" as never));
 				return;
 			}
-			toast.error(localizedSettingsError(result.status, t, "Connection check failed"));
+			toast.error(t("strings.Connection check failed" as never));
 		} catch (error) {
 			const message = localizedSettingsError(error, t, "Action failed", t("broadcastControls.connectionCheckFailed"));
 			toast.error(message);

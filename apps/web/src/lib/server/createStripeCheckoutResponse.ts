@@ -5,7 +5,10 @@ import {
 	type ResendCheckoutStartedPayload,
 } from "@/lib/automations/resend-events";
 import { sendBillingDiscordWebhook } from "@/lib/automations/billingDiscord";
-import { buildStripeCheckoutRedirectUrls } from "@/lib/stripeCheckoutRedirects";
+import {
+	buildStripeCheckoutRedirectUrls,
+	resolveConfiguredStripeCheckoutBaseUrl,
+} from "@/lib/stripeCheckoutRedirects";
 import { getStripe } from "@/lib/stripe";
 import { requireActiveWorkspaceStripeCustomer } from "@/lib/server/activeTeamStripe";
 import { createAdminClient } from "@/utils/supabase/admin";
@@ -76,7 +79,8 @@ export async function createStripeCheckoutResponse(
 		refererHeader,
 		requestedWorkspaceId,
 	} = args;
-	if (process.env.NODE_ENV === "production" && !process.env.NEXT_PUBLIC_BASE_URL) {
+	const configuredBaseUrl = resolveConfiguredStripeCheckoutBaseUrl(process.env);
+	if (process.env.NODE_ENV === "production" && !configuredBaseUrl) {
 		return NextResponse.json({ error: "Checkout redirect base URL is not configured" }, { status: 503 });
 	}
 	const allowRequestHeaderFallback = process.env.NODE_ENV !== "production";
@@ -123,7 +127,7 @@ export async function createStripeCheckoutResponse(
 	}
 
 	const { successUrl, cancelUrl } = buildStripeCheckoutRedirectUrls({
-		configuredBaseUrl: process.env.NEXT_PUBLIC_BASE_URL,
+		configuredBaseUrl,
 		originHeader,
 		refererHeader,
 		kind,
@@ -139,7 +143,7 @@ export async function createStripeCheckoutResponse(
 
 		const paymentAttempt = Date.now();
 		const { successUrl: paymentSuccessUrl } = buildStripeCheckoutRedirectUrls({
-			configuredBaseUrl: process.env.NEXT_PUBLIC_BASE_URL,
+			configuredBaseUrl,
 			originHeader,
 			refererHeader,
 			kind,
@@ -220,7 +224,7 @@ export async function createStripeCheckoutResponse(
 
 		const paymentAttempt = Date.now();
 		const { successUrl: paymentSuccessUrl } = buildStripeCheckoutRedirectUrls({
-			configuredBaseUrl: process.env.NEXT_PUBLIC_BASE_URL,
+			configuredBaseUrl,
 			originHeader,
 			refererHeader,
 			kind,

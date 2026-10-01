@@ -1,8 +1,9 @@
 "use client";
+import { useInvalidatePrivateSettings } from "../PrivateSettingsQuery";
 
 import { useMemo, useRef, useState, useTransition } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import useSWR from "swr";
+import { useQuery } from "@tanstack/react-query";
 import { Check, ChevronDown, DollarSign, Gauge, Layers3, Loader2, Plus, ShieldCheck, Sparkles, Trash2, Zap } from "lucide-react";
 import { toast } from "sonner";
 import { updateAutoRoutingSettings } from "@/app/(dashboard)/settings/routing/actions";
@@ -16,8 +17,9 @@ import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import type { GatewaySupportedModel } from "@/lib/fetchers/gateway/getGatewaySupportedModelIds";
 import type { AutoRoutingObjective, AutoRoutingSpendProfile, SettingsAutoRoutingInitialData } from "@/lib/fetchers/internal/settingsTypes";
-import { publicSWRKeys } from "@/lib/swr/keys";
-import { publicSWRFetcher } from "@/lib/swr/publicFetcher";
+import { fetchJsonQuery } from "@/lib/query/fetchers";
+import { WEB_QUERY_POLICIES } from "@/lib/query/policies";
+import { webQueryKeys } from "@/lib/query/queryKeys";
 import { cn } from "@/lib/utils";
 import { useLocale, useTranslations } from "next-intl";
 
@@ -112,6 +114,7 @@ export default function AutoRoutingSettingsClient({ initialData }: { initialData
 	const m = (key: string, values: Record<string, string | number>) =>
 		t(`autoRouting.${key}` as never, values as never);
 	const locale = useLocale();
+	const invalidateSettings = useInvalidatePrivateSettings();
 	const initial = initialData.autoRouting;
 	const [objective, setObjective] = useState<AutoRoutingObjective>(initial.objective);
 	const [spendProfile, setSpendProfile] = useState<AutoRoutingSpendProfile>(initial.spendProfile);
@@ -126,7 +129,11 @@ export default function AutoRoutingSettingsClient({ initialData }: { initialData
 	const [updatedAt, setUpdatedAt] = useState(initial.updatedAt);
 	const [advancedOpen, setAdvancedOpen] = useState(initial.allowedPatterns.length > 0 || initial.spendProfile === "custom");
 	const [isPending, startTransition] = useTransition();
-	const { data: modelCatalog, error: modelCatalogError, isLoading: modelCatalogLoading } = useSWR<{ models: GatewaySupportedModel[] }>(publicSWRKeys.gatewayModels, publicSWRFetcher);
+	const { data: modelCatalog, error: modelCatalogError, isLoading: modelCatalogLoading } = useQuery<{ models: GatewaySupportedModel[] }>({
+		queryKey: webQueryKeys.public.gatewayModels(),
+		queryFn: ({ signal }) => fetchJsonQuery<{ models: GatewaySupportedModel[] }>("/api/gateway/models", { signal }),
+		...WEB_QUERY_POLICIES.public,
+	});
 	const modelOptions = useMemo(() => buildModelOptions(modelCatalog?.models ?? []), [modelCatalog?.models]);
 	const selectedProfileIndex = SPEND_PROFILES.findIndex((profile) => profile.value === spendProfile);
 	const selectedProfile = selectedProfileIndex >= 0 ? SPEND_PROFILES[selectedProfileIndex] : null;
@@ -165,6 +172,7 @@ export default function AutoRoutingSettingsClient({ initialData }: { initialData
 				);
 				return;
 			}
+			void invalidateSettings();
 			const saved = result.autoRouting;
 			setAllowedPatterns(saved.allowedPatterns); setSpendProfile(saved.spendProfile); setMaxInputPricePerMillion(saved.maxInputPricePerMillion); setMaxOutputPricePerMillion(saved.maxOutputPricePerMillion); setObjective(saved.objective); setAllowFallbacks(saved.allowFallbacks); setRevision(saved.revision); setUpdatedAt(saved.updatedAt); setSavedFingerprint(configurationFingerprint(saved));
 			toast.success(s(result.gatewayCacheInvalidated ? "updateSuccess" : "cacheRefreshPending"));

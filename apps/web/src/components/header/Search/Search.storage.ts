@@ -1,8 +1,11 @@
 import type { PaletteItem } from "./Search.types";
 
 export const PINNED_STORAGE_KEY = "phaseo:command-palette:pinned:v1";
+export const RECENT_STORAGE_KEY = "phaseo:command-palette:recent:v1";
 const MAX_PINNED_ITEMS = 12;
+const MAX_RECENT_ITEMS = 5;
 let pinnedCache: PaletteItem[] | null = null;
+let recentCache: PaletteItem[] | null = null;
 
 function isPaletteItem(value: unknown): value is PaletteItem {
 	if (!value || typeof value !== "object") return false;
@@ -12,6 +15,40 @@ function isPaletteItem(value: unknown): value is PaletteItem {
 
 function isPersistablePinnedItem(item: PaletteItem): boolean {
 	return item.persistable !== false && !item.id.startsWith("workspace:");
+}
+
+function isRecentableItem(item: PaletteItem): boolean {
+	if (item.workspaceId) return Boolean(item.href?.startsWith("/"));
+	return Boolean(
+		item.href?.startsWith("/") &&
+		!item.external &&
+		!item.action &&
+		!item.id.startsWith("action-") &&
+		!item.id.startsWith("context-"),
+	);
+}
+
+function normalizeRecentItems(items: readonly PaletteItem[]): PaletteItem[] {
+	const seen = new Set<string>();
+	const normalized: PaletteItem[] = [];
+
+	for (const item of items) {
+		if (!isRecentableItem(item) || seen.has(item.id)) continue;
+		seen.add(item.id);
+		normalized.push({
+			id: item.id,
+			title: item.title,
+			subtitle: item.subtitle,
+			href: item.href,
+			logoId: item.logoId,
+			flagIso: item.flagIso,
+			workspaceId: item.workspaceId,
+			persistable: item.workspaceId ? false : item.persistable,
+		});
+		if (normalized.length === MAX_RECENT_ITEMS) break;
+	}
+
+	return normalized;
 }
 
 export function readPinnedItems(): PaletteItem[] {
@@ -57,4 +94,52 @@ export function togglePinnedItem(items: readonly PaletteItem[], item: PaletteIte
 
 export function invalidatePinnedItemsCache(): void {
 	pinnedCache = null;
+}
+
+export function readRecentItems(): PaletteItem[] {
+	if (recentCache) return recentCache;
+	if (typeof window === "undefined") return [];
+
+	try {
+		const rawValue = window.localStorage.getItem(RECENT_STORAGE_KEY);
+		const parsed = rawValue ? (JSON.parse(rawValue) as unknown) : [];
+		recentCache = normalizeRecentItems(
+			Array.isArray(parsed) ? parsed.filter(isPaletteItem) : [],
+		);
+		if (JSON.stringify(parsed) !== JSON.stringify(recentCache)) {
+			window.localStorage.setItem(RECENT_STORAGE_KEY, JSON.stringify(recentCache));
+		}
+	} catch {
+		recentCache = [];
+	}
+
+	return recentCache;
+}
+
+export function addRecentItem(
+	items: readonly PaletteItem[],
+	item: PaletteItem,
+): PaletteItem[] {
+	if (!isRecentableItem(item)) return [...items];
+	return normalizeRecentItems([item, ...items.filter((candidate) => candidate.id !== item.id)]);
+}
+
+export function writeRecentItems(items: readonly PaletteItem[]): PaletteItem[] {
+	recentCache = normalizeRecentItems(items);
+	if (typeof window !== "undefined") {
+		try {
+			window.localStorage.setItem(RECENT_STORAGE_KEY, JSON.stringify(recentCache));
+		} catch {
+			// Search remains usable when storage is unavailable or full.
+		}
+	}
+	return recentCache;
+}
+
+export function clearRecentItems(): PaletteItem[] {
+	return writeRecentItems([]);
+}
+
+export function invalidateRecentItemsCache(): void {
+	recentCache = null;
 }

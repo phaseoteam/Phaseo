@@ -1,6 +1,11 @@
 export interface ImagesGenerationRequest {
+  background?: "transparent" | "opaque" | "auto";
   model: string;
+  moderation?: "auto" | "low";
   n?: number;
+  output_compression?: number;
+  output_format?: "png" | "jpeg" | "webp";
+  partial_images?: number;
   prompt: string;
   provider?: {
     allow_fallbacks?: boolean | null;
@@ -40,8 +45,10 @@ export interface ImagesGenerationRequest {
     zdr?: boolean | null;
   };
   quality?: string;
+  resolution?: string;
   response_format?: string;
   size?: string;
+  stream?: boolean;
   style?: string;
   user?: string;
 }

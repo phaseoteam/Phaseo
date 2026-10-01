@@ -15,6 +15,15 @@ function normalizeHttpOrigin(candidate: string | null | undefined): string | nul
 	}
 }
 
+export function resolveConfiguredStripeCheckoutBaseUrl(
+	env: Record<string, string | undefined>,
+): string | null {
+	return (
+		normalizeHttpOrigin(env.NEXT_PUBLIC_WEBSITE_URL) ??
+		normalizeHttpOrigin(env.WEBSITE_URL)
+	);
+}
+
 export function resolveStripeCheckoutBaseUrl(args: {
 	configuredBaseUrl?: string | null;
 	originHeader?: string | null;

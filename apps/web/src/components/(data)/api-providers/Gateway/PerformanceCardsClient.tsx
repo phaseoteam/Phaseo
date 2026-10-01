@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import Link from "next/link";
 import {
 	Minus,
@@ -22,8 +23,8 @@ export type Trend = "up" | "down" | "neutral";
 
 export type MetricCardSummary = {
 	title: string;
-	value: string;
-	delta?: string;
+	value: number | null;
+	delta?: number | null;
 	trend: Trend;
 	helpText?: string;
 };
@@ -48,17 +49,19 @@ function toUtcBucket(date: Date): string {
 	return bucket.toISOString();
 }
 
-function formatBucketDate(timestamp: string | null, locale: string): string {
-	if (!timestamp) return "";
-	const date = new Date(timestamp);
-	if (!Number.isFinite(date.getTime())) return "";
-	return date.toLocaleDateString(locale, { month: "short", day: "numeric" });
-}
-
-function formatMetricValue(metric: MetricKey, value: number | null): string {
+function formatMetricValue(
+	metric: MetricKey,
+	value: number | null,
+	formatNumber: ReturnType<typeof useDisplayFormatters>["number"],
+): string {
 	if (value == null || !Number.isFinite(value)) return "-";
-	if (metric === "throughput") return `${value.toFixed(2)} t/s`;
-	return `${Math.round(value)} ms`;
+	if (metric === "throughput") {
+		return `${formatNumber(value, {
+			minimumFractionDigits: 2,
+			maximumFractionDigits: 2,
+		})} t/s`;
+	}
+	return `${formatNumber(value, { maximumFractionDigits: 0 })} ms`;
 }
 
 function DeltaPill({
@@ -67,11 +70,12 @@ function DeltaPill({
 	invertColors = false,
 	className,
 }: {
-	value: string;
+	value: number;
 	trend: Trend;
 	invertColors?: boolean;
 	className?: string;
 }) {
+	const format = useDisplayFormatters();
 	const isPositive = trend === "up";
 	const isNeutral = trend === "neutral";
 	const isGood = invertColors ? !isPositive : isPositive;
@@ -97,16 +101,21 @@ function DeltaPill({
 				styles,
 				className,
 			)}
-			aria-label={`Change ${value}`}
+			aria-label={`Change ${format.number(value)} percent`}
 		>
 			<Icon className="h-3.5 w-3.5" aria-hidden />
-			{value}
+			{value >= 0 ? "+" : "-"}
+			{format.number(Math.abs(value), {
+				minimumFractionDigits: 1,
+				maximumFractionDigits: 1,
+			})}%
 		</span>
 	);
 }
 
 function PerformanceCard({
 	title,
+	metric,
 	value,
 	delta,
 	trend,
@@ -115,15 +124,17 @@ function PerformanceCard({
 	children,
 }: {
 	title: string;
-	value: string;
-	delta?: string;
+	metric: MetricKey;
+	value: number | null;
+	delta?: number | null;
 	trend?: Trend;
 	invertDeltaColors?: boolean;
 	helpText?: string;
 	children: React.ReactNode;
 }) {
-	const isEmpty = value.trim() === "--" || value.trim() === "-";
-	const displayValue = isEmpty ? "-" : value;
+	const format = useDisplayFormatters();
+	const isEmpty = value == null || !Number.isFinite(value);
+	const displayValue = isEmpty ? "-" : formatMetricValue(metric, value, format.number);
 
 	return (
 		<div className="space-y-4 px-0 py-4 md:px-6">
@@ -135,7 +146,7 @@ function PerformanceCard({
 					<span className="text-3xl font-semibold tracking-tight leading-none text-foreground">
 						{displayValue}
 					</span>
-					{!isEmpty && delta ? (
+					{!isEmpty && delta != null ? (
 						<DeltaPill
 							value={delta}
 							trend={trend ?? "neutral"}
@@ -161,10 +172,11 @@ function MiniModelLeaderboard({
 	locale: string;
 }) {
 	const t = useTranslations("Catalogue.providers");
+	const format = useDisplayFormatters();
 	return (
 		<div className="mt-3">
 			<div className="mb-2 text-center text-xs text-muted-foreground">
-				{formatBucketDate(dateLabel, locale)}
+				{format.calendarDate(dateLabel, "")}
 			</div>
 			{items.length > 0 ? (
 				<div className="space-y-1.5">
@@ -182,7 +194,7 @@ function MiniModelLeaderboard({
 							<div className="inline-flex items-baseline gap-1 justify-self-end">
 								<span className="text-[11px] text-muted-foreground">{t("averageAbbreviation")}</span>
 								<span className="text-sm font-medium text-foreground">
-									{formatMetricValue(metric, item.value)}
+									{formatMetricValue(metric, item.value, format.number)}
 								</span>
 							</div>
 						</div>
@@ -294,6 +306,7 @@ function PerformanceCardsWithData({
 		<div className="grid grid-cols-1 divide-y divide-border/70 overflow-hidden rounded-lg border border-border/70 bg-background md:grid-cols-3 md:divide-x md:divide-y-0 *:min-w-0">
 			<PerformanceCard
 				title={summary.throughput.title}
+				metric="throughput"
 				value={summary.throughput.value}
 				delta={summary.throughput.delta}
 				trend={summary.throughput.trend}
@@ -314,6 +327,7 @@ function PerformanceCardsWithData({
 
 			<PerformanceCard
 				title={summary.latency.title}
+				metric="latency"
 				value={summary.latency.value}
 				delta={summary.latency.delta}
 				trend={summary.latency.trend}
@@ -335,6 +349,7 @@ function PerformanceCardsWithData({
 
 			<PerformanceCard
 				title={summary.e2e.title}
+				metric="e2e"
 				value={summary.e2e.value}
 				delta={summary.e2e.delta}
 				trend={summary.e2e.trend}

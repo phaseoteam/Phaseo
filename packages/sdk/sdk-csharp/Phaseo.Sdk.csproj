@@ -6,7 +6,7 @@
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
 
     <PackageId>Phaseo.Sdk</PackageId>
-    <Version>2.1.0</Version>
+    <Version>3.0.0</Version>
     <Authors>Phaseo</Authors>
     <Company>Phaseo</Company>
     <Description>Official Phaseo SDK for .NET.</Description>
@@ -24,6 +24,8 @@
   <ItemGroup>
     <Compile Include="Client.cs" />
     <Compile Include="Devtools.cs" />
+    <Compile Include="ParameterSupport.cs" />
+    <Compile Include="Workflows.cs" />
     <Compile Include="src\gen\**\*.cs" />
   </ItemGroup>
 

@@ -1,4 +1,5 @@
 "use client";
+import { useInvalidatePrivateSettings } from "../PrivateSettingsQuery";
 
 import React, { useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
@@ -157,6 +158,7 @@ export default function EditKeyItem({
 }) {
 	const t = useTranslations("SettingsUI");
 	const [internalOpen, setInternalOpen] = useState(false);
+	const invalidateSettings = useInvalidatePrivateSettings();
 	const open = controlledOpen ?? internalOpen;
 	const setOpen = onOpenChange ?? setInternalOpen;
 	const [name, setName] = useState(String(k?.name ?? ""));
@@ -186,20 +188,27 @@ export default function EditKeyItem({
 		if (!limitPayload) return;
 
 		setSaving(true);
+		const updates = [
+			updateApiKeyAction(k.id, { name: trimmedName, paused: !enabled }),
+			updateKeyLimitsAction(k.id, limitPayload),
+		];
+		const promise = Promise.all(updates);
 		try {
 			await toast.promise(
-				Promise.all([
-					updateApiKeyAction(k.id, { name: trimmedName, paused: !enabled }),
-					updateKeyLimitsAction(k.id, limitPayload),
-				]),
+				promise,
 				{
 					loading: t("strings.Saving key..." as never),
 					success: t("strings.Key updated" as never),
 					error: (error) => localizedSettingsError(error, t, "Failed to update key"),
 				},
 			);
+			await promise;
 			setOpen(false);
+		} catch {
+			// The toast reports the mutation error; keep the dialog open.
 		} finally {
+			await Promise.allSettled(updates);
+			void invalidateSettings();
 			setSaving(false);
 		}
 	}

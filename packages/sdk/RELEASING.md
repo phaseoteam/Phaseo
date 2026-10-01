@@ -4,9 +4,9 @@ This repo uses a hybrid release model:
 
 - TypeScript, TypeScript Agent SDK, and Python are auto-released from CI.
 - Python, Go, PHP, and Ruby Agent SDKs publish through the dedicated Agent SDK workflow; C# shares the existing trusted NuGet workflow; Rust uses its own ordered crates.io workflow.
-- Go/C#/Java/PHP/Ruby publish automatically when their committed package version changes on `main`.
+- Go/C#/Java/PHP/Ruby publish automatically when their committed package version changes on `main`. Java publishes both the core and Agent SDKs.
 - Their workflows also support manual dispatch for safe, idempotent recovery.
-- C++ remains excluded until functional end-to-end; Java remains a work in progress until Maven Central credentials are configured.
+- C++ remains excluded until functional end-to-end.
 - Manual SDK release readiness can be checked with `.github/workflows/sdk-publish-readiness.yml`.
 
 ## Canonical Distribution Targets
@@ -15,11 +15,12 @@ This repo uses a hybrid release model:
 - TypeScript Agent SDK (`@phaseo/agent-sdk`) -> npm
 - Python (`phaseo`) -> PyPI
 - Python Agent SDK (`phaseo-agent-sdk`) -> PyPI
-- Go (`github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v2`) -> Go proxy (`pkg.go.dev`) via git tags
+- Go (`github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3`) -> Go proxy (`pkg.go.dev`) via git tags
 - Go Agent SDK (`github.com/phaseoteam/Phaseo/packages/sdk/agent-sdk-go`) -> Go proxy via git tags
 - C# (`Phaseo.Sdk`) -> NuGet
 - C# Agent SDK (`Phaseo.AgentSdk`) -> NuGet
 - Java (`app.phaseo:phaseo-sdk`) -> Maven Central
+- Java Agent SDK (`app.phaseo:phaseo-agent-sdk`) -> Maven Central
 - PHP (`phaseo/sdk`) -> Packagist
 - PHP Agent SDK (`phaseo/agent-sdk`) -> Packagist
 - Ruby (`phaseo_sdk`) -> RubyGems
@@ -80,6 +81,20 @@ General policy:
 - `minor`: backward-compatible feature additions (new optional params/endpoints).
 - `major`: breaking changes (removed/renamed params, signature/shape breaks).
 
+For the pre-1.0 Rust core and Agent SDKs, incompatible changes advance the minor version. A `1.0.0` release is a separate decision to commit to a stable public API.
+
+## Coordinated Core v3 Release
+
+- Core TypeScript, Python, Go, C#, Java, PHP and Ruby SDKs move to `3.0.0` because the native model discovery contract changes. Consumers should review the `providers` to `offers` migration and the updated lifecycle fields before upgrading.
+- Rust core and Agent SDKs move to `0.2.0`; the other Agent SDKs move to `0.3.0` alongside their core dependencies.
+- The AI SDK provider moves to `2.0.0` for AI SDK 7 / ProviderV4 and Node.js 22 requirements.
+- `changeset:version` synchronizes language Agent SDK manifests, core dependency constraints and attribution headers. Private `package.json` files track versions for the native-language packages; they are not npm distributions.
+- Go major versions also update the module declaration, dependent imports, examples and documentation. Model constants are regenerated from the canonical generator. The core v3 import path ends in `/v3`.
+- The Go workspace and C# project reference allow local tests against unpublished core releases. The packed C# Agent SDK retains a NuGet dependency on `Phaseo.Sdk` at the core project's version.
+- `sdk:check-version-literals` exercises version synchronization in an isolated fixture. `packages:pack:ts` installs the actual tarball offline and checks all ESM/CommonJS entrypoints and TypeScript declarations.
+
+Before merging the version PR, run SDK Publish Readiness with secret checks enabled. Maven Central publishing requires its four documented credentials in the `release` environment. A passing package build does not verify registry credentials or OIDC publisher registration.
+
 ## Language SDK Publish Workflows
 
 - Agent SDKs: `.github/workflows/publish-agent-sdks.yml`
@@ -111,7 +126,10 @@ General policy:
   - Optional repo variable: `NUGET_TRUSTED_PUBLISHING_USER` (defaults to repo owner)
 
 - Java: `.github/workflows/publish-sdk-java.yml`
-  - Builds/signs and deploys to Maven Central
+  - Tests and packages core and Agent SDKs on relevant pull requests, without release secrets
+  - Builds/signs and deploys core before Agent to Maven Central on `main`
+  - Checks each artifact independently and skips published versions, including when only the Agent SDK needs publishing
+  - Runs when either package version or the publishing workflow changes; manual dispatch checks the optional core version against the committed manifest
   - Required secrets:
     - `MAVEN_CENTRAL_USERNAME`
     - `MAVEN_CENTRAL_PASSWORD`

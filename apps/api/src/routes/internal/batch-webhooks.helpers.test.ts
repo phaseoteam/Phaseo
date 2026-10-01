@@ -430,10 +430,10 @@ describe("batch webhook helpers", () => {
 		});
 	});
 
-	it("maps expired OpenAI batches to failed user-webhook phase", () => {
+	it("maps expired OpenAI batches to the expired user-webhook phase", () => {
 		expect(mapOpenAiBatchTerminal("batch.expired", { data: { status: "expired" } })).toEqual({
 			status: "expired",
-			phase: "failed",
+			phase: "expired",
 		});
 		expect(mapOpenAiBatchTerminal("batch.canceled", { data: { status: "canceled" } })).toEqual({
 			status: "cancelled",

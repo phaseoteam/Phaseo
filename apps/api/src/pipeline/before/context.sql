@@ -3,7 +3,7 @@ declare
   key_status          jsonb;
   key_limit_status    jsonb;
   workspace_budget_status jsonb;
-  min_balance_nanos   bigint := 1000000000; -- 1.00 USD
+  min_balance_nanos   bigint := case when endpoint like 'video.%' or endpoint like 'batch%' then 1000000000 else 100000000 end;
 
   providers           jsonb;
   pricing             jsonb;
@@ -237,7 +237,8 @@ begin
   from public.gateway_requests gr
   where gr.key_id  = gateway_fetch_request_context.api_key_id
     and gr.workspace_id = gateway_fetch_request_context.workspace_id
-    and gr.success is true;
+    and gr.success is true
+    and gr.created_at >= month_start;
 
   if v_soft_blocked then
     within_limits := false;
@@ -457,7 +458,17 @@ begin
       m.provider_id,
       m.api_model_id,
       m.provider_model_slug,
+      coalesce(
+        (select route.metadata -> 'availability'
+         from public.v2_model_provider_routes route
+         where route.provider_model_id = m.provider_api_model_id
+           and jsonb_typeof(route.metadata -> 'availability') = 'object'
+           and (route.metadata -> 'availability' ->> 'mode') in ('allowlist', 'blocklist')
+           and jsonb_typeof(route.metadata -> 'availability' -> 'countries') = 'array'),
+        p.metadata -> 'availability'
+      ) as availability,
       m.routing_status as model_status,
+      coalesce((m.metadata->>'external_routing_override')::boolean, false) as external_routing_override,
       m.input_modalities,
       m.output_modalities,
       p.prompt_training_policy,
@@ -478,7 +489,7 @@ begin
       select provider_model_id as provider_api_model_id, provider_slug as provider_id,
         model_slug as api_model_id, model_slug as model_id, provider_model_slug,
         routing_enabled as is_active_gateway, status as routing_status,
-        input_modalities, output_modalities, effective_from, effective_to
+        input_modalities, output_modalities, effective_from, effective_to, metadata
       from public.v2_model_provider_routes
     ) m
     join (
@@ -499,6 +510,10 @@ begin
       and c.capability_id = gateway_fetch_request_context.endpoint
       and c.status in ('active', 'deranked', 'deranked_lvl1', 'deranked_lvl2', 'deranked_lvl3')
       and m.is_active_gateway
+      and (
+        p.status <> 'external'
+        or coalesce((m.metadata->>'external_routing_override')::boolean, false)
+      )
       and (m.effective_from is null or m.effective_from <= now() at time zone 'utc')
       and (m.effective_to   is null or (now() at time zone 'utc') < m.effective_to)
     order by m.provider_api_model_id, coalesce(c.updated_at, c.created_at) desc
@@ -511,7 +526,9 @@ begin
           'api_model_id', pr.api_model_id,
           'pricing_key', pr.provider_id,
           'provider_model_slug', pr.provider_model_slug,
+          'availability', pr.availability,
           'model_status', pr.model_status,
+          'external_routing_override', pr.external_routing_override,
           'input_modalities', pr.input_modalities,
           'output_modalities', pr.output_modalities,
           'prompt_training_policy', coalesce(pr.prompt_training_policy, 'unknown'),
@@ -578,7 +595,7 @@ begin
               where sku.status = 'active' and meter.billable
             ) r
             -- TODO: Redesign pricing selection to key on provider_api_model_id or
-            -- explicit variant metadata so provider-only SKUs (for example CrofAI
+            -- explicit variant metadata so provider-only SKUs (for example
             -- precision tiers) can share a parent internal model without forcing
             -- distinct api_model_id values just to preserve pricing separation.
             where r.model_key =

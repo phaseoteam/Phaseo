@@ -67,6 +67,7 @@ public final class Models {
 		public Object provider;
 		public Object provider_options;
 		public Object reasoning;
+		public Object service_tier;
 		public String session_id;
 		public java.util.List<String> stop_sequences;
 		public Boolean stream;
@@ -91,6 +92,7 @@ public final class Models {
 	}
 
 	public static class AnthropicTool {
+		public Boolean async;
 		public String description;
 		public Object input_schema;
 		public String name;
@@ -301,10 +303,12 @@ public final class Models {
 	}
 
 	public static class AudioSpeechRequest {
+		public Object config;
 		public Object format;
 		public String input;
 		public String model;
 		public Object provider;
+		public Double speed;
 		public String voice;
 	}
 
@@ -418,6 +422,7 @@ public final class Models {
 		public String model;
 		public java.util.List<String> prompts;
 		public Object provider;
+		public Object provider_options;
 		public java.util.List<Object> requests;
 		public String session_id;
 		public String system;
@@ -496,6 +501,7 @@ public final class Models {
 		public String provider;
 		public Object request_counts;
 		public String request_id;
+		public String results_url;
 		public String session_id;
 		public String status;
 		public Object usage;
@@ -695,6 +701,53 @@ public final class Models {
 		public Boolean return_upstream_response;
 		public Boolean trace;
 		public Object trace_level;
+	}
+
+	public static class DecisionChoiceQuestion {
+		public Object criteria;
+		public Object instructions;
+		public Object type;
+	}
+
+	public static class DecisionInstructions {
+	}
+
+	public static class DecisionNoulQuestion {
+		public Object criteria;
+		public Object instructions;
+		public Object type;
+	}
+
+	public static class DecisionScoreQuestion {
+		public java.util.List<String> criteria;
+		public Object instructions;
+		public Object type;
+	}
+
+	public static class DecisionsRequest {
+		public Object debug;
+		public Boolean echo_upstream_request;
+		public Boolean meta;
+		public Object metadata;
+		public String model;
+		public Object provider;
+		public Object questions;
+		public Object routing;
+		public Object state;
+	}
+
+	public static class DecisionsResponse {
+		public Object answers;
+		public Object meta;
+		public String model;
+		public String request_id;
+		public Object usage;
+	}
+
+	public static class DecisionsUsage {
+		public Integer input_tokens;
+		public Integer output_tokens;
+		public Integer total_tokens;
 	}
 
 	public static class DeletedResponse {
@@ -944,6 +997,7 @@ public final class Models {
 	}
 
 	public static class FunctionToolDefinition {
+		public Boolean async;
 		public Object function;
 		public Object type;
 	}
@@ -1185,9 +1239,12 @@ public final class Models {
 	}
 
 	public static class GatewayWebSearchToolDefinition {
+		public Object engine;
 		public Boolean include_highlights;
 		public Boolean include_text;
+		public String language;
 		public Integer max_results;
+		public Integer page;
 		public Object parameters;
 		public Object type;
 	}
@@ -1423,14 +1480,23 @@ public final class Models {
 	}
 
 	public static class ImagesEditRequest {
-		public String image;
+		public Object background;
+		public Object image;
+		public Object input_fidelity;
 		public String mask;
 		public Boolean meta;
 		public String model;
+		public Object moderation;
 		public Integer n;
+		public Integer output_compression;
+		public Object output_format;
+		public Integer partial_images;
 		public String prompt;
 		public Object provider;
+		public Object quality;
+		public String resolution;
 		public String size;
+		public Boolean stream;
 		public Boolean usage;
 		public String user;
 	}
@@ -1441,13 +1507,20 @@ public final class Models {
 	}
 
 	public static class ImagesGenerationRequest {
+		public Object background;
 		public String model;
+		public Object moderation;
 		public Integer n;
+		public Integer output_compression;
+		public Object output_format;
+		public Integer partial_images;
 		public String prompt;
 		public Object provider;
 		public String quality;
+		public String resolution;
 		public String response_format;
 		public String size;
+		public Boolean stream;
 		public String style;
 		public String user;
 	}
@@ -1994,6 +2067,14 @@ public final class Models {
 	public static class OcrResponse {
 	}
 
+	public static class OpenAIReasoningConfig {
+		public Object effort;
+		public Boolean enabled;
+		public Integer max_tokens;
+		public Object mode;
+		public Object summary;
+	}
+
 	public static class OrganisationId {
 	}
 
@@ -2206,6 +2287,79 @@ public final class Models {
 	}
 
 	public static class PresetVisibility {
+	}
+
+	public static class PrivateModel {
+		public String base_url;
+		public String catalog_model_id;
+		public Integer context_length;
+		public String created_at;
+		public String created_by;
+		public String credential_prefix;
+		public String credential_suffix;
+		public String custom_provider_name;
+		public String custom_provider_url;
+		public String description;
+		public Boolean enabled;
+		public String host_provider_id;
+		public String id;
+		public java.util.List<String> input_modalities;
+		public String local_slug;
+		public Integer max_output_tokens;
+		public String model_id;
+		public String name;
+		public java.util.List<String> output_modalities;
+		public Object routing_policy;
+		public Boolean supports_responses;
+		public String updated_at;
+		public String upstream_model_id;
+		public String workspace_id;
+	}
+
+	public static class PrivateModelCreateRequest {
+		public String base_url;
+		public Integer context_length;
+		public String credential;
+		public String custom_provider_name;
+		public String custom_provider_url;
+		public String description;
+		public Boolean enabled;
+		public String host_provider_id;
+		public Integer max_output_tokens;
+		public String model_reference;
+		public String name;
+		public Object routing_policy;
+		public Boolean supports_responses;
+		public String upstream_model_id;
+	}
+
+	public static class PrivateModelDeleteResponse {
+		public Boolean deleted;
+	}
+
+	public static class PrivateModelListResponse {
+		public java.util.List<Object> data;
+	}
+
+	public static class PrivateModelResponse {
+		public Object data;
+	}
+
+	public static class PrivateModelUpdateRequest {
+		public String base_url;
+		public Integer context_length;
+		public String credential;
+		public String custom_provider_name;
+		public String custom_provider_url;
+		public String description;
+		public Boolean enabled;
+		public String host_provider_id;
+		public Integer max_output_tokens;
+		public String model_reference;
+		public String name;
+		public Object routing_policy;
+		public Boolean supports_responses;
+		public String upstream_model_id;
 	}
 
 	public static class Provider {
@@ -2507,6 +2661,53 @@ public final class Models {
 	public static class SupportedParameterDetails {
 	}
 
+	public static class SystemOneChoiceQuestion {
+		public Object criteria;
+		public Object instructions;
+		public Object type;
+	}
+
+	public static class SystemOneInstructions {
+	}
+
+	public static class SystemOneNoulQuestion {
+		public Object criteria;
+		public Object instructions;
+		public Object type;
+	}
+
+	public static class SystemOneRequest {
+		public Object debug;
+		public Boolean echo_upstream_request;
+		public Boolean meta;
+		public Object metadata;
+		public String model;
+		public Object provider;
+		public Object questions;
+		public Object routing;
+		public Object state;
+	}
+
+	public static class SystemOneResponse {
+		public Object answers;
+		public Object meta;
+		public String model;
+		public String request_id;
+		public Object usage;
+	}
+
+	public static class SystemOneScoreQuestion {
+		public java.util.List<String> criteria;
+		public Object instructions;
+		public Object type;
+	}
+
+	public static class SystemOneUsage {
+		public Integer input_tokens;
+		public Integer output_tokens;
+		public Integer total_tokens;
+	}
+
 	public static class TextContentPart {
 		public String text;
 		public Object type;
@@ -2580,6 +2781,7 @@ public final class Models {
 		public Integer compression_quality;
 		public Integer duration;
 		public Boolean enhance_prompt;
+		public java.util.List<Object> frame_images;
 		public Boolean generate_audio;
 		public Double input_audio_duration;
 		public java.util.List<Object> input_references;
@@ -2590,6 +2792,7 @@ public final class Models {
 		public String person_generation;
 		public String prompt;
 		public Object provider;
+		public Object provider_options;
 		public Object provider_params;
 		public String resize_mode;
 		public String resolution;
@@ -2693,7 +2896,7 @@ public final class Models {
 		public String createdAt;
 		public String createdBy;
 		public String deletedAt;
-		public java.util.List<String> events;
+		public java.util.List<Object> events;
 		public Boolean hasSecret;
 		public String id;
 		public String name;
@@ -2704,7 +2907,7 @@ public final class Models {
 	}
 
 	public static class WebhookEndpointCreateRequest {
-		public java.util.List<String> events;
+		public java.util.List<Object> events;
 		public String name;
 		public String url;
 	}
@@ -2715,8 +2918,11 @@ public final class Models {
 		public Object object;
 	}
 
+	public static class WebhookEndpointEvent {
+	}
+
 	public static class WebhookEndpointInput {
-		public java.util.List<String> events;
+		public java.util.List<Object> events;
 		public String name;
 		public String url;
 	}
@@ -2741,8 +2947,16 @@ public final class Models {
 		public String workspaceId;
 	}
 
+	public static class WebhookEndpointTestResponse {
+		public String error;
+		public String event_id;
+		public Boolean ok;
+		public String response_body_preview;
+		public Integer status_code;
+	}
+
 	public static class WebhookEndpointUpdateRequest {
-		public java.util.List<String> events;
+		public java.util.List<Object> events;
 		public String name;
 		public Object status;
 		public String url;
@@ -2883,6 +3097,8 @@ public final class Models {
 		public Integer amount_nanos;
 		public Integer balance_threshold_nanos;
 		public Boolean enabled;
+		public Boolean mfa_bypass_acknowledged;
+		public String mfa_bypass_phrase;
 		public String payment_method_id;
 	}
 

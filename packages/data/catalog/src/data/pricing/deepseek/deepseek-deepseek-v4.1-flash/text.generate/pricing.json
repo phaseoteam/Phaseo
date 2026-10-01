@@ -1,0 +1,159 @@
+{
+  "key": "deepseek:deepseek/deepseek-v4.1-flash:text.generate",
+  "api_provider_id": "deepseek",
+  "provider_slug": "deepseek",
+  "api_model_id": "deepseek/deepseek-v4.1-flash",
+  "capability_id": "text.generate",
+  "rules": [
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.22,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Limited beta pricing mirrors the current Flash-series rate until the scheduled 2026-09-10 change.",
+      "match": [],
+      "priority": 100,
+      "billing_timestamp_basis": "provider_accept",
+      "time_windows": [
+        { "label": "peak", "timezone": "UTC", "days_of_week": ["mon", "tue", "wed", "thu", "fri"], "start_time": "01:00", "end_time": "04:00", "price_per_unit": 0.44 },
+        { "label": "peak", "timezone": "UTC", "days_of_week": ["mon", "tue", "wed", "thu", "fri"], "start_time": "06:00", "end_time": "10:00", "price_per_unit": 0.44 }
+      ],
+      "effective_from": "2026-09-08T00:00:00Z",
+      "effective_to": "2026-09-10T04:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": "https://api-docs.deepseek.com/quick_start/pricing/"
+    },
+    {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.007,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Limited beta pricing mirrors the current Flash-series rate until the scheduled 2026-09-10 change.",
+      "match": [],
+      "priority": 100,
+      "billing_timestamp_basis": "provider_accept",
+      "time_windows": [
+        { "label": "peak", "timezone": "UTC", "days_of_week": ["mon", "tue", "wed", "thu", "fri"], "start_time": "01:00", "end_time": "04:00", "price_per_unit": 0.014 },
+        { "label": "peak", "timezone": "UTC", "days_of_week": ["mon", "tue", "wed", "thu", "fri"], "start_time": "06:00", "end_time": "10:00", "price_per_unit": 0.014 }
+      ],
+      "effective_from": "2026-09-08T00:00:00Z",
+      "effective_to": "2026-09-10T04:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": "https://api-docs.deepseek.com/quick_start/pricing/"
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.66,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Limited beta pricing mirrors the current Flash-series rate until the scheduled 2026-09-10 change.",
+      "match": [],
+      "priority": 100,
+      "billing_timestamp_basis": "provider_accept",
+      "time_windows": [
+        { "label": "peak", "timezone": "UTC", "days_of_week": ["mon", "tue", "wed", "thu", "fri"], "start_time": "01:00", "end_time": "04:00", "price_per_unit": 1.32 },
+        { "label": "peak", "timezone": "UTC", "days_of_week": ["mon", "tue", "wed", "thu", "fri"], "start_time": "06:00", "end_time": "10:00", "price_per_unit": 1.32 }
+      ],
+      "effective_from": "2026-09-08T00:00:00Z",
+      "effective_to": "2026-09-10T04:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": "https://api-docs.deepseek.com/quick_start/pricing/"
+    },
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.15,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Provider notice supplied 2026-09-08: scheduled Flash-series pricing from 12:00 Beijing time on 2026-09-10.",
+      "match": [],
+      "priority": 100,
+      "billing_timestamp_basis": "provider_accept",
+      "time_windows": [
+        { "label": "peak", "timezone": "UTC", "days_of_week": ["mon", "tue", "wed", "thu", "fri"], "start_time": "01:00", "end_time": "04:00", "price_per_unit": 0.3 },
+        { "label": "peak", "timezone": "UTC", "days_of_week": ["mon", "tue", "wed", "thu", "fri"], "start_time": "06:00", "end_time": "10:00", "price_per_unit": 0.3 }
+      ],
+      "effective_from": "2026-09-10T04:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": "https://api-docs.deepseek.com/quick_start/pricing/"
+    },
+    {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.003,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Provider notice supplied 2026-09-08: scheduled Flash-series pricing from 12:00 Beijing time on 2026-09-10.",
+      "match": [],
+      "priority": 100,
+      "billing_timestamp_basis": "provider_accept",
+      "time_windows": [
+        { "label": "peak", "timezone": "UTC", "days_of_week": ["mon", "tue", "wed", "thu", "fri"], "start_time": "01:00", "end_time": "04:00", "price_per_unit": 0.006 },
+        { "label": "peak", "timezone": "UTC", "days_of_week": ["mon", "tue", "wed", "thu", "fri"], "start_time": "06:00", "end_time": "10:00", "price_per_unit": 0.006 }
+      ],
+      "effective_from": "2026-09-10T04:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": "https://api-docs.deepseek.com/quick_start/pricing/"
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.6,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Provider notice supplied 2026-09-08: scheduled Flash-series pricing from 12:00 Beijing time on 2026-09-10.",
+      "match": [],
+      "priority": 100,
+      "billing_timestamp_basis": "provider_accept",
+      "time_windows": [
+        { "label": "peak", "timezone": "UTC", "days_of_week": ["mon", "tue", "wed", "thu", "fri"], "start_time": "01:00", "end_time": "04:00", "price_per_unit": 1.2 },
+        { "label": "peak", "timezone": "UTC", "days_of_week": ["mon", "tue", "wed", "thu", "fri"], "start_time": "06:00", "end_time": "10:00", "price_per_unit": 1.2 }
+      ],
+      "effective_from": "2026-09-10T04:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": "https://api-docs.deepseek.com/quick_start/pricing/"
+    }
+  ],
+  "regions": [],
+  "service_tiers": ["standard"],
+  "sources": [
+    {
+      "kind": "pricing",
+      "url": "https://api-docs.deepseek.com/quick_start/pricing/",
+      "accessed_at": "2026-09-08T00:00:00Z",
+      "notes": "The public pricing page lists the current Flash-series schedule; the September 10 rates are transcribed from the provider notice supplied on 2026-09-08."
+    },
+    {
+      "kind": "announcement",
+      "url": "https://36kr.com/p/3974654461604357",
+      "accessed_at": "2026-09-08T00:00:00Z",
+      "notes": "Reports the limited DeepSeek V4.1 Flash beta and its temporary API route."
+    }
+  ],
+  "verification": {
+    "status": "partial",
+    "checked_at": "2026-09-08T00:00:00Z",
+    "notes": "The model and future rates are tracked as a pre-release catalog entry pending an official public model page."
+  }
+}

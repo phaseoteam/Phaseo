@@ -12,6 +12,45 @@ function makeTiming() {
 }
 
 describe("guardAllFailed", () => {
+	it("returns 429 and the earliest reset when every provider is locally capacity limited", async () => {
+		const ctx: any = {
+			model: "openai/gpt-4.1-mini",
+			endpoint: "responses",
+			requestId: "req_capacity",
+			attemptErrors: [
+				{ provider: "openai", type: "provider_rate_limited", status: 429, upstream_rate_limit_headers: { "Retry-After": "40" } },
+				{ provider: "azure", type: "provider_rate_limited", status: 429, upstream_rate_limit_headers: { "Retry-After": "12" } },
+			],
+		};
+
+		const result = await guardAllFailed(ctx, makeTiming());
+		expect(result.ok).toBe(false);
+		if (result.ok) return;
+		expect(result.response.status).toBe(429);
+		expect(result.response.headers.get("Retry-After")).toBe("12");
+		expect(await result.response.json()).toMatchObject({
+			error: "provider_capacity_exhausted",
+			reason: "all_candidates_rate_limited",
+			failed_providers: ["openai", "azure"],
+		});
+	});
+
+	it("does not expose provider identities for stealth capacity limits", async () => {
+		const ctx: any = {
+			model: "stealth/test-model-20260827",
+			requestedModel: "stealth/test-model-20260827",
+			endpoint: "responses",
+			requestId: "req_stealth_capacity",
+			attemptErrors: [{ provider: "secret-provider", type: "provider_rate_limited", status: 429 }],
+		};
+		const result = await guardAllFailed(ctx, makeTiming());
+		expect(result.ok).toBe(false);
+		if (result.ok) return;
+		const payload = await result.response.json();
+		expect(result.response.status).toBe(429);
+		expect(JSON.stringify(payload)).not.toContain("secret-provider");
+	});
+
 	it("hides every provider failure detail for stealth models", async () => {
 		const ctx: any = {
 			model: "stealth/test-model-20260827",

@@ -141,13 +141,6 @@ export const PLATFORM_DISCOVERY_RULES: PlatformDiscoveryRule[] = [
         active: true,
     },
     {
-        platformId: "crofai",
-        platformName: "CrofAI",
-        providerIds: ["crofai"],
-        modelsEndpoint: "https://crof.ai/v1/models",
-        active: true,
-    },
-    {
         platformId: "crusoe",
         platformName: "Crusoe",
         providerIds: ["crusoe"],
@@ -409,6 +402,13 @@ export const PLATFORM_DISCOVERY_RULES: PlatformDiscoveryRule[] = [
         platformName: "Together",
         providerIds: ["together"],
         modelsEndpoint: "https://api.together.ai/v1/models",
+        active: true,
+    },
+    {
+        platformId: "typesafe",
+        platformName: "TypeSafe",
+        providerIds: ["typesafe"],
+        modelsEndpoint: "https://api.typesafe.ai/v1/models",
         active: true,
     },
     {

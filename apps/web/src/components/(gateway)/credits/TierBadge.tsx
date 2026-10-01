@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/hover-card";
 import { ArrowUpRight } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 
 const HIDE_ENTERPRISE_REFERENCES = true;
 
@@ -38,6 +39,13 @@ export function TierBadge({
 	topTier = false,
 }: TierBadgeProps) {
 	const t = useTranslations("SettingsUI.credits");
+	const format = useDisplayFormatters();
+	const percent = (value: number) =>
+		format.number(value, {
+			minimumFractionDigits: 1,
+			maximumFractionDigits: 1,
+			notation: "standard",
+		});
 	const hasSavings = savingsPoints > 0;
 	const displayTierName = HIDE_ENTERPRISE_REFERENCES ? t("standard") : tierName;
 	const showNextTierHint =
@@ -54,7 +62,7 @@ export function TierBadge({
 						variant="secondary"
 						className="flex items-center gap-1 rounded-full bg-white/70 px-2 py-0 text-[11px] text-indigo-800 shadow-sm dark:bg-zinc-900/70 dark:text-indigo-200"
 					>
-						{feePct.toFixed(1)}%
+						{percent(feePct)}%
 						<ArrowUpRight className="h-3 w-3" aria-hidden />
 					</Badge>
 				</Link>
@@ -67,9 +75,9 @@ export function TierBadge({
 							{t("currentTierLower")}: {displayTierName}
 						</div>
 						<div className="text-xs text-muted-foreground">
-							{t("topUpFee")}: {feePct.toFixed(1)}%{" "}
+							{t("topUpFee")}: {percent(feePct)}%{" "}
 							{hasSavings
-								? `(${t("saveVsBasic", { percent: savingsPoints.toFixed(1) })})`
+								? `(${t("saveVsBasic", { percent: percent(savingsPoints) })})`
 								: ""}
 						</div>
 					</div>
@@ -99,10 +107,10 @@ export function TierBadge({
 											{" "}
 											(
 											{t("topUpFeePercent", {
-												percent: nextFeePct.toFixed(1),
+												percent: percent(nextFeePct),
 											})}
 											{nextDiscountDelta
-												? `, ${t("saveVsBasic", { percent: nextDiscountDelta.toFixed(1) })}`
+												? `, ${t("saveVsBasic", { percent: percent(nextDiscountDelta) })}`
 												: ""}
 											)
 										</>

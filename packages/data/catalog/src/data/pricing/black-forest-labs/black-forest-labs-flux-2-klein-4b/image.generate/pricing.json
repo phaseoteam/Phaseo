@@ -12,23 +12,26 @@
       "price_per_unit": 0.01,
       "currency": "USD",
       "pricing_plan": "standard",
-      "note": null,
       "match": [],
       "priority": 100,
-      "region": null,
-      "cache_duration_seconds": null,
-      "conditions": [],
-      "source": null
+      "source": "https://docs.bfl.ai/quick_start/pricing"
     }
   ],
   "regions": [],
   "service_tiers": [
     "standard"
   ],
-  "sources": [],
+  "sources": [
+    {
+      "kind": "pricing",
+      "url": "https://docs.bfl.ai/quick_start/pricing",
+      "accessed_at": "2026-09-07T00:00:00Z",
+      "notes": "One BFL credit equals $0.01. Native settled credit usage includes all image dimensions."
+    }
+  ],
   "verification": {
-    "status": "unverified",
-    "checked_at": null,
-    "notes": null
+    "status": "verified",
+    "checked_at": "2026-09-07T00:00:00Z",
+    "notes": "Use authoritative credit usage from the native result; do not estimate megapixels as image count."
   }
 }

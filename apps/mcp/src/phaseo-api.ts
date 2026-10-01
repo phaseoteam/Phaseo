@@ -1,6 +1,7 @@
 export type PhaseoEnv = Cloudflare.Env & {
 	PHASEO_MCP_RESOURCE_SERVER_SECRET: string;
 	OPENAI_APPS_CHALLENGE_TOKEN?: string;
+	PHASEO_WEB_BASE_URL: string;
 };
 
 export type GatewayMeter = {
@@ -16,6 +17,14 @@ export type GatewayModel = {
 	name: string;
 	description: string | null;
 	organization: { id: string; name: string | null; color: string | null } | null;
+	lifecycle: {
+		status: "active" | "deprecated" | "retired" | null;
+		released_at: string | null;
+		deprecated_at: string | null;
+		retires_at: string | null;
+		replacement_id: string | null;
+		message: string | null;
+	};
 	modalities: { input: string[]; output: string[] };
 	limits: { input_tokens: number | null; output_tokens: number | null };
 	capabilities: {
@@ -41,7 +50,14 @@ export type GatewayModel = {
 	}>;
 };
 
-type ModelsResponse = { ok: boolean; models?: GatewayModel[]; message?: string };
+type ModelsResponse = {
+	ok: boolean;
+	models?: GatewayModel[];
+	message?: string;
+	total?: number;
+	limit?: number;
+	offset?: number;
+};
 type ProvidersResponse = {
 	ok: boolean;
 	providers?: Array<{
@@ -53,6 +69,27 @@ type ProvidersResponse = {
 	}>;
 	message?: string;
 };
+
+export type BenchmarkRanking = {
+	benchmark_id: string;
+	name: string;
+	category: string | null;
+	benchmark_type: string | null;
+	lower_is_better: boolean;
+	total_models: number | null;
+	entries: Array<{
+		model_id: string;
+		model_name: string;
+		organisation_id: string | null;
+		organisation_name: string | null;
+		score: number;
+		rank: number;
+		source_link: string | null;
+		updated_at: string | null;
+	}>;
+};
+
+type BenchmarkRankingsResponse = { benchmarks?: BenchmarkRanking[]; error?: string };
 
 export class PhaseoApiError extends Error {
 	constructor(message: string, readonly status?: number) {
@@ -129,10 +166,76 @@ export async function readControlPlane(
 	return requestPhaseo<Record<string, unknown>>(env, path, { credentials, query });
 }
 
+export type ModelSearchOptions = {
+	query?: string;
+	provider?: string;
+	modality?: "text" | "image" | "audio" | "video";
+	minimumContextTokens?: number;
+	maximumInputPricePerMillion?: number;
+	gatewayAvailableOnly?: boolean;
+	sortBy?: "relevance" | "input_price" | "output_price" | "context_length" | "provider_count";
+	sortOrder?: "asc" | "desc";
+	limit?: number;
+};
+
 export async function listModels(env: PhaseoEnv, limit = 250, credentials?: PhaseoCredentials): Promise<GatewayModel[]> {
 	const payload = await requestPhaseo<ModelsResponse>(env, "/v1/models", { query: { limit }, credentials });
 	if (!payload.ok || !payload.models) throw new PhaseoApiError(payload.message ?? "Phaseo could not load models.");
 	return payload.models;
+}
+
+export async function searchModels(
+	env: PhaseoEnv,
+	options: ModelSearchOptions,
+	credentials?: PhaseoCredentials,
+): Promise<GatewayModel[]> {
+	const payload = await requestPhaseo<ModelsResponse>(env, "/v1/models", {
+		query: {
+			search: options.query,
+			provider_search: options.provider,
+			input_modality: options.modality,
+			minimum_context_tokens: options.minimumContextTokens,
+			maximum_input_price_per_million: options.maximumInputPricePerMillion,
+			gateway_available_only: options.gatewayAvailableOnly || undefined,
+			sort_by: options.sortBy,
+			sort_order: options.sortOrder,
+			limit: options.limit ?? 250,
+		},
+		credentials,
+	});
+	if (!payload.ok || !payload.models) throw new PhaseoApiError(payload.message ?? "Phaseo could not load models.");
+	return payload.models;
+}
+
+export async function getModelsByIds(
+	env: PhaseoEnv,
+	modelIds: string[],
+	credentials?: PhaseoCredentials,
+): Promise<GatewayModel[]> {
+	const models: GatewayModel[] = [];
+	const chunks: string[][] = [];
+	let chunk: string[] = [];
+	let chunkLength = 0;
+	for (const modelId of modelIds) {
+		if (chunk.length >= 250 || (chunk.length > 0 && chunkLength + modelId.length > 10_000)) {
+			chunks.push(chunk);
+			chunk = [];
+			chunkLength = 0;
+		}
+		chunk.push(modelId);
+		chunkLength += modelId.length;
+	}
+	if (chunk.length > 0) chunks.push(chunk);
+
+	for (const modelIdChunk of chunks) {
+		const payload = await requestPhaseo<ModelsResponse>(env, "/v1/models", {
+			query: { model_id: modelIdChunk.join(","), limit: modelIdChunk.length },
+			credentials,
+		});
+		if (!payload.ok || !payload.models) throw new PhaseoApiError(payload.message ?? "Phaseo could not load models.");
+		models.push(...payload.models);
+	}
+	return models;
 }
 
 export async function getModel(env: PhaseoEnv, modelId: string, credentials?: PhaseoCredentials): Promise<GatewayModel | null> {
@@ -145,6 +248,34 @@ export async function listProviders(env: PhaseoEnv, credentials?: PhaseoCredenti
 	const payload = await requestPhaseo<ProvidersResponse>(env, "/v1/providers", { query: { limit: 250 }, credentials });
 	if (!payload.ok || !payload.providers) throw new PhaseoApiError(payload.message ?? "Phaseo could not load providers.");
 	return payload.providers;
+}
+
+export async function listBenchmarkRankings(env: PhaseoEnv): Promise<BenchmarkRanking[]> {
+	const baseUrl = env.PHASEO_WEB_BASE_URL?.trim();
+	if (!baseUrl) throw new PhaseoApiError("Phaseo benchmark rankings are not configured.");
+	const url = new URL(
+		"/api/_web/rankings/benchmarks",
+		baseUrl.endsWith("/") ? baseUrl : `${baseUrl}/`,
+	);
+	let response: Response;
+	try {
+		response = await fetch(url, {
+			headers: { Accept: "application/json" },
+			signal: AbortSignal.timeout(10_000),
+		});
+	} catch {
+		throw new PhaseoApiError("Phaseo benchmark rankings are temporarily unavailable.");
+	}
+	const payload = await response.json<BenchmarkRankingsResponse>().catch(() => null);
+	if (!response.ok || !payload?.benchmarks) {
+		throw new PhaseoApiError(
+			response.status >= 500
+				? `Phaseo could not load benchmark rankings (${response.status}).`
+				: payload?.error || `Phaseo benchmark request failed (${response.status}).`,
+			response.status,
+		);
+	}
+	return payload.benchmarks;
 }
 
 export async function authenticatePhaseoUser(request: Request, env: PhaseoEnv): Promise<AuthenticatedPhaseoUser | null> {

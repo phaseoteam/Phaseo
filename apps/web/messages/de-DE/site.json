@@ -1,16 +1,16 @@
 {
 	"home": {
-		"title": "Phaseo: KI-Gateway und offener Modellkatalog",
-		"description": "Entdecken Sie verlässliche Modelldaten, leiten Sie Anfragen über ein Open-Source-KI-Gateway und beobachten Sie Kosten, Zuverlässigkeit, Nutzung und Leistung über mehrere Anbieter hinweg.",
-		"heroTitle": "Eine Plattform für jedes KI-Modell",
-		"heroDescription": "Entdecken Sie verlässliche Modelldaten, leiten Sie Anfragen über ein OpenAI-kompatibles Gateway und beobachten Sie Kosten, Zuverlässigkeit, Nutzung und Leistung der unterstützten Anbieter.",
+		"title": "Phaseo: Das offene Gateway für erschwingliche KI",
+		"description": "Entdecke Modelle, leite Anfragen über verschiedene Anbieter und nutze ein quelloffenes KI-Gateway, das Inferenz zugänglich, portabel und transparent hält.",
+		"heroTitle": "KI-Inferenz sollte offen, erschwinglich und frei wählbar sein.",
+		"heroDescription": "Phaseo entwickelt das quelloffene, anbieterneutrale Gateway für KI. Entdecke Modelle, leite Anfragen über Anbieter und halte deine Integration portabel, während bessere Partnerschaften die Inferenzkosten senken helfen.",
 		"explore": "Entdecken",
 		"models": "Modelle",
 		"getApiKey": "API-Schlüssel erhalten",
 		"viewGithub": "GitHub öffnen",
 		"openModelDatabase": "Offener Modellkatalog, einheitliches Gateway",
 		"openModelDatabaseDescription": "Durchsuchen Sie den gesamten Modellkatalog und filtern Sie vor dem Start auf Modelle mit einer aktiven Gateway-Route.",
-		"transparentPricing": "Transparente Preise",
+		"transparentPricing": "Klare Preise heute. Weniger Zusatzkosten morgen.",
 		"viewPricing": "Preise ansehen",
 		"usePricingCalculator": "Preiskalkulator verwenden",
 		"latestModels": "Neueste Modelle",
@@ -51,12 +51,14 @@
 			"description": "Übergreifende Signale aus unserer Modell- und Benchmarkdatenbank (Beispieldaten). Laufende Aktualisierung bei neuen Ereignissen."
 		},
 		"pricingPoints": {
-			"payAsYouGo": "Einfach nutzungsbasiert",
-			"payAsYouGoBody": "Kein Unternehmensplan, Vertrag, Abo, Mindestumsatz oder monatliche beziehungsweise jährliche Bindung.",
+			"payAsYouGo": "Nutzung nach Verbrauch bezahlen",
+			"payAsYouGoBody": "Kein Vertrag, Abonnement oder Mindestumsatz für die Modellnutzung.",
 			"creditFee": "{fee}% Gebühr für Guthabenkäufe",
 			"creditFeeBody": "Wird beim Kauf von Guthaben erhoben, mit einem Mindestbetrag von 1 $. Die Nutzung richtet sich nach den im Katalog angezeigten Modellpreisen.",
 			"managedCredits": "Verwaltetes Guthaben oder BYOK",
-			"managedCreditsBody": "BYOK umfasst eine Million gebührenfreie Anfragen pro Monat; danach fällt eine Servicegebühr von 2,5 % auf die entsprechenden Anbieterkosten an."
+			"managedCreditsBody": "BYOK umfasst eine Million gebührenfreie Anfragen pro Monat; danach fällt eine Servicegebühr von 2,5 % auf die entsprechenden Anbieterkosten an.",
+			"selfServeEnterprise": "Enterprise im Self-Service",
+			"selfServeEnterpriseBody": "Ein optionaler monatlicher Arbeitsbereichstarif für SSO, SCIM, Governance und bevorzugten Support."
 		},
 		"reliability": {
 			"title": "Zuverlässigkeit für KI im Produktivbetrieb.",
@@ -80,6 +82,16 @@
 			"routingBody": "Erfahre, wie das Gateway den Traffic bei einer Änderung des Anbieterstatus umgeleitet hat.",
 			"regressionsTitle": "Regressionen früh erkennen",
 			"regressionsBody": "Vergleiche Änderungen an Modellen und Anbietern, bevor sie zu sichtbaren Vorfällen werden."
+		},
+		"transparentPricingDescription": "Die Nutzung folgt den Modellpreisen im Katalog. Die heutige Gebühr für den Kauf von Guthaben wird offen ausgewiesen. Wir wollen vermeidbare Plattformkosten senken, sobald Anbieterpartnerschaften und effizienter Betrieb dies nachhaltig ermöglichen.",
+		"missionLink": "Sieh, worauf wir hinarbeiten",
+		"missionProofs": {
+			"openSource": "Quelloffen",
+			"openSourceBody": "Prüfe, erweitere und verbessere das Gateway.",
+			"providerNeutral": "Anbieterneutral",
+			"providerNeutralBody": "Wähle den Anbieter, der zu deiner Arbeit passt.",
+			"lowerOverhead": "Weniger Zusatzkosten",
+			"lowerOverheadBody": "Senke vermeidbare Kosten durch Effizienz und Partnerschaften."
 		}
 	},
 	"about": {
@@ -772,6 +784,10 @@
 			"batch": {
 				"label": "Stapelverarbeitung",
 				"detail": "Asynchrone Verarbeitung"
+			},
+			"decisions": {
+				"label": "Entscheidungen",
+				"detail": "Typisierte Antworten"
 			}
 		},
 		"gatewayCapabilities": "Gateway-Funktionen",
@@ -1551,15 +1567,15 @@
 			"audit": "Prüfungs- und Governance-Kontrollen",
 			"priority": "Bevorzugter Support"
 		},
-		"paygHeadline": "Standardmäßig zahlen Sie nutzungsbasiert. Fügen Sie das Unternehmensabo hinzu, wenn Ihr Team es braucht.",
-		"paygBody": "Kaufen Sie Guthaben bei Bedarf und zahlen Sie nur für die Nutzung. Identitäts- und Zahlungsvorteile für Unternehmen sind optional, transparent bepreist und ohne Verkaufsgespräch aktivierbar.",
+		"paygHeadline": "Standardmäßig nutzungsabhängig zahlen. Enterprise zur Selbstbedienung, wenn dein Team es braucht.",
+		"paygBody": "Kaufe Guthaben nach Bedarf und zahle für deine Nutzung. Enterprise ist ein separates monatliches Abonnement für Identität, Governance und bevorzugten Support. Es ändert die Modellnutzungspreise nicht und lässt sich ohne Vertriebsgespräch aktivieren. Für Kostenschätzungen pro Modell nutze den",
 		"manageCredits": "Guthaben verwalten",
 		"manageProviderKeys": "Anbieterschlüssel verwalten",
 		"modelPricingCalculator": "Preiskalkulator für Modelle",
 		"payg": "Nutzungsbasiert",
 		"paygBodyShort": "Laden Sie Guthaben nur bei Bedarf auf.",
-		"enterpriseOptional": "Das Unternehmensabo ist optional",
-		"enterpriseOptionalBody": "Fügen Sie SSO, SCIM und Governance hinzu, ohne die Nutzungspreise zu ändern.",
+		"enterpriseOptional": "Enterprise zur Selbstbedienung",
+		"enterpriseOptionalBody": "Ergänze SSO, SCIM, Governance und bevorzugten Support ohne Änderungen an den Nutzungspreisen.",
 		"pricesPublic": "Preise bleiben öffentlich",
 		"pricesPublicBody": "Beantworten Sie einige Fragen und abonnieren Sie sofort.",
 		"faqTitle": "Häufig gestellte Fragen",
@@ -1639,7 +1655,8 @@
 				"training-data": "Trainiert Phaseo mit meinen Prompts oder Antworten?",
 				"request-logging": "Welche Anfragedaten speichert Phaseo?",
 				"service-status": "Wo kann ich Vorfälle und Verfügbarkeit prüfen?",
-				"contact-support": "Wie erreiche ich den Support?"
+				"contact-support": "Wie erreiche ich den Support?",
+				"receipts": "Kann ich einen Beleg für einen Guthabenkauf erhalten?"
 			},
 			"answers": {
 				"how-are-tokens-billed": "Abrechenbare Ein- und Ausgaben sowie weitere Nutzung werden zu den im Katalog angezeigten Modellpreisen von deinem Phaseo-Creditguthaben abgezogen. Phaseo erhebt keinen zusätzlichen Aufschlag pro verwalteter Anfrage.",
@@ -1676,7 +1693,8 @@
 				"training-data": "Nein. Phaseo verwendet Gateway-Prompts oder -Antworten nicht, um eigene Modelle zu trainieren. Anfragen werden an den ausführenden Anbieter gesendet; dessen Daten- und Trainingsrichtlinien gelten weiter, sofern deine Routing-Anforderungen den Anbieter nicht ausschließen.",
 				"request-logging": "Phaseo speichert Betriebs- und Abrechnungsmetadaten wie Modell, Anbieter, Tokenanzahl, Latenz und Fehler. Rohe Prompts und Antworten werden standardmäßig nicht dauerhaft gespeichert. Wenn I/O-Protokollierung im Arbeitsbereich aktiviert ist, richtet sich die Aufbewahrung nach den dortigen Datenschutz- und Speicherfristeinstellungen.",
 				"service-status": "Der aktuelle Servicestatus und der Vorfallverlauf stehen auf status.phaseo.app. Anfragen-IDs und Aktivitätsprotokolle helfen dem Support, einen konkreten Fehler nachzuverfolgen.",
-				"contact-support": "Nutze die Kontaktseite oder schreibe an support@phaseo.app bei Fragen zu Konto, Abrechnung oder Technik. Fehlerberichte und Funktionswünsche kannst du auch im öffentlichen GitHub-Repository einreichen."
+				"contact-support": "Nutze die Kontaktseite oder schreibe an support@phaseo.app bei Fragen zu Konto, Abrechnung oder Technik. Fehlerberichte und Funktionswünsche kannst du auch im öffentlichen GitHub-Repository einreichen.",
+				"receipts": "Ja. Von Stripe bereitgestellte Belege für abgeschlossene Käufe findest du unter Einstellungen → Guthaben. Fehlt ein Beleg für eine erfolgreiche Zahlung, kontaktiere den Support mit Zahlungs-ID und Datum."
 			}
 		},
 		"matrix": {
@@ -1871,7 +1889,13 @@
 			"paygCreditPurchaseFee": "Beim Kauf von Credits fällt eine Gebühr von {fee, number}% (mindestens {minimum}) an",
 			"enterpriseCreditPurchaseFee": "Beim Kauf von Credits fällt eine Gebühr von 5% (mindestens {minimum}) an",
 			"byokServiceFee": "{freeRequests, number} Anfragen pro Monat enthalten, danach {serviceFee, number}% der gleichwertigen Anbieterkosten"
-		}
+		},
+		"paygHeadlinePreview": "Standardmäßig nutzungsabhängig zahlen.",
+		"paygBodyPreview": "Kaufe Guthaben nach Bedarf und zahle für deine Nutzung. Enterprise-Funktionen für Identität, Governance und bevorzugten Support sind für berechtigte Workspaces als Vorschau verfügbar. Für Kostenschätzungen pro Modell nutze den",
+		"enterprisePreview": "Enterprise-Vorschau",
+		"enterprisePreviewBody": "Identität, Governance und bevorzugter Support werden für berechtigte Workspaces vorbereitet.",
+		"pricesPublicPreview": "Öffentliche Preise",
+		"pricesPublicPreviewBody": "Vergleiche Modellnutzungspreise im Katalog und Rechner."
 	},
 	"gatewayComparison": {
 		"title": "Phaseo im Vergleich zu {name}",
@@ -2422,7 +2446,8 @@
 			"survival": "Nach dem Ende deines Zugangs zum Service gelten die Abschnitte 2, 3, 4, 5 und 8–15 weiter.",
 			"contactQuestions": "Bei Fragen zu diesen Bedingungen kannst du uns kontaktieren:",
 			"contactEmailLabel": "E-Mail",
-			"operatorDetails": "Der Service wird von <person>Daniel Butler</person> unter dem Namen <brand>Phaseo</brand> angeboten."
+			"operatorDetails": "Der Service wird von <person>Daniel Butler</person> unter dem Namen <brand>Phaseo</brand> angeboten.",
+			"autoTopUpSecurity": "Aus Sicherheitsgründen können wir vor der Aktivierung der automatischen Aufladung eine Zwei-Faktor-Authentifizierung verlangen. Falls wir eine Fortsetzung ohne Zwei-Faktor-Authentifizierung anbieten, müssen Sie eine gesonderte Bestätigungs- und Zustimmungserklärung abgeben. Damit erkennen Sie das erhöhte Risiko unbefugter Abbuchungen an sowie, dass Erstattungen und Zahlungsstreitigkeiten nach diesen Bedingungen und geltendem Recht beurteilt werden. Dieser Abschnitt schränkt keine zwingenden Verbraucherrechte ein."
 		}
 	},
 	"brandMenu": {

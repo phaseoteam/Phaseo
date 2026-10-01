@@ -24,8 +24,14 @@ const state = vi.hoisted(() => ({
 	membershipRows: [] as Array<Record<string, unknown> | null>,
 	updateFilters: [] as Array<Array<{ column: string; value: unknown }>>,
 	deleteFilters: [] as Array<{ table: string; column: string; value: unknown }>,
-	enforceWorkspaceKeyLimit: vi.fn(async (_workspaceId: string) => undefined),
+	enforceWorkspaceKeyLimit: vi.fn(async (_workspaceId: string, _keyType: string, _excludeKeyId?: string) => undefined),
+	isUsableWorkspaceKey: vi.fn((key: Record<string, unknown>) => {
+		if (key.status !== "active" || key.soft_blocked !== false) return false;
+		if (key.expires_at === null || key.expires_at === undefined) return true;
+		return new Date(String(key.expires_at)).getTime() > Date.now();
+	}),
 	setKeyVersion: vi.fn(async () => undefined),
+    cacheDelete: vi.fn(async (_key: string) => undefined),
 	bindings: { PHASEO_CONTROL_SECRET: "secret", KEY_PEPPER_ACTIVE: "pepper" } as Record<string, unknown>,
 }));
 
@@ -130,7 +136,7 @@ function buildKeysSupabaseMock() {
 
 vi.mock("@/runtime/env", () => ({
 	getSupabaseAdmin: () => buildKeysSupabaseMock(),
-	getCache: () => ({ delete: vi.fn(async () => undefined) }),
+	getCache: () => ({ delete: state.cacheDelete }),
 	getBindings: () => state.bindings,
 }));
 
@@ -170,6 +176,7 @@ vi.mock("@/lib/audit/workspaceAudit", () => ({
 vi.mock("./management-helpers", () => ({
 	CHAT_MANAGED_KEY_NAME: "__chat_route_managed_key__",
 	enforceWorkspaceKeyLimit: state.enforceWorkspaceKeyLimit,
+	isUsableWorkspaceKey: state.isUsableWorkspaceKey,
 }));
 
 describe("management key routes", () => {
@@ -183,6 +190,7 @@ describe("management key routes", () => {
 			value: { workspaceId: "ws_1", apiKeyId: "mgmt_1", internal: false },
 		};
 		state.keyRows.length = 0;
+        state.cacheDelete.mockClear();
 		state.keyUsageRows.length = 0;
 		state.workspaceRows.length = 0;
 		state.membershipRows.length = 0;
@@ -283,7 +291,7 @@ describe("management key routes", () => {
 		const body = await response.json();
 
 		expect(response.status).toBe(201);
-		expect(state.enforceWorkspaceKeyLimit).toHaveBeenCalledWith("ws_1");
+		expect(state.enforceWorkspaceKeyLimit).toHaveBeenCalledWith("ws_1", "api");
 		expect(state.insertPayloads[0]).toMatchObject({
 			workspace_id: "ws_1",
 			name: "Analytics Key",
@@ -389,6 +397,35 @@ describe("management key routes", () => {
 			hash: "hash_1",
 			name: "Primary Key",
 		});
+	});
+
+	it("rechecks the API key limit before reactivating a paused key", async () => {
+		state.keyRows.push({
+			id: "key_paused",
+			hash: "hash_1",
+			workspace_id: "ws_1",
+			kid: "kid_1",
+			name: "Paused Key",
+			status: "paused",
+			soft_blocked: false,
+			expires_at: null,
+		});
+		state.enforceWorkspaceKeyLimit.mockRejectedValueOnce(
+			new Error("Key limit reached (5) for this workspace. Delete an existing API key to create a new one."),
+		);
+
+		const { keysRoutes } = await import("./keys");
+		const response = await keysRoutes.request("https://example.com/hash_1", {
+			method: "PATCH",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({ disabled: false }),
+		});
+		const body = await response.json();
+
+		expect(response.status).toBe(409);
+		expect(body).toMatchObject({ error: "key_limit_reached" });
+		expect(state.enforceWorkspaceKeyLimit).toHaveBeenCalledWith("ws_1", "api", "key_paused");
+		expect(state.updatePayloads).toEqual([]);
 	});
 
 	it("updates a key by hash and remaps limit_reset using the existing limit", async () => {
@@ -568,6 +605,7 @@ describe("management key routes", () => {
 
 		expect(response.status).toBe(200);
 		expect(state.setKeyVersion).toHaveBeenCalledWith("kid", "kid_legacy", expect.any(Number));
+        expect(state.cacheDelete).toHaveBeenCalledWith("gateway:private-routes:v1:ws_legacy");
 	});
 
 	it("allows scoped management auth to invalidate without a shared control secret", async () => {
@@ -586,5 +624,6 @@ describe("management key routes", () => {
 
 		expect(response.status).toBe(200);
 		expect(state.setKeyVersion).toHaveBeenCalledWith("kid", "kid_scoped", expect.any(Number));
+        expect(state.cacheDelete).toHaveBeenCalledWith("gateway:private-routes:v1:ws_1");
 	});
 });

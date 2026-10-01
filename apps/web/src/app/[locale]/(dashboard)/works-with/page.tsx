@@ -173,33 +173,11 @@ export default async function WorksWithPage({ params }: { params: Promise<{ loca
 					<div className="space-y-3">
 						<h3 className="text-base font-semibold text-zinc-900">{t("howToSubmit")}</h3>
 						<ol className="list-decimal space-y-2 pl-5">
-							<li>{t("forkRepository")}</li>
-							<li>
-								{t("addCatalogEntry")} {" "}
-								<code className="rounded bg-zinc-100 px-1 py-0.5">packages/data/catalog/src/data/works-with-phaseo.json</code>.
-							</li>
-							<li>
-								{t("addLogo")} {" "}
-								<code className="rounded bg-zinc-100 px-1 py-0.5">apps/web/public/works-with-phaseo/&lt;your-app-name&gt;/logo.png</code>.
-							</li>
-							<li>{t("submitPullRequest")}</li>
+							<li><a href="https://github.com/phaseoteam/Phaseo/issues/new?template=data-request.yml" target="_blank" rel="noopener noreferrer" className="underline underline-offset-4">{t("openDataRequest")}</a> {t("forYourApp")}</li>
+							<li>{t("includeAppDetails")}</li>
+							<li>{t("includeCategories")}</li>
+							<li>{t("trackPublication")}</li>
 						</ol>
-					</div>
-
-					<div className="space-y-3">
-						<h3 className="text-base font-semibold text-zinc-900">{t("entryFormat")}</h3>
-						<pre className="overflow-auto rounded-lg border border-zinc-200 bg-zinc-50 p-4 text-xs text-zinc-800">
-{`{
-  "name": "Your App Name",
-  "description": "A brief description of your app (1-2 sentences, max 300 characters)",
-  "url": "https://your-app-url.com",
-  "docs": "https://your-app-url.com/docs/phaseo",
-  "tags": ["chat"],
-  "open_source": "https://github.com/you/your-app",
-  "date_added": "2026-01-28",
-  "logo": "/works-with-phaseo/your-app-name/logo.png"
-}`}
-						</pre>
 					</div>
 
 					<div className="space-y-2">

@@ -1,3 +1,4 @@
+import { chatLocalStorage } from "@/lib/chat/userStorage";
 import { getRoomScopedStorageKey } from "@/lib/chat/rooms"
 
 export const CHAT_COMPLETION_NOTIFICATIONS_STORAGE_KEY = getRoomScopedStorageKey(
@@ -20,7 +21,7 @@ export function chatCompletionNotificationsEnabled(): boolean {
 	if (window.Notification.permission !== "granted") return false
 	try {
 		return (
-			window.localStorage.getItem(CHAT_COMPLETION_NOTIFICATIONS_STORAGE_KEY) ===
+			chatLocalStorage.getItem(CHAT_COMPLETION_NOTIFICATIONS_STORAGE_KEY) ===
 				"true" || sessionEnabled
 		)
 	} catch {
@@ -32,7 +33,7 @@ export function disableChatCompletionNotifications(): void {
 	if (typeof window === "undefined") return
 	sessionEnabled = false
 	try {
-		window.localStorage.setItem(CHAT_COMPLETION_NOTIFICATIONS_STORAGE_KEY, "false")
+		chatLocalStorage.setItem(CHAT_COMPLETION_NOTIFICATIONS_STORAGE_KEY, "false")
 	} catch {
 		// Storage can be unavailable in privacy-restricted browsing contexts.
 	}
@@ -53,7 +54,7 @@ export async function enableChatCompletionNotifications(): Promise<ChatNotificat
 	}
 
 	try {
-		window.localStorage.setItem(CHAT_COMPLETION_NOTIFICATIONS_STORAGE_KEY, "true")
+		chatLocalStorage.setItem(CHAT_COMPLETION_NOTIFICATIONS_STORAGE_KEY, "true")
 	} catch {
 		// Keep the preference for this session when storage is unavailable.
 	}

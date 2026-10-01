@@ -10,6 +10,14 @@ const env = {
 
 afterEach(() => vi.unstubAllGlobals());
 
+it.each(["keys", "management-api-keys"])("omits credential material from the %s response", async (path) => {
+	vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => authenticatedFetch(input)));
+	const response = await app.request(`https://phaseo.app/api/account/settings/${path}?workspaceId=workspace-1`, { headers: { authorization: "Bearer token" } }, env);
+	expect(response.status).toBe(200);
+	expect(response.headers.get("cache-control")).toContain("no-store");
+	expect(await response.text()).not.toContain("do-not-send");
+});
+
 function authenticatedFetch(input: RequestInfo | URL): Response {
 	const url = input instanceof Request ? input.url : String(input);
 	if (url.includes("/auth/v1/user")) {
@@ -172,12 +180,14 @@ function authenticatedFetch(input: RequestInfo | URL): Response {
 	if (url.includes("management_keys")) {
 		return new Response(JSON.stringify([{
 			id: "management-key-1", workspace_id: "workspace-1", name: "Automation",
+			hash: "do-not-send-credential-hash", encrypted_key: "do-not-send-ciphertext",
 			created_at: "2026-01-01T00:00:00Z",
 		}]), { status: 200 });
 	}
 	if (url.includes("/rest/v1/keys?")) {
 		return new Response(JSON.stringify([{
 			id: "key-1", workspace_id: "workspace-1", name: "Production",
+			hash: "do-not-send-credential-hash", encrypted_key: "do-not-send-ciphertext",
 			status: "active", last_used_at: null,
 		}]), { status: 200 });
 	}
@@ -225,6 +235,35 @@ function authenticatedFetch(input: RequestInfo | URL): Response {
 }
 
 describe("account settings routes", () => {
+	it("excludes usage debits before limiting billing transaction history", async () => {
+		let ledgerQuery: URL | undefined;
+		const billingKinds = ["top_up", "auto_top_up", "refund", "promo_credit", "adjustment", null];
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+			const url = new URL(input instanceof Request ? input.url : String(input));
+			if (url.pathname.endsWith("/workspaces") && url.searchParams.get("select") === "tier,billing_mode") {
+				return new Response(JSON.stringify({ tier: "basic", billing_mode: "wallet" }), { status: 200 });
+			}
+			if (url.pathname.endsWith("/credit_ledger")) {
+				ledgerQuery = url;
+				return new Response(JSON.stringify(billingKinds.map((kind, index) => ({
+					id: `billing-${index}`, kind, amount_nanos: kind === "refund" ? -1000000000 : 1000000000,
+					status: "paid", event_time: "2026-09-07T12:00:00Z",
+				}))), { status: 200 });
+			}
+			return authenticatedFetch(input);
+		}));
+		const response = await app.request(
+			"https://phaseo.app/api/account/settings/credits/transactions?workspaceId=workspace-1",
+			{ headers: { authorization: "Bearer session-token" } }, env,
+		);
+		expect(response.status).toBe(200);
+		expect(ledgerQuery?.searchParams.get("workspace_id")).toBe("eq.workspace-1");
+		expect(ledgerQuery?.searchParams.get("or")).toBe("(kind.is.null,kind.not.in.(charge,usage))");
+		expect(ledgerQuery?.searchParams.get("limit")).toBe("250");
+		const body = await response.json() as { transactions: Array<{ kind: string | null }> };
+		expect(body.transactions.map(row => row.kind)).toEqual(billingKinds);
+	});
+
 	it.each(["phaseo_cli", "aistats_cli"])("identifies the first-party CLI client %s without metadata", async (clientId) => {
 		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
 			const url = input instanceof Request ? input.url : String(input);
@@ -390,6 +429,7 @@ describe("account settings routes", () => {
 				platformRole: "user",
 				isInternalAdmin: false,
 				isProvider: false,
+				providerMode: false,
 				providerSlugs: [],
 				workspaceRole: "admin",
 				workspaceKind: "enterprise",
@@ -525,6 +565,7 @@ describe("account settings routes", () => {
 		await expect(credits.json()).resolves.toMatchObject({
 			initialBalance: 12.5,
 			latestPaymentSuccessAt: "2026-07-13T00:00:00Z",
+			mfaEnabled: true,
 			lowBalanceEmailEnabled: true,
 			lowBalanceEmailThresholdUsd: 5,
 			notificationRoutes: { low_balance: ["destination-1"] },

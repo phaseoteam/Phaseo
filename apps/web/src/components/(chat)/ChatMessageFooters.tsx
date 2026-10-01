@@ -26,6 +26,7 @@ import {
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Logo } from "@/components/Logo";
+import { buildChatRequestLogHref } from "@/components/(chat)/chatMessageMetadata";
 
 function formatMetric(
 	value: number | string | null | undefined,
@@ -35,6 +36,26 @@ function formatMetric(
 	return suffix ? `${value}${suffix}` : `${value}`;
 }
 
+function formatServiceTierLabel(value: string | null | undefined, labels: Record<string, string>) {
+	const normalized = value?.trim().toLowerCase();
+	if (!normalized) return "-";
+	const knownLabels = labels;
+	if (knownLabels[normalized]) return knownLabels[normalized];
+	return normalized
+		.replace(/[-_]+/g, " ")
+		.replace(/\b\w/g, (character) => character.toUpperCase());
+}
+
+function formatThroughputLabel(value: number | null) {
+	if (typeof value !== "number" || !Number.isFinite(value)) return "-";
+	const normalized = Math.max(0, value);
+	if (normalized === 0) return "0 tps";
+	if (normalized < 1) return `${normalized.toFixed(2)} tps`;
+	if (normalized < 10) {
+		return `${normalized.toFixed(1).replace(/\.0$/, "")} tps`;
+	}
+	return `${Math.round(normalized)} tps`;
+}
 
 function formatTimingLabel(value: number, locale: string) {
 	if (!Number.isFinite(value)) return "-";
@@ -197,14 +218,19 @@ type AssistantMessageFooterProps = {
 	metadataOpen: boolean;
 	metadataProviderId: string | null;
 	metadataProviderLabel: string | null;
+	metadataRequestId?: string | null;
+	metadataServiceTier: string | null;
+	inputTokens?: number | string | null;
+	outputSpeedTps: number | null;
 	sentAtLabel: string | null;
 	onBranch: () => void;
 	onCopy: () => void;
 	onMetadataOpenChange: (open: boolean) => void;
 	onRetry: () => void;
 	onSelectVariant: (variantIndex: number) => void;
-	throughputDisplay: number | null;
-	totalTokens: number | string | null;
+	totalTokens?: number | string | null;
+	throughputTps: number | null;
+	outputTokens: number | string | null;
 	variantCount: number;
 };
 
@@ -213,20 +239,26 @@ export function AssistantMessageFooter({
 	assistantCopied,
 	costLabel,
 	endToEndDisplay,
+	endToEndMs: _endToEndMs,
 	generationMs,
 	isPendingAssistant,
 	latencyMs,
 	metadataOpen,
 	metadataProviderId,
 	metadataProviderLabel,
+	metadataRequestId = null,
+	metadataServiceTier,
+	inputTokens,
+	outputSpeedTps,
 	sentAtLabel,
 	onBranch,
 	onCopy,
 	onMetadataOpenChange,
 	onRetry,
 	onSelectVariant,
-	throughputDisplay,
 	totalTokens,
+	throughputTps,
+	outputTokens,
 	variantCount,
 }: AssistantMessageFooterProps) {
 	const t = useTranslations("Product.chat.messageActions");
@@ -235,6 +267,9 @@ export function AssistantMessageFooter({
 		: null;
 	const providerLabel =
 		metadataProviderLabel ?? metadataProviderId ?? "-";
+	const requestLogHref = metadataRequestId
+		? buildChatRequestLogHref(metadataRequestId)
+		: null;
 	const latencyMetricMs =
 		typeof latencyMs === "number" && Number.isFinite(latencyMs)
 			? Math.max(0, latencyMs)
@@ -324,36 +359,64 @@ export function AssistantMessageFooter({
 							className="w-72 max-w-[calc(100vw-2rem)]"
 						>
 							<div className="grid gap-3 text-sm">
-								<MetadataRow label={t("provider")}>
-									{providerHref && metadataProviderId ? (
-										<Link
-											href={providerHref}
-											className="inline-flex min-w-0 items-center justify-end gap-1.5 text-right"
-										>
-											<Logo
-												id={metadataProviderId}
-												alt={providerLabel}
-												width={16}
-												height={16}
-												className="shrink-0 rounded-none"
-											/>
-											<span className="truncate">
+								<div className="grid gap-0">
+									<MetadataRow label={t("provider")}>
+										{providerHref && metadataProviderId ? (
+											<Link
+												href={providerHref}
+												className="inline-flex min-w-0 items-center justify-end gap-1.5 text-right text-sm"
+											>
+												<Logo
+													id={metadataProviderId}
+													alt={providerLabel}
+													width={16}
+													height={16}
+													className="shrink-0 rounded-none"
+												/>
+												<span className="truncate">
+													{providerLabel}
+												</span>
+											</Link>
+										) : (
+											<span className="block truncate text-sm">
 												{providerLabel}
 											</span>
-										</Link>
-									) : (
-										<span className="block truncate">
-											{providerLabel}
-										</span>
-									)}
-								</MetadataRow>
-								<div className="h-px bg-border" />
-								<MetadataSection title={t("usage")}>
-									<MetadataRow label={t("totalTokens")}>
+										)}
+									</MetadataRow>
+									<MetadataRow label={t("serviceTier")}>
 										<NumericValue>
-											{formatMetric(totalTokens)}
+											{formatServiceTierLabel(metadataServiceTier, { standard: t("serviceTiers.standard"), priority: t("serviceTiers.priority"), flex: t("serviceTiers.flex"), batch: t("serviceTiers.batch") })}
 										</NumericValue>
 									</MetadataRow>
+									{requestLogHref && metadataRequestId ? (
+										<MetadataRow label={t("requestId")}>
+											<Link
+												href={requestLogHref}
+												title={t("openRequestLog", { id: metadataRequestId })}
+												className="block max-w-44 truncate font-mono text-xs underline decoration-border underline-offset-4 transition-colors hover:decoration-foreground"
+											>
+												{metadataRequestId}
+											</Link>
+										</MetadataRow>
+									) : null}
+								</div>
+								<div className="h-px bg-border" />
+								<MetadataSection title={t("usage")}>
+									{inputTokens !== null && inputTokens !== undefined ? (
+										<MetadataRow label={t("inputTokens")}>
+											<NumericValue>{formatMetric(inputTokens)}</NumericValue>
+										</MetadataRow>
+									) : null}
+									<MetadataRow label={t("outputTokens")}>
+										<NumericValue>
+											{formatMetric(outputTokens)}
+										</NumericValue>
+									</MetadataRow>
+									{totalTokens !== null && totalTokens !== undefined ? (
+										<MetadataRow label={t("totalTokens")}>
+											<NumericValue>{formatMetric(totalTokens)}</NumericValue>
+										</MetadataRow>
+									) : null}
 									<MetadataRow label={t("totalCost")}>
 										<NumericValue>{costLabel ?? "-"}</NumericValue>
 									</MetadataRow>
@@ -375,9 +438,17 @@ export function AssistantMessageFooter({
 									</MetadataRow>
 									<MetadataRow label={t("throughput")}>
 										<NumericValue>
-											{formatMetric(throughputDisplay, " tps")}
+											{formatThroughputLabel(throughputTps)}
 										</NumericValue>
 									</MetadataRow>
+									{typeof outputSpeedTps === "number" &&
+									Number.isFinite(outputSpeedTps) ? (
+										<MetadataRow label={t("outputSpeed")}>
+											<NumericValue>
+												{formatThroughputLabel(outputSpeedTps)}
+											</NumericValue>
+										</MetadataRow>
+									) : null}
 								</MetadataSection>
 							</div>
 						</PopoverContent>

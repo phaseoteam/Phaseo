@@ -8,6 +8,7 @@ export type GatewaySupportedModel = {
 	providerId: string;
 	capabilities: string[];
 	capabilityParamsById?: CapabilityParamsById;
+	serviceTiers?: string[];
 	inputModalities?: string[];
 	outputModalities?: string[];
 	effectiveFrom: string | null;
@@ -27,5 +28,5 @@ export type GatewaySupportedModel = {
 	inputPricePerMillion?: number | null;
 	outputPricePerMillion?: number | null;
 	isAvailable: boolean;
-	chatBlockedReasons?: Array<{ source: "workspace" | "account" | "guardrail"; label: string; settingsHref: string }>;
+	chatBlockedReasons?: Array<{ source: "workspace" | "guardrail"; label: string; settingsHref: string }>;
 };

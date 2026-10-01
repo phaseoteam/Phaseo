@@ -1,4 +1,5 @@
 "use client";
+import { useInvalidatePrivateSettings } from "../PrivateSettingsQuery";
 import React, { useState } from "react";
 import {
 	Dialog,
@@ -76,6 +77,7 @@ export default function CreateManagementKeyDialog({
 	const [expiresAtLocal, setExpiresAtLocal] = useState("");
 	const [template, setTemplate] = useState<(typeof KEY_TEMPLATES)[number]["value"]>("read-only");
 	const [loading, setLoading] = useState(false);
+	const invalidateSettings = useInvalidatePrivateSettings();
 	const [plainKey, setPlainKey] = useState<string | null>(null);
 	const [selectedWorkspaceId, setSelectedWorkspaceId] = useState<string | null>(
 		resolveInitialWorkspaceId()
@@ -125,6 +127,7 @@ export default function CreateManagementKeyDialog({
 				expiresAt,
 			});
 			setPlainKey(res?.plaintext ?? null);
+			void invalidateSettings();
 		} catch (err: unknown) {
 			toast.error(
 				localizedSettingsError(
@@ -168,8 +171,8 @@ export default function CreateManagementKeyDialog({
 				</Button>
 			</DialogTrigger>
 
-			<DialogContent>
-				<DialogHeader>
+			<DialogContent className="gap-5 sm:max-w-lg">
+				<DialogHeader className="gap-2">
 					<DialogTitle className="flex items-center gap-2">
 						<ShieldAlert className="h-5 w-5 text-amber-600" />
 						{t("strings.Create Management API Key" as never)}
@@ -177,14 +180,14 @@ export default function CreateManagementKeyDialog({
 					<DialogDescription>
 						{t("strings.Choose the minimum access this management API key needs." as never)}
 					</DialogDescription>
-					<DialogDescription className="mt-2 text-sm text-red-600">
+					<p className="rounded-md bg-amber-500/10 px-3 py-2 text-sm leading-5 text-amber-700 dark:text-amber-400">
 						{t("keys.keyShownOnce")} <strong>{t("strings.once" as never)}</strong>{" "}
 						{t("strings.and grants elevated privileges. Store it securely." as never)}
-					</DialogDescription>
+					</p>
 				</DialogHeader>
 
 				{!plainKey ? (
-					<form onSubmit={onCreate} className="space-y-4">
+					<form onSubmit={onCreate} className="space-y-5">
 						{workspaces && workspaces.length > 1 ? (
 							<DropdownMenu>
 								<DropdownMenuTrigger render={<Button
@@ -278,22 +281,20 @@ export default function CreateManagementKeyDialog({
 						</DialogFooter>
 					</form>
 				) : (
-					<div className="space-y-4">
-						<div className="font-mono break-all select-all rounded-lg p-4 bg-amber-100 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-700">
+					<div className="space-y-5">
+						<div className="select-all break-all rounded-lg border border-amber-300 bg-amber-100/70 p-3 font-mono text-xs leading-5 dark:border-amber-700 dark:bg-amber-900/30 sm:text-sm">
 							{plainKey}
 						</div>
-						<div className="flex items-center gap-2">
-							<div className="text-sm text-amber-700 dark:text-amber-400 font-bold">
-								{t("strings.This key will not be shown again and grants elevated privileges. Keep this code secret at all times." as never)}
-							</div>
-						</div>
+						<p className="text-sm leading-5 text-amber-700 dark:text-amber-400">
+							{t("strings.This key will not be shown again and grants elevated privileges. Keep this code secret at all times." as never)}
+						</p>
 						<SecretRevealActions
 							secret={plainKey}
 							name={name || t("strings.AI Stats management API key" as never)}
 							kind="management-key"
 							enableTest={false}
 						/>
-						<DialogFooter>
+						<DialogFooter className="pt-1">
 							<DialogClose asChild>
 								<Button onClick={onClose}>{t("labels.done")}</Button>
 							</DialogClose>

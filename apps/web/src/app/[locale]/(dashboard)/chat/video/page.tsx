@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
+import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { buildMetadata } from "@/lib/seo";
 import { fetchFrontendGatewayModels } from "@/lib/fetchers/frontend/fetchFrontendGatewayModels";
@@ -12,13 +13,13 @@ export async function generateMetadata(): Promise<Metadata> {
 	return buildMetadata({ title: t("video"), description: t("videoDescription"), path: "/chat/video", keywords: ["AI video generation", "video studio", "Phaseo chat"] });
 }
 
-export default async function ChatVideoPage() {
+export default function ChatVideoPage() {
+	return <RoomScaffold><Suspense fallback={<p role="status" className="p-6 text-sm text-muted-foreground">Loading video models…</p>}><VideoContent /></Suspense></RoomScaffold>;
+}
+
+async function VideoContent() {
 	if (!await videoApiFlag()) notFound();
 	const models = await fetchFrontendGatewayModels();
 
-	return (
-		<RoomScaffold>
-			<VideoStudioRoom models={models} />
-		</RoomScaffold>
-	);
+	return <VideoStudioRoom models={models} />;
 }

@@ -37,7 +37,7 @@ export function RoomErrorNotice({ error, className }: RoomErrorNoticeProps) {
 						<p className="text-[11px] text-muted-foreground">
 							{formatted.statusCode ? `${t("status")} ${formatted.statusCode}` : null}
 							{formatted.statusCode && formatted.generationId ? " · " : null}
-							{formatted.generationId ? `${t("identifier")} ${formatted.generationId}` : null}
+							{formatted.generationId ? <a className="underline underline-offset-4" href={`/settings/usage/logs/requests/${encodeURIComponent(formatted.generationId)}`} target="_blank" rel="noreferrer">{t("viewRequest")}</a> : null}
 						</p>
 					) : null}
 				</div>

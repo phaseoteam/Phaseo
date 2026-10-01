@@ -88,6 +88,7 @@ describe("public organisation routes", () => {
 				organisation_id: "openai",
 				name: "OpenAI",
 				country_code: "US",
+				subdivision_code: null,
 			},
 		});
 		await expect(models.json()).resolves.toMatchObject({

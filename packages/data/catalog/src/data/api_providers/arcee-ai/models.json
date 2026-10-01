@@ -689,6 +689,63 @@
     "rate_limits": []
   },
   {
+    "api_model_id": "deepseek/deepseek-v4-pro-0813",
+    "provider_api_model_id": "arcee-ai:deepseek/deepseek-v4-pro-0813",
+    "provider_model_slug": "deepseek/deepseek-v4-pro-0813",
+    "internal_model_id": "deepseek/deepseek-v4-pro-0813",
+    "is_active_gateway": false,
+    "provider_status": "available",
+    "phaseo_status": "implementing",
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 1000000,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "disabled",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "disabled",
+    "routable": false,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "url": "https://docs.arcee.ai/get-started/pricing",
+        "kind": "pricing",
+        "accessed_at": "2026-09-03T00:00:00Z",
+        "notes": "Listed in Arcee AI's official pricing documentation."
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-09-03T00:00:00Z",
+      "notes": "Model and exact provider slug are listed in Arcee's official pricing documentation; retained as coming soon and non-routable until the provider route is smoke tested."
+    },
+    "rate_limits": []
+  },
+  {
     "api_model_id": "z-ai/glm-5.2",
     "provider_api_model_id": "arcee-ai:zai-org/glm-5.2",
     "provider_model_slug": "zai-org/glm-5.2",
@@ -803,6 +860,120 @@
       "status": "verified",
       "checked_at": "2026-08-14T00:00:00Z",
       "notes": "Model is listed as an Arcee Platform text model."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "z-ai/glm-5.3",
+    "provider_api_model_id": "arcee-ai:zai-org/glm-5.3",
+    "provider_model_slug": "zai-org/glm-5.3",
+    "internal_model_id": "z-ai/glm-5.3",
+    "is_active_gateway": false,
+    "provider_status": "available",
+    "phaseo_status": "implementing",
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 1000000,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "disabled",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "disabled",
+    "routable": false,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "url": "https://x.com/arcee_ai/status/2094964589775479266",
+        "kind": "announcement",
+        "accessed_at": "2026-09-03T00:00:00Z",
+        "notes": "Official Arcee announcement that GLM-5.3 is available through the Arcee API."
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-09-03T00:00:00Z",
+      "notes": "Announced by Arcee; retained as coming soon and non-routable until provider pricing is published and the route can be smoke tested."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "z-ai/glm-5.3-flash",
+    "provider_api_model_id": "arcee-ai:zai-org/glm-5.3-flash",
+    "provider_model_slug": "zai-org/glm-5.3-flash",
+    "internal_model_id": "z-ai/glm-5.3-flash",
+    "is_active_gateway": false,
+    "provider_status": "available",
+    "phaseo_status": "implementing",
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 1048576,
+    "max_output_tokens": 131072,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "disabled",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "disabled",
+    "routable": false,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "url": "https://x.com/arcee_ai/status/2094964589775479266",
+        "kind": "announcement",
+        "accessed_at": "2026-09-03T00:00:00Z",
+        "notes": "Official Arcee announcement that GLM-5.3-Flash is available through the Arcee API."
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-09-03T00:00:00Z",
+      "notes": "Announced by Arcee; retained as coming soon and non-routable until provider pricing, modality support, and a smoke-tested route are available."
     },
     "rate_limits": []
   }

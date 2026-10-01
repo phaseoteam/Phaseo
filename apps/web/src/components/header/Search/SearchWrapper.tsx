@@ -6,6 +6,9 @@ import { Search as SearchIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import { cn } from "@/lib/utils";
+import { useSearchShortcutLabel } from "./SearchShortcut";
+import type { SearchCapabilities } from "@/components/header/Search/Search.navigation";
+import type { AccountQueryScope } from "@/lib/query/queryKeys";
 
 const Search = dynamic(() => import("./Search"), {
 	ssr: false,
@@ -14,12 +17,14 @@ const Search = dynamic(() => import("./Search"), {
 
 interface SearchWrapperProps {
 	className?: string;
-	mobileGhost?: boolean;
+	capabilities?: SearchCapabilities;
+	accountQueryScope?: AccountQueryScope | null;
 }
 
-export function SearchWrapper({ className, mobileGhost }: SearchWrapperProps) {
+export function SearchWrapper({ className, capabilities, accountQueryScope }: SearchWrapperProps) {
 	const t = useTranslations("Common.search");
 	const [activated, setActivated] = useState(false);
+	const shortcutLabel = useSearchShortcutLabel();
 
 	useEffect(() => {
 		function onKeyDown(event: KeyboardEvent) {
@@ -36,7 +41,8 @@ export function SearchWrapper({ className, mobileGhost }: SearchWrapperProps) {
 		return (
 			<Search
 				className={className}
-				mobileGhost={mobileGhost}
+				capabilities={capabilities}
+				accountQueryScope={accountQueryScope}
 				initiallyOpen
 			/>
 		);
@@ -48,16 +54,17 @@ export function SearchWrapper({ className, mobileGhost }: SearchWrapperProps) {
 				type="button"
 				onClick={() => setActivated(true)}
 				className={cn(
-					"relative flex size-9 items-center justify-center rounded-lg border border-border bg-background px-0 text-left text-sm text-muted-foreground shadow-none transition-[border-color,color,background-color] hover:bg-accent hover:text-accent-foreground xl:w-full xl:justify-start xl:pl-9 xl:pr-12",
-					mobileGhost &&
-						"border-transparent bg-transparent hover:border-transparent hover:bg-accent xl:border-border xl:bg-background xl:hover:border-border",
+					"relative flex h-9 w-full min-w-0 items-center justify-start rounded-lg border border-border bg-background pl-8 pr-2 text-left text-sm text-muted-foreground shadow-none transition-[border-color,color,background-color] hover:bg-accent hover:text-accent-foreground max-[25rem]:justify-center max-[25rem]:px-0 lg:pl-9 lg:pr-14",
 				)}
 				aria-label={t("openPalette")}
 			>
-				<SearchIcon className="pointer-events-none absolute left-1/2 top-1/2 size-4 -translate-x-1/2 -translate-y-1/2 text-muted-foreground xl:left-3 xl:translate-x-0" />
-				<span className="hidden truncate font-medium xl:inline">{t("search")}</span>
-				<span className="pointer-events-none absolute right-2.5 top-1/2 hidden -translate-y-1/2 rounded-md border border-border px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground xl:inline-flex">
-					Ctrl K
+				<SearchIcon className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground max-[25rem]:left-1/2 max-[25rem]:-translate-x-1/2 lg:left-3" />
+				<span className="min-w-0 flex-1 truncate font-medium max-[25rem]:hidden">
+					<span className="xl:hidden">{t("search")}</span>
+					<span className="hidden whitespace-nowrap xl:inline">{t("search")} Phaseo</span>
+				</span>
+				<span className="pointer-events-none absolute right-2.5 top-1/2 hidden -translate-y-1/2 rounded-md border border-border px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground lg:inline-flex">
+					{shortcutLabel}
 				</span>
 			</button>
 		</div>

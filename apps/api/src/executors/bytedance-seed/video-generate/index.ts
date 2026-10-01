@@ -4,7 +4,7 @@
 
 import type { IRVideoGenerationRequest, IRVideoGenerationResponse } from "@core/ir";
 import type { ExecutorExecuteArgs, ExecutorResult } from "@executors/types";
-import { fetchUpstream } from "@executors/_shared/timing/upstream";
+import { fetchVideoSubmission as fetchUpstream, configureVideoSubmission, canReleaseVideoSubmission } from "@executors/_shared/video-submission";
 import { getBindings } from "@/runtime/env";
 import { resolveProviderKey } from "@providers/keys";
 import { saveVideoJobMeta } from "@core/video-jobs";
@@ -250,7 +250,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	const bytePlus = args.providerId.toLowerCase() === "byteplus";
 	const model = args.providerModelSlug || ir.model || "seedance-1-5-pro";
 	const seconds = parseDurationSeconds(ir);
-	const size = resolveVideoSize({ size: ir.size, resolution: ir.resolution });
+	const size = normalizeSeedanceResolution(resolveVideoSize({ size: ir.size, resolution: ir.resolution }));
 	const quality = ir.quality ?? null;
 	const bytedanceConfig = extractBytedanceConfig((ir.rawRequest ?? {}) as Record<string, any>);
 	const aspectRatioForPricing =
@@ -301,6 +301,9 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	let reservationGateError: { status: number; type: string; message: string } | null = null;
 	try {
 		const reserved = await reserveVideoGenerationCredits({
+			keyId: args.apiKeyId,
+			authMethod: args.meta.authMethod,
+			onReservationDenied: args.onReservationDenied,
 			workspaceId: args.workspaceId,
 			videoId: args.requestId,
 			providerId: args.providerId,
@@ -349,7 +352,9 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		};
 	}
 
+	configureVideoSubmission(args, { model, reservationId, reservedNanos, reservationStatus, keySource: keyInfo.source, byokKeyId: keyInfo.byokId });
 	const releaseReservationOnFailure = async () => {
+		if (!canReleaseVideoSubmission(args)) return;
 		if (!reservationId) return;
 		try {
 			await releaseWalletReservation({

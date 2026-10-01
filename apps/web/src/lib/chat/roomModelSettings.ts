@@ -43,7 +43,7 @@ export type EmbeddingsRoomParams = {
 };
 
 type ImageModelSchema = {
-	variant: "dalle2" | "dalle3" | "gpt-image" | "generic";
+	variant: "dalle2" | "dalle3" | "gpt-image" | "hy-image" | "generic";
 	sizeOptions: string[];
 	qualityOptions: string[];
 	styleOptions: string[];
@@ -150,6 +150,16 @@ function applyVoiceParams(
 }
 
 export function getImageModelSchema(modelId: string): ImageModelSchema {
+	if (modelIdIncludes(modelId, ["hy-image-v3.5-preview"])) {
+		return {
+			variant: "hy-image",
+			sizeOptions: ["1024x1024", "1536x1536", "2048x2048"],
+			qualityOptions: [],
+			styleOptions: [],
+			supportsBackground: false,
+			maxCount: 1,
+		};
+	}
 	if (modelIdIncludes(modelId, ["dall-e-2"])) {
 		return {
 			variant: "dalle2",
@@ -520,7 +530,7 @@ export function getDefaultImageRoomParams(modelId: string): ImageRoomParams {
 	const schema = getImageModelSchema(modelId);
 	return {
 		size: schema.sizeOptions[0] ?? "1024x1024",
-		quality: schema.qualityOptions[0] ?? "standard",
+		quality: schema.qualityOptions[0] ?? "",
 		style: schema.styleOptions[0] ?? "",
 		background: "auto",
 		n: 1,

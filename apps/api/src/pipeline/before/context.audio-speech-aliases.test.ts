@@ -42,6 +42,10 @@ const runtime = vi.hoisted(() => {
 	});
 
 	const from = vi.fn((table: string) => {
+        if (table === "v2_model_provider_routes") {
+            const q: any = { select: () => q, eq: () => q, in: () => q, then: (resolve: any) => Promise.resolve({ data: [], error: null }).then(resolve) };
+            return q;
+        }
 		if (table === "v2_providers") {
 			return {
 				select: () => ({

@@ -1,24 +1,24 @@
 import { Hono } from "hono";
+import { PUBLIC_LIVE_DATA_CACHE } from "@/cache/publicLiveData";
 import { getDataClient } from "@/data/supabase";
 import type { Env } from "@/env";
 import { withPublicCache, type PublicCachePolicy } from "@/http/cache";
 
 const TELEMETRY_CACHE: PublicCachePolicy = {
-	edgeTtlSeconds: 15 * 60,
-	staleWhileRevalidateSeconds: 15 * 60,
+	...PUBLIC_LIVE_DATA_CACHE,
 	cacheTags: ["web-api-providers", "web-api-provider-telemetry"],
 };
 const UPDATES_CACHE: PublicCachePolicy = {
-	edgeTtlSeconds: 60 * 60,
-	staleWhileRevalidateSeconds: 24 * 60 * 60,
+	...PUBLIC_LIVE_DATA_CACHE,
 	cacheTags: ["web-api-providers", "web-api-provider-updates"],
 };
 const IDENTITY_CACHE: PublicCachePolicy = { edgeTtlSeconds: 24 * 60 * 60, staleWhileRevalidateSeconds: 7 * 24 * 60 * 60, cacheTags: ["web-api-providers"] };
 const MODALITIES = ["text", "image", "video", "audio", "moderation", "embedding"] as const;
 type Modality = typeof MODALITIES[number];
-type Variant = { id: string; name: string; colour: string | null; country: string; dataCenters: string[]; dataRegions: string[]; family: string | null; offerLabel: string | null; offerScope: string | null; isGatewayProvider: boolean; providerStatus: string | null; byokAvailable: boolean; promptTrainingPolicy: string | null; dataPolicyTier: string | null; zeroDataRetention: boolean; dataRetentionDays: number | null; privacyPolicyUrl: string | null; termsOfServiceUrl: string | null; totalIds: string[]; activeIds: string[]; freeIds: string[]; dailyRequests: number; dailyTokens: number; monthlyTokens: number; updatedAt: string | null; modalities: Record<Modality, { input: string[]; output: string[] }> };
+type Variant = { id: string; name: string; colour: string | null; country: string; subdivision: string | null; dataCenters: string[]; dataRegions: string[]; family: string | null; offerLabel: string | null; offerScope: string | null; isGatewayProvider: boolean; providerStatus: string | null; byokAvailable: boolean; promptTrainingPolicy: string | null; dataPolicyTier: string | null; zeroDataRetention: boolean; dataRetentionDays: number | null; privacyPolicyUrl: string | null; termsOfServiceUrl: string | null; totalIds: string[]; activeIds: string[]; freeIds: string[]; dailyRequests: number; dailyTokens: number; monthlyTokens: number; updatedAt: string | null; modalities: Record<Modality, { input: string[]; output: string[] }> };
 type ProviderIndexRpcRow = {
 	provider_slug: string; provider_name: string; colour: string | null; country_code: string | null;
+	subdivision_code: string | null;
 	default_execution_regions: string[] | null; default_data_regions: string[] | null;
 	provider_family_id: string | null; offer_label: string | null; offer_scope: string | null; is_gateway_provider: boolean; provider_status: string | null; byok_available: boolean | null;
 	prompt_training_policy: string | null; data_policy_tier: string | null; zero_data_retention: boolean | string | null; data_retention_days: number | null;
@@ -92,19 +92,21 @@ function providerCards(variants: Variant[]) {
 		const providerStatus = !isGatewayProvider && group.some((item) => String(item.providerStatus ?? "").trim().toLowerCase() === "external")
 			? "external"
 			: representative.providerStatus;
-		return { api_provider_id: representative.id, api_provider_name: ["anthropic-aws", "anthropic-aws-us"].includes(representative.id) ? "Anthropic on AWS" : representative.name, colour: representative.colour, country_code: representative.country, default_execution_regions: unique(group.flatMap((item) => item.dataCenters), []), default_data_regions: unique(group.flatMap((item) => item.dataRegions), []), is_gateway_provider: isGatewayProvider, provider_status: providerStatus, byok_available: group.some((item) => item.byokAvailable), prompt_training_policy: representative.promptTrainingPolicy, data_policy_tier: representative.dataPolicyTier, zero_data_retention: representative.zeroDataRetention, data_retention_days: representative.dataRetentionDays, privacy_policy_url: representative.privacyPolicyUrl, terms_of_service_url: representative.termsOfServiceUrl, last_updated_at: latest(group.map((item) => item.updatedAt)), total_models: new Set(group.flatMap((item) => item.totalIds)).size, active_models: new Set(group.flatMap((item) => item.activeIds)).size, free_models: new Set(group.flatMap((item) => item.freeIds)).size, total_daily_tokens: group.reduce((sum, item) => sum + Math.max(0, item.dailyTokens), 0), total_monthly_tokens: group.reduce((sum, item) => sum + Math.max(0, item.monthlyTokens), 0), daily_share_pct: totalDailyRequests ? groupRequests / totalDailyRequests * 100 : 0, modality_support: modalitySupport };
+		return { api_provider_id: representative.id, api_provider_name: ["anthropic-aws", "anthropic-aws-us"].includes(representative.id) ? "Anthropic on AWS" : representative.name, colour: representative.colour, country_code: representative.country, subdivision_code: representative.subdivision, default_execution_regions: unique(group.flatMap((item) => item.dataCenters), []), default_data_regions: unique(group.flatMap((item) => item.dataRegions), []), is_gateway_provider: isGatewayProvider, provider_status: providerStatus, byok_available: group.some((item) => item.byokAvailable), prompt_training_policy: representative.promptTrainingPolicy, data_policy_tier: representative.dataPolicyTier, zero_data_retention: representative.zeroDataRetention, data_retention_days: representative.dataRetentionDays, privacy_policy_url: representative.privacyPolicyUrl, terms_of_service_url: representative.termsOfServiceUrl, last_updated_at: latest(group.map((item) => item.updatedAt)), total_models: new Set(group.flatMap((item) => item.totalIds)).size, active_models: new Set(group.flatMap((item) => item.activeIds)).size, free_models: new Set(group.flatMap((item) => item.freeIds)).size, total_daily_tokens: group.reduce((sum, item) => sum + Math.max(0, item.dailyTokens), 0), total_monthly_tokens: group.reduce((sum, item) => sum + Math.max(0, item.monthlyTokens), 0), daily_share_pct: totalDailyRequests ? groupRequests / totalDailyRequests * 100 : 0, modality_support: modalitySupport };
 	});
 }
 
 async function providerIndex(env: Env) {
-	const result = await getDataClient(env).rpc("get_public_provider_index");
+	const client = getDataClient(env);
+	const result = await client.rpc("get_public_provider_index");
 	if (result.error) throw result.error;
-	const rows = (result.data ?? []) as ProviderIndexRpcRow[];
+	const rows = ((result.data ?? []) as ProviderIndexRpcRow[]).filter((row) => String(row.provider_status ?? "").trim().toLowerCase() !== "disabled");
 	const variants: Variant[] = rows.map((row) => ({
 		id: row.provider_slug,
 		name: row.provider_name,
 		colour: row.colour,
 		country: row.country_code ?? "",
+		subdivision: row.subdivision_code ?? null,
 		dataCenters: row.default_execution_regions ?? [], dataRegions: row.default_data_regions ?? [],
 		family: row.provider_family_id,
 		offerLabel: row.offer_label,
@@ -295,6 +297,72 @@ function timeValue(value: unknown): number {
 	return Number.isFinite(parsed) ? parsed : Number.NEGATIVE_INFINITY;
 }
 
+const PUBLIC_PROVIDER_AVAILABILITY = new Set([
+	"unknown",
+	"available",
+	"preview",
+	"limited_access",
+]);
+const COMING_SOON_PHASEO_STATUSES = new Set([
+	"planned",
+	"implementing",
+	"testing",
+]);
+
+function normalizedStatus(value: unknown): string {
+	return String(value ?? "")
+		.trim()
+		.toLowerCase()
+		.replace(/[\s-]+/g, "_");
+}
+
+function routeAvailability(
+	row: Record<string, any>,
+	capabilityStatuses: string[],
+	now: number,
+): "active" | "coming_soon" | null {
+	if (!["active", "degraded"].includes(normalizedStatus(row.status))) return null;
+	if (normalizedStatus(row.access_scope) !== "public") return null;
+
+	const effectiveFrom = Date.parse(String(row.effective_from ?? ""));
+	const effectiveTo = Date.parse(String(row.effective_to ?? ""));
+	if (Number.isFinite(effectiveTo) && effectiveTo <= now) return null;
+
+	const providerAvailability = normalizedStatus(row.provider_availability_status);
+	if (["deprecated", "removed"].includes(providerAvailability)) return null;
+	const phaseoStatus = normalizedStatus(row.phaseo_status);
+	const capabilityPreview = capabilityStatuses.some((status) =>
+		["internal_testing", "coming_soon"].includes(normalizedStatus(status)),
+	);
+	const isComingSoon =
+		(Number.isFinite(effectiveFrom) && effectiveFrom > now) ||
+		providerAvailability === "coming_soon" ||
+		COMING_SOON_PHASEO_STATUSES.has(phaseoStatus) ||
+		capabilityPreview;
+	if (isComingSoon) return "coming_soon";
+
+	if (row.routing_enabled !== true) return null;
+	if (providerAvailability && !PUBLIC_PROVIDER_AVAILABILITY.has(providerAvailability)) return null;
+	if (phaseoStatus && phaseoStatus !== "enabled") return null;
+	return "active";
+}
+
+function routeAvailabilityReason(
+	row: Record<string, any>,
+	capabilityStatuses: string[],
+	now: number,
+): string | null {
+	const availability = routeAvailability(row, capabilityStatuses, now);
+	if (!availability) return null;
+	const effectiveFrom = Date.parse(String(row.effective_from ?? ""));
+	if (Number.isFinite(effectiveFrom) && effectiveFrom > now) return "scheduled";
+	if (capabilityStatuses.some((status) => normalizedStatus(status) === "internal_testing")) return "internal_testing";
+	if (normalizedStatus(row.provider_availability_status) === "coming_soon") return "provider_coming_soon";
+	const phaseoStatus = normalizedStatus(row.phaseo_status);
+	if (COMING_SOON_PHASEO_STATUSES.has(phaseoStatus)) return `phaseo_${phaseoStatus}`;
+	return availability === "coming_soon" ? "not_routable" : "active";
+}
+
 function lifecycleDate(model: RecentModel): string | null {
 	return typeof model.data_models?.release_date === "string"
 		? model.data_models.release_date
@@ -350,13 +418,38 @@ export const publicProvidersRouter = new Hono<{ Bindings: Env }>();
 
 publicProvidersRouter.use("/:providerId/*", async (c, next) => {
 	const providerId = c.req.param("providerId");
-	const visibility = await getDataClient(c.env).from("v2_model_provider_routes")
+	const client = getDataClient(c.env);
+	const visibility = await client.from("v2_model_provider_routes")
 		.select("provider_model_id")
 		.eq("provider_slug", providerId)
 		.eq("is_stealth", false)
 		.limit(1);
 	if (visibility.error) return c.json({ error: "provider_unavailable" }, 503);
-	if (!visibility.data?.length) return c.json({ error: "provider_not_found" }, 404);
+	if (!visibility.data?.length) {
+		const provider = await client.from("v2_providers")
+			.select("provider_slug")
+			.eq("provider_slug", providerId)
+			.maybeSingle();
+		if (provider.error) return c.json({ error: "provider_unavailable" }, 503);
+		if (!provider.data) return c.json({ error: "provider_not_found" }, 404);
+
+		// A provider identity is public even when all of its routes are stealth.
+		// Short-circuit every child resource so aggregate telemetry cannot reveal
+		// the existence, names, traffic, or applications of those routes.
+		const resource = c.req.path.split("/").pop();
+		if (resource === "models" || resource === "top-models") {
+			return withPublicCache(c.json({ models: [] }), providerPolicy(resource === "models" ? UPDATES_CACHE : TELEMETRY_CACHE, providerId));
+		}
+		if (resource === "top-apps") return withPublicCache(c.json({ apps: [] }), providerPolicy(TELEMETRY_CACHE, providerId));
+		if (resource === "updates") return withPublicCache(c.json({ newModels: [], recentModels: [], recentTokens: 0 }), providerPolicy(UPDATES_CACHE, providerId));
+		if (resource === "metrics") return withPublicCache(c.json({
+			summary: { uptimePct: null, avgLatencyMs: null, avgThroughput: null, avgGenerationMs: null, requests24h: 0, successful24h: 0 },
+			timeseries: { latency: [], throughput: [] },
+			dailyModelLeaderboards: {},
+		}), providerPolicy(TELEMETRY_CACHE, providerId));
+		if (resource === "model-token-timeseries") return withPublicCache(c.json({ models: [], points: [] }), providerPolicy(TELEMETRY_CACHE, providerId));
+		if (resource === "app-token-timeseries") return withPublicCache(c.json({ apps: [], points: [] }), providerPolicy(TELEMETRY_CACHE, providerId));
+	}
 	await next();
 });
 
@@ -472,10 +565,9 @@ publicProvidersRouter.get("/:providerId/models", async (c) => {
 	try {
 		const client = getDataClient(c.env);
 		const providerResult = await client.from("v2_model_provider_routes")
-			.select("provider_model_id,provider_model_slug,model_slug,routing_enabled,status,input_modalities,output_modalities,created_at")
+			.select("provider_model_id,provider_model_slug,model_slug,routing_enabled,status,provider_availability_status,phaseo_status,access_scope,effective_from,effective_to,input_modalities,output_modalities,created_at")
 			.eq("provider_slug", providerId)
 			.eq("is_stealth", false)
-			.eq("routing_enabled", true)
 			.in("status", ["active", "degraded"])
 			.order("created_at", { ascending: false });
 		if (providerResult.error) throw providerResult.error;
@@ -495,27 +587,45 @@ publicProvidersRouter.get("/:providerId/models", async (c) => {
 		if (metersResult.error) throw metersResult.error;
 		const visible = new Set((modelsResult.data ?? []).map((row) => row.model_slug)); const modelMeta = new Map((modelsResult.data ?? []).map((row) => [row.model_slug, row]));
 		const capabilities = new Map<string, string[]>(); const params = new Map<string, string[]>();
+		const capabilityStatuses = new Map<string, string[]>();
 		for (const cap of capsResult.data ?? []) {
+			if (cap.provider_model_id && cap.status) capabilityStatuses.set(cap.provider_model_id, [...(capabilityStatuses.get(cap.provider_model_id) ?? []), cap.status]);
 			if (cap.status === "disabled" || !cap.provider_model_id || !cap.capability_id) continue;
 			capabilities.set(cap.provider_model_id, unique(capabilities.get(cap.provider_model_id) ?? [], [cap.capability_id]));
 			const supported = cap.params && typeof cap.params === "object" && !Array.isArray(cap.params) ? Object.keys(cap.params) : [];
 			params.set(cap.provider_model_id, unique(params.get(cap.provider_model_id) ?? [], supported));
 		}
+		const now = Date.now();
+		const activeModelIds = new Set(providerRows.filter((row) => {
+			if (!row.model_slug) return false;
+			return routeAvailability(row, capabilityStatuses.get(row.provider_model_id) ?? [], now) === "active";
+		}).map((row) => row.model_slug));
 		const merged = new Map<string, Record<string, unknown>>(); const routeIds = new Map<string, Set<string>>();
 		for (const row of providerRows) {
 			if (!row.model_slug || !visible.has(row.model_slug)) continue;
+			const routeStatuses = capabilityStatuses.get(row.provider_model_id) ?? [];
+			const availabilityStatus = routeAvailability(row, routeStatuses, now);
+			if (!availabilityStatus) continue;
 			const modelId = row.model_slug;
+			if (activeModelIds.has(modelId) && availabilityStatus !== "active") continue;
 			routeIds.set(modelId, new Set([...(routeIds.get(modelId) ?? []), row.provider_model_id]));
 			const meta = modelMeta.get(modelId); const endpoints = capabilities.get(row.provider_model_id) ?? []; const supported = params.get(row.provider_model_id) ?? [];
 			const existing = merged.get(modelId);
 			if (!existing) {
-				merged.set(modelId, { model_id: modelId, api_model_id: row.provider_model_slug ?? modelId, model_name: meta?.name ?? row.provider_model_slug ?? modelId, provider_model_slug: row.provider_model_slug ?? null, endpoints, supported_params: supported, is_active_gateway: Boolean(row.routing_enabled && ["active", "degraded"].includes(String(row.status))), input_modalities: stringList(row.input_modalities), output_modalities: stringList(row.output_modalities), release_date: meta?.released_at ?? null, announcement_date: meta?.announced_at ?? null, created_at: row.created_at ?? null });
+				merged.set(modelId, { model_id: modelId, api_model_id: row.provider_model_slug ?? modelId, model_name: meta?.name ?? row.provider_model_slug ?? modelId, provider_model_slug: row.provider_model_slug ?? null, endpoints, supported_params: supported, is_active_gateway: availabilityStatus === "active", availability_status: availabilityStatus, availability_reason: routeAvailabilityReason(row, routeStatuses, now), input_modalities: stringList(row.input_modalities), output_modalities: stringList(row.output_modalities), release_date: meta?.released_at ?? null, announcement_date: meta?.announced_at ?? null, created_at: row.created_at ?? null });
 				continue;
 			}
 			if (timeValue(row.created_at) > timeValue(existing.created_at)) existing.created_at = row.created_at ?? null;
 			existing.endpoints = unique(stringList(existing.endpoints), endpoints); existing.supported_params = unique(stringList(existing.supported_params), supported);
 			existing.input_modalities = unique(stringList(existing.input_modalities), stringList(row.input_modalities)); existing.output_modalities = unique(stringList(existing.output_modalities), stringList(row.output_modalities));
-			existing.is_active_gateway = Boolean(existing.is_active_gateway || (row.routing_enabled && ["active", "degraded"].includes(String(row.status))));
+			if (availabilityStatus === "active") {
+				existing.is_active_gateway = true;
+				existing.availability_status = "active";
+				existing.availability_reason = "active";
+			} else if (existing.availability_status !== "active") {
+				existing.availability_status = "coming_soon";
+				existing.availability_reason = existing.availability_reason ?? routeAvailabilityReason(row, routeStatuses, now);
+			}
 		}
 		const skuById = new Map((skusResult.data ?? []).map((row) => [row.sku_id, row]));
 		const rulesByRoute = new Map<string, PricingRule[]>();

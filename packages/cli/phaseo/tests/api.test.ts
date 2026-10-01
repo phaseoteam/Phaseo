@@ -131,7 +131,7 @@ test("parses explicit login scopes and removes duplicates", () => {
 		"openid keys:write activity:read",
 	);
 	assert.equal(parseScopeArgument(undefined), DEFAULT_LOGIN_SCOPES.join(" "));
-	assert.equal(DEFAULT_LOGIN_SCOPES.length, 37);
+	assert.equal(DEFAULT_LOGIN_SCOPES.length, 40);
 	assert.equal(DEFAULT_LOGIN_SCOPES.includes("budgets:read"), true);
 	assert.equal(DEFAULT_LOGIN_SCOPES.includes("budgets:write"), true);
 	assert.equal(DEFAULT_LOGIN_SCOPES.includes("budgets:delete"), true);
@@ -394,6 +394,14 @@ test("treats short and long root flags as flags instead of commands", () => {
 	assert.deepEqual(parseArgs(["-h"]), {
 		command: [],
 		flags: { help: true },
+	});
+});
+
+test("keeps harness arguments after -- for the delegated runner", () => {
+	assert.deepEqual(parseArgs(["cline", "--model", "openai/gpt-test", "--", "--plan", "Review the diff"]), {
+		command: ["cline"],
+		flags: { model: "openai/gpt-test" },
+		passthrough: ["--plan", "Review the diff"],
 	});
 });
 

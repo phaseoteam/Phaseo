@@ -1,4 +1,5 @@
 "use client";
+import { useInvalidatePrivateSettings } from "../PrivateSettingsQuery";
 
 import * as React from "react";
 import { z } from "zod";
@@ -18,7 +19,8 @@ import {
 	AlertDialogTitle,
 	AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Loader2, Trash2 } from "lucide-react";
+import { Camera, Loader2, Trash2 } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
 	updateTeamAction,
 	deleteTeamAction,
@@ -26,8 +28,9 @@ import {
 } from "@/app/(dashboard)/settings/teams/actions";
 import WorkspaceIdentitySettings from "./WorkspaceIdentitySettings";
 import type { TeamSsoSettingsRow } from "@/lib/auth/teamSsoSettings";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 
-type Team = { id: string; name: string; publisherHandle?: string | null };
+type Team = { id: string; name: string; publisherHandle?: string | null; logoUrl?: string | null };
 type MembersByTeam = Record<
 	string,
 	Array<{ user_id: string; role?: string; display_name?: string }>
@@ -96,9 +99,14 @@ export default function TeamSettingsPanel({
 		teams.find((entry) => entry.id === fallbackTeamId)?.name ??
 		DEFAULTS.teamName;
 	const initialPublisherHandle = teams.find((entry) => entry.id === fallbackTeamId)?.publisherHandle ?? "";
+	const initialLogoUrl = teams.find((entry) => entry.id === fallbackTeamId)?.logoUrl ?? null;
 
 	const [saving, setSaving] = React.useState(false);
+	const invalidateSettings = useInvalidatePrivateSettings();
 	const [deleting, setDeleting] = React.useState(false);
+	const [logoUploading, setLogoUploading] = React.useState(false);
+	const [logoUrl, setLogoUrl] = React.useState(initialLogoUrl);
+	const logoInputRef = React.useRef<HTMLInputElement>(null);
 	const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
 	const t = useTranslations("SettingsUI");
 
@@ -140,10 +148,12 @@ export default function TeamSettingsPanel({
 
 					if (!isPersonalTeam && normalizedName !== initialName) {
 						await updateTeamAction(workspaceId, normalizedName);
+						void invalidateSettings();
 					}
 					const normalizedPublisherHandle = settings.publisherHandle.trim().toLowerCase();
 					if (normalizedPublisherHandle !== initial.publisherHandle.trim()) {
 						await updateWorkspacePublisherHandleAction(workspaceId, normalizedPublisherHandle);
+						void invalidateSettings();
 					}
 					const normalized = { teamName: normalizedName, publisherHandle: normalizedPublisherHandle };
 					setSettings(normalized);
@@ -164,6 +174,34 @@ export default function TeamSettingsPanel({
 		setSettings(initial);
 	}
 
+	async function uploadLogo(file: File) {
+		if (!workspaceId) return;
+		setLogoUploading(true);
+		try {
+			const response = await fetch(`/api/account/settings/teams/${encodeURIComponent(workspaceId)}/logo`, { method: "POST", headers: { "content-type": file.type }, body: file });
+			const payload = await response.json() as { logoUrl?: string; error?: string };
+			if (!response.ok || !payload.logoUrl) throw new Error(payload.error ?? "Could not upload the workspace logo.");
+			setLogoUrl(payload.logoUrl);
+			void invalidateSettings();
+			toast.success("Workspace logo updated.");
+		} catch (error) { toast.error(error instanceof Error ? error.message : "Could not upload the workspace logo."); }
+		finally { setLogoUploading(false); if (logoInputRef.current) logoInputRef.current.value = ""; }
+	}
+
+	async function removeLogo() {
+		if (!workspaceId) return;
+		setLogoUploading(true);
+		try {
+			const response = await fetch(`/api/account/settings/teams/${encodeURIComponent(workspaceId)}/logo`, { method: "DELETE" });
+			const payload = await response.json() as { error?: string };
+			if (!response.ok) throw new Error(payload.error ?? "Could not remove the workspace logo.");
+			setLogoUrl(null);
+			void invalidateSettings();
+			toast.success("Workspace logo removed.");
+		} catch (error) { toast.error(error instanceof Error ? error.message : "Could not remove the workspace logo."); }
+		finally { setLogoUploading(false); }
+	}
+
 	async function handleDeleteTeam() {
 		if (!workspaceId) return;
 		if (isPersonalTeam) {
@@ -172,7 +210,7 @@ export default function TeamSettingsPanel({
 		}
 		setDeleting(true);
 		try {
-			await toast.promise(deleteTeamAction(workspaceId), {
+			await toast.promise(deleteTeamAction(workspaceId).then((result) => { void invalidateSettings(); return result; }), {
 				loading: t("workspace.deletingWorkspace"),
 				success: t("workspace.workspaceDeleted"),
 				error: () => t("workspace.deleteError"),
@@ -192,8 +230,25 @@ export default function TeamSettingsPanel({
 					event.preventDefault();
 					void handleSave();
 				}}
-				className="overflow-hidden rounded-xl border bg-background/40"
+			className="overflow-hidden rounded-xl border bg-background/40"
 			>
+				<div className="flex flex-col gap-3 border-t px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
+					<div className="min-w-0">
+						<Label className="text-sm font-medium">Workspace Logo</Label>
+						<p className="mt-0.5 text-sm text-muted-foreground">Shown on private models and workspace-owned resources.</p>
+					</div>
+					<div className="flex w-full shrink-0 items-center gap-3 sm:w-[min(32rem,55%)]">
+						<Avatar className="size-12 rounded-md border bg-muted/30 after:rounded-md">
+							{logoUrl ? <AvatarImage src={logoUrl} alt={`${initialTeamName} logo`} className="rounded-md object-cover" /> : null}
+							<AvatarFallback className="rounded-md text-sm font-semibold">{initialTeamName.split(/\s+/).map((word) => word[0]).join("").slice(0, 2).toUpperCase()}</AvatarFallback>
+						</Avatar>
+						<input ref={logoInputRef} className="sr-only" type="file" accept="image/png,image/jpeg,image/webp" onChange={(event) => { const file = event.target.files?.[0]; if (file) void uploadLogo(file); }} />
+						<Button type="button" variant="outline" size="sm" disabled={!hasTeamControl || logoUploading} onClick={() => logoInputRef.current?.click()}>
+							{logoUploading ? <Loader2 className="size-4 animate-spin" /> : <Camera className="size-4" />} Upload
+						</Button>
+						{logoUrl ? <Button type="button" variant="ghost" size="sm" disabled={!hasTeamControl || logoUploading} onClick={() => void removeLogo()}>Remove</Button> : null}
+					</div>
+				</div>
 				<div className="flex flex-col gap-3 px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
 					<div className="min-w-0">
 						<Label htmlFor="teamName" className="text-sm font-medium">
@@ -336,8 +391,8 @@ function ConfirmDeleteTeam({
 	remainingBalance?: number;
 	translate: (key: string, values?: Record<string, string | number>) => string;
 }) {
-	const locale = useLocale();
 	const t = translate;
+	const format = useDisplayFormatters();
 	const [text, setText] = React.useState("");
 	const [ackCredits, setAckCredits] = React.useState(false);
 	const phrase = t("workspace.deleteConfirmationPhrase");
@@ -346,11 +401,12 @@ function ConfirmDeleteTeam({
 		typeof remainingBalance === "number" ? Math.max(remainingBalance, 0) : 0;
 	const hasCredits = balance > 0.001;
 	const formattedBalance = hasCredits
-		? new Intl.NumberFormat(locale, {
+		? format.number(balance, {
 				style: "currency",
 				currency: "USD",
 				maximumFractionDigits: 2,
-			}).format(balance)
+				notation: "standard",
+			})
 		: null;
 
 	return (

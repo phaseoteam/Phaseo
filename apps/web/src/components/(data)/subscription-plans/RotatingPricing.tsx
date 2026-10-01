@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import type { SubscriptionPlansMessages } from "@/i18n/subscription-plans";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 
 interface RotatingPricingProps {
 	locale: string;
@@ -15,6 +16,7 @@ interface RotatingPricingProps {
 }
 
 export default function RotatingPricing({ prices, locale, messages }: RotatingPricingProps) {
+	const format = useDisplayFormatters();
 	const [currentIndex, setCurrentIndex] = useState(0);
 	const priceCount = prices?.length ?? 0;
 
@@ -63,11 +65,12 @@ export default function RotatingPricing({ prices, locale, messages }: RotatingPr
 			return messages.customPricing;
 		}
 
-		const formatter = new Intl.NumberFormat(locale, {
+		const formattedPrice = format.number(price, {
 			style: "currency",
 			currency: currency,
 			minimumFractionDigits: 0,
 			maximumFractionDigits: 2,
+			notation: "standard",
 		});
 
 		const period =
@@ -83,7 +86,7 @@ export default function RotatingPricing({ prices, locale, messages }: RotatingPr
 				? messages.dailySuffix
 				: "";
 
-		return `${formatter.format(price)}${period ? ` ${period}` : ""}`;
+		return `${formattedPrice}${period ? ` ${period}` : ""}`;
 	};
 
 	return (

@@ -1,7 +1,10 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import { Globe2 } from "lucide-react";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 
 import {
 	Table,
@@ -31,10 +34,6 @@ function countryName(code: string, locale: string) {
 	}
 }
 
-function compact(value: number) {
-	return new Intl.NumberFormat("en-GB", { notation: "compact", maximumFractionDigits: 1 }).format(value);
-}
-
 function successRate(row: GeographyRow) {
 	if (row.requests <= 0 || row.successes == null) return null;
 	return (row.successes / row.requests) * 100;
@@ -44,18 +43,6 @@ function requestShare(row: GeographyRow, totalRequests: number) {
 	if (row.sharePercent != null) return row.sharePercent;
 	if (totalRequests <= 0) return 0;
 	return (row.requests / totalRequests) * 100;
-}
-
-function formatSpend(value: number | undefined) {
-	return ((value ?? 0) / 1e9).toLocaleString("en-US", {
-		style: "currency",
-		currency: "USD",
-		maximumFractionDigits: 4,
-	});
-}
-
-function formatLatency(value: number | null | undefined) {
-	return value == null ? "—" : `${Math.round(value)} ms`;
 }
 
 function CountryMark({ code }: { code: string }) {
@@ -80,6 +67,29 @@ export function GeographyUsage({
 }) {
 	const t = useTranslations("SettingsUI");
 	const locale = useLocale();
+	const format = useDisplayFormatters();
+	const compact = (value: number) =>
+		format.number(value, { notation: "compact", maximumFractionDigits: 1 });
+	const formatPercent = (value: number) =>
+		`${format.number(value, {
+			minimumFractionDigits: 1,
+			maximumFractionDigits: 1,
+			notation: "standard",
+		})}%`;
+	const formatSpend = (value: number | undefined) =>
+		format.number((value ?? 0) / 1e9, {
+			style: "currency",
+			currency: "USD",
+			maximumFractionDigits: 4,
+			notation: "standard",
+		});
+	const formatLatency = (value: number | null | undefined) =>
+		value == null
+			? "—"
+			: `${format.number(Math.round(value), {
+					maximumFractionDigits: 0,
+					notation: "standard",
+				})} ms`;
 	const totalRequests = rows.reduce((sum, row) => sum + row.requests, 0);
 	if (publicView) {
 		if (rows.length === 0) {
@@ -116,7 +126,7 @@ export function GeographyUsage({
 									</div>
 									<div className="text-right">
 										<p className="font-medium tabular-nums">{compact(row.tokens)} {t("strings.tokens" as never)}</p>
-										<p className="text-xs tabular-nums text-muted-foreground">{(row.sharePercent ?? 0).toFixed(1)}%</p>
+										<p className="text-xs tabular-nums text-muted-foreground">{formatPercent(row.sharePercent ?? 0)}</p>
 									</div>
 								</>
 							);
@@ -167,7 +177,7 @@ export function GeographyUsage({
 									</div>
 									<div>
 										<dt className="text-muted-foreground">{t("strings.Share" as never)}</dt>
-										<dd className="font-medium tabular-nums">{share.toFixed(1)}%</dd>
+										<dd className="font-medium tabular-nums">{formatPercent(share)}</dd>
 									</div>
 									<div>
 										<dt className="text-muted-foreground">{t("strings.Tokens" as never)}</dt>
@@ -175,7 +185,7 @@ export function GeographyUsage({
 									</div>
 									<div>
 										<dt className="text-muted-foreground">{t("strings.Success" as never)}</dt>
-										<dd className="font-medium tabular-nums">{rate == null ? "—" : `${rate.toFixed(1)}%`}</dd>
+										<dd className="font-medium tabular-nums">{rate == null ? "—" : formatPercent(rate)}</dd>
 									</div>
 									<div>
 										<dt className="text-muted-foreground">{t("strings.Spend" as never)}</dt>
@@ -222,10 +232,10 @@ export function GeographyUsage({
 										<TableCell className="text-right font-medium tabular-nums">
 											{compact(row.requests)}
 										</TableCell>
-										<TableCell className="text-right tabular-nums">{share.toFixed(1)}%</TableCell>
+										<TableCell className="text-right tabular-nums">{formatPercent(share)}</TableCell>
 										<TableCell className="text-right tabular-nums">{compact(row.tokens)}</TableCell>
 										<TableCell className="text-right tabular-nums">
-											{rate == null ? "—" : `${rate.toFixed(1)}%`}
+											{rate == null ? "—" : formatPercent(rate)}
 										</TableCell>
 										<TableCell className="text-right tabular-nums">{formatSpend(row.spendNanos)}</TableCell>
 										<TableCell className="px-4 text-right tabular-nums">

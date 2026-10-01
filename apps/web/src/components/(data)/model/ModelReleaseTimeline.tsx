@@ -3,6 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import Link from "next/link";
 import { getLocale, getTranslations } from "next-intl/server";
 import { fetchFrontendModelTimeline } from "@/lib/fetchers/frontend/fetchPublicCatalog";
+import { DisplayCalendarDate } from "@/components/display/DisplayValue";
 
 type RawEvent = {
 	date: string;
@@ -208,13 +209,6 @@ function normaliseEvents(raws: RawEvent[]): Normalised[] {
 	});
 }
 
-const formatDate = (iso: string, locale: string) =>
-	new Date(iso).toLocaleDateString(locale, {
-		day: "2-digit",
-		month: "short",
-		year: "numeric",
-	});
-
 export default async function ModelReleaseTimeline({
 	// params,
 	modelId,
@@ -259,7 +253,7 @@ export default async function ModelReleaseTimeline({
 
 							<CardContent className="pl-6 py-4">
 								<div className="text-xs mb-1 text-zinc-500">
-										{formatDate(ev.date, locale)}
+									<DisplayCalendarDate value={ev.date} />
 								</div>
 
 								<div

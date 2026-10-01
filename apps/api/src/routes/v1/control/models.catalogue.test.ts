@@ -13,6 +13,7 @@ type QueryResult = {
 
 type QueryState = {
     emptyCapabilityInCalled: boolean;
+    modelInCalls?: Array<{ column: string; values: unknown[] }>;
 };
 
 function buildSupabaseMock(
@@ -91,6 +92,9 @@ function buildSupabaseMock(
                     return query;
                 },
 				in(column: string, values: unknown[]) {
+					if (table === "v2_models") {
+						state.modelInCalls?.push({ column, values });
+					}
 					if (
 						table === "v2_route_capabilities" &&
 						column === "provider_model_id" &&
@@ -153,6 +157,7 @@ function buildSupabaseMock(
                             country_code: row.country_code,
                             status: row.status,
                             routing_enabled: row.routing_status === "active",
+                            routable: row.routable === true,
                         }));
                         return Promise.resolve({ ...next, data }).then(onfulfilled as any, onrejected as any);
                     }
@@ -206,6 +211,47 @@ describe("publicCatalogueProviderRoute", () => {
             provider_model_slug: "stealth/preview",
         });
     });
+
+    it("loads bounded variant and successor dependencies for explicit model IDs", async () => {
+        const state: QueryState = { emptyCapabilityInCalled: false, modelInCalls: [] };
+        const model = (overrides: Record<string, unknown>) => ({
+            model_id: "test/model-old",
+            base_model_id: "test/model-old",
+            variant_kind: "standard",
+            previous_model_id: null,
+            replacement_model_id: null,
+            name: "Old model",
+            status: "active",
+            organisation_id: null,
+            input_types: ["text"],
+            output_types: ["text"],
+            organisation: null,
+            ...overrides,
+        });
+        const responses: Record<string, QueryResult[]> = {
+            data_models: [
+                { data: [model({})], error: null },
+                { data: [model({ model_id: "test/model-old:free", variant_kind: "free" })], error: null },
+                { data: [model({ model_id: "test/model-next", base_model_id: "test/model-next", previous_model_id: "test/model-old" })], error: null },
+            ],
+            v2_model_details: [{ data: [], error: null }],
+            data_api_provider_models: [{ data: [], error: null }],
+            data_api_model_aliases: [{ data: [], error: null }],
+            data_api_providers: [{ data: [], error: null }],
+            data_api_pricing_rules: [{ data: [], error: null }],
+        };
+        getSupabaseAdminMock.mockReturnValue(buildSupabaseMock(responses, state));
+        const { fetchCatalogue } = await import("./models.catalogue");
+
+        const models = await fetchCatalogue({ modelIds: ["test/model-old"], availability: "all" });
+
+        expect(models).toEqual([]);
+        expect(state.modelInCalls).toEqual([
+            { column: "model_slug", values: ["test/model-old"] },
+            { column: "base_model_slug", values: ["test/model-old"] },
+            { column: "previous_model_slug", values: ["test/model-old"] },
+        ]);
+    });
 });
 
 describe("fetchCatalogue", () => {
@@ -220,6 +266,8 @@ describe("fetchCatalogue", () => {
                 data: [{
                     model_id: "stealth/preview",
                     name: "Preview",
+                    replacement_model_id: null,
+                    metadata: { replacement_model_id: "stealth/successor" },
                     release_date: null,
                     deprecation_date: null,
                     retirement_date: null,
@@ -273,6 +321,7 @@ describe("fetchCatalogue", () => {
         getSupabaseAdminMock.mockReturnValue(buildSupabaseMock(responses, state));
         const { fetchCatalogue } = await import("./models.catalogue");
         const models = await fetchCatalogue({});
+		expect(models[0]?.replacement_model_id).toBe("stealth/successor");
 
         expect(models[0]?.providers[0]).toMatchObject({
             api_provider_id: "stealth",
@@ -2361,6 +2410,85 @@ describe("fetchCatalogue", () => {
             api_provider_id: "openai",
             availability_status: "active",
             availability_reason: "active",
+        });
+    });
+
+    it("includes an explicitly routable external provider in active catalogue results", async () => {
+        const state: QueryState = { emptyCapabilityInCalled: false };
+        const responses: Record<string, QueryResult[]> = {
+            data_models: [{
+                data: [{
+                    model_id: "test/model-external",
+                    name: "External Model",
+                    release_date: null,
+                    deprecation_date: null,
+                    retirement_date: null,
+                    status: "active",
+                    organisation_id: "openai",
+                    input_types: ["text"],
+                    output_types: ["text"],
+                    organisation: null,
+                }],
+                error: null,
+            }],
+            data_api_provider_models: [{
+                data: [{
+                    provider_api_model_id: "pam_external",
+                    provider_id: "openrouter",
+                    api_model_id: "test/model-external",
+                    model_id: "test/model-external",
+                    provider_model_slug: "external-model",
+                    is_active_gateway: true,
+                    routing_status: "active",
+                    input_modalities: ["text"],
+                    output_modalities: ["text"],
+                    metadata: { external_routing_override: true },
+                    effective_from: null,
+                    effective_to: null,
+                }],
+                error: null,
+            }],
+            data_api_provider_model_capabilities: [{
+                data: [{
+                    provider_api_model_id: "pam_external",
+                    capability_id: "responses",
+                    status: "active",
+                    params: { temperature: true },
+                    effective_from: null,
+                    effective_to: null,
+                }],
+                error: null,
+            }],
+            data_api_model_aliases: [{ data: [], error: null }],
+            data_api_providers: [{
+                data: [{
+                    api_provider_id: "openrouter",
+                    api_provider_name: "OpenRouter",
+                    link: null,
+                    country_code: null,
+                    status: "external",
+                    routing_status: "active",
+                    routable: false,
+                }],
+                error: null,
+            }],
+            data_api_pricing_rules: [{ data: [], error: null }],
+        };
+
+        getSupabaseAdminMock.mockReturnValue(buildSupabaseMock(responses, state));
+        const { fetchCatalogue } = await import("./models.catalogue");
+
+        const models = await fetchCatalogue({});
+
+        expect(models).toHaveLength(1);
+        expect(models[0]).toMatchObject({
+            model_id: "test/model-external",
+            providers: [{
+                api_provider_id: "openrouter",
+                provider_status: "external",
+                availability_status: "active",
+                availability_reason: "active",
+            }],
         });
     });
 

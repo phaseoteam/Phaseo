@@ -231,7 +231,7 @@ export function SecretRevealActions({
 				) : null}
 			</div>
 
-			<div className="flex flex-wrap items-center gap-2">
+			<div className="flex flex-wrap items-start gap-x-3 gap-y-2 border-t border-border/60 pt-3">
 				<OnePasswordSaveButton
 					title={name || "AI Stats API key"}
 					secret={secret}
@@ -243,7 +243,7 @@ export function SecretRevealActions({
 					urls={onePasswordUrls}
 				/>
 				{kind === "api-key" ? (
-							<p className="text-xs text-muted-foreground">
+							<p className="max-w-sm text-xs leading-4 text-muted-foreground">
 								{t("strings.Exports use placeholders so downloaded collections do not contain the secret." as never)}
 					</p>
 				) : null}

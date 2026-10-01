@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { Bar, BarChart, CartesianGrid, Tooltip as RechartsTooltip, XAxis, YAxis } from "recharts";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ChartContainer } from "@/components/ui/chart";
@@ -27,17 +28,6 @@ type ProviderTokenUsageChartClientProps = {
 	showLinkedTables?: boolean;
 };
 
-function formatCompact(value: number, locale: string) {
-	if (!Number.isFinite(value)) return "--";
-	return new Intl.NumberFormat(locale, { notation: "compact", maximumFractionDigits: 1 }).format(value);
-}
-
-function formatBucketLabel(value: string, locale: string) {
-	const date = new Date(`${value}T00:00:00.000Z`);
-	if (Number.isNaN(date.getTime())) return value;
-	return date.toLocaleDateString(locale, { month: "short", day: "numeric" });
-}
-
 export default function ProviderTokenUsageChartClient({
 	models,
 	points,
@@ -47,6 +37,12 @@ export default function ProviderTokenUsageChartClient({
 }: ProviderTokenUsageChartClientProps) {
 	const t = useTranslations("Catalogue.providers");
 	const locale = useLocale();
+	const format = useDisplayFormatters();
+	const formatCompact = (value: number, _locale?: string) => Number.isFinite(value)
+		? format.number(value, { maximumFractionDigits: 1 })
+		: "--";
+	const formatBucketLabel = (value: string, _locale?: string) =>
+		format.calendarDate(`${value}T00:00:00.000Z`, value);
 	const [hoveredBucket, setHoveredBucket] = useState<string | null>(null);
 	const [hoveredModelId, setHoveredModelId] = useState<string | null>(null);
 
@@ -401,7 +397,7 @@ export default function ProviderTokenUsageChartClient({
 																	: "text-foreground"
 															}`}
 														>
-										{model.tokens.toLocaleString(locale)}
+													{format.number(model.tokens)}
 														</td>
 													</tr>
 												))
@@ -461,7 +457,7 @@ export default function ProviderTokenUsageChartClient({
 														</Link>
 													</td>
 													<td className="px-2 py-2 text-right tabular-nums">
-									{app.tokens.toLocaleString(locale)}
+												{format.number(app.tokens)}
 													</td>
 													<td className="px-2 py-2 text-right">
 														{app.url && app.url !== "about:blank" ? (

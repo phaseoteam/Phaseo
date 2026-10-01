@@ -7,6 +7,7 @@ import type {
 	UpstreamFetchPhase,
 	UpstreamResponseTiming,
 } from "@executors/types";
+import { observeGatewayStream, type GatewayTimingTrace } from "@pipeline/telemetry/gateway-trace";
 
 export type UpstreamTimingSnapshot = {
 	requestBuildMs?: number;
@@ -19,12 +20,14 @@ export type UpstreamTimingSnapshot = {
 	upstreamMediaCount: number;
 };
 
-export function createUpstreamTimingTracker(): {
+export function createUpstreamTimingTracker(trace?: GatewayTimingTrace): {
 	timing: ExecutorUpstreamTiming;
 	snapshot: () => UpstreamTimingSnapshot;
+	isProviderTransportFailure: (error: unknown) => boolean;
 } {
 	const executorStartedAt = performance.now();
 	const responseTimings = new WeakMap<Response, UpstreamResponseTiming>();
+	const providerTransportFailures = new Set<unknown>();
 	let sequence = 0;
 	let firstProviderFetchAt: number | undefined;
 	let firstProviderFetchEpochMs: number | undefined;
@@ -43,16 +46,35 @@ export function createUpstreamTimingTracker(): {
 		phase = "provider",
 	) => {
 		const fetchStartedAt = performance.now();
-		const dispatchAtMs = Date.now();
+        const dispatchAtMs = Date.now();
+        const diagnosticStart = trace?.now();
+        if (trace && phase === "provider") {
+            trace.providerRequests++;
+            trace.mark("upstream_dispatch", diagnosticStart);
+        }
 		const fetchSequence = ++sequence;
 		counts[phase] += 1;
 		if (phase === "provider" && firstProviderFetchAt === undefined) {
 			firstProviderFetchAt = fetchStartedAt;
 			firstProviderFetchEpochMs = dispatchAtMs;
 		}
-		const response = await globalThis.fetch(input, init);
+		let response: Response;
+		try {
+			response = await globalThis.fetch(input, init);
+		} catch (error) {
+			// Preserve the original error identity and adapter retry semantics.
+			// Explicit cancellation is not provider downtime.
+			if ((phase === "provider" || phase === "poll") && !(error instanceof Error && error.name === "AbortError")) providerTransportFailures.add(error);
+			throw error;
+		}
 		const headersAtMs = Date.now();
-		const headersMs = Math.max(0, performance.now() - fetchStartedAt);
+        const headersMs = Math.max(0, performance.now() - fetchStartedAt);
+        if (trace && phase === "provider") {
+            const arrived = trace.now();
+            trace.mark("upstream_headers", arrived);
+            trace.wait(diagnosticStart!, arrived, "headers");
+            response = observeGatewayStream(response, trace, "upstream");
+        }
 		responseTimings.set(response, {
 			phase,
 			sequence: fetchSequence,
@@ -67,6 +89,7 @@ export function createUpstreamTimingTracker(): {
 	};
 
 	return {
+		isProviderTransportFailure: (error) => providerTransportFailures.has(error),
 		timing: {
 			fetch: timedFetch,
 			timingFor: (response) => responseTimings.get(response),

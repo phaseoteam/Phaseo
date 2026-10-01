@@ -83,7 +83,7 @@ function RoutingVisual() {
 				<span>healthy</span>
 			</div>
 			<div className="rounded-[1.25rem] border border-white/10 bg-white/5 p-3">
-				<p className="text-sm font-semibold">openai/gpt-5.4</p>
+				<p className="text-sm font-semibold">openai/gpt-6-astra</p>
 				<p className="mt-1 text-xs leading-5 text-zinc-400">
 					Primary route selected by latency policy.
 				</p>

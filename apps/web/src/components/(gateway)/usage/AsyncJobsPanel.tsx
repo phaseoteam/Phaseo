@@ -2,6 +2,8 @@
 
 import * as React from "react";
 import { useLocale, useTranslations } from "next-intl";
+import ConfigurableLogTable from "./ConfigurableLogTable";
+import { JOB_COLUMNS } from "./logColumns";
 import dynamic from "next/dynamic";
 import {
         fetchAppMetadata,
@@ -41,7 +43,6 @@ import {
 	HoverCardContent,
 	HoverCardTrigger,
 } from "@/components/ui/hover-card";
-import { Separator } from "@/components/ui/separator";
 import {
 	Table,
 	TableBody,
@@ -61,15 +62,20 @@ import {
 } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { formatRelativeToNow } from "@/lib/formatRelative";
-import { cn } from "@/lib/utils";
 import { registerUsageViewRefresher } from "@/lib/gateway/usage/refreshBus";
+import { usePrivateUsageRefresh } from "./PrivateUsageQuery";
 import {
 	formatDateTime,
 	formatWordyDateTime,
 } from "@/lib/gateway/usage/timeFormatting";
 import { formatAsyncJobFailureSummary } from "@/lib/gateway/usage/asyncJobFailureSummary";
 import { formatRoomError, type RoomErrorTranslator } from "@/lib/chat/formatRoomError";
-import { getModelDisplayName, type ModelMetadataMap } from "./model-display";
+import {
+	getModelDetailsHref,
+	getModelDisplayName,
+	getModelMetadataEntry,
+	type ModelMetadataMap,
+} from "./model-display";
 import Link from "next/link";
 import {
         DetailKeyValueGrid,
@@ -93,7 +99,7 @@ function AsyncJobHeader({
 	const locale = useLocale();
 	const formatTimestamp = (value: string | null | undefined) =>
 		formatLocalizedTimestamp(value, locale);
-	const modelHref = getModelDetailsHref(job.model ?? null);
+	const modelHref = getModelDetailsHref(job.model ?? null, modelMetadata, job.provider);
 	const modelLabel = getModelDisplayName(job.model ?? null, modelMetadata);
 	const modelLogoId = getModelLogoId(job.model ?? null, modelMetadata);
 	const providerLabel = job.provider
@@ -150,20 +156,12 @@ function stopRowClick(event: React.MouseEvent<HTMLElement>) {
 	event.stopPropagation();
 }
 
-function getModelDetailsHref(modelId: string | null): string | null {
-	if (!modelId) return null;
-	const [organisationId, ...modelParts] = modelId.split("/");
-	if (!organisationId || modelParts.length === 0) return null;
-	const routeModelId = modelParts.join("/");
-	return `/models/${encodeURIComponent(organisationId)}/${encodeURIComponent(routeModelId)}`;
-}
-
 function getModelLogoId(
 	modelId: string | null,
 	modelMetadata: ModelMetadataMap,
 ): string | null {
 	if (!modelId) return null;
-	const metadata = modelMetadata.get(modelId);
+	const metadata = getModelMetadataEntry(modelId, modelMetadata);
 	if (metadata?.organisationId) return metadata.organisationId;
 	if (modelId.includes("/")) {
 		const [organisationId] = modelId.split("/");
@@ -225,12 +223,12 @@ function buildUsageLogsFilterHref(args: {
 
 function formatMoneyFromNanos(value: number | null | undefined): string {
 	if (value == null || !Number.isFinite(value)) return "-";
-	return `$${(value / 1e9).toFixed(5)}`;
+	return formatMoneyFromUsd(value / 1e9);
 }
 
 function formatMoneyFromUsd(value: number | null | undefined): string {
 	if (value == null || !Number.isFinite(value)) return "-";
-	return `$${value.toFixed(5)}`;
+	return `$${value.toFixed(value !== 0 && Math.abs(value) < 0.00001 ? 9 : 5)}`;
 }
 
 function formatMilliseconds(value: number | null | undefined): string {
@@ -962,6 +960,12 @@ function AsyncJobDetailSheet({
 											value: job.billing_reason ?? "-",
 										},
 										{
+											label: s("Provider submission"),
+											value: job.submission_state === "submitting" || job.submission_state === "unknown"
+												? s("Awaiting confirmation")
+												: job.submission_state ?? "-",
+										},
+										{
 											label: s("Charged"),
 											value:
 												job.charged == null ? "-" : job.charged ? "Yes" : "No",
@@ -1560,8 +1564,8 @@ function AsyncJobDetailSheet({
 										columns={1}
 										items={[
 											{
-													label: s("Webhook URL"),
-												value: job.webhook.url ?? s("No webhook configured"),
+												label: s("Webhook destination"),
+												value: job.webhook.url ?? (job.webhook.configured ? s("Workspace endpoint") : s("No webhook configured")),
 											},
 											{
 													label: s("Subscribed events"),
@@ -1573,9 +1577,9 @@ function AsyncJobDetailSheet({
 											{
 													label: s("Signing"),
 												value: job.webhook.configured
-													? job.webhook.has_secret
-													? s("Enabled")
-													: s("Disabled")
+													? !job.webhook.url ? s("Managed by endpoint") : job.webhook.has_secret
+														? s("Enabled")
+														: s("Disabled")
 													: "-",
 											},
 											{
@@ -1708,6 +1712,7 @@ function AsyncJobDetailSheet({
 }
 
 export default function AsyncJobsPanel({
+	settingsTargetId,
 	initialJobs,
 	title,
 	description,
@@ -1724,6 +1729,7 @@ export default function AsyncJobsPanel({
 	statusFilter = null,
 	providerFilter = null,
 }: {
+	settingsTargetId?: string;
 	initialJobs: AsyncJobRow[];
 	title?: string;
 	description?: string;
@@ -1754,6 +1760,7 @@ export default function AsyncJobsPanel({
 			? Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"
 			: "UTC";
 	const [jobs, setJobs] = React.useState(initialJobs);
+	const privateQuery = usePrivateUsageRefresh();
 	const [resolvedProviderNames, setResolvedProviderNames] = React.useState(
 		() => new Map(providerNames ?? []),
 	);
@@ -1788,6 +1795,8 @@ export default function AsyncJobsPanel({
 
 	React.useEffect(() => {
 		setJobs(initialJobs);
+		detailCacheRef.current.clear();
+		requestDetailCacheRef.current.clear();
 	}, [initialJobs]);
 
 	React.useEffect(() => {
@@ -1810,6 +1819,7 @@ export default function AsyncJobsPanel({
 	}, []);
 
 	const refresh = React.useCallback(() => {
+		if (privateQuery) return privateQuery.refresh();
 		return (async () => {
 			setIsRefreshing(true);
 			try {
@@ -1862,6 +1872,7 @@ export default function AsyncJobsPanel({
 		})();
 	}, [
 		includeWithoutWebhook,
+		privateQuery,
 		kindFilter,
 		providerFilter,
 		refreshLimit,
@@ -1938,56 +1949,105 @@ export default function AsyncJobsPanel({
 		});
 	}, []);
 
-	const table = jobs.length === 0 ? (
-		<div className="rounded-lg border border-dashed px-4 py-8 text-sm text-muted-foreground">
-			{resolvedEmptyMessage}
-		</div>
-	) : (
-	<>
-		{variant === "logs" ? (
-			<div className="space-y-3 md:hidden">
-				{jobs.map((job) => {
+	const table =
+		variant === "logs" ? (
+			<ConfigurableLogTable
+				key={kindFilter ?? "jobs"}
+				tableId={kindFilter === "video" ? "videos" : kindFilter === "batch" ? "batches" : "jobs"}
+				label={kindFilter === "video" ? s("Videos") : kindFilter === "batch" ? s("Batches") : s("Jobs")}
+				definitions={JOB_COLUMNS}
+				rows={jobs}
+				rowKey={(job) => `${job.kind}:${job.internal_id}`}
+				settingsTargetId={settingsTargetId}
+				onRowClick={openDetail}
+				emptyMessage={resolvedEmptyMessage}
+				renderCell={(job, column) => {
 					const timestamp = job.request_created_at ?? job.created_at;
-					const providerLabel = job.provider
-						? resolvedProviderNames.get(job.provider) ?? job.provider
-						: null;
 					const failureSummary = formatAsyncJobFailureSummary(job);
-					const appLabel = job.app_id
-						? resolvedAppMetadata.get(job.app_id)?.title?.trim() || job.app_id
+					const providerLabel = job.provider
+						? (resolvedProviderNames.get(job.provider) ?? job.provider)
 						: null;
-					const appHref = job.app_id ? `/apps/${encodeURIComponent(job.app_id)}` : null;
 					const modelLabel = getModelDisplayName(
 						job.model,
 						resolvedModelMetadata,
 					);
-					const modelHref = getModelDetailsHref(job.model);
-					const modelLogoId = getModelLogoId(
+					const modelHref = getModelDetailsHref(
 						job.model,
 						resolvedModelMetadata,
+						job.provider,
 					);
-					const Icon = kindIcon(job.kind);
-					return (
-						<button
-							key={`mobile-${job.kind}:${job.internal_id}`}
-							type="button"
-							className="w-full rounded-lg border bg-card px-4 py-3 text-left transition-colors hover:bg-muted/40"
-							onClick={() => openDetail(job)}
-						>
-							<div className="flex items-start justify-between gap-3">
-								<div className="min-w-0">
-									<div className="font-mono text-xs text-muted-foreground">
-										{timestamp ? formatTimestamp(timestamp) : "-"}
-									</div>
-									<div className="mt-1 flex items-center gap-2">
-										{modelLogoId ? (
-											<Logo
-												id={modelLogoId}
-												width={16}
-												height={16}
-												className="flex-shrink-0"
-											/>
-										) : null}
-										<div className="min-w-0 text-sm font-medium text-foreground">
+					const modelLogoId = getModelLogoId(job.model, resolvedModelMetadata);
+
+					switch (column) {
+						case "date":
+							return (
+								<>
+									{timestamp ? (
+										<HoverCard>
+											<HoverCardTrigger asChild>
+												<span className="cursor-help underline underline-offset-2 decoration-dotted">
+													{formatTimestamp(timestamp)}
+												</span>
+											</HoverCardTrigger>
+											<HoverCardContent align="start" className="w-auto">
+												{(() => {
+													const date = new Date(timestamp);
+													const unixSeconds = Math.floor(date.getTime() / 1000);
+													return (
+														<div className="grid gap-2 text-xs">
+															<div className="grid grid-cols-[120px_1fr] gap-2">
+																<div className="text-muted-foreground">
+																	{userTimeZone}
+																</div>
+																<div className="font-mono">
+																	{formatDateTime(date, userTimeZone)}
+																</div>
+															</div>
+															<div className="grid grid-cols-[120px_1fr] gap-2">
+																<div className="text-muted-foreground">UTC</div>
+																<div className="font-mono">
+																	{formatDateTime(date, "UTC")}
+																</div>
+															</div>
+															<div className="grid grid-cols-[120px_1fr] gap-2">
+																<div className="text-muted-foreground">
+																	Relative
+																</div>
+																<div className="font-mono">
+																	{relativeNowMs
+																		? formatRelativeToNow(date, relativeNowMs)
+																		: "-"}
+																</div>
+															</div>
+															<div className="grid grid-cols-[120px_1fr] gap-2">
+																<div className="text-muted-foreground">
+																	Timestamp
+																</div>
+																<div className="font-mono">{unixSeconds}</div>
+															</div>
+														</div>
+													);
+												})()}
+											</HoverCardContent>
+										</HoverCard>
+									) : (
+										"-"
+									)}
+								</>
+							);
+						case "model":
+							return (
+								<>
+									<div className="max-w-[280px]">
+										<div className="flex items-center gap-2">
+											{modelLogoId ? (
+												<Logo
+													id={modelLogoId}
+													width={16}
+													height={16}
+													className="flex-shrink-0"
+												/>
+											) : null}
 											{modelHref ? (
 												<Link
 													href={modelHref}
@@ -1998,282 +2058,41 @@ export default function AsyncJobsPanel({
 													{modelLabel}
 												</Link>
 											) : (
-												<span className="truncate">{modelLabel}</span>
+												<div
+													className="truncate font-medium text-foreground"
+													title={job.model ?? undefined}
+												>
+													{modelLabel}
+												</div>
 											)}
 										</div>
 									</div>
-								</div>
-									<div className="shrink-0 text-right">
-										<div className="font-mono text-sm text-foreground">
-											{job.kind === "batch" && (job.settled_cost_nanos != null || job.settled_cost_usd != null)
-												? formatSettledCost(job)
-												: formatMoneyFromNanos(job.request_cost_nanos)}
-										</div>
-										<div className="mt-1">
-											<JobStatusBadge status={job.status} />
-									</div>
-								</div>
-							</div>
-
-							<div className="mt-3 flex flex-wrap items-center gap-2">
-								{job.provider ? (
-									<Badge
-										variant="outline"
-										className="inline-flex items-center gap-2"
-									>
-										<Logo
-											id={job.provider}
-											width={14}
-											height={14}
-											className="flex-shrink-0"
-										/>
-										<span className="truncate">{providerLabel}</span>
-									</Badge>
-								) : null}
-								<AsyncJobAppBadge
-									appId={job.app_id}
-									appLabel={appLabel}
-									href={appHref}
-								/>
-								<Badge
-									variant="outline"
-									className="inline-flex items-center gap-2 capitalize"
-								>
-									<Icon className="h-3.5 w-3.5 text-muted-foreground" />
-									{job.kind}
-								</Badge>
-							</div>
-							{failureSummary ? (
-								<div className="mt-2 text-xs text-rose-700 line-clamp-2">
-									{failureSummary}
-								</div>
-							) : null}
-						</button>
-					);
-				})}
-			</div>
-		) : null}
-
-		<div className={cn("overflow-hidden rounded-lg border", variant === "logs" ? "hidden md:block" : undefined)}>
-			<ScrollArea
-				className="w-full"
-				scrollBarOrientation="horizontal"
-				keepScrollbarMounted
-				viewportClassName="w-full pb-2"
-			>
-			<Table
-				wrapInContainer={false}
-				className={cn(variant === "logs" ? "min-w-[760px] text-xs" : "min-w-[860px]")}
-			>
-				<TableHeader>
-					<TableRow className={variant === "logs" ? "h-9" : undefined}>
-						{variant === "logs" ? <TableHead>{s("Timestamp")}</TableHead> : null}
-						{variant === "logs" ? <TableHead>{s("Model")}</TableHead> : <TableHead>{s("Job")}</TableHead>}
-						{variant === "logs" ? <TableHead>{s("Provider")}</TableHead> : null}
-						{variant === "logs" ? <TableHead>{s("Job")}</TableHead> : null}
-						{variant === "logs" ? <TableHead className="text-right">{s("Cost")}</TableHead> : null}
-						<TableHead>{s("Status")}</TableHead>
-						{variant === "logs" ? null : <TableHead>{s("Webhook")}</TableHead>}
-						{variant === "logs" ? null : <TableHead>{s("Last attempt")}</TableHead>}
-						{variant === "logs" ? null : <TableHead>{s("Next retry")}</TableHead>}
-					</TableRow>
-				</TableHeader>
-				<TableBody>
-					{jobs.map((job) => {
-						const Icon = kindIcon(job.kind);
-						const timestamp = job.request_created_at ?? job.created_at;
-						const failureSummary = formatAsyncJobFailureSummary(job);
-						const providerLabel = job.provider
-							? resolvedProviderNames.get(job.provider) ?? job.provider
-							: null;
-						const appLabel = job.app_id
-							? resolvedAppMetadata.get(job.app_id)?.title?.trim() || job.app_id
-							: null;
-						const appHref = job.app_id ? `/apps/${encodeURIComponent(job.app_id)}` : null;
-						const modelLabel = getModelDisplayName(
-							job.model,
-							resolvedModelMetadata,
-						);
-						const modelHref = getModelDetailsHref(job.model);
-						const modelLogoId = getModelLogoId(
-							job.model,
-							resolvedModelMetadata,
-						);
-						return (
-							<TableRow
-								key={`${job.kind}:${job.internal_id}`}
-								className={cn(
-									variant === "logs" ? "h-12" : undefined,
-									"cursor-pointer hover:bg-muted/40",
-								)}
-								onClick={() => openDetail(job)}
-							>
-								{variant === "logs" ? (
-									<TableCell className="py-2 font-mono text-xs">
-										{timestamp ? (
-											<HoverCard>
-												<HoverCardTrigger asChild>
-													<span className="cursor-help underline underline-offset-2 decoration-dotted">
-														{formatTimestamp(timestamp)}
-													</span>
-												</HoverCardTrigger>
-												<HoverCardContent align="start" className="w-auto">
-													{(() => {
-														const date = new Date(timestamp);
-														const unixSeconds = Math.floor(
-															date.getTime() / 1000,
-														);
-														return (
-															<div className="grid gap-2 text-xs">
-																<div className="grid grid-cols-[120px_1fr] gap-2">
-																	<div className="text-muted-foreground">
-																		{userTimeZone}
-																	</div>
-																	<div className="font-mono">
-																{formatDateTime(date, userTimeZone, locale)}
-																	</div>
-																</div>
-																<div className="grid grid-cols-[120px_1fr] gap-2">
-																	<div className="text-muted-foreground">
-												UTC
-																	</div>
-																	<div className="font-mono">
-																	{formatDateTime(date, "UTC", locale)}
-																	</div>
-																</div>
-																<div className="grid grid-cols-[120px_1fr] gap-2">
-																	<div className="text-muted-foreground">
-												{tTime("relative")}
-																	</div>
-																	<div className="font-mono">
-																		{relativeNowMs
-																			? formatRelativeToNow(date, relativeNowMs)
-																			: "-"}
-																	</div>
-																</div>
-																<div className="grid grid-cols-[120px_1fr] gap-2">
-																	<div className="text-muted-foreground">
-												{tTime("timestamp")}
-																	</div>
-																	<div className="font-mono">
-																		{unixSeconds}
-																	</div>
-																</div>
-															</div>
-														);
-													})()}
-												</HoverCardContent>
-											</HoverCard>
-										) : (
-											"-"
-										)}
-									</TableCell>
-								) : null}
-								{variant === "logs" ? (
-									<TableCell className="py-2">
-										<div className="max-w-[280px]">
-											<div className="flex items-center gap-2">
-												{modelLogoId ? (
-													<Logo
-														id={modelLogoId}
-														width={16}
-														height={16}
-														className="flex-shrink-0"
-													/>
-												) : null}
-												{modelHref ? (
-													<Link
-														href={modelHref}
-														className="truncate underline decoration-transparent transition-colors duration-200 hover:text-primary hover:decoration-current"
-														title={job.model ?? undefined}
-														onClick={stopRowClick}
-													>
-														{modelLabel}
-													</Link>
-												) : (
-													<div
-														className="truncate font-medium text-foreground"
-														title={job.model ?? undefined}
-													>
-														{modelLabel}
-													</div>
-												)}
-											</div>
-										</div>
-									</TableCell>
-								) : (
-									<TableCell>
-										<div className="space-y-1">
-											<div className="flex items-center gap-2">
-												<Icon className="h-4 w-4 text-muted-foreground" />
-												<span className="font-medium capitalize">{job.kind}</span>
-												<span className="font-mono text-xs text-muted-foreground">{job.internal_id}</span>
-											</div>
-											<div className="text-xs text-muted-foreground">
-												{job.provider ?? s("Unknown provider")}
-												{job.model ? ` · ${job.model}` : ""}
-											</div>
-											{failureSummary ? (
-												<div className="text-xs text-rose-700 line-clamp-2">
-													{failureSummary}
-												</div>
-											) : null}
-											<AsyncJobAppBadge
-												appId={job.app_id}
-												appLabel={appLabel}
-												href={appHref}
+								</>
+							);
+						case "provider":
+							return (
+								<>
+									{job.provider ? (
+										<Badge
+											variant="outline"
+											className="inline-flex items-center gap-2"
+										>
+											<Logo
+												id={job.provider}
+												width={14}
+												height={14}
+												className="flex-shrink-0"
 											/>
-										</div>
-									</TableCell>
-								)}
-								{variant === "logs" ? (
-									<TableCell className="py-2">
-										{job.provider ? (
-											<Badge
-												variant="outline"
-												className="inline-flex items-center gap-2"
-											>
-												<Logo
-													id={job.provider}
-													width={14}
-													height={14}
-													className="flex-shrink-0"
-												/>
-												<span className="truncate">{providerLabel}</span>
-											</Badge>
-										) : (
-											<Badge variant="outline">-</Badge>
-										)}
-									</TableCell>
-								) : null}
-								{variant === "logs" ? (
-									<TableCell className="py-2">
-										<div className="space-y-1">
-											<div className="flex items-center gap-2">
-												<Badge
-													variant="outline"
-													className="inline-flex items-center gap-2 capitalize"
-												>
-													<Icon className="h-3.5 w-3.5 text-muted-foreground" />
-													{job.kind}
-												</Badge>
-											</div>
-											<AsyncJobAppBadge
-												appId={job.app_id}
-												appLabel={appLabel}
-												href={appHref}
-											/>
-										</div>
-									</TableCell>
-								) : null}
-								{variant === "logs" ? (
-									<TableCell className="py-2 text-right font-mono text-xs">
-										{job.kind === "batch" && (job.settled_cost_nanos != null || job.settled_cost_usd != null)
-											? formatSettledCost(job)
-											: formatMoneyFromNanos(job.request_cost_nanos)}
-									</TableCell>
-								) : null}
-								<TableCell>
+											<span className="truncate">{providerLabel}</span>
+										</Badge>
+									) : (
+										<Badge variant="outline">-</Badge>
+									)}
+								</>
+							);
+						case "status":
+							return (
+								<>
 									<div className="space-y-1">
 										<JobStatusBadge status={job.status} />
 										{failureSummary ? (
@@ -2282,56 +2101,141 @@ export default function AsyncJobsPanel({
 											</div>
 										) : null}
 									</div>
-								</TableCell>
-								{variant === "logs" ? null : (
-									<TableCell>
-						<div className="space-y-1 text-xs">
-							<div>
-								{s("Delivered events")}: {job.webhook.delivered_events.toLocaleString(locale)}
-							</div>
-							<div className="text-muted-foreground">
-								{job.webhook.pending_retries > 0
-									? `${s("Pending retries")}: ${job.webhook.pending_retries.toLocaleString(locale)}`
-									: job.webhook.configured
-										? s("No pending retries")
-										: s("No webhook configured")}
-							</div>
-						</div>
-									</TableCell>
-								)}
-								{variant === "logs" ? null : (
-									<TableCell>
-										<div className="space-y-1 text-xs">
-											<div>{formatTimestamp(job.webhook.last_attempt_at)}</div>
-											{job.webhook.last_attempt_status ? (
-												<div className="text-muted-foreground">{job.webhook.last_attempt_status}</div>
-											) : null}
-										</div>
-									</TableCell>
-								)}
-								{variant === "logs" ? null : (
-									<TableCell className="text-xs">
-										<div className="flex items-center gap-2 text-muted-foreground">
-											<Clock3 className="h-3.5 w-3.5" />
-											{formatTimestamp(job.webhook.next_retry_at)}
-										</div>
-										{job.webhook.last_error_message ? (
-											<div className="mt-1 flex items-start gap-1 text-[11px] text-amber-700">
-												<AlertTriangle className="mt-0.5 h-3 w-3" />
-												<span className="line-clamp-2">{job.webhook.last_error_message}</span>
-											</div>
-										) : null}
-									</TableCell>
-								)}
+								</>
+							);
+						case "cost":
+							return (
+								<>
+									{job.settled_cost_nanos != null ||
+									job.settled_cost_usd != null
+										? formatSettledCost(job)
+										: formatMoneyFromNanos(job.request_cost_nanos)}
+								</>
+							);
+					}
+				}}
+			/>
+		) : jobs.length === 0 ? (
+			<div className="rounded-lg border border-dashed px-4 py-8 text-sm text-muted-foreground">
+				{resolvedEmptyMessage}
+			</div>
+		) : (
+			<div className="overflow-hidden rounded-lg border">
+				<ScrollArea
+					scrollBarOrientation="horizontal"
+					keepScrollbarMounted
+					viewportClassName="w-full pb-2"
+				>
+					<Table wrapInContainer={false} className="min-w-[860px]">
+						<TableHeader>
+							<TableRow>
+								<TableHead>{s("Job")}</TableHead>
+								<TableHead>{s("Status")}</TableHead>
+								<TableHead>{s("Webhook")}</TableHead>
+								<TableHead>{s("Last attempt")}</TableHead>
+								<TableHead>{s("Next retry")}</TableHead>
 							</TableRow>
-						);
-					})}
-				</TableBody>
-			</Table>
-			</ScrollArea>
-		</div>
-	</>
-	);
+						</TableHeader>
+						<TableBody>
+							{jobs.map((job) => {
+								const Icon = kindIcon(job.kind);
+								const failureSummary = formatAsyncJobFailureSummary(job);
+								const appLabel = job.app_id
+									? resolvedAppMetadata.get(job.app_id)?.title?.trim() ||
+										job.app_id
+									: null;
+								const appHref = job.app_id
+									? `/apps/${encodeURIComponent(job.app_id)}`
+									: null;
+								return (
+									<TableRow
+										key={`${job.kind}:${job.internal_id}`}
+										className="cursor-pointer hover:bg-muted/40"
+										onClick={() => openDetail(job)}
+									>
+										<TableCell>
+											<div className="space-y-1">
+												<div className="flex items-center gap-2">
+													<Icon className="h-4 w-4 text-muted-foreground" />
+													<span className="font-medium capitalize">
+														{job.kind}
+													</span>
+													<span className="font-mono text-xs text-muted-foreground">
+														{job.internal_id}
+													</span>
+												</div>
+												<div className="text-xs text-muted-foreground">
+													{job.provider ?? s("Unknown provider")}
+													{job.model ? ` · ${job.model}` : ""}
+												</div>
+												{failureSummary ? (
+													<div className="text-xs text-rose-700 line-clamp-2">
+														{failureSummary}
+													</div>
+												) : null}
+												<AsyncJobAppBadge
+													appId={job.app_id}
+													appLabel={appLabel}
+													href={appHref}
+												/>
+											</div>
+										</TableCell>
+										<TableCell>
+											<div className="space-y-1">
+												<JobStatusBadge status={job.status} />
+												{failureSummary ? (
+													<div className="max-w-[220px] text-xs text-rose-700 line-clamp-2">
+														{failureSummary}
+													</div>
+												) : null}
+											</div>
+										</TableCell>
+										<TableCell>
+											<div className="space-y-1 text-xs">
+												<div>{job.webhook.delivered_events} delivered</div>
+												<div className="text-muted-foreground">
+													{job.webhook.pending_retries > 0
+														? `${job.webhook.pending_retries} pending retry`
+														: job.webhook.configured
+															? "No pending retries"
+															: "No webhook configured"}
+												</div>
+											</div>
+										</TableCell>
+										<TableCell>
+											<div className="space-y-1 text-xs">
+												<div>
+													{formatTimestamp(job.webhook.last_attempt_at)}
+												</div>
+												{job.webhook.last_attempt_status ? (
+													<div className="text-muted-foreground">
+														{job.webhook.last_attempt_status}
+													</div>
+												) : null}
+											</div>
+										</TableCell>
+										<TableCell>
+											<div className="flex items-center gap-2 text-muted-foreground">
+												<Clock3 className="h-3.5 w-3.5" />
+												{formatTimestamp(job.webhook.next_retry_at)}
+											</div>
+											{job.webhook.last_error_message ? (
+												<div className="mt-1 flex items-start gap-1 text-[11px] text-amber-700">
+													<AlertTriangle className="mt-0.5 h-3 w-3" />
+													<span className="line-clamp-2">
+														{job.webhook.last_error_message}
+													</span>
+												</div>
+											) : null}
+										</TableCell>
+									</TableRow>
+								);
+							})}
+						</TableBody>
+					</Table>
+				</ScrollArea>
+			</div>
+		);
 
 	return (
 		<>

@@ -29,9 +29,9 @@
   "country_code": "CN",
   "status": "Active",
   "colour": null,
-  "gateway_kind": "catalogue",
+  "gateway_kind": "direct",
   "routable": true,
-  "routing_enabled": false,
+  "routing_enabled": true,
   "sdk_package": "@ai-sdk/openai-compatible",
   "api_base_url": "https://api-inference.modelscope.cn/v1",
   "docs_url": "https://modelscope.cn/docs/model-service/API-Inference/intro",
@@ -61,6 +61,6 @@
   "verification": {
     "status": "verified",
     "checked_at": "2026-08-24T00:00:00Z",
-    "notes": "Reconciled against the official live /v1/models response and official API-Inference documentation. Routing remains disabled because this is a free, dynamically limited, non-commercial service without an SLA. Account use requires an Alibaba Cloud-linked, real-name-verified ModelScope account."
+    "notes": "Reconciled against the official live /v1/models response and official API-Inference documentation. IR routing supports OpenAI-compatible text and native asynchronous image editing. This is a free, dynamically limited, non-commercial service without an SLA; no live inference test was performed. Account use requires an Alibaba Cloud-linked, real-name-verified ModelScope account."
   }
 }

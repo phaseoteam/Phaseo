@@ -1,0 +1,9 @@
+---
+title: "Mettre à jour un modèle privé"
+sidebarTitle: "Mettre à jour un modèle privé"
+badge: "Bêta"
+openapi: "/fr/openapi/v1/openapi.localized.yaml PATCH /private-models/{id}"
+description: "Modifiez les paramètres du point de terminaison ou renouvelez l’identifiant d’authentification accessible uniquement en écriture."
+---
+
+Nécessite `private_models:write` et une identité de propriétaire ou d’administrateur. Envoyez `slug` pour renommer le modèle propre à l’espace de travail ; `model_id` ne peut pas être fourni directement.

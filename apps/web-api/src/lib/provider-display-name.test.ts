@@ -45,4 +45,28 @@ describe("formatProviderOfferDisplayName", () => {
 			offerScope: "specialized",
 		})).toBe("Example Fast");
 	});
+
+	it("does not repeat a specialized label already in parentheses", () => {
+		expect(formatProviderOfferDisplayName({
+			providerId: "wafer-zdr",
+			providerName: "Wafer (ZDR)",
+			offerLabel: "ZDR",
+			offerScope: "specialized",
+		})).toBe("Wafer (ZDR)");
+	});
+
+	it("does not repeat regional labels in spaced or hyphenated names", () => {
+		expect(formatProviderOfferDisplayName({
+			providerId: "example-eu",
+			providerName: "Example EU",
+			offerLabel: "EU",
+			offerScope: "regional",
+		})).toBe("Example EU");
+		expect(formatProviderOfferDisplayName({
+			providerId: "example-eu",
+			providerName: "Example-EU",
+			offerLabel: "EU",
+			offerScope: "regional",
+		})).toBe("Example-EU");
+	});
 });

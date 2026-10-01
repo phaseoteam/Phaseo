@@ -20,7 +20,7 @@ export default async function AuthControls({
 		userRole: undefined,
 	};
 	try {
-		data = await fetchInternalAuthHeaderData();
+		data = await fetchInternalAuthHeaderData({ limit: 50 });
 	} catch {
 		// Keep the header renderable if the internal route is unavailable.
 	}
@@ -31,6 +31,7 @@ export default async function AuthControls({
 				isLoggedIn={false}
 				user={undefined}
 				teams={[]}
+				displayPreferences={undefined}
 				currentTeamId={undefined}
 				userRole={undefined}
 				variant={variant}
@@ -43,8 +44,10 @@ export default async function AuthControls({
 			isLoggedIn={true}
 			user={data.user}
 			teams={data.teams}
+			displayPreferences={data.displayPreferences}
 			currentTeamId={data.currentTeamId}
 			userRole={data.userRole}
+			providerMode={data.providerMode}
 			variant={variant}
 		/>
 	);

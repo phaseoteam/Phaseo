@@ -33,6 +33,7 @@ import {
 } from "@/components/ui/drawer";
 import { cn } from "@/lib/utils";
 import { captureProductEvent } from "@/lib/productAnalytics";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 
 export type OnboardingWorkspace = {
 	id: string;
@@ -195,6 +196,7 @@ function SimulatedResponse({
 }) {
 	const t = useTranslations("Product.interactiveOnboarding");
 	const locale = useLocale();
+	const format = useDisplayFormatters();
 	if (!value && !isStreaming) return null;
 	const seconds = new Intl.NumberFormat(locale, {
 		minimumFractionDigits: 1,
@@ -207,7 +209,7 @@ function SimulatedResponse({
 				<div className="flex items-center gap-2">
 					<span className="text-sm font-medium">{t("responseTitle")}</span>
 					<span className="font-mono text-xs text-muted-foreground">
-						{t("responseStats", { seconds, count: streamedTokens } as never)}
+						{t("responseStats", { seconds: format.number(elapsedMs / 1000, { minimumFractionDigits: 1, maximumFractionDigits: 1, notation: "standard" }), count: streamedTokens })}
 					</span>
 				</div>
 				<div className="flex items-center gap-1">

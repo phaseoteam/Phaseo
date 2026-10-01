@@ -17,9 +17,11 @@ import {
 	ProviderInspectorSheetTitle,
 } from "./pricing/ProviderInspectorSheet";
 import Quickstart from "./quickstart/Quickstart";
+import { getByokOnlyProviders } from "./quickstart/byokOnly";
 
 export function UseModelSheet({
 	modelId,
+	requestModelId,
 	modelName,
 	gatewayMetadata,
 	compact = false,
@@ -27,6 +29,7 @@ export function UseModelSheet({
 	className,
 }: {
 	modelId: string;
+	requestModelId?: string;
 	modelName: string;
 	gatewayMetadata?: ModelGatewayMetadata | null;
 	compact?: boolean;
@@ -64,6 +67,10 @@ export function UseModelSheet({
 				: [],
 		[gatewayMetadata],
 	);
+	const byokOnlyProviders = useMemo(
+		() => getByokOnlyProviders(gatewayMetadata),
+		[gatewayMetadata],
+	);
 
 	return (
 		<ProviderInspectorSheet open={open} onOpenChange={handleOpenChange}>
@@ -91,7 +98,7 @@ export function UseModelSheet({
 				<ScrollArea className="min-h-0 flex-1" viewportClassName="px-5 py-5 sm:px-6" keepScrollbarMounted>
 					{gatewayMetadata ? (
 						<Quickstart
-							modelId={gatewayMetadata.modelId}
+							modelId={requestModelId ?? gatewayMetadata.modelId}
 							aliases={gatewayMetadata.aliases}
 							apiModelIds={gatewayMetadata.apiModelIds}
 							primaryModelIdentifier={gatewayMetadata.primaryModelIdentifier}
@@ -101,13 +108,14 @@ export function UseModelSheet({
 							supportedParametersByEndpoint={gatewayMetadata.supportedParametersByEndpoint}
 							endpoint={quickstartEndpoint}
 							supportedEndpoints={supportedEndpoints}
+							byokOnlyProviders={byokOnlyProviders}
 							showHeader={false}
 						/>
 					) : (
 						<Quickstart
 							mode="model-metadata"
-							modelId={modelId}
-							acceptedModelIdentifiers={[modelId]}
+							modelId={requestModelId ?? modelId}
+							acceptedModelIdentifiers={[requestModelId ?? modelId]}
 							showHeader={false}
 						/>
 					)}

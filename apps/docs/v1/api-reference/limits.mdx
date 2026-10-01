@@ -1,59 +1,29 @@
 ---
-title: "Limits"
-description: "Understand provider-driven rate limits and how to build resilient retry behavior."
+title: "Rate Limits"
+description: "Handle throttling, provider quotas, and bounded retries."
 icon: "gauge"
 ---
 
-The Gateway does not currently enforce a separate platform-level request cap. Most throttling comes from upstream providers.
+A request can be throttled by the selected provider or by an applicable workspace or key policy. Routing and fallbacks can reduce provider failures, but a request can still return `429`.
 
-## How limits work
+## Provider limits
 
-- Requests can be rate-limited by the routed provider for the selected model.
-- BYOK traffic uses the limits tied to your provider account.
-- Gateway routing and fallback can reduce failures, but limits can still surface as `429`.
+BYOK requests use the limits of your provider account. Managed requests use shared provider capacity; that capacity is not an individual workspace allowance.
 
-## Handling `429` responses
+Phaseo forwards a validated `Retry-After` value when the routed provider supplies one. BYOK responses can also include `X-Phaseo-Upstream-RateLimit-*` headers. These quota headers are omitted for managed requests because they describe shared provider capacity. Other upstream headers are not forwarded.
 
-- Respect `Retry-After` when present.
-- Use exponential backoff with jitter.
-- Set a maximum retry count and fail gracefully.
+## Handle a throttled request
 
-Phaseo forwards a validated `Retry-After` value when the routed provider supplies one. For BYOK requests, provider quota details may also be returned under `X-Phaseo-Upstream-RateLimit-*` headers. Those quota headers are intentionally omitted for managed-provider requests because they describe shared Phaseo provider capacity, not an individual customer's allowance. Other upstream headers are not forwarded.
+1. Inspect the [error code](./errors.mdx) to distinguish temporary provider throttling from a policy or budget restriction that requires configuration changes.
+2. Respect `Retry-After` when present. It can be a delay in seconds or an HTTP date; validate the value before scheduling a retry.
+3. Otherwise, use exponential backoff with jitter and a maximum delay.
+4. Bound retries by both attempt count and an overall deadline. Cancel abandoned work and release each failed response body before retrying.
+5. Reduce concurrency if throttling persists.
 
-```ts
-async function retryWithBackoff(run: () => Promise<Response>, maxRetries = 4) {
-  for (let attempt = 0; attempt <= maxRetries; attempt += 1) {
-    const response = await run();
-    if (response.status !== 429) return response;
+Do not automatically retry an ambiguous job submission or replay completed tool actions. A request may have reached the provider even if the client lost its response; retries can duplicate work and charges. For an accepted video or batch job, use its status endpoint rather than submitting it again.
 
-    const retryAfterHeader = response.headers.get("retry-after");
-    const retryAfterMs = retryAfterHeader
-      ? Number(retryAfterHeader) * 1000
-      : Math.min(1000 * 2 ** attempt, 8000);
+## Monitor throttling
 
-    await new Promise((resolve) => setTimeout(resolve, retryAfterMs));
-  }
+Track `429` rates by endpoint and model, and inspect fallback frequency in request logs. Compare your application logs with [routing settings](../guides/routing-and-fallbacks.mdx) and provider account quotas for BYOK traffic.
 
-  throw new Error("Rate limit retries exhausted");
-}
-```
-
-## Monitoring
-
-- Track `429` rates by endpoint and model.
-- Watch fallback frequency to identify provider pressure.
-- Use dashboard metrics and your app logs together for incident triage.
-
-## Related pages
-
-- [Authentication](./authentication.mdx)
-- [Parameters](./parameters.mdx)
-- [Errors and Debugging](./errors.mdx)
-
-<Visibility for="agents">
-If you are implementing retries as an agent:
-
-- Use repository skills for safe retry loops and timeout control.
-- Keep retry policy configuration centralized (attempt count, base delay, max delay).
-- Never retry non-idempotent requests without explicit product approval.
-</Visibility>
+See [budgets](./endpoint/budgets-list.mdx) and [guardrails](./endpoint/guardrails.mdx) for workspace spending and access controls.

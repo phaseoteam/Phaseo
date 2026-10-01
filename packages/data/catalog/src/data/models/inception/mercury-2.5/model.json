@@ -1,0 +1,100 @@
+{
+  "model_id": "inception/mercury-2.5",
+  "organisation_id": "inception",
+  "name": "Mercury 2.5",
+  "status": "Available",
+  "previous_model_id": "inception/mercury-2",
+  "description": "Mercury 2.5 is Inception's reasoning diffusion language model for fast, high-quality text generation, coding, and agent workflows. It accepts text inputs and produces text outputs.",
+  "announced_date": "2026-08-26T00:00:00Z",
+  "release_date": "2026-09-07T00:00:00Z",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "text",
+  "output_types": "text",
+  "api_model_id": "inception/mercury-2.5",
+  "links": [
+    {
+      "title": "Models",
+      "kind": "model_card",
+      "url": "https://www.inceptionlabs.ai/models"
+    },
+    {
+      "title": "Models, Endpoints, and Pricing",
+      "kind": "docs",
+      "url": "https://docs.inceptionlabs.ai/get-started/models"
+    }
+  ],
+  "details": [
+    {
+      "name": "context_length",
+      "value": "256K tokens (marketed as 260K on Inception's public model page)."
+    },
+    {
+      "name": "reasoning_effort",
+      "value": "instant, medium, and high; medium is the recommended default."
+    },
+    {
+      "name": "max_tokens",
+      "value": "Inception's early-access guidance recommends 8192; max_tokens is shared between internal reasoning and the visible response."
+    }
+  ],
+  "benchmarks": [],
+  "family_id": null,
+  "page_notice": null,
+  "model_type": "language",
+  "knowledge_cutoff": null,
+  "limits": {
+    "context": 262144,
+    "input": null,
+    "output": null
+  },
+  "modalities": {
+    "input": [
+      "text"
+    ],
+    "output": [
+      "text"
+    ]
+  },
+  "reasoning": {
+    "supported": true,
+    "options": [
+      "instant",
+      "medium",
+      "high"
+    ]
+  },
+  "capabilities": {
+    "attachment": false,
+    "tool_call": true,
+    "structured_output": true,
+    "temperature": null,
+    "streaming": true,
+    "web_search": false
+  },
+  "open_weights": false,
+  "sources": [
+    {
+      "kind": "model_card",
+      "url": "https://www.inceptionlabs.ai/models",
+      "accessed_at": "2026-09-06T00:00:00Z",
+      "notes": "Inception's public model page lists Mercury 2.5 as a preview model with a 260K context window, reasoning, tool use, and structured output."
+    },
+    {
+      "kind": "documentation",
+      "url": "https://docs.inceptionlabs.ai/get-started/models",
+      "accessed_at": "2026-09-06T00:00:00Z",
+      "notes": "Official Inception API model and pricing documentation; the public model page supplies the Mercury 2.5-specific metadata."
+    }
+  ],
+  "verification": {
+    "status": "partial",
+    "checked_at": "2026-09-06T00:00:00Z",
+    "notes": "Metadata and pricing are verified against Inception's public model page. A live Phaseo smoke test remains pending the production provider key and the 2026-09-07 launch window."
+  },
+  "last_updated": "2026-09-06T00:00:00Z",
+  "removal_date": null,
+  "replacement_model_id": null,
+  "license_url": null
+}

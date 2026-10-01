@@ -36,6 +36,7 @@ type Provider = {
     description: string | null;
     link: string | null;
     country_code: string | null;
+    subdivision_code: string | null;
 };
 
 async function handleProviders(req: Request) {
@@ -65,7 +66,7 @@ async function handleProviders(req: Request) {
         // Get paginated data
         const { data: providers, error: dataError } = await supabase
             .from("v2_providers")
-            .select("api_provider_id:provider_slug, api_provider_name:name, metadata, country_code")
+            .select("api_provider_id:provider_slug, api_provider_name:name, metadata, country_code, subdivision_code")
             .order("name", { ascending: true })
             .range(offset, offset + limit - 1);
 
@@ -79,6 +80,7 @@ async function handleProviders(req: Request) {
             description: typeof provider.metadata?.description === "string" ? provider.metadata.description : null,
             link: typeof provider.metadata?.link === "string" ? provider.metadata.link : null,
             country_code: provider.country_code ?? null,
+            subdivision_code: provider.subdivision_code ?? null,
         }));
 
         const cacheOptions = {

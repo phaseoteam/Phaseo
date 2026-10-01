@@ -6,12 +6,16 @@ import { ExternalLink, ChevronDown, ChevronRight } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import type { ModelBenchmarkResult } from "@/lib/fetchers/models/getModelBenchmarkData";
+import { isArtificialAnalysisCostBenchmark } from "@/lib/benchmarks/artificialAnalysis";
 
 interface ModelBenchmarksTableProps {
 	grouped: Record<string, ModelBenchmarkResult[]>;
 }
 
 function getScoreDisplay(result: ModelBenchmarkResult) {
+	if (isArtificialAnalysisCostBenchmark(result.benchmark_id) && result.score != null) {
+		return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(result.score);
+	}
 	if (result.benchmark.max_score != null && result.score != null) {
 		const formatted =
 			result.score % 1 === 0

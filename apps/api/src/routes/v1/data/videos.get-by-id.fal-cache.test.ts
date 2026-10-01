@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+const state = vi.hoisted(() => ({ provider: "fal" }));
 
 vi.mock("@pipeline/before/guards", () => ({
 	guardAuth: vi.fn(async () => ({
@@ -27,14 +28,14 @@ vi.mock("./videos.helpers", async () => {
 				workspaceId: "ws_fal_cached",
 				videoId: "video_fal_cached",
 				nativeId: "fal-task-cached",
-				provider: "fal",
+				provider: state.provider,
 				model: "fal/kling-video/v2.5/turbo/pro/text-to-video",
 				status: "completed",
 				createdAt: "2026-08-10T20:00:00.000Z",
 				updatedAt: "2026-08-10T20:01:00.000Z",
 			},
 			meta: {
-				provider: "fal",
+				provider: state.provider,
 				downloadUrl: "https://cdn.example.com/fal-output.mp4",
 			},
 		})),
@@ -46,7 +47,9 @@ import { fetchVideoProviderStatus } from "@core/video-reconciliation";
 import { getVideoByIdHandler } from "./videos.get-by-id";
 
 describe("getVideoByIdHandler cached Fal terminal status", () => {
-	it("returns the persisted terminal result when the upstream poll is unavailable", async () => {
+	it.each(["fal", "ltx"])("returns persisted %s results when polling is unavailable", async (provider) => {
+		state.provider = provider;
+		vi.mocked(fetchVideoProviderStatus).mockClear();
 		const response = await getVideoByIdHandler(
 			new Request("https://api.phaseo.app/v1/videos/video_fal_cached"),
 		);
@@ -56,7 +59,7 @@ describe("getVideoByIdHandler cached Fal terminal status", () => {
 		await expect(response.json()).resolves.toMatchObject({
 			id: "video_fal_cached",
 			status: "completed",
-			provider: "fal",
+			provider,
 			output: [{ uri: "https://cdn.example.com/fal-output.mp4", mime_type: "video/mp4" }],
 		});
 	});

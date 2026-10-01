@@ -18,6 +18,7 @@ import { attachToolUsageMetrics, summarizeToolUsage } from "./tool-usage";
 import { extractSearchObservability } from "./search-observability";
 import { mergeWebFetchObservability } from "./fetch-observability";
 import {
+	buildResponseTimeline,
 	resolveBeforeLatencyMs,
 	resolveExecuteTotalLatencyMs,
 	resolveNonStreamLatencyMs,
@@ -397,6 +398,7 @@ export async function handleFailureAudit(
             providerResponse: errorDetails ?? result.rawResponse ?? null,
             detailMetadata: {
                 stage: "execute",
+                response_timeline: buildResponseTimeline(ctx),
                 labels: ctx.meta.labels ?? [],
                 client_source: ctx.meta.clientSource ?? null,
                 routing_snapshot: sanitizeForAxiom((ctx as any).routingSnapshot ?? null),
@@ -513,12 +515,6 @@ export async function handleSuccessAudit(
     // Enrich usage with multimodal signals visible at the gateway layer (e.g., image/audio/video inputs).
     const usageWithMultimodal = enrichUsageWithMultimodal(ctx, result, usagePriced);
 
-    // Calculate throughput (tokens/sec) using output tokens only to reflect generation speed.
-    if (ctx.meta.throughput_tps === undefined && typeof generationMs === "number" && generationMs > 0) {
-        const usage = usageWithMultimodal ?? {};
-        const tokensOut = Number(usage.output_tokens ?? usage.output_text_tokens ?? usage.completion_tokens ?? 0);
-        ctx.meta.throughput_tps = tokensOut / (generationMs / 1000);
-    }
     const outputTokens = Number(
         usageWithMultimodal?.output_tokens ??
         usageWithMultimodal?.output_text_tokens ??
@@ -534,7 +530,8 @@ export async function handleSuccessAudit(
         providerTtftMs,
         gatewayE2eMs: endToEndMs,
     });
-    ctx.meta.throughput_tps ??= outputPerformance.effectiveThroughputTps ?? undefined;
+    // Throughput is API-owned: output tokens divided by the full provider duration in seconds.
+    ctx.meta.throughput_tps = outputPerformance.effectiveThroughputTps ?? undefined;
     ctx.meta.output_speed_tps ??= outputPerformance.outputSpeedTps ?? undefined;
     ctx.meta.tpot_ms ??= outputPerformance.tpotMs ?? undefined;
     ctx.meta.itl_ms ??= outputPerformance.itlMs ?? undefined;
@@ -679,6 +676,7 @@ export async function handleSuccessAudit(
             providerResponse: result.rawResponse ?? null,
             detailMetadata: {
                 stage: "execute",
+                response_timeline: buildResponseTimeline(ctx),
                 labels: ctx.meta.labels ?? [],
                 client_source: ctx.meta.clientSource ?? null,
                 finish_reason: finishReason ?? null,

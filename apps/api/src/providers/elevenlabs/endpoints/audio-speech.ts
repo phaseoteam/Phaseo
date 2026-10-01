@@ -55,13 +55,14 @@ function missingVoiceResponse(): Response {
 }
 
 function invalidVoiceResponse(voice: string, model: string, supported: string[]): Response {
+	const isV4 = /(?:^|\/)eleven[-_]v4(?:[-_]turbo)?$/.test(model);
 	return new Response(
 		JSON.stringify({
 			error: {
 				type: "invalid_request_error",
 				message:
 					`Invalid voice "${voice}" for ElevenLabs model "${model}". ` +
-					`Supported voices: ${supported.join(", ")}`,
+					(isV4 ? "Use a 20-character ElevenLabs voice ID." : `Supported voices: ${supported.join(", ")}`),
 				param: "voice",
 			},
 		}),
@@ -69,6 +70,19 @@ function invalidVoiceResponse(voice: string, model: string, supported: string[])
 			status: 400,
 			headers: { "Content-Type": "application/json" },
 		},
+	);
+}
+
+function unsupportedV4SettingResponse(setting: string): Response {
+	return new Response(
+		JSON.stringify({
+			error: {
+				type: "invalid_request_error",
+				message: `Eleven v4 does not support ${setting}; use stability and similarity_boost in config.elevenlabs.voice_settings.`,
+				param: setting,
+			},
+		}),
+		{ status: 400, headers: { "Content-Type": "application/json" } },
 	);
 }
 
@@ -142,6 +156,30 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
 	}
 
 	const modelId = resolveElevenLabsModelSlug(typedPayload.model, args.providerModelSlug);
+	if (modelId === "eleven_v4" || modelId === "eleven_v4_turbo") {
+		const settings = asRecord(elevenlabsParams.voice_settings);
+		for (const [setting, provided] of [
+			["speed", typedPayload.speed],
+			["voice_settings.speed", settings.speed],
+			["voice_settings.style", settings.style],
+		] as const) {
+			if (provided !== undefined) {
+				return {
+					kind: "completed",
+					upstream: unsupportedV4SettingResponse(setting),
+					bill: {
+						cost_cents: 0,
+						currency: "USD" as const,
+						usage: undefined,
+						upstream_id: null,
+						finish_reason: null,
+					},
+					keySource: keyInfo.source,
+					byokKeyId: keyInfo.byokId,
+				};
+			}
+		}
+	}
 	const outputFormat = resolveOutputFormat(
 		typedPayload.response_format,
 		typedPayload.format,

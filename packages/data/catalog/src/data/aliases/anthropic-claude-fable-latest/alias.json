@@ -1,7 +1,7 @@
 {
   "alias_slug": "anthropic/claude-fable-latest",
-  "resolved_api_model_id": "anthropic/claude-fable-5",
-  "resolved_model_id": "anthropic/claude-fable-5",
+  "resolved_api_model_id": "anthropic/claude-fable-5.1",
+  "resolved_model_id": "anthropic/claude-fable-5.1",
   "channel": "stable",
   "is_enabled": true,
   "notes": null

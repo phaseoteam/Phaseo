@@ -6,19 +6,165 @@
   "capability_id": "video.generate",
   "rules": [
     {
-      "meter": "requests",
-      "unit": "request",
+      "meter": "output_video_seconds",
+      "unit": "second",
+      "unit_size": 1,
+      "price_per_unit": 0.13,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "2K output video, billed per generated second.",
+      "match": [
+        {
+          "path": "video_params.resolution",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 1,
+          "value": "2K"
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-09-06T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "video_params.resolution",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 1,
+          "value": "2K"
+        }
+      ],
+      "source": "https://docs.orcarouter.ai/minimax-video/overview"
+    },
+    {
+      "meter": "output_video_seconds",
+      "unit": "second",
       "unit_size": 1,
       "price_per_unit": 0.08,
       "currency": "USD",
       "pricing_plan": "standard",
-      "note": "OrcaRouter published price per request.",
-      "match": [],
+      "note": "768P output video, billed per generated second.",
+      "match": [
+        {
+          "path": "video_params.resolution",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 1,
+          "value": "768P"
+        }
+      ],
       "priority": 100,
+      "effective_from": "2026-09-06T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "video_params.resolution",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 1,
+          "value": "768P"
+        }
+      ],
+      "source": "https://docs.orcarouter.ai/minimax-video/overview"
+    },
+    {
+      "meter": "input_video_seconds",
+      "unit": "second",
+      "unit_size": 1,
+      "price_per_unit": 0.13,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Reference-video input when generating 2K output, billed per input-video second.",
+      "match": [
+        {
+          "path": "video_params.resolution",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 1,
+          "value": "2K"
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-09-06T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "video_params.resolution",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 1,
+          "value": "2K"
+        }
+      ],
+      "source": "https://docs.orcarouter.ai/minimax-video/overview"
+    },
+    {
+      "meter": "input_video_seconds",
+      "unit": "second",
+      "unit_size": 1,
+      "price_per_unit": 0.08,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Reference-video input when generating 768P output, billed per input-video second.",
+      "match": [
+        {
+          "path": "video_params.resolution",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 1,
+          "value": "768P"
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-09-06T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "video_params.resolution",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 1,
+          "value": "768P"
+        }
+      ],
+      "source": "https://docs.orcarouter.ai/minimax-video/overview"
+    },
+    {
+      "meter": "input_image",
+      "unit": "image",
+      "unit_size": 1,
+      "price_per_unit": 0.04,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "First five input images are free; $0.04 for each additional image.",
+      "included_quantity": 5,
+      "match": [],
+      "priority": 90,
+      "effective_from": "2026-09-06T00:00:00Z",
       "region": null,
       "cache_duration_seconds": null,
       "conditions": [],
-      "source": null
+      "source": "https://docs.orcarouter.ai/minimax-video/overview"
+    },
+    {
+      "meter": "input_audio_seconds",
+      "unit": "second",
+      "unit_size": 1,
+      "price_per_unit": 0,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Input audio is free.",
+      "match": [],
+      "priority": 80,
+      "effective_from": "2026-09-06T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": "https://docs.orcarouter.ai/minimax-video/overview"
     }
   ],
   "regions": [],
@@ -35,7 +181,7 @@
   ],
   "verification": {
     "status": "partial",
-    "checked_at": "2026-08-24T02:57:08.935Z",
-    "notes": "Pricing synchronized from the provider models API."
+    "checked_at": "2026-09-06T00:00:00Z",
+    "notes": "Output and reference-video rates match provider documentation. Reference-image fee follows upstream MiniMax; verify live usage before enabling this route."
   }
 }

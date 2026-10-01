@@ -1,5 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { buildServerToolContinuation, prepareServerToolsForTextRequest } from "./server-tools";
+import {
+	attachServerToolUsageToRawUsage,
+	buildServerToolContinuation,
+	prepareServerToolsForTextRequest,
+} from "./server-tools";
 
 const getBindingsMock = vi.fn();
 
@@ -1148,6 +1152,52 @@ describe("buildServerToolContinuation", () => {
 		});
 	});
 
+	it("returns completed tool usage when cancellation prevents the next tool", async () => {
+		const controller = new AbortController();
+		const executeAdvisor = vi.fn(async () => {
+			controller.abort();
+			return {
+				ok: true as const,
+				content: "Completed advice",
+				usage: { inputTokens: 30, outputTokens: 12, totalTokens: 42 },
+			};
+		});
+		const continuation = await buildServerToolContinuation(
+			{
+				choices: [{
+					message: {
+						role: "assistant",
+						content: [],
+						toolCalls: ["first", "second"].map((id) => ({
+							id,
+							name: "phaseo_advisor_reviewer",
+							arguments: JSON.stringify({ prompt: "Review this." }),
+						})),
+					},
+					finishReason: "tool_calls",
+				}],
+			} as any,
+			{
+				enabled: true,
+				advisorEnabled: true,
+				defaultAdvisorModel: "openai/gpt-5-nano",
+				advisors: {
+					phaseo_advisor_reviewer: {
+						functionName: "phaseo_advisor_reviewer",
+						forwardTranscript: false,
+						maxUses: 2,
+						maxTokens: 100,
+					},
+				},
+			} as any,
+			{ executeAdvisor, signal: controller.signal },
+		);
+		expect(executeAdvisor).toHaveBeenCalledTimes(1);
+		expect(continuation?.toolResults).toHaveLength(1);
+		expect(continuation?.usage.advisorRequests).toBe(1);
+		expect(continuation?.advisorUsage).toMatchObject({ totalTokens: 42 });
+	});
+
 	it("executes Phaseo image generation calls through the provided image executor", async () => {
 		const executeImageGeneration = vi.fn(async () => ({
 			ok: true as const,
@@ -1431,6 +1481,146 @@ describe("buildServerToolContinuation", () => {
 			error: "search_not_configured",
 			engine: "parallel",
 		});
+	});
+
+	it("executes configured TinyFish Search calls", async () => {
+		getBindingsMock.mockReturnValue({
+			TINYFISH_API_KEY: "tinyfish_test_key",
+			TINYFISH_SEARCH_BASE_URL: "https://api.search.tinyfish.ai",
+		});
+		const fetchMock = vi.fn(async () =>
+			new Response(JSON.stringify({
+				query: "latest AI policy site:example.com -site:reddit.com",
+				results: [
+					{
+						position: 1,
+						site_name: "Example",
+						title: "Example result",
+						snippet: "A TinyFish search result.",
+						url: "https://example.com/result",
+					},
+				],
+				total_results: 1,
+			}), { status: 200, headers: { "Content-Type": "application/json" } }),
+		);
+		vi.stubGlobal("fetch", fetchMock);
+
+		try {
+			const continuation = await buildServerToolContinuation(
+				{
+					choices: [{
+						message: {
+							role: "assistant",
+							content: [],
+							toolCalls: [{
+								id: "call_tinyfish",
+								name: "phaseo_web_search",
+								arguments: JSON.stringify({
+									query: "latest AI policy",
+									engine: "tinyfish",
+									max_results: 1,
+									allowed_domains: ["example.com"],
+									excluded_domains: ["reddit.com"],
+									user_location: { country: "GB" },
+									language: "en",
+									page: 2,
+								}),
+							}],
+						},
+						finishReason: "tool_calls",
+					}],
+				} as any,
+				{
+					enabled: true,
+					datetimeDefaultTimezones: ["UTC"],
+					webSearchEnabled: true,
+					webSearchMaxResults: 5,
+					webSearchIncludeText: false,
+					webSearchIncludeHighlights: true,
+					webFetchEnabled: false,
+					webFetchMaxChars: 12000,
+				},
+			);
+
+			expect(fetchMock).toHaveBeenCalledWith(
+				expect.stringContaining("https://api.search.tinyfish.ai/"),
+				expect.objectContaining({
+					method: "GET",
+					headers: expect.objectContaining({ "X-API-Key": "tinyfish_test_key" }),
+				}),
+			);
+			const requestUrl = new URL(String(fetchMock.mock.calls[0]?.[0]));
+			expect(requestUrl.searchParams.get("query")).toBe("latest AI policy (site:example.com) -site:reddit.com");
+			expect(requestUrl.searchParams.get("location")).toBe("GB");
+			expect(requestUrl.searchParams.get("language")).toBe("en");
+			expect(requestUrl.searchParams.get("page")).toBe("2");
+			expect(continuation?.usage).toMatchObject({
+				webSearchRequests: 1,
+				billableWebSearchRequests: 0,
+				webSearchResults: 1,
+				webSearchExtraResults: 0,
+				webFetchRequests: 0,
+			});
+			const parsed = JSON.parse(String(continuation?.toolResults[0]?.content));
+			expect(parsed).toMatchObject({
+				provider: "tinyfish",
+				engine: "tinyfish",
+				results: [{
+					title: "Example result",
+					url: "https://example.com/result",
+					highlights: ["A TinyFish search result."],
+				}],
+			});
+		} finally {
+			vi.unstubAllGlobals();
+		}
+	});
+
+	it("rejects insecure TinyFish Search base URLs", async () => {
+		getBindingsMock.mockReturnValue({
+			TINYFISH_API_KEY: "tinyfish_test_key",
+			TINYFISH_SEARCH_BASE_URL: "http://search.example.com",
+		});
+		const fetchMock = vi.fn();
+		vi.stubGlobal("fetch", fetchMock);
+
+		try {
+			const continuation = await buildServerToolContinuation(
+				{
+					choices: [{
+						message: {
+							role: "assistant",
+							content: [],
+							toolCalls: [{
+								id: "call_tinyfish_insecure",
+								name: "phaseo_web_search",
+								arguments: JSON.stringify({ query: "latest AI news", engine: "tinyfish" }),
+							}],
+						},
+						finishReason: "tool_calls",
+					}],
+				} as any,
+				{
+					enabled: true,
+					datetimeDefaultTimezones: ["UTC"],
+					webSearchEnabled: true,
+					webSearchMaxResults: 5,
+					webSearchIncludeText: false,
+					webSearchIncludeHighlights: true,
+					webFetchEnabled: false,
+					webFetchMaxChars: 12000,
+				},
+			);
+
+			expect(fetchMock).not.toHaveBeenCalled();
+			expect(continuation?.toolResults[0]).toMatchObject({ isError: true });
+			expect(JSON.parse(String(continuation?.toolResults[0]?.content))).toMatchObject({
+				error: "search_not_configured",
+				engine: "tinyfish",
+			});
+		} finally {
+			vi.unstubAllGlobals();
+		}
 	});
 
 	it("executes configured Parallel web search calls", async () => {
@@ -2018,5 +2208,35 @@ describe("buildServerToolContinuation", () => {
 		} finally {
 			vi.unstubAllGlobals();
 		}
+	});
+});
+
+describe("server tool billing", () => {
+	it("keeps free TinyFish usage observable without adding a billable search meter", () => {
+		const usage = attachServerToolUsageToRawUsage(
+			{ prompt_tokens: 10 },
+			{
+				datetimeRequests: 0,
+				webSearchRequests: 1,
+				billableWebSearchRequests: 0,
+				webSearchResults: 3,
+				webSearchExtraResults: 0,
+				webFetchRequests: 0,
+				advisorRequests: 0,
+				imageGenerationRequests: 0,
+				applyPatchRequests: 0,
+				subagentRequests: 0,
+				fusionRequests: 0,
+				searchModelsRequests: 0,
+			},
+		);
+
+		expect(usage).toMatchObject({
+			server_tool_use: {
+				web_search_requests: 1,
+				web_search_results: 3,
+			},
+			server_tool_web_search_requests: 0,
+		});
 	});
 });

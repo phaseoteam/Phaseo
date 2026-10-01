@@ -1,4 +1,5 @@
 "use client";
+import { useInvalidatePrivateSettings } from "../PrivateSettingsQuery";
 
 import React, { useMemo, useState } from "react";
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
@@ -26,6 +27,7 @@ import { toast } from "sonner";
 import { useTranslations } from "next-intl";
 import { localizedSettingsError } from "@/i18n/error-messages";
 import { useLocale } from "next-intl";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { rotateApiKeyAction } from "@/app/(dashboard)/settings/keys/actions";
 import { SecretRevealActions } from "./SecretRevealActions";
 
@@ -47,17 +49,6 @@ function toIsoFromMode(mode: ExpiryMode, customValue: string): string | null {
 	return null;
 }
 
-function formatExpiryLabel(
-	iso: string | null | undefined,
-	locale: string,
-	neverLabel: string,
-): string {
-	if (!iso) return neverLabel;
-	const parsed = new Date(iso);
-	if (Number.isNaN(parsed.getTime())) return neverLabel;
-	return parsed.toLocaleString(locale);
-}
-
 export default function RotateKeyItem({
 	k,
 	trigger = true,
@@ -69,7 +60,9 @@ export default function RotateKeyItem({
 	open?: boolean;
 	onOpenChange?: (open: boolean) => void;
 }) {
+	const format = useDisplayFormatters();
 	const [internalOpen, setInternalOpen] = useState(false);
+	const invalidateSettings = useInvalidatePrivateSettings();
 	const open = controlledOpen ?? internalOpen;
 	const setOpen = onOpenChange ?? setInternalOpen;
 	const [loading, setLoading] = useState(false);
@@ -124,6 +117,7 @@ export default function RotateKeyItem({
 				previousKeyExpiresAt: expiresAtIso,
 			});
 			setNewPlaintext(result?.plaintext ?? null);
+			void invalidateSettings();
 			setOldExpiryApplied(result?.previousKeyExpiresAt ?? expiresAtIso);
 			toast.success(t("keys.rotated"), { id: toastId });
 		} catch (error) {
@@ -227,7 +221,7 @@ export default function RotateKeyItem({
 							{newPlaintext}
 						</div>
 						<div className="text-sm text-muted-foreground">
-							{t("keys.previousKeyExpiry")}: {formatExpiryLabel(oldExpiryApplied, locale, t("labels.never"))}
+							{t("keys.previousKeyExpiry")}: {oldExpiryApplied ? format.dateTime(oldExpiryApplied) : t("labels.never")}
 						</div>
 						<div className="text-sm text-muted-foreground font-semibold">
 							{t("keys.storeThisKeyNow")}

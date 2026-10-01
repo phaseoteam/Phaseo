@@ -2,6 +2,7 @@
 
 import { BarChart3, CircuitBoard } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
 	ChartContainer,
@@ -22,22 +23,6 @@ function formatPercent(value: number | null | undefined, locale: string, digits 
 function formatLatency(value: number | null | undefined, locale: string): string {
 	const normalized = value == null || Number.isNaN(value) ? 0 : value;
 	return `${new Intl.NumberFormat(locale, { maximumFractionDigits: 0 }).format(Math.round(normalized))} ms`;
-}
-
-function formatCompactNumber(value: number | null | undefined, locale: string): string {
-	const normalized = value == null || Number.isNaN(value) ? 0 : value;
-	return Intl.NumberFormat(locale, {
-		notation: "compact",
-		maximumFractionDigits: 1,
-	}).format(normalized);
-}
-
-function formatAbsoluteNumber(value: number | string | null | undefined, locale: string): string {
-	if (value == null) return "0";
-	const numericValue =
-		typeof value === "number" ? value : Number.parseFloat(String(value));
-	if (!Number.isFinite(numericValue)) return "0";
-	return Intl.NumberFormat(locale).format(Math.round(numericValue));
 }
 
 function formatHoursAgoTick(
@@ -63,7 +48,7 @@ function formatHoursAgoTick(
 function formatTooltipNumber(
 	value: number | string | null | undefined,
 	unit: string,
-	locale: string
+	formatNumber: ReturnType<typeof useDisplayFormatters>["number"]
 ): string {
 	if (value == null) return `0 ${unit}`;
 	const numericValue =
@@ -71,9 +56,10 @@ function formatTooltipNumber(
 	if (!Number.isFinite(numericValue)) {
 		return `0 ${unit}`;
 	}
-	return `${Intl.NumberFormat(locale, {
+	return `${formatNumber(numericValue, {
 		maximumFractionDigits: 1,
-	}).format(numericValue)} ${unit}`;
+		notation: "standard",
+	})} ${unit}`;
 }
 
 interface ReliabilitySectionProps {
@@ -83,6 +69,20 @@ interface ReliabilitySectionProps {
 export function ReliabilitySection({ metrics }: ReliabilitySectionProps) {
 	const t = useTranslations("Site.gatewayMarketing.reliability");
 	const locale = useLocale();
+	const format = useDisplayFormatters();
+	const formatCompactNumber = (value: number | null | undefined) =>
+		format.number(value == null || Number.isNaN(value) ? 0 : value, {
+			maximumFractionDigits: 1,
+		});
+	const formatAbsoluteNumber = (value: number | string | null | undefined) => {
+		if (value == null) return "0";
+		const numericValue = typeof value === "number" ? value : Number.parseFloat(String(value));
+		return Number.isFinite(numericValue) ? format.number(Math.round(numericValue)) : "0";
+	};
+	const formatHourLabel = (iso: string) => format.dateParts(iso, {
+		weekday: "short",
+		hour: "numeric",
+	});
 	const throughputData = (() => {
 		return metrics.timeseries.throughput.map((point) => {
 			const hoursAgo =
@@ -149,8 +149,7 @@ export function ReliabilitySection({ metrics }: ReliabilitySectionProps) {
 									<span>{t("tokensServed")}</span>
 									<span className="font-semibold">
 										{formatCompactNumber(
-											metrics.summary.tokens24h,
-											locale
+											metrics.summary.tokens24h
 										)}
 									</span>
 								</div>
@@ -158,8 +157,7 @@ export function ReliabilitySection({ metrics }: ReliabilitySectionProps) {
 									<span>{t("modelsSupported")}</span>
 									<span className="font-semibold">
 										{formatAbsoluteNumber(
-											metrics.summary.supportedModels,
-											locale
+											metrics.summary.supportedModels
 										)}
 									</span>
 								</div>
@@ -218,7 +216,7 @@ export function ReliabilitySection({ metrics }: ReliabilitySectionProps) {
 								/>
 								<YAxis
 									tickFormatter={(value) =>
-										formatCompactNumber(value, locale)
+										formatCompactNumber(value)
 									}
 									width={68}
 								/>
@@ -245,9 +243,9 @@ export function ReliabilitySection({ metrics }: ReliabilitySectionProps) {
 													<div className="flex flex-col gap-0.5">
 														<span className="font-mono text-sm font-semibold text-slate-900 dark:text-slate-100">
 															{formatTooltipNumber(
-																resolved,
-														t("tokens"),
-															locale
+															resolved,
+															t("tokens"),
+															format.number
 															)}
 														</span>
 														<span className="text-[0.65rem] uppercase tracking-[0.3em] text-slate-500 dark:text-slate-400">

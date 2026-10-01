@@ -2,6 +2,7 @@
   "organisation_id": "allenai",
   "name": "AllenAI",
   "country_code": "US",
+  "subdivision_code": "US-WA",
   "description": "The Allen Institute for Artificial Intelligence (Ai2) is a Seattle-based non-profit AI research institute. Their mission is to develop foundational AI research and innovation and deliver real-world impact through large-scale open models, data and engineering.",
   "colour": "#f0529c",
   "organisation_links": [

@@ -49,6 +49,58 @@ function makeAudioFile(filename = "audio.wav"): File {
 }
 
 describe("ElevenLabs audio endpoints", () => {
+	it.each([
+		["eleven-labs/eleven-v4", "eleven_v4"],
+		["eleven-labs/eleven-v4-turbo", "eleven_v4_turbo"],
+	])("routes %s with a voice library ID and v4 settings", async (model, providerModelSlug) => {
+		let capturedBody: any;
+		const voice = "NfUrCNRReUL9RXS9upG1";
+		const mock = installFetchMock([{
+			match: (url) => url.includes(`/v1/text-to-speech/${voice}`),
+			response: new Response("AUDIO", { status: 200, headers: { "Content-Type": "audio/mpeg" } }),
+			onRequest: (call) => { capturedBody = call.bodyJson; },
+		}]);
+		try {
+			const result = await execSpeech({
+				endpoint: "audio.speech", model,
+				body: { model, input: "[whispering] Hello world", voice,
+					config: { elevenlabs: { voice_settings: { stability: 0.5, similarity_boost: 0.75 } } } },
+				meta: REQUEST_META, workspaceId: "team_test", providerId: "elevenlabs",
+				byokMeta: [], pricingCard: PRICING_CARD, providerModelSlug, stream: false,
+			} as any);
+			expect(result.upstream.status).toBe(200);
+			expect(capturedBody).toMatchObject({ model_id: providerModelSlug,
+				text: "[whispering] Hello world",
+				voice_settings: { stability: 0.5, similarity_boost: 0.75 } });
+		} finally { mock.restore(); }
+	});
+
+	it("rejects speed for Eleven v4 before calling the provider", async () => {
+		const model = "eleven-labs/eleven-v4";
+		const result = await execSpeech({ endpoint: "audio.speech", model,
+			body: { model, input: "Hello", voice: "NfUrCNRReUL9RXS9upG1", speed: 1.2 },
+			meta: REQUEST_META, workspaceId: "team_test", providerId: "elevenlabs",
+			byokMeta: [], pricingCard: PRICING_CARD, providerModelSlug: "eleven_v4", stream: false,
+		} as any);
+		expect(result.upstream.status).toBe(400);
+		expect((await result.upstream.json()).error.param).toBe("speed");
+	});
+
+	it.each([
+		["speed", { speed: 1.2 }],
+		["style", { style: 0.5 }],
+	])("rejects nested %s for Eleven v4 before calling the provider", async (setting, voiceSettings) => {
+		const model = "eleven-labs/eleven-v4";
+		const result = await execSpeech({ endpoint: "audio.speech", model,
+			body: { model, input: "Hello", voice: "NfUrCNRReUL9RXS9upG1",
+				config: { elevenlabs: { voice_settings: voiceSettings } } },
+			meta: REQUEST_META, workspaceId: "team_test", providerId: "elevenlabs",
+			byokMeta: [], pricingCard: PRICING_CARD, providerModelSlug: "eleven_v4", stream: false,
+		} as any);
+		expect(result.upstream.status).toBe(400);
+		expect((await result.upstream.json()).error.param).toBe(`voice_settings.${setting}`);
+	});
+
 	it("maps audio.speech to text-to-speech with model slug conversion", async () => {
 		let capturedBody: any = null;
 		const mock = installFetchMock([

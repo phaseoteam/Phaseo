@@ -36,6 +36,7 @@ import {
 	ChartContainer,
 	type ChartConfig,
 } from "@/components/ui/chart";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import {
 	Table,
 	TableBody,
@@ -73,9 +74,15 @@ import {
 	buildProviderTablePriceSummary,
 	calculateDailyAveragePricingMeterPrice,
 	fmtUSD,
+	formatPricingHistoryUnitLabel,
+	normalizePricingHistoryPrice,
 	resolvePricingMeterPrice,
 } from "@/components/(data)/model/pricing/pricingHelpers";
-import { assignSeriesColours, keyForSeries } from "@/components/(rankings)/chart-colors";
+import {
+	assignPerceptualSeriesColours,
+	getPricingTierDasharray,
+	keyForSeries,
+} from "@/components/(rankings)/chart-colors";
 import type { ProviderPricing } from "@/lib/fetchers/models/getModelPricing";
 import type { ModelPricingHistoryRule } from "@/lib/fetchers/models/getModelPricingHistoryRules";
 import type { ModelUsageDailyBreakdownRow } from "@/lib/fetchers/models/getModelUsageDailyBreakdown";
@@ -85,7 +92,7 @@ import {
 	resolveProviderLogoId,
 } from "@/lib/providers/providerOffers";
 import { cn } from "@/lib/utils";
-import { getTierFilterMeta } from "@/lib/models/tierFilterStyles";
+import { ServiceTierBadge } from "@/components/(data)/model/pricing/ServiceTierBadge";
 import {
 	getPricingHistoryTimestamps,
 	pricingHistoryToCsv,
@@ -93,9 +100,16 @@ import {
 	type PricingRange,
 } from "@/components/(data)/model/pricing/pricingHistoryTimeline";
 import {
+	PRICING_HISTORY_TOOLTIP_EDGE_COUNT,
+	getPricingHistoryLineStyle,
+	orderPricingHistoryTooltipItems,
+	selectPricingHistoryTooltipItems,
+} from "@/components/(data)/model/pricing/pricingHistoryTooltip";
+import {
 	calculateCacheHitRatePct,
 	calculateObservedEffectivePriceSummary,
 	calculateTokenSharePct,
+	hasObservedTokenUsage,
 } from "@/components/(data)/model/pricing/effectivePricing";
 import { normalizeGatewayStatusValue } from "@/components/(data)/model/pricing/providerGatewayStatus";
 import {
@@ -188,6 +202,7 @@ function formatTokenCount(value: number, formatCount: (count: number) => string)
 
 function formatUsd(value: number | null): string {
 	if (value == null || !Number.isFinite(value)) return "--";
+	if (value === 0) return "Free";
 	return fmtUSD(value);
 }
 
@@ -425,27 +440,30 @@ function getPriceForMeter(
 			meterPreference,
 			timestampMs,
 		) ?? selectedRule;
-	if (!rule.timeWindows?.length) return rule.pricePer1MUnits;
+	if (!rule.timeWindows?.length) {
+		return normalizePricingHistoryPrice(rule.pricePer1MUnits, rule.unit);
+	}
 	if (mode === "exact") {
 		const date = new Date(timestampMs);
 		const utcTime = `${String(date.getUTCHours()).padStart(2, "0")}:${String(date.getUTCMinutes()).padStart(2, "0")}`;
-		return resolvePricingMeterPrice({
+		const pricePer1MUnits = resolvePricingMeterPrice({
 			price_per_unit: String(rule.pricePerUnit),
 			time_windows: rule.timeWindows,
 		}, utcTime, date).pricePerUnit * (1_000_000 / rule.unitSize);
+		return normalizePricingHistoryPrice(pricePer1MUnits, rule.unit);
 	}
 	const cached = dailyAveragePricePer1MCache.get(rule);
-	if (cached !== undefined) return cached;
+	if (cached !== undefined) return normalizePricingHistoryPrice(cached, rule.unit);
 	const average = calculateDailyAveragePricingMeterPrice({
 		price_per_unit: String(rule.pricePerUnit),
 		time_windows: rule.timeWindows,
 	}) * (1_000_000 / rule.unitSize);
 	dailyAveragePricePer1MCache.set(rule, average);
-	return average;
+	return normalizePricingHistoryPrice(average, rule.unit);
 }
 
 const RANGE_OPTIONS: PricingRange[] = ["7d", "30d", "90d", "1y", "all"];
-const PRICING_PLAN_ORDER = ["free", "standard", "priority", "flex", "batch"];
+const PRICING_PLAN_ORDER = ["free", "standard", "priority", "ultrafast", "flex", "batch"];
 
 function getProviderPricingPlans(provider: ProviderPricing): string[] {
 	const plans = Array.from(
@@ -468,22 +486,70 @@ function formatMeterLabel(meter: string): string {
 }
 
 function formatPricingPlanLabel(plan: string): string {
-	return plan
+	const normalizedPlan = String(plan ?? "").trim().toLowerCase();
+	const knownLabels: Record<string, string> = {
+		standard: "Standard",
+		fast: "Fast",
+		priority: "Fast",
+		ultrafast: "Ultrafast",
+		flex: "Flex",
+		batch: "Batch",
+		free: "Free",
+	};
+	return knownLabels[normalizedPlan] ?? normalizedPlan
 		.replace(/[_-]+/g, " ")
 		.replace(/\b\w/g, (character) => character.toUpperCase());
 }
 
-function ServiceTierIcon({ plan }: { plan: string }) {
-	const tier = getTierFilterMeta(plan);
-	const Icon = tier.icon;
-	return <Icon className={cn("size-3.5 shrink-0", tier.iconClassName)} aria-hidden="true" />;
+function PricingLineTypeIcon({ plan, color }: { plan: string; color: string }) {
+	return (
+		<svg width="24" height="8" viewBox="0 0 24 8" aria-hidden="true" focusable="false">
+			<line
+				x1="1"
+				y1="4"
+				x2="23"
+				y2="4"
+				stroke={color}
+				strokeWidth="1.75"
+				strokeDasharray={getPricingTierDasharray(plan)}
+				strokeLinecap="round"
+			/>
+		</svg>
+	);
 }
 
-function ServiceTierIconBadge({ plan }: { plan: string }) {
+function PricingTierLabel({ providerName, plan }: { providerName: string; plan: string }) {
 	return (
-		<span className="grid size-6 shrink-0 place-items-center rounded-md border border-border bg-background">
-			<ServiceTierIcon plan={plan} />
+		<span className="inline-flex items-center gap-2.5 whitespace-nowrap text-foreground">
+			<span>{providerName}</span>
+			<ServiceTierBadge plan={plan} />
 		</span>
+	);
+}
+
+function PricingTierLegend({ plans }: { plans: string[] }) {
+	if (!plans.length) return null;
+	return (
+		<div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 border-t px-2 pt-2.5 text-[11px] text-muted-foreground" aria-label="Service tier line styles">
+			<span className="font-medium text-foreground">Service tier</span>
+			{plans.map((plan) => (
+				<span key={plan} className="inline-flex items-center gap-1.5">
+					<svg width="28" height="8" viewBox="0 0 28 8" aria-hidden="true" focusable="false">
+						<line
+							x1="1"
+							y1="4"
+							x2="27"
+							y2="4"
+							stroke="currentColor"
+							strokeWidth="2"
+							strokeDasharray={getPricingTierDasharray(plan)}
+							strokeLinecap="round"
+						/>
+					</svg>
+					<span>{formatPricingPlanLabel(plan)}</span>
+				</span>
+			))}
+		</div>
 	);
 }
 
@@ -577,12 +643,14 @@ function buildPricingHistoryState(args: {
 	const chartConfig: ChartConfig = {};
 	const rulesBySeries = new Map<string, ModelPricingHistoryRule[]>();
 	const seriesByProviderPlan = new Map<string, string>();
+	const lineDasharrayBySeries = new Map<string, string | undefined>();
 	for (const row of args.rows) {
 		const seriesLabel = `${row.providerName} (${formatPricingPlanLabel(row.pricingPlan)})`;
 		providerNameBySeries.set(row.seriesKey, seriesLabel);
 		chartConfig[row.seriesKey] = { label: seriesLabel, color: row.color };
 		rulesBySeries.set(row.seriesKey, []);
 		seriesByProviderPlan.set(`${row.providerId}\u0000${row.pricingPlan}`, row.seriesKey);
+		lineDasharrayBySeries.set(row.seriesKey, getPricingTierDasharray(row.pricingPlan));
 	}
 	for (const rule of args.historyRules) {
 		const seriesKey = seriesByProviderPlan.get(`${rule.providerId}\u0000${rule.pricingPlan}`);
@@ -651,6 +719,7 @@ function buildPricingHistoryState(args: {
 		chartData,
 		seriesKeys,
 		providerNameBySeries,
+		lineDasharrayBySeries,
 		hasData: chartData.some((entry) =>
 			seriesKeys.some((key) => typeof entry[key] === "number" && Number.isFinite(entry[key])),
 		),
@@ -660,11 +729,13 @@ function buildPricingHistoryState(args: {
 function PricingHistoryChart({
 	state,
 	visibleSeriesKeys,
+	highlightedSeriesKey,
 	range,
 	expanded,
 }: {
 	state: ReturnType<typeof buildPricingHistoryState>;
 	visibleSeriesKeys: string[];
+	highlightedSeriesKey: string | null;
 	range: PricingRange;
 	expanded?: boolean;
 }) {
@@ -682,34 +753,68 @@ function PricingHistoryChart({
 					isAnimationActive={false}
 					content={({ active, payload, label }) => {
 						if (!active || !payload?.length) return null;
-						const items = payload
-							.filter((item) => Number.isFinite(Number(item.value)))
-							.sort((a, b) => Number(a.value ?? 0) - Number(b.value ?? 0));
+						const items = orderPricingHistoryTooltipItems(
+							payload.filter((item) => Number.isFinite(Number(item.value))),
+							visibleSeriesKeys,
+							(item) => String(item.dataKey ?? ""),
+						);
 						if (!items.length) return null;
+						const { items: visibleItems, hiddenCount } = selectPricingHistoryTooltipItems(items);
+						const leadingItems = hiddenCount
+							? visibleItems.slice(0, PRICING_HISTORY_TOOLTIP_EDGE_COUNT)
+							: visibleItems;
+						const trailingItems = hiddenCount
+							? visibleItems.slice(PRICING_HISTORY_TOOLTIP_EDGE_COUNT)
+							: [];
+						const renderItem = (item: (typeof items)[number]) => {
+							const key = String(item.dataKey ?? "");
+							const color = state.chartConfig[key]?.color ?? String(item.color ?? "currentColor");
+							return (
+								<div key={key} className="flex items-center justify-between gap-5">
+									<span className="flex min-w-0 items-center gap-2">
+										<span className="size-2 shrink-0 rounded-full" style={{ backgroundColor: color }} />
+										<span className="truncate">{state.providerNameBySeries.get(key) ?? key}</span>
+									</span>
+									<span className="shrink-0 font-medium tabular-nums">{formatUsd(Number(item.value))}</span>
+								</div>
+							);
+						};
 						return (
-							<div className="max-h-72 min-w-48 overflow-y-auto rounded-lg border bg-background/95 px-3 py-2 text-xs shadow-xl backdrop-blur">
+							<div className="min-w-48 rounded-lg border bg-background/95 px-3 py-2 text-xs shadow-xl backdrop-blur">
 								<p className="mb-2 font-medium text-foreground">{formatTimestampLabel(String(label ?? ""), locale, true)} UTC</p>
 								<div className="space-y-1.5">
-									{items.map((item) => {
-										const key = String(item.dataKey ?? "");
-										return (
-											<div key={key} className="flex items-center justify-between gap-5">
-												<span className="flex items-center gap-2">
-													<span className="size-2 rounded-full" style={{ backgroundColor: String(item.color ?? "currentColor") }} />
-													<span>{state.providerNameBySeries.get(key) ?? key}</span>
-												</span>
-												<span className="font-medium tabular-nums">{formatUsd(Number(item.value))}</span>
-											</div>
-										);
-									})}
+									{leadingItems.map(renderItem)}
+									{hiddenCount ? (
+										<div className="flex items-center gap-2 py-0.5 text-[11px] text-muted-foreground" aria-label={`${hiddenCount} providers omitted`}>
+											<span className="h-px flex-1 border-t border-dashed border-muted-foreground/40" aria-hidden="true" />
+											<span className="shrink-0">{hiddenCount}+ Providers</span>
+											<span className="h-px flex-1 border-t border-dashed border-muted-foreground/40" aria-hidden="true" />
+										</div>
+									) : null}
+									{trailingItems.map(renderItem)}
 								</div>
 							</div>
 						);
 					}}
 				/>
-				{visibleSeriesKeys.map((seriesKey) => (
-					<Line key={seriesKey} type="stepAfter" dataKey={seriesKey} stroke={`var(--color-${seriesKey})`} strokeWidth={1.8} dot={false} activeDot={{ r: 3 }} connectNulls={false} isAnimationActive={false} />
-				))}
+				{visibleSeriesKeys.map((seriesKey) => {
+					const lineStyle = getPricingHistoryLineStyle(seriesKey, highlightedSeriesKey, visibleSeriesKeys);
+					return (
+						<Line
+							key={seriesKey}
+							type="stepAfter"
+							dataKey={seriesKey}
+							stroke={`var(--color-${seriesKey})`}
+							strokeOpacity={lineStyle.strokeOpacity}
+							strokeWidth={lineStyle.strokeWidth}
+							strokeDasharray={state.lineDasharrayBySeries.get(seriesKey)}
+							dot={false}
+							activeDot={{ r: lineStyle.activeDotRadius }}
+							connectNulls={false}
+							isAnimationActive={false}
+						/>
+					);
+				})}
 			</LineChart>
 		</ChartContainer>
 	);
@@ -733,6 +838,7 @@ export default function PricingInsights({
 	};
 	const formatLocalizedTokenCount = (count: number) => t("tokensCount", { count });
 	const formatAction = (isVisible: boolean) => isVisible ? t("hide") : t("show");
+	const format = useDisplayFormatters();
 	const [sortKey, setSortKey] = useState<SortKey | null>("tokenShare");
 	const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
 	const [pricingView, setPricingView] = useState<PricingView>("effective");
@@ -748,6 +854,7 @@ export default function PricingInsights({
 	const [expandedProviders, setExpandedProviders] = useState<Set<string>>(() => new Set());
 	const [activeProviderInspectorId, setActiveProviderInspectorId] = useState<string | null>(null);
 	const [seriesVisibilityOverrides, setSeriesVisibilityOverrides] = useState<Record<string, boolean>>({});
+	const [highlightedSeriesKey, setHighlightedSeriesKey] = useState<string | null>(null);
 	const [historyNowMs] = useState(() => Date.now());
 	const customStartMs = customPricingRange?.from
 		? Date.UTC(customPricingRange.from.getFullYear(), customPricingRange.from.getMonth(), customPricingRange.from.getDate())
@@ -785,12 +892,19 @@ export default function PricingInsights({
 	}, []);
 
 	const pricingProviders = providers;
-	const pricingTierColours = useMemo(() => {
-		const tierKeys = pricingProviders.flatMap((provider) => {
-			const providerId = provider.provider.api_provider_id;
-			return getProviderPricingPlans(provider).map((providerPlan) => `${providerId}:${providerPlan}`);
-		});
-		return assignSeriesColours(tierKeys);
+	const pricingProviderColours = useMemo(() => {
+		const providerIds = pricingProviders.map((provider) => provider.provider.api_provider_id);
+		const fallbackColours = assignPerceptualSeriesColours(providerIds);
+		return new Map(
+			pricingProviders.map((provider) => {
+				const providerId = provider.provider.api_provider_id;
+				const storedColour = provider.provider.colour?.trim();
+				return [
+					providerId,
+					storedColour || fallbackColours[providerId]?.stroke || "oklch(0.58 0.19 255)",
+				] as const;
+			}),
+		);
 	}, [pricingProviders]);
 
 	const summaryCutoffMs = useMemo(() => {
@@ -858,6 +972,9 @@ export default function PricingInsights({
 	const observedUsageByProviderPlan = useMemo(() => {
 		const map = new Map<string, ObservedEffectiveUsageSummary>();
 		for (const row of effectivePricingRows) {
+			// The aggregate API can retain zero-valued plan keys for historical integrity.
+			// They are not observed usage and must not become visible usage tiers.
+			if (!hasObservedTokenUsage(row.inputTokens, row.outputTokens)) continue;
 			const key = `${row.providerId}\u0000${row.pricingPlan}`;
 			const existing = map.get(key) ?? {
 				inputTokens30d: 0,
@@ -918,6 +1035,9 @@ export default function PricingInsights({
 			});
 			const usage = usageByProvider.get(providerId);
 			const observedUsage = observedUsageByProviderPlan.get(`${providerId}\u0000${selectedProviderPlan}`);
+			const observedUsageWithTokens = observedUsage && observedUsage.totalTokens30d > 0
+				? observedUsage
+				: null;
 			const effectivePrices = observedUsage
 				? calculateObservedEffectivePriceSummary(observedUsage.usageByDay, summaryCutoffMs)
 				: null;
@@ -944,11 +1064,11 @@ export default function PricingInsights({
 				providerName,
 				logoProviderId,
 				seriesKey: keyForSeries(`${providerId}:${selectedProviderPlan}`),
-				color: pricingTierColours[`${providerId}:${selectedProviderPlan}`]?.stroke ?? "hsl(210 70% 55%)",
+				color: pricingProviderColours.get(providerId) ?? "oklch(0.58 0.19 255)",
 				pricingPlan: selectedProviderPlan,
 				availablePlans: providerPlans,
 				isExternal: normalizeGatewayStatusValue(provider.provider.status) === "external",
-				effectiveUsageEligible: Boolean(observedUsage),
+				effectiveUsageEligible: observedUsageWithTokens !== null,
 				inputPricePer1M:
 					effectivePrices?.weightedInputPricePer1M ?? null,
 				outputPricePer1M:
@@ -956,15 +1076,15 @@ export default function PricingInsights({
 				listedInputPricePer1M: listInputPricePer1M,
 				listedOutputPricePer1M: listOutputPricePer1M,
 				cacheHitRatePct: useTierAwareUsage
-					? observedUsage
-						? calculateCacheHitRatePct(observedUsage.cachedReadTokens30d, observedUsage.inputTokens30d)
+					? observedUsageWithTokens
+						? calculateCacheHitRatePct(observedUsageWithTokens.cachedReadTokens30d, observedUsageWithTokens.inputTokens30d)
 						: null
 					: usage
 						? calculateCacheHitRatePct(usage.cachedReadInputTokens30d, usage.inputWeightTokens30d)
 						: null,
 				tokenSharePct: useTierAwareUsage
-					? observedUsage
-						? calculateTokenSharePct(observedUsage.totalTokens30d, observedTotalTokensAll)
+					? observedUsageWithTokens
+						? calculateTokenSharePct(observedUsageWithTokens.totalTokens30d, observedTotalTokensAll)
 						: null
 					: usage
 						? calculateTokenSharePct(usage.totalTokens30d, providerTotalTokensAll)
@@ -980,7 +1100,7 @@ export default function PricingInsights({
 					: usage?.outputWeightTokens30d ?? 0,
 			} satisfies EffectiveRow;
 		});
-	}, [observedUsageByProviderPlan, plan, pricingProviders, pricingTierColours, summaryCutoffMs, usageByProvider]);
+	}, [observedUsageByProviderPlan, plan, pricingProviderColours, pricingProviders, summaryCutoffMs, usageByProvider]);
 	const providerById = useMemo(
 		() => new Map(pricingProviders.map((provider) => [provider.provider.api_provider_id, provider])),
 		[pricingProviders],
@@ -994,6 +1114,9 @@ export default function PricingInsights({
 			if (!provider) continue;
 			const tierRows = baseRow.availablePlans.map((providerPlan) => {
 				const observedUsage = observedUsageByProviderPlan.get(`${baseRow.providerId}\u0000${providerPlan}`);
+				const observedUsageWithTokens = observedUsage && observedUsage.totalTokens30d > 0
+					? observedUsage
+					: null;
 				const effectivePrices = observedUsage
 					? calculateObservedEffectivePriceSummary(observedUsage.usageByDay, summaryCutoffMs)
 					: null;
@@ -1009,28 +1132,28 @@ export default function PricingInsights({
 				return {
 					...baseRow,
 					seriesKey: keyForSeries(`${baseRow.providerId}:${providerPlan}`),
-					color: pricingTierColours[`${baseRow.providerId}:${providerPlan}`]?.stroke ?? baseRow.color,
+					color: pricingProviderColours.get(baseRow.providerId) ?? baseRow.color,
 					pricingPlan: providerPlan,
-					effectiveUsageEligible: Boolean(observedUsage),
+					effectiveUsageEligible: observedUsageWithTokens !== null,
 					inputPricePer1M: effectivePrices?.weightedInputPricePer1M ?? null,
 					outputPricePer1M: effectivePrices?.weightedOutputPricePer1M ?? null,
 					listedInputPricePer1M,
 					listedOutputPricePer1M,
-					cacheHitRatePct: observedUsage
-						? calculateCacheHitRatePct(observedUsage.cachedReadTokens30d, observedUsage.inputTokens30d)
+					cacheHitRatePct: observedUsageWithTokens
+						? calculateCacheHitRatePct(observedUsageWithTokens.cachedReadTokens30d, observedUsageWithTokens.inputTokens30d)
 						: null,
 					totalTokens30d: observedUsage?.totalTokens30d ?? 0,
 					inputWeightTokens30d: observedUsage?.inputTokens30d ?? 0,
 					outputWeightTokens30d: observedUsage?.outputTokens30d ?? 0,
-					tokenSharePct: observedUsage
-						? calculateTokenSharePct(observedUsage.totalTokens30d, observedTotalTokensAll)
+					tokenSharePct: observedUsageWithTokens
+						? calculateTokenSharePct(observedUsageWithTokens.totalTokens30d, observedTotalTokensAll)
 						: null,
 				};
 			});
 			rowsByProvider.set(baseRow.providerId, tierRows);
 		}
 		return rowsByProvider;
-	}, [effectiveRows, observedUsageByProviderPlan, pricingTierColours, providerById, summaryCutoffMs]);
+	}, [effectiveRows, observedUsageByProviderPlan, pricingProviderColours, providerById, summaryCutoffMs]);
 
 	const effectiveSummary = useMemo(() => {
 		let inputCostUsd = 0;
@@ -1072,6 +1195,15 @@ export default function PricingInsights({
 		() => sortedRows.flatMap((row) => providerTierRowsById.get(row.providerId) ?? [row]),
 		[providerTierRowsById, sortedRows],
 	);
+	const pricingHistoryPlans = useMemo(
+		() => Array.from(new Set(historyRows.map((row) => row.pricingPlan))).sort((a, b) => {
+			const aRank = PRICING_PLAN_ORDER.indexOf(a);
+			const bRank = PRICING_PLAN_ORDER.indexOf(b);
+			if (aRank !== bRank) return (aRank < 0 ? 999 : aRank) - (bRank < 0 ? 999 : bRank);
+			return a.localeCompare(b);
+		}),
+		[historyRows],
+	);
 
 	const meterOptions = useMemo(() => {
 		const meters = new Map<string, ModelPricingHistoryRule>();
@@ -1080,9 +1212,7 @@ export default function PricingInsights({
 		);
 		for (const rule of historyRules) {
 			if (!availableProviderPlans.has(`${rule.providerId}\u0000${rule.pricingPlan}`)) continue;
-			if (pricingView === "effective"
-				&& !INPUT_METER_PREFERENCE.includes(rule.meter as (typeof INPUT_METER_PREFERENCE)[number])
-				&& !OUTPUT_METER_PREFERENCE.includes(rule.meter as (typeof OUTPUT_METER_PREFERENCE)[number])) continue;
+			if (rule.unit.trim().toLowerCase() === "usd") continue;
 			if (!meters.has(rule.meter)) meters.set(rule.meter, rule);
 		}
 		const preferred = [
@@ -1099,11 +1229,18 @@ export default function PricingInsights({
 			if (aRank !== bRank) return (aRank < 0 ? 999 : aRank) - (bRank < 0 ? 999 : bRank);
 			return a.meter.localeCompare(b.meter);
 		});
-	}, [historyRows, historyRules, pricingView]);
+	}, [historyRows, historyRules]);
 	const activeMeter = meterOptions.some((option) => option.meter === selectedMeter)
 		? selectedMeter
 		: meterOptions[0]?.meter ?? "input_text_tokens";
 	const activeMeterRule = meterOptions.find((option) => option.meter === activeMeter);
+	const activeMeterSupportsEffectivePricing =
+		INPUT_METER_PREFERENCE.includes(
+			activeMeter as (typeof INPUT_METER_PREFERENCE)[number],
+		) ||
+		OUTPUT_METER_PREFERENCE.includes(
+			activeMeter as (typeof OUTPUT_METER_PREFERENCE)[number],
+		);
 	const effectivePricingHistoryState = useMemo(() => buildPricingHistoryState({
 			rows: historyRows,
 			usageByProvider,
@@ -1116,7 +1253,8 @@ export default function PricingInsights({
 			customStartMs,
 			customEndMs,
 		}), [activeMeter, customEndMs, customStartMs, historyNowMs, historyRows, historyRules, observedUsageByProviderPlan, pricingRange, usageByProvider]);
-	const hasEffectivePricing = effectivePricingHistoryState.hasData;
+	const hasEffectivePricing =
+		activeMeterSupportsEffectivePricing && effectivePricingHistoryState.hasData;
 	const displayedPricingView: PricingView = pricingView === "effective" && !hasEffectivePricing
 		? "listed"
 		: pricingView;
@@ -1243,6 +1381,7 @@ export default function PricingInsights({
 				unit: t(`${activeMeterRule.unitSize === 1 ? "unitsSingular" : "units"}.${activeMeterRule.unit}` as never),
 			})
 		: "USD";
+	const hasTokenPricing = effectiveRows.some((row) => row.listedInputPricePer1M != null || row.listedOutputPricePer1M != null);
 	const renderPricingHistory = (expanded = false) => (
 		<div className={cn("min-w-0", expanded ? "space-y-5" : "space-y-4 p-4 sm:p-5")}>
 			<div className="space-y-3">
@@ -1346,7 +1485,7 @@ export default function PricingInsights({
 
 			<div className="overflow-hidden rounded-lg border bg-background p-2 sm:p-3">
 			{pricingHistoryState.hasData ? (
-				<PricingHistoryChart state={pricingHistoryState} visibleSeriesKeys={visibleSeriesKeys} range={pricingRange} expanded={expanded} />
+				<PricingHistoryChart state={pricingHistoryState} visibleSeriesKeys={visibleSeriesKeys} highlightedSeriesKey={highlightedSeriesKey} range={pricingRange} expanded={expanded} />
 			) : (
 				<div className={cn("grid place-items-center text-center text-sm text-muted-foreground", expanded ? "h-[min(42vh,460px)]" : "h-[300px]")}>
 					<div className="max-w-sm space-y-1 px-6">
@@ -1355,6 +1494,7 @@ export default function PricingInsights({
 					</div>
 				</div>
 			)}
+			{pricingHistoryState.hasData ? <PricingTierLegend plans={pricingHistoryPlans} /> : null}
 			</div>
 		</div>
 	);
@@ -1366,22 +1506,22 @@ export default function PricingInsights({
 					<div className="space-y-1">
 						<h2 className="text-lg font-semibold">{t("title")}</h2>
 						<p className="text-xs text-muted-foreground">
-							{t("overviewDescription")}
+							{t(hasTokenPricing ? "tokenOverviewDescription" : "unitOverviewDescription")}
 						</p>
 					</div>
 				</div>
 			) : null}
 
-			<div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+			{hasTokenPricing ? <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 				<div className="space-y-1">
 					<h3 className="text-sm font-medium text-foreground">{t("effectiveTitle")}</h3>
 					<p className="text-xs text-muted-foreground">
 						{t("weightedByUsage")}
 					</p>
 				</div>
-			</div>
+			</div> : null}
 
-			<div className="overflow-hidden rounded-lg border border-zinc-200/80 bg-background shadow-sm dark:border-zinc-800">
+			{hasTokenPricing ? <div className="overflow-hidden rounded-lg border border-zinc-200/80 bg-background shadow-sm dark:border-zinc-800">
 				<div className="grid grid-cols-1 divide-y divide-border/60 border-b border-border/70 sm:grid-cols-2 sm:divide-x sm:divide-y-0">
 					<div className="px-4 py-3">
 						<p className="text-xs text-muted-foreground">{t("weightedInput")}</p>
@@ -1483,7 +1623,13 @@ export default function PricingInsights({
 								<Fragment key={row.providerId}>
 								<TableRow
 									tabIndex={0}
-										aria-label={t("openProviderDetails", { provider: row.providerName })}
+									aria-label={t("openProviderDetails", { provider: row.providerName })}
+									onMouseEnter={() => setHighlightedSeriesKey(row.seriesKey)}
+									onMouseLeave={() => setHighlightedSeriesKey(null)}
+									onFocus={() => setHighlightedSeriesKey(row.seriesKey)}
+									onBlur={(event) => {
+										if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setHighlightedSeriesKey(null);
+									}}
 									onClick={(event) => handleProviderRowClick(event, row.providerId)}
 									onKeyDown={(event) => handleProviderRowKeyDown(event, row.providerId)}
 									className="cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
@@ -1495,12 +1641,15 @@ export default function PricingInsights({
 										<div className="flex items-center gap-2">
 											<button
 												type="button"
-												onClick={() => toggleSeries(row)}
+												onClick={(event) => {
+													event.stopPropagation();
+													toggleSeries(row);
+												}}
 												aria-pressed={isMainSeriesVisible}
-										aria-label={t("seriesVisibility", { action: formatAction(isMainSeriesVisible), provider: row.providerName, plan: formatPricingPlanLabel(row.pricingPlan) })}
-												className={cn("grid size-5 place-items-center rounded-md transition-colors hover:bg-muted", !isMainSeriesVisible && "opacity-35")}
+												aria-label={t("seriesVisibility", { action: formatAction(isMainSeriesVisible), provider: row.providerName, plan: formatPricingPlanLabel(row.pricingPlan) })}
+											className={cn("grid size-7 shrink-0 place-items-center rounded-md transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2", !isMainSeriesVisible && "opacity-35")}
 											>
-												<span className="size-2 rounded-full" style={{ backgroundColor: row.color }} />
+												<PricingLineTypeIcon plan={row.pricingPlan} color={row.color} />
 											</button>
 										<Link
 											href={`/api-providers/${row.providerId}`}
@@ -1525,12 +1674,16 @@ export default function PricingInsights({
 																{row.providerName}
 															</span>
 														</Link>
+										<ServiceTierBadge plan={row.pricingPlan} />
 										{row.isExternal ? <ExternalProviderBadge /> : null}
 										{additionalTierRows.length > 0 ? <Button
 											type="button"
 											variant="ghost"
 											size="icon"
-											onClick={() => toggleProviderExpanded(row.providerId)}
+																		onClick={(event) => {
+																			event.stopPropagation();
+																			toggleProviderExpanded(row.providerId);
+																		}}
 											aria-expanded={isExpanded}
 											aria-label={isExpanded ? t("collapseTier", { provider: row.providerName }) : t("expandTier", { provider: row.providerName })}
 											className="size-7 shrink-0 rounded-md text-muted-foreground aria-expanded:!bg-transparent aria-expanded:text-muted-foreground hover:text-foreground hover:aria-expanded:!bg-transparent"
@@ -1585,22 +1738,31 @@ export default function PricingInsights({
 								</TableRow>
 								{isExpanded ? additionalTierRows.map((tierRow) => {
 									const isTierVisible = isSeriesVisible(tierRow);
+									const canToggleTierSeries = displayedPricingView === "listed" || tierRow.effectiveUsageEligible;
 
 									return (
 										<TableRow
 											key={`${row.providerId}-${tierRow.pricingPlan}`}
 											tabIndex={0}
 											aria-label={t("openProviderDetails", { provider: row.providerName })}
+											onMouseEnter={() => setHighlightedSeriesKey(tierRow.seriesKey)}
+											onMouseLeave={() => setHighlightedSeriesKey(null)}
+											onFocus={() => setHighlightedSeriesKey(tierRow.seriesKey)}
+											onBlur={(event) => {
+												if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setHighlightedSeriesKey(null);
+											}}
 											onClick={(event) => handleProviderRowClick(event, row.providerId)}
 											onKeyDown={(event) => handleProviderRowKeyDown(event, row.providerId)}
 											className="cursor-pointer bg-muted/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
 										>
-										<TableCell className="px-3 py-1.5">
-												<button type="button" onClick={() => toggleSeries(tierRow)} aria-pressed={isTierVisible} aria-label={t("seriesVisibility", { action: formatAction(isTierVisible), provider: row.providerName, plan: formatPricingPlanLabel(tierRow.pricingPlan) })} className={cn("inline-flex h-7 items-center gap-2 text-xs font-medium text-foreground focus-visible:outline-none", !isTierVisible && "opacity-45")}>
-													<span className="grid size-5 shrink-0 place-items-center"><span className="size-2 rounded-full" style={{ backgroundColor: tierRow.color }} /></span>
-													<span className="inline-flex items-center gap-2.5"><ServiceTierIconBadge plan={tierRow.pricingPlan} />{row.providerName} ({formatPricingPlanLabel(tierRow.pricingPlan)})</span>
-												</button>
-											</TableCell>
+						<TableCell className="px-3 py-1.5">
+						<div className="flex items-center gap-2">
+											<button type="button" disabled={!canToggleTierSeries} onClick={(event) => { event.stopPropagation(); toggleSeries(tierRow); }} aria-pressed={canToggleTierSeries ? isTierVisible : undefined} aria-label={canToggleTierSeries ? t("seriesVisibility", { action: formatAction(isTierVisible), provider: row.providerName, plan: formatPricingPlanLabel(tierRow.pricingPlan) }) : t("tierUnavailable", { provider: row.providerName, plan: formatPricingPlanLabel(tierRow.pricingPlan) })} className={cn("grid size-7 shrink-0 place-items-center rounded-md transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2", !canToggleTierSeries && "cursor-not-allowed opacity-35", canToggleTierSeries && !isTierVisible && "opacity-45")}>
+									<PricingLineTypeIcon plan={tierRow.pricingPlan} color={tierRow.color} />
+								</button>
+								<PricingTierLabel providerName={row.providerName} plan={tierRow.pricingPlan} />
+							</div>
+						</TableCell>
 										<TableCell className="px-3 py-1.5 text-left font-medium tabular-nums text-foreground">{formatUsd(tierRow.inputPricePer1M)}</TableCell>
 										<TableCell className="px-3 py-1.5 text-left font-medium tabular-nums text-foreground">{formatUsd(tierRow.outputPricePer1M)}</TableCell>
 										<TableCell className="px-3 py-1.5 text-left font-medium tabular-nums text-foreground">{formatUsd(tierRow.listedInputPricePer1M)}</TableCell>
@@ -1617,11 +1779,14 @@ export default function PricingInsights({
 					</Table>
 				</ScrollArea>
 				</div>
-			</div>
+			</div> : renderPricingHistory()}
 
 			<Dialog open={isHistoryExpanded} onOpenChange={(open) => {
 				setIsHistoryExpanded(open);
-				if (!open) setOpenCalendarSurface(null);
+				if (!open) {
+					setOpenCalendarSurface(null);
+					setHighlightedSeriesKey(null);
+				}
 			}}>
 				<DialogContent className="flex h-[88dvh] max-w-[calc(100vw-1.5rem)] flex-col overflow-hidden rounded-xl p-0 sm:h-[84dvh] sm:max-w-[84vw]">
 					<DialogHeader className="sr-only">
@@ -1655,6 +1820,12 @@ export default function PricingInsights({
 										<TableRow
 											tabIndex={0}
 											aria-label={t("openProviderDetails", { provider: row.providerName })}
+											onMouseEnter={() => setHighlightedSeriesKey(row.seriesKey)}
+											onMouseLeave={() => setHighlightedSeriesKey(null)}
+											onFocus={() => setHighlightedSeriesKey(row.seriesKey)}
+											onBlur={(event) => {
+												if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setHighlightedSeriesKey(null);
+											}}
 											onClick={(event) => handleProviderRowClick(event, row.providerId)}
 											onKeyDown={(event) => handleProviderRowKeyDown(event, row.providerId)}
 											className="cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
@@ -1664,8 +1835,8 @@ export default function PricingInsights({
 													<span aria-hidden="true" className="absolute inset-y-0 left-0 w-0.5 bg-primary" />
 												) : null}
 												<span className="inline-flex items-center gap-2 font-medium">
-											<button type="button" onClick={() => toggleSeries(row)} aria-pressed={isMainSeriesVisible} aria-label={t("seriesVisibility", { action: formatAction(isMainSeriesVisible), provider: row.providerName, plan: formatPricingPlanLabel(row.pricingPlan) })} className={cn("grid size-5 place-items-center rounded-md transition-colors hover:bg-muted", !isMainSeriesVisible && "opacity-35")}>
-												<span className="size-2 rounded-full" style={{ backgroundColor: row.color }} />
+							<button type="button" onClick={(event) => { event.stopPropagation(); toggleSeries(row); }} aria-pressed={isMainSeriesVisible} aria-label={t("seriesVisibility", { action: formatAction(isMainSeriesVisible), provider: row.providerName, plan: formatPricingPlanLabel(row.pricingPlan) })} className={cn("grid size-7 shrink-0 place-items-center rounded-md transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2", !isMainSeriesVisible && "opacity-35")}>
+								<PricingLineTypeIcon plan={row.pricingPlan} color={row.color} />
 											</button>
 											<span className="inline-flex items-center gap-2.5">
 												<span className="relative flex size-6 shrink-0 items-center justify-center rounded-md border border-zinc-200/80 bg-background dark:border-zinc-800">
@@ -1675,8 +1846,9 @@ export default function PricingInsights({
 												</span>
 												{row.providerName}
 											</span>
-											{row.isExternal ? <ExternalProviderBadge /> : null}
-											{additionalTierRows.length > 0 ? <Button type="button" variant="ghost" size="icon" onClick={() => toggleProviderExpanded(row.providerId)} aria-expanded={isExpanded} aria-label={isExpanded ? t("collapseTier", { provider: row.providerName }) : t("expandTier", { provider: row.providerName })} className="size-7 shrink-0 rounded-md text-muted-foreground aria-expanded:!bg-transparent aria-expanded:text-muted-foreground hover:text-foreground hover:aria-expanded:!bg-transparent">
+										<ServiceTierBadge plan={row.pricingPlan} />
+										{row.isExternal ? <ExternalProviderBadge /> : null}
+							{additionalTierRows.length > 0 ? <Button type="button" variant="ghost" size="icon" onClick={(event) => { event.stopPropagation(); toggleProviderExpanded(row.providerId); }} aria-expanded={isExpanded} aria-label={isExpanded ? t("collapseTier", { provider: row.providerName }) : t("expandTier", { provider: row.providerName })} className="size-7 shrink-0 rounded-md text-muted-foreground aria-expanded:!bg-transparent aria-expanded:text-muted-foreground hover:text-foreground hover:aria-expanded:!bg-transparent">
 														<ChevronDown className={cn("size-3.5 transition-transform", !isExpanded && "-rotate-90")} />
 													</Button> : null}
 												</span>
@@ -1688,22 +1860,31 @@ export default function PricingInsights({
 										</TableRow>
 										{isExpanded ? additionalTierRows.map((tierRow) => {
 											const isTierVisible = isSeriesVisible(tierRow);
+											const canToggleTierSeries = displayedPricingView === "listed" || tierRow.effectiveUsageEligible;
 
 											return (
 												<TableRow
 													key={`expanded-${row.providerId}-${tierRow.pricingPlan}`}
 													tabIndex={0}
 													aria-label={t("openProviderDetails", { provider: row.providerName })}
+													onMouseEnter={() => setHighlightedSeriesKey(tierRow.seriesKey)}
+													onMouseLeave={() => setHighlightedSeriesKey(null)}
+													onFocus={() => setHighlightedSeriesKey(tierRow.seriesKey)}
+													onBlur={(event) => {
+														if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setHighlightedSeriesKey(null);
+													}}
 													onClick={(event) => handleProviderRowClick(event, row.providerId)}
 													onKeyDown={(event) => handleProviderRowKeyDown(event, row.providerId)}
 													className="cursor-pointer bg-muted/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
 												>
-											<TableCell>
-												<button type="button" onClick={() => toggleSeries(tierRow)} aria-pressed={isTierVisible} aria-label={t("seriesVisibility", { action: formatAction(isTierVisible), provider: row.providerName, plan: formatPricingPlanLabel(tierRow.pricingPlan) })} className={cn("inline-flex h-7 items-center gap-2 text-xs font-medium text-foreground focus-visible:outline-none", !isTierVisible && "opacity-45")}>
-													<span className="grid size-5 shrink-0 place-items-center"><span className="size-2 rounded-full" style={{ backgroundColor: tierRow.color }} /></span>
-													<span className="inline-flex items-center gap-2.5"><ServiceTierIconBadge plan={tierRow.pricingPlan} />{row.providerName} ({formatPricingPlanLabel(tierRow.pricingPlan)})</span>
-														</button>
-													</TableCell>
+							<TableCell>
+								<div className="flex items-center gap-2">
+															<button type="button" disabled={!canToggleTierSeries} onClick={(event) => { event.stopPropagation(); toggleSeries(tierRow); }} aria-pressed={canToggleTierSeries ? isTierVisible : undefined} aria-label={canToggleTierSeries ? t("seriesVisibility", { action: formatAction(isTierVisible), provider: row.providerName, plan: formatPricingPlanLabel(tierRow.pricingPlan) }) : t("tierUnavailable", { provider: row.providerName, plan: formatPricingPlanLabel(tierRow.pricingPlan) })} className={cn("grid size-7 shrink-0 place-items-center rounded-md transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2", !canToggleTierSeries && "cursor-not-allowed opacity-35", canToggleTierSeries && !isTierVisible && "opacity-45")}>
+										<PricingLineTypeIcon plan={tierRow.pricingPlan} color={tierRow.color} />
+									</button>
+									<PricingTierLabel providerName={row.providerName} plan={tierRow.pricingPlan} />
+								</div>
+							</TableCell>
 												<TableCell className="text-left font-medium tabular-nums">{formatUsd(tierRow.inputPricePer1M)}</TableCell>
 												<TableCell className="text-left font-medium tabular-nums">{formatUsd(tierRow.outputPricePer1M)}</TableCell>
 												<TableCell className="text-left font-medium tabular-nums">{formatUsd(tierRow.listedInputPricePer1M)}</TableCell>

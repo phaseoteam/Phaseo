@@ -8,12 +8,14 @@ import type {
 	ChatMessage,
 	ChatAdvisorServerToolConfig,
 	ChatModelSettings,
+	ChatServiceTier,
 	ChatServerToolConfigs,
 	ChatServerToolType,
 	ChatSettings,
 	ChatThread,
 	UnifiedChatEndpoint,
 } from "@/lib/indexeddb/chats";
+import { getServiceTierLabel } from "@/components/(chat)/playground/serviceTierSupport";
 
 export const DEFAULT_SERVER_TOOLS: ChatServerToolType[] = ["gateway:datetime"];
 const CHARS_PER_APPROXIMATE_TOKEN = 4;
@@ -32,6 +34,12 @@ const SUPPORTED_CHAT_SERVER_TOOLS = new Set<ChatServerToolType>([
 
 export type ChatResponseLayout = "sequential" | "side-by-side";
 export type NewChatModelPreference = "blank" | "selected";
+
+export function getRequestedChatServiceTier(
+	settings: Pick<ChatModelSettings, "serviceTier">,
+): ChatServiceTier {
+	return settings.serviceTier ?? "standard";
+}
 
 export function normalizeServerTools(
 	serverTools?: ChatServerToolType[],
@@ -60,6 +68,7 @@ export const DEFAULT_SETTINGS: ChatSettings = {
 	systemPrompt: "",
 	stream: true,
 	providerId: "auto",
+	serviceTier: "standard",
 	reasoningEnabled: false,
 	reasoningEffort: "medium",
 	endpoint: "responses",
@@ -87,6 +96,7 @@ const MODEL_SETTING_KEYS: Array<keyof ChatModelSettings> = [
 	"systemPrompt",
 	"stream",
 	"providerId",
+	"serviceTier",
 	"reasoningEnabled",
 	"reasoningEffort",
 	"endpoint",
@@ -183,6 +193,9 @@ export const getChangedSettings = (
 							.join(" ")
 				: "Auto (Gateway)",
 		);
+	}
+	if ((settings.serviceTier ?? defaults.serviceTier) !== defaults.serviceTier) {
+		addChange("Service tier", getServiceTierLabel(settings.serviceTier));
 	}
 	if (settings.reasoningEnabled !== defaults.reasoningEnabled) {
 		addChange(
@@ -513,6 +526,7 @@ export function getEffectiveModelSettings(
 		systemPrompt: buildDefaultSystemPrompt(modelId, modelDisplayName),
 		stream: DEFAULT_SETTINGS.stream,
 		providerId: DEFAULT_SETTINGS.providerId,
+		serviceTier: DEFAULT_SETTINGS.serviceTier,
 		reasoningEnabled: DEFAULT_SETTINGS.reasoningEnabled,
 		reasoningEffort: DEFAULT_SETTINGS.reasoningEffort,
 		endpoint: DEFAULT_SETTINGS.endpoint,
@@ -863,7 +877,7 @@ export type ModelOption = {
 	providerAvailability: Record<string, boolean>;
 	releaseDate: string | null;
 	gatewayStatus: "active" | "inactive";
-	chatBlockedReasons: Array<{ source: "workspace" | "account" | "guardrail"; label: string; settingsHref: string }>;
+	chatBlockedReasons: Array<{ source: "workspace" | "guardrail"; label: string; settingsHref: string }>;
 };
 
 export const PENDING_STATUSES = new Set([

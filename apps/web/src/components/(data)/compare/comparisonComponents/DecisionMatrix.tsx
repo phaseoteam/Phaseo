@@ -2,7 +2,9 @@
 "use client";
 
 import Link from "next/link";
+import { resolveProviderDisplayName } from "@/lib/providers/providerOffers";
 import * as React from "react";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -98,69 +100,48 @@ type CapabilityChip = {
 const BEST_TONE =
 	"border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900/70 dark:bg-emerald-950/40 dark:text-emerald-300";
 
-function formatMonthYear(value: string | null | undefined, locale: string): string {
-	if (!value) return "-";
-	const d = new Date(value);
-	if (Number.isNaN(d.getTime())) return "-";
-	return d.toLocaleDateString(locale, { month: "short", year: "numeric" });
-}
-
-function formatInteger(value: number | null | undefined, locale: string): string {
-	if (value == null || !Number.isFinite(value)) return "-";
-	return value.toLocaleString(locale, { maximumFractionDigits: 0 });
-}
-
-function formatCompact(value: number | null | undefined, locale: string): string {
-	if (value == null || !Number.isFinite(value)) return "-";
-	return Intl.NumberFormat(locale, {
-		notation: "compact",
-		maximumFractionDigits: 1,
-	}).format(value);
-}
-
-function formatUsd(value: number | null | undefined, locale: string): string {
-	if (value == null || !Number.isFinite(value)) return "-";
-	const maximumFractionDigits = value > 0 && value < 0.01 ? 4 : 2;
-	return new Intl.NumberFormat(locale, {
-		style: "currency",
-		currency: "USD",
-		minimumFractionDigits: Math.min(2, maximumFractionDigits),
-		maximumFractionDigits,
-	}).format(value);
-}
-
-function formatRequestCost(value: number | null | undefined, locale: string): string {
-	if (value == null || !Number.isFinite(value)) return "-";
-	const maximumFractionDigits = value > 0 && value < 0.01 ? 4 : 2;
-	return new Intl.NumberFormat(locale, {
-		style: "currency",
-		currency: "USD",
-		minimumFractionDigits: maximumFractionDigits,
-		maximumFractionDigits,
-	}).format(value);
-}
-
-function formatLatency(value: number | null | undefined, locale: string): string {
-	if (value == null || !Number.isFinite(value)) return "-";
-	if (value >= 1000) {
-		return `${(value / 1000).toLocaleString(locale, {
-			maximumFractionDigits: 2,
-		})} s`;
-	}
-	return `${Math.round(value).toLocaleString(locale)} ms`;
-}
-
-function formatThroughput(value: number | null | undefined, locale: string): string {
-	if (value == null || !Number.isFinite(value)) return "-";
-	return `${value.toLocaleString(locale, { maximumFractionDigits: 1 })} tok/s`;
-}
-
-function formatDuration(valueMs: number | null | undefined, locale: string): string {
-	if (valueMs == null || !Number.isFinite(valueMs)) return "-";
-	if (valueMs < 1000) return `${Math.round(valueMs)} ms`;
-	return `${(valueMs / 1000).toLocaleString(locale, {
-		maximumFractionDigits: 1,
-	})} s`;
+function useDecisionFormatters() {
+	const format = useDisplayFormatters();
+	const valid = (value: number | null | undefined): value is number =>
+		value != null && Number.isFinite(value);
+	const currency = (value: number, minimumFractionDigits: number, maximumFractionDigits: number) =>
+		format.number(value, {
+			style: "currency",
+			currency: "USD",
+			minimumFractionDigits,
+			maximumFractionDigits,
+			notation: "standard",
+		});
+	return {
+		formatMonthYear: (value: string | null | undefined) => format.calendarDate(value),
+		formatInteger: (value: number | null | undefined) => valid(value)
+			? format.number(value, { maximumFractionDigits: 0 })
+			: "-",
+		formatCompact: (value: number | null | undefined) => valid(value)
+			? format.number(value, { maximumFractionDigits: 1 })
+			: "-",
+		formatUsd: (value: number | null | undefined) => {
+			if (!valid(value)) return "-";
+			const digits = value > 0 && value < 0.01 ? 4 : 2;
+			return currency(value, Math.min(2, digits), digits);
+		},
+		formatRequestCost: (value: number | null | undefined) => !valid(value)
+			? "-"
+			: currency(value, value > 0 && value < 0.01 ? 4 : 2, value > 0 && value < 0.01 ? 4 : 2),
+		formatLatency: (value: number | null | undefined) => !valid(value)
+			? "-"
+			: value >= 1000
+				? `${format.number(value / 1000, { maximumFractionDigits: 2, notation: "standard" })} s`
+				: `${format.number(Math.round(value), { notation: "standard" })} ms`,
+		formatThroughput: (value: number | null | undefined) => valid(value)
+			? `${format.number(value, { maximumFractionDigits: 1, notation: "standard" })} tok/s`
+			: "-",
+		formatDuration: (value: number | null | undefined) => !valid(value)
+			? "-"
+			: value < 1000
+				? `${format.number(Math.round(value), { notation: "standard" })} ms`
+				: `${format.number(value / 1000, { maximumFractionDigits: 1, notation: "standard" })} s`,
+	};
 }
 
 function estimateTokensFromText(value: string): number {
@@ -263,7 +244,7 @@ function getProviderOptions(model: ExtendedModel): ProviderOption[] {
 		}
 		byProvider.set(id, {
 			id,
-			name: providerNames.get(id) ?? getProviderName(price) ?? id,
+			name: resolveProviderDisplayName({ providerId: id, providerName: providerNames.get(id) ?? getProviderName(price) ?? id }),
 			prices: [price],
 		});
 	}
@@ -272,8 +253,7 @@ function getProviderOptions(model: ExtendedModel): ProviderOption[] {
 		if (!byProvider.has(group.provider.api_provider_id)) {
 			byProvider.set(group.provider.api_provider_id, {
 				id: group.provider.api_provider_id,
-				name:
-					group.provider.api_provider_name ?? group.provider.api_provider_id,
+				name: resolveProviderDisplayName({ providerId: group.provider.api_provider_id, providerName: group.provider.api_provider_name ?? group.provider.api_provider_id }),
 				prices: [],
 			});
 		}
@@ -551,6 +531,16 @@ export default function DecisionMatrix({
 }: DecisionMatrixProps) {
 	const t = useTranslations("Catalogue.compare");
 	const locale = useLocale();
+	const {
+		formatCompact,
+		formatDuration,
+		formatInteger,
+		formatLatency,
+		formatMonthYear,
+		formatRequestCost,
+		formatThroughput,
+		formatUsd,
+	} = useDecisionFormatters();
 	const [highlightBest, setHighlightBest] = React.useState(true);
 	const [selectedProviderByModel, setSelectedProviderByModel] = React.useState<
 		Record<string, string>
@@ -921,7 +911,7 @@ export default function DecisionMatrix({
 										highlightBest
 									)}
 								>
-									{formatInteger(model.input_context_length, locale)}
+									{formatInteger(model.input_context_length)}
 								</Highlight>
 							</MetricRow>
 							<MetricRow label={t("maxOutput")}>
@@ -932,11 +922,11 @@ export default function DecisionMatrix({
 										highlightBest
 									)}
 								>
-									{formatInteger(model.output_context_length, locale)}
+									{formatInteger(model.output_context_length)}
 								</Highlight>
 							</MetricRow>
 							<MetricRow label={t("release")}>
-								{formatMonthYear(model.release_date, locale)}
+								{formatMonthYear(model.release_date)}
 							</MetricRow>
 							<MetricRow label={t("capabilities")}>
 								<div className="flex flex-wrap justify-end gap-1">
@@ -997,7 +987,7 @@ export default function DecisionMatrix({
 										highlightBest
 									)}
 								>
-									{formatUsd(prices?.input.valuePerMillion, locale)} / M {t("tokenUnit")}
+									{formatUsd(prices?.input.valuePerMillion)} / M {t("tokenUnit")}
 								</Highlight>
 							</MetricRow>
 							<MetricRow label={t("output")}>
@@ -1008,7 +998,7 @@ export default function DecisionMatrix({
 										highlightBest
 									)}
 								>
-									{formatUsd(prices?.output.valuePerMillion, locale)} / M {t("tokenUnit")}
+									{formatUsd(prices?.output.valuePerMillion)} / M {t("tokenUnit")}
 								</Highlight>
 							</MetricRow>
 							<MetricRow label={t("cachedInput")}>
@@ -1019,7 +1009,7 @@ export default function DecisionMatrix({
 										highlightBest
 									)}
 								>
-									{formatUsd(prices?.cached.valuePerMillion, locale)} / M {t("tokenUnit")}
+									{formatUsd(prices?.cached.valuePerMillion)} / M {t("tokenUnit")}
 								</Highlight>
 							</MetricRow>
 							<MetricRow label={t("plan")}>
@@ -1065,7 +1055,7 @@ export default function DecisionMatrix({
 										highlightBest
 									)}
 								>
-									{formatLatency(usage?.latencyP50Ms30m, locale)}
+									{formatLatency(usage?.latencyP50Ms30m)}
 								</Highlight>
 							</MetricRow>
 							<MetricRow label={t("throughputP50")}>
@@ -1076,7 +1066,7 @@ export default function DecisionMatrix({
 										highlightBest
 									)}
 								>
-									{formatThroughput(usage?.throughputP50TokPerSec30m, locale)}
+									{formatThroughput(usage?.throughputP50TokPerSec30m)}
 								</Highlight>
 							</MetricRow>
 							<MetricRow label={t("providerLatency")}>
@@ -1108,17 +1098,17 @@ export default function DecisionMatrix({
 								<Highlight
 									active={isBest(usage?.tokens30d, bestTokens30d, highlightBest)}
 								>
-									{formatCompact(usage?.tokens30d, locale)}
+									{formatCompact(usage?.tokens30d)}
 								</Highlight>
 							</MetricRow>
 							<div className="border-b border-border/60 py-3">
 								<MiniBars modelId={model.id} points={usage?.points30d ?? []} />
 							</div>
 							<MetricRow label={t("totalRequests")}>
-								{formatCompact(usage?.totalRequests, locale)}
+								{formatCompact(usage?.totalRequests)}
 							</MetricRow>
 							<MetricRow label={t("requests30m")}>
-								{formatCompact(usage?.requests30m, locale)}
+								{formatCompact(usage?.requests30m)}
 							</MetricRow>
 						</div>
 					);
@@ -1197,7 +1187,7 @@ export default function DecisionMatrix({
 								</label>
 							</div>
 							<MetricRow label={t("estimatedInput")}>
-								{formatInteger(inputTokens, locale)} {t("tokenUnit")}
+								{formatInteger(inputTokens)} {t("tokenUnit")}
 							</MetricRow>
 							<MetricRow label={t("contextFit")}>
 								<Badge
@@ -1220,7 +1210,7 @@ export default function DecisionMatrix({
 										highlightBest
 									)}
 								>
-									{formatRequestCost(row?.totalCost, locale)}
+									{formatRequestCost(row?.totalCost)}
 								</Highlight>
 							</MetricRow>
 							<MetricRow label={t("estimatedResponseTime")}>
@@ -1231,13 +1221,13 @@ export default function DecisionMatrix({
 										highlightBest
 									)}
 								>
-									{formatDuration(row?.estimatedTimeMs, locale)}
+									{formatDuration(row?.estimatedTimeMs)}
 								</Highlight>
 							</MetricRow>
 							<MetricRow label={t("pricingBasis")}>
 								<span className="truncate">
-									{formatUsd(row?.inputPrice?.valuePerMillion, locale)} {t("input")} /{" "}
-									{formatUsd(row?.outputPrice?.valuePerMillion, locale)} {t("output")}
+									{formatUsd(row?.inputPrice?.valuePerMillion)} {t("input")} /{" "}
+									{formatUsd(row?.outputPrice?.valuePerMillion)} {t("output")}
 								</span>
 							</MetricRow>
 						</div>

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
+import { Link } from "@/i18n/navigation";
 import NoFooterStyle from "@/components/layout/NoFooterStyle";
 import InteractiveOnboarding, {
 	type OnboardingModel,
@@ -15,6 +16,7 @@ import type { GatewaySupportedModel } from "@/lib/fetchers/gateway/getGatewaySup
 import { fetchFrontendGatewayModels } from "@/lib/fetchers/frontend/fetchFrontendGatewayModels";
 import { getWorkspaceIdFromCookie } from "@/utils/workspaceCookie";
 import { fetchOnboardingInitialData } from "@/lib/fetchers/internal/fetchOnboardingInitialData";
+import { fetchInternalAuthHeaderData } from "@/lib/fetchers/internal/fetchInternalAuthHeaderData";
 
 export async function generateMetadata(): Promise<Metadata> {
 	const t = await getTranslations("Product.interactiveOnboarding");
@@ -97,6 +99,11 @@ function pickModels(models: GatewaySupportedModel[]) {
 }
 
 export default async function OnboardingPage() {
+	const t = await getTranslations("Product.interactiveOnboarding");
+	const settingsT = await getTranslations("SettingsUI.strings");
+	const account = await fetchInternalAuthHeaderData().catch(() => null);
+	if (!account) return <main className="container mx-auto max-w-xl px-4 py-16"><h1 className="text-xl font-semibold">{t("accountUnavailable")}</h1><p className="mt-2 text-sm text-muted-foreground">{t("accountVerificationFailed")}</p><Link className="mt-5 inline-flex text-sm font-medium underline underline-offset-4" href="/onboarding">{t("retryAccount")}</Link></main>;
+	if (account.providerMode) redirect("/settings/account/providers");
 	const onboarding = await fetchOnboardingInitialData();
 	if (!onboarding.signedIn) {
 		redirect("/sign-in?returnUrl=%2Fonboarding");
@@ -112,7 +119,7 @@ export default async function OnboardingPage() {
 			? row.workspaces[0]
 			: row.workspaces;
 		const id = String(workspace?.id ?? row.workspace_id ?? "").trim();
-		const name = String(workspace?.name ?? "Workspace").trim();
+		const name = String(workspace?.name ?? settingsT("Workspace")).trim();
 		if (!id || seenWorkspaceIds.has(id)) continue;
 		seenWorkspaceIds.add(id);
 		workspaces.push({ id, name, role: String(row.role ?? "member") });
@@ -135,6 +142,9 @@ export default async function OnboardingPage() {
 	return (
 		<>
 			<NoFooterStyle />
+			<div className="mx-auto w-full max-w-5xl px-6 pt-6 text-right text-sm">
+				<Link href="/settings/account/providers" className="text-muted-foreground underline underline-offset-4 hover:text-foreground">{t("becomeProvider")}</Link>
+			</div>
 			<InteractiveOnboarding
 				initialState={savedState}
 				initialCountryCode={userRow?.declared_country_code ?? null}

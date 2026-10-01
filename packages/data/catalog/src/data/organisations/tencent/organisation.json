@@ -2,6 +2,7 @@
   "organisation_id": "tencent",
   "name": "Tencent Hunyuan",
   "country_code": "CN",
+  "subdivision_code": "CN-GD",
   "description": "Tencent Hunyuan develops open and proprietary AI models for reasoning, multimodal understanding, coding, and agentic workloads through Tencent's Hunyuan model team. Tencent's headquarters are in Shenzhen, China.",
   "colour": "#0055E9",
   "organisation_links": [

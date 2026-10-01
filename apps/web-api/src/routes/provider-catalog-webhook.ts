@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import type { Env } from "@/env";
 import { getDataClient } from "@/data/supabase";
 import { PRIVATE_NO_STORE_HEADERS } from "@/http/cache";
+import { readLimitedText } from "@/http/readLimitedText";
 import {
 	decryptProviderCatalogWebhookSecret,
 	syncProviderCatalog,
@@ -35,16 +36,17 @@ providerCatalogWebhookRouter.get("/provider-catalog/openapi", (c) => c.json({
 providerCatalogWebhookRouter.post("/provider-catalog/:providerSlug", async (c) => {
 	const providerSlug = c.req.param("providerSlug").trim().toLowerCase();
 	if (!PROVIDER_SLUG.test(providerSlug)) return c.json({ error: "invalid_provider_slug" }, 400, PRIVATE_NO_STORE_HEADERS);
+	if (!c.req.header("x-phaseo-timestamp") || !c.req.header("x-phaseo-signature")) return c.json({ error: "invalid_signature" }, 401, PRIVATE_NO_STORE_HEADERS);
 	const declaredLength = Number(c.req.header("content-length") ?? 0);
 	if (declaredLength > MAX_WEBHOOK_BODY_BYTES) return c.json({ error: "payload_too_large" }, 413, PRIVATE_NO_STORE_HEADERS);
-	const body = await c.req.text();
-	if (new TextEncoder().encode(body).byteLength > MAX_WEBHOOK_BODY_BYTES) return c.json({ error: "payload_too_large" }, 413, PRIVATE_NO_STORE_HEADERS);
+	let body: string;
+	try { body = await readLimitedText(c.req.raw, MAX_WEBHOOK_BODY_BYTES); }
+	catch { return c.json({ error: "payload_too_large" }, 413, PRIVATE_NO_STORE_HEADERS); }
 
 	const client = getDataClient(c.env);
 	const sourceResult = await client.from("provider_catalog_sources").select("provider_slug,status,webhook_secret_ciphertext,webhook_secret_iv,webhook_secret_hash").eq("provider_slug", providerSlug).maybeSingle();
 	if (sourceResult.error) return c.json({ error: "provider_sync_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
-	if (!sourceResult.data) return c.json({ error: "provider_not_found" }, 404, PRIVATE_NO_STORE_HEADERS);
-	if (String(sourceResult.data.status) !== "active") return c.json({ error: "provider_sync_paused" }, 409, PRIVATE_NO_STORE_HEADERS);
+	if (!sourceResult.data) return c.json({ error: "invalid_signature" }, 401, PRIVATE_NO_STORE_HEADERS);
 
 	let secret: string;
 	try {
@@ -55,6 +57,7 @@ providerCatalogWebhookRouter.post("/provider-catalog/:providerSlug", async (c) =
 	if (!await verifyProviderCatalogWebhookSignature({ secret, timestamp: c.req.header("x-phaseo-timestamp"), signature: c.req.header("x-phaseo-signature"), body })) {
 		return c.json({ error: "invalid_signature" }, 401, PRIVATE_NO_STORE_HEADERS);
 	}
+	if (String(sourceResult.data.status) !== "active") return c.json({ error: "provider_sync_paused" }, 409, PRIVATE_NO_STORE_HEADERS);
 
 	let payload: { event_id?: unknown };
 	try {

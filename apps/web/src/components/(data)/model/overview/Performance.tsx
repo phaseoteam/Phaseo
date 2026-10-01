@@ -66,9 +66,7 @@ export default async function Performance({ details }: PerformanceProps) {
 				{/* Input Context Window Card */}
 				<div className="p-4 flex flex-col items-center justify-center border border-gray-200 dark:border-gray-700 border-b-2 border-b-gray-300 dark:border-b-gray-600 rounded-lg h-full">
 					<span className="text-xl font-bold">
-						{inputCtx != null
-							? `${inputCtx.toLocaleString(locale)} ${tMetadata("tokenUnit")}`
-							: "-"}
+						{inputCtx != null ? <><DisplayNumber value={inputCtx} /> {tMetadata("tokenUnit")}</> : "-"}
 					</span>
 					<span className="text-sm font-medium text-gray-500 mt-1">
 						{tMetadata("inputContext")}
@@ -77,9 +75,7 @@ export default async function Performance({ details }: PerformanceProps) {
 				{/* Output Context Window Card */}
 				<div className="p-2 flex flex-col items-center justify-center border border-gray-200 dark:border-gray-700 border-b-2 border-b-gray-300 dark:border-b-gray-600 rounded-lg">
 					<span className="text-xl font-bold">
-						{outputCtx != null
-							? `${outputCtx.toLocaleString(locale)} ${tMetadata("tokenUnit")}`
-							: "-"}
+						{outputCtx != null ? <><DisplayNumber value={outputCtx} /> {tMetadata("tokenUnit")}</> : "-"}
 					</span>
 					<span className="text-sm font-medium text-gray-500 mt-1">
 						{tMetadata("outputContext")}
@@ -88,7 +84,7 @@ export default async function Performance({ details }: PerformanceProps) {
 				{/* Knowledge Cutoff Card (replaces Latency) */}
 				<div className="p-2 flex flex-col items-center justify-center border border-gray-200 dark:border-gray-700 border-b-2 border-b-gray-300 dark:border-b-gray-600 rounded-lg">
 					<span className="text-xl font-bold">
-						{formattedKnowledgeCutoff}
+						{knowledgeCutoff ? <DisplayCalendarDate value={knowledgeCutoff} /> : "-"}
 					</span>
 					<span className="text-sm font-medium text-gray-500 mt-1">
 						{tMetadata("knowledgeCutoff")}
@@ -98,3 +94,4 @@ export default async function Performance({ details }: PerformanceProps) {
 		</div>
 	);
 }
+import { DisplayCalendarDate, DisplayNumber } from "@/components/display/DisplayValue";

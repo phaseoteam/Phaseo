@@ -28,18 +28,26 @@ import {
 	BadgeAlert,
 	FileText,
 	CircleDot,
+	Scale,
 	type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import { resolveWeeklyUsageDisplay } from "./weeklyUsage";
 import type { ModelCard as ModelCardType } from "@/lib/fetchers/models/getAllModels";
 import { getModelDetailsHref } from "@/lib/models/modelHref";
 import { normalizeOrganisationDisplayName } from "@/lib/models/organisationDisplay";
 import { hasPassedLifecycleDate } from "@/lib/models/modelLifecycle";
+import { resolveProviderLogoId } from "@/lib/providers/providerOffers";
 
 type ModelCardLike = Omit<ModelCardType, "gateway_status"> & {
-	gateway_status?: ModelCardType["gateway_status"] | "coming_soon" | null;
+	gateway_status?:
+		| ModelCardType["gateway_status"]
+		| "coming_soon"
+		| "deprecated"
+		| "retired"
+		| null;
 	router_requests_30d?: number | null;
 	router_spend_nanos_30d?: number | null;
 };
@@ -62,12 +70,8 @@ import {
 	HoverCardTrigger,
 } from "@/components/ui/hover-card";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 
-const PRIMARY_DATE_FORMATTER = new Intl.DateTimeFormat(undefined, {
-	year: "numeric",
-	month: "short",
-	day: "numeric",
-});
 const MODALITY_DISPLAY_ORDER = [
 	"text",
 	"image",
@@ -80,6 +84,7 @@ const MODALITY_DISPLAY_ORDER = [
 	"rerank",
 	"embedding",
 	"moderation",
+	"decisions",
 ] as const;
 const PROVIDER_STATUS_ORDER = [
 	"active",
@@ -256,41 +261,9 @@ function formatProviderStatusLabel(
 		.replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
-function formatTokenCount(value: number): string {
-	if (!Number.isFinite(value) || value < 0) return "-";
-	if (value >= 1_000_000_000_000_000_000) {
-		const scaled = value / 1_000_000_000_000_000_000;
-		const text = scaled.toFixed(2).replace(/\.?0+$/, "");
-		return `${text}Qi`;
-	}
-	if (value >= 1_000_000_000_000_000) {
-		const scaled = value / 1_000_000_000_000_000;
-		const text = scaled.toFixed(2).replace(/\.?0+$/, "");
-		return `${text}Q`;
-	}
-	if (value >= 1_000_000_000_000) {
-		const scaled = value / 1_000_000_000_000;
-		const text = scaled.toFixed(2).replace(/\.?0+$/, "");
-		return `${text}T`;
-	}
-	if (value >= 1_000_000_000) {
-		const scaled = value / 1_000_000_000;
-		const text = scaled.toFixed(2).replace(/\.?0+$/, "");
-		return `${text}B`;
-	}
-	if (value >= 1_000_000) {
-		const scaled = value / 1_000_000;
-		const text = scaled.toFixed(2).replace(/\.?0+$/, "");
-		return `${text}M`;
-	}
-	if (value >= 1_000) {
-		return `${Math.round(value / 1_000)}K`;
-	}
-	return value.toLocaleString();
-}
-
 function formatPrice(
 	value: number | null | undefined,
+	formatNumber: (value: number, options?: Intl.NumberFormatOptions) => string,
 	options: { allowZero?: boolean } = {},
 ): string | null {
 	if (
@@ -301,24 +274,24 @@ function formatPrice(
 	) {
 		return null;
 	}
-	if (value === 0) {
-		return options.allowZero ? "$0" : null;
-	}
-	if (value < 0.001) return `$${value.toFixed(4)}`;
-	if (value < 0.1) return `$${value.toFixed(3)}`;
-	if (value < 1) return `$${value.toFixed(2)}`;
-	return `$${value.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+	if (value === 0) return options.allowZero ? "$0" : null;
+	const maximumFractionDigits = value < 0.001 ? 4 : value < 0.1 ? 3 : 2;
+	return `$${formatNumber(value, { maximumFractionDigits, notation: "standard" })}`;
 }
 
-function formatCostNanos(value: number | null | undefined): string | null {
+function formatCostNanos(
+	value: number | null | undefined,
+	formatNumber: (value: number, options?: Intl.NumberFormatOptions) => string,
+): string | null {
 	if (!Number.isFinite(value) || value === null || value === undefined || value < 0) {
 		return null;
 	}
-	return new Intl.NumberFormat("en-US", {
+	return formatNumber(value / 1e9, {
 		style: "currency",
 		currency: "USD",
 		maximumFractionDigits: value / 1e9 >= 1 ? 2 : 5,
-	}).format(value / 1e9);
+		notation: "standard",
+	});
 }
 
 function normalizeFromPriceUnit(value: string | null | undefined): string | null {
@@ -353,9 +326,10 @@ function normalizeFromPriceUnit(value: string | null | undefined): string | null
 function formatFromPrice(
 	value: number | null | undefined,
 	unit: string | null | undefined,
+	formatNumber: (value: number, options?: Intl.NumberFormatOptions) => string,
 	options: { allowZero?: boolean } = {},
 ): string | null {
-	const amount = formatPrice(value, { allowZero: options.allowZero });
+	const amount = formatPrice(value, formatNumber, { allowZero: options.allowZero });
 	if (!amount) return null;
 	const normalizedUnit = normalizeFromPriceUnit(unit);
 	return normalizedUnit ? `${amount} per ${normalizedUnit}` : amount;
@@ -364,8 +338,9 @@ function formatFromPrice(
 function formatPriceWithUnit(
 	value: number | null | undefined,
 	unit: string | null | undefined,
+	formatNumber: (value: number, options?: Intl.NumberFormatOptions) => string,
 ): string | null {
-	const amount = formatPrice(value, { allowZero: true });
+	const amount = formatPrice(value, formatNumber, { allowZero: true });
 	if (!amount) return null;
 	const normalizedUnit = normalizeFromPriceUnit(unit);
 	if (!normalizedUnit) return amount;
@@ -380,7 +355,10 @@ function inferPriceUnitFromModality(modalityKey: string): string | null {
 	return null;
 }
 
-function summarizePricingValues(values: string[]): string | null {
+function summarizePricingValues(
+	values: string[],
+	formatNumber: (value: number, options?: Intl.NumberFormatOptions) => string,
+): string | null {
 	const parsed = values
 		.map((value) => {
 			const match = value.match(/^\$([\d.,]+)(?:-\$?([\d.,]+))?\s*\/\s*(.+)$/);
@@ -397,14 +375,15 @@ function summarizePricingValues(values: string[]): string | null {
 	if (!unit || parsed.some((entry) => entry.unit !== unit)) return null;
 	const min = Math.min(...parsed.map((entry) => entry.min));
 	const max = Math.max(...parsed.map((entry) => entry.max));
-	const minText = formatPrice(min, { allowZero: true });
-	const maxText = formatPrice(max, { allowZero: true });
+	const minText = formatPrice(min, formatNumber, { allowZero: true });
+	const maxText = formatPrice(max, formatNumber, { allowZero: true });
 	if (!minText || !maxText) return null;
 	return min === max ? `${minText} / ${unit}` : `${minText}-${maxText} / ${unit}`;
 }
 
 function summarizeDuplicatePricingItems(
 	items: Array<{ value: string }>,
+	formatNumber: (value: number, options?: Intl.NumberFormatOptions) => string,
 ): string | null {
 	const uniqueValues = Array.from(
 		new Set(
@@ -415,11 +394,12 @@ function summarizeDuplicatePricingItems(
 	);
 	if (uniqueValues.length === 0) return null;
 	if (uniqueValues.length === 1) return uniqueValues[0] ?? null;
-	return summarizePricingValues(uniqueValues);
+	return summarizePricingValues(uniqueValues, formatNumber);
 }
 
 function getModalityIcon(value: string): LucideIcon {
 	const normalized = value.toLowerCase().replace(/[._/-]+/g, " ");
+	if (normalized.includes("decision")) return Scale;
 	if (normalized.includes("realtime") || normalized.includes("real time")) {
 		return Radio;
 	}
@@ -450,13 +430,6 @@ function getModalityIcon(value: string): LucideIcon {
 	if (normalized.includes("audio")) return Headphones;
 	if (normalized.includes("text")) return Type;
 	return CircleDot;
-}
-
-function formatPrimaryDate(model: ModelCardLike): string {
-	if (!model.primary_date) return "Date unknown";
-	const parsed = new Date(model.primary_date);
-	if (Number.isNaN(parsed.getTime())) return model.primary_date;
-	return PRIMARY_DATE_FORMATTER.format(parsed);
 }
 
 function ModelCardScrollRail({
@@ -546,6 +519,7 @@ function ModelCardImpl({
 		degraded: tProviderStatus("degraded"),
 		external: tProviderStatus("external"),
 	};
+	const format = useDisplayFormatters();
 	const modelSlug = model.model_id;
 	const modelHref =
 		getModelDetailsHref(model.organisation_id, model.model_id) ??
@@ -598,7 +572,7 @@ function ModelCardImpl({
 		Number(model.router_requests_30d) > 0
 			? Number(model.router_requests_30d)
 			: null;
-	const routerSpend30d = formatCostNanos(model.router_spend_nanos_30d);
+	const routerSpend30d = formatCostNanos(model.router_spend_nanos_30d, format.number);
 	const rawProviderDetails = (model.gateway_provider_details ?? [])
 		.map((provider) => ({
 			id: String(provider.id ?? "").trim(),
@@ -687,12 +661,12 @@ function ModelCardImpl({
 		),
 	);
 	const isTextModel = modalitySet.has("text");
-	const inputPrice = formatPrice(model.lowest_input_price, { allowZero: true });
-	const outputPrice = formatPrice(model.lowest_output_price, { allowZero: true });
-	const standardInputPrice = formatPrice(model.lowest_standard_input_price, {
+	const inputPrice = formatPrice(model.lowest_input_price, format.number, { allowZero: true });
+	const outputPrice = formatPrice(model.lowest_output_price, format.number, { allowZero: true });
+	const standardInputPrice = formatPrice(model.lowest_standard_input_price, format.number, {
 		allowZero: true,
 	});
-	const standardOutputPrice = formatPrice(model.lowest_standard_output_price, {
+	const standardOutputPrice = formatPrice(model.lowest_standard_output_price, format.number, {
 		allowZero: true,
 	});
 	const primaryInputKey = inputModalities[0]
@@ -726,6 +700,7 @@ function ModelCardImpl({
 	const explicitFromPrice = formatFromPrice(
 		model.lowest_from_price,
 		model.lowest_from_price_unit,
+		format.number,
 		{ allowZero: true },
 	);
 	const tokenPriceCandidates = [model.lowest_input_price, model.lowest_output_price]
@@ -741,7 +716,7 @@ function ModelCardImpl({
 		.filter((value) => Number.isFinite(value) && value >= 0);
 	const fallbackFromPrice =
 		tokenPriceCandidates.length > 0
-			? formatFromPrice(Math.min(...tokenPriceCandidates), "1M tokens")
+			? formatFromPrice(Math.min(...tokenPriceCandidates), "1M tokens", format.number)
 			: null;
 	const normalizedFromPriceUnit = normalizeFromPriceUnit(model.lowest_from_price_unit);
 	const parsedFromPrice =
@@ -814,6 +789,7 @@ function ModelCardImpl({
 			value: formatPriceWithUnit(
 				model.lowest_standard_input_price,
 				model.lowest_standard_input_price_unit,
+				format.number,
 			),
 		},
 		{
@@ -823,6 +799,7 @@ function ModelCardImpl({
 			value: formatPriceWithUnit(
 				model.lowest_standard_output_price,
 				model.lowest_standard_output_price_unit,
+				format.number,
 			),
 		},
 	].filter((row) => Boolean(row.value));
@@ -833,6 +810,7 @@ function ModelCardImpl({
 			value: formatPriceWithUnit(
 				model.lowest_input_price,
 				fallbackInputUnit,
+				format.number,
 			),
 		},
 		{
@@ -841,6 +819,7 @@ function ModelCardImpl({
 			value: formatPriceWithUnit(
 				model.lowest_output_price,
 				fallbackOutputUnit,
+				format.number,
 			),
 		},
 	].filter((row) => Boolean(row.value));
@@ -968,7 +947,7 @@ function ModelCardImpl({
 	const inputModalityDisplay = formatModalities(inputModalities);
 	const outputModalityDisplay = formatModalities(outputModalities);
 	const weeklyUsage = resolveWeeklyUsageDisplay(model);
-	const weeklyUsageValue = `${formatTokenCount(weeklyUsage.quantity)}${weeklyUsage.unitSuffix}`;
+	const weeklyUsageValue = `${format.number(weeklyUsage.quantity, { maximumFractionDigits: 2, notation: "standard" })}${weeklyUsage.unitSuffix}`;
 
 	const copyModelId = async () => {
 		try {
@@ -1015,7 +994,7 @@ function ModelCardImpl({
 						scroll
 					>
 						<div className="w-10 h-10 relative flex items-center justify-center rounded-lg border bg-background ml-1 md:ml-0">
-							<div className="w-6 h-6 relative">
+							{model.organisation_logo_url ? <Avatar className="size-full rounded-md after:rounded-md"><AvatarImage src={model.organisation_logo_url} alt={`${model.organisation_name ?? "Workspace"} logo`} className="rounded-md object-cover" /><AvatarFallback className="rounded-md">{(model.organisation_name ?? "W").slice(0, 2).toUpperCase()}</AvatarFallback></Avatar> : <div className="w-6 h-6 relative">
 								<Logo
 									id={model.organisation_id}
 									alt={tDetail("availabilityLabels.providerLogo", {
@@ -1026,7 +1005,7 @@ function ModelCardImpl({
 									className="object-contain"
 									fill
 								/>
-							</div>
+							</div>}
 						</div>
 					</Link>
 
@@ -1131,7 +1110,7 @@ function ModelCardImpl({
 													group.items.every((item) => Boolean(item.variant));
 												const duplicateSummary =
 													!shouldGroupVariants && group.items.length > 1
-														? summarizeDuplicatePricingItems(group.items)
+																? summarizeDuplicatePricingItems(group.items, format.number)
 														: null;
 												if (duplicateSummary) {
 													return (
@@ -1156,9 +1135,10 @@ function ModelCardImpl({
 													));
 												}
 												if (group.baseLabel === "Image Output" && group.items.length >= 3) {
-													const summarizedValue = summarizePricingValues(
-														group.items.map((item) => item.value),
-													);
+															const summarizedValue = summarizePricingValues(
+																group.items.map((item) => item.value),
+																format.number,
+															);
 													if (summarizedValue) {
 														return (
 															<div key={group.id} className="space-y-0.5 text-xs">
@@ -1296,7 +1276,7 @@ function ModelCardImpl({
 									>
 										<span className="text-muted-foreground">{t("providers")}</span>
 										<span className="font-medium text-foreground tabular-nums">
-											{activeProviders.toLocaleString()}/{providerCount.toLocaleString()}
+											{format.number(activeProviders)}/{format.number(providerCount)}
 										</span>
 									</button>
 								</HoverCardTrigger>
@@ -1320,7 +1300,7 @@ function ModelCardImpl({
 															>
 																<span className="relative h-4 w-4 shrink-0 rounded-[4px] border bg-background">
 																	<Logo
-																		id={provider.id}
+																		id={resolveProviderLogoId({ providerId: provider.id })}
 																		alt={provider.name}
 																		className="object-contain p-[1px]"
 																		fill
@@ -1356,7 +1336,7 @@ function ModelCardImpl({
 							<div className="inline-flex items-center gap-1 rounded-md border border-border/60 bg-muted/30 px-2 py-1">
 								<span className="text-muted-foreground">{t("providers")}</span>
 								<span className="font-medium text-foreground tabular-nums">
-									{activeProviders.toLocaleString()}/{providerCount.toLocaleString()}
+									{format.number(activeProviders)}/{format.number(providerCount)}
 								</span>
 							</div>
 						)}
@@ -1364,9 +1344,7 @@ function ModelCardImpl({
 							<div className="inline-flex items-center gap-1 rounded-md border border-border/60 bg-muted/30 px-2 py-1">
 								<span className="text-muted-foreground">{t("filtersUi.contextLength")}</span>
 								<span className="font-medium text-foreground tabular-nums">
-									{t("tokenCountDisplay", {
-										count: formatTokenCount(maxContextLength),
-									})}
+									{t("tokenCountDisplay", { count: format.number(maxContextLength, { maximumFractionDigits: 2 }) })}
 								</span>
 							</div>
 						) : null}
@@ -1374,7 +1352,7 @@ function ModelCardImpl({
 							<div className="inline-flex items-center gap-1 rounded-md border border-border/60 bg-muted/30 px-2 py-1">
 								<span className="text-muted-foreground">{t("freeRouter.requests30d")}</span>
 								<span className="font-medium tabular-nums text-foreground">
-									{routerRequests30d.toLocaleString()}
+									{format.number(routerRequests30d)}
 								</span>
 							</div>
 						) : null}
@@ -1466,7 +1444,7 @@ function ModelCardImpl({
 				</div>
 
 				<div className="mt-auto flex items-center justify-between gap-3 text-xs text-muted-foreground">
-					<span className="truncate">{formatPrimaryDate(model)}</span>
+					<span className="truncate">{model.primary_date ? format.calendarDate(model.primary_date) : "Date unknown"}</span>
 					<div className="shrink-0">
 						<Tooltip>
 							<TooltipTrigger asChild>

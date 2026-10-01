@@ -304,6 +304,7 @@ function decodeOpenAITool(tool: any): IRTool {
 					? tool.custom.description
 					: undefined,
 			parameters: {},
+			async: typeof tool.async === "boolean" ? tool.async : undefined,
 			raw: { ...tool },
 		};
 	}
@@ -313,6 +314,7 @@ function decodeOpenAITool(tool: any): IRTool {
 		description: tool.function?.description || tool.description,
 		parameters: tool.function?.parameters || tool.parameters || {},
 		strict: tool.function?.strict ?? tool.strict,
+		async: typeof tool.async === "boolean" ? tool.async : undefined,
 	};
 }
 

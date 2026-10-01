@@ -2,6 +2,7 @@
 
 import React from "react";
 import { useTranslations } from "next-intl";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import TeamInviteDialog from "./TeamInviteDialog";
 import { Infinity } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -62,6 +63,7 @@ export default function TeamsInvites({
 			t(`strings.${key}` as never, values as never),
 		[t],
 	);
+	const format = useDisplayFormatters();
 	const [localActiveTeamId, setLocalActiveTeamId] = React.useState<
 		string | undefined
 	>(teams.length ? teams[0].id : undefined);
@@ -201,10 +203,8 @@ export default function TeamsInvites({
 															s("Unknown")}
 													</div>
 													<div className="text-xs text-muted-foreground">
-															{s("Created")}{" "}
-														{new Date(
-															i.created_at
-														).toLocaleDateString()}
+														{s("Created")}{" "}
+														{format.date(i.created_at)}
 													</div>
 												</div>
 												<div className="ml-2">
@@ -233,10 +233,8 @@ export default function TeamsInvites({
 											<div className="mt-2 flex items-center justify-between text-xs">
 												<div className="text-muted-foreground">
 													{i.expires_at
-																? `${s("Expires")} ${new Date(
-																i.expires_at
-														  ).toLocaleDateString()}`
-																: s("No expiry")}
+														? `${s("Expires")} ${format.date(i.expires_at)}`
+														: s("No expiry")}
 												</div>
 												<div className="flex items-center gap-2">
 													<div className="flex items-center gap-1 text-muted-foreground">

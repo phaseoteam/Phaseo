@@ -14,11 +14,12 @@ import {
 	UserCog,
 	UserRoundX,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useSettingsRouter as useRouter } from "../../PrivateSettingsQuery";
 import Link from "next/link";
 import { toast } from "sonner";
 import { useTranslations } from "next-intl";
 import { localizedSettingsError } from "@/i18n/error-messages";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -128,15 +129,19 @@ function roleBadge(role: string | undefined, s: (key: string) => string) {
 	}
 }
 
-function formatUsdFromNanos(value?: number | null) {
+function formatUsdFromNanos(
+	value: number | null | undefined,
+	formatNumber: ReturnType<typeof useDisplayFormatters>["number"]
+) {
 	const nanos = Number(value ?? 0);
 	if (!Number.isFinite(nanos)) return "--";
-	return new Intl.NumberFormat("en-US", {
+	return formatNumber(nanos / 1_000_000_000, {
 		style: "currency",
 		currency: "USD",
 		minimumFractionDigits: 2,
 		maximumFractionDigits: 2,
-	}).format(nanos / 1_000_000_000);
+		notation: "standard",
+	});
 }
 
 export default function TeamsMembers({
@@ -149,6 +154,7 @@ export default function TeamsMembers({
 	personalTeamId,
 	samplePreview = false,
 }: Props) {
+	const format = useDisplayFormatters();
 	const router = useRouter();
 	const t = useTranslations("SettingsUI");
 	const s = React.useCallback(
@@ -527,7 +533,7 @@ export default function TeamsMembers({
 											</TableCell>
 											<TableCell className="px-4 py-3 text-sm text-muted-foreground">
 												<span className="font-mono tabular-nums">
-													{formatUsdFromNanos(member.spend_30d_nanos)}
+											{formatUsdFromNanos(member.spend_30d_nanos, format.number)}
 												</span>
 											</TableCell>
 											<TableCell className="px-4 py-3 text-right">

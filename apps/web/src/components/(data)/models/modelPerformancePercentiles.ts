@@ -33,8 +33,13 @@ export function buildSingleProviderPercentileSeries(
 				supported.has(point.percentile) &&
 				point.requests > 0 &&
 				(point.avgThroughput != null ||
+					point.avgOutputSpeed != null ||
 					point.avgLatencyMs != null ||
+					point.avgEndToEndMs != null ||
 					point.avgGenerationMs != null ||
+					point.avgPhaseoOverheadMs != null ||
+					point.avgTpotMs != null ||
+					point.avgItlMs != null ||
 					point.cachedInputPct != null),
 		)
 		.map((point) => {

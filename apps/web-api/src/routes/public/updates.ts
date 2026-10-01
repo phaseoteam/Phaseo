@@ -20,6 +20,7 @@ type ModelEvent = {
 	};
 	types: ModelEventType[];
 	date: string;
+	cataloguedAt: string | null;
 };
 
 const MODEL_EVENT_RANK: Record<ModelEventType, number> = {
@@ -83,10 +84,20 @@ function modelEventSort(left: ModelEvent, right: ModelEvent, ascending: boolean)
 			? left.date.localeCompare(right.date)
 			: right.date.localeCompare(left.date);
 	}
+	if (left.cataloguedAt !== right.cataloguedAt) {
+		if (!left.cataloguedAt) return 1;
+		if (!right.cataloguedAt) return -1;
+		return right.cataloguedAt.localeCompare(left.cataloguedAt);
+	}
 	const organisationCompare = left.model.organisation.organisation_id.localeCompare(
 		right.model.organisation.organisation_id,
 	);
 	return organisationCompare || left.model.model_id.localeCompare(right.model.model_id);
+}
+
+function publicModelEvent(event: ModelEvent): Omit<ModelEvent, "cataloguedAt"> {
+	const { cataloguedAt: _cataloguedAt, ...publicEvent } = event;
+	return publicEvent;
 }
 
 function buildModelEvents(rows: Array<Record<string, unknown>>): ModelEvent[] {
@@ -110,6 +121,7 @@ function buildModelEvents(rows: Array<Record<string, unknown>>): ModelEvent[] {
 				name: organisation.name == null ? null : String(organisation.name),
 			},
 		};
+		const cataloguedAt = isoDate(row.created_at);
 		for (const [field, type] of [
 			["announcement_date", "Announced"],
 			["release_date", "Released"],
@@ -126,7 +138,7 @@ function buildModelEvents(rows: Array<Record<string, unknown>>): ModelEvent[] {
 					existing.types.sort((a, b) => MODEL_EVENT_RANK[a] - MODEL_EVENT_RANK[b]);
 				}
 			} else {
-				events.set(key, { model, types: [type], date });
+				events.set(key, { model, types: [type], date, cataloguedAt });
 			}
 		}
 	}
@@ -139,7 +151,7 @@ async function fetchModelEventRows(
 ): Promise<Array<Record<string, unknown>>> {
 	let query = getDataClient(env)
 		.from("v2_models")
-		.select("model_slug,name,lab_slug,announced_at,released_at,deprecated_at,retired_at,lab:v2_labs!v2_models_lab_slug_fkey(lab_slug,name)")
+		.select("model_slug,name,lab_slug,announced_at,released_at,deprecated_at,retired_at,created_at,lab:v2_labs!v2_models_lab_slug_fkey(lab_slug,name)")
 		.eq("hidden", false)
 		.or("announced_at.not.is.null,released_at.not.is.null,deprecated_at.not.is.null,retired_at.not.is.null");
 	if (organisationId) query = query.eq("lab_slug", organisationId);
@@ -155,6 +167,7 @@ async function fetchModelEventRows(
 			release_date: row.released_at,
 			deprecation_date: row.deprecated_at,
 			retirement_date: row.retired_at,
+			created_at: row.created_at,
 			organisation: lab ? {
 				organisation_id: lab.lab_slug,
 				name: lab.name,
@@ -239,7 +252,10 @@ publicUpdatesRouter.get("/updates/models", async (c) => {
 			.filter((event) => Date.parse(event.date) > now)
 			.sort((left, right) => modelEventSort(left, right, true))
 			.slice(0, upcomingLimit);
-		return withPublicCache(c.json({ past, future }), {
+		return withPublicCache(c.json({
+			past: past.map(publicModelEvent),
+			future: future.map(publicModelEvent),
+		}), {
 			...UPDATE_CACHE,
 			cacheTags: ["web-api-updates", "web-api-model-updates"],
 		});
@@ -259,7 +275,7 @@ publicUpdatesRouter.get("/updates/organisations/:organisationId/releases", async
 			)
 			.map((event) => ({ ...event, types: ["Released"] as ModelEventType[] }))
 			.sort((left, right) => modelEventSort(left, right, false));
-		return withPublicCache(c.json({ events }), {
+		return withPublicCache(c.json({ events: events.map(publicModelEvent) }), {
 			...UPDATE_CACHE,
 			cacheTags: [
 				"web-api-updates",

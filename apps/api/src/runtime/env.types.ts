@@ -1,9 +1,13 @@
 // Purpose: Runtime environment type definitions.
 
 export type GatewayBindings = {
+    GATEWAY_CONTEXT_BUNDLE_ENABLED?: string;
+    GATEWAY_PUBLIC_CATALOG_TARGETS?: string;
     SUPABASE_URL: string;
     SUPABASE_SERVICE_ROLE_KEY: string;
+	GATEWAY_ROUTING_REGION?: "eu" | "us";
     GATEWAY_CACHE: KVNamespace;
+    ROUTING_HEALTH?: DurableObjectNamespace<import("@core/routing-health-durable-object").RoutingHealthDurableObject>;
 	GATEWAY_IO_LOGS_BUCKET?: R2Bucket;
 	GATEWAY_IO_LOGS_BUCKET_NAME?: string;
 	GATEWAY_IO_LOGGING_MAX_BYTES?: string;
@@ -32,6 +36,7 @@ export type GatewayBindings = {
     OAUTH_TOKEN_RATE_LIMITER?: RateLimit;
 	REALTIME_RELAY_RATE_LIMITER?: RateLimit;
     REALTIME_RELAY?: DurableObjectNamespace;
+	PROVIDER_RATE_LIMITS?: DurableObjectNamespace;
     KV?: KVNamespace;
     DB?: D1Database;
     PHASEO_CONTROL_SECRET?: string;
@@ -55,6 +60,8 @@ export type GatewayBindings = {
 	LINEAR_ASSIGNEE_ID?: string;
 	LINEAR_OBSERVABILITY_LABEL_ID?: string;
 	OPENAI_API_KEY?: string;
+	OPENROUTER_API_KEY?: string;
+	TYPESAFE_API_KEY?: string;
 	OPENAI_EU_BASE_URL?: string;
     OPENAI_BASE_URL?: string;
     OPENAI_WEBHOOK_SECRET?: string;
@@ -79,6 +86,8 @@ export type GatewayBindings = {
     AKASHML_API_KEY?: string;
     AKASHML_BASE_URL?: string;
     ALIBABA_CLOUD_API_KEY?: string;
+    MODELSCOPE_API_KEY?: string;
+    MODELSCOPE_BASE_URL?: string;
     DASHSCOPE_API_KEY?: string;
     ALIBABA_BASE_URL?: string;
     ALIBABA_VIDEO_WEBHOOK_SECRET?: string;
@@ -123,12 +132,8 @@ export type GatewayBindings = {
     CLOUDFLARE_AI_GATEWAY_ID?: string;
     COHERE_API_KEY?: string;
     COHERE_BASE_URL?: string;
-    CROFAI_API_KEY?: string;
     CANOPYWAVE_API_KEY?: string;
     CANOPYWAVE_BASE_URL?: string;
-    CROFAI_BASE_URL?: string;
-    CROF_AI_API_KEY?: string;
-    CROF_AI_BASE_URL?: string;
     VOYAGE_API_KEY?: string;
     VOYAGE_BASE_URL?: string;
     CRUSOE_API_KEY?: string;
@@ -139,6 +144,8 @@ export type GatewayBindings = {
     IOINTELLIGENCE_BASE_URL?: string;
     DEEPSEEK_API_KEY?: string;
     DEEPSEEK_BASE_URL?: string;
+    DOUBLEWORD_API_KEY?: string;
+    DOUBLEWORD_BASE_URL?: string;
     DARKBLOOM_API_KEY?: string;
     DARKBLOOM_BASE_URL?: string;
     DIGITALOCEAN_TOKEN?: string;
@@ -239,6 +246,7 @@ export type GatewayBindings = {
     BFL_POLL_TIMEOUT_MS?: string;
     XIAOMI_MIMO_API_KEY?: string;
     XIAOMI_MIMO_BASE_URL?: string;
+    XIAOMI_MIMO_BATCH_BASE_URL?: string;
     NOVITA_API_KEY?: string;
     NOVITA_BASE_URL?: string;
     PARALLEL_API_KEY?: string;
@@ -253,6 +261,8 @@ export type GatewayBindings = {
     FAL_QUEUE_BASE_URL?: string;
     PERPLEXITY_API_KEY?: string;
     PERPLEXITY_BASE_URL?: string;
+    TINYFISH_API_KEY?: string;
+    TINYFISH_SEARCH_BASE_URL?: string;
     POOLSIDE_API_KEY?: string;
     POOLSIDE_BASE_URL?: string;
     PHALA_API_KEY?: string;
@@ -263,6 +273,7 @@ export type GatewayBindings = {
     RELACE_BASE_URL?: string;
     REKA_API_KEY?: string;
     REKA_BASE_URL?: string;
+    RESPAN_API_KEY?: string;
     SAKANA_API_KEY?: string;
     SAKANA_BASE_URL?: string;
     SAIL_API_KEY?: string;
@@ -294,13 +305,18 @@ export type GatewayBindings = {
 	AZURE_OPENAI_AUTH_TOKEN?: string;
     AZURE_OPENAI_BASE_URL?: string;
     AZURE_OPENAI_API_VERSION?: string;
+    AZURE_OPENAI_DEPLOYMENTS?: string;
     RESEND_API_KEY?: string;
     RESEND_FROM_EMAIL?: string;
     RESEND_ONBOARDING_AUTOMATIONS_ENABLED?: string;
     RESEND_TEMPLATE_LOW_BALANCE_ID?: string;
+    RESEND_TEMPLATE_MODEL_DEPRECATION_ID?: string;
     DISCORD_WEBHOOK_URL?: string;
+    DISCORD_WEBHOOK_NEW_MODELS_PUBLIC?: string;
     DISCORD_ROLE_ID?: string;
     DISCORD_USER_ID?: string;
+    MODEL_DISCOVERY_SLACK_WEBHOOK_URL?: string;
+    MODEL_DISCOVERY_REVIEW_URL?: string;
     ENV?: string;
 	ACCOUNT_DELETION_PURGE_ENABLED?: string;
     HF_TOKEN?: string;
@@ -325,9 +341,13 @@ export type GatewayBindings = {
     GATEWAY_PERF_WORKSPACE_ID?: string;
     GATEWAY_PERF_ALLOWED_ENDPOINTS?: string;
     GATEWAY_LOCAL_TESTING_MODE?: string;
+    MODEL_DISCOVERY_ENABLED?: string;
     MODEL_DISCOVERY_RETENTION_DAYS?: string;
     MODEL_DISCOVERY_SHARD_SIZE?: string;
+    MODEL_DISCOVERY_SHARDING_ENABLED?: string;
+    MODEL_DISCOVERY_CONCURRENCY?: string;
     MODEL_DISCOVERY_ISSUE_SYNC_ENABLED?: string;
+    MODEL_UPDATES_NOTIFICATIONS_DISABLED?: string;
     VIDEO_RECONCILIATION_ENABLED?: string;
     VIDEO_RECONCILIATION_LIMIT?: string;
     VIDEO_RECONCILIATION_CONCURRENCY?: string;

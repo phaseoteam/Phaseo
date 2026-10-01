@@ -1,8 +1,7 @@
 import { Suspense } from "react";
 import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
-import BroadcastSettingsClient from "@/components/(gateway)/settings/observability/BroadcastSettingsClient";
+import BroadcastSettingsContent from "./BroadcastContent";
 import { ProductFeedbackButton } from "@/components/feedback/ProductFeedbackButton";
-import { fetchSettingsBroadcastInitialData } from "@/lib/fetchers/internal/fetchSettingsBroadcastInitialData";
 import { getTranslations } from "next-intl/server";
 
 export async function generateMetadata() {
@@ -29,25 +28,5 @@ export default async function BroadcastSettingsPage() {
 				<BroadcastSettingsContent />
 			</Suspense>
 		</main>
-	);
-}
-
-async function BroadcastSettingsContent() {
-	const t = await getTranslations("SettingsUI");
-	const initialData = await fetchSettingsBroadcastInitialData();
-
-	if (!initialData.workspaceId) {
-		return (
-			<div className="rounded-lg border border-border/60 bg-muted/20 p-4 text-sm text-muted-foreground">
-				{t("headers.broadcastWorkspaceRequired")}
-			</div>
-		);
-	}
-
-	return (
-		<BroadcastSettingsClient
-			teamName={initialData.teamName}
-			configuredDestinations={initialData.configuredDestinations}
-		/>
 	);
 }

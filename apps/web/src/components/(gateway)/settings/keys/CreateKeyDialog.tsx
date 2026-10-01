@@ -1,4 +1,5 @@
 "use client";
+import { useInvalidatePrivateSettings } from "../PrivateSettingsQuery";
 import React, { useState } from "react";
 import {
 	Dialog,
@@ -51,6 +52,7 @@ export default function CreateKeyDialog({
 	const [name, setName] = useState("");
 	const [loading, setLoading] = useState(false);
 	const t = useTranslations("SettingsUI");
+	const invalidateSettings = useInvalidatePrivateSettings();
 	const [plainKey, setPlainKey] = useState<string | null>(null);
 	const [selectedPresetId, setSelectedPresetId] =
 		useState<ApiKeyPresetId>("production");
@@ -66,10 +68,9 @@ export default function CreateKeyDialog({
 		e?.preventDefault();
 		if (!name) return;
 		if (!currentUserId || selectedTeamId === undefined) {
-			// surface an error so users understand why nothing happens
 			setPlainKey(null);
 			setLoading(false);
-			alert(t("strings.Sign in and select a workspace before creating an API key." as never));
+			toast.error(t("strings.Sign in and select a workspace before creating an API key." as never));
 			return;
 		}
 		try {
@@ -85,6 +86,7 @@ export default function CreateKeyDialog({
 				getApiKeyPreset(selectedPresetId).limits
 			);
 			setPlainKey(res?.plaintext ?? null);
+			void invalidateSettings();
 			captureProductEvent("api_key_created", {
 				preset: selectedPresetId,
 				surface: "settings",
@@ -126,19 +128,19 @@ export default function CreateKeyDialog({
 				</Button>
 			</DialogTrigger>
 
-			<DialogContent>
-				<DialogHeader>
+			<DialogContent className="gap-5 sm:max-w-lg">
+				<DialogHeader className="gap-2">
 					<DialogTitle>{t("keys.createKey")}</DialogTitle>
 					<DialogDescription>
 						{t("strings.Create a new API key for a workspace." as never)}
 					</DialogDescription>
-					<DialogDescription className="mt-2 text-sm text-red-600">
+					<p className="rounded-md bg-destructive/10 px-3 py-2 text-sm leading-5 text-destructive">
 						{t("strings.The key will be shown only once - copy it and store it somewhere safe." as never)}
-					</DialogDescription>
+					</p>
 				</DialogHeader>
 
 				{!plainKey ? (
-					<form onSubmit={onCreate} className="space-y-4">
+					<form onSubmit={onCreate} className="space-y-5">
 						{/* Team selector (dropdown placed above name input) */}
 						{resolvedTeams && resolvedTeams.length > 0 ? (
 							<DropdownMenu>
@@ -223,21 +225,19 @@ export default function CreateKeyDialog({
 						</DialogFooter>
 					</form>
 				) : (
-					<div className="space-y-4">
-						<div className="font-mono break-all select-all rounded-lg p-4 bg-gray-100 dark:bg-gray-800">
+					<div className="space-y-5">
+						<div className="select-all break-all rounded-lg border border-border bg-muted/60 p-3 font-mono text-xs leading-5 sm:text-sm">
 							{plainKey}
 						</div>
-						<div className="flex items-center gap-2">
-							<div className="text-sm text-muted-foreground font-bold">
-								{t("strings.This key will not be shown again and gives anyone access to your credits for your workspace. Keep this code secret at all times." as never)}
-							</div>
-						</div>
+						<p className="text-sm leading-5 text-muted-foreground">
+							{t("strings.This key will not be shown again and gives anyone access to your credits for your workspace. Keep this code secret at all times." as never)}
+						</p>
 						<SecretRevealActions
 							secret={plainKey}
 							name={name || "AI Stats API key"}
 							kind="api-key"
 						/>
-						<DialogFooter>
+						<DialogFooter className="pt-1">
 							<DialogClose asChild>
 								<Button onClick={onClose}>{t("labels.done")}</Button>
 							</DialogClose>

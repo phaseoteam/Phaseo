@@ -136,6 +136,7 @@ export default async function TermsPage() {
 					{autoTopUpActions.map((item, index) => <li key={index}>{item}</li>)}
 				</ul>
 				<p className="mt-1 text-foreground/80">{t("termsBody.autoTopUpCard")}</p>
+				<p className="mt-1 text-foreground/80">{t("termsBody.autoTopUpSecurity")}</p>
 
 				<h3 className="mt-3 text-base font-semibold text-foreground">
 					{t("termsHeadings.refundsExpiry")}

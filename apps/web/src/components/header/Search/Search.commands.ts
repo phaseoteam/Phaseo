@@ -71,7 +71,7 @@ export function getContextItems(pathname: string): PaletteItem[] {
 		return [
 			{ id: `context-model-chat-${modelId}`, title: "Chat with this model", subtitle: modelId, href: `/chat?model=${encodeURIComponent(modelId)}`, keywords: ["playground", "prompt", "current model"] },
 			{ id: `context-model-compare-${modelId}`, title: "Compare this model", subtitle: modelId, href: `/compare?models=${encodeURIComponent(modelId)}`, keywords: ["comparison", "versus", "current model"] },
-			{ id: `context-model-copy-${modelId}`, title: "Copy model ID", subtitle: modelId, action: "copy-text", actionValue: modelId, keywords: ["identifier", "slug", "clipboard", "current model"] },
+			{ id: `context-model-copy-${modelId}`, title: "Copy model ID", subtitle: modelId, action: "copy-text", actionValue: modelId, keywords: ["identifier", "slug", "clipboard", "current model"], shortcut: ["C", "I"] },
 		];
 	}
 

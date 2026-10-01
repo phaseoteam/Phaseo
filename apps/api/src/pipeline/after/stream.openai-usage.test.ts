@@ -9,6 +9,7 @@ const reportProbeResultMock = vi.fn();
 const maybeOpenOnRecentErrorsMock = vi.fn();
 const maybeWriteStickyRoutingFromUsageMock = vi.fn();
 const classifyProviderHealthImpactMock = vi.fn();
+const recordManagedProviderTokensOnceMock = vi.fn();
 
 vi.mock("../audit", () => ({
 	auditSuccess: (...args: any[]) => auditSuccessMock(...args),
@@ -21,6 +22,10 @@ vi.mock("@observability/events", () => ({
 
 vi.mock("./charge", () => ({
 	recordUsageAndChargeOnce: (...args: any[]) => recordUsageAndChargeOnceMock(...args),
+}));
+
+vi.mock("@core/provider-rate-limits", () => ({
+	recordManagedProviderTokensOnce: (...args: any[]) => recordManagedProviderTokensOnceMock(...args),
 }));
 
 vi.mock("../execute/health", () => ({
@@ -164,6 +169,24 @@ function baseCtx(): any {
 }
 
 describe("handleStreamResponse OpenAI usage finalization", () => {
+    it.each([false, true])("keeps private stream health scoped when failure=%s", async failed => {
+        onCallEndMock.mockReset().mockResolvedValue(undefined);
+        reportProbeResultMock.mockReset().mockResolvedValue(undefined);
+        maybeOpenOnRecentErrorsMock.mockReset().mockResolvedValue(undefined);
+        classifyProviderHealthImpactMock.mockReset().mockReturnValue(failed ? "failure" : "success");
+        auditSuccessMock.mockReset().mockResolvedValue(undefined);
+        auditFailureMock.mockReset().mockResolvedValue(undefined);
+        emitGatewayRequestEventMock.mockReset().mockResolvedValue(undefined);
+        recordUsageAndChargeOnceMock.mockReset().mockResolvedValue(undefined);
+        const upstream = failed ? makeFailedOpenAIStream() : makeEmptySuccessfulOpenAIStream();
+        const scopedProvider = "private-model:workspace-a:route-1";
+        const response = await handleStreamResponse(baseCtx(), { kind: "stream", stream: upstream.body, upstream, provider: "private-model", healthContext: { provider: scopedProvider, isProbe: true }, usageFinalizer: async () => null, bill: { cost_cents: 0, currency: "USD", usage: null, finish_reason: null } } as any, null);
+        await response.text();
+        await new Promise(resolve => setTimeout(resolve, 0));
+        expect(onCallEndMock).toHaveBeenCalledWith("chat.completions", expect.objectContaining({ provider: scopedProvider, ok: !failed }));
+        expect(reportProbeResultMock).toHaveBeenCalledWith("chat.completions", scopedProvider, "openai/gpt-5.6-luna", !failed);
+    });
+
 	it("passes trailing usage-only tokens into charging and persisted audit facts", async () => {
 		auditSuccessMock.mockReset().mockResolvedValue(undefined);
 		emitGatewayRequestEventMock.mockReset().mockResolvedValue(undefined);
@@ -174,9 +197,13 @@ describe("handleStreamResponse OpenAI usage finalization", () => {
 		maybeWriteStickyRoutingFromUsageMock.mockReset().mockResolvedValue(undefined);
 		classifyProviderHealthImpactMock.mockReset().mockReturnValue("success");
 
+		const ctx = baseCtx();
+		ctx.meta.returnMeta = true;
+		ctx.meta.startedAtMs = Date.now() - 100;
+		ctx.meta.upstreamStartMs = Date.now() - 80;
 		const upstream = makeOpenAIStream();
 		const response = await handleStreamResponse(
-			baseCtx(),
+			ctx,
 			{
 				kind: "stream",
 				stream: upstream.body,
@@ -202,6 +229,16 @@ describe("handleStreamResponse OpenAI usage finalization", () => {
 
 		expect(downstream).toContain('"finish_reason":"stop"');
 		expect(downstream).toContain('"total_tokens":15');
+		const usageFrame = JSON.parse(
+			downstream
+				.split("\n")
+				.find((line) => line.startsWith("data: ") && line.includes('"completion_tokens":4'))
+				?.slice(6) ?? "{}",
+		);
+		expect(usageFrame.meta.throughput_tps).toBeCloseTo(
+			4 / ((ctx.meta.generation_ms as number) / 1000),
+			5,
+		);
 		expect(recordUsageAndChargeOnceMock).toHaveBeenCalledTimes(1);
 		expect(auditSuccessMock).toHaveBeenCalledTimes(1);
 		expect(auditSuccessMock.mock.calls[0]?.[0]?.usagePriced).toMatchObject({
@@ -221,6 +258,7 @@ describe("handleStreamResponse OpenAI usage finalization", () => {
 		maybeOpenOnRecentErrorsMock.mockReset().mockResolvedValue(undefined);
 		maybeWriteStickyRoutingFromUsageMock.mockReset().mockResolvedValue(undefined);
 		classifyProviderHealthImpactMock.mockReset().mockReturnValue("failure");
+		recordManagedProviderTokensOnceMock.mockReset().mockResolvedValue(undefined);
 
 		const upstream = makeIncompleteOpenAIStream();
 		const response = await handleStreamResponse(
@@ -240,6 +278,10 @@ describe("handleStreamResponse OpenAI usage finalization", () => {
 		await new Promise((resolve) => setTimeout(resolve, 0));
 
 		expect(recordUsageAndChargeOnceMock).not.toHaveBeenCalled();
+		expect(recordManagedProviderTokensOnceMock).toHaveBeenCalledWith(expect.objectContaining({
+			providerId: "openai",
+			usage: expect.objectContaining({ input_tokens: 10 }),
+		}));
 		expect(auditSuccessMock).not.toHaveBeenCalled();
 		expect(auditFailureMock).toHaveBeenCalledTimes(1);
 	});

@@ -440,7 +440,10 @@
 				"aliasIdentifier": "उपनाम",
 				"showFullDescription": "पूरा दिखाएँ",
 				"showLessDescription": "कम दिखाएँ",
-				"viewOrganisation": "{organisation} देखें"
+				"viewOrganisation": "{organisation} देखें",
+				"decisions": "निर्णय",
+				"openDecisions": "निर्णय खोलें",
+				"openDecisionsPlayground": "निर्णय परीक्षण क्षेत्र खोलें"
 			},
 			"sections": {
 				"providersDescription": "API प्रदाता, रूट की कीमतें, उपलब्धता और हाल के विश्वसनीयता संकेत।",
@@ -863,7 +866,11 @@
 						"label": "सेवानिवृत्त",
 						"description": "इस प्रदाता मैपिंग की प्रभावी अवधि समाप्त हो चुकी है।"
 					}
-				}
+				},
+				"tierUltrafast": "अति तेज़",
+				"planDescriptionFlexOnly": "केवल तब उपयोग होता है जब service_tier flex हो।",
+				"planDescriptionFastRouting": "उपलब्ध होने पर तेज़ रूटिंग।",
+				"planDescriptionUltrafast": "उपलब्ध होने पर अधिकतम गति वाली रूटिंग।"
 			},
 			"seoTitles": {
 				"titleDefault": "{model}: मूल्य, बेंचमार्क और प्रदाता",
@@ -886,7 +893,11 @@
 				"showLess": "कम दिखाएँ",
 				"showMore": "{count} और दिखाएँ",
 				"noHighlights": "अभी कोई उल्लेखनीय बेंचमार्क परिणाम नहीं हैं।",
-				"tableTitle": "बेंचमार्क तालिका"
+				"tableTitle": "बेंचमार्क तालिका",
+				"openSource": "{benchmark} का स्रोत खोलें",
+				"hideDetailsFor": "{benchmark} का विवरण छिपाएँ",
+				"showDetailsFor": "{benchmark} का विवरण दिखाएँ",
+				"showAll": "सभी {count} बेंचमार्क दिखाएँ"
 			},
 			"faqContent": {
 				"title": "अक्सर पूछे जाने वाले प्रश्न",
@@ -963,6 +974,11 @@
 				"countFooter": "{count, plural, one {इस परिवार में # मॉडल।} other {इस परिवार में # मॉडल।}}",
 				"close": "बंद करें",
 				"genericFamily": "मॉडल"
+			},
+			"privateModel": {
+				"endpoint": "निजी एंडपॉइंट",
+				"deployment": "निजी डिप्लॉयमेंट",
+				"billingNote": "प्रदाता की बिलिंग सीधे कार्यक्षेत्र द्वारा प्रबंधित की जाती है।"
 			}
 		},
 		"noModelsAvailableForView": "इस दृश्य के लिए अभी कोई मॉडल उपलब्ध नहीं है।",
@@ -1187,7 +1203,14 @@
 				"input_video_seconds": "इनपुट वीडियो सेकंड",
 				"total_tokens": "कुल टोकन",
 				"requests": "अनुरोध"
-			}
+			},
+			"organisationComingSoon": "{organisation} जल्द उपलब्ध होगा",
+			"announcedPricingDescription": "{organisation} ने {model} की घोषणा की है। उपलब्ध होने पर प्रदाता की उपलब्धता और कीमतें जोड़ी जाएँगी।",
+			"noProviderAvailability": "इस मॉडल के लिए अभी API प्रदाता की कीमतें या उपलब्धता नहीं है।",
+			"thisModel": "यह मॉडल",
+			"tokenOverviewDescription": "सूची मूल्य प्रदाताओं की वर्तमान दरें हैं। प्रभावी मूल्य पिछले 30 दिनों के देखे गए गेटवे ट्रैफ़िक के अनुसार भारित हैं। सारांश समयावधि वाली मूल्य-सूचियों का औसत दिखाते हैं; एक सप्ताह का इतिहास हर UTC बदलाव दिखाता है।",
+			"unitOverviewDescription": "तुलना के लिए सूची मूल्यों में मानकीकृत इकाइयाँ उपयोग होती हैं। सारांश समयावधि वाली मूल्य-सूचियों का औसत दिखाते हैं; एक सप्ताह का इतिहास हर UTC बदलाव दिखाता है।",
+			"tierUnavailable": "देखे गए उपयोग के बिना प्रभावी दृश्य में {provider} {plan} की मूल्य रेखा उपलब्ध नहीं है"
 		},
 		"sections": {
 			"apiProvidersAndPricing": "API प्रदाता और कीमतें",
@@ -1400,18 +1423,23 @@
 			"suggestProviders": "यदि आप ऐसे प्रदाताओं को जानते हैं जिन्हें हमें जोड़ना चाहिए, तो Discord पर बताएं या GitHub पर समस्या खोलें ताकि हम मूल्य डेटा जोड़ सकें।",
 			"noSubscriptions": "अभी तक कोई सदस्यता योजना सूचीबद्ध नहीं है",
 			"noSubscriptionPrice": "कोई कीमत सूचीबद्ध नहीं है",
-			"noSubscriptionPricingDescription": "इस मॉडल के लिए सदस्यता मूल्य उपलब्ध नहीं हैं।"
+			"noSubscriptionPricingDescription": "इस मॉडल के लिए सदस्यता मूल्य उपलब्ध नहीं हैं।",
+			"noHistoryTitle": "अभी मूल्य इतिहास उपलब्ध नहीं है",
+			"submittedPrices": "प्रदाताओं द्वारा जमा की गई वर्तमान कीमतें ऊपर की प्रदाता तालिका में दिखाई गई हैं।"
 		},
 		"uptime": {
-			"title": "मॉडल उपलब्धता",
+			"title": "औसत उपलब्धता",
 			"last24Hours": "पिछले 24 घंटे",
 			"noRequests": "कोई अनुरोध दर्ज नहीं हुआ",
 			"requestsObserved": "दर्ज अनुरोध: {count}",
 			"perHour": "प्रति घंटे उपलब्धता",
 			"chartLabel": "पिछले {hours} घंटों में मॉडल की प्रति घंटे उपलब्धता। उपलब्धता: {uptime}। दर्ज अनुरोध: {count}।",
-			"leastStableProviderLabel": "सबसे कम स्थिर प्रदाता",
+			"leastStableProviderLabel": "Phaseo Routing के बिना",
 			"tooltipUptime": "अपटाइम:",
-			"tooltipWorstProvider": "सबसे कम स्थिर प्रदाता:"
+			"tooltipWorstProvider": "Phaseo Routing के बिना:",
+			"hourlyAverage": "पिछले 24 घंटे · प्रति घंटे औसत",
+			"routingChartLabel": "पिछले 24 घंटों में मॉडल की प्रति घंटे उपलब्धता। Phaseo Routing: {uptime}।{comparison}",
+			"routingComparison": " Phaseo Routing के बिना: {uptime}।"
 		},
 		"providerInfo": {
 			"dataPolicy": "डेटा नीति",
@@ -1534,7 +1562,9 @@
 			"relativeTime": "सापेक्ष समय",
 			"elapsed": "बीत चुके",
 			"remaining": "शेष",
-			"totalDays": "कुल {count} दिन"
+			"totalDays": "कुल {count} दिन",
+			"modalityStructured": "संरचित स्थिति",
+			"modalityDecisions": "निर्णय"
 		},
 		"performance": {
 			"noTelemetry": "पिछले 7 दिनों में Gateway टेलीमेट्री नहीं है",
@@ -1641,7 +1671,9 @@
 				"metricByHour": "घंटे के अनुसार {metric}",
 				"noSamples": "इस समयावधि के लिए कोई नमूना उपलब्ध नहीं है।",
 				"footer": "सभी समय UTC में हैं। मान चुनी गई रिपोर्टिंग अवधि के प्रति घंटा माध्यिका को एकत्र करते हैं।"
-			}
+			},
+			"observationsShown": "{description} {series} दिखाए जा रहे हैं।",
+			"requestSuccess": "सफल अनुरोध"
 		}
 	},
 	"providers": {
@@ -1779,7 +1811,9 @@
 		"browseModels": "{name} के ज़रिए उपलब्ध मॉडल ब्राउज़ करें।",
 		"missingTitle": "हमें वह API प्रदाता अभी नहीं मिला...",
 		"missingDescription": "अगर कोई API प्रदाता छूट गया है, तो कृपया GitHub पर योगदान दें।",
-		"contribute": "GitHub पर योगदान दें"
+		"contribute": "GitHub पर योगदान दें",
+		"internalPreview": "प्रदाता का आंतरिक पूर्वावलोकन",
+		"internalPreviewDescription": "इस प्रदाता के कैटलॉग सबमिशन अधिकृत हैं, लेकिन अभी सार्वजनिक गेटवे विश्लेषण उपलब्ध नहीं है। नीचे दिए गए मॉडल सबमिशन केवल प्रदाता के कार्यस्थान और Phaseo व्यवस्थापकों को दिखाई देते हैं।"
 	},
 	"benchmarks": {
 		"title": "बेंचमार्क",
@@ -1843,7 +1877,44 @@
 		"tocProgress": "प्रगति",
 		"tocModelResults": "मॉडल परिणाम",
 		"editBenchmark": "बेंचमार्क संपादित करें",
-		"ranking": "रैंकिंग"
+		"ranking": "रैंकिंग",
+		"tocIndexComparisons": "सूचकांक तुलना",
+		"tocIndexLeaderboard": "सूचकांक रैंकिंग",
+		"independentEvaluations": "{metric} · स्वतंत्र मूल्यांकन",
+		"noModelsMatchSearch": "आपकी खोज से कोई मॉडल मेल नहीं खाता।",
+		"noBenchmarkResults": "इस बेंचमार्क के लिए अभी कोई परिणाम उपलब्ध नहीं है।",
+		"directoryDescription": "स्वतंत्र मूल्यांकनों में मॉडल की क्षमताओं की तुलना करें।",
+		"featuredAnalysis": "चुनिंदा Artificial Analysis बेंचमार्क",
+		"featuredDescription": "बुद्धिमत्ता, प्रोग्रामिंग, एजेंट और मूल्यांकन लागत",
+		"evaluatedModels": "{count} मूल्यांकित मॉडल",
+		"viewResults": "परिणाम देखें",
+		"allBenchmarks": "सभी बेंचमार्क",
+		"sortBenchmarks": "बेंचमार्क क्रमबद्ध करें",
+		"mostModels": "सबसे अधिक मॉडल",
+		"nameAlphabetically": "नाम के अनुसार",
+		"modelCount": "{count} मॉडल",
+		"showMoreBenchmarks": "और बेंचमार्क दिखाएँ",
+		"showingCount": "{total} में से {shown} दिखाए जा रहे हैं",
+		"metricDescriptions": {
+			"intelligence": "मॉडल की समग्र क्षमता",
+			"coding": "सॉफ़्टवेयर इंजीनियरिंग क्षमता",
+			"agentic": "कई चरणों वाले कार्यों में प्रदर्शन",
+			"cost": "संपूर्ण बुद्धिमत्ता सूचकांक मूल्यांकन · USD"
+		},
+		"filteredEmpty": "इन फ़िल्टर से कोई स्कोर मेल नहीं खाता।",
+		"scoreProgress": "स्कोर की प्रगति",
+		"releaseDateDescription": "रिलीज़ की तारीख के अनुसार मॉडल के स्कोर की तुलना करें।",
+		"progressTimeRange": "प्रगति की समय सीमा",
+		"filterByModel": "मॉडल के अनुसार प्रगति फ़िल्टर करें",
+		"filterModels": "मॉडल फ़िल्टर करें",
+		"filterByOrg": "संगठन के अनुसार प्रगति फ़िल्टर करें",
+		"allOrganisations": "सभी संगठन",
+		"filterByConfig": "कॉन्फ़िगरेशन के अनुसार प्रगति फ़िल्टर करें",
+		"allConfigurations": "सभी कॉन्फ़िगरेशन",
+		"paretoFrontier": "पारेटो सीमा",
+		"all": "सभी",
+		"nonReasoning": "तर्क-विचार के बिना",
+		"confidenceInterval": "95% विश्वास अंतराल: {low}–{high}"
 	},
 	"rankings": {
 		"title": "AI मॉडल रैंकिंग",
@@ -2053,7 +2124,29 @@
 			"transcription": "ट्रांसक्रिप्शन"
 		},
 		"shareLabel": "हिस्सेदारी",
-		"tokensLabel": "टोकन"
+		"tokensLabel": "टोकन",
+		"unavailable": "यह रैंकिंग अस्थायी रूप से उपलब्ध नहीं है।",
+		"retrying": "फिर से प्रयास किया जा रहा है…",
+		"tryAgain": "फिर से प्रयास करें",
+		"benchmarkRankings": "बेंचमार्क रैंकिंग",
+		"independentEvaluations": "Artificial Analysis द्वारा स्वतंत्र मूल्यांकन",
+		"benchmarkMetric": "बेंचमार्क मापदंड",
+		"lowerCostIsBetter": "कम लागत बेहतर है · USD",
+		"indexVersion": "सूचकांक v{versions}",
+		"searchRankedModels": "रैंक किए गए मॉडल खोजें",
+		"searchModels": "मॉडल खोजें",
+		"noSearchMatches": "आपकी खोज से कोई मॉडल मेल नहीं खाता।",
+		"noMetricResults": "इस मापदंड के लिए अभी कोई परिणाम उपलब्ध नहीं है।",
+		"allEvaluationResults": "सभी परिणाम और मूल्यांकन विवरण",
+		"resultCount": "{count} परिणाम",
+		"benchmarkMetrics": {
+			"intelligence": "बुद्धिमत्ता",
+			"coding": "प्रोग्रामिंग",
+			"agentic": "एजेंट",
+			"cost": "मूल्यांकन लागत"
+		},
+		"audioTranscribed": "लिप्यंतरित ऑडियो",
+		"recentRequests": "{count} हाल के अनुरोध"
 	},
 	"compare": {
 		"title": "मॉडलों की तुलना करें",
@@ -2315,7 +2408,7 @@
 		"modelsTab": "मॉडल",
 		"visitPlatformPage": "{platform} पर {name} पर जाएँ",
 		"unknownLabTitle": "हम इस लैब को अभी तक नहीं जानते।",
-		"unknownLabDescription": "अगर कोई लैब छूट गई है, तो GitHub पर योगदान दें।",
+		"unknownLabDescription": "यदि कोई लैब नहीं है, तो कृपया डेटा अनुरोध भेजें।",
 		"contributeGitHub": "GitHub पर योगदान दें",
 		"githubLogoAlt": "GitHub का लोगो",
 		"editOrganisation": "संगठन संपादित करें",
@@ -2345,7 +2438,8 @@
 		"metadataModelsTitle": "{name} के AI मॉडल",
 		"metadataModelsDescription": "{name} के मॉडल देखें, जिनमें Gateway उपलब्धता, रिलीज़ स्थिति और कीमतें शामिल हैं।",
 		"keywordAiModels": "AI मॉडल",
-		"keywordAiGateway": "एआई गेटवे"
+		"keywordAiGateway": "एआई गेटवे",
+		"requestMissingData": "अनुपलब्ध डेटा का अनुरोध करें"
 	},
 	"catalogNotFound": {
 		"modelHeading": "मॉडल “{id}” नहीं मिला।",
@@ -2481,7 +2575,8 @@
 		"waitingForFirstToken": "पहले टोकन की प्रतीक्षा हो रही है",
 		"measuredPace": "मापी गई गति",
 		"fastPace": "तेज़ गति",
-		"veryFastPace": "बहुत तेज़ गति"
+		"veryFastPace": "बहुत तेज़ गति",
+		"tokensPerSecond": "{count} टोकन/सेकंड"
 	},
 	"monitor": {
 		"title": "मॉनिटर",
@@ -2745,7 +2840,7 @@
 		"visitApp": "ऐप पर जाएँ",
 		"active": "सक्रिय",
 		"inactive": "निष्क्रिय",
-		"lastSeen": "पिछली सक्रियता: {date}",
+		"lastSeen": "पिछली सक्रियता: <date></date>",
 		"totalRequests": "कुल अनुरोध",
 		"allTimeSuccessfulRequests": "अब तक के सफल अनुरोध",
 		"totalTokens": "कुल टोकन",

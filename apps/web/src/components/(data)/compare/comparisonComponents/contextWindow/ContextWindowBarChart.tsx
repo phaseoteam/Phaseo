@@ -1,3 +1,5 @@
+"use client";
+
 import React from "react";
 import {
 	BarChart,
@@ -9,6 +11,7 @@ import {
 	CartesianGrid,
 	Legend,
 } from "recharts";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 
 interface ContextWindowBarChartProps {
 	chartData: { [key: string]: string | number | null }[];
@@ -21,17 +24,6 @@ interface ContextWindowBarChartProps {
 }
 
 // Helper to format numbers as K/M/B
-function formatTokens(val: number | null | undefined, locale: string): string {
-	if (val == null) return "-";
-	if (val >= 1_000_000_000)
-		return `${(val / 1_000_000_000).toLocaleString(locale, { maximumFractionDigits: 1 })}B`;
-	if (val >= 1_000_000)
-		return `${(val / 1_000_000).toLocaleString(locale, { maximumFractionDigits: 1 })}M`;
-	if (val >= 1_000)
-		return `${(val / 1_000).toLocaleString(locale, { maximumFractionDigits: 1 })}K`;
-	return val.toLocaleString(locale);
-}
-
 export default function ContextWindowBarChart({
 	chartData,
 	models,
@@ -41,6 +33,9 @@ export default function ContextWindowBarChart({
 	outputLabel,
 	barGap = 32,
 }: ContextWindowBarChartProps) {
+	const format = useDisplayFormatters();
+	const formatTokens = (value: number | null | undefined) =>
+		value == null ? "-" : format.number(value, { maximumFractionDigits: 1 });
 	const data = models.map((model) => ({
 		model: model.name,
 		input: chartData[0][model.name],
@@ -95,7 +90,7 @@ export default function ContextWindowBarChart({
 					tickLine={false}
 					domain={[0, niceMax]}
 					ticks={ticks}
-					tickFormatter={(value) => formatTokens(Number(value), locale)}
+					tickFormatter={(value) => format.number(Number(value))}
 					allowDecimals={false}
 				/>
 				<YAxis

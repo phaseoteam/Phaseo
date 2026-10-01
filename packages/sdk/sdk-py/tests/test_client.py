@@ -7,6 +7,24 @@ from gen import models
 from gen import operations as ops
 
 
+@pytest.mark.parametrize(
+    ("region", "expected_base_url"),
+    [
+        ("eu", "https://eu.api.phaseo.app/v1"),
+        ("us", "https://us.api.phaseo.app/v1"),
+        ("global", "https://api.phaseo.app/v1"),
+    ],
+)
+def test_region_selects_regional_base_url(region: str, expected_base_url: str):
+    client = Phaseo(api_key="sk_test_123", region=region)
+    assert client._base_url == expected_base_url
+
+
+def test_region_rejects_ambiguous_base_url():
+    with pytest.raises(ValueError, match="base_url and region cannot be used together"):
+        Phaseo(api_key="sk_test_123", base_url="https://example.test/v1", region="eu")
+
+
 def test_app_attribution_headers_are_opt_in():
     plain = Phaseo(api_key="sk_test_123", base_url="https://example.test")
     assert "X-App-Id" not in plain._headers
@@ -762,9 +780,8 @@ def test_get_file_content_downloads_bytes(monkeypatch):
         captured.append((url, headers or {}, timeout))
         return FakeResponse(b'{"ok":true}\n')
 
-    monkeypatch.setattr("phaseo.httpx.get", fake_get)
-
     client = Phaseo(api_key="sk_test_123", base_url="https://example.test", timeout=12.5)
+    monkeypatch.setattr(client._client, "get", fake_get)
     content = client.get_file_content("file_123")
 
     assert content == b'{"ok":true}\n'

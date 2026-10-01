@@ -49,10 +49,12 @@ export default async function ModelPricingInsightsSection({
 	modelId,
 	includeHidden,
 	showPageHeader = false,
+	hasSubmittedProviderPrices = false,
 }: {
 	modelId: string;
 	includeHidden: boolean;
 	showPageHeader?: boolean;
+	hasSubmittedProviderPrices?: boolean;
 }) {
 	const providers = await withOptionalPricingTimeout(
 		fetchFrontendModelPricing(modelId),
@@ -82,6 +84,7 @@ export default async function ModelPricingInsightsSection({
 		),
 	).sort((a, b) => a.localeCompare(b));
 	if (!providersForDisplay.length) {
+		const isPreview = pendingApiRelease?.isPendingApiRelease === true || hasSubmittedProviderPrices;
 		return (
 			<div className="space-y-3">
 				{pendingApiRelease?.isPendingApiRelease ? (
@@ -95,15 +98,19 @@ export default async function ModelPricingInsightsSection({
 						<EmptyMedia variant="icon">
 							<CircleAlert className="size-4" />
 						</EmptyMedia>
-						<EmptyTitle>{tEmpty("noPricingTitle")}</EmptyTitle>
+						<EmptyTitle>{isPreview ? tEmpty("noHistoryTitle") : tEmpty("noPricingTitle")}</EmptyTitle>
 						<EmptyDescription>
-							{tEmpty("noPricingDescription")}
+							{isPreview
+								? tEmpty("submittedPrices")
+								: tEmpty("noPricingDescription")}
 						</EmptyDescription>
 					</EmptyHeader>
 					<EmptyContent>
-						<EmptyDescription>
-							{tEmpty("suggestProviders")}
-						</EmptyDescription>
+						{!isPreview ? (
+							<EmptyDescription>
+								{tEmpty("suggestProviders")}
+							</EmptyDescription>
+						) : null}
 					</EmptyContent>
 				</Empty>
 			</div>

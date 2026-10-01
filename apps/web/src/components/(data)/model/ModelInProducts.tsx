@@ -7,6 +7,7 @@ import { Separator } from "@/components/ui/separator";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Check, X } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 
 interface ModelInProductsProps {
 	model: ExtendedModel; // currently viewed model
@@ -19,6 +20,7 @@ export default function ModelInProducts({
 }: ModelInProductsProps) {
 	const locale = useLocale();
 	const t = useTranslations("Catalogue.models");
+	const format = useDisplayFormatters();
 	// Plans that include the current model
 	const matchingPlans = plans.filter(
 		(plan: any) =>
@@ -95,11 +97,13 @@ export default function ModelInProducts({
 				? v
 				: NaN;
 		if (!Number.isFinite(n)) return null;
-		return new Intl.NumberFormat(locale, {
+		return format.number(n, {
 			style: "currency",
 			currency: "USD",
+			minimumFractionDigits: n % 1 === 0 ? 0 : 2,
 			maximumFractionDigits: n % 1 === 0 ? 0 : 2,
-		}).format(n);
+			notation: "standard",
+		});
 	};
 
 	// Build a normalised, de-duped list of ALL features shown across the visible plans

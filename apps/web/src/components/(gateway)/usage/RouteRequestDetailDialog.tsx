@@ -20,8 +20,10 @@ import RequestDetailDialog from "./RequestDetailDialog";
 
 export function RouteRequestDetailErrorDialog({
 	closeHref,
+	onRetry,
 }: {
 	closeHref: string;
+	onRetry?: () => void;
 }) {
 	const router = useRouter();
 	const t = useTranslations("SettingsUI");
@@ -41,7 +43,7 @@ export function RouteRequestDetailErrorDialog({
 					</DialogDescription>
 				</DialogHeader>
 				<DialogFooter>
-					<Button variant="outline" onClick={() => router.refresh()}>
+					<Button variant="outline" onClick={onRetry ?? (() => router.refresh())}>
 						{t("strings.Try again" as never)}
 					</Button>
 					<Button asChild>
@@ -90,7 +92,6 @@ export default function RouteRequestDetailDialog({
 		<RequestDetailDialog
 			open
 			presentation="sheet"
-			disablePointerDismissal
 			onOpenChange={(open) => {
 				if (!open) router.push(closeHref);
 			}}

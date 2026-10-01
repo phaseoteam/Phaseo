@@ -632,6 +632,344 @@
     "rate_limits": []
   },
   {
+    "api_model_id": "eleven-labs/eleven-v4",
+    "provider_api_model_id": "elevenlabs:eleven-labs/eleven-v4",
+    "provider_model_slug": "eleven_v4",
+    "internal_model_id": "eleven-labs/eleven-v4",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "audio_tts",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-09-28T00:00:00Z",
+    "effective_to": "2026-10-12T00:00:00Z",
+    "capabilities": [
+      {
+        "capability_id": "audio.speech",
+        "status": "active",
+        "params": [
+          {
+            "param_id": "input",
+            "type": "string",
+            "provider_max": 10000,
+            "maps_to": "text",
+            "source_url": "https://elevenlabs.io/v4"
+          },
+          {
+            "param_id": "voice",
+            "type": "string_or_object",
+            "maps_to": "voice_id",
+            "source_url": "https://elevenlabs.io/docs/api-reference/text-to-speech/convert"
+          },
+          {
+            "param_id": "format",
+            "type": "enum",
+            "values": [
+              "mp3",
+              "wav",
+              "pcm"
+            ],
+            "maps_to": "output_format",
+            "source_url": "https://elevenlabs.io/docs/api-reference/text-to-speech/convert"
+          },
+          {
+            "param_id": "response_format",
+            "type": "enum",
+            "values": [
+              "mp3",
+              "wav",
+              "pcm"
+            ],
+            "maps_to": "output_format",
+            "source_url": "https://elevenlabs.io/docs/api-reference/text-to-speech/convert"
+          },
+          {
+            "param_id": "config.elevenlabs",
+            "type": "object",
+            "properties": {
+              "voice_id": {
+                "type": "string"
+              },
+              "output_format": {
+                "type": "string",
+                "provider_default": "mp3_44100_128"
+              },
+              "language_code": {
+                "type": "string"
+              },
+              "voice_settings": {
+                "type": "object",
+                "properties": {
+                  "stability": {
+                    "type": "number"
+                  },
+                  "similarity_boost": {
+                    "type": "number"
+                  }
+                }
+              },
+              "seed": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 4294967295
+              },
+              "pronunciation_dictionary_locators": {
+                "type": "array",
+                "max_items": 3
+              },
+              "enable_logging": {
+                "type": "boolean",
+                "provider_default": true
+              },
+              "optimize_streaming_latency": {
+                "type": "integer",
+                "values": [
+                  0,
+                  1,
+                  2,
+                  3,
+                  4
+                ],
+                "deprecated": true
+              },
+              "previous_text": {
+                "type": "string"
+              },
+              "next_text": {
+                "type": "string"
+              },
+              "previous_request_ids": {
+                "type": "array",
+                "max_items": 3
+              },
+              "next_request_ids": {
+                "type": "array",
+                "max_items": 3
+              },
+              "apply_text_normalization": {
+                "type": "enum",
+                "values": [
+                  "auto",
+                  "on",
+                  "off"
+                ],
+                "provider_default": "auto"
+              },
+              "apply_language_text_normalization": {
+                "type": "boolean",
+                "provider_default": false,
+                "notes": "Currently supported only for Japanese."
+              },
+              "use_pvc_as_ivc": {
+                "type": "boolean",
+                "provider_default": false,
+                "deprecated": true
+              }
+            },
+            "source_url": "https://elevenlabs.io/docs/overview/capabilities/text-to-speech/eleven-v4"
+          }
+        ],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": true,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-09-28T00:00:00Z",
+      "notes": "https://elevenlabs.io/docs/overview/capabilities/text-to-speech/eleven-v4"
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "eleven-labs/eleven-v4-turbo",
+    "provider_api_model_id": "elevenlabs:eleven-labs/eleven-v4-turbo",
+    "provider_model_slug": "eleven_v4_turbo",
+    "internal_model_id": "eleven-labs/eleven-v4-turbo",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "audio_tts",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-09-28T00:00:00Z",
+    "effective_to": "2026-10-12T00:00:00Z",
+    "capabilities": [
+      {
+        "capability_id": "audio.speech",
+        "status": "active",
+        "params": [
+          {
+            "param_id": "input",
+            "type": "string",
+            "provider_max": 10000,
+            "maps_to": "text",
+            "source_url": "https://elevenlabs.io/v4"
+          },
+          {
+            "param_id": "voice",
+            "type": "string_or_object",
+            "maps_to": "voice_id",
+            "source_url": "https://elevenlabs.io/docs/api-reference/text-to-speech/convert"
+          },
+          {
+            "param_id": "format",
+            "type": "enum",
+            "values": [
+              "mp3",
+              "wav",
+              "pcm"
+            ],
+            "maps_to": "output_format",
+            "source_url": "https://elevenlabs.io/docs/api-reference/text-to-speech/convert"
+          },
+          {
+            "param_id": "response_format",
+            "type": "enum",
+            "values": [
+              "mp3",
+              "wav",
+              "pcm"
+            ],
+            "maps_to": "output_format",
+            "source_url": "https://elevenlabs.io/docs/api-reference/text-to-speech/convert"
+          },
+          {
+            "param_id": "config.elevenlabs",
+            "type": "object",
+            "properties": {
+              "voice_id": {
+                "type": "string"
+              },
+              "output_format": {
+                "type": "string",
+                "provider_default": "mp3_44100_128"
+              },
+              "language_code": {
+                "type": "string"
+              },
+              "voice_settings": {
+                "type": "object",
+                "properties": {
+                  "stability": {
+                    "type": "number"
+                  },
+                  "similarity_boost": {
+                    "type": "number"
+                  }
+                }
+              },
+              "seed": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 4294967295
+              },
+              "pronunciation_dictionary_locators": {
+                "type": "array",
+                "max_items": 3
+              },
+              "enable_logging": {
+                "type": "boolean",
+                "provider_default": true
+              },
+              "optimize_streaming_latency": {
+                "type": "integer",
+                "values": [
+                  0,
+                  1,
+                  2,
+                  3,
+                  4
+                ],
+                "deprecated": true
+              },
+              "previous_text": {
+                "type": "string"
+              },
+              "next_text": {
+                "type": "string"
+              },
+              "previous_request_ids": {
+                "type": "array",
+                "max_items": 3
+              },
+              "next_request_ids": {
+                "type": "array",
+                "max_items": 3
+              },
+              "apply_text_normalization": {
+                "type": "enum",
+                "values": [
+                  "auto",
+                  "on",
+                  "off"
+                ],
+                "provider_default": "auto"
+              },
+              "apply_language_text_normalization": {
+                "type": "boolean",
+                "provider_default": false,
+                "notes": "Currently supported only for Japanese."
+              },
+              "use_pvc_as_ivc": {
+                "type": "boolean",
+                "provider_default": false,
+                "deprecated": true
+              }
+            },
+            "source_url": "https://elevenlabs.io/docs/overview/capabilities/text-to-speech/eleven-v4"
+          }
+        ],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": true,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-09-28T00:00:00Z",
+      "notes": "https://elevenlabs.io/docs/overview/capabilities/text-to-speech/eleven-v4"
+    },
+    "rate_limits": []
+  },
+  {
     "api_model_id": "eleven-labs/eleven-v3",
     "provider_api_model_id": "elevenlabs:eleven-labs/eleven-v3",
     "provider_model_slug": "eleven_v3",

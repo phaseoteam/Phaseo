@@ -1,0 +1,12 @@
+{
+  "key": "meta:meta/muse-voice-transcribe-1.0:audio.transcription",
+  "api_provider_id": "meta",
+  "provider_slug": "meta",
+  "api_model_id": "meta/muse-voice-transcribe-1.0",
+  "capability_id": "audio.transcription",
+  "rules": [{ "meter": "input_audio_seconds", "unit": "second", "unit_size": 3600, "price_per_unit": 0.18, "currency": "USD", "pricing_plan": "standard", "note": "Muse Voice Transcribe API pricing.", "match": [], "priority": 100, "region": "global", "cache_duration_seconds": null, "conditions": [], "source": "https://dev.meta.ai/docs/pricing-rate-limits" }],
+  "regions": ["global"],
+  "service_tiers": ["standard"],
+  "sources": [{ "kind": "pricing", "url": "https://dev.meta.ai/docs/pricing-rate-limits", "accessed_at": "2026-09-01T00:00:00Z", "notes": "Meta lists USD 3 per 1,000 audio minutes, equivalent to USD 0.18 per audio hour." }],
+  "verification": { "status": "verified", "checked_at": "2026-09-01T00:00:00Z", "notes": "Launch-day Meta Model API rate." }
+}

@@ -220,6 +220,13 @@ function createPresetTestRun(Client $client, ?array $path = null, ?array $query 
 	return $client->request("POST", $resolvedPath, $query, $headers, $body);
 }
 
+function createPrivateModel(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	$resolvedPath = "/private-models";
+	return $client->request("POST", $resolvedPath, $query, $headers, $body);
+}
+
 function createProviderCredential(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
 {
 	$path = $path ?? [];
@@ -406,6 +413,13 @@ function deletePreset(Client $client, ?array $path = null, ?array $query = null,
 {
 	$path = $path ?? [];
 	$resolvedPath = "/presets/" . rawurlencode((string)($path["id"] ?? ""));
+	return $client->request("DELETE", $resolvedPath, $query, $headers, $body);
+}
+
+function deletePrivateModel(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	$resolvedPath = "/private-models/" . rawurlencode((string)($path["id"] ?? ""));
 	return $client->request("DELETE", $resolvedPath, $query, $headers, $body);
 }
 
@@ -665,6 +679,13 @@ function getPresetTestRun(Client $client, ?array $path = null, ?array $query = n
 {
 	$path = $path ?? [];
 	$resolvedPath = "/preset-test-runs/" . rawurlencode((string)($path["id"] ?? ""));
+	return $client->request("GET", $resolvedPath, $query, $headers, $body);
+}
+
+function getPrivateModel(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	$resolvedPath = "/private-models/" . rawurlencode((string)($path["id"] ?? ""));
 	return $client->request("GET", $resolvedPath, $query, $headers, $body);
 }
 
@@ -990,6 +1011,13 @@ function listPricingModels(Client $client, ?array $path = null, ?array $query = 
 	return $client->request("GET", $resolvedPath, $query, $headers, $body);
 }
 
+function listPrivateModels(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	$resolvedPath = "/private-models";
+	return $client->request("GET", $resolvedPath, $query, $headers, $body);
+}
+
 function listProviderCredentials(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
 {
 	$path = $path ?? [];
@@ -1130,6 +1158,13 @@ function listWorkspaceScimAuditEvents(Client $client, ?array $path = null, ?arra
 	return $client->request("GET", $resolvedPath, $query, $headers, $body);
 }
 
+function makeDecision(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	$resolvedPath = "/decisions";
+	return $client->request("POST", $resolvedPath, $query, $headers, $body);
+}
+
 function mergeWorkspaceApp(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
 {
 	$path = $path ?? [];
@@ -1242,6 +1277,20 @@ function retrieveBatchFileContentAlias(Client $client, ?array $path = null, ?arr
 	return $client->request("GET", $resolvedPath, $query, $headers, $body);
 }
 
+function retrieveBatchResults(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	$resolvedPath = "/batches/" . rawurlencode((string)($path["batch_id"] ?? "")) . "/results";
+	return $client->requestRaw("GET", $resolvedPath, $query, $headers, $body);
+}
+
+function retrieveBatchResultsAlias(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	$resolvedPath = "/batch/" . rawurlencode((string)($path["id"] ?? "")) . "/results";
+	return $client->requestRaw("GET", $resolvedPath, $query, $headers, $body);
+}
+
 function retrieveFile(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
 {
 	$path = $path ?? [];
@@ -1289,6 +1338,13 @@ function summarizeGatewayFeedback(Client $client, ?array $path = null, ?array $q
 	$path = $path ?? [];
 	$resolvedPath = "/feedback/summary";
 	return $client->request("GET", $resolvedPath, $query, $headers, $body);
+}
+
+function testWebhookEndpoint(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	$resolvedPath = "/webhook-endpoints/" . rawurlencode((string)($path["id"] ?? "")) . "/test";
+	return $client->request("POST", $resolvedPath, $query, $headers, $body);
 }
 
 function testWorkspaceNotificationDestination(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
@@ -1386,6 +1442,13 @@ function updatePresetTestRun(Client $client, ?array $path = null, ?array $query 
 {
 	$path = $path ?? [];
 	$resolvedPath = "/preset-test-runs/" . rawurlencode((string)($path["id"] ?? ""));
+	return $client->request("PATCH", $resolvedPath, $query, $headers, $body);
+}
+
+function updatePrivateModel(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	$resolvedPath = "/private-models/" . rawurlencode((string)($path["id"] ?? ""));
 	return $client->request("PATCH", $resolvedPath, $query, $headers, $body);
 }
 

@@ -1,7 +1,8 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useSettingsRouter as useRouter } from "../PrivateSettingsQuery";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { toast } from "sonner";
 import { useLocale, useTranslations } from "next-intl";
 import { localizedSettingsError } from "@/i18n/error-messages";
@@ -34,22 +35,20 @@ const DEFAULT_CATEGORIES = JSON.stringify({
 	operation: ["research", "content", "automation", "other"],
 }, null, 2);
 
-function formatMoney(locale: string, nanos: number): string {
-	return new Intl.NumberFormat(locale, { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 4 })
-		.format(nanos / 1_000_000_000);
-}
 
 export function DataContributionSettingsCard({ initial }: { initial: DataContributionSettings }) {
 	const t = useTranslations("SettingsUI");
 	const locale = useLocale();
+	const format = useDisplayFormatters();
+	const formatMoney = (nanos: number) => format.number(nanos / 1_000_000_000, { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 4, notation: "standard" });
 	const s = (key: string) => t(`strings.${key}` as never);
 	const router = useRouter();
 	const [enabled, setEnabled] = useState(initial.enabled);
 	const [confirmOpen, setConfirmOpen] = useState(false);
 	const [createOpen, setCreateOpen] = useState(false);
 	const [pending, startTransition] = useTransition();
-	const discount = new Intl.NumberFormat(locale, { maximumFractionDigits: 2 }).format(initial.discountBps / 100);
-	const sampleRate = new Intl.NumberFormat(locale, { maximumFractionDigits: 2 }).format(initial.classifierSampleRateBps / 100);
+	const discount = format.number(initial.discountBps / 100, { maximumFractionDigits: 2, notation: "standard" });
+	const sampleRate = format.number(initial.classifierSampleRateBps / 100, { maximumFractionDigits: 2, notation: "standard" });
 	const [name, setName] = useState("");
 	const [instructions, setInstructions] = useState(() => t("contributionCopy.defaultInstructions" as never));
 	const [categories, setCategories] = useState(DEFAULT_CATEGORIES);
@@ -96,7 +95,7 @@ export function DataContributionSettingsCard({ initial }: { initial: DataContrib
 			<div className="grid gap-5 border-b bg-gradient-to-br from-emerald-500/10 via-background to-sky-500/10 p-5 lg:grid-cols-[1fr_auto] lg:items-start">
 				<div className="space-y-2">
 					<div className="flex flex-wrap items-center gap-2">
-						<h2 className="text-base font-semibold">{s("Contribute data, save")} {initial.discountBps / 100}%</h2>
+						<h2 className="text-base font-semibold">{s("Contribute data, save")} {discount}%</h2>
 						<Badge variant={enabled ? "default" : "secondary"}>{enabled ? s("Active") : s("Opt in")}</Badge>
 					</div>
 					<p className="max-w-3xl text-sm leading-6 text-muted-foreground">
@@ -128,9 +127,9 @@ export function DataContributionSettingsCard({ initial }: { initial: DataContrib
 			</div>
 
 			<div className="grid border-b sm:grid-cols-3">
-				<div className="flex items-center gap-3 border-b p-4 sm:border-b-0 sm:border-r"><Percent className="size-4 text-emerald-600" /><div><div className="text-xs text-muted-foreground">{s("Discount")}</div><div className="font-semibold">{initial.discountBps / 100}% {s("per request")}</div></div></div>
-				<div className="flex items-center gap-3 border-b p-4 sm:border-b-0 sm:border-r"><Database className="size-4 text-sky-600" /><div><div className="text-xs text-muted-foreground">{s("Retained (30 days)")}</div><div className="font-semibold">{new Intl.NumberFormat(locale).format(initial.contributions30d)} {s("requests")}</div></div></div>
-				<div className="flex items-center gap-3 p-4"><BarChart3 className="size-4 text-violet-600" /><div><div className="text-xs text-muted-foreground">{s("Discount earned")}</div><div className="font-semibold">{formatMoney(locale, initial.discountNanos30d)}</div></div></div>
+				<div className="flex items-center gap-3 border-b p-4 sm:border-b-0 sm:border-r"><Percent className="size-4 text-emerald-600" /><div><div className="text-xs text-muted-foreground">{s("Discount")}</div><div className="font-semibold">{discount}% {s("per request")}</div></div></div>
+				<div className="flex items-center gap-3 border-b p-4 sm:border-b-0 sm:border-r"><Database className="size-4 text-sky-600" /><div><div className="text-xs text-muted-foreground">{s("Retained (30 days)")}</div><div className="font-semibold">{format.number(initial.contributions30d)} {s("requests")}</div></div></div>
+				<div className="flex items-center gap-3 p-4"><BarChart3 className="size-4 text-violet-600" /><div><div className="text-xs text-muted-foreground">{s("Discount earned")}</div><div className="font-semibold">{formatMoney(initial.discountNanos30d)}</div></div></div>
 			</div>
 
 			<div className="grid gap-6 p-5 lg:grid-cols-[minmax(0,1.2fr)_minmax(280px,.8fr)]">
@@ -169,7 +168,7 @@ export function DataContributionSettingsCard({ initial }: { initial: DataContrib
 					<div className="space-y-2 rounded-lg border p-3">
 						{categoryTotals.map(([category, count]) => {
 							const max = categoryTotals[0]?.[1] ?? 1;
-							return <div key={category} className="space-y-1"><div className="flex justify-between gap-3 text-xs"><span className="truncate">{category.replaceAll("_", " ")}</span><span className="tabular-nums text-muted-foreground">{count.toLocaleString()}</span></div><div className="h-1.5 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full bg-foreground/70" style={{ width: `${Math.max(4, (count / max) * 100)}%` }} /></div></div>;
+							return <div key={category} className="space-y-1"><div className="flex justify-between gap-3 text-xs"><span className="truncate">{category.replaceAll("_", " ")}</span><span className="tabular-nums text-muted-foreground">{format.number(count)}</span></div><div className="h-1.5 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full bg-foreground/70" style={{ width: `${Math.max(4, (count / max) * 100)}%` }} /></div></div>;
 						})}
 						{!categoryTotals.length ? <p className="py-6 text-center text-xs text-muted-foreground">{s("Classifications will appear after sampled requests are processed.")}</p> : null}
 					</div>

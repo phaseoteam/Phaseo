@@ -9,6 +9,9 @@ import { parseRouteAvailabilityPolicy } from "@/lib/config/routeAvailability";
 import { getTextMany, keyVersionToken } from "@/core/kv";
 import { gatewayCreditCacheKey } from "@/core/gateway-credit-cache";
 import { isDataContributionAccessEnabled } from "@/core/feature-flags";
+import { normalizePrivateModelBaseUrl } from "@/core/private-models";
+import { loadPrivateRouteRow } from "./privateModelCache";
+import { contextBundleEnabled, loadTextContextBundle, type ContextBundle } from "./contextBundle";
 import { bytesToString, decryptBYOK } from "@pipeline/byok/decrypt";
 import { BYOK_KEYS_PER_PROVIDER_LIMIT, isByokKeyEligible } from "@/core/byok";
 import { contextSchema } from "./schemas";
@@ -64,15 +67,26 @@ export {
 const CONTEXT_CACHE_PREFIX = "gateway:context";
 
 // Multi-tier caching constants (respecting Cloudflare KV 60s minimum)
-const STATIC_CACHE_PREFIX = "gateway:static:v3";
+// Bump when the static context payload changes or a catalogue/pricing repair
+// must invalidate previously cached provider cards across Worker isolates.
+const STATIC_CACHE_PREFIX = "gateway:static:v5";
 const DYNAMIC_CACHE_PREFIX = "gateway:dynamic";
-const PRESET_CACHE_PREFIX = "gateway:preset:v3";
+// Preset payloads include provider/pricing snapshots too, so invalidate them
+// with the static context when catalogue or pricing data changes.
+const PRESET_CACHE_PREFIX = "gateway:preset:v4";
 
 const PRESET_TTL = 120;      // 2 minutes
 const CONTEXT_INFLIGHT_MAX_ENTRIES = 512;
 const CONTEXT_KEY_VERSION_L1_TTL_MS = 5_000;
 const FREE_ROUTER_MODEL_ID = "phaseo/free";
-const MIN_GATEWAY_CREDIT_NANOS = 1_000_000_000;
+const MIN_INFERENCE_CREDIT_NANOS = 100_000_000;
+const MIN_ASYNC_CREDIT_NANOS = 1_000_000_000;
+
+function minimumCreditNanos(endpoint: string): number {
+	return endpoint.startsWith("video.") || endpoint.startsWith("batch")
+		? MIN_ASYNC_CREDIT_NANOS
+		: MIN_INFERENCE_CREDIT_NANOS;
+}
 
 const contextInflight = new Map<string, Promise<GatewayContextData>>();
 
@@ -104,6 +118,22 @@ type CreditContextSnapshot = Pick<
 	"workspaceId" | "credit" | "teamEnrichment"
 >;
 
+function applyCreditMinimum(snapshot: CreditContextSnapshot, endpoint: string): CreditContextSnapshot {
+	if (snapshot.credit.reason && snapshot.credit.reason !== "insufficient_funds") return snapshot;
+	const hasMinimumCredit = finiteNonNegativeNanos(snapshot.credit.balanceNanos) >= minimumCreditNanos(endpoint);
+	return {
+		...snapshot,
+		credit: {
+			...snapshot.credit,
+			ok: hasMinimumCredit,
+			reason: hasMinimumCredit ? null : "insufficient_funds",
+		},
+		teamEnrichment: snapshot.teamEnrichment
+			? { ...snapshot.teamEnrichment, balance_is_low: !hasMinimumCredit }
+			: null,
+	};
+}
+
 function finiteNonNegativeNanos(value: unknown): number {
 	const parsed = Number(value);
 	return Number.isFinite(parsed) ? Math.max(0, parsed) : 0;
@@ -111,6 +141,7 @@ function finiteNonNegativeNanos(value: unknown): number {
 
 async function fetchFreshCreditContext(args: {
 	workspaceId: string;
+	endpoint: string;
 	teamEnrichment?: GatewayContextData["teamEnrichment"];
 }): Promise<CreditContextSnapshot> {
 	const { data, error } = await getSupabaseAdmin()
@@ -138,7 +169,7 @@ async function fetchFreshCreditContext(args: {
 	const rawBalanceNanos = finiteNonNegativeNanos(data.balance_nanos);
 	const reservedNanos = finiteNonNegativeNanos(data.reserved_nanos);
 	const availableNanos = Math.max(rawBalanceNanos - reservedNanos, 0);
-	const hasMinimumCredit = availableNanos >= MIN_GATEWAY_CREDIT_NANOS;
+	const hasMinimumCredit = availableNanos >= minimumCreditNanos(args.endpoint);
 	const teamEnrichment = args.teamEnrichment
 		? {
 			...args.teamEnrichment,
@@ -172,7 +203,9 @@ async function hydrateByokKeys(
 	if (!providerIds.length) return context;
 	const keyIds = Array.from(new Set(
 		(context.providers ?? []).flatMap((provider) =>
-			(provider.byokMeta ?? []).map((key) => key.id).filter(Boolean),
+			provider.privateEndpoint
+				? []
+				: (provider.byokMeta ?? []).map((key) => key.id).filter(Boolean),
 		),
 	));
 	// The cached/RPC context contains only metadata. Avoid a Supabase read entirely
@@ -194,7 +227,7 @@ async function hydrateByokKeys(
 			...context,
 			providers: (context.providers ?? []).map((provider) => ({
 				...provider,
-				byokMeta: [],
+				byokMeta: provider.privateEndpoint ? provider.byokMeta : [],
 			})),
 		};
 	}
@@ -221,9 +254,10 @@ async function hydrateByokKeys(
 			return orderedRows.slice(0, maxKeysPerProvider);
 		});
 
+	const importedKeys = new Map<number, Promise<CryptoKey>>();
 	const decrypted = await Promise.all(selectedRows.map(async (row) => {
 		try {
-			const decryptedBytes = await decryptBYOK(row);
+			const decryptedBytes = await decryptBYOK(row, importedKeys);
 			let key: string;
 			try {
 				key = bytesToString(decryptedBytes);
@@ -272,8 +306,90 @@ async function hydrateByokKeys(
 		...context,
 		providers: (context.providers ?? []).map((provider) => ({
 			...provider,
-			byokMeta: byProvider.get(provider.providerId) ?? [],
+			byokMeta: provider.privateEndpoint
+				? provider.byokMeta
+				: byProvider.get(provider.providerId) ?? [],
 		})),
+	};
+}
+
+export async function loadWorkspacePrivateModel(args: {
+	workspaceId: string;
+	model: string;
+	endpoint: string;
+	apiKeyId?: string;
+	disableCache?: boolean;
+}): Promise<{ provider: GatewayProviderSnapshot; pricingKey: string; pricing: GatewayContextData["pricing"][string]; attached: boolean } | null> {
+	if (args.endpoint !== "text.generate") return null;
+	const row = await loadPrivateRouteRow({ ...args, disableCache: args.disableCache || !args.apiKeyId });
+	if (!row) return null;
+	const decrypted = await decryptBYOK(row);
+	let credential: string;
+	try {
+		credential = bytesToString(decrypted);
+	} finally {
+		decrypted.fill(0);
+	}
+	const pricingKey = `private-model:${row.id}`;
+	return {
+		attached: Boolean(row.catalog_model_id),
+		provider: {
+			providerId: "private-model",
+			providerFamilyId: "private-model",
+			offerScope: "specialized",
+			offerLabel: "Private",
+			apiModelId: row.model_id,
+			pricingKey,
+			providerStatus: "active",
+			providerRoutingStatus: "active",
+			modelRoutingStatus: "active",
+			capabilityStatus: "active",
+			residencyMode: "customer_selectable",
+			executionRegions: null,
+			dataRegions: null,
+			zeroDataRetention: true,
+			promptTrainingPolicy: "enterprise_no_train",
+			dataPolicyTier: "private",
+			dataPolicyConfidence: "confirmed",
+			dataPolicyContractMode: "customer_agreement",
+			supportsEndpoint: true,
+			baseWeight: 1,
+			byokMeta: [{
+				id: row.id,
+				providerId: "private-model",
+				fingerprintSha256: row.fingerprint_sha256,
+				keyVersion: String(row.key_version),
+				alwaysUse: row.routing_policy === "preferred",
+				routingMode: row.routing_policy === "preferred" ? "priority" : row.routing_policy,
+				sortOrder: row.routing_policy === "fallback" ? 10_000 : 0,
+				key: credential,
+				value: credential,
+			}],
+			providerModelSlug: row.upstream_model_id,
+			privateEndpoint: {
+				baseUrl: normalizePrivateModelBaseUrl(row.base_url),
+				supportsResponses: row.supports_responses,
+			},
+			inputModalities: row.input_modalities ?? ["text"],
+			outputModalities: row.output_modalities ?? ["text"],
+			capabilityParams: {},
+			maxInputTokens: row.context_length,
+			maxOutputTokens: row.max_output_tokens,
+		},
+		pricingKey,
+		pricing: {
+			provider: "private-model",
+			model: row.model_id,
+			endpoint: args.endpoint,
+			effective_from: null,
+			effective_to: null,
+			currency: "USD",
+			version: "workspace-private-v1",
+			rules: [
+				{ pricing_plan: "standard", meter: "input_tokens", unit: "token", unit_size: 1, price_per_unit: "0", currency: "USD", match: [], priority: 100 },
+				{ pricing_plan: "standard", meter: "output_tokens", unit: "token", unit_size: 1, price_per_unit: "0", currency: "USD", match: [], priority: 100 },
+			],
+		},
 	};
 }
 
@@ -623,8 +739,11 @@ async function fetchTestingProviderSnapshots(args: {
         .in("model_slug", modelCandidates)
         .eq("access_scope", "internal")
         .in("phaseo_status", ["testing", "enabled"])
-        .in("provider_availability_status", ["available", "preview", "limited_access"])
-        .in("status", ["active", "degraded"]);
+        // Internal testing may use a staged/disabled route before the model is
+        // public. Public routing still requires the normal active route and
+        // routing_enabled checks later in the pipeline.
+        .in("provider_availability_status", ["coming_soon", "available", "preview", "limited_access"])
+        .in("status", ["active", "degraded", "disabled"]);
 
     if (byApiModelResult.error) return [];
 
@@ -637,9 +756,14 @@ async function fetchTestingProviderSnapshots(args: {
     const providerRows = Array.from(providerRowById.values());
     if (!providerRows.length) return [];
 
-    const inWindowRows = providerRows.filter((row: any) =>
-        isWithinEffectiveWindow(row?.effective_from, row?.effective_to, nowMs)
-    );
+    // Internal testing is deliberately allowed before a scheduled public
+    // release. The end of a route's effective window still applies so a
+    // retired/shutdown route cannot be revived by testing mode.
+    const inWindowRows = providerRows.filter((row: any) => {
+		if (row?.effective_to == null) return true;
+		const effectiveTo = toMillis(row.effective_to);
+		return Number.isFinite(effectiveTo) && effectiveTo > nowMs;
+    });
     if (!inWindowRows.length) return [];
 
     const providerModelIds = Array.from(
@@ -947,11 +1071,21 @@ export async function fetchGatewayContext(args: {
     apiKeyId: string;
     includeTestingMode?: boolean;
     disableCache?: boolean;
+    onCreditCacheWrite?: (write: Promise<void>) => void;
 }): Promise<GatewayContextData> {
+	const fetchStartedAt = performance.now();
 	await assertPresetAccess(args);
+	const presetAccessMs = round3(performance.now() - fetchStartedAt);
+
     const supabase = getSupabaseAdmin();
     const cache = getCache();
-    const fetchStartedAt = performance.now();
+    async function persistCredit(value: CreditContextSnapshot, ttl: number): Promise<void> {
+        const write = cache.put(gatewayCreditCacheKey(args.workspaceId), JSON.stringify(value), { expirationTtl: ttl }).catch(() => undefined);
+        if (args.onCreditCacheWrite) {
+            args.onCreditCacheWrite(write);
+            dispatchBackground(write);
+        } else await write;
+    }
     const telemetry: ContextFetchTelemetry = {
         cacheStatus: args.disableCache ? "bypass" : "miss",
         totalMs: 0,
@@ -962,9 +1096,53 @@ export async function fetchGatewayContext(args: {
         enrichMs: null,
         cacheWriteMs: null,
         fallbackRemap: false,
+        presetAccessMs,
+        privateModelMs: null,
     };
+    const privateStartedAt = performance.now();
+    const privateModelLoad = loadWorkspacePrivateModel(args).then(
+        value => ({ ok: true as const, value }),
+        error => ({ ok: false as const, error }),
+    ).then(result => {
+        telemetry.privateModelMs = round3(performance.now() - privateStartedAt);
+        return result;
+    });
+    async function finishContext(value: GatewayContextData): Promise<GatewayContextData> {
+        const privateResult = await privateModelLoad;
+        if (privateResult.ok === false) throw privateResult.error;
+        const privateModel = privateResult.value;
+        const startedAt = performance.now();
+		if (privateModel) {
+			value = {
+				...value,
+				resolvedModel: args.model,
+				providers: privateModel.attached
+					? [privateModel.provider, ...(value.providers ?? [])]
+					: [privateModel.provider],
+				pricing: {
+					...(value.pricing ?? {}),
+					[privateModel.pricingKey]: privateModel.pricing,
+				},
+			};
+		}
+
+        const hydrated = await hydrateByokKeys(value, args.workspaceId, args.model, args.apiKeyId);
+        return {
+            ...hydrated,
+            contextTelemetry: {
+                ...telemetry,
+                presetAccessMs,
+                privateModelMs: telemetry.privateModelMs,
+                byokHydrationMs: round3(performance.now() - startedAt),
+                totalMs: round3(performance.now() - fetchStartedAt),
+            },
+        };
+    }
+    try {
     // Check if model is a preset
     const isPreset = args.model.startsWith("@");
+    const useContextBundle = !isPreset && !args.includeTestingMode && !isFreeRouterModel(args.model) &&
+        ["responses", "chat.completions", "messages", "text.generate"].includes(args.endpoint) && contextBundleEnabled();
     const shouldUseCache = !args.disableCache;
     const needsVersionToken = shouldUseCache;
     let versionToken = "v0";
@@ -1002,6 +1180,7 @@ export async function fetchGatewayContext(args: {
                 const staticParsed = JSON.parse(staticCachedRaw);
                 if (
 					isDynamicContextLike(dynamicParsed) &&
+                    dynamicParsed.workspaceId === args.workspaceId && staticParsed.workspaceId === args.workspaceId &&
 					isStaticContextLike(staticParsed) &&
 					!hasConfiguredKeyLimits(dynamicParsed.keyLimit)
 				) {
@@ -1022,6 +1201,7 @@ export async function fetchGatewayContext(args: {
 						const creditRefreshStartedAt = performance.now();
 						creditContext = await fetchFreshCreditContext({
 							workspaceId: args.workspaceId,
+							endpoint: args.endpoint,
 							teamEnrichment: dynamicParsed.teamEnrichment ?? null,
 						});
 						telemetry.creditRefreshMs = round3(
@@ -1037,26 +1217,26 @@ export async function fetchGatewayContext(args: {
 						const creditTtl = clampTtl(
 							computeCreditSnapshotTtlForContext(creditOnlyContext),
 						);
-						await cache.put(
-							creditCacheKey,
-							JSON.stringify(creditContext),
-							{ expirationTtl: creditTtl },
-						).catch(() => undefined);
+						const creditWriteStartedAt = performance.now();
+                        await persistCredit(creditContext, creditTtl);
+						telemetry.cacheWriteMs = round3(performance.now() - creditWriteStartedAt);
 					}
-					const merged = mergeCachedContext({
+					creditContext = applyCreditMinimum(creditContext, args.endpoint);
+					telemetry.cacheStatus = cacheStatus;
+                    const merged = mergeCachedContext({
                         dynamic: dynamicParsed,
                         static: staticParsed,
                         credit: creditContext,
                         endpoint: args.endpoint,
                     });
-					return hydrateByokKeys({
+					return finishContext({
                         ...merged,
                         contextTelemetry: {
                             ...telemetry,
                             cacheStatus,
                             totalMs: round3(performance.now() - fetchStartedAt),
                         },
-					}, args.workspaceId, args.model, args.apiKeyId);
+					});
                 }
             }
         } catch {
@@ -1065,12 +1245,14 @@ export async function fetchGatewayContext(args: {
         }
     }
 
-    const inflightKey = shouldUseCache ? compositionCacheKey : null;
+    // Deferred persistence belongs to this request's billing barrier. Do not
+    // share another request's loader/I/O when that barrier is in use.
+    const inflightKey = shouldUseCache && !args.onCreditCacheWrite ? compositionCacheKey : null;
     if (inflightKey) {
 		const inflight = contextInflight.get(inflightKey);
 		if (inflight) {
 			return inflight.then((value) =>
-				hydrateByokKeys(cloneGatewayContextData(value), args.workspaceId, args.model, args.apiKeyId),
+				finishContext(cloneGatewayContextData(value)),
 			);
         }
     }
@@ -1118,8 +1300,17 @@ export async function fetchGatewayContext(args: {
         let contextCapability = contextCapabilityCandidates[0] ?? args.endpoint;
         let parsed: GatewayContextData;
 
+        let contextBundle: ContextBundle | null = null;
         if (textContextCapabilities) {
-            const variants = await Promise.all(
+            if (useContextBundle) {
+                contextBundle = await loadTextContextBundle(args);
+                rpcTotalMs += contextBundle.rpcMs;
+                telemetry.catalogReadMs = round3(contextBundle.catalogReadMs);
+                telemetry.catalogCacheStatus = contextBundle.cacheStatus;
+            }
+            const variants = contextBundle
+                ? contextBundle.variants.map(variant => ({ candidateCapability: variant.endpoint, parsed: contextSchema.parse(variant.payload) }))
+                : await Promise.all(
                 textContextCapabilities.map(async (candidateCapability) => ({
                     candidateCapability,
                     parsed: await fetchParsedContextMeasured(
@@ -1161,6 +1352,7 @@ export async function fetchGatewayContext(args: {
                 }
             }
         }
+        if (contextBundle) parsed.publicCatalogExpiresAt = contextBundle.catalog.expiresAt;
 
         // Fallback path for provider-scoped model slugs (e.g. mistral/mistral-medium-2508):
         // if RPC returned no providers and did not resolve the model, remap via provider_model_slug.
@@ -1192,6 +1384,7 @@ export async function fetchGatewayContext(args: {
                 };
             }
         }
+
 
         parsed = applyNebiusRegionalModelAllowlist({
             parsed,
@@ -1363,14 +1556,24 @@ export async function fetchGatewayContext(args: {
                 )
             );
 
-            const providerStatusQuery = providerIds.length
+            const providerStatusQuery = contextBundle
+                ? Promise.resolve({ data: contextBundle.catalog.providerRows, error: null })
+                : providerIds.length
                 ? supabase
                     .from("v2_providers")
-                    .select("provider_slug,status,routing_enabled,provider_family_slug,offer_scope,offer_label,residency_mode,default_execution_regions,default_data_regions,zero_data_retention,prompt_training_policy,data_policy_tier,data_policy_confidence,data_policy_contract_mode,data_policy_variant,stream_cancellation_support,stream_cancellation_stops_provider_billing,stream_cancellation_usage_recovery,stream_cancellation_evidence_kind,stream_cancellation_source_url,metadata")
+                    .select("provider_slug,status,routing_enabled,routable,credential_mode,provider_family_slug,offer_scope,offer_label,residency_mode,default_execution_regions,default_data_regions,zero_data_retention,prompt_training_policy,data_policy_tier,data_policy_confidence,data_policy_contract_mode,data_policy_variant,stream_cancellation_support,stream_cancellation_stops_provider_billing,stream_cancellation_usage_recovery,stream_cancellation_evidence_kind,stream_cancellation_source_url,metadata")
                     .in("provider_slug", providerIds)
                 : Promise.resolve({ data: [], error: null } as any);
+			const routeCredentialModeQuery = contextBundle
+                ? Promise.resolve({ data: contextBundle.catalog.routeModes, error: null })
+                : providerIds.length
+				? supabase.from("v2_model_provider_routes").select("provider_slug,credential_mode")
+					.in("provider_slug", providerIds).eq("model_slug", parsed.resolvedModel ?? args.model)
+					.eq("routing_enabled", true).in("status", ["active", "degraded"])
+				: Promise.resolve({ data: [], error: null } as any);
 
             const settingsQuery = (async () => {
+                if (contextBundle) return { data: contextBundle.settings, error: null };
                 const columns = "routing_mode,byok_fallback_enabled,beta_channel_enabled,alpha_channel_enabled,privacy_zdr_only,privacy_enable_paid_may_train,privacy_enable_free_may_train,privacy_enable_input_output_logging,io_logging_enabled,io_logging_include_provider_payloads,data_contribution_enabled,data_contribution_policy_version,data_contribution_sample_rate_bps,data_contribution_classifier_sample_rate_bps,data_contribution_discount_bps,response_healing_enabled,response_healing_locked,response_healing_mode";
                 const withCacheAwareRouting = await supabase
                     .from("workspace_settings")
@@ -1393,10 +1596,11 @@ export async function fetchGatewayContext(args: {
                     .maybeSingle();
             })();
 
-            const [settingsResult, providerStatusResult, teamResult] = await Promise.all([
+            const [settingsResult, providerStatusResult, routeCredentialModeResult, teamResult] = await Promise.all([
                 settingsQuery,
                 providerStatusQuery,
-                supabase
+				routeCredentialModeQuery,
+                contextBundle ? Promise.resolve({ data: { billing_mode: contextBundle.billingMode }, error: null }) : supabase
                     .from("workspaces")
                     .select("billing_mode")
                     .eq("id", args.workspaceId)
@@ -1412,6 +1616,9 @@ export async function fetchGatewayContext(args: {
             if (providerStatusResult?.error) {
                 throw new Error(`provider_status_enrichment_failed:${providerStatusResult.error.message ?? "unknown"}`);
             }
+			if (routeCredentialModeResult?.error) {
+				throw new Error(`route_credential_mode_enrichment_failed:${routeCredentialModeResult.error.message ?? "unknown"}`);
+			}
             if (teamResult?.error || !teamResult?.data) {
                 throw new Error(`workspace_billing_enrichment_failed:${teamResult?.error?.message ?? "missing"}`);
             }
@@ -1476,6 +1683,7 @@ export async function fetchGatewayContext(args: {
             };
 
             const rolloutStatusByProvider = new Map<string, ProviderRolloutStatus>();
+			const credentialModeByProvider = new Map<string, GatewayProviderSnapshot["credentialMode"]>();
             const routingStatusByProvider = new Map<string, RoutingStatus>();
             const providerFamilyByProvider = new Map<string, string | null>();
             const offerScopeByProvider = new Map<string, GatewayProviderSnapshot["offerScope"]>();
@@ -1509,6 +1717,7 @@ export async function fetchGatewayContext(args: {
                         providerId,
                         normalizeProviderStatus(row.status),
                     );
+					credentialModeByProvider.set(providerId, row.credential_mode === "byok_only" ? "byok_only" : "managed_and_byok");
                     routingStatusByProvider.set(
                         providerId,
                         row.routing_enabled === true ? "active" : "disabled",
@@ -1605,6 +1814,11 @@ export async function fetchGatewayContext(args: {
                     );
                 }
             }
+			for (const row of routeCredentialModeResult?.data ?? []) {
+				if (row?.credential_mode === "byok_only" && typeof row?.provider_slug === "string") {
+					credentialModeByProvider.set(row.provider_slug, "byok_only");
+				}
+			}
 
             parsed.providers = (parsed.providers ?? []).map((provider) => {
                 const residency = getProviderResidencyMetadata({
@@ -1613,6 +1827,7 @@ export async function fetchGatewayContext(args: {
                 });
                 return {
                     ...provider,
+					credentialMode: credentialModeByProvider.get(provider.providerId) ?? provider.credentialMode ?? "managed_and_byok",
                     providerFamilyId:
                         providerFamilyByProvider.get(provider.providerId) ??
                         provider.providerFamilyId ??
@@ -1634,6 +1849,9 @@ export async function fetchGatewayContext(args: {
                         (provider.providerStatus == null
                             ? "not_ready"
                             : normalizeProviderStatus(provider.providerStatus)),
+                    externalRoutingOverride:
+                        provider.externalRoutingOverride ??
+                        false,
                     providerRoutingStatus:
                         routingStatusByProvider.get(provider.providerId) ??
                         (provider.providerRoutingStatus == null
@@ -1718,6 +1936,13 @@ export async function fetchGatewayContext(args: {
         telemetry.enrichMs = round3(performance.now() - enrichStartedAt);
 
         parsed.endpoint = args.endpoint as any;
+		const creditSnapshot = applyCreditMinimum({
+			workspaceId: parsed.workspaceId,
+			credit: parsed.credit,
+			teamEnrichment: parsed.teamEnrichment,
+		}, args.endpoint);
+		parsed.credit = creditSnapshot.credit;
+		parsed.teamEnrichment = creditSnapshot.teamEnrichment;
 
         // Compute adaptive TTLs and write split cache entries.
         if (shouldUseCache) {
@@ -1730,11 +1955,7 @@ export async function fetchGatewayContext(args: {
                     ? null
                     : clampTtl(isPreset ? Math.min(PRESET_TTL, pricingAwareStaticTtl) : pricingAwareStaticTtl);
                 const creditTtl = clampTtl(computeCreditSnapshotTtlForContext(parsed));
-                await cache.put(
-                    creditCacheKey,
-                    JSON.stringify(split.credit),
-                    { expirationTtl: creditTtl },
-                );
+                await persistCredit(split.credit, creditTtl);
                 const backgroundCacheWrites: Promise<void>[] = [
                     ...(hasConfiguredKeyLimits(parsed.keyLimit)
                         ? []
@@ -1774,17 +1995,15 @@ export async function fetchGatewayContext(args: {
     }
 
     try {
-		return await hydrateByokKeys(await dbLoader, args.workspaceId, args.model, args.apiKeyId);
+		return await finishContext(await dbLoader);
     } finally {
         if (inflightKey && contextInflight.get(inflightKey) === dbLoader) {
             contextInflight.delete(inflightKey);
         }
     }
+    } finally {
+        // Keep request runtime alive until the parallel private lookup settles,
+        // including when the public context or access check failed.
+        await privateModelLoad;
+    }
 }
-
-
-
-
-
-
-

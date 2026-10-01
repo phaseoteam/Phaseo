@@ -2,6 +2,11 @@ use std::collections::HashMap;
 
 pub type JsonValue = String;
 
+pub enum StringOrStringArray {
+	String(String),
+	Array(Vec<String>),
+}
+
 pub struct ActivityEntry {
 	pub byok_usage_inference: f64,
 	pub completion_tokens: i64,
@@ -66,6 +71,7 @@ pub struct AnthropicMessagesRequest {
 	pub provider: Option<HashMap<String, String>>,
 	pub provider_options: Option<HashMap<String, String>>,
 	pub reasoning: Option<HashMap<String, String>>,
+	pub service_tier: Option<String>,
 	pub session_id: Option<String>,
 	pub stop_sequences: Option<Vec<String>>,
 	pub stream: Option<bool>,
@@ -90,6 +96,7 @@ pub struct AnthropicMessagesResponse {
 }
 
 pub struct AnthropicTool {
+	pub r#async: Option<bool>,
 	pub description: Option<String>,
 	pub input_schema: Option<HashMap<String, String>>,
 	pub name: String,
@@ -299,10 +306,12 @@ pub struct AudioContentPart {
 }
 
 pub struct AudioSpeechRequest {
+	pub config: Option<HashMap<String, String>>,
 	pub format: Option<String>,
 	pub input: String,
 	pub model: String,
 	pub provider: Option<HashMap<String, String>>,
+	pub speed: Option<f64>,
 	pub voice: Option<String>,
 }
 
@@ -416,6 +425,7 @@ pub struct BatchRequest {
 	pub model: Option<String>,
 	pub prompts: Option<Vec<String>>,
 	pub provider: Option<HashMap<String, String>>,
+	pub provider_options: Option<HashMap<String, String>>,
 	pub requests: Option<Vec<HashMap<String, String>>>,
 	pub session_id: Option<String>,
 	pub system: Option<String>,
@@ -494,6 +504,7 @@ pub struct BatchResponse {
 	pub provider: Option<String>,
 	pub request_counts: Option<HashMap<String, String>>,
 	pub request_id: Option<String>,
+	pub results_url: Option<Option<String>>,
 	pub session_id: Option<String>,
 	pub status: Option<String>,
 	pub usage: Option<HashMap<String, String>>,
@@ -691,6 +702,52 @@ pub struct DebugOptions {
 	pub return_upstream_response: Option<bool>,
 	pub trace: Option<bool>,
 	pub trace_level: Option<String>,
+}
+
+pub struct DecisionChoiceQuestion {
+	pub criteria: HashMap<String, String>,
+	pub instructions: String,
+	pub r#type: String,
+}
+
+pub type DecisionInstructions = JsonValue;
+
+pub struct DecisionNoulQuestion {
+	pub criteria: Option<HashMap<String, String>>,
+	pub instructions: String,
+	pub r#type: String,
+}
+
+pub struct DecisionScoreQuestion {
+	pub criteria: Vec<String>,
+	pub instructions: String,
+	pub r#type: String,
+}
+
+pub struct DecisionsRequest {
+	pub debug: Option<HashMap<String, String>>,
+	pub echo_upstream_request: Option<bool>,
+	pub meta: Option<bool>,
+	pub metadata: Option<HashMap<String, String>>,
+	pub model: String,
+	pub provider: Option<HashMap<String, String>>,
+	pub questions: HashMap<String, String>,
+	pub routing: Option<HashMap<String, String>>,
+	pub state: String,
+}
+
+pub struct DecisionsResponse {
+	pub answers: Option<HashMap<String, String>>,
+	pub meta: Option<HashMap<String, String>>,
+	pub model: Option<String>,
+	pub request_id: Option<Option<String>>,
+	pub usage: Option<HashMap<String, String>>,
+}
+
+pub struct DecisionsUsage {
+	pub input_tokens: Option<i64>,
+	pub output_tokens: Option<i64>,
+	pub total_tokens: Option<i64>,
 }
 
 pub struct DeletedResponse {
@@ -940,6 +997,7 @@ pub struct FileUploadRequest {
 }
 
 pub struct FunctionToolDefinition {
+	pub r#async: Option<bool>,
 	pub function: HashMap<String, String>,
 	pub r#type: String,
 }
@@ -1176,9 +1234,12 @@ pub struct GatewayWebFetchToolDefinition {
 }
 
 pub struct GatewayWebSearchToolDefinition {
+	pub engine: Option<String>,
 	pub include_highlights: Option<bool>,
 	pub include_text: Option<bool>,
+	pub language: Option<String>,
 	pub max_results: Option<i64>,
+	pub page: Option<i64>,
 	pub parameters: Option<HashMap<String, String>>,
 	pub r#type: String,
 }
@@ -1414,14 +1475,23 @@ pub struct ImageModerationInput {
 }
 
 pub struct ImagesEditRequest {
-	pub image: String,
+	pub background: Option<String>,
+	pub image: StringOrStringArray,
+	pub input_fidelity: Option<String>,
 	pub mask: Option<String>,
 	pub meta: Option<bool>,
 	pub model: String,
+	pub moderation: Option<String>,
 	pub n: Option<i64>,
+	pub output_compression: Option<i64>,
+	pub output_format: Option<String>,
+	pub partial_images: Option<i64>,
 	pub prompt: String,
 	pub provider: Option<HashMap<String, String>>,
+	pub quality: Option<String>,
+	pub resolution: Option<String>,
 	pub size: Option<String>,
+	pub stream: Option<bool>,
 	pub usage: Option<bool>,
 	pub user: Option<String>,
 }
@@ -1432,13 +1502,20 @@ pub struct ImagesEditResponse {
 }
 
 pub struct ImagesGenerationRequest {
+	pub background: Option<String>,
 	pub model: String,
+	pub moderation: Option<String>,
 	pub n: Option<i64>,
+	pub output_compression: Option<i64>,
+	pub output_format: Option<String>,
+	pub partial_images: Option<i64>,
 	pub prompt: String,
 	pub provider: Option<HashMap<String, String>>,
 	pub quality: Option<String>,
+	pub resolution: Option<String>,
 	pub response_format: Option<String>,
 	pub size: Option<String>,
+	pub stream: Option<bool>,
 	pub style: Option<String>,
 	pub user: Option<String>,
 }
@@ -1981,6 +2058,14 @@ pub struct OcrRequest {
 pub struct OcrResponse {
 }
 
+pub struct OpenAIReasoningConfig {
+	pub effort: Option<String>,
+	pub enabled: Option<bool>,
+	pub max_tokens: Option<i64>,
+	pub mode: Option<String>,
+	pub summary: Option<String>,
+}
+
 pub type OrganisationId = JsonValue;
 
 pub type OrganisationIdList = JsonValue;
@@ -2188,6 +2273,79 @@ pub struct PresetVersionResponse {
 }
 
 pub type PresetVisibility = JsonValue;
+
+pub struct PrivateModel {
+	pub base_url: String,
+	pub catalog_model_id: Option<Option<String>>,
+	pub context_length: Option<Option<i64>>,
+	pub created_at: Option<Option<String>>,
+	pub created_by: Option<Option<String>>,
+	pub credential_prefix: Option<Option<String>>,
+	pub credential_suffix: Option<Option<String>>,
+	pub custom_provider_name: Option<Option<String>>,
+	pub custom_provider_url: Option<Option<String>>,
+	pub description: Option<Option<String>>,
+	pub enabled: bool,
+	pub host_provider_id: Option<Option<String>>,
+	pub id: String,
+	pub input_modalities: Option<Vec<String>>,
+	pub local_slug: Option<String>,
+	pub max_output_tokens: Option<Option<i64>>,
+	pub model_id: String,
+	pub name: String,
+	pub output_modalities: Option<Vec<String>>,
+	pub routing_policy: Option<String>,
+	pub supports_responses: bool,
+	pub updated_at: Option<Option<String>>,
+	pub upstream_model_id: String,
+	pub workspace_id: String,
+}
+
+pub struct PrivateModelCreateRequest {
+	pub base_url: String,
+	pub context_length: Option<Option<i64>>,
+	pub credential: String,
+	pub custom_provider_name: Option<Option<String>>,
+	pub custom_provider_url: Option<Option<String>>,
+	pub description: Option<String>,
+	pub enabled: Option<bool>,
+	pub host_provider_id: Option<Option<String>>,
+	pub max_output_tokens: Option<Option<i64>>,
+	pub model_reference: String,
+	pub name: String,
+	pub routing_policy: Option<String>,
+	pub supports_responses: Option<bool>,
+	pub upstream_model_id: String,
+}
+
+pub struct PrivateModelDeleteResponse {
+	pub deleted: bool,
+}
+
+pub struct PrivateModelListResponse {
+	pub data: Vec<HashMap<String, String>>,
+}
+
+pub struct PrivateModelResponse {
+	pub data: HashMap<String, String>,
+}
+
+pub struct PrivateModelUpdateRequest {
+	pub base_url: Option<String>,
+	pub context_length: Option<Option<i64>>,
+	pub credential: Option<String>,
+	pub custom_provider_name: Option<Option<String>>,
+	pub custom_provider_url: Option<Option<String>>,
+	pub description: Option<Option<String>>,
+	pub enabled: Option<bool>,
+	pub host_provider_id: Option<Option<String>>,
+	pub max_output_tokens: Option<Option<i64>>,
+	pub model_reference: Option<String>,
+	pub name: Option<String>,
+	pub routing_policy: Option<String>,
+	pub supports_responses: Option<bool>,
+	pub upstream_model_id: Option<String>,
+}
 
 pub struct Provider {
 	pub api_provider_id: Option<String>,
@@ -2485,6 +2643,52 @@ pub struct SubagentToolDefinition {
 pub struct SupportedParameterDetails {
 }
 
+pub struct SystemOneChoiceQuestion {
+	pub criteria: HashMap<String, String>,
+	pub instructions: String,
+	pub r#type: String,
+}
+
+pub type SystemOneInstructions = JsonValue;
+
+pub struct SystemOneNoulQuestion {
+	pub criteria: Option<HashMap<String, String>>,
+	pub instructions: String,
+	pub r#type: String,
+}
+
+pub struct SystemOneRequest {
+	pub debug: Option<HashMap<String, String>>,
+	pub echo_upstream_request: Option<bool>,
+	pub meta: Option<bool>,
+	pub metadata: Option<HashMap<String, String>>,
+	pub model: String,
+	pub provider: Option<HashMap<String, String>>,
+	pub questions: HashMap<String, String>,
+	pub routing: Option<HashMap<String, String>>,
+	pub state: String,
+}
+
+pub struct SystemOneResponse {
+	pub answers: Option<HashMap<String, String>>,
+	pub meta: Option<HashMap<String, String>>,
+	pub model: Option<String>,
+	pub request_id: Option<Option<String>>,
+	pub usage: Option<HashMap<String, String>>,
+}
+
+pub struct SystemOneScoreQuestion {
+	pub criteria: Vec<String>,
+	pub instructions: String,
+	pub r#type: String,
+}
+
+pub struct SystemOneUsage {
+	pub input_tokens: Option<i64>,
+	pub output_tokens: Option<i64>,
+	pub total_tokens: Option<i64>,
+}
+
 pub struct TextContentPart {
 	pub text: String,
 	pub r#type: String,
@@ -2556,6 +2760,7 @@ pub struct VideoGenerationRequest {
 	pub compression_quality: Option<i64>,
 	pub duration: Option<i64>,
 	pub enhance_prompt: Option<bool>,
+	pub frame_images: Option<Vec<HashMap<String, String>>>,
 	pub generate_audio: Option<bool>,
 	pub input_audio_duration: Option<f64>,
 	pub input_references: Option<Vec<String>>,
@@ -2566,6 +2771,7 @@ pub struct VideoGenerationRequest {
 	pub person_generation: Option<String>,
 	pub prompt: String,
 	pub provider: Option<HashMap<String, String>>,
+	pub provider_options: Option<HashMap<String, String>>,
 	pub provider_params: Option<HashMap<String, String>>,
 	pub resize_mode: Option<String>,
 	pub resolution: Option<String>,
@@ -2690,6 +2896,8 @@ pub struct WebhookEndpointDeleteResponse {
 	pub object: String,
 }
 
+pub type WebhookEndpointEvent = JsonValue;
+
 pub struct WebhookEndpointInput {
 	pub events: Option<Vec<String>>,
 	pub name: Option<String>,
@@ -2716,6 +2924,14 @@ pub struct WebhookEndpointSecretResponse {
 	pub workspaceId: String,
 }
 
+pub struct WebhookEndpointTestResponse {
+	pub error: Option<String>,
+	pub event_id: String,
+	pub ok: bool,
+	pub response_body_preview: Option<String>,
+	pub status_code: Option<i64>,
+}
+
 pub struct WebhookEndpointUpdateRequest {
 	pub events: Option<Vec<String>>,
 	pub name: Option<String>,
@@ -2728,7 +2944,7 @@ pub struct Workspace {
 	pub created_by: Option<String>,
 	pub id: String,
 	pub name: Option<String>,
-	pub slug: Option<String>,
+	pub slug: Option<Option<String>>,
 	pub updated_at: Option<String>,
 }
 
@@ -2857,6 +3073,8 @@ pub struct WorkspaceAutoTopUpUpdate {
 	pub amount_nanos: Option<i64>,
 	pub balance_threshold_nanos: Option<i64>,
 	pub enabled: bool,
+	pub mfa_bypass_acknowledged: Option<bool>,
+	pub mfa_bypass_phrase: Option<String>,
 	pub payment_method_id: Option<Option<String>>,
 }
 

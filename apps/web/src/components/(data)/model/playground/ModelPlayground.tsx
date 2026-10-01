@@ -31,8 +31,14 @@ import {
 	DialogTitle,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { filterModelsForRoom } from "@/lib/chat/rooms";
 import { fetchChatWebApi } from "@/lib/web-api/client";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import {
 	buildAudioRequestOptions,
 	buildEmbeddingsRequestOptions,
@@ -54,6 +60,7 @@ import { normalizeMediaGenerationStatus } from "@/lib/chat/mediaGenerationStatus
 import { extractResponseText } from "@/components/(chat)/chatPayload";
 import { extractTotalCostUsd } from "@/components/(chat)/playground/chat-playground-core";
 import { BASE_URL } from "@/components/(data)/model/quickstart/config";
+import { jsonToPythonLiteral } from "@/components/(data)/model/quickstart/quickstartPayloads";
 import type { GatewaySupportedModel } from "@/lib/fetchers/gateway/getGatewaySupportedModelIds";
 import type { ShikiLang } from "@/components/(data)/model/quickstart/shiki";
 import { normalizePlaygroundMediaUrl } from "@/lib/utils/urlSafety";
@@ -224,24 +231,6 @@ function extractThroughputTokensPerSecond(
 	if (fromMeta != null) return fromMeta;
 	if (totalTokens == null || elapsedMs <= 0) return null;
 	return totalTokens / (elapsedMs / 1000);
-}
-
-function formatDuration(ms: number): string {
-	return `${(ms / 1000).toFixed(1)}s`;
-}
-
-function formatTokens(
-	totalTokens: number | null,
-	unavailable: string,
-	formatCount: (count: number) => string,
-): string {
-	if (totalTokens == null) return unavailable;
-	return formatCount(Math.round(totalTokens));
-}
-
-function formatThroughput(tokensPerSecond: number | null): string {
-	if (tokensPerSecond == null) return "N/A tok/s";
-	return `${tokensPerSecond.toFixed(1)} tok/s`;
 }
 
 function formatCost(totalCostUsd: string | null): string {
@@ -814,13 +803,6 @@ function resolvePromptForSnippet(prompt: string, modelName: string): string {
 	const trimmed = prompt.trim();
 	if (trimmed) return trimmed;
 	return `Give me a concise overview of ${modelName}.`;
-}
-
-function jsonToPythonLiteral(json: string): string {
-	return json
-		.replace(/true/g, "True")
-		.replace(/false/g, "False")
-		.replace(/null/g, "None");
 }
 
 function buildPlaygroundCodeSnippets({
@@ -1536,6 +1518,14 @@ export default function ModelPlayground({
 				return t("snippetDescriptions.rawHttp");
 		}
 	};
+	const format = useDisplayFormatters();
+	const formatDuration = (ms: number) => `${format.number(ms / 1000, { maximumFractionDigits: 1, notation: "standard" })}s`;
+	const formatTokens = (totalTokens: number | null) => totalTokens == null
+		? t("metrics.tokensUnavailable")
+		: t("metrics.tokenCount", { count: Math.round(totalTokens) });
+	const formatThroughput = (tokensPerSecond: number | null) => tokensPerSecond == null
+		? "—"
+		: `${format.number(tokensPerSecond, { maximumFractionDigits: 1, notation: "standard" })} tok/s`;
 	const [mode, setMode] = useState<PlaygroundMode>("text");
 	const [prompt, setPrompt] = useState("");
 	const [responseText, setResponseText] = useState("");
@@ -2926,16 +2916,12 @@ export default function ModelPlayground({
 						{embeddingsVectors.length ? (
 							<div className="space-y-2 rounded-md border border-black/15 bg-black/[0.02] p-3 text-sm dark:border-white/20 dark:bg-white/[0.03]">
 								<p>
-									<span className="font-medium">
-										{t("embeddingResults.vectors")}:
-									</span>{" "}
-									{embeddingsVectors.length.toLocaleString()}
+									<span className="font-medium">{t("embeddingResults.vectors")}:</span>{" "}
+									{format.number(embeddingsVectors.length)}
 								</p>
 								<p>
-									<span className="font-medium">
-										{t("embeddingResults.dimensions")}:
-									</span>{" "}
-									{(embeddingsFirstVector?.length ?? 0).toLocaleString()}
+									<span className="font-medium">{t("embeddingResults.dimensions")}:</span>{" "}
+									{format.number(embeddingsFirstVector?.length ?? 0)}
 								</p>
 								{embeddingsFirstVector ? (
 									<p className="font-mono text-xs text-black/70 dark:text-white/70">
@@ -3040,17 +3026,16 @@ export default function ModelPlayground({
 
 	return (
 		<div className="w-full space-y-4">
-			<div className="space-y-2">
-				<h2 className="text-2xl font-semibold tracking-tight">
-					{t("title", { modelName })}
-				</h2>
-				<p className="text-base text-muted-foreground">
-					{t("description")}
-				</p>
-			</div>
-
-			<div className="space-y-4 text-black dark:text-white">
-				<div className="flex flex-wrap items-center justify-between gap-3 border-b border-black/10 pb-3 dark:border-white/15">
+			<div className="flex flex-wrap items-center gap-3 border-b border-black/10 pb-3 dark:border-white/15">
+				<div className="mr-auto min-w-0">
+					<h2 className="truncate text-2xl font-semibold tracking-tight">
+						{t("title", { modelName })}
+					</h2>
+					<p className="text-sm text-muted-foreground">
+						{t("description")}
+					</p>
+				</div>
+				<div className="max-w-full overflow-x-auto">
 					<div className="inline-flex items-center rounded-md border border-black/20 p-1 dark:border-white/25">
 						{availableModeConfigs.map((config) => {
 							const isActive = mode === config.mode;
@@ -3072,53 +3057,56 @@ export default function ModelPlayground({
 							);
 						})}
 					</div>
-					<div className="ml-auto flex items-center gap-3">
-						{mode === "text"
-							? isGenerating ? (
-									<div className="inline-flex items-center gap-1.5 text-xs text-black/70 dark:text-white/70">
-										<Clock3 className="h-3.5 w-3.5" />
-										{formatDuration(elapsedMs)}
-									</div>
-								) : stats ? (
-									<div className="text-xs text-black/70 dark:text-white/70">
-									{`${formatDuration(stats.elapsedMs)} | ${formatTokens(
-											stats.totalTokens,
-											t("metrics.tokensUnavailable"),
-											(count) => t("metrics.tokenCount", { count }),
-										)} | ${formatThroughput(
-											stats.throughputTokensPerSecond,
-										)} | ${formatCost(stats.totalCostUsd)}`}
-									</div>
-								) : null
-							: isAudioGenerationMode
-								? audioIsGenerating ? (
-										<div className="inline-flex items-center gap-1.5 text-xs text-black/70 dark:text-white/70">
-											<Clock3 className="h-3.5 w-3.5" />
-											{formatDuration(audioElapsedMs)}
-										</div>
-									) : audioStats ? (
-										<div className="text-xs text-black/70 dark:text-white/70">
-										{`${formatDuration(audioStats.elapsedMs)} | ${formatTokens(
-											audioStats.totalTokens,
-											t("metrics.tokensUnavailable"),
-											(count) => t("metrics.tokenCount", { count }),
-										)} | ${formatThroughput(
-												audioStats.throughputTokensPerSecond,
-											)} | ${formatCost(audioStats.totalCostUsd)}`}
-										</div>
-									) : null
-								: null}
+				</div>
+				{mode === "text"
+					? isGenerating ? (
+							<div className="inline-flex items-center gap-1.5 text-xs text-black/70 dark:text-white/70">
+								<Clock3 className="h-3.5 w-3.5" />
+								{formatDuration(elapsedMs)}
+							</div>
+						) : stats ? (
+							<div className="text-xs text-black/70 dark:text-white/70">
+								{`${formatDuration(stats.elapsedMs)} | ${formatTokens(
+									stats.totalTokens,
+								)} | ${formatThroughput(
+									stats.throughputTokensPerSecond,
+								)} | ${formatCost(stats.totalCostUsd)}`}
+							</div>
+						) : null
+					: isAudioGenerationMode
+						? audioIsGenerating ? (
+								<div className="inline-flex items-center gap-1.5 text-xs text-black/70 dark:text-white/70">
+									<Clock3 className="h-3.5 w-3.5" />
+									{formatDuration(audioElapsedMs)}
+								</div>
+							) : audioStats ? (
+								<div className="text-xs text-black/70 dark:text-white/70">
+									{`${formatDuration(audioStats.elapsedMs)} | ${formatTokens(
+										audioStats.totalTokens,
+									)} | ${formatThroughput(
+										audioStats.throughputTokensPerSecond,
+									)} | ${formatCost(audioStats.totalCostUsd)}`}
+								</div>
+							) : null
+						: null}
+				<Tooltip>
+					<TooltipTrigger asChild>
 						<Button
 							type="button"
 							variant="outline"
+							size="icon"
 							onClick={() => setIsCodeDialogOpen(true)}
-							className="h-9 border-black/30 bg-white text-black hover:bg-zinc-100 dark:border-white/30 dark:bg-black dark:text-white dark:hover:bg-zinc-900"
+							aria-label="Get code"
+							className="h-9 w-9 shrink-0 border-black/30 bg-white text-black hover:bg-zinc-100 dark:border-white/30 dark:bg-black dark:text-white dark:hover:bg-zinc-900"
 						>
 							<Code2 className="h-4 w-4" />
-										{t("actions.getCode")}
 						</Button>
-					</div>
-				</div>
+					</TooltipTrigger>
+					<TooltipContent side="top">Get code</TooltipContent>
+				</Tooltip>
+			</div>
+
+			<div className="space-y-4 text-black dark:text-white">
 
 				{mode === "text" ? (
 					<div className="grid gap-6 md:grid-cols-2">
@@ -3193,6 +3181,8 @@ export default function ModelPlayground({
 						</div>
 					</div>
 				) : (
+					// The room renderer reads stable media refs to bind the existing elements.
+					// eslint-disable-next-line react-hooks/refs
 					renderInlineRoom()
 				)}
 			</div>

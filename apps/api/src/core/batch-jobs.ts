@@ -240,8 +240,10 @@ function parseBatchMeta(value: unknown): BatchJobMeta | null {
 	if (typeof source.last_webhook_progress_at === "string") out.lastWebhookProgressAt = source.last_webhook_progress_at;
 	if (typeof source.lastWebhookDispatchedAt === "string") out.lastWebhookDispatchedAt = source.lastWebhookDispatchedAt;
 	if (typeof source.last_webhook_dispatched_at === "string") out.lastWebhookDispatchedAt = source.last_webhook_dispatched_at;
-	if (source.keySource === "gateway" || source.keySource === "byok") out.keySource = source.keySource;
 	if (typeof source.byokKeyId === "string") out.byokKeyId = source.byokKeyId;
+	out.keySource = source.keySource === "gateway" || source.keySource === "byok"
+		? source.keySource
+		: out.byokKeyId ? "byok" : "gateway";
 	if (typeof source.reservationId === "string") out.reservationId = source.reservationId;
 	if (typeof source.reservation_id === "string") out.reservationId = source.reservation_id;
 	if (typeof source.reservedNanos === "number") out.reservedNanos = source.reservedNanos;
@@ -287,8 +289,10 @@ function parseBatchFileMeta(value: unknown): BatchFileMeta | null {
 	if (typeof source.purpose === "string") out.purpose = source.purpose;
 	if (typeof source.filename === "string") out.filename = source.filename;
 	if (typeof source.bytes === "number") out.bytes = source.bytes;
-	if (source.keySource === "gateway" || source.keySource === "byok") out.keySource = source.keySource;
 	if (typeof source.byokKeyId === "string") out.byokKeyId = source.byokKeyId;
+	out.keySource = source.keySource === "gateway" || source.keySource === "byok"
+		? source.keySource
+		: out.byokKeyId ? "byok" : "gateway";
 	if (typeof source.createdAt === "number") out.createdAt = source.createdAt;
 	return out;
 }
@@ -495,20 +499,37 @@ export async function listPendingBatchJobs(
 export async function listTeamBatchJobs(args: {
 	workspaceId: string;
 	limit?: number;
+	offset?: number;
 	statuses?: Array<string | null>;
 }): Promise<BatchJobRecord[]> {
 	if (!args.workspaceId) return [];
-	const records = await listTeamAsyncOperations({
-		workspaceId: args.workspaceId,
-		kind: "batch",
-		limit: args.limit ? Math.max(args.limit * 3, args.limit + 50) : undefined,
-		statuses: args.statuses,
-	});
-	return records
-		.map((record) => toBatchJobRecord(record))
-		.filter((record): record is BatchJobRecord => Boolean(record))
-		.filter((record) => !record.batchId.startsWith(BATCH_FILE_INTERNAL_PREFIX))
-		.slice(0, args.limit);
+	const offset = Number.isFinite(args.offset) ? Math.max(0, Math.trunc(args.offset!)) : 0;
+	const limit = Number.isFinite(args.limit) ? Math.max(1, Math.trunc(args.limit!)) : 100;
+	const target = offset + limit;
+	const visible: BatchJobRecord[] = [];
+	let storageOffset = 0;
+
+	while (visible.length < target) {
+		const pageLimit = Math.min(500, Math.max(100, target - visible.length));
+		const records = await listTeamAsyncOperations({
+			workspaceId: args.workspaceId,
+			kind: "batch",
+			limit: pageLimit,
+			offset: storageOffset,
+			statuses: args.statuses,
+		});
+		if (records.length === 0) break;
+		storageOffset += records.length;
+		visible.push(
+			...records
+				.map((record) => toBatchJobRecord(record))
+				.filter((record): record is BatchJobRecord => Boolean(record))
+				.filter((record) => !record.batchId.startsWith(BATCH_FILE_INTERNAL_PREFIX)),
+		);
+		if (records.length < pageLimit) break;
+	}
+
+	return visible.slice(offset, target);
 }
 
 export async function setBatchJobStatus(

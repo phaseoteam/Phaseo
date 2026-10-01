@@ -12,7 +12,7 @@ describe("rankProviders", () => {
 		vi.clearAllMocks();
 	});
 
-	it("copies the score trace into the persisted routing snapshot", async () => {
+	it("defers score tracing until diagnostics are consumed and preserves the persisted snapshot", async () => {
 		const candidate = {
 			providerId: "example",
 			providerModelSlug: "model",
@@ -24,6 +24,7 @@ describe("rankProviders", () => {
 				finalScore: 0.75,
 			},
 		};
+        const readTrace = vi.fn(() => scoreTrace);
 		routeProvidersMock.mockResolvedValue({
 			ranked: [{
 				candidate,
@@ -31,7 +32,7 @@ describe("rankProviders", () => {
 				health: { breaker: "closed", breaker_until_ms: null },
 				score: 0.75,
 				scoreFactorValues: [1, 0.5],
-				scoreTrace,
+				get scoreTrace() { return readTrace(); },
 			}],
 			diagnostics: {},
 		});
@@ -45,9 +46,10 @@ describe("rankProviders", () => {
 		};
 
 		await rankProviders([candidate] as any, ctx as any);
-
-		expect((ctx as any).routingSnapshot).toEqual([
+        expect(readTrace).not.toHaveBeenCalled();
+		expect(JSON.parse(JSON.stringify((ctx as any).routingSnapshot))).toEqual([
 			expect.objectContaining({ score_trace: scoreTrace }),
 		]);
+        expect(readTrace).toHaveBeenCalledTimes(1);
 	});
 });

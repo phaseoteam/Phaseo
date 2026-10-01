@@ -40,6 +40,18 @@ function getDisplayedUptime(value: number | null | undefined, requests: number) 
 	return requests === 0 ? 100 : null;
 }
 
+export function calculateAverageUptime(
+	values: Array<number | null | undefined>,
+) {
+	const validValues = values.filter(
+		(value): value is number => value != null && Number.isFinite(value),
+	);
+
+	return validValues.length > 0
+		? validValues.reduce((sum, value) => sum + value, 0) / validValues.length
+		: null;
+}
+
 function formatUptime(value: number | null | undefined) {
 	return value != null ? `${value.toFixed(1)}%` : "—";
 }
@@ -69,6 +81,7 @@ export function buildUptimeChartData(
 				: null,
 			bucket,
 			requests,
+			worstRequests: point?.worstProviderRequests ?? 0,
 		};
 	});
 }
@@ -100,23 +113,15 @@ export default function ModelSuccessChart({
 		...point,
 		worst: showLeastStableProvider ? point.worst : null,
 	}));
-	const totalRequests = chartData.reduce((sum, point) => sum + point.requests, 0);
-	const measuredPoints = chartData.filter(
-		(point) => point.requests > 0 && point.overall != null,
+	const averageUptime = calculateAverageUptime(
+		chartData.map((point) => point.overall),
 	);
-	const measuredRequests = measuredPoints.reduce(
-		(sum, point) => sum + point.requests,
-		0,
+	const measuredWorstPoints = chartData.filter(
+		(point) => point.worstRequests > 0 && point.worst != null,
 	);
-	const summaryUptime =
-		totalRequests === 0
-			? 100
-			: measuredRequests > 0
-				? measuredPoints.reduce(
-						(sum, point) => sum + (point.overall ?? 0) * point.requests,
-						0,
-					) / measuredRequests
-				: null;
+	const withoutRoutingUptime = calculateAverageUptime(
+		measuredWorstPoints.map((point) => point.worst),
+	);
 
 	return (
 		<div className="grid gap-4 rounded-lg border border-border/70 bg-background p-4 sm:grid-cols-[10rem_minmax(0,1fr)] sm:items-center">
@@ -125,28 +130,17 @@ export default function ModelSuccessChart({
 					<h3 className="text-sm font-medium text-foreground">{t("title")}</h3>
 				) : null}
 				<p className="mt-1 text-3xl font-semibold tracking-tight text-emerald-600 tabular-nums dark:text-emerald-400">
-					{formatUptime(summaryUptime)}
+					{formatUptime(averageUptime)}
 				</p>
-				<p className="mt-1 text-xs text-muted-foreground">{t("last24Hours")}</p>
-				<p className="mt-0.5 text-xs text-muted-foreground">
-					{totalRequests > 0
-						? t("requestsObserved", { count: totalRequests.toLocaleString(locale) })
-						: t("noRequests")}
+				<p className="mt-1 text-xs text-muted-foreground">
+					{t("hourlyAverage")}
 				</p>
 			</div>
 			<div className="min-w-0">
-				<div className="mb-1 flex items-center gap-1.5 text-[11px] text-muted-foreground">
-					<span className="size-1.5 rounded-full bg-emerald-500" aria-hidden="true" />
-					{t("perHour")}
-				</div>
 				<div
 					className="h-[112px] w-full"
 					role="img"
-					aria-label={t("chartLabel", {
-						hours: 24,
-						uptime: formatUptime(summaryUptime),
-						count: totalRequests.toLocaleString(locale),
-					})}
+					aria-label={t("routingChartLabel", { uptime: formatUptime(averageUptime), comparison: showLeastStableProvider ? t("routingComparison", { uptime: formatUptime(withoutRoutingUptime) }) : "" })}
 				>
 				<ChartContainer
 					config={successChartConfig}
@@ -191,7 +185,7 @@ export default function ModelSuccessChart({
 											{showLeastStableProvider ? (
 												<p className="text-sm">
 													<span className="font-semibold">
-													{t("tooltipWorstProvider")}
+														{t("tooltipWorstProvider")}
 													</span>{" "}
 													{formatUptime(payload[0].payload.worst)}
 												</p>
@@ -207,6 +201,7 @@ export default function ModelSuccessChart({
 									stroke="var(--color-worst)"
 									strokeWidth={2}
 									dot={false}
+									activeDot={false}
 									strokeDasharray="4 3"
 									connectNulls
 								/>
@@ -216,12 +211,25 @@ export default function ModelSuccessChart({
 								dataKey="overall"
 								stroke="var(--color-overall)"
 								strokeWidth={3}
-								dot={{ r: 2, strokeWidth: 0 }}
+								dot={false}
+								activeDot={false}
 								connectNulls
 							/>
 						</LineChart>
 					</ResponsiveContainer>
 				</ChartContainer>
+				</div>
+				<div className="mt-2 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-[11px] text-muted-foreground">
+					<span className="inline-flex items-center gap-1.5">
+						<span className="h-0.5 w-4 rounded-full bg-emerald-600 dark:bg-emerald-400" aria-hidden="true" />
+						Phaseo Routing <span className="font-medium tabular-nums text-foreground">{formatUptime(averageUptime)}</span>
+					</span>
+					{showLeastStableProvider ? (
+						<span className="inline-flex items-center gap-1.5">
+							<span className="w-4 border-t-2 border-dashed border-pink-600 dark:border-pink-400" aria-hidden="true" />
+							Without Phaseo Routing <span className="font-medium tabular-nums text-foreground">{formatUptime(withoutRoutingUptime)}</span>
+						</span>
+					) : null}
 				</div>
 			</div>
 		</div>

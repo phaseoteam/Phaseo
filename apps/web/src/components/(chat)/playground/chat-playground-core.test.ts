@@ -5,6 +5,8 @@ import {
 	buildServerToolDefinitions,
 	estimatePromptTokenCount,
 	getChangedSettings,
+	getRequestedChatServiceTier,
+	pickModelSettings,
 	inferChatApiTarget,
 	isGeneratedDefaultSystemPrompt,
 	normalizeServerTools,
@@ -57,6 +59,31 @@ describe("getChangedSettings", () => {
 		);
 
 		expect(changes).toContainEqual({ label: "Provider", value: "OpenAI" });
+	});
+
+	it("shows a selected service tier", () => {
+		expect(getChangedSettings(
+			{ ...DEFAULT_SETTINGS, serviceTier: "flex" },
+			"deepseek/deepseek-v4.1-flash",
+		)).toContainEqual({ label: "Service tier", value: "Flex" });
+		expect(getChangedSettings(
+			{ ...DEFAULT_SETTINGS, serviceTier: "priority" },
+			"openai/gpt-5.5",
+		)).toContainEqual({ label: "Service tier", value: "Fast" });
+	});
+});
+
+describe("chat service tier requests", () => {
+	it("keeps the tier in per-model settings", () => {
+		expect(pickModelSettings({ serviceTier: "priority" })).toEqual({ serviceTier: "priority" });
+	});
+
+	it("sends only explicit non-standard tiers", () => {
+		expect(getRequestedChatServiceTier({ serviceTier: "standard" })).toBe("standard");
+		expect(getRequestedChatServiceTier({})).toBe("standard");
+		expect(getRequestedChatServiceTier({ serviceTier: "priority" })).toBe("priority");
+		expect(getRequestedChatServiceTier({ serviceTier: "flex" })).toBe("flex");
+		expect(getRequestedChatServiceTier({ serviceTier: "ultrafast" })).toBe("ultrafast");
 	});
 });
 

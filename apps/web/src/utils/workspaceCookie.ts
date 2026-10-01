@@ -48,6 +48,12 @@ export async function setActiveWorkspaceCookie(workspaceId: string): Promise<voi
 	}
 }
 
+export async function setActiveWorkspaceCookieOrThrow(workspaceId: string): Promise<void> {
+	const normalized = String(workspaceId ?? "").trim();
+	if (!normalized) throw new Error("A workspace is required.");
+	await writeActiveWorkspaceCookieValue(normalized);
+}
+
 export async function clearActiveWorkspaceCookie(): Promise<void> {
 	try {
 		await writeActiveWorkspaceCookieValue(undefined);
@@ -72,15 +78,25 @@ async function getActiveWorkspaceIdFromCookieRaw(): Promise<string | undefined> 
 
 export async function resolveAccessibleWorkspaceIdFromCookie(options?: {
 	throwOnFailure?: boolean;
+	persistCookie?: boolean;
 }): Promise<string | undefined> {
+	const persistCookie = options?.persistCookie === true;
 	try {
 		const rawCookieWorkspaceId = await getActiveWorkspaceIdFromCookieRaw();
 		const context = await getServerAccountContext();
-		if (!context.accessToken) { await clearActiveWorkspaceCookie(); return undefined; }
+		if (!context.accessToken) {
+			if (persistCookie) await clearActiveWorkspaceCookie();
+			return undefined;
+		}
 		const query = rawCookieWorkspaceId ? `?requested=${encodeURIComponent(rawCookieWorkspaceId)}` : "";
 		const result = await fetchAccountWebApi<{ signedIn: boolean; workspaceId: string | null }>(`/api/account/auth/workspace${query}`, context.accessToken);
-		if (!result.workspaceId) { await clearActiveWorkspaceCookie(); return undefined; }
-		if (result.workspaceId !== rawCookieWorkspaceId) await setActiveWorkspaceCookie(result.workspaceId);
+		if (!result.workspaceId) {
+			if (persistCookie) await clearActiveWorkspaceCookie();
+			return undefined;
+		}
+		if (persistCookie && result.workspaceId !== rawCookieWorkspaceId) {
+			await setActiveWorkspaceCookie(result.workspaceId);
+		}
 		return result.workspaceId;
 	} catch (e) {
 		console.warn("[workspace-resolve] unexpected failure", {

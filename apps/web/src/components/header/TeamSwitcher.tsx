@@ -3,25 +3,24 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
+import { useQueryClient } from "@tanstack/react-query";
 import { usePathname, useRouter } from "next/navigation";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import {
 	LogOut,
 	CreditCard,
 	Key as KeyIcon,
 	Activity,
-	ScrollText,
-	Check,
+	Logs,
 	Settings,
 	LifeBuoy,
-	Users,
 	Lock,
 	FlaskConical,
-	ChevronDown,
 	Sun,
 	Moon,
 	Monitor,
 	MessageSquareMore,
+	Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -38,6 +37,11 @@ import { getLondonInfo, getSupportAvailability } from "@/lib/support/schedule";
 import { toast } from "sonner";
 import { useTheme } from "next-themes";
 import { ProductFeedbackDialog } from "@/components/feedback/ProductFeedbackButton";
+import { isPublicDataPathname } from "@/lib/publicDataRoutes";
+import { clearAccountQueryScope } from "@/lib/query/invalidation";
+import { toAccountQueryScope } from "@/lib/query/queryKeys";
+import { WorkspaceCombobox } from "./WorkspaceCombobox";
+import { setActionDockEnabled, useActionDockEnabled } from "@/lib/actionDockPreferences";
 
 interface TeamSwitcherProps {
 	user?: any;
@@ -45,6 +49,7 @@ interface TeamSwitcherProps {
 	onSignOut?: () => void;
 	initialActiveTeamId?: string;
 	userRole?: string | undefined;
+	providerMode?: boolean;
 }
 
 export default function TeamSwitcher({
@@ -53,11 +58,14 @@ export default function TeamSwitcher({
 	onSignOut,
 	initialActiveTeamId,
 	userRole,
+	providerMode = false,
 }: TeamSwitcherProps) {
 	const tNav = useTranslations("Common.nav");
 	const tUi = useTranslations("Common.ui");
 	const router = useRouter();
+	const queryClient = useQueryClient();
 	const pathname = usePathname();
+	const isPublicDataPage = isPublicDataPathname(pathname);
 	const { theme, setTheme } = useTheme();
 
 	const getInitialTeamId = (initial?: string) => {
@@ -68,11 +76,11 @@ export default function TeamSwitcher({
 	const [activeWorkspaceId, setActiveTeamId] = useState<string | undefined>(() =>
 		getInitialTeamId(initialActiveTeamId)
 	);
-	const [isTeamMenuOpen, setIsTeamMenuOpen] = useState(false);
 	const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
 	const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
+	const canUseActionDock = providerMode || userRole?.toLocaleLowerCase() === "admin";
+	const actionDockEnabled = useActionDockEnabled(user?.id);
 
-	const activeTeam = teams.find((t) => t.id === activeWorkspaceId) ?? teams[0];
 	const currentTheme =
 		theme === "light" || theme === "dark" || theme === "system"
 			? theme
@@ -101,136 +109,50 @@ export default function TeamSwitcher({
 	}, [supportIsOpen, minutesUntilNextWindow]);
 
 	useEffect(() => {
-		setIsTeamMenuOpen(false);
 		setIsProfileMenuOpen(false);
 	}, [pathname]);
 
+	async function handleWorkspaceSelect(team: { id: string; name: string }) {
+		if (team.id === activeWorkspaceId) return true;
+
+		const previous = activeWorkspaceId;
+		setActiveTeamId(team.id);
+		const switchPromise = SwapTeam(team.id).then((result) => {
+			if (!result?.ok) throw new Error("Failed to switch workspace");
+			clearAccountQueryScope(
+				queryClient,
+				toAccountQueryScope({ userId: user?.id, workspaceId: previous }),
+			);
+			router.refresh();
+			return result;
+		});
+		toast.promise(switchPromise, {
+			loading: tUi("workspaceSwitcher.switching"),
+			success: tUi("workspaceSwitcher.switched", { workspace: team.name }),
+			error: tUi("workspaceSwitcher.switchFailed", { workspace: team.name }),
+		});
+		try {
+			await switchPromise;
+			return true;
+		} catch {
+			setActiveTeamId(previous);
+			return false;
+		}
+	}
+
 	return (
 		<div className="flex items-center gap-2">
-			{/* Workspace Dropdown */}
-			<DropdownMenu open={isTeamMenuOpen} onOpenChange={setIsTeamMenuOpen}>
-				<DropdownMenuTrigger asChild>
-					<Button
-						variant="ghost"
-						aria-label={tNav("openWorkspaceSwitcher")}
-						className={cn(
-							"inline-flex h-[var(--site-header-control-h,2.25rem)] items-center gap-2 rounded-lg px-3 leading-none cursor-pointer",
-							"border border-transparent text-[13px] font-medium text-foreground",
-							"transition-colors hover:bg-zinc-100/70 dark:hover:bg-zinc-900/60",
-							"focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400/50 dark:focus-visible:ring-zinc-600/50"
-						)}
-					>
-						<span
-							className="max-w-32 truncate text-sm font-medium select-none"
-							title={activeTeam ? activeTeam.name : undefined}
-						>
-							{activeTeam ? activeTeam.name : tNav("personalWorkspace")}
-						</span>
-						<ChevronDown
-							className={cn(
-								"h-4 w-4 text-zinc-500 transition-transform",
-								isTeamMenuOpen && "rotate-180"
-							)}
-						/>
-					</Button>
-				</DropdownMenuTrigger>
-
-				<DropdownMenuContent
-					align="end"
-					className="w-56 rounded-lg"
-				>
-					<div>
-						{teams.slice(0, 10).map((t) => {
-							const isActive = t.id === activeWorkspaceId;
-							return (
-								<DropdownMenuItem
-									key={t.id}
-									className={cn(
-										"cursor-pointer rounded-lg",
-										isActive && "bg-accent text-accent-foreground"
-									)}
-									closeOnClick={!isActive}
-									onClick={() => {
-										if (isActive) {
-											if (
-												typeof navigator === "undefined" ||
-												!navigator?.clipboard?.writeText
-											) {
-												toast.error(tUi("workspaceSwitcher.clipboardUnavailable"), {
-													position: "bottom-right",
-												});
-												return;
-											}
-											void navigator.clipboard
-												.writeText(t.id)
-												.then(() => {
-													toast.success(tUi("workspaceSwitcher.workspaceCopied"), {
-														position: "bottom-right",
-													});
-												})
-												.catch(() => {
-													toast.error(tUi("workspaceSwitcher.workspaceCopyFailed"), {
-														position: "bottom-right",
-													});
-												});
-											return;
-										}
-										const previous = activeWorkspaceId;
-										setActiveTeamId(t.id);
-										toast.promise(SwapTeam(t.id), {
-											loading: tUi("workspaceSwitcher.switching"),
-											success: (res) => {
-												if (res?.ok) {
-													router.refresh();
-													return tUi("workspaceSwitcher.switched", { workspace: t.name });
-												} else {
-													setActiveTeamId(
-														previous
-													);
-													throw new Error(
-														tUi("workspaceSwitcher.switchFailed", { workspace: t.name })
-													);
-												}
-											},
-											error: () => {
-												setActiveTeamId(previous);
-												return tUi("workspaceSwitcher.switchFailed", { workspace: t.name });
-											},
-										});
-									}}
-								>
-									<span
-										className={cn(
-											"truncate",
-											isActive && "text-foreground"
-										)}
-									>
-										{t.name}
-									</span>
-									{isActive && (
-										<Check className="ml-auto h-4 w-4 text-primary" />
-									)}
-								</DropdownMenuItem>
-							);
-						})}
-						{teams.length > 0 ? (
-							<DropdownMenuSeparator />
-						) : null}
-						<DropdownMenuItem
-							asChild
-							className="cursor-pointer rounded-lg"
-						>
-							<Link
-								href="/settings/workspaces/settings"
-								className="flex w-full items-center"
-							>
-								<Users className="mr-2 h-4 w-4" />
-								<span>{tNav("manageWorkspaces")}</span>
-							</Link>
-						</DropdownMenuItem>
-					</div>
-				</DropdownMenuContent>
-			</DropdownMenu>
+			{providerMode ? (
+				<Button asChild variant="ghost">
+					<Link href="/settings/provider/models">{tNav("manageCatalog")}</Link>
+				</Button>
+			) : (
+				<WorkspaceCombobox
+					workspaces={teams}
+					activeWorkspaceId={activeWorkspaceId}
+					onSelect={handleWorkspaceSelect}
+				/>
+			)}
 
 			{/* Profile Dropdown */}
 			<DropdownMenu
@@ -332,28 +254,27 @@ export default function TeamSwitcher({
 						asChild
 						className="cursor-pointer rounded-lg"
 					>
-						<Link
-							href="/settings/workspaces/settings"
-						>
-							<Users className="h-4 w-4" />
-							<span>{tNav("workspaces")}</span>
-						</Link>
-					</DropdownMenuItem>
-
-					<DropdownMenuItem
-						asChild
-						className="cursor-pointer rounded-lg"
-					>
-						<Link
-							href="/settings/account"
-						>
+						<Link href="/settings/account">
 							<Settings className="h-4 w-4" />
 							<span>{tNav("settings")}</span>
 						</Link>
 					</DropdownMenuItem>
+					{user?.id && canUseActionDock && !actionDockEnabled ? (
+						<DropdownMenuItem
+							className="cursor-pointer rounded-lg"
+							onClick={() => {
+								setActionDockEnabled(user.id, true);
+								setIsProfileMenuOpen(false);
+							}}
+						>
+							<Sparkles className="h-4 w-4" />
+							<span>Turn on Phaseo action dock</span>
+						</DropdownMenuItem>
+					) : null}
 
 					<DropdownMenuSeparator />
 
+					{!providerMode && <>
 					<DropdownMenuItem asChild className="cursor-pointer rounded-lg">
 						<Link
 							href={`/settings/usage/overview?workspace_id=${encodeURIComponent(
@@ -371,7 +292,7 @@ export default function TeamSwitcher({
 								activeWorkspaceId ?? "",
 							)}`}
 						>
-							<ScrollText className="h-4 w-4" />
+							<Logs className="h-4 w-4" />
 							<span>{tNav("logs")}</span>
 						</Link>
 					</DropdownMenuItem>
@@ -399,6 +320,7 @@ export default function TeamSwitcher({
 							<span>{tNav("keys")}</span>
 						</Link>
 					</DropdownMenuItem>
+					</>}
 
 					<DropdownMenuItem asChild className="cursor-pointer rounded-lg">
 						<Link href="/contact" className="flex w-full items-center justify-between">
@@ -434,16 +356,18 @@ export default function TeamSwitcher({
 							</span>
 						</Link>
 					</DropdownMenuItem>
-					<DropdownMenuItem
-						className="cursor-pointer rounded-lg"
-						onClick={() => {
-							setIsProfileMenuOpen(false);
-							setIsFeedbackOpen(true);
-						}}
-					>
-						<MessageSquareMore className="h-4 w-4" />
-						<span>{tNav("sendFeedback")}</span>
-					</DropdownMenuItem>
+					{!isPublicDataPage ? (
+						<DropdownMenuItem
+							className="cursor-pointer rounded-lg"
+							onClick={() => {
+								setIsProfileMenuOpen(false);
+								setIsFeedbackOpen(true);
+							}}
+						>
+							<MessageSquareMore className="h-4 w-4" />
+							<span>{tNav("sendFeedback")}</span>
+						</DropdownMenuItem>
+					) : null}
 
 					<DropdownMenuSeparator />
 

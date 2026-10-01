@@ -309,7 +309,7 @@ jobs:
       version: ${{ steps.registry.outputs.version }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-      - uses: ruby/setup-ruby@95ef2b042f9d7a56d8268cba8559e2842e2ad01b
+      - uses: ruby/setup-ruby@14594264cd68ce8a2345dd349bc3d138a4ef85c8
         with:
           ruby-version: "3.2"
       - name: Check RubyGems release status
@@ -338,7 +338,8 @@ jobs:
       - name: Test and build
         working-directory: packages/sdk/agent-sdk-ruby
         run: |
-          gem install phaseo_sdk -v '~> 2.1' --no-document
+          (cd ../sdk-ruby && gem build phaseo_sdk.gemspec)
+          gem install --local ../sdk-ruby/phaseo_sdk-*.gem --no-document
           ruby -Ilib -Itests tests/agent_loop_test.rb
           gem build phaseo_agent_sdk.gemspec
       - name: Upload gem
@@ -363,7 +364,7 @@ jobs:
         with:
           name: ruby-agent-sdk-${{ needs.build-ruby.outputs.version }}
           path: dist/ruby-agent
-      - uses: ruby/setup-ruby@95ef2b042f9d7a56d8268cba8559e2842e2ad01b
+      - uses: ruby/setup-ruby@14594264cd68ce8a2345dd349bc3d138a4ef85c8
         with:
           ruby-version: "3.2"
       - name: Configure RubyGems trusted publishing credentials

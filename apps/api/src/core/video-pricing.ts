@@ -339,7 +339,8 @@ export function computeVideoPricedUsage(args: {
 	});
 	const pricingMode = resolveStringOption(args.requestOptions ?? {}, ["mode", "video_params.mode"]);
 	const inputAudioSeconds = resolveNumericOption(args.requestOptions ?? {}, "input_audio_seconds") ?? resolveNumericOption(args.requestOptions ?? {}, "video_params.input_audio_seconds");
-	const usageMeters: Record<string, number> = pricingMode === "audio-to-video" && inputAudioSeconds
+	const usesAudioMeter = pricingMode === "audio-to-video" && hasMeter(args.card, "input_audio_seconds");
+	const usageMeters: Record<string, number> = usesAudioMeter && inputAudioSeconds
 		? { input_audio_seconds: inputAudioSeconds }
 		: { output_video_seconds: args.seconds };
 	const outputVideoCount = resolveNumericOption(args.requestOptions ?? {}, "outputCount")
@@ -366,10 +367,20 @@ export function computeVideoPricedUsage(args: {
 		args.card,
 		primaryContext,
 	);
-	if (getPricedTotalNanos(priced as Record<string, unknown>) > 0) {
+	const primaryMeters = usesAudioMeter
+		? ["input_audio_seconds"]
+		: ["output_video_seconds", "output_video", "total_tokens", "output_video_tokens", "output_video_frames"];
+	const requiresPrimaryLine = primaryMeters.some((meter) => hasMeter(args.card, meter));
+	const hasPrimaryLine = (result: Record<string, any>) =>
+		Array.isArray(result.pricing?.lines) &&
+		result.pricing.lines.some((line: any) => primaryMeters.includes(line.dimension));
+	if (getPricedTotalNanos(priced as Record<string, unknown>) > 0 && (!requiresPrimaryLine || hasPrimaryLine(priced))) {
 		return priced as Record<string, unknown>;
 	}
 	if (!hasLegacyOutputVideoMeter(args.card)) {
+		if (getPricedTotalNanos(priced) > 0 && requiresPrimaryLine) {
+			throw new Error("video_pricing_primary_rule_missing");
+		}
 		return priced as Record<string, unknown>;
 	}
 
@@ -380,9 +391,12 @@ export function computeVideoPricedUsage(args: {
 		normalizeLegacyResolutionCase: true,
 	});
 	priced = computeBill(
-		{ output_video: resolveVideoOutputCount(args.requestOptions ?? {}) },
+		{ ...usageMeters, output_video: resolveVideoOutputCount(args.requestOptions ?? {}) },
 		args.card,
 		legacyContext,
 	);
+	if (getPricedTotalNanos(priced) > 0 && requiresPrimaryLine && !hasPrimaryLine(priced)) {
+		throw new Error("video_pricing_primary_rule_missing");
+	}
 	return priced as Record<string, unknown>;
 }

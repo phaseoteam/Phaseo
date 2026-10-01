@@ -90,6 +90,14 @@ function publicRouting(value: unknown): boolean {
 	return normalized === null || normalized === "active" || normalized === "deranked_lvl1" || normalized === "deranked_lvl2" || normalized === "deranked_lvl3";
 }
 
+function providerAvailabilityAllowsRouting(row: Row, now: number): boolean {
+	const providerAvailability = status(row.provider_availability_status);
+	if (providerAvailability === null || ["available", "preview", "limited_access"].includes(providerAvailability)) return true;
+	if (providerAvailability !== "deprecated") return false;
+	const effectiveTo = row.effective_to ? Date.parse(String(row.effective_to)) : Number.NaN;
+	return Number.isFinite(effectiveTo) && effectiveTo > now;
+}
+
 function availability(row: Row, capability: Row, provider: Row | null, now: number): "active" | "coming_soon" | "inactive" {
 	const from = row.effective_from ? Date.parse(String(row.effective_from)) : Number.NEGATIVE_INFINITY;
 	const to = row.effective_to ? Date.parse(String(row.effective_to)) : Number.POSITIVE_INFINITY;
@@ -97,7 +105,7 @@ function availability(row: Row, capability: Row, provider: Row | null, now: numb
 	if (now < from) return "coming_soon";
 	const providerAvailability = status(row.provider_availability_status);
 	if (providerAvailability === "coming_soon") return "coming_soon";
-	if (providerAvailability && !["available", "preview", "limited_access"].includes(providerAvailability)) return "inactive";
+	if (!providerAvailabilityAllowsRouting(row, now)) return "inactive";
 	const phaseo = status(row.phaseo_status);
 	if (status(row.access_scope) === "internal") return "coming_soon";
 	if (phaseo && ["planned", "implementing", "testing"].includes(phaseo)) return "coming_soon";
@@ -107,7 +115,7 @@ function availability(row: Row, capability: Row, provider: Row | null, now: numb
 	if (!row.is_active_gateway || (providerStatus && providerStatus !== "active") || !publicRouting(provider?.routing_status) || !publicRouting(row.routing_status)) return "inactive";
 	const capabilityStatus = status(capability.status);
 	if (capabilityStatus === "internal_testing" || capabilityStatus === "coming_soon") return "coming_soon";
-	return capabilityStatus && capabilityStatus !== "active" ? "inactive" : "active";
+	return capabilityStatus && capabilityStatus !== "active" && !(providerAvailability === "deprecated" && capabilityStatus === "degraded") ? "inactive" : "active";
 }
 
 function availabilityReason(row: Row, capability: Row, provider: Row | null, now: number): string {
@@ -147,7 +155,7 @@ export async function fetchGatewayMetadataSource(env: Env, modelId: string): Pro
 	if (!v2Pricing.error && Array.isArray(v2Pricing.data)) {
 		const routeStatusResult = await client
 			.from("v2_model_provider_routes")
-			.select("provider_model_id,provider_availability_status,phaseo_status,access_scope")
+			.select("provider_model_id,provider_availability_status,phaseo_status,access_scope,effective_from,effective_to,credential_mode")
 			.eq("model_slug", modelId);
 		const explicitStatusesByRoute = new Map(
 			(routeStatusResult.error ? [] : rows(routeStatusResult.data)).flatMap((route) => {
@@ -182,8 +190,9 @@ export async function fetchGatewayMetadataSource(env: Env, modelId: string): Pro
 					output_modalities: item.output_modalities,
 					context_length: item.context_length,
 					max_output_tokens: item.max_output_tokens,
-					effective_from: null,
-					effective_to: null,
+					effective_from: explicitStatuses?.effective_from ?? item.effective_from ?? null,
+					effective_to: explicitStatuses?.effective_to ?? item.effective_to ?? null,
+					credential_mode: explicitStatuses?.credential_mode === "byok_only" ? "byok_only" : "managed_and_byok",
 				};
 				if (!providerModels.has(key) || item.execution_region == null) providerModels.set(key, normalized);
 				caps.set(key, {
@@ -197,6 +206,22 @@ export async function fetchGatewayMetadataSource(env: Env, modelId: string): Pro
 			}
 		}
 		const uniqueProviders = [...new Map(providers.map((provider, index) => [id(provider.api_provider_id) ?? `provider-${index}`, provider])).values()];
+		const providerIds = uniqueProviders.map((provider) => id(provider.api_provider_id)).filter((value): value is string => value !== null);
+		if (providerIds.length > 0) {
+			const modes = await client.from("v2_providers").select("provider_slug,credential_mode").in("provider_slug", providerIds);
+			if (modes.error) throw modes.error;
+			const modeByProvider = new Map(rows(modes.data).map((row) => [id(row.provider_slug), row.credential_mode]));
+			const routeModes = new Map<string, string[]>();
+			for (const route of providerModels.values()) {
+				const providerId = id(route.provider_id);
+				if (providerId) routeModes.set(providerId, [...(routeModes.get(providerId) ?? []), route.credential_mode === "byok_only" ? "byok_only" : "managed_and_byok"]);
+			}
+			for (const provider of uniqueProviders) {
+				const providerId = id(provider.api_provider_id);
+				const modesForRoutes = providerId ? routeModes.get(providerId) ?? [] : [];
+				provider.credential_mode = modeByProvider.get(providerId) === "byok_only" || (modesForRoutes.length > 0 && modesForRoutes.every((mode) => mode === "byok_only")) ? "byok_only" : "managed_and_byok";
+			}
+		}
 		const aliasResult = await client.rpc("get_v2_model_aliases", { p_model_slug: modelId });
 		const aliases = !aliasResult.error
 			? rows(aliasResult.data).flatMap((alias) => id(alias.alias_slug) ? [{ api_model_id: modelId, alias_slug: id(alias.alias_slug)! }] : [])
@@ -285,6 +310,7 @@ export function composeGatewayMetadata(modelId: string, source: GatewayMetadataS
 				output_modalities: stringList(row.output_modalities).join(","),
 				max_input_tokens: cap.max_input_tokens ?? null,
 				max_output_tokens: cap.max_output_tokens ?? null,
+				credential_mode: row.credential_mode === "byok_only" ? "byok_only" : "managed_and_byok",
 				effective_from: row.effective_from ?? null,
 				effective_to: row.effective_to ?? null,
 				created_at: row.created_at ?? null,

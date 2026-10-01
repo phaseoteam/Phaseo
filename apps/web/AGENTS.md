@@ -8,7 +8,7 @@ These instructions apply only to `apps/web` and extend the repository-level `AGE
 - Routes, layouts, metadata, route handlers, and server actions live under `src/app`; route groups such as `(auth)` and `(dashboard)` organize routes without changing URLs.
 - Shared components live in `src/components`, with reusable primitives in `src/components/ui`. Shared hooks, domain logic, types, and utilities live in `src/hooks`, `src/lib`, `src/types`, and `src/utils`.
 - Keep feature-specific code close to its route or domain. Promote it to a shared directory only after it has a genuine second consumer.
-- Canonical model, provider, pricing, and benchmark data belongs to `packages/data/catalog`; do not create a competing web-only source of truth.
+- Canonical model, provider, pricing, and benchmark data lives in the database and is managed through `/internal/data`. Catalog JSON files are archived fixtures or generated exports, not an import feed. Public catalog corrections should link to GitHub issues; keep direct editing restricted to admins.
 - Use the `@/` alias and prefer direct implementation imports over new barrel files.
 
 ## Scoped Commands
@@ -43,7 +43,8 @@ Run the narrowest relevant checks while iterating. Run a production build when a
 - Start with existing `src/components/ui` primitives and the configured ShadCN registries before adding a primitive or dependency.
 - Use Tailwind utilities and established tokens; keep `src/app/globals.css` for tokens, resets, and truly global behavior.
 - Keep product copy concise. Add helper text only when it prevents a likely misunderstanding.
-- Prefer URL state for shareable filters, searches, tabs, and pagination, using existing `nuqs` patterns. Use SWR for client revalidation and request deduplication.
+- Prefer URL state for shareable filters, searches, tabs, and pagination, using existing `nuqs` patterns. Use TanStack Query for client revalidation and request deduplication.
+- Use `nuqs` for query-backed sheets and dialogs, with `shallow: true` and `scroll: false` for client-only state. Preserve the intended push/replace history behavior, deep-link hydration, Back/Forward synchronization, and unrelated query parameters. Do not use router navigation or hand-written History API updates for these controls; reserve route navigation for actual page changes and server-backed queries.
 - Keep transient state local, derive values during render where possible, and avoid effects that merely synchronize duplicate state.
 
 ## Web Testing and Safety

@@ -14,6 +14,7 @@ const ensureRuntimeForBackgroundMock = vi.fn();
 const dispatchBackgroundMock = vi.fn();
 const validateTextIRContractMock = vi.fn();
 const prepareServerToolsForTextRequestMock = vi.fn();
+const consumeTextProtocolStreamToIRMock = vi.fn();
 
 vi.mock("@protocols/detect", () => ({
 	detectTextProtocol: (...args: any[]) => detectTextProtocolMock(...args),
@@ -59,7 +60,8 @@ vi.mock("./server-tools", () => ({
 	attachServerToolUsageToRawUsage: vi.fn(),
 	buildSyntheticServerToolStream: vi.fn(),
 	buildServerToolContinuation: vi.fn(),
-	consumeTextProtocolStreamToIR: vi.fn(),
+	consumeTextProtocolStreamToIR: (...args: any[]) =>
+		consumeTextProtocolStreamToIRMock(...args),
 	mergeIRUsageTotals: vi.fn(),
 }));
 
@@ -306,10 +308,56 @@ describe("runTextGeneratePipeline response cache", () => {
 
 		expect(response.status).toBe(200);
 		expect(doRequestWithIRMock).toHaveBeenCalledTimes(1);
+		expect(doRequestWithIRMock.mock.calls[0]?.[1]).toMatchObject({ stream: true });
 		expect(finalizeRequestMock).toHaveBeenCalledTimes(1);
 		expect(args.pre.ctx.responseCache).toMatchObject({
 			enabled: true,
 			status: "miss",
+		});
+	});
+
+	it("materializes an internal provider stream for a buffered client", async () => {
+		getResponseCacheMock.mockReturnValue(null);
+		const providerStream = new ReadableStream<Uint8Array>({
+			start(controller) {
+				controller.close();
+			},
+		});
+		doRequestWithIRMock.mockResolvedValue({
+			result: {
+				kind: "stream",
+				stream: providerStream,
+				upstream: new Response(null, { status: 200 }),
+				provider: "openai",
+				generationTimeMs: 4,
+				bill: { cost_cents: 0, currency: "USD" },
+			},
+		});
+		consumeTextProtocolStreamToIRMock.mockResolvedValue({
+			ir: {
+				id: "ir_streamed",
+				model: "openai/gpt-5.4-nano",
+				choices: [{
+					index: 0,
+					message: { role: "assistant", content: [{ type: "text", text: "hello" }] },
+					finishReason: "stop",
+				}],
+			},
+			rawResponse: { id: "resp_streamed" },
+			usageRaw: { input_tokens: 1, output_tokens: 1 },
+		});
+		finalizeRequestMock.mockResolvedValue(
+			new Response(JSON.stringify({ id: "resp_streamed" }), { status: 200 }),
+		);
+
+		await runTextGeneratePipeline(createArgs());
+
+		expect(doRequestWithIRMock.mock.calls[0]?.[1]).toMatchObject({ stream: true });
+		expect(consumeTextProtocolStreamToIRMock).toHaveBeenCalledOnce();
+		expect(finalizeRequestMock.mock.calls[0]?.[0]?.exec?.result).toMatchObject({
+			kind: "completed",
+			stream: null,
+			ir: { id: "ir_streamed" },
 		});
 	});
 });

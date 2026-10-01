@@ -19,6 +19,17 @@ export const deepInfraQuirks: ProviderQuirks = {
 			}
 		}
 
+		// DeepInfra's OpenAI-compatible schema names video content parts
+		// `video_url`, while the gateway IR uses `input_video`.
+		if (Array.isArray(request.messages)) {
+			for (const message of request.messages) {
+				if (!Array.isArray(message?.content)) continue;
+				message.content = message.content.map((part: any) =>
+					part?.type === "input_video" ? { ...part, type: "video_url" } : part,
+				);
+			}
+		}
+
 		const reasoning = ir.reasoning;
 		if (!reasoning || request.reasoning_effort != null || request.reasoning != null) return;
 

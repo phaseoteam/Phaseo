@@ -19,6 +19,7 @@ const SCOPE_RESOURCES = {
 	presets: "presets",
 	settings: "settings",
 	provider_credentials: "providerCredentials",
+	private_models: "privateModels",
 	guardrails: "guardrails",
 	budgets: "budgets",
 	management_keys: "managementKeys",

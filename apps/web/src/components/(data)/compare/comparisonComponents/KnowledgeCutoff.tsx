@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import {
 	Card,
 	CardHeader,
@@ -19,17 +20,6 @@ function getMonthDiff(date1: Date, date2: Date) {
 	const years = date1.getFullYear() - date2.getFullYear();
 	const months = date1.getMonth() - date2.getMonth();
 	return years * 12 + months;
-}
-
-function formatDate(dateStr: string | null | undefined, locale: string) {
-	if (!dateStr) return "-";
-	const date = new Date(dateStr);
-	if (isNaN(date.getTime())) return "-";
-	return date.toLocaleDateString(locale, {
-		day: "2-digit",
-		month: "short",
-		year: "numeric",
-	});
 }
 
 function formatMonthSpan(months: number, locale: string): string {
@@ -71,6 +61,8 @@ export default function KnowledgeCutoffTimeline({
 }) {
 	const t = useTranslations("Catalogue.compare");
 	const locale = useLocale();
+	const format = useDisplayFormatters();
+	const formatDate = (value: string | null | undefined) => format.calendarDate(value);
 	const modelsWithCutoff = selectedModels.filter((m) => m.knowledge_cutoff);
 	if (modelsWithCutoff.length < 1) return null;
 
@@ -97,8 +89,8 @@ export default function KnowledgeCutoffTimeline({
 	);
 	const spanString = formatMonthSpan(spanMonths, locale);
 
-	const oldestDate = formatDate(oldest.knowledge_cutoff, locale);
-	const newestDate = formatDate(newest.knowledge_cutoff, locale);
+	const oldestDate = formatDate(oldest.knowledge_cutoff);
+	const newestDate = formatDate(newest.knowledge_cutoff);
 	const linkedModel = (model: ExtendedModel) => (chunks: React.ReactNode) => (
 		<Link href={`/models/${model.id}`} className="group">
 			<span className="relative underline decoration-transparent group-hover:decoration-current transition-colors duration-200 font-semibold">
@@ -189,7 +181,7 @@ export default function KnowledgeCutoffTimeline({
 														: "text-center"
 											}`}
 										>
-											{formatDate(model.knowledge_cutoff, locale)}
+											{formatDate(model.knowledge_cutoff)}
 										</span>
 									</div>
 								))}

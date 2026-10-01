@@ -1,4 +1,6 @@
-export type RequestOptions = {
+import { createTransport, requestTraceUrl, trackResponse, type RequestControls } from "./transport.js";
+
+export type RequestOptions = RequestControls & {
 	method: string;
 	path: string;
 	query?: Record<string, string | number | boolean | Array<string | number | boolean>>;
@@ -6,11 +8,19 @@ export type RequestOptions = {
 	body?: unknown;
 };
 
-export type ClientOptions = {
+export type ClientOptions = RequestControls & {
 	baseUrl: string;
 	headers?: Record<string, string>;
 	fetchImpl?: typeof fetch;
 	timeoutMs?: number;
+};
+
+export type RawResponse<T> = {
+	data: T;
+	status: number;
+	headers: Headers;
+	requestId?: string;
+	traceUrl?: string;
 };
 
 export class PhaseoHttpError extends Error {
@@ -18,6 +28,19 @@ export class PhaseoHttpError extends Error {
 	readonly statusText: string;
 	readonly body: unknown;
 	readonly headers: Record<string, string>;
+	get requestId(): string | undefined { return this.headers["x-request-id"] ?? this.headers["x-phaseo-request-id"]; }
+	get traceUrl(): string | undefined { return this.requestId ? requestTraceUrl(this.requestId) : undefined; }
+	get code(): string | undefined {
+		const body = this.body as { code?: unknown; error?: { code?: unknown } | string } | null;
+		const code = typeof body?.error === "string" ? body.error : body?.error?.code ?? body?.code;
+		return typeof code === "string" ? code : undefined;
+	}
+	get retryAfterMs(): number | undefined {
+		const value = this.headers["retry-after"];
+		if (!value) return undefined;
+		const ms = Number.isFinite(Number(value)) ? Number(value) * 1000 : Date.parse(value) - Date.now();
+		return Number.isFinite(ms) ? Math.max(0, ms) : undefined;
+	}
 
 	constructor(args: {
 		status: number;
@@ -34,7 +57,7 @@ export class PhaseoHttpError extends Error {
 		this.status = args.status;
 		this.statusText = args.statusText;
 		this.body = args.body;
-		this.headers = args.headers ?? {};
+		this.headers = Object.fromEntries(Object.entries(args.headers ?? {}).map(([key, value]) => [key.toLowerCase(), value]));
 	}
 }
 
@@ -42,7 +65,7 @@ export class Client {
 	private readonly baseUrl: string;
 	private readonly headers: Record<string, string>;
 	private readonly fetchImpl: typeof fetch;
-	private readonly timeoutMs: number;
+	private readonly controls: RequestControls;
 
 	constructor(options: ClientOptions) {
 		this.baseUrl = trimTrailingSlashes(options.baseUrl);
@@ -51,10 +74,14 @@ export class Client {
 		if (!this.fetchImpl) {
 			throw new Error("Global fetch is not available. Provide a fetch implementation.");
 		}
-		this.timeoutMs = options.timeoutMs ?? 60_000;
+		this.controls = options;
 	}
 
 	async request<T>(options: RequestOptions): Promise<T> {
+		return (await this.requestWithResponse<T>(options)).data;
+	}
+
+	async requestWithResponse<T>(options: RequestOptions): Promise<RawResponse<T>> {
 		const url = new URL(this.baseUrl + options.path);
 		if (options.query) {
 			for (const [key, value] of Object.entries(options.query)) {
@@ -66,38 +93,47 @@ export class Client {
 			}
 		}
 
-		const controller = new AbortController();
-		const timeout = setTimeout(() => controller.abort(), this.timeoutMs);
+		const scopedControls = Object.fromEntries(
+			Object.entries(options).filter(([, value]) => value !== undefined),
+		) as RequestControls;
+		const transport = createTransport(this.fetchImpl, { ...this.controls, ...scopedControls });
 		const { body, headers } = prepareBody(options.body);
-		try {
-			const response = await this.fetchImpl(url.toString(), {
-				method: options.method,
-				headers: {
-					Accept: "application/json",
-					...this.headers,
-					...(options.headers ?? {}),
-					...headers
-				},
-				body,
-				signal: controller.signal
+		const response = await transport(url.toString(), {
+			method: options.method,
+			headers: {
+				Accept: "application/json",
+				...this.headers,
+				...(options.headers ?? {}),
+				...headers
+			},
+			body,
+		});
+		const text = await response.text();
+		const parsedBody = parseResponseText(text);
+		if (!response.ok) {
+			throw new PhaseoHttpError({
+				status: response.status,
+				statusText: response.statusText,
+				body: parsedBody,
+				headers: Object.fromEntries(response.headers.entries())
 			});
-			const text = await response.text();
-			const parsedBody = parseResponseText(text);
-			if (!response.ok) {
-				throw new PhaseoHttpError({
-					status: response.status,
-					statusText: response.statusText,
-					body: parsedBody,
-					headers: Object.fromEntries(response.headers.entries())
-				});
-			}
-			if (!text) {
-				return undefined as T;
-			}
-			return parsedBody as T;
-		} finally {
-			clearTimeout(timeout);
 		}
+		let data: T;
+		if (response.headers.get("content-type")?.split(";")[0].trim().toLowerCase() === "application/x-ndjson") {
+			data = text as T;
+		} else if (!text) {
+			data = undefined as T;
+		} else {
+			data = trackResponse(parsedBody, response) as T;
+		}
+		const requestId = response.headers.get("x-request-id") ?? response.headers.get("x-phaseo-request-id") ?? undefined;
+		return {
+			data,
+			status: response.status,
+			headers: response.headers,
+			requestId,
+			traceUrl: requestId ? requestTraceUrl(requestId) : undefined,
+		};
 	}
 }
 
@@ -148,10 +184,6 @@ function prepareBody(value: unknown): { body?: BodyInit; headers: Record<string,
 		return { body: value, headers: {} };
 	}
 	if (value instanceof Uint8Array) {
-		const buffer = value.buffer;
-		if (buffer instanceof ArrayBuffer) {
-			return { body: buffer, headers: {} };
-		}
 		return { body: value.slice().buffer as ArrayBuffer, headers: {} };
 	}
 	if (typeof value === "string") {

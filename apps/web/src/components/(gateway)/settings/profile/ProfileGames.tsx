@@ -1,35 +1,27 @@
-import Link from "next/link";
-import { useLocale, useTranslations } from "next-intl";
+"use client";
+
+import { Link } from "@/i18n/navigation";
+import { useTranslations } from "next-intl";
 import { ArrowRight, Gamepad2, Trophy } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import type { ProfileGameSummary } from "@/lib/fetchers/profile/types";
 import { GAME_INFO, GAME_KEYS } from "@/lib/games/types";
-
-function formatLastPlayed(
-	value: string | null,
-	translate: (key: string) => string,
-	locale: string,
-): string {
-	if (!value) return translate("Not played yet");
-	return `${translate("Last played")} ${new Date(value).toLocaleDateString(locale, {
-		month: "short",
-		day: "numeric",
-		year: "numeric",
-	})}`;
-}
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 
 export function ProfileGames({ summary }: { summary: ProfileGameSummary | null }) {
+	const format = useDisplayFormatters();
 	const t = useTranslations("SettingsUI");
 	const gamesT = useTranslations("Product.games");
-	const locale = useLocale();
 	const s = (key: string) => t(`strings.${key}` as never);
+	const formatLastPlayed = (value: string | null) =>
+		value ? `${s("Last played")} ${format.date(value)}` : s("Not played yet");
 	const gameResults = new Map((summary?.games ?? []).map((game) => [game.game, game]));
 	const metrics = [
-		[s("Played"), summary?.totalPlayed ?? 0],
-		[s("Wins"), summary?.totalWins ?? 0],
-		[s("Streak"), `${summary?.currentStreak ?? 0}d`],
-		[s("Average Score"), `${summary?.averageScore ?? 0}%`],
+		[s("Played"), format.number(summary?.totalPlayed ?? 0)],
+		[s("Wins"), format.number(summary?.totalWins ?? 0)],
+		[s("Streak"), t("profileCopy.streakDays", { count: summary?.currentStreak ?? 0 })],
+		[s("Average Score"), format.number((summary?.averageScore ?? 0) / 100, { style: "percent" })],
 	] as const;
 
 	return (
@@ -75,20 +67,20 @@ export function ProfileGames({ summary }: { summary: ProfileGameSummary | null }
 										<ArrowRight className="size-3.5 text-muted-foreground transition-transform group-hover:translate-x-1" />
 									</div>
 									<p className="mt-1 text-sm text-muted-foreground">{gamesT(info.descriptionKey)}</p>
-										<p className="mt-1 text-xs text-muted-foreground">{formatLastPlayed(result?.lastPlayedAt ?? null, s, locale)}</p>
+										<p className="mt-1 text-xs text-muted-foreground">{formatLastPlayed(result?.lastPlayedAt ?? null)}</p>
 								</div>
 								<div className="grid grid-cols-3 gap-5 text-sm sm:min-w-64">
 									<div>
 										<div className="text-xs text-muted-foreground">{s("Played")}</div>
-										<div className="mt-1 font-semibold text-foreground">{result?.played ?? 0}</div>
+										<div className="mt-1 font-semibold text-foreground">{format.number(result?.played ?? 0)}</div>
 									</div>
 									<div>
 										<div className="flex items-center gap-1 text-xs text-muted-foreground"><Trophy className="size-3" />{s("Wins")}</div>
-										<div className="mt-1 font-semibold text-foreground">{result?.wins ?? 0}</div>
+										<div className="mt-1 font-semibold text-foreground">{format.number(result?.wins ?? 0)}</div>
 									</div>
 									<div>
 										<div className="text-xs text-muted-foreground">{s("Best Score")}</div>
-										<div className="mt-1 font-semibold text-foreground">{result?.bestScore ?? 0}%</div>
+										<div className="mt-1 font-semibold text-foreground">{format.number((result?.bestScore ?? 0) / 100, { style: "percent" })}</div>
 									</div>
 								</div>
 							</Link>

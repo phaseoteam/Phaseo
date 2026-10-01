@@ -9,6 +9,7 @@ import {
 import { buildMetadata } from "@/lib/seo";
 import { getTranslations } from "next-intl/server";
 import type { PublicLocale } from "@/i18n/routing";
+import { DisplayNumber } from "@/components/display/DisplayValue";
 
 type StaticContributor = {
 	name?: string;

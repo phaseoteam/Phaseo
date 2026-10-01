@@ -440,7 +440,10 @@
 				"aliasIdentifier": "Alias",
 				"showFullDescription": "Show full",
 				"showLessDescription": "Show less",
-				"viewOrganisation": "View {organisation}"
+				"viewOrganisation": "View {organisation}",
+				"decisions": "Decisions",
+				"openDecisions": "Open Decisions",
+				"openDecisionsPlayground": "Open Decisions playground"
 			},
 			"sections": {
 				"providersDescription": "API providers, route pricing, availability, and recent reliability signals.",
@@ -863,7 +866,11 @@
 						"label": "Retired",
 						"description": "This provider mapping is past its effective window."
 					}
-				}
+				},
+				"tierUltrafast": "Ultrafast",
+				"planDescriptionFlexOnly": "Used only when service_tier is flex.",
+				"planDescriptionFastRouting": "Fast routing when available.",
+				"planDescriptionUltrafast": "Highest-speed routing when available."
 			},
 			"seoTitles": {
 				"titleDefault": "{model} Pricing, Benchmarks & Providers",
@@ -886,7 +893,11 @@
 				"showLess": "Show less",
 				"showMore": "Show {count} more",
 				"noHighlights": "No benchmark highlights are available yet.",
-				"tableTitle": "Benchmark table"
+				"tableTitle": "Benchmark table",
+				"openSource": "Open source for {benchmark}",
+				"hideDetailsFor": "Hide details for {benchmark}",
+				"showDetailsFor": "Show details for {benchmark}",
+				"showAll": "Show all {count} benchmarks"
 			},
 			"faqContent": {
 				"title": "Frequently asked questions",
@@ -963,6 +974,11 @@
 				"countFooter": "{count, plural, one {# model in this family.} other {# models in this family.}}",
 				"close": "Close",
 				"genericFamily": "Model"
+			},
+			"privateModel": {
+				"endpoint": "Private endpoint",
+				"deployment": "Private deployment",
+				"billingNote": "Upstream billing is managed directly by the workspace."
 			}
 		},
 		"noModelsAvailableForView": "There are no models available for this view yet.",
@@ -1187,7 +1203,14 @@
 				"input_video_seconds": "Input video seconds",
 				"total_tokens": "Total tokens",
 				"requests": "Requests"
-			}
+			},
+			"organisationComingSoon": "{organisation} coming soon",
+			"announcedPricingDescription": "{model} has been announced by {organisation}. Provider availability and pricing will be added when it becomes available.",
+			"noProviderAvailability": "No API provider pricing or availability is available for this model yet.",
+			"thisModel": "This model",
+			"tokenOverviewDescription": "List prices are current provider rates. Effective prices are weighted by observed gateway traffic over the last 30 days. Summary values average time-windowed schedules; one-week history shows each UTC change.",
+			"unitOverviewDescription": "List prices use normalized units for comparison. Summary values average time-windowed schedules; one-week history shows each UTC change.",
+			"tierUnavailable": "{provider} {plan} price line unavailable in Effective view without observed usage"
 		},
 		"sections": {
 			"apiProvidersAndPricing": "API providers and pricing",
@@ -1400,18 +1423,23 @@
 			"suggestProviders": "If you know providers we should integrate, please tell us on Discord or open an issue on GitHub so we can add pricing data.",
 			"noSubscriptions": "No subscription plans listed yet",
 			"noSubscriptionPrice": "No pricing listed",
-			"noSubscriptionPricingDescription": "No subscription pricing is available for this model."
+			"noSubscriptionPricingDescription": "No subscription pricing is available for this model.",
+			"noHistoryTitle": "No pricing history available yet",
+			"submittedPrices": "Current submitted provider prices are shown in the provider table above."
 		},
 		"uptime": {
-			"title": "Model uptime",
+			"title": "Average uptime",
 			"last24Hours": "Last 24 hours",
 			"noRequests": "No requests observed",
 			"requestsObserved": "{count} requests observed",
 			"perHour": "Uptime per hour",
 			"chartLabel": "Hourly model uptime over the last {hours} hours. Uptime: {uptime}. Requests recorded: {count}.",
-			"leastStableProviderLabel": "Least stable provider",
+			"leastStableProviderLabel": "Without Phaseo Routing",
 			"tooltipUptime": "Uptime:",
-			"tooltipWorstProvider": "Least stable provider:"
+			"tooltipWorstProvider": "Without Phaseo Routing:",
+			"hourlyAverage": "Last 24 hours · hourly average",
+			"routingChartLabel": "Hourly model uptime over the last 24 hours. Phaseo Routing: {uptime}.{comparison}",
+			"routingComparison": " Without Phaseo Routing: {uptime}."
 		},
 		"providerInfo": {
 			"dataPolicy": "Data policy",
@@ -1534,7 +1562,9 @@
 			"relativeTime": "Relative time",
 			"elapsed": "elapsed",
 			"remaining": "remaining",
-			"totalDays": "{count, plural, one {# total day} other {# total days}}"
+			"totalDays": "{count, plural, one {# total day} other {# total days}}",
+			"modalityStructured": "Structured state",
+			"modalityDecisions": "Decisions"
 		},
 		"performance": {
 			"noTelemetry": "No gateway telemetry in the past 7 days",
@@ -1641,7 +1671,9 @@
 				"metricByHour": "{metric} by hour",
 				"noSamples": "No samples are available for this time range.",
 				"footer": "All times are in UTC. Values aggregate hourly medians from the selected reporting period."
-			}
+			},
+			"observationsShown": "{description} Showing {series}.",
+			"requestSuccess": "Request success"
 		}
 	},
 	"providers": {
@@ -1779,7 +1811,9 @@
 		"browseModels": "Browse models available through {name}.",
 		"missingTitle": "We don't know that API provider... yet!",
 		"missingDescription": "If we're missing an API provider, please contribute on GitHub.",
-		"contribute": "Contribute on GitHub"
+		"contribute": "Contribute on GitHub",
+		"internalPreview": "Internal provider preview",
+		"internalPreviewDescription": "This provider has authorized catalogue submissions but no public gateway analytics yet. Model submissions below are visible only to the provider workspace and Phaseo administrators."
 	},
 	"benchmarks": {
 		"title": "Benchmarks",
@@ -1843,7 +1877,44 @@
 		"tocProgress": "Progress",
 		"tocModelResults": "Model results",
 		"editBenchmark": "Edit benchmark",
-		"ranking": "Ranking"
+		"ranking": "Ranking",
+		"tocIndexComparisons": "Index comparisons",
+		"tocIndexLeaderboard": "Index leaderboard",
+		"independentEvaluations": "{metric} · Independent evaluations",
+		"noModelsMatchSearch": "No models match your search.",
+		"noBenchmarkResults": "No results are available for this benchmark yet.",
+		"directoryDescription": "Compare model capability across independent evaluations.",
+		"featuredAnalysis": "Featured Artificial Analysis benchmarks",
+		"featuredDescription": "Intelligence, coding, agents and evaluation cost",
+		"evaluatedModels": "{count} evaluated models",
+		"viewResults": "View results",
+		"allBenchmarks": "All benchmarks",
+		"sortBenchmarks": "Sort benchmarks",
+		"mostModels": "Most models",
+		"nameAlphabetically": "Name A–Z",
+		"modelCount": "{count} models",
+		"showMoreBenchmarks": "Show more benchmarks",
+		"showingCount": "Showing {shown} of {total}",
+		"metricDescriptions": {
+			"intelligence": "Overall model capability",
+			"coding": "Software engineering capability",
+			"agentic": "Multi-step task performance",
+			"cost": "Full Intelligence Index evaluation · USD"
+		},
+		"filteredEmpty": "No scores match these filters.",
+		"scoreProgress": "Score progress",
+		"releaseDateDescription": "Compare model scores by release date.",
+		"progressTimeRange": "Progress time range",
+		"filterByModel": "Filter progress by model",
+		"filterModels": "Filter models",
+		"filterByOrg": "Filter progress by organisation",
+		"allOrganisations": "All organisations",
+		"filterByConfig": "Filter progress by configuration",
+		"allConfigurations": "All configurations",
+		"paretoFrontier": "Pareto frontier",
+		"all": "All",
+		"nonReasoning": "Non-reasoning",
+		"confidenceInterval": "95% confidence interval: {low}–{high}"
 	},
 	"rankings": {
 		"title": "AI model rankings",
@@ -2053,7 +2124,29 @@
 			"transcription": "Transcription"
 		},
 		"shareLabel": "Share",
-		"tokensLabel": "Tokens"
+		"tokensLabel": "Tokens",
+		"unavailable": "This ranking is temporarily unavailable.",
+		"retrying": "Retrying…",
+		"tryAgain": "Try again",
+		"benchmarkRankings": "Benchmark rankings",
+		"independentEvaluations": "Independent evaluations by Artificial Analysis",
+		"benchmarkMetric": "Benchmark metric",
+		"lowerCostIsBetter": "Lower cost is better · USD",
+		"indexVersion": "Index v{versions}",
+		"searchRankedModels": "Search ranked models",
+		"searchModels": "Search models",
+		"noSearchMatches": "No models match your search.",
+		"noMetricResults": "No results available for this metric yet.",
+		"allEvaluationResults": "All results and evaluation details",
+		"resultCount": "{count} results",
+		"benchmarkMetrics": {
+			"intelligence": "Intelligence",
+			"coding": "Coding",
+			"agentic": "Agentic",
+			"cost": "Evaluation cost"
+		},
+		"audioTranscribed": "Audio transcribed",
+		"recentRequests": "{count} recent requests"
 	},
 	"compare": {
 		"title": "Compare models",
@@ -2315,7 +2408,7 @@
 		"modelsTab": "Models",
 		"visitPlatformPage": "Visit {name} on {platform}",
 		"unknownLabTitle": "We don’t know that lab yet.",
-		"unknownLabDescription": "If a lab is missing, please contribute on GitHub.",
+		"unknownLabDescription": "If a lab is missing, please open a data request.",
 		"contributeGitHub": "Contribute on GitHub",
 		"githubLogoAlt": "GitHub logo",
 		"editOrganisation": "Edit organisation",
@@ -2345,7 +2438,8 @@
 		"metadataModelsTitle": "AI models from {name}",
 		"metadataModelsDescription": "Explore the models from {name}, including Gateway availability, release status, and pricing.",
 		"keywordAiModels": "AI models",
-		"keywordAiGateway": "AI Gateway"
+		"keywordAiGateway": "AI Gateway",
+		"requestMissingData": "Request missing data"
 	},
 	"catalogNotFound": {
 		"modelHeading": "We couldn’t find the model “{id}”.",
@@ -2481,7 +2575,8 @@
 		"waitingForFirstToken": "Waiting for first token",
 		"measuredPace": "Measured pace",
 		"fastPace": "Fast pace",
-		"veryFastPace": "Very fast pace"
+		"veryFastPace": "Very fast pace",
+		"tokensPerSecond": "{count} tokens/s"
 	},
 	"monitor": {
 		"title": "Monitor",
@@ -2745,7 +2840,7 @@
 		"visitApp": "Visit app",
 		"active": "Active",
 		"inactive": "Inactive",
-		"lastSeen": "Last seen {date}",
+		"lastSeen": "Last seen <date></date>",
 		"totalRequests": "Total requests",
 		"allTimeSuccessfulRequests": "Successful requests over all time",
 		"totalTokens": "Total tokens",

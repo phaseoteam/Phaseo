@@ -12,7 +12,6 @@ function args(ir: Partial<IREmbeddingsRequest> = {}): ExecutorExecuteArgs {
 			model: "baai/bge-m3",
 			input: ["first", "second"],
 			encodingFormat: "float",
-			dimensions: 1024,
 			userId: "user-123",
 			providerOptions: { morpheus: { sessionId: "session-123" } },
 			...ir,
@@ -35,6 +34,14 @@ beforeAll(() => setupRuntimeFromEnv({ MORPHEUS_API_KEY: "morpheus-test-key" } as
 afterAll(() => teardownTestRuntime());
 
 describe("Morpheus current embeddings contract", () => {
+	it("rejects dimensions before making a provider request", async () => {
+		const mock = installFetchMock([]);
+		try {
+			const result = await executor(args({ dimensions: 1024 }));
+			expect(result.upstream.status).toBe(400);
+			expect(mock.calls).toHaveLength(0);
+		} finally { mock.restore(); }
+	});
 	it("preserves the documented session extension through public decode", () => {
 		const ir = decodeOpenAIEmbeddingsRequest({
 			model: "text-embedding-bge-m3",

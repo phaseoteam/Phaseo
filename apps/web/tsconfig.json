@@ -33,7 +33,8 @@
         "./src/app/[locale]/(auth)/*"
       ],
       "@/app/(dashboard)/*": [
-        "./src/app/[locale]/(dashboard)/*"
+        "./src/app/[locale]/(dashboard)/*",
+        "./src/app/(dashboard)/*"
       ],
       "@/app/(legal)/*": [
         "./src/app/[locale]/(legal)/*"

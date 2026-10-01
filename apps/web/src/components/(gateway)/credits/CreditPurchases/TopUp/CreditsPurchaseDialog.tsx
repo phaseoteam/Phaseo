@@ -29,6 +29,8 @@ import { COUNTRY_OPTIONS } from "@/lib/countryCodes";
 import { PurchaseLocationStep, type LocationPreview } from "./PurchaseLocationStep";
 import { cn } from "@/lib/utils";
 import { formatCardBrand } from "./cardBrand";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
+import { SensitiveValue } from "@/components/display/SensitiveValue";
 
 /* Helpers */
 const formatUSD = (v: number, locale: string) =>
@@ -135,6 +137,8 @@ export default function CreditsPurchaseDialog({
 		}
 		return message;
 	};
+	const format = useDisplayFormatters();
+	const formatUSD = (value: number, _locale?: string) => format.number(value, { style: "currency", currency: "USD", notation: "standard" });
 	const router = useRouter();
 	const searchParams = useSearchParams();
 	const shouldReduceMotion = useReducedMotion();
@@ -642,12 +646,12 @@ export default function CreditsPurchaseDialog({
 										setRawAmount(formatInputAmount(v, locale));
 									}}
 								>
-										{new Intl.NumberFormat(locale, {
-											style: "currency",
-											currency: "USD",
-											currencyDisplay: "narrowSymbol",
-											maximumFractionDigits: 0,
-										}).format(v)}
+									{format.number(v, {
+										style: "currency",
+										currency: "USD",
+										maximumFractionDigits: 0,
+										notation: "standard",
+									})}
 								</Button>
 							))}
 						</div>
@@ -796,7 +800,7 @@ export default function CreditsPurchaseDialog({
 										return (
 											<>
 												{text("payWithSavedCard", { brand })}{" "}
-												<span data-pii="true">****{last4}</span>
+												<SensitiveValue inline label={t("strings.Card number" as never)}>****{last4}</SensitiveValue>
 											</>
 										);
 									})()

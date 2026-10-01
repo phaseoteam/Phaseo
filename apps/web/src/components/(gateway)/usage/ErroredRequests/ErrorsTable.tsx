@@ -2,6 +2,7 @@
 
 import React from "react";
 import { useTranslations } from "next-intl";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import {
 	Table,
 	TableBody,
@@ -27,14 +28,6 @@ export type ErrorRow = {
 	cost_nanos?: number | null;
 };
 
-function niceDate(iso: string) {
-	try {
-		return new Date(iso).toLocaleString();
-	} catch {
-		return iso;
-	}
-}
-
 export default function ErrorsTable({
 	rows,
 	onSelect,
@@ -43,6 +36,7 @@ export default function ErrorsTable({
 	onSelect: (row: ErrorRow) => void;
 }) {
 	const t = useTranslations("SettingsUI");
+	const format = useDisplayFormatters();
 	return (
 		<div className="overflow-auto">
 			<Table>
@@ -60,7 +54,7 @@ export default function ErrorsTable({
 						return (
 						<TableRow key={idx} className="h-8">
 							<TableCell className="py-1 align-middle">
-								{niceDate(r.created_at)}
+								{format.dateTime(r.created_at)}
 							</TableCell>
 							<TableCell className="py-1 align-middle">
 								<div className="space-y-1">

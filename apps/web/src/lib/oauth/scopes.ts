@@ -56,6 +56,9 @@ export const OAUTH_SCOPE_OPTIONS: OAuthScopeOption[] = [
 	{ value: "budgets:delete", group: "Delete" },
 	{ value: "management_keys:delete", group: "Delete" },
 	{ value: "oauth_clients:delete", group: "Delete" },
+	{ value: "private_models:read", group: "Read" },
+	{ value: "private_models:write", group: "Write" },
+	{ value: "private_models:delete", group: "Delete" },
 ];
 
 export function normalizeOAuthScopes(value: unknown): string[] {

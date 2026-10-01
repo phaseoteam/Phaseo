@@ -8,6 +8,8 @@ description: "Browse gateway-native models through Phaseo Gateway, including opt
 
 By default, this endpoint only returns models that are currently routable. Set `availability=all` to include models that are known but not currently available.
 
+Catalogue responses are cached for five minutes and may be served for another five minutes while the cache revalidates. This applies to the JSON, RSS, and Atom representations of the current catalogue; the release feed has its own shorter polling cache.
+
 `GET /models/me` is reserved for future guardrail-aware filtering of models for the current caller. It currently returns `501 not implemented`, so use `GET /models` for the shared gateway catalogue today.
 
 ## Useful filters

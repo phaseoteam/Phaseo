@@ -16,7 +16,7 @@ import { aiderAdapter } from "../src/integrations/adapters/aider.js";
 import { continueAdapter } from "../src/integrations/adapters/continue.js";
 import { zedAdapter } from "../src/integrations/adapters/zed.js";
 import { applyChanges } from "../src/integrations/files.js";
-import { isPrimarySetupName, runIntegrationCommand } from "../src/integrations/index.js";
+import { isIntegrationSetupName, isPrimarySetupName, runIntegrationCommand } from "../src/integrations/index.js";
 import { getIntegrationGatewayCredential, getLegacyIntegrationGatewayCredential, revokeIntegrationGatewayCredential } from "../src/integrations/credential.js";
 import { readSession, writeSession } from "../src/session.js";
 import { fetchIntegrationModels, toIntegrationModel } from "../src/integrations/catalog.js";
@@ -605,11 +605,15 @@ test("integration commands reject unexpected positional arguments", async () => 
 	);
 });
 
-test("one-command setup is limited to the primary harnesses", async () => {
+test("one-command setup accepts every persistent integration and keeps runner names explicit", async () => {
 	assert.equal(isPrimarySetupName("claude"), true);
 	assert.equal(isPrimarySetupName("dsh"), true);
 	assert.equal(isPrimarySetupName("openclaw"), true);
 	assert.equal(isPrimarySetupName("aider"), false);
+	assert.equal(isIntegrationSetupName("aider"), true);
+	assert.equal(isIntegrationSetupName("continue"), true);
+	assert.equal(isIntegrationSetupName("zed"), true);
+	assert.equal(isIntegrationSetupName("not-an-integration"), false);
 	await assert.rejects(
 		runIntegrationCommand(["setup", "aider"], { "dry-run": true }, { primaryOnly: true }),
 		/Phaseo direct setup currently supports codex, claude-code, hermes, opencode, pi, prime-agent, deepseek-harness, and openclaw/,

@@ -233,21 +233,25 @@ function buildSummary(apiModelId: string, rows: PricingRuleRow[]): CatalogPricin
     return summary;
 }
 
-async function fetchPricingRuleRows(): Promise<PricingRuleRow[]> {
+async function fetchPricingRuleRows(signal?: AbortSignal): Promise<PricingRuleRow[]> {
 	return (await fetchPublicWebApi<{ rules: PricingRuleRow[] }>(
 		"/api/_web/models/catalog-pricing-rules",
+		{ signal },
 	)).rules;
 }
 
-export async function getCatalogPricingSummariesCached(): Promise<
-    CatalogPricingSummaryByModelId
+export async function getCatalogPricingSummariesCached(
+	signal?: AbortSignal,
+): Promise<
+	CatalogPricingSummaryByModelId
 > {
-    let rows: PricingRuleRow[];
-    try {
-        rows = await fetchPricingRuleRows();
-    } catch {
-        return {};
-    }
+	let rows: PricingRuleRow[];
+	try {
+		rows = await fetchPricingRuleRows(signal);
+	} catch (error) {
+		if (error instanceof Error && error.name === "AbortError") throw error;
+		return {};
+	}
 
     const nowMs = Date.now();
     const rowsByApiModelId = new Map<string, PricingRuleRow[]>();

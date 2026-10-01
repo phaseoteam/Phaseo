@@ -30,20 +30,28 @@ export const xiaomiQuirks: ProviderQuirks = {
 			}
 		}
 
-		// Xiaomi uses a nested parameter format: chat_template_kwargs.enable_thinking
-		// Set explicitly for both enabled and disabled reasoning to avoid upstream defaults.
+		// Xiaomi's native Responses API uses OpenAI's reasoning.effort shape,
+		// while its Chat Completions API uses chat_template_kwargs.
 		const reasoning = ir.reasoning;
 		const reasoningEnabled =
 			reasoning?.enabled ??
 			(typeof reasoning?.effort === "string" ? reasoning.effort !== "none" : undefined);
 
 		if (typeof reasoningEnabled === "boolean") {
-			request.chat_template_kwargs = {
-				...(request.chat_template_kwargs && typeof request.chat_template_kwargs === "object"
-					? request.chat_template_kwargs
-					: {}),
-				enable_thinking: reasoningEnabled,
-			};
+			if ("input" in request) {
+				request.reasoning = {
+					effort: typeof reasoning?.effort === "string"
+						? reasoning.effort
+						: reasoningEnabled ? "medium" : "none",
+				};
+			} else {
+				request.chat_template_kwargs = {
+					...(request.chat_template_kwargs && typeof request.chat_template_kwargs === "object"
+						? request.chat_template_kwargs
+						: {}),
+					enable_thinking: reasoningEnabled,
+				};
+			}
 		}
 	},
 
@@ -121,5 +129,4 @@ export const xiaomiQuirks: ProviderQuirks = {
 		}
 	},
 };
-
 

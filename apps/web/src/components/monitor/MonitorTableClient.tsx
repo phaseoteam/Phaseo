@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import {
 	MonitorDataTable,
+	type ModelTablePreferences,
 	type ModelData,
 } from "@/components/monitor/MonitorDataTable";
 import { type MonitorModelTableRow } from "@/lib/fetchers/models/table-view/types";
@@ -11,6 +12,7 @@ interface MonitorTableClientProps {
 	initialModelData: MonitorModelTableRow[];
 	effectiveStatuses?: string[];
 	stickyHeaderOffset?: number;
+	modelTablePreferences?: ModelTablePreferences;
 }
 
 function formatModelDisplayName(
@@ -29,6 +31,7 @@ export function MonitorTableClient({
 	initialModelData,
 	effectiveStatuses,
 	stickyHeaderOffset,
+	modelTablePreferences,
 }: MonitorTableClientProps) {
 	// Convert MonitorModelData to ModelData format for the table
 	const modelData = useMemo<ModelData[]>(
@@ -63,6 +66,7 @@ export function MonitorTableClient({
 			loading={false}
 			effectiveStatuses={effectiveStatuses}
 			stickyHeaderOffset={stickyHeaderOffset}
+			modelTablePreferences={modelTablePreferences}
 		/>
 	);
 }

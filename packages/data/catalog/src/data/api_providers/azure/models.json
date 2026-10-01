@@ -1,5 +1,91 @@
 [
   {
+    "api_model_id": "openai/gpt-6-astra",
+    "provider_api_model_id": "azure:openai/gpt-6-astra",
+    "provider_model_slug": "gpt-6-astra",
+    "internal_model_id": "openai/gpt-6-astra",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": 1050000,
+    "max_output_tokens": 128000,
+    "effective_from": "2026-09-03T00:00:00Z",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": ["max_tokens", "reasoning", "reasoning_effort", "response_format", "structured_outputs", "tools", "tool_choice", "stream"],
+        "reasoning": true,
+        "tool_call": true,
+        "structured_output": true,
+        "temperature": false,
+        "attachment": true,
+        "input_modalities": ["text", "image"],
+        "output_modalities": ["text"],
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "provider_status": "available",
+    "phaseo_status": "planned",
+    "access_scope": "public",
+    "regions": { "execution": ["global"], "data": null },
+    "service_tiers": [],
+    "api": { "formats": ["openai"], "endpoint": "/openai/v1", "deployment": "gpt-6-astra" },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://learn.microsoft.com/en-us/azure/foundry/foundry-models/concepts/models-sold-directly-by-azure",
+        "accessed_at": "2026-09-05T00:00:00Z",
+        "notes": "Microsoft documents GPT-6 Astra version 2026-09-03 through the Foundry Limited Access Program. Availability depends on deployment type, Azure geography, subscription, quota, and rollout access."
+      },
+      {
+        "kind": "provider_announcement",
+        "url": "https://azure.microsoft.com/en-us/blog/gpt-6-astra-frontier-intelligence-for-work-now-available-in-microsoft-foundry/",
+        "accessed_at": "2026-09-05T00:00:00Z",
+        "notes": "Microsoft announces GPT-6 Astra as available through a limited-access rollout in Microsoft Foundry."
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-09-05T00:00:00Z",
+      "notes": "Azure availability is verified. Phaseo routing remains disabled because Azure deployments require resource-specific configuration and Astra is not yet implemented on the gateway."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "anthropic/claude-fable-5.1",
+    "provider_api_model_id": "azure:anthropic/claude-fable-5.1",
+    "provider_model_slug": "claude-fable-5-1",
+    "internal_model_id": "anthropic/claude-fable-5.1",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": 1000000,
+    "max_output_tokens": 128000,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [{ "capability_id": "text.generate", "status": "active", "params": ["max_tokens", "stop", "reasoning", "include_reasoning", "tool_choice", "tools", "reasoning_effort"], "reasoning": true, "tool_call": true, "structured_output": null, "temperature": null, "attachment": true, "input_modalities": ["text", "image"], "output_modalities": ["text"], "modes": [] }],
+    "routing_status": "active",
+    "routable": false,
+    "regions": { "execution": ["global"], "data": null },
+    "provider_status": "available",
+    "phaseo_status": "planned",
+    "access_scope": "public",
+    "service_tiers": [],
+    "api": { "formats": [], "endpoint": null, "deployment": "claude-fable-5-1" },
+    "sources": [
+      { "kind": "docs", "url": "https://platform.claude.com/docs/en/models/fable-5-1/migration-guide", "accessed_at": "2026-09-01T00:00:00Z", "notes": "Anthropic confirms Microsoft Foundry availability and the 1M context / 128K output limits." },
+      { "kind": "models", "url": "https://learn.microsoft.com/en-us/azure/foundry/foundry-models/concepts/claude-models", "accessed_at": "2026-09-01T00:00:00Z", "notes": "Official Microsoft Foundry Claude model catalogue; Fable models use Anthropic-hosted partner deployments." }
+    ],
+    "verification": { "status": "partial", "checked_at": "2026-09-01T00:00:00Z", "notes": "Microsoft Foundry availability is verified by Anthropic. The Fable 5.1 deployment slug, lifecycle, regions, quota, and pricing remain pending Microsoft-specific verification, so routing is disabled." },
+    "rate_limits": []
+  },
+  {
     "api_model_id": "microsoft/mai-image-2",
     "provider_api_model_id": "azure:microsoft/mai-image-2",
     "provider_model_slug": "mai-image-2",
@@ -414,7 +500,7 @@
     "provider_api_model_id": "azure:openai/gpt-5-nano",
     "provider_model_slug": "gpt-5-nano",
     "internal_model_id": "openai/gpt-5-nano",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text,image",
     "output_modalities": "text",
@@ -425,25 +511,35 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "disabled",
+        "status": "active",
         "params": [],
         "reasoning": null,
         "tool_call": null,
         "structured_output": null,
         "temperature": null,
         "attachment": null,
-        "input_modalities": null,
-        "output_modalities": null,
+        "input_modalities": [
+          "text"
+        ],
+        "output_modalities": [
+          "text"
+        ],
         "modes": []
       }
     ],
-    "routing_status": "disabled",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
-      "execution": null,
-      "data": null
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "US"
+      ]
     },
-    "service_tiers": [],
+    "service_tiers": [
+      "standard"
+    ],
     "api": {
       "formats": [
         "openai"
@@ -468,7 +564,7 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-23T23:20:00Z",
-      "notes": "Verified against Microsoft Learn. Route remains disabled because Azure deployments use customer-chosen deployment names and require resource-specific configuration."
+      "notes": "Existing deployment verified in Foundry on 2026-09-07: Succeeded, Global Standard, deployment name matches provider slug. Resource is eastus2; processing is global. Local gateway resource configuration verified with a successful GPT-4.1 Nano smoke request. Other model contracts have deterministic coverage; rates use Microsoft retail pricing."
     },
     "rate_limits": []
   },
@@ -477,7 +573,7 @@
     "provider_api_model_id": "azure:openai/gpt-oss-120b",
     "provider_model_slug": "gpt-oss-120b",
     "internal_model_id": "openai/gpt-oss-120b",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "text",
@@ -488,25 +584,35 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "disabled",
+        "status": "active",
         "params": [],
         "reasoning": null,
         "tool_call": null,
         "structured_output": null,
         "temperature": null,
         "attachment": null,
-        "input_modalities": null,
-        "output_modalities": null,
+        "input_modalities": [
+          "text"
+        ],
+        "output_modalities": [
+          "text"
+        ],
         "modes": []
       }
     ],
-    "routing_status": "disabled",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
-      "execution": null,
-      "data": null
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "US"
+      ]
     },
-    "service_tiers": [],
+    "service_tiers": [
+      "standard"
+    ],
     "api": {
       "formats": [
         "openai"
@@ -531,7 +637,7 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-23T23:20:00Z",
-      "notes": "Verified against Microsoft Learn. Route remains disabled because Azure deployments use customer-chosen deployment names and require resource-specific configuration."
+      "notes": "Existing deployment verified in Foundry on 2026-09-07: Succeeded, Global Standard, deployment name matches provider slug. Resource is eastus2; processing is global. Local gateway resource configuration verified with a successful GPT-4.1 Nano smoke request. Other model contracts have deterministic coverage; rates use Microsoft retail pricing."
     },
     "rate_limits": []
   },
@@ -673,10 +779,10 @@
     "provider_api_model_id": "azure:openai/gpt-5.6-luna",
     "provider_model_slug": "gpt-5.6-luna",
     "internal_model_id": "openai/gpt-5.6-luna",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
     "context_length": 1050000,
     "max_output_tokens": 128000,
     "effective_from": "2026-07-09T00:00:00Z",
@@ -684,25 +790,35 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "disabled",
+        "status": "active",
         "params": [],
         "reasoning": null,
         "tool_call": null,
         "structured_output": null,
         "temperature": null,
         "attachment": null,
-        "input_modalities": null,
-        "output_modalities": null,
+        "input_modalities": [
+          "text"
+        ],
+        "output_modalities": [
+          "text"
+        ],
         "modes": []
       }
     ],
-    "routing_status": "disabled",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
-      "execution": null,
-      "data": null
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "US"
+      ]
     },
-    "service_tiers": [],
+    "service_tiers": [
+      "standard"
+    ],
     "api": {
       "formats": [
         "openai"
@@ -727,7 +843,7 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-23T23:20:00Z",
-      "notes": "Verified against Microsoft Learn. Route remains disabled because Azure deployments use customer-chosen deployment names and require resource-specific configuration."
+      "notes": "Existing deployment verified in Foundry on 2026-09-07: Succeeded, Global Standard, deployment name matches provider slug. Resource is eastus2; processing is global. Local gateway resource configuration verified with a successful GPT-4.1 Nano smoke request. Other model contracts have deterministic coverage; rates use Microsoft retail pricing."
     },
     "rate_limits": []
   },
@@ -801,10 +917,10 @@
     "provider_api_model_id": "azure:openai/gpt-5.6-terra",
     "provider_model_slug": "gpt-5.6-terra",
     "internal_model_id": "openai/gpt-5.6-terra",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
     "context_length": 1050000,
     "max_output_tokens": 128000,
     "effective_from": "2026-07-09T00:00:00Z",
@@ -812,25 +928,35 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "disabled",
+        "status": "active",
         "params": [],
         "reasoning": null,
         "tool_call": null,
         "structured_output": null,
         "temperature": null,
         "attachment": null,
-        "input_modalities": null,
-        "output_modalities": null,
+        "input_modalities": [
+          "text"
+        ],
+        "output_modalities": [
+          "text"
+        ],
         "modes": []
       }
     ],
-    "routing_status": "disabled",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
-      "execution": null,
-      "data": null
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "US"
+      ]
     },
-    "service_tiers": [],
+    "service_tiers": [
+      "standard"
+    ],
     "api": {
       "formats": [
         "openai"
@@ -855,7 +981,7 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-23T23:20:00Z",
-      "notes": "Verified against Microsoft Learn. Route remains disabled because Azure deployments use customer-chosen deployment names and require resource-specific configuration."
+      "notes": "Existing deployment verified in Foundry on 2026-09-07: Succeeded, Global Standard, deployment name matches provider slug. Resource is eastus2; processing is global. Local gateway resource configuration verified with a successful GPT-4.1 Nano smoke request. Other model contracts have deterministic coverage; rates use Microsoft retail pricing."
     },
     "rate_limits": []
   },
@@ -929,10 +1055,10 @@
     "provider_api_model_id": "azure:openai/gpt-5.6-sol",
     "provider_model_slug": "gpt-5.6-sol",
     "internal_model_id": "openai/gpt-5.6-sol",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
     "context_length": 1050000,
     "max_output_tokens": 128000,
     "effective_from": "2026-07-09T00:00:00Z",
@@ -940,25 +1066,35 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "disabled",
+        "status": "active",
         "params": [],
         "reasoning": null,
         "tool_call": null,
         "structured_output": null,
         "temperature": null,
         "attachment": null,
-        "input_modalities": null,
-        "output_modalities": null,
+        "input_modalities": [
+          "text"
+        ],
+        "output_modalities": [
+          "text"
+        ],
         "modes": []
       }
     ],
-    "routing_status": "disabled",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
-      "execution": null,
-      "data": null
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "US"
+      ]
     },
-    "service_tiers": [],
+    "service_tiers": [
+      "standard"
+    ],
     "api": {
       "formats": [
         "openai"
@@ -983,7 +1119,7 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-23T23:20:00Z",
-      "notes": "Verified against Microsoft Learn. Route remains disabled because Azure deployments use customer-chosen deployment names and require resource-specific configuration."
+      "notes": "Existing deployment verified in Foundry on 2026-09-07: Succeeded, Global Standard, deployment name matches provider slug. Resource is eastus2; processing is global. Local gateway resource configuration verified with a successful GPT-4.1 Nano smoke request. Other model contracts have deterministic coverage; rates use Microsoft retail pricing."
     },
     "rate_limits": []
   },
@@ -1320,7 +1456,7 @@
     "provider_api_model_id": "azure:openai/gpt-5.4-nano",
     "provider_model_slug": "gpt-5.4-nano",
     "internal_model_id": "openai/gpt-5.4-nano",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text,image",
     "output_modalities": "text",
@@ -1331,25 +1467,35 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "disabled",
+        "status": "active",
         "params": [],
         "reasoning": null,
         "tool_call": null,
         "structured_output": null,
         "temperature": null,
         "attachment": null,
-        "input_modalities": null,
-        "output_modalities": null,
+        "input_modalities": [
+          "text"
+        ],
+        "output_modalities": [
+          "text"
+        ],
         "modes": []
       }
     ],
-    "routing_status": "disabled",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
-      "execution": null,
-      "data": null
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "US"
+      ]
     },
-    "service_tiers": [],
+    "service_tiers": [
+      "standard"
+    ],
     "api": {
       "formats": [
         "openai"
@@ -1374,7 +1520,7 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-23T23:20:00Z",
-      "notes": "Verified against Microsoft Learn. Route remains disabled because Azure deployments use customer-chosen deployment names and require resource-specific configuration."
+      "notes": "Existing deployment verified in Foundry on 2026-09-07: Succeeded, Global Standard, deployment name matches provider slug. Resource is eastus2; processing is global. Local gateway resource configuration verified with a successful GPT-4.1 Nano smoke request. Other model contracts have deterministic coverage; rates use Microsoft retail pricing."
     },
     "rate_limits": []
   },
@@ -1383,7 +1529,7 @@
     "provider_api_model_id": "azure:openai/gpt-5.4-mini",
     "provider_model_slug": "gpt-5.4-mini",
     "internal_model_id": "openai/gpt-5.4-mini",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text,image",
     "output_modalities": "text",
@@ -1394,25 +1540,35 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "disabled",
+        "status": "active",
         "params": [],
         "reasoning": null,
         "tool_call": null,
         "structured_output": null,
         "temperature": null,
         "attachment": null,
-        "input_modalities": null,
-        "output_modalities": null,
+        "input_modalities": [
+          "text"
+        ],
+        "output_modalities": [
+          "text"
+        ],
         "modes": []
       }
     ],
-    "routing_status": "disabled",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
-      "execution": null,
-      "data": null
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "US"
+      ]
     },
-    "service_tiers": [],
+    "service_tiers": [
+      "standard"
+    ],
     "api": {
       "formats": [
         "openai"
@@ -1437,7 +1593,7 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-23T23:20:00Z",
-      "notes": "Verified against Microsoft Learn. Route remains disabled because Azure deployments use customer-chosen deployment names and require resource-specific configuration."
+      "notes": "Existing deployment verified in Foundry on 2026-09-07: Succeeded, Global Standard, deployment name matches provider slug. Resource is eastus2; processing is global. Local gateway resource configuration verified with a successful GPT-4.1 Nano smoke request. Other model contracts have deterministic coverage; rates use Microsoft retail pricing."
     },
     "rate_limits": []
   },
@@ -2516,7 +2672,7 @@
     "provider_api_model_id": "azure:openai/gpt-4.1",
     "provider_model_slug": "gpt-4.1",
     "internal_model_id": "openai/gpt-4.1",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "image,text",
     "output_modalities": "text",
@@ -2527,25 +2683,35 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "disabled",
+        "status": "active",
         "params": [],
         "reasoning": null,
         "tool_call": null,
         "structured_output": null,
         "temperature": null,
         "attachment": null,
-        "input_modalities": null,
-        "output_modalities": null,
+        "input_modalities": [
+          "text"
+        ],
+        "output_modalities": [
+          "text"
+        ],
         "modes": []
       }
     ],
-    "routing_status": "disabled",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
-      "execution": null,
-      "data": null
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "US"
+      ]
     },
-    "service_tiers": [],
+    "service_tiers": [
+      "standard"
+    ],
     "api": {
       "formats": [
         "openai"
@@ -2570,7 +2736,7 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-23T23:20:00Z",
-      "notes": "Verified against Microsoft Learn. Route remains disabled because Azure deployments use customer-chosen deployment names and require resource-specific configuration."
+      "notes": "Existing deployment verified in Foundry on 2026-09-07: Succeeded, Global Standard, deployment name matches provider slug. Resource is eastus2; processing is global. Local gateway resource configuration verified with a successful GPT-4.1 Nano smoke request. Other model contracts have deterministic coverage; rates use Microsoft retail pricing."
     },
     "rate_limits": []
   },
@@ -2579,7 +2745,7 @@
     "provider_api_model_id": "azure:openai/gpt-4.1-mini",
     "provider_model_slug": "gpt-4.1-mini",
     "internal_model_id": "openai/gpt-4.1-mini",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "image,text",
     "output_modalities": "text",
@@ -2590,25 +2756,35 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "disabled",
+        "status": "active",
         "params": [],
         "reasoning": null,
         "tool_call": null,
         "structured_output": null,
         "temperature": null,
         "attachment": null,
-        "input_modalities": null,
-        "output_modalities": null,
+        "input_modalities": [
+          "text"
+        ],
+        "output_modalities": [
+          "text"
+        ],
         "modes": []
       }
     ],
-    "routing_status": "disabled",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
-      "execution": null,
-      "data": null
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "US"
+      ]
     },
-    "service_tiers": [],
+    "service_tiers": [
+      "standard"
+    ],
     "api": {
       "formats": [
         "openai"
@@ -2633,7 +2809,7 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-23T23:20:00Z",
-      "notes": "Verified against Microsoft Learn. Route remains disabled because Azure deployments use customer-chosen deployment names and require resource-specific configuration."
+      "notes": "Existing deployment verified in Foundry on 2026-09-07: Succeeded, Global Standard, deployment name matches provider slug. Resource is eastus2; processing is global. Local gateway resource configuration verified with a successful GPT-4.1 Nano smoke request. Other model contracts have deterministic coverage; rates use Microsoft retail pricing."
     },
     "rate_limits": []
   },
@@ -2642,7 +2818,7 @@
     "provider_api_model_id": "azure:openai/gpt-4.1-nano",
     "provider_model_slug": "gpt-4.1-nano",
     "internal_model_id": "openai/gpt-4.1-nano",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "image,text",
     "output_modalities": "text",
@@ -2653,25 +2829,35 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "disabled",
+        "status": "active",
         "params": [],
         "reasoning": null,
         "tool_call": null,
         "structured_output": null,
         "temperature": null,
         "attachment": null,
-        "input_modalities": null,
-        "output_modalities": null,
+        "input_modalities": [
+          "text"
+        ],
+        "output_modalities": [
+          "text"
+        ],
         "modes": []
       }
     ],
-    "routing_status": "disabled",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
-      "execution": null,
-      "data": null
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "US"
+      ]
     },
-    "service_tiers": [],
+    "service_tiers": [
+      "standard"
+    ],
     "api": {
       "formats": [
         "openai"
@@ -2696,7 +2882,7 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-23T23:20:00Z",
-      "notes": "Verified against Microsoft Learn. Route remains disabled because Azure deployments use customer-chosen deployment names and require resource-specific configuration."
+      "notes": "Existing deployment verified in Foundry on 2026-09-07: Succeeded, Global Standard, deployment name matches provider slug. Resource is eastus2; processing is global. Local gateway resource configuration verified with a successful GPT-4.1 Nano smoke request. Other model contracts have deterministic coverage; rates use Microsoft retail pricing."
     },
     "rate_limits": []
   },

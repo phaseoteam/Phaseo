@@ -2,6 +2,7 @@
   "organisation_id": "moonshotai",
   "name": "Moonshot",
   "country_code": "CN",
+  "subdivision_code": "CN-BJ",
   "description": "Moonshot AI is an AI company with its address in Beijing, China. Their mission is to pursue ambitious and frontier model/agent development, creating advanced systems that deliver new kinds of intelligence and application.",
   "colour": "#333333",
   "organisation_links": [

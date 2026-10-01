@@ -24,7 +24,6 @@ const providers = [
   { id: "clarifai", name: "Clarifai", prefix: "/v2/ext/openai/v1", docs: "https://docs.clarifai.com/compute/inference/open-ai/", responses: true },
   { id: "cloudflare", name: "Cloudflare AI Gateway", prefix: "", docs: "https://developers.cloudflare.com/ai-gateway/usage/providers/openai-compatible/" },
   { id: "cohere", name: "Cohere", prefix: "/compatibility/v1", docs: "https://docs.cohere.com/docs/compatibility-api" },
-  { id: "crofai", name: "CrofAI", prefix: "/v1", docs: "https://crof.ai/home" },
   { id: "crusoe", name: "Crusoe Cloud", prefix: "/v1", docs: "https://docs.crusoecloud.com/ai/" },
   { id: "darkbloom", name: "Darkbloom", prefix: "/v1", docs: "https://docs.darkbloom.dev/" },
   { id: "deepseek", name: "DeepSeek", prefix: "/v1", docs: "https://api-docs.deepseek.com/api/create-chat-completion" },

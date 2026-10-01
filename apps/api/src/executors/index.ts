@@ -36,32 +36,47 @@ import { executor as aionLabsText } from "./aion-labs/text-generate";
 import { executor as amazonBedrockText } from "./amazon-bedrock/text-generate";
 import { executor as googleVertexText } from "./google-vertex/text-generate";
 import { executor as googleVertexVideo } from "./google-vertex/video-generate";
+import { executor as googleVertexTranscription } from "./google-vertex/audio-transcription";
 import { executor as googleAiStudioVideo } from "./google/video-generate";
 import { executor as deepinfraText } from "./deepinfra/text-generate";
 import { executor as ioNetText } from "./io-net/text-generate";
 import { executor as togetherText } from "./together/text-generate";
-import { executor as crofaiText } from "./crofai/text-generate";
+import { executor as togetherDecisions } from "./together/decisions";
+import { executor as respanDecisions } from "./respan/decisions";
 import { executor as canopyWaveText } from "./canopy-wave/text-generate";
 import { executor as tensorixText } from "./tensorix/text-generate";
 import { executor as basetenText } from "./baseten/text-generate";
 import { executor as baiduText } from "./baidu/text-generate";
+import { executor as baiduImage } from "./baidu/image-generate";
 import { executor as cerebrasText } from "./cerebras/text-generate";
 import { executor as cohereText } from "./cohere/text-generate";
 import { executor as fireworksText } from "./fireworks/text-generate";
 import { executor as groqText } from "./groq/text-generate";
 import { executor as novitaaiText } from "./novitaai/text-generate";
+import { executor as novitaVideo } from "./novita/video-generate";
 import { executor as perplexityText } from "./perplexity/text-generate";
 import { executor as liquidAiText } from "./liquid-ai/text-generate";
+import { executor as liquidAiDecisions } from "./liquid-ai/decisions";
+import { executor as perplexityDecisions } from "./perplexity/decisions";
 import { executor as ai21Text } from "./ai21/text-generate";
 import { executor as akashmlText } from "./akashml/text-generate";
 import { executor as arceeText } from "./arcee/text-generate";
 import { executor as alibabaCloudText } from "./alibaba-cloud/text-generate";
+import { executor as alibabaImage } from "./alibaba/image-generate";
+import { executor as modelscopeImage } from "./modelscope/image-generate";
+import { executor as modelscopeText } from "./modelscope/text-generate";
+import { executor as ovhcloudSpeech } from "./ovhcloud/audio-speech";
+import { executor as ovhcloudImage } from "./ovhcloud/image-generate";
+import { executor as googleTranscription } from "./google-ai-studio/audio-transcription";
+import { executor as upstageOcr } from "./upstage/ocr";
+import { executor as relaceRerank } from "./relace/rerank";
 import { executor as atlasCloudText } from "./atlas-cloud/text-generate";
 import { executor as byteplusText } from "./byteplus/text-generate";
 import { executor as bytedanceSeedText } from "./bytedance-seed/text-generate";
 import { executor as chutesText } from "./chutes/text-generate";
 import { executor as clarifaiText } from "./clarifai/text-generate";
 import { executor as cloudflareText } from "./cloudflare/text-generate";
+import { executor as openrouterText } from "./openrouter/text-generate";
 import { executor as cloudflareImage } from "./cloudflare/image-generate";
 import { executor as cloudflareAudioTranscription } from "./cloudflare/audio-transcription";
 import { executor as crusoeText } from "./crusoe/text-generate";
@@ -70,6 +85,7 @@ import { executor as friendliText } from "./friendli/text-generate";
 import { executor as gmicloudText } from "./gmicloud/text-generate";
 import { executor as gmicloudMusic } from "./gmicloud/music-generate";
 import { executor as gmicloudAudioSpeech } from "./gmicloud/audio-speech";
+import { executor as gmicloudImage } from "./gmicloud/image-generate";
 import { executor as hyperbolicText } from "./hyperbolic/text-generate";
 import { executor as inceptionText } from "./inception/text-generate";
 import { executor as infermaticText } from "./infermatic/text-generate";
@@ -92,6 +108,7 @@ import { executor as relaceText } from "./relace/text-generate";
 import { executor as sambanovaText } from "./sambanova/text-generate";
 import { executor as sailResearchText } from "./sail-research/text-generate";
 import { executor as siliconflowText } from "./siliconflow/text-generate";
+import { executor as siliconflowDecisions } from "./siliconflow/systemone";
 import { executor as stepfunText } from "./stepfun/text-generate";
 import { executor as veniceText } from "./venice/text-generate";
 import { executor as weightsAndBiasesText } from "./weights-and-biases/text-generate";
@@ -103,17 +120,22 @@ import { executor as scalewayText } from "./scaleway/text-generate";
 import { executor as thinkingMachinesText } from "./thinking-machines/text-generate";
 import { executor as darkbloomText } from "./darkbloom/text-generate";
 import { executor as inferenceNetText } from "./inference-net/text-generate";
+import { executor as doublewordText } from "./doubleword/text-generate";
 import { executor as maraText } from "./mara/text-generate";
 import { executor as rekaText } from "./reka/text-generate";
 import { executor as streamlakeText } from "./streamlake/text-generate";
 import { executor as switchpointText } from "./switchpoint/text-generate";
 import { executor as upstageText } from "./upstage/text-generate";
+import { executor as upstageDecisions } from "./upstage/systemone";
 import { executor as waferText } from "./wafer/text-generate";
 import { executor as tencentCloudText } from "./tencent-cloud/text-generate";
+import { executor as privateModelText } from "./private-model/text-generate";
+import { executor as typesafeDecisions } from "./typesafe/systemone";
 
 // Embeddings executors (migrated providers only)
 import { executor as openaiEmbeddings } from "./openai/embeddings";
 import { executor as googleAiStudioEmbeddings } from "./google-ai-studio/embeddings";
+import { executor as googleVertexEmbeddings } from "./google-vertex/embeddings";
 
 // Moderations executors (migrated providers only)
 import { executor as openaiModerations } from "./openai/moderations";
@@ -122,6 +144,9 @@ import { executor as openaiRerank } from "./openai/rerank";
 import { executor as openaiVideo } from "./openai/video-generate";
 import { nonTextAdapterExecutor } from "./_shared/non-text/adapter-bridge";
 import { executor as blackForestLabsImage } from "./black-forest-labs/image-generate";
+import { executor as blackForestLabsVideo } from "./black-forest-labs/video-generate";
+import { executor as deepinfraImage } from "./deepinfra/image-generate";
+import { executor as deepinfraVideo } from "./deepinfra/video-generate";
 
 // Video generation executors
 import { executor as alibabaVideo } from "./alibaba/video-generate";
@@ -139,12 +164,15 @@ type Capability =
 	| "embeddings"
 	| "moderations"
 	| "rerank"
+	| "decisions.make"
+	| "systemone"
 	| "image.generate"
 	| "image.edit"
 	| "audio.speech"
 	| "audio.transcription"
 	| "audio.translations"
 	| "video.generate"
+	| "video.edit"
 	| "ocr"
 	| "parse"
 	| "music.generate";
@@ -170,6 +198,10 @@ const CAPABILITY_ALIASES: Record<string, Capability> = {
 	"audio.translate": "audio.translations",
 	"video.generation": "video.generate",
 	"video.generations": "video.generate",
+	"systemone": "decisions.make",
+	"system.one": "decisions.make",
+	"decision.make": "decisions.make",
+	"typed.decisions": "decisions.make",
 };
 
 export function normalizeCapability(capability: string): Capability {
@@ -177,6 +209,9 @@ export function normalizeCapability(capability: string): Capability {
 }
 
 export const EXECUTORS_BY_PROVIDER: Record<string, ProviderCapabilityMap> = {
+	"private-model": {
+		"text.generate": privateModelText,
+	},
 	openai: {
 		"text.generate": openaiText,
 		embeddings: openaiEmbeddings,
@@ -224,15 +259,27 @@ export const EXECUTORS_BY_PROVIDER: Record<string, ProviderCapabilityMap> = {
 	},
 	azure: {
 		"text.generate": azureText,
+		embeddings: openaiEmbeddings,
+		"image.generate": nonTextAdapterExecutor,
+		"image.edit": nonTextAdapterExecutor,
+		"audio.speech": nonTextAdapterExecutor,
+		"audio.transcription": nonTextAdapterExecutor,
+		"audio.translations": nonTextAdapterExecutor,
 	},
 	baidu: {
 		"text.generate": baiduText,
+		"image.generate": baiduImage,
+		embeddings: openaiEmbeddings,
+		rerank: openaiRerank,
 	},
 	darkbloom: {
 		"text.generate": darkbloomText,
 	},
 	"inference-net": {
 		"text.generate": inferenceNetText,
+	},
+	doubleword: {
+		"text.generate": doublewordText,
 	},
 	mara: {
 		"text.generate": maraText,
@@ -248,14 +295,21 @@ export const EXECUTORS_BY_PROVIDER: Record<string, ProviderCapabilityMap> = {
 	},
 	upstage: {
 		"text.generate": upstageText,
+		"decisions.make": upstageDecisions,
+		ocr: upstageOcr,
 		embeddings: openaiEmbeddings,
 	},
 	wafer: {
 		"text.generate": waferText,
 	},
+	"wafer-zdr": {
+		"text.generate": waferText,
+	},
 	"tencent-cloud": { "text.generate": tencentCloudText },
 	"alibaba-cloud": {
 		"text.generate": alibabaCloudText,
+		"image.generate": alibabaImage,
+		"image.edit": alibabaImage,
 		embeddings: openaiEmbeddings,
 		"video.generate": alibabaVideo,
 	},
@@ -297,15 +351,16 @@ export const EXECUTORS_BY_PROVIDER: Record<string, ProviderCapabilityMap> = {
 		"image.generate": cloudflareImage,
 		"audio.transcription": cloudflareAudioTranscription,
 	},
+	openrouter: { "text.generate": openrouterText },
+	typesafe: {
+		"decisions.make": typesafeDecisions,
+	},
 	cohere: {
 		"text.generate": cohereText,
 		embeddings: openaiEmbeddings,
 		rerank: openaiRerank,
 		"audio.transcription": nonTextAdapterExecutor,
 		parse: nonTextAdapterExecutor,
-	},
-	crofai: {
-		"text.generate": crofaiText,
 	},
 	"canopy-wave": {
 		"text.generate": canopyWaveText,
@@ -321,22 +376,25 @@ export const EXECUTORS_BY_PROVIDER: Record<string, ProviderCapabilityMap> = {
 
 	"google-ai-studio": {
 		"text.generate": googleAiStudioText,
+		"audio.transcription": googleTranscription,
 		embeddings: googleAiStudioEmbeddings,
 		"audio.speech": googleAudioSpeech,
 		"image.generate": nonTextAdapterExecutor,
 		"music.generate": googleMusic,
 		"video.generate": googleAiStudioVideo,
 	},
-	"spacex-ai": { "text.generate": xAiText, "video.generate": xAiVideo, "image.generate": nonTextAdapterExecutor, "image.edit": nonTextAdapterExecutor, "audio.speech": nonTextAdapterExecutor, "audio.transcription": nonTextAdapterExecutor },
-	"x-ai": { "text.generate": xAiText, "video.generate": xAiVideo, "image.generate": nonTextAdapterExecutor, "image.edit": nonTextAdapterExecutor, "audio.speech": nonTextAdapterExecutor, "audio.transcription": nonTextAdapterExecutor },
-	xai: { "text.generate": xAiText, "video.generate": xAiVideo, "image.generate": nonTextAdapterExecutor, "image.edit": nonTextAdapterExecutor, "audio.speech": nonTextAdapterExecutor, "audio.transcription": nonTextAdapterExecutor },
+	"spacex-ai": { "text.generate": xAiText, "video.generate": xAiVideo, "video.edit": xAiVideo, "image.generate": nonTextAdapterExecutor, "image.edit": nonTextAdapterExecutor, "audio.speech": nonTextAdapterExecutor, "audio.transcription": nonTextAdapterExecutor },
+	"x-ai": { "text.generate": xAiText, "video.generate": xAiVideo, "video.edit": xAiVideo, "image.generate": nonTextAdapterExecutor, "image.edit": nonTextAdapterExecutor, "audio.speech": nonTextAdapterExecutor, "audio.transcription": nonTextAdapterExecutor },
+	xai: { "text.generate": xAiText, "video.generate": xAiVideo, "video.edit": xAiVideo, "image.generate": nonTextAdapterExecutor, "image.edit": nonTextAdapterExecutor, "audio.speech": nonTextAdapterExecutor, "audio.transcription": nonTextAdapterExecutor },
 	featherless: { "text.generate": featherlessText },
-	friendli: { "text.generate": friendliText },
+	friendli: { "text.generate": friendliText, "audio.transcription": nonTextAdapterExecutor },
 	deepseek: { "text.generate": deepseekText },
 	gmicloud: {
 		"text.generate": gmicloudText,
 		"music.generate": gmicloudMusic,
 		"audio.speech": gmicloudAudioSpeech,
+		"image.generate": gmicloudImage,
+		"image.edit": gmicloudImage,
 	},
 	hyperbolic: { "text.generate": hyperbolicText },
 	inception: { "text.generate": inceptionText },
@@ -353,13 +411,14 @@ export const EXECUTORS_BY_PROVIDER: Record<string, ProviderCapabilityMap> = {
 	"minimax-lightning": { "text.generate": minimaxText },
 	alibaba: { "text.generate": alibabaText, embeddings: openaiEmbeddings, "video.generate": alibabaVideo },
 	qwen: { "text.generate": qwenText, embeddings: openaiEmbeddings, "video.generate": alibabaVideo },
+	modelscope: { "text.generate": modelscopeText, "image.generate": modelscopeImage, "image.edit": modelscopeImage },
 	morph: { "text.generate": morphText },
 	morpheus: { "text.generate": morpheusText, embeddings: openaiEmbeddings, "audio.speech": nonTextAdapterExecutor },
 	"nebius-token-factory": { "text.generate": nebiusTokenFactoryText, embeddings: openaiEmbeddings, rerank: openaiRerank },
 	"nebius-token-factory-eu-north-1": { "text.generate": nebiusTokenFactoryEuText, embeddings: openaiEmbeddings },
 	"nebius-token-factory-us-central-1": { "text.generate": nebiusTokenFactoryUsText },
 	nvidia: { "text.generate": nvidiaText },
-	parasail: { "text.generate": parasailText },
+	parasail: { "text.generate": parasailText, embeddings: openaiEmbeddings },
 	phala: { "text.generate": phalaText, embeddings: openaiEmbeddings },
 	poolside: { "text.generate": poolsideText },
 	runway: { "video.generate": runwayVideo },
@@ -378,9 +437,17 @@ export const EXECUTORS_BY_PROVIDER: Record<string, ProviderCapabilityMap> = {
 	"aion-labs": { "text.generate": aionLabsText },
 	aionlabs: { "text.generate": aionLabsText },
 	"amazon-bedrock": { "text.generate": amazonBedrockText },
-	"google-vertex": { "text.generate": googleVertexText, "video.generate": googleVertexVideo },
+	"google-vertex": { "text.generate": googleVertexText, embeddings: googleVertexEmbeddings, "video.generate": googleVertexVideo, "audio.transcription": googleVertexTranscription },
 	"google-vertex-eu": { "text.generate": googleVertexText },
-	deepinfra: { "text.generate": deepinfraText },
+	deepinfra: {
+		"text.generate": deepinfraText,
+		embeddings: openaiEmbeddings,
+		"image.generate": deepinfraImage,
+		"image.edit": deepinfraImage,
+		"video.generate": deepinfraVideo,
+		"audio.speech": nonTextAdapterExecutor,
+		"audio.transcription": nonTextAdapterExecutor,
+	},
 	"io-net": { "text.generate": ioNetText },
 	fireworks: { "text.generate": fireworksText, embeddings: openaiEmbeddings, rerank: openaiRerank, "image.generate": nonTextAdapterExecutor },
 	groq: {
@@ -388,23 +455,30 @@ export const EXECUTORS_BY_PROVIDER: Record<string, ProviderCapabilityMap> = {
 		"audio.transcription": nonTextAdapterExecutor,
 		"audio.translations": nonTextAdapterExecutor,
 	},
-	liquid: { "text.generate": liquidAiText },
-	"liquid-ai": { "text.generate": liquidAiText },
-	novitaai: { "text.generate": novitaaiText, embeddings: openaiEmbeddings, rerank: openaiRerank },
-	novita: { "text.generate": novitaaiText, embeddings: openaiEmbeddings, rerank: openaiRerank },
-	perplexity: { "text.generate": perplexityText, embeddings: openaiEmbeddings },
-	relace: { "text.generate": relaceText },
+	liquid: { "text.generate": liquidAiText, "decisions.make": liquidAiDecisions },
+	"liquid-ai": { "text.generate": liquidAiText, "decisions.make": liquidAiDecisions },
+	novitaai: { "text.generate": novitaaiText, embeddings: openaiEmbeddings, rerank: openaiRerank, "video.generate": novitaVideo },
+	novita: { "text.generate": novitaaiText, embeddings: openaiEmbeddings, rerank: openaiRerank, "video.generate": novitaVideo },
+	perplexity: { "text.generate": perplexityText, embeddings: openaiEmbeddings, "decisions.make": perplexityDecisions },
+	relace: { "text.generate": relaceText, rerank: relaceRerank },
 	sambanova: { "text.generate": sambanovaText },
 	"sail-research": { "text.generate": sailResearchText },
-	siliconflow: { "text.generate": siliconflowText },
-	stepfun: { "text.generate": stepfunText },
+	siliconflow: {
+		"text.generate": siliconflowText,
+		"decisions.make": siliconflowDecisions,
+	},
+	stepfun: { "text.generate": stepfunText, "audio.speech": nonTextAdapterExecutor, "audio.transcription": nonTextAdapterExecutor, "image.generate": nonTextAdapterExecutor, "image.edit": nonTextAdapterExecutor },
 	together: {
 		"text.generate": togetherText,
+		"decisions.make": togetherDecisions,
 		embeddings: openaiEmbeddings,
 		"image.generate": nonTextAdapterExecutor,
 		"audio.speech": nonTextAdapterExecutor,
 		"audio.transcription": nonTextAdapterExecutor,
 		"audio.translations": nonTextAdapterExecutor,
+	},
+	respan: {
+		"decisions.make": respanDecisions,
 	},
 	venice: { "text.generate": veniceText },
 	"venice-e2ee": { "text.generate": veniceText },
@@ -415,9 +489,12 @@ export const EXECUTORS_BY_PROVIDER: Record<string, ProviderCapabilityMap> = {
 		"text.generate": metaText,
 		"image.generate": nonTextAdapterExecutor,
 		"image.edit": nonTextAdapterExecutor,
+		"audio.transcription": nonTextAdapterExecutor,
 	},
 	ovhcloud: {
 		"text.generate": ovhcloudText,
+		"image.generate": ovhcloudImage,
+		"audio.speech": ovhcloudSpeech,
 		embeddings: openaiEmbeddings,
 		moderations: ovhcloudModerations,
 		"audio.transcription": nonTextAdapterExecutor,
@@ -425,7 +502,7 @@ export const EXECUTORS_BY_PROVIDER: Record<string, ProviderCapabilityMap> = {
 	sakana: { "text.generate": sakanaText },
 	scaleway: { "text.generate": scalewayText, embeddings: openaiEmbeddings, rerank: openaiRerank, "audio.transcription": nonTextAdapterExecutor },
 	"thinking-machines": { "text.generate": thinkingMachinesText },
-	"black-forest-labs": { "image.generate": blackForestLabsImage, "image.edit": blackForestLabsImage },
+	"black-forest-labs": { "image.generate": blackForestLabsImage, "image.edit": blackForestLabsImage, "video.generate": blackForestLabsVideo },
 	elevenlabs: { "audio.speech": nonTextAdapterExecutor, "audio.transcription": nonTextAdapterExecutor, "music.generate": nonTextAdapterExecutor },
 };
 

@@ -1,0 +1,72 @@
+{
+  "key": "gmicloud:qwen/qwen3.8-max-0902:text.generate",
+  "api_provider_id": "gmicloud",
+  "provider_slug": "gmicloud",
+  "api_model_id": "qwen/qwen3.8-max-0902",
+  "capability_id": "text.generate",
+  "rules": [
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0,
+      "currency": "USD",
+      "pricing_plan": "free",
+      "note": "GMICloud Model Hub lists Qwen3.8 Max 0902 as Usage Free at $0 per 1M tokens.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-09-09T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": "https://console.gmicloud.ai/user-console/ie/model-hub/llm/b2d7b50b-eafe-4174-bbbf-9ea95f248bf8"
+    },
+    {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0,
+      "currency": "USD",
+      "pricing_plan": "free",
+      "note": "GMICloud Model Hub lists Qwen3.8 Max 0902 as Usage Free at $0 per 1M tokens.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-09-09T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": "https://console.gmicloud.ai/user-console/ie/model-hub/llm/b2d7b50b-eafe-4174-bbbf-9ea95f248bf8"
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0,
+      "currency": "USD",
+      "pricing_plan": "free",
+      "note": "GMICloud Model Hub lists Qwen3.8 Max 0902 as Usage Free at $0 per 1M tokens.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-09-09T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": "https://console.gmicloud.ai/user-console/ie/model-hub/llm/b2d7b50b-eafe-4174-bbbf-9ea95f248bf8"
+    }
+  ],
+  "regions": [],
+  "service_tiers": ["free"],
+  "sources": [
+    {
+      "kind": "provider_pricing",
+      "url": "https://console.gmicloud.ai/user-console/ie/model-hub/llm/b2d7b50b-eafe-4174-bbbf-9ea95f248bf8",
+      "accessed_at": "2026-09-09T00:00:00Z",
+      "notes": "GMICloud Model Hub shows Qwen3.8 Max 0902 with Price $0 per 1M tokens and Usage Free."
+    }
+  ],
+  "verification": {
+    "status": "verified",
+    "checked_at": "2026-09-09T00:00:00Z",
+    "notes": "Exact model route and free pricing verified on the authenticated GMICloud Model Hub."
+  }
+}

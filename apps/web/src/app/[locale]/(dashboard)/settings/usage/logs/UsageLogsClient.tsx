@@ -1,0 +1,484 @@
+"use client";
+
+import { useLocale, useTranslations } from "next-intl";
+import { memo, useMemo } from "react";
+import { useSearchParams } from "next/navigation";
+import { NuqsAdapter } from "nuqs/adapters/next/app";
+
+import { PrivateUsageQuery, usePrivateUsageQuery } from "@/components/(gateway)/usage/PrivateUsageQuery";
+import { fetchPrivateUsage, fetchPrivateUsageRequest } from "@/lib/query/fetchPrivateUsage";
+import { readUsageSearchParams, usageSearchParams, type UsageSearchParams } from "@/lib/query/privateUsage";
+import type { AccountQueryScope } from "@/lib/query/queryKeys";
+import type { SettingsUsageLogsInitialData } from "@/lib/fetchers/internal/settingsTypes";
+import { resolveProviderDisplayName } from "@/lib/providers/providerOffers";
+import { WebApiError } from "@/lib/web-api/client";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import AsyncJobsPanel from "@/components/(gateway)/usage/AsyncJobsPanel";
+import SessionsPanel from "@/components/(gateway)/usage/SessionsPanel";
+import UsageLogsToolbar from "@/components/(gateway)/usage/UsageLogsToolbar";
+import UsageViewFilters from "@/components/(gateway)/usage/UsageViewFilters";
+import RequestLabelFilter from "@/components/(gateway)/usage/RequestLabelFilter";
+import InvestigateGeneration from "@/components/(gateway)/usage/UsageHeader/InvestigateGeneration";
+import UpstreamRequestsTable from "@/components/(gateway)/usage/UpstreamRequestsTable";
+import {
+	getUsageRangeParamKeys,
+	parseUsageDateInput,
+	parseUsageRangePreset,
+	resolveUsageTimeRange,
+	type UsageLogsViewKey,
+} from "@/lib/gateway/usage/timeRange";
+
+import RequestsSection from "@/components/(gateway)/usage/RequestsSection";
+import RouteRequestDetailDialog, {
+	RouteRequestDetailErrorDialog,
+} from "@/components/(gateway)/usage/RouteRequestDetailDialog";
+import type { RequestRow } from "@/app/(dashboard)/gateway/usage/server-actions";
+
+function parseView(view?: string | null): UsageLogsViewKey {
+	const v = (view ?? "").toLowerCase();
+	return v === "logs" || v === "upstream" || v === "jobs" || v === "sessions" ? v : "logs";
+}
+
+function buildLogsRequestHref(
+	searchParams: Record<string, string | string[] | undefined>,
+	requestId?: string | null,
+): string {
+	const next = new URLSearchParams();
+	for (const [key, rawValue] of Object.entries(searchParams)) {
+		if (typeof rawValue === "string") {
+			next.set(key, rawValue);
+			continue;
+		}
+		if (Array.isArray(rawValue)) {
+			for (const item of rawValue) {
+				if (typeof item === "string") next.append(key, item);
+			}
+		}
+	}
+	const query = next.toString();
+	const base = requestId
+		? `/settings/usage/logs/requests/${encodeURIComponent(requestId)}`
+		: "/settings/usage/logs/requests";
+	return query ? `${base}?${query}` : base;
+}
+
+function firstSearchParam(
+	value: string | string[] | undefined,
+): string | undefined {
+	if (typeof value === "string") return value;
+	if (Array.isArray(value)) return value[0];
+	return undefined;
+}
+
+function formatLabelSpend(nanos: number, locale: string): string {
+	return new Intl.NumberFormat(locale, {
+		style: "currency", currency: "USD", minimumFractionDigits: 5, maximumFractionDigits: 5,
+	}).format(Number.isFinite(nanos) ? nanos / 1e9 : 0);
+}
+
+const SAMPLE_CLIENT_SOURCES = [
+	{ id: "codex", name: "Codex", kind: "coding_agent", version: "0.145.0", detection: "declared" },
+	{ id: "claude-code", name: "Claude Code", kind: "coding_agent", version: "2.1.218", detection: "declared" },
+	{ id: "phaseo-typescript", name: "Phaseo TypeScript SDK", kind: "sdk", version: "2.2.0", detection: "declared" },
+	{ id: "openai-python", name: "OpenAI Python SDK", kind: "sdk", version: "1.99.1", detection: "user_agent" },
+	{ id: "curl", name: "cURL", kind: "http_client", version: "8.12.1", detection: "user_agent" },
+	{ id: "api", name: "Direct HTTP", kind: "api", version: null, detection: "unknown" },
+] as const;
+
+function buildSampleSourceRows(rows: RequestRow[]): RequestRow[] {
+	const base = rows[0] ?? ({
+		request_id: "sample_base", created_at: new Date().toISOString(), endpoint: "responses",
+		model_id: "openai/gpt-5.6-terra", provider: "openai", app_id: null, session_id: null,
+		success: true, status_code: 200, error_code: null, error_message: null, error_payload: null,
+		usage: { input_tokens: 128, output_tokens: 64, total_tokens: 192 }, cost_nanos: 1250000,
+		pricing_lines: [], provider_attempts: [],
+	} as RequestRow);
+
+	return SAMPLE_CLIENT_SOURCES.map((source, index) => ({
+		...base,
+		request_id: `sample_source_${source.id}`,
+		created_at: new Date(Date.now() - index * 70_000).toISOString(),
+		is_sample: true,
+		client_source_id: source.id,
+		client_source_name: source.name,
+		client_source_kind: source.kind,
+		client_source_version: source.version,
+		client_source_detection: source.detection,
+		detail_metadata: { ...(base.detail_metadata ?? {}), client_source: source },
+	}));
+}
+
+export default function UsageLogsClient({
+	scope,
+	selectedRequestId = null,
+	selectedView,
+	forcedJobKind,
+}: {
+	scope: AccountQueryScope;
+	selectedRequestId?: string | null;
+	selectedView?: UsageLogsViewKey;
+	forcedJobKind?: "video" | "batch";
+}) {
+	const searchParams = useSearchParams();
+	const normalized = new URLSearchParams(searchParams);
+	if (selectedView) normalized.set("view", selectedView);
+	if (forcedJobKind) normalized.set("job_kind", forcedJobKind);
+	normalized.delete("request");
+	// Request pagination is fetched separately, against this same time snapshot.
+	if (selectedView === "logs") normalized.delete("page");
+	const serialized = normalized.toString();
+	const sp = useMemo(() => readUsageSearchParams(new URLSearchParams(serialized)), [serialized]);
+	const preset = parseUsageRangePreset(firstSearchParam(sp.usage_preset));
+	const query = usePrivateUsageQuery(scope, "logs", sp, preset === "live", async (signal) => {
+		const timeRange = resolveUsageTimeRange({ preset, customFrom: parseUsageDateInput(firstSearchParam(sp.usage_from)), customTo: parseUsageDateInput(firstSearchParam(sp.usage_to)) });
+		const params = usageSearchParams(sp);
+		params.set("workspaceId", scope.workspaceId!);
+		params.set("usage_preset", "custom");
+		params.set("usage_from", timeRange.from);
+		params.set("usage_to", timeRange.to);
+		const path = `/api/account/settings/usage/logs?${params}` as const;
+		const initialData = await fetchPrivateUsage<SettingsUsageLogsInitialData>(path, scope, signal);
+		if (!initialData.signedIn || initialData.loadState === "unauthorized") throw new WebApiError(path, 401);
+		if (initialData.workspaceId !== scope.workspaceId || initialData.loadState === "forbidden") throw new WebApiError(path, 403);
+		if (!initialData.data || initialData.loadState === "failed") throw new Error("Logs unavailable");
+		if (initialData.data.providerNameEntries) initialData.data.providerNameEntries = initialData.data.providerNameEntries.map(([providerId, providerName]) => [providerId, resolveProviderDisplayName({ providerId, providerName })]);
+		return { initialData, timeRange };
+	});
+	return <PrivateUsageQuery query={query} scope={scope} live={preset === "live"}>{({ initialData, timeRange }) => <UsageLogsView initialData={initialData} timeRange={timeRange} sp={sp} selectedRequestId={selectedRequestId} selectedView={selectedView} forcedJobKind={forcedJobKind} scope={scope} />}</PrivateUsageQuery>;
+}
+
+const UsageLogsView = memo(function UsageLogsView({ initialData, timeRange, sp, selectedRequestId, selectedView, forcedJobKind, scope }: {
+	initialData: SettingsUsageLogsInitialData;
+	timeRange: { from: string; to: string };
+	sp: UsageSearchParams;
+	selectedRequestId: string | null;
+	selectedView?: UsageLogsViewKey;
+	forcedJobKind?: "video" | "batch";
+	scope: AccountQueryScope;
+}) {
+	const t = useTranslations("SettingsUI");
+	const locale = useLocale();
+	const detailQuery = usePrivateUsageQuery(scope, "request-detail", { request: selectedRequestId ?? "" }, firstSearchParam(sp.usage_preset) === "live", (signal) => fetchPrivateUsageRequest(selectedRequestId!, scope, signal), Boolean(selectedRequestId));
+
+	if (initialData.loadState === "failed") {
+		return (
+			<Card>
+				<CardHeader><CardTitle>{t("strings.Logs unavailable" as never)}</CardTitle></CardHeader>
+				<CardContent><p className="text-sm text-muted-foreground">{t("strings.We couldn't load request logs. Try again in a moment." as never)}</p></CardContent>
+			</Card>
+		);
+	}
+
+	if (initialData.loadState === "forbidden") {
+		return (
+			<Card>
+				<CardHeader><CardTitle>{t("strings.Workspace access changed" as never)}</CardTitle></CardHeader>
+				<CardContent><p className="text-sm text-muted-foreground">{t("strings.You no longer have access to this workspace. Select another workspace to view its logs." as never)}</p></CardContent>
+			</Card>
+		);
+	}
+
+	if (!initialData.workspaceId) {
+		return (
+			<Card>
+				<CardHeader>
+					<CardTitle>{t("strings.No workspace available" as never)}</CardTitle>
+				</CardHeader>
+				<CardContent>
+					<p className="text-sm text-muted-foreground">
+						{t("strings.Join or create a workspace to view request logs." as never)}
+					</p>
+				</CardContent>
+			</Card>
+		);
+	}
+
+	const view = selectedView ?? parseView(
+		typeof sp?.view === "string"
+			? sp?.view
+			: Array.isArray(sp?.view)
+				? sp?.view?.[0]
+				: undefined,
+	);
+	const rangeKeys = getUsageRangeParamKeys();
+	const preset = parseUsageRangePreset(firstSearchParam(sp?.[rangeKeys.preset]));
+	const customFrom = parseUsageDateInput(firstSearchParam(sp?.[rangeKeys.from]));
+	const customTo = parseUsageDateInput(firstSearchParam(sp?.[rangeKeys.to]));
+	const sessionFilter = firstSearchParam(sp?.session)?.trim() || null;
+	const jobKindFilter = firstSearchParam(sp?.job_kind)?.trim() || null;
+	const jobStatusFilter = firstSearchParam(sp?.job_status)?.trim() || null;
+	const jobProviderFilter = firstSearchParam(sp?.job_provider)?.trim() || null;
+	const sessionAppFilter = firstSearchParam(sp?.session_app)?.trim() || null;
+	const sessionModelFilter = firstSearchParam(sp?.session_model)?.trim() || null;
+	const sessionProviderFilter = firstSearchParam(sp?.session_provider)?.trim() || null;
+	const pageTitle = view === "logs" ? t("strings.Requests" as never) : view === "upstream" ? t("strings.Upstream Requests" as never) : view === "jobs" ? forcedJobKind === "video" ? t("strings.Videos" as never) : forcedJobKind === "batch" ? t("strings.Batches" as never) : t("strings.Jobs" as never) : t("strings.Sessions" as never);
+	const pageDescription = view === "logs"
+		? t("strings.Inspect gateway requests, routing decisions, usage, and errors." as never)
+		: view === "upstream"
+			? t("strings.Review each generation’s final provider, attempts, and latency." as never)
+			: view === "jobs"
+				? forcedJobKind === "video" ? t("strings.Inspect asynchronous video generation jobs." as never) : forcedJobKind === "batch" ? t("strings.Inspect asynchronous batch processing jobs." as never) : t("strings.Inspect asynchronous video and batch jobs." as never)
+				: t("strings.Inspect grouped request activity across apps and models." as never);
+
+	let content: React.ReactNode;
+	let filters: React.ReactNode = null;
+	let detailDialog: React.ReactNode = null;
+
+	if (view === "upstream") {
+		const data = initialData.view === "upstream" ? initialData.data : null;
+		const upstreamRows = data?.upstreamRequests ?? [];
+		const modelFilter = firstSearchParam(sp.model)?.trim() || null;
+		const providerFilter = firstSearchParam(sp.provider)?.trim() || null;
+		const keyFilter = firstSearchParam(sp.key)?.trim() || null;
+		const statusFilter = firstSearchParam(sp.status)?.trim() || "all";
+		const filteredRows = upstreamRows.filter((row) =>
+			(!modelFilter || row.model_id === modelFilter) &&
+			(!providerFilter || row.provider === providerFilter) &&
+			(!keyFilter || row.key_id === keyFilter) &&
+			(statusFilter === "all" || (statusFilter === "success" ? row.success === true : row.success !== true)),
+		);
+		filters = <UsageViewFilters
+			view="upstream"
+			models={Array.from(new Set(upstreamRows.map((row) => row.model_id).filter(Boolean)))}
+			providers={Array.from(new Set(upstreamRows.map((row) => row.provider).filter((value): value is string => Boolean(value))))}
+			providerNames={new Map(data?.providerNameEntries ?? [])}
+			apiKeys={data?.availableKeys ?? []}
+			modelMetadata={new Map(data?.modelMetadataEntries ?? [])}
+			providerMetadata={new Map(data?.providerMetadataEntries ?? [])}
+		/>;
+		content = (
+			<UpstreamRequestsTable
+				settingsTargetId="request-column-settings"
+				rows={filteredRows}
+				modelMetadata={new Map(data?.modelMetadataEntries ?? [])}
+				providerNames={new Map(data?.providerNameEntries ?? [])}
+				providerMetadata={new Map(data?.providerMetadataEntries ?? [])}
+				keys={new Map((data?.availableKeys ?? []).map((key) => [key.id, key]))}
+			/>
+		);
+	} else if (view === "jobs") {
+		const data = initialData.view === "jobs" ? initialData.data : null;
+		if (!data) throw new Error("Missing usage jobs data");
+		const providerNames = new Map(data.providerNameEntries);
+		const modelMetadata = new Map(data.modelMetadataEntries);
+		const appMetadata = new Map(data.appMetadataEntries);
+		filters = (
+			<UsageViewFilters
+				view="jobs"
+				lockJobKind={Boolean(forcedJobKind)}
+				providers={data.jobProviders}
+				providerNames={providerNames}
+			/>
+		);
+		content = (
+			<AsyncJobsPanel
+				settingsTargetId="request-column-settings"
+				initialJobs={data.recentJobs}
+				title={t("strings.Async jobs" as never)}
+				description={t("strings.Recent long-running video and batch jobs, including status, billing, and webhook delivery history." as never)}
+				emptyMessage={t("strings.No async jobs found in this workspace yet." as never)}
+				refreshLimit={50}
+				includeWithoutWebhook
+				providerNames={providerNames}
+				modelMetadata={modelMetadata}
+				appMetadata={appMetadata}
+				variant="logs"
+				timeRange={timeRange}
+				showRefreshButton={false}
+				kindFilter={forcedJobKind ?? (
+					jobKindFilter === "video" || jobKindFilter === "batch"
+						? jobKindFilter
+						: null
+				)}
+				statusFilter={jobStatusFilter}
+				providerFilter={jobProviderFilter}
+			/>
+		);
+	} else if (view === "sessions") {
+		const data = initialData.view === "sessions" ? initialData.data : null;
+		if (!data) throw new Error("Missing usage session data");
+		const appMetadata = new Map(data.appMetadataEntries);
+		const modelMetadata = new Map(data.modelMetadataEntries);
+		const providerNames = new Map(data.providerNameEntries);
+		const providerMetadata = new Map(data.providerMetadataEntries);
+		filters = (
+			<UsageViewFilters
+				view="sessions"
+				appMetadata={appMetadata}
+				modelMetadata={modelMetadata}
+				providerNames={providerNames}
+				providerMetadata={providerMetadata}
+				sessionAppIds={data.sessionAppIds}
+				sessionModelIds={data.sessionModelIds}
+				sessionProviderIds={data.sessionProviderIds}
+			/>
+		);
+
+		content = (
+			<SessionsPanel
+				settingsTargetId="request-column-settings"
+				initialSessions={data.sessions}
+				initialAppMetadata={appMetadata}
+				initialModelMetadata={modelMetadata}
+				initialProviderMetadata={providerMetadata}
+				initialProviderNames={providerNames}
+				timeRange={timeRange}
+				showRefreshButton={false}
+				appFilter={sessionAppFilter}
+				modelFilter={sessionModelFilter}
+				providerFilter={sessionProviderFilter}
+				sessionFilter={sessionFilter}
+			/>
+		);
+	} else {
+		const data = initialData.view === "logs" ? initialData.data : null;
+		if (!data) throw new Error("Missing usage logs data");
+		const appNames = new Map(data.appNameEntries);
+		const appMetadata = new Map(data.appNameEntries.map(([id, title]) => [id, { id, title, imageUrl: null }] as const));
+		const providerNames = new Map(data.providerNameEntries);
+		const providerMetadata = new Map(data.providerMetadataEntries);
+		const modelMetadata = new Map(data.modelMetadataEntries);
+		const modelProviders = new Map(data.modelProviderEntries);
+		const showSampleSources = process.env.NODE_ENV !== "production" && firstSearchParam(sp.sampleSources) === "1";
+		const sampleSourceFilter = firstSearchParam(sp.source)?.trim() || null;
+		const sampleRows = showSampleSources
+			? buildSampleSourceRows(data.initialRequestsPage.data).filter((row) => !sampleSourceFilter || row.client_source_id === sampleSourceFilter)
+			: [];
+		const requestRows = [...sampleRows, ...data.initialRequestsPage.data];
+		const clientSources = showSampleSources
+			? Array.from(new Map([...SAMPLE_CLIENT_SOURCES.map((source) => [source.id, { id: source.id, name: source.name }] as const), ...data.clientSources.map((source) => [source.id, source] as const)]).values())
+			: data.clientSources;
+		filters = (
+			<>
+				<UsageViewFilters
+					view="logs"
+					models={data.dedupedModels}
+					providers={data.dedupedProviders}
+					modelProviders={modelProviders}
+					providerNames={providerNames}
+					apiKeys={data.availableKeys}
+					modelMetadata={modelMetadata}
+					providerMetadata={providerMetadata}
+					appMetadata={appMetadata}
+					clientSources={clientSources}
+					logAppIds={data.logAppIds}
+					logEndpoints={data.logEndpoints}
+					logFinishReasons={data.logFinishReasons}
+					logErrorCodes={data.logErrorCodes}
+					logStatusCodes={data.logStatusCodes}
+				/>
+				<RequestLabelFilter facets={data.labelFacets} />
+			</>
+		);
+
+		content = (
+			<>
+				{data.labelSummary ? (
+					<Card className="ring-1 ring-primary/15">
+						<CardContent className="flex flex-wrap items-center justify-between gap-4 py-4">
+							<div className="min-w-0">
+								<p className="text-xs font-medium uppercase tracking-[0.12em] text-muted-foreground">{t("strings.Filtered spend" as never)}</p>
+								<p className="mt-1 truncate text-sm font-medium">
+									<span className="font-mono">{data.labelSummary.key}</span>
+									<span className="px-1.5 text-muted-foreground">=</span>
+									<span>{data.labelSummary.value}</span>
+								</p>
+							</div>
+							<div className="flex items-center gap-6 text-sm">
+								<div>
+									<p className="text-xs text-muted-foreground">{t("strings.Requests" as never)}</p>
+									<p className="mt-1 font-mono font-medium">{new Intl.NumberFormat(locale).format(data.labelSummary.requestCount)}</p>
+								</div>
+								<div>
+									<p className="text-xs text-muted-foreground">{t("strings.Spend" as never)}</p>
+									<p className="mt-1 font-mono font-medium">{formatLabelSpend(data.labelSummary.totalCostNanos, locale)}</p>
+								</div>
+							</div>
+							{data.labelSummary.isSampled ? <p className="basis-full text-xs text-muted-foreground">{t("strings.Spend is calculated from a 5,000-request sample." as never)}</p> : null}
+						</CardContent>
+					</Card>
+				) : null}
+				<RequestsSection
+					columnSettingsTargetId="request-column-settings"
+					apiKeys={data.availableKeys}
+					timeRange={timeRange}
+					appNames={appNames}
+					providerNames={providerNames}
+					providerMetadata={providerMetadata}
+					modelMetadata={modelMetadata}
+					initialPage={1}
+					initialRows={requestRows}
+					initialTotal={requestRows.length}
+					initialTotalPages={data.initialRequestsPage.hasMore ? 2 : 1}
+					initialHasMore={data.initialRequestsPage.hasMore}
+					initialNextCursor={data.initialRequestsPage.nextCursor}
+					initialPageSize={data.initialRequestsPage.pageSize ?? 50}
+					detailBasePath="/settings/usage/logs/requests"
+				/>
+			</>
+		);
+
+		if (selectedRequestId) {
+			const investigated = detailQuery.data;
+			if (!detailQuery.isError && investigated?.success && investigated.data) {
+				const rows: Array<{ request_id: string }> =
+					data.initialRequestsPage.data;
+				const currentIndex = rows.findIndex(
+					(row) => row.request_id === selectedRequestId,
+				);
+				detailDialog = (
+					<RouteRequestDetailDialog
+						detail={investigated.data}
+						closeHref={buildLogsRequestHref(sp)}
+						previousHref={
+							currentIndex > 0
+								? buildLogsRequestHref(sp, rows[currentIndex - 1].request_id)
+								: null
+						}
+						nextHref={
+							currentIndex >= 0 && currentIndex < rows.length - 1
+								? buildLogsRequestHref(sp, rows[currentIndex + 1].request_id)
+								: null
+						}
+						position={currentIndex >= 0 ? currentIndex + 1 : null}
+						total={rows.length}
+					/>
+				);
+			} else if (detailQuery.isPending) {
+				detailDialog = <p role="status">{t("strings.Loading request details…" as never)}</p>;
+			} else {
+				detailDialog = (
+					<RouteRequestDetailErrorDialog
+						closeHref={buildLogsRequestHref(sp)}
+						onRetry={() => void detailQuery.refetch()}
+					/>
+				);
+			}
+		}
+	}
+	return (
+		<NuqsAdapter>
+		<div className="min-w-0 space-y-4">
+			<div>
+				<h1 className="text-2xl font-semibold tracking-tight">{pageTitle}</h1>
+				<p className="mt-1 max-w-3xl text-sm text-muted-foreground">{pageDescription}</p>
+			</div>
+			<div className="flex min-w-0 flex-wrap items-center justify-between gap-3">
+				<div className="flex min-w-0 flex-wrap items-center gap-2">
+					{filters}
+					{view === "logs" ? <InvestigateGeneration /> : null}
+				</div>
+				<div className="flex min-w-0 max-w-full flex-wrap items-center gap-2">
+					<UsageLogsToolbar view={view} preset={preset} customFrom={customFrom} customTo={customTo} />
+					<div id="request-column-settings" className="flex shrink-0 items-center empty:hidden" />
+				</div>
+			</div>
+			<div id="usage-log-active-filters" className="empty:hidden" />
+			<div className="min-w-0 max-w-full space-y-4 overflow-hidden">
+				{content}
+			</div>
+			{detailDialog}
+		</div>
+		</NuqsAdapter>
+	);
+});

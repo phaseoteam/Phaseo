@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { fetchFrontendAppUsage } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import { Zap } from "lucide-react";
 import { getLocale, getTranslations } from "next-intl/server";
+import { DisplayNumber } from "@/components/display/DisplayValue";
 
 type RangeKey = "1h" | "1d" | "1w" | "4w" | "1m" | "1y";
 
@@ -84,7 +85,7 @@ export default async function TopModelsForApp({
 							<div className="text-right">
 								<div className="flex items-center gap-1 text-sm">
 									<Zap className="h-3 w-3" />
-									{new Intl.NumberFormat(locale).format(model.tokens)} {t("tokensUnit")}
+									<DisplayNumber value={model.tokens} /> {t("tokensUnit")}
 								</div>
 							</div>
 						</div>

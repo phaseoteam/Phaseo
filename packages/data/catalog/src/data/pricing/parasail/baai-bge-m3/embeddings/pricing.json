@@ -1,0 +1,36 @@
+{
+  "key": "parasail:baai/bge-m3:embeddings",
+  "api_provider_id": "parasail",
+  "provider_slug": "parasail",
+  "api_model_id": "baai/bge-m3",
+  "capability_id": "embeddings",
+  "rules": [
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.01,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "match": [],
+      "priority": 100,
+      "source": "https://www.parasail.io/models/bge-m3"
+    }
+  ],
+  "regions": [],
+  "service_tiers": [
+    "standard"
+  ],
+  "sources": [
+    {
+      "kind": "pricing",
+      "url": "https://www.parasail.io/models/bge-m3",
+      "accessed_at": "2026-09-07T22:05:00Z"
+    }
+  ],
+  "verification": {
+    "status": "verified",
+    "checked_at": "2026-09-07T22:05:00Z",
+    "notes": "Endpoint ID and published input/output/cache rates checked against the public provider model page."
+  }
+}

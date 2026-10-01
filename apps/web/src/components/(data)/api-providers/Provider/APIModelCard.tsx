@@ -5,7 +5,6 @@ import React, { useMemo } from "react";
 import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import {
@@ -30,6 +29,7 @@ import {
 	Eye,
 	Bot,
 	Link2,
+	Scale,
 } from "lucide-react";
 import type { APIProviderModels } from "@/lib/fetchers/api-providers/providerDataTypes";
 import { CopyButton } from "@/components/ui/copy-button";
@@ -49,6 +49,7 @@ const MOD_ICON: Record<string, React.ElementType> = {
 	rerank: ArrowUpDown,
 	embeddings: Braces,
 	vision: Eye,
+	decisions: Scale,
 };
 
 const MOD_BADGE_CLASS: Record<string, string> = {
@@ -63,6 +64,7 @@ const MOD_BADGE_CLASS: Record<string, string> = {
 	rerank: "bg-teal-50 text-teal-700 ring-1 ring-inset ring-teal-200",
 	embeddings: "bg-slate-50 text-slate-700 ring-1 ring-inset ring-slate-200",
 	vision: "bg-pink-50 text-pink-700 ring-1 ring-inset ring-pink-200",
+	decisions: "bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-200",
 };
 
 const KNOWN_MODALITIES = [
@@ -75,6 +77,7 @@ const KNOWN_MODALITIES = [
 	"audio_music",
 	"rerank",
 	"embeddings",
+	"decisions",
 ];
 
 function normalizeModality(value: string): string {
@@ -83,6 +86,7 @@ function normalizeModality(value: string): string {
 		.toLowerCase()
 		.replace(/[._/-]+/g, " ");
 	if (!normalized) return "";
+	if (normalized.includes("decision")) return "decisions";
 	if (normalized.includes("embed")) return "embeddings";
 	if (normalized.includes("rerank") || normalized.includes("re rank")) return "rerank";
 	if (normalized.includes("vision") || normalized.includes("image")) return "image";
@@ -202,6 +206,11 @@ const ENDPOINT_META: Record<
 		icon: Music4,
 		className: "bg-pink-50 text-pink-700 ring-1 ring-inset ring-pink-200",
 	},
+	"/decisions": {
+		label: "Decisions",
+		icon: Scale,
+		className: "bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-200",
+	},
 };
 
 function getEndpointMeta(endpoint?: string | null, fallbackLabel = "Endpoint"): {
@@ -247,6 +256,7 @@ export default function APIModelCard({ model }: { model: APIProviderModels }) {
 	const t = useTranslations("Catalogue.apiModelCard");
 	const tProviderModelList = useTranslations("Catalogue.providerModelList");
 	const tModelMetadata = useTranslations("Catalogue.modelDetail.metadata");
+	const tStatus = useTranslations("Catalogue.modelDetail.providerTable.statusDescriptions");
 	const formatModalityLabel = (value: string) => {
 		if (value === "audio_stt") return tModelMetadata("modalityTranscription");
 		if (value === "audio_tts") return tModelMetadata("modalitySpeech");
@@ -264,6 +274,7 @@ export default function APIModelCard({ model }: { model: APIProviderModels }) {
 			.trim()
 			.replace(/\b\w/g, (char) => char.toUpperCase());
 	};
+	const isComingSoon = model.availability_status === "coming_soon";
 	const inputs = useMemo(
 		() => toList(model.input_modalities),
 		[model.input_modalities]
@@ -306,12 +317,14 @@ export default function APIModelCard({ model }: { model: APIProviderModels }) {
 						<div
 							className={cn(
 								"inline-flex items-center justify-center rounded-full p-1.5 ring-1 ring-inset",
-								model.is_active_gateway
+								model.is_active_gateway && !isComingSoon
 									? "bg-emerald-50 text-emerald-700 ring-emerald-200"
-									: "bg-neutral-50 text-neutral-600 ring-neutral-200"
+									: isComingSoon
+										? "bg-blue-50 text-blue-700 ring-blue-200"
+										: "bg-neutral-50 text-neutral-600 ring-neutral-200"
 							)}
 						>
-							{model.is_active_gateway ? (
+							{model.is_active_gateway && !isComingSoon ? (
 								<CheckCircle2 className="h-3.5 w-3.5" />
 							) : (
 								<Circle className="h-3.5 w-3.5" />
@@ -319,13 +332,18 @@ export default function APIModelCard({ model }: { model: APIProviderModels }) {
 						</div>
 					</TooltipTrigger>
 					<TooltipContent>
-						{model.is_active_gateway ? t("gatewayActive") : t("gatewayInactive")}
+						{isComingSoon ? tStatus("comingSoon") : model.is_active_gateway ? t("gatewayActive") : t("gatewayInactive")}
 					</TooltipContent>
 				</Tooltip>
 			</div>
 
 			{/* Model name */}
 			<div className="pr-10">
+				{isComingSoon ? (
+					<Badge variant="secondary" className="mb-2 border-blue-200 bg-blue-50 text-xs font-medium text-blue-700">
+						Coming soon
+					</Badge>
+				) : null}
 				<h3 className="text-base sm:text-lg font-semibold leading-tight line-clamp-2">
 					{model.model_name}
 				</h3>

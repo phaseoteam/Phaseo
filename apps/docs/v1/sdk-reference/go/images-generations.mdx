@@ -1,5 +1,5 @@
 ---
-icon: "wand-sparkles"
+icon: "image"
 title: "Image generations"
 description: "Generate images with the Go SDK."
 ---
@@ -12,7 +12,7 @@ Use the wrapper method:
 import (
   "context"
   "fmt"
-  phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v2"
+  phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3"
 )
 
 client := phaseo.New(apiKey, "https://api.phaseo.app/v1")
@@ -27,4 +27,3 @@ if err != nil {
 
 fmt.Println(resp)
 ```
-

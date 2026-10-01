@@ -1,3 +1,4 @@
+import { DisplayMoneyMessage } from "./DisplayMoneyMessage";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -6,16 +7,23 @@ import { fetchCreditsTierSummary } from "@/lib/fetchers/internal/fetchCreditsTie
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
+import { DisplayNumber } from "@/components/display/DisplayValue";
 
 const HIDE_ENTERPRISE_REFERENCES = true;
 
 function money(amount: number, currency: string = "USD") {
-	return new Intl.NumberFormat("en-US", {
-		style: "currency",
-		currency,
-		minimumFractionDigits: 0,
-		maximumFractionDigits: 0,
-	}).format(amount);
+	return (
+		<DisplayNumber
+			value={amount}
+			options={{
+				style: "currency",
+				currency,
+				minimumFractionDigits: 0,
+				maximumFractionDigits: 0,
+				notation: "standard",
+			}}
+		/>
+	);
 }
 
 interface Props {
@@ -117,11 +125,11 @@ export default async function TierOverview({ workspaceId }: Props) {
 								{remainingToEnterprise > 0 ? (
 									HIDE_ENTERPRISE_REFERENCES ? (
 										<>
-											{t("spendMoreToThreshold", { amount: money(remainingToEnterprise) })}
+											{<DisplayMoneyMessage messageKey={"spendMoreToThreshold"} amount={remainingToEnterprise} />}
 										</>
 									) : (
 										<>
-											{t("spendMoreToThreshold", { amount: money(remainingToEnterprise) })}
+											{<DisplayMoneyMessage messageKey={"spendMoreToThreshold"} amount={remainingToEnterprise} />}
 										</>
 									)
 								) : (
@@ -137,7 +145,7 @@ export default async function TierOverview({ workspaceId }: Props) {
 							<div className="flex items-center gap-2 text-sm">
 								<Sparkles className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
 								<span className="font-medium text-emerald-900 dark:text-emerald-100">
-									{t("savingVsBasic", { amount: money(estimatedSavings) })}
+									{<DisplayMoneyMessage messageKey={"savingVsBasic"} amount={estimatedSavings} />}
 								</span>
 							</div>
 						</div>

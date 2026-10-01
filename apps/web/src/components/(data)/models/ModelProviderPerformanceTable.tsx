@@ -26,14 +26,20 @@ import {
 import type { ModelProviderPerformance } from "@/lib/fetchers/models/getModelPerformance";
 import { cn } from "@/lib/utils";
 import { formatProviderDuration } from "@/components/(data)/models/modelPerformanceFormatting";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 
 function formatMetric(
 	value: number | null,
 	suffix: string,
-	decimals = 0
+	decimals: number,
+	formatNumber: ReturnType<typeof useDisplayFormatters>["number"]
 ): string {
 	if (value == null) return "--";
-	return `${value.toFixed(decimals)}${suffix}`;
+	return `${formatNumber(value, {
+		minimumFractionDigits: decimals,
+		maximumFractionDigits: decimals,
+		notation: "standard",
+	})}${suffix}`;
 }
 
 function getUptimeColorClass(value: number | null): string {
@@ -43,7 +49,11 @@ function getUptimeColorClass(value: number | null): string {
 	return "bg-rose-500";
 }
 
-function formatRangeLabel(start: string, end: string, locale: string): string {
+function formatRangeLabel(
+	start: string,
+	end: string,
+	formatDateParts: ReturnType<typeof useDisplayFormatters>["dateParts"]
+): string {
 	const startDate = new Date(start);
 	const endDate = new Date(end);
 	if (
@@ -53,12 +63,18 @@ function formatRangeLabel(start: string, end: string, locale: string): string {
 		return `${start} – ${end}`;
 	}
 
-	const formatter = new Intl.DateTimeFormat(locale, {
+	const startLabel = formatDateParts(startDate, {
 		weekday: "short",
 		hour: "2-digit",
 		minute: "2-digit",
 	});
-	return `${formatter.format(startDate)} – ${formatter.format(endDate)}`;
+	const endLabel = formatDateParts(endDate, {
+		weekday: "short",
+		hour: "2-digit",
+		minute: "2-digit",
+	});
+
+	return `${startLabel} – ${endLabel}`;
 }
 
 interface ProviderTableProps {
@@ -70,6 +86,7 @@ export default function ModelProviderPerformanceTable({
 }: ProviderTableProps) {
 	const t = useTranslations("Catalogue.modelDetail.performance");
 	const locale = useLocale();
+	const format = useDisplayFormatters();
 	const [sorting, setSorting] = useState<SortingState>([
 		{ id: "avgThroughput", desc: true },
 	]);
@@ -138,7 +155,7 @@ export default function ModelProviderPerformanceTable({
 				),
 				cell: ({ row }) => (
 					<span className="ml-3">
-						{formatMetric(row.original.avgThroughput, " t/s", 2)}
+						{formatMetric(row.original.avgThroughput, " t/s", 2, format.number)}
 					</span>
 				),
 			},
@@ -158,7 +175,7 @@ export default function ModelProviderPerformanceTable({
 				),
 				cell: ({ row }) => (
 					<span className="ml-3">
-						{formatMetric(row.original.avgLatencyMs, " ms")}
+						{formatMetric(row.original.avgLatencyMs, " ms", 0, format.number)}
 					</span>
 				),
 			},
@@ -178,13 +195,13 @@ export default function ModelProviderPerformanceTable({
 				),
 				cell: ({ row }) => (
 					<span className="ml-3">
-						{formatProviderDuration(row.original.avgGenerationMs)}
+						{formatProviderDuration(row.original.avgGenerationMs, format.number)}
 					</span>
 				),
 			},
 			{
 				id: "uptime",
-				header: t("uptime"),
+				header: t("requestSuccess"),
 				enableSorting: false,
 				cell: ({ row }) => (
 					<div className="flex items-center gap-4">
@@ -206,7 +223,7 @@ export default function ModelProviderPerformanceTable({
 											range: formatRangeLabel(
 												bucket.start,
 												bucket.end,
-												locale,
+												format.dateParts,
 											),
 										})}
 									>
@@ -215,7 +232,7 @@ export default function ModelProviderPerformanceTable({
 												range: formatRangeLabel(
 													bucket.start,
 													bucket.end,
-													locale,
+													format.dateParts,
 												),
 											})}
 										</span>
@@ -232,7 +249,7 @@ export default function ModelProviderPerformanceTable({
 				),
 			},
 		],
-		[t, locale]
+		[t, format]
 	);
 
 	const table = useReactTable({

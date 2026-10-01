@@ -17,6 +17,7 @@ describe("normalizeProviderId", () => {
 		expect(normalizeProviderId("x-ai")).toBe("spacex-ai");
 		expect(normalizeProviderId("xai")).toBe("spacex-ai");
 		expect(normalizeProviderId("TensorX")).toBe("tensorix");
+		expect(normalizeProviderId("Wafer-ZDR")).toBe("wafer-zdr");
 	});
 
 	it("does not alias display/provider brand names", () => {

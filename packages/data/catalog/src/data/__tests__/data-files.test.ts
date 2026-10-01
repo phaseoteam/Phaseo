@@ -268,6 +268,48 @@ describe('Models', () => {
       }
     });
   }
+
+  test('Suno v6 suite records the official product release without API assertions', () => {
+    const suite = ['suno-v6', 'suno-v6-wild', 'suno-v6-mini'].map((slug) =>
+      readJson(path.join(modelsDir, 'suno', slug, 'model.json')),
+    );
+
+    expect(suite.map((model) => model.model_id)).toEqual([
+      'suno/suno-v6',
+      'suno/suno-v6-wild',
+      'suno/suno-v6-mini',
+    ]);
+    expect(suite).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        model_id: 'suno/suno-v6',
+        status: 'Available',
+      }),
+      expect.objectContaining({
+        model_id: 'suno/suno-v6-wild',
+        status: 'Available',
+      }),
+      expect.objectContaining({
+        model_id: 'suno/suno-v6-mini',
+        status: 'Available',
+      }),
+    ]));
+    for (const model of suite) {
+      expect(model).toMatchObject({
+        announced_date: '2026-09-09T00:00:00',
+        release_date: '2026-09-09T00:00:00',
+        api_model_id: null,
+        model_type: 'music',
+        input_types: 'text,audio,image,video',
+        output_types: 'music',
+        modalities: {
+          input: ['text', 'audio/*', 'image/*', 'video/*'],
+          output: ['audio/*'],
+        },
+      });
+    }
+    expect(suite.every((model) => model.api_model_id === null)).toBe(true);
+  });
+
 });
 
 // Aliases ----------------------------------------------------------------
@@ -283,6 +325,14 @@ describe('Aliases', () => {
       expect(modelIds.has(j.resolved_model_id)).toBe(true);
     });
   }
+
+  test('OpenAI image aliases resolve to GPT Image 2.5 Flare', () => {
+    for (const aliasDirectory of ['openai-gpt-image-latest', 'openai-gpt-image-2.5']) {
+      const alias = readJson(path.join(aliasesDir, aliasDirectory, 'alias.json'));
+      expect(alias.resolved_api_model_id).toBe('openai/gpt-image-2.5-flare');
+      expect(alias.resolved_model_id).toBe('openai/gpt-image-2.5-flare');
+    }
+  });
 });
 
 // API Providers ----------------------------------------------------------

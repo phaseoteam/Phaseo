@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { Logo } from "@/components/Logo";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 
 interface TopModelRow {
 	modelId: string;
@@ -36,13 +37,14 @@ export default function InsightsSection({
 	mostExpensive,
 	fastestModel,
 }: InsightsSectionProps) {
+	const format = useDisplayFormatters();
 	const t = useTranslations("SettingsUI");
 	const quickStats = [
 		{
 			icon: Target,
 			title: t("strings.Top Provider" as never),
 			value: topProvider?.name || t("strings.No data" as never),
-			subtitle: topProvider ? `${topProvider.requests.toLocaleString()} ${t("strings.requests" as never)}` : null,
+			subtitle: topProvider ? `${format.number(topProvider.requests)} ${t("strings.requests" as never)}` : null,
 			color: "text-blue-600",
 			bgColor: "bg-blue-50",
 		},
@@ -153,7 +155,7 @@ export default function InsightsSection({
 												<ArrowUpRight className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
 											</div>
 											<div className="flex items-center gap-4 mt-1 text-sm text-muted-foreground">
-												<span>{model.requests.toLocaleString()} {t("strings.requests" as never)}</span>
+												<span>{format.number(model.requests)} {t("strings.requests" as never)}</span>
 												{model.avgLatency && (
 													<span>{Math.round(model.avgLatency)}ms avg</span>
 												)}

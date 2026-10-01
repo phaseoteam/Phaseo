@@ -1,0 +1,19 @@
+{
+  "key": "anthropic:anthropic/claude-mythos-5.1:text.generate",
+  "api_provider_id": "anthropic",
+  "provider_slug": "anthropic",
+  "api_model_id": "anthropic/claude-mythos-5.1",
+  "capability_id": "text.generate",
+  "rules": [
+    { "meter": "input_text_tokens", "unit": "token", "unit_size": 1000000, "price_per_unit": 10, "currency": "USD", "pricing_plan": "standard", "note": null, "match": [], "priority": 100, "effective_from": "2026-09-01T00:00:00Z", "region": null, "cache_duration_seconds": null, "conditions": [], "source": "https://platform.claude.com/docs/en/models/fable-5-1/migration-guide" },
+    { "meter": "cached_read_text_tokens", "unit": "token", "unit_size": 1000000, "price_per_unit": 0.25, "currency": "USD", "pricing_plan": "standard", "note": "Cache hits require at least 512 prompt tokens.", "match": [], "priority": 100, "effective_from": "2026-09-01T00:00:00Z", "region": null, "cache_duration_seconds": null, "conditions": [], "source": "https://platform.claude.com/docs/en/models/fable-5-1/migration-guide" },
+    { "meter": "output_text_tokens", "unit": "token", "unit_size": 1000000, "price_per_unit": 50, "currency": "USD", "pricing_plan": "standard", "note": null, "match": [], "priority": 100, "effective_from": "2026-09-01T00:00:00Z", "region": null, "cache_duration_seconds": null, "conditions": [], "source": "https://platform.claude.com/docs/en/models/fable-5-1/migration-guide" },
+    { "meter": "cached_write_text_tokens_5m", "unit": "token", "unit_size": 1000000, "price_per_unit": 12.5, "currency": "USD", "pricing_plan": "standard", "note": null, "match": [], "priority": 100, "effective_from": "2026-09-01T00:00:00Z", "region": null, "cache_duration_seconds": null, "conditions": [], "source": "https://platform.claude.com/docs/en/models/fable-5-1/migration-guide" },
+    { "meter": "cached_write_text_tokens_1h", "unit": "token", "unit_size": 1000000, "price_per_unit": 20, "currency": "USD", "pricing_plan": "standard", "note": null, "match": [], "priority": 100, "effective_from": "2026-09-01T00:00:00Z", "region": null, "cache_duration_seconds": null, "conditions": [], "source": "https://platform.claude.com/docs/en/models/fable-5-1/migration-guide" },
+    { "meter": "native_web_search_requests", "unit": "request", "unit_size": 1, "price_per_unit": 0.01, "currency": "USD", "pricing_plan": "standard", "note": "Anthropic web-search request rate; token charges also apply.", "match": [], "priority": 100, "effective_from": "2026-09-01T00:00:00Z", "effective_to": null, "region": null, "cache_duration_seconds": null, "conditions": [], "source": "https://platform.claude.com/docs/en/about-claude/pricing" }
+  ],
+  "regions": [],
+  "service_tiers": ["standard"],
+  "sources": [{ "kind": "pricing", "url": "https://platform.claude.com/docs/en/models/fable-5-1/migration-guide", "accessed_at": "2026-09-01T00:00:00Z", "notes": "Official Mythos 5.1 input, output, and cache-read pricing." }],
+  "verification": { "status": "verified", "checked_at": "2026-09-01T00:00:00Z", "notes": "Official migration guide confirms $10/M input, $50/M output, and $0.25/M cache-read pricing." }
+}

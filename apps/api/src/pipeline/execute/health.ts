@@ -3,8 +3,9 @@
 // How: Exposes helpers used by before/execute/after orchestration.
 
 import { dispatchBackground, getCache, getSupabaseAdmin } from "@/runtime/env";
-import { HEALTH_CONSTANTS, HEALTH_KEYS } from "./health.config";
+import { HEALTH_CONSTANTS, HEALTH_KEYS, isRecoveryProbeRequest } from "./health.config";
 import type { Endpoint } from "@core/types";
+import { coordinatedHealthEnabled, coordinatedHealthMany, coordinatedHealthRead, reportCoordinatedHealth, resetCoordinatedHealthForTests } from "./health-coordinator";
 
 export type BreakerState = "closed" | "open" | "half_open";
 export type HealthImpact = "success" | "failure" | "neutral";
@@ -28,6 +29,11 @@ export type ProviderHealth = {
 
     rec_ok_ew_60s: number;
     rec_tot_ew_60s: number;
+    rec_ok_ew_10s?: number;
+    rec_tot_ew_10s?: number;
+    rec_rate_limited_ew_10s?: number;
+    last_success_ms?: number;
+    consecutive_failures?: number;
 
     inflight: number;
     current_load: number;
@@ -65,24 +71,36 @@ export function classifyProviderHealthImpact(args: {
 	finishReason?: string | null;
     errorCode?: string | null;
     errorMessage?: string | null;
+    credentialSource?: "gateway" | "byok";
+    failureOrigin?: "provider" | "gateway" | "client";
 }): HealthImpact {
-    if (args.aborted) return "neutral";
+    if (args.aborted || args.failureOrigin === "client" || args.failureOrigin === "gateway") return "neutral";
+    const status = Number(args.upstreamStatus ?? 0);
+    // Credential ownership remains authoritative if a stream also reports an error.
+    if (args.credentialSource === "byok" && [401, 402, 403, 429].includes(status)) return "neutral";
 	if (args.midStreamError) return "failure";
 	const finishReason = normalizeHealthSignal(args.finishReason);
 	if (finishReason === "error" || finishReason === "failed" || finishReason === "failure" || finishReason === "upstream_failure") {
 		return "failure";
 	}
 
-    const status = Number(args.upstreamStatus ?? 0);
     if (Number.isFinite(status) && status >= 200 && status < 300) {
         return "success";
     }
-	if (status === 400 || status === 403 || status === 413 || status === 429) return "neutral";
-	if (status === 401 || status === 402 || status === 404 || status >= 500) return "failure";
+	// A user's own key/quota is not evidence against the shared managed route.
+	if (status === 429 || status === 408) return "failure";
+	// Authentication, billing, model lookup and request validation describe a
+	// credential/request/configuration problem, not shared provider reliability.
+	if (status >= 400 && status < 500) return "neutral";
+	if (status >= 500 && status < 600) return "failure";
     if (isRateLimitSignal(args.errorCode) || isRateLimitSignal(args.errorMessage)) {
-		return "neutral";
+        return args.credentialSource !== "byok" && args.failureOrigin === "provider" ? "failure" : "neutral";
     }
-    return "failure";
+    const code = normalizeHealthSignal(args.errorCode);
+    if (/^(econnreset|econnrefused|etimedout|ehostunreach|enetunreach|und_err_(connect_timeout|headers_timeout|body_timeout|socket))$/.test(code)) return args.failureOrigin === "provider" ? "failure" : "neutral";
+    // Unknown exceptions may be request mapping, billing, or gateway bugs.
+    // Only explicit upstream evidence should affect provider selection.
+    return args.failureOrigin === "provider" ? "failure" : "neutral";
 }
 
 type ProviderConfigField = "err_open_th" | "base_open_secs" | "max_open_secs" | "load_soft_cap";
@@ -99,6 +117,11 @@ const NUMERIC_DEFAULTS: Record<keyof Omit<ProviderHealth, "endpoint" | "provider
     tp_ewma_60s: 0,
     rec_ok_ew_60s: 0,
     rec_tot_ew_60s: 0,
+    rec_ok_ew_10s: 0,
+    rec_tot_ew_10s: 0,
+    rec_rate_limited_ew_10s: 0,
+    last_success_ms: 0,
+    consecutive_failures: 0,
     inflight: 0,
     current_load: 0,
     breaker_until_ms: 0,
@@ -120,7 +143,9 @@ const breakerField = (provider: string) => `${provider}::breaker`;
 const field = (provider: string, metric: string) => `${provider}::${metric}`;
 
 const HEALTH_STATE_TTL_SECONDS = 24 * 60 * 60;
-const HALF_STATE_TTL_SECONDS = HEALTH_CONSTANTS.HALF_OPEN_TEST_SECS;
+// KV requires expirationTtl >= 60 seconds. Retain sparse recovery probes long
+// enough to accumulate a batch; each recorded probe refreshes this TTL.
+const HALF_STATE_TTL_SECONDS = HEALTH_CONSTANTS.MAX_OPEN_SECS;
 const HEALTH_L1_TTL_MS = 1_000;
 
 type L1StateEntry = {
@@ -500,6 +525,11 @@ function snapshotFromMap(
         tp_ewma_60s: readNumber(map, provider, "tp_ewma_60s"),
         rec_ok_ew_60s: readNumber(map, provider, "rec_ok_ew_60s"),
         rec_tot_ew_60s: readNumber(map, provider, "rec_tot_ew_60s"),
+        rec_ok_ew_10s: readNumber(map, provider, "rec_ok_ew_10s"),
+        rec_tot_ew_10s: readNumber(map, provider, "rec_tot_ew_10s"),
+        rec_rate_limited_ew_10s: readNumber(map, provider, "rec_rate_limited_ew_10s"),
+        last_success_ms: readNumber(map, provider, "last_success_ms"),
+        consecutive_failures: readNumber(map, provider, "consecutive_failures"),
         inflight: readNumber(map, provider, "inflight"),
         current_load: readNumber(map, provider, "current_load"),
         breaker: readBreaker(map, provider),
@@ -552,6 +582,7 @@ export async function readHealth(
     provider: string,
     model: string
 ): Promise<ProviderHealth> {
+    if (coordinatedHealthEnabled()) return (await coordinatedHealthRead(endpoint, model, [provider]))[provider];
     const map = await loadStateMap(endpoint, model);
     return snapshotFromMap(endpoint, provider, model, map);
 }
@@ -561,6 +592,7 @@ export async function readHealthMany(
     model: string,
     providers: string[]
 ): Promise<Record<string, ProviderHealth>> {
+    if (coordinatedHealthEnabled()) return coordinatedHealthRead(endpoint, model, providers);
     if (!providers.length) return {};
     const map = await loadStateMap(endpoint, model);
     const out: Record<string, ProviderHealth> = {};
@@ -580,6 +612,7 @@ export function readHealthManyOptimistic(
     model: string,
     providers: string[]
 ): Record<string, ProviderHealth> {
+    if (coordinatedHealthEnabled()) return coordinatedHealthMany(endpoint, model, providers);
     if (!providers.length) return {};
 
     const key = HEALTH_KEYS.health(endpoint, model);
@@ -601,6 +634,8 @@ async function openBreaker(endpoint: Endpoint, provider: string, model: string) 
     let breakerUntilMs = 0;
     await updateMap(key, (map) => {
         const now = Date.now();
+        // In-flight failures must not repeatedly extend an already-open breaker.
+        if (readBreaker(map, provider) === "open") return map;
         const attempts = readNumber(map, provider, "breaker_attempts") + 1;
         const base = readConfig(map, provider, "base_open_secs");
         const maxs = readConfig(map, provider, "max_open_secs");
@@ -612,6 +647,8 @@ async function openBreaker(endpoint: Endpoint, provider: string, model: string) 
         map[field(provider, "last_updated")] = String(now);
         return map;
     });
+    if (!breakerUntilMs) return;
+    await deleteHalf(endpoint, provider, model);
     persistBreakerState({
         endpoint,
         provider,
@@ -630,6 +667,14 @@ async function closeBreaker(endpoint: Endpoint, provider: string, model: string)
         map[field(provider, "breaker_attempts")] = "0";
         map[field(provider, "breaker_until_ms")] = "0";
         map[field(provider, "last_updated")] = String(now);
+        // Successful recovery starts a fresh decision window; do not reopen
+        // immediately from the previous outage's observations.
+        for (const horizon of ["10s", "60s"]) {
+            map[field(provider, `rec_ok_ew_${horizon}`)] = String(HEALTH_CONSTANTS.HALF_OPEN_MIN_PROBES);
+            map[field(provider, `rec_tot_ew_${horizon}`)] = String(HEALTH_CONSTANTS.HALF_OPEN_MIN_PROBES);
+            map[field(provider, `err_ewma_${horizon}`)] = "0";
+        }
+        map[field(provider, "rec_rate_limited_ew_10s")] = "0";
         return map;
     });
     persistBreakerState({
@@ -676,14 +721,7 @@ async function incrHalf(endpoint: Endpoint, provider: string, model: string, ok:
 }
 
 function allowSample(workspaceId: string, requestId: string, p: number) {
-    const s = `${workspaceId}|${requestId}`;
-    let h = 2166136261 >>> 0;
-    for (let i = 0; i < s.length; i++) {
-        h ^= s.charCodeAt(i);
-        h = Math.imul(h, 16777619);
-    }
-    const frac = (h >>> 0) / 0xffffffff;
-    return frac < p;
+    return isRecoveryProbeRequest(workspaceId, requestId, p);
 }
 
 export async function admitThroughBreaker(
@@ -694,7 +732,18 @@ export async function admitThroughBreaker(
     requestId: string,
     snapshot?: ProviderHealth
 ): Promise<"blocked" | "probe" | "closed"> {
+    if (coordinatedHealthEnabled()) {
+        const latest = coordinatedHealthMany(endpoint, model, [provider])[provider];
+        const h = snapshot && snapshot.last_updated > latest.last_updated ? snapshot : latest;
+        if (h.breaker === "closed") return "closed";
+        if (Date.now() < h.breaker_until_ms) return "blocked";
+        return allowSample(workspaceId, requestId, HEALTH_CONSTANTS.HALF_OPEN_PROBE_RATIO) ? "probe" : "blocked";
+    }
     if (snapshot) {
+        const latest = l1State.get(HEALTH_KEYS.health(endpoint, model));
+        if (latest && asNum(latest.map[field(provider, "last_updated")]) >= snapshot.last_updated) {
+            snapshot = snapshotFromMap(endpoint, provider, model, latest.map);
+        }
         let state = snapshot.breaker;
         const now = Date.now();
 
@@ -767,6 +816,9 @@ export async function reportProbeResult(
     model: string,
     ok: boolean
 ) {
+    if (coordinatedHealthEnabled()) return; // Recorded atomically with the terminal outcome.
+    const state = await loadStateMap(endpoint, model);
+    if (readBreaker(state, provider) !== "half_open") return;
     await incrHalf(endpoint, provider, model, ok);
     const half = await readHalf(endpoint, provider, model);
     if (!half) return;
@@ -776,6 +828,7 @@ export async function reportProbeResult(
         const errRate = half.cnt > 0 ? 1 - (half.ok / half.cnt) : 1;
         if (half.ok === half.cnt) await closeBreaker(endpoint, provider, model);
         else if (errRate >= threshold) await openBreaker(endpoint, provider, model);
+        else await deleteHalf(endpoint, provider, model); // retry a clean batch; never remain stuck on one failed probe
     }
 }
 
@@ -784,17 +837,25 @@ export async function maybeOpenOnRecentErrors(
     provider: string,
     model: string
 ) {
+    if (coordinatedHealthEnabled()) return; // The shared reducer owns breaker transitions.
     const map = await loadStateMap(endpoint, model);
-    const tot = readNumber(map, provider, "rec_tot_ew_60s");
-    const ok = readNumber(map, provider, "rec_ok_ew_60s");
-    const rate60 = readNumber(map, provider, "rate_60s");
+    if (readBreaker(map, provider) !== "closed") return;
+    // Rate limits degrade routing scores, but are not evidence of an outage.
+    // Conflating saturation with downtime can open every provider under load.
+    const tot = Math.max(0, readNumber(map, provider, "rec_tot_ew_10s") - readNumber(map, provider, "rec_rate_limited_ew_10s"));
+    const ok = readNumber(map, provider, "rec_ok_ew_10s");
+    const rate60 = readNumber(map, provider, "rate_10s");
     const threshold = readConfig(map, provider, "err_open_th");
 
-    const expected = rate60 * 60;
+    const expected = rate60 * 10;
     const minFloor = HEALTH_CONSTANTS.OPEN_MIN_TOTAL_FLOOR;
     const minFrac = HEALTH_CONSTANTS.OPEN_MIN_TOTAL_FRAC;
     const minNeeded = Math.max(minFloor, minFrac * expected);
 
+    if (readNumber(map, provider, "consecutive_failures") >= HEALTH_CONSTANTS.OPEN_MIN_TOTAL_FLOOR) {
+        await openBreaker(endpoint, provider, model);
+        return;
+    }
     if (tot < minNeeded) return;
 
     const errRate = 1 - (ok / Math.max(tot, 1));
@@ -802,6 +863,7 @@ export async function maybeOpenOnRecentErrors(
 }
 
 export function resetHealthStateForTests(): void {
+    resetCoordinatedHealthForTests();
     healthStateEpoch += 1;
     l1State.clear();
     l1StateInflight.clear();
@@ -811,6 +873,7 @@ export function resetHealthStateForTests(): void {
 }
 
 export async function onCallStart(endpoint: Endpoint, provider: string, model: string) {
+    if (coordinatedHealthEnabled()) return; // No paid write for advisory in-flight counts.
     const key = HEALTH_KEYS.health(endpoint, model);
     await updateMap(key, (map) => {
         const now = Date.now();
@@ -832,18 +895,44 @@ export async function onCallEnd(
         model: string;
         ok: boolean;
         healthImpact?: HealthImpact;
+        upstreamStatus?: number;
+        errorCode?: string | null;
+        errorMessage?: string | null;
         latency_ms: number;
         generation_ms?: number;
         tokens_in?: number;
         tokens_out?: number;
+        observationId?: string;
+        startedAt?: number;
+        probe?: boolean;
     }
 ) {
     const { provider, model, ok, latency_ms } = params;
-    const tokens = (params.tokens_in ?? 0) + (params.tokens_out ?? 0);
+    const impact = params.healthImpact ?? (ok ? "success" : "failure");
+    const rateLimited = impact === "failure" && (params.upstreamStatus === 429 || isRateLimitSignal(params.errorCode) || isRateLimitSignal(params.errorMessage));
+    const textGeneration = endpoint === "responses" || endpoint === "chat.completions" || endpoint === "messages";
+    // Generated text speed excludes the prompt. Other endpoints retain their
+    // existing token-volume metric (e.g. input tokens processed by embeddings).
+    const tokens = Math.max(0, params.tokens_out ?? 0) + (textGeneration ? 0 : Math.max(0, params.tokens_in ?? 0));
+    if (coordinatedHealthEnabled()) {
+        if (impact !== "neutral") {
+            const now = Date.now();
+            const latency = Number.isFinite(latency_ms) ? Math.max(0, latency_ms) : 0;
+            const generation = Number.isFinite(params.generation_ms) ? Math.max(0, params.generation_ms ?? 0) : 0;
+            const tps = generation > 0 && tokens > 0 ? tokens / (generation / 1000) : null;
+            reportCoordinatedHealth({
+                id: params.observationId ?? crypto.randomUUID(), endpoint, model, provider,
+                observedAt: now, startedAt: Number.isFinite(params.startedAt) ? Math.min(now, params.startedAt!) : now - latency - generation,
+                ok: impact === "success", limited: rateLimited, probe: params.probe ?? false,
+                latencyMs: latency,
+                tps: tps !== null && Number.isFinite(tps) ? tps : null,
+            });
+        }
+        return { rateLimited };
+    }
     const key = HEALTH_KEYS.health(endpoint, model);
     await updateMap(key, (map) => {
         const now = Date.now();
-        const impact = params.healthImpact ?? (ok ? "success" : "failure");
         const softCap = readConfig(map, provider, "load_soft_cap");
         const inflightField = field(provider, "inflight");
         const inflight = Math.max(asNum(map[inflightField], 0) - 1, 0);
@@ -877,27 +966,36 @@ export async function onCallEnd(
 
         const decay = (prev: number, sample: number, d: number) => prev * d + (1 - d) * sample;
 
-        const lat10 = decay(readNumber(map, provider, "lat_ewma_10s"), latency_ms, decay10);
-        const lat60 = decay(readNumber(map, provider, "lat_ewma_60s"), latency_ms, decay60);
-        const lat300 = decay(readNumber(map, provider, "lat_ewma_300s"), latency_ms, decay300);
-
 		const healthOk = impact === "success";
-		const errSample = healthOk ? 0 : 1;
-        const err10 = decay(readNumber(map, provider, "err_ewma_10s"), errSample, decay10);
-        const err60 = decay(readNumber(map, provider, "err_ewma_60s"), errSample, decay60);
-        const err300 = decay(readNumber(map, provider, "err_ewma_300s"), errSample, decay300);
+        map[field(provider, "consecutive_failures")] = String(healthOk || rateLimited ? 0 : readNumber(map, provider, "consecutive_failures") + 1);
+        const lastSuccess = readNumber(map, provider, "last_success_ms");
+        const performanceDecay = (tau: number) => lastSuccess > 0 ? Math.exp(-(now-lastSuccess)/tau) : 0;
+        // A quick error must never improve latency or retain invented throughput.
+        const lat10 = healthOk ? decay(readNumber(map, provider, "lat_ewma_10s"), latency_ms, performanceDecay(tau10)) : readNumber(map, provider, "lat_ewma_10s");
+        const lat60 = healthOk ? decay(readNumber(map, provider, "lat_ewma_60s"), latency_ms, performanceDecay(tau60)) : readNumber(map, provider, "lat_ewma_60s");
+        const lat300 = healthOk ? decay(readNumber(map, provider, "lat_ewma_300s"), latency_ms, performanceDecay(tau300)) : readNumber(map, provider, "lat_ewma_300s");
+        // Decayed counts include every completion, including simultaneous ones.
+        const recOk10 = readNumber(map, provider, "rec_ok_ew_10s")*decay10 + Number(healthOk);
+        const recTot10 = readNumber(map, provider, "rec_tot_ew_10s")*decay10 + 1;
+        const recRateLimited10 = readNumber(map, provider, "rec_rate_limited_ew_10s")*decay10 + Number(rateLimited);
+        const recOk = readNumber(map, provider, "rec_ok_ew_60s")*decay60 + Number(healthOk);
+        const recTot = readNumber(map, provider, "rec_tot_ew_60s")*decay60 + 1;
+        const err10 = 1-recOk10/recTot10;
+        const err60 = 1-recOk/recTot;
+        const err300 = decay(readNumber(map, provider, "err_ewma_300s"), Number(!healthOk), decay300);
 
         const rate10 = readNumber(map, provider, "rate_10s") * decay10 + (1000 / tau10);
         const rate60 = readNumber(map, provider, "rate_60s") * decay60 + (1000 / tau60);
 
         let tp60 = readNumber(map, provider, "tp_ewma_60s");
-        if (tokens > 0 && params.generation_ms && params.generation_ms > 0) {
+        if (healthOk && tokens > 0 && params.generation_ms && params.generation_ms > 0) {
             const tps = tokens / Math.max(params.generation_ms / 1000, 0.001);
-            tp60 = decay(tp60, tps, decay60);
+            tp60 = decay(tp60, tps, performanceDecay(tau60));
         }
-
-		const recOk = decay(readNumber(map, provider, "rec_ok_ew_60s"), healthOk ? 1 : 0, decay60);
-        const recTot = decay(readNumber(map, provider, "rec_tot_ew_60s"), 1, decay60);
+        if (healthOk) map[field(provider, "last_success_ms")] = String(now);
+        map[field(provider, "rec_ok_ew_10s")] = String(recOk10);
+        map[field(provider, "rec_tot_ew_10s")] = String(recTot10);
+        map[field(provider, "rec_rate_limited_ew_10s")] = String(recRateLimited10);
         map[field(provider, "lat_ewma_10s")] = String(lat10);
         map[field(provider, "lat_ewma_60s")] = String(lat60);
         map[field(provider, "lat_ewma_300s")] = String(lat300);
@@ -914,4 +1012,5 @@ export async function onCallEnd(
         map[field(provider, "last_ts_300s")] = String(now);
         return map;
     }, HEALTH_STATE_TTL_SECONDS, "background");
+    return { rateLimited };
 }

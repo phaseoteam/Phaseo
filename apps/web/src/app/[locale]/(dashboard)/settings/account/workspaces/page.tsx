@@ -1,80 +1,12 @@
-import { getTranslations } from "next-intl/server";
-import Link from "next/link";
-import { ArrowUpRight, Building2 } from "lucide-react";
-
-import CreateTeamDialog from "@/components/(gateway)/settings/CreateTeamDialog";
-import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHeader";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { fetchSettingsTeamsInitialData } from "@/lib/fetchers/internal/fetchSettingsTeamsInitialData";
-
+import { redirect } from "@/i18n/navigation";
+import { getLocale, getTranslations } from "next-intl/server";
+import { fetchInternalAuthHeaderData } from "@/lib/fetchers/internal/fetchInternalAuthHeaderData";
+import WorkspacesContent from "./WorkspacesContent";
 export async function generateMetadata() {
 	const t = await getTranslations("SettingsUI");
-	return { title: `${t("headers.workspaces")} - ${t("headers.settings")}` };
+	return { title: `${t("headers.workspaces")} - ${t("settingsPageCopy.accountScope")}` };
 }
-
-export default async function AccountWorkspacesPage() {
-	const [data, t] = await Promise.all([fetchSettingsTeamsInitialData(), getTranslations("SettingsUI")]);
-	const manageable = new Set(data.manageableTeamIds);
-	const activeWorkspace = data.teams.find(
-		(workspace) => workspace.id === data.initialTeamId,
-	);
-	const orderedWorkspaces = activeWorkspace
-		? [
-				activeWorkspace,
-				...data.teams.filter((workspace) => workspace.id !== activeWorkspace.id),
-			]
-		: data.teams;
-
-	return (
-		<div className="space-y-6">
-			<div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-				<SettingsPageHeader
-					title="Workspaces"
-					titleKey="headers.workspaces"
-					description="Create workspaces and choose which ones you want to manage."
-					descriptionKey="headers.workspacesDescription"
-					className="min-w-0 flex-1"
-				/>
-				<div className="shrink-0 sm:pt-1">
-					<CreateTeamDialog currentUserId={data.currentUserId ?? undefined} />
-				</div>
-			</div>
-
-			<div className="divide-y border-y">
-				{orderedWorkspaces.map((workspace) => {
-					const memberCount = data.membersByTeam[workspace.id]?.length ?? 0;
-					const membership = (data.membersByTeam[workspace.id] ?? []).find(
-						(member) => member.user_id === data.currentUserId,
-					);
-					const isPersonal = workspace.id === data.personalTeamId;
-					return (
-						<div key={workspace.id} className="flex flex-col gap-4 py-4 sm:flex-row sm:items-center sm:justify-between">
-							<div className="flex min-w-0 items-start gap-3">
-								<div className="grid size-9 shrink-0 place-items-center rounded-lg border bg-muted/30">
-									<Building2 className="size-4 text-muted-foreground" />
-								</div>
-								<div className="min-w-0">
-									<div className="flex flex-wrap items-center gap-2">
-										<p className="truncate text-sm font-medium">{workspace.name}</p>
-										{isPersonal ? <Badge variant="secondary">{t("strings.Personal" as never)}</Badge> : null}
-										{membership?.role ? <Badge variant="outline" className="capitalize">{membership.role}</Badge> : null}
-									</div>
-									<p className="mt-1 text-xs text-muted-foreground">
-										{t("settingsCopy.teams.memberCount", { count: memberCount })}
-									</p>
-								</div>
-							</div>
-							<Button asChild variant="outline" size="sm">
-								<Link href={`/settings/workspaces/${manageable.has(workspace.id) ? "settings" : "members"}?workspaceId=${encodeURIComponent(workspace.id)}`}>
-									{manageable.has(workspace.id) ? t("settingsCopy.teams.openSettings") : t("settingsCopy.teams.viewMembers")}
-									<ArrowUpRight className="size-3.5" />
-								</Link>
-							</Button>
-						</div>
-					);
-				})}
-			</div>
-		</div>
-	);
+export default async function Page() {
+	if ((await fetchInternalAuthHeaderData()).providerMode) redirect({ href: "/settings/account/providers", locale: await getLocale() });
+	return <WorkspacesContent />;
 }

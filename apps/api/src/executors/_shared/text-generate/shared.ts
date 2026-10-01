@@ -3,7 +3,7 @@
 // Why: Keeps provider executors small and consistent across openai-compat and native adapters.
 // How: Filters IR params and applies pre/post hooks around the executor call.
 
-import type { IRChatRequest, IRReasoning } from "@core/ir";
+import type { IRChatRequest } from "@core/ir";
 import type { ExecutorExecuteArgs, ExecutorResult, ProviderExecutor } from "@executors/types";
 
 export type TextGenerateAdapterHooks = {
@@ -40,25 +40,30 @@ export function cherryPickIRParams(
 		messages: ir.messages,
 		model: ir.model,
 		stream: ir.stream,
+		// These carry validated adapter options and request context, not sampling params.
+		vendor: ir.vendor,
+		geo: ir.geo,
+		rawRequest: ir.rawRequest,
+		anthropicCacheControl: ir.anthropicCacheControl,
+		googleCachedContent: ir.googleCachedContent,
+		xaiConversationId: ir.xaiConversationId,
+		promptCacheOptions: ir.promptCacheOptions,
+		// Reasoning is normalized by the provider adapter as a complete configuration.
+		reasoning: ir.reasoning,
 	};
 
-	let reasoning: IRReasoning | undefined = undefined;
 	let responseFormat: IRChatRequest["responseFormat"] | undefined = undefined;
 
 	for (const entry of allowlist) {
 		if (typeof entry !== "string") continue;
 		if (entry.includes(".")) {
-			const [root, leaf] = entry.split(".", 2);
-			if (root === "reasoning") {
-				reasoning ??= {};
-				if (leaf === "effort") reasoning.effort = ir.reasoning?.effort;
-				if (leaf === "summary") reasoning.summary = ir.reasoning?.summary;
-				if (leaf === "enabled") reasoning.enabled = ir.reasoning?.enabled;
-				if (leaf === "maxTokens" || leaf === "max_tokens") reasoning.maxTokens = ir.reasoning?.maxTokens;
-			}
-			if (root === "responseFormat") {
+			const [root] = entry.split(".", 2);
+			if (root === "responseFormat" || root === "response_format") {
 				responseFormat = ir.responseFormat;
 			}
+			if (root === "text" && entry === "text.verbosity") next.textVerbosity = ir.textVerbosity;
+			if (entry === "text.format" || entry.startsWith("text.format.")) responseFormat = ir.responseFormat;
+			if (root === "audio") next.audioConfig = ir.audioConfig;
 			continue;
 		}
 		const mappedKey = (() => {
@@ -106,6 +111,20 @@ export function cherryPickIRParams(
 					return "modalities";
 				case "image_config":
 					return "imageConfig";
+				case "audio":
+					return "audioConfig";
+				case "verbosity":
+					return "textVerbosity";
+				case "web_search_options":
+					return "webSearchOptions";
+				case "context_management":
+					return "contextManagement";
+				case "cache_control":
+					return "anthropicCacheControl";
+				case "cached_content":
+					return "googleCachedContent";
+				case "prompt_cache_options":
+					return "promptCacheOptions";
 				case "stream_options":
 					return "streamOptions";
 				case "store":
@@ -143,16 +162,8 @@ export function cherryPickIRParams(
 		}
 	}
 
-	if (reasoning && Object.keys(reasoning).length > 0) {
-		next.reasoning = reasoning;
-	}
 	if (responseFormat) {
 		next.responseFormat = responseFormat;
-	}
-
-	// Reasoning is handled inside provider adapters, not capability gating.
-	if (ir.reasoning && !next.reasoning) {
-		next.reasoning = ir.reasoning;
 	}
 
 	return next;

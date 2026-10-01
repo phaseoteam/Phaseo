@@ -14,6 +14,7 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { debounce, useQueryState } from "nuqs";
 import { ModelsGrid } from "./ModelsGrid";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { ActiveModelFilters, type ActiveModelFilter } from "./ActiveModelFilters";
 import { resolveDefaultGatewayStatuses } from "@/lib/models/defaultGatewayStatuses";
 import { Logo } from "@/components/Logo";
@@ -24,13 +25,18 @@ import {
 	Table2 as TableIcon,
 	Layers3,
 	SlidersHorizontal,
+	Archive,
 	Activity,
 	ArrowDownCircle,
 	ArrowUpDown,
 	BadgeAlert,
+	Ban,
 	Binary,
+	CalendarClock,
 	Captions,
 	CircleDot,
+	CircleCheck,
+	CircleMinus,
 	Database,
 	FileText,
 	Headphones,
@@ -46,6 +52,8 @@ import {
 	Video,
 	CalendarDays,
 	Globe2,
+	LockKeyhole,
+	Scale,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -98,6 +106,7 @@ import type {
 	ModelsPageModel,
 	OptionCount,
 } from "./modelsDisplay.types";
+import { compareModelsByNewest } from "./modelOrdering";
 
 interface ModelsDisplayProps {
 	modelsPageData: ModelsPageData;
@@ -198,6 +207,8 @@ const ENDPOINT_DISPLAY_ORDER = [
 	"audio/translations",
 	"audio/realtime",
 	"video/generations",
+	"decisions",
+	"decisions/make",
 ] as const;
 
 const ENDPOINT_LABELS: Record<string, string> = {
@@ -219,6 +230,12 @@ const ENDPOINT_LABELS: Record<string, string> = {
 	"audio/translations": "Translation",
 	"audio/realtime": "Real-time",
 	"video/generations": "Video Generation",
+	decisions: "Decisions",
+	"decision/make": "Decisions",
+	"decisions/make": "Decisions",
+	systemone: "Decisions",
+	"system.one": "Decisions",
+	"typed.decisions": "Decisions",
 };
 
 const endpointOrder = new Map(
@@ -334,6 +351,8 @@ function toGatewayStatusFilter(value: string): GatewayStatusFilter | null {
 	if (normalized === "coming_soon" || normalized === "comingsoon") {
 		return "coming_soon";
 	}
+	if (normalized === "deprecated") return "deprecated";
+	if (normalized === "retired") return "retired";
 	if (
 		normalized === "not_active" ||
 		normalized === "inactive" ||
@@ -358,6 +377,8 @@ function getGatewayStatusBucket(
 ): GatewayStatusFilter {
 	if (status === "active") return "active";
 	if (status === "coming_soon") return "coming_soon";
+	if (status === "deprecated") return "deprecated";
+	if (status === "retired") return "retired";
 	return "not_active";
 }
 
@@ -450,6 +471,16 @@ function toTitleCase(value: string): string {
 	const normalized = String(value ?? "")
 		.trim()
 		.toLowerCase();
+	if (
+		normalized === "decisions.make" ||
+		normalized === "decision.make" ||
+		normalized === "systemone" ||
+		normalized === "system.one" ||
+		normalized === "typed.decisions" ||
+		normalized === "decisions"
+	) {
+		return "Decisions";
+	}
 	if (normalized === "realtime") return "Real-time";
 	if (normalized === "audio_stt") return "Transcription";
 	if (normalized === "audio_tts") return "Speech";
@@ -526,6 +557,7 @@ function getEndpointSortRank(value: string): number {
 function getModalityIcon(modality: string): LucideIcon {
 	const normalized = modality.toLowerCase().replace(/[._/-]+/g, " ");
 
+	if (normalized.includes("decision")) return Scale;
 	if (normalized.includes("realtime") || normalized.includes("real time")) {
 		return Radio;
 	}
@@ -560,6 +592,17 @@ function getModalityIcon(modality: string): LucideIcon {
 
 function getEndpointIcon(endpoint: string): LucideIcon {
 	const normalized = normalizeEndpointValue(endpoint);
+	if (
+		normalized === "decisions" ||
+		normalized === "/decisions" ||
+		normalized === "decision/make" ||
+		normalized === "decisions/make" ||
+		normalized === "systemone" ||
+		normalized === "system/one" ||
+		normalized === "typed/decisions"
+	) {
+		return Scale;
+	}
 	if (normalized.includes("embedding")) return Database;
 	if (normalized.includes("rerank")) return ArrowUpDown;
 	if (normalized.includes("moderation")) return BadgeAlert;
@@ -954,6 +997,7 @@ function ModelsDisplayContent({
 	modelsPageData: ModelsPageData;
 	showPrimaryHeader?: boolean;
 }) {
+	const format = useDisplayFormatters();
 	const { models, facets } = modelsPageData;
 	const t = useTranslations("Catalogue.models");
 	const tFilters = useTranslations("Catalogue.models.filtersUi");
@@ -1167,6 +1211,8 @@ function ModelsDisplayContent({
 	});
 	const [sort, setSort] = useQueryState("sort", sortParser);
 	const selectedSort = normalizeSortOption(sort);
+	const hasPrivateModels = models.some((model) => model.gateway_tiers?.includes("private"));
+	const privateOnly = selectedTiers.includes("private");
 	const [showMobileFilterFab, setShowMobileFilterFab] = useState(false);
 	const [isMobileViewport, setIsMobileViewport] = useState(false);
 	const [sidebarCountsReady, setSidebarCountsReady] = useState(false);
@@ -1441,12 +1487,8 @@ function ModelsDisplayContent({
 	);
 
 	const filteredPreparedModels = useMemo(() => {
-		const compareByNewest = (a: PreparedModel, b: PreparedModel) => {
-			const tsA = a.model.primary_timestamp ?? Number.NEGATIVE_INFINITY;
-			const tsB = b.model.primary_timestamp ?? Number.NEGATIVE_INFINITY;
-			if (tsA !== tsB) return tsB - tsA;
-			return (a.model.name ?? "").localeCompare(b.model.name ?? "");
-		};
+		const compareByNewest = (a: PreparedModel, b: PreparedModel) =>
+			compareModelsByNewest(a.model, b.model);
 
 		const filtered = preparedModels.filter((prepared) =>
 			matchesPreparedModel(prepared),
@@ -1521,6 +1563,8 @@ function ModelsDisplayContent({
 			active: 0,
 			coming_soon: 0,
 			not_active: 0,
+			deprecated: 0,
+			retired: 0,
 		};
 		for (const prepared of statusSource) {
 			statusCounts[prepared.status] += 1;
@@ -1661,10 +1705,13 @@ function ModelsDisplayContent({
 			if (statuses.length > 0) {
 				params.set(
 					"statuses",
-					statuses
-						.map((status) =>
-							status === "not_active" ? "inactive" : status,
-						)
+					Array.from(new Set(statuses.map((status) =>
+							status === "not_active" ||
+							status === "deprecated" ||
+							status === "retired"
+								? "inactive"
+								: status,
+						)))
 						.join(","),
 				);
 			} else {
@@ -1688,6 +1735,14 @@ function ModelsDisplayContent({
 		{
 			value: "not_active",
 			count: dynamicSidebarCounts.statusCounts.not_active,
+		},
+		{
+			value: "deprecated",
+			count: dynamicSidebarCounts.statusCounts.deprecated,
+		},
+		{
+			value: "retired",
+			count: dynamicSidebarCounts.statusCounts.retired,
 		},
 	];
 	const endpointOptions = useMemo(
@@ -1795,6 +1850,19 @@ function ModelsDisplayContent({
 			) : null}
 		</Button>
 	);
+	const privateFilterButton = hasPrivateModels ? (
+		<Button
+			type="button"
+			size="sm"
+			variant={privateOnly ? "default" : "outline"}
+			className="h-8 gap-1.5 rounded-md"
+			onClick={() => setSelectedTiers(privateOnly ? without(selectedTiers, "private") : [...selectedTiers, "private"])}
+			aria-pressed={privateOnly}
+		>
+			<LockKeyhole className="h-3.5 w-3.5" />
+			Private
+		</Button>
+	) : null;
 
 	const viewSwitcherItemClass = (active: boolean, isFirst = false) =>
 		cn(
@@ -1900,9 +1968,11 @@ function ModelsDisplayContent({
 						}}
 						labelForValue={translateStatus}
 						iconForValue={(value) => {
-							if (value === "active") return Activity;
-							if (value === "coming_soon") return Sparkles;
-							return Database;
+							if (value === "active") return CircleCheck;
+							if (value === "coming_soon") return CalendarClock;
+							if (value === "not_active") return CircleMinus;
+							if (value === "deprecated") return Ban;
+							return Archive;
 						}}
 					/>
 				</AccordionContent>
@@ -2184,8 +2254,9 @@ function ModelsDisplayContent({
 							</div>
 						) : null}
 
-						<div className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2">
+						<div className="flex items-center gap-2">
 							{sortSelect("h-8 min-w-0 rounded-md bg-background text-sm")}
+							{privateFilterButton}
 							{filterButton()}
 							{showPrimaryHeader ? viewSwitcher : null}
 						</div>
@@ -2233,6 +2304,7 @@ function ModelsDisplayContent({
 									{sortSelect(
 										"h-8 w-[12.5rem] rounded-md bg-background text-sm 2xl:w-[13.5rem]",
 									)}
+									{privateFilterButton}
 									{showPrimaryHeader ? viewSwitcher : null}
 								</div>
 							</div>
@@ -2246,6 +2318,7 @@ function ModelsDisplayContent({
 									<div />
 								)}
 								<div className="flex shrink-0 items-center justify-end gap-2">
+									{privateFilterButton}
 									{filterButton()}
 									{showPrimaryHeader ? viewSwitcher : null}
 								</div>

@@ -1,0 +1,173 @@
+{
+  "model_id": "qwen/qwen3.8-max-0902",
+  "organisation_id": "qwen",
+  "name": "Qwen 3.8 Max 0902",
+  "status": "Available",
+  "previous_model_id": "qwen/qwen3.8-max",
+  "description": "Qwen3.8-Max-0902 is a pinned Qwen Cloud snapshot of Qwen3.8-Max, further post-trained for coding and collaborative agent work. It improves engineering-scale coding, long-horizon autonomous development, multi-tool orchestration, enterprise tasks, scientific research, chart reasoning, document parsing and multimodal perception while retaining the 1M-token context window, thinking mode and built-in tool ecosystem. It is also available under the alias qwen3.8-max-2026-09-02.",
+  "announced_date": "2026-09-02T00:00:00",
+  "release_date": "2026-09-02T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": [
+    "text",
+    "image",
+    "video"
+  ],
+  "output_types": [
+    "text"
+  ],
+  "api_model_id": "qwen/qwen3.8-max-0902",
+  "links": [
+    {
+      "title": "Qwen Cloud model page",
+      "kind": "release",
+      "url": "https://www.qwencloud.com/models/qwen3.8-max-0902"
+    },
+    {
+      "title": "Qwen announcement",
+      "kind": "release",
+      "url": "https://x.com/Alibaba_Qwen/status/2094968708288680276"
+    },
+    {
+      "title": "DashScope API reference",
+      "kind": "api_reference",
+      "url": "https://docs.qwencloud.com/api-reference/chat/dashscope"
+    }
+  ],
+  "details": [
+    {
+      "name": "parameters",
+      "value": 2400000000000,
+      "source_link": "https://x.com/Alibaba_Qwen/status/2094968708288680276"
+    },
+    {
+      "name": "input_context_length",
+      "value": 991800,
+      "source_link": "https://www.qwencloud.com/models/qwen3.8-max-0902",
+      "other_info": "Maximum input shown by Qwen Cloud; the advertised total context window is 1M tokens."
+    },
+    {
+      "name": "output_context_length",
+      "value": 131072,
+      "source_link": "https://www.qwencloud.com/models/qwen3.8-max-0902"
+    },
+    {
+      "name": "thinking_input_limit",
+      "value": 983610,
+      "source_link": "https://www.qwencloud.com/models/qwen3.8-max-0902"
+    },
+    {
+      "name": "max_reasoning_tokens",
+      "value": 262144,
+      "source_link": "https://www.qwencloud.com/models/qwen3.8-max-0902"
+    },
+    {
+      "name": "requests_per_minute",
+      "value": 15000,
+      "source_link": "https://www.qwencloud.com/models/qwen3.8-max-0902"
+    },
+    {
+      "name": "tokens_per_minute",
+      "value": 1000000,
+      "source_link": "https://www.qwencloud.com/models/qwen3.8-max-0902"
+    },
+    {
+      "name": "input_price_per_million_tokens_usd",
+      "value": 2,
+      "source_link": "https://www.qwencloud.com/models/qwen3.8-max-0902"
+    },
+    {
+      "name": "implicit_cache_input_price_per_million_tokens_usd",
+      "value": 0.25,
+      "source_link": "https://www.qwencloud.com/models/qwen3.8-max-0902"
+    },
+    {
+      "name": "explicit_cache_creation_price_per_million_tokens_usd",
+      "value": 2.5,
+      "source_link": "https://www.qwencloud.com/models/qwen3.8-max-0902"
+    },
+    {
+      "name": "explicit_cache_read_price_per_million_tokens_usd",
+      "value": 0.17,
+      "source_link": "https://www.qwencloud.com/models/qwen3.8-max-0902"
+    },
+    {
+      "name": "output_price_per_million_tokens_usd",
+      "value": 6,
+      "source_link": "https://www.qwencloud.com/models/qwen3.8-max-0902"
+    },
+    {
+      "name": "supported_features",
+      "value": "Prefix completion, function calling, cache, structured outputs, batches, web search, fine-tuning, code interpreter, web extraction, text-to-image search and image-to-image search.",
+      "source_link": "https://www.qwencloud.com/models/qwen3.8-max-0902"
+    }
+  ],
+  "page_notice": null,
+  "benchmarks": [],
+  "family_id": null,
+  "model_type": null,
+  "knowledge_cutoff": null,
+  "limits": {
+    "context": 1000000,
+    "input": 991800,
+    "output": 131072
+  },
+  "modalities": {
+    "input": [
+      "text",
+      "image/*",
+      "video/*"
+    ],
+    "output": [
+      "text"
+    ]
+  },
+  "reasoning": {
+    "supported": true,
+    "options": [
+      "low",
+      "medium",
+      "xhigh"
+    ]
+  },
+  "capabilities": {
+    "attachment": true,
+    "tool_call": true,
+    "structured_output": true,
+    "temperature": true,
+    "streaming": true,
+    "web_search": true
+  },
+  "open_weights": false,
+  "sources": [
+    {
+      "kind": "release",
+      "url": "https://www.qwencloud.com/models/qwen3.8-max-0902",
+      "accessed_at": "2026-09-02T00:00:00Z",
+      "notes": "Official Qwen Cloud model page with aliases, modalities, limits, features and pricing."
+    },
+    {
+      "kind": "release",
+      "url": "https://x.com/Alibaba_Qwen/status/2094968708288680276",
+      "accessed_at": "2026-09-02T00:00:00Z",
+      "notes": "Official launch announcement with parameter count, context window, positioning and pricing."
+    },
+    {
+      "kind": "documentation",
+      "url": "https://docs.qwencloud.com/api-reference/chat/dashscope",
+      "accessed_at": "2026-09-02T00:00:00Z",
+      "notes": "Official DashScope chat API parameter reference."
+    }
+  ],
+  "verification": {
+    "status": "verified",
+    "checked_at": "2026-09-02T00:00:00Z",
+    "notes": "Verified against the official Qwen announcement and live Qwen Cloud model page."
+  },
+  "last_updated": "2026-09-02T00:00:00Z",
+  "removal_date": null,
+  "replacement_model_id": null,
+  "license_url": null
+}

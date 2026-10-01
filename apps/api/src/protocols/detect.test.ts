@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { detectProtocol, detectTextProtocol } from "./detect";
+import {
+	detectProtocol,
+	detectTextProtocol,
+	protocolSupportsFeature,
+} from "./detect";
 
 describe("detectTextProtocol", () => {
 	it("detects openai chat protocol for chat completions endpoint", () => {
@@ -38,6 +42,15 @@ describe("detectProtocol", () => {
 		expect(detectProtocol("rerank", "/v1/rerank")).toBe(
 			"openai.rerank",
 		);
+		expect(detectProtocol("decisions", "/v1/decisions")).toBe(
+			"phaseo.decisions",
+		);
+	});
+
+	it("keeps structured decision protocol capabilities explicit", () => {
+		expect(protocolSupportsFeature("phaseo.decisions", "streaming")).toBe(false);
+		expect(protocolSupportsFeature("phaseo.decisions", "tools")).toBe(false);
+		expect(protocolSupportsFeature("phaseo.decisions", "multimodal")).toBe(false);
+		expect(protocolSupportsFeature("phaseo.decisions", "reasoning")).toBe(false);
 	});
 });
-

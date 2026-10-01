@@ -1,0 +1,240 @@
+---
+icon: "globe"
+title: "Route text requests by region"
+description: "Restrict Phaseo text generation to EU or US provider routes."
+---
+
+Use a regional Phaseo endpoint to keep provider execution and provider data
+handling within the EU or US routes documented by Phaseo. You can use regional
+routing with Chat Completions, Responses, and Messages without changing your
+model IDs or API keys.
+
+<Warning>
+Regional routing is not currently an end-to-end data residency guarantee.
+Phaseo restricts provider selection and uses a Cloudflare placement hint near
+the selected region, but shared account, billing, cache, and operational systems
+may process data outside that region.
+</Warning>
+
+## Choose an endpoint
+
+| Region | Base URL | Behavior |
+| --- | --- | --- |
+| European Union | `https://eu.api.phaseo.app/v1` | Requires EU execution and data-region provider routes |
+| United States | `https://us.api.phaseo.app/v1` | Requires US execution and data-region provider routes |
+| Global | `https://api.phaseo.app/v1` | Uses the standard global routing policy |
+
+The regional hostname is the policy boundary. A request cannot override it with
+a conflicting `required_execution_region` or `required_data_region` value.
+
+## Use the Phaseo SDK
+
+Set `region` when creating the client. Every supported request made by that
+client uses the corresponding regional base URL.
+
+<CodeGroup>
+```ts TypeScript
+import { Phaseo } from "@phaseo/sdk";
+
+const phaseo = new Phaseo({
+  apiKey: process.env.PHASEO_API_KEY!,
+  region: "eu",
+});
+
+const response = await phaseo.responses.create({
+  model: "openai/gpt-5-mini",
+  input: "Summarize this note in one sentence.",
+});
+
+console.log(response.output_text);
+```
+
+```python Python
+import os
+from phaseo import Phaseo
+
+phaseo = Phaseo(
+    api_key=os.environ["PHASEO_API_KEY"],
+    region="eu",
+)
+
+response = phaseo.responses.create({
+    "model": "openai/gpt-5-mini",
+    "input": "Summarize this note in one sentence.",
+})
+
+print(response.get("output_text"))
+```
+</CodeGroup>
+
+Use `"us"` for US routing. Omit `region`, or use `"global"`, for global
+routing. The SDK rejects configurations that combine `region` with a custom
+`baseUrl` or `base_url`, because the two options would select competing hosts.
+
+## Use Chat Completions
+
+```bash
+curl https://eu.api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-5-mini",
+    "messages": [
+      {"role": "user", "content": "Write a two-line status update."}
+    ]
+  }'
+```
+
+## Use Responses
+
+```bash
+curl https://eu.api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-5-mini",
+    "input": "Extract the three most important actions from this note."
+  }'
+```
+
+## Use Messages
+
+The Messages endpoint accepts the Anthropic request format while retaining the
+same regional provider restriction.
+
+```bash
+curl https://us.api.phaseo.app/v1/messages \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -H "anthropic-version: 2023-06-01" \
+  -d '{
+    "model": "anthropic/claude-sonnet-4.6",
+    "max_tokens": 256,
+    "messages": [
+      {"role": "user", "content": "Summarize this incident report."}
+    ]
+  }'
+```
+
+## Supported request features
+
+Regional routing currently supports:
+
+- Text input and text output
+- Streaming and non-streaming responses
+- System and developer instructions
+- Client-defined function tools and custom tools
+- Tool results containing text
+- Structured text and JSON output, when supported by the model
+- Presets, provider ordering, fallbacks, and pricing limits that do not conflict
+  with the regional policy
+
+The regional endpoints reject:
+
+- Images, audio, video, documents, files, and attachments
+- Non-text output modalities
+- Provider-hosted tools such as web search, file search, code execution, computer
+  use, and image generation
+- Image, audio, video, embedding, moderation, batch, file, webhook, and realtime
+  endpoints
+
+Function tools are allowed because the tool executes in your application. A
+provider-hosted tool is blocked because its execution location may not match the
+regional policy.
+
+## Discover models available in a region
+
+Call `/v1/models` through the same regional hostname you use for generation:
+
+```bash
+curl https://eu.api.phaseo.app/v1/models \
+  -H "Authorization: Bearer $PHASEO_API_KEY"
+```
+
+The response contains only models with an active provider route whose declared
+execution and data regions both include the selected region. It advertises only
+Chat Completions, Responses, and Messages, with text input and output.
+
+Each offer includes its regional metadata:
+
+```json
+{
+  "provider": { "id": "example-eu", "name": "Example EU" },
+  "residency": {
+    "execution_regions": ["eu"],
+    "data_regions": ["eu"]
+  }
+}
+```
+
+Model availability can differ between the EU, US, and global endpoints. Always
+discover models through the endpoint your application will call.
+
+## Verify the selected gateway
+
+Regional responses include:
+
+```http
+X-Phaseo-Gateway-Region: eu
+```
+
+Use this header to confirm that the request reached the expected Phaseo
+deployment. Request details record the required execution region, required data
+region, selected provider, and the provider's declared regional metadata.
+
+<Note>
+The header identifies the regional Phaseo policy that handled the request. It is
+not evidence of guaranteed Cloudflare execution residency.
+</Note>
+
+## Failure behavior
+
+Regional routing fails closed. Phaseo never silently retries the request through
+a provider outside the hostname's region.
+
+| Error | Meaning | What to do |
+| --- | --- | --- |
+| `regional_endpoint_not_supported` | The path is not available on regional Workers | Use one of the three supported text endpoints or the global API |
+| `regional_non_text_content` | The request contains media, a file, or an attachment | Remove non-text content or use the global API |
+| `regional_non_text_output` | The request asks for a non-text response | Request text output or use the global API |
+| `regional_hosted_tool_not_supported` | A provider-hosted tool was requested | Use a client-defined function tool or the global API |
+| `deployment_region_conflict` | The request or preset specifies another region | Remove the conflicting setting |
+| No available provider route | No healthy provider satisfies the model and regional policy | Choose another model returned by the regional `/v1/models` endpoint |
+
+## What regional routing covers
+
+For an accepted generation request, Phaseo requires the selected provider route
+to declare both:
+
+1. Model execution in the selected region
+2. Prompt and completion data handling in the selected region
+
+Phaseo applies these requirements after presets and dynamic routing rules are
+merged, so those features cannot weaken the hostname policy. If no provider
+matches, the request stops before upstream model execution.
+
+## Current limitations
+
+This initial release does not guarantee that the complete request lifecycle
+stays inside the selected region:
+
+- Cloudflare Workers placement hints choose a location near the configured cloud
+  region, but do not create a compliance boundary.
+- Phaseo account, authentication, billing, and request metadata use shared
+  Supabase infrastructure.
+- Cloudflare KV and Worker invocation logs are not region-bound.
+- Provider subrequests are constrained by the selected provider endpoint, not by
+  Cloudflare's placement setting.
+- Support and operational access are not restricted to personnel in the selected
+  region.
+
+Phaseo will only describe the feature as end-to-end data residency after the
+gateway, storage, logging, provider, and operational paths are covered by
+enforceable regional controls.
+
+## Related guides
+
+- [Routing and fallbacks](/v1/guides/routing-and-fallbacks)
+- [Provider-qualified models](/v1/guides/provider-qualified-models)
+- [Presets](/v1/guides/presets)
+- [Tool calling](/v1/guides/tool-calling)

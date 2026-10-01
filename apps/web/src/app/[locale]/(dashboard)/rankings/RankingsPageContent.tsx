@@ -35,19 +35,18 @@ import {
     fetchFrontendOrganisationLogoIdsByNames,
     fetchFrontendProviderNamesByIds,
     fetchFrontendRankingModalityTimeseries,
-    fetchFrontendRankingMultimodal,
     fetchFrontendRankingsIndexability,
     fetchFrontendRankingUniqueUserTimeseries,
 } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import {
 	fetchFrontendRankingFastestModels,
-	fetchFrontendRankingImageInputs,
-	fetchFrontendRankingTextLeaderboard,
 } from "@/lib/fetchers/frontend/fetchRankingSections";
 import type {
-	MultimodalData,
+	TimeseriesData,
 	PerformanceData,
 } from "@/lib/fetchers/rankings/getRankingsData";
+import { modalityMetrics, secondaryModalityMetrics } from "@/lib/fetchers/rankings/modalityMetrics";
+import { RankingUnavailable } from "@/components/(rankings)/RankingUnavailable";
 import { formatModelDisplayName } from "@/lib/models/displayName";
 
 export type RankingModality =
@@ -148,6 +147,9 @@ export default async function RankingsPageContent({
 
                     {isTextPage ? (
                     <>
+					<Suspense fallback={<ListSkeleton />}>
+						<TextRankingSignalsServer />
+					</Suspense>
 					<Suspense fallback={<ListSkeleton />}>
 						<BenchmarkRankingsSectionServer />
 					</Suspense>
@@ -256,31 +258,6 @@ function formatCount(value: number, unit: string, locale: string) {
 	return `${formatted} ${unit}`;
 }
 
-function buildVolumeEntries(
-	rows: MultimodalData[],
-	metric: Exclude<keyof MultimodalData, "model_id">,
-	metaMap: Record<string, { name: string | null; organisation_id: string | null; organisation_name: string | null }>,
-	label: (value: number) => string,
-): ModalityLeaderboardEntry[] {
-	return rows
-		.map((row): ModalityLeaderboardEntry | null => {
-			const value = Number(row[metric] ?? 0);
-			if (!row.model_id || !Number.isFinite(value) || value <= 0) return null;
-			const meta = metadataFor(row.model_id, metaMap);
-			return {
-				key: `${String(metric)}:${row.model_id}`,
-				model_id: row.model_id,
-				...meta,
-				value,
-				value_label: label(value),
-			};
-		})
-		.filter((entry): entry is ModalityLeaderboardEntry => entry !== null)
-		.sort((left, right) => right.value - left.value)
-		.slice(0, 20)
-		.map((entry, index) => ({ ...entry, rank: index + 1 }));
-}
-
 function buildPerformanceEntries(
 	rows: PerformanceData[],
 	metric: "median_throughput" | "median_latency_ms",
@@ -291,6 +268,7 @@ function buildPerformanceEntries(
 		throughput: (value: string) => string;
 		latency: (value: string) => string;
 		medianLatency: (value: string) => string;
+		recentRequests: (count: string) => string;
 	},
 ): ModalityLeaderboardEntry[] {
 	const lowerIsBetter = metric === "median_latency_ms";
@@ -318,6 +296,7 @@ function buildPerformanceEntries(
 					metric === "median_throughput"
 						? labels.throughput(new Intl.NumberFormat(locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(value))
 						: labels.latency(new Intl.NumberFormat(locale, { maximumFractionDigits: 0 }).format(value)),
+				secondary: labels.recentRequests(new Intl.NumberFormat(locale).format(Number(row.requests ?? 0))),
 				tertiary:
 					metric === "median_throughput"
 						? Number(row.median_latency_ms ?? 0) > 0
@@ -337,283 +316,65 @@ function buildPerformanceEntries(
 		.map((entry, index) => ({ ...entry, rank: index + 1 }));
 }
 
-async function ModalityLeaderboardsServer({
-	modality,
-}: {
-	modality: RankingModality;
-}) {
-	const [t, locale] = await Promise.all([
-		getTranslations("Catalogue.rankings"),
-		getLocale(),
+export async function ModalityLeaderboardsServer({ modality }: { modality: RankingModality }) {
+	const [t, locale] = await Promise.all([getTranslations("Catalogue.rankings"), getLocale()]);
+	const metricTitles = { text_tokens: "modalityMetricTitles.text-volume", image_outputs: "modalityMetricTitles.image-generated", embedding_tokens: "modalityMetricTitles.embedding-volume", rerank_quad_tokens: "modalityMetricTitles.rerank-volume", audio_tokens: "modalityMetricTitles.audio-tokens", video_seconds: "modalityMetricTitles.video-seconds", speech_seconds: "modalityMetricTitles.speech-seconds", transcription_seconds: "audioTranscribed", image_inputs: "modalityMetricTitles.image-inputs", audio_seconds: "modalityMetricTitles.audio-cache", video_tokens: "modalityMetricTitles.video-tokens" } as const;
+	const metricTitle = (metric: string) => t(metricTitles[metric as keyof typeof metricTitles]);
+	const unitLabel = (unit: string) => unit === "quadtokens" ? unit : t(({ tokens: "usageTokensUnit", images: "usageImagesUnit", seconds: "usageSecondsUnit" } as const)[unit as "tokens" | "images" | "seconds"]);
+	const primary = modalityMetrics[modality];
+	const secondary = secondaryModalityMetrics[modality];
+	const [series, monthly, secondaryMonthly] = await Promise.all([
+		fetchFrontendRankingModalityTimeseries(primary.metric, "year").catch(() => null),
+		fetchFrontendRankingModalityTimeseries(primary.metric, "month").catch(() => null),
+		secondary ? fetchFrontendRankingModalityTimeseries(secondary.metric, "month").catch(() => null) : null,
 	]);
-	const [
-		multimodalRes,
-		perfRes,
-		textTimeseries,
-		imageInputTimeseries,
-		imageGeneratedTimeseries,
-		audioTimeseries,
-		videoTimeseries,
-		videoSecondsTimeseries,
-		cacheTimeseries,
-		audioSecondsTimeseries,
-		embeddingTimeseries,
-		rerankTimeseries,
-	] = await Promise.all([
-		fetchFrontendRankingMultimodal("month").catch(() => ({ data: [] })),
-		fetchFrontendRankingFastestModels(30, 20).catch(() => ({ data: [] })),
-		fetchFrontendRankingTextLeaderboard("year", 20).catch(() => ({ data: [] })),
-		fetchFrontendRankingImageInputs("year", 20).catch(() => ({ data: [] })),
-		fetchFrontendRankingModalityTimeseries("image_outputs", "year").catch(() => ({ data: [] })),
-		fetchFrontendRankingModalityTimeseries("audio_tokens", "year").catch(() => ({ data: [] })),
-		fetchFrontendRankingModalityTimeseries("video_tokens", "year").catch(() => ({ data: [] })),
-		fetchFrontendRankingModalityTimeseries("video_seconds", "year").catch(() => ({ data: [] })),
-		fetchFrontendRankingModalityTimeseries("cached_tokens", "year").catch(() => ({ data: [] })),
-		fetchFrontendRankingModalityTimeseries("audio_seconds", "year").catch(() => ({ data: [] })),
-		fetchFrontendRankingModalityTimeseries("embedding_tokens", "year").catch(() => ({ data: [] })),
-		fetchFrontendRankingModalityTimeseries("rerank_quad_tokens", "year").catch(() => ({ data: [] })),
-	]);
+	const modelIds = [...new Set([...(series?.data ?? []), ...(monthly?.data ?? []), ...(secondaryMonthly?.data ?? [])]
+		.map((row) => row.model_id).filter((id) => id && !["other", "unknown"].includes(id.toLowerCase())))];
+	const metaMap = await fetchFrontendModelLeaderboardMetaByIds(modelIds).catch(
+		(): Awaited<ReturnType<typeof fetchFrontendModelLeaderboardMetaByIds>> => ({}),
+	);
+	const nameMap = Object.fromEntries(modelIds.map((id) => [id, formatModelDisplayName(metaMap[id]?.name, id)]));
+	const logoIdMap = Object.fromEntries(modelIds.map((id) => [id, metaMap[id]?.organisation_id ?? id]));
+	const organisationNameMap = Object.fromEntries(modelIds.map((id) => [id, metaMap[id]?.organisation_name ?? null]));
+	const entries = (rows: TimeseriesData[], unit: string): ModalityLeaderboardEntry[] => {
+		const totals = new Map<string, number>();
+		for (const row of rows) {
+			if (!modelIds.includes(row.model_id)) continue;
+			const value = Number(row.tokens);
+			if (Number.isFinite(value) && value > 0) totals.set(row.model_id, (totals.get(row.model_id) ?? 0) + value);
+		}
+		return [...totals].sort((a, b) => b[1] - a[1]).slice(0, 20).map(([id, value], index) => ({
+			key: id, model_id: id, ...metadataFor(id, metaMap), value,
+			value_label: formatCount(value, unitLabel(unit), locale), rank: index + 1,
+			secondary: t("usagePeriodMonth"),
+		}));
+	};
+	const section: ModalitySectionData = {
+		id: modality,
+		title: t(rankingSectionLabelKeys[modality] as never), description: t("modalitySectionDescription"),
+		chartTitle: metricTitle(primary.metric), chartDescription: `${t("modalityChartDescription")} · UTC`, valueUnit: unitLabel(primary.unit),
+		primaryTimeseries: series?.data ?? [], primaryEntries: [], unavailable: series === null,
+		metrics: [
+			{ id: primary.metric, title: metricTitle(primary.metric), description: t("usagePeriodMonth"), entries: entries(monthly?.data ?? [], primary.unit), unavailable: monthly === null },
+			...(secondary ? [{ id: secondary.metric, title: metricTitle(secondary.metric), description: t("usagePeriodMonth"), entries: entries(secondaryMonthly?.data ?? [], secondary.unit), unavailable: secondaryMonthly === null }] : []),
+		],
+	};
+	return <ModalityLeaderboards sections={[section]} nameMap={nameMap} logoIdMap={logoIdMap} organisationNameMap={organisationNameMap} />;
+}
 
-	const modelIds = Array.from(
-		new Set([
-			...multimodalRes.data.map((row) => row.model_id).filter(Boolean),
-			...perfRes.data.map((row) => row.model_id).filter(Boolean),
-			...textTimeseries.data.map((row) => row.model_id).filter(Boolean),
-			...imageInputTimeseries.data.map((row) => row.model_id).filter(Boolean),
-			...imageGeneratedTimeseries.data.map((row) => row.model_id).filter(Boolean),
-			...audioTimeseries.data.map((row) => row.model_id).filter(Boolean),
-			...videoTimeseries.data.map((row) => row.model_id).filter(Boolean),
-			...videoSecondsTimeseries.data.map((row) => row.model_id).filter(Boolean),
-			...cacheTimeseries.data.map((row) => row.model_id).filter(Boolean),
-			...audioSecondsTimeseries.data.map((row) => row.model_id).filter(Boolean),
-			...embeddingTimeseries.data.map((row) => row.model_id).filter(Boolean),
-			...rerankTimeseries.data.map((row) => row.model_id).filter(Boolean),
-		]),
-	);
-	const providerIds = Array.from(
-		new Set(perfRes.data.map((row) => row.provider).filter(Boolean)),
-	);
+async function TextRankingSignalsServer() {
+	const [t, locale] = await Promise.all([getTranslations("Catalogue.rankings"), getLocale()]);
+	const labels = { throughput: (value: string) => t("modalityThroughputValue", { value }), latency: (value: string) => t("modalityLatencyValue", { value }), medianLatency: (value: string) => t("modalityMedianLatencyValue", { value }), recentRequests: (count: string) => t("recentRequests", { count }) };
+	const result = await fetchFrontendRankingFastestModels(30, 100).catch(() => null);
+	if (!result) return <RankingUnavailable id="fastest-models" title={t("fastestModels")} />;
 	const [metaMap, providerNames] = await Promise.all([
-		fetchFrontendModelLeaderboardMetaByIds(modelIds).catch(
-			(): Awaited<ReturnType<typeof fetchFrontendModelLeaderboardMetaByIds>> => ({}),
-		),
-		fetchFrontendProviderNamesByIds(providerIds).catch(
-			(): Record<string, string> => ({}),
-		),
+		fetchFrontendModelLeaderboardMetaByIds([...new Set(result.data.map((row) => row.model_id))]).catch(() => ({})),
+		fetchFrontendProviderNamesByIds([...new Set(result.data.map((row) => row.provider))]).catch(() => ({})),
 	]);
-	const nameMap = Object.fromEntries(
-		Object.entries(metaMap).map(([modelId, meta]) => [
-			modelId,
-			formatModelDisplayName(meta.name, modelId),
-		]),
-	);
-	const logoIdMap = Object.fromEntries(
-		Object.entries(metaMap).map(([modelId, meta]) => [
-			modelId,
-			meta.organisation_id ?? modelId,
-		]),
-	);
-	const organisationNameMap = Object.fromEntries(
-		Object.entries(metaMap).flatMap(([modelId, meta]) => [
-			[modelId, meta.organisation_name ?? meta.organisation_id ?? null],
-			...(meta.organisation_id
-				? [[meta.organisation_id, meta.organisation_name ?? meta.organisation_id]]
-				: []),
-		]),
-	);
-
-	const textEntries = buildVolumeEntries(
-		multimodalRes.data,
-		"text_tokens",
-		metaMap,
-		(value) => formatTokens(value, locale),
-	);
-	const imageInputEntries = buildVolumeEntries(
-		multimodalRes.data,
-		"image_inputs",
-		metaMap,
-		(value) => formatCount(value, t("usageImagesUnit"), locale),
-	);
-	const imageGeneratedEntries = buildVolumeEntries(
-		multimodalRes.data,
-		"image_outputs",
-		metaMap,
-		(value) => formatCount(value, t("usageImagesUnit"), locale),
-	);
-	const audioEntries = buildVolumeEntries(
-		multimodalRes.data,
-		"audio_tokens",
-		metaMap,
-		(value) => formatTokens(value, locale),
-	);
-	const videoEntries = buildVolumeEntries(
-		multimodalRes.data,
-		"video_tokens",
-		metaMap,
-		(value) => formatTokens(value, locale),
-	);
-	const videoSecondsEntries = buildVolumeEntries(
-		multimodalRes.data,
-		"video_seconds",
-		metaMap,
-		(value) => formatCount(value, t("usageSecondsUnit"), locale),
-	);
-	const cacheEntries = buildVolumeEntries(
-		multimodalRes.data,
-		"cached_tokens",
-		metaMap,
-		(value) => formatTokens(value, locale),
-	);
-	const audioSecondsEntries = buildVolumeEntries(
-		multimodalRes.data,
-		"audio_seconds",
-		metaMap,
-		(value) => `${new Intl.NumberFormat(locale, { maximumFractionDigits: value >= 600 ? 0 : 1 }).format(value / 60)} ${t("usageMinutesUnit")}`,
-	);
-	const embeddingEntries = buildVolumeEntries(
-		multimodalRes.data,
-		"embedding_tokens",
-		metaMap,
-		(value) => formatTokens(value, locale),
-	);
-	const rerankEntries = buildVolumeEntries(
-		multimodalRes.data,
-		"rerank_quad_tokens",
-		metaMap,
-		(value) => formatTokens(value, locale),
-	);
-	const throughputEntries = buildPerformanceEntries(
-		perfRes.data,
-		"median_throughput",
-		metaMap,
-		providerNames,
-		locale,
-		{
-			throughput: (value) => t("modalityThroughputValue", { value }),
-			latency: (value) => t("modalityLatencyValue", { value }),
-			medianLatency: (value) => t("modalityMedianLatencyValue", { value }),
-		},
-	);
-	const latencyEntries = buildPerformanceEntries(
-		perfRes.data,
-		"median_latency_ms",
-		metaMap,
-		providerNames,
-		locale,
-		{
-			throughput: (value) => t("modalityThroughputValue", { value }),
-			latency: (value) => t("modalityLatencyValue", { value }),
-			medianLatency: (value) => t("modalityMedianLatencyValue", { value }),
-		},
-	);
-
-	const localizedModalityTitles = t.raw("modalityTitles" as never) as Record<RankingModality, string>;
-	const localizedMetricTitles = t.raw("modalityMetricTitles" as never) as Record<string, string>;
-	const sectionCopy = (id: RankingModality) => ({
-		title: localizedModalityTitles[id],
-		description: t("modalitySectionDescription"),
-		chartTitle: t("modalityTopModels"),
-		chartDescription: t("modalityChartDescription"),
-	});
-	const metricCopy = (id: string, entries: ModalityLeaderboardEntry[]) => ({
-		id,
-		title: localizedMetricTitles[id],
-		description: t("modalityMetricDescription"),
-		entries,
-	});
-	const sections: ModalitySectionData[] = [
-		{
-			id: "text",
-			...sectionCopy("text"),
-			primaryTimeseries: textTimeseries.data,
-			primaryEntries: textEntries,
-			metrics: [
-				metricCopy("text-volume", textEntries),
-				metricCopy("text-throughput", throughputEntries),
-				metricCopy("text-latency", latencyEntries),
-				metricCopy("text-cache", cacheEntries),
-				metricCopy("text-image-inputs", imageInputEntries),
-			],
-		},
-		{
-			id: "image",
-			...sectionCopy("image"),
-			primaryTimeseries: imageInputTimeseries.data,
-			primaryEntries: imageInputEntries,
-			metrics: [
-				metricCopy("image-generated", imageGeneratedEntries),
-				metricCopy("image-inputs", imageInputEntries),
-				metricCopy("image-timeseries", []),
-			],
-		},
-		{
-			id: "embeddings",
-			...sectionCopy("embeddings"),
-			primaryTimeseries: embeddingTimeseries.data,
-			primaryEntries: embeddingEntries,
-			metrics: [metricCopy("embedding-volume", embeddingEntries)],
-		},
-		{
-			id: "rerank",
-			...sectionCopy("rerank"),
-			primaryTimeseries: rerankTimeseries.data,
-			primaryEntries: rerankEntries,
-			metrics: [metricCopy("rerank-volume", rerankEntries)],
-		},
-		{
-			id: "audio",
-			...sectionCopy("audio"),
-			primaryTimeseries: audioTimeseries.data,
-			primaryEntries: audioEntries,
-			metrics: [
-				metricCopy("audio-tokens", audioEntries),
-				metricCopy("audio-cache", audioSecondsEntries),
-			],
-		},
-		{
-			id: "video",
-			...sectionCopy("video"),
-			primaryTimeseries: videoSecondsTimeseries.data,
-			primaryEntries: videoSecondsEntries,
-			metrics: [
-				metricCopy("video-seconds", videoSecondsEntries),
-				metricCopy("video-tokens", videoEntries),
-			],
-		},
-		{
-			id: "speech",
-			...sectionCopy("speech"),
-			primaryTimeseries: [],
-			primaryEntries: [],
-			metrics: [metricCopy("speech-seconds", [])],
-		},
-		{
-			id: "transcription",
-			...sectionCopy("transcription"),
-			primaryTimeseries: [],
-			primaryEntries: [],
-			metrics: [metricCopy("transcription-minutes", [])],
-		},
-	];
-
-	const selectedSections = sections.filter((section) => section.id === modality);
-
-	return (
-		<>
-			<ModalityLeaderboards
-				sections={selectedSections}
-				nameMap={nameMap}
-				logoIdMap={logoIdMap}
-				organisationNameMap={organisationNameMap}
-			/>
-			{modality === "text" ? (
-				<TextRankingSignals
-					throughputEntries={throughputEntries}
-					latencyEntries={latencyEntries}
-				/>
-			) : null}
-		</>
-	);
+	return <TextRankingSignals
+		throughputEntries={buildPerformanceEntries(result.data, "median_throughput", metaMap, providerNames, locale, labels)}
+		latencyEntries={buildPerformanceEntries(result.data, "median_latency_ms", metaMap, providerNames, locale, labels)}
+	/>;
 }
 
 async function TextRankingSignals({
@@ -657,7 +418,8 @@ async function TextRankingSignals({
 
 async function UniqueUsersSectionServer() {
 	const t = await getTranslations("Catalogue.rankings");
-	const result = await fetchFrontendRankingUniqueUserTimeseries("year", "week", 10).catch(() => ({ data: [] }));
+	const result = await fetchFrontendRankingUniqueUserTimeseries("year", "week", 10).catch(() => null);
+	if (!result) return <RankingUnavailable id="unique-users" title={t("uniqueUsers")} />;
 	const modelIds = Array.from(
 		new Set(
 			result.data
@@ -723,10 +485,12 @@ async function UniqueUsersSectionServer() {
 }
 
 async function MarketShareOrganizationServer() {
+	const t = await getTranslations("Catalogue.rankings");
     const [timeseriesResult, leaderboardResult] = await Promise.all([
-        fetchFrontendMarketShareTimeseries("organization", "year", "week", 10).catch(() => ({ data: [] })),
-        fetchFrontendMarketShare("organization", "year").catch(() => ({ data: [] })),
+        fetchFrontendMarketShareTimeseries("organization", "year", "week", 10).catch(() => null),
+        fetchFrontendMarketShare("organization", "year").catch(() => null),
     ]);
+    if (!timeseriesResult || !leaderboardResult) return <RankingUnavailable title={t("marketShareByOrganisation")} />;
 
     const organisationNames = Array.from(
         new Set(
@@ -786,9 +550,10 @@ async function MarketShareOrganizationServer() {
 async function MarketShareProviderServer() {
 	const t = await getTranslations("Catalogue.rankings");
     const [timeseriesResult, leaderboardResult] = await Promise.all([
-        fetchFrontendMarketShareTimeseries("provider", "year", "week", 10).catch(() => ({ data: [] })),
-        fetchFrontendMarketShare("provider", "year").catch(() => ({ data: [] })),
+        fetchFrontendMarketShareTimeseries("provider", "year", "week", 10).catch(() => null),
+        fetchFrontendMarketShare("provider", "year").catch(() => null),
     ]);
+    if (!timeseriesResult || !leaderboardResult) return <RankingUnavailable title={t("marketShareByProvider")} />;
 
     const providerIds = Array.from(
         new Set(

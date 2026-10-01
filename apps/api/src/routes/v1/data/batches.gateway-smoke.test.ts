@@ -108,6 +108,14 @@ vi.mock("@providers/keys", () => ({
 	resolveProviderKey: vi.fn(() => ({ key: "test-openai-key" })),
 }));
 
+vi.mock("@core/batch-credentials", () => ({
+	resolveBatchSubmissionCredential: vi.fn(async () => ({
+		credential: { key: "test-openai-key", source: "gateway", byokKeyId: null },
+		credentialMode: "managed_and_byok",
+	})),
+	reloadBatchCredential: vi.fn(async () => ({ key: "test-openai-key", source: "gateway", byokKeyId: null })),
+}));
+
 vi.mock("@core/async-notifications", () => ({
 	dispatchAsyncWebhookEventInBackground: vi.fn((payload: Record<string, unknown>) => {
 		state.webhookEvents.push(payload);
@@ -420,6 +428,11 @@ describe("mounted batch gateway smoke flows", () => {
 				phase: "created",
 			},
 			{
+				workspaceId: "ws_batch_smoke", kind: "batch", internalId: publicBatchId,
+				phase: "status_changed", previousStatus: "queued", currentStatus: "completed",
+				deliveryKey: "batch.status_changed:queued:completed",
+			},
+			{
 				workspaceId: "ws_batch_smoke",
 				kind: "batch",
 				internalId: publicBatchId,
@@ -442,11 +455,13 @@ describe("mounted batch gateway smoke flows", () => {
 			"provider:retrieve",
 			"persist:completed",
 			"finalize:completed",
+			"webhook:status_changed",
 			"webhook:completed",
 		]);
 		expect(state.fetchCalls.map((call) => `${call.method} ${call.url}`)).toEqual([
 			"POST https://api.openai.example/v1/files",
 			"GET https://api.openai.example/v1/files/file_input_123/content",
+			"POST https://api.openai.example/v1/files",
 			"POST https://api.openai.example/v1/batches",
 			"GET https://api.openai.example/v1/batches/batch_123",
 			"GET https://api.openai.example/v1/files/file_output_123",
@@ -642,6 +657,11 @@ describe("mounted batch gateway smoke flows", () => {
 				phase: "created",
 			},
 			{
+				workspaceId: "ws_batch_smoke", kind: "batch", internalId: publicBatchId,
+				phase: "status_changed", previousStatus: "queued", currentStatus: "failed",
+				deliveryKey: "batch.status_changed:queued:failed",
+			},
+			{
 				workspaceId: "ws_batch_smoke",
 				kind: "batch",
 				internalId: publicBatchId,
@@ -658,6 +678,7 @@ describe("mounted batch gateway smoke flows", () => {
 		expect(state.fetchCalls.map((call) => `${call.method} ${call.url}`)).toEqual([
 			"POST https://api.openai.example/v1/files",
 			"GET https://api.openai.example/v1/files/file_input_fail_123/content",
+			"POST https://api.openai.example/v1/files",
 			"POST https://api.openai.example/v1/batches",
 			"GET https://api.openai.example/v1/batches/batch_fail_123",
 			"GET https://api.openai.example/v1/files/file_error_fail_123",

@@ -21,33 +21,51 @@ function normalizeObservedServiceTier(value: unknown): string {
     return normalizeTextServiceTier(value) ?? "";
 }
 
-function normalizePricingServiceTier(body: any, usage: any): string {
+function normalizePricingServiceTier(body: any, usage: any, card?: PriceCard): string {
     const observedTier =
         normalizeObservedServiceTier(usage?.service_tier) ||
         normalizeObservedServiceTier(usage?.serviceTier);
+    const requestedTier = normalizeTextServiceTier(readRequestedServiceTier(body).value) ?? "";
+    // Dedicated priority routes cannot downgrade to an unpriced standard SKU.
+    // Honor observed downgrades on cards that actually offer standard pricing.
+    if (observedTier === "standard" && (requestedTier === "priority" || requestedTier === "fast") &&
+        card?.rules.some((rule) => rule.pricing_plan === "priority") &&
+        !card.rules.some((rule) => rule.pricing_plan === "standard")) {
+        return requestedTier;
+    }
     if (observedTier) return observedTier;
 
-    return normalizeTextServiceTier(readRequestedServiceTier(body).value) ?? "";
+    return requestedTier;
 }
 
-function derivePricingPlan(body: any, usage: any): string {
-    const tier = normalizePricingServiceTier(body, usage);
+function derivePricingPlan(body: any, usage: any, card: PriceCard): string {
+    const tier = normalizePricingServiceTier(body, usage, card);
 
     if (tier === "fast" || tier === "priority") return "priority";
+    if (tier === "ultrafast") return "ultrafast";
     if (tier === "batch") return "batch";
     if (tier === "flex") return "flex";
+
+    // Free model variants encode their pricing tier in the model id (for
+    // example, `poolside/laguna-s-2.1:free`) and providers do not always echo
+    // a service_tier in their usage response. Preserve the free SKU in that
+    // case so cache-read and other zero-priced meters are covered as well.
+    const requestedModel = typeof body?.model === "string"
+        ? body.model.trim().toLowerCase()
+        : "";
+    if (!tier && requestedModel.endsWith(":free")) return "free";
 
     return "standard";
 }
 
-function buildTrustedPricingRequestOptions(body: any, usage: any, pricingPlan: string): Record<string, unknown> {
+function buildTrustedPricingRequestOptions(body: any, usage: any, pricingPlan: string, card: PriceCard): Record<string, unknown> {
     const options: Record<string, unknown> = {
         ...deriveCachePricingContext(body),
         ...buildImagePricingRequestOptions(body ?? {}, usage),
         pricing_plan: pricingPlan,
     };
 
-    const serviceTier = normalizePricingServiceTier(body, usage);
+    const serviceTier = normalizePricingServiceTier(body, usage, card);
     if (serviceTier) {
         options.service_tier = serviceTier;
         options.serviceTier = serviceTier;
@@ -162,14 +180,80 @@ export function calculatePricing(
 
     if (card) {
         try {
-            const pricingPlan = derivePricingPlan(body, usage);
+			const pricingPlan = derivePricingPlan(body, usage, card);
+			const activePlanRules = card.rules.filter(
+				(rule) => rule.pricing_plan === pricingPlan ||
+					(pricingPlan !== "standard" && rule.pricing_plan === "standard"),
+			);
+			const outputAudioTokens = Number((usageMeters as any)?.output_audio_tokens ?? 0);
+			const hasPaidOutputAudioRule = activePlanRules.some(
+				(rule) => rule.meter === "output_audio_tokens" && Number(rule.price_per_unit) > 0,
+			);
+			if (
+				card.endpoint === "audio.speech" &&
+				hasPaidOutputAudioRule &&
+				(!Number.isFinite(outputAudioTokens) || outputAudioTokens <= 0)
+			) {
+				throw new Error("pricing_usage_unmatched:output_audio_tokens");
+			}
+
+			let billableUsage = usageMeters;
+			const cachedReadTokens = Number((usageMeters as any)?.cached_read_text_tokens ?? 0);
+			const inputTokens = Number((usageMeters as any)?.input_tokens);
+			const inputTextTokens = Number((usageMeters as any)?.input_text_tokens);
+			const hasCachedReadRule = activePlanRules.some(
+				(rule) => rule.meter === "cached_read_text_tokens",
+			);
+			if (
+				card.endpoint === "audio.speech" &&
+				!hasCachedReadRule &&
+				Number.isFinite(cachedReadTokens) &&
+				cachedReadTokens > 0 &&
+				Number.isFinite(inputTokens) &&
+				Number.isFinite(inputTextTokens) &&
+				inputTextTokens + cachedReadTokens === inputTokens
+			) {
+				const {
+					cached_read_text_tokens: _cachedReadTextTokens,
+					cache_read_input_tokens: _cacheReadInputTokens,
+					cached_tokens: _cachedTokens,
+					prompt_cache_hit_tokens: _promptCacheHitTokens,
+					cachedInputTokens: _cachedInputTokens,
+					cachedContentTokenCount: _cachedContentTokenCount,
+					cached_read_tokens_are_subset_of_input: _cachedSubsetHint,
+					...usageWithoutCacheReadAliases
+				} = usageMeters;
+				const withoutNestedCachedTokens = (details: unknown) => {
+					if (!details || typeof details !== "object") return details;
+					const { cached_tokens: _nestedCachedTokens, ...rest } = details as Record<string, unknown>;
+					return rest;
+				};
+				billableUsage = {
+					...usageWithoutCacheReadAliases,
+					input_text_tokens: inputTokens,
+					input_tokens_details: withoutNestedCachedTokens((usageMeters as any).input_tokens_details),
+					input_details: withoutNestedCachedTokens((usageMeters as any).input_details),
+					prompt_tokens_details: withoutNestedCachedTokens((usageMeters as any).prompt_tokens_details),
+				};
+			}
             const requestOptions = attachBillingTimestamps(
-                buildTrustedPricingRequestOptions(body, usage, pricingPlan),
+                buildTrustedPricingRequestOptions(body, usage, pricingPlan, card),
                 meta,
             );
 
             // Step 1: Calculate base pricing (provider costs)
-            pricedUsage = computeBill(usageMeters ?? {}, card, requestOptions, pricingPlan);
+            pricedUsage = computeBill(billableUsage ?? {}, card, requestOptions, pricingPlan);
+			if (
+				billableUsage !== usageMeters &&
+				Number.isFinite(cachedReadTokens) &&
+				cachedReadTokens > 0
+			) {
+				pricedUsage = {
+					...pricedUsage,
+					input_text_tokens: inputTextTokens,
+					cached_read_text_tokens: cachedReadTokens,
+				};
+			}
 
             const pricingInfo = (pricedUsage as any)?.pricing ?? {};
             totalCents = pricingInfo.total_cents ?? 0;

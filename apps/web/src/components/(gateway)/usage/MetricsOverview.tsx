@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { useQueryState } from "nuqs";
 import { Activity, Coins, Zap } from "lucide-react";
 import MetricChartCard from "./MetricChartCard";
@@ -39,6 +40,7 @@ export default function MetricsOverview({
 	initialChartData = null,
 }: MetricsOverviewProps) {
 	const tUi = useTranslations("Common.ui");
+	const display = useDisplayFormatters();
 	const [keyFilter] = useQueryState("key");
 	const [groupBy] = useQueryState<GroupBy>("group", {
 		defaultValue: "model",
@@ -172,8 +174,15 @@ export default function MetricsOverview({
 		setDialogOpen(true);
 	};
 
-	const formatNumber = (value: number) => value.toLocaleString();
-	const formatCost = (value: number) => `$${value.toFixed(5)}`;
+	const formatNumber = (value: number) =>
+		display.number(value, { maximumFractionDigits: 0, notation: "standard" });
+	const formatCost = (value: number) =>
+		display.number(value, {
+			style: "currency",
+			currency: "USD",
+			maximumFractionDigits: 5,
+			notation: "standard",
+		});
 
 	if (loading) {
 		return (

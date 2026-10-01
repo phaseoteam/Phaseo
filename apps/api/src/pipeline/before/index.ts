@@ -41,6 +41,7 @@ import { fetchWorkspacePolicy, applyWorkspacePolicy } from "./workspacePolicy";
 import { getWebhookEndpointSigningConfig } from "@core/webhook-endpoints";
 import { parseRequestLabels } from "./request-labels";
 import { generatePublicId } from "./genId";
+import { applyDeploymentRegionPolicy, validateRegionalTextRequest } from "./deployment-region";
 import {
     applyDynamicRouteToBody,
     evaluateDynamicRoute,
@@ -94,6 +95,12 @@ function objectOrEmpty(value: unknown): Record<string, unknown> {
         : {};
 }
 
+function requiredExecutionParams(endpoint: Endpoint): string[] {
+	return endpoint === "chat.completions" || endpoint === "responses" || endpoint === "messages"
+		? ["stream"]
+		: [];
+}
+
 function applyWorkspacePrivacyRoutingDefaults(
     body: any,
     teamSettings: PipelineContext["teamSettings"] | null | undefined,
@@ -122,7 +129,6 @@ function classifyWorkspaceProviderFilterFailure(diagnostics: {
     activeGuardrailIds: string[];
     allowedApiModels: string[];
 	droppedByPrivacy?: unknown[];
-	accountPolicyApplied?: boolean;
     beforeCount: number;
 }): {
 	code: "validation_error" | "guardrail_blocked";
@@ -162,7 +168,7 @@ function classifyWorkspaceProviderFilterFailure(diagnostics: {
 			errorOrigin: "user",
 			operationalKind: "data_handling_policy_no_routes",
 			reason: "data_handling_policy_no_routes",
-			description: "No provider routes satisfy the account or workspace data-handling policy",
+			description: "No provider routes satisfy the workspace data-handling policy",
 			keyword: "no_routes_after_data_handling_policy",
 		};
 	}
@@ -174,7 +180,7 @@ function classifyWorkspaceProviderFilterFailure(diagnostics: {
             errorOrigin: "user",
 			operationalKind: "provider_restricted_by_policy",
 			reason: "provider_restricted_by_policy",
-			description: "All provider routes for this model are blocked by an account or workspace guardrail",
+			description: "All provider routes for this model are blocked by a workspace policy or guardrail",
 			keyword: "no_providers_after_route_access_policy",
         };
     }
@@ -447,6 +453,13 @@ export async function beforeRequest(
 
     // 5) RPC + gating + providers (choose viable providers for this model/endpoint)
     const capability = normalizeCapability(resolveCapabilityFromEndpoint(endpoint));
+    // Streamed text has no wallet reservation before provider dispatch. Its
+    // cache fill may overlap inference, but must finish before final charging
+    // invalidates that cache. Media/async reservation paths remain ordered.
+    const creditCacheWrites: Promise<void>[] = [];
+    const onCreditCacheWrite = stream && ["responses", "chat.completions", "messages"].includes(endpoint)
+        ? (write: Promise<void>) => { creditCacheWrites.push(write); }
+        : undefined;
     let autoRouterEvaluation: AutoRouterEvaluation | null = null;
     let workspacePolicyLoad: Awaited<typeof workspacePolicyPromise> | null = null;
     const loadWorkspacePolicy = async () => {
@@ -463,10 +476,18 @@ export async function beforeRequest(
 		internal,
 		testingMode: testingModeEnabled,
 		disableCache: debugEnabled,
+		onCreditCacheWrite,
 	});
 
 	let c: Awaited<ReturnType<typeof guardContext>>;
 	if (isAutoRouterModel(model)) {
+		const regionalAutoRouterBody = applyDeploymentRegionPolicy(
+			body,
+			bindings.GATEWAY_ROUTING_REGION,
+		);
+		const autoRouterBody = regionalAutoRouterBody.ok
+			? regionalAutoRouterBody.body
+			: body;
 		if (body?.routing?.auto != null || body?.provider?.auto != null) {
 			return {
 				ok: false,
@@ -483,11 +504,11 @@ export async function beforeRequest(
 				}),
 			};
 		}
-		const deterministicClassification = deterministicAutoRouterClassification(body);
+		const deterministicClassification = deterministicAutoRouterClassification(autoRouterBody);
 		const classifierPromise = options?.autoRouterClassificationOverride
 			? Promise.resolve(options.autoRouterClassificationOverride)
 			: options?.classifyAutoRouterRequest && !options?.autoRouterModelOverride
-				? timer.span("classifyAutoRouterRequest", () => options.classifyAutoRouterRequest!({ endpoint, body }))
+				? timer.span("classifyAutoRouterRequest", () => options.classifyAutoRouterRequest!({ endpoint, body: autoRouterBody }))
 					.catch((error) => {
 						console.warn("[beforeRequest] auto_router_classifier_failed", {
 							workspaceId,
@@ -508,10 +529,10 @@ export async function beforeRequest(
 			});
 			return { ok: false, response: err("gateway_error", { reason: "auto_router_config_fetch_failed", request_id: requestId, workspace_id: workspaceId }) };
 		}
-		const classification = applyAutoRouterHardRequirements(body, await classifierPromise ?? deterministicClassification);
+		const classification = applyAutoRouterHardRequirements(autoRouterBody, await classifierPromise ?? deterministicClassification);
 		let candidateUniverse: Awaited<ReturnType<typeof loadManagedAutoRouterCandidates>>;
 		try {
-			candidateUniverse = await timer.span("loadManagedAutoRouterCandidates", () => loadManagedAutoRouterCandidates(config, body, classification));
+			candidateUniverse = await timer.span("loadManagedAutoRouterCandidates", () => loadManagedAutoRouterCandidates(config, autoRouterBody, classification));
 		} catch (error) {
 			console.error("[beforeRequest] auto_router_candidates_fetch_failed", {
 				workspaceId,
@@ -536,7 +557,7 @@ export async function beforeRequest(
 		}
 		const selection = await timer.span("selectAutoRouterModel", () => selectAutoRouterModel({
 			endpoint,
-			body,
+			body: autoRouterBody,
 			config: selectionConfig,
 			classification,
 			modelOverride: options?.autoRouterModelOverride,
@@ -548,7 +569,7 @@ export async function beforeRequest(
 				const policyResult = applyWorkspacePolicy({
 					providers: candidateContext.value.providers,
 					resolvedModel: candidateResolvedModel,
-					body,
+					body: autoRouterBody,
 					workspacePolicy: policyLoad.value,
 					teamSettings: candidateContext.value.context.teamSettings ?? null,
 				});
@@ -565,18 +586,19 @@ export async function beforeRequest(
 				const capabilityResult = await validateCapabilities({
 					endpoint,
 					rawBody,
-					body,
+					body: autoRouterBody,
 					requestId,
 					workspaceId,
 					providers: executableProviders,
 					model: candidateResolvedModel,
+					requiredParams: requiredExecutionParams(endpoint),
 				});
 				if (!capabilityResult.ok || !capabilityResult.providers.length) {
 					return { ok: false as const, reason: "request_capabilities_unsupported" };
 				}
 				const quantizationResult = filterQuantizationCandidates(
 					capabilityResult.providers,
-					getEffectiveRoutingHints(body).quantizations,
+					getEffectiveRoutingHints(autoRouterBody).quantizations,
 				);
 				if (!quantizationResult.ok || !quantizationResult.providers.length) {
 					return { ok: false as const, reason: "request_quantization_unsupported" };
@@ -621,8 +643,12 @@ export async function beforeRequest(
     const contextTelemetry = context.contextTelemetry ?? null;
     const contextTimingSpans = {
         context_total: contextTelemetry?.totalMs,
+        context_preset_access: contextTelemetry?.presetAccessMs,
+        context_private_model: contextTelemetry?.privateModelMs,
+        context_byok_hydration: contextTelemetry?.byokHydrationMs,
         context_key_version: contextTelemetry?.keyVersionMs,
         context_cache_read: contextTelemetry?.cacheReadMs,
+        context_catalog_read: contextTelemetry?.catalogReadMs,
         context_credit_refresh: contextTelemetry?.creditRefreshMs,
         context_rpc: contextTelemetry?.rpcMs,
         context_enrich: contextTelemetry?.enrichMs,
@@ -690,6 +716,7 @@ export async function beforeRequest(
                     endpoint,
                     capability,
                     model: routedModel,
+                    onCreditCacheWrite,
                     requestId,
                     internal,
                     testingMode: testingModeEnabled,
@@ -853,6 +880,61 @@ export async function beforeRequest(
         }
     }
 
+	const regionalRequestViolation = validateRegionalTextRequest(
+		endpoint,
+		mergedBody,
+		bindings.GATEWAY_ROUTING_REGION,
+	);
+	if (regionalRequestViolation) {
+		return {
+			ok: false,
+			response: err("not_supported", {
+				reason: `regional_${regionalRequestViolation.reason}`,
+				description:
+					"Regional gateways currently support text-only Chat Completions, Responses, and Messages requests.",
+				details: [{
+					message: "This request uses a feature that is not available on a regional gateway.",
+					path: regionalRequestViolation.path,
+					keyword: `regional_${regionalRequestViolation.reason}`,
+					params: { value: regionalRequestViolation.value ?? null },
+				}],
+				request_id: requestId,
+				workspace_id: workspaceId,
+			}),
+		};
+	}
+
+	const deploymentRegionResult = applyDeploymentRegionPolicy(
+		mergedBody,
+		bindings.GATEWAY_ROUTING_REGION,
+	);
+	if (deploymentRegionResult.ok === false) {
+		return {
+			ok: false,
+			response: err("validation_error", {
+				reason: "deployment_region_conflict",
+				description:
+					`This gateway only routes requests whose execution and data regions are ${deploymentRegionResult.region.toUpperCase()}.`,
+				error_type: "user",
+				error_origin: "user",
+				error_operational_kind: "deployment_region_conflict",
+				details: [{
+					message:
+						`Requested region "${deploymentRegionResult.requestedRegion}" conflicts with the ${deploymentRegionResult.region.toUpperCase()} gateway.`,
+					path: ["provider", deploymentRegionResult.field],
+					keyword: "deployment_region_conflict",
+					params: {
+						gateway_region: deploymentRegionResult.region,
+						requested_region: deploymentRegionResult.requestedRegion,
+					},
+				}],
+				request_id: requestId,
+				workspace_id: workspaceId,
+			}),
+		};
+	}
+	mergedBody = deploymentRegionResult.body;
+
     // Keep this as the final request-level provider constraint before workspace
     // policy enforcement. A provider-qualified model is an exact pair, not a
     // provider preference that presets or other routing hints may widen.
@@ -942,15 +1024,15 @@ export async function beforeRequest(
                 response: err("guardrail_blocked", {
                     model: resolvedModel || model,
 					reason: "model_restricted_by_policy",
-					description: `Model "${resolvedModel || model}" is blocked by an account or workspace guardrail`,
+					description: `Model "${resolvedModel || model}" is blocked by a workspace policy or guardrail`,
 					error_operational_kind: "model_restricted_by_policy",
 					guardrail: {
 						type: "route_access",
-						scope: workspacePolicyFailure.diagnostics.accountPolicyApplied ? "account_or_workspace" : "workspace",
+						scope: "workspace",
 						active_guardrail_ids: workspacePolicyFailure.diagnostics.activeGuardrailIds,
 					},
                     details: [{
-						message: `Model "${resolvedModel || model}" is blocked by an account or workspace guardrail`,
+						message: `Model "${resolvedModel || model}" is blocked by a workspace policy or guardrail`,
                         path: ["model"],
 						keyword: "model_restricted_by_policy",
                         params: workspacePolicyFailure.diagnostics,
@@ -983,7 +1065,7 @@ export async function beforeRequest(
                 }],
 				guardrail: providerFilterClassification.code === "guardrail_blocked" ? {
 					type: providerFilterClassification.reason === "data_handling_policy_no_routes" ? "data_handling" : "route_access",
-					scope: workspacePolicyFailure.diagnostics.accountPolicyApplied ? "account_or_workspace" : "workspace",
+					scope: "workspace",
 					active_guardrail_ids: workspacePolicyFailure.diagnostics.activeGuardrailIds,
 				} : undefined,
                 routing_diagnostics: {
@@ -1041,6 +1123,7 @@ export async function beforeRequest(
             workspaceId,
             providers: presetFilteredProviders,
             model: resolvedModel || model,
+			requiredParams: requiredExecutionParams(endpoint),
         })
     );
     if (!capabilityValidation.ok) return capabilityValidation as { ok: false; response: Response };
@@ -1052,6 +1135,8 @@ export async function beforeRequest(
         "embeddings",
         "moderations",
         "rerank",
+        "decisions.make",
+        "systemone",
         "image.generate",
         "image.edit",
         "audio.speech",
@@ -1303,6 +1388,7 @@ export async function beforeRequest(
         providerCandidateBuildDiagnostics: candidateDiagnostics,
         providerEnablementDiagnostics,
         plugins: normalizeGatewayPlugins(mergedBody?.plugins),
+        creditCacheWrites,
         providers: enabledProviders,
         providerCapabilitiesBeta: betaCapabilities,
         pricing: context.pricing,

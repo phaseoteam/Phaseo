@@ -1,6 +1,7 @@
 "use client";
 
 import { startTransition, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import {
@@ -1069,7 +1070,12 @@ function getCardSortPriority(card: MonitorCard) {
 	return 3;
 }
 
-function buildCommitGroups(data: ChangeHistory[], now: number, locale: string): CommitGroup[] {
+function buildCommitGroups(
+	data: ChangeHistory[],
+	now: number,
+	formatAbsoluteTime: (value: string) => string,
+	formatRelativeTime: (value: string, referenceDate?: Date) => string,
+): CommitGroup[] {
 	const sorted = [...data].sort(
 		(a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
 	);
@@ -1082,11 +1088,11 @@ function buildCommitGroups(data: ChangeHistory[], now: number, locale: string): 
 
 		if (!group) {
 			group = {
-				absoluteLabel: formatAbsoluteTime(change.timestamp, locale),
+				absoluteLabel: formatAbsoluteTime(change.timestamp),
 				cards: [],
 				commit: change.commit,
 				id: groupId,
-				relativeLabel: formatRelativeTime(change.timestamp, now, locale),
+				relativeLabel: formatRelativeTime(change.timestamp, new Date(now)),
 				timestamp: change.timestamp,
 			};
 			groups.set(groupId, group);
@@ -1969,6 +1975,7 @@ export function MonitorHistoryClient({
 	const t = useTranslations("Catalogue.monitor");
 	const translate = t as unknown as MonitorTranslate;
 	const locale = useLocale();
+	const format = useDisplayFormatters();
 	const isRemoteMode = Boolean(initialPage && modelOptions && providerOptions);
 	const [modelQuery, setModelQuery] = useState("");
 	const [modelLabel, setModelLabel] = useState<string | undefined>();
@@ -2153,8 +2160,8 @@ export function MonitorHistoryClient({
 	);
 
 	const groupedCommits = useMemo(
-		() => buildCommitGroups(filteredData, now, locale),
-		[filteredData, locale, now],
+		() => buildCommitGroups(filteredData, now, format.dateTime, format.timestamp),
+		[filteredData, format, now],
 	);
 	const visibleGroups = isRemoteMode
 		? groupedCommits
@@ -2245,14 +2252,14 @@ export function MonitorHistoryClient({
 					<div className="border-t border-zinc-200/80 px-4 py-4 sm:border-t-0 dark:border-zinc-800/80">
 						<p className="text-sm text-zinc-500 dark:text-zinc-400">{t("generated")}</p>
 						<p className="mt-1 text-2xl font-semibold text-zinc-950 dark:text-zinc-50">
-							{generatedAt ? formatAbsoluteTime(generatedAt.toISOString(), locale) : t("unknown")}
+							{generatedAt ? format.dateTime(generatedAt) : t("unknown")}
 						</p>
 					</div>
 
 					<div className="border-t border-zinc-200/80 px-4 py-4 sm:border-t-0 dark:border-zinc-800/80">
 						<p className="text-sm text-zinc-500 dark:text-zinc-400">{t("commitsCovered")}</p>
 						<p className="mt-1 text-2xl font-semibold text-zinc-950 dark:text-zinc-50">
-							{totalCommits.toLocaleString(locale)}
+							{format.number(totalCommits)}
 						</p>
 					</div>
 				</div>

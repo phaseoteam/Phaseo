@@ -212,7 +212,10 @@ describe("beforeRequest pricing loss-prevention", () => {
 		}));
 	});
 
-	it("allows request when pricing rules are present", async () => {
+	it.each([false, true])("preserves pricing and carries the credit barrier only for streaming text (stream=%s)", async stream => {
+		guardModelMock.mockReturnValue({ ok: true, value: {
+			body: { model: "openai/gpt-4.1-mini", stream }, model: "openai/gpt-4.1-mini", stream,
+		} });
 		const provider = providerWithPricingRules(1);
 		guardContextMock.mockResolvedValue({
 			ok: true,
@@ -243,6 +246,12 @@ describe("beforeRequest pricing loss-prevention", () => {
 		});
 		const result = await beforeRequest(req, "responses", new Timer(), null);
 		expect(result.ok).toBe(true);
+		const register = guardContextMock.mock.calls[0][0].onCreditCacheWrite;
+		if (stream && result.ok) {
+			const write = Promise.resolve();
+			register(write);
+			expect(result.ctx.creditCacheWrites).toEqual([write]);
+		} else expect(register).toBeUndefined();
 	});
 
 	it("captures parsed model metadata before a context guard failure", async () => {
@@ -338,6 +347,7 @@ describe("beforeRequest pricing loss-prevention", () => {
 						totalMs: 28.5,
 						keyVersionMs: 4.25,
 						cacheReadMs: 21.75,
+						catalogReadMs: 2.5,
 						creditRefreshMs: null,
 						rpcMs: null,
 						enrichMs: 1.5,
@@ -369,6 +379,7 @@ describe("beforeRequest pricing loss-prevention", () => {
 			context_total: 28.5,
 			context_key_version: 4.25,
 			context_cache_read: 21.75,
+			context_catalog_read: 2.5,
 			context_enrich: 1.5,
 		});
 		expect(timer.serverTiming()).not.toContain("context_credit_refresh");
@@ -592,7 +603,7 @@ describe("beforeRequest pricing loss-prevention", () => {
 		expect(payload).toMatchObject({
 			error: "guardrail_blocked",
 			reason: "data_handling_policy_no_routes",
-			guardrail: { type: "data_handling", scope: "account_or_workspace" },
+			guardrail: { type: "data_handling", scope: "workspace" },
 		});
 		expect(payload.details?.[0]?.keyword).toBe("no_routes_after_data_handling_policy");
 	});

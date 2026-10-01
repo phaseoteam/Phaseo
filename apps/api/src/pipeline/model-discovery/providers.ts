@@ -43,6 +43,7 @@ const PROVIDER_ID_ALIASES_TO_SKIP = new Set<string>([
 	"moonshot-ai",
 	"moonshot-ai-turbo",
 	"novitaai",
+	"openrouter",
 	"qwen",
 	"relace",
 	"voyageai",
@@ -88,7 +89,6 @@ const PROVIDER_OVERRIDES: Record<string, ProviderOverride> = {
 		apiKeyEnv: ["CLOUDFLARE_WORKERS_AI_SYNC_API_TOKEN", "CLOUDFLARE_API_TOKEN"],
 	},
 	cohere: { providerName: "Cohere" },
-	crofai: { providerName: "CrofAI", authStyle: "none" },
 	"canopy-wave": { providerName: "Canopy Wave", authStyle: "bearer" },
 	deepinfra: { providerName: "DeepInfra", authStyle: "optional_bearer" },
 	deepseek: { providerName: "DeepSeek" },
@@ -105,6 +105,10 @@ const PROVIDER_OVERRIDES: Record<string, ProviderOverride> = {
 	"inference-net": {
 		providerName: "Inference.net",
 		apiKeyEnv: ["INFERENCE_API_KEY", "INFERENCE_NET_API_KEY"],
+	},
+	doubleword: {
+		providerName: "Doubleword",
+		apiKeyEnv: ["DOUBLEWORD_API_KEY"],
 	},
 	ionrouter: { providerName: "IonRouter" },
 	"liquid-ai": { providerName: "Liquid AI", disabled: true },
@@ -237,13 +241,6 @@ const NATIVE_DISCOVERY_PROVIDERS: ProviderConfig[] = [
 		authStyle: "optional_bearer",
 	},
 	{
-		providerId: "openrouter",
-		providerName: "OpenRouter",
-		modelsEndpoint: "https://openrouter.ai/api/v1/models",
-		apiKeyEnv: ["OPENROUTER_API_KEY"],
-		authStyle: "optional_bearer",
-	},
-	{
 		providerId: "pioneer",
 		providerName: "Pioneer",
 		modelsEndpoint: "https://api.pioneer.ai/v1/models",
@@ -305,6 +302,13 @@ const NATIVE_DISCOVERY_PROVIDERS: ProviderConfig[] = [
 		modelsEndpoint: "https://api.elevenlabs.io/v1/models",
 		apiKeyEnv: ["ELEVENLABS_API_KEY"],
 		authStyle: "elevenlabs",
+	},
+	{
+		providerId: "typesafe",
+		providerName: "TypeSafe",
+		modelsEndpoint: "https://api.typesafe.ai/v1/models",
+		apiKeyEnv: ["TYPESAFE_API_KEY"],
+		authStyle: "bearer",
 	},
 ];
 

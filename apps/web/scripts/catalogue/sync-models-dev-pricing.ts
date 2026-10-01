@@ -53,7 +53,7 @@ function slug(value: string): string {
 	return value.trim().toLowerCase().replace(/[^a-z0-9._-]+/g, "-").replace(/^-+|-+$/g, "");
 }
 
-function modelDevMeters(cost: JsonObject): Record<string, number> | null {
+export function modelDevMeters(cost: JsonObject): Record<string, number> | null {
 	if (cost.tiers) return null;
 	const meters = Object.fromEntries([
 		["input_text_tokens", asNumber(cost.input)],

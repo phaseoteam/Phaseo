@@ -94,6 +94,17 @@ describe("applyByokServiceFee", () => {
 		expect(result.pricedUsage.pricing.lines).toEqual([]);
 	});
 
+	it("uses an idempotent counter RPC when a settlement key is provided", async () => {
+		rpcMock.mockResolvedValue({ data: [{ month_start: "2026-09-01T00:00:00+00:00", request_count: 12 }], error: null });
+		await applyByokServiceFee({ workspaceId: "team_1", idempotencyKey: "batch:batch_1", isByok: true, requestCount: 3, baseCostNanos: 1000, baseCostsNanos: [300, 300, 400], pricedUsage: {} });
+		expect(rpcMock).toHaveBeenCalledWith("increment_workspace_byok_monthly_request_count_once", {
+			p_workspace_id: "team_1",
+			p_now: expect.any(String),
+			p_request_count: 3,
+			p_idempotency_key: "batch:batch_1",
+		});
+	});
+
 	it("charges 2.5% fee after the monthly threshold", async () => {
 		rpcMock.mockResolvedValue({
 			data: [{ month_start: "2026-02-01T00:00:00+00:00", request_count: BYOK_MONTHLY_FREE_REQUESTS + 1 }],
@@ -125,6 +136,29 @@ describe("applyByokServiceFee", () => {
 		expect(result.pricedUsage.pricing.lines).toHaveLength(1);
 		expect(result.pricedUsage.pricing.lines[0].meter).toBe("byok_service_fee");
 		expect(result.pricedUsage.pricing.byok_reference_total_nanos).toBe(baseCost);
+	});
+
+	it("increments a batch atomically and charges only rows beyond the free boundary", async () => {
+		rpcMock.mockResolvedValue({
+			data: [{ month_start: "2026-02-01T00:00:00+00:00", request_count: BYOK_MONTHLY_FREE_REQUESTS + 2 }],
+			error: null,
+		});
+		const result = await applyByokServiceFee({
+			workspaceId: "team_1",
+			isByok: true,
+			requestCount: 4,
+			baseCostNanos: 1_000,
+			baseCostsNanos: [100, 200, 300, 400],
+			pricedUsage: { pricing: { total_nanos: 1_000, currency: "USD" } },
+		});
+
+		expect(rpcMock).toHaveBeenCalledWith("increment_workspace_byok_monthly_request_count_by", {
+			p_workspace_id: "team_1",
+			p_now: expect.any(String),
+			p_request_count: 4,
+		});
+		expect(result.chargedCostsNanos).toEqual([0, 0, 8, 10]);
+		expect(result.totalNanos).toBe(18);
 	});
 
 	it("previews the next completed-request count without incrementing reservations", async () => {

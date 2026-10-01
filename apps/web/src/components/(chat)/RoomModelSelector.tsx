@@ -1,5 +1,6 @@
 "use client";
 
+import { chatLocalStorage } from "@/lib/chat/userStorage";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import {
@@ -28,6 +29,7 @@ import {
 	HoverCardTrigger,
 } from "@/components/ui/hover-card";
 import { Logo } from "@/components/Logo";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import type { GatewaySupportedModel } from "@/lib/fetchers/gateway/getGatewaySupportedModelIds";
 import { cn } from "@/lib/utils";
 import { CircleCheck, Plus, Star, X } from "lucide-react";
@@ -277,6 +279,7 @@ export function RoomModelSelector({
 	onOpenModelSettingsForModel,
 }: RoomModelSelectorProps) {
 	const t = useTranslations("Product.chat.modelPicker");
+	const format = useDisplayFormatters();
 	const modelOptions = useMemo(() => buildModelOptions(models), [models]);
 	const [open, setOpen] = useState(false);
 	const [searchValue, setSearchValue] = useState("");
@@ -299,7 +302,7 @@ export function RoomModelSelector({
 				normalizeFavoriteModelId(option.modelId),
 			),
 		);
-		const raw = window.localStorage.getItem(
+		const raw = chatLocalStorage.getItem(
 			MODEL_SELECTOR_FAVORITES_STORAGE_KEY,
 		);
 		if (!raw) {
@@ -388,7 +391,7 @@ export function RoomModelSelector({
 				next.add(normalizedId);
 			}
 			if (typeof window !== "undefined") {
-				window.localStorage.setItem(
+				chatLocalStorage.setItem(
 					MODEL_SELECTOR_FAVORITES_STORAGE_KEY,
 					JSON.stringify(Array.from(next)),
 				);
@@ -537,12 +540,16 @@ export function RoomModelSelector({
 					(option) =>
 						!favoriteModelIdSet.has(normalizeFavoriteModelId(option.modelId)),
 				),
+				(date) => format.dateParts(date, { month: "long", year: "numeric", timeZone: "UTC" }),
 			),
-		[filteredActive, favoriteModelIdSet],
+		[filteredActive, favoriteModelIdSet, format],
 	);
 	const groupedComingSoonOptions = useMemo(
-		() => groupModelsByReleaseMonth(filteredComingSoonEntries),
-		[filteredComingSoonEntries],
+		() => groupModelsByReleaseMonth(
+			filteredComingSoonEntries,
+			(date) => format.dateParts(date, { month: "long", year: "numeric", timeZone: "UTC" }),
+		),
+		[filteredComingSoonEntries, format],
 	);
 	const allModelOptions = useMemo(
 		() => [

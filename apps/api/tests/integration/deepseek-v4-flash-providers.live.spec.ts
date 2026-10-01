@@ -52,7 +52,6 @@ describeLive("DeepSeek v4 flash multi-provider sweep", () => {
     for (const providerId of [
         "atlascloud",
         "baseten",
-        "crofai",
         "deepinfra",
         "deepseek",
         "fireworks",

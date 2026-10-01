@@ -16,8 +16,8 @@ import (
 	"sync"
 	"time"
 
-	phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v2"
-	gen "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v2/src/gen"
+	phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3"
+	gen "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3/src/gen"
 )
 
 type ToolCall struct {
@@ -637,7 +637,7 @@ func CreateGatewayAgentClient(options GatewayAgentClientOptions) (*GatewayAgentC
 		}
 		client = phaseo.New(apiKey, baseURL)
 		client.RawClient().Headers["X-Phaseo-Client"] = "phaseo-agent-go"
-		client.RawClient().Headers["X-Phaseo-Client-Version"] = "0.1.0"
+		client.RawClient().Headers["X-Phaseo-Client-Version"] = "0.3.0"
 	}
 	httpClient := options.HTTPClient
 	if httpClient == nil {
@@ -863,7 +863,7 @@ func (g *GatewayAgentClient) Stream(ctx context.Context, request ModelRequest) <
 		httpRequest.Header.Set("Content-Type", "application/json")
 		httpRequest.Header.Set("Accept", "text/event-stream")
 		httpRequest.Header.Set("X-Phaseo-Client", "phaseo-agent-go")
-		httpRequest.Header.Set("X-Phaseo-Client-Version", "0.1.0")
+		httpRequest.Header.Set("X-Phaseo-Client-Version", "0.3.0")
 		for key, value := range g.options.Headers {
 			httpRequest.Header.Set(key, value)
 		}

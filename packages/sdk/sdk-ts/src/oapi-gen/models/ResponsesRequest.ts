@@ -107,14 +107,29 @@ export interface ResponsesRequest {
     };
   };
   reasoning?: {
-    effort?: "none" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max";
+    effort?:
+      | "none"
+      | "instant"
+      | "minimal"
+      | "low"
+      | "medium"
+      | "high"
+      | "xhigh"
+      | "max";
     enabled?: boolean;
     max_tokens?: number;
     mode?: "standard" | "pro";
     summary?: "auto" | "concise" | "detailed";
   };
   safety_identifier?: string | null;
-  service_tier?: "standard" | "fast" | "priority" | "flex" | "batch";
+  service_tier?:
+    | "standard"
+    | "default"
+    | "fast"
+    | "ultrafast"
+    | "priority"
+    | "flex"
+    | "batch";
   session_id?: string;
   store?: boolean;
   stream?: boolean;
@@ -136,6 +151,7 @@ export interface ResponsesRequest {
     | {};
   tools?: (
     | {
+        async?: boolean;
         function: {
           description?: string;
           name: string;
@@ -152,13 +168,33 @@ export interface ResponsesRequest {
         type: "phaseo:datetime" | "gateway:datetime";
       }
     | {
+        engine?:
+          | "auto"
+          | "native"
+          | "exa"
+          | "firecrawl"
+          | "parallel"
+          | "perplexity"
+          | "tinyfish";
         include_highlights?: boolean;
         include_text?: boolean;
+        language?: string;
         max_results?: number;
+        page?: number;
         parameters?: {
+          engine?:
+            | "auto"
+            | "native"
+            | "exa"
+            | "firecrawl"
+            | "parallel"
+            | "perplexity"
+            | "tinyfish";
           include_highlights?: boolean;
           include_text?: boolean;
+          language?: string;
           max_results?: number;
+          page?: number;
         };
         type: "phaseo:web_search" | "gateway:web_search";
       }

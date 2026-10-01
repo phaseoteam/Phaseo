@@ -36,7 +36,8 @@
   ],
   "service_tiers": [
     "default",
-    "priority"
+    "priority",
+    "fast"
   ],
   "sources": [
     {

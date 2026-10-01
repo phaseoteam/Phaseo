@@ -26,6 +26,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
 import { useTranslations } from "next-intl";
 import { localizedSettingsError } from "@/i18n/error-messages";
+import { useSettingsWrite } from "../PrivateSettingsQuery";
 import { cn } from "@/lib/utils";
 import {
 	getProviderCredentialFormKind,
@@ -110,6 +111,7 @@ export default function BYOKInputDialog({
 }: Props) {
 	const t = useTranslations("SettingsUI");
 	const valueNotAvailable = t("strings.valueNotAvailable" as never);
+	const write = useSettingsWrite();
 	const activeProviderId = providerId ?? initial?.providerId ?? null;
 	const credentialFormKind = useMemo(
 		() => getProviderCredentialFormKind(activeProviderId),
@@ -287,17 +289,17 @@ export default function BYOKInputDialog({
 		try {
 			setLoading(true);
 			if (initial && initial.id) {
-				await updateByokKeyAction(initial.id, {
+				await write(updateByokKeyAction(initial.id, {
 					name: normalizedName,
 					value: submission.value ?? undefined,
 					enabled,
 					always_use: alwaysUse,
 					allowedModelSlugs,
 					allowedApiKeyIds,
-				});
+				}));
 			toast.success(submission.value ? t("strings.Key updated and replaced" as never) : t("strings.Key updated" as never));
 			} else {
-				await createByokKeyAction(
+				await write(createByokKeyAction(
 					normalizedName,
 					providerId as string,
 					submission.value as string,
@@ -305,7 +307,7 @@ export default function BYOKInputDialog({
 					alwaysUse,
 					allowedModelSlugs,
 					allowedApiKeyIds,
-				);
+				));
 		toast.success(t("strings.Key saved" as never));
 			}
 			setOpen(false);

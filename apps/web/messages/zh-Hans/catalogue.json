@@ -440,7 +440,10 @@
 				"aliasIdentifier": "别名",
 				"showFullDescription": "展开",
 				"showLessDescription": "收起",
-				"viewOrganisation": "查看 {organisation}"
+				"viewOrganisation": "查看 {organisation}",
+				"decisions": "决策",
+				"openDecisions": "打开决策",
+				"openDecisionsPlayground": "打开决策测试平台"
 			},
 			"sections": {
 				"providersDescription": "API 提供商、路由价格、可用性和近期可靠性信号。",
@@ -863,7 +866,11 @@
 						"label": "已退役",
 						"description": "此提供商映射已超过有效期限。"
 					}
-				}
+				},
+				"tierUltrafast": "超高速",
+				"planDescriptionFlexOnly": "仅在 service_tier 为 flex 时使用。",
+				"planDescriptionFastRouting": "可用时采用快速路由。",
+				"planDescriptionUltrafast": "可用时采用最高速路由。"
 			},
 			"seoTitles": {
 				"titleDefault": "{model}：价格、基准测试与提供商",
@@ -886,7 +893,11 @@
 				"showLess": "收起",
 				"showMore": "再显示 {count} 项",
 				"noHighlights": "暂无基准测试重点结果。",
-				"tableTitle": "基准测试表"
+				"tableTitle": "基准测试表",
+				"openSource": "打开 {benchmark} 的来源",
+				"hideDetailsFor": "隐藏 {benchmark} 的详情",
+				"showDetailsFor": "显示 {benchmark} 的详情",
+				"showAll": "显示全部 {count} 项基准测试"
 			},
 			"faqContent": {
 				"title": "常见问题",
@@ -963,6 +974,11 @@
 				"countFooter": "{count, plural, other {本系列共 # 个模型。}}",
 				"close": "关闭",
 				"genericFamily": "模型"
+			},
+			"privateModel": {
+				"endpoint": "私有端点",
+				"deployment": "私有部署",
+				"billingNote": "提供商计费由工作区直接管理。"
 			}
 		},
 		"noModelsAvailableForView": "此视图中暂时没有可用模型。",
@@ -1187,7 +1203,14 @@
 				"input_video_seconds": "输入视频秒数",
 				"total_tokens": "Token 总数",
 				"requests": "请求数"
-			}
+			},
+			"organisationComingSoon": "{organisation} 即将推出",
+			"announcedPricingDescription": "{organisation} 已公布 {model}。模型可用后将添加提供商可用性和价格信息。",
+			"noProviderAvailability": "此模型尚无 API 提供商价格或可用性信息。",
+			"thisModel": "此模型",
+			"tokenOverviewDescription": "标价是提供商的当前费率。有效价格按过去30天观测到的网关流量加权。汇总值对各时间段的价格计划取平均；一周历史记录展示每次 UTC 变更。",
+			"unitOverviewDescription": "标价使用标准化单位进行比较。汇总值对各时间段的价格计划取平均；一周历史记录展示每次 UTC 变更。",
+			"tierUnavailable": "由于没有观测到的用量，无法在有效价格视图中显示 {provider} {plan} 的价格线"
 		},
 		"sections": {
 			"apiProvidersAndPricing": "API 提供商与价格",
@@ -1400,18 +1423,23 @@
 			"suggestProviders": "如果你知道可集成的提供商，请在 Discord 告知我们，或在 GitHub 提交问题，以便我们添加定价数据。",
 			"noSubscriptions": "尚未列出订阅计划",
 			"noSubscriptionPrice": "未列出价格",
-			"noSubscriptionPricingDescription": "此模型暂无订阅价格。"
+			"noSubscriptionPricingDescription": "此模型暂无订阅价格。",
+			"noHistoryTitle": "尚无价格历史记录",
+			"submittedPrices": "提供商当前提交的价格显示在上方的提供商表中。"
 		},
 		"uptime": {
-			"title": "模型可用率",
+			"title": "平均可用率",
 			"last24Hours": "过去 24 小时",
 			"noRequests": "未观察到请求",
 			"requestsObserved": "观察到的请求数：{count}",
 			"perHour": "每小时可用率",
 			"chartLabel": "过去 {hours} 小时的模型每小时可用率。可用率：{uptime}。记录的请求数：{count}。",
-			"leastStableProviderLabel": "最不稳定的提供商",
+			"leastStableProviderLabel": "不使用 Phaseo Routing",
 			"tooltipUptime": "运行时间：",
-			"tooltipWorstProvider": "最不稳定的提供商："
+			"tooltipWorstProvider": "不使用 Phaseo Routing:",
+			"hourlyAverage": "过去24小时 · 每小时平均值",
+			"routingChartLabel": "过去24小时的模型每小时可用率。Phaseo Routing：{uptime}。{comparison}",
+			"routingComparison": " 不使用 Phaseo Routing：{uptime}。"
 		},
 		"providerInfo": {
 			"dataPolicy": "数据政策",
@@ -1534,7 +1562,9 @@
 			"relativeTime": "相对时间",
 			"elapsed": "已过去",
 			"remaining": "剩余",
-			"totalDays": "共 {count} 天"
+			"totalDays": "共 {count} 天",
+			"modalityStructured": "结构化状态",
+			"modalityDecisions": "决策"
 		},
 		"performance": {
 			"noTelemetry": "过去 7 天没有 Gateway 遥测数据",
@@ -1641,7 +1671,9 @@
 				"metricByHour": "每小时{metric}",
 				"noSamples": "此时段没有可用样本。",
 				"footer": "所有时间均为 UTC。数值汇总所选报告期内的每小时中位数。"
-			}
+			},
+			"observationsShown": "{description} 显示{series}。",
+			"requestSuccess": "请求成功率"
 		}
 	},
 	"providers": {
@@ -1779,7 +1811,9 @@
 		"browseModels": "浏览可通过 {name} 使用的模型。",
 		"missingTitle": "我们还不知道这个 API 提供商……暂时还不知道！",
 		"missingDescription": "如果我们遗漏了某个 API 提供商，请在 GitHub 上贡献信息。",
-		"contribute": "在 GitHub 上贡献"
+		"contribute": "在 GitHub 上贡献",
+		"internalPreview": "提供商内部预览",
+		"internalPreviewDescription": "此提供商已有获授权的目录提交，但尚无公开网关分析。下方提交的模型仅对提供商工作空间和 Phaseo 管理员可见。"
 	},
 	"benchmarks": {
 		"title": "基准测试",
@@ -1843,7 +1877,44 @@
 		"tocProgress": "进展",
 		"tocModelResults": "模型结果",
 		"editBenchmark": "编辑基准测试",
-		"ranking": "排名"
+		"ranking": "排名",
+		"tocIndexComparisons": "指数比较",
+		"tocIndexLeaderboard": "指数排行榜",
+		"independentEvaluations": "{metric} · 独立评估",
+		"noModelsMatchSearch": "没有与搜索匹配的模型。",
+		"noBenchmarkResults": "此基准测试尚无结果。",
+		"directoryDescription": "通过独立评估比较模型能力。",
+		"featuredAnalysis": "精选 Artificial Analysis 基准",
+		"featuredDescription": "智能、编程、智能体和评估成本",
+		"evaluatedModels": "{count} 个已评估模型",
+		"viewResults": "查看结果",
+		"allBenchmarks": "所有基准",
+		"sortBenchmarks": "基准排序",
+		"mostModels": "模型数量最多",
+		"nameAlphabetically": "按名称排序",
+		"modelCount": "{count} 个模型",
+		"showMoreBenchmarks": "显示更多基准",
+		"showingCount": "显示 {shown} 项，共 {total} 项",
+		"metricDescriptions": {
+			"intelligence": "模型综合能力",
+			"coding": "软件工程能力",
+			"agentic": "多步骤任务性能",
+			"cost": "完整智能指数评估 · USD"
+		},
+		"filteredEmpty": "没有与这些筛选条件匹配的分数。",
+		"scoreProgress": "分数趋势",
+		"releaseDateDescription": "按发布日期比较模型分数。",
+		"progressTimeRange": "趋势时间范围",
+		"filterByModel": "按模型筛选趋势",
+		"filterModels": "筛选模型",
+		"filterByOrg": "按组织筛选趋势",
+		"allOrganisations": "所有组织",
+		"filterByConfig": "按配置筛选趋势",
+		"allConfigurations": "所有配置",
+		"paretoFrontier": "帕累托前沿",
+		"all": "全部",
+		"nonReasoning": "无推理",
+		"confidenceInterval": "95% 置信区间：{low}–{high}"
 	},
 	"rankings": {
 		"title": "AI 模型排名",
@@ -2053,7 +2124,29 @@
 			"transcription": "转写"
 		},
 		"shareLabel": "占比",
-		"tokensLabel": "Token"
+		"tokensLabel": "Token",
+		"unavailable": "此排名暂时不可用。",
+		"retrying": "正在重试…",
+		"tryAgain": "重试",
+		"benchmarkRankings": "基准排名",
+		"independentEvaluations": "Artificial Analysis 提供的独立评估",
+		"benchmarkMetric": "基准指标",
+		"lowerCostIsBetter": "成本越低越好 · USD",
+		"indexVersion": "指数 v{versions}",
+		"searchRankedModels": "搜索排名中的模型",
+		"searchModels": "搜索模型",
+		"noSearchMatches": "没有与搜索匹配的模型。",
+		"noMetricResults": "此指标暂无结果。",
+		"allEvaluationResults": "所有结果和评估详情",
+		"resultCount": "{count} 个结果",
+		"benchmarkMetrics": {
+			"intelligence": "智能",
+			"coding": "编程",
+			"agentic": "智能体",
+			"cost": "评估成本"
+		},
+		"audioTranscribed": "已转录音频",
+		"recentRequests": "最近 {count} 次请求"
 	},
 	"compare": {
 		"title": "比较模型",
@@ -2315,7 +2408,7 @@
 		"modelsTab": "模型",
 		"visitPlatformPage": "在 {platform} 访问 {name}",
 		"unknownLabTitle": "我们尚未收录此实验室。",
-		"unknownLabDescription": "如果缺少某个实验室，欢迎在 GitHub 上贡献。",
+		"unknownLabDescription": "如果缺少某个实验室，请提交数据请求。",
 		"contributeGitHub": "在 GitHub 上贡献",
 		"githubLogoAlt": "GitHub 标志",
 		"editOrganisation": "编辑组织",
@@ -2345,7 +2438,8 @@
 		"metadataModelsTitle": "来自 {name} 的 AI 模型",
 		"metadataModelsDescription": "探索 {name} 的模型，包括 Gateway 可用性、发布状态和价格。",
 		"keywordAiModels": "AI 模型",
-		"keywordAiGateway": "AI 网关"
+		"keywordAiGateway": "AI 网关",
+		"requestMissingData": "请求补充数据"
 	},
 	"catalogNotFound": {
 		"modelHeading": "未找到模型“{id}”。",
@@ -2481,7 +2575,8 @@
 		"waitingForFirstToken": "正在等待首个词元",
 		"measuredPace": "中等速度",
 		"fastPace": "快速",
-		"veryFastPace": "极快"
+		"veryFastPace": "极快",
+		"tokensPerSecond": "{count} token/秒"
 	},
 	"monitor": {
 		"title": "监控",
@@ -2745,7 +2840,7 @@
 		"visitApp": "访问应用",
 		"active": "活跃",
 		"inactive": "未活跃",
-		"lastSeen": "上次活动：{date}",
+		"lastSeen": "上次活动：<date></date>",
 		"totalRequests": "请求总数",
 		"allTimeSuccessfulRequests": "全部时间的成功请求",
 		"totalTokens": "令牌总数",

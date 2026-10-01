@@ -35,12 +35,14 @@ export function resolveElevenLabsVoiceId(voice: string): string {
 }
 
 export function validateElevenLabsVoiceForModel(
-	_model: string,
+	model: string,
 	voice: string,
 ): { ok: true; resolved: string; supported: string[] } | { ok: false; resolved: string; supported: string[] } {
 	const resolved = resolveElevenLabsVoiceId(voice);
 	const supported = [...ELEVENLABS_TTS_VOICE_IDS] as string[];
-	if (supported.includes(resolved)) {
+	// Eleven v4 supports the full voice library, including custom clones.
+	const isV4 = /(?:^|\/)eleven[-_]v4(?:[-_]turbo)?$/.test(model);
+	if (supported.includes(resolved) || (isV4 && /^[A-Za-z0-9]{20}$/.test(resolved))) {
 		return { ok: true, resolved, supported };
 	}
 	return { ok: false, resolved, supported };

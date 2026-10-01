@@ -9,7 +9,14 @@ import { buildTextExecutor, cherryPickIRParams } from "@executors/_shared/text-g
 import type { ProviderExecutor } from "../../types";
 
 export function preprocess(ir: IRChatRequest, args: ExecutorExecuteArgs): IRChatRequest {
-	return cherryPickIRParams(ir, args.capabilityParams);
+	const next = cherryPickIRParams(ir, args.capabilityParams);
+	if (next.serviceTier === undefined) return next;
+
+	// Xiaomi selects the fast offering through the UltraSpeed model slug.
+	// Do not also forward Phaseo's routing hint as an upstream request parameter.
+	const request = { ...next };
+	delete request.serviceTier;
+	return request;
 }
 
 export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult> {
@@ -30,5 +37,3 @@ export const executor: ProviderExecutor = buildTextExecutor({
 	postprocess,
 	transformStream,
 });
-
-

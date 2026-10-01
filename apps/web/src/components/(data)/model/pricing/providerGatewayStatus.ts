@@ -87,14 +87,19 @@ export function resolveGatewayStatus({
 		normalizeGatewayStatusValue(providerRoutingStatus);
 	const normalizedModelRoutingStatus = normalizeGatewayStatusValue(modelRoutingStatus);
 	const normalizedCapabilityStatus = normalizeGatewayStatusValue(capabilityStatus);
+	const hasRouteLifecycleStatus =
+		isFutureEffectiveWindow(effectiveFrom) ||
+		normalizedProviderAvailabilityStatus === "coming_soon" ||
+		normalizedPhaseoStatus === "planned" ||
+		normalizedPhaseoStatus === "implementing" ||
+		normalizedPhaseoStatus === "testing" ||
+		normalizedCapabilityStatus === "coming_soon";
 
-	if (normalizedProviderStatus === "external") {
+	if (normalizedProviderStatus === "external" && !hasRouteLifecycleStatus) {
 		return "external";
 	}
 
 	if (
-		normalizedProviderRoutingStatus === "disabled" ||
-		normalizedModelRoutingStatus === "disabled" ||
 		normalizedCapabilityStatus === "disabled" ||
 		normalizedPhaseoStatus === "disabled" ||
 		normalizedPhaseoStatus === "blocked"
@@ -139,6 +144,13 @@ export function resolveGatewayStatus({
 		normalizedCapabilityStatus === "coming_soon"
 	) {
 		return "coming_soon";
+	}
+
+	if (
+		normalizedProviderRoutingStatus === "disabled" ||
+		normalizedModelRoutingStatus === "disabled"
+	) {
+		return "disabled";
 	}
 
 	if (normalizedProviderStatus && normalizedProviderStatus !== "active") {

@@ -2,6 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { useEffect, useMemo, useRef } from "react";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import {
 	Table,
 	TableBody,
@@ -53,6 +54,7 @@ export function AuditDataTable({
 	const tUi = useTranslations("Common.ui");
 	const tAccessibility = useTranslations("Common.accessibility");
 	const tAudit = useTranslations("Common.ui.auditDataTable");
+	const format = useDisplayFormatters();
 	const [searchQuery] = useQueryState("search", {
 		defaultValue: "",
 		parse: (value) => value || "",
@@ -468,8 +470,7 @@ export function AuditDataTable({
 	const pageData = filteredSortedData.slice(pageStart, pageStart + PAGE_SIZE);
 
 	const formatDate = (dateStr: string | null) => {
-		if (!dateStr) return "-";
-		return new Date(dateStr).toLocaleDateString();
+		return format.calendarDate(dateStr);
 	};
 
 	const getPaginationRange = (current: number, total: number, delta = 1) => {

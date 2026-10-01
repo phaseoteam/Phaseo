@@ -273,6 +273,20 @@ describe("decodeOpenAIChatRequest", () => {
 		});
 	});
 
+	it("preserves async on Chat Completions tools", () => {
+		const ir = decodeOpenAIChatRequest({
+			model: "gpt-6-astra",
+			messages: [{ role: "user", content: "Start the lookup." }],
+			tools: [{
+				type: "function",
+				async: true,
+				function: { name: "lookup", parameters: { type: "object" } },
+			}],
+		} as any);
+
+		expect(ir.tools?.[0]).toMatchObject({ name: "lookup", async: true });
+	});
+
 	it("should preserve native web search tools", () => {
 		const request = {
 			model: "gpt-4.1",

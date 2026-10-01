@@ -7,6 +7,7 @@
 
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import {
     ScatterChart,
     Scatter,
@@ -35,17 +36,16 @@ interface PerformanceScatterProps {
     mode?: PerformanceMode;
 }
 
-function formatCompact(value: number, locale: string) {
-    if (!Number.isFinite(value)) return "--";
-    return new Intl.NumberFormat(locale, { notation: "compact", maximumFractionDigits: 1 }).format(value);
-}
-
 export function PerformanceScatter({
     data,
     mode = "throughput",
 }: PerformanceScatterProps) {
-    const t = useTranslations("Catalogue.rankings");
-    const locale = useLocale();
+	const t = useTranslations("Catalogue.rankings");
+	const locale = useLocale();
+	const format = useDisplayFormatters();
+	const formatCompact = (value: number, _locale?: string) => Number.isFinite(value)
+		? format.number(value, { maximumFractionDigits: 1 })
+		: "--";
     if (!data.length) {
         return (
             <EmptyChartPreview

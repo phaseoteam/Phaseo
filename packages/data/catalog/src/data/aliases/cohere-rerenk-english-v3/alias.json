@@ -1,0 +1,8 @@
+{
+  "alias_slug": "cohere/rerenk-english-v3",
+  "resolved_api_model_id": "cohere/rerank-english-v3",
+  "resolved_model_id": "cohere/rerank-english-v3",
+  "channel": "legacy",
+  "is_enabled": true,
+  "notes": "Legacy compatibility alias for the corrected Cohere Rerank English V3 identifier."
+}

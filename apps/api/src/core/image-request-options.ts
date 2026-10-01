@@ -4,6 +4,7 @@
 
 type ImageOptionInput = {
 	model?: unknown;
+	capability_id?: unknown;
 	size?: unknown;
 	resolution?: unknown;
 	quality?: unknown;
@@ -163,13 +164,14 @@ export function buildImagePricingRequestOptions(
 		normalizeAutoOption(resolveImageSize(responseInput)) ??
 		inferredVariant?.resolution ??
 		(isGrokImagineImage2 ? "1k" : undefined);
+	const defaultGrokImagineQuality = input.capability_id === "image.edit" ? "medium" : "low";
 	const rawQuality =
 		normalizeAutoOption(toNonEmptyString(input.quality) ?? toNonEmptyString(input.image_params?.quality)) ??
 		normalizeAutoOption(
 			toNonEmptyString(responseInput.quality) ?? toNonEmptyString(responseInput.image_params?.quality),
 		) ??
 		inferredVariant?.quality ??
-		(isGrokImagineImage2 ? "low" : undefined);
+		(isGrokImagineImage2 ? defaultGrokImagineQuality : undefined);
 	const size = isGrokImagineImage2 && /^\d+k$/i.test(rawSize ?? "") ? rawSize?.toLowerCase() : rawSize;
 	const quality = isGrokImagineImage2 ? rawQuality?.toLowerCase() : rawQuality;
 	const providerImageSize = normalizeProviderImageSize(quality);

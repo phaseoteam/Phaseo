@@ -154,6 +154,82 @@ function activateDeepSeekV4ProPeakWindows(card: PriceCard): PriceCard {
 }
 
 describe("after/pricing calculatePricing", () => {
+	it("fails closed when paid usage produces no pricing line", () => {
+		expect(() => calculatePricing(
+			{ input_tokens: 11, output_tokens: 7, total_tokens: 18 },
+			TTS_CARD,
+			{},
+		)).toThrow("pricing_usage_unmatched");
+	});
+
+	it("fails closed when paid speech output has no usage metadata", () => {
+		expect(() => calculatePricing({}, TTS_CARD, {})).toThrow(
+			"pricing_usage_unmatched:output_audio_tokens",
+		);
+	});
+
+	it("bills cached speech input at the input rate when the card has no cache rule", () => {
+		const result = calculatePricing(
+			{
+				input_tokens: 11,
+				input_text_tokens: 8,
+				cached_read_text_tokens: 3,
+				cached_read_tokens_are_subset_of_input: true,
+				input_tokens_details: { cached_tokens: 3 },
+				output_tokens: 7,
+				output_audio_tokens: 7,
+			},
+			TTS_CARD,
+			{},
+		);
+
+		expect(result.totalNanos).toBe(90_600);
+		expect(result.pricedUsage.input_text_tokens).toBe(8);
+		expect(result.pricedUsage.cached_read_text_tokens).toBe(3);
+	});
+
+	it("ignores speech meters that belong only to an inactive pricing plan", () => {
+		const card: PriceCard = {
+			...TTS_CARD,
+			rules: [
+				TTS_CARD.rules[0],
+				{ ...TTS_CARD.rules[1], pricing_plan: "batch" },
+			],
+		};
+
+		const result = calculatePricing({ input_text_tokens: 1_000 }, card, {});
+		expect(result.totalNanos).toBe(600_000);
+	});
+
+    it.each([
+        [{}, { service_tier: "priority" }],
+        [{ service_tier: "default" }, { service_tier: "fast" }],
+        [{ serviceTier: "standard" }, { serviceTier: "priority" }],
+    ])("bills an explicitly requested dedicated priority route with usage %j", (observed, body) => {
+        const card: PriceCard = { ...TTS_CARD, provider: "fireworks", model: "z-ai/glm-5.3",
+            rules: [{ ...TTS_CARD.rules[0], pricing_plan: "priority", price_per_unit: "2" }] };
+        const result = calculatePricing({ input_text_tokens: 1_000_000, ...observed }, card, body);
+        expect(result.totalNanos).toBe(2_000_000_000);
+    });
+
+    it("bills an Ultrafast-only card at the Ultrafast rate", () => {
+        const card: PriceCard = {
+            ...TTS_CARD,
+            rules: [{ ...TTS_CARD.rules[0], pricing_plan: "ultrafast", price_per_unit: "20" }],
+        };
+        const result = calculatePricing(
+            { input_text_tokens: 1_000_000 },
+            card,
+            { service_tier: "ultrafast" },
+        );
+        expect(result.totalNanos).toBe(20_000_000_000);
+    });
+
+    it("rejects default billing against a priority-only card", () => {
+        const card: PriceCard = { ...TTS_CARD, rules: [{ ...TTS_CARD.rules[0], pricing_plan: "priority" }] };
+        expect(() => calculatePricing({ input_text_tokens: 1_000 }, card, {})).toThrow("pricing_plan_missing:standard");
+    });
+
 	beforeEach(() => {
 		loadPriceCardMock.mockReset();
 	});
@@ -182,9 +258,86 @@ describe("after/pricing calculatePricing", () => {
 		expect(result.pricedUsage?.pricing?.lines ?? []).toHaveLength(0);
 	});
 
+	it("uses the free pricing plan for model ids with a :free suffix", () => {
+		const card: PriceCard = {
+			provider: "poolside",
+			model: "poolside/laguna-s-2.1:free",
+			endpoint: "responses",
+			effective_from: null,
+			effective_to: null,
+			currency: "USD",
+			version: null,
+			rules: [
+				{
+					meter: "cached_read_text_tokens",
+					unit: "token",
+					unit_size: 1_000_000,
+					price_per_unit: "0",
+					currency: "USD",
+					pricing_plan: "free",
+					match: [],
+					priority: 100,
+				},
+			],
+		};
+
+		const result = calculatePricing(
+			{ cached_read_text_tokens: 32 },
+			card,
+			{ model: "poolside/laguna-s-2.1:free" },
+		);
+
+		expect(result.totalNanos).toBe(0);
+		expect(result.pricedUsage?.pricing?.lines?.[0]?.dimension).toBe("cached_read_text_tokens");
+	});
+
+	it("preserves an observed standard service tier on a :free model id", () => {
+		const card: PriceCard = {
+			provider: "poolside",
+			model: "poolside/laguna-s-2.1:free",
+			endpoint: "responses",
+			effective_from: null,
+			effective_to: null,
+			currency: "USD",
+			version: null,
+			rules: [
+				{
+					meter: "cached_read_text_tokens",
+					unit: "token",
+					unit_size: 1_000_000,
+					price_per_unit: "0",
+					currency: "USD",
+					pricing_plan: "free",
+					match: [],
+					priority: 100,
+				},
+				{
+					meter: "cached_read_text_tokens",
+					unit: "token",
+					unit_size: 1_000_000,
+					price_per_unit: "1",
+					currency: "USD",
+					pricing_plan: "standard",
+					match: [],
+					priority: 90,
+				},
+			],
+		};
+
+		const result = calculatePricing(
+			{ cached_read_text_tokens: 32, service_tier: "standard" },
+			card,
+			{ model: "poolside/laguna-s-2.1:free" },
+		);
+
+		expect(result.totalNanos).toBe(32_000);
+		expect(result.pricedUsage?.pricing?.lines?.[0]?.unit_price_usd).toBe("1.000000000");
+	});
+
 	it("falls back to a matching standard rule when the requested plan conditions do not match", () => {
 		const card: PriceCard = {
 			...TTS_CARD,
+			endpoint: "text.generate",
 			rules: [
 				...TTS_CARD.rules,
 				{

@@ -4,6 +4,11 @@ import { getDataClient } from "@/data/supabase";
 import type { Env } from "@/env";
 import { PRIVATE_NO_STORE_HEADERS } from "@/http/cache";
 import { normaliseCountryCode } from "@/lib/countryCodes";
+import {
+	DISPLAY_PREFERENCE_SELECT,
+	displayPreferencesFromRow,
+} from "@/lib/displayPreferences";
+import { providerAccountWorkspaceId } from "./provider-account";
 
 function cookieValue(request: Request, name: string): string | null {
 	for (const segment of (request.headers.get("cookie") ?? "").split(";")) {
@@ -37,6 +42,27 @@ function isMissingCountryColumn(error: unknown) {
 	const message = String(value.message ?? "").toLowerCase();
 	return ["declared_country_code", "country_declared_at"].some((column) => message.includes(column));
 }
+
+type WorkspaceMembershipRow = {
+	workspace_id?: string | null;
+	workspaces?: { id?: string | null; name?: string | null } | Array<{ id?: string | null; name?: string | null }> | null;
+};
+
+function workspaceFromMembership(row: WorkspaceMembershipRow): { id: string; name: string } | null {
+	const workspace = Array.isArray(row.workspaces) ? row.workspaces[0] : row.workspaces;
+	const id = String(workspace?.id ?? row.workspace_id ?? "").trim();
+	const name = String(workspace?.name ?? "").trim();
+	return id && name ? { id, name } : null;
+}
+
+function escapeLikePattern(value: string): string {
+	return value.replace(/[\\%_]/g, "\\$&");
+}
+
+// Gateway keys were renamed from the legacy `aistats` namespace to `phaseo`.
+// Keep accepting both here so the test endpoint does not reject a key before
+// the gateway gets a chance to authenticate it.
+const GATEWAY_API_KEY_PATTERN = /^(?:phaseo_v1|aistats(?:_v\d+)?)_sk_[A-Za-z0-9_-]{16,}$/;
 
 export const accountAuthRouter = new Hono<{ Bindings: Env }>();
 
@@ -122,6 +148,44 @@ accountAuthRouter.get("/workspace-access", async (c) => {
 	return c.json({ allowed, role, userId: user.id }, allowed ? 200 : 403, PRIVATE_NO_STORE_HEADERS);
 });
 
+accountAuthRouter.post("/workspace-accessed", async (c) => {
+	const user = await requireUser(c.req.raw, c.env);
+	if (!user) return c.json({ error: "unauthorized" }, 401, PRIVATE_NO_STORE_HEADERS);
+	const body: { workspaceId?: unknown } = await c.req.json<{ workspaceId?: unknown }>().catch(() => ({}));
+	const workspaceId = typeof body.workspaceId === "string" ? body.workspaceId.trim() : "";
+	if (!workspaceId || workspaceId.length > 128) {
+		return c.json({ error: "invalid_workspace_id" }, 400, PRIVATE_NO_STORE_HEADERS);
+	}
+
+	const client = getDataClient(c.env);
+	const membership = await client
+		.from("workspace_members")
+		.select("workspace_id")
+		.eq("user_id", user.id)
+		.eq("workspace_id", workspaceId)
+		.maybeSingle();
+	if (membership.error) return c.json({ error: "workspace_access_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
+	if (!membership.data) {
+		const ownedWorkspace = await client
+			.from("workspaces")
+			.select("id")
+			.eq("id", workspaceId)
+			.eq("owner_user_id", user.id)
+			.maybeSingle();
+		if (ownedWorkspace.error) return c.json({ error: "workspace_access_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
+		if (!ownedWorkspace.data) return c.json({ error: "workspace_not_accessible" }, 403, PRIVATE_NO_STORE_HEADERS);
+		return c.json({ ok: true }, 200, PRIVATE_NO_STORE_HEADERS);
+	}
+
+	const update = await client
+		.from("workspace_members")
+		.update({ last_accessed_at: new Date().toISOString() })
+		.eq("user_id", user.id)
+		.eq("workspace_id", workspaceId);
+	if (update.error) return c.json({ error: "workspace_access_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
+	return c.json({ ok: true }, 200, PRIVATE_NO_STORE_HEADERS);
+});
+
 accountAuthRouter.get("/workspaces", async (c) => {
 	const user = await requireUser(c.req.raw, c.env);
 	if (!user) return c.json({ workspaces: [] }, 401, PRIVATE_NO_STORE_HEADERS);
@@ -140,7 +204,7 @@ accountAuthRouter.post("/test-key", async (c) => {
 	if (!user) return c.json({ ok: false, message: "Sign in to test API keys." }, 401, PRIVATE_NO_STORE_HEADERS);
 	const body: { apiKey?: unknown } = await c.req.json().catch(() => ({}));
 	const apiKey = typeof body.apiKey === "string" ? body.apiKey.trim() : "";
-	if (!/^aistats(_v\d+)?_sk_[A-Za-z0-9_-]{16,}$/.test(apiKey)) return c.json({ ok: false, message: "This does not look like an AI Stats API key." }, 400, PRIVATE_NO_STORE_HEADERS);
+	if (!GATEWAY_API_KEY_PATTERN.test(apiKey)) return c.json({ ok: false, message: "This does not look like a Phaseo API key." }, 400, PRIVATE_NO_STORE_HEADERS);
 	const raw = c.env.NEXT_PUBLIC_GATEWAY_API_URL ?? c.env.NEXT_PUBLIC_API_URL ?? c.env.AI_STATS_GATEWAY_URL ?? "https://api.phaseo.app";
 	const base = raw.replace(/\/+$/, ""); const gateway = base.endsWith("/v1") ? base : `${base}/v1`;
 	try {
@@ -263,51 +327,137 @@ accountAuthRouter.get("/header", async (c) => {
 	}
 	try {
 		const client = getDataClient(c.env);
-		const [userResult, membershipResult, ownedResult] = await Promise.all([
-			client.from("users").select("default_workspace_id,role,display_name").eq("user_id", user.id).maybeSingle(),
-			client.from("workspace_members").select("workspace_id").eq("user_id", user.id),
-			client.from("workspaces").select("id").eq("owner_user_id", user.id),
-		]);
-		for (const result of [userResult, membershipResult, ownedResult]) {
-			if (result.error) throw result.error;
-		}
+		const searchQuery = String(c.req.query("q") ?? "").trim().slice(0, 120);
+		const limitParam = c.req.query("limit");
+		const offsetParam = c.req.query("offset");
+		const isPaged = limitParam !== undefined || offsetParam !== undefined || searchQuery.length > 0;
+		const pageSize = isPaged
+			? Math.min(50, Math.max(1, Math.floor(Number(limitParam) || 50)))
+			: 0;
+		const offset = isPaged
+			? Math.min(1_000_000, Math.max(0, Math.floor(Number(offsetParam) || 0)))
+			: 0;
+		const userResult = await client.from("users")
+			.select(`default_workspace_id,role,display_name,${DISPLAY_PREFERENCE_SELECT}`)
+			.eq("user_id", user.id)
+			.maybeSingle();
+		if (userResult.error) throw userResult.error;
 		const defaultWorkspaceId = String(userResult.data?.default_workspace_id ?? "").trim();
 		const role = String(userResult.data?.role ?? "").trim();
-		const workspaceIds = Array.from(new Set([
-			...(membershipResult.data ?? []).map((row) => String(row.workspace_id ?? "").trim()),
-			...(ownedResult.data ?? []).map((row) => String(row.id ?? "").trim()),
-			defaultWorkspaceId,
-		].filter(Boolean)));
 		let teams: Array<{ id: string; name: string }> = [];
-		if (workspaceIds.length > 0) {
-			const { data, error } = await client
-				.from("workspaces")
-				.select("id,name")
-				.in("id", workspaceIds);
-			if (error) throw error;
-			teams = (data ?? [])
-				.map((row) => ({ id: String(row.id ?? ""), name: String(row.name ?? "").trim() }))
-				.filter((team) => team.id && team.name);
+		let teamsHasMore: boolean | undefined;
+		let providerWorkspaceId: string | null;
+
+		if (isPaged) {
+			const searchPattern = searchQuery ? `%${escapeLikePattern(searchQuery)}%` : null;
+			let membershipsQuery = client
+				.from("workspace_members")
+				.select("workspace_id,last_accessed_at,workspaces:workspaces!inner(id,name)")
+				.eq("user_id", user.id);
+			if (searchPattern) membershipsQuery = membershipsQuery.ilike("workspaces.name", searchPattern);
+			const [membershipPage, links] = await Promise.all([
+				membershipsQuery
+					.order("last_accessed_at", { ascending: false, nullsFirst: false })
+					.order("workspace_id", { ascending: true })
+					.range(offset, offset + pageSize),
+				client.from("provider_account_links")
+					.select("workspace_id,linked_by,status")
+					.eq("linked_by", user.id)
+					.eq("status", "active"),
+			]);
+			if (membershipPage.error || links.error) throw membershipPage.error ?? links.error;
+			providerWorkspaceId = providerAccountWorkspaceId(user.id, role, links.data ?? []);
+			const pageRows = (membershipPage.data ?? []) as WorkspaceMembershipRow[];
+			teamsHasMore = pageRows.length > pageSize;
+			teams = pageRows.slice(0, pageSize)
+				.map(workspaceFromMembership)
+				.filter((team): team is { id: string; name: string } => Boolean(team));
+
+			if (!searchQuery && offset === 0) {
+				const activeWorkspaceId = cookieValue(c.req.raw, "activeWorkspaceId") ?? defaultWorkspaceId;
+				if (activeWorkspaceId) {
+					const activeIndex = teams.findIndex((team) => team.id === activeWorkspaceId);
+					if (activeIndex >= 0) {
+						teams = [teams[activeIndex]!, ...teams.filter((_, index) => index !== activeIndex)];
+					} else {
+						const activeMembership = await client
+							.from("workspace_members")
+							.select("workspace_id,last_accessed_at,workspaces:workspaces!inner(id,name)")
+							.eq("user_id", user.id)
+							.eq("workspace_id", activeWorkspaceId)
+							.maybeSingle();
+						if (activeMembership.error) throw activeMembership.error;
+						const activeTeam = activeMembership.data
+							? workspaceFromMembership(activeMembership.data as WorkspaceMembershipRow)
+							: null;
+						if (activeTeam) {
+							teams = [activeTeam, ...teams].slice(0, pageSize);
+							teamsHasMore = true;
+						}
+					}
+				}
+			}
+
+			if (teams.length === 0 && ["admin", "editor"].includes(role.toLowerCase())) {
+				let workspacesQuery = client.from("workspaces").select("id,name");
+				if (searchPattern) workspacesQuery = workspacesQuery.ilike("name", searchPattern);
+				const workspacePage = await workspacesQuery
+					.order("name", { ascending: true })
+					.range(offset, offset + pageSize);
+				if (workspacePage.error) throw workspacePage.error;
+				const rows = workspacePage.data ?? [];
+				teamsHasMore = rows.length > pageSize;
+				teams = rows.slice(0, pageSize)
+					.map((row) => ({ id: String(row.id ?? ""), name: String(row.name ?? "").trim() }))
+					.filter((team) => team.id && team.name);
+			}
+		} else {
+			const [membershipResult, ownedResult] = await Promise.all([
+				client.from("workspace_members").select("workspace_id").eq("user_id", user.id),
+				client.from("workspaces").select("id").eq("owner_user_id", user.id),
+			]);
+			if (membershipResult.error || ownedResult.error) throw membershipResult.error ?? ownedResult.error;
+			const workspaceIds = Array.from(new Set([
+				...(membershipResult.data ?? []).map((row) => String(row.workspace_id ?? "").trim()),
+				...(ownedResult.data ?? []).map((row) => String(row.id ?? "").trim()),
+				defaultWorkspaceId,
+			].filter(Boolean)));
+			const links = workspaceIds.length ? await client.from("provider_account_links")
+				.select("workspace_id,linked_by,status").in("workspace_id", workspaceIds).eq("status", "active") : { data: [], error: null };
+			if (links.error) throw links.error;
+			providerWorkspaceId = providerAccountWorkspaceId(user.id, role, links.data ?? []);
+			if (workspaceIds.length > 0) {
+				const { data, error } = await client
+					.from("workspaces")
+					.select("id,name")
+					.in("id", workspaceIds);
+				if (error) throw error;
+				teams = (data ?? [])
+					.map((row) => ({ id: String(row.id ?? ""), name: String(row.name ?? "").trim() }))
+					.filter((team) => team.id && team.name);
+			}
+			if (teams.length === 0 && ["admin", "editor"].includes(role.toLowerCase())) {
+				const { data, error } = await client.from("workspaces").select("id,name");
+				if (error) throw error;
+				teams = (data ?? [])
+					.map((row) => ({ id: String(row.id ?? ""), name: String(row.name ?? "").trim() }))
+					.filter((team) => team.id && team.name);
+			}
+			teams.sort((left, right) => {
+				if (left.id === defaultWorkspaceId) return -1;
+				if (right.id === defaultWorkspaceId) return 1;
+				return left.name.localeCompare(right.name);
+			});
 		}
-		if (teams.length === 0 && ["admin", "editor"].includes(role.toLowerCase())) {
-			const { data, error } = await client.from("workspaces").select("id,name");
-			if (error) throw error;
-			teams = (data ?? [])
-				.map((row) => ({ id: String(row.id ?? ""), name: String(row.name ?? "").trim() }))
-				.filter((team) => team.id && team.name);
-		}
-		teams.sort((left, right) => {
-			if (left.id === defaultWorkspaceId) return -1;
-			if (right.id === defaultWorkspaceId) return 1;
-			return left.name.localeCompare(right.name);
-		});
-		const currentTeamId =
-			cookieValue(c.req.raw, "activeWorkspaceId") ??
-			(defaultWorkspaceId || undefined);
+
+		const providerMode = providerWorkspaceId !== null;
+		const currentTeamId = providerMode ? (providerWorkspaceId || undefined) :
+			cookieValue(c.req.raw, "activeWorkspaceId") ?? (defaultWorkspaceId || undefined);
 		const displayName = String(userResult.data?.display_name ?? "").trim()
 			|| metadataString(user.userMetadata, ["full_name", "name"]);
 		return c.json({
 			isLoggedIn: true,
+			providerMode,
 			user: {
 				id: user.id,
 				email: user.email,
@@ -315,6 +465,8 @@ accountAuthRouter.get("/header", async (c) => {
 				avatarUrl: metadataString(user.userMetadata, ["avatar_url", "picture", "picture_url"]),
 			},
 			teams,
+			...(teamsHasMore !== undefined ? { teamsHasMore } : {}),
+			displayPreferences: displayPreferencesFromRow(userResult.data),
 			...(currentTeamId ? { currentTeamId } : {}),
 			...(role ? { userRole: role } : {}),
 		}, 200, PRIVATE_NO_STORE_HEADERS);

@@ -2,6 +2,7 @@
 
 import React from "react";
 import { useTranslations } from "next-intl";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import {
     Table,
     TableBody,
@@ -32,14 +33,6 @@ function computeTotalTokens(u: any): number {
 }
 const getTokens = (u: any) => computeTotalTokens(u);
 
-function niceDate(iso: string) {
-    try {
-        return new Date(iso).toLocaleString();
-    } catch {
-        return iso;
-    }
-}
-
 export default function RecentRequestsTable({
     rows,
     onSelect,
@@ -48,6 +41,7 @@ export default function RecentRequestsTable({
     onSelect: (row: RecentRequestRow) => void;
 }) {
     const t = useTranslations("SettingsUI");
+	const format = useDisplayFormatters();
     return (
         <div className="overflow-auto">
             <Table>
@@ -67,16 +61,24 @@ export default function RecentRequestsTable({
                         return (
                             <TableRow key={idx} className="h-8">
                                 <TableCell className="py-1 align-middle">
-                                    {niceDate(r.created_at)}
+                                {format.dateTime(r.created_at)}
                                 </TableCell>
                                 <TableCell className="py-1 align-middle">
                                     {r.model_id ?? "-"}
                                 </TableCell>
-                                <TableCell className="py-1 align-middle text-right">
-                                    ${spend.toFixed(5)}
-                                </TableCell>
-                                <TableCell className="py-1 align-middle text-right">
-                                    {Intl.NumberFormat().format(tokens)}
+								<TableCell className="py-1 align-middle text-right">
+									{format.number(spend, {
+										style: "currency",
+										currency: "USD",
+										maximumFractionDigits: 5,
+										notation: "standard",
+									})}
+								</TableCell>
+								<TableCell className="py-1 align-middle text-right">
+									{format.number(tokens, {
+										maximumFractionDigits: 0,
+										notation: "standard",
+									})}
                                 </TableCell>
                                 <TableCell className="py-1 align-middle">
                                     <Button

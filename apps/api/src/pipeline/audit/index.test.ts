@@ -33,7 +33,20 @@ vi.mock("./upstream-requests", () => ({
 	persistGatewayUpstreamRequests: (...args: any[]) => persistGatewayUpstreamRequestsMock(...args),
 }));
 
-import { auditFailure, auditSuccess } from "./index";
+import { auditFailure, auditSuccess, resolveAuditServiceTiers } from "./index";
+
+describe("audit service tier attribution", () => {
+	it("defaults requests without a tier to standard", () => {
+		expect(resolveAuditServiceTiers({ endpoint: "chat.completions" })).toEqual({
+			requested: null,
+			observed: null,
+			effective: "standard",
+		});
+	});
+	it("preserves the batch tier", () => {
+		expect(resolveAuditServiceTiers({ endpoint: "batch" }).effective).toBe("batch");
+	});
+});
 
 describe("audit request detail persistence", () => {
 	beforeEach(() => {
@@ -56,6 +69,66 @@ describe("audit request detail persistence", () => {
 			settings: { enabled: true, retentionDays: 90, includeProviderPayloads: true },
 		});
 		persistGatewayIoLogMock.mockResolvedValue(undefined);
+	});
+
+	it.each([false, true])("retries analytics writes without duplicating the request log (stream=%s)", async (stream) => {
+		const insert = vi.fn(() => ({ select: () => ({ single: async () => ({
+			data: { id: "row_retry", created_at: "2026-09-20T08:58:00Z", workspace_id: "ws_retry" },
+			error: null,
+		}) }) }));
+		const rpc = vi.fn()
+			.mockResolvedValueOnce({ error: { code: "40001", message: "could not serialize access" } })
+			.mockResolvedValue({ data: "event_retry", error: null });
+		getSupabaseAdminMock.mockReturnValue({ from: () => ({ insert }), rpc });
+		resolveGatewayIoLoggingPolicyMock.mockResolvedValue({ captureEnabled: false });
+
+		await auditSuccess({
+			requestId: "req_retry", workspaceId: "ws_retry", provider: "google-ai-studio",
+			model: "google/gemini-2.5-flash-lite", endpoint: "chat.completions", stream, byok: false,
+			usagePriced: { input_tokens: 273, output_tokens: 20, total_tokens: 293 },
+			totalCents: 0, totalNanos: 35_300, currency: "USD", statusCode: 200, finishReason: "tool_calls",
+			requestPayload: { messages: [{ role: "user", content: [
+				{ type: "image_url", image_url: { url: "data:image/png;base64,fixture" } },
+			] }] },
+			gatewayResponse: { choices: [{ message: { tool_calls: [
+				{ id: "call_fixture", type: "function", function: { name: "echo", arguments: '{}' } },
+			] } }] },
+		});
+
+		expect(insert).toHaveBeenCalledTimes(1);
+		expect(rpc).toHaveBeenCalledTimes(2);
+		expect(rpc.mock.calls[1]).toEqual(rpc.mock.calls[0]);
+		const event = rpc.mock.calls[1][1].p_event;
+		expect(event).toMatchObject({ request_id: "req_retry", stream, tool_call_count: 1 });
+		expect(event.usage_meters).toContainEqual(expect.objectContaining({ meter_key: "input_images", quantity: 1 }));
+		expect(JSON.stringify(event)).not.toContain("data:image");
+	});
+
+	it("reports the database code and message when analytics retries are exhausted", async () => {
+		const insert = vi.fn(() => ({ select: () => ({ single: async () => ({
+			data: { id: "row_rejected", created_at: "2026-09-20T08:58:00Z", workspace_id: "ws_rejected" },
+			error: null,
+		}) }) }));
+		const rpc = vi.fn().mockResolvedValue({ error: {
+			code: "23514", message: 'new row violates check constraint "example_check"',
+			details: "private row contents", hint: "private hint",
+		} });
+		getSupabaseAdminMock.mockReturnValue({ from: () => ({ insert }), rpc });
+		resolveGatewayIoLoggingPolicyMock.mockResolvedValue({ captureEnabled: false });
+		const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+		try {
+			await expect(auditSuccess({
+				requestId: "req_rejected", workspaceId: "ws_rejected", provider: "google-ai-studio",
+				model: "google/gemini-2.5-flash-lite", endpoint: "chat.completions", stream: false, byok: false,
+				usagePriced: { input_tokens: 1, output_tokens: 1 },
+				totalCents: 0, totalNanos: 100, currency: "USD", statusCode: 200,
+			})).rejects.toThrow('supabase_v2_audit_success_rpc: [23514] new row violates check constraint "example_check"');
+			expect(insert).toHaveBeenCalledTimes(1);
+			expect(rpc).toHaveBeenCalledTimes(3);
+			expect(JSON.stringify(consoleError.mock.calls)).not.toMatch(/private row contents|private hint/);
+		} finally {
+			consoleError.mockRestore();
+		}
 	});
 
 	it("stores replay-ready details for successful requests", async () => {
@@ -122,7 +195,7 @@ describe("audit request detail persistence", () => {
 			gatewayResponse: { id: "resp_1", output_text: "hi" },
 			providerRequest: { model: "openai/gpt-5-nano", messages: [{ role: "user", content: "hello" }] },
 			providerResponse: { id: "chatcmpl_1" },
-			detailMetadata: { replay_supported: true },
+			detailMetadata: { replay_supported: true, response_timeline: { version: 1, routing_ms: 12 } },
 			userAgent: "phaseo-typescript/2.2.0",
 			clientSource: {
 				id: "phaseo-typescript",
@@ -161,6 +234,7 @@ describe("audit request detail persistence", () => {
 				detail_metadata: expect.objectContaining({
 					labels: [{ key: "team", value: "support" }],
 					replay_supported: true,
+					response_timeline: { version: 1, routing_ms: 12 },
 					client_source: expect.objectContaining({ id: "phaseo-typescript" }),
 					request: expect.objectContaining({ user_agent: "phaseo-typescript/2.2.0" }),
 				}),
@@ -178,7 +252,7 @@ describe("audit request detail persistence", () => {
 					messages: [{ role: "user", content: "hello" }],
 				},
 				request_content: [{ role: "user", content: "hello" }],
-				metadata: expect.objectContaining({ replay_supported: true }),
+				metadata: expect.objectContaining({ replay_supported: true, response_timeline: { version: 1, routing_ms: 12 } }),
 			}),
 		);
 		expect(consoleErrorSpy).not.toHaveBeenCalledWith(
@@ -548,8 +622,12 @@ describe("audit request detail persistence", () => {
 			requestPayload: {
 				messages: [{ role: "user", content: "private prompt" }],
 				response_format: { type: "json_object" },
+				service_tier: "fast",
 			},
-			gatewayResponse: { output_text: '{"result":"private response"}' },
+			gatewayResponse: {
+				output_text: '{"result":"private response"}',
+				usage: { service_tier: "priority" },
+			},
 			providerRequest: { secret: "provider request" },
 			providerResponse: { secret: "provider response" },
 			providerAttempts: [{
@@ -571,6 +649,7 @@ describe("audit request detail persistence", () => {
 					score_factor_values: [0.99, 0.8, 0.7, 0.6, 1, 0.95, 50, 0.5, 1, 1, 1, 1, 1, 1],
 					score_trace: { calculation: { baseScore: 0.82, finalScore: 0.82 } },
 				}],
+				response_timeline: { version: 1, routing_ms: 0 },
 				routing_diagnostics: {
 					algorithm: {
 						version: "provider-score-v2",
@@ -619,6 +698,9 @@ describe("audit request detail persistence", () => {
 			tool_call_succeeded: true,
 			structured_output_attempted: true,
 			structured_output_succeeded: true,
+			service_tier_requested: "priority",
+			service_tier_observed: "priority",
+			service_tier: "priority",
 		}));
 		expect(event.usage_meters).toEqual(expect.arrayContaining([
 			expect.objectContaining({ meter_key: "input_tokens", quantity: 10 }),
@@ -626,7 +708,9 @@ describe("audit request detail persistence", () => {
 			expect.objectContaining({ meter_key: "output_tokens", quantity: 4 }),
 		]));
 		expect(event.safe_metadata).toEqual(expect.objectContaining({
+			response_timeline: { version: 1, routing_ms: 0 },
 			cached_input_tokens_are_subset_of_input: true,
+			service_tier: "priority",
 		}));
 		expect(event.routing_decisions).toEqual([
 			expect.objectContaining({

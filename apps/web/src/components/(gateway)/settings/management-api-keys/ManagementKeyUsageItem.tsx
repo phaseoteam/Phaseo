@@ -8,6 +8,7 @@ import {
 	TooltipContent,
 } from "@/components/ui/tooltip";
 import { BarChart3 } from "lucide-react";
+import { DisplayNumber } from "@/components/display/DisplayValue";
 import {
 	Dialog,
 	DialogContent,
@@ -55,7 +56,7 @@ export default function ManagementKeyUsageItem({ k }: any) {
 									{t("strings.Total Requests" as never)}
 								</div>
 								<div className="text-2xl font-bold">
-									{usage.requests.toLocaleString()}
+									<DisplayNumber value={usage.requests} />
 								</div>
 							</div>
 							<div className="p-4 bg-muted rounded-lg">

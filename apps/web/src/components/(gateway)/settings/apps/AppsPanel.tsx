@@ -16,6 +16,7 @@ import {
 import { toast } from "sonner";
 import { useTranslations } from "next-intl";
 import { localizedSettingsError } from "@/i18n/error-messages";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -67,13 +68,6 @@ type AppItem = {
 	last_seen: string | null;
 	created_at: string | null;
 };
-
-function formatDate(value: string | null) {
-	if (!value) return "-";
-	const date = new Date(value);
-	if (Number.isNaN(date.getTime())) return "-";
-	return date.toLocaleDateString();
-}
 
 function getAttributionHeaders(app: AppItem) {
 	const displayUrl = app.url && app.url !== "about:blank";
@@ -189,6 +183,7 @@ export default function AppsPanel({ apps }: { apps: AppItem[] }) {
 	const t = useTranslations("SettingsUI");
 	const s = (key: string, values?: Record<string, string>) =>
 		(t as unknown as (messageKey: string, messageValues?: Record<string, string>) => string)(`strings.${key}`, values);
+	const format = useDisplayFormatters();
 	const [items, setItems] = useState<AppItem[]>(apps);
 	const [pending, setPending] = useState<Record<string, boolean>>({});
 	const [editAppId, setEditAppId] = useState<string | null>(null);
@@ -445,10 +440,10 @@ export default function AppsPanel({ apps }: { apps: AppItem[] }) {
 									)}
 								</TableCell>
 								<TableCell className="text-xs text-muted-foreground">
-									{formatDate(app.last_seen)}
+									{format.date(app.last_seen)}
 								</TableCell>
 								<TableCell className="text-xs text-muted-foreground">
-									{formatDate(app.created_at)}
+									{format.date(app.created_at)}
 								</TableCell>
 								<TableCell className="text-right">
 									<div className="flex items-center justify-end gap-1">
@@ -511,11 +506,11 @@ export default function AppsPanel({ apps }: { apps: AppItem[] }) {
 								<div className="grid grid-cols-2 gap-3 text-xs">
 									<div>
 										<div className="text-muted-foreground">{s("Last Seen")}</div>
-										<div>{formatDate(app.last_seen)}</div>
+										<div>{format.date(app.last_seen)}</div>
 									</div>
 									<div>
 										<div className="text-muted-foreground">{s("Created")}</div>
-										<div>{formatDate(app.created_at)}</div>
+										<div>{format.date(app.created_at)}</div>
 									</div>
 								</div>
 							</div>

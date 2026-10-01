@@ -135,9 +135,54 @@ describe("resolveProviderState", () => {
 			availability: "coming_soon",
 		});
 	});
+
+	test("keeps an opted-in external route labeled External while showing active availability", () => {
+		expect(
+			resolveProviderState(
+				makeProvider({
+					availability_status: "active",
+					availability_reason: "active",
+					provider_status: "external",
+					is_active_gateway: true,
+				}),
+			),
+		).toMatchObject({
+			key: "external",
+			label: "External",
+			availability: "active",
+		});
+	});
+
+	test("keeps a non-routable external route labeled External while showing inactive availability", () => {
+		expect(
+			resolveProviderState(
+				makeProvider({
+					availability_status: "inactive",
+					provider_status: "external",
+				}),
+			),
+		).toMatchObject({
+			key: "external",
+			label: "External",
+			availability: "inactive",
+		});
+	});
 });
 
 describe("groupProviders", () => {
+	test("marks a provider family BYOK-only only when every offer is BYOK-only", () => {
+		const only = groupProviders(makeMetadata([
+			makeProvider({ provider: { api_provider_id: "openai", api_provider_name: "OpenAI", credential_mode: "byok_only" } }),
+		]))[0];
+		expect(only.credentialMode).toBe("byok_only");
+
+		const mixed = groupProviders(makeMetadata([
+			makeProvider({ id: "one", provider: { api_provider_id: "openai", api_provider_name: "OpenAI", provider_family_id: "openai", credential_mode: "byok_only" } }),
+			makeProvider({ id: "two", api_provider_id: "openai-regional", provider: { api_provider_id: "openai-regional", api_provider_name: "OpenAI Regional", provider_family_id: "openai", credential_mode: "managed_and_byok" } }),
+		]))[0];
+		expect(mixed.credentialMode).toBe("managed_and_byok");
+	});
+
 	test("preserves preview_only as the grouped provider state", () => {
 		const [provider] = groupProviders(
 			makeMetadata([

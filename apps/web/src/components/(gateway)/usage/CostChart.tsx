@@ -9,6 +9,7 @@ import {
 	ChartTooltipContent,
 } from "@/components/ui/chart";
 import { BarChart, Bar, CartesianGrid, XAxis, YAxis } from "recharts";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 
 interface CostChartProps {
 	data: Array<{
@@ -48,6 +49,7 @@ export default function CostChart({
 	onBarClick,
 }: CostChartProps) {
 	const t = useTranslations("SettingsUI");
+	const format = useDisplayFormatters();
 	// Extract model IDs from data (excluding 'bucket' key)
 	const modelIds = React.useMemo(() => {
 		const ids = new Set<string>();
@@ -95,7 +97,13 @@ export default function CostChart({
 								<ChartTooltipContent
 									labelFormatter={(label) => String(label)}
 									formatter={(value, name) => [
-										`$${Number(value).toFixed(5)}`,
+										format.number(Number(value), {
+											style: "currency",
+											currency: "USD",
+											minimumFractionDigits: 5,
+											maximumFractionDigits: 5,
+											notation: "standard",
+										}),
 										String(name),
 									]}
 								/>

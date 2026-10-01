@@ -407,11 +407,83 @@
     },
     {
       "benchmark_id": "aa-intelligence-index-v4",
-      "score": 59.7,
+      "score": 37.1,
       "is_self_reported": false,
-      "other_info": "Kimi K3 (max); Artificial Analysis Intelligence Index v4.1.1",
+      "updated_at": "2026-09-08T10:38:34.750Z",
+      "variant": "low",
+      "other_info": "Kimi K3 (low); Artificial Analysis ID 512d17ef-13d2-4f65-bf9b-154b0dec7e8d; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/kimi-k3-low",
+      "rank": 70
+    },
+    {
+      "benchmark_id": "aa-coding-index-v4",
+      "score": 72,
+      "is_self_reported": false,
+      "updated_at": "2026-09-08T10:38:34.750Z",
+      "variant": "low",
+      "other_info": "Kimi K3 (low); Artificial Analysis ID 512d17ef-13d2-4f65-bf9b-154b0dec7e8d; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/kimi-k3-low",
+      "rank": 39
+    },
+    {
+      "benchmark_id": "aa-agentic-index-v4",
+      "score": 30.8,
+      "is_self_reported": false,
+      "updated_at": "2026-09-08T10:38:34.750Z",
+      "variant": "low",
+      "other_info": "Kimi K3 (low); Artificial Analysis ID 512d17ef-13d2-4f65-bf9b-154b0dec7e8d; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/kimi-k3-low",
+      "rank": 60
+    },
+    {
+      "benchmark_id": "aa-intelligence-index-cost-v4",
+      "score": 379.07,
+      "is_self_reported": false,
+      "updated_at": "2026-09-08T10:38:34.750Z",
+      "variant": "low",
+      "other_info": "Kimi K3 (low); Artificial Analysis ID 512d17ef-13d2-4f65-bf9b-154b0dec7e8d; Intelligence Index v4.3; USD 0.2517 per task",
+      "source_link": "https://artificialanalysis.ai/models/kimi-k3-low",
+      "rank": 35
+    },
+    {
+      "benchmark_id": "aa-intelligence-index-v4",
+      "score": 50.2,
+      "is_self_reported": false,
+      "updated_at": "2026-09-08T10:38:34.750Z",
+      "variant": "max",
+      "other_info": "Kimi K3 (max); Artificial Analysis ID f7d2fc3e-1f7b-405f-818c-07952a4af78f; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/kimi-k3",
-      "rank": 6
+      "rank": 18
+    },
+    {
+      "benchmark_id": "aa-coding-index-v4",
+      "score": 76.2,
+      "is_self_reported": false,
+      "updated_at": "2026-09-08T10:38:34.750Z",
+      "variant": "max",
+      "other_info": "Kimi K3 (max); Artificial Analysis ID f7d2fc3e-1f7b-405f-818c-07952a4af78f; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/kimi-k3",
+      "rank": 21
+    },
+    {
+      "benchmark_id": "aa-agentic-index-v4",
+      "score": 50.9,
+      "is_self_reported": false,
+      "updated_at": "2026-09-08T10:38:34.750Z",
+      "variant": "max",
+      "other_info": "Kimi K3 (max); Artificial Analysis ID f7d2fc3e-1f7b-405f-818c-07952a4af78f; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/kimi-k3",
+      "rank": 16
+    },
+    {
+      "benchmark_id": "aa-intelligence-index-cost-v4",
+      "score": 3069.54,
+      "is_self_reported": false,
+      "updated_at": "2026-09-08T10:38:34.750Z",
+      "variant": "max",
+      "other_info": "Kimi K3 (max); Artificial Analysis ID f7d2fc3e-1f7b-405f-818c-07952a4af78f; Intelligence Index v4.3; USD 1.5764 per task",
+      "source_link": "https://artificialanalysis.ai/models/kimi-k3",
+      "rank": 81
     }
   ],
   "model_type": null,

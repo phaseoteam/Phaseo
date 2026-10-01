@@ -19,6 +19,11 @@ const ensureRuntimeForBackgroundMock = vi.fn(() => releaseBackgroundRuntimeMock)
 vi.mock("@/runtime/env", () => ({
 	dispatchBackground: (promise: Promise<unknown>) => void promise,
 	ensureRuntimeForBackground: () => ensureRuntimeForBackgroundMock(),
+    getSupabaseAdmin: () => ({ from: (table: string) => {
+        if (table === "byok_keys") return { update: () => ({ eq: () => ({ eq: async () => ({ error: null }) }) }) };
+        if (table === "provider_rate_limits") return { select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: null, error: null }) }) }) };
+        throw new Error(`Unexpected database table: ${table}`);
+    } }),
 }));
 
 vi.mock("./guards", () => ({
@@ -58,6 +63,7 @@ function createCtx(overrides?: Partial<any>): any {
 		capability: "image.generate",
 		requestId: "req_test_1",
 		workspaceId: "team_test_1",
+		keyId: "key_test_1",
 		model: "openai/gpt-image-1-mini",
 		body: {},
 		meta: {
@@ -101,6 +107,87 @@ describe("doRequestWithIR pricing behavior in testing mode", () => {
 		reportProbeResultMock.mockResolvedValue(undefined);
 	});
 
+	it.each([
+		{ currency: "EUR", rules: [] },
+		{ currency: "USD", rules: [{ currency: "EUR" }] },
+	])("rejects unconverted cached pricing before provider execution: %j", async (pricingCard) => {
+		const candidate = { providerId: "scaleway", pricingCard, byokMeta: [],
+			providerModelSlug: "model", capabilityParams: {} };
+		guardCandidatesMock.mockResolvedValue({ ok: true, value: [candidate] });
+		rankProvidersMock.mockResolvedValue([{ candidate, health: {} }]);
+		const executor = vi.fn();
+		resolveProviderExecutorMock.mockReturnValue(executor);
+		await doRequestWithIR(createCtx(), { model: "model", prompt: "test" } as any, createTiming());
+		expect(executor).not.toHaveBeenCalled();
+		expect(onCallStartMock).not.toHaveBeenCalled();
+		expect(guardAllFailedMock).toHaveBeenCalled();
+	});
+
+	it.each([429, 402, 401])("returns local video admission denial %s without fallback or provider failure", async (status) => {
+		const candidates = ["google", "minimax"].map((providerId) => ({
+			providerId, pricingCard: { rules: [], currency: "USD" }, byokMeta: [],
+			providerModelSlug: "video-model", capabilityParams: {},
+		}));
+		guardCandidatesMock.mockResolvedValue({ ok: true, value: candidates });
+		rankProvidersMock.mockResolvedValue(candidates.map((candidate) => ({ candidate, health: {} })));
+		const executor = vi.fn(async (args: any) => {
+			args.onReservationDenied({ status, code: "key_limit_exceeded", reason: "daily_cost_limit_reached" });
+			return { kind: "completed", upstream: new Response("{}", { status: 503 }),
+				bill: { cost_cents: 0, currency: "USD" }, keySource: "gateway" };
+		});
+		resolveProviderExecutorMock.mockReturnValue(executor);
+		const result = await doRequestWithIR(createCtx({ capability: "video.generate", endpoint: "video.generation" }),
+			{ model: "video-model", prompt: "test" } as any, createTiming());
+		expect(result).toBeInstanceOf(Response);
+		expect((result as Response).status).toBe(status);
+		expect(await (result as Response).json()).toMatchObject({ error: "key_limit_exceeded", reason: "daily_cost_limit_reached", error_type: "user", error_origin: "user" });
+		expect(executor).toHaveBeenCalledTimes(1);
+		expect(onCallEndMock).toHaveBeenCalledWith("video.generation", expect.objectContaining({ healthImpact: "neutral" }));
+		expect(maybeOpenOnRecentErrorsMock).not.toHaveBeenCalled();
+		expect(reportProbeResultMock).not.toHaveBeenCalled();
+		expect(guardAllFailedMock).not.toHaveBeenCalled();
+	});
+
+	it.each([400, 502, 408, "transport"])("does not repeat a dispatched video submission (%s)", async (failure) => {
+		const candidates = ["openai", "atlascloud"].map((providerId) => ({
+			providerId, pricingCard: { rules: [], currency: "USD" }, byokMeta: [],
+			providerModelSlug: "video-model", capabilityParams: {},
+		}));
+		guardCandidatesMock.mockResolvedValue({ ok: true, value: candidates });
+		rankProvidersMock.mockResolvedValue(candidates.map((candidate) => ({ candidate, health: {} })));
+		const executor = vi.fn(async (args: any) => {
+			if (failure === 400) {
+				const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response("{}", { status: 400 }));
+				await args.upstreamTiming.fetch("https://provider.test/videos", { method: "POST" });
+				fetchSpy.mockRestore();
+			}
+			if (failure === "transport") throw Object.assign(new Error("lost response"), { retryable: true });
+			return {
+				kind: "completed", upstream: new Response("{}", { status: failure }),
+				bill: { cost_cents: 0, currency: "USD" }, keySource: "gateway",
+			};
+		});
+		resolveProviderExecutorMock.mockReturnValue(executor);
+		await doRequestWithIR(createCtx({ capability: "video.generate", endpoint: "video.generation" }),
+			{ model: "video-model", prompt: "test" } as any, createTiming());
+		expect(executor).toHaveBeenCalledTimes(1);
+		expect(executor.mock.calls[0][0]).toMatchObject({ apiKeyId: "key_test_1" });
+	});
+
+    it.each(["completed", "stream"] as const)("retains private health identity through %s execution", async kind => {
+        const candidate = { providerId: "private-model", privateEndpoint: { baseUrl: "https://private.example/v1", supportsResponses: true }, pricingCard: { currency: "USD", rules: [] }, byokMeta: [{ id: "route-1", key: "test-private-key", value: "test-private-key", alwaysUse: true, routingMode: "priority" }], providerModelSlug: "private", capabilityParams: {} };
+        const scopedProvider = "private-model:workspace-a:route-1";
+        guardCandidatesMock.mockResolvedValue({ ok: true, value: [candidate] });
+        rankProvidersMock.mockResolvedValue([{ candidate, health: { provider: scopedProvider } }]);
+        resolveProviderExecutorMock.mockReturnValue(vi.fn().mockResolvedValue({ kind, ir: {}, upstream: new Response("{}", { status: 200 }), stream: kind === "stream" ? new ReadableStream({ start(controller) { controller.close(); } }) : undefined, bill: { cost_cents: 0, currency: "USD" }, keySource: "byok", byokKeyId: "route-1" }));
+        const result = await doRequestWithIR(createCtx({ endpoint: "chat.completions", capability: "text.generate", workspaceId: "workspace-a", model: "acme/private", testingMode: true, stream: kind === "stream" }), { model: "acme/private", messages: [] } as any, createTiming());
+        expect(result.ok).toBe(true);
+        expect(admitThroughBreakerMock.mock.calls[0][1]).toBe(scopedProvider);
+        expect(onCallStartMock).toHaveBeenCalledWith("chat.completions", scopedProvider, "acme/private");
+        if (kind === "completed") expect(onCallEndMock).toHaveBeenCalledWith("chat.completions", expect.objectContaining({ provider: scopedProvider, ok: true }));
+        else expect((result as any).result.healthContext.provider).toBe(scopedProvider);
+    });
+
 	it("loads pricing lazily for testing-mode candidates and executes", async () => {
 		const candidate = {
 			providerId: "openai",
@@ -139,7 +226,7 @@ describe("doRequestWithIR pricing behavior in testing mode", () => {
 		);
 
 		expect((result as any).ok).toBe(true);
-		expect(loadPriceCardMock).toHaveBeenCalledWith("openai", "openai/gpt-image-1-mini", "image.generate");
+		expect(loadPriceCardMock).toHaveBeenCalledWith("openai", "openai/gpt-image-1-mini", "image.generate", "gpt-image-1-mini");
 		expect(executor).toHaveBeenCalledTimes(1);
 		expect(guardPricingFoundMock).not.toHaveBeenCalled();
 		expect(onCallEndMock).toHaveBeenCalledWith(
@@ -165,6 +252,40 @@ describe("doRequestWithIR pricing behavior in testing mode", () => {
 				response_kind: "completed",
 			}),
 		]);
+	});
+
+	it.each([false, true])("retains first dispatch through a transport failure (fallback succeeds: %s)", async (recover) => {
+		const candidates = (recover ? ["openai", "other"] : ["openai"]).map((providerId) => ({
+			providerId, pricingCard: { currency: "USD", rules: [] }, byokMeta: [],
+			providerModelSlug: "model", capabilityParams: {},
+		}));
+		guardCandidatesMock.mockResolvedValue({ ok: true, value: candidates });
+		rankProvidersMock.mockResolvedValue(candidates.map((candidate) => ({ candidate, health: {} })));
+		let now = 1000;
+		const dateSpy = vi.spyOn(Date, "now").mockImplementation(() => now);
+		const fetchSpy = vi.spyOn(globalThis, "fetch").mockImplementation(async () => {
+			now += 2000;
+			if (fetchSpy.mock.calls.length === 1) throw new Error("connection lost");
+			return new Response("{}", { status: 200 });
+		});
+		resolveProviderExecutorMock.mockReturnValue(async (args: any) => {
+			now += 15;
+			const upstream = await args.upstreamTiming.fetch("https://provider.test/generate");
+			return { kind: "completed", ir: {}, upstream, bill: { cost_cents: 0, currency: "USD" }, keySource: "gateway" };
+		});
+		const ctx = createCtx({ testingMode: true, meta: { startedAtMs: 1000 } });
+		try {
+			const result = await doRequestWithIR(ctx, { model: "model", prompt: "test" } as any, createTiming());
+			expect(ctx.meta.timeToUpstreamRequestMs).toBe(15);
+			expect(fetchSpy).toHaveBeenCalledTimes(recover ? 2 : 1);
+			if (recover) {
+				expect(result.ok).toBe(true);
+				expect(ctx.meta.timeToLatestUpstreamRequestMs).toBe(2030);
+			}
+		} finally {
+			dateSpy.mockRestore();
+			fetchSpy.mockRestore();
+		}
 	});
 
 	it("retains executor timing for a successful moderation response", async () => {
@@ -210,6 +331,51 @@ describe("doRequestWithIR pricing behavior in testing mode", () => {
 		expect((result as any).ok).toBe(true);
 		expect(ctx.meta.latency_ms).toBe(41);
 		expect(ctx.meta.generation_ms).toBe(17);
+	});
+
+	it("retains executor timing for a successful decisions response", async () => {
+		const candidate = {
+			providerId: "typesafe",
+			pricingCard: {
+				provider: "typesafe",
+				model: "typesafe/jev-1.13.0",
+				endpoint: "decisions",
+				currency: "USD",
+				rules: [],
+			},
+			byokMeta: [],
+			providerModelSlug: "jev-1.13.0",
+			capabilityParams: {},
+			maxInputTokens: null,
+			maxOutputTokens: null,
+		};
+		guardCandidatesMock.mockResolvedValue({ ok: true, value: [candidate] });
+		rankProvidersMock.mockResolvedValue([{ candidate, health: {} }]);
+		resolveProviderExecutorMock.mockReturnValue(vi.fn().mockResolvedValue({
+			kind: "completed",
+			ir: { model: "typesafe/jev-1.13.0", answers: {} },
+			upstream: new Response(JSON.stringify({ answers: {} }), { status: 200 }),
+			bill: { cost_cents: 0, currency: "USD" },
+			keySource: "gateway",
+			byokKeyId: null,
+			timing: { latencyMs: 41, generationMs: 41 },
+		}));
+		const ctx = createCtx({
+			endpoint: "decisions",
+			capability: "decisions.make",
+			model: "typesafe/jev-1.13.0",
+		});
+
+		const result = await doRequestWithIR(
+			ctx,
+			{ model: "typesafe/jev-1.13.0", state: {}, questions: {} } as any,
+			createTiming(),
+		);
+
+		expect((result as any).ok).toBe(true);
+		expect(ctx.meta.latency_ms).toBe(41);
+		expect(ctx.meta.generation_ms).toBeGreaterThanOrEqual(41);
+		expect(ctx.meta.end_to_end_ms).toBeUndefined();
 	});
 
 	it("still returns pricing guard failure on non-testing traffic when no pricing is preloaded", async () => {

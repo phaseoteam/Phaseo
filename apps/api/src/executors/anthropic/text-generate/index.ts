@@ -11,6 +11,7 @@ import { fetchUpstream } from "@executors/_shared/timing/upstream";
 import type { IRChatRequest, IRChatResponse, IRChoice, IRContentPart, IRToolCall } from "@core/ir";
 import { getBindings } from "@/runtime/env";
 import { resolveProviderKey } from "@providers/keys";
+import { azureHeaders, resolveAzureConfig, resolveAzureCredential } from "@providers/azure/config";
 import { upstreamTestHeaders } from "@providers/shared/testing";
 import { normalizeTextUsageForPricing } from "@executors/_shared/usage/text";
 import { createAnthropicToResponsesStreamTransformer } from "./stream-transformer";
@@ -157,11 +158,15 @@ function usesAnthropicFileReference(value: unknown): boolean {
 export async function executeAnthropic(args: ExecutorExecuteArgs): Promise<ExecutorResult> {
 		const awsPlatform = isAnthropicAwsProvider(args.providerId);
 		const bindings = getBindings() as any;
+		const azureArgs = { ...args, model: args.ir.model, forceGatewayKey: args.meta.forceGatewayKey } as any;
+		const azureConfig = args.providerId === "azure" ? resolveAzureConfig(azureArgs) : null;
+		const azureCredential = azureConfig ? resolveAzureCredential(azureArgs) : null;
 		// Resolve API key (gateway or BYOK)
-		const keyInfo = resolveProviderKey(
+		const keyInfo = azureCredential ?? resolveProviderKey(
 			{
 				providerId: args.providerId,
 				byokMeta: args.byokMeta,
+				forceGatewayKey: args.meta.forceGatewayKey,
 			} as any,
 			() => {
 				if (!awsPlatform) return bindings.ANTHROPIC_API_KEY;
@@ -188,7 +193,7 @@ export async function executeAnthropic(args: ExecutorExecuteArgs): Promise<Execu
 
 		const requestBody = {
 			...requestPayload,
-			model: args.providerModelSlug || args.ir.model,
+			model: azureConfig?.deployment || args.providerModelSlug || args.ir.model,
 			stream: true,
 		};
 		if (awsPlatform && requestBody.speed === "fast") {
@@ -214,8 +219,10 @@ export async function executeAnthropic(args: ExecutorExecuteArgs): Promise<Execu
 	const awsAuth = awsPlatform
 		? resolveAnthropicAwsAuth(keyInfo.key, bindings)
 		: null;
-	const url = awsAuth ? `${awsAuth.baseUrl}/v1/messages` : `${anthropicBaseUrl()}/v1/messages`;
-	const headers = awsAuth
+	const url = azureConfig
+		? `${azureConfig.baseUrl.replace(/\/+$/, "").replace(/\/(?:openai(?:\/v1)?|anthropic(?:\/v1)?)$/i, "")}/anthropic/v1/messages`
+		: awsAuth ? `${awsAuth.baseUrl}/v1/messages` : `${anthropicBaseUrl()}/v1/messages`;
+	const headers = azureCredential ? { ...azureHeaders(azureCredential.key, azureCredential.authType), ...baseHeaders } : awsAuth
 		? await buildAnthropicAwsHeaders(awsAuth, requestPayloadJson, baseHeaders)
 		: { "x-api-key": keyInfo.key, ...baseHeaders };
 

@@ -1,401 +1,463 @@
 {
-  "help": {
-    "title": "مركز المساعدة",
-    "description": "تصفّح مقالات الدعم المتعلقة بالوصول إلى الحساب وإعداد المصادقة متعددة العوامل والفوترة والأمان واستكشاف مشكلات تكامل API وإصلاحها.",
-    "supportResources": "موارد الدعم",
-    "articleCount": "{count, plural, =0 {لا توجد مقالات} one {مقال واحد} two {مقالان} few {# مقالات} many {# مقالاً} other {# مقال}}",
-    "viewAll": "عرض الكل في {category}",
-    "updated": "آخر تحديث: {date}",
-    "moreIn": "المزيد في {category}"
-  },
-  "announcementComponents": {
-    "followPhaseo": "تابع Phaseo",
-    "followOn": "تابع Phaseo على {platform}: {handle}",
-    "joinDiscord": "انضم إلى Discord",
-    "getStartedTitle": "ابدأ البناء باستخدام Phaseo",
-    "getStartedDescription": "أنشئ مفتاح Gateway، أو اتبع البدء السريع، أو قارن النماذج قبل توجيه حركة المرور.",
-    "getGatewayKey": "إنشاء مفتاح Gateway",
-    "readQuickstart": "قراءة البدء السريع",
-    "browseModels": "استعراض النماذج",
-    "installCli": "تثبيت CLI",
-    "updateCli": "تحديث CLI",
-    "choosePackageManager": "اختر مدير الحزم، ثم انسخ الأمر.",
-    "copyCommand": "نسخ أمر {packageManager}",
-    "incrementCounter": "زيادة العدد",
-    "decrementCounter": "تقليل العدد"
-  },
-  "blog": {
-    "title": "مدونة Phaseo",
-    "categories": {
-      "all": "كل المنشورات",
-      "announcements": "الإعلانات",
-      "guides": "الأدلة",
-      "data": "البيانات"
-    },
-    "preview": "معاينة",
-    "onThisPage": "في هذه الصفحة",
-    "tableOfContents": "جدول المحتويات",
-    "readPost": "اقرأ المنشور",
-    "showMore": "عرض المزيد",
-    "pinned": "المنشورات المثبّتة",
-    "recent": "الأحدث",
-    "showAll": "عرض كل المنشورات",
-    "emptyTitle": "لا توجد منشورات بعد.",
-    "emptyDescription": "ستظهر التحديثات الجديدة هنا عند نشرها.",
-    "emptyCategory": "لا توجد منشورات في هذه الفئة بعد.",
-    "back": "العودة إلى المدونة",
-    "readingTime": "{minutes, plural, zero {لا توجد دقائق للقراءة} one {دقيقة واحدة للقراءة} two {دقيقتان للقراءة} few {# دقائق للقراءة} many {# دقيقة للقراءة} other {# دقيقة للقراءة}}",
-    "latestFromBlog": "أحدث ما في المدونة",
-    "noPublishedPosts": "لم تُنشر أي مقالات في المدونة بعد.",
-    "fromJournal": "من المدوّنة",
-    "journalDescription": "أخبار المنتجات والأدلة وملاحظات الإصدارات.",
-    "viewAllPosts": "عرض كل المقالات",
-    "englishBodyNotice": "هذا المحتوى التحريري متاح حالياً باللغة الإنجليزية. الواجهة المحيطة مترجمة، بينما نعرض المقال الأصلي للحفاظ على معناه."
-  },
-  "roadmap": {
-    "title": "خارطة طريق Phaseo",
-    "description": "نظرة شفافة على ما نبنيه لاحقاً. تابع الميزات القادمة والمراحل التي أُطلقت في قاعدة بيانات نماذج الذكاء الاصطناعي والبوابة وأدوات التحليلات.",
-    "intro": "نظرة شفافة على ما نبنيه لاحقاً. الجداول الزمنية إرشادية وقد تتغير مع تسارع الإطلاق أو ورود الملاحظات.",
-    "feedback": "لديك فكرة أو وجدت خطأ أو تريد إعطاء أولوية لميزة؟ نقرأ كل شيء ونطلق التحديثات بسرعة.",
-    "giveFeedback": "أرسل ملاحظاتك",
-    "upcoming": "قادم",
-    "shipped": "أُطلق",
-    "latestShipped": "أحدث ما أُطلق",
-    "target": "الموعد المستهدف: {date}",
-    "continuous": "مستمر",
-    "learnMore": "تعرّف على المزيد",
-    "nothingShipped": "لم يُطلق أي شيء بعد - عاود الزيارة قريباً.",
-    "shippedDate": "تاريخ الإطلاق: {date}",
-    "view": "عرض",
-    "comingSoon": "قريباً",
-    "activeDevelopment": "هذه الصفحة قيد التطوير النشط.",
-    "shippingFast": "نطلق التحديثات بسرعة. عاود الزيارة قريباً أو اطّلع على خارطة الطريق كاملة.",
-    "viewRoadmap": "عرض خارطة الطريق",
-    "continuousImprovements": "تحسينات مستمرة قادمة",
-    "currentlyBuilt": "قيد البناء حالياً",
-    "availableBeta": "متاح في الإصدار التجريبي",
-    "plannedFeature": "ميزة مخططة",
-    "seeRoadmapItem": "عرض عنصر خارطة الطريق",
-    "goHome": "العودة إلى الرئيسية",
-    "status": {
-      "Planned": "مخطط",
-      "In Progress": "قيد التنفيذ",
-      "Beta": "إصدار تجريبي",
-      "Shipped": "أُطلق",
-      "Ongoing": "مستمر"
-    },
-    "milestones": {
-      "gateway": {
-        "title": "توسيع تغطية البوابة",
-        "description": "توسيع مستمر لمزوّدي الخدمة والنماذج والأنماط المدعومة، مع إعدادات توجيه افتراضية أكثر ذكاءً."
-      },
-      "expanded-database": {
-        "title": "تغطية قاعدة البيانات",
-        "description": "إدخال بيانات النماذج والمزوّدين والأسعار والإصدارات والتحقق منها باستمرار في الكتالوج."
-      },
-      "usage-limits": {
-        "title": "حدود الاستخدام",
-        "description": "ضوابط الإنفاق والاستخدام لكل مفتاح للحد من الإنفاق غير المقصود وفرض ميزانيات الفريق."
-      },
-      "guardrails": {
-        "title": "ضوابط الأمان",
-        "description": "توسيع ضوابط الأمان والسياسات والإشراف على المحتوى عبر حركة مرور البوابة."
-      },
-      "privacy-settings": {
-        "title": "إعدادات الخصوصية",
-        "description": "ضوابط أكثر دقة للخصوصية والاحتفاظ بالبيانات للفرق التي تستخدم Phaseo Gateway."
-      },
-      "provisioning-keys": {
-        "title": "مفاتيح API للإدارة",
-        "description": "إنشاء بيانات اعتماد الإدارة ذات الصلاحيات العالية وإدارة دورة حياتها تلقائياً."
-      },
-      "presets": {
-        "title": "سوق الإعدادات المسبقة",
-        "description": "تحسين مشاركة إعدادات الإنتاج الجاهزة واكتشافها واعتمادها بنقرة واحدة."
-      },
-      "anthropic-compatibility": {
-        "title": "التوافق مع Anthropic",
-        "description": "توفير التوافق مع Anthropic Messages API عبر نقطة النهاية /messages في البوابة."
-      },
-      "organisation-page": {
-        "title": "صفحات المؤسسات",
-        "description": "صفحات مخصصة للمؤسسات تتضمن النماذج المرتبطة والبيانات الوصفية."
-      },
-      "model-page": {
-        "title": "صفحات النماذج",
-        "description": "صفحات مخصصة للنماذج تتضمن الأسعار والتوفّر وتفاصيل البدء السريع."
-      },
-      "benchmarks": {
-        "title": "صفحات المقارنات المعيارية",
-        "description": "صفحات للمقارنات المعيارية تتضمن تغيّر الترتيب ومقارنات الأداء لكل نموذج."
-      },
-      "api-providers": {
-        "title": "صفحات مزوّدي API",
-        "description": "صفحات للمزوّدين تتضمن النماذج المدعومة ومراجع الأسعار وتغطية القدرات."
-      },
-      "latest-updates": {
-        "title": "أحدث التحديثات",
-        "description": "موجز واحد للإصدارات والإعلانات وتحديثات قاعدة البيانات."
-      },
-      "countries-pages": {
-        "title": "صفحات الدول",
-        "description": "عرض على مستوى الدولة يربط المؤسسات بنشاط النماذج."
-      },
-      "revamped-pricing-page": {
-        "title": "تحديث مرجع الأسعار",
-        "description": "تجربة أوضح لمرجع الأسعار مع تنقّل يركّز على النماذج والمزوّدين."
-      },
-      "database-updates": {
-        "title": "موجز تحديثات قاعدة البيانات",
-        "description": "موجز تحديثات موسّع يعرض التغييرات المستمرة على مستوى قاعدة البيانات."
-      },
-      "sources": {
-        "title": "المصادر المضمّنة",
-        "description": "عرض إسناد المصادر مباشرةً بجوار بيانات النماذج والمزوّدين ذات الصلة."
-      },
-      "compare": {
-        "title": "مقارنات النماذج",
-        "description": "مقارنة النماذج جنباً إلى جنب من حيث الأسعار والقدرات والبيانات الوصفية الأساسية."
-      }
-    },
-    "expected": "المتوقع",
-    "developmentNotice": "يجري تطوير هذه الصفحة بنشاط وتحديثها باستمرار. نرحب بملاحظاتك."
-  },
-  "migrate": {
-    "title": "الترحيل",
-    "description": "دليل تفاعلي للانتقال من OpenRouter وVercel AI Gateway وRequesty وLLMGateway والمكتبات المتوافقة مع OpenAI إلى Phaseo Gateway.",
-    "heading": "مساعد الترحيل",
-    "intro": "اختر إعدادك الحالي واحصل على دليل ترحيل مخصّص لك.",
-    "ui": {
-      "breadcrumb": "مسار التنقل",
-      "backToAllGuides": "العودة إلى جميع أدلة الترحيل",
-      "readTime": "{minutes, plural, zero {لا دقائق للقراءة} one {دقيقة واحدة للقراءة} two {دقيقتان للقراءة} few {# دقائق للقراءة} many {# دقيقة للقراءة} other {# دقيقة للقراءة}}",
-      "updatedAt": "آخر تحديث: {date}",
-      "tryPhaseo": "جرّب Phaseo",
-      "comparePhaseoOpenRouter": "قارن بين Phaseo وOpenRouter",
-      "prerequisites": "المتطلبات المسبقة",
-      "checklist": "قائمة التحقق",
-      "validationSteps": "خطوات التحقق",
-      "faqHeading": "الأسئلة الشائعة",
-      "migrationResources": "موارد الترحيل",
-      "openrouterCtaTitle": "هل تريد منا تولّي عملية الترحيل؟",
-      "customMigrationCtaTitle": "هل تحتاج إلى تعديل مخصص للترحيل؟",
-      "openrouterCtaBody": "تواصل معنا وسنساعدك مجاناً على نقل تكامل OpenRouter إلى Phaseo، بما في ذلك تبديل نقطة النهاية والتحقق من النماذج ومراجعة الترحيل.",
-      "customMigrationCtaBody": "استخدم المساعد التفاعلي للحصول على أمثلة قبل/بعد تناسب SDK واللغة اللذين تستخدمهما حالياً.",
-      "getFreeMigrationHelp": "احصل على مساعدة مجانية للترحيل",
-      "openMigrationAssistant": "افتح مساعد الترحيل"
-    },
-    "agentPrompt": {
-      "codingAgents": "لوكلاء البرمجة",
-      "title": "أرسل هذا إلى وكيل البرمجة لديك",
-      "description": "الصق هذا النص في وكيل البرمجة عندما تريد إزالة OpenRouter بدلاً من إبقائه كخيار احتياطي. يتضمن رابطاً إلى المهارة المُحدّثة ويحدد متى يكتمل الترحيل.",
-      "copied": "تم النسخ",
-      "copyPrompt": "انسخ التعليمات",
-      "readSkill": "اقرأ مهارة الترحيل"
-    },
-    "englishBodyNotice": "دليل الترحيل هذا متاح حالياً باللغة الإنجليزية. الواجهة المحيطة مترجمة، بينما نعرض الدليل الأصلي للحفاظ على الدقة التقنية.",
-    "assistant": {
-      "stepLabel": "الخطوة {number}",
-      "sourceQuestion": "من أين تريد الترحيل؟",
-      "chooseSource": "اختر المصدر للمتابعة.",
-      "selectSourcePrompt": "حدد المصدر الحالي لعرض الخيارات التالية.",
-      "reviewChanges": "راجع التغييرات",
-      "split": "عرض مقسّم",
-      "diff": "الفروقات",
-      "startOver": "البدء من جديد",
-      "beforeAndAfter": "قبل وبعد",
-      "comparisonDescription": "قارن تكاملك الحالي بإصدار Phaseo، أو انتقل إلى عرض الفروقات في صفحة واحدة.",
-      "before": "قبل",
-      "after": "بعد",
-      "keyChanges": "أهم التغييرات",
-      "fullGuidePrompt": "إذا كنت تنتقل من {source}، فراجع الدليل الكامل خطوة بخطوة.",
-      "readFullGuide": "قراءة الدليل الكامل",
-      "snippetNoSdk": "لم يتم إعداد أي SDK",
-      "sourceLabels": {
-        "compatibleLibraries": "مكتبات متوافقة مع OpenAI",
-        "gettingStarted": "البدء الآن"
-      },
-      "sourceDescriptions": {
-        "openaiSdk": "تستخدم حاليًا حزم OpenAI الرسمية.",
-        "anthropicSdk": "تستخدم مكتبات عميل Anthropic.",
-        "openrouter": "توجّه الطلبات عبر OpenRouter.",
-        "vercelAi": "تستخدم Vercel AI Gateway أو مجموعة موفّري AI SDK.",
-        "requesty": "تستخدم Requesty كبوابة متوافقة مع OpenAI.",
-        "llmGateway": "تستخدم LLMGateway كنقطة نهاية متوافقة مع OpenAI.",
-        "compatibleLibraries": "أي SDK أو تكامل REST متوافق مع OpenAI.",
-        "gettingStarted": "ابدأ الإعداد من الصفر بأسرع طريقة."
-      },
-      "prompts": {
-        "openaiSdk": "ما حزمة OpenAI SDK التي تستخدمها؟",
-        "anthropicSdk": "ما حزمة Anthropic SDK التي تستخدمها؟",
-        "openrouter": "كيف تستدعي OpenRouter حاليًا؟",
-        "vercelAi": "كيف تتكامل مع Vercel حاليًا؟",
-        "requesty": "كيف تستدعي Requesty حاليًا؟",
-        "llmGateway": "كيف تستدعي LLMGateway حاليًا؟",
-        "environment": "اختر بيئتك.",
-        "integration": "اختر طريقة التكامل المفضلة."
-      },
-      "options": {
-        "keepOpenAiClient": "احتفظ بعميل OpenAI وغيّر عنوان URL الأساسي.",
-        "keepAnthropicClient": "احتفظ بعميل Anthropic وغيّر عنوان URL الأساسي.",
-        "pointPythonSdk": "وجّه Python SDK إلى Phaseo.",
-        "switchRestToGateway": "حوّل طلبات REST إلى Gateway.",
-        "switchVercelProvider": "استبدل مصنع موفّري Vercel/OpenAI بموفّر Phaseo الرسمي.",
-        "restAnyRuntime": "استخدم طلبات REST في أي بيئة تشغيل.",
-        "swapEnvironmentAndBaseUrl": "احتفظ بالعميل وغيّر متغيرات البيئة وعنوان URL الأساسي.",
-        "openAiPythonSettings": "استخدم إعدادات عميل OpenAI Python مع Phaseo.",
-        "switchRestToPhaseo": "حوّل طلبات REST إلى Phaseo Gateway.",
-        "openAiCompatibleConfiguration": "استخدم إعدادًا متوافقًا مع OpenAI SDK.",
-        "openAiPythonWithPhaseo": "استخدم عميل OpenAI Python مع Phaseo.",
-        "callGatewayDirectly": "استدعِ Gateway مباشرةً.",
-        "typedSdk": "عميل مكتمل الأنواع مع أدوات مساعدة.",
-        "asyncPythonSdk": "عميل Python يعطي الأولوية للعمليات غير المتزامنة.",
-        "fastestRequest": "أسرع طريقة لإرسال طلب."
-      },
-      "steps": {
-        "useApiKey": "استخدم مفتاح Phaseo API الخاص بك",
-        "createApiKey": "أنشئ مفتاحًا في لوحة Phaseo واحفظه باسم PHASEO_API_KEY.",
-        "setBaseUrlTitle": "وجّه عنوان URL الأساسي إلى Phaseo",
-        "setBaseUrlDescription": "اضبط عنوان URL الأساسي على {baseUrl}.",
-        "keepPayloadTitle": "أبقِ محتوى الطلب كما هو",
-        "keepPayloadDescription": "سيظل اختيار النموذج والرسائل كما هما.",
-        "authorizationHeaderTitle": "أرسل ترويسة Authorization",
-        "authorizationHeaderDescription": "أضف Authorization: Bearer <key> إلى كل طلب."
-      },
-      "changeTitles": {
-        "useGatewayKey": "استخدم مفتاح Phaseo Gateway الخاص بك",
-        "routeThroughPhaseo": "وجّه الطلبات عبر Phaseo",
-        "updateModelIds": "حدّث معرّفات النماذج",
-        "switchAiSdk": "انتقل إلى موفّر Phaseo AI SDK"
-      },
-      "changes": {
-        "replaceOpenAiKey": "استبدل OPENAI_API_KEY بمفتاح PHASEO_API_KEY من لوحة Phaseo.",
-        "replaceAnthropicKey": "استبدل ANTHROPIC_API_KEY بمفتاح PHASEO_API_KEY من لوحة Phaseo.",
-        "setSdkKey": "اضبط PHASEO_API_KEY من لوحة Phaseo لعميل SDK.",
-        "sendAuthorization": "أرسل Authorization: Bearer YOUR_API_KEY مع كل طلب.",
-        "replaceVercelProvider": "استبدل مصنع موفّري Vercel OpenAI بالدالة createPhaseo(...) من @phaseo/ai-sdk-provider.",
-        "routeBaseUrl": "اضبط baseURL على {baseUrl} لتمر حركة المرور عبر Gateway.",
-        "routeBaseUrlPython": "اضبط base_url على {baseUrl} لتمر حركة المرور عبر Gateway.",
-        "routeRest": "أرسل الطلبات إلى {endpoint}.",
-        "openAiModelIds": "استخدم معرّفات نماذج Phaseo مثل {modelId}. ستجدها في دليل البدء السريع لكل نموذج.",
-        "anthropicModelIds": "استخدم معرّفات نماذج Phaseo مثل {modelId}. ستجدها في دليل البدء السريع لكل نموذج."
-      },
-      "docs": {
-        "apiReference": "مرجع API",
-        "apiReferenceDescription": "نقاط النهاية والمصادقة وتنسيقات الأخطاء.",
-        "quickstart": "البدء السريع",
-        "quickstartDescription": "أرسل أول طلب إلى Gateway خلال دقائق.",
-        "toolCalling": "استدعاء الأدوات",
-        "toolCallingDescription": "الأدوات وtool_choice وتوجيه الدوال.",
-        "structuredOutputs": "المخرجات المنظّمة",
-        "structuredOutputsDescription": "استجابات مقيدة بمخطط ومعايير محددة.",
-        "featureParity": "مصفوفة تكافؤ الميزات",
-        "featureParityDescription": "تكافؤ ترحيل Gateway حسب الواجهة والمنافس.",
-        "parityReview": "مراجعة تكافؤ Gateway",
-        "parityReviewDescription": "مراجعة تستند إلى المستودع للمجالات المؤكدة وتلك التي ما زالت مفتوحة."
-      },
-      "docsHeading": "التوثيق"
-    }
-  },
-  "worksWith": {
-    "title": "يعمل مع Phaseo",
-    "description": "اكتشف التطبيقات وعمليات التكامل المبنية باستخدام Phaseo Gateway، بما في ذلك أدوات الإنتاج والمشاريع مفتوحة المصدر والإطلاقات المجتمعية لمختلف سير العمل والفرق.",
-    "intro": "اكتشف التطبيقات والأدوات وعمليات التكامل التي تستخدم Phaseo Gateway. يمكن للفرق البناء فوق Phaseo للتوجيه والأسعار والوصول إلى النماذج، بينما يستخدم العملاء مفاتيح Phaseo API الخاصة بهم.",
-    "community": "المجتمع",
-    "submitApp": "أرسل تطبيقك",
-    "contribute": "ساهم في Phaseo",
-    "emptyTitle": "لا توجد تطبيقات بعد",
-    "emptyDescription": "هذه القائمة جاهزة لمساهمات المجتمع. كن أول من يضيف تطبيقه.",
-    "addApp": "أضف تطبيقك",
-    "added": "أُضيف في {date}",
-    "visitSite": "زيارة الموقع",
-    "setupDocs": "مستندات الإعداد",
-    "openSource": "مفتوح المصدر",
-    "contributing": "المساهمة",
-    "contributingDescription": "أضف تطبيقك إلى قائمة يعمل مع Phaseo باتباع الخطوات أدناه.",
-    "requirements": "المتطلبات",
-    "tags": {
-      "chat": "محادثة",
-      "coding": "برمجة",
-      "productivity": "إنتاجية",
-      "creative": "إبداع",
-      "research": "بحث",
-      "other": "أخرى"
-    },
-    "appLogoAlt": "شعار {app}",
-    "requirementModelAccess": "استخدم Phaseo للوصول إلى نماذج الذكاء الاصطناعي.",
-    "requirementBringOwnKey": "أتح للمستخدمين الاتصال باستخدام مفتاح API الخاص بهم من Phaseo.",
-    "requirementPublicAccess": "اجعل التطبيق متاحًا للجميع أو وفّر صفحة تعريف عامة.",
-    "requirementLogo": "أضف صورة للشعار.",
-    "howToSubmit": "طريقة الإرسال",
-    "forkRepository": "أنشئ fork لهذا المستودع.",
-    "addCatalogEntry": "أضف إدخال التطبيق إلى",
-    "addLogo": "أضف شعارك إلى",
-    "submitPullRequest": "أرسل pull request.",
-    "entryFormat": "تنسيق الإدخال",
-    "validTags": "الوسوم الصالحة",
-    "questions": "هل لديك أسئلة؟",
-    "questionHelp": "افتح issue إذا كانت لديك أسئلة أو احتجت إلى مساعدة في الإرسال."
-  },
-  "acknowledgements": {
-    "title": "الشكر والتقدير",
-    "description": "المشاريع مفتوحة المصدر والمنصات وأعمال التصميم التي تعتمد عليها Phaseo وتستفيد منها.",
-    "heading": "بُني بجهود كثيرين.",
-    "intro": "تعتمد Phaseo على برمجيات مفتوحة المصدر وأعمال تصميم مدروسة وبنية تحتية موثوقة. تكرّم هذه الصفحة المشاريع والفرق التي تؤثر بشكل ملموس في ما نبنيه.",
-    "thanks": "شكراً لكل مشرف ومساهم وباحث ومصمم يجعل Phaseo ممكنة.",
-    "howUsed": "كيف تستخدمها Phaseo.",
-    "disclaimer": "هذا إقرار مستمر بفضل المنتجات، وليس قائمة شاملة بمواد البرمجيات أو إشعار تراخيص. تبقى حقوق النشر وشروط الترخيص على مستوى الحزم لدى مشاريعها المعنية.",
-    "continue": "متابعة",
-    "review": "مراجعة",
-    "accessibleStates": "حالات الوصول",
-    "streamingResponse": "استجابة متدفقة",
-    "searchExample": "مثال للبحث",
-    "createdBy": "أنشأه {name}",
-    "reliableGateway": "بوابة موثوقة",
-    "routeByHealthPriceCapability": "التوجيه حسب الحالة والسعر والقدرات",
-    "orbWorking": "قيد العمل",
-    "orbSearching": "جارٍ البحث",
-    "orbSolving": "جارٍ الحل",
-    "orbComposing": "جارٍ الإعداد",
-    "orbLabel": "كرة {state}",
-    "groups": {
-      "interface": { "label": "الواجهة", "description": "الأسس التي تقوم عليها تجربة Phaseo على الويب ولغة التفاعل فيها." },
-      "aiExperience": { "label": "تجربة الذكاء الاصطناعي", "description": "مشروعات تساعد Phaseo على بث مخرجات النماذج وعرضها وشرحها." },
-      "platform": { "label": "المنصة", "description": "البنية التحتية والخدمات التي تساعد Phaseo على العمل بموثوقية." },
-      "productIntelligence": { "label": "تحليلات المنتج", "description": "أدوات تساعدنا على فهم الإصدارات والموثوقية وسلوك المنتج." }
-    },
-    "items": {
-      "react": { "description": "نموذج تصريحي للمكوّنات والحالة يشكّل أساس واجهات Phaseo التفاعلية.", "usedFor": "تُبنى واجهة الدردشة ومقارنة النماذج والإعدادات وقابلية المراقبة وسائر الواجهات ذات الحالة باستخدام مكوّنات React." },
-      "nextjs": { "description": "إطار عمل للتطبيقات يجمع العرض على الخادم والتوجيه والبيانات الوصفية والتخزين المؤقت والتفاعل على العميل.", "usedFor": "يشترك الكتالوج العام ومساحة العمل المسجّلة وجسور API وهذه الصفحة في تطبيق App Router واحد." },
-      "tailwind": { "description": "نظام تنسيق يعتمد على الأدوات المساعدة ويقرّب القرارات المرئية من المكوّنات المتأثرة بها.", "usedFor": "يعتمد التخطيط المتجاوب والطباعة والألوان والحركة والوضع الداكن على رموز التصميم وأدواته المشتركة." },
-      "baseUi": { "description": "أنماط مكوّنات مفتوحة وعناصر أساسية ميسّرة بلا تنسيق مفروض، توفّر سلوكًا موثوقًا من دون فرض التصميم المرئي النهائي.", "usedFor": "تستند مربعات الحوار والقوائم والتلميحات والأزرار وأدوات الاختيار والتفاعلات بلوحة المفاتيح في Phaseo إلى هذه الأسس." },
-      "lucide": { "description": "مجموعة أيقونات متناسقة وسهلة القراءة ذات مفردات واسعة لواجهات المنتجات.", "usedFor": "توضّح الأيقونات التنقل وإجراءات النماذج وحالة الطلبات والإعدادات وأدوات التحكم المدمجة عندما يكون النص وحده غير عملي." },
-      "thinkingOrbs": { "description": "مجموعة من رسوم Canvas المتحركة المضبوطة بعناية، تُظهر حالة العمل في الخلفية من دون الاعتماد على مؤشر تحميل عام.", "usedFor": "يعرض Phaseo Chat حالة العمل عند الإرسال والإضافة إلى قائمة الانتظار، وحالة الصياغة أثناء إعداد المساعد للإجابة." },
-      "streamdown": { "description": "عارض Markdown مصمم للنص غير المكتمل الذي يصل تدريجيًا رمزًا بعد رمز.", "usedFor": "يمكن لـ Phaseo عرض العناوين والقوائم والروابط والتعليمات البرمجية والرياضيات أثناء بث الإجابة، من دون انتظار المستند النهائي." },
-      "shiki": { "description": "أداة تمييز صياغة متوافقة مع TextMate تعرض التعليمات البرمجية بقواعد نحوية بجودة المحررات.", "usedFor": "تظل التعليمات البرمجية في إجابات النماذج واضحة عبر اللغات والسمات المختلفة، بما في ذلك المقارنات التقنية وتصحيح الأخطاء." },
-      "cloudflare": { "description": "منصة تطبيقات عالمية تشمل الحوسبة الطرفية والتنسيق الدائم والتخزين والشبكات والأمان.", "usedFor": "تستخدم البوابة وواجهات API المساندة في Phaseo خدمات Workers وما يرتبط بها للتنفيذ بالقرب من المستخدمين وتنسيق المهام طويلة الأمد." },
-      "supabase": { "description": "منصة Postgres توفر المصادقة والتخزين وإمكانات الوقت الفعلي وأدوات المطورين.", "usedFor": "تعتمد Phaseo على Supabase لهوية الحسابات والبيانات العلائقية الدائمة، مثل مساحات العمل والاستخدام والأرصدة وإعدادات البوابة." },
-      "vercel": { "description": "بنية تحتية للنشر والتطبيقات محسّنة لـ Next.js وتقديم الويب الحديث.", "usedFor": "يُبنى موقع Phaseo ويُعاين ويُقدّم عبر Vercel، بينما تربطه واجهات API الخاصة ببقية المنصة." },
-      "hono": { "description": "إطار ويب صغير قائم على المعايير ومصمم لبيئات تشغيل JavaScript الحديثة.", "usedFor": "يوفر التوجيه والبرمجيات الوسيطة ومعالجة الطلبات ذات الأنواع المحددة عبر واجهات Cloudflare Workers API في Phaseo." },
-      "stripe": { "description": "بنية مدفوعات لإتمام الدفع بأمان ووسائل الدفع والفواتير وأحداث الفوترة.", "usedFor": "تتولى Stripe معالجة المعاملات المالية عندما يشتري العملاء أرصدة Phaseo ويديرونها." },
-      "posthog": { "description": "منصة مفتوحة لتحليلات المنتجات تشمل الأحداث ومسارات التحويل وتشخيص الجلسات وسلوك الميزات.", "usedFor": "تستخدم Phaseo مؤشرات المنتج المقاسة لفهم الموثوقية وتحسين المسارات من دون اعتبار الحدس دليلًا." },
-      "statsig": { "description": "منصة لإدارة الميزات والتجارب تتيح تقديم تغييرات المنتج بصورة مضبوطة.", "usedFor": "تتيح بوابات الميزات إدخال التغييرات تدريجيًا ومقارنة النتائج والتعافي بسرعة إذا لم يسر الإطلاق كما هو متوقع." }
-    }
-  },
-  "contribute": {
-    "title": "ساهم",
-    "description": "تعرّف على المساهمين والجهات الراعية التي تدعم Phaseo، وتصفّح ملفات المجتمع وسجل المساهمات، وتعرّف على طرق واضحة للمشاركة أو الرعاية أو المساعدة في تحسين المنصة.",
-    "heading": "المساهمون والجهات الراعية",
-    "intro": "نبني في العلن. تعرض هذه القوائم كل من ساهم في مستودع Phaseo ومن يرعى تطويره عبر GitHub Sponsors. هؤلاء أشخاص رائعون!",
-    "contributors": "مساهمو المستودع",
-    "contributorCount": "{count} من المساهمين",
-    "sponsors": "الجهات الراعية",
-    "listed": "{count} مدرجين",
-    "contributorExportPending": "ما زالت بيانات المساهمين قيد الإعداد. شغّل عملية التصدير أو عُد للتحقق لاحقاً.",
-    "commitCount": "{count, plural, zero {# عملية إيداع} one {عملية إيداع واحدة} two {عمليتا إيداع} few {# عمليات إيداع} many {# عملية إيداع} other {# عملية إيداع}}",
-    "communityContributor": "مساهم من المجتمع",
-    "sponsorListEmpty": "لا يوجد رعاة مسجلون بعد. انضم إلى المجتمع وسيظهر اسمك هنا قريباً!",
-    "viewProfile": "عرض الملف الشخصي",
-    "linkUnavailable": "الرابط غير متاح"
-  }
+	"help": {
+		"title": "مركز المساعدة",
+		"description": "تصفّح مقالات الدعم المتعلقة بالوصول إلى الحساب وإعداد المصادقة متعددة العوامل والفوترة والأمان واستكشاف مشكلات تكامل API وإصلاحها.",
+		"supportResources": "موارد الدعم",
+		"articleCount": "{count, plural, =0 {لا توجد مقالات} one {مقال واحد} two {مقالان} few {# مقالات} many {# مقالاً} other {# مقال}}",
+		"viewAll": "عرض الكل في {category}",
+		"updated": "آخر تحديث: {date}",
+		"moreIn": "المزيد في {category}"
+	},
+	"announcementComponents": {
+		"followPhaseo": "تابع Phaseo",
+		"followOn": "تابع Phaseo على {platform}: {handle}",
+		"joinDiscord": "انضم إلى Discord",
+		"getStartedTitle": "ابدأ البناء باستخدام Phaseo",
+		"getStartedDescription": "أنشئ مفتاح Gateway، أو اتبع البدء السريع، أو قارن النماذج قبل توجيه حركة المرور.",
+		"getGatewayKey": "إنشاء مفتاح Gateway",
+		"readQuickstart": "قراءة البدء السريع",
+		"browseModels": "استعراض النماذج",
+		"installCli": "تثبيت CLI",
+		"updateCli": "تحديث CLI",
+		"choosePackageManager": "اختر مدير الحزم، ثم انسخ الأمر.",
+		"copyCommand": "نسخ أمر {packageManager}",
+		"incrementCounter": "زيادة العدد",
+		"decrementCounter": "تقليل العدد"
+	},
+	"blog": {
+		"title": "مدونة Phaseo",
+		"categories": {
+			"all": "كل المنشورات",
+			"announcements": "الإعلانات",
+			"guides": "الأدلة",
+			"data": "البيانات"
+		},
+		"preview": "معاينة",
+		"onThisPage": "في هذه الصفحة",
+		"tableOfContents": "جدول المحتويات",
+		"readPost": "اقرأ المنشور",
+		"showMore": "عرض المزيد",
+		"pinned": "المنشورات المثبّتة",
+		"recent": "الأحدث",
+		"showAll": "عرض كل المنشورات",
+		"emptyTitle": "لا توجد منشورات بعد.",
+		"emptyDescription": "ستظهر التحديثات الجديدة هنا عند نشرها.",
+		"emptyCategory": "لا توجد منشورات في هذه الفئة بعد.",
+		"back": "العودة إلى المدونة",
+		"readingTime": "{minutes, plural, zero {لا توجد دقائق للقراءة} one {دقيقة واحدة للقراءة} two {دقيقتان للقراءة} few {# دقائق للقراءة} many {# دقيقة للقراءة} other {# دقيقة للقراءة}}",
+		"latestFromBlog": "أحدث ما في المدونة",
+		"noPublishedPosts": "لم تُنشر أي مقالات في المدونة بعد.",
+		"fromJournal": "من المدوّنة",
+		"journalDescription": "أخبار المنتجات والأدلة وملاحظات الإصدارات.",
+		"viewAllPosts": "عرض كل المقالات",
+		"englishBodyNotice": "هذا المحتوى التحريري متاح حالياً باللغة الإنجليزية. الواجهة المحيطة مترجمة، بينما نعرض المقال الأصلي للحفاظ على معناه."
+	},
+	"roadmap": {
+		"title": "خارطة طريق Phaseo",
+		"description": "نظرة شفافة على ما نبنيه لاحقاً. تابع الميزات القادمة والمراحل التي أُطلقت في قاعدة بيانات نماذج الذكاء الاصطناعي والبوابة وأدوات التحليلات.",
+		"intro": "نظرة شفافة على ما نبنيه لاحقاً. الجداول الزمنية إرشادية وقد تتغير مع تسارع الإطلاق أو ورود الملاحظات.",
+		"feedback": "لديك فكرة أو وجدت خطأ أو تريد إعطاء أولوية لميزة؟ نقرأ كل شيء ونطلق التحديثات بسرعة.",
+		"giveFeedback": "أرسل ملاحظاتك",
+		"upcoming": "قادم",
+		"shipped": "أُطلق",
+		"latestShipped": "أحدث ما أُطلق",
+		"target": "الموعد المستهدف: {date}",
+		"continuous": "مستمر",
+		"learnMore": "تعرّف على المزيد",
+		"nothingShipped": "لم يُطلق أي شيء بعد - عاود الزيارة قريباً.",
+		"shippedDate": "تاريخ الإطلاق: {date}",
+		"view": "عرض",
+		"comingSoon": "قريباً",
+		"activeDevelopment": "هذه الصفحة قيد التطوير النشط.",
+		"shippingFast": "نطلق التحديثات بسرعة. عاود الزيارة قريباً أو اطّلع على خارطة الطريق كاملة.",
+		"viewRoadmap": "عرض خارطة الطريق",
+		"continuousImprovements": "تحسينات مستمرة قادمة",
+		"currentlyBuilt": "قيد البناء حالياً",
+		"availableBeta": "متاح في الإصدار التجريبي",
+		"plannedFeature": "ميزة مخططة",
+		"seeRoadmapItem": "عرض عنصر خارطة الطريق",
+		"goHome": "العودة إلى الرئيسية",
+		"status": {
+			"Planned": "مخطط",
+			"In Progress": "قيد التنفيذ",
+			"Beta": "إصدار تجريبي",
+			"Shipped": "أُطلق",
+			"Ongoing": "مستمر"
+		},
+		"milestones": {
+			"gateway": {
+				"title": "توسيع تغطية البوابة",
+				"description": "توسيع مستمر لمزوّدي الخدمة والنماذج والأنماط المدعومة، مع إعدادات توجيه افتراضية أكثر ذكاءً."
+			},
+			"expanded-database": {
+				"title": "تغطية قاعدة البيانات",
+				"description": "إدخال بيانات النماذج والمزوّدين والأسعار والإصدارات والتحقق منها باستمرار في الكتالوج."
+			},
+			"usage-limits": {
+				"title": "حدود الاستخدام",
+				"description": "ضوابط الإنفاق والاستخدام لكل مفتاح للحد من الإنفاق غير المقصود وفرض ميزانيات الفريق."
+			},
+			"guardrails": {
+				"title": "ضوابط الأمان",
+				"description": "توسيع ضوابط الأمان والسياسات والإشراف على المحتوى عبر حركة مرور البوابة."
+			},
+			"privacy-settings": {
+				"title": "إعدادات الخصوصية",
+				"description": "ضوابط أكثر دقة للخصوصية والاحتفاظ بالبيانات للفرق التي تستخدم Phaseo Gateway."
+			},
+			"provisioning-keys": {
+				"title": "مفاتيح API للإدارة",
+				"description": "إنشاء بيانات اعتماد الإدارة ذات الصلاحيات العالية وإدارة دورة حياتها تلقائياً."
+			},
+			"presets": {
+				"title": "سوق الإعدادات المسبقة",
+				"description": "تحسين مشاركة إعدادات الإنتاج الجاهزة واكتشافها واعتمادها بنقرة واحدة."
+			},
+			"anthropic-compatibility": {
+				"title": "التوافق مع Anthropic",
+				"description": "توفير التوافق مع Anthropic Messages API عبر نقطة النهاية /messages في البوابة."
+			},
+			"organisation-page": {
+				"title": "صفحات المؤسسات",
+				"description": "صفحات مخصصة للمؤسسات تتضمن النماذج المرتبطة والبيانات الوصفية."
+			},
+			"model-page": {
+				"title": "صفحات النماذج",
+				"description": "صفحات مخصصة للنماذج تتضمن الأسعار والتوفّر وتفاصيل البدء السريع."
+			},
+			"benchmarks": {
+				"title": "صفحات المقارنات المعيارية",
+				"description": "صفحات للمقارنات المعيارية تتضمن تغيّر الترتيب ومقارنات الأداء لكل نموذج."
+			},
+			"api-providers": {
+				"title": "صفحات مزوّدي API",
+				"description": "صفحات للمزوّدين تتضمن النماذج المدعومة ومراجع الأسعار وتغطية القدرات."
+			},
+			"latest-updates": {
+				"title": "أحدث التحديثات",
+				"description": "موجز واحد للإصدارات والإعلانات وتحديثات قاعدة البيانات."
+			},
+			"countries-pages": {
+				"title": "صفحات الدول",
+				"description": "عرض على مستوى الدولة يربط المؤسسات بنشاط النماذج."
+			},
+			"revamped-pricing-page": {
+				"title": "تحديث مرجع الأسعار",
+				"description": "تجربة أوضح لمرجع الأسعار مع تنقّل يركّز على النماذج والمزوّدين."
+			},
+			"database-updates": {
+				"title": "موجز تحديثات قاعدة البيانات",
+				"description": "موجز تحديثات موسّع يعرض التغييرات المستمرة على مستوى قاعدة البيانات."
+			},
+			"sources": {
+				"title": "المصادر المضمّنة",
+				"description": "عرض إسناد المصادر مباشرةً بجوار بيانات النماذج والمزوّدين ذات الصلة."
+			},
+			"compare": {
+				"title": "مقارنات النماذج",
+				"description": "مقارنة النماذج جنباً إلى جنب من حيث الأسعار والقدرات والبيانات الوصفية الأساسية."
+			}
+		},
+		"expected": "المتوقع",
+		"developmentNotice": "يجري تطوير هذه الصفحة بنشاط وتحديثها باستمرار. نرحب بملاحظاتك."
+	},
+	"migrate": {
+		"title": "الترحيل",
+		"description": "دليل تفاعلي للانتقال من OpenRouter وVercel AI Gateway وRequesty وLLMGateway والمكتبات المتوافقة مع OpenAI إلى Phaseo Gateway.",
+		"heading": "مساعد الترحيل",
+		"intro": "اختر إعدادك الحالي واحصل على دليل ترحيل مخصّص لك.",
+		"ui": {
+			"breadcrumb": "مسار التنقل",
+			"backToAllGuides": "العودة إلى جميع أدلة الترحيل",
+			"readTime": "{minutes, plural, zero {لا دقائق للقراءة} one {دقيقة واحدة للقراءة} two {دقيقتان للقراءة} few {# دقائق للقراءة} many {# دقيقة للقراءة} other {# دقيقة للقراءة}}",
+			"updatedAt": "آخر تحديث: {date}",
+			"tryPhaseo": "جرّب Phaseo",
+			"comparePhaseoOpenRouter": "قارن بين Phaseo وOpenRouter",
+			"prerequisites": "المتطلبات المسبقة",
+			"checklist": "قائمة التحقق",
+			"validationSteps": "خطوات التحقق",
+			"faqHeading": "الأسئلة الشائعة",
+			"migrationResources": "موارد الترحيل",
+			"openrouterCtaTitle": "هل تريد منا تولّي عملية الترحيل؟",
+			"customMigrationCtaTitle": "هل تحتاج إلى تعديل مخصص للترحيل؟",
+			"openrouterCtaBody": "تواصل معنا وسنساعدك مجاناً على نقل تكامل OpenRouter إلى Phaseo، بما في ذلك تبديل نقطة النهاية والتحقق من النماذج ومراجعة الترحيل.",
+			"customMigrationCtaBody": "استخدم المساعد التفاعلي للحصول على أمثلة قبل/بعد تناسب SDK واللغة اللذين تستخدمهما حالياً.",
+			"getFreeMigrationHelp": "احصل على مساعدة مجانية للترحيل",
+			"openMigrationAssistant": "افتح مساعد الترحيل"
+		},
+		"agentPrompt": {
+			"codingAgents": "لوكلاء البرمجة",
+			"title": "أرسل هذا إلى وكيل البرمجة لديك",
+			"description": "الصق هذا النص في وكيل البرمجة عندما تريد إزالة OpenRouter بدلاً من إبقائه كخيار احتياطي. يتضمن رابطاً إلى المهارة المُحدّثة ويحدد متى يكتمل الترحيل.",
+			"copied": "تم النسخ",
+			"copyPrompt": "انسخ التعليمات",
+			"readSkill": "اقرأ مهارة الترحيل"
+		},
+		"englishBodyNotice": "دليل الترحيل هذا متاح حالياً باللغة الإنجليزية. الواجهة المحيطة مترجمة، بينما نعرض الدليل الأصلي للحفاظ على الدقة التقنية.",
+		"assistant": {
+			"stepLabel": "الخطوة {number}",
+			"sourceQuestion": "من أين تريد الترحيل؟",
+			"chooseSource": "اختر المصدر للمتابعة.",
+			"selectSourcePrompt": "حدد المصدر الحالي لعرض الخيارات التالية.",
+			"reviewChanges": "راجع التغييرات",
+			"split": "عرض مقسّم",
+			"diff": "الفروقات",
+			"startOver": "البدء من جديد",
+			"beforeAndAfter": "قبل وبعد",
+			"comparisonDescription": "قارن تكاملك الحالي بإصدار Phaseo، أو انتقل إلى عرض الفروقات في صفحة واحدة.",
+			"before": "قبل",
+			"after": "بعد",
+			"keyChanges": "أهم التغييرات",
+			"fullGuidePrompt": "إذا كنت تنتقل من {source}، فراجع الدليل الكامل خطوة بخطوة.",
+			"readFullGuide": "قراءة الدليل الكامل",
+			"snippetNoSdk": "لم يتم إعداد أي SDK",
+			"sourceLabels": {
+				"compatibleLibraries": "مكتبات متوافقة مع OpenAI",
+				"gettingStarted": "البدء الآن"
+			},
+			"sourceDescriptions": {
+				"openaiSdk": "تستخدم حاليًا حزم OpenAI الرسمية.",
+				"anthropicSdk": "تستخدم مكتبات عميل Anthropic.",
+				"openrouter": "توجّه الطلبات عبر OpenRouter.",
+				"vercelAi": "تستخدم Vercel AI Gateway أو مجموعة موفّري AI SDK.",
+				"requesty": "تستخدم Requesty كبوابة متوافقة مع OpenAI.",
+				"llmGateway": "تستخدم LLMGateway كنقطة نهاية متوافقة مع OpenAI.",
+				"compatibleLibraries": "أي SDK أو تكامل REST متوافق مع OpenAI.",
+				"gettingStarted": "ابدأ الإعداد من الصفر بأسرع طريقة."
+			},
+			"prompts": {
+				"openaiSdk": "ما حزمة OpenAI SDK التي تستخدمها؟",
+				"anthropicSdk": "ما حزمة Anthropic SDK التي تستخدمها؟",
+				"openrouter": "كيف تستدعي OpenRouter حاليًا؟",
+				"vercelAi": "كيف تتكامل مع Vercel حاليًا؟",
+				"requesty": "كيف تستدعي Requesty حاليًا؟",
+				"llmGateway": "كيف تستدعي LLMGateway حاليًا؟",
+				"environment": "اختر بيئتك.",
+				"integration": "اختر طريقة التكامل المفضلة."
+			},
+			"options": {
+				"keepOpenAiClient": "احتفظ بعميل OpenAI وغيّر عنوان URL الأساسي.",
+				"keepAnthropicClient": "احتفظ بعميل Anthropic وغيّر عنوان URL الأساسي.",
+				"pointPythonSdk": "وجّه Python SDK إلى Phaseo.",
+				"switchRestToGateway": "حوّل طلبات REST إلى Gateway.",
+				"switchVercelProvider": "استبدل مصنع موفّري Vercel/OpenAI بموفّر Phaseo الرسمي.",
+				"restAnyRuntime": "استخدم طلبات REST في أي بيئة تشغيل.",
+				"swapEnvironmentAndBaseUrl": "احتفظ بالعميل وغيّر متغيرات البيئة وعنوان URL الأساسي.",
+				"openAiPythonSettings": "استخدم إعدادات عميل OpenAI Python مع Phaseo.",
+				"switchRestToPhaseo": "حوّل طلبات REST إلى Phaseo Gateway.",
+				"openAiCompatibleConfiguration": "استخدم إعدادًا متوافقًا مع OpenAI SDK.",
+				"openAiPythonWithPhaseo": "استخدم عميل OpenAI Python مع Phaseo.",
+				"callGatewayDirectly": "استدعِ Gateway مباشرةً.",
+				"typedSdk": "عميل مكتمل الأنواع مع أدوات مساعدة.",
+				"asyncPythonSdk": "عميل Python يعطي الأولوية للعمليات غير المتزامنة.",
+				"fastestRequest": "أسرع طريقة لإرسال طلب."
+			},
+			"steps": {
+				"useApiKey": "استخدم مفتاح Phaseo API الخاص بك",
+				"createApiKey": "أنشئ مفتاحًا في لوحة Phaseo واحفظه باسم PHASEO_API_KEY.",
+				"setBaseUrlTitle": "وجّه عنوان URL الأساسي إلى Phaseo",
+				"setBaseUrlDescription": "اضبط عنوان URL الأساسي على {baseUrl}.",
+				"keepPayloadTitle": "أبقِ محتوى الطلب كما هو",
+				"keepPayloadDescription": "سيظل اختيار النموذج والرسائل كما هما.",
+				"authorizationHeaderTitle": "أرسل ترويسة Authorization",
+				"authorizationHeaderDescription": "أضف Authorization: Bearer <key> إلى كل طلب."
+			},
+			"changeTitles": {
+				"useGatewayKey": "استخدم مفتاح Phaseo Gateway الخاص بك",
+				"routeThroughPhaseo": "وجّه الطلبات عبر Phaseo",
+				"updateModelIds": "حدّث معرّفات النماذج",
+				"switchAiSdk": "انتقل إلى موفّر Phaseo AI SDK"
+			},
+			"changes": {
+				"replaceOpenAiKey": "استبدل OPENAI_API_KEY بمفتاح PHASEO_API_KEY من لوحة Phaseo.",
+				"replaceAnthropicKey": "استبدل ANTHROPIC_API_KEY بمفتاح PHASEO_API_KEY من لوحة Phaseo.",
+				"setSdkKey": "اضبط PHASEO_API_KEY من لوحة Phaseo لعميل SDK.",
+				"sendAuthorization": "أرسل Authorization: Bearer YOUR_API_KEY مع كل طلب.",
+				"replaceVercelProvider": "استبدل مصنع موفّري Vercel OpenAI بالدالة createPhaseo(...) من @phaseo/ai-sdk-provider.",
+				"routeBaseUrl": "اضبط baseURL على {baseUrl} لتمر حركة المرور عبر Gateway.",
+				"routeBaseUrlPython": "اضبط base_url على {baseUrl} لتمر حركة المرور عبر Gateway.",
+				"routeRest": "أرسل الطلبات إلى {endpoint}.",
+				"openAiModelIds": "استخدم معرّفات نماذج Phaseo مثل {modelId}. ستجدها في دليل البدء السريع لكل نموذج.",
+				"anthropicModelIds": "استخدم معرّفات نماذج Phaseo مثل {modelId}. ستجدها في دليل البدء السريع لكل نموذج."
+			},
+			"docs": {
+				"apiReference": "مرجع API",
+				"apiReferenceDescription": "نقاط النهاية والمصادقة وتنسيقات الأخطاء.",
+				"quickstart": "البدء السريع",
+				"quickstartDescription": "أرسل أول طلب إلى Gateway خلال دقائق.",
+				"toolCalling": "استدعاء الأدوات",
+				"toolCallingDescription": "الأدوات وtool_choice وتوجيه الدوال.",
+				"structuredOutputs": "المخرجات المنظّمة",
+				"structuredOutputsDescription": "استجابات مقيدة بمخطط ومعايير محددة.",
+				"featureParity": "مصفوفة تكافؤ الميزات",
+				"featureParityDescription": "تكافؤ ترحيل Gateway حسب الواجهة والمنافس.",
+				"parityReview": "مراجعة تكافؤ Gateway",
+				"parityReviewDescription": "مراجعة تستند إلى المستودع للمجالات المؤكدة وتلك التي ما زالت مفتوحة."
+			},
+			"docsHeading": "التوثيق"
+		}
+	},
+	"worksWith": {
+		"title": "يعمل مع Phaseo",
+		"description": "اكتشف التطبيقات وعمليات التكامل المبنية باستخدام Phaseo Gateway، بما في ذلك أدوات الإنتاج والمشاريع مفتوحة المصدر والإطلاقات المجتمعية لمختلف سير العمل والفرق.",
+		"intro": "اكتشف التطبيقات والأدوات وعمليات التكامل التي تستخدم Phaseo Gateway. يمكن للفرق البناء فوق Phaseo للتوجيه والأسعار والوصول إلى النماذج، بينما يستخدم العملاء مفاتيح Phaseo API الخاصة بهم.",
+		"community": "المجتمع",
+		"submitApp": "أرسل تطبيقك",
+		"contribute": "ساهم في Phaseo",
+		"emptyTitle": "لا توجد تطبيقات بعد",
+		"emptyDescription": "هذه القائمة جاهزة لمساهمات المجتمع. كن أول من يضيف تطبيقه.",
+		"addApp": "أضف تطبيقك",
+		"added": "أُضيف في {date}",
+		"visitSite": "زيارة الموقع",
+		"setupDocs": "مستندات الإعداد",
+		"openSource": "مفتوح المصدر",
+		"contributing": "المساهمة",
+		"contributingDescription": "أضف تطبيقك إلى قائمة يعمل مع Phaseo باتباع الخطوات أدناه.",
+		"requirements": "المتطلبات",
+		"tags": {
+			"chat": "محادثة",
+			"coding": "برمجة",
+			"productivity": "إنتاجية",
+			"creative": "إبداع",
+			"research": "بحث",
+			"other": "أخرى"
+		},
+		"appLogoAlt": "شعار {app}",
+		"requirementModelAccess": "استخدم Phaseo للوصول إلى نماذج الذكاء الاصطناعي.",
+		"requirementBringOwnKey": "أتح للمستخدمين الاتصال باستخدام مفتاح API الخاص بهم من Phaseo.",
+		"requirementPublicAccess": "اجعل التطبيق متاحًا للجميع أو وفّر صفحة تعريف عامة.",
+		"requirementLogo": "أضف صورة للشعار.",
+		"howToSubmit": "طريقة الإرسال",
+		"forkRepository": "أنشئ fork لهذا المستودع.",
+		"addCatalogEntry": "أضف إدخال التطبيق إلى",
+		"addLogo": "أضف شعارك إلى",
+		"submitPullRequest": "أرسل pull request.",
+		"entryFormat": "تنسيق الإدخال",
+		"validTags": "الوسوم الصالحة",
+		"questions": "هل لديك أسئلة؟",
+		"questionHelp": "افتح issue إذا كانت لديك أسئلة أو احتجت إلى مساعدة في الإرسال.",
+		"openDataRequest": "افتح طلب بيانات",
+		"forYourApp": "لتطبيقك.",
+		"includeAppDetails": "أدرج اسم التطبيق ووصفًا موجزًا وموقعه الإلكتروني ودليل التكامل مع Phaseo ورابطًا للشعار.",
+		"includeCategories": "أضف الفئات المناسبة ورابط مستودع المصدر إذا كان التطبيق مفتوح المصدر.",
+		"trackPublication": "تابع المراجعة والنشر في المشكلة."
+	},
+	"acknowledgements": {
+		"title": "الشكر والتقدير",
+		"description": "المشاريع مفتوحة المصدر والمنصات وأعمال التصميم التي تعتمد عليها Phaseo وتستفيد منها.",
+		"heading": "بُني بجهود كثيرين.",
+		"intro": "تعتمد Phaseo على برمجيات مفتوحة المصدر وأعمال تصميم مدروسة وبنية تحتية موثوقة. تكرّم هذه الصفحة المشاريع والفرق التي تؤثر بشكل ملموس في ما نبنيه.",
+		"thanks": "شكراً لكل مشرف ومساهم وباحث ومصمم يجعل Phaseo ممكنة.",
+		"howUsed": "كيف تستخدمها Phaseo.",
+		"disclaimer": "هذا إقرار مستمر بفضل المنتجات، وليس قائمة شاملة بمواد البرمجيات أو إشعار تراخيص. تبقى حقوق النشر وشروط الترخيص على مستوى الحزم لدى مشاريعها المعنية.",
+		"continue": "متابعة",
+		"review": "مراجعة",
+		"accessibleStates": "حالات الوصول",
+		"streamingResponse": "استجابة متدفقة",
+		"searchExample": "مثال للبحث",
+		"createdBy": "أنشأه {name}",
+		"reliableGateway": "بوابة موثوقة",
+		"routeByHealthPriceCapability": "التوجيه حسب الحالة والسعر والقدرات",
+		"orbWorking": "قيد العمل",
+		"orbSearching": "جارٍ البحث",
+		"orbSolving": "جارٍ الحل",
+		"orbComposing": "جارٍ الإعداد",
+		"orbLabel": "كرة {state}",
+		"groups": {
+			"interface": {
+				"label": "الواجهة",
+				"description": "الأسس التي تقوم عليها تجربة Phaseo على الويب ولغة التفاعل فيها."
+			},
+			"aiExperience": {
+				"label": "تجربة الذكاء الاصطناعي",
+				"description": "مشروعات تساعد Phaseo على بث مخرجات النماذج وعرضها وشرحها."
+			},
+			"platform": {
+				"label": "المنصة",
+				"description": "البنية التحتية والخدمات التي تساعد Phaseo على العمل بموثوقية."
+			},
+			"productIntelligence": {
+				"label": "تحليلات المنتج",
+				"description": "أدوات تساعدنا على فهم الإصدارات والموثوقية وسلوك المنتج."
+			}
+		},
+		"items": {
+			"react": {
+				"description": "نموذج تصريحي للمكوّنات والحالة يشكّل أساس واجهات Phaseo التفاعلية.",
+				"usedFor": "تُبنى واجهة الدردشة ومقارنة النماذج والإعدادات وقابلية المراقبة وسائر الواجهات ذات الحالة باستخدام مكوّنات React."
+			},
+			"nextjs": {
+				"description": "إطار عمل للتطبيقات يجمع العرض على الخادم والتوجيه والبيانات الوصفية والتخزين المؤقت والتفاعل على العميل.",
+				"usedFor": "يشترك الكتالوج العام ومساحة العمل المسجّلة وجسور API وهذه الصفحة في تطبيق App Router واحد."
+			},
+			"tailwind": {
+				"description": "نظام تنسيق يعتمد على الأدوات المساعدة ويقرّب القرارات المرئية من المكوّنات المتأثرة بها.",
+				"usedFor": "يعتمد التخطيط المتجاوب والطباعة والألوان والحركة والوضع الداكن على رموز التصميم وأدواته المشتركة."
+			},
+			"baseUi": {
+				"description": "أنماط مكوّنات مفتوحة وعناصر أساسية ميسّرة بلا تنسيق مفروض، توفّر سلوكًا موثوقًا من دون فرض التصميم المرئي النهائي.",
+				"usedFor": "تستند مربعات الحوار والقوائم والتلميحات والأزرار وأدوات الاختيار والتفاعلات بلوحة المفاتيح في Phaseo إلى هذه الأسس."
+			},
+			"lucide": {
+				"description": "مجموعة أيقونات متناسقة وسهلة القراءة ذات مفردات واسعة لواجهات المنتجات.",
+				"usedFor": "توضّح الأيقونات التنقل وإجراءات النماذج وحالة الطلبات والإعدادات وأدوات التحكم المدمجة عندما يكون النص وحده غير عملي."
+			},
+			"thinkingOrbs": {
+				"description": "مجموعة من رسوم Canvas المتحركة المضبوطة بعناية، تُظهر حالة العمل في الخلفية من دون الاعتماد على مؤشر تحميل عام.",
+				"usedFor": "يعرض Phaseo Chat حالة العمل عند الإرسال والإضافة إلى قائمة الانتظار، وحالة الصياغة أثناء إعداد المساعد للإجابة."
+			},
+			"streamdown": {
+				"description": "عارض Markdown مصمم للنص غير المكتمل الذي يصل تدريجيًا رمزًا بعد رمز.",
+				"usedFor": "يمكن لـ Phaseo عرض العناوين والقوائم والروابط والتعليمات البرمجية والرياضيات أثناء بث الإجابة، من دون انتظار المستند النهائي."
+			},
+			"shiki": {
+				"description": "أداة تمييز صياغة متوافقة مع TextMate تعرض التعليمات البرمجية بقواعد نحوية بجودة المحررات.",
+				"usedFor": "تظل التعليمات البرمجية في إجابات النماذج واضحة عبر اللغات والسمات المختلفة، بما في ذلك المقارنات التقنية وتصحيح الأخطاء."
+			},
+			"cloudflare": {
+				"description": "منصة تطبيقات عالمية تشمل الحوسبة الطرفية والتنسيق الدائم والتخزين والشبكات والأمان.",
+				"usedFor": "تستخدم البوابة وواجهات API المساندة في Phaseo خدمات Workers وما يرتبط بها للتنفيذ بالقرب من المستخدمين وتنسيق المهام طويلة الأمد."
+			},
+			"supabase": {
+				"description": "منصة Postgres توفر المصادقة والتخزين وإمكانات الوقت الفعلي وأدوات المطورين.",
+				"usedFor": "تعتمد Phaseo على Supabase لهوية الحسابات والبيانات العلائقية الدائمة، مثل مساحات العمل والاستخدام والأرصدة وإعدادات البوابة."
+			},
+			"vercel": {
+				"description": "بنية تحتية للنشر والتطبيقات محسّنة لـ Next.js وتقديم الويب الحديث.",
+				"usedFor": "يُبنى موقع Phaseo ويُعاين ويُقدّم عبر Vercel، بينما تربطه واجهات API الخاصة ببقية المنصة."
+			},
+			"hono": {
+				"description": "إطار ويب صغير قائم على المعايير ومصمم لبيئات تشغيل JavaScript الحديثة.",
+				"usedFor": "يوفر التوجيه والبرمجيات الوسيطة ومعالجة الطلبات ذات الأنواع المحددة عبر واجهات Cloudflare Workers API في Phaseo."
+			},
+			"stripe": {
+				"description": "بنية مدفوعات لإتمام الدفع بأمان ووسائل الدفع والفواتير وأحداث الفوترة.",
+				"usedFor": "تتولى Stripe معالجة المعاملات المالية عندما يشتري العملاء أرصدة Phaseo ويديرونها."
+			},
+			"posthog": {
+				"description": "منصة مفتوحة لتحليلات المنتجات تشمل الأحداث ومسارات التحويل وتشخيص الجلسات وسلوك الميزات.",
+				"usedFor": "تستخدم Phaseo مؤشرات المنتج المقاسة لفهم الموثوقية وتحسين المسارات من دون اعتبار الحدس دليلًا."
+			},
+			"statsig": {
+				"description": "منصة لإدارة الميزات والتجارب تتيح تقديم تغييرات المنتج بصورة مضبوطة.",
+				"usedFor": "تتيح بوابات الميزات إدخال التغييرات تدريجيًا ومقارنة النتائج والتعافي بسرعة إذا لم يسر الإطلاق كما هو متوقع."
+			}
+		}
+	},
+	"contribute": {
+		"title": "ساهم",
+		"description": "تعرّف على المساهمين والجهات الراعية التي تدعم Phaseo، وتصفّح ملفات المجتمع وسجل المساهمات، وتعرّف على طرق واضحة للمشاركة أو الرعاية أو المساعدة في تحسين المنصة.",
+		"heading": "المساهمون والجهات الراعية",
+		"intro": "نبني في العلن. تعرض هذه القوائم كل من ساهم في مستودع Phaseo ومن يرعى تطويره عبر GitHub Sponsors. هؤلاء أشخاص رائعون!",
+		"contributors": "مساهمو المستودع",
+		"contributorCount": "{count} من المساهمين",
+		"sponsors": "الجهات الراعية",
+		"listed": "{count} مدرجين",
+		"contributorExportPending": "ما زالت بيانات المساهمين قيد الإعداد. شغّل عملية التصدير أو عُد للتحقق لاحقاً.",
+		"commitCount": "{count, plural, zero {# عملية إيداع} one {عملية إيداع واحدة} two {عمليتا إيداع} few {# عمليات إيداع} many {# عملية إيداع} other {# عملية إيداع}}",
+		"communityContributor": "مساهم من المجتمع",
+		"sponsorListEmpty": "لا يوجد رعاة مسجلون بعد. انضم إلى المجتمع وسيظهر اسمك هنا قريباً!",
+		"viewProfile": "عرض الملف الشخصي",
+		"linkUnavailable": "الرابط غير متاح"
+	}
 }

@@ -1,9 +1,11 @@
 "use client";
 
+import { chatLocalStorage } from "@/lib/chat/userStorage";
 import Link from "next/link";
 import { createPortal } from "react-dom";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { Logo } from "@/components/Logo";
 import type { GatewaySupportedModel } from "@/lib/fetchers/gateway/getGatewaySupportedModelIds";
 import { filterModelsForRoom } from "@/lib/chat/rooms";
@@ -26,6 +28,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { RoomModelSelector } from "@/components/(chat)/RoomModelSelector";
+import { RoomSdkExport } from "@/components/(chat)/RoomSdkExport";
 import { RoomSearchDialog } from "@/components/(chat)/RoomSearchDialog";
 import { useSidebar } from "@/components/ui/sidebar";
 import { ROOM_SIDEBAR_SLOT_ID } from "@/components/(chat)/RoomScaffold";
@@ -572,6 +575,7 @@ export function ModerationRoom({ models }: { models: GatewaySupportedModel[] }) 
 		both: t("textAndImage"),
 		unknown: t("unknown"),
 	};
+	const format = useDisplayFormatters();
 	const { toggleSidebar, state: sidebarState, isMobile } = useSidebar();
 	const collapsed = sidebarState === "collapsed" && !isMobile;
 	const filteredModels = useMemo(
@@ -704,13 +708,13 @@ export function ModerationRoom({ models }: { models: GatewaySupportedModel[] }) 
 
 	useEffect(() => {
 		if (typeof window === "undefined") return;
-		const stored = window.localStorage.getItem(MODERATION_PINNED_STORAGE_KEY);
+		const stored = chatLocalStorage.getItem(MODERATION_PINNED_STORAGE_KEY);
 		setPinnedConversationIds(safeParsePinned(stored));
 	}, []);
 
 	useEffect(() => {
 		if (typeof window === "undefined") return;
-		window.localStorage.setItem(
+		chatLocalStorage.setItem(
 			MODERATION_PINNED_STORAGE_KEY,
 			JSON.stringify(pinnedConversationIds),
 		);
@@ -1088,7 +1092,7 @@ export function ModerationRoom({ models }: { models: GatewaySupportedModel[] }) 
 				? truncateTitle(inputText)
 				: resolvedImageUrls[0]
 					? truncateTitle(resolvedImageUrls[0])
-					: `Moderation ${new Date().toLocaleDateString()}`;
+					: `Moderation ${format.date(new Date())}`;
 			const conversationTitle =
 				overrides?.forcedConversationTitle ||
 				(temporaryMode ? "Temporary chat" : existingTitle || candidateTitle);
@@ -1415,6 +1419,7 @@ export function ModerationRoom({ models }: { models: GatewaySupportedModel[] }) 
 						/>
 					</div>
 					<div className="flex items-center gap-2">
+						<RoomSdkExport />
 						<Tooltip>
 							<TooltipTrigger asChild>
 								<Button

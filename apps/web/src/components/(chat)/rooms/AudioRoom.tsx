@@ -1,9 +1,11 @@
 "use client";
 
+import { chatLocalStorage } from "@/lib/chat/userStorage";
 import Link from "next/link";
 import { createPortal } from "react-dom";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { Logo } from "@/components/Logo";
 import type { GatewaySupportedModel } from "@/lib/fetchers/gateway/getGatewaySupportedModelIds";
 import { filterModelsForRoom } from "@/lib/chat/rooms";
@@ -48,6 +50,7 @@ import {
 	MediaPlayerVolumeIndicator,
 } from "@/components/ui/media-player";
 import { RoomModelSelector } from "@/components/(chat)/RoomModelSelector";
+import { RoomSdkExport } from "@/components/(chat)/RoomSdkExport";
 import { RoomSearchDialog } from "@/components/(chat)/RoomSearchDialog";
 import { useSidebar } from "@/components/ui/sidebar";
 import { ROOM_SIDEBAR_SLOT_ID } from "@/components/(chat)/RoomScaffold";
@@ -989,6 +992,7 @@ export function AudioRoom({
 	const tUi = useTranslations("Common.ui");
 	const tSearch = useTranslations("Common.search");
 	const locale = useLocale();
+	const format = useDisplayFormatters();
 	const { toggleSidebar, state: sidebarState, isMobile } = useSidebar();
 	const collapsed = sidebarState === "collapsed" && !isMobile;
 	const normalizedAllowedModes = useMemo(
@@ -1195,13 +1199,13 @@ export function AudioRoom({
 
 	useEffect(() => {
 		if (typeof window === "undefined") return;
-		const stored = window.localStorage.getItem(pinnedStorageKey);
+		const stored = chatLocalStorage.getItem(pinnedStorageKey);
 		setPinnedConversationIds(safeParsePinned(stored));
 	}, [pinnedStorageKey]);
 
 	useEffect(() => {
 		if (typeof window === "undefined") return;
-		window.localStorage.setItem(
+		chatLocalStorage.setItem(
 			pinnedStorageKey,
 			JSON.stringify(pinnedConversationIds),
 		);
@@ -1610,7 +1614,7 @@ export function AudioRoom({
 		const existingTitle = activeConversation?.title?.trim() ?? "";
 		const candidateTitle = promptText
 			? truncateTitle(promptText)
-			: `${t(modeLabelKey(targetMode))} ${new Date().toLocaleDateString(locale)}`;
+			: `${t(modeLabelKey(targetMode))} ${format.date(new Date())}`;
 		const conversationTitle =
 			overrides?.forcedConversationTitle ||
 			(temporaryMode ? "Temporary chat" : existingTitle || candidateTitle);
@@ -2124,6 +2128,7 @@ aria-label={sidebarState === "expanded" ? t("collapseSidebar") : t("openSidebar"
 						/>
 					</div>
 					<div className="flex items-center gap-2">
+						<RoomSdkExport />
 						<Tooltip>
 							<TooltipTrigger asChild>
 								<Button

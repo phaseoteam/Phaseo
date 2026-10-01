@@ -16,6 +16,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ModelSearchDropdown } from "@/components/model-picker/ModelSearchDropdown";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import {
   Card,
   CardContent,
@@ -399,16 +400,16 @@ function ResultCard({
   );
 }
 
-function formatPrice(value: number): string {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    maximumFractionDigits: 6,
-  }).format(value);
-}
-
 function PriceleGame({ puzzle }: { puzzle: PricelePuzzle }) {
   const t = useTranslations("Product.games");
+  const format = useDisplayFormatters();
+  const formatPrice = (value: number) =>
+    format.number(value, {
+      style: "currency",
+      currency: "USD",
+      maximumFractionDigits: 6,
+      notation: "standard",
+    });
   const [state, setState] = useState<GuessState<PriceleResult>>(() =>
     readGameState("pricele", puzzle.puzzleId, { guesses: [], answer: null })
   );
@@ -733,6 +734,7 @@ function HeadChoice({
   correct?: boolean;
   onClick: () => void;
 }) {
+  const format = useDisplayFormatters();
   return (
     <button
       type="button"
@@ -757,7 +759,7 @@ function HeadChoice({
       />
       {value != null && (
         <div className="mt-3 text-sm font-semibold">
-          {typeof value === "number" ? value.toLocaleString() : String(value)}
+          {typeof value === "number" ? format.number(value) : String(value)}
         </div>
       )}
     </button>

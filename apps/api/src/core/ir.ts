@@ -70,6 +70,7 @@ export type IRTool = {
 	description?: string;
 	parameters: Record<string, any>; // JSON Schema
 	strict?: boolean; // OpenAI/xAI function-schema strictness
+	async?: boolean; // OpenAI Responses async function/custom tool execution
 	cacheControl?: IRCacheControl;
 	raw?: Record<string, any>; // Original provider-native tool payload for passthrough
 };
@@ -470,6 +471,31 @@ export type IRRerankResponse = {
 };
 
 // ============================================================================
+// DECISIONS
+// ============================================================================
+
+export type IRDecisionQuestion = {
+	type: "noul" | "choice" | "score";
+	instructions: string | Record<string, any> | any[];
+	criteria?: Record<string, string | null> | string[] | { true?: string; false?: string };
+	[key: string]: any;
+};
+
+export type IRDecisionsRequest = {
+	model: string;
+	state: string | Record<string, any> | any[];
+	questions: Record<string, IRDecisionQuestion>;
+	rawRequest?: any;
+};
+
+export type IRDecisionsResponse = {
+	model: string;
+	answers: Record<string, any>;
+	usage?: IRUsage;
+	rawResponse?: any;
+};
+
+// ============================================================================
 // IMAGE GENERATION (BASELINE)
 // ============================================================================
 
@@ -639,9 +665,11 @@ export type IRVideoGenerationRequest = {
 		raw?: Record<string, any>;
 	}>;
 	providerParams?: Record<string, any>;
+	providerOptions?: Record<string, Record<string, any>>;
 	outputAccess?: "bytes" | "signed_url" | "both";
 	webhook?: {
-		url: string;
+		endpointId?: string | null;
+		url?: string;
 		secret?: string;
 		events?: string[];
 	};

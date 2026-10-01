@@ -1,0 +1,41 @@
+{
+  "key": "alibaba-cloud:qwen/qwen-image-edit-2025-10-30:image.edit",
+  "api_provider_id": "alibaba-cloud",
+  "provider_slug": "alibaba-cloud",
+  "api_model_id": "qwen/qwen-image-edit-2025-10-30",
+  "capability_id": "image.edit",
+  "rules": [
+    {
+      "meter": "output_image",
+      "unit": "image",
+      "unit_size": 1,
+      "price_per_unit": 0.03,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-09-07T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": "https://www.alibabacloud.com/help/en/model-studio/model-pricing"
+    }
+  ],
+  "regions": [],
+  "service_tiers": [
+    "standard"
+  ],
+  "sources": [
+    {
+      "kind": "documentation",
+      "url": "https://www.alibabacloud.com/help/en/model-studio/model-pricing",
+      "accessed_at": "2026-09-07T00:00:00Z",
+      "notes": "Published provider pricing; no live inference call."
+    }
+  ],
+  "verification": {
+    "status": "verified",
+    "checked_at": "2026-09-07T00:00:00Z",
+    "notes": "Verified against official published prices; no live inference test."
+  }
+}

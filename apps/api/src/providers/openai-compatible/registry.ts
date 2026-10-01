@@ -12,7 +12,6 @@ import { CEREBRAS_OPENAI_COMPAT_CONFIGS } from "../cerebras/config";
 import { CLARIFAI_OPENAI_COMPAT_CONFIGS } from "../clarifai/config";
 import { CHUTES_OPENAI_COMPAT_CONFIGS } from "../chutes/config";
 import { COHERE_OPENAI_COMPAT_CONFIGS } from "../cohere/config";
-import { CROFAI_OPENAI_COMPAT_CONFIGS } from "../crofai/config";
 import { CANOPY_WAVE_OPENAI_COMPAT_CONFIGS } from "../canopy-wave/config";
 import { VOYAGE_OPENAI_COMPAT_CONFIGS } from "../voyage/config";
 import { DEEPINFRA_OPENAI_COMPAT_CONFIGS } from "../deepinfra/config";
@@ -33,6 +32,7 @@ import { MINIMAX_OPENAI_COMPAT_CONFIGS } from "../minimax/config";
 import { MISTRAL_OPENAI_COMPAT_CONFIGS } from "../mistral/config";
 import { MOONSHOT_OPENAI_COMPAT_CONFIGS } from "../moonshotai/config";
 import { MORPH_OPENAI_COMPAT_CONFIGS } from "../morph/config";
+import { MODELSCOPE_OPENAI_COMPAT_CONFIGS } from "../modelscope/config";
 import { MORPHEUS_OPENAI_COMPAT_CONFIGS } from "../morpheus/config";
 import { NOVITA_OPENAI_COMPAT_CONFIGS } from "../novita/config";
 import { NVIDIA_OPENAI_COMPAT_CONFIGS } from "../nvidia/config";
@@ -69,6 +69,7 @@ import { AVIAN_OPENAI_COMPAT_CONFIGS } from "../avian/config";
 import { BAIDU_OPENAI_COMPAT_CONFIGS } from "../baidu/config";
 import { DARKBLOOM_OPENAI_COMPAT_CONFIGS } from "../darkbloom/config";
 import { INFERENCE_NET_OPENAI_COMPAT_CONFIGS } from "../inference-net/config";
+import { DOUBLEWORD_OPENAI_COMPAT_CONFIGS } from "../doubleword/config";
 import { MARA_OPENAI_COMPAT_CONFIGS } from "../mara/config";
 import { REKA_OPENAI_COMPAT_CONFIGS } from "../reka/config";
 import { UPSTAGE_OPENAI_COMPAT_CONFIGS } from "../upstage/config";
@@ -77,6 +78,7 @@ import { STREAMLAKE_OPENAI_COMPAT_CONFIGS } from "../streamlake/config";
 import { SWITCHPOINT_OPENAI_COMPAT_CONFIGS } from "../switchpoint/config";
 import { WAFER_OPENAI_COMPAT_CONFIGS } from "../wafer/config";
 import { TENCENT_CLOUD_OPENAI_COMPAT_CONFIGS } from "../tencent-cloud/config";
+import { OPENROUTER_OPENAI_COMPAT_CONFIGS } from "../openrouter/config";
 
 export const OPENAI_COMPAT_CONFIG = {
 	...OPENAI_OPENAI_COMPAT_CONFIGS,
@@ -92,7 +94,6 @@ export const OPENAI_COMPAT_CONFIG = {
 	...CLARIFAI_OPENAI_COMPAT_CONFIGS,
 	...CHUTES_OPENAI_COMPAT_CONFIGS,
 	...COHERE_OPENAI_COMPAT_CONFIGS,
-	...CROFAI_OPENAI_COMPAT_CONFIGS,
 	...CANOPY_WAVE_OPENAI_COMPAT_CONFIGS,
 	...VOYAGE_OPENAI_COMPAT_CONFIGS,
 	...DEEPINFRA_OPENAI_COMPAT_CONFIGS,
@@ -113,6 +114,7 @@ export const OPENAI_COMPAT_CONFIG = {
 	...MISTRAL_OPENAI_COMPAT_CONFIGS,
 	...MOONSHOT_OPENAI_COMPAT_CONFIGS,
 	...MORPH_OPENAI_COMPAT_CONFIGS,
+	...MODELSCOPE_OPENAI_COMPAT_CONFIGS,
 	...MORPHEUS_OPENAI_COMPAT_CONFIGS,
 	...NOVITA_OPENAI_COMPAT_CONFIGS,
 	...NVIDIA_OPENAI_COMPAT_CONFIGS,
@@ -149,6 +151,7 @@ export const OPENAI_COMPAT_CONFIG = {
 	...BAIDU_OPENAI_COMPAT_CONFIGS,
 	...DARKBLOOM_OPENAI_COMPAT_CONFIGS,
 	...INFERENCE_NET_OPENAI_COMPAT_CONFIGS,
+	...DOUBLEWORD_OPENAI_COMPAT_CONFIGS,
 	...MARA_OPENAI_COMPAT_CONFIGS,
 	...REKA_OPENAI_COMPAT_CONFIGS,
 	...UPSTAGE_OPENAI_COMPAT_CONFIGS,
@@ -157,4 +160,5 @@ export const OPENAI_COMPAT_CONFIG = {
 	...SWITCHPOINT_OPENAI_COMPAT_CONFIGS,
 	...WAFER_OPENAI_COMPAT_CONFIGS,
 	...TENCENT_CLOUD_OPENAI_COMPAT_CONFIGS,
+	...OPENROUTER_OPENAI_COMPAT_CONFIGS,
 } satisfies Record<string, OpenAICompatConfig>;

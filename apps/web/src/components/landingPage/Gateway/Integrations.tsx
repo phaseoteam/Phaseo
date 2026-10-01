@@ -55,7 +55,7 @@ const client = new OpenAI({
 });
 
 const response = await client.chat.completions.create({
-  model: "openai/gpt-5.2",
+  model: "openai/gpt-6-astra",
   messages: [
     { role: "user", content: "Summarize the deployment status." }
   ]
@@ -71,7 +71,7 @@ const response = await client.chat.completions.create({
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer $PHASEO_API_KEY" \\
   -d '{
-    "model": "anthropic/claude-opus-4-6",
+    "model": "anthropic/claude-fable-5.1",
     "messages": [
       {
         "role": "user",
@@ -94,7 +94,7 @@ const client = new Anthropic({
 });
 
 const message = await client.messages.create({
-  model: "anthropic/claude-opus-4.5",
+  model: "anthropic/claude-fable-5.1",
   max_tokens: 512,
   messages: [
     { role: "user", content: "Draft the weekly update." }
@@ -114,7 +114,7 @@ const client = new GatewayClient({
 });
 
 const result = await client.chat.completions.create({
-  model: "google/gemini-3-pro-preview",
+  model: "google/gemini-3.8-flash",
   routing: { strategy: "lowest-latency" },
   messages: [
     { role: "user", content: "Summarize the enterprise roadmap." }
@@ -345,4 +345,3 @@ export function Integrations() {
 		</section>
 	);
 }
-

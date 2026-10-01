@@ -4,7 +4,7 @@
     "provider_api_model_id": "stepfun:stepfun/step-1o-turbo-vision",
     "provider_model_slug": "step-1o-turbo-vision",
     "internal_model_id": "stepfun/step-1o-turbo-vision",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text,image",
     "output_modalities": "text",
@@ -27,8 +27,8 @@
         "modes": []
       }
     ],
-    "routing_status": "inactive",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": [
         "CN"
@@ -56,7 +56,7 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-24T00:00:00Z",
-      "notes": "Reconciled against live official documentation and pricing."
+      "notes": "Native endpoint and pricing reconciled against official documentation; enabled with model-specific media handling and USD billing rates."
     },
     "rate_limits": []
   },
@@ -65,7 +65,7 @@
     "provider_api_model_id": "stepfun:stepfun/step-1o-vision-32k",
     "provider_model_slug": "step-1o-vision-32k",
     "internal_model_id": "stepfun/step-1o-vision-32k",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text,image",
     "output_modalities": "text",
@@ -88,8 +88,8 @@
         "modes": []
       }
     ],
-    "routing_status": "inactive",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": [
         "CN"
@@ -117,7 +117,7 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-24T00:00:00Z",
-      "notes": "Reconciled against live official documentation and pricing."
+      "notes": "Native endpoint and pricing reconciled against official documentation; enabled with model-specific media handling and USD billing rates."
     },
     "rate_limits": []
   },
@@ -126,7 +126,7 @@
     "provider_api_model_id": "stepfun:stepfun/step-1v-8k",
     "provider_model_slug": "step-1v-8k",
     "internal_model_id": "stepfun/step-1v-8k",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text,image",
     "output_modalities": "text",
@@ -149,8 +149,8 @@
         "modes": []
       }
     ],
-    "routing_status": "inactive",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": [
         "CN"
@@ -178,7 +178,7 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-24T00:00:00Z",
-      "notes": "Reconciled against live official documentation and pricing."
+      "notes": "Native endpoint and pricing reconciled against official documentation; enabled with model-specific media handling and USD billing rates."
     },
     "rate_limits": []
   },
@@ -187,7 +187,7 @@
     "provider_api_model_id": "stepfun:stepfun/step-1v-32k",
     "provider_model_slug": "step-1v-32k",
     "internal_model_id": "stepfun/step-1v-32k",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text,image",
     "output_modalities": "text",
@@ -210,8 +210,8 @@
         "modes": []
       }
     ],
-    "routing_status": "inactive",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": [
         "CN"
@@ -239,7 +239,7 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-24T00:00:00Z",
-      "notes": "Reconciled against live official documentation and pricing."
+      "notes": "Native endpoint and pricing reconciled against official documentation; enabled with model-specific media handling and USD billing rates."
     },
     "rate_limits": []
   },
@@ -309,7 +309,7 @@
     "provider_api_model_id": "stepfun:stepfun/step-3.5-flash",
     "provider_model_slug": "step-3.5-flash",
     "internal_model_id": "stepfun/step-3.5-flash",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "text",
@@ -332,8 +332,8 @@
         "modes": []
       }
     ],
-    "routing_status": "inactive",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": [
         "CN"
@@ -361,7 +361,7 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-24T00:00:00Z",
-      "notes": "Reconciled against live official documentation and pricing."
+      "notes": "Native endpoint and pricing reconciled against official documentation; enabled with model-specific media handling and USD billing rates."
     },
     "rate_limits": []
   },
@@ -431,7 +431,7 @@
     "provider_api_model_id": "stepfun:stepfun/step-r1-v-mini",
     "provider_model_slug": "step-r1-v-mini",
     "internal_model_id": "stepfun/step-r1-v-mini",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text,image",
     "output_modalities": "text",
@@ -454,8 +454,8 @@
         "modes": []
       }
     ],
-    "routing_status": "inactive",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": [
         "CN"
@@ -483,7 +483,7 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-24T00:00:00Z",
-      "notes": "Reconciled against live official documentation and pricing."
+      "notes": "Native endpoint and pricing reconciled against official documentation; enabled with model-specific media handling and USD billing rates."
     },
     "rate_limits": []
   },
@@ -492,7 +492,7 @@
     "provider_api_model_id": "stepfun:stepfun/step-3",
     "provider_model_slug": "step-3",
     "internal_model_id": "stepfun/step-3",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text,image",
     "output_modalities": "text",
@@ -515,8 +515,8 @@
         "modes": []
       }
     ],
-    "routing_status": "inactive",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": [
         "CN"
@@ -544,7 +544,7 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-24T00:00:00Z",
-      "notes": "Reconciled against live official documentation and pricing."
+      "notes": "Native endpoint and pricing reconciled against official documentation; enabled with model-specific media handling and USD billing rates."
     },
     "rate_limits": []
   },
@@ -553,7 +553,7 @@
     "provider_api_model_id": "stepfun:stepfun/step-1o-audio",
     "provider_model_slug": "step-1o-audio",
     "internal_model_id": "stepfun/step-1o-audio",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text,audio",
     "output_modalities": "text,audio",
@@ -576,8 +576,8 @@
         "modes": []
       }
     ],
-    "routing_status": "inactive",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": [
         "CN"
@@ -605,7 +605,7 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-24T00:00:00Z",
-      "notes": "Reconciled against live official documentation and pricing."
+      "notes": "Native endpoint and pricing reconciled against official documentation; enabled with model-specific media handling and USD billing rates."
     },
     "rate_limits": []
   },
@@ -614,7 +614,7 @@
     "provider_api_model_id": "stepfun:stepfun/step-audio-2",
     "provider_model_slug": "step-audio-2",
     "internal_model_id": "stepfun/step-audio-2",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text,audio",
     "output_modalities": "text,audio",
@@ -637,8 +637,8 @@
         "modes": []
       }
     ],
-    "routing_status": "inactive",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": [
         "CN"
@@ -666,7 +666,7 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-24T00:00:00Z",
-      "notes": "Reconciled against live official documentation and pricing."
+      "notes": "Native endpoint and pricing reconciled against official documentation; enabled with model-specific media handling and USD billing rates."
     },
     "rate_limits": []
   },
@@ -675,7 +675,7 @@
     "provider_api_model_id": "stepfun:stepfun/step-audio-r1.1",
     "provider_model_slug": "step-audio-r1.1",
     "internal_model_id": "stepfun/step-audio-r1.1",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text,audio",
     "output_modalities": "text,audio",
@@ -698,8 +698,8 @@
         "modes": []
       }
     ],
-    "routing_status": "inactive",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": [
         "CN"
@@ -727,7 +727,7 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-24T00:00:00Z",
-      "notes": "Reconciled against live official documentation and pricing."
+      "notes": "Native endpoint and pricing reconciled against official documentation; enabled with model-specific media handling and USD billing rates."
     },
     "rate_limits": []
   },
@@ -736,7 +736,7 @@
     "provider_api_model_id": "stepfun:stepfun/step-2-mini",
     "provider_model_slug": "step-2-mini",
     "internal_model_id": "stepfun/step-2-mini",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "text",
@@ -759,8 +759,8 @@
         "modes": []
       }
     ],
-    "routing_status": "inactive",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": [
         "CN"
@@ -788,7 +788,7 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-24T00:00:00Z",
-      "notes": "Reconciled against live official documentation and pricing."
+      "notes": "Native endpoint and pricing reconciled against official documentation; enabled with model-specific media handling and USD billing rates."
     },
     "rate_limits": []
   },
@@ -797,7 +797,7 @@
     "provider_api_model_id": "stepfun:stepfun/step-2-16k",
     "provider_model_slug": "step-2-16k",
     "internal_model_id": "stepfun/step-2-16k",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "text",
@@ -820,8 +820,8 @@
         "modes": []
       }
     ],
-    "routing_status": "inactive",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": [
         "CN"
@@ -849,7 +849,7 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-24T00:00:00Z",
-      "notes": "Reconciled against live official documentation and pricing."
+      "notes": "Native endpoint and pricing reconciled against official documentation; enabled with model-specific media handling and USD billing rates."
     },
     "rate_limits": []
   },
@@ -858,7 +858,7 @@
     "provider_api_model_id": "stepfun:stepfun/step-2-16k-exp",
     "provider_model_slug": "step-2-16k-exp",
     "internal_model_id": "stepfun/step-2-16k-exp",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "text",
@@ -881,8 +881,8 @@
         "modes": []
       }
     ],
-    "routing_status": "inactive",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": [
         "CN"
@@ -910,7 +910,7 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-24T00:00:00Z",
-      "notes": "Reconciled against live official documentation and pricing."
+      "notes": "Native endpoint and pricing reconciled against official documentation; enabled with model-specific media handling and USD billing rates."
     },
     "rate_limits": []
   },
@@ -919,7 +919,7 @@
     "provider_api_model_id": "stepfun:stepfun/step-1-8k",
     "provider_model_slug": "step-1-8k",
     "internal_model_id": "stepfun/step-1-8k",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "text",
@@ -942,8 +942,8 @@
         "modes": []
       }
     ],
-    "routing_status": "inactive",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": [
         "CN"
@@ -971,7 +971,7 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-24T00:00:00Z",
-      "notes": "Reconciled against live official documentation and pricing."
+      "notes": "Native endpoint and pricing reconciled against official documentation; enabled with model-specific media handling and USD billing rates."
     },
     "rate_limits": []
   },
@@ -980,7 +980,7 @@
     "provider_api_model_id": "stepfun:stepfun/step-1-32k",
     "provider_model_slug": "step-1-32k",
     "internal_model_id": "stepfun/step-1-32k",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "text",
@@ -1003,8 +1003,8 @@
         "modes": []
       }
     ],
-    "routing_status": "inactive",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": [
         "CN"
@@ -1032,7 +1032,7 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-24T00:00:00Z",
-      "notes": "Reconciled against live official documentation and pricing."
+      "notes": "Native endpoint and pricing reconciled against official documentation; enabled with model-specific media handling and USD billing rates."
     },
     "rate_limits": []
   },
@@ -1041,7 +1041,7 @@
     "provider_api_model_id": "stepfun:stepfun/stepaudio-2.5-tts",
     "provider_model_slug": "stepaudio-2.5-tts",
     "internal_model_id": "stepfun/stepaudio-2.5-tts",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "audio",
@@ -1064,8 +1064,8 @@
         "modes": []
       }
     ],
-    "routing_status": "inactive",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": [
         "CN"
@@ -1093,7 +1093,7 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-24T00:00:00Z",
-      "notes": "Reconciled against live official documentation and pricing."
+      "notes": "Native endpoint and pricing reconciled against official documentation; enabled with model-specific media handling and USD billing rates."
     },
     "rate_limits": []
   },
@@ -1102,7 +1102,7 @@
     "provider_api_model_id": "stepfun:stepfun/step-tts-2",
     "provider_model_slug": "step-tts-2",
     "internal_model_id": "stepfun/step-tts-2",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "audio",
@@ -1125,8 +1125,8 @@
         "modes": []
       }
     ],
-    "routing_status": "inactive",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": [
         "CN"
@@ -1154,7 +1154,7 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-24T00:00:00Z",
-      "notes": "Reconciled against live official documentation and pricing."
+      "notes": "Native endpoint and pricing reconciled against official documentation; enabled with model-specific media handling and USD billing rates."
     },
     "rate_limits": []
   },
@@ -1163,7 +1163,7 @@
     "provider_api_model_id": "stepfun:stepfun/step-tts-mini",
     "provider_model_slug": "step-tts-mini",
     "internal_model_id": "stepfun/step-tts-mini",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "audio",
@@ -1186,8 +1186,8 @@
         "modes": []
       }
     ],
-    "routing_status": "inactive",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": [
         "CN"
@@ -1215,7 +1215,7 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-24T00:00:00Z",
-      "notes": "Reconciled against live official documentation and pricing."
+      "notes": "Native endpoint and pricing reconciled against official documentation; enabled with model-specific media handling and USD billing rates."
     },
     "rate_limits": []
   },
@@ -1224,7 +1224,7 @@
     "provider_api_model_id": "stepfun:stepfun/stepaudio-2.5-asr",
     "provider_model_slug": "stepaudio-2.5-asr",
     "internal_model_id": "stepfun/stepaudio-2.5-asr",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "audio",
     "output_modalities": "text",
@@ -1247,8 +1247,8 @@
         "modes": []
       }
     ],
-    "routing_status": "inactive",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": [
         "CN"
@@ -1260,9 +1260,9 @@
     ],
     "api": {
       "formats": [
-        "openai-compatible"
+        "http-sse"
       ],
-      "endpoint": "/v1/audio/transcriptions",
+      "endpoint": "/v1/audio/asr/sse",
       "deployment": null
     },
     "sources": [
@@ -1276,7 +1276,7 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-24T00:00:00Z",
-      "notes": "Reconciled against live official documentation and pricing."
+      "notes": "Native endpoint and pricing reconciled against official documentation; enabled with model-specific media handling and USD billing rates."
     },
     "rate_limits": []
   },
@@ -1285,7 +1285,7 @@
     "provider_api_model_id": "stepfun:stepfun/stepaudio-2-asr-pro",
     "provider_model_slug": "stepaudio-2-asr-pro",
     "internal_model_id": "stepfun/stepaudio-2-asr-pro",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "audio",
     "output_modalities": "text",
@@ -1308,8 +1308,8 @@
         "modes": []
       }
     ],
-    "routing_status": "inactive",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": [
         "CN"
@@ -1321,9 +1321,9 @@
     ],
     "api": {
       "formats": [
-        "openai-compatible"
+        "http-sse"
       ],
-      "endpoint": "/v1/audio/transcriptions",
+      "endpoint": "/v1/audio/asr/sse",
       "deployment": null
     },
     "sources": [
@@ -1337,7 +1337,7 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-24T00:00:00Z",
-      "notes": "Reconciled against live official documentation and pricing."
+      "notes": "Native endpoint and pricing reconciled against official documentation; enabled with model-specific media handling and USD billing rates."
     },
     "rate_limits": []
   },
@@ -1346,7 +1346,7 @@
     "provider_api_model_id": "stepfun:stepfun/step-asr",
     "provider_model_slug": "step-asr",
     "internal_model_id": "stepfun/step-asr",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "audio",
     "output_modalities": "text",
@@ -1369,8 +1369,8 @@
         "modes": []
       }
     ],
-    "routing_status": "inactive",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": [
         "CN"
@@ -1398,7 +1398,7 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-24T00:00:00Z",
-      "notes": "Reconciled against live official documentation and pricing."
+      "notes": "Native endpoint and pricing reconciled against official documentation; enabled with model-specific media handling and USD billing rates."
     },
     "rate_limits": []
   },
@@ -1418,7 +1418,7 @@
     "capabilities": [
       {
         "capability_id": "audio.transcription",
-        "status": "active",
+        "status": "disabled",
         "params": [],
         "reasoning": false,
         "tool_call": false,
@@ -1430,7 +1430,7 @@
         "modes": []
       }
     ],
-    "routing_status": "inactive",
+    "routing_status": "disabled",
     "routable": false,
     "regions": {
       "execution": [
@@ -1458,8 +1458,8 @@
     ],
     "verification": {
       "status": "verified",
-      "checked_at": "2026-08-24T00:00:00Z",
-      "notes": "Reconciled against live official documentation and pricing."
+      "checked_at": "2026-09-08T00:00:00Z",
+      "notes": "Retained in the catalog with routing disabled. Native asynchronous media tasks require durable submission, result retrieval and billing recovery; implementation deferred by product decision."
     },
     "rate_limits": []
   },
@@ -1468,7 +1468,7 @@
     "provider_api_model_id": "stepfun:stepfun/step-asr-1.1-stream",
     "provider_model_slug": "step-asr-1.1-stream",
     "internal_model_id": "stepfun/step-asr-1.1-stream",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "audio",
     "output_modalities": "text",
@@ -1491,8 +1491,8 @@
         "modes": []
       }
     ],
-    "routing_status": "inactive",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": [
         "CN"
@@ -1504,9 +1504,9 @@
     ],
     "api": {
       "formats": [
-        "openai-compatible"
+        "http-sse"
       ],
-      "endpoint": "/v1/audio/transcriptions",
+      "endpoint": "/v1/audio/asr/sse",
       "deployment": null
     },
     "sources": [
@@ -1520,7 +1520,7 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-24T00:00:00Z",
-      "notes": "Reconciled against live official documentation and pricing."
+      "notes": "Native endpoint and pricing reconciled against official documentation; enabled with model-specific media handling and USD billing rates."
     },
     "rate_limits": []
   },
@@ -1529,7 +1529,7 @@
     "provider_api_model_id": "stepfun:stepfun/step-1x-medium",
     "provider_model_slug": "step-1x-medium",
     "internal_model_id": "stepfun/step-1x-medium",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "image",
@@ -1552,8 +1552,8 @@
         "modes": []
       }
     ],
-    "routing_status": "inactive",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": [
         "CN"
@@ -1581,7 +1581,7 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-24T00:00:00Z",
-      "notes": "Reconciled against live official documentation and pricing."
+      "notes": "Native endpoint and pricing reconciled against official documentation; enabled with model-specific media handling and USD billing rates."
     },
     "rate_limits": []
   },
@@ -1590,7 +1590,7 @@
     "provider_api_model_id": "stepfun:stepfun/step-1x-edit",
     "provider_model_slug": "step-1x-edit",
     "internal_model_id": "stepfun/step-1x-edit",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text,image",
     "output_modalities": "image",
@@ -1613,8 +1613,8 @@
         "modes": []
       }
     ],
-    "routing_status": "inactive",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": [
         "CN"
@@ -1642,7 +1642,7 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-24T00:00:00Z",
-      "notes": "Reconciled against live official documentation and pricing."
+      "notes": "Native endpoint and pricing reconciled against official documentation; enabled with model-specific media handling and USD billing rates."
     },
     "rate_limits": []
   },
@@ -1651,7 +1651,7 @@
     "provider_api_model_id": "stepfun:stepfun/step-2x-large",
     "provider_model_slug": "step-2x-large",
     "internal_model_id": "stepfun/step-2x-large",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "image",
@@ -1674,8 +1674,8 @@
         "modes": []
       }
     ],
-    "routing_status": "inactive",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": [
         "CN"
@@ -1703,7 +1703,7 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-24T00:00:00Z",
-      "notes": "Reconciled against live official documentation and pricing."
+      "notes": "Native endpoint and pricing reconciled against official documentation; enabled with model-specific media handling and USD billing rates."
     },
     "rate_limits": []
   },
@@ -1712,7 +1712,7 @@
     "provider_api_model_id": "stepfun:stepfun/step-image-edit-2",
     "provider_model_slug": "step-image-edit-2",
     "internal_model_id": "stepfun/step-image-edit-2",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text,image",
     "output_modalities": "image",
@@ -1748,8 +1748,8 @@
         "modes": []
       }
     ],
-    "routing_status": "inactive",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": [
         "CN"
@@ -1777,7 +1777,7 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-24T00:00:00Z",
-      "notes": "Reconciled against live official documentation and pricing."
+      "notes": "Native endpoint and pricing reconciled against official documentation; enabled with model-specific media handling and USD billing rates."
     },
     "rate_limits": []
   },

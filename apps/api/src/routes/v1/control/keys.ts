@@ -1,3 +1,4 @@
+import { invalidatePrivateRoutes } from "@/pipeline/before/privateModelCache";
 // Purpose: Key control-plane routes for current-key inspection and API key lifecycle operations.
 // Why: Splits ordinary data-plane key auth from elevated workspace key management.
 // How: Uses gateway-key auth for /key-like introspection and management-key auth for CRUD.
@@ -14,7 +15,7 @@ import { CAPABILITIES } from "@/lib/authz/capabilities";
 import { recordWorkspaceAuditEvent } from "@/lib/audit/workspaceAudit";
 import { loadOAuthClient } from "@/lib/oauth/service";
 import { internalServerError, requireCapability, type ManagementRouteAuth } from "./route-helpers";
-import { CHAT_MANAGED_KEY_NAME, enforceWorkspaceKeyLimit } from "./management-helpers";
+import { CHAT_MANAGED_KEY_NAME, enforceWorkspaceKeyLimit, isUsableWorkspaceKey } from "./management-helpers";
 
 type KeyRow = {
 	id: string;
@@ -587,7 +588,7 @@ async function handleCreateKey(req: Request) {
 	}
 
 	try {
-		await enforceWorkspaceKeyLimit(workspaceScope.workspaceId);
+		await enforceWorkspaceKeyLimit(workspaceScope.workspaceId, "api");
 		const creatorUserId =
 			auth.value.authMethod === "oauth" && auth.value.userId
 				? auth.value.userId
@@ -784,6 +785,10 @@ async function handleUpdateKey(req: Request) {
 		if (detailedLimits.ok === false) {
 			return json({ error: "bad_request", message: detailedLimits.message }, 400, { "Cache-Control": "no-store" });
 		}
+		const keyStateChanged = ["status", "soft_blocked", "expires_at"].some((field) => field in updatePayload);
+		if (keyStateChanged && isUsableWorkspaceKey({ ...existing, ...updatePayload })) {
+			await enforceWorkspaceKeyLimit(auth.value.workspaceId, "api", existing.id);
+		}
 
 		const { error: updateError } = await supabase
 			.from("keys")
@@ -809,6 +814,10 @@ async function handleUpdateKey(req: Request) {
 
 		return json({ data: formatApiKey(updated as KeyRow) }, 200, { "Cache-Control": "no-store" });
 	} catch (error: any) {
+		const message = String(error?.message ?? error);
+		if (message.startsWith("Key limit reached")) {
+			return json({ error: "key_limit_reached", message }, 409, { "Cache-Control": "no-store" });
+		}
 		return internalServerError("keys.update", error);
 	}
 }
@@ -910,7 +919,7 @@ async function handleRotateKey(req: Request) {
 			.eq("workspace_id", auth.value.workspaceId).neq("name", CHAT_MANAGED_KEY_NAME).eq(lookupColumn, keyId).maybeSingle();
 		if (fetchError) throw new Error(fetchError.message || "Failed to fetch API key");
 		if (!existing || String(existing.status ?? "").toLowerCase() === "deleted") return json({ error: "not_found", message: "API key not found" }, 404, { "Cache-Control": "no-store" });
-		await enforceWorkspaceKeyLimit(auth.value.workspaceId, existing.id);
+		await enforceWorkspaceKeyLimit(auth.value.workspaceId, "api", existing.id);
 		const pepper = resolveActiveKeyPepper(getBindings());
 		if (!pepper) return json({ error: "server_misconfig_missing_pepper", message: "KEY_PEPPER_ACTIVE is not configured" }, 503, { "Cache-Control": "no-store" });
 		const generated = generateGatewayKey();
@@ -1007,6 +1016,7 @@ async function handleInvalidateKey(req: Request) {
 		}
 
 		await invalidateKeyCache({ id: data.id, kid: data.kid ?? null });
+		await invalidatePrivateRoutes(data.workspace_id);
 		if (auth.ok) await auditApiKey(auth.value, "api_key.cache_invalidated", { id: data.id, name: null, prefix: null });
 
 		return json(

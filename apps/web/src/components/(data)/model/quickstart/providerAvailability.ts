@@ -63,6 +63,7 @@ export type GroupedProvider = {
 	providerIds: Set<string>;
 	logoProviderId: string;
 	providerName: string;
+	credentialMode: "managed_and_byok" | "byok_only";
 	offerLabels: Set<string>;
 	endpoints: Set<string>;
 	modelSlugs: Set<string>;
@@ -222,8 +223,15 @@ function describeKnownInactiveProviderState(
 function stateFromAvailabilityReason(
 	reason: GatewayProviderModel["availability_reason"],
 	availabilityStatus: GatewayProviderModel["availability_status"],
+	providerStatus: GatewayProviderModel["provider_status"],
 ): ProviderState | null {
 	if (!reason) return null;
+	if (
+		providerStatus === "external" &&
+		(reason === "active" || reason === "inactive" || reason === "provider_inactive")
+	) {
+		return describeExternalProvider(availabilityStatus);
+	}
 	if (
 		reason === "deranked_lvl1" ||
 		reason === "deranked_lvl2" ||
@@ -402,6 +410,17 @@ function stateFromAvailabilityReason(
 	};
 }
 
+function describeExternalProvider(
+	availability: GatewayProviderModel["availability_status"],
+): ProviderState {
+	return {
+		key: "external",
+		label: "External",
+		description: "Listed from an external catalogue; routing requires an explicit provider-level override.",
+		availability,
+	};
+}
+
 export function resolveProviderState(
 	providerModel: GatewayProviderModel,
 	now: Date = new Date()
@@ -409,6 +428,7 @@ export function resolveProviderState(
 	const explicitReasonState = stateFromAvailabilityReason(
 		providerModel.availability_reason,
 		providerModel.availability_status,
+		providerModel.provider_status,
 	);
 	if (explicitReasonState) {
 		return explicitReasonState;
@@ -434,12 +454,7 @@ export function resolveProviderState(
 
 	if (providerModel.provider_status && providerModel.provider_status !== "active") {
 		if (providerModel.provider_status === "external") {
-			return {
-				key: "external",
-				label: "External",
-				description: "Listed from an external catalogue; not routable through Phaseo.",
-				availability: "inactive",
-			};
+			return describeExternalProvider(providerModel.availability_status);
 		}
 		if (providerModel.provider_status === "beta" || providerModel.provider_status === "alpha") {
 			return {
@@ -664,6 +679,9 @@ export function groupProviders(metadata: ModelGatewayMetadata): GroupedProvider[
 			});
 
 		if (current) {
+			if ((item.provider?.credential_mode ?? "managed_and_byok") !== "byok_only") {
+				current.credentialMode = "managed_and_byok";
+			}
 			if (item.endpoint) current.endpoints.add(item.endpoint);
 			current.providerIds.add(providerId);
 			current.offerLabels.add(offerLabel);
@@ -755,6 +773,10 @@ export function groupProviders(metadata: ModelGatewayMetadata): GroupedProvider[
 		grouped.set(familyId, {
 			providerId,
 			providerIds: new Set([providerId]),
+			credentialMode:
+				item.provider?.credential_mode === "byok_only"
+					? "byok_only"
+					: "managed_and_byok",
 			logoProviderId: resolveProviderLogoId({
 				providerId,
 				providerFamilyId: familyId,

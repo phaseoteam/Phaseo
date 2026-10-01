@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 
 const CODE_SNIPPET = `POST /v1/responses
 {
-  "model": "openai/gpt-5.4",
+  "model": "openai/gpt-6-astra",
   "input": "Summarise the latest model release."
 }`;
 
@@ -20,7 +20,7 @@ const ACTIONS = [
 	},
 	{
 		title: "View the repository",
-		body: "Inspect the open-source gateway, SDKs, and roadmap directly.",
+		body: "Inspect the open-source gateway, SDKs, and public changes directly.",
 		href: "https://github.com/phaseoteam/Phaseo",
 		icon: GitHubBrandIcon,
 	},

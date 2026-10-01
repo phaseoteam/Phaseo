@@ -4,12 +4,16 @@ import {
 	ArrowRight,
 	CalendarOff,
 	Coins,
+	GitBranch,
+	Handshake,
 	KeyRound,
+	ShieldCheck,
 	type LucideIcon,
 } from "lucide-react";
 import type { Metadata } from "next";
 import { absoluteUrl } from "@/lib/seo";
 import { buildLocalizedPageMetadata } from "@/lib/auth/localized-metadata";
+import { enterpriseSelfServePreviewEnabled } from "@/lib/flags";
 import { getGatewayHeroVariant } from "@/lib/flags/gatewayHero";
 import { GATEWAY_TIERS } from "@/components/(gateway)/credits/tiers";
 import DatabaseStats from "@/components/landingPage/DatabaseStatistics";
@@ -67,6 +71,28 @@ const standardFeeText = Number.isInteger(standardFeePct)
 const GITHUB_HREF = "https://github.com/phaseoteam/Phaseo";
 type HomeTranslator = (key: string, values?: Record<string, unknown>) => string;
 
+const MISSION_PROOFS: Array<{
+	title: string;
+	body: string;
+	icon: LucideIcon;
+}> = [
+	{
+		title: "openSource",
+		body: "openSourceBody",
+		icon: GitBranch,
+	},
+	{
+		title: "providerNeutral",
+		body: "providerNeutralBody",
+		icon: Handshake,
+	},
+	{
+		title: "lowerOverhead",
+		body: "lowerOverheadBody",
+		icon: Coins,
+	},
+];
+
 const PRICING_POINTS: Array<{
 	title: string;
 	body: string;
@@ -76,6 +102,11 @@ const PRICING_POINTS: Array<{
 		title: "payAsYouGo",
 		body: "payAsYouGoBody",
 		icon: CalendarOff,
+	},
+	{
+		title: "selfServeEnterprise",
+		body: "selfServeEnterpriseBody",
+		icon: ShieldCheck,
 	},
 	{
 		title: "creditFee",
@@ -102,7 +133,7 @@ function DatabaseStatsFallback() {
 	);
 }
 
-function LandingSecondarySections({ isBeta, t }: { isBeta: boolean; t: HomeTranslator }) {
+function LandingSecondarySections({ isBeta, showEnterprisePreview, t }: { isBeta: boolean; showEnterprisePreview: boolean; t: HomeTranslator }) {
 	return (
 		<>
 			<section className="space-y-6 border-b border-zinc-200/80 pb-20 dark:border-zinc-800/80">
@@ -125,9 +156,14 @@ function LandingSecondarySections({ isBeta, t }: { isBeta: boolean; t: HomeTrans
 					<h2 className="text-3xl font-semibold tracking-[-0.05em] text-zinc-950 dark:text-zinc-50 sm:text-4xl">
 						{t("transparentPricing")}
 					</h2>
+					<p className="mx-auto max-w-2xl text-base leading-7 text-zinc-600 dark:text-zinc-300 md:text-lg">
+						{t("transparentPricingDescription")}
+					</p>
 				</div>
-				<div className="grid gap-6 lg:grid-cols-3">
-					{PRICING_POINTS.map((point) => {
+				<div className="grid gap-6 lg:grid-cols-2 xl:grid-cols-4">
+					{PRICING_POINTS.filter(
+						(point) => showEnterprisePreview || point.title !== "selfServeEnterprise",
+					).map((point) => {
 						const Icon = point.icon;
 						return (
 							<div
@@ -194,10 +230,12 @@ function LandingPage({
 	isBeta,
 	t,
 	modelPrices,
+	showEnterprisePreview,
 }: {
 	isBeta: boolean;
 	t: HomeTranslator;
 	modelPrices: HomeModelPrices;
+	showEnterprisePreview: boolean;
 }) {
 	return (
 		<div className="container mx-auto mt-16 mb-20 px-4 sm:mt-20 sm:px-6 lg:px-8">
@@ -205,7 +243,7 @@ function LandingPage({
 				<section className="space-y-12 border-b border-zinc-200/80 pb-20 dark:border-zinc-800/80">
 					<div className="mx-auto max-w-5xl space-y-8 text-center">
 						<div className="space-y-6">
-							<h1 className="text-balance mx-auto max-w-5xl text-5xl font-semibold leading-[0.96] tracking-[-0.065em] text-zinc-950 dark:text-zinc-50 md:text-7xl md:leading-[0.94] 2xl:max-w-7xl 2xl:whitespace-nowrap">
+							<h1 className="text-balance mx-auto max-w-5xl text-5xl font-semibold leading-[0.96] tracking-[-0.065em] text-zinc-950 dark:text-zinc-50 md:text-7xl md:leading-[0.94] 2xl:max-w-7xl">
 								{t("heroTitle")}
 							</h1>
 							<p className="text-balance mx-auto max-w-[44rem] text-lg leading-8 text-zinc-600 dark:text-zinc-300 2xl:max-w-5xl 2xl:text-pretty">
@@ -262,6 +300,28 @@ function LandingPage({
 								</Button>
 							) : null}
 						</div>
+						<Link
+							className="mt-4 inline-flex items-center text-sm font-medium text-zinc-600 underline decoration-zinc-300 underline-offset-4 transition-colors hover:text-zinc-950 dark:text-zinc-300 dark:decoration-zinc-700 dark:hover:text-white"
+							href="/mission"
+						>
+							{t("missionLink")}
+							<ArrowRight aria-hidden="true" className="ml-2 size-4" />
+						</Link>
+
+						<div className="mx-auto mt-10 grid max-w-3xl gap-3 border-y border-zinc-200/80 py-4 text-left dark:border-zinc-800/80 sm:grid-cols-3">
+							{MISSION_PROOFS.map(({ body, icon: Icon, title }) => (
+								<div className="flex gap-3 sm:block" key={title}>
+									<Icon
+										aria-hidden="true"
+										className="mt-0.5 size-4 shrink-0 text-primary sm:mb-2"
+									/>
+									<div>
+										<p className="text-sm font-semibold text-zinc-950 dark:text-white">{t(`missionProofs.${title}`)}</p>
+										<p className="mt-1 text-sm leading-5 text-zinc-500 dark:text-zinc-400">{t(`missionProofs.${body}`)}</p>
+									</div>
+								</div>
+							))}
+						</div>
 					</div>
 
 					<HomeQuickstartSection
@@ -269,7 +329,7 @@ function LandingPage({
 						modelPrices={modelPrices}
 					/>
 				</section>
-				<LandingSecondarySections isBeta={isBeta} t={t} />
+				<LandingSecondarySections isBeta={isBeta} showEnterprisePreview={showEnterprisePreview} t={t} />
 			</div>
 		</div>
 	);
@@ -277,7 +337,7 @@ function LandingPage({
 
 export default async function Page() {
 	const t = await getTranslations("Site.home");
-	const [heroVariant, modelPrices] = await Promise.all([
+	const [heroVariant, modelPrices, showEnterprisePreview] = await Promise.all([
 		getGatewayHeroVariant(),
 		fetchFrontendGatewayModels()
 			.then(buildHomeModelPrices)
@@ -285,6 +345,7 @@ export default async function Page() {
 				console.warn("[Homepage] failed to load gateway model prices", error);
 				return {};
 			}),
+		enterpriseSelfServePreviewEnabled(),
 	]);
 	const softwareApplicationSchema = {
 		"@context": "https://schema.org",
@@ -350,6 +411,7 @@ export default async function Page() {
 				isBeta={heroVariant === "experimental"}
 				t={t as unknown as HomeTranslator}
 				modelPrices={modelPrices}
+				showEnterprisePreview={showEnterprisePreview}
 			/>
 		</>
 	);

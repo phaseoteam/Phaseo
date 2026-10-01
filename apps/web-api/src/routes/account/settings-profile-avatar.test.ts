@@ -12,6 +12,7 @@ const baseEnv = {
 
 const PNG_BYTES = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
 const USER_ID = "11111111-1111-4111-8111-111111111111";
+const WORKSPACE_ID = "22222222-2222-4222-8222-222222222222";
 
 function fakeBucket() {
 	const objects = new Map<string, { bytes: Uint8Array; contentType: string; cacheControl: string }>();
@@ -66,6 +67,27 @@ function stubSupabase(options: { avatarUrl?: string; adminStatus?: number } = {}
 		return new Response(JSON.stringify([]), { status: 200 });
 	}));
 	return { adminBody: () => adminBody };
+}
+
+function stubWorkspaceSupabase(options: { role?: string; logoUrl?: string; updateStatus?: number } = {}) {
+	vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+		const request = input instanceof Request ? input : null;
+		const url = request?.url ?? String(input);
+		const method = request?.method ?? init?.method ?? "GET";
+		if (url.includes("/auth/v1/user") && method === "GET") {
+			return new Response(JSON.stringify({ id: USER_ID, email: "owner@example.com", user_metadata: {} }), { status: 200 });
+		}
+		if (url.includes("/rest/v1/workspace_members")) {
+			return new Response(JSON.stringify({ role: options.role ?? "admin" }), { status: 200 });
+		}
+		if (url.includes("/rest/v1/workspaces") && method === "GET") {
+			return new Response(JSON.stringify({ owner_user_id: null, slug: "acme", name: "Acme", logo_url: options.logoUrl ?? null }), { status: 200 });
+		}
+		if (url.includes("/rest/v1/workspaces") && method === "PATCH") {
+			return new Response(null, { status: options.updateStatus ?? 204 });
+		}
+		return new Response(JSON.stringify([]), { status: 200 });
+	}));
 }
 
 afterEach(() => vi.unstubAllGlobals());
@@ -187,6 +209,31 @@ describe("profile avatar routes", () => {
 		expect(payload.avatarUrl).toMatch(new RegExp(`^/api/_web/profile-avatars/avatars/${USER_ID}/[\\w-]+\\.png$`));
 	});
 
+	it("uses the local proxy even when a production avatar base is configured", async () => {
+		stubSupabase();
+		const { bucket } = fakeBucket();
+		const response = await app.request(
+			"http://localhost:8788/api/account/settings/profile/avatar",
+			{ method: "POST", body: PNG_BYTES, headers: { authorization: "Bearer token", "content-type": "image/png" } },
+			{ ...baseEnv, PROFILE_AVATARS_BUCKET: bucket },
+		);
+		expect(response.status).toBe(200);
+		const payload = await response.json<{ avatarUrl: string }>();
+		expect(payload.avatarUrl).toMatch(new RegExp(`^/api/_web/profile-avatars/avatars/${USER_ID}/[\\w-]+\\.png$`));
+	});
+
+	it("uses the local proxy when Next forwards a localhost request", async () => {
+		stubSupabase();
+		const { bucket } = fakeBucket();
+		const response = await app.request(
+			"https://phaseo.app/api/account/settings/profile/avatar",
+			{ method: "POST", body: PNG_BYTES, headers: { authorization: "Bearer token", "content-type": "image/png", "x-forwarded-host": "localhost:3101" } },
+			{ ...baseEnv, PROFILE_AVATARS_BUCKET: bucket },
+		);
+		const payload = await response.json<{ avatarUrl: string }>();
+		expect(payload.avatarUrl).toMatch(/^\/api\/_web\/profile-avatars\/avatars\//);
+	});
+
 	it("removes the owned R2 avatar when the account is deleted", async () => {
 		const oldUrl = `https://avatars.phaseo.app/avatars/${USER_ID}/old.png`;
 		stubSupabase({ avatarUrl: oldUrl });
@@ -223,5 +270,46 @@ describe("profile avatar routes", () => {
 		expect(response.headers.get("cloudflare-cdn-cache-control")).toBe("public, max-age=31536000, immutable");
 		expect(get).toHaveBeenCalledWith(key);
 		expect(new Uint8Array(await response.arrayBuffer())).toEqual(PNG_BYTES);
+	});
+
+	it("allows only workspace admins to upload a validated workspace logo", async () => {
+		stubWorkspaceSupabase();
+		const { bucket, put } = fakeBucket();
+		const response = await app.request(
+			`https://phaseo.app/api/account/settings/teams/${WORKSPACE_ID}/logo`,
+			{ method: "POST", body: PNG_BYTES, headers: { authorization: "Bearer token", "content-type": "image/png" } },
+			{ ...baseEnv, PROFILE_AVATARS_BUCKET: bucket },
+		);
+		expect(response.status).toBe(200);
+		expect(response.headers.get("cache-control")).toBe("private, no-store");
+		expect(put).toHaveBeenCalledWith(
+			expect.stringMatching(new RegExp(`^workspaces/${WORKSPACE_ID}/[\\w-]+\\.png$`)),
+			expect.any(ArrayBuffer),
+			expect.objectContaining({ customMetadata: { workspaceId: WORKSPACE_ID } }),
+		);
+	});
+
+	it("does not let an ordinary workspace member write a logo", async () => {
+		stubWorkspaceSupabase({ role: "member" });
+		const { bucket, put } = fakeBucket();
+		const response = await app.request(
+			`https://phaseo.app/api/account/settings/teams/${WORKSPACE_ID}/logo`,
+			{ method: "POST", body: PNG_BYTES, headers: { authorization: "Bearer token", "content-type": "image/png" } },
+			{ ...baseEnv, PROFILE_AVATARS_BUCKET: bucket },
+		);
+		expect(response.status).toBe(403);
+		expect(put).not.toHaveBeenCalled();
+	});
+
+	it("rolls back a new workspace logo object when the database update fails", async () => {
+		stubWorkspaceSupabase({ updateStatus: 500 });
+		const { bucket, remove } = fakeBucket();
+		const response = await app.request(
+			`https://phaseo.app/api/account/settings/teams/${WORKSPACE_ID}/logo`,
+			{ method: "POST", body: PNG_BYTES, headers: { authorization: "Bearer token", "content-type": "image/png" } },
+			{ ...baseEnv, PROFILE_AVATARS_BUCKET: bucket },
+		);
+		expect(response.status).toBe(503);
+		expect(remove).toHaveBeenCalledWith(expect.stringMatching(new RegExp(`^workspaces/${WORKSPACE_ID}/`)));
 	});
 });

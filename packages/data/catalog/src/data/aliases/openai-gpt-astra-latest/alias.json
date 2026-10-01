@@ -1,0 +1,8 @@
+{
+  "alias_slug": "openai/gpt-astra-latest",
+  "resolved_api_model_id": "openai/gpt-6-astra",
+  "resolved_model_id": "openai/gpt-6-astra",
+  "channel": "preview",
+  "is_enabled": true,
+  "notes": "Alias for OpenAI's GPT-6 Astra model."
+}

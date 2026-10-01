@@ -12,12 +12,51 @@
       "price_per_unit": 2.5,
       "currency": "USD",
       "pricing_plan": "standard",
-      "note": "Venice models API metadata as of 2026-08-21.",
-      "match": [],
+      "note": "Venice models API metadata as of 2026-09-07.",
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "lte",
+          "value": 200000
+        }
+      ],
       "priority": 100,
       "region": null,
       "cache_duration_seconds": null,
-      "conditions": [],
+      "conditions": [
+        {
+          "path": "input_tokens",
+          "op": "lte",
+          "value": 200000
+        }
+      ],
+      "source": "https://api.venice.ai/api/v1/models"
+    },
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 5,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Venice models API metadata as of 2026-09-07.",
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "value": 200000
+        }
+      ],
+      "priority": 100,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "value": 200000
+        }
+      ],
       "source": "https://api.venice.ai/api/v1/models"
     },
     {
@@ -27,12 +66,105 @@
       "price_per_unit": 0.5,
       "currency": "USD",
       "pricing_plan": "standard",
-      "note": "Venice models API metadata as of 2026-08-21.",
-      "match": [],
+      "note": "Venice models API metadata as of 2026-09-07.",
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "lte",
+          "value": 200000
+        }
+      ],
       "priority": 100,
       "region": null,
       "cache_duration_seconds": null,
-      "conditions": [],
+      "conditions": [
+        {
+          "path": "input_tokens",
+          "op": "lte",
+          "value": 200000
+        }
+      ],
+      "source": "https://api.venice.ai/api/v1/models"
+    },
+    {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.5,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Venice models API metadata as of 2026-09-07.",
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "value": 200000
+        }
+      ],
+      "priority": 100,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "value": 200000
+        }
+      ],
+      "source": "https://api.venice.ai/api/v1/models"
+    },
+    {
+      "meter": "cached_write_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.5,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Venice models API metadata as of 2026-09-07.",
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "lte",
+          "value": 200000
+        }
+      ],
+      "priority": 100,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "input_tokens",
+          "op": "lte",
+          "value": 200000
+        }
+      ],
+      "source": "https://api.venice.ai/api/v1/models"
+    },
+    {
+      "meter": "cached_write_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.5,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Venice models API metadata as of 2026-09-07.",
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "value": 200000
+        }
+      ],
+      "priority": 100,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "value": 200000
+        }
+      ],
       "source": "https://api.venice.ai/api/v1/models"
     },
     {
@@ -42,12 +174,51 @@
       "price_per_unit": 15,
       "currency": "USD",
       "pricing_plan": "standard",
-      "note": "Venice models API metadata as of 2026-08-21.",
-      "match": [],
+      "note": "Venice models API metadata as of 2026-09-07.",
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "lte",
+          "value": 200000
+        }
+      ],
       "priority": 100,
       "region": null,
       "cache_duration_seconds": null,
-      "conditions": [],
+      "conditions": [
+        {
+          "path": "input_tokens",
+          "op": "lte",
+          "value": 200000
+        }
+      ],
+      "source": "https://api.venice.ai/api/v1/models"
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 22.5,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Venice models API metadata as of 2026-09-07.",
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "value": 200000
+        }
+      ],
+      "priority": 100,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "value": 200000
+        }
+      ],
       "source": "https://api.venice.ai/api/v1/models"
     },
     {
@@ -74,13 +245,13 @@
     {
       "kind": "provider_pricing",
       "url": "https://api.venice.ai/api/v1/models",
-      "accessed_at": "2026-08-21T00:00:00Z",
-      "notes": "Per-million-token USD pricing returned by Venice."
+      "accessed_at": "2026-09-07T23:17:00Z",
+      "notes": "Verified against the live Venice models API; USD units are explicit on each rule."
     }
   ],
   "verification": {
     "status": "verified",
-    "checked_at": "2026-08-21",
-    "notes": "Verified against the live Venice models API."
+    "checked_at": "2026-09-07",
+    "notes": "Verified against the live Venice models API; USD units are explicit on each rule."
   }
 }

@@ -108,6 +108,7 @@ const PROVIDER_PROFILES: ProviderProfile[] = [
 					"gemini-3.5-flash-lite",
 					"gemini-3.6-flash",
 					"gemini-3.7-flash",
+					"gemini-3.8-flash",
 					"gemini-robotics-er-2-preview",
 					"gemma-4-26b-a4b-it",
 					"gemma-4-31b-it",
@@ -120,7 +121,7 @@ const PROVIDER_PROFILES: ProviderProfile[] = [
 			"image.generate": true,
 			"image.edit": false,
 			"audio.speech": true,
-			"audio.transcription": false,
+			"audio.transcription": true,
 			"audio.translations": false,
 			"video.generate": true,
 		},
@@ -131,7 +132,7 @@ const PROVIDER_PROFILES: ProviderProfile[] = [
 			"image.generate": false,
 			"image.edit": false,
 			"audio.speech": false,
-			"audio.transcription": false,
+			"audio.transcription": true,
 			"audio.translations": false,
 			"video.generate": true,
 		},
@@ -413,12 +414,12 @@ const PROVIDER_PROFILES: ProviderProfile[] = [
 		id: "novita",
 		aliases: ["novitaai", "novita-ai"],
 		adapterBackedOverrides: {
+			"video.generate": true,
 			"image.generate": false,
 			"image.edit": false,
 			"audio.speech": false,
 			"audio.transcription": false,
 			"audio.translations": false,
-			"video.generate": false,
 		},
 		text: {
 			paramPolicy: {
@@ -781,6 +782,29 @@ const PROVIDER_PROFILES: ProviderProfile[] = [
 		},
 	},
 	{
+		id: "doubleword",
+		adapterBackedOverrides: {
+			"image.generate": false,
+			"image.edit": false,
+			"audio.speech": false,
+			"audio.transcription": false,
+			"audio.translations": false,
+			"video.generate": false,
+		},
+		text: {
+			paramPolicy: {
+				supportedParams: [
+					"max_tokens", "temperature", "top_p", "frequency_penalty",
+					"presence_penalty", "response_format", "tools", "reasoning.effort", "service_tier",
+				],
+			},
+			normalize: {
+				maxTemperature: 2,
+				reasoningEffortFallback: ["none", "minimal", "low", "medium", "high", "xhigh", "max"],
+			},
+		},
+	},
+	{
 		id: "io-net",
 		adapterBackedOverrides: {
 			"image.generate": false,
@@ -1058,7 +1082,7 @@ const PROVIDER_PROFILES: ProviderProfile[] = [
 	},
 	{
 		id: "upstage",
-		textOnly: true,
+		adapterBackedOverrides: { ocr: true },
 		text: {
 			paramPolicy: {
 				supportedParams: [
@@ -1143,16 +1167,8 @@ const PROVIDER_PROFILES: ProviderProfile[] = [
 		},
 	},
 	{
-		id: "crofai",
-		textOnly: true,
-		text: {
-			paramPolicy: {
-				supportedParams: ["service_tier"],
-			},
-		},
-	},
-	{
 		id: "wafer",
+		aliases: ["wafer-zdr"],
 		textOnly: true,
 		text: {
 			paramPolicy: {

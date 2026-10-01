@@ -63,4 +63,16 @@ assert_true($fake->calls === [
     ["GET", "/models", ["availability" => "all"], null, null],
 ], "expected request call for models discovery");
 
+$report = Phaseo::checkParameterSupport([
+    "id" => "openai/example",
+    "endpoints" => [[
+        "id" => "openai:responses", "endpoint" => "responses", "routable" => true, "status" => "active",
+        "provider" => ["id" => "openai"],
+        "capabilities" => ["parameters" => ["temperature"], "parameter_details" => ["temperature" => ["supported" => true, "minimum" => 0, "maximum" => 1]]],
+    ]],
+], ["temperature" => 1.5]);
+assert_true($report["ok"] === false, "expected invalid value to be highlighted");
+assert_true($report["parameters"][0]["status"] === "supported", "expected parameter name support");
+assert_true($report["parameters"][0]["accepted_by"] === [], "expected no accepting route");
+
 echo "php models tests ok" . PHP_EOL;

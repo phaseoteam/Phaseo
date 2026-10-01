@@ -1,0 +1,18 @@
+{
+  "key": "openai:openai/gpt-image-2.5-sunburst:image.generate",
+  "api_provider_id": "openai",
+  "provider_slug": "openai",
+  "api_model_id": "openai/gpt-image-2.5-sunburst",
+  "capability_id": "image.generate",
+  "rules": [
+    {"meter":"input_text_tokens","unit":"token","unit_size":1000000,"price_per_unit":5,"currency":"USD","pricing_plan":"standard","note":null,"match":[],"priority":100,"effective_from":"2026-09-08T00:00:00Z","region":null,"cache_duration_seconds":null,"conditions":[],"source":null},
+    {"meter":"cached_read_text_tokens","unit":"token","unit_size":1000000,"price_per_unit":1.25,"currency":"USD","pricing_plan":"standard","note":null,"match":[],"priority":100,"effective_from":"2026-09-08T00:00:00Z","region":null,"cache_duration_seconds":null,"conditions":[],"source":null},
+    {"meter":"input_image_tokens","unit":"token","unit_size":1000000,"price_per_unit":8,"currency":"USD","pricing_plan":"standard","note":null,"match":[],"priority":100,"effective_from":"2026-09-08T00:00:00Z","region":null,"cache_duration_seconds":null,"conditions":[],"source":null},
+    {"meter":"cached_read_image_tokens","unit":"token","unit_size":1000000,"price_per_unit":2,"currency":"USD","pricing_plan":"standard","note":null,"match":[],"priority":100,"effective_from":"2026-09-08T00:00:00Z","region":null,"cache_duration_seconds":null,"conditions":[],"source":null},
+    {"meter":"output_image_tokens","unit":"token","unit_size":1000000,"price_per_unit":30,"currency":"USD","pricing_plan":"standard","note":"Image output cost varies with the generated token count for the requested size and quality.","match":[],"priority":100,"effective_from":"2026-09-08T00:00:00Z","region":null,"cache_duration_seconds":null,"conditions":[],"source":null}
+  ],
+  "regions": [],
+  "service_tiers": ["standard"],
+  "sources": [{"kind":"pricing","url":"https://developers.openai.com/api/docs/pricing#image-generation","accessed_at":"2026-09-08T00:00:00Z","notes":"Official OpenAI image-generation token rates."}],
+  "verification": {"status":"verified","checked_at":"2026-09-08T00:00:00Z","notes":"Token rates verified against OpenAI's image-generation pricing table."}
+}

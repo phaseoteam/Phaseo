@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useSettingsWrite } from "../PrivateSettingsQuery";
 import {
 	DndContext,
 	DragOverlay,
@@ -26,6 +26,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { ArrowDown, ArrowUp, ChevronDown, ExternalLink, GripVertical, KeyRound } from "lucide-react";
 import { toast } from "sonner";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -60,14 +61,8 @@ function maskKey(prefix?: string, suffix?: string) {
 	return `${prefix ?? ""}${"*".repeat(6)}${suffix ?? ""}`;
 }
 
-function formatLastUsed(value: string | null, translate: any) {
-	if (!value) return translate("byokControls.neverUsed");
-	const date = new Date(value);
-	if (Number.isNaN(date.getTime())) return translate("byokControls.neverUsed");
-	return translate("byokControls.lastUsed", { date: new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(date) });
-}
-
 function KeySummary({ entry }: { entry: ByokKeyEntry }) {
+	const format = useDisplayFormatters();
 	const t = useTranslations("SettingsUI");
 	const modelCount = entry.allowedModelSlugs?.length ?? 0;
 	const apiKeyCount = entry.allowedApiKeyIds?.length ?? 0;
@@ -81,9 +76,9 @@ function KeySummary({ entry }: { entry: ByokKeyEntry }) {
 			</div>
 			<div className="mt-0.5 flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
 				<span className="font-mono">{maskKey(entry.prefix, entry.suffix)}</span>
-				<span>{formatLastUsed(entry.lastUsedAt, t)}</span>
-				<span>{modelCount ? t("byokControls.models", { count: String(modelCount) }) : t("byokControls.allModels")}</span>
-				<span>{apiKeyCount ? t("byokControls.apiKeys", { count: String(apiKeyCount) }) : t("byokControls.allApiKeys")}</span>
+				<span>{entry.lastUsedAt && Number.isFinite(Date.parse(entry.lastUsedAt)) ? t("byokControls.lastUsed", { date: format.dateTime(entry.lastUsedAt) }) : t("byokControls.neverUsed")}</span>
+				<span>{modelCount ? t("byokControls.models", { count: format.number(modelCount) }) : t("byokControls.allModels")}</span>
+				<span>{apiKeyCount ? t("byokControls.apiKeys", { count: format.number(apiKeyCount) }) : t("byokControls.allApiKeys")}</span>
 			</div>
 		</div>
 	);
@@ -189,8 +184,8 @@ export function reorderByokEntries(entries: ByokKeyEntry[], activeId: string, ov
 }
 
 export default function ByokProviderKeys({ provider, entries, modelOptions, apiKeyOptions }: { provider: { id: string; name: string }; entries: ByokKeyEntry[]; modelOptions: Option[]; apiKeyOptions: Option[] }) {
-	const router = useRouter();
 	const t = useTranslations("SettingsUI");
+	const write = useSettingsWrite();
 	const [displayEntries, setDisplayEntries] = useState(() => [...entries].sort((a, b) => a.sortOrder - b.sortOrder));
 	const [activeId, setActiveId] = useState<string | null>(null);
 	const [saving, setSaving] = useState(false);
@@ -215,15 +210,16 @@ export default function ByokProviderKeys({ provider, entries, modelOptions, apiK
 		if (!previous || !next || next.sample) return;
 		setSaving(true);
 		try {
-			if (previous.routingMode !== next.routingMode) await updateByokKeyAction(id, { always_use: next.routingMode === "priority" });
-			const targetModeEntries = after.filter((entry) => entry.routingMode === next.routingMode).sort((a, b) => a.sortOrder - b.sortOrder);
-			const targetIndex = targetModeEntries.findIndex((entry) => entry.id === id);
-			const startingIndex = previous.routingMode === next.routingMode
-				? before.filter((entry) => entry.routingMode === previous.routingMode).sort((a, b) => a.sortOrder - b.sortOrder).findIndex((entry) => entry.id === id)
-				: targetModeEntries.length - 1;
-			const direction = targetIndex < startingIndex ? "up" : "down";
-			for (let step = 0; step < Math.abs(targetIndex - startingIndex); step += 1) await reorderByokKeyAction(id, direction);
-			router.refresh();
+			await write((async () => {
+				if (previous.routingMode !== next.routingMode) await updateByokKeyAction(id, { always_use: next.routingMode === "priority" });
+				const targetModeEntries = after.filter((entry) => entry.routingMode === next.routingMode).sort((a, b) => a.sortOrder - b.sortOrder);
+				const targetIndex = targetModeEntries.findIndex((entry) => entry.id === id);
+				const startingIndex = previous.routingMode === next.routingMode
+					? before.filter((entry) => entry.routingMode === previous.routingMode).sort((a, b) => a.sortOrder - b.sortOrder).findIndex((entry) => entry.id === id)
+					: targetModeEntries.length - 1;
+				const direction = targetIndex < startingIndex ? "up" : "down";
+				for (let step = 0; step < Math.abs(targetIndex - startingIndex); step += 1) await reorderByokKeyAction(id, direction);
+			})());
 		} catch (error) {
 			setEntries(before);
 			toast.error(localizedSettingsError(error, t, "Action failed", t("byokControls.failedReorder")));

@@ -34,6 +34,7 @@ type Organisation = {
     organisation_id: string;
     name: string | null;
     country_code: string | null;
+    subdivision_code: string | null;
     description: string | null;
     colour: string | null;
 };
@@ -65,7 +66,7 @@ async function handleOrganisations(req: Request) {
         // Get paginated data
         const { data: organisations, error: dataError } = await supabase
             .from("v2_labs")
-            .select("organisation_id:lab_slug, name, country_code, description, metadata")
+            .select("organisation_id:lab_slug, name, country_code, subdivision_code, description, metadata")
             .order("name", { ascending: true })
             .range(offset, offset + limit - 1);
 
@@ -77,6 +78,7 @@ async function handleOrganisations(req: Request) {
             organisation_id: org.organisation_id,
             name: org.name ?? null,
             country_code: org.country_code ?? null,
+            subdivision_code: org.subdivision_code ?? null,
             description: org.description ?? null,
             colour: typeof org.metadata?.colour === "string" ? org.metadata.colour : null,
         }));

@@ -1,5 +1,31 @@
 [
   {
+    "api_model_id": "google/gemini-3.8-flash",
+    "provider_api_model_id": "google-ai-studio:google/gemini-3.8-flash",
+    "provider_model_slug": "gemini-3.8-flash",
+    "internal_model_id": "google/gemini-3.8-flash",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text,image,video,audio",
+    "output_modalities": "text",
+    "context_length": 1048576,
+    "max_output_tokens": 65536,
+    "effective_from": "2026-09-02T00:00:00Z",
+    "effective_to": null,
+    "capabilities": [{ "capability_id": "text.generate", "status": "active", "params": ["max_tokens", "stop", "reasoning_effort", "tool_choice", "tools", "response_format", "structured_outputs", "service_tier"], "reasoning": true, "tool_call": true, "structured_output": true, "temperature": false, "attachment": true, "input_modalities": ["text", "image", "video", "audio"], "output_modalities": ["text"], "modes": [] }],
+    "routing_status": "active",
+    "routable": true,
+    "regions": { "execution": ["global"], "data": null },
+    "provider_status": "available",
+    "phaseo_status": "available",
+    "access_scope": "public",
+    "service_tiers": ["standard", "batch", "flex", "priority"],
+    "api": { "formats": ["google.generateContent"], "endpoint": ":generateContent", "deployment": null },
+    "sources": [{ "kind": "documentation", "url": "https://ai.google.dev/gemini-api/docs/models/gemini-3.8-flash", "accessed_at": "2026-09-02T00:00:00Z", "notes": "Official Gemini API documentation confirms the stable model ID, modalities, limits, capabilities, and Batch, Flex, and Priority consumption options." }, { "kind": "pricing", "url": "https://cloud.google.com/skus?filter=3.8%20Flash&currency=USD", "accessed_at": "2026-09-02T00:00:00Z", "notes": "Google's public Gemini API SKU catalogue lists Gemini 3.8 Flash standard, batch, flex, priority, cached-input, and cache-storage SKUs." }],
+    "verification": { "status": "verified", "checked_at": "2026-09-03T00:00:00Z", "notes": "Official Gemini API documentation and billing SKUs verify callable availability, supported consumption options, and pricing. Phaseo routing is enabled through the Google Interactions request path." },
+    "rate_limits": []
+  },
+  {
     "api_model_id": "google/deep-research-max-preview-04-2026",
     "provider_api_model_id": "google-ai-studio:google/deep-research-max-preview-04-2026",
     "provider_model_slug": "deep-research-max-preview-04-2026",
@@ -5879,7 +5905,7 @@
     "provider_api_model_id": "google-ai-studio:google/gemini-3.5-transcribe",
     "provider_model_slug": "gemini-3.5-transcribe",
     "internal_model_id": "google/gemini-3.5-transcribe",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "audio",
     "output_modalities": "text",
@@ -5887,34 +5913,68 @@
     "max_output_tokens": 32000,
     "effective_from": "2026-08-26T00:00:00",
     "effective_to": null,
-    "capabilities": [{
-      "capability_id": "audio.transcription",
-      "status": "active",
-      "params": [],
-      "reasoning": false,
-      "tool_call": false,
-      "structured_output": false,
-      "temperature": null,
-      "attachment": true,
-      "input_modalities": ["audio"],
-      "output_modalities": ["text"],
-      "modes": []
-    }],
-    "routing_status": null,
-    "routable": false,
-    "regions": { "execution": ["global"], "data": ["global"] },
-    "service_tiers": ["standard"],
-    "api": { "formats": ["google.generateContent"], "endpoint": ":generateContent", "deployment": null },
-    "sources": [{
-      "kind": "api_reference",
-      "url": "https://deepmind.google/models/gemini-audio/ai-transcription/",
-      "accessed_at": "2026-08-26T00:00:00Z",
-      "notes": "Google DeepMind documents the transcription model and Google AI Studio distribution; the Gemini API model index publishes the exact endpoint."
-    }],
+    "capabilities": [
+      {
+        "capability_id": "audio.transcription",
+        "status": "active",
+        "params": [
+          "file",
+          "file_url",
+          "language",
+          "languages",
+          "keywords",
+          "context_bias",
+          "diarize",
+          "enable_diarization",
+          "timestamp_granularities",
+          "response_format"
+        ],
+        "reasoning": false,
+        "tool_call": false,
+        "structured_output": false,
+        "temperature": null,
+        "attachment": true,
+        "input_modalities": [
+          "audio"
+        ],
+        "output_modalities": [
+          "text"
+        ],
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": true,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [
+      "standard"
+    ],
+    "api": {
+      "formats": [
+        "google.generateContent"
+      ],
+      "endpoint": "/v1beta/interactions",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "api_reference",
+        "url": "https://deepmind.google/models/gemini-audio/ai-transcription/",
+        "accessed_at": "2026-08-26T00:00:00Z",
+        "notes": "Google DeepMind documents the transcription model and Google AI Studio distribution; the Gemini API model index publishes the exact endpoint."
+      }
+    ],
     "verification": {
       "status": "verified",
-      "checked_at": "2026-08-26T00:00:00Z",
-      "notes": "Exact model ID, modalities, limits, generateContent route, and pricing verified against Google's current model and pricing pages; gateway routing remains disabled because no Google audio-transcription executor is registered."
+      "checked_at": "2026-09-07T00:00:00Z",
+      "notes": "Native Interactions API adapter, inline audio up to 14 MB, transcription controls and returned token usage verified against official documentation and deterministic fixtures. No live inference test."
     },
     "rate_limits": []
   },
@@ -5959,6 +6019,61 @@
       "status": "verified",
       "checked_at": "2026-08-26T00:00:00Z",
       "notes": "Exact model ID, realtime audio-to-text capability, Live route, and pricing verified against Google's current model and pricing pages; gateway routing remains disabled because no Google Live transcription executor is registered."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "google/lyria-3.5",
+    "provider_api_model_id": "google-ai-studio:google/lyria-3.5",
+    "provider_model_slug": null,
+    "internal_model_id": "google/lyria-3.5",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text,audio_music",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [{
+      "capability_id": "music.generate",
+      "status": "disabled",
+      "params": [],
+      "reasoning": null,
+      "tool_call": false,
+      "structured_output": false,
+      "temperature": null,
+      "attachment": true,
+      "input_modalities": ["text", "image"],
+      "output_modalities": ["text", "audio_music"],
+      "modes": []
+    }],
+    "provider_status": "unknown",
+    "phaseo_status": "blocked",
+    "access_scope": "public",
+    "routing_status": "disabled",
+    "routable": false,
+    "regions": { "execution": null, "data": null },
+    "service_tiers": [],
+    "api": { "formats": [], "endpoint": null, "deployment": null },
+    "sources": [
+      {
+        "kind": "official",
+        "url": "https://deepmind.google/models/lyria/",
+        "accessed_at": "2026-09-03T00:00:00Z",
+        "notes": "Google lists Lyria 3.5 for Flow Music and links Google AI Studio as a Lyria surface, but does not publish a Lyria 3.5 API model identifier."
+      },
+      {
+        "kind": "api_reference",
+        "url": "https://ai.google.dev/gemini-api/docs/music-generation",
+        "accessed_at": "2026-09-03T00:00:00Z",
+        "notes": "The current Gemini API music guide documents only lyria-3-clip-preview and lyria-3-pro-preview."
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-09-03T00:00:00Z",
+      "notes": "No public Google API model identifier is documented for Lyria 3.5, so the provider offer is recorded but cannot be routed."
     },
     "rate_limits": []
   }

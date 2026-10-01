@@ -7,8 +7,7 @@ import { Hono } from "hono";
 import type { Env } from "@/runtime/types";
 
 import { inferenceRouter } from "./data";
-import { platformRouter } from "./control";
-import { experimentsRoutes } from "./experiments";
+import { lazyRouter } from "@/routes/lazy";
 import { EXPOSED_UPSTREAM_RATE_LIMIT_HEADERS } from "@/pipeline/upstream-rate-limit-headers";
 
 export const v1Router = new Hono<Env>();
@@ -49,10 +48,12 @@ v1Router.use(
 );
 
 v1Router.route("/", inferenceRouter);
-v1Router.route("/", platformRouter);
-v1Router.route("/", experimentsRoutes);
-
-
+v1Router.all("*", lazyRouter(null, async () => {
+    const [{ platformRouter }, { experimentsRoutes }] = await Promise.all([
+        import("./control"), import("./experiments"),
+    ]);
+    return new Hono<Env>().route("/", platformRouter).route("/", experimentsRoutes);
+}));
 
 
 

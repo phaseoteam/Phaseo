@@ -4,7 +4,7 @@
     "provider_api_model_id": "fireworks:black-forest-labs/flux-1-dev",
     "provider_model_slug": "accounts/fireworks/models/flux-1-dev-fp8",
     "internal_model_id": "",
-    "is_active_gateway": true,
+    "is_active_gateway": false,
     "quantization_scheme": "FP8",
     "input_modalities": "text,image",
     "output_modalities": "image",
@@ -425,6 +425,88 @@
       "status": "unverified",
       "checked_at": null,
       "notes": null
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "deepseek/deepseek-v4-flash-vision-exp",
+    "provider_api_model_id": "fireworks:deepseek/deepseek-v4-flash-vision-exp",
+    "provider_model_slug": "accounts/fireworks/models/deepseek-v4-flash-vision-exp",
+    "internal_model_id": "deepseek/deepseek-v4-flash-vision-exp",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": 1064960,
+    "max_output_tokens": null,
+    "effective_from": "2026-08-31T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [
+          "reasoning",
+          "include_reasoning",
+          "max_tokens",
+          "temperature",
+          "top_p",
+          "stop",
+          "frequency_penalty",
+          "presence_penalty",
+          "top_k",
+          "repetition_penalty",
+          "logit_bias",
+          "logprobs",
+          "top_logprobs",
+          "response_format",
+          "structured_outputs",
+          "tools",
+          "tool_choice",
+          "reasoning_effort"
+        ],
+        "reasoning": true,
+        "tool_call": true,
+        "structured_output": null,
+        "temperature": true,
+        "attachment": true,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": true,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [
+      "standard"
+    ],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "api_reference",
+        "url": "https://fireworks.ai/models/deepseek-ai/deepseek-v4-flash-vision-exp",
+        "accessed_at": "2026-09-02T00:00:00Z",
+        "notes": "Official Fireworks model page confirming the API model path, image input, context length, function calling, and serverless availability."
+      },
+      {
+        "kind": "announcement",
+        "url": "https://x.com/FireworksAI_HQ/status/2094847757358137779",
+        "accessed_at": "2026-09-02T00:00:00Z",
+        "notes": "Official announcement confirming serverless and priority-tier availability."
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-09-02T00:00:00Z",
+      "notes": "Verified against Fireworks' official announcement and live model page."
     },
     "rate_limits": []
   },
@@ -2379,6 +2461,29 @@
       "checked_at": "2026-08-21T00:00:00Z",
       "notes": "Verified against the official Fireworks model page."
     },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "z-ai/glm-5.3",
+    "provider_api_model_id": "fireworks:accounts/fireworks/routers/glm-5p3-fast",
+    "provider_model_slug": "accounts/fireworks/routers/glm-5p3-fast",
+    "internal_model_id": "z-ai/glm-5.3",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 1048576,
+    "max_output_tokens": 131072,
+    "effective_from": "2026-09-04T00:00:00Z",
+    "effective_to": null,
+    "capabilities": [{"capability_id":"text.generate","status":"active","params":["reasoning","include_reasoning","max_tokens","temperature","top_p","stop","frequency_penalty","presence_penalty","top_k","repetition_penalty","logit_bias","logprobs","top_logprobs","response_format","structured_outputs","tools","tool_choice","reasoning_effort"],"reasoning":true,"tool_call":true,"structured_output":null,"temperature":true,"attachment":false,"input_modalities":["text"],"output_modalities":["text"],"modes":[]}],
+    "routing_status": "active",
+    "routable": true,
+    "regions": {"execution": null, "data": null},
+    "service_tiers": ["fast"],
+    "api": {"formats": ["openai.chat.completions"], "endpoint": "/v1/chat/completions", "deployment": "serverless"},
+    "sources": [{"kind":"provider_models","url":"https://app.fireworks.ai/models/fireworks/glm-5p3","accessed_at":"2026-09-04T00:00:00Z","notes":"Fireworks' authenticated model dashboard lists GLM-5.3 as serverless-ready with a Fast serving path using accounts/fireworks/routers/glm-5p3-fast, a 1M context window, 131,072 maximum output tokens, function calling, and no image input."}],
+    "verification": {"status":"verified","checked_at":"2026-09-04T00:00:00Z","notes":"Fast router slug, availability, text-only modality, context and output limits, function calling, and Fast-tier pricing verified against Fireworks' authenticated GLM-5.3 dashboard."},
     "rate_limits": []
   },
   {

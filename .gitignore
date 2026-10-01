@@ -41,8 +41,7 @@ guides/private/
 /design-qa*
 /postman/
 /supabase/.temp/
-/apps/web/scripts/importer/*.log
-/apps/web/scripts/importer/reports/
+/apps/web/scripts/reports/
 packages/data/catalog/src/data/monitor-history.json
 packages/sdk/sdk-csharp/bin/
 packages/sdk/sdk-csharp/obj/

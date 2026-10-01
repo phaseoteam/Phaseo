@@ -2,6 +2,7 @@
   "organisation_id": "suno",
   "name": "Suno",
   "country_code": "US",
+  "subdivision_code": "US-MA",
   "description": "Suno is an AI generative-audio company headquartered in Cambridge, Massachusetts. Their mission is to build models and tools for music and creative audio generation so that creators can generate high-fidelity pieces and new forms of expression via AI.",
   "colour": "#FF4B23",
   "organisation_links": [

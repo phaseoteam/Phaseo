@@ -1,9 +1,8 @@
 "use client";
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { Link, usePathname } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
-import { useState, useSyncExternalStore } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import {
 	Building2,
 	ChevronRight,
@@ -56,6 +55,12 @@ export default function SettingsSidebarTrigger({
 	const t = useTranslations("SettingsUI");
 	const pathname = usePathname() ?? "";
 	const [open, setOpen] = useState(false);
+	useEffect(() => {
+		const desktop = window.matchMedia("(min-width: 1024px)");
+		const closeOnDesktop = () => { if (desktop.matches) setOpen(false); };
+		desktop.addEventListener("change", closeOnDesktop);
+		return () => desktop.removeEventListener("change", closeOnDesktop);
+	}, []);
 	const isHydrated = useSyncExternalStore(
 		subscribe,
 		getClientSnapshot,
@@ -205,7 +210,7 @@ export default function SettingsSidebarTrigger({
 						type="button"
 						className={cn(
 							buttonVariants({ variant: "ghost", size: "icon" }),
-							"size-[var(--site-header-control-h,2.25rem)] shrink-0 rounded-lg",
+							"size-[var(--site-header-control-h,2.25rem)] shrink-0 rounded-lg max-[22rem]:size-8",
 						)}
 						aria-label={t("settingsCopy.settingsSidebar.open")}
 					>

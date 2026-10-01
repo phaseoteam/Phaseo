@@ -4,7 +4,7 @@
     "provider_api_model_id": "crofai:deepseek-v4-pro",
     "provider_model_slug": "deepseek-v4-pro",
     "internal_model_id": "deepseek/deepseek-v4-pro",
-    "is_active_gateway": true,
+    "is_active_gateway": false,
     "quantization_scheme": "Q6_K",
     "input_modalities": "text",
     "output_modalities": "text",
@@ -15,8 +15,18 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "active",
-        "params": [],
+        "status": "disabled",
+        "params": {
+          "max_tokens": true,
+          "max_completion_tokens": true,
+          "temperature": true,
+          "top_p": true,
+          "stop": true,
+          "seed": true,
+          "tools": true,
+          "response_format": true,
+          "repetition_penalty": true
+        },
         "reasoning": null,
         "tool_call": null,
         "structured_output": null,
@@ -27,8 +37,8 @@
         "modes": []
       }
     ],
-    "routing_status": "active",
-    "routable": true,
+    "routing_status": "disabled",
+    "routable": false,
     "regions": {
       "execution": null,
       "data": null
@@ -52,7 +62,7 @@
     "provider_api_model_id": "crofai:deepseek-v4-pro",
     "provider_model_slug": "deepseek-v4-pro",
     "internal_model_id": "deepseek/deepseek-v4-pro",
-    "is_active_gateway": true,
+    "is_active_gateway": false,
     "quantization_scheme": "Q8_0",
     "input_modalities": "text",
     "output_modalities": "text",
@@ -63,8 +73,27 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "active",
-        "params": [],
+        "status": "disabled",
+        "params": {
+          "max_tokens": true,
+          "max_completion_tokens": true,
+          "temperature": true,
+          "top_p": true,
+          "stop": true,
+          "seed": true,
+          "tools": true,
+          "reasoning_effort": {
+            "type": "enum",
+            "values": [
+              "none",
+              "low",
+              "medium",
+              "high"
+            ]
+          },
+          "response_format": true,
+          "repetition_penalty": true
+        },
         "reasoning": true,
         "tool_call": null,
         "structured_output": null,
@@ -75,8 +104,8 @@
         "modes": []
       }
     ],
-    "routing_status": "active",
-    "routable": true,
+    "routing_status": "disabled",
+    "routable": false,
     "regions": {
       "execution": null,
       "data": null
@@ -112,7 +141,17 @@
       {
         "capability_id": "text.generate",
         "status": "inactive",
-        "params": [],
+        "params": {
+          "max_tokens": true,
+          "max_completion_tokens": true,
+          "temperature": true,
+          "top_p": true,
+          "stop": true,
+          "seed": true,
+          "tools": true,
+          "response_format": true,
+          "repetition_penalty": true
+        },
         "reasoning": null,
         "tool_call": null,
         "structured_output": null,
@@ -167,7 +206,26 @@
       {
         "capability_id": "text.generate",
         "status": "inactive",
-        "params": [],
+        "params": {
+          "max_tokens": true,
+          "max_completion_tokens": true,
+          "temperature": true,
+          "top_p": true,
+          "stop": true,
+          "seed": true,
+          "tools": true,
+          "reasoning_effort": {
+            "type": "enum",
+            "values": [
+              "none",
+              "low",
+              "medium",
+              "high"
+            ]
+          },
+          "response_format": true,
+          "repetition_penalty": true
+        },
         "reasoning": true,
         "tool_call": null,
         "structured_output": null,
@@ -222,7 +280,7 @@
     "provider_api_model_id": "crofai:deepseek-v4-pro-lightning",
     "provider_model_slug": "deepseek-v4-pro-lightning",
     "internal_model_id": "deepseek/deepseek-v4-pro",
-    "is_active_gateway": true,
+    "is_active_gateway": false,
     "quantization_scheme": "Q8_0",
     "input_modalities": "text",
     "output_modalities": "text",
@@ -233,8 +291,18 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "active",
-        "params": [],
+        "status": "disabled",
+        "params": {
+          "max_tokens": true,
+          "max_completion_tokens": true,
+          "temperature": true,
+          "top_p": true,
+          "stop": true,
+          "seed": true,
+          "tools": true,
+          "response_format": true,
+          "repetition_penalty": true
+        },
         "reasoning": null,
         "tool_call": null,
         "structured_output": null,
@@ -245,8 +313,8 @@
         "modes": []
       }
     ],
-    "routing_status": "active",
-    "routable": true,
+    "routing_status": "disabled",
+    "routable": false,
     "regions": {
       "execution": null,
       "data": null
@@ -284,7 +352,17 @@
       {
         "capability_id": "text.generate",
         "status": "inactive",
-        "params": [],
+        "params": {
+          "max_tokens": true,
+          "max_completion_tokens": true,
+          "temperature": true,
+          "top_p": true,
+          "stop": true,
+          "seed": true,
+          "tools": true,
+          "response_format": true,
+          "repetition_penalty": true
+        },
         "reasoning": null,
         "tool_call": null,
         "structured_output": null,
@@ -329,7 +407,7 @@
     "provider_api_model_id": "crofai:deepseek-v4-flash",
     "provider_model_slug": "deepseek-v4-flash",
     "internal_model_id": "deepseek/deepseek-v4-flash",
-    "is_active_gateway": true,
+    "is_active_gateway": false,
     "quantization_scheme": "Q4_0",
     "input_modalities": "text",
     "output_modalities": "text",
@@ -340,8 +418,27 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "active",
-        "params": [],
+        "status": "disabled",
+        "params": {
+          "max_tokens": true,
+          "max_completion_tokens": true,
+          "temperature": true,
+          "top_p": true,
+          "stop": true,
+          "seed": true,
+          "tools": true,
+          "reasoning_effort": {
+            "type": "enum",
+            "values": [
+              "none",
+              "low",
+              "medium",
+              "high"
+            ]
+          },
+          "response_format": true,
+          "repetition_penalty": true
+        },
         "reasoning": true,
         "tool_call": null,
         "structured_output": null,
@@ -352,8 +449,8 @@
         "modes": []
       }
     ],
-    "routing_status": "active",
-    "routable": true,
+    "routing_status": "disabled",
+    "routable": false,
     "regions": {
       "execution": null,
       "data": null
@@ -377,7 +474,7 @@
     "provider_api_model_id": "crofai:deepseek-v4-flash-0731",
     "provider_model_slug": "deepseek-v4-flash-0731",
     "internal_model_id": "deepseek/deepseek-v4-flash-0731",
-    "is_active_gateway": true,
+    "is_active_gateway": false,
     "quantization_scheme": "Q8_0",
     "input_modalities": "text",
     "output_modalities": "text",
@@ -388,8 +485,27 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "active",
-        "params": [],
+        "status": "disabled",
+        "params": {
+          "max_tokens": true,
+          "max_completion_tokens": true,
+          "temperature": true,
+          "top_p": true,
+          "stop": true,
+          "seed": true,
+          "tools": true,
+          "reasoning_effort": {
+            "type": "enum",
+            "values": [
+              "none",
+              "low",
+              "medium",
+              "high"
+            ]
+          },
+          "response_format": true,
+          "repetition_penalty": true
+        },
         "reasoning": true,
         "tool_call": null,
         "structured_output": null,
@@ -400,8 +516,8 @@
         "modes": []
       }
     ],
-    "routing_status": "active",
-    "routable": true,
+    "routing_status": "disabled",
+    "routable": false,
     "regions": {
       "execution": null,
       "data": null
@@ -432,7 +548,7 @@
     "provider_api_model_id": "crofai:deepseek-v3.2",
     "provider_model_slug": "deepseek-v3.2",
     "internal_model_id": "deepseek/deepseek-v3.2",
-    "is_active_gateway": true,
+    "is_active_gateway": false,
     "quantization_scheme": "Q6_K",
     "input_modalities": "text",
     "output_modalities": "text",
@@ -443,8 +559,18 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "active",
-        "params": [],
+        "status": "disabled",
+        "params": {
+          "max_tokens": true,
+          "max_completion_tokens": true,
+          "temperature": true,
+          "top_p": true,
+          "stop": true,
+          "seed": true,
+          "tools": true,
+          "response_format": true,
+          "repetition_penalty": true
+        },
         "reasoning": null,
         "tool_call": null,
         "structured_output": null,
@@ -455,8 +581,8 @@
         "modes": []
       }
     ],
-    "routing_status": "active",
-    "routable": true,
+    "routing_status": "disabled",
+    "routable": false,
     "regions": {
       "execution": null,
       "data": null
@@ -480,7 +606,7 @@
     "provider_api_model_id": "crofai:mimo-v2.5-pro",
     "provider_model_slug": "mimo-v2.5-pro",
     "internal_model_id": "xiaomi/mimo-v2.5-pro",
-    "is_active_gateway": true,
+    "is_active_gateway": false,
     "quantization_scheme": "Q6_K",
     "input_modalities": "text",
     "output_modalities": "text",
@@ -491,8 +617,18 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "active",
-        "params": [],
+        "status": "disabled",
+        "params": {
+          "max_tokens": true,
+          "max_completion_tokens": true,
+          "temperature": true,
+          "top_p": true,
+          "stop": true,
+          "seed": true,
+          "tools": true,
+          "response_format": true,
+          "repetition_penalty": true
+        },
         "reasoning": null,
         "tool_call": null,
         "structured_output": null,
@@ -503,8 +639,8 @@
         "modes": []
       }
     ],
-    "routing_status": "active",
-    "routable": true,
+    "routing_status": "disabled",
+    "routable": false,
     "regions": {
       "execution": null,
       "data": null
@@ -528,7 +664,7 @@
     "provider_api_model_id": "crofai:mimo-v2.5-pro",
     "provider_model_slug": "mimo-v2.5-pro",
     "internal_model_id": "xiaomi/mimo-v2.5-pro",
-    "is_active_gateway": true,
+    "is_active_gateway": false,
     "quantization_scheme": "Q8_0",
     "input_modalities": "text",
     "output_modalities": "text",
@@ -539,8 +675,27 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "active",
-        "params": [],
+        "status": "disabled",
+        "params": {
+          "max_tokens": true,
+          "max_completion_tokens": true,
+          "temperature": true,
+          "top_p": true,
+          "stop": true,
+          "seed": true,
+          "tools": true,
+          "reasoning_effort": {
+            "type": "enum",
+            "values": [
+              "none",
+              "low",
+              "medium",
+              "high"
+            ]
+          },
+          "response_format": true,
+          "repetition_penalty": true
+        },
         "reasoning": true,
         "tool_call": null,
         "structured_output": null,
@@ -551,8 +706,8 @@
         "modes": []
       }
     ],
-    "routing_status": "active",
-    "routable": true,
+    "routing_status": "disabled",
+    "routable": false,
     "regions": {
       "execution": null,
       "data": null
@@ -588,7 +743,17 @@
       {
         "capability_id": "text.generate",
         "status": "inactive",
-        "params": [],
+        "params": {
+          "max_tokens": true,
+          "max_completion_tokens": true,
+          "temperature": true,
+          "top_p": true,
+          "stop": true,
+          "seed": true,
+          "tools": true,
+          "response_format": true,
+          "repetition_penalty": true
+        },
         "reasoning": null,
         "tool_call": null,
         "structured_output": null,
@@ -631,7 +796,7 @@
     "provider_api_model_id": "crofai:glm-5.1",
     "provider_model_slug": "glm-5.1",
     "internal_model_id": "z-ai/glm-5.1",
-    "is_active_gateway": true,
+    "is_active_gateway": false,
     "quantization_scheme": "Q6_K",
     "input_modalities": "text",
     "output_modalities": "text",
@@ -642,8 +807,18 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "active",
-        "params": [],
+        "status": "disabled",
+        "params": {
+          "max_tokens": true,
+          "max_completion_tokens": true,
+          "temperature": true,
+          "top_p": true,
+          "stop": true,
+          "seed": true,
+          "tools": true,
+          "response_format": true,
+          "repetition_penalty": true
+        },
         "reasoning": null,
         "tool_call": null,
         "structured_output": null,
@@ -654,8 +829,8 @@
         "modes": []
       }
     ],
-    "routing_status": "active",
-    "routable": true,
+    "routing_status": "disabled",
+    "routable": false,
     "regions": {
       "execution": null,
       "data": null
@@ -679,7 +854,7 @@
     "provider_api_model_id": "crofai:glm-5.1",
     "provider_model_slug": "glm-5.1",
     "internal_model_id": "z-ai/glm-5.1",
-    "is_active_gateway": true,
+    "is_active_gateway": false,
     "quantization_scheme": "Q8_0",
     "input_modalities": "text",
     "output_modalities": "text",
@@ -690,8 +865,27 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "active",
-        "params": [],
+        "status": "disabled",
+        "params": {
+          "max_tokens": true,
+          "max_completion_tokens": true,
+          "temperature": true,
+          "top_p": true,
+          "stop": true,
+          "seed": true,
+          "tools": true,
+          "reasoning_effort": {
+            "type": "enum",
+            "values": [
+              "none",
+              "low",
+              "medium",
+              "high"
+            ]
+          },
+          "response_format": true,
+          "repetition_penalty": true
+        },
         "reasoning": true,
         "tool_call": null,
         "structured_output": null,
@@ -702,8 +896,8 @@
         "modes": []
       }
     ],
-    "routing_status": "active",
-    "routable": true,
+    "routing_status": "disabled",
+    "routable": false,
     "regions": {
       "execution": null,
       "data": null
@@ -739,7 +933,17 @@
       {
         "capability_id": "text.generate",
         "status": "inactive",
-        "params": [],
+        "params": {
+          "max_tokens": true,
+          "max_completion_tokens": true,
+          "temperature": true,
+          "top_p": true,
+          "stop": true,
+          "seed": true,
+          "tools": true,
+          "response_format": true,
+          "repetition_penalty": true
+        },
         "reasoning": null,
         "tool_call": null,
         "structured_output": null,
@@ -782,7 +986,7 @@
     "provider_api_model_id": "crofai:glm-5.2",
     "provider_model_slug": "glm-5.2",
     "internal_model_id": "z-ai/glm-5.2",
-    "is_active_gateway": true,
+    "is_active_gateway": false,
     "quantization_scheme": "Q8_0",
     "input_modalities": "text",
     "output_modalities": "text",
@@ -793,8 +997,27 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "active",
-        "params": [],
+        "status": "disabled",
+        "params": {
+          "max_tokens": true,
+          "max_completion_tokens": true,
+          "temperature": true,
+          "top_p": true,
+          "stop": true,
+          "seed": true,
+          "tools": true,
+          "reasoning_effort": {
+            "type": "enum",
+            "values": [
+              "none",
+              "low",
+              "medium",
+              "high"
+            ]
+          },
+          "response_format": true,
+          "repetition_penalty": true
+        },
         "reasoning": true,
         "tool_call": null,
         "structured_output": null,
@@ -805,8 +1028,8 @@
         "modes": []
       }
     ],
-    "routing_status": "active",
-    "routable": true,
+    "routing_status": "disabled",
+    "routable": false,
     "regions": {
       "execution": null,
       "data": null
@@ -830,7 +1053,7 @@
     "provider_api_model_id": "crofai:glm-5.3",
     "provider_model_slug": "glm-5.3",
     "internal_model_id": "z-ai/glm-5.3",
-    "is_active_gateway": true,
+    "is_active_gateway": false,
     "quantization_scheme": "Q8_0",
     "input_modalities": "text",
     "output_modalities": "text",
@@ -841,8 +1064,27 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "active",
-        "params": [],
+        "status": "disabled",
+        "params": {
+          "max_tokens": true,
+          "max_completion_tokens": true,
+          "temperature": true,
+          "top_p": true,
+          "stop": true,
+          "seed": true,
+          "tools": true,
+          "reasoning_effort": {
+            "type": "enum",
+            "values": [
+              "none",
+              "low",
+              "medium",
+              "high"
+            ]
+          },
+          "response_format": true,
+          "repetition_penalty": true
+        },
         "reasoning": true,
         "tool_call": null,
         "structured_output": null,
@@ -853,8 +1095,8 @@
         "modes": []
       }
     ],
-    "routing_status": "active",
-    "routable": true,
+    "routing_status": "disabled",
+    "routable": false,
     "regions": {
       "execution": null,
       "data": null
@@ -885,7 +1127,7 @@
     "provider_api_model_id": "crofai:glm-5.3-flash",
     "provider_model_slug": "glm-5.3-flash",
     "internal_model_id": "z-ai/glm-5.3-flash",
-    "is_active_gateway": true,
+    "is_active_gateway": false,
     "quantization_scheme": "Q8_0",
     "input_modalities": "text",
     "output_modalities": "text",
@@ -896,8 +1138,27 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "active",
-        "params": [],
+        "status": "disabled",
+        "params": {
+          "max_tokens": true,
+          "max_completion_tokens": true,
+          "temperature": true,
+          "top_p": true,
+          "stop": true,
+          "seed": true,
+          "tools": true,
+          "reasoning_effort": {
+            "type": "enum",
+            "values": [
+              "none",
+              "low",
+              "medium",
+              "high"
+            ]
+          },
+          "response_format": true,
+          "repetition_penalty": true
+        },
         "reasoning": true,
         "tool_call": null,
         "structured_output": null,
@@ -908,8 +1169,8 @@
         "modes": []
       }
     ],
-    "routing_status": "active",
-    "routable": true,
+    "routing_status": "disabled",
+    "routable": false,
     "regions": {
       "execution": null,
       "data": null
@@ -951,8 +1212,18 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "active",
-        "params": [],
+        "status": "disabled",
+        "params": {
+          "max_tokens": true,
+          "max_completion_tokens": true,
+          "temperature": true,
+          "top_p": true,
+          "stop": true,
+          "seed": true,
+          "tools": true,
+          "response_format": true,
+          "repetition_penalty": true
+        },
         "reasoning": null,
         "tool_call": null,
         "structured_output": null,
@@ -988,7 +1259,7 @@
     "provider_api_model_id": "crofai:greg-1-mini",
     "provider_model_slug": "greg-1-mini",
     "internal_model_id": "crofai/greg-1-mini",
-    "is_active_gateway": true,
+    "is_active_gateway": false,
     "quantization_scheme": "Q4_0",
     "input_modalities": "text",
     "output_modalities": "text",
@@ -999,8 +1270,18 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "active",
-        "params": [],
+        "status": "disabled",
+        "params": {
+          "max_tokens": true,
+          "max_completion_tokens": true,
+          "temperature": true,
+          "top_p": true,
+          "stop": true,
+          "seed": true,
+          "tools": true,
+          "response_format": true,
+          "repetition_penalty": true
+        },
         "reasoning": null,
         "tool_call": null,
         "structured_output": null,
@@ -1011,8 +1292,8 @@
         "modes": []
       }
     ],
-    "routing_status": "active",
-    "routable": true,
+    "routing_status": "disabled",
+    "routable": false,
     "regions": {
       "execution": null,
       "data": null
@@ -1047,8 +1328,18 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "active",
-        "params": [],
+        "status": "disabled",
+        "params": {
+          "max_tokens": true,
+          "max_completion_tokens": true,
+          "temperature": true,
+          "top_p": true,
+          "stop": true,
+          "seed": true,
+          "tools": true,
+          "response_format": true,
+          "repetition_penalty": true
+        },
         "reasoning": null,
         "tool_call": null,
         "structured_output": null,
@@ -1095,8 +1386,18 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "active",
-        "params": [],
+        "status": "disabled",
+        "params": {
+          "max_tokens": true,
+          "max_completion_tokens": true,
+          "temperature": true,
+          "top_p": true,
+          "stop": true,
+          "seed": true,
+          "tools": true,
+          "response_format": true,
+          "repetition_penalty": true
+        },
         "reasoning": null,
         "tool_call": null,
         "structured_output": null,
@@ -1132,7 +1433,7 @@
     "provider_api_model_id": "crofai:greg-rp",
     "provider_model_slug": "greg-rp",
     "internal_model_id": "crofai/greg-rp",
-    "is_active_gateway": true,
+    "is_active_gateway": false,
     "quantization_scheme": "Q4_0",
     "input_modalities": "text",
     "output_modalities": "text",
@@ -1143,8 +1444,18 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "active",
-        "params": [],
+        "status": "disabled",
+        "params": {
+          "max_tokens": true,
+          "max_completion_tokens": true,
+          "temperature": true,
+          "top_p": true,
+          "stop": true,
+          "seed": true,
+          "tools": true,
+          "response_format": true,
+          "repetition_penalty": true
+        },
         "reasoning": null,
         "tool_call": null,
         "structured_output": null,
@@ -1155,8 +1466,8 @@
         "modes": []
       }
     ],
-    "routing_status": "active",
-    "routable": true,
+    "routing_status": "disabled",
+    "routable": false,
     "regions": {
       "execution": null,
       "data": null
@@ -1180,7 +1491,7 @@
     "provider_api_model_id": "crofai:greg-2-super",
     "provider_model_slug": "greg-2-super",
     "internal_model_id": "crofai/greg-2-super",
-    "is_active_gateway": true,
+    "is_active_gateway": false,
     "quantization_scheme": "int4",
     "input_modalities": "text",
     "output_modalities": "text",
@@ -1191,8 +1502,18 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "active",
-        "params": [],
+        "status": "disabled",
+        "params": {
+          "max_tokens": true,
+          "max_completion_tokens": true,
+          "temperature": true,
+          "top_p": true,
+          "stop": true,
+          "seed": true,
+          "tools": true,
+          "response_format": true,
+          "repetition_penalty": true
+        },
         "reasoning": null,
         "tool_call": null,
         "structured_output": null,
@@ -1203,8 +1524,8 @@
         "modes": []
       }
     ],
-    "routing_status": "active",
-    "routable": true,
+    "routing_status": "disabled",
+    "routable": false,
     "regions": {
       "execution": null,
       "data": null
@@ -1228,7 +1549,7 @@
     "provider_api_model_id": "crofai:greg-2-ultra",
     "provider_model_slug": "greg-2-ultra",
     "internal_model_id": "crofai/greg-2-ultra",
-    "is_active_gateway": true,
+    "is_active_gateway": false,
     "quantization_scheme": "int4",
     "input_modalities": "text",
     "output_modalities": "text",
@@ -1239,8 +1560,18 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "active",
-        "params": [],
+        "status": "disabled",
+        "params": {
+          "max_tokens": true,
+          "max_completion_tokens": true,
+          "temperature": true,
+          "top_p": true,
+          "stop": true,
+          "seed": true,
+          "tools": true,
+          "response_format": true,
+          "repetition_penalty": true
+        },
         "reasoning": null,
         "tool_call": null,
         "structured_output": null,
@@ -1251,8 +1582,8 @@
         "modes": []
       }
     ],
-    "routing_status": "active",
-    "routable": true,
+    "routing_status": "disabled",
+    "routable": false,
     "regions": {
       "execution": null,
       "data": null
@@ -1276,9 +1607,9 @@
     "provider_api_model_id": "crofai:kimi-k2.6",
     "provider_model_slug": "kimi-k2.6",
     "internal_model_id": "moonshotai/kimi-k2.6",
-    "is_active_gateway": true,
+    "is_active_gateway": false,
     "quantization_scheme": "Q3_K_L",
-    "input_modalities": "text,image",
+    "input_modalities": "text",
     "output_modalities": "text",
     "context_length": 262144,
     "max_output_tokens": 262144,
@@ -1287,8 +1618,18 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "active",
-        "params": [],
+        "status": "disabled",
+        "params": {
+          "max_tokens": true,
+          "max_completion_tokens": true,
+          "temperature": true,
+          "top_p": true,
+          "stop": true,
+          "seed": true,
+          "tools": true,
+          "response_format": true,
+          "repetition_penalty": true
+        },
         "reasoning": null,
         "tool_call": null,
         "structured_output": null,
@@ -1299,8 +1640,8 @@
         "modes": []
       }
     ],
-    "routing_status": "active",
-    "routable": true,
+    "routing_status": "disabled",
+    "routable": false,
     "regions": {
       "execution": null,
       "data": null
@@ -1324,7 +1665,7 @@
     "provider_api_model_id": "crofai:kimi-k2.6",
     "provider_model_slug": "kimi-k2.6",
     "internal_model_id": "moonshotai/kimi-k2.6",
-    "is_active_gateway": true,
+    "is_active_gateway": false,
     "quantization_scheme": "int4",
     "input_modalities": "text,image",
     "output_modalities": "text",
@@ -1335,8 +1676,27 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "active",
-        "params": [],
+        "status": "disabled",
+        "params": {
+          "max_tokens": true,
+          "max_completion_tokens": true,
+          "temperature": true,
+          "top_p": true,
+          "stop": true,
+          "seed": true,
+          "tools": true,
+          "reasoning_effort": {
+            "type": "enum",
+            "values": [
+              "none",
+              "low",
+              "medium",
+              "high"
+            ]
+          },
+          "response_format": true,
+          "repetition_penalty": true
+        },
         "reasoning": true,
         "tool_call": null,
         "structured_output": null,
@@ -1347,8 +1707,8 @@
         "modes": []
       }
     ],
-    "routing_status": "active",
-    "routable": true,
+    "routing_status": "disabled",
+    "routable": false,
     "regions": {
       "execution": null,
       "data": null
@@ -1384,7 +1744,17 @@
       {
         "capability_id": "text.generate",
         "status": "inactive",
-        "params": [],
+        "params": {
+          "max_tokens": true,
+          "max_completion_tokens": true,
+          "temperature": true,
+          "top_p": true,
+          "stop": true,
+          "seed": true,
+          "tools": true,
+          "response_format": true,
+          "repetition_penalty": true
+        },
         "reasoning": null,
         "tool_call": null,
         "structured_output": null,
@@ -1427,7 +1797,7 @@
     "provider_api_model_id": "crofai:kimi-k2.7-code",
     "provider_model_slug": "kimi-k2.7-code",
     "internal_model_id": "moonshotai/kimi-k2.7-code",
-    "is_active_gateway": true,
+    "is_active_gateway": false,
     "quantization_scheme": "int4",
     "input_modalities": "text,image",
     "output_modalities": "text",
@@ -1438,8 +1808,27 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "active",
-        "params": [],
+        "status": "disabled",
+        "params": {
+          "max_tokens": true,
+          "max_completion_tokens": true,
+          "temperature": true,
+          "top_p": true,
+          "stop": true,
+          "seed": true,
+          "tools": true,
+          "reasoning_effort": {
+            "type": "enum",
+            "values": [
+              "none",
+              "low",
+              "medium",
+              "high"
+            ]
+          },
+          "response_format": true,
+          "repetition_penalty": true
+        },
         "reasoning": true,
         "tool_call": null,
         "structured_output": null,
@@ -1450,8 +1839,8 @@
         "modes": []
       }
     ],
-    "routing_status": "active",
-    "routable": true,
+    "routing_status": "disabled",
+    "routable": false,
     "regions": {
       "execution": null,
       "data": null
@@ -1487,7 +1876,17 @@
       {
         "capability_id": "text.generate",
         "status": "inactive",
-        "params": [],
+        "params": {
+          "max_tokens": true,
+          "max_completion_tokens": true,
+          "temperature": true,
+          "top_p": true,
+          "stop": true,
+          "seed": true,
+          "tools": true,
+          "response_format": true,
+          "repetition_penalty": true
+        },
         "reasoning": null,
         "tool_call": null,
         "structured_output": null,
@@ -1542,7 +1941,17 @@
       {
         "capability_id": "text.generate",
         "status": "inactive",
-        "params": [],
+        "params": {
+          "max_tokens": true,
+          "max_completion_tokens": true,
+          "temperature": true,
+          "top_p": true,
+          "stop": true,
+          "seed": true,
+          "tools": true,
+          "response_format": true,
+          "repetition_penalty": true
+        },
         "reasoning": null,
         "tool_call": null,
         "structured_output": null,
@@ -1599,7 +2008,17 @@
       {
         "capability_id": "text.generate",
         "status": "inactive",
-        "params": [],
+        "params": {
+          "max_tokens": true,
+          "max_completion_tokens": true,
+          "temperature": true,
+          "top_p": true,
+          "stop": true,
+          "seed": true,
+          "tools": true,
+          "response_format": true,
+          "repetition_penalty": true
+        },
         "reasoning": null,
         "tool_call": null,
         "structured_output": null,
@@ -1654,7 +2073,17 @@
       {
         "capability_id": "text.generate",
         "status": "inactive",
-        "params": [],
+        "params": {
+          "max_tokens": true,
+          "max_completion_tokens": true,
+          "temperature": true,
+          "top_p": true,
+          "stop": true,
+          "seed": true,
+          "tools": true,
+          "response_format": true,
+          "repetition_penalty": true
+        },
         "reasoning": null,
         "tool_call": null,
         "structured_output": null,
@@ -1709,7 +2138,17 @@
       {
         "capability_id": "text.generate",
         "status": "inactive",
-        "params": [],
+        "params": {
+          "max_tokens": true,
+          "max_completion_tokens": true,
+          "temperature": true,
+          "top_p": true,
+          "stop": true,
+          "seed": true,
+          "tools": true,
+          "response_format": true,
+          "repetition_penalty": true
+        },
         "reasoning": null,
         "tool_call": null,
         "structured_output": null,
@@ -1752,7 +2191,7 @@
     "provider_api_model_id": "crofai:gemma-4-31b-it",
     "provider_model_slug": "gemma-4-31b-it",
     "internal_model_id": "google/gemma-4-31b",
-    "is_active_gateway": true,
+    "is_active_gateway": false,
     "quantization_scheme": "Q4_0",
     "input_modalities": "text,image",
     "output_modalities": "text",
@@ -1763,8 +2202,27 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "active",
-        "params": [],
+        "status": "disabled",
+        "params": {
+          "max_tokens": true,
+          "max_completion_tokens": true,
+          "temperature": true,
+          "top_p": true,
+          "stop": true,
+          "seed": true,
+          "tools": true,
+          "reasoning_effort": {
+            "type": "enum",
+            "values": [
+              "none",
+              "low",
+              "medium",
+              "high"
+            ]
+          },
+          "response_format": true,
+          "repetition_penalty": true
+        },
         "reasoning": true,
         "tool_call": null,
         "structured_output": null,
@@ -1775,8 +2233,8 @@
         "modes": []
       }
     ],
-    "routing_status": "active",
-    "routable": true,
+    "routing_status": "disabled",
+    "routable": false,
     "regions": {
       "execution": null,
       "data": null
@@ -1812,7 +2270,17 @@
       {
         "capability_id": "text.generate",
         "status": "inactive",
-        "params": [],
+        "params": {
+          "max_tokens": true,
+          "max_completion_tokens": true,
+          "temperature": true,
+          "top_p": true,
+          "stop": true,
+          "seed": true,
+          "tools": true,
+          "response_format": true,
+          "repetition_penalty": true
+        },
         "reasoning": null,
         "tool_call": null,
         "structured_output": null,
@@ -1855,7 +2323,7 @@
     "provider_api_model_id": "crofai:qwen3.6-27b",
     "provider_model_slug": "qwen3.6-27b",
     "internal_model_id": "qwen/qwen3.6-27b",
-    "is_active_gateway": true,
+    "is_active_gateway": false,
     "quantization_scheme": "Q4_0",
     "input_modalities": "text,image",
     "output_modalities": "text",
@@ -1866,8 +2334,27 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "active",
-        "params": [],
+        "status": "disabled",
+        "params": {
+          "max_tokens": true,
+          "max_completion_tokens": true,
+          "temperature": true,
+          "top_p": true,
+          "stop": true,
+          "seed": true,
+          "tools": true,
+          "reasoning_effort": {
+            "type": "enum",
+            "values": [
+              "none",
+              "low",
+              "medium",
+              "high"
+            ]
+          },
+          "response_format": true,
+          "repetition_penalty": true
+        },
         "reasoning": true,
         "tool_call": null,
         "structured_output": null,
@@ -1878,8 +2365,8 @@
         "modes": []
       }
     ],
-    "routing_status": "active",
-    "routable": true,
+    "routing_status": "disabled",
+    "routable": false,
     "regions": {
       "execution": null,
       "data": null
@@ -1903,7 +2390,7 @@
     "provider_api_model_id": "crofai:qwen3.5-397b-a17b",
     "provider_model_slug": "qwen3.5-397b-a17b",
     "internal_model_id": "qwen/qwen3.5-397b-a17b",
-    "is_active_gateway": true,
+    "is_active_gateway": false,
     "quantization_scheme": "Q4_0",
     "input_modalities": "text,image",
     "output_modalities": "text",
@@ -1914,8 +2401,27 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "active",
-        "params": [],
+        "status": "disabled",
+        "params": {
+          "max_tokens": true,
+          "max_completion_tokens": true,
+          "temperature": true,
+          "top_p": true,
+          "stop": true,
+          "seed": true,
+          "tools": true,
+          "reasoning_effort": {
+            "type": "enum",
+            "values": [
+              "none",
+              "low",
+              "medium",
+              "high"
+            ]
+          },
+          "response_format": true,
+          "repetition_penalty": true
+        },
         "reasoning": true,
         "tool_call": null,
         "structured_output": null,
@@ -1926,8 +2432,8 @@
         "modes": []
       }
     ],
-    "routing_status": "active",
-    "routable": true,
+    "routing_status": "disabled",
+    "routable": false,
     "regions": {
       "execution": null,
       "data": null
@@ -1951,7 +2457,7 @@
     "provider_api_model_id": "crofai:qwen3.5-9b",
     "provider_model_slug": "qwen3.5-9b",
     "internal_model_id": "qwen/qwen3.5-9b",
-    "is_active_gateway": true,
+    "is_active_gateway": false,
     "quantization_scheme": "fp8",
     "input_modalities": "text,image",
     "output_modalities": "text",
@@ -1962,8 +2468,27 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "active",
-        "params": [],
+        "status": "disabled",
+        "params": {
+          "max_tokens": true,
+          "max_completion_tokens": true,
+          "temperature": true,
+          "top_p": true,
+          "stop": true,
+          "seed": true,
+          "tools": true,
+          "reasoning_effort": {
+            "type": "enum",
+            "values": [
+              "none",
+              "low",
+              "medium",
+              "high"
+            ]
+          },
+          "response_format": true,
+          "repetition_penalty": true
+        },
         "reasoning": true,
         "tool_call": null,
         "structured_output": null,
@@ -1974,8 +2499,8 @@
         "modes": []
       }
     ],
-    "routing_status": "active",
-    "routable": true,
+    "routing_status": "disabled",
+    "routable": false,
     "regions": {
       "execution": null,
       "data": null
@@ -2011,7 +2536,17 @@
       {
         "capability_id": "text.generate",
         "status": "inactive",
-        "params": [],
+        "params": {
+          "max_tokens": true,
+          "max_completion_tokens": true,
+          "temperature": true,
+          "top_p": true,
+          "stop": true,
+          "seed": true,
+          "tools": true,
+          "response_format": true,
+          "repetition_penalty": true
+        },
         "reasoning": null,
         "tool_call": null,
         "structured_output": null,
@@ -2054,7 +2589,7 @@
     "provider_api_model_id": "crofai:kimi-k3",
     "provider_model_slug": "kimi-k3",
     "internal_model_id": "moonshotai/kimi-k3",
-    "is_active_gateway": true,
+    "is_active_gateway": false,
     "quantization_scheme": "mxfp4",
     "input_modalities": "text",
     "output_modalities": "text",
@@ -2065,8 +2600,27 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "active",
-        "params": [],
+        "status": "disabled",
+        "params": {
+          "max_tokens": true,
+          "max_completion_tokens": true,
+          "temperature": true,
+          "top_p": true,
+          "stop": true,
+          "seed": true,
+          "tools": true,
+          "reasoning_effort": {
+            "type": "enum",
+            "values": [
+              "none",
+              "low",
+              "medium",
+              "high"
+            ]
+          },
+          "response_format": true,
+          "repetition_penalty": true
+        },
         "reasoning": true,
         "tool_call": true,
         "structured_output": null,
@@ -2077,8 +2631,8 @@
         "modes": []
       }
     ],
-    "routing_status": "active",
-    "routable": true,
+    "routing_status": "disabled",
+    "routable": false,
     "regions": {
       "execution": null,
       "data": null
@@ -2122,8 +2676,27 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "active",
-        "params": [],
+        "status": "disabled",
+        "params": {
+          "max_tokens": true,
+          "max_completion_tokens": true,
+          "temperature": true,
+          "top_p": true,
+          "stop": true,
+          "seed": true,
+          "tools": true,
+          "reasoning_effort": {
+            "type": "enum",
+            "values": [
+              "none",
+              "low",
+              "medium",
+              "high"
+            ]
+          },
+          "response_format": true,
+          "repetition_penalty": true
+        },
         "reasoning": true,
         "tool_call": true,
         "structured_output": null,
@@ -2179,8 +2752,18 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "active",
-        "params": [],
+        "status": "disabled",
+        "params": {
+          "max_tokens": true,
+          "max_completion_tokens": true,
+          "temperature": true,
+          "top_p": true,
+          "stop": true,
+          "seed": true,
+          "tools": true,
+          "response_format": true,
+          "repetition_penalty": true
+        },
         "reasoning": null,
         "tool_call": null,
         "structured_output": null,
@@ -2225,7 +2808,7 @@
     "provider_api_model_id": "crofai:kimi-k2.5",
     "provider_model_slug": "kimi-k2.5",
     "internal_model_id": "moonshotai/kimi-k2.5",
-    "is_active_gateway": true,
+    "is_active_gateway": false,
     "quantization_scheme": "Q4_K_M",
     "input_modalities": "text,image",
     "output_modalities": "text",
@@ -2236,8 +2819,18 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "active",
-        "params": [],
+        "status": "disabled",
+        "params": {
+          "max_tokens": true,
+          "max_completion_tokens": true,
+          "temperature": true,
+          "top_p": true,
+          "stop": true,
+          "seed": true,
+          "tools": true,
+          "response_format": true,
+          "repetition_penalty": true
+        },
         "reasoning": null,
         "tool_call": null,
         "structured_output": null,
@@ -2248,8 +2841,8 @@
         "modes": []
       }
     ],
-    "routing_status": "active",
-    "routable": true,
+    "routing_status": "disabled",
+    "routable": false,
     "regions": {
       "execution": null,
       "data": null
@@ -2291,8 +2884,18 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "active",
-        "params": [],
+        "status": "disabled",
+        "params": {
+          "max_tokens": true,
+          "max_completion_tokens": true,
+          "temperature": true,
+          "top_p": true,
+          "stop": true,
+          "seed": true,
+          "tools": true,
+          "response_format": true,
+          "repetition_penalty": true
+        },
         "reasoning": null,
         "tool_call": null,
         "structured_output": null,
@@ -2348,8 +2951,18 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "active",
-        "params": [],
+        "status": "disabled",
+        "params": {
+          "max_tokens": true,
+          "max_completion_tokens": true,
+          "temperature": true,
+          "top_p": true,
+          "stop": true,
+          "seed": true,
+          "tools": true,
+          "response_format": true,
+          "repetition_penalty": true
+        },
         "reasoning": null,
         "tool_call": null,
         "structured_output": null,
@@ -2360,8 +2973,8 @@
         "modes": []
       }
     ],
-    "routing_status": "active",
-    "routable": true,
+    "routing_status": "disabled",
+    "routable": false,
     "regions": {
       "execution": null,
       "data": null
@@ -2403,8 +3016,18 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "active",
-        "params": [],
+        "status": "disabled",
+        "params": {
+          "max_tokens": true,
+          "max_completion_tokens": true,
+          "temperature": true,
+          "top_p": true,
+          "stop": true,
+          "seed": true,
+          "tools": true,
+          "response_format": true,
+          "repetition_penalty": true
+        },
         "reasoning": null,
         "tool_call": null,
         "structured_output": null,
@@ -2415,8 +3038,8 @@
         "modes": []
       }
     ],
-    "routing_status": "active",
-    "routable": true,
+    "routing_status": "disabled",
+    "routable": false,
     "regions": {
       "execution": null,
       "data": null
@@ -2458,8 +3081,18 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "active",
-        "params": [],
+        "status": "disabled",
+        "params": {
+          "max_tokens": true,
+          "max_completion_tokens": true,
+          "temperature": true,
+          "top_p": true,
+          "stop": true,
+          "seed": true,
+          "tools": true,
+          "response_format": true,
+          "repetition_penalty": true
+        },
         "reasoning": null,
         "tool_call": null,
         "structured_output": null,
@@ -2470,8 +3103,8 @@
         "modes": []
       }
     ],
-    "routing_status": "active",
-    "routable": true,
+    "routing_status": "disabled",
+    "routable": false,
     "regions": {
       "execution": null,
       "data": null
@@ -2513,8 +3146,18 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "active",
-        "params": [],
+        "status": "disabled",
+        "params": {
+          "max_tokens": true,
+          "max_completion_tokens": true,
+          "temperature": true,
+          "top_p": true,
+          "stop": true,
+          "seed": true,
+          "tools": true,
+          "response_format": true,
+          "repetition_penalty": true
+        },
         "reasoning": null,
         "tool_call": null,
         "structured_output": null,
@@ -2525,8 +3168,8 @@
         "modes": []
       }
     ],
-    "routing_status": "active",
-    "routable": true,
+    "routing_status": "disabled",
+    "routable": false,
     "regions": {
       "execution": null,
       "data": null
@@ -2557,7 +3200,7 @@
     "provider_api_model_id": "crofai:deepseek-v4-pro-0813",
     "provider_model_slug": "deepseek-v4-pro-0813",
     "internal_model_id": "deepseek/deepseek-v4-pro-0813",
-    "is_active_gateway": true,
+    "is_active_gateway": false,
     "quantization_scheme": "Q8_0",
     "input_modalities": "text",
     "output_modalities": "text",
@@ -2568,8 +3211,27 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "active",
-        "params": [],
+        "status": "disabled",
+        "params": {
+          "max_tokens": true,
+          "max_completion_tokens": true,
+          "temperature": true,
+          "top_p": true,
+          "stop": true,
+          "seed": true,
+          "tools": true,
+          "reasoning_effort": {
+            "type": "enum",
+            "values": [
+              "none",
+              "low",
+              "medium",
+              "high"
+            ]
+          },
+          "response_format": true,
+          "repetition_penalty": true
+        },
         "reasoning": true,
         "tool_call": null,
         "structured_output": null,
@@ -2580,8 +3242,8 @@
         "modes": []
       }
     ],
-    "routing_status": "active",
-    "routable": true,
+    "routing_status": "disabled",
+    "routable": false,
     "regions": {
       "execution": null,
       "data": null
@@ -2618,7 +3280,7 @@
     "provider_api_model_id": "crofai:qwen3.8-27b",
     "provider_model_slug": "qwen3.8-27b",
     "internal_model_id": "qwen/qwen3.8-27b",
-    "is_active_gateway": true,
+    "is_active_gateway": false,
     "quantization_scheme": "Q4_0",
     "input_modalities": "text",
     "output_modalities": "text",
@@ -2629,8 +3291,27 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "active",
-        "params": [],
+        "status": "disabled",
+        "params": {
+          "max_tokens": true,
+          "max_completion_tokens": true,
+          "temperature": true,
+          "top_p": true,
+          "stop": true,
+          "seed": true,
+          "tools": true,
+          "reasoning_effort": {
+            "type": "enum",
+            "values": [
+              "none",
+              "low",
+              "medium",
+              "high"
+            ]
+          },
+          "response_format": true,
+          "repetition_penalty": true
+        },
         "reasoning": true,
         "tool_call": null,
         "structured_output": null,
@@ -2641,8 +3322,8 @@
         "modes": []
       }
     ],
-    "routing_status": "active",
-    "routable": true,
+    "routing_status": "disabled",
+    "routable": false,
     "regions": {
       "execution": null,
       "data": null
@@ -2671,6 +3352,90 @@
       "status": "verified",
         "checked_at": "2026-08-28T15:37:10Z",
         "notes": "Availability, limits, quantization, and current pricing verified against CrofAI's live model and pricing payloads."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "deepseek/deepseek-v4-flash-vision-exp",
+    "provider_api_model_id": "crofai:deepseek-v4-flash-vision-exp",
+    "provider_model_slug": "deepseek-v4-flash-vision-exp",
+    "internal_model_id": "deepseek/deepseek-v4-flash-vision-exp",
+    "is_active_gateway": false,
+    "quantization_scheme": "Q8_0",
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 1000000,
+    "max_output_tokens": 131072,
+    "effective_from": "2026-09-03T00:00:00Z",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "disabled",
+        "params": {
+          "max_tokens": true,
+          "max_completion_tokens": true,
+          "temperature": true,
+          "top_p": true,
+          "stop": true,
+          "seed": true,
+          "tools": true,
+          "reasoning_effort": {
+            "type": "enum",
+            "values": [
+              "none",
+              "low",
+              "medium",
+              "high"
+            ]
+          },
+          "response_format": true,
+          "repetition_penalty": true
+        },
+        "reasoning": true,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": [
+          "text"
+        ],
+        "output_modalities": [
+          "text"
+        ],
+        "modes": []
+      }
+    ],
+    "routing_status": "disabled",
+    "routable": false,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "api",
+        "url": "https://crof.ai/v1/models",
+        "accessed_at": "2026-09-03T00:00:00Z",
+        "notes": "Live CrofAI model payload lists deepseek-v4-flash-vision-exp with Q8_0 quantization, a 1M context window, 131,072 maximum output tokens, reasoning support, and token rates."
+      },
+      {
+        "kind": "pricing",
+        "url": "https://crof.ai/pricing",
+        "accessed_at": "2026-09-03T00:00:00Z",
+        "notes": "Current CrofAI pricing lists $0.08 input, $0.007 cached input, and $0.20 output per 1M tokens."
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-09-03T00:00:00Z",
+      "notes": "Availability, slug, limits, quantization, reasoning support, and current pricing verified against CrofAI's live model payload. Image routing remains disabled until CrofAI-specific vision transport support is independently verified."
     },
     "rate_limits": []
   }

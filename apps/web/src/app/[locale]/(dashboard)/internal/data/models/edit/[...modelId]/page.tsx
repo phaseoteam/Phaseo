@@ -2,9 +2,9 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { fetchAdminCatalogRecord } from "@/lib/fetchers/internal/fetchAdminCatalog";
-import { deleteModelAction } from "../../../actions";
 import ModelLegacyEditor from "./ModelLegacyEditor";
 import ModelRevalidationControls from "./ModelRevalidationControls";
+import SendModelDiscordNotificationButton from "@/app/(dashboard)/internal/data/models/edit/[...modelId]/SendModelDiscordNotificationButton";
 
 export default async function EditModelPage({
 	params,
@@ -27,15 +27,18 @@ export default async function EditModelPage({
 			: undefined;
 	const { row } = await fetchAdminCatalogRecord("model", modelId);
 	if (!row) return notFound();
-	const deleteAction = deleteModelAction.bind(null, modelId);
 
 	return (
 		<div className="container mx-auto space-y-8 py-8">
-			<div>
-				<h1 className="text-2xl font-semibold">{t("modelEditTitle")}</h1>
-				<p className="font-mono text-xs text-muted-foreground">{row.model_id}</p>
+			<div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+				<div>
+					<h1 className="text-2xl font-semibold">{String(row.name || t("modelEditTitle"))}</h1>
+					<p className="font-mono text-xs text-muted-foreground">{row.model_id}</p>
+				</div>
+				<SendModelDiscordNotificationButton modelId={modelId} />
 			</div>
 			<ModelLegacyEditor
+				key={`${modelId}:${initialTab ?? "basic"}`}
 				modelId={modelId}
 				initialTab={initialTab}
 				focusProviderId={focusProviderId}
@@ -46,12 +49,6 @@ export default async function EditModelPage({
 					{t("backToModels")}
 				</Link>
 			</div>
-			<form action={deleteAction} className="rounded-lg border border-red-300 p-4">
-				<div className="mb-2 text-sm font-medium text-red-700">{t("dangerZone")}</div>
-				<button type="submit" className="rounded-md bg-red-600 px-3 py-2 text-sm text-white">
-					{t("deleteModel")}
-				</button>
-			</form>
 		</div>
 	);
 }

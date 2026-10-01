@@ -1,4 +1,5 @@
 "use client";
+import { useInvalidatePrivateSettings } from "../PrivateSettingsQuery";
 
 import Link from "next/link";
 import { startTransition, useEffect, useMemo, useRef, useState } from "react";
@@ -14,13 +15,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Logo } from "@/components/Logo";
+import { updateGlobalGuardrailsSettings } from "@/app/(dashboard)/settings/guardrails/actions";
 import type { AccountPrivacyPolicy, SettingsAccountPrivacyInitialData } from "@/lib/fetchers/internal/settingsTypes";
 import { formatProviderOfferDisplayName, formatProviderOfferVariantLabel, resolveProviderLogoId } from "@/lib/providers/providerOffers";
 
 type Props = Omit<SettingsAccountPrivacyInitialData, "signedIn"> & {
-	scope?: "account" | "workspace";
 	workspaceId?: string | null;
-	inheritedAccountPolicy?: AccountPrivacyPolicy | null;
 	workspaceLogStorage?: {
 		enabled: boolean;
 		retentionDays: number;
@@ -55,15 +55,14 @@ export default function AccountPrivacySettingsClient({
 	policy: initialPolicy,
 	providers,
 	models,
-	scope = "account",
 	workspaceId = null,
-	inheritedAccountPolicy = null,
 	workspaceLogStorage = null,
 }: Props) {
 	const t = useTranslations("SettingsUI");
 	const s = (key: string, values?: Record<string, string | number>) =>
 		t(`strings.${key}` as never, values as never);
 	const tUi = useTranslations("Common.ui");
+	const invalidateSettings = useInvalidatePrivateSettings();
 	const [policy, setPolicy] = useState<AccountPrivacyPolicy>(() => {
 		const legacy = initialPolicy as AccountPrivacyPolicy & { blockedProviderIds?: string[]; blockedApiModelIds?: string[] };
 		const legacyProviders = legacy.blockedProviderIds ?? [];
@@ -80,69 +79,56 @@ export default function AccountPrivacySettingsClient({
 	const [routeKind, setRouteKind] = useState<"providers" | "models">("providers");
 	const [availabilityKind, setAvailabilityKind] = useState<"providers" | "models">("models");
 	const [availabilityState, setAvailabilityState] = useState<"all" | "available" | "unavailable">("all");
-	const [availabilityScope, setAvailabilityScope] = useState<"workspace" | "personal">("workspace");
 	const [autosaveStatus, setAutosaveStatus] = useState<"idle" | "saving" | "saved" | "pending" | "error">("idle");
 	const [logStorage, setLogStorage] = useState(workspaceLogStorage);
 	const lastSavedPolicy = useRef(JSON.stringify(policy));
 	const lastSavedLogStorage = useRef(JSON.stringify(workspaceLogStorage));
 	useEffect(() => {
+		if (!workspaceId) return;
 		const serialized = JSON.stringify(policy);
 		if (serialized === lastSavedPolicy.current) return;
 		setAutosaveStatus("saving");
-		const controller = new AbortController();
+		let cancelled = false;
 		const timer = window.setTimeout(async () => {
 			try {
-				const endpoint = scope === "workspace"
-					? "/api/account/settings/guardrails/global"
-					: "/api/account/settings/account/privacy";
-				const response = await fetch(endpoint, {
-					method: "PUT",
-					headers: { "content-type": "application/json" },
-					body: JSON.stringify({ ...policy, ...(scope === "workspace" ? { workspaceId } : {}) }),
-					signal: controller.signal,
-				});
-				if (!response.ok) throw new Error();
-				const result = await response.json() as { cacheInvalidationPending?: boolean };
+				await updateGlobalGuardrailsSettings(policy, workspaceId);
+				void invalidateSettings();
+				if (cancelled) return;
 				lastSavedPolicy.current = serialized;
-				setAutosaveStatus(result.cacheInvalidationPending ? "pending" : "saved");
-			} catch (error) {
-				if (controller.signal.aborted) return;
+				setAutosaveStatus("saved");
+			} catch {
+				if (cancelled) return;
 				setAutosaveStatus("error");
-				toast.error(`${s("Could not save the")} ${scope} ${s("data policy")}`);
+				toast.error(tUi("privacyEligibility.saveWorkspacePolicyFailed"));
 			}
 		}, 650);
-		return () => { window.clearTimeout(timer); controller.abort(); };
-	}, [policy, scope, workspaceId]);
+		return () => { cancelled = true; window.clearTimeout(timer); };
+	}, [policy, workspaceId, invalidateSettings]);
 	useEffect(() => {
-		if (scope !== "workspace" || !logStorage || !workspaceId) return;
+		if (!logStorage || !workspaceId) return;
 		const serialized = JSON.stringify(logStorage);
 		if (serialized === lastSavedLogStorage.current) return;
 		setAutosaveStatus("saving");
-		const controller = new AbortController();
+		let cancelled = false;
 		const timer = window.setTimeout(async () => {
 			try {
-				const response = await fetch("/api/account/settings/guardrails/global", {
-					method: "PUT",
-					headers: { "content-type": "application/json" },
-					body: JSON.stringify({
-						workspaceId,
-						ioLoggingEnabled: logStorage.enabled,
-						ioLoggingRetentionDays: logStorage.retentionDays,
-						ioLoggingIncludeProviderPayloads: logStorage.includeProviderPayloads,
-					}),
-					signal: controller.signal,
-				});
-				if (!response.ok) throw new Error();
+				await updateGlobalGuardrailsSettings({
+					ioLoggingEnabled: logStorage.enabled,
+					ioLoggingRetentionDays: logStorage.retentionDays,
+					ioLoggingIncludeProviderPayloads: logStorage.includeProviderPayloads,
+				}, workspaceId);
+				void invalidateSettings();
+				if (cancelled) return;
 				lastSavedLogStorage.current = serialized;
 				setAutosaveStatus("saved");
 			} catch {
-				if (controller.signal.aborted) return;
+				if (cancelled) return;
 				setAutosaveStatus("error");
 				toast.error(s("Could not save workspace log storage settings"));
 			}
 		}, 650);
-		return () => { window.clearTimeout(timer); controller.abort(); };
-	}, [logStorage, scope, workspaceId]);
+		return () => { cancelled = true; window.clearTimeout(timer); };
+	}, [logStorage, workspaceId, invalidateSettings]);
 	const normalized = query.trim().toLowerCase();
 	const visibleProviders = useMemo(() => providers
 		.filter((item) => `${item.name} ${item.id} ${item.offer_label ?? ""}`.toLowerCase().includes(normalized))
@@ -177,8 +163,7 @@ export default function AccountPrivacySettingsClient({
 		return s(phrase);
 	};
 	const setOrganisation = (ids: string[], selected: boolean) => setPolicy((current) => ({ ...current, modelRestrictionModelIds: selected ? [...new Set([...current.modelRestrictionModelIds, ...ids])] : current.modelRestrictionModelIds.filter((id) => !ids.includes(id)) }));
-	const scopeLabel = scope === "workspace" ? tUi("privacyEligibility.workspace") : tUi("privacyEligibility.account");
-	const includePersonalPolicy = scope === "workspace" && availabilityScope === "personal" && inheritedAccountPolicy !== null;
+	const scopeLabel = tUi("privacyEligibility.workspace");
 	const routeAllowed = (candidatePolicy: AccountPrivacyPolicy, kind: "provider" | "model", id: string) => {
 		const mode = kind === "provider" ? candidatePolicy.providerRestrictionMode : candidatePolicy.modelRestrictionMode;
 		const ids = kind === "provider" ? candidatePolicy.providerRestrictionProviderIds : candidatePolicy.modelRestrictionModelIds;
@@ -188,15 +173,14 @@ export default function AccountPrivacySettingsClient({
 	};
 	const providerAvailability = useMemo(() => new Map(providers.map((provider) => {
 		const workspaceAllowed = routeAllowed(policy, "provider", provider.id);
-		const personalAllowed = !includePersonalPolicy || routeAllowed(inheritedAccountPolicy!, "provider", provider.id);
-		const available = workspaceAllowed && personalAllowed;
+		const available = workspaceAllowed;
 		const reason = !workspaceAllowed
 			? policy.providerRestrictionMode === "allowlist"
 				? tUi("privacyEligibility.outsideProviderAllowlist", { scope: scopeLabel })
 				: tUi("privacyEligibility.blockedByProviderRule", { scope: scopeLabel })
-			: !personalAllowed ? tUi("privacyEligibility.blockedByAccountControls") : null;
+			: null;
 		return [provider.id, { ...provider, available, reason }];
-	})), [policy, providers, scopeLabel, includePersonalPolicy, inheritedAccountPolicy]);
+	})), [policy, providers]);
 	const effectiveProviders = [...providerAvailability.values()];
 	const providerCoverageGroups = useMemo(() => {
 		const groups = Object.groupBy(effectiveProviders, (provider) => provider.provider_family_id || provider.id);
@@ -208,8 +192,7 @@ export default function AccountPrivacySettingsClient({
 	}, [effectiveProviders]);
 	const effectiveModels = useMemo(() => models.map((model) => {
 		const workspaceAllowed = routeAllowed(policy, "model", model.id);
-		const personalAllowed = !includePersonalPolicy || routeAllowed(inheritedAccountPolicy!, "model", model.id);
-		const allowedByModel = workspaceAllowed && personalAllowed;
+		const allowedByModel = workspaceAllowed;
 		const providerRouteIds = model.providerIds ?? [];
 		const permittedProviders = providerRouteIds.filter((id) => providerAvailability.get(id)?.available !== false);
 		const hasPermittedRoute = providerRouteIds.length === 0 || permittedProviders.length > 0;
@@ -218,10 +201,9 @@ export default function AccountPrivacySettingsClient({
 			? policy.modelRestrictionMode === "allowlist"
 				? tUi("privacyEligibility.outsideModelAllowlist", { scope: scopeLabel })
 				: tUi("privacyEligibility.blockedByModelRule", { scope: scopeLabel })
-			: !personalAllowed ? tUi("privacyEligibility.blockedByAccountControls")
 			: !hasPermittedRoute ? tUi("privacyEligibility.noPermittedProviderRoutes") : null;
 		return { ...model, available, reason };
-	}).sort(compareModelsByOrganisationAndName), [models, policy, providerAvailability, scopeLabel, includePersonalPolicy, inheritedAccountPolicy]);
+	}).sort(compareModelsByOrganisationAndName), [models, policy, providerAvailability]);
 	const availabilityItems = availabilityKind === "providers" ? effectiveProviders : effectiveModels;
 	const availabilityCounts = { available: availabilityItems.filter((item) => item.available).length, unavailable: availabilityItems.filter((item) => !item.available).length };
 	const visibleAvailabilityItems = availabilityItems.filter((item) => availabilityState === "all" || (availabilityState === "available") === item.available);
@@ -234,7 +216,7 @@ export default function AccountPrivacySettingsClient({
 	return <div className="space-y-8">
 		<section>
 			<h2 className="text-base font-semibold">{s("Data Handling")}</h2>
-			<p className="mt-1 text-sm text-muted-foreground">{scope === "workspace" ? s("Set the minimum privacy standard for every request in this workspace.") : s("Set the minimum privacy standard for interactive requests made as you, including Phaseo Chat.")}</p>
+			<p className="mt-1 text-sm text-muted-foreground">{s("Set the minimum privacy standard for every request in this workspace.")}</p>
 			<div className="mt-3 rounded-lg border px-4">
 				<SettingRow title={s("Allow paid routes that may train")} description={s("Permit paid routes whose provider may use prompts or completions for training.")} checked={policy.privacyEnablePaidMayTrain} onCheckedChange={(value) => set("privacyEnablePaidMayTrain", value)} />
 				<SettingRow title={s("Allow free routes that may train")} description={s("Permit free routes whose provider may use prompts or completions for training.")} checked={policy.privacyEnableFreeMayTrain} onCheckedChange={(value) => set("privacyEnableFreeMayTrain", value)} />
@@ -242,7 +224,7 @@ export default function AccountPrivacySettingsClient({
 				<SettingRow title={s("Require zero data retention")} description={s("Only route requests where the selected capability is eligible for ZDR.")} checked={policy.privacyZdrOnly} onCheckedChange={(value) => set("privacyZdrOnly", value)} />
 			</div>
 		</section>
-		{scope === "workspace" && logStorage ? <section className="border-t pt-8">
+		{logStorage ? <section className="border-t pt-8">
 			<div className="grid gap-6 lg:grid-cols-[13rem_minmax(0,1fr)] lg:gap-10">
 				<div>
 					<h2 className="text-base font-semibold">{s("Gateway Log Storage")}</h2>
@@ -267,7 +249,7 @@ export default function AccountPrivacySettingsClient({
 			<div className="grid gap-6 lg:grid-cols-[13rem_minmax(0,1fr)] lg:gap-10">
 				<div>
 					<h2 className="text-base font-semibold">{s("Route Access")}</h2>
-					<p className="mt-1.5 text-sm leading-6 text-muted-foreground">{scope === "workspace" ? s("Control which providers and models this workspace may use. Scoped guardrails can restrict individual members and API keys further.") : s("Control which providers and models Phaseo may use for requests made as you. Workspace policy can restrict them further.")}</p>
+					<p className="mt-1.5 text-sm leading-6 text-muted-foreground">{s("Control which providers and models this workspace may use. Scoped guardrails can restrict individual members and API keys further.")}</p>
 				</div>
 				<div className="min-w-0">
 			<div className="grid gap-4 sm:grid-cols-2">
@@ -291,17 +273,13 @@ export default function AccountPrivacySettingsClient({
 			<div className="grid gap-6 lg:grid-cols-[13rem_minmax(0,1fr)] lg:gap-10">
 				<div>
 					<h2 className="text-base font-semibold">{tUi("privacyEligibility.title")}</h2>
-					<p className="mt-1.5 text-sm leading-6 text-muted-foreground">{scope === "workspace" ? tUi("privacyEligibility.workspaceDescription") : tUi("privacyEligibility.accountDescription")}</p>
+					<p className="mt-1.5 text-sm leading-6 text-muted-foreground">{tUi("privacyEligibility.workspaceDescription")}</p>
 				</div>
 				<div className="min-w-0 space-y-4">
-				{scope === "workspace" && inheritedAccountPolicy ? <div className="inline-flex items-center rounded-md border bg-background p-1" role="tablist" aria-label={tUi("privacyEligibility.scopeLabel")}>
-					<Button type="button" variant="ghost" size="sm" role="tab" aria-selected={availabilityScope === "workspace"} className={`h-8 rounded-md px-3 ${availabilityScope === "workspace" ? "bg-muted text-foreground" : "text-muted-foreground"}`} onClick={() => setAvailabilityScope("workspace")}>{tUi("privacyEligibility.workspaceBaseline")}</Button>
-					<Button type="button" variant="ghost" size="sm" role="tab" aria-selected={availabilityScope === "personal"} className={`h-8 rounded-md px-3 ${availabilityScope === "personal" ? "bg-muted text-foreground" : "text-muted-foreground"}`} onClick={() => setAvailabilityScope("personal")}>{tUi("privacyEligibility.effectiveForMe")}</Button>
-				</div> : null}
 				<div className="border-b pb-4">
 					<div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
 						<div><div className="text-sm font-medium text-muted-foreground">{tUi("privacyEligibility.effectiveAvailability")}</div><div className="mt-1 text-2xl font-semibold tracking-tight">{tUi("privacyEligibility.routableSummary", { available: availabilityCounts.available, total: availabilityItems.length })}</div></div>
-						<div className="text-xs text-muted-foreground sm:text-right"><div>{tUi(includePersonalPolicy ? "privacyEligibility.passedWorkspacePersonalRules" : "privacyEligibility.passedScopeRules", { count: availabilityCounts.available, scope: scopeLabel })}</div><div>{tUi("privacyEligibility.excludedCount", { count: availabilityCounts.unavailable })}</div></div>
+						<div className="text-xs text-muted-foreground sm:text-right"><div>{tUi("privacyEligibility.passedScopeRules", { count: availabilityCounts.available, scope: scopeLabel })}</div><div>{tUi("privacyEligibility.excludedCount", { count: availabilityCounts.unavailable })}</div></div>
 					</div>
 				</div>
 				<div className="space-y-2">

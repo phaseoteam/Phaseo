@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
 import type { MarketShareTimeseriesData } from "@/lib/fetchers/rankings/getRankingsData";
 import { EmptyChartPreview } from "@/components/(rankings)/EmptyChartPreview";
@@ -23,24 +24,6 @@ type MarketShareStackedBarProps = {
 
 type SeriesStyle = Record<string, { label: string; color: string; stroke: string }>;
 const TOP_SERIES = 10;
-
-function formatBucketLabel(value: string, locale: string) {
-	const date = new Date(value);
-	if (Number.isNaN(date.getTime())) return value;
-	return date.toLocaleDateString(locale, {
-		month: "short",
-		day: "numeric",
-		timeZone: "UTC",
-	});
-}
-
-function formatNumber(value: number, locale: string) {
-	if (!Number.isFinite(value)) return "--";
-	return new Intl.NumberFormat(locale, {
-		notation: "compact",
-		maximumFractionDigits: 1,
-	}).format(value);
-}
 
 function formatPercent(value: number, locale: string, lessThanOneLabel: string) {
 	if (!Number.isFinite(value)) return "--";
@@ -67,8 +50,13 @@ export function MarketShareStackedBar({
 	metric = "requests",
 	normalizeToPercent = false,
 }: MarketShareStackedBarProps) {
-	const locale = useLocale();
 	const t = useTranslations("Catalogue.rankings");
+	const locale = useLocale();
+	const format = useDisplayFormatters();
+	const formatBucketLabel = (value: string, _locale?: string) => format.calendarDate(value, value);
+	const formatNumber = (value: number, _locale?: string) => Number.isFinite(value)
+		? format.number(value, { maximumFractionDigits: 1 })
+		: "--";
 	const [hoveredKey, setHoveredKey] = useState<string | null>(null);
 	const [nowMs] = useState(() => Date.now());
 

@@ -56,7 +56,7 @@ vi.mock("@pipeline/pricing", () => ({
 function makeCard(args: {
     provider: string;
     model: string;
-    plans: Array<"standard" | "priority" | "batch" | "flex">;
+    plans: Array<"standard" | "priority" | "ultrafast" | "batch" | "flex">;
 }): PriceCard {
     return {
         provider: args.provider,
@@ -104,6 +104,67 @@ function makeCandidate(args: {
 }
 
 describe("applyServiceTierRouting", () => {
+    it.each(["on-demand", "llm-plus"])("preserves default routing for provider SKU %s", async (plan) => {
+        const card = makeCard({ provider: "provider", model: "model", plans: ["standard"] });
+        card.rules = card.rules.map((rule) => ({ ...rule, pricing_plan: plan }));
+        const provider = makeCandidate({ providerId: "provider", pricingCard: card });
+        for (const body of [{}, { service_tier: "default" }, { service_tier: "standard" }]) {
+            expect((await applyServiceTierRouting({ candidates: [provider], body, capability: "text.generate" })).candidates).toEqual([provider]);
+        }
+    });
+    it("preserves default routing for explicitly free cards", async () => {
+        const card = makeCard({ provider: "free", model: "model", plans: ["standard"] });
+        card.rules = card.rules.map((rule) => ({ ...rule, pricing_plan: "free", price_per_unit: "0" }));
+        const free = makeCandidate({ providerId: "free", pricingCard: card });
+        expect((await applyServiceTierRouting({ candidates: [free], body: {}, capability: "text.generate" })).candidates).toEqual([free]);
+    });
+    it.each([{}, { service_tier: "default" }, { service_tier: "standard" }, { serviceTier: "standard" }])(
+        "rejects a global priority-only route for a default request %j", async (body) => {
+            const fast = makeCandidate({ providerId: "fireworks", apiModelId: "z-ai/glm-5.3",
+                providerModelSlug: "accounts/fireworks/routers/glm-5p3-fast", offerScope: "global",
+                pricingCard: makeCard({ provider: "fireworks", model: "z-ai/glm-5.3", plans: ["priority"] }) });
+            const standard = makeCandidate({ providerId: "other", pricingCard: makeCard({ provider: "other", model: "z-ai/glm-5.3", plans: ["standard"] }) });
+            const result = await applyServiceTierRouting({ candidates: [fast, standard], body, capability: "text.generate" });
+            expect(result.candidates).toEqual([standard]);
+        },
+    );
+
+    it.each([{}, { service_tier: "default" }, { service_tier: "standard" }, { serviceTier: "standard" }])(
+        "rejects a dedicated flex route for a standard request %j", async (body) => {
+            const flex = makeCandidate({ providerId: "deepinfra", apiModelId: "deepseek/deepseek-v4.1-flash",
+                providerModelSlug: "deepseek-ai/DeepSeek-V4.1-Flash", offerScope: "specialized", offerLabel: "flex",
+                pricingCard: makeCard({ provider: "deepinfra", model: "deepseek/deepseek-v4.1-flash", plans: ["standard", "flex"] }) });
+            const standard = makeCandidate({ providerId: "other", pricingCard: makeCard({ provider: "other", model: "deepseek/deepseek-v4.1-flash", plans: ["standard"] }) });
+            const result = await applyServiceTierRouting({ candidates: [flex, standard], body, capability: "text.generate" });
+            expect(result.candidates).toEqual([standard]);
+            expect(result.diagnostics.droppedProviders[0]?.reason).toBe("service_tier_flex_required");
+        },
+    );
+
+    it("keeps a shared standard and flex route on the standard tier", async () => {
+        const provider = makeCandidate({ providerId: "deepinfra", apiModelId: "deepseek/deepseek-v4.1-flash",
+            pricingCard: makeCard({ provider: "deepinfra", model: "deepseek/deepseek-v4.1-flash", plans: ["standard", "flex"] }) });
+        const result = await applyServiceTierRouting({ candidates: [provider], body: {}, capability: "text.generate" });
+        expect(result.candidates).toEqual([provider]);
+    });
+
+    it.each([{}, { service_tier: "standard" }])(
+        "preserves a canonical model whose name ends in flex for a standard request %j", async (body) => {
+            const provider = makeCandidate({ providerId: "provider", apiModelId: "black-forest-labs/flux-2-flex",
+                providerModelSlug: "flux-2-flex",
+                pricingCard: makeCard({ provider: "provider", model: "black-forest-labs/flux-2-flex", plans: ["standard"] }) });
+            const result = await applyServiceTierRouting({ candidates: [provider], body, capability: "image.generate" });
+            expect(result.candidates).toEqual([provider]);
+        },
+    );
+
+    it.each(["fast", "priority"])("keeps a global priority-only route for an explicit %s request", async (tier) => {
+        const fast = makeCandidate({ providerId: "fireworks", apiModelId: "z-ai/glm-5.3",
+            pricingCard: makeCard({ provider: "fireworks", model: "z-ai/glm-5.3", plans: ["priority"] }) });
+        const result = await applyServiceTierRouting({ candidates: [fast], body: { service_tier: tier }, capability: "text.generate" });
+        expect(result.candidates).toEqual([fast]);
+    });
+
     beforeEach(() => {
         queryState.providerRows = [];
         queryState.capabilityRows = [];
@@ -401,6 +462,100 @@ describe("applyServiceTierRouting", () => {
         ]);
     });
 
+    it("remaps Xiaomi MiMo V2.6 Pro fast requests to the hidden UltraSpeed slug", async () => {
+        queryState.providerRows = [
+            {
+                provider_id: "xiaomi",
+                api_model_id: "xiaomi/mimo-v2.6-pro",
+                provider_api_model_id: "xiaomi-ultraspeed-pam",
+                provider_model_slug: "mimo-v2.6-pro-ultraspeed",
+                is_active_gateway: false,
+                effective_from: "2026-09-21T00:00:00Z",
+                effective_to: null,
+            },
+        ];
+        queryState.capabilityRows = [
+            {
+                provider_api_model_id: "xiaomi-ultraspeed-pam",
+                params: { reasoning: true },
+                max_input_tokens: 262_144,
+                max_output_tokens: 65_536,
+                status: "active",
+                updated_at: "2026-09-21T00:00:00Z",
+                created_at: "2026-09-21T00:00:00Z",
+            },
+        ];
+
+        const result = await applyServiceTierRouting({
+            candidates: [
+                makeCandidate({
+                    providerId: "xiaomi",
+                    apiModelId: "xiaomi/mimo-v2.6-pro",
+                    providerModelSlug: "mimo-v2.6-pro",
+                    pricingCard: makeCard({
+                        provider: "xiaomi",
+                        model: "xiaomi/mimo-v2.6-pro",
+                        plans: ["standard", "priority"],
+                    }),
+                }),
+            ],
+            body: { service_tier: "fast" },
+            capability: "text.generate",
+        });
+
+        expect(loadPriceCardMock).not.toHaveBeenCalled();
+        expect(result.candidates).toHaveLength(1);
+        expect(result.candidates[0]).toMatchObject({
+            providerId: "xiaomi",
+            apiModelId: "xiaomi/mimo-v2.6-pro",
+            pricingKey: "xiaomi:xiaomi/mimo-v2.6-pro:mimo-v2.6-pro-ultraspeed",
+            providerModelSlug: "mimo-v2.6-pro-ultraspeed",
+            maxInputTokens: 262_144,
+            maxOutputTokens: 65_536,
+            capabilityParams: { reasoning: true },
+        });
+        expect(result.diagnostics.remappedProviders).toMatchObject([
+            {
+                providerId: "xiaomi",
+                fromApiModelId: "xiaomi/mimo-v2.6-pro",
+                toApiModelId: "mimo-v2.6-pro-ultraspeed",
+                reason: "priority_fast_sibling",
+            },
+        ]);
+
+        const priorityResult = await applyServiceTierRouting({
+            candidates: [
+                makeCandidate({
+                    providerId: "xiaomi",
+                    apiModelId: "xiaomi/mimo-v2.6-pro",
+                    providerModelSlug: "mimo-v2.6-pro",
+                    pricingCard: makeCard({
+                        provider: "xiaomi",
+                        model: "xiaomi/mimo-v2.6-pro",
+                        plans: ["standard", "priority"],
+                    }),
+                }),
+            ],
+            body: { service_tier: "priority" },
+            capability: "text.generate",
+        });
+		expect(priorityResult.candidates).toHaveLength(1);
+		expect(priorityResult.candidates[0]).toMatchObject({
+			providerId: "xiaomi",
+			apiModelId: "xiaomi/mimo-v2.6-pro",
+			pricingKey: "xiaomi:xiaomi/mimo-v2.6-pro:mimo-v2.6-pro-ultraspeed",
+			providerModelSlug: "mimo-v2.6-pro-ultraspeed",
+		});
+		expect(priorityResult.diagnostics.remappedProviders).toMatchObject([
+			{
+				providerId: "xiaomi",
+				fromApiModelId: "xiaomi/mimo-v2.6-pro",
+				toApiModelId: "mimo-v2.6-pro-ultraspeed",
+				reason: "priority_fast_sibling",
+			},
+		]);
+    });
+
     it("does not treat unrelated -highspeed models as priority siblings", async () => {
         const result = await applyServiceTierRouting({
             candidates: [
@@ -492,106 +647,6 @@ describe("applyServiceTierRouting", () => {
         ]);
     });
 
-    it("remaps CrofAI priority requests to hidden same-model Lightning slugs", async () => {
-        queryState.providerRows = [
-            {
-                provider_id: "crofai",
-                api_model_id: "deepseek/deepseek-v4-pro",
-                provider_api_model_id: "crofai-v4-pro-lightning-pam",
-                provider_model_slug: "deepseek-v4-pro-lightning",
-                is_active_gateway: false,
-                effective_from: "2026-08-23T00:00:00Z",
-                effective_to: null,
-            },
-            {
-                provider_id: "crofai",
-                api_model_id: "moonshotai/kimi-k2.5",
-                provider_api_model_id: "crofai-kimi-k2.5-lightning-pam",
-                provider_model_slug: "kimi-k2.5-lightning",
-                is_active_gateway: false,
-                effective_from: "2026-08-23T00:00:00Z",
-                effective_to: null,
-            },
-        ];
-        queryState.capabilityRows = [
-            {
-                provider_api_model_id: "crofai-v4-pro-lightning-pam",
-                params: { reasoning: true },
-                max_input_tokens: 1_000_000,
-                max_output_tokens: 131_072,
-                status: "active",
-                updated_at: "2026-08-23T00:00:00Z",
-                created_at: "2026-08-23T00:00:00Z",
-            },
-            {
-                provider_api_model_id: "crofai-kimi-k2.5-lightning-pam",
-                params: { reasoning: true },
-                max_input_tokens: 131_072,
-                max_output_tokens: 32_768,
-                status: "active",
-                updated_at: "2026-08-23T00:00:00Z",
-                created_at: "2026-08-23T00:00:00Z",
-            },
-        ];
-
-        const result = await applyServiceTierRouting({
-            candidates: [
-                makeCandidate({
-                    providerId: "crofai",
-                    apiModelId: "deepseek/deepseek-v4-pro",
-                    providerModelSlug: "deepseek-v4-pro",
-                    pricingCard: makeCard({
-                        provider: "crofai",
-                        model: "deepseek/deepseek-v4-pro",
-                        plans: ["standard", "priority"],
-                    }),
-                }),
-                makeCandidate({
-                    providerId: "crofai",
-                    apiModelId: "moonshotai/kimi-k2.5",
-                    providerModelSlug: "kimi-k2.5",
-                    pricingCard: makeCard({
-                        provider: "crofai",
-                        model: "moonshotai/kimi-k2.5",
-                        plans: ["standard", "priority"],
-                    }),
-                }),
-            ],
-            body: { service_tier: "priority" },
-            capability: "text.generate",
-        });
-
-        expect(loadPriceCardMock).not.toHaveBeenCalled();
-        expect(result.candidates).toHaveLength(2);
-        expect(result.candidates[0]).toMatchObject({
-            providerId: "crofai",
-            apiModelId: "deepseek/deepseek-v4-pro",
-            pricingKey: "crofai:deepseek/deepseek-v4-pro:deepseek-v4-pro-lightning",
-            providerModelSlug: "deepseek-v4-pro-lightning",
-            maxInputTokens: 1_000_000,
-            maxOutputTokens: 131_072,
-            capabilityParams: { reasoning: true },
-        });
-        expect(result.diagnostics.remappedProviders[0]).toMatchObject({
-            providerId: "crofai",
-            toApiModelId: "deepseek/deepseek-v4-pro",
-            reason: "priority_fast_sibling",
-        });
-        expect(result.candidates[1]).toMatchObject({
-            providerId: "crofai",
-            apiModelId: "moonshotai/kimi-k2.5",
-            pricingKey: "crofai:moonshotai/kimi-k2.5:kimi-k2.5-lightning",
-            providerModelSlug: "kimi-k2.5-lightning",
-            maxInputTokens: 131_072,
-            maxOutputTokens: 32_768,
-        });
-        expect(result.diagnostics.remappedProviders[1]).toMatchObject({
-            providerId: "crofai",
-            toApiModelId: "moonshotai/kimi-k2.5",
-            reason: "priority_fast_sibling",
-        });
-    });
-
     it("remaps flex requests to the flex sibling model when pricing is exposed that way", async () => {
         queryState.providerRows = [
             {
@@ -663,6 +718,63 @@ describe("applyServiceTierRouting", () => {
         ]);
     });
 
+    it("tries a priced Ultrafast sibling before dropping an unpriced base candidate", async () => {
+        queryState.providerRows = [{
+            provider_id: "google-ai-studio",
+            api_model_id: "google/gemini-3-pro-image-ultrafast",
+            provider_api_model_id: "provider-ultrafast-pam",
+            provider_model_slug: "gemini-3-pro-image-ultrafast",
+            is_active_gateway: true,
+            effective_from: "2026-05-29T00:00:00Z",
+            effective_to: null,
+        }];
+        queryState.capabilityRows = [{
+            provider_api_model_id: "provider-ultrafast-pam",
+            params: { mode: "ultrafast" },
+            max_input_tokens: 2_000_000,
+            max_output_tokens: 64_000,
+            status: "active",
+            updated_at: "2026-05-29T00:00:00Z",
+            created_at: "2026-05-29T00:00:00Z",
+        }];
+        const siblingCard = makeCard({
+            provider: "google-ai-studio",
+            model: "google/gemini-3-pro-image-ultrafast",
+            plans: ["ultrafast"],
+        });
+        loadPriceCardMock.mockResolvedValue(siblingCard);
+
+        const result = await applyServiceTierRouting({
+            candidates: [makeCandidate({
+                providerId: "google-ai-studio",
+                apiModelId: "google/gemini-3-pro-image",
+                providerModelSlug: "gemini-3-pro-image",
+                pricingCard: null,
+            })],
+            body: { service_tier: "ultrafast" },
+            capability: "text.generate",
+        });
+
+        expect(loadPriceCardMock).toHaveBeenCalledWith(
+            "google-ai-studio",
+            "google/gemini-3-pro-image-ultrafast",
+            "text.generate",
+        );
+        expect(result.candidates[0]).toMatchObject({
+            providerId: "google-ai-studio",
+            apiModelId: "google/gemini-3-pro-image-ultrafast",
+            providerModelSlug: "gemini-3-pro-image-ultrafast",
+            pricingCard: siblingCard,
+            capabilityParams: { mode: "ultrafast" },
+        });
+        expect(result.diagnostics.remappedProviders).toMatchObject([{
+            providerId: "google-ai-studio",
+            fromApiModelId: "google/gemini-3-pro-image",
+            toApiModelId: "google/gemini-3-pro-image-ultrafast",
+            reason: "ultrafast_sibling",
+        }]);
+    });
+
 	it("drops a tier sibling when final-route workspace authorization rejects it", async () => {
 		queryState.providerRows = [{
 			provider_id: "google-ai-studio",
@@ -726,25 +838,6 @@ describe("applyServiceTierRouting", () => {
         });
         expect(result.candidates[0]).toMatchObject({ providerId: "wafer", apiModelId: "moonshotai/kimi-k3", pricingKey: "wafer:moonshotai/kimi-k3:kimi-k3-fast", providerModelSlug: "Kimi-K3-Fast", maxInputTokens: 1_000_000, maxOutputTokens: 262_144 });
         expect(result.diagnostics.remappedProviders[0]).toMatchObject({ providerId: "wafer", toApiModelId: "moonshotai/kimi-k3-fast", reason: "priority_fast_sibling" });
-    });
-
-    it("remaps CrofAI K3 flex requests to the hidden Eco slug", async () => {
-        queryState.providerRows = [{
-            provider_id: "crofai", api_model_id: "moonshotai/kimi-k3-flex",
-            provider_api_model_id: "crof-k3-eco-pam", provider_model_slug: "kimi-k3-eco",
-            is_active_gateway: false, effective_from: "2026-07-30T00:00:00Z", effective_to: null,
-        }];
-        queryState.capabilityRows = [{
-            provider_api_model_id: "crof-k3-eco-pam", params: { reasoning: true },
-            max_input_tokens: 1_000_000, max_output_tokens: 131_072, status: "active",
-            updated_at: "2026-07-30T00:00:00Z", created_at: "2026-07-30T00:00:00Z",
-        }];
-        const result = await applyServiceTierRouting({
-            candidates: [makeCandidate({ providerId: "crofai", apiModelId: "moonshotai/kimi-k3", providerModelSlug: "kimi-k3", pricingCard: makeCard({ provider: "crofai", model: "moonshotai/kimi-k3", plans: ["standard", "flex"] }) })],
-            body: { service_tier: "flex" }, capability: "text.generate",
-        });
-        expect(result.candidates[0]).toMatchObject({ providerId: "crofai", apiModelId: "moonshotai/kimi-k3", pricingKey: "crofai:moonshotai/kimi-k3:kimi-k3-eco", providerModelSlug: "kimi-k3-eco", maxInputTokens: 1_000_000, maxOutputTokens: 131_072 });
-        expect(result.diagnostics.remappedProviders[0]).toMatchObject({ providerId: "crofai", toApiModelId: "moonshotai/kimi-k3-flex", reason: "flex_sibling" });
     });
 
     it("does not classify missing pricing as service-tier unsupported", async () => {

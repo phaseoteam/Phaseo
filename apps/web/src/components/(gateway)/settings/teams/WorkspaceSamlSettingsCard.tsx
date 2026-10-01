@@ -1,4 +1,5 @@
 "use client";
+import { useInvalidatePrivateSettings } from "../PrivateSettingsQuery";
 
 import * as React from "react";
 import { useTranslations } from "next-intl";
@@ -34,6 +35,7 @@ export default function WorkspaceSamlSettingsCard({
 	preview = false,
 }: Props) {
 	const t = useTranslations("SettingsUI");
+	const invalidateSettings = useInvalidatePrivateSettings();
 	const [enabled, setEnabled] = React.useState(Boolean(initialSettings?.sso_enabled));
 	const [providerId, setProviderId] = React.useState(
 		String(initialSettings?.sso_provider_identifier ?? (preview ? "sp_example_provider" : "")),
@@ -78,6 +80,7 @@ export default function WorkspaceSamlSettingsCard({
 				ssoDomains: domainList,
 			});
 			await updateTeamSsoSettingsAction(workspaceId, normalized);
+			void invalidateSettings();
 			toast.success(t("saml.saved"));
 		} catch (error) {
 			toast.error(localizedSettingsError(error, t, "Action failed", t("saml.saveFailed")));

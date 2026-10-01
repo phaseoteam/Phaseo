@@ -26,6 +26,7 @@
   "pricing_source_url": "https://evroc.com/ai-services/think-models/",
   "regional_pricing_notes": "Published shared-model pricing is in EUR for evroc's Europe-operated service.",
   "country_code": "SE",
+  "subdivision_code": "SE-AB",
   "status": "Active",
   "colour": null,
   "gateway_kind": "catalogue",

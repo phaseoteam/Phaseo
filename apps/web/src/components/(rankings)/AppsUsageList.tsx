@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -34,9 +35,8 @@ type AppsUsageListProps = {
 	maxExpanded?: number;
 };
 
-function formatTokens(value: number, locale: string) {
-	if (!Number.isFinite(value)) return "--";
-	return new Intl.NumberFormat(locale, { notation: "compact", maximumFractionDigits: 1 }).format(value);
+function rangeLabel(value: AppRange) {
+	return RANGE_OPTIONS.find((option) => option.key === value)?.label ?? value;
 }
 
 export function AppsUsageList({
@@ -53,6 +53,8 @@ export function AppsUsageList({
 	const locale = useLocale();
 	const rangeOptions = RANGE_OPTIONS.map(({ key, label }) => ({ key, label: t(label as never) }));
 	const rangeLabel = (value: AppRange) => rangeOptions.find((option) => option.key === value)?.label ?? value;
+	const format = useDisplayFormatters();
+	const formatTokens = (value: number, _locale?: string) => Number.isFinite(value) ? format.number(value, { maximumFractionDigits: 1 }) : "--";
 	const getInitial = (name: string) => name.trim().charAt(0).toUpperCase() || "A";
 
 	const resolvedDataByRange = useMemo<Partial<Record<AppRange, TopAppData[]>>>(

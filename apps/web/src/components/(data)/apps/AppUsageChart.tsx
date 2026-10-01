@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { BarChart, Bar, CartesianGrid, XAxis, YAxis } from "recharts";
 import { RankingsEmptyState } from "@/components/(rankings)/RankingsEmptyState";
 import { assignSeriesColours, keyForSeries } from "@/components/(rankings)/chart-colors";
@@ -22,21 +23,6 @@ type Row = {
 const TOP_MODELS = 10;
 const UNKNOWN_MODEL_KEY = "__unknown_model__";
 const WINDOW_DAYS = 30;
-
-function formatDayLabel(date: Date, locale: string) {
-	return date.toLocaleDateString(locale, {
-		month: "short",
-		day: "numeric",
-	});
-}
-
-function formatNumber(value: number, locale: string) {
-	if (!Number.isFinite(value)) return "--";
-	return new Intl.NumberFormat(locale, {
-		notation: "compact",
-		maximumFractionDigits: 1,
-	}).format(value);
-}
 
 function getTokens(usage: any) {
 	const total = Number(usage?.total_tokens);
@@ -69,6 +55,11 @@ export default function AppUsageChart({
 }) {
 	const locale = useLocale();
 	const t = useTranslations("Product.appsDetail");
+	const format = useDisplayFormatters();
+	const formatDayLabel = (date: Date, _locale?: string) => format.calendarDate(date);
+	const formatNumber = (value: number, _locale?: string) => Number.isFinite(value)
+		? format.number(value, { maximumFractionDigits: 1 })
+		: "--";
 	const [hoveredKey, setHoveredKey] = useState<string | null>(null);
 
 	const { chartData, seriesKeys, seriesStyle } = useMemo(() => {

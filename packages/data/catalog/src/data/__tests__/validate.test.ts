@@ -123,6 +123,23 @@ function readProviderModels(providerId: string) {
     );
 }
 
+test('priced MiniMax variants never collapse to a sibling canonical SKU', () => {
+    const variants = new Set([
+        'minimax/minimax-m2.5-highspeed',
+        'minimax/speech-2.8-hd',
+        'minimax/speech-2.8-turbo',
+    ]);
+    for (const providerId of fs.readdirSync(path.join(DATA_ROOT, 'api_providers'))) {
+        const modelsPath = path.join(DATA_ROOT, 'api_providers', providerId, 'models.json');
+        if (!fs.existsSync(modelsPath)) continue;
+        for (const row of readProviderModels(providerId)) {
+            if (variants.has(row.api_model_id)) {
+                expect(row.internal_model_id, `${providerId}:${row.provider_api_model_id}`).toBe(row.api_model_id);
+            }
+        }
+    }
+});
+
 describe('pricing safety checks', () => {
     test('active on gateway with no rules -> error flagged', () => {
         const bad = {
@@ -176,6 +193,7 @@ describe('pricing safety checks', () => {
             'input_audio_minutes',
             'output_reasoning_tokens',
             'bfl_credits',
+            'deepinfra_cost_usd',
             'output_video',
             'cached_write_text_tokens_5m',
             'cached_write_text_tokens_1h',
@@ -440,6 +458,177 @@ describe('pricing safety checks', () => {
 });
 
 describe('api provider model safety checks', () => {
+    test('Lyria 3.5 remains unroutable until Google publishes an API model identifier', () => {
+        const row = readProviderModels('google-ai-studio').find(
+            (candidate: any) => candidate.api_model_id === 'google/lyria-3.5'
+        );
+
+        expect(row).toMatchObject({
+            provider_model_slug: null,
+            is_active_gateway: false,
+            provider_status: 'unknown',
+            phaseo_status: 'blocked',
+            effective_from: null,
+            routing_status: 'disabled',
+            routable: false,
+            verification: {
+                status: 'verified',
+                checked_at: '2026-09-03T00:00:00Z',
+            },
+        });
+        expect(row.capabilities).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({
+                    capability_id: 'music.generate',
+                    status: 'disabled',
+                }),
+            ])
+        );
+    });
+
+    test('Astra keeps its documented OpenAI contract and pricing while available', () => {
+        const row = readProviderModels('openai').find(
+            (candidate: any) => candidate.internal_model_id === 'openai/gpt-6-astra'
+        );
+        const proRow = readProviderModels('openai').find(
+            (candidate: any) => candidate.internal_model_id === 'openai/gpt-6-astra-pro'
+        );
+
+        expect(row).toMatchObject({
+            is_active_gateway: true,
+            routable: true,
+            routing_status: 'active',
+            provider_status: 'available',
+            phaseo_status: 'enabled',
+            context_length: 1050000,
+            max_output_tokens: 128000,
+        });
+        expect(row?.capabilities).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({
+                    capability_id: 'text.generate',
+                    status: 'active',
+                    params: expect.arrayContaining([
+                        expect.objectContaining({
+                            param_id: 'reasoning.mode',
+                            provider_default: 'standard',
+                            values: ['standard', 'pro'],
+                        }),
+                    ]),
+                }),
+            ])
+        );
+        expect(proRow).toMatchObject({
+            api_model_id: 'openai/gpt-6-astra-pro',
+            provider_model_slug: 'gpt-6-astra-pro',
+            internal_model_id: 'openai/gpt-6-astra-pro',
+            is_active_gateway: true,
+            routable: true,
+        });
+        expect(proRow?.capabilities).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({
+                    capability_id: 'text.generate',
+                    params: expect.arrayContaining([
+                        expect.objectContaining({
+                            param_id: 'reasoning.mode',
+                            provider_default: 'pro',
+                            values: ['standard', 'pro'],
+                        }),
+                    ]),
+                }),
+            ])
+        );
+        const pricingPath = path.join(
+            DATA_ROOT,
+            'pricing',
+            'openai',
+            'openai-gpt-6-astra',
+            'text.generate',
+            'pricing.json'
+        );
+        const pricing = JSON.parse(fs.readFileSync(pricingPath, 'utf8'));
+        expect(pricing.rules).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({
+                    meter: 'input_text_tokens',
+                    pricing_plan: 'standard',
+                    price_per_unit: 10,
+                    match: [{ path: 'input_tokens', op: 'lte', value: 272000 }],
+                }),
+                expect.objectContaining({
+                    meter: 'output_text_tokens',
+                    pricing_plan: 'standard',
+                    price_per_unit: 75,
+                    match: [{ path: 'input_tokens', op: 'gt', value: 272000 }],
+                }),
+                expect.objectContaining({
+                    meter: 'native_web_search_requests',
+                    pricing_plan: 'standard',
+                    price_per_unit: 0.01,
+                }),
+            ])
+        );
+        const proPricingPath = path.join(
+            DATA_ROOT,
+            'pricing',
+            'openai',
+            'openai-gpt-6-astra-pro',
+            'text.generate',
+            'pricing.json'
+        );
+        const proPricing = JSON.parse(fs.readFileSync(proPricingPath, 'utf8'));
+        expect(proPricing).toMatchObject({
+            key: 'openai:openai/gpt-6-astra-pro:text.generate',
+            api_model_id: 'openai/gpt-6-astra-pro',
+            capability_id: 'text.generate',
+        });
+        expect(proPricing.rules).toHaveLength(pricing.rules.length);
+    });
+
+    test('Astra distinguishes upstream cloud availability from Phaseo routability', () => {
+        const azureRow = readProviderModels('azure').find(
+            (candidate: any) => candidate.internal_model_id === 'openai/gpt-6-astra'
+        );
+        const bedrockRow = readProviderModels('amazon-bedrock').find(
+            (candidate: any) => candidate.internal_model_id === 'openai/gpt-6-astra'
+        );
+
+        expect(azureRow).toMatchObject({
+            provider_status: 'available',
+            phaseo_status: 'planned',
+            routing_status: 'active',
+            is_active_gateway: false,
+            routable: false,
+            service_tiers: [],
+        });
+        expect(bedrockRow).toMatchObject({
+            provider_status: 'unknown',
+            phaseo_status: 'planned',
+            routing_status: 'disabled',
+            is_active_gateway: false,
+            routable: false,
+        });
+    });
+
+    it('rejects internal routes whose Phaseo integration is not testing or enabled', () => {
+        const result = checkApiProviderModelEntrySafety({
+            api_model_id: 'anthropic/claude-mythos-5.1',
+            provider_api_model_id: 'anthropic:anthropic/claude-mythos-5.1',
+            provider_model_slug: 'claude-mythos-5-1',
+            is_active_gateway: false,
+            routable: false,
+            routing_status: 'disabled',
+            access_scope: 'internal',
+            input_modalities: 'text,image',
+            output_modalities: 'text',
+        }, { providerId: 'anthropic' });
+
+        expect(result.errors).toContain(
+            'API provider model anthropic (anthropic:anthropic/claude-mythos-5.1) with internal access_scope must set phaseo_status to testing or enabled'
+        );
+    });
+
     test('Venice E2EE models remain unroutable until the encryption protocol is implemented', () => {
         const rows = readProviderModels('venice-e2ee');
         expect(rows.length).toBeGreaterThan(0);

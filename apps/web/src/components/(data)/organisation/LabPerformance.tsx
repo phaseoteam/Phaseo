@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { getLocale, getTranslations } from "next-intl/server";
+import type { ReactNode } from "react";
 import { Activity, ArrowUpRight, Gauge, Timer } from "lucide-react";
+import { DisplayNumber } from "@/components/display/DisplayValue";
 
 import type { OrganisationModelCards } from "@/lib/fetchers/organisations/types";
 
@@ -8,7 +10,7 @@ type Metric = {
 	icon: typeof Gauge;
 	id: "throughput" | "latency" | "usage";
 	label: string;
-	format: (value: number, model: OrganisationModelCards) => string;
+	format: (value: number, model: OrganisationModelCards) => ReactNode;
 	value: (model: OrganisationModelCards) => number | null | undefined;
 };
 
@@ -29,14 +31,14 @@ export default async function LabPerformance({
 			icon: Gauge,
 			id: "throughput",
 			label: t("throughput"),
-			format: (value) => `${value.toLocaleString(locale, { maximumFractionDigits: 1 })} t/s`,
+			format: (value) => <><DisplayNumber value={value} options={{ maximumFractionDigits: 1, notation: "standard" }} /> t/s</>,
 			value: (model) => model.throughput_week,
 		},
 		{
 			icon: Timer,
 			id: "latency",
 			label: t("timeToFirstToken"),
-			format: (value) => `${Math.round(value).toLocaleString(locale)} ms`,
+			format: (value) => <><DisplayNumber value={Math.round(value)} options={{ maximumFractionDigits: 0, notation: "standard" }} /> ms</>,
 			value: (model) => model.latency_week,
 		},
 		{
@@ -46,7 +48,7 @@ export default async function LabPerformance({
 			format: (value, model) => {
 				const unit = model.weekly_usage_unit?.toLowerCase();
 				const unitLabel = unit === "tokens" ? t("unitTokens") : unit === "requests" ? t("unitRequests") : model.weekly_usage_unit || t("unitGeneric");
-				return `${compactNumber.format(value)} ${unitLabel}`;
+				return <><DisplayNumber value={value} /> {unitLabel}</>;
 			},
 			value: (model) => model.weekly_usage_quantity,
 		},

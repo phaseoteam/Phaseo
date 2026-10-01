@@ -18,8 +18,9 @@ country is persisted on the user account and attached to Stripe payment
 metadata; Stripe Checkout also collects a full billing address for new cards.
 The preview is composed by the web API. It reads a route override first, then
 the provider policy stored in `v2_providers.metadata.availability`. The
-catalogue importer materializes that effective policy into
-`v2_model_provider_routes.metadata.availability` for database consumers.
+catalog editor and approved database automations materialize that effective
+policy into `v2_model_provider_routes.metadata.availability` for database
+consumers.
 Country-specific preview responses are publicly edge-cached for five minutes;
 the authenticated country confirmation remains private and uncached.
 

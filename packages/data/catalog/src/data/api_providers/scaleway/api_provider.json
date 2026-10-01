@@ -17,6 +17,7 @@
   "pricing_source_url": "https://www.scaleway.com/en/generative-apis/",
   "regional_pricing_notes": "Scaleway publishes Generative APIs pricing in EUR on its public Generative APIs pricing section.",
   "country_code": "FR",
+  "subdivision_code": "FR-IDF",
   "status": "Active",
   "colour": "#4F46E5",
   "privacy_policy_url": "https://www.scaleway.com/en/privacy-policy/",

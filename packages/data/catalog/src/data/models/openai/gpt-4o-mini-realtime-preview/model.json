@@ -2,13 +2,13 @@
   "model_id": "openai/gpt-4o-mini-realtime-preview",
   "organisation_id": "openai",
   "name": "GPT 4o Mini Realtime Preview",
-  "status": "Available",
+  "status": "Deprecated",
   "previous_model_id": null,
   "description": "A cost-efficient version of GPT Audio. The new snapshot features an upgraded decoder for more natural sounding voices and maintains better voice consistency. This entry tracks a preview release and capabilities may change before general availability.",
   "announced_date": "2024-12-17T00:00:00",
   "release_date": "2024-12-17T00:00:00",
-  "deprecation_date": null,
-  "retirement_date": null,
+  "deprecation_date": "2026-07-20T00:00:00",
+  "retirement_date": "2027-01-20T00:00:00",
   "license": "Proprietary",
   "input_types": "text,audio",
   "output_types": "text,audio",
@@ -121,14 +121,21 @@
     "web_search": null
   },
   "open_weights": null,
-  "sources": [],
+  "sources": [
+    {
+      "kind": "documentation",
+      "url": "https://developers.openai.com/api/docs/deprecations",
+      "accessed_at": "2026-09-03T00:00:00Z",
+      "notes": "Official OpenAI deprecations page lists the July 20, 2026 deprecation and January 20, 2027 shutdown, and recommends openai/gpt-realtime-2.1-mini."
+    }
+  ],
   "verification": {
     "status": "unverified",
     "checked_at": null,
-    "notes": null
+    "notes": "Lifecycle fields verified against OpenAI's official deprecations page; remaining model metadata is unverified."
   },
-  "last_updated": null,
+  "last_updated": "2026-09-03T00:00:00Z",
   "removal_date": null,
-  "replacement_model_id": null,
+  "replacement_model_id": "openai/gpt-realtime-2.1-mini",
   "license_url": null
 }

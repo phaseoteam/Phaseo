@@ -15,7 +15,7 @@ import {
 } from "@/routes/auth.helpers";
 import { resolveActiveKeyPepper } from "@/lib/security/keyPepper";
 import { recordWorkspaceAuditEvent } from "@/lib/audit/workspaceAudit";
-import { enforceWorkspaceKeyLimit } from "./management-helpers";
+import { enforceWorkspaceKeyLimit, isUsableWorkspaceKey } from "./management-helpers";
 import {
 	isResponse,
 	internalServerError,
@@ -204,7 +204,7 @@ async function issueManagementKey(args: {
 	const pepper = resolveActiveKeyPepper(getBindings());
 	if (!pepper) throw new Error("KEY_PEPPER_ACTIVE is not configured");
 
-	await enforceWorkspaceKeyLimit(args.workspaceId);
+	await enforceWorkspaceKeyLimit(args.workspaceId, "management");
 	const generated = generateManagementKey();
 	const hash = await hmacSecret(generated.secret, pepper);
 	const { data, error } = await getSupabaseAdmin()
@@ -373,6 +373,12 @@ async function handleUpdateManagementKey(req: Request) {
 		if (Object.keys(patch).length === 0) {
 			return json({ error: "bad_request", message: "No supported management key fields were provided" }, 400, { "Cache-Control": "no-store" });
 		}
+		const existing = await findManagementKey(auth.value.workspaceId, id);
+		if (!existing) return json({ error: "not_found", message: "Management key not found" }, 404, { "Cache-Control": "no-store" });
+		const keyStateChanged = ["status", "soft_blocked", "expires_at"].some((field) => field in patch);
+		if (keyStateChanged && isUsableWorkspaceKey({ ...existing, ...patch })) {
+			await enforceWorkspaceKeyLimit(auth.value.workspaceId, "management", existing.id);
+		}
 		const { data, error } = await getSupabaseAdmin()
 			.from("management_keys")
 			.update(patch)
@@ -387,6 +393,10 @@ async function handleUpdateManagementKey(req: Request) {
 		});
 		return json({ data: formatManagementKey(data as unknown as ManagementKeyRow) }, 200, { "Cache-Control": "no-store" });
 	} catch (error: any) {
+		const message = String(error?.message ?? error);
+		if (message.startsWith("Key limit reached")) {
+			return json({ error: "key_limit_reached", message }, 409, { "Cache-Control": "no-store" });
+		}
 		if (String(error?.message ?? "").startsWith("expires_at")) {
 			return json({ error: "bad_request", message: error.message }, 400, { "Cache-Control": "no-store" });
 		}

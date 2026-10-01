@@ -1,3 +1,4 @@
+import { chatStorageKey } from "@/lib/chat/userStorage";
 import type { ChatRoomId } from "@/lib/chat/rooms";
 
 export type ChatMessageVariant = {
@@ -48,6 +49,18 @@ export type ChatServerToolType =
 	| "phaseo:fusion"
 	| "phaseo:subagent";
 
+export type ChatReasoningEffort =
+	| "none"
+	| "instant"
+	| "minimal"
+	| "low"
+	| "medium"
+	| "high"
+	| "xhigh"
+	| "max";
+
+export type ChatServiceTier = "standard" | "priority" | "flex" | "ultrafast";
+
 export type ChatAdvisorServerToolConfig = {
     name?: string;
     model?: string;
@@ -56,7 +69,7 @@ export type ChatAdvisorServerToolConfig = {
     maxUses?: number | null;
     maxCompletionTokens?: number | null;
     temperature?: number | null;
-    reasoningEffort?: "none" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max";
+	reasoningEffort?: ChatReasoningEffort;
 };
 
 export type ChatSubagentServerToolConfig = {
@@ -65,7 +78,7 @@ export type ChatSubagentServerToolConfig = {
     maxUses?: number | null;
     maxCompletionTokens?: number | null;
     temperature?: number | null;
-    reasoningEffort?: "none" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max";
+	reasoningEffort?: ChatReasoningEffort;
 };
 
 export type ChatFusionServerToolConfig = {
@@ -133,8 +146,9 @@ export type ChatModelSettings = {
     systemPrompt?: string;
     stream: boolean;
     providerId?: string;
+	serviceTier?: ChatServiceTier;
     reasoningEnabled?: boolean;
-    reasoningEffort?: "none" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max";
+	reasoningEffort?: ChatReasoningEffort;
     endpoint?: UnifiedChatEndpoint;
     webSearchEnabled?: boolean;
     apiServerToolsEnabled?: boolean;
@@ -167,9 +181,8 @@ export type ChatThread = {
 };
 
 const DB_NAME = "phaseo-chat";
-const LEGACY_DB_NAME = "ai-stats-chat";
 const DEFAULT_CHAT_TAG_COLOR = "#737373";
-const DB_VERSION = 8;
+const DB_VERSION = 9;
 const LEGACY_TEXT_STORE_NAME = "chats";
 const TAG_STORE_NAME = "chat-tags";
 const ROOM_STORE_NAMES: Record<ChatRoomId, string> = {
@@ -186,6 +199,7 @@ const ROOM_STORE_NAMES: Record<ChatRoomId, string> = {
     embeddings: "chats-embeddings",
     ocr: "chats-ocr",
     rerank: "chats-rerank",
+    decisions: "chats-decisions",
 };
 
 function getStoreName(roomId: ChatRoomId): string {
@@ -235,14 +249,14 @@ export function getChatThreadSessionId(
     return sessionId || thread.id;
 }
 
-function openDb(): Promise<IDBDatabase> {
+export function openChatDatabase(): Promise<IDBDatabase> {
     return new Promise((resolve, reject) => {
         if (typeof window === "undefined") {
             reject(new Error("IndexedDB is only available in the browser."));
             return;
         }
 
-        const request = window.indexedDB.open(DB_NAME, DB_VERSION);
+        const request = window.indexedDB.open(chatStorageKey(DB_NAME), DB_VERSION);
         request.onerror = () => reject(request.error ?? new Error("IndexedDB error"));
         request.onupgradeneeded = () => {
             const db = request.result;
@@ -255,102 +269,17 @@ function openDb(): Promise<IDBDatabase> {
                 db.createObjectStore(TAG_STORE_NAME, { keyPath: "id" });
             }
         };
-        request.onsuccess = async () => {
+        request.onsuccess = () => {
             const db = request.result;
-            await migrateLegacyChatDb(db).catch(() => undefined);
-            resolve(db);
+            try {
+                chatStorageKey(DB_NAME); // Reject opens completed after an identity change.
+                resolve(db);
+            } catch (error) { db.close(); reject(error); }
         };
     });
 }
 
-async function databaseExists(name: string): Promise<boolean> {
-    const factory = window.indexedDB as IDBFactory & {
-        databases?: () => Promise<Array<{ name?: string | null }>>;
-    };
-    if (!factory.databases) return true;
-    const databases = await factory.databases();
-    return databases.some((database) => database.name === name);
-}
-
-function openLegacyDb(): Promise<IDBDatabase | null> {
-    return new Promise((resolve) => {
-        void (async () => {
-            if (!(await databaseExists(LEGACY_DB_NAME).catch(() => true))) {
-                resolve(null);
-                return;
-            }
-            const request = window.indexedDB.open(LEGACY_DB_NAME, DB_VERSION);
-            request.onerror = () => resolve(null);
-            request.onsuccess = () => resolve(request.result);
-        })();
-    });
-}
-
-function readAllFromStore(db: IDBDatabase, storeName: string): Promise<unknown[]> {
-    return new Promise((resolve) => {
-        if (!db.objectStoreNames.contains(storeName)) {
-            resolve([]);
-            return;
-        }
-        const tx = db.transaction(storeName, "readonly");
-        const request = tx.objectStore(storeName).getAll();
-        request.onerror = () => resolve([]);
-        request.onsuccess = () => resolve(Array.isArray(request.result) ? request.result : []);
-    });
-}
-
-function countStoreRecords(db: IDBDatabase, storeName: string): Promise<number> {
-    return new Promise((resolve) => {
-        if (!db.objectStoreNames.contains(storeName)) {
-            resolve(0);
-            return;
-        }
-        const tx = db.transaction(storeName, "readonly");
-        const request = tx.objectStore(storeName).count();
-        request.onerror = () => resolve(0);
-        request.onsuccess = () => resolve(Number(request.result ?? 0));
-    });
-}
-
-function writeAllToStore(db: IDBDatabase, storeName: string, rows: unknown[]): Promise<void> {
-    return new Promise((resolve) => {
-        if (!rows.length || !db.objectStoreNames.contains(storeName)) {
-            resolve();
-            return;
-        }
-        const tx = db.transaction(storeName, "readwrite");
-        const store = tx.objectStore(storeName);
-        for (const row of rows) {
-            store.put(row);
-        }
-        tx.oncomplete = () => resolve();
-        tx.onerror = () => resolve();
-        tx.onabort = () => resolve();
-    });
-}
-
-async function migrateLegacyChatDb(targetDb: IDBDatabase): Promise<void> {
-    const migrationKey = "phaseo:indexeddb:migrated:chat";
-    if (window.localStorage.getItem(migrationKey) === "1") return;
-    const legacyDb = await openLegacyDb();
-    if (!legacyDb) {
-        window.localStorage.setItem(migrationKey, "1");
-        return;
-    }
-    try {
-        const storeNames = Array.from(
-            new Set([...Object.values(ROOM_STORE_NAMES), TAG_STORE_NAME])
-        );
-        for (const storeName of storeNames) {
-            if ((await countStoreRecords(targetDb, storeName)) > 0) continue;
-            const rows = await readAllFromStore(legacyDb, storeName);
-            await writeAllToStore(targetDb, storeName, rows);
-        }
-        window.localStorage.setItem(migrationKey, "1");
-    } finally {
-        legacyDb.close();
-    }
-}
+const openDb = openChatDatabase;
 
 async function withStore<T>(
     mode: IDBTransactionMode,
@@ -363,8 +292,22 @@ async function withStore<T>(
         const tx = db.transaction(storeName, mode);
         const store = tx.objectStore(storeName);
         const request = fn(store);
+        let result: T | undefined;
+        let hasResult = false;
         request.onerror = () => reject(request.error ?? new Error("IndexedDB error"));
-        request.onsuccess = () => resolve(request.result);
+        request.onsuccess = () => {
+            result = request.result;
+            hasResult = true;
+        };
+        tx.onerror = () => reject(tx.error ?? new Error("IndexedDB error"));
+        tx.onabort = () => reject(tx.error ?? new Error("IndexedDB transaction aborted"));
+        tx.oncomplete = () => {
+            if (!hasResult) {
+                reject(new Error("IndexedDB request completed without a result."));
+                return;
+            }
+            resolve(result as T);
+        };
     });
 }
 

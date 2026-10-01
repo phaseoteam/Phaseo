@@ -63,6 +63,7 @@ function normalizeModality(value: string): string {
 	if (!normalized) return "";
 	if (normalized === "embedding") return "embeddings";
 	if (normalized === "moderation") return "moderations";
+	if (normalized.includes("decision")) return "decisions";
 	if (normalized.includes("music")) return "audio_music";
 	if (
 		normalized.includes("transcri") ||
@@ -108,6 +109,8 @@ function formatModality(value: string): string {
 			return "embedding";
 		case "moderations":
 			return "moderation";
+		case "decisions":
+			return "decision";
 		default:
 			return value.replace(/_/g, " ");
 	}
@@ -239,6 +242,12 @@ function formatContextLength(value: number): string {
 	if (value >= 1_000_000) return `${Math.round(value / 1_000_000)}M`;
 	if (value >= 1_000) return `${Math.round(value / 1_000)}K`;
 	return String(Math.round(value));
+}
+
+export function countModelMetadataProviders(
+	providers: ReadonlyArray<{ api_provider_id: string }> = [],
+): number {
+	return new Set(providers.map((provider) => provider.api_provider_id.trim()).filter(Boolean)).size;
 }
 
 export function buildModelOverviewMetadataTitle(

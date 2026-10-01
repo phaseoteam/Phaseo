@@ -694,6 +694,38 @@ describe("Perplexity Sonar response metadata", () => {
 	});
 });
 
+describe("Alibaba Cloud reasoning request contract", () => {
+	it("maps effort levels without combining them with a token budget", () => {
+		const effortRequest = irToOpenAIChat({
+			model: "qwen3.8-max-0902",
+			messages: [{ role: "user", content: [{ type: "text", text: "Plan the migration." }] }],
+			stream: false,
+			reasoning: { enabled: true, effort: "high" },
+		} as any, "qwen3.8-max-0902", "alibaba-cloud");
+		const budgetRequest = irToOpenAIChat({
+			model: "qwen3.8-max-0902",
+			messages: [{ role: "user", content: [{ type: "text", text: "Plan the migration." }] }],
+			stream: false,
+			reasoning: { enabled: true, effort: "high", maxTokens: 8192 },
+		} as any, "qwen3.8-max-0902", "alibaba-cloud");
+
+		expect(effortRequest).toMatchObject({ enable_thinking: true, reasoning_effort: "xhigh" });
+		expect(budgetRequest).toMatchObject({ enable_thinking: true, thinking_budget: 8192 });
+		expect(budgetRequest.reasoning_effort).toBeUndefined();
+	});
+
+	it("disables thinking when effort is none", () => {
+		const request = irToOpenAIChat({
+			model: "qwen3.8-max-0902",
+			messages: [{ role: "user", content: [{ type: "text", text: "Hello." }] }],
+			stream: false,
+			reasoning: { effort: "none" },
+		} as any, "qwen3.8-max-0902", "alibaba-cloud");
+
+		expect(request.enable_thinking).toBe(false);
+	});
+});
+
 describe("Mistral chat request contract", () => {
 	it("emits documented reasoning, caching, and Mistral-specific controls", () => {
 		const request = irToOpenAIChat({

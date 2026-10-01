@@ -19,6 +19,7 @@ import {
 	DialogTrigger,
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 
 const DEFAULT_CARD_LIMIT = 10;
 const DEFAULT_CHART_ROW_LIMIT = 10;
@@ -102,14 +103,6 @@ function formatPercent(value: number, locale: string) {
 	}).format(value);
 }
 
-function formatNumber(value: number, locale: string) {
-	if (!Number.isFinite(value)) return "--";
-	return new Intl.NumberFormat(locale, {
-		notation: "compact",
-		maximumFractionDigits: 1,
-	}).format(value);
-}
-
 function getWeekdayLabels(locale: string) {
 	const monday = new Date(Date.UTC(2024, 0, 1));
 	return Array.from({ length: 7 }, (_, index) => {
@@ -140,6 +133,10 @@ export default function ModelReleaseWeekdayAnalysis({
 		() => DAY_SERIES.map((day, index) => ({ ...day, label: weekdayLabels[index] })),
 		[weekdayLabels]
 	);
+	const format = useDisplayFormatters();
+	const formatNumber = (value: number) => Number.isFinite(value)
+		? format.number(value, { maximumFractionDigits: 1 })
+		: "--";
 	const [hoveredDayKey, setHoveredDayKey] = useState<string | null>(null);
 	const [expandLevel, setExpandLevel] = useState<ExpandLevel>(0);
 	const [organisationQuery, setOrganisationQuery] = useState("");
@@ -356,7 +353,7 @@ export default function ModelReleaseWeekdayAnalysis({
 				</div>
 				<div className="flex shrink-0 items-center gap-2 text-[10px] text-zinc-500 dark:text-zinc-400">
 					<span>
-						{t("todayCount", { count: formatNumber(org.releasedTodayCount, locale) })}
+						{t("todayCount", { count: formatNumber(org.releasedTodayCount) })}
 					</span>
 					<span className="font-mono font-semibold text-zinc-700 dark:text-zinc-300">
 						{org.total}
@@ -395,8 +392,8 @@ export default function ModelReleaseWeekdayAnalysis({
 						</h2>
 						<p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
 								{t("compactSummary", {
-									releases: formatNumber(analysis.totalReleases, locale),
-									days: formatNumber(analysis.uniqueReleaseDayCount, locale),
+									releases: formatNumber(analysis.totalReleases),
+									days: formatNumber(analysis.uniqueReleaseDayCount),
 								})}
 						</p>
 					</div>
@@ -424,7 +421,7 @@ export default function ModelReleaseWeekdayAnalysis({
 									/>
 								</div>
 								<span className="text-right font-mono text-zinc-500 dark:text-zinc-400">
-										{formatNumber(entry.count, locale)}
+										{formatNumber(entry.count)}
 								</span>
 							</div>
 						);
@@ -480,19 +477,19 @@ export default function ModelReleaseWeekdayAnalysis({
 					<div className="flex items-center gap-2">
 						<span className="text-zinc-500 dark:text-zinc-400">{t("releaseEvents")}</span>
 						<span className="font-semibold text-zinc-900 dark:text-zinc-50">
-							{formatNumber(analysis.totalReleases, locale)}
+							{format.number(analysis.totalReleases)}
 						</span>
 					</div>
 					<div className="flex items-center gap-2">
 						<span className="text-zinc-500 dark:text-zinc-400">{t("modelsReleased")}</span>
 						<span className="font-semibold text-zinc-900 dark:text-zinc-50">
-							{formatNumber(analysis.uniqueModelCount, locale)}
+							{format.number(analysis.uniqueModelCount)}
 						</span>
 					</div>
 					<div className="flex items-center gap-2">
 						<span className="text-zinc-500 dark:text-zinc-400">{t("activeReleaseDays")}</span>
 						<span className="font-semibold text-zinc-900 dark:text-zinc-50">
-							{formatNumber(analysis.uniqueReleaseDayCount, locale)}
+							{format.number(analysis.uniqueReleaseDayCount)}
 						</span>
 					</div>
 					<div className="flex items-center gap-2">
@@ -501,7 +498,7 @@ export default function ModelReleaseWeekdayAnalysis({
 							{analysis.topWeekdayLabel}
 						</span>
 						<span className="text-zinc-500 dark:text-zinc-400">
-							{formatNumber(analysis.topWeekdayCount, locale)} (
+							{format.number(analysis.topWeekdayCount)} (
 							{formatPercent(analysis.topWeekdayShare, locale)})
 						</span>
 					</div>
@@ -523,7 +520,7 @@ export default function ModelReleaseWeekdayAnalysis({
 								/>
 								{entry.label}
 							</span>{" "}
-							<span className="font-mono">{entry.count.toLocaleString()}</span>{" "}
+							<span className="font-mono">{format.number(entry.count)}</span>{" "}
 							<span className="text-zinc-500 dark:text-zinc-400">
 								({formatPercent(entry.share, locale)})
 							</span>
@@ -534,7 +531,7 @@ export default function ModelReleaseWeekdayAnalysis({
 				<div className="mt-5 grid gap-4 lg:grid-cols-[1.4fr_1fr]">
 					<div className="rounded-md border border-zinc-200/80 p-3 dark:border-zinc-800/90">
 						<h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
-								{t("weekdayMixTitle", { count: formatNumber(visibleOrganisationChartRows.length, locale) })}
+								{t("weekdayMixTitle", { count: formatNumber(visibleOrganisationChartRows.length) })}
 						</h3>
 						<p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
 							{t("weekdayMixDescription")}
@@ -556,7 +553,7 @@ export default function ModelReleaseWeekdayAnalysis({
 									allowDecimals={false}
 									tickLine={false}
 									axisLine={false}
-									tickFormatter={(value) => formatNumber(Number(value), locale)}
+									tickFormatter={(value) => formatNumber(Number(value))}
 								/>
 								<YAxis
 									type="category"
@@ -617,8 +614,8 @@ export default function ModelReleaseWeekdayAnalysis({
 																<span>{day?.label ?? String(name)}</span>
 															</span>
 															<span className="font-mono">
-										{formatNumber(amount, locale)} (
-										{formatPercent(share, locale)})
+																{format.number(amount)} (
+																{formatPercent(share, locale)})
 															</span>
 														</div>
 													);
@@ -683,7 +680,7 @@ export default function ModelReleaseWeekdayAnalysis({
 								/>
 								<p className="text-xs text-zinc-500 dark:text-zinc-400">
 									{t("organisationCount", {
-										count: formatNumber(matchingOrganisations.length, locale),
+										count: formatNumber(matchingOrganisations.length),
 									})}
 								</p>
 								<ScrollArea className="h-[420px] pr-3">

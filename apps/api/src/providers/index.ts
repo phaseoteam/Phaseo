@@ -11,7 +11,6 @@ import { XiaomiAdapter } from "./xiaomi/index";
 import { AzureAdapter } from "./azure/index";
 import { AI21Adapter } from "./ai21/index";
 import { MistralAdapter } from "./mistral/index";
-import { CrofAIAdapter } from "./crofai/index";
 import { TensorixAdapter } from "./tensorix/index";
 import { ElevenLabsAdapter } from "./elevenlabs/index";
 import { SunoAdapter } from "./suno/index";
@@ -25,6 +24,8 @@ import { normalizeProviderId } from "@/lib/config/providerAliases";
 // See apps/api/src/pipeline/index.ts:49 "IR PIPELINE (MANDATORY - ONLY EXECUTION PATH)"
 
 // Adapter registry (default per-provider)
+const PRIVATE_MODEL_ADAPTER = createOpenAICompatibleAdapter("private-model");
+
 const ADAPTERS: Record<string, ProviderAdapter> = {
     openai: OpenAIAdapter,
     "openai-eu": createOpenAICompatibleAdapter("openai-eu"),
@@ -58,11 +59,11 @@ const ADAPTERS: Record<string, ProviderAdapter> = {
     atlascloud: createOpenAICompatibleAdapter("atlas-cloud"), // Alias for database naming
     clarifai: createOpenAICompatibleAdapter("clarifai"),
     cloudflare: createOpenAICompatibleAdapter("cloudflare"),
+    openrouter: createOpenAICompatibleAdapter("openrouter"),
     baseten: createOpenAICompatibleAdapter("baseten"),
     cerebras: createOpenAICompatibleAdapter("cerebras"),
     chutes: createOpenAICompatibleAdapter("chutes"),
     cohere: createOpenAICompatibleAdapter("cohere"),
-    crofai: CrofAIAdapter,
     "canopy-wave": createOpenAICompatibleAdapter("canopy-wave"),
     tensorix: TensorixAdapter,
 	tensorx: createOpenAICompatibleAdapter("tensorx"),
@@ -82,6 +83,7 @@ const ADAPTERS: Record<string, ProviderAdapter> = {
     infermatic: createOpenAICompatibleAdapter("infermatic"),
     inflection: createOpenAICompatibleAdapter("inflection"),
     "inference-net": createOpenAICompatibleAdapter("inference-net"),
+    doubleword: createOpenAICompatibleAdapter("doubleword"),
     ionrouter: createOpenAICompatibleAdapter("ionrouter"),
     longcat: createOpenAICompatibleAdapter("longcat"),
     mancer: createOpenAICompatibleAdapter("mancer"),
@@ -92,6 +94,7 @@ const ADAPTERS: Record<string, ProviderAdapter> = {
     moonshotai: createOpenAICompatibleAdapter("moonshotai"),
     "moonshotai-turbo": createOpenAICompatibleAdapter("moonshotai-turbo"),
     morph: createOpenAICompatibleAdapter("morph"),
+    modelscope: createOpenAICompatibleAdapter("modelscope"),
     morpheus: createOpenAICompatibleAdapter("morpheus"),
     "nebius-token-factory": createOpenAICompatibleAdapter("nebius-token-factory"),
     "nebius-token-factory-eu-north-1": createOpenAICompatibleAdapter("nebius-token-factory-eu-north-1"),
@@ -111,6 +114,7 @@ const ADAPTERS: Record<string, ProviderAdapter> = {
     scaleway: createOpenAICompatibleAdapter("scaleway"),
     siliconflow: createOpenAICompatibleAdapter("siliconflow"),
     together: createOpenAICompatibleAdapter("together"),
+    respan: createUnsupportedAdapter("respan", "decisions.make uses the dedicated Span-01 executor"),
     venice: createOpenAICompatibleAdapter("venice"),
     "venice-e2ee": createOpenAICompatibleAdapter("venice-e2ee"),
     "weights-and-biases": createOpenAICompatibleAdapter("weights-and-biases"),
@@ -132,7 +136,11 @@ const ADAPTERS: Record<string, ProviderAdapter> = {
     meta: createOpenAICompatibleAdapter("meta"),
     upstage: createOpenAICompatibleAdapter("upstage"),
     wafer: createOpenAICompatibleAdapter("wafer"),
+    "wafer-zdr": createOpenAICompatibleAdapter("wafer-zdr"),
     "tencent-cloud": createOpenAICompatibleAdapter("tencent-cloud"),
+    // TypeSafe uses a native structured endpoint; the legacy adapter only
+    // exists so testing-mode capability discovery does not drop the provider.
+    typesafe: createUnsupportedAdapter("typesafe", "decisions.make uses the dedicated TypeSafe executor"),
 };
 
 // Capability-specific adapter overrides (e.g. Mistral OCR)
@@ -218,6 +226,7 @@ export function allProviderNames(): string[] {
 
 export function adapterFor(providerId: string, endpoint: Endpoint): ProviderAdapter | null {
 	const canonicalProviderId = normalizeProviderId(providerId);
+	if (canonicalProviderId === "private-model") return PRIVATE_MODEL_ADAPTER;
 	const override = ADAPTERS_BY_CAPABILITY[endpoint]?.[canonicalProviderId];
 	return override ?? ADAPTERS[canonicalProviderId] ?? null;
 }

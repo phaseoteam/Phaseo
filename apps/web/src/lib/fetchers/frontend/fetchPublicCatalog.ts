@@ -4,11 +4,13 @@ import type {
 	RangeKey,
 } from "@/lib/fetchers/apps/types";
 import { connection } from "next/server";
+import { resolveProviderDisplayName } from "@/lib/providers/providerOffers";
 import type { ProfileSnapshot } from "@/lib/fetchers/profile/types";
 import type {
 	OgEntity,
 	OgPayload,
 } from "@/lib/fetchers/frontend/getOgPayload";
+import { buildModelOgStats } from "@/lib/fetchers/frontend/getOgPayload";
 import type {
 	SignInModel,
 	SupportedModelsStats,
@@ -30,7 +32,7 @@ import type {
 } from "@/lib/fetchers/gateway/marketplaceTypes";
 import type { GatewayMarketingMetrics } from "@/lib/fetchers/gateway/getMarketingMetrics";
 import type { ModelAppUsage } from "@/lib/fetchers/models/getModelApps";
-import type { ModelBenchmarkHighlight } from "@/lib/fetchers/models/getModelBenchmarkData";
+import type { ModelBenchmarkHighlight, ModelBenchmarkResult } from "@/lib/fetchers/models/getModelBenchmarkData";
 import getModelGatewayMetadata, {
 	type ModelGatewayMetadata,
 } from "@/lib/fetchers/models/getModelGatewayMetadata";
@@ -270,9 +272,11 @@ export async function fetchFrontendMonitorHistoryPage(
 
 export async function fetchFrontendModelOverview(
 	modelId: string,
+	signal?: AbortSignal,
 ): Promise<ModelOverviewPage | null> {
 	const payload = await fetchOptionalPublicWebApi<{ model: ModelOverviewPage }>(
 		`/api/_web/models/${encodeURIComponent(modelId)}?projection=variants-v1`,
+		{ signal },
 	);
 	return payload?.model ?? null;
 }
@@ -358,8 +362,9 @@ export async function fetchFrontendModelPendingApiReleaseState(
 
 export async function fetchFrontendModelPricing(
 	modelId: string,
+	signal?: AbortSignal,
 ): Promise<ProviderPricing[]> {
-	return getModelPricing(modelId, false);
+	return getModelPricing(modelId, false, false, signal);
 }
 
 export async function fetchFrontendModelPricingHistory(
@@ -417,7 +422,7 @@ export async function fetchFrontendModelPerformance(
 	percentile = 50,
 ): Promise<ModelPerformanceMetrics | null> {
 	void windowHours;
-	const params = new URLSearchParams({ percentile: String(percentile) });
+	const params = new URLSearchParams({ percentile: String(percentile), range: "3" });
 	if (cloudflareColo) params.set("colo", cloudflareColo);
 	const query = `?${params.toString()}`;
 	return (await fetchOptionalPublicWebApi<{ metrics: ModelPerformanceMetrics | null }>(`/api/_web/models/${encodeURIComponent(modelId)}/performance${query}`))?.metrics ?? null;
@@ -527,9 +532,16 @@ export async function fetchFrontendModelBenchmarkHighlights(
 	return payload?.highlights ?? [];
 }
 
+export async function fetchFrontendModelBenchmarkResults(
+	modelId: string,
+): Promise<ModelBenchmarkResult[]> {
+	const payload = await fetchOptionalPublicWebApi<{ results: ModelBenchmarkResult[] }>(`/api/_web/models/${encodeURIComponent(modelId)}/benchmarks`);
+	return payload?.results ?? [];
+}
+
 export async function fetchFrontendAPIProviders(): Promise<APIProviderCard[]> {
 	const payload = await fetchPublicWebApi<{ providers: APIProviderCard[] }>("/api/_web/api-providers");
-	return payload.providers;
+	return payload.providers.map((provider) => ({ ...provider, api_provider_name: resolveProviderDisplayName({ providerId: provider.api_provider_id, providerName: provider.api_provider_name }) }));
 }
 
 export async function fetchFrontendAPIProviderHeader(
@@ -538,7 +550,8 @@ export async function fetchFrontendAPIProviderHeader(
 	const payload = await fetchOptionalPublicWebApi<{ provider: APIProviderHeader }>(
 		`/api/_web/api-providers/${encodeURIComponent(apiProviderId)}/header`,
 	);
-	return payload?.provider ?? null;
+	const provider = payload?.provider;
+	return provider ? { ...provider, api_provider_name: resolveProviderDisplayName({ providerId: apiProviderId, providerName: provider.api_provider_name }) } : null;
 }
 
 export async function fetchFrontendAPIProviderModels(
@@ -642,8 +655,11 @@ export async function fetchFrontendBenchmarks(
 export async function fetchFrontendBenchmark(
 	benchmarkId: string,
 ): Promise<BenchmarkPage | null> {
+	// Epoch ECI was initially cached with inverted score ordering. Keep the
+	// corrected cache namespace explicit while older edge entries expire.
+	const cacheRevision = benchmarkId === "epoch-capabilities-index" ? "?revision=2" : "";
 	const payload = await fetchOptionalPublicWebApi<{ benchmark: BenchmarkPage }>(
-		`/api/_web/benchmarks/${encodeURIComponent(benchmarkId)}`,
+		`/api/_web/benchmarks/${encodeURIComponent(benchmarkId)}${cacheRevision}`,
 	);
 	return payload?.benchmark ?? null;
 }
@@ -829,10 +845,29 @@ export async function fetchFrontendOgPayload(
 ): Promise<OgPayload | null> {
 	const id = kind === "models" ? segments.join("/") : segments[0];
 	if (!id) return null;
-	const response = await fetchOptionalPublicWebApi<{ payload: OgPayload }>(
-		`/api/_web/og?kind=${encodeURIComponent(kind)}&id=${encodeURIComponent(id)}`,
-	);
-	return response?.payload ?? null;
+	const controller = new AbortController();
+	const timeout = setTimeout(() => controller.abort(), 5_000);
+	const params = new URLSearchParams({ kind, id });
+	try {
+		const response = await fetchOptionalPublicWebApi<{ payload: OgPayload }>(
+			`/api/_web/og?${params.toString()}`,
+			{ signal: controller.signal },
+		);
+		if (!response?.payload || kind !== "models") return response?.payload ?? null;
+
+		const resolvedModelId = response.payload.id;
+		if (!resolvedModelId || resolvedModelId !== id) return null;
+		const [model, pricing] = await Promise.all([
+			fetchFrontendModelOverview(resolvedModelId, controller.signal).catch(() => null),
+			fetchFrontendModelPricing(resolvedModelId, controller.signal).catch(() => []),
+		]);
+		return {
+			...response.payload,
+			stats: buildModelOgStats(model, pricing),
+		};
+	} finally {
+		clearTimeout(timeout);
+	}
 }
 
 export async function fetchFrontendAppUsage(
@@ -975,12 +1010,25 @@ export async function fetchFrontendRankingToolCallTimeseries(
 }
 
 export type PublicBenchmarkRankingEntry = {
+	other_info?: string | null;
+	source_link?: string | null;
+	updated_at?: string | null;
 	model_id: string;
 	model_name: string;
 	organisation_id: string | null;
 	organisation_name: string | null;
+	organisation_colour?: string | null;
+	release_date?: string | null;
 	score: number;
 	rank: number;
+	configurations?: Array<{
+		variant: string | null;
+		result_key: string | null;
+		score: number;
+		other_info: string | null;
+		source_link: string | null;
+		updated_at: string | null;
+	}>;
 };
 
 export type PublicBenchmarkRanking = {
@@ -1020,7 +1068,8 @@ export async function fetchFrontendProviderMetaByIds(
 	providerIds: string[],
 ): Promise<Record<string, ProviderMeta>> {
 	if (!providerIds.length) return {};
-	return (await fetchPublicWebApi<{ providers: Record<string, ProviderMeta> }>(`/api/_web/rankings/provider-meta?ids=${encodeURIComponent([...new Set(providerIds)].sort().join(","))}`)).providers;
+	const { providers } = await fetchPublicWebApi<{ providers: Record<string, ProviderMeta> }>(`/api/_web/rankings/provider-meta?ids=${encodeURIComponent([...new Set(providerIds)].sort().join(","))}`);
+	return Object.fromEntries(Object.entries(providers).map(([providerId, metadata]) => [providerId, { ...metadata, name: resolveProviderDisplayName({ providerId, providerName: metadata.name }) }]));
 }
 
 export async function fetchFrontendOrganisationLogoIdsByNames(

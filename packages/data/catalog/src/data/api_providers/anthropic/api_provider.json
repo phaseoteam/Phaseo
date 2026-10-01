@@ -41,6 +41,7 @@
   "data_policy_confidence": "confirmed",
   "data_policy_contract_mode": "customer_agreement",
   "country_code": "US",
+  "subdivision_code": "US-CA",
   "status": "Active",
   "colour": "#CC785C",
   "gateway_kind": null,

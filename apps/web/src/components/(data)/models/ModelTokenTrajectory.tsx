@@ -28,6 +28,8 @@ import type {
 	ModelTokenTrajectory,
 	ModelTokenTrajectoryPoint,
 } from "@/lib/fetchers/models/getModelTokenTrajectory";
+import { DisplayCalendarDate } from "@/components/display/DisplayValue";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 
 type RechartsTooltipContentProps = {
 	active?: boolean;
@@ -54,15 +56,9 @@ function formatDelta(value: number, locale: string): string {
 	}).format(value);
 }
 
-function formatDate(value: string | null, locale: string) {
-	if (!value) return "—";
-	const date = new Date(value);
-	if (!Number.isFinite(date.getTime())) return value;
-	return date.toLocaleDateString(locale, {
-		month: "short",
-		day: "numeric",
-		year: "numeric",
-	});
+function formatDays(value: number | null) {
+	if (value == null) return "—";
+	return `${value}d`;
 }
 
 function SuccessorReferenceLabel({ name }: { name: string }) {
@@ -103,7 +99,7 @@ function MilestoneTable({
 									})}
 						</TableCell>
 						<TableCell className="text-muted-foreground">
-							{formatDate(milestone.reachedOn, locale)}
+							<DisplayCalendarDate value={milestone.reachedOn} fallback="—" />
 						</TableCell>
 					</TableRow>
 				))}
@@ -140,7 +136,7 @@ function SuccessorList({
 									})}
 						</TableCell>
 						<TableCell className="text-muted-foreground">
-							{formatDate(successor.releaseDate, locale)}
+							<DisplayCalendarDate value={successor.releaseDate} fallback="—" />
 						</TableCell>
 					</TableRow>
 				))}
@@ -152,6 +148,7 @@ function SuccessorList({
 export default function ModelTokenTrajectoryChart({
 	data,
 }: ModelTokenTrajectoryProps) {
+	const format = useDisplayFormatters();
 	const t = useTranslations("Catalogue.models.tokenTrajectory");
 	const locale = useLocale();
 	const points = data?.points ?? EMPTY_POINTS;
@@ -165,6 +162,7 @@ export default function ModelTokenTrajectoryChart({
 			color: "hsl(var(--chart-1))",
 		},
 	};
+	const deprecationLabel = data?.deprecationDate ? t("markedDeprecatedOn", { date: format.calendarDate(data.deprecationDate, "—") }) : null;
 
 	const pointByDay = useMemo(() => {
 		const map = new Map<number, ModelTokenTrajectoryPoint>();
@@ -239,7 +237,7 @@ export default function ModelTokenTrajectoryChart({
 					<p className="text-xs uppercase text-muted-foreground">
 						{t("day", { count: point.daysSinceRelease })}
 					</p>
-					<p className="font-semibold">{formatDate(point.date, locale)}</p>
+					<p className="font-semibold">{format.calendarDate(point.date, "—")}</p>
 				</div>
 				<div className="space-y-1 text-sm">
 					<div className="flex items-center justify-between">
@@ -285,7 +283,7 @@ export default function ModelTokenTrajectoryChart({
 						</p>
 						<p className="text-muted-foreground">
 							{t("markedDeprecatedOn", {
-								date: formatDate(data.deprecationDate, locale),
+								date: format.calendarDate(data.deprecationDate, "—"),
 							})}
 						</p>
 					</div>
@@ -321,7 +319,7 @@ export default function ModelTokenTrajectoryChart({
 					</div>
 					<span className="text-xs text-muted-foreground">
 						{t("releaseDate", {
-							date: formatDate(data.releaseDate, locale),
+							date: format.calendarDate(data.releaseDate, "—"),
 						})}
 					</span>
 				</div>
@@ -395,7 +393,7 @@ export default function ModelTokenTrajectoryChart({
 							<div className="flex items-center justify-between">
 								<span>{t("deprecatedOn")}</span>
 								<span className="font-semibold">
-									{formatDate(data.deprecationDate, locale)}
+									{format.calendarDate(data.deprecationDate, "—")}
 								</span>
 							</div>
 							<div className="flex items-center justify-between text-muted-foreground">

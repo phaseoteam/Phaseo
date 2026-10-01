@@ -1,6 +1,9 @@
 import BenchmarkDetailShell from "@/components/(data)/benchmark/BenchmarkDetailShell";
 import BenchmarkOverview from "@/components/(data)/benchmark/BenchmarkOverview";
-import { fetchFrontendBenchmark } from "@/lib/fetchers/frontend/fetchPublicCatalog";
+import { applyArtificialAnalysisOrganisationColours, artificialAnalysisMetricsForBenchmark, buildArtificialAnalysisRanking, isArtificialAnalysisBenchmark } from "@/lib/benchmarks/artificialAnalysis";
+import { isEpochCapabilitiesIndex, isEpochConfidenceIntervalForScore } from "@/lib/benchmarks/epoch";
+import { epochModelKey, fetchEpochConfidenceIntervals } from "@/lib/benchmarks/epochData";
+import { fetchFrontendBenchmark, fetchFrontendOrganisations } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { absoluteUrl } from "@/lib/seo";
@@ -81,6 +84,35 @@ export default async function Page({
 	if (!benchmark) {
 		notFound();
 	}
+	const artificialAnalysis = isArtificialAnalysisBenchmark(benchmark.id);
+	const epochCapabilitiesIndex = isEpochCapabilitiesIndex(benchmark.id);
+	const epochConfidenceIntervals = epochCapabilitiesIndex ? await fetchEpochConfidenceIntervals() : {};
+	const displayBenchmark = epochCapabilitiesIndex ? {
+		...benchmark,
+		results: benchmark.results.map((result) => {
+			const interval = epochConfidenceIntervals[epochModelKey(result.model?.name ?? result.model_id)];
+			if (!isEpochConfidenceIntervalForScore(interval, result.score)) return result;
+			const withoutInterval = typeof result.other_info === "string" ? result.other_info.replace(/;?\s*95% CI\s+[\d.]+[–-][\d.]+/i, "") : "";
+			return { ...result, other_info: `${withoutInterval ? `${withoutInterval}; ` : ""}95% CI ${interval.low.toFixed(2)}–${interval.high.toFixed(2)}` };
+		}),
+	} : benchmark;
+	const artificialAnalysisRankings = artificialAnalysis
+		? await (async () => {
+			const metricDefinitions = artificialAnalysisMetricsForBenchmark(benchmark.id);
+			const [rankings, organisations] = await Promise.all([
+				Promise.all(metricDefinitions.map(async ({ id }) => {
+					const metricBenchmark = id === benchmark.id ? benchmark : await fetchFrontendBenchmark(id).catch(() => null);
+					return metricBenchmark ? buildArtificialAnalysisRanking(metricBenchmark) : null;
+				})),
+				fetchFrontendOrganisations().catch(() => []),
+			]);
+			const colours = new Map(organisations.map((organisation) => [organisation.organisation_id, organisation.colour]));
+			return applyArtificialAnalysisOrganisationColours(
+				rankings.filter((ranking): ranking is NonNullable<typeof ranking> => ranking !== null),
+				colours,
+			);
+		})()
+		: [];
 
 	// Generate structured data for the benchmark page.
 	const generateStructuredData = () => {
@@ -137,8 +169,11 @@ export default async function Page({
 					<JsonLdScript id="benchmark-breadcrumb-schema" data={structuredData.breadcrumbSchema} />
 				</>
 			)}
-			<BenchmarkDetailShell benchmark={benchmark} tocItems={[{ id: "summary", label: t("tocSummary") }, { id: "progress", label: t("tocProgress") }, { id: "model-results", label: t("tocModelResults") }]}>
-				<BenchmarkOverview benchmark={benchmark} />
+			<BenchmarkDetailShell benchmark={displayBenchmark} tocItems={artificialAnalysis
+				? [{ id: "summary", label: t("tocSummary") }, { id: "comparisons", label: t("tocIndexComparisons") }, { id: "progress", label: t("tocProgress") }, { id: "model-results", label: t("tocModelResults") }]
+				: epochCapabilitiesIndex ? [{ id: "summary", label: t("tocSummary") }, { id: "comparisons", label: t("tocIndexLeaderboard") }, { id: "progress", label: t("tocProgress") }, { id: "model-results", label: t("tocModelResults") }]
+				: [{ id: "summary", label: t("tocSummary") }, { id: "progress", label: t("tocProgress") }, { id: "model-results", label: t("tocModelResults") }]}>
+				<BenchmarkOverview benchmark={displayBenchmark} artificialAnalysisRankings={artificialAnalysisRankings} />
 			</BenchmarkDetailShell>
 		</>
 	);

@@ -1,8 +1,10 @@
 "use client";
 
+import { chatLocalStorage } from "@/lib/chat/userStorage";
 import { startTransition, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { getTierFilterMeta } from "@/lib/models/tierFilterStyles";
 import { Logo } from "@/components/Logo";
 import {
     Accordion,
@@ -34,7 +36,11 @@ import {
     MODEL_SELECTOR_FAVORITES_STORAGE_KEY,
     normalizeFavoriteModelId,
 } from "@/components/(chat)/playgroundConfig";
+import { REASONING_OPTIONS } from "@/components/(chat)/chatConversationHelpers";
 import { estimatePromptTokenCount } from "@/components/(chat)/playground/chat-playground-core";
+import type { ReasoningEffortSupport } from "@/components/(chat)/playground/reasoningEffortSupport";
+import { getServiceTierLabel, type ServiceTierOption } from "@/components/(chat)/playground/serviceTierSupport";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -50,7 +56,11 @@ import { Slider } from "@/components/ui/slider";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import type { ChatModelSettings } from "@/lib/indexeddb/chats";
+import type {
+    ChatModelSettings,
+    ChatReasoningEffort,
+    ChatServiceTier,
+} from "@/lib/indexeddb/chats";
 import { ArrowLeft, CheckIcon, ChevronRight, RotateCcw, SearchIcon, Star } from "lucide-react";
 
 type ModelSettingsDialogProps = {
@@ -64,10 +74,15 @@ type ModelSettingsDialogProps = {
         orgId: string;
         orgName: string;
         releaseDate?: string | null;
+        disabled?: boolean;
     }>;
     modelLabel?: string;
     providerOptions: Array<{ id: string; name: string; logoId?: string }>;
     supportedProvidersForModel?: string[];
+    serviceTierOptions?: ServiceTierOption[];
+    serviceTier?: ChatServiceTier | null;
+    reasoningSupport?: ReasoningEffortSupport | null;
+    reasoningEffort?: ChatReasoningEffort | null;
     temperatureValue: number;
     maxTokensValue: number;
     topPValue: number;
@@ -152,6 +167,10 @@ export function ModelSettingsDialog({
     modelLabel,
     providerOptions,
     supportedProvidersForModel,
+    serviceTierOptions,
+    serviceTier,
+    reasoningSupport,
+    reasoningEffort,
     temperatureValue,
     maxTokensValue,
     topPValue,
@@ -172,6 +191,7 @@ export function ModelSettingsDialog({
     const tRooms = useTranslations("Product.chatRooms");
     const tRequest = useTranslations("Product.tools.request");
     const tSettings = useTranslations("SettingsUI.strings");
+    const format = useDisplayFormatters();
     const reduceMotion = useReducedMotion();
     const [modelPickerOpen, setModelPickerOpen] = useState(false);
     const [modelPickerSearch, setModelPickerSearch] = useState("");
@@ -347,12 +367,50 @@ export function ModelSettingsDialog({
         )
             ? settings.providerId
             : "auto";
+    const selectedProvider = filteredProviderOptions.find((provider) => provider.id === providerValue);
     const selectedProviderLabel =
         providerValue === "auto"
-            ? "Auto (Gateway)"
+            ? tUi("select.autoGateway")
             : (filteredProviderOptions.find(
                   (provider) => provider.id === providerValue
-              )?.name ?? "Auto (Gateway)");
+              )?.name ?? tUi("select.autoGateway"));
+    const reasoningOptions = REASONING_OPTIONS.map((option) => ({
+        ...option,
+        label: tUi(`requestBuilder.${option.value === "xhigh" ? "extraHigh" : option.value}`),
+    }));
+    const supportedReasoningOptions = reasoningSupport?.supportedValues.length
+        ? reasoningOptions.filter((option) =>
+              reasoningSupport.supportedValues.includes(option.value)
+          )
+        : [];
+    const selectedReasoningOption =
+        supportedReasoningOptions.find(
+            (option) =>
+                option.value === (reasoningEffort ?? settings.reasoningEffort)
+        );
+    const reasoningStateLabel = settings.reasoningEnabled
+        ? (selectedReasoningOption?.label ?? tUi("modelSettingsDialog.selectEffort"))
+        : tUi("modelSettingsDialog.off");
+    const availableServiceTierOptions = serviceTierOptions?.length
+        ? serviceTierOptions
+        : [{ value: "standard" as const, label: "Standard" }];
+    const renderServiceTier = (value: ChatServiceTier, label: string) => {
+        const tier = getTierFilterMeta(value);
+        const TierIcon = tier.icon;
+        return (
+            <span className="flex min-w-0 items-center gap-2">
+                <TierIcon aria-hidden="true" className={`size-4 shrink-0 ${tier.iconClassName}`} />
+                <span className="truncate">{label}</span>
+            </span>
+        );
+    };
+    const requestedServiceTier = serviceTier ?? settings.serviceTier ?? "standard";
+    const selectedServiceTier = requestedServiceTier;
+    const selectedServiceTierAvailable = availableServiceTierOptions.some((option) => option.value === selectedServiceTier);
+    const selectedServiceTierLabel =
+        availableServiceTierOptions.find(
+            (option) => option.value === selectedServiceTier,
+        )?.label ?? `${getServiceTierLabel(selectedServiceTier)} (unavailable)`;
     useEffect(() => {
         if (!modelPickerOpen) {
             setModelPickerListReady(false);
@@ -376,7 +434,7 @@ export function ModelSettingsDialog({
             setFavoriteModelIds(fallbackIds);
             return;
         }
-        const raw = window.localStorage.getItem(
+        const raw = chatLocalStorage.getItem(
             MODEL_SELECTOR_FAVORITES_STORAGE_KEY
         );
         if (!raw) {
@@ -431,8 +489,11 @@ export function ModelSettingsDialog({
         const remainingChoices = filteredModelChoices.filter(
             (choice) => !favoriteModelIdSet.has(choice.favoriteId)
         );
-        return groupModelsByReleaseMonth(remainingChoices);
-    }, [favoriteModelIdSet, filteredModelChoices]);
+        return groupModelsByReleaseMonth(
+            remainingChoices,
+            (date) => format.dateParts(date, { month: "long", year: "numeric", timeZone: "UTC" }),
+        );
+    }, [favoriteModelIdSet, filteredModelChoices, format]);
     const modelPickerHasResults =
         featuredModelChoices.length > 0 || groupedModelChoices.length > 0;
     const selectedChoice = useMemo(
@@ -530,12 +591,13 @@ export function ModelSettingsDialog({
                                                 <button
                                                     key={choice.id}
                                                     type="button"
+                                                    disabled={choice.disabled}
                                                     onClick={() => {
                                                         onModelChange?.(choice.id);
                                                         setModelPickerSearch("");
                                                         setModelPickerOpen(false);
                                                     }}
-															className="flex min-h-7 w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm text-foreground outline-none transition-colors hover:bg-muted focus-visible:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
+                                                    className="flex min-h-7 w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm text-foreground outline-none transition-colors hover:bg-muted focus-visible:bg-muted focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-45"
                                                 >
                                                     <Logo
                                                         id={choice.orgId}
@@ -567,12 +629,13 @@ export function ModelSettingsDialog({
                                                 <button
                                                     key={choice.id}
                                                     type="button"
+                                                    disabled={choice.disabled}
                                                     onClick={() => {
                                                         onModelChange?.(choice.id);
                                                         setModelPickerSearch("");
                                                         setModelPickerOpen(false);
                                                     }}
-															className="flex min-h-7 w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm text-foreground outline-none transition-colors hover:bg-muted focus-visible:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
+                                                    className="flex min-h-7 w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm text-foreground outline-none transition-colors hover:bg-muted focus-visible:bg-muted focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-45"
                                                 >
                                                     <Logo
                                                         id={choice.orgId}
@@ -686,6 +749,57 @@ export function ModelSettingsDialog({
                             </Button>
                         </div>
                         <div className="grid gap-1.5">
+                            <div className="flex items-center justify-between gap-2">
+                                <Label htmlFor="reasoning-effort">{tUi("modelSettingsDialog.reasoningEffort")}</Label>
+                                <span className="text-xs text-muted-foreground">
+                                    {reasoningStateLabel}
+                                </span>
+                            </div>
+                            {supportedReasoningOptions.length > 0 ? (
+                                <Select
+                                    value={selectedReasoningOption?.value}
+                                    onValueChange={(value) =>
+                                        onUpdate({
+                                            reasoningEnabled: true,
+                                            reasoningEffort: value as ChatReasoningEffort,
+                                        })
+                                    }
+                                >
+                                    <SelectTrigger
+                                        id="reasoning-effort"
+                                        className="w-full min-w-0"
+                                    >
+                                        <SelectValue
+                                            className="min-w-0"
+                                            placeholder={tUi("modelSettingsDialog.selectEffort")}
+                                        />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {supportedReasoningOptions.map((option) => (
+                                            <SelectItem key={option.value} value={option.value}>
+                                                {option.label}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            ) : (
+                                <div className="rounded-md border border-border bg-muted/20 px-3 py-2">
+                                    <p className="text-xs text-muted-foreground">
+                                        {tUi("modelSettingsDialog.noEffortValues")}
+                                    </p>
+                                </div>
+                            )}
+                            {reasoningSupport?.defaultValue ? (
+                                <p className="text-xs text-muted-foreground">
+                                    {tUi("modelSettingsDialog.gatewayDefault")}{" "}
+                                    {reasoningOptions.find(
+                                        (option) =>
+                                            option.value === reasoningSupport.defaultValue,
+                                    )?.label ?? reasoningSupport.defaultValue}
+                                </p>
+                            ) : null}
+                        </div>
+                        <div className="grid gap-1.5">
                             <Label>{tRooms("provider")}</Label>
                             <Select
                                 value={providerValue}
@@ -698,7 +812,12 @@ export function ModelSettingsDialog({
                                         className="min-w-0"
                                 placeholder={tUi("select.autoGateway")}
                                     >
-                                        {selectedProviderLabel}
+                                        <span className="flex min-w-0 items-center gap-2">
+                                            {selectedProvider && (
+                                                <Logo id={selectedProvider.logoId ?? selectedProvider.id} alt={selectedProvider.name} width={16} height={16} className="shrink-0" />
+                                            )}
+                                            <span className="truncate">{selectedProviderLabel}</span>
+                                        </span>
                                     </SelectValue>
                                 </SelectTrigger>
                                 <SelectContent className="max-w-[min(var(--anchor-width),calc(100vw-2rem))]">
@@ -740,13 +859,44 @@ export function ModelSettingsDialog({
                                 </SelectContent>
                             </Select>
                         </div>
+                        <div className="grid gap-1.5">
+                            <Label>Service Tier</Label>
+                            <Select
+                                value={selectedServiceTier}
+                                disabled={availableServiceTierOptions.length <= 1 && selectedServiceTierAvailable}
+                                onValueChange={(value) =>
+                                    onUpdate({ serviceTier: value as ChatServiceTier })
+                                }
+                            >
+                                <SelectTrigger className="w-full min-w-0">
+                                    <SelectValue className="min-w-0">
+                                        {renderServiceTier(selectedServiceTier, selectedServiceTierLabel)}
+                                    </SelectValue>
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {!selectedServiceTierAvailable && (
+                                        <SelectItem value={selectedServiceTier} disabled>
+                                            {renderServiceTier(selectedServiceTier, selectedServiceTierLabel)}
+                                        </SelectItem>
+                                    )}
+                                    {availableServiceTierOptions.map((option) => (
+                                        <SelectItem key={option.value} value={option.value}>
+                                            {renderServiceTier(option.value, option.label)}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
                     </div>
                     <Separator />
                     <div className="grid gap-1.5">
                         <div className="flex items-center justify-between gap-3">
                             <Label htmlFor="system-prompt">{tRooms("systemPrompt")}</Label>
                             <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
-                                ~{estimatePromptTokenCount(settings.systemPrompt).toLocaleString()} {tSettings("tokens")}
+                                ~{format.number(estimatePromptTokenCount(settings.systemPrompt), {
+                                    maximumFractionDigits: 0,
+                                    notation: "standard",
+                                })} {tSettings("tokens")}
                             </span>
                         </div>
                         <Textarea

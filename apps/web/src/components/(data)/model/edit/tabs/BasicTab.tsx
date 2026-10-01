@@ -2,9 +2,11 @@
 
 import { useTranslations } from "next-intl"
 import { type ReactNode, useEffect, useState } from "react"
+import { Logo } from "@/components/Logo"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { DatePickerInput } from "@/components/ui/date-picker-input"
+import { SearchableSelect } from "@/components/ui/searchable-select"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
@@ -97,16 +99,18 @@ function parseTypeList(value: string | null): string[] {
 function FieldRow({
   label,
   description,
+  htmlFor,
   children,
 }: {
   label: string
   description?: string
+  htmlFor?: string
   children: ReactNode
 }) {
   return (
     <div className="grid gap-2 md:grid-cols-[220px_minmax(0,1fr)] md:items-start">
       <div className="space-y-0.5">
-        <Label className="text-sm font-medium">{label}</Label>
+        <Label htmlFor={htmlFor} className="text-sm font-medium">{label}</Label>
         {description ? (
           <p className="text-xs text-muted-foreground">{description}</p>
         ) : null}
@@ -141,12 +145,6 @@ export default function BasicTab({ model, onModelChange }: BasicTabProps) {
     void fetchOptions()
   }, [model.model_id])
 
-  useEffect(() => {
-    if (!model.organisation_id && organisations.length > 0) {
-      onModelChange({ ...model, organisation_id: organisations[0].organisation_id })
-    }
-  }, [model, organisations, onModelChange])
-
   const inputTypes = parseTypeList(model.input_types)
   const outputTypes = parseTypeList(model.output_types)
 
@@ -172,28 +170,14 @@ export default function BasicTab({ model, onModelChange }: BasicTabProps) {
           />
         </FieldRow>
         <FieldRow label={tModel("organization")}>
-          <Select
-            value={model.organisation_id ?? undefined}
-            onValueChange={(value) => onModelChange({ ...model, organisation_id: value })}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder={tModel("selectOrganization")} />
-            </SelectTrigger>
-            <SelectContent>
-              {organisations.map((organisation) => (
-                <SelectItem key={organisation.organisation_id} value={organisation.organisation_id}>
-                  {organisation.name ?? organisation.organisation_id}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <SearchableSelect label={tModel("organization")} value={model.organisation_id || ""} placeholder={tModel("selectOrganization")} options={organisations.map((item) => ({ value: item.organisation_id, label: item.name || item.organisation_id, icon: <Logo id={item.organisation_id} alt="" width={20} height={20} className="size-5 shrink-0 object-contain" /> }))} onValueChange={(value) => onModelChange({ ...model, organisation_id: value === "__none__" ? null : value })} />
         </FieldRow>
         <FieldRow label={tModel("status")}>
           <Select
             value={normalizeModelStatus(model.status)}
             onValueChange={(value) => onModelChange({ ...model, status: value })}
           >
-            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectTrigger><SelectValue>{normalizeModelStatus(model.status)}</SelectValue></SelectTrigger>
             <SelectContent>
               {MODEL_STATUS_OPTIONS.map((status) => (
                 <SelectItem key={status} value={status}>
@@ -204,11 +188,7 @@ export default function BasicTab({ model, onModelChange }: BasicTabProps) {
           </Select>
         </FieldRow>
         <FieldRow label={tEditor("license")}>
-          <Input
-            value={model.license || ""}
-            onChange={(event) => onModelChange({ ...model, license: event.target.value || null })}
-            placeholder={tEditor("licenseExample")}
-          />
+          <SearchableSelect label={tEditor("license")} value={model.license || "unspecified"} options={[{ value: "unspecified", label: tEditor("notSpecified") }, ...[...new Set(["Apache-2.0", "MIT", "BSD-3-Clause", "CC-BY-4.0", "CC-BY-NC-4.0", "OpenRAIL", "Proprietary", ...(model.license ? [model.license] : [])])].map((value) => ({ value, label: value === "Proprietary" ? tEditor("proprietary") : value }))]} onValueChange={(value) => onModelChange({ ...model, license: value === "unspecified" ? null : value })} />
         </FieldRow>
         <FieldRow
           label={tEditor("visibility")}
@@ -227,17 +207,24 @@ export default function BasicTab({ model, onModelChange }: BasicTabProps) {
       <section className="rounded-lg border p-4 space-y-4">
         <div className="text-sm font-semibold">{tEditor("relationships")}</div>
         <FieldRow label={tEditor("previousModel")}>
+          <SearchableSelect label={tEditor("previousModel")} value={model.previous_model_id || "__none__"} options={[{ value: "__none__", label: tUi("select.none") }, ...existingModels.map((item) => ({ value: item.model_id, label: item.name || item.model_id, icon: <Logo id={item.model_id.split("/")[0]} alt="" width={20} height={20} className="size-5 shrink-0 object-contain" /> }))]} onValueChange={(value) => onModelChange({ ...model, previous_model_id: value === "__none__" ? null : value })} />
+        </FieldRow>
+        <FieldRow
+          label={tEditor("recommendedSuccessor")}
+          description={tEditor("recommendedSuccessorDescription")}
+          htmlFor="recommended-successor"
+        >
           <Select
-            value={model.previous_model_id || "__none__"}
+            value={model.replacement_model_id || "__none__"}
             onValueChange={(value) =>
               onModelChange({
                 ...model,
-                previous_model_id: value === "__none__" ? null : value,
+                replacement_model_id: value === "__none__" ? null : value,
               })
             }
           >
-            <SelectTrigger>
-              <SelectValue placeholder={tEditor("selectPreviousModel")} />
+            <SelectTrigger id="recommended-successor">
+              <SelectValue placeholder={tEditor("selectRecommendedSuccessor")} />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="__none__">{tUi("select.none")}</SelectItem>
@@ -250,27 +237,7 @@ export default function BasicTab({ model, onModelChange }: BasicTabProps) {
           </Select>
         </FieldRow>
         <FieldRow label={tEditor("modelFamily")}>
-          <Select
-            value={model.family_id || "__none__"}
-            onValueChange={(value) =>
-              onModelChange({
-                ...model,
-                family_id: value === "__none__" ? null : value,
-              })
-            }
-          >
-            <SelectTrigger>
-              <SelectValue placeholder={tEditor("selectFamily")} />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="__none__">{tUi("select.none")}</SelectItem>
-              {families.map((family) => (
-                <SelectItem key={family.family_id} value={family.family_id}>
-                  {family.family_name ?? family.family_id}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <SearchableSelect label={tEditor("modelFamily")} value={model.family_id || "__none__"} options={[{ value: "__none__", label: tUi("select.none") }, ...families.map((item) => ({ value: item.family_id, label: item.family_name || item.family_id }))]} onValueChange={(value) => onModelChange({ ...model, family_id: value === "__none__" ? null : value })} />
         </FieldRow>
       </section>
 

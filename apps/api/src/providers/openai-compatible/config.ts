@@ -7,7 +7,6 @@ import type { ProviderExecuteArgs } from "../types";
 import { resolveProviderKey, type ResolvedKey } from "../keys";
 import type { OpenAICompatConfig } from "./types";
 import { OPENAI_COMPAT_CONFIG } from "./registry";
-import { CROFAI_API_KEY_ENVS, CROFAI_BASE_URL_ENVS } from "../crofai/config";
 import { WEIGHTSANDBIASES_API_KEY_ENVS } from "../weights-and-biases/config";
 import { ARCEE_API_KEY_ENVS } from "../arcee/config";
 import { ALIBABA_CLOUD_API_KEY_ENVS } from "../alibaba/config";
@@ -20,10 +19,17 @@ import {
 } from "../nebius-token-factory/config";
 import { BYTEPLUS_API_KEY_ENVS, BYTEPLUS_BASE_URL_ENVS } from "../byteplus/config";
 import { INFERENCE_NET_API_KEY_ENVS } from "../inference-net/config";
+import { DOUBLEWORD_API_KEY_ENVS } from "../doubleword/config";
 import { LIQUID_AI_API_KEY_ENVS } from "../liquid-ai/config";
 import { MISTRAL_API_KEY_ENVS } from "../mistral/config";
 import { MOONSHOT_API_KEY_ENVS } from "../moonshotai/config";
 import { normalizeProviderId } from "@/lib/config/providerAliases";
+import { deepInfraMediaUrl } from "../deepinfra/config";
+
+function normalizeCompatProviderId(providerId: string): string {
+	const normalized = normalizeProviderId(providerId);
+	return normalized === "wafer-zdr" ? "wafer" : normalized;
+}
 
 function configError(code: string): Error & { code: string } {
 	const error = new Error(code) as Error & { code: string };
@@ -123,7 +129,7 @@ function isNebiusTokenFactoryProvider(providerId: string): boolean {
 }
 
 export function resolveOpenAICompatConfig(providerId: string): OpenAICompatConfig {
-	const canonicalProviderId = normalizeProviderId(providerId);
+	const canonicalProviderId = normalizeCompatProviderId(providerId);
 	const fallback: OpenAICompatConfig = { providerId: canonicalProviderId };
 	const config = OPENAI_COMPAT_CONFIG[canonicalProviderId] ?? fallback;
 	const bindings = getBindings() as unknown as Record<string, string | undefined>;
@@ -131,9 +137,7 @@ export function resolveOpenAICompatConfig(providerId: string): OpenAICompatConfi
 	const baseUrl =
 		((providerId === "byteplus" || providerId === "bytedance-seed")
 			? readFirstBinding(BYTEPLUS_BASE_URL_ENVS)
-			: (providerId === "crofai")
-				? readFirstBinding(CROFAI_BASE_URL_ENVS)
-				: undefined) ||
+			: undefined) ||
 		resolveNebiusBaseUrl(canonicalProviderId) ||
 		(config.baseUrlEnv && bindings[config.baseUrlEnv]) ||
 		resolveCloudflareWorkersAIBaseUrl(canonicalProviderId) ||
@@ -150,13 +154,17 @@ export function resolveOpenAICompatConfig(providerId: string): OpenAICompatConfi
 }
 
 export function isOpenAICompatProvider(providerId: string): boolean {
-	return Object.prototype.hasOwnProperty.call(OPENAI_COMPAT_CONFIG, normalizeProviderId(providerId));
+	return Object.prototype.hasOwnProperty.call(OPENAI_COMPAT_CONFIG, normalizeCompatProviderId(providerId));
 }
 
-export function openAICompatUrl(providerId: string, path: string): string {
-	const canonicalProviderId = normalizeProviderId(providerId);
+export function openAICompatUrl(providerId: string, path: string, model?: string | null): string {
+	const canonicalProviderId = normalizeCompatProviderId(providerId);
 	const config = resolveOpenAICompatConfig(canonicalProviderId);
 	const requestedSuffix = normalizePathSegment(path);
+	if (canonicalProviderId === "deepinfra") {
+		const mediaUrl = deepInfraMediaUrl(config.baseUrl ?? "", requestedSuffix);
+		if (mediaUrl) return mediaUrl;
+	}
 	// Perplexity's hosted Sonar surface is Chat-shaped, but its canonical
 	// endpoint is /v1/sonar rather than OpenAI's /v1/chat/completions.
 	const suffix = canonicalProviderId === "perplexity" && requestedSuffix === "/chat/completions"
@@ -165,11 +173,14 @@ export function openAICompatUrl(providerId: string, path: string): string {
 	const isAlibabaCompatProvider = ALIBABA_COMPAT_PROVIDER_IDS.has(canonicalProviderId);
 	const isAlibabaResponsesRoute = isAlibabaCompatProvider && suffix === "/responses";
 	const isAlibabaChatRoute = isAlibabaCompatProvider && suffix === "/chat/completions";
+	const isRelaceHostedModel = canonicalProviderId === "relace"
+		&& Boolean(model?.trim())
+		&& normalizeOpenAIModelName(model) !== "relace-search";
 	let base = config.baseUrl?.replace(/\/+$/, "") ?? "";
 	const configuredPrefix = normalizePathSegment(
 		isAlibabaResponsesRoute
 				? ALIBABA_RESPONSES_PATH_PREFIX
-				: (config.pathPrefix ?? "/v1"),
+				: (isRelaceHostedModel ? "/v1" : config.pathPrefix ?? "/v1"),
 	);
 	let prefix = configuredPrefix;
 
@@ -180,7 +191,13 @@ export function openAICompatUrl(providerId: string, path: string): string {
 			if (canonicalProviderId === "friendli") {
 				prefix = resolveFriendliPathPrefix(basePath, configuredPrefix);
 			}
-			if (isAlibabaResponsesRoute) {
+			if (isRelaceHostedModel) {
+				const searchPrefix = normalizePathSegment(config.pathPrefix ?? "");
+				if (searchPrefix && basePath === searchPrefix) {
+					const trimmedBasePath = basePath.slice(0, basePath.length - searchPrefix.length).replace(/\/+$/, "");
+					base = `${parsed.origin}${trimmedBasePath}`;
+				}
+			} else if (isAlibabaResponsesRoute) {
 				const chatPrefix = normalizePathSegment(config.pathPrefix ?? "");
 				if (chatPrefix && basePath === chatPrefix) {
 					const trimmedBasePath = basePath.slice(0, basePath.length - chatPrefix.length).replace(/\/+$/, "");
@@ -214,7 +231,7 @@ export function openAICompatHeaders(
 	key: string,
 	extraHeaders?: Record<string, string | undefined>,
 ): Record<string, string> {
-	const canonicalProviderId = normalizeProviderId(providerId);
+	const canonicalProviderId = normalizeCompatProviderId(providerId);
 	const config = resolveOpenAICompatConfig(canonicalProviderId);
 	const headerName = config.apiKeyHeader ?? "Authorization";
 	const prefix = config.apiKeyPrefix ?? "Bearer ";
@@ -233,11 +250,12 @@ export function openAICompatHeaders(
 				Object.entries(extraHeaders).filter(([, value]) => typeof value === "string" && value.length > 0),
 			)
 			: {}),
+		...(providerId.trim().toLowerCase() === "wafer-zdr" ? { "Wafer-ZDR": "required" } : {}),
 	};
 }
 
-export function resolveOpenAICompatKey(args: ProviderExecuteArgs): ResolvedKey {
-	const providerId = normalizeProviderId(args.providerId);
+export function resolveOpenAICompatKey(args: Pick<ProviderExecuteArgs, "providerId" | "byokMeta"> & { forceGatewayKey?: boolean }): ResolvedKey {
+	const providerId = normalizeCompatProviderId(args.providerId);
 	const normalizedArgs = providerId === args.providerId ? args : { ...args, providerId };
 	if (providerId === "weights-and-biases") {
 		return resolveProviderKey(normalizedArgs, () => readFirstBinding(WEIGHTSANDBIASES_API_KEY_ENVS));
@@ -257,11 +275,11 @@ export function resolveOpenAICompatKey(args: ProviderExecuteArgs): ResolvedKey {
 	if (args.providerId === "byteplus" || args.providerId === "bytedance-seed") {
 		return resolveProviderKey(args, () => readFirstBinding(BYTEPLUS_API_KEY_ENVS));
 	}
-	if (args.providerId === "crofai") {
-		return resolveProviderKey(args, () => readFirstBinding(CROFAI_API_KEY_ENVS));
-	}
 	if (args.providerId === "inference-net") {
 		return resolveProviderKey(args, () => readFirstBinding(INFERENCE_NET_API_KEY_ENVS));
+	}
+	if (args.providerId === "doubleword") {
+		return resolveProviderKey(args, () => readFirstBinding(DOUBLEWORD_API_KEY_ENVS));
 	}
 	if (args.providerId === "liquid" || args.providerId === "liquid-ai") {
 		return resolveProviderKey(args, () => readFirstBinding(LIQUID_AI_API_KEY_ENVS));
@@ -303,7 +321,7 @@ export type OpenAICompatRoute = "responses" | "chat";
 
 export function resolveOpenAICompatModel(providerId: string, model?: string | null): string {
 	const value = model?.trim() ?? "";
-	if (normalizeProviderId(providerId) !== "poolside" || !value) return value;
+	if (normalizeCompatProviderId(providerId) !== "poolside" || !value) return value;
 
 	const upstreamModel = value.replace(/:free$/i, "");
 	return upstreamModel.startsWith("poolside/") ? upstreamModel : `poolside/${upstreamModel}`;
@@ -318,7 +336,7 @@ function normalizeOpenAIModelName(model?: string | null): string {
 }
 
 export function resolveOpenAICompatRoute(providerId: string, model?: string | null): OpenAICompatRoute {
-	const canonicalProviderId = normalizeProviderId(providerId);
+	const canonicalProviderId = normalizeCompatProviderId(providerId);
 	const config = resolveOpenAICompatConfig(canonicalProviderId);
 	const normalized = normalizeOpenAIModelName(model);
 	// StepFun currently exposes Responses only for step-3.7-flash; its other
@@ -332,6 +350,7 @@ export function resolveOpenAICompatRoute(providerId: string, model?: string | nu
 	if (canonicalProviderId === "deepseek") {
 		return (
 			normalized === "deepseek-v4-flash" ||
+			normalized === "deepseek-v4.1-flash-expires-on-0910" ||
 			normalized === "deepseek-v4-pro" ||
 			normalized === "deepseek-v4-flash-vision-exp"
 		)
@@ -360,7 +379,7 @@ export function resolveOpenAICompatRoute(providerId: string, model?: string | nu
 }
 
 export function supportsOpenAICompatResponses(providerId: string, model?: string | null): boolean {
-	const canonicalProviderId = normalizeProviderId(providerId);
+	const canonicalProviderId = normalizeCompatProviderId(providerId);
 	if (canonicalProviderId === "deepseek") return resolveOpenAICompatRoute(canonicalProviderId, model) === "responses";
 	const config = resolveOpenAICompatConfig(canonicalProviderId);
 	if (typeof config.supportsResponses === "boolean") return config.supportsResponses;

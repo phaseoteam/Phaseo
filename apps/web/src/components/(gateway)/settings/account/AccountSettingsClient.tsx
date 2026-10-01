@@ -1,4 +1,5 @@
 "use client";
+import { useInvalidatePrivateSettings } from "../PrivateSettingsQuery";
 
 import * as React from "react";
 import { useLocale, useTranslations } from "next-intl";
@@ -19,10 +20,6 @@ import {
 	disableChatCompletionNotifications,
 	enableChatCompletionNotifications,
 } from "@/lib/chat/completionNotifications";
-import {
-	OBFUSCATE_INFO_COOKIE,
-	serializeObfuscateInfo,
-} from "@/lib/obfuscation";
 import { z } from "zod";
 import { PasswordStrengthIndicator } from "./PasswordStrengthIndicator";
 import { resolveDefaultWorkspaceId } from "./defaultWorkspace";
@@ -43,6 +40,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { ChevronsUpDown, Loader2, Lock, Mail } from "lucide-react";
+import { SensitiveValue } from "@/components/display/SensitiveValue";
 
 export type UserPayload = {
 	id: string;
@@ -142,7 +140,6 @@ const schema = z.object({
 		.min(1, "Workspace ID cannot be empty.")
 		.optional()
 		.nullable(),
-	obfuscate_info: z.boolean(),
 });
 
 const passwordChangeSchema = z
@@ -176,6 +173,7 @@ export default function AccountSettingsClient({
 	const m = (key: string, values: Record<string, string | number>) =>
 		t(`strings.${key}` as never, values as never);
 	const locale = useLocale();
+	const invalidateSettings = useInvalidatePrivateSettings();
 	const [displayName, setDisplayName] = React.useState<string | null>(
 		user.displayName ?? null
 	);
@@ -191,10 +189,6 @@ export default function AccountSettingsClient({
 		initialDefaultTeam
 	);
 	const [declaredCountryCode, setDeclaredCountryCode] = React.useState(user.declaredCountryCode ?? "");
-	const [obfuscateInfo, setObfuscateInfo] = React.useState<boolean>(
-		!!user.obfuscateInfo
-	);
-
 	const [saving, setSaving] = React.useState(false);
 
 	// Password change state
@@ -217,36 +211,11 @@ export default function AccountSettingsClient({
 		React.useState(true);
 	const [updatingChatNotifications, setUpdatingChatNotifications] =
 		React.useState(false);
-	const applyObfuscationMode = React.useCallback((next: boolean) => {
-		if (typeof document === "undefined") return;
-		const serialized = serializeObfuscateInfo(next);
-		document.documentElement.setAttribute(
-			"data-obfuscate-pii",
-			next ? "true" : "false"
-		);
-		document
-			.getElementById("dashboard-shell")
-			?.setAttribute("data-obfuscate-pii", next ? "true" : "false");
-		document
-			.querySelectorAll("[data-obfuscation-sync='true']")
-			.forEach((node) =>
-				(node as HTMLElement).setAttribute(
-					"data-obfuscate-pii",
-					next ? "true" : "false"
-				)
-			);
-		document.cookie = `${OBFUSCATE_INFO_COOKIE}=${serialized}; path=/; max-age=${
-			60 * 60 * 24 * 365
-		}; samesite=lax`;
-	}, []);
-
 	React.useEffect(() => {
 		setAnalyticsConsent(readAnalyticsConsent());
-		applyObfuscationMode(Boolean(user.obfuscateInfo));
-
 		setChatNotificationsSupported(chatCompletionNotificationsSupported());
 		setChatNotifyOnComplete(chatCompletionNotificationsEnabled());
-	}, [applyObfuscationMode, user.obfuscateInfo]);
+	}, []);
 
 	const analyticsEnabled = analyticsConsent === "accepted";
 
@@ -255,7 +224,6 @@ export default function AccountSettingsClient({
 			display_name: user.displayName ?? null,
 			default_workspace_id: user.defaultWorkspaceId ?? null,
 			declared_country_code: user.countryStorageAvailable === false ? undefined : user.declaredCountryCode ?? null,
-			obfuscate_info: !!user.obfuscateInfo,
 		}),
 		[user]
 	);
@@ -264,7 +232,6 @@ export default function AccountSettingsClient({
 		display_name: displayName,
 		default_workspace_id: defaultWorkspaceId,
 		declared_country_code: user.countryStorageAvailable === false ? undefined : declaredCountryCode || null,
-		obfuscate_info: obfuscateInfo,
 	};
 	const hasChanges = JSON.stringify(initial) !== JSON.stringify(current);
 
@@ -284,12 +251,14 @@ export default function AccountSettingsClient({
 
 		setSaving(true);
 		try {
-			await toast.promise(updateAccount(updatePayload), {
+			const promise = updateAccount(updatePayload);
+			toast.promise(promise, {
 				loading: s("Saving your settings..."),
 				success: s("Settings saved."),
 				error: () => s("Could not save settings"),
 			});
-			applyObfuscationMode(Boolean(parsed.data.obfuscate_info));
+			await promise;
+			void invalidateSettings();
 		} catch (e) {
 			void e;
 		} finally {
@@ -501,9 +470,9 @@ export default function AccountSettingsClient({
 									{s("Contact support to change your sign-in email.")}
 								</p>
 							</div>
-							<div className="w-full shrink-0 sm:w-[min(32rem,55%)]">
-									<Input value={user.email} readOnly data-pii="true" />
-							</div>
+							<SensitiveValue className="w-full shrink-0 sm:w-[min(32rem,55%)]" label="email address">
+								<Input value={user.email} readOnly />
+							</SensitiveValue>
 						</div>
 						) : null}
 
@@ -571,20 +540,6 @@ export default function AccountSettingsClient({
 								/>
 						</div>
 
-					<div className="flex items-center justify-between gap-4 border-t px-4 py-3.5">
-						<div className="min-w-0">
-							<Label className="text-sm font-medium">{s("Obfuscate Info")}</Label>
-							<p className="mt-0.5 text-sm text-muted-foreground">
-								{s("Blur sensitive information across the website.")}
-							</p>
-						</div>
-								<Switch
-									checked={obfuscateInfo}
-									onCheckedChange={setObfuscateInfo}
-									aria-label={s("Toggle obfuscation")}
-								/>
-					</div>
-
 					<div className="flex flex-col gap-3 border-t bg-muted/10 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
 						<div className="flex min-w-0 items-center gap-2">
 							<p className="text-xs text-muted-foreground">
@@ -604,7 +559,6 @@ export default function AccountSettingsClient({
 									setDisplayName(initial.display_name);
 									setDefaultTeamId(initialDefaultTeam);
 									setDeclaredCountryCode(initial.declared_country_code ?? "");
-									setObfuscateInfo(initial.obfuscate_info);
 								}}
 								disabled={!hasChanges || saving}
 							>
@@ -767,25 +721,24 @@ export default function AccountSettingsClient({
 						<div className="grid gap-3">
 							<div className="grid gap-2 sm:grid-cols-[160px_1fr] sm:items-start">
 								<Label className="sm:pt-2">{s("Current email")}</Label>
-								<div className="max-w-lg">
-									<Input value={user.email ?? ""} readOnly data-pii="true" />
-								</div>
+								<SensitiveValue className="max-w-lg" label={s("Current email")}>
+									<Input value={user.email ?? ""} readOnly />
+								</SensitiveValue>
 							</div>
 
 							<div className="grid gap-2 sm:grid-cols-[160px_1fr] sm:items-start">
 								<Label htmlFor="newEmail" className="sm:pt-2">
 									{s("New email")}
 								</Label>
-								<div className="max-w-lg">
+								<SensitiveValue className="max-w-lg" label="new email address">
 									<Input
 										id="newEmail"
 										type="email"
 										value={newEmail}
-										data-pii="true"
 										onChange={(e) => setNewEmail(e.target.value)}
 										placeholder={s("Enter your new email address")}
 									/>
-								</div>
+								</SensitiveValue>
 							</div>
 
 							<div className="grid gap-2 sm:grid-cols-[160px_1fr] sm:items-start">

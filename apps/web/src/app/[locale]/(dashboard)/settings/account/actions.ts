@@ -313,9 +313,9 @@ export async function updateAccount(payload: {
         throw new Error('Not authenticated')
     }
 
-    const toUpsert: any = {}
-    if (payload.display_name !== undefined) toUpsert.display_name = payload.display_name
-    if (payload.default_workspace_id !== undefined) toUpsert.default_workspace_id = payload.default_workspace_id
+    const toUpdate: any = {}
+    if (payload.display_name !== undefined) toUpdate.display_name = payload.display_name
+    if (payload.default_workspace_id !== undefined) toUpdate.default_workspace_id = payload.default_workspace_id
     if (payload.declared_country_code !== undefined) {
         const countryCode = normaliseCountryCode(payload.declared_country_code)
         if (!countryCode) throw new Error('Select a valid country')
@@ -326,16 +326,18 @@ export async function updateAccount(payload: {
             .maybeSingle()
         if (countryError) throw new Error(countryError.message)
         if (existingCountry?.declared_country_code !== countryCode) {
-            toUpsert.declared_country_code = countryCode
-            toUpsert.country_declared_at = new Date().toISOString()
+            toUpdate.declared_country_code = countryCode
+            toUpdate.country_declared_at = new Date().toISOString()
         }
     }
-    if (payload.obfuscate_info !== undefined) toUpsert.obfuscate_info = payload.obfuscate_info
+    if (payload.obfuscate_info !== undefined) toUpdate.obfuscate_info = payload.obfuscate_info
 
-    toUpsert.user_id = authUser.id
-
-    const { error } = await supabase.from('users').upsert(toUpsert, { onConflict: 'user_id' })
-    if (error) throw new Error(error.message)
+    // Use a scoped UPDATE instead of upsert: the users table intentionally does
+    // not grant authenticated users UPDATE access to the protected user_id key.
+    if (Object.keys(toUpdate).length > 0) {
+        const { error } = await supabase.from('users').update(toUpdate).eq('user_id', authUser.id)
+        if (error) throw new Error(error.message)
+    }
     if (payload.obfuscate_info !== undefined) {
         const cookieStore = await cookies()
         cookieStore.set(OBFUSCATE_INFO_COOKIE, serializeObfuscateInfo(payload.obfuscate_info), {

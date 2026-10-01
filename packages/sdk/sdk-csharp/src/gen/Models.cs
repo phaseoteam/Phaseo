@@ -160,6 +160,9 @@ public sealed class AnthropicMessagesRequest
 	[JsonPropertyName("reasoning")]
 	public Dictionary<string, object>? Reasoning { get; set; }
 
+	[JsonPropertyName("service_tier")]
+	public string? ServiceTier { get; set; }
+
 	[JsonPropertyName("session_id")]
 	public string? SessionId { get; set; }
 
@@ -222,6 +225,9 @@ public sealed class AnthropicMessagesResponse
 
 public sealed class AnthropicTool
 {
+	[JsonPropertyName("async")]
+	public bool? Async { get; set; }
+
 	[JsonPropertyName("description")]
 	public string? Description { get; set; }
 
@@ -725,6 +731,9 @@ public sealed class AudioContentPart
 
 public sealed class AudioSpeechRequest
 {
+	[JsonPropertyName("config")]
+	public Dictionary<string, object>? Config { get; set; }
+
 	[JsonPropertyName("format")]
 	public string? Format { get; set; }
 
@@ -736,6 +745,9 @@ public sealed class AudioSpeechRequest
 
 	[JsonPropertyName("provider")]
 	public Dictionary<string, object>? Provider { get; set; }
+
+	[JsonPropertyName("speed")]
+	public double? Speed { get; set; }
 
 	[JsonPropertyName("voice")]
 	public string? Voice { get; set; }
@@ -1021,6 +1033,9 @@ public sealed class BatchRequest
 	[JsonPropertyName("provider")]
 	public Dictionary<string, object>? Provider { get; set; }
 
+	[JsonPropertyName("provider_options")]
+	public Dictionary<string, object>? ProviderOptions { get; set; }
+
 	[JsonPropertyName("requests")]
 	public List<Dictionary<string, object>>? Requests { get; set; }
 
@@ -1234,6 +1249,9 @@ public sealed class BatchResponse
 
 	[JsonPropertyName("request_id")]
 	public string? RequestId { get; set; }
+
+	[JsonPropertyName("results_url")]
+	public string? ResultsUrl { get; set; }
 
 	[JsonPropertyName("session_id")]
 	public string? SessionId { get; set; }
@@ -1717,6 +1735,110 @@ public sealed class DebugOptions
 
 	[JsonPropertyName("trace_level")]
 	public string? TraceLevel { get; set; }
+
+}
+
+public sealed class DecisionChoiceQuestion
+{
+	[JsonPropertyName("criteria")]
+	public Dictionary<string, object> Criteria { get; set; }
+
+	[JsonPropertyName("instructions")]
+	public object Instructions { get; set; }
+
+	[JsonPropertyName("type")]
+	public string Type { get; set; }
+
+}
+
+public sealed class DecisionInstructions { }
+
+public sealed class DecisionNoulQuestion
+{
+	[JsonPropertyName("criteria")]
+	public Dictionary<string, object>? Criteria { get; set; }
+
+	[JsonPropertyName("instructions")]
+	public object Instructions { get; set; }
+
+	[JsonPropertyName("type")]
+	public string Type { get; set; }
+
+}
+
+public sealed class DecisionScoreQuestion
+{
+	[JsonPropertyName("criteria")]
+	public List<string> Criteria { get; set; }
+
+	[JsonPropertyName("instructions")]
+	public object Instructions { get; set; }
+
+	[JsonPropertyName("type")]
+	public string Type { get; set; }
+
+}
+
+public sealed class DecisionsRequest
+{
+	[JsonPropertyName("debug")]
+	public Dictionary<string, object>? Debug { get; set; }
+
+	[JsonPropertyName("echo_upstream_request")]
+	public bool? EchoUpstreamRequest { get; set; }
+
+	[JsonPropertyName("meta")]
+	public bool? Meta { get; set; }
+
+	[JsonPropertyName("metadata")]
+	public Dictionary<string, object>? Metadata { get; set; }
+
+	[JsonPropertyName("model")]
+	public string Model { get; set; }
+
+	[JsonPropertyName("provider")]
+	public Dictionary<string, object>? Provider { get; set; }
+
+	[JsonPropertyName("questions")]
+	public Dictionary<string, object> Questions { get; set; }
+
+	[JsonPropertyName("routing")]
+	public Dictionary<string, object>? Routing { get; set; }
+
+	[JsonPropertyName("state")]
+	public object State { get; set; }
+
+}
+
+public sealed class DecisionsResponse
+{
+	[JsonPropertyName("answers")]
+	public Dictionary<string, object>? Answers { get; set; }
+
+	[JsonPropertyName("meta")]
+	public Dictionary<string, object>? Meta { get; set; }
+
+	[JsonPropertyName("model")]
+	public string? Model { get; set; }
+
+	[JsonPropertyName("request_id")]
+	public string? RequestId { get; set; }
+
+	[JsonPropertyName("usage")]
+	public Dictionary<string, object>? Usage { get; set; }
+
+}
+
+public sealed class DecisionsUsage
+{
+	[JsonPropertyName("input_tokens")]
+	public long? InputTokens { get; set; }
+
+	[JsonPropertyName("output_tokens")]
+	public long? OutputTokens { get; set; }
+
+	[JsonPropertyName("total_tokens")]
+	public long? TotalTokens { get; set; }
 
 }
 
@@ -2300,6 +2422,9 @@ public sealed class FileUploadRequest
 
 public sealed class FunctionToolDefinition
 {
+	[JsonPropertyName("async")]
+	public bool? Async { get; set; }
+
 	[JsonPropertyName("function")]
 	public Dictionary<string, object> Function { get; set; }
 
@@ -2868,14 +2993,23 @@ public sealed class GatewayWebFetchToolDefinition
 
 public sealed class GatewayWebSearchToolDefinition
 {
+	[JsonPropertyName("engine")]
+	public string? Engine { get; set; }
+
 	[JsonPropertyName("include_highlights")]
 	public bool? IncludeHighlights { get; set; }
 
 	[JsonPropertyName("include_text")]
 	public bool? IncludeText { get; set; }
 
+	[JsonPropertyName("language")]
+	public string? Language { get; set; }
+
 	[JsonPropertyName("max_results")]
 	public long? MaxResults { get; set; }
+
+	[JsonPropertyName("page")]
+	public long? Page { get; set; }
 
 	[JsonPropertyName("parameters")]
 	public Dictionary<string, object>? Parameters { get; set; }
@@ -3452,8 +3586,14 @@ public sealed class ImageModerationInput
 
 public sealed class ImagesEditRequest
 {
+	[JsonPropertyName("background")]
+	public string? Background { get; set; }
+
 	[JsonPropertyName("image")]
-	public string Image { get; set; }
+	public object Image { get; set; }
+
+	[JsonPropertyName("input_fidelity")]
+	public string? InputFidelity { get; set; }
 
 	[JsonPropertyName("mask")]
 	public string? Mask { get; set; }
@@ -3464,8 +3604,20 @@ public sealed class ImagesEditRequest
 	[JsonPropertyName("model")]
 	public string Model { get; set; }
 
+	[JsonPropertyName("moderation")]
+	public string? Moderation { get; set; }
+
 	[JsonPropertyName("n")]
 	public long? N { get; set; }
+
+	[JsonPropertyName("output_compression")]
+	public long? OutputCompression { get; set; }
+
+	[JsonPropertyName("output_format")]
+	public string? OutputFormat { get; set; }
+
+	[JsonPropertyName("partial_images")]
+	public long? PartialImages { get; set; }
 
 	[JsonPropertyName("prompt")]
 	public string Prompt { get; set; }
@@ -3473,8 +3625,17 @@ public sealed class ImagesEditRequest
 	[JsonPropertyName("provider")]
 	public Dictionary<string, object>? Provider { get; set; }
 
+	[JsonPropertyName("quality")]
+	public string? Quality { get; set; }
+
+	[JsonPropertyName("resolution")]
+	public string? Resolution { get; set; }
+
 	[JsonPropertyName("size")]
 	public string? Size { get; set; }
+
+	[JsonPropertyName("stream")]
+	public bool? Stream { get; set; }
 
 	[JsonPropertyName("usage")]
 	public bool? Usage { get; set; }
@@ -3496,11 +3657,26 @@ public sealed class ImagesEditResponse
 
 public sealed class ImagesGenerationRequest
 {
+	[JsonPropertyName("background")]
+	public string? Background { get; set; }
+
 	[JsonPropertyName("model")]
 	public string Model { get; set; }
 
+	[JsonPropertyName("moderation")]
+	public string? Moderation { get; set; }
+
 	[JsonPropertyName("n")]
 	public long? N { get; set; }
+
+	[JsonPropertyName("output_compression")]
+	public long? OutputCompression { get; set; }
+
+	[JsonPropertyName("output_format")]
+	public string? OutputFormat { get; set; }
+
+	[JsonPropertyName("partial_images")]
+	public long? PartialImages { get; set; }
 
 	[JsonPropertyName("prompt")]
 	public string Prompt { get; set; }
@@ -3511,11 +3687,17 @@ public sealed class ImagesGenerationRequest
 	[JsonPropertyName("quality")]
 	public string? Quality { get; set; }
 
+	[JsonPropertyName("resolution")]
+	public string? Resolution { get; set; }
+
 	[JsonPropertyName("response_format")]
 	public string? ResponseFormat { get; set; }
 
 	[JsonPropertyName("size")]
 	public string? Size { get; set; }
+
+	[JsonPropertyName("stream")]
+	public bool? Stream { get; set; }
 
 	[JsonPropertyName("style")]
 	public string? Style { get; set; }
@@ -4848,6 +5030,25 @@ public sealed class OcrResponse
 {
 }
 
+public sealed class OpenAIReasoningConfig
+{
+	[JsonPropertyName("effort")]
+	public string? Effort { get; set; }
+
+	[JsonPropertyName("enabled")]
+	public bool? Enabled { get; set; }
+
+	[JsonPropertyName("max_tokens")]
+	public long? MaxTokens { get; set; }
+
+	[JsonPropertyName("mode")]
+	public string? Mode { get; set; }
+
+	[JsonPropertyName("summary")]
+	public string? Summary { get; set; }
+
+}
+
 public sealed class OrganisationId { }
 
 public sealed class OrganisationIdList { }
@@ -5312,6 +5513,195 @@ public sealed class PresetVersionResponse
 }
 
 public sealed class PresetVisibility { }
+
+public sealed class PrivateModel
+{
+	[JsonPropertyName("base_url")]
+	public string BaseUrl { get; set; }
+
+	[JsonPropertyName("catalog_model_id")]
+	public string? CatalogModelId { get; set; }
+
+	[JsonPropertyName("context_length")]
+	public long? ContextLength { get; set; }
+
+	[JsonPropertyName("created_at")]
+	public string? CreatedAt { get; set; }
+
+	[JsonPropertyName("created_by")]
+	public string? CreatedBy { get; set; }
+
+	[JsonPropertyName("credential_prefix")]
+	public string? CredentialPrefix { get; set; }
+
+	[JsonPropertyName("credential_suffix")]
+	public string? CredentialSuffix { get; set; }
+
+	[JsonPropertyName("custom_provider_name")]
+	public string? CustomProviderName { get; set; }
+
+	[JsonPropertyName("custom_provider_url")]
+	public string? CustomProviderUrl { get; set; }
+
+	[JsonPropertyName("description")]
+	public string? Description { get; set; }
+
+	[JsonPropertyName("enabled")]
+	public bool Enabled { get; set; }
+
+	[JsonPropertyName("host_provider_id")]
+	public string? HostProviderId { get; set; }
+
+	[JsonPropertyName("id")]
+	public string Id { get; set; }
+
+	[JsonPropertyName("input_modalities")]
+	public List<string>? InputModalities { get; set; }
+
+	[JsonPropertyName("local_slug")]
+	public string? LocalSlug { get; set; }
+
+	[JsonPropertyName("max_output_tokens")]
+	public long? MaxOutputTokens { get; set; }
+
+	[JsonPropertyName("model_id")]
+	public string ModelId { get; set; }
+
+	[JsonPropertyName("name")]
+	public string Name { get; set; }
+
+	[JsonPropertyName("output_modalities")]
+	public List<string>? OutputModalities { get; set; }
+
+	[JsonPropertyName("routing_policy")]
+	public string? RoutingPolicy { get; set; }
+
+	[JsonPropertyName("supports_responses")]
+	public bool SupportsResponses { get; set; }
+
+	[JsonPropertyName("updated_at")]
+	public string? UpdatedAt { get; set; }
+
+	[JsonPropertyName("upstream_model_id")]
+	public string UpstreamModelId { get; set; }
+
+	[JsonPropertyName("workspace_id")]
+	public string WorkspaceId { get; set; }
+
+}
+
+public sealed class PrivateModelCreateRequest
+{
+	[JsonPropertyName("base_url")]
+	public string BaseUrl { get; set; }
+
+	[JsonPropertyName("context_length")]
+	public long? ContextLength { get; set; }
+
+	[JsonPropertyName("credential")]
+	public string Credential { get; set; }
+
+	[JsonPropertyName("custom_provider_name")]
+	public string? CustomProviderName { get; set; }
+
+	[JsonPropertyName("custom_provider_url")]
+	public string? CustomProviderUrl { get; set; }
+
+	[JsonPropertyName("description")]
+	public string? Description { get; set; }
+
+	[JsonPropertyName("enabled")]
+	public bool? Enabled { get; set; }
+
+	[JsonPropertyName("host_provider_id")]
+	public string? HostProviderId { get; set; }
+
+	[JsonPropertyName("max_output_tokens")]
+	public long? MaxOutputTokens { get; set; }
+
+	[JsonPropertyName("model_reference")]
+	public string ModelReference { get; set; }
+
+	[JsonPropertyName("name")]
+	public string Name { get; set; }
+
+	[JsonPropertyName("routing_policy")]
+	public string? RoutingPolicy { get; set; }
+
+	[JsonPropertyName("supports_responses")]
+	public bool? SupportsResponses { get; set; }
+
+	[JsonPropertyName("upstream_model_id")]
+	public string UpstreamModelId { get; set; }
+
+}
+
+public sealed class PrivateModelDeleteResponse
+{
+	[JsonPropertyName("deleted")]
+	public bool Deleted { get; set; }
+
+}
+
+public sealed class PrivateModelListResponse
+{
+	[JsonPropertyName("data")]
+	public List<Dictionary<string, object>> Data { get; set; }
+
+}
+
+public sealed class PrivateModelResponse
+{
+	[JsonPropertyName("data")]
+	public Dictionary<string, object> Data { get; set; }
+
+}
+
+public sealed class PrivateModelUpdateRequest
+{
+	[JsonPropertyName("base_url")]
+	public string? BaseUrl { get; set; }
+
+	[JsonPropertyName("context_length")]
+	public long? ContextLength { get; set; }
+
+	[JsonPropertyName("credential")]
+	public string? Credential { get; set; }
+
+	[JsonPropertyName("custom_provider_name")]
+	public string? CustomProviderName { get; set; }
+
+	[JsonPropertyName("custom_provider_url")]
+	public string? CustomProviderUrl { get; set; }
+
+	[JsonPropertyName("description")]
+	public string? Description { get; set; }
+
+	[JsonPropertyName("enabled")]
+	public bool? Enabled { get; set; }
+
+	[JsonPropertyName("host_provider_id")]
+	public string? HostProviderId { get; set; }
+
+	[JsonPropertyName("max_output_tokens")]
+	public long? MaxOutputTokens { get; set; }
+
+	[JsonPropertyName("model_reference")]
+	public string? ModelReference { get; set; }
+
+	[JsonPropertyName("name")]
+	public string? Name { get; set; }
+
+	[JsonPropertyName("routing_policy")]
+	public string? RoutingPolicy { get; set; }
+
+	[JsonPropertyName("supports_responses")]
+	public bool? SupportsResponses { get; set; }
+
+	[JsonPropertyName("upstream_model_id")]
+	public string? UpstreamModelId { get; set; }
+
+}
 
 public sealed class Provider
 {
@@ -6044,6 +6434,110 @@ public sealed class SupportedParameterDetails
 {
 }
 
+public sealed class SystemOneChoiceQuestion
+{
+	[JsonPropertyName("criteria")]
+	public Dictionary<string, object> Criteria { get; set; }
+
+	[JsonPropertyName("instructions")]
+	public object Instructions { get; set; }
+
+	[JsonPropertyName("type")]
+	public string Type { get; set; }
+
+}
+
+public sealed class SystemOneInstructions { }
+
+public sealed class SystemOneNoulQuestion
+{
+	[JsonPropertyName("criteria")]
+	public Dictionary<string, object>? Criteria { get; set; }
+
+	[JsonPropertyName("instructions")]
+	public object Instructions { get; set; }
+
+	[JsonPropertyName("type")]
+	public string Type { get; set; }
+
+}
+
+public sealed class SystemOneRequest
+{
+	[JsonPropertyName("debug")]
+	public Dictionary<string, object>? Debug { get; set; }
+
+	[JsonPropertyName("echo_upstream_request")]
+	public bool? EchoUpstreamRequest { get; set; }
+
+	[JsonPropertyName("meta")]
+	public bool? Meta { get; set; }
+
+	[JsonPropertyName("metadata")]
+	public Dictionary<string, object>? Metadata { get; set; }
+
+	[JsonPropertyName("model")]
+	public string Model { get; set; }
+
+	[JsonPropertyName("provider")]
+	public Dictionary<string, object>? Provider { get; set; }
+
+	[JsonPropertyName("questions")]
+	public Dictionary<string, object> Questions { get; set; }
+
+	[JsonPropertyName("routing")]
+	public Dictionary<string, object>? Routing { get; set; }
+
+	[JsonPropertyName("state")]
+	public object State { get; set; }
+
+}
+
+public sealed class SystemOneResponse
+{
+	[JsonPropertyName("answers")]
+	public Dictionary<string, object>? Answers { get; set; }
+
+	[JsonPropertyName("meta")]
+	public Dictionary<string, object>? Meta { get; set; }
+
+	[JsonPropertyName("model")]
+	public string? Model { get; set; }
+
+	[JsonPropertyName("request_id")]
+	public string? RequestId { get; set; }
+
+	[JsonPropertyName("usage")]
+	public Dictionary<string, object>? Usage { get; set; }
+
+}
+
+public sealed class SystemOneScoreQuestion
+{
+	[JsonPropertyName("criteria")]
+	public List<string> Criteria { get; set; }
+
+	[JsonPropertyName("instructions")]
+	public object Instructions { get; set; }
+
+	[JsonPropertyName("type")]
+	public string Type { get; set; }
+
+}
+
+public sealed class SystemOneUsage
+{
+	[JsonPropertyName("input_tokens")]
+	public long? InputTokens { get; set; }
+
+	[JsonPropertyName("output_tokens")]
+	public long? OutputTokens { get; set; }
+
+	[JsonPropertyName("total_tokens")]
+	public long? TotalTokens { get; set; }
+
+}
+
 public sealed class TextContentPart
 {
 	[JsonPropertyName("text")]
@@ -6203,6 +6697,9 @@ public sealed class VideoGenerationRequest
 	[JsonPropertyName("enhance_prompt")]
 	public bool? EnhancePrompt { get; set; }
 
+	[JsonPropertyName("frame_images")]
+	public List<Dictionary<string, object>>? FrameImages { get; set; }
+
 	[JsonPropertyName("generate_audio")]
 	public bool? GenerateAudio { get; set; }
 
@@ -6232,6 +6729,9 @@ public sealed class VideoGenerationRequest
 
 	[JsonPropertyName("provider")]
 	public Dictionary<string, object>? Provider { get; set; }
+
+	[JsonPropertyName("provider_options")]
+	public Dictionary<string, object>? ProviderOptions { get; set; }
 
 	[JsonPropertyName("provider_params")]
 	public Dictionary<string, object>? ProviderParams { get; set; }
@@ -6547,6 +7047,8 @@ public sealed class WebhookEndpointDeleteResponse
 
 }
 
+public sealed class WebhookEndpointEvent { }
+
 public sealed class WebhookEndpointInput
 {
 	[JsonPropertyName("events")]
@@ -6607,6 +7109,25 @@ public sealed class WebhookEndpointSecretResponse
 
 	[JsonPropertyName("workspaceId")]
 	public string WorkspaceId { get; set; }
+
+}
+
+public sealed class WebhookEndpointTestResponse
+{
+	[JsonPropertyName("error")]
+	public string? Error { get; set; }
+
+	[JsonPropertyName("event_id")]
+	public string EventId { get; set; }
+
+	[JsonPropertyName("ok")]
+	public bool Ok { get; set; }
+
+	[JsonPropertyName("response_body_preview")]
+	public string? ResponseBodyPreview { get; set; }
+
+	[JsonPropertyName("status_code")]
+	public long? StatusCode { get; set; }
 
 }
 
@@ -6947,6 +7468,12 @@ public sealed class WorkspaceAutoTopUpUpdate
 
 	[JsonPropertyName("enabled")]
 	public bool Enabled { get; set; }
+
+	[JsonPropertyName("mfa_bypass_acknowledged")]
+	public bool? MfaBypassAcknowledged { get; set; }
+
+	[JsonPropertyName("mfa_bypass_phrase")]
+	public string? MfaBypassPhrase { get; set; }
 
 	[JsonPropertyName("payment_method_id")]
 	public string? PaymentMethodId { get; set; }

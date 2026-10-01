@@ -7,9 +7,11 @@ import {
 	CircleSlash,
 	Clock3,
 	FlaskConical,
+	KeyRound,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Logo } from "@/components/Logo";
 import { getTranslations } from "next-intl/server";
 import ProviderInfoHoverIcons from "@/components/(data)/model/ProviderInfoHoverIcons";
@@ -160,6 +162,20 @@ export default async function Providers({ metadata }: { metadata: ModelGatewayMe
 												{provider.providerId}
 											</p>
 										</div>
+										{provider.credentialMode === "byok_only" ? (
+											<Tooltip>
+												<TooltipTrigger asChild>
+													<Link
+														href={`/settings/byok/${provider.providerId}`}
+														aria-label={`${provider.providerName} requires your own provider key`}
+														className="text-amber-600 transition-colors hover:text-amber-700 dark:text-amber-400 dark:hover:text-amber-300"
+													>
+														<KeyRound className="h-4 w-4" />
+													</Link>
+												</TooltipTrigger>
+												<TooltipContent>This provider requires a BYOK key.</TooltipContent>
+											</Tooltip>
+										) : null}
 									</div>
 
 										<Badge

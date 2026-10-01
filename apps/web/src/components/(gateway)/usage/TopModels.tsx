@@ -10,6 +10,7 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
+import { DisplayNumber } from "@/components/display/DisplayValue";
 
 type BreakdownRow = {
 	id: string;
@@ -78,10 +79,10 @@ export default function TopModels({
 									${row.spendUsd.toFixed(5)}
 								</TableCell>
 								<TableCell className="text-right">
-									{Intl.NumberFormat().format(row.requests)}
+									<DisplayNumber value={row.requests} />
 								</TableCell>
 								<TableCell className="text-right">
-									{Intl.NumberFormat().format(row.tokens)}
+									<DisplayNumber value={row.tokens} />
 								</TableCell>
 								<TableCell className="text-right">
 									{row.avgLatencyMs != null

@@ -1,7 +1,11 @@
+// Legacy local/manual embed helpers retained for compatibility callers.
+// The internal notifier and scheduled public announcements use the public catalog embed builder.
+// Production private alerts are text-only in apps/api.
 export type InternalModelNotificationModel = {
 	modelId: string;
 	modelName: string;
 	modelUrl: string;
+	imageUrl?: string;
 	creatorId?: string;
 	creatorName?: string;
 	creatorColor?: string;
@@ -16,6 +20,9 @@ export type DiscordEmbed = {
 		text: string;
 	};
 	timestamp?: string;
+	image?: {
+		url: string;
+	};
 };
 
 export type DiscordWebhookPayload = {
@@ -90,6 +97,7 @@ function sanitizeModel(input: InternalModelNotificationModel): InternalModelNoti
 		modelId,
 		modelName,
 		modelUrl,
+		imageUrl: trimOrNull(input.imageUrl) ?? undefined,
 		creatorId: creatorId ?? undefined,
 		creatorName: creatorName ?? undefined,
 		creatorColor: creatorColor ?? undefined,
@@ -122,6 +130,17 @@ function parseHexColor(value: string | null | undefined): number | null {
 function resolveEmbedColor(model: InternalModelNotificationModel): number {
 	const parsed = parseHexColor(model.creatorColor);
 	return parsed ?? DEFAULT_EMBED_COLOR;
+}
+
+function resolveImageUrl(rawImageUrl: string | null | undefined): string | null {
+	const value = trimOrNull(rawImageUrl);
+	if (!value) return null;
+	try {
+		const parsed = new URL(value);
+		return parsed.protocol === "https:" ? parsed.toString() : null;
+	} catch {
+		return null;
+	}
 }
 
 function formatFooterText(nowIso: string): string {
@@ -189,12 +208,14 @@ export function formatSingleModelEmbed(
 		`[View Model](${safeModel.modelUrl})`,
 	];
 
+	const imageUrl = resolveImageUrl(safeModel.imageUrl);
 	return {
 		title: truncateText(buildDisplayTitle(safeModel), 180),
 		url: safeModel.modelUrl,
 		description: descriptionLines.join("\n"),
 		color: resolveEmbedColor(safeModel),
 		footer: { text: formatFooterText(nowIso) },
+		...(imageUrl ? { image: { url: imageUrl } } : {}),
 	};
 }
 
@@ -212,12 +233,14 @@ function formatPerModelDetailEmbed(
 		`[View Model](${safeModel.modelUrl})`,
 	];
 
+	const imageUrl = resolveImageUrl(safeModel.imageUrl);
 	return {
 		title: truncateText(buildDisplayTitle(safeModel), 180),
 		url: safeModel.modelUrl,
 		description: descriptionLines.join("\n"),
 		color: resolveEmbedColor(safeModel),
 		footer: { text: formatFooterText(nowIso) },
+		...(imageUrl ? { image: { url: imageUrl } } : {}),
 	};
 }
 
@@ -370,6 +393,26 @@ async function sendDiscordWebhookRequest(args: {
 	});
 }
 
+type DiscordWebhookMessageResponse = {
+	id?: unknown;
+	channel_id?: unknown;
+};
+
+function parseDiscordWebhookMessageResponse(responseBody: string): DiscordWebhookMessageResponse {
+	try {
+		const parsed = JSON.parse(responseBody) as unknown;
+		if (!parsed || typeof parsed !== "object") throw new Error("response was not an object");
+		const message = parsed as DiscordWebhookMessageResponse;
+		if (typeof message.id !== "string" || !message.id.trim()) {
+			throw new Error("response did not include a message id");
+		}
+		return message;
+	} catch (error) {
+		const message = error instanceof Error ? error.message : String(error);
+		throw new Error(`Discord webhook returned success without a saved message: ${message}`);
+	}
+}
+
 export async function sendDiscordWebhookPayload(
 	webhookUrl: string,
 	payload: DiscordWebhookPayload,
@@ -379,7 +422,10 @@ export async function sendDiscordWebhookPayload(
 	const segments = parsedWebhookUrl.pathname.split("/").filter(Boolean);
 	const webhookId = segments[2] ?? "";
 	const webhookToken = segments[3] ?? "";
-	const requestPath = `/api/webhooks/${webhookId}/${webhookToken}`;
+	const requestUrl = new URL(parsedWebhookUrl.toString());
+	requestUrl.pathname = `/api/webhooks/${webhookId}/${webhookToken}`;
+	requestUrl.searchParams.set("wait", "true");
+	const requestPath = `${requestUrl.pathname}${requestUrl.search}`;
 	const requestBody = JSON.stringify(payload);
 	const maxAttempts = Number.isFinite(options?.maxAttempts)
 		? Math.max(1, Math.floor(options?.maxAttempts as number))
@@ -401,6 +447,11 @@ export async function sendDiscordWebhookPayload(
 				timeoutMs,
 			});
 			if (response.status >= 200 && response.status < 300) {
+				const message = parseDiscordWebhookMessageResponse(response.body);
+				const channel = typeof message.channel_id === "string" && message.channel_id.trim()
+					? ` to channel ${message.channel_id}`
+					: "";
+				logger.info(`[internal-model-check] Discord webhook delivered message ${message.id}${channel}.`);
 				if (attempt > 1) {
 					logger.info(
 						`[internal-model-check] Discord webhook send succeeded on retry ${attempt}/${maxAttempts}.`

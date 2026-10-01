@@ -52,7 +52,15 @@ function normalizeReferenceValue(reference: NormalizedVideoInputReference | unde
 }
 
 export function decodeOpenAIVideoRequestToIR(body: any): IRVideoGenerationRequest {
-	const rawInputReferences = Array.isArray(body?.input_references) ? body.input_references : [];
+	const frameImages = Array.isArray(body?.frame_images) ? body.frame_images : [];
+	const rawInputReferences = [
+		...frameImages.map((frame: any) => ({ ...frame, role: frame.frame_type })),
+		...(Array.isArray(body?.input_references) ? body.input_references.map((reference: any) => (
+			frameImages.length && reference.type === "image_url"
+				? { ...reference, role: reference.role ?? "reference" }
+				: reference
+		)) : []),
+	];
 	const providerParams =
 		body?.provider_params && typeof body.provider_params === "object" && !Array.isArray(body.provider_params)
 			? { ...(body.provider_params as Record<string, any>) }
@@ -96,11 +104,12 @@ export function decodeOpenAIVideoRequestToIR(body: any): IRVideoGenerationReques
 			raw: item.raw ?? item,
 		})),
 		providerParams,
+		providerOptions: body?.provider_options,
 		outputAccess: body?.output?.access ?? "both",
 		webhook: body?.webhook,
 		seconds: durationSeconds,
 		inputReference: nativeInputReference ?? normalizeReferenceValue(firstFrame),
-		inputReferenceMimeType: firstFrame?.mime_type ?? firstFrame?.mimeType,
+		inputReferenceMimeType: firstFrame?.raw?.mime_type ?? firstFrame?.raw?.mimeType,
 		input: {
 			image: normalizeReferenceValue(firstFrame),
 			video: normalizeReferenceValue(sourceVideo),

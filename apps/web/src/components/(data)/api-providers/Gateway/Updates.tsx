@@ -3,6 +3,7 @@ import { Calendar, Sparkles, TrendingUp, Check } from "lucide-react";
 import { fetchFrontendAPIProviderUpdates } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import type { APIProviderRecentModel } from "@/lib/fetchers/api-providers/providerDataTypes";
 import { getLocale, getTranslations } from "next-intl/server";
+import { DisplayCalendarDate, DisplayNumber } from "@/components/display/DisplayValue";
 import {
 	Empty,
 	EmptyDescription,
@@ -160,7 +161,7 @@ export default async function Updates({
 					{/* Token count */}
 					<div className="text-center p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
 						<div className="text-3xl font-bold mb-1">
-							{recentTokens.toLocaleString(locale)}
+							<DisplayNumber value={recentTokens} />
 						</div>
 						<p className="text-sm text-muted-foreground flex items-center justify-center gap-1">
 							<TrendingUp className="h-3 w-3" />
@@ -171,7 +172,7 @@ export default async function Updates({
 					{/* Model count */}
 					<div className="text-center p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
 						<div className="text-2xl font-bold mb-1">
-							{recentModels.length}
+							<DisplayNumber value={recentModels.length} />
 						</div>
 						<p className="text-sm text-muted-foreground flex items-center justify-center gap-1">
 							<Sparkles className="h-3 w-3" />
@@ -276,6 +277,6 @@ function resolveModelDisplayInfo(
 	};
 }
 
-function formatModelDate(timestamp: string, locale: string): string {
-	return new Date(timestamp).toLocaleDateString(locale, { timeZone: "UTC" });
+function formatModelDate(timestamp: string, _locale?: string) {
+	return <DisplayCalendarDate value={timestamp} />;
 }

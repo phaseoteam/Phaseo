@@ -96,6 +96,12 @@ function makeProviderPricing(): ProviderPricing {
 }
 
 describe("providerPlanRouting", () => {
+	it("keeps a standard offering visible when a provider has no pricing yet", () => {
+		const provider = makeProviderPricing();
+		provider.pricing_rules = [];
+		expect(getProviderAvailablePlans(provider)).toEqual(["standard"]);
+	});
+
 	it("keeps Standard as the multiplier baseline when Batch is selected globally", () => {
 		expect(
 			getProviderPlanComparisonBase(
@@ -112,6 +118,18 @@ describe("providerPlanRouting", () => {
 		expect(getProviderPlanComparisonBase(["batch"], "standard")).toBe("batch");
 		expect(hasSelectedAlternativeServiceTier("batch", "batch")).toBe(false);
 	});
+
+    it("keeps Ultrafast availability separate from the standard route", () => {
+        const provider = makeProviderPricing();
+        const base = { ...provider.provider_models[0], service_tier: "standard" };
+        const ultrafast = { ...base, service_tier: "ultrafast", is_active_gateway: false, provider_availability_status: "coming_soon" as const };
+        provider.provider_models = [base, ultrafast];
+        provider.pricing_rules.push({ ...provider.pricing_rules[0], pricing_plan: "ultrafast" });
+        expect(getProviderModelScopeForPlan(provider, "standard")).toEqual([base]);
+        expect(getProviderModelScopeForPlan(provider, "ultrafast")).toEqual([ultrafast]);
+        provider.provider_models[1] = { ...ultrafast, is_active_gateway: true, provider_availability_status: "available" };
+        expect(getProviderModelScopeForPlan(provider, "ultrafast")[0].is_active_gateway).toBe(true);
+    });
 
     it("prefers explicit priority pricing on the base model over hidden fast sibling rows", () => {
         const provider = makeProviderPricing();
@@ -164,6 +182,27 @@ describe("providerPlanRouting", () => {
         expect(
             getProviderModelScopeForPlan(provider, "flex").map((model) => model.model_id),
         ).toEqual(["anthropic/claude-opus-5-flex"]);
+    });
+
+    it("derives an Ultrafast plan from an Ultrafast sibling model", () => {
+        const provider = makeProviderPricing();
+        provider.provider_models.push({
+            ...provider.provider_models[0],
+            id: "venice:opus48ultrafast",
+            provider_model_slug: "claude-opus-5-ultrafast",
+            model_id: "anthropic/claude-opus-5-ultrafast",
+        });
+        provider.pricing_rules.push({
+            ...provider.pricing_rules[0],
+            id: "std-ultrafast-input",
+            model_key: "venice:anthropic/claude-opus-5-ultrafast:text.generate",
+            pricing_plan: "standard",
+        });
+
+        expect(getProviderAvailablePlans(provider)).toEqual(["standard", "priority", "ultrafast"]);
+        expect(getProviderPricingRulesForPlan(provider, "ultrafast").map((rule) => rule.id)).toEqual([
+            "std-ultrafast-input",
+        ]);
     });
 
     it("shows explicit xAI batch pricing without requiring gateway batch execution support", () => {

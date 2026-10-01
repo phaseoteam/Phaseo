@@ -228,10 +228,6 @@ export function normalizeProviderModelPricing(providerId: string, modelDetails: 
 					})
 				: null;
 		}
-		case "crofai": {
-			const pricing = asRecord(model.pricing);
-			return pricing ? promptCompletionPricing(pricing, false) : null;
-		}
 		case "deepinfra": {
 			const pricing = asRecord(asRecord(model.metadata)?.pricing);
 			return pricing

@@ -1,4 +1,5 @@
 "use client";
+import { useInvalidatePrivateSettings } from "./PrivateSettingsQuery";
 
 import React, { useState } from "react";
 import { useTranslations } from "next-intl";
@@ -33,6 +34,7 @@ export default function CreateTeamDialog({
 }) {
 	const t = useTranslations("SettingsUI");
 	const [open, setOpen] = useState(false);
+	const invalidateSettings = useInvalidatePrivateSettings();
 	const [acceptOpen, setAcceptOpen] = useState(false);
 	const [dropdownOpen, setDropdownOpen] = useState(false);
 	const [name, setName] = useState("");
@@ -48,6 +50,7 @@ export default function CreateTeamDialog({
 			setLoading(true);
 			// call server action
 			await createTeamAction(name, currentUserId);
+			void invalidateSettings();
 			setOpen(false);
 			setName("");
 		} catch (err: unknown) {

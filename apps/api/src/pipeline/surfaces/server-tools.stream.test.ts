@@ -14,6 +14,33 @@ function buildSseStream(frames: string[]): ReadableStream<Uint8Array> {
 }
 
 describe("consumeTextProtocolStreamToIR", () => {
+	it.each([
+		["stop", "length"],
+		["length", "stop"],
+	])("preserves different choice finish reasons (%s, %s) before a usage-only frame", async (...finishReasons) => {
+		const stream = buildSseStream([
+			...finishReasons.map((finishReason, index) => `data: ${JSON.stringify({
+				object: "chat.completion.chunk",
+				choices: [{ index, delta: { reasoning_content: `Reasoning ${index}.` }, finish_reason: finishReason }],
+			})}\n\n`),
+			`data: ${JSON.stringify({
+				object: "chat.completion.chunk",
+				choices: [],
+				usage: { prompt_tokens: 10, completion_tokens: 6500, total_tokens: 6510 },
+			})}\n\n`,
+			"data: [DONE]\n\n",
+		]);
+		const consumed = await consumeTextProtocolStreamToIR({
+			protocol: "openai.chat.completions",
+			stream,
+			requestId: "req_multiple_choices",
+			model: "test-model",
+			provider: "test-provider",
+		});
+		expect(consumed.ir.choices.map((choice) => choice.finishReason)).toEqual(finishReasons);
+		expect(consumed.ir.usage?.outputTokens).toBe(6500);
+	});
+
 	it("materializes fragmented Anthropic tool arguments by content block index", async () => {
 		const stream = buildSseStream([
 			`event: message_start\ndata: ${JSON.stringify({

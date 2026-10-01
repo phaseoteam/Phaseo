@@ -33,6 +33,7 @@ import {
 	TooltipContent,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import {
 	Dialog,
 	DialogContent,
@@ -164,6 +165,7 @@ export default function ModelCalendar({
 		new Intl.NumberFormat(locale).format(value);
 	const eventTypeLabel = (type: EventType) =>
 		eventTypeT(EVENT_TYPE_MESSAGE_KEY[type]);
+	const format = useDisplayFormatters();
 	const now = useMemo(() => new Date(), []);
 	const currentYear = new Date().getFullYear();
 	const startYear = 2018;
@@ -362,11 +364,7 @@ export default function ModelCalendar({
 						<DialogContent className="max-w-2xl">
 							<DialogHeader>
 								<DialogTitle>
-									{t("releasesOn", { date: cell.date.toLocaleDateString(locale, {
-										month: "long",
-										day: "numeric",
-										year: "numeric",
-									}) })}
+									{t("releasesOn", { date: format.calendarDate(`${getDateKey(cell.date)}T00:00:00.000Z`) })}
 								</DialogTitle>
 							</DialogHeader>
 							<ScrollArea className="max-h-96">
@@ -631,11 +629,7 @@ export default function ModelCalendar({
 										!isSelected && "hover:bg-zinc-100 dark:hover:bg-zinc-900",
 										isToday && !isSelected && "font-bold ring-1 ring-inset ring-zinc-400"
 									)}
-									aria-label={cell.date.toLocaleDateString(locale, {
-										day: "numeric",
-										month: "long",
-										year: "numeric",
-									})}
+									aria-label={format.calendarDate(`${getDateKey(cell.date)}T00:00:00.000Z`)}
 								>
 									<span>{formatNumber(cell.date.getDate())}</span>
 									{cell.events.length > 0 ? (
@@ -663,12 +657,10 @@ export default function ModelCalendar({
 
 					<div className="border-t border-zinc-200 p-3 dark:border-zinc-800">
 						<h3 className="mb-2 text-sm font-semibold">
-											{selectedDay?.date.toLocaleDateString(locale, {
-								weekday: "long",
-								day: "numeric",
-								month: "long",
-								year: "numeric",
-							})}
+							{selectedDay ? format.dateParts(
+								`${getDateKey(selectedDay.date)}T00:00:00.000Z`,
+								{ weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: "UTC" },
+							) : ""}
 						</h3>
 						{selectedDay?.events.length ? (
 							<div className="space-y-2">

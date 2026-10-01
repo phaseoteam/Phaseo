@@ -26,6 +26,7 @@
   "pricing_source_url": "https://www.crossmodel.ai/api/models",
   "regional_pricing_notes": null,
   "country_code": "NL",
+  "subdivision_code": "NL-GE",
   "status": "Active",
   "colour": null,
   "gateway_kind": "aggregator",

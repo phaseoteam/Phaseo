@@ -1,15 +1,14 @@
 import { Suspense } from "react";
 import { getTranslations } from "next-intl/server";
-import PresetsPanel from "@/components/(gateway)/settings/presets/PresetsPanel";
+import PresetsContent from "./PresetsContent";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Sparkles, Store } from "lucide-react";
+import { Info, Plus, Store } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
 	fetchFrontendModels,
 } from "@/lib/fetchers/frontend/fetchPublicCatalog";
-import { fetchSettingsPresetsInitialData } from "@/lib/fetchers/internal/fetchSettingsPresetsInitialData";
 import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
 import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHeader";
 import { ProductFeedbackButton } from "@/components/feedback/ProductFeedbackButton";
@@ -24,11 +23,11 @@ export default async function PresetsPage() {
 	return (
 		<div className="space-y-7">
 			<Alert className="border-border/80 bg-muted/25">
-				<Sparkles className="h-4 w-4 text-muted-foreground" />
+				<Info className="h-4 w-4 text-muted-foreground" />
 				<AlertTitle className="text-foreground">
 					{t("introTitle")}
 				</AlertTitle>
-				<AlertDescription className="max-w-4xl text-muted-foreground">
+				<AlertDescription className="max-w-none text-muted-foreground">
 					{t("introBody")}
 				</AlertDescription>
 			</Alert>
@@ -60,31 +59,12 @@ export default async function PresetsPage() {
 			/>
 
 			<Suspense fallback={<SettingsSectionFallback />}>
-				<PresetsContent />
+				<PresetsWithCatalog />
 			</Suspense>
 		</div>
 	);
 }
 
-async function PresetsContent() {
-	const [initialData, models] = await Promise.all([
-		fetchSettingsPresetsInitialData(),
-		fetchFrontendModels(),
-	]);
-
-	const teamsWithPresets = initialData.teamsWithPresets.map((team) => ({
-		...team,
-		presets: team.presets.map((preset: any) => ({
-			...preset,
-			all_models: models,
-		})),
-	}));
-
-	return (
-		<PresetsPanel
-			teamsWithPresets={teamsWithPresets}
-			currentUserId={initialData.currentUserId}
-			workspacePublisherHandle={initialData.workspacePublisher.handle}
-		/>
-	);
+async function PresetsWithCatalog() {
+	return <PresetsContent models={await fetchFrontendModels()} />;
 }

@@ -6,6 +6,7 @@
 import { fetchFrontendModelRankings } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Activity, Zap, Server, Clock, CheckCircle2, Hash } from "lucide-react";
+import { DisplayNumber } from "@/components/display/DisplayValue";
 
 export async function SummaryStats() {
     const data = await fetchFrontendModelRankings();
@@ -18,7 +19,7 @@ export async function SummaryStats() {
     const stats = [
         {
             title: "Requests (24h)",
-            value: summary.total_requests_24h.toLocaleString(),
+            value: <DisplayNumber value={summary.total_requests_24h} />,
             icon: Activity,
             description: "Total requests processed",
         },

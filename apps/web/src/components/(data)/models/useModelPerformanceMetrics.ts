@@ -1,32 +1,39 @@
 "use client";
 
-import useSWR from "swr";
-import type { SWRConfiguration } from "swr";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { useEffect, useRef } from "react";
 
 import type { ModelPerformanceMetrics } from "@/lib/fetchers/models/getModelPerformance";
 import { fetchOptionalPublicWebApi } from "@/lib/web-api/client";
+import { WEB_QUERY_POLICIES } from "@/lib/query/policies";
+import { webQueryKeys } from "@/lib/query/queryKeys";
 import type { ModelPercentile } from "./ModelPercentileSelect";
 
-export const MODEL_PERFORMANCE_REFRESH_INTERVAL_MS = 15 * 60 * 1000;
+export const MODEL_PERFORMANCE_REFRESH_INTERVAL_MS = WEB_QUERY_POLICIES.public.refetchInterval;
 
 function getModelPerformanceKey({
 	modelId,
 	cloudflareColo,
 	percentile,
+	rangeDays,
 }: {
 	modelId: string;
 	cloudflareColo: string | null;
 	percentile: ModelPercentile;
+	rangeDays: 1 | 3 | 7;
 }): `/api/_web/${string}` {
-	const query = new URLSearchParams({ percentile: String(percentile) });
+	const query = new URLSearchParams({ percentile: String(percentile), range: String(rangeDays) });
 	if (cloudflareColo) query.set("colo", cloudflareColo);
 	return `/api/_web/models/${encodeURIComponent(modelId)}/performance?${query.toString()}`;
 }
 
-async function fetchModelPerformanceMetrics(key: `/api/_web/${string}`) {
+async function fetchModelPerformanceMetrics(
+	key: `/api/_web/${string}`,
+	signal: AbortSignal,
+) {
 	const payload = await fetchOptionalPublicWebApi<{
 		metrics: ModelPerformanceMetrics | null;
-	}>(key);
+	}>(key, { signal });
 	return payload?.metrics ?? null;
 }
 
@@ -34,14 +41,16 @@ export function useModelPerformanceMetrics({
 	modelId,
 	cloudflareColo,
 	percentile,
+	rangeDays,
 	fallbackData,
-	refreshInterval = 0,
+	refreshInterval = MODEL_PERFORMANCE_REFRESH_INTERVAL_MS,
 	onError,
 	onSuccess,
 }: {
 	modelId: string;
 	cloudflareColo: string | null;
 	percentile: ModelPercentile;
+	rangeDays: 1 | 3 | 7;
 	fallbackData?: ModelPerformanceMetrics;
 	refreshInterval?: number;
 	onError?: () => void;
@@ -51,25 +60,37 @@ export function useModelPerformanceMetrics({
 		modelId,
 		cloudflareColo,
 		percentile,
+		rangeDays,
 	});
-	const options: SWRConfiguration<ModelPerformanceMetrics | null> = {
-		dedupingInterval: 30_000,
-		errorRetryCount: 2,
-		fallbackData,
-		focusThrottleInterval: 60_000,
-		keepPreviousData: true,
-		refreshInterval,
-		refreshWhenHidden: false,
-		refreshWhenOffline: false,
-		revalidateOnFocus: true,
-		revalidateOnReconnect: true,
-	};
-	if (onError) options.onError = onError;
-	if (onSuccess) options.onSuccess = onSuccess;
+	const query = useQuery<ModelPerformanceMetrics | null>({
+		queryKey: webQueryKeys.public.modelPerformance({
+			modelId,
+			cloudflareColo,
+			percentile,
+			rangeDays,
+		}),
+		queryFn: ({ signal }) => fetchModelPerformanceMetrics(key, signal),
+		...WEB_QUERY_POLICIES.public,
+		refetchInterval: refreshInterval,
+		refetchIntervalInBackground: false,
+		placeholderData: keepPreviousData,
+		initialData: fallbackData,
+	});
+	const lastSuccessAtRef = useRef(0);
+	const lastErrorRef = useRef<unknown>(null);
+	useEffect(() => {
+		if (query.dataUpdatedAt <= lastSuccessAtRef.current) return;
+		lastSuccessAtRef.current = query.dataUpdatedAt;
+		onSuccess?.(query.data ?? null);
+	}, [onSuccess, query.data, query.dataUpdatedAt]);
+	useEffect(() => {
+		if (!query.error || query.error === lastErrorRef.current) return;
+		lastErrorRef.current = query.error;
+		onError?.();
+	}, [onError, query.error]);
 
-	return useSWR<ModelPerformanceMetrics | null>(
-		key,
-		fetchModelPerformanceMetrics,
-		options,
-	);
+	return {
+		...query,
+		isValidating: query.isFetching,
+	};
 }

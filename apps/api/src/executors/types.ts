@@ -26,6 +26,7 @@ import type {
 	IRModerationsRequest,
 	IRModerationsResponse,
 	IRRerankResponse,
+	IRDecisionsResponse,
 } from "@core/ir";
 import type { ByokKeyMeta } from "@pipeline/before/types";
 import type { Endpoint } from "@core/types";
@@ -57,12 +58,18 @@ export type ExecutorExecuteArgs = {
 
 	requestId: string;
 	workspaceId: string;
+	apiKeyId?: string | null;
+	onReservationDenied?: (denial: import("@core/video-reservations").VideoReservationDenial) => void;
 	providerId: string;
 	endpoint: Endpoint;
 	protocol?: Protocol;
 	capability?: string;
 
 	providerModelSlug?: string | null;
+	privateEndpoint?: {
+		baseUrl: string;
+		supportsResponses: boolean;
+	} | null;
 	capabilityParams?: Record<string, any> | null;
 	maxInputTokens?: number | null;
 	maxOutputTokens?: number | null;
@@ -103,11 +110,16 @@ export type Bill = {
 export type ExecutorCompletedResult = {
 	kind: "completed";
 	allowEmptySuccess?: boolean;
+	// Stop retries and fallback when the executor cannot safely replay the request.
+	terminal?: boolean;
+	// Return a locally generated client error directly instead of treating it as an upstream failure.
+	localClientError?: boolean;
 	ir?:
 		| IRChatResponse
 		| IREmbeddingsResponse
 		| IRModerationsResponse
 		| IRRerankResponse
+		| IRDecisionsResponse
 		| IRImageGenerationResponse
 		| IRAudioSpeechResponse
 		| IRAudioTranscriptionResponse

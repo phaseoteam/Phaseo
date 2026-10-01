@@ -9,6 +9,52 @@
       "meter": "output_video_seconds",
       "unit": "second",
       "unit_size": 1,
+      "price_per_unit": 0.07,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Singapore international deployment, 480P list price",
+      "match": [
+        {
+          "path": "video_params.resolution",
+          "op": "in",
+          "or_group": 1,
+          "and_index": 1,
+          "value": [
+            "480P",
+            "480p",
+            "854x480",
+            "480x854",
+            "854*480",
+            "480*854"
+          ]
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-09-06T00:00:00Z",
+      "region": "ap-southeast-1",
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "video_params.resolution",
+          "op": "in",
+          "or_group": 1,
+          "and_index": 1,
+          "value": [
+            "480P",
+            "480p",
+            "854x480",
+            "480x854",
+            "854*480",
+            "480*854"
+          ]
+        }
+      ],
+      "source": "https://www.alibabacloud.com/help/en/model-studio/model-pricing"
+    },
+    {
+      "meter": "output_video_seconds",
+      "unit": "second",
+      "unit_size": 1,
       "price_per_unit": 0.14,
       "currency": "USD",
       "pricing_plan": "standard",
@@ -19,7 +65,14 @@
           "op": "in",
           "or_group": 1,
           "and_index": 1,
-          "value": ["720P", "720p", "1280x720", "720x1280", "1280*720", "720*1280"]
+          "value": [
+            "720P",
+            "720p",
+            "1280x720",
+            "720x1280",
+            "1280*720",
+            "720*1280"
+          ]
         }
       ],
       "priority": 100,
@@ -32,7 +85,14 @@
           "op": "in",
           "or_group": 1,
           "and_index": 1,
-          "value": ["720P", "720p", "1280x720", "720x1280", "1280*720", "720*1280"]
+          "value": [
+            "720P",
+            "720p",
+            "1280x720",
+            "720x1280",
+            "1280*720",
+            "720*1280"
+          ]
         }
       ],
       "source": "https://www.alibabacloud.com/help/en/model-studio/model-pricing"
@@ -51,7 +111,14 @@
           "op": "in",
           "or_group": 1,
           "and_index": 1,
-          "value": ["1080P", "1080p", "1920x1080", "1080x1920", "1920*1080", "1080*1920"]
+          "value": [
+            "1080P",
+            "1080p",
+            "1920x1080",
+            "1080x1920",
+            "1920*1080",
+            "1080*1920"
+          ]
         }
       ],
       "priority": 100,
@@ -64,14 +131,25 @@
           "op": "in",
           "or_group": 1,
           "and_index": 1,
-          "value": ["1080P", "1080p", "1920x1080", "1080x1920", "1920*1080", "1080*1920"]
+          "value": [
+            "1080P",
+            "1080p",
+            "1920x1080",
+            "1080x1920",
+            "1920*1080",
+            "1080*1920"
+          ]
         }
       ],
       "source": "https://www.alibabacloud.com/help/en/model-studio/model-pricing"
     }
   ],
-  "regions": ["ap-southeast-1"],
-  "service_tiers": ["standard"],
+  "regions": [
+    "ap-southeast-1"
+  ],
+  "service_tiers": [
+    "standard"
+  ],
   "sources": [
     {
       "url": "https://www.alibabacloud.com/help/en/model-studio/model-pricing",

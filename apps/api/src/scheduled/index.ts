@@ -1,16 +1,19 @@
 // src/scheduled/index.ts
 // Purpose: Scheduled event handlers.
 // Why: Keep cron logic out of the main app routing entrypoint.
-// How: Runs one deterministic model discovery shard per cron invocation.
+// How: Runs the Cloudflare model discovery sweep on its configured cadence.
 
 import type { GatewayBindings } from "@/runtime/env";
 import { clearRuntime, configureRuntime, getSupabaseAdmin } from "@/runtime/env";
 import {
 	DEFAULT_MODEL_DISCOVERY_SHARD_SIZE,
+	DEFAULT_MODEL_DISCOVERY_CONCURRENCY,
 	getModelDiscoveryShardCount,
+	normalizeModelDiscoveryConcurrency,
 	normalizeModelDiscoveryShardSize,
 	runModelDiscoveryJob,
 } from "@/pipeline/model-discovery";
+import { runPublicModelAnnouncementCheck } from "@/pipeline/model-discovery/public-model-catalog-announcements";
 import { runAsyncWebhookRetriesJob } from "@/core/async-notifications";
 import { runBatchReconciliationJob } from "@/pipeline/batch-reconciliation";
 import { drainEmailOutbox } from "@/pipeline/notifications/email-outbox";
@@ -25,6 +28,7 @@ import { pruneExpiredDataContributions } from "@/pipeline/classification/data-co
 import { drainGatewayOtlpOutbox } from "@/observability/otlp-export";
 import { runAccountDeletionPurgeJob } from "@/pipeline/privacy/account-deletion";
 import { pruneExpiredGatewayIoLogs } from "@/pipeline/audit/io-retention-expiry";
+import { publishConfiguredPublicCatalog } from "./public-catalog";
 
 const MODEL_DISCOVERY_TICKS_PER_DAY = Array.from({ length: 24 }, (_value, hour) =>
 	60 / getModelDiscoveryStepMinutesUtc(hour),
@@ -138,24 +142,83 @@ function getModelDiscoveryExecutionIndex(event: ScheduledController): number {
 }
 
 async function handleModelDiscoveryScheduledEvent(event: ScheduledController, env: GatewayBindings): Promise<void> {
+	if (!toBool(env.MODEL_DISCOVERY_ENABLED, true)) {
+		return;
+	}
+
+	const shardingEnabled = toBool(env.MODEL_DISCOVERY_SHARDING_ENABLED, true);
 	const shardSize = normalizeModelDiscoveryShardSize(
 		toInt(env.MODEL_DISCOVERY_SHARD_SIZE, DEFAULT_MODEL_DISCOVERY_SHARD_SIZE),
 	);
-	const shardCount = getModelDiscoveryShardCount(shardSize);
+	const shardCount = shardingEnabled ? getModelDiscoveryShardCount(shardSize) : 1;
 	const executionIndex = getModelDiscoveryExecutionIndex(event);
 	const shardIndex = executionIndex % shardCount;
+	const concurrency = normalizeModelDiscoveryConcurrency(
+		toInt(env.MODEL_DISCOVERY_CONCURRENCY, DEFAULT_MODEL_DISCOVERY_CONCURRENCY),
+	);
 
 	configureRuntime(env);
 	try {
 		await runModelDiscoveryJob({
 			trigger: "scheduled",
-			source: `cloudflare_cron:shard-${shardIndex + 1}-of-${shardCount}`,
+			source: shardingEnabled
+				? `cloudflare_cron:shard-${shardIndex + 1}-of-${shardCount}`
+				: "cloudflare_cron:all-providers",
 			scheduledAtIso: new Date(event.scheduledTime).toISOString(),
 			shardIndex,
 			shardCount,
+			concurrency,
 			notify: true,
 			prune: shardIndex === 0,
 		});
+	} finally {
+		clearRuntime();
+	}
+}
+
+async function handlePublicModelAnnouncementsScheduledEvent(env: GatewayBindings): Promise<void> {
+	configureRuntime(env);
+	try {
+		const runId = crypto.randomUUID();
+		let runCreated = false;
+		let runStart: Promise<void> | null = null;
+		const ensureRun = () => {
+			runStart ??= (async () => {
+				const { error } = await getSupabaseAdmin().from("model_discovery_runs").insert({
+					id: runId,
+					trigger: "scheduled",
+					source: "public_model_announcements",
+					status: "running",
+					started_at: new Date().toISOString(),
+				});
+				if (error) throw new Error(error.message || "Failed to insert public model announcement run");
+				runCreated = true;
+			})();
+			return runStart;
+		};
+		const summary = await runPublicModelAnnouncementCheck({
+			runId,
+			notify: true,
+			ensureRun,
+		});
+		if (runCreated) {
+			const { error } = await getSupabaseAdmin()
+				.from("model_discovery_runs")
+				.update({
+					status: summary.error ? "completed_with_errors" : "completed",
+					finished_at: new Date().toISOString(),
+					changes_count: summary.detected,
+					summary: { publicModelAnnouncements: summary },
+					error: summary.error ?? null,
+				})
+				.eq("id", runId);
+			if (error) throw new Error(error.message || "Failed to finish public model announcement run");
+		}
+		if (summary.error) {
+			console.error("public_model_announcement_check_failed", summary.error);
+		} else if (summary.detected > 0 || summary.notified > 0 || summary.pending > 0) {
+			console.log("public_model_announcement_check_completed", summary);
+		}
 	} finally {
 		clearRuntime();
 	}
@@ -452,6 +515,25 @@ async function handleGatewayIoRetentionExpiryScheduledEvent(
 }
 
 export async function handleScheduledEvent(event: ScheduledController, env: GatewayBindings): Promise<void> {
+	// Run before maintenance jobs so their duration cannot delay publication.
+	// Only the primary deployment configures targets; regional Workers consume KV.
+	if (env.GATEWAY_CONTEXT_BUNDLE_ENABLED === "true" && env.GATEWAY_PUBLIC_CATALOG_TARGETS && getScheduledMinuteUtc(event) % 2 === 0) {
+		configureRuntime(env);
+		try {
+			const summary = await publishConfiguredPublicCatalog(env.GATEWAY_PUBLIC_CATALOG_TARGETS);
+			console.log("public_catalog_publication_completed", summary);
+		} catch {
+			console.error("public_catalog_publication_invalid_config");
+		} finally {
+			clearRuntime();
+		}
+	}
+	// Keep release notices independent from the slower provider discovery sweep.
+	try {
+		await handlePublicModelAnnouncementsScheduledEvent(env);
+	} catch (error) {
+		console.error("public_model_announcement_check_scheduled_failed", serializeError(error));
+	}
 	if (isDailyPaymentMethodExpiryTick(event)) {
 		try {
 			await handlePaymentMethodExpiryScheduledEvent(env);

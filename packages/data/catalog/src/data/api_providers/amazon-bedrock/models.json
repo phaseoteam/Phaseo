@@ -1,5 +1,88 @@
 [
   {
+    "api_model_id": "openai/gpt-6-astra",
+    "provider_api_model_id": "amazon-bedrock:openai/gpt-6-astra",
+    "provider_model_slug": "openai.gpt-6-astra",
+    "internal_model_id": "openai/gpt-6-astra",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": 1050000,
+    "max_output_tokens": 128000,
+    "effective_from": "2026-09-08T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": true,
+        "tool_call": true,
+        "structured_output": true,
+        "temperature": false,
+        "attachment": true,
+        "input_modalities": ["text", "image"],
+        "output_modalities": ["text"],
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": true,
+    "provider_status": "available",
+    "phaseo_status": "available",
+    "access_scope": "public",
+    "regions": { "execution": ["us"], "data": ["us"] },
+    "service_tiers": ["standard"],
+    "api": { "formats": [], "endpoint": null, "deployment": null },
+    "sources": [
+      {
+        "kind": "models",
+        "url": "https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-openai-gpt-6-astra.html",
+        "accessed_at": "2026-09-09T00:00:00Z",
+        "notes": "AWS documents openai.gpt-6-astra on bedrock-mantle, available in-region through us-west-2."
+      },
+      {
+        "kind": "pricing",
+        "url": "https://aws.amazon.com/bedrock/pricing/",
+        "accessed_at": "2026-09-09T00:00:00Z",
+        "notes": "Amazon Bedrock GPT-6 Astra standard in-region pricing."
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-09-09T00:00:00Z",
+      "notes": "Verified against AWS's GPT-6 Astra model card and Mantle endpoint documentation."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "anthropic/claude-fable-5.1",
+    "provider_api_model_id": "amazon-bedrock:anthropic/claude-fable-5.1",
+    "provider_model_slug": "us.anthropic.claude-fable-5-1",
+    "internal_model_id": "anthropic/claude-fable-5.1",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": 1000000,
+    "max_output_tokens": 128000,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [{ "capability_id": "text.generate", "status": "active", "params": ["max_tokens", "stop", "reasoning", "include_reasoning", "tool_choice", "tools", "reasoning_effort"], "reasoning": true, "tool_call": true, "structured_output": null, "temperature": null, "attachment": true, "input_modalities": ["text", "image"], "output_modalities": ["text"], "modes": [] }],
+    "routing_status": "active",
+    "routable": false,
+    "regions": { "execution": ["us"], "data": ["us"] },
+    "provider_status": "available",
+    "phaseo_status": "planned",
+    "access_scope": "public",
+    "service_tiers": [],
+    "api": { "formats": [], "endpoint": null, "deployment": null },
+    "sources": [{ "kind": "docs", "url": "https://platform.claude.com/docs/en/models/fable-5-1/migration-guide", "accessed_at": "2026-09-01T00:00:00Z", "notes": "Anthropic confirms Amazon Bedrock availability and the 1M context / 128K output limits." }],
+    "verification": { "status": "partial", "checked_at": "2026-09-01T00:00:00Z", "notes": "Amazon Bedrock availability and the US inference profile ID are corroborated; routing remains disabled pending AWS endpoint, region, and pricing verification." },
+    "rate_limits": []
+  },
+  {
     "api_model_id": "ai21/jamba-1.5-large",
     "provider_api_model_id": "amazon-bedrock:ai21/jamba-1.5-large",
     "provider_model_slug": "ai21.jamba-1-5-large-v1:0",

@@ -2,8 +2,10 @@
 
 import React from "react";
 import { useLocale, useTranslations } from "next-intl";
+import { resolveProviderDisplayName } from "@/lib/providers/providerOffers";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { AppWindow, Bot, Braces, Copy, Database, GraduationCap, Info, ListFilter, LoaderCircle, Package, ShieldCheck, ShieldQuestion, Terminal, XCircle } from "lucide-react";
 import {
 	Dialog,
@@ -55,7 +57,6 @@ import {
 	DetailKeyValueGrid,
 	DetailTimingBar,
 } from "./DetailDialogPrimitives";
-import { formatWordyDateTime } from "@/lib/gateway/usage/timeFormatting";
 import { getModelDisplayName, type ModelMetadataMap } from "./model-display";
 import {
 	PROVIDER_PROMPT_TRAINING_POLICY_LABELS,
@@ -64,6 +65,7 @@ import {
 import { formatRoomError, type RoomErrorTranslator } from "@/lib/chat/formatRoomError";
 import UsageEntityHoverCard from "./UsageEntityHoverCard";
 import { RoutingTracePanel } from "@/components/(gateway)/usage/RoutingTracePanel";
+import { providerAttemptTimelineDuration, responseTimelineTiming } from "./responseTimeline";
 import {
 	ProviderInspectorSheet,
 	ProviderInspectorSheetContent,
@@ -88,7 +90,10 @@ interface RequestDetailDialogProps {
 
 type ProviderAttemptRow = RequestRow["provider_attempts"][number];
 
-function formatRequestPricingLine(line: RequestRow["pricing_lines"][number]): string {
+function formatRequestPricingLine(
+	line: RequestRow["pricing_lines"][number],
+	formatNumber: (value: number) => string,
+): string {
 	if (line == null) return "null";
 	if (
 		typeof line === "string" ||
@@ -123,7 +128,7 @@ function formatRequestPricingLine(line: RequestRow["pricing_lines"][number]): st
 				: null;
 	const costNanos =
 		typeof line.cost_nanos === "number"
-			? line.cost_nanos.toLocaleString()
+			? formatNumber(line.cost_nanos)
 			: typeof line.cost_nanos === "string" && line.cost_nanos.trim().length > 0
 				? line.cost_nanos.trim()
 				: null;
@@ -785,10 +790,8 @@ function RequestHeader({
 }) {
 	const t = useTranslations("SettingsUI");
 	const locale = useLocale();
-	const timestamp = formatWordyDateTime(request.created_at, {
-		includeTime: true,
-		locale,
-	});
+	const format = useDisplayFormatters();
+	const timestamp = format.dateTime(request.created_at);
 	return (
 		<div className="relative">
 			{headerNavigation ? (
@@ -815,7 +818,7 @@ export default function RequestDetailDialog({
 	request,
 	appName,
 	modelMetadata,
-	providerName,
+	providerName: suppliedProviderName,
 	providerNames,
 	providerMetadata,
 	headerNavigation,
@@ -832,9 +835,11 @@ export default function RequestDetailDialog({
 	const s = (key: string) => t(`strings.${key}` as never);
 	const m = (key: string, values: Record<string, string | number>) =>
 		t(`strings.${key}` as never, values as never);
+	const format = useDisplayFormatters();
 	const searchParams = useSearchParams();
 
 	if (!request) return null;
+	const providerName = resolveProviderDisplayName({ providerId: request.provider, providerName: suppliedProviderName ?? request.provider ?? "" });
 	if (loading) {
 		const loadingContent = (
 			<>
@@ -853,7 +858,11 @@ export default function RequestDetailDialog({
 		);
 		if (presentation === "sheet") {
 			return (
-				<ProviderInspectorSheet open={open} onOpenChange={onOpenChange}>
+				<ProviderInspectorSheet
+					open={open}
+					onOpenChange={onOpenChange}
+					disablePointerDismissal={disablePointerDismissal}
+				>
 					<ProviderInspectorSheetContent className="!w-full max-w-none gap-0 overflow-hidden p-0 sm:max-w-none md:!w-[58vw] lg:!w-[54vw] xl:!w-[50vw] 2xl:!w-[46vw] data-[side=right]:sm:max-w-none">
 						{loadingContent}
 					</ProviderInspectorSheetContent>
@@ -883,8 +892,9 @@ export default function RequestDetailDialog({
 		(meter) => !internalUsageMeters.some((internal) => internal.key === meter.key),
 	);
 	const usageSummary = buildUsageSummary(normalizedUsage);
-	const timingLatency = Number(request.latency_ms ?? 0) || 0;
-	const timingGeneration = Number(request.generation_ms ?? 0) || 0;
+	const timelineTiming = responseTimelineTiming(request);
+	const timingLatency = timelineTiming.providerMs ?? 0;
+	const timingGeneration = timelineTiming.generationMs ?? 0;
 	const requestedModelId = getRequestedModelId(request);
 	const routedModelId = getRoutedModelId(request);
 	const requestedModelHref = getModelDetailsHref(requestedModelId);
@@ -918,7 +928,7 @@ export default function RequestDetailDialog({
 		apiModelId: finalSuccessAttempt?.api_model_id,
 		providerModelSlug: finalSuccessAttempt?.provider_model_slug,
 	});
-	const responseTimelineItems =
+	const providerTimelineItems =
 		attempts.length > 0
 			? attempts.flatMap((attempt, index) => {
 					const attemptProviderId = attempt.provider ?? null;
@@ -928,7 +938,7 @@ export default function RequestDetailDialog({
 						`Attempt ${index + 1}`;
 					const statusTone = getAttemptStatusTone(attempt);
 					const statusDescription = getAttemptStatusDescription(attempt);
-					const durationMs = Number(attempt.total_ms ?? attempt.duration_ms ?? 0) || 0;
+					const durationMs = providerAttemptTimelineDuration(attempt, request.detail_metadata?.response_timeline);
 					const attemptFinishReason =
 						attempt.provider_finish_reason ?? attempt.finish_reason ?? null;
 					const attemptCostNanos = Number(attempt.cost_nanos ?? 0) || 0;
@@ -1018,14 +1028,15 @@ export default function RequestDetailDialog({
 								</HoverCard>
 							</div>
 						),
-						duration: durationMs,
+						duration: finalSuccessAttempt === attempt && timelineTiming.providerMs !== null
+							? timelineTiming.providerMs : durationMs,
 						colorClass: statusTone.barClass,
 					};
 
 					if (
 						finalSuccessAttempt === attempt &&
-						timingLatency > 0 &&
-						timingGeneration > 0
+						timelineTiming.providerMs !== null &&
+						timelineTiming.generationMs !== null
 					) {
 						return [
 							{
@@ -1048,7 +1059,7 @@ export default function RequestDetailDialog({
 					return [providerRow];
 			  })
 			: [
-					...(timingLatency > 0
+					...(timelineTiming.providerMs !== null
 						? [
 								{
 								key: "provider-latency",
@@ -1058,7 +1069,7 @@ export default function RequestDetailDialog({
 										<span className="min-w-0 break-words">
 											{request.provider ? (
 												<Link
-													href={`/api-providers/${encodeURIComponent(request.provider)}`}
+											href={request.provider === "private-model" ? "/settings/workspaces/private-models" : `/api-providers/${encodeURIComponent(request.provider)}`}
 													className="text-foreground underline decoration-transparent transition-colors hover:decoration-foreground/70"
 												>
 													{providerName ?? request.provider}
@@ -1072,7 +1083,7 @@ export default function RequestDetailDialog({
 								},
 						  ]
 						: []),
-					...(timingGeneration > 0
+					...(timelineTiming.generationMs !== null
 						? [
 								{
 								key: "generation",
@@ -1087,6 +1098,20 @@ export default function RequestDetailDialog({
 						  ]
 						: []),
 			  ];
+	const responseTimelineItems = [
+		{
+			key: "phaseo-routing",
+			label: (
+				<div className="flex min-w-0 items-center gap-2" title="Authentication, validation, routing and request preparation before the first upstream request.">
+					<Logo id="phaseo" alt="" width={14} height={14} className="shrink-0" />
+					<span>Phaseo routing</span>
+				</div>
+			),
+			duration: timelineTiming.routingMs,
+			colorClass: "bg-violet-500",
+		},
+		...providerTimelineItems,
+	];
 	const sessionFilterHref = request.session_id
 		? buildUsageLogsFilterHref({
 				searchParams,
@@ -1186,7 +1211,7 @@ export default function RequestDetailDialog({
 						) : null}
 						<Link
 							href={modelHref}
-							className="min-w-0 truncate text-foreground underline decoration-transparent transition-colors duration-200 hover:text-foreground hover:decoration-foreground/70"
+							className="min-w-0 break-words text-foreground underline decoration-transparent transition-colors duration-200 hover:text-foreground hover:decoration-foreground/70 sm:truncate"
 						>
 							{modelName || routedModelId || "-"}
 						</Link>
@@ -1234,7 +1259,7 @@ export default function RequestDetailDialog({
 								className="flex-shrink-0"
 							/>
 						) : null}
-						<span className="min-w-0 truncate">
+						<span className="min-w-0 break-words sm:truncate">
 							{modelName || routedModelId || "-"}
 						</span>
 					</div>
@@ -1252,12 +1277,12 @@ export default function RequestDetailDialog({
 					rows={[{ label: s("Model ID"), value: <code className="font-mono text-[11px]">{requestedModelId}</code> }]}
 				>
 					{requestedModelHref ? (
-						<Link href={requestedModelHref} className="inline-flex min-w-0 items-center justify-end gap-2 text-foreground underline decoration-transparent transition-colors hover:decoration-foreground/70">
+						<Link href={requestedModelHref} className="inline-flex min-w-0 items-center gap-2 text-foreground underline decoration-transparent transition-colors hover:decoration-foreground/70 sm:justify-end">
 							{requestedModelMeta ? <Logo id={requestedModelMeta.organisationId} width={16} height={16} className="shrink-0" /> : null}
-							<span className="truncate">{requestedModelName || requestedModelId}</span>
+							<span className="min-w-0 break-words sm:truncate">{requestedModelName || requestedModelId}</span>
 						</Link>
 					) : (
-						<span className="truncate">{requestedModelName || requestedModelId}</span>
+						<span className="min-w-0 break-words sm:truncate">{requestedModelName || requestedModelId}</span>
 					)}
 				</UsageEntityHoverCard>
 			) : (
@@ -1285,7 +1310,7 @@ export default function RequestDetailDialog({
 			value: request.provider ? (
 				<UsageEntityHoverCard
 					title={providerName ?? request.provider}
-					href={`/api-providers/${encodeURIComponent(request.provider)}`}
+				href={request.provider === "private-model" ? "/settings/workspaces/private-models" : `/api-providers/${encodeURIComponent(request.provider)}`}
 					visual={
 						<Logo
 							id={request.provider}
@@ -1314,7 +1339,7 @@ export default function RequestDetailDialog({
 					]}
 				>
 					<Link
-						href={`/api-providers/${encodeURIComponent(request.provider)}`}
+					href={request.provider === "private-model" ? "/settings/workspaces/private-models" : `/api-providers/${encodeURIComponent(request.provider)}`}
 					className="inline-flex items-center gap-2 text-foreground underline decoration-transparent transition-colors duration-200 hover:text-foreground hover:decoration-foreground/70"
 					>
 						<Logo
@@ -1336,7 +1361,7 @@ export default function RequestDetailDialog({
 						label: s("Upstream model ID"),
 						description: s("The provider-facing model identifier sent upstream for the successful attempt."),
 						value: (
-							<div className="flex min-w-0 flex-wrap items-center justify-end gap-2">
+							<div className="flex min-w-0 flex-wrap items-center gap-2 sm:justify-end">
 								{modelMeta ? <Logo id={modelMeta.organisationId} width={16} height={16} className="shrink-0" /> : null}
 								{concreteSuccessModelParts.map((value) => (
 									<code
@@ -1488,7 +1513,7 @@ export default function RequestDetailDialog({
 					<Database className="size-3.5 shrink-0 text-muted-foreground" />
 					{ioLog?.retention_until
 						? m("Retained until", {
-								date: formatWordyDateTime(ioLog.retention_until, { locale }),
+								date: format.dateTime(ioLog.retention_until),
 							})
 						: s("No Retained Payload")}
 				</span>
@@ -2653,17 +2678,17 @@ export default function RequestDetailDialog({
 							<DetailKeyValueGrid
 								columns={3}
 								items={[
-					{ label: s("Provider latency"), value: <span className="font-mono">{timingLatency > 0 ? `${timingLatency} ms` : "-"}</span> },
-					{ label: s("Generation time"), value: <span className="font-mono">{timingGeneration > 0 ? `${timingGeneration} ms` : "-"}</span> },
-					{ label: s("Throughput"), value: <span className="font-mono">{formatThroughput(request.throughput)}</span> },
-					{ label: s("Cost"), value: <span className="font-mono">{formatCost(request.cost_nanos)}</span> },
-					{ label: s("Tokens"), value: <span className="font-mono">{usageSummary.input != null || usageSummary.output != null ? `${formatUsageNumber(usageSummary.input ?? 0)} → ${formatUsageNumber(usageSummary.output ?? 0)}` : "-"}</span> },
-					{ label: s("Stop reason"), value: request.finish_reason || "-" },
+									{ label: timelineTiming.generationMs !== null ? s("Provider latency") : s("Provider duration"), value: <span className="font-mono">{timelineTiming.providerMs !== null ? `${timingLatency} ms` : "-"}</span> },
+									{ label: s("Generation time"), value: <span className="font-mono">{timelineTiming.generationMs !== null ? `${timingGeneration} ms` : "-"}</span> },
+									{ label: s("Throughput"), value: <span className="font-mono">{formatThroughput(request.throughput)}</span> },
+									{ label: s("Cost"), value: <span className="font-mono">{formatCost(request.cost_nanos)}</span> },
+									{ label: s("Tokens"), value: <span className="font-mono">{usageSummary.input != null || usageSummary.output != null ? `${formatUsageNumber(usageSummary.input ?? 0, format.number)} → ${formatUsageNumber(usageSummary.output ?? 0, format.number)}` : "-"}</span> },
+									{ label: s("Stop reason"), value: request.finish_reason || "-" },
 								]}
 							/>
 						</GenerationSection>
 
-						<GenerationSection title={s("Provider Responses")}>
+						<GenerationSection title={s("Response timeline")}>
 							<DetailTimingBar items={responseTimelineItems} />
 							<RoutingTracePanel
 								trace={request.routing_trace ?? null}
@@ -2695,15 +2720,7 @@ export default function RequestDetailDialog({
 									<div className="flex flex-wrap gap-x-4 gap-y-1 text-muted-foreground">
 										<span>{s("Status:")} <span className="font-medium text-foreground">{ioLog.status}</span></span>
 										{ioLog.bytes ? <span>{m("Byte count", { count: ioLog.bytes })}</span> : null}
-										{ioLog.retention_until ? (
-											<span>
-												{m("Retained until", {
-													date: formatWordyDateTime(ioLog.retention_until, {
-														locale,
-													}),
-												})}
-											</span>
-										) : null}
+										{ioLog.retention_until ? <span>{m("Retained until", { date: format.dateTime(ioLog.retention_until) })}</span> : null}
 									</div>
 									{ioLog.payload ? (
 										<div className="grid gap-4 xl:grid-cols-2">
@@ -2728,7 +2745,7 @@ export default function RequestDetailDialog({
 											className="rounded-lg border border-border/60 bg-muted/30 px-3 py-2"
 										>
 											<code className="whitespace-pre-wrap break-words font-mono text-xs">
-												{formatRequestPricingLine(line)}
+												{formatRequestPricingLine(line, (value) => format.number(value, { notation: "standard" }))}
 											</code>
 										</div>
 									))}
@@ -2791,7 +2808,7 @@ function DetailRows({
 			{items.map((item) => (
 				<div
 					key={item.label}
-					className="grid min-h-6 min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-4"
+					className="grid min-h-6 min-w-0 gap-1 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:gap-4"
 				>
 					<div className="flex items-center gap-1.5 text-[11px] leading-5 text-muted-foreground">
 						<span>{item.label}</span>
@@ -2808,7 +2825,7 @@ function DetailRows({
 							</Tooltip>
 						) : null}
 					</div>
-					<div className="flex min-w-0 max-w-[18rem] justify-end break-words text-right text-sm font-medium text-foreground [&>div]:min-w-0 [&_code]:break-all">
+					<div className="flex min-w-0 justify-start break-words text-left text-sm font-medium text-foreground sm:max-w-[18rem] sm:justify-end sm:text-right [&>div]:min-w-0 [&_code]:break-all">
 						{item.value}
 					</div>
 				</div>
@@ -2883,13 +2900,14 @@ function CopyableText({ value, ariaLabel }: { value: string; ariaLabel: string }
 }
 
 function UsageGroup({ title, meters }: { title: string; meters: UsageMeter[] }) {
+	const format = useDisplayFormatters();
 	return (
 		<div>
 			<h3 className="mb-2 text-xs font-medium text-foreground">{title}</h3>
 			<DetailRows
 				items={meters.map((meter) => ({
 					label: meter.label,
-					value: <span className="font-mono">{formatUsageNumber(meter.value)}</span>,
+					value: <span className="font-mono">{formatUsageNumber(meter.value, format.number)}</span>,
 				}))}
 			/>
 		</div>

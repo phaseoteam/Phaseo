@@ -126,9 +126,7 @@ jobs:
           dotnet test packages/sdk/agent-sdk-csharp/tests/Phaseo.AgentSdk.Tests/Phaseo.AgentSdk.Tests.csproj -c Release
           dotnet pack packages/sdk/agent-sdk-csharp/Phaseo.AgentSdk.csproj \
             -c Release \
-            -o artifacts/csharp-agent \
-            /p:Version=${{ steps.agent-version.outputs.value }} \
-            /p:PackageVersion=${{ steps.agent-version.outputs.value }}
+            -o artifacts/csharp-agent
 
       - name: NuGet login (OIDC -> temporary API key)
         id: nuget_login

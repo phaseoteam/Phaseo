@@ -7,6 +7,9 @@ export type AccountWorkspaceContext = {
 	client: ReturnType<typeof getDataClient>;
 	userClient: ReturnType<typeof getDataClient>;
 	workspaceId: string;
+	workspaceSlug: string;
+	workspaceName: string;
+	workspaceLogoUrl: string | null;
 	role: string;
 	isOwner: boolean;
 };
@@ -43,7 +46,7 @@ export async function requireAccountWorkspace(args: {
 			.maybeSingle(),
 		client
 			.from("workspaces")
-			.select("owner_user_id")
+			.select("owner_user_id,slug,name,logo_url")
 			.eq("id", workspaceId)
 			.maybeSingle(),
 	]);
@@ -55,6 +58,9 @@ export async function requireAccountWorkspace(args: {
 		client,
 		userClient,
 		workspaceId,
+		workspaceSlug: String(workspaceResult.data?.slug ?? workspaceId).trim().toLowerCase(),
+		workspaceName: String(workspaceResult.data?.name ?? workspaceResult.data?.slug ?? workspaceId).trim(),
+		workspaceLogoUrl: typeof workspaceResult.data?.logo_url === "string" ? workspaceResult.data.logo_url : null,
 		role: isOwner ? "admin" : String(membershipResult.data?.role ?? "member"),
 		isOwner,
 	};

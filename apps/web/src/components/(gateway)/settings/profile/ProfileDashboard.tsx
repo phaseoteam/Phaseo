@@ -1,14 +1,14 @@
 "use client"
 
 import { useMemo, useRef, useState, type ChangeEvent, type ReactNode } from "react"
-import Link from "next/link"
-import { useRouter } from "next/navigation"
+import { Link } from "@/i18n/navigation"
+import { useSettingsRouter as useRouter } from "../PrivateSettingsQuery"
 import { Camera, ExternalLink, Flame, LoaderCircle } from "lucide-react"
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts"
 import { toast } from "sonner"
 
 import type { ProfileSnapshot } from "@/lib/fetchers/profile/types"
-import { formatCompactNumber, formatUsdFromNanos } from "@/lib/profile"
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider"
 import { buildProfileShareCardPayload } from "@/lib/profileShare"
 import { getModelDetailsHref } from "@/lib/models/modelHref"
 import { getBrowserAccessToken } from "@/lib/fetchers/internal/accountAuthClient"
@@ -30,6 +30,7 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import type { ProfileMessages } from "@/i18n/profile"
+import { SensitiveValue } from "@/components/display/SensitiveValue"
 
 type Props = {
 	profile: ProfileSnapshot
@@ -63,41 +64,10 @@ function getInitials(name: string): string {
 		.join("")
 }
 
-function formatShortDate(date: string, locale: string): string {
-	return new Date(`${date}T00:00:00.000Z`).toLocaleDateString(locale, {
-		month: "numeric",
-		day: "numeric",
-		timeZone: "UTC",
-	})
-}
-
-function formatLongDate(date: string, locale: string): string {
-	return new Date(`${date}T00:00:00.000Z`).toLocaleDateString(locale, {
-		weekday: "short",
-		month: "short",
-		day: "numeric",
-		year: "numeric",
-		timeZone: "UTC",
-	})
-}
-
-function formatWeekday(date: string, locale: string): string {
-	return new Date(`${date}T00:00:00.000Z`).toLocaleDateString(locale, {
-		weekday: "long",
-		timeZone: "UTC",
-	})
-}
-
 function getWeekdayLabels(locale: string): string[] {
-	const formatter = new Intl.DateTimeFormat(locale, {
-		weekday: "narrow",
-		timeZone: "UTC",
-	})
-	return Array.from({ length: 7 }, (_, index) =>
-		formatter.format(new Date(Date.UTC(2024, 0, index + 1))),
-	)
+	const formatter = new Intl.DateTimeFormat(locale, { weekday: "narrow", timeZone: "UTC" })
+	return Array.from({ length: 7 }, (_, index) => formatter.format(new Date(Date.UTC(2024, 0, index + 1))))
 }
-
 function getSeriesForRange(
 	profile: ProfileSnapshot,
 	range: TimeRange,
@@ -161,37 +131,37 @@ function getLongestStreak(points: ProfileSnapshot["activitySeries30"]): number {
 	return longest
 }
 
-function formatMetricValue(
-	metric: Metric,
-	value: number,
-	locale: string,
-	compact = true,
-): string {
-	if (metric === "spend") {
-		return new Intl.NumberFormat(locale, {
-			style: "currency",
-			currency: "USD",
-			notation: value >= 1000 && compact ? "compact" : "standard",
-			maximumFractionDigits: value >= 100 ? 0 : value >= 1 ? 2 : 4,
-		}).format(value)
-	}
-
-	return compact
-		? formatCompactNumber(value, locale)
-		: value.toLocaleString(locale)
-}
-
-function formatChangePercent(value: number, locale: string): string {
-	return new Intl.NumberFormat(locale, {
-		style: "percent",
-		maximumFractionDigits: 0,
-		signDisplay: "exceptZero",
-	}).format(value / 100)
-}
-
 function getProviderFromModelId(id: string): string {
 	const provider = id.includes("/") ? id.split("/")[0] : ""
 	return provider || "phaseo"
+}
+
+function useProfileFormatters() {
+	const format = useDisplayFormatters()
+	const calendarValue = (date: string) => `${date}T00:00:00.000Z`
+	return {
+		formatShortDate: (date: string) => format.calendarDate(calendarValue(date)),
+		formatLongDate: (date: string) => format.calendarDate(calendarValue(date)),
+		formatWeekday: (date: string) => format.dateParts(calendarValue(date), {
+			weekday: "long",
+			timeZone: "UTC",
+		}),
+		formatMonth: (date: string) => format.dateParts(calendarValue(date), {
+			month: "short",
+			timeZone: "UTC",
+		}),
+		formatMetricValue: (metric: Metric, value: number, compact = true) => {
+			if (metric === "spend") {
+				return format.number(value, {
+					style: "currency",
+					currency: "USD",
+					notation: compact ? undefined : "standard",
+					maximumFractionDigits: value >= 100 ? 0 : value >= 1 ? 2 : 4,
+				})
+			}
+			return format.number(value, compact ? undefined : { notation: "standard" })
+		},
+	}
 }
 
 function formatProviderName(provider: string): string {
@@ -259,6 +229,7 @@ function ActivityHeatmap({
 	metric: Metric
 	labels: ProfileMessages
 }) {
+	const { formatLongDate, formatMetricValue, formatMonth, formatWeekday } = useProfileFormatters()
 	const days = profile.heatmapDays
 	const activeDays = days.filter((day) => day.inTrailingWindow && !day.isFuture)
 	const values = activeDays.map((day) => getMetricValue(day, metric))
@@ -277,7 +248,7 @@ function ActivityHeatmap({
 		return best
 	}, null)
 	const weekdayTotals = activeDays.reduce<Record<string, number>>((acc, day) => {
-		const weekday = formatWeekday(day.date, locale)
+		const weekday = formatWeekday(day.date)
 		acc[weekday] = (acc[weekday] ?? 0) + getMetricValue(day, metric)
 		return acc
 	}, {})
@@ -293,18 +264,9 @@ function ActivityHeatmap({
 		: 0
 	const topModelShare = total > 0 ? Math.round((topModelValue / total) * 100) : 0
 
-	let previousMonth = ""
-	const monthLabels = days.flatMap((day, index) => {
-		const date = new Date(`${day.date}T00:00:00.000Z`)
-		const monthKey = `${date.getUTCFullYear()}-${date.getUTCMonth()}`
-		const label = date.toLocaleDateString(locale, {
-			month: "short",
-			timeZone: "UTC",
-		})
-		const isMonthAnchor = date.getUTCDate() <= 7 && monthKey !== previousMonth
-		previousMonth = monthKey
-		return isMonthAnchor ? [{ index, label }] : []
-	})
+	const monthLabels = days
+		.map((day, index) => ((index === 0 || day.date.slice(0, 7) !== days[index - 1].date.slice(0, 7)) ? { index, label: formatMonth(day.date) } : null))
+		.filter(Boolean) as Array<{ index: number; label: string }>
 	const weekdayLabels = getWeekdayLabels(locale)
 
 	return (
@@ -325,28 +287,28 @@ function ActivityHeatmap({
 						<span>{labels.streak}</span>
 					</div>
 					<div className="mt-1 text-base font-semibold text-foreground">
-						{profile.currentStreak.toLocaleString(locale)} {labels.days}
+						{formatMetricValue("requests", profile.currentStreak, false)} {labels.days}
 					</div>
 					<div className="mt-0.5 text-xs text-muted-foreground">
-						{labels.best} {profile.longestStreak.toLocaleString(locale)}
+						{labels.best} {formatMetricValue("requests", profile.longestStreak, false)}
 					</div>
 				</div>
 				<div className="pl-4 sm:px-6">
 						<div className="text-muted-foreground">{labels.avgDay}</div>
 						<div className="mt-1 text-base font-semibold text-foreground">
-							{formatMetricValue(metric, avgDay, locale)}
+							{formatMetricValue(metric, avgDay)}
 						</div>
 				</div>
 				<div className="pr-4 sm:px-6">
 						<div className="text-muted-foreground">{labels.avgWeek}</div>
 					<div className="mt-1 text-base font-semibold text-foreground">
-						{formatMetricValue(metric, avgWeek, locale)}
+						{formatMetricValue(metric, avgWeek)}
 					</div>
 				</div>
 				<div className="pl-4 sm:pl-6">
 						<div className="text-muted-foreground">{labels.total}</div>
 					<div className="mt-1 text-base font-semibold text-foreground">
-						{formatMetricValue(metric, total, locale)}
+						{formatMetricValue(metric, total)}
 					</div>
 				</div>
 			</div>
@@ -391,13 +353,13 @@ function ActivityHeatmap({
 													day.isFuture ? "opacity-40" : ""
 												}`}
 												style={level === 0 ? undefined : { backgroundColor: getMetricColor(metric, HEATMAP_LEVEL_OPACITIES[level]) }}
-												aria-label={`${formatLongDate(day.date, locale)} ${formatMetricValue(metric, value, locale)}`}
+												aria-label={`${formatLongDate(day.date)} ${formatMetricValue(metric, value)}`}
 											/>
 										</TooltipTrigger>
 										<TooltipContent>
 											<div className="space-y-1">
-									<p className="font-medium">{formatLongDate(day.date, locale)}</p>
-									<p>{formatMetricValue(metric, value, locale, false)}</p>
+									<p className="font-medium">{formatLongDate(day.date)}</p>
+									<p>{formatMetricValue(metric, value, false)}</p>
 											</div>
 										</TooltipContent>
 									</Tooltip>
@@ -431,10 +393,9 @@ function ActivityHeatmap({
 							<span className="text-muted-foreground">{labels.biggestDay}</span>
 							<span className="text-right font-medium text-foreground">
 								{biggestDay
-									? `${formatLongDate(biggestDay.date, locale)} · ${formatMetricValue(
+									? `${formatLongDate(biggestDay.date)} · ${formatMetricValue(
 											metric,
 											biggestDay.metricValue,
-											locale,
 										)}`
 									: labels.noActivityYet}
 							</span>
@@ -447,14 +408,14 @@ function ActivityHeatmap({
 							<span className="text-muted-foreground">{labels.activeDays}</span>
 							<span className="font-medium text-foreground">
 								{labels.activeDaysCount
-									.replace("{active}", nonZeroDays.length.toLocaleString(locale))
-									.replace("{total}", activeDays.length.toLocaleString(locale))}
+									.replace("{active}", formatMetricValue("requests", nonZeroDays.length, false))
+									.replace("{total}", formatMetricValue("requests", activeDays.length, false))}
 							</span>
 						</div>
 						<div className="flex items-center justify-between gap-6">
 							<span className="text-muted-foreground">{labels.quietDays}</span>
 							<span className="font-medium text-foreground">
-								{Math.max(0, activeDays.length - nonZeroDays.length).toLocaleString(locale)}
+								{formatMetricValue("requests", Math.max(0, activeDays.length - nonZeroDays.length), false)}
 							</span>
 						</div>
 					</div>
@@ -478,7 +439,7 @@ function ActivityHeatmap({
 						<div className="flex items-center justify-between gap-6">
 							<span className="text-muted-foreground">{labels.modelsUsed}</span>
 							<span className="font-medium text-foreground">
-								{profile.topModels.length.toLocaleString(locale)}
+								{formatMetricValue("requests", profile.topModels.length, false)}
 							</span>
 						</div>
 					</div>
@@ -496,6 +457,7 @@ export default function ProfileDashboard({
 	actions,
 }: Props) {
 	const rangeLabels = useMemo<Record<TimeRange, string>>(() => ({ today: labels.periodToday, "7d": labels.period7d, "30d": labels.period30d, "1y": labels.period1y, all: labels.periodAll }), [labels])
+	const { formatLongDate, formatMetricValue, formatShortDate } = useProfileFormatters()
 	const router = useRouter()
 	const avatarInputRef = useRef<HTMLInputElement>(null)
 	const [avatarUrl, setAvatarUrl] = useState(profile.avatarUrl)
@@ -638,9 +600,9 @@ export default function ProfileDashboard({
 						{publicView ? (
 							<p className="text-sm text-muted-foreground">/{profile.publicProfileSlug}</p>
 						) : profile.email ? (
-							<p className="truncate text-sm text-muted-foreground" data-pii="true">
+							<SensitiveValue inline className="max-w-full truncate text-sm text-muted-foreground" label="email address">
 								{profile.email}
-							</p>
+							</SensitiveValue>
 						) : null}
 					</div>
 				</div>
@@ -697,12 +659,12 @@ export default function ProfileDashboard({
 								{rangeLabels[range]}
 							</div>
 							<div className="mt-1 text-4xl font-semibold tracking-tight text-foreground">
-								{formatMetricValue(metric, total, locale)}
+								{formatMetricValue(metric, total)}
 							</div>
 							<div className="mt-1 text-sm text-muted-foreground">
 								{previous == null
 									? labels.noPriorData
-									: labels.changeVsPrior.replace("{change}", formatChangePercent(previous, locale))}
+									: labels.changeVsPrior.replace("{change}", new Intl.NumberFormat(locale, { style: "percent", maximumFractionDigits: 1, signDisplay: "exceptZero" }).format(previous / 100))}
 							</div>
 						</div>
 
@@ -728,23 +690,23 @@ export default function ProfileDashboard({
 									axisLine={false}
 									minTickGap={28}
 									tickMargin={8}
-									tickFormatter={(value) => formatShortDate(String(value), locale)}
+									tickFormatter={(value) => formatShortDate(String(value))}
 								/>
 								<YAxis
 									tickLine={false}
 									axisLine={false}
 									width={52}
-									tickFormatter={(value) => formatMetricValue(metric, Number(value), locale)}
+									tickFormatter={(value) => formatMetricValue(metric, Number(value))}
 								/>
 								<ChartTooltip
 									cursor={{ fill: "rgba(24,24,27,0.06)" }}
 									content={
 										<ChartTooltipContent
 											hideIndicator
-											labelFormatter={(label) => formatLongDate(String(label), locale)}
+											labelFormatter={(label) => formatLongDate(String(label))}
 											formatter={(value) => (
 												<span className="font-mono font-semibold tabular-nums text-foreground">
-											{formatMetricValue(metric, Number(value), locale, false)}
+											{formatMetricValue(metric, Number(value), false)}
 												</span>
 											)}
 										/>
@@ -805,8 +767,8 @@ export default function ProfileDashboard({
 										</div>
 										<div className="text-sm font-semibold tabular-nums text-foreground">
 											{metric === "spend"
-												? formatUsdFromNanos(model.spendNanos, locale)
-												: formatCompactNumber(value, locale)}
+												? formatMetricValue("spend", model.spendNanos / 1_000_000_000, false)
+												: formatMetricValue(metric, value)}
 										</div>
 									</div>
 								)

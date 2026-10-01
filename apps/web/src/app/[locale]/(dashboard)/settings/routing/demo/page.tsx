@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import DynamicRoutesStudio from "@/components/(gateway)/settings/routing/DynamicRoutesStudio";
+import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHeader";
 import type { SettingsDynamicRoutesInitialData } from "@/lib/fetchers/internal/settingsTypes";
 import { getTranslations } from "next-intl/server";
 
@@ -107,11 +108,8 @@ export default async function DynamicRoutingDemoPage() {
 		})),
 	};
 	return (
-		<div className="space-y-6">
-			<header>
-				<h1 className="text-2xl font-bold">{t("headers.dynamicRouting")}</h1>
-				<p className="mt-2 text-sm text-muted-foreground">{t("headers.dynamicRoutingDescription")}</p>
-			</header>
+		<div className="flex flex-col gap-3 lg:h-[calc(100dvh-var(--site-header-height,3.75rem)-var(--site-notice-height,0px)-2.5rem)] lg:min-h-[420px]">
+			<SettingsPageHeader title={t("headers.dynamicRouting")} />
 			<div className="border-l-2 border-cyan-500 px-3 py-1 text-sm text-muted-foreground">{t("headers.dynamicRoutingPreview")}</div>
 			<DynamicRoutesStudio initialData={localizedPreviewData} demoMode />
 		</div>

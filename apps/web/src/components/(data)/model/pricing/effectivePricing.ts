@@ -48,6 +48,16 @@ export function calculateCacheHitRatePct(
 	return Math.min(100, (cachedReadTokens / inputTokens) * 100);
 }
 
+export function hasObservedTokenUsage(
+	inputTokens: number,
+	outputTokens: number,
+): boolean {
+	return (
+		(Number.isFinite(inputTokens) && inputTokens > 0) ||
+		(Number.isFinite(outputTokens) && outputTokens > 0)
+	);
+}
+
 export function calculateTokenSharePct(
 	tokens: number,
 	totalTokens: number,

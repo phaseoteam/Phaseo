@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import {
 	Card,
 	CardHeader,
@@ -19,15 +20,6 @@ function getMonthDiff(date1: Date, date2: Date) {
 	const years = date1.getFullYear() - date2.getFullYear();
 	const months = date1.getMonth() - date2.getMonth();
 	return years * 12 + months;
-}
-
-function formatDate(dateStr: string, locale: string) {
-	const date = new Date(dateStr);
-	return date.toLocaleDateString(locale, {
-		day: "2-digit",
-		month: "short",
-		year: "numeric",
-	});
 }
 
 function formatMonthSpan(months: number, locale: string): string {
@@ -69,6 +61,8 @@ export default function ReleaseTimeline({
 }) {
 	const t = useTranslations("Catalogue.compare");
 	const locale = useLocale();
+	const format = useDisplayFormatters();
+	const formatDate = (value: string) => format.calendarDate(value, value);
 	const modelsWithDates = selectedModels.filter(
 		(model): model is ExtendedModel & { release_date: string } =>
 			model.release_date !== null
@@ -104,8 +98,8 @@ export default function ReleaseTimeline({
 	const spanString = formatMonthSpan(spanMonths, locale);
 
 	// Build summary mini-section comparing oldest and newest
-	const oldestDate = formatDate(oldest.release_date, locale);
-	const newestDate = formatDate(newest.release_date, locale);
+	const oldestDate = formatDate(oldest.release_date);
+	const newestDate = formatDate(newest.release_date);
 	const linkedModel = (model: ExtendedModel) => (chunks: React.ReactNode) => (
 		<Link href={`/models/${model.id}`} className="group">
 			<span className="relative underline decoration-transparent group-hover:decoration-current transition-colors duration-200 font-semibold">
@@ -202,7 +196,7 @@ export default function ReleaseTimeline({
 												className="group"
 											>
 												<span className="relative underline decoration-transparent group-hover:decoration-current transition-colors duration-200">
-													{formatDate(model.release_date, locale)}
+													{formatDate(model.release_date)}
 												</span>
 											</Link>
 										</span>

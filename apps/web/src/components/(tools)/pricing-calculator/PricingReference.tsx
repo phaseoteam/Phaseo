@@ -38,6 +38,7 @@ import {
 	type PricingContextTier,
 } from "./pricingMeterConditions";
 import { useLocale, useTranslations } from "next-intl";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 
 interface PricingReferenceProps {
 	meters: PricingMeter[];
@@ -67,6 +68,8 @@ function formatUnitPrice(
 	locale: string,
 	perMillionTokens: string,
 	formatUnitPriceMessage: (values: { price: string; currency: string; count: string; unit: string }) => string
+,
+	formatNumber: (value: number) => string = value => new Intl.NumberFormat(locale).format(value),
 ) {
 	const derivedUnit = parseMeter(meter.meter).unit;
 	const unitLabel = derivedUnit !== "unknown" ? derivedUnit : meter.unit;
@@ -77,7 +80,7 @@ function formatUnitPrice(
 	return formatUnitPriceMessage({
 		price: pricePerUnitRaw,
 		currency: meter.currency,
-		count: meter.unit_size.toLocaleString(locale),
+		count: formatNumber(meter.unit_size),
 		unit: unitLabel,
 	});
 }
@@ -109,6 +112,7 @@ function ContextRateStack({
 	perMillionTokens: string;
 	formatUnitPriceMessage: (values: { price: string; currency: string; count: string; unit: string }) => string;
 }) {
+	const format = useDisplayFormatters();
 	return (
 		<div className={tiers.length > 1 ? "grid gap-2 sm:grid-cols-2" : "grid gap-2"}>
 			{tiers.map((tier) => {
@@ -117,7 +121,7 @@ function ContextRateStack({
 				return (
 					<div key={tier.key} className="min-h-[74px] rounded-lg border bg-muted/20 px-3 py-2.5">
 						<p className="text-[10px] font-medium text-muted-foreground">{tier.label}</p>
-						<p className="mt-0.5 text-sm font-semibold tabular-nums">{formatUnitPrice(meter, pricingTimeUtc, locale, perMillionTokens, formatUnitPriceMessage)}</p>
+						<p className="mt-0.5 text-sm font-semibold tabular-nums">{formatUnitPrice(meter, pricingTimeUtc, locale, perMillionTokens, formatUnitPriceMessage, format.number)}</p>
 						<p className="mt-0.5 text-[10px] text-muted-foreground">{tier.detail}</p>
 					</div>
 				);
@@ -163,6 +167,7 @@ export function PricingReference({
 		}
 		return { ...tier, label, detail };
 	};
+	const format = useDisplayFormatters();
 	if (meters.length === 0) return null;
 	const activeModels: ComparisonPricingModel[] =
 		comparisonModels && comparisonModels.length > 0

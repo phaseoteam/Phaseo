@@ -6,7 +6,7 @@
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
 
     <PackageId>Phaseo.AgentSdk</PackageId>
-    <Version>0.2.0</Version>
+    <Version>0.3.0</Version>
     <Authors>Phaseo</Authors>
     <Company>Phaseo</Company>
     <Description>Official Phaseo Agent SDK for .NET.</Description>
@@ -27,7 +27,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Phaseo.Sdk" Version="2.1.0" />
+    <ProjectReference Include="../sdk-csharp/Phaseo.Sdk.csproj" />
   </ItemGroup>
 
   <ItemGroup>

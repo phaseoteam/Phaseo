@@ -27,6 +27,7 @@ import {
 	formatSentenceLabel,
 	type ComparisonPricingModel,
 } from "./PricingTableVisuals";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 
 interface CostBreakdownProps {
 	meters: PricingMeter[];
@@ -64,6 +65,7 @@ export function CostBreakdown({
 		translateMeter.has(meterName as never)
 			? translateMeter(meterName as never)
 			: formatSentenceLabel(formatMeterName(meterName));
+	const format = useDisplayFormatters();
 	const safeRequestMultiplier = sanitizeRequestMultiplier(requestMultiplier);
 	const activeModels = useMemo<ComparisonPricingModel[]>(
 		() =>
@@ -152,7 +154,7 @@ export function CostBreakdown({
 													{t("unitPrice", {
 														price: fmtUSD(resolvedPrice.pricePerUnit),
 														currency: meter.currency,
-														count: meter.unit_size.toLocaleString(locale),
+														count: format.number(meter.unit_size),
 														unit: meter.unit,
 													})}
 													</p>

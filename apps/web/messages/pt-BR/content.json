@@ -335,7 +335,12 @@
 		"entryFormat": "Formato da entrada",
 		"validTags": "Tags válidas",
 		"questions": "Dúvidas?",
-		"questionHelp": "Abra uma issue se tiver dúvidas ou precisar de ajuda com o envio."
+		"questionHelp": "Abra uma issue se tiver dúvidas ou precisar de ajuda com o envio.",
+		"openDataRequest": "Abra uma solicitação de dados",
+		"forYourApp": "para seu aplicativo.",
+		"includeAppDetails": "Inclua o nome do aplicativo, uma breve descrição, o site, o guia de integração com Phaseo e um link para o logotipo.",
+		"includeCategories": "Adicione categorias relevantes e um link para o repositório se o aplicativo for de código aberto.",
+		"trackPublication": "Acompanhe a revisão e a publicação na issue."
 	},
 	"acknowledgements": {
 		"title": "Agradecimentos",

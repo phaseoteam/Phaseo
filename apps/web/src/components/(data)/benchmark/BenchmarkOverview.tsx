@@ -1,6 +1,10 @@
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { ExternalLink } from "lucide-react";
+import { ArtificialAnalysisOverview } from "./ArtificialAnalysisOverview";
+import { isArtificialAnalysisBenchmark } from "@/lib/benchmarks/artificialAnalysis";
+import { isEpochCapabilitiesIndex } from "@/lib/benchmarks/epoch";
+import { EpochCapabilitiesOverview } from "./EpochCapabilitiesOverview";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -8,6 +12,7 @@ import BenchmarkMetrics from "./BenchmarkMetrics";
 import BenchmarkProgressChart from "./BenchmarkProgressChart";
 import ModelsUsingBenchmark from "./ModelsUsingBenchmark";
 import type { BenchmarkPage } from "@/lib/fetchers/benchmarks/types";
+import type { PublicBenchmarkRanking } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import {
 	getLowerIsBetter,
 	normalizeBenchmarkScoreValue,
@@ -119,10 +124,14 @@ function getCategoryColor(category: string): string {
 
 export default async function BenchmarkOverview({
 	benchmark,
+	artificialAnalysisRankings = [],
 }: {
 	benchmark: BenchmarkPage;
+	artificialAnalysisRankings?: PublicBenchmarkRanking[];
 }) {
 	const t = await getTranslations("Catalogue.benchmarks");
+	if (isArtificialAnalysisBenchmark(benchmark.id)) return <ArtificialAnalysisOverview benchmark={benchmark} rankings={artificialAnalysisRankings} />;
+	if (isEpochCapabilitiesIndex(benchmark.id)) return <EpochCapabilitiesOverview benchmark={benchmark} />;
 	const results = benchmark.results ?? [];
 
 	const orderHints = results

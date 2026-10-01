@@ -36,4 +36,22 @@ class ModelsTest < Minitest::Test
     assert_equal "scheduled", response["models"][0]["providers"][0]["availability_reason"]
     assert_equal [["GET", "/models", {"availability" => "all"}, nil, nil]], calls
   end
+
+  def test_parameter_support_highlights_invalid_value
+    report = PhaseoSdk::Phaseo.check_parameter_support(
+      {
+        "id" => "openai/example",
+        "endpoints" => [{
+          "id" => "openai:responses", "endpoint" => "responses", "routable" => true, "status" => "active",
+          "provider" => { "id" => "openai" },
+          "capabilities" => { "parameters" => ["temperature"], "parameter_details" => { "temperature" => { "supported" => true, "minimum" => 0, "maximum" => 1 } } }
+        }]
+      },
+      { "temperature" => 1.5 }
+    )
+
+    refute report[:ok]
+    assert_equal "supported", report[:parameters][0][:status]
+    assert_empty report[:parameters][0][:accepted_by]
+  end
 end

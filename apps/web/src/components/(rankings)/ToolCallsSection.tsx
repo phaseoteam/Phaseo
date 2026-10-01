@@ -6,6 +6,7 @@ import {
 } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import { formatModelDisplayName } from "@/lib/models/displayName";
 import { getTranslations } from "next-intl/server";
+import { RankingUnavailable } from "@/components/(rankings)/RankingUnavailable";
 
 export async function ToolCallsSection() {
 	const t = await getTranslations("Catalogue.rankings");
@@ -13,7 +14,8 @@ export async function ToolCallsSection() {
 		"year",
 		"week",
 		10,
-	).catch(() => ({ data: [] }));
+	).catch(() => null);
+	if (!result) return <RankingUnavailable id="tool-calls" title={t("toolCalls")} />;
 	const modelIds = Array.from(
 		new Set(
 			result.data

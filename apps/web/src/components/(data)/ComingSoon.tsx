@@ -2,6 +2,7 @@
 "use client";
 
 import * as React from "react";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { Sparkles, Hammer, Clock, Home, Info } from "lucide-react";
 import { motion } from "motion/react";
 import { useLocale, useTranslations } from "next-intl";
@@ -91,7 +92,8 @@ export default function ComingSoon({
 }: ComingSoonProps) {
 	const locale = useLocale();
 	const t = useTranslations("Content.roadmap");
-	const etaText = formatEta(eta, locale);
+	const format = useDisplayFormatters();
+	const etaText = eta instanceof Date ? format.calendarDate(eta) : formatEta(eta, locale);
 
 	const alignment =
 		align === "center"

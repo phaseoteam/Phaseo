@@ -1,5 +1,6 @@
 import { Pencil } from "lucide-react";
 import { getTranslations } from "next-intl/server";
+import { CatalogIssueButton } from "@/components/(data)/CatalogIssueButton";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { fetchInternalAuthStatus } from "@/lib/fetchers/internal/fetchInternalAuthStatus";
@@ -18,7 +19,7 @@ export default async function BenchmarkEditButton({
   }));
 
   if (!authStatus.isAdmin) {
-    return null;
+    return <CatalogIssueButton entity="Benchmark" id={benchmarkId} />;
   }
 
   return (

@@ -9,10 +9,10 @@
       "meter": "input_text_tokens",
       "unit": "token",
       "unit_size": 1000000,
-      "price_per_unit": 1.875,
+      "price_per_unit": 0.9375,
       "currency": "USD",
       "pricing_plan": "standard",
-      "note": "Venice models API metadata as of 2026-08-21.",
+      "note": "Venice models API metadata as of 2026-09-07.",
       "match": [],
       "priority": 100,
       "region": null,
@@ -24,10 +24,10 @@
       "meter": "cached_read_text_tokens",
       "unit": "token",
       "unit_size": 1000000,
-      "price_per_unit": 0.1875,
+      "price_per_unit": 0.09375,
       "currency": "USD",
       "pricing_plan": "standard",
-      "note": "Venice models API metadata as of 2026-08-21.",
+      "note": "Venice models API metadata as of 2026-09-07.",
       "match": [],
       "priority": 100,
       "region": null,
@@ -39,10 +39,10 @@
       "meter": "output_text_tokens",
       "unit": "token",
       "unit_size": 1000000,
-      "price_per_unit": 9.375,
+      "price_per_unit": 4.6875,
       "currency": "USD",
       "pricing_plan": "standard",
-      "note": "Venice models API metadata as of 2026-08-21.",
+      "note": "Venice models API metadata as of 2026-09-07.",
       "match": [],
       "priority": 100,
       "region": null,
@@ -74,13 +74,13 @@
     {
       "kind": "provider_pricing",
       "url": "https://api.venice.ai/api/v1/models",
-      "accessed_at": "2026-08-21T00:00:00Z",
-      "notes": "Per-million-token USD pricing returned by Venice."
+      "accessed_at": "2026-09-07T23:17:00Z",
+      "notes": "Verified against the live Venice models API; USD units are explicit on each rule."
     }
   ],
   "verification": {
     "status": "verified",
-    "checked_at": "2026-08-21",
-    "notes": "Verified against the live Venice models API."
+    "checked_at": "2026-09-07",
+    "notes": "Verified against the live Venice models API; USD units are explicit on each rule."
   }
 }

@@ -245,9 +245,16 @@ export async function decryptBYOK(row: {
 
     workspace_id: string;
     provider_id: string;
-}) {
+}, importedKeys?: Map<number, Promise<CryptoKey>>) {
     const ver = typeof row.key_version === "number" ? row.key_version : parseInt(row.key_version);
-    const key = await importAes(ver);
+    // The caller owns this map for one hydration only: never retain customer
+    // credentials or master-key promises across requests/runtime bindings.
+    let imported = importedKeys?.get(ver);
+    if (!imported) {
+        imported = importAes(ver);
+        importedKeys?.set(ver, imported);
+    }
+    const key = await imported;
 
     let ivBytes: Uint8Array;
     let ctBytes: Uint8Array;
@@ -318,7 +325,6 @@ export async function decryptBYOK(row: {
 export function bytesToString(u8: Uint8Array): string {
     return td.decode(u8);
 }
-
 
 
 

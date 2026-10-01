@@ -4,6 +4,7 @@ import { Users } from "lucide-react";
 import { fetchFrontendAPIProviderTopApps } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import { getLocale, getTranslations } from "next-intl/server";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { DisplayNumber } from "@/components/display/DisplayValue";
 import {
 	Empty,
 	EmptyDescription,
@@ -79,7 +80,7 @@ export default async function TopApps({
 										</div>
 									</td>
 									<td className="py-2 px-2 text-right tabular-nums">
-										{app.total_tokens.toLocaleString(locale)}
+										<DisplayNumber value={app.total_tokens} />
 									</td>
 									<td className="py-2 px-2 text-right">
 										{app.url && app.url !== "about:blank" ? (

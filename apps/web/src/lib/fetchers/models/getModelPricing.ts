@@ -6,8 +6,12 @@ import { normalizeQuantizationScheme } from "@/lib/quantization";
 export interface PricingRule {
     id: string;                 // rule_id
     model_key: string;          // `${provider}:${model}:${endpoint}`
-    pricing_plan: string;       // standard|batch|flex|priority
+    pricing_plan: string;       // standard|fast|priority|ultrafast|batch|flex
     meter: string;              // e.g. input_text_tokens
+    modality?: string | null;
+    direction?: string | null;
+    display_label?: string | null;
+    display_unit?: string | null;
     unit: string;               // token|image|second|minute|...
     unit_size: number;
     price_per_unit: number;     // numeric -> number (cast below)
@@ -76,6 +80,7 @@ function isWithinActiveOrUpcomingPricingWindow(
     return true;
 }
 export interface ProviderModel {
+    service_tier?: string | null;
     id: string;                 // provider_api_model_id
     api_provider_id: string;
     provider_model_slug?: string | null;
@@ -103,6 +108,7 @@ export interface ProviderModel {
 		| null;
 	access_scope?: "public" | "internal" | null;
     is_active_gateway: boolean;
+	is_unreleased?: boolean;
     input_modalities: string;   // CSV in your current schema
     output_modalities: string;  // CSV in your current schema
     quantization_scheme?: string | null;
@@ -141,6 +147,7 @@ export interface ProviderInfo {
     country_code?: string | null;
     status?: string | null;
     routing_status?: string | null;
+	credential_mode?: "managed_and_byok" | "byok_only";
     residency_mode?:
         | "unknown"
         | "provider_managed"
@@ -257,11 +264,13 @@ function isMissingProviderModelColumnError(error: unknown): boolean {
 export default async function getModelPricing(
     modelId: string,
     includeHidden: boolean,
-    includeInternal = false
+    includeInternal = false,
+	signal?: AbortSignal,
 ): Promise<ProviderPricing[]> {
 	if (!includeHidden && !includeInternal) {
 		return (await fetchPublicWebApi<{ providers: ProviderPricing[] }>(
 			`/api/_web/models/${encodeURIComponent(modelId)}/pricing`,
+			{ signal },
 		)).providers;
 	}
     // console.log(`[getModelPricing] Starting for modelId: ${modelId}`);
@@ -642,6 +651,10 @@ export default async function getModelPricing(
             x.note ?? null
         ),
         meter: x.meter,
+        modality: x.modality ?? null,
+        direction: x.direction ?? null,
+        display_label: x.display_label ?? null,
+        display_unit: x.display_unit ?? null,
         unit: x.unit ?? "token",
         unit_size: Number(x.unit_size ?? 1),
         price_per_unit: Number(x.price_per_unit),

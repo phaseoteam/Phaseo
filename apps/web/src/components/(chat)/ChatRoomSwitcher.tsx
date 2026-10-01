@@ -9,6 +9,7 @@ import {
 	ArrowUpDown,
 	BadgeCheck,
 	ChevronsUpDown,
+	Scale,
 	GitMerge,
 	ImageIcon,
 	Mic,
@@ -52,9 +53,10 @@ const ICONS: Record<ChatRoomId, ComponentType<{ className?: string }>> = {
 	embeddings: Sparkles,
 	ocr: ScanText,
 	rerank: ArrowUpDown,
+	decisions: Scale,
 };
 
-const DISABLED_ROOMS = new Set<ChatRoomId>(["ocr", "rerank"]);
+
 
 type ChatRoomLabelKey =
 	| "text"
@@ -69,7 +71,8 @@ type ChatRoomLabelKey =
 	| "moderation"
 	| "embeddings"
 	| "ocr"
-	| "rerank";
+	| "rerank"
+	| "decisions";
 
 const CHAT_ROOM_LABEL_KEYS: Record<ChatRoomId, ChatRoomLabelKey> = {
 	text: "text",
@@ -85,6 +88,7 @@ const CHAT_ROOM_LABEL_KEYS: Record<ChatRoomId, ChatRoomLabelKey> = {
 	embeddings: "embeddings",
 	ocr: "ocr",
 	rerank: "rerank",
+	decisions: "decisions",
 };
 
 function isRoomActive(pathname: string, route: string): boolean {
@@ -157,7 +161,6 @@ export function ChatRoomSwitcher({ className }: { className?: string } = {}) {
 						const Icon = ICONS[room.id];
 						const active = isRoomActive(pathname, room.route);
 						const disabled =
-							DISABLED_ROOMS.has(room.id) ||
 							(room.id === "video" && !videoEnabled) ||
 							(room.id === "realtime" && !realtimeEnabled);
 						if (disabled) {

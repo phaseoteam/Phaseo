@@ -1,21 +1,27 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import React, { memo, useId, useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import { parseAsStringLiteral, useQueryState } from "nuqs";
+import { useSettingsWrite } from "../PrivateSettingsQuery";
+import { settleWrites } from "@/lib/query/settleWrites";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
+
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
 	DropdownMenu,
 	DropdownMenuTrigger,
 	DropdownMenuContent,
 	DropdownMenuItem,
+	DropdownMenuCheckboxItem,
 } from "@/components/ui/dropdown-menu";
 import {
 	Ban,
 	CheckCircle2,
 	Edit2,
+	Eye,
+	EyeOff,
 	Infinity as InfinityIcon,
 	Info,
 	Key,
@@ -23,7 +29,12 @@ import {
 	OctagonAlert,
 	RefreshCw,
 	Trash2,
+	X,
+	Filter,
+	Loader2,
+	Search,
 } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import {
 	Dialog,
 	DialogContent,
@@ -64,12 +75,14 @@ import DeleteKeyItem from "./DeleteKeyItem";
 import RotateKeyItem from "./RotateKeyItem";
 import {
 	deleteApiKeyAction,
+	lookupApiKeyAction,
 	updateApiKeyAction,
 } from "@/app/(dashboard)/settings/keys/actions";
 import { toast } from "sonner";
 import { useTranslations } from "next-intl";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 
-type KeyState = "active" | "disabled" | "limited" | "expired";
+import { getKeyState, organiseKeys, type KeyState } from "./keyOrdering";
 type KeyDialogType = "details" | "edit" | "rotate" | "delete";
 type ActiveKeyDialog = { type: KeyDialogType; key: any } | null;
 
@@ -98,73 +111,37 @@ function KeyDialogMenuItem({
 	);
 }
 
-function getKeyState(k: any): KeyState {
-	const expiresRaw = typeof k?.expires_at === "string" ? k.expires_at : "";
-	if (expiresRaw) {
-		const expiresAtMs = Date.parse(expiresRaw);
-		if (Number.isFinite(expiresAtMs) && expiresAtMs <= Date.now()) {
-			return "expired";
-		}
-	}
 
-	const status = String(k?.status ?? "").toLowerCase();
-	const isDisabled = status === "paused" || status === "disabled" || status === "revoked";
-	if (isDisabled) return "disabled";
-
-	const limits = [
-		[Number(k?.current_usage_daily ?? 0) || 0, Number(k?.daily_limit_requests ?? 0) || 0],
-		[Number(k?.current_usage_weekly ?? 0) || 0, Number(k?.weekly_limit_requests ?? 0) || 0],
-		[Number(k?.current_usage_monthly ?? 0) || 0, Number(k?.monthly_limit_requests ?? 0) || 0],
-		[Number(k?.current_usage_daily_cost_nanos ?? 0) || 0, Number(k?.daily_limit_cost_nanos ?? 0) || 0],
-		[Number(k?.current_usage_weekly_cost_nanos ?? 0) || 0, Number(k?.weekly_limit_cost_nanos ?? 0) || 0],
-		[Number(k?.current_usage_monthly_cost_nanos ?? 0) || 0, Number(k?.monthly_limit_cost_nanos ?? 0) || 0],
-	] as const;
-	const hasReachedLimit = limits.some(([used, limit]) => limit > 0 && used >= limit);
-	if (hasReachedLimit) return "limited";
-
-	return "active";
-}
-
-function stateMeta(state: KeyState) {
+function stateMeta(state: KeyState, t: ReturnType<typeof useTranslations<"SettingsUI">>) {
 	switch (state) {
 		case "active":
-			return { label: "Active", Icon: CheckCircle2, className: "text-emerald-600" };
+			return { label: t("labels.active"), Icon: CheckCircle2, className: "text-emerald-600" };
 		case "disabled":
-			return { label: "Disabled", Icon: Ban, className: "text-zinc-400" };
+			return { label: t("labels.disabled"), Icon: Ban, className: "text-zinc-400" };
 		case "limited":
-			return { label: "Limits Reached", Icon: OctagonAlert, className: "text-red-600" };
+			return { label: t("strings.Limits Reached" as never), Icon: OctagonAlert, className: "text-red-600" };
 		case "expired":
-			return { label: "Expired", Icon: Ban, className: "text-amber-600" };
+			return { label: t("labels.expired"), Icon: Ban, className: "text-amber-600" };
 	}
 }
 
-function formatLastUsed(v?: string | null) {
-	if (!v) return "Never";
-	const d = new Date(v);
-	if (Number.isNaN(d.getTime())) return "Never";
-	return d.toLocaleDateString();
-}
-
-function formatExpiry(v?: string | null) {
-	if (!v) return "No expiry";
-	const d = new Date(v);
-	if (Number.isNaN(d.getTime())) return "No expiry";
-	const days = Math.ceil((d.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
-	if (days <= 0) return "Expired";
-	return `${days}d`;
-}
-
-function fmtCompactInt(v: number) {
-	return new Intl.NumberFormat("en-US", { notation: "compact" }).format(v);
-}
-
-function fmtUsdFromNanos(v: number) {
-	const usd = v / NANOS_PER_USD;
-	return new Intl.NumberFormat("en-US", {
-		style: "currency",
-		currency: "USD",
-		maximumFractionDigits: usd < 10 ? 2 : 0,
-	}).format(usd);
+function useKeyRowDisplay() {
+ const t = useTranslations("SettingsUI");
+ const format = useDisplayFormatters();
+ return {
+  t,
+  formatLastUsed: (value?: string | null) => value && Number.isFinite(Date.parse(value)) ? format.calendarDate(value) : t("labels.never"),
+  formatExpiry: (value?: string | null) => {
+   if (!value || !Number.isFinite(Date.parse(value))) return t("labels.noExpiry");
+   const days = Math.ceil((Date.parse(value) - Date.now()) / 86_400_000);
+   return days <= 0 ? t("labels.expired") : format.number(days, { style: "unit", unit: "day", unitDisplay: "short", notation: "standard" });
+  },
+  fmtCompactInt: (value: number) => format.number(value),
+  fmtUsdFromNanos: (value: number) => {
+   const usd = value / NANOS_PER_USD;
+   return format.number(usd, { style: "currency", currency: "USD", maximumFractionDigits: usd < 10 ? 2 : 0, notation: "standard" });
+  },
+ };
 }
 
 function formatKeyReference(v?: string | null) {
@@ -237,7 +214,7 @@ function getWindowTone(window: LimitWindowUsage, state: KeyState): LimitTone {
 	return "ok";
 }
 
-function getKeyUsageVisuals(k: any, state: KeyState) {
+function getKeyUsageVisuals(k: any) {
 	const dailyLimit = Number(k?.daily_limit_requests ?? 0) || 0;
 	const weeklyLimit = Number(k?.weekly_limit_requests ?? 0) || 0;
 	const monthlyLimit = Number(k?.monthly_limit_requests ?? 0) || 0;
@@ -265,10 +242,6 @@ function getKeyUsageVisuals(k: any, state: KeyState) {
 		requestWindows,
 		spendWindows,
 	};
-}
-
-function formatLimitValue(value: number, formatter: (value: number) => string) {
-	return value > 0 ? formatter(value) : "∞";
 }
 
 function LimitRadial({
@@ -381,7 +354,7 @@ function formatResetCountdown(label: LimitWindowUsage["label"]) {
 	return `${Math.max(1, minutes)}m`;
 }
 
-function LimitPillStack({
+const LimitPillStack = memo(function LimitPillStack({
 	windows,
 	formatter,
 	state,
@@ -420,8 +393,8 @@ function LimitPillStack({
 				const value = clamped !== null ? `${Math.round(clamped)}%` : t("strings.No cap" as never);
 				const title =
 					metricLabel === "requests"
-						? `${window.name} ${t("strings.requests" as never)}`
-						: `${window.name} ${t("strings.spend" as never)}`;
+						? `${t(`strings.${window.name}` as never)} ${t("strings.requests" as never)}`
+						: `${t(`strings.${window.name}` as never)} ${t("strings.spend" as never)}`;
 				const resetText = formatResetCountdown(window.label);
 
 				return (
@@ -491,41 +464,325 @@ function LimitPillStack({
 			})}
 		</div>
 	);
+});
+
+function KeySelectionCheckbox({ "aria-label": label, ...props }: {
+ checked: boolean;
+ indeterminate?: boolean;
+ onCheckedChange: (checked: boolean) => void;
+ className?: string;
+ "aria-label": string;
+}) {
+ const labelId = useId();
+ // An explicit label avoids Base UI's DOM label-association lookup on every commit.
+ return <>
+  <span id={labelId} className="sr-only">{label}</span>
+  <Checkbox {...props} aria-labelledby={labelId} />
+ </>;
 }
+
+type KeyRowProps = {
+	k: any;
+	selected: boolean;
+	toggleKeySelection: (id: string, checked: boolean) => void;
+	openKeyDialog: (type: KeyDialogType, key: any) => void;
+	openDetailsFromRow: (event: React.MouseEvent<HTMLElement>, key: any) => void;
+	openDetailsFromKeyboard: (event: React.KeyboardEvent<HTMLElement>, key: any) => void;
+};
+
+const MobileKeyRow = memo(function MobileKeyRow({ k, selected, toggleKeySelection, openKeyDialog, openDetailsFromRow, openDetailsFromKeyboard }: KeyRowProps) {
+	const { t, formatLastUsed, formatExpiry, fmtCompactInt, fmtUsdFromNanos } = useKeyRowDisplay();
+	const state = getKeyState(k);
+	const meta = useMemo(() => stateMeta(state, t), [state, t]);
+	const visuals = useMemo(() => getKeyUsageVisuals(k), [k]);
+	const keyId = String(k.id);
+
+	return (
+		<div
+			key={k.id}
+			className={`cursor-pointer space-y-3 p-3 transition-colors hover:bg-muted/30 ${selected ? "bg-muted/40" : ""}`}
+			role="button"
+			tabIndex={0}
+			onClick={(event) => openDetailsFromRow(event, k)}
+			onKeyDown={(event) => openDetailsFromKeyboard(event, k)}
+		>
+			<div className="flex items-start justify-between gap-2">
+			<div className="flex min-w-0 gap-3">
+				<KeySelectionCheckbox
+					checked={selected}
+					onCheckedChange={(checked) =>
+						toggleKeySelection(keyId, checked === true)
+					}
+					aria-label={t("keys.search.select", { name: String(k.name ?? "") })}
+					className="mt-0.5"
+				/>
+			<div className="min-w-0">
+				<div className="flex items-center gap-2 min-w-0">
+					<meta.Icon
+							aria-label={meta.label}
+							className={`h-4 w-4 shrink-0 ${meta.className}`}
+						/>
+						<div className="font-medium truncate">{k.name}</div>
+				</div>
+				<div className="mt-1 font-mono text-[11px] text-muted-foreground truncate">
+					{formatKeyReference(k.prefix)}
+				</div>
+				<GuardrailSummary guardrails={k.guardrails} />
+			</div>
+			</div>
+			<DropdownMenu>
+					<DropdownMenuTrigger render={<Button
+							variant="ghost"
+							size="icon"
+							className="h-8 w-8"
+							aria-label={t("labels.actions")} />}>
+
+							<MoreVertical className="h-4 w-4" />
+
+					</DropdownMenuTrigger>
+				<DropdownMenuContent side="bottom" align="end" className="w-40 rounded-2xl">
+						<KeyDialogMenuItem
+							label={t("labels.details")}
+							Icon={Info}
+							onOpen={() => openKeyDialog("details", k)}
+						/>
+						<UsageItem k={k} />
+						<KeyDialogMenuItem
+							label={t("labels.edit")}
+							Icon={Edit2}
+							onOpen={() => openKeyDialog("edit", k)}
+						/>
+						<KeyDialogMenuItem
+							label={t("keys.rotate")}
+							Icon={RefreshCw}
+							onOpen={() => openKeyDialog("rotate", k)}
+						/>
+						<KeyDialogMenuItem
+							label={t("labels.delete")}
+							Icon={Trash2}
+							variant="destructive"
+							onOpen={() => openKeyDialog("delete", k)}
+						/>
+					</DropdownMenuContent>
+				</DropdownMenu>
+			</div>
+
+			<div className="grid grid-cols-2 gap-3 text-xs">
+				<div>
+					<div className="text-muted-foreground">{t("strings.Last Used" as never)}</div>
+					<div>{formatLastUsed(k.last_used_at)}</div>
+				</div>
+				<div>
+					<div className="text-muted-foreground">{t("strings.Expires" as never)}</div>
+					<div>{formatExpiry(k.expires_at)}</div>
+				</div>
+			</div>
+
+			<div className="space-y-1.5">
+				<div className="text-[11px] uppercase tracking-wide text-muted-foreground">
+					{t("strings.Requests" as never)}
+				</div>
+				<LimitPillStack
+					windows={visuals.requestWindows}
+					state={state}
+					formatter={fmtCompactInt}
+					metricLabel="requests"
+				/>
+			</div>
+
+			<div className="space-y-1.5">
+				<div className="text-[11px] uppercase tracking-wide text-muted-foreground">
+					{t("strings.Spend" as never)}
+				</div>
+				<LimitPillStack
+					windows={visuals.spendWindows}
+					state={state}
+					formatter={fmtUsdFromNanos}
+					metricLabel="spend"
+				/>
+			</div>
+		</div>
+	);
+});
+
+const DesktopKeyRow = memo(function DesktopKeyRow({ k, selected, toggleKeySelection, openKeyDialog, openDetailsFromRow, openDetailsFromKeyboard }: KeyRowProps) {
+		const { t, formatLastUsed, formatExpiry, fmtCompactInt, fmtUsdFromNanos } = useKeyRowDisplay();
+	const state = getKeyState(k);
+		const meta = useMemo(() => stateMeta(state, t), [state, t]);
+		const visuals = useMemo(() => getKeyUsageVisuals(k), [k]);
+		const keyId = String(k.id);
+
+ const content = useMemo(() => <>
+				<TableCell className="min-w-0">
+					<div className="flex items-center gap-2 min-w-0">
+						<Tooltip delayDuration={0}>
+							<TooltipTrigger asChild>
+								<meta.Icon
+									aria-label={meta.label}
+									className={`h-4 w-4 shrink-0 ${meta.className}`}
+								/>
+							</TooltipTrigger>
+							<TooltipContent>
+								{meta.label}
+							</TooltipContent>
+						</Tooltip>
+						<div className="min-w-0">
+						<div className="font-medium truncate">
+							{k.name}
+						</div>
+						<div className="font-mono text-xs text-muted-foreground truncate">
+							{formatKeyReference(k.prefix)}
+						</div>
+					</div>
+				</div>
+			</TableCell>
+				<TableCell className="min-w-0">
+					<GuardrailSummary
+						guardrails={k.guardrails}
+						className="flex flex-wrap gap-1.5"
+					/>
+				</TableCell>
+				<TableCell>
+					<LimitPillStack
+						windows={visuals.requestWindows}
+						state={state}
+						formatter={fmtCompactInt}
+						metricLabel="requests"
+					/>
+				</TableCell>
+				<TableCell>
+					<LimitPillStack
+						windows={visuals.spendWindows}
+						state={state}
+						formatter={fmtUsdFromNanos}
+						metricLabel="spend"
+					/>
+				</TableCell>
+				<TableCell className="text-xs text-muted-foreground">
+					{formatLastUsed(k.last_used_at)}
+				</TableCell>
+				<TableCell className="text-xs text-muted-foreground">
+					{formatExpiry(k.expires_at)}
+				</TableCell>
+				<TableCell className="text-right">
+					<DropdownMenu>
+						<DropdownMenuTrigger render={<Button
+								variant="ghost"
+								size="icon"
+								aria-label={t("labels.actions")} />}>
+
+								<MoreVertical />
+
+						</DropdownMenuTrigger>
+				<DropdownMenuContent
+					side="bottom"
+					align="end"
+					className="w-40 rounded-2xl"
+						>
+							<KeyDialogMenuItem
+								label={t("labels.details")}
+								Icon={Info}
+								onOpen={() => openKeyDialog("details", k)}
+							/>
+							<UsageItem k={k} />
+							<KeyDialogMenuItem
+								label={t("labels.edit")}
+								Icon={Edit2}
+								onOpen={() => openKeyDialog("edit", k)}
+							/>
+							<KeyDialogMenuItem
+								label={t("keys.rotate")}
+								Icon={RefreshCw}
+								onOpen={() => openKeyDialog("rotate", k)}
+							/>
+							<KeyDialogMenuItem
+								label={t("labels.delete")}
+								Icon={Trash2}
+								variant="destructive"
+								onOpen={() => openKeyDialog("delete", k)}
+							/>
+						</DropdownMenuContent>
+					</DropdownMenu>
+				</TableCell>
+ </>, [k, state, meta, visuals, openKeyDialog]);
+
+		return (
+			<TableRow
+				key={k.id}
+				className={`cursor-pointer transition-colors hover:bg-muted/30 ${selected ? "bg-muted/40" : ""}`}
+				role="button"
+				tabIndex={0}
+				onClick={(event) => openDetailsFromRow(event, k)}
+				onKeyDown={(event) => openDetailsFromKeyboard(event, k)}
+			>
+				<TableCell>
+					<KeySelectionCheckbox
+						checked={selected}
+						onCheckedChange={(checked) =>
+							toggleKeySelection(keyId, checked === true)
+						}
+						aria-label={t("keys.search.select", { name: String(k.name ?? "") })}
+					/>
+				</TableCell>
+ {content}
+			</TableRow>
+		);
+});
+
+const desktopQuery = "(min-width: 64rem)";
+function subscribeToLayout(onChange: () => void) {
+ const query = window.matchMedia(desktopQuery);
+ query.addEventListener("change", onChange);
+ return () => query.removeEventListener("change", onChange);
+}
+const getDesktopLayout = () => window.matchMedia(desktopQuery).matches;
+const getServerLayout = () => false;
 
 export default function KeysPanel({ teamsWithKeys }: any) {
 	const t = useTranslations("SettingsUI");
-	const router = useRouter();
+	const write = useSettingsWrite();
+ const desktop = useSyncExternalStore(subscribeToLayout, getDesktopLayout, getServerLayout);
+	const [filter, setFilter] = useQueryState("keyStatus", parseAsStringLiteral(["enabled", "disabled", "expired", "enabled-disabled", "enabled-expired", "disabled-expired", "all", "none"] as const).withDefault("enabled-disabled"));
+	const [search, setSearch] = useState("");
+	const [showRawKey, setShowRawKey] = useState(false);
+	const [matchedKeyId, setMatchedKeyId] = useState<string | null>(null);
+	const [rawLookupPending, setRawLookupPending] = useState(false);
+	const normalizedSearch = search.trim();
+	const isRawKeySearch = /^(?:phaseo|aistats)_v1_sk_[^_]+_.+$/.test(normalizedSearch);
+	const workspaceId = String(teamsWithKeys?.[0]?.id ?? "");
+
+	useEffect(() => {
+		if (!isRawKeySearch || !workspaceId) return;
+		let current = true;
+		const timeout = window.setTimeout(() => {
+			setRawLookupPending(true);
+			lookupApiKeyAction(workspaceId, normalizedSearch)
+				.then((result) => { if (current) setMatchedKeyId(result.keyId); })
+				.catch(() => { if (current) setMatchedKeyId(null); })
+				.finally(() => { if (current) setRawLookupPending(false); });
+		}, 250);
+		return () => { current = false; window.clearTimeout(timeout); };
+	}, [isRawKeySearch, normalizedSearch, workspaceId]);
 	// Ensure teams that have keys are shown first. Within each workspace, keys are
-	// ordered by most recent use; keys without a valid last-used timestamp come last.
+	// ordered with enabled keys first, then by most recent use within each status.
 	const sortedTeams = useMemo(() => {
 		if (!Array.isArray(teamsWithKeys)) return teamsWithKeys;
 		const withKeys: any[] = [];
 		const withoutKeys: any[] = [];
 		for (const t of teamsWithKeys) {
 			if (t && Array.isArray(t.keys) && t.keys.length > 0) {
-				const keys = t.keys
-					.map((key: any, index: number) => ({ key, index }))
-					.sort((a: { key: any; index: number }, b: { key: any; index: number }) => {
-						const aTime = typeof a.key?.last_used_at === "string"
-							? Date.parse(a.key.last_used_at)
-							: Number.NaN;
-						const bTime = typeof b.key?.last_used_at === "string"
-							? Date.parse(b.key.last_used_at)
-							: Number.NaN;
-						const aValid = Number.isFinite(aTime);
-						const bValid = Number.isFinite(bTime);
-						if (aValid && bValid && aTime !== bTime) return bTime - aTime;
-						if (aValid !== bValid) return aValid ? -1 : 1;
-						return a.index - b.index;
-					})
-					.map(({ key }: { key: any }) => key);
+				const searchedKeys = isRawKeySearch
+					? (matchedKeyId ? t.keys.filter((key: any) => String(key.id) === matchedKeyId) : [])
+					: normalizedSearch
+						? t.keys.filter((key: any) => String(key.name ?? "").toLocaleLowerCase().includes(normalizedSearch.toLocaleLowerCase()))
+						: t.keys;
+				const keys = organiseKeys(searchedKeys, isRawKeySearch ? "all" : filter);
 				withKeys.push({ ...t, keys });
 			}
 			else withoutKeys.push(t);
 		}
 		return [...withKeys, ...withoutKeys];
-	}, [teamsWithKeys]);
+	}, [teamsWithKeys, filter, isRawKeySearch, matchedKeyId, normalizedSearch]);
 	const allKeys = useMemo(() => {
 		if (!Array.isArray(sortedTeams)) return [] as any[];
 		return sortedTeams.flatMap((team: any) =>
@@ -536,36 +793,36 @@ export default function KeysPanel({ teamsWithKeys }: any) {
 	const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
 	const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
 	const [bulkBusy, setBulkBusy] = useState(false);
-	const openKeyDialog = (type: KeyDialogType, key: any) => {
+	const openKeyDialog = useCallback((type: KeyDialogType, key: any) => {
 		setActiveDialog({ type, key });
-	};
-	const openDetailsFromRow = (event: React.MouseEvent<HTMLElement>, key: any) => {
+	}, []);
+	const openDetailsFromRow = useCallback((event: React.MouseEvent<HTMLElement>, key: any) => {
 		const target = event.target as HTMLElement;
 		if (target.closest("button, a, input, [role='checkbox'], [role='menuitem']")) return;
 		openKeyDialog("details", key);
-	};
-	const openDetailsFromKeyboard = (event: React.KeyboardEvent<HTMLElement>, key: any) => {
+	}, [openKeyDialog]);
+	const openDetailsFromKeyboard = useCallback((event: React.KeyboardEvent<HTMLElement>, key: any) => {
 		if (event.target !== event.currentTarget) return;
 		if (event.key !== "Enter" && event.key !== " ") return;
 		event.preventDefault();
 		openKeyDialog("details", key);
-	};
+	}, [openKeyDialog]);
 	const closeKeyDialog = () => setActiveDialog(null);
 	const selectedKeys = allKeys.filter((key: any) => selectedIds.has(String(key.id)));
 	const selectableKeyIds = allKeys.map((key: any) => String(key.id));
 	const allSelected =
 		selectableKeyIds.length > 0 &&
 		selectableKeyIds.every((id: string) => selectedIds.has(id));
-	const someSelected = selectedIds.size > 0;
+	const someSelected = selectedKeys.length > 0;
 
-	function toggleKeySelection(id: string, checked: boolean) {
+	const toggleKeySelection = useCallback((id: string, checked: boolean) => {
 		setSelectedIds((current) => {
 			const next = new Set(current);
 			if (checked) next.add(id);
 			else next.delete(id);
 			return next;
 		});
-	}
+	}, []);
 
 	function toggleAllKeys(checked: boolean) {
 		setSelectedIds(checked ? new Set(selectableKeyIds) : new Set());
@@ -575,12 +832,12 @@ export default function KeysPanel({ teamsWithKeys }: any) {
 		if (selectedKeys.length === 0) return;
 		setBulkBusy(true);
 		try {
-			await toast.promise(
-				Promise.all(
-					selectedKeys.map((key: any) =>
-						updateApiKeyAction(String(key.id), { paused })
-					)
-				),
+			const operation = write(settleWrites(
+				selectedKeys.map((key: any) =>
+					updateApiKeyAction(String(key.id), { paused })
+				)
+			));
+			toast.promise(operation,
 				{
 					loading: paused ? t("strings.Pausing selected keys..." as never) : t("strings.Activating selected keys..." as never),
 					success: paused ? t("strings.Selected keys paused" as never) : t("strings.Selected keys activated" as never),
@@ -588,8 +845,10 @@ export default function KeysPanel({ teamsWithKeys }: any) {
 						(error && (error as any).message) || t("strings.Failed to update selected keys" as never),
 				}
 			);
+			await operation;
 			setSelectedIds(new Set());
-			router.refresh();
+		} catch {
+			// The toast reports the error; retain selection for a retry.
 		} finally {
 			setBulkBusy(false);
 		}
@@ -599,12 +858,12 @@ export default function KeysPanel({ teamsWithKeys }: any) {
 		if (selectedKeys.length === 0) return;
 		setBulkBusy(true);
 		try {
-			await toast.promise(
-				Promise.all(
-					selectedKeys.map((key: any) =>
-						deleteApiKeyAction(String(key.id), String(key.name ?? ""))
-					)
-				),
+			const operation = write(settleWrites(
+				selectedKeys.map((key: any) =>
+					deleteApiKeyAction(String(key.id), String(key.name ?? ""))
+				)
+			));
+			toast.promise(operation,
 				{
 					loading: t("strings.Deleting selected keys..." as never),
 					success: t("strings.Selected keys deleted" as never),
@@ -612,15 +871,40 @@ export default function KeysPanel({ teamsWithKeys }: any) {
 						(error && (error as any).message) || t("strings.Failed to delete selected keys" as never),
 				}
 			);
+			await operation;
 			setBulkDeleteOpen(false);
 			setSelectedIds(new Set());
-			router.refresh();
+		} catch {
+			// Keep the dialog open; successful siblings are still revalidated.
 		} finally {
 			setBulkBusy(false);
 		}
 	}
 
-	if (!sortedTeams || sortedTeams.length === 0) {
+ const statusOptions = ["enabled", "disabled", "expired"] as const;
+ const selectedStatuses = filter === "all" ? [...statusOptions] : filter.split("-");
+ const statusMenu = (
+  <DropdownMenu>
+   <DropdownMenuTrigger render={<Button variant="ghost" size="icon" className="size-7" aria-label={t("keys.search.filterStatus")} />}>
+    <Filter className={`size-3.5 ${filter !== "enabled-disabled" ? "text-primary" : "text-muted-foreground"}`} />
+   </DropdownMenuTrigger>
+   <DropdownMenuContent align="start">
+    {statusOptions.map((status) => (
+     <DropdownMenuCheckboxItem key={status} checked={selectedStatuses.includes(status)} disabled={bulkBusy}
+      onCheckedChange={(checked) => {
+       const next = statusOptions.filter((item) => item === status ? checked : selectedStatuses.includes(item));
+       setSelectedIds(new Set());
+       void setFilter((next.length === 3 ? "all" : next.join("-") || "none") as typeof filter);
+      }}>
+      {status === "enabled" ? <CheckCircle2 className="text-emerald-600" /> : status === "expired" ? <OctagonAlert className="text-amber-600" /> : <Ban className="text-muted-foreground" />}
+      {t(`labels.${status}` as never)}
+     </DropdownMenuCheckboxItem>
+    ))}
+   </DropdownMenuContent>
+  </DropdownMenu>
+ );
+
+	if (!sortedTeams || sortedTeams.length === 0 || teamsWithKeys.every((team: any) => !team.keys?.length)) {
 		return (
 			<Empty className="mt-6 rounded-xl border border-dashed border-border/80 p-8">
 				<EmptyHeader>
@@ -638,10 +922,41 @@ export default function KeysPanel({ teamsWithKeys }: any) {
 
 	return (
 		<>
-		<div className="mt-6 min-w-0 space-y-6">
+		<div className="mt-6 min-w-0 space-y-6 pb-24">
+			<div className="relative max-w-md">
+				<Search aria-hidden="true" className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+				<Input
+					aria-label={t("keys.search.label")}
+					autoCapitalize="none"
+					autoComplete="off"
+					className={isRawKeySearch ? "pl-8 pr-24" : "pl-8 pr-9"}
+					placeholder={t("keys.search.placeholder")}
+					spellCheck={false}
+					type={isRawKeySearch && !showRawKey ? "password" : "text"}
+					value={search}
+					onChange={(event) => {
+						setSearch(event.target.value);
+						setShowRawKey(false);
+						setMatchedKeyId(null);
+						setRawLookupPending(false);
+					}}
+				/>
+				{normalizedSearch ? (
+					<div className="absolute right-0 top-0 flex h-full items-center">
+						{isRawKeySearch && rawLookupPending ? <Loader2 aria-label={t("keys.search.checking")} className="mr-1 size-4 animate-spin text-muted-foreground" /> : null}
+						{isRawKeySearch ? (
+							<Button type="button" variant="ghost" size="icon" className="size-8" aria-label={showRawKey ? t("keys.search.hide") : t("keys.search.show")} aria-pressed={showRawKey} onClick={() => setShowRawKey((visible) => !visible)}>
+								{showRawKey ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+							</Button>
+						) : null}
+						<Button type="button" variant="ghost" size="icon" className="size-8" aria-label={t("keys.search.clear")} onClick={() => { setSearch(""); setShowRawKey(false); }}><X className="size-4" /></Button>
+					</div>
+				) : null}
+			</div>
+
 			{someSelected ? (
-				<div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border/70 bg-card px-3 py-2 shadow-sm">
-					<div className="text-sm">
+				<div role="region" aria-label={t("keys.search.selectedActions")} className="fixed bottom-6 left-1/2 z-40 flex w-max max-w-[calc(100vw-2rem)] -translate-x-1/2 flex-wrap items-center justify-center gap-3 rounded-2xl border border-border/70 bg-popover px-3 py-2 text-popover-foreground shadow-xl">
+					<div className="text-sm" role="status" aria-live="polite">
 						<span className="font-medium">{selectedKeys.length}</span>{" "}
 						<span className="text-muted-foreground">
 											{selectedKeys.length === 1 ? t("strings.key selected" as never) : t("strings.keys selected" as never)}
@@ -678,6 +993,9 @@ export default function KeysPanel({ teamsWithKeys }: any) {
 							<Trash2 className="h-4 w-4" />
 							{t("strings.Delete" as never)}
 						</Button>
+						<Button type="button" variant="ghost" size="icon" className="size-8" disabled={bulkBusy} aria-label="Clear selection" onClick={() => setSelectedIds(new Set())}>
+							<X className="size-4" />
+						</Button>
 					</div>
 				</div>
 			) : null}
@@ -692,132 +1010,24 @@ export default function KeysPanel({ teamsWithKeys }: any) {
 								<EmptyMedia variant="icon">
 									<Key className="h-5 w-5" />
 								</EmptyMedia>
-						<EmptyTitle className="text-base">{t("strings.No keys for this workspace" as never)}</EmptyTitle>
+								<EmptyTitle className="text-base">{t("keys.search.empty")}</EmptyTitle>
+ {statusMenu}
 								<EmptyDescription>
-									{t("strings.Create an API key to manage access and usage limits." as never)}
+									{normalizedSearch ? (rawLookupPending ? t("keys.search.checking") : t("keys.search.tryAnother")) : filter === "all" ? t("strings.Create an API key to manage access and usage limits." as never) : t("keys.search.chooseStatus")}
 								</EmptyDescription>
 							</EmptyHeader>
 						</Empty>
 					) : (
 						<div className="min-w-0 overflow-hidden rounded-lg border border-border/60 bg-card">
-							<div className="divide-y divide-border/60 lg:hidden">
-								{team.keys.map((k: any) => {
-									const state = getKeyState(k);
-									const meta = stateMeta(state);
-									const visuals = getKeyUsageVisuals(k, state);
-									const keyId = String(k.id);
-									const selected = selectedIds.has(keyId);
-
-									return (
-										<div
-											key={k.id}
-											className={`cursor-pointer space-y-3 p-3 transition-colors hover:bg-muted/30 ${selected ? "bg-muted/40" : ""}`}
-											role="button"
-											tabIndex={0}
-											onClick={(event) => openDetailsFromRow(event, k)}
-											onKeyDown={(event) => openDetailsFromKeyboard(event, k)}
-										>
-											<div className="flex items-start justify-between gap-2">
-											<div className="flex min-w-0 gap-3">
-												<Checkbox
-													checked={selected}
-													onCheckedChange={(checked) =>
-														toggleKeySelection(keyId, checked === true)
-													}
-													aria-label={`Select ${k.name}`}
-													className="mt-0.5"
-												/>
-											<div className="min-w-0">
-												<div className="flex items-center gap-2 min-w-0">
-													<meta.Icon
-															aria-label={meta.label}
-															className={`h-4 w-4 shrink-0 ${meta.className}`}
-														/>
-														<div className="font-medium truncate">{k.name}</div>
-												</div>
-												<div className="mt-1 font-mono text-[11px] text-muted-foreground truncate">
-													{formatKeyReference(k.prefix)}
-												</div>
-												<GuardrailSummary guardrails={k.guardrails} />
-											</div>
-											</div>
-											<DropdownMenu>
-													<DropdownMenuTrigger render={<Button
-															variant="ghost"
-															size="icon"
-															className="h-8 w-8"
-									aria-label={t("labels.actions")} />}>
-
-															<MoreVertical className="h-4 w-4" />
-
-													</DropdownMenuTrigger>
-												<DropdownMenuContent side="bottom" align="end" className="w-40 rounded-2xl">
-														<KeyDialogMenuItem
-																	label={t("strings.Details" as never)}
-															Icon={Info}
-															onOpen={() => openKeyDialog("details", k)}
-														/>
-														<UsageItem k={k} />
-														<KeyDialogMenuItem
-																	label={t("strings.Edit" as never)}
-															Icon={Edit2}
-															onOpen={() => openKeyDialog("edit", k)}
-														/>
-														<KeyDialogMenuItem
-																	label={t("strings.Rotate" as never)}
-															Icon={RefreshCw}
-															onOpen={() => openKeyDialog("rotate", k)}
-														/>
-														<KeyDialogMenuItem
-																	label={t("strings.Delete" as never)}
-															Icon={Trash2}
-															variant="destructive"
-															onOpen={() => openKeyDialog("delete", k)}
-														/>
-													</DropdownMenuContent>
-												</DropdownMenu>
-											</div>
-
-											<div className="grid grid-cols-2 gap-3 text-xs">
-												<div>
-											<div className="text-muted-foreground">{t("strings.Last Used" as never)}</div>
-													<div>{formatLastUsed(k.last_used_at)}</div>
-												</div>
-												<div>
-											<div className="text-muted-foreground">{t("strings.Expires" as never)}</div>
-													<div>{formatExpiry(k.expires_at)}</div>
-												</div>
-											</div>
-
-											<div className="space-y-1.5">
-												<div className="text-[11px] uppercase tracking-wide text-muted-foreground">
-									{t("strings.Requests" as never)}
-												</div>
-												<LimitPillStack
-													windows={visuals.requestWindows}
-													state={state}
-													formatter={fmtCompactInt}
-													metricLabel="requests"
-												/>
-											</div>
-
-											<div className="space-y-1.5">
-												<div className="text-[11px] uppercase tracking-wide text-muted-foreground">
-									{t("strings.Spend" as never)}
-												</div>
-												<LimitPillStack
-													windows={visuals.spendWindows}
-													state={state}
-													formatter={fmtUsdFromNanos}
-													metricLabel="spend"
-												/>
-											</div>
-										</div>
-									);
-								})}
+							{!desktop ? <div className="divide-y divide-border/60 lg:hidden">
+ <div className="flex items-center gap-2 px-3 py-1">{t("headers.apiKeys")} {statusMenu}</div>
+								{team.keys.map((k: any) => (
+ <MobileKeyRow key={k.id} k={k} selected={selectedIds.has(String(k.id))}
+ toggleKeySelection={toggleKeySelection} openKeyDialog={openKeyDialog}
+ openDetailsFromRow={openDetailsFromRow} openDetailsFromKeyboard={openDetailsFromKeyboard} />
+ ))}
 							</div>
-
-							<ScrollArea
+ : <ScrollArea
 								className="hidden w-full lg:block"
 								viewportClassName="pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
 								scrollBarOrientation="horizontal"
@@ -827,19 +1037,23 @@ export default function KeysPanel({ teamsWithKeys }: any) {
 								<TableHeader className="bg-muted/30">
 									<TableRow>
 										<TableHead className="w-[3%]">
-											<Checkbox
+											<KeySelectionCheckbox
 												checked={allSelected}
+												indeterminate={someSelected && !allSelected}
 												onCheckedChange={(checked) =>
 													toggleAllKeys(checked === true)
 												}
-								aria-label={t("strings.Select all API keys" as never)}
+												aria-label={t("keys.search.selectAll")}
 											/>
 										</TableHead>
 										<TableHead className="w-[26%]">
-											{t("strings.Key" as never)}{" "}
+											<div className="flex items-center gap-2">
+ <span>{t("strings.Key" as never)}</span>
+ {statusMenu}
 											<span className="ml-1 text-xs font-normal text-muted-foreground">
 												({team.keys.length})
 											</span>
+ </div>
 										</TableHead>
 											<TableHead className="w-[16%]">{t("strings.Guardrails" as never)}</TableHead>
 											<TableHead className="w-[16%]">{t("strings.Requests" as never)}</TableHead>
@@ -854,128 +1068,14 @@ export default function KeysPanel({ teamsWithKeys }: any) {
 									</TableRow>
 								</TableHeader>
 								<TableBody>
-									{team.keys.map((k: any) => {
-										const state = getKeyState(k);
-										const meta = stateMeta(state);
-										const visuals = getKeyUsageVisuals(k, state);
-										const keyId = String(k.id);
-										const selected = selectedIds.has(keyId);
-
-										return (
-											<TableRow
-												key={k.id}
-												className={`cursor-pointer transition-colors hover:bg-muted/30 ${selected ? "bg-muted/40" : ""}`}
-												role="button"
-												tabIndex={0}
-												onClick={(event) => openDetailsFromRow(event, k)}
-												onKeyDown={(event) => openDetailsFromKeyboard(event, k)}
-											>
-												<TableCell>
-													<Checkbox
-														checked={selected}
-														onCheckedChange={(checked) =>
-															toggleKeySelection(keyId, checked === true)
-														}
-														aria-label={`Select ${k.name}`}
-													/>
-												</TableCell>
-												<TableCell className="min-w-0">
-													<div className="flex items-center gap-2 min-w-0">
-														<Tooltip delayDuration={0}>
-															<TooltipTrigger asChild>
-																<meta.Icon
-																	aria-label={meta.label}
-																	className={`h-4 w-4 shrink-0 ${meta.className}`}
-																/>
-															</TooltipTrigger>
-															<TooltipContent>
-																{meta.label}
-															</TooltipContent>
-														</Tooltip>
-														<div className="min-w-0">
-														<div className="font-medium truncate">
-															{k.name}
-														</div>
-														<div className="font-mono text-xs text-muted-foreground truncate">
-															{formatKeyReference(k.prefix)}
-														</div>
-													</div>
-												</div>
-											</TableCell>
-												<TableCell className="min-w-0">
-													<GuardrailSummary
-														guardrails={k.guardrails}
-														className="flex flex-wrap gap-1.5"
-													/>
-												</TableCell>
-												<TableCell>
-													<LimitPillStack
-														windows={visuals.requestWindows}
-														state={state}
-														formatter={fmtCompactInt}
-														metricLabel="requests"
-													/>
-												</TableCell>
-												<TableCell>
-													<LimitPillStack
-														windows={visuals.spendWindows}
-														state={state}
-														formatter={fmtUsdFromNanos}
-														metricLabel="spend"
-													/>
-												</TableCell>
-												<TableCell className="text-xs text-muted-foreground">
-													{formatLastUsed(k.last_used_at)}
-												</TableCell>
-												<TableCell className="text-xs text-muted-foreground">
-													{formatExpiry(k.expires_at)}
-												</TableCell>
-												<TableCell className="text-right">
-													<DropdownMenu>
-														<DropdownMenuTrigger render={<Button
-																variant="ghost"
-																size="icon"
-								aria-label={t("labels.actions")} />}>
-
-																<MoreVertical />
-
-														</DropdownMenuTrigger>
-												<DropdownMenuContent
-													side="bottom"
-													align="end"
-													className="w-40 rounded-2xl"
-														>
-															<KeyDialogMenuItem
-																		label={t("strings.Details" as never)}
-																Icon={Info}
-																onOpen={() => openKeyDialog("details", k)}
-															/>
-															<UsageItem k={k} />
-															<KeyDialogMenuItem
-																		label={t("strings.Edit" as never)}
-																Icon={Edit2}
-																onOpen={() => openKeyDialog("edit", k)}
-															/>
-															<KeyDialogMenuItem
-																		label={t("strings.Rotate" as never)}
-																Icon={RefreshCw}
-																onOpen={() => openKeyDialog("rotate", k)}
-															/>
-															<KeyDialogMenuItem
-																		label={t("strings.Delete" as never)}
-																Icon={Trash2}
-																variant="destructive"
-																onOpen={() => openKeyDialog("delete", k)}
-															/>
-														</DropdownMenuContent>
-													</DropdownMenu>
-												</TableCell>
-											</TableRow>
-										);
-									})}
+									{team.keys.map((k: any) => (
+ <DesktopKeyRow key={k.id} k={k} selected={selectedIds.has(String(k.id))}
+ toggleKeySelection={toggleKeySelection} openKeyDialog={openKeyDialog}
+ openDetailsFromRow={openDetailsFromRow} openDetailsFromKeyboard={openDetailsFromKeyboard} />
+ ))}
 								</TableBody>
 							</Table>
-							</ScrollArea>
+							</ScrollArea>}
 						</div>
 					)}
 				</div>

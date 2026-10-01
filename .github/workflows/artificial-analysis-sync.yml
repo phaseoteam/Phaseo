@@ -1,0 +1,55 @@
+name: Artificial Analysis benchmark sync
+
+on:
+    schedule:
+        - cron: "23 4 * * *"
+    workflow_dispatch:
+
+concurrency:
+    group: artificial-analysis-benchmark-sync
+    cancel-in-progress: false
+
+permissions:
+    contents: read
+    id-token: write
+
+jobs:
+    sync:
+        if: github.ref == 'refs/heads/main'
+        runs-on: ubuntu-latest
+        timeout-minutes: 20
+        steps:
+            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+              with:
+                  persist-credentials: false
+            - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413
+              with:
+                  version: 10.33.0
+            - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+              with:
+                  node-version: 24
+                  cache: pnpm
+            - run: pnpm install --frozen-lockfile
+            - name: Test benchmark matching
+              run: pnpm exec tsx --test scripts/benchmark-source-ids.test.ts scripts/artificial-analysis/core.test.ts
+            - name: Load Artificial Analysis API key from Infisical
+              uses: Infisical/secrets-action@d2e351f16c6ca20d17c85e6c992e04bdeb64e87d # v1.0.18
+              with:
+                  method: oidc
+                  identity-id: ${{ vars.INFISICAL_IDENTITY_ID }}
+                  project-slug: ${{ vars.INFISICAL_PROJECT_SLUG }}
+                  env-slug: prod
+                  secret-path: /operations
+                  secret-name: ARTIFICIAL_ANALYSIS_API_KEY
+            - name: Fetch benchmark snapshot
+              env:
+                  NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+                  SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+              run: pnpm data:sync-artificial-analysis --write --report=artificial-analysis-report.json
+            - name: Upload matching report
+              if: always()
+              uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+              with:
+                  name: artificial-analysis-matching
+                  path: artificial-analysis-report.json
+                  if-no-files-found: ignore

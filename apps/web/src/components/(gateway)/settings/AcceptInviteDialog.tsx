@@ -1,4 +1,5 @@
 "use client";
+import { useInvalidatePrivateSettings } from "./PrivateSettingsQuery";
 
 import React, { useState } from "react";
 import { useTranslations } from "next-intl";
@@ -28,6 +29,7 @@ export default function AcceptInviteDialog({
 	const t = useTranslations("SettingsUI");
 	const s = (key: string) => t(`strings.${key}` as never);
 	const [code, setCode] = useState("");
+	const invalidateSettings = useInvalidatePrivateSettings();
 	const [loading, setLoading] = useState(false);
 	const [message, setMessage] = useState<string | null>(null);
 
@@ -39,6 +41,7 @@ export default function AcceptInviteDialog({
 		try {
 			// call server action to create a join request
 			const res = await acceptTeamInviteAction(code, currentUserId);
+			void invalidateSettings();
 			if (!res || !res.success)
 				throw new Error(res?.error || s("Failed to submit request"));
 			setMessage(

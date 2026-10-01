@@ -54,22 +54,41 @@ describe("provider catalog onboarding", () => {
 		expect(validateCatalogUrl("http://acme.example/models.json").ok).toBe(false);
 		expect(validateCatalogUrl("https://localhost/models.json").ok).toBe(false);
 		expect(validateCatalogUrl("https://acme.example/models.json")).toEqual({
-		ok: true,
-		url: "https://acme.example/models.json",
+			ok: true,
+			url: "https://acme.example/models.json",
+		});
 	});
+
+	it("preserves a format query when fetching a catalog", async () => {
+		const url = "https://acme.example/models?format=phaseo";
+		expect(validateCatalogUrl(url)).toEqual({ ok: true, url });
+		await fetchAndValidateProviderCatalog(url, async (requestedUrl) => {
+			expect(requestedUrl).toBe(url);
+			return new Response(JSON.stringify({ data: [{ id: "acme/atlas-1", capabilities: ["text.generate"] }] }), { headers: { "content-type": "application/json" } });
+		});
 	});
 
 	it("fetches and hashes a valid JSON catalog", async () => {
 		const result = await fetchAndValidateProviderCatalog(
 			"https://acme.example/models.json",
-			async () => new Response(JSON.stringify({ data: [{ id: "acme/atlas-1", capabilities: ["text.generate"] }] }), {
-				status: 200,
-				headers: { "content-type": "application/json" },
-			}),
+			async (_url, init) => {
+				expect(init?.redirect).toBe("manual");
+				return new Response(JSON.stringify({ data: [{ id: "acme/atlas-1", capabilities: ["text.generate"] }] }), {
+					status: 200,
+					headers: { "content-type": "application/json" },
+				});
+			},
 		);
 
 		expect(result.sha256).toMatch(/^[a-f0-9]{64}$/);
 		expect(result.preview.valid).toBe(true);
+	});
+
+	it("rejects a redirect instead of fetching its destination", async () => {
+		await expect(fetchAndValidateProviderCatalog("https://acme.example/models.json", async (_url, init) => {
+			expect(init?.redirect).toBe("manual");
+			return new Response(null, { status: 302, headers: { location: "https://other.example/models.json" } });
+		})).rejects.toThrow("Catalog URL must not redirect.");
 	});
 
 	it("normalizes provider route lifecycle fields", () => {
@@ -77,9 +96,53 @@ describe("provider catalog onboarding", () => {
 		expect(model).toMatchObject({ availability: "deprecated", availableFrom: "2026-01-01T00:00:00.000Z", deprecatedAt: "2026-08-01T00:00:00.000Z", shutdownAt: "2026-10-01T00:00:00.000Z" });
 	});
 
+	it("preserves a future release timestamp for staged publication", () => {
+		const model = normalizeProviderCatalog({ data: [{ id: "acme/atlas-1", available_from: "2026-12-01T14:30:00Z", capabilities: ["text.generate"] }] }).models[0];
+		expect(model).toMatchObject({ availability: "ready", availableFrom: "2026-12-01T14:30:00.000Z" });
+	});
+
+	it("converts provider-local release times to the canonical UTC instant", () => {
+		const model = normalizeProviderCatalog({ data: [{ id: "acme/atlas-1", available_from: "2026-12-01T09:30:00-05:00", capabilities: ["text.generate"] }] }).models[0];
+		expect(model.availableFrom).toBe("2026-12-01T14:30:00.000Z");
+	});
+
+	it("rejects ambiguous lifecycle timestamps without a timezone", () => {
+		const preview = normalizeProviderCatalog({ data: [{ id: "acme/atlas-1", available_from: "2026-12-01T14:30:00", capabilities: ["text.generate"] }] });
+		expect(preview.valid).toBe(false);
+		expect(preview.issues).toContainEqual({ path: "data[0].available_from", message: "Expected an ISO 8601 timestamp with an explicit timezone (Z or ±HH:MM)." });
+	});
+
 	it("normalizes billable pricing meters for staged routes", () => {
 		const model = normalizeProviderCatalog({ data: [{ id: "acme/atlas-1", capabilities: ["text.generate"], pricing: [{ meter_key: "input_tokens", modality: "text", direction: "input", unit: "token", unit_quantity: 1_000_000, price_nanos: 250_000_000, display_label: "Input tokens", display_unit: "1M tokens" }] }] }).models[0];
-		expect(model.pricing).toEqual([{ meterKey: "input_tokens", modality: "text", direction: "input", unit: "token", unitQuantity: 1_000_000, priceNanos: 250_000_000, displayLabel: "Input tokens", displayUnit: "1M tokens" }]);
+		expect(model.pricing).toEqual([{ meterKey: "input_tokens", modality: "text", direction: "input", unit: "token", unitQuantity: 1_000_000, priceNanos: 250_000_000, displayLabel: "Input tokens", displayUnit: "1M tokens", conditions: [] }]);
+	});
+
+	it("preserves distinct conditional pricing tiers and rejects malformed conditions", async () => {
+		const price = { meter_key: "output_tokens", modality: "text", direction: "output", unit: "token", unit_quantity: 1_000_000, price_nanos: 100_000_000, display_label: "Output", display_unit: "1M tokens" };
+		const preview = normalizeProviderCatalog({ data: [{ id: "acme/atlas-1", capabilities: ["text.generate"], pricing: [
+			{ ...price, conditions: [{ path: "usage.output_tokens", op: "lte", value: 100_000 }] },
+			{ ...price, price_nanos: 200_000_000, conditions: [{ path: "usage.output_tokens", op: "gt", value: 100_000 }] },
+		] }] });
+		const client = { from: () => ({ select: () => ({ in: () => ({ neq: async () => ({ data: [{ meter_key: "output_tokens" }], error: null }) }) }) }) };
+		expect((await validateProviderCatalogPricingMeters(client, preview)).valid).toBe(true);
+		expect(preview.models[0].pricing.map((item) => item.conditions)).toEqual([
+			[{ path: "usage.output_tokens", op: "lte", value: 100_000 }],
+			[{ path: "usage.output_tokens", op: "gt", value: 100_000 }],
+		]);
+		const invalid = normalizeProviderCatalog({ data: [{ id: "acme/atlas-1", capabilities: ["text.generate"], pricing: [{ ...price, conditions: [{ path: "usage.output_tokens", op: "in", value: 100 }] }] }] });
+		expect(invalid.valid).toBe(false);
+		expect(invalid.issues[0].path).toBe("data[0].pricing[0].conditions[0]");
+	});
+
+	it("rejects negative prices and non-positive price quantities", () => {
+		const preview = normalizeProviderCatalog({ data: [{
+			id: "acme/atlas-1",
+			capabilities: ["text.generate"],
+			pricing: [{ meter_key: "input_tokens", modality: "text", direction: "input", unit: "token", unit_quantity: 0, price_nanos: -1, display_label: "Input", display_unit: "token" }],
+		}] });
+
+		expect(preview.valid).toBe(false);
+		expect(preview.issues).toContainEqual({ path: "data[0].pricing[0]", message: "Pricing meter fields are invalid." });
 	});
 
 	it("rejects duplicate and unregistered pricing meters before submission", async () => {

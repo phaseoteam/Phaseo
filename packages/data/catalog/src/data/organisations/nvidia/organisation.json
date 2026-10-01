@@ -2,6 +2,7 @@
   "organisation_id": "nvidia",
   "name": "Nvidia",
   "country_code": "US",
+  "subdivision_code": "US-CA",
   "description": "NVIDIA is a hardware- and software-AI company headquartered in Santa Clara, California. Their mission is to enable the training and deployment of large-scale models through specialised architecture, infrastructure and model frameworks.",
   "colour": "#76B900",
   "organisation_links": [

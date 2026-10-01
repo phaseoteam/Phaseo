@@ -13,6 +13,8 @@ import {
 	PaginationLink,
 } from "@/components/ui/pagination";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useSettingsWrite } from "../settings/PrivateSettingsQuery";
+import { requestCreditRefund } from "./refundRequest";
 import {
 	ExternalLink,
 	ArrowUpCircle,
@@ -57,6 +59,16 @@ import {
 	DialogTitle,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
+import { getCreditTransactionKindLabel } from "@/lib/credits/promoCodes";
+import { formatRelativeToNow } from "@/lib/formatRelative";
+import { useDisplayPreferences } from "@/components/providers/DisplayPreferencesProvider";
+import {
+	formatDisplayDateTime,
+	formatDisplayDateParts,
+	formatDisplayNumber,
+	formatDisplayTimestamp,
+	type DisplayFormattingPreferences,
+} from "@/lib/displayPreferences";
 import { toast } from "sonner";
 
 type Transaction = {
@@ -115,39 +127,50 @@ const TRANSACTION_CHIP_TONES = {
 	neutral: "border-border bg-muted/50 text-muted-foreground",
 } as const;
 
-function formatNanos(nanos: number | null | undefined, currency: string, locale: string) {
+function formatNanos(
+	nanos: number | null | undefined,
+	currency: string,
+	preferences: DisplayFormattingPreferences,
+) {
 	const val = (nanos ?? 0) / 1_000_000_000;
 	try {
-		return new Intl.NumberFormat(locale, {
+		return formatDisplayNumber(val, preferences, {
 			style: "currency",
 			currency,
 			currencyDisplay: "symbol",
 			minimumFractionDigits: 2,
 			maximumFractionDigits: 2,
-		}).format(val);
+		});
 	} catch {
 		// fallback if unknown currency code
-		return `${new Intl.NumberFormat(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(val)} ${currency}`;
+		return `${formatDisplayNumber(val, preferences, {
+			minimumFractionDigits: 2,
+			maximumFractionDigits: 2,
+			notation: "standard",
+		})} ${currency}`;
 	}
 }
 
-function formatDateTime(date: Date, timeZone: string, locale: string): string {
-	return new Intl.DateTimeFormat(locale, {
-		year: "numeric",
-		month: "short",
-		day: "2-digit",
-		hour: "2-digit",
-		minute: "2-digit",
-		second: "2-digit",
-		hour12: false,
+function formatDateTime(
+	date: Date,
+	timeZone: string,
+	preferences: DisplayFormattingPreferences,
+): string {
+	return formatDisplayDateParts(date, preferences, {
+		dateStyle: preferences.dateStyle === "iso" ? "short" : preferences.dateStyle,
+		timeStyle: "medium",
 		timeZone,
-	}).format(date);
+	});
 }
 
-function formatSignedNanos(nanos: number | null | undefined, currency: string, locale: string) {
+function formatSignedNanos(
+	nanos: number | null | undefined,
+	currency: string,
+	preferences: DisplayFormattingPreferences,
+) {
 	const value = nanos ?? 0;
-	if (value === 0) return formatNanos(0, currency, locale);
-	return `${value > 0 ? "+" : "-"}${formatNanos(Math.abs(value), currency, locale)}`;
+	if (value === 0) return formatNanos(0, currency, preferences);
+	return `${value > 0 ? "+" : "-"}${formatNanos(Math.abs(value), currency, preferences)}`;
 }
 
 function formatRelativeDate(date: Date, nowMs: number, locale: string): string {
@@ -337,6 +360,22 @@ function kindBadge(kind: string | null | undefined, labelFor: (key: TransactionK
 	return kind ? <Badge variant="secondary">{kind}</Badge> : null;
 }
 
+/** Credit is amount > 0, Debit is amount < 0 */
+function amountPill(
+	nanos: number | null | undefined,
+	currency: string,
+	preferences: DisplayFormattingPreferences,
+) {
+	const n = nanos ?? 0;
+	const prefix = n > 0 ? "+" : n < 0 ? "-" : "";
+	return (
+		<span className="inline-flex items-center font-medium tabular-nums text-foreground">
+			{prefix}
+			{formatNanos(Math.abs(n), currency, preferences)}
+		</span>
+	);
+}
+
 function parsePaymentIntentId(tx: Transaction): string | null {
 	if (!tx.ref_id || !tx.ref_type) return null;
 	const refType = String(tx.ref_type).toLowerCase();
@@ -385,11 +424,15 @@ export default function RecentTransactions({
 	const transactionText = (key: string) => t(`credits.transactions.${key}` as never);
 	const statusLabel = (key: TransactionStatusKey) => transactionText(`status.${key}`);
 	const kindLabel = (key: TransactionKindKey) => transactionText(`kind.${key}`);
+	const { formattingPreferences: preferences } = useDisplayPreferences();
 	const userTimeZone =
-		typeof Intl !== "undefined"
+		preferences.timeZone !== "system"
+			? preferences.timeZone
+			: typeof Intl !== "undefined"
 			? Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"
 			: "UTC";
 	const router = useRouter();
+	const write = useSettingsWrite();
 	const [actionBusy, setActionBusy] = useState<Record<string, boolean>>({});
 	const [refundDialogTx, setRefundDialogTx] = useState<Transaction | null>(null);
 	const [refundReason, setRefundReason] =
@@ -488,26 +531,18 @@ export default function RecentTransactions({
 		}
 		setBusy(tx.id, true);
 		try {
-			const result = await toast.promise(
-				(async () => {
-					const response = await fetch("/api/stripe/refunds/request", {
-						method: "POST",
-						headers: { "Content-Type": "application/json" },
-						body: JSON.stringify({ paymentIntentId, reason }),
-					});
-					const payload = await response.json().catch(() => ({}));
-					if (!response.ok) throw new Error("refund_request_failed");
-					return payload;
-				})(),
+			const operation = write(requestCreditRefund(paymentIntentId, reason));
+			toast.promise(operation,
 				{
 					loading: transactionText("refundSubmitting"),
 					success: transactionText("refundSubmitted"),
 					error: transactionText("refundRequestFailed"),
 				},
 			);
+			const result = await operation;
 			const params = new URLSearchParams(Array.from(searchParams.entries()));
 			const nextStatus =
-				String((result as any)?.status ?? "").toLowerCase() === "succeeded"
+				String(result?.status ?? "").toLowerCase() === "succeeded"
 					? "succeeded"
 					: "processing";
 			params.set("refund", nextStatus);
@@ -624,8 +659,10 @@ export default function RecentTransactions({
 												{createdAtDate && Number.isFinite(createdAtDate.getTime()) ? (
 													<HoverCard>
 														<HoverCardTrigger asChild>
-																	<span className="cursor-help underline decoration-dotted underline-offset-2">
-																{new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeStyle: "medium" }).format(createdAtDate)}
+															<span className="cursor-help underline decoration-dotted underline-offset-2">
+																{relativeNowMs
+																	? formatDisplayTimestamp(createdAtDate, preferences, new Date(relativeNowMs))
+																	: formatDisplayDateTime(createdAtDate, preferences)}
 															</span>
 														</HoverCardTrigger>
 														<HoverCardContent align="start" className="w-auto">
@@ -633,13 +670,13 @@ export default function RecentTransactions({
 																<div className="grid grid-cols-[120px_1fr] gap-2">
 																	<div className="text-muted-foreground">{userTimeZone}</div>
 																	<div className="font-mono">
-																		{formatDateTime(createdAtDate, userTimeZone, locale)}
+															{formatDateTime(createdAtDate, userTimeZone, preferences)}
 																	</div>
 																</div>
 																<div className="grid grid-cols-[120px_1fr] gap-2">
 																	<div className="text-muted-foreground">UTC</div>
 																	<div className="font-mono">
-																		{formatDateTime(createdAtDate, "UTC", locale)}
+															{formatDateTime(createdAtDate, "UTC", preferences)}
 																	</div>
 																</div>
 																<div className="grid grid-cols-[120px_1fr] gap-2">
@@ -658,7 +695,7 @@ export default function RecentTransactions({
 												)}
 											</TableCell>
 											<TableCell className="py-2 font-medium tabular-nums">
-												{formatSignedNanos(t.amount_nanos ?? 0, currency, locale)}
+														{amountPill(t.amount_nanos ?? 0, currency, preferences)}
 											</TableCell>
 											<TableCell className="py-2">{kindBadge(t.kind, kindLabel)}</TableCell>
 											<TableCell className="py-2">
@@ -678,7 +715,7 @@ export default function RecentTransactions({
 													<HoverCard>
 														<HoverCardTrigger asChild>
 															<span className="cursor-default font-medium tabular-nums">
-																			{formatNanos(after, currency, locale)}
+																	{formatNanos(after, currency, preferences)}
 															</span>
 														</HoverCardTrigger>
 														<HoverCardContent align="start" className="w-64">
@@ -695,7 +732,7 @@ export default function RecentTransactions({
 																	<div className="flex items-center justify-between gap-4">
 																		<span className="text-muted-foreground">{transactionText("before")}</span>
 																		<span className="font-mono font-medium tabular-nums">
-																			{before !== null ? formatNanos(before, currency, locale) : "-"}
+																			{before !== null ? formatNanos(before, currency, preferences) : "-"}
 																		</span>
 																	</div>
 																	<div className="flex items-center justify-between gap-4">
@@ -710,13 +747,13 @@ export default function RecentTransactions({
 																						: "text-muted-foreground"
 																			)}
 																		>
-																			{formatSignedNanos(amountNanos, currency, locale)}
+																			{formatSignedNanos(amountNanos, currency, preferences)}
 																		</span>
 																	</div>
 																	<div className="flex items-center justify-between gap-4 border-t pt-2">
 																		<span className="text-muted-foreground">{transactionText("after")}</span>
 																		<span className="font-mono font-semibold tabular-nums text-foreground">
-																			{formatNanos(after, currency, locale)}
+																			{formatNanos(after, currency, preferences)}
 																		</span>
 																	</div>
 																</div>
@@ -737,7 +774,7 @@ export default function RecentTransactions({
 															disabled={busy}
 															onClick={() => openDocument(t)}
 														>
-															{transactionText("invoice")}
+														{transactionText("receipt")}
 														</Button>
 														<Button
 															size="sm"

@@ -9,6 +9,7 @@ import {
 	Braces,
 	Captions,
 	ChevronRight,
+	Scale,
 	Headphones,
 	ImageIcon,
 	Music4,
@@ -29,16 +30,20 @@ import ModelBenchmarks from "@/components/(data)/model/benchmarks/ModelBenchmark
 import KeyDates from "@/components/(data)/model/overview/KeyDates";
 import OtherInfo from "@/components/(data)/model/overview/OtherInfo";
 import ModelLinks, { hasModelLinks } from "@/components/(data)/model/overview/ModelLinks";
+import { DisplayNumber } from "@/components/display/DisplayValue";
 import { isAdminViewer } from "@/lib/auth/getViewerRole";
 import type { ModelOverviewPage } from "@/lib/fetchers/models/getModel";
+import type { AuthenticatedProviderCatalogPreview } from "@/lib/query/providerCatalogPreviews";
 import {
 	getModelGatewayMetadataCached,
 	type ModelGatewayMetadata,
 } from "@/lib/fetchers/models/getModelGatewayMetadata";
 import type { ModelPerformanceMetrics } from "@/lib/fetchers/models/getModelPerformance";
 import {
+	fetchFrontendBenchmark,
 	fetchFrontendModelApps,
 	fetchFrontendModelBenchmarkHighlights,
+	fetchFrontendModelBenchmarkResults,
 	fetchFrontendModelGatewayMetadata,
 	fetchFrontendModelHeader,
 	fetchFrontendModelOverview,
@@ -46,9 +51,15 @@ import {
 	fetchFrontendModelPerformance,
 	fetchFrontendModelTimeline,
 	fetchFrontendModelUsageDailyBreakdown,
+	fetchFrontendOrganisations,
 	fetchFrontendOrganisationModels,
 } from "@/lib/fetchers/frontend/fetchPublicCatalog";
+import { applyArtificialAnalysisOrganisationColours } from "@/lib/benchmarks/artificialAnalysis";
+import { isEpochConfidenceIntervalForScore } from "@/lib/benchmarks/epoch";
+import { epochModelKey, fetchEpochConfidenceIntervals } from "@/lib/benchmarks/epochData";
+import { fetchFrontendRankingBenchmarks } from "@/lib/fetchers/frontend/fetchRankingSections";
 import { Skeleton } from "@/components/ui/skeleton";
+import type { ProviderPricing } from "@/lib/fetchers/models/getModelPricing";
 import {
 	Carousel,
 	CarouselContent,
@@ -63,7 +74,7 @@ import {
 	EmptyTitle,
 } from "@/components/ui/empty";
 import ModelPendingApiReleaseBanner from "@/components/(data)/model/overview/ModelPendingApiReleaseBanner";
-import { formatModelLifecycleDate } from "@/lib/dates/modelLifecycleDates";
+import { DisplayCalendarDate } from "@/components/display/DisplayValue";
 import { cn } from "@/lib/utils";
 import { getModalityTone } from "@/lib/models/modalityStyles";
 import {
@@ -74,6 +85,7 @@ import {
 import ModelVerificationSection, {
 	supportsProvenanceVerification,
 } from "@/components/(data)/model/overview/ModelVerificationSection";
+import { ProviderCatalogPreviewDetailsSection } from "@/components/(data)/model/ProviderCatalogPreviewDetailContent";
 
 type ModelOverviewSectionsProps = {
 	modelId: string;
@@ -81,9 +93,14 @@ type ModelOverviewSectionsProps = {
 	includeHidden: boolean;
 	showBenchmarks?: boolean;
 	showSubscriptions?: boolean;
+	showProviders?: boolean;
 	status?: string | null;
 	isGatewayActive?: boolean;
 	performancePromise?: Promise<ModelPerformanceMetrics | null>;
+	isPrivateModel?: boolean;
+	privateProviders?: ProviderPricing[];
+	previewOffers?: AuthenticatedProviderCatalogPreview[];
+	showPreviewDetails?: boolean;
 };
 
 export type ModelSectionSharedProps = {
@@ -142,6 +159,9 @@ function Section({
 	);
 }
 
+const MODEL_SECTION_STACK_CLASSNAME =
+	"space-y-10 [&>section:first-of-type]:border-t-0 [&>section:first-of-type]:pt-0";
+
 function parseTypes(types: unknown): string[] {
 	const normalizeType = (value: string): string => {
 		const normalized = value
@@ -167,6 +187,7 @@ function parseTypes(types: unknown): string[] {
 		) {
 			return "audio_tts";
 		}
+		if (normalized.includes("decision")) return "decisions";
 		return normalized;
 	};
 
@@ -193,6 +214,8 @@ const KNOWN_MODALITY_META = [
 	{ key: "audio_music", translationKey: "modalityMusic", icon: Music4 },
 	{ key: "embeddings", translationKey: "modalityEmbeddings", icon: Braces },
 	{ key: "moderations", translationKey: "modalityModeration", icon: BadgeAlert },
+	{ key: "structured", translationKey: "modalityStructured", icon: Braces },
+	{ key: "decisions", translationKey: "modalityDecisions", icon: Scale },
 ];
 
 function formatTypeLabel(value: string): string {
@@ -212,8 +235,11 @@ export async function ModelProvidersSection({
 	modelStatus,
 	modelName,
 	creatorOrganisationId,
+	creatorOrganisationName,
+	previewOffers,
 	description = "API providers, route pricing, availability, and recent reliability signals.",
-}: ModelSectionSharedProps & { modelStatus?: string | null; modelName?: string | null; creatorOrganisationId?: string | null; description?: string | null }) {
+	providersOverride,
+}: ModelSectionSharedProps & { modelStatus?: string | null; modelName?: string | null; creatorOrganisationId?: string | null; creatorOrganisationName?: string | null; previewOffers?: AuthenticatedProviderCatalogPreview[]; description?: string | null; providersOverride?: ProviderPricing[] }) {
 	await connection();
 	return (
 		<ModelPricing
@@ -224,6 +250,9 @@ export async function ModelProvidersSection({
 			modelStatus={modelStatus}
 			modelName={modelName}
 			creatorOrganisationId={creatorOrganisationId}
+			creatorOrganisationName={creatorOrganisationName}
+			providersOverride={providersOverride}
+			previewOffers={previewOffers}
 		/>
 	);
 }
@@ -231,12 +260,14 @@ export async function ModelProvidersSection({
 export async function ModelPricingInsightsOverviewSection({
 	modelId,
 	includeHidden,
-}: ModelSectionSharedProps) {
+	previewOffers = [],
+}: ModelSectionSharedProps & { previewOffers?: AuthenticatedProviderCatalogPreview[] }) {
 	return (
 		<ModelPricingInsightsSection
 			modelId={modelId}
 			includeHidden={includeHidden}
 			showPageHeader={false}
+			hasSubmittedProviderPrices={previewOffers.some((offer) => (offer.pricing?.length ?? 0) > 0)}
 		/>
 	);
 }
@@ -256,20 +287,6 @@ function SectionHeader({
 			) : null}
 		</div>
 	);
-}
-
-function formatCompactUsage(value: number): string {
-	if (!Number.isFinite(value) || value <= 0) return "0";
-	if (value >= 1_000_000_000) return `${(value / 1_000_000_000).toFixed(2)}B`;
-	if (value >= 1_000_000) {
-		const millions = Math.round(value / 1_000_000);
-		return millions >= 1_000 ? `${(value / 1_000_000_000).toFixed(2)}B` : `${millions}M`;
-	}
-	if (value >= 1_000) {
-		const thousands = Math.round((value / 1_000) * 10) / 10;
-		return thousands >= 1_000 ? "1M" : `${thousands.toFixed(1)}K`;
-	}
-	return Math.round(value).toLocaleString();
 }
 
 function getAppInitial(title: string): string {
@@ -465,7 +482,7 @@ export async function ModelAppsSection({
 											) : null}
 										</div>
 										<div className="whitespace-nowrap text-right text-sm tabular-nums text-muted-foreground">
-										{formatCompactUsage(app.totalTokens)} {tApps("tokens")}
+											<DisplayNumber value={app.totalTokens} options={{ maximumFractionDigits: 2 }} /> {tApps("tokens")}
 										</div>
 									</Link>
 								);
@@ -493,16 +510,13 @@ export async function ModelActivitySection({
 		[],
 		"model activity"
 	);
-	if (usageRows.length === 0) return null;
-
 	return (
-		<Section id="activity">
-				<ModelActivityChart
-					rows={usageRows}
-					showHeading={showHeading}
-					description={t("sections.activityChartDescription")}
-				/>
-		</Section>
+		<ModelActivityChart
+			modelId={modelId}
+			rows={usageRows}
+			showHeading={showHeading}
+			description={t("sections.activityChartDescription")}
+		/>
 	);
 }
 
@@ -609,18 +623,68 @@ export async function ModelBenchmarksSection({
 }: ModelSectionSharedProps & { hideWhenEmpty?: boolean }) {
 	const emptyStateT = await getTranslations("Catalogue.models.detail.emptyStates");
 	const t = await getTranslations("Catalogue.models.detail");
-	const [benchmarkHighlights, pendingApiRelease] = await Promise.all([
+	const [benchmarkHighlights, benchmarkResults, benchmarkRankings, organisations, pendingApiRelease, epochBenchmark, epochConfidenceIntervals, modelHeader] = await Promise.all([
 		withOptionalSectionTimeout(
 			fetchFrontendModelBenchmarkHighlights(modelId),
 			[],
 			"benchmark highlights"
 		),
 		withOptionalSectionTimeout(
+			fetchFrontendModelBenchmarkResults(modelId),
+			[],
+			"benchmark results"
+		),
+		withOptionalSectionTimeout(
+			fetchFrontendRankingBenchmarks().then((payload) => payload.benchmarks),
+			[],
+			"benchmark rankings"
+		),
+		withOptionalSectionTimeout(
+			fetchFrontendOrganisations(),
+			[],
+			"organisation colours"
+		),
+		withOptionalSectionTimeout(
 			fetchFrontendModelPendingApiReleaseState(modelId, includeHidden),
 			null,
 			"benchmark pending API release state"
 		),
+		withOptionalSectionTimeout(fetchFrontendBenchmark("epoch-capabilities-index"), null, "Epoch benchmark leaderboard"),
+		withOptionalSectionTimeout(fetchEpochConfidenceIntervals(), {}, "Epoch confidence intervals"),
+		withOptionalSectionTimeout(fetchFrontendModelHeader(modelId), null, "benchmark model identity"),
 	]);
+	const organisationColours = new Map(organisations.map((organisation) => [organisation.organisation_id, organisation.colour]));
+	const epochRanking = epochBenchmark ? {
+		benchmark_id: epochBenchmark.id,
+		name: epochBenchmark.name ?? "Epoch Capabilities Index",
+		category: epochBenchmark.category,
+		benchmark_type: epochBenchmark.type ?? null,
+		lower_is_better: epochBenchmark.ascending_order === false,
+		total_models: epochBenchmark.total_models,
+		entries: epochBenchmark.results.flatMap((result) => result.model && result.score !== null && Number.isFinite(Number(result.score)) ? [{
+			model_id: result.model_id,
+			model_name: result.model.name ?? result.model_id,
+			organisation_id: result.model.organisation?.organisation_id ?? null,
+			organisation_name: result.model.organisation?.name ?? null,
+			organisation_colour: result.model.organisation?.colour ?? null,
+			release_date: result.model.release_date ?? null,
+			score: Number(result.score),
+			rank: result.rank ?? 0,
+			other_info: (() => {
+				const base = typeof result.other_info === "string" ? result.other_info : "";
+				const interval = epochConfidenceIntervals[epochModelKey(result.model.name ?? result.model_id)];
+				return isEpochConfidenceIntervalForScore(interval, result.score)
+					? `${base}${base ? "; " : ""}95% CI ${interval.low}–${interval.high}`
+					: base || null;
+			})(),
+			source_link: result.source_link ?? null,
+			updated_at: result.updated_at ?? null,
+		}] : []),
+	} : null;
+	const allBenchmarkRankings = epochRanking && !benchmarkRankings.some((item) => item.benchmark_id === epochRanking.benchmark_id)
+		? [...benchmarkRankings, epochRanking]
+		: benchmarkRankings;
+	const enrichedBenchmarkRankings = applyArtificialAnalysisOrganisationColours(allBenchmarkRankings, organisationColours);
 	const shouldShowPendingApiBanner =
 		benchmarkHighlights.length === 0 && pendingApiRelease?.isPendingApiRelease;
 	if (hideWhenEmpty && benchmarkHighlights.length === 0 && !shouldShowPendingApiBanner) {
@@ -632,6 +696,10 @@ export async function ModelBenchmarksSection({
 			{benchmarkHighlights.length > 0 ? (
 				<ModelBenchmarks
 					highlightCards={benchmarkHighlights}
+					benchmarkResults={benchmarkResults}
+					benchmarkRankings={enrichedBenchmarkRankings}
+					modelId={modelId}
+					modelName={modelHeader?.name}
 					mode="summary"
 				/>
 			) : (
@@ -825,7 +893,6 @@ export async function ModelAboutSection({
 			</div>
 		);
 	};
-
 	return (
 		<>
 			<div className="space-y-2">
@@ -990,7 +1057,7 @@ export async function ModelCreatorModelsSection({
 										</div>
 										<div className="mt-3">
 											<p className="text-xs text-muted-foreground">
-												{formatModelLifecycleDate(creatorModel.primary_date, locale)}
+												<DisplayCalendarDate value={creatorModel.primary_date} />
 											</p>
 										</div>
 									</Link>
@@ -1042,7 +1109,7 @@ function ProvidersSectionSkeleton() {
 			</div>
 			<div className="overflow-hidden rounded-sm border border-border/70 bg-background">
 				<div className="grid min-w-[780px] grid-cols-[27%_12%_12%_11%_11%_13%_1fr] border-b px-3 py-3">
-					{["Provider", "Input $/M", "Output $/M", "Latency", "Throughput", "Uptime"].map((label) => (
+					{["Provider", "Input", "Output", "Latency", "Throughput", "Uptime"].map((label) => (
 						<div key={label} className="px-2">
 							<Skeleton className="h-3 w-2/3" />
 						</div>
@@ -1226,8 +1293,8 @@ export function ModelCreatorModelsSkeleton() {
 export async function ModelOverviewSectionsSkeleton() {
 	const t = await getTranslations("Catalogue.models.detail");
 	return (
-		<div className="space-y-10">
-			<Section id="providers" showDivider={false}>
+		<div className={MODEL_SECTION_STACK_CLASSNAME}>
+			<Section id="providers">
 				<SectionHeader
 					title={t("navigation.providers")}
 					description={t("sections.providersDescription")}
@@ -1297,20 +1364,26 @@ export default async function ModelOverviewSections({
 	includeHidden,
 	showBenchmarks = true,
 	showSubscriptions = true,
+	showProviders = true,
 	status,
 	isGatewayActive = true,
 	performancePromise,
+	isPrivateModel = false,
+	privateProviders,
+	previewOffers = [],
+	showPreviewDetails = Boolean(model),
 }: ModelOverviewSectionsProps) {
 	const t = await getTranslations("Catalogue.models.detail");
 	const hasInternalModelData = Boolean(model);
 	const isRetired = status === "Retired";
 	const showVerification = supportsProvenanceVerification(model?.output_types);
 
+
 	if (isRetired) {
 		return (
-			<div className="space-y-10">
+			<div className={MODEL_SECTION_STACK_CLASSNAME}>
 				{showBenchmarks ? (
-					<Section id="benchmarks" showDivider={false}>
+					<Section id="benchmarks">
 						<SectionHeader title={t("navigation.benchmarks")} />
 						<Suspense fallback={<BenchmarksSectionSkeleton />}>
 							<ModelBenchmarksSection
@@ -1324,11 +1397,11 @@ export default async function ModelOverviewSections({
 				{hasInternalModelData ? (
 					<>
 						{showVerification ? (
-							<Section id="verification" showDivider={showBenchmarks}>
+							<Section id="verification">
 								<ModelVerificationSection outputTypes={model?.output_types} />
 							</Section>
 						) : null}
-						<Section id="about" showDivider={showBenchmarks || showVerification}>
+						<Section id="about">
 							<SectionHeader
 								title={t("navigation.about")}
 								description={t("sections.archivedAboutDescription")}
@@ -1337,6 +1410,15 @@ export default async function ModelOverviewSections({
 								<ModelAboutSection model={model!} />
 							</Suspense>
 						</Section>
+						{showPreviewDetails && previewOffers.length > 0 ? (
+							<Section id="provider-submissions">
+								<SectionHeader
+									title="Provider submissions"
+									description="Complete provider-supplied details for authorized internal review."
+								/>
+								<ProviderCatalogPreviewDetailsSection previews={previewOffers} />
+							</Section>
+						) : null}
 						{showSubscriptions ? (
 							<Section id="subscriptions">
 								<SectionHeader
@@ -1360,19 +1442,23 @@ export default async function ModelOverviewSections({
 
 	if (!isGatewayActive) {
 		return (
-			<div className="space-y-10">
-				<Section id="providers" showDivider={false}>
-					<Suspense fallback={<ProvidersSectionSkeleton />}>
-						<ModelProvidersSection
-							modelId={modelId}
-							includeHidden={includeHidden}
-							modelStatus={status}
-							modelName={model?.name}
-							creatorOrganisationId={model?.organisation_id}
-							description={t("sections.providerListingsDescription")}
-						/>
-					</Suspense>
-				</Section>
+			<div className={MODEL_SECTION_STACK_CLASSNAME}>
+				{showProviders ? (
+					<Section id="providers">
+						<Suspense fallback={<ProvidersSectionSkeleton />}>
+							<ModelProvidersSection
+								modelId={modelId}
+								includeHidden={includeHidden}
+								modelStatus={status}
+								modelName={model?.name}
+								creatorOrganisationId={model?.organisation_id}
+								creatorOrganisationName={model?.organisation?.name}
+								previewOffers={previewOffers}
+								description={t("sections.providerListingsDescription")}
+							/>
+						</Suspense>
+					</Section>
+				) : null}
 				{showBenchmarks ? (
 					<Section id="benchmarks">
 						<SectionHeader title={t("navigation.benchmarks")} />
@@ -1401,6 +1487,15 @@ export default async function ModelOverviewSections({
 								<ModelAboutSection model={model!} />
 							</Suspense>
 						</Section>
+						{showPreviewDetails && previewOffers.length > 0 ? (
+							<Section id="provider-submissions">
+								<SectionHeader
+									title="Provider submissions"
+									description="Complete provider-supplied details for authorized internal review."
+								/>
+								<ProviderCatalogPreviewDetailsSection previews={previewOffers} />
+							</Section>
+						) : null}
 						{showSubscriptions ? (
 							<Section id="subscriptions">
 								<SectionHeader
@@ -1423,19 +1518,24 @@ export default async function ModelOverviewSections({
 	}
 
 	return (
-		<div className="space-y-10">
-			<Section id="providers" showDivider={false}>
-				<Suspense fallback={<ProvidersSectionSkeleton />}>
-					<ModelProvidersSection
-						modelId={modelId}
-						includeHidden={includeHidden}
-						modelStatus={status}
-						modelName={model?.name}
-						creatorOrganisationId={model?.organisation_id}
-						description={t("sections.providersDescription")}
-					/>
-				</Suspense>
-			</Section>
+		<div className={MODEL_SECTION_STACK_CLASSNAME}>
+			{showProviders ? (
+				<Section id="providers">
+					<Suspense fallback={<ProvidersSectionSkeleton />}>
+						<ModelProvidersSection
+							modelId={modelId}
+							includeHidden={includeHidden}
+							modelStatus={status}
+							modelName={model?.name}
+							creatorOrganisationId={model?.organisation_id}
+							creatorOrganisationName={model?.organisation?.name}
+							providersOverride={privateProviders}
+							previewOffers={previewOffers}
+							description={t("sections.providersDescription")}
+						/>
+					</Suspense>
+				</Section>
+			) : null}
 			<Suspense
 				fallback={
 					<Section id="performance">
@@ -1449,18 +1549,19 @@ export default async function ModelOverviewSections({
 						performancePromise={performancePromise}
 					/>
 				</Suspense>
-			<Section id="pricing">
+			{!isPrivateModel ? <Section id="pricing">
 				<SectionHeader
-						title={t("navigation.pricing")}
-						description={t("sections.pricingDescription")}
+					title={t("navigation.pricing")}
+					description={t("sections.pricingDescription")}
 				/>
 				<Suspense fallback={<PricingSectionSkeleton />}>
 					<ModelPricingInsightsOverviewSection
 						modelId={modelId}
 						includeHidden={includeHidden}
+						previewOffers={previewOffers}
 					/>
 				</Suspense>
-			</Section>
+			</Section> : null}
 			{showBenchmarks ? (
 				<Section id="benchmarks">
 					<SectionHeader title={t("navigation.benchmarks")} />
@@ -1520,9 +1621,18 @@ export default async function ModelOverviewSections({
 							description={t("sections.aboutDescription")}
 						/>
 						<Suspense fallback={<AboutSectionSkeleton />}>
-							<ModelAboutSection model={model!} />
+								<ModelAboutSection model={model!} />
 						</Suspense>
 					</Section>
+					{showPreviewDetails && previewOffers.length > 0 ? (
+						<Section id="provider-submissions">
+							<SectionHeader
+								title="Provider submissions"
+								description="Complete provider-supplied details for authorized internal review."
+							/>
+							<ProviderCatalogPreviewDetailsSection previews={previewOffers} />
+						</Section>
+					) : null}
 					{showSubscriptions ? (
 						<Section id="subscriptions">
 							<SectionHeader

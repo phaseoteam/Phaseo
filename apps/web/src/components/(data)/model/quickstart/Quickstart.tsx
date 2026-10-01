@@ -21,6 +21,7 @@ import { QuickstartUsageSection } from "./QuickstartUsageSection";
 import { buildEndpointRoutes, ENDPOINT_OPTIONS } from "./endpointRoutes";
 import {
 	AI_SDK_ENDPOINTS,
+	GENERIC_PHASEO_SDK_ENDPOINTS,
 	PHASEO_METHODS,
 	LANGUAGE_OPTIONS,
 	OPENAI_METHODS,
@@ -38,6 +39,8 @@ import { useLocale, useTranslations } from "next-intl";
 import type { QuickstartRequestContext } from "./requestContext";
 import { captureProductEvent } from "@/lib/productAnalytics";
 import { getLocalizedDocsHref } from "@/lib/docs";
+import { useDisplayPreferences } from "@/components/providers/DisplayPreferencesProvider";
+import type { ByokOnlyProvider } from "./byokOnly";
 
 interface QuickstartProps {
 	mode?: "generation" | "model-metadata";
@@ -66,6 +69,7 @@ interface QuickstartProps {
 	supportedEndpoints?: string[];
 	showHeader?: boolean;
 	requestContext?: QuickstartRequestContext;
+	byokOnlyProviders?: ByokOnlyProvider[];
 }
 
 const normalizeEndpointValue = (value: string | null | undefined) =>
@@ -196,6 +200,10 @@ const ENDPOINT_DOCS_BY_VALUE: Partial<Record<string, { label: string; href: stri
 		label: "Responses API",
 		href: `${DOCS_BASE_URL}/api-reference/endpoint/responses`,
 	},
+	decisions: {
+		label: "Decisions API",
+		href: `${DOCS_BASE_URL}/api-reference/endpoint/decisions`,
+	},
 	"chat.completions": {
 		label: "Chat Completions API",
 		href: `${DOCS_BASE_URL}/api-reference/endpoint/chat-completions`,
@@ -314,9 +322,16 @@ export default function Quickstart({
 	supportedEndpoints = [],
 	showHeader = true,
 	requestContext,
+	byokOnlyProviders = [],
 }: QuickstartProps) {
 	const t = useTranslations("Catalogue.models.detail.quickstart");
 	const locale = useLocale();
+	const { preferences } = useDisplayPreferences();
+	const preferredLanguage = {
+		typescript: "typescript-sdk",
+		python: "python-sdk",
+		curl: "curl",
+	}[preferences.codeLanguage];
 	const isModelMetadataQuickstart = mode === "model-metadata";
 	const supportedEndpointValues = useMemo(() => {
 		const normalized = new Set(
@@ -367,7 +382,8 @@ export default function Quickstart({
 	);
 
 	const [selectedEndpoint, setSelectedEndpoint] = useState(defaultEndpoint);
-	const [selectedLanguage, setSelectedLanguage] = useState("typescript-sdk");
+	const [selectedLanguageOverride, setSelectedLanguage] = useState<string | null>(null);
+	const selectedLanguage = selectedLanguageOverride ?? preferredLanguage;
 	const [selectedServiceTier, setSelectedServiceTier] =
 		useState<ServiceTier>("standard");
 	const batchEnabled = false;
@@ -416,11 +432,13 @@ export default function Quickstart({
 			"curl",
 			"node-fetch",
 			"python-requests",
-			"go-sdk",
-			"csharp-sdk",
-			"php-sdk",
-			"ruby-sdk",
 		]);
+		if (GENERIC_PHASEO_SDK_ENDPOINTS.has(normalizedEndpoint)) {
+			supported.add("go-sdk");
+			supported.add("csharp-sdk");
+			supported.add("php-sdk");
+			supported.add("ruby-sdk");
+		}
 		if (AI_SDK_ENDPOINTS.has(normalizedEndpoint)) {
 			supported.add("ai-sdk");
 			supported.add("agent-sdk-ts");
@@ -753,6 +771,12 @@ ${payloadObjectNode}
 
 const audioBytes = await audio.arrayBuffer();
 console.log(\`Generated speech bytes: \${audioBytes.byteLength}\`);`
+			: normalizedEndpoint === "decisions"
+				? `const decision = await client.${phaseoMethod?.ts}({
+${payloadObjectNode}
+});
+
+console.log(JSON.stringify(decision.answers ?? decision, null, 2));`
 			: `const response = await client.${phaseoMethod?.ts}({
 ${payloadObjectNode}
 });
@@ -763,6 +787,10 @@ console.log(JSON.stringify(response, null, 2));`;
 			? `audio = client.${phaseoMethod?.py}(payload)
 
 print(audio)`
+			: normalizedEndpoint === "decisions"
+				? `decision = client.${phaseoMethod?.py}(payload)
+
+print(decision.get("answers", decision))`
 			: `response = client.${phaseoMethod?.py}(payload)
 
 print(response)`;
@@ -1533,6 +1561,8 @@ console.log(outputText ?? JSON.stringify(data, null, 2));`
   ?.text;
 
 console.log(messageText ?? JSON.stringify(data, null, 2));`
+			: normalizedEndpoint === "decisions"
+				? `console.log(data.answers ?? JSON.stringify(data, null, 2));`
 			: `console.log(
   data.choices?.[0]?.message?.content ?? JSON.stringify(data, null, 2),
 );`
@@ -1657,7 +1687,9 @@ print(output_text or data)`
 )
 
 print(message_text or data)`
-			: `print(data.get("choices", [])[0].get("message", {}).get("content") if data.get("choices") else data)`
+		: normalizedEndpoint === "decisions"
+			? `print(data.get("answers", data))`
+		: `print(data.get("choices", [])[0].get("message", {}).get("content") if data.get("choices") else data)`
 }`;
 
 	const pythonRequestsStreamingQuickstart = `# Import json, os and requests libraries
@@ -1809,6 +1841,8 @@ console.log(response);`
 			: supportsServiceTier
 				? t("tierRequestMode", { tier: serviceTierLabel })
 				: t("standardRequestMode");
+	const requiresByok = !isModelMetadataQuickstart && byokOnlyProviders.length > 0;
+	const requestStep = requiresByok ? 3 : 2;
 
 	return (
 		<section className="space-y-4">
@@ -1904,13 +1938,49 @@ console.log(response);`
 					</div>
 				</div>
 
+				{requiresByok ? (
+					<div className="space-y-3 border-t border-border/70 pt-4">
+						<div className="flex items-center gap-3">
+							<Badge
+								variant="outline"
+								className="flex h-7 w-7 items-center justify-center rounded-full p-0 text-xs"
+							>
+								2
+							</Badge>
+							<h3 className="text-base font-semibold">Add a provider key</h3>
+						</div>
+						<div className="flex flex-col gap-3 rounded-lg border border-border/70 bg-muted/20 p-3 sm:flex-row sm:items-center sm:justify-between">
+							<div className="flex min-w-0 items-start gap-3">
+								<div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border bg-background text-muted-foreground">
+									<KeyRound className="h-4 w-4" />
+								</div>
+								<div>
+									<p className="text-sm font-medium">Provider key required</p>
+									<p className="mt-0.5 text-sm text-muted-foreground">
+										Add your own {byokOnlyProviders.map((provider) => provider.providerName).join(" or ")} credential before sending this request.
+									</p>
+								</div>
+							</div>
+							<div className="flex shrink-0 flex-wrap gap-2 pl-11 sm:pl-0">
+								{byokOnlyProviders.map((provider) => (
+									<Button key={provider.providerId} asChild size="sm" variant="outline" className="bg-background">
+										<Link href={`/settings/byok/${provider.providerId}`}>
+											Add {provider.providerName} key
+										</Link>
+									</Button>
+								))}
+							</div>
+						</div>
+					</div>
+				) : null}
+
 				<div className="space-y-3 border-t border-border/70 pt-4">
 					<div className="flex items-center gap-3">
 						<Badge
 							variant="outline"
 							className="flex h-7 w-7 items-center justify-center rounded-full p-0 text-xs"
 						>
-							2
+							{requestStep}
 						</Badge>
 						<h3 className="text-base font-semibold">
 							{isModelMetadataQuickstart

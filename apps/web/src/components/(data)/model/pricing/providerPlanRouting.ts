@@ -4,7 +4,7 @@ import type {
     ProviderPricing,
 } from "@/lib/fetchers/models/getModelPricing";
 
-const PLAN_ORDER = ["free", "standard", "priority", "flex", "batch"] as const;
+const PLAN_ORDER = ["free", "standard", "priority", "ultrafast", "flex", "batch"] as const;
 
 function normalizePlan(value: string | null | undefined): string {
     return String(value ?? "").trim().toLowerCase() || "standard";
@@ -19,6 +19,7 @@ function extractModelIdFromModelKey(modelKey: string): string {
 
 function getSiblingSuffixForPlan(plan: string): string | null {
     if (plan === "priority") return "-fast";
+    if (plan === "ultrafast") return "-ultrafast";
     if (plan === "flex") return "-flex";
     return null;
 }
@@ -41,6 +42,7 @@ function getSiblingModelKeys(provider: ProviderPricing): Set<string> {
         provider.provider_models
             .filter((model) =>
                 isSiblingModelIdForPlan(model.model_id, "priority") ||
+                isSiblingModelIdForPlan(model.model_id, "ultrafast") ||
                 isSiblingModelIdForPlan(model.model_id, "flex"),
             )
             .map((model) => buildProviderModelKey(model)),
@@ -94,7 +96,7 @@ export function getProviderPricingRulesForPlan(
     const explicitRules = getExplicitPricingRulesForPlan(provider, normalizedPlan);
     if (explicitRules.length > 0) return explicitRules;
 
-    if (normalizedPlan === "priority" || normalizedPlan === "flex") {
+    if (normalizedPlan === "priority" || normalizedPlan === "ultrafast" || normalizedPlan === "flex") {
         return getDerivedSiblingPlanRules(provider, normalizedPlan);
     }
 
@@ -113,6 +115,9 @@ export function getProviderAvailablePlans(provider: ProviderPricing): string[] {
     if (!set.has("priority") && getDerivedSiblingPlanRules(provider, "priority").length > 0) {
         set.add("priority");
     }
+    if (!set.has("ultrafast") && getDerivedSiblingPlanRules(provider, "ultrafast").length > 0) {
+        set.add("ultrafast");
+    }
     if (!set.has("flex") && getDerivedSiblingPlanRules(provider, "flex").length > 0) {
         set.add("flex");
     }
@@ -120,7 +125,8 @@ export function getProviderAvailablePlans(provider: ProviderPricing): string[] {
     const extras = Array.from(set)
         .filter((plan) => !PLAN_ORDER.includes(plan as never))
         .sort();
-    return [...ordered, ...extras];
+    const plans = [...ordered, ...extras];
+    return plans.length > 0 || provider.provider_models.length === 0 ? plans : ["standard"];
 }
 
 export function getProviderPlanComparisonBase(
@@ -159,6 +165,10 @@ export function getProviderModelScopeForPlan(
     const matchingProviderModels = provider.provider_models.filter((model) =>
         planModelKeys.has(buildProviderModelKey(model)),
     );
+    const tierModels = matchingProviderModels.filter(
+        (model) => model.service_tier != null && normalizePlan(model.service_tier) === normalizePlan(plan),
+    );
+    if (tierModels.length > 0) return tierModels;
     return matchingProviderModels.length > 0
         ? matchingProviderModels
         : provider.provider_models;

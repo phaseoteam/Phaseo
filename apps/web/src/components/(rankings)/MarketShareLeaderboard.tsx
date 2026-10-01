@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/Logo";
@@ -23,11 +24,6 @@ type MarketShareLeaderboardProps = {
 	maxExpanded?: number;
 };
 
-function formatTokens(value: number, locale: string) {
-	if (!Number.isFinite(value)) return "--";
-	return new Intl.NumberFormat(locale, { notation: "compact", maximumFractionDigits: 1 }).format(value);
-}
-
 function formatPercent(value: number, locale: string, lessThanOneLabel: string) {
 	if (!Number.isFinite(value)) return "--";
 	if (value === 0) return new Intl.NumberFormat(locale, { style: "percent", maximumFractionDigits: 0 }).format(0);
@@ -42,6 +38,10 @@ export function MarketShareLeaderboard({
 }: MarketShareLeaderboardProps) {
 	const t = useTranslations("Catalogue.rankings");
 	const locale = useLocale();
+	const format = useDisplayFormatters();
+	const formatTokens = (value: number, _locale?: string) => Number.isFinite(value)
+		? format.number(value, { maximumFractionDigits: 1 })
+		: "--";
 	const [showAll, setShowAll] = useState(false);
 
 	if (!data.length) {

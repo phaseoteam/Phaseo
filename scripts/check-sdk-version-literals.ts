@@ -10,7 +10,7 @@ type Check = {
 };
 
 type Spec = {
-  sdkKey: "ts" | "py" | "go" | "csharp" | "java" | "php" | "ruby" | "agent";
+  sdkKey: "ts" | "py" | "go" | "csharp" | "java" | "php" | "ruby" | "rust" | "agentRust" | "agent";
   sdkLabel: string;
   packageJsonPath: string;
   checks: Check[];
@@ -24,6 +24,8 @@ const SDK_VERSION_OVERRIDE_ENV: Record<Spec["sdkKey"], string> = {
   java: "PHASEO_SDK_VERSION_OVERRIDE_JAVA",
   php: "PHASEO_SDK_VERSION_OVERRIDE_PHP",
   ruby: "PHASEO_SDK_VERSION_OVERRIDE_RUBY",
+  rust: "PHASEO_SDK_VERSION_OVERRIDE_RUST",
+  agentRust: "PHASEO_SDK_VERSION_OVERRIDE_AGENT_RUST",
   agent: "PHASEO_SDK_VERSION_OVERRIDE_AGENT",
 };
 
@@ -156,6 +158,40 @@ async function main(): Promise<void> {
       ],
     },
     {
+      sdkKey: "rust",
+      sdkLabel: "Rust",
+      packageJsonPath: file("packages", "sdk", "sdk-rust", "package.json"),
+      checks: [
+        {
+          filePath: file("packages", "sdk", "sdk-rust", "Cargo.toml"),
+          pattern: /\[package\][\s\S]*?^version\s*=\s*"([^"]+)"$/m,
+          label: "Cargo package version",
+        },
+        {
+          filePath: file("packages", "sdk", "sdk-rust", "Cargo.lock"),
+          pattern: /\[\[package\]\]\s+name = "phaseo"\s+version = "([^"]+)"$/m,
+          label: "Cargo.lock package version",
+        },
+      ],
+    },
+    {
+      sdkKey: "agentRust",
+      sdkLabel: "Agent Rust",
+      packageJsonPath: file("packages", "sdk", "agent-sdk-rust", "package.json"),
+      checks: [
+        {
+          filePath: file("packages", "sdk", "agent-sdk-rust", "Cargo.toml"),
+          pattern: /\[package\][\s\S]*?^version\s*=\s*"([^"]+)"$/m,
+          label: "Cargo package version",
+        },
+        {
+          filePath: file("packages", "sdk", "agent-sdk-rust", "Cargo.lock"),
+          pattern: /\[\[package\]\]\s+name = "phaseo-agent"\s+version = "([^"]+)"$/m,
+          label: "Cargo.lock package version",
+        },
+      ],
+    },
+    {
       sdkKey: "agent",
       sdkLabel: "Agent TypeScript",
       packageJsonPath: file("packages", "sdk", "agent-sdk-ts", "package.json"),
@@ -164,6 +200,11 @@ async function main(): Promise<void> {
           filePath: file("packages", "sdk", "agent-sdk-ts", "src", "devtools.ts"),
           pattern: /const AGENT_SDK_VERSION = "([^"]+)"/m,
           label: "AGENT_SDK_VERSION constant",
+        },
+        {
+          filePath: file("packages", "sdk", "agent-sdk-ts", "src", "adapters", "gateway-client.ts"),
+          pattern: /"X-Phaseo-Client-Version": "([^"]+)"/m,
+          label: "gateway client attribution version",
         },
       ],
     },
@@ -184,6 +225,28 @@ async function main(): Promise<void> {
           `[${spec.sdkLabel}] ${check.label}: expected ${expected}, found ${found} (${check.filePath})`,
         );
       }
+    }
+  }
+
+  const rustSdkVersion = await readVersion(file("packages", "sdk", "sdk-rust", "package.json"));
+  const rustDependencyChecks: Check[] = [
+    {
+      filePath: file("packages", "sdk", "agent-sdk-rust", "Cargo.toml"),
+      pattern: /^phaseo\s*=\s*\{[^\r\n]*?version\s*=\s*"([^"]+)"/m,
+      label: "Rust Agent SDK phaseo dependency",
+    },
+    {
+      filePath: file("packages", "sdk", "agent-sdk-rust", "Cargo.lock"),
+      pattern: /\[\[package\]\]\s+name = "phaseo"\s+version = "([^"]+)"$/m,
+      label: "Rust Agent SDK locked phaseo dependency",
+    },
+  ];
+  for (const check of rustDependencyChecks) {
+    const found = await readMatch(check.filePath, check.pattern);
+    if (!found) {
+      failures.push(`[Agent Rust] ${check.label}: pattern not found in ${check.filePath}`);
+    } else if (found !== rustSdkVersion) {
+      failures.push(`[Agent Rust] ${check.label}: expected ${rustSdkVersion}, found ${found} (${check.filePath})`);
     }
   }
 

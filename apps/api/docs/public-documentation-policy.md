@@ -20,3 +20,5 @@ Everything tracked in this repository is public. Documentation committed here mu
 Use the team's private workspace for these records. Do not add them to a tracked `docs` directory, even temporarily.
 
 Run `pnpm docs:public-safety` before publishing documentation changes. The normal `pnpm validate:docs` check also runs this validation.
+
+The documentation and SDK generators share `apps/docs/openapi/v1/openapi.yaml`. Preview endpoints remain in this contract with Beta labels; API access is enforced by workspace feature gates. Internal operations use `x-internal` and `x-excluded` to keep them out of the customer reference without maintaining a second specification.

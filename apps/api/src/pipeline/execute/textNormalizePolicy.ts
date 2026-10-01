@@ -46,7 +46,7 @@ export function fallbackReasoningEfforts(
 ): ReasoningEffort[] {
 	return (
 		getTextProviderReasoningEffortFallback({ providerId, model }) ?? [
-			...REASONING_EFFORT_ORDER,
+			...REASONING_EFFORT_ORDER.filter((effort) => effort !== "instant"),
 		]
 	);
 }

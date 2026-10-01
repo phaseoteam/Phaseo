@@ -37,7 +37,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
-import { useRouter } from "next/navigation";
+import { useSettingsWrite } from "../PrivateSettingsQuery";
 import { useTranslations } from "next-intl";
 import RegenerateSecretDialog from "./RegenerateSecretDialog";
 import RedirectUriManager from "./RedirectUriManager";
@@ -120,7 +120,6 @@ export default function OAuthAppDetailPanel({
 	userDirectory,
 	currentUserId,
 }: OAuthAppDetailPanelProps) {
-	const router = useRouter();
 	const translate = useTranslations("SettingsUI");
 	const t = (key: string, values?: Record<string, unknown>) =>
 		translate(
@@ -129,6 +128,7 @@ export default function OAuthAppDetailPanel({
 				: key) as never,
 			values as never,
 		);
+	const write = useSettingsWrite();
 	const [copiedId, setCopiedId] = useState(false);
 	const [allowedScopes, setAllowedScopes] = useState(() => normalizeOAuthScopes(oauthApp.allowed_scopes));
 	const [savingScopes, setSavingScopes] = useState(false);
@@ -192,10 +192,9 @@ export default function OAuthAppDetailPanel({
 	const saveScopes = async () => {
 		setSavingScopes(true);
 		try {
-			const result = await updateOAuthAppScopesAction(oauthApp.client_id, allowedScopes);
+			const result = await write(updateOAuthAppScopesAction(oauthApp.client_id, allowedScopes));
 			if (result.error) throw new Error(result.error);
 		toast.success(t("strings.OAuth scopes updated" as never));
-			router.refresh();
 		} catch (error: unknown) {
 			toast.error(
 				localizedSettingsError(error, translate, "Failed to update OAuth scopes"),
@@ -664,3 +663,4 @@ export default function OAuthAppDetailPanel({
 		</div>
 	);
 }
+

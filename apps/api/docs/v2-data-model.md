@@ -20,7 +20,7 @@ backfill and consumer cutover are verified.
   JSON points to the exact variant through `canonical_model_id`. A
   provider-specific free API ID that differs from the canonical spelling is
   stored as an alias to the canonical `:free` model. Validation rejects free
-  routes without an authored free model; the importer never manufactures one.
+  routes without an authored free model; database automation never manufactures one.
 - `v2_model_aliases` resolves client input to a canonical model slug.
 - `v2_labs` owns model metadata. `v2_providers` represents a provider endpoint
   (including `external` catalogue-only providers) and has global status and
@@ -91,6 +91,12 @@ backfill and consumer cutover are verified.
 - `get_public_models_page_rows()` is the public catalogue contract and now
   delegates to the v2 projection, including catalogue-only models and all
   available service tiers.
+- `get_free_router_usage_summary(model_slugs, since)` aggregates Free Models
+  Router request counts, charged nanos, and latest route time in the database,
+  returning one row per routed model to the web API.
+- `get_public_models_page_payload()` preserves lifecycle date ordering and
+  uses `v2_models.created_at` to show more recently catalogued models first
+  when lifecycle dates are equal.
 - `get_v2_public_models_page_rows(region, service_tier)` owns the expensive
   model/provider/variant/capability/pricing joins. The Worker only applies
   pagination, search, and response caching.
@@ -109,15 +115,40 @@ backfill and consumer cutover are verified.
   benchmark, subscription, availability, and performance requests together;
   streamed sections retain separate API routes, cache policies, and failure
   boundaries.
-- The importer remains JSON-first: it writes the legacy compatibility tables,
-  then mirrors labs, models, providers, routes, aliases, regions, capabilities,
-  service tiers, variants, SKUs, and meters into v2. No website editing path is
-  introduced for catalogue data.
+- The admin editor and approved database automations write the v2 catalogue
+  directly. Public JSON snapshots are exported from v2 for compatibility,
+  documentation, and SDK generation; they are not an authoring or import feed.
 
 Release timelines and pricing history still retain compatibility fallbacks.
 Benchmarks, subscriptions, and provider health now have v2 RPC paths and
 backfilled data; the fallback remains for deployments where those functions
 have not yet been rolled out.
+
+## Public rankings measurements
+
+Rankings read content-free V2 usage meters through public daily projections.
+Charts use UTC weekly buckets; detail tables cover the last 30 days. Each
+modality uses its native unit: text and embedding tokens, image counts, rerank
+quadtokens, audio tokens, and measured video, speech, or transcription seconds.
+Speech and transcription have separate endpoint-specific meters. These extra
+workload meters are nonbillable and do not affect pricing.
+
+Image counts use explicit provider counts or observed content parts, image-edit
+uploads, and generated output items. Masks, image tokens, and requested output
+counts do not imply additional images. Unknown audio durations remain absent;
+characters do not imply seconds. Tool-call rankings use the existing audited
+tool-call counts.
+
+`v2_rpc_gateway_model_usage_daily` reads canonical meter names and historical
+aliases without adding both, and excludes hidden models and unavailable routes.
+Video completion synchronization replaces the request's duration measurement
+idempotently and requeues its analytics outbox entry without changing billing.
+
+Weekly Return Rate uses workspace cohorts with minimum activity and privacy
+thresholds. Its table remains inaccessible to direct client roles. A successful
+empty response means there are no qualifying observations; failed requests show
+a retry state. Newly recorded measurements accumulate from traffic rather than
+fabricating historical values.
 
 ## V1 retirement boundary
 
@@ -138,12 +169,10 @@ entities without a V2 equivalent:
 - gateway audit, realtime, and async-finalization lifecycle code owns the
   authoritative `gateway_requests` record while also writing its V2
   observability extension;
-- the catalogue administration mutation adapter remains legacy, while the JSON
-  catalogue is the intended authoring surface;
+- the catalogue administration mutation adapter remains legacy, while the
+  internal database editor is the intended authoring surface;
 - model links/details/families, organisation links, and page notices do not yet
   have V2 replacements;
-- importer staging still writes the JSON catalogue to V1 before synchronising
-  the V2 canonical tables.
 
 Those dependencies must be migrated or deliberately removed before physical V1
 table deletion. They are not used by current website or gateway read paths.

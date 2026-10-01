@@ -13,6 +13,7 @@ import {
 import { fetchInternalAuthStatus } from "@/lib/fetchers/internal/fetchInternalAuthStatus";
 import { getServerAccountContext } from "@/lib/fetchers/internal/serverAccountContext";
 import { fetchInternalWebApi } from "@/lib/web-api/client";
+import { resolveActionDockPageRefresh } from "@/lib/cache/actionDockPageRefresh";
 import {
 	revalidateSingleModelAllAction,
 	revalidateSingleModelApiInfoAction,
@@ -119,6 +120,9 @@ type CacheScopeId =
 	| "search"
 	| "catalogue"
 	| "model"
+	| "model-info"
+	| "model-providers"
+	| "model-telemetry"
 	| "provider"
 	| "organisation"
 	| "benchmark"
@@ -240,6 +244,21 @@ function expireNextCacheScope(scope: CacheScopeId, targetId: string | null) {
 		case "model":
 			expirePublicModelCatalogueCache({ modelId: targetId });
 			break;
+		case "model-info":
+			for (const tag of ["frontend:model-overview", "frontend:model-header", "frontend:model-notice", "frontend:model-timeline", "frontend:model-benchmarks", "frontend:model-subscription-plans"]) updateTag(tag);
+			revalidatePath("/models");
+			if (targetId) revalidatePath(`/models/${targetId}`);
+			break;
+		case "model-providers":
+			for (const tag of ["frontend:model-pricing", "frontend:model-pricing-history", "frontend:model-gateway-metadata", "frontend:model-availability", "frontend:model-routing-health"]) updateTag(tag);
+			revalidatePath("/models");
+			if (targetId) revalidatePath(`/models/${targetId}`);
+			break;
+		case "model-telemetry":
+			for (const tag of ["frontend:model-performance", "frontend:model-activity", "frontend:model-runtime-stats", "frontend:model-usage-daily", "frontend:model-realtime-window", "frontend:model-token-trajectory", "frontend:model-apps"]) updateTag(tag);
+			revalidatePath("/models");
+			if (targetId) revalidatePath(`/models/${targetId}`);
+			break;
 		case "provider":
 			revalidateProviderDataTags(
 				targetId ? { providerId: targetId } : {}
@@ -339,7 +358,6 @@ function expireNextCacheScope(scope: CacheScopeId, targetId: string | null) {
 export async function purgeCacheScopeAction(input: {
 	scope: CacheScopeId;
 	targetId?: string;
-	bumpBrowserGeneration: boolean;
 }): Promise<CachePurgeResult> {
 	const { accessToken } = await getServerAccountContext();
 	if (!accessToken) throw new Error("Your admin session is no longer available. Sign in again.");
@@ -357,6 +375,36 @@ export async function purgeCacheScopeAction(input: {
 	return result;
 }
 
+export async function refreshActionDockPageDataAction(pathname: string): Promise<CacheOpResult> {
+	return runAdminAction("Page data", async () => {
+		const target = resolveActionDockPageRefresh(pathname);
+		if (!target) {
+			return { ok: false, message: "This page does not have refreshable data." };
+		}
+
+		// Revalidate the exact open route even if the upstream cache purge fails.
+		revalidatePath(target.pathname);
+
+		if (target.scope) {
+			try {
+				await purgeCacheScopeAction({
+					scope: target.scope,
+					...(target.targetId ? { targetId: target.targetId } : {}),
+				});
+			} catch (error) {
+				// Keep the website cache fresh when the Worker purge is unavailable.
+				expireNextCacheScope(target.scope, target.targetId ?? null);
+				return {
+					ok: false,
+					message: `This page was refreshed, but its shared data cache could not be purged: ${error instanceof Error ? error.message : "request failed"}`,
+				};
+			}
+		}
+
+		return { ok: true, message: "Page data refreshed." };
+	});
+}
+
 export async function revalidateModelsGlobalDataAction(): Promise<CacheOpResult> {
 	return runAdminAction("Models (global data)", async () => {
 		revalidateModelDataOnlyTags();
@@ -367,16 +415,26 @@ export async function revalidateModelsGlobalDataAction(): Promise<CacheOpResult>
 
 export async function revalidatePublicModelCatalogueAction(): Promise<CacheOpResult> {
 	return runAdminAction("Public catalogue", async () => {
-		expirePublicModelCatalogueCache();
+		let webApiPurge: CachePurgeResult | null = null;
+		let webApiPurgeError = "";
+		try {
+			webApiPurge = await purgeCacheScopeAction({ scope: "catalogue" });
+		} catch (error) {
+			webApiPurgeError = error instanceof Error ? error.message : "request failed";
+			expirePublicModelCatalogueCache();
+		}
 		for (const tag of APP_FRONTEND_TAGS) {
 			updateTag(tag);
 		}
 		const gatewayPurge = await purgeGatewayCatalogueCache(["models"]);
+		const webApiMessage = webApiPurge
+			? `Web API cache purged (${webApiPurge.tags.join(", ")}).`
+			: `Web API cache purge failed: ${webApiPurgeError}.`;
 		return {
-			ok: gatewayPurge.ok,
+			ok: Boolean(webApiPurge) && gatewayPurge.ok,
 			message: gatewayPurge.ok
-				? `Public catalogue cache revalidated. ${gatewayPurge.message}`
-				: `Public catalogue website cache revalidated. ${gatewayPurge.message}`,
+				? `Public catalogue cache revalidated. ${webApiMessage} ${gatewayPurge.message}`
+				: `Public catalogue website cache revalidated. ${webApiMessage} ${gatewayPurge.message}`,
 		};
 	});
 }

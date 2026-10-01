@@ -1,12 +1,13 @@
 {
   "name": "@phaseo/cpp-sdk",
-  "version": "1.0.2",
+  "version": "2.0.0",
   "private": true,
   "description": "Phaseo C++ SDK (preview) - generated client with models wrapper",
   "license": "MIT",
   "scripts": {
     "postinstall": "node ../scripts/postinstall-viewer-prompt.cjs @phaseo/cpp-sdk",
     "smoke:chat": "dotenv -e .env.local -- cmd /c \"g++ -std=c++17 -I src/gen -o tests/smoke_chat.exe tests/smoke_chat.cpp && tests\\\\smoke_chat.exe\"",
-    "smoke:responses": "dotenv -e .env.local -- cmd /c \"g++ -std=c++17 -I src/gen -o tests/smoke_responses.exe tests/smoke_responses.cpp && tests\\\\smoke_responses.exe\""
+    "smoke:responses": "dotenv -e .env.local -- cmd /c \"g++ -std=c++17 -I src/gen -o tests/smoke_responses.exe tests/smoke_responses.cpp && tests\\\\smoke_responses.exe\"",
+    "test": "g++ -std=c++17 -I src -o tests/workflows.exe tests/workflows.cpp && g++ -std=c++17 -I src -o tests/core_contract.exe tests/core_contract.cpp && g++ -std=c++17 -I src -o tests/parameter_support.exe tests/parameter_support.cpp && node tests/run-binaries.mjs"
   }
 }

@@ -2,6 +2,10 @@
 
 import { useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { fetchPublicWebApi } from "@/lib/web-api/client";
+import { WEB_QUERY_POLICIES } from "@/lib/query/policies";
+import { webQueryKeys } from "@/lib/query/queryKeys";
 import { useQueryState } from "nuqs";
 import { Bar, BarChart, CartesianGrid, Cell, XAxis, YAxis } from "recharts";
 import {
@@ -24,6 +28,7 @@ import {
 import type { ModelUsageDailyBreakdownRow } from "@/lib/fetchers/models/getModelUsageDailyBreakdown";
 
 type ModelActivityChartProps = {
+	modelId: string;
 	rows: ModelUsageDailyBreakdownRow[];
 	showHeading?: boolean;
 	description?: string;
@@ -162,7 +167,8 @@ function RequestsActivityShape({
 }
 
 export default function ModelActivityChart({
-	rows,
+	modelId,
+	rows: initialRows,
 	showHeading = false,
 	description: suppliedDescription,
 }: ModelActivityChartProps) {
@@ -185,6 +191,16 @@ export default function ModelActivityChart({
 		})),
 		[t],
 	);
+	const path = `/api/_web/models/${encodeURIComponent(modelId)}/usage-daily?days=30` as const;
+	const { data: rows = initialRows } = useQuery<ModelUsageDailyBreakdownRow[]>({
+		queryKey: webQueryKeys.public.modelUsageDaily(modelId),
+		queryFn: async ({ signal }) =>
+			(await fetchPublicWebApi<{ rows: ModelUsageDailyBreakdownRow[] }>(path, { signal })).rows,
+		...WEB_QUERY_POLICIES.public,
+		initialData: initialRows.length > 0 ? initialRows : undefined,
+		refetchIntervalInBackground: false,
+		placeholderData: keepPreviousData,
+	});
 	const [modeParam, setModeParam] = useQueryState("activityMetric", {
 		defaultValue: "tokens",
 	});
@@ -305,8 +321,10 @@ export default function ModelActivityChart({
 			? INACTIVE_SERIES_OPACITY
 			: 1;
 
+	if (rows.length === 0) return null;
+
 	return (
-		<div className="space-y-4">
+		<section id="activity" className="scroll-mt-28 space-y-4 border-t border-border/60 pt-6">
 			{showHeading ? (
 				<div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
 					<div className="space-y-1">
@@ -539,6 +557,6 @@ export default function ModelActivityChart({
 					</Tooltip>
 				))}
 			</div>
-		</div>
+		</section>
 	);
 }

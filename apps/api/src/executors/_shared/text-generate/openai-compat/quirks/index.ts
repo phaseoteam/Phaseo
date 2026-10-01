@@ -8,6 +8,7 @@
 import type { ProviderQuirks } from "./types";
 import { aionQuirks } from "../providers/aion-labs/quirks";
 import { minimaxQuirks } from "../providers/minimax/quirks";
+import { vertexOpenModelQuirks } from "../providers/google-vertex/quirks";
 import { zaiQuirks } from "../providers/z-ai/quirks";
 import { deepseekQuirks } from "../providers/deepseek/quirks";
 import { xiaomiQuirks } from "../providers/xiaomi/quirks";
@@ -25,7 +26,6 @@ import { basetenQuirks } from "../providers/baseten/quirks";
 import { cohereQuirks } from "../providers/cohere/quirks";
 import { togetherQuirks } from "../providers/together/quirks";
 import { inceptionQuirks } from "../providers/inception/quirks";
-import { crofAIQuirks } from "../providers/crofai/quirks";
 import { veniceQuirks } from "../providers/venice/quirks";
 import { sakanaQuirks } from "../providers/sakana/quirks";
 import { waferQuirks } from "../providers/wafer/quirks";
@@ -43,6 +43,7 @@ import { gmiCloudQuirks } from "../providers/gmicloud/quirks";
 import { darkbloomQuirks } from "../providers/darkbloom/quirks";
 import { featherlessQuirks } from "../providers/featherless/quirks";
 import { inferenceNetQuirks } from "../providers/inference-net/quirks";
+import { doublewordQuirks } from "../providers/doubleword/quirks";
 import { mancerQuirks } from "../providers/mancer/quirks";
 import { maraQuirks } from "../providers/mara/quirks";
 import { poolsideQuirks } from "../providers/poolside/quirks";
@@ -59,6 +60,8 @@ import { defaultQuirks } from "./default";
  * Add new providers here as they need custom handling
  */
 const PROVIDER_QUIRKS: Record<string, ProviderQuirks> = {
+	"google-vertex": vertexOpenModelQuirks,
+	"google-vertex-eu": vertexOpenModelQuirks,
 	"aion-labs": aionQuirks,
 	aionlabs: aionQuirks,
 	minimax: minimaxQuirks,
@@ -88,7 +91,6 @@ const PROVIDER_QUIRKS: Record<string, ProviderQuirks> = {
 	openai: openAIQuirks,
 	baseten: basetenQuirks,
 	cohere: cohereQuirks,
-	crofai: crofAIQuirks,
 	together: togetherQuirks,
 	inception: inceptionQuirks,
 	venice: veniceQuirks,
@@ -109,6 +111,7 @@ const PROVIDER_QUIRKS: Record<string, ProviderQuirks> = {
 	darkbloom: darkbloomQuirks,
 	featherless: featherlessQuirks,
 	"inference-net": inferenceNetQuirks,
+	doubleword: doublewordQuirks,
 	mancer: mancerQuirks,
 	mara: maraQuirks,
 	poolside: poolsideQuirks,

@@ -30,6 +30,8 @@ import ProvidersTab from "./tabs/ProvidersTab"
 interface ModelEditDialogProps {
   modelId: string
   tab?: string
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
 }
 
 export interface ModelData {
@@ -46,15 +48,21 @@ export interface ModelData {
   input_types: string | null
   output_types: string | null
   previous_model_id: string | null
+  replacement_model_id: string | null
   family_id: string | null
 }
 
 const MODEL_EDITOR_TABS = ["basic", "details", "benchmarks", "pricing", "providers"] as const
 
-export default function ModelEditDialog({ modelId, tab }: ModelEditDialogProps) {
+export default function ModelEditDialog({ modelId, tab, open: controlledOpen, onOpenChange }: ModelEditDialogProps) {
+  const [internalOpen, setInternalOpen] = useState(false)
+  const open = controlledOpen ?? internalOpen
+  const setOpen = useCallback((nextOpen: boolean) => {
+    if (controlledOpen === undefined) setInternalOpen(nextOpen)
+    onOpenChange?.(nextOpen)
+  }, [controlledOpen, onOpenChange])
   const tEditor = useTranslations("Common.ui.modelEditor")
   const tActions = useTranslations("Common.ui.actions")
-  const [open, setOpen] = useState(false)
   const [model, setModel] = useState<ModelData | null>(null)
   const [providers, setProviders] = useState<Array<{ id: string; name: string }>>([])
   const [detailRows, setDetailRows] = useState<Array<{ id?: string; detail_name: string; detail_value: string }>>([])
@@ -109,6 +117,7 @@ export default function ModelEditDialog({ modelId, tab }: ModelEditDialogProps) 
           input_types: model.input_types,
           output_types: model.output_types,
           previous_model_id: model.previous_model_id,
+          replacement_model_id: model.replacement_model_id,
           family_id: model.family_id,
           model_details: detailsTouched
             ? detailRows.map((row) => ({
@@ -147,11 +156,11 @@ export default function ModelEditDialog({ modelId, tab }: ModelEditDialogProps) 
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
+      {controlledOpen === undefined ? <DialogTrigger asChild>
         <Button variant="outline" size="icon-sm">
           <Pencil className="h-4 w-4" />
         </Button>
-      </DialogTrigger>
+      </DialogTrigger> : null}
       <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{tEditor("dialogTitle")}</DialogTitle>

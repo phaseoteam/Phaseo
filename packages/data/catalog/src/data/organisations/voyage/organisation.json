@@ -2,6 +2,7 @@
   "organisation_id": "voyage",
   "name": "Voyage",
   "country_code": "US",
+  "subdivision_code": "US-CA",
   "description": "Voyage is a US AI company located in Palo Alto, California, focused on retrieval infrastructure. Its mission is to power high-quality search and RAG systems with strong embedding and reranking models that help developers build accurate information retrieval and discovery experiences.",
   "colour": "#809641",
   "organisation_links": [

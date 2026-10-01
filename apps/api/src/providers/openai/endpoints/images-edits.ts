@@ -5,7 +5,7 @@
 import type { AdapterResult, ProviderExecuteArgs } from "../../types";
 import { ImagesEditSchema, type ImagesEditRequest } from "@core/schemas";
 import { buildAdapterPayload } from "../../utils";
-import { openAICompatHeaders, openAICompatUrl, resolveOpenAICompatKey } from "../../openai-compatible/config";
+import { resolveOpenAITransport } from "../../shared/openai-transport";
 import { computeBill } from "@pipeline/pricing/engine";
 import { resolveUploadableFromString } from "./uploadable";
 import { buildImagePricingRequestOptions, normalizeOpenAIImageTokenUsage } from "@core/image-request-options";
@@ -52,7 +52,7 @@ function resolveOutputImageCount(body: ImagesEditRequest, normalized: any): numb
 }
 
 export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
-    const keyInfo = await resolveOpenAICompatKey(args);
+    const { keyInfo, url, headers, deployment } = resolveOpenAITransport(args, "/images/edits");
     const { adapterPayload } = buildAdapterPayload(ImagesEditSchema, args.body, ["meta", "usage"]);
     const body: ImagesEditRequest = {
         ...adapterPayload,
@@ -122,7 +122,7 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
     }
 
     const form = new FormData();
-    form.append("model", body.model);
+    form.append("model", deployment || body.model);
     form.append("prompt", body.prompt);
     for (const imageUpload of imageUploads) {
         form.append("image[]", imageUpload.blob, imageUpload.filename);
@@ -141,10 +141,9 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
     if (body.input_fidelity) form.append("input_fidelity", body.input_fidelity);
     if (body.user) form.append("user", body.user);
 
-    const headers = openAICompatHeaders(args.providerId, keyInfo.key);
     delete (headers as any)["Content-Type"];
 
-    const res = await (args.upstreamTiming?.fetch ?? fetch)(openAICompatUrl(args.providerId, "/images/edits"), {
+    const res = await (args.upstreamTiming?.fetch ?? fetch)(url, {
         method: "POST",
         headers,
         body: form,

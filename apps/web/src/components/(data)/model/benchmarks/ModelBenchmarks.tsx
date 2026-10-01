@@ -1,37 +1,71 @@
 import { Card } from "@/components/ui/card";
 import { getTranslations } from "next-intl/server";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import type {
 	ModelBenchmarkHighlight,
 	ModelBenchmarkResult,
 } from "@/lib/fetchers/models/getModelBenchmarkData";
+import type { PublicBenchmarkRanking } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import { ModelBenchmarksGrid } from "./ModelBenchmarksGrid";
 import { ModelBenchmarksTable } from "./ModelBenchmarksTable";
+import { isArtificialAnalysisBenchmark } from "@/lib/benchmarks/artificialAnalysis";
+import { isEpochCapabilitiesIndex } from "@/lib/benchmarks/epoch";
+import { ArtificialAnalysisBenchmarks } from "./ArtificialAnalysisBenchmarks";
+import { EpochCapabilitiesIndex } from "./EpochCapabilitiesIndex";
 
 type Props = {
 	highlightCards: ModelBenchmarkHighlight[];
 	benchmarkTableData?: Record<string, ModelBenchmarkResult[]>;
+	benchmarkResults?: ModelBenchmarkResult[];
+	benchmarkRankings?: PublicBenchmarkRanking[];
+	modelId?: string;
+	modelName?: string;
 	mode?: "summary" | "full";
 };
 
 export default async function ModelBenchmarks({
 	highlightCards,
 	benchmarkTableData,
+	benchmarkResults = [],
+	benchmarkRankings = [],
+	modelId,
+	modelName,
 	mode = "full",
 }: Props) {
 	const t = await getTranslations("Catalogue.models.detail.benchmarkGrid");
 	const showFull = mode === "full";
+	const otherHighlights = highlightCards.filter(
+		(item) => !isArtificialAnalysisBenchmark(item.benchmarkId) && !isEpochCapabilitiesIndex(item.benchmarkId),
+	);
+	const hasArtificialAnalysis = highlightCards.some((item) => isArtificialAnalysisBenchmark(item.benchmarkId) && item.score !== null);
+	const hasEpochCapabilitiesIndex = highlightCards.some((item) => isEpochCapabilitiesIndex(item.benchmarkId) && item.score !== null);
+	const hasKeyBenchmark = hasArtificialAnalysis || hasEpochCapabilitiesIndex;
+	const otherBenchmarks = otherHighlights.length ? (
+		<ModelBenchmarksGrid highlights={otherHighlights} />
+	) : (
+		<Card className="border border-dashed bg-muted/30 p-6 text-center text-sm text-muted-foreground">
+			No benchmark highlights available yet.
+		</Card>
+	);
 
 	return (
 		<div className="space-y-8">
-			<section className="space-y-3">
-				{highlightCards.length ? (
-					<ModelBenchmarksGrid highlights={highlightCards} />
+			<ArtificialAnalysisBenchmarks highlights={highlightCards} results={benchmarkResults} rankings={benchmarkRankings} modelId={modelId} modelName={modelName} />
+			<EpochCapabilitiesIndex highlights={highlightCards} ranking={benchmarkRankings.find((item) => isEpochCapabilitiesIndex(item.benchmark_id))} modelId={modelId} />
+			{otherHighlights.length > 0 || !hasKeyBenchmark ? (
+				hasKeyBenchmark ? (
+					<section aria-label="Other Benchmarks">
+						<Accordion className="border-t" type="single">
+							<AccordionItem value="other-benchmarks" className="border-0">
+								<AccordionTrigger className="py-4 text-lg font-semibold hover:no-underline">Other Benchmarks</AccordionTrigger>
+								<AccordionContent className="pt-1">{otherBenchmarks}</AccordionContent>
+							</AccordionItem>
+						</Accordion>
+					</section>
 				) : (
-					<Card className="border border-dashed bg-muted/30 p-6 text-center text-sm text-muted-foreground">
-						{t("noHighlights")}
-					</Card>
-				)}
-			</section>
+					<section>{otherBenchmarks}</section>
+				)
+			) : null}
 
 			{showFull ? (
 				<>

@@ -2,6 +2,7 @@
   "organisation_id": "inception",
   "name": "Inception",
   "country_code": "US",
+  "subdivision_code": "US-CA",
   "description": "Inception Labs is an AI research + product company with its corporate address in Palo Alto, California, building diffusion-based language models (the Mercury family) aimed at very low latency, high throughput, and production deployment (API + on-prem).",
   "colour": "#2563EB",
   "organisation_links": [],

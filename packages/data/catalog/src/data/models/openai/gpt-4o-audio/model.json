@@ -2,13 +2,13 @@
   "model_id": "openai/gpt-4o-audio",
   "organisation_id": "openai",
   "name": "GPT 4o Audio Preview (2025-06-03)",
-  "status": "Retired",
+  "status": "Deprecated",
   "previous_model_id": "openai/gpt-4o-audio-2024-12-17",
-  "description": "The June 3, 2025 GPT-4o Audio Preview snapshot supported text and audio input and output through Chat Completions. OpenAI retired the GPT-4o Audio preview family in favor of GPT Audio 1.5.",
+  "description": "The June 3, 2025 GPT-4o Audio Preview snapshot supports text and audio input and output through Chat Completions. OpenAI has deprecated the legacy audio family in favor of GPT Audio 1.5.",
   "announced_date": null,
   "release_date": "2025-06-03T00:00:00",
-  "deprecation_date": null,
-  "retirement_date": null,
+  "deprecation_date": "2026-07-20T00:00:00",
+  "retirement_date": "2027-01-20T00:00:00",
   "license": "Proprietary",
   "input_types": "text,audio",
   "output_types": "text,audio",
@@ -378,15 +378,21 @@
       "url": "https://platform.openai.com/docs/models/gpt-4o-audio-preview",
       "accessed_at": null,
       "notes": null
+    },
+    {
+      "kind": "documentation",
+      "url": "https://developers.openai.com/api/docs/deprecations",
+      "accessed_at": "2026-09-03T00:00:00Z",
+      "notes": "Official OpenAI deprecations page lists the July 20, 2026 deprecation and January 20, 2027 shutdown, and recommends openai/gpt-audio-1.5."
     }
   ],
   "verification": {
     "status": "unverified",
     "checked_at": null,
-    "notes": null
+    "notes": "Lifecycle fields verified against OpenAI's official deprecations page; remaining model metadata is unverified."
   },
-  "last_updated": null,
+  "last_updated": "2026-09-03T00:00:00Z",
   "removal_date": null,
-  "replacement_model_id": null,
+  "replacement_model_id": "openai/gpt-audio-1.5",
   "license_url": null
 }

@@ -14,12 +14,12 @@ export default function HeaderShell({ children }: HeaderShellProps) {
 		"--site-header-control-h": "2.25rem",
 		"--site-header-nav-px": "0.5rem",
 		"--site-header-search-width": "10.75rem",
-		"--site-header-search-width-xl": "12rem",
+		"--site-header-search-width-xl": "14rem",
 	};
 
 	return (
 		<div
-			className="w-full max-w-full px-4 lg:px-5 xl:px-6"
+			className="w-full max-w-full px-4 max-[22rem]:px-2 max-[19.375rem]:px-1 lg:px-5 xl:px-6"
 			style={headerVars}
 			data-variant="full-width"
 		>
@@ -27,4 +27,3 @@ export default function HeaderShell({ children }: HeaderShellProps) {
 		</div>
 	);
 }
-

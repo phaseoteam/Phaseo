@@ -41,7 +41,7 @@ export const deepseekQuirks: ProviderQuirks = {
 		const model = String(ir.model ?? "").toLowerCase();
 		const effort = ir.reasoning?.effort;
 		if (
-			(model.includes("deepseek-v4-pro") || model.includes("deepseek-v4-flash")) &&
+			(model.includes("deepseek-v4-pro") || model.includes("deepseek-v4-flash") || model.includes("deepseek-v4.1-flash")) &&
 			typeof effort === "string" &&
 			effort !== "none" &&
 			request.reasoning_effort == null

@@ -1,9 +1,11 @@
 "use client";
 
+import { chatLocalStorage } from "@/lib/chat/userStorage";
 import Link from "next/link";
 import { createPortal } from "react-dom";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { Logo } from "@/components/Logo";
 import type { GatewaySupportedModel } from "@/lib/fetchers/gateway/getGatewaySupportedModelIds";
 import { filterModelsForRoom } from "@/lib/chat/rooms";
@@ -28,6 +30,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { RoomModelSelector } from "@/components/(chat)/RoomModelSelector";
+import { RoomSdkExport } from "@/components/(chat)/RoomSdkExport";
 import { RoomSearchDialog } from "@/components/(chat)/RoomSearchDialog";
 import { useSidebar } from "@/components/ui/sidebar";
 import { ROOM_SIDEBAR_SLOT_ID } from "@/components/(chat)/RoomScaffold";
@@ -440,6 +443,7 @@ export function EmbeddingsRoom({ models }: { models: GatewaySupportedModel[] }) 
 	const tChat = useTranslations("Product.chat");
 	const tUi = useTranslations("Common.ui");
 	const tSearch = useTranslations("Common.search");
+	const format = useDisplayFormatters();
 	const { toggleSidebar, state: sidebarState, isMobile } = useSidebar();
 	const collapsed = sidebarState === "collapsed" && !isMobile;
 	const filteredModels = useMemo(
@@ -604,13 +608,13 @@ export function EmbeddingsRoom({ models }: { models: GatewaySupportedModel[] }) 
 
 	useEffect(() => {
 		if (typeof window === "undefined") return;
-		const stored = window.localStorage.getItem(EMBEDDINGS_PINNED_STORAGE_KEY);
+		const stored = chatLocalStorage.getItem(EMBEDDINGS_PINNED_STORAGE_KEY);
 		setPinnedConversationIds(safeParsePinned(stored));
 	}, []);
 
 	useEffect(() => {
 		if (typeof window === "undefined") return;
-		window.localStorage.setItem(
+		chatLocalStorage.setItem(
 			EMBEDDINGS_PINNED_STORAGE_KEY,
 			JSON.stringify(pinnedConversationIds),
 		);
@@ -816,7 +820,7 @@ export function EmbeddingsRoom({ models }: { models: GatewaySupportedModel[] }) 
 				? truncateTitle(textLines[0])
 				: imageUrl.trim() || audioUrl.trim() || videoUrl.trim()
 					? truncateTitle(imageUrl.trim() || audioUrl.trim() || videoUrl.trim())
-					: `Embedding ${new Date().toLocaleDateString()}`;
+					: `Embedding ${format.date(new Date())}`;
 			const conversationTitle =
 				overrides?.forcedConversationTitle ||
 				(temporaryMode ? "Temporary chat" : existingTitle || candidateTitle);
@@ -1328,6 +1332,7 @@ export function EmbeddingsRoom({ models }: { models: GatewaySupportedModel[] }) 
 						/>
 				</div>
 					<div className="flex items-center gap-2">
+						<RoomSdkExport />
 						<Tooltip>
 							<TooltipTrigger asChild>
 								<Button

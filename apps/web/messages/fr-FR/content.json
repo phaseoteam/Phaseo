@@ -335,7 +335,12 @@
 		"entryFormat": "Format de l’entrée",
 		"validTags": "Tags valides",
 		"questions": "Des questions ?",
-		"questionHelp": "Ouvrez une issue si vous avez des questions ou besoin d’aide pour votre proposition."
+		"questionHelp": "Ouvrez une issue si vous avez des questions ou besoin d’aide pour votre proposition.",
+		"openDataRequest": "Ouvrez une demande de données",
+		"forYourApp": "pour votre application.",
+		"includeAppDetails": "Indiquez le nom de l’application, une brève description, son site web, le guide d’intégration à Phaseo et un lien vers son logo.",
+		"includeCategories": "Ajoutez les catégories pertinentes et un lien vers le dépôt si l’application est open source.",
+		"trackPublication": "Suivez la révision et la publication dans le ticket."
 	},
 	"acknowledgements": {
 		"title": "Remerciements",

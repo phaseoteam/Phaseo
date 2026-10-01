@@ -2,6 +2,7 @@
   "organisation_id": "mistral",
   "name": "Mistral",
   "country_code": "FR",
+  "subdivision_code": "FR-IDF",
   "description": "Mistral is an AI model company with registered offices in Paris, France. Their mission is to democratise artificial intelligence by building efficient, open-source and high-performance models which organisations can deploy and own.",
   "colour": "#e97a35",
   "organisation_links": [

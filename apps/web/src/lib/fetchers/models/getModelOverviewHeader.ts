@@ -2,7 +2,7 @@ import { fetchOptionalPublicWebApi } from "@/lib/web-api/client";
 import { fetchAdminModelSource } from "@/lib/fetchers/internal/fetchAdminModelSource";
 import { FREE_ROUTER_MODEL_ID, FREE_ROUTER_NAME, FREE_ROUTER_ORGANISATION_ID, isFreeRouterModelId } from "@/lib/models/freeRouter";
 
-export interface ModelOverviewHeader { model_id: string; name: string; organisation_id: string; organisation: { name: string; country_code: string }; aliases: string[]; variants?: Array<{ model_id: string; name: string; variant_kind: string }>; family_id?: string; status?: string | null; hidden?: boolean }
+export interface ModelOverviewHeader { model_id: string; name: string; organisation_id: string; organisation: { name: string; country_code: string; logo_url?: string | null }; aliases: string[]; variants?: Array<{ model_id: string; name: string; variant_kind: string }>; family_id?: string; status?: string | null; hidden?: boolean; is_private?: boolean }
 
 export async function fetchModelOverviewHeader(modelId: string, includeHidden: boolean): Promise<ModelOverviewHeader> {
 	if (isFreeRouterModelId(modelId)) return { model_id: FREE_ROUTER_MODEL_ID, name: FREE_ROUTER_NAME, organisation_id: FREE_ROUTER_ORGANISATION_ID, organisation: { name: "Phaseo", country_code: "" }, aliases: [], status: "Available", hidden: false };

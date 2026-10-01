@@ -3,7 +3,29 @@ export interface WebhookEndpointListResponse {
     createdAt?: string | null;
     createdBy?: string | null;
     deletedAt?: string | null;
-    events: string[];
+    events: (
+      | "job.created"
+      | "job.status_changed"
+      | "job.progress"
+      | "job.completed"
+      | "job.failed"
+      | "job.cancelled"
+      | "job.expired"
+      | "video.created"
+      | "video.status_changed"
+      | "video.progress"
+      | "video.completed"
+      | "video.failed"
+      | "video.cancelled"
+      | "video.expired"
+      | "batch.created"
+      | "batch.status_changed"
+      | "batch.progress"
+      | "batch.completed"
+      | "batch.failed"
+      | "batch.cancelled"
+      | "batch.expired"
+    )[];
     hasSecret: boolean;
     id: string;
     name: string;

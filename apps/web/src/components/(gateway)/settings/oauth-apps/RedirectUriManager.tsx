@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { useSettingsWrite } from "../PrivateSettingsQuery";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -33,6 +34,7 @@ export default function RedirectUriManager({
 				: key) as never,
 			values as never,
 		);
+	const write = useSettingsWrite();
 	const [redirectUris, setRedirectUris] = useState<string[]>(initialRedirectUris);
 	const [newUri, setNewUri] = useState("");
 	const [error, setError] = useState<string | null>(null);
@@ -59,7 +61,7 @@ export default function RedirectUriManager({
 			const { updateRedirectUrisAction } = await import(
 				"@/app/(dashboard)/settings/oauth-apps/actions"
 			);
-			const result = await updateRedirectUrisAction(clientId, nextRedirectUris);
+			const result = await write(updateRedirectUrisAction(clientId, nextRedirectUris));
 			if (result.error) {
 				throw new Error(result.error);
 			}

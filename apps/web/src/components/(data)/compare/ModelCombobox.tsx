@@ -2,6 +2,7 @@
 "use client";
 
 import * as React from "react";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { Check, Plus } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -89,13 +90,6 @@ function getReleaseDate(model: ExtendedModel): Date | null {
 	return parsed;
 }
 
-function getReleaseMonthLabel(date: Date, locale: string): string {
-	return date.toLocaleDateString(locale, {
-		month: "short",
-		year: "numeric",
-	});
-}
-
 export default function ModelCombobox({
 	models,
 	selected,
@@ -110,6 +104,15 @@ export default function ModelCombobox({
 }: ModelComboboxProps) {
 	const t = useTranslations("Catalogue.compare");
 	const locale = useLocale();
+	const format = useDisplayFormatters();
+	const getReleaseMonthLabel = React.useCallback(
+		(date: Date) => format.dateParts(date, {
+			month: "long",
+			year: "numeric",
+			timeZone: "UTC",
+		}),
+		[format],
+	);
 	const [internalDialogOpen, setInternalDialogOpen] = React.useState(false);
 	const openPropIsControlled = open !== undefined;
 	const dialogOpen = open ?? internalDialogOpen;
@@ -142,7 +145,7 @@ export default function ModelCombobox({
 				? `${releaseDate.getUTCFullYear()}-${String(releaseDate.getUTCMonth() + 1).padStart(2, "0")}`
 				: "unknown";
 			const monthLabel = releaseDate
-				? getReleaseMonthLabel(releaseDate, locale)
+				? getReleaseMonthLabel(releaseDate)
 				: t("unknownReleaseDate");
 			const monthTimestamp = releaseDate
 				? Date.UTC(releaseDate.getUTCFullYear(), releaseDate.getUTCMonth(), 1)
@@ -175,7 +178,7 @@ export default function ModelCombobox({
 					}),
 			}))
 			.sort((a, b) => b.monthTimestamp - a.monthTimestamp);
-	}, [models, locale, t]);
+	}, [getReleaseMonthLabel, models, t]);
 
 	const filteredGroups = React.useMemo(() => {
 		const term = searchTerm.trim().toLowerCase();

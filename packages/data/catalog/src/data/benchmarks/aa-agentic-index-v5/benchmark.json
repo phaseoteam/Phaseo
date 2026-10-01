@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "aa-agentic-index-v5",
+  "benchmark_name": "Artificial Analysis Agentic Index v5",
+  "category": "agentic",
+  "ascending_order": true,
+  "type": "numerical",
+  "link": "https://artificialanalysis.ai/data-api/docs",
+  "total_models": 0
+}

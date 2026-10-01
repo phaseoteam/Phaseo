@@ -373,11 +373,23 @@
     },
     {
       "benchmark_id": "aa-intelligence-index-v4",
-      "score": 40.6,
+      "score": 26.3,
       "is_self_reported": false,
-      "other_info": "Gemini 3 Pro Preview (high); Artificial Analysis Intelligence Index v4.1.1",
+      "updated_at": "2026-09-08T10:38:34.750Z",
+      "variant": "low",
+      "other_info": "Gemini 3 Pro Preview (low); Artificial Analysis ID b2f3191f-77d6-4155-8be6-330f0baa1ae5; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/gemini-3-pro-low",
+      "rank": 159
+    },
+    {
+      "benchmark_id": "aa-intelligence-index-v4",
+      "score": 32.4,
+      "is_self_reported": false,
+      "updated_at": "2026-09-08T10:38:34.750Z",
+      "variant": "high",
+      "other_info": "Gemini 3 Pro Preview (high); Artificial Analysis ID d1122eff-ee85-4fdc-8a9f-23bee6590667; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/gemini-3-pro",
-      "rank": 68
+      "rank": 98
     }
   ],
   "page_notice": null,

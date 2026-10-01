@@ -8,6 +8,7 @@ import { Info } from "lucide-react";
 import { ProviderLogo } from "../ProviderLogo";
 import { PriceRotator } from "./PriceRotator";
 import { useLocale, useTranslations } from "next-intl";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 
 interface SubscriptionPlansComparisonProps {
 	selectedModels: ExtendedModel[];
@@ -108,35 +109,28 @@ function planSortKey(prices: PlanPrice[] | null | undefined): number {
 function formatCurrencyAmount(
 	amount: number,
 	currency: string | null | undefined,
-	locale: string
+	formatNumber: ReturnType<typeof useDisplayFormatters>["number"],
 ): string {
 	const c = (currency ?? "").trim().toUpperCase();
-	const normalizedCurrency = c || "USD";
-	try {
-		return new Intl.NumberFormat(locale, {
-			style: "currency",
-			currency: normalizedCurrency,
-			minimumFractionDigits: 2,
-			maximumFractionDigits: 2,
-		}).format(amount);
-	} catch {
-		return `${normalizedCurrency} ${new Intl.NumberFormat(locale, {
-			minimumFractionDigits: 2,
-			maximumFractionDigits: 2,
-		}).format(amount)}`;
-	}
+	return formatNumber(amount, {
+		style: "currency",
+		currency: c || "USD",
+		minimumFractionDigits: 2,
+		maximumFractionDigits: 2,
+		notation: "standard",
+	});
 }
 
 function formatPriceLine(
 	p: PlanPrice,
-	locale: string,
+	formatNumber: ReturnType<typeof useDisplayFormatters>["number"],
 	t: ReturnType<typeof useTranslations<"Catalogue.compare">>
 ): string {
 	const freq = normalizeFrequency(p.frequency);
 	if (freq.toLowerCase() === "usage") return t("usageBased");
 	if (freq.toLowerCase() === "custom") return t("customPricing");
 	if (p.price == null || !Number.isFinite(p.price)) return `${t("customPricing")} / ${freq}`;
-	return `${formatCurrencyAmount(p.price, p.currency, locale)} / ${freq}`;
+	return `${formatCurrencyAmount(p.price, p.currency, formatNumber)} / ${freq}`;
 }
 
 function getSortedPlanPrices(prices: PlanPrice[] | null | undefined): PlanPrice[] {
@@ -165,6 +159,7 @@ export default function SubscriptionPlansComparison({
 }: SubscriptionPlansComparisonProps) {
 	const t = useTranslations("Catalogue.compare");
 	const locale = useLocale();
+	const format = useDisplayFormatters();
 	if (!selectedModels || selectedModels.length === 0) return null;
 
 	const modelPlans = selectedModels.map((model) => ({
@@ -223,7 +218,7 @@ export default function SubscriptionPlansComparison({
 									.map((plan) => {
 										const sortedPrices = getSortedPlanPrices(plan.prices);
 										const priceLines = sortedPrices.map((price) =>
-											formatPriceLine(price, locale, t)
+											formatPriceLine(price, format.number, t)
 										);
 										const notes = getPlanNotes(plan);
 										return (

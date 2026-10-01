@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { AlertTriangle, CheckCircle2, GitCompare, Search } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -37,18 +38,13 @@ type ApiModelConflictsClientProps = {
 	snapshot: ApiModelConflictsSnapshot;
 };
 
-function formatTimestamp(value: string, locale: string): string {
-	const date = new Date(value);
-	if (Number.isNaN(date.getTime())) return value;
-	return date.toLocaleString(locale);
-}
-
 export default function ApiModelConflictsClient({
 	snapshot,
 }: ApiModelConflictsClientProps) {
+	const format = useDisplayFormatters();
+	const formatTimestamp = format.dateTime;
 	const tUi = useTranslations("Common.ui");
 	const tConflict = useTranslations("Common.ui.apiModelConflicts");
-	const locale = useLocale();
 	const [query, setQuery] = useState("");
 	const [providerFilter, setProviderFilter] = useState<string>("all");
 	const [conflictsOnly, setConflictsOnly] = useState(false);
@@ -178,7 +174,7 @@ export default function ApiModelConflictsClient({
 					{tConflict("description")}
 				</p>
 				<p className="text-xs text-muted-foreground">
-					{tConflict("generatedAt", { date: formatTimestamp(snapshot.generatedAt, locale) })}
+					{tConflict("generatedAt", { date: formatTimestamp(snapshot.generatedAt) })}
 				</p>
 			</div>
 

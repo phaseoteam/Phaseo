@@ -440,7 +440,10 @@
 				"aliasIdentifier": "اسم مستعار",
 				"showFullDescription": "عرض بالكامل",
 				"showLessDescription": "عرض أقل",
-				"viewOrganisation": "عرض {organisation}"
+				"viewOrganisation": "عرض {organisation}",
+				"decisions": "القرارات",
+				"openDecisions": "فتح القرارات",
+				"openDecisionsPlayground": "فتح بيئة اختبار القرارات"
 			},
 			"sections": {
 				"providersDescription": "مزوّدو API، وأسعار المسارات، والتوافر، ومؤشرات الموثوقية الحديثة.",
@@ -863,7 +866,11 @@
 						"label": "متقاعد",
 						"description": "انتهت فترة صلاحية تعيين هذا المزوّد."
 					}
-				}
+				},
+				"tierUltrafast": "فائق السرعة",
+				"planDescriptionFlexOnly": "يُستخدم فقط عندما تكون service_tier هي flex.",
+				"planDescriptionFastRouting": "توجيه سريع عند توفره.",
+				"planDescriptionUltrafast": "توجيه بأعلى سرعة عند توفره."
 			},
 			"seoTitles": {
 				"titleDefault": "{model}: الأسعار والمعايير والمزوّدون",
@@ -886,7 +893,11 @@
 				"showLess": "عرض أقل",
 				"showMore": "عرض {count} إضافية",
 				"noHighlights": "لا توجد نتائج بارزة للمعايير حتى الآن.",
-				"tableTitle": "جدول المعايير"
+				"tableTitle": "جدول المعايير",
+				"openSource": "فتح مصدر {benchmark}",
+				"hideDetailsFor": "إخفاء تفاصيل {benchmark}",
+				"showDetailsFor": "عرض تفاصيل {benchmark}",
+				"showAll": "عرض جميع الاختبارات المعيارية البالغ عددها {count}"
 			},
 			"faqContent": {
 				"title": "الأسئلة الشائعة",
@@ -963,6 +974,11 @@
 				"countFooter": "{count, plural, zero {لا توجد نماذج في هذه العائلة.} one {نموذج واحد في هذه العائلة.} two {نموذجان في هذه العائلة.} few {# نماذج في هذه العائلة.} many {# نموذجًا في هذه العائلة.} other {# نموذج في هذه العائلة.}}",
 				"close": "إغلاق",
 				"genericFamily": "نموذج"
+			},
+			"privateModel": {
+				"endpoint": "نقطة نهاية خاصة",
+				"deployment": "نشر خاص",
+				"billingNote": "تدير مساحة العمل فوترة المزوّد مباشرةً."
 			}
 		},
 		"noModelsAvailableForView": "لا توجد نماذج متاحة لهذا العرض حتى الآن.",
@@ -1187,7 +1203,14 @@
 				"input_video_seconds": "ثواني الفيديو للإدخال",
 				"total_tokens": "إجمالي الرموز",
 				"requests": "الطلبات"
-			}
+			},
+			"organisationComingSoon": "{organisation} قريبًا",
+			"announcedPricingDescription": "أعلنت {organisation} عن {model}. ستُضاف معلومات توفر المزوّدين والأسعار عند إتاحته.",
+			"noProviderAvailability": "لا تتوفر أسعار أو معلومات توفر لمزوّدي API لهذا النموذج بعد.",
+			"thisModel": "هذا النموذج",
+			"tokenOverviewDescription": "الأسعار المعلنة هي أسعار المزوّدين الحالية. تُرجّح الأسعار الفعلية بحسب حركة البوابة المرصودة خلال آخر 30 يومًا. تحسب القيم الملخّصة متوسط جداول الأسعار حسب الفترات الزمنية؛ ويعرض سجل الأسبوع كل تغيير بتوقيت UTC.",
+			"unitOverviewDescription": "تستخدم الأسعار المعلنة وحدات موحّدة للمقارنة. تحسب القيم الملخّصة متوسط جداول الأسعار حسب الفترات الزمنية؛ ويعرض سجل الأسبوع كل تغيير بتوقيت UTC.",
+			"tierUnavailable": "خط أسعار {provider} {plan} غير متاح في العرض الفعلي دون استخدام مرصود"
 		},
 		"sections": {
 			"apiProvidersAndPricing": "موفرو API والأسعار",
@@ -1400,18 +1423,23 @@
 			"suggestProviders": "إذا كنت تعرف مزوّدين ينبغي أن ندمجهم، فأخبرنا عبر Discord أو افتح مشكلة على GitHub لنضيف بيانات الأسعار.",
 			"noSubscriptions": "لم تُدرج أي خطط اشتراك بعد",
 			"noSubscriptionPrice": "لا توجد أسعار مدرجة",
-			"noSubscriptionPricingDescription": "لا تتوفر أسعار اشتراك لهذا النموذج."
+			"noSubscriptionPricingDescription": "لا تتوفر أسعار اشتراك لهذا النموذج.",
+			"noHistoryTitle": "لا يتوفر سجل أسعار بعد",
+			"submittedPrices": "تظهر أسعار المزوّدين الحالية المرسلة في جدول المزوّدين أعلاه."
 		},
 		"uptime": {
-			"title": "توافر النموذج",
+			"title": "متوسط وقت التشغيل",
 			"last24Hours": "آخر 24 ساعة",
 			"noRequests": "لم تُرصد أي طلبات",
 			"requestsObserved": "الطلبات المرصودة: {count}",
 			"perHour": "التوافر بالساعة",
 			"chartLabel": "توافر النموذج بالساعة خلال آخر {hours} ساعة. التوافر: {uptime}. الطلبات المسجلة: {count}.",
-			"leastStableProviderLabel": "أقل مزوّد استقرارًا",
+			"leastStableProviderLabel": "بدون Phaseo Routing",
 			"tooltipUptime": "مدة التشغيل:",
-			"tooltipWorstProvider": "أقل مزوّد استقرارًا:"
+			"tooltipWorstProvider": "بدون Phaseo Routing:",
+			"hourlyAverage": "آخر 24 ساعة · المتوسط لكل ساعة",
+			"routingChartLabel": "وقت تشغيل النموذج لكل ساعة خلال آخر 24 ساعة. Phaseo Routing: {uptime}.{comparison}",
+			"routingComparison": " بدون Phaseo Routing: {uptime}."
 		},
 		"providerInfo": {
 			"dataPolicy": "سياسة البيانات",
@@ -1534,7 +1562,9 @@
 			"relativeTime": "الوقت النسبي",
 			"elapsed": "منقضية",
 			"remaining": "متبقية",
-			"totalDays": "إجمالي الأيام: {count}"
+			"totalDays": "إجمالي الأيام: {count}",
+			"modalityStructured": "حالة منظمة",
+			"modalityDecisions": "القرارات"
 		},
 		"performance": {
 			"noTelemetry": "لا توجد بيانات قياس عن Gateway خلال آخر 7 أيام",
@@ -1641,7 +1671,9 @@
 				"metricByHour": "{metric} حسب الساعة",
 				"noSamples": "لا تتوفر عينات لهذا النطاق الزمني.",
 				"footer": "جميع الأوقات بتوقيت UTC. تجمع القيم متوسطات الساعات للفترة المحددة."
-			}
+			},
+			"observationsShown": "{description} يتم عرض {series}.",
+			"requestSuccess": "نجاح الطلبات"
 		}
 	},
 	"providers": {
@@ -1779,7 +1811,9 @@
 		"browseModels": "تصفّح النماذج المتاحة عبر {name}.",
 		"missingTitle": "لا نعرف مزوّد واجهة API هذا... بعد!",
 		"missingDescription": "إذا كان مزوّد واجهة API مفقودًا، فنرجو المساهمة عبر GitHub.",
-		"contribute": "ساهم عبر GitHub"
+		"contribute": "ساهم عبر GitHub",
+		"internalPreview": "معاينة داخلية للمزوّد",
+		"internalPreviewDescription": "لدى هذا المزوّد عمليات إرسال معتمدة إلى الكتالوج، ولكن لا تتوفر تحليلات عامة للبوابة بعد. النماذج المرسلة أدناه مرئية فقط لمساحة عمل المزوّد ومسؤولي Phaseo."
 	},
 	"benchmarks": {
 		"title": "المعايير",
@@ -1843,7 +1877,44 @@
 		"tocProgress": "التقدم",
 		"tocModelResults": "نتائج النماذج",
 		"editBenchmark": "تعديل المعيار",
-		"ranking": "الترتيب"
+		"ranking": "الترتيب",
+		"tocIndexComparisons": "مقارنات المؤشر",
+		"tocIndexLeaderboard": "ترتيب المؤشر",
+		"independentEvaluations": "{metric} · تقييمات مستقلة",
+		"noModelsMatchSearch": "لا توجد نماذج تطابق بحثك.",
+		"noBenchmarkResults": "لا توجد نتائج لهذا الاختبار المرجعي بعد.",
+		"directoryDescription": "قارن قدرات النماذج عبر تقييمات مستقلة.",
+		"featuredAnalysis": "معايير Artificial Analysis المميزة",
+		"featuredDescription": "الذكاء والبرمجة والوكلاء وتكلفة التقييم",
+		"evaluatedModels": "{count} نماذج مقيّمة",
+		"viewResults": "عرض النتائج",
+		"allBenchmarks": "جميع المعايير",
+		"sortBenchmarks": "ترتيب المعايير",
+		"mostModels": "الأكثر نماذج",
+		"nameAlphabetically": "حسب الاسم",
+		"modelCount": "{count} نماذج",
+		"showMoreBenchmarks": "عرض المزيد من المعايير",
+		"showingCount": "عرض {shown} من {total}",
+		"metricDescriptions": {
+			"intelligence": "قدرة النموذج الإجمالية",
+			"coding": "قدرة هندسة البرمجيات",
+			"agentic": "الأداء في المهام متعددة الخطوات",
+			"cost": "التقييم الكامل لمؤشر الذكاء · USD"
+		},
+		"filteredEmpty": "لا توجد درجات تطابق هذه المرشحات.",
+		"scoreProgress": "تطور الدرجات",
+		"releaseDateDescription": "قارن درجات النماذج حسب تاريخ الإصدار.",
+		"progressTimeRange": "الفترة الزمنية للتطور",
+		"filterByModel": "تصفية التطور حسب النموذج",
+		"filterModels": "تصفية النماذج",
+		"filterByOrg": "تصفية التطور حسب المؤسسة",
+		"allOrganisations": "جميع المؤسسات",
+		"filterByConfig": "تصفية التطور حسب الإعداد",
+		"allConfigurations": "جميع الإعدادات",
+		"paretoFrontier": "جبهة باريتو",
+		"all": "الكل",
+		"nonReasoning": "بلا استدلال",
+		"confidenceInterval": "فاصل الثقة 95%: {low}–{high}"
 	},
 	"rankings": {
 		"title": "ترتيب نماذج AI",
@@ -2053,7 +2124,29 @@
 			"transcription": "النسخ الصوتي"
 		},
 		"shareLabel": "الحصة",
-		"tokensLabel": "الرموز"
+		"tokensLabel": "الرموز",
+		"unavailable": "هذا الترتيب غير متاح مؤقتًا.",
+		"retrying": "جارٍ إعادة المحاولة…",
+		"tryAgain": "حاول مجددًا",
+		"benchmarkRankings": "تصنيفات المعايير",
+		"independentEvaluations": "تقييمات مستقلة من Artificial Analysis",
+		"benchmarkMetric": "مقياس التقييم",
+		"lowerCostIsBetter": "التكلفة الأقل أفضل · USD",
+		"indexVersion": "المؤشر v{versions}",
+		"searchRankedModels": "البحث عن النماذج المصنفة",
+		"searchModels": "البحث عن النماذج",
+		"noSearchMatches": "لا توجد نماذج تطابق بحثك.",
+		"noMetricResults": "لا توجد نتائج لهذا المقياس بعد.",
+		"allEvaluationResults": "جميع النتائج وتفاصيل التقييم",
+		"resultCount": "{count} نتائج",
+		"benchmarkMetrics": {
+			"intelligence": "الذكاء",
+			"coding": "البرمجة",
+			"agentic": "الوكلاء",
+			"cost": "تكلفة التقييم"
+		},
+		"audioTranscribed": "الصوت المفرّغ نصيًا",
+		"recentRequests": "{count} طلبات حديثة"
 	},
 	"compare": {
 		"title": "مقارنة النماذج",
@@ -2315,7 +2408,7 @@
 		"modelsTab": "النماذج",
 		"visitPlatformPage": "زيارة {name} على {platform}",
 		"unknownLabTitle": "لم ندرج هذا المختبر بعد.",
-		"unknownLabDescription": "إذا كان هناك مختبر مفقود، يُرجى المساهمة عبر GitHub.",
+		"unknownLabDescription": "إذا كان أحد المختبرات مفقودًا، يُرجى إرسال طلب بيانات.",
 		"contributeGitHub": "المساهمة عبر GitHub",
 		"githubLogoAlt": "شعار GitHub",
 		"editOrganisation": "تعديل المؤسسة",
@@ -2345,7 +2438,8 @@
 		"metadataModelsTitle": "نماذج الذكاء الاصطناعي من {name}",
 		"metadataModelsDescription": "استكشف نماذج {name}، بما في ذلك توفر Gateway وحالة الإصدار والأسعار.",
 		"keywordAiModels": "نماذج الذكاء الاصطناعي",
-		"keywordAiGateway": "Gateway الذكاء الاصطناعي"
+		"keywordAiGateway": "Gateway الذكاء الاصطناعي",
+		"requestMissingData": "طلب البيانات المفقودة"
 	},
 	"catalogNotFound": {
 		"modelHeading": "لم يتم العثور على النموذج «{id}».",
@@ -2481,7 +2575,8 @@
 		"waitingForFirstToken": "بانتظار الرمز الأول",
 		"measuredPace": "السرعة المقاسة",
 		"fastPace": "سريع",
-		"veryFastPace": "سريع جداً"
+		"veryFastPace": "سريع جداً",
+		"tokensPerSecond": "{count} رمز/ثانية"
 	},
 	"monitor": {
 		"title": "المراقبة",
@@ -2745,7 +2840,7 @@
 		"visitApp": "زيارة التطبيق",
 		"active": "نشط",
 		"inactive": "غير نشط",
-		"lastSeen": "آخر نشاط: {date}",
+		"lastSeen": "آخر نشاط: <date></date>",
 		"totalRequests": "إجمالي الطلبات",
 		"allTimeSuccessfulRequests": "الطلبات الناجحة منذ البداية",
 		"totalTokens": "إجمالي الرموز",

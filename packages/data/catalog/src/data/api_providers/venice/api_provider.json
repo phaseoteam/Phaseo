@@ -34,13 +34,13 @@
     {
       "kind": "provider_models",
       "url": "https://api.venice.ai/api/v1/models",
-      "accessed_at": "2026-08-21T00:00:00Z",
+      "accessed_at": "2026-09-07T23:17:00Z",
       "notes": "Official live model inventory, capabilities, limits, privacy modes, deprecations, and pricing."
     }
   ],
   "verification": {
     "status": "verified",
-    "checked_at": "2026-08-21",
+    "checked_at": "2026-09-07",
     "notes": "Verified against Venice's official live models API and API reference."
   }
 }

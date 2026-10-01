@@ -1,0 +1,42 @@
+{
+  "key": "gmicloud:tencent/hy-image-v3.5-preview:free:image.edit",
+  "api_provider_id": "gmicloud",
+  "provider_slug": "gmicloud",
+  "api_model_id": "tencent/hy-image-v3.5-preview:free",
+  "capability_id": "image.edit",
+  "rules": [
+    {
+      "meter": "requests",
+      "unit": "request",
+      "unit_size": 1,
+      "price_per_unit": 0,
+      "currency": "USD",
+      "pricing_plan": "free",
+      "note": "Hy Week free promotion.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-09-25T00:00:00Z",
+      "effective_to": "2026-10-02T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
+    }
+  ],
+  "regions": [],
+  "service_tiers": [
+    "free"
+  ],
+  "sources": [
+    {
+      "kind": "promotion",
+      "url": "https://www.gmicloud.ai/hy-week",
+      "accessed_at": "2026-09-25T00:00:00Z"
+    }
+  ],
+  "verification": {
+    "status": "partial",
+    "checked_at": "2026-09-25T00:00:00Z",
+    "notes": "Published campaign and pricing; live billing pending."
+  }
+}

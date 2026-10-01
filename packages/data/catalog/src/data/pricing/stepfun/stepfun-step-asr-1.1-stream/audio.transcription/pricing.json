@@ -9,10 +9,10 @@
       "meter": "input_audio_seconds",
       "unit": "second",
       "unit_size": 3600,
-      "price_per_unit": 2.6,
-      "currency": "CNY",
+      "price_per_unit": 0.387429802292,
+      "currency": "USD",
       "pricing_plan": "standard",
-      "note": null,
+      "note": "Converted from 2.6 CNY using ECB 2026-09-04 cross rate: 1.1622 USD / 7.7994 CNY.",
       "match": [],
       "priority": 100,
       "effective_from": "2026-08-24T00:00:00Z",
@@ -34,6 +34,11 @@
       "url": "https://platform.stepfun.com/docs/zh/guides/pricing/details",
       "accessed_at": "2026-08-24T00:00:00Z",
       "notes": "Current official StepFun mainland-China API pricing."
+    },
+    {
+      "kind": "exchange_rate",
+      "url": "https://eur-lex.europa.eu/legal-content/EN/TXT/PDF/?uri=CELEX%3AC%2F2026%2F04600",
+      "accessed_at": "2026-09-07T21:50:00Z"
     }
   ],
   "verification": {

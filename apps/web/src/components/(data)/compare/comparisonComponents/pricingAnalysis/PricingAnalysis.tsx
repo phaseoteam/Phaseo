@@ -1,6 +1,7 @@
 "use client";
 
 import type { ExtendedModel, Price } from "@/data/types";
+import { resolveProviderDisplayName } from "@/lib/providers/providerOffers";
 import {
 	Card,
 	CardHeader,
@@ -22,6 +23,7 @@ import {
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { useLocale, useTranslations } from "next-intl";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 
 interface PricingAnalysisProps {
 	selectedModels: ExtendedModel[];
@@ -107,14 +109,20 @@ function normalizePricePerMillion(
 	return (pricePerUnit * 1_000_000) / normalizedUnitSize;
 }
 
-function formatUsd(value: number | null | undefined, locale: string): string {
+type NumberFormatter = ReturnType<typeof useDisplayFormatters>["number"];
+
+function formatUsd(
+	value: number | null | undefined,
+	formatNumber: NumberFormatter
+): string {
 	if (value == null || !Number.isFinite(value)) return "-";
-	return new Intl.NumberFormat(locale, {
+	return formatNumber(value, {
 		style: "currency",
 		currency: "USD",
 		minimumFractionDigits: 2,
 		maximumFractionDigits: 2,
-	}).format(value);
+		notation: "standard",
+	});
 }
 
 function meterMatchesInput(meter: string): boolean {
@@ -152,7 +160,7 @@ function resolveProvider(price: Price): PricingProvider | null {
 			: providerId;
 	return {
 		id: providerId,
-		name: providerName,
+		name: resolveProviderDisplayName({ providerId, providerName }),
 	};
 }
 
@@ -299,7 +307,7 @@ function getStatCards(
 	providerSelectionByModel: ProviderSelectionByModel,
 	onProviderSelectionChange: (modelId: string, providerId: string) => void,
 	t: ReturnType<typeof useTranslations<"Catalogue.compare">>,
-	locale: string
+	formatNumber: NumberFormatter
 ) {
 	return (
 		<div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2 gap-3">
@@ -334,7 +342,7 @@ function getStatCards(
 										{t("inputPricePerMillion")}
 									</div>
 									<div className="font-mono text-foreground">
-										{formatUsd(summary.input.valuePerMillion, locale)}
+										{formatUsd(summary.input.valuePerMillion, formatNumber)}
 									</div>
 									<div className="text-[10px] text-muted-foreground truncate">
 										{summary.input.provider?.name ?? "-"}
@@ -345,7 +353,7 @@ function getStatCards(
 										{t("outputPricePerMillion")}
 									</div>
 									<div className="font-mono text-foreground">
-										{formatUsd(summary.output.valuePerMillion, locale)}
+										{formatUsd(summary.output.valuePerMillion, formatNumber)}
 									</div>
 									<div className="text-[10px] text-muted-foreground truncate">
 										{summary.output.provider?.name ?? "-"}
@@ -356,7 +364,7 @@ function getStatCards(
 										{t("blendedPricePerMillion")}
 									</div>
 									<div className="font-mono text-foreground">
-										{formatUsd(summary.blendedPerMillion, locale)}
+										{formatUsd(summary.blendedPerMillion, formatNumber)}
 									</div>
 									<div className="text-[10px] text-muted-foreground">
 										{t("blended9010")}
@@ -419,6 +427,7 @@ function toChartData(summaries: ModelPricingSummary[]): PricingChartDatum[] {
 function BarChartTooltip({ active, payload, label }: any) {
 	const t = useTranslations("Catalogue.compare");
 	const locale = useLocale();
+	const format = useDisplayFormatters();
 	if (!active || !payload || payload.length === 0) return null;
 	const point = payload[0]?.payload as PricingChartDatum | undefined;
 	if (!point) return null;
@@ -431,21 +440,21 @@ function BarChartTooltip({ active, payload, label }: any) {
 			<CardContent className="p-0 space-y-1 text-xs">
 				<div className="flex justify-between gap-3">
 					<span>{t("input")}</span>
-					<span className="font-mono">{formatUsd(point.input, locale)}</span>
+					<span className="font-mono">{formatUsd(point.input, format.number)}</span>
 				</div>
 				<div className="text-[10px] text-muted-foreground truncate">
 					{t("provider")}: {point.inputProvider ?? "-"}
 				</div>
 				<div className="flex justify-between gap-3">
 					<span>{t("output")}</span>
-					<span className="font-mono">{formatUsd(point.output, locale)}</span>
+					<span className="font-mono">{formatUsd(point.output, format.number)}</span>
 				</div>
 				<div className="text-[10px] text-muted-foreground truncate">
 					{t("provider")}: {point.outputProvider ?? "-"}
 				</div>
 				<div className="flex justify-between gap-3 pt-1 border-t border-border/60">
 					<span>{t("blended9010")}</span>
-					<span className="font-mono">{formatUsd(point.blended, locale)}</span>
+					<span className="font-mono">{formatUsd(point.blended, format.number)}</span>
 				</div>
 			</CardContent>
 		</Card>
@@ -582,6 +591,7 @@ function buildMeterComparisonRows(
 export default function PricingAnalysis({ selectedModels }: PricingAnalysisProps) {
 	const t = useTranslations("Catalogue.compare");
 	const locale = useLocale();
+	const format = useDisplayFormatters();
 	const [chartScale, setChartScale] = React.useState<"linear" | "log">("linear");
 	const [providerSelectionByModel, setProviderSelectionByModel] =
 		React.useState<ProviderSelectionByModel>({});
@@ -652,7 +662,7 @@ export default function PricingAnalysis({ selectedModels }: PricingAnalysisProps
 							providerSelectionByModel,
 							handleProviderSelectionChange,
 							t,
-							locale
+							format.number
 						)}
 					</div>
 					<Card className="border border-border/60 bg-background/60 shadow-none">
@@ -793,7 +803,7 @@ export default function PricingAnalysis({ selectedModels }: PricingAnalysisProps
 															<span
 																className={isBest ? "text-emerald-600 dark:text-emerald-400" : ""}
 															>
-												{formatUsd(value, locale)}
+														{formatUsd(value, format.number)}
 															</span>
 														) : (
 															<span className="text-muted-foreground">-</span>

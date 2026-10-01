@@ -5,7 +5,7 @@
 import type { AdapterResult, ProviderExecuteArgs } from "../../types";
 import { AudioTranscriptionSchema, type AudioTranscriptionRequest } from "@core/schemas";
 import { buildAdapterPayload } from "../../utils";
-import { openAICompatHeaders, openAICompatUrl, resolveOpenAICompatKey } from "../../openai-compatible/config";
+import { resolveOpenAITransport } from "../../shared/openai-transport";
 import { upstreamTestHeaders } from "@providers/shared/testing";
 import { estimateOpenAiSpeechToTextUsage, mergeSpeechToTextUsage } from "./audio-transcription-usage";
 
@@ -52,20 +52,20 @@ async function parseAudioTextPayload(response: Response): Promise<Record<string,
 }
 
 function normalizeAudioTextUsage(payload: Record<string, any> | undefined): Record<string, any> | undefined {
-    const usage = payload?.usage;
-    if (!usage || typeof usage !== "object") return undefined;
+    const usage = payload?.usage && typeof payload.usage === "object" ? payload.usage : {};
     const seconds = typeof usage.seconds === "number"
         ? usage.seconds
         : typeof usage.duration === "number"
             ? usage.duration
-            : undefined;
+            : typeof payload?.duration === "number" ? payload.duration : undefined;
+    if (Object.keys(usage).length === 0 && seconds === undefined) return undefined;
     return {
         ...usage,
         ...(typeof seconds === "number" ? { input_audio_seconds: seconds } : {}),
     } as Record<string, any>;
 }
 
-async function collectTranscriptionStreamUsage(stream: ReadableStream<Uint8Array>): Promise<Record<string, any> | undefined> {
+export async function collectTranscriptionStreamUsage(stream: ReadableStream<Uint8Array>): Promise<Record<string, any> | undefined> {
     const reader = stream.getReader();
     const decoder = new TextDecoder();
     let buffer = "";
@@ -100,7 +100,7 @@ async function collectTranscriptionStreamUsage(stream: ReadableStream<Uint8Array
 }
 
 export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
-    const keyInfo = await resolveOpenAICompatKey(args);
+    const { keyInfo, url, headers, deployment } = resolveOpenAITransport(args, "/audio/transcriptions", upstreamTestHeaders(args.meta));
     const adapterPayload = buildAdapterPayload(AudioTranscriptionSchema, args.body, []).adapterPayload as AudioTranscriptionRequest;
     const body: AudioTranscriptionRequest = {
         ...adapterPayload,
@@ -117,6 +117,11 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
     const supportedGptFormats = isDiarize
         ? new Set(["json", "text", "diarized_json"])
         : new Set(["json"]);
+	if (args.providerId === "deepinfra") {
+		const unsupported = ["include", "chunking_strategy", "languages", "keywords", "diarize", "known_speaker_names", "known_speaker_references"].find(name => (body as any)[name] != null);
+		const param = body.stream === true ? "stream" : unsupported ?? (!new Set(["json", "verbose_json", "text", "srt", "vtt"]).has(responseFormat) ? "response_format" : undefined);
+		if (param) return { kind: "completed", upstream: invalidParameterResponse(param, `DeepInfra transcription does not support ${param}.`), bill: emptyBill(), keySource: keyInfo.source, byokKeyId: keyInfo.byokId };
+	}
 	if (args.providerId === "scaleway") {
 		if (responseFormat !== "json") {
 			return {
@@ -288,7 +293,7 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
     }
 
     const form = new FormData();
-    form.append("model", body.model);
+    form.append("model", deployment || body.model);
     const filename = typeof File !== "undefined" && body.file instanceof File && body.file.name
         ? body.file.name
         : "audio";
@@ -299,11 +304,11 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
     if (body.prompt) form.append("prompt", body.prompt);
     if (typeof body.temperature === "number") form.append("temperature", String(body.temperature));
     form.append("response_format", responseFormat);
-	if (typeof body.stream === "boolean") form.append("stream", String(body.stream));
+	if (typeof body.stream === "boolean" && args.providerId !== "deepinfra") form.append("stream", String(body.stream));
     if (Array.isArray(body.timestamp_granularities)) {
         for (const entry of body.timestamp_granularities) {
             if (entry === "word" || entry === "segment") {
-                form.append("timestamp_granularities[]", entry);
+                form.append(args.providerId === "deepinfra" ? "timestamp_granularities" : "timestamp_granularities[]", entry);
             }
         }
     }
@@ -335,10 +340,9 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
         form.append("known_speaker_references[]", reference);
     }
 
-    const headers = openAICompatHeaders(args.providerId, keyInfo.key, upstreamTestHeaders(args.meta));
     delete (headers as any)["Content-Type"];
 
-    const res = await (args.upstreamTiming?.fetch ?? fetch)(openAICompatUrl(args.providerId, "/audio/transcriptions"), {
+    const res = await (args.upstreamTiming?.fetch ?? fetch)(url, {
         method: "POST",
         headers,
         body: form,
@@ -369,6 +373,9 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
 	}
 
     const normalized = await parseAudioTextPayload(res);
+    if (args.providerId === "deepinfra" && normalized && typeof normalized.input_length_ms === "number" && Number.isFinite(normalized.input_length_ms) && normalized.input_length_ms >= 0) {
+        normalized.usage = { ...normalized.usage, seconds: normalized.input_length_ms / 1000 };
+    }
     let usage = normalizeAudioTextUsage(normalized);
     if (res.ok) {
         const estimated = await estimateOpenAiSpeechToTextUsage({

@@ -1,10 +1,6 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
-import Link from "next/link";
 import { getTranslations } from "next-intl/server";
-import CreateOAuthAppDialog from "@/components/(gateway)/settings/oauth-apps/CreateOAuthAppDialog";
-import OAuthAppsPanel from "@/components/(gateway)/settings/oauth-apps/OAuthAppsPanel";
-import { Button } from "@/components/ui/button";
 import {
 	Empty,
 	EmptyDescription,
@@ -15,10 +11,9 @@ import {
 import { UserRoundX } from "lucide-react";
 import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
 import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHeader";
+import OAuthAppsContent from "./OAuthAppsContent";
 import { isThirdPartyOAuthEnabled } from "@/lib/oauth/thirdPartyOAuth";
-import { fetchSettingsOAuthAppsInitialData } from "@/lib/fetchers/internal/fetchSettingsOAuthAppsInitialData";
 import { buildMetadata } from "@/lib/seo";
-import { getLocalizedDocsHref } from "@/lib/docs";
 import type { PublicLocale } from "@/i18n/routing";
 
 export async function generateMetadata({
@@ -115,65 +110,8 @@ export default async function OAuthAppsPage({
 			</div>
 
 			<Suspense fallback={<SettingsSectionFallback />}>
-				<OAuthAppsContent locale={locale} />
+				<OAuthAppsContent />
 			</Suspense>
-		</div>
-	);
-}
-
-async function OAuthAppsContent({ locale }: { locale: PublicLocale }) {
-	const t = await getTranslations({
-		locale,
-		namespace: "SettingsUI.oauthAppsPage",
-	});
-	const initialData = await fetchSettingsOAuthAppsInitialData();
-
-	if (!initialData.signedIn) {
-		return (
-			<Empty className="rounded-xl border border-dashed border-border/80 p-8">
-				<EmptyHeader>
-					<EmptyMedia variant="icon">
-						<UserRoundX className="h-5 w-5" />
-					</EmptyMedia>
-					<EmptyTitle>{t("signInTitle")}</EmptyTitle>
-					<EmptyDescription>
-						{t("signInDescription")}
-					</EmptyDescription>
-				</EmptyHeader>
-			</Empty>
-		);
-	}
-
-	return (
-		<div className="space-y-6">
-			<SettingsPageHeader
-				title={t("title")}
-				meta={
-					<span className="inline-flex items-center rounded-md bg-yellow-100 dark:bg-yellow-900 px-2 py-1 text-xs font-medium text-yellow-800 dark:text-yellow-200">
-						{t("alphaLabel")}
-					</span>
-				}
-				description={t("createDescription")}
-				actions={
-					<>
-						<Link
-							href={getLocalizedDocsHref(locale, "https://phaseo.app/docs/v1/guides/oauth-quickstart")}
-							target="_blank"
-							rel="noopener noreferrer"
-						>
-							<Button variant="outline" size="sm">
-								{t("viewDocs")}
-							</Button>
-						</Link>
-						<CreateOAuthAppDialog
-							currentTeamId={initialData.initialTeamId}
-						/>
-					</>
-				}
-			/>
-			<OAuthAppsPanel
-				oauthApps={initialData.oauthApps}
-			/>
 		</div>
 	);
 }

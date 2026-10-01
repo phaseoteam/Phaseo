@@ -58,7 +58,6 @@ export function irToOpenAIChat(
 				providerId === "deepseek" ||
 				providerId === "z-ai" ||
 				providerId === "zai" ||
-				providerId === "crofai" ||
 				providerId === "xiaomi" ||
 				providerId === "minimax" ||
 				providerId === "minimax-lightning" ||
@@ -69,7 +68,8 @@ export function irToOpenAIChat(
 				providerId === "poolside" ||
 				providerId === "siliconflow" ||
 				providerId === "stepfun" ||
-				providerId === "wafer";
+				providerId === "wafer" ||
+				providerId === "doubleword";
 			if (providerSupportsAssistantReasoningContent && assistantReasoning.length > 0) {
 				message.reasoning_content = assistantReasoning;
 			}

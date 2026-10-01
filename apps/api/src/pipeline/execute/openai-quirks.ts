@@ -28,6 +28,10 @@ const OPENAI_REASONING_EFFORT_SUPPORT: Record<string, Set<string>> = {
 	"gpt-5.4-nano": new Set(["none", "low", "medium", "high", "xhigh"]),
 	"gpt-5.4-pro": new Set(["medium", "high", "xhigh"]),
 
+	// GPT-6 Astra starts at low and adds max; none/minimal are unsupported.
+	"gpt-6-astra": new Set(["low", "medium", "high", "xhigh", "max"]),
+	"gpt-6-astra-pro": new Set(["low", "medium", "high", "xhigh", "max"]),
+
 	// Pre-GPT-5.1 models (o1, o3-mini) - don't support "none"
 	"o1": new Set(["low", "medium", "high"]),
 	"o1-preview": new Set(["low", "medium", "high"]),

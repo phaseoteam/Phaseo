@@ -1,11 +1,9 @@
 import { afterAll, afterEach, describe, expect, it } from "vitest";
 import {
 	assertSafeDiscoverySnapshot,
-	buildDiscordMessage,
 	buildProviderApiModelSnapshotDiff,
 	confirmModelRemovals,
 	collapseDiscordProviderChanges,
-	computeDiscordNotificationFingerprint,
 	extractDiscoveredModels,
 	extractProviderApiModelSnapshot,
 	fetchProviderModels,
@@ -13,6 +11,11 @@ import {
 	getDiscordProviderFamilyId,
 	resolveProviderModelsEndpoint,
 } from "./helpers";
+import {
+	buildPrivateModelDiscoveryMessage,
+	computePrivateModelDiscoveryFingerprint,
+	sendPrivateModelDiscoveryNotification,
+} from "./private-model-discovery-notifications";
 import { installFetchMock, jsonResponse } from "../../../tests/helpers/mock-fetch";
 import { setupRuntimeFromEnv, teardownTestRuntime } from "../../../tests/helpers/runtime";
 
@@ -40,6 +43,14 @@ const MINIMAX_DISCOVERY_PROVIDER = {
 	baseUrl: "https://api.minimax.io",
 	pathPrefix: "/v1",
 	apiKeyEnv: ["MINIMAX_API_KEY"],
+	authStyle: "bearer",
+} as const;
+
+const TYPESAFE_DISCOVERY_PROVIDER = {
+	providerId: "typesafe",
+	providerName: "TypeSafe",
+	modelsEndpoint: "https://api.typesafe.ai/v1/models",
+	apiKeyEnv: ["TYPESAFE_API_KEY"],
 	authStyle: "bearer",
 } as const;
 
@@ -109,6 +120,25 @@ describe("fetchProviderModels", () => {
 			const models = await fetchProviderModels(MINIMAX_DISCOVERY_PROVIDER, "test-minimax-key");
 			expect(models.map((model) => model.id)).toEqual(["MiniMax-H3-Max", "MiniMax-M3"]);
 			expect(fetchMock.calls[0]?.headers.Authorization).toBe("Bearer test-minimax-key");
+		} finally {
+			fetchMock.restore();
+		}
+	});
+
+	it("fetches TypeSafe's native model list with bearer auth", async () => {
+		const fetchMock = installFetchMock([{
+			match: (url) => url === "https://api.typesafe.ai/v1/models",
+			response: jsonResponse({
+				models: [
+					{ name: "jev-latest", version: "jev-1.13.0" },
+					{ name: "jev-1.13.0", version: "jev-1.13.0" },
+				],
+			}),
+		}]);
+		try {
+			const models = await fetchProviderModels(TYPESAFE_DISCOVERY_PROVIDER, "test-typesafe-key");
+			expect(models.map((model) => model.id)).toEqual(["jev-1.13.0", "jev-latest"]);
+			expect(fetchMock.calls[0]?.headers.Authorization).toBe("Bearer test-typesafe-key");
 		} finally {
 			fetchMock.restore();
 		}
@@ -382,7 +412,7 @@ describe("confirmModelRemovals", () => {
 	});
 });
 
-describe("buildDiscordMessage", () => {
+describe("buildPrivateModelDiscoveryMessage", () => {
 	it("collapses regional and endpoint variants into provider families", () => {
 		const collapsed = collapseDiscordProviderChanges([
 			{ providerId: "nebius-token-factory", providerName: "Nebius", previousCount: 1, currentCount: 2, added: ["model-a"], removed: [] },
@@ -396,7 +426,7 @@ describe("buildDiscordMessage", () => {
 	});
 
 	it("preserves pricing update counts while deduplicating visible samples", () => {
-		const message = buildDiscordMessage({
+		const message = buildPrivateModelDiscoveryMessage({
 			modelChanges: [],
 			pricing: {
 				updatesDetected: 10,
@@ -423,9 +453,9 @@ describe("buildDiscordMessage", () => {
 
 	it("includes pricing-only changes", () => {
 		setupRuntimeFromEnv({} as any);
-		expect(buildDiscordMessage({
+		expect(buildPrivateModelDiscoveryMessage({
 			modelChanges: [],
-			pricing: { updatesDetected: 1, providerChanges: [{ providerId: "crofai", updates: 1, samples: ["glm-5.2 | price changed"] }] },
+			pricing: { updatesDetected: 1, providerChanges: [{ providerId: "groq", updates: 1, samples: ["llama-3.3 | price changed"] }] },
 			providerApiPricing: { updatesDetected: 1, providerChanges: [{ providerId: "deepinfra", updates: 1, samples: ["model | price changed"] }] },
 			pricingTable: { updatesDetected: 0, providerChanges: [], errors: [] },
 			configuredModelCoverage: { updatesDetected: 0, providerChanges: [] },
@@ -434,7 +464,7 @@ describe("buildDiscordMessage", () => {
 
 	it("does not notify for pricing source failures without a pricing change", () => {
 		setupRuntimeFromEnv({} as any);
-		expect(buildDiscordMessage({
+		expect(buildPrivateModelDiscoveryMessage({
 			modelChanges: [],
 			pricing: { updatesDetected: 0, providerChanges: [] },
 			providerApiPricing: { updatesDetected: 0, providerChanges: [] },
@@ -449,7 +479,7 @@ describe("buildDiscordMessage", () => {
 
 	it("reports pricing page changes with added and removed price lines", () => {
 		setupRuntimeFromEnv({} as any);
-		const message = buildDiscordMessage({
+		const message = buildPrivateModelDiscoveryMessage({
 			modelChanges: [],
 			pricing: { updatesDetected: 0, providerChanges: [] },
 			providerApiPricing: { updatesDetected: 0, providerChanges: [] },
@@ -706,7 +736,7 @@ describe("extractProviderApiModelSnapshot pricing comparisons", () => {
 	});
 });
 
-describe("computeDiscordNotificationFingerprint", () => {
+describe("computePrivateModelDiscoveryFingerprint", () => {
 	it("is stable for an identical notification and changes with its payload", async () => {
 		setupRuntimeFromEnv({} as any);
 		const input = {
@@ -717,9 +747,9 @@ describe("computeDiscordNotificationFingerprint", () => {
 			configuredModelCoverage: { updatesDetected: 0, providerChanges: [] },
 		} as any;
 
-		const first = await computeDiscordNotificationFingerprint(input);
-		const repeated = await computeDiscordNotificationFingerprint(input);
-		const changed = await computeDiscordNotificationFingerprint({
+		const first = await computePrivateModelDiscoveryFingerprint(input);
+		const repeated = await computePrivateModelDiscoveryFingerprint(input);
+		const changed = await computePrivateModelDiscoveryFingerprint({
 			...input,
 			providerApiPricing: { updatesDetected: 2, providerChanges: [{ providerId: "openrouter", updates: 2, samples: ["two prices changed"] }] },
 		});
@@ -727,6 +757,48 @@ describe("computeDiscordNotificationFingerprint", () => {
 		expect(first).toMatch(/^[0-9a-f]{64}$/);
 		expect(repeated).toBe(first);
 		expect(changed).not.toBe(first);
+	});
+});
+
+describe("sendPrivateModelDiscoveryNotification", () => {
+	it("sends a text-only operator alert even when models were added", async () => {
+		const webhookUrl = "https://discord.example/private-discovery";
+		setupRuntimeFromEnv({
+			DISCORD_WEBHOOK_URL: webhookUrl,
+			DISCORD_ROLE_ID: "role-1",
+			DISCORD_USER_ID: "user-1",
+		} as any);
+		const fetchMock = installFetchMock([{
+			match: (url) => url === webhookUrl,
+			response: new Response(null, { status: 204 }),
+		}]);
+
+		try {
+			const summary = await sendPrivateModelDiscoveryNotification({
+				modelChanges: [{
+					providerId: "novita",
+					providerName: "Novita",
+					previousCount: 0,
+					currentCount: 1,
+					added: ["novita/new-model"],
+					removed: [],
+				}],
+				pricing: { updatesDetected: 0, providerChanges: [] },
+				providerApiPricing: { updatesDetected: 0, providerChanges: [] },
+				pricingTable: { updatesDetected: 0, providerChanges: [], errors: [] },
+				configuredModelCoverage: { updatesDetected: 0, providerChanges: [] },
+			} as any);
+
+			expect(summary).toMatchObject({ delivered: true, skipped: false });
+			expect(fetchMock.calls).toHaveLength(1);
+			expect(fetchMock.calls[0]?.bodyJson).toMatchObject({
+				username: "Phaseo Private Model Discovery",
+				content: expect.stringContaining("novita/new-model"),
+			});
+			expect(fetchMock.calls[0]?.bodyJson.embeds).toBeUndefined();
+		} finally {
+			fetchMock.restore();
+		}
 	});
 });
 

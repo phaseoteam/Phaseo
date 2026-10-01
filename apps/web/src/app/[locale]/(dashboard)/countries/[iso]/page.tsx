@@ -6,10 +6,10 @@ import CountryOrganisationCard from "@/components/(data)/countries/CountryOrgani
 import CountryModelsSection from "@/components/(data)/countries/CountryModelsSection";
 import { ModelCard } from "@/components/(data)/models/Models/ModelCard";
 import { Logo } from "@/components/Logo";
+import { DisplayDateParts, DisplayNumber } from "@/components/display/DisplayValue";
 import {
 	getUniqueCountryModels,
 	normaliseIso,
-	formatCountryDate,
 } from "@/components/(data)/countries/utils";
 import { fetchFrontendCountry } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import { buildLocalizedPageMetadata } from "@/lib/auth/localized-metadata";
@@ -92,7 +92,7 @@ export default async function CountryDetailPage({
 							</p>
 						</div>
 						<p className="mt-1 text-3xl font-semibold text-zinc-950 dark:text-zinc-50">
-							{country.totalOrganisations}
+							<DisplayNumber value={country.totalOrganisations} />
 						</p>
 					</div>
 					<div className="flex flex-col border-b border-border/70 px-4 py-5 md:border-b-0">
@@ -102,7 +102,7 @@ export default async function CountryDetailPage({
 							</p>
 						</div>
 						<p className="mt-1 text-3xl font-semibold text-zinc-950 dark:text-zinc-50">
-							{country.totalModels}
+							<DisplayNumber value={country.totalModels} />
 						</p>
 					</div>
 					<div className="px-4 py-5">
@@ -115,7 +115,11 @@ export default async function CountryDetailPage({
 							</p>
 							{latestModel?.primary_date ? (
 								<p className="text-xs text-muted-foreground">
-									{formatCountryDate(latestModel.primary_date, locale, t("unknownValue"))}
+									<DisplayDateParts
+										value={latestModel.primary_date}
+										options={{ month: "short", year: "numeric", timeZone: "UTC" }}
+										fallback={t("unknownValue")}
+									/>
 								</p>
 							) : null}
 						</div>
@@ -126,7 +130,7 @@ export default async function CountryDetailPage({
 										href={`/organisations/${latestModel.organisation_id}`}
 									>
 										<div
-											className="relative flex h-10 w-10 items-center justify-center rounded-lg border bg-white dark:border-zinc-800 dark:bg-zinc-900"
+											className="relative flex size-10 items-center justify-center rounded-md border border-border/70 bg-background"
 											style={{ borderColor: latestAccent }}
 										>
 											<Logo
@@ -180,7 +184,10 @@ export default async function CountryDetailPage({
 						<div className="space-y-4">
 							{Array.from(
 								modelsToShow.reduce((map, model) => {
-									const label = formatCountryDate(model.primary_date, locale, t("unknownValue"));
+									const date = model.primary_date ? new Date(model.primary_date) : null;
+									const label = date && Number.isFinite(date.getTime())
+										? `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}`
+										: "unknown";
 									if (!map.has(label)) map.set(label, []);
 									map.get(label)!.push(model);
 									return map;
@@ -188,7 +195,11 @@ export default async function CountryDetailPage({
 							).map(([label, groupedModels]) => (
 								<div key={label} className="space-y-2">
 									<h3 className="text-sm font-medium text-muted-foreground">
-										{label}
+										<DisplayDateParts
+											value={label === "unknown" ? null : `${label}-01T00:00:00.000Z`}
+											options={{ month: "long", year: "numeric", timeZone: "UTC" }}
+											fallback="Unknown"
+										/>
 									</h3>
 									<div className="divide-y divide-border/70">
 										{groupedModels.map((model) => (

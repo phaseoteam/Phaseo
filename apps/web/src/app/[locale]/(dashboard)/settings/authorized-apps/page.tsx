@@ -1,10 +1,8 @@
 import { getLocale, getTranslations } from "next-intl/server";
 import { Suspense } from "react";
-import { redirect } from "next/navigation";
-import AuthorizedAppsPanel from "@/components/(gateway)/settings/authorized-apps/AuthorizedAppsPanel";
+import AuthorizedAppsContent from "./AuthorizedAppsContent";
 import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
 import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHeader";
-import { fetchSettingsAuthorizedAppsInitialData } from "@/lib/fetchers/internal/fetchSettingsAuthorizedAppsInitialData";
 
 export async function generateMetadata() {
 	const t = await getTranslations("SettingsUI");
@@ -30,23 +28,8 @@ export default async function AuthorizedAppsPage() {
 				descriptionKey="settingsRouteCopy.oauthIntegrationsDescription"
 			/>
 			<Suspense fallback={<SettingsSectionFallback />}>
-				<AuthorizedAppsContent locale={locale} />
+				<AuthorizedAppsContent />
 			</Suspense>
 		</div>
-	);
-}
-
-async function AuthorizedAppsContent({ locale }: { locale: string }) {
-	const initialData = await fetchSettingsAuthorizedAppsInitialData(locale);
-
-	if (!initialData.signedIn || !initialData.userId) {
-		redirect("/sign-in");
-	}
-
-	return (
-		<AuthorizedAppsPanel
-			authorizedApps={initialData.authorizedApps}
-			userId={initialData.userId}
-		/>
 	);
 }

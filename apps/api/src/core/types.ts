@@ -14,6 +14,7 @@ export type Endpoint =
     | "audio.realtime"
     | "moderations"
     | "rerank"
+    | "decisions"
     | "video.generation"
     | "embeddings"
     | "batch"
@@ -106,7 +107,7 @@ export type RequestMeta = {
     keySource?: "gateway" | "byok";
     byokKeyId?: string | null;
     // Performance metrics
-    throughput_tps?: number;      // Effective output tokens/sec over the full provider duration
+    throughput_tps?: number;      // Output tokens/sec over the full provider duration
     output_speed_tps?: number;    // Output tokens/sec after the first generated token
     generation_ms?: number;       // Selected upstream dispatch to terminal frame/body when available
     latency_ms?: number;          // Legacy alias for provider_ttft_ms on streamed text responses

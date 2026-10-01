@@ -437,6 +437,7 @@ export async function guardContext(args: {
     internal?: boolean;
     testingMode?: boolean;
     disableCache?: boolean;
+    onCreditCacheWrite?: (write: Promise<void>) => void;
 }): Promise<GuardResult<{ context: any; providers: any[]; resolvedModel?: string | null; candidateDiagnostics: ProviderCandidateBuildDiagnostics }>> {
     try {
         const context = await fetchGatewayContext({
@@ -446,6 +447,7 @@ export async function guardContext(args: {
             apiKeyId: args.apiKeyId,
             includeTestingMode: args.testingMode,
             disableCache: args.disableCache,
+            onCreditCacheWrite: args.onCreditCacheWrite,
         });
 
         if (!context.key.ok) {

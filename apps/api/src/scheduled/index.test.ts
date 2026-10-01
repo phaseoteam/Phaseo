@@ -8,6 +8,9 @@ const runBatchProviderWebhookReplayJobMock = vi.fn();
 const runVideoReconciliationJobMock = vi.fn();
 const drainEmailOutboxMock = vi.fn();
 const runModelDiscoveryJobMock = vi.fn();
+const publicAnnouncementCheckMock = vi.fn();
+const runRecordInsertMock = vi.fn();
+const runRecordUpdateMock = vi.fn();
 const oauthCleanupRpcMock = vi.fn();
 const runGatewayIoRetentionBillingJobMock = vi.fn();
 const pruneExpiredDataContributionsMock = vi.fn();
@@ -16,11 +19,28 @@ const runNotificationDeliveryJobMock = vi.fn();
 const enqueueModelDeprecationNotificationsMock = vi.fn();
 const runAccountDeletionPurgeJobMock = vi.fn();
 const pruneExpiredGatewayIoLogsMock = vi.fn();
+const publishConfiguredPublicCatalogMock = vi.fn();
+vi.mock("./public-catalog", () => ({
+	publishConfiguredPublicCatalog: (...args: unknown[]) => publishConfiguredPublicCatalogMock(...args),
+}));
 
 vi.mock("@/runtime/env", () => ({
 	clearRuntime: (...args: unknown[]) => clearRuntimeMock(...args),
 	configureRuntime: (...args: unknown[]) => configureRuntimeMock(...args),
-	getSupabaseAdmin: () => ({ rpc: (...args: unknown[]) => oauthCleanupRpcMock(...args) }),
+	getSupabaseAdmin: () => ({
+		rpc: (...args: unknown[]) => oauthCleanupRpcMock(...args),
+		from: () => ({
+			insert: (...args: unknown[]) => runRecordInsertMock(...args),
+			update: (...args: unknown[]) => {
+				runRecordUpdateMock(...args);
+				return { eq: async () => ({ error: null }) };
+			},
+		}),
+	}),
+}));
+
+vi.mock("@/pipeline/model-discovery/public-model-catalog-announcements", () => ({
+	runPublicModelAnnouncementCheck: (...args: unknown[]) => publicAnnouncementCheckMock(...args),
 }));
 
 vi.mock("@/core/async-notifications", () => ({
@@ -55,7 +75,9 @@ vi.mock("@/pipeline/notifications/notification-delivery", () => ({
 
 vi.mock("@/pipeline/model-discovery", () => ({
 	DEFAULT_MODEL_DISCOVERY_SHARD_SIZE: 250,
+	DEFAULT_MODEL_DISCOVERY_CONCURRENCY: 8,
 	getModelDiscoveryShardCount: vi.fn(() => 4),
+	normalizeModelDiscoveryConcurrency: vi.fn((value: number) => value),
 	normalizeModelDiscoveryShardSize: vi.fn((value: number) => value),
 	runModelDiscoveryJob: (...args: unknown[]) => runModelDiscoveryJobMock(...args),
 }));
@@ -90,6 +112,7 @@ function scheduledEventAt(iso: string): ScheduledController {
 
 describe("handleScheduledEvent", () => {
 	beforeEach(() => {
+		publishConfiguredPublicCatalogMock.mockReset().mockResolvedValue({ targets: 1, published: 1, failed: 0, skipped: 0 });
 		clearRuntimeMock.mockReset();
 		configureRuntimeMock.mockReset();
 		runAsyncWebhookRetriesJobMock.mockReset();
@@ -98,6 +121,9 @@ describe("handleScheduledEvent", () => {
 		runVideoReconciliationJobMock.mockReset();
 		drainEmailOutboxMock.mockReset();
 		runModelDiscoveryJobMock.mockReset();
+		publicAnnouncementCheckMock.mockReset().mockResolvedValue({ detected: 0, notified: 0, pending: 0, error: null });
+		runRecordInsertMock.mockReset().mockResolvedValue({ error: null });
+		runRecordUpdateMock.mockReset();
 		oauthCleanupRpcMock.mockReset();
 		runGatewayIoRetentionBillingJobMock.mockReset();
 		pruneExpiredDataContributionsMock.mockReset();
@@ -221,6 +247,68 @@ describe("handleScheduledEvent", () => {
 		expect(runBatchReconciliationJobMock).not.toHaveBeenCalled();
 		expect(runBatchProviderWebhookReplayJobMock).not.toHaveBeenCalled();
 		expect(runVideoReconciliationJobMock).not.toHaveBeenCalled();
+	});
+
+	it("creates one parent run before announcement writes and finishes it", async () => {
+		publicAnnouncementCheckMock.mockImplementationOnce(async ({ ensureRun }: { ensureRun: () => Promise<void> }) => {
+			await ensureRun();
+			await ensureRun();
+			return { detected: 1, notified: 1, pending: 0, error: null };
+		});
+
+		await handleScheduledEvent(scheduledEventAt("2026-06-10T00:01:00.000Z"), {} as any);
+
+		expect(runRecordInsertMock).toHaveBeenCalledTimes(1);
+		expect(runRecordInsertMock).toHaveBeenCalledWith(expect.objectContaining({
+			trigger: "scheduled",
+			source: "public_model_announcements",
+			status: "running",
+		}));
+		expect(runRecordUpdateMock).toHaveBeenCalledWith(expect.objectContaining({
+			status: "completed",
+			changes_count: 1,
+		}));
+	});
+
+	it("honors the model discovery kill switch", async () => {
+		await handleScheduledEvent(
+			scheduledEventAt("2026-06-10T00:00:00.000Z"),
+			{ MODEL_DISCOVERY_ENABLED: "false" } as any,
+		);
+
+		expect(runModelDiscoveryJobMock).not.toHaveBeenCalled();
+	});
+
+	it("can run all provider checks in one Cloudflare invocation", async () => {
+		await handleScheduledEvent(
+			scheduledEventAt("2026-06-10T00:00:00.000Z"),
+			{
+				MODEL_DISCOVERY_ENABLED: "true",
+				MODEL_DISCOVERY_SHARDING_ENABLED: "false",
+				MODEL_DISCOVERY_CONCURRENCY: "12",
+			} as any,
+		);
+
+		expect(runModelDiscoveryJobMock).toHaveBeenCalledWith({
+			trigger: "scheduled",
+			source: "cloudflare_cron:all-providers",
+			scheduledAtIso: "2026-06-10T00:00:00.000Z",
+			shardIndex: 0,
+			shardCount: 1,
+			concurrency: 12,
+			notify: true,
+			prune: true,
+		});
+	});
+
+	it("publishes configured catalogs every two minutes independently of core jobs", async () => {
+		const env = { GATEWAY_CONTEXT_BUNDLE_ENABLED: "true", GATEWAY_PUBLIC_CATALOG_TARGETS: "[]" } as any;
+		await handleScheduledEvent(scheduledEventAt("2026-06-10T00:01:00.000Z"), env);
+		expect(publishConfiguredPublicCatalogMock).not.toHaveBeenCalled();
+		await handleScheduledEvent(scheduledEventAt("2026-06-10T00:02:00.000Z"), env);
+		expect(publishConfiguredPublicCatalogMock).toHaveBeenCalledOnce();
+		await handleScheduledEvent(scheduledEventAt("2026-06-10T00:04:00.000Z"), {} as any);
+		expect(publishConfiguredPublicCatalogMock).toHaveBeenCalledOnce();
 	});
 
 	it("runs I/O retention billing on the daily billing tick", async () => {

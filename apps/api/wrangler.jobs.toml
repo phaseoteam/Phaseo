@@ -1,0 +1,117 @@
+name = "phaseo-jobs"
+main = "src/jobs.ts"
+compatibility_date = "2025-10-01"
+compatibility_flags = ["global_fetch_strictly_public", "web_socket_auto_reply_to_close"]
+workers_dev = false
+preview_urls = false
+
+[vars]
+GATEWAY_CONTEXT_BUNDLE_ENABLED = "true"
+# Two-minute publication: four public snapshots, 86,400 KV writes / 30 days.
+# Keep this only on the primary scheduler; regional Workers share its KV.
+GATEWAY_PUBLIC_CATALOG_TARGETS = '[{"model":"openai/gpt-5.4-mini","endpoint":"responses"},{"model":"openai/gpt-5.4-mini","endpoint":"text.generate"},{"model":"anthropic/claude-haiku-4.5","endpoint":"messages"},{"model":"anthropic/claude-haiku-4.5","endpoint":"text.generate"}]'
+ENV = "prod"
+SUPABASE_URL = "https://xansbgjaduxypzsmjwct.supabase.co"
+AMAZON_BEDROCK_REGION = "us-west-2"
+AMAZON_BEDROCK_MANTLE_BASE_URL = "https://bedrock-mantle.us-west-2.api.aws"
+MODEL_DISCOVERY_ENABLED = "true"
+ACCOUNT_DELETION_PURGE_ENABLED = "true"
+MODEL_DISCOVERY_RETENTION_DAYS = "7"
+MODEL_DISCOVERY_SHARD_SIZE = "20"
+# Run every provider check in one scheduled invocation. The watcher itself
+# uses bounded concurrency so this removes shard-to-shard notification delay.
+MODEL_DISCOVERY_SHARDING_ENABLED = "false"
+MODEL_DISCOVERY_CONCURRENCY = "8"
+MODEL_DISCOVERY_ISSUE_SYNC_ENABLED = "false"
+VIDEO_RECONCILIATION_ENABLED = "true"
+VIDEO_RECONCILIATION_LIMIT = "1000"
+VIDEO_RECONCILIATION_CONCURRENCY = "24"
+VIDEO_RECONCILIATION_LEASE_SECONDS = "180"
+BATCH_RECONCILIATION_ENABLED = "true"
+BATCH_RECONCILIATION_LIMIT = "500"
+BATCH_RECONCILIATION_CONCURRENCY = "12"
+BATCH_RECONCILIATION_LEASE_SECONDS = "300"
+BATCH_API_PREVIEW_PROVIDERS = "openai,anthropic,google-ai-studio,mistral,together"
+BATCH_PROVIDER_WEBHOOK_REPLAY_ENABLED = "true"
+BATCH_PROVIDER_WEBHOOK_REPLAY_LIMIT = "100"
+OTEL_EXPORT_ENABLED = "true"
+OTEL_EXPORT_OUTBOX_LIMIT = "100"
+AXIOM_SUCCESS_SAMPLE_RATE = "0.1"
+AXIOM_DETAIL_SAMPLE_RATE = "0.01"
+AXIOM_SLOW_REQUEST_MS = "8000"
+LINEAR_TEAM_ID = "225da192-bf92-4b06-bdcd-2aa801b05c22"
+LINEAR_PROJECT_ID = "ca9a8e13-5650-40a6-9fd0-d02b965cf71e"
+LINEAR_TRIAGE_STATUS_ID = "eceffe2e-8550-43b2-ae59-c737bbe83f78"
+LINEAR_ASSIGNEE_ID = "c05c0a22-0a3b-425c-ac3b-a38a195bb88b"
+LINEAR_OBSERVABILITY_LABEL_ID = "7ae8dc6e-d628-4c88-8775-4e9844960d56"
+STATSIG_BATCH_API_GATE = "gateway_batch_api"
+STATSIG_GATEWAY_IO_LOGGING_GATE = "gateway_io_logging"
+STATSIG_DATA_CONTRIBUTION_GATE = "gateway_data_contribution"
+ASYNC_WEBHOOK_SECRET_ENCRYPTION_KEY_VERSION = "v1"
+STATSIG_ENVIRONMENT_TIER = "production"
+EMAIL_OUTBOX_DRAIN_ENABLED = "true"
+EMAIL_OUTBOX_DRAIN_LIMIT = "25"
+VIDEO_API_ENABLED = "true"
+PRICING_MONITOR_ENABLED = "false"
+PRICING_PAGE_MONITOR_ENABLED = "true"
+ENTERPRISE_INVOICING_ENABLED = "true"
+GATEWAY_PUBLIC_BASE_URL = "https://api.phaseo.app"
+PHASEO_THIRD_PARTY_OAUTH_ENABLED = "true"
+GATEWAY_IO_LOGS_BUCKET_NAME = "phaseo-gateway-io-logs"
+GATEWAY_IO_LOGGING_MAX_BYTES = "5242880"
+GATEWAY_IO_RETENTION_BILLING_ENABLED = "false"
+GATEWAY_IO_RETENTION_BILLING_LIMIT = "100"
+GATEWAY_IO_RETENTION_GRACE_DAYS = "14"
+GATEWAY_IO_RETENTION_PRICE_PER_MILLION_UNITS_NANOS = "0"
+GATEWAY_IO_RETENTION_PRUNE_LIMIT = "250"
+DATA_CONTRIBUTIONS_BUCKET_NAME = "phaseo-data-contributions"
+DATA_CONTRIBUTIONS_MAX_BYTES = "1048576"
+DATA_CONTRIBUTION_CLASSIFIER_ENABLED = "true"
+DATA_CONTRIBUTION_CLASSIFIER_LIMIT = "100"
+DATA_CONTRIBUTION_CLASSIFIER_CONCURRENCY = "8"
+DATA_CONTRIBUTION_CLASSIFIER_MODEL = "gpt-5-mini"
+DATA_CONTRIBUTION_CLASSIFIER_SERVICE_TIER = "flex"
+DATA_CONTRIBUTION_RETENTION_PRUNE_LIMIT = "1000"
+
+[triggers]
+# Provision with schedules disabled; enable after the gateway cron stops.
+crons = []
+
+[placement]
+mode = "smart"
+
+[observability]
+[observability.logs]
+enabled = true
+head_sampling_rate = 0.1
+invocation_logs = true
+
+[[kv_namespaces]]
+binding = "GATEWAY_CACHE"
+id = "f5e23068fcd94125ad9860c817c543d9"
+preview_id = "f5e23068fcd94125ad9860c817c543d9"
+
+[[r2_buckets]]
+binding = "GATEWAY_IO_LOGS_BUCKET"
+bucket_name = "phaseo-gateway-io-logs"
+preview_bucket_name = "phaseo-gateway-io-logs-preview"
+
+[[r2_buckets]]
+binding = "DATA_CONTRIBUTIONS_BUCKET"
+bucket_name = "phaseo-data-contributions"
+preview_bucket_name = "phaseo-data-contributions-preview"
+
+[[durable_objects.bindings]]
+name = "REALTIME_RELAY"
+class_name = "RealtimeRelayDurableObject"
+script_name = "phaseo-gateway"
+
+[[durable_objects.bindings]]
+name = "PROVIDER_RATE_LIMITS"
+class_name = "ProviderRateLimitDurableObject"
+script_name = "phaseo-gateway"
+
+[[durable_objects.bindings]]
+name = "ROUTING_HEALTH"
+class_name = "RoutingHealthDurableObject"
+script_name = "phaseo-gateway"

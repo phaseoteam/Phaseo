@@ -4,6 +4,7 @@ import app from "@/index";
 describe("account mutation boundaries", () => {
 	it.each([
 		["PUT", "/api/account/settings/beta", { beta_features: {} }],
+		["PUT", "/api/account/settings/preferences", { locale: "system", dateStyle: "medium", timeZone: "system", hourCycle: "system", relativeTime: "contextual", numberNotation: "standard", lightPalette: "phaseo", darkPalette: "phaseo", lightAccent: "#0069a8", darkAccent: "#0078b8", density: "comfortable", codeLanguage: "typescript", landingPage: "home", maskSensitiveData: false }],
 		["PUT", "/api/account/settings/routing", { workspaceId: "workspace-1", mode: "balanced" }],
 		["PUT", "/api/account/settings/routing/auto", { workspaceId: "workspace-1", spendProfile: "standard", allowedPatterns: [] }],
 		["POST", "/api/account/settings/dynamic-routes", { workspaceId: "workspace-1", name: "Production", config: {} }],
@@ -53,6 +54,7 @@ describe("account mutation boundaries", () => {
 		["POST", "/api/account/settings/webhooks", { name: "Test", url: "https://example.com", workspaceId: "workspace-1" }],
 		["PUT", "/api/account/settings/webhooks/endpoint-1/status", { status: "disabled", workspaceId: "workspace-1" }],
 		["POST", "/api/account/settings/webhooks/endpoint-1/rotate", { workspaceId: "workspace-1" }],
+		["POST", "/api/account/settings/webhooks/endpoint-1/test", { workspaceId: "workspace-1" }],
 		["DELETE", "/api/account/settings/webhooks/endpoint-1", { workspaceId: "workspace-1" }],
 		["POST", "/api/account/auth/oauth-consent/validate", { clientId: "phaseo_cli", workspaceIds: ["workspace-1"] }],
 		["POST", "/api/account/models/catalog/benchmarks", { id: "benchmark-test", name: "Benchmark Test" }],
@@ -68,6 +70,8 @@ describe("account mutation boundaries", () => {
 		["PUT", "/api/account/models/catalog/benchmarks/benchmark-test", { name: "Benchmark Test" }],
 		["DELETE", "/api/account/models/catalog/benchmarks/benchmark-test", undefined],
 		["PUT", "/api/account/models/org%2Fmodel/graph", { modelId: "org/model", name: "Updated" }],
+		["PUT", "/api/account/models/org%2Fmodel/notice", { tone: "warning", markdown: "Limited availability." }],
+		["PUT", "/api/account/models/org%2Fmodel/aliases", [{ alias_slug: "org/model-latest", alias_type: "public", enabled: true }]],
 		["DELETE", "/api/account/models/org%2Fmodel/benchmark-results/result-1", undefined],
 		["DELETE", "/api/account/models/org%2Fmodel/pricing-rules/rule-1", undefined],
 		["DELETE", "/api/account/models/org%2Fmodel/provider-models/provider-model-1", undefined],

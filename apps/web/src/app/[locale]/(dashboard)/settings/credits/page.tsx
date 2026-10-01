@@ -1,8 +1,10 @@
 import CurrentCredits from "@/components/(gateway)/credits/CurrentCredits";
+import EnterpriseSubscriptionCard from "@/components/(gateway)/credits/EnterpriseSubscriptionCard";
 import Banner from "@/components/(gateway)/credits/Banner";
 import BuyCreditsClient from "@/components/(gateway)/credits/CreditPurchases/TopUp/BuyCreditsClient";
 import AutoTopUpClient from "@/components/(gateway)/credits/CreditPurchases/AutoTopUp/AutoTopUpClient";
 import { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
 import { connection } from "next/server";
 import { Suspense } from "react";
 import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
@@ -12,10 +14,9 @@ import { fetchSettingsCreditsInitialData } from "@/lib/fetchers/internal/fetchSe
 import { getSettingsMessages } from "@/i18n/settings";
 import { isPublicLocale, type PublicLocale } from "@/i18n/routing";
 
-export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
-	const { locale } = await params;
-	const messages = getSettingsMessages((isPublicLocale(locale) ? locale : "en-GB") as PublicLocale);
-	return { title: `${messages.pages.credits} - ${messages.pages.settings}` };
+export async function generateMetadata(): Promise<Metadata> {
+	const t = await getTranslations("SettingsUI");
+	return { title: t("billingCopy.metadataTitle") };
 }
 
 export default function Page(props: {
@@ -35,6 +36,7 @@ async function CreditsSettingsContent(props: {
 	searchParams?: Promise<Record<string, string | string[] | undefined>>;
 	params: Promise<{ locale: string }>;
 }) {
+	const t = await getTranslations("SettingsUI");
 	const { locale } = await props.params;
 	const messages = getSettingsMessages((isPublicLocale(locale) ? locale : "en-GB") as PublicLocale);
 	await connection();
@@ -56,7 +58,12 @@ async function CreditsSettingsContent(props: {
 			data-obfuscate-pii={initialData.obfuscateInfo ? "true" : "false"}
 			data-obfuscation-sync="true"
 		>
-			<SettingsPageHeader title={messages.pages.credits} />
+			<SettingsPageHeader
+				title={t("sidebarNew.billingCredits")}
+				description={t("billingCopy.description")}
+			/>
+
+			{initialData.workspaceId ? <EnterpriseSubscriptionCard workspaceId={initialData.workspaceId} /> : null}
 
 			<Banner
 				queryString={queryString ?? null}
@@ -65,7 +72,7 @@ async function CreditsSettingsContent(props: {
 
 			<CurrentCredits
 				balance={initialData.initialBalance}
-				title={messages.pages.currentBalance}
+				title={t("billingCopy.modelUsageBalance")}
 				refreshAriaLabel={messages.pages.refreshBalance}
 			/>
 
@@ -85,6 +92,7 @@ async function CreditsSettingsContent(props: {
 								<AutoTopUpClient
 									wallet={initialData.wallet}
 									stripeInfo={initialData.stripeInfo}
+									mfaEnabled={initialData.mfaEnabled}
 									embedded
 								/>
 							</div>

@@ -7,6 +7,7 @@
 
 import { useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { TrendingUp, TrendingDown, Minus, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -37,6 +38,7 @@ export function TopModelsRankings({
 }: TopModelsRankingsProps) {
     const t = useTranslations("Catalogue.rankings");
     const locale = useLocale();
+	const format = useDisplayFormatters();
     const [data] = useState(initialData);
     const [timeRange] = useState<TimeRange>(initialTimeRange as TimeRange);
     const [metric] = useState<Metric>(initialMetric as Metric);
@@ -82,17 +84,15 @@ export function TopModelsRankings({
     const formatValue = (value: number, metricType: Metric) => {
         const safeValue = Number(value);
         if (!Number.isFinite(safeValue)) return "--";
-        if (metricType === "tokens") {
-            return safeValue >= 1e9
-                ? new Intl.NumberFormat(locale, { notation: "compact", maximumFractionDigits: 2 }).format(safeValue)
-                : safeValue >= 1e6
-                ? new Intl.NumberFormat(locale, { notation: "compact", maximumFractionDigits: 2 }).format(safeValue)
-                : safeValue >= 1e3
-                ? new Intl.NumberFormat(locale, { notation: "compact", maximumFractionDigits: 2 }).format(safeValue)
-                : new Intl.NumberFormat(locale).format(safeValue);
-        }
-        if (metricType === "cost") return new Intl.NumberFormat(locale, { style: "currency", currency: "USD" }).format(safeValue);
-        return new Intl.NumberFormat(locale).format(safeValue);
+        if (metricType === "cost") {
+			return format.number(safeValue, {
+				style: "currency",
+				currency: "USD",
+				maximumFractionDigits: 2,
+				notation: "standard",
+			});
+		}
+		return format.number(safeValue, { maximumFractionDigits: 2 });
     };
 
     return (

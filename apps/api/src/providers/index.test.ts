@@ -7,4 +7,8 @@ describe("provider adapter registry", () => {
 		expect(adapterFor("venice", "chat.completions")).toBeTruthy();
 		expect(adapterById("venice")).toBeTruthy();
 	});
+	it("resolves Wafer ZDR without collapsing its routing identity", () => {
+		expect(adapterFor("wafer-zdr", "chat.completions")).toBeTruthy();
+		expect(adapterById("wafer-zdr")).toBeTruthy();
+	});
 });

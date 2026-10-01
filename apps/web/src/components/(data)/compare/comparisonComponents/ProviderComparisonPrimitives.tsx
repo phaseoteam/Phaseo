@@ -1,16 +1,12 @@
 "use client";
 
 import { Badge } from "@/components/ui/badge";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import type { ExtendedModel } from "@/data/types";
 import { cn } from "@/lib/utils";
 import { getModalityTone } from "@/lib/models/modalityStyles";
 import { Binary, Captions, FileText, Image as ImageIcon, Music4, Radio, Speech, Type, Video, Volume2 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
-
-function formatInteger(value: number | null | undefined, locale: string): string {
-	if (value == null || !Number.isFinite(value)) return "-";
-	return value.toLocaleString(locale, { maximumFractionDigits: 0 });
-}
 
 function normalizeTypeLabel(
 	value: string,
@@ -93,6 +89,7 @@ export function MiniBars({
 }) {
 	const t = useTranslations("Catalogue.compare");
 	const locale = useLocale();
+	const format = useDisplayFormatters();
 	const compactPoints = points.slice(-18);
 	const maxValue = compactPoints.length
 		? Math.max(...compactPoints.map((point) => point.value), 1)
@@ -112,7 +109,7 @@ export function MiniBars({
 							)}%`,
 							opacity: point.value > 0 ? 1 : 0.2,
 						}}
-						title={t("tokenCountTooltip", { count: formatInteger(point.value, locale) })}
+						title={t("tokenCountTooltip", { count: format.number(point.value, { maximumFractionDigits: 0, notation: "standard" }) })}
 					/>
 				))
 			) : (

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { Check, ChevronDown } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
 import type { TimeseriesData } from "@/lib/fetchers/rankings/getRankingsData";
@@ -26,6 +27,7 @@ import {
 } from "@/components/(rankings)/chart-colors";
 import { formatModelDisplayName } from "@/lib/models/displayName";
 import { getModelDetailsHref } from "@/lib/models/modelHref";
+import { formatCompactAxisTick } from "@/lib/formatRoundedCount";
 
 type UsageStackedBarProps = {
 	data: TimeseriesData[];
@@ -69,21 +71,6 @@ const CLOSED_LICENSE_VALUES = new Set([
 	"none",
 ]);
 
-function formatBucketLabel(value: string, locale: string) {
-	const date = new Date(value);
-	if (Number.isNaN(date.getTime())) return value;
-	return date.toLocaleDateString(locale, {
-		month: "short",
-		day: "numeric",
-		timeZone: "UTC",
-	});
-}
-
-function formatNumber(value: number, locale: string) {
-	if (!Number.isFinite(value)) return "--";
-	return new Intl.NumberFormat(locale, { notation: "compact", maximumFractionDigits: 1 }).format(value);
-}
-
 function timeseriesValue(
 	row: TimeseriesData,
 	metric: "requests" | "tokens" | "users",
@@ -92,11 +79,6 @@ function timeseriesValue(
 	return metric === "tokens"
 		? Number(row.tokens ?? 0)
 		: Number(row.requests ?? 0);
-}
-
-function formatPaceGain(value: number, locale: string) {
-	const safeValue = Number.isFinite(value) ? Math.max(0, value) : 0;
-	return `+${new Intl.NumberFormat(locale, { notation: "compact", maximumFractionDigits: 2 }).format(safeValue)}`;
 }
 
 function formatChange(value: number | null, locale: string, newLabel: string) {
@@ -228,6 +210,10 @@ export function UsageStackedBar({
 	}));
 	const displayedLeaderboardTitle = leaderboardTitle ?? t("usageDefaultLeaderboardTitle");
 	const displayedLeaderboardDescription = leaderboardDescription ?? t("usageDefaultLeaderboardDescription");
+	const format = useDisplayFormatters();
+	const formatBucketLabel = (value: string, _locale?: string) => format.calendarDate(value, value);
+	const formatNumber = (value: number, _locale?: string) => Number.isFinite(value) ? format.number(value, { maximumFractionDigits: 1 }) : "--";
+	const formatPaceGain = (value: number, _locale?: string) => `+${format.number(Number.isFinite(value) ? Math.max(0, value) : 0, { maximumFractionDigits: 2 })}`;
 	const [hoveredKey, setHoveredKey] = useState<string | null>(null);
 	const [nowMs] = useState(() => Date.now());
 	const [listExpanded, setListExpanded] = useState(false);
@@ -541,7 +527,7 @@ export function UsageStackedBar({
 						axisLine={false}
 					/>
 					<YAxis
-						tickFormatter={(value) => formatNumber(Number(value), locale)}
+						tickFormatter={(value) => formatCompactAxisTick(Number(value))}
 						width={60}
 						tickLine={false}
 						axisLine={false}

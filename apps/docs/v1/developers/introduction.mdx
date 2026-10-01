@@ -1,102 +1,32 @@
 ---
 title: "How Phaseo Works"
-description: "Understand the Phaseo Gateway before you choose endpoints, SDKs, routing, or production settings."
+description: "Understand models, providers, routing, and billing before integrating Phaseo."
 icon: "terminal"
 ---
 
-Use this explanation when you want the mental model before you build against the Gateway.
+Phaseo routes your application's model requests to providers through one API. Your application chooses a model and endpoint; workspace settings and request controls determine which providers can serve it.
 
-Phaseo gives you one API for models, providers, routing, pricing, and async AI workflows.
+## Models and providers
 
-That means you can:
+A model is the system generating the output. A provider hosts that model and determines availability, supported parameters, pricing, and performance. The same model can have several provider offers.
 
--   call multiple providers through one consistent API
--   keep request and response handling simpler
--   track usage, latency, and price in one place
--   change models or routing strategy without rebuilding your app
+The public catalog also includes models that are not currently available through the Gateway. Check [model availability](../exploring/models.mdx) before using an ID in a request.
 
-<Note>
-You can get started on `:free` models with zero deposited credits. Paid models require available wallet balance.
-</Note>
+## Requests and routing
 
----
+Use [Responses, Chat Completions, or Messages](../api-reference/introduction.mdx) according to your application's protocol. Provider-specific capabilities still vary; a common endpoint does not mean every model supports every parameter.
 
-## Why use a gateway
+[Routing controls](../guides/routing-and-fallbacks.mdx) let you restrict providers and choose how they are ranked. Fallbacks remain subject to your restrictions and available capacity; they do not guarantee success.
 
-AI integrations become harder as soon as you need more than one provider, model, endpoint family, or deployment environment.
+## Billing and access
 
-Phaseo gives your app one stable integration layer. You can ship the product flow first, then adjust models, providers, routing, and pricing strategy without rewriting every caller.
+Managed requests use your Phaseo workspace balance. `:free` models can run without deposited credits. With provider credentials (BYOK), provider billing and account limits apply; review [pricing and billing](../pricing/tiers.mdx) before rollout.
 
----
+[Video and batch jobs](../guides/async-video-and-batch.mdx) return a job before processing finishes. Their preview access is managed per workspace. Poll for status or receive webhook updates, then download the result.
 
-## Core concepts
+## Build your integration
 
-<Columns cols={2}>
-	<Card
-		title="Unified endpoints"
-		icon="terminal"
-		href="../api-reference/introduction"
-	>
-		Use one API shape across text, image, moderation, audio, video, and provider-compatible routes.
-	</Card>
-	<Card title="Routing controls" icon="git-branch" href="../guides/routing-and-fallbacks">
-		Choose how requests move across providers for availability, cost, latency, region, and policy.
-	</Card>
-	<Card title="Usage and cost tracking" icon="chart-column-increasing">
-		Track request volume, token usage, latency, and price so production behavior is visible.
-	</Card>
-	<Card title="BYOK (Bring Your Own Key)" icon="key">
-		Connect provider keys when you want provider billing and limits while keeping the same Gateway interface.
-	</Card>
-</Columns>
-
----
-
-## Recommended path
-
-1. **[Sign up](https://phaseo.app/sign-up)** for a Phaseo account.
-2. **[Generate an API key](https://phaseo.app/gateway/keys)** in your dashboard.
-3. **Make your first request** with the `/v1/responses` endpoint.
-4. **Choose your production path** for SDKs, routing, observability, and rollout.
-
-<Card
-	title="Quickstart"
-	icon="rocket"
-	href="/v1/quickstart"
-	horizontal
->
-	Make your first successful API call with a free model.
-</Card>
-
----
-
-## Next steps
-
-<Columns cols={2}>
-	<Card
-		title="Authentication"
-		icon="lock"
-		href="./authentication"
-	>
-		Learn how to authenticate securely using your personal or team API key.
-	</Card>
-	<Card title="API Reference" icon="code" href="../api-reference/introduction">
-		Browse the complete API documentation with endpoints, parameters, and
-		response schemas.
-	</Card>
-	<Card
-		title="Best Practices"
-		icon="shield-check"
-		href="./best-practices"
-	>
-		Guidance on how to get the most out of the Phaseo Gateway.
-	</Card>
-	<Card title="Examples" icon="terminal" href="../guides/examples">
-		Copy ready-to-run snippets for Next.js, Node.js streaming, Python, and
-		curl.
-	</Card>
-</Columns>
-
----
-
-Need a build-focused walkthrough? Continue with [Integrating with the Gateway](./integrating-with-the-gateway), then explore [Integrations](../guides/integrations/index) or [Rate limits](./rate-limits) as you scale.
+- [Quickstart](../quickstart.mdx): make your first request.
+- [Integrate the Gateway](./integrating-with-the-gateway.mdx): keep credentials on your backend and configure your application.
+- [Reliability and status](./reliability-and-status.mdx): investigate availability and failed requests.
+- [Request logs and observability](../guides/integrations/observability.mdx): inspect usage, latency, cost, and errors.

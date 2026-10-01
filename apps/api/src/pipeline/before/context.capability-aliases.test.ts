@@ -76,6 +76,23 @@ describe("getContextCapabilityCandidates", () => {
 		]);
 	});
 
+	it("expands Decisions capability aliases with the canonical capability first", () => {
+		expect(getContextCapabilityCandidates("systemone")).toEqual([
+			"decisions.make",
+			"systemone",
+			"decision.make",
+			"system.one",
+			"typed.decisions",
+		]);
+		expect(getContextCapabilityCandidates("decisions.make")).toEqual([
+			"decisions.make",
+			"decision.make",
+			"systemone",
+			"system.one",
+			"typed.decisions",
+		]);
+	});
+
 	it("expands audio speech capability aliases", () => {
 		expect(getContextCapabilityCandidates("audio.speech")).toEqual([
 			"audio.speech",

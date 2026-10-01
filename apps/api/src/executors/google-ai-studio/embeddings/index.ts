@@ -3,88 +3,20 @@
 // How: Maps IR embeddings to Google AI Studio embeddings and normalizes usage.
 
 import type {
-	IREmbeddingsContentPart,
-	IREmbeddingsInput,
-	IREmbeddingsInputItem,
 	IREmbeddingsRequest,
 	IREmbeddingsResponse,
 } from "@core/ir";
 import type { ExecutorExecuteArgs, ExecutorResult, ExecutorUpstreamTiming } from "@executors/types";
 import { fetchUpstream } from "@executors/_shared/timing/upstream";
 import { getBindings } from "@/runtime/env";
-import { normalizeGoogleUsage } from "@providers/google-ai-studio/usage";
 import { resolveProviderKey } from "@providers/keys";
 import { upstreamTestHeaders } from "@providers/shared/testing";
 import type { ProviderExecutor } from "../../types";
-import { irPartToGeminiPart } from "../../google/shared/media";
 import { resolveGoogleModelCandidates } from "../../google/shared/model";
 
+import { type GeminiEmbeddingContent, embeddingRequestError, normalizeEmbeddingsInputItems, normalizeEmbeddingInput, extractEmbeddingUsage, mapGoogleToIr } from "../../google/shared/embeddings";
+
 const BASE_URL = "https://generativelanguage.googleapis.com";
-
-type GeminiEmbeddingContent = {
-	parts: Array<Record<string, any>>;
-};
-
-function isHttpUrl(value: string): boolean {
-	return /^https?:\/\//i.test(value);
-}
-
-function isGoogleFilesUri(value: string): boolean {
-	try {
-		const url = new URL(value);
-		return (
-			url.hostname === "generativelanguage.googleapis.com" ||
-			url.hostname.endsWith(".googleapis.com")
-		);
-	} catch {
-		return false;
-	}
-}
-
-function expectedMimePrefix(part: IREmbeddingsContentPart): string | null {
-	if (part.type === "image") return "image/";
-	if (part.type === "audio") return "audio/";
-	if (part.type === "video") return "video/";
-	return null;
-}
-
-function sourceUrlForPart(part: IREmbeddingsContentPart): string | null {
-	if (part.type === "video") return part.url;
-	if (part.type === "image" || part.type === "audio") return part.data;
-	return null;
-}
-
-function assertEmbeddingMediaPart(part: IREmbeddingsContentPart, geminiPart: Record<string, any>) {
-	if (part.type === "text") return;
-
-	const sourceUrl = sourceUrlForPart(part);
-	const fallbackFileUri =
-		typeof geminiPart?.file_data?.file_uri === "string"
-			? geminiPart.file_data.file_uri
-			: null;
-	if (
-		sourceUrl &&
-		part.source === "url" &&
-		isHttpUrl(sourceUrl) &&
-		fallbackFileUri &&
-		!isGoogleFilesUri(fallbackFileUri)
-	) {
-		throw new Error(
-			`Google embeddings could not inline ${part.type} URL "${sourceUrl}". Use a direct public file URL, a data URL, or upload bytes from the client.`,
-		);
-	}
-
-	const expectedPrefix = expectedMimePrefix(part);
-	const actualMime =
-		typeof geminiPart?.inline_data?.mime_type === "string"
-			? geminiPart.inline_data.mime_type.trim().toLowerCase()
-			: null;
-	if (expectedPrefix && actualMime && !actualMime.startsWith(expectedPrefix)) {
-		throw new Error(
-			`Google embeddings expected ${expectedPrefix} input for ${part.type} but received "${actualMime}". Use a direct media file URL.`,
-		);
-	}
-}
 
 function resolvedBaseUrl(): string {
 	const bindings = getBindings() as unknown as Record<string, string | undefined>;
@@ -101,112 +33,6 @@ function baseHeaders(meta?: ExecutorExecuteArgs["meta"]) {
 		"Content-Type": "application/json",
 		...upstreamTestHeaders(meta),
 	};
-}
-
-function isTokenArray(value: unknown): value is number[] {
-	return Array.isArray(value) && value.every((entry) => typeof entry === "number" && Number.isFinite(entry));
-}
-
-function isEmbeddingsContentParts(value: unknown): value is IREmbeddingsContentPart[] {
-	return (
-		Array.isArray(value) &&
-		value.length > 0 &&
-		value.every((entry) => entry && typeof entry === "object" && typeof (entry as any).type === "string")
-	);
-}
-
-function normalizeEmbeddingsInputItems(input: IREmbeddingsInput): IREmbeddingsInputItem[] {
-	if (isTokenArray(input)) return [input];
-	if (!Array.isArray(input)) return [input];
-	if (input.length === 0) return [""];
-	if (isEmbeddingsContentParts(input)) return [input];
-	return input as IREmbeddingsInputItem[];
-}
-
-function tokenArrayToText(tokens: number[]): string {
-	return tokens.map((token) => Math.trunc(token)).join(" ");
-}
-
-async function normalizeEmbeddingInput(item: IREmbeddingsInputItem): Promise<GeminiEmbeddingContent> {
-	if (typeof item === "string") {
-		return {
-			parts: [{ text: item }],
-		};
-	}
-
-	if (isTokenArray(item)) {
-		return {
-			parts: [{ text: tokenArrayToText(item) }],
-		};
-	}
-
-	const parts = await Promise.all((item as IREmbeddingsContentPart[]).map(async (part) => {
-		const geminiPart = await irPartToGeminiPart(part);
-		assertEmbeddingMediaPart(part, geminiPart);
-		return geminiPart;
-	}));
-	return {
-		parts: parts.length > 0 ? parts : [{ text: "" }],
-	};
-}
-
-function extractEmbeddingUsage(json: any): Record<string, number> | undefined {
-	const merged: Record<string, number> = {};
-	const mergeUsage = (usage?: Record<string, number>) => {
-		if (!usage) return;
-		for (const [key, value] of Object.entries(usage)) {
-			if (typeof value !== "number") continue;
-			merged[key] = (merged[key] ?? 0) + value;
-		}
-	};
-
-	const usageEntries: any[] = [];
-	if (json?.usageMetadata) usageEntries.push(json.usageMetadata);
-	if (Array.isArray(json?.embeddings)) {
-		for (const entry of json.embeddings) {
-			if (entry?.usageMetadata) usageEntries.push(entry.usageMetadata);
-			if (entry?.usage) usageEntries.push(entry.usage);
-		}
-	}
-	if (Array.isArray(json?.requests)) {
-		for (const entry of json.requests) {
-			if (entry?.usageMetadata) usageEntries.push(entry.usageMetadata);
-			if (entry?.usage) usageEntries.push(entry.usage);
-		}
-	}
-	for (const entry of usageEntries) {
-		mergeUsage(normalizeGoogleUsage(entry?.usageMetadata ?? entry));
-	}
-	const readCount = (entry: any) =>
-		entry?.totalTokenCount ??
-		entry?.totalTokens ??
-		entry?.promptTokenCount ??
-		entry?.promptTokens ??
-		entry?.inputTokenCount ??
-		entry?.inputTokens ??
-		entry?.tokenCount ??
-		entry?.tokens ??
-		entry?.usage?.totalTokenCount ??
-		entry?.usage?.totalTokens ??
-		entry?.usage?.promptTokenCount ??
-		entry?.usage?.inputTokenCount ??
-		0;
-	let total = 0;
-	for (const entry of usageEntries) {
-		total += readCount(entry);
-	}
-	if (!total && Object.keys(merged).length) {
-		return merged;
-	}
-	if (!total) return undefined;
-	const usage = {
-		embedding_tokens: total,
-		total_tokens: total,
-		input_text_tokens: total,
-	};
-	return Object.keys(merged).length
-		? { ...merged, ...usage }
-		: usage;
 }
 
 async function fetchTokenCount(
@@ -237,64 +63,11 @@ async function fetchTokenCount(
 	return total;
 }
 
-function pickUsageNumber(usage: Record<string, number> | undefined, key: string): number | undefined {
-	const value = usage?.[key];
-	return typeof value === "number" ? value : undefined;
-}
-
-function mapGoogleToIr(json: any, model: string, usageOverride?: Record<string, number>): IREmbeddingsResponse {
-	const entries = Array.isArray(json?.embeddings)
-		? json.embeddings
-		: json?.embedding
-			? [json.embedding]
-			: [];
-
-	const data = entries.map((item: any, index: number) => ({
-		index,
-		embedding: item?.values ?? item?.embedding?.values ?? [],
-	}));
-
-	const usage = usageOverride ?? extractEmbeddingUsage(json);
-	const derivedInputTokens = [
-		pickUsageNumber(usage, "input_text_tokens"),
-		pickUsageNumber(usage, "input_image_tokens"),
-		pickUsageNumber(usage, "input_audio_tokens"),
-		pickUsageNumber(usage, "input_video_tokens"),
-	].reduce((total, value) => total + (value ?? 0), 0);
-
-	const inputTokens =
-		pickUsageNumber(usage, "input_tokens") ??
-		(derivedInputTokens > 0 ? derivedInputTokens : undefined) ??
-		pickUsageNumber(usage, "embedding_tokens");
-	const totalTokens = pickUsageNumber(usage, "total_tokens") ?? inputTokens;
-	const embeddingTokens = pickUsageNumber(usage, "embedding_tokens") ?? inputTokens;
-
-	const ext = {
-		inputImageTokens: pickUsageNumber(usage, "input_image_tokens"),
-		inputAudioTokens: pickUsageNumber(usage, "input_audio_tokens"),
-		inputVideoTokens: pickUsageNumber(usage, "input_video_tokens"),
-	};
-
-	return {
-		object: "list",
-		model,
-		data,
-		usage: usage
-			? {
-				inputTokens: typeof inputTokens === "number" ? inputTokens : undefined,
-				totalTokens: typeof totalTokens === "number" ? totalTokens : undefined,
-				embeddingTokens: typeof embeddingTokens === "number" ? embeddingTokens : undefined,
-				_ext: Object.values(ext).some((value) => typeof value === "number")
-					? ext
-					: undefined,
-			}
-			: undefined,
-		rawResponse: json ?? null,
-	};
-}
-
 export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult> {
 	const ir = args.ir as IREmbeddingsRequest;
+	if (ir.encodingFormat && !["float", "base64"].includes(ir.encodingFormat)) {
+		return embeddingRequestError("Google embeddings support float or base64 encoding.", "encoding_format");
+	}
 	const keyInfo = resolveProviderKey(args as any, () => getBindings().GOOGLE_AI_STUDIO_API_KEY);
 	const key = keyInfo.key;
 
@@ -341,6 +114,13 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		body: JSON.stringify(payload),
 	});
 	const json = await res.clone().json().catch(() => null);
+	if (!res.ok) {
+		return {
+			kind: "completed", upstream: res,
+			bill: { cost_cents: 0, currency: "USD", upstream_id: res.headers.get("x-request-id") },
+			keySource: keyInfo.source, byokKeyId: keyInfo.byokId, mappedRequest, rawResponse: json,
+		};
+	}
 
 	let usage = json ? extractEmbeddingUsage(json) : undefined;
 	if (!usage) {
@@ -354,7 +134,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		}
 	}
 
-	const responseIr = json ? mapGoogleToIr(json, ir.model, usage) : {
+	const responseIr = json ? mapGoogleToIr(json, ir.model, usage, ir.encodingFormat) : {
 		object: "list",
 		model: ir.model,
 		data: [],

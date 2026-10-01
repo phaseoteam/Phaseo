@@ -7,10 +7,12 @@ import {
 import { fetchFrontendRankingImageInputs } from "@/lib/fetchers/frontend/fetchRankingSections";
 import { formatModelDisplayName } from "@/lib/models/displayName";
 import { getTranslations } from "next-intl/server";
+import { RankingUnavailable } from "@/components/(rankings)/RankingUnavailable";
 
 export async function ImageInputsSection() {
 	const t = await getTranslations("Catalogue.rankings");
-	const result = await fetchFrontendRankingImageInputs("year", 20).catch(() => ({ data: [] }));
+	const result = await fetchFrontendRankingImageInputs("year", 20).catch(() => null);
+	if (!result) return <RankingUnavailable id="image-inputs" title={t("imageInputs")} />;
 	const modelIds = [...new Set(result.data.map((row) => row.model_id).filter(Boolean))];
 	const metaMap = await fetchFrontendModelLeaderboardMetaByIds(modelIds).catch(
 		(): Awaited<ReturnType<typeof fetchFrontendModelLeaderboardMetaByIds>> => ({}),

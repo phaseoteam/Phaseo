@@ -1,10 +1,46 @@
 export type ModelMetadataEntry = {
 	organisationId: string;
 	organisationName: string;
+	canonicalModelId?: string;
 	modelName?: string;
 };
 
 export type ModelMetadataMap = Map<string, ModelMetadataEntry>;
+
+export function getModelMetadataEntry(
+	modelId: string | null | undefined,
+	modelMetadata: ModelMetadataMap,
+): ModelMetadataEntry | undefined {
+	if (!modelId) return undefined;
+	for (const variant of modelIdVariants(modelId)) {
+		const entry = modelMetadata.get(variant);
+		if (entry) return entry;
+	}
+	return undefined;
+}
+
+export function getModelDetailsHref(
+	modelId: string | null | undefined,
+	modelMetadata?: ModelMetadataMap,
+	fallbackOrganisationId?: string | null,
+): string | null {
+	const value = modelId?.trim();
+	if (!value) return null;
+
+	const metadata = modelMetadata
+		? getModelMetadataEntry(value, modelMetadata)
+		: undefined;
+	if (fallbackOrganisationId && !metadata) return null;
+	const canonicalValue = metadata?.canonicalModelId?.trim() || value;
+	const [canonicalOrganisationIdFromId, ...canonicalModelParts] = canonicalValue.split("/");
+	const organisationId = canonicalModelParts.length > 0
+		? canonicalOrganisationIdFromId
+		: metadata?.organisationId || fallbackOrganisationId || undefined;
+	if (!organisationId) return null;
+
+	const routeModelId = canonicalModelParts.length > 0 ? canonicalModelParts.join("/") : canonicalValue;
+	return `/models/${encodeURIComponent(organisationId)}/${encodeURIComponent(routeModelId)}`;
+}
 
 function modelIdVariants(modelId: string): string[] {
 	const variants = new Set<string>();
@@ -116,6 +152,7 @@ function displayOrganisationName(raw: string | null | undefined): string | null 
 	]);
 	if (known.has(lower)) return known.get(lower)!;
 	if (value.includes("/")) return null;
+	if (/\s/.test(value)) return value;
 	const tokenKnown = new Map<string, string>([
 		["ai", "AI"],
 		["api", "API"],

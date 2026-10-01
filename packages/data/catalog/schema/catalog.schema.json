@@ -24,7 +24,7 @@
     "nullableNumber": { "type": ["number", "null"] },
     "dateTime": {
       "type": ["string", "null"],
-      "description": "ISO-like timestamp. Legacy files may omit an explicit timezone; importers normalise timestamps before persistence."
+      "description": "ISO-like timestamp. Legacy files may omit an explicit timezone; catalog tooling normalises timestamps before validation."
     },
     "link": {
       "type": "object",
@@ -184,6 +184,7 @@
         "organisation_id": { "$ref": "#/$defs/slug" },
         "name": { "type": "string", "minLength": 1 },
         "country_code": { "type": "string", "minLength": 2, "maxLength": 3 },
+        "subdivision_code": { "type": ["string", "null"], "pattern": "^[A-Z]{2}-[A-Z0-9]{1,3}$" },
         "description": { "$ref": "#/$defs/nullableString" },
         "colour": { "$ref": "#/$defs/nullableString" },
         "organisation_links": { "type": "array", "items": { "$ref": "#/$defs/link" } }
@@ -206,6 +207,7 @@
         "provider_family_id": { "type": ["string", "null"] },
         "status": { "type": ["string", "null"] },
         "country_code": { "type": ["string", "null"] },
+        "subdivision_code": { "type": ["string", "null"], "pattern": "^[A-Z]{2}-[A-Z0-9]{1,3}$" },
         "availability": {
           "type": ["object", "null"],
           "required": ["mode", "countries", "country_source", "unknown_country"],
@@ -254,6 +256,7 @@
         "api_base_url": { "type": ["string", "null"], "format": "uri" },
         "docs_url": { "type": ["string", "null"], "format": "uri" },
         "auth_env": { "type": ["array", "null"], "items": { "type": "string" } },
+		"credential_mode": { "type": "string", "enum": ["managed_and_byok", "byok_only"] },
         "api_formats": { "type": "array", "items": { "type": "string" } },
         "service_tiers": { "type": "array", "items": { "type": "string" } },
         "sources": { "type": "array", "items": { "$ref": "#/$defs/source" } },
@@ -285,6 +288,7 @@
         "provider_model_slug": { "type": ["string", "null"], "minLength": 1 },
         "internal_model_id": { "type": ["string", "null"] },
         "is_active_gateway": { "type": "boolean" },
+		"credential_mode": { "type": "string", "enum": ["managed_and_byok", "byok_only"] },
         "input_modalities": { "type": ["string", "array", "null"] },
         "output_modalities": { "type": ["string", "array", "null"] },
         "capabilities": { "type": "array", "items": { "$ref": "#/$defs/capability" } }

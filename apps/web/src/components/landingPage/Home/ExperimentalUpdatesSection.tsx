@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { fetchFrontendModelUpdateCards } from "@/lib/fetchers/frontend/fetchPublicCatalog";
+import { DisplayCalendarDate } from "@/components/display/DisplayValue";
 
 export function ExperimentalUpdatesSectionFallback() {
 	return (
@@ -73,11 +74,7 @@ export default async function ExperimentalUpdatesSection() {
 									) : null}
 									{update.dateIso ? (
 										<span className="text-[11px] uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-400">
-											{new Date(update.dateIso).toLocaleDateString(undefined, {
-												month: "short",
-												day: "numeric",
-												year: "numeric",
-											})}
+											<DisplayCalendarDate value={update.dateIso} />
 										</span>
 									) : null}
 								</div>

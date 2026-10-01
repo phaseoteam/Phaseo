@@ -41,6 +41,8 @@ import {
 	Video,
 	CalendarDays,
 	XCircle,
+	LockKeyhole,
+	Scale,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -74,10 +76,13 @@ import { getModalityTone } from "@/lib/models/modalityStyles";
 import { getTierFilterMeta } from "@/lib/models/tierFilterStyles";
 import type { MonitorModelTableRow } from "@/lib/fetchers/models/table-view/types";
 import { MonitorTableClient } from "@/components/monitor/MonitorTableClient";
+import { MODEL_TABLE_COLUMNS } from "@/components/monitor/MonitorDataTable";
 import { Logo } from "@/components/Logo";
 import { ActiveModelFilters, type ActiveModelFilter } from "./ActiveModelFilters";
 import { resolveDefaultGatewayStatuses } from "@/lib/models/defaultGatewayStatuses";
 import { Slider } from "@/components/ui/slider";
+import TableSettings from "@/components/(gateway)/usage/TableSettings";
+import { useTablePreferences } from "@/components/(gateway)/usage/useTablePreferences";
 
 type OptionCount = {
 	value: string;
@@ -141,6 +146,7 @@ const MODALITY_FILTER_DISPLAY_ORDER = [
 	"moderations",
 	"rerank",
 	"embeddings",
+	"decisions",
 ] as const;
 
 const STATUS_FILTER_DISPLAY_ORDER = [
@@ -331,6 +337,9 @@ function toTitleCase(value: string): string {
 	const normalized = String(value ?? "")
 		.trim()
 		.toLowerCase();
+	if (normalized === "decisions.make" || normalized === "systemone" || normalized === "system.one" || normalized === "typed.decisions" || normalized === "decisions") {
+		return "Decisions";
+	}
 	if (normalized === "realtime") return "Real-time";
 	if (normalized === "audio_stt") return "Transcription";
 	if (normalized === "audio_tts") return "Speech";
@@ -350,6 +359,7 @@ function toTitleCase(value: string): string {
 
 function getModalityIcon(modality: string): LucideIcon {
 	const normalized = modality.toLowerCase().replace(/[._/-]+/g, " ");
+	if (normalized.includes("decision")) return Scale;
 	if (normalized.includes("realtime") || normalized.includes("real time")) {
 		return Radio;
 	}
@@ -937,6 +947,21 @@ export default function ModelsTableDisplay({
 	const pathname = usePathname();
 	const searchParams = useSearchParams();
 	const isTable = pathname?.includes("/models/table");
+	const modelTablePreferences = useTablePreferences(
+		"models-table",
+		MODEL_TABLE_COLUMNS,
+	);
+	const modelTableSettings = isTable ? (
+		<TableSettings
+			columns={modelTablePreferences.columns}
+			definitions={MODEL_TABLE_COLUMNS}
+			tableLabel="models"
+			onReset={modelTablePreferences.resetColumns}
+			onChange={modelTablePreferences.updateColumns}
+			density={modelTablePreferences.density}
+			onDensityChange={modelTablePreferences.updateDensity}
+		/>
+	) : null;
 
 	const selectedContextStopIndex = getClosestStopIndex(selectedContextMin);
 
@@ -1252,6 +1277,13 @@ export default function ModelsTableDisplay({
 			(option) =>
 				option.value === sortField && option.direction === sortDirection,
 		) ?? TABLE_SORT_OPTIONS[0];
+	const hasPrivateModels = initialModelData.some((model) => model.tier === "private");
+	const privateOnly = selectedTiers.includes("private");
+	const privateFilterButton = hasPrivateModels ? (
+		<Button type="button" size="sm" variant={privateOnly ? "default" : "outline"} className="h-8 gap-1.5 rounded-md" onClick={() => setSelectedTiers(privateOnly ? selectedTiers.filter((value) => value !== "private") : [...selectedTiers, "private"])} aria-pressed={privateOnly}>
+			<LockKeyhole className="h-3.5 w-3.5" />Private
+		</Button>
+	) : null;
 
 	const filterButton = (compact = false) => (
 		<Button
@@ -1684,10 +1716,14 @@ export default function ModelsTableDisplay({
 							<h1 className="font-bold text-xl leading-8">{t("title")}</h1>
 						</div>
 
-						<div className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2">
+						<div className="flex items-center gap-2">
 							{sortSelect("h-8 min-w-0 rounded-md bg-background text-sm")}
+							{privateFilterButton}
 							{filterButton()}
-							{viewSwitcher}
+							<div className="flex items-center gap-1">
+								{modelTableSettings}
+								{viewSwitcher}
+							</div>
 						</div>
 
 						<div className="relative w-full">
@@ -1731,6 +1767,8 @@ export default function ModelsTableDisplay({
 									{sortSelect(
 										"h-8 w-[12.5rem] rounded-md bg-background text-sm 2xl:w-[13.5rem]",
 									)}
+					{privateFilterButton}
+					{modelTableSettings}
 									{viewSwitcher}
 								</div>
 							</div>
@@ -1740,7 +1778,9 @@ export default function ModelsTableDisplay({
 							<div className="flex h-8 items-center justify-between gap-3">
 								<h1 className="font-bold text-xl leading-8">{t("title")}</h1>
 								<div className="flex shrink-0 items-center justify-end gap-2">
+									{privateFilterButton}
 									{filterButton()}
+									{modelTableSettings}
 									{viewSwitcher}
 								</div>
 							</div>
@@ -1784,6 +1824,7 @@ export default function ModelsTableDisplay({
 						initialModelData={initialModelData}
 						effectiveStatuses={effectiveSelectedStatuses}
 						stickyHeaderOffset={stickyOffsets.tableHeaderTop}
+						modelTablePreferences={isTable ? modelTablePreferences : undefined}
 					/>
 				</div>
 			</section>

@@ -6,6 +6,7 @@ import { EmptyChartPreview } from "@/components/(rankings)/EmptyChartPreview";
 import { RankingMetricLeaderboard } from "@/components/(rankings)/RankingMetricLeaderboard";
 import { UsageStackedBar } from "@/components/(rankings)/UsageStackedBar";
 import { LazyRenderOnVisible } from "@/components/(rankings)/LazyRenderOnVisible";
+import { RankingUnavailable } from "@/components/(rankings)/RankingUnavailable";
 import type { TimeseriesData } from "@/lib/fetchers/rankings/getRankingsData";
 
 export type ModalityId =
@@ -40,6 +41,7 @@ export type ModalityMetric = {
 	description: string;
 	entries: ModalityLeaderboardEntry[];
 	dataNeeded?: string;
+	unavailable?: boolean;
 };
 
 export type ModalitySectionData = {
@@ -51,6 +53,8 @@ export type ModalitySectionData = {
 	primaryTimeseries: TimeseriesData[];
 	primaryEntries: ModalityLeaderboardEntry[];
 	metrics: ModalityMetric[];
+	valueUnit?: string;
+	unavailable?: boolean;
 };
 
 type ModalityLeaderboardsProps = {
@@ -83,7 +87,7 @@ function TopChart({
 	organisationNameMap: Record<string, string | null>;
 }) {
 	const t = useTranslations("Catalogue.rankings");
-	const valueUnit = t((
+	const valueUnit = section.valueUnit ?? t((
 		section.id === "image"
 			? "usageImagesUnit"
 			: section.id === "video"
@@ -92,6 +96,7 @@ function TopChart({
 					? "usageMinutesUnit"
 					: "usageTokensUnit"
 	) as never);
+	if (section.unavailable) return <RankingUnavailable title={section.chartTitle} />;
 
 	if (!section.primaryTimeseries.length) {
 		return (
@@ -156,7 +161,7 @@ function ModalitySection({
 		year: "numeric",
 		timeZone: "UTC",
 	});
-	const availableMetrics = section.metrics.filter((metric) => metric.entries.length);
+	const availableMetrics = section.metrics;
 
 	return (
 		<section
@@ -201,8 +206,9 @@ function ModalitySection({
 			{section.id !== "text" && availableMetrics.length ? (
 				<div className="grid gap-10 border-t border-border pt-10 lg:grid-cols-2 lg:gap-16">
 					{availableMetrics.map((metric) => (
-						<RankingMetricLeaderboard
+						metric.unavailable ? <RankingUnavailable key={metric.id} title={metric.title} /> : <RankingMetricLeaderboard
 							key={metric.id}
+							metricId={metric.id}
 							title={metric.title}
 							description={metric.description}
 							entries={metric.entries}

@@ -1,3 +1,4 @@
+import { collectSessionCounts } from "@/usage/sessionCounts";
 import { Hono } from "hono";
 import { getDataClient } from "@/data/supabase";
 import type { Env } from "@/env";
@@ -57,25 +58,54 @@ export async function metadataForIds(context: Awaited<ReturnType<typeof requireA
 	const modelIds = Array.from(new Set(args.models ?? [])).filter(Boolean);
 	const providerIds = Array.from(new Set(args.providers ?? [])).filter(Boolean);
 	const appIds = Array.from(new Set(args.apps ?? [])).filter(Boolean);
-	const [modelsResult, mappingsResult, providersResult, appsResult] = await Promise.all([
-		modelIds.length ? context.client.from("v2_models").select("model_id:model_slug,name,organisation_id:lab_slug,organisation:v2_labs(name,metadata)").in("model_slug", modelIds) : Promise.resolve({ data: [], error: null }),
-		modelIds.length ? context.client.from("v2_model_provider_routes").select("api_model_id:model_slug,model_id:model_slug").in("model_slug", modelIds) : Promise.resolve({ data: [], error: null }),
-		providerIds.length ? context.client.from("v2_providers").select("api_provider_id:provider_slug,api_provider_name:name,provider_family_id:provider_family_slug,offer_label,offer_scope,prompt_training_policy,metadata").in("provider_slug", providerIds) : Promise.resolve({ data: [], error: null }),
+	const routeSelect = "api_model_id:model_slug,model_id:model_slug,provider_model_id,provider_model_slug,provider_slug";
+	const [modelsResult, routesByModelResult, routesByProviderSlugResult, routesByProviderIdResult, providersResult, appsResult] = await Promise.all([
+		modelIds.length ? context.userClient.from("v2_models").select("model_id:model_slug,name,organisation_id:lab_slug,organisation:v2_labs(name,metadata)").in("model_slug", modelIds) : Promise.resolve({ data: [], error: null }),
+		modelIds.length ? context.userClient.from("v2_model_provider_routes").select(routeSelect).in("model_slug", modelIds) : Promise.resolve({ data: [], error: null }),
+		modelIds.length ? context.userClient.from("v2_model_provider_routes").select(routeSelect).in("provider_model_slug", modelIds) : Promise.resolve({ data: [], error: null }),
+		modelIds.length ? context.userClient.from("v2_model_provider_routes").select(routeSelect).in("provider_model_id", modelIds) : Promise.resolve({ data: [], error: null }),
+		providerIds.length ? context.userClient.from("v2_providers").select("api_provider_id:provider_slug,api_provider_name:name,provider_family_id:provider_family_slug,offer_label,offer_scope,prompt_training_policy,metadata").in("provider_slug", providerIds) : Promise.resolve({ data: [], error: null }),
 		appIds.length ? context.client.from("api_apps").select("id,title,app_key,image_url").in("id", appIds) : Promise.resolve({ data: [], error: null }),
 	]);
-	const canonicalIds = Array.from(new Set((mappingsResult.data ?? []).map((row) => row.model_id).filter(Boolean)));
-	const mappedModelsResult = canonicalIds.length ? await context.client.from("v2_models").select("model_id:model_slug,name,organisation_id:lab_slug,organisation:v2_labs(name,metadata)").in("model_slug", canonicalIds) : { data: [], error: null };
+	const routeRows = [
+		...(routesByModelResult.data ?? []),
+		...(routesByProviderSlugResult.data ?? []),
+		...(routesByProviderIdResult.data ?? []),
+	] as Array<Record<string, any>>;
+	const requestedProviders = new Set(providerIds.map((provider) => provider.toLowerCase()));
+	const mappingCandidates = new Map<string, Set<string>>();
+	for (const route of routeRows) {
+		const canonicalId = route.model_id ?? route.api_model_id;
+		if (typeof canonicalId !== "string" || !canonicalId) continue;
+		const routeProvider = typeof route.provider_slug === "string" ? route.provider_slug.trim().toLowerCase() : null;
+		if (requestedProviders.size > 0 && routeProvider && !requestedProviders.has(routeProvider)) continue;
+		for (const alias of [route.api_model_id, route.model_id, route.provider_model_slug, route.provider_model_id]) {
+			if (typeof alias !== "string" || !modelIds.includes(alias)) continue;
+			const candidates = mappingCandidates.get(alias) ?? new Set<string>();
+			candidates.add(canonicalId);
+			mappingCandidates.set(alias, candidates);
+		}
+	}
+	const mappings = new Map<string, { model_id: string }>();
+	for (const [alias, candidates] of mappingCandidates) {
+		if (candidates.size !== 1) continue;
+		mappings.set(alias, { model_id: Array.from(candidates)[0] });
+	}
+	const canonicalIds = Array.from(new Set(Array.from(mappings.values()).map((row) => row.model_id).filter(Boolean)));
+	const mappedModelsResult = canonicalIds.length ? await context.userClient.from("v2_models").select("model_id:model_slug,name,organisation_id:lab_slug,organisation:v2_labs(name,metadata)").in("model_slug", canonicalIds) : { data: [], error: null };
 	const canonical = new Map<string, Record<string, unknown>>();
-	for (const row of [...(modelsResult.data ?? []), ...(mappedModelsResult.data ?? [])]) canonical.set(row.model_id, row);
+	for (const row of [...(modelsResult.data ?? []), ...(mappedModelsResult.data ?? [])]) {
+		if (row.model_id) canonical.set(row.model_id, row);
+	}
 	const modelMetadata = new Map<string, Record<string, unknown>>();
-	const addModel = (key: string, row: Record<string, any>) => {
+	const addModel = (key: string, row: Record<string, any>, canonicalModelId = row.model_id ?? key) => {
 		const organisation = Array.isArray(row.organisation) ? row.organisation[0] : row.organisation;
-		modelMetadata.set(key, { organisationId: row.organisation_id ?? "", organisationName: organisation?.name ?? row.organisation_id ?? "", organisationColour: organisation?.metadata?.colour ?? null, modelName: row.name ?? key });
+		modelMetadata.set(key, { canonicalModelId, organisationId: row.organisation_id ?? "", organisationName: organisation?.name ?? row.organisation_id ?? "", organisationColour: organisation?.metadata?.colour ?? null, modelName: row.name ?? key });
 	};
 	for (const [id, row] of canonical) addModel(id, row);
-	for (const mapping of mappingsResult.data ?? []) {
+	for (const [alias, mapping] of mappings) {
 		const row = canonical.get(mapping.model_id);
-		if (row && mapping.api_model_id) addModel(mapping.api_model_id, row);
+		if (row) addModel(alias, row, mapping.model_id);
 	}
 	const providerNames = new Map<string, string>();
 	const providerMetadata = new Map<string, Record<string, unknown>>();
@@ -274,7 +304,7 @@ accountSettingsUsageRouter.get("/usage/logs", async (c) => {
 	if (view === "upstream") {
 		const v2Result = await context.client
 			.from("v2_request_facts")
-			.select("request_event_id,occurred_at,request_id,key_id,endpoint,requested_model_input,requested_model_slug,routed_model_slug,provider_model_id,status_code,success,error_code,byok,latency_ms,generation_ms,gateway_total_ms,upstream_attempt_count,throughput,cost_nanos,currency,client_source_id,client_source_name,client_source_kind,client_source_version,client_source_detection,v2_request_attempts(attempt_id,attempt_number,provider_model_id,started_at,completed_at,status_code,success,error_code,failure_class,upstream_response_id,latency_ms,safe_metadata)")
+			.select("request_event_id,occurred_at,request_id,key_id,endpoint,requested_model_input,requested_model_slug,routed_model_slug,provider_model_id,status_code,success,error_code,byok,stream,latency_ms,gateway_ttft_ms,generation_ms,gateway_total_ms,upstream_attempt_count,throughput,cost_nanos,currency,client_source_id,client_source_name,client_source_kind,client_source_version,client_source_detection,v2_request_attempts(attempt_id,attempt_number,provider_model_id,started_at,completed_at,status_code,success,error_code,failure_class,upstream_response_id,latency_ms,safe_metadata)")
 			.eq("workspace_id", workspaceId)
 			.gte("occurred_at", timeRange.from)
 			.lte("occurred_at", timeRange.to)
@@ -306,6 +336,8 @@ accountSettingsUsageRouter.get("/usage/logs", async (c) => {
 					round_number: 1,
 					attempt_number: attempt.attempt_number,
 					attempt_count: fact.upstream_attempt_count,
+					request_latency_ms: fact.stream === false ? fact.gateway_total_ms ?? null : fact.gateway_ttft_ms ?? null,
+					request_created_at: fact.occurred_at,
 					internal_attempt_number: null,
 					stage: "upstream",
 					endpoint: fact.endpoint,
@@ -359,6 +391,12 @@ accountSettingsUsageRouter.get("/usage/logs", async (c) => {
 				.limit(500);
 			if (legacyResult.error && v2Result.error) return c.json({ error: "usage_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
 			upstreamRequests = legacyResult.data ?? [];
+			const requestIds = Array.from(new Set(upstreamRequests.map((row) => row.request_id)));
+			if (requestIds.length) {
+				const latencyResult = await context.client.from("gateway_requests").select("request_id,created_at,gateway_ttft_ms").eq("workspace_id", workspaceId).in("request_id", requestIds);
+				const latencies = new Map((latencyResult.data ?? []).map((row) => [row.request_id, row]));
+				upstreamRequests = upstreamRequests.map((row) => ({ ...row, request_latency_ms: latencies.get(row.request_id)?.gateway_ttft_ms ?? null, request_created_at: latencies.get(row.request_id)?.created_at ?? null }));
+			}
 		}
 		const models = Array.from(new Set(upstreamRequests.map((row) => String(row.model_id ?? "").trim()).filter(Boolean)));
 		const providers = Array.from(new Set(upstreamRequests.map((row) => String(row.provider ?? "").trim()).filter(Boolean)));
@@ -373,16 +411,23 @@ accountSettingsUsageRouter.get("/usage/logs", async (c) => {
 		const provider = stringParam(url, "job_provider"); if (provider) query = query.eq("provider", provider);
 		const result = await query.order("updated_at", { ascending: false }).limit(50);
 		if (result.error) return c.json({ error: "usage_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
-		const recentJobsBase = (result.data ?? []).map((row) => ({ ...row, ...(row.meta && typeof row.meta === "object" && !Array.isArray(row.meta) ? row.meta : {}), webhook: row.meta && typeof row.meta === "object" && !Array.isArray(row.meta) ? (row.meta as Record<string, unknown>).webhook ?? null : null }));
+		// Reuse the refresh serializer; never return raw provider/webhook metadata.
+		const { toAsyncJobRow } = await import("@/usage/actions");
+		const recentJobsBase = (result.data ?? []).map((row) => toAsyncJobRow(row as Record<string, unknown>, { includeWithoutWebhook: true })).filter((row): row is NonNullable<typeof row> => row !== null);
 		const requestIds = Array.from(new Set(recentJobsBase.map((row) => row.request_id).filter(Boolean)));
 		const requestSourcesResult = requestIds.length
 			? await context.client.from("gateway_requests")
-				.select("request_id,client_source_id,client_source_name,client_source_kind,client_source_version,client_source_detection")
+				.select("request_id,created_at,cost_nanos,client_source_id,client_source_name,client_source_kind,client_source_version,client_source_detection")
 				.eq("workspace_id", workspaceId)
 				.in("request_id", requestIds)
 			: { data: [], error: null };
 		const requestSources = new Map((requestSourcesResult.data ?? []).map((row) => [row.request_id, row]));
-		const recentJobs = recentJobsBase.map((row) => ({ ...row, ...(requestSources.get(row.request_id) ?? {}) }));
+		const recentJobs = recentJobsBase.map((row) => {
+			const request = requestSources.get(row.request_id);
+			if (!request) return row;
+			const { created_at, cost_nanos, ...source } = request;
+			return { ...row, ...source, request_created_at: created_at ?? null, request_cost_nanos: cost_nanos == null ? null : Number(cost_nanos) };
+		});
 		const models = recentJobs.map((row) => String(row.model ?? "")).filter(Boolean); const providers = recentJobs.map((row) => String(row.provider ?? "")).filter(Boolean); const apps = recentJobs.map((row) => String(row.app_id ?? "")).filter(Boolean);
 		const metadata = await metadataForIds(context, { models, providers, apps });
 		return c.json({ data: { appMetadataEntries: metadata.appMetadataEntries, jobProviders: Array.from(new Set(providers)), modelMetadataEntries: metadata.modelMetadataEntries, providerNameEntries: metadata.providerNameEntries, recentJobs }, signedIn: true, view, workspaceId }, 200, PRIVATE_NO_STORE_HEADERS);
@@ -400,7 +445,8 @@ accountSettingsUsageRouter.get("/usage/logs", async (c) => {
 			if (!row.session_id) continue; const entry = groups.get(row.session_id) ?? { session_id: row.session_id, request_count: 0, total_cost_nanos: 0, first_request_at: row.created_at, last_request_at: row.created_at, app_ids: new Set<string>(), model_ids: new Set<string>(), provider_ids: new Set<string>(), end_user_ids: new Set<string>() };
 			entry.request_count += 1; entry.total_cost_nanos += Number(row.cost_nanos ?? 0); if (row.created_at < entry.first_request_at) entry.first_request_at = row.created_at; if (row.created_at > entry.last_request_at) entry.last_request_at = row.created_at; if (row.app_id) entry.app_ids.add(row.app_id); if (row.model_id) entry.model_ids.add(row.model_id); if (row.provider) entry.provider_ids.add(row.provider); if (row.end_user_id) entry.end_user_ids.add(row.end_user_id); groups.set(row.session_id, entry);
 		}
-		const sessions = Array.from(groups.values()).sort((a, b) => Date.parse(b.last_request_at) - Date.parse(a.last_request_at)).slice(0, 100).map((entry) => ({ ...entry, total_cost_usd: entry.total_cost_nanos / 1e9, app_ids: Array.from(entry.app_ids), model_ids: Array.from(entry.model_ids), provider_ids: Array.from(entry.provider_ids), end_user_ids: Array.from(entry.end_user_ids) }));
+		const sessionCounts = collectSessionCounts(result.data ?? []);
+		const sessions = Array.from(groups.values()).sort((a, b) => Date.parse(b.last_request_at) - Date.parse(a.last_request_at)).slice(0, 100).map((entry) => ({ ...entry, ...sessionCounts.get(entry.session_id), total_cost_usd: entry.total_cost_nanos / 1e9, app_ids: Array.from(entry.app_ids), model_ids: Array.from(entry.model_ids), provider_ids: Array.from(entry.provider_ids), end_user_ids: Array.from(entry.end_user_ids) }));
 		const appIds = Array.from(new Set(sessions.flatMap((row) => row.app_ids))); const modelIds = Array.from(new Set(sessions.flatMap((row) => row.model_ids))); const providerIds = Array.from(new Set(sessions.flatMap((row) => row.provider_ids)));
 		const metadata = await metadataForIds(context, { models: modelIds, providers: providerIds, apps: appIds });
 		return c.json({ data: { appMetadataEntries: metadata.appMetadataEntries, modelMetadataEntries: metadata.modelMetadataEntries, providerMetadataEntries: metadata.providerMetadataEntries, providerNameEntries: metadata.providerNameEntries, sessionAppIds: appIds, sessionModelIds: modelIds, sessionProviderIds: providerIds, sessions }, signedIn: true, view, workspaceId }, 200, PRIVATE_NO_STORE_HEADERS);
@@ -411,7 +457,7 @@ accountSettingsUsageRouter.get("/usage/logs", async (c) => {
 	const labelFilterResult = requestLabelFilter(url);
 	if (labelFilterResult && "error" in labelFilterResult) return c.json({ error: "invalid_label_filter", description: labelFilterResult.error }, 400, PRIVATE_NO_STORE_HEADERS);
 	const labelFilter = labelFilterResult && "key" in labelFilterResult ? labelFilterResult : null;
-	let requestQuery = context.client.from("gateway_requests").select("id,request_id,created_at,endpoint,model_id,requested_model_id,routed_model_id,provider,native_response_id,stream,session_id,app_id,usage,usage_input_tokens,usage_output_tokens,usage_total_tokens,cost_nanos,generation_ms,latency_ms,finish_reason,success,status_code,error_code,client_source_id,client_source_name,client_source_kind,client_source_version,client_source_detection,key_id,throughput").eq("workspace_id", workspaceId).gte("created_at", timeRange.from).lte("created_at", timeRange.to).not("endpoint", "in", '("video.generation","batch","music.generate")');
+	let requestQuery = context.client.from("gateway_requests").select("id,request_id,created_at,endpoint,model_id,requested_model_id,routed_model_id,provider,native_response_id,stream,session_id,app_id,usage,usage_input_tokens,usage_output_tokens,usage_total_tokens,cost_nanos,generation_ms,latency_ms,finish_reason,success,status_code,error_code,client_source_id,client_source_name,client_source_kind,client_source_version,client_source_detection,key_id,throughput,response_timeline:detail_metadata->response_timeline").eq("workspace_id", workspaceId).gte("created_at", timeRange.from).lte("created_at", timeRange.to).not("endpoint", "in", '("video.generation","batch","music.generate")');
 	if (labelFilter) requestQuery = requestQuery.contains("detail_metadata", { labels: [{ key: labelFilter.key, value: labelFilter.value }] });
 	for (const [param, column, operatorParam = `${param}_op`] of [
 		["model", "model_id"], ["provider", "provider"], ["app", "app_id"],
@@ -467,7 +513,7 @@ accountSettingsUsageRouter.get("/usage/logs", async (c) => {
 		? context.client.from("v2_request_facts").select("cost_nanos", { count: "exact" }).eq("workspace_id", workspaceId).gte("occurred_at", timeRange.from).lte("occurred_at", timeRange.to).contains("safe_metadata", { labels: [{ key: labelFilter.key, value: labelFilter.value }] }).limit(5000)
 		: null;
 	const [rollupResult, keysResult, facetsResult, labelFacetFactsResult, labelSummaryFactsResult] = await Promise.all([
-		context.client.from("v2_web_private_usage_daily").select("canonical_model_id,provider,app_id").eq("workspace_id", workspaceId).gte("bucket_15m", timeRange.from).lte("bucket_15m", timeRange.to),
+		context.client.rpc("get_private_usage_facets", { p_workspace_id: workspaceId, p_from: timeRange.from, p_to: timeRange.to }),
 		context.client.from("keys").select("id,name,prefix").eq("workspace_id", workspaceId).neq("status", "deleted").neq("name", "__chat_route_managed_key__").order("created_at", { ascending: true }),
 		context.client.rpc("get_gateway_request_facets", {
 			p_workspace_id: workspaceId,
@@ -478,6 +524,7 @@ accountSettingsUsageRouter.get("/usage/logs", async (c) => {
 		labelFacetFactsQuery,
 		labelSummaryFactsQuery,
 	]);
+	if (rollupResult.error || !Array.isArray(rollupResult.data)) return c.json({ error: "usage_facets_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
 	const requestRows = requestsResult.data ?? [];
 	const hasMoreRequests = requestRows.length > pageSize;
 	const visibleRequestRows = requestRows.slice(0, pageSize);
@@ -527,7 +574,7 @@ accountSettingsUsageRouter.get("/usage/alerts", async (c) => {
 	const windowStart = new Date(now - 7 * 86_400_000).toISOString().slice(0, 10);
 	const windowEnd = new Date(now + 90 * 86_400_000).toISOString().slice(0, 10);
 	const lifecycleResult = await context.client.from("v2_models")
-		.select("model_id:model_slug,name,organisation_id:lab_slug,deprecation_date:deprecated_at,retirement_date:retired_at,previous_model_id:previous_model_slug")
+		.select("model_id:model_slug,name,organisation_id:lab_slug,deprecation_date:deprecated_at,retirement_date:retired_at,previous_model_id:previous_model_slug,replacement_model_id:replacement_model_slug,metadata")
 		.eq("hidden", false)
 		.or(`and(retired_at.gte.${windowStart},retired_at.lte.${windowEnd}),and(deprecated_at.gte.${windowStart},deprecated_at.lte.${windowEnd})`);
 	if (lifecycleResult.error) return c.json({ error: "usage_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
@@ -581,7 +628,8 @@ accountSettingsUsageRouter.get("/usage/alerts", async (c) => {
 		const usedRecently = Boolean(lastUsedAt && Date.parse(lastUsedAt) >= now - 90 * 86_400_000);
 		let severity: Warning["severity"] = "fyi";
 		if (primary != null && primary >= 0 && primary <= 90 && usedRecently) severity = primary <= 7 ? "critical" : primary <= 28 ? "warning" : "notice";
-		return { modelId: model.model_id, modelName: model.name ?? null, organisationId: model.organisation_id ?? null, lastUsedAt, deprecationDate, retirementDate, deprecationDaysUntil, retirementDaysUntil, replacementModelId: replacementByPrevious.get(model.model_id) ?? null, previousModelId: model.previous_model_id ?? null, countAsAlert: usedRecently && primary != null && primary >= 0 && primary <= 90, severity };
+		const legacyReplacement = typeof model.metadata === "object" && model.metadata !== null && !Array.isArray(model.metadata) && typeof model.metadata.replacement_model_id === "string" ? model.metadata.replacement_model_id : null;
+		return { modelId: model.model_id, modelName: model.name ?? null, organisationId: model.organisation_id ?? null, lastUsedAt, deprecationDate, retirementDate, deprecationDaysUntil, retirementDaysUntil, replacementModelId: model.replacement_model_id ?? legacyReplacement ?? replacementByPrevious.get(model.model_id) ?? null, previousModelId: model.previous_model_id ?? null, countAsAlert: usedRecently && primary != null && primary >= 0 && primary <= 90, severity };
 	}).filter((warning) => [warning.deprecationDaysUntil, warning.retirementDaysUntil].some((days) => days != null && days >= -7 && days <= 90))
 		.sort((left, right) => Math.min(left.retirementDaysUntil ?? Infinity, left.deprecationDaysUntil ?? Infinity) - Math.min(right.retirementDaysUntil ?? Infinity, right.deprecationDaysUntil ?? Infinity));
 	return c.json({ signedIn: true, warnings, workspaceId }, 200, PRIVATE_NO_STORE_HEADERS);

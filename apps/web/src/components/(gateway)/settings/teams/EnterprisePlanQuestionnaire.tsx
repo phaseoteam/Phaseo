@@ -5,6 +5,7 @@ import { ArrowRight, Check, Loader2, MessagesSquare, ShieldCheck, Users } from "
 import { toast } from "sonner";
 import { useTranslations } from "next-intl";
 import { localizedSettingsError } from "@/i18n/error-messages";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -34,6 +35,7 @@ export default function EnterprisePlanQuestionnaire({ canEdit, workspaceId }: Pr
 			t(`strings.${key}` as never, values as never),
 		[t],
 	);
+	const format = useDisplayFormatters();
 	const [memberCount, setMemberCount] = React.useState(String(ENTERPRISE_MIN_SELF_SERVE_MEMBERS));
 	const [needsSso, setNeedsSso] = React.useState(true);
 	const [needsScim, setNeedsScim] = React.useState(true);
@@ -95,14 +97,14 @@ export default function EnterprisePlanQuestionnaire({ canEdit, workspaceId }: Pr
 							<section key={option.variant} className="space-y-5 border-y border-border/60 py-5">
 								<div className="flex flex-wrap items-start justify-between gap-3"><h4 className="flex items-center gap-2 font-semibold"><ShieldCheck className="h-4 w-4" />{s("Self Serve Enterprise")}</h4><div><span className="text-2xl font-semibold tracking-tight">${option.monthlyUsd}</span><span className="text-sm text-muted-foreground">{s(" / month")}</span></div></div>
 								<div className="space-y-2 text-sm">
-									{[s("SAML SSO and SCIM provisioning"), s("{count} active members included", { count: option.includedMembers.toLocaleString("en-US") }), ...(option.overageMembers > 0 ? [s("Estimated {count} additional members at ${price}/member/month", { count: option.overageMembers.toLocaleString("en-US"), price: String(option.overageMemberMonthlyUsd) }), s("Estimated monthly total: ${amount}", { amount: option.estimatedMonthlyUsd.toLocaleString("en-US") })] : []), s("Departments, roles and governance"), s("Standard 5% credit top-up fee")].map((feature) => <p key={feature} className="flex gap-2"><Check className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />{feature}</p>)}
+									{[s("SAML SSO and SCIM provisioning"), s("{count} active members included", { count: format.number(option.includedMembers) }), ...(option.overageMembers > 0 ? [s("Estimated {count} additional members at ${price}/member/month", { count: format.number(option.overageMembers), price: format.number(option.overageMemberMonthlyUsd, { notation: "standard" }) }), s("Estimated monthly total: ${amount}", { amount: format.number(option.estimatedMonthlyUsd, { notation: "standard" }) })] : []), s("Departments, roles and governance"), s("Standard 5% credit top-up fee")].map((feature) => <p key={feature} className="flex gap-2"><Check className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />{feature}</p>)}
 								</div>
 				<div className="flex justify-end"><Button onClick={() => checkout(option.variant)} disabled={working || !canEdit}>{working ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}{s("Subscribe")}</Button></div>
 							</section>
 						);
 					})}
 				</div>
-			<p className="text-xs text-muted-foreground">{s("Quote valid until {date}. USD billing only.", { date: new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(new Date(quote.expiresAt)) })}</p>
+			<p className="text-xs text-muted-foreground">{s("Quote valid until {date}. USD billing only.", { date: format.dateTime(quote.expiresAt) })}</p>
 			</div>
 		);
 	}

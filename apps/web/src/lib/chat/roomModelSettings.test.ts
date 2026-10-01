@@ -32,6 +32,18 @@ describe("roomModelSettings", () => {
 		expect(request.n).toBe(1);
 	});
 
+	it("sends only supported Hy Image options from the image room", () => {
+		const modelId = "tencent/hy-image-v3.5-preview:free";
+		const schema = getImageModelSchema(modelId);
+		expect(schema.sizeOptions).toContain("2048x2048");
+		expect(schema.qualityOptions).toEqual([]);
+		expect(buildImageRequestOptions(modelId, {
+			...getDefaultImageRoomParams(modelId),
+			quality: "standard",
+			n: 4,
+		})).toEqual({ size: "1024x1024", n: 1 });
+	});
+
 	it("uses Veo 3.1 duration constraints by resolution", () => {
 		const schema = getVideoModelSchema("google/veo-3.1-preview");
 		expect(schema.sizeOptions).toEqual(["720p", "1080p", "4k"]);

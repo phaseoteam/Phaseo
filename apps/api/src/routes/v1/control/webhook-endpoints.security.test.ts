@@ -40,11 +40,16 @@ vi.mock("@core/feature-flags", () => ({
 }));
 
 vi.mock("@core/webhook-endpoints", () => ({
+	WEBHOOK_ENDPOINT_EVENT_VALUES: ["batch.completed", "video.completed"],
 	encryptWebhookSecret: vi.fn(),
 	generateWebhookSigningSecret: vi.fn(),
 	normalizeWebhookEndpointEvents: vi.fn(),
 	toPublicWebhookEndpoint: vi.fn(),
 	validateWebhookEndpointUrlForDelivery: vi.fn(),
+}));
+
+vi.mock("@core/async-notifications", () => ({
+	sendWebhookTestEvent: vi.fn(),
 }));
 
 import app from "./webhook-endpoints";
@@ -105,6 +110,13 @@ describe("webhook endpoint management authorization", () => {
 			headers: { "Content-Type": "application/json" },
 			body: JSON.stringify({ name: "test", url: "https://hooks.example.test/batch" }),
 		}, {} as any);
+		expect(response.status).toBe(403);
+		expect(await response.json()).toMatchObject({ error: "insufficient_scope" });
+		expect(state.dbCalls).toBe(0);
+	});
+
+	it("requires settings:write before sending a test delivery", async () => {
+		const response = await app.request("https://api.example.test/wh_1/test", { method: "POST" }, {} as any);
 		expect(response.status).toBe(403);
 		expect(await response.json()).toMatchObject({ error: "insufficient_scope" });
 		expect(state.dbCalls).toBe(0);

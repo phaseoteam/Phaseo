@@ -440,7 +440,10 @@
 				"aliasIdentifier": "Alias",
 				"showFullDescription": "Vollständig anzeigen",
 				"showLessDescription": "Weniger anzeigen",
-				"viewOrganisation": "{organisation} ansehen"
+				"viewOrganisation": "{organisation} ansehen",
+				"decisions": "Entscheidungen",
+				"openDecisions": "Entscheidungen öffnen",
+				"openDecisionsPlayground": "Testumgebung für Entscheidungen öffnen"
 			},
 			"sections": {
 				"providersDescription": "API-Anbieter, Preise der Routen, Verfügbarkeit und aktuelle Zuverlässigkeitssignale.",
@@ -863,7 +866,11 @@
 						"label": "Eingestellt",
 						"description": "Der Gültigkeitszeitraum dieser Anbieterzuordnung ist abgelaufen."
 					}
-				}
+				},
+				"tierUltrafast": "Ultraschnell",
+				"planDescriptionFlexOnly": "Wird nur verwendet, wenn service_tier flex ist.",
+				"planDescriptionFastRouting": "Schnelles Routing, sofern verfügbar.",
+				"planDescriptionUltrafast": "Routing mit höchster Geschwindigkeit, sofern verfügbar."
 			},
 			"seoTitles": {
 				"titleDefault": "{model}: Preise, Benchmarks & Anbieter",
@@ -886,7 +893,11 @@
 				"showLess": "Weniger anzeigen",
 				"showMore": "{count} weitere anzeigen",
 				"noHighlights": "Es liegen noch keine Benchmark-Highlights vor.",
-				"tableTitle": "Benchmark-Tabelle"
+				"tableTitle": "Benchmark-Tabelle",
+				"openSource": "Quelle für {benchmark} öffnen",
+				"hideDetailsFor": "Details für {benchmark} ausblenden",
+				"showDetailsFor": "Details für {benchmark} anzeigen",
+				"showAll": "Alle {count} Benchmarks anzeigen"
 			},
 			"faqContent": {
 				"title": "Häufig gestellte Fragen",
@@ -963,6 +974,11 @@
 				"countFooter": "{count, plural, one {# Modell in dieser Familie.} other {# Modelle in dieser Familie.}}",
 				"close": "Schließen",
 				"genericFamily": "Modell"
+			},
+			"privateModel": {
+				"endpoint": "Privater Endpunkt",
+				"deployment": "Private Bereitstellung",
+				"billingNote": "Die Abrechnung des Anbieters wird direkt vom Arbeitsbereich verwaltet."
 			}
 		},
 		"noModelsAvailableForView": "Für diese Ansicht sind noch keine Modelle verfügbar.",
@@ -1187,7 +1203,14 @@
 				"input_video_seconds": "Eingabe-Videosekunden",
 				"total_tokens": "Tokens gesamt",
 				"requests": "Anfragen"
-			}
+			},
+			"organisationComingSoon": "{organisation} demnächst verfügbar",
+			"announcedPricingDescription": "{model} wurde von {organisation} angekündigt. Anbieterinformationen und Preise werden ergänzt, sobald es verfügbar ist.",
+			"noProviderAvailability": "Für dieses Modell sind noch keine API-Anbieterpreise oder Verfügbarkeitsdaten vorhanden.",
+			"thisModel": "Dieses Modell",
+			"tokenOverviewDescription": "Listenpreise sind die aktuellen Anbietertarife. Effektive Preise werden nach dem beobachteten Gateway-Datenverkehr der letzten 30 Tage gewichtet. Zusammenfassungen mitteln zeitlich begrenzte Preispläne; der Wochenverlauf zeigt jede Änderung in UTC.",
+			"unitOverviewDescription": "Listenpreise verwenden normalisierte Einheiten zum Vergleich. Zusammenfassungen mitteln zeitlich begrenzte Preispläne; der Wochenverlauf zeigt jede Änderung in UTC.",
+			"tierUnavailable": "Die Preislinie für {provider} {plan} ist ohne beobachtete Nutzung in der effektiven Ansicht nicht verfügbar"
 		},
 		"sections": {
 			"apiProvidersAndPricing": "API-Anbieter und Preise",
@@ -1400,18 +1423,23 @@
 			"suggestProviders": "Wenn du Anbieter kennst, die wir integrieren sollten, schreib uns auf Discord oder eröffne ein GitHub-Issue, damit wir Preisdaten ergänzen können.",
 			"noSubscriptions": "Noch keine Abonnementpläne aufgeführt",
 			"noSubscriptionPrice": "Keine Preise aufgeführt",
-			"noSubscriptionPricingDescription": "Für dieses Modell sind keine Abonnementpreise verfügbar."
+			"noSubscriptionPricingDescription": "Für dieses Modell sind keine Abonnementpreise verfügbar.",
+			"noHistoryTitle": "Noch kein Preisverlauf verfügbar",
+			"submittedPrices": "Die aktuell eingereichten Anbieterpreise werden in der Anbietertabelle oben angezeigt."
 		},
 		"uptime": {
-			"title": "Modellverfügbarkeit",
+			"title": "Durchschnittliche Verfügbarkeit",
 			"last24Hours": "Letzte 24 Stunden",
 			"noRequests": "Keine Anfragen beobachtet",
 			"requestsObserved": "Beobachtete Anfragen: {count}",
 			"perHour": "Verfügbarkeit pro Stunde",
 			"chartLabel": "Stündliche Modellverfügbarkeit der letzten {hours} Stunden. Verfügbarkeit: {uptime}. Erfasste Anfragen: {count}.",
-			"leastStableProviderLabel": "Am wenigsten zuverlässiger Anbieter",
+			"leastStableProviderLabel": "Ohne Phaseo Routing",
 			"tooltipUptime": "Betriebszeit:",
-			"tooltipWorstProvider": "Am wenigsten zuverlässiger Anbieter:"
+			"tooltipWorstProvider": "Ohne Phaseo Routing:",
+			"hourlyAverage": "Letzte 24 Stunden · stündlicher Durchschnitt",
+			"routingChartLabel": "Stündliche Modellverfügbarkeit in den letzten 24 Stunden. Phaseo Routing: {uptime}.{comparison}",
+			"routingComparison": " Ohne Phaseo Routing: {uptime}."
 		},
 		"providerInfo": {
 			"dataPolicy": "Datenschutzrichtlinie",
@@ -1534,7 +1562,9 @@
 			"relativeTime": "Relative Zeit",
 			"elapsed": "vergangen",
 			"remaining": "verbleibend",
-			"totalDays": "{count, plural, one {# Tag insgesamt} other {# Tage insgesamt}}"
+			"totalDays": "{count, plural, one {# Tag insgesamt} other {# Tage insgesamt}}",
+			"modalityStructured": "Strukturierter Zustand",
+			"modalityDecisions": "Entscheidungen"
 		},
 		"performance": {
 			"noTelemetry": "Keine Gateway-Telemetrie in den letzten 7 Tagen",
@@ -1641,7 +1671,9 @@
 				"metricByHour": "{metric} nach Stunde",
 				"noSamples": "Für diesen Zeitraum sind keine Messwerte verfügbar.",
 				"footer": "Alle Zeitangaben sind in UTC. Die Werte fassen Stundenmediane des ausgewählten Berichtszeitraums zusammen."
-			}
+			},
+			"observationsShown": "{description} Angezeigt werden {series}.",
+			"requestSuccess": "Erfolgreiche Anfragen"
 		}
 	},
 	"providers": {
@@ -1779,7 +1811,9 @@
 		"browseModels": "Über {name} verfügbare Modelle durchsuchen.",
 		"missingTitle": "Diesen API-Anbieter kennen wir noch nicht ...",
 		"missingDescription": "Fehlt ein API-Anbieter, können Sie auf GitHub beitragen.",
-		"contribute": "Auf GitHub beitragen"
+		"contribute": "Auf GitHub beitragen",
+		"internalPreview": "Interne Anbietervorschau",
+		"internalPreviewDescription": "Dieser Anbieter hat autorisierte Katalogeinreichungen, aber noch keine öffentlichen Gateway-Analysen. Die unten eingereichten Modelle sind nur für den Anbieterarbeitsbereich und Phaseo-Administratoren sichtbar."
 	},
 	"benchmarks": {
 		"title": "Vergleichstests",
@@ -1843,7 +1877,44 @@
 		"tocProgress": "Verlauf",
 		"tocModelResults": "Modellergebnisse",
 		"editBenchmark": "Benchmark bearbeiten",
-		"ranking": "Rang"
+		"ranking": "Rang",
+		"tocIndexComparisons": "Indexvergleiche",
+		"tocIndexLeaderboard": "Indexrangliste",
+		"independentEvaluations": "{metric} · Unabhängige Bewertungen",
+		"noModelsMatchSearch": "Keine Modelle entsprechen Ihrer Suche.",
+		"noBenchmarkResults": "Für diesen Benchmark liegen noch keine Ergebnisse vor.",
+		"directoryDescription": "Vergleiche Modellfähigkeiten anhand unabhängiger Bewertungen.",
+		"featuredAnalysis": "Ausgewählte Benchmarks von Artificial Analysis",
+		"featuredDescription": "Intelligenz, Programmierung, Agenten und Bewertungskosten",
+		"evaluatedModels": "{count} bewertete Modelle",
+		"viewResults": "Ergebnisse ansehen",
+		"allBenchmarks": "Alle Benchmarks",
+		"sortBenchmarks": "Benchmarks sortieren",
+		"mostModels": "Meiste Modelle",
+		"nameAlphabetically": "Name A–Z",
+		"modelCount": "{count} Modelle",
+		"showMoreBenchmarks": "Weitere Benchmarks anzeigen",
+		"showingCount": "{shown} von {total} angezeigt",
+		"metricDescriptions": {
+			"intelligence": "Gesamte Modellfähigkeit",
+			"coding": "Fähigkeiten in der Softwareentwicklung",
+			"agentic": "Leistung bei mehrstufigen Aufgaben",
+			"cost": "Vollständige Bewertung des Intelligenzindex · USD"
+		},
+		"filteredEmpty": "Keine Bewertungen entsprechen diesen Filtern.",
+		"scoreProgress": "Bewertungsentwicklung",
+		"releaseDateDescription": "Vergleiche Modellbewertungen nach Veröffentlichungsdatum.",
+		"progressTimeRange": "Zeitraum der Entwicklung",
+		"filterByModel": "Entwicklung nach Modell filtern",
+		"filterModels": "Modelle filtern",
+		"filterByOrg": "Entwicklung nach Organisation filtern",
+		"allOrganisations": "Alle Organisationen",
+		"filterByConfig": "Entwicklung nach Konfiguration filtern",
+		"allConfigurations": "Alle Konfigurationen",
+		"paretoFrontier": "Pareto-Grenze",
+		"all": "Alle",
+		"nonReasoning": "Ohne Schlussfolgern",
+		"confidenceInterval": "95%-Konfidenzintervall: {low}–{high}"
 	},
 	"rankings": {
 		"title": "KI-Modellranglisten",
@@ -2053,7 +2124,29 @@
 			"transcription": "Transkription"
 		},
 		"shareLabel": "Anteil",
-		"tokensLabel": "Tokens"
+		"tokensLabel": "Tokens",
+		"unavailable": "Diese Rangliste ist vorübergehend nicht verfügbar.",
+		"retrying": "Erneuter Versuch…",
+		"tryAgain": "Erneut versuchen",
+		"benchmarkRankings": "Benchmark-Ranglisten",
+		"independentEvaluations": "Unabhängige Bewertungen von Artificial Analysis",
+		"benchmarkMetric": "Benchmark-Metrik",
+		"lowerCostIsBetter": "Geringere Kosten sind besser · USD",
+		"indexVersion": "Index v{versions}",
+		"searchRankedModels": "Bewertete Modelle suchen",
+		"searchModels": "Modelle suchen",
+		"noSearchMatches": "Keine Modelle entsprechen deiner Suche.",
+		"noMetricResults": "Für diese Metrik sind noch keine Ergebnisse verfügbar.",
+		"allEvaluationResults": "Alle Ergebnisse und Bewertungsdetails",
+		"resultCount": "{count} Ergebnisse",
+		"benchmarkMetrics": {
+			"intelligence": "Intelligenz",
+			"coding": "Programmierung",
+			"agentic": "Agenten",
+			"cost": "Bewertungskosten"
+		},
+		"audioTranscribed": "Transkribiertes Audio",
+		"recentRequests": "{count} aktuelle Anfragen"
 	},
 	"compare": {
 		"title": "Modelle vergleichen",
@@ -2315,7 +2408,7 @@
 		"modelsTab": "Modelle",
 		"visitPlatformPage": "{name} auf {platform} besuchen",
 		"unknownLabTitle": "Dieses Labor ist uns noch nicht bekannt.",
-		"unknownLabDescription": "Wenn ein Labor fehlt, kannst du es auf GitHub ergänzen.",
+		"unknownLabDescription": "Wenn ein Labor fehlt, stelle bitte eine Datenanfrage.",
 		"contributeGitHub": "Auf GitHub beitragen",
 		"githubLogoAlt": "GitHub-Logo",
 		"editOrganisation": "Organisation bearbeiten",
@@ -2345,7 +2438,8 @@
 		"metadataModelsTitle": "KI-Modelle von {name}",
 		"metadataModelsDescription": "Entdecke die Modelle von {name} mit Gateway-Verfügbarkeit, Veröffentlichungsstatus und Preisen.",
 		"keywordAiModels": "KI-Modelle",
-		"keywordAiGateway": "KI-Gateway"
+		"keywordAiGateway": "KI-Gateway",
+		"requestMissingData": "Fehlende Daten anfragen"
 	},
 	"catalogNotFound": {
 		"modelHeading": "Das Modell „{id}“ wurde nicht gefunden.",
@@ -2481,7 +2575,8 @@
 		"waitingForFirstToken": "Warte auf das erste Token",
 		"measuredPace": "Gemessenes Tempo",
 		"fastPace": "Schnelles Tempo",
-		"veryFastPace": "Sehr schnelles Tempo"
+		"veryFastPace": "Sehr schnelles Tempo",
+		"tokensPerSecond": "{count} Token/s"
 	},
 	"monitor": {
 		"title": "Überwachung",
@@ -2745,7 +2840,7 @@
 		"visitApp": "App besuchen",
 		"active": "Aktiv",
 		"inactive": "Inaktiv",
-		"lastSeen": "Zuletzt aktiv: {date}",
+		"lastSeen": "Zuletzt aktiv: <date></date>",
 		"totalRequests": "Anfragen insgesamt",
 		"allTimeSuccessfulRequests": "Erfolgreiche Anfragen seit Beginn",
 		"totalTokens": "Tokens insgesamt",

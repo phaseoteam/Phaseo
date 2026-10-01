@@ -1,16 +1,16 @@
 {
 	"home": {
-		"title": "Phaseo: gateway de IA e catálogo de modelos abertos",
-		"description": "Descubra dados confiáveis sobre modelos, encaminhe solicitações por um único gateway de IA de código aberto e acompanhe custos, confiabilidade, uso e desempenho entre provedores.",
-		"heroTitle": "Uma plataforma para todos os modelos de IA",
-		"heroDescription": "Descubra dados confiáveis sobre modelos, encaminhe solicitações por um único gateway compatível com OpenAI e acompanhe custos, confiabilidade, uso e desempenho entre os provedores compatíveis.",
+		"title": "Phaseo: o gateway aberto para IA acessível",
+		"description": "Descubra modelos, encaminhe solicitações entre provedores e use um gateway de IA de código aberto criado para manter a inferência acessível, portátil e transparente.",
+		"heroTitle": "A inferência de IA deve ser aberta, acessível e oferecer liberdade de escolha.",
+		"heroDescription": "A Phaseo está criando um gateway de IA de código aberto e independente de provedores. Descubra modelos, encaminhe solicitações entre provedores e mantenha sua integração portátil, enquanto melhores parcerias ajudam a reduzir o custo da inferência.",
 		"explore": "Explorar",
 		"models": "Modelos",
 		"getApiKey": "Obter chave de API",
 		"viewGithub": "Ver no GitHub",
 		"openModelDatabase": "Banco de modelos aberto, gateway unificado",
 		"openModelDatabaseDescription": "Explore o catálogo completo de modelos e filtre aqueles com uma rota ativa no Gateway antes de colocá-los em produção.",
-		"transparentPricing": "Preços transparentes",
+		"transparentPricing": "Preços claros hoje. Menos despesas amanhã.",
 		"viewPricing": "Ver preços",
 		"usePricingCalculator": "Usar calculadora de preços",
 		"latestModels": "Modelos recentes",
@@ -51,12 +51,14 @@
 			"description": "Sinais gerais derivados do nosso banco de dados de modelos e benchmarks (dados de exemplo exibidos). Atualizado continuamente conforme novos eventos são registrados."
 		},
 		"pricingPoints": {
-			"payAsYouGo": "Pague conforme usar, sem complicação",
-			"payAsYouGoBody": "Sem plano empresarial, contrato, assinatura, gasto mínimo ou compromisso mensal ou anual.",
+			"payAsYouGo": "Pague conforme o uso",
+			"payAsYouGoBody": "Sem contrato, assinatura ou gasto mínimo para usar modelos.",
 			"creditFee": "Taxa de {fee}% na compra de créditos",
 			"creditFeeBody": "Aplicada quando você compra créditos, com mínimo de US$ 1. O uso segue os preços dos modelos exibidos no catálogo.",
 			"managedCredits": "Créditos gerenciados ou BYOK",
-			"managedCreditsBody": "O BYOK inclui um milhão de solicitações sem taxa todos os meses; depois disso, há uma taxa de serviço de 2,5% sobre o custo equivalente do provedor."
+			"managedCreditsBody": "O BYOK inclui um milhão de solicitações sem taxa todos os meses; depois disso, há uma taxa de serviço de 2,5% sobre o custo equivalente do provedor.",
+			"selfServeEnterprise": "Enterprise por autoatendimento",
+			"selfServeEnterpriseBody": "Um plano mensal opcional por espaço de trabalho para SSO, SCIM, governança e suporte prioritário."
 		},
 		"reliability": {
 			"title": "Confiabilidade para IA em produção.",
@@ -80,6 +82,16 @@
 			"routingBody": "Entenda como o gateway redirecionou o tráfego quando a integridade do provedor mudou.",
 			"regressionsTitle": "Identificar regressões cedo",
 			"regressionsBody": "Compare mudanças em modelos e provedores antes que virem incidentes visíveis para usuários."
+		},
+		"transparentPricingDescription": "O uso segue os preços dos modelos exibidos no catálogo. A taxa atual de compra de créditos é mostrada abertamente; nossa missão é reduzir custos evitáveis da plataforma quando parcerias com provedores e eficiência operacional tornarem isso sustentável.",
+		"missionLink": "Veja o que estamos construindo",
+		"missionProofs": {
+			"openSource": "Código aberto",
+			"openSourceBody": "Inspecione, amplie e melhore o gateway.",
+			"providerNeutral": "Independente de provedores",
+			"providerNeutralBody": "Escolha o provedor que combina com seu trabalho.",
+			"lowerOverhead": "Menos despesas",
+			"lowerOverheadBody": "Use eficiência e parcerias para reduzir custos evitáveis."
 		}
 	},
 	"about": {
@@ -760,6 +772,10 @@
 			"batch": {
 				"label": "Lote",
 				"detail": "Processamento assíncrono"
+			},
+			"decisions": {
+				"label": "Decisões",
+				"detail": "Respostas tipadas"
 			}
 		},
 		"gatewayCapabilities": "Recursos do Gateway",
@@ -1551,15 +1567,15 @@
 			"audit": "Controles de auditoria e governança",
 			"priority": "Suporte prioritário"
 		},
-		"paygHeadline": "Pagamento conforme o uso por padrão. Adicione o plano empresarial quando sua equipe precisar.",
-		"paygBody": "Compre créditos quando precisar e pague pelo que usar. A gestão de identidade e os benefícios de pagamento para empresas são opcionais, têm preços transparentes e podem ser ativados sem conversa com vendas.",
+		"paygHeadline": "Pagamento por uso por padrão. Enterprise por autoatendimento quando sua equipe precisar.",
+		"paygBody": "Compre créditos quando precisar e pague pelo que usar. Enterprise é uma assinatura mensal separada para identidade, governança e suporte prioritário. Não altera os preços de uso dos modelos e pode ser ativada sem falar com vendas. Para estimativas por modelo, use a",
 		"manageCredits": "Gerenciar créditos",
 		"manageProviderKeys": "Gerenciar chaves de provedores",
 		"modelPricingCalculator": "Calculadora de preços de modelos",
 		"payg": "Pague conforme usar",
 		"paygBodyShort": "Recarregue créditos somente quando precisar.",
-		"enterpriseOptional": "O plano empresarial é opcional",
-		"enterpriseOptionalBody": "Adicione SSO, SCIM e governança sem alterar os preços de uso.",
+		"enterpriseOptional": "Enterprise por autoatendimento",
+		"enterpriseOptionalBody": "Adicione SSO, SCIM, governança e suporte prioritário sem alterar os preços de uso.",
 		"pricesPublic": "Os preços continuam públicos",
 		"pricesPublicBody": "Responda a um breve questionário e assine imediatamente.",
 		"faqTitle": "Perguntas frequentes",
@@ -1639,7 +1655,8 @@
 				"training-data": "A Phaseo treina com meus prompts ou respostas?",
 				"request-logging": "Quais dados das solicitações a Phaseo armazena?",
 				"service-status": "Onde posso consultar incidentes e disponibilidade?",
-				"contact-support": "Como entro em contato com o suporte?"
+				"contact-support": "Como entro em contato com o suporte?",
+				"receipts": "Posso obter um recibo de uma compra de créditos?"
 			},
 			"answers": {
 				"how-are-tokens-billed": "O uso faturável de entrada, saída e outros itens é descontado do seu saldo de créditos Phaseo pelos preços de modelo exibidos no catálogo. A Phaseo não adiciona uma margem separada a cada solicitação gerenciada.",
@@ -1676,7 +1693,8 @@
 				"training-data": "Não. A Phaseo não usa prompts nem respostas do gateway para treinar seus próprios modelos. As solicitações são enviadas ao provedor que as atende, e as políticas de dados e treinamento dele continuam valendo, a menos que seus requisitos de roteamento o excluam.",
 				"request-logging": "A Phaseo armazena metadados operacionais e de faturamento, como modelo, provedor, contagem de tokens, latência e erros. Por padrão, prompts e respostas brutos não são armazenados de forma persistente. Se o registro de E/S do espaço estiver ativo, a retenção de dados segue as configurações de privacidade e retenção do espaço.",
 				"service-status": "O status atual do serviço e o histórico de incidentes são publicados em status.phaseo.app. IDs de solicitação e registros de atividade podem ajudar o suporte a rastrear uma falha específica.",
-				"contact-support": "Use a página de contato ou envie um e-mail para support@phaseo.app sobre conta, faturamento ou dúvidas técnicas. Relatos de bugs e pedidos de recursos também podem ser abertos no repositório público do GitHub."
+				"contact-support": "Use a página de contato ou envie um e-mail para support@phaseo.app sobre conta, faturamento ou dúvidas técnicas. Relatos de bugs e pedidos de recursos também podem ser abertos no repositório público do GitHub.",
+				"receipts": "Sim. Recibos hospedados na Stripe de compras concluídas estão em Configurações → Créditos. Se faltar um recibo de um pagamento bem-sucedido, contate o suporte com o ID e a data do pagamento."
 			}
 		},
 		"matrix": {
@@ -1871,7 +1889,13 @@
 			"paygCreditPurchaseFee": "É cobrada uma taxa de {fee, number}% (mínimo de {minimum}) na compra de créditos",
 			"enterpriseCreditPurchaseFee": "É cobrada uma taxa de 5% (mínimo de {minimum}) na compra de créditos",
 			"byokServiceFee": "{freeRequests, number} solicitações por mês incluídas; depois, {serviceFee, number}% do custo equivalente do provedor"
-		}
+		},
+		"paygHeadlinePreview": "Pagamento por uso por padrão.",
+		"paygBodyPreview": "Compre créditos quando precisar e pague pelo que usar. Identidade, governança e suporte prioritário Enterprise estão em prévia para espaços elegíveis. Para estimativas por modelo, use a",
+		"enterprisePreview": "Prévia Enterprise",
+		"enterprisePreviewBody": "Identidade, governança e suporte prioritário estão sendo preparados para espaços elegíveis.",
+		"pricesPublicPreview": "Preços públicos",
+		"pricesPublicPreviewBody": "Compare os preços de uso dos modelos no catálogo e na calculadora."
 	},
 	"gatewayComparison": {
 		"title": "Phaseo vs. {name}",
@@ -2422,7 +2446,8 @@
 			"survival": "Quando seu acesso ao Serviço terminar, as Seções 2, 3, 4, 5 e 8–15 continuarão em vigor.",
 			"contactQuestions": "Se tiver dúvidas sobre estes Termos, entre em contato:",
 			"contactEmailLabel": "E-mail",
-			"operatorDetails": "O Serviço é oferecido por <person>Daniel Butler</person>, que atua como <brand>Phaseo</brand>."
+			"operatorDetails": "O Serviço é oferecido por <person>Daniel Butler</person>, que atua como <brand>Phaseo</brand>.",
+			"autoTopUpSecurity": "Por segurança, podemos exigir autenticação de dois fatores antes de ativar a recarga automática. Se oferecermos a opção de continuar sem ela, você deverá concluir uma etapa separada de reconhecimento e confirmação. Ao fazê-lo, você reconhece o maior risco de cobranças não autorizadas e que qualquer reembolso ou contestação será avaliado conforme estes Termos e a legislação aplicável. Nada nesta seção limita os direitos obrigatórios dos consumidores."
 		}
 	},
 	"brandMenu": {

@@ -12,6 +12,10 @@ import {
 	ArrowRightLeft,
 } from "lucide-react";
 import NumberFlow, { type Format } from "@number-flow/react";
+import {
+	useDisplayFormatters,
+	useDisplayPreferences,
+} from "@/components/providers/DisplayPreferencesProvider";
 
 type Delta = { percent: number | null };
 
@@ -50,6 +54,8 @@ export default function UsageStatCards(props: {
 		delta: { percent: number | null };
 	}>;
 }) {
+	const display = useDisplayFormatters();
+	const { preferences } = useDisplayPreferences();
 	const iconMap: Record<string, any> = {
 		spend: CreditCard,
 		requests: ArrowRightLeft,
@@ -94,6 +100,7 @@ export default function UsageStatCards(props: {
 										) : null}
 										<NumberFlow
 											value={c.value}
+											locales={preferences.locale === "system" ? undefined : preferences.locale}
 											// duration={0.8}
 											format={
 												c.format ??
@@ -107,20 +114,16 @@ export default function UsageStatCards(props: {
 													  }
 													: {
 															useGrouping: true,
+															notation: preferences.numberNotation,
 															minimumFractionDigits: 0,
 															maximumFractionDigits: 0,
 													  })
 											}
 											className="leading-none"
-											aria-label={`${
-												c.title
-											}: ${c.value.toLocaleString(
-												undefined,
-												{
-													minimumFractionDigits: 0,
-													maximumFractionDigits: 2,
-												}
-											)}`}
+											aria-label={`${c.title}: ${display.number(c.value, {
+												minimumFractionDigits: 0,
+												maximumFractionDigits: 2,
+											})}`}
 										/>
 										{c.suffix ? (
 											<span

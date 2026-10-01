@@ -43,5 +43,4 @@ If validation fails:
 
 ## Streaming note
 
-For now, keep tool-calling requests non-streaming (`stream: false`) to satisfy gateway request validation.
-
+Streaming tool calls depend on model and provider support. Accumulate all argument deltas before parsing, validating, or executing a call. See [Streaming](./streaming.mdx).

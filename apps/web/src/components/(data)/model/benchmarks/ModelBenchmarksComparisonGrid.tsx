@@ -572,12 +572,12 @@ export function ModelBenchmarksComparisonGrid({
 								  })
 							: tUi("benchmarkComparison.chartsUnavailable")}
 					</span>
-					<div className="flex items-center gap-2">
+					<div className="flex w-full items-center gap-2 sm:w-auto">
 						<Button
 							asChild
 							variant="ghost"
 							size="sm"
-							className="text-xs font-medium"
+							className="min-w-0 flex-1 justify-center text-xs font-medium sm:flex-none"
 						>
 							<Link
 								href={`/benchmarks/${selectedComparison.benchmarkId}`}
@@ -590,7 +590,7 @@ export function ModelBenchmarksComparisonGrid({
 							size="sm"
 							variant="outline"
 							onClick={() => setDialogOpen(true)}
-							className="gap-1.5"
+							className="min-w-0 flex-1 justify-center gap-1.5 sm:flex-none"
 						>
 							<Expand className="h-4 w-4" />
 							<span>{tUi("benchmarkComparison.fullRanking")}</span>

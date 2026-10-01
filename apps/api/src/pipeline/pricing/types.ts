@@ -72,6 +72,7 @@ export type PricingDimensionKey =
     | "cached_read_audio_tokens"
     | "embedding_tokens"
     | "bfl_credits"
+    | "deepinfra_cost_usd"
     | "server_tool_web_search_requests"
     | "server_tool_web_search_extra_results"
     | "server_tool_web_fetch_requests"
@@ -159,7 +160,6 @@ export type PricingResult = {
     currency: "USD";
     lines: PricingBreakdownLine[];
 };
-
 
 
 

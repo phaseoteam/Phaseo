@@ -175,7 +175,26 @@
     "max_output_tokens": 64000,
     "effective_from": "2026-05-20T00:00:00",
     "effective_to": null,
-    "capabilities": [],
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": true,
+        "tool_call": true,
+        "structured_output": true,
+        "temperature": true,
+        "attachment": true,
+        "input_modalities": [
+          "text",
+          "image"
+        ],
+        "output_modalities": [
+          "text"
+        ],
+        "modes": []
+      }
+    ],
     "routing_status": null,
     "routable": false,
     "regions": {
@@ -188,11 +207,18 @@
       "endpoint": null,
       "deployment": null
     },
-    "sources": [],
+    "sources": [
+      {
+        "kind": "models",
+        "url": "https://docs.cohere.com/docs/command-a-plus",
+        "accessed_at": "2026-09-08T00:00:00Z",
+        "notes": "Cohere current Command A+ model documentation."
+      }
+    ],
     "verification": {
-      "status": "unverified",
-      "checked_at": null,
-      "notes": null
+      "status": "verified",
+      "checked_at": "2026-09-08T00:00:00Z",
+      "notes": "Verified as Cohere's current Command A+ model; gateway routing remains disabled pending production pricing and route verification."
     },
     "rate_limits": []
   },
@@ -507,6 +533,126 @@
       "status": "unverified",
       "checked_at": null,
       "notes": null
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "cohere/rerank-english-v3",
+    "provider_api_model_id": "cohere:cohere/rerank-english-v3",
+    "provider_model_slug": "rerank-english-v3.0",
+    "internal_model_id": "cohere/rerank-english-v3",
+    "is_active_gateway": false,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 4096,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "rerank",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": null,
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [
+        "cohere.rerank"
+      ],
+      "endpoint": "/v2/rerank",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "models",
+        "url": "https://docs.cohere.com/docs/rerank",
+        "accessed_at": "2026-09-08T00:00:00Z",
+        "notes": "Cohere current Rerank model catalogue."
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-09-08T00:00:00Z",
+      "notes": "Verified as a current Cohere Rerank model; gateway routing remains disabled pending production pricing and route verification."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "cohere/rerank-multilingual-v3",
+    "provider_api_model_id": "cohere:cohere/rerank-multilingual-v3",
+    "provider_model_slug": "rerank-multilingual-v3.0",
+    "internal_model_id": "cohere/rerank-multilingual-v3",
+    "is_active_gateway": false,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 4096,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "rerank",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": null,
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [
+        "cohere.rerank"
+      ],
+      "endpoint": "/v2/rerank",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "models",
+        "url": "https://docs.cohere.com/docs/rerank",
+        "accessed_at": "2026-09-08T00:00:00Z",
+        "notes": "Cohere current Rerank model catalogue."
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-09-08T00:00:00Z",
+      "notes": "Verified as a current Cohere Rerank model; gateway routing remains disabled pending production pricing and route verification."
     },
     "rate_limits": []
   },
@@ -832,6 +978,126 @@
       "status": "unverified",
       "checked_at": null,
       "notes": null
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "cohere/embed-english-light-v3",
+    "provider_api_model_id": "cohere:cohere/embed-english-light-v3",
+    "provider_model_slug": "embed-english-light-v3.0",
+    "internal_model_id": "cohere/embed-english-light-v3",
+    "is_active_gateway": false,
+    "input_modalities": "text",
+    "output_modalities": "embedding",
+    "context_length": 512,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "embeddings",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": null,
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [
+        "openai.embeddings"
+      ],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "models",
+        "url": "https://docs.cohere.com/docs/cohere-embed",
+        "accessed_at": "2026-09-08T00:00:00Z",
+        "notes": "Cohere current Embed model catalogue."
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-09-08T00:00:00Z",
+      "notes": "Verified as a current Cohere Embed model; gateway routing remains disabled pending production pricing and route verification."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "cohere/embed-multilingual-light-v3",
+    "provider_api_model_id": "cohere:cohere/embed-multilingual-light-v3",
+    "provider_model_slug": "embed-multilingual-light-v3.0",
+    "internal_model_id": "cohere/embed-multilingual-light-v3",
+    "is_active_gateway": false,
+    "input_modalities": "text",
+    "output_modalities": "embedding",
+    "context_length": 512,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "embeddings",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": null,
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [
+        "openai.embeddings"
+      ],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "models",
+        "url": "https://docs.cohere.com/docs/cohere-embed",
+        "accessed_at": "2026-09-08T00:00:00Z",
+        "notes": "Cohere current Embed model catalogue."
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-09-08T00:00:00Z",
+      "notes": "Verified as a current Cohere Embed model; gateway routing remains disabled pending production pricing and route verification."
     },
     "rate_limits": []
   },

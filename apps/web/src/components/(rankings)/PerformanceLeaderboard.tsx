@@ -9,6 +9,7 @@ import { EmptyLeaderboardPreview } from "@/components/(rankings)/EmptyLeaderboar
 import { formatModelDisplayName } from "@/lib/models/displayName";
 import { getModelDetailsHref } from "@/lib/models/modelHref";
 import { ChevronDown } from "lucide-react";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 
 export type PerformanceLeaderboardEntry = {
 	key: string;
@@ -27,9 +28,16 @@ type PerformanceLeaderboardProps = {
 	maxExpanded?: number;
 };
 
-function formatThroughput(value: number, locale: string) {
+function formatThroughput(
+	value: number,
+	formatNumber: ReturnType<typeof useDisplayFormatters>["number"],
+) {
 	if (!Number.isFinite(value)) return "--";
-	return new Intl.NumberFormat(locale, { notation: "compact", maximumFractionDigits: 1 }).format(value);
+	return formatNumber(value, {
+		notation: value >= 1_000 ? "compact" : "standard",
+		minimumFractionDigits: value >= 1_000 ? 0 : 1,
+		maximumFractionDigits: 1,
+	});
 }
 
 function getModelHref(entry: PerformanceLeaderboardEntry) {
@@ -43,6 +51,7 @@ export function PerformanceLeaderboard({
 }: PerformanceLeaderboardProps) {
 	const t = useTranslations("Catalogue.rankings");
 	const locale = useLocale();
+	const format = useDisplayFormatters();
 	const [showAll, setShowAll] = useState(false);
 
 	if (!data.length) {
@@ -117,7 +126,7 @@ export function PerformanceLeaderboard({
 				</div>
 				<div className="text-right">
 					<div className="whitespace-nowrap text-sm tabular-nums text-muted-foreground">
-						{t("throughputValue", { value: formatThroughput(entry.throughput, locale) })}
+						{t("throughputValue", { value: formatThroughput(entry.throughput, format.number) })}
 					</div>
 				</div>
 			</div>

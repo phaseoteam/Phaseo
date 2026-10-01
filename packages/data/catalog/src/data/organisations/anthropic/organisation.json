@@ -2,6 +2,7 @@
   "organisation_id": "anthropic",
   "name": "Anthropic",
   "country_code": "US",
+  "subdivision_code": "US-CA",
   "description": "Anthropic is an AI research and deployment company with its corporate address in San Francisco, California. Their mission is to build reliable, interpretable and steerable AI systems so that increasingly capable technologies remain beneficial to humanity.",
   "colour": "#cc785c",
   "organisation_links": [

@@ -1,17 +1,16 @@
 import { fetchFrontendRankingContextLengths } from "@/lib/fetchers/frontend/fetchRankingSections";
 import { VerticalRankingChart } from "@/components/(rankings)/VerticalRankingChart";
 import { getLocale, getTranslations } from "next-intl/server";
+import { RankingUnavailable } from "@/components/(rankings)/RankingUnavailable";
 
 function formatRequests(value: number, locale: string) {
 	return new Intl.NumberFormat(locale, { notation: "compact", maximumFractionDigits: 1 }).format(value);
 }
 
 export async function ContextLengthSection() {
-	const [t, locale] = await Promise.all([
-		getTranslations("Catalogue.rankings"),
-		getLocale(),
-	]);
-	const result = await fetchFrontendRankingContextLengths(30).catch(() => ({ data: [], days: 30 }));
+	const [t, locale] = await Promise.all([getTranslations("Catalogue.rankings"), getLocale()]);
+	const result = await fetchFrontendRankingContextLengths(30).catch(() => null);
+	if (!result) return <RankingUnavailable id="context-length" title={t("contextLength")} />;
 	const rows = result.data
 		.map((row) => ({
 			key: row.bucket_key,

@@ -2,7 +2,7 @@
   "organisation_id": "crofai",
   "name": "CrofAI",
   "country_code": "US",
-  "description": "CrofAI is an OpenAI-compatible inference provider focused on low-cost access to large open models.",
+  "description": "Historical CrofAI publisher record retained for request and usage history; new routing and discovery are disabled.",
   "colour": "#7C3AED",
   "organisation_links": [
     {
@@ -10,8 +10,8 @@
       "url": "https://crof.ai/"
     }
   ],
-  "status": "active",
-  "routable": null,
+  "status": "retired",
+  "routable": false,
   "sources": [],
   "verification": {
     "status": "unverified",

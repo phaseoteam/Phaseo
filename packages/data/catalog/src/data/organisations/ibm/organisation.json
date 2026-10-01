@@ -2,6 +2,7 @@
   "organisation_id": "ibm",
   "name": "IBM",
   "country_code": "US",
+  "subdivision_code": "US-NY",
   "description": "IBM is an enterprise-technology and AI company headquartered in Armonk, New York. Their mission is to deliver AI solutions, large-model capabilities and industrial-scale platforms for organisations to apply intelligence across operations.",
   "colour": "#415eb4",
   "organisation_links": [

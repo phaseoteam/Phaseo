@@ -1,6 +1,14 @@
 import { getActiveSettingsNav, getSettingsSidebar, isSettingsNavChildActive } from "./Sidebar.config";
 
 describe("settings sidebar navigation", () => {
+	it("puts provider catalogs first without workspace or billing navigation", () => {
+		const groups = getSettingsSidebar({ providerMode: true });
+		expect(groups.map((group) => group.scope)).toEqual(["personal", "provider"]);
+		expect(groups.flatMap((group) => group.items.map((item) => item.label))).toEqual(["Profile", "Account", "Your Models", "Provider Review", "Integrations"]);
+		expect(getActiveSettingsNav("/settings/provider/models", { providerMode: true })?.group.scope).toBe("provider");
+		expect(getActiveSettingsNav("/settings/provider/review", { providerMode: true })?.item.label).toBe("Provider Review");
+		expect(groups.flatMap((group) => group.items).some((item) => item.children?.some((child) => child.href === "/settings/account/providers"))).toBe(false);
+	});
 	it("keeps personal settings focused on the account", () => {
 		const personalLabels = getSettingsSidebar()
 			.filter((group) => group.scope === "personal")
@@ -10,6 +18,7 @@ describe("settings sidebar navigation", () => {
 			"Profile",
 			"Account",
 			"Workspaces",
+			"Preferences",
 			"Billing",
 			"Feature Preview",
 		]);
@@ -60,8 +69,9 @@ describe("settings sidebar navigation", () => {
 				"Routing",
 				"Guardrails",
 				"Privacy",
-				"Bring Your Own Key",
 				"Presets",
+				"Private Models",
+				"Bring Your Own Key",
 				"Apps",
 				"Management Keys",
 				"Broadcast",

@@ -18,6 +18,8 @@ describe("settings UI contracts", () => {
 		);
 
 		expect(layoutSource).toContain("<SettingsSidebar");
+		// Keep the sidebar hidden for the full mobile-menu breakpoint.
+		expect(layoutSource).toContain('desktopClassName="hidden md:hidden lg:block"');
 		expect(layoutSource).not.toContain("SettingsTopTabsClientOnly");
 		expect(sidebarSource).toContain("<Collapsible");
 		expect(sidebarSource).toContain("<CollapsibleTrigger asChild>");
@@ -39,7 +41,7 @@ describe("settings UI contracts", () => {
 		const pageHeaderSource = readSource(
 			"src/components/(gateway)/settings/SettingsPageHeader.tsx",
 		);
-		const keysPageSource = readSource("src/app/[locale]/(dashboard)/settings/keys/page.tsx");
+		const keysPageSource = readSource("src/app/[locale]/(dashboard)/settings/keys/KeysContent.tsx");
 
 		expect(headerSource).toContain("<SettingsSidebarTrigger");
 		expect(headerSource.indexOf("<SettingsSidebarTrigger")).toBeLessThan(
@@ -92,7 +94,7 @@ describe("settings UI contracts", () => {
 			"src/components/(gateway)/settings/teams/TeamSettingsPanel.tsx",
 		);
 		const accountWorkspacesSource = readSource(
-			"src/app/[locale]/(dashboard)/settings/account/workspaces/page.tsx",
+			"src/app/[locale]/(dashboard)/settings/account/workspaces/WorkspacesContent.tsx",
 		);
 
 		expect(containerSource).not.toContain('settings/CreateTeamDialog');

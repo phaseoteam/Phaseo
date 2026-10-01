@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useSettingsWrite } from "../PrivateSettingsQuery";
 import {
 	Dialog,
 	DialogContent,
@@ -33,8 +33,8 @@ export default function RegenerateSecretDialog({
 	const [error, setError] = useState<string | null>(null);
 	const [newSecret, setNewSecret] = useState<string | null>(null);
 	const [copied, setCopied] = useState(false);
-	const router = useRouter();
 	const t = useTranslations("SettingsUI");
+	const write = useSettingsWrite();
 
 	const handleRegenerate = async () => {
 		setLoading(true);
@@ -45,7 +45,7 @@ export default function RegenerateSecretDialog({
 				"@/app/(dashboard)/settings/oauth-apps/actions"
 			);
 
-			const result = await regenerateClientSecretAction(clientId);
+			const result = await write(regenerateClientSecretAction(clientId));
 
 			if (result.error) {
 				setError(localizedSettingsError(result.error, t, "Failed to regenerate secret"));
@@ -56,7 +56,6 @@ export default function RegenerateSecretDialog({
 
 			toast.success(t("strings.Client secret regenerated successfully" as never));
 
-			router.refresh();
 		} catch (err: any) {
 			setError(localizedSettingsError(err, t, "Failed to regenerate secret"));
 		} finally {

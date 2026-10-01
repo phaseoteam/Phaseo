@@ -16,11 +16,9 @@ import {
 	TooltipContent,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 
 // Predictions removed per request; only actuals and 3-mo avg
-
-const MONTH_LABELS = (date: Date, locale: string) =>
-	date.toLocaleString(locale, { month: "short", year: "2-digit" });
 
 const isRelease = (event: ModelEvent) => event.types.includes("Released");
 
@@ -66,6 +64,7 @@ const ReleaseTooltip = ({
 	inProgressLabel,
 	predictedLabel,
 }: ReleaseTooltipProps) => {
+	const format = useDisplayFormatters();
 	if (!active || !payload?.length) return null;
 
 	const rows = payload.filter((item) => item.value !== undefined);
@@ -89,7 +88,7 @@ const ReleaseTooltip = ({
 								{isPred ? ` (${predictedLabel})` : ""}
 							</span>
 							<span className="font-mono">
-								{Number(entry.value ?? 0).toLocaleString(locale)}
+								{format.number(Number(entry.value ?? 0))}
 							</span>
 						</div>
 					);
@@ -106,6 +105,7 @@ export default function ModelReleasePace({
 }: ModelReleasePaceProps) {
 	const locale = useLocale();
 	const t = useTranslations("Catalogue.updatesCalendar.releasePace");
+	const format = useDisplayFormatters();
 	const now = useMemo(() => new Date(), []);
 	const config = {
 		releases: { label: t("monthlyReleases"), color: "#22c55e" },
@@ -117,8 +117,8 @@ export default function ModelReleasePace({
 	};
 
 	const data = useMemo<ReleasePaceData[]>(() => {
-		const windowStart = new Date(now.getFullYear(), now.getMonth(), 1);
-		windowStart.setMonth(windowStart.getMonth() - (monthsWindow - 1));
+		const windowStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+		windowStart.setUTCMonth(windowStart.getUTCMonth() - (monthsWindow - 1));
 
 		const releaseMap = new Map<string, number>();
 
@@ -126,18 +126,18 @@ export default function ModelReleasePace({
 			if (!isRelease(event)) return;
 			const parsed = new Date(event.date);
 			if (Number.isNaN(parsed.getTime())) return;
-			const key = `${parsed.getFullYear()}-${padTwo(
-				parsed.getMonth() + 1
+			const key = `${parsed.getUTCFullYear()}-${padTwo(
+				parsed.getUTCMonth() + 1
 			)}`;
 			releaseMap.set(key, (releaseMap.get(key) ?? 0) + 1);
 		});
 
 		const months = Array.from({ length: monthsWindow }, (_, index) => {
 			const point = new Date(windowStart);
-			point.setMonth(windowStart.getMonth() + index);
+			point.setUTCMonth(windowStart.getUTCMonth() + index);
 			return {
-				key: `${point.getFullYear()}-${padTwo(point.getMonth() + 1)}`,
-				label: MONTH_LABELS(point, locale),
+				key: `${point.getUTCFullYear()}-${padTwo(point.getUTCMonth() + 1)}`,
+				label: format.dateParts(point, { month: "short", year: "2-digit", timeZone: "UTC" }),
 			};
 		});
 
@@ -159,7 +159,7 @@ export default function ModelReleasePace({
 				trendActual: Math.round(trend * 100) / 100,
 			};
 		});
-	}, [events, monthsWindow, now, locale]);
+	}, [events, format, monthsWindow, now]);
 
 	const maxRelease = Math.max(...data.map((entry) => entry.releases), 0);
 	const thresholds = [0, Math.round(maxRelease / 2), maxRelease].filter(
@@ -287,7 +287,7 @@ export default function ModelReleasePace({
 								<ReleaseTooltip
 									locale={locale}
 									labels={tooltipLabels}
-									currentLabel={MONTH_LABELS(now, locale)}
+									currentLabel={format.dateParts(now, { month: "short", year: "2-digit", timeZone: "UTC" })}
 									inProgressLabel={t("inProgress")}
 									predictedLabel={t("predicted")}
 								/>

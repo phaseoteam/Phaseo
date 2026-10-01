@@ -1,5 +1,6 @@
 import { createClient } from "@/utils/supabase/server";
 import { after, NextResponse } from "next/server";
+import { getTranslations } from "next-intl/server";
 import {
 	buildAuthErrorCodeRedirectUrl,
 	resolveCallbackErrorCode,
@@ -12,10 +13,12 @@ import {
 } from "@/lib/auth/localized-paths";
 import { getLocaleDefinition, type PublicLocale } from "@/i18n/routing";
 
-function buildHashPreservingAuthErrorResponse(
+async function buildHashPreservingAuthErrorResponse(
 	requestUrl: string,
 	locale: PublicLocale,
 ) {
+	const t = await getTranslations({ locale, namespace: "Common.authFlows.callback" });
+	const escapeHtml = (value: string) => value.replace(/[&<>"']/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" })[character] ?? character);
 	const direction = getLocaleDefinition(locale).dir;
 	const fallbackUrl = buildAuthErrorCodeRedirectUrl(
 		requestUrl,
@@ -30,7 +33,7 @@ function buildHashPreservingAuthErrorResponse(
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Redirecting...</title>
+    <title>${escapeHtml(t("redirecting"))}</title>
     <noscript>
       <meta http-equiv="refresh" content="0;url=${fallbackPath}" />
     </noscript>
@@ -57,8 +60,8 @@ function buildHashPreservingAuthErrorResponse(
       })();
     </script>
     <noscript>
-      <p>Redirecting to the sign-in error page...</p>
-      <p><a href="${fallbackPath}">Continue</a></p>
+      <p>${escapeHtml(t("redirectingToError"))}</p>
+      <p><a href="${fallbackPath}">${escapeHtml(t("continue"))}</a></p>
     </noscript>
   </body>
 </html>`;
@@ -90,7 +93,21 @@ export async function GET(request: Request) {
 		);
 	}
 
-	const supabaseUser = await createClient();
+	const pendingCookies: Array<{
+		name: string;
+		value: string;
+		options?: Parameters<NextResponse["cookies"]["set"]>[2];
+	}> = [];
+	const supabaseUser = await createClient({
+		onSetCookies: (cookies) => pendingCookies.push(...cookies),
+	});
+	const redirectWithSession = (target: string | URL) => {
+		const response = NextResponse.redirect(new URL(target, url));
+		for (const cookie of pendingCookies) {
+			response.cookies.set(cookie.name, cookie.value, cookie.options);
+		}
+		return response;
+	};
 
 	if (type !== "email") {
 		if (!code) {
@@ -108,7 +125,7 @@ export async function GET(request: Request) {
 				status: (exchangeErr as { status?: number }).status,
 				code: (exchangeErr as { code?: string }).code,
 			});
-			return NextResponse.redirect(
+			return redirectWithSession(
 				buildAuthErrorCodeRedirectUrl(request.url, "default", locale),
 			);
 		}
@@ -122,7 +139,7 @@ export async function GET(request: Request) {
 		if (type === "email") {
 			return buildHashPreservingAuthErrorResponse(request.url, locale);
 		}
-		return NextResponse.redirect(
+		return redirectWithSession(
 			buildAuthErrorCodeRedirectUrl(request.url, "default", locale),
 		);
 	}
@@ -143,13 +160,13 @@ export async function GET(request: Request) {
 		const redirectPath = result.redirectPath.startsWith("/auth/verify-mfa")
 			? withAuthLocale(result.redirectPath, locale)
 			: result.redirectPath;
-		return NextResponse.redirect(new URL(redirectPath, url));
+		return redirectWithSession(redirectPath);
 	} catch (error) {
 		console.error("Failed to finalize post-login state during auth callback", {
 			userId: user.id,
 			error: error instanceof Error ? error.message : String(error),
 		});
-		return NextResponse.redirect(
+		return redirectWithSession(
 			buildAuthErrorCodeRedirectUrl(request.url, "workspace-setup", locale),
 		);
 	}

@@ -5,7 +5,7 @@
 import type { AdapterResult, ProviderExecuteArgs } from "../../types";
 import { AudioTranslationSchema, type AudioTranslationRequest } from "@core/schemas";
 import { buildAdapterPayload } from "../../utils";
-import { openAICompatHeaders, openAICompatUrl, resolveOpenAICompatKey } from "../../openai-compatible/config";
+import { resolveOpenAITransport } from "../../shared/openai-transport";
 import { upstreamTestHeaders } from "@providers/shared/testing";
 import { estimateOpenAiSpeechToTextUsage, mergeSpeechToTextUsage } from "./audio-transcription-usage";
 
@@ -64,7 +64,7 @@ function normalizeAudioTextUsage(payload: Record<string, any> | undefined): Reco
 }
 
 export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
-    const keyInfo = await resolveOpenAICompatKey(args);
+    const { keyInfo, url, headers, deployment } = resolveOpenAITransport(args, "/audio/translations", upstreamTestHeaders(args.meta));
     const adapterPayload = buildAdapterPayload(AudioTranslationSchema, args.body, []).adapterPayload as AudioTranslationRequest;
     const body: AudioTranslationRequest = {
         ...adapterPayload,
@@ -97,7 +97,7 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
     }
 
     const form = new FormData();
-    form.append("model", body.model);
+    form.append("model", deployment || body.model);
     const filename = typeof File !== "undefined" && body.file instanceof File && body.file.name
         ? body.file.name
         : `audio.${extensionForAudioMimeType(body.file.type)}`;
@@ -106,10 +106,9 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
     if (typeof body.temperature === "number") form.append("temperature", String(body.temperature));
     form.append("response_format", responseFormat);
 
-    const headers = openAICompatHeaders(args.providerId, keyInfo.key, upstreamTestHeaders(args.meta));
     delete (headers as any)["Content-Type"];
 
-    const res = await (args.upstreamTiming?.fetch ?? fetch)(openAICompatUrl(args.providerId, "/audio/translations"), {
+    const res = await (args.upstreamTiming?.fetch ?? fetch)(url, {
         method: "POST",
         headers,
         body: form,

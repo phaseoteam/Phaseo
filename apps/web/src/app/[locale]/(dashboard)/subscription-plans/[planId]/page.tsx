@@ -109,23 +109,7 @@ export default async function Page({
 	const plan = await fetchFrontendSubscriptionPlan(planId);
 
 	if (!plan) {
-		return (
-			<main className="flex min-h-screen flex-col">
-				<div className="container mx-auto px-4 py-8">
-					<div className="rounded-lg border border-dashed p-6 md:p-8 text-center bg-muted/30">
-						<div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-muted">
-							<span className="text-xl">💰</span>
-						</div>
-						<p className="text-base font-medium">
-							{messages.detail.unknownPlan}
-						</p>
-						<p className="mt-1 text-sm text-muted-foreground">
-							{messages.detail.unknownPlanDescription}
-						</p>
-					</div>
-				</div>
-			</main>
-		);
+		return <SubscriptionPlanDetailShell planId={planId}>{null}</SubscriptionPlanDetailShell>;
 	}
 
 	return (

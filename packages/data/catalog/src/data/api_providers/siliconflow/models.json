@@ -1417,55 +1417,6 @@
     "rate_limits": []
   },
   {
-    "api_model_id": "nex-agi/nex-n2-pro:free",
-    "canonical_model_id": "nex-agi/nex-n2-pro:free",
-    "provider_api_model_id": "siliconflow:nex-agi/nex-n2-pro:free",
-    "provider_model_slug": "nex-agi/Nex-N2-Pro",
-    "internal_model_id": "nex-agi/nex-n2-pro",
-    "is_active_gateway": true,
-    "quantization_scheme": "FP8",
-    "input_modalities": "text,image",
-    "output_modalities": "text",
-    "context_length": 262000,
-    "max_output_tokens": 256000,
-    "effective_from": "2026-06-05T00:00:00",
-    "effective_to": "2026-06-19T00:00:00",
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": [],
-        "reasoning": null,
-        "tool_call": null,
-        "structured_output": null,
-        "temperature": null,
-        "attachment": null,
-        "input_modalities": null,
-        "output_modalities": null,
-        "modes": []
-      }
-    ],
-    "routing_status": "active",
-    "routable": true,
-    "regions": {
-      "execution": null,
-      "data": null
-    },
-    "service_tiers": [],
-    "api": {
-      "formats": [],
-      "endpoint": null,
-      "deployment": null
-    },
-    "sources": [],
-    "verification": {
-      "status": "unverified",
-      "checked_at": null,
-      "notes": null
-    },
-    "rate_limits": []
-  },
-  {
     "api_model_id": "openai/gpt-oss-120b",
     "provider_api_model_id": "siliconflow:openai/gpt-oss-120b",
     "provider_model_slug": "openai/gpt-oss-120b",

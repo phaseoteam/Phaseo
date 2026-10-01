@@ -1,5 +1,6 @@
 "use client";
 
+import { chatLocalStorage } from "@/lib/chat/userStorage";
 import {
 	useCallback,
 	useEffect,
@@ -16,6 +17,7 @@ import Link from "next/link";
 import { ThinkingOrb } from "thinking-orbs";
 import { AIGeneratedNotice } from "@/components/(chat)/AIGeneratedNotice";
 import { getChatComposerSendAction } from "@/components/(chat)/chatComposerSendAction";
+import { REASONING_OPTIONS } from "@/components/(chat)/chatConversationHelpers";
 import Image from "next/image";
 import {
 	ArrowLeft,
@@ -69,6 +71,7 @@ import {
 	normalizeFavoriteModelId,
 } from "@/components/(chat)/playgroundConfig";
 import { Logo } from "@/components/Logo";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import {
 	Attachment,
 	AttachmentAction,
@@ -140,6 +143,7 @@ type ComposerModelOption = Pick<
 	| "capabilityEndpoints"
 	| "releaseDate"
 	| "gatewayStatus"
+	| "chatBlockedReasons"
 >;
 
 type ModelSlashGroup = {
@@ -538,6 +542,13 @@ function ComposerModelSelectField({
 	}, [options, search]);
 
 	const handleSelect = (nextValue: string | undefined) => {
+		if (
+			nextValue &&
+			options.find((option) => option.modelId === nextValue)?.chatBlockedReasons
+				.length
+		) {
+			return;
+		}
 		onChange(nextValue);
 		setOpen(false);
 		setSearch("");
@@ -608,8 +619,9 @@ function ComposerModelSelectField({
 									<button
 										type="button"
 										key={option.modelId}
+										disabled={option.chatBlockedReasons.length > 0}
 										className={cn(
-											"flex min-h-7 items-center gap-2 rounded-lg px-2 py-1 text-left text-xs text-foreground hover:bg-muted focus-visible:bg-muted focus-visible:outline-none",
+											"flex min-h-7 items-center gap-2 rounded-lg px-2 py-1 text-left text-xs text-foreground hover:bg-muted focus-visible:bg-muted focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-45",
 											selected && "bg-muted",
 										)}
 										onClick={() => handleSelect(option.modelId)}
@@ -932,6 +944,7 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 		"phaseo:fusion": tUi("chatComposer.fusionToolDescription"),
 		"phaseo:subagent": tUi("chatComposer.subAgentToolDescription"),
 	};
+	const format = useDisplayFormatters();
 	const {
 		sendGateType,
 		isSending,
@@ -1233,14 +1246,14 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 	>(
 		() => [
 			{ value: "none", label: "Default" },
-			...reasoningOptions
+			...REASONING_OPTIONS
 				.filter((option) => option.value !== "none")
 				.map((option) => ({
 					value: option.value,
 					label: option.label,
 				})),
 		],
-		[reasoningOptions],
+		[],
 	);
 	const advisorEnabled = enabledServerToolSet.has("phaseo:advisor");
 	const selectedServerToolCommand = selectedServerToolSettings
@@ -1517,7 +1530,7 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 		const fallbackIds = getDefaultFavoriteModelIds().filter((id) =>
 			availableFavoriteIds.has(id),
 		);
-		const raw = window.localStorage.getItem(
+		const raw = chatLocalStorage.getItem(
 			MODEL_SELECTOR_FAVORITES_STORAGE_KEY,
 		);
 		if (!raw) {
@@ -1573,6 +1586,16 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 		},
 		[onComposerChange, slashQuery],
 	);
+
+	const returnToMainSlashMenu = useCallback(() => {
+		setSlashMenu("main");
+		setSelectedServerToolSettings(null);
+		setSlashSelectedIndex(0);
+		setCommandSearch("");
+		requestAnimationFrame(() => {
+			textareaRef.current?.focus();
+		});
+	}, [textareaRef]);
 
 	const clearSlashCommand = useCallback(() => {
 		if (slashMenuOpen) {
@@ -1720,25 +1743,31 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 					!selectedIdSet.has(option.modelId) &&
 					!favoriteModelIdSet.has(normalizeFavoriteModelId(option.modelId)),
 			),
+			(date) => format.dateParts(date, { month: "long", year: "numeric", timeZone: "UTC" }),
 		);
-		const toCommand = (option: ComposerModelOption): SlashCommand => ({
-			id: `model-${option.modelId}`,
-			label: option.label,
-			keywords: [
-				"model",
-				"models",
-				option.modelId,
-				option.label,
-				option.orgId,
-				option.orgName,
-				...option.providerIds,
-				...option.providerNames,
-			],
-			icon: Cpu,
-			logoId: option.orgId,
-			modelId: option.modelId,
-			selected: selectedIdSet.has(option.modelId),
-		});
+		const toCommand = (option: ComposerModelOption): SlashCommand => {
+			const isBlocked = option.chatBlockedReasons.length > 0;
+			return {
+				id: `model-${option.modelId}`,
+				label: option.label,
+				description: isBlocked ? "Blocked by Chat policy" : undefined,
+				keywords: [
+					"model",
+					"models",
+					option.modelId,
+					option.label,
+					option.orgId,
+					option.orgName,
+					...option.providerIds,
+					...option.providerNames,
+				],
+				icon: Cpu,
+				logoId: option.orgId,
+				modelId: option.modelId,
+				selected: selectedIdSet.has(option.modelId),
+				disabled: isBlocked,
+			};
+		};
 		const groups: ModelSlashGroup[] = [];
 		if (selectedOptions.length > 0) {
 			groups.push({
@@ -1759,7 +1788,7 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 			});
 		}
 		return groups;
-	}, [activeModelOptions, favoriteModelIdSet, selectedModelIds, tModelPicker]);
+	}, [activeModelOptions, favoriteModelIdSet, format, selectedModelIds, tModelPicker]);
 
 	const modelSlashCommands = useMemo<SlashCommand[]>(
 		() => modelSlashGroups.flatMap((group) => group.commands),
@@ -2563,12 +2592,7 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 			if (event.key === "Escape") {
 				event.preventDefault();
 				if (slashMenu !== "main") {
-					setSlashMenu("main");
-					setSlashSelectedIndex(0);
-					setCommandSearch("");
-					requestAnimationFrame(() => {
-						textareaRef.current?.focus();
-					});
+					returnToMainSlashMenu();
 				} else {
 					setCommandMenuOpen(false);
 					if (slashQuery !== null) {
@@ -2583,12 +2607,7 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 				activeSlashSearchValue === ""
 			) {
 				event.preventDefault();
-				setSlashMenu("main");
-				setSlashSelectedIndex(0);
-				setCommandSearch("");
-				requestAnimationFrame(() => {
-					textareaRef.current?.focus();
-				});
+				returnToMainSlashMenu();
 				return true;
 			}
 			if (event.key === "Enter" && !event.shiftKey) {
@@ -2605,6 +2624,7 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 			activeSlashIndex,
 			filteredSlashCommands,
 			onComposerChange,
+			returnToMainSlashMenu,
 			runSlashCommand,
 			activeSlashSearchValue,
 			slashMenu,
@@ -3147,6 +3167,17 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 							{showSlashSearch ? (
 								<div className="border-b border-border/70 p-2">
 									<div className="flex h-8 items-center gap-2 rounded-lg bg-muted px-2 text-muted-foreground">
+										<Button
+											type="button"
+											variant="ghost"
+											size="icon-sm"
+											className="h-6 w-6 shrink-0"
+											onClick={returnToMainSlashMenu}
+											aria-label="Back to chat actions"
+											title="Back to chat actions"
+										>
+											<ArrowLeft className="h-3.5 w-3.5" />
+										</Button>
 										<Search className="h-3.5 w-3.5 shrink-0" />
 										<Input
 											ref={slashSearchInputRef}

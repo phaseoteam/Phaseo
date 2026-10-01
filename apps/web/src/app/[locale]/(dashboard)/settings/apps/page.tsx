@@ -1,12 +1,11 @@
 import { getLocale, getTranslations } from "next-intl/server";
-import AppsPanel from "@/components/(gateway)/settings/apps/AppsPanel";
+import AppsSettingsContent from "./AppsSettingsContent";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ArrowUpRight } from "lucide-react";
 import { Suspense } from "react";
 import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
 import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHeader";
-import { fetchSettingsAppsInitialData } from "@/lib/fetchers/internal/fetchSettingsAppsInitialData";
 import { getLocalizedDocsHref } from "@/lib/docs";
 
 const ATTRIBUTION_DOCS_HREF =
@@ -52,10 +51,4 @@ export default async function AppsSettingsPage() {
 			</Suspense>
 		</div>
 	);
-}
-
-async function AppsSettingsContent() {
-	const initialData = await fetchSettingsAppsInitialData();
-
-	return <AppsPanel apps={initialData.apps} />;
 }

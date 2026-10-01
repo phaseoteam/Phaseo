@@ -353,6 +353,7 @@ export async function cancelBatch(
     total?: number;
   };
   request_id?: string;
+  results_url?: string | null;
   session_id?: string;
   status?: string;
   usage?: {
@@ -466,6 +467,7 @@ export async function cancelBatch(
       total?: number;
     };
     request_id?: string;
+    results_url?: string | null;
     session_id?: string;
     status?: string;
     usage?: {
@@ -600,6 +602,7 @@ export async function cancelBatchAlias(
     total?: number;
   };
   request_id?: string;
+  results_url?: string | null;
   session_id?: string;
   status?: string;
   usage?: {
@@ -713,6 +716,7 @@ export async function cancelBatchAlias(
       total?: number;
     };
     request_id?: string;
+    results_url?: string | null;
     session_id?: string;
     status?: string;
     usage?: {
@@ -937,6 +941,14 @@ export type CreateAnthropicMessageParams = {
       mode?: "standard" | "pro";
       summary?: "auto" | "concise" | "detailed";
     };
+    service_tier?:
+      | "standard"
+      | "default"
+      | "fast"
+      | "ultrafast"
+      | "priority"
+      | "flex"
+      | "batch";
     session_id?: string;
     stop_sequences?: string[];
     stream?: boolean;
@@ -956,6 +968,7 @@ export type CreateAnthropicMessageParams = {
     tool_choice?: {} | string;
     tools?: (
       | {
+          async?: boolean;
           description?: string;
           input_schema?: {};
           name: string;
@@ -968,13 +981,33 @@ export type CreateAnthropicMessageParams = {
           type: "phaseo:datetime" | "gateway:datetime";
         }
       | {
+          engine?:
+            | "auto"
+            | "native"
+            | "exa"
+            | "firecrawl"
+            | "parallel"
+            | "perplexity"
+            | "tinyfish";
           include_highlights?: boolean;
           include_text?: boolean;
+          language?: string;
           max_results?: number;
+          page?: number;
           parameters?: {
+            engine?:
+              | "auto"
+              | "native"
+              | "exa"
+              | "firecrawl"
+              | "parallel"
+              | "perplexity"
+              | "tinyfish";
             include_highlights?: boolean;
             include_text?: boolean;
+            language?: string;
             max_results?: number;
+            page?: number;
           };
           type: "phaseo:web_search" | "gateway:web_search";
         }
@@ -1329,6 +1362,11 @@ export type CreateBatchParams = {
           };
       zdr?: boolean | null;
     };
+    provider_options?: {
+      [key: string]: {
+        [key: string]: unknown;
+      };
+    };
     requests?: {
       body: {
         [key: string]: unknown;
@@ -1419,6 +1457,7 @@ export async function createBatch(
     total?: number;
   };
   request_id?: string;
+  results_url?: string | null;
   session_id?: string;
   status?: string;
   usage?: {
@@ -1532,6 +1571,7 @@ export async function createBatch(
       total?: number;
     };
     request_id?: string;
+    results_url?: string | null;
     session_id?: string;
     status?: string;
     usage?: {
@@ -1652,6 +1692,11 @@ export type CreateBatchAliasParams = {
           };
       zdr?: boolean | null;
     };
+    provider_options?: {
+      [key: string]: {
+        [key: string]: unknown;
+      };
+    };
     requests?: {
       body: {
         [key: string]: unknown;
@@ -1742,6 +1787,7 @@ export async function createBatchAlias(
     total?: number;
   };
   request_id?: string;
+  results_url?: string | null;
   session_id?: string;
   status?: string;
   usage?: {
@@ -1855,6 +1901,7 @@ export async function createBatchAlias(
       total?: number;
     };
     request_id?: string;
+    results_url?: string | null;
     session_id?: string;
     status?: string;
     usage?: {
@@ -2092,14 +2139,29 @@ export type CreateChatCompletionParams = {
       };
     };
     reasoning?: {
-      effort?: "none" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max";
+      effort?:
+        | "none"
+        | "instant"
+        | "minimal"
+        | "low"
+        | "medium"
+        | "high"
+        | "xhigh"
+        | "max";
       enabled?: boolean;
       max_tokens?: number;
       mode?: "standard" | "pro";
       summary?: "auto" | "concise" | "detailed";
     };
     reasoning_effort?:
-      "none" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max";
+      | "none"
+      | "instant"
+      | "minimal"
+      | "low"
+      | "medium"
+      | "high"
+      | "xhigh"
+      | "max";
     response_format?:
       | string
       | {
@@ -2108,7 +2170,14 @@ export type CreateChatCompletionParams = {
         };
     safety_identifier?: string | null;
     seed?: number;
-    service_tier?: "standard" | "fast" | "priority" | "flex" | "batch";
+    service_tier?:
+      | "standard"
+      | "default"
+      | "fast"
+      | "ultrafast"
+      | "priority"
+      | "flex"
+      | "batch";
     session_id?: string;
     stop?: string | string[];
     store?: boolean;
@@ -2131,6 +2200,7 @@ export type CreateChatCompletionParams = {
       | {};
     tools?: (
       | {
+          async?: boolean;
           function: {
             description?: string;
             name: string;
@@ -2147,13 +2217,33 @@ export type CreateChatCompletionParams = {
           type: "phaseo:datetime" | "gateway:datetime";
         }
       | {
+          engine?:
+            | "auto"
+            | "native"
+            | "exa"
+            | "firecrawl"
+            | "parallel"
+            | "perplexity"
+            | "tinyfish";
           include_highlights?: boolean;
           include_text?: boolean;
+          language?: string;
           max_results?: number;
+          page?: number;
           parameters?: {
+            engine?:
+              | "auto"
+              | "native"
+              | "exa"
+              | "firecrawl"
+              | "parallel"
+              | "perplexity"
+              | "tinyfish";
             include_highlights?: boolean;
             include_text?: boolean;
+            language?: string;
             max_results?: number;
+            page?: number;
           };
           type: "phaseo:web_search" | "gateway:web_search";
         }
@@ -3257,8 +3347,13 @@ export type CreateImageParams = {
   query?: Record<string, never>;
   headers?: Record<string, never>;
   body?: {
+    background?: "transparent" | "opaque" | "auto";
     model: string;
+    moderation?: "auto" | "low";
     n?: number;
+    output_compression?: number;
+    output_format?: "png" | "jpeg" | "webp";
+    partial_images?: number;
     prompt: string;
     provider?: {
       allow_fallbacks?: boolean | null;
@@ -3298,8 +3393,10 @@ export type CreateImageParams = {
       zdr?: boolean | null;
     };
     quality?: string;
+    resolution?: string;
     response_format?: string;
     size?: string;
+    stream?: boolean;
     style?: string;
     user?: string;
   };
@@ -3342,11 +3439,17 @@ export type CreateImageEditParams = {
   query?: Record<string, never>;
   headers?: Record<string, never>;
   body?: {
-    image: string;
+    background?: "transparent" | "opaque" | "auto";
+    image: string | string[];
+    input_fidelity?: "high" | "low";
     mask?: string;
     meta?: boolean;
     model: string;
+    moderation?: "auto" | "low";
     n?: number;
+    output_compression?: number;
+    output_format?: "png" | "jpeg" | "webp";
+    partial_images?: number;
     prompt: string;
     provider?: {
       allow_fallbacks?: boolean | null;
@@ -3385,7 +3488,10 @@ export type CreateImageEditParams = {
           };
       zdr?: boolean | null;
     };
+    quality?: "standard" | "low" | "medium" | "high" | "xhigh" | "max" | "auto";
+    resolution?: string;
     size?: string;
+    stream?: boolean;
     usage?: boolean;
     user?: string;
   };
@@ -4444,6 +4550,100 @@ export async function createPresetTestRun(
   });
 }
 
+export type CreatePrivateModelParams = {
+  path?: Record<string, never>;
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: {
+    base_url: string;
+    context_length?: number | null;
+    credential: string;
+    custom_provider_name?: string | null;
+    custom_provider_url?: string | null;
+    description?: string;
+    enabled?: boolean;
+    host_provider_id?: string | null;
+    max_output_tokens?: number | null;
+    model_reference: string;
+    name: string;
+    routing_policy?: "preferred" | "balanced" | "fallback";
+    supports_responses?: boolean;
+    upstream_model_id: string;
+  };
+};
+
+/**
+ * Creates a workspace-only OpenAI-compatible model endpoint. Requires `private_models:write` and an owner or admin identity.
+ */
+export async function createPrivateModel(
+  client: Client,
+  args: CreatePrivateModelParams = {},
+): Promise<{
+  data: {
+    base_url: string;
+    catalog_model_id?: string | null;
+    context_length?: number | null;
+    created_at?: string | null;
+    created_by?: string | null;
+    credential_prefix?: string | null;
+    credential_suffix?: string | null;
+    custom_provider_name?: string | null;
+    custom_provider_url?: string | null;
+    description?: string | null;
+    enabled: boolean;
+    host_provider_id?: string | null;
+    id: string;
+    input_modalities?: string[];
+    local_slug?: string;
+    max_output_tokens?: number | null;
+    model_id: string;
+    name: string;
+    output_modalities?: string[];
+    routing_policy?: "preferred" | "balanced" | "fallback";
+    supports_responses: boolean;
+    updated_at?: string | null;
+    upstream_model_id: string;
+    workspace_id: string;
+  };
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = "/private-models";
+  return client.request<{
+    data: {
+      base_url: string;
+      catalog_model_id?: string | null;
+      context_length?: number | null;
+      created_at?: string | null;
+      created_by?: string | null;
+      credential_prefix?: string | null;
+      credential_suffix?: string | null;
+      custom_provider_name?: string | null;
+      custom_provider_url?: string | null;
+      description?: string | null;
+      enabled: boolean;
+      host_provider_id?: string | null;
+      id: string;
+      input_modalities?: string[];
+      local_slug?: string;
+      max_output_tokens?: number | null;
+      model_id: string;
+      name: string;
+      output_modalities?: string[];
+      routing_policy?: "preferred" | "balanced" | "fallback";
+      supports_responses: boolean;
+      updated_at?: string | null;
+      upstream_model_id: string;
+      workspace_id: string;
+    };
+  }>({
+    method: "POST",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
 export type CreateProviderCredentialParams = {
   path?: Record<string, never>;
   query?: Record<string, never>;
@@ -4824,14 +5024,29 @@ export type CreateResponseParams = {
       };
     };
     reasoning?: {
-      effort?: "none" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max";
+      effort?:
+        | "none"
+        | "instant"
+        | "minimal"
+        | "low"
+        | "medium"
+        | "high"
+        | "xhigh"
+        | "max";
       enabled?: boolean;
       max_tokens?: number;
       mode?: "standard" | "pro";
       summary?: "auto" | "concise" | "detailed";
     };
     safety_identifier?: string | null;
-    service_tier?: "standard" | "fast" | "priority" | "flex" | "batch";
+    service_tier?:
+      | "standard"
+      | "default"
+      | "fast"
+      | "ultrafast"
+      | "priority"
+      | "flex"
+      | "batch";
     session_id?: string;
     store?: boolean;
     stream?: boolean;
@@ -4853,6 +5068,7 @@ export type CreateResponseParams = {
       | {};
     tools?: (
       | {
+          async?: boolean;
           function: {
             description?: string;
             name: string;
@@ -4869,13 +5085,33 @@ export type CreateResponseParams = {
           type: "phaseo:datetime" | "gateway:datetime";
         }
       | {
+          engine?:
+            | "auto"
+            | "native"
+            | "exa"
+            | "firecrawl"
+            | "parallel"
+            | "perplexity"
+            | "tinyfish";
           include_highlights?: boolean;
           include_text?: boolean;
+          language?: string;
           max_results?: number;
+          page?: number;
           parameters?: {
+            engine?:
+              | "auto"
+              | "native"
+              | "exa"
+              | "firecrawl"
+              | "parallel"
+              | "perplexity"
+              | "tinyfish";
             include_highlights?: boolean;
             include_text?: boolean;
+            language?: string;
             max_results?: number;
+            page?: number;
           };
           type: "phaseo:web_search" | "gateway:web_search";
         }
@@ -5139,6 +5375,20 @@ export type CreateSpeechParams = {
   query?: Record<string, never>;
   headers?: Record<string, never>;
   body?: {
+    config?: {
+      elevenlabs?: {
+        language_code?: string;
+        output_format?: string;
+        voice_id?: string;
+        voice_settings?: {
+          similarity_boost?: number;
+          stability?: number;
+          [key: string]: unknown;
+        };
+        [key: string]: unknown;
+      };
+      [key: string]: unknown;
+    };
     format?: "mp3" | "wav" | "ogg" | "aac";
     input: string;
     model: string;
@@ -5179,6 +5429,7 @@ export type CreateSpeechParams = {
           };
       zdr?: boolean | null;
     };
+    speed?: number;
     voice?: string;
   };
 };
@@ -5364,6 +5615,13 @@ export type CreateVideoParams = {
     compression_quality?: number;
     duration?: number;
     enhance_prompt?: boolean;
+    frame_images?: {
+      frame_type: "first_frame" | "last_frame";
+      image_url: {
+        url: string;
+      };
+      type: "image_url";
+    }[];
     generate_audio?: boolean;
     input_audio_duration?: number;
     input_references?: (
@@ -5428,6 +5686,11 @@ export type CreateVideoParams = {
             [key: string]: unknown;
           };
       zdr?: boolean | null;
+    };
+    provider_options?: {
+      [key: string]: {
+        [key: string]: unknown;
+      };
     };
     provider_params?: {
       [key: string]: unknown;
@@ -5690,6 +5953,13 @@ export type CreateVideoAliasParams = {
     compression_quality?: number;
     duration?: number;
     enhance_prompt?: boolean;
+    frame_images?: {
+      frame_type: "first_frame" | "last_frame";
+      image_url: {
+        url: string;
+      };
+      type: "image_url";
+    }[];
     generate_audio?: boolean;
     input_audio_duration?: number;
     input_references?: (
@@ -5754,6 +6024,11 @@ export type CreateVideoAliasParams = {
             [key: string]: unknown;
           };
       zdr?: boolean | null;
+    };
+    provider_options?: {
+      [key: string]: {
+        [key: string]: unknown;
+      };
     };
     provider_params?: {
       [key: string]: unknown;
@@ -6086,7 +6361,29 @@ export type CreateWebhookEndpointParams = {
   query?: Record<string, never>;
   headers?: Record<string, never>;
   body?: {
-    events?: string[];
+    events?: (
+      | "job.created"
+      | "job.status_changed"
+      | "job.progress"
+      | "job.completed"
+      | "job.failed"
+      | "job.cancelled"
+      | "job.expired"
+      | "video.created"
+      | "video.status_changed"
+      | "video.progress"
+      | "video.completed"
+      | "video.failed"
+      | "video.cancelled"
+      | "video.expired"
+      | "batch.created"
+      | "batch.status_changed"
+      | "batch.progress"
+      | "batch.completed"
+      | "batch.failed"
+      | "batch.cancelled"
+      | "batch.expired"
+    )[];
     name?: string;
     url: string;
   };
@@ -6158,7 +6455,7 @@ export async function createWorkspace(
     created_by: string | null;
     id: string;
     name: string | null;
-    slug: string | null;
+    slug?: string | null;
     updated_at: string | null;
   };
 }> {
@@ -6170,7 +6467,7 @@ export async function createWorkspace(
       created_by: string | null;
       id: string;
       name: string | null;
-      slug: string | null;
+      slug?: string | null;
       updated_at: string | null;
     };
   }>({
@@ -6819,6 +7116,37 @@ export async function deletePreset(
   const resolvedPath = `/presets/${encodeURIComponent(String(path["id"]))}`;
   return client.request<{
     deleted: true;
+  }>({
+    method: "DELETE",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type DeletePrivateModelParams = {
+  path: {
+    id: string;
+  };
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Permanently deletes a private model owned by the authenticated workspace. Repeated deletion is safe.
+ */
+export async function deletePrivateModel(
+  client: Client,
+  args: DeletePrivateModelParams,
+): Promise<{
+  deleted: boolean;
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = `/private-models/${encodeURIComponent(String(path["id"]))}`;
+  return client.request<{
+    deleted: boolean;
   }>({
     method: "DELETE",
     path: resolvedPath,
@@ -9393,6 +9721,87 @@ export async function getPresetTestRun(
   });
 }
 
+export type GetPrivateModelParams = {
+  path: {
+    id: string;
+  };
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Returns endpoint metadata for one private model in the authenticated workspace without returning its credential.
+ */
+export async function getPrivateModel(
+  client: Client,
+  args: GetPrivateModelParams,
+): Promise<{
+  data: {
+    base_url: string;
+    catalog_model_id?: string | null;
+    context_length?: number | null;
+    created_at?: string | null;
+    created_by?: string | null;
+    credential_prefix?: string | null;
+    credential_suffix?: string | null;
+    custom_provider_name?: string | null;
+    custom_provider_url?: string | null;
+    description?: string | null;
+    enabled: boolean;
+    host_provider_id?: string | null;
+    id: string;
+    input_modalities?: string[];
+    local_slug?: string;
+    max_output_tokens?: number | null;
+    model_id: string;
+    name: string;
+    output_modalities?: string[];
+    routing_policy?: "preferred" | "balanced" | "fallback";
+    supports_responses: boolean;
+    updated_at?: string | null;
+    upstream_model_id: string;
+    workspace_id: string;
+  };
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = `/private-models/${encodeURIComponent(String(path["id"]))}`;
+  return client.request<{
+    data: {
+      base_url: string;
+      catalog_model_id?: string | null;
+      context_length?: number | null;
+      created_at?: string | null;
+      created_by?: string | null;
+      credential_prefix?: string | null;
+      credential_suffix?: string | null;
+      custom_provider_name?: string | null;
+      custom_provider_url?: string | null;
+      description?: string | null;
+      enabled: boolean;
+      host_provider_id?: string | null;
+      id: string;
+      input_modalities?: string[];
+      local_slug?: string;
+      max_output_tokens?: number | null;
+      model_id: string;
+      name: string;
+      output_modalities?: string[];
+      routing_policy?: "preferred" | "balanced" | "fallback";
+      supports_responses: boolean;
+      updated_at?: string | null;
+      upstream_model_id: string;
+      workspace_id: string;
+    };
+  }>({
+    method: "GET",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
 export type GetProviderCredentialParams = {
   path: {
     id: string;
@@ -10066,7 +10475,29 @@ export async function getWebhookEndpoint(
   createdAt?: string | null;
   createdBy?: string | null;
   deletedAt?: string | null;
-  events: string[];
+  events: (
+    | "job.created"
+    | "job.status_changed"
+    | "job.progress"
+    | "job.completed"
+    | "job.failed"
+    | "job.cancelled"
+    | "job.expired"
+    | "video.created"
+    | "video.status_changed"
+    | "video.progress"
+    | "video.completed"
+    | "video.failed"
+    | "video.cancelled"
+    | "video.expired"
+    | "batch.created"
+    | "batch.status_changed"
+    | "batch.progress"
+    | "batch.completed"
+    | "batch.failed"
+    | "batch.cancelled"
+    | "batch.expired"
+  )[];
   hasSecret: boolean;
   id: string;
   name: string;
@@ -10081,7 +10512,29 @@ export async function getWebhookEndpoint(
     createdAt?: string | null;
     createdBy?: string | null;
     deletedAt?: string | null;
-    events: string[];
+    events: (
+      | "job.created"
+      | "job.status_changed"
+      | "job.progress"
+      | "job.completed"
+      | "job.failed"
+      | "job.cancelled"
+      | "job.expired"
+      | "video.created"
+      | "video.status_changed"
+      | "video.progress"
+      | "video.completed"
+      | "video.failed"
+      | "video.cancelled"
+      | "video.expired"
+      | "batch.created"
+      | "batch.status_changed"
+      | "batch.progress"
+      | "batch.completed"
+      | "batch.failed"
+      | "batch.cancelled"
+      | "batch.expired"
+    )[];
     hasSecret: boolean;
     id: string;
     name: string;
@@ -10119,7 +10572,7 @@ export async function getWorkspace(
     created_by: string | null;
     id: string;
     name: string | null;
-    slug: string | null;
+    slug?: string | null;
     updated_at: string | null;
   };
 }> {
@@ -10131,7 +10584,7 @@ export async function getWorkspace(
       created_by: string | null;
       id: string;
       name: string | null;
-      slug: string | null;
+      slug?: string | null;
       updated_at: string | null;
     };
   }>({
@@ -10894,6 +11347,7 @@ export type ListBatchesParams = {
   path?: Record<string, never>;
   query?: {
     limit?: number;
+    offset?: number;
     status?: string[];
     statuses?: string;
   };
@@ -10973,6 +11427,7 @@ export async function listBatches(
       total?: number;
     };
     request_id?: string;
+    results_url?: string | null;
     session_id?: string;
     status?: string;
     usage?: {
@@ -11097,6 +11552,7 @@ export async function listBatches(
         total?: number;
       };
       request_id?: string;
+      results_url?: string | null;
       session_id?: string;
       status?: string;
       usage?: {
@@ -11239,6 +11695,7 @@ export async function listBatchesAlias(
       total?: number;
     };
     request_id?: string;
+    results_url?: string | null;
     session_id?: string;
     status?: string;
     usage?: {
@@ -11363,6 +11820,7 @@ export async function listBatchesAlias(
         total?: number;
       };
       request_id?: string;
+      results_url?: string | null;
       session_id?: string;
       status?: string;
       usage?: {
@@ -11885,139 +12343,247 @@ export type ListDataModelsParams = {
     model_id?: string | string[];
     offset?: number;
     organisation?:
+      | "01-ai"
+      | "adept"
       | "ai21"
       | "aion-labs"
+      | "aisingapore"
       | "alibaba"
       | "allenai"
       | "amazon"
+      | "anthracite-org"
       | "anthropic"
       | "arcee-ai"
       | "baai"
+      | "baichuan"
       | "baidu"
+      | "bigcode"
       | "black-forest-labs"
       | "bytedance"
+      | "bytedance-seed"
+      | "cogito"
+      | "cognitivecomputations"
       | "cohere"
       | "crofai"
       | "cursor"
+      | "cyfragovpl"
+      | "databricks"
+      | "decart"
       | "deepseek"
+      | "dots-studio"
+      | "early-access"
       | "eleven-labs"
       | "essential-ai"
+      | "fastino"
+      | "fish-audio"
       | "github"
       | "google"
+      | "gryphe"
       | "hexgrad"
       | "ibm"
+      | "ibm-granite"
       | "inception"
       | "inclusionai"
+      | "inference-net"
       | "inflection"
+      | "intfloat"
       | "jetbrains"
+      | "kblab"
+      | "kling"
+      | "kuaishou"
       | "kwaipilot"
+      | "kwaivgi"
       | "lg"
       | "lightricks"
       | "liquid-ai"
+      | "mancer"
+      | "medaibase"
       | "meituan"
       | "meta"
       | "microsoft"
       | "mindai"
       | "minimax"
       | "mistral"
+      | "mistralai"
       | "moonshotai"
       | "morph"
       | "naver-hyperclova"
+      | "near-ai"
       | "nex-agi"
       | "nous"
+      | "nousresearch"
+      | "novasearch"
       | "nvidia"
       | "openai"
+      | "openbmb"
+      | "opencompass"
+      | "opengvlab"
+      | "orcarouter"
+      | "ornith"
+      | "perceptron"
       | "perplexity"
+      | "phala"
+      | "pixverse"
       | "poe"
       | "poolside"
       | "prime-intellect"
+      | "prism-ml"
       | "qwen"
       | "reka"
       | "relace"
       | "runway"
       | "sakana"
+      | "sao10k"
+      | "sapiens-ai"
+      | "sentence-transformers"
+      | "sference"
+      | "shanghai-ai-laboratory"
+      | "shengshu-ai"
+      | "snowflake"
       | "sourceful"
       | "spacex-ai"
+      | "speakleash"
       | "stability-ai"
       | "stealth"
       | "stepfun"
       | "suno"
       | "tencent"
+      | "thedrummer"
       | "thinking-machines"
+      | "undi95"
       | "upstage"
       | "venice"
       | "vercel"
+      | "villanova-ai"
       | "voyage"
       | "windsurf"
+      | "writer"
+      | "xai"
+      | "xgenerationlab"
       | "xiaomi"
       | "z-ai"
+      | "zyphra"
       | (
+          | "01-ai"
+          | "adept"
           | "ai21"
           | "aion-labs"
+          | "aisingapore"
           | "alibaba"
           | "allenai"
           | "amazon"
+          | "anthracite-org"
           | "anthropic"
           | "arcee-ai"
           | "baai"
+          | "baichuan"
           | "baidu"
+          | "bigcode"
           | "black-forest-labs"
           | "bytedance"
+          | "bytedance-seed"
+          | "cogito"
+          | "cognitivecomputations"
           | "cohere"
           | "crofai"
           | "cursor"
+          | "cyfragovpl"
+          | "databricks"
+          | "decart"
           | "deepseek"
+          | "dots-studio"
+          | "early-access"
           | "eleven-labs"
           | "essential-ai"
+          | "fastino"
+          | "fish-audio"
           | "github"
           | "google"
+          | "gryphe"
           | "hexgrad"
           | "ibm"
+          | "ibm-granite"
           | "inception"
           | "inclusionai"
+          | "inference-net"
           | "inflection"
+          | "intfloat"
           | "jetbrains"
+          | "kblab"
+          | "kling"
+          | "kuaishou"
           | "kwaipilot"
+          | "kwaivgi"
           | "lg"
           | "lightricks"
           | "liquid-ai"
+          | "mancer"
+          | "medaibase"
           | "meituan"
           | "meta"
           | "microsoft"
           | "mindai"
           | "minimax"
           | "mistral"
+          | "mistralai"
           | "moonshotai"
           | "morph"
           | "naver-hyperclova"
+          | "near-ai"
           | "nex-agi"
           | "nous"
+          | "nousresearch"
+          | "novasearch"
           | "nvidia"
           | "openai"
+          | "openbmb"
+          | "opencompass"
+          | "opengvlab"
+          | "orcarouter"
+          | "ornith"
+          | "perceptron"
           | "perplexity"
+          | "phala"
+          | "pixverse"
           | "poe"
           | "poolside"
           | "prime-intellect"
+          | "prism-ml"
           | "qwen"
           | "reka"
           | "relace"
           | "runway"
           | "sakana"
+          | "sao10k"
+          | "sapiens-ai"
+          | "sentence-transformers"
+          | "sference"
+          | "shanghai-ai-laboratory"
+          | "shengshu-ai"
+          | "snowflake"
           | "sourceful"
           | "spacex-ai"
+          | "speakleash"
           | "stability-ai"
           | "stealth"
           | "stepfun"
           | "suno"
           | "tencent"
+          | "thedrummer"
           | "thinking-machines"
+          | "undi95"
           | "upstage"
           | "venice"
           | "vercel"
+          | "villanova-ai"
           | "voyage"
           | "windsurf"
+          | "writer"
+          | "xai"
+          | "xgenerationlab"
           | "xiaomi"
           | "z-ai"
+          | "zyphra"
         )[];
     status?: string[];
   };
@@ -13184,145 +13750,257 @@ export type ListModelsParams = {
     endpoints?: string[];
     feed?: "json" | "rss" | "atom";
     format?: "json" | "rss" | "atom";
+    gateway_available_only?: boolean;
     input_modalities?: string[];
+    input_modality?: "text" | "image" | "audio" | "video";
     input_types?: string[];
     limit?: number;
+    maximum_input_price_per_million?: number;
+    minimum_context_tokens?: number;
     model_routing_status?: string[];
     offset?: number;
     organisation?:
+      | "01-ai"
+      | "adept"
       | "ai21"
       | "aion-labs"
+      | "aisingapore"
       | "alibaba"
       | "allenai"
       | "amazon"
+      | "anthracite-org"
       | "anthropic"
       | "arcee-ai"
       | "baai"
+      | "baichuan"
       | "baidu"
+      | "bigcode"
       | "black-forest-labs"
       | "bytedance"
+      | "bytedance-seed"
+      | "cogito"
+      | "cognitivecomputations"
       | "cohere"
       | "crofai"
       | "cursor"
+      | "cyfragovpl"
+      | "databricks"
+      | "decart"
       | "deepseek"
+      | "dots-studio"
+      | "early-access"
       | "eleven-labs"
       | "essential-ai"
+      | "fastino"
+      | "fish-audio"
       | "github"
       | "google"
+      | "gryphe"
       | "hexgrad"
       | "ibm"
+      | "ibm-granite"
       | "inception"
       | "inclusionai"
+      | "inference-net"
       | "inflection"
+      | "intfloat"
       | "jetbrains"
+      | "kblab"
+      | "kling"
+      | "kuaishou"
       | "kwaipilot"
+      | "kwaivgi"
       | "lg"
       | "lightricks"
       | "liquid-ai"
+      | "mancer"
+      | "medaibase"
       | "meituan"
       | "meta"
       | "microsoft"
       | "mindai"
       | "minimax"
       | "mistral"
+      | "mistralai"
       | "moonshotai"
       | "morph"
       | "naver-hyperclova"
+      | "near-ai"
       | "nex-agi"
       | "nous"
+      | "nousresearch"
+      | "novasearch"
       | "nvidia"
       | "openai"
+      | "openbmb"
+      | "opencompass"
+      | "opengvlab"
+      | "orcarouter"
+      | "ornith"
+      | "perceptron"
       | "perplexity"
+      | "phala"
+      | "pixverse"
       | "poe"
       | "poolside"
       | "prime-intellect"
+      | "prism-ml"
       | "qwen"
       | "reka"
       | "relace"
       | "runway"
       | "sakana"
+      | "sao10k"
+      | "sapiens-ai"
+      | "sentence-transformers"
+      | "sference"
+      | "shanghai-ai-laboratory"
+      | "shengshu-ai"
+      | "snowflake"
       | "sourceful"
       | "spacex-ai"
+      | "speakleash"
       | "stability-ai"
       | "stealth"
       | "stepfun"
       | "suno"
       | "tencent"
+      | "thedrummer"
       | "thinking-machines"
+      | "undi95"
       | "upstage"
       | "venice"
       | "vercel"
+      | "villanova-ai"
       | "voyage"
       | "windsurf"
+      | "writer"
+      | "xai"
+      | "xgenerationlab"
       | "xiaomi"
       | "z-ai"
+      | "zyphra"
       | (
+          | "01-ai"
+          | "adept"
           | "ai21"
           | "aion-labs"
+          | "aisingapore"
           | "alibaba"
           | "allenai"
           | "amazon"
+          | "anthracite-org"
           | "anthropic"
           | "arcee-ai"
           | "baai"
+          | "baichuan"
           | "baidu"
+          | "bigcode"
           | "black-forest-labs"
           | "bytedance"
+          | "bytedance-seed"
+          | "cogito"
+          | "cognitivecomputations"
           | "cohere"
           | "crofai"
           | "cursor"
+          | "cyfragovpl"
+          | "databricks"
+          | "decart"
           | "deepseek"
+          | "dots-studio"
+          | "early-access"
           | "eleven-labs"
           | "essential-ai"
+          | "fastino"
+          | "fish-audio"
           | "github"
           | "google"
+          | "gryphe"
           | "hexgrad"
           | "ibm"
+          | "ibm-granite"
           | "inception"
           | "inclusionai"
+          | "inference-net"
           | "inflection"
+          | "intfloat"
           | "jetbrains"
+          | "kblab"
+          | "kling"
+          | "kuaishou"
           | "kwaipilot"
+          | "kwaivgi"
           | "lg"
           | "lightricks"
           | "liquid-ai"
+          | "mancer"
+          | "medaibase"
           | "meituan"
           | "meta"
           | "microsoft"
           | "mindai"
           | "minimax"
           | "mistral"
+          | "mistralai"
           | "moonshotai"
           | "morph"
           | "naver-hyperclova"
+          | "near-ai"
           | "nex-agi"
           | "nous"
+          | "nousresearch"
+          | "novasearch"
           | "nvidia"
           | "openai"
+          | "openbmb"
+          | "opencompass"
+          | "opengvlab"
+          | "orcarouter"
+          | "ornith"
+          | "perceptron"
           | "perplexity"
+          | "phala"
+          | "pixverse"
           | "poe"
           | "poolside"
           | "prime-intellect"
+          | "prism-ml"
           | "qwen"
           | "reka"
           | "relace"
           | "runway"
           | "sakana"
+          | "sao10k"
+          | "sapiens-ai"
+          | "sentence-transformers"
+          | "sference"
+          | "shanghai-ai-laboratory"
+          | "shengshu-ai"
+          | "snowflake"
           | "sourceful"
           | "spacex-ai"
+          | "speakleash"
           | "stability-ai"
           | "stealth"
           | "stepfun"
           | "suno"
           | "tencent"
+          | "thedrummer"
           | "thinking-machines"
+          | "undi95"
           | "upstage"
           | "venice"
           | "vercel"
+          | "villanova-ai"
           | "voyage"
           | "windsurf"
+          | "writer"
+          | "xai"
+          | "xgenerationlab"
           | "xiaomi"
           | "z-ai"
+          | "zyphra"
         )[];
     output_modalities?: string[];
     output_types?: string[];
@@ -13331,7 +14009,16 @@ export type ListModelsParams = {
     provider_availability_reason?: string[];
     provider_availability_status?: string[];
     provider_routing_status?: string[];
+    provider_search?: string;
     provider_status?: string[];
+    search?: string;
+    sort_by?:
+      | "relevance"
+      | "input_price"
+      | "output_price"
+      | "context_length"
+      | "provider_count";
+    sort_order?: "asc" | "desc";
     status?: string[];
     supported_parameters?: string[];
   };
@@ -14168,6 +14855,85 @@ export async function listPricingModels(
   });
 }
 
+export type ListPrivateModelsParams = {
+  path?: Record<string, never>;
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Lists private model metadata for the authenticated workspace. Requires `private_models:read` and an owner or admin identity.
+ */
+export async function listPrivateModels(
+  client: Client,
+  args: ListPrivateModelsParams = {},
+): Promise<{
+  data: {
+    base_url: string;
+    catalog_model_id?: string | null;
+    context_length?: number | null;
+    created_at?: string | null;
+    created_by?: string | null;
+    credential_prefix?: string | null;
+    credential_suffix?: string | null;
+    custom_provider_name?: string | null;
+    custom_provider_url?: string | null;
+    description?: string | null;
+    enabled: boolean;
+    host_provider_id?: string | null;
+    id: string;
+    input_modalities?: string[];
+    local_slug?: string;
+    max_output_tokens?: number | null;
+    model_id: string;
+    name: string;
+    output_modalities?: string[];
+    routing_policy?: "preferred" | "balanced" | "fallback";
+    supports_responses: boolean;
+    updated_at?: string | null;
+    upstream_model_id: string;
+    workspace_id: string;
+  }[];
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = "/private-models";
+  return client.request<{
+    data: {
+      base_url: string;
+      catalog_model_id?: string | null;
+      context_length?: number | null;
+      created_at?: string | null;
+      created_by?: string | null;
+      credential_prefix?: string | null;
+      credential_suffix?: string | null;
+      custom_provider_name?: string | null;
+      custom_provider_url?: string | null;
+      description?: string | null;
+      enabled: boolean;
+      host_provider_id?: string | null;
+      id: string;
+      input_modalities?: string[];
+      local_slug?: string;
+      max_output_tokens?: number | null;
+      model_id: string;
+      name: string;
+      output_modalities?: string[];
+      routing_policy?: "preferred" | "balanced" | "fallback";
+      supports_responses: boolean;
+      updated_at?: string | null;
+      upstream_model_id: string;
+      workspace_id: string;
+    }[];
+  }>({
+    method: "GET",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
 export type ListProviderCredentialsParams = {
   path?: Record<string, never>;
   query?: {
@@ -14310,139 +15076,247 @@ export type ListTeamModelsParams = {
     model_routing_status?: string[];
     offset?: number;
     organisation?:
+      | "01-ai"
+      | "adept"
       | "ai21"
       | "aion-labs"
+      | "aisingapore"
       | "alibaba"
       | "allenai"
       | "amazon"
+      | "anthracite-org"
       | "anthropic"
       | "arcee-ai"
       | "baai"
+      | "baichuan"
       | "baidu"
+      | "bigcode"
       | "black-forest-labs"
       | "bytedance"
+      | "bytedance-seed"
+      | "cogito"
+      | "cognitivecomputations"
       | "cohere"
       | "crofai"
       | "cursor"
+      | "cyfragovpl"
+      | "databricks"
+      | "decart"
       | "deepseek"
+      | "dots-studio"
+      | "early-access"
       | "eleven-labs"
       | "essential-ai"
+      | "fastino"
+      | "fish-audio"
       | "github"
       | "google"
+      | "gryphe"
       | "hexgrad"
       | "ibm"
+      | "ibm-granite"
       | "inception"
       | "inclusionai"
+      | "inference-net"
       | "inflection"
+      | "intfloat"
       | "jetbrains"
+      | "kblab"
+      | "kling"
+      | "kuaishou"
       | "kwaipilot"
+      | "kwaivgi"
       | "lg"
       | "lightricks"
       | "liquid-ai"
+      | "mancer"
+      | "medaibase"
       | "meituan"
       | "meta"
       | "microsoft"
       | "mindai"
       | "minimax"
       | "mistral"
+      | "mistralai"
       | "moonshotai"
       | "morph"
       | "naver-hyperclova"
+      | "near-ai"
       | "nex-agi"
       | "nous"
+      | "nousresearch"
+      | "novasearch"
       | "nvidia"
       | "openai"
+      | "openbmb"
+      | "opencompass"
+      | "opengvlab"
+      | "orcarouter"
+      | "ornith"
+      | "perceptron"
       | "perplexity"
+      | "phala"
+      | "pixverse"
       | "poe"
       | "poolside"
       | "prime-intellect"
+      | "prism-ml"
       | "qwen"
       | "reka"
       | "relace"
       | "runway"
       | "sakana"
+      | "sao10k"
+      | "sapiens-ai"
+      | "sentence-transformers"
+      | "sference"
+      | "shanghai-ai-laboratory"
+      | "shengshu-ai"
+      | "snowflake"
       | "sourceful"
       | "spacex-ai"
+      | "speakleash"
       | "stability-ai"
       | "stealth"
       | "stepfun"
       | "suno"
       | "tencent"
+      | "thedrummer"
       | "thinking-machines"
+      | "undi95"
       | "upstage"
       | "venice"
       | "vercel"
+      | "villanova-ai"
       | "voyage"
       | "windsurf"
+      | "writer"
+      | "xai"
+      | "xgenerationlab"
       | "xiaomi"
       | "z-ai"
+      | "zyphra"
       | (
+          | "01-ai"
+          | "adept"
           | "ai21"
           | "aion-labs"
+          | "aisingapore"
           | "alibaba"
           | "allenai"
           | "amazon"
+          | "anthracite-org"
           | "anthropic"
           | "arcee-ai"
           | "baai"
+          | "baichuan"
           | "baidu"
+          | "bigcode"
           | "black-forest-labs"
           | "bytedance"
+          | "bytedance-seed"
+          | "cogito"
+          | "cognitivecomputations"
           | "cohere"
           | "crofai"
           | "cursor"
+          | "cyfragovpl"
+          | "databricks"
+          | "decart"
           | "deepseek"
+          | "dots-studio"
+          | "early-access"
           | "eleven-labs"
           | "essential-ai"
+          | "fastino"
+          | "fish-audio"
           | "github"
           | "google"
+          | "gryphe"
           | "hexgrad"
           | "ibm"
+          | "ibm-granite"
           | "inception"
           | "inclusionai"
+          | "inference-net"
           | "inflection"
+          | "intfloat"
           | "jetbrains"
+          | "kblab"
+          | "kling"
+          | "kuaishou"
           | "kwaipilot"
+          | "kwaivgi"
           | "lg"
           | "lightricks"
           | "liquid-ai"
+          | "mancer"
+          | "medaibase"
           | "meituan"
           | "meta"
           | "microsoft"
           | "mindai"
           | "minimax"
           | "mistral"
+          | "mistralai"
           | "moonshotai"
           | "morph"
           | "naver-hyperclova"
+          | "near-ai"
           | "nex-agi"
           | "nous"
+          | "nousresearch"
+          | "novasearch"
           | "nvidia"
           | "openai"
+          | "openbmb"
+          | "opencompass"
+          | "opengvlab"
+          | "orcarouter"
+          | "ornith"
+          | "perceptron"
           | "perplexity"
+          | "phala"
+          | "pixverse"
           | "poe"
           | "poolside"
           | "prime-intellect"
+          | "prism-ml"
           | "qwen"
           | "reka"
           | "relace"
           | "runway"
           | "sakana"
+          | "sao10k"
+          | "sapiens-ai"
+          | "sentence-transformers"
+          | "sference"
+          | "shanghai-ai-laboratory"
+          | "shengshu-ai"
+          | "snowflake"
           | "sourceful"
           | "spacex-ai"
+          | "speakleash"
           | "stability-ai"
           | "stealth"
           | "stepfun"
           | "suno"
           | "tencent"
+          | "thedrummer"
           | "thinking-machines"
+          | "undi95"
           | "upstage"
           | "venice"
           | "vercel"
+          | "villanova-ai"
           | "voyage"
           | "windsurf"
+          | "writer"
+          | "xai"
+          | "xgenerationlab"
           | "xiaomi"
           | "z-ai"
+          | "zyphra"
         )[];
     output_types?: string[];
     params?: string[];
@@ -14990,7 +15864,10 @@ export async function listVideoModelsAlias(
 export type ListVideosParams = {
   path?: Record<string, never>;
   query?: {
+    after?: string;
     limit?: number;
+    offset?: number;
+    order?: "asc" | "desc";
     status?: string[];
   };
   headers?: Record<string, never>;
@@ -15547,7 +16424,29 @@ export async function listWebhookEndpoints(
     createdAt?: string | null;
     createdBy?: string | null;
     deletedAt?: string | null;
-    events: string[];
+    events: (
+      | "job.created"
+      | "job.status_changed"
+      | "job.progress"
+      | "job.completed"
+      | "job.failed"
+      | "job.cancelled"
+      | "job.expired"
+      | "video.created"
+      | "video.status_changed"
+      | "video.progress"
+      | "video.completed"
+      | "video.failed"
+      | "video.cancelled"
+      | "video.expired"
+      | "batch.created"
+      | "batch.status_changed"
+      | "batch.progress"
+      | "batch.completed"
+      | "batch.failed"
+      | "batch.cancelled"
+      | "batch.expired"
+    )[];
     hasSecret: boolean;
     id: string;
     name: string;
@@ -15565,7 +16464,29 @@ export async function listWebhookEndpoints(
       createdAt?: string | null;
       createdBy?: string | null;
       deletedAt?: string | null;
-      events: string[];
+      events: (
+        | "job.created"
+        | "job.status_changed"
+        | "job.progress"
+        | "job.completed"
+        | "job.failed"
+        | "job.cancelled"
+        | "job.expired"
+        | "video.created"
+        | "video.status_changed"
+        | "video.progress"
+        | "video.completed"
+        | "video.failed"
+        | "video.cancelled"
+        | "video.expired"
+        | "batch.created"
+        | "batch.status_changed"
+        | "batch.progress"
+        | "batch.completed"
+        | "batch.failed"
+        | "batch.cancelled"
+        | "batch.expired"
+      )[];
       hasSecret: boolean;
       id: string;
       name: string;
@@ -16190,7 +17111,7 @@ export async function listWorkspaces(
     created_by: string | null;
     id: string;
     name: string | null;
-    slug: string | null;
+    slug?: string | null;
     updated_at: string | null;
   }[];
   total_count: number;
@@ -16203,7 +17124,7 @@ export async function listWorkspaces(
       created_by: string | null;
       id: string;
       name: string | null;
-      slug: string | null;
+      slug?: string | null;
       updated_at: string | null;
     }[];
     total_count: number;
@@ -16269,6 +17190,192 @@ export async function listWorkspaceScimAuditEvents(
     }[];
   }>({
     method: "GET",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type MakeDecisionParams = {
+  path?: Record<string, never>;
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: {
+    debug?: {
+      enabled?: boolean;
+      return_upstream_request?: boolean;
+      return_upstream_response?: boolean;
+      trace?: boolean;
+      trace_level?: "summary" | "full";
+    };
+    echo_upstream_request?: boolean;
+    meta?: boolean;
+    metadata?: {
+      [key: string]: unknown;
+    };
+    model: string;
+    provider?: {
+      allow_fallbacks?: boolean | null;
+      data_collection?: "allow" | "deny" | null;
+      enforce_distillable_text?: boolean | null;
+      ignore?: string[];
+      include_alpha?: boolean;
+      max_price?: {
+        audio?: number | string;
+        completion?: number | string;
+        image?: number | string;
+        prompt?: number | string;
+        request?: number | string;
+      };
+      only?: string[];
+      order?: string[];
+      preferred_max_latency?:
+        | number
+        | {
+            [key: string]: number;
+          };
+      preferred_min_throughput?:
+        | number
+        | {
+            [key: string]: number;
+          };
+      quantizations?: string[] | null;
+      require_parameters?: boolean | null;
+      require_zero_data_retention?: boolean | null;
+      required_data_region?: string | null;
+      required_execution_region?: string | null;
+      sort?:
+        | string
+        | {
+            [key: string]: unknown;
+          };
+      zdr?: boolean | null;
+    };
+    questions: {
+      [key: string]:
+        | {
+            criteria?: {
+              false?: string;
+              true?: string;
+              [key: string]: unknown;
+            };
+            instructions:
+              | string
+              | {
+                  [key: string]: unknown;
+                }
+              | unknown[];
+            type: "noul";
+          }
+        | {
+            criteria: {
+              [key: string]: string | null;
+            };
+            instructions:
+              | string
+              | {
+                  [key: string]: unknown;
+                }
+              | unknown[];
+            type: "choice";
+          }
+        | {
+            criteria: string[];
+            instructions:
+              | string
+              | {
+                  [key: string]: unknown;
+                }
+              | unknown[];
+            type: "score";
+          };
+    };
+    routing?: {
+      allow_fallbacks?: boolean | null;
+      data_collection?: "allow" | "deny" | null;
+      enforce_distillable_text?: boolean | null;
+      ignore?: string[];
+      include_alpha?: boolean;
+      max_price?: {
+        audio?: number | string;
+        completion?: number | string;
+        image?: number | string;
+        prompt?: number | string;
+        request?: number | string;
+      };
+      only?: string[];
+      order?: string[];
+      preferred_max_latency?:
+        | number
+        | {
+            [key: string]: number;
+          };
+      preferred_min_throughput?:
+        | number
+        | {
+            [key: string]: number;
+          };
+      quantizations?: string[] | null;
+      require_parameters?: boolean | null;
+      require_zero_data_retention?: boolean | null;
+      required_data_region?: string | null;
+      required_execution_region?: string | null;
+      sort?:
+        | string
+        | {
+            [key: string]: unknown;
+          };
+      zdr?: boolean | null;
+    };
+    state:
+      | string
+      | {
+          [key: string]: unknown;
+        }
+      | unknown[];
+  };
+};
+
+/**
+ * Evaluates typed Noul, Choice, and Score questions against structured state using a decision model such as TypeSafe Jev.
+ */
+export async function makeDecision(
+  client: Client,
+  args: MakeDecisionParams = {},
+): Promise<{
+  answers?: {
+    [key: string]: unknown;
+  };
+  meta?: {
+    [key: string]: unknown;
+  };
+  model?: string;
+  request_id?: string | null;
+  usage?: {
+    input_tokens?: number;
+    output_tokens?: number;
+    total_tokens?: number;
+  };
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = "/decisions";
+  return client.request<{
+    answers?: {
+      [key: string]: unknown;
+    };
+    meta?: {
+      [key: string]: unknown;
+    };
+    model?: string;
+    request_id?: string | null;
+    usage?: {
+      input_tokens?: number;
+      output_tokens?: number;
+      total_tokens?: number;
+    };
+  }>({
+    method: "POST",
     path: resolvedPath,
     query,
     headers,
@@ -16758,6 +17865,7 @@ export async function retrieveBatch(
     total?: number;
   };
   request_id?: string;
+  results_url?: string | null;
   session_id?: string;
   status?: string;
   usage?: {
@@ -16871,6 +17979,7 @@ export async function retrieveBatch(
       total?: number;
     };
     request_id?: string;
+    results_url?: string | null;
     session_id?: string;
     status?: string;
     usage?: {
@@ -17005,6 +18114,7 @@ export async function retrieveBatchAlias(
     total?: number;
   };
   request_id?: string;
+  results_url?: string | null;
   session_id?: string;
   status?: string;
   usage?: {
@@ -17118,6 +18228,7 @@ export async function retrieveBatchAlias(
       total?: number;
     };
     request_id?: string;
+    results_url?: string | null;
     session_id?: string;
     status?: string;
     usage?: {
@@ -17308,6 +18419,60 @@ export async function retrieveBatchFileContentAlias(
   const { path, query, headers, body } = args;
   const resolvedPath = `/batch/files/${encodeURIComponent(String(path["file_id"]))}/content`;
   return client.request<Blob>({
+    method: "GET",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type RetrieveBatchResultsParams = {
+  path: {
+    batch_id: string;
+  };
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Streams complete provider-native result rows as JSONL for a terminal batch owned by the authenticated workspace. Combines success and error files, converts inline outputs, and follows provider result pagination. Use a Phaseo API key. Downloads do not submit inference or add usage charges. Existing file endpoints remain available. Inline rows are limited to 8 MiB; interrupted downloads must be discarded and downloaded again. Limited to 10 download attempts per workspace per batch in a rolling 30-minute window, shared across API keys and aliases. Failed or cancelled upstream attempts count. A 429 response includes Retry-After in seconds.
+ */
+export async function retrieveBatchResults(
+  client: Client,
+  args: RetrieveBatchResultsParams,
+): Promise<string> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = `/batches/${encodeURIComponent(String(path["batch_id"]))}/results`;
+  return client.request<string>({
+    method: "GET",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type RetrieveBatchResultsAliasParams = {
+  path: {
+    id: string;
+  };
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Streams complete provider-native result rows as JSONL for a terminal batch owned by the authenticated workspace. Combines success and error files, converts inline outputs, and follows provider result pagination. Use a Phaseo API key. Downloads do not submit inference or add usage charges. Existing file endpoints remain available. Inline rows are limited to 8 MiB; interrupted downloads must be discarded and downloaded again. Limited to 10 download attempts per workspace per batch in a rolling 30-minute window, shared across API keys and aliases. Failed or cancelled upstream attempts count. A 429 response includes Retry-After in seconds.
+ */
+export async function retrieveBatchResultsAlias(
+  client: Client,
+  args: RetrieveBatchResultsAliasParams,
+): Promise<string> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = `/batch/${encodeURIComponent(String(path["id"]))}/results`;
+  return client.request<string>({
     method: "GET",
     path: resolvedPath,
     query,
@@ -17728,6 +18893,45 @@ export async function summarizeGatewayFeedback(
     group_by: "preset_id" | "test_run_id" | "metadata";
   }>({
     method: "GET",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type TestWebhookEndpointParams = {
+  path: {
+    id: string;
+  };
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Sends one signed `webhook.test` event without retries or delivery-history persistence.
+ */
+export async function testWebhookEndpoint(
+  client: Client,
+  args: TestWebhookEndpointParams,
+): Promise<{
+  error: string | null;
+  event_id: string;
+  ok: boolean;
+  response_body_preview: string | null;
+  status_code: number | null;
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = `/webhook-endpoints/${encodeURIComponent(String(path["id"]))}/test`;
+  return client.request<{
+    error: string | null;
+    event_id: string;
+    ok: boolean;
+    response_body_preview: string | null;
+    status_code: number | null;
+  }>({
+    method: "POST",
     path: resolvedPath,
     query,
     headers,
@@ -19062,6 +20266,102 @@ export async function updatePresetTestRun(
   });
 }
 
+export type UpdatePrivateModelParams = {
+  path: {
+    id: string;
+  };
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: {
+    base_url?: string;
+    context_length?: number | null;
+    credential?: string;
+    custom_provider_name?: string | null;
+    custom_provider_url?: string | null;
+    description?: string | null;
+    enabled?: boolean;
+    host_provider_id?: string | null;
+    max_output_tokens?: number | null;
+    model_reference?: string;
+    name?: string;
+    routing_policy?: "preferred" | "balanced" | "fallback";
+    supports_responses?: boolean;
+    upstream_model_id?: string;
+  };
+};
+
+/**
+ * Updates private model metadata or replaces its write-only encrypted credential.
+ */
+export async function updatePrivateModel(
+  client: Client,
+  args: UpdatePrivateModelParams,
+): Promise<{
+  data: {
+    base_url: string;
+    catalog_model_id?: string | null;
+    context_length?: number | null;
+    created_at?: string | null;
+    created_by?: string | null;
+    credential_prefix?: string | null;
+    credential_suffix?: string | null;
+    custom_provider_name?: string | null;
+    custom_provider_url?: string | null;
+    description?: string | null;
+    enabled: boolean;
+    host_provider_id?: string | null;
+    id: string;
+    input_modalities?: string[];
+    local_slug?: string;
+    max_output_tokens?: number | null;
+    model_id: string;
+    name: string;
+    output_modalities?: string[];
+    routing_policy?: "preferred" | "balanced" | "fallback";
+    supports_responses: boolean;
+    updated_at?: string | null;
+    upstream_model_id: string;
+    workspace_id: string;
+  };
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = `/private-models/${encodeURIComponent(String(path["id"]))}`;
+  return client.request<{
+    data: {
+      base_url: string;
+      catalog_model_id?: string | null;
+      context_length?: number | null;
+      created_at?: string | null;
+      created_by?: string | null;
+      credential_prefix?: string | null;
+      credential_suffix?: string | null;
+      custom_provider_name?: string | null;
+      custom_provider_url?: string | null;
+      description?: string | null;
+      enabled: boolean;
+      host_provider_id?: string | null;
+      id: string;
+      input_modalities?: string[];
+      local_slug?: string;
+      max_output_tokens?: number | null;
+      model_id: string;
+      name: string;
+      output_modalities?: string[];
+      routing_policy?: "preferred" | "balanced" | "fallback";
+      supports_responses: boolean;
+      updated_at?: string | null;
+      upstream_model_id: string;
+      workspace_id: string;
+    };
+  }>({
+    method: "PATCH",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
 export type UpdateProviderCredentialParams = {
   path: {
     id: string;
@@ -19149,7 +20449,29 @@ export type UpdateWebhookEndpointParams = {
   query?: Record<string, never>;
   headers?: Record<string, never>;
   body?: {
-    events?: string[];
+    events?: (
+      | "job.created"
+      | "job.status_changed"
+      | "job.progress"
+      | "job.completed"
+      | "job.failed"
+      | "job.cancelled"
+      | "job.expired"
+      | "video.created"
+      | "video.status_changed"
+      | "video.progress"
+      | "video.completed"
+      | "video.failed"
+      | "video.cancelled"
+      | "video.expired"
+      | "batch.created"
+      | "batch.status_changed"
+      | "batch.progress"
+      | "batch.completed"
+      | "batch.failed"
+      | "batch.cancelled"
+      | "batch.expired"
+    )[];
     name?: string;
     status?: "active" | "disabled";
     url?: string;
@@ -19166,7 +20488,29 @@ export async function updateWebhookEndpoint(
   createdAt?: string | null;
   createdBy?: string | null;
   deletedAt?: string | null;
-  events: string[];
+  events: (
+    | "job.created"
+    | "job.status_changed"
+    | "job.progress"
+    | "job.completed"
+    | "job.failed"
+    | "job.cancelled"
+    | "job.expired"
+    | "video.created"
+    | "video.status_changed"
+    | "video.progress"
+    | "video.completed"
+    | "video.failed"
+    | "video.cancelled"
+    | "video.expired"
+    | "batch.created"
+    | "batch.status_changed"
+    | "batch.progress"
+    | "batch.completed"
+    | "batch.failed"
+    | "batch.cancelled"
+    | "batch.expired"
+  )[];
   hasSecret: boolean;
   id: string;
   name: string;
@@ -19181,7 +20525,29 @@ export async function updateWebhookEndpoint(
     createdAt?: string | null;
     createdBy?: string | null;
     deletedAt?: string | null;
-    events: string[];
+    events: (
+      | "job.created"
+      | "job.status_changed"
+      | "job.progress"
+      | "job.completed"
+      | "job.failed"
+      | "job.cancelled"
+      | "job.expired"
+      | "video.created"
+      | "video.status_changed"
+      | "video.progress"
+      | "video.completed"
+      | "video.failed"
+      | "video.cancelled"
+      | "video.expired"
+      | "batch.created"
+      | "batch.status_changed"
+      | "batch.progress"
+      | "batch.completed"
+      | "batch.failed"
+      | "batch.cancelled"
+      | "batch.expired"
+    )[];
     hasSecret: boolean;
     id: string;
     name: string;
@@ -19222,7 +20588,7 @@ export async function updateWorkspace(
     created_by: string | null;
     id: string;
     name: string | null;
-    slug: string | null;
+    slug?: string | null;
     updated_at: string | null;
   };
 }> {
@@ -19234,7 +20600,7 @@ export async function updateWorkspace(
       created_by: string | null;
       id: string;
       name: string | null;
-      slug: string | null;
+      slug?: string | null;
       updated_at: string | null;
     };
   }>({
@@ -19669,6 +21035,8 @@ export type UpdateWorkspaceNotificationSettingsParams = {
       amount_nanos?: number;
       balance_threshold_nanos?: number;
       enabled: boolean;
+      mfa_bypass_acknowledged?: boolean;
+      mfa_bypass_phrase?: string;
       payment_method_id?: string | null;
     };
     email_preferences?: {
@@ -19684,7 +21052,7 @@ export type UpdateWorkspaceNotificationSettingsParams = {
 };
 
 /**
- * Updates one or more durable notification-policy sections. Enabling auto top-up requires an existing saved payment method identifier; payment collection remains an interactive account flow.
+ * Updates one or more durable notification-policy sections. Enabling auto top-up requires an existing saved payment method identifier and verified two-factor authentication. An existing auto top-up configuration may be updated without repeating the MFA acknowledgement. To enable auto top-up without MFA, clients must explicitly set `mfa_bypass_acknowledged` to true and provide the exact `mfa_bypass_phrase` value `I ACCEPT THE RISK`; payment collection remains an interactive account flow.
  */
 export async function updateWorkspaceNotificationSettings(
   client: Client,

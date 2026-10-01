@@ -1,6 +1,8 @@
 "use client";
 
+import { chatLocalStorage } from "@/lib/chat/userStorage";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import {
@@ -204,19 +206,6 @@ function pickLogoId(organisationId: string | null, providerId: string) {
 		if (resolved.src) return organisationId;
 	}
 	return providerId;
-}
-
-function formatRunTime(iso: string, locale: string) {
-	try {
-		return new Date(iso).toLocaleString(locale, {
-			month: "short",
-			day: "numeric",
-			hour: "2-digit",
-			minute: "2-digit",
-		});
-	} catch {
-		return iso;
-	}
 }
 
 function extractOutputTokens(payload: any): number | null {
@@ -777,6 +766,8 @@ export default function CouncilClient({
 	initialSelectedRunId = null,
 	routeBasePath = "/experiments/council",
 }: CouncilClientProps) {
+	const format = useDisplayFormatters();
+	const formatRunTime = format.dateTime;
 	const router = useRouter();
 	const locale = useLocale();
 	const t = useTranslations("Product.experimentsCouncil");
@@ -840,7 +831,7 @@ export default function CouncilClient({
 
 	useEffect(() => {
 		try {
-			const stored = window.localStorage.getItem(MODEL_SELECTOR_FAVORITES_STORAGE_KEY);
+			const stored = chatLocalStorage.getItem(MODEL_SELECTOR_FAVORITES_STORAGE_KEY);
 			if (!stored) return;
 			const parsed = JSON.parse(stored);
 			if (!Array.isArray(parsed)) return;
@@ -1978,7 +1969,7 @@ export default function CouncilClient({
 														<div className="flex items-center justify-between text-[10px] text-muted-foreground">
 															<span className="inline-flex items-center gap-1">
 																<Clock3 className="h-3 w-3" />
-																{formatRunTime(run.createdAt, locale)}
+																{formatRunTime(run.createdAt)}
 															</span>
 									<span>{translatedStatus(run.status)}</span>
 														</div>
@@ -2129,7 +2120,7 @@ export default function CouncilClient({
 											{runs.map((run) => (
 												<CommandItem
 													key={`mobile-run-${run.id}`}
-										value={`${run.originalPrompt} ${translatedStatus(run.status)} ${formatRunTime(run.createdAt, locale)}`}
+										value={`${run.originalPrompt} ${translatedStatus(run.status)} ${formatRunTime(run.createdAt)}`}
 													onSelect={() => {
 														if (run.id == null) return;
 														setMobileRunPickerOpen(false);
@@ -2139,7 +2130,7 @@ export default function CouncilClient({
 													<div className="min-w-0 flex-1">
 														<p className="truncate text-xs font-medium">{run.originalPrompt}</p>
 														<p className="text-[10px] text-muted-foreground">
-															{translatedStatus(run.status)} - {formatRunTime(run.createdAt, locale)}
+															{translatedStatus(run.status)} - {formatRunTime(run.createdAt)}
 														</p>
 													</div>
 													<Check
@@ -2208,7 +2199,7 @@ export default function CouncilClient({
 											</div>
 										</div>
 										<div className="rounded-md border border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
-																{translatedStatus(selectedRun.status)} - {successfulSourceCount} {t("complete")} - {failedSourceCount} {t("failed")} - {totalSourceOutputTokens.toLocaleString(locale)} {t("outputTokens")}
+											{translatedStatus(selectedRun.status)} - {format.number(successfulSourceCount)} {t("complete")} - {format.number(failedSourceCount)} {t("failed")} - {format.number(totalSourceOutputTokens)} {t("outputTokens")}
 										</div>
 										<div className="space-y-2">
 											{selectedRun.modelSlugs.map((modelId) => {
@@ -2224,8 +2215,8 @@ export default function CouncilClient({
 															? t("running")
 													: isCompleted
 														? outputTokens !== null
-															? t("completedWithUsage", { tokens: outputTokens.toLocaleString(locale), tokenLabel: t("outputTokens"), seconds: ((result?.latency_ms ?? 0) / 1000).toLocaleString(locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 }) })
-															: t("completedWithoutUsage", { seconds: ((result?.latency_ms ?? 0) / 1000).toLocaleString(locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 }) })
+															? t("completedWithUsage", { tokens: format.number(outputTokens), tokenLabel: t("outputTokens"), seconds: format.number((result?.latency_ms ?? 0) / 1000, { minimumFractionDigits: 1, maximumFractionDigits: 1, notation: "standard" }) })
+															: t("completedWithoutUsage", { seconds: format.number((result?.latency_ms ?? 0) / 1000, { minimumFractionDigits: 1, maximumFractionDigits: 1, notation: "standard" }) })
 																: isFailed
 																	? t("failed")
 																	: t("queued");
@@ -2981,7 +2972,7 @@ export default function CouncilClient({
 								</ProviderInspectorSheetTitle>
 								<ProviderInspectorSheetDescription>
 									{sourceViewResult?.status === "completed"
-										? t("outputSummary", { tokens: sourceViewResult.output_tokens?.toLocaleString(locale) ?? "—", tokenLabel: t("outputTokens"), seconds: ((sourceViewResult.latency_ms ?? 0) / 1000).toLocaleString(locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 }) })
+										? t("outputSummary", { tokens: sourceViewResult.output_tokens != null ? format.number(sourceViewResult.output_tokens) : "—", tokenLabel: t("outputTokens"), seconds: format.number((sourceViewResult.latency_ms ?? 0) / 1000, { minimumFractionDigits: 1, maximumFractionDigits: 1, notation: "standard" }) })
 										: sourceViewResult?.status === "failed"
 											? t("generationFailed")
 															: t("generatingResponse")}

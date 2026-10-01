@@ -35,6 +35,10 @@ const internalTools = [
 		comingSoon: false,
 	},
 	{
+		id: "realtime-billing", titleKey: "realtimeBillingTitle", descriptionKey: "realtimeBillingDescription",
+		icon: Shield, href: "/internal/realtime-billing", comingSoon: false,
+	},
+	{
 		id: "model-test-playground",
 		titleKey: "modelTestLabTitle",
 		descriptionKey: "modelTestLabDescription",

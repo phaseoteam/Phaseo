@@ -6,6 +6,32 @@ import {
 } from "@/lib/providers/providerOffers";
 
 describe("providerOffers", () => {
+    test("preserves specialized catalogue names while formatting explicit regions", () => {
+        expect(resolveProviderDisplayName({ providerId: "minimax-lightning", providerName: "MiniMax Lightning", offerLabel: "highspeed", offerScope: "specialized" })).toBe("MiniMax Lightning");
+        expect(resolveProviderDisplayName({ providerId: "regional-route", providerName: "Example", offerLabel: "Singapore", offerScope: "regional" })).toBe("Example (Singapore)");
+    });
+    test.each([
+        ["openai", "OpenAI", "OpenAI"],
+        ["openai-eu", "OpenAI", "OpenAI (EU)"],
+        ["anthropic-us", "Anthropic", "Anthropic (US)"],
+        ["anthropic-aws-us", "Anthropic", "Claude Platform for AWS (US)"],
+        ["google-vertex-eu", "Google Vertex (EU)", "Google Vertex (EU)"],
+        ["google-vertex-eu", "Google Vertex EU", "Google Vertex (EU)"],
+    ])("preserves route identity for %s", (providerId, providerName, expected) => {
+        const name = resolveProviderDisplayName({ providerId, providerName });
+        expect(name).toBe(expected);
+        expect(formatProviderOfferDisplayName({ providerId, providerName: name })).toBe(expected);
+    });
+
+    test("does not repeat specialized offer labels when formatting catalogue names again", () => {
+        expect(formatProviderOfferDisplayName({ providerId: "example-fast", providerName: "Example Fast", offerLabel: "Fast", offerScope: "specialized" })).toBe("Example Fast");
+        expect(formatProviderOfferDisplayName({ providerId: "wafer-zdr", providerName: "Wafer (ZDR)", offerLabel: "ZDR", offerScope: "specialized" })).toBe("Wafer (ZDR)");
+    });
+
+    test("retains the region when offer scope is omitted", () => {
+        expect(formatProviderOfferDisplayName({ providerId: "openai-eu", providerName: "OpenAI", offerLabel: "EU" })).toBe("OpenAI (EU)");
+    });
+
     test("keeps Anthropic on AWS offers branded with AWS logos", () => {
         expect(
             resolveProviderLogoId({
@@ -19,6 +45,14 @@ describe("providerOffers", () => {
                 providerFamilyId: "anthropic",
             }),
         ).toBe("aws");
+    });
+
+    test.each([
+        ["mistral-eu", "mistral"],
+        ["moonshotai-turbo", "moonshotai"],
+        ["wafer-zdr", "wafer"],
+    ])("uses the %s brand logo", (providerId, logoId) => {
+        expect(resolveProviderLogoId({ providerId })).toBe(logoId);
     });
 
     test("resolves regional and specialized provider logos through their catalog IDs", () => {
@@ -51,6 +85,21 @@ describe("providerOffers", () => {
                 offerScope: "regional",
             }),
         ).toBe("Claude Platform for AWS (US)");
+    });
+
+    test("uses Tencent Cloud for the Tencent Cloud provider identity", () => {
+        expect(
+            resolveProviderDisplayName({
+                providerId: "tencent-cloud",
+                providerName: "Tencent Cloud TokenHub",
+            }),
+        ).toBe("Tencent Cloud");
+        expect(
+            resolveProviderLogoId({
+                providerId: "tencent-cloud",
+                providerFamilyId: "tencent-cloud",
+            }),
+        ).toBe("tencent-cloud");
     });
 
     test("formats regional offers with bracketed regions", () => {

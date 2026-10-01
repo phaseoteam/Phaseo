@@ -16,8 +16,9 @@ import type {
 	UpcomingPricingChange,
 } from "./pricingHelpers";
 import { fmtUSD } from "./pricingHelpers";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 
-type PricingComparisonAccent = "batch" | "flex" | "free" | "priority" | null;
+type PricingComparisonAccent = "batch" | "flex" | "free" | "priority" | "ultrafast" | null;
 
 function renderComparisonToneClass(
 	kind?: PriceComparisonKind | null,
@@ -31,10 +32,13 @@ function renderComparisonToneClass(
 		return "text-xs font-semibold text-sky-700 tabular-nums dark:text-sky-300";
 	}
 	if (accent === "free") {
-		return "text-xs font-semibold text-emerald-700 tabular-nums dark:text-emerald-300";
+		return "text-xs font-semibold text-foreground tabular-nums";
 	}
 	if (accent === "priority") {
 		return "text-xs font-semibold text-violet-700 tabular-nums dark:text-violet-300";
+	}
+	if (accent === "ultrafast") {
+		return "text-xs font-semibold text-fuchsia-700 tabular-nums dark:text-fuchsia-300";
 	}
 	if (kind === "discount" || direction === "cheaper") {
 		return "text-xs font-semibold text-emerald-600 tabular-nums";
@@ -72,19 +76,6 @@ function renderComparisonPrices(
 			</span>
 		</>
 	);
-}
-
-function formatEffectiveDate(iso: string | null | undefined, locale: string) {
-	if (!iso) return null;
-	const d = new Date(iso);
-	if (Number.isNaN(d.getTime())) return null;
-	const now = new Date();
-	const includeYear = d.getFullYear() !== now.getFullYear();
-	return d.toLocaleDateString(locale, {
-		day: "2-digit",
-		month: "short",
-		...(includeYear ? { year: "numeric" as const } : {}),
-	});
 }
 
 function resolutionSortValue(label: string): number {
@@ -975,7 +966,7 @@ export function UpcomingPricingSection({
 	vertical?: boolean;
 }) {
 	const t = useTranslations("Catalogue.modelDetail.sections");
-	const locale = useLocale();
+	const format = useDisplayFormatters();
 	if (!rows?.length) return null;
 
 	const orderedRows = [...rows].sort((a, b) => {
@@ -1014,7 +1005,9 @@ export function UpcomingPricingSection({
 			</div>
 			<div className={`grid gap-2 ${gridClass}`}>
 				{visibleRows.map((row, i) => {
-					const effectiveDate = formatEffectiveDate(row.effectiveFrom, locale);
+					const effectiveDate = row.effectiveFrom
+						? format.calendarDate(row.effectiveFrom)
+						: null;
 					const deltaPct = formatPercentDelta(row.price, row.currentPrice);
 					const trendClass =
 						row.trend === "down"
@@ -1070,7 +1063,7 @@ export function UpcomingPricingSection({
 	);
 }
 
-export function AdvancedTable({
+export function MeterRateRows({
 	rows,
 }: {
 	rows: ProviderSections["otherRules"];
@@ -1100,42 +1093,39 @@ export function AdvancedTable({
 	};
 
 	return (
-		<div className="space-y-1.5">
-			<h4 className="text-xs font-semibold tracking-wide text-foreground">{t("otherMeters")}</h4>
-			<div className="space-y-2">
-				{rows.map((row, index) => {
-					const conditions = formatConditions(row.conditions);
-					return (
-						<div
-							key={`${row.meter}-${row.ruleId ?? index}`}
-							className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-4"
-						>
-							<div className="min-w-0">
-								<div className="text-[11px] text-muted-foreground">
-									{formatMeterName(row.meter)}
+		<div className="space-y-2">
+			{rows.map((row, index) => {
+				const conditions = formatConditions(row.conditions);
+				return (
+					<div
+						key={`${row.meter}-${row.ruleId ?? index}`}
+						className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-4"
+					>
+						<div className="min-w-0">
+							<div className="text-[11px] text-muted-foreground">
+								{formatMeterName(row.meter)}
+							</div>
+							{conditions ? (
+								<div className="mt-0.5 truncate text-[10px] text-muted-foreground">
+									{conditions}
 								</div>
-								{conditions ? (
-									<div className="mt-0.5 truncate text-[10px] text-muted-foreground">
-										{conditions}
-									</div>
-								) : null}
-							</div>
-							<div className="flex items-baseline justify-end gap-2 text-right">
-								{renderComparisonPrices(
-									row.price,
-									row.basePrice,
-									countUsdDecimals(row.price),
-									row.comparisonKind,
-									row.comparisonDirection,
-								)}
-								<span className="text-[10px] text-muted-foreground">
-									{formatCompactUnit(row.unitLabel)}
-								</span>
-							</div>
+							) : null}
 						</div>
-					);
-				})}
-			</div>
+						<div className="flex items-baseline justify-end gap-2 text-right">
+							{renderComparisonPrices(
+								row.price,
+								row.basePrice,
+								countUsdDecimals(row.price),
+								row.comparisonKind,
+								row.comparisonDirection,
+							)}
+							<span className="text-[10px] text-muted-foreground">
+								{formatCompactUnit(row.unitLabel)}
+							</span>
+						</div>
+					</div>
+				);
+			})}
 		</div>
 	);
 }

@@ -2,6 +2,9 @@
 
 import * as React from "react";
 import { useLocale, useTranslations } from "next-intl";
+import ConfigurableLogTable from "./ConfigurableLogTable";
+import { SESSION_COLUMNS } from "./logColumns";
+import { getSessionPrimary } from "./sessionPrimary";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import {
@@ -44,6 +47,7 @@ import {
 } from "@/components/ui/table";
 import { formatRelativeToNow } from "@/lib/formatRelative";
 import { registerUsageViewRefresher } from "@/lib/gateway/usage/refreshBus";
+import { usePrivateUsageRefresh } from "./PrivateUsageQuery";
 import { formatErrorListSummary } from "@/lib/gateway/usage/errorListSummary";
 import { cn } from "@/lib/utils";
 import {
@@ -58,7 +62,12 @@ import {
 	formatWordyRange,
 	shortenIdentifier,
 } from "@/lib/gateway/usage/timeFormatting";
-import { getModelDisplayName, type ModelMetadataMap } from "./model-display";
+import {
+	getModelDetailsHref,
+	getModelDisplayName,
+	getModelMetadataEntry,
+	type ModelMetadataMap,
+} from "./model-display";
 import {
 	buildUsageFromNormalizedRequestFields,
 	extractUsageMeters,
@@ -85,20 +94,12 @@ function formatDuration(milliseconds: number): string {
 	return `${(minutes / 60).toFixed(1)} hr`;
 }
 
-function getModelDetailsHref(modelId: string | null): string | null {
-	if (!modelId) return null;
-	const [organisationId, ...modelParts] = modelId.split("/");
-	if (!organisationId || modelParts.length === 0) return null;
-	const routeModelId = modelParts.join("/");
-	return `/models/${encodeURIComponent(organisationId)}/${encodeURIComponent(routeModelId)}`;
-}
-
 function getModelLogoId(
 	modelId: string | null,
 	modelMetadata: ModelMetadataMap,
 ): string | null {
 	if (!modelId) return null;
-	const metadata = modelMetadata.get(modelId);
+	const metadata = getModelMetadataEntry(modelId, modelMetadata);
 	if (metadata?.organisationId) return metadata.organisationId;
 	if (modelId.includes("/")) {
 		const [organisationId] = modelId.split("/");
@@ -378,7 +379,7 @@ function SessionModelsCell({
 		<div className="flex flex-wrap gap-1.5">
 			{visibleModels.map(({ model_id: modelId }) => {
 				const modelLabel = getModelDisplayName(modelId, modelMetadata);
-				const modelHref = getModelDetailsHref(modelId);
+				const modelHref = getModelDetailsHref(modelId, modelMetadata);
 				const modelLogoId = getModelLogoId(modelId, modelMetadata);
 
 				return (
@@ -430,7 +431,7 @@ function SessionModelsCell({
 							<div className="flex flex-wrap gap-1.5">
 								{hiddenModels.map(({ model_id: modelId }) => {
 									const modelLabel = getModelDisplayName(modelId, modelMetadata);
-									const modelHref = getModelDetailsHref(modelId);
+									const modelHref = getModelDetailsHref(modelId, modelMetadata);
 									const modelLogoId = getModelLogoId(modelId, modelMetadata);
 
 									return (
@@ -725,7 +726,7 @@ function SessionDetailSheet({
 												request.model_id,
 												modelMetadata,
 											);
-											const modelHref = getModelDetailsHref(request.model_id);
+											const modelHref = getModelDetailsHref(request.model_id, modelMetadata, request.provider);
 											const modelLogoId = getModelLogoId(
 												request.model_id,
 												modelMetadata,
@@ -881,6 +882,7 @@ function SessionDetailSheet({
 }
 
 export default function SessionsPanel({
+	settingsTargetId,
 	initialSessions,
 	initialAppMetadata,
 	initialModelMetadata,
@@ -895,6 +897,7 @@ export default function SessionsPanel({
 	providerFilter = null,
 	sessionFilter = null,
 }: {
+	settingsTargetId?: string;
 	initialSessions: SessionRollupRow[];
 	initialAppMetadata: Map<string, AppMetadata>;
 	initialModelMetadata: ModelMetadataMap;
@@ -916,6 +919,7 @@ export default function SessionsPanel({
 			? Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"
 			: "UTC";
 	const [sessions, setSessions] = React.useState(initialSessions);
+	const privateQuery = usePrivateUsageRefresh();
 	const [appMetadata, setAppMetadata] = React.useState(
 		() => new Map(initialAppMetadata),
 	);
@@ -940,6 +944,7 @@ export default function SessionsPanel({
 
 	React.useEffect(() => {
 		setSessions(initialSessions);
+		detailCacheRef.current.clear();
 	}, [initialSessions]);
 
 	React.useEffect(() => {
@@ -974,6 +979,7 @@ export default function SessionsPanel({
 	}, []);
 
 	const refresh = React.useCallback(() => {
+		if (privateQuery) return privateQuery.refresh();
 		return (async () => {
 			setIsRefreshing(true);
 			try {
@@ -1035,6 +1041,7 @@ export default function SessionsPanel({
 	}, [
 		appFilter,
 		appMetadata,
+		privateQuery,
 		modelFilter,
 		modelMetadata,
 		providerFilter,
@@ -1126,182 +1133,108 @@ export default function SessionsPanel({
 		[appMetadata, modelMetadata, providerMetadata, providerNames, timeRange],
 	);
 
-	const table = sessions.length === 0 ? (
-		<div className="rounded-lg border border-dashed px-4 py-8 text-sm text-muted-foreground">
-			{emptyMessage}
-		</div>
-	) : (
-		<>
-			<div className="space-y-3 md:hidden">
-				{sessions.map((session) => {
-					const modelCounts =
-						session.model_counts ??
-						(session.model_ids ?? []).map((modelId) => ({
-							model_id: modelId,
-							request_count: 0,
-						}));
-
-					return (
-						<div
-							key={`mobile-${session.session_id}`}
-							role="button"
-							tabIndex={0}
-							className="w-full rounded-lg border bg-card px-4 py-3 text-left transition-colors hover:bg-muted/40"
-							onClick={() => openDetail(session)}
-							onKeyDown={(event) => {
-								if (event.target !== event.currentTarget) return;
-								if (event.key === "Enter" || event.key === " ") {
-									event.preventDefault();
-									openDetail(session);
-								}
-							}}
-						>
-							<div className="flex items-start justify-between gap-3">
-								<div className="min-w-0 space-y-1">
-									<div className="text-sm font-medium text-foreground">
-										{formatWordyRange(session.first_request_at, session.last_request_at, locale)}
-									</div>
-									<div className="flex items-center gap-1.5 font-mono text-xs text-muted-foreground">
-										<span title={session.session_id}>
-											{shortenIdentifier(session.session_id)}
-										</span>
-										<Button
-											type="button"
-											variant="ghost"
-											size="icon"
-											className="h-5 w-5 p-0"
-											onClick={(event) => {
-												stopRowClick(event);
-												copySessionId(session.session_id);
-											}}
-									title={t("strings.Copy session id" as never)}
-									aria-label={t("strings.Copy session id" as never)}
-										>
-											{copiedSessionId === session.session_id ? (
-												<Check className="h-3 w-3" />
-											) : (
-												<Copy className="h-3 w-3" />
-											)}
-										</Button>
-									</div>
-								</div>
-								<div className="shrink-0 text-right">
-									<div className="font-mono text-xs text-muted-foreground">
-								{t("strings.Request count" as never, { count: session.request_count } as never)}
-									</div>
-									<div className="font-mono text-sm text-foreground">
-										{formatMoneyFromNanos(session.total_cost_nanos)}
-									</div>
-								</div>
-							</div>
-							<div className="mt-3">
-								<SessionModelsCell
-									modelCounts={modelCounts}
-									modelMetadata={modelMetadata}
-									maxVisible={2}
+	const table = (
+		<ConfigurableLogTable
+			tableId="sessions"
+			label={t("strings.Sessions" as never)}
+			definitions={SESSION_COLUMNS}
+			rows={sessions}
+			rowKey={(session) => session.session_id}
+			onRowClick={openDetail}
+			settingsTargetId={settingsTargetId}
+			emptyMessage={emptyMessage}
+			renderCell={(session, column) => {
+				const { primary, provider, other } = getSessionPrimary(session);
+				switch (column) {
+					case "date":
+						return (
+							<>
+								<PeriodHover
+									start={session.first_request_at}
+									end={session.last_request_at}
+									userTimeZone={userTimeZone}
+									relativeNowMs={relativeNowMs}
+									triggerClassName="text-xs font-medium"
 								/>
+							</>
+						);
+					case "session":
+						return (
+							<>
+								<div className="flex items-center gap-1.5">
+									<span title={session.session_id}>
+										{shortenIdentifier(session.session_id)}
+									</span>
+									<Button
+										type="button"
+										variant="ghost"
+										size="icon"
+										className="h-6 w-6 p-0"
+										onClick={(event) => {
+											stopRowClick(event);
+											copySessionId(session.session_id);
+										}}
+										title="Copy session ID"
+										aria-label="Copy session ID"
+									>
+										{copiedSessionId === session.session_id ? (
+											<Check className="h-3.5 w-3.5" />
+										) : (
+											<Copy className="h-3.5 w-3.5" />
+										)}
+									</Button>
+								</div>
+							</>
+						);
+					case "requests":
+						return <>{session.request_count.toLocaleString()}</>;
+					case "cost":
+						return <>{formatMoneyFromNanos(session.total_cost_nanos)}</>;
+					case "app":
+						return (
+							<div className="flex items-center gap-1.5">
+								{session.app_ids?.length
+									? session.app_ids.map((id) => (
+											<AppBadge
+												key={id}
+												appId={id}
+												app={appMetadata.get(id)}
+												compact
+											/>
+										))
+									: "—"}
 							</div>
-						</div>
-					);
-				})}
-			</div>
-
-			<div className="hidden overflow-hidden rounded-lg border md:block">
-				<ScrollArea
-					className="w-full"
-					scrollBarOrientation="horizontal"
-					keepScrollbarMounted
-					viewportClassName="w-full pb-2"
-				>
-				<Table wrapInContainer={false} className="min-w-[720px] text-xs">
-					<TableHeader>
-						<TableRow className="h-9">
-							<TableHead>
-													{t("strings.Period" as never)}
-							</TableHead>
-							<TableHead>
-													{t("strings.Session ID" as never)}
-							</TableHead>
-							<TableHead>
-													{t("strings.Models" as never)}
-							</TableHead>
-							<TableHead className="text-right">
-													{t("strings.Requests" as never)}
-							</TableHead>
-							<TableHead className="text-right">
-									{t("strings.Cost" as never)}
-							</TableHead>
-						</TableRow>
-					</TableHeader>
-					<TableBody>
-						{sessions.map((session) => {
-							const modelCounts =
-								session.model_counts ??
-								(session.model_ids ?? []).map((modelId) => ({
-									model_id: modelId,
-									request_count: 0,
-								}));
-
-							return (
-								<TableRow
-									key={session.session_id}
-									className="h-12 cursor-pointer hover:bg-muted/40"
-									onClick={() => openDetail(session)}
-								>
-									<TableCell className="py-2">
-										<PeriodHover
-											start={session.first_request_at}
-											end={session.last_request_at}
-											userTimeZone={userTimeZone}
-											relativeNowMs={relativeNowMs}
-											triggerClassName="text-xs font-medium"
-										/>
-									</TableCell>
-									<TableCell className="py-2 font-mono text-xs">
-										<div className="flex items-center gap-1.5">
-											<span title={session.session_id}>
-												{shortenIdentifier(session.session_id)}
-											</span>
-											<Button
-												type="button"
-												variant="ghost"
-												size="icon"
-												className="h-6 w-6 p-0"
-												onClick={(event) => {
-													stopRowClick(event);
-													copySessionId(session.session_id);
-												}}
-									title={t("strings.Copy session id" as never)}
-									aria-label={t("strings.Copy session id" as never)}
-											>
-												{copiedSessionId === session.session_id ? (
-													<Check className="h-3.5 w-3.5" />
-												) : (
-													<Copy className="h-3.5 w-3.5" />
-												)}
-											</Button>
-										</div>
-									</TableCell>
-									<TableCell className="py-2">
-										<SessionModelsCell
-											modelCounts={modelCounts}
-											modelMetadata={modelMetadata}
-										/>
-									</TableCell>
-									<TableCell className="py-2 text-right font-mono text-xs">
-										{session.request_count.toLocaleString()}
-									</TableCell>
-									<TableCell className="py-2 text-right font-mono text-xs">
-										{formatMoneyFromNanos(session.total_cost_nanos)}
-									</TableCell>
-								</TableRow>
-							);
-						})}
-					</TableBody>
-				</Table>
-				</ScrollArea>
-			</div>
-		</>
+						);
+					case "primary":
+						return primary ? (
+							<SessionModelsCell
+								modelCounts={[primary]}
+								modelMetadata={modelMetadata}
+							/>
+						) : (
+							"—"
+						);
+					case "provider":
+						return provider ? (
+							<span className="inline-flex items-center gap-2">
+								<Logo id={provider} width={14} height={14} />
+								{providerNames.get(provider) ?? provider}
+							</span>
+						) : (
+							"—"
+						);
+					case "other":
+						return other.length ? (
+							<SessionModelsCell
+								modelCounts={other}
+								modelMetadata={modelMetadata}
+							/>
+						) : (
+							"—"
+						);
+				}
+			}}
+		/>
 	);
 
 	return (

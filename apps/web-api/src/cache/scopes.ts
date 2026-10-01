@@ -1,7 +1,12 @@
+import { PUBLIC_MODEL_CATALOGUE_CACHE_TAGS } from "@/cache/catalogue";
+
 export const CACHE_SCOPE_IDS = [
 	"search",
 	"catalogue",
 	"model",
+	"model-info",
+	"model-providers",
+	"model-telemetry",
 	"provider",
 	"organisation",
 	"benchmark",
@@ -27,10 +32,10 @@ export type CacheScopeDefinition = {
 	tags: readonly string[];
 };
 
-const SEARCH_TAGS = ["web-api-search", "web-api-cache-generation"] as const;
+const SEARCH_TAGS = ["web-api-search"] as const;
 
 const CATALOGUE_TAGS = [
-	"web-api-models",
+	...PUBLIC_MODEL_CATALOGUE_CACHE_TAGS,
 	"web-api-models-v2",
 	"web-api-model-details",
 	"web-api-model-benchmarks",
@@ -40,6 +45,7 @@ const CATALOGUE_TAGS = [
 	"web-api-model-performance",
 	"web-api-model-pricing-history",
 	"web-api-model-usage-daily",
+	"web-api-model-effective-pricing",
 	"web-api-model-realtime",
 	"web-api-model-token-trajectories",
 	"web-api-model-provider-health",
@@ -61,7 +67,6 @@ const CATALOGUE_TAGS = [
 	"web-api-countries",
 	"web-api-collections",
 	"web-api-search",
-	"web-api-cache-generation",
 ] as const;
 
 const ALL_PUBLIC_TAGS = [
@@ -85,7 +90,6 @@ const ALL_PUBLIC_TAGS = [
 	"web-api-rankings",
 	"web-api-ranking-metadata",
 	"web-api-pricing-models",
-	"web-api-gateway-models",
 	"web-api-monitor-history",
 	"web-api-og",
 ] as const;
@@ -119,6 +123,36 @@ const DEFINITIONS: Record<CacheScopeId, CacheScopeDefinition> = {
 		affectsSearch: true,
 		danger: "normal",
 		tags: CATALOGUE_TAGS,
+	},
+	"model-info": {
+		id: "model-info",
+		label: "Model details",
+		description: "Refresh one model's identity, About, benchmarks, timeline, notice, and subscriptions.",
+		targetLabel: "Model ID",
+		targetRequired: true,
+		affectsSearch: false,
+		danger: "normal",
+		tags: [...PUBLIC_MODEL_CATALOGUE_CACHE_TAGS, "web-api-models-v2"],
+	},
+	"model-providers": {
+		id: "model-providers",
+		label: "Model providers",
+		description: "Refresh one model's provider routes, pricing, and availability.",
+		targetLabel: "Model ID",
+		targetRequired: true,
+		affectsSearch: false,
+		danger: "normal",
+		tags: [...PUBLIC_MODEL_CATALOGUE_CACHE_TAGS, "web-api-models-v2", "web-api-provider-routing-health"],
+	},
+	"model-telemetry": {
+		id: "model-telemetry",
+		label: "Model activity and performance",
+		description: "Refresh one model's usage, uptime, performance, and provider health.",
+		targetLabel: "Model ID",
+		targetRequired: true,
+		affectsSearch: false,
+		danger: "normal",
+		tags: [...PUBLIC_MODEL_CATALOGUE_CACHE_TAGS, "web-api-models-v2"],
 	},
 	provider: {
 		id: "provider",
@@ -198,7 +232,7 @@ const DEFINITIONS: Record<CacheScopeId, CacheScopeDefinition> = {
 		targetRequired: false,
 		affectsSearch: false,
 		danger: "normal",
-		tags: ["web-api-pricing-models", "web-api-catalog-pricing", "web-api-model-pricing", "web-api-model-pricing-history", "web-api-subscription-plans"],
+		tags: [...PUBLIC_MODEL_CATALOGUE_CACHE_TAGS, "web-api-pricing-models", "web-api-catalog-pricing", "web-api-model-pricing", "web-api-model-pricing-history", "web-api-subscription-plans"],
 	},
 	"all-public": {
 		id: "all-public",
@@ -234,6 +268,9 @@ export function resolveCacheScope(scope: CacheScopeId, rawTargetId?: string | nu
 	const tags = [...definition.tags];
 	if (targetId) {
 		if (scope === "model") tags.push(dynamicTag("web-api-model-", targetId));
+		if (scope === "model-info") tags.push(dynamicTag("web-api-model-info-", targetId));
+		if (scope === "model-providers") tags.push(dynamicTag("web-api-model-providers-", targetId));
+		if (scope === "model-telemetry") tags.push(dynamicTag("web-api-model-telemetry-", targetId));
 		if (scope === "provider") tags.push(dynamicTag("web-api-provider-", targetId));
 		if (scope === "organisation") tags.push(dynamicTag("web-api-organisation-", targetId));
 		if (scope === "benchmark") tags.push(dynamicTag("web-api-benchmark-", targetId));

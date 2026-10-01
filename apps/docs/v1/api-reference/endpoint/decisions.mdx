@@ -1,0 +1,61 @@
+---
+title: "Make a decision"
+sidebarTitle: "Decisions"
+badge: "Beta"
+openapi: "POST /decisions"
+description: "Evaluate typed questions against application state with supported decision models."
+---
+
+Use `POST /v1/decisions` when your application needs structured answers that code can consume directly. Supported models include TypeSafe Jev 1.13 (`typesafe/jev-1.13.0`), Together Tev1 4B Experimental (`together/tev1-4b-experimental`), and Respan Span-01 (`respan/span-01:free` and `respan/span-01`).
+
+The request contains:
+
+- `state`: a string, object, or array containing the information to evaluate.
+- `questions`: a map of named questions. Each question sets `type` to `noul`, `choice`, or `score` and includes `instructions`; supported types depend on the selected model.
+- `model`: the Phaseo model ID. Use `typesafe/jev-1.13.0` for Jev 1.13, or `typesafe/jev-latest` to follow the latest Jev release.
+
+Liquid D1 (`liquid-ai/d1:free`, also available as `liquid-ai/d1`) and Perplexity Decider 27B (`perplexity/decider-27b`) support all three question types. D1 is free during experimental early access. Decider costs $0.04 per million input tokens, including image tokens; output tokens are free. Add a Perplexity provider credential in Phaseo to use Decider. Its image state uses PNG, JPEG, or WebP base64 data URLs; remote image URLs are unsupported. Each choice question accepts up to 255 options, and each score question accepts up to 10 levels. Check model availability before calling either model.
+
+For Respan Span-01, `state` must be a conversation span with an `input` array of preceding messages and an `output` assistant message. Span-01 supports `noul` questions only. The `noul` answer is the probability that the behavior is present; `probabilities` also includes absent and not-observable probabilities.
+
+```json
+{
+  "model": "respan/span-01:free",
+  "state": {
+    "input": [{ "role": "user", "content": "Please connect me to a person." }],
+    "output": { "role": "assistant", "content": "I will connect you to support." }
+  },
+  "questions": {
+    "escalation": {
+      "type": "noul",
+      "instructions": "Does the assistant offer a human handoff?"
+    }
+  }
+}
+```
+
+`respan/span-01:free` is the free Lite model with a daily limit; Phaseo maps it to Respan's `span-01-free` API model ID. `respan/span-01` maps to Respan's `span-01-pro` API model ID and is billed by Respan at $0.02 per million input tokens; output tokens are free. Span-01 is in early access, so Respan must enable access for your organization. Add your Respan API key as a Respan provider credential in Phaseo before calling these models.
+
+Answers use the same keys as `questions`. `choice` answers include the selected option, probabilities, and confidence; `noul` answers include a 0–1 probability; and `score` answers include a probability-weighted score, legend, probabilities, and confidence.
+
+For the Respan example, a response looks like this:
+
+```json
+{
+  "answers": {
+    "escalation": {
+      "type": "noul",
+      "noul": 0.73,
+      "probabilities": {
+        "true": 0.73,
+        "false": 0.25,
+        "not_observable": 0.02
+      }
+    }
+  }
+}
+```
+
+Jev supports mixing all three question types in one request; Span-01 supports `noul` questions only. See the [Quickstart](../../quickstart) for copy-pasteable cURL, JavaScript, TypeScript SDK, and Python SDK examples. Jev 1.13 is billed at $0.042 per 1M input tokens; output tokens are free.
+
+For the upstream question semantics, see TypeSafe's [API reference](https://docs.typesafe.ai/api).

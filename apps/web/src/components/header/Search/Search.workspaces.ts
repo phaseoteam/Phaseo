@@ -15,7 +15,6 @@ export function createWorkspaceSearchItem(
 	return {
 		id: `workspace:${workspace.id}`,
 		title: workspace.name,
-		subtitle: "Workspace settings",
 		href: "/settings/workspaces/settings",
 		workspaceId: workspace.id,
 		persistable: false,
@@ -25,11 +24,14 @@ export function createWorkspaceSearchItem(
 
 export async function fetchWorkspaceSearchItems(
 	path: string,
+	options: { signal?: AbortSignal } = {},
 ): Promise<PaletteItem[]> {
 	const response = await fetch(path, {
 		method: "GET",
 		credentials: "same-origin",
+		cache: "no-store",
 		headers: { Accept: "application/json" },
+		signal: options.signal,
 	});
 
 	if (!response.ok) return [];

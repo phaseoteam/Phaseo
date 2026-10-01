@@ -123,7 +123,7 @@ jobs:
                           return {}
                       try:
                           output = subprocess.check_output(
-                              ["git", "show", f"{rev}:packages/data/catalog/src/data/manifest.json"],
+                              ["git", "show", f"{rev}:packages/data/catalog/generated/database-v2/enum-catalog.json"],
                               text=True,
                           )
                       except Exception:
@@ -137,6 +137,8 @@ jobs:
                   def model_ids(manifest: dict) -> set[str]:
                       result: set[str] = set()
                       models = manifest.get("models")
+                      if isinstance(models, list):
+                          return set(ensure_list(models))
                       if not isinstance(models, dict):
                           return result
                       for org_key, entries in models.items():

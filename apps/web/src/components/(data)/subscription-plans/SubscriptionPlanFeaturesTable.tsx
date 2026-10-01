@@ -1,5 +1,6 @@
 import type { SubscriptionPlanFeature } from "@/lib/fetchers/subscription-plans/types";
 import type { SubscriptionPlansMessages } from "@/i18n/subscription-plans";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 interface SubscriptionPlanFeaturesTableProps {
 	features?: SubscriptionPlanFeature[] | null;
@@ -7,47 +8,28 @@ interface SubscriptionPlanFeaturesTableProps {
 }
 
 export default function SubscriptionPlanFeaturesTable({ features, messages }: SubscriptionPlanFeaturesTableProps) {
-	if (!features || features.length === 0) {
-		return null;
-	}
+	if (!features?.length) return null;
 
 	return (
-		<div className="w-full">
-			<div className="overflow-x-auto">
-				<table className="w-full border-collapse border border-gray-200 dark:border-gray-700 rounded-lg">
-					<thead>
-						<tr className="bg-muted/50">
-							<th className="border border-gray-200 dark:border-gray-700 px-4 py-3 text-left font-semibold">
-								{messages.feature}
-							</th>
-							<th className="border border-gray-200 dark:border-gray-700 px-4 py-3 text-left font-semibold">
-								{messages.value}
-							</th>
-							<th className="border border-gray-200 dark:border-gray-700 px-4 py-3 text-left font-semibold">
-								{messages.description}
-							</th>
-						</tr>
-					</thead>
-					<tbody>
-						{features.map((feature, index) => (
-							<tr
-								key={feature.feature_name}
-								className={index % 2 === 0 ? "bg-background" : "bg-muted/20"}
-							>
-								<td className="border border-gray-200 dark:border-gray-700 px-4 py-3 font-medium">
-									{feature.feature_name}
-								</td>
-								<td className="border border-gray-200 dark:border-gray-700 px-4 py-3">
-									{feature.feature_value || "-"}
-								</td>
-								<td className="border border-gray-200 dark:border-gray-700 px-4 py-3 text-muted-foreground">
-									{feature.feature_description || "-"}
-								</td>
-							</tr>
-						))}
-					</tbody>
-				</table>
-			</div>
+		<div className="overflow-hidden rounded-md border border-border/70">
+			<Table aria-label={messages.feature}>
+				<TableHeader className="bg-muted/50">
+					<TableRow>
+						<TableHead scope="col" className="px-4">{messages.feature}</TableHead>
+						<TableHead scope="col" className="px-4">{messages.value}</TableHead>
+						<TableHead scope="col" className="px-4">{messages.description}</TableHead>
+					</TableRow>
+				</TableHeader>
+				<TableBody>
+					{features.map((feature) => (
+						<TableRow key={feature.feature_name}>
+							<TableCell className="px-4 py-3 font-medium">{feature.feature_name}</TableCell>
+							<TableCell className="px-4 py-3">{feature.feature_value || "-"}</TableCell>
+							<TableCell className="min-w-48 px-4 py-3 text-muted-foreground">{feature.feature_description || "-"}</TableCell>
+						</TableRow>
+					))}
+				</TableBody>
+			</Table>
 		</div>
 	);
 }

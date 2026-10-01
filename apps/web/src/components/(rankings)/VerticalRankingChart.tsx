@@ -5,7 +5,7 @@ export type VerticalRankingChartEntry = {
 	key: string;
 	label: string;
 	value: number;
-	valueLabel: string;
+	valueLabel: React.ReactNode;
 	logoId?: string | null;
 };
 
@@ -43,7 +43,7 @@ export function VerticalRankingChart({
 						<div
 							key={entry.key}
 							className="grid h-full min-w-0 grid-rows-[1.25rem_1fr_1.75rem] gap-1.5"
-							aria-label={`${entry.label}: ${entry.valueLabel}`}
+							aria-label={`${entry.label}: ${entry.value}`}
 						>
 							<span className="truncate text-center text-[10px] font-medium tabular-nums text-muted-foreground">
 								{entry.valueLabel}

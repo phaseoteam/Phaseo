@@ -1,4 +1,17 @@
-import { buildUptimeChartData } from "./ModelSuccessChart";
+import {
+	buildUptimeChartData,
+	calculateAverageUptime,
+} from "./ModelSuccessChart";
+
+describe("calculateAverageUptime", () => {
+	test("averages hourly uptime values instead of weighting by requests", () => {
+		const hourlyUptime = Array.from({ length: 24 }, (_, index) =>
+			index < 2 ? 0 : 100,
+		);
+
+		expect(calculateAverageUptime(hourlyUptime)).toBeCloseTo(91.6667, 4);
+	});
+});
 
 describe("buildUptimeChartData", () => {
 	test("shows a consistent 100% uptime line when there are no requests", () => {
@@ -12,6 +25,7 @@ describe("buildUptimeChartData", () => {
 			time: "11:00",
 			overall: 100,
 			worst: null,
+			worstRequests: 0,
 			bucket: "2026-08-29T11:00:00.000Z",
 			requests: 0,
 		});
@@ -19,6 +33,7 @@ describe("buildUptimeChartData", () => {
 			time: "10:00",
 			overall: 100,
 			worst: null,
+			worstRequests: 0,
 			bucket: "2026-08-30T10:00:00.000Z",
 			requests: 0,
 		});

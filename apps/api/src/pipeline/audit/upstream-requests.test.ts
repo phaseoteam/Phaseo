@@ -40,6 +40,7 @@ describe("persistGatewayUpstreamRequests", () => {
                     outcome: "upstream_non_2xx",
                     status: 429,
                     duration_ms: 35,
+                    started_at_unix_ms: 1000,
                     retryable: true,
                     upstream_error_code: "rate_limit",
                 },
@@ -77,6 +78,7 @@ describe("persistGatewayUpstreamRequests", () => {
             cost_nanos: 0,
             total_ms: 35,
             error_code: "rate_limit",
+            metadata: expect.objectContaining({ started_at_unix_ms: 1000 }),
         });
         expect(rows[1]).toMatchObject({
             sequence: 2,

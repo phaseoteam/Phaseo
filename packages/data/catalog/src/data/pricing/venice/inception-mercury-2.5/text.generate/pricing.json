@@ -1,0 +1,84 @@
+{
+  "key": "venice:inception/mercury-2.5:text.generate",
+  "api_provider_id": "venice",
+  "provider_slug": "venice",
+  "api_model_id": "inception/mercury-2.5",
+  "capability_id": "text.generate",
+  "rules": [
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.05,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Venice models API metadata as of 2026-09-09.",
+      "match": [],
+      "priority": 100,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": "https://api.venice.ai/api/v1/models"
+    },
+    {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.005,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Venice models API metadata as of 2026-09-09.",
+      "match": [],
+      "priority": 100,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": "https://api.venice.ai/api/v1/models"
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.1875,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Venice models API metadata as of 2026-09-09.",
+      "match": [],
+      "priority": 100,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": "https://api.venice.ai/api/v1/models"
+    },
+    {
+      "meter": "native_web_search_requests",
+      "unit": "request",
+      "unit_size": 1,
+      "price_per_unit": 0.01,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Venice Web Search: $10 per 1,000 requests.",
+      "match": [],
+      "priority": 100,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": "https://docs.venice.ai/overview/pricing"
+    }
+  ],
+  "regions": [],
+  "service_tiers": ["standard"],
+  "sources": [
+    {
+      "kind": "provider_pricing",
+      "url": "https://api.venice.ai/api/v1/models",
+      "accessed_at": "2026-09-09T00:00:00Z",
+      "notes": "Per-million-token USD pricing returned by Venice for mercury-2-5."
+    }
+  ],
+  "verification": {
+    "status": "verified",
+    "checked_at": "2026-09-09T00:00:00Z",
+    "notes": "Pricing verified against Venice's live models API."
+  }
+}

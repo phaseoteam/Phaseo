@@ -19,6 +19,7 @@ import type {
   ImagesGenerationRequest,
   ImagesGenerationResponse,
   ListFilesResponse as FileListResponse,
+  ModelEndpointsResponse,
   ModelId as OapiModelId,
   ModerationsRequest,
   ModerationsResponse,
@@ -32,11 +33,33 @@ import type {
   RerankResponse,
   ResponsesRequest,
   ResponsesResponse,
+  DecisionsRequest,
+  DecisionsResponse,
+  SystemOneRequest,
+  SystemOneResponse,
   VideoGenerationRequest,
   VideoGenerationResponse
 } from "./oapi-gen/models/index.js";
 import * as ops from "./oapi-gen/client/index.js";
-import { PhaseoHttpError, Client } from "./runtime/client.js";
+import { PhaseoHttpError, Client, type RawResponse } from "./runtime/client.js";
+import { createTransport, type RequestControls } from "./runtime/transport.js";
+import { JobHandle } from "./jobHandle.js";
+import { paginateItems, paginatePages, type PageOptions } from "./pagination.js";
+import {
+  parseOutput,
+  checkCapabilities,
+  checkParameterSupport,
+  toFile,
+  type OutputSchema,
+  type CapabilityRequirements,
+  type ModelCapabilities,
+  type ParameterSupportOptions,
+  type ParameterSupportReport,
+} from "./helpers.js";
+export { JobHandle } from "./jobHandle.js";
+export { paginateItems, paginatePages, type Page, type PageFetcher, type PageOptions } from "./pagination.js";
+export { PhaseoHttpError, type RawResponse } from "./runtime/client.js";
+export { responseMetadata, requestTraceUrl, RequestTimeoutError, type RequestControls, type RequestEvent, type ResponseEvent, type RetryEvent, type ResponseMetadata } from "./runtime/transport.js";
 import {
   TelemetryCapture,
   extractBatchMetadata,
@@ -48,9 +71,35 @@ import {
 import type { DevToolsConfig } from "./devtools/core.js";
 import type { KnownModelId as GeneratedKnownModelId } from "./modelIds.js";
 import { verifyAsyncWebhookSignature as verifyWebhookSignatureValue } from "./webhooks.js";
+import { createAndWaitForJob, waitForJob, type JobWaitOptions } from "./jobs.js";
+export { JobFailedError, JobTimeoutError, JobCancelledError, type JobWaitOptions, type JobKind } from "./jobs.js";
 
 export type KnownModelId = GeneratedKnownModelId;
+export { parseOutput, outputText, collectStream, checkCapabilities, checkParameterSupport, batchResults, matchBatchResult, downloadTo, toFile, StructuredOutputError, StreamResponseError } from "./helpers.js";
+export type {
+  OutputSchema,
+  CapabilityRequirements,
+  CapabilityCheck,
+  BatchResult,
+  ParameterSupport,
+  ParameterSupportOptions,
+  ParameterSupportReport,
+  ParameterSupportStatus,
+  ParameterRouteReference,
+} from "./helpers.js";
 export type ModelIdLiteral = KnownModelId;
+export type PreflightReport = {
+  ok: boolean;
+  model: string;
+  checkedParameters: Record<string, unknown>;
+  lifecycle: { ok: boolean; info: ModelLifecycleInfo | null; reason?: string };
+  parameterSupport: ParameterSupportReport;
+};
+
+const PREFLIGHT_STRUCTURAL_FIELDS = new Set([
+  "model", "input", "messages", "prompt", "contents", "provider", "providers", "routing",
+  "metadata", "session_id", "app", "webhook", "idempotency_key",
+]);
 /**
  * Model identifier in `provider/model` format (for example: `openai/gpt-5.4`).
  *
@@ -72,9 +121,11 @@ export type AppAttribution = {
   categories?: Array<"chat" | "developer-tools" | "research" | "productivity" | "education" | "commerce" | "media" | "finance" | "other">;
 };
 
-type Options = {
+export type Options = RequestControls & {
   apiKey?: string;
   baseUrl?: string;
+  /** Select a Phaseo regional provider-routing endpoint. Cannot be combined with baseUrl. */
+  region?: PhaseoRegion;
   timeoutMs?: number;
   fetchImpl?: typeof fetch;
   devtools?: Partial<DevToolsConfig>;
@@ -168,6 +219,7 @@ export type MessageStreamChunk = Record<string, unknown> & {
   usage?: GatewayStreamUsage | null;
   reasoningTokens?: number | null;
 };
+export type ImageStreamChunk = Record<string, unknown>;
 
 export type VideoCreateRequest = {
   model: ModelId;
@@ -293,6 +345,20 @@ export type ChatCompletionsParams = Omit<ChatCompletionsRequest, "model" | "mess
 };
 
 const DEFAULT_BASE_URL = "https://api.phaseo.app/v1";
+const REGIONAL_BASE_URLS = {
+  global: DEFAULT_BASE_URL,
+  eu: "https://eu.api.phaseo.app/v1",
+  us: "https://us.api.phaseo.app/v1",
+} as const;
+
+export type PhaseoRegion = keyof typeof REGIONAL_BASE_URLS;
+
+function resolveBaseUrl(options: Pick<Options, "baseUrl" | "region">): string {
+  if (options.baseUrl !== undefined && options.region !== undefined) {
+    throw new Error("baseUrl and region cannot be used together");
+  }
+  return options.baseUrl ?? REGIONAL_BASE_URLS[options.region ?? "global"];
+}
 
 function trimTrailingSlashes(value: string): string {
   let end = value.length;
@@ -328,6 +394,7 @@ export type {
   ModerationsResponse,
   MusicGenerateRequest,
   MusicGenerateResponse,
+  ModelEndpointsResponse,
   OcrRequest,
   OcrResponse,
   ParseRequest,
@@ -336,6 +403,10 @@ export type {
   RerankResponse,
   ResponsesRequest,
   ResponsesResponse,
+  DecisionsRequest,
+  DecisionsResponse,
+  SystemOneRequest,
+  SystemOneResponse,
   VideoBillingSummary,
   VideoGenerationRequest,
   VideoGenerationResponse
@@ -364,12 +435,11 @@ export {
 } from "./webhooks.js";
 export type PhaseoOptions = Options;
 export type PhaseoRequestOptions = { signal?: AbortSignal };
-
 export class Phaseo {
   private readonly client: Client;
   private readonly basePath: string;
   private readonly headers: Record<string, string>;
-  private readonly telemetry: TelemetryCapture;
+  private telemetry: TelemetryCapture;
   private readonly fetchImpl: typeof fetch;
   private readonly enableDeprecationWarnings: boolean;
   private readonly warningsAsErrors: boolean;
@@ -378,6 +448,10 @@ export class Phaseo {
   private readonly modelLifecycleCache = new Map<string, ModelLifecycleInfo | null>();
 
   readonly responses = {
+    parse: async <T>(req: ResponsesRequest, schema: OutputSchema<T>): Promise<T> => {
+      if (req.stream) throw new Error("parse requires a completed response; use streamResponses for streaming");
+      return parseOutput(await this.generateResponse(req), schema);
+    },
     create: async (req: ResponsesRequest, options: PhaseoRequestOptions = {}): Promise<ResponsesResponse | AsyncGenerator<ResponseStreamChunk>> => {
       if ((req as { stream?: boolean }).stream) {
         return this.streamResponses(req, options);
@@ -408,6 +482,15 @@ export class Phaseo {
 
   readonly models = {
     list: async (params: Record<string, unknown> = {}): Promise<ModelListResponse> => this.getModels(params),
+    capabilities: async (modelId: string, params: Record<string, unknown> = {}): Promise<ModelEndpointsResponse> =>
+      this.getModelEndpointCapabilities(modelId, params),
+    checkParameters: async (
+      modelId: string,
+      parameterValues: Record<string, unknown>,
+      options: ParameterSupportOptions = {},
+    ): Promise<ParameterSupportReport> => this.checkModelParameters(modelId, parameterValues, options),
+    preflight: async (request: Record<string, unknown>, options: ParameterSupportOptions = {}): Promise<PreflightReport> =>
+      this.preflightRequest(request, options),
     getDeprecationInfo: async (modelId: string): Promise<ModelLifecycleInfo | null> =>
       this.getModelDeprecationInfo(modelId),
     validate: async (modelId: string): Promise<{ ok: boolean; info: ModelLifecycleInfo | null; reason?: string }> =>
@@ -415,9 +498,23 @@ export class Phaseo {
   };
 
   readonly batches = {
+    start: async (req: BatchCreateRequest) => { const job = await this.createBatch(req); return this.batchHandle(job.id, job); },
+    resume: (id: string) => this.batchHandle(id),
     create: async (req: BatchCreateRequest): Promise<BatchResponse> => this.createBatch(req),
+    createAndWait: (req: BatchCreateRequest, options: JobWaitOptions<BatchResponse> = {}) =>
+      this.createBatchAndWait(req, options),
     list: async (params: Record<string, unknown> = {}): Promise<BatchListResponse> => this.listBatches(params),
+    pages: (params: Record<string, unknown> & PageOptions = {}) => paginatePages<BatchResponse, BatchListResponse>(
+      ({ limit, offset }) => this.listBatches({ ...params, limit, offset }),
+      params,
+    ),
+    all: (params: Record<string, unknown> & PageOptions = {}) => paginateItems<BatchResponse, BatchListResponse>(
+      ({ limit, offset }) => this.listBatches({ ...params, limit, offset }),
+      params,
+    ),
     get: async (batchId: string): Promise<BatchResponse> => this.getBatch(batchId),
+    streamResults: (batchId: string, options: { signal?: AbortSignal } = {}): Promise<ReadableStream<Uint8Array>> =>
+      this.streamBatchResults(batchId, options),
     cancel: async (batchId: string): Promise<BatchResponse> => this.cancelBatch(batchId),
     listRequests: async (batchId: string, options: BatchRequestListOptions = {}): Promise<BatchRequestRowsResponse> =>
       this.listBatchRequests(batchId, options),
@@ -435,7 +532,22 @@ export class Phaseo {
   };
 
   readonly videos = {
+    start: async (req: VideoCreateRequest) => { const job = await this.generateVideo(req); return this.videoHandle(job.id, job); },
+    resume: (id: string) => this.videoHandle(id),
+    streamContent: (id: string) => this.streamContent(`/videos/${encodeURIComponent(id)}/content`),
     create: async (req: VideoCreateRequest): Promise<VideoStatusResponse> => this.generateVideo(req),
+    list: async (params: Record<string, unknown> = {}): Promise<VideoListResponse> => this.listVideos(params as Record<string, QueryParamValue>),
+    pages: (params: Record<string, unknown> & PageOptions = {}) => paginatePages<VideoStatusResponse, VideoListResponse>(
+      ({ limit, offset }) => this.listVideos({ ...params, limit, offset } as Record<string, QueryParamValue>),
+      params,
+    ),
+    all: (params: Record<string, unknown> & PageOptions = {}) => paginateItems<VideoStatusResponse, VideoListResponse>(
+      ({ limit, offset }) => this.listVideos({ ...params, limit, offset } as Record<string, QueryParamValue>),
+      params,
+    ),
+    generateAndWait: (req: VideoCreateRequest, options: JobWaitOptions<VideoStatusResponse> = {}) =>
+      this.generateVideoAndWait(req, options),
+    wait: (videoId: string, options: JobWaitOptions<VideoStatusResponse> = {}) => this.waitForVideo(videoId, options),
     get: async (videoId: string): Promise<VideoStatusResponse> => this.getVideo(videoId),
     content: async (videoId: string): Promise<Uint8Array> => this.getVideoContent(videoId),
     downloadUrl: async (
@@ -450,7 +562,12 @@ export class Phaseo {
   };
 
   readonly music = {
+    start: async (req: MusicGenerateRequest) => { const job = await this.generateMusic(req); return this.musicHandle(job.id, job); },
+    resume: (id: string) => this.musicHandle(id),
     create: async (req: MusicGenerateRequest): Promise<MusicGenerateResponse> => this.generateMusic(req),
+    generateAndWait: (req: MusicGenerateRequest, options: JobWaitOptions<MusicGenerateResponse> = {}) =>
+      this.generateMusicAndWait(req, options),
+    wait: (musicId: string, options: JobWaitOptions<MusicGenerateResponse> = {}) => this.waitForMusic(musicId, options),
     get: async (musicId: string): Promise<MusicGenerateResponse> => this.getMusicGeneration(musicId),
   };
 
@@ -464,6 +581,10 @@ export class Phaseo {
 
   readonly rerank = {
     create: async (req: RerankRequest): Promise<RerankResponse> => this.createRerank(req),
+  };
+
+  readonly decisions = {
+    make: async (req: DecisionsRequest): Promise<DecisionsResponse> => this.makeDecision(req),
   };
 
   readonly providers = {
@@ -481,7 +602,7 @@ export class Phaseo {
 
   constructor(private readonly opts: Options = {}) {
     const apiKey = resolveApiKey(opts.apiKey);
-    this.basePath = trimTrailingSlashes(opts.baseUrl ?? DEFAULT_BASE_URL);
+    this.basePath = trimTrailingSlashes(resolveBaseUrl(opts));
     this.headers = {
       Authorization: `Bearer ${apiKey}`,
       "X-Phaseo-Client": "phaseo-typescript",
@@ -493,14 +614,16 @@ export class Phaseo {
       baseUrl: this.basePath,
       headers: this.headers,
       timeoutMs: opts.timeoutMs,
+      signal: opts.signal,
+      maxRetries: opts.maxRetries,
       fetchImpl: opts.fetchImpl
     });
-    this.fetchImpl = opts.fetchImpl ?? fetch;
+    this.fetchImpl = createTransport(opts.fetchImpl ?? fetch, opts);
     this.enableDeprecationWarnings = opts.enableDeprecationWarnings ?? true;
     this.warningsAsErrors = opts.warningsAsErrors ?? false;
     this.logger = opts.logger;
 
-    this.telemetry = new TelemetryCapture(opts.devtools, "2.2.0");
+    this.telemetry = new TelemetryCapture(opts.devtools, "3.0.0");
 
   }
 
@@ -508,44 +631,112 @@ export class Phaseo {
     return this.client;
   }
 
-  async request(method: string, path: string, options: {
+  /** Immutable request-scoped client; works with every resource, stream and media method. */
+  withOptions(options: RequestControls & { headers?: Record<string, string> }): Phaseo {
+    const signal = this.opts.signal && options.signal ? AbortSignal.any([this.opts.signal, options.signal]) : options.signal ?? this.opts.signal;
+    // Scoped clients belong to the same capture session; constructing another
+    // enabled capture would register timers and process listeners on every poll.
+    const scoped = new Phaseo({ ...this.opts, ...options, signal, headers: { ...this.opts.headers, ...options.headers }, devtools: { enabled: false } });
+    scoped.telemetry = this.telemetry;
+    return scoped;
+  }
+
+  private videoHandle(id: string, initial?: VideoStatusResponse): JobHandle<VideoStatusResponse> {
+    return new JobHandle("video", id, (signal, timeoutMs) => this.withOptions({ signal, timeoutMs: Math.min(timeoutMs ?? Infinity, this.opts.timeoutMs ?? 60_000) }).getVideo(id),
+      options => this.waitForVideo(id, options), initial, () => this.cancelVideo(id));
+  }
+  private musicHandle(id: string, initial?: MusicGenerateResponse): JobHandle<MusicGenerateResponse> {
+    return new JobHandle("music", id, (signal, timeoutMs) => this.withOptions({ signal, timeoutMs: Math.min(timeoutMs ?? Infinity, this.opts.timeoutMs ?? 60_000) }).getMusicGeneration(id),
+      options => this.waitForMusic(id, options), initial);
+  }
+  private batchHandle(id: string, initial?: BatchResponse): JobHandle<BatchResponse> {
+    return new JobHandle("batch", id, (signal, timeoutMs) => this.withOptions({ signal, timeoutMs: Math.min(timeoutMs ?? Infinity, this.opts.timeoutMs ?? 60_000) }).getBatch(id),
+      options => this.waitForBatch(id, options), initial, () => this.cancelBatch(id));
+  }
+
+  async streamContent(path: string): Promise<ReadableStream<Uint8Array>> {
+    if (!path.startsWith("/") || path.startsWith("//") || path.includes("://")) throw new Error("Expected a relative API path");
+    const response = await this.fetchImpl(`${this.basePath}${path}`, { headers: this.headers });
+    if (!response.ok) throw createHttpError(response, await response.text());
+    if (!response.body) throw new Error("Response has no content");
+    return response.body;
+  }
+
+  async checkModelCapabilities(modelId: string, requirements: CapabilityRequirements) {
+    const payload = await this.getModels({ model_id: modelId, limit: 1 });
+    const model = (payload as { models?: ModelCapabilities[] }).models?.find(item => (item.id ?? item.model_id) === modelId);
+    return model ? checkCapabilities(model, requirements) : { ok: false, issues: [`Model ${modelId} was not found in the catalogue`] };
+  }
+
+  async getModelEndpointCapabilities(
+    modelId: string,
+    params: Record<string, unknown> = {},
+  ): Promise<ModelEndpointsResponse> {
+    const parts = modelId.split("/");
+    if (parts.length !== 2 || !parts[0] || !parts[1]) {
+      throw new Error("modelId must use author/slug format");
+    }
+    const [author, slug] = parts;
+    return this.telemetry.wrap(
+      "models.capabilities",
+      () => ops.listModelEndpoints(this.client, {
+        path: { author, slug },
+        query: params as any,
+      }),
+      () => ({ model: modelId, ...params }),
+    );
+  }
+
+  async checkModelParameters(
+    modelId: string,
+    parameterValues: Record<string, unknown>,
+    options: ParameterSupportOptions = {},
+  ): Promise<ParameterSupportReport> {
+    const capabilities = await this.getModelEndpointCapabilities(modelId);
+    return checkParameterSupport(capabilities, parameterValues, options);
+  }
+
+  async preflightRequest(request: Record<string, unknown>, options: ParameterSupportOptions = {}): Promise<PreflightReport> {
+    const model = typeof request.model === "string" ? request.model.trim() : "";
+    if (!model) throw new TypeError("preflight requires request.model");
+    const checkedParameters = Object.fromEntries(
+      Object.entries(request).filter(([name, value]) => value !== undefined && !PREFLIGHT_STRUCTURAL_FIELDS.has(name)),
+    );
+    const [lifecycle, parameterSupport] = await Promise.all([
+      this.validateModel(model),
+      this.checkModelParameters(model, checkedParameters, options),
+    ]);
+    return { ok: lifecycle.ok && parameterSupport.ok, model, checkedParameters, lifecycle, parameterSupport };
+  }
+
+  async request(method: string, path: string, options: RequestControls & {
     query?: Record<string, QueryParamValue>;
     headers?: Record<string, string>;
     body?: unknown;
   } = {}): Promise<unknown> {
-    const url = new URL(path.replace(/^\/+/, ""), `${this.basePath}/`);
-    if (options.query) {
-      for (const [key, value] of Object.entries(options.query)) {
-        if (Array.isArray(value)) {
-          for (const item of value) {
-            url.searchParams.append(key, String(item));
-          }
-        } else {
-          url.searchParams.set(key, String(value));
-        }
-      }
-    }
-    const res = await this.fetchImpl(url.toString(), {
+    return (await this.requestWithResponse(method, path, options)).data ?? null;
+  }
+
+  async requestWithResponse(method: string, path: string, options: RequestControls & {
+    query?: Record<string, QueryParamValue>;
+    headers?: Record<string, string>;
+    body?: unknown;
+  } = {}): Promise<RawResponse<unknown>> {
+    const normalizedPath = `/${path.replace(/^\/+/, "")}`;
+    return this.client.requestWithResponse({
       method,
-      headers: {
-        ...this.headers,
-        ...(options.body !== undefined ? { "Content-Type": "application/json" } : {}),
-        ...(options.headers ?? {})
-      },
-      body: options.body !== undefined ? JSON.stringify(options.body) : undefined
+      path: normalizedPath,
+      query: options.query as Record<string, string | number | boolean | Array<string | number | boolean>> | undefined,
+      headers: options.headers,
+      body: options.body,
+      signal: options.signal,
+      timeoutMs: options.timeoutMs,
+      maxRetries: options.maxRetries,
+      idempotencyKey: options.idempotencyKey,
+      onRequest: options.onRequest,
+      onResponse: options.onResponse,
+      onRetry: options.onRetry,
     });
-    if (!res.ok) {
-      const text = await res.text();
-      throw createHttpError(res, text);
-    }
-    if (res.status === 204) return null;
-    const text = await res.text();
-    if (!text) return null;
-    try {
-      return JSON.parse(text);
-    } catch {
-      return text;
-    }
   }
 
   getAsyncJobWebSocketUrl(kind: AsyncJobKind, jobId: string, options: AsyncJobWebSocketOptions = {}): string {
@@ -756,17 +947,36 @@ export class Phaseo {
     );
   }
 
+  async *streamImage(req: ImagesGenerationRequest): AsyncGenerator<ImageStreamChunk> {
+    const payload = { ...req, stream: true };
+    await this.maybeWarnForPayload(payload);
+
+    const generator = async function* (this: Phaseo) {
+      const res = await this.fetchImpl(`${this.basePath}/images/generations`, {
+        method: "POST",
+        headers: { ...this.headers, "Content-Type": "application/json", Accept: "text/event-stream" },
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok || !res.body) {
+        const text = await res.text();
+        throw createStreamHttpError(res, text);
+      }
+      for await (const line of readSseLines(res)) {
+        const chunk = parseImageStreamLine(line);
+        if (chunk) yield chunk;
+      }
+    }.bind(this);
+
+    yield* this.telemetry.wrapStream("images.generations", generator(), () => payload);
+  }
+
   async generateImageEdit(req: ImagesEditRequest): Promise<ImagesEditResponse> {
     await this.maybeWarnForPayload(req);
     return this.telemetry.wrap(
       "images.edits",
       async () => {
         const form = new FormData();
-        Object.entries(req).forEach(([key, value]) => {
-          if (value !== undefined && value !== null) {
-            form.append(key, value as string | Blob);
-          }
-        });
+        appendMultipartFields(form, req);
         const res = await this.fetchImpl(`${this.basePath}/images/edits`, {
           method: "POST",
           headers: this.headers,
@@ -780,6 +990,35 @@ export class Phaseo {
       },
       () => ({ ...req, image: req.image ? "[File]" : undefined }),
       extractImageMetadata
+    );
+  }
+
+  async *streamImageEdit(req: ImagesEditRequest): AsyncGenerator<ImageStreamChunk> {
+    const payload = { ...req, stream: true };
+    await this.maybeWarnForPayload(payload);
+
+    const generator = async function* (this: Phaseo) {
+      const form = new FormData();
+      appendMultipartFields(form, payload);
+      const res = await this.fetchImpl(`${this.basePath}/images/edits`, {
+        method: "POST",
+        headers: { ...this.headers, Accept: "text/event-stream" },
+        body: form
+      });
+      if (!res.ok || !res.body) {
+        const text = await res.text();
+        throw createStreamHttpError(res, text);
+      }
+      for await (const line of readSseLines(res)) {
+        const chunk = parseImageStreamLine(line);
+        if (chunk) yield chunk;
+      }
+    }.bind(this);
+
+    yield* this.telemetry.wrapStream(
+      "images.edits",
+      generator(),
+      () => ({ ...payload, image: payload.image ? "[File]" : undefined })
     );
   }
 
@@ -924,6 +1163,18 @@ export class Phaseo {
     );
   }
 
+  makeDecision(req: DecisionsRequest): Promise<DecisionsResponse> {
+    return this.withLifecycleGuard(
+      req,
+      () => this.telemetry.wrap(
+        "decisions.make",
+        () => ops.makeDecision(this.client, { body: req }) as Promise<DecisionsResponse>,
+        () => req,
+        extractGatewayMetadata,
+      ),
+    );
+  }
+
   generateResponse(req: ResponsesRequest): Promise<ResponsesResponse> {
     return this.withLifecycleGuard(
       req,
@@ -980,6 +1231,19 @@ export class Phaseo {
     );
   }
 
+  /** Stream batch JSONL without buffering. Cancel the stream or signal to stop downloading. */
+  async streamBatchResults(batchId: string, options: { signal?: AbortSignal } = {}): Promise<ReadableStream<Uint8Array>> {
+    const res = await this.fetchImpl(`${this.basePath}/batches/${encodeURIComponent(batchId)}/results`, {
+      method: "GET",
+      headers: { ...this.headers, Accept: "application/x-ndjson" },
+      signal: options.signal,
+      redirect: "error",
+    });
+    if (!res.ok) throw createHttpError(res, await res.text());
+    if (!res.body) throw new Error("Batch results response has no body");
+    return res.body;
+  }
+
   getBatch(batchId: string): Promise<BatchResponse> {
     return this.telemetry.wrap(
       "batches.retrieve",
@@ -1013,27 +1277,32 @@ export class Phaseo {
     );
   }
 
-  async waitForBatch(batchId: string, options: BatchWaitOptions = {}): Promise<BatchResponse> {
-    const normalizedId = asTrimmedString(batchId);
-    if (!normalizedId) throw new Error("batchId is required");
-    const intervalMs = Math.max(250, Math.trunc(options.intervalMs ?? 5_000));
-    const timeoutMs = Math.max(1, Math.trunc(options.timeoutMs ?? 30 * 60_000));
-    const terminalStatuses = new Set(
+  waitForBatch(batchId: string, options: BatchWaitOptions = {}): Promise<BatchResponse> {
+    const terminalStatuses =
       (options.terminalStatuses ?? ["completed", "failed", "cancelled", "expired"])
         .map((status) => normalizeBatchStatus(status))
-        .filter((status): status is BatchTerminalStatus => Boolean(status))
-    );
-    if (terminalStatuses.size === 0) throw new Error("At least one terminal batch status is required");
-    const startedAt = Date.now();
-    while (true) {
-      throwIfAborted(options.signal);
-      const batch = await this.getBatch(normalizedId);
-      await options.onPoll?.(batch);
-      const status = normalizeBatchStatus(batch.status);
-      if (status && terminalStatuses.has(status)) return batch;
-      if (Date.now() - startedAt >= timeoutMs) throw new Error(`Timed out waiting for batch ${normalizedId}`);
-      await sleep(Math.min(intervalMs, Math.max(1, timeoutMs - (Date.now() - startedAt))), options.signal);
-    }
+        .filter((status): status is BatchTerminalStatus => Boolean(status));
+    return waitForJob("batch", batchId, (id, signal) => this.withOptions({ signal }).getBatch(id), options, undefined, terminalStatuses);
+  }
+
+  createBatchAndWait(req: BatchCreateRequest, options: JobWaitOptions<BatchResponse> = {}): Promise<BatchResponse> {
+    return createAndWaitForJob("batch", () => this.createBatch(req), (id, signal) => this.withOptions({ signal }).getBatch(id), options);
+  }
+
+  waitForVideo(videoId: string, options: JobWaitOptions<VideoStatusResponse> = {}): Promise<VideoStatusResponse> {
+    return waitForJob("video", videoId, (id, signal) => this.withOptions({ signal }).getVideo(id), options);
+  }
+
+  generateVideoAndWait(req: VideoCreateRequest, options: JobWaitOptions<VideoStatusResponse> = {}): Promise<VideoStatusResponse> {
+    return createAndWaitForJob("video", () => this.generateVideo(req), (id, signal) => this.withOptions({ signal }).getVideo(id), options);
+  }
+
+  waitForMusic(musicId: string, options: JobWaitOptions<MusicGenerateResponse> = {}): Promise<MusicGenerateResponse> {
+    return waitForJob("music", musicId, (id, signal) => this.withOptions({ signal }).getMusicGeneration(id), options);
+  }
+
+  generateMusicAndWait(req: MusicGenerateRequest, options: JobWaitOptions<MusicGenerateResponse> = {}): Promise<MusicGenerateResponse> {
+    return createAndWaitForJob("music", () => this.generateMusic(req), (id, signal) => this.withOptions({ signal }).getMusicGeneration(id), options);
   }
 
   static async verifyWebhookSignature(input: WebhookVerificationInput): Promise<boolean> {
@@ -1107,6 +1376,8 @@ export class Phaseo {
   async uploadFile(params: {
     purpose?: string;
     file: Blob | File | BufferSource | string;
+    filename?: string;
+    contentType?: string;
     model?: string;
     provider?: string;
   }): Promise<FileObject> {
@@ -1114,7 +1385,7 @@ export class Phaseo {
       "files.upload",
       async () => {
         const form = new FormData();
-        form.append("file", params.file as any);
+        form.append("file", toFile(params.file, params.filename, params.contentType));
         if (params.purpose) {
           form.append("purpose", params.purpose);
         }
@@ -1468,6 +1739,23 @@ function parseMessageStreamLine(line: string): MessageStreamChunk | null {
   };
 }
 
+function parseImageStreamLine(line: string): ImageStreamChunk | null {
+  const parsed = parseSseJson(line);
+  if (parsed === null) return null;
+  return isRecord(parsed) ? parsed : { raw: parsed };
+}
+
+function appendMultipartFields(form: FormData, fields: object): void {
+  for (const [key, value] of Object.entries(fields)) {
+    if (value === undefined || value === null) continue;
+    if (Array.isArray(value)) {
+      for (const item of value) form.append(key, item as string | Blob);
+      continue;
+    }
+    form.append(key, value as string | Blob);
+  }
+}
+
 function parseSseJson(line: string): unknown | null {
   const data = line.startsWith("data:") ? line.slice(5).trim() : line.trim();
   if (!data || data === "[DONE]") return null;
@@ -1809,22 +2097,6 @@ function normalizeBatchStatus(value: unknown): BatchTerminalStatus | null {
     return normalized;
   }
   return null;
-}
-
-function throwIfAborted(signal?: AbortSignal): void {
-  if (!signal?.aborted) return;
-  throw signal.reason instanceof Error ? signal.reason : new Error("Operation aborted");
-}
-
-function sleep(ms: number, signal?: AbortSignal): Promise<void> {
-  return new Promise((resolve, reject) => {
-    throwIfAborted(signal);
-    const timeout = setTimeout(resolve, ms);
-    signal?.addEventListener("abort", () => {
-      clearTimeout(timeout);
-      reject(signal.reason instanceof Error ? signal.reason : new Error("Operation aborted"));
-    }, { once: true });
-  });
 }
 
 function asTrimmedString(value: unknown): string | null {

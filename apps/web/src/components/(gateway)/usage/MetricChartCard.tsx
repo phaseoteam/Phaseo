@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Maximize2, TrendingUp, TrendingDown } from "lucide-react";
 import { ChartContainer } from "@/components/ui/chart";
 import { BarChart, Bar, CartesianGrid, XAxis, YAxis, Tooltip } from "recharts";
-import { formatAxisNumber, formatAxisCurrency } from "./chart-formatters";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { EnhancedChartTooltip } from "./EnhancedChartTooltip";
 import { OTHER_SERIES_KEY, reduceChartSeries } from "./chartSeries";
 import { getModelDisplayName, type ModelMetadataMap } from "./model-display";
@@ -109,6 +109,7 @@ export default function MetricChartCard({
 	metricType = "number",
 }: MetricChartCardProps) {
 	const t = useTranslations("SettingsUI");
+	const displayFormat = useDisplayFormatters();
 	const [activeSeriesKey, setActiveSeriesKey] = React.useState<string | null>(
 		null,
 	);
@@ -191,12 +192,24 @@ export default function MetricChartCard({
 								{percentChange > 0 ? (
 									<>
 										<TrendingUp className="h-3 w-3" />
-										<span>+{Math.abs(percentChange).toFixed(1)}%</span>
+										<span>
+											+
+											{displayFormat.number(Math.abs(percentChange), {
+												minimumFractionDigits: 1,
+												maximumFractionDigits: 1,
+											})}%
+										</span>
 									</>
 								) : (
 									<>
 										<TrendingDown className="h-3 w-3" />
-										<span>-{Math.abs(percentChange).toFixed(1)}%</span>
+										<span>
+											-
+											{displayFormat.number(Math.abs(percentChange), {
+												minimumFractionDigits: 1,
+												maximumFractionDigits: 1,
+											})}%
+										</span>
 									</>
 								)}
 							</div>
@@ -221,9 +234,7 @@ export default function MetricChartCard({
 					<div className="text-sm text-muted-foreground">
 						{t("strings.Avg" as never)}:{" "}
 						<span className="font-mono font-medium text-foreground">
-							{metricType === "currency"
-								? format(avgValue)
-								: Math.round(avgValue).toLocaleString()}
+							{format(metricType === "currency" ? avgValue : Math.round(avgValue))}
 						</span>
 					</div>
 				</div>
@@ -249,7 +260,15 @@ export default function MetricChartCard({
 								axisLine={false}
 								tick={{ fontSize: 10 }}
 								width={45}
-								tickFormatter={metricType === "currency" ? formatAxisCurrency : formatAxisNumber}
+								tickFormatter={(value) =>
+									displayFormat.number(Number(value), {
+										...(metricType === "currency"
+											? { style: "currency" as const, currency: "USD" }
+											: {}),
+										notation: "compact",
+										maximumFractionDigits: 1,
+									})
+								}
 							/>
 							<Tooltip
 								content={(props) => (

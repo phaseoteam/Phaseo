@@ -11,6 +11,7 @@ import {
 	type AnnouncementCategory,
 	type AnnouncementSummary,
 } from "@/lib/content/announcements";
+import { DisplayCalendarDate } from "@/components/display/DisplayValue";
 import { cn } from "@/lib/utils";
 import { buildMetadata } from "@/lib/seo";
 import { canPreviewFutureBlogPosts } from "@/lib/flags/blogPreview";
@@ -105,8 +106,8 @@ function PostImage({
 	);
 }
 
-function PostDate({ post, locale }: { post: AnnouncementSummary; locale: string }) {
-	return <span>{formatAnnouncementDate(post.publishedAt, locale)}</span>;
+function PostDate({ post }: { post: AnnouncementSummary }) {
+	return <span><DisplayCalendarDate value={post.publishedAt} /></span>;
 }
 
 function PinnedPostCard({
@@ -141,7 +142,7 @@ function PinnedPostCard({
 			<div className="flex flex-1 flex-col gap-4 p-5">
 				<div className="flex items-center justify-between gap-3 text-xs text-zinc-500 dark:text-zinc-400">
 					<span>{preview ? previewLabel : categoryLabel}</span>
-					<PostDate post={post} locale={locale} />
+					<PostDate post={post} />
 				</div>
 				<div className="space-y-2">
 					<h2 className="text-lg font-semibold leading-tight tracking-tight text-zinc-950 transition group-hover:text-zinc-700 dark:text-zinc-50 dark:group-hover:text-zinc-200">
@@ -192,11 +193,9 @@ export default async function AnnouncementsPage({
 		coverImage: post.coverImage,
 		categoryLabel: t(`categories.${post.category}`),
 		isPreview: isPreviewPost(post),
-		metaParts: [
-			post.author,
-			formatAnnouncementDate(post.publishedAt, locale),
-			t("readingTime", { minutes: post.readingTimeMinutes }),
-		].filter((part): part is string => Boolean(part)),
+		author: post.author,
+		publishedAt: post.publishedAt,
+		readingTimeLabel: t("readingTime", { minutes: post.readingTimeMinutes }),
 	}));
 
 	return (

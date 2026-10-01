@@ -3,13 +3,14 @@
 
 import { Link, usePathname, useRouter } from "@/i18n/navigation";
 import { useLocale, useTranslations } from "next-intl";
+import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import {
 	Activity,
-	ScrollText,
+	Logs,
 	Boxes,
 	BookOpenText,
-	Check,
 	CreditCard,
 	Key as KeyIcon,
 	LifeBuoy,
@@ -27,6 +28,7 @@ import {
 	MessageSquare,
 	MessageSquareMore,
 	Sun,
+	Sparkles,
 	Users,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -44,18 +46,32 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { CurrentUserAvatar } from "@/components/ui/current-user-avatar";
 import { getSupportAvailability } from "@/lib/support/schedule";
 import { ProductFeedbackDialog } from "@/components/feedback/ProductFeedbackButton";
 import { getLocalizedDocsHref } from "@/lib/docs";
+import { isPublicDataPathname } from "@/lib/publicDataRoutes";
+import { clearAccountQueryCache, clearAccountQueryScope } from "@/lib/query/invalidation";
+import { toAccountQueryScope } from "@/lib/query/queryKeys";
+import { useDisplayPreferences } from "@/components/providers/DisplayPreferencesProvider";
+import type { DisplayPreferences } from "@/lib/displayPreferences";
+import type { InternalAuthHeaderUser } from "@/lib/fetchers/internal/authTypes";
+import { WorkspaceCombobox } from "./WorkspaceCombobox";
+import { setActionDockEnabled, useActionDockEnabled } from "@/lib/actionDockPreferences";
+
+const PhaseoActionDock = dynamic(
+	() => import("@/components/action-dock/PhaseoActionDock").then((module) => module.PhaseoActionDock),
+	{ ssr: false },
+);
 
 interface HeaderProps {
 	isLoggedIn: boolean;
-	user?: any;
+	user?: InternalAuthHeaderUser;
 	teams?: { id: string; name: string }[];
+	displayPreferences?: DisplayPreferences;
 	currentTeamId?: string;
 	userRole?: string | undefined;
+	providerMode?: boolean;
 	variant?: "mobile" | "desktop";
 }
 
@@ -63,17 +79,22 @@ export default function HeaderClient({
 	isLoggedIn,
 	user,
 	teams = [],
+	displayPreferences,
 	currentTeamId,
 	userRole,
+	providerMode = false,
 	variant = "desktop",
 }: HeaderProps) {
 	const router = useRouter();
+	const queryClient = useQueryClient();
 	const pathname = usePathname() ?? "/";
 	const locale = useLocale();
 	const t = useTranslations("Common.nav");
 	const tSearch = useTranslations("Common.search");
 	const tTheme = useTranslations("Common.theme");
+	const isPublicDataPage = isPublicDataPathname(pathname);
 	const { theme, setTheme } = useTheme();
+	const { isHydrated: displayPreferencesHydrated, setPreferences } = useDisplayPreferences();
 	const currentTheme =
 		theme === "light" || theme === "dark" || theme === "system"
 			? theme
@@ -95,13 +116,19 @@ export default function HeaderClient({
 		currentTeamId ?? teams[0]?.id,
 	);
 	const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
-	const [isMobileTeamDialogOpen, setIsMobileTeamDialogOpen] = useState(false);
 	const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
-	const activeTeam = teams.find((team) => team.id === activeWorkspaceId) ?? teams[0];
+	const canUseActionDock = providerMode || userRole?.toLocaleLowerCase() === "admin";
+	const actionDockEnabled = useActionDockEnabled(user?.id);
 
 	useEffect(() => {
 		setActiveTeamId(currentTeamId ?? teams[0]?.id);
 	}, [currentTeamId, teams]);
+
+	useEffect(() => {
+		if (displayPreferencesHydrated && isLoggedIn && displayPreferences) {
+			setPreferences(displayPreferences);
+		}
+	}, [displayPreferences, displayPreferencesHydrated, isLoggedIn, setPreferences]);
 
 	async function handleSignOut() {
 		try {
@@ -109,6 +136,7 @@ export default function HeaderClient({
 		} catch (error) {
 			console.error("Sign out error", error);
 		} finally {
+			clearAccountQueryCache(queryClient);
 			window.location.assign("/");
 		}
 	}
@@ -128,6 +156,10 @@ export default function HeaderClient({
 			return false;
 		}
 
+		clearAccountQueryScope(
+			queryClient,
+			toAccountQueryScope({ userId: user?.id, workspaceId: previousTeamId }),
+		);
 		router.refresh();
 		toast.success(tSearch("switchedWorkspace", { workspace: teamName }), {
 			position: "bottom-right",
@@ -152,7 +184,9 @@ export default function HeaderClient({
 					open={isMobileNavOpen}
 					onOpenChange={(open) => setIsMobileNavOpen(Boolean(open))}
 				>
-					<ButtonGroup className="h-8 items-stretch overflow-hidden rounded-lg shadow-xs">
+					<ButtonGroup
+						className="h-8 items-stretch overflow-hidden rounded-l-lg rounded-r-md shadow-xs [&>[data-slot]:not(:has(~[data-slot]))]:rounded-r-md!"
+					>
 						<Button asChild className="h-8 rounded-r-none px-4">
 							<Link href="/sign-up">
 								{t("signUp")}
@@ -244,13 +278,18 @@ export default function HeaderClient({
 
 		return (
 			<>
+			<div className="flex items-center gap-1">
+				{!providerMode && teams.length > 0 ? (
+					<WorkspaceCombobox
+						workspaces={teams}
+						activeWorkspaceId={activeWorkspaceId}
+						triggerVariant="icon"
+						onSelect={(workspace) => handleTeamSwitch(workspace.id, workspace.name)}
+					/>
+				) : null}
 			<DropdownMenu
 				open={isMobileNavOpen}
-				onOpenChange={(open) => {
-					const nextOpen = Boolean(open);
-					setIsMobileNavOpen(nextOpen);
-					if (!nextOpen) setIsMobileTeamDialogOpen(false);
-				}}
+				onOpenChange={(open) => setIsMobileNavOpen(Boolean(open))}
 			>
 				<DropdownMenuTrigger asChild>
 					<Button
@@ -280,90 +319,6 @@ export default function HeaderClient({
 								<DropdownMenuSeparator />
 							</>
 						)}
-						{isLoggedIn && teams.length > 0 && (
-							<>
-								<Popover
-									modal={false}
-									open={isMobileTeamDialogOpen}
-									onOpenChange={(open) =>
-										setIsMobileTeamDialogOpen(Boolean(open))
-									}
-								>
-									<PopoverTrigger asChild>
-										<button
-											type="button"
-											className={cn(
-												"relative flex min-h-7 w-full cursor-pointer select-none items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm outline-hidden transition-colors",
-												"hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground",
-												isMobileTeamDialogOpen && "bg-accent text-accent-foreground",
-											)}
-										>
-											<Users className="h-4 w-4" />
-											<span className="min-w-0 flex-1 truncate">
-												{activeTeam?.name ?? "Workspace"}
-											</span>
-											<ChevronDown
-												className={cn(
-													"ml-auto h-4 w-4 text-zinc-500 transition-transform",
-													isMobileTeamDialogOpen && "rotate-180",
-												)}
-											/>
-										</button>
-									</PopoverTrigger>
-									<PopoverContent
-										side="bottom"
-										align="start"
-										sideOffset={6}
-										className="w-56 gap-0 rounded-lg p-1"
-									>
-										{teams.slice(0, 5).map((team) => {
-											const isActive = team.id === activeWorkspaceId;
-											return (
-												<button
-													key={team.id}
-													type="button"
-													className={cn(
-														"flex min-h-7 w-full cursor-pointer select-none items-center gap-2 rounded-lg px-2 py-1.5 text-sm outline-hidden transition-colors",
-														"hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground",
-														isActive && "bg-accent text-accent-foreground",
-													)}
-													onClick={() => {
-														void handleTeamSwitch(team.id, team.name).then((ok) => {
-															if (ok) setIsMobileTeamDialogOpen(false);
-														});
-													}}
-												>
-													<span
-														className={cn(
-															"truncate",
-															isActive && "text-foreground",
-														)}
-													>
-														{team.name}
-													</span>
-													{isActive && <Check className="ml-auto h-4 w-4 text-primary" />}
-												</button>
-											);
-										})}
-										<DropdownMenuSeparator />
-										<Link
-											href="/settings/workspaces/settings"
-											prefetch={false}
-											className={cn(
-												"flex min-h-7 w-full cursor-pointer select-none items-center gap-2 rounded-lg px-2 py-1.5 text-sm outline-hidden transition-colors",
-												"hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground",
-											)}
-											onClick={() => setIsMobileTeamDialogOpen(false)}
-										>
-											<Users className="h-4 w-4" />
-										<span>{t("manageWorkspaces")}</span>
-										</Link>
-									</PopoverContent>
-								</Popover>
-								<DropdownMenuSeparator />
-							</>
-						)}
-
 					{navLinks.map(({ href, label, icon: Icon }) => {
 						const isActive =
 							pathname === href || pathname.startsWith(href + "/");
@@ -395,22 +350,37 @@ export default function HeaderClient({
 								</Link>
 							</DropdownMenuItem>
 
-							<DropdownMenuItem asChild className="cursor-pointer rounded-lg text-sm">
-								<Link href="/settings/workspaces/settings" prefetch={false}>
-									<Users className="h-4 w-4" />
-									<span>{t("workspaces")}</span>
-								</Link>
-							</DropdownMenuItem>
-
+							{providerMode ? (
 								<DropdownMenuItem asChild className="cursor-pointer rounded-lg text-sm">
-									<Link href="/settings/account" prefetch={false}>
-										<Settings className="h-4 w-4" />
+									<Link href="/settings/provider/models" prefetch={false}>
+										<Users className="h-4 w-4" />
+										<span>{t("manageCatalog")}</span>
+									</Link>
+								</DropdownMenuItem>
+							) : null}
+
+							<DropdownMenuItem asChild className="cursor-pointer rounded-lg text-sm">
+								<Link href="/settings/account" prefetch={false}>
+									<Settings className="h-4 w-4" />
 									<span>{t("settings")}</span>
 								</Link>
 							</DropdownMenuItem>
+							{user?.id && canUseActionDock && !actionDockEnabled ? (
+								<DropdownMenuItem
+									className="cursor-pointer rounded-lg text-sm"
+										onClick={() => {
+										setActionDockEnabled(user.id, true);
+										setIsMobileNavOpen(false);
+									}}
+								>
+									<Sparkles className="h-4 w-4" />
+									<span>Turn on Phaseo action dock</span>
+								</DropdownMenuItem>
+							) : null}
 
 							<DropdownMenuSeparator />
 
+							{!providerMode && <>
 							<DropdownMenuItem asChild className="cursor-pointer rounded-lg text-sm">
 								<Link
 									href={`/settings/usage/overview?workspace_id=${encodeURIComponent(
@@ -429,7 +399,7 @@ export default function HeaderClient({
 									)}`}
 									prefetch={false}
 								>
-									<ScrollText className="h-4 w-4" />
+									<Logs className="h-4 w-4" />
 									<span>{t("logs")}</span>
 								</Link>
 							</DropdownMenuItem>
@@ -445,6 +415,7 @@ export default function HeaderClient({
 									<span>{t("keys")}</span>
 								</Link>
 							</DropdownMenuItem>
+							</>}
 								<DropdownMenuItem asChild className="cursor-pointer rounded-lg text-sm">
 									<Link href="/contact" prefetch={false}>
 										<LifeBuoy className="h-4 w-4" />
@@ -470,16 +441,18 @@ export default function HeaderClient({
 										</span>
 									</Link>
 								</DropdownMenuItem>
-								<DropdownMenuItem
-									className="cursor-pointer rounded-lg text-sm"
-									onClick={() => {
-										setIsMobileNavOpen(false);
-										setIsFeedbackOpen(true);
-									}}
-								>
-									<MessageSquareMore className="h-4 w-4" />
-									<span>{t("sendFeedback")}</span>
-								</DropdownMenuItem>
+								{!isPublicDataPage ? (
+									<DropdownMenuItem
+										className="cursor-pointer rounded-lg text-sm"
+										onClick={() => {
+											setIsMobileNavOpen(false);
+											setIsFeedbackOpen(true);
+										}}
+									>
+										<MessageSquareMore className="h-4 w-4" />
+										<span>{t("sendFeedback")}</span>
+									</DropdownMenuItem>
+								) : null}
 								<DropdownMenuItem asChild className="cursor-pointer rounded-lg text-sm">
 									<Link href={docsHref} target="_blank" rel="noreferrer">
 										<BookOpenText className="h-4 w-4" />
@@ -579,6 +552,7 @@ export default function HeaderClient({
 					)}
 				</DropdownMenuContent>
 			</DropdownMenu>
+			</div>
 			<ProductFeedbackDialog
 				open={isFeedbackOpen}
 				onOpenChange={setIsFeedbackOpen}
@@ -597,9 +571,18 @@ export default function HeaderClient({
 						user={user}
 						teams={teams}
 						userRole={userRole}
+						providerMode={providerMode}
 						onSignOut={handleSignOut}
 						initialActiveTeamId={currentTeamId}
 					/>
+					{user?.id && canUseActionDock ? (
+						<PhaseoActionDock
+							key={user.id}
+							userId={user.id}
+							userRole={userRole}
+							providerMode={providerMode}
+						/>
+					) : null}
 				</>
 			) : (
 				<Link href="/sign-up">

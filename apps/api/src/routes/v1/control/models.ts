@@ -20,6 +20,8 @@ import {
 } from "./models.catalogue";
 import { buildFeedResponse, parseFeedFormat, type FeedItem } from "./models.feeds";
 import { getEndpointMetadata } from "./endpoint-metadata";
+import { getBindingsIfConfigured, getSupabaseAdmin } from "@/runtime/env";
+import { normalizeGatewayRoutingRegion } from "@pipeline/before/deployment-region";
 
 type LifecycleStatus = "active" | "deprecated" | "retired" | null;
 type AvailabilityMode = "active" | "all";
@@ -34,9 +36,17 @@ type ModelVariantLinks = Record<string, ModelVariantLink>;
 const DEFAULT_LIMIT = 50;
 const MAX_LIMIT = 250;
 const MAX_OFFSET = 5000;
+const MAX_EXACT_MODEL_IDS = 250;
+const MAX_MODEL_ID_LENGTH = 200;
+const MAX_MODEL_IDS_TOTAL_LENGTH = 10_000;
 const FREE_ROUTER_MODEL_ID = "phaseo/free";
 const FREE_ROUTER_NAME = "Phaseo Free Router";
 const FREE_ROUTER_ENDPOINTS = ["chat/completions", "responses", "messages"] as const;
+
+// Keep the authenticated models API aligned with the public /models catalogue:
+// five minutes fresh, followed by five minutes of stale-while-revalidate.
+const MODEL_CATALOGUE_CACHE_TTL_SECONDS = 5 * 60;
+const MODEL_CATALOGUE_CACHE_STALE_SECONDS = 5 * 60;
 
 function parsePaginationParam(raw: string | null, fallback: number, max: number): number {
     if (!raw) return fallback;
@@ -202,7 +212,7 @@ function detailNumber(model: CatalogueModel, names: string[]): number | null {
     return null;
 }
 
-function buildDescription(model: CatalogueModel): string {
+function buildDescription(model: CatalogueModel, regional = false): string {
     if (model.model_id === FREE_ROUTER_MODEL_ID) {
         return "Routes each request to an eligible free model pool with provider-aware balancing.";
     }
@@ -211,8 +221,8 @@ function buildDescription(model: CatalogueModel): string {
     const displayName = model.name?.trim() || model.model_id;
     const organization = model.organisation_name?.trim();
     const owner = organization ? ` by ${organization}` : "";
-    const input = model.input_types.length ? model.input_types.join(", ") : "unspecified";
-    const output = model.output_types.length ? model.output_types.join(", ") : "unspecified";
+    const input = regional ? "text" : model.input_types.length ? model.input_types.join(", ") : "unspecified";
+    const output = regional ? "text" : model.output_types.length ? model.output_types.join(", ") : "unspecified";
     const availability = model.availability.active_provider_count > 0
         ? `${model.availability.active_provider_count} active provider${model.availability.active_provider_count === 1 ? "" : "s"}`
         : model.availability.status.replace(/_/g, " ");
@@ -256,7 +266,7 @@ function cloneJsonObject<T>(value: T): T {
     return JSON.parse(JSON.stringify(value ?? {}));
 }
 
-function toModelOffer(model: CatalogueModel, provider: CatalogueModel["providers"][number]) {
+function toModelOffer(model: CatalogueModel, provider: CatalogueModel["providers"][number], regional = false) {
     return {
         provider: {
             id: provider.api_provider_id,
@@ -268,8 +278,12 @@ function toModelOffer(model: CatalogueModel, provider: CatalogueModel["providers
         routable: provider.is_active_gateway,
         endpoints: [...(provider.endpoints ?? [])],
         modalities: {
-            input: provider.input_modalities?.length ? [...provider.input_modalities] : [...model.input_types],
-            output: provider.output_modalities?.length ? [...provider.output_modalities] : [...model.output_types],
+            input: regional ? ["text"] : provider.input_modalities?.length ? [...provider.input_modalities] : [...model.input_types],
+            output: regional ? ["text"] : provider.output_modalities?.length ? [...provider.output_modalities] : [...model.output_types],
+        },
+        residency: {
+            execution_regions: [...(provider.execution_regions ?? [])],
+            data_regions: [...(provider.data_regions ?? [])],
         },
         capabilities: {
             parameters: [...(provider.params ?? [])],
@@ -338,16 +352,20 @@ async function buildFreeRouterCatalogueModel(args: {
     apiKeyId: string;
     endpoints: string[];
     catalogue: CatalogueModel[];
+    freeContext?: Awaited<ReturnType<typeof fetchGatewayContext>> | null;
 }): Promise<CatalogueModel | null> {
     if (!canIncludeFreeRouter(args.endpoints)) return null;
 
     try {
-        const freeContext = await fetchGatewayContext({
-            workspaceId: args.workspaceId,
-            apiKeyId: args.apiKeyId,
-            model: FREE_ROUTER_MODEL_ID,
-            endpoint: "text.generate",
-        });
+        const freeContext = args.freeContext === undefined
+            ? await fetchGatewayContext({
+                workspaceId: args.workspaceId,
+                apiKeyId: args.apiKeyId,
+                model: FREE_ROUTER_MODEL_ID,
+                endpoint: "text.generate",
+            })
+            : args.freeContext;
+        if (!freeContext) return null;
         if (!Array.isArray(freeContext.providers) || freeContext.providers.length === 0) {
             return null;
         }
@@ -412,6 +430,7 @@ async function buildFreeRouterCatalogueModel(args: {
             base_model_id: FREE_ROUTER_MODEL_ID,
             variant_kind: "standard",
             previous_model_id: null,
+            replacement_model_id: null,
             name: FREE_ROUTER_NAME,
             description: null,
             release_date: null,
@@ -475,6 +494,7 @@ function toPhaseoModel(
     model: CatalogueModel,
     replacementModelId: string | null,
     variants: ModelVariantLinks,
+	regional = false,
 ) {
     const lifecycleStatus = normalizeLifecycleStatus(model.status, model.deprecation_date, model.retirement_date);
     return {
@@ -483,7 +503,7 @@ function toPhaseoModel(
         variant: model.variant_kind || "standard",
         variants,
         name: model.name?.trim() || model.model_id,
-        description: buildDescription(model),
+        description: buildDescription(model, regional),
         organization: model.organisation_id ? {
             id: model.organisation_id,
             name: model.organisation_name,
@@ -504,8 +524,8 @@ function toPhaseoModel(
             ),
         },
         modalities: {
-            input: [...model.input_types],
-            output: [...model.output_types],
+            input: regional ? ["text"] : [...model.input_types],
+            output: regional ? ["text"] : [...model.output_types],
         },
         limits: {
             input_tokens: detailNumber(model, ["input_context_length", "context_length"]),
@@ -524,12 +544,183 @@ function toPhaseoModel(
             inactive_provider_count: model.availability.inactive_provider_count,
         },
         pricing: cloneJsonObject(model.pricing),
-        offers: model.providers.map((provider) => toModelOffer(model, provider)),
+        offers: model.providers.map((provider) => toModelOffer(model, provider, regional)),
     };
+}
+
+type ModelListSort = "relevance" | "input_price" | "output_price" | "context_length" | "provider_count";
+type ModelListSortOrder = "asc" | "desc";
+type PhaseoModel = ReturnType<typeof toPhaseoModel>;
+
+function normalizeModelSearch(value: string | null | undefined): string {
+    return value?.trim().toLowerCase() ?? "";
+}
+
+function modelTokenRate(model: PhaseoModel, meterNames: string[]): number | null {
+    const meters = model.pricing.meters as Record<string, unknown>;
+    const meter = meterNames.map((name) => meters[name]).find(Boolean);
+    if (!meter || typeof meter !== "object") return null;
+    const record = meter as Record<string, unknown>;
+    if (String(record.currency ?? "").trim().toUpperCase() !== "USD") return null;
+    const price = Number(record.price_per_unit);
+    const unitSize = Number(record.unit_size);
+    if (!Number.isFinite(price) || !Number.isFinite(unitSize) || unitSize <= 0) return null;
+    return price / unitSize;
+}
+
+function modelSortValue(model: PhaseoModel, sortBy: Exclude<ModelListSort, "relevance">): number | null {
+    switch (sortBy) {
+        case "input_price":
+            return modelTokenRate(model, ["input_tokens", "input_text_tokens"]);
+        case "output_price":
+            return modelTokenRate(model, ["output_tokens", "output_text_tokens"]);
+        case "context_length":
+            return model.limits.input_tokens;
+        case "provider_count":
+            return model.offers.filter((offer) => offer.routable).length;
+    }
+}
+
+function filterAndSortModels(
+    models: PhaseoModel[],
+    filters: {
+        search: string;
+        provider: string;
+        inputModality: string;
+        minimumContextTokens: number | null;
+        maximumInputPricePerMillion: number | null;
+        gatewayAvailableOnly: boolean;
+        sortBy: ModelListSort;
+        sortOrder: ModelListSortOrder | null;
+    },
+): PhaseoModel[] {
+    const queryTerms = normalizeModelSearch(filters.search).split(/\s+/).filter(Boolean);
+    const providerQuery = normalizeModelSearch(filters.provider);
+    const filtered = models.filter((model) => {
+        const searchable = normalizeModelSearch([
+            model.id,
+            model.name,
+            model.description,
+            model.organization?.name,
+        ].filter(Boolean).join(" "));
+        const providerMatches = !providerQuery
+            || normalizeModelSearch(model.organization?.name).includes(providerQuery)
+            || model.offers.some((offer) => offer.routable && normalizeModelSearch(offer.provider.name).includes(providerQuery));
+        const inputPrice = modelTokenRate(model, ["input_tokens", "input_text_tokens"]);
+        return queryTerms.every((term) => searchable.includes(term))
+            && providerMatches
+            && (!filters.inputModality || model.modalities.input.map(normalizeModelSearch).includes(filters.inputModality))
+            && (filters.minimumContextTokens === null || (model.limits.input_tokens ?? 0) >= filters.minimumContextTokens)
+            && (filters.maximumInputPricePerMillion === null
+                || (inputPrice !== null && inputPrice * 1_000_000 <= filters.maximumInputPricePerMillion))
+            && (!filters.gatewayAvailableOnly || model.offers.some((offer) => offer.routable));
+    });
+    if (filters.sortBy === "relevance") return filtered;
+    const direction = filters.sortOrder
+        ?? (filters.sortBy === "input_price" || filters.sortBy === "output_price" ? "asc" : "desc");
+    return filtered.sort((left, right) => {
+        const leftValue = modelSortValue(left, filters.sortBy as Exclude<ModelListSort, "relevance">);
+        const rightValue = modelSortValue(right, filters.sortBy as Exclude<ModelListSort, "relevance">);
+        if (leftValue === null && rightValue === null) return left.id.localeCompare(right.id);
+        if (leftValue === null) return 1;
+        if (rightValue === null) return -1;
+        const comparison = leftValue - rightValue;
+        return comparison === 0
+            ? left.id.localeCompare(right.id)
+            : direction === "asc" ? comparison : -comparison;
+    });
+}
+
+function parseOptionalNonNegativeNumber(raw: string | null): number | null | "invalid" {
+    if (raw === null) return null;
+    if (!raw.trim()) return "invalid";
+    const value = Number(raw);
+    return Number.isFinite(value) && value >= 0 ? value : "invalid";
+}
+
+async function fetchWorkspacePrivateCatalogue(args: {
+    workspaceId: string;
+    endpoints: string[];
+    modelIds: string[];
+    providerIds: string[];
+    organisationIds: string[];
+    inputTypes: string[];
+    outputTypes: string[];
+}) {
+    if (args.providerIds.length && !args.providerIds.some((id) => id === "private" || id === "private-model")) return [];
+    if (args.organisationIds.length && !args.organisationIds.includes("private")) return [];
+    if (args.inputTypes.length && !args.inputTypes.includes("text")) return [];
+    if (args.outputTypes.length && !args.outputTypes.includes("text")) return [];
+    const { data, error } = await getSupabaseAdmin().from("workspace_private_models")
+        .select("model_id,name,description,supports_responses,input_modalities,output_modalities,context_length,max_output_tokens,created_at")
+        .eq("workspace_id", args.workspaceId)
+        .eq("enabled", true)
+        .order("model_id");
+    if (error) throw new Error(`private_model_catalogue_failed:${error.message ?? "unknown"}`);
+    return (data ?? []).flatMap((row: any) => {
+        if (args.modelIds.length && !args.modelIds.includes(String(row.model_id))) return [];
+        const availableEndpoints = ["chat/completions", "messages", ...(row.supports_responses ? ["responses"] : [])];
+        if (args.endpoints.length && !args.endpoints.some((endpoint) => availableEndpoints.includes(endpoint))) return [];
+        return [{
+            id: String(row.model_id),
+            base_model_id: String(row.model_id),
+            variant: "standard",
+            variants: {},
+            name: String(row.name),
+            description: String(row.description ?? "Workspace-owned private model."),
+            organization: { id: "private", name: "Private", color: null },
+            aliases: [],
+            lifecycle: {
+                status: "active",
+                released_at: row.created_at ?? null,
+                deprecated_at: null,
+                retires_at: null,
+                replacement_id: null,
+                message: null,
+            },
+            modalities: {
+                input: Array.isArray(row.input_modalities) ? row.input_modalities : ["text"],
+                output: Array.isArray(row.output_modalities) ? row.output_modalities : ["text"],
+            },
+            limits: {
+                input_tokens: row.context_length ?? null,
+                output_tokens: row.max_output_tokens ?? null,
+            },
+            capabilities: { endpoints: availableEndpoints, parameters: [], parameter_details: {} },
+            availability: {
+                status: "active",
+                provider_count: 1,
+                active_provider_count: 1,
+                coming_soon_provider_count: 0,
+                inactive_provider_count: 0,
+            },
+            pricing: { pricing_plan: "byok", meters: {} },
+            offers: [{
+                provider: { id: "private-model", name: "Private" },
+                model: String(row.model_id),
+                status: "active",
+                status_reason: null,
+                routable: true,
+                endpoints: availableEndpoints,
+                modalities: {
+                    input: Array.isArray(row.input_modalities) ? row.input_modalities : ["text"],
+                    output: Array.isArray(row.output_modalities) ? row.output_modalities : ["text"],
+                },
+                residency: { execution_regions: [], data_regions: [] },
+                capabilities: { parameters: [], parameter_details: {} },
+                routing: { provider: "active", model: "active", capability: "active" },
+                effective: { from: null, to: null },
+                pricing: { pricing_plan: "byok", meters: {} },
+            }],
+        }];
+    });
 }
 
 export async function handleModels(req: Request) {
     const url = new URL(req.url);
+    const gatewayRegion = normalizeGatewayRoutingRegion(
+		getBindingsIfConfigured()?.GATEWAY_ROUTING_REGION,
+	);
     if (hasDeprecatedPrivacyScopeQuery(url)) {
         return json(
             {
@@ -553,6 +744,33 @@ export async function handleModels(req: Request) {
             },
             400,
             { "Cache-Control": "no-store" }
+        );
+    }
+
+    const search = url.searchParams.get("search")?.trim() ?? "";
+    const providerSearch = url.searchParams.get("provider_search")?.trim() ?? "";
+    const inputModality = normalizeModelSearch(url.searchParams.get("input_modality"));
+    const minimumContextTokens = parseOptionalNonNegativeNumber(url.searchParams.get("minimum_context_tokens"));
+    const maximumInputPricePerMillion = parseOptionalNonNegativeNumber(url.searchParams.get("maximum_input_price_per_million"));
+    const gatewayAvailableRaw = url.searchParams.get("gateway_available_only");
+    const gatewayAvailableOnly = gatewayAvailableRaw === "true";
+    const sortByRaw = url.searchParams.get("sort_by") ?? "relevance";
+    const sortOrderRaw = url.searchParams.get("sort_order");
+    const validSorts: ModelListSort[] = ["relevance", "input_price", "output_price", "context_length", "provider_count"];
+    if (
+        search.length > 200
+        || providerSearch.length > 100
+        || (inputModality && !["text", "image", "audio", "video"].includes(inputModality))
+        || minimumContextTokens === "invalid"
+        || maximumInputPricePerMillion === "invalid"
+        || (gatewayAvailableRaw !== null && gatewayAvailableRaw !== "true" && gatewayAvailableRaw !== "false")
+        || !validSorts.includes(sortByRaw as ModelListSort)
+        || (sortOrderRaw !== null && sortOrderRaw !== "asc" && sortOrderRaw !== "desc")
+    ) {
+        return json(
+            { ok: false, error: "invalid_request", message: "Invalid model discovery filter." },
+            400,
+            { "Cache-Control": "no-store" },
         );
     }
 
@@ -581,8 +799,8 @@ export async function handleModels(req: Request) {
 
     const cacheOptions = {
         scope: cacheScope,
-        ttlSeconds: 1800,
-        staleSeconds: 1800,
+        ttlSeconds: MODEL_CATALOGUE_CACHE_TTL_SECONDS,
+        staleSeconds: MODEL_CATALOGUE_CACHE_STALE_SECONDS,
         varyHeaders: [],
     };
 
@@ -607,10 +825,21 @@ export async function handleModels(req: Request) {
         url.searchParams,
         "provider_availability_reason"
     );
-    const modelIds = [
+    const modelIds = Array.from(new Set([
         ...parseMultiValue(url.searchParams, "model_id"),
         ...parseMultiValue(url.searchParams, "id"),
-    ];
+    ]));
+    if (
+        modelIds.length > MAX_EXACT_MODEL_IDS
+        || modelIds.some((modelId) => modelId.length > MAX_MODEL_ID_LENGTH)
+        || modelIds.reduce((total, modelId) => total + modelId.length, 0) > MAX_MODEL_IDS_TOTAL_LENGTH
+    ) {
+        return json(
+            { ok: false, error: "invalid_request", message: "Too many or oversized model identifiers." },
+            400,
+            { "Cache-Control": "no-store" },
+        );
+    }
     const organisationIds = parseMultiValue(url.searchParams, "organisation");
     const inputTypes = parseMultiValueAliases(url.searchParams, ["input_types", "input_modalities"]);
     const outputTypes = parseMultiValueAliases(url.searchParams, ["output_types", "output_modalities"]);
@@ -629,7 +858,30 @@ export async function handleModels(req: Request) {
     }
 
     try {
-        const catalogue = await fetchCatalogue({
+        let prefetchedFreeContext: Awaited<ReturnType<typeof fetchGatewayContext>> | null | undefined;
+        let catalogueModelIds = modelIds;
+        let freeRouterModelIds: string[] = [];
+        if (modelIds.includes(FREE_ROUTER_MODEL_ID) && canIncludeFreeRouter(endpoints)) {
+            try {
+                prefetchedFreeContext = await fetchGatewayContext({
+                    workspaceId: auth.value.workspaceId,
+                    apiKeyId: auth.value.apiKeyId,
+                    model: FREE_ROUTER_MODEL_ID,
+                    endpoint: "text.generate",
+                });
+                catalogueModelIds = modelIds.filter((modelId) => modelId !== FREE_ROUTER_MODEL_ID);
+                freeRouterModelIds = Array.from(new Set(
+                    prefetchedFreeContext.providers
+                        .map((provider) => String(provider.apiModelId ?? "").trim())
+                        .filter(Boolean)
+                )).slice(0, MAX_EXACT_MODEL_IDS);
+            } catch {
+                prefetchedFreeContext = null;
+                catalogueModelIds = modelIds.filter((modelId) => modelId !== FREE_ROUTER_MODEL_ID);
+            }
+        }
+        const catalogueArgs = {
+            modelIds: catalogueModelIds,
             endpoints,
             statuses,
             providerIds,
@@ -644,12 +896,23 @@ export async function handleModels(req: Request) {
             outputTypes,
             params,
             availability: availabilityMode,
-        });
+			...(gatewayRegion ? { region: gatewayRegion, textOnly: true } : {}),
+		};
+        const catalogue = await fetchCatalogue(catalogueArgs);
+        if (freeRouterModelIds.length) {
+            const freeRouterCatalogue = await fetchCatalogue({
+                ...catalogueArgs,
+                modelIds: freeRouterModelIds,
+            });
+            const knownModelIds = new Set(catalogue.map((model) => model.model_id));
+            catalogue.push(...freeRouterCatalogue.filter((model) => !knownModelIds.has(model.model_id)));
+        }
         const freeRouterModel = await buildFreeRouterCatalogueModel({
             workspaceId: auth.value.workspaceId,
             apiKeyId: auth.value.apiKeyId,
             endpoints,
             catalogue,
+            freeContext: prefetchedFreeContext,
         });
         const enrichedCatalogue =
             freeRouterModel && !catalogue.some((model) => model.model_id === freeRouterModel.model_id)
@@ -657,17 +920,55 @@ export async function handleModels(req: Request) {
                 : catalogue;
         const replacementByPreviousModel = buildReplacementByPreviousModel(enrichedCatalogue);
         const variantsByBaseModel = buildModelVariants(enrichedCatalogue);
-        const models = enrichedCatalogue
+        const publicModels = enrichedCatalogue
             .filter((model) => !modelIds.length || modelIds.includes(model.model_id))
             .map((model) =>
                 toPhaseoModel(
                     model,
-                    replacementByPreviousModel.get(model.model_id) ?? null,
+                    model.replacement_model_id ?? replacementByPreviousModel.get(model.model_id) ?? null,
                     variantsByBaseModel.get(model.base_model_id || model.model_id) ?? {},
+					gatewayRegion !== null,
                 )
             );
+        const privateModels = await fetchWorkspacePrivateCatalogue({
+            workspaceId: auth.value.workspaceId,
+            endpoints,
+            modelIds,
+            providerIds,
+            organisationIds,
+            inputTypes,
+            outputTypes,
+        });
+        const privateByModelId = new Map(privateModels.map((model) => [model.id, model]));
+        const mergedPublicModels = publicModels.map((model) => {
+            const privateModel = privateByModelId.get(model.id);
+            if (!privateModel) return model;
+            privateByModelId.delete(model.id);
+            return {
+                ...model,
+                offers: [...model.offers, ...privateModel.offers],
+                availability: {
+                    ...model.availability,
+                    provider_count: model.availability.provider_count + privateModel.availability.provider_count,
+                    active_provider_count: model.availability.active_provider_count + privateModel.availability.active_provider_count,
+                },
+            };
+        });
+        const models = filterAndSortModels(
+            [...privateByModelId.values(), ...mergedPublicModels] as PhaseoModel[],
+            {
+                search,
+                provider: providerSearch,
+                inputModality,
+                minimumContextTokens,
+                maximumInputPricePerMillion,
+                gatewayAvailableOnly,
+                sortBy: sortByRaw as ModelListSort,
+                sortOrder: sortOrderRaw as ModelListSortOrder | null,
+            },
+        );
         const paged = models.slice(offset, offset + limit);
-        const headers = cacheHeaders(cacheOptions);
+        const headers = cacheHeaders({ ...cacheOptions, varyHeaders: ["Authorization"] });
         if (requestedFormat.format !== "json") {
             const items: FeedItem[] = paged.map((model) => ({
                 id: model.id,
@@ -688,6 +989,7 @@ export async function handleModels(req: Request) {
             {
                 ok: true,
                 availability_mode: availabilityMode,
+                gateway_region: gatewayRegion,
                 limit,
                 offset,
                 total: models.length,
@@ -861,8 +1163,8 @@ export async function handleModelEndpoints(req: Request) {
             200,
             cacheHeaders({
                 scope: "models:endpoints:shared:v1",
-                ttlSeconds: 1800,
-                staleSeconds: 1800,
+                ttlSeconds: MODEL_CATALOGUE_CACHE_TTL_SECONDS,
+                staleSeconds: MODEL_CATALOGUE_CACHE_STALE_SECONDS,
                 varyHeaders: [],
             }),
         );
@@ -898,4 +1200,3 @@ export const modelsRoutes = new Hono<Env>();
 modelsRoutes.get("/me", withRuntime((req) => handleMyModels(req)));
 modelsRoutes.get("/:author/:slug/endpoints", withRuntime((req) => handleModelEndpoints(req)));
 modelsRoutes.get("/", withRuntime((req) => handleModels(req)));
-

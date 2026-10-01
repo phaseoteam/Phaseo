@@ -1,4 +1,5 @@
 "use client";
+import { useSettingsWrite } from "../PrivateSettingsQuery";
 
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -19,6 +20,7 @@ import { toast } from "sonner";
 import { useTranslations } from "next-intl";
 
 export default function DeletePresetItem({ p, open: controlledOpen, onOpenChange, showTrigger = true }: any) {
+	const write = useSettingsWrite();
 	const [internalOpen, setInternalOpen] = useState(false);
 	const open = controlledOpen ?? internalOpen;
 	const setOpen = onOpenChange ?? setInternalOpen;
@@ -30,7 +32,7 @@ export default function DeletePresetItem({ p, open: controlledOpen, onOpenChange
 		e?.preventDefault();
 		if (confirm !== p.name) return;
 		setLoading(true);
-		const promise = deletePresetAction(p.id, confirm);
+		const promise = write(deletePresetAction(p.id, confirm));
 		try {
 			await toast.promise(promise, {
 				loading: t("strings.Deleting preset..." as never),

@@ -21,6 +21,14 @@ const MEDIA_CAPABILITIES = new Set([
 	"video.generate",
 	"video.edit",
 	"music.generate",
+	"embeddings",
+	"text.embed",
+	"rerank",
+	"text.rerank",
+	"moderations",
+	"text.moderate",
+	"ocr",
+	"parse",
 ]);
 
 function readDataProviders(): string[] {
@@ -106,7 +114,7 @@ describe("data provider executor coverage", () => {
 		}
 	});
 
-	it("resolves a media executor for every active gateway media capability in data", () => {
+	it("resolves an executor for every active gateway non-text capability in data", () => {
 		const providers = readDataProviders();
 		for (const provider of providers) {
 			for (const { modelId, capabilityId } of getActiveGatewayMediaCapabilities(provider)) {

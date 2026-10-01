@@ -14,6 +14,7 @@ import {
 import { buildMetadata } from "@/lib/seo";
 import { getTranslations } from "next-intl/server";
 import type { PublicLocale } from "@/i18n/routing";
+import { DisplayCalendarDate } from "@/components/display/DisplayValue";
 
 type PageProps = {
 	params: Promise<{ locale: PublicLocale; category: string; slug: string }>;
@@ -59,21 +60,6 @@ const markdownComponents: Components = {
 	),
 };
 
-function formatUpdated(updated: string | null): string | null {
-	if (!updated) {
-		return null;
-	}
-	const parsed = new Date(updated);
-	if (Number.isNaN(parsed.getTime())) {
-		return updated;
-	}
-	return parsed.toLocaleDateString(undefined, {
-		year: "numeric",
-		month: "short",
-		day: "numeric",
-	});
-}
-
 export async function generateStaticParams(): Promise<
 	Array<{ category: string; slug: string }>
 > {
@@ -113,8 +99,6 @@ export default async function HelpArticlePage({ params }: PageProps) {
 		notFound();
 	}
 
-	const updatedLabel = formatUpdated(article.updated);
-
 	return (
 		<div className="container mx-auto w-full max-w-6xl px-4 py-8 md:py-12">
 			<nav className="mb-4 flex items-center gap-1 text-sm text-zinc-600 dark:text-zinc-300">
@@ -140,9 +124,9 @@ export default async function HelpArticlePage({ params }: PageProps) {
 					<p className="mt-3 text-sm leading-7 text-zinc-700 dark:text-zinc-300">
 						{article.description}
 					</p>
-					{updatedLabel ? (
+					{article.updated ? (
 						<div className="mt-4">
-						<Badge variant="secondary">{t("updated", { date: updatedLabel })}</Badge>
+						<Badge variant="secondary">{t("updated", { date: new Intl.DateTimeFormat(locale, { dateStyle: "medium" }).format(new Date(article.updated)) })}</Badge>
 						</div>
 					) : null}
 					<div className="mt-8">

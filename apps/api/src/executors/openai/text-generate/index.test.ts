@@ -153,6 +153,93 @@ describe("openai text executor HTTP mode", () => {
 		expect(mock.calls[0]?.bodyJson?.stream_options).toEqual({ include_usage: true });
 	});
 
+	it.each([
+		["gpt-6.1-sol", undefined],
+		["gpt-6-astra", "ultrafast"],
+	] as const)("routes %s through Responses for Chat Completions requests", async (model, serviceTier) => {
+		const mock = installFetchMock([{
+			match: (url) => url === "https://api.openai.com/v1/responses",
+			response: jsonResponse({
+				id: "resp_gpt6_route",
+				object: "response",
+				created_at: Math.floor(Date.now() / 1000),
+				model,
+				status: "completed",
+				output: [],
+				usage: { input_tokens: 4, output_tokens: 1, total_tokens: 5 },
+			}),
+		}]);
+
+		const result = await executor({
+			...buildArgs({ model: `openai/${model}`, serviceTier }),
+			providerModelSlug: model,
+			endpoint: "chat.completions",
+			protocol: "openai.chat.completions",
+		});
+		mock.restore();
+
+		expect(result.kind).toBe("completed");
+		expect(mock.calls).toHaveLength(1);
+		expect(mock.calls[0]?.url).toBe("https://api.openai.com/v1/responses");
+		expect(mock.calls[0]?.bodyJson?.service_tier).toBe(serviceTier);
+	});
+
+	it("preserves GPT-6.1 Sol max reasoning effort", async () => {
+		const mock = installFetchMock([{
+			match: (url) => url === "https://api.openai.com/v1/responses",
+			response: jsonResponse({
+				id: "resp_gpt61_max",
+				object: "response",
+				created_at: Math.floor(Date.now() / 1000),
+				model: "gpt-6.1-sol",
+				status: "completed",
+				output: [],
+				usage: { input_tokens: 4, output_tokens: 1, total_tokens: 5 },
+			}),
+		}]);
+
+		const result = await executor({
+			...buildArgs({ model: "openai/gpt-6.1-sol", reasoning: { effort: "max" } }),
+			providerModelSlug: "gpt-6.1-sol",
+		});
+		mock.restore();
+
+		expect(result.kind).toBe("completed");
+		expect(mock.calls[0]?.bodyJson?.reasoning?.effort).toBe("max");
+	});
+
+	it("routes Chat Completions async tools through OpenAI Responses", async () => {
+		const mock = installFetchMock([{
+			match: (url) => url === "https://api.openai.com/v1/responses",
+			response: jsonResponse({
+				id: "resp_async_tool_1",
+				object: "response",
+				created_at: Math.floor(Date.now() / 1000),
+				model: "gpt-6-astra",
+				status: "completed",
+				output: [],
+				usage: { input_tokens: 4, output_tokens: 1, total_tokens: 5 },
+			}),
+		}]);
+
+		const result = await executor({
+			...buildArgs({
+				model: "openai/gpt-6-astra",
+				tools: [{ name: "lookup", parameters: { type: "object" }, async: true }],
+			}),
+			endpoint: "chat.completions",
+			protocol: "openai.chat.completions",
+		});
+		mock.restore();
+
+		expect(result.kind).toBe("completed");
+		expect(mock.calls).toHaveLength(1);
+		expect(mock.calls[0]?.url).toBe("https://api.openai.com/v1/responses");
+		expect(mock.calls[0]?.bodyJson?.tools).toEqual([
+			expect.objectContaining({ type: "function", name: "lookup", async: true }),
+		]);
+	});
+
 	it("streams over HTTP responses endpoint when tools are present", async () => {
 		const streamBody = [
 			"event: response.created",
@@ -531,6 +618,205 @@ describe("openai text executor HTTP mode", () => {
 		expect(mock.calls[0]?.bodyJson?.model).toBe("gpt-5.6-sol");
 		expect(mock.calls[0]?.bodyJson?.reasoning).toMatchObject({
 			effort: "max",
+			mode: "pro",
+		});
+	});
+
+	it("normalizes the GPT-6 Astra pro slug and preserves pro mode in the IR", async () => {
+		const mock = installFetchMock([{
+			match: (url) => url === "https://api.openai.com/v1/responses",
+			response: jsonResponse({
+				id: "resp_astra_pro",
+				object: "response",
+				created_at: Math.floor(Date.now() / 1000),
+				model: "gpt-6-astra",
+				status: "completed",
+				output: [{
+					type: "message",
+					role: "assistant",
+					content: [{ type: "output_text", text: "ok" }],
+				}],
+				usage: { input_tokens: 2, output_tokens: 1, total_tokens: 3 },
+			}, { status: 200 }),
+		}]);
+
+		const result = await executor({
+			...buildArgs({
+				model: "openai/gpt-6-astra-pro",
+				reasoning: { effort: "max" },
+			}),
+			providerModelSlug: "gpt-6-astra-pro",
+			capabilityParams: {
+				request: {
+					allowlist: ["reasoning.effort", "reasoning.mode", "max_tokens"],
+				},
+			},
+		});
+		mock.restore();
+
+		expect(result.kind).toBe("completed");
+		expect(mock.calls).toHaveLength(1);
+		expect(mock.calls[0]?.bodyJson?.model).toBe("gpt-6-astra");
+		expect(mock.calls[0]?.bodyJson?.reasoning).toMatchObject({
+			effort: "max",
+			mode: "pro",
+		});
+	});
+
+	it("routes GPT-6.1 Sol Pro through Responses with pro reasoning", async () => {
+		const mock = installFetchMock([{
+			match: (url) => url === "https://api.openai.com/v1/responses",
+			response: jsonResponse({
+				id: "resp_sol61_pro",
+				object: "response",
+				created_at: Math.floor(Date.now() / 1000),
+				model: "gpt-6.1-sol",
+				status: "completed",
+				output: [{
+					type: "message",
+					role: "assistant",
+					content: [{ type: "output_text", text: "ok" }],
+				}],
+				usage: { input_tokens: 2, output_tokens: 1, total_tokens: 3 },
+			}, { status: 200 }),
+		}]);
+
+		const result = await executor({
+			...buildArgs({
+				model: "openai/gpt-6.1-sol-pro",
+				reasoning: { effort: "max" },
+			}),
+			providerModelSlug: "gpt-6.1-sol-pro",
+			capabilityParams: {
+				request: {
+					allowlist: ["reasoning.effort", "reasoning.mode", "max_tokens"],
+				},
+			},
+		});
+		mock.restore();
+
+		expect(result.kind).toBe("completed");
+		expect(mock.calls).toHaveLength(1);
+		expect(mock.calls[0]?.bodyJson?.model).toBe("gpt-6.1-sol");
+		expect(mock.calls[0]?.bodyJson?.reasoning).toMatchObject({
+			effort: "max",
+			mode: "pro",
+		});
+	});
+
+	it("preserves Astra max reasoning effort", async () => {
+		const mock = installFetchMock([{
+			match: (url) => url === "https://api.openai.com/v1/responses",
+			response: jsonResponse({
+				id: "resp_astra_max",
+				object: "response",
+				created_at: Math.floor(Date.now() / 1000),
+				model: "gpt-6-astra",
+				status: "completed",
+				output: [{
+					type: "message",
+					role: "assistant",
+					content: [{ type: "output_text", text: "ok" }],
+				}],
+				usage: { input_tokens: 2, output_tokens: 1, total_tokens: 3 },
+			}, { status: 200 }),
+		}]);
+
+		const result = await executor({
+			...buildArgs({
+				model: "openai/gpt-6-astra",
+				reasoning: { effort: "max" },
+			}),
+			providerModelSlug: "gpt-6-astra",
+			capabilityParams: {
+				request: { allowlist: ["reasoning.effort", "max_tokens"] },
+			},
+		});
+		mock.restore();
+
+		expect(result.kind).toBe("completed");
+		expect(mock.calls).toHaveLength(1);
+		expect(mock.calls[0]?.bodyJson?.reasoning).toMatchObject({ effort: "max" });
+	});
+
+	it("routes GPT-6 Luna Pro through the base model with pro reasoning", async () => {
+		const mock = installFetchMock([{
+			match: (url) => url === "https://api.openai.com/v1/responses",
+			response: jsonResponse({
+				id: "resp_luna_pro",
+				object: "response",
+				created_at: Math.floor(Date.now() / 1000),
+				model: "gpt-6-luna",
+				status: "completed",
+				output: [{
+					type: "message",
+					role: "assistant",
+					content: [{ type: "output_text", text: "ok" }],
+				}],
+				usage: { input_tokens: 2, output_tokens: 1, total_tokens: 3 },
+			}, { status: 200 }),
+		}]);
+
+		const result = await executor({
+			...buildArgs({
+				model: "openai/gpt-6-luna-pro",
+				reasoning: { effort: "max" },
+			}),
+			providerModelSlug: "gpt-6-luna-pro",
+			capabilityParams: {
+				request: {
+					allowlist: ["reasoning.effort", "reasoning.mode", "max_tokens"],
+				},
+			},
+		});
+		mock.restore();
+
+		expect(result.kind).toBe("completed");
+		expect(mock.calls).toHaveLength(1);
+		expect(mock.calls[0]?.bodyJson?.model).toBe("gpt-6-luna");
+		expect(mock.calls[0]?.bodyJson?.reasoning).toMatchObject({
+			effort: "max",
+			mode: "pro",
+		});
+	});
+
+	it("preserves none effort and pro mode for the canonical GPT-6 Sol slug", async () => {
+		const mock = installFetchMock([{
+			match: (url) => url === "https://api.openai.com/v1/responses",
+			response: jsonResponse({
+				id: "resp_sol",
+				object: "response",
+				created_at: Math.floor(Date.now() / 1000),
+				model: "gpt-6-sol",
+				status: "completed",
+				output: [{
+					type: "message",
+					role: "assistant",
+					content: [{ type: "output_text", text: "ok" }],
+				}],
+				usage: { input_tokens: 2, output_tokens: 1, total_tokens: 3 },
+			}, { status: 200 }),
+		}]);
+
+		const result = await executor({
+			...buildArgs({
+				model: "openai/gpt-6-sol",
+				reasoning: { effort: "none", mode: "pro" },
+			}),
+			providerModelSlug: "gpt-6-sol",
+			capabilityParams: {
+				request: {
+					allowlist: ["reasoning.effort", "reasoning.mode", "max_tokens"],
+				},
+			},
+		});
+		mock.restore();
+
+		expect(result.kind).toBe("completed");
+		expect(mock.calls).toHaveLength(1);
+		expect(mock.calls[0]?.bodyJson?.model).toBe("gpt-6-sol");
+		expect(mock.calls[0]?.bodyJson?.reasoning).toMatchObject({
+			effort: "none",
 			mode: "pro",
 		});
 	});

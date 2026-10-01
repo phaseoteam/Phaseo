@@ -1,5 +1,8 @@
+"use client";
+
 import * as React from "react";
 import { useTranslations } from "next-intl";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { Badge } from "@/components/ui/badge";
 import {
 	HoverCard,
@@ -7,14 +10,6 @@ import {
 	HoverCardTrigger,
 } from "@/components/ui/hover-card";
 import { cn } from "@/lib/utils";
-
-function formatShortDate(date: Date) {
-	return date.toLocaleDateString(undefined, {
-		year: "numeric",
-		month: "short",
-		day: "numeric",
-	});
-}
 
 function formatUtcShortDate(date: Date) {
 	return date.toLocaleDateString(undefined, {
@@ -54,6 +49,7 @@ export default function RetiresBadge(props: {
 	retirementDate: string | null;
 	className?: string;
 }) {
+	const format = useDisplayFormatters();
 	const { label, retirementDate, className } = props;
 	const t = useTranslations("SettingsUI");
 	const parsed = retirementDate ? new Date(retirementDate) : null;
@@ -85,7 +81,7 @@ export default function RetiresBadge(props: {
 				<div className="grid gap-2 text-xs">
 					<div className="grid grid-cols-[120px_1fr] gap-2">
 						<div className="text-muted-foreground">{t("strings.Your timezone" as never)}</div>
-						<div className="font-mono">{formatShortDate(valid)}</div>
+						<div className="font-mono">{format.date(valid)}</div>
 					</div>
 					<div className="grid grid-cols-[120px_1fr] gap-2">
 						<div className="text-muted-foreground">UTC</div>

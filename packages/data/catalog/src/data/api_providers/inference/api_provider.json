@@ -26,6 +26,7 @@
   "pricing_source_url": "https://inference.net/models/",
   "regional_pricing_notes": null,
   "country_code": "US",
+  "subdivision_code": "US-CA",
   "status": "Active",
   "colour": null,
   "gateway_kind": "catalogue",

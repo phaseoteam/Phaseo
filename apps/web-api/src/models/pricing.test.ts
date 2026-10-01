@@ -52,6 +52,7 @@ describe("publicPricingRouteIdentity", () => {
 					operation: "text.generate",
 					status: "active",
 					currency: "USD",
+					metadata: { match: [{ path: "request.quality", op: "eq", value: "premium" }] },
 				}]));
 			}
 			if (url.includes("v2_pricing_sku_meters")) {
@@ -59,10 +60,24 @@ describe("publicPricingRouteIdentity", () => {
 					sku_meter_id: "meter-stealth",
 					sku_id: "sku-stealth",
 					meter_key: "input_text_tokens",
+					modality: "text",
+					direction: "input",
 					unit: "token",
 					unit_quantity: 1_000_000,
 					price_nanos: 1_000_000_000,
+					display_label: "Prompt tokens",
+					display_unit: "1M tokens",
 					meter_order: 1,
+				}]));
+			}
+			if (url.includes("v2_route_capabilities")) {
+				return new Response(JSON.stringify([{
+					provider_model_id: "stealth:preview",
+					capability_id: "text.generate",
+					params: {},
+					effective_from: "2026-01-01T00:00:00Z",
+					effective_to: "2026-12-01T00:00:00Z",
+					status: "active",
 				}]));
 			}
 			return new Response(JSON.stringify([]));
@@ -78,6 +93,11 @@ describe("publicPricingRouteIdentity", () => {
 		expect(result.providerRows[0]).toMatchObject({
 			provider_id: "stealth",
 			provider_model_slug: "stealth/preview",
+			data_api_provider_model_capabilities: [{
+				capability_id: "text.generate",
+				effective_from: "2026-01-01T00:00:00Z",
+				effective_to: "2026-12-01T00:00:00Z",
+			}],
 			data_api_providers: {
 				api_provider_name: "Stealth",
 				provider_family_id: "stealth",
@@ -85,6 +105,11 @@ describe("publicPricingRouteIdentity", () => {
 		});
 		expect(result.pricingRows[0]).toMatchObject({
 			model_key: "stealth:stealth/preview:text.generate",
+			modality: "text",
+			direction: "input",
+			display_label: "Prompt tokens",
+			display_unit: "1M tokens",
+			match: [{ path: "request.quality", op: "eq", value: "premium" }],
 		});
 		const serialized = JSON.stringify(result);
 		expect(serialized).not.toContain("private-provider");
@@ -151,7 +176,7 @@ describe("composeModelPricing", () => {
 				data_api_providers: { api_provider_name: "Provider A", country_code: "US" },
 			},
 		], [
-			{ rule_id: "rule-1", model_key: "provider-a:openai/gpt-test:free:text.generate", pricing_plan: "standard", meter: "input_text_tokens", unit: "token", unit_size: 1000000, price_per_unit: 0, currency: "USD", priority: 100, effective_from: "2026-01-01T00:00:00Z", effective_to: null, note: "Free tier", match: [] },
+			{ rule_id: "rule-1", model_key: "provider-a:openai/gpt-test:free:text.generate", pricing_plan: "standard", meter: "input_text_tokens", modality: "text", direction: "input", display_label: "Prompt tokens", display_unit: "1M tokens", unit: "token", unit_size: 1000000, price_per_unit: 0, currency: "USD", priority: 100, effective_from: "2026-01-01T00:00:00Z", effective_to: null, note: "Free tier", match: [] },
 			{ rule_id: "expired", model_key: "provider-a:openai/gpt-test:free:text.generate", pricing_plan: "standard", meter: "output_text_tokens", unit: "token", unit_size: 1000000, price_per_unit: 1, effective_to: "2020-01-01T00:00:00Z" },
 		]);
 
@@ -165,6 +190,6 @@ describe("composeModelPricing", () => {
 			phaseo_status: "enabled",
 			access_scope: "public",
 		}]);
-		expect(providers[0]?.pricing_rules).toMatchObject([{ id: "rule-1", pricing_plan: "free", price_per_unit: 0 }]);
+		expect(providers[0]?.pricing_rules).toMatchObject([{ id: "rule-1", pricing_plan: "free", price_per_unit: 0, modality: "text", direction: "input", display_label: "Prompt tokens", display_unit: "1M tokens" }]);
 	});
 });

@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { fetchAdminCatalogList } from "@/lib/fetchers/internal/fetchAdminCatalog";
 
 const PAGE_SIZE = 100;
@@ -39,22 +41,23 @@ export default async function InternalOrganisationsPage({
 				</Link>
 			</div>
 			<form className="flex flex-col gap-3 sm:flex-row" action="/internal/data/organisations" method="get">
-				<input
+				<Input
 					name="q"
 					defaultValue={queryText}
 					placeholder={t("searchOrganisationsPlaceholder")}
-					className="w-full rounded-md border px-3 py-2 text-sm sm:max-w-md"
+					aria-label={t("search")} className="min-h-11 w-full sm:max-w-md"
 				/>
-				<button type="submit" className="rounded-md border px-3 py-2 text-sm">
+				<Button type="submit" variant="outline" className="min-h-11">
 					{t("search")}
-				</button>
+				</Button>
 			</form>
-			<div className="grid gap-2 2xl:grid-cols-2">
+			<div className="divide-y border-y">
+				{rows.length === 0 ? <p className="py-10 text-center text-sm text-muted-foreground">No records found.</p> : null}
 				{rows.map((row: any) => (
 					<Link
 						key={row.organisation_id}
 						href={`/internal/data/organisations/${row.organisation_id}/edit`}
-						className="rounded-md border px-4 py-3 hover:bg-muted/40 transition-colors"
+						className="block px-3 py-4 transition-colors hover:bg-muted/40 focus-visible:outline-2 focus-visible:outline-ring"
 					>
 						<div className="truncate">{row.name ?? row.organisation_id}</div>
 						<div className="mt-1 break-all font-mono text-xs text-muted-foreground">{row.organisation_id}</div>

@@ -40,6 +40,7 @@ import {
 import { applyResponsePlugins } from "@/plugins/registry";
 import { applySuccessfulResponseBillingPolicy, suppressFailedResponseBilling } from "./billing-policy";
 import { calculateOutputPerformanceMetrics } from "./performance-metrics";
+import { recordManagedProviderTokensOnce } from "@core/provider-rate-limits";
 
 function shouldAttachRoutingDiagnostics(ctx: PipelineContext): boolean {
 	return Boolean(ctx.meta?.debug?.enabled || ctx.meta?.returnRoutingDiagnostics);
@@ -91,9 +92,8 @@ function attachStreamTimingMeta(args: {
         providerTtftMs: ctx.meta.provider_ttft_ms ?? null,
         gatewayE2eMs: ctx.meta.end_to_end_ms ?? null,
     });
-    const throughputTps =
-        ctx.meta.throughput_tps ?? calculated.effectiveThroughputTps;
-    ctx.meta.throughput_tps ??= calculated.effectiveThroughputTps ?? undefined;
+    const throughputTps = calculated.effectiveThroughputTps;
+    ctx.meta.throughput_tps = throughputTps ?? undefined;
     ctx.meta.output_speed_tps ??= calculated.outputSpeedTps ?? undefined;
     ctx.meta.tpot_ms ??= calculated.tpotMs ?? undefined;
     ctx.meta.itl_ms ??= calculated.itlMs ?? undefined;
@@ -361,19 +361,20 @@ export async function handleStreamResponse(
             // Add API timing meta to terminal stream frames when requested.
             // Responses streams previously only received routing meta here, so chat
             // clients could not display API latency/generation/throughput values.
-            const matchedTimingFrame =
-                next?.object === "chat.completion" ||
-                next?.object === "response" ||
-                next?.response?.object === "response" ||
-                next?.response?.object === "chat.completion" ||
-                next?.type === "message_delta" ||
-                next?.type === "message_stop";
             const timingUsage =
                 next.usage ??
                 next.response?.usage ??
                 next.message?.usage ??
                 (next?.type === "message_stop" ? latestStreamUsageRaw : null) ??
                 null;
+            const matchedTimingFrame =
+                next?.object === "chat.completion" ||
+                next?.object === "response" ||
+                next?.response?.object === "response" ||
+                next?.response?.object === "chat.completion" ||
+                next?.type === "message_delta" ||
+                next?.type === "message_stop" ||
+                (next?.object === "chat.completion.chunk" && timingUsage != null);
             if ((includeMeta || ctx.meta?.debug?.enabled) && matchedTimingFrame) {
                 attachStreamTimingMeta({
                     ctx,
@@ -508,9 +509,11 @@ export async function handleStreamResponse(
             );
 			const baseModel = getBaseModel(ctx.model);
 			const healthContext = (result as any).healthContext ?? null;
+            const healthProvider = healthContext?.provider ?? result.provider;
 			const isProbe = Boolean(healthContext?.isProbe);
 			const healthImpact = classifyProviderHealthImpact({
 				upstreamStatus: result.upstream.status,
+				credentialSource: result.keySource,
 				aborted: info?.aborted === true,
 				// An upstream-completed empty response is a contract issue, not
 				// evidence that the provider is unhealthy.
@@ -518,20 +521,31 @@ export async function handleStreamResponse(
 				finishReason: cachedFinishReason ?? result.bill.finish_reason ?? null,
 			});
 			if (info?.aborted || streamFailed || healthImpact === "failure") {
-				await onCallEnd(ctx.endpoint, {
-					provider: result.provider,
+				const healthUpdate = await onCallEnd(ctx.endpoint, {
+					observationId: healthContext?.observationId,
+					startedAt: healthContext?.startedAt,
+					probe: isProbe,
+					provider: healthProvider,
 					model: baseModel,
 					ok: false,
+					upstreamStatus: result.upstream.status,
 					healthImpact,
 					latency_ms: ctx.meta.latency_ms ?? null,
 					generation_ms: ctx.meta.generation_ms ?? null,
 				});
-				if (isProbe && healthImpact !== "neutral") {
-					await reportProbeResult(ctx.endpoint, result.provider, baseModel, healthImpact === "success");
-				} else if (healthImpact === "failure") {
-					await maybeOpenOnRecentErrors(ctx.endpoint, result.provider, baseModel);
+				if (isProbe && healthImpact !== "neutral" && !healthUpdate?.rateLimited) {
+					await reportProbeResult(ctx.endpoint, healthProvider, baseModel, healthImpact === "success");
+				} else if (healthImpact === "failure" && !healthUpdate?.rateLimited) {
+					await maybeOpenOnRecentErrors(ctx.endpoint, healthProvider, baseModel);
 				}
 				const reason = info?.aborted ? "incomplete_stream" : "upstream_failure";
+				await recordManagedProviderTokensOnce({
+					ctx,
+					providerId: result.provider,
+					keySource: result.keySource,
+					usage: shapedUsage,
+					reservation: result.providerRateLimitReservation,
+				});
 				suppressFailedResponseBilling({ ctx, result, usage: shapedUsage, reason });
 				await handleFailureAudit(
 					ctx,
@@ -549,7 +563,10 @@ export async function handleStreamResponse(
                 result.upstream.status < 400 &&
                 !info?.aborted;
             await onCallEnd(ctx.endpoint, {
-                provider: result.provider,
+                observationId: healthContext?.observationId,
+                startedAt: healthContext?.startedAt,
+                probe: isProbe,
+                provider: healthProvider,
                 model: baseModel,
                 ok,
                 healthImpact,
@@ -569,7 +586,7 @@ export async function handleStreamResponse(
                 ),
             });
             if (isProbe && healthImpact !== "neutral") {
-				await reportProbeResult(ctx.endpoint, result.provider, baseModel, healthImpact === "success");
+				await reportProbeResult(ctx.endpoint, healthProvider, baseModel, healthImpact === "success");
             }
 
             const finalizeFromBill = async (bill: Bill | null | undefined) => {
@@ -657,6 +674,7 @@ export async function handleStreamResponse(
                     costNanos: pricedWithByok.totalNanos,
                     endpoint: ctx.endpoint,
                 });
+				await recordManagedProviderTokensOnce({ ctx, providerId: result.provider, keySource: result.keySource, usage: result.bill.usage, reservation: result.providerRateLimitReservation });
 
                 await handleSuccessAudit(
                     ctx,
@@ -715,6 +733,7 @@ export async function handleStreamResponse(
                     costNanos: pricedWithByok.totalNanos,
                     endpoint: ctx.endpoint,
                 });
+				await recordManagedProviderTokensOnce({ ctx, providerId: result.provider, keySource: result.keySource, usage: pricedWithByok.pricedUsage, reservation: result.providerRateLimitReservation });
                 await handleSuccessAudit(
                     ctx,
                     result,
@@ -790,6 +809,7 @@ export async function handleStreamResponse(
                 costNanos: pricedWithByok.totalNanos,
                 endpoint: ctx.endpoint,
             });
+			await recordManagedProviderTokensOnce({ ctx, providerId: result.provider, keySource: result.keySource, usage: result.bill.usage, reservation: result.providerRateLimitReservation });
 
             await handleSuccessAudit(
                 ctx,
@@ -818,11 +838,6 @@ export async function handleStreamResponse(
 export function handlePassthroughFallback(upstream: Response): Response {
     return passthrough(upstream);
 }
-
-
-
-
-
 
 
 

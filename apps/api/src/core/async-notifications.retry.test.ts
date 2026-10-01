@@ -1,4 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { createServer } from "node:http";
+const nativeFetch = globalThis.fetch;
 
 const getAsyncOperationMock = vi.fn();
 const listAsyncOperationsMock = vi.fn();
@@ -64,6 +66,76 @@ describe("dispatchAsyncWebhookEvent retries", () => {
 
 	afterEach(() => {
 		vi.useRealTimers();
+		vi.unstubAllGlobals();
+	});
+	it("does not send a stale attempt after another worker schedules a retry before the lease is acquired", async () => {
+		const record = { workspaceId: "ws_race", kind: "video", internalId: "video_race", status: "completed", meta: { webhook: { url: "https://receiver.test/hook", secret: "whsec_race", events: ["video.completed"] } } };
+		getAsyncOperationMock.mockResolvedValueOnce(structuredClone(record)).mockResolvedValue({ ...record, meta: { ...record.meta, webhookRetryQueue: { "video.completed": { deliveryKey: "video.completed", eventType: "video.completed", phase: "completed", attemptCount: 1, nextRetryAt: new Date(Date.now() + 60000).toISOString() } } } });
+		const transport = vi.fn();
+		vi.stubGlobal("fetch", transport);
+		await expect(dispatchAsyncWebhookEvent({ workspaceId: "ws_race", kind: "video", internalId: "video_race", phase: "completed", force: true })).resolves.toBe(false);
+		expect(transport).not.toHaveBeenCalled();
+		expect(releaseAsyncWebhookDeliveryClaimMock).toHaveBeenCalledOnce();
+	});
+
+	it.each([
+		{ kind: "video", finalStatus: 200 }, { kind: "batch", finalStatus: 200 },
+		{ kind: "video", finalStatus: 503 }, { kind: "batch", finalStatus: 503 },
+	] as const)("delivers $kind through a real HTTP receiver and records all four attempts (final $finalStatus)", async ({ kind, finalStatus }) => {
+		const received: Array<{ body: string; headers: Record<string, any> }> = [];
+		const server = createServer(async (request, response) => {
+			let body = "";
+			for await (const chunk of request) body += chunk.toString();
+			received.push({ body, headers: request.headers });
+			response.writeHead(received.length < 4 ? 503 : finalStatus);
+			response.end("receiver response");
+		});
+		await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+		const address = server.address() as { port: number };
+		const record: any = {
+			workspaceId: "ws_http", kind, internalId: "job_http", requestId: "req_http",
+			provider: "minimax", model: "MiniMax-H3", status: "completed",
+			createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
+			meta: { webhook: { url: "https://receiver.test/hook", secret: "whsec_http", events: [`${kind}.completed`] } },
+		};
+		getAsyncOperationMock.mockImplementation(async () => structuredClone(record));
+		listAsyncOperationsMock.mockImplementation(async (args: any) => args.kind === kind ? [structuredClone(record)] : []);
+		patchAsyncOperationMetaMock.mockImplementation(async ({ metaPatch }: any) => { Object.assign(record.meta, metaPatch); });
+		releaseAsyncWebhookDeliveryClaimMock.mockImplementation(async () => {
+			expect(record.meta.webhookAttempts).toHaveLength(received.length);
+			return true;
+		});
+		completeAsyncWebhookDeliveryMock.mockImplementation(async () => {
+			record.meta.webhookDeliveries = { [`${kind}.completed`]: new Date().toISOString() };
+			return true;
+		});
+		// Only reroute transport to loopback; URL validation, signing, outbox retry
+		// scheduling and attempt serialization use the production implementation.
+		vi.stubGlobal("fetch", vi.fn((_url: string, init: RequestInit) => nativeFetch(`http://127.0.0.1:${address.port}/hook`, init)));
+		try {
+			await dispatchAsyncWebhookEvent({ workspaceId: record.workspaceId, kind, internalId: record.internalId, phase: "completed" });
+			for (let retry = 0; retry < 3; retry++) {
+				const nextRetryAt = record.meta.nextWebhookRetryAt;
+				expect(nextRetryAt).toBeTruthy();
+				await runAsyncWebhookRetriesJob({ now: nextRetryAt, maxDeliveries: 1 });
+			}
+			await dispatchAsyncWebhookEvent({ workspaceId: record.workspaceId, kind, internalId: record.internalId, phase: "completed" });
+			await runAsyncWebhookRetriesJob({ now: new Date(Date.now() + 86_400_000).toISOString() });
+			expect(received).toHaveLength(4);
+			const attempts = record.meta.webhookAttempts;
+			expect(attempts).toHaveLength(4);
+			expect(attempts.map((attempt: any) => attempt.attempt_number).sort()).toEqual([1, 2, 3, 4]);
+			expect(attempts.find((attempt: any) => attempt.attempt_number === 4)).toMatchObject({ max_attempts: 4, response_status: finalStatus, next_retry_at: null, status: finalStatus === 200 ? "delivered" : "failed_permanently" });
+			for (const [index, request] of received.entries()) {
+				expect(request.headers["x-phaseo-attempt"]).toBe(String(index + 1));
+				expect(request.headers["x-phaseo-event-id"]).toBe(received[0].headers["x-phaseo-event-id"]);
+				const timestamp = request.headers["x-phaseo-timestamp"];
+				expect(request.headers["x-phaseo-signature"]).toBe(await hmacSha256Hex("whsec_http", `${timestamp}.${request.body}`));
+			}
+		} finally {
+			server.closeAllConnections();
+			await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
+		}
 	});
 
 	it("recovers a durable video status-change event from the outbox", async () => {
@@ -110,9 +182,10 @@ describe("dispatchAsyncWebhookEvent retries", () => {
 
 		expect(summary.deliveriesRetried).toBe(1);
 		expect(fetchMock).toHaveBeenCalledTimes(1);
-		expect(completeAsyncWebhookDeliveryMock).toHaveBeenCalledWith(expect.objectContaining({
-			deliveryKey: "video.status_changed:queued:in_progress",
+		expect(patchAsyncOperationMetaMock).toHaveBeenCalledWith(expect.objectContaining({
+			metaPatch: expect.objectContaining({ webhookAttempts: expect.arrayContaining([expect.objectContaining({ delivery_key: "video.status_changed:queued:in_progress", status: "delivered" })]) }),
 		}));
+		expect(completeAsyncWebhookDeliveryMock).not.toHaveBeenCalled();
 	});
 
 	it("records a scheduled retry after the first delivery failure", async () => {
@@ -360,6 +433,7 @@ describe("dispatchAsyncWebhookEvent retries", () => {
 			updatedAt: "2026-05-03T10:01:00.000Z",
 		};
 		getAsyncOperationMock
+			.mockResolvedValueOnce(baseRecord)
 			.mockResolvedValueOnce(baseRecord)
 			.mockResolvedValueOnce({
 				...baseRecord,
@@ -1054,6 +1128,7 @@ describe("dispatchAsyncWebhookEvent retries", () => {
 		});
 		getAsyncOperationMock
 			.mockResolvedValueOnce(retryRecord)
+			.mockResolvedValueOnce(retryRecord)
 			.mockResolvedValueOnce(deliveredRecord);
 		vi.stubGlobal(
 			"fetch",
@@ -1280,6 +1355,7 @@ describe("dispatchAsyncWebhookEvent retries", () => {
 			return [];
 		});
 		getAsyncOperationMock
+			.mockResolvedValueOnce(retryRecord)
 			.mockResolvedValueOnce(retryRecord)
 			.mockResolvedValueOnce(deliveredRecord);
 		vi.stubGlobal(

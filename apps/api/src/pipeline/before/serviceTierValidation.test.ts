@@ -28,8 +28,8 @@ describe("validateSynchronousTextServiceTierRequest", () => {
 		});
 	});
 
-	it("allows standard, fast, priority, and flex on synchronous text endpoints", () => {
-		for (const serviceTier of ["standard", "fast", "priority", "flex"]) {
+	it("allows standard, default, fast, priority, and flex on synchronous text endpoints", () => {
+		for (const serviceTier of ["standard", "default", "fast", "priority", "flex"]) {
 			expect(
 				validateSynchronousTextServiceTierRequest({
 					endpoint: "responses",
@@ -42,7 +42,7 @@ describe("validateSynchronousTextServiceTierRequest", () => {
 	});
 
 	it("rejects non-standard service tier aliases", async () => {
-		for (const serviceTier of ["default", "auto", "standard_only"]) {
+		for (const serviceTier of ["auto", "standard_only"]) {
 			const result = validateSynchronousTextServiceTierRequest({
 				endpoint: "messages",
 				body: { service_tier: serviceTier },

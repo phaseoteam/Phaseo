@@ -1,17 +1,22 @@
-import Link from "next/link";
-import { getTranslations } from "next-intl/server";
-import { fetchSettingsGuardrailEditorData } from "@/lib/fetchers/internal/fetchSettingsGuardrailEditorData";
+"use client";
+import { Link } from "@/i18n/navigation";
+import { useTranslations } from "next-intl";
+import type { SettingsGuardrailEditorData } from "@/lib/fetchers/internal/settingsTypes";
+import { PrivateSettingsQuery } from "../PrivateSettingsQuery";
 import GuardrailEditorPageClient from "./GuardrailEditorPageClient";
 
-export default async function GuardrailEditorPage(props: {
+export default function GuardrailEditorPage(props: {
 	mode: "create" | "edit";
 	guardrailId?: string;
 }) {
-	const t = await getTranslations("SettingsUI.settingsCopy.guardrails");
-	const data = await fetchSettingsGuardrailEditorData(
-		props.mode,
-		props.guardrailId,
-	);
+	const params = new URLSearchParams({ mode: props.mode });
+	if (props.guardrailId) params.set("guardrailId", props.guardrailId);
+	return <PrivateSettingsQuery<SettingsGuardrailEditorData> path={`/api/account/settings/guardrails/editor?${params}`}>{(data) => <GuardrailEditorContent {...props} data={data} />}</PrivateSettingsQuery>;
+}
+
+function GuardrailEditorContent(props: { mode: "create" | "edit"; guardrailId?: string; data: SettingsGuardrailEditorData }) {
+	const { data } = props;
+	const t = useTranslations("SettingsUI.settingsCopy.guardrails");
 
 	if (!data.workspaceId) {
 		return (
@@ -58,4 +63,3 @@ export default async function GuardrailEditorPage(props: {
 		/>
 	);
 }
-

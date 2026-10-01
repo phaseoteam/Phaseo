@@ -7,13 +7,16 @@ import {
 	fetchFrontendModelProviderRoutingHealth,
 	fetchFrontendModelProviderRuntimeStats,
 	fetchFrontendModelPricing,
+	fetchFrontendModelGatewayMetadata,
 } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import ModelPricingClient from "@/components/(data)/model/pricing/ModelPricingClient";
 import ModelPendingApiReleaseBanner from "@/components/(data)/model/overview/ModelPendingApiReleaseBanner";
 import { fetchWorkspacePrivacySettings } from "@/lib/fetchers/internal/fetchWorkspacePrivacySettings";
 import type { WorkspacePrivacySettings } from "@/lib/fetchers/internal/settingsTypes";
+import type { ProviderPricing } from "@/lib/fetchers/models/getModelPricing";
 import { isAdminViewer } from "@/lib/auth/getViewerRole";
 import { getTranslations } from "next-intl/server";
+import type { AuthenticatedProviderCatalogPreview } from "@/lib/query/providerCatalogPreviews";
 import {
 	Empty,
 	EmptyContent,
@@ -24,6 +27,86 @@ import {
 } from "@/components/ui/empty";
 
 const OPTIONAL_PROVIDER_TELEMETRY_TIMEOUT_MS = 2_500;
+
+function mergePreviewOffers(
+	providers: ProviderPricing[],
+	previews: AuthenticatedProviderCatalogPreview[],
+): ProviderPricing[] {
+	if (!previews.length) return providers;
+
+	const byProvider = new Map(
+		providers.map((provider) => [provider.provider.api_provider_id, provider]),
+	);
+	for (const preview of previews) {
+		const providerId = preview.provider_slug.trim();
+		if (!providerId) continue;
+		const isRetired = ["deprecated", "retired", "removed", "shutdown"].includes(String(preview.availability_reason ?? "").trim().toLowerCase());
+		const providerModel: ProviderPricing["provider_models"][number] = {
+			id: `provider-preview:${providerId}:${preview.provider_model_slug}`,
+			api_provider_id: providerId,
+			provider_model_slug: preview.provider_model_slug,
+			model_id: preview.canonical_model_slug?.trim() || preview.model_id,
+			endpoint: preview.endpoints?.[0] || "unmapped",
+			is_active_gateway: false,
+			is_unreleased: true,
+			provider_availability_status: isRetired ? "deprecated" : "coming_soon",
+			phaseo_status: isRetired ? "disabled" : "planned",
+			access_scope: "internal",
+			routing_status: "preview",
+			capability_status: isRetired ? "disabled" : "planned",
+			input_modalities: (preview.input_modalities ?? []).join(","),
+			output_modalities: (preview.output_modalities ?? []).join(","),
+			context_length: preview.context_length ?? null,
+			max_input_tokens: preview.context_length ?? null,
+			max_output_tokens: preview.max_output_tokens ?? null,
+			effective_from: preview.available_from ?? null,
+			effective_to: preview.shutdown_at ?? null,
+			created_at: preview.created_at ?? undefined,
+			params: Object.fromEntries((preview.supported_params ?? []).map((parameter) => [parameter, true])),
+		};
+		const pricingRules = (preview.pricing ?? []).map((price, index) => ({
+			id: `provider-preview:${providerId}:${preview.provider_model_slug}:${index}`,
+			model_key: `${providerId}:${preview.api_model_id}:${price.meterKey}`,
+			provider_id: providerId,
+			api_model_id: preview.api_model_id,
+			capability_id: price.modality || preview.endpoints?.[0] || "unmapped",
+			pricing_plan: "standard",
+			meter: price.meterKey,
+			unit: price.unit,
+			unit_size: price.unitQuantity,
+			price_per_unit: price.priceNanos / 1_000_000_000,
+			currency: "USD",
+			note: null,
+			priority: 100,
+			effective_from: preview.created_at ?? new Date(0).toISOString(),
+			effective_to: null,
+			match: [],
+		}));
+		const incoming: ProviderPricing = {
+			provider: {
+				api_provider_id: providerId,
+				api_provider_name: preview.provider_name,
+				status: "active",
+			},
+			provider_models: [providerModel],
+			pricing_rules: pricingRules,
+		};
+		const existing = byProvider.get(providerId);
+		byProvider.set(providerId, existing
+			? {
+					...existing,
+					provider_models: [
+						...existing.provider_models,
+						...incoming.provider_models.filter(
+							(model) => !existing.provider_models.some((candidate) => candidate.id === model.id),
+						),
+					],
+					pricing_rules: [...existing.pricing_rules, ...incoming.pricing_rules],
+				}
+			: incoming);
+	}
+	return [...byProvider.values()];
+}
 
 function withOptionalTimeout<T>(
 	promise: Promise<T>,
@@ -56,6 +139,9 @@ export default async function ModelPricing({
 	modelStatus,
 	modelName,
 	creatorOrganisationId,
+	creatorOrganisationName,
+	providersOverride,
+	previewOffers = [],
 }: {
 	modelId: string;
 	includeHidden: boolean;
@@ -64,18 +150,55 @@ export default async function ModelPricing({
 	modelStatus?: string | null;
 	modelName?: string | null;
 	creatorOrganisationId?: string | null;
+	creatorOrganisationName?: string | null;
+	providersOverride?: ProviderPricing[];
+	previewOffers?: AuthenticatedProviderCatalogPreview[];
 }) {
 	const tProvider = await getTranslations("Catalogue.modelDetail.providerTable");
 	const tPricing = await getTranslations("Catalogue.modelDetail.pricing");
 	const tModel = await getTranslations("Catalogue.models.detail");
 	const tActions = await getTranslations("Common.ui.actions");
-	const [providers, identity, showAdminPricingControls] = await Promise.all([
-		fetchFrontendModelPricing(modelId),
+	const [providers, identity, showAdminPricingControls, gatewayMetadata] = await Promise.all([
+		providersOverride ? Promise.resolve(providersOverride) : fetchFrontendModelPricing(modelId),
 		modelStatus !== undefined
-			? Promise.resolve({ status: modelStatus, name: modelName ?? null, organisationId: creatorOrganisationId ?? null })
-			: fetchFrontendModelHeader(modelId, includeHidden).then((header) => ({ status: header?.status ?? null, name: header?.name ?? null, organisationId: header?.organisation_id ?? null })),
+			? Promise.resolve({
+					status: modelStatus,
+					name: modelName ?? null,
+					organisationId: creatorOrganisationId ?? null,
+					organisationName: creatorOrganisationName ?? null,
+				})
+			: fetchFrontendModelHeader(modelId, includeHidden).then((header) => ({
+					status: header?.status ?? null,
+					name: header?.name ?? null,
+					organisationId: header?.organisation_id ?? null,
+					organisationName: header?.organisation?.name ?? null,
+				})),
 		withOptionalTimeout(isAdminViewer(), false, "admin viewer check"),
+		withOptionalTimeout(fetchFrontendModelGatewayMetadata(modelId), null, "gateway metadata"),
 	]);
+	const providersWithPreviews = mergePreviewOffers(providers || [], previewOffers);
+	const credentialModesByProvider = new Map<string, Array<"managed_and_byok" | "byok_only">>();
+	for (const provider of gatewayMetadata?.activeProviders ?? []) {
+		const modes = credentialModesByProvider.get(provider.api_provider_id) ?? [];
+		modes.push(provider.credential_mode === "byok_only" ? "byok_only" : "managed_and_byok");
+		credentialModesByProvider.set(provider.api_provider_id, modes);
+	}
+	const credentialModeByProvider = new Map(
+		Array.from(credentialModesByProvider, ([providerId, modes]) => [
+			providerId,
+			modes.every((mode) => mode === "byok_only") ? "byok_only" : "managed_and_byok",
+		] as const),
+	);
+	const providersWithCredentialModes = providersWithPreviews.map((provider) => ({
+		...provider,
+		provider: {
+			...provider.provider,
+			credential_mode:
+				credentialModeByProvider.get(provider.provider.api_provider_id) ??
+				provider.provider.credential_mode ??
+				"managed_and_byok",
+		},
+	}));
 	const workspacePrivacySettings: WorkspacePrivacySettings | null =
 		await withOptionalTimeout(
 			fetchWorkspacePrivacySettings(),
@@ -84,7 +207,7 @@ export default async function ModelPricing({
 		);
 
 	// Show providers with model mappings even when pricing rules are missing.
-	const providersForDisplay = (providers || []).filter(
+	const providersForDisplay = providersWithCredentialModes.filter(
 		(p) => Array.isArray(p.provider_models) && p.provider_models.length > 0
 	);
 	const now = new Date();
@@ -107,7 +230,7 @@ export default async function ModelPricing({
 	const showPendingApiBanner =
 		identity.status === "Available" && !hasActiveApiProviders;
 
-	const [runtimeStats, routingHealth] = await Promise.all([
+	const [runtimeStats, routingHealth] = providersOverride ? [{}, {}] : await Promise.all([
 		withOptionalTimeout(
 			fetchFrontendModelProviderRuntimeStats({
 				modelId,
@@ -167,27 +290,49 @@ export default async function ModelPricing({
 						/>
 					</div>
 				) : null}
-				<Empty className="rounded-lg border p-8">
+				<ModelPricingClient
+					modelId={modelId}
+					providers={[]}
+					refreshPricing={!providersOverride}
+					creatorOrgId={identity.organisationId}
+					initialPricingTimeMs={now.getTime()}
+					runtimeStats={runtimeStats}
+					routingHealth={routingHealth}
+					workspacePrivacySettings={workspacePrivacySettings}
+					showHeader={false}
+					emptyState={<Empty className="rounded-lg border p-8">
 					<EmptyHeader>
 						<EmptyMedia variant="icon">
 							<CircleAlert className="size-4" />
 						</EmptyMedia>
-						<EmptyTitle>{tPricing("noProviderPricing")}</EmptyTitle>
-					</EmptyHeader>
-					<EmptyContent>
+						<EmptyTitle>
+							{identity.status === "Announced" && identity.organisationName
+								? tPricing("organisationComingSoon", { organisation: identity.organisationName })
+								: tPricing("noProviderPricing")}
+						</EmptyTitle>
 						<EmptyDescription>
-							{tPricing("suggestProvider")}
-							<a
-								className="ml-1 text-primary underline"
-								href="https://github.com/phaseoteam/Phaseo/issues"
-								target="_blank"
-								rel="noopener noreferrer"
-							>
-								{tPricing("openIssue")}
-							</a>
+							{identity.status === "Announced" && identity.organisationName
+								? tPricing("announcedPricingDescription", { model: identity.name ?? tPricing("thisModel"), organisation: identity.organisationName })
+								: tPricing("noProviderAvailability")}
 						</EmptyDescription>
-					</EmptyContent>
-				</Empty>
+					</EmptyHeader>
+					{identity.status === "Announced" && identity.organisationName ? null : (
+						<EmptyContent>
+							<EmptyDescription>
+								{tPricing("suggestProvider")}
+								<a
+									className="ml-1 text-primary underline"
+									href="https://github.com/phaseoteam/Phaseo/issues"
+									target="_blank"
+									rel="noopener noreferrer"
+								>
+									{tPricing("openIssue")}
+								</a>
+							</EmptyDescription>
+						</EmptyContent>
+					)}
+				</Empty>}
+				/>
 			</div>
 		);
 	}
@@ -213,6 +358,7 @@ export default async function ModelPricing({
 			<ModelPricingClient
 				modelId={modelId}
 				providers={providersForDisplay}
+				refreshPricing={!providersOverride}
 				creatorOrgId={identity.organisationId}
 				initialPricingTimeMs={now.getTime()}
 				runtimeStats={runtimeStats}

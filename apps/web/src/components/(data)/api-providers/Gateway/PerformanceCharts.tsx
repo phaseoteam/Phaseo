@@ -1,6 +1,7 @@
 "use client";
 
 import { useLocale, useTranslations } from "next-intl";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 
 import {
 	ChartContainer,
@@ -46,12 +47,6 @@ const e2eLatencyChartConfig = (label: string): ChartConfig => ({
 	},
 });
 
-function formatDateTick(timestamp: string, locale: string) {
-	const date = new Date(timestamp);
-	if (Number.isNaN(date.getTime())) return timestamp;
-	return date.toLocaleDateString(locale, { month: "short", day: "numeric" });
-}
-
 interface LatencyChartProps {
 	data: Array<{ timestamp: string; avgLatencyMs: number | null }>;
 	onHoverBucket?: (timestamp: string | null) => void;
@@ -65,6 +60,8 @@ export function LatencyChart({
 }: LatencyChartProps) {
 	const t = useTranslations("Catalogue.providers");
 	const locale = useLocale();
+	const format = useDisplayFormatters();
+	const formatDateTick = (timestamp: string, _locale?: string) => format.calendarDate(timestamp, timestamp);
 	const chartData = data.map((point) => ({
 		timestamp: point.timestamp,
 		latency: point.avgLatencyMs,
@@ -198,6 +195,8 @@ export function ThroughputChart({
 }: ThroughputChartProps) {
 	const t = useTranslations("Catalogue.providers");
 	const locale = useLocale();
+	const format = useDisplayFormatters();
+	const formatDateTick = (timestamp: string, _locale?: string) => format.calendarDate(timestamp, timestamp);
 	const chartData = data.map((point) => ({
 		timestamp: point.timestamp,
 		throughput: point.avgThroughput,
@@ -331,6 +330,8 @@ export function E2ELatencyChart({
 }: E2ELatencyChartProps) {
 	const t = useTranslations("Catalogue.providers");
 	const locale = useLocale();
+	const format = useDisplayFormatters();
+	const formatDateTick = (timestamp: string, _locale?: string) => format.calendarDate(timestamp, timestamp);
 	const chartData = data.map((point) => ({
 		timestamp: point.timestamp,
 		e2eLatency: point.avgGenerationMs,

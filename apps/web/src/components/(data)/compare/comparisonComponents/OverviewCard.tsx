@@ -1,23 +1,12 @@
 "use client";
 
 import type { ExtendedModel } from "@/data/types";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { ProviderLogo } from "../ProviderLogo";
 import { useLocale, useTranslations } from "next-intl";
-
-function formatMonthYear(value: string | null | undefined, locale: string): string {
-	if (!value) return "-";
-	const d = new Date(value);
-	if (Number.isNaN(d.getTime())) return "-";
-	return d.toLocaleDateString(locale, { month: "short", year: "numeric" });
-}
-
-function formatCount(value: number | null | undefined, locale: string): string {
-	if (value == null || !Number.isFinite(value)) return "-";
-	return value.toLocaleString(locale, { maximumFractionDigits: 0 });
-}
 
 function bestNumber(
 	models: ExtendedModel[],
@@ -124,6 +113,11 @@ export default function OverviewCard({
 }) {
 	const t = useTranslations("Catalogue.compare");
 	const locale = useLocale();
+	const format = useDisplayFormatters();
+	const formatMonthYear = (value: string | null | undefined) => format.calendarDate(value);
+	const formatCount = (value: number | null | undefined) => value == null || !Number.isFinite(value)
+		? "-"
+		: format.number(value, { maximumFractionDigits: 0 });
 	if (!selectedModels || selectedModels.length === 0) return null;
 	const bestInputContext = bestNumber(
 		selectedModels,
@@ -273,7 +267,7 @@ export default function OverviewCard({
 							<div className="flex items-center justify-between gap-3">
 								<span className="text-xs text-muted-foreground">{t("release")}</span>
 								<span className="font-mono text-xs text-foreground">
-									{formatMonthYear(m.release_date, locale)}
+									{formatMonthYear(m.release_date)}
 								</span>
 							</div>
 							<div className="flex items-center justify-between gap-3">
@@ -281,7 +275,7 @@ export default function OverviewCard({
 									{t("knowledgeCutoff")}
 								</span>
 								<span className="font-mono text-xs text-foreground">
-									{formatMonthYear(m.knowledge_cutoff, locale)}
+									{formatMonthYear(m.knowledge_cutoff)}
 								</span>
 							</div>
 							<div className="flex items-center justify-between gap-3">
@@ -293,7 +287,7 @@ export default function OverviewCard({
 											"bg-emerald-50 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300"
 									)}
 								>
-									{formatCount(m.input_context_length, locale)}
+									{formatCount(m.input_context_length)}
 								</span>
 							</div>
 							<div className="flex items-center justify-between gap-3">
@@ -305,7 +299,7 @@ export default function OverviewCard({
 											"bg-emerald-50 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300"
 									)}
 								>
-									{formatCount(m.output_context_length, locale)}
+									{formatCount(m.output_context_length)}
 								</span>
 							</div>
 							<div className="flex items-center justify-between gap-3">
@@ -328,3 +322,4 @@ export default function OverviewCard({
 		</section>
 	);
 }
+

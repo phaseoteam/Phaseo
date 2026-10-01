@@ -12,7 +12,28 @@ afterEach(() => {
 });
 
 describe("public reference-data routes", () => {
-	it("returns stable public datasets with a long-lived edge policy", async () => {
+    it("excludes retired plan prices from listings and detail pages", async () => {
+        vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+            const url = new URL(typeof input === "string" ? input : input instanceof URL ? input.href : input.url);
+            if (!url.pathname.endsWith("/v2_subscription_plans")) return new Response("[]");
+            const rows = [
+                { plan_uuid: "active", plan_id: "active", name: "Active", price: 10, effective_to: null },
+                { plan_uuid: "retired", plan_id: "retired", name: "Retired", price: 20, effective_to: "2020-01-01T00:00:00Z" },
+            ];
+            const activeOnly = url.searchParams.get("or")?.includes("effective_to.is.null,effective_to.gt.");
+            const selected = rows.filter(row => (!activeOnly || row.effective_to === null)
+                && (!url.searchParams.has("plan_id") || url.searchParams.get("plan_id") === `eq.${row.plan_id}`));
+            return new Response(JSON.stringify(selected));
+        }));
+        const listing = await app.request("https://phaseo.app/api/_web/subscription-plans", {}, env);
+        expect(listing.status).toBe(200);
+        expect((await listing.json() as { subscription_plans: { plan_id: string }[] }).subscription_plans.map(plan => plan.plan_id))
+            .toEqual(["active"]);
+        const retired = await app.request("https://phaseo.app/api/_web/subscription-plans/retired", {}, env);
+        expect(retired.status).toBe(404);
+    });
+
+	it("keeps reference data long-lived but refreshes provider information every fifteen minutes", async () => {
 		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
 			const url = String(input);
 			if (url.includes("v2_labs")) {
@@ -33,7 +54,11 @@ describe("public reference-data routes", () => {
 
 		for (const response of [organisations, benchmarks, providerHeader, sources]) {
 			expect(response.status).toBe(200);
-			expect(response.headers.get("cloudflare-cdn-cache-control")).toBe("public, max-age=86400, stale-while-revalidate=604800");
+			expect(response.headers.get("cloudflare-cdn-cache-control")).toBe(
+				response === providerHeader || response === sources
+					? "public, max-age=900"
+					: "public, max-age=86400, stale-while-revalidate=604800",
+			);
 		}
 		await expect(organisations.json()).resolves.toMatchObject({ organisations: [{ organisation_id: "openai" }] });
 		await expect(benchmarks.json()).resolves.toMatchObject({ benchmarks: [{ benchmark_id: "mmlu" }] });
@@ -182,7 +207,7 @@ describe("public reference-data routes", () => {
 	it("reuses the compact database-backed catalogue for country models", async () => {
 		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
 			const url = String(input);
-			if (url.includes("get_public_models_page_rows")) {
+			if (url.includes("get_public_models_page_payload")) {
 				return new Response(JSON.stringify([{
 					model_id: "openai/gpt-test",
 					name: "GPT Test",
@@ -195,7 +220,7 @@ describe("public reference-data routes", () => {
 					gateway_execution_regions: ["us"],
 				}]), { status: 200 });
 			}
-			if (url.includes("get_monitor_model_rows")) {
+			if (url.includes("get_public_monitor_rows_payload")) {
 				return new Response(JSON.stringify([{
 					model_id: "openai/gpt-test",
 					api_model_id: "gpt-test",

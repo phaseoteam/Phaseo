@@ -103,7 +103,7 @@ export const METHODOLOGY_ENTRIES: MethodologyEntry[] = [
 				paragraphs: [
 					"Time to first token (TTFT) is measured from the gateway receiving a request to the first content-bearing generated output delivered by a streaming response. Provider TTFT starts at the selected provider dispatch. Metadata-only SSE frames do not stop either clock, and TTFT is not reported for non-streaming responses.",
 					"Provider duration runs from selected provider dispatch to the terminal response. Gateway end-to-end duration runs from gateway request start to completion. Phaseo overhead is their non-negative difference.",
-					"Effective throughput divides all output tokens by the full provider duration. Output speed excludes TTFT and divides the remaining output tokens by the remaining generation interval. TPOT and ITL are request-level averages over that same post-first-token interval.",
+					"Throughput is output tokens divided by the full provider duration in seconds. Output speed excludes TTFT and divides the remaining output tokens by the remaining generation interval. TPOT and ITL are request-level averages over that same post-first-token interval.",
 				],
 			},
 			{

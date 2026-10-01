@@ -1,4 +1,5 @@
 import type { StatsigProfile } from "@/lib/statsig/shared";
+import type { DisplayPreferences } from "@/lib/displayPreferences";
 
 export type InternalAuthStatus = {
 	isAdmin: boolean;
@@ -17,8 +18,11 @@ export type InternalAuthHeaderData = {
 	isLoggedIn: boolean;
 	user?: InternalAuthHeaderUser;
 	teams: Array<{ id: string; name: string }>;
+	teamsHasMore?: boolean;
+	displayPreferences?: DisplayPreferences;
 	currentTeamId?: string;
 	userRole?: string;
+	providerMode?: boolean;
 };
 
 export type InternalAuthStatsigData = {

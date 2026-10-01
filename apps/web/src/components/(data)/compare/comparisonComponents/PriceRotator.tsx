@@ -14,15 +14,11 @@ function usePrefersReducedMotion(): boolean {
 		update();
 
 		// Safari still uses addListener/removeListener in some versions.
-		// eslint-disable-next-line deprecation/deprecation
 		if (mq.addEventListener) mq.addEventListener("change", update);
-		// eslint-disable-next-line deprecation/deprecation
 		else mq.addListener(update);
 
 		return () => {
-			// eslint-disable-next-line deprecation/deprecation
 			if (mq.removeEventListener) mq.removeEventListener("change", update);
-			// eslint-disable-next-line deprecation/deprecation
 			else mq.removeListener(update);
 		};
 	}, []);

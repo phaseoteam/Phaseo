@@ -177,14 +177,29 @@ export interface ChatCompletionsRequest {
     };
   };
   reasoning?: {
-    effort?: "none" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max";
+    effort?:
+      | "none"
+      | "instant"
+      | "minimal"
+      | "low"
+      | "medium"
+      | "high"
+      | "xhigh"
+      | "max";
     enabled?: boolean;
     max_tokens?: number;
     mode?: "standard" | "pro";
     summary?: "auto" | "concise" | "detailed";
   };
   reasoning_effort?:
-    "none" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max";
+    | "none"
+    | "instant"
+    | "minimal"
+    | "low"
+    | "medium"
+    | "high"
+    | "xhigh"
+    | "max";
   response_format?:
     | string
     | {
@@ -193,7 +208,14 @@ export interface ChatCompletionsRequest {
       };
   safety_identifier?: string | null;
   seed?: number;
-  service_tier?: "standard" | "fast" | "priority" | "flex" | "batch";
+  service_tier?:
+    | "standard"
+    | "default"
+    | "fast"
+    | "ultrafast"
+    | "priority"
+    | "flex"
+    | "batch";
   session_id?: string;
   stop?: string | string[];
   store?: boolean;
@@ -216,6 +238,7 @@ export interface ChatCompletionsRequest {
     | {};
   tools?: (
     | {
+        async?: boolean;
         function: {
           description?: string;
           name: string;
@@ -232,13 +255,33 @@ export interface ChatCompletionsRequest {
         type: "phaseo:datetime" | "gateway:datetime";
       }
     | {
+        engine?:
+          | "auto"
+          | "native"
+          | "exa"
+          | "firecrawl"
+          | "parallel"
+          | "perplexity"
+          | "tinyfish";
         include_highlights?: boolean;
         include_text?: boolean;
+        language?: string;
         max_results?: number;
+        page?: number;
         parameters?: {
+          engine?:
+            | "auto"
+            | "native"
+            | "exa"
+            | "firecrawl"
+            | "parallel"
+            | "perplexity"
+            | "tinyfish";
           include_highlights?: boolean;
           include_text?: boolean;
+          language?: string;
           max_results?: number;
+          page?: number;
         };
         type: "phaseo:web_search" | "gateway:web_search";
       }

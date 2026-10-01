@@ -2,9 +2,10 @@
 
 import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
 import Link from "next/link";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
 import { AlertCircle, CheckCircle2, History, RefreshCw, ShieldAlert } from "lucide-react";
 import { toast } from "sonner";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
 	AlertDialog,
@@ -19,7 +20,6 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import {
 	fetchCacheControlState,
@@ -54,15 +54,9 @@ const TARGET_LABEL_KEYS: Record<string, string> = {
 	apps: "apps",
 };
 
-function formatTimestamp(value: string, locale: string) {
-	return new Intl.DateTimeFormat(locale, {
-		dateStyle: "medium",
-		timeStyle: "short",
-	}).format(new Date(value));
-}
-
 export default function CacheOpsClient() {
-	const locale = useLocale();
+	const format = useDisplayFormatters();
+	const formatTimestamp = format.dateTime;
 	const t = useTranslations("Product.internalTools.cacheOps");
 	const tInternal = useTranslations("Product.internalTools");
 	const tScopes = useTranslations("Product.developerMenu.scopes");
@@ -70,7 +64,6 @@ export default function CacheOpsClient() {
 	const [error, setError] = useState<string | null>(null);
 	const [targets, setTargets] = useState<Record<string, string>>({});
 	const [pendingPurge, setPendingPurge] = useState<PendingPurge | null>(null);
-	const [bumpBrowserGeneration, setBumpBrowserGeneration] = useState(true);
 	const [destructiveConfirmation, setDestructiveConfirmation] = useState("");
 	const [lastResult, setLastResult] = useState<CachePurgeResult | null>(null);
 	const [isPending, startTransition] = useTransition();
@@ -105,7 +98,6 @@ export default function CacheOpsClient() {
 		return () => window.clearTimeout(timeoutId);
 	}, [loadState]);
 
-	const generation = state?.generations.find((item) => item.scope === "search");
 	const quickScopes = useMemo(
 		() => state?.scopes.filter((scope) => !TARGET_LABEL_KEYS[scope.id] && scope.id !== "all-public") ?? [],
 		[state],
@@ -122,7 +114,6 @@ export default function CacheOpsClient() {
 			toast.error(t("targetRequired", { target: targetLabel(scope.id) }));
 			return;
 		}
-		setBumpBrowserGeneration(scope.affectsSearch);
 		setDestructiveConfirmation("");
 		setPendingPurge({ scope, targetId });
 	}
@@ -135,7 +126,6 @@ export default function CacheOpsClient() {
 				const result = await purgeCacheScopeAction({
 					scope: scope.id as Parameters<typeof purgeCacheScopeAction>[0]["scope"],
 					targetId: targetId || undefined,
-					bumpBrowserGeneration,
 				});
 				setLastResult(result);
 				setPendingPurge(null);
@@ -152,10 +142,7 @@ export default function CacheOpsClient() {
 		<div className="container mx-auto max-w-6xl space-y-6 py-8">
 			<div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
 				<div className="space-y-1">
-					<div className="flex items-center gap-2">
-						<h1 className="text-2xl font-semibold">{tInternal("cacheControlCentreTitle")}</h1>
-						{generation ? <Badge variant="secondary">{t("generationUpdated", { generation: generation.generation })}</Badge> : null}
-					</div>
+					<h1 className="text-2xl font-semibold">{tInternal("cacheControlCentreTitle")}</h1>
 					<p className="max-w-2xl text-sm text-muted-foreground">
 						{tInternal("cacheControlCentreDescription")}
 					</p>
@@ -189,9 +176,7 @@ export default function CacheOpsClient() {
 					<CheckCircle2 className="size-4 text-emerald-600" />
 					<AlertTitle>{t("purgeCompletedTitle")}</AlertTitle>
 					<AlertDescription>
-						{t("completedSummary", { count: lastResult.tags.length, date: formatTimestamp(lastResult.purgedAt, locale) })}
-						{lastResult.generation !== null ? ` ${t("generationUpdated", { generation: lastResult.generation })}` : ""}
-						{lastResult.generationWarning ? ` ${t("generationWarning")}` : ""}
+						{t("completedSummary", { count: lastResult.tags.length, date: formatTimestamp(lastResult.purgedAt) })}
 					</AlertDescription>
 				</Alert>
 			) : null}
@@ -274,7 +259,7 @@ export default function CacheOpsClient() {
 									</div>
 									<div className="flex items-center gap-2 text-muted-foreground">
 										<Badge variant={event.purge_succeeded ? "secondary" : "destructive"}>{event.purge_succeeded ? t("eventSucceeded") : t("eventFailed")}</Badge>
-										<span>{formatTimestamp(event.created_at, locale)}</span>
+										<span>{formatTimestamp(event.created_at)}</span>
 									</div>
 								</div>
 							))}
@@ -288,17 +273,9 @@ export default function CacheOpsClient() {
 					<AlertDialogHeader>
 						<AlertDialogTitle>{t("confirmTitle", { scope: pendingPurge ? scopeLabel(pendingPurge.scope.id) : "" })}</AlertDialogTitle>
 						<AlertDialogDescription>
-							{pendingPurge?.targetId
-								? t("confirmDescriptionWithTarget", { count: pendingPurge.scope.tagCount, target: pendingPurge.targetId })
-								: t("confirmDescription", { count: pendingPurge?.scope.tagCount ?? 0 })}
+							{pendingPurge?.targetId ? t("confirmDescriptionWithTarget", { count: pendingPurge.scope.tagCount + 1, target: pendingPurge.targetId }) : t("confirmDescription", { count: pendingPurge?.scope.tagCount ?? 0 })}
 						</AlertDialogDescription>
 					</AlertDialogHeader>
-					{pendingPurge?.scope.affectsSearch ? (
-						<label className="flex items-start gap-3 rounded-xl border p-3 text-sm">
-							<Checkbox checked={bumpBrowserGeneration} onCheckedChange={(checked) => setBumpBrowserGeneration(checked === true)} />
-							<span><span className="font-medium">{t("refreshTabs")}</span><br /><span className="text-muted-foreground">{t("refreshTabsDescription")}</span></span>
-						</label>
-					) : null}
 					{pendingPurge?.scope.danger === "high" ? (
 						<div className="space-y-2">
 							<label className="text-sm font-medium" htmlFor="purge-confirmation">{t("typePurge")}</label>

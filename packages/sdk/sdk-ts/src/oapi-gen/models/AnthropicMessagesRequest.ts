@@ -110,6 +110,14 @@ export interface AnthropicMessagesRequest {
     mode?: "standard" | "pro";
     summary?: "auto" | "concise" | "detailed";
   };
+  service_tier?:
+    | "standard"
+    | "default"
+    | "fast"
+    | "ultrafast"
+    | "priority"
+    | "flex"
+    | "batch";
   session_id?: string;
   stop_sequences?: string[];
   stream?: boolean;
@@ -129,6 +137,7 @@ export interface AnthropicMessagesRequest {
   tool_choice?: {} | string;
   tools?: (
     | {
+        async?: boolean;
         description?: string;
         input_schema?: {};
         name: string;
@@ -141,13 +150,33 @@ export interface AnthropicMessagesRequest {
         type: "phaseo:datetime" | "gateway:datetime";
       }
     | {
+        engine?:
+          | "auto"
+          | "native"
+          | "exa"
+          | "firecrawl"
+          | "parallel"
+          | "perplexity"
+          | "tinyfish";
         include_highlights?: boolean;
         include_text?: boolean;
+        language?: string;
         max_results?: number;
+        page?: number;
         parameters?: {
+          engine?:
+            | "auto"
+            | "native"
+            | "exa"
+            | "firecrawl"
+            | "parallel"
+            | "perplexity"
+            | "tinyfish";
           include_highlights?: boolean;
           include_text?: boolean;
+          language?: string;
           max_results?: number;
+          page?: number;
         };
         type: "phaseo:web_search" | "gateway:web_search";
       }

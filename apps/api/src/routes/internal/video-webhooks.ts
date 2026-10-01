@@ -8,6 +8,7 @@ import { dispatchBackground, ensureRuntimeForBackground } from "@/runtime/env";
 import { insertProviderEvent } from "@core/provider-events";
 import { BodyLimitExceededError, readStreamTextWithLimit } from "@core/bounded-stream";
 import { json, withRuntime } from "@/routes/utils";
+import { handleDeepinfraVideoWebhook } from "./deepinfra-video-webhook";
 
 import {
 	ALIBABA_PROVIDER_ID,
@@ -25,6 +26,12 @@ import {
 
 export const internalVideoWebhookRoutes = new Hono<Env>();
 const MAX_PROVIDER_VIDEO_WEBHOOK_BODY_BYTES = 1024 * 1024;
+
+internalVideoWebhookRoutes.post("/deepinfra", withRuntime(async req => {
+	const rawBody = await readVideoWebhookBody(req);
+	if (rawBody == null) return json({ error: "payload_too_large" }, 413, { "Cache-Control": "no-store" });
+	return handleDeepinfraVideoWebhook(req, rawBody);
+}));
 
 async function readVideoWebhookBody(req: Request): Promise<string | null> {
 	const declaredLength = Number(req.headers.get("content-length") ?? 0);

@@ -9,6 +9,23 @@ vi.mock("../pricing/persist", () => ({
 import { recordUsageAndChargeOnce } from "./charge";
 
 describe("recordUsageAndChargeOnce", () => {
+    it("passes the server-owned admission balance into settlement", async () => {
+        const ctx: any = { requestId: "r", billingRequestId: "bill", workspaceId: "ws", meta: {},
+            gating: { credit: { balanceNanos: 100_000_000_000_000 } }, rawBody: { creditSnapshotBalanceNanos: 1 } };
+        await recordUsageAndChargeOnce({ ctx, costNanos: 10, endpoint: "responses" });
+        expect(recordUsageAndChargeMock).toHaveBeenCalledWith({ requestId: "bill", workspaceId: "ws", cost_nanos: 10,
+            creditSnapshotBalanceNanos: 100_000_000_000_000 });
+    });
+    it("does not debit or invalidate until this request's credit snapshot is persisted", async () => {
+        let finish!: () => void;
+        const write = new Promise<void>(resolve => { finish = resolve; });
+        const ctx: any = { requestId: "r", billingRequestId: "bill", workspaceId: "ws", meta: {}, creditCacheWrites: [write] };
+        const charge = recordUsageAndChargeOnce({ ctx, costNanos: 10, endpoint: "responses" });
+        await Promise.resolve();
+        expect(recordUsageAndChargeMock).not.toHaveBeenCalled();
+        finish(); await charge;
+        expect(recordUsageAndChargeMock).toHaveBeenCalledOnce();
+    });
 	beforeEach(() => {
 		recordUsageAndChargeMock.mockClear();
 	});
@@ -38,6 +55,7 @@ describe("recordUsageAndChargeOnce", () => {
 			requestId: ctx.billingRequestId,
 			workspaceId: "team_charge",
 			cost_nanos: 12345,
+			creditSnapshotBalanceNanos: null,
 		});
 		expect(recordUsageAndChargeMock.mock.calls[0]?.[0]?.requestId).not.toBe(ctx.requestId);
 	});

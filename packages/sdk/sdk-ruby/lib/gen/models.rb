@@ -91,6 +91,8 @@ module Phaseo
     #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] reasoning
     #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] service_tier
+    #   @return [String, nil]
     # @!attribute [rw] session_id
     #   @return [String, nil]
     # @!attribute [rw] stop_sequences
@@ -111,7 +113,7 @@ module Phaseo
     #   @return [Float, nil]
     # @!attribute [rw] usage
     #   @return [Boolean, nil]
-    AnthropicMessagesRequest = Struct.new(:debug, :echo_upstream_request, :max_tokens, :messages, :meta, :metadata, :model, :provider, :provider_options, :reasoning, :session_id, :stop_sequences, :stream, :system, :temperature, :tool_choice, :tools, :top_k, :top_p, :usage, keyword_init: true)
+    AnthropicMessagesRequest = Struct.new(:debug, :echo_upstream_request, :max_tokens, :messages, :meta, :metadata, :model, :provider, :provider_options, :reasoning, :service_tier, :session_id, :stop_sequences, :stream, :system, :temperature, :tool_choice, :tools, :top_k, :top_p, :usage, keyword_init: true)
     # @!attribute [rw] content
     #   @return [Array<Hash{String => Object}>, nil]
     # @!attribute [rw] id
@@ -129,13 +131,15 @@ module Phaseo
     # @!attribute [rw] usage
     #   @return [Hash{String => Object}, nil]
     AnthropicMessagesResponse = Struct.new(:content, :id, :model, :role, :stop_reason, :stop_sequence, :type, :usage, keyword_init: true)
+    # @!attribute [rw] async
+    #   @return [Boolean, nil]
     # @!attribute [rw] description
     #   @return [String, nil]
     # @!attribute [rw] input_schema
     #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] name
     #   @return [String]
-    AnthropicTool = Struct.new(:description, :input_schema, :name, keyword_init: true)
+    AnthropicTool = Struct.new(:async, :description, :input_schema, :name, keyword_init: true)
     # @!attribute [rw] input_tokens
     #   @return [Integer, nil]
     # @!attribute [rw] output_tokens
@@ -424,6 +428,8 @@ module Phaseo
     # @!attribute [rw] type
     #   @return [String]
     AudioContentPart = Struct.new(:input_audio, :type, keyword_init: true)
+    # @!attribute [rw] config
+    #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] format
     #   @return [String, nil]
     # @!attribute [rw] input
@@ -432,9 +438,11 @@ module Phaseo
     #   @return [String]
     # @!attribute [rw] provider
     #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] speed
+    #   @return [Float, nil]
     # @!attribute [rw] voice
     #   @return [String, nil]
-    AudioSpeechRequest = Struct.new(:format, :input, :model, :provider, :voice, keyword_init: true)
+    AudioSpeechRequest = Struct.new(:config, :format, :input, :model, :provider, :speed, :voice, keyword_init: true)
     # @!attribute [rw] audio_b64
     #   @return [String, nil]
     # @!attribute [rw] audio_url
@@ -603,6 +611,8 @@ module Phaseo
     #   @return [Array<String>, nil]
     # @!attribute [rw] provider
     #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] provider_options
+    #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] requests
     #   @return [Array<Hash{String => Object}>, nil]
     # @!attribute [rw] session_id
@@ -615,7 +625,7 @@ module Phaseo
     #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] webhook_endpoint_id
     #   @return [String, nil]
-    BatchRequest = Struct.new(:completion_window, :debug, :endpoint, :input_file_id, :items, :max_tokens, :metadata, :model, :prompts, :provider, :requests, :session_id, :system, :temperature, :webhook, :webhook_endpoint_id, keyword_init: true)
+    BatchRequest = Struct.new(:completion_window, :debug, :endpoint, :input_file_id, :items, :max_tokens, :metadata, :model, :prompts, :provider, :provider_options, :requests, :session_id, :system, :temperature, :webhook, :webhook_endpoint_id, keyword_init: true)
     # @!attribute [rw] completed
     #   @return [Integer, nil]
     # @!attribute [rw] failed
@@ -739,6 +749,8 @@ module Phaseo
     #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] request_id
     #   @return [String, nil]
+    # @!attribute [rw] results_url
+    #   @return [String, nil]
     # @!attribute [rw] session_id
     #   @return [String, nil]
     # @!attribute [rw] status
@@ -749,7 +761,7 @@ module Phaseo
     #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] websocket_url
     #   @return [String, nil]
-    BatchResponse = Struct.new(:billing, :cancel_url, :cancelled_at, :cancelling_at, :completed_at, :completion_window, :created_at, :endpoint, :error_file_id, :errors, :expired_at, :expires_at, :failed_at, :finalized_at, :finalizing_at, :id, :in_progress_at, :input_file_id, :last_webhook_dispatched_at, :last_webhook_progress, :last_webhook_progress_at, :lifecycle_status, :metadata, :native_batch_id, :next_webhook_retry_at, :object, :output_file_id, :polling_url, :pricing_lines, :progress, :provider, :request_counts, :request_id, :session_id, :status, :usage, :webhook, :websocket_url, keyword_init: true)
+    BatchResponse = Struct.new(:billing, :cancel_url, :cancelled_at, :cancelling_at, :completed_at, :completion_window, :created_at, :endpoint, :error_file_id, :errors, :expired_at, :expires_at, :failed_at, :finalized_at, :finalizing_at, :id, :in_progress_at, :input_file_id, :last_webhook_dispatched_at, :last_webhook_progress, :last_webhook_progress_at, :lifecycle_status, :metadata, :native_batch_id, :next_webhook_retry_at, :object, :output_file_id, :polling_url, :pricing_lines, :progress, :provider, :request_counts, :request_id, :results_url, :session_id, :status, :usage, :webhook, :websocket_url, keyword_init: true)
     BenchmarkId = Object
     # @!attribute [rw] scope
     #   @return [String, nil]
@@ -1028,6 +1040,65 @@ module Phaseo
     # @!attribute [rw] trace_level
     #   @return [String, nil]
     DebugOptions = Struct.new(:enabled, :return_upstream_request, :return_upstream_response, :trace, :trace_level, keyword_init: true)
+    # @!attribute [rw] criteria
+    #   @return [Hash{String => Object}]
+    # @!attribute [rw] instructions
+    #   @return [String, Hash{String => Object}, Array<Object>]
+    # @!attribute [rw] type
+    #   @return [String]
+    DecisionChoiceQuestion = Struct.new(:criteria, :instructions, :type, keyword_init: true)
+    DecisionInstructions = Object
+    # @!attribute [rw] criteria
+    #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] instructions
+    #   @return [String, Hash{String => Object}, Array<Object>]
+    # @!attribute [rw] type
+    #   @return [String]
+    DecisionNoulQuestion = Struct.new(:criteria, :instructions, :type, keyword_init: true)
+    # @!attribute [rw] criteria
+    #   @return [Array<String>]
+    # @!attribute [rw] instructions
+    #   @return [String, Hash{String => Object}, Array<Object>]
+    # @!attribute [rw] type
+    #   @return [String]
+    DecisionScoreQuestion = Struct.new(:criteria, :instructions, :type, keyword_init: true)
+    # @!attribute [rw] debug
+    #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] echo_upstream_request
+    #   @return [Boolean, nil]
+    # @!attribute [rw] meta
+    #   @return [Boolean, nil]
+    # @!attribute [rw] metadata
+    #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] model
+    #   @return [String]
+    # @!attribute [rw] provider
+    #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] questions
+    #   @return [Hash{String => Object}]
+    # @!attribute [rw] routing
+    #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] state
+    #   @return [String, Hash{String => Object}, Array<Object>]
+    DecisionsRequest = Struct.new(:debug, :echo_upstream_request, :meta, :metadata, :model, :provider, :questions, :routing, :state, keyword_init: true)
+    # @!attribute [rw] answers
+    #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] meta
+    #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] model
+    #   @return [String, nil]
+    # @!attribute [rw] request_id
+    #   @return [String, nil]
+    # @!attribute [rw] usage
+    #   @return [Hash{String => Object}, nil]
+    DecisionsResponse = Struct.new(:answers, :meta, :model, :request_id, :usage, keyword_init: true)
+    # @!attribute [rw] input_tokens
+    #   @return [Integer, nil]
+    # @!attribute [rw] output_tokens
+    #   @return [Integer, nil]
+    # @!attribute [rw] total_tokens
+    #   @return [Integer, nil]
+    DecisionsUsage = Struct.new(:input_tokens, :output_tokens, :total_tokens, keyword_init: true)
     # @!attribute [rw] deleted
     #   @return [String]
     DeletedResponse = Struct.new(:deleted, keyword_init: true)
@@ -1360,11 +1431,13 @@ module Phaseo
     # @!attribute [rw] purpose
     #   @return [String]
     FileUploadRequest = Struct.new(:file, :purpose, keyword_init: true)
+    # @!attribute [rw] async
+    #   @return [Boolean, nil]
     # @!attribute [rw] function
     #   @return [Hash{String => Object}]
     # @!attribute [rw] type
     #   @return [String]
-    FunctionToolDefinition = Struct.new(:function, :type, keyword_init: true)
+    FunctionToolDefinition = Struct.new(:async, :function, :type, keyword_init: true)
     # @!attribute [rw] parameters
     #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] type
@@ -1697,17 +1770,23 @@ module Phaseo
     # @!attribute [rw] type
     #   @return [String]
     GatewayWebFetchToolDefinition = Struct.new(:max_chars, :parameters, :type, keyword_init: true)
+    # @!attribute [rw] engine
+    #   @return [String, nil]
     # @!attribute [rw] include_highlights
     #   @return [Boolean, nil]
     # @!attribute [rw] include_text
     #   @return [Boolean, nil]
+    # @!attribute [rw] language
+    #   @return [String, nil]
     # @!attribute [rw] max_results
+    #   @return [Integer, nil]
+    # @!attribute [rw] page
     #   @return [Integer, nil]
     # @!attribute [rw] parameters
     #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] type
     #   @return [String]
-    GatewayWebSearchToolDefinition = Struct.new(:include_highlights, :include_text, :max_results, :parameters, :type, keyword_init: true)
+    GatewayWebSearchToolDefinition = Struct.new(:engine, :include_highlights, :include_text, :language, :max_results, :page, :parameters, :type, keyword_init: true)
     # @!attribute [rw] app_id
     #   @return [String, nil]
     # @!attribute [rw] byok
@@ -2043,35 +2122,27 @@ module Phaseo
     # @!attribute [rw] type
     #   @return [String]
     ImageModerationInput = Struct.new(:image_url, :type, keyword_init: true)
+    # @!attribute [rw] background
+    #   @return [String, nil]
     # @!attribute [rw] image
-    #   @return [String]
+    #   @return [String, Array<String>]
+    # @!attribute [rw] input_fidelity
+    #   @return [String, nil]
     # @!attribute [rw] mask
     #   @return [String, nil]
     # @!attribute [rw] meta
     #   @return [Boolean, nil]
     # @!attribute [rw] model
     #   @return [String]
+    # @!attribute [rw] moderation
+    #   @return [String, nil]
     # @!attribute [rw] n
     #   @return [Integer, nil]
-    # @!attribute [rw] prompt
-    #   @return [String]
-    # @!attribute [rw] provider
-    #   @return [Hash{String => Object}, nil]
-    # @!attribute [rw] size
-    #   @return [String, nil]
-    # @!attribute [rw] usage
-    #   @return [Boolean, nil]
-    # @!attribute [rw] user
-    #   @return [String, nil]
-    ImagesEditRequest = Struct.new(:image, :mask, :meta, :model, :n, :prompt, :provider, :size, :usage, :user, keyword_init: true)
-    # @!attribute [rw] created
+    # @!attribute [rw] output_compression
     #   @return [Integer, nil]
-    # @!attribute [rw] data
-    #   @return [Array<Hash{String => Object}>, nil]
-    ImagesEditResponse = Struct.new(:created, :data, keyword_init: true)
-    # @!attribute [rw] model
-    #   @return [String]
-    # @!attribute [rw] n
+    # @!attribute [rw] output_format
+    #   @return [String, nil]
+    # @!attribute [rw] partial_images
     #   @return [Integer, nil]
     # @!attribute [rw] prompt
     #   @return [String]
@@ -2079,15 +2150,55 @@ module Phaseo
     #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] quality
     #   @return [String, nil]
+    # @!attribute [rw] resolution
+    #   @return [String, nil]
+    # @!attribute [rw] size
+    #   @return [String, nil]
+    # @!attribute [rw] stream
+    #   @return [Boolean, nil]
+    # @!attribute [rw] usage
+    #   @return [Boolean, nil]
+    # @!attribute [rw] user
+    #   @return [String, nil]
+    ImagesEditRequest = Struct.new(:background, :image, :input_fidelity, :mask, :meta, :model, :moderation, :n, :output_compression, :output_format, :partial_images, :prompt, :provider, :quality, :resolution, :size, :stream, :usage, :user, keyword_init: true)
+    # @!attribute [rw] created
+    #   @return [Integer, nil]
+    # @!attribute [rw] data
+    #   @return [Array<Hash{String => Object}>, nil]
+    ImagesEditResponse = Struct.new(:created, :data, keyword_init: true)
+    # @!attribute [rw] background
+    #   @return [String, nil]
+    # @!attribute [rw] model
+    #   @return [String]
+    # @!attribute [rw] moderation
+    #   @return [String, nil]
+    # @!attribute [rw] n
+    #   @return [Integer, nil]
+    # @!attribute [rw] output_compression
+    #   @return [Integer, nil]
+    # @!attribute [rw] output_format
+    #   @return [String, nil]
+    # @!attribute [rw] partial_images
+    #   @return [Integer, nil]
+    # @!attribute [rw] prompt
+    #   @return [String]
+    # @!attribute [rw] provider
+    #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] quality
+    #   @return [String, nil]
+    # @!attribute [rw] resolution
+    #   @return [String, nil]
     # @!attribute [rw] response_format
     #   @return [String, nil]
     # @!attribute [rw] size
     #   @return [String, nil]
+    # @!attribute [rw] stream
+    #   @return [Boolean, nil]
     # @!attribute [rw] style
     #   @return [String, nil]
     # @!attribute [rw] user
     #   @return [String, nil]
-    ImagesGenerationRequest = Struct.new(:model, :n, :prompt, :provider, :quality, :response_format, :size, :style, :user, keyword_init: true)
+    ImagesGenerationRequest = Struct.new(:background, :model, :moderation, :n, :output_compression, :output_format, :partial_images, :prompt, :provider, :quality, :resolution, :response_format, :size, :stream, :style, :user, keyword_init: true)
     # @!attribute [rw] created
     #   @return [Integer, nil]
     # @!attribute [rw] data
@@ -2877,6 +2988,17 @@ module Phaseo
     #   @return [Hash{String => Object}, nil]
     OcrRequest = Struct.new(:debug, :echo_upstream_request, :image, :language, :model, :provider, keyword_init: true)
     OcrResponse = Struct.new(:_unused, keyword_init: true)
+    # @!attribute [rw] effort
+    #   @return [String, nil]
+    # @!attribute [rw] enabled
+    #   @return [Boolean, nil]
+    # @!attribute [rw] max_tokens
+    #   @return [Integer, nil]
+    # @!attribute [rw] mode
+    #   @return [String, nil]
+    # @!attribute [rw] summary
+    #   @return [String, nil]
+    OpenAIReasoningConfig = Struct.new(:effort, :enabled, :max_tokens, :mode, :summary, keyword_init: true)
     OrganisationId = Object
     OrganisationIdList = Object
     ParseBlock = Object
@@ -3140,6 +3262,122 @@ module Phaseo
     #   @return [Hash{String => Object}]
     PresetVersionResponse = Struct.new(:data, keyword_init: true)
     PresetVisibility = Object
+    # @!attribute [rw] base_url
+    #   @return [String]
+    # @!attribute [rw] catalog_model_id
+    #   @return [String, nil]
+    # @!attribute [rw] context_length
+    #   @return [Integer, nil]
+    # @!attribute [rw] created_at
+    #   @return [String, nil]
+    # @!attribute [rw] created_by
+    #   @return [String, nil]
+    # @!attribute [rw] credential_prefix
+    #   @return [String, nil]
+    # @!attribute [rw] credential_suffix
+    #   @return [String, nil]
+    # @!attribute [rw] custom_provider_name
+    #   @return [String, nil]
+    # @!attribute [rw] custom_provider_url
+    #   @return [String, nil]
+    # @!attribute [rw] description
+    #   @return [String, nil]
+    # @!attribute [rw] enabled
+    #   @return [Boolean]
+    # @!attribute [rw] host_provider_id
+    #   @return [String, nil]
+    # @!attribute [rw] id
+    #   @return [String]
+    # @!attribute [rw] input_modalities
+    #   @return [Array<String>, nil]
+    # @!attribute [rw] local_slug
+    #   @return [String, nil]
+    # @!attribute [rw] max_output_tokens
+    #   @return [Integer, nil]
+    # @!attribute [rw] model_id
+    #   @return [String]
+    # @!attribute [rw] name
+    #   @return [String]
+    # @!attribute [rw] output_modalities
+    #   @return [Array<String>, nil]
+    # @!attribute [rw] routing_policy
+    #   @return [String, nil]
+    # @!attribute [rw] supports_responses
+    #   @return [Boolean]
+    # @!attribute [rw] updated_at
+    #   @return [String, nil]
+    # @!attribute [rw] upstream_model_id
+    #   @return [String]
+    # @!attribute [rw] workspace_id
+    #   @return [String]
+    PrivateModel = Struct.new(:base_url, :catalog_model_id, :context_length, :created_at, :created_by, :credential_prefix, :credential_suffix, :custom_provider_name, :custom_provider_url, :description, :enabled, :host_provider_id, :id, :input_modalities, :local_slug, :max_output_tokens, :model_id, :name, :output_modalities, :routing_policy, :supports_responses, :updated_at, :upstream_model_id, :workspace_id, keyword_init: true)
+    # @!attribute [rw] base_url
+    #   @return [String]
+    # @!attribute [rw] context_length
+    #   @return [Integer, nil]
+    # @!attribute [rw] credential
+    #   @return [String]
+    # @!attribute [rw] custom_provider_name
+    #   @return [String, nil]
+    # @!attribute [rw] custom_provider_url
+    #   @return [String, nil]
+    # @!attribute [rw] description
+    #   @return [String, nil]
+    # @!attribute [rw] enabled
+    #   @return [Boolean, nil]
+    # @!attribute [rw] host_provider_id
+    #   @return [String, nil]
+    # @!attribute [rw] max_output_tokens
+    #   @return [Integer, nil]
+    # @!attribute [rw] model_reference
+    #   @return [String]
+    # @!attribute [rw] name
+    #   @return [String]
+    # @!attribute [rw] routing_policy
+    #   @return [String, nil]
+    # @!attribute [rw] supports_responses
+    #   @return [Boolean, nil]
+    # @!attribute [rw] upstream_model_id
+    #   @return [String]
+    PrivateModelCreateRequest = Struct.new(:base_url, :context_length, :credential, :custom_provider_name, :custom_provider_url, :description, :enabled, :host_provider_id, :max_output_tokens, :model_reference, :name, :routing_policy, :supports_responses, :upstream_model_id, keyword_init: true)
+    # @!attribute [rw] deleted
+    #   @return [Boolean]
+    PrivateModelDeleteResponse = Struct.new(:deleted, keyword_init: true)
+    # @!attribute [rw] data
+    #   @return [Array<Hash{String => Object}>]
+    PrivateModelListResponse = Struct.new(:data, keyword_init: true)
+    # @!attribute [rw] data
+    #   @return [Hash{String => Object}]
+    PrivateModelResponse = Struct.new(:data, keyword_init: true)
+    # @!attribute [rw] base_url
+    #   @return [String, nil]
+    # @!attribute [rw] context_length
+    #   @return [Integer, nil]
+    # @!attribute [rw] credential
+    #   @return [String, nil]
+    # @!attribute [rw] custom_provider_name
+    #   @return [String, nil]
+    # @!attribute [rw] custom_provider_url
+    #   @return [String, nil]
+    # @!attribute [rw] description
+    #   @return [String, nil]
+    # @!attribute [rw] enabled
+    #   @return [Boolean, nil]
+    # @!attribute [rw] host_provider_id
+    #   @return [String, nil]
+    # @!attribute [rw] max_output_tokens
+    #   @return [Integer, nil]
+    # @!attribute [rw] model_reference
+    #   @return [String, nil]
+    # @!attribute [rw] name
+    #   @return [String, nil]
+    # @!attribute [rw] routing_policy
+    #   @return [String, nil]
+    # @!attribute [rw] supports_responses
+    #   @return [Boolean, nil]
+    # @!attribute [rw] upstream_model_id
+    #   @return [String, nil]
+    PrivateModelUpdateRequest = Struct.new(:base_url, :context_length, :credential, :custom_provider_name, :custom_provider_url, :description, :enabled, :host_provider_id, :max_output_tokens, :model_reference, :name, :routing_policy, :supports_responses, :upstream_model_id, keyword_init: true)
     # @!attribute [rw] api_provider_id
     #   @return [String, nil]
     # @!attribute [rw] api_provider_name
@@ -3578,6 +3816,65 @@ module Phaseo
     #   @return [String]
     SubagentToolDefinition = Struct.new(:parameters, :type, keyword_init: true)
     SupportedParameterDetails = Struct.new(:_unused, keyword_init: true)
+    # @!attribute [rw] criteria
+    #   @return [Hash{String => Object}]
+    # @!attribute [rw] instructions
+    #   @return [String, Hash{String => Object}, Array<Object>]
+    # @!attribute [rw] type
+    #   @return [String]
+    SystemOneChoiceQuestion = Struct.new(:criteria, :instructions, :type, keyword_init: true)
+    SystemOneInstructions = Object
+    # @!attribute [rw] criteria
+    #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] instructions
+    #   @return [String, Hash{String => Object}, Array<Object>]
+    # @!attribute [rw] type
+    #   @return [String]
+    SystemOneNoulQuestion = Struct.new(:criteria, :instructions, :type, keyword_init: true)
+    # @!attribute [rw] debug
+    #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] echo_upstream_request
+    #   @return [Boolean, nil]
+    # @!attribute [rw] meta
+    #   @return [Boolean, nil]
+    # @!attribute [rw] metadata
+    #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] model
+    #   @return [String]
+    # @!attribute [rw] provider
+    #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] questions
+    #   @return [Hash{String => Object}]
+    # @!attribute [rw] routing
+    #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] state
+    #   @return [String, Hash{String => Object}, Array<Object>]
+    SystemOneRequest = Struct.new(:debug, :echo_upstream_request, :meta, :metadata, :model, :provider, :questions, :routing, :state, keyword_init: true)
+    # @!attribute [rw] answers
+    #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] meta
+    #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] model
+    #   @return [String, nil]
+    # @!attribute [rw] request_id
+    #   @return [String, nil]
+    # @!attribute [rw] usage
+    #   @return [Hash{String => Object}, nil]
+    SystemOneResponse = Struct.new(:answers, :meta, :model, :request_id, :usage, keyword_init: true)
+    # @!attribute [rw] criteria
+    #   @return [Array<String>]
+    # @!attribute [rw] instructions
+    #   @return [String, Hash{String => Object}, Array<Object>]
+    # @!attribute [rw] type
+    #   @return [String]
+    SystemOneScoreQuestion = Struct.new(:criteria, :instructions, :type, keyword_init: true)
+    # @!attribute [rw] input_tokens
+    #   @return [Integer, nil]
+    # @!attribute [rw] output_tokens
+    #   @return [Integer, nil]
+    # @!attribute [rw] total_tokens
+    #   @return [Integer, nil]
+    SystemOneUsage = Struct.new(:input_tokens, :output_tokens, :total_tokens, keyword_init: true)
     # @!attribute [rw] text
     #   @return [String]
     # @!attribute [rw] type
@@ -3667,6 +3964,8 @@ module Phaseo
     #   @return [Integer, nil]
     # @!attribute [rw] enhance_prompt
     #   @return [Boolean, nil]
+    # @!attribute [rw] frame_images
+    #   @return [Array<Hash{String => Object}>, nil]
     # @!attribute [rw] generate_audio
     #   @return [Boolean, nil]
     # @!attribute [rw] input_audio_duration
@@ -3687,6 +3986,8 @@ module Phaseo
     #   @return [String]
     # @!attribute [rw] provider
     #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] provider_options
+    #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] provider_params
     #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] resize_mode
@@ -3701,7 +4002,7 @@ module Phaseo
     #   @return [String, nil]
     # @!attribute [rw] webhook
     #   @return [Hash{String => Object}, nil]
-    VideoGenerationRequest = Struct.new(:aspect_ratio, :compression_quality, :duration, :enhance_prompt, :generate_audio, :input_audio_duration, :input_references, :input_video_duration, :model, :negative_prompt, :output, :person_generation, :prompt, :provider, :provider_params, :resize_mode, :resolution, :sample_count, :seed, :size, :webhook, keyword_init: true)
+    VideoGenerationRequest = Struct.new(:aspect_ratio, :compression_quality, :duration, :enhance_prompt, :frame_images, :generate_audio, :input_audio_duration, :input_references, :input_video_duration, :model, :negative_prompt, :output, :person_generation, :prompt, :provider, :provider_options, :provider_params, :resize_mode, :resolution, :sample_count, :seed, :size, :webhook, keyword_init: true)
     # @!attribute [rw] asset
     #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] audio
@@ -3879,6 +4180,7 @@ module Phaseo
     # @!attribute [rw] object
     #   @return [String]
     WebhookEndpointDeleteResponse = Struct.new(:deleted, :id, :object, keyword_init: true)
+    WebhookEndpointEvent = Object
     # @!attribute [rw] events
     #   @return [Array<String>, nil]
     # @!attribute [rw] name
@@ -3916,6 +4218,17 @@ module Phaseo
     # @!attribute [rw] workspaceId
     #   @return [String]
     WebhookEndpointSecretResponse = Struct.new(:createdAt, :createdBy, :deletedAt, :events, :hasSecret, :id, :name, :signing_secret, :status, :updatedAt, :url, :workspaceId, keyword_init: true)
+    # @!attribute [rw] error
+    #   @return [String, nil]
+    # @!attribute [rw] event_id
+    #   @return [String]
+    # @!attribute [rw] ok
+    #   @return [Boolean]
+    # @!attribute [rw] response_body_preview
+    #   @return [String, nil]
+    # @!attribute [rw] status_code
+    #   @return [Integer, nil]
+    WebhookEndpointTestResponse = Struct.new(:error, :event_id, :ok, :response_body_preview, :status_code, keyword_init: true)
     # @!attribute [rw] events
     #   @return [Array<String>, nil]
     # @!attribute [rw] name
@@ -4113,9 +4426,13 @@ module Phaseo
     #   @return [Integer, nil]
     # @!attribute [rw] enabled
     #   @return [Boolean]
+    # @!attribute [rw] mfa_bypass_acknowledged
+    #   @return [Boolean, nil]
+    # @!attribute [rw] mfa_bypass_phrase
+    #   @return [String, nil]
     # @!attribute [rw] payment_method_id
     #   @return [String, nil]
-    WorkspaceAutoTopUpUpdate = Struct.new(:amount_nanos, :balance_threshold_nanos, :enabled, :payment_method_id, keyword_init: true)
+    WorkspaceAutoTopUpUpdate = Struct.new(:amount_nanos, :balance_threshold_nanos, :enabled, :mfa_bypass_acknowledged, :mfa_bypass_phrase, :payment_method_id, keyword_init: true)
     # @!attribute [rw] created_at
     #   @return [String]
     # @!attribute [rw] created_by

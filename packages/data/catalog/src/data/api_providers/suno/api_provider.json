@@ -27,17 +27,17 @@
   "sources": [{
     "kind": "documentation",
     "url": "https://platform.suno.com/",
-    "accessed_at": "2026-08-24T00:00:00Z",
+    "accessed_at": "2026-09-09T00:00:00Z",
     "notes": "Official authenticated Suno API account portal; the public login page identifies itself as Suno Platform but does not expose endpoint, model-ID, or API-pricing documentation."
   }, {
     "kind": "provider_docs",
     "url": "https://suno.com/pricing",
-    "accessed_at": "2026-08-24T00:00:00Z",
-    "notes": "Official consumer-plan page identifies the currently offered music models, including v5.5; subscription credits are not treated as an API price schedule."
+    "accessed_at": "2026-09-09T00:00:00Z",
+    "notes": "Official consumer-plan page identifies Suno's current music models; subscription credits are not treated as an API price schedule."
   }],
   "verification": {
     "status": "partial",
-    "checked_at": "2026-08-24T00:00:00Z",
-    "notes": "Official API availability is verified only at the account-portal level. Former sunoapi.org identifiers remain disabled historical third-party records; no official route, model identifier, or structured API price is asserted."
+    "checked_at": "2026-09-09T00:00:00Z",
+    "notes": "Official API availability is verified only at the account-portal level. The v6 announcement confirms consumer models but publishes no official route, model identifier, or structured API price; former sunoapi.org identifiers remain disabled historical records."
   }
 }

@@ -9,7 +9,7 @@ Use `phaseo:web_search` when the model needs current or source-backed informatio
 Phaseo returns URLs, titles, snippets, highlights, and optional page text to the model so it can write a grounded response.
 
 <Note>
-Google native web search is not enabled in Phaseo server tools yet. Use managed search or provider-native search on supported OpenAI and Anthropic routes.
+TinyFish Search is available as an optional managed engine. Provider-native search remains available through `engine: "native"` on supported routes.
 </Note>
 
 ## How it works
@@ -58,7 +58,7 @@ curl https://api.phaseo.app/v1/chat/completions \
 
 | Parameter | Type | Default | Description |
 | --- | --- | --- | --- |
-| `engine` | string | `exa` | Search engine: `auto`, `native`, `exa`, `parallel`, `firecrawl`, or `perplexity`. |
+| `engine` | string | `exa` | Search engine: `auto`, `native`, `exa`, `parallel`, `firecrawl`, `perplexity`, or `tinyfish`. |
 | `max_results` | integer | `5` | Maximum results returned per search call. |
 | `max_total_results` | integer | `10` | Maximum cumulative results across the server-tool loop. |
 | `max_uses` | integer | `10` | Maximum search calls across the server-tool loop. |
@@ -69,6 +69,8 @@ curl https://api.phaseo.app/v1/chat/completions \
 | `include_highlights` | boolean | `true` | Include engine-provided highlights/snippets when available. |
 | `include_text` | boolean | `false` | Include fuller result text when the engine supports it. |
 | `user_location` | object | none | Optional location hint for engines that support localized search. |
+| `language` | string | none | TinyFish language hint, such as `en`. |
+| `page` | integer | `0` | TinyFish result page, from `0` through `10`. |
 
 ## Engine selection
 
@@ -79,9 +81,30 @@ curl https://api.phaseo.app/v1/chat/completions \
 | `parallel` | Uses Parallel search when configured. |
 | `firecrawl` | Uses Firecrawl search when configured. |
 | `perplexity` | Uses the first-party Perplexity Search API when configured. Supports ranked results, `search_context_size`, regional search from `user_location.country`, and either allowed or excluded domains. |
+| `tinyfish` | Uses TinyFish Search when `TINYFISH_API_KEY` is configured. Supports localized, paginated ranked results and translates `allowed_domains` / `excluded_domains` into search operators. TinyFish Search does not supply full page text; use `phaseo:web_fetch` when fuller content is needed. |
 | `native` | Converts the declaration to a provider-native web-search tool before the upstream model call when the request surface supports it. |
 
 Use `engine: "native"` only in the tool declaration. If a model tries to pass `engine: "native"` inside an already-emitted gateway search call, Phaseo returns a tool error because native tools must be selected before the upstream request is sent.
+
+## TinyFish Search
+
+Enable the engine by configuring `TINYFISH_API_KEY` in your Phaseo gateway runtime secrets, then select it in the tool parameters:
+
+```json
+{
+  "type": "phaseo:web_search",
+  "parameters": {
+    "engine": "tinyfish",
+    "language": "en",
+    "page": 0,
+    "max_results": 5,
+    "allowed_domains": ["phaseo.app", "github.com"],
+    "excluded_domains": ["reddit.com"]
+  }
+}
+```
+
+`language` provides a locale hint and `page` selects a result page from `0` through `10`. TinyFish supports both domain-filter lists; Phaseo converts them into search operators. Results include URLs, titles, and snippets/highlights. Use `phaseo:web_fetch` when the model needs fuller text from a result.
 
 ## Domain filtering
 
@@ -98,7 +121,9 @@ Use `allowed_domains` when the answer must come from a controlled source set:
 
 Use `excluded_domains` when broad web search is allowed but specific domains should be removed from the result set.
 
-Perplexity and Firecrawl accept either `allowed_domains` or `excluded_domains` in a single search call, not both. Perplexity accepts up to 20 domain filters per request and maps excluded domains to its denylist format.
+Perplexity and Firecrawl accept either `allowed_domains` or `excluded_domains` in a single search call, not both. Perplexity accepts up to 20 domain filters per request and maps excluded domains to its denylist format. TinyFish translates both arrays to `site:` and `-site:` operators in the query.
+
+TinyFish Search is free on its published plans, so Phaseo does not add a provider usage charge for `engine: "tinyfish"`; normal Phaseo request and token pricing still applies.
 
 ## Responses API
 

@@ -28,6 +28,10 @@ function toIRSchemaInner(
 	schema: OpenAPIV3.SchemaObject,
 	ctx: SchemaContext
 ): IRSchema {
+	if (isUnconstrainedSchema(schema)) {
+		return { kind: "unknown" };
+	}
+
 	if (schema.enum && schema.enum.length > 0) {
 		return { kind: "enum", values: schema.enum as Array<string | number | boolean | null> };
 	}
@@ -245,4 +249,50 @@ function isRequiredOnlySchema(schema: OpenAPIV3.SchemaObject): boolean {
 		Boolean(schema.oneOf?.length) || Boolean(schema.anyOf?.length) || Boolean(schema.allOf?.length);
 	const hasEnum = Boolean(schema.enum?.length);
 	return hasRequired && !hasType && !hasProperties && !hasAdditionalProperties && !hasCombinators && !hasEnum;
+}
+
+const schemaConstraintKeys = new Set([
+	"$dynamicRef",
+	"$ref",
+	"additionalProperties",
+	"allOf",
+	"anyOf",
+	"const",
+	"contains",
+	"dependentRequired",
+	"dependentSchemas",
+	"else",
+	"enum",
+	"exclusiveMaximum",
+	"exclusiveMinimum",
+	"if",
+	"items",
+	"maxContains",
+	"maximum",
+	"maxItems",
+	"maxLength",
+	"maxProperties",
+	"minContains",
+	"minimum",
+	"minItems",
+	"minLength",
+	"minProperties",
+	"multipleOf",
+	"not",
+	"oneOf",
+	"pattern",
+	"patternProperties",
+	"prefixItems",
+	"properties",
+	"propertyNames",
+	"required",
+	"then",
+	"type",
+	"unevaluatedItems",
+	"unevaluatedProperties",
+	"uniqueItems",
+]);
+
+function isUnconstrainedSchema(schema: OpenAPIV3.SchemaObject): boolean {
+	return Object.keys(schema).every((key) => !schemaConstraintKeys.has(key));
 }

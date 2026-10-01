@@ -82,14 +82,14 @@ export async function fetchModelPricingSources(
 			.or(`effective_to.is.null,effective_to.gte.${new Date(pricingWindow.startMs).toISOString()}`);
 	}
 	const [capabilitiesResult, providersResult, skusResult] = await Promise.all([
-		routeIds.length ? client.from("v2_route_capabilities").select("provider_model_id,capability_id,params,max_input_tokens,max_output_tokens,status,metadata").in("provider_model_id", routeIds) : Promise.resolve({ data: [], error: null }),
+		routeIds.length ? client.from("v2_route_capabilities").select("provider_model_id,capability_id,params,max_input_tokens,max_output_tokens,status,effective_from,effective_to,metadata").in("provider_model_id", routeIds) : Promise.resolve({ data: [], error: null }),
 		providerIds.length ? client.from("v2_providers").select("provider_slug,name,provider_family_slug,offer_label,offer_scope,country_code,status,routing_enabled,residency_mode,default_execution_regions,default_data_regions,zero_data_retention,data_retention_days,prompt_training_policy,data_policy_tier,data_policy_confidence,data_policy_contract_mode,metadata").in("provider_slug", providerIds) : Promise.resolve({ data: [], error: null }),
 		routeIds.length ? skusQuery : Promise.resolve({ data: [], error: null }),
 	]);
 	for (const result of [capabilitiesResult, providersResult, skusResult]) if (result.error) throw result.error;
 	const skuIds = (skusResult.data ?? []).map((row) => id(row.sku_id)).filter(Boolean);
 	const metersResult = skuIds.length
-		? await client.from("v2_pricing_sku_meters").select("sku_meter_id,sku_id,meter_key,unit,unit_quantity,price_nanos,meter_order,metadata").in("sku_id", skuIds)
+		? await client.from("v2_pricing_sku_meters").select("sku_meter_id,sku_id,meter_key,modality,direction,unit,unit_quantity,price_nanos,display_label,display_unit,meter_order,metadata").in("sku_id", skuIds).eq("billable", true)
 		: { data: [], error: null };
 	if (metersResult.error) throw metersResult.error;
 	const providerMap = new Map((providersResult.data ?? []).map((row) => [id(row.provider_slug), row as Row]));
@@ -128,6 +128,8 @@ export async function fetchModelPricingSources(
 				max_input_tokens: capability.max_input_tokens,
 				max_output_tokens: capability.max_output_tokens,
 				status: capability.status,
+				effective_from: capability.effective_from,
+				effective_to: capability.effective_to,
 				data_policy: asRow(capability.metadata)?.data_policy ?? null,
 			})),
 			data_api_providers: id(route.provider_slug) === STEALTH_PROVIDER_IDENTITY ? {
@@ -181,23 +183,29 @@ export async function fetchModelPricingSources(
 		if (!includeExpiredPricing && now >= effectiveTo) return [];
 		const priceNanos = Number(meter.price_nanos);
 		if (!Number.isFinite(priceNanos)) return [];
+		const skuMetadata = asRow(sku.metadata) ?? {};
+		const meterMetadata = asRow(meter.metadata) ?? {};
 		return [{
 			rule_id: meter.sku_meter_id,
 			model_key: `${id(route.provider_slug)}:${id(route.model_slug)}:${id(sku.operation) || "inference"}`,
 			capability_id: sku.operation,
 			pricing_plan: sku.service_tier_slug ?? "standard",
 			meter: meter.meter_key,
+			modality: meter.modality,
+			direction: meter.direction,
+			display_label: meter.display_label,
+			display_unit: meter.display_unit,
 			unit: meter.unit,
 			unit_size: Number(meter.unit_quantity ?? 1),
 			price_per_unit: priceNanos / 1_000_000_000,
 			currency: sku.currency ?? "USD",
-			priority: Number((asRow(meter.metadata) ?? {}).priority ?? meter.meter_order ?? 100),
+			priority: Number(meterMetadata.priority ?? meter.meter_order ?? 100),
 			effective_from: sku.effective_from,
 			effective_to: sku.effective_to,
 			note: null,
-			match: [],
-			billing_timestamp_basis: (asRow(sku.metadata) ?? {}).billing_timestamp_basis ?? "request_start",
-			time_windows: (asRow(sku.metadata) ?? {}).time_windows ?? [],
+			match: skuMetadata.match ?? meterMetadata.match ?? [],
+			billing_timestamp_basis: skuMetadata.billing_timestamp_basis ?? "request_start",
+			time_windows: skuMetadata.time_windows ?? [],
 		}];
 	});
 	return { providerRows, pricingRows };
@@ -332,6 +340,10 @@ export function composeModelPricing(providerRows: Row[], pricingRows: Row[]) {
 			model_key: modelKey,
 			pricing_plan: normalizePlan(row.pricing_plan, modelKey, row.note),
 			meter: id(row.meter),
+			modality: row.modality ?? null,
+			direction: row.direction ?? null,
+			display_label: row.display_label ?? null,
+			display_unit: row.display_unit ?? null,
 			unit: id(row.unit) || "token",
 			unit_size: Number(row.unit_size ?? 1),
 			price_per_unit: Number(row.price_per_unit),

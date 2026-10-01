@@ -15,6 +15,7 @@ import {
 import { getPublicAppPath } from "@/lib/apps/publicAppPath";
 import AppCategoryTags from "@/components/(data)/apps/AppCategoryTags";
 import AppLogo from "@/components/(data)/apps/AppLogo";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 
 const PAGE_SIZE = 20;
 
@@ -39,15 +40,6 @@ const RANGE_OPTIONS: Array<{
 	{ value: "month", labelKey: "thisMonth" },
 ];
 
-function formatCompactNumber(value: number): string {
-	if (!Number.isFinite(value)) return "0";
-	if (value >= 1e12) return `${(value / 1e12).toFixed(1)}T`;
-	if (value >= 1e9) return `${(value / 1e9).toFixed(1)}B`;
-	if (value >= 1e6) return `${(value / 1e6).toFixed(1)}M`;
-	if (value >= 1e3) return `${(value / 1e3).toFixed(1)}K`;
-	return value.toLocaleString();
-}
-
 function getInitial(name: string): string {
 	return name.trim().charAt(0).toUpperCase() || "A";
 }
@@ -69,6 +61,7 @@ export default function TopAppsLeaderboardTable({
 	imageUrlsById: Record<string, string | null>;
 }) {
 	const tUi = useTranslations("Common.ui");
+	const format = useDisplayFormatters();
 	const [range, setRange] = useState<RankingRange>("month");
 	const [page, setPage] = useState(1);
 	const rows = rowsByRange[range];
@@ -159,7 +152,7 @@ export default function TopAppsLeaderboardTable({
 											<AppCategoryTags categoryCsv={app.appCategory} className="mt-1.5" />
 										</div>
 										<p className="pl-2 text-right text-sm font-semibold tabular-nums text-foreground">
-							{formatCompactNumber(app.tokens)} <span className="hidden font-normal text-muted-foreground sm:inline">{tUi("apps.tokens")}</span>
+							{format.number(app.tokens, { maximumFractionDigits: 1 })} <span className="hidden font-normal text-muted-foreground sm:inline">{tUi("apps.tokens")}</span>
 										</p>
 									</Link>
 								);

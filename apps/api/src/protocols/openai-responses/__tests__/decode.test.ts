@@ -64,6 +64,22 @@ describe("decodeOpenAIResponsesRequest", () => {
 			expect.objectContaining({ type: "custom", name: "grammar" }),
 		]);
 	});
+
+	it("preserves async on Responses function and custom tools", () => {
+		const ir = decodeOpenAIResponsesRequest({
+			model: "gpt-6-astra",
+			input: "hello",
+			tools: [
+				{ type: "function", name: "lookup", parameters: { type: "object" }, async: true },
+				{ type: "custom", name: "wait", format: { type: "text" }, async: true },
+			],
+		} as any);
+
+		expect(ir.tools).toEqual([
+			expect.objectContaining({ name: "lookup", async: true }),
+			expect.objectContaining({ type: "custom", name: "wait", async: true }),
+		]);
+	});
 	it("should decode simple string input as user message", () => {
 		const request = {
 			model: "gpt-4",

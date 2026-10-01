@@ -3861,15 +3861,15 @@
     "sources": [
       {
         "kind": "provider_models",
-        "url": null,
-        "accessed_at": "2026-08-12T00:00:00Z",
-        "notes": "Third-party availability observation; direct provider documentation, slug, and official pricing remain to be verified."
+        "url": "https://www.together.ai/pricing",
+        "accessed_at": "2026-09-10T00:00:00Z",
+        "notes": "Together's first-party pricing page publishes DeepSeek V4 Flash 0731 input, cached-input, and output token rates."
       }
     ],
     "verification": {
       "status": "verified",
-      "checked_at": "2026-08-20T00:00:00Z",
-      "notes": "Verified against the current Together serverless model catalogue."
+      "checked_at": "2026-09-10T00:00:00Z",
+      "notes": "Availability verified against Together's serverless model catalogue and pricing verified against Together's first-party pricing page."
     },
     "rate_limits": []
   },

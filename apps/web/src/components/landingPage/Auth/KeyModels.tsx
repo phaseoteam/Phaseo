@@ -9,12 +9,12 @@ export default async function KeyModels() {
 
 	// Default model ids to display on the sign-in page
 	const defaultIds = [
-		"gpt-5-2025-08-07",
-		"claude-sonnet-4-5-20250929",
-		"grok-4-0709",
-		"gemini-2.5-pro",
-		"omni-moderation-2024-09-26",
-		"veo-3.1-generate-preview",
+		"openai/gpt-6-astra",
+		"anthropic/claude-fable-5.1",
+		"spacex-ai/grok-4.6",
+		"google/gemini-3.8-flash",
+		"openai/omni-moderation",
+		"google/veo-3.1-preview",
 	];
 	try {
 		models = await fetchFrontendSignInMainModels(defaultIds);

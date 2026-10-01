@@ -1,0 +1,37 @@
+{
+  "key": "black-forest-labs:black-forest-labs/flux-2-flex:image.edit",
+  "api_provider_id": "black-forest-labs",
+  "provider_slug": "black-forest-labs",
+  "api_model_id": "black-forest-labs/flux-2-flex",
+  "capability_id": "image.edit",
+  "rules": [
+    {
+      "meter": "bfl_credits",
+      "unit": "credit",
+      "unit_size": 1,
+      "price_per_unit": 0.01,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "match": [],
+      "priority": 100,
+      "source": "https://docs.bfl.ai/quick_start/pricing"
+    }
+  ],
+  "regions": [],
+  "service_tiers": [
+    "standard"
+  ],
+  "sources": [
+    {
+      "kind": "pricing",
+      "url": "https://docs.bfl.ai/quick_start/pricing",
+      "accessed_at": "2026-09-07T00:00:00Z",
+      "notes": "One BFL credit equals $0.01. Native settled credit usage includes all image dimensions."
+    }
+  ],
+  "verification": {
+    "status": "verified",
+    "checked_at": "2026-09-07T00:00:00Z",
+    "notes": "Use authoritative credit usage from the native result; do not estimate megapixels as image count."
+  }
+}

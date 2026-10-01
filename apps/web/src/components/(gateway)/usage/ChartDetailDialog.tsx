@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/table";
 import { Download } from "lucide-react";
 import { exportToCSV, exportToPDF } from "./export-utils";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 
 interface ChartDetailDialogProps {
 	open: boolean;
@@ -36,6 +37,7 @@ export default function ChartDetailDialog({
 	metric,
 }: ChartDetailDialogProps) {
 	const t = useTranslations("SettingsUI");
+	const format = useDisplayFormatters();
 	const rows = React.useMemo(() => {
 		return Object.entries(breakdown ?? {})
 			.map(([modelId, data]) => ({
@@ -119,10 +121,10 @@ export default function ChartDetailDialog({
 									<TableRow key={row.model}>
 										<TableCell className="font-medium">{row.model}</TableCell>
 										<TableCell className="text-right font-mono">
-											{row.requests.toLocaleString()}
+											{format.number(row.requests)}
 										</TableCell>
 										<TableCell className="text-right font-mono">
-											{row.tokens.toLocaleString()}
+											{format.number(row.tokens)}
 										</TableCell>
 										<TableCell className="text-right font-mono">${row.cost.toFixed(5)}</TableCell>
 									</TableRow>
@@ -130,10 +132,10 @@ export default function ChartDetailDialog({
 								<TableRow className="bg-muted font-semibold">
 									<TableCell>{t("strings.Total" as never)}</TableCell>
 									<TableCell className="text-right font-mono">
-										{totals.requests.toLocaleString()}
+										{format.number(totals.requests)}
 									</TableCell>
 									<TableCell className="text-right font-mono">
-										{totals.tokens.toLocaleString()}
+										{format.number(totals.tokens)}
 									</TableCell>
 									<TableCell className="text-right font-mono">
 										${totals.cost.toFixed(5)}

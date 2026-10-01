@@ -503,7 +503,7 @@ class GatewayAgentClient:
             if not api_key:
                 raise ValueError("PHASEO_API_KEY is required")
             base_url = options.get("base_url")
-            client = Phaseo(api_key=api_key, base_url=base_url, client_source="phaseo-agent-python", client_source_version="0.2.0") if base_url else Phaseo(api_key=api_key, client_source="phaseo-agent-python", client_source_version="0.2.0")
+            client = Phaseo(api_key=api_key, base_url=base_url, client_source="phaseo-agent-python", client_source_version="0.3.0") if base_url else Phaseo(api_key=api_key, client_source="phaseo-agent-python", client_source_version="0.3.0")
         self._client = client
         self._model = model
         self._preset = preset

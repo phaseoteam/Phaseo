@@ -83,13 +83,14 @@ describe("execute health state", () => {
     it("classifies only provider uptime failures as failures", async () => {
         const health = await import("./health");
 
-		for (const upstreamStatus of [401, 402, 404, 500, 502, 503]) {
+		for (const upstreamStatus of [408, 429, 500, 502, 503]) {
 			expect(health.classifyProviderHealthImpact({ upstreamStatus })).toBe("failure");
 		}
-		for (const upstreamStatus of [400, 403, 413, 429]) {
+		for (const upstreamStatus of [400, 403, 413, 422]) {
 			expect(health.classifyProviderHealthImpact({ upstreamStatus })).toBe("neutral");
 		}
 		expect(health.classifyProviderHealthImpact({ errorCode: "rate_limit_exceeded" })).toBe("neutral");
+		expect(health.classifyProviderHealthImpact({ errorCode: "rate_limit_exceeded", failureOrigin: "provider" })).toBe("failure");
 		expect(health.classifyProviderHealthImpact({ upstreamStatus: 200, finishReason: "error" })).toBe("failure");
 		expect(health.classifyProviderHealthImpact({ upstreamStatus: 200, midStreamError: true })).toBe("failure");
     });

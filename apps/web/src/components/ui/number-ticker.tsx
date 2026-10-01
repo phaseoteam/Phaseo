@@ -3,6 +3,7 @@
 import { useInView, useMotionValue, useSpring } from "motion/react";
 import { ComponentPropsWithoutRef, useEffect, useRef } from "react";
 
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { cn } from "@/lib/utils";
 
 interface NumberTickerProps extends ComponentPropsWithoutRef<"span"> {
@@ -22,6 +23,7 @@ export function NumberTicker({
 	decimalPlaces = 0,
 	...props
 }: NumberTickerProps) {
+	const format = useDisplayFormatters();
 	const ref = useRef<HTMLSpanElement>(null);
 	const motionValue = useMotionValue(
 		direction === "down" ? value : startValue
@@ -45,13 +47,14 @@ export function NumberTicker({
 		() =>
 			springValue.on("change", (latest) => {
 				if (ref.current) {
-					ref.current.textContent = Intl.NumberFormat("en-US", {
+					const factor = 10 ** decimalPlaces;
+					ref.current.textContent = format.number(Math.round(latest * factor) / factor, {
 						minimumFractionDigits: decimalPlaces,
 						maximumFractionDigits: decimalPlaces,
-					}).format(Number(latest.toFixed(decimalPlaces)));
+					});
 				}
 			}),
-		[springValue, decimalPlaces]
+		[springValue, decimalPlaces, format]
 	);
 
 	return (
@@ -63,7 +66,10 @@ export function NumberTicker({
 			)}
 			{...props}
 		>
-			{startValue}
+			{format.number(startValue, {
+				minimumFractionDigits: decimalPlaces,
+				maximumFractionDigits: decimalPlaces,
+			})}
 		</span>
 	);
 }

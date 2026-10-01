@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const runtime = vi.hoisted(() => {
     const store = new Map<string, string>();
+    const privateRows: any[] = [];
 
     const cache = {
         get: vi.fn(async (key: string, type?: "text" | "json" | "arrayBuffer" | "stream") => {
@@ -33,6 +34,10 @@ const runtime = vi.hoisted(() => {
         return { data: [contextPayload], error: null };
     });
     const from = vi.fn((table: string) => {
+        if (table === "workspace_private_models") {
+            const query: any = { select: () => query, eq: () => query, limit: async () => ({ data: structuredClone(privateRows), count: privateRows.length, error: null }), maybeSingle: async () => ({ data: privateRows[0] ?? null, error: null }) };
+            return query;
+        }
         if (table === "workspace_settings") {
             return {
                 select: () => ({
@@ -75,19 +80,27 @@ const runtime = vi.hoisted(() => {
 
     return {
         store,
+        privateRows,
         cache,
         supabase: { rpc, from },
     };
 });
 
 vi.mock("@/runtime/env", () => ({
+    getBindingsIfConfigured: () => null,
+    dispatchBackground: (p: Promise<unknown>) => { void p; },
     getCache: () => runtime.cache as unknown as KVNamespace,
     getSupabaseAdmin: () => runtime.supabase,
+}));
+vi.mock("@pipeline/byok/decrypt", () => ({
+    decryptBYOK: async () => new TextEncoder().encode("private-plaintext-never-cache"),
+    bytesToString: (bytes: Uint8Array) => new TextDecoder().decode(bytes),
 }));
 
 describe("fetchGatewayContext inflight dedupe", () => {
     beforeEach(() => {
         runtime.store.clear();
+        runtime.privateRows.length = 0;
         runtime.cache.get.mockClear();
         runtime.cache.put.mockClear();
         runtime.cache.delete.mockClear();
@@ -122,5 +135,45 @@ describe("fetchGatewayContext inflight dedupe", () => {
         expect(c.workspaceId).toBe("team_inflight");
         expect(a).not.toBe(b);
         expect(b).not.toBe(c);
+    });
+
+    it("caches the base context without private credentials and applies deletion on a cache hit", async () => {
+        runtime.privateRows.push({ id: "private-1", workspace_id: "team_inflight", model_id: "acme/private", base_url: "https://customer.example/v1", upstream_model_id: "v1", supports_responses: true, routing_policy: "preferred", provider_id: "private-model", enc_value: "ciphertext", enc_iv: "iv", enc_tag: "tag", key_version: 1, fingerprint_sha256: "fingerprint" });
+        const { fetchGatewayContext } = await import("./context");
+        const { invalidatePrivateRoutes } = await import("./privateModelCache");
+        const args = { workspaceId: "team_inflight", apiKeyId: "private-key", model: "acme/private", endpoint: "text.generate" };
+        const first = await fetchGatewayContext(args);
+        const second = await fetchGatewayContext(args);
+        expect(second.contextTelemetry?.cacheStatus).toBe("hit");
+        expect(first.providers[0].byokMeta[0].key).toBe("private-plaintext-never-cache");
+        expect(second.providers).toHaveLength(1);
+        expect([...runtime.store.values()].join("\n")).not.toContain("private-plaintext-never-cache");
+        for (const [key, value] of runtime.store) {
+            if (!key.startsWith("gateway:private-routes:")) expect(value).not.toContain("https://customer.example");
+        }
+        runtime.privateRows.length = 0;
+        await invalidatePrivateRoutes(args.workspaceId);
+        const deleted = await fetchGatewayContext(args);
+        expect(deleted.contextTelemetry?.cacheStatus).toBe("hit");
+        expect(deleted.providers).toHaveLength(0);
+    });
+
+    it("includes private-model lookup and hydration in total context timing", async () => {
+        const pending: Array<() => void> = [];
+        runtime.supabase.rpc.mockImplementation(async () => {
+            await new Promise<void>((resolve) => pending.push(resolve));
+            return { data: [{ workspace_id: "team_inflight", resolved_model: "model", key_ok: { ok: true, reason: null }, key_limit_ok: { ok: true, reason: null }, credit_ok: { ok: true, reason: null }, providers: [], pricing: {} }], error: null };
+        });
+        const { fetchGatewayContext } = await import("./context");
+        const request = fetchGatewayContext({ workspaceId: "team_inflight", apiKeyId: "key_parallel", model: "model", endpoint: "text.generate" });
+        try {
+            await vi.waitFor(() => expect(pending.length).toBeGreaterThan(0));
+
+        } finally {
+            for (const resolve of pending) resolve();
+        }
+        const result = await request;
+        expect(result.contextTelemetry?.totalMs).toBeGreaterThanOrEqual(result.contextTelemetry?.privateModelMs ?? 0);
+        expect(result.contextTelemetry?.byokHydrationMs).toBeGreaterThanOrEqual(0);
     });
 });

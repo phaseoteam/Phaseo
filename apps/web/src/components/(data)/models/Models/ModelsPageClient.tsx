@@ -1,31 +1,76 @@
 "use client";
 
-import useSWR from "swr";
-import { publicSWRKeys } from "@/lib/swr/keys";
+import { useTranslations } from "next-intl";
+import { useEffect } from "react";
+import dynamic from "next/dynamic";
+import { useQuery } from "@tanstack/react-query";
 import {
 	fetchModelsPageData,
 	fetchModelsPageDataV2,
-} from "@/lib/swr/models";
-import ModelsDisplay from "./ModelsDisplay";
+} from "@/lib/query/models";
+import { useRefetchOnResume } from "@/lib/query/refetchOnResume";
 import { ModelsPageSkeleton } from "./ModelsPageSkeleton";
+import type { AuthenticatedProviderCatalogPreview } from "@/lib/query/providerCatalogPreviews";
+import { WEB_QUERY_POLICIES } from "@/lib/query/policies";
+import {
+	ANONYMOUS_ACCOUNT_QUERY_SCOPE,
+	hasAuthenticatedAccountQueryScope,
+	webQueryKeys,
+	type AccountQueryScope,
+} from "@/lib/query/queryKeys";
+
+const ModelsDisplay = dynamic(() => import("./ModelsDisplay"), {
+	loading: function Loading() { const t = useTranslations("Catalogue.models"); return <ModelsPageSkeleton title={t("title")} />; },
+});
 
 type ModelsPageClientProps = {
 	catalogueVersion?: "v1" | "v2";
 	title: string;
+	initialProviderPreviews?: AuthenticatedProviderCatalogPreview[];
+	previewCacheScope?: string;
+	accountQueryScope?: AccountQueryScope | null;
 };
 
 export default function ModelsPageClient({
 	catalogueVersion = "v1",
 	title,
+	initialProviderPreviews,
+	previewCacheScope = "public",
+	accountQueryScope = ANONYMOUS_ACCOUNT_QUERY_SCOPE,
 }: ModelsPageClientProps) {
-	const swrKey =
-		catalogueVersion === "v2" ? publicSWRKeys.modelsV2 : publicSWRKeys.models;
-	const fetcher =
-		catalogueVersion === "v2" ? fetchModelsPageDataV2 : fetchModelsPageData;
-	const { data, error } = useSWR(swrKey, fetcher);
+	const scope = accountQueryScope ?? ANONYMOUS_ACCOUNT_QUERY_SCOPE;
+	const path =
+		catalogueVersion === "v2"
+			? "/api/_web/models?limit=2000&offset=0&shape=page&projection=6&catalogue_version=v2"
+			: "/api/_web/models?limit=2000&offset=0&shape=page&projection=5";
+	const query = useQuery({
+		queryKey: webQueryKeys.account.catalogue({
+			scope,
+			catalogueVersion,
+			previewCacheScope,
+		}),
+		queryFn: ({ signal }) =>
+			catalogueVersion === "v2"
+				? fetchModelsPageDataV2(path, initialProviderPreviews, {
+						signal,
+						accountQueryScope: scope,
+					})
+				: fetchModelsPageData(path, initialProviderPreviews, {
+						signal,
+						accountQueryScope: scope,
+					}),
+		...(hasAuthenticatedAccountQueryScope(scope) ? WEB_QUERY_POLICIES.private : WEB_QUERY_POLICIES.public),
+		refetchOnWindowFocus: false,
+		refetchOnReconnect: false,
+	});
+	useRefetchOnResume(query.refetch, query.isStale, query.error);
+	useEffect(() => {
+		// Load the display code alongside the catalogue request, not after it.
+		void import("./ModelsDisplay");
+	}, []);
 
-	if (error) throw error;
-	if (!data) return <ModelsPageSkeleton title={title} />;
+	if (query.error && !query.data) throw query.error;
+	if (!query.data) return <ModelsPageSkeleton title={title} />;
 
-	return <ModelsDisplay modelsPageData={data} />;
+	return <ModelsDisplay modelsPageData={query.data} />;
 }

@@ -1,6 +1,7 @@
 import type { StatsigProfile } from "@/lib/statsig/shared";
 import type { SensitiveInfoRulePayload } from "@/app/(dashboard)/settings/guardrails/actions";
 import type { DeprecationWarning } from "@/lib/fetchers/usage/types";
+import type { DisplayPreferences } from "@/lib/displayPreferences";
 
 export type SettingsLayoutInitialData = {
 	isEnterpriseInvoiceMode: boolean;
@@ -12,6 +13,7 @@ export type SettingsLayoutInitialData = {
 		platformRole: string;
 		isInternalAdmin: boolean;
 		isProvider: boolean;
+		providerMode?: boolean;
 		providerSlugs: string[];
 		workspaceRole: string | null;
 		workspaceKind: "personal" | "organization" | "enterprise" | "provider" | null;
@@ -302,6 +304,7 @@ export type SettingsCreditsInitialData = {
 	declaredCountryCode: string | null;
 	initialBalance: number;
 	latestPaymentSuccessAt: string | null;
+	mfaEnabled: boolean;
 	autoTopUpFailureEmailEnabled: boolean;
 	lowBalanceEmailEnabled: boolean;
 	lowBalanceEmailThresholdUsd: number | null;
@@ -319,6 +322,7 @@ export type SettingsCreditsInitialData = {
 			id: string;
 		}>;
 	};
+	workspaceId: string | null;
 	wallet: {
 		stripe_customer_id?: string | null;
 		balance_bigint?: number | null;
@@ -329,12 +333,23 @@ export type SettingsCreditsInitialData = {
 	} | null;
 };
 
+export type SettingsPreferencesInitialData = {
+	preferences: DisplayPreferences;
+	signedIn: boolean;
+};
+
 export type ProviderOnboardingSubmission = {
 	id: string;
 	provider_slug: string;
 	provider_name: string;
-	catalog_url: string;
+	website_url: string;
+	logo_url: string | null;
+	catalog_url: string | null;
+	application_type: "new" | "claim";
+	catalog_mode: "managed" | "remote";
 	status: string;
+	provider_review_status: string;
+	provider_review_reason: string | null;
 	model_count: number;
 	validation_summary: Record<string, unknown> | null;
 	submitted_at: string | null;
@@ -351,13 +366,25 @@ export type SettingsProviderOnboardingInitialData = {
 		status: "pending" | "active";
 		verified_at: string | null;
 	}>;
+	catalogProviders: Array<{
+		provider_slug: string;
+		name?: string;
+		operatingStatus?: string;
+		provider_review_status?: string | null;
+		canManageCatalog?: boolean;
+		workspace_id: string;
+		role: string;
+		status: "pending" | "active";
+		verified_at: string | null;
+	}>;
 	submissions: ProviderOnboardingSubmission[];
 	syncSources: Array<{
 		provider_slug: string;
 		status: string;
 		delivery_mode: "polling" | "webhook_and_polling";
-		catalog_url: string;
+		catalog_url: string | null;
 		webhookUrl: string;
+		webhookConfigured: boolean;
 		last_success_at: string | null;
 		last_polled_at: string | null;
 		last_catalog_sha256: string | null;
@@ -552,7 +579,7 @@ export type WorkspacePrivacySettings = {
 };
 
 export type TeamsSettingsData = {
-	teams: Array<{ id: string; name: string }>;
+	teams: Array<{ id: string; name: string; publisherHandle?: string | null; logoUrl?: string | null }>;
 	membersByTeam: Record<string, any[]>;
 	invitesByTeam: Record<string, any[]>;
 	requestsByTeam: Record<string, any[]>;
@@ -578,6 +605,8 @@ export type UsageUpstreamRequestRow = {
 	round_number: number;
 	attempt_number: number | null;
 	attempt_count?: number | null;
+	request_latency_ms?: number | null;
+	request_created_at?: string | null;
 	internal_attempt_number: number | null;
 	stage: string;
 	endpoint: string;

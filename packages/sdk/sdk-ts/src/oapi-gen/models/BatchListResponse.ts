@@ -64,6 +64,7 @@ export interface BatchListResponse {
       total?: number;
     };
     request_id?: string;
+    results_url?: string | null;
     session_id?: string;
     status?: string;
     usage?: {

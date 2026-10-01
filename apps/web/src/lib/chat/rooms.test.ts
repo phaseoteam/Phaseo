@@ -24,6 +24,11 @@ describe("chat room capability mapping", () => {
 		expect(capabilityIdToRoomId("text.embed")).toBe("embeddings");
 		expect(capabilityIdToRoomId("audio.realtime")).toBe("realtime");
 		expect(capabilityIdToRoomId("realtime")).toBe("realtime");
+		expect(capabilityIdToRoomId("systemone")).toBe("decisions");
+		expect(capabilityIdToRoomId("decisions.make")).toBe("decisions");
+		expect(capabilityIdToRoomId("decision.outputs")).toBe("decisions");
+		expect(CHAT_ROOM_BY_ID.decisions.label).toBe("Decisions");
+		expect(CHAT_ROOM_BY_ID.decisions.route).toBe("/chat/decisions");
 	});
 
 	it("maps normalized capabilities to their dedicated rooms", () => {
@@ -68,11 +73,16 @@ describe("chat room capability mapping", () => {
 				modelId: "openai/gpt-realtime-2",
 				capabilities: ["audio.realtime"],
 			},
+			{
+				modelId: "typesafe/jev-1.13.0",
+				capabilities: ["decisions.make"],
+			},
 		];
 		expect(filterModelsForRoom(models, "text")).toHaveLength(1);
 		expect(filterModelsForRoom(models, "image")).toHaveLength(1);
 		expect(filterModelsForRoom(models, "embeddings")).toHaveLength(1);
 		expect(filterModelsForRoom(models, "realtime")).toHaveLength(1);
+		expect(filterModelsForRoom(models, "decisions")).toHaveLength(1);
 	});
 
 	it("does not guess a room when a model declares an unsupported capability", () => {
@@ -96,6 +106,7 @@ describe("chat room capability mapping", () => {
 
 		expect(filterModelsForRoom(models, "text")).toEqual([models[0]]);
 		expect(filterModelsForRoom(models, "image")).toEqual([models[1]]);
+		expect(filterModelsForRoom([{ modelId: "typesafe/jev-1.13.0", outputModalities: ["decisions"] }], "decisions")).toHaveLength(1);
 	});
 
 	it("uses output modalities before model id inference", () => {

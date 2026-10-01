@@ -1,6 +1,7 @@
 import { ReactNode } from "react";
 import Link from "next/link";
-import { List, PanelsTopLeft, Sparkles } from "lucide-react";
+import { CreditCard, List, PanelsTopLeft, Sparkles } from "lucide-react";
+import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import { fetchFrontendSubscriptionPlan } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import { Logo } from "@/components/Logo";
 import EntityStickyHeader from "@/components/(data)/EntityStickyHeader";
@@ -31,17 +32,13 @@ export default async function SubscriptionPlanDetailShell({
 		return (
 			<main className="flex min-h-screen flex-col">
 				<div className="container mx-auto px-4 py-8">
-					<div className="rounded-lg border border-dashed p-6 md:p-8 text-center bg-muted/30">
-						<div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-muted">
-							<span className="text-xl">💰</span>
-						</div>
-						<p className="text-base font-medium">
-							{messages.detail.unknownPlan}
-						</p>
-						<p className="mt-1 text-sm text-muted-foreground">
-							{messages.detail.unknownPlanDescription}
-						</p>
-					</div>
+					<Empty className="rounded-md border bg-muted/30">
+						<EmptyHeader>
+							<EmptyMedia variant="icon" className="rounded-md"><CreditCard aria-hidden="true" /></EmptyMedia>
+							<EmptyTitle>{messages.detail.unknownPlan}</EmptyTitle>
+							<EmptyDescription>{messages.detail.unknownPlanDescription}</EmptyDescription>
+						</EmptyHeader>
+					</Empty>
 				</div>
 			</main>
 		);
@@ -93,9 +90,9 @@ export default async function SubscriptionPlanDetailShell({
 
 					<div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
 						<RotatingPricing prices={plan.prices} locale={locale} messages={messages.detail} />
-						{tab !== "overview" ? <Button asChild variant="outline" size="sm" className="rounded-lg"><Link href={baseHref}><PanelsTopLeft className="size-4" />{messages.detail.overview}</Link></Button> : null}
-						{tab !== "features" ? <Button asChild variant="outline" size="sm" className="rounded-lg"><Link href={`${baseHref}/features`}><Sparkles className="size-4" />{messages.detail.features}</Link></Button> : null}
-						{tab !== "models" ? <Button asChild variant="outline" size="sm" className="rounded-lg"><Link href={`${baseHref}/models`}><List className="size-4" />{messages.detail.models}</Link></Button> : null}
+						{tab !== "overview" ? <Button asChild variant="outline" size="sm" className="rounded-md"><Link href={baseHref}><PanelsTopLeft className="size-4" />{messages.detail.overview}</Link></Button> : null}
+						{tab !== "features" ? <Button asChild variant="outline" size="sm" className="rounded-md"><Link href={`${baseHref}/features`}><Sparkles className="size-4" />{messages.detail.features}</Link></Button> : null}
+						{tab !== "models" ? <Button asChild variant="outline" size="sm" className="rounded-md"><Link href={`${baseHref}/models`}><List className="size-4" />{messages.detail.models}</Link></Button> : null}
 					</div>
 				</div>
 				<div className="mt-6 min-h-full">{tocItems.length ? <div className="flex flex-col gap-6 lg:flex-row lg:items-start"><ModelPageToc items={tocItems} className="lg:h-full lg:w-40 lg:shrink-0 xl:w-44" /><div className="min-w-0 flex-1">{children}</div></div> : children}</div>

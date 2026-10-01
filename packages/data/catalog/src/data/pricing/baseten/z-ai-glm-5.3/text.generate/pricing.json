@@ -52,21 +52,75 @@
       "cache_duration_seconds": null,
       "conditions": [],
       "source": "https://www.baseten.co/library/glm-53/"
+    },
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 2.1,
+      "currency": "USD",
+      "pricing_plan": "priority",
+      "note": "Baseten GLM-5.3 Fast.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-09-03T00:00:00Z",
+      "region": "US",
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": "https://www.baseten.co/products/model-apis/"
+    },
+    {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.21,
+      "currency": "USD",
+      "pricing_plan": "priority",
+      "note": "Baseten GLM-5.3 Fast.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-09-03T00:00:00Z",
+      "region": "US",
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": "https://www.baseten.co/products/model-apis/"
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 6.6,
+      "currency": "USD",
+      "pricing_plan": "priority",
+      "note": "Baseten GLM-5.3 Fast.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-09-03T00:00:00Z",
+      "region": "US",
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": "https://www.baseten.co/products/model-apis/"
     }
   ],
   "regions": ["US"],
-  "service_tiers": ["standard"],
+  "service_tiers": ["standard", "priority"],
   "sources": [
     {
       "kind": "pricing",
       "url": "https://www.baseten.co/library/glm-53/",
       "accessed_at": "2026-08-28T00:00:00Z",
       "notes": "Baseten lists GLM-5.3 at $1.40 input, $0.14 cached input, and $4.40 output per million tokens."
+    },
+    {
+      "kind": "pricing",
+      "url": "https://www.baseten.co/products/model-apis/",
+      "accessed_at": "2026-09-03T00:00:00Z",
+      "notes": "Baseten's GLM-5.3 Fast priority service tier is $2.10 input, $0.21 cached input, and $6.60 output per million tokens."
     }
   ],
   "verification": {
     "status": "verified",
-    "checked_at": "2026-08-28T00:00:00Z",
-    "notes": "Pricing verified against Baseten's official GLM-5.3 model page."
+    "checked_at": "2026-09-03T00:00:00Z",
+    "notes": "Standard pricing is Baseten GLM-5.3 at $1.40/$0.14/$4.40; priority selects the hidden GLM-5.3 Fast sibling at $2.10/$0.21/$6.60 per million tokens."
   }
 }

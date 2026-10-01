@@ -209,6 +209,50 @@ describe("OpenAI media endpoints", () => {
 		expect(capturedBody.output_compression).toBe(60);
 	});
 
+	it("forwards xAI Grok Imagine Image 2.0 controls", async () => {
+		let capturedBody: any = null;
+		const mock = installFetchMock([{
+			match: (url) => url === "https://api.x.ai/v1/images/generations",
+			response: jsonResponse({ created: 1700000000, data: [{ url: "https://imgen.x.ai/output.jpeg" }] }),
+			onRequest: (call) => { capturedBody = call.bodyJson; },
+		}]);
+
+		let result;
+		try {
+			result = await execImages({
+				endpoint: "images.generations",
+				model: "spacex-ai/grok-imagine-image-2.0",
+				body: {
+					model: "spacex-ai/grok-imagine-image-2.0",
+					prompt: "A cinematic mountain landscape",
+					n: 2,
+					quality: "medium",
+					aspect_ratio: "21:9",
+					resolution: "2k",
+					response_format: "url",
+				},
+				meta: REQUEST_META,
+				workspaceId: "team_test",
+				providerId: "spacex-ai",
+				byokMeta: [],
+				pricingCard: PRICING_CARD,
+				providerModelSlug: "grok-imagine-image-2.0",
+				stream: false,
+			} as any);
+		} finally {
+			mock.restore();
+		}
+
+		expect(result.upstream.status).toBe(200);
+		expect(capturedBody).toMatchObject({
+			model: "grok-imagine-image-2.0",
+			n: 2,
+			quality: "medium",
+			aspect_ratio: "21:9",
+			resolution: "2k",
+		});
+	});
+
 	it("routes Meta Muse Image through the OpenAI-compatible image endpoint", async () => {
 		let capturedUrl = "";
 		let capturedBody: any = null;

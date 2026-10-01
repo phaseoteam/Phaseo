@@ -37,6 +37,11 @@ function renderModels(models: IRModel[]): string {
 		"use std::collections::HashMap;",
 		"",
 		"pub type JsonValue = String;",
+		"",
+		"pub enum StringOrStringArray {",
+		"\tString(String),",
+		"\tArray(Vec<String>),",
+		"}",
 		""
 	];
 	for (const model of models) {
@@ -53,7 +58,11 @@ function renderModel(model: IRModel): string {
 		const lines: string[] = [`pub struct ${model.name} {`];
 		for (const field of fields) {
 			const name = sanitizeIdentifier(field);
-			const type = renderFieldType(model.schema.properties[field], required.has(field));
+			const type = renderFieldType(
+				model.schema.properties[field],
+				required.has(field),
+				model.name === "ImagesEditRequest" && field === "image"
+			);
 			lines.push(`\tpub ${name}: ${type},`);
 		}
 		lines.push("}");
@@ -65,11 +74,31 @@ function renderModel(model: IRModel): string {
 function renderClient(): string {
 	return [
 		"use std::collections::HashMap;",
+		"use url::form_urlencoded;",
 		"",
 		"#[derive(Debug)]",
 		"pub struct Response {",
 		"\tpub status: u16,",
+		"\tpub headers: HashMap<String, String>,",
 		"\tpub body: String,",
+		"}",
+		"",
+		"impl Response {",
+		"\tpub fn request_id(&self) -> Option<&str> {",
+		"\t\tself.headers.get(\"x-request-id\").or_else(|| self.headers.get(\"request-id\")).map(String::as_str)",
+		"\t}",
+		"",
+		"\tpub fn trace_url(&self) -> Option<String> {",
+		"\t\tself.request_id().map(|id| format!(\"https://phaseo.app/settings/usage/logs/requests/{}\", form_urlencoded::byte_serialize(id.as_bytes()).collect::<String>()))",
+		"\t}",
+		"}",
+		"",
+		"#[derive(Clone, Debug, Default)]",
+		"pub struct RequestOptions {",
+		"\tpub headers: HashMap<String, String>,",
+		"\tpub timeout_ms: Option<u64>,",
+		"\tpub max_retries: Option<u32>,",
+		"\tpub idempotency_key: Option<String>,",
 		"}",
 		"",
 		"pub trait Transport {",
@@ -80,6 +109,22 @@ function renderClient(): string {
 		"\t\tbody: Option<&str>,",
 		"\t\theaders: &HashMap<String, String>,",
 		"\t) -> Result<Response, String>;",
+		"",
+		"\tfn request_with_options(",
+		"\t\t&self,",
+		"\t\tmethod: &str,",
+		"\t\turl: &str,",
+		"\t\tbody: Option<&str>,",
+		"\t\theaders: &HashMap<String, String>,",
+		"\t\toptions: &RequestOptions,",
+		"\t) -> Result<Response, String> {",
+		"\t\tlet mut merged_headers = headers.clone();",
+		"\t\tmerged_headers.extend(options.headers.clone());",
+		"\t\tif let Some(key) = &options.idempotency_key {",
+		"\t\t\tmerged_headers.insert(\"Idempotency-Key\".to_string(), key.clone());",
+		"\t\t}",
+		"\t\tself.request(method, url, body, &merged_headers)",
+		"\t}",
 		"}",
 		"",
 		"pub struct Client<T: Transport> {",
@@ -100,6 +145,11 @@ function renderClient(): string {
 		"\tpub fn request(&self, method: &str, path: &str, body: Option<&str>) -> Result<Response, String> {",
 		"\t\tlet url = format!(\"{}{}\", self.base_url, path);",
 		"\t\tself.transport.request(method, &url, body, &self.headers)",
+		"\t}",
+		"",
+		"\tpub fn request_with_options(&self, method: &str, path: &str, body: Option<&str>, options: &RequestOptions) -> Result<Response, String> {",
+		"\t\tlet url = format!(\"{}{}\", self.base_url, path);",
+		"\t\tself.transport.request_with_options(method, &url, body, &self.headers, options)",
 		"\t}",
 		"}",
 		""
@@ -161,8 +211,8 @@ function renderPathTemplate(path: string, params: IROperation["params"]): string
 		: `format!("${formatString}", ${args.join(", ")})`;
 }
 
-function renderFieldType(schema: IRSchema, required: boolean): string {
-	const base = rustType(schema);
+function renderFieldType(schema: IRSchema, required: boolean, stringOrStringArray = false): string {
+	const base = stringOrStringArray ? "StringOrStringArray" : rustType(schema);
 	if (required) {
 		return base;
 	}
@@ -184,6 +234,7 @@ function rustType(schema: IRSchema): string {
 		case "enum":
 			return schema.values.filter((value) => value !== null).every((value) => typeof value === "boolean") ? "bool" : "String";
 		case "union":
+			return "String";
 		case "intersection":
 		case "unknown":
 		case "literal":

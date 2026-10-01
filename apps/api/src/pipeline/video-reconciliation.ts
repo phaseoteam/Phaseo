@@ -105,6 +105,11 @@ export async function runVideoReconciliationJob(args?: {
 			jobsErrored: 0,
 		};
 		try {
+			if (job.meta?.submissionState === "unknown" || job.meta?.submissionState === "submitting") {
+				// A missing create response is not evidence that no paid task exists.
+				// Keep the reservation and journal available for provider-side recovery.
+				throw new Error("video_submission_requires_reconciliation");
+			}
 			const currentStatus = String(job.status ?? "").toLowerCase();
 			if (terminalVideoStatus(currentStatus)) {
 				const finalized = await finalizeVideoJob({
@@ -122,7 +127,7 @@ export async function runVideoReconciliationJob(args?: {
 					},
 				});
 				const eventType = terminalVideoEvent(finalized.status);
-				if (eventType && currentStatus !== "cancelled" && currentStatus !== "expired") {
+				if (eventType) {
 					dispatchVideoWebhookEventInBackground({
 						workspaceId: job.workspaceId,
 						videoId: job.videoId,

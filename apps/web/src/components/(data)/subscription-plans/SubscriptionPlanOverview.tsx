@@ -1,5 +1,7 @@
 import type { SubscriptionPlanDetails } from "@/lib/fetchers/subscription-plans/types";
 import Link from "next/link";
+import { ArrowRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import SubscriptionPlanFeaturesTable from "./SubscriptionPlanFeaturesTable";
 import type { SubscriptionPlansMessages } from "@/i18n/subscription-plans";
 
@@ -27,12 +29,12 @@ export default function SubscriptionPlanOverview({
 						<div className="space-y-3">
 							<SubscriptionPlanFeaturesTable features={topFeatures} messages={messages} />
 							{plan.features && plan.features.length > 5 && (
-								<Link
+								<Button asChild variant="link" className="h-auto p-0"><Link
 									href={`/subscription-plans/${plan.plan_id}/features`}
 									className="text-sm text-primary relative underline decoration-transparent hover:decoration-current transition-colors duration-200"
 								>
 									{messages.viewAllFeatures.replace("{count}", String(plan.features.length))}
-								</Link>
+								</Link></Button>
 							)}
 						</div>
 					) : (
@@ -68,12 +70,12 @@ export default function SubscriptionPlanOverview({
 								</div>
 							))}
 							{plan.models && plan.models.length > 5 && (
-								<Link
+								<Button asChild variant="link" className="h-auto py-3 px-0"><Link
 									href={`/subscription-plans/${plan.plan_id}/models`}
 									className="text-sm text-primary relative underline decoration-transparent hover:decoration-current transition-colors duration-200"
 								>
 									{messages.viewAllModels.replace("{count}", String(plan.models.length))}
-								</Link>
+								</Link></Button>
 							)}
 						</div>
 					) : (

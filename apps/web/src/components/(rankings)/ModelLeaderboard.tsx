@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import Link from "next/link";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
@@ -56,14 +57,6 @@ const RANGE_OPTIONS: Array<{
 	{ key: "trending", labelKey: "trending" },
 ];
 
-function formatTokens(value: number) {
-	if (!Number.isFinite(value)) return "--";
-	if (value >= 1e9) return `${(value / 1e9).toFixed(1).replace(/\.0$/, "")}B`;
-	if (value >= 1e6) return `${(value / 1e6).toFixed(1).replace(/\.0$/, "")}M`;
-	if (value >= 1e3) return `${(value / 1e3).toFixed(1).replace(/\.0$/, "")}K`;
-	return value.toLocaleString();
-}
-
 function getChangeDisplay(entry: ModelLeaderboardEntry, newLabel: string) {
 	const trend = entry.trend ?? "same";
 	const fallbackChange =
@@ -116,6 +109,10 @@ export function ModelLeaderboard({
 	maxExpanded = 20,
 }: ModelLeaderboardProps) {
 	const tUi = useTranslations("Common.ui");
+	const format = useDisplayFormatters();
+	const formatTokens = (value: number) => Number.isFinite(value)
+		? format.number(value, { maximumFractionDigits: 1 })
+		: "--";
 	const availableRanges = useMemo(
 		() =>
 			RANGE_OPTIONS.filter(

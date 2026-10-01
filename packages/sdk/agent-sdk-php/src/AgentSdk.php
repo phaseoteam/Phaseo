@@ -798,7 +798,7 @@ final class AgentSdk
             $baseUrl = is_string($clientOptions["base_url"] ?? null)
                 ? $clientOptions["base_url"]
                 : (getenv("PHASEO_BASE_URL") ?: "https://api.phaseo.app/v1");
-            $client = new Phaseo(apiKey: $apiKey, basePath: $baseUrl, clientSource: "phaseo-agent-php", clientSourceVersion: "0.2.0");
+            $client = new Phaseo(apiKey: $apiKey, basePath: $baseUrl, clientSource: "phaseo-agent-php", clientSourceVersion: "0.3.0");
         }
 
         return new GatewayAgentClient($client, $options);

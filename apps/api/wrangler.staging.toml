@@ -10,8 +10,8 @@ routes = [{ pattern = "api-staging.phaseo.app", custom_domain = true }]
 ENV = "staging"
 NODE_ENV = "production"
 SUPABASE_URL = "https://xansbgjaduxypzsmjwct.supabase.co"
-AMAZON_BEDROCK_REGION = "us-east-1"
-AMAZON_BEDROCK_MANTLE_BASE_URL = "https://bedrock-mantle.us-east-1.api.aws"
+AMAZON_BEDROCK_REGION = "us-west-2"
+AMAZON_BEDROCK_MANTLE_BASE_URL = "https://bedrock-mantle.us-west-2.api.aws"
 STATSIG_ENVIRONMENT_TIER = "staging"
 ACCOUNT_DELETION_PURGE_ENABLED = "false"
 STATSIG_GATEWAY_IO_LOGGING_GATE = "gateway_io_logging"
@@ -42,7 +42,9 @@ PRICING_MONITOR_ENABLED = "false"
 ENTERPRISE_INVOICING_ENABLED = "false"
 
 [triggers]
-crons = ["* * * * *"]
+# This staging deployment shares the production database. Scheduled consumers
+# must remain disabled until staging has an isolated database and credentials.
+crons = []
 
 [placement]
 mode = "smart"
@@ -80,6 +82,14 @@ namespace_id = "41002"
 [ratelimits.simple]
 limit = 60
 period = 60
+
+[[durable_objects.bindings]]
+name = "PROVIDER_RATE_LIMITS"
+class_name = "ProviderRateLimitDurableObject"
+
+[[migrations]]
+tag = "v1-provider-rate-limits"
+new_sqlite_classes = ["ProviderRateLimitDurableObject"]
 
 [[ratelimits]]
 name = "REALTIME_RELAY_RATE_LIMITER"

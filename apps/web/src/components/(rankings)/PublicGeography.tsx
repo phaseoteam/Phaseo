@@ -1,10 +1,12 @@
 import { GeographyUsage } from "@/components/(gateway)/usage/GeographyUsage";
 import { fetchFrontendRankingGeography } from "@/lib/fetchers/frontend/fetchRankingSections";
 import { getTranslations } from "next-intl/server";
+import { RankingUnavailable } from "@/components/(rankings)/RankingUnavailable";
 
 export async function PublicGeography() {
 	const t = await getTranslations("Catalogue.rankings");
-	const result = await fetchFrontendRankingGeography(30).catch(() => ({ data: [], days: 30 }));
+	const result = await fetchFrontendRankingGeography(30).catch(() => null);
+	if (!result) return <RankingUnavailable id="geography" title={t("countries")} />;
 	const rows = (result.data ?? []).map((row) => ({
 		countryCode: row.country_code,
 		requests: Number(row.requests ?? 0),

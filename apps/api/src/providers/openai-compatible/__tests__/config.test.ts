@@ -50,6 +50,7 @@ describe("resolveOpenAICompatRoute", () => {
 			expect(resolveOpenAICompatRoute("friendli", "meta-llama-3.1-8b-instruct")).toBe("chat");
 			expect(resolveOpenAICompatRoute("gmicloud", "Qwen/Qwen3-235B-A22B-Thinking-2507")).toBe("chat");
 			expect(resolveOpenAICompatRoute("deepseek", "deepseek-v4-flash")).toBe("responses");
+			expect(resolveOpenAICompatRoute("deepseek", "deepseek-v4.1-flash-expires-on-0910")).toBe("responses");
 			expect(resolveOpenAICompatRoute("deepseek", "deepseek-v4-pro")).toBe("responses");
 			expect(resolveOpenAICompatRoute("deepseek", "deepseek-v4-flash-vision-exp")).toBe("responses");
 			expect(resolveOpenAICompatRoute("deepseek", "deepseek-chat")).toBe("chat");
@@ -111,6 +112,9 @@ describe("openAICompatUrl", () => {
 
 		expect(openAICompatUrl("siliconflow", "/chat/completions")).toBe(
 			"https://api.siliconflow.com/v1/chat/completions",
+		);
+		expect(openAICompatUrl("siliconflow", "/systemone")).toBe(
+			"https://api.siliconflow.com/v1/systemone",
 		);
 		expect(openAICompatHeaders("siliconflow", "test-siliconflow-key")).toEqual(
 			expect.objectContaining({ Authorization: "Bearer test-siliconflow-key" }),
@@ -327,6 +331,14 @@ describe("openAICompatUrl", () => {
 		expect(openAICompatHeaders("wafer", "test-wafer-key")).toEqual(
 			expect.objectContaining({ Authorization: "Bearer test-wafer-key" }),
 		);
+		expect(openAICompatUrl("wafer-zdr", "/chat/completions")).toBe(
+			"https://pass.wafer.ai/v1/chat/completions",
+		);
+		expect(openAICompatHeaders("wafer-zdr", "test-wafer-key")).toMatchObject({
+			Authorization: "Bearer test-wafer-key",
+			"Wafer-ZDR": "required",
+		});
+		expect(openAICompatHeaders("wafer", "test-wafer-key")).not.toHaveProperty("Wafer-ZDR");
 		expect(openAICompatHeaders("ambient", "test-ambient-key")).toEqual(
 			expect.objectContaining({ Authorization: "Bearer test-ambient-key" }),
 		);
@@ -975,37 +987,6 @@ describe("resolveOpenAICompatKey", () => {
 		expect(openAICompatUrl("tensorix", "/chat/completions")).toBe(
 			"https://api.tensorx.ai/v1/chat/completions",
 		);
-	});
-
-	it("accepts CROF_AI_API_KEY fallback for crofai", () => {
-		teardownTestRuntime();
-		setupRuntimeFromEnv({
-			CROF_AI_API_KEY: "test-crof-key-fallback",
-		} as any);
-
-		const resolved = resolveOpenAICompatKey({
-			providerId: "crofai",
-			byokMeta: [],
-		} as any);
-
-		expect(resolved.key).toBe("test-crof-key-fallback");
-		expect(resolved.source).toBe("gateway");
-	});
-
-	it("prefers CROFAI_API_KEY over CROF_AI_API_KEY for crofai", () => {
-		teardownTestRuntime();
-		setupRuntimeFromEnv({
-			CROFAI_API_KEY: "test-crof-key-primary",
-			CROF_AI_API_KEY: "test-crof-key-fallback",
-		} as any);
-
-		const resolved = resolveOpenAICompatKey({
-			providerId: "crofai",
-			byokMeta: [],
-		} as any);
-
-		expect(resolved.key).toBe("test-crof-key-primary");
-		expect(resolved.source).toBe("gateway");
 	});
 
 	it("accepts NEBIUS_TOKEN_FACTORY_API_KEY fallback for Nebius providers", () => {

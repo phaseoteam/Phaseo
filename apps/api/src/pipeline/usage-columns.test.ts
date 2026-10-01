@@ -132,6 +132,68 @@ describe("buildGatewayRequestUsageColumns", () => {
 });
 
 describe("buildV2RequestUsageMeters", () => {
+	it("persists native embedding tokens and rerank workload in distinct meters", () => {
+		const embedding = buildV2RequestUsageMeters({ endpoint: "embeddings", usage: { input_tokens: 42 } });
+		expect(embedding).toContainEqual(expect.objectContaining({ meter_key: "embedding_tokens", quantity: 42, billable: false }));
+		const rerank = buildV2RequestUsageMeters({ endpoint: "rerank", usage: { rerank_quad_tokens: 12 }, requestPayload: { query: "query", documents: ["document"] } });
+		expect(rerank).toContainEqual(expect.objectContaining({ meter_key: "rerank_quad_tokens", quantity: 12 }));
+		expect(rerank.some((meter) => meter.meter_key === "embedding_tokens")).toBe(false);
+	});
+
+	it.each(["audio.speech", "audio.transcription", "audio.translations"] as const)("separates measured duration for %s without rounding seconds", (endpoint) => {
+		const meters = buildV2RequestUsageMeters({ endpoint, usage: { audio_seconds: 2.75 } });
+		const expected = endpoint === "audio.speech" ? "speech_seconds" : "transcription_seconds";
+		expect(meters).toContainEqual(expect.objectContaining({ meter_key: expected, quantity: 2.75, unit: "seconds", billable: false }));
+		expect(meters.filter((meter) => ["speech_seconds", "transcription_seconds"].includes(meter.meter_key))).toHaveLength(1);
+	});
+
+	it("does not fabricate durations when only speech characters are available", () => {
+		const meters = buildV2RequestUsageMeters({ endpoint: "audio.speech", usage: { input_characters: 100 } });
+		expect(meters.some((meter) => meter.meter_key === "speech_seconds")).toBe(false);
+	});
+
+	it.each(["chat.completions", "responses", "messages"] as const)("counts image parts once for %s without treating image tokens as counts", (endpoint) => {
+		const part = { type: endpoint === "messages" ? "image" : "input_image", image_url: "private-url" };
+		const message = { type: "message", role: "user", content: [part, part] };
+		const meters = buildV2RequestUsageMeters({ endpoint, usage: { input_image_tokens: 1500 }, requestPayload: endpoint === "responses" ? { input: [message] } : { messages: [message] } });
+		expect(meters).toContainEqual(expect.objectContaining({ meter_key: "input_images", quantity: 2 }));
+		expect(JSON.stringify(meters)).not.toContain("private-url");
+	});
+
+	it("uses observed generated images, not the requested count or image tokens", () => {
+		const meters = buildV2RequestUsageMeters({ endpoint: "images.generations", usage: { output_image_tokens: 2000 }, requestPayload: { n: 4 }, gatewayResponse: { data: [{ b64_json: "private" }] } });
+		expect(meters).toContainEqual(expect.objectContaining({ meter_key: "output_images", quantity: 1 }));
+		expect(JSON.stringify(meters)).not.toContain("private");
+	});
+
+	it.each([
+		{ image: "private-url", count: 1 },
+		{ image: ["private-url", "private-base64"], count: 2 },
+		{ image: new Blob(["private-upload"]), count: 1 },
+		{ image: [new Blob(["private-upload"]), "private-url"], count: 2 },
+	])("counts $count image-edit uploads without counting the mask", ({ image, count }) => {
+		const meters = buildV2RequestUsageMeters({
+			endpoint: "images.edits", usage: { input_image_tokens: 1500 },
+			requestPayload: { image, mask: new Blob(["private-mask"]), n: 4 },
+		});
+		expect(meters).toContainEqual(expect.objectContaining({ meter_key: "input_images", quantity: count }));
+		expect(JSON.stringify(meters)).not.toContain("private");
+	});
+
+	it.each(["input_image_count", "input_images", "input_image"])("prefers the explicit %s count over image-edit uploads", (alias) => {
+		const meters = buildV2RequestUsageMeters({ endpoint: "images.edits", usage: { [alias]: 3 }, requestPayload: { image: "private-url" } });
+		expect(meters).toContainEqual(expect.objectContaining({ meter_key: "input_images", quantity: 3 }));
+	});
+
+	it("does not count absent image-edit uploads or top-level images on other endpoints", () => {
+		for (const args of [
+			{ endpoint: "images.edits" as const, requestPayload: { mask: "private-mask" } },
+			{ endpoint: "chat.completions" as const, requestPayload: { image: "private-url" } },
+		]) {
+			expect(buildV2RequestUsageMeters({ ...args, usage: {} }).some((meter) => meter.meter_key === "input_images")).toBe(false);
+		}
+	});
+
 	it("projects flexible cache, token, media, and character meters without content", () => {
 		const meters = buildV2RequestUsageMeters({
 			endpoint: "chat.completions",

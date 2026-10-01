@@ -4,7 +4,7 @@ export type HorizontalRankingChartEntry = {
 	key: string;
 	label: string;
 	value: number;
-	valueLabel: string;
+	valueLabel: React.ReactNode;
 	logoId?: string | null;
 };
 
@@ -32,7 +32,7 @@ export function HorizontalRankingChart({
 					<div
 						key={entry.key}
 						className="grid grid-cols-[minmax(7rem,11rem)_minmax(5rem,1fr)_4.75rem] items-center gap-3 sm:grid-cols-[minmax(10rem,15rem)_minmax(6rem,1fr)_5.25rem]"
-						aria-label={`${entry.label}: ${entry.valueLabel}`}
+						aria-label={`${entry.label}: ${entry.value}`}
 					>
 						<div className="flex min-w-0 items-center gap-2">
 							{entry.logoId ? (

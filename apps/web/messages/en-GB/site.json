@@ -1,16 +1,16 @@
 {
 	"home": {
-		"title": "Phaseo: AI Gateway and Open Model Catalog",
-		"description": "Discover trusted model data, route requests through one open-source AI gateway, and observe cost, reliability, usage, and performance across providers.",
-		"heroTitle": "One Platform for Every AI Model",
-		"heroDescription": "Discover trusted model data, route requests through one OpenAI-compatible gateway, and observe cost, reliability, usage, and performance across supported providers.",
+		"title": "Phaseo: The Open Gateway for Affordable AI",
+		"description": "Discover models, route across providers, and use an open-source AI gateway designed to keep inference accessible, portable, and transparent.",
+		"heroTitle": "AI Inference Should Be Open, Affordable, and Yours to Choose.",
+		"heroDescription": "Phaseo is building the open-source, provider-neutral gateway for AI. Discover models, route across providers, and keep your integration portable while better partnerships help move the cost of inference down.",
 		"explore": "Explore",
 		"models": "Models",
 		"getApiKey": "Get API Key",
 		"viewGithub": "View GitHub",
 		"openModelDatabase": "Open model database, unified gateway",
 		"openModelDatabaseDescription": "Explore the broader model catalog, then filter to models with an active Gateway route before you ship.",
-		"transparentPricing": "Transparent pricing",
+		"transparentPricing": "Clear prices today. Lower overhead tomorrow.",
 		"viewPricing": "View pricing",
 		"usePricingCalculator": "Use pricing calculator",
 		"latestModels": "Latest models",
@@ -51,12 +51,14 @@
 			"description": "Macro signals derived from our model and benchmark database (sample data shown). Updated continuously as new events land."
 		},
 		"pricingPoints": {
-			"payAsYouGo": "Pay as you go, full stop",
-			"payAsYouGoBody": "No enterprise plan, contract, subscription, minimum spend, or monthly or annual commitment.",
+			"payAsYouGo": "Pay as you go for usage",
+			"payAsYouGoBody": "No contract, subscription, or minimum spend for model usage.",
 			"creditFee": "{fee}% credit purchase fee",
 			"creditFeeBody": "Applied when you purchase credits, with a $1 minimum. Usage follows the model prices shown in the catalog.",
 			"managedCredits": "Managed credits or BYOK",
-			"managedCreditsBody": "BYOK includes one million fee-free requests each month, then a 2.5% service fee on provider-equivalent cost."
+			"managedCreditsBody": "BYOK includes one million fee-free requests each month, then a 2.5% service fee on provider-equivalent cost.",
+			"selfServeEnterprise": "Self-serve Enterprise",
+			"selfServeEnterpriseBody": "An optional monthly workspace plan for SSO, SCIM, governance, and priority support."
 		},
 		"reliability": {
 			"title": "Reliability for production AI.",
@@ -80,6 +82,16 @@
 			"routingBody": "Understand how the gateway rerouted traffic when provider health changed.",
 			"regressionsTitle": "Spot regressions early",
 			"regressionsBody": "Compare model and provider changes before they become user-facing incidents."
+		},
+		"transparentPricingDescription": "Usage follows the model prices shown in the catalog. Today’s credit purchase fee is shown openly; our mission is to reduce avoidable platform cost as provider partnerships and operating efficiency make that sustainable.",
+		"missionLink": "See what we are building toward",
+		"missionProofs": {
+			"openSource": "Open source",
+			"openSourceBody": "Inspect, extend, and improve the gateway.",
+			"providerNeutral": "Provider neutral",
+			"providerNeutralBody": "Choose the provider that fits your work.",
+			"lowerOverhead": "Lower overhead",
+			"lowerOverheadBody": "Use efficiency and partnerships to reduce avoidable cost."
 		}
 	},
 	"about": {
@@ -772,6 +784,10 @@
 			"batch": {
 				"label": "Batch",
 				"detail": "Async processing"
+			},
+			"decisions": {
+				"label": "Decisions",
+				"detail": "Typed answers"
 			}
 		},
 		"gatewayCapabilities": "Gateway capabilities",
@@ -1551,15 +1567,15 @@
 			"audit": "Audit and governance controls",
 			"priority": "Priority support"
 		},
-		"paygHeadline": "Pay as you go by default. Add Enterprise when your team needs it.",
-		"paygBody": "Buy credits when you need them and pay for what you use. Enterprise identity and payment benefits are optional, priced openly, and activated without a sales call.",
+		"paygHeadline": "Pay as you go by default. Self-serve Enterprise when your team needs it.",
+		"paygBody": "Buy credits when you need them and pay for what you use. Enterprise is a separate monthly subscription for identity, governance and priority support. It does not change model-usage pricing and can be activated without a sales call. For model-level estimates, use the",
 		"manageCredits": "Manage Credits",
 		"manageProviderKeys": "Manage Provider Keys",
 		"modelPricingCalculator": "Model Pricing Calculator",
 		"payg": "Pay as you go",
 		"paygBodyShort": "Top up credits only when you need them.",
-		"enterpriseOptional": "Enterprise is optional",
-		"enterpriseOptionalBody": "Add SSO, SCIM and governance without changing usage pricing.",
+		"enterpriseOptional": "Self-serve Enterprise",
+		"enterpriseOptionalBody": "Add SSO, SCIM, governance and priority support without changing usage pricing.",
 		"pricesPublic": "Prices stay public",
 		"pricesPublicBody": "Answer a short questionnaire and subscribe immediately.",
 		"faqTitle": "Frequently Asked Questions",
@@ -1639,7 +1655,8 @@
 				"training-data": "Does Phaseo train on my prompts or responses?",
 				"request-logging": "What request data does Phaseo store?",
 				"service-status": "Where can I check incidents and uptime?",
-				"contact-support": "How do I contact support?"
+				"contact-support": "How do I contact support?",
+				"receipts": "Can I get a receipt for a credit purchase?"
 			},
 			"answers": {
 				"how-are-tokens-billed": "Input, output, and other billable usage is deducted from your Phaseo credit balance at the model prices shown in the catalog. Phaseo does not add a separate markup to each managed request.",
@@ -1676,7 +1693,8 @@
 				"training-data": "No. Phaseo does not use gateway prompts or responses to train its own models. Requests are sent to the provider that serves them, so that provider’s data and training policies still apply unless your routing requirements exclude that provider.",
 				"request-logging": "Phaseo stores operational and billing metadata such as model, provider, token counts, latency, and errors. Raw prompts and responses are not persistently stored by default. If workspace I/O logging is enabled, payload retention follows the workspace privacy and retention settings.",
 				"service-status": "Current service status and incident history are published at status.phaseo.app. Request IDs and activity logs can help support trace a specific failure.",
-				"contact-support": "Use the contact page or email support@phaseo.app for account, billing, and technical questions. Bug reports and feature requests can also be filed through the public GitHub repository."
+				"contact-support": "Use the contact page or email support@phaseo.app for account, billing, and technical questions. Bug reports and feature requests can also be filed through the public GitHub repository.",
+				"receipts": "Yes. Stripe-hosted receipts are available for completed credit purchases from Settings → Credits. If a receipt is missing for a successful payment, contact support with the payment ID and date."
 			}
 		},
 		"matrix": {
@@ -1871,7 +1889,13 @@
 			"paygCreditPurchaseFee": "{fee, number}% ({minimum} minimum) when credits are purchased",
 			"enterpriseCreditPurchaseFee": "5% ({minimum} minimum) when credits are purchased",
 			"byokServiceFee": "{freeRequests, number} requests/month included, then {serviceFee, number}% of provider-equivalent cost"
-		}
+		},
+		"paygHeadlinePreview": "Pay as you go by default.",
+		"paygBodyPreview": "Buy credits when you need them and pay for what you use. Enterprise identity, governance and priority support are in preview for eligible workspaces. For model-level estimates, use the",
+		"enterprisePreview": "Enterprise preview",
+		"enterprisePreviewBody": "Identity, governance and priority support are being prepared for eligible workspaces.",
+		"pricesPublicPreview": "Public pricing",
+		"pricesPublicPreviewBody": "Compare model usage prices openly in the catalog and calculator."
 	},
 	"gatewayComparison": {
 		"title": "Phaseo vs {name}",
@@ -2422,7 +2446,8 @@
 			"survival": "When your access to the Service ends, Sections 2, 3, 4, 5 and 8–15 continue to apply.",
 			"contactQuestions": "If you have questions about these Terms, contact us:",
 			"contactEmailLabel": "Email",
-			"operatorDetails": "The Service is offered by <person>Daniel Butler</person>, trading as <brand>Phaseo</brand>."
+			"operatorDetails": "The Service is offered by <person>Daniel Butler</person>, trading as <brand>Phaseo</brand>.",
+			"autoTopUpSecurity": "For security, we may require two-factor authentication before enabling Auto Top-Up. If we make an option available to continue without two-factor authentication, you must complete a separate acknowledgment and confirmation step. By doing so, you acknowledge the increased risk of unauthorized charges and that any refund or charge dispute will be assessed under these Terms and applicable law. Nothing in this section limits any mandatory consumer rights."
 		}
 	},
 	"brandMenu": {

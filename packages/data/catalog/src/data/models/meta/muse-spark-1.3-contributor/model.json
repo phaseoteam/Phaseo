@@ -1,0 +1,41 @@
+{
+  "model_id": "meta/muse-spark-1.3-contributor",
+  "organisation_id": "meta",
+  "name": "Muse Spark 1.3 Contributor",
+  "status": "Available",
+  "previous_model_id": "meta/muse-spark-1.2-contributor",
+  "description": "Muse Spark 1.3 Contributor has the same model and capabilities as Muse Spark 1.3 at lower prices. Inputs and outputs may be used to train and improve Meta's AI models.",
+  "announced_date": "2026-09-02T00:00:00Z",
+  "release_date": "2026-09-02T00:00:00Z",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "text,image,video,audio",
+  "output_types": "text",
+  "api_model_id": "meta/muse-spark-1.3-contributor",
+  "links": [
+    { "title": "Meta Model API models", "kind": "api_reference", "url": "https://dev.meta.ai/docs/models" },
+    { "title": "Meta Model API pricing and rate limits", "kind": "pricing", "url": "https://dev.meta.ai/docs/pricing-rate-limits" }
+  ],
+  "details": [
+    { "name": "context_window", "value": "1048576", "unit": "tokens", "source_link": "https://dev.meta.ai/models", "other_info": "Meta lists a 1M token context window." },
+    { "name": "data_use", "value": "training_permitted", "unit": null, "source_link": "https://dev.meta.ai/models", "other_info": "Inputs and outputs are used to train and improve Meta's AI models." }
+  ],
+  "benchmarks": [],
+  "family_id": "meta/muse-spark-1.3",
+  "model_type": null,
+  "knowledge_cutoff": null,
+  "limits": { "context": 1048576, "input": null, "output": null },
+  "modalities": { "input": ["text", "image/*", "video/*", "audio/*", "application/pdf"], "output": ["text"] },
+  "reasoning": { "supported": true, "options": [] },
+  "capabilities": { "attachment": true, "tool_call": true, "structured_output": true, "temperature": true, "streaming": true, "web_search": true },
+  "open_weights": false,
+  "sources": [
+    { "kind": "api_reference", "url": "https://dev.meta.ai/models", "accessed_at": "2026-09-02T00:00:00Z", "notes": "Authenticated Meta Model API catalogue verified the contributor model ID, availability, context, data-use policy, and pricing." }
+  ],
+  "verification": { "status": "verified", "checked_at": "2026-09-02T00:00:00Z", "notes": "Model ID and route are available to the Phaseo Meta gateway account." },
+  "last_updated": "2026-09-02T00:00:00Z",
+  "removal_date": null,
+  "replacement_model_id": null,
+  "license_url": null
+}

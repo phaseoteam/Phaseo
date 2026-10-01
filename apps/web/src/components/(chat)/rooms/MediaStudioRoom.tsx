@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type SyntheticEvent } from "react";
 import { useLocale, useTranslations } from "next-intl";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { Logo } from "@/components/Logo";
 import type { GatewaySupportedModel } from "@/lib/fetchers/gateway/getGatewaySupportedModelIds";
 import { filterModelsForRoom } from "@/lib/chat/rooms";
@@ -56,6 +57,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
 import { RoomModelSelector } from "@/components/(chat)/RoomModelSelector";
+import { RoomSdkExport } from "@/components/(chat)/RoomSdkExport";
 import { useSidebar } from "@/components/ui/sidebar";
 import {
 	Tooltip,
@@ -516,19 +518,6 @@ function extractEntryMetrics(payload: any): EntryMetrics {
 	};
 }
 
-function formatTimestamp(value: string, locale: string): string {
-	const date = new Date(value);
-	if (Number.isNaN(date.getTime())) return value;
-	return date.toLocaleString(locale, {
-		day: "2-digit",
-		month: "short",
-		year: "numeric",
-		hour: "2-digit",
-		minute: "2-digit",
-		second: "2-digit",
-	});
-}
-
 function formatDuration(
 	durationMs: number | null | undefined,
 	locale: string,
@@ -543,26 +532,6 @@ function formatDuration(
 		maximumFractionDigits: 2,
 	});
 	return `${seconds.format(durationMs / 1000)}s`;
-}
-
-function formatCost(costUsd: number | null | undefined, locale: string, notAvailable: string): string {
-	if (typeof costUsd !== "number" || !Number.isFinite(costUsd)) return notAvailable;
-	return new Intl.NumberFormat(locale, {
-		style: "currency",
-		currency: "USD",
-		minimumFractionDigits: 3,
-		maximumFractionDigits: 3,
-	}).format(costUsd);
-}
-
-function formatCostFull(costUsd: number | null | undefined, locale: string, notAvailable: string): string {
-	if (typeof costUsd !== "number" || !Number.isFinite(costUsd)) return notAvailable;
-	return new Intl.NumberFormat(locale, {
-		style: "currency",
-		currency: "USD",
-		minimumFractionDigits: 2,
-		maximumFractionDigits: 9,
-	}).format(costUsd);
 }
 
 function formatVideoSeconds(
@@ -922,6 +891,28 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 		generatingVideo: t("generatingVideo"),
 	};
 	const notAvailable = t("mediaStudio.notAvailable");
+	const format = useDisplayFormatters();
+	const formatTimestamp = (value: string) => format.dateTime(value, { includeSeconds: true });
+	const formatCost = (costUsd: number | null | undefined) =>
+		typeof costUsd !== "number" || !Number.isFinite(costUsd)
+			? notAvailable
+			: format.number(costUsd, {
+				style: "currency",
+				currency: "USD",
+				minimumFractionDigits: 3,
+				maximumFractionDigits: 3,
+				notation: "standard",
+			});
+	const formatCostFull = (costUsd: number | null | undefined) =>
+		typeof costUsd !== "number" || !Number.isFinite(costUsd)
+			? notAvailable
+			: format.number(costUsd, {
+				style: "currency",
+				currency: "USD",
+				minimumFractionDigits: 2,
+				maximumFractionDigits: 9,
+				notation: "standard",
+			});
 	const isImageRoom = roomId === "image";
 	const { toggleSidebar, state: sidebarState } = useSidebar();
 	const filteredModels = useMemo(
@@ -1876,6 +1867,7 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 					/>
 				</div>
 				<div className="flex items-center gap-2">
+					<RoomSdkExport />
 					<Tooltip>
 						<TooltipTrigger asChild>
 							<Button
@@ -2004,7 +1996,7 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 											{modelLabel}
 										</p>
 										<div className="flex items-center justify-between gap-2">
-						<p className="text-[11px] text-muted-foreground">{t("mediaStudio.cost")}: {formatCost(entry.costUsd, locale, notAvailable)}</p>
+						<p className="text-[11px] text-muted-foreground">{t("mediaStudio.cost")}: {formatCost(entry.costUsd)}</p>
 										{entry.status === "completed" ? (
 											<RoomResponseTimestamp createdAt={entry.createdAt} className="order-last ml-auto" />
 										) : null}
@@ -2105,7 +2097,7 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 										</div>
 										<div className="flex items-center gap-2">
 											<RoomResponseTimestamp createdAt={entry.createdAt} className="order-last" />
-											<p className="text-xs text-muted-foreground">{t("mediaStudio.cost")}: {formatCost(entry.costUsd, locale, notAvailable)}</p>
+											<p className="text-xs text-muted-foreground">{t("mediaStudio.cost")}: {formatCost(entry.costUsd)}</p>
 											{entry.status === "failed" ? (
 												<div className="flex items-center gap-1">
 													<Button
@@ -2338,9 +2330,9 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 									<div className="flex flex-wrap items-center justify-between gap-3">
 										<div className="flex min-w-0 flex-1 flex-col gap-2">
 											<div className="flex items-center gap-2 overflow-x-auto whitespace-nowrap text-xs text-muted-foreground">
-												<span>{t("mediaStudio.timestamp")}: {formatTimestamp(previewEntry.createdAt, locale)}</span>
+												<span>{t("mediaStudio.timestamp")}: {formatTimestamp(previewEntry.createdAt)}</span>
 												<span className="h-3 w-px bg-border" aria-hidden="true" />
-												<span>{t("mediaStudio.cost")}: {formatCostFull(previewEntry.costUsd, locale, notAvailable)}</span>
+												<span>{t("mediaStudio.cost")}: {formatCostFull(previewEntry.costUsd)}</span>
 												<span className="h-3 w-px bg-border" aria-hidden="true" />
 												<span className="inline-flex items-center gap-1">
 													<span>{t("mediaStudio.generationTime")}: {formatDuration(previewEntry.durationMs, locale, notAvailable)}</span>
@@ -2485,9 +2477,9 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 									<div className="flex flex-wrap items-center justify-between gap-3">
 										<div className="flex min-w-0 flex-1 flex-col gap-2">
 											<div className="flex items-center gap-2 overflow-x-auto whitespace-nowrap text-xs text-muted-foreground">
-												<span>{t("mediaStudio.timestamp")}: {formatTimestamp(previewEntry.createdAt, locale)}</span>
+												<span>{t("mediaStudio.timestamp")}: {formatTimestamp(previewEntry.createdAt)}</span>
 												<span className="h-3 w-px bg-border" aria-hidden="true" />
-												<span>{t("mediaStudio.cost")}: {formatCostFull(previewEntry.costUsd, locale, notAvailable)}</span>
+												<span>{t("mediaStudio.cost")}: {formatCostFull(previewEntry.costUsd)}</span>
 												<span className="h-3 w-px bg-border" aria-hidden="true" />
 												<span className="inline-flex items-center gap-1">
 													<span>{t("mediaStudio.generationTime")}: {formatDuration(previewEntry.durationMs, locale, notAvailable)}</span>

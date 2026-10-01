@@ -4,6 +4,7 @@ import { BarChart3, Loader2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -31,12 +32,14 @@ export default function ModelPercentileSelect({
 	isLoading = false,
 	disabled = false,
 	ariaLabel,
+	className,
 }: {
 	value: ModelPercentile;
 	onChange: (value: ModelPercentile) => void;
 	isLoading?: boolean;
 	disabled?: boolean;
 	ariaLabel?: string;
+	className?: string;
 }) {
 	const tPerformance = useTranslations("Catalogue.modelDetail.performance");
 	const tQuickstart = useTranslations("Catalogue.models.detail.quickstart");
@@ -46,7 +49,7 @@ export default function ModelPercentileSelect({
 				<Button
 					variant="outline"
 					size="sm"
-					className="h-8 gap-2 rounded-md px-3 text-xs"
+					className={cn("h-8 gap-2 rounded-md px-3 text-xs", className)}
 					aria-label={ariaLabel ?? tPerformance("selectPercentile")}
 					title={disabled ? tQuickstart("comingSoon") : undefined}
 					disabled={disabled || isLoading}

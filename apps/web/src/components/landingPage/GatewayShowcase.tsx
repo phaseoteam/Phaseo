@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { fetchFrontendGatewayShowcase } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import { formatGatewayMetricWindow } from "@/lib/fetchers/gateway/getMarketingMetrics";
 import { getModelDetailsHref } from "@/lib/models/modelHref";
+import { DisplayNumber } from "@/components/display/DisplayValue";
 
 type TopModelRow = {
 	key: string;
@@ -29,14 +30,6 @@ type TopAppRow = {
 	imageUrl: string | null;
 	tokens: number;
 };
-
-function formatCompact(value: number) {
-	if (!Number.isFinite(value) || value <= 0) return "0";
-	if (value >= 1e9) return `${(value / 1e9).toFixed(1)}B`;
-	if (value >= 1e6) return `${(value / 1e6).toFixed(1)}M`;
-	if (value >= 1e3) return `${(value / 1e3).toFixed(1)}K`;
-	return value.toLocaleString();
-}
 
 function getInitial(name: string) {
 	return name.trim().charAt(0).toUpperCase() || "A";
@@ -132,17 +125,17 @@ async function GatewayShowcaseData() {
 	const stats = [
 		{
 			label: `Tokens routed (${formatGatewayMetricWindow(metrics.summary.windowHours)})`,
-			value: `${formatCompact(metrics.summary.tokensInWindow)}+`,
+			value: <><DisplayNumber value={metrics.summary.tokensInWindow} options={{ maximumFractionDigits: 1 }} />+</>,
 			icon: Coins,
 		},
 		{
 			label: "Active models",
-			value: `${formatCompact(metrics.summary.supportedModels ?? 0)}+`,
+			value: <><DisplayNumber value={metrics.summary.supportedModels ?? 0} />+</>,
 			icon: Boxes,
 		},
 		{
 			label: "Supported providers",
-			value: `${formatCompact(metrics.summary.supportedProviders ?? 0)}+`,
+			value: <><DisplayNumber value={metrics.summary.supportedProviders ?? 0} />+</>,
 			icon: Route,
 		},
 	] as const;
@@ -217,7 +210,7 @@ async function GatewayShowcaseData() {
 								</div>
 								<div className="text-right">
 									<div className="text-sm tabular-nums font-medium">
-										{formatCompact(model.tokens)}
+										<DisplayNumber value={model.tokens} options={{ maximumFractionDigits: 1 }} />
 									</div>
 									<div className="text-[11px] text-muted-foreground">
 										tokens
@@ -279,7 +272,7 @@ async function GatewayShowcaseData() {
 									</div>
 									<div className="text-right">
 										<div className="text-sm tabular-nums font-medium">
-											{formatCompact(app.tokens)}
+											<DisplayNumber value={app.tokens} options={{ maximumFractionDigits: 1 }} />
 										</div>
 										<div className="text-[11px] text-muted-foreground">
 											tokens
