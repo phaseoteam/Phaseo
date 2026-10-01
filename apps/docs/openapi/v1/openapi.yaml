@@ -10434,6 +10434,20 @@ components:
     ResponsesResponse:
       type: object
       properties:
+        incomplete_details:
+          type: object
+          nullable: true
+          description: >-
+            Present when generation ends incomplete, including token limits or
+            content filtering.
+          properties:
+            reason:
+              type: string
+              enum:
+                - max_output_tokens
+                - content_filter
+          required:
+            - reason
         id:
           type: string
         object:

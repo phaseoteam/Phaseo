@@ -314,7 +314,7 @@ describe("runTextGeneratePipeline response cache", () => {
 
 		expect(response.status).toBe(200);
 		expect(doRequestWithIRMock).toHaveBeenCalledTimes(1);
-		expect(doRequestWithIRMock.mock.calls[0]?.[1]).toMatchObject({ stream: true });
+		expect(doRequestWithIRMock.mock.calls[0]?.[1]).toMatchObject({ stream: false });
 		expect(finalizeRequestMock).toHaveBeenCalledTimes(1);
 		expect(args.pre.ctx.responseCache).toMatchObject({
 			enabled: true,
@@ -359,7 +359,7 @@ describe("runTextGeneratePipeline response cache", () => {
 
 		await runTextGeneratePipeline(createArgs());
 
-		expect(doRequestWithIRMock.mock.calls[0]?.[1]).toMatchObject({ stream: true });
+		expect(doRequestWithIRMock.mock.calls[0]?.[1]).toMatchObject({ stream: false });
 		expect(consumeTextProtocolStreamToIRMock).toHaveBeenCalledOnce();
 		expect(onCallEndMock).toHaveBeenCalledWith("responses", expect.objectContaining({ observationId: "buffered-attempt", ok: true }));
 		await Promise.all(pendingBackground);

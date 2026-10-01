@@ -681,9 +681,9 @@ async function runTextGeneratePipelineInner(args: PipelineRunnerArgs, liveSink?:
 		const requestedStream = ir.stream === true;
 		const irForExecution: IRChatRequest = {
 			...ir,
-			// Always use the provider's streaming transport for text generation.
-			// Buffered clients are materialized back into their requested JSON shape below.
-			stream: true,
+			// Each provider attempt may opt buffered requests into streaming only
+			// with explicit parity metadata. Preserve the client's intent here.
+			stream: requestedStream,
 		};
 		const responseCacheEligibility = isResponseCacheEligible({
 			endpoint,

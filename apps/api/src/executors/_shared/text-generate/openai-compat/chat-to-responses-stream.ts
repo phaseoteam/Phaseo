@@ -4,6 +4,7 @@ import { readSseEvents, sseReadable, SseProtocolError } from "@core/sse";
 import { openAIChatToIR } from "./transform-chat";
 import { parseMinimaxInterleavedText } from "./providers/minimax/quirks";
 import { encodeOpenAIResponsesResponse } from "@protocols/openai-responses/encode";
+import { deriveResponsesCompletion as deriveResponsesCompletionFromFinish } from "@protocols/openai-responses/completion";
 import { applyStreamQuirks, normalizeResponsesEvent, type StreamAdapterState } from "./stream-shared";
 
 function parseChatMediaParts(value: any): Array<Extract<IRContentPart, { type: "image" | "audio" }>> {
@@ -571,28 +572,6 @@ function buildResponsesOutputFromState(
 	}
 	outputItems.sort((a, b) => a.index - b.index);
 	return outputItems.map((entry) => entry.item);
-}
-
-function deriveResponsesCompletionFromFinish(finishReason?: string | null): {
-	status: "completed" | "incomplete" | "failed";
-	incompleteDetails?: { reason: string };
-} {
-	if (finishReason === "error") {
-		return { status: "failed" };
-	}
-	if (finishReason === "length" || finishReason === "max_tokens") {
-		return {
-			status: "incomplete",
-			incompleteDetails: { reason: "max_output_tokens" },
-		};
-	}
-	if (finishReason === "content_filter") {
-		return {
-			status: "incomplete",
-			incompleteDetails: { reason: "content_filter" },
-		};
-	}
-	return { status: "completed" };
 }
 
 function encodeResponsesUsageFromIR(usage?: IRChatResponse["usage"]) {

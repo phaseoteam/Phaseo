@@ -2332,6 +2332,7 @@ class ResponsesResponse(TypedDict):
 	currency: NotRequired[str]
 	finish_reason: NotRequired[Optional[str]]
 	id: NotRequired[str]
+	incomplete_details: NotRequired[Optional[Dict[str, Any]]]
 	meta: NotRequired[OcrResponse]
 	model: NotRequired[str]
 	nativeResponseId: NotRequired[Optional[str]]

@@ -8,6 +8,7 @@ import type { RequestResult } from "../execute";
 import type { GatewayCompletionsChoice } from "@core/types";
 import type { IRChatResponse, IRUsage } from "@core/ir";
 import { encodeAnthropicMessagesResponse } from "@/protocols/anthropic-messages/encode";
+import { deriveResponsesCompletion } from "@/protocols/openai-responses/completion";
 import { shapeUsageForClient } from "../usage";
 
 type AnyRecord = Record<string, any>;
@@ -127,7 +128,8 @@ function buildResponsesPayload(ctx: PipelineContext, result: RequestResult): Any
         ? Math.floor(ctx.meta.startedAtMs / 1000)
         : Math.floor(Date.now() / 1000);
     const now = Math.floor(Date.now() / 1000);
-    const status = raw?.status ?? deriveResponsesStatus(ir);
+    const completion = deriveResponsesCompletion(ir?.choices?.[0]?.finishReason);
+    const status = raw?.status ?? completion.status;
     const rawUsage = raw?.usage && typeof raw.usage === "object" ? raw.usage : undefined;
     const irUsage = ir?.usage ? encodeResponsesUsage(ir.usage) : undefined;
     // IR usage is authoritative for canonical token mapping.
@@ -158,7 +160,7 @@ function buildResponsesPayload(ctx: PipelineContext, result: RequestResult): Any
         finish_reason: raw?.finish_reason ?? ir?.choices?.[0]?.finishReason ?? null,
         completed_at: raw?.completed_at ?? (status === "completed" ? now : null),
         error: raw?.error ?? null,
-        incomplete_details: raw?.incomplete_details ?? null,
+        incomplete_details: raw?.incomplete_details ?? (status === "incomplete" ? completion.incompleteDetails ?? null : null),
         instructions: raw?.instructions ?? request.instructions ?? null,
         max_output_tokens: raw?.max_output_tokens ?? request.max_output_tokens ?? null,
         max_tool_calls: raw?.max_tool_calls ?? request.max_tool_calls ?? null,
@@ -246,14 +248,6 @@ function resolveClientModel(
         return ctxModel;
     }
     return rawModel;
-}
-
-function deriveResponsesStatus(ir?: IRChatResponse) {
-    const mainChoice = ir?.choices?.[0];
-    if (!mainChoice) return "completed";
-    if (mainChoice.finishReason === "error") return "failed";
-    if (mainChoice.finishReason === "length") return "incomplete";
-    return "completed";
 }
 
 function encodeResponsesUsage(usage: IRUsage) {
@@ -959,5 +953,4 @@ export function formatClientPayload(args: {
     if (meta) fallback.meta = meta;
     return attachTopLevelPricing(fallback, usage);
 }
-
 
