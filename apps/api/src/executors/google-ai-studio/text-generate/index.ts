@@ -1279,6 +1279,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 				bufferingArgs,
 				"chat",
 				selectedDispatchAtMs,
+				undefined, keyInfo.source,
 			);
 			const fallback = applyGoogleOutputTokenFallback(irResponse);
 			if (fallback.applied) {

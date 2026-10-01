@@ -203,6 +203,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 			args,
 			routeForBuffer,
 			selectedDispatchAtMs,
+			undefined, keyInfo.source,
 		);
 		if (route.family === "gemini") {
 			const fallback = applyGoogleOutputTokenFallback(ir);

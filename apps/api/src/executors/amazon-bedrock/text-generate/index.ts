@@ -258,6 +258,7 @@ async function executeMantleOpenAI(
 			args,
 			route,
 			selectedDispatchAtMs,
+			undefined, keyInfo.source,
 		);
 		const usageMeters = normalizeTextUsageForPricing(usage ?? ir?.usage);
 		if (usageMeters) {

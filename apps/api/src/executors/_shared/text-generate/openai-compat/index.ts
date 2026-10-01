@@ -23,6 +23,9 @@ import { resolveProviderKey } from "@providers/keys";
 import { upstreamTestHeaders } from "@providers/shared/testing";
 import { normalizeTextUsageForPricing } from "@executors/_shared/usage/text";
 import { sanitizeOpenAICompatRequest } from "./provider-policy";
+import { readSseEvents, SseProtocolError } from "@/core/sse";
+import { sniffUpstreamBody, readBoundedUpstreamJson } from "@/core/upstream-body";
+import { classifyStreamProviderError } from "@/core/stream-error";
 import {
 	transformChatStream,
 	transformChatStreamToResponses,
@@ -352,6 +355,7 @@ export async function executeOpenAIWire(
 			route,
 			selectedDispatchAtMs,
 			policy.emptyDoneBehavior,
+			keyInfo.source,
 		);
 		if (ir) {
 			(ir as any).rawResponse = rawResponse;
@@ -440,16 +444,16 @@ export async function bufferStreamToIR(
 	route: "responses" | "chat",
 	upstreamStartMs: number,
 	emptyDoneBehavior?: "length",
+	credentialSource?: "gateway" | "byok",
 ): Promise<{ ir: IRChatResponse; usage: any; rawResponse: any; firstByteMs: number | null; totalMs: number }> {
 	if (!res.body) {
 		throw new Error("openai_stream_missing_body");
 	}
 
-	const reader = res.body.getReader();
-	const decoder = new TextDecoder();
-	let buf = "";
 	let finalResponse: any = null;
 	let sawDone = false;
+	let nativeTerminal = false;
+	let admittedChars = 0;
 	const applyStreamPayload = (payload: any) => {
 		// Responses API sends response in payload.response
 		if (route === "responses" && payload?.response) {
@@ -467,40 +471,35 @@ export async function bufferStreamToIR(
 
 	let firstByteMs: number | null = null;
 	let terminalAtMs: number | null = null;
-	while (true) {
-		const { value, done } = await reader.read();
-		if (done) break;
-		buf += decoder.decode(value, { stream: true });
-		const frames = buf.split(/\r?\n\r?\n/);
-		buf = frames.pop() ?? "";
-
-		for (const raw of frames) {
-			const lines = raw.split("\n");
-			let data = "";
-
-			for (const line of lines) {
-				const l = line.replace(/\r$/, "");
-				if (l.startsWith("data:")) {
-					data += l.slice(5).trimStart();
-				}
-			}
-
-			if (!data) continue;
+	const detected = await sniffUpstreamBody(res.body, () => { firstByteMs ??= Math.max(0, Date.now() - upstreamStartMs); });
+	if (detected.kind === "json") {
+		const parsed = await readBoundedUpstreamJson(detected.stream);
+		if (parsed?.error || parsed?.response?.error) throw classifyStreamProviderError(parsed, credentialSource);
+		finalResponse = route === "responses" && parsed?.response ? parsed.response : parsed;
+	} else {
+		for await (const event of readSseEvents(detected.stream)) {
+			const data = event.data;
+			admittedChars += data.length;
+			if (admittedChars > 16 * 1024 * 1024) throw new SseProtocolError("sse_state_too_large");
 			if (data === "[DONE]") {
 				sawDone = true;
-				continue;
+				break;
 			}
 
 			let payload: any;
 			try {
 				payload = JSON.parse(data);
 			} catch {
-				continue;
+				throw new SseProtocolError("sse_invalid_json");
 			}
-			if (firstByteMs === null) {
-				firstByteMs = Math.max(0, Date.now() - upstreamStartMs);
-			}
+			if (!payload || typeof payload !== "object" || Array.isArray(payload)) throw new SseProtocolError("sse_invalid_json");
+			const type = payload.type ?? event.event;
+			if (payload.error || type === "error" || type === "response.failed" || payload.response?.status === "failed") throw classifyStreamProviderError(payload, credentialSource);
 			applyStreamPayload(payload);
+			if (route === "responses" && payload.response && (type === "response.completed" || type === "response.incomplete"
+				|| payload.response.status === "completed" || payload.response.status === "incomplete")) {
+				nativeTerminal = true; terminalAtMs = Date.now(); break;
+			}
 			if (
 				payload?.type === "response.completed" ||
 				payload?.response?.status === "completed" ||
@@ -510,46 +509,8 @@ export async function bufferStreamToIR(
 			}
 		}
 	}
-	buf += decoder.decode();
-	const trailing = buf.trim();
-	if (trailing.length > 0) {
-		const lines = trailing.split("\n");
-		let data = "";
-
-		for (const line of lines) {
-			const trimmed = line.replace(/\r$/, "");
-			if (trimmed.startsWith("data:")) {
-				data += trimmed.slice(5).trimStart();
-			}
-		}
-
-		if (data === "[DONE]") {
-			sawDone = true;
-		} else if (data) {
-			try {
-				const payload = JSON.parse(data);
-				applyStreamPayload(payload);
-			} catch {
-				// Fall through to raw JSON parse below when applicable.
-			}
-		}
-	}
-
-	if (!finalResponse) {
-		// Some providers ignore stream=true and return a regular JSON response body.
-		const fallbackText = trailing;
-		if (fallbackText) {
-			try {
-				const parsed = JSON.parse(fallbackText);
-				if (route === "responses" && parsed?.response) {
-					finalResponse = parsed.response;
-				} else {
-					finalResponse = parsed;
-				}
-			} catch {
-				// Keep existing error path below.
-			}
-		}
+	if (detected.kind === "sse" && !nativeTerminal && !(sawDone && (isChatCompletionResponse(finalResponse) || (route === "chat" && emptyDoneBehavior === "length")))) {
+		throw new SseProtocolError("sse_missing_terminal");
 	}
 
 	if (!finalResponse) {
@@ -569,7 +530,6 @@ export async function bufferStreamToIR(
 	}
 
 	if (!finalResponse) {
-		console.error(`Missing final response for provider ${args.providerId}, route: ${route}, buf length: ${buf.length}`);
 		throw new Error("openai_stream_missing_response");
 	}
 
@@ -736,7 +696,8 @@ function accumulateChatCompletion(finalResponse: any, payload: any): any {
 	}
 
 	for (const chunk of payload.choices) {
-		const idx = chunk.index || 0;
+		const idx = chunk.index ?? 0;
+		if (!Number.isInteger(idx) || idx < 0 || idx >= 128) throw new SseProtocolError("sse_state_too_large");
 		if (!response.choices[idx]) {
 			response.choices[idx] = {
 				index: idx,
@@ -780,7 +741,8 @@ function accumulateChatCompletion(finalResponse: any, payload: any): any {
 			if (!choice.message.tool_calls) choice.message.tool_calls = [];
 			// Accumulate tool calls
 			for (const tcDelta of chunk.delta.tool_calls) {
-				const tcIdx = tcDelta.index || 0;
+				const tcIdx = tcDelta.index ?? 0;
+				if (!Number.isInteger(tcIdx) || tcIdx < 0 || tcIdx >= 128) throw new SseProtocolError("sse_state_too_large");
 				if (!choice.message.tool_calls[tcIdx]) {
 					choice.message.tool_calls[tcIdx] = {
 						id: tcDelta.id || "",
