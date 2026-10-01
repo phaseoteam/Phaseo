@@ -37,7 +37,7 @@ export function BenchmarkRankingsSection({ benchmarks, intelligenceValue }: { be
         <div><h3 className="font-semibold">{metric.label}</h3><p className="mt-1 text-xs text-muted-foreground">{entries.length} matched {selectedMetric === "value" ? "configurations" : "models"} · {selectedMetric === "value" ? "Evaluation Cost ÷ intelligence score · Lower is better" : selectedMetric === "cost" ? "Lower cost is better · USD" : "Higher is better"}{versions.length ? ` · Index v${versions.join(" / v")}` : ""}</p></div>
         <div className="relative w-full sm:w-64"><Search className="pointer-events-none absolute left-3 top-3 size-4 text-muted-foreground" /><Input aria-label="Search ranked models" placeholder="Search models" value={search} onChange={(e) => { setSearch(e.target.value); setLimit(20); }} className="pl-9" /></div>
       </div>
-      {selectedMetric === "value" && valueEntries.length > 0 ? <IntelligenceValueComparison entries={valueEntries} limit={limit} onShowMore={() => setLimit((value) => value + 20)} /> : null}
+      {selectedMetric === "value" && valueEntries.length > 0 ? <IntelligenceValueComparison entries={valueEntries} total={entries.length} limit={limit} onShowMore={() => setLimit((value) => value + 20)} /> : null}
       {selectedMetric !== "value" ? <ol className="divide-y">
         {filtered.slice(0, limit).map((entry) => <li key={entry.model_id} className="relative grid min-h-20 grid-cols-[1.75rem_minmax(0,1fr)_auto] items-center gap-3 py-3 sm:grid-cols-[2rem_2rem_minmax(0,1fr)_auto]">
           <span className="text-sm tabular-nums text-muted-foreground">{entry.rank}</span>

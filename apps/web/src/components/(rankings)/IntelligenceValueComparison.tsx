@@ -14,7 +14,7 @@ import { artificialAnalysisValueKey, artificialAnalysisValueLabel } from "@/lib/
 
 const Scatter = dynamic(() => import("./IntelligenceValueScatter"), { ssr: false, loading: () => <div className="flex h-96 items-center justify-center text-sm text-muted-foreground" role="status">Loading value chart…</div> });
 
-export function IntelligenceValueComparison({ entries, limit, onShowMore }: { entries: PublicIntelligenceValueEntry[]; limit: number; onShowMore: () => void }) {
+export function IntelligenceValueComparison({ entries, total, limit, onShowMore }: { entries: PublicIntelligenceValueEntry[]; total: number; limit: number; onShowMore: () => void }) {
 	const [view, setView] = useState<"bars" | "scatter">("bars");
 	const [selected, setSelected] = useState<Set<string> | null>(null);
 	const [query, setQuery] = useState("");
@@ -43,7 +43,7 @@ export function IntelligenceValueComparison({ entries, limit, onShowMore }: { en
 			</Popover>
 		</div>
 		{visible.length ? <>
-			{view === "bars" ? <IntelligenceValueBars entries={visible} total={entries.length} /> : <Scatter entries={visible} />}
+			{view === "bars" ? <IntelligenceValueBars entries={visible} total={total} /> : <Scatter entries={visible} />}
 			<IntelligenceValueTable entries={visible.slice(0, limit)} />
 			{visible.length > limit ? <div className="flex justify-end py-3"><Button variant="ghost" size="sm" onClick={onShowMore}>Show more</Button></div> : null}
 		</> : <p className="py-10 text-center text-sm text-muted-foreground">Select models to compare.</p>}

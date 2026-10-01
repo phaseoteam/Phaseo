@@ -23,10 +23,16 @@ export function latestIndexVersion(rows: Array<{ other_info: string | null }>) {
 export function intelligenceValueResults(rows: Score[], intelligenceId: string, costId: string) {
 	const version = latestIndexVersion(rows.filter((row) => row.benchmark_id === intelligenceId));
 	const key = (row: Score) => JSON.stringify([row.model_slug, sourceId(row.other_info), indexVersion(row.other_info), row.variant, row.updated_at]);
-	const costs = new Map(rows.filter((row) => row.benchmark_id === costId && sourceId(row.other_info) && row.updated_at && indexVersion(row.other_info) === version).map((row) => [key(row), row]));
+	const costs = new Map<string, Score>();
+	const conflictingCosts = new Set<string>();
+	for (const row of rows.filter((row) => row.benchmark_id === costId && sourceId(row.other_info) && row.updated_at && indexVersion(row.other_info) === version)) {
+		const identity = key(row);
+		if (costs.has(identity) && costs.get(identity)!.score_numeric !== row.score_numeric) conflictingCosts.add(identity);
+		else costs.set(identity, row);
+	}
 	return rows.flatMap((row) => {
 		if (row.benchmark_id !== intelligenceId || !sourceId(row.other_info) || !row.updated_at || indexVersion(row.other_info) !== version) return [];
-		const rawCost = costs.get(key(row))?.score_numeric;
+		const rawCost = conflictingCosts.has(key(row)) ? null : costs.get(key(row))?.score_numeric;
 		if (row.score_numeric == null || rawCost == null) return [];
 		const cost = Number(rawCost);
 		const intelligence = Number(row.score_numeric);

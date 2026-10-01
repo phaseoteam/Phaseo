@@ -75,16 +75,20 @@ export function buildArtificialAnalysisValue(benchmarks: PublicBenchmarkRanking[
 		return source && version && configuration.updated_at ? JSON.stringify([model, source, version, configuration.variant, configuration.updated_at]) : null;
 	};
 	const costs = new Map<string, number>();
+	const conflictingCosts = new Set<string>();
 	for (const entry of cost?.entries ?? []) for (const configuration of entry.configurations ?? []) {
 		const identity = key(entry.model_id, configuration);
-		if (identity && Number.isFinite(configuration.score) && configuration.score > 0) costs.set(identity, configuration.score);
+		if (identity) {
+			if (costs.has(identity) && costs.get(identity) !== configuration.score) conflictingCosts.add(identity);
+			else costs.set(identity, configuration.score);
+		}
 	}
 	const entries: PublicIntelligenceValueEntry[] = [];
 	for (const entry of intelligence?.entries ?? []) {
 		for (const configuration of entry.configurations ?? []) {
 			const identity = key(entry.model_id, configuration);
-			const evaluationCost = identity ? costs.get(identity) : undefined;
-			if (evaluationCost == null || !Number.isFinite(configuration.score) || configuration.score <= 0) continue;
+			const evaluationCost = identity && !conflictingCosts.has(identity) ? costs.get(identity) : undefined;
+			if (evaluationCost == null || !Number.isFinite(evaluationCost) || evaluationCost <= 0 || !Number.isFinite(configuration.score) || configuration.score <= 0) continue;
 			const ratio = evaluationCost / configuration.score;
 			if (!Number.isFinite(ratio)) continue;
 			entries.push({ ...entry, configurations: undefined, configuration_id: identity!, variant: configuration.variant, score: ratio, intelligence_score: configuration.score, evaluation_cost: evaluationCost, other_info: configuration.other_info, source_link: configuration.source_link, updated_at: configuration.updated_at });

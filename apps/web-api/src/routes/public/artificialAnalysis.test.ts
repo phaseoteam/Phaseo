@@ -10,6 +10,13 @@ const row = (benchmark_id: string, score_numeric: number | null, source = "sourc
 });
 
 describe("Artificial Analysis intelligence value", () => {
+	it("rejects conflicting costs in either input order while accepting equal duplicates", () => {
+		const intelligence = row(intelligenceId, 50);
+		for (const costs of [[100, 200], [200, 100], [0, 100], [100, 0]]) {
+			expect(intelligenceValueResults([intelligence, ...costs.map((cost) => row(costId, cost))], intelligenceId, costId)).toEqual([]);
+		}
+		expect(intelligenceValueResults([intelligence, row(costId, 100), row(costId, 100)], intelligenceId, costId)[0].score_numeric).toBe(2);
+	});
 	it("uses the imported dataset version rather than a standalone manual patch version", () => {
 		expect(latestIndexVersion([row(intelligenceId, 50), { other_info: "Artificial Analysis Intelligence Index v4.3.2; High reasoning" }])).toBe("4.3");
 	});
