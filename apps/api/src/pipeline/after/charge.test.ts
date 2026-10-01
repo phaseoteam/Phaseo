@@ -9,6 +9,56 @@ vi.mock("../pricing/persist", () => ({
 import { recordUsageAndChargeOnce } from "./charge";
 
 describe("recordUsageAndChargeOnce", () => {
+    it("coalesces concurrent finalizers before the credit-write barrier", async () => {
+        let finish!: () => void;
+        let settle!: () => void;
+        recordUsageAndChargeMock.mockImplementation(() => new Promise<void>(resolve => { settle = resolve; }));
+        const ctx: any = { requestId: "r", billingRequestId: "bill", workspaceId: "ws", meta: {},
+            creditCacheWrites: [new Promise<void>(resolve => { finish = resolve; })] };
+        const pending = Array.from({ length: 32 }, () => recordUsageAndChargeOnce({ ctx, costNanos: 10, endpoint: "responses" }));
+        await Promise.resolve(); expect(recordUsageAndChargeMock).not.toHaveBeenCalled();
+        finish();
+        await vi.waitFor(() => expect(recordUsageAndChargeMock).toHaveBeenCalled());
+        expect(recordUsageAndChargeMock).toHaveBeenCalledOnce();
+        settle(); await Promise.all(pending);
+        expect(ctx.meta.__usageChargeRecorded).toBe(true);
+    });
+
+    it("coalesces different context wrappers sharing one request's metadata", async () => {
+        const meta = {};
+        const ctx: any = { requestId: "r", billingRequestId: "bill", workspaceId: "ws", meta };
+        await Promise.all([
+            recordUsageAndChargeOnce({ ctx, costNanos: 10, endpoint: "responses" }),
+            recordUsageAndChargeOnce({ ctx: { ...ctx }, costNanos: 10, endpoint: "responses" }),
+        ]);
+        expect(recordUsageAndChargeMock).toHaveBeenCalledOnce();
+    });
+
+    it("does not silently accept a conflicting amount or identity for one settlement", async () => {
+        const ctx: any = { requestId: "r", billingRequestId: "bill", workspaceId: "ws", meta: {} };
+        await recordUsageAndChargeOnce({ ctx, costNanos: 10, endpoint: "responses" });
+        await expect(recordUsageAndChargeOnce({ ctx, costNanos: 20, endpoint: "responses" })).rejects.toThrow("settlement_identity_conflict");
+        await expect(recordUsageAndChargeOnce({ ctx: { ...ctx, workspaceId: "other" }, costNanos: 10, endpoint: "responses" })).rejects.toThrow("settlement_identity_conflict");
+        expect(recordUsageAndChargeMock).toHaveBeenCalledOnce();
+    });
+
+    it("shares retry attempts and permits recovery after an exhausted attempt", async () => {
+        vi.useFakeTimers();
+        const log = vi.spyOn(console, "error").mockImplementation(() => {});
+        try {
+            recordUsageAndChargeMock.mockRejectedValue(new Error("unavailable"));
+            const ctx: any = { requestId: "r", billingRequestId: "bill", workspaceId: "ws", meta: {} };
+            const pending = Promise.all(Array.from({ length: 16 }, () => recordUsageAndChargeOnce({ ctx, costNanos: 10, endpoint: "responses" })));
+            await vi.runAllTimersAsync(); await pending;
+            expect(recordUsageAndChargeMock).toHaveBeenCalledTimes(3);
+            expect(log).toHaveBeenCalledOnce();
+            expect(ctx.meta.__usageChargeRecorded).not.toBe(true);
+            recordUsageAndChargeMock.mockResolvedValue(undefined);
+            await recordUsageAndChargeOnce({ ctx, costNanos: 10, endpoint: "responses" });
+            expect(recordUsageAndChargeMock).toHaveBeenCalledTimes(4);
+            expect(ctx.meta.__usageChargeRecorded).toBe(true);
+        } finally { log.mockRestore(); vi.useRealTimers(); }
+    });
     it("passes the server-owned admission balance into settlement", async () => {
         const ctx: any = { requestId: "r", billingRequestId: "bill", workspaceId: "ws", meta: {},
             gating: { credit: { balanceNanos: 100_000_000_000_000 } }, rawBody: { creditSnapshotBalanceNanos: 1 } };
@@ -27,7 +77,7 @@ describe("recordUsageAndChargeOnce", () => {
         expect(recordUsageAndChargeMock).toHaveBeenCalledOnce();
     });
 	beforeEach(() => {
-		recordUsageAndChargeMock.mockClear();
+		recordUsageAndChargeMock.mockReset().mockResolvedValue(undefined);
 	});
 
 	it("records usage charge once per request context", async () => {
