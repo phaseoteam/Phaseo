@@ -10,6 +10,7 @@ import type {
 	WorkspacePolicy,
 } from "./types";
 import { normalizeDynamicRouteConfig, type DynamicRoutePolicy } from "./dynamic-routes";
+import { CacheCapacityError, L1Cache } from "@/runtime/cache/l1";
 
 type ProviderRestrictionMode = "none" | "allowlist" | "blocklist";
 
@@ -71,19 +72,20 @@ type ProviderHintSet = {
 
 const WORKSPACE_POLICY_L1_TTL_MS = 30_000;
 const WORKSPACE_POLICY_L1_MAX_ENTRIES = 2_000;
-const WORKSPACE_POLICY_KV_PREFIX = "gateway:workspace-policy:v2";
+const WORKSPACE_POLICY_KV_PREFIX = "gateway:workspace-policy:v3";
 const WORKSPACE_POLICY_KV_TTL_SECONDS = 60;
 const WORKSPACE_POLICY_VERSION_PREFIX = "gateway:workspace-policy-version";
 const WORKSPACE_POLICY_VERSION_L1_TTL_MS = 5_000;
 
-type WorkspacePolicyL1Entry = {
-	expiresAt: number;
-	value: WorkspacePolicy;
-};
-
-const workspacePolicyL1 = new Map<string, WorkspacePolicyL1Entry>();
-type PolicyVersionState = { value: number; expiresAt: number; epoch: object; pendingBumps: number };
+const WORKSPACE_POLICY_MAX_CHARS = 120_000;
+const workspacePolicyL1 = new L1Cache<string>({
+	namespace: "workspace-policy", maxEntries: WORKSPACE_POLICY_L1_MAX_ENTRIES,
+	maxBytes: 4 * 1024 * 1024, maxEntryBytes: 256 * 1024, maxPending: 32,
+	sizeOf: (value, key) => 2 * (value.length + key.length) + 128,
+});
+type PolicyVersionState = { value: number; expiresAt: number; epoch: object; pendingBumps: number; read?: Promise<string | null> };
 const workspacePolicyVersionL1 = new Map<string, PolicyVersionState>();
+let policyVersionReads = 0;
 
 function policyVersionState(workspaceId: string): PolicyVersionState {
 	let state = workspacePolicyVersionL1.get(workspaceId);
@@ -178,23 +180,30 @@ async function getWorkspacePolicyVersionToken(workspaceId: string): Promise<stri
 	const state = policyVersionState(workspaceId);
 	const epoch = state.epoch;
 	if (state.pendingBumps) return null;
-
-	try {
-		const raw = await getCache().get(workspacePolicyVersionKey(workspaceId), "text");
-		const normalized = parseWorkspacePolicyVersion(raw);
-		// An evicted or superseded read cannot restore or serve old permissions.
-		if (workspacePolicyVersionL1.get(workspaceId) !== state || state.epoch !== epoch || state.pendingBumps) return null;
-		writeWorkspacePolicyVersionL1(state, normalized);
-		return `v${normalized}`;
-	} catch {
-		// Unknown is not the initial version: old permissions must not be reused.
-		return null;
-	}
+	if (state.read) return state.read;
+	if (policyVersionReads >= 32) throw new CacheCapacityError();
+	policyVersionReads++;
+	const read = Promise.resolve().then(async () => {
+		try {
+			const raw = await getCache().get(workspacePolicyVersionKey(workspaceId), "text");
+			const normalized = parseWorkspacePolicyVersion(raw);
+			// An evicted or superseded read cannot restore or serve old permissions.
+			if (workspacePolicyVersionL1.get(workspaceId) !== state || state.epoch !== epoch || state.pendingBumps) return null;
+			writeWorkspacePolicyVersionL1(state, normalized);
+			return `v${normalized}`;
+		} catch {
+			// Unknown is not the initial version: old permissions must not be reused.
+			return null;
+		}
+	}).finally(() => { policyVersionReads--; if (state.read === read) delete state.read; });
+	state.read = read;
+	return read;
 }
 
 export async function bumpWorkspacePolicyVersion(workspaceId: string): Promise<number> {
 	const state = policyVersionState(workspaceId);
 	const epoch = state.epoch = {};
+	delete state.read;
 	state.expiresAt = 0;
 	state.pendingBumps++;
 	try {
@@ -240,60 +249,20 @@ function isWorkspacePolicyLike(value: unknown): value is WorkspacePolicy {
 	);
 }
 
-function cloneWorkspacePolicy(policy: WorkspacePolicy): WorkspacePolicy {
-	return {
-		providerAllowlist: policy.providerAllowlist ? [...policy.providerAllowlist] : null,
-		providerBlocklist: policy.providerBlocklist ? [...policy.providerBlocklist] : null,
-		allowedApiModels: policy.allowedApiModels ? [...policy.allowedApiModels] : null,
-		blockedApiModels: policy.blockedApiModels ? [...policy.blockedApiModels] : null,
-		promptInjectionAction: policy.promptInjectionAction ?? null,
-		promptInjectionGuardrailIds: [...policy.promptInjectionGuardrailIds],
-		sensitiveInfoRules: [...policy.sensitiveInfoRules],
-		sensitiveInfoGuardrailIds: [...policy.sensitiveInfoGuardrailIds],
-		privacyEnablePaidMayTrain: policy.privacyEnablePaidMayTrain ?? true,
-		privacyEnableFreeMayTrain: policy.privacyEnableFreeMayTrain ?? true,
-		privacyEnableInputOutputLogging: policy.privacyEnableInputOutputLogging ?? true,
-		privacyZdrOnly: policy.privacyZdrOnly ?? false,
-		enforceAllowed: policy.enforceAllowed,
-		activeGuardrailIds: [...policy.activeGuardrailIds],
-		dynamicRoute: policy.dynamicRoute
-			? { ...policy.dynamicRoute, config: normalizeDynamicRouteConfig(policy.dynamicRoute.config) }
-			: null,
-	};
-}
+type PolicySnapshot = { workspaceId: string; apiKeyId: string; version: string; checkedAtMs: number; expiresAtMs: number; policy: WorkspacePolicy };
 
-function readWorkspacePolicyL1(workspaceId: string, apiKeyId: string, versionToken: string): WorkspacePolicy | null {
-	const key = workspacePolicyCacheKey(workspaceId, apiKeyId, versionToken);
-	const entry = workspacePolicyL1.get(key);
-	if (!entry) return null;
-	if (entry.expiresAt <= Date.now()) {
-		workspacePolicyL1.delete(key);
-		return null;
-	}
-	return cloneWorkspacePolicy(entry.value);
-}
-
-function writeWorkspacePolicyL1(
-	workspaceId: string,
-	apiKeyId: string,
-	versionToken: string,
-	value: WorkspacePolicy,
-): void {
-	const now = Date.now();
-	for (const [key, entry] of workspacePolicyL1.entries()) {
-		if (entry.expiresAt <= now) {
-			workspacePolicyL1.delete(key);
-		}
-	}
-	while (workspacePolicyL1.size >= WORKSPACE_POLICY_L1_MAX_ENTRIES) {
-		const oldestKey = workspacePolicyL1.keys().next().value;
-		if (!oldestKey) break;
-		workspacePolicyL1.delete(oldestKey);
-	}
-	workspacePolicyL1.set(workspacePolicyCacheKey(workspaceId, apiKeyId, versionToken), {
-		expiresAt: now + ttlWithJitter(WORKSPACE_POLICY_L1_TTL_MS),
-		value: cloneWorkspacePolicy(value),
-	});
+function parsePolicySnapshot(raw: string, args: { workspaceId: string; apiKeyId: string }, version: string, fromSource = false): PolicySnapshot | null {
+	if (!fromSource && raw.length > WORKSPACE_POLICY_MAX_CHARS) return null;
+	try {
+		const value = JSON.parse(raw) as PolicySnapshot;
+		const now = Date.now();
+		if (value.workspaceId !== args.workspaceId || value.apiKeyId !== args.apiKeyId || value.version !== version
+			|| !Number.isSafeInteger(value.checkedAtMs) || !Number.isSafeInteger(value.expiresAtMs)
+			|| value.checkedAtMs > now || value.expiresAtMs <= now || value.expiresAtMs <= value.checkedAtMs
+			|| value.expiresAtMs - value.checkedAtMs > WORKSPACE_POLICY_KV_TTL_SECONDS * 1000
+			|| !isWorkspacePolicyLike(value.policy)) return null;
+		return value;
+	} catch { return null; }
 }
 
 function normalizeMode(value: unknown): ProviderRestrictionMode {
@@ -527,6 +496,10 @@ export async function fetchWorkspacePolicy(args: {
 	workspaceId: string;
 	apiKeyId: string;
 }): Promise<WorkspacePolicy> {
+	return fetchPolicyLease(args, 0);
+}
+
+async function fetchPolicyLease(args: { workspaceId: string; apiKeyId: string }, attempt: number): Promise<WorkspacePolicy> {
 	const [workspaceVersionToken, apiKeyVersionToken] = await Promise.all([
 		getWorkspacePolicyVersionToken(args.workspaceId),
 		keyVersionToken("id", args.apiKeyId, { useL1Cache: true, l1TtlMs: 5_000 }).catch(() => null),
@@ -535,25 +508,46 @@ export async function fetchWorkspacePolicy(args: {
 	// Unknown markers bypass both cache layers, including writes.
 	const versionToken = workspaceVersionToken !== null && apiKeyVersionToken !== null
 		? `${workspaceVersionToken}:${apiKeyVersionToken}` : null;
-	const cached = versionToken === null ? null : readWorkspacePolicyL1(args.workspaceId, args.apiKeyId, versionToken);
-	if (cached) return cached;
-
-	try {
-		const raw = versionToken === null ? null : await getCache().get(
-			workspacePolicyKvKey(args.workspaceId, args.apiKeyId, versionToken),
-			"text",
-		);
-		if (raw && versionToken !== null) {
-			const parsed = JSON.parse(raw);
-			if (isWorkspacePolicyLike(parsed)) {
-				writeWorkspacePolicyL1(args.workspaceId, args.apiKeyId, versionToken, parsed);
-				return cloneWorkspacePolicy(parsed);
-			}
-		}
-	} catch {
-		// Ignore cache read failures and use the source of truth.
+	if (versionToken === null) return loadSourcePolicy(args);
+	const state = workspacePolicyVersionL1.get(args.workspaceId);
+	const epoch = state?.epoch;
+	const key = workspacePolicyCacheKey(args.workspaceId, args.apiKeyId, versionToken);
+	const raw = await workspacePolicyL1.getOrLoad(key, async () => {
+		try {
+			const cached = await getCache().get(workspacePolicyKvKey(args.workspaceId, args.apiKeyId, versionToken), "text");
+			const parsed = cached ? parsePolicySnapshot(cached, args, versionToken) : null;
+			if (parsed && cached) return { value: cached, expiresAtMs: Math.min(parsed.expiresAtMs, Date.now() + WORKSPACE_POLICY_L1_TTL_MS) };
+		} catch { /* A disposable cache failure requires authoritative policy. */ }
+		const checkedAtMs = Date.now();
+		const policy = await loadSourcePolicy(args);
+		const expiresAtMs = checkedAtMs + WORKSPACE_POLICY_KV_TTL_SECONDS * 1000;
+		if (expiresAtMs <= Date.now()) throw new Error("workspace_policy_source_lease_expired");
+		const value = JSON.stringify({ ...args, version: versionToken, checkedAtMs, expiresAtMs, policy } satisfies PolicySnapshot);
+		// The cache limit is not a new configuration limit. Large authoritative
+		// policies remain usable but never acquire an L1/KV entry.
+		if (value.length > WORKSPACE_POLICY_MAX_CHARS) return { value, expiresAtMs: 0 };
+		// Publication is advisory acceleration, not mutation acknowledgement.
+		// The original source deadline is preserved even if KV arrives late.
+		dispatchBackground(getCache().put(workspacePolicyKvKey(args.workspaceId, args.apiKeyId, versionToken), value,
+			{ expirationTtl: WORKSPACE_POLICY_KV_TTL_SECONDS }).catch(() => {
+			console.warn("workspace_policy_cache_publication_failed");
+		}));
+		return { value, expiresAtMs: Math.min(expiresAtMs, Date.now() + WORKSPACE_POLICY_L1_TTL_MS) };
+	});
+	if (workspacePolicyVersionL1.get(args.workspaceId) !== state || state?.epoch !== epoch || state?.pendingBumps) {
+		workspacePolicyL1.invalidate(key);
+		if (attempt >= 1) throw new Error("workspace_policy_changed_during_request");
+		return fetchPolicyLease(args, attempt + 1);
 	}
+	// Every KV value has already passed the bounded decoder above; only a fresh
+	// source result can exceed the admission limit at this point.
+	const parsed = parsePolicySnapshot(raw, args, versionToken, true);
+	if (!parsed) throw new Error("workspace_policy_source_lease_expired");
+	// Parse per request: callers cannot mutate another request's nested rules.
+	return parsed.policy;
+}
 
+async function loadSourcePolicy(args: { workspaceId: string; apiKeyId: string }): Promise<WorkspacePolicy> {
 	const supabase = getSupabaseAdmin();
 	const [settingsResult, keyResult, keyGuardrailsResult, routeLinkResult] = await Promise.all([
 		supabase
@@ -672,16 +666,6 @@ export async function fetchWorkspacePolicy(args: {
 		guardrails,
 		dynamicRoute,
 	});
-	if (versionToken === null) return policy;
-	writeWorkspacePolicyL1(args.workspaceId, args.apiKeyId, versionToken, policy);
-	dispatchBackground(
-		getCache()
-			.put(
-				workspacePolicyKvKey(args.workspaceId, args.apiKeyId, versionToken),
-				JSON.stringify(policy),
-				{ expirationTtl: WORKSPACE_POLICY_KV_TTL_SECONDS },
-			),
-	);
 	return policy;
 }
 
