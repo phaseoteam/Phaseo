@@ -31,6 +31,9 @@ import { createSyntheticResponsesStreamFromIR } from "@executors/_shared/text-ge
 import { buildSyntheticServerToolStream } from "@pipeline/surfaces/server-tools.stream";
 import { sanitizeGeminiSchema } from "@executors/google/shared/schema";
 import { supportsTextProviderInteractionsModel } from "@providers/textProfiles";
+import { readSseEvents, sseReadable, SseProtocolError } from "@core/sse";
+import { sniffUpstreamBody, readBoundedUpstreamJson } from "@core/upstream-body";
+import { classifyStreamProviderError } from "@core/stream-error";
 
 const DEFAULT_LYRIA_RETRY_ATTEMPTS = 3;
 const DEFAULT_LYRIA_RETRY_DELAY_MS = 300;
@@ -1246,7 +1249,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 					...args,
 					providerModelSlug: model,
 				} as ExecutorExecuteArgs;
-				const transformedStream = transformStream(response.body, streamingArgs);
+				const transformedStream = transformStream(response.body, streamingArgs, keyInfo.source);
 				return {
 					kind: "stream",
 					stream: transformedStream,
@@ -1269,7 +1272,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 				endpoint: "chat.completions",
 				protocol: "openai.chat.completions",
 			} as ExecutorExecuteArgs;
-			const transformedStream = transformStream(response.body, bufferingArgs);
+			const transformedStream = transformStream(response.body, bufferingArgs, keyInfo.source);
 			const transformedResponse = new Response(transformedStream, {
 				status: response.status,
 				headers: response.headers,
@@ -1479,13 +1482,30 @@ export function postprocess(ir: any, args: ExecutorExecuteArgs): any {
 export function transformStream(
 	stream: ReadableStream<Uint8Array>,
 	args: ExecutorExecuteArgs,
+	credentialSource?: "gateway" | "byok",
 ): ReadableStream<Uint8Array> {
-	const reader = stream.getReader();
-	const decoder = new TextDecoder();
 	const encoder = new TextEncoder();
-	let buf = "";
+	type ChunkSink = { enqueue(chunk: Uint8Array): void };
+	const indexOf = (value: unknown): number => {
+		const index = value ?? 0;
+		if (!Number.isInteger(index) || (index as number) < 0 || (index as number) >= 128) throw new SseProtocolError("sse_state_too_large");
+		return index as number;
+	};
+	const identity = (value: unknown): string | undefined => {
+		if (value == null) return undefined;
+		if (typeof value !== "string" || value.length > 1024) throw new SseProtocolError("sse_state_too_large");
+		return value;
+	};
+	let toolArgumentChars = 0;
+	const admitArguments = (value: string) => {
+		toolArgumentChars += value.length;
+		if (toolArgumentChars > 4 * 1024 * 1024) throw new SseProtocolError("sse_state_too_large");
+	};
+	const candidates = new Map<number, { finished: boolean; tool: boolean }>();
+	let sawInteraction = false, interactionCompleted = false;
 	type StreamToolState = {
 		id: string;
+		name?: string;
 		argumentsSoFar: string;
 		emittedName: boolean;
 	};
@@ -1493,7 +1513,6 @@ export function transformStream(
 		type: string;
 		id?: string;
 		name?: string;
-		argumentsSoFar: string;
 		emittedName: boolean;
 		toolIndex: number;
 	};
@@ -1507,20 +1526,14 @@ export function transformStream(
 	const model = args.providerModelSlug || args.ir.model || "gemini-2.0-flash-exp";
 	const provider = args.providerId || "google-ai-studio";
 	const toPayloadEntries = (payload: any): any[] => {
-		if (Array.isArray(payload)) return payload.filter((entry) => entry && typeof entry === "object");
-		return payload && typeof payload === "object" ? [payload] : [];
-	};
-	const splitSseBlocks = (value: string): { blocks: string[]; remainder: string } => {
-		const normalized = value.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
-		const blocks = normalized.split(/\n\n/);
-		return {
-			blocks: blocks.slice(0, -1),
-			remainder: blocks[blocks.length - 1] ?? "",
-		};
+		const entries = Array.isArray(payload) ? payload : [payload];
+		if (entries.length > 128) throw new SseProtocolError("sse_state_too_large");
+		if (entries.some(entry => !entry || typeof entry !== "object" || Array.isArray(entry))) throw new SseProtocolError("sse_invalid_json");
+		return entries;
 	};
 	const enqueueIRChunk = (
 		irChunk: IRStreamChunk,
-		controller: ReadableStreamDefaultController<Uint8Array>,
+		controller: ChunkSink,
 	): void => {
 		if (irChunk.choices.some((choice: any) => {
 			if ((choice.delta?.toolCalls?.length ?? 0) > 0) return true;
@@ -1548,10 +1561,12 @@ export function transformStream(
 	});
 	const emitInteractionPayloadEntry = (
 		payloadEntry: any,
-		controller: ReadableStreamDefaultController<Uint8Array>,
+		controller: ChunkSink,
 	): number | null => {
 		const eventType = typeof payloadEntry?.event_type === "string" ? payloadEntry.event_type : null;
 		if (!eventType) return null;
+		sawInteraction = true;
+		if (interactionCompleted) throw new SseProtocolError("sse_invalid_json");
 
 		if (eventType === "interaction.created") {
 			const createdAt = Date.parse(payloadEntry?.interaction?.created ?? "");
@@ -1562,13 +1577,13 @@ export function transformStream(
 		}
 
 		if (eventType === "step.start") {
-			const index = Number.isFinite(payloadEntry.index) ? Number(payloadEntry.index) : 0;
+			const index = indexOf(payloadEntry.index);
+			if (interactionStepStates.has(index)) throw new SseProtocolError("sse_invalid_tool_delta");
 			const step = payloadEntry.step ?? {};
 			const state: InteractionStepState = {
 				type: String(step.type ?? ""),
-				id: typeof step.id === "string" ? step.id : undefined,
-				name: typeof step.name === "string" ? step.name : undefined,
-				argumentsSoFar: "",
+				id: identity(step.id),
+				name: identity(step.name),
 				emittedName: false,
 				toolIndex: interactionToolCallCount,
 			};
@@ -1601,7 +1616,7 @@ export function transformStream(
 		}
 
 		if (eventType === "step.delta") {
-			const index = Number.isFinite(payloadEntry.index) ? Number(payloadEntry.index) : 0;
+			const index = indexOf(payloadEntry.index);
 			const state = interactionStepStates.get(index);
 			const delta = payloadEntry.delta ?? {};
 			const irChunk = buildBaseIRChunk();
@@ -1628,6 +1643,7 @@ export function transformStream(
 					}];
 				}
 			} else if (delta.type === "arguments_delta") {
+				if (!state || state.type !== "function_call") throw new SseProtocolError("sse_invalid_tool_delta");
 				const argumentsDelta = typeof delta.arguments === "string" ? delta.arguments : "";
 				const toolIndex = state?.toolIndex ?? 0;
 				const toolDelta: {
@@ -1644,10 +1660,8 @@ export function transformStream(
 					state.emittedName = true;
 				}
 				if (argumentsDelta) {
+					admitArguments(argumentsDelta);
 					toolDelta.arguments = argumentsDelta;
-					if (state) {
-						state.argumentsSoFar += argumentsDelta;
-					}
 				}
 				choice.delta.toolCalls = [toolDelta];
 			}
@@ -1661,6 +1675,8 @@ export function transformStream(
 
 		if (eventType === "interaction.completed") {
 			const interaction = payloadEntry.interaction ?? {};
+			if (interaction.status === "failed") throw classifyStreamProviderError(payloadEntry, credentialSource);
+			interactionCompleted = true;
 			const usage = interactionUsageToIRUsage(
 				interaction.usage ??
 				payloadEntry.usage ??
@@ -1680,18 +1696,21 @@ export function transformStream(
 		}
 
 		if (eventType === "error") {
-			const message = payloadEntry?.error?.message || "google_interaction_stream_error";
-			throw new Error(message);
+			throw classifyStreamProviderError(payloadEntry, credentialSource);
 		}
 
 		return 0;
 	};
 	const emitPayloadEntries = (
 		payloadEntries: any[],
-		controller: ReadableStreamDefaultController<Uint8Array>,
+		controller: ChunkSink,
 	): number => {
 		let emitted = 0;
 		for (const payloadEntry of payloadEntries) {
+			if (payloadEntry.error) {
+				throw classifyStreamProviderError({ error: { ...payloadEntry.error,
+					status_code: typeof payloadEntry.error.code === "number" ? payloadEntry.error.code : payloadEntry.error.status_code } }, credentialSource);
+			}
 			const interactionEmitted = emitInteractionPayloadEntry(payloadEntry, controller);
 			if (interactionEmitted !== null) {
 				emitted += interactionEmitted;
@@ -1701,9 +1720,14 @@ export function transformStream(
 			const irChunk = buildBaseIRChunk();
 
 			if (Array.isArray(payloadEntry?.candidates)) {
+				if (payloadEntry.candidates.length > 128) throw new SseProtocolError("sse_state_too_large");
 				for (const cand of payloadEntry.candidates) {
-					const index = cand.index || 0;
+					const index = indexOf(cand.index);
 					const parts = cand.content?.parts || [];
+					if (!Array.isArray(parts) || parts.length > 128) throw new SseProtocolError("sse_state_too_large");
+					const candidate = candidates.get(index) ?? { finished: false, tool: false };
+					if (candidate.finished && parts.length) throw new SseProtocolError("sse_invalid_json");
+					candidates.set(index, candidate);
 
 					let content = "";
 					let reasoning = "";
@@ -1724,12 +1748,17 @@ export function transformStream(
 								content += part.text;
 							}
 						} else if (part.functionCall) {
+							candidate.tool = true;
+							const name = identity(part.functionCall.name);
 							const toolIndex = functionCallIndex++;
-							const stateKey = `${index}:${partIdx}:${part.functionCall.name || "tool"}`;
+							const stateKey = `${index}:${toolIndex}`;
 							let state = toolStates.get(stateKey);
+							if (state?.name && name && state.name !== name) throw new SseProtocolError("sse_invalid_tool_delta");
 							if (!state) {
+								if (toolStates.size >= 128) throw new SseProtocolError("sse_state_too_large");
 								state = {
 									id: `call_${args.requestId}_${index}_${partIdx}`,
+									name,
 									argumentsSoFar: "",
 									emittedName: false,
 								};
@@ -1751,15 +1780,17 @@ export function transformStream(
 							} else if (nextArguments.startsWith(state.argumentsSoFar)) {
 								argumentsDelta = nextArguments.slice(state.argumentsSoFar.length);
 							} else if (nextArguments !== state.argumentsSoFar) {
-								argumentsDelta = nextArguments;
+								throw new SseProtocolError("sse_invalid_tool_delta");
 							}
 
 							const functionDelta: { name?: string; arguments?: string } = {};
 							if (!state.emittedName && part.functionCall.name) {
+								state.name = name;
 								functionDelta.name = part.functionCall.name;
 								state.emittedName = true;
 							}
 							if (argumentsDelta) {
+								admitArguments(argumentsDelta);
 								functionDelta.arguments = argumentsDelta;
 								state.argumentsSoFar = nextArguments;
 							}
@@ -1800,7 +1831,8 @@ export function transformStream(
 					}
 
 					let finishReason = cand.finishReason ? mapGeminiFinishReason(cand.finishReason) : undefined;
-					if (finishReason === "stop" && toolCalls.length > 0) {
+					if (cand.finishReason && cand.finishReason !== "FINISH_REASON_UNSPECIFIED") candidate.finished = true;
+					if (finishReason === "stop" && candidate.tool) {
 						finishReason = "tool_calls";
 					}
 
@@ -1837,108 +1869,40 @@ export function transformStream(
 		return emitted;
 	};
 
-	const openAIStream = new ReadableStream<Uint8Array>({
-		async start(controller) {
-			let rawText = "";
-			let emittedChunkCount = 0;
-			try {
-				while (true) {
-					const { value, done } = await reader.read();
-					if (done) {
-						const trimmed = buf.trim();
-						if (trimmed.length > 0) {
-							const { blocks, remainder } = splitSseBlocks(`${buf}\n\n`);
-							buf = remainder;
-							for (const block of blocks) {
-								const dataStr = block
-									.split(/\n/)
-									.map((line) => line.replace(/\r$/, ""))
-									.filter((line) => line.startsWith("data:"))
-									.map((line) => line.slice(5).trimStart())
-									.join("")
-									.trim();
-								if (!dataStr || dataStr === "[DONE]") continue;
-								let payload: any;
-								try {
-									payload = JSON.parse(dataStr);
-								} catch {
-									continue;
-								}
-								emittedChunkCount += emitPayloadEntries(toPayloadEntries(payload), controller);
-							}
-						}
-						if (emittedChunkCount === 0 && rawText.trim().length > 0) {
-							const normalized = rawText.replace(/\r\n/g, "\n").replace(/\r/g, "\n").trim();
-							const fallbackPayloads = normalized.startsWith("data:")
-								? normalized
-									.split("\n")
-									.map((line) => line.trim())
-									.filter((line) => line.startsWith("data:"))
-									.map((line) => line.slice(5).trimStart())
-									.filter((line) => line.length > 0 && line !== "[DONE]")
-								: [normalized];
-							for (const payloadStr of fallbackPayloads) {
-								let payload: any;
-								try {
-									payload = JSON.parse(payloadStr);
-								} catch {
-									continue;
-								}
-								emittedChunkCount += emitPayloadEntries(toPayloadEntries(payload), controller);
-							}
-						}
-						break;
-					}
-
-					const decoded = decoder.decode(value, { stream: true });
-					rawText += decoded;
-					buf += decoded;
-					const split = splitSseBlocks(buf);
-					const lines = split.blocks;
-					buf = split.remainder;
-
-					for (const block of lines) {
-						// Extract data payload; Gemini SSE can include multiple data: lines.
-						const dataStr = block
-							.split(/\r?\n/)
-							.map((line) => line.replace(/\r$/, ""))
-							.filter((line) => line.startsWith("data:"))
-							.map((line) => line.slice(5).trimStart())
-							.join("")
-							.trim();
-						if (!dataStr || dataStr === "[DONE]") continue;
-
-						let payload: any;
-						try {
-							payload = JSON.parse(dataStr);
-						} catch {
-							continue;
-						}
-						emittedChunkCount += emitPayloadEntries(toPayloadEntries(payload), controller);
-					}
-				}
-				if (!sawUsableOutput) {
-					const errorPayload = {
-						error: {
-							code: "google_empty_response",
-							message: "Google returned a successful response without any output.",
-						},
-					};
-					controller.enqueue(encoder.encode(
-						`event: response.failed\ndata: ${JSON.stringify({
-							type: "response.failed",
-								...errorPayload,
-						})}\n\n`,
-					));
-				}
-				controller.enqueue(encoder.encode("data: [DONE]\n\n"));
-			} catch (err) {
-				console.error("Gemini stream transform error:", err);
-				controller.error(err);
-			} finally {
-				controller.close();
+	const openAIStream = sseReadable(async function* (signal) {
+		// A queue only for the current provider event, never for the full response.
+		const queue: Uint8Array[] = [];
+		let queuedBytes = 0;
+		const sink: ChunkSink = { enqueue(chunk) {
+			queuedBytes += chunk.byteLength;
+			if (queue.length >= 128 || queuedBytes > 16 * 1024 * 1024) throw new SseProtocolError("sse_state_too_large");
+			queue.push(chunk);
+		} };
+		const body = await sniffUpstreamBody(stream, undefined, signal);
+		if (body.kind === "json") {
+			emitPayloadEntries(toPayloadEntries(await readBoundedUpstreamJson(body.stream, undefined, signal)), sink);
+			for (const chunk of queue) yield chunk;
+			queue.length = 0;
+		} else {
+			for await (const event of readSseEvents(body.stream, { signal })) {
+				if (event.data === "[DONE]") break;
+				let payload: any;
+				try { payload = JSON.parse(event.data); } catch { throw new SseProtocolError("sse_invalid_json"); }
+				emitPayloadEntries(toPayloadEntries(payload), sink);
+				for (const chunk of queue) yield chunk;
+				queue.length = 0;
+				queuedBytes = 0;
 			}
-		},
+		}
+		// Gemini ends with candidate finish reasons, not a native DONE sentinel.
+		// Keep reading after finish reasons so the final usage-only event survives.
+		if (sawInteraction ? !interactionCompleted : !candidates.size || [...candidates.values()].some(candidate => !candidate.finished)) {
+			throw new SseProtocolError("sse_missing_terminal");
+		}
+		if (!sawUsableOutput) {
+			throw classifyStreamProviderError({ error: { code: "google_empty_response" } }, credentialSource);
+		}
+		yield encoder.encode("data: [DONE]\n\n");
 	});
 
 	const protocol = args.protocol ?? (args.endpoint === "responses" ? "openai.responses" : "openai.chat.completions");

@@ -130,7 +130,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 			let anthropicStream: ReturnType<typeof observeAnthropicStream> | undefined;
 			const stream = (() => {
 				if (route.family === "gemini") {
-					return transformGoogleGeminiStream(res.body!, args);
+					return transformGoogleGeminiStream(res.body!, args, keyInfo.source);
 				}
 				if (route.family === "openapi_chat") {
 					return resolveStreamForProtocol(
@@ -184,7 +184,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 					endpoint: "chat.completions",
 					protocol: "openai.chat.completions",
 				} as ExecutorExecuteArgs;
-				return transformGoogleGeminiStream(res.body!, bufferingArgs);
+				return transformGoogleGeminiStream(res.body!, bufferingArgs, keyInfo.source);
 			}
 			if (route.family === "openapi_chat") {
 				return res.body!;

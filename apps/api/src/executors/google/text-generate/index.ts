@@ -6,7 +6,7 @@
 // Documentation: https://ai.google.dev/gemini-api/docs/text-generation
 // NOT OpenAI-compatible - uses Google's native API format
 
-import type { IRChatRequest, IRChatResponse, IRContentPart, IRChoice, IRStreamChunk, IRStreamDelta } from "@core/ir";
+import type { IRChatRequest, IRChatResponse, IRContentPart, IRChoice } from "@core/ir";
 import type { ExecutorExecuteArgs, ExecutorResult } from "@executors/types";
 import { fetchUpstream } from "@executors/_shared/timing/upstream";
 import type { ProviderExecutor } from "../../types";
@@ -14,7 +14,8 @@ import { buildTextExecutor, cherryPickIRParams } from "@executors/_shared/text-g
 import { normalizeTextUsageForPricing } from "@executors/_shared/usage/text";
 import { resolveProviderKey } from "@providers/keys";
 import { getBindings } from "@/runtime/env";
-import { bufferStreamToIR, resolveStreamForProtocol } from "@executors/_shared/text-generate/openai-compat";
+import { bufferStreamToIR } from "@executors/_shared/text-generate/openai-compat";
+import { transformStream } from "@executors/google-ai-studio/text-generate";
 import { withNormalizedReasoning } from "./normalize-reasoning";
 import { irPartsToGeminiParts } from "../shared/media";
 import { resolveGoogleModelCandidates } from "../shared/model";
@@ -394,7 +395,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 
 		if (response.body && !isJsonResponse) {
 			if (ir.stream) {
-				const transformedStream = transformStream(response.body, args);
+				const transformedStream = transformStream(response.body, args, keyInfo.source);
 				return {
 					kind: "stream",
 					stream: transformedStream,
@@ -412,7 +413,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 				endpoint: "chat.completions",
 				protocol: "openai.chat.completions",
 			} as ExecutorExecuteArgs;
-			const transformedStream = transformStream(response.body, bufferingArgs);
+			const transformedStream = transformStream(response.body, bufferingArgs, keyInfo.source);
 			const transformedResponse = new Response(transformedStream, {
 				status: response.status,
 				headers: response.headers,
@@ -546,233 +547,8 @@ export function postprocess(ir: any): any {
  *
  * We map this to IRStreamChunk, then to GatewayCompletionsResponse chunks.
  */
-export function transformStream(
-	stream: ReadableStream<Uint8Array>,
-	args: ExecutorExecuteArgs,
-): ReadableStream<Uint8Array> {
-	const reader = stream.getReader();
-	const decoder = new TextDecoder();
-	const encoder = new TextEncoder();
-	let buf = "";
-
-	let created = Math.floor(Date.now() / 1000);
-	const model = args.providerModelSlug || args.ir.model || "gemini-2.0-flash-exp";
-	const provider = args.providerId || "google-ai-studio";
-
-	const openAIStream = new ReadableStream<Uint8Array>({
-		async start(controller) {
-			try {
-				while (true) {
-					const { value, done } = await reader.read();
-					if (done) break;
-
-					buf += decoder.decode(value, { stream: true });
-					const lines = buf.split(/\r?\n\r?\n/); // Split by double newline (SSE blocks)
-					buf = lines.pop() ?? "";
-
-					for (const block of lines) {
-						// Extract data line
-						const dataMatch = block.match(/^data: (.*)/m);
-						if (!dataMatch) continue;
-
-						const dataStr = dataMatch[1].trim();
-						if (!dataStr || dataStr === "[DONE]") continue;
-
-						let payload: any;
-						try {
-							payload = JSON.parse(dataStr);
-						} catch {
-							continue;
-						}
-
-						// Convert to IR Chunk
-						const irChunk: IRStreamChunk = {
-							id: args.requestId,
-							created,
-							model,
-							provider,
-							choices: [],
-						};
-
-						if (payload.candidates) {
-							for (const cand of payload.candidates) {
-								const index = cand.index || 0;
-								const parts = cand.content?.parts || [];
-								
-								// Accumulate content from parts
-								let content = "";
-								let reasoning = "";
-								const imageParts: any[] = [];
-								
-								for (const part of parts) {
-									const inlineData = normalizeGeminiInlineData(part);
-									if (part.text) {
-										if (part.thought) {
-											reasoning += part.text;
-										} else {
-											content += part.text;
-										}
-									} else if (inlineData?.data) {
-										imageParts.push({
-											type: "image",
-											source: "data",
-											data: inlineData.data,
-											mimeType: inlineData.mime_type,
-											thoughtSignature: inlineData.thought_signature,
-										});
-									}
-								}
-
-								// Construct delta
-								const delta: IRStreamDelta = {};
-								if (content) delta.content = content;
-								const deltaContentParts: any[] = [];
-								if (reasoning) {
-									deltaContentParts.push({ type: "reasoning_text", text: reasoning });
-								}
-								if (imageParts.length > 0) {
-									deltaContentParts.push(...imageParts);
-								}
-								if (deltaContentParts.length > 0) {
-									delta.contentParts = deltaContentParts as any;
-								}
-
-								const finishReason = cand.finishReason ? mapGeminiFinishReason(cand.finishReason) : undefined;
-
-								if (Object.keys(delta).length > 0 || finishReason) {
-									irChunk.choices.push({
-										index,
-										delta: {
-											role: "assistant",
-											...delta,
-										},
-										finishReason,
-									});
-								}
-							}
-						}
-
-						const chunkUsage = googleUsageMetadataToIRUsage(payload.usageMetadata);
-						if (chunkUsage) {
-							irChunk.usage = chunkUsage;
-						}
-
-						// Encode IR Chunk to OpenAI Chunk (bytes)
-						const openAIChunk = encodeIRChunkToOpenAI(irChunk);
-						controller.enqueue(encoder.encode(`data: ${JSON.stringify(openAIChunk)}\n\n`));
-					}
-				}
-				controller.enqueue(encoder.encode("data: [DONE]\n\n"));
-			} catch (err) {
-				console.error("Google stream transform error:", err);
-				controller.error(err);
-			} finally {
-				controller.close();
-			}
-		},
-	});
-
-	const protocol = args.protocol ?? (args.endpoint === "responses" ? "openai.responses" : "openai.chat.completions");
-	if (protocol === "openai.chat.completions") {
-		return openAIStream;
-	}
-
-	return resolveStreamForProtocol(
-		new Response(openAIStream),
-		args,
-		"chat",
-	);
-}
-
-/**
- * Helper to encode IR Chunk to OpenAI Protocol Chunk
- */
-function encodeIRChunkToOpenAI(chunk: IRStreamChunk): any {
-	const choices = chunk.choices.map(c => {
-		const delta: any = {};
-		if (c.delta.role) delta.role = c.delta.role;
-		if (c.delta.content) delta.content = c.delta.content;
-		
-		if (c.delta.contentParts) {
-			for (const part of c.delta.contentParts) {
-				if (part.type === "reasoning_text") {
-					delta.reasoning_content = part.text;
-				} else if (part.type === "text") {
-					delta.content = (delta.content || "") + part.text;
-				} else if (part.type === "image") {
-					const imageUrl = part.source === "data"
-						? `data:${part.mimeType || "image/png"};base64,${part.data}`
-						: part.data;
-					if (!Array.isArray(delta.images)) {
-						delta.images = [];
-					}
-					delta.images.push({
-						type: "image_url",
-						image_url: { url: imageUrl },
-						...(part.mimeType ? { mime_type: part.mimeType } : {}),
-					});
-				}
-			}
-		}
-
-		return {
-			index: c.index,
-			delta,
-			finish_reason: c.finishReason || null,
-		};
-	});
-
-	const response: any = {
-		id: chunk.id,
-		object: "chat.completion.chunk",
-		created: chunk.created,
-		model: chunk.model,
-		provider: chunk.provider,
-		choices,
-	};
-
-	if (chunk.usage) {
-		const inputDetails: Record<string, number> = {};
-		const outputDetails: Record<string, number> = {};
-		if (typeof chunk.usage.cachedInputTokens === "number") {
-			inputDetails.cached_tokens = chunk.usage.cachedInputTokens;
-		}
-		if (typeof chunk.usage._ext?.inputImageTokens === "number") {
-			inputDetails.input_images = chunk.usage._ext.inputImageTokens;
-		}
-		if (typeof chunk.usage._ext?.inputAudioTokens === "number") {
-			inputDetails.input_audio = chunk.usage._ext.inputAudioTokens;
-		}
-		if (typeof chunk.usage._ext?.inputVideoTokens === "number") {
-			inputDetails.input_videos = chunk.usage._ext.inputVideoTokens;
-		}
-		if (typeof chunk.usage.reasoningTokens === "number") {
-			outputDetails.reasoning_tokens = chunk.usage.reasoningTokens;
-		}
-		if (typeof chunk.usage._ext?.cachedWriteTokens === "number") {
-			outputDetails.cached_tokens = chunk.usage._ext.cachedWriteTokens;
-		}
-		if (typeof chunk.usage._ext?.outputImageTokens === "number") {
-			outputDetails.output_images = chunk.usage._ext.outputImageTokens;
-		}
-		if (typeof chunk.usage._ext?.outputAudioTokens === "number") {
-			outputDetails.output_audio = chunk.usage._ext.outputAudioTokens;
-		}
-		if (typeof chunk.usage._ext?.outputVideoTokens === "number") {
-			outputDetails.output_videos = chunk.usage._ext.outputVideoTokens;
-		}
-
-		response.usage = {
-			prompt_tokens: chunk.usage.inputTokens,
-			completion_tokens: chunk.usage.outputTokens,
-			total_tokens: chunk.usage.totalTokens,
-			...(Object.keys(inputDetails).length > 0 ? { input_tokens_details: inputDetails } : {}),
-			...(Object.keys(outputDetails).length > 0 ? { output_tokens_details: outputDetails } : {}),
-		};
-	}
-
-	return response;
-}
+// Google and Vertex use the same bounded native Gemini stream translator.
+export { transformStream } from "@executors/google-ai-studio/text-generate";
 
 export const executor: ProviderExecutor = buildTextExecutor({
 	preprocess: (ir, args) =>
@@ -788,6 +564,4 @@ export const executor: ProviderExecutor = buildTextExecutor({
 	postprocess,
 	transformStream,
 });
-
-
 
