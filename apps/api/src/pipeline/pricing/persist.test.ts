@@ -111,6 +111,73 @@ describe("recordUsageAndCharge", () => {
 		expect(invalidateGatewayCreditCacheMock).toHaveBeenCalledWith("ws");
 	});
 
+	it.each(["applied", "already_applied"])("never treats a missing wallet as settled despite legacy %s", async flag => {
+		rpcMock.mockResolvedValue({ data: { status: "wallet_not_found", [flag]: true, invalidate_credit_cache: false }, error: null });
+		const { recordUsageAndCharge } = await import("./persist");
+		await expect(recordUsageAndCharge({ requestId: "immutable", workspaceId: "ws", cost_nanos: 100 }))
+			.rejects.toThrow("gateway_charge_wallet_not_found");
+		expect(invalidateGatewayCreditCacheMock).toHaveBeenCalledExactlyOnceWith("ws");
+		expect(enqueueAutoTopUpFailedEmailMock).not.toHaveBeenCalled();
+		expect(releaseRuntimeMock).toHaveBeenCalledOnce();
+	});
+
+	it.each([
+		null, [], [{ status: "charged", applied: true }, { status: "charged", applied: true }],
+		{ applied: true }, { status: "unknown", applied: true },
+		{ status: "charged", applied: true, already_applied: true },
+		{ status: "charged", applied: true, already_applied: "false" },
+		{ status: "already_applied", applied: true },
+		{ status: "charged", applied: true, invalidate_credit_cache: "false" },
+		...[true, "", " ", -1, 0.5, "1e3", Number.MAX_SAFE_INTEGER + 1].map(amount => ({
+			status: "top_up_required", applied: true, auto_top_up_amount_nanos: amount,
+		})),
+		{ status: "top_up_required", applied: true, stripe_customer_id: 123 },
+	])("keeps an ambiguous debit reply unresolved and invalidates stale credit: %j", async data => {
+		rpcMock.mockResolvedValue({ data, error: null });
+		const { recordUsageAndCharge } = await import("./persist");
+		await expect(recordUsageAndCharge({ requestId: "immutable", workspaceId: "ws", cost_nanos: 100 }))
+			.rejects.toThrow("gateway_charge_confirmation_invalid");
+		expect(invalidateGatewayCreditCacheMock).toHaveBeenCalledExactlyOnceWith("ws");
+		expect(enqueueAutoTopUpFailedEmailMock).not.toHaveBeenCalled();
+		expect(rpcMock).toHaveBeenCalledOnce();
+		expect(releaseRuntimeMock).toHaveBeenCalledOnce();
+	});
+
+	it("preserves a single-row legacy replay without top-up side effects", async () => {
+		rpcMock.mockResolvedValue({ data: [{ status: "already_applied", already_applied: true,
+			auto_top_up_amount_nanos: "0" }], error: null });
+		const { recordUsageAndCharge } = await import("./persist");
+		await expect(recordUsageAndCharge({ requestId: "immutable", workspaceId: "ws", cost_nanos: 100 }))
+			.resolves.toMatchObject({ already_applied: true, auto_top_up_amount_nanos: 0 });
+		expect(invalidateGatewayCreditCacheMock).not.toHaveBeenCalled();
+		expect(enqueueAutoTopUpFailedEmailMock).not.toHaveBeenCalled();
+	});
+
+	it("invalidates an unconfirmed debit without inventing success evidence", async () => {
+		rpcMock.mockResolvedValue({ data: { status: "charged", applied: false, already_applied: false }, error: null });
+		const { recordUsageAndCharge } = await import("./persist");
+		await expect(recordUsageAndCharge({ requestId: "immutable", workspaceId: "ws", cost_nanos: 100 }))
+			.rejects.toThrow("gateway_charge_not_applied:charged");
+		expect(invalidateGatewayCreditCacheMock).toHaveBeenCalledExactlyOnceWith("ws");
+		expect(enqueueAutoTopUpFailedEmailMock).not.toHaveBeenCalled();
+	});
+
+	it("passes a recovery abort signal to the debit and preserves uncertain-debit invalidation", async () => {
+		const abort = new AbortController();
+		const error = { message: "AbortError: debit outcome unknown" };
+		const abortSignal = vi.fn().mockResolvedValue({ data: null, error });
+		rpcMock.mockReturnValue({ abortSignal });
+		const { recordUsageAndCharge } = await import("./persist");
+		await expect(recordUsageAndCharge({ requestId: "immutable", workspaceId: "ws", cost_nanos: 100,
+			debitSignal: abort.signal })).rejects.toEqual(error);
+		expect(abortSignal).toHaveBeenCalledExactlyOnceWith(abort.signal);
+		expect(rpcMock).toHaveBeenCalledExactlyOnceWith("gateway_charge_with_credit_cache", {
+			p_workspace_id: "ws", p_request_id: "immutable", p_cost_nanos: 100, p_credit_snapshot_balance_nanos: null,
+		});
+		expect(invalidateGatewayCreditCacheMock).toHaveBeenCalledExactlyOnceWith("ws");
+		expect(releaseRuntimeMock).toHaveBeenCalledOnce();
+	});
+
 	it("queues an owner notification when Auto Top-Up has no payment method", async () => {
 		rpcMock.mockResolvedValue({
 			data: {

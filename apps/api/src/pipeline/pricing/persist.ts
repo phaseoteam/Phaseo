@@ -49,24 +49,42 @@ async function resolveDefaultPaymentMethod(stripe: Stripe, customerId: string): 
     return methods.data?.[0]?.id ?? null;
 }
 
-function normalizeChargeRpcResult(data: any): ChargeRpcResult | null {
+function normalizeChargeRpcResult(data: unknown): ChargeRpcResult | null {
+    if (Array.isArray(data) && data.length !== 1) return null;
     const row = Array.isArray(data) ? data[0] : data;
-    if (!row || typeof row !== "object") return null;
-    const amountRaw = Number((row as any).auto_top_up_amount_nanos ?? 0);
+    if (!row || typeof row !== "object" || Array.isArray(row)) return null;
+    const result = row as Record<string, unknown>;
+    if (typeof result.status !== "string" || ![
+        "charged", "top_up_not_required", "top_up_required", "already_applied", "wallet_not_found",
+    ].includes(result.status)) return null;
+    for (const field of ["applied", "already_applied", "invalidate_credit_cache"]) {
+        if (result[field] !== undefined && typeof result[field] !== "boolean") return null;
+    }
+    if (result.applied === true && result.already_applied === true) return null;
+    if (result.status === "already_applied" && result.already_applied !== true) return null;
+    for (const field of ["auto_top_up_account_id", "stripe_customer_id"]) {
+        if (result[field] != null && typeof result[field] !== "string") return null;
+    }
+    // PostgREST may serialize bigint as a decimal string. Do not coerce booleans,
+    // blanks, fractional or unsafe values into payment instructions.
+    const amount = result.auto_top_up_amount_nanos ?? 0;
+    if (typeof amount !== "number" && !(typeof amount === "string" && /^\d{1,16}$/.test(amount))) return null;
+    const amountRaw = Number(amount);
+    if (!Number.isSafeInteger(amountRaw) || amountRaw < 0) return null;
     return {
-        status: String((row as any).status ?? "unknown"),
-        auto_top_up_amount_nanos: Number.isFinite(amountRaw) ? amountRaw : 0,
+        status: result.status,
+        auto_top_up_amount_nanos: amountRaw,
         auto_top_up_account_id:
-            typeof (row as any).auto_top_up_account_id === "string"
-                ? (row as any).auto_top_up_account_id
+            typeof result.auto_top_up_account_id === "string"
+                ? result.auto_top_up_account_id
                 : null,
         stripe_customer_id:
-            typeof (row as any).stripe_customer_id === "string"
-                ? (row as any).stripe_customer_id
+            typeof result.stripe_customer_id === "string"
+                ? result.stripe_customer_id
                 : null,
-        applied: (row as any).applied === true,
-        already_applied: (row as any).already_applied === true,
-        invalidate_credit_cache: typeof row.invalidate_credit_cache === "boolean" ? row.invalidate_credit_cache : undefined,
+        applied: result.applied === true,
+        already_applied: result.already_applied === true,
+        invalidate_credit_cache: typeof result.invalidate_credit_cache === "boolean" ? result.invalidate_credit_cache : undefined,
     };
 }
 
@@ -185,6 +203,8 @@ export async function recordUsageAndCharge(args: {
     workspaceId: string;
     cost_nanos: number;
     creditSnapshotBalanceNanos?: number | null;
+    /** Deadline for the debit transport only; abort is not proof of rollback. */
+    debitSignal?: AbortSignal;
 }): Promise<ChargeRpcResult> {
     const releaseRuntime = ensureRuntimeForBackground();
     try {
@@ -192,12 +212,13 @@ export async function recordUsageAndCharge(args: {
         // The wrapper uses the same idempotent debit and returns an authoritative
         // cache decision in this round trip. No local or KV spending counter.
         const snapshotBalance = args.creditSnapshotBalanceNanos;
-        const onceRpc = await supabase.rpc("gateway_charge_with_credit_cache", {
+        const debit = supabase.rpc("gateway_charge_with_credit_cache", {
             p_workspace_id: args.workspaceId,
             p_request_id: args.requestId,
             p_cost_nanos: args.cost_nanos,
             p_credit_snapshot_balance_nanos: Number.isSafeInteger(snapshotBalance) && snapshotBalance! >= 0 ? snapshotBalance : null,
         });
+        const onceRpc = await (args.debitSignal ? debit.abortSignal(args.debitSignal) : debit);
         if (onceRpc.error) {
             // In particular, insufficient funds must not leave a high cached
             // balance reusable after a failed debit or an uncertain response.
@@ -206,8 +227,21 @@ export async function recordUsageAndCharge(args: {
         }
         const chargeResult = normalizeChargeRpcResult(onceRpc.data);
 
-        if (!chargeResult) throw new Error("gateway_charge_result_missing");
+        if (!chargeResult) {
+            // A malformed confirmation does not prove rollback. Invalidate the
+            // admission snapshot and let the caller replay the SAME debit ID.
+            await invalidateGatewayCreditCache(args.workspaceId);
+            throw new Error("gateway_charge_confirmation_invalid");
+        }
+        // The legacy idempotency wrapper marks its record applied even when
+        // the underlying debit returns wallet_not_found. That is not a debit,
+        // including on replay; leave it unresolved for bounded reconciliation.
+        if (chargeResult.status === "wallet_not_found") {
+            await invalidateGatewayCreditCache(args.workspaceId);
+            throw new Error("gateway_charge_wallet_not_found");
+        }
         if (!chargeResult.applied && !chargeResult.already_applied) {
+            await invalidateGatewayCreditCache(args.workspaceId);
             throw new Error(`gateway_charge_not_applied:${chargeResult.status || "unknown"}`);
         }
         if (chargeResult.invalidate_credit_cache === true ||
@@ -351,10 +385,6 @@ export async function recordUsageAndCharge(args: {
         releaseRuntime();
     }
 }
-
-
-
-
 
 
 

@@ -1,6 +1,10 @@
 // Purpose: Runtime environment type definitions.
 
 export type GatewayBindings = {
+    GATEWAY_SETTLEMENT_RECOVERY_ENABLED?: string;
+    GATEWAY_SETTLEMENT_RECOVERY_QUEUE_NAME?: string;
+    SETTLEMENT_RECOVERY_QUEUE?: Queue<import("@core/settlement-recovery").SettlementRecoveryRecord>;
+    SETTLEMENT_RECOVERY_DEAD_LETTER?: Queue<unknown>;
     GATEWAY_OPERATION_SAMPLE_RATE?: string;
     GATEWAY_CONTEXT_BUNDLE_ENABLED?: string;
     GATEWAY_WORKSPACE_RUNTIME_ENABLED?: string;

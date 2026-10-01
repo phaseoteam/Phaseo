@@ -90,6 +90,10 @@ app.onError((error, c) => {
 
 export default {
 	fetch: app.fetch,
+	async queue(batch: MessageBatch<unknown>, env: GatewayBindings, ctx: ExecutionContext) {
+		const { handleSettlementRecoveryBatch } = await import("@/core/settlement-recovery");
+		await handleSettlementRecoveryBatch(batch, env, ctx);
+	},
 	async scheduled(event: ScheduledController, env: GatewayBindings) {
 		const { handleScheduledEvent } = await import("@/scheduled");
 		await handleScheduledEvent(event, env);
