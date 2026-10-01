@@ -2,6 +2,7 @@ import {
 	APP_HEADERS,
 	DEFAULT_SETTINGS,
 	buildDefaultSystemPrompt,
+	createInitialChatThread,
 	buildServerToolDefinitions,
 	estimatePromptTokenCount,
 	getChangedSettings,
@@ -12,6 +13,36 @@ import {
 	normalizeServerTools,
 	resolveChatApiBaseUrl,
 } from "./chat-playground-core";
+
+describe("initial chat selection", () => {
+	it("starts an empty conversation for a model link without changing saved history", () => {
+		const saved = createInitialChatThread([], "old/model")!;
+		saved.messages = [{ id: "message", role: "user", content: "Existing conversation", createdAt: saved.createdAt }];
+		const before = structuredClone(saved);
+		const fresh = createInitialChatThread([saved], "apodex/apodex-1.1-mini:free")!;
+		expect(fresh.id).not.toBe(saved.id);
+		expect(fresh.modelId).toBe("apodex/apodex-1.1-mini:free");
+		expect(fresh.messages).toEqual([]);
+		expect(fresh.settings.systemPrompt).toBe(buildDefaultSystemPrompt(fresh.modelId));
+		expect(saved).toEqual(before);
+	});
+
+	it("keeps saved chats when opening Chat without a model link", () => {
+		const saved = createInitialChatThread([], "old/model")!;
+		expect(createInitialChatThread([saved], null)).toBeNull();
+	});
+
+	it("starts a blank chat when there is no saved history", () => {
+		expect(createInitialChatThread([], null)).toMatchObject({ modelId: "", messages: [] });
+	});
+
+	it("creates a different conversation on repeated visits to the same model", () => {
+		const first = createInitialChatThread([], "apodex/apodex-1.1-mini:free")!;
+		const second = createInitialChatThread([first], first.modelId)!;
+		expect(second.id).not.toBe(first.id);
+		expect(second.messages).toEqual([]);
+	});
+});
 
 describe("Phaseo Chat attribution", () => {
 	it("sends App attribution without declaring a client source", () => {
