@@ -168,7 +168,6 @@ export async function handleStreamResponse(
     let cachedFinishReason: string | null = null;
     let latestStreamUsageRaw: any = null;
     let latestGatewaySnapshot: any = null;
-	let streamFailed = false;
     let streamErrorStatus: number | undefined;
     let appliedStreamResponsePlugins = false;
     const streamedToolCallKeys = new Set<string>();
@@ -209,7 +208,6 @@ export async function handleStreamResponse(
 
     const onStreamEvent = (event: UnifiedStreamEvent) => {
 		if (event.type === "error") {
-			streamFailed = true;
             const error = event.payload?.response?.error ?? event.payload?.error ?? event.payload;
             const status = Number(error?.status_code ?? error?.status ?? event.payload?.status);
             const knownCodeStatus: Record<string, number> = {
@@ -438,9 +436,6 @@ export async function handleStreamResponse(
         onFinalSnapshot: (snapshot: any) => {
             const payload = snapshot?.response ?? snapshot;
             latestGatewaySnapshot = payload;
-			if (String(payload?.status ?? "").toLowerCase() === "failed") {
-				streamFailed = true;
-			}
             const finishReason = normalizeFinishReason(
                 extractFinishReason(payload),
                 result.provider
@@ -458,7 +453,9 @@ export async function handleStreamResponse(
                 result.bill.finish_reason = finishReason;
             }
         },
-        onFinalUsage: async (usageRaw: any, info) => {
+        onCompletion: async (outcome) => {
+            const { usage: usageRaw, finalInfo: info } = outcome;
+            const streamFailed = outcome.state === "FAILED";
             let releaseRuntime: () => void = () => { };
             try {
                 releaseRuntime = ensureRuntimeForBackground();
