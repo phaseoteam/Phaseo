@@ -59,7 +59,7 @@ export type ChatReasoningEffort =
 	| "xhigh"
 	| "max";
 
-export type ChatServiceTier = "standard" | "priority" | "flex";
+export type ChatServiceTier = "standard" | "priority" | "flex" | "ultrafast";
 
 export type ChatAdvisorServerToolConfig = {
     name?: string;

@@ -3,6 +3,7 @@
 import { chatLocalStorage } from "@/lib/chat/userStorage";
 import { startTransition, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { getTierFilterMeta } from "@/lib/models/tierFilterStyles";
 import { Logo } from "@/components/Logo";
 import {
     Accordion,
@@ -37,7 +38,7 @@ import {
 import { REASONING_OPTIONS } from "@/components/(chat)/chatConversationHelpers";
 import { estimatePromptTokenCount } from "@/components/(chat)/playground/chat-playground-core";
 import type { ReasoningEffortSupport } from "@/components/(chat)/playground/reasoningEffortSupport";
-import type { ServiceTierOption } from "@/components/(chat)/playground/serviceTierSupport";
+import { getServiceTierLabel, type ServiceTierOption } from "@/components/(chat)/playground/serviceTierSupport";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -361,6 +362,7 @@ export function ModelSettingsDialog({
         )
             ? settings.providerId
             : "auto";
+    const selectedProvider = filteredProviderOptions.find((provider) => provider.id === providerValue);
     const selectedProviderLabel =
         providerValue === "auto"
             ? "Auto (Gateway)"
@@ -383,15 +385,23 @@ export function ModelSettingsDialog({
     const availableServiceTierOptions = serviceTierOptions?.length
         ? serviceTierOptions
         : [{ value: "standard" as const, label: "Standard" }];
+    const renderServiceTier = (value: ChatServiceTier, label: string) => {
+        const tier = getTierFilterMeta(value);
+        const TierIcon = tier.icon;
+        return (
+            <span className="flex min-w-0 items-center gap-2">
+                <TierIcon aria-hidden="true" className={`size-4 shrink-0 ${tier.iconClassName}`} />
+                <span className="truncate">{label}</span>
+            </span>
+        );
+    };
     const requestedServiceTier = serviceTier ?? settings.serviceTier ?? "standard";
-    const selectedServiceTier =
-        availableServiceTierOptions.find(
-            (option) => option.value === requestedServiceTier,
-        )?.value ?? availableServiceTierOptions[0]?.value ?? "standard";
+    const selectedServiceTier = requestedServiceTier;
+    const selectedServiceTierAvailable = availableServiceTierOptions.some((option) => option.value === selectedServiceTier);
     const selectedServiceTierLabel =
         availableServiceTierOptions.find(
             (option) => option.value === selectedServiceTier,
-        )?.label ?? "Standard";
+        )?.label ?? `${getServiceTierLabel(selectedServiceTier)} (unavailable)`;
     useEffect(() => {
         if (!modelPickerOpen) {
             setModelPickerListReady(false);
@@ -668,7 +678,7 @@ export function ModelSettingsDialog({
                     <div className="grid gap-2">
                         <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
                             <div className="grid flex-1 gap-1.5">
-                                <Label htmlFor="chat-display-name">Chat display name</Label>
+                                <Label htmlFor="chat-display-name">Chat Display Name</Label>
                                 <Input
                                     id="chat-display-name"
                                     value={textDraft.displayName}
@@ -793,7 +803,12 @@ export function ModelSettingsDialog({
                                         className="min-w-0"
                                         placeholder="Auto (Gateway)"
                                     >
-                                        {selectedProviderLabel}
+                                        <span className="flex min-w-0 items-center gap-2">
+                                            {selectedProvider && (
+                                                <Logo id={selectedProvider.logoId ?? selectedProvider.id} alt={selectedProvider.name} width={16} height={16} className="shrink-0" />
+                                            )}
+                                            <span className="truncate">{selectedProviderLabel}</span>
+                                        </span>
                                     </SelectValue>
                                 </SelectTrigger>
                                 <SelectContent className="max-w-[min(var(--anchor-width),calc(100vw-2rem))]">
@@ -836,23 +851,28 @@ export function ModelSettingsDialog({
                             </Select>
                         </div>
                         <div className="grid gap-1.5">
-                            <Label>Service tier</Label>
+                            <Label>Service Tier</Label>
                             <Select
                                 value={selectedServiceTier}
-                                disabled={availableServiceTierOptions.length <= 1}
+                                disabled={availableServiceTierOptions.length <= 1 && selectedServiceTierAvailable}
                                 onValueChange={(value) =>
                                     onUpdate({ serviceTier: value as ChatServiceTier })
                                 }
                             >
                                 <SelectTrigger className="w-full min-w-0">
                                     <SelectValue className="min-w-0">
-                                        {selectedServiceTierLabel}
+                                        {renderServiceTier(selectedServiceTier, selectedServiceTierLabel)}
                                     </SelectValue>
                                 </SelectTrigger>
                                 <SelectContent>
+                                    {!selectedServiceTierAvailable && (
+                                        <SelectItem value={selectedServiceTier} disabled>
+                                            {renderServiceTier(selectedServiceTier, selectedServiceTierLabel)}
+                                        </SelectItem>
+                                    )}
                                     {availableServiceTierOptions.map((option) => (
                                         <SelectItem key={option.value} value={option.value}>
-                                            {option.label}
+                                            {renderServiceTier(option.value, option.label)}
                                         </SelectItem>
                                     ))}
                                 </SelectContent>
@@ -862,7 +882,7 @@ export function ModelSettingsDialog({
                     <Separator />
                     <div className="grid gap-1.5">
                         <div className="flex items-center justify-between gap-3">
-                            <Label htmlFor="system-prompt">System prompt</Label>
+                            <Label htmlFor="system-prompt">System Prompt</Label>
                             <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
                                 ~{format.number(estimatePromptTokenCount(settings.systemPrompt), {
                                     maximumFractionDigits: 0,
@@ -884,7 +904,7 @@ export function ModelSettingsDialog({
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-sm font-medium">
-                                    Stream responses
+                                    Stream Responses
                                 </p>
                                 <p className="text-xs text-muted-foreground">
                                     Render answers as they arrive.
@@ -902,7 +922,7 @@ export function ModelSettingsDialog({
                         <Accordion type="single" collapsible className="w-full">
                             <AccordionItem value="sampling" className="border-b-0">
                                 <AccordionTrigger>
-                                    <span>Sampling parameters</span>
+                                    <span>Sampling Parameters</span>
                                 </AccordionTrigger>
                                 <AccordionContent>
                                     <div className="grid min-w-0 gap-3 px-1 pt-2">

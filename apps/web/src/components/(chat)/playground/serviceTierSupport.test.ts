@@ -3,6 +3,7 @@ import {
 	getRouteServiceTierSupport,
 	getServiceTierOptions,
 	resolveChatServiceTier,
+	assertChatServiceTierSupported,
 } from "./serviceTierSupport";
 import type { GatewaySupportedModel } from "@/lib/fetchers/gateway/getGatewaySupportedModelIds";
 
@@ -38,45 +39,56 @@ function gatewayModel(
 }
 
 describe("chat service tier support", () => {
-	it("reads Standard and Priority from Grok 4.7 capability metadata", () => {
+	it("uses priced tiers even when capability params omit service tier", () => {
+		const model = {
+			...gatewayModel("openai/gpt-6-astra", { "text.generate": [] }),
+			serviceTiers: ["standard", "priority", "flex", "ultrafast", "batch"],
+		};
+		const support = getModelServiceTierSupport({ models: [model], modelId: model.modelId });
+		expect(getServiceTierOptions(support).map((option) => option.value)).toEqual([
+			"standard", "priority", "ultrafast", "flex",
+		]);
+		expect(resolveChatServiceTier("ultrafast")).toBe("ultrafast");
+		expect(() => assertChatServiceTierSupported("ultrafast", support)).not.toThrow();
+	});
+
+	it("keeps priced tiers authoritative and respects provider selection", () => {
+		const models = [
+			{ ...gatewayModel("openai/gpt-6.1-sol", { "text.generate": [] }), serviceTiers: ["standard", "priority", "flex"] },
+			{ ...gatewayModel("openai/gpt-6.1-sol", { "text.generate": { service_tier: ["standard", "priority"] } }), providerId: "other", serviceTiers: ["standard"] },
+		];
+		expect(getModelServiceTierSupport({ models, modelId: models[0].modelId })?.supportedValues).toEqual(["standard"]);
+		expect(getModelServiceTierSupport({ models, modelId: models[0].modelId, providerId: "spacex-ai" })?.supportedValues).toEqual(["standard", "priority", "flex"]);
+	});
+
+	it("keeps Grok 4.7 on Standard when no service tier is advertised", () => {
 		const support = getModelServiceTierSupport({
 			models: [
 				gatewayModel("spacex-ai/grok-4.7", {
 					"text.generate": {
 						reasoning: {
-							effort: {
-								supported_values: ["low", "medium", "high", "xhigh"],
-							},
-						},
-						service_tier: {
-							param_id: "service_tier",
-							provider_default: "standard",
-							supported_values: ["standard", "priority"],
-						},
+						effort: { supported_values: ["low", "medium", "high", "xhigh"] },
 					},
+				},
 				}),
 			],
 			modelId: "spacex-ai/grok-4.7",
 		});
 
-		expect(support).toEqual({
-			supportedValues: ["standard", "priority"],
-			defaultValue: "standard",
-		});
+		expect(support).toEqual({ supportedValues: ["standard"] });
 		expect(getServiceTierOptions(support)).toEqual([
 			{ value: "standard", label: "Standard" },
-			{ value: "priority", label: "Fast" },
 		]);
 	});
 
 	it("reads Priority from a legacy service tier parameter note", () => {
 		const support = getRouteServiceTierSupport([
-			{
-				param_id: "service_tier",
-				provider_default: "standard",
-				notes: "Priority Processing is available at 2x standard token prices.",
-			},
-		]);
+				{
+					param_id: "service_tier",
+					provider_default: "standard",
+					notes: "Priority Processing is available at 2x standard token prices.",
+				},
+			]);
 		expect(support).toEqual({
 			supportedValues: ["standard", "priority"],
 			defaultValue: "standard",
@@ -107,9 +119,25 @@ describe("chat service tier support", () => {
 		).toEqual({ supportedValues: ["standard"] });
 	});
 
-	it("falls back to a supported tier when a saved value is unavailable", () => {
-		expect(
-			resolveChatServiceTier("flex", { supportedValues: ["standard"] }),
-		).toBe("standard");
+	it.each(["priority", "flex", "ultrafast"] as const)("never opts into %s when it is the only priced tier", (tier) => {
+		const model = { ...gatewayModel("vendor/model", { "text.generate": [] }), serviceTiers: [tier] };
+		const support = getModelServiceTierSupport({ models: [model], modelId: model.modelId });
+		const selected = resolveChatServiceTier(undefined);
+		expect(selected).toBe("standard");
+		expect(() => assertChatServiceTierSupported(selected, support)).toThrow("Choose a supported tier");
+		expect(() => assertChatServiceTierSupported(tier, support)).not.toThrow();
+	});
+
+	it("preserves and rejects an unavailable saved tier instead of switching it", () => {
+		const selected = resolveChatServiceTier("flex");
+		expect(selected).toBe("flex");
+		expect(() => assertChatServiceTierSupported(selected, {
+			supportedValues: ["priority"], defaultValue: "priority",
+		})).toThrow("Choose a supported tier");
+	});
+
+	it("keeps Standard when tier metadata is absent", () => {
+		expect(() => assertChatServiceTierSupported(resolveChatServiceTier(undefined), null)).not.toThrow();
+		expect(() => assertChatServiceTierSupported("priority", null)).toThrow();
 	});
 });
