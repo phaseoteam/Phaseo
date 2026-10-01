@@ -511,21 +511,16 @@ describe("resolveStreamForProtocol", () => {
 		expect(frames.filter((frame) => frame.delta?.type === "text_delta")).toHaveLength(1);
 	});
 
-	it("terminates anthropic messages when a Responses stream closes early", async () => {
+	it("rejects truncated Responses streams instead of fabricating message_stop", async () => {
 		const upstream = makeSseResponse([
 			{ event: "response.created", data: { response: { id: "resp_partial", model: "test-model" } } },
 			{ event: "response.output_text.delta", data: { item_id: "message_1", output_index: 0, delta: "Partial" } },
 		]);
-		const frames = parseSseJsonFrames(await readStreamText(resolveStreamForProtocol(
+		await expect(readStreamText(resolveStreamForProtocol(
 			upstream,
 			baseArgs({ endpoint: "messages", protocol: "anthropic.messages" }),
 			"responses",
-		)));
-		expect(frames.slice(-3).map((frame) => frame.type)).toEqual([
-			"content_block_stop",
-			"message_delta",
-			"message_stop",
-		]);
+		))).rejects.toMatchObject({ code: "sse_missing_terminal" });
 	});
 
 	it("converts chat-chunk stream to anthropic messages stream on responses route", async () => {

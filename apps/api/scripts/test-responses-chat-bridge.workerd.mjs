@@ -9,6 +9,7 @@ const root = fileURLToPath(new URL("../", import.meta.url));
 const bundle = await build({ absWorkingDir: root, bundle: true, format: "esm", platform: "browser", write: false,
     stdin: { resolveDir: root, loader: "ts", contents: `
         import { transformResponsesStreamToChat, transformChatStreamToResponses } from './src/executors/_shared/text-generate/openai-compat/stream-transforms';
+        import { transformResponsesStreamToAnthropic } from './src/executors/_shared/text-generate/openai-compat/responses-to-messages-stream';
         const args = { providerId: 'poolside', requestId: 'native-bridge', ir: { model: 'test', messages: [] } };
         const bridge = source => transformResponsesStreamToChat(source, args, { requestId: args.requestId, providerId: args.providerId, choiceStates: new Map() });
         const enc = new TextEncoder();
@@ -42,8 +43,20 @@ const bundle = await build({ absWorkingDir: root, bundle: true, format: "esm", p
             await Promise.resolve(); const chatEager = chatPulls;
             const chatReading = chatReader.read(); await new Promise(resolve => setTimeout(resolve, 1));
             await chatReader.cancel(); await chatReading;
+            const messagesBridge = source => transformResponsesStreamToAnthropic(source, args);
+            const messagesOutput = await new Response(messagesBridge(new Response(bytes).body)).text();
+            let messagesIncomplete;
+            try { await new Response(messagesBridge(new Response(event('response.output_text.delta', { delta: 'partial' })).body)).text(); }
+            catch (error) { messagesIncomplete = error.code; }
+            let messagesPulls = 0, messagesCancels = 0;
+            const messagesPending = new ReadableStream({ pull() { messagesPulls++; }, cancel() { messagesCancels++; } }, { highWaterMark: 0 });
+            const messagesReader = messagesBridge(messagesPending).getReader();
+            await Promise.resolve(); const messagesEager = messagesPulls;
+            const messagesReading = messagesReader.read(); await new Promise(resolve => setTimeout(resolve, 1));
+            await messagesReader.cancel(); await messagesReading;
             return Response.json({ output, eagerPulls, pulls, cancels, released: !source.locked && !pending.locked, incomplete,
-                chatOutput, chatIncomplete, chatEager, chatPulls, chatCancels, chatReleased: !chatPending.locked });
+                chatOutput, chatIncomplete, chatEager, chatPulls, chatCancels, chatReleased: !chatPending.locked,
+                messagesOutput, messagesIncomplete, messagesEager, messagesPulls, messagesCancels, messagesReleased: !messagesPending.locked });
         }};
     ` } });
 const runtime = new Miniflare({ modules: true, script: bundle.outputFiles[0].text, compatibilityDate: "2025-10-01" });
@@ -58,5 +71,9 @@ try {
     assert.equal(result.chatIncomplete, "sse_missing_terminal");
     assert.equal(result.chatEager, 0); assert.equal(result.chatPulls, 1);
     assert.equal(result.chatCancels, 1); assert.equal(result.chatReleased, true);
+    assert.equal((result.messagesOutput.match(/event: message_stop/g) ?? []).length, 1);
+    assert.equal(result.messagesIncomplete, "sse_missing_terminal");
+    assert.equal(result.messagesEager, 0); assert.equal(result.messagesPulls, 1);
+    assert.equal(result.messagesCancels, 1); assert.equal(result.messagesReleased, true);
     console.log(JSON.stringify({ result: "PASS", ...result }));
 } finally { await runtime.dispose(); }
