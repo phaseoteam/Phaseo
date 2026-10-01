@@ -238,7 +238,7 @@ describe("openai rerank executor", () => {
 		expect((result as any).bill.usage).toMatchObject({ input_tokens: 9, total_tokens: 9 });
 	});
 
-	it("maps OpenAI-style rerank payload into Voyage-compatible fields", async () => {
+	it.each(["rerank-2.5", "rerank-3", "rerank-3-lite"])("maps %s into Voyage-compatible fields", async model => {
 		setupRuntimeFromEnv({
 			VOYAGE_API_KEY: "test-voyage-key",
 		} as any);
@@ -248,7 +248,7 @@ describe("openai rerank executor", () => {
 				match: (url) => url === "https://api.voyage.example/v1/rerank",
 				response: jsonResponse({
 					id: "rerank_voyage",
-					model: "rerank-2.5",
+					model,
 					data: [{ index: 0, relevance_score: 0.94 }],
 				}),
 			},
@@ -258,7 +258,7 @@ describe("openai rerank executor", () => {
 			buildArgs({
 				providerId: "voyage",
 				ir: {
-					model: "voyage/rerank-2.5",
+					model: `voyage/${model}`,
 					query: "best retrieval strategy",
 					documents: [
 						{ title: "Vector search", body: "Use ANN for recall." },
@@ -277,7 +277,7 @@ describe("openai rerank executor", () => {
 
 		expect(result.kind).toBe("completed");
 		expect(mock.calls).toHaveLength(1);
-		expect(mock.calls[0]?.bodyJson?.model).toBe("rerank-2.5");
+		expect(mock.calls[0]?.bodyJson?.model).toBe(model);
 		expect(mock.calls[0]?.bodyJson?.top_k).toBe(1);
 		expect(mock.calls[0]?.bodyJson?.top_n).toBeUndefined();
 		expect(mock.calls[0]?.bodyJson?.documents).toEqual([
