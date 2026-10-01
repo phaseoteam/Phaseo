@@ -404,6 +404,8 @@ jobs:
               if: matrix.app == 'api'
               run: |
                   pnpm run validate:api
+                  node supabase/tests/workspace-publication-outbox.test.mjs
+                  node apps/api/scripts/test-workspace-publication-outbox.workerd.mjs
                   pnpm --filter @phaseo/gateway-api exec vitest run src/executors/_shared/text-generate/openai-compat/__tests__/execute.test.ts
                   cd apps/api && pnpm exec tsx scripts/pricing-simulator-cli.ts
 
