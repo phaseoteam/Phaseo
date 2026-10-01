@@ -166,8 +166,12 @@ export async function createPricedStreamSession(opts: PassthroughWithPricingOpts
         }
     };
     // Write one SSE JSON object as "event: X\ndata: {...}\n\n" (event optional).
-    const writeJson = (obj: unknown, eventName?: string | null) =>
-        writeFrame(`${eventName ? `event: ${eventName}\n` : ""}data: ${JSON.stringify(obj)}\n\n`);
+    const writeJson = (obj: unknown, eventName?: string | null) => {
+        // Drain still observes usage, terminal snapshots and rewrite side effects.
+        // Do not stringify potentially large output for an already-closed client.
+        if (downstreamClosed) return Promise.resolve(false);
+        return writeFrame(`${eventName ? `event: ${eventName}\n` : ""}data: ${JSON.stringify(obj)}\n\n`);
+    };
 
     if (onFinalUsage || onCompletion) dispatchBackground(session.completion.then(async outcome => {
         const { usage, finalInfo: info } = outcome;
