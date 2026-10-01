@@ -105,6 +105,9 @@ importers:
       '@visulima/tabular':
         specifier: ^4.1.0
         version: 4.1.0
+      eventsource-parser:
+        specifier: 3.1.1
+        version: 3.1.1
       hono:
         specifier: ^4.12.27
         version: 4.12.30
