@@ -1,7 +1,6 @@
 "use client";
 import Link from "next/link";
-import dynamic from "next/dynamic";
-import { IntelligenceValueTable } from "./IntelligenceValueTable";
+import { IntelligenceValueComparison } from "./IntelligenceValueComparison";
 import { useState } from "react";
 import { ArrowUpRight, Search } from "lucide-react";
 import { Logo } from "@/components/Logo";
@@ -11,7 +10,6 @@ import { Button } from "@/components/ui/button";
 import { artificialAnalysisMetricKey, artificialAnalysisMetrics, artificialAnalysisVersion, formatArtificialAnalysisScore } from "@/lib/benchmarks/artificialAnalysis";
 import type { PublicBenchmarkRanking, PublicIntelligenceValue } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 
-const IntelligenceValueScatter = dynamic(() => import("./IntelligenceValueScatter"), { ssr: false, loading: () => <div className="flex h-96 items-center justify-center text-sm text-muted-foreground" role="status">Loading value chart…</div> });
 const metrics = [...artificialAnalysisMetrics, { key: "value", label: "Cost per intelligence point", id: "aa-intelligence-index-v4" }] as const;
 
 export function BenchmarkRankingsSection({ benchmarks, intelligenceValue }: { benchmarks: PublicBenchmarkRanking[]; intelligenceValue?: PublicIntelligenceValue }) {
@@ -39,10 +37,7 @@ export function BenchmarkRankingsSection({ benchmarks, intelligenceValue }: { be
         <div><h3 className="font-semibold">{metric.label}</h3><p className="mt-1 text-xs text-muted-foreground">{entries.length} matched models · {selectedMetric === "value" ? "Evaluation cost ÷ intelligence score · Lower is better" : selectedMetric === "cost" ? "Lower cost is better · USD" : "Higher is better"}{versions.length ? ` · Index v${versions.join(" / v")}` : ""}</p></div>
         <div className="relative w-full sm:w-64"><Search className="pointer-events-none absolute left-3 top-3 size-4 text-muted-foreground" /><Input aria-label="Search ranked models" placeholder="Search models" value={search} onChange={(e) => { setSearch(e.target.value); setLimit(20); }} className="pl-9" /></div>
       </div>
-      {selectedMetric === "value" && valueEntries.length > 0 ? <>
-        <IntelligenceValueScatter entries={valueEntries} />
-        <IntelligenceValueTable entries={valueEntries.slice(0, limit)} />
-      </> : null}
+      {selectedMetric === "value" && valueEntries.length > 0 ? <IntelligenceValueComparison entries={valueEntries} limit={limit} onShowMore={() => setLimit((value) => value + 20)} /> : null}
       {selectedMetric !== "value" ? <ol className="divide-y">
         {filtered.slice(0, limit).map((entry) => <li key={entry.model_id} className="relative grid min-h-20 grid-cols-[1.75rem_minmax(0,1fr)_auto] items-center gap-3 py-3 sm:grid-cols-[2rem_2rem_minmax(0,1fr)_auto]">
           <span className="text-sm tabular-nums text-muted-foreground">{entry.rank}</span>
@@ -54,7 +49,7 @@ export function BenchmarkRankingsSection({ benchmarks, intelligenceValue }: { be
       {!filtered.length ? <p className="px-5 py-10 text-center text-sm text-muted-foreground">{entries.length ? "No models match your search." : "No results available for this metric yet."}</p> : null}
       <div className="flex flex-wrap items-center justify-between gap-3 border-t py-4 text-xs text-muted-foreground">
         <Link href={`/benchmarks/${selected}`} className="inline-flex items-center gap-1 hover:text-foreground">All results and evaluation details <ArrowUpRight className="size-3.5" /></Link>
-        {filtered.length > limit ? <Button variant="ghost" size="sm" onClick={() => setLimit((value) => value + 20)}>Show more</Button> : <span>{filtered.length} {filtered.length === 1 ? "result" : "results"}</span>}
+        {selectedMetric !== "value" ? filtered.length > limit ? <Button variant="ghost" size="sm" onClick={() => setLimit((value) => value + 20)}>Show more</Button> : <span>{filtered.length} {filtered.length === 1 ? "result" : "results"}</span> : null}
       </div>
     </div>
   </section>;
