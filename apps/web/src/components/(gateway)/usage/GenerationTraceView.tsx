@@ -626,7 +626,7 @@ export function GenerationTraceView({ request, ioLog, timelineItems, providerNam
 				</div>
 			</div>
 
-			<nav aria-label="Request lifecycle" className="sticky top-0 z-20 -mx-3 border-y border-border/70 bg-background/95 px-2 py-2 backdrop-blur-md sm:-mx-4 sm:px-3">
+			<nav aria-label="Request lifecycle" className="-mx-3 border-y border-border/70 bg-background px-2 py-2 sm:-mx-4 sm:px-3">
 				<div className="grid grid-cols-5 gap-1">
 					{lifecycleNavigation.map((step) => {
 						const active = activeStep === step.id;
