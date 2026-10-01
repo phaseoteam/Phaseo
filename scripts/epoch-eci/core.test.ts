@@ -1,8 +1,18 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { matchEpochRows, parseEpochEciCsv } from "./core";
+import { matchEpochRows, parseEpochEciCsv, staleEpochResultIds } from "./core";
 
 const epochRow = { model: "epoch-stable-id", displayName: "Ambiguous Name", score: 12, ciLow: 11, ciHigh: 13, releaseDate: "", organisation: "Lab" };
+
+test("remapping an Epoch source retires its former owner's result while preserving unclaimed scores", () => {
+	const result = (result_id: string, model_slug: string, source: string) => ({ result_id, model_slug, result_key: `${model_slug}:epoch-capabilities-index:${source}` });
+	const previous = result("previous", "lab/old-owner", "Epoch: Model (high)");
+	const current = result("current", "lab/new-owner", "Epoch: Model (high)");
+	const unclaimed = result("unclaimed", "lab/unmatched", "Other Epoch Model");
+	const replaced = result("replaced", "lab/new-owner", "Old configuration");
+	assert.deepEqual(staleEpochResultIds([previous, current, unclaimed, replaced], [current]), ["previous", "replaced"]);
+	assert.deepEqual(staleEpochResultIds([unclaimed], []), []);
+});
 
 test("explicit database IDs override ambiguous display names", () => {
 	const models = [{ model_slug: "lab/renamed", name: "Different Name", metadata: { external_ids: { epoch_ai: epochRow.model } } }, { model_slug: "lab/alias", name: epochRow.displayName }];

@@ -3,7 +3,7 @@ import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { loadEnvFile } from "node:process";
 import { createAdminClient } from "../apps/web/src/utils/supabase/admin";
-import { matchEpochRows, parseEpochEciCsv } from "./epoch-eci/core";
+import { matchEpochRows, parseEpochEciCsv, staleEpochResultIds } from "./epoch-eci/core";
 
 const BENCHMARK_ID = "epoch-capabilities-index";
 const SOURCE_URL = "https://epoch.ai/data/eci_scores.csv";
@@ -66,12 +66,10 @@ async function main() {
 		const { error } = await db.from("v2_benchmark_results").upsert(rows.slice(index, index + 250), { onConflict: "result_id" });
 		if (error) throw error;
 	}
-	const { data: activeRows, error: activeRowsError } = await db.from("v2_benchmark_results").select("result_id,model_slug").eq("benchmark_id", BENCHMARK_ID).is("effective_to", null);
+	const { data: activeRows, error: activeRowsError } = await db.from("v2_benchmark_results").select("result_id,model_slug,result_key").eq("benchmark_id", BENCHMARK_ID).is("effective_to", null);
 	if (activeRowsError) throw activeRowsError;
-	const currentResultIds = new Set(rows.map((row) => row.result_id));
-	const matchedModelIds = new Set(rows.map((row) => row.model_slug));
-	// Unmatched and opted-out models retain their prior results and provenance.
-	const staleResultIds = (activeRows ?? []).filter((row) => matchedModelIds.has(row.model_slug) && !currentResultIds.has(row.result_id)).map((row) => row.result_id);
+	// Preserve unmatched scores unless their source now belongs to another model.
+	const staleResultIds = staleEpochResultIds(activeRows ?? [], rows);
 	if (staleResultIds.length) {
 		const { error } = await db.from("v2_benchmark_results").update({ effective_to: updatedAt, updated_at: updatedAt }).is("effective_to", null).in("result_id", staleResultIds);
 		if (error) throw error;
