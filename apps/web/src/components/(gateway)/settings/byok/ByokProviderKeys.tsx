@@ -1,4 +1,5 @@
 "use client";
+import { gatewayMutationMessage, type GatewayPublicationResult } from "@/lib/settings/gatewayPublication";
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
@@ -204,16 +205,20 @@ export default function ByokProviderKeys({ provider, entries, modelOptions, apiK
 		if (!previous || !next || next.sample) return;
 		setSaving(true);
 		try {
+			const results: GatewayPublicationResult[] = [];
 			await write((async () => {
-				if (previous.routingMode !== next.routingMode) await updateByokKeyAction(id, { always_use: next.routingMode === "priority" });
+				if (previous.routingMode !== next.routingMode) results.push(await updateByokKeyAction(id, { always_use: next.routingMode === "priority" }));
 				const targetModeEntries = after.filter((entry) => entry.routingMode === next.routingMode).sort((a, b) => a.sortOrder - b.sortOrder);
 				const targetIndex = targetModeEntries.findIndex((entry) => entry.id === id);
 				const startingIndex = previous.routingMode === next.routingMode
 					? before.filter((entry) => entry.routingMode === previous.routingMode).sort((a, b) => a.sortOrder - b.sortOrder).findIndex((entry) => entry.id === id)
 					: targetModeEntries.length - 1;
 				const direction = targetIndex < startingIndex ? "up" : "down";
-				for (let step = 0; step < Math.abs(targetIndex - startingIndex); step += 1) await reorderByokKeyAction(id, direction);
+				for (let step = 0; step < Math.abs(targetIndex - startingIndex); step += 1) results.push(await reorderByokKeyAction(id, direction));
 			})());
+			if (results.some((result) => result.gatewayCacheInvalidated === false)) {
+				toast.warning(gatewayMutationMessage("Key order saved", ...results));
+			}
 		} catch (error) {
 			setEntries(before);
 			toast.error(error instanceof Error ? error.message : "Failed to reorder key");

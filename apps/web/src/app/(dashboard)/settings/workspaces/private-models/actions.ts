@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { getServerAccountContext } from "@/lib/fetchers/internal/serverAccountContext";
 import { fetchAccountWebApi } from "@/lib/web-api/client";
+import type { GatewayPublicationResult } from "@/lib/settings/gatewayPublication";
 
 async function account() {
 	const context = await getServerAccountContext();
@@ -18,18 +19,18 @@ function refresh() {
 
 export async function createPrivateModelAction(input: Record<string, unknown>) {
 	const value = await account();
-	const result = await fetchAccountWebApi(`/api/account/private-models?workspaceId=${encodeURIComponent(value.workspaceId)}`, value.token, { method: "POST", body: JSON.stringify(input) });
+	const result = await fetchAccountWebApi<GatewayPublicationResult>(`/api/account/private-models?workspaceId=${encodeURIComponent(value.workspaceId)}`, value.token, { method: "POST", body: JSON.stringify(input) });
 	refresh(); return result;
 }
 
 export async function updatePrivateModelAction(id: string, input: Record<string, unknown>) {
 	const value = await account();
-	const result = await fetchAccountWebApi(`/api/account/private-models/${encodeURIComponent(id)}?workspaceId=${encodeURIComponent(value.workspaceId)}`, value.token, { method: "PATCH", body: JSON.stringify(input) });
+	const result = await fetchAccountWebApi<GatewayPublicationResult>(`/api/account/private-models/${encodeURIComponent(id)}?workspaceId=${encodeURIComponent(value.workspaceId)}`, value.token, { method: "PATCH", body: JSON.stringify(input) });
 	refresh(); return result;
 }
 
 export async function deletePrivateModelAction(id: string) {
 	const value = await account();
-	const result = await fetchAccountWebApi(`/api/account/private-models/${encodeURIComponent(id)}?workspaceId=${encodeURIComponent(value.workspaceId)}`, value.token, { method: "DELETE" });
+	const result = await fetchAccountWebApi<GatewayPublicationResult>(`/api/account/private-models/${encodeURIComponent(id)}?workspaceId=${encodeURIComponent(value.workspaceId)}`, value.token, { method: "DELETE" });
 	refresh(); return result;
 }

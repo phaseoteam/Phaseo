@@ -1,4 +1,5 @@
 "use client";
+import { gatewayMutationMessage, type GatewayPublicationResult } from "@/lib/settings/gatewayPublication";
 
 import Link from "next/link";
 import { useSettingsRouter as useRouter } from "../PrivateSettingsQuery";
@@ -1587,6 +1588,7 @@ export default function GuardrailEditorPageClient(props: {
 		);
 		try {
 			let guardrailId = props.guardrailId;
+			const publications: GatewayPublicationResult[] = [];
 			if (props.mode === "create") {
 				const created = await createGuardrail({
 					enabled: form.enabled,
@@ -1610,8 +1612,9 @@ export default function GuardrailEditorPageClient(props: {
 					budgets,
 				});
 				guardrailId = created.id ?? null;
+				publications.push(created);
 			} else if (props.mode === "edit" && props.guardrailId) {
-				await updateGuardrail(props.guardrailId, {
+				const updated = await updateGuardrail(props.guardrailId, {
 					enabled: form.enabled,
 					name: form.name,
 					description: form.description || null,
@@ -1632,16 +1635,17 @@ export default function GuardrailEditorPageClient(props: {
 					sensitiveInfoRules: form.sensitiveInfoRules,
 					budgets,
 				});
+				publications.push(updated);
 			}
 
 			if (guardrailId) {
-				await Promise.all([
+				publications.push(...await Promise.all([
 					setGuardrailKeys(guardrailId, form.keyIds),
 					setGuardrailMembers(guardrailId, form.memberIds),
-				]);
+				]));
 			}
 
-			toast.success("Guardrail saved", { id: toastId });
+			toast.success(gatewayMutationMessage("Guardrail saved", ...publications), { id: toastId });
 			router.push(props.backHref);
 			router.refresh();
 		} catch (err) {
@@ -1658,8 +1662,8 @@ export default function GuardrailEditorPageClient(props: {
 		setDeleting(true);
 		const toastId = toast.loading("Deleting guardrail...");
 		try {
-			await deleteGuardrail(props.guardrailId);
-			toast.success("Guardrail deleted", { id: toastId });
+			const result = await deleteGuardrail(props.guardrailId);
+			toast.success(gatewayMutationMessage("Guardrail deleted", result), { id: toastId });
 			router.push(props.backHref);
 			router.refresh();
 		} catch (err) {

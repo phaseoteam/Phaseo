@@ -86,11 +86,11 @@ export default function AccountPrivacySettingsClient({
 		let cancelled = false;
 		const timer = window.setTimeout(async () => {
 			try {
-				await updateGlobalGuardrailsSettings(policy, workspaceId);
+				const result = await updateGlobalGuardrailsSettings(policy, workspaceId);
 				void invalidateSettings();
 				if (cancelled) return;
 				lastSavedPolicy.current = serialized;
-				setAutosaveStatus("saved");
+				setAutosaveStatus(result.gatewayCacheInvalidated === false ? "pending" : "saved");
 			} catch {
 				if (cancelled) return;
 				setAutosaveStatus("error");
@@ -107,7 +107,7 @@ export default function AccountPrivacySettingsClient({
 		let cancelled = false;
 		const timer = window.setTimeout(async () => {
 			try {
-				await updateGlobalGuardrailsSettings({
+				const result = await updateGlobalGuardrailsSettings({
 					ioLoggingEnabled: logStorage.enabled,
 					ioLoggingRetentionDays: logStorage.retentionDays,
 					ioLoggingIncludeProviderPayloads: logStorage.includeProviderPayloads,
@@ -115,7 +115,7 @@ export default function AccountPrivacySettingsClient({
 				void invalidateSettings();
 				if (cancelled) return;
 				lastSavedLogStorage.current = serialized;
-				setAutosaveStatus("saved");
+				setAutosaveStatus(result.gatewayCacheInvalidated === false ? "pending" : "saved");
 			} catch {
 				if (cancelled) return;
 				setAutosaveStatus("error");

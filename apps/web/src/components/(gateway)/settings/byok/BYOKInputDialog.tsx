@@ -1,4 +1,5 @@
 "use client";
+import { gatewayMutationMessage } from "@/lib/settings/gatewayPublication";
 
 import React, { useMemo, useState } from "react";
 import Link from "next/link";
@@ -285,7 +286,7 @@ export default function BYOKInputDialog({
 		try {
 			setLoading(true);
 			if (initial && initial.id) {
-				await write(updateByokKeyAction(initial.id, {
+				const result = await write(updateByokKeyAction(initial.id, {
 					name: normalizedName,
 					value: submission.value ?? undefined,
 					enabled,
@@ -293,9 +294,9 @@ export default function BYOKInputDialog({
 					allowedModelSlugs,
 					allowedApiKeyIds,
 				}));
-				toast.success(submission.value ? "Key updated and replaced" : "Key updated");
+				toast.success(gatewayMutationMessage(submission.value ? "Key updated and replaced" : "Key updated", result));
 			} else {
-				await write(createByokKeyAction(
+				const result = await write(createByokKeyAction(
 					normalizedName,
 					providerId as string,
 					submission.value as string,
@@ -304,7 +305,7 @@ export default function BYOKInputDialog({
 					allowedModelSlugs,
 					allowedApiKeyIds,
 				));
-				toast.success("Key saved");
+				toast.success(gatewayMutationMessage("Key saved", result));
 			}
 			setOpen(false);
 			resetForm();

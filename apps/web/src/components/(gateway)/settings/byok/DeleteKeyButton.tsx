@@ -1,4 +1,5 @@
 "use client";
+import { gatewayMutationMessage } from "@/lib/settings/gatewayPublication";
 
 import React, { useState } from "react";
 import { Trash2 } from "lucide-react";
@@ -25,8 +26,8 @@ export default function DeleteKeyButton({ id }: { id: string }) {
 	async function onConfirmDelete() {
 		try {
 			setLoading(true);
-			await write(deleteByokKeyAction(id));
-			toast.success("Key deleted");
+			const result = await write(deleteByokKeyAction(id));
+			toast.success(gatewayMutationMessage("Key deleted", result));
 			setOpen(false);
 		} catch (err: any) {
 			console.error(err);

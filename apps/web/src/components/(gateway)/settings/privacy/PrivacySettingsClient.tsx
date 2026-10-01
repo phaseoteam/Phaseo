@@ -1,4 +1,5 @@
 "use client";
+import { gatewayMutationMessage } from "@/lib/settings/gatewayPublication";
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -490,6 +491,7 @@ export default function PrivacySettingsClient(props: {
 	const [global, setGlobal] = useState(defaultGlobal);
 	const [savedGlobal, setSavedGlobal] = useState(defaultGlobal);
 	const [savingGlobal, setSavingGlobal] = useState(false);
+	const [gatewayRefreshFailed, setGatewayRefreshFailed] = useState(false);
 	const globalTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 	const globalSaveSeqRef = useRef(0);
 	const globalFirstRunRef = useRef(true);
@@ -499,6 +501,7 @@ export default function PrivacySettingsClient(props: {
 		globalResetRef.current = true;
 		setGlobal(defaultGlobal);
 		setSavedGlobal(defaultGlobal);
+		setGatewayRefreshFailed(false);
 	}, [defaultGlobal]);
 
 	useEffect(() => {
@@ -527,8 +530,7 @@ export default function PrivacySettingsClient(props: {
 			const saveSeq = ++globalSaveSeqRef.current;
 			setSavingGlobal(true);
 			try {
-				await toast.promise(
-					updateGlobalGuardrailsSettings({
+				const operation = updateGlobalGuardrailsSettings({
 						privacyEnablePaidMayTrain: global.privacyEnablePaidMayTrain,
 						privacyEnableFreeMayTrain: global.privacyEnableFreeMayTrain,
 						privacyEnableFreeMayPublishPrompts:
@@ -547,16 +549,20 @@ export default function PrivacySettingsClient(props: {
 							global.providerRestrictionProviderIds,
 						providerRestrictionEnforceAllowed:
 							global.providerRestrictionEnforceAllowed,
-					}),
-					{
+					});
+				toast.promise(operation, {
 						loading: "Saving privacy settings...",
-						success: "Privacy settings updated",
+						success: (result) => gatewayMutationMessage("Privacy settings updated", result),
 						error: "Failed to update privacy settings",
 					},
 				);
+				const result = await operation;
 				if (saveSeq === globalSaveSeqRef.current) {
 					setSavedGlobal(global);
+					setGatewayRefreshFailed(result.gatewayCacheInvalidated === false);
 				}
+			} catch {
+				// The toast reports the failure; leave the draft unsaved.
 			} finally {
 				if (saveSeq === globalSaveSeqRef.current) setSavingGlobal(false);
 			}
@@ -575,7 +581,7 @@ export default function PrivacySettingsClient(props: {
 		? "Saving..."
 		: globalDirty
 			? "Pending sync"
-			: "Synced";
+			: gatewayRefreshFailed ? "Saved; gateway refresh failed" : "Synced";
 
 	const eligiblePreview = useMemo(() => {
 		return computeEligiblePreview({
@@ -923,4 +929,3 @@ export default function PrivacySettingsClient(props: {
 		</div>
 	);
 }
-
