@@ -345,7 +345,7 @@ export function createInitialChatThread(
 	existing: ChatThread[],
 	modelId: string | null,
 ): ChatThread | null {
-	if (existing.length > 0 && !modelId) return null;
+	if (existing.length > 0 && modelId === null) return null;
 	const createdAt = nowIso();
 	return {
 		id: generateId(),

@@ -36,6 +36,14 @@ describe("initial chat selection", () => {
 		expect(createInitialChatThread([], null)).toMatchObject({ modelId: "", messages: [] });
 	});
 
+	it("starts a blank conversation for a model link that cannot be selected", () => {
+		const saved = createInitialChatThread([], "old/model")!;
+		const fresh = createInitialChatThread([saved], "")!;
+		expect(fresh.id).not.toBe(saved.id);
+		expect(fresh.modelId).toBe("");
+		expect(fresh.messages).toEqual([]);
+	});
+
 	it("creates a different conversation on repeated visits to the same model", () => {
 		const first = createInitialChatThread([], "apodex/apodex-1.1-mini:free")!;
 		const second = createInitialChatThread([first], first.modelId)!;

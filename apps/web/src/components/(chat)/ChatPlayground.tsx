@@ -575,7 +575,9 @@ function ChatPlaygroundContent({
 		getPrimaryCapabilityForModel,
 	} = useChatModelCatalog({ models, modelParam });
 	const queryPrompt = promptParam ?? "";
-	const initialModelId = queryModelIsValid ? resolvedQueryModelId : null;
+	const initialModelId = modelParam?.trim()
+		? (queryModelIsValid ? resolvedQueryModelId : "")
+		: null;
 	const [personalization, setPersonalization] =
 		useState<PersonalizationSettings>({
 			name: "",
@@ -762,13 +764,13 @@ function ChatPlaygroundContent({
 			setChatTags(storedTags.sort(compareChatTags));
 
 			const initialId =
-				!initialModelId &&
+				initialModelId === null &&
 				storedActive &&
 				normalized.some((t) => t.id === storedActive)
 					? storedActive
 					: (normalized[0]?.id ?? null);
 			setActiveId((current) =>
-				initialModelId ? initialId : current ?? initialId,
+				initialModelId !== null ? initialId : current ?? initialId,
 			);
 			if (initialId) {
 				window.localStorage.setItem(STORAGE_KEYS.activeChatId, initialId);
