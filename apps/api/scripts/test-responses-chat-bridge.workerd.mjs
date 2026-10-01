@@ -8,7 +8,7 @@ const { Miniflare } = wranglerRequire("miniflare");
 const root = fileURLToPath(new URL("../", import.meta.url));
 const bundle = await build({ absWorkingDir: root, bundle: true, format: "esm", platform: "browser", write: false,
     stdin: { resolveDir: root, loader: "ts", contents: `
-        import { transformResponsesStreamToChat } from './src/executors/_shared/text-generate/openai-compat/stream-transforms';
+        import { transformResponsesStreamToChat, transformChatStreamToResponses } from './src/executors/_shared/text-generate/openai-compat/stream-transforms';
         const args = { providerId: 'poolside', requestId: 'native-bridge', ir: { model: 'test', messages: [] } };
         const bridge = source => transformResponsesStreamToChat(source, args, { requestId: args.requestId, providerId: args.providerId, choiceStates: new Map() });
         const enc = new TextEncoder();
@@ -31,7 +31,19 @@ const bundle = await build({ absWorkingDir: root, bundle: true, format: "esm", p
             let incomplete;
             try { await new Response(bridge(new Response(event('response.output_text.delta', { delta: 'partial' })).body)).text(); }
             catch (error) { incomplete = error.code; }
-            return Response.json({ output, eagerPulls, pulls, cancels, released: !source.locked && !pending.locked, incomplete });
+            const chatBridge = source => transformChatStreamToResponses(source, args, { requestId: args.requestId, providerId: args.providerId, choiceStates: new Map() });
+            const chatFrame = 'data: ' + JSON.stringify({ object: 'chat.completion.chunk', choices: [{ index: 0, delta: { content: 'hello' }, finish_reason: 'stop' }] }) + '\\r\\n\\r\\n';
+            const chatOutput = await new Response(chatBridge(new Response(chatFrame + 'data: [DONE]\\r\\n\\r\\n').body)).text();
+            let chatIncomplete;
+            try { await new Response(chatBridge(new Response(chatFrame).body)).text(); } catch (error) { chatIncomplete = error.code; }
+            let chatPulls = 0, chatCancels = 0;
+            const chatPending = new ReadableStream({ pull() { chatPulls++; }, cancel() { chatCancels++; } }, { highWaterMark: 0 });
+            const chatReader = chatBridge(chatPending).getReader();
+            await Promise.resolve(); const chatEager = chatPulls;
+            const chatReading = chatReader.read(); await new Promise(resolve => setTimeout(resolve, 1));
+            await chatReader.cancel(); await chatReading;
+            return Response.json({ output, eagerPulls, pulls, cancels, released: !source.locked && !pending.locked, incomplete,
+                chatOutput, chatIncomplete, chatEager, chatPulls, chatCancels, chatReleased: !chatPending.locked });
         }};
     ` } });
 const runtime = new Miniflare({ modules: true, script: bundle.outputFiles[0].text, compatibilityDate: "2025-10-01" });
@@ -42,5 +54,9 @@ try {
     assert.equal(result.eagerPulls, 0); assert.equal(result.pulls, 1);
     assert.equal(result.cancels, 1); assert.equal(result.released, true);
     assert.equal(result.incomplete, "sse_missing_terminal");
+    assert.equal((result.chatOutput.match(/event: response.completed/g) ?? []).length, 1);
+    assert.equal(result.chatIncomplete, "sse_missing_terminal");
+    assert.equal(result.chatEager, 0); assert.equal(result.chatPulls, 1);
+    assert.equal(result.chatCancels, 1); assert.equal(result.chatReleased, true);
     console.log(JSON.stringify({ result: "PASS", ...result }));
 } finally { await runtime.dispose(); }
