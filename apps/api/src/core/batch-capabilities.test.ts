@@ -123,6 +123,7 @@ describe("batch capabilities", () => {
 			"google-ai-studio",
 			"mistral",
 			"moonshotai",
+			"xiaomi",
 			"together",
 			"parasail",
 		]);

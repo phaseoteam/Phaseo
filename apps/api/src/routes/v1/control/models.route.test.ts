@@ -59,6 +59,7 @@ describe("handleModels", () => {
 		expect(fetchCatalogueMock).toHaveBeenCalledWith({
 			availability: "all",
 			endpoints: [],
+			modelIds: [],
 			providerIds: ["openai"],
 			providerStatuses: ["beta"],
 			providerRoutingStatuses: ["disabled"],
