@@ -3,7 +3,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { loadEnvFile } from "node:process";
 import { createAdminClient } from "../apps/web/src/utils/supabase/admin";
-import { METRICS, benchmarkId, databaseModelMappings, fetchModels, matchModels, mergeResults, metricValue, resultsForConfigurations, type CatalogModel, type MappingConfig } from "./artificial-analysis/core";
+import { METRICS, benchmarkId, databaseModelMappings, fetchModels, matchModels, mergeResults, metricValue, reassignedArtificialAnalysisResultIds, resultsForConfigurations, type CatalogModel, type MappingConfig } from "./artificial-analysis/core";
 
 for (const file of ["apps/web/.env.local", ".env.local", ".env"]) {
 	if (existsSync(resolve(file))) loadEnvFile(resolve(file));
@@ -89,6 +89,22 @@ async function main() {
 		const stale = (old ?? []).filter((row) => !rows.some((result) => result.result_id === row.result_id)).map((row) => row.result_id);
 		// Saved catalogue records cannot be deleted. Withdraw obsolete scores in place.
 		if (stale.length) { const { error } = await db.from("v2_benchmark_results").update({ effective_to: updated_at, updated_at }).is("effective_to", null).in("result_id", stale); if (error) throw error; }
+	}
+	// Retire former owners only after all newly assigned results were published.
+	const sourceOwners = new Map(plan.flatMap((entry) => (entry.match.sources ?? []).map((source) => [source.id, entry.model.model_id] as const)));
+	const reassignedIds: string[] = [];
+	for (let offset = 0; ; offset += 500) {
+		const { data, error } = await db.from("v2_benchmark_results")
+			.select("result_id,model_slug,other_info").is("effective_to", null)
+			.in("benchmark_id", managedBenchmarkIds).order("result_id").range(offset, offset + 499);
+		if (error) throw error;
+		reassignedIds.push(...reassignedArtificialAnalysisResultIds(data ?? [], sourceOwners));
+		if ((data ?? []).length < 500) break;
+	}
+	for (let offset = 0; offset < reassignedIds.length; offset += 200) {
+		const { error } = await db.from("v2_benchmark_results").update({ effective_to: updated_at, updated_at })
+			.is("effective_to", null).in("result_id", reassignedIds.slice(offset, offset + 200));
+		if (error) throw error;
 	}
 	console.log("Synchronized matched database models. Public caches expire under their normal TTLs.");
 }

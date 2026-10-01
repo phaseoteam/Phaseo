@@ -28,6 +28,17 @@ export function databaseModelMappings(models: CatalogModel[]): Record<string, st
 	}
 	return mappings;
 }
+
+export function reassignedArtificialAnalysisResultIds(
+	rows: Array<{ result_id: string; model_slug: string; other_info: string | null }>,
+	sourceOwners: ReadonlyMap<string, string>,
+) {
+	return rows.filter((row) => {
+		const sourceId = row.other_info?.match(/Artificial Analysis ID ([^;]+)/)?.[1];
+		const owner = sourceId ? sourceOwners.get(sourceId) : undefined;
+		return owner !== undefined && owner !== row.model_slug;
+	}).map((row) => row.result_id);
+}
 export type MappingConfig = {
 	// Canonical model ID -> stable Artificial Analysis model ID used to identify
 	// the evaluated model family. All reasoning configurations in that family
