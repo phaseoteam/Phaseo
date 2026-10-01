@@ -10,6 +10,8 @@ import {
 	type KeyPepperCandidate,
 } from "@/lib/security/keyPepper";
 import { GATEWAY_ACCESS_SCOPE, parseStoredScopeList } from "@/lib/authz/capabilities";
+import { AUTH_SOURCE_LEASE_MS, readAuthKey, readAuthKeySource, rememberAuthKey, readValidatedAuth, rememberValidatedAuth, resetAuthServingCaches } from "./auth-cache";
+import { coalesceKeyLastUsed, resetKeyLastUsedForTests } from "./auth-last-used";
 
 const enc = new TextEncoder();
 const KEY_CACHE_PREFIX = "gateway:key";
@@ -17,8 +19,6 @@ const KEY_CACHE_TTL_SECONDS = 60;
 // Key mutations advance the version token. These short isolate-local windows
 // remove repeated KV reads while bounding revocation propagation.
 const KEY_VERSION_L1_TTL_MS = 5_000;
-const KEY_LOOKUP_L1_TTL_MS = 30_000;
-const KEY_LOOKUP_L1_MAX_ENTRIES = 2_000;
 const hmacKeys = new Map<string, CryptoKey>();
 /* -------------------- Web Crypto HMAC helpers -------------------- */
 
@@ -213,7 +213,7 @@ type AuthenticateOptions = {
     allowOAuthJwt?: boolean;
 };
 
-type KeyRow = {
+export type KeyRow = {
     id: string;
     workspace_id: string;
     status: string;
@@ -227,55 +227,12 @@ type KeyRow = {
 	oauth_user_id?: string | null;
 	oauth_scopes?: unknown;
 	oauth_resource?: string | null;
+    auth_source_at_ms?: number;
 };
-
-type CachedKeyLookup = KeyRow | "missing" | null;
-type KeyLookupL1Value = Exclude<CachedKeyLookup, null>;
-type KeyLookupL1Entry = {
-    value: KeyLookupL1Value;
-    expiresAt: number;
-};
-const keyLookupL1Cache = new Map<string, KeyLookupL1Entry>();
 
 export function __resetAuthCachesForTests(): void {
-	keyLookupL1Cache.clear();
-}
-
-function keyLookupL1Key(kid: string, versionToken: string): string {
-    return `${kid}:${versionToken}`;
-}
-
-function readKeyLookupL1(kid: string, versionToken: string): KeyLookupL1Value | null {
-    const key = keyLookupL1Key(kid, versionToken);
-    const entry = keyLookupL1Cache.get(key);
-    if (!entry) return null;
-    if (entry.expiresAt <= Date.now()) {
-        keyLookupL1Cache.delete(key);
-        return null;
-    }
-    return entry.value;
-}
-
-function pruneKeyLookupL1(nowMs: number): void {
-    for (const [key, entry] of keyLookupL1Cache.entries()) {
-        if (entry.expiresAt <= nowMs) {
-            keyLookupL1Cache.delete(key);
-        }
-    }
-    while (keyLookupL1Cache.size >= KEY_LOOKUP_L1_MAX_ENTRIES) {
-        const oldest = keyLookupL1Cache.keys().next().value;
-        if (!oldest) break;
-        keyLookupL1Cache.delete(oldest);
-    }
-}
-
-function writeKeyLookupL1(kid: string, versionToken: string, value: KeyLookupL1Value): void {
-    const now = Date.now();
-    pruneKeyLookupL1(now);
-    keyLookupL1Cache.set(keyLookupL1Key(kid, versionToken), {
-        value,
-        expiresAt: now + KEY_LOOKUP_L1_TTL_MS,
-    });
+    resetAuthServingCaches();
+    resetKeyLastUsedForTests();
 }
 
 function isValidKidFormat(kid: string): boolean {
@@ -286,7 +243,7 @@ function isValidKidFormat(kid: string): boolean {
 function isExpiredKey(expiresAt?: string | null): boolean {
     if (!expiresAt) return false;
     const ts = Date.parse(expiresAt);
-    if (!Number.isFinite(ts)) return false;
+    if (!Number.isFinite(ts)) return true;
     return ts <= Date.now();
 }
 
@@ -312,22 +269,9 @@ async function findMatchingPepperCandidate(args: {
     return null;
 }
 
-async function getCachedKey(kid: string, versionToken: string): Promise<CachedKeyLookup> {
+async function getCachedKey(kid: string, versionToken: string): Promise<KeyRow | null> {
     try {
-        const l1 = readKeyLookupL1(kid, versionToken);
-        if (l1 !== null) return l1;
-        const cached = await getCache().get(`${KEY_CACHE_PREFIX}:${kid}:${versionToken}`, "json");
-        if (!cached || typeof cached !== "object") return null;
-        const marker = cached as { missing?: unknown };
-        if (marker.missing === true) {
-            writeKeyLookupL1(kid, versionToken, "missing");
-            return "missing";
-        }
-        const row = cached as Partial<KeyRow>;
-        if (!row.id || !row.workspace_id || !row.status || !row.hash) return null;
-        const value = row as KeyRow;
-        writeKeyLookupL1(kid, versionToken, value);
-        return value;
+        return await readAuthKey(kid, versionToken, () => getCache().get(`${KEY_CACHE_PREFIX}:${kid}:${versionToken}`, "text"));
     } catch {
         // Fail open to DB lookup when KV is unavailable.
         return null;
@@ -339,15 +283,24 @@ async function cacheKey(kid: string, row: KeyRow, versionToken: string | null) {
     // pre-deletion read must never publish an active row under a newer marker.
     if (versionToken === null) return;
     try {
-        writeKeyLookupL1(kid, versionToken, row);
+        const text = rememberAuthKey(kid, versionToken, row);
+        if (!text) return;
         // This request already has the authoritative row. Keep the versioned
         // write alive without making authentication wait for KV persistence.
-        dispatchBackground(getCache().put(`${KEY_CACHE_PREFIX}:${kid}:${versionToken}`, JSON.stringify(row), {
+        dispatchBackground(getCache().put(`${KEY_CACHE_PREFIX}:${kid}:${versionToken}`, text, {
             expirationTtl: KEY_CACHE_TTL_SECONDS,
         }).catch(() => undefined));
     } catch {
         // Ignore KV write failures.
     }
+}
+
+function touchStandardKey(keyId: string, supabase: ReturnType<typeof getSupabaseAdmin>): void {
+    const work = coalesceKeyLastUsed(keyId, async () => {
+        const { error } = await supabase.from("keys").update({ last_used_at: new Date().toISOString() }).eq("id", keyId);
+        if (error) throw new Error("key_last_used_update_failed");
+    });
+    if (work) dispatchBackground(work);
 }
 
 /**
@@ -407,16 +360,25 @@ export async function authenticate(req: Request, options: AuthenticateOptions = 
     let keyRow: KeyRow | null = null;
     let keyRowSource: "cache" | "db" | null = null;
     let lookupVersion: string | null = null;
+    let credentialDigest: string | null = null;
+    const activePepper = resolveActiveKeyPepper(bindings);
+    const pepperCandidates = resolveKeyPepperCandidates(bindings);
 
-    const fetchFreshKeyRow = async (): Promise<KeyRow | "db_error" | null> => {
+    const readSource = async (): Promise<KeyRow | "db_error" | null> => {
+        const observedAt = Date.now();
         const { data, error } = await supabase
             .from("keys")
             .select("*")
             .eq("kid", parsed.kid)
             .maybeSingle();
-        if (error) return "db_error";
+        if (error || Date.now() - observedAt >= AUTH_SOURCE_LEASE_MS) return "db_error";
         if (!data) return null;
-        return data as KeyRow;
+        return { ...data, auth_source_at_ms: observedAt } as KeyRow;
+    };
+    const fetchFreshKeyRow = async (): Promise<KeyRow | "db_error" | null> => {
+        try {
+            return lookupVersion === null ? await readSource() : await readAuthKeySource(parsed.kid, lookupVersion, readSource);
+        } catch { return "db_error"; }
     };
 
     if (useKvCache) {
@@ -429,8 +391,17 @@ export async function authenticate(req: Request, options: AuthenticateOptions = 
             // Unknown version: use the authoritative database without reading
             // or filling any credential cache, especially an older v0 entry.
         }
+        if (lookupVersion !== null && activePepper) {
+            credentialDigest = await hmacUtf8(token, activePepper);
+            const lease = readValidatedAuth(credentialDigest, lookupVersion);
+            if (lease) {
+                // Internal privilege is request-bound and is never cached.
+                touchStandardKey(lease.apiKeyId, supabase);
+                return { ...lease, internal: isInternalRequestAuthorized(req, bindings) };
+            }
+        }
         const cachedLookup = lookupVersion === null ? null : await getCachedKey(parsed.kid, lookupVersion);
-        if (cachedLookup && cachedLookup !== "missing") {
+        if (cachedLookup) {
             keyRow = cachedLookup;
             keyRowSource = "cache";
         }
@@ -471,8 +442,6 @@ export async function authenticate(req: Request, options: AuthenticateOptions = 
     }
 
     let stored = String(keyRow.hash).toLowerCase().trim();
-    const activePepper = resolveActiveKeyPepper(bindings);
-    const pepperCandidates = resolveKeyPepperCandidates(bindings);
     if (!activePepper || pepperCandidates.length === 0) {
         return { ok: false, reason: "server_misconfig_missing_pepper" };
     }
@@ -595,8 +564,9 @@ export async function authenticate(req: Request, options: AuthenticateOptions = 
 			};
 		}
 
-        // Fire-and-forget update of last_used_at timestamp (+ hash migration when needed).
-        dispatchBackground((async () => {
+        // Coalesce display-only timestamps, never a credential hash migration.
+        if (!hasHashMigration) touchStandardKey(keyRow.id, supabase);
+        else dispatchBackground((async () => {
             configureRuntime(bindings);
             try {
                 const updatePayload: Record<string, unknown> = {
@@ -620,7 +590,7 @@ export async function authenticate(req: Request, options: AuthenticateOptions = 
             }
         })());
 
-        return {
+        const result: AuthSuccess = {
             ok: true,
             apiKeyId: keyRow.id,
             apiKeyRef: `kid_${parsed.kid}`,
@@ -629,7 +599,11 @@ export async function authenticate(req: Request, options: AuthenticateOptions = 
             userId: null,
             internal,
             authMethod: "api_key",
-        } as AuthSuccess;
+        };
+        if (credentialDigest && lookupVersion && keyKind === "standard" && !hasHashMigration && matchedPepper?.source === "active") {
+            rememberValidatedAuth(credentialDigest, lookupVersion, keyRow, result);
+        }
+        return result;
     };
 
     if (matchedPepper.source === "previous") {

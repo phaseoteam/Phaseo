@@ -37,6 +37,47 @@ const id = randomUUID(), kid = randomBytes(9).toString("hex"), secret = randomBy
 const key = `phaseo_v1_sk_${kid}_${secret}`;
 const records = [];
 let created = false;
+let revoked = false;
+
+async function revokeTestKey() {
+    await query(`keys?id=eq.${id}&workspace_id=eq.${workspace}`, "PATCH", { status: "revoked", revoked_at: new Date().toISOString(),
+        revoked_reason: "Completed staging Poolside protocol matrix", expires_at: new Date().toISOString() });
+    revoked = true;
+    console.log(JSON.stringify({ event: "temporary_key_revoked", keyId: id }));
+}
+
+async function authOnlyProbe() {
+    // Authentication precedes JSON parsing. This malformed body cannot invoke a provider.
+    const response = await fetch(`${gateway}/v1/chat/completions`, { method: "POST", signal: AbortSignal.timeout(10_000),
+        headers: { authorization: `Bearer ${key}`, "content-type": "application/json" }, body: "{" });
+    await response.body?.cancel();
+    return { status: response.status, colo: response.headers.get("cf-ray")?.split("-").at(-1) };
+}
+
+async function verifyAuthSourceLease() {
+    const warm = await authOnlyProbe();
+    assert.equal(warm.status, 400, "Auth freshness warm-up failed");
+    // Deliberately no KV marker publication: test the source deadline, not the fast invalidation path.
+    await revokeTestKey();
+    const start = performance.now();
+    let rejected = 0;
+    for (let attempt = 0; attempt < 16; attempt++) {
+        const result = await authOnlyProbe();
+        const elapsedMs = Math.round(performance.now() - start);
+        console.log(JSON.stringify({ event: "auth_freshness_probe", attempt, elapsedMs, ...result }));
+        assert.ok(result.status === 400 || result.status === 401, "Auth freshness unexpected response");
+        if (result.status === 401) rejected++; else rejected = 0;
+        if (rejected === 2) {
+            assert.ok(elapsedMs <= 75_000, "Auth source lease exceeded");
+            console.log(JSON.stringify({ event: "auth_freshness_pass", elapsedMs, consecutiveRejections: rejected,
+                sourceOnlyRevocation: true, globalSlaMeasured: false }));
+            return;
+        }
+        if (elapsedMs >= 75_000) break;
+        await new Promise(resolve => setTimeout(resolve, 5000));
+    }
+    throw new Error("Auth source lease exceeded");
+}
 
 async function readBounded(response, start) {
     const reader = response.body.getReader();
@@ -131,19 +172,17 @@ try {
     assert.ok(logs.every(row => row.status_code === 200 && row.success && row.provider === "poolside" && models.includes(row.model_id) && Number(row.cost_nanos) === 0), "Charge/provider/result verification failed");
     console.log(JSON.stringify({ event: "protocol_matrix_pass", requests: records.length, zeroCostVerified: true,
         routingMs: logs.map(row => row.detail_metadata?.response_timeline?.routing_ms ?? null) }));
+    if (process.env.LIVE_PROVIDER_ENDPOINT_MATRIX_AUTH_FRESHNESS === "1") await verifyAuthSourceLease();
 } catch (error) {
     // Never print request bodies, keys, provider payloads or database errors.
     const reasons = ["Protocol error response", "Missing Chat completion", "Missing Responses completion", "Missing Messages completion",
         "Missing SSE frames", "SSE error event", "Responses terminal status", "Missing protocol terminal event", "Gateway request failed",
-        "Missing request logs", "Charge/provider/result verification failed"];
+        "Missing request logs", "Charge/provider/result verification failed", "Auth freshness warm-up failed",
+        "Auth freshness unexpected response", "Auth source lease exceeded"];
     console.error(JSON.stringify({ event: "protocol_matrix_failed", completedRequests: records.length,
         reason: reasons.find(reason => error?.message?.startsWith(reason)) ?? null,
         errorType: error instanceof assert.AssertionError ? "contract_assertion" : "probe_error" }));
     process.exitCode = 1;
 } finally {
-    if (created) {
-        await query(`keys?id=eq.${id}&workspace_id=eq.${workspace}`, "PATCH", { status: "revoked", revoked_at: new Date().toISOString(),
-            revoked_reason: "Completed staging Poolside protocol matrix", expires_at: new Date().toISOString() });
-        console.log(JSON.stringify({ event: "temporary_key_revoked", keyId: id }));
-    }
+    if (created && !revoked) await revokeTestKey();
 }
