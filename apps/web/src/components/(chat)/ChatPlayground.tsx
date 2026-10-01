@@ -773,7 +773,7 @@ function ChatPlaygroundContent({
 				initialModelId !== null ? initialId : current ?? initialId,
 			);
 			if (initialId) {
-				window.localStorage.setItem(STORAGE_KEYS.activeChatId, initialId);
+				chatLocalStorage.setItem(STORAGE_KEYS.activeChatId, initialId);
 			}
 		})();
 		return () => {
