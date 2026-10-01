@@ -1,11 +1,11 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { ChevronsUpDown, ListChecks, ListX } from "lucide-react";
+import { Check, ChevronsUpDown, ListChecks, ListX } from "lucide-react";
 import { Logo } from "@/components/Logo";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import type { PublicIntelligenceValueEntry } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import { IntelligenceValueBars } from "./IntelligenceValueBars";
@@ -19,14 +19,6 @@ export function IntelligenceValueComparison({ entries, limit, onShowMore }: { en
 	const [selected, setSelected] = useState<Set<string> | null>(null);
 	const [query, setQuery] = useState("");
 	const [pickerOpen, setPickerOpen] = useState(false);
-	const pickerScrollY = useRef<number | null>(null);
-	useEffect(() => {
-		if (!pickerOpen || pickerScrollY.current === null) return;
-		const restore = () => window.scrollTo({ top: pickerScrollY.current ?? 0, behavior: "auto" });
-		let secondFrame: number | undefined;
-		const firstFrame = requestAnimationFrame(() => { secondFrame = requestAnimationFrame(restore); });
-		return () => { cancelAnimationFrame(firstFrame); if (secondFrame !== undefined) cancelAnimationFrame(secondFrame); };
-	}, [pickerOpen]);
 	const visible = entries.filter((entry) => selected === null || selected.has(artificialAnalysisValueKey(entry)));
 	const options = entries.filter((entry) => `${entry.model_name} ${entry.organisation_name ?? ""} ${artificialAnalysisValueLabel(entry)}`.toLowerCase().includes(query.toLowerCase()));
 	return <>
@@ -35,14 +27,17 @@ export function IntelligenceValueComparison({ entries, limit, onShowMore }: { en
 				<Button variant={view === "bars" ? "secondary" : "ghost"} size="sm" aria-pressed={view === "bars"} onClick={() => setView("bars")}>USD per point</Button>
 				<Button variant={view === "scatter" ? "secondary" : "ghost"} size="sm" aria-pressed={view === "scatter"} onClick={() => setView("scatter")}>Score vs cost</Button>
 			</div>
-			<Popover open={pickerOpen} onOpenChange={setPickerOpen}><PopoverTrigger asChild><Button variant="outline" size="sm" className="w-full justify-between sm:w-64" onPointerDown={() => { pickerScrollY.current = window.scrollY; }} onKeyDown={() => { pickerScrollY.current = window.scrollY; }}><span>{visible.length} of {entries.length} configurations</span><ChevronsUpDown className="size-3.5 text-muted-foreground" /></Button></PopoverTrigger>
+			<Popover open={pickerOpen} onOpenChange={setPickerOpen}><PopoverTrigger asChild><Button variant="outline" size="sm" className="w-full justify-between sm:w-64"><span>{visible.length} of {entries.length} configurations</span><ChevronsUpDown className="size-3.5 text-muted-foreground" /></Button></PopoverTrigger>
 				<PopoverContent initialFocus={false} align="end" className="w-[min(28rem,calc(100vw-2rem))] gap-0 p-0">
-					<Command shouldFilter={false}><CommandInput value={query} onValueChange={setQuery} placeholder="Search models or configurations…" /><CommandList className="max-h-80"><CommandEmpty>No evaluated configuration found.</CommandEmpty><CommandGroup>
-						{options.map((entry) => <CommandItem key={artificialAnalysisValueKey(entry)} value={artificialAnalysisValueKey(entry)} data-checked={selected === null || selected.has(artificialAnalysisValueKey(entry))} onSelect={() => setSelected((current) => { const next = new Set(current ?? entries.map(artificialAnalysisValueKey)); const key = artificialAnalysisValueKey(entry); if (next.has(key)) next.delete(key); else next.add(key); return next; })} className="min-h-8 py-1">
+					<div className="p-2"><Input aria-label="Search models or configurations" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search models or configurations…" className="h-8" /></div>
+					<div className="max-h-80 overflow-y-auto overscroll-contain p-1" role="group" aria-label="Evaluated configurations">
+						{!options.length ? <p className="py-6 text-center text-sm text-muted-foreground">No evaluated configuration found.</p> : null}
+						{options.map((entry) => <button type="button" role="checkbox" aria-checked={selected === null || selected.has(artificialAnalysisValueKey(entry))} key={artificialAnalysisValueKey(entry)} onClick={() => setSelected((current) => { const next = new Set(current ?? entries.map(artificialAnalysisValueKey)); const key = artificialAnalysisValueKey(entry); if (next.has(key)) next.delete(key); else next.add(key); return next; })} className="flex min-h-8 w-full items-center gap-2 rounded-sm px-2 py-1 text-left text-sm hover:bg-muted focus-visible:bg-muted focus-visible:outline-none">
 							<span className="relative size-5 shrink-0 overflow-hidden rounded bg-muted"><Logo id={entry.organisation_id ?? entry.model_id} alt="" fill className="object-contain p-0.5" /></span>
 							<span className="min-w-0 flex-1 truncate">{entry.model_name} <span className="text-muted-foreground">({artificialAnalysisValueLabel(entry)})</span></span>
-						</CommandItem>)}
-					</CommandGroup></CommandList></Command>
+							<Check aria-hidden="true" className={`size-4 shrink-0 ${selected === null || selected.has(artificialAnalysisValueKey(entry)) ? "" : "invisible"}`} />
+						</button>)}
+					</div>
 					<div className="grid grid-cols-2 gap-1.5 border-t bg-popover p-2"><Button variant="ghost" size="sm" className="h-8 justify-between bg-muted/40 px-2.5 text-xs" onClick={() => setSelected(new Set())}>Clear<ListX className="size-3.5" /></Button><Button variant="ghost" size="sm" className="h-8 justify-between bg-muted/40 px-2.5 text-xs" onClick={() => setSelected(null)}>Select all<ListChecks className="size-3.5" /></Button></div>
 				</PopoverContent>
 			</Popover>
