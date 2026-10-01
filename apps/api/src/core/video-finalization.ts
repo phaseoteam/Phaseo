@@ -962,7 +962,7 @@ export async function finalizeVideoJob(args: FinalizeVideoJobArgs): Promise<Fina
 					reason: captured.status,
 				};
 			}
-			if (captured.status !== "not_found" && captured.status !== "unknown") {
+			if (captured.status !== "not_found") {
 				await setVideoJobStatus(args.workspaceId, args.videoId, nextStatus, {
 					finalizedAt: finalizedAtIso,
 					...(typeof durationMs === "number" ? { durationMs } : {}),
@@ -1145,8 +1145,9 @@ export async function finalizeVideoJob(args: FinalizeVideoJobArgs): Promise<Fina
 				reason: captured.status,
 			};
 		}
-		const shouldFallbackToLegacyDebit =
-			captured.status === "not_found" || captured.status === "unknown";
+		// Only authoritative absence permits another billing mechanism. An unknown
+		// result can follow a committed capture whose confirmation was lost.
+		const shouldFallbackToLegacyDebit = captured.status === "not_found";
 		if (!shouldFallbackToLegacyDebit) {
 			await setVideoJobStatus(args.workspaceId, args.videoId, nextStatus, {
 				finalizedAt: finalizedAtIso,

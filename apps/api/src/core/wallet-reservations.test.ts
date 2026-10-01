@@ -33,6 +33,39 @@ describe("wallet reservation RPC compatibility", () => {
 		setKeyVersionMock.mockReset();
 	});
 
+	it.each([null, [], {}, [{}, {}], { status: "unknown" }, { ok: true },
+		{ ok: false, reason: "already_captured", amount_nanos: 100 },
+		{ ok: true, applied: true, amount_nanos: -100 },
+		{ ok: true, applied: true, amount_nanos: Number.MAX_SAFE_INTEGER + 1 },
+		{ ok: true, applied: true, status: "unexpected", amount_nanos: 100 },
+		{ ok: true, applied: true, status: "captured", reason: "wallet_not_found", amount_nanos: 100 },
+		{ ok: "true", applied: true, amount_nanos: 100 },
+		{ ok: true, applied: true, amount_nanos: true },
+		{ ok: true, applied: true, amount_nanos: " " },
+	])("rejects ambiguous capture confirmation %j without allowing a different debit", async (data) => {
+		rpcMock.mockResolvedValue({ data, error: null });
+		await expect(captureWalletReservation({ workspaceId: "ws", reservationId: "video_hold:r" }))
+			.rejects.toThrow("wallet_reservation_confirmation_invalid");
+		expect(rpcMock).toHaveBeenCalledTimes(1);
+	});
+
+	it.each(["reserve", "release", "settle"])("rejects an empty %s response", async (operation) => {
+		rpcMock.mockResolvedValue({ data: [], error: null });
+		const args = { workspaceId: "ws", reservationId: "r", amountNanos: 100, actualNanos: 100 };
+		const action = operation === "reserve" ? reserveWalletCredits : operation === "release"
+			? releaseWalletReservation : settleWalletReservation;
+		await expect(action(args)).rejects.toThrow("wallet_reservation_confirmation_invalid");
+	});
+
+	it("preserves explicit missing reservation and wallet denials", async () => {
+		for (const [reason, status] of [["reservation_not_found", "not_found"], ["wallet_not_found", "wallet_not_found"],
+			["reservation_not_active", "reservation_not_active"]]) {
+			rpcMock.mockResolvedValue({ data: [{ ok: false, applied: false, reason, amount_nanos: null }], error: null });
+			await expect(captureWalletReservation({ workspaceId: "ws", reservationId: "r" }))
+				.resolves.toMatchObject({ status, applied: false, alreadyApplied: false, beforeBalanceNanos: null });
+		}
+	});
+
 	it("retries reserve calls against legacy p_team_id signatures", async () => {
 		rpcMock
 			.mockResolvedValueOnce({
@@ -149,7 +182,7 @@ describe("wallet reservation RPC compatibility", () => {
 				},
 			})
 			.mockResolvedValueOnce({
-				data: [{ status: "captured", amount_nanos: 150000000 }],
+				data: [{ status: "captured", applied: true, amount_nanos: 150000000 }],
 				error: null,
 			})
 			.mockResolvedValueOnce({
@@ -161,7 +194,7 @@ describe("wallet reservation RPC compatibility", () => {
 				},
 			})
 			.mockResolvedValueOnce({
-				data: [{ status: "released", amount_nanos: 150000000 }],
+				data: [{ status: "released", applied: true, amount_nanos: 150000000 }],
 				error: null,
 			});
 
