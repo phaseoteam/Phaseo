@@ -8,6 +8,6 @@ it("orders cost-per-point bars best to worst with exact units and lab colours", 
 	expect(html.indexOf('aria-label="Affordable: $2')).toBeLessThan(html.indexOf('aria-label="Expensive: $10'));
 	expect(html).toContain("per intelligence point");
 	expect(html).toContain("background-color:#4285F4");
-	expect(html).toContain("height:36px");
-	expect(html).toContain("height:180px");
+	expect(html).toContain("height:41px");
+	expect(html).toContain("height:205px");
 });

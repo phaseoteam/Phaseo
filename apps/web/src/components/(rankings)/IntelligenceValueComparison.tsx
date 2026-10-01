@@ -3,8 +3,9 @@
 import dynamic from "next/dynamic";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Checkbox } from "@/components/ui/checkbox";
+import { ChevronsUpDown, ListChecks, ListX } from "lucide-react";
+import { Logo } from "@/components/Logo";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import type { PublicIntelligenceValueEntry } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import { IntelligenceValueBars } from "./IntelligenceValueBars";
@@ -24,17 +25,15 @@ export function IntelligenceValueComparison({ entries, limit, onShowMore }: { en
 				<Button variant={view === "bars" ? "secondary" : "ghost"} size="sm" aria-pressed={view === "bars"} onClick={() => setView("bars")}>USD per point</Button>
 				<Button variant={view === "scatter" ? "secondary" : "ghost"} size="sm" aria-pressed={view === "scatter"} onClick={() => setView("scatter")}>Score vs cost</Button>
 			</div>
-			<Popover><PopoverTrigger asChild><Button variant="outline" size="sm">Models ({visible.length})</Button></PopoverTrigger>
-				<PopoverContent align="end" className="w-80 space-y-3">
-					<Input aria-label="Find models to compare" placeholder="Find models" value={query} onChange={(event) => setQuery(event.target.value)} />
-					<div className="flex gap-2"><Button variant="ghost" size="sm" onClick={() => setSelected(null)}>Select all</Button><Button variant="ghost" size="sm" onClick={() => setSelected(new Set())}>Clear</Button></div>
-					<div className="max-h-72 space-y-3 overflow-y-auto">
-						{options.map((entry) => <label key={entry.model_id} className="flex cursor-pointer items-center gap-3 text-sm">
-							<Checkbox checked={selected === null || selected.has(entry.model_id)} onCheckedChange={(checked) => setSelected((current) => { const next = new Set(current ?? entries.map((item) => item.model_id)); if (checked) next.add(entry.model_id); else next.delete(entry.model_id); return next; })} />
-							<span>{entry.model_name}</span>
-						</label>)}
-						{!options.length ? <p className="text-sm text-muted-foreground">No models match your search.</p> : null}
-					</div>
+			<Popover><PopoverTrigger asChild><Button variant="outline" size="sm" className="w-full justify-between sm:w-64"><span>{visible.length} of {entries.length} models</span><ChevronsUpDown className="size-3.5 text-muted-foreground" /></Button></PopoverTrigger>
+				<PopoverContent initialFocus={false} align="end" className="w-[min(28rem,calc(100vw-2rem))] gap-0 p-0">
+					<Command shouldFilter={false}><CommandInput value={query} onValueChange={setQuery} placeholder="Search models…" /><CommandList className="max-h-80"><CommandEmpty>No evaluated model found.</CommandEmpty><CommandGroup>
+						{options.map((entry) => <CommandItem key={entry.model_id} value={entry.model_id} data-checked={selected === null || selected.has(entry.model_id)} onSelect={() => setSelected((current) => { const next = new Set(current ?? entries.map((item) => item.model_id)); if (next.has(entry.model_id)) next.delete(entry.model_id); else next.add(entry.model_id); return next; })} className="min-h-8 py-1">
+							<span className="relative size-5 shrink-0 overflow-hidden rounded bg-muted"><Logo id={entry.organisation_id ?? entry.model_id} alt="" fill className="object-contain p-0.5" /></span>
+							<span className="min-w-0 flex-1 truncate">{entry.model_name}</span>
+						</CommandItem>)}
+					</CommandGroup></CommandList></Command>
+					<div className="grid grid-cols-2 gap-1.5 border-t bg-popover p-2"><Button variant="ghost" size="sm" className="h-8 justify-between bg-muted/40 px-2.5 text-xs" onClick={() => setSelected(new Set())}>Clear<ListX className="size-3.5" /></Button><Button variant="ghost" size="sm" className="h-8 justify-between bg-muted/40 px-2.5 text-xs" onClick={() => setSelected(null)}>Select all<ListChecks className="size-3.5" /></Button></div>
 				</PopoverContent>
 			</Popover>
 		</div>
