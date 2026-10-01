@@ -17,7 +17,7 @@ const bundle = await build({
             return withRequestOperations(record, async () => {
                 const kv = instrumentKv(env.CACHE);
                 const count = Number(new URL(request.url).pathname.slice(1));
-                for (let n = 0; n < count; n++) await kv.get('test');
+                for (let n = 0; n < count; n++) await kv.get('gateway:credit:private');
                 markProviderDispatch();
                 const background = Promise.resolve().then(() => { countOperation('healthRpc'); });
                 record.track(background); ctx.waitUntil(background);
@@ -36,6 +36,17 @@ try {
         assert.deepEqual(result.total, { kvRead: index + 1, healthRpc: 1 });
         assert.deepEqual(result.beforeDispatch, { kvRead: index + 1 });
         assert.equal(result.complete, true);
+        assert.deepEqual(result.kvByPurpose, { credit: { kvRead: index + 1 } });
+        assert.match(result.runtimeInstanceId, /^[0-9a-f-]{36}$/);
+        assert.equal(result.runtimeInstanceId, results[0].runtimeInstanceId);
+        assert.ok(!JSON.stringify(result).includes('private'));
     });
+    const replacement = new Miniflare({ modules: true, script: bundle.outputFiles[0].text,
+        compatibilityDate: "2025-10-01", compatibilityFlags: ["nodejs_als"], kvNamespaces: ["CACHE"] });
+    try {
+        const fresh = await replacement.dispatchFetch('https://test.example/1').then(response => response.json());
+        assert.notEqual(fresh.runtimeInstanceId, results[0].runtimeInstanceId);
+        assert.deepEqual(fresh.total, { kvRead: 1, healthRpc: 1 });
+    } finally { await replacement.dispose(); }
     console.log("PASS: 12 interleaved native Workers requests, real KV binding, isolated counts and background context");
 } finally { await runtime.dispose(); }

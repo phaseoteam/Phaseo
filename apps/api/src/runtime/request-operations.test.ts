@@ -1,9 +1,60 @@
 import { describe, expect, it, vi } from "vitest";
 import { RequestOperations, withRequestOperations, countOperation, instrumentKv,
-    countSupabaseOperation, markProviderDispatch, shouldSampleOperations, recordStreamObservation } from "./request-operations";
+    countSupabaseOperation, markProviderDispatch, shouldSampleOperations, recordStreamObservation,
+    recordSettlement, recordSettlementAttempt } from "./request-operations";
 import { StreamSession, observeStreamOutcome } from "@/pipeline/after/stream-session";
 
 describe("request operations", () => {
+    it("isolates evolving settlement evidence without new operations or mutable snapshots", async () => {
+        recordSettlement("confirmed"); recordSettlementAttempt(); // Unsampled no-op.
+        const a = new RequestOperations(), b = new RequestOperations();
+        expect(a.snapshot()).not.toHaveProperty("settlement");
+        await Promise.all([
+            withRequestOperations(a, async () => {
+                recordSettlementAttempt(); await Promise.resolve(); recordSettlement("unresolved");
+                recordSettlementAttempt(); recordSettlement("confirmed");
+            }),
+            withRequestOperations(b, async () => { recordSettlementAttempt(); await Promise.resolve(); recordSettlement("recovery_queued"); }),
+        ]);
+        expect(a.snapshot()).toMatchObject({ settlement: { state: "confirmed", directAttempts: 2 }, total: {} });
+        expect(b.snapshot()).toMatchObject({ settlement: { state: "recovery_queued", directAttempts: 1 }, total: {} });
+        a.snapshot().settlement!.directAttempts = 999;
+        expect(a.snapshot().settlement!.directAttempts).toBe(2);
+    });
+    it("attributes mixed bulk reads and failed writes without retaining keys or values", async () => {
+        const source = { getWithMetadata: vi.fn(), put: vi.fn(() => { throw new Error("offline"); }), delete: vi.fn(), list: vi.fn() };
+        const kv = instrumentKv(source as unknown as KVNamespace);
+        const record = new RequestOperations();
+        withRequestOperations(record, () => {
+            void kv.getWithMetadata(["gateway:key:private", "gateway:keyver:private", "gateway:credit:private",
+                "gateway:routing:sticky:private", "gw:health:private", "gateway:static:v5:private", "gateway:keynot:private"], "text");
+            markProviderDispatch();
+            expect(() => kv.put("gateway:routing:sticky:private", "secret")).toThrow("offline");
+            void kv.delete("gateway:credit:private");
+            void kv.list({ prefix: "gateway:key:private" });
+        });
+        const snapshot = record.snapshot();
+        expect(snapshot.total).toEqual({ kvRead: 7, kvWrite: 1, kvDelete: 1, kvList: 1 });
+        expect(snapshot.beforeDispatch).toEqual({ kvRead: 7 });
+        expect(snapshot.kvByPurpose).toEqual({ auth: { kvRead: 2 }, credit: { kvRead: 1, kvDelete: 1 },
+            sticky: { kvRead: 1, kvWrite: 1 }, health: { kvRead: 1 }, context: { kvRead: 1 }, other: { kvRead: 1, kvList: 1 } });
+        snapshot.kvByPurpose.auth.kvRead = 999;
+        expect(record.snapshot().kvByPurpose.auth.kvRead).toBe(2);
+        expect(JSON.stringify(snapshot)).not.toMatch(/private|secret/);
+        expect(new RequestOperations().snapshot().runtimeInstanceId).toBe(snapshot.runtimeInstanceId);
+    });
+
+    it("does not inspect keys or list options on unsampled calls", () => {
+        const source = { get: vi.fn(), list: vi.fn() };
+        const kv = instrumentKv(source as unknown as KVNamespace);
+        const key = { toString() { throw new Error("must not coerce"); } };
+        void kv.get(key as unknown as string);
+        const options = Object.defineProperty({}, "prefix", { get() { throw new Error("must not inspect"); } });
+        void kv.list(options);
+        expect(source.get.mock.calls[0][0]).toBe(key);
+        expect(source.list.mock.calls[0][0]).toBe(options);
+    });
+
     it("isolates stream observations, strips extra fields and preserves the first terminal outcome", () => {
         const a = new RequestOperations(), b = new RequestOperations();
         const session = new StreamSession(() => 0);
