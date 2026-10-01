@@ -1,5 +1,6 @@
 import { z } from "zod";
-import { dispatchBackground, getBindingsIfConfigured, getSupabaseAdmin } from "@/runtime/env";
+import { dispatchBackground, getBindingsIfConfigured, getCache, getSupabaseAdmin } from "@/runtime/env";
+import { PublishedPublicCatalog } from "./publishedPublicCatalog";
 import { publicCatalogSchema as catalogSchema, isPublicCatalogFresh as fresh, type PublicCatalogSnapshot } from "./publicCatalogSnapshot";
 import { PublicCatalogCache, publicCatalogEndpoints, publicCatalogKey } from "./publicCatalogCache";
 import { fetchWorkspaceRuntime, refillWorkspaceRuntime, workspaceRuntimeCache, workspaceRuntimeEnabled } from "./workspaceRuntime";
@@ -34,9 +35,13 @@ export type ContextBundle = {
     workspaceReadMs?: number;
     admission?: CachedContextAdmission;
 };
+const publishedCatalog = new PublishedPublicCatalog(() => getCache());
+const publishedCatalogEnabled = () => getBindingsIfConfigured()?.GATEWAY_PUBLISHED_CATALOG_ENABLED === "true";
 const publicCatalog = new PublicCatalogCache(
     () => typeof caches === "undefined" ? undefined : caches.default,
     () => getBindingsIfConfigured()?.GATEWAY_PUBLIC_BASE_URL,
+    { read: (model, endpoints) => publishedCatalogEnabled() ? publishedCatalog.read(model, endpoints) : Promise.resolve(null),
+        defer: work => dispatchBackground(work) },
 );
 // Only read-through refills join this map. A mutation publication must never
 // join an older source read. Resolved data lives only in the bounded cache.
@@ -68,6 +73,15 @@ export function contextBundleEnabled(): boolean {
 
 export async function publishPublicCatalog(input: unknown, expected?: { model: string; endpoints: string[] }): Promise<boolean> {
     return publicCatalog.publish(input, expected);
+}
+
+/** Scheduler/control-plane only. Inference fills remain Cache-API-only. */
+export async function publishPublicCatalogFromControlPlane(input: unknown, expected: { model: string; endpoints: string[] }): Promise<boolean> {
+    if (!publishedCatalogEnabled()) return publishPublicCatalog(input, expected);
+    if (!await publishedCatalog.publish(input, expected)) return false;
+    // A Cache API outage must not misreport the confirmed shared publication.
+    await publishPublicCatalog(input, expected).catch(() => false);
+    return true;
 }
 
 export function parseContextBundleVariant(bundle: ContextBundle, variant: ContextBundle["variants"][number]): GatewayContextData {

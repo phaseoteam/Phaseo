@@ -12,17 +12,23 @@ export const publicCatalogEndpoints = (endpoint: string): string[] =>
     endpoint === "text.generate" ? [endpoint] : ["text.generate", endpoint];
 export const publicCatalogKey = (model: string, endpoints: string[]) => JSON.stringify([model, endpoints]);
 
-/** Cache API is a disposable per-datacenter L2, not publication authority. Misses
- * fall through to the source bundle; neither reads nor writes use Workers KV. */
+/** Cache API is a disposable per-datacenter L2, not publication authority.
+ * Optional shared backing can refill it without a database query. A miss is
+ * returned to the caller; this cache never renews a source lease. */
 export class PublicCatalogCache {
     private publications = 0;
+    private edgeWrites = 0;
     private readonly local = new L1Cache<PublicRoutingSnapshot | null>({
         namespace: "public-catalog-v2", maxEntries: 128, maxBytes: 4 * 1024 * 1024,
         maxEntryBytes: PUBLIC_CATALOG_MAX_BYTES + 4096, maxPending: 32,
         sizeOf: (value, key) => 2 * (JSON.stringify(value).length + key.length),
     });
 
-    constructor(private readonly cache: () => Cache | undefined, private readonly origin: () => string | undefined) {}
+    constructor(private readonly cache: () => Cache | undefined, private readonly origin: () => string | undefined,
+        private readonly published?: {
+            read(model: string, endpoints: string[]): Promise<PublicCatalogSnapshot | null>;
+            defer(work: Promise<unknown>): void;
+        }) {}
 
     private key(model: string, endpoints: string[]): string | null {
         const origin = this.origin();
@@ -44,7 +50,16 @@ export class PublicCatalogCache {
         if (!key) return null;
         try {
             const load = async () => {
-                const value = await this.readEdge(key, model, endpoints);
+                let value = await this.readEdge(key, model, endpoints).catch(() => null);
+                if (!value && this.published) {
+                    const catalog = await this.published.read(model, endpoints);
+                    if (catalog && isPublicCatalogFresh(catalog, model, endpoints)) {
+                        value = await createPublicRoutingSnapshot(catalog);
+                        // Fill only this data centre's disposable cache. Do not
+                        // renew the source lease or write KV from the read path.
+                        this.published.defer(this.writeEdge(key, value).catch(() => false));
+                    }
+                }
                 return { value, expiresAtMs: this.deadline(value), version: value?.revision };
             };
             const value = skipMemory ? (await load()).value : await this.local.getOrLoad(key, load);
@@ -97,6 +112,18 @@ export class PublicCatalogCache {
         const existing = this.local.get(key);
         if (existing && existing.catalog.checkedAt > catalog.checkedAt) return false;
         this.local.set(key, { value: snapshot, expiresAtMs: this.deadline(snapshot), version: snapshot.revision });
+        return this.writeEdge(key, snapshot);
+    }
+
+    private async writeEdge(key: string, snapshot: PublicRoutingSnapshot): Promise<boolean> {
+        if (this.edgeWrites >= 32) return false;
+        this.edgeWrites++;
+        try { return await this.writeEdgeChecked(key, snapshot); }
+        finally { this.edgeWrites--; }
+    }
+
+    private async writeEdgeChecked(key: string, snapshot: PublicRoutingSnapshot): Promise<boolean> {
+        const catalog = snapshot.catalog;
         const cache = this.cache();
         if (!cache) return false;
         const ttl = Math.floor((catalog.expiresAt - Date.now()) / 1000);
@@ -115,5 +142,5 @@ export class PublicCatalogCache {
         if (key) this.local.invalidate(key);
     }
 
-    stats() { return { ...this.local.stats(), publications: this.publications }; }
+    stats() { return { ...this.local.stats(), publications: this.publications, edgeWrites: this.edgeWrites }; }
 }
