@@ -4,6 +4,24 @@ import { isWorkspaceRuntimeFresh, workspaceRuntimeSchema, type WorkspaceRuntimeS
 
 export const workspaceRuntimeCache = new WorkspaceRuntimeCache(() => getCache());
 
+// Read-through only: mutation publication must always fetch its own post-commit
+// source, never join an older reader. No resolved snapshots live in this map.
+const sourceRefills = new Map<string, Promise<WorkspaceRuntimeSnapshot>>();
+
+export async function refillWorkspaceRuntime(workspaceId: string, version: string): Promise<WorkspaceRuntimeSnapshot> {
+    const key = `${workspaceId}:${version}`;
+    let pending = sourceRefills.get(key);
+    if (!pending) {
+        if (sourceRefills.size >= 32) throw new Error("workspace_runtime_refill_capacity");
+        pending = fetchWorkspaceRuntime(workspaceId).finally(() => {
+            if (sourceRefills.get(key) === pending) sourceRefills.delete(key);
+        });
+        sourceRefills.set(key, pending);
+    }
+    // Each caller owns its settings and credential-reference objects.
+    return structuredClone(await pending);
+}
+
 /** Rollout gate: install and validate the additive RPCs before enabling. */
 export function workspaceRuntimeEnabled(): boolean {
     return getBindingsIfConfigured()?.GATEWAY_WORKSPACE_RUNTIME_ENABLED === "true";

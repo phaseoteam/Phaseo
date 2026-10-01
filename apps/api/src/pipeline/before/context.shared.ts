@@ -305,7 +305,7 @@ export function mergeCachedContext(args: {
 	};
 }
 
-export function splitContextForCache(value: GatewayContextData): {
+export function splitContextForCache(value: GatewayContextData, options?: { separateWorkspace?: boolean }): {
 	dynamic: DynamicContextCacheEntry;
 	static: StaticContextCacheEntry;
 	credit: CreditContextCacheEntry;
@@ -316,8 +316,7 @@ export function splitContextForCache(value: GatewayContextData): {
 			key: value.key,
 			keyLimit: value.keyLimit,
 			keyEnrichment: value.keyEnrichment ?? null,
-			teamSettings: value.teamSettings ?? null,
-            workspaceRuntimeExpiresAt: value.workspaceRuntimeExpiresAt,
+			...(options?.separateWorkspace ? {} : { teamSettings: value.teamSettings ?? null, workspaceRuntimeExpiresAt: value.workspaceRuntimeExpiresAt }),
 			// Aggregate enrichment is observational rather than an authorization
 			// input. Keep it with the dynamic context so a credit-only refresh can
 			// preserve it while replacing its balance fields authoritatively.
@@ -327,9 +326,11 @@ export function splitContextForCache(value: GatewayContextData): {
 			workspaceId: value.workspaceId,
 			resolvedModel: value.resolvedModel ?? null,
             publicCatalogExpiresAt: value.publicCatalogExpiresAt,
-            workspaceRuntimeExpiresAt: value.workspaceRuntimeExpiresAt,
+            ...(options?.separateWorkspace ? {} : { workspaceRuntimeExpiresAt: value.workspaceRuntimeExpiresAt }),
 			preset: value.preset ?? null,
-			providers: value.providers ?? [],
+			providers: options?.separateWorkspace
+                ? (value.providers ?? []).map(provider => ({ ...provider, byokMeta: [] }))
+                : value.providers ?? [],
 			pricing: value.pricing ?? {},
 			testingMode: Boolean(value.testingMode),
 		},
