@@ -1010,6 +1010,8 @@ export async function fetchFrontendRankingToolCallTimeseries(
 }
 
 export type PublicIntelligenceValueEntry = PublicBenchmarkRankingEntry & {
+	configuration_id?: string;
+	variant?: string | null;
 	intelligence_score: number;
 	evaluation_cost: number;
 };

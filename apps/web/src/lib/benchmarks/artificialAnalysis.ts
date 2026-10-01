@@ -54,6 +54,13 @@ export function formatArtificialAnalysisScore(id: string, score: number) {
 export function formatArtificialAnalysisValue(value: number) {
 	return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumSignificantDigits: 3 }).format(value);
 }
+export function artificialAnalysisValueKey(entry: PublicIntelligenceValueEntry) {
+	return entry.configuration_id ?? JSON.stringify([entry.model_id, entry.variant, entry.other_info, entry.updated_at]);
+}
+export function artificialAnalysisValueLabel(entry: PublicIntelligenceValueEntry) {
+	const variant = entry.variant?.replace(/[-_]/g, " ") ?? "default";
+	return variant.replace(/\b\w/g, (character) => character.toUpperCase());
+}
 export function artificialAnalysisVersion(info?: string | null) {
 	return info?.match(/Intelligence Index v(\d+(?:\.\d+)*)(?=$|[\s;]|[.!?](?=$|\s))/)?.[1] ?? null;
 }
@@ -74,16 +81,14 @@ export function buildArtificialAnalysisValue(benchmarks: PublicBenchmarkRanking[
 	}
 	const entries: PublicIntelligenceValueEntry[] = [];
 	for (const entry of intelligence?.entries ?? []) {
-		let best: PublicIntelligenceValueEntry | undefined;
 		for (const configuration of entry.configurations ?? []) {
 			const identity = key(entry.model_id, configuration);
 			const evaluationCost = identity ? costs.get(identity) : undefined;
 			if (evaluationCost == null || !Number.isFinite(configuration.score) || configuration.score <= 0) continue;
 			const ratio = evaluationCost / configuration.score;
 			if (!Number.isFinite(ratio)) continue;
-			if (!best || ratio < best.score || (ratio === best.score && configuration.score > best.intelligence_score)) best = { ...entry, configurations: undefined, score: ratio, intelligence_score: configuration.score, evaluation_cost: evaluationCost, other_info: configuration.other_info, source_link: configuration.source_link, updated_at: configuration.updated_at };
+			entries.push({ ...entry, configurations: undefined, configuration_id: identity!, variant: configuration.variant, score: ratio, intelligence_score: configuration.score, evaluation_cost: evaluationCost, other_info: configuration.other_info, source_link: configuration.source_link, updated_at: configuration.updated_at });
 		}
-		if (best) entries.push(best);
 	}
 	entries.sort((a, b) => a.score - b.score || b.intelligence_score - a.intelligence_score);
 	entries.forEach((entry) => { entry.rank = entries.findIndex((other) => other.score === entry.score) + 1; });

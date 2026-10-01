@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { PublicIntelligenceValueEntry } from "@/lib/fetchers/frontend/fetchPublicCatalog";
-import { formatArtificialAnalysisScore, formatArtificialAnalysisValue } from "@/lib/benchmarks/artificialAnalysis";
+import { artificialAnalysisValueKey, artificialAnalysisValueLabel, formatArtificialAnalysisScore, formatArtificialAnalysisValue } from "@/lib/benchmarks/artificialAnalysis";
 
 export function IntelligenceValueTable({ entries }: { entries: PublicIntelligenceValueEntry[] }) {
 	return <div className="overflow-x-auto">
@@ -16,11 +16,11 @@ export function IntelligenceValueTable({ entries }: { entries: PublicIntelligenc
 				</tr>
 			</thead>
 			<tbody className="divide-y">
-				{entries.map((entry) => <tr key={entry.model_id}>
+				{entries.map((entry) => <tr key={artificialAnalysisValueKey(entry)}>
 					<td className="px-5 py-4 tabular-nums text-muted-foreground">{entry.rank}</td>
 					<th scope="row" className="min-w-52 px-3 py-4 font-normal">
 						<Link href={`/models/${entry.model_id}`} className="font-medium hover:underline">{entry.model_name}</Link>
-						<p className="mt-1 text-xs text-muted-foreground">{entry.other_info?.split(";")[0]}</p>
+						<p className="mt-1 text-xs text-muted-foreground">{artificialAnalysisValueLabel(entry)}</p>
 					</th>
 					<td className="px-3 py-4 text-right tabular-nums">{entry.intelligence_score}</td>
 					<td className="px-3 py-4 text-right tabular-nums">{formatArtificialAnalysisScore("aa-intelligence-index-cost-v4", entry.evaluation_cost)}</td>

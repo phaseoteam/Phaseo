@@ -10,7 +10,7 @@ import { buildArtificialAnalysisValue } from "@/lib/benchmarks/artificialAnalysi
 
 export async function fetchFrontendRankingBenchmarks() {
 	const result = await fetchPublicWebApi<{ benchmarks: PublicBenchmarkRanking[]; intelligence_value?: PublicIntelligenceValue }>("/api/_web/rankings/benchmarks");
-	return { ...result, intelligence_value: result.intelligence_value ?? buildArtificialAnalysisValue(result.benchmarks) };
+	return { ...result, intelligence_value: buildArtificialAnalysisValue(result.benchmarks) };
 }
 
 export async function fetchFrontendRankingFastestModels(days = 30, limit = 20) {

@@ -8,6 +8,10 @@ describe("Artificial Analysis benchmark helpers", () => {
 		const intelligence = benchmark("aa-intelligence-index-v4", [config(50, "max"), config(40, "low")]);
 		const cost = benchmark("aa-intelligence-index-cost-v4", [config(500, "max"), config(100, "low")]);
 		expect(buildArtificialAnalysisValue([intelligence, cost]).entries[0]).toMatchObject({ score: 2.5, intelligence_score: 40, evaluation_cost: 100, other_info: "Example low; Artificial Analysis ID source-low; Intelligence Index v4.3.2" });
+		const configurations = buildArtificialAnalysisValue([intelligence, cost]).entries;
+		expect(configurations.map((entry) => entry.variant)).toEqual(["low", "max"]);
+		expect(new Set(configurations.map((entry) => entry.configuration_id)).size).toBe(2);
+		expect(configurations[1]).toMatchObject({ score: 10, intelligence_score: 50, evaluation_cost: 500, rank: 2 });
 		expect(buildArtificialAnalysisValue([intelligence, benchmark(cost.benchmark_id, [config(0, "low")])]).entries).toEqual([]);
 		expect(buildArtificialAnalysisValue([intelligence, benchmark(cost.benchmark_id, [config(0, "low"), config(500, "max")])]).entries[0]).toMatchObject({ score: 10, intelligence_score: 50, evaluation_cost: 500 });
 		expect(buildArtificialAnalysisValue([intelligence, benchmark(cost.benchmark_id, [config(1, "low", "old-snapshot")])]).entries).toEqual([]);
