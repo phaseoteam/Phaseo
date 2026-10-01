@@ -3,6 +3,7 @@
 export type GatewayBindings = {
     GATEWAY_OPERATION_SAMPLE_RATE?: string;
     GATEWAY_CONTEXT_BUNDLE_ENABLED?: string;
+    GATEWAY_WORKSPACE_RUNTIME_ENABLED?: string;
     GATEWAY_PUBLIC_CATALOG_TARGETS?: string;
     SUPABASE_URL: string;
     SUPABASE_SERVICE_ROLE_KEY: string;

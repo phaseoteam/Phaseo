@@ -5,6 +5,7 @@ import type { GatewayBindings } from "./env.types";
 export const BINDING_KEYS: Array<keyof GatewayBindings> = [
     "GATEWAY_OPERATION_SAMPLE_RATE",
     "GATEWAY_CONTEXT_BUNDLE_ENABLED",
+    "GATEWAY_WORKSPACE_RUNTIME_ENABLED",
     "GATEWAY_PUBLIC_CATALOG_TARGETS",
     "SUPABASE_URL",
     "SUPABASE_SERVICE_ROLE_KEY",

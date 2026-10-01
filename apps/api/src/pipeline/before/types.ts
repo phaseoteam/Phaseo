@@ -317,6 +317,8 @@ export type KeyEnrichment = {
 export type ContextFetchTelemetry = {
     catalogReadMs?: number;
     catalogCacheStatus?: "hit" | "miss" | "bypass";
+    workspaceCacheStatus?: "hit" | "miss" | "bypass";
+    workspaceReadMs?: number;
     presetAccessMs?: number | null;
     privateModelMs?: number | null;
     byokHydrationMs?: number | null;
@@ -338,6 +340,8 @@ export type ContextFetchTelemetry = {
 export type GatewayContextData = {
     /** Absolute public-catalog deadline; never extend it when caching workspace composition. */
     publicCatalogExpiresAt?: number;
+    /** Absolute deadline shared by settings and BYOK reference compositions. */
+    workspaceRuntimeExpiresAt?: number;
     workspaceId: string;
     endpoint?: Endpoint;
     resolvedModel?: string | null;

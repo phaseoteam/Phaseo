@@ -3,6 +3,8 @@ import {
 	computeAdaptiveTtlForDynamic,
 	computeStaticTtl,
 	hasConfiguredKeyLimits,
+	isDynamicContextLike,
+	isStaticContextLike,
 	mergeCachedContext,
 	normalizeCapabilityStatus,
 	normalizeProviderStatus,
@@ -12,6 +14,19 @@ import {
 } from "./context.shared";
 
 describe("credit cache composition", () => {
+    it("preserves workspace source deadlines across splits and refuses expired compositions", () => {
+        const deadline = Date.now() + 1000;
+        const value = { workspaceId:"workspace", key:{ok:true}, keyLimit:{ok:true}, credit:{ok:true}, providers:[],pricing:{},workspaceRuntimeExpiresAt:deadline };
+        const parts = splitContextForCache(value);
+        expect(parts.dynamic.workspaceRuntimeExpiresAt).toBe(deadline);
+        expect(parts.static.workspaceRuntimeExpiresAt).toBe(deadline);
+        expect(mergeCachedContext({...parts,endpoint:"responses"}).workspaceRuntimeExpiresAt).toBe(deadline);
+        expect(isDynamicContextLike(parts.dynamic)).toBe(true);
+        expect(isStaticContextLike(parts.static)).toBe(true);
+        expect(isDynamicContextLike({...parts.dynamic,workspaceRuntimeExpiresAt:Date.now()})).toBe(false);
+        expect(isStaticContextLike({...parts.static,workspaceRuntimeExpiresAt:Date.now()})).toBe(false);
+        expect(mergeCachedContext({...parts,dynamic:{...parts.dynamic,workspaceRuntimeExpiresAt:deadline-100},endpoint:"responses"}).workspaceRuntimeExpiresAt).toBe(deadline-100);
+    });
 	const teamEnrichment = {
 		tier: "basic",
 		created_at: "2026-01-01T00:00:00.000Z",

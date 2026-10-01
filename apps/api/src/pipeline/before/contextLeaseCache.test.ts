@@ -58,6 +58,16 @@ describe("context segment leases", () => {
         expect(cache.stats().entries).toBe(0);
     });
 
+    it("bounds both composed settings and BYOK references by their workspace source deadline", async () => {
+        const { cache } = setup();
+        const raw = encodeContextLease({ workspaceRuntimeExpiresAt: now + 1000 }, 7200, now);
+        const read = vi.fn(async () => ({ [dynamic]: raw, [staticKey]: raw }));
+        expect(await cache.read([dynamic, staticKey], read)).toEqual({[dynamic]:raw,[staticKey]:raw});
+        vi.setSystemTime(now + 1000);
+        expect(await cache.read([dynamic, staticKey], read)).toEqual({[dynamic]:null,[staticKey]:null});
+        expect(cache.stats().entries).toBe(0);
+    });
+
     it.each([
         { checkedAtMs: now + 1, expiresAtMs: now + 60000 },
         { checkedAtMs: now, expiresAtMs: now + 7200001 },

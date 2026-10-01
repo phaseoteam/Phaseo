@@ -200,7 +200,10 @@ export async function getWorkspacePolicyVersionToken(workspaceId: string): Promi
 	return read;
 }
 
-export async function bumpWorkspacePolicyVersion(workspaceId: string): Promise<number> {
+export async function bumpWorkspacePolicyVersion(
+	workspaceId: string,
+	beforeVersionWrite?: (versionToken: string) => Promise<void>,
+): Promise<number> {
 	const state = policyVersionState(workspaceId);
 	const epoch = state.epoch = {};
 	delete state.read;
@@ -211,6 +214,8 @@ export async function bumpWorkspacePolicyVersion(workspaceId: string): Promise<n
 		const current = parseWorkspacePolicyVersion(raw);
 		const next = current + 1;
 		if (!Number.isSafeInteger(next)) throw new Error("invalid_workspace_policy_version");
+		// Publish dependent data before readers can observe the new generation.
+		await beforeVersionWrite?.(`v${next}`);
 		await getCache().put(workspacePolicyVersionKey(workspaceId), String(next));
 		if (workspacePolicyVersionL1.get(workspaceId) === state && state.epoch === epoch) writeWorkspacePolicyVersionL1(state, next);
 		return next;
