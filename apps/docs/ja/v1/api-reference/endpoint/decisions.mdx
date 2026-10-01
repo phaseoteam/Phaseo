@@ -1,0 +1,61 @@
+---
+title: "判断を行う"
+sidebarTitle: "Decisions"
+badge: "Beta"
+openapi: "/ja/openapi/v1/openapi.localized.yaml POST /decisions"
+description: "対応する判断モデルを使い、アプリケーションの状態に対して型付きの質問を評価します。"
+---
+
+アプリケーションでコードから直接利用できる構造化された回答が必要な場合は、`POST /v1/decisions` を使用します。対応モデルには TypeSafe Jev 1.13 (`typesafe/jev-1.13.0`)、Together Tev1 4B Experimental (`together/tev1-4b-experimental`)、Respan Span-01 (`respan/span-01:free` と `respan/span-01`) があります。
+
+リクエストには以下を含めます。
+
+- `state`: 評価する情報を含む文字列、オブジェクト、または配列。
+- `questions`: 名前付きの質問のマップ。各質問の `type` を `noul`、`choice`、`score` のいずれかに設定し、`instructions` を含めます。対応する型は選択したモデルによって異なります。
+- `model`: Phaseo のモデル ID。Jev 1.13 には `typesafe/jev-1.13.0` を使い、常に最新の Jev リリースを使うには `typesafe/jev-latest` を指定します。
+
+Liquid D1 (`liquid-ai/d1:free`、`liquid-ai/d1` としても利用可能) と Perplexity Decider 27B (`perplexity/decider-27b`) は、3 種類すべての質問に対応しています。D1 は実験的な早期アクセス期間中は無料です。Decider は画像トークンを含む入力トークン 100 万個あたり 0.04 米ドルで、出力トークンは無料です。Decider を使うには Phaseo に Perplexity のプロバイダー認証情報を追加してください。画像を含む状態には PNG、JPEG、WebP の Base64 データ URL を使用し、リモート画像 URL には対応していません。選択式の質問は最大 255 個の選択肢、スコアの質問は最大 10 段階に対応します。どちらのモデルも呼び出す前に利用可能か確認してください。
+
+Respan Span-01 の `state` は、先行するメッセージの `input` 配列と、アシスタントの `output` メッセージを含む会話の区間である必要があります。Span-01 は `noul` の質問にのみ対応します。`noul` の回答は対象の振る舞いが存在する確率で、`probabilities` には存在しない確率と観測できない確率も含まれます。
+
+```json
+{
+  "model": "respan/span-01:free",
+  "state": {
+    "input": [{ "role": "user", "content": "Please connect me to a person." }],
+    "output": { "role": "assistant", "content": "I will connect you to support." }
+  },
+  "questions": {
+    "escalation": {
+      "type": "noul",
+      "instructions": "Does the assistant offer a human handoff?"
+    }
+  }
+}
+```
+
+`respan/span-01:free` は日次制限のある無料の Lite モデルで、Phaseo はこれを Respan の API モデル ID `span-01-free` に対応付けます。`respan/span-01` は Respan の API モデル ID `span-01-pro` に対応し、Respan が入力トークン 100 万個あたり 0.02 米ドルを請求します。出力トークンは無料です。Span-01 は早期アクセス段階のため、Respan が組織のアクセスを有効にする必要があります。これらのモデルを呼び出す前に、Respan API キーを Phaseo の Respan プロバイダー認証情報として追加してください。
+
+回答には `questions` と同じキーが使われます。`choice` の回答には選択された選択肢、確率、信頼度が含まれます。`noul` の回答には 0～1 の確率が含まれ、`score` の回答には確率で重み付けしたスコア、凡例、確率、信頼度が含まれます。
+
+Respan の例では、レスポンスは次のようになります。
+
+```json
+{
+  "answers": {
+    "escalation": {
+      "type": "noul",
+      "noul": 0.73,
+      "probabilities": {
+        "true": 0.73,
+        "false": 0.25,
+        "not_observable": 0.02
+      }
+    }
+  }
+}
+```
+
+Jev は 1 回のリクエストで 3 種類の質問を組み合わせられます。Span-01 は `noul` の質問にのみ対応します。コピーして使える cURL、JavaScript、TypeScript SDK、Python SDK の例は[クイックスタート](../../quickstart)を参照してください。Jev 1.13 は入力トークン 100 万個あたり 0.042 米ドルで、出力トークンは無料です。
+
+提供元の質問の意味については、TypeSafe の [API リファレンス](https://docs.typesafe.ai/api)を参照してください。

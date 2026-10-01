@@ -4,7 +4,7 @@ info:
   version: 1.0.0
 servers:
   - url: https://api.phaseo.app/v1
-    description: Global routing
+    description: Enrutamiento global
 security:
   - BearerAuth: []
 paths:
@@ -1465,11 +1465,11 @@ paths:
     get:
       servers:
         - url: https://api.phaseo.app/v1
-          description: Global routing
+          description: वैश्विक रूटिंग
         - url: https://eu.api.phaseo.app/v1
-          description: EU regional provider routing (text only)
+          description: यूरोपीय संघ क्षेत्रीय प्रदाता रूटिंग (केवल टेक्स्ट)
         - url: https://us.api.phaseo.app/v1
-          description: US regional provider routing (text only)
+          description: अमेरिकी क्षेत्रीय प्रदाता रूटिंग (केवल टेक्स्ट)
       x-beta: true
       tags:
         - Gateway
@@ -1597,11 +1597,11 @@ paths:
     post:
       servers:
         - url: https://api.phaseo.app/v1
-          description: Global routing
+          description: वैश्विक रूटिंग
         - url: https://eu.api.phaseo.app/v1
-          description: EU regional provider routing (text only)
+          description: यूरोपीय संघ क्षेत्रीय प्रदाता रूटिंग (केवल टेक्स्ट)
         - url: https://us.api.phaseo.app/v1
-          description: US regional provider routing (text only)
+          description: अमेरिकी क्षेत्रीय प्रदाता रूटिंग (केवल टेक्स्ट)
       tags:
         - Gateway
       operationId: createChatCompletion
@@ -1640,11 +1640,11 @@ paths:
     post:
       servers:
         - url: https://api.phaseo.app/v1
-          description: Global routing
+          description: वैश्विक रूटिंग
         - url: https://eu.api.phaseo.app/v1
-          description: EU regional provider routing (text only)
+          description: यूरोपीय संघ क्षेत्रीय प्रदाता रूटिंग (केवल टेक्स्ट)
         - url: https://us.api.phaseo.app/v1
-          description: US regional provider routing (text only)
+          description: अमेरिकी क्षेत्रीय प्रदाता रूटिंग (केवल टेक्स्ट)
       tags:
         - Gateway
       operationId: createResponse
@@ -1683,11 +1683,11 @@ paths:
     post:
       servers:
         - url: https://api.phaseo.app/v1
-          description: Global routing
+          description: वैश्विक रूटिंग
         - url: https://eu.api.phaseo.app/v1
-          description: EU regional provider routing (text only)
+          description: यूरोपीय संघ क्षेत्रीय प्रदाता रूटिंग (केवल टेक्स्ट)
         - url: https://us.api.phaseo.app/v1
-          description: US regional provider routing (text only)
+          description: अमेरिकी क्षेत्रीय प्रदाता रूटिंग (केवल टेक्स्ट)
       tags:
         - Gateway
       operationId: createAnthropicMessage
@@ -1772,15 +1772,36 @@ paths:
               schema:
                 type: object
                 additionalProperties: true
+  /decisions:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: makeDecision
+      summary: संरचित निर्णय लें
+      description: TypeSafe Jev जैसे निर्णय मॉडल से संरचित स्थिति पर Noul, Choice और Score प्रकार के प्रश्नों का मूल्यांकन करता है।
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DecisionsRequest'
+      responses:
+        '200':
+          description: संरचित निर्णय प्रतिक्रिया
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DecisionsResponse'
   /models:
     get:
       servers:
         - url: https://api.phaseo.app/v1
-          description: Global routing
+          description: वैश्विक रूटिंग
         - url: https://eu.api.phaseo.app/v1
-          description: EU regional provider routing (text only)
+          description: यूरोपीय संघ क्षेत्रीय प्रदाता रूटिंग (केवल टेक्स्ट)
         - url: https://us.api.phaseo.app/v1
-          description: US regional provider routing (text only)
+          description: अमेरिकी क्षेत्रीय प्रदाता रूटिंग (केवल टेक्स्ट)
       x-beta: true
       tags:
         - Gateway
@@ -1790,19 +1811,19 @@ paths:
       parameters:
         - name: search
           in: query
-          description: Case-insensitive search across model ids, names, descriptions, and organisations.
+          description: मॉडल आईडी, नाम, विवरण और संगठनों में बड़े-छोटे अक्षरों का भेद किए बिना खोजें।
           schema:
             type: string
             maxLength: 200
         - name: provider_search
           in: query
-          description: Case-insensitive provider or model-organisation search.
+          description: प्रदाता या मॉडल संगठन में बड़े-छोटे अक्षरों का भेद किए बिना खोजें।
           schema:
             type: string
             maxLength: 100
         - name: input_modality
           in: query
-          description: Require a supported input modality.
+          description: समर्थित इनपुट मोडैलिटी आवश्यक करें।
           schema:
             type: string
             enum:
@@ -1812,25 +1833,25 @@ paths:
               - video
         - name: minimum_context_tokens
           in: query
-          description: Require at least this many input context tokens.
+          description: कम से कम इतने इनपुट संदर्भ टोकन आवश्यक करें।
           schema:
             type: number
             minimum: 0
         - name: maximum_input_price_per_million
           in: query
-          description: Maximum USD input-token price per million tokens.
+          description: प्रति दस लाख इनपुट टोकन अधिकतम मूल्य (USD)।
           schema:
             type: number
             minimum: 0
         - name: gateway_available_only
           in: query
-          description: Return only models with at least one routable gateway offer.
+          description: केवल वे मॉडल लौटाएँ जिनका कम से कम एक रूट करने योग्य गेटवे ऑफ़र हो।
           schema:
             type: boolean
             default: false
         - name: sort_by
           in: query
-          description: Field used to order model discovery results.
+          description: मॉडल खोज परिणामों को क्रमबद्ध करने वाला फ़ील्ड।
           schema:
             type: string
             enum:
@@ -1842,7 +1863,7 @@ paths:
             default: relevance
         - name: sort_order
           in: query
-          description: Optional sort direction. Price sorts default to ascending; other numeric sorts default to descending.
+          description: वैकल्पिक क्रम दिशा। मूल्य डिफ़ॉल्ट रूप से बढ़ते क्रम में और अन्य संख्याएँ घटते क्रम में होती हैं।
           schema:
             type: string
             enum:
@@ -6592,7 +6613,7 @@ components:
             - xhigh
             - max
             - auto
-          description: Image rendering quality. xhigh and max are available only for GPT Image 2.5 models.
+          description: चित्र रेंडरिंग गुणवत्ता। xhigh और max केवल GPT Image 2.5 मॉडल के लिए उपलब्ध हैं।
         stream:
           type: boolean
         partial_images:
@@ -8876,7 +8897,7 @@ components:
             - function
         async:
           type: boolean
-          description: Lets supported OpenAI models continue while the caller executes this tool. Accepted on all text API surfaces and ignored by other providers.
+          description: कॉलर के इस टूल को चलाने के दौरान समर्थित OpenAI मॉडल को जारी रहने देता है। सभी टेक्स्ट API पर स्वीकार किया जाता है और अन्य प्रदाता इसे अनदेखा करते हैं।
         function:
           type: object
           required:
@@ -9500,7 +9521,7 @@ components:
           minimum: 1
         service_tier:
           type: string
-          description: Selects a supported routing or pricing tier on compatible text APIs.
+          description: संगत टेक्स्ट API पर समर्थित रूटिंग या मूल्य स्तर चुनता है।
           enum:
             - standard
             - default
@@ -9625,7 +9646,7 @@ components:
           type: string
         async:
           type: boolean
-          description: Lets supported OpenAI models continue while the caller executes this tool. Ignored when routed to other providers.
+          description: कॉलर के इस टूल को चलाने के दौरान समर्थित OpenAI मॉडल को जारी रहने देता है। अन्य प्रदाताओं को रूट होने पर इसे अनदेखा किया जाता है।
         description:
           type: string
         input_schema:
@@ -9691,6 +9712,140 @@ components:
           type: integer
         output_tokens:
           type: integer
+    DecisionsRequest:
+      type: object
+      required:
+        - model
+        - state
+        - questions
+      properties:
+        model:
+          type: string
+          description: मानक Phaseo मॉडल आईडी या प्रदाता मॉडल उपनाम।
+          default: typesafe/jev-1.13.0
+        state:
+          description: मॉडल द्वारा मूल्यांकित संरचित स्थिति।
+          oneOf:
+            - type: string
+            - type: object
+              additionalProperties: true
+            - type: array
+              items: {}
+        questions:
+          type: object
+          minProperties: 1
+          maxProperties: 128
+          additionalProperties:
+            oneOf:
+              - $ref: '#/components/schemas/DecisionNoulQuestion'
+              - $ref: '#/components/schemas/DecisionChoiceQuestion'
+              - $ref: '#/components/schemas/DecisionScoreQuestion'
+        meta:
+          type: boolean
+          default: false
+        echo_upstream_request:
+          type: boolean
+        debug:
+          $ref: '#/components/schemas/DebugOptions'
+        provider:
+          $ref: '#/components/schemas/ProviderRoutingOptions'
+        routing:
+          $ref: '#/components/schemas/ProviderRoutingOptions'
+        metadata:
+          type: object
+          additionalProperties: true
+    DecisionNoulQuestion:
+      type: object
+      required:
+        - type
+        - instructions
+      properties:
+        type:
+          type: string
+          enum:
+            - noul
+        instructions:
+          $ref: '#/components/schemas/DecisionInstructions'
+        criteria:
+          type: object
+          properties:
+            'true':
+              type: string
+            'false':
+              type: string
+          additionalProperties: true
+    DecisionInstructions:
+      oneOf:
+        - type: string
+        - type: object
+          additionalProperties: true
+        - type: array
+          items: {}
+    DecisionChoiceQuestion:
+      type: object
+      required:
+        - type
+        - instructions
+        - criteria
+      properties:
+        type:
+          type: string
+          enum:
+            - choice
+        instructions:
+          $ref: '#/components/schemas/DecisionInstructions'
+        criteria:
+          type: object
+          minProperties: 1
+          additionalProperties:
+            type: string
+            nullable: true
+    DecisionScoreQuestion:
+      type: object
+      required:
+        - type
+        - instructions
+        - criteria
+      properties:
+        type:
+          type: string
+          enum:
+            - score
+        instructions:
+          $ref: '#/components/schemas/DecisionInstructions'
+        criteria:
+          type: array
+          minItems: 2
+          items:
+            type: string
+    DecisionsResponse:
+      type: object
+      properties:
+        model:
+          type: string
+        answers:
+          type: object
+          additionalProperties: true
+        usage:
+          $ref: '#/components/schemas/DecisionsUsage'
+        request_id:
+          type: string
+          nullable: true
+        meta:
+          type: object
+          additionalProperties: true
+    DecisionsUsage:
+      type: object
+      properties:
+        input_tokens:
+          type: integer
+          minimum: 0
+        output_tokens:
+          type: integer
+          minimum: 0
+        total_tokens:
+          type: integer
+          minimum: 0
     OrganisationId:
       type: string
       description: संगठन पहचानकर्ता।

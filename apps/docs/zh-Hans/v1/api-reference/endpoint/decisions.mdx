@@ -1,0 +1,61 @@
+---
+title: "作出决策"
+sidebarTitle: "Decisions"
+badge: "Beta"
+openapi: "/zh-Hans/openapi/v1/openapi.localized.yaml POST /decisions"
+description: "使用受支持的决策模型，针对应用状态评估带类型的问题。"
+---
+
+当应用需要代码可直接使用的结构化答案时，请使用 `POST /v1/decisions`。受支持的模型包括 TypeSafe Jev 1.13 (`typesafe/jev-1.13.0`)、Together Tev1 4B Experimental (`together/tev1-4b-experimental`) 和 Respan Span-01（`respan/span-01:free` 和 `respan/span-01`）。
+
+请求包含：
+
+- `state`：包含待评估信息的字符串、对象或数组。
+- `questions`：具名问题的映射。每个问题将 `type` 设置为 `noul`、`choice` 或 `score`，并包含 `instructions`；支持的类型取决于所选模型。
+- `model`：Phaseo 模型 ID。使用 `typesafe/jev-1.13.0` 指定 Jev 1.13，或使用 `typesafe/jev-latest` 跟随最新 Jev 版本。
+
+Liquid D1（`liquid-ai/d1:free`，也可使用 `liquid-ai/d1`）和 Perplexity Decider 27B (`perplexity/decider-27b`) 支持全部三种问题类型。D1 在实验性早期访问期间免费。Decider 每百万输入 token 收费 0.04 美元，包括图像 token；输出 token 免费。使用 Decider 前，请在 Phaseo 中添加 Perplexity 提供商凭证。其图像状态使用 PNG、JPEG 或 WebP 的 base64 数据 URL；不支持远程图像 URL。每个选择问题最多接受 255 个选项，每个评分问题最多接受 10 个等级。调用任一模型前请检查其可用性。
+
+对于 Respan Span-01，`state` 必须是一个会话片段，包含先前消息的 `input` 数组和一条助手的 `output` 消息。Span-01 仅支持 `noul` 问题。`noul` 答案表示该行为存在的概率；`probabilities` 还包含不存在和不可观察的概率。
+
+```json
+{
+  "model": "respan/span-01:free",
+  "state": {
+    "input": [{ "role": "user", "content": "Please connect me to a person." }],
+    "output": { "role": "assistant", "content": "I will connect you to support." }
+  },
+  "questions": {
+    "escalation": {
+      "type": "noul",
+      "instructions": "Does the assistant offer a human handoff?"
+    }
+  }
+}
+```
+
+`respan/span-01:free` 是有每日限额的免费 Lite 模型；Phaseo 将其映射为 Respan 的 API 模型 ID `span-01-free`。`respan/span-01` 映射为 Respan 的 API 模型 ID `span-01-pro`，由 Respan 按每百万输入 token 0.02 美元计费；输出 token 免费。Span-01 处于早期访问阶段，因此 Respan 必须为您的组织启用访问权限。调用这些模型前，请将 Respan API 密钥添加为 Phaseo 中的 Respan 提供商凭证。
+
+答案使用与 `questions` 相同的键。`choice` 答案包含所选选项、概率和置信度；`noul` 答案包含 0–1 的概率；`score` 答案包含概率加权分数、图例、概率和置信度。
+
+对于 Respan 示例，响应如下：
+
+```json
+{
+  "answers": {
+    "escalation": {
+      "type": "noul",
+      "noul": 0.73,
+      "probabilities": {
+        "true": 0.73,
+        "false": 0.25,
+        "not_observable": 0.02
+      }
+    }
+  }
+}
+```
+
+Jev 支持在同一请求中混合全部三种问题类型；Span-01 仅支持 `noul` 问题。请参阅[快速开始](../../quickstart)，获取可直接复制的 cURL、JavaScript、TypeScript SDK 和 Python SDK 示例。Jev 1.13 按每百万输入 token 0.042 美元计费；输出 token 免费。
+
+有关上游问题语义，请参阅 TypeSafe 的 [API 参考](https://docs.typesafe.ai/api)。

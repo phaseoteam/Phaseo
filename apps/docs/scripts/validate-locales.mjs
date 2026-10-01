@@ -1,4 +1,4 @@
-import { readdirSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { dirname, join, relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -6,6 +6,20 @@ const docsRoot = dirname(dirname(fileURLToPath(import.meta.url)));
 const sourceRoot = join(docsRoot, "v1");
 const locales = ["ar", "de", "es", "fr", "hi", "ja", "pt-BR", "zh-Hans"];
 const pageExtensions = new Set([".md", ".mdx"]);
+const docsConfig = JSON.parse(readFileSync(join(docsRoot, "docs.json"), "utf8"));
+const redirects = new Map(
+	(docsConfig.redirects ?? []).map(({ source, destination }) => [source, destination]),
+);
+
+function hasLocalizedRedirect(page, locale) {
+	const route = `/v1/${page.replace(/\.(md|mdx)$/, "")}`;
+	const destination = redirects.get(route);
+	if (typeof destination !== "string") return false;
+	const localizedDestination = destination.startsWith("/v1/")
+		? `/${locale}${destination}`
+		: destination;
+	return redirects.get(`/${locale}${route}`) === localizedDestination;
+}
 
 function listPages(root, parent = root, pages = new Set()) {
 	for (const entry of readdirSync(parent, { withFileTypes: true })) {
@@ -29,7 +43,9 @@ for (const locale of locales) {
 	const localeRoot = join(docsRoot, locale, "v1");
 	const translatedPages = listPages(localeRoot);
 	const missing = [...sourcePages].filter((page) => !translatedPages.has(page));
-	const unexpected = [...translatedPages].filter((page) => !sourcePages.has(page));
+	const unexpected = [...translatedPages].filter(
+		(page) => !sourcePages.has(page) && !hasLocalizedRedirect(page, locale),
+	);
 	if (missing.length > 0 || unexpected.length > 0) {
 		issues.push(
 			`${locale}: ${missing.length} missing page(s), ${unexpected.length} unexpected page(s)` +

@@ -322,6 +322,7 @@ function buildLocalizedSpec(locale) {
 		paths,
 	};
 	if (Object.keys(components).length > 0) spec.components = components;
+	applyStringCopy(locale, spec, "OpenAPI specification");
 
 	return yaml.dump(spec, {
 		lineWidth: -1,

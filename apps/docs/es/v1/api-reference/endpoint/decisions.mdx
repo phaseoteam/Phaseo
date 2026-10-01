@@ -1,0 +1,61 @@
+---
+title: "Tomar una decisión"
+sidebarTitle: "Decisions"
+badge: "Beta"
+openapi: "/es/openapi/v1/openapi.localized.yaml POST /decisions"
+description: "Evalúa preguntas tipadas sobre el estado de la aplicación con los modelos de decisión compatibles."
+---
+
+Usa `POST /v1/decisions` cuando tu aplicación necesite respuestas estructuradas que el código pueda consumir directamente. Los modelos compatibles incluyen TypeSafe Jev 1.13 (`typesafe/jev-1.13.0`), Together Tev1 4B Experimental (`together/tev1-4b-experimental`) y Respan Span-01 (`respan/span-01:free` y `respan/span-01`).
+
+La solicitud contiene:
+
+- `state`: una cadena, objeto o matriz que contiene la información que se va a evaluar.
+- `questions`: un mapa de preguntas con nombre. Cada pregunta establece `type` en `noul`, `choice` o `score` e incluye `instructions`; los tipos compatibles dependen del modelo seleccionado.
+- `model`: el identificador del modelo de Phaseo. Usa `typesafe/jev-1.13.0` para Jev 1.13 o `typesafe/jev-latest` para seguir la última versión de Jev.
+
+Liquid D1 (`liquid-ai/d1:free`, también disponible como `liquid-ai/d1`) y Perplexity Decider 27B (`perplexity/decider-27b`) admiten los tres tipos de preguntas. D1 es gratuito durante el acceso anticipado experimental. Decider cuesta 0,04 USD por millón de tokens de entrada, incluidos los de imagen; los tokens de salida son gratuitos. Añade una credencial del proveedor Perplexity en Phaseo para usar Decider. Su estado con imágenes usa URL de datos base64 PNG, JPEG o WebP; no admite URL de imágenes remotas. Cada pregunta de elección acepta hasta 255 opciones y cada pregunta de puntuación hasta 10 niveles. Comprueba la disponibilidad antes de invocar cualquiera de los modelos.
+
+Para Respan Span-01, `state` debe ser un segmento de conversación con una matriz `input` de mensajes previos y un mensaje `output` del asistente. Span-01 solo admite preguntas `noul`. La respuesta `noul` es la probabilidad de que el comportamiento esté presente; `probabilities` también incluye las probabilidades de ausencia y de no poder observarlo.
+
+```json
+{
+  "model": "respan/span-01:free",
+  "state": {
+    "input": [{ "role": "user", "content": "Please connect me to a person." }],
+    "output": { "role": "assistant", "content": "I will connect you to support." }
+  },
+  "questions": {
+    "escalation": {
+      "type": "noul",
+      "instructions": "Does the assistant offer a human handoff?"
+    }
+  }
+}
+```
+
+`respan/span-01:free` es el modelo Lite gratuito con un límite diario; Phaseo lo asigna al identificador de modelo API `span-01-free` de Respan. `respan/span-01` se asigna al identificador `span-01-pro` de Respan y Respan lo factura a 0,02 USD por millón de tokens de entrada; los tokens de salida son gratuitos. Span-01 está en acceso anticipado, así que Respan debe habilitar el acceso para tu organización. Añade tu clave API de Respan como credencial del proveedor Respan en Phaseo antes de invocar estos modelos.
+
+Las respuestas usan las mismas claves que `questions`. Las respuestas `choice` incluyen la opción seleccionada, probabilidades y confianza; las respuestas `noul` incluyen una probabilidad de 0 a 1; y las respuestas `score` incluyen una puntuación ponderada por probabilidad, leyenda, probabilidades y confianza.
+
+Para el ejemplo de Respan, una respuesta tiene este aspecto:
+
+```json
+{
+  "answers": {
+    "escalation": {
+      "type": "noul",
+      "noul": 0.73,
+      "probabilities": {
+        "true": 0.73,
+        "false": 0.25,
+        "not_observable": 0.02
+      }
+    }
+  }
+}
+```
+
+Jev permite combinar los tres tipos de preguntas en una solicitud; Span-01 solo admite preguntas `noul`. Consulta el [inicio rápido](../../quickstart) para ver ejemplos de cURL, JavaScript, SDK de TypeScript y SDK de Python listos para copiar y pegar. Jev 1.13 se factura a 0,042 USD por millón de tokens de entrada; los tokens de salida son gratuitos.
+
+Para conocer la semántica de las preguntas del proveedor, consulta la [referencia API](https://docs.typesafe.ai/api) de TypeSafe.

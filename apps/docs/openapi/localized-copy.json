@@ -1,6 +1,6 @@
 {
   "_components": {
-      "securitySchemes": {
+    "securitySchemes": {
       "BearerAuth": {
         "description": {
           "es": "Autenticación con token Bearer",
@@ -5177,9 +5177,9 @@
       "fr": "Erreur",
       "de": "Fehler",
       "pt-BR": "Erro",
-      "hi": "त्रुटि",
       "ja": "エラー",
       "zh-Hans": "错误",
+      "hi": "त्रुटि",
       "ar": "خطأ"
     },
     "List model endpoint capabilities": {
@@ -5491,6 +5491,186 @@
       "ja": "署名シークレットをローテーションしました",
       "zh-Hans": "签名密钥已轮换",
       "ar": "تم تدوير سر التوقيع"
+    },
+    "Global routing": {
+      "es": "Enrutamiento global",
+      "fr": "Routage mondial",
+      "de": "Globales Routing",
+      "pt-BR": "Roteamento global",
+      "ja": "グローバルルーティング",
+      "zh-Hans": "全球路由",
+      "hi": "वैश्विक रूटिंग",
+      "ar": "التوجيه العالمي"
+    },
+    "EU regional provider routing (text only)": {
+      "es": "Enrutamiento regional a proveedores de la UE (solo texto)",
+      "fr": "Routage régional vers les fournisseurs de l’UE (texte uniquement)",
+      "de": "Regionales Anbieter-Routing für die EU (nur Text)",
+      "pt-BR": "Roteamento regional para provedores da UE (somente texto)",
+      "ja": "EU 域内のプロバイダールーティング（テキストのみ）",
+      "zh-Hans": "欧盟区域提供商路由（仅文本）",
+      "hi": "यूरोपीय संघ क्षेत्रीय प्रदाता रूटिंग (केवल टेक्स्ट)",
+      "ar": "توجيه إقليمي إلى مزودي الاتحاد الأوروبي (نص فقط)"
+    },
+    "US regional provider routing (text only)": {
+      "es": "Enrutamiento regional a proveedores de EE. UU. (solo texto)",
+      "fr": "Routage régional vers les fournisseurs des États-Unis (texte uniquement)",
+      "de": "Regionales Anbieter-Routing für die USA (nur Text)",
+      "pt-BR": "Roteamento regional para provedores dos EUA (somente texto)",
+      "ja": "米国内のプロバイダールーティング（テキストのみ）",
+      "zh-Hans": "美国区域提供商路由（仅文本）",
+      "hi": "अमेरिकी क्षेत्रीय प्रदाता रूटिंग (केवल टेक्स्ट)",
+      "ar": "توجيه إقليمي إلى مزودي الولايات المتحدة (نص فقط)"
+    },
+    "Structured decisions response": {
+      "es": "Respuesta de decisiones estructuradas",
+      "fr": "Réponse de décisions structurées",
+      "de": "Antwort mit strukturierten Entscheidungen",
+      "pt-BR": "Resposta de decisões estruturadas",
+      "ja": "構造化された判断のレスポンス",
+      "zh-Hans": "结构化决策响应",
+      "hi": "संरचित निर्णय प्रतिक्रिया",
+      "ar": "استجابة القرارات المنظّمة"
+    },
+    "Case-insensitive search across model ids, names, descriptions, and organisations.": {
+      "es": "Búsqueda sin distinguir mayúsculas en identificadores, nombres y descripciones de modelos y organizaciones.",
+      "fr": "Recherche insensible à la casse dans les identifiants, noms et descriptions des modèles et les organisations.",
+      "de": "Suche ohne Beachtung der Groß-/Kleinschreibung in Modell-IDs, Namen, Beschreibungen und Organisationen.",
+      "pt-BR": "Pesquisa sem diferenciar maiúsculas e minúsculas em identificadores, nomes e descrições de modelos e organizações.",
+      "ja": "モデル ID、名前、説明、組織を対象に、大文字と小文字を区別せず検索します。",
+      "zh-Hans": "在模型 ID、名称、描述和组织中搜索，不区分大小写。",
+      "hi": "मॉडल आईडी, नाम, विवरण और संगठनों में बड़े-छोटे अक्षरों का भेद किए बिना खोजें।",
+      "ar": "بحث غير حساس لحالة الأحرف في معرّفات النماذج وأسمائها وأوصافها والمؤسسات."
+    },
+    "Case-insensitive provider or model-organisation search.": {
+      "es": "Búsqueda de proveedores u organizaciones de modelos sin distinguir mayúsculas.",
+      "fr": "Recherche insensible à la casse de fournisseurs ou d’organisations de modèles.",
+      "de": "Suche nach Anbietern oder Modellorganisationen ohne Beachtung der Groß-/Kleinschreibung.",
+      "pt-BR": "Pesquisa de provedores ou organizações de modelos sem diferenciar maiúsculas e minúsculas.",
+      "ja": "プロバイダーまたはモデルの組織を、大文字と小文字を区別せず検索します。",
+      "zh-Hans": "搜索提供商或模型组织，不区分大小写。",
+      "hi": "प्रदाता या मॉडल संगठन में बड़े-छोटे अक्षरों का भेद किए बिना खोजें।",
+      "ar": "بحث غير حساس لحالة الأحرف عن المزود أو مؤسسة النموذج."
+    },
+    "Require a supported input modality.": {
+      "es": "Exigir una modalidad de entrada compatible.",
+      "fr": "Exiger une modalité d’entrée prise en charge.",
+      "de": "Eine unterstützte Eingabemodalität voraussetzen.",
+      "pt-BR": "Exigir uma modalidade de entrada suportada.",
+      "ja": "対応する入力モダリティを必須とします。",
+      "zh-Hans": "要求支持指定的输入模态。",
+      "hi": "समर्थित इनपुट मोडैलिटी आवश्यक करें।",
+      "ar": "اشتراط نمط إدخال مدعوم."
+    },
+    "Require at least this many input context tokens.": {
+      "es": "Exigir al menos este número de tokens de contexto de entrada.",
+      "fr": "Exiger au moins ce nombre de tokens de contexte d’entrée.",
+      "de": "Mindestens diese Anzahl an Eingabe-Kontexttokens voraussetzen.",
+      "pt-BR": "Exigir pelo menos esta quantidade de tokens de contexto de entrada.",
+      "ja": "入力コンテキストに少なくともこの数のトークンを要求します。",
+      "zh-Hans": "要求输入上下文至少支持此数量的 token。",
+      "hi": "कम से कम इतने इनपुट संदर्भ टोकन आवश्यक करें।",
+      "ar": "اشتراط هذا العدد على الأقل من رموز سياق الإدخال."
+    },
+    "Maximum USD input-token price per million tokens.": {
+      "es": "Precio máximo en USD de entrada por millón de tokens.",
+      "fr": "Prix maximal en USD par million de tokens d’entrée.",
+      "de": "Maximaler Eingabetokenpreis in USD pro Million Tokens.",
+      "pt-BR": "Preço máximo em USD de entrada por milhão de tokens.",
+      "ja": "入力トークン 100 万個あたりの上限価格（米ドル）。",
+      "zh-Hans": "每百万输入 token 的最高价格（美元）。",
+      "hi": "प्रति दस लाख इनपुट टोकन अधिकतम मूल्य (USD)।",
+      "ar": "أقصى سعر بالدولار لكل مليون رمز إدخال."
+    },
+    "Return only models with at least one routable gateway offer.": {
+      "es": "Devolver solo modelos con al menos una oferta enrutable del gateway.",
+      "fr": "Renvoyer uniquement les modèles ayant au moins une offre routable du gateway.",
+      "de": "Nur Modelle mit mindestens einem routbaren Gateway-Angebot zurückgeben.",
+      "pt-BR": "Retornar apenas modelos com pelo menos uma oferta roteável do gateway.",
+      "ja": "ルーティング可能なゲートウェイの提供ルートが少なくとも 1 つあるモデルのみを返します。",
+      "zh-Hans": "仅返回至少有一个可路由网关服务的模型。",
+      "hi": "केवल वे मॉडल लौटाएँ जिनका कम से कम एक रूट करने योग्य गेटवे ऑफ़र हो।",
+      "ar": "عرض النماذج التي لديها عرض بوابة واحد على الأقل قابل للتوجيه فقط."
+    },
+    "Field used to order model discovery results.": {
+      "es": "Campo usado para ordenar los resultados del descubrimiento de modelos.",
+      "fr": "Champ utilisé pour trier les résultats de découverte des modèles.",
+      "de": "Feld zum Sortieren der Ergebnisse der Modellerkennung.",
+      "pt-BR": "Campo usado para ordenar os resultados da descoberta de modelos.",
+      "ja": "モデル検出結果の並べ替えに使うフィールド。",
+      "zh-Hans": "用于对模型发现结果排序的字段。",
+      "hi": "मॉडल खोज परिणामों को क्रमबद्ध करने वाला फ़ील्ड।",
+      "ar": "الحقل المستخدم لترتيب نتائج اكتشاف النماذج."
+    },
+    "Optional sort direction. Price sorts default to ascending; other numeric sorts default to descending.": {
+      "es": "Dirección de orden opcional. Los precios se ordenan de forma ascendente por defecto; los demás valores numéricos, de forma descendente.",
+      "fr": "Sens de tri facultatif. Les prix sont triés par ordre croissant par défaut ; les autres valeurs numériques par ordre décroissant.",
+      "de": "Optionale Sortierrichtung. Preise werden standardmäßig aufsteigend sortiert, andere Zahlenwerte absteigend.",
+      "pt-BR": "Direção de ordenação opcional. Preços são ordenados de forma crescente por padrão; outros valores numéricos, de forma decrescente.",
+      "ja": "任意の並べ替え方向。価格は標準で昇順、それ以外の数値は標準で降順に並べ替えます。",
+      "zh-Hans": "可选的排序方向。价格默认升序，其他数值默认降序。",
+      "hi": "वैकल्पिक क्रम दिशा। मूल्य डिफ़ॉल्ट रूप से बढ़ते क्रम में और अन्य संख्याएँ घटते क्रम में होती हैं।",
+      "ar": "اتجاه ترتيب اختياري. تُرتّب الأسعار تصاعديًا افتراضيًا، والقيم الرقمية الأخرى تنازليًا."
+    },
+    "Image rendering quality. xhigh and max are available only for GPT Image 2.5 models.": {
+      "es": "Calidad de renderizado de imágenes. xhigh y max solo están disponibles para los modelos GPT Image 2.5.",
+      "fr": "Qualité de rendu des images. xhigh et max sont uniquement disponibles pour les modèles GPT Image 2.5.",
+      "de": "Bildrenderqualität. xhigh und max sind nur für GPT Image 2.5-Modelle verfügbar.",
+      "pt-BR": "Qualidade de renderização de imagens. xhigh e max estão disponíveis apenas para os modelos GPT Image 2.5.",
+      "ja": "画像のレンダリング品質。xhigh と max は GPT Image 2.5 モデルでのみ利用できます。",
+      "zh-Hans": "图像渲染质量。xhigh 和 max 仅适用于 GPT Image 2.5 模型。",
+      "hi": "चित्र रेंडरिंग गुणवत्ता। xhigh और max केवल GPT Image 2.5 मॉडल के लिए उपलब्ध हैं।",
+      "ar": "جودة عرض الصور. تتوفر xhigh وmax لنماذج GPT Image 2.5 فقط."
+    },
+    "Lets supported OpenAI models continue while the caller executes this tool. Accepted on all text API surfaces and ignored by other providers.": {
+      "es": "Permite que los modelos compatibles de OpenAI continúen mientras el cliente ejecuta esta herramienta. Se acepta en todas las API de texto y otros proveedores lo ignoran.",
+      "fr": "Permet aux modèles OpenAI pris en charge de continuer pendant que l’appelant exécute cet outil. Accepté sur toutes les API de texte et ignoré par les autres fournisseurs.",
+      "de": "Lässt unterstützte OpenAI-Modelle weiterarbeiten, während der Aufrufer dieses Tool ausführt. Wird auf allen Text-API-Schnittstellen akzeptiert und von anderen Anbietern ignoriert.",
+      "pt-BR": "Permite que os modelos OpenAI suportados continuem enquanto o chamador executa esta ferramenta. Aceito em todas as APIs de texto e ignorado por outros provedores.",
+      "ja": "呼び出し元がこのツールを実行する間、対応する OpenAI モデルの処理を継続させます。すべてのテキスト API で受け付けられ、他のプロバイダーでは無視されます。",
+      "zh-Hans": "允许受支持的 OpenAI 模型在调用方执行此工具时继续处理。所有文本 API 均接受此设置，其他提供商会忽略它。",
+      "hi": "कॉलर के इस टूल को चलाने के दौरान समर्थित OpenAI मॉडल को जारी रहने देता है। सभी टेक्स्ट API पर स्वीकार किया जाता है और अन्य प्रदाता इसे अनदेखा करते हैं।",
+      "ar": "يسمح لنماذج OpenAI المدعومة بالاستمرار أثناء تنفيذ المستدعي لهذه الأداة. يُقبل في جميع واجهات API النصية وتتجاهله الجهات المزودة الأخرى."
+    },
+    "Selects a supported routing or pricing tier on compatible text APIs.": {
+      "es": "Selecciona un nivel de enrutamiento o precios compatible en las API de texto que lo admiten.",
+      "fr": "Sélectionne un niveau de routage ou de tarification pris en charge sur les API de texte compatibles.",
+      "de": "Wählt eine unterstützte Routing- oder Preisstufe auf kompatiblen Text-APIs.",
+      "pt-BR": "Seleciona um nível de roteamento ou preço suportado nas APIs de texto compatíveis.",
+      "ja": "対応するテキスト API で、サポートされるルーティングまたは料金のティアを選択します。",
+      "zh-Hans": "在兼容的文本 API 上选择受支持的路由或定价等级。",
+      "hi": "संगत टेक्स्ट API पर समर्थित रूटिंग या मूल्य स्तर चुनता है।",
+      "ar": "يحدد مستوى توجيه أو تسعير مدعومًا في واجهات API النصية المتوافقة."
+    },
+    "Lets supported OpenAI models continue while the caller executes this tool. Ignored when routed to other providers.": {
+      "es": "Permite que los modelos compatibles de OpenAI continúen mientras el cliente ejecuta esta herramienta. Se ignora al enrutar a otros proveedores.",
+      "fr": "Permet aux modèles OpenAI pris en charge de continuer pendant que l’appelant exécute cet outil. Ignoré lors du routage vers d’autres fournisseurs.",
+      "de": "Lässt unterstützte OpenAI-Modelle weiterarbeiten, während der Aufrufer dieses Tool ausführt. Wird beim Routing zu anderen Anbietern ignoriert.",
+      "pt-BR": "Permite que os modelos OpenAI suportados continuem enquanto o chamador executa esta ferramenta. Ignorado ao rotear para outros provedores.",
+      "ja": "呼び出し元がこのツールを実行する間、対応する OpenAI モデルの処理を継続させます。他のプロバイダーにルーティングされた場合は無視されます。",
+      "zh-Hans": "允许受支持的 OpenAI 模型在调用方执行此工具时继续处理。路由至其他提供商时会忽略此设置。",
+      "hi": "कॉलर के इस टूल को चलाने के दौरान समर्थित OpenAI मॉडल को जारी रहने देता है। अन्य प्रदाताओं को रूट होने पर इसे अनदेखा किया जाता है।",
+      "ar": "يسمح لنماذج OpenAI المدعومة بالاستمرار أثناء تنفيذ المستدعي لهذه الأداة. يُتجاهل عند التوجيه إلى مزودين آخرين."
+    },
+    "Canonical Phaseo model id or provider model alias.": {
+      "es": "Identificador canónico del modelo de Phaseo o alias del modelo del proveedor.",
+      "fr": "Identifiant canonique du modèle Phaseo ou alias du modèle du fournisseur.",
+      "de": "Kanonische Phaseo-Modell-ID oder Modellalias des Anbieters.",
+      "pt-BR": "Identificador canônico do modelo da Phaseo ou alias do modelo do provedor.",
+      "ja": "Phaseo の正規モデル ID またはプロバイダーのモデルエイリアス。",
+      "zh-Hans": "Phaseo 的规范模型 ID 或提供商模型别名。",
+      "hi": "मानक Phaseo मॉडल आईडी या प्रदाता मॉडल उपनाम।",
+      "ar": "معرّف نموذج Phaseo الأساسي أو الاسم المستعار لنموذج المزود."
+    },
+    "Structured state evaluated by the model.": {
+      "es": "Estado estructurado evaluado por el modelo.",
+      "fr": "État structuré évalué par le modèle.",
+      "de": "Vom Modell bewerteter strukturierter Zustand.",
+      "pt-BR": "Estado estruturado avaliado pelo modelo.",
+      "ja": "モデルが評価する構造化された状態。",
+      "zh-Hans": "由模型评估的结构化状态。",
+      "hi": "मॉडल द्वारा मूल्यांकित संरचित स्थिति।",
+      "ar": "حالة منظّمة يقيّمها النموذج."
     }
   },
   "GET /apps": {
@@ -7347,6 +7527,28 @@
         "zh-Hans": "实时会话已创建",
         "ar": "تم إنشاء الجلسة في الوقت الفعلي"
       }
+    }
+  },
+  "POST /decisions": {
+    "summary": {
+      "es": "Tomar decisiones estructuradas",
+      "fr": "Prendre des décisions structurées",
+      "de": "Strukturierte Entscheidungen treffen",
+      "pt-BR": "Tomar decisões estruturadas",
+      "ja": "構造化された判断を行う",
+      "zh-Hans": "作出结构化决策",
+      "hi": "संरचित निर्णय लें",
+      "ar": "اتخاذ قرارات منظّمة"
+    },
+    "description": {
+      "es": "Evalúa preguntas tipadas Noul, Choice y Score sobre un estado estructurado con un modelo de decisión como TypeSafe Jev.",
+      "fr": "Évalue des questions typées Noul, Choice et Score à partir d’un état structuré avec un modèle de décision tel que TypeSafe Jev.",
+      "de": "Bewertet typisierte Noul-, Choice- und Score-Fragen anhand eines strukturierten Zustands mit einem Entscheidungsmodell wie TypeSafe Jev.",
+      "pt-BR": "Avalia perguntas tipadas Noul, Choice e Score sobre um estado estruturado usando um modelo de decisão como TypeSafe Jev.",
+      "ja": "TypeSafe Jev などの判断モデルを使い、構造化された状態に対して Noul、Choice、Score の型付き質問を評価します。",
+      "zh-Hans": "使用 TypeSafe Jev 等决策模型，针对结构化状态评估 Noul、Choice 和 Score 类型的问题。",
+      "hi": "TypeSafe Jev जैसे निर्णय मॉडल से संरचित स्थिति पर Noul, Choice और Score प्रकार के प्रश्नों का मूल्यांकन करता है।",
+      "ar": "يقيّم أسئلة Noul وChoice وScore ذات الأنواع المحددة بناءً على حالة منظّمة باستخدام نموذج قرار مثل TypeSafe Jev."
     }
   }
 }

@@ -1,0 +1,61 @@
+---
+title: "निर्णय लें"
+sidebarTitle: "Decisions"
+badge: "Beta"
+openapi: "/hi/openapi/v1/openapi.localized.yaml POST /decisions"
+description: "समर्थित निर्णय मॉडल से ऐप्लिकेशन की स्थिति पर प्रकारयुक्त प्रश्नों का मूल्यांकन करें।"
+---
+
+जब ऐप्लिकेशन को ऐसे संरचित उत्तर चाहिए जिन्हें कोड सीधे इस्तेमाल कर सके, तो `POST /v1/decisions` इस्तेमाल करें। समर्थित मॉडल में TypeSafe Jev 1.13 (`typesafe/jev-1.13.0`), Together Tev1 4B Experimental (`together/tev1-4b-experimental`) और Respan Span-01 (`respan/span-01:free` तथा `respan/span-01`) शामिल हैं।
+
+अनुरोध में ये शामिल हैं:
+
+- `state`: मूल्यांकन की जानकारी वाली स्ट्रिंग, ऑब्जेक्ट या ऐरे।
+- `questions`: नाम वाले प्रश्नों का मैप। हर प्रश्न में `type` को `noul`, `choice` या `score` रखा जाता है और `instructions` शामिल होता है; समर्थित प्रकार चुने गए मॉडल पर निर्भर हैं।
+- `model`: Phaseo मॉडल आईडी। Jev 1.13 के लिए `typesafe/jev-1.13.0` या नवीनतम Jev रिलीज़ के लिए `typesafe/jev-latest` इस्तेमाल करें।
+
+Liquid D1 (`liquid-ai/d1:free`, `liquid-ai/d1` के रूप में भी उपलब्ध) और Perplexity Decider 27B (`perplexity/decider-27b`) तीनों प्रश्न प्रकारों का समर्थन करते हैं। D1 प्रयोगात्मक शुरुआती पहुँच के दौरान मुफ़्त है। Decider की कीमत चित्र टोकन सहित प्रति दस लाख इनपुट टोकन 0.04 अमेरिकी डॉलर है; आउटपुट टोकन मुफ़्त हैं। Decider के लिए Phaseo में Perplexity प्रदाता क्रेडेंशियल जोड़ें। चित्र वाली स्थिति PNG, JPEG या WebP के base64 डेटा URL इस्तेमाल करती है; दूरस्थ चित्र URL समर्थित नहीं हैं। हर चयन प्रश्न में अधिकतम 255 विकल्प और हर स्कोर प्रश्न में अधिकतम 10 स्तर हो सकते हैं। दोनों में से किसी मॉडल को कॉल करने से पहले उसकी उपलब्धता जाँचें।
+
+Respan Span-01 के लिए `state` बातचीत का ऐसा भाग होना चाहिए जिसमें पिछले संदेशों का `input` ऐरे और सहायक का `output` संदेश हो। Span-01 केवल `noul` प्रश्नों का समर्थन करता है। `noul` उत्तर व्यवहार मौजूद होने की संभावना है; `probabilities` में अनुपस्थित और न देखे जा सकने की संभावनाएँ भी हैं।
+
+```json
+{
+  "model": "respan/span-01:free",
+  "state": {
+    "input": [{ "role": "user", "content": "Please connect me to a person." }],
+    "output": { "role": "assistant", "content": "I will connect you to support." }
+  },
+  "questions": {
+    "escalation": {
+      "type": "noul",
+      "instructions": "Does the assistant offer a human handoff?"
+    }
+  }
+}
+```
+
+`respan/span-01:free` दैनिक सीमा वाला मुफ़्त Lite मॉडल है; Phaseo इसे Respan की API मॉडल आईडी `span-01-free` से मैप करता है। `respan/span-01`, Respan की API मॉडल आईडी `span-01-pro` से मैप होता है और Respan प्रति दस लाख इनपुट टोकन 0.02 अमेरिकी डॉलर लेता है; आउटपुट टोकन मुफ़्त हैं। Span-01 शुरुआती पहुँच में है, इसलिए Respan को आपके संगठन के लिए पहुँच सक्षम करनी होगी। इन मॉडल को कॉल करने से पहले अपनी Respan API कुंजी Phaseo में Respan प्रदाता क्रेडेंशियल के रूप में जोड़ें।
+
+उत्तर `questions` वाली ही कुंजियाँ इस्तेमाल करते हैं। `choice` उत्तर में चुना हुआ विकल्प, संभावनाएँ और विश्वास स्तर होते हैं; `noul` उत्तर में 0–1 की संभावना होती है; और `score` उत्तर में संभावना-भारित स्कोर, संकेत विवरण, संभावनाएँ और विश्वास स्तर होते हैं।
+
+Respan उदाहरण के लिए प्रतिक्रिया इस प्रकार होती है:
+
+```json
+{
+  "answers": {
+    "escalation": {
+      "type": "noul",
+      "noul": 0.73,
+      "probabilities": {
+        "true": 0.73,
+        "false": 0.25,
+        "not_observable": 0.02
+      }
+    }
+  }
+}
+```
+
+Jev एक अनुरोध में तीनों प्रश्न प्रकारों को मिलाने का समर्थन करता है; Span-01 केवल `noul` प्रश्नों का समर्थन करता है। कॉपी-पेस्ट करने योग्य cURL, JavaScript, TypeScript SDK और Python SDK उदाहरणों के लिए [त्वरित शुरुआत](../../quickstart) देखें। Jev 1.13 की कीमत प्रति दस लाख इनपुट टोकन 0.042 अमेरिकी डॉलर है; आउटपुट टोकन मुफ़्त हैं।
+
+प्रदाता के प्रश्नों के अर्थ के लिए TypeSafe का [API संदर्भ](https://docs.typesafe.ai/api) देखें।

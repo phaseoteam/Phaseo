@@ -620,7 +620,8 @@
       "guides/integrations/oh-my-pi.mdx": "360f0db7ab5c4afe45a1bbca0e16ca51ba1d7e4c59f470cb80c5dc44c0c78102",
       "guides/integrations/muse-code.mdx": "fa097c1e7b8ba30a67b80e6c811d2c6d4ae1e1e5503a9830df092f6eddced793",
       "changelog/2026-08.mdx": "bfce447fc54ca3869f19b595b1120210845eaa232b951ea5eed1f3a12cb4fe3e",
-      "guides/integrations/minimax-code.mdx": "116fc4ba1a02a47389daaf576a52990a4512328ad02b0fef1f48a3eb81008145"
+      "guides/integrations/minimax-code.mdx": "116fc4ba1a02a47389daaf576a52990a4512328ad02b0fef1f48a3eb81008145",
+      "api-reference/endpoint/decisions.mdx": "8f3b0773a34d06c3426c675f945f393eabcb810d3a25c239e1a6a0d9087f3357"
     },
     "de": {
       "@openapi": "2c3f491274db474a71ed11efc217d0c83e0900166519d54300030e428df69710",
@@ -1241,7 +1242,8 @@
       "guides/integrations/oh-my-pi.mdx": "360f0db7ab5c4afe45a1bbca0e16ca51ba1d7e4c59f470cb80c5dc44c0c78102",
       "guides/integrations/muse-code.mdx": "fa097c1e7b8ba30a67b80e6c811d2c6d4ae1e1e5503a9830df092f6eddced793",
       "changelog/2026-08.mdx": "bfce447fc54ca3869f19b595b1120210845eaa232b951ea5eed1f3a12cb4fe3e",
-      "guides/integrations/minimax-code.mdx": "116fc4ba1a02a47389daaf576a52990a4512328ad02b0fef1f48a3eb81008145"
+      "guides/integrations/minimax-code.mdx": "116fc4ba1a02a47389daaf576a52990a4512328ad02b0fef1f48a3eb81008145",
+      "api-reference/endpoint/decisions.mdx": "8f3b0773a34d06c3426c675f945f393eabcb810d3a25c239e1a6a0d9087f3357"
     },
     "es": {
       "@openapi": "2c3f491274db474a71ed11efc217d0c83e0900166519d54300030e428df69710",
@@ -1862,7 +1864,8 @@
       "guides/integrations/oh-my-pi.mdx": "360f0db7ab5c4afe45a1bbca0e16ca51ba1d7e4c59f470cb80c5dc44c0c78102",
       "guides/integrations/muse-code.mdx": "fa097c1e7b8ba30a67b80e6c811d2c6d4ae1e1e5503a9830df092f6eddced793",
       "changelog/2026-08.mdx": "bfce447fc54ca3869f19b595b1120210845eaa232b951ea5eed1f3a12cb4fe3e",
-      "guides/integrations/minimax-code.mdx": "116fc4ba1a02a47389daaf576a52990a4512328ad02b0fef1f48a3eb81008145"
+      "guides/integrations/minimax-code.mdx": "116fc4ba1a02a47389daaf576a52990a4512328ad02b0fef1f48a3eb81008145",
+      "api-reference/endpoint/decisions.mdx": "8f3b0773a34d06c3426c675f945f393eabcb810d3a25c239e1a6a0d9087f3357"
     },
     "fr": {
       "@openapi": "2c3f491274db474a71ed11efc217d0c83e0900166519d54300030e428df69710",
@@ -2483,7 +2486,8 @@
       "guides/integrations/oh-my-pi.mdx": "360f0db7ab5c4afe45a1bbca0e16ca51ba1d7e4c59f470cb80c5dc44c0c78102",
       "guides/integrations/muse-code.mdx": "fa097c1e7b8ba30a67b80e6c811d2c6d4ae1e1e5503a9830df092f6eddced793",
       "changelog/2026-08.mdx": "bfce447fc54ca3869f19b595b1120210845eaa232b951ea5eed1f3a12cb4fe3e",
-      "guides/integrations/minimax-code.mdx": "116fc4ba1a02a47389daaf576a52990a4512328ad02b0fef1f48a3eb81008145"
+      "guides/integrations/minimax-code.mdx": "116fc4ba1a02a47389daaf576a52990a4512328ad02b0fef1f48a3eb81008145",
+      "api-reference/endpoint/decisions.mdx": "8f3b0773a34d06c3426c675f945f393eabcb810d3a25c239e1a6a0d9087f3357"
     },
     "hi": {
       "@openapi": "2c3f491274db474a71ed11efc217d0c83e0900166519d54300030e428df69710",
@@ -3104,7 +3108,8 @@
       "guides/integrations/oh-my-pi.mdx": "360f0db7ab5c4afe45a1bbca0e16ca51ba1d7e4c59f470cb80c5dc44c0c78102",
       "guides/integrations/muse-code.mdx": "fa097c1e7b8ba30a67b80e6c811d2c6d4ae1e1e5503a9830df092f6eddced793",
       "changelog/2026-08.mdx": "bfce447fc54ca3869f19b595b1120210845eaa232b951ea5eed1f3a12cb4fe3e",
-      "guides/integrations/minimax-code.mdx": "116fc4ba1a02a47389daaf576a52990a4512328ad02b0fef1f48a3eb81008145"
+      "guides/integrations/minimax-code.mdx": "116fc4ba1a02a47389daaf576a52990a4512328ad02b0fef1f48a3eb81008145",
+      "api-reference/endpoint/decisions.mdx": "8f3b0773a34d06c3426c675f945f393eabcb810d3a25c239e1a6a0d9087f3357"
     },
     "ja": {
       "@openapi": "2c3f491274db474a71ed11efc217d0c83e0900166519d54300030e428df69710",
@@ -3725,7 +3730,8 @@
       "guides/integrations/oh-my-pi.mdx": "360f0db7ab5c4afe45a1bbca0e16ca51ba1d7e4c59f470cb80c5dc44c0c78102",
       "guides/integrations/muse-code.mdx": "fa097c1e7b8ba30a67b80e6c811d2c6d4ae1e1e5503a9830df092f6eddced793",
       "changelog/2026-08.mdx": "bfce447fc54ca3869f19b595b1120210845eaa232b951ea5eed1f3a12cb4fe3e",
-      "guides/integrations/minimax-code.mdx": "116fc4ba1a02a47389daaf576a52990a4512328ad02b0fef1f48a3eb81008145"
+      "guides/integrations/minimax-code.mdx": "116fc4ba1a02a47389daaf576a52990a4512328ad02b0fef1f48a3eb81008145",
+      "api-reference/endpoint/decisions.mdx": "8f3b0773a34d06c3426c675f945f393eabcb810d3a25c239e1a6a0d9087f3357"
     },
     "pt-BR": {
       "@openapi": "2c3f491274db474a71ed11efc217d0c83e0900166519d54300030e428df69710",
@@ -4346,7 +4352,8 @@
       "guides/integrations/oh-my-pi.mdx": "360f0db7ab5c4afe45a1bbca0e16ca51ba1d7e4c59f470cb80c5dc44c0c78102",
       "guides/integrations/muse-code.mdx": "fa097c1e7b8ba30a67b80e6c811d2c6d4ae1e1e5503a9830df092f6eddced793",
       "changelog/2026-08.mdx": "bfce447fc54ca3869f19b595b1120210845eaa232b951ea5eed1f3a12cb4fe3e",
-      "guides/integrations/minimax-code.mdx": "116fc4ba1a02a47389daaf576a52990a4512328ad02b0fef1f48a3eb81008145"
+      "guides/integrations/minimax-code.mdx": "116fc4ba1a02a47389daaf576a52990a4512328ad02b0fef1f48a3eb81008145",
+      "api-reference/endpoint/decisions.mdx": "8f3b0773a34d06c3426c675f945f393eabcb810d3a25c239e1a6a0d9087f3357"
     },
     "zh-Hans": {
       "@openapi": "2c3f491274db474a71ed11efc217d0c83e0900166519d54300030e428df69710",
@@ -4967,7 +4974,8 @@
       "guides/integrations/oh-my-pi.mdx": "360f0db7ab5c4afe45a1bbca0e16ca51ba1d7e4c59f470cb80c5dc44c0c78102",
       "guides/integrations/muse-code.mdx": "fa097c1e7b8ba30a67b80e6c811d2c6d4ae1e1e5503a9830df092f6eddced793",
       "changelog/2026-08.mdx": "bfce447fc54ca3869f19b595b1120210845eaa232b951ea5eed1f3a12cb4fe3e",
-      "guides/integrations/minimax-code.mdx": "116fc4ba1a02a47389daaf576a52990a4512328ad02b0fef1f48a3eb81008145"
+      "guides/integrations/minimax-code.mdx": "116fc4ba1a02a47389daaf576a52990a4512328ad02b0fef1f48a3eb81008145",
+      "api-reference/endpoint/decisions.mdx": "8f3b0773a34d06c3426c675f945f393eabcb810d3a25c239e1a6a0d9087f3357"
     }
   }
 }

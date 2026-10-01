@@ -4,7 +4,7 @@ info:
   version: 1.0.0
 servers:
   - url: https://api.phaseo.app/v1
-    description: Global routing
+    description: Enrutamiento global
 security:
   - BearerAuth: []
 paths:
@@ -1465,11 +1465,11 @@ paths:
     get:
       servers:
         - url: https://api.phaseo.app/v1
-          description: Global routing
+          description: Routage mondial
         - url: https://eu.api.phaseo.app/v1
-          description: EU regional provider routing (text only)
+          description: Routage régional vers les fournisseurs de l’UE (texte uniquement)
         - url: https://us.api.phaseo.app/v1
-          description: US regional provider routing (text only)
+          description: Routage régional vers les fournisseurs des États-Unis (texte uniquement)
       x-beta: true
       tags:
         - Gateway
@@ -1597,11 +1597,11 @@ paths:
     post:
       servers:
         - url: https://api.phaseo.app/v1
-          description: Global routing
+          description: Routage mondial
         - url: https://eu.api.phaseo.app/v1
-          description: EU regional provider routing (text only)
+          description: Routage régional vers les fournisseurs de l’UE (texte uniquement)
         - url: https://us.api.phaseo.app/v1
-          description: US regional provider routing (text only)
+          description: Routage régional vers les fournisseurs des États-Unis (texte uniquement)
       tags:
         - Gateway
       operationId: createChatCompletion
@@ -1640,11 +1640,11 @@ paths:
     post:
       servers:
         - url: https://api.phaseo.app/v1
-          description: Global routing
+          description: Routage mondial
         - url: https://eu.api.phaseo.app/v1
-          description: EU regional provider routing (text only)
+          description: Routage régional vers les fournisseurs de l’UE (texte uniquement)
         - url: https://us.api.phaseo.app/v1
-          description: US regional provider routing (text only)
+          description: Routage régional vers les fournisseurs des États-Unis (texte uniquement)
       tags:
         - Gateway
       operationId: createResponse
@@ -1683,11 +1683,11 @@ paths:
     post:
       servers:
         - url: https://api.phaseo.app/v1
-          description: Global routing
+          description: Routage mondial
         - url: https://eu.api.phaseo.app/v1
-          description: EU regional provider routing (text only)
+          description: Routage régional vers les fournisseurs de l’UE (texte uniquement)
         - url: https://us.api.phaseo.app/v1
-          description: US regional provider routing (text only)
+          description: Routage régional vers les fournisseurs des États-Unis (texte uniquement)
       tags:
         - Gateway
       operationId: createAnthropicMessage
@@ -1772,15 +1772,36 @@ paths:
               schema:
                 type: object
                 additionalProperties: true
+  /decisions:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: makeDecision
+      summary: Prendre des décisions structurées
+      description: Évalue des questions typées Noul, Choice et Score à partir d’un état structuré avec un modèle de décision tel que TypeSafe Jev.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DecisionsRequest'
+      responses:
+        '200':
+          description: Réponse de décisions structurées
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DecisionsResponse'
   /models:
     get:
       servers:
         - url: https://api.phaseo.app/v1
-          description: Global routing
+          description: Routage mondial
         - url: https://eu.api.phaseo.app/v1
-          description: EU regional provider routing (text only)
+          description: Routage régional vers les fournisseurs de l’UE (texte uniquement)
         - url: https://us.api.phaseo.app/v1
-          description: US regional provider routing (text only)
+          description: Routage régional vers les fournisseurs des États-Unis (texte uniquement)
       x-beta: true
       tags:
         - Gateway
@@ -1790,19 +1811,19 @@ paths:
       parameters:
         - name: search
           in: query
-          description: Case-insensitive search across model ids, names, descriptions, and organisations.
+          description: Recherche insensible à la casse dans les identifiants, noms et descriptions des modèles et les organisations.
           schema:
             type: string
             maxLength: 200
         - name: provider_search
           in: query
-          description: Case-insensitive provider or model-organisation search.
+          description: Recherche insensible à la casse de fournisseurs ou d’organisations de modèles.
           schema:
             type: string
             maxLength: 100
         - name: input_modality
           in: query
-          description: Require a supported input modality.
+          description: Exiger une modalité d’entrée prise en charge.
           schema:
             type: string
             enum:
@@ -1812,25 +1833,25 @@ paths:
               - video
         - name: minimum_context_tokens
           in: query
-          description: Require at least this many input context tokens.
+          description: Exiger au moins ce nombre de tokens de contexte d’entrée.
           schema:
             type: number
             minimum: 0
         - name: maximum_input_price_per_million
           in: query
-          description: Maximum USD input-token price per million tokens.
+          description: Prix maximal en USD par million de tokens d’entrée.
           schema:
             type: number
             minimum: 0
         - name: gateway_available_only
           in: query
-          description: Return only models with at least one routable gateway offer.
+          description: Renvoyer uniquement les modèles ayant au moins une offre routable du gateway.
           schema:
             type: boolean
             default: false
         - name: sort_by
           in: query
-          description: Field used to order model discovery results.
+          description: Champ utilisé pour trier les résultats de découverte des modèles.
           schema:
             type: string
             enum:
@@ -1842,7 +1863,7 @@ paths:
             default: relevance
         - name: sort_order
           in: query
-          description: Optional sort direction. Price sorts default to ascending; other numeric sorts default to descending.
+          description: Sens de tri facultatif. Les prix sont triés par ordre croissant par défaut ; les autres valeurs numériques par ordre décroissant.
           schema:
             type: string
             enum:
@@ -6592,7 +6613,7 @@ components:
             - xhigh
             - max
             - auto
-          description: Image rendering quality. xhigh and max are available only for GPT Image 2.5 models.
+          description: Qualité de rendu des images. xhigh et max sont uniquement disponibles pour les modèles GPT Image 2.5.
         stream:
           type: boolean
         partial_images:
@@ -8876,7 +8897,7 @@ components:
             - function
         async:
           type: boolean
-          description: Lets supported OpenAI models continue while the caller executes this tool. Accepted on all text API surfaces and ignored by other providers.
+          description: Permet aux modèles OpenAI pris en charge de continuer pendant que l’appelant exécute cet outil. Accepté sur toutes les API de texte et ignoré par les autres fournisseurs.
         function:
           type: object
           required:
@@ -9500,7 +9521,7 @@ components:
           minimum: 1
         service_tier:
           type: string
-          description: Selects a supported routing or pricing tier on compatible text APIs.
+          description: Sélectionne un niveau de routage ou de tarification pris en charge sur les API de texte compatibles.
           enum:
             - standard
             - default
@@ -9625,7 +9646,7 @@ components:
           type: string
         async:
           type: boolean
-          description: Lets supported OpenAI models continue while the caller executes this tool. Ignored when routed to other providers.
+          description: Permet aux modèles OpenAI pris en charge de continuer pendant que l’appelant exécute cet outil. Ignoré lors du routage vers d’autres fournisseurs.
         description:
           type: string
         input_schema:
@@ -9691,6 +9712,140 @@ components:
           type: integer
         output_tokens:
           type: integer
+    DecisionsRequest:
+      type: object
+      required:
+        - model
+        - state
+        - questions
+      properties:
+        model:
+          type: string
+          description: Identifiant canonique du modèle Phaseo ou alias du modèle du fournisseur.
+          default: typesafe/jev-1.13.0
+        state:
+          description: État structuré évalué par le modèle.
+          oneOf:
+            - type: string
+            - type: object
+              additionalProperties: true
+            - type: array
+              items: {}
+        questions:
+          type: object
+          minProperties: 1
+          maxProperties: 128
+          additionalProperties:
+            oneOf:
+              - $ref: '#/components/schemas/DecisionNoulQuestion'
+              - $ref: '#/components/schemas/DecisionChoiceQuestion'
+              - $ref: '#/components/schemas/DecisionScoreQuestion'
+        meta:
+          type: boolean
+          default: false
+        echo_upstream_request:
+          type: boolean
+        debug:
+          $ref: '#/components/schemas/DebugOptions'
+        provider:
+          $ref: '#/components/schemas/ProviderRoutingOptions'
+        routing:
+          $ref: '#/components/schemas/ProviderRoutingOptions'
+        metadata:
+          type: object
+          additionalProperties: true
+    DecisionNoulQuestion:
+      type: object
+      required:
+        - type
+        - instructions
+      properties:
+        type:
+          type: string
+          enum:
+            - noul
+        instructions:
+          $ref: '#/components/schemas/DecisionInstructions'
+        criteria:
+          type: object
+          properties:
+            'true':
+              type: string
+            'false':
+              type: string
+          additionalProperties: true
+    DecisionInstructions:
+      oneOf:
+        - type: string
+        - type: object
+          additionalProperties: true
+        - type: array
+          items: {}
+    DecisionChoiceQuestion:
+      type: object
+      required:
+        - type
+        - instructions
+        - criteria
+      properties:
+        type:
+          type: string
+          enum:
+            - choice
+        instructions:
+          $ref: '#/components/schemas/DecisionInstructions'
+        criteria:
+          type: object
+          minProperties: 1
+          additionalProperties:
+            type: string
+            nullable: true
+    DecisionScoreQuestion:
+      type: object
+      required:
+        - type
+        - instructions
+        - criteria
+      properties:
+        type:
+          type: string
+          enum:
+            - score
+        instructions:
+          $ref: '#/components/schemas/DecisionInstructions'
+        criteria:
+          type: array
+          minItems: 2
+          items:
+            type: string
+    DecisionsResponse:
+      type: object
+      properties:
+        model:
+          type: string
+        answers:
+          type: object
+          additionalProperties: true
+        usage:
+          $ref: '#/components/schemas/DecisionsUsage'
+        request_id:
+          type: string
+          nullable: true
+        meta:
+          type: object
+          additionalProperties: true
+    DecisionsUsage:
+      type: object
+      properties:
+        input_tokens:
+          type: integer
+          minimum: 0
+        output_tokens:
+          type: integer
+          minimum: 0
+        total_tokens:
+          type: integer
+          minimum: 0
     OrganisationId:
       type: string
       description: Identifiant de l’organisation.
