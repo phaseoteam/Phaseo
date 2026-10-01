@@ -655,11 +655,11 @@ describe("resolveStreamForProtocol", () => {
 		const chunks = parseSseJsonFrames(output).filter((payload) => payload?.object === "chat.completion.chunk");
 		const toolChunks = chunks.filter((payload) => Array.isArray(payload?.choices?.[0]?.delta?.tool_calls));
 		expect(toolChunks.length).toBeGreaterThan(0);
-		for (const chunk of toolChunks) {
-			const tc = chunk.choices?.[0]?.delta?.tool_calls?.[0];
-			expect(tc?.id).toBe("call_weather_1");
-			expect(tc?.function?.name).toBe("get_weather");
-		}
+		const deltas = toolChunks.map((chunk) => chunk.choices[0].delta.tool_calls[0]);
+		expect(deltas.every((delta) => delta.index === 0)).toBe(true);
+		expect(deltas.map((delta) => delta.id ?? "").join("")).toBe("call_weather_1");
+		expect(deltas.map((delta) => delta.function?.name ?? "").join("")).toBe("get_weather");
+		expect(deltas.map((delta) => delta.function?.arguments ?? "").join("")).toBe('{"city":"SF"}');
 		expect(output).toContain("\"arguments\":\"{\\\"city\\\":\\\"SF\\\"}\"");
 	});
 
@@ -707,6 +707,14 @@ describe("resolveStreamForProtocol", () => {
 					arguments: "{\"city\":\"SF\"}",
 				},
 			},
+			{
+				event: "response.completed",
+				data: { response: {
+					id: "resp_tc_1", object: "response", model: "test-model", status: "completed",
+					output: [{ type: "function_call", call_id: "call_weather_1", name: "get_weather", arguments: '{"city":"SF"}' }],
+					usage: { input_tokens: 2, output_tokens: 1, total_tokens: 3 },
+				} },
+			},
 			"[DONE]",
 		]);
 
@@ -724,12 +732,12 @@ describe("resolveStreamForProtocol", () => {
 		const chunks = parseSseJsonFrames(output).filter((payload) => payload?.object === "chat.completion.chunk");
 		const toolChunks = chunks.filter((payload) => Array.isArray(payload?.choices?.[0]?.delta?.tool_calls));
 		expect(toolChunks.length).toBeGreaterThan(0);
-		for (const chunk of toolChunks) {
-			expect(chunk.choices?.[0]?.index).toBe(0);
-			const tc = chunk.choices?.[0]?.delta?.tool_calls?.[0];
-			expect(tc?.id).toBe("call_weather_1");
-			expect(tc?.function?.name).toBe("get_weather");
-		}
+		expect(toolChunks.every((chunk) => chunk.choices[0].index === 0)).toBe(true);
+		const deltas = toolChunks.map((chunk) => chunk.choices[0].delta.tool_calls[0]);
+		expect(deltas.every((delta) => delta.index === 0)).toBe(true);
+		expect(deltas.map((delta) => delta.id ?? "").join("")).toBe("call_weather_1");
+		expect(deltas.map((delta) => delta.function?.name ?? "").join("")).toBe("get_weather");
+		expect(deltas.map((delta) => delta.function?.arguments ?? "").join("")).toBe('{"city":"SF"}');
 		expect(output).toContain("\"arguments\":\"{\\\"city\\\":\\\"SF\\\"}\"");
 	});
 

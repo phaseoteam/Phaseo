@@ -67,6 +67,23 @@ function baseCtx(overrides?: Record<string, unknown>): any {
 }
 
 describe("passthroughWithPricing", () => {
+	it("finishes compatibility Chat snapshots with exactly one DONE", async () => {
+		const outcomes: unknown[] = [];
+		const response = await passthroughWithPricing({
+			upstream: makeSseResponse([
+				{ data: { object: "chat.completion", choices: [{ index: 0, message: { role: "assistant", content: "Hello" }, finish_reason: "stop" }], usage: { total_tokens: 5 } } },
+				{ data: "[DONE]" },
+				{ data: { object: "chat.completion", choices: [], usage: { total_tokens: 99 } } },
+			]),
+			ctx: baseCtx({ protocol: "openai.chat.completions" }), provider: "openai", priceCard: null,
+			onFinalUsage: (usage, info) => { outcomes.push({ usage, info }); },
+		});
+		const text = await response.text();
+		expect(text.match(/data: \[DONE\]/g)).toHaveLength(1);
+		expect(text.endsWith("data: [DONE]\n\n")).toBe(true);
+		expect(text).not.toContain("99");
+		expect(outcomes).toEqual([{ usage: { total_tokens: 5 }, info: { aborted: false, sawFinalUsage: true } }]);
+	});
 
 	it("does not settle successfully when transport fails after finish_reason and usage but before DONE", async () => {
 		const outcomes: unknown[] = [];
