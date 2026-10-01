@@ -1,12 +1,12 @@
 import { expect, test, vi } from "vitest";
-import { ageHealth, emptyHealth, reduceHealth, healthSnapshotKey, type HealthEvidence, type HealthObservation, type HealthReceipt } from "../../src/pipeline/execute/health-evidence";
+import { ageHealth, emptyHealth, reduceHealth, type HealthEvidence, type HealthObservation, type HealthReceipt } from "../../src/pipeline/execute/health-evidence";
 import { simulate } from "./simulator";
 import { deepSuite } from "./deep-suite";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { isRecoveryProbeRequest } from "../../src/pipeline/execute/health.config";
 import * as health from "../../src/pipeline/execute/health";
-import { resetRuntime, flushBackground, setHealthCoordinator, cacheOperations, getCache } from "./runtime";
+import { resetRuntime, flushBackground, setHealthCoordinator, setHealthSnapshot, cacheOperations } from "./runtime";
 
 const epoch = 1_800_000_000_000;
 test("recovery sampling spreads sequential request IDs across windows", () => {
@@ -114,13 +114,13 @@ test("a newer wall clock cannot erase local failures missing from a published re
     try {
         await health.onCallEnd("responses", { provider: "p", model: "m", observationId: "delayed", ok: false, latency_ms: 50 });
         vi.setSystemTime(epoch + 31_000);
-        await getCache().put(healthSnapshotKey("responses", "m"), JSON.stringify({ version: 5, publishedAt: Date.now(), providers: { p: emptyHealth("responses", "m", "p") } }));
+        setHealthSnapshot(() => ({ version: 5, publishedAt: Date.now(), providers: { p: emptyHealth("responses", "m", "p") } }));
         expect((await health.readHealthMany("responses", "m", ["p"])).p.err_ewma_60s).toBe(1);
         resolveReport({ health: accepted, version: 6 });
         await flushBackground();
         expect(health.readHealthManyOptimistic("responses", "m", ["p"]).p.err_ewma_60s).toBe(1);
         vi.setSystemTime(epoch + 62_000);
-        await getCache().put(healthSnapshotKey("responses", "m"), JSON.stringify({ version: 6, publishedAt: Date.now(), providers: { p: { ...accepted, lat_ewma_60s: 123 } } }));
+        setHealthSnapshot(() => ({ version: 6, publishedAt: Date.now(), providers: { p: { ...accepted, lat_ewma_60s: 123 } } }));
         expect((await health.readHealthMany("responses", "m", ["p"])).p.lat_ewma_60s).toBe(123);
     } finally {
         if (resolveReport) resolveReport({ health: accepted, version: 6 });

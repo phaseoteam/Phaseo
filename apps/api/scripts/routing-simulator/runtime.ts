@@ -2,7 +2,9 @@
 // It never imports production bindings, reads credentials, or opens a socket.
 const store = new Map<string, { value: string; expires: number }>();
 let coordinator: ((event: import("../../src/pipeline/execute/health-evidence").HealthObservation) => Promise<import("../../src/pipeline/execute/health-evidence").HealthReceipt | null>) | undefined;
+let snapshot: (() => import("../../src/pipeline/execute/health-evidence").HealthSnapshot) | undefined;
 export function setHealthCoordinator(value: typeof coordinator) { coordinator = value; }
+export function setHealthSnapshot(value: typeof snapshot) { snapshot = value; }
 const background: Promise<unknown>[] = [];
 let epoch = 0;
 let outages: Array<{ fromMs: number; untilMs: number; reads: boolean; writes: boolean }> = [];
@@ -23,13 +25,14 @@ export function inspectStoredHealth(key: string): Record<string, string> {
   return row && row.expires > Date.now() ? JSON.parse(row.value) : {};
 }
 export function resetRuntime() {
-  coordinator = undefined;
+  coordinator = undefined; snapshot = undefined;
   store.clear(); background.length = 0; transitions.length = 0; outages = []; lastWrite.clear(); enforceKvLimits = false;
   cacheOperations.reads = cacheOperations.writes = cacheOperations.failedReads = cacheOperations.failedWrites = 0;
 }
 export function dispatchBackground(task: Promise<unknown>) { background.push(task); }
 export function getBindings() {
-  return coordinator ? { ROUTING_HEALTH: { idFromName: (name: string) => name, get: () => ({ observe: coordinator! }) } } : {};
+  return coordinator ? { ROUTING_HEALTH: { idFromName: (name: string) => name, get: () => ({ observe: coordinator!,
+    getSnapshot: async () => structuredClone(snapshot?.() ?? { version: 0, publishedAt: 0, providers: {} }) }) } } : {};
 }
 export async function flushBackground() {
   while (background.length) await Promise.all(background.splice(0));

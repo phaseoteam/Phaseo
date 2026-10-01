@@ -11,8 +11,8 @@ import { flushBackground, resetRuntime, transitions, inspectStoredHealth, config
 import { networkAttempts } from "./network-guard";
 import { scenarioSchema, type Scenario, type Distribution } from "./schema";
 import { Aggregate } from "./aggregate";
-import { setHealthCoordinator } from "./runtime";
-import { emptyHealth, reduceHealth, healthSnapshotKey, type HealthEvidence } from "../../src/pipeline/execute/health-evidence";
+import { setHealthCoordinator, setHealthSnapshot } from "./runtime";
+import { emptyHealth, reduceHealth, type HealthEvidence } from "../../src/pipeline/execute/health-evidence";
 
 export const EPOCH = Date.UTC(2026, 8, 15);
 export type Attempt = { provider: string; atMs: number; endMs?: number; status?: number; admission: string; healthImpact?: string };
@@ -73,13 +73,9 @@ export async function simulate(input: unknown) {
         last_success_ms: p.initialHealth ? EPOCH : 0, last_updated: EPOCH,
       }]));
       coordinatedStates = states;
-      let version = 0, pending = false;
+        let version = 0;
       const ids = new Set<string>();
-      const publish = async () => {
-        await getCache().put(healthSnapshotKey(endpoint, baseModel), JSON.stringify({ version, publishedAt: Date.now(), providers: states }), { expirationTtl: 900 });
-        pending = false;
-      };
-      await publish();
+        setHealthSnapshot(() => ({ version, publishedAt: Math.max(...Object.values(states).map(state => state.last_updated)), providers: states }));
       setHealthCoordinator(async observation => {
         if (ids.has(observation.id)) return { health: states[observation.provider], version };
         ids.add(observation.id);
@@ -89,7 +85,6 @@ export async function simulate(input: unknown) {
         if (previous.breaker !== next.breaker) transitions.push({ provider_id: next.provider, breaker_state: next.breaker,
           open_until_ms: next.breaker_until_ms, last_transition_at: new Date(Date.now()).toISOString(), updated_at: new Date(Date.now()).toISOString() });
         version++;
-        if (!pending) { pending = true; events.add(Date.now() - EPOCH + 60_000, -1, publish); }
         return { health: structuredClone(next), version };
       });
     }
