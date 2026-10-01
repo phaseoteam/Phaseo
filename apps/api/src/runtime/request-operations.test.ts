@@ -1,10 +1,59 @@
 import { describe, expect, it, vi } from "vitest";
 import { RequestOperations, withRequestOperations, countOperation, instrumentKv,
     countSupabaseOperation, markProviderDispatch, shouldSampleOperations, recordStreamObservation,
-    recordSettlement, recordSettlementAttempt } from "./request-operations";
+    recordSettlement, recordSettlementAttempt, measureDispatchStage } from "./request-operations";
 import { StreamSession, observeStreamOutcome } from "@/pipeline/after/stream-session";
 
 describe("request operations", () => {
+    it("keeps overlapping wall intervals, errors and dispatch boundaries without retaining payloads", async () => {
+        let now = 100;
+        const clock = vi.spyOn(performance, "now").mockImplementation(() => now);
+        try {
+            const record = new RequestOperations();
+            let release!: () => void;
+            const gate = new Promise<void>(resolve => { release = resolve; });
+            await withRequestOperations(record, async () => {
+                const first = measureDispatchStage("catalog.cache", () => gate);
+                now = 110;
+                await expect(measureDispatchStage("workspace.cache", () => Promise.reject(new Error("private")))).rejects.toThrow("private");
+                now = 120;
+                markProviderDispatch();
+                const original = Promise.resolve("secret");
+                expect(measureDispatchStage("context.source", () => original)).toBe(original);
+                now = 130; release(); await first;
+            });
+            expect(record.snapshot().dispatchTimings).toEqual([
+                { stage: "catalog.cache", startMs: 0, endMs: 30, state: "fulfilled" },
+                { stage: "workspace.cache", startMs: 10, endMs: 10, state: "rejected" },
+            ]);
+            expect(record.snapshot().beforeDispatchMs).toBe(20);
+            record.snapshot().dispatchTimings[0].startMs = 999;
+            expect(record.snapshot().dispatchTimings[0].startMs).toBe(0);
+            expect(JSON.stringify(record.snapshot())).not.toMatch(/private|secret/);
+        } finally { clock.mockRestore(); }
+    });
+    it("bounds unfinished timings, isolates concurrent owners and preserves synchronous throws", async () => {
+        const a = new RequestOperations(), b = new RequestOperations();
+        const error = new Error("private");
+        withRequestOperations(a, () => {
+            expect(() => measureDispatchStage("auth.source", () => { throw error; })).toThrow(error);
+            for (let i = 0; i < 70; i++) void measureDispatchStage("catalog.cache", () => new Promise(() => {}));
+        });
+        await withRequestOperations(b, () => measureDispatchStage("credit.cache", async () => null));
+        expect(a.snapshot().dispatchTimings).toHaveLength(64);
+        expect(a.snapshot().dispatchTimingsOverflow).toBe(true);
+        expect(a.snapshot().dispatchTimings[1]).toMatchObject({ state: "pending", endMs: null });
+        expect(b.snapshot().dispatchTimings).toHaveLength(1);
+        expect(b.snapshot().dispatchTimingsOverflow).toBe(false);
+    });
+    it("leaves unsampled calls untouched without clock reads or promise wrapping", () => {
+        const original = Promise.resolve("value");
+        const clock = vi.spyOn(performance, "now");
+        try {
+            expect(measureDispatchStage("auth.cache", () => original)).toBe(original);
+            expect(clock).not.toHaveBeenCalled();
+        } finally { clock.mockRestore(); }
+    });
     it("isolates evolving settlement evidence without new operations or mutable snapshots", async () => {
         recordSettlement("confirmed"); recordSettlementAttempt(); // Unsampled no-op.
         const a = new RequestOperations(), b = new RequestOperations();

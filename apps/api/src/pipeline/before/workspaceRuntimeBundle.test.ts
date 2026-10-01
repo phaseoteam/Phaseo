@@ -43,6 +43,44 @@ beforeEach(() => {
 afterEach(async () => { await Promise.all(state.background); vi.useRealTimers(); vi.unstubAllGlobals(); });
 
 describe("workspace snapshot bundle reader", () => {
+    it("records overlapping cold L2 reads and the subsequent source wait without changing dispatch order", async () => {
+        let now = 0;
+        const clock = vi.spyOn(performance, "now").mockImplementation(() => now);
+        function deferred<T>() {
+            let resolve!: (value: T) => void;
+            const promise = new Promise<T>(done => { resolve = done; });
+            return { promise, resolve };
+        }
+        const catalog = deferred<undefined>(), workspace = deferred<null>();
+        const catalogStarted = deferred<void>(), workspaceStarted = deferred<void>(), sourceStarted = deferred<void>();
+        const source = deferred<ReturnType<typeof response>>();
+        vi.stubGlobal("caches", { default: {
+            match: () => { catalogStarted.resolve(); return catalog.promise; },
+            put: async () => undefined,
+        } });
+        state.get.mockImplementation(() => { workspaceStarted.resolve(); return workspace.promise; });
+        state.rpc.mockImplementation(() => { sourceStarted.resolve(); return source.promise; });
+        try {
+            const { RequestOperations, withRequestOperations } = await import("@/runtime/request-operations");
+            const { loadTextContextBundle } = await import("./contextBundle");
+            const metrics = new RequestOperations();
+            const result = withRequestOperations(metrics, () => loadTextContextBundle({ ...args, workspaceVersionToken: "v1" }));
+            await Promise.all([catalogStarted.promise, workspaceStarted.promise]);
+            expect(state.rpc).not.toHaveBeenCalled();
+            now = 10; workspace.resolve(null);
+            now = 20; catalog.resolve(undefined);
+            await sourceStarted.promise;
+            expect(state.rpc).toHaveBeenCalledTimes(1);
+            now = 40; source.resolve(response());
+            expect((await result).catalog.resolvedModel).toBe(args.model);
+            const timings = metrics.snapshot().dispatchTimings;
+            expect(timings.map(timing => timing.stage)).toEqual(["catalog.cache", "workspace.cache", "context.source"]);
+            expect(timings[0].startMs).toBe(0);
+            expect(timings[1].startMs).toBe(0);
+            expect(timings[2]).toMatchObject({ startMs: 20, endMs: 40, state: "fulfilled" });
+            expect(timings.slice(0, 2).every(timing => timing.endMs! <= timings[2].startMs)).toBe(true);
+        } finally { clock.mockRestore(); }
+    });
     function cachedPipeline() {
         const store = new Map<string, string>();
         const publicStore = new Map<string, string>();
