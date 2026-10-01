@@ -169,6 +169,25 @@ function baseCtx(): any {
 }
 
 describe("handleStreamResponse OpenAI usage finalization", () => {
+    it.each(["usage", "finalizer", "fallback"])("settles and audits %s before a stalled sticky hint", async mode => {
+        for (const mock of [auditSuccessMock, emitGatewayRequestEventMock, recordUsageAndChargeOnceMock, recordManagedProviderTokensOnceMock,
+            onCallEndMock, reportProbeResultMock, maybeOpenOnRecentErrorsMock]) mock.mockReset().mockResolvedValue(undefined);
+        classifyProviderHealthImpactMock.mockReset().mockReturnValue("success");
+        let release!: () => void;
+        maybeWriteStickyRoutingFromUsageMock.mockReset().mockImplementation(() => new Promise<void>(resolve => { release = resolve; }));
+        const upstream = mode === "usage" ? makeOpenAIStream() : makeEmptySuccessfulOpenAIStream();
+        const bill = { cost_cents: 0, currency: "USD", usage: null, finish_reason: "stop", upstream_id: "fixture" };
+        const response = await handleStreamResponse(baseCtx(), { kind: "stream", stream: upstream.body, upstream, provider: "openai", bill,
+            usageFinalizer: async () => mode === "finalizer" ? { ...bill, usage: { input_tokens: 11, output_tokens: 4 } } : null,
+        } as any, null);
+        const body = response.text();
+        try {
+            await vi.waitFor(() => expect(maybeWriteStickyRoutingFromUsageMock).toHaveBeenCalledOnce());
+            expect(recordUsageAndChargeOnceMock).toHaveBeenCalledOnce();
+            expect(recordManagedProviderTokensOnceMock).toHaveBeenCalledOnce();
+            expect(auditSuccessMock).toHaveBeenCalledOnce();
+        } finally { release?.(); await body; }
+    });
     it.each([401, 402, 403, 429])("preserves BYOK ownership for native error status %s", async status => {
         onCallEndMock.mockReset(); reportProbeResultMock.mockReset(); maybeOpenOnRecentErrorsMock.mockReset();
         auditFailureMock.mockReset(); recordUsageAndChargeOnceMock.mockReset();

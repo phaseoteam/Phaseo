@@ -654,7 +654,6 @@ export async function handleStreamResponse(
                 result.bill.currency = pricedWithByok.currency;
                 result.bill.usage = pricedWithByok.pricedUsage;
                 result.bill.finish_reason = bill.finish_reason ?? cachedFinishReason ?? result.bill.finish_reason;
-                await maybeWriteStickyForUsage(result.bill.usage);
 
                 // Normalize finish reason for consistent storage
                 const normalizedFinishReason = normalizeFinishReason(
@@ -687,6 +686,8 @@ export async function handleStreamResponse(
                     latestGatewaySnapshot,
                 );
 
+                // Advisory affinity must not gate financial finalization or audit.
+                await maybeWriteStickyForUsage(result.bill.usage);
                 return true;
             };
 
@@ -724,7 +725,6 @@ export async function handleStreamResponse(
 						discountBps: ctx.teamSettings?.dataContributionDiscountBps,
 					}),
 				};
-                await maybeWriteStickyForUsage(pricedWithByok.pricedUsage);
                 await recordUsageAndChargeOnce({
                     ctx,
                     costNanos: pricedWithByok.totalNanos,
@@ -744,6 +744,7 @@ export async function handleStreamResponse(
                     result.bill.upstream_id ?? null,
                     latestGatewaySnapshot,
                 );
+                await maybeWriteStickyForUsage(pricedWithByok.pricedUsage);
                 return;
             }
 
@@ -799,7 +800,6 @@ export async function handleStreamResponse(
             result.bill.currency = pricedWithByok.currency;
             result.bill.usage = pricedWithByok.pricedUsage;
             result.bill.finish_reason = cachedFinishReason ?? result.bill.finish_reason;
-            await maybeWriteStickyForUsage(result.bill.usage);
 
             await recordUsageAndChargeOnce({
                 ctx,
@@ -821,6 +821,7 @@ export async function handleStreamResponse(
                 result.bill.upstream_id ?? null,
                 latestGatewaySnapshot,
             );
+            await maybeWriteStickyForUsage(result.bill.usage);
 
             } finally {
                 releaseRuntime();
