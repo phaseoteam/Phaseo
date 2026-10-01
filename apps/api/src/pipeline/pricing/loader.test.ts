@@ -100,4 +100,29 @@ describe("joined price-card loader", () => {
         expect(await loadPriceCard("poolside", "free", "text.generate")).not.toBeNull();
         expect(requests).toHaveLength(2);
     });
+
+    it("does not collide model and endpoint separators in cache keys", async () => {
+        await loadPriceCard("provider", "a:b", "c");
+        await loadPriceCard("provider", "a", "b:c");
+        expect(requests).toHaveLength(2);
+    });
+
+    it("bounds positive and negative entries with LRU eviction", async () => {
+        rows = [];
+        for (let i = 0; i < 513; i++) await loadPriceCard("provider", `model-${i}`, "text.generate");
+        expect(requests).toHaveLength(513);
+        await loadPriceCard("provider", "model-512", "text.generate");
+        expect(requests).toHaveLength(513);
+        await loadPriceCard("provider", "model-0", "text.generate");
+        expect(requests).toHaveLength(514);
+    });
+
+    it("does not retain an oversized card or evict an unrelated warm card", async () => {
+        await loadPriceCard("provider", "normal", "text.generate");
+        rows = [{ ...sku(), metadata: { ...sku().metadata, time_windows: [{ price_per_unit: "x".repeat(300_000) }] } }];
+        expect(await loadPriceCard("provider", "large", "text.generate")).not.toBeNull();
+        expect(await loadPriceCard("provider", "large", "text.generate")).not.toBeNull();
+        await loadPriceCard("provider", "normal", "text.generate");
+        expect(requests).toHaveLength(3);
+    });
 });

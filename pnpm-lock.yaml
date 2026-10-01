@@ -111,6 +111,9 @@ importers:
       ink:
         specifier: ^7.1.0
         version: 7.1.0(@types/react@19.2.18)(react-devtools-core@6.1.5)(react@19.2.8)
+      lru-cache:
+        specifier: 11.5.2
+        version: 11.5.2
       music-metadata:
         specifier: ^11.15.0
         version: 11.15.0
