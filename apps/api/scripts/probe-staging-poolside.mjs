@@ -81,14 +81,14 @@ async function verifyAuthSourceLease() {
     throw new Error("Auth source lease exceeded");
 }
 
-async function readBounded(response, start) {
+async function readBounded(response, start, maximumBytes = 262_144) {
     const reader = response.body.getReader();
     const decoder = new TextDecoder(); let text = "", bytes = 0, firstByteMs = null;
     try {
         while (true) {
             const { done, value } = await reader.read(); if (done) break;
             bytes += value.byteLength;
-            if (bytes > 262_144) { await reader.cancel(); throw new Error("Probe response exceeds bound"); }
+            if (bytes > maximumBytes) { await reader.cancel(); throw new Error("Probe response exceeds bound"); }
             if (value.byteLength) firstByteMs ??= Math.round(performance.now() - start);
             text += decoder.decode(value, { stream: true });
         }
@@ -182,13 +182,33 @@ try {
     assert.ok(logs.every(row => row.status_code === 200 && row.success && row.provider === "poolside" && models.includes(row.model_id) && Number(row.cost_nanos) === 0), "Charge/provider/result verification failed");
     console.log(JSON.stringify({ event: "protocol_matrix_pass", requests: records.length, zeroCostVerified: true,
         routingMs: logs.map(row => row.detail_metadata?.response_timeline?.routing_ms ?? null) }));
+    if (process.env.LIVE_PROVIDER_ENDPOINT_MATRIX_DISCOVERY === "1") {
+        for (const path of ["providers?limit=2", "pricing/models"]) {
+            for (let attempt = 0; attempt < 3; attempt++) {
+                const start = performance.now();
+                const response = await fetch(`${gateway}/v1/${path}`, {
+                    signal: AbortSignal.timeout(30_000), headers: { authorization: `Bearer ${key}` },
+                });
+                const payload = await readBounded(response, start, 2 * 1024 * 1024);
+                assert.equal(response.status, 200, "Discovery probe failed");
+                const body = JSON.parse(payload.text);
+                assert.ok(body.ok && Array.isArray(path.startsWith("providers") ? body.providers : body.models), "Discovery contract failed");
+                assert.match(response.headers.get("cache-control") ?? "", /^private, max-age=\d+$/, "Discovery cache headers failed");
+                console.log(JSON.stringify({ event: "discovery_probe", path, attempt, status: response.status,
+                    elapsedMs: Math.round(performance.now() - start), bytes: payload.bytes,
+                    colo: response.headers.get("cf-ray")?.split("-").at(-1),
+                    sourceOperationCountsMeasured: false }));
+            }
+        }
+    }
     if (process.env.LIVE_PROVIDER_ENDPOINT_MATRIX_AUTH_FRESHNESS === "1") await verifyAuthSourceLease();
 } catch (error) {
     // Never print request bodies, keys, provider payloads or database errors.
     const reasons = ["Protocol error response", "Missing Chat completion", "Missing Responses completion", "Missing Messages completion",
         "Missing SSE frames", "SSE error event", "Responses terminal status", "Missing protocol terminal event", "Gateway request failed",
         "Missing request logs", "Charge/provider/result verification failed", "Auth freshness warm-up failed",
-        "Auth freshness unexpected response", "Auth source lease exceeded"];
+        "Auth freshness unexpected response", "Auth source lease exceeded", "Discovery probe failed",
+        "Discovery contract failed", "Discovery cache headers failed"];
     console.error(JSON.stringify({ event: "protocol_matrix_failed", completedRequests: records.length,
         reason: reasons.find(reason => error?.message?.startsWith(reason)) ?? null,
         errorType: error instanceof assert.AssertionError ? "contract_assertion" : "probe_error" }));
