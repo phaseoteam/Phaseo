@@ -1,4 +1,5 @@
 ---
+icon: "book-open"
 title: "SDK PHP"
 description: "Cliente oficial de PHP para o gateway Phaseo."
 ---
@@ -22,6 +23,7 @@ O wrapper local em `packages/sdk/sdk-php/src/index.php` expõe atualmente estes 
 - `getAsyncJobWebSocketUrl(...)`, `getBatchWebSocketUrl(...)`, `getVideoWebSocketUrl(...)`, `asyncJobs()->websocketUrl(...)`
 - `listFiles(...)`, `retrieveFile(...)`, `retrieveFileContent(...)`, `retrieveVideoContent(...)`, `getVideoDownloadUrl(...)`, `uploadFile(...)`
 - `listModels(...)`
+- `getModelEndpointCapabilities(...)`, `checkModelParameters(...)`
 - `listApiKeys(...)`, `createApiKey(...)`, `updateApiKey(...)`, `deleteApiKey(...)`
 - `getApiKey(...)`
 - `listWorkspaces(...)`, `getWorkspace(...)`, `createWorkspace(...)`, `updateWorkspace(...)`, `deleteWorkspace(...)`
@@ -42,3 +44,5 @@ use Phaseo\Sdk\Phaseo;
 $client = new Phaseo('YOUR_KEY');
 $models = $client->listModels(['limit' => 5]);
 ```
+
+`checkModelParameters(...)` usa metadados atuais das rotas de provedores para destacar valores não suportados ou inválidos e retornar as rotas que aceitam o conjunto completo de parâmetros.

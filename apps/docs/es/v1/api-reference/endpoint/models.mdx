@@ -8,6 +8,8 @@ description: "Consulta los modelos propios de Gateway mediante Phaseo Gateway, i
 
 De forma predeterminada, este endpoint solo devuelve los modelos que se pueden enrutar actualmente. Define `availability=all` para incluir modelos conocidos que todavía no están disponibles.
 
+Las respuestas del catálogo se almacenan en caché durante cinco minutos y pueden servirse otros cinco minutos mientras se revalida la caché. Esto se aplica a las representaciones JSON, RSS y Atom del catálogo actual; el feed de lanzamientos tiene su propia caché de consulta, de menor duración.
+
 `GET /models/me` está reservado para filtrar en el futuro los modelos según los guardrails del usuario actual. Ahora devuelve `501 not implemented`, así que por el momento usa `GET /models` para consultar el catálogo compartido de Gateway.
 
 ## Filtros útiles

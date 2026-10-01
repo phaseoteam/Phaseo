@@ -4,6 +4,7 @@ info:
   version: 1.0.0
 servers:
   - url: https://api.phaseo.app/v1
+    description: Global routing
 security:
   - BearerAuth: []
 paths:
@@ -174,6 +175,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ImagesGenerationResponse'
+            text/event-stream:
+              schema:
+                type: string
   /images/edits:
     post:
       x-beta: true
@@ -195,6 +199,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ImagesEditResponse'
+            text/event-stream:
+              schema:
+                type: string
   /ocr:
     post:
       x-beta: true
@@ -1456,6 +1463,13 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
   /health:
     get:
+      servers:
+        - url: https://api.phaseo.app/v1
+          description: Global routing
+        - url: https://eu.api.phaseo.app/v1
+          description: EU regional provider routing (text only)
+        - url: https://us.api.phaseo.app/v1
+          description: US regional provider routing (text only)
       x-beta: true
       tags:
         - Gateway
@@ -1581,6 +1595,13 @@ paths:
                     type: string
   /chat/completions:
     post:
+      servers:
+        - url: https://api.phaseo.app/v1
+          description: Global routing
+        - url: https://eu.api.phaseo.app/v1
+          description: EU regional provider routing (text only)
+        - url: https://us.api.phaseo.app/v1
+          description: US regional provider routing (text only)
       tags:
         - Gateway
       operationId: createChatCompletion
@@ -1617,6 +1638,13 @@ paths:
           $ref: '#/components/responses/UpstreamRateLimited'
   /responses:
     post:
+      servers:
+        - url: https://api.phaseo.app/v1
+          description: Global routing
+        - url: https://eu.api.phaseo.app/v1
+          description: EU regional provider routing (text only)
+        - url: https://us.api.phaseo.app/v1
+          description: US regional provider routing (text only)
       tags:
         - Gateway
       operationId: createResponse
@@ -1653,6 +1681,13 @@ paths:
           $ref: '#/components/responses/UpstreamRateLimited'
   /messages:
     post:
+      servers:
+        - url: https://api.phaseo.app/v1
+          description: Global routing
+        - url: https://eu.api.phaseo.app/v1
+          description: EU regional provider routing (text only)
+        - url: https://us.api.phaseo.app/v1
+          description: US regional provider routing (text only)
       tags:
         - Gateway
       operationId: createAnthropicMessage
@@ -1739,6 +1774,13 @@ paths:
                 additionalProperties: true
   /models:
     get:
+      servers:
+        - url: https://api.phaseo.app/v1
+          description: Global routing
+        - url: https://eu.api.phaseo.app/v1
+          description: EU regional provider routing (text only)
+        - url: https://us.api.phaseo.app/v1
+          description: US regional provider routing (text only)
       x-beta: true
       tags:
         - Gateway
@@ -1746,6 +1788,66 @@ paths:
       summary: Gateway-Modelle auflisten
       description: Gibt gemeinsam genutzte, nicht ausgeblendete Gateway-Modelle zurück. Standardmäßig werden aktuell öffentlich routbare Modelle angezeigt; mit `availability=all` lassen sich nicht routbare Verfügbarkeitsdatensätze einbeziehen.
       parameters:
+        - name: search
+          in: query
+          description: Case-insensitive search across model ids, names, descriptions, and organisations.
+          schema:
+            type: string
+            maxLength: 200
+        - name: provider_search
+          in: query
+          description: Case-insensitive provider or model-organisation search.
+          schema:
+            type: string
+            maxLength: 100
+        - name: input_modality
+          in: query
+          description: Require a supported input modality.
+          schema:
+            type: string
+            enum:
+              - text
+              - image
+              - audio
+              - video
+        - name: minimum_context_tokens
+          in: query
+          description: Require at least this many input context tokens.
+          schema:
+            type: number
+            minimum: 0
+        - name: maximum_input_price_per_million
+          in: query
+          description: Maximum USD input-token price per million tokens.
+          schema:
+            type: number
+            minimum: 0
+        - name: gateway_available_only
+          in: query
+          description: Return only models with at least one routable gateway offer.
+          schema:
+            type: boolean
+            default: false
+        - name: sort_by
+          in: query
+          description: Field used to order model discovery results.
+          schema:
+            type: string
+            enum:
+              - relevance
+              - input_price
+              - output_price
+              - context_length
+              - provider_count
+            default: relevance
+        - name: sort_order
+          in: query
+          description: Optional sort direction. Price sorts default to ascending; other numeric sorts default to descending.
+          schema:
+            type: string
+            enum:
+              - asc
+              - desc
         - name: endpoints
           in: query
           description: Nach Endpunkten filtern
@@ -3067,33 +3169,6 @@ paths:
       responses:
         '200':
           description: Benachrichtigungseinstellungen
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/WorkspaceNotificationSettingsResponse'
-        default:
-          description: Anfrage fehlgeschlagen
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-    patch:
-      x-beta: true
-      security: []
-      tags:
-        - Gateway
-      operationId: updateWorkspaceNotificationSettings
-      summary: Benachrichtigungseinstellungen des Arbeitsbereichs aktualisieren
-      description: Aktualisiert einen oder mehrere dauerhafte Abschnitte der Benachrichtigungsrichtlinie. Für automatische Aufladung ist die Kennung einer gespeicherten Zahlungsmethode erforderlich; die Zahlung bleibt ein interaktiver Kontovorgang.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/WorkspaceNotificationSettingsUpdateRequest'
-      responses:
-        '200':
-          description: Benachrichtigungseinstellungen aktualisiert
           content:
             application/json:
               schema:
@@ -6192,6 +6267,10 @@ components:
           type: string
         voice:
           type: string
+        speed:
+          type: number
+          minimum: 0.25
+          maximum: 4
         format:
           type: string
           enum:
@@ -6201,6 +6280,28 @@ components:
             - aac
         provider:
           $ref: '#/components/schemas/ProviderRoutingOptions'
+        config:
+          type: object
+          additionalProperties: true
+          properties:
+            elevenlabs:
+              type: object
+              additionalProperties: true
+              properties:
+                voice_id:
+                  type: string
+                language_code:
+                  type: string
+                output_format:
+                  type: string
+                voice_settings:
+                  type: object
+                  additionalProperties: true
+                  properties:
+                    stability:
+                      type: number
+                    similarity_boost:
+                      type: number
     ProviderRoutingOptions:
       type: object
       description: Anbieterrouting-Präferenzen für die Auswahl durch das Gateway.
@@ -6391,12 +6492,41 @@ components:
           type: string
         size:
           type: string
+        resolution:
+          type: string
         'n':
           type: integer
           minimum: 1
           maximum: 10
         quality:
           type: string
+        stream:
+          type: boolean
+        partial_images:
+          type: integer
+          minimum: 0
+          maximum: 3
+        output_format:
+          type: string
+          enum:
+            - png
+            - jpeg
+            - webp
+        output_compression:
+          type: integer
+          minimum: 0
+          maximum: 100
+        background:
+          type: string
+          enum:
+            - transparent
+            - opaque
+            - auto
+        moderation:
+          type: string
+          enum:
+            - auto
+            - low
         response_format:
           type: string
         style:
@@ -6433,17 +6563,68 @@ components:
         model:
           type: string
         image:
-          type: string
+          oneOf:
+            - type: string
+            - type: array
+              minItems: 1
+              maxItems: 16
+              items:
+                type: string
         mask:
           type: string
         prompt:
           type: string
         size:
           type: string
+        resolution:
+          type: string
         'n':
           type: integer
           minimum: 1
           maximum: 10
+        quality:
+          type: string
+          enum:
+            - standard
+            - low
+            - medium
+            - high
+            - xhigh
+            - max
+            - auto
+          description: Image rendering quality. xhigh and max are available only for GPT Image 2.5 models.
+        stream:
+          type: boolean
+        partial_images:
+          type: integer
+          minimum: 0
+          maximum: 3
+        output_format:
+          type: string
+          enum:
+            - png
+            - jpeg
+            - webp
+        output_compression:
+          type: integer
+          minimum: 0
+          maximum: 100
+        background:
+          type: string
+          enum:
+            - transparent
+            - opaque
+            - auto
+        moderation:
+          type: string
+          enum:
+            - auto
+            - low
+        input_fidelity:
+          type: string
+          enum:
+            - high
+            - low
         user:
           type: string
         meta:
@@ -7541,7 +7722,7 @@ components:
         events:
           type: array
           items:
-            type: string
+            $ref: '#/components/schemas/WebhookEndpointEvent'
         hasSecret:
           type: boolean
         createdBy:
@@ -7560,6 +7741,30 @@ components:
           format: date-time
           nullable: true
       additionalProperties: false
+    WebhookEndpointEvent:
+      type: string
+      enum:
+        - job.created
+        - job.status_changed
+        - job.progress
+        - job.completed
+        - job.failed
+        - job.cancelled
+        - job.expired
+        - video.created
+        - video.status_changed
+        - video.progress
+        - video.completed
+        - video.failed
+        - video.cancelled
+        - video.expired
+        - batch.created
+        - batch.status_changed
+        - batch.progress
+        - batch.completed
+        - batch.failed
+        - batch.cancelled
+        - batch.expired
     GuardrailDetailResponse:
       type: object
       required:
@@ -8264,12 +8469,13 @@ components:
           items:
             $ref: '#/components/schemas/ChatMessage'
         reasoning:
-          $ref: '#/components/schemas/ReasoningConfig'
+          $ref: '#/components/schemas/OpenAIReasoningConfig'
         reasoning_effort:
           type: string
           description: OpenAI-kompatibler Alias für `reasoning.effort`.
           enum:
             - none
+            - instant
             - minimal
             - low
             - medium
@@ -8394,7 +8600,9 @@ components:
           type: string
           enum:
             - standard
+            - default
             - fast
+            - ultrafast
             - priority
             - flex
             - batch
@@ -8615,13 +8823,14 @@ components:
             - ogg
             - pcm16
             - pcm24
-    ReasoningConfig:
+    OpenAIReasoningConfig:
       type: object
       properties:
         effort:
           type: string
           enum:
             - none
+            - instant
             - minimal
             - low
             - medium
@@ -8665,6 +8874,9 @@ components:
           type: string
           enum:
             - function
+        async:
+          type: boolean
+          description: Lets supported OpenAI models continue while the caller executes this tool. Accepted on all text API surfaces and ignored by other providers.
         function:
           type: object
           required:
@@ -8714,9 +8926,25 @@ components:
         parameters:
           type: object
           properties:
+            engine:
+              type: string
+              enum:
+                - auto
+                - native
+                - exa
+                - firecrawl
+                - parallel
+                - perplexity
+                - tinyfish
             max_results:
               type: integer
               minimum: 1
+              maximum: 25
+            language:
+              type: string
+            page:
+              type: integer
+              minimum: 0
               maximum: 10
             include_text:
               type: boolean
@@ -8726,6 +8954,22 @@ components:
         max_results:
           type: integer
           minimum: 1
+          maximum: 25
+        engine:
+          type: string
+          enum:
+            - auto
+            - native
+            - exa
+            - firecrawl
+            - parallel
+            - perplexity
+            - tinyfish
+        language:
+          type: string
+        page:
+          type: integer
+          minimum: 0
           maximum: 10
         include_text:
           type: boolean
@@ -8979,12 +9223,14 @@ components:
         previous_response_id:
           type: string
         reasoning:
-          $ref: '#/components/schemas/ReasoningConfig'
+          $ref: '#/components/schemas/OpenAIReasoningConfig'
         service_tier:
           type: string
           enum:
             - standard
+            - default
             - fast
+            - ultrafast
             - priority
             - flex
             - batch
@@ -9252,6 +9498,17 @@ components:
         max_tokens:
           type: integer
           minimum: 1
+        service_tier:
+          type: string
+          description: Selects a supported routing or pricing tier on compatible text APIs.
+          enum:
+            - standard
+            - default
+            - fast
+            - ultrafast
+            - priority
+            - flex
+            - batch
         temperature:
           type: number
           minimum: 0
@@ -9366,10 +9623,44 @@ components:
       properties:
         name:
           type: string
+        async:
+          type: boolean
+          description: Lets supported OpenAI models continue while the caller executes this tool. Ignored when routed to other providers.
         description:
           type: string
         input_schema:
           type: object
+    ReasoningConfig:
+      type: object
+      properties:
+        effort:
+          type: string
+          enum:
+            - none
+            - minimal
+            - low
+            - medium
+            - high
+            - xhigh
+            - max
+          default: medium
+        mode:
+          type: string
+          enum:
+            - standard
+            - pro
+        summary:
+          type: string
+          enum:
+            - auto
+            - concise
+            - detailed
+          default: auto
+        enabled:
+          type: boolean
+        max_tokens:
+          type: integer
+          minimum: 0
     AnthropicMessagesResponse:
       type: object
       properties:
@@ -9404,72 +9695,126 @@ components:
       type: string
       description: Organisationskennung.
       enum:
+        - 01-ai
+        - adept
         - ai21
         - aion-labs
+        - aisingapore
         - alibaba
         - allenai
         - amazon
+        - anthracite-org
         - anthropic
         - arcee-ai
         - baai
+        - baichuan
         - baidu
+        - bigcode
         - black-forest-labs
         - bytedance
+        - bytedance-seed
+        - cogito
+        - cognitivecomputations
         - cohere
         - crofai
         - cursor
+        - cyfragovpl
+        - databricks
+        - decart
         - deepseek
+        - dots-studio
+        - early-access
         - eleven-labs
         - essential-ai
+        - fastino
+        - fish-audio
         - github
         - google
+        - gryphe
         - hexgrad
         - ibm
+        - ibm-granite
         - inception
         - inclusionai
+        - inference-net
         - inflection
+        - intfloat
         - jetbrains
+        - kblab
+        - kling
+        - kuaishou
         - kwaipilot
+        - kwaivgi
         - lg
         - lightricks
         - liquid-ai
+        - mancer
+        - medaibase
         - meituan
         - meta
         - microsoft
         - mindai
         - minimax
         - mistral
+        - mistralai
         - moonshotai
         - morph
         - naver-hyperclova
+        - near-ai
         - nex-agi
         - nous
+        - nousresearch
+        - novasearch
         - nvidia
         - openai
+        - openbmb
+        - opencompass
+        - opengvlab
+        - orcarouter
+        - ornith
+        - perceptron
         - perplexity
+        - phala
+        - pixverse
         - poe
         - poolside
         - prime-intellect
+        - prism-ml
         - qwen
         - reka
         - relace
         - runway
         - sakana
+        - sao10k
+        - sapiens-ai
+        - sentence-transformers
+        - sference
+        - shanghai-ai-laboratory
+        - shengshu-ai
+        - snowflake
         - sourceful
         - spacex-ai
+        - speakleash
         - stability-ai
         - stealth
         - stepfun
         - suno
         - tencent
+        - thedrummer
         - thinking-machines
+        - undi95
         - upstage
         - venice
         - vercel
+        - villanova-ai
         - voyage
         - windsurf
+        - writer
+        - xai
+        - xgenerationlab
         - xiaomi
         - z-ai
+        - zyphra
     GatewayModelsResponse:
       type: object
       required:
@@ -11002,57 +11347,6 @@ components:
         model_deprecation:
           type: boolean
       additionalProperties: false
-    WorkspaceNotificationSettingsUpdateRequest:
-      type: object
-      minProperties: 1
-      properties:
-        auto_top_up:
-          $ref: '#/components/schemas/WorkspaceAutoTopUpUpdate'
-        low_balance_email:
-          $ref: '#/components/schemas/WorkspaceLowBalanceEmailUpdate'
-        email_preferences:
-          $ref: '#/components/schemas/WorkspaceNotificationEmailPreferencesUpdate'
-      additionalProperties: false
-    WorkspaceAutoTopUpUpdate:
-      type: object
-      required:
-        - enabled
-      properties:
-        enabled:
-          type: boolean
-        balance_threshold_nanos:
-          type: integer
-          minimum: 0
-        amount_nanos:
-          type: integer
-          minimum: 0
-        payment_method_id:
-          type: string
-          nullable: true
-      additionalProperties: false
-    WorkspaceLowBalanceEmailUpdate:
-      type: object
-      required:
-        - enabled
-      properties:
-        enabled:
-          type: boolean
-        threshold_usd:
-          type: number
-          minimum: 0
-          multipleOf: 0.01
-      additionalProperties: false
-    WorkspaceNotificationEmailPreferencesUpdate:
-      type: object
-      minProperties: 1
-      properties:
-        auto_top_up_failure:
-          type: boolean
-        payment_method_expiring:
-          type: boolean
-        model_deprecation:
-          type: boolean
-      additionalProperties: false
     WorkspaceAppUpdateRequest:
       type: object
       minProperties: 1
@@ -12382,8 +12676,9 @@ components:
           format: uri
         events:
           type: array
+          minItems: 1
           items:
-            type: string
+            $ref: '#/components/schemas/WebhookEndpointEvent'
       additionalProperties: false
     WebhookEndpointSecretResponse:
       type: object
@@ -12449,8 +12744,9 @@ components:
           format: uri
         events:
           type: array
+          minItems: 1
           items:
-            type: string
+            $ref: '#/components/schemas/WebhookEndpointEvent'
         status:
           type: string
           enum:
@@ -13379,7 +13675,7 @@ components:
       required:
         - id
         - name
-        - slug
+        - model_id
         - created_by
         - created_at
         - updated_at

@@ -15,6 +15,8 @@ description: "Genera audio TTS a partir de texto con la voz y el formato especif
   `Zephyr`, `Puck`, `Charon`, `Kore`, `Fenrir`, `Leda`, `Orus`, `Aoede`, `Callirrhoe`, `Autonoe`, `Enceladus`, `Iapetus`, `Umbriel`, `Algieba`, `Despina`, `Erinome`, `Algenib`, `Rasalgethi`, `Laomedeia`, `Achernar`, `Alnilam`, `Schedar`, `Gacrux`, `Pulcherrima`, `Achird`, `Zubenelgenubi`, `Vindemiatrix`, `Sadachbia`, `Sadaltager`, `Sulafat`.
 - `elevenlabs`: se asignan voces públicas de uso frecuente (por ejemplo `rachel`, `domi`, `bella`, `antoni`, `elli`, `josh`, `arnold`, `adam`, `sam`).
 
+Para `eleven-labs/eleven-v4` y `eleven-labs/eleven-v4-turbo`, pasa cualquier identificador de 20 caracteres de la biblioteca de voces de ElevenLabs, incluidos los clones personalizados. Ajusta `config.elevenlabs.voice_settings.stability` y `similarity_boost` según necesites. Eleven v4 no admite `speed` ni `voice_settings.style`.
+
 Si `voice` no es válido para la combinación de proveedor y modelo de la ruta, la solicitud devuelve `400 invalid_request_error` con `param: "voice"`.
 
 ## Anulaciones del proveedor

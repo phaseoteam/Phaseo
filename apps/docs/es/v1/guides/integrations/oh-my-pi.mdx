@@ -1,0 +1,76 @@
+---
+title: "oh-my-pi"
+icon: "/icons/brands/oh-my-pi.svg"
+description: "Ejecuta oh-my-pi a través de Phaseo Gateway con Phaseo CLI."
+---
+
+Phaseo CLI puede iniciar oh-my-pi con una clave exclusiva del gateway y un catálogo temporal de proveedores compatible con OpenAI.
+
+## Configurar con Phaseo CLI
+
+```bash
+phaseo login
+phaseo omp --model openai/gpt-5.6-terra --
+```
+
+La primera ejecución interactiva ofrece instalar el comando `omp` si falta. Usa `--catalog all` para mostrar todos los modelos activos de texto/chat de Phaseo, o `--dry-run --json` para previsualizar el plan de instalación e inicio sin crear una clave ni iniciar oh-my-pi:
+
+```bash
+phaseo omp --catalog all --dry-run --json
+```
+
+Usa `phaseo run omp ...` para la forma explícita del comando. Coloca las opciones de oh-my-pi después de `--` para que Phaseo procese primero sus propias opciones.
+
+## Configurar oh-my-pi manualmente
+
+Usa un proveedor persistente si quieres que Phaseo esté disponible en todas las sesiones de oh-my-pi. Crea una clave de Phaseo, expórtala en el shell que inicia oh-my-pi y añade un proveedor a `~/.omp/agent/models.yml`:
+
+```bash
+phaseo login
+phaseo keys create --name "oh-my-pi Phaseo key" --json
+export PHASEO_OMP_API_KEY="<your Phaseo API key>"
+mkdir -p ~/.omp/agent
+```
+
+```yaml title="~/.omp/agent/models.yml"
+providers:
+  phaseo:
+    baseUrl: https://api.phaseo.app/v1
+    api: openai-completions
+    apiKey: PHASEO_OMP_API_KEY
+    authHeader: true
+    models:
+      - id: openai/gpt-5.6-terra
+        name: GPT-5.6 Terra via Phaseo
+        contextWindow: 32768
+        maxTokens: 8192
+```
+
+Inicia oh-my-pi con el identificador de modelo que incluye el proveedor:
+
+```bash
+omp --model phaseo/openai/gpt-5.6-terra
+```
+
+Añade más modelos al mismo proveedor según necesites. Mantén `apiKey` apuntando a una variable de entorno en lugar de escribir la clave directamente en `models.yml`.
+
+## Verificar
+
+Envía un prompt breve desde el entorno iniciado y comprueba que la solicitud aparece en la actividad de Phaseo. El ejecutor escribe `models.yml` en un `PI_CODING_AGENT_DIR` temporal y lo elimina cuando oh-my-pi termina.
+
+## Solución de problemas
+
+### oh-my-pi no está instalado
+
+Ejecuta el comando en un terminal interactivo para aprobar la instalación, o instala oh-my-pi por separado y vuelve a ejecutarlo con `--skip-install`.
+
+### El modelo no aparece
+
+Usa `--catalog all` o pasa un identificador de modelo con `--model`. El descubrimiento de modelos no es necesario para el gateway de Phaseo.
+
+## Relacionado
+
+- [Phaseo CLI](./phaseo-cli)
+- [Configuración de proveedores de oh-my-pi](https://github.com/can1357/oh-my-pi/blob/main/docs/providers.md)
+- [Modelos](../../api-reference/endpoint/models.mdx)
+- [Actividad](../../api-reference/endpoint/activity.mdx)

@@ -8,6 +8,8 @@ description: "Parcourir les modèles natifs Gateway via Phaseo Gateway, avec des
 
 Par défaut, ce point de terminaison renvoie uniquement les modèles actuellement routables. Définissez `availability=all` pour inclure les modèles connus mais indisponibles pour le moment.
 
+Les réponses du catalogue sont mises en cache pendant cinq minutes et peuvent être servies pendant cinq minutes supplémentaires lors de la revalidation du cache. Cela s’applique aux représentations JSON, RSS et Atom du catalogue actuel ; le flux des nouvelles versions dispose de son propre cache de consultation, plus court.
+
 `GET /models/me` est réservé à un futur filtrage des modèles adapté aux garde-fous de l’appelant actuel. Il renvoie actuellement `501 not implemented` ; utilisez donc `GET /models` pour accéder au catalogue Gateway partagé.
 
 ## Filtres utiles

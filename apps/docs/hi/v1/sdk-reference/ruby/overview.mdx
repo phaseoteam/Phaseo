@@ -1,4 +1,5 @@
 ---
+icon: "book-open"
 title: "Ruby SDK"
 description: "Phaseo Gateway के लिए आधिकारिक Ruby client।"
 ---
@@ -22,6 +23,7 @@ RubyGems से प्रकाशित gem [`phaseo_sdk`](https://rubygems.org
 - `get_async_job_websocket_url(...)`, `batch_websocket_url(...)`, `video_websocket_url(...)`, `async_jobs.websocket_url(...)`
 - `list_files(...)`, `retrieve_file(...)`, `retrieve_file_content(...)`, `retrieve_video_content(...)`, `get_video_download_url(...)`, `upload_file(...)`
 - `list_models(...)`
+- `model_endpoint_capabilities(...)`, `check_model_parameters(...)`
 - `list_api_keys(...)`, `create_api_key(...)`, `update_api_key(...)`, `delete_api_key(...)`
 - `get_api_key(...)`
 - `list_workspaces(...)`, `get_workspace(...)`, `create_workspace(...)`, `update_workspace(...)`, `delete_workspace(...)`
@@ -40,3 +42,5 @@ require 'phaseo_sdk'
 client = PhaseoSdk::Phaseo.new(api_key: 'YOUR_KEY')
 models = client.list_models(limit: 5)
 ```
+
+`check_model_parameters(...)` प्रदाता रूट के लाइव मेटाडेटा से असमर्थित या अमान्य मानों को दिखाता है और पूरे पैरामीटर सेट को स्वीकार करने वाले रूट लौटाता है।

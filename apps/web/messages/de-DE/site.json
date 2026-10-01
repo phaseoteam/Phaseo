@@ -227,6 +227,92 @@
 			"contact": "Kontakt",
 			"terms": "Nutzungsbedingungen",
 			"privacy": "Datenschutz"
+		},
+		"current": {
+			"beliefs": {
+				"openSource": {
+					"title": "Open Source schafft Vertrauen",
+					"body": "Die Menschen, die das Gateway nutzen, sollten es, sein Verhalten und seine Standards prüfen und verbessern können."
+				},
+				"fees": {
+					"title": "Das Ziel: keine überschüssige Gebühr",
+					"body": "Langfristig sollen vermeidbare Plattformkosten entfallen, damit Menschen für Inferenz zahlen und nicht für einen dauerhaften Gateway-Aufschlag. Zusagen müssen wirtschaftlich tragfähig sein."
+				},
+				"access": {
+					"title": "Zugang sollte breit verfügbar sein",
+					"body": "Menschen sollten die besten verfügbaren Modelle finden und nutzen können, unabhängig vom Anbieter."
+				},
+				"choice": {
+					"title": "Wahlfreiheit muss echt sein",
+					"body": "Eine stabile, offene Schnittstelle sollte Modell- und Anbieterwechsel ermöglichen, ohne alles neu aufzubauen."
+				},
+				"transparency": {
+					"title": "Transparenz statt Anbieterbindung",
+					"body": "Öffentliche Modelldaten, klare Preise, Lebenszyklusinformationen und nachvollziehbare Anfragen sind besser als undurchsichtiger Komfort."
+				},
+				"revenue": {
+					"title": "Einnahmen sollen Zugang ermöglichen",
+					"body": "Zuverlässige Infrastruktur braucht nachhaltige Einnahmen. Sie dienen dazu, den Dienst nützlich zu halten, und sind nicht sein Existenzgrund."
+				}
+			},
+			"forYou": {
+				"title": "Für dich.",
+				"body": "Phaseo ist für dich gebaut: für Menschen, die das passende Modell frei wählen, Vor- und Nachteile verstehen und darauf vertrauen wollen, dass das Gateway in ihrem Interesse handelt. Wir wollen das ehrlichste und transparenteste KI-Gateway sein, das du nutzt – von seiner Community geprägt und den Menschen verpflichtet, die darauf angewiesen sind."
+			},
+			"audiences": {
+				"people": {
+					"title": "Für Menschen",
+					"body": "Mehr Möglichkeiten, nützliche Modelle zu finden, Vor- und Nachteile zu verstehen und KI ohne dauerhafte Bindung an einen einzigen Vermittler zu nutzen."
+				},
+				"developers": {
+					"title": "Für Entwickler",
+					"body": "Eine portable Integration, zuverlässiges Routing und genug Einblick, um die Verarbeitung einer Anfrage zu verstehen."
+				},
+				"providers": {
+					"title": "Für Anbieter",
+					"body": "Eine offene Vertriebsebene, die passende Nachfrage, nützliches Feedback und direkte Mitsprache bei der Darstellung und Nutzung von Modellen ermöglicht."
+				}
+			},
+			"hero": {
+				"title": "KI sollte allen zugutekommen.",
+				"body": "Ich habe Phaseo gegründet, um dieses Prinzip praktisch umzusetzen: ein offenes, anbieterneutrales Gateway, mit dem Menschen möglichst viele Modelle finden und nutzen können, ohne sich an einen Anbieter zu binden."
+			},
+			"missionLink": "Unsere Mission lesen",
+			"catalogLink": "Modellkatalog durchsuchen",
+			"who": {
+				"title": "Wer Phaseo ist.",
+				"intro": "Ein unabhängiges Projekt mit einer einfachen Idee: Zugang zu Intelligenz sollte die Wahlmöglichkeiten von Menschen erweitern und nicht einschränken.",
+				"project": "Phaseo ist das Unternehmen und das Open-Source-Projekt, das ich aufbaue, um Modellsuche, Inferenz und ehrliche Betriebsinformationen an einem Ort zu verbinden.",
+				"goal": "Das Ziel ist nicht, ein weiterer dauerhafter Vermittler zu werden. Die Ebene zwischen Menschen und Modellanbietern soll nützlicher, portabler und leichter hinterfragbar sein."
+			},
+			"beliefsTitle": "Wofür wir stehen.",
+			"beliefsIntro": "Diese Entscheidungen prägen das Produkt, das Unternehmen und die Beziehungen, die wir aufbauen möchten.",
+			"gateway": {
+				"title": "Warum ein offenes Gateway.",
+				"intro": "Das KI-Ökosystem wird leistungsfähiger und zugleich stärker fragmentiert.",
+				"fragmentation": "Jeder Anbieter hat andere Modelle, APIs, Preise, Limits und Richtlinien. Diese Fragmentierung erzeugt unnötige Arbeit und erschwert es, zu verstehen, wofür man zahlt oder wohin eine Anfrage ging.",
+				"role": "Ein offenes Gateway kann diese Komplexität zugänglich machen, ohne sie zu verbergen. Phaseo soll Integrationen portabel halten, Vor- und Nachteile zeigen und Anbieter dabei unterstützen, über Qualität, Zuverlässigkeit und Nutzen statt über Bindung zu konkurrieren.",
+				"quote": "„Das beste Gateway erweitert mit der Zeit die Wahlmöglichkeiten der Nutzer, bleibt transparent und ihnen gegenüber verantwortlich und wird mit der Community aufgebaut, der es dient.“",
+				"community": "Es sollte von den Menschen geprägt werden, die es nutzen, nicht nur vom Unternehmen, das es betreibt."
+			},
+			"inspiration": {
+				"title": "Inspiriert von Missionen, die Menschen in den Mittelpunkt stellen.",
+				"intro": "Uns inspiriert die Idee, dass fortschrittliche KI das Leben aller verbessern sollte, nicht nur das der Unternehmen, die die Infrastruktur kontrollieren.",
+				"openai": "Die öffentliche Mission von OpenAI, dass AGI der gesamten Menschheit zugutekommen soll, stellt die richtige Frage in den Mittelpunkt: Wer profitiert letztlich von leistungsfähigerer KI?",
+				"benefit": "Phaseo verfolgt einen engeren, praktischen Weg zu diesem Nutzen für Menschen. Wenn Menschen über ein offenes Gateway mehr Modelle erreichen, ehrlich vergleichen und frei zwischen Anbietern wechseln können, bleibt mehr Wert bei denen, die die Technologie entwickeln und nutzen.",
+				"independence": "Das ist Inspiration, keine Zugehörigkeit. Phaseo ist ein eigenständiges Projekt und muss selbst zeigen, dass Offenheit, Portabilität und fairer Zugang in der Praxis funktionieren.",
+				"economics": "Auch das Geschäftsmodell unterscheidet sich. Eine herkömmliche gewinnorientierte Plattform muss den Nutzwert mit den Renditeerwartungen ihrer Eigentümer abwägen. Phaseo setzt andere Prioritäten: nachhaltiger Betrieb, Nutzen zuerst und das Ziel, überschüssige Gebühren zu beseitigen. Es geht darum, die Maut unnötig zu machen, statt sie zu erhöhen."
+			},
+			"community": {
+				"title": "Für dich gebaut, mit der Community.",
+				"body": "Phaseo bietet dir einen ehrlicheren, transparenteren und portableren Weg, KI zu nutzen, geprägt von den Menschen, die darauf angewiesen sind."
+			},
+			"cta": {
+				"title": "Mehr Zugang. Weniger Bindung.",
+				"body": "An dieser Zukunft arbeitet Phaseo: Infrastruktur, die Menschen dient, Anbietern einen fairen Weg zur Entdeckung bietet und das Ökosystem offen genug für Verbesserungen hält.",
+				"start": "Loslegen",
+				"contact": "Kontakt aufnehmen"
+			}
 		}
 	},
 	"mission": {
@@ -310,6 +396,62 @@
 			"description": "Diese Mission ist ein fortlaufendes Versprechen. Wenn Phaseo ihr nicht gerecht wird, eröffne ein Issue, schlage eine Änderung vor oder hilf uns, es besser zu machen.",
 			"openIssue": "Issue eröffnen",
 			"aboutPhaseo": "Über Phaseo"
+		},
+		"current": {
+			"principles": {
+				"sustainablePrice": "Anbieterpartnerschaften und effizienten Betrieb nutzen, um vermeidbare Kosten zu senken, diese Vorteile an Nutzer weiterzugeben und genug Marge für zuverlässige Infrastruktur zu behalten.",
+				"usersFirst": "Entscheidungen nach langfristigem Nutzwert, Produktqualität und fairem Zugang treffen, statt unter Druck kurzfristige Renditen zu maximieren."
+			},
+			"measures": {
+				"coverage": "Abgedeckte Modelle, Anbieter, Modalitäten und Regionen",
+				"multipleProviders": "Routen mit mehr als einem Anbieter",
+				"savings": "An Nutzer weitergegebene Preissenkungen und Effizienzgewinne",
+				"providerDemand": "Über Phaseo erzeugte Nachfrage und Volumen für Anbieter",
+				"performance": "Zuverlässigkeit, Latenz und Plattformaufwand des Gateways",
+				"operatingCosts": "Im Laufe der Zeit vermeidbare Zahlungs- und Betriebskosten",
+				"community": "Open-Source-Mitwirkende und Verbesserungen aus der Community",
+				"publishTime": "Zeit bis zur Veröffentlichung von Releases, Korrekturen und Lebenszyklusänderungen"
+			},
+			"hero": {
+				"title": "KI-Inferenz offen, bezahlbar und für alle verfügbar machen.",
+				"body": "Phaseo baut ein offenes, überprüfbares Gateway, mit dem Menschen Modelle verschiedener Anbieter ohne Bindung finden und nutzen können. Wir senken gemeinsam mit Anbietern die Inferenzkosten und nutzen die Vorteile, um vermeidbaren Plattformaufwand zu reduzieren und den Zugang zu verbessern."
+			},
+			"updatesLink": "Neueste Updates lesen",
+			"fees": {
+				"title": "Menschen sollten für Inferenz zahlen, nicht für einen vermeidbaren Gateway-Aufschlag.",
+				"body": "Phaseo legt heutige Gebühren offen. Langfristig sollen vermeidbare Plattformkosten entfallen, sobald Anbieterbeziehungen, effizientes Routing und nachhaltiger Betrieb dies ermöglichen.",
+				"tagline": "Offene Wirtschaftlichkeit. Messbarer Fortschritt."
+			},
+			"purpose": {
+				"title": "KI-Infrastruktur sollte den Menschen dienen, die sie nutzen.",
+				"ecosystem": "Das Modellökosystem ist über Labore, Inferenzanbieter, Clouds, Preise, Schnittstellen und Richtlinien verteilt. Phaseo macht diese Komplexität über eine offene Ebene verständlich und nutzbar, die Menschen die freie Wahl lässt.",
+				"success": "Wir wollen das bestmögliche Gateway gemeinsam mit seinen Nutzern bauen. Erfolg bedeutet, das passende Modell beim passenden Anbieter zu einem fairen Preis zu erreichen und klar zu verstehen, was passiert ist und wohin das Geld ging.",
+				"sharedSuccess": "Die Mission ist auch erfolgreich, wenn Phaseos Open-Source-Arbeit, öffentliche Daten oder Standards anderen Produkten helfen, KI zugänglicher zu machen, selbst wenn keine Anfrage durch Phaseo läuft. Ziel ist ein gesünderes Ökosystem, keine dauerhafte Abhängigkeit von einem Gateway."
+			},
+			"sustainability": {
+				"title": "Nachhaltigkeit lässt die Mission bestehen.",
+				"intro": "Phaseo wird den Nutzern, Anbietern und der Open-Source-Community verpflichtet aufgebaut, statt unter Druck die Renditen von Investoren zu maximieren.",
+				"marginTitle": "Minimale nachhaltige Marge",
+				"marginBody": "Wir wollen nur genug Marge behalten, um zuverlässige Infrastruktur zu betreiben, das Team zu unterstützen und das Produkt weiterzuentwickeln. Mehr Effizienz soll den Zugang verbessern, nicht bloß höhere Einnahmen aus Nutzern ermöglichen.",
+				"revenueTitle": "Einnahmen ermöglichen Zugang",
+				"revenueBody": "Einnahmen sind wichtig, weil Phaseo zuverlässig bleiben und sich weiter verbessern muss. Sie sichern die Mission und rechtfertigen keine Abstriche bei fairen Preisen, Offenheit oder dem Nutzererlebnis.",
+				"independenceTitle": "Unabhängigkeit von Anfang an",
+				"independenceBody": "Falls Finanzierung erwogen wird, muss sie Phaseos Unabhängigkeit, Open-Source-Verpflichtung, fairen Umgang mit Nutzern und Freiheit zu langfristigen Produktentscheidungen bewahren. Herkömmliches Risikokapital ist nicht der Standardweg."
+			},
+			"providers": {
+				"title": "Anbieter wachsen, wenn Entwickler sie erreichen können.",
+				"distribution": "Phaseo bietet Modellherstellern und Inferenzanbietern eine offene Vertriebsebene: einfachere Entdeckung, konsistente Integration, nützliche Nachfragesignale und direkte Mitsprache bei der Nutzung ihrer Modelle.",
+				"costs": "Wir wollen direkt mit Anbietern und dem breiteren Infrastrukturökosystem arbeiten, um die Kosten für Inferenz, Rechenleistung, Bereitstellung, Speicherung, Beobachtbarkeit und Zahlungen zu senken und zugleich die Zuverlässigkeit zu verbessern.",
+				"cycle": "Bessere Konditionen, gemeinsame technische Arbeit, Guthaben, effizientere Software und intelligenteres Routing können die Kosten einer Anfrage senken. Der Kreislauf ist einfach: Besserer Anbieterzugang senkt Kosten und erhöht Zuverlässigkeit, was mehr Entwickler und geroutete Nachfrage bringt.",
+				"partners": "Wir suchen Partner, die mit einem offenen Gateway wachsen wollen, statt nur ein Logo auf einem weiteren Marktplatz zu platzieren. Anbieter können Adapter validieren, Modellmetadaten verbessern, Routing und Beobachtbarkeit mitgestalten und Releases koordinieren, die passende Nutzer erreichen.",
+				"testTitle": "Der Maßstab für Partnerschaften",
+				"testBody": "Eine Partnerschaft sollte den Vertrieb des Anbieters und mindestens einen Aspekt von Preis, Zugang, Zuverlässigkeit, Datenschutz, Portabilität oder Entwicklererlebnis verbessern, ohne die anderen zu beeinträchtigen."
+			},
+			"evidence": {
+				"title": "Eine Mission sollte im Produkt sichtbar sein.",
+				"body": "Wir wollen Fortschritt anhand von Belegen bewerten, die Nutzer sehen, hinterfragen und verbessern können."
+			},
+			"commitment": "Diese Mission ist eine lebendige Verpflichtung. Wenn Phaseo ihr nicht gerecht wird, eröffne ein Issue, schlage eine Änderung vor oder hilf uns, eine bessere Version zu bauen."
 		}
 	},
 	"faq": {

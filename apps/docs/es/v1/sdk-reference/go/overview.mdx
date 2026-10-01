@@ -1,9 +1,10 @@
 ---
+icon: "book-open"
 title: "SDK de Go"
 description: "Cliente oficial de Go para el gateway de Phaseo."
 ---
 
-Instala el módulo publicado [`sdk-go/v2`](https://pkg.go.dev/github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v2).
+Instala el módulo publicado [`sdk-go/v2`](https://pkg.go.dev/github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3).
 
 El wrapper local de `packages/sdk/sdk-go/index.go` expone actualmente estos métodos:
 
@@ -14,6 +15,7 @@ El wrapper local de `packages/sdk/sdk-go/index.go` expone actualmente estos mét
 - `CreateSpeech(...)`, `CreateTranscription(...)`, `CreateTranslation(...)`
 - `CreateAnthropicMessage(...)`
 - `GetModels(...)`
+- `GetModelEndpointCapabilities(...)`, `CheckModelParameters(...)`
 - `ListOrganisations(...)`
 - `ListPricingModels(...)`
 - `CalculatePricing(...)`
@@ -42,7 +44,7 @@ Para los endpoints que aún no se hayan incorporado al wrapper, usa directamente
 import (
   "context"
   "fmt"
-  phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v2"
+  phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3"
 )
 
 client := phaseo.New("YOUR_KEY", "https://api.phaseo.app/v1")
@@ -52,3 +54,5 @@ if err != nil {
 }
 fmt.Println(models)
 ```
+
+`CheckModelParameters` usa metadatos actuales de las rutas de proveedores para clasificar cada parámetro como `supported`, `partial`, `unsupported` o `unknown`, validar los valores y rangos publicados y devolver las rutas que aceptan el conjunto completo de parámetros.

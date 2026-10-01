@@ -227,6 +227,92 @@
 			"contact": "Contact",
 			"terms": "Conditions",
 			"privacy": "Confidentialité"
+		},
+		"current": {
+			"beliefs": {
+				"openSource": {
+					"title": "L’open source inspire confiance",
+					"body": "Les personnes qui dépendent de la passerelle doivent pouvoir examiner et améliorer son fonctionnement et ses standards."
+				},
+				"fees": {
+					"title": "L’objectif : aucune commission excédentaire",
+					"body": "L’objectif à long terme est de supprimer les coûts évitables de la plateforme afin de payer l’inférence sans surtaxe permanente de passerelle. Toute promesse doit reposer sur un modèle économique durable."
+				},
+				"access": {
+					"title": "L’accès doit être ouvert au plus grand nombre",
+					"body": "Chacun doit pouvoir découvrir et utiliser les meilleurs modèles disponibles, quel que soit leur fournisseur."
+				},
+				"choice": {
+					"title": "Le choix doit être réel",
+					"body": "Une interface ouverte et stable doit permettre de changer de modèle ou de fournisseur sans tout reconstruire."
+				},
+				"transparency": {
+					"title": "La transparence vaut mieux que la dépendance",
+					"body": "Des données publiques sur les modèles, des prix clairs, des informations de cycle de vie et des requêtes observables valent mieux qu’une commodité opaque."
+				},
+				"revenue": {
+					"title": "Les revenus doivent servir l’accès",
+					"body": "Une infrastructure fiable exige des revenus durables, mais ceux-ci servent à maintenir l’utilité du service ; ils ne sont pas sa raison d’être."
+				}
+			},
+			"forYou": {
+				"title": "Pour vous.",
+				"body": "Phaseo est conçu pour vous : pour choisir librement le bon modèle, comprendre les compromis et avoir confiance dans une passerelle qui défend vos intérêts. Nous voulons être la passerelle IA la plus honnête et transparente que vous utilisez, façonnée par sa communauté et responsable envers ceux qui en dépendent."
+			},
+			"audiences": {
+				"people": {
+					"title": "Pour tous",
+					"body": "Plus de moyens de trouver des modèles utiles, de comprendre les compromis et d’utiliser l’IA sans dépendre durablement d’un seul intermédiaire."
+				},
+				"developers": {
+					"title": "Pour les développeurs",
+					"body": "Une intégration portable, un routage fiable et assez de visibilité pour comprendre le traitement d’une requête."
+				},
+				"providers": {
+					"title": "Pour les fournisseurs",
+					"body": "Une couche de distribution ouverte qui apporte une demande pertinente, des retours utiles et une participation directe à la représentation et à l’utilisation des modèles."
+				}
+			},
+			"hero": {
+				"title": "L’IA doit bénéficier à tous.",
+				"body": "J’ai créé Phaseo pour concrétiser ce principe : une passerelle open source, neutre entre fournisseurs, qui permet de découvrir et d’utiliser autant de modèles que possible sans dépendre d’un seul fournisseur."
+			},
+			"missionLink": "Découvrez notre mission",
+			"catalogLink": "Parcourir le catalogue de modèles",
+			"who": {
+				"title": "Qui est Phaseo.",
+				"intro": "Un projet indépendant fondé sur une idée simple : l’accès à l’intelligence doit élargir les choix, pas les restreindre.",
+				"project": "Phaseo est l’entreprise et le projet open source que je construis pour réunir la découverte de modèles, l’inférence et des informations opérationnelles honnêtes.",
+				"goal": "Le but n’est pas de devenir un autre intermédiaire incontournable. Nous voulons rendre la couche entre les utilisateurs et les fournisseurs de modèles plus utile, portable et facile à remettre en question."
+			},
+			"beliefsTitle": "Nos convictions.",
+			"beliefsIntro": "Ces choix guident le produit, l’entreprise et les relations que nous voulons construire.",
+			"gateway": {
+				"title": "Pourquoi une passerelle ouverte.",
+				"intro": "L’écosystème de l’IA devient à la fois plus puissant et plus fragmenté.",
+				"fragmentation": "Chaque fournisseur propose ses propres modèles, API, prix, limites et politiques. Cette fragmentation crée du travail inutile et rend difficile de savoir ce que l’on paie ou où une requête a été traitée.",
+				"role": "Une passerelle ouverte rend cette complexité accessible sans la masquer. Phaseo vise à garder les intégrations portables, à montrer les compromis et à permettre aux fournisseurs de se distinguer par la qualité, la fiabilité et la valeur plutôt que par la dépendance.",
+				"quote": "« La meilleure passerelle élargit les choix des utilisateurs au fil du temps, reste transparente et responsable envers eux, et se construit avec la communauté qu’elle sert. »",
+				"community": "Elle doit être façonnée par ses utilisateurs, pas seulement par l’entreprise qui l’exploite."
+			},
+			"inspiration": {
+				"title": "Inspirés par des missions qui placent les personnes au premier plan.",
+				"intro": "Nous sommes inspirés par l’idée que l’IA avancée doit améliorer la vie de tous, pas seulement celle des entreprises qui contrôlent l’infrastructure.",
+				"openai": "La mission publique d’OpenAI, selon laquelle l’AGI doit bénéficier à toute l’humanité, place la bonne question au centre : qui profite finalement d’une IA plus puissante ?",
+				"benefit": "Phaseo suit une voie plus ciblée et pratique vers ce même bénéfice humain. Pouvoir accéder à davantage de modèles grâce à une passerelle open source, les comparer honnêtement et changer librement de fournisseur laisse plus de valeur aux personnes qui créent et utilisent la technologie.",
+				"independence": "Il s’agit d’une inspiration, pas d’une affiliation. Phaseo est un projet indépendant, responsable de prouver que l’ouverture, la portabilité et un accès équitable fonctionnent en pratique.",
+				"economics": "Le modèle économique diffère aussi. Une plateforme classique à but lucratif doit équilibrer la valeur pour l’utilisateur et le rendement financier attendu par ses propriétaires. Phaseo se construit autour d’une autre priorité : des opérations durables, l’utilité d’abord et aucune commission excédentaire comme objectif. Le but n’est pas d’augmenter le péage, mais de le rendre inutile."
+			},
+			"community": {
+				"title": "Conçu pour vous, avec la communauté.",
+				"body": "Phaseo existe pour vous offrir une façon plus honnête, transparente et portable d’utiliser l’IA, façonnée par ceux qui en dépendent."
+			},
+			"cta": {
+				"title": "Plus d’accès. Moins de dépendance.",
+				"body": "C’est l’avenir auquel Phaseo travaille : une infrastructure au service des personnes, une voie équitable pour découvrir les fournisseurs et un écosystème assez ouvert pour s’améliorer.",
+				"start": "Commencer",
+				"contact": "Contactez-nous"
+			}
 		}
 	},
 	"mission": {
@@ -310,6 +396,62 @@
 			"description": "Cette mission est un engagement vivant. Si Phaseo n’est pas à la hauteur, ouvrez un ticket, proposez une modification ou aidez-nous à construire une meilleure version.",
 			"openIssue": "Ouvrir un ticket",
 			"aboutPhaseo": "À propos de Phaseo"
+		},
+		"current": {
+			"principles": {
+				"sustainablePrice": "Utiliser les partenariats avec les fournisseurs et l’efficacité opérationnelle pour réduire les coûts évitables, en faire profiter les utilisateurs et conserver une marge suffisante pour une infrastructure fiable.",
+				"usersFirst": "Prendre des décisions fondées sur le bénéfice à long terme pour les utilisateurs, la qualité du produit et un accès équitable, plutôt que sur la pression de maximiser les rendements financiers à court terme."
+			},
+			"measures": {
+				"coverage": "Modèles, fournisseurs, modalités et régions couverts",
+				"multipleProviders": "Routes disponibles auprès de plusieurs fournisseurs",
+				"savings": "Réductions de prix et gains d’efficacité rendus aux utilisateurs",
+				"providerDemand": "Demande et volume générés pour les fournisseurs par Phaseo",
+				"performance": "Fiabilité de la passerelle, latence et coûts de plateforme",
+				"operatingCosts": "Coûts de paiement et d’exploitation supprimables à terme",
+				"community": "Contributeurs open source et améliorations portées par la communauté",
+				"publishTime": "Délai de publication des versions, corrections et changements de cycle de vie"
+			},
+			"hero": {
+				"title": "Rendre l’inférence IA ouverte, abordable et accessible à tous.",
+				"body": "Phaseo construit une passerelle open source et vérifiable qui permet de découvrir et d’utiliser des modèles de différents fournisseurs sans dépendance. Nous travaillons avec les fournisseurs pour réduire le coût de l’inférence, puis utilisons ces gains pour diminuer les frais évitables de plateforme et améliorer l’accès."
+			},
+			"updatesLink": "Lire les dernières actualités",
+			"fees": {
+				"title": "Il faut payer l’inférence, pas une surtaxe de passerelle évitable.",
+				"body": "Phaseo est transparent sur ses frais actuels. L’objectif à long terme est de supprimer les coûts évitables de plateforme lorsque les relations fournisseurs, l’efficacité du routage et la durabilité des opérations le permettent.",
+				"tagline": "Une économie ouverte. Des progrès mesurables."
+			},
+			"purpose": {
+				"title": "L’infrastructure IA doit servir ceux qui l’utilisent.",
+				"ecosystem": "L’écosystème des modèles est fragmenté entre laboratoires, fournisseurs d’inférence, clouds, prix, interfaces et politiques. Phaseo vise à rendre cette complexité compréhensible et utilisable grâce à une couche ouverte qui préserve la liberté de choix.",
+				"success": "Nous voulons construire la meilleure passerelle possible avec ses utilisateurs. Réussir signifie accéder au bon modèle, par le bon fournisseur, à un prix juste, en comprenant ce qui s’est passé et où l’argent est allé.",
+				"sharedSuccess": "Notre mission sera aussi réussie si le travail open source, les données publiques ou les standards de Phaseo aident d’autres produits à rendre l’IA plus accessible, même sans requête passant par Phaseo. L’objectif est un écosystème plus sain, pas une dépendance permanente à une passerelle."
+			},
+			"sustainability": {
+				"title": "La durabilité fait vivre la mission.",
+				"intro": "Phaseo se construit pour rester responsable envers les utilisateurs, les fournisseurs et la communauté open source, plutôt que sous la pression de maximiser les rendements des investisseurs.",
+				"marginTitle": "Une marge minimale durable",
+				"marginBody": "Nous voulons garder uniquement la marge nécessaire pour exploiter une infrastructure fiable, soutenir l’équipe et améliorer le produit. Plus d’efficacité doit améliorer l’accès, pas simplement accroître ce que prélève la plateforme.",
+				"revenueTitle": "Les revenus servent l’accès",
+				"revenueBody": "Les revenus comptent parce que Phaseo doit rester fiable et continuer à s’améliorer. Ils soutiennent la mission sans justifier de compromettre des prix équitables, l’ouverture ou l’expérience utilisateur.",
+				"independenceTitle": "L’indépendance dès la conception",
+				"independenceBody": "Si un financement est envisagé, il doit préserver l’indépendance de Phaseo, son engagement open source, le traitement équitable des utilisateurs et la liberté de décider à long terme. Le capital-risque classique n’est pas la voie par défaut."
+			},
+			"providers": {
+				"title": "Les fournisseurs grandissent quand les développeurs peuvent les atteindre.",
+				"distribution": "Phaseo offre aux créateurs de modèles et fournisseurs d’inférence une distribution ouverte : découverte simplifiée, intégration cohérente, signaux de demande utiles et participation directe à l’utilisation de leurs modèles.",
+				"costs": "Nous voulons travailler directement avec les fournisseurs et l’écosystème d’infrastructure pour réduire les coûts d’inférence, de calcul, de livraison, de stockage, d’observabilité et de paiement tout en améliorant la fiabilité.",
+				"cycle": "De meilleures conditions commerciales, un travail technique partagé, des crédits, des logiciels plus efficaces et un routage intelligent réduisent le coût des requêtes. Le cycle est simple : un meilleur accès aux fournisseurs diminue les coûts et renforce la fiabilité, attirant davantage de développeurs et de demande routée.",
+				"partners": "Nous cherchons des partenaires qui veulent grandir avec une passerelle ouverte, pas simplement afficher un logo sur une autre place de marché. Les fournisseurs peuvent valider les adaptateurs, améliorer les métadonnées, orienter le routage et l’observabilité, et coordonner des lancements attirant des utilisateurs pertinents.",
+				"testTitle": "Le critère d’un partenariat",
+				"testBody": "Un partenariat doit améliorer la distribution du fournisseur et au moins un aspect parmi le prix, l’accès, la fiabilité, la confidentialité, la portabilité ou l’expérience développeur, sans nuire aux autres."
+			},
+			"evidence": {
+				"title": "Une mission doit se voir dans le produit.",
+				"body": "Nous voulons mesurer les progrès avec des preuves que les utilisateurs peuvent voir, questionner et contribuer à améliorer."
+			},
+			"commitment": "Cette mission est un engagement vivant. Si Phaseo n’est pas à la hauteur, ouvrez une issue, proposez un changement ou aidez-nous à construire une meilleure version."
 		}
 	},
 	"faq": {

@@ -10,4 +10,4 @@ description: "Revisa los encabezados de C++ en desarrollo."
 - Estado: En desarrollo (aún no publicado).
 - El código fuente está en `packages/sdk/sdk-cpp`.
 - Los encabezados generados están en `packages/sdk/sdk-cpp/src/gen`.
-
+- `src/phaseo.hpp` incorpora la consulta de capacidades de modelos en tiempo real e informes de compatibilidad de parámetros. El transporte de vista previa devuelve JSON sin procesar, así que deserializa la respuesta en `ModelEndpointCapabilities` antes de comprobarla.

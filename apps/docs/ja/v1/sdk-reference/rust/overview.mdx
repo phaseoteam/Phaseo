@@ -11,9 +11,13 @@ description: "公式crateのphaseoを使って、RustからPhaseo Gatewayにリ�
 - `Phaseo::responses(...)`によるResponses APIリクエスト
 - `Phaseo::chat_completions(...)`によるChat Completionsリクエスト
 - `Phaseo::post(...)`によるその他のJSONエンドポイント
+- `Phaseo::model_endpoint_capabilities(...)` による現在のモデルルートの検出
+- `Phaseo::check_model_parameters(...)` によるパラメーターの対応状況レポート
 - `Phaseo::from_env()`による環境変数ベースの設定
 - カスタムHTTPSエンドポイントとループバック開発サーバー
 - 構造化されたステータス、JSON本文、リクエストID、エラー詳細
+
+パラメーターレポートは、要求した各パラメーターを `supported`、`partial`、`unsupported`、`unknown` のいずれかとして示し、公開された値と範囲を検証して、パラメーターの組み合わせ全体を受け入れるルートを返します。
 
 ```rust
 use phaseo::Phaseo;
@@ -22,7 +26,7 @@ use serde_json::json;
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let client = Phaseo::from_env()?;
     let response = client.responses(&json!({
-        "model": "openai/gpt-5.6-sol",
+        "model": "openai/gpt-6-astra",
         "input": "Reply with exactly: Rust SDK works"
     }))?;
 

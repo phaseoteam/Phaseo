@@ -15,6 +15,8 @@ description: "Générez un audio TTS à partir du texte avec la voix et le forma
   `Zephyr`, `Puck`, `Charon`, `Kore`, `Fenrir`, `Leda`, `Orus`, `Aoede`, `Callirrhoe`, `Autonoe`, `Enceladus`, `Iapetus`, `Umbriel`, `Algieba`, `Despina`, `Erinome`, `Algenib`, `Rasalgethi`, `Laomedeia`, `Achernar`, `Alnilam`, `Schedar`, `Gacrux`, `Pulcherrima`, `Achird`, `Zubenelgenubi`, `Vindemiatrix`, `Sadachbia`, `Sadaltager`, `Sulafat`.
 - `elevenlabs`: les voix de démarrage publiques courantes sont associées (par exemple `rachel`, `domi`, `bella`, `antoni`, `elli`, `josh`, `arnold`, `adam`, `sam`).
 
+Pour `eleven-labs/eleven-v4` et `eleven-labs/eleven-v4-turbo`, transmettez un identifiant de 20 caractères de la bibliothèque de voix ElevenLabs, y compris pour une voix clonée personnalisée. Réglez `config.elevenlabs.voice_settings.stability` et `similarity_boost` selon vos besoins. Eleven v4 ne prend pas en charge `speed` ni `voice_settings.style`.
+
 Si `voice` ne correspond pas au fournisseur et au modèle de la route, la requête renvoie `400 invalid_request_error` avec `param: "voice"`.
 
 ## Paramètres propres au fournisseur

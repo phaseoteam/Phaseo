@@ -1,5 +1,5 @@
 ---
-icon: "rotate"
+icon: "rotate-cw"
 title: "आउटपुट और पुनः प्रयास"
 description: "Final outputs validate करें, model requests retry करें और पूरी हुई PHP runs देखें।"
 ---
@@ -30,7 +30,7 @@ echo $result->output;
 echo $result->run->status;
 echo $result->usage["total_tokens"];
 echo $result->usage["cost"];
-```$result = $agent->run(input: $prompt, client: $client);
+```
 
 echo $result->output;
 echo $result->run->status;

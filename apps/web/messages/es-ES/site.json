@@ -227,6 +227,92 @@
 			"contact": "Contacto",
 			"terms": "Términos",
 			"privacy": "Privacidad"
+		},
+		"current": {
+			"beliefs": {
+				"openSource": {
+					"title": "El código abierto genera confianza",
+					"body": "La comunidad que depende de la pasarela debe poder examinar y mejorar su comportamiento y sus estándares."
+				},
+				"fees": {
+					"title": "El objetivo es eliminar las comisiones excedentes",
+					"body": "El objetivo a largo plazo es eliminar los costes evitables de la plataforma para que se pague por la inferencia, sin un recargo permanente de la pasarela. Cualquier promesa debe apoyarse en una economía sostenible."
+				},
+				"access": {
+					"title": "El acceso debe ser amplio",
+					"body": "Cualquier persona debe poder descubrir y utilizar los mejores modelos disponibles, independientemente del proveedor que los opere."
+				},
+				"choice": {
+					"title": "La elección debe ser real",
+					"body": "Una interfaz abierta y estable debe permitir cambiar de modelos o proveedores sin reconstruirlo todo."
+				},
+				"transparency": {
+					"title": "La transparencia supera la dependencia",
+					"body": "Los datos públicos sobre modelos, los precios claros, las señales de ciclo de vida y las solicitudes observables son mejores que una comodidad opaca."
+				},
+				"revenue": {
+					"title": "Los ingresos deben facilitar el acceso",
+					"body": "Una infraestructura fiable necesita ingresos sostenibles, pero estos sirven para mantener el servicio útil, no son su razón de ser."
+				}
+			},
+			"forYou": {
+				"title": "Para ti.",
+				"body": "Phaseo está hecho para ti: para quien quiere elegir el modelo adecuado, entender las ventajas y las limitaciones y confiar en que la pasarela actúa en su interés. Queremos ser la pasarela de IA más honesta y transparente que utilices, formada por su comunidad y responsable ante quienes dependen de ella."
+			},
+			"audiences": {
+				"people": {
+					"title": "Para las personas",
+					"body": "Más formas de encontrar modelos útiles, entender sus ventajas y limitaciones y utilizar IA sin depender permanentemente de un único intermediario."
+				},
+				"developers": {
+					"title": "Para desarrolladores",
+					"body": "Una integración portable, enrutamiento fiable y visibilidad suficiente para entender qué ocurrió al atender una solicitud."
+				},
+				"providers": {
+					"title": "Para proveedores",
+					"body": "Una capa de distribución abierta que aporta demanda relevante, comentarios útiles y una voz directa sobre cómo se presentan y utilizan los modelos."
+				}
+			},
+			"hero": {
+				"title": "La IA debe beneficiar a todos.",
+				"body": "Fundé Phaseo para llevar ese principio a la práctica: una pasarela de código abierto, neutral entre proveedores, que permite descubrir y utilizar tantos modelos como sea posible sin quedar atado a un único proveedor."
+			},
+			"missionLink": "Lee nuestra misión",
+			"catalogLink": "Explora el catálogo de modelos",
+			"who": {
+				"title": "Quién es Phaseo.",
+				"intro": "Un proyecto independiente basado en una idea sencilla: el acceso a la inteligencia debe ampliar las opciones de las personas, no reducirlas.",
+				"project": "Phaseo es la empresa y el proyecto de código abierto que estoy creando para reunir el descubrimiento de modelos, la inferencia y la información operativa transparente.",
+				"goal": "El objetivo no es convertirnos en otro intermediario permanente. Queremos que la capa entre las personas y los proveedores de modelos sea más útil, portable y fácil de cuestionar."
+			},
+			"beliefsTitle": "Qué defendemos.",
+			"beliefsIntro": "Estas decisiones sustentan el producto, la empresa y las relaciones que queremos construir.",
+			"gateway": {
+				"title": "Por qué una pasarela abierta.",
+				"intro": "El ecosistema de IA gana capacidad y, al mismo tiempo, se fragmenta cada vez más.",
+				"fragmentation": "Cada proveedor tiene modelos, API, precios, límites y políticas diferentes. Esa fragmentación genera trabajo innecesario y dificulta saber por qué se paga o dónde se procesó una solicitud.",
+				"role": "Una pasarela abierta permite entender esa complejidad sin ocultarla. Phaseo busca mantener las integraciones portables, mostrar las ventajas y limitaciones y ayudar a los proveedores a competir en calidad, fiabilidad y valor, sin crear dependencia.",
+				"quote": "«La mejor pasarela amplía las opciones de los usuarios con el tiempo, se mantiene transparente y responsable ante ellos y se construye con la comunidad a la que sirve».",
+				"community": "Deben darle forma las personas que lo utilizan, no solo la empresa que lo gestiona."
+			},
+			"inspiration": {
+				"title": "Inspirados por misiones que priorizan a las personas.",
+				"intro": "Nos inspira la idea de que la IA avanzada debe mejorar la vida de todos, no solo la de las empresas que controlan la infraestructura.",
+				"openai": "La misión pública de OpenAI de que la AGI beneficie a toda la humanidad sitúa en el centro la pregunta correcta: ¿quién se beneficia en última instancia de una IA más capaz?",
+				"benefit": "Phaseo sigue un camino más concreto y práctico hacia ese beneficio humano. Si se puede acceder a más modelos mediante una pasarela de código abierto, compararlos con honestidad y cambiar libremente de proveedor, más valor queda en manos de quienes crean y utilizan la tecnología.",
+				"independence": "Es una inspiración, no una afiliación. Phaseo es un proyecto independiente, responsable de demostrar que la apertura, la portabilidad y el acceso justo funcionan en la práctica.",
+				"economics": "También hay una diferencia en el modelo de negocio. Una plataforma convencional con ánimo de lucro debe equilibrar el valor para el usuario y el rendimiento financiero esperado por sus propietarios. Phaseo se construye con otra prioridad: operaciones sostenibles, utilidad primero y eliminación de comisiones excedentes como meta. La idea no es cobrar más peaje, sino hacerlo innecesario."
+			},
+			"community": {
+				"title": "Hecho para ti, con la comunidad.",
+				"body": "Phaseo existe para ofrecerte una forma más honesta, transparente y portable de utilizar IA, moldeada por quienes dependen de ella."
+			},
+			"cta": {
+				"title": "Más acceso. Menos dependencia.",
+				"body": "Ese es el futuro por el que trabaja Phaseo: infraestructura al servicio de las personas, una vía justa para que se descubra a los proveedores y un ecosistema lo bastante abierto para mejorar.",
+				"start": "Comenzar",
+				"contact": "Contacta con nosotros"
+			}
 		}
 	},
 	"mission": {
@@ -310,6 +396,62 @@
 			"description": "Esta misión es un compromiso vivo. Si Phaseo no está a la altura, abre una incidencia, propone un cambio o ayúdanos a construir una versión mejor.",
 			"openIssue": "Abrir una incidencia",
 			"aboutPhaseo": "Acerca de Phaseo"
+		},
+		"current": {
+			"principles": {
+				"sustainablePrice": "Aprovechar las alianzas con proveedores y la eficiencia operativa para reducir costes evitables, devolver esas mejoras a los usuarios y mantener un margen suficiente para operar una infraestructura fiable.",
+				"usersFirst": "Tomar decisiones centradas en el beneficio a largo plazo de los usuarios, la calidad del producto y el acceso justo, sin ceder a la presión de maximizar rendimientos financieros a corto plazo."
+			},
+			"measures": {
+				"coverage": "Modelos, proveedores, modalidades y regiones cubiertos",
+				"multipleProviders": "Rutas disponibles a través de más de un proveedor",
+				"savings": "Reducciones de precios y mejoras de eficiencia devueltas a los usuarios",
+				"providerDemand": "Demanda y volumen generados para proveedores mediante Phaseo",
+				"performance": "Fiabilidad de la pasarela, latencia y costes de la plataforma",
+				"operatingCosts": "Costes de pago y operación que pueden eliminarse con el tiempo",
+				"community": "Colaboradores de código abierto y mejoras impulsadas por la comunidad",
+				"publishTime": "Tiempo necesario para publicar versiones, correcciones y cambios del ciclo de vida"
+			},
+			"hero": {
+				"title": "Hacer que la inferencia de IA sea abierta, asequible y accesible para todos.",
+				"body": "Phaseo construye una pasarela de código abierto y verificable que permite descubrir y utilizar modelos de distintos proveedores sin dependencia. Trabajamos con proveedores para reducir el coste de la inferencia y utilizar esas mejoras para eliminar costes evitables de la plataforma y ampliar el acceso."
+			},
+			"updatesLink": "Lee las últimas novedades",
+			"fees": {
+				"title": "Se debe pagar por la inferencia, no por un recargo evitable de la pasarela.",
+				"body": "Phaseo es transparente sobre sus comisiones actuales. El objetivo a largo plazo es eliminar los costes evitables de la plataforma cuando las relaciones con proveedores, la eficiencia del enrutamiento y las operaciones sostenibles lo permitan.",
+				"tagline": "Economía abierta. Avances medibles."
+			},
+			"purpose": {
+				"title": "La infraestructura de IA debe servir a quienes la utilizan.",
+				"ecosystem": "El ecosistema de modelos está fragmentado entre laboratorios, proveedores de inferencia, nubes, precios, interfaces y políticas. Phaseo busca hacer esa complejidad comprensible y útil mediante una capa abierta que mantenga la libertad de elección.",
+				"success": "Queremos crear la mejor pasarela posible junto con sus usuarios. El éxito significa acceder al modelo adecuado, con el proveedor adecuado, a un precio justo, y entender qué ocurrió y dónde fue el dinero.",
+				"sharedSuccess": "También consideraremos cumplida la misión cuando el código abierto, los datos públicos o los estándares de Phaseo ayuden a otros productos a hacer la IA más accesible, aunque ninguna solicitud pase por Phaseo. El objetivo es un ecosistema más saludable, no la dependencia permanente de una pasarela."
+			},
+			"sustainability": {
+				"title": "La sostenibilidad permite que la misión perdure.",
+				"intro": "Phaseo se construye para ser responsable ante usuarios, proveedores y la comunidad de código abierto, sin someterse a la presión de maximizar el rendimiento para inversores.",
+				"marginTitle": "Margen mínimo sostenible",
+				"marginBody": "Queremos conservar solo el margen necesario para operar una infraestructura fiable, mantener al equipo y seguir mejorando el producto. Una mayor eficiencia debe mejorar el acceso, no aumentar simplemente lo que cobra la plataforma.",
+				"revenueTitle": "Los ingresos facilitan el acceso",
+				"revenueBody": "Los ingresos importan porque Phaseo debe seguir siendo fiable y mejorando. Son una forma de sostener la misión, no un motivo para comprometer los precios justos, la apertura o la experiencia del usuario.",
+				"independenceTitle": "Independencia desde el diseño",
+				"independenceBody": "Si alguna vez se considera financiación, debe preservar la independencia de Phaseo, su compromiso con el código abierto, el trato justo a los usuarios y la libertad de decidir a largo plazo. El capital riesgo convencional no es la opción predeterminada."
+			},
+			"providers": {
+				"title": "Los proveedores crecen cuando los desarrolladores pueden acceder a ellos.",
+				"distribution": "Phaseo ofrece a creadores de modelos y proveedores de inferencia una capa de distribución abierta: descubrimiento más sencillo, una integración consistente, señales útiles de demanda y participación directa en cómo se utilizan sus modelos.",
+				"costs": "Queremos trabajar directamente con proveedores y el ecosistema de infraestructura para reducir los costes de inferencia, computación, entrega, almacenamiento, observabilidad y pagos, mejorando la fiabilidad.",
+				"cycle": "Mejores condiciones comerciales, trabajo técnico compartido, créditos, software más eficiente y enrutamiento inteligente pueden reducir el coste de cada solicitud. El ciclo es sencillo: mejor acceso a proveedores reduce costes y mejora la fiabilidad, lo que atrae más desarrolladores y demanda enrutada.",
+				"partners": "Buscamos socios que quieran crecer con una pasarela abierta, no solo colocar un logotipo en otro mercado. Los proveedores pueden validar adaptadores, mejorar metadatos de modelos, definir el enrutamiento y la observabilidad y coordinar lanzamientos que atraigan usuarios relevantes.",
+				"testTitle": "La prueba de una alianza",
+				"testBody": "Una alianza debe mejorar la distribución del proveedor y al menos uno de estos aspectos: precio, acceso, fiabilidad, privacidad, portabilidad o experiencia del desarrollador, sin perjudicar los demás."
+			},
+			"evidence": {
+				"title": "Una misión debe verse en el producto.",
+				"body": "Evaluaremos el progreso con pruebas que los usuarios puedan ver, cuestionar y ayudar a mejorar."
+			},
+			"commitment": "Esta misión es un compromiso vivo. Si Phaseo no está a la altura, abre una incidencia, propone un cambio o ayúdanos a construir una versión mejor."
 		}
 	},
 	"faq": {

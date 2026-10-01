@@ -8,6 +8,8 @@ description: "通过 Phaseo Gateway 浏览 Gateway 原生模型，并可选择�
 
 默认情况下，此端点仅返回当前可路由的模型。设置 `availability=all` 可同时包含已知但当前不可用的模型。
 
+目录响应会缓存五分钟，并可能在缓存重新验证期间继续提供五分钟。这适用于当前目录的 JSON、RSS 和 Atom 表示；发布动态有自己时长更短的轮询缓存。
+
 `GET /models/me` 为未来根据当前调用方的护栏筛选模型而保留。目前该接口会返回 `501 not implemented`，因此现在请使用 `GET /models` 查询共享的 Gateway 目录。
 
 ## 常用筛选条件

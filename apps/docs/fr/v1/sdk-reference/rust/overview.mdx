@@ -11,9 +11,13 @@ Le client de haut niveau prend en charge :
 - requêtes à l’API Responses avec `Phaseo::responses(...)`
 - requêtes Chat Completions avec `Phaseo::chat_completions(...)`
 - d’autres points de terminaison JSON avec `Phaseo::post(...)`
+- découverte des routes de modèles en temps réel avec `Phaseo::model_endpoint_capabilities(...)`
+- rapports de prise en charge des paramètres avec `Phaseo::check_model_parameters(...)`
 - configuration basée sur l’environnement avec `Phaseo::from_env()`
 - points de terminaison HTTPS personnalisés et serveurs de développement loopback
 - statut, corps JSON, ID de requête et détails d’erreur structurés
+
+Les rapports de paramètres classent chaque paramètre demandé comme `supported`, `partial`, `unsupported` ou `unknown`, valident les valeurs et plages annoncées et renvoient les routes acceptant l’ensemble des paramètres.
 
 ```rust
 use phaseo::Phaseo;
@@ -22,7 +26,7 @@ use serde_json::json;
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let client = Phaseo::from_env()?;
     let response = client.responses(&json!({
-        "model": "openai/gpt-5.6-sol",
+        "model": "openai/gpt-6-astra",
         "input": "Reply with exactly: Rust SDK works"
     }))?;
 

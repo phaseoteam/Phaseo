@@ -12,6 +12,8 @@ Java SDK 现在在生成的客户端之上提供了一个轻量的手写封装�
 - `app.phaseo.sdk.Phaseo` 提供聊天、Responses、Anthropic 消息、图像、嵌入、内容审核、语音/转录/翻译、批处理、文件、视频、模型/供应商/端点/组织/定价、API 密钥发现与生命周期管理、工作区和当前密钥管理、价格计算、活动/额度/分析、生成记录查询、生命周期验证、通过直接辅助方法或 `client.asyncJobs.websocketUrl(...)` 获取异步任务 WebSocket URL，以及支持开发工具的遥测等高级辅助功能。
 - 如有需要，底层仍可使用 `app.phaseo.gen.Client` 和 `app.phaseo.gen.Operations`，以覆盖全部低级操作。
 
+`getModelEndpointCapabilities(...)` 返回提供商路由的实时元数据。`checkModelParameters(...)` 将各参数标记为 `supported`、`partial`、`unsupported` 或 `unknown`，验证公布的值和范围，并返回接受完整参数集的路由。
+
 ## 当前状态
 
 - 开发中；尚未发布到 Maven Central。

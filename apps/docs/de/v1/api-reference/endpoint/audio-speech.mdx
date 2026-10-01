@@ -15,6 +15,8 @@ description: "Mit der angegebenen Stimme und dem angegebenen Format TTS-Audio au
   `Zephyr`, `Puck`, `Charon`, `Kore`, `Fenrir`, `Leda`, `Orus`, `Aoede`, `Callirrhoe`, `Autonoe`, `Enceladus`, `Iapetus`, `Umbriel`, `Algieba`, `Despina`, `Erinome`, `Algenib`, `Rasalgethi`, `Laomedeia`, `Achernar`, `Alnilam`, `Schedar`, `Gacrux`, `Pulcherrima`, `Achird`, `Zubenelgenubi`, `Vindemiatrix`, `Sadachbia`, `Sadaltager`, `Sulafat`.
 - `elevenlabs`: gängige öffentliche Einstiegsstimmen werden zugeordnet (zum Beispiel `rachel`, `domi`, `bella`, `antoni`, `elli`, `josh`, `arnold`, `adam`, `sam`).
 
+Übergib für `eleven-labs/eleven-v4` und `eleven-labs/eleven-v4-turbo` eine beliebige 20-stellige ID aus der ElevenLabs-Stimmenbibliothek, auch für einen eigenen Stimmenklon. Setze `config.elevenlabs.voice_settings.stability` und `similarity_boost` nach Bedarf. Eleven v4 unterstützt weder `speed` noch `voice_settings.style`.
+
 Ist `voice` für die Anbieter-/Modellzuordnung der Route ungültig, gibt die Anfrage `400 invalid_request_error` mit `param: "voice"` zurück.
 
 ## Anbieterüberschreibungen

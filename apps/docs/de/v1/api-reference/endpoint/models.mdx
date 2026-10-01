@@ -8,6 +8,8 @@ description: "Gateway-native Modelle über das Phaseo Gateway durchsuchen, einsc
 
 Standardmäßig gibt dieser Endpunkt nur Modelle zurück, die aktuell geroutet werden können. Setzen Sie `availability=all`, um bekannte, derzeit aber nicht verfügbare Modelle einzuschließen.
 
+Katalogantworten werden fünf Minuten zwischengespeichert und können während der Cache-Revalidierung weitere fünf Minuten ausgeliefert werden. Dies gilt für die JSON-, RSS- und Atom-Darstellungen des aktuellen Katalogs; der Veröffentlichungsfeed hat einen eigenen, kürzeren Abfrage-Cache.
+
 `GET /models/me` ist für eine künftige Filterung nach den Guardrails des aktuellen Aufrufers vorgesehen. Der Endpunkt gibt derzeit `501 not implemented` zurück. Verwenden Sie deshalb vorerst `GET /models` für den gemeinsamen Gateway-Katalog.
 
 ## Nützliche Filter

@@ -1,5 +1,5 @@
 ---
-icon: "rotate"
+icon: "rotate-cw"
 title: "出力と再試行"
 description: "最終出力を検証し、モデルリクエストを再試行して、完了したPHP実行を確認します。"
 ---
@@ -30,7 +30,7 @@ echo $result->output;
 echo $result->run->status;
 echo $result->usage["total_tokens"];
 echo $result->usage["cost"];
-```$result = $agent->run(input: $prompt, client: $client);
+```
 
 echo $result->output;
 echo $result->run->status;

@@ -11,9 +11,13 @@ description: "أرسل طلبات إلى بوابة Phaseo من Rust باستخ�
 - طلبات Responses API باستخدام `Phaseo::responses(...)`
 - طلبات Chat Completions باستخدام `Phaseo::chat_completions(...)`
 - نقاط نهاية JSON أخرى باستخدام `Phaseo::post(...)`
+- اكتشاف مسارات النماذج مباشرةً باستخدام `Phaseo::model_endpoint_capabilities(...)`
+- تقارير دعم المعلمات باستخدام `Phaseo::check_model_parameters(...)`
 - إعداد يستند إلى البيئة باستخدام `Phaseo::from_env()`
 - نقاط نهاية HTTPS مخصصة وخوادم تطوير loopback
 - حالة منظّمة وجسم JSON ومعرّف الطلب وتفاصيل الخطأ
+
+تصنّف تقارير المعلمات كل معلمة مطلوبة على أنها `supported` أو `partial` أو `unsupported` أو `unknown`، وتتحقق من القيم والنطاقات المعلنة، وتعرض المسارات التي تقبل مجموعة المعلمات كاملةً.
 
 ```rust
 use phaseo::Phaseo;
@@ -22,7 +26,7 @@ use serde_json::json;
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let client = Phaseo::from_env()?;
     let response = client.responses(&json!({
-        "model": "openai/gpt-5.6-sol",
+        "model": "openai/gpt-6-astra",
         "input": "Reply with exactly: Rust SDK works"
     }))?;
 

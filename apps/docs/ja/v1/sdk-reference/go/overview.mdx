@@ -1,9 +1,10 @@
 ---
+icon: "book-open"
 title: "Go SDK"
 description: "Phaseo Gateway用の公式Goクライアントです。"
 ---
 
-公開済みの[`sdk-go/v2`](https://pkg.go.dev/github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v2)モジュールをインストールしてください。
+公開済みの[`sdk-go/v2`](https://pkg.go.dev/github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3)モジュールをインストールしてください。
 
 ローカルラッパー`packages/sdk/sdk-go/index.go`が現在公開しているメソッド：
 
@@ -14,6 +15,7 @@ description: "Phaseo Gateway用の公式Goクライアントです。"
 - `CreateSpeech(...)`, `CreateTranscription(...)`, `CreateTranslation(...)`
 - `CreateAnthropicMessage(...)`
 - `GetModels(...)`
+- `GetModelEndpointCapabilities(...)`, `CheckModelParameters(...)`
 - `ListOrganisations(...)`
 - `ListPricingModels(...)`
 - `CalculatePricing(...)`
@@ -42,7 +44,7 @@ description: "Phaseo Gateway用の公式Goクライアントです。"
 import (
   "context"
   "fmt"
-  phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v2"
+  phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3"
 )
 
 client := phaseo.New("YOUR_KEY", "https://api.phaseo.app/v1")
@@ -52,3 +54,5 @@ if err != nil {
 }
 fmt.Println(models)
 ```
+
+`CheckModelParameters` は現在のプロバイダールートのメタデータを使って、各パラメーターを `supported`、`partial`、`unsupported`、`unknown` のいずれかとして示し、公開された値と範囲を検証して、パラメーターの組み合わせ全体を受け入れるルートを返します。

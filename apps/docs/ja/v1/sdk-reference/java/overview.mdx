@@ -12,6 +12,8 @@ Java SDKには、生成されたクライアントを使う軽量な手書きラ
 - `app.phaseo.sdk.Phaseo`は、チャット、Responses、Anthropicメッセージ、画像、埋め込み、モデレーション、音声/文字起こし/翻訳、バッチ、ファイル、動画、モデル/プロバイダー/エンドポイント/組織/料金、APIキーの検索とライフサイクル管理、ワークスペースと現在のキーの管理、料金計算、アクティビティ/クレジット/分析、生成結果の検索、ライフサイクル検証、直接ヘルパーまたは`client.asyncJobs.websocketUrl(...)`による非同期ジョブのWebSocket URL、devtools対応テレメトリーのための高レベルヘルパーを提供します。
 - 必要に応じて低レベル操作をすべて利用できるよう、下位層では引き続き`app.phaseo.gen.Client`と`app.phaseo.gen.Operations`を使用できます。
 
+`getModelEndpointCapabilities(...)` は現在のプロバイダールートのメタデータを返します。`checkModelParameters(...)` は各パラメーターを `supported`、`partial`、`unsupported`、`unknown` のいずれかとして示し、公開された値と範囲を検証して、パラメーターの組み合わせ全体を受け入れるルートを返します。
+
 ## 現在の状況
 
 - 開発中。Maven Centralにはまだ公開されていません。

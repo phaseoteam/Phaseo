@@ -16,7 +16,7 @@
     "eyebrows": "section"
   },
   "api": {
-    "openapi": "openapi/v1/openapi.public.yaml",
+    "openapi": "openapi/v1/openapi.yaml",
     "version": "0.1.0",
     "playground": {
       "display": "interactive"

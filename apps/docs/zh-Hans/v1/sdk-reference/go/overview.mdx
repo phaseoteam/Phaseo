@@ -1,9 +1,10 @@
 ---
+icon: "book-open"
 title: "Go SDK"
 description: "Phaseo Gateway 的官方 Go 客户端。"
 ---
 
-安装已发布的 [`sdk-go/v2`](https://pkg.go.dev/github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v2) 模块。
+安装已发布的 [`sdk-go/v2`](https://pkg.go.dev/github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3) 模块。
 
 本地封装 `packages/sdk/sdk-go/index.go` 目前提供以下方法：
 
@@ -14,6 +15,7 @@ description: "Phaseo Gateway 的官方 Go 客户端。"
 - `CreateSpeech(...)`, `CreateTranscription(...)`, `CreateTranslation(...)`
 - `CreateAnthropicMessage(...)`
 - `GetModels(...)`
+- `GetModelEndpointCapabilities(...)`, `CheckModelParameters(...)`
 - `ListOrganisations(...)`
 - `ListPricingModels(...)`
 - `CalculatePricing(...)`
@@ -42,7 +44,7 @@ description: "Phaseo Gateway 的官方 Go 客户端。"
 import (
   "context"
   "fmt"
-  phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v2"
+  phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3"
 )
 
 client := phaseo.New("YOUR_KEY", "https://api.phaseo.app/v1")
@@ -52,3 +54,5 @@ if err != nil {
 }
 fmt.Println(models)
 ```
+
+`CheckModelParameters` 使用提供商路由的实时元数据，将各参数标记为 `supported`、`partial`、`unsupported` 或 `unknown`，验证公布的值和范围，并返回接受完整参数集的路由。

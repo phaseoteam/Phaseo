@@ -15,6 +15,8 @@ description: "إنشاء صوت TTS من النص باستخدام الصوت و
   `Zephyr`, `Puck`, `Charon`, `Kore`, `Fenrir`, `Leda`, `Orus`, `Aoede`, `Callirrhoe`, `Autonoe`, `Enceladus`, `Iapetus`, `Umbriel`, `Algieba`, `Despina`, `Erinome`, `Algenib`, `Rasalgethi`, `Laomedeia`, `Achernar`, `Alnilam`, `Schedar`, `Gacrux`, `Pulcherrima`, `Achird`, `Zubenelgenubi`, `Vindemiatrix`, `Sadachbia`, `Sadaltager`, `Sulafat`.
 - `elevenlabs`: تُطابق أصوات البداية العامة الشائعة (مثل `rachel`, `domi`, `bella`, `antoni`, `elli`, `josh`, `arnold`, `adam`, `sam`).
 
+مع `eleven-labs/eleven-v4` و`eleven-labs/eleven-v4-turbo`، مرّر أي معرّف من 20 محرفًا من مكتبة أصوات ElevenLabs، بما في ذلك نسخة صوتية مخصصة. اضبط `config.elevenlabs.voice_settings.stability` و`similarity_boost` حسب الحاجة. لا يدعم Eleven v4 الحقلين `speed` و`voice_settings.style`.
+
 إذا لم تكن قيمة `voice` صالحة لمزيج المزوّد والنموذج المحدد للمسار، فسيُرجع الطلب `400 invalid_request_error` مع `param: "voice"`.
 
 ## تجاوزات المزوّد

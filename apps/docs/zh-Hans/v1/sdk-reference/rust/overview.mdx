@@ -11,9 +11,13 @@ description: "使用官方 phaseo crate 从 Rust 向 Phaseo Gateway 发送请求
 - 使用 `Phaseo::responses(...)` 调用 Responses API
 - 使用 `Phaseo::chat_completions(...)` 调用 Chat Completions
 - 使用 `Phaseo::post(...)` 调用其他 JSON 端点
+- 使用 `Phaseo::model_endpoint_capabilities(...)` 实时发现模型路由
+- 使用 `Phaseo::check_model_parameters(...)` 获取参数支持报告
 - 使用 `Phaseo::from_env()` 读取环境变量配置
 - 自定义 HTTPS 端点和本地回环开发服务器
 - 结构化状态、JSON 正文、请求 ID 和错误详情
+
+参数报告将请求的各参数标记为 `supported`、`partial`、`unsupported` 或 `unknown`，验证公布的值和范围，并返回接受完整参数集的路由。
 
 ```rust
 use phaseo::Phaseo;
@@ -22,7 +26,7 @@ use serde_json::json;
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let client = Phaseo::from_env()?;
     let response = client.responses(&json!({
-        "model": "openai/gpt-5.6-sol",
+        "model": "openai/gpt-6-astra",
         "input": "Reply with exactly: Rust SDK works"
     }))?;
 

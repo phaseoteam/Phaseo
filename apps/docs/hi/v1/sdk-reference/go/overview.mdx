@@ -1,9 +1,10 @@
 ---
+icon: "book-open"
 title: "Go SDK"
 description: "Phaseo Gateway के लिए आधिकारिक Go client।"
 ---
 
-Published [`sdk-go/v2`](https://pkg.go.dev/github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v2) module install करें।
+Published [`sdk-go/v2`](https://pkg.go.dev/github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3) module install करें।
 
 `packages/sdk/sdk-go/index.go` का local wrapper अभी ये methods देता है:
 
@@ -14,6 +15,7 @@ Published [`sdk-go/v2`](https://pkg.go.dev/github.com/phaseoteam/Phaseo/packages
 - `CreateSpeech(...)`, `CreateTranscription(...)`, `CreateTranslation(...)`
 - `CreateAnthropicMessage(...)`
 - `GetModels(...)`
+- `GetModelEndpointCapabilities(...)`, `CheckModelParameters(...)`
 - `ListOrganisations(...)`
 - `ListPricingModels(...)`
 - `CalculatePricing(...)`
@@ -42,7 +44,7 @@ Published [`sdk-go/v2`](https://pkg.go.dev/github.com/phaseoteam/Phaseo/packages
 import (
   "context"
   "fmt"
-  phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v2"
+  phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3"
 )
 
 client := phaseo.New("YOUR_KEY", "https://api.phaseo.app/v1")
@@ -52,3 +54,5 @@ if err != nil {
 }
 fmt.Println(models)
 ```
+
+`CheckModelParameters` प्रदाता रूट के लाइव मेटाडेटा से हर पैरामीटर को `supported`, `partial`, `unsupported` या `unknown` चिह्नित करता है, घोषित मानों और सीमाओं की जाँच करता है और पूरे पैरामीटर सेट को स्वीकार करने वाले रूट लौटाता है।

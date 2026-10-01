@@ -1,4 +1,5 @@
 ---
+icon: "activity"
 title: "イベント、再試行、エラー"
 description: "Rustエージェントの同期実行を監視し、モデルやツールの失敗を処理します。"
 ---
@@ -47,7 +48,7 @@ use std::time::Duration;
 
 let definition = AgentDefinition::new(
     "resilient-agent",
-    "openai/gpt-5.6-sol",
+    "openai/gpt-6-astra",
 )
 .model_retries(2, Duration::from_millis(250));
 ```

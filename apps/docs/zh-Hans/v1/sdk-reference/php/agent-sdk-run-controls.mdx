@@ -1,5 +1,5 @@
 ---
-icon: "rotate"
+icon: "rotate-cw"
 title: "输出与重试"
 description: "验证最终输出、重试模型请求，并检查已完成的 PHP 运行。"
 ---
@@ -30,7 +30,7 @@ echo $result->output;
 echo $result->run->status;
 echo $result->usage["total_tokens"];
 echo $result->usage["cost"];
-```$result = $agent->run(input: $prompt, client: $client);
+```
 
 echo $result->output;
 echo $result->run->status;

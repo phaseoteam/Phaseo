@@ -1,0 +1,51 @@
+---
+title: "Muse Code"
+icon: "/icons/brands/meta.svg"
+description: "使用 Phaseo CLI 通过 Phaseo Gateway 运行 Muse Code。"
+---
+
+Phaseo CLI 可以使用专用网关密钥和临时提供商设置启动 Muse Code。
+
+## 使用 Phaseo CLI 配置
+
+```bash
+phaseo login
+phaseo muse --model meta/muse-spark-1.3 --
+```
+
+使用 `--catalog all` 提供所有有效的 Phaseo 文本/聊天模型，或使用 `--dry-run --json` 预览启动计划，而不创建密钥或启动 Muse Code：
+
+```bash
+phaseo muse --catalog all --dry-run --json
+```
+
+使用 `phaseo run muse ...` 这一显式命令形式。将 Muse Code 的选项放在 `--` 后，让 Phaseo 先处理自己的选项。
+
+在类 Unix 系统上，首次交互式运行会提示使用 Meta 的安装程序安装 Muse Code。在 Windows 上，请单独安装 Muse Code，检查 `muse --version`，并使用 `--skip-install`。
+
+## 手动配置
+
+Muse Code 的公开配置围绕 Meta 自有的 Model API 和认证流程构建。Meta 目前未记录将该端点替换为第三方 OpenAI 兼容网关的稳定持久设置，因此通过 Phaseo 路由 Muse Code 的受支持方式是使用 Phaseo CLI 运行器。
+
+如果要从其他客户端手动使用 Phaseo 模型，请通过 `https://api.phaseo.app/v1` 和 Phaseo API 密钥使用 [OpenAI 兼容集成](./openai-sdk)。不要将运行器的临时 Muse 设置复制到常规 Muse 配置中；这些文件属于实现细节，会在运行器退出时删除。
+
+## 验证
+
+通过已启动的运行环境发送简短提示词，然后确认请求出现在 Phaseo 活动中。运行器将 `settings.json` 写入临时的 `XDG_CONFIG_HOME`，并在 Muse Code 退出时删除。
+
+## 故障排除
+
+### 未安装 Muse Code
+
+单独安装 Muse Code，检查 `muse --version`，然后使用 `--skip-install` 重新运行。
+
+### 未列出模型
+
+使用 `--catalog all` 或通过 `--model` 传入模型 ID。Phaseo 网关不要求使用模型发现功能。
+
+## 相关内容
+
+- [Phaseo CLI](./phaseo-cli)
+- [Meta Model API](https://ai.meta.com/llama)
+- [模型](../../api-reference/endpoint/models.mdx)
+- [活动](../../api-reference/endpoint/activity.mdx)

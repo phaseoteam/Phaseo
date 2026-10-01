@@ -12,6 +12,8 @@ O SDK Java agora inclui um wrapper leve, escrito à mão, sobre o cliente gerado
 - `app.phaseo.sdk.Phaseo` oferece helpers para chat, respostas, mensagens Anthropic, imagens, embeddings, moderação, voz/transcrição/tradução, lotes, arquivos, vídeo, modelos/provedores/endpoints/organizações/preços, descoberta e alterações do ciclo de vida de chaves de API, ciclo de vida do workspace e da chave atual, cálculo de preços, atividade/créditos/análises, consulta de gerações, validação do ciclo de vida, URLs WebSocket de tarefas assíncronas por helpers diretos ou por `client.asyncJobs.websocketUrl(...)`, além de telemetria compatível com devtools.
 - `app.phaseo.gen.Client` e `app.phaseo.gen.Operations` continuam disponíveis na camada inferior para oferecer cobertura completa das operações de baixo nível quando necessário.
 
+`getModelEndpointCapabilities(...)` retorna metadados atuais das rotas de provedores. `checkModelParameters(...)` classifica cada parâmetro como `supported`, `partial`, `unsupported` ou `unknown`, valida os valores e intervalos informados e retorna as rotas que aceitam o conjunto completo de parâmetros.
+
 ## Status atual
 
 - Em desenvolvimento; ainda não publicado no Maven Central.

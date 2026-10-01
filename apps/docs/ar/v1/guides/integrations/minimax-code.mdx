@@ -1,0 +1,67 @@
+---
+title: "MiniMax Code"
+icon: "/icons/brands/minimax.svg"
+description: "شغّل MiniMax Code عبر Phaseo Gateway باستخدام Phaseo CLI."
+---
+
+يمكن لـ Phaseo CLI تشغيل MiniMax Code بمفتاح مخصص للبوابة وإعدادات مؤقتة للمزود.
+
+## الإعداد باستخدام Phaseo CLI
+
+```bash
+phaseo login
+phaseo minimax --model openai/gpt-5.6-terra --
+```
+
+يستخدم المشغّل الأمر `mcode provider add` من MiniMax Code مع نقطة نهاية Phaseo المتوافقة مع OpenAI، ثم يشغّل `mcode` بالمزود المحدد. استخدم `--catalog all` لتسجيل جميع نماذج النص/الدردشة النشطة في Phaseo المتوافقة مع Chat Completions، أو عاين خطة التثبيت والتشغيل دون إنشاء مفتاح:
+
+```bash
+phaseo minimax --catalog all --dry-run --json
+```
+
+استخدم `phaseo run minimax ...` للصيغة الصريحة للأمر. ضع خيارات MiniMax Code بعد `--` حتى يتمكن Phaseo من معالجة خياراته أولًا.
+
+على الأنظمة الشبيهة بـ Unix، يعرض التشغيل التفاعلي الأول تثبيت MiniMax Code بمثبّت MiniMax الرسمي. على Windows، يستخدم Phaseo مثبّت PowerShell الرسمي. إذا كنت تدير MiniMax Code بشكل منفصل، فثبّته بنفسك وتحقق من `mcode --version` وأعد التشغيل باستخدام `--skip-install`.
+
+يضبط المشغّل `MINIMAX_DATA_DIR` على مجلد مؤقت ويحذفه عند خروج `mcode`. لا تتغير تهيئة `~/.minimax` المعتادة، ولا يُمرّر مفتاح Phaseo المخصص إلا إلى عملية الإعداد المؤقت للمزود.
+
+## التهيئة اليدوية
+
+لإعداد مزود دائم في MiniMax Code، استخدم أوامر المزود الخاصة بـ MiniMax Code مباشرةً:
+
+```bash
+export MCODE_PROVIDER_API_KEY="your_phaseo_api_key"
+mcode provider add \
+  --name "Phaseo" \
+  --base-url "https://api.phaseo.app/v1" \
+  --api-format openai-completions \
+  --model "openai/gpt-5.6-terra" \
+  --use
+```
+
+يخزّن MiniMax Code إعدادات المزود الدائمة في مجلد البيانات المهيأ. استخدم مشغّل Phaseo CLI إذا أردت عزل هذه الإعدادات في جلسة واحدة.
+
+## التحقق
+
+أرسل مطالبة قصيرة عبر MiniMax Code، ثم تأكد من ظهور الطلب في نشاط Phaseo. لفحص معرّفات النماذج المتاحة، استخدم `--catalog all` أو مرّر نموذج Phaseo محددًا باستخدام `--model`.
+
+## استكشاف الأخطاء وإصلاحها
+
+### MiniMax Code غير مثبت
+
+شغّل الأمر في طرفية تفاعلية للموافقة على المثبّت الرسمي، أو ثبّت MiniMax Code بشكل منفصل وأعد التشغيل باستخدام `--skip-install`.
+
+### المزود أو النموذج غير مدرج
+
+استخدم `phaseo minimax --catalog all` أو مرّر معرّف النموذج المطلوب باستخدام `--model`. تنشئ CLI المزود في مجلد بيانات MiniMax مؤقت قبل تشغيل `mcode`.
+
+### أحتاج إلى ACP بدلًا من CLI التفاعلية
+
+يتيح MiniMax Code أيضًا عملية ACP عبر `mcode acp` لتكاملات المحررات والتطبيقات المضيفة. `phaseo minimax` هو مشغّل CLI التفاعلية؛ استخدم تهيئة ACP الخاصة بـ MiniMax Code عندما يتواصل التطبيق المضيف عبر ACP مباشرةً.
+
+## روابط ذات صلة
+
+- [Phaseo CLI](./phaseo-cli)
+- [وكلاء البرمجة](./coding-assistants)
+- [النماذج](../../api-reference/endpoint/models.mdx)
+- [النشاط](../../api-reference/endpoint/activity.mdx)

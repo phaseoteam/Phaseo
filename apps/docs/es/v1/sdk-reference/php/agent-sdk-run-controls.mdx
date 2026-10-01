@@ -1,5 +1,5 @@
 ---
-icon: "rotate"
+icon: "rotate-cw"
 title: "Salidas y reintentos"
 description: "Valida las salidas finales, reintenta solicitudes al modelo y consulta ejecuciones completadas de PHP."
 ---
@@ -30,7 +30,7 @@ echo $result->output;
 echo $result->run->status;
 echo $result->usage["total_tokens"];
 echo $result->usage["cost"];
-```$result = $agent->run(input: $prompt, client: $client);
+```
 
 echo $result->output;
 echo $result->run->status;

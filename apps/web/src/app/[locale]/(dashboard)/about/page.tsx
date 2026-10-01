@@ -65,60 +65,61 @@ function TextLink({
 }
 
 export default async function AboutPage() {
+	const t = await getTranslations("Site.about");
 const beliefs = [
 	{
-		title: "Open Source Builds Trust",
-		description: "The gateway, its behavior, and its standards should be inspectable and improvable by the people who depend on them.",
+		title: t("current.beliefs.openSource.title"),
+		description: t("current.beliefs.openSource.body"),
 		icon: GitBranch,
 	},
 	{
-		title: "No Surplus Fee Is the Goal",
-		description: "The long-term goal is to remove avoidable platform cost so people pay for inference, not a permanent gateway surcharge. Any promise about that must follow sustainable economics.",
+		title: t("current.beliefs.fees.title"),
+		description: t("current.beliefs.fees.body"),
 		icon: Wallet,
 	},
 	{
-		title: "Access Should Be Broad",
-		description: "People should be able to discover and use the best available models, regardless of which provider operates them.",
+		title: t("current.beliefs.access.title"),
+		description: t("current.beliefs.access.body"),
 		icon: Users,
 	},
 	{
-		title: "Choice Should Be Real",
-		description: "A stable, open interface should make it possible to change models or providers without rebuilding everything.",
+		title: t("current.beliefs.choice.title"),
+		description: t("current.beliefs.choice.body"),
 		icon: Route,
 	},
 	{
-		title: "Transparency Beats Lock-In",
-		description: "Public model data, clear pricing, lifecycle signals, and observable requests are better than opaque convenience.",
+		title: t("current.beliefs.transparency.title"),
+		description: t("current.beliefs.transparency.body"),
 		icon: ShieldCheck,
 	},
 	{
-		title: "Revenue Should Serve Access",
-		description: "Reliable infrastructure needs sustainable revenue, but revenue is the means to keep the service useful, not the reason the service exists.",
+		title: t("current.beliefs.revenue.title"),
+		description: t("current.beliefs.revenue.body"),
 		icon: Scale,
 	},
 ] as const;
 
 const forYou = {
-	title: "For You.",
-	description: "Phaseo is built for you: the person who wants the freedom to choose the right model, the clarity to understand the trade-offs, and the confidence that the gateway is acting in your best interests. We want this to be the most honest and transparent AI gateway you use, shaped by the community it serves and accountable to the people who rely on it.",
+	title: t("current.forYou.title"),
+	description: t("current.forYou.body"),
 	icon: Heart,
 } as const;
 const ForYouIcon = forYou.icon;
 
 const builtFor = [
 	{
-		title: "For People",
-		description: "More ways to find useful models, understand the trade-offs, and use AI without a permanent commitment to one gatekeeper.",
+		title: t("current.audiences.people.title"),
+		description: t("current.audiences.people.body"),
 		icon: Users,
 	},
 	{
-		title: "For Developers",
-		description: "A portable integration surface, reliable routing, and enough visibility to understand what happened when a request was served.",
+		title: t("current.audiences.developers.title"),
+		description: t("current.audiences.developers.body"),
 		icon: Route,
 	},
 	{
-		title: "For Providers",
-		description: "An open distribution layer that can bring qualified demand, useful feedback, and a direct voice in how models are represented and used.",
+		title: t("current.audiences.providers.title"),
+		description: t("current.audiences.providers.body"),
 		icon: Handshake,
 	},
 ] as const;
@@ -129,14 +130,12 @@ const builtFor = [
 			<div className="mx-4 px-2 py-12 sm:mx-6 sm:px-0 sm:py-16 lg:mx-8 xl:mx-10 2xl:mx-auto 2xl:max-w-[1460px]">
 				<section className="space-y-7">
 					<h1 className="max-w-4xl text-4xl font-semibold tracking-tight text-foreground sm:text-5xl">
-						AI Should Benefit Everyone.
-					</h1>
+						{t("current.hero.title")}</h1>
 					<p className="max-w-none text-base leading-7 text-muted-foreground">
-						I started Phaseo to make that principle practical: an open-source, provider-neutral gateway that lets people discover and use as many models as possible without locking themselves to one provider.
-					</p>
+						{t("current.hero.body")}</p>
 					<div className="flex flex-wrap items-center gap-x-6 gap-y-3 pt-1">
-						<TextLink href="/mission" label="Read Our Mission" />
-						<TextLink href="/models" label="Browse the Model Catalog" />
+						<TextLink href="/mission" label={t("current.missionLink")} />
+						<TextLink href="/models" label={t("current.catalogLink")} />
 					</div>
 				</section>
 
@@ -146,16 +145,14 @@ const builtFor = [
 
 				<section className="grid gap-8 lg:grid-cols-[0.78fr_1.22fr] lg:items-start">
 					<SectionTitle
-						title="Who Phaseo Is."
-						description="An independent project built around a simple idea: access to intelligence should expand people&apos;s choices, not narrow them."
+						title={t("current.who.title")}
+						description={t("current.who.intro")}
 					/>
 					<div className="space-y-4 border-l border-zinc-200/80 pl-6 text-sm leading-7 text-muted-foreground dark:border-zinc-800/80">
 						<p>
-							Phaseo is the company and the open-source project I am building to connect model discovery, inference, and honest operational information in one place.
-						</p>
+							{t("current.who.project")}</p>
 						<p>
-							The aim is not to become another permanent gatekeeper. It is to make the layer between people and model providers more useful, more portable, and easier to question.
-						</p>
+							{t("current.who.goal")}</p>
 					</div>
 				</section>
 
@@ -165,8 +162,8 @@ const builtFor = [
 
 				<section className="space-y-7">
 					<SectionTitle
-						title="What We Stand For."
-						description="These are the choices behind the product, the business, and the relationships we want to build."
+						title={t("current.beliefsTitle")}
+						description={t("current.beliefsIntro")}
 					/>
 					<div className="grid gap-x-8 gap-y-7 md:grid-cols-2">
 						{beliefs.map((belief) => {
@@ -196,25 +193,21 @@ const builtFor = [
 				<section className="grid gap-8 lg:grid-cols-[1fr_0.86fr] lg:items-start">
 					<div className="space-y-6">
 						<SectionTitle
-							title="Why an Open Gateway."
-							description="The AI ecosystem is becoming more capable and more fragmented at the same time."
+							title={t("current.gateway.title")}
+							description={t("current.gateway.intro")}
 						/>
 						<div className="space-y-4 text-sm leading-7 text-muted-foreground">
 							<p>
-								Every provider has different models, APIs, pricing, limits, and policies. That fragmentation creates unnecessary work and makes it hard for people to know what they are paying for or where a request went.
-							</p>
+								{t("current.gateway.fragmentation")}</p>
 							<p>
-								An open gateway can make that complexity navigable without hiding it. Phaseo is meant to keep integrations portable, show the trade-offs, and help providers compete on quality, reliability, and value rather than on lock-in.
-							</p>
+								{t("current.gateway.role")}</p>
 						</div>
 					</div>
 					<blockquote className="border-l border-emerald-500/50 pl-6 dark:border-emerald-400/50">
 						<p className="text-xl font-medium leading-8 tracking-tight text-foreground sm:text-2xl">
-							“The best gateway gives users more choice over time, stays transparent and accountable to them, and is built with the community it serves.”
-						</p>
+							{t("current.gateway.quote")}</p>
 						<footer className="mt-4 text-sm leading-6 text-muted-foreground">
-							It should be shaped by the people who use it, not only by the company that runs it.
-						</footer>
+							{t("current.gateway.community")}</footer>
 					</blockquote>
 				</section>
 
@@ -224,22 +217,18 @@ const builtFor = [
 
 				<section className="grid gap-8 lg:grid-cols-[0.78fr_1.22fr] lg:items-start">
 					<SectionTitle
-						title="Inspired by Missions That Put People First."
-						description="We are inspired by the idea that advanced AI should improve life for everyone, not only the companies that control the infrastructure."
+						title={t("current.inspiration.title")}
+						description={t("current.inspiration.intro")}
 					/>
 					<div className="space-y-4 text-sm leading-7 text-muted-foreground">
 						<p>
-							OpenAI&apos;s public mission that AGI should benefit all of humanity puts the right question at the center: who ultimately benefits from more capable AI?
-						</p>
+							{t("current.inspiration.openai")}</p>
 						<p>
-							Phaseo is taking a narrower, practical route toward the same kind of human benefit. If people can reach more models through an open-source gateway, compare them honestly, and move between providers freely, more of the value stays with the people building and using the technology.
-						</p>
+							{t("current.inspiration.benefit")}</p>
 						<p>
-							That is an inspiration, not an affiliation. Phaseo is its own project, with its own responsibility to prove that openness, portability, and fair access can work in practice.
-						</p>
+							{t("current.inspiration.independence")}</p>
 						<p>
-							There is also a business-model difference. A conventional for-profit platform has to balance user value with the financial return expected by its owners. Phaseo is being built around a different priority: sustainable operations, usefulness first, and no surplus fee as the destination. The point is not to take a bigger toll; it is to make the toll unnecessary.
-						</p>
+							{t("current.inspiration.economics")}</p>
 					</div>
 				</section>
 
@@ -249,8 +238,8 @@ const builtFor = [
 
 				<section className="space-y-7">
 					<SectionTitle
-						title="Built for You, With the Community."
-						description="Phaseo exists to give you a more honest, transparent, and portable way to use AI, shaped by the people who rely on it."
+						title={t("current.community.title")}
+						description={t("current.community.body")}
 					/>
 					<div className="space-y-8">
 						<div className="w-full">
@@ -285,25 +274,22 @@ const builtFor = [
 				<section className="py-8">
 					<div className="grid gap-6 lg:grid-cols-[1fr_auto] lg:items-center">
 						<div className="space-y-2">
-							<h2 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">More Access. Less Lock-In.</h2>
+							<h2 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">{t("current.cta.title")}</h2>
 							<p className="max-w-3xl text-sm leading-6 text-muted-foreground">
-								That is the future Phaseo is working toward: infrastructure that serves people, gives providers a fair path to be discovered, and keeps the ecosystem open enough to improve.
-							</p>
+								{t("current.cta.body")}</p>
 						</div>
 						<div className="flex flex-wrap items-center gap-3 lg:justify-end">
 							<Button asChild size="lg">
 								<Link href="/sign-up">
-									Get Started
-									<ArrowRight className="size-4" aria-hidden="true" />
+									{t("current.cta.start")}<ArrowRight className="size-4" aria-hidden="true" />
 								</Link>
 							</Button>
 							<Button asChild size="lg" variant="outline">
-								<Link href="/mission">Read Our Mission</Link>
+								<Link href="/mission">{t("current.missionLink")}</Link>
 							</Button>
 							<Button asChild className="px-1 text-foreground hover:text-foreground/70 dark:text-white dark:hover:text-white/70" size="lg" variant="link">
 								<Link href="/contact">
-									Get in Touch
-									<ArrowRight className="size-4" aria-hidden="true" />
+									{t("current.cta.contact")}<ArrowRight className="size-4" aria-hidden="true" />
 								</Link>
 							</Button>
 						</div>

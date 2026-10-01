@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 import yaml from "js-yaml";
 
 const docsRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const sourcePath = path.join(docsRoot, "openapi/v1/openapi.public.yaml");
+const sourcePath = path.join(docsRoot, "openapi/v1/openapi.yaml");
 const translationsPath = path.join(docsRoot, "openapi/localized-copy.json");
 const locales = ["es", "fr", "de", "pt-BR", "hi", "ja", "zh-Hans", "ar"];
 const checkOnly = process.argv.includes("--check");

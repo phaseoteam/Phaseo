@@ -1,4 +1,5 @@
 ---
+icon: "blocks"
 title: "Enregistrer et reprendre des exécutions"
 description: "Enregistrez l’état d’exécution de l’Agent SDK Rust et continuez après les outils ou la revue humaine."
 ---
@@ -35,7 +36,7 @@ use serde_json::json;
 
 let definition = AgentDefinition::new(
     "review-agent",
-    "openai/gpt-5.6-sol",
+    "openai/gpt-6-astra",
 )
 .human_review(|context| {
     if context.response.message.content.contains("needs approval") {

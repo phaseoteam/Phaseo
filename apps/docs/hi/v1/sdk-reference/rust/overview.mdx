@@ -11,9 +11,13 @@ Rust ऐप्लिकेशन से Phaseo Gateway पर अनुरोध
 - `Phaseo::responses(...)` से Responses API अनुरोध
 - `Phaseo::chat_completions(...)` से Chat Completions अनुरोध
 - `Phaseo::post(...)` से अन्य JSON एंडपॉइंट
+- `Phaseo::model_endpoint_capabilities(...)` से लाइव मॉडल रूट खोज
+- `Phaseo::check_model_parameters(...)` से पैरामीटर समर्थन रिपोर्ट
 - `Phaseo::from_env()` से पर्यावरण-आधारित कॉन्फ़िगरेशन
 - कस्टम HTTPS एंडपॉइंट और loopback विकास सर्वर
 - संरचित स्थिति, JSON बॉडी, अनुरोध ID और त्रुटि विवरण
+
+पैरामीटर रिपोर्ट हर अनुरोधित पैरामीटर को `supported`, `partial`, `unsupported` या `unknown` चिह्नित करती है, घोषित मानों और सीमाओं की जाँच करती है और पूरे पैरामीटर सेट को स्वीकार करने वाले रूट लौटाती है।
 
 ```rust
 use phaseo::Phaseo;
@@ -22,7 +26,7 @@ use serde_json::json;
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let client = Phaseo::from_env()?;
     let response = client.responses(&json!({
-        "model": "openai/gpt-5.6-sol",
+        "model": "openai/gpt-6-astra",
         "input": "Reply with exactly: Rust SDK works"
     }))?;
 

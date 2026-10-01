@@ -15,6 +15,8 @@ description: "指定した音声と形式で、テキストからTTS音声を生
   `Zephyr`, `Puck`, `Charon`, `Kore`, `Fenrir`, `Leda`, `Orus`, `Aoede`, `Callirrhoe`, `Autonoe`, `Enceladus`, `Iapetus`, `Umbriel`, `Algieba`, `Despina`, `Erinome`, `Algenib`, `Rasalgethi`, `Laomedeia`, `Achernar`, `Alnilam`, `Schedar`, `Gacrux`, `Pulcherrima`, `Achird`, `Zubenelgenubi`, `Vindemiatrix`, `Sadachbia`, `Sadaltager`, `Sulafat`.
 - `elevenlabs`: 一般公開されている初期音声をマッピングします（例: `rachel`, `domi`, `bella`, `antoni`, `elli`, `josh`, `arnold`, `adam`, `sam`).
 
+`eleven-labs/eleven-v4` と `eleven-labs/eleven-v4-turbo` には、カスタムクローンを含む任意の 20 文字の ElevenLabs 音声ライブラリ ID を指定できます。必要に応じて `config.elevenlabs.voice_settings.stability` と `similarity_boost` を設定してください。Eleven v4 は `speed` と `voice_settings.style` に対応していません。
+
 指定した`voice`がルート先のプロバイダーとモデルで無効な場合、リクエストは`param: "voice"`を含む`400 invalid_request_error`を返します。
 
 ## プロバイダー固有の設定

@@ -1,4 +1,5 @@
 ---
+icon: "book-open"
 title: "C# SDK"
 description: "Phaseo Gateway用の公式.NETクライアントです。"
 ---
@@ -6,6 +7,8 @@ description: "Phaseo Gateway用の公式.NETクライアントです。"
 NuGetから公開パッケージ[`Phaseo.Sdk`](https://www.nuget.org/packages/Phaseo.Sdk)をインストールします。
 
 ローカルラッパー`packages/sdk/sdk-csharp/Client.cs`は現在、チャット、Responses、Anthropicメッセージ、画像、音声、埋め込み、モデレーション、ファイル、バッチ、動画、生成、モデル/プロバイダー/エンドポイント/組織/料金、APIキー検索とライフサイクル変更、ワークスペース/現在のキーのライフサイクルヘルパー、料金計算、アクティビティ/クレジット/分析、ヘルスチェック、モデルのライフサイクル検証、非同期ジョブのWebSocket URLを扱う高水準ヘルパーを公開しています。直接のヘルパーと`client.AsyncJobs.WebSocketUrl(...)`の両方から利用できます。
+
+`GetModelEndpointCapabilities(...)` は現在のプロバイダールートのメタデータを返します。`CheckModelParameters(...)` は各パラメーターを `supported`、`partial`、`unsupported`、`unknown` のいずれかとして示し、公開された値と範囲を検証して、パラメーターの組み合わせ全体を受け入れるルートを返します。
 
 ```csharp
 using PhaseoSdk;

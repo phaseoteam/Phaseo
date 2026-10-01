@@ -227,6 +227,92 @@
 			"contact": "Contact",
 			"terms": "Terms",
 			"privacy": "Privacy"
+		},
+		"current": {
+			"beliefs": {
+				"openSource": {
+					"title": "Open Source Builds Trust",
+					"body": "The gateway, its behavior, and its standards should be inspectable and improvable by the people who depend on them."
+				},
+				"fees": {
+					"title": "No Surplus Fee Is the Goal",
+					"body": "The long-term goal is to remove avoidable platform cost so people pay for inference, not a permanent gateway surcharge. Any promise about that must follow sustainable economics."
+				},
+				"access": {
+					"title": "Access Should Be Broad",
+					"body": "People should be able to discover and use the best available models, regardless of which provider operates them."
+				},
+				"choice": {
+					"title": "Choice Should Be Real",
+					"body": "A stable, open interface should make it possible to change models or providers without rebuilding everything."
+				},
+				"transparency": {
+					"title": "Transparency Beats Lock-In",
+					"body": "Public model data, clear pricing, lifecycle signals, and observable requests are better than opaque convenience."
+				},
+				"revenue": {
+					"title": "Revenue Should Serve Access",
+					"body": "Reliable infrastructure needs sustainable revenue, but revenue is the means to keep the service useful, not the reason the service exists."
+				}
+			},
+			"forYou": {
+				"title": "For You.",
+				"body": "Phaseo is built for you: the person who wants the freedom to choose the right model, the clarity to understand the trade-offs, and the confidence that the gateway is acting in your best interests. We want this to be the most honest and transparent AI gateway you use, shaped by the community it serves and accountable to the people who rely on it."
+			},
+			"audiences": {
+				"people": {
+					"title": "For People",
+					"body": "More ways to find useful models, understand the trade-offs, and use AI without a permanent commitment to one gatekeeper."
+				},
+				"developers": {
+					"title": "For Developers",
+					"body": "A portable integration surface, reliable routing, and enough visibility to understand what happened when a request was served."
+				},
+				"providers": {
+					"title": "For Providers",
+					"body": "An open distribution layer that can bring qualified demand, useful feedback, and a direct voice in how models are represented and used."
+				}
+			},
+			"hero": {
+				"title": "AI Should Benefit Everyone.",
+				"body": "I started Phaseo to make that principle practical: an open-source, provider-neutral gateway that lets people discover and use as many models as possible without locking themselves to one provider."
+			},
+			"missionLink": "Read Our Mission",
+			"catalogLink": "Browse the Model Catalog",
+			"who": {
+				"title": "Who Phaseo Is.",
+				"intro": "An independent project built around a simple idea: access to intelligence should expand people's choices, not narrow them.",
+				"project": "Phaseo is the company and the open-source project I am building to connect model discovery, inference, and honest operational information in one place.",
+				"goal": "The aim is not to become another permanent gatekeeper. It is to make the layer between people and model providers more useful, more portable, and easier to question."
+			},
+			"beliefsTitle": "What We Stand For.",
+			"beliefsIntro": "These are the choices behind the product, the business, and the relationships we want to build.",
+			"gateway": {
+				"title": "Why an Open Gateway.",
+				"intro": "The AI ecosystem is becoming more capable and more fragmented at the same time.",
+				"fragmentation": "Every provider has different models, APIs, pricing, limits, and policies. That fragmentation creates unnecessary work and makes it hard for people to know what they are paying for or where a request went.",
+				"role": "An open gateway can make that complexity navigable without hiding it. Phaseo is meant to keep integrations portable, show the trade-offs, and help providers compete on quality, reliability, and value rather than on lock-in.",
+				"quote": "“The best gateway gives users more choice over time, stays transparent and accountable to them, and is built with the community it serves.”",
+				"community": "It should be shaped by the people who use it, not only by the company that runs it."
+			},
+			"inspiration": {
+				"title": "Inspired by Missions That Put People First.",
+				"intro": "We are inspired by the idea that advanced AI should improve life for everyone, not only the companies that control the infrastructure.",
+				"openai": "OpenAI's public mission that AGI should benefit all of humanity puts the right question at the center: who ultimately benefits from more capable AI?",
+				"benefit": "Phaseo is taking a narrower, practical route toward the same kind of human benefit. If people can reach more models through an open-source gateway, compare them honestly, and move between providers freely, more of the value stays with the people building and using the technology.",
+				"independence": "That is an inspiration, not an affiliation. Phaseo is its own project, with its own responsibility to prove that openness, portability, and fair access can work in practice.",
+				"economics": "There is also a business-model difference. A conventional for-profit platform has to balance user value with the financial return expected by its owners. Phaseo is being built around a different priority: sustainable operations, usefulness first, and no surplus fee as the destination. The point is not to take a bigger toll; it is to make the toll unnecessary."
+			},
+			"community": {
+				"title": "Built for You, With the Community.",
+				"body": "Phaseo exists to give you a more honest, transparent, and portable way to use AI, shaped by the people who rely on it."
+			},
+			"cta": {
+				"title": "More Access. Less Lock-In.",
+				"body": "That is the future Phaseo is working toward: infrastructure that serves people, gives providers a fair path to be discovered, and keeps the ecosystem open enough to improve.",
+				"start": "Get Started",
+				"contact": "Get in Touch"
+			}
 		}
 	},
 	"mission": {
@@ -310,6 +396,62 @@
 			"description": "This mission is a living commitment. If Phaseo falls short, open an issue, propose a change, or help us build a better version.",
 			"openIssue": "Open an issue",
 			"aboutPhaseo": "About Phaseo"
+		},
+		"current": {
+			"principles": {
+				"sustainablePrice": "Use provider partnerships and operating efficiency to reduce avoidable cost, return those gains to users, and keep enough margin to run reliable infrastructure.",
+				"usersFirst": "Make decisions around long-term user benefit, product quality, and fair access rather than pressure to maximise short-term financial returns."
+			},
+			"measures": {
+				"coverage": "Models, providers, modalities, and regions covered",
+				"multipleProviders": "Routes available through more than one provider",
+				"savings": "Price reductions and efficiency gains returned to users",
+				"providerDemand": "Provider demand and volume generated through Phaseo",
+				"performance": "Gateway reliability, latency, and platform overhead",
+				"operatingCosts": "Payment and operating costs that can be removed over time",
+				"community": "Open-source contributors and community-led improvements",
+				"publishTime": "Time taken to publish releases, corrections, and lifecycle changes"
+			},
+			"hero": {
+				"title": "Make AI Inference Open, Affordable, and Available to Everyone.",
+				"body": "Phaseo is building an open-source, verifiable gateway that lets people discover and use models across providers without lock-in. We work with providers to lower the cost of serving inference, then use those gains to reduce avoidable platform overhead and improve access."
+			},
+			"updatesLink": "Read the latest updates",
+			"fees": {
+				"title": "People Should Pay for Inference, Not an Avoidable Gateway Surcharge.",
+				"body": "Phaseo is transparent about today's fees. The long-term goal is to remove avoidable platform overhead as provider relationships, routing efficiency, and sustainable operations make that possible.",
+				"tagline": "Open economics. Measurable progress."
+			},
+			"purpose": {
+				"title": "AI infrastructure should serve the people who use it.",
+				"ecosystem": "The model ecosystem is fragmented across laboratories, inference providers, clouds, prices, interfaces, and policies. Phaseo exists to make that complexity understandable and usable through an open layer that keeps people free to choose.",
+				"success": "We want to build the best possible gateway with the people who use it. Success means people can reach the right model, through the right provider, at a fair price, with a clear understanding of what happened and where the money went.",
+				"sharedSuccess": "We will also consider the mission successful when Phaseo's open-source work, public data, or standards help other products make AI more accessible, even when a request never passes through Phaseo. The goal is a healthier ecosystem, not permanent dependence on one gateway."
+			},
+			"sustainability": {
+				"title": "Sustainability is how the mission lasts.",
+				"intro": "Phaseo is being built to stay accountable to users, providers, and the open-source community rather than pressure to maximise investor returns.",
+				"marginTitle": "Minimal sustainable margin",
+				"marginBody": "We want to retain only enough margin to operate reliable infrastructure, support the team, and keep improving the product. More efficiency should make access better, not simply make the platform extract more.",
+				"revenueTitle": "Revenue serves access",
+				"revenueBody": "Revenue matters because Phaseo must remain reliable and keep improving. It is a way to sustain the mission, not a reason to compromise fair pricing, openness, or the user experience.",
+				"independenceTitle": "Independence by design",
+				"independenceBody": "If financing is ever considered, it must preserve Phaseo's independence, open-source commitment, fair treatment of users, and freedom to make long-term product decisions. Conventional venture capital is not the default path."
+			},
+			"providers": {
+				"title": "Providers grow when developers can reach them.",
+				"distribution": "Phaseo gives model creators and inference providers an open distribution layer: easier discovery, a consistent integration surface, useful demand signals, and a direct way to help shape how their models are used.",
+				"costs": "We want to work directly with providers and the wider infrastructure ecosystem to reduce the cost of inference, compute, delivery, storage, observability, and payments while improving reliability.",
+				"cycle": "Better commercial terms, shared technical work, credits, more efficient software, and smarter routing can all lower the cost of serving a request. The loop is simple: better provider access leads to lower cost and stronger reliability, which brings more developers and more routed demand.",
+				"partners": "We are looking for partners who want to grow with an open gateway, not just place a logo on another marketplace. Providers can help validate adapters, improve model metadata, shape routing and observability, and coordinate launches that send qualified users their way.",
+				"testTitle": "The partnership test",
+				"testBody": "A partnership should improve provider distribution and at least one of price, access, reliability, privacy, portability, or developer experience without undermining the others."
+			},
+			"evidence": {
+				"title": "A mission should be visible in the product.",
+				"body": "We intend to judge progress using evidence that users can see, question, and help improve."
+			},
+			"commitment": "This mission is a living commitment. If Phaseo falls short, open an issue, propose a change, or help us build the better version."
 		}
 	},
 	"faq": {
