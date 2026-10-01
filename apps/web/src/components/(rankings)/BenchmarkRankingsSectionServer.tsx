@@ -5,5 +5,5 @@ import { RankingUnavailable } from "@/components/(rankings)/RankingUnavailable";
 export async function BenchmarkRankingsSectionServer() {
 	const result = await fetchFrontendRankingBenchmarks().catch(() => null);
 	if (!result) return <RankingUnavailable id="benchmarks" title="Intelligence Benchmarks" />;
-	return <BenchmarkRankingsSection benchmarks={result.benchmarks} />;
+	return <BenchmarkRankingsSection benchmarks={result.benchmarks} intelligenceValue={result.intelligence_value} />;
 }

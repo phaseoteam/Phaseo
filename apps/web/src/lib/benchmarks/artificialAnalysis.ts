@@ -51,6 +51,9 @@ export function formatArtificialAnalysisScore(id: string, score: number) {
     ? { style: "currency", currency: "USD", maximumFractionDigits: 2 }
     : { maximumFractionDigits: 2 }).format(score);
 }
+export function formatArtificialAnalysisValue(value: number) {
+	return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumSignificantDigits: 3 }).format(value);
+}
 export function artificialAnalysisVersion(info?: string | null) {
 	return info?.match(/Intelligence Index v(\d+(?:\.\d+)*)(?=$|[\s;]|[.!?](?=$|\s))/)?.[1] ?? null;
 }
@@ -78,7 +81,8 @@ export function applyArtificialAnalysisOrganisationColours(
 }
 
 function latestArtificialAnalysisVersion(results: BenchmarkResult[]) {
-  const versions = [...new Set(results.map((result) => artificialAnalysisVersion(typeof result.other_info === "string" ? result.other_info : null)))].filter((version): version is string => Boolean(version));
+  const imported = results.filter((result) => typeof result.other_info === "string" && /Artificial Analysis ID [\w-]+(?:;|$)/.test(result.other_info));
+  const versions = [...new Set((imported.length ? imported : results).map((result) => artificialAnalysisVersion(typeof result.other_info === "string" ? result.other_info : null)))].filter((version): version is string => Boolean(version));
   return versions.sort((left, right) => right.localeCompare(left, "en", { numeric: true }))[0] ?? null;
 }
 

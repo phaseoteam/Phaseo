@@ -72,7 +72,7 @@ describe("public rankings routes", () => {
 		const response = await app.request("https://phaseo.app/api/_web/rankings/benchmarks", {}, env);
 
 		expect(response.status).toBe(200);
-		expect(response.headers.get("cloudflare-cdn-cache-control")).toBe("public, max-age=3600, stale-while-revalidate=86400");
+		expect(response.headers.get("cloudflare-cdn-cache-control")).toBe("public, max-age=300, stale-while-revalidate=300");
 		await expect(response.json()).resolves.toMatchObject({
 			benchmarks: [{
 				benchmark_id: "aa-intelligence-index-v4",
@@ -239,16 +239,19 @@ describe("public rankings routes", () => {
 
 it("paginates AA results, excludes hidden and old-version scores, and ranks costs and ties correctly", async () => {
   const ids = ["aa-intelligence-index-v4", "aa-coding-index-v4", "aa-agentic-index-v4", "aa-intelligence-index-cost-v4"];
-  const info = "Test configuration; Intelligence Index v4.3";
+  const info = "Test configuration; Artificial Analysis ID source-test; Intelligence Index v4.3";
   const rows = [
     ...Array.from({length: 500}, (_, index) => ({ benchmark_id: ids[0], model_slug: `test/model-${index}`, score_numeric: index, other_info: info })),
-    { benchmark_id: ids[0], model_slug: "test/last", score_numeric: 900, other_info: info, variant: "max", result_key: "last:max" },
-	{ benchmark_id: ids[0], model_slug: "test/last", score_numeric: 850, other_info: info, variant: "high", result_key: "last:high" },
+    { benchmark_id: ids[0], model_slug: "test/last", score_numeric: 900, other_info: info, variant: "max", result_key: "last:max", updated_at: "2026-10-01T10:00:00Z" },
+	{ benchmark_id: ids[0], model_slug: "test/last", score_numeric: 850, other_info: info, variant: "high", result_key: "last:high", updated_at: "2026-10-01T10:00:00Z" },
     { benchmark_id: ids[0], model_slug: "test/hidden", score_numeric: 1000, other_info: info },
     { benchmark_id: ids[0], model_slug: "test/old", score_numeric: 1200, other_info: "Intelligence Index v4.1.1" },
     { benchmark_id: ids[0], model_slug: "test/preview", score_numeric: 43.6, other_info: "Intelligence Index v4.3. Preview result." },
     { benchmark_id: ids[0], model_slug: "test/malformed", score_numeric: 1300, other_info: "Intelligence Index v4.3..2" },
+    { benchmark_id: ids[0], model_slug: "test/manual", score_numeric: 53, other_info: "Artificial Analysis Intelligence Index v4.3.2; High reasoning" },
     { benchmark_id: ids[3], model_slug: "test/last", score_numeric: 10.25, other_info: info },
+    { benchmark_id: ids[3], model_slug: "test/last", score_numeric: 900, other_info: info, variant: "max", updated_at: "2026-10-01T10:00:00Z" },
+    { benchmark_id: ids[3], model_slug: "test/last", score_numeric: 85, other_info: info, variant: "high", updated_at: "2026-10-01T10:00:00Z" },
     { benchmark_id: ids[3], model_slug: "test/model-0", score_numeric: 0, other_info: info },
     { benchmark_id: ids[3], model_slug: "test/model-1", score_numeric: 0, other_info: info },
   ];
@@ -270,11 +273,14 @@ it("paginates AA results, excludes hidden and old-version scores, and ranks cost
   vi.stubGlobal('fetch', fetchMock);
   const response = await app.request('https://phaseo.app/api/_web/rankings/benchmarks', {}, env);
   expect(response.status).toBe(200);
-  const { benchmarks } = await response.json() as any;
+  const { benchmarks, intelligence_value } = await response.json() as any;
+  expect(intelligence_value.entries).toEqual([expect.objectContaining({ model_id: 'test/last', score: 0.1, intelligence_score: 850, evaluation_cost: 85 })]);
   expect(benchmarks).toHaveLength(4);
   expect(benchmarks[0].entries[0]).toMatchObject({ model_id:'test/last', score:900, rank:1, other_info:info });
 	expect(benchmarks[0].entries[0]).toMatchObject({ organisation_colour:'#123456', release_date:'2026-09-01', configurations:[{variant:'max',score:900},{variant:'high',score:850}] });
-  expect(benchmarks[0].entries.some((entry:any)=>['test/old','test/hidden','test/malformed'].includes(entry.model_id))).toBe(false);
+  expect(benchmarks[0].entries.some((entry:any)=>['test/old','test/hidden','test/malformed','test/manual'].includes(entry.model_id))).toBe(false);
+  expect(benchmarks[0].total_models).toBe(benchmarks[0].entries.length);
+  expect(response.headers.get("cloudflare-cdn-cache-control")).toBe("public, max-age=300, stale-while-revalidate=300");
   expect(benchmarks[0].entries).toEqual(expect.arrayContaining([expect.objectContaining({ model_id: 'test/preview', score: 43.6 })]));
   expect(benchmarks[3].lower_is_better).toBe(true);
   expect(benchmarks[3].entries.map((entry:any)=>[entry.score,entry.rank])).toEqual([[0,1],[0,1],[10.25,3]]);

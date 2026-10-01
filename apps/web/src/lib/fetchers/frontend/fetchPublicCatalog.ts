@@ -1009,6 +1009,16 @@ export async function fetchFrontendRankingToolCallTimeseries(
 	);
 }
 
+export type PublicIntelligenceValueEntry = PublicBenchmarkRankingEntry & {
+	intelligence_score: number;
+	evaluation_cost: number;
+};
+
+export type PublicIntelligenceValue = {
+	benchmark_id: string;
+	entries: PublicIntelligenceValueEntry[];
+};
+
 export type PublicBenchmarkRankingEntry = {
 	other_info?: string | null;
 	source_link?: string | null;

@@ -1,0 +1,31 @@
+"use client";
+
+import { CartesianGrid, ResponsiveContainer, Scatter, ScatterChart, Tooltip, XAxis, YAxis } from "recharts";
+import type { PublicIntelligenceValueEntry } from "@/lib/fetchers/frontend/fetchPublicCatalog";
+import { formatArtificialAnalysisScore, formatArtificialAnalysisValue } from "@/lib/benchmarks/artificialAnalysis";
+
+export default function IntelligenceValueScatter({ entries }: { entries: PublicIntelligenceValueEntry[] }) {
+	return <figure className="border-b px-2 py-5 sm:px-5">
+		<figcaption className="mb-4 px-3 text-xs text-muted-foreground">Intelligence vs evaluation cost · Lower and further right is better. Each point uses a model’s best cost per point configuration.</figcaption>
+		<div className="h-80 w-full" role="img" aria-label="Scatter chart of intelligence score versus evaluation cost. Exact values are listed below.">
+			<ResponsiveContainer width="100%" height="100%">
+				<ScatterChart margin={{ top: 10, right: 20, bottom: 25, left: 15 }}>
+					<CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+					<XAxis type="number" dataKey="intelligence_score" name="Intelligence" domain={[0, "auto"]} tick={{ fontSize: 11 }} label={{ value: "Intelligence score", position: "bottom", offset: 5 }} />
+					<YAxis type="number" dataKey="evaluation_cost" name="Evaluation cost" domain={[0, "auto"]} tickFormatter={(value: number) => `$${value}`} tick={{ fontSize: 11 }} width={75} label={{ value: "Evaluation cost (USD)", angle: -90, position: "insideLeft", offset: -5 }} />
+					<Tooltip cursor={{ strokeDasharray: "3 3" }} content={({ active, payload }) => {
+						const entry = payload?.[0]?.payload as PublicIntelligenceValueEntry | undefined;
+						return active && entry ? <div className="max-w-72 rounded-lg border bg-popover p-3 text-xs text-popover-foreground shadow-md">
+							<p className="font-semibold">{entry.model_name}</p>
+							<p className="mt-1 text-muted-foreground">{entry.other_info?.split(";")[0]}</p>
+							<p className="mt-2">Intelligence: {entry.intelligence_score}</p>
+							<p>Evaluation cost: {formatArtificialAnalysisScore("aa-intelligence-index-cost-v4", entry.evaluation_cost)}</p>
+							<p className="mt-1 font-semibold">{formatArtificialAnalysisValue(entry.score)} / intelligence point</p>
+						</div> : null;
+					}} />
+					<Scatter data={entries} fill="var(--primary)" fillOpacity={0.65} isAnimationActive={false} />
+				</ScatterChart>
+			</ResponsiveContainer>
+		</div>
+	</figure>;
+}

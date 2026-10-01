@@ -4,11 +4,11 @@ import type {
 	TimeseriesData,
 	TopAppData,
 } from "@/lib/fetchers/rankings/getRankingsData";
-import type { PublicBenchmarkRanking } from "@/lib/fetchers/frontend/fetchPublicCatalog";
+import type { PublicBenchmarkRanking, PublicIntelligenceValue } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import { fetchPublicWebApi } from "@/lib/web-api/client";
 
 export async function fetchFrontendRankingBenchmarks() {
-	return fetchPublicWebApi<{ benchmarks: PublicBenchmarkRanking[] }>("/api/_web/rankings/benchmarks");
+	return fetchPublicWebApi<{ benchmarks: PublicBenchmarkRanking[]; intelligence_value?: PublicIntelligenceValue }>("/api/_web/rankings/benchmarks");
 }
 
 export async function fetchFrontendRankingFastestModels(days = 30, limit = 20) {

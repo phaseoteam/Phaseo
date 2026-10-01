@@ -1,5 +1,7 @@
 "use client";
 import Link from "next/link";
+import dynamic from "next/dynamic";
+import { IntelligenceValueTable } from "./IntelligenceValueTable";
 import { useState } from "react";
 import { ArrowUpRight, Search } from "lucide-react";
 import { Logo } from "@/components/Logo";
@@ -7,16 +9,20 @@ import { ArtificialAnalysisLogo } from "@/components/ArtificialAnalysisLogo";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { artificialAnalysisMetricKey, artificialAnalysisMetrics, artificialAnalysisVersion, formatArtificialAnalysisScore } from "@/lib/benchmarks/artificialAnalysis";
-import type { PublicBenchmarkRanking } from "@/lib/fetchers/frontend/fetchPublicCatalog";
+import type { PublicBenchmarkRanking, PublicIntelligenceValue } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 
-export function BenchmarkRankingsSection({ benchmarks }: { benchmarks: PublicBenchmarkRanking[] }) {
-  const [selectedMetric, setSelectedMetric] = useState<(typeof artificialAnalysisMetrics)[number]["key"]>(artificialAnalysisMetrics[0].key);
+const IntelligenceValueScatter = dynamic(() => import("./IntelligenceValueScatter"), { ssr: false, loading: () => <div className="flex h-96 items-center justify-center text-sm text-muted-foreground" role="status">Loading value chart…</div> });
+const metrics = [...artificialAnalysisMetrics, { key: "value", label: "Cost per intelligence point", id: "aa-intelligence-index-v4" }] as const;
+
+export function BenchmarkRankingsSection({ benchmarks, intelligenceValue }: { benchmarks: PublicBenchmarkRanking[]; intelligenceValue?: PublicIntelligenceValue }) {
+  const [selectedMetric, setSelectedMetric] = useState<(typeof metrics)[number]["key"]>(metrics[0].key);
   const [search, setSearch] = useState("");
   const [limit, setLimit] = useState(20);
   const benchmark = benchmarks.find((item) => artificialAnalysisMetricKey(item.benchmark_id) === selectedMetric);
-  const selected = benchmark?.benchmark_id ?? artificialAnalysisMetrics.find((item) => item.key === selectedMetric)!.id;
-  const metric = artificialAnalysisMetrics.find((item) => item.key === selectedMetric)!;
-  const entries = benchmark?.entries ?? [];
+  const selected = benchmark?.benchmark_id ?? intelligenceValue?.benchmark_id ?? "aa-intelligence-index-v4";
+  const metric = metrics.find((item) => item.key === selectedMetric)!;
+  const entries = selectedMetric === "value" ? intelligenceValue?.entries ?? [] : benchmark?.entries ?? [];
+  const valueEntries = (intelligenceValue?.entries ?? []).filter((entry) => `${entry.model_name} ${entry.organisation_name ?? ""}`.toLowerCase().includes(search.toLowerCase()));
   const filtered = entries.filter((entry) => `${entry.model_name} ${entry.organisation_name ?? ""}`.toLowerCase().includes(search.toLowerCase()));
   const versions = [...new Set(entries.map((entry) => artificialAnalysisVersion(entry.other_info)).filter(Boolean))];
   const maximum = Math.max(1, ...entries.map((entry) => entry.score));
@@ -26,25 +32,29 @@ export function BenchmarkRankingsSection({ benchmarks }: { benchmarks: PublicBen
       <a href="https://artificialanalysis.ai/models" target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">Source & methodology <ArrowUpRight className="size-4" /></a>
     </div>
     <div className="overflow-hidden rounded-xl border bg-card">
-      <div className="grid grid-cols-2 border-b lg:grid-cols-4" role="group" aria-label="Benchmark metric">
-        {artificialAnalysisMetrics.map((item) => <button key={item.key} type="button" aria-pressed={selectedMetric === item.key} onClick={() => { setSelectedMetric(item.key); setLimit(20); }} className={`border-b-2 px-4 py-4 text-sm transition-colors hover:bg-muted/40 ${selectedMetric === item.key ? "border-foreground bg-muted/50 font-semibold" : "border-transparent text-muted-foreground"}`}>{item.label}</button>)}
+      <div className="grid grid-cols-2 border-b lg:grid-cols-5" role="group" aria-label="Benchmark metric">
+        {metrics.map((item) => <button key={item.key} type="button" aria-pressed={selectedMetric === item.key} onClick={() => { setSelectedMetric(item.key); setLimit(20); }} className={`border-b-2 px-4 py-4 text-sm transition-colors hover:bg-muted/40 ${selectedMetric === item.key ? "border-foreground bg-muted/50 font-semibold" : "border-transparent text-muted-foreground"}`}>{item.label}</button>)}
       </div>
       <div className="flex flex-wrap items-center justify-between gap-3 border-b p-5">
-        <div><h3 className="font-semibold">{metric.label}</h3><p className="mt-1 text-xs text-muted-foreground">{entries.length} matched models · {selectedMetric === "cost" ? "Lower cost is better · USD" : "Higher is better"}{versions.length ? ` · Index v${versions.join(" / v")}` : ""}</p></div>
+        <div><h3 className="font-semibold">{metric.label}</h3><p className="mt-1 text-xs text-muted-foreground">{entries.length} matched models · {selectedMetric === "value" ? "Evaluation cost ÷ intelligence score · Lower is better" : selectedMetric === "cost" ? "Lower cost is better · USD" : "Higher is better"}{versions.length ? ` · Index v${versions.join(" / v")}` : ""}</p></div>
         <div className="relative w-full sm:w-64"><Search className="pointer-events-none absolute left-3 top-3 size-4 text-muted-foreground" /><Input aria-label="Search ranked models" placeholder="Search models" value={search} onChange={(e) => { setSearch(e.target.value); setLimit(20); }} className="pl-9" /></div>
       </div>
-      <ol className="divide-y px-4 sm:px-5">
+      {selectedMetric === "value" && valueEntries.length > 0 ? <>
+        <IntelligenceValueScatter entries={valueEntries} />
+        <IntelligenceValueTable entries={valueEntries.slice(0, limit)} />
+      </> : null}
+      {selectedMetric !== "value" ? <ol className="divide-y px-4 sm:px-5">
         {filtered.slice(0, limit).map((entry) => <li key={entry.model_id} className="relative grid min-h-20 grid-cols-[1.75rem_minmax(0,1fr)_auto] items-center gap-3 py-3 sm:grid-cols-[2rem_2rem_minmax(0,1fr)_auto]">
           <span className="text-sm tabular-nums text-muted-foreground">{entry.rank}</span>
           <span className="hidden size-8 items-center justify-center rounded-md border sm:flex"><Logo id={entry.organisation_id ?? entry.model_id} alt="" width={20} height={20} /></span>
           <div className="min-w-0"><Link href={`/models/${entry.model_id}`} className="block truncate text-sm font-medium hover:underline">{entry.model_name}</Link><p className="mt-1 truncate text-xs text-muted-foreground" title={entry.other_info ?? undefined}>{entry.other_info?.split(";")[0] ?? entry.organisation_name}</p></div>
           <div className="min-w-20 text-right"><span className="text-sm font-semibold tabular-nums">{formatArtificialAnalysisScore(selected, entry.score)}</span><div className="mt-2 h-1 w-20 overflow-hidden rounded-full bg-muted sm:w-28" aria-hidden="true"><div className="h-full rounded-full bg-foreground/65" style={{ width: `${Math.max(0, (selectedMetric === "cost" ? 1 - entry.score / maximum : entry.score / maximum) * 100)}%` }} /></div></div>
         </li>)}
-      </ol>
+      </ol> : null}
       {!filtered.length ? <p className="px-5 py-10 text-center text-sm text-muted-foreground">{entries.length ? "No models match your search." : "No results available for this metric yet."}</p> : null}
       <div className="flex flex-wrap items-center justify-between gap-3 border-t px-5 py-4 text-xs text-muted-foreground">
         <Link href={`/benchmarks/${selected}`} className="inline-flex items-center gap-1 hover:text-foreground">All results and evaluation details <ArrowUpRight className="size-3.5" /></Link>
-        {filtered.length > limit ? <Button variant="ghost" size="sm" onClick={() => setLimit((value) => value + 20)}>Show more</Button> : <span>{filtered.length} results</span>}
+        {filtered.length > limit ? <Button variant="ghost" size="sm" onClick={() => setLimit((value) => value + 20)}>Show more</Button> : <span>{filtered.length} {filtered.length === 1 ? "result" : "results"}</span>}
       </div>
     </div>
   </section>;

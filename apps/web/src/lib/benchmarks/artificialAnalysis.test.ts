@@ -1,6 +1,17 @@
-import { artificialAnalysisConfigurationRank, artificialAnalysisMetricsForBenchmark, artificialAnalysisVersion } from "./artificialAnalysis";
+import { artificialAnalysisConfigurationRank, artificialAnalysisMetricsForBenchmark, artificialAnalysisVersion, buildArtificialAnalysisRanking, formatArtificialAnalysisValue } from "./artificialAnalysis";
 
 describe("Artificial Analysis benchmark helpers", () => {
+	it("keeps the imported rankings visible when a manual result has a newer patch version", () => {
+		const results = [
+			{ id: "imported", model_id: "test/imported", score: 50, is_self_reported: false, other_info: "Model; Artificial Analysis ID source-test; Intelligence Index v4.3" },
+			{ id: "manual", model_id: "test/manual", score: 53, is_self_reported: false, other_info: "Artificial Analysis Intelligence Index v4.3.2; High reasoning" },
+		];
+		expect(buildArtificialAnalysisRanking({ id: "aa-intelligence-index-v4", name: null, category: null, ascending_order: true, total_models: 2, link: null, results }).entries.map((entry) => entry.model_id)).toEqual(["test/imported"]);
+	});
+	it("shows small positive ratios without rounding them to zero", () => {
+		expect(formatArtificialAnalysisValue(0.001234)).toBe("$0.00123");
+		expect(formatArtificialAnalysisValue(0)).toBe("$0");
+	});
 	it("ignores sentence punctuation without merging index versions", () => {
 		expect(artificialAnalysisVersion("Intelligence Index v4.3. Rounded headline score")).toBe("4.3");
 		expect(artificialAnalysisVersion("Intelligence Index v4.1.1; historical")).toBe("4.1.1");
