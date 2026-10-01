@@ -76,6 +76,7 @@ import { executor as bytedanceSeedText } from "./bytedance-seed/text-generate";
 import { executor as chutesText } from "./chutes/text-generate";
 import { executor as clarifaiText } from "./clarifai/text-generate";
 import { executor as cloudflareText } from "./cloudflare/text-generate";
+import { executor as cloudflareDecisions } from "./cloudflare/decisions";
 import { executor as openrouterText } from "./openrouter/text-generate";
 import { executor as cloudflareImage } from "./cloudflare/image-generate";
 import { executor as cloudflareAudioTranscription } from "./cloudflare/audio-transcription";
@@ -346,6 +347,7 @@ export const EXECUTORS_BY_PROVIDER: Record<string, ProviderCapabilityMap> = {
 		"text.generate": clarifaiText,
 	},
 	cloudflare: {
+		"decisions.make": cloudflareDecisions,
 		"text.generate": cloudflareText,
 		embeddings: openaiEmbeddings,
 		"image.generate": cloudflareImage,

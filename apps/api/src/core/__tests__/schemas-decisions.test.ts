@@ -2,6 +2,13 @@ import { describe, expect, it } from "vitest";
 import { DecisionsSchema } from "../schemas";
 
 describe("DecisionsSchema", () => {
+	it("accepts embedded decision images and rejects URLs and unsupported formats", () => {
+		const base = { state: "Photo", questions: { visible: { type: "noul", instructions: "Visible?" } } };
+		expect(DecisionsSchema.safeParse({ ...base, images: ["data:image/png;base64,AQID", { content_type: "image/jpeg", base64: "AQID" }] }).success).toBe(true);
+		for (const images of [["https://example.com/a.png"], ["data:image/gif;base64,AQID"], Array(5).fill("data:image/png;base64,AQID")]) {
+			expect(DecisionsSchema.safeParse({ ...base, images }).success).toBe(false);
+		}
+	});
 	it("accepts TypeSafe's keyed Noul, Choice, and Score question map", () => {
 		const parsed = DecisionsSchema.safeParse({
 			state: { account_type: "startup" },

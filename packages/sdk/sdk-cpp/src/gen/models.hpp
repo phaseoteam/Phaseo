@@ -709,6 +709,11 @@ struct DecisionChoiceQuestion {
 	std::any type;
 };
 
+struct DecisionImage {
+	std::string base64;
+	std::any content_type;
+};
+
 using DecisionInstructions = std::any;
 
 struct DecisionNoulQuestion {
@@ -726,6 +731,7 @@ struct DecisionScoreQuestion {
 struct DecisionsRequest {
 	std::map<std::string, std::any> debug;
 	std::optional<bool> echo_upstream_request;
+	std::vector<std::any> images;
 	std::optional<bool> meta;
 	std::map<std::string, std::any> metadata;
 	std::string model;

@@ -483,6 +483,13 @@ export async function doRequestWithIR(
 
 	// 1.5) Filter providers by requested input/output modalities
 	const normalizedCapability = normalizeCapability(ctx.capability);
+	if (normalizedCapability === "decisions.make" && (ir as IRDecisionsRequest).images?.length) {
+		candidates = candidates.filter(candidate => candidate.inputModalities?.includes("image") && candidate.capabilityParams?.images === true);
+		if (!candidates.length) {
+			return err("unsupported_modalities", { model: ctx.model, endpoint: ctx.endpoint,
+				request_id: ctx.requestId, reason: "unsupported_modalities" });
+		}
+	}
 	if (normalizedCapability === "text.generate") {
 		const filtered = await timing.timer.span("execute_filter_modalities", () =>
 			filterCandidatesByModalities(candidates, ir as IRChatRequest),

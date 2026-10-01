@@ -1561,6 +1561,13 @@ const DecisionQuestionSchema = z.discriminatedUnion("type", [
 export const DecisionsSchema = z.object({
     model: z.string().min(1).default("typesafe/jev-1.13.0"),
     state: DecisionsStateSchema,
+    images: z.array(z.union([
+        z.string().regex(/^[Dd][Aa][Tt][Aa]:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/]+={0,2}$/),
+        z.object({
+            content_type: z.enum(["image/png", "image/jpeg", "image/webp"]),
+            base64: z.string().regex(/^[A-Za-z0-9+/]+={0,2}$/),
+        }),
+    ])).max(4).optional(),
     questions: z.record(z.string().min(1).max(128), DecisionQuestionSchema)
         .refine((questions) => Object.keys(questions).length > 0, {
             message: "At least one decision question is required.",

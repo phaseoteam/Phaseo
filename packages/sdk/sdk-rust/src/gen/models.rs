@@ -710,6 +710,11 @@ pub struct DecisionChoiceQuestion {
 	pub r#type: String,
 }
 
+pub struct DecisionImage {
+	pub base64: String,
+	pub content_type: String,
+}
+
 pub type DecisionInstructions = JsonValue;
 
 pub struct DecisionNoulQuestion {
@@ -727,6 +732,7 @@ pub struct DecisionScoreQuestion {
 pub struct DecisionsRequest {
 	pub debug: Option<HashMap<String, String>>,
 	pub echo_upstream_request: Option<bool>,
+	pub images: Option<Vec<String>>,
 	pub meta: Option<bool>,
 	pub metadata: Option<HashMap<String, String>>,
 	pub model: String,
