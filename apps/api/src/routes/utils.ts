@@ -8,6 +8,8 @@ import { configureRuntime, setWaitUntil, clearRuntime, getBindings, dispatchBack
 import { safeJsonStringify } from "@/lib/safe-json";
 import { sanitizeRequestHeaders } from "@pipeline/http/sanitize-headers";
 import { attachGatewayTrace, gatewayTraceFor } from "@pipeline/telemetry/gateway-trace";
+import { RequestOperations, currentRequestOperations, withRequestOperations, shouldSampleOperations, countOperation } from "@/runtime/request-operations";
+import { requestIdFor } from "@/runtime/request-id";
 
 type Handler = (req: Request, context?: Context<{ Bindings: GatewayBindings }>) => Promise<Response>;
 type CacheOptions = {
@@ -99,13 +101,15 @@ export function withRuntime(handler: Handler) {
         });
     };
 
-    return async (c: Context<{ Bindings: GatewayBindings }>) => {
+    const run = async (c: Context<{ Bindings: GatewayBindings }>) => {
+        const operations = currentRequestOperations();
         configureRuntime(c.env);
         const waitUntil = c.executionCtx?.waitUntil?.bind(c.executionCtx);
         const releaseWaitUntil = setWaitUntil(waitUntil);
         const cleanup = () => {
             releaseWaitUntil();
             clearRuntime();
+            operations?.complete();
         };
         const sanitized = sanitizeRequestHeaders(c.req.raw, { preserve: ["authorization"] });
         const trace = gatewayTraceFor(c.req.raw);
@@ -122,6 +126,20 @@ export function withRuntime(handler: Handler) {
             cleanup();
             throw error;
         }
+    };
+    return (c: Context<{ Bindings: GatewayBindings }>) => {
+        if (currentRequestOperations() || !shouldSampleOperations(c.env.GATEWAY_OPERATION_SAMPLE_RATE)) return run(c);
+        const metrics = new RequestOperations();
+        const requestId = requestIdFor(c.req.raw);
+        const finished = metrics.finished.then(async () => {
+            await metrics.drain();
+            console.log("gateway_operations", { requestId, ...metrics.snapshot() });
+        });
+        c.executionCtx.waitUntil(finished);
+        return withRequestOperations(metrics, async () => {
+            try { return await run(c); }
+            catch (error) { metrics.complete(); throw error; }
+        });
     };
 }
 
@@ -295,6 +313,7 @@ async function persistCachedResponse(req: Request, response: Response, options: 
         headers,
     });
     try {
+        countOperation("cacheWrite");
         await cache.put(cacheKey, decorated.clone());
     } catch {
         // ignore Cache API write failures
@@ -310,6 +329,7 @@ async function readCachedResponseWithMeta(req: Request, options: CacheOptions): 
     try {
         const cacheKey = await buildCacheKey(req, options.scope);
         const lockKey = await buildRouteLockKey(req, options.scope);
+        countOperation("cacheRead");
         const cached = await cache.match(cacheKey);
         if (cached) {
             const cachedAtMs = parseCachedAtMs(

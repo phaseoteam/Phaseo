@@ -9,6 +9,7 @@ import type { ResponseCacheStore } from "@/core/response-cache";
 
 import { BINDING_KEYS } from "./env.binding-keys";
 import type { GatewayBindings } from "./env.types";
+import { countSupabaseOperation, currentRequestOperations, instrumentKv } from "./request-operations";
 
 export type { GatewayBindings, GatewayRuntime } from "./env.types";
 
@@ -61,7 +62,10 @@ export function configureRuntime(env: GatewayBindings) {
     const bindings = snapshotBindings(env);
     lastBindingsSnapshot = bindings;
 
-    const globalFetch: typeof fetch = (input, init) => fetch(input, init);
+    const globalFetch: typeof fetch = (input, init) => {
+        countSupabaseOperation(input, init);
+        return fetch(input, init);
+    };
 
     const reusable = cachedSupabase?.url === bindings.SUPABASE_URL && cachedSupabase.key === bindings.SUPABASE_SERVICE_ROLE_KEY;
     const supabaseAdmin = reusable ? cachedSupabase!.client : createClient(bindings.SUPABASE_URL, bindings.SUPABASE_SERVICE_ROLE_KEY, {
@@ -72,7 +76,7 @@ export function configureRuntime(env: GatewayBindings) {
     // configuration, and replace it immediately on URL/service-key rotation.
     cachedSupabase = { url: bindings.SUPABASE_URL, key: bindings.SUPABASE_SERVICE_ROLE_KEY, client: supabaseAdmin };
 
-    runtimeState = { bindings, cache: bindings.GATEWAY_CACHE, supabase: supabaseAdmin };
+    runtimeState = { bindings, cache: instrumentKv(bindings.GATEWAY_CACHE), supabase: supabaseAdmin };
 }
 
 export function clearRuntime() {
@@ -139,6 +143,7 @@ export function isLocalTestingModeEnabled(bindings?: Partial<GatewayBindings> | 
 }
 
 export function dispatchBackground(promise: Promise<unknown>) {
+    currentRequestOperations()?.track(promise);
     const handler = waitUntilHandler;
     if (handler) {
         handler(promise.catch((err) => console.error(err)));
@@ -170,4 +175,3 @@ export function getByokKey(version: number): string {
     const s = String(raw).trim().replace(/^["']|["']$/g, "");
     return s.startsWith("base64:") ? s.slice(7) : s;
 }
-

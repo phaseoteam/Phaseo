@@ -1,4 +1,5 @@
 import { dispatchBackground, getBindings, getCache } from "@/runtime/env";
+import { countOperation } from "@/runtime/request-operations";
 import type { Endpoint } from "@core/types";
 import type { ProviderHealth } from "./health";
 import {
@@ -76,6 +77,7 @@ export function reportCoordinatedHealth(event: HealthObservation): void {
         for (let attempt = 0; attempt < 2; attempt++) {
             try {
                 const stub = namespace.get(namespace.idFromName(healthPoolName(event.endpoint, event.model)));
+                countOperation("healthRpc");
                 const result = await stub.observe(event);
                 if (result && cached.local.get(event.provider) === local) {
                     if (cached.snapshot && cached.snapshot.version >= result.version && Date.now() - cached.snapshot.publishedAt < HEALTH_SNAPSHOT_MAX_AGE_MS) {
