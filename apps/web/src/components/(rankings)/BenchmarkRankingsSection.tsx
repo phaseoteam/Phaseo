@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { artificialAnalysisMetricKey, artificialAnalysisMetrics, artificialAnalysisVersion, formatArtificialAnalysisScore } from "@/lib/benchmarks/artificialAnalysis";
 import type { PublicBenchmarkRanking, PublicIntelligenceValue } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 
-const metrics = [...artificialAnalysisMetrics, { key: "value", label: "Cost per intelligence point", id: "aa-intelligence-index-v4" }] as const;
+const metrics = [...artificialAnalysisMetrics, { key: "value", label: "Cost per Intelligence Point", id: "aa-intelligence-index-v4" }] as const;
 
 export function BenchmarkRankingsSection({ benchmarks, intelligenceValue }: { benchmarks: PublicBenchmarkRanking[]; intelligenceValue?: PublicIntelligenceValue }) {
   const [selectedMetric, setSelectedMetric] = useState<(typeof metrics)[number]["key"]>(metrics[0].key);
@@ -34,7 +34,7 @@ export function BenchmarkRankingsSection({ benchmarks, intelligenceValue }: { be
         {metrics.map((item) => <button key={item.key} type="button" aria-pressed={selectedMetric === item.key} onClick={() => { setSelectedMetric(item.key); setLimit(20); }} className={`shrink-0 border-b-2 py-3 text-sm transition-colors hover:text-foreground ${selectedMetric === item.key ? "border-foreground font-semibold" : "border-transparent text-muted-foreground"}`}>{item.label}</button>)}
       </div>
       <div className="flex flex-wrap items-center justify-between gap-3 border-b py-5">
-        <div><h3 className="font-semibold">{metric.label}</h3><p className="mt-1 text-xs text-muted-foreground">{entries.length} matched {selectedMetric === "value" ? "configurations" : "models"} · {selectedMetric === "value" ? "Evaluation cost ÷ intelligence score · Lower is better" : selectedMetric === "cost" ? "Lower cost is better · USD" : "Higher is better"}{versions.length ? ` · Index v${versions.join(" / v")}` : ""}</p></div>
+        <div><h3 className="font-semibold">{metric.label}</h3><p className="mt-1 text-xs text-muted-foreground">{entries.length} matched {selectedMetric === "value" ? "configurations" : "models"} · {selectedMetric === "value" ? "Evaluation Cost ÷ intelligence score · Lower is better" : selectedMetric === "cost" ? "Lower cost is better · USD" : "Higher is better"}{versions.length ? ` · Index v${versions.join(" / v")}` : ""}</p></div>
         <div className="relative w-full sm:w-64"><Search className="pointer-events-none absolute left-3 top-3 size-4 text-muted-foreground" /><Input aria-label="Search ranked models" placeholder="Search models" value={search} onChange={(e) => { setSearch(e.target.value); setLimit(20); }} className="pl-9" /></div>
       </div>
       {selectedMetric === "value" && valueEntries.length > 0 ? <IntelligenceValueComparison entries={valueEntries} limit={limit} onShowMore={() => setLimit((value) => value + 20)} /> : null}

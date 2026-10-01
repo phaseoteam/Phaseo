@@ -6,7 +6,7 @@ export const artificialAnalysisMetrics = [
   { id: "aa-intelligence-index-v4", key: "intelligence", label: "Intelligence", description: "Overall model capability" },
   { id: "aa-coding-index-v4", key: "coding", label: "Coding", description: "Software engineering capability" },
   { id: "aa-agentic-index-v4", key: "agentic", label: "Agentic", description: "Multi-step task performance" },
-  { id: "aa-intelligence-index-cost-v4", key: "cost", label: "Evaluation cost", description: "Full Intelligence Index evaluation · USD" },
+  { id: "aa-intelligence-index-cost-v4", key: "cost", label: "Evaluation Cost", description: "Full Intelligence Index evaluation · USD" },
 ] as const;
 
 export function artificialAnalysisMetricsForBenchmark(benchmarkId: string) {

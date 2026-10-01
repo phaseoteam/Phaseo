@@ -24,7 +24,7 @@ export function IntelligenceValueComparison({ entries, limit, onShowMore }: { en
 	return <>
 		<div className="flex flex-wrap items-center justify-between gap-3 pt-4">
 			<div role="group" aria-label="Value chart display" className="flex gap-2">
-				<Button variant={view === "bars" ? "secondary" : "ghost"} size="sm" aria-pressed={view === "bars"} onClick={() => setView("bars")}>USD per point</Button>
+				<Button variant={view === "bars" ? "secondary" : "ghost"} size="sm" aria-pressed={view === "bars"} onClick={() => setView("bars")}>USD per Point</Button>
 				<Button variant={view === "scatter" ? "secondary" : "ghost"} size="sm" aria-pressed={view === "scatter"} onClick={() => setView("scatter")}>Score vs cost</Button>
 			</div>
 			<Popover open={pickerOpen} onOpenChange={setPickerOpen}><PopoverTrigger asChild><Button variant="outline" size="sm" className="w-full justify-between sm:w-64"><span>{visible.length} of {entries.length} configurations</span><ChevronsUpDown className="size-3.5 text-muted-foreground" /></Button></PopoverTrigger>

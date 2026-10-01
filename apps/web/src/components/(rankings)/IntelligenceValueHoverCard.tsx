@@ -14,7 +14,7 @@ export function IntelligenceValueHoverCard({ entry, total }: { entry: PublicInte
 		<div className="mt-3 space-y-1.5 border-t pt-2.5 text-xs">
 			<p className="flex justify-between gap-3"><span className="text-muted-foreground">{artificialAnalysisValueLabel(entry)}</span><span className="font-medium tabular-nums">{formatArtificialAnalysisValue(entry.score)} / point</span></p>
 			<p className="flex justify-between"><span className="text-muted-foreground">Intelligence</span><span>{entry.intelligence_score}</span></p>
-			<p className="flex justify-between"><span className="text-muted-foreground">Evaluation cost</span><span>{formatArtificialAnalysisScore("aa-intelligence-index-cost-v4", entry.evaluation_cost)}</span></p>
+			<p className="flex justify-between"><span className="text-muted-foreground">Evaluation Cost</span><span>{formatArtificialAnalysisScore("aa-intelligence-index-cost-v4", entry.evaluation_cost)}</span></p>
 		</div>
 		<p className="mt-2 text-xs text-muted-foreground">Rank #{entry.rank} of {total} configurations</p>
 	</HoverCardContent>;
