@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { workspaceRuntimeSettingsSchema } from "./workspaceRuntimeSnapshot";
 const state = vi.hoisted(() => ({ rpc: vi.fn(), from: vi.fn(), get: vi.fn(), put: vi.fn(), multi: vi.fn(), version: vi.fn(), background: [] as Promise<unknown>[] }));
 vi.mock("@/runtime/env", () => ({
-    getBindingsIfConfigured: () => ({ GATEWAY_CONTEXT_BUNDLE_ENABLED: "true", GATEWAY_WORKSPACE_RUNTIME_ENABLED: "true" }),
+    getBindingsIfConfigured: () => ({ GATEWAY_CONTEXT_BUNDLE_ENABLED: "true", GATEWAY_WORKSPACE_RUNTIME_ENABLED: "true", GATEWAY_PUBLIC_BASE_URL: "https://staging.example" }),
     getCache: () => ({ get: state.get, put: state.put }),
     getSupabaseAdmin: () => ({ rpc: state.rpc, from: state.from }),
     dispatchBackground: (promise: Promise<unknown>) => { state.background.push(promise); },
@@ -40,11 +40,16 @@ beforeEach(() => {
     state.rpc.mockReset().mockImplementation(async (name, params) => name === "gateway_fetch_workspace_runtime"
         ? {data:runtime(params.p_workspace_id),error:null} : response(params.workspace_id,params.include_workspace,params.model));
 });
-afterEach(async () => { await Promise.all(state.background); vi.useRealTimers(); });
+afterEach(async () => { await Promise.all(state.background); vi.useRealTimers(); vi.unstubAllGlobals(); });
 
 describe("workspace snapshot bundle reader", () => {
     function cachedPipeline() {
         const store = new Map<string, string>();
+        const publicStore = new Map<string, string>();
+        vi.stubGlobal("caches", { default: {
+            match: async (key: string) => publicStore.has(key) ? new Response(publicStore.get(key)) : undefined,
+            put: async (key: string, value: Response) => { publicStore.set(key, await value.text()); },
+        } });
         state.put.mockImplementation(async (key, value) => { store.set(key, value); });
         state.get.mockImplementation(async key => {
             const raw = store.get(key);
@@ -52,6 +57,7 @@ describe("workspace snapshot bundle reader", () => {
         });
         state.multi.mockImplementation(async keys => Object.fromEntries(keys.map((key: string) => [key, store.get(key) ?? null])));
         state.rpc.mockImplementation(async (name, params) => {
+            if (name === "gateway_fetch_public_catalog") return { data: response(workspaceId, false, params.p_model).data.catalog, error: null };
             if (name === "gateway_fetch_workspace_runtime") {
                 const snapshot = runtime(params.p_workspace_id);
                 snapshot.byok = {} as never;
@@ -72,9 +78,9 @@ describe("workspace snapshot bundle reader", () => {
         const first = await fetchGatewayContext(args);
         await Promise.all(state.background);
         const segments = [...store].filter(([key]) => key.startsWith("gateway:dynamic:") || key.startsWith("gateway:static:"));
-        expect(segments).toHaveLength(2);
+        expect(segments).toHaveLength(1);
         for (const [key, raw] of segments) {
-            expect(key).toContain(":runtime-v2:");
+            expect(key).toContain(":runtime-v3:");
             const data = JSON.parse(raw);
             expect(data).not.toHaveProperty("workspaceRuntimeExpiresAt");
             expect(data).not.toHaveProperty("teamSettings");
@@ -104,6 +110,173 @@ describe("workspace snapshot bundle reader", () => {
         expect(state.put).toHaveBeenCalledTimes(1);
         expect(state.put.mock.calls[0][0]).toContain("gateway:workspace-runtime:");
         expect(state.from).not.toHaveBeenCalled();
+    });
+
+    it("loads a new model without rewriting or renewing the existing admission and credit", async () => {
+        const store = cachedPipeline();
+        const { fetchGatewayContext } = await import("./context");
+        await fetchGatewayContext(args); await Promise.all(state.background);
+        const admission = [...store].find(([key]) => key.startsWith("gateway:dynamic:"))!;
+        state.rpc.mockClear(); state.put.mockClear();
+        vi.setSystemTime(Date.now() + 1000);
+        const next = await fetchGatewayContext({ ...args, model: "lab/second" }); await Promise.all(state.background);
+        expect(next.resolvedModel).toBe("lab/second");
+        expect(next.providers[0].apiModelId).toBe("lab/second");
+        expect(state.rpc.mock.calls.map(call => call[0])).toEqual(["gateway_fetch_public_catalog"]);
+        expect(state.put).not.toHaveBeenCalled();
+        expect(store.get(admission[0])).toBe(admission[1]);
+        expect([...store.keys()].some(key => key.startsWith("gateway:static:"))).toBe(false);
+    });
+
+    it("shares a model catalog across workspaces but never shares their admission", async () => {
+        cachedPipeline();
+        const { fetchGatewayContext } = await import("./context");
+        await fetchGatewayContext(args); await Promise.all(state.background);
+        state.rpc.mockClear();
+        const next = await fetchGatewayContext({ ...args, workspaceId: other, apiKeyId: "another-key" });
+        expect(next.workspaceId).toBe(other);
+        expect(state.rpc.mock.calls).toEqual([["gateway_fetch_request_context_bundle_v2", expect.objectContaining({
+            workspace_id: other, api_key_id: "another-key", include_catalog: false, include_workspace: true,
+        })]]);
+    });
+
+    it("coalesces public source refills without sharing request-owned provider or admission objects", async () => {
+        cachedPipeline();
+        const { fetchGatewayContext } = await import("./context");
+        await fetchGatewayContext(args); await Promise.all(state.background);
+        state.rpc.mockClear(); state.put.mockClear();
+        let resolve!: (value: unknown) => void;
+        state.rpc.mockImplementation(() => new Promise(done => { resolve = done; }));
+        const pending = Array.from({ length: 24 }, () => fetchGatewayContext({ ...args, model: "lab/second" }));
+        await vi.waitFor(() => expect(state.rpc).toHaveBeenCalledTimes(1));
+        resolve({ data: response(workspaceId, false, "lab/second").data.catalog, error: null });
+        const values = await Promise.all(pending);
+        values[0].providers[0].baseWeight = 100;
+        values[0].key.ok = false;
+        expect(values[1].providers[0].baseWeight).toBe(1);
+        expect(values[1].key.ok).toBe(true);
+        expect(state.put).not.toHaveBeenCalled();
+    });
+
+    it("rechecks source admission at its original expiry even under continuous model traffic", async () => {
+        const store = cachedPipeline();
+        const { fetchGatewayContext } = await import("./context");
+        await fetchGatewayContext(args); await Promise.all(state.background);
+        const raw = [...store].find(([key]) => key.startsWith("gateway:dynamic:"))![1];
+        const expiresAt = JSON.parse(raw).cacheLease.expiresAtMs;
+        vi.setSystemTime(expiresAt - 1000);
+        await fetchGatewayContext(args); await Promise.all(state.background);
+        state.rpc.mockClear();
+        vi.setSystemTime(expiresAt);
+        await fetchGatewayContext(args);
+        expect(state.rpc.mock.calls.some(call => call[0] === "gateway_fetch_request_context_bundle_v2")).toBe(true);
+    });
+
+    it("never caches admission when a workspace has a configured spending budget", async () => {
+        const store = cachedPipeline();
+        const source = state.rpc.getMockImplementation()!;
+        state.rpc.mockImplementation(async (name, params) => {
+            const result = await source(name, params);
+            if (name === "gateway_fetch_request_context_bundle_v2") result.data.context.key_limit_ok = {
+                ok: true, budgets: [{ id: "b", interval: "daily", limit_nanos: 100, usage_nanos: 1,
+                    remaining_nanos: 99, projected_usage_nanos: 1, exceeded: false }],
+            };
+            return result;
+        });
+        const { fetchGatewayContext } = await import("./context");
+        await fetchGatewayContext(args); await Promise.all(state.background);
+        state.rpc.mockClear();
+        await fetchGatewayContext(args);
+        expect(state.rpc.mock.calls.some(call => call[0] === "gateway_fetch_request_context_bundle_v2")).toBe(true);
+        expect([...store.keys()].some(key => key.startsWith("gateway:dynamic:"))).toBe(false);
+    });
+
+    it("preserves an independent credit invalidation and denied balance with warm public routing", async () => {
+        const store = cachedPipeline();
+        const { fetchGatewayContext } = await import("./context");
+        await fetchGatewayContext(args); await Promise.all(state.background);
+        const { creditAdmissionLeases } = await import("@/core/credit-admission-leases");
+        vi.setSystemTime(Date.now() + 1);
+        creditAdmissionLeases.invalidate(workspaceId);
+        for (const key of store.keys()) if (key.includes("credit")) store.delete(key);
+        const query = { select: vi.fn(() => query), eq: vi.fn(() => query), maybeSingle: async () => ({ data: { balance_nanos: 0, reserved_nanos: 0 }, error: null }) };
+        state.from.mockReturnValue(query); state.rpc.mockClear();
+        const next = await fetchGatewayContext(args);
+        expect(next.credit.ok).toBe(false);
+        expect(next.credit.balanceNanos).toBe(0);
+        expect(next.contextTelemetry?.cacheStatus).toBe("credit_refresh");
+        expect(state.from).toHaveBeenCalledWith("wallets");
+        expect(state.rpc).not.toHaveBeenCalled();
+    });
+
+    it("follows an expired public alias without renewing the key admission", async () => {
+        const store = cachedPipeline();
+        const source = state.rpc.getMockImplementation()!;
+        state.rpc.mockImplementation(async (name, params) => {
+            const result = await source(name, params);
+            if (name === "gateway_fetch_request_context_bundle_v2") result.data.catalog.expiresAt = Date.now() + 1000;
+            if (name === "gateway_fetch_public_catalog") {
+                result.data.resolvedModel = "lab/replacement";
+                for (const variant of result.data.variants) variant.providers[0].api_model_id = "lab/replacement";
+            }
+            return result;
+        });
+        const { fetchGatewayContext } = await import("./context");
+        await fetchGatewayContext(args); await Promise.all(state.background);
+        const admission = [...store].find(([key]) => key.startsWith("gateway:dynamic:"))!;
+        vi.setSystemTime(Date.now() + 1000); state.rpc.mockClear(); state.put.mockClear();
+        const next = await fetchGatewayContext(args);
+        expect(next.resolvedModel).toBe("lab/replacement");
+        expect(next.providers[0].apiModelId).toBe("lab/replacement");
+        expect(state.rpc.mock.calls.map(call => call[0])).toEqual(["gateway_fetch_public_catalog"]);
+        expect(store.get(admission[0])).toBe(admission[1]);
+        expect(state.put).not.toHaveBeenCalled();
+    });
+
+    it("does not use stale public routing when a source refresh fails, and recovers on retry", async () => {
+        cachedPipeline();
+        const { fetchGatewayContext } = await import("./context");
+        await fetchGatewayContext(args); await Promise.all(state.background);
+        state.rpc.mockResolvedValue({ data: null, error: { message: "unavailable" } });
+        await expect(fetchGatewayContext({ ...args, model: "lab/new" })).rejects.toThrow("gateway_public_catalog_refresh_failed");
+        state.rpc.mockResolvedValue({ data: response(workspaceId, false, "lab/new").data.catalog, error: null });
+        expect((await fetchGatewayContext({ ...args, model: "lab/new" })).resolvedModel).toBe("lab/new");
+    });
+
+    function admission(expiresAtMs = Date.now() + 5000) {
+        return { apiKeyId: args.apiKeyId, expiresAtMs, value: {
+            workspaceId, key: { ok: false, reason: "blocked" }, keyLimit: { ok: false }, credit: { ok: false },
+        } };
+    }
+
+    it("never replaces cached denials with catalog or workspace data", async () => {
+        cachedPipeline();
+        const { loadTextContextBundle, parseContextBundleVariant } = await import("./contextBundle");
+        const bundle = await loadTextContextBundle({ ...args, cachedAdmission: admission() });
+        const value = parseContextBundleVariant(bundle, bundle.variants[0]);
+        expect(value.key).toEqual({ ok: false, reason: "blocked" });
+        expect(value.keyLimit.ok).toBe(false); expect(value.credit.ok).toBe(false);
+        expect(state.rpc.mock.calls.some(call => call[0].includes("context_bundle"))).toBe(false);
+    });
+
+    it("rejects cross-key, cross-workspace, unknown-generation, bypassed and expired cached admission", async () => {
+        const { loadTextContextBundle } = await import("./contextBundle");
+        for (const change of [
+            { apiKeyId: "another-key" }, { workspaceId: other }, { workspaceVersionToken: null }, { disableCache: true },
+        ]) await expect(loadTextContextBundle({ ...args, cachedAdmission: admission(), ...change })).rejects.toThrow("cached_admission_invalid");
+        await expect(loadTextContextBundle({ ...args, cachedAdmission: admission(Date.now()) })).rejects.toThrow("cached_admission_invalid");
+        expect(state.rpc).not.toHaveBeenCalled();
+    });
+
+    it("rejects admission that expires while loading a public catalog", async () => {
+        cachedPipeline();
+        const source = state.rpc.getMockImplementation()!;
+        state.rpc.mockImplementation(async (name, params) => {
+            if (name === "gateway_fetch_public_catalog") vi.setSystemTime(Date.now() + 2000);
+            return source(name, params);
+        });
+        const { loadTextContextBundle } = await import("./contextBundle");
+        await expect(loadTextContextBundle({ ...args, cachedAdmission: admission(Date.now() + 1000) })).rejects.toThrow("cached_admission_expired");
     });
 
     it("fails closed when expired workspace source cannot be refreshed even with valid composition segments", async () => {
