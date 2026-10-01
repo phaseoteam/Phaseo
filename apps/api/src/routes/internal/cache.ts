@@ -3,8 +3,10 @@
 // How: Authenticates with the internal gateway token and purges by cache tag.
 
 import { Hono } from "hono";
+import { z } from "zod";
 import type { Env } from "@/runtime/types";
-import { json } from "@/routes/utils";
+import { json, withRuntime } from "@/routes/utils";
+import { readWorkspacePublicationStatus } from "@/core/workspace-publication-status";
 
 export const internalCacheRoutes = new Hono<Env>();
 
@@ -49,6 +51,26 @@ async function readPurgeTags(req: Request): Promise<string[]> {
 		),
 	);
 }
+
+const publicationHeaders = { "Cache-Control": "private, no-store" };
+internalCacheRoutes.get("/workspace-publication/:workspaceId", async (c, next) => {
+	const headers = publicationHeaders;
+	// Authenticate the original request before withRuntime sanitizes internal headers.
+	if (!isAuthorized(c.req.raw, c.env)) return json({ error: "unauthorized" }, 401, headers);
+	if (c.env.GATEWAY_WORKSPACE_PUBLICATION_ENABLED !== "true" &&
+		c.env.GATEWAY_WORKSPACE_PUBLICATION_DRAIN_ENABLED !== "true") {
+		return json({ error: "workspace_publication_disabled" }, 404, headers);
+	}
+	const workspaceId = c.req.param("workspaceId");
+	if (!z.uuid().safeParse(workspaceId).success) return json({ error: "invalid_workspace_id" }, 400, headers);
+	await next();
+}, withRuntime(async (_req, context) => {
+	try {
+		return json({ data: await readWorkspacePublicationStatus(context!.req.param("workspaceId")) }, 200, publicationHeaders);
+	} catch {
+		return json({ error: "workspace_publication_status_unavailable" }, 503, publicationHeaders);
+	}
+}));
 
 internalCacheRoutes.post("/purge", async (c) => {
 	if (!isAuthorized(c.req.raw, c.env)) {
