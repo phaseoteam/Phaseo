@@ -2,6 +2,11 @@ import { describe, expect, it } from "vitest";
 import { extractUnifiedStreamEvents } from "./stream-events";
 
 describe("extractUnifiedStreamEvents", () => {
+	it("recognizes a native Chat error envelope without requiring an object discriminator", () => {
+		const frame = { error: { message: "upstream rejected request", code: "invalid_api_key" } };
+		expect(extractUnifiedStreamEvents({ protocol: "openai.chat.completions", frame }))
+			.toEqual([{ type: "error", message: frame.error.message, payload: frame }]);
+	});
 	it("extracts text, reasoning, and tool deltas from chat completion chunks", () => {
 		const events = extractUnifiedStreamEvents({
 			protocol: "openai.chat.completions",

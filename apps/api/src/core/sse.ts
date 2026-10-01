@@ -34,6 +34,7 @@ export function sseReadable(generate: (signal: AbortSignal) => AsyncGenerator<Ui
 export async function* readSseEvents(stream: ReadableStream<Uint8Array>, options: {
     signal?: AbortSignal;
     maxEventChars?: number;
+    onChunk?: (receivedAt: number) => void;
 } = {}): AsyncGenerator<EventSourceMessage> {
     const maxEventChars = options.maxEventChars ?? MAX_EVENT_CHARS;
     if (!Number.isSafeInteger(maxEventChars) || maxEventChars <= 0 || maxEventChars > MAX_EVENT_CHARS) {
@@ -65,6 +66,7 @@ export async function* readSseEvents(stream: ReadableStream<Uint8Array>, options
             const { value, done } = await reader.read();
             if (options.signal?.aborted) throw options.signal.reason;
             if (done) break;
+            options.onChunk?.(performance.now());
             if (value.byteLength > MAX_CHUNK_BYTES) throw new SseProtocolError("sse_chunk_too_large");
             // Bound a feed, including when one network chunk contains thousands
             // of complete messages (which bypass the parser's partial buffer).

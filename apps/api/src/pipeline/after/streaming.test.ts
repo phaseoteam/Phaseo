@@ -5,7 +5,7 @@ function makeSseResponse(frames: Array<{ event?: string; data: any }>): Response
 	const text = frames
 		.map((frame) => {
 			const eventLine = frame.event ? `event: ${frame.event}\n` : "";
-			return `${eventLine}data: ${JSON.stringify(frame.data)}\n\n`;
+			return `${eventLine}data: ${frame.data === "[DONE]" ? frame.data : JSON.stringify(frame.data)}\n\n`;
 		})
 		.join("");
 	const stream = new ReadableStream<Uint8Array>({
@@ -34,7 +34,7 @@ function makeDelayedSseResponse(
 			}
 			const frame = frames[index++];
 			const eventLine = frame?.event ? `event: ${frame.event}\n` : "";
-			const chunk = `${eventLine}data: ${JSON.stringify(frame?.data ?? {})}\n\n`;
+			const chunk = `${eventLine}data: ${frame?.data === "[DONE]" ? frame.data : JSON.stringify(frame?.data ?? {})}\n\n`;
 			await new Promise((resolve) => setTimeout(resolve, delayMs));
 			controller.enqueue(new TextEncoder().encode(chunk));
 		},
@@ -67,6 +67,62 @@ function baseCtx(overrides?: Record<string, unknown>): any {
 }
 
 describe("passthroughWithPricing", () => {
+
+	it("does not settle successfully when transport fails after finish_reason and usage but before DONE", async () => {
+		const outcomes: unknown[] = [];
+		let index = 0;
+		const stream = new ReadableStream<Uint8Array>({ pull(controller) {
+			if (index++ === 0) controller.enqueue(new TextEncoder().encode('data: {"object":"chat.completion.chunk","choices":[{"finish_reason":"stop"}],"usage":{"total_tokens":5}}\n\n'));
+			else controller.error(new Error("transport ended"));
+		} });
+		const ctx = baseCtx({ protocol: "openai.chat.completions" });
+		const response = await passthroughWithPricing({ upstream: new Response(stream), ctx, provider: "openai", priceCard: null,
+			onFinalUsage: (usage, info) => { outcomes.push({ usage, info }); },
+		});
+		await expect(response.text()).rejects.toThrow("transport ended");
+		expect(outcomes).toEqual([{ usage: { total_tokens: 5 }, info: { aborted: true, sawFinalUsage: false, failureOrigin: "provider" } }]);
+		expect(ctx.meta.downstreamDisconnected).not.toBe(true);
+		expect(stream.locked).toBe(false);
+	});
+
+	it.each(["rewrite", "snapshot", "observer"])("classifies %s callback errors as gateway failures", async (stage) => {
+		const outcomes: unknown[] = [];
+		const throwing = () => { throw new Error("gateway callback failed"); };
+		const upstream = makeSseResponse([{ event: "response.completed", data: { type: "response.completed", response: { status: "completed", usage: { total_tokens: 5 } } } }]);
+		const response = await passthroughWithPricing({ upstream, ctx: baseCtx(), provider: "openai", priceCard: null,
+			rewriteFrame: stage === "rewrite" ? throwing : undefined,
+			onFinalSnapshot: stage === "snapshot" ? throwing : undefined,
+			onStreamEvent: stage === "observer" ? throwing : undefined,
+			onFinalUsage: (_usage, info) => { outcomes.push(info); },
+		});
+		await expect(response.text()).rejects.toThrow("gateway callback failed");
+		expect(outcomes).toEqual([{ aborted: true, sawFinalUsage: false, failureOrigin: "gateway" }]);
+	});
+
+	it("does not forward stray frames or bill twice after a native terminal", async () => {
+		const outcomes: unknown[] = [];
+		const response = await passthroughWithPricing({
+			upstream: makeSseResponse([
+				{ event: "response.completed", data: { type: "response.completed", response: { status: "completed", usage: { total_tokens: 5 } } } },
+				{ event: "response.output_text.delta", data: { delta: "late" } },
+				{ event: "response.completed", data: { type: "response.completed", response: { status: "completed", usage: { total_tokens: 99 } } } },
+			]),
+			ctx: baseCtx(), provider: "openai", priceCard: null, onFinalUsage: (usage, info) => { outcomes.push({ usage, info }); },
+		});
+		const text = await response.text();
+		expect(text).not.toContain("late"); expect(text).not.toContain("99");
+		expect(outcomes).toEqual([{ usage: { total_tokens: 5 }, info: { aborted: false, sawFinalUsage: true } }]);
+	});
+
+	it("uses shared CRLF and multiline framing through the after-stage", async () => {
+		const outcomes: unknown[] = [];
+		const response = await passthroughWithPricing({
+			upstream: new Response('event: response.completed\r\ndata: {"type":"response.completed",\r\ndata: "response":{"status":"completed","usage":{"total_tokens":5}}}\r\n\r\n'),
+			ctx: baseCtx(), provider: "openai", priceCard: null, onFinalUsage: (usage) => { outcomes.push(usage); },
+		});
+		expect(await response.text()).toContain('"total_tokens":5');
+		expect(outcomes).toEqual([{ total_tokens: 5 }]);
+	});
 	it.each(["completed", "incomplete"])("finalizes usage once without aborting response.%s events", async (status) => {
 		const usageCalls: Array<any> = [];
 		const outcomes: Array<unknown> = [];
@@ -180,6 +236,7 @@ describe("passthroughWithPricing", () => {
 					usage: { prompt_tokens: 11, completion_tokens: 4, total_tokens: 15 },
 				},
 			},
+			{ data: "[DONE]" },
 		], 10).response;
 		const ctx = baseCtx({
 			endpoint: "chat.completions",
@@ -249,6 +306,7 @@ describe("passthroughWithPricing", () => {
 					usage: { prompt_tokens: 9, completion_tokens: 3, total_tokens: 12 },
 				},
 			},
+			{ data: "[DONE]" },
 		], 10);
 
 		const response = await passthroughWithPricing({
@@ -356,7 +414,7 @@ describe("passthroughWithPricing", () => {
 			},
 		});
 
-		await drain(response);
+		await expect(drain(response)).rejects.toThrow("sse_missing_terminal");
 
 		expect(usageCalls).toHaveLength(1);
 		expect(usageCalls[0]?.usage).toEqual({
@@ -700,6 +758,7 @@ describe("passthroughWithPricing", () => {
 					usage: { prompt_tokens: 4, completion_tokens: 2, total_tokens: 6 },
 				},
 			},
+			{ data: "[DONE]" },
 		], 15);
 
 		const response = await passthroughWithPricing({
@@ -725,6 +784,7 @@ describe("passthroughWithPricing", () => {
 			{ data: { object: "chat.completion.chunk", choices: [{ index: 0, delta: { content: "hello" }, finish_reason: null }] } },
 			{ data: { object: "chat.completion.chunk", choices: [{ index: 0, delta: { content: " world" }, finish_reason: null }] } },
 			{ data: { object: "chat.completion.chunk", choices: [{ index: 0, delta: {}, finish_reason: "stop" }], usage: { prompt_tokens: 4, completion_tokens: 2, total_tokens: 6 } } },
+			{ data: "[DONE]" },
 		]);
 
 		const response = await passthroughWithPricing({

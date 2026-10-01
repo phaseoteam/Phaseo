@@ -169,6 +169,7 @@ export async function handleStreamResponse(
     let latestStreamUsageRaw: any = null;
     let latestGatewaySnapshot: any = null;
 	let streamFailed = false;
+    let streamErrorStatus: number | undefined;
     let appliedStreamResponsePlugins = false;
     const streamedToolCallKeys = new Set<string>();
     const streamedToolCallNames = new Set<string>();
@@ -209,6 +210,15 @@ export async function handleStreamResponse(
     const onStreamEvent = (event: UnifiedStreamEvent) => {
 		if (event.type === "error") {
 			streamFailed = true;
+            const error = event.payload?.response?.error ?? event.payload?.error ?? event.payload;
+            const status = Number(error?.status_code ?? error?.status ?? event.payload?.status);
+            const knownCodeStatus: Record<string, number> = {
+                invalid_api_key: 401, authentication_error: 401, permission_denied: 403,
+                insufficient_quota: 429, rate_limit_exceeded: 429, rate_limit_error: 429,
+            };
+            const code = String(error?.code ?? error?.type ?? "");
+            streamErrorStatus = Number.isInteger(status) && status >= 400 && status <= 599
+                ? status : Object.hasOwn(knownCodeStatus, code) ? knownCodeStatus[code] : undefined;
 		}
         if (event.type === "delta_tool") {
             const key =
@@ -512,12 +522,13 @@ export async function handleStreamResponse(
             const healthProvider = healthContext?.provider ?? result.provider;
 			const isProbe = Boolean(healthContext?.isProbe);
 			const healthImpact = classifyProviderHealthImpact({
-				upstreamStatus: result.upstream.status,
+				upstreamStatus: streamErrorStatus ?? result.upstream.status,
 				credentialSource: result.keySource,
-				aborted: info?.aborted === true,
+				aborted: info?.aborted === true && info.failureOrigin !== "provider",
+				failureOrigin: info.failureOrigin,
 				// An upstream-completed empty response is a contract issue, not
 				// evidence that the provider is unhealthy.
-				midStreamError: streamFailed,
+				midStreamError: streamFailed || info.failureOrigin === "provider",
 				finishReason: cachedFinishReason ?? result.bill.finish_reason ?? null,
 			});
 			if (info?.aborted || streamFailed || healthImpact === "failure") {
@@ -550,10 +561,10 @@ export async function handleStreamResponse(
 				await handleFailureAudit(
 					ctx,
 					result,
-					502,
-					"upstream",
-					"upstream_stream_failure",
-					"The upstream stream failed before successful completion.",
+					info.failureOrigin === "gateway" ? 500 : 502,
+					info.failureOrigin === "gateway" ? "gateway" : "upstream",
+					info.failureOrigin === "gateway" ? "gateway_stream_failure" : "upstream_stream_failure",
+					info.failureOrigin === "gateway" ? "The gateway could not process the stream." : "The upstream stream failed before successful completion.",
 					result.rawResponse ?? latestGatewaySnapshot,
 				);
 				return;
@@ -838,5 +849,3 @@ export async function handleStreamResponse(
 export function handlePassthroughFallback(upstream: Response): Response {
     return passthrough(upstream);
 }
-
-

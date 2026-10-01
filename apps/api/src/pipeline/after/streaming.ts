@@ -16,6 +16,13 @@ import {
 } from "@protocols/stream/encode";
 import { dispatchBackground } from "@/runtime/env";
 import { getProviderStreamCancellationPolicy } from "./stream-cancellation";
+import { readSseEvents, SseProtocolError } from "@core/sse";
+
+export type StreamFinalInfo = {
+    aborted: boolean;
+    sawFinalUsage: boolean;
+    failureOrigin?: "provider" | "gateway";
+};
 
 /** Pure passthrough for non-stream fallbacks (keeps upstream headers where safe). */
 export function passthrough(upstream: Response): Response {
@@ -40,7 +47,7 @@ type PassthroughWithPricingOpts = {
      * Called once at the end with the final usage object from the final snapshot frame.
      * You can compute pricing & persist inside (prefer fire-and-forget in caller).
      */
-    onFinalUsage?: (usageRaw: any, info: { aborted: boolean; sawFinalUsage: boolean }) => Promise<void> | void;
+    onFinalUsage?: (usageRaw: any, info: StreamFinalInfo) => Promise<void> | void;
     /**
      * Called once with the final snapshot frame (if detected).
      */
@@ -74,8 +81,6 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
     // metadata says it exists, keep draining until the resolver is executable.
     ctx.meta.streamDisconnectAction = "drain_upstream";
 
-    const reader = upstream.body?.getReader();
-    const dec = new TextDecoder();
     const enc = new TextEncoder();
 
     const ts = new TransformStream();
@@ -86,7 +91,9 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
     let outputFrameIntervalTotalMs = 0;
     let outputFrameIntervalCount = 0;
     let downstreamClosed = false;
+    let upstreamFailed = false;
     void writer.closed.catch(() => {
+        if (upstreamFailed) return;
         downstreamClosed = true;
         ctx.meta.downstreamDisconnected = true;
     });
@@ -147,7 +154,7 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
     let finalUsageSettled = false;
     const finalizeUsage = (
         usage: any,
-        info: { aborted: boolean; sawFinalUsage: boolean },
+        info: StreamFinalInfo,
     ) => {
         if (finalUsageSettled) return;
         finalUsageSettled = true;
@@ -155,11 +162,12 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
         if (!onFinalUsage) return;
 
         if (info.aborted) {
-            console.warn("[gateway] Streaming response ended before final usage", {
+            console.warn("[gateway] Streaming response did not finish successfully", {
                 requestId: ctx.requestId,
                 workspaceId: ctx.workspaceId,
                 endpoint: ctx.endpoint,
                 provider,
+                failureOrigin: info.failureOrigin ?? null,
             });
         } else if (!info.sawFinalUsage) {
             console.warn("[gateway] Streaming response completed without final usage", {
@@ -172,9 +180,7 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
 
         recordCompletionTiming();
         dispatchBackground(
-            Promise.resolve(
-                onFinalUsage(usage, info),
-            ).catch((err) => {
+            Promise.resolve().then(() => onFinalUsage(usage, info)).catch((err) => {
                 console.error("passthroughWithPricing onFinalUsage error:", err, {
                     requestId: ctx.requestId,
                     workspaceId: ctx.workspaceId,
@@ -184,54 +190,43 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
     };
 
     const streamPump = (async () => {
-        if (!reader) {
+        if (!upstream.body) {
             finalizeUsage(null, { aborted: true, sawFinalUsage: false });
             try { await writer.close(); } catch { }
             return;
         }
 
-        let buf = "";
         let sawTerminalSnapshot = false;
+        let sawWireTerminal = false;
         let lastSeenUsage: any = null;
+        let finalUsageCandidate: any = null;
+        let failure: unknown;
+        let failed = false;
+        let failureOrigin: "provider" | "gateway" = "provider";
+        let chunkReceivedAt = performance.now();
 
         try {
-            while (true) {
-                const { value, done } = await reader.read();
-                if (done) break;
-                const chunkReceivedAt = performance.now();
-
-                buf += dec.decode(value, { stream: true });
-
-                // Split on SSE frame boundary
-                const frames = buf.split(/\n\n/);
-                buf = frames.pop() ?? "";
-
-                for (const raw of frames) {
+            for await (const parsed of readSseEvents(upstream.body, { onChunk: time => { chunkReceivedAt = time; } })) {
+                    failureOrigin = "gateway";
                     const frameReceivedAt = chunkReceivedAt;
-                    // SSE fields - capture event name and data payload
-                    let dataStr = "";
-                    let eventName: string | null = null;
-                    for (const line of raw.split(/\n/)) {
-                        const l = line.replace(/\r$/, "");
-                        if (l.startsWith("event:")) eventName = l.slice(6).trim();
-                        if (l.startsWith("data:")) dataStr += l.slice(5).trimStart();
-                        // Keep ignoring "id:" etc - we preserve event when present
+                    const dataStr = parsed.data;
+                    const eventName = parsed.event ?? null;
+                    if (!dataStr) { failureOrigin = "provider"; continue; }
+                    if (dataStr === "[DONE]") {
+                        sawWireTerminal = true;
+                        if (!downstreamClosed && ctx.protocol === "openai.chat.completions") {
+                            try { await writer.write(enc.encode("data: [DONE]\n\n")); }
+                            catch { downstreamClosed = true; ctx.meta.downstreamDisconnected = true; }
+                        }
+                        break;
                     }
-                    if (!dataStr) continue;
 
                     let json: any;
                     try {
                         json = JSON.parse(dataStr);
                     } catch {
-                        // not JSON - just forward raw block
-                        if (!downstreamClosed) {
-                            try {
-                                await writer.write(enc.encode(raw + "\n\n"));
-                            } catch {
-                                downstreamClosed = true;
-                            }
-                        }
-                        continue;
+                        failureOrigin = "provider";
+                        throw new SseProtocolError("sse_invalid_json");
                     }
 
                     const events = extractUnifiedStreamEvents({
@@ -259,14 +254,10 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
                             : null;
                     if (onStreamEvent && events.length > 0) {
                         for (const event of events) {
-                            try {
                                 const observed = onStreamEvent(event);
                                 if (observed && typeof (observed as Promise<void>).then === "function") {
                                     await observed;
                                 }
-                            } catch {
-                                // Never let event consumer errors break stream forwarding.
-                            }
                         }
                     }
 
@@ -331,7 +322,7 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
                     // must not settle billing before that trailing frame arrives.
                     if (isFinalSnapshot) {
                         if (onFinalSnapshot) {
-                            try { onFinalSnapshot(finalSnapshotFromEvents ?? json); } catch { }
+                            onFinalSnapshot(finalSnapshotFromEvents ?? json);
                         }
                         finalUsageAfterWrite = usageCandidate ?? lastSeenUsage;
                     } else if (sawTerminalSnapshot && usageCandidate) {
@@ -390,29 +381,39 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
                     for (const outbound of outboundFrames) {
                         let frameOut: any = outbound.frame;
                         if (rewriteFrame) {
-                            try { frameOut = rewriteFrame(frameOut) ?? frameOut; } catch { }
+                            frameOut = rewriteFrame(frameOut) ?? frameOut;
                         }
                         await writeJson(frameOut, outbound.eventName ?? null);
                     }
 
                     if (finalUsageAfterWrite) {
-                        finalizeUsage(finalUsageAfterWrite, {
-                            aborted: false,
-                            sawFinalUsage: true,
-                        });
+                        finalUsageCandidate = finalUsageAfterWrite;
                     }
-
-                }
+                    const nativeType = eventName ?? json?.type;
+                    const nativeTerminal = ["response.completed", "response.incomplete", "response.failed", "message_stop", "error"].includes(nativeType)
+                        || json?.object === "error" || (json?.error && typeof json.error === "object") || json?.object === "chat.completion"
+                        || (json?.object === "response" && ["completed", "incomplete", "failed"].includes(json?.status));
+                    if (nativeTerminal) { sawWireTerminal = true; break; }
+                    failureOrigin = "provider";
             }
+            if (!sawWireTerminal) { failureOrigin = "provider"; throw new SseProtocolError("sse_missing_terminal"); }
+        } catch (error) {
+            failed = true;
+            upstreamFailed = true;
+            failure = error;
         } finally {
             if (!finalUsageSettled) {
-                finalizeUsage(lastSeenUsage, {
-                    aborted: !sawTerminalSnapshot,
-                    sawFinalUsage: false,
+                finalizeUsage(finalUsageCandidate ?? lastSeenUsage, {
+                    aborted: failed || !sawWireTerminal,
+                    sawFinalUsage: !failed && sawWireTerminal && Boolean(finalUsageCandidate ?? lastSeenUsage),
+                    ...(failed ? { failureOrigin } : {}),
                 });
             }
             if (!downstreamClosed) {
-                try { await writer.close(); } catch { }
+                try {
+                    if (failed) await writer.abort(failure);
+                    else await writer.close();
+                } catch { }
             }
         }
     })();
@@ -434,10 +435,6 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
     // Do not add custom gateway headers; everything important is in-body now.
     return new Response(ts.readable, { status: upstream.status, headers });
 }
-
-
-
-
 
 
 
