@@ -8,6 +8,7 @@ import type {
 	ChatMessage,
 	ChatAdvisorServerToolConfig,
 	ChatModelSettings,
+	ChatServiceTier,
 	ChatServerToolConfigs,
 	ChatServerToolType,
 	ChatSettings,
@@ -36,10 +37,8 @@ export type NewChatModelPreference = "blank" | "selected";
 
 export function getRequestedChatServiceTier(
 	settings: Pick<ChatModelSettings, "serviceTier">,
-): "priority" | "flex" | null {
-	return settings.serviceTier === "priority" || settings.serviceTier === "flex"
-		? settings.serviceTier
-		: null;
+): ChatServiceTier {
+	return settings.serviceTier ?? "standard";
 }
 
 export function normalizeServerTools(

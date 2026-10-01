@@ -126,6 +126,7 @@ import {
 	getModelServiceTierSupport,
 	getServiceTierOptions,
 	resolveChatServiceTier,
+	assertChatServiceTierSupported,
 } from "@/components/(chat)/playground/serviceTierSupport";
 
 type ChatPlaygroundProps = {
@@ -1237,8 +1238,8 @@ function ChatPlaygroundContent({
 			});
 			const resolvedServiceTier = resolveChatServiceTier(
 				effectiveModelSettings.serviceTier ?? "standard",
-				serviceTierSupport,
 			);
+			assertChatServiceTierSupported(resolvedServiceTier, serviceTierSupport);
 			const wantsImageModalities =
 				endpoint === "responses" &&
 				(effectiveModelSettings.imageOutputEnabled ||
@@ -1353,9 +1354,7 @@ function ChatPlaygroundContent({
 			const requestedServiceTier = getRequestedChatServiceTier({
 				serviceTier: resolvedServiceTier,
 			});
-			if (requestedServiceTier) {
-				requestBody.service_tier = requestedServiceTier;
-			}
+			requestBody.service_tier = requestedServiceTier;
 			if (endpoint === "responses") {
 				requestBody.input = input;
 				requestBody.meta = true;
@@ -4435,7 +4434,6 @@ function ChatPlaygroundContent({
 	]);
 	const dialogServiceTier = resolveChatServiceTier(
 		dialogModelSettings.serviceTier ?? "standard",
-		dialogServiceTierSupport,
 	);
 	const dialogServiceTierOptions = getServiceTierOptions(dialogServiceTierSupport);
 	const temperatureValue = activeModelSettings?.temperature ?? 0.7;

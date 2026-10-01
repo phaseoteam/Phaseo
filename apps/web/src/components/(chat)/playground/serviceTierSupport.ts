@@ -14,12 +14,14 @@ export type ServiceTierOption = {
 export const SERVICE_TIER_OPTIONS: ServiceTierOption[] = [
 	{ value: "standard", label: "Standard" },
 	{ value: "priority", label: "Fast" },
+	{ value: "ultrafast", label: "Ultrafast" },
 	{ value: "flex", label: "Flex" },
 ];
 
 const SERVICE_TIER_ORDER: ChatServiceTier[] = [
 	"standard",
 	"priority",
+	"ultrafast",
 	"flex",
 ];
 
@@ -51,14 +53,11 @@ function normalizeParameterId(value: unknown) {
 function parseServiceTier(value: unknown): ChatServiceTier | null {
 	if (typeof value !== "string") return null;
 	const normalized = value.trim().toLowerCase();
-	if (
-		normalized === "standard" ||
-		normalized === "default" ||
-		normalized === "auto"
-	) {
+	if (normalized === "standard" || normalized === "default" || normalized === "auto") {
 		return "standard";
 	}
 	if (normalized === "priority" || normalized === "fast") return "priority";
+	if (normalized === "ultrafast") return "ultrafast";
 	if (normalized === "flex") return "flex";
 	return null;
 }
@@ -101,16 +100,10 @@ function supportFromConfig(value: unknown): ServiceTierSupport | null {
 	if (!isRecord(value)) return null;
 
 	const supportedValues = parseValues(
-		value.supported_values ??
-			value.supportedValues ??
-			value.values ??
-			value.enum,
+		value.supported_values ?? value.supportedValues ?? value.values ?? value.enum,
 	);
 	const defaultValue = parseServiceTier(
-		value.default_value ??
-			value.default ??
-			value.provider_default ??
-			value.providerDefault,
+		value.default_value ?? value.default ?? value.provider_default ?? value.providerDefault,
 	);
 	if (supportedValues.length > 0) {
 		return {
@@ -214,6 +207,10 @@ function hasTextGenerationCapability(model: GatewaySupportedModel) {
 function getModelRouteServiceTierSupport(
 	model: GatewaySupportedModel,
 ): ServiceTierSupport | null {
+	if (Array.isArray(model.serviceTiers)) {
+		const supportedValues = parseValues(model.serviceTiers);
+		return { supportedValues: supportedValues.length ? supportedValues : ["standard"] };
+	}
 	const capabilityParamsById = model.capabilityParamsById;
 	if (isRecord(capabilityParamsById)) {
 		const textRoutes = Object.entries(capabilityParamsById).filter(([capabilityId]) =>
@@ -272,17 +269,17 @@ export function getServiceTierOptions(
 
 export function resolveChatServiceTier(
 	tier: ChatServiceTier | null | undefined,
-	support: ServiceTierSupport | null | undefined,
 ): ChatServiceTier {
-	const requested = parseServiceTier(tier) ?? "standard";
-	if (!support || support.supportedValues.length === 0) return "standard";
-	if (support.supportedValues.includes(requested)) return requested;
-	if (support.defaultValue && support.supportedValues.includes(support.defaultValue)) {
-		return support.defaultValue;
+	return parseServiceTier(tier) ?? "standard";
+}
+
+export function assertChatServiceTierSupported(
+	tier: ChatServiceTier,
+	support: ServiceTierSupport | null | undefined,
+) {
+	if (!getServiceTierOptions(support).some((option) => option.value === tier)) {
+		throw new Error("Selected service tier is unavailable for this model and provider. Choose a supported tier in model settings.");
 	}
-	return support.supportedValues.includes("standard")
-		? "standard"
-		: support.supportedValues[0] ?? "standard";
 }
 
 export function getServiceTierLabel(tier: ChatServiceTier | null | undefined) {

@@ -79,10 +79,11 @@ describe("chat service tier requests", () => {
 	});
 
 	it("sends only explicit non-standard tiers", () => {
-		expect(getRequestedChatServiceTier({ serviceTier: "standard" })).toBeNull();
-		expect(getRequestedChatServiceTier({})).toBeNull();
+		expect(getRequestedChatServiceTier({ serviceTier: "standard" })).toBe("standard");
+		expect(getRequestedChatServiceTier({})).toBe("standard");
 		expect(getRequestedChatServiceTier({ serviceTier: "priority" })).toBe("priority");
 		expect(getRequestedChatServiceTier({ serviceTier: "flex" })).toBe("flex");
+		expect(getRequestedChatServiceTier({ serviceTier: "ultrafast" })).toBe("ultrafast");
 	});
 });
 
