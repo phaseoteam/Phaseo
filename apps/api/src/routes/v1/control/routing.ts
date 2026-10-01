@@ -5,7 +5,7 @@
 import { Hono } from "hono";
 import type { Env } from "@/runtime/types";
 import { getSupabaseAdmin } from "@/runtime/env";
-import { setKeyVersion } from "@/core/kv";
+import { publishWorkspaceMutation } from "@/core/workspace-publication";
 import { guardManagementAuth, type GuardErr } from "@/pipeline/before/guards";
 import { normalizeDynamicRouteConfig } from "@/pipeline/before/dynamic-routes";
 import { CAPABILITIES } from "@/lib/authz/capabilities";
@@ -119,11 +119,6 @@ function formatRoute(row: Record<string, any>, relations: Awaited<ReturnType<typ
 	};
 }
 
-async function invalidateKeys(keyIds: string[]) {
-	const version = Date.now();
-	await Promise.all([...new Set(keyIds)].map((keyId) => setKeyVersion("id", keyId, version)));
-}
-
 async function audit(auth: any, action: string, route: Record<string, any>, metadata?: Record<string, unknown>) {
 	await recordWorkspaceAuditEvent(getSupabaseAdmin(), {
 		workspaceId: auth.workspaceId,
@@ -213,9 +208,7 @@ async function updateRoute(req: Request) {
 			throw new Error(updated.error?.message || "Failed to update dynamic route");
 		}
 		if (body.status !== undefined && body.status !== existing.status) {
-			const links = await getSupabaseAdmin().from("gateway_dynamic_route_keys").select("key_id").eq("route_id", id);
-			if (links.error) throw new Error(links.error.message || "Failed to load route keys");
-			await invalidateKeys((links.data ?? []).map((item) => String(item.key_id)));
+			await publishWorkspaceMutation(access.auth.workspaceId);
 		}
 		await audit(access.auth, "routing.dynamic_route.updated", updated.data, { changed_fields: Object.keys(body), version: nextVersion });
 		return json({ data: formatRoute(updated.data, await routeRelations([id])) }, 200, NO_STORE);
@@ -233,8 +226,7 @@ async function deployVersion(req: Request) {
 		if (!selected.data?.config) return json({ error: "not_found", message: "Route version not found" }, 404, NO_STORE);
 		const updated = await getSupabaseAdmin().from("gateway_dynamic_routes").update({ config: selected.data.config, deployed_version: version, updated_at: new Date().toISOString() }).eq("workspace_id", access.auth.workspaceId).eq("id", id);
 		if (updated.error) throw new Error(updated.error.message || "Failed to deploy route version");
-		const links = await getSupabaseAdmin().from("gateway_dynamic_route_keys").select("key_id").eq("route_id", id); if (links.error) throw new Error(links.error.message || "Failed to load route keys");
-		await invalidateKeys((links.data ?? []).map((item) => String(item.key_id)));
+		await publishWorkspaceMutation(access.auth.workspaceId);
 		await audit(access.auth, "routing.dynamic_route.deployed", route, { version });
 		return json({ data: { id, deployed_version: version } }, 200, NO_STORE);
 	} catch (error) { return internalServerError("routing.dynamic_routes.deploy", error); }
@@ -250,10 +242,9 @@ async function replaceKeys(req: Request) {
 		const valid = keyIds.length ? await client.from("keys").select("id").eq("workspace_id", access.auth.workspaceId).neq("status", "deleted").in("id", keyIds) : { data: [], error: null };
 		if (valid.error) throw new Error(valid.error.message || "Failed to validate route keys");
 		if ((valid.data ?? []).length !== keyIds.length) return json({ error: "conflict", message: "One or more API keys are unavailable" }, 409, NO_STORE);
-		const previous = await client.from("gateway_dynamic_route_keys").select("key_id").eq("route_id", id); if (previous.error) throw new Error(previous.error.message || "Failed to load existing route keys");
 		const replaced = await client.rpc("replace_gateway_dynamic_route_keys", { p_route_id: id, p_key_ids: keyIds, p_attached_by: access.auth.userId ?? null });
 		if (replaced.error) throw new Error(replaced.error.message || "Failed to replace route keys");
-		await invalidateKeys([...(previous.data ?? []).map((item) => String(item.key_id)), ...keyIds]);
+		await publishWorkspaceMutation(access.auth.workspaceId);
 		await audit(access.auth, "routing.dynamic_route.keys_updated", route, { key_count: keyIds.length });
 		return json({ data: { id, key_ids: keyIds } }, 200, NO_STORE);
 	} catch (error) { return internalServerError("routing.dynamic_routes.keys", error); }
@@ -265,9 +256,8 @@ async function deleteRoute(req: Request) {
 	try {
 		const route = await loadRoute(access.auth.workspaceId, id); if (!route) return json({ error: "not_found", message: "Dynamic route not found" }, 404, NO_STORE);
 		const confirmation = url.searchParams.get("confirm_name"); if (confirmation !== null && confirmation !== route.name) return json({ error: "conflict", message: "Route name confirmation does not match" }, 409, NO_STORE);
-		const links = await getSupabaseAdmin().from("gateway_dynamic_route_keys").select("key_id").eq("route_id", id); if (links.error) throw new Error(links.error.message || "Failed to load route keys");
 		const deleted = await getSupabaseAdmin().from("gateway_dynamic_routes").delete().eq("workspace_id", access.auth.workspaceId).eq("id", id); if (deleted.error) throw new Error(deleted.error.message || "Failed to delete dynamic route");
-		await invalidateKeys((links.data ?? []).map((item) => String(item.key_id)));
+		await publishWorkspaceMutation(access.auth.workspaceId);
 		await audit(access.auth, "routing.dynamic_route.deleted", route);
 		return json({ data: { id, deleted: true } }, 200, NO_STORE);
 	} catch (error) { return internalServerError("routing.dynamic_routes.delete", error); }

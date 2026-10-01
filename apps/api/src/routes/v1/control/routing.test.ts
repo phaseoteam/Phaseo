@@ -76,7 +76,7 @@ function supabase() {
 }
 
 vi.mock("@/runtime/env", () => ({ getSupabaseAdmin: () => supabase() }));
-vi.mock("@/core/kv", () => ({ setKeyVersion: async (_kind: string, id: string) => { state.invalidated.push(id); } }));
+vi.mock("@/core/workspace-publication", () => ({ publishWorkspaceMutation: async (id: string) => { state.invalidated.push(id); } }));
 vi.mock("@/pipeline/before/guards", () => ({
 	guardManagementAuth: async () => ({ ok: true, value: { workspaceId: "workspace_1", userId: "user_1", requestId: "request_1" } }),
 }));
@@ -139,7 +139,7 @@ describe("dynamic routing management", () => {
 		});
 		expect(response.status).toBe(200);
 		expect(state.rpcArgs).toMatchObject({ p_route_id: "route_1", p_key_ids: ["key_1", "key_2"] });
-		expect(state.invalidated).toEqual(expect.arrayContaining(["key_1", "key_2"]));
+		expect(state.invalidated).toEqual(["workspace_1"]);
 	});
 
 	it("deploys a selected version and refreshes attached-key context", async () => {
@@ -148,7 +148,7 @@ describe("dynamic routing management", () => {
 		const response = await routingRoutes.request("https://example.com/dynamic-routes/route_1/versions/1/deploy", { method: "POST" });
 		expect(response.status).toBe(200);
 		expect(state.route?.deployed_version).toBe(1);
-		expect(state.invalidated).toContain("key_1");
+		expect(state.invalidated).toEqual(["workspace_1"]);
 		expect(state.auditEvents[0]).toMatchObject({ action: "routing.dynamic_route.deployed" });
 	});
 

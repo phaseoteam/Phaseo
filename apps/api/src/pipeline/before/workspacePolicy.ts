@@ -174,7 +174,7 @@ function parseWorkspacePolicyVersion(raw: string | null): number {
 	return parsed;
 }
 
-async function getWorkspacePolicyVersionToken(workspaceId: string): Promise<string | null> {
+export async function getWorkspacePolicyVersionToken(workspaceId: string): Promise<string | null> {
 	const cached = readWorkspacePolicyVersionL1(workspaceId);
 	if (cached !== null) return `v${cached}`;
 	const state = policyVersionState(workspaceId);

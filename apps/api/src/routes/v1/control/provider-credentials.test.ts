@@ -38,7 +38,7 @@ function query(table: string) {
 
 vi.mock("@/pipeline/before/guards", () => ({ guardManagementAuth: vi.fn(async () => state.auth) }));
 vi.mock("@/runtime/env", () => ({ getSupabaseAdmin: () => ({ from: (table: string) => query(table), rpc: vi.fn(async () => ({ data: true, error: null })) }) }));
-vi.mock("@/core/kv", () => ({ setKeyVersion: vi.fn(async () => 1) }));
+vi.mock("@/core/workspace-publication", () => ({ publishWorkspaceMutation: vi.fn(async () => 1) }));
 vi.mock("@/core/provider-credentials", () => ({
 	canonicalProviderId: (value: unknown) => String(value ?? "").trim().toLowerCase(),
 	normalizeCredentialScope: (value: unknown) => Array.isArray(value) ? value.map(String) : null,

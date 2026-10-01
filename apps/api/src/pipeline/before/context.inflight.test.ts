@@ -137,6 +137,40 @@ describe("fetchGatewayContext inflight dedupe", () => {
         expect(b).not.toBe(c);
     });
 
+    it("fences every warmed key after one workspace version publication", async () => {
+        const { fetchGatewayContext } = await import("./context");
+        const { bumpWorkspacePolicyVersion } = await import("./workspacePolicy");
+        const args = { workspaceId: "team_inflight", model: "openai/gpt-5-nano", endpoint: "text.generate" };
+        for (const apiKeyId of ["key-a", "key-b"]) {
+            await fetchGatewayContext({ ...args, apiKeyId });
+            expect((await fetchGatewayContext({ ...args, apiKeyId })).contextTelemetry?.cacheStatus).toBe("hit");
+        }
+        const before = runtime.supabase.rpc.mock.calls.length;
+        await bumpWorkspacePolicyVersion(args.workspaceId);
+        for (const apiKeyId of ["key-a", "key-b"]) {
+            expect((await fetchGatewayContext({ ...args, apiKeyId })).contextTelemetry?.cacheStatus).not.toBe("hit");
+        }
+        expect(runtime.supabase.rpc.mock.calls.length).toBeGreaterThan(before);
+        expect(runtime.cache.put.mock.calls.filter(([, value]) => value === "1")).toHaveLength(1);
+    });
+
+    it("does not reuse or fill context caches when the workspace marker is malformed", async () => {
+        const { fetchGatewayContext } = await import("./context");
+        const args = { workspaceId: "team_inflight", apiKeyId: "unknown-marker", model: "model", endpoint: "text.generate" };
+        await fetchGatewayContext(args);
+        const markerKey = runtime.cache.get.mock.calls.find(([key]) => key.includes("policy-version"))?.[0];
+        expect(markerKey).toBeDefined();
+        runtime.store.set(markerKey!, "malformed");
+        // A fresh isolate must not trust an old context under an unknown marker.
+        vi.resetModules();
+        runtime.supabase.rpc.mockClear(); runtime.cache.put.mockClear();
+        const fresh = await import("./context");
+        await fresh.fetchGatewayContext(args);
+        await fresh.fetchGatewayContext(args);
+        expect(runtime.supabase.rpc).toHaveBeenCalledTimes(4);
+        expect(runtime.cache.put.mock.calls.filter(([key]) => /gateway:(dynamic|static|context)/.test(key))).toEqual([]);
+    });
+
     it("caches the base context without private credentials and applies deletion on a cache hit", async () => {
         runtime.privateRows.push({ id: "private-1", workspace_id: "team_inflight", model_id: "acme/private", base_url: "https://customer.example/v1", upstream_model_id: "v1", supports_responses: true, routing_policy: "preferred", provider_id: "private-model", enc_value: "ciphertext", enc_iv: "iv", enc_tag: "tag", key_version: 1, fingerprint_sha256: "fingerprint" });
         const { fetchGatewayContext } = await import("./context");

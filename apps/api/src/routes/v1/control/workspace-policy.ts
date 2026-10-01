@@ -3,7 +3,7 @@ import type { Env } from "@/runtime/types";
 import { getBindings } from "@/runtime/env";
 import { guardAuth, type GuardErr } from "@/pipeline/before/guards";
 import { json, withRuntime } from "@/routes/utils";
-import { bumpWorkspacePolicyVersion } from "@/pipeline/before/workspacePolicy";
+import { publishWorkspaceMutation } from "@/core/workspace-publication";
 
 function timingSafeEqual(a: string, b: string): boolean {
 	const len = Math.max(a.length, b.length);
@@ -17,12 +17,6 @@ function timingSafeEqual(a: string, b: string): boolean {
 }
 
 async function handleInvalidateWorkspacePolicy(req: Request) {
-	const auth = await guardAuth(req, { useKvCache: false });
-	if (!auth.ok) {
-		return (auth as GuardErr).response;
-	}
-	const { workspaceId } = auth.value;
-
 	const bindings = getBindings();
 	const controlSecret = bindings.PHASEO_CONTROL_SECRET?.trim();
 	if (!controlSecret) {
@@ -41,13 +35,21 @@ async function handleInvalidateWorkspacePolicy(req: Request) {
 			{ "Cache-Control": "no-store" },
 		);
 	}
+	// Website service authorization requires BOTH configured credentials. An
+	// ordinary caller remains scoped to its own authenticated workspace.
+	const authorization = req.headers.get("authorization") ?? "";
+	const bearer = authorization.startsWith("Bearer ") ? authorization.slice(7) : "";
+	const serviceKey = bindings.PHASEO_CONTROL_KEY?.trim();
+	const serviceAuthorized = !!serviceKey && timingSafeEqual(bearer, serviceKey);
+	const auth = serviceAuthorized ? null : await guardAuth(req, { useKvCache: false });
+	if (auth && !auth.ok) return (auth as GuardErr).response;
 
 	const url = new URL(req.url);
 	const targetWorkspaceId = url.pathname.split("/").at(-2) ?? "";
-	if (!targetWorkspaceId) {
+	if (!targetWorkspaceId || targetWorkspaceId.length > 128 || !/^[A-Za-z0-9_-]+$/.test(targetWorkspaceId)) {
 		return json({ ok: false, error: "workspace_id_required" }, 400, { "Cache-Control": "no-store" });
 	}
-	if (targetWorkspaceId !== workspaceId) {
+	if (auth?.ok && targetWorkspaceId !== auth.value.workspaceId) {
 		return json(
 			{ ok: false, error: "forbidden", message: "Workspace does not belong to the authenticated team" },
 			403,
@@ -56,21 +58,22 @@ async function handleInvalidateWorkspacePolicy(req: Request) {
 	}
 
 	try {
-		const version = await bumpWorkspacePolicyVersion(targetWorkspaceId);
+		const version = await publishWorkspaceMutation(targetWorkspaceId);
 		return json(
 			{
 				ok: true,
 				workspace_id: targetWorkspaceId,
-				cache_version: version,
-				message: "Workspace policy cache invalidated globally",
+				cache_version: version.policyVersion,
+				context_version: version.contextVersion,
+				message: "Workspace cache invalidation published; existing leases expire normally",
 			},
 			200,
 			{ "Cache-Control": "no-store" },
 		);
-	} catch (error: any) {
+	} catch {
 		return json(
-			{ ok: false, error: "failed", message: String(error?.message ?? error) },
-			500,
+			{ ok: false, error: "workspace_publication_failed" },
+			503,
 			{ "Cache-Control": "no-store" },
 		);
 	}

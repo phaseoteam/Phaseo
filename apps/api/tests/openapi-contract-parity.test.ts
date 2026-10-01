@@ -50,6 +50,8 @@ const INTERNAL_DATA_OPERATIONS = new Set([
 	"POST /audio/realtime/sessions/{param}/finalize",
 	"POST /audio/realtime/sessions/{param}/usage",
 	"POST /security/report-leaked-key",
+	// Internal website-to-gateway publication requires a separate control secret.
+	"POST /workspaces/{param}/invalidate",
 ]);
 
 const SPEC_PATH = path.resolve(

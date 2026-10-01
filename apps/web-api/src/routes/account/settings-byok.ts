@@ -4,6 +4,7 @@ import { PRIVATE_NO_STORE_HEADERS } from "@/http/cache";
 import { getDataClient } from "@/data/supabase";
 import { requireUser } from "@/auth/requireUser";
 import { requireAccountWorkspace } from "./context";
+import { invalidateWorkspaceGatewayContext } from "./gateway-invalidation";
 
 const MAX_KEYS_PER_ROUTING_MODE = 16;
 const MAX_SCOPE_ITEMS = 256;
@@ -173,7 +174,8 @@ accountSettingsByokRouter.post("/byok", async (c) => {
 		};
 		const inserted = await context.client.from("byok_keys").insert(payload).select("id").maybeSingle();
 		if (inserted.error) throw inserted.error;
-		return c.json({ id: inserted.data?.id, mode: "created" }, 200, PRIVATE_NO_STORE_HEADERS);
+		const gatewayCacheInvalidated = await invalidateWorkspaceGatewayContext(context, c.env);
+		return c.json({ id: inserted.data?.id, mode: "created", gatewayCacheInvalidated }, 200, PRIVATE_NO_STORE_HEADERS);
 	} catch (error) {
 		return c.json({ error: error instanceof Error ? error.message : "BYOK key write failed" }, 409, PRIVATE_NO_STORE_HEADERS);
 	}
@@ -237,7 +239,8 @@ accountSettingsByokRouter.put("/byok/:keyId", async (c) => {
 		}
 		const result = await loaded.context.client.from("byok_keys").update(update).eq("id", loaded.key.id).eq("workspace_id", loaded.context.workspaceId);
 		if (result.error) throw result.error;
-		return c.json({ success: true }, 200, PRIVATE_NO_STORE_HEADERS);
+		const gatewayCacheInvalidated = await invalidateWorkspaceGatewayContext(loaded.context, c.env);
+		return c.json({ success: true, gatewayCacheInvalidated }, 200, PRIVATE_NO_STORE_HEADERS);
 	} catch (error) { return c.json({ error: error instanceof Error ? error.message : "BYOK key write failed" }, 409, PRIVATE_NO_STORE_HEADERS); }
 });
 
@@ -246,7 +249,8 @@ accountSettingsByokRouter.delete("/byok/:keyId", async (c) => {
 	if (!loaded) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
 	const result = await loaded.context.client.from("byok_keys").delete().eq("id", loaded.key.id).eq("workspace_id", loaded.context.workspaceId);
 	if (result.error) return c.json({ error: "BYOK key delete failed" }, 503, PRIVATE_NO_STORE_HEADERS);
-	return c.json({ success: true }, 200, PRIVATE_NO_STORE_HEADERS);
+	const gatewayCacheInvalidated = await invalidateWorkspaceGatewayContext(loaded.context, c.env);
+	return c.json({ success: true, gatewayCacheInvalidated }, 200, PRIVATE_NO_STORE_HEADERS);
 });
 
 accountSettingsByokRouter.post("/byok/:keyId/reorder", async (c) => {
@@ -261,7 +265,8 @@ accountSettingsByokRouter.post("/byok/:keyId/reorder", async (c) => {
 		p_direction: direction,
 	});
 	if (result.error) return c.json({ error: "settings_write_failed" }, 503, PRIVATE_NO_STORE_HEADERS);
-	return c.json({ success: true }, 200, PRIVATE_NO_STORE_HEADERS);
+	const gatewayCacheInvalidated = await invalidateWorkspaceGatewayContext(loaded.context, c.env);
+	return c.json({ success: true, gatewayCacheInvalidated }, 200, PRIVATE_NO_STORE_HEADERS);
 });
 
 accountSettingsByokRouter.put("/byok-fallback", async (c) => {
@@ -275,5 +280,6 @@ accountSettingsByokRouter.put("/byok-fallback", async (c) => {
 		? await context.client.from("workspace_settings").update(payload).eq("workspace_id", context.workspaceId)
 		: await context.client.from("workspace_settings").insert({ ...payload, routing_mode: "balanced" });
 	if (result.error) return c.json({ error: "settings_write_failed" }, 503, PRIVATE_NO_STORE_HEADERS);
-	return c.json({ success: true }, 200, PRIVATE_NO_STORE_HEADERS);
+	const gatewayCacheInvalidated = await invalidateWorkspaceGatewayContext(context, c.env);
+	return c.json({ success: true, gatewayCacheInvalidated }, 200, PRIVATE_NO_STORE_HEADERS);
 });

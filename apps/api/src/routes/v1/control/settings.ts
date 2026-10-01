@@ -1,9 +1,8 @@
 import { Hono } from "hono";
 import type { Env } from "@/runtime/types";
 import { getSupabaseAdmin } from "@/runtime/env";
-import { setKeyVersion } from "@/core/kv";
+import { publishWorkspaceMutation } from "@/core/workspace-publication";
 import { guardManagementAuth, type GuardErr } from "@/pipeline/before/guards";
-import { bumpWorkspacePolicyVersion } from "@/pipeline/before/workspacePolicy";
 import { CAPABILITIES } from "@/lib/authz/capabilities";
 import { recordWorkspaceAuditEvent } from "@/lib/audit/workspaceAudit";
 import { json, withRuntime } from "@/routes/utils";
@@ -126,22 +125,6 @@ function normalizeSettingsPatch(body: Record<string, unknown>): { data: Record<s
 	return { data: patch };
 }
 
-async function invalidateWorkspaceGatewayContextCache(workspaceId: string): Promise<void> {
-	const { data, error } = await getSupabaseAdmin()
-		.from("keys")
-		.select("id")
-		.eq("workspace_id", workspaceId)
-		.neq("status", "deleted");
-	if (error) throw new Error(error.message || "Failed to list workspace keys for context cache invalidation");
-	const nowVersion = Date.now();
-	await Promise.all(
-		(data ?? [])
-			.map((row) => String((row as { id?: unknown }).id ?? "").trim())
-			.filter(Boolean)
-			.map((keyId) => setKeyVersion("id", keyId, nowVersion)),
-	);
-}
-
 async function handleGetSettings(req: Request) {
 	const auth = await guardManagementAuth(req, { useKvCache: false });
 	if (!auth.ok) return (auth as GuardErr).response;
@@ -194,11 +177,8 @@ async function handleUpdateSettings(req: Request) {
 			.select(SETTINGS_COLUMNS)
 			.maybeSingle();
 		if (error) throw new Error(error.message || "Failed to update workspace settings");
-		if (Object.keys(patch).some((field) => WORKSPACE_POLICY_FIELDS.has(field))) {
-			await bumpWorkspacePolicyVersion(auth.value.workspaceId);
-		}
-		if (Object.keys(patch).some((field) => GATEWAY_CONTEXT_FIELDS.has(field))) {
-			await invalidateWorkspaceGatewayContextCache(auth.value.workspaceId);
+		if (Object.keys(patch).some((field) => WORKSPACE_POLICY_FIELDS.has(field) || GATEWAY_CONTEXT_FIELDS.has(field))) {
+			await publishWorkspaceMutation(auth.value.workspaceId);
 		}
 		await recordWorkspaceAuditEvent(getSupabaseAdmin(), {
 			workspaceId: auth.value.workspaceId,

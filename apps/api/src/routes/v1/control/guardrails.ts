@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import type { Env } from "@/runtime/types";
 import { getSupabaseAdmin } from "@/runtime/env";
 import { guardManagementAuth, type GuardErr } from "@/pipeline/before/guards";
-import { bumpWorkspacePolicyVersion } from "@/pipeline/before/workspacePolicy";
+import { publishWorkspaceMutation } from "@/core/workspace-publication";
 import { CAPABILITIES } from "@/lib/authz/capabilities";
 import { recordWorkspaceAuditEvent } from "@/lib/audit/workspaceAudit";
 import { json, withRuntime } from "@/routes/utils";
@@ -330,7 +330,7 @@ async function handleCreateGuardrail(req: Request) {
 			.maybeSingle();
 		if (error) throw new Error(error.message || "Failed to create guardrail");
 		if (!data) throw new Error("Failed to create guardrail");
-		await bumpWorkspacePolicyVersion(auth.value.workspaceId);
+		await publishWorkspaceMutation(auth.value.workspaceId);
 		await auditGuardrail(auth.value, "guardrail.created", data as unknown as GuardrailRow);
 		return json({ data }, 201, { "Cache-Control": "no-store" });
 	} catch (error: any) {
@@ -389,7 +389,7 @@ async function handleUpdateGuardrail(req: Request) {
 			.maybeSingle();
 		if (error) throw new Error(error.message || "Failed to update guardrail");
 		if (!data) return json({ error: "not_found", message: "Guardrail not found" }, 404, { "Cache-Control": "no-store" });
-		await bumpWorkspacePolicyVersion(auth.value.workspaceId);
+		await publishWorkspaceMutation(auth.value.workspaceId);
 		await auditGuardrail(auth.value, "guardrail.updated", data as unknown as GuardrailRow, { changed_fields: Object.keys(patch) });
 		return json({ data }, 200, { "Cache-Control": "no-store" });
 	} catch (error: any) {
@@ -424,7 +424,7 @@ async function handleDeleteGuardrail(req: Request) {
 			.eq("workspace_id", auth.value.workspaceId)
 			.eq("id", id);
 		if (error) throw new Error(error.message || "Failed to delete guardrail");
-		await bumpWorkspacePolicyVersion(auth.value.workspaceId);
+		await publishWorkspaceMutation(auth.value.workspaceId);
 		await auditGuardrail(auth.value, "guardrail.deleted", guardrail);
 		return json({ deleted: true }, 200, { "Cache-Control": "no-store" });
 	} catch (error: any) {
@@ -468,7 +468,7 @@ async function handleSetGuardrailKeys(req: Request) {
 				.insert(keyIds.map((keyId) => ({ key_id: keyId, guardrail_id: id })));
 			if (error) throw new Error(error.message || "Failed to assign guardrail keys");
 		}
-		await bumpWorkspacePolicyVersion(auth.value.workspaceId);
+		await publishWorkspaceMutation(auth.value.workspaceId);
 		await auditGuardrail(auth.value, "guardrail.keys.replaced", guardrail, { key_count: keyIds.length });
 		return json({ data: { guardrail_id: id, key_ids: keyIds } }, 200, { "Cache-Control": "no-store" });
 	} catch (error: any) {
@@ -544,7 +544,7 @@ async function handleAddGuardrailKeys(req: Request) {
 
 		const assignments = await listGuardrailKeyAssignments(auth.value.workspaceId, id);
 		const added = assignments.filter((assignment) => keyIds.includes(assignment.key_id));
-		await bumpWorkspacePolicyVersion(auth.value.workspaceId);
+		await publishWorkspaceMutation(auth.value.workspaceId);
 		await auditGuardrail(auth.value, "guardrail.keys.added", guardrail, { key_count: added.length });
 		return json({ added_count: added.length, data: added }, 200, { "Cache-Control": "no-store" });
 	} catch (error: any) {
@@ -582,7 +582,7 @@ async function handleRemoveGuardrailKeys(req: Request) {
 			.in("key_id", keyIds);
 		if (deleteError) throw new Error(deleteError.message || "Failed to remove guardrail keys");
 
-		await bumpWorkspacePolicyVersion(auth.value.workspaceId);
+		await publishWorkspaceMutation(auth.value.workspaceId);
 		await auditGuardrail(auth.value, "guardrail.keys.removed", guardrail, { key_count: count ?? 0 });
 		return json({ removed_count: count ?? 0 }, 200, { "Cache-Control": "no-store" });
 	} catch (error: any) {
@@ -659,7 +659,7 @@ async function handleAddGuardrailMembers(req: Request) {
 
 		const assignments = await listGuardrailMemberAssignments(auth.value.workspaceId, id);
 		const added = assignments.filter((assignment) => userIds.includes(assignment.user_id));
-		await bumpWorkspacePolicyVersion(auth.value.workspaceId);
+		await publishWorkspaceMutation(auth.value.workspaceId);
 		await auditGuardrail(auth.value, "guardrail.members.added", guardrail, { member_count: added.length });
 		return json({ added_count: added.length, data: added }, 200, { "Cache-Control": "no-store" });
 	} catch (error: any) {
@@ -698,7 +698,7 @@ async function handleRemoveGuardrailMembers(req: Request) {
 			.in("user_id", userIds);
 		if (deleteError) throw new Error(deleteError.message || "Failed to remove guardrail members");
 
-		await bumpWorkspacePolicyVersion(auth.value.workspaceId);
+		await publishWorkspaceMutation(auth.value.workspaceId);
 		await auditGuardrail(auth.value, "guardrail.members.removed", guardrail, { member_count: count ?? 0 });
 		return json({ removed_count: count ?? 0 }, 200, { "Cache-Control": "no-store" });
 	} catch (error: any) {
