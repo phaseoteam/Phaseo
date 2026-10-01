@@ -179,7 +179,7 @@ describe("handleStreamResponse OpenAI usage finalization", () => {
             bill: { cost_cents: 0, currency: "USD", usage: null, finish_reason: null } } as any, null);
         expect(await response.text()).toContain('"error"');
         await new Promise(resolve => setTimeout(resolve, 0));
-        expect(classifyProviderHealthImpactMock).toHaveBeenCalledWith(expect.objectContaining({ upstreamStatus: status, credentialSource: "byok", midStreamError: true }));
+        expect(classifyProviderHealthImpactMock).not.toHaveBeenCalled(); // The session already classified this error.
         expect(onCallEndMock).toHaveBeenCalledWith("chat.completions", expect.objectContaining({ healthImpact: "neutral", ok: false }));
         expect(reportProbeResultMock).not.toHaveBeenCalled(); expect(maybeOpenOnRecentErrorsMock).not.toHaveBeenCalled();
         expect(recordUsageAndChargeOnceMock).not.toHaveBeenCalled(); expect(auditFailureMock).toHaveBeenCalledTimes(1);
@@ -300,7 +300,9 @@ describe("handleStreamResponse OpenAI usage finalization", () => {
 			null,
 		);
 
-		await expect(response.text()).rejects.toThrow("sse_missing_terminal");
+		const output = await response.text();
+		expect(output).toContain('"code":"sse_missing_terminal"');
+		expect(output).not.toContain("[DONE]");
 		await new Promise((resolve) => setTimeout(resolve, 0));
 
 		expect(recordUsageAndChargeOnceMock).not.toHaveBeenCalled();
@@ -310,9 +312,8 @@ describe("handleStreamResponse OpenAI usage finalization", () => {
 		}));
 		expect(auditSuccessMock).not.toHaveBeenCalled();
 		expect(auditFailureMock).toHaveBeenCalledTimes(1);
-		expect(classifyProviderHealthImpactMock).toHaveBeenCalledWith(expect.objectContaining({
-			failureOrigin: "provider", midStreamError: true, aborted: false,
-		}));
+		expect(classifyProviderHealthImpactMock).not.toHaveBeenCalled();
+		expect(onCallEndMock).toHaveBeenCalledWith("chat.completions", expect.objectContaining({ ok: false, healthImpact: "failure" }));
 	});
 
 	it("does not classify a successfully completed empty response as provider failure", async () => {
@@ -385,7 +386,8 @@ describe("handleStreamResponse OpenAI usage finalization", () => {
 		await response.text();
 		await new Promise((resolve) => setTimeout(resolve, 0));
 
-		expect(classifyProviderHealthImpactMock).toHaveBeenCalledWith(expect.objectContaining({ finishReason: "error" }));
+		expect(classifyProviderHealthImpactMock).not.toHaveBeenCalled();
+		expect(onCallEndMock).toHaveBeenCalledWith("chat.completions", expect.objectContaining({ ok: false, healthImpact: "failure" }));
 		expect(recordUsageAndChargeOnceMock).not.toHaveBeenCalled();
 		expect(auditSuccessMock).not.toHaveBeenCalled();
 		expect(auditFailureMock).toHaveBeenCalledTimes(1);

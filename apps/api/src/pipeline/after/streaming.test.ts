@@ -96,7 +96,10 @@ describe("passthroughWithPricing", () => {
 		const response = await passthroughWithPricing({ upstream: new Response(stream), ctx, provider: "openai", priceCard: null,
 			onFinalUsage: (usage, info) => { outcomes.push({ usage, info }); },
 		});
-		await expect(response.text()).rejects.toThrow("transport ended");
+        const output = await response.text();
+        expect(output).toContain('"code":"upstream_stream_failure"');
+        expect(output).not.toContain("[DONE]");
+        expect(output).not.toContain("transport ended");
 		expect(outcomes).toEqual([{ usage: { total_tokens: 5 }, info: { aborted: true, sawFinalUsage: false, failureOrigin: "provider" } }]);
 		expect(ctx.meta.downstreamDisconnected).not.toBe(true);
 		expect(stream.locked).toBe(false);
@@ -431,7 +434,9 @@ describe("passthroughWithPricing", () => {
 			},
 		});
 
-		await expect(drain(response)).rejects.toThrow("sse_missing_terminal");
+		const output = await drain(response);
+		expect(output).toContain('"code":"sse_missing_terminal"');
+		expect(output).not.toContain("[DONE]");
 
 		expect(usageCalls).toHaveLength(1);
 		expect(usageCalls[0]?.usage).toEqual({

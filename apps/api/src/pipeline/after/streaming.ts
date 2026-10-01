@@ -18,6 +18,8 @@ import { dispatchBackground } from "@/runtime/env";
 import { getProviderStreamCancellationPolicy } from "./stream-cancellation";
 import { readSseEvents, SseProtocolError } from "@core/sse";
 import { StreamSession, type StreamFinalInfo, type StreamOutcome } from "./stream-session";
+import { classifyStreamException, classifyStreamProviderError, type GatewayStreamError } from "@core/stream-error";
+import { encodeStreamFailure } from "@protocols/stream/error";
 
 export type { StreamFinalInfo } from "./stream-session";
 
@@ -34,6 +36,7 @@ type PassthroughWithPricingOpts = {
     upstream: Response;
     ctx: PipelineContext;
     provider: string;
+    credentialSource?: "gateway" | "byok";
     priceCard: PriceCard | null;
     /**
      * Mutate each parsed SSE JSON frame before sending downstream.
@@ -99,6 +102,7 @@ export async function createPricedStreamSession(opts: PassthroughWithPricingOpts
     let outputFrameIntervalCount = 0;
     let downstreamClosed = false;
     let upstreamFailed = false;
+    let nextResponseSequence = 0;
     void writer.closed.catch(() => {
         if (upstreamFailed) return;
         downstreamClosed = true;
@@ -147,15 +151,17 @@ export async function createPricedStreamSession(opts: PassthroughWithPricingOpts
     };
 
     const writeFrame = async (frame: string) => {
-        if (downstreamClosed) return;
+        if (downstreamClosed) return false;
         const bytes = enc.encode(frame);
         try {
             await writer.write(bytes);
             session.delivered(bytes.byteLength);
+            return true;
         } catch {
             downstreamClosed = true;
             session.disconnect();
             ctx.meta.downstreamDisconnected = true;
+            return false;
         }
     };
     // Write one SSE JSON object as "event: X\ndata: {...}\n\n" (event optional).
@@ -197,7 +203,7 @@ export async function createPricedStreamSession(opts: PassthroughWithPricingOpts
     const streamPump = (async () => {
         if (!upstream.body) {
             recordCompletionTiming();
-            session.finish(null, { aborted: true, sawFinalUsage: false });
+            session.finish(null, { aborted: true, sawFinalUsage: false }, classifyStreamException(null, "provider"));
             try { await writer.close(); } catch { }
             return;
         }
@@ -208,7 +214,8 @@ export async function createPricedStreamSession(opts: PassthroughWithPricingOpts
         let finalUsageCandidate: any = null;
         let failure: unknown;
         let failed = false;
-        let providerError = false;
+        let streamError: GatewayStreamError | null = null;
+        let emittedFailure = false;
         let failureOrigin: "provider" | "gateway" = "provider";
         let chunkReceivedAt = performance.now();
 
@@ -240,8 +247,10 @@ export async function createPricedStreamSession(opts: PassthroughWithPricingOpts
                         eventName,
                         frame: json,
                     });
-                    providerError ||= events.some(event => event.type === "error"
-                        || (event.type === "snapshot" && String(event.payload?.status).toLowerCase() === "failed"));
+                    const errorEvent = events.find(event => event.type === "error"
+                        || (event.type === "snapshot" && String(event.payload?.status).toLowerCase() === "failed")
+                        || (event.type === "stop" && ["error", "failed", "failure", "upstream_failure"].includes(String(event.finishReason).toLowerCase())));
+                    if (errorEvent && !streamError) streamError = classifyStreamProviderError(errorEvent.payload ?? json, opts.credentialSource);
                     const containsGeneratedOutput = events.some((event) =>
                         (event.type === "delta_text" && event.text.length > 0) ||
                         (event.type === "delta_tool" && Boolean(
@@ -392,6 +401,11 @@ export async function createPricedStreamSession(opts: PassthroughWithPricingOpts
                             frameOut = rewriteFrame(frameOut) ?? frameOut;
                         }
                         await writeJson(frameOut, outbound.eventName ?? null);
+                        if (ctx.protocol === "openai.responses") {
+                            const sequence = frameOut?.sequence_number;
+                            nextResponseSequence = Number.isSafeInteger(sequence) && sequence >= nextResponseSequence
+                                ? sequence + 1 : nextResponseSequence + 1;
+                        }
                     }
 
                     if (finalUsageAfterWrite) {
@@ -418,16 +432,24 @@ export async function createPricedStreamSession(opts: PassthroughWithPricingOpts
             failed = true;
             upstreamFailed = true;
             failure = error;
+            streamError = classifyStreamException(error, failureOrigin);
+            failureOrigin = streamError.origin === "gateway" ? "gateway" : "provider";
+            // Once data has reached the client there is no provider fallback.
+            // End in its native error shape; never synthesize successful DONE/stop.
+            if (session.committed && !downstreamClosed && ["openai.chat.completions", "openai.responses", "anthropic.messages"].includes(ctx.protocol)) {
+                const encoded = encodeStreamFailure(ctx.protocol as StreamProtocol, streamError, nextResponseSequence);
+                emittedFailure = await writeJson(encoded.frame, encoded.eventName);
+            }
         } finally {
             recordCompletionTiming();
             session.finish(finalUsageCandidate ?? lastSeenUsage, {
                     aborted: failed || !sawWireTerminal,
                     sawFinalUsage: !failed && sawWireTerminal && Boolean(finalUsageCandidate ?? lastSeenUsage),
                     ...(failed ? { failureOrigin } : {}),
-                }, providerError);
+                }, streamError);
             if (!downstreamClosed) {
                 try {
-                    if (failed) await writer.abort(failure);
+                    if (failed && !emittedFailure) await writer.abort(failure);
                     else await writer.close();
                 } catch { }
             }
@@ -451,4 +473,3 @@ export async function createPricedStreamSession(opts: PassthroughWithPricingOpts
     // Do not add custom gateway headers; everything important is in-body now.
     return { response: new Response(ts.readable, { status: upstream.status, headers }), session };
 }
-
