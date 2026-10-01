@@ -517,12 +517,13 @@ export function transformChatStreamToResponses(
 		return tool;
 	};
 
+	let sequenceNumber = 0;
 	const emitEvent = async (
 		eventName: string,
 		payload: any,
 		controller: ReadableStreamDefaultController<Uint8Array>,
 	) => {
-		controller.enqueue(encoder.encode(`event: ${eventName}\ndata: ${JSON.stringify(payload)}\n\n`));
+		controller.enqueue(encoder.encode(`event: ${eventName}\ndata: ${JSON.stringify({ ...payload, type: eventName, sequence_number: sequenceNumber++ })}\n\n`));
 	};
 
 	const emitCreated = async (controller: ReadableStreamDefaultController<Uint8Array>) => {
@@ -833,7 +834,7 @@ export function transformChatStreamToResponses(
 							...(encoded.related_questions ? { related_questions: encoded.related_questions } : {}),
 							...(encoded.reasoning_steps ? { reasoning_steps: encoded.reasoning_steps } : {}),
 						};
-						await emitEvent("response.completed", { response }, controller);
+						await emitEvent(`response.${completion.status}`, { response }, controller);
 					}
 				}
 			} catch (err) {

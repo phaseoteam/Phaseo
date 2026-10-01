@@ -67,20 +67,22 @@ function baseCtx(overrides?: Record<string, unknown>): any {
 }
 
 describe("passthroughWithPricing", () => {
-	it("finalizes usage once from response.completed events", async () => {
+	it.each(["completed", "incomplete"])("finalizes usage once without aborting response.%s events", async (status) => {
 		const usageCalls: Array<any> = [];
+		const outcomes: Array<unknown> = [];
 		const upstream = makeSseResponse([
 			{
 				event: "response.created",
 				data: { response: { id: "resp_1", object: "response", status: "in_progress" } },
 			},
 			{
-				event: "response.completed",
+				event: `response.${status}`,
 				data: {
 					response: {
 						id: "resp_1",
 						object: "response",
-						status: "completed",
+						status,
+						...(status === "incomplete" ? { incomplete_details: { reason: "max_output_tokens" } } : {}),
 						usage: { input_tokens: 3, output_tokens: 2, total_tokens: 5 },
 					},
 				},
@@ -92,14 +94,16 @@ describe("passthroughWithPricing", () => {
 			ctx: baseCtx(),
 			provider: "openai",
 			priceCard: null,
-			onFinalUsage: (usage) => {
+			onFinalUsage: (usage, info) => {
 				usageCalls.push(usage);
+				outcomes.push(info);
 			},
 		});
 
 		await drain(response);
 
 		expect(usageCalls).toHaveLength(1);
+		expect(outcomes).toEqual([{ aborted: false, sawFinalUsage: true }]);
 		expect(usageCalls[0]).toEqual({
 			input_tokens: 3,
 			output_tokens: 2,
