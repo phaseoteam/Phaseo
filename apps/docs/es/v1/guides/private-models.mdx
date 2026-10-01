@@ -1,0 +1,118 @@
+---
+title: "Conectar despliegues dedicados de modelos"
+description: "Añade un endpoint privado compatible con OpenAI al catálogo de modelos de tu espacio de trabajo."
+icon: "lock-keyhole"
+---
+
+Los modelos privados permiten que tu equipo invoque un despliegue dedicado o autohospedado mediante la API habitual de Phaseo. El modelo solo aparece para los miembros autenticados del espacio de trabajo y puede usarse donde usarías un identificador de modelo público.
+
+Las fuentes habituales incluyen despliegues dedicados en Baseten, Modal, RunPod, Fireworks o Together, además de servicios que ejecutan vLLM u otro servidor compatible con OpenAI.
+
+## Antes de empezar
+
+Tu despliegue debe ofrecer:
+
+- una URL base HTTPS pública;
+- un endpoint `/chat/completions` compatible con OpenAI;
+- autenticación con token Bearer; y
+- un identificador de modelo o despliegue del proveedor aceptado por ese endpoint.
+
+La compatibilidad con `/responses` es opcional. Déjala desactivada salvo que el despliegue implemente explícitamente ese endpoint.
+
+<Warning>
+Los modelos privados no adaptan protocolos exclusivos de proveedores ni esquemas de autenticación personalizados. Añade una capa compatible con OpenAI delante de esos despliegues o usa una integración de proveedor compatible con Phaseo.
+</Warning>
+
+## Conectar un despliegue
+
+<Steps>
+<Step title="Abrir modelos privados">
+
+Abre **Panel → Configuración → Espacio de trabajo → Modelos privados** y selecciona **Añadir modelo**. Debes ser propietario o administrador del espacio de trabajo.
+
+</Step>
+
+<Step title="Nombrar el modelo">
+
+Elige un modelo existente del catálogo para añadir este despliegue a su lista de proveedores, o introduce un slug corto como `legal-assistant`. Si ningún modelo del catálogo tiene ese slug único, Phaseo lo combina con el espacio de nombres de confianza del espacio de trabajo:
+
+```text
+acme/legal-assistant
+```
+
+No puedes elegir ni sustituir el espacio de nombres del espacio de trabajo. Los identificadores exactos del catálogo se vinculan a ese modelo sin cambiar su identidad pública.
+
+</Step>
+
+<Step title="Configurar el endpoint">
+
+Introduce la URL base sin la ruta de inferencia. Por ejemplo:
+
+```text
+https://model.example.com/v1
+```
+
+No incluyas `/chat/completions` ni `/responses`. Introduce por separado el identificador exacto del modelo o despliegue del proveedor; Phaseo lo sustituye al reenviar las solicitudes.
+
+</Step>
+
+<Step title="Guardar la credencial">
+
+Introduce la clave API del despliegue. Phaseo cifra la credencial y nunca la devuelve después de guardarla. Puedes sustituirla más tarde desde la configuración del modelo.
+
+</Step>
+
+<Step title="Invocar el modelo">
+
+Usa el identificador de modelo generado con el endpoint habitual de Chat Completions:
+
+```bash cURL
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "acme/legal-assistant",
+    "messages": [{"role": "user", "content": "Summarize this contract."}]
+  }'
+```
+
+La clave API que realiza la llamada debe pertenecer al mismo espacio de trabajo que el modelo privado.
+
+</Step>
+</Steps>
+
+## Cómo funciona el enrutamiento
+
+Los modelos privados usan la misma API de solicitudes de Phaseo que los modelos del catálogo. Un modelo independiente del espacio de trabajo solo se enruta a su endpoint configurado. Un endpoint vinculado a un modelo del catálogo se incorpora a su lista de proveedores según su política de enrutamiento **Preferido**, **Grupo normal** o **Solo respaldo**. Phaseo envía la credencial almacenada como token Bearer y sustituye el identificador del modelo del proveedor configurado.
+
+Un modelo privado no se convierte en una ruta pública de proveedor ni es visible para otros espacios de trabajo. Los modelos privados habilitados se incluyen en el catálogo autenticado y aparecen bajo el filtro **Privados**.
+
+<Note>
+Tras añadir o habilitar un despliegue privado en un modelo existente del catálogo, espera entre 5 y 10 segundos para que el cambio se propague por la API antes de probar su enrutamiento. Durante ese intervalo, las solicitudes pueden seguir usando los proveedores públicos existentes del modelo. Las solicitudes en curso no se vuelven a enrutar.
+</Note>
+
+## Ejemplos de proveedores
+
+| Despliegue | Qué introducir |
+| --- | --- |
+| Endpoint dedicado de Baseten | Su URL base compatible con OpenAI, identificador de modelo del despliegue y clave API |
+| Endpoint web de Modal | Un endpoint HTTPS público que implementa el contrato de OpenAI Chat Completions |
+| Endpoint sin servidor de RunPod | Una URL de proxy compatible con OpenAI y una credencial Bearer |
+| Despliegue dedicado de Fireworks o Together | La URL dedicada compatible con OpenAI y el identificador de modelo del proveedor |
+| vLLM | La URL pública que termina en `/v1` y el nombre del modelo servido por vLLM |
+
+Los productos de los proveedores y los formatos de URL pueden cambiar. Confirma la URL base, el identificador del modelo, el método de autenticación y los endpoints compatibles en la documentación actual del proveedor.
+
+## Gestionar modelos privados mediante la API
+
+La administración desde el servidor puede usar la [API de modelos privados](../api-reference/endpoint/private-models-list) con una clave de gestión que tenga `private_models:read`, `private_models:write` o `private_models:delete`, según sea necesario.
+
+Las solicitudes de creación y actualización aceptan `model_reference`: un identificador exacto del catálogo o un slug corto. Phaseo calcula `model_id`; los clientes no pueden enviarlo directamente. Usa `host_provider_id` para un proveedor existente de Phaseo, o `custom_provider_name` y, opcionalmente, `custom_provider_url` para otro operador.
+
+## Solución de problemas
+
+- **404 del proveedor:** Comprueba que la URL base no incluye la ruta de inferencia.
+- **Modelo desconocido:** Copia el identificador del despliegue del proveedor en **ID del modelo del proveedor**. No uses ahí el identificador de modelo del espacio de trabajo de Phaseo.
+- **Solicitud al proveedor no autorizada:** Sustituye la credencial guardada y confirma que el proveedor admite autenticación Bearer.
+- **Chat funciona pero Responses falla:** Desactiva **Responses API** salvo que el proveedor implemente `/responses` de forma nativa.
+- **El modelo no aparece en el catálogo:** Confirma que está habilitado y que el cliente está autenticado en el mismo espacio de trabajo.

@@ -621,7 +621,8 @@
       "guides/integrations/muse-code.mdx": "fa097c1e7b8ba30a67b80e6c811d2c6d4ae1e1e5503a9830df092f6eddced793",
       "changelog/2026-08.mdx": "bfce447fc54ca3869f19b595b1120210845eaa232b951ea5eed1f3a12cb4fe3e",
       "guides/integrations/minimax-code.mdx": "116fc4ba1a02a47389daaf576a52990a4512328ad02b0fef1f48a3eb81008145",
-      "api-reference/endpoint/decisions.mdx": "8f3b0773a34d06c3426c675f945f393eabcb810d3a25c239e1a6a0d9087f3357"
+      "api-reference/endpoint/decisions.mdx": "8f3b0773a34d06c3426c675f945f393eabcb810d3a25c239e1a6a0d9087f3357",
+      "guides/private-models.mdx": "6978a5555a215428c1b0e373553766e7afedb3d95c5f053d8d33aafecf6a7eab"
     },
     "de": {
       "@openapi": "2c3f491274db474a71ed11efc217d0c83e0900166519d54300030e428df69710",
@@ -1243,7 +1244,8 @@
       "guides/integrations/muse-code.mdx": "fa097c1e7b8ba30a67b80e6c811d2c6d4ae1e1e5503a9830df092f6eddced793",
       "changelog/2026-08.mdx": "bfce447fc54ca3869f19b595b1120210845eaa232b951ea5eed1f3a12cb4fe3e",
       "guides/integrations/minimax-code.mdx": "116fc4ba1a02a47389daaf576a52990a4512328ad02b0fef1f48a3eb81008145",
-      "api-reference/endpoint/decisions.mdx": "8f3b0773a34d06c3426c675f945f393eabcb810d3a25c239e1a6a0d9087f3357"
+      "api-reference/endpoint/decisions.mdx": "8f3b0773a34d06c3426c675f945f393eabcb810d3a25c239e1a6a0d9087f3357",
+      "guides/private-models.mdx": "6978a5555a215428c1b0e373553766e7afedb3d95c5f053d8d33aafecf6a7eab"
     },
     "es": {
       "@openapi": "2c3f491274db474a71ed11efc217d0c83e0900166519d54300030e428df69710",
@@ -1865,7 +1867,8 @@
       "guides/integrations/muse-code.mdx": "fa097c1e7b8ba30a67b80e6c811d2c6d4ae1e1e5503a9830df092f6eddced793",
       "changelog/2026-08.mdx": "bfce447fc54ca3869f19b595b1120210845eaa232b951ea5eed1f3a12cb4fe3e",
       "guides/integrations/minimax-code.mdx": "116fc4ba1a02a47389daaf576a52990a4512328ad02b0fef1f48a3eb81008145",
-      "api-reference/endpoint/decisions.mdx": "8f3b0773a34d06c3426c675f945f393eabcb810d3a25c239e1a6a0d9087f3357"
+      "api-reference/endpoint/decisions.mdx": "8f3b0773a34d06c3426c675f945f393eabcb810d3a25c239e1a6a0d9087f3357",
+      "guides/private-models.mdx": "6978a5555a215428c1b0e373553766e7afedb3d95c5f053d8d33aafecf6a7eab"
     },
     "fr": {
       "@openapi": "2c3f491274db474a71ed11efc217d0c83e0900166519d54300030e428df69710",
@@ -2487,7 +2490,8 @@
       "guides/integrations/muse-code.mdx": "fa097c1e7b8ba30a67b80e6c811d2c6d4ae1e1e5503a9830df092f6eddced793",
       "changelog/2026-08.mdx": "bfce447fc54ca3869f19b595b1120210845eaa232b951ea5eed1f3a12cb4fe3e",
       "guides/integrations/minimax-code.mdx": "116fc4ba1a02a47389daaf576a52990a4512328ad02b0fef1f48a3eb81008145",
-      "api-reference/endpoint/decisions.mdx": "8f3b0773a34d06c3426c675f945f393eabcb810d3a25c239e1a6a0d9087f3357"
+      "api-reference/endpoint/decisions.mdx": "8f3b0773a34d06c3426c675f945f393eabcb810d3a25c239e1a6a0d9087f3357",
+      "guides/private-models.mdx": "6978a5555a215428c1b0e373553766e7afedb3d95c5f053d8d33aafecf6a7eab"
     },
     "hi": {
       "@openapi": "2c3f491274db474a71ed11efc217d0c83e0900166519d54300030e428df69710",
@@ -3109,7 +3113,8 @@
       "guides/integrations/muse-code.mdx": "fa097c1e7b8ba30a67b80e6c811d2c6d4ae1e1e5503a9830df092f6eddced793",
       "changelog/2026-08.mdx": "bfce447fc54ca3869f19b595b1120210845eaa232b951ea5eed1f3a12cb4fe3e",
       "guides/integrations/minimax-code.mdx": "116fc4ba1a02a47389daaf576a52990a4512328ad02b0fef1f48a3eb81008145",
-      "api-reference/endpoint/decisions.mdx": "8f3b0773a34d06c3426c675f945f393eabcb810d3a25c239e1a6a0d9087f3357"
+      "api-reference/endpoint/decisions.mdx": "8f3b0773a34d06c3426c675f945f393eabcb810d3a25c239e1a6a0d9087f3357",
+      "guides/private-models.mdx": "6978a5555a215428c1b0e373553766e7afedb3d95c5f053d8d33aafecf6a7eab"
     },
     "ja": {
       "@openapi": "2c3f491274db474a71ed11efc217d0c83e0900166519d54300030e428df69710",
@@ -3731,7 +3736,8 @@
       "guides/integrations/muse-code.mdx": "fa097c1e7b8ba30a67b80e6c811d2c6d4ae1e1e5503a9830df092f6eddced793",
       "changelog/2026-08.mdx": "bfce447fc54ca3869f19b595b1120210845eaa232b951ea5eed1f3a12cb4fe3e",
       "guides/integrations/minimax-code.mdx": "116fc4ba1a02a47389daaf576a52990a4512328ad02b0fef1f48a3eb81008145",
-      "api-reference/endpoint/decisions.mdx": "8f3b0773a34d06c3426c675f945f393eabcb810d3a25c239e1a6a0d9087f3357"
+      "api-reference/endpoint/decisions.mdx": "8f3b0773a34d06c3426c675f945f393eabcb810d3a25c239e1a6a0d9087f3357",
+      "guides/private-models.mdx": "6978a5555a215428c1b0e373553766e7afedb3d95c5f053d8d33aafecf6a7eab"
     },
     "pt-BR": {
       "@openapi": "2c3f491274db474a71ed11efc217d0c83e0900166519d54300030e428df69710",
@@ -4353,7 +4359,8 @@
       "guides/integrations/muse-code.mdx": "fa097c1e7b8ba30a67b80e6c811d2c6d4ae1e1e5503a9830df092f6eddced793",
       "changelog/2026-08.mdx": "bfce447fc54ca3869f19b595b1120210845eaa232b951ea5eed1f3a12cb4fe3e",
       "guides/integrations/minimax-code.mdx": "116fc4ba1a02a47389daaf576a52990a4512328ad02b0fef1f48a3eb81008145",
-      "api-reference/endpoint/decisions.mdx": "8f3b0773a34d06c3426c675f945f393eabcb810d3a25c239e1a6a0d9087f3357"
+      "api-reference/endpoint/decisions.mdx": "8f3b0773a34d06c3426c675f945f393eabcb810d3a25c239e1a6a0d9087f3357",
+      "guides/private-models.mdx": "6978a5555a215428c1b0e373553766e7afedb3d95c5f053d8d33aafecf6a7eab"
     },
     "zh-Hans": {
       "@openapi": "2c3f491274db474a71ed11efc217d0c83e0900166519d54300030e428df69710",
@@ -4975,7 +4982,8 @@
       "guides/integrations/muse-code.mdx": "fa097c1e7b8ba30a67b80e6c811d2c6d4ae1e1e5503a9830df092f6eddced793",
       "changelog/2026-08.mdx": "bfce447fc54ca3869f19b595b1120210845eaa232b951ea5eed1f3a12cb4fe3e",
       "guides/integrations/minimax-code.mdx": "116fc4ba1a02a47389daaf576a52990a4512328ad02b0fef1f48a3eb81008145",
-      "api-reference/endpoint/decisions.mdx": "8f3b0773a34d06c3426c675f945f393eabcb810d3a25c239e1a6a0d9087f3357"
+      "api-reference/endpoint/decisions.mdx": "8f3b0773a34d06c3426c675f945f393eabcb810d3a25c239e1a6a0d9087f3357",
+      "guides/private-models.mdx": "6978a5555a215428c1b0e373553766e7afedb3d95c5f053d8d33aafecf6a7eab"
     }
   }
 }
