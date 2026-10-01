@@ -1,6 +1,17 @@
-import { artificialAnalysisConfigurationRank, artificialAnalysisMetricsForBenchmark, artificialAnalysisVersion, buildArtificialAnalysisRanking, formatArtificialAnalysisValue } from "./artificialAnalysis";
+import { artificialAnalysisConfigurationRank, artificialAnalysisMetricsForBenchmark, artificialAnalysisVersion, buildArtificialAnalysisRanking, buildArtificialAnalysisValue, formatArtificialAnalysisValue } from "./artificialAnalysis";
+import type { PublicBenchmarkRanking } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 
 describe("Artificial Analysis benchmark helpers", () => {
+	it("derives preview value from existing API configurations without mixing reasoning settings", () => {
+		const config = (score: number, variant: string, updated_at = "2026-10-01") => ({ score, variant, result_key: variant, updated_at, source_link: null, other_info: `Example ${variant}; Artificial Analysis ID source-${variant}; Intelligence Index v4.3.2` });
+		const benchmark = (benchmark_id: string, configurations: ReturnType<typeof config>[]): PublicBenchmarkRanking => ({ benchmark_id, name: "Test", category: null, benchmark_type: null, total_models: 1, lower_is_better: false, entries: [{ model_id: "test/model", model_name: "Test", organisation_id: null, organisation_name: null, rank: 1, score: configurations[0].score, configurations }] });
+		const intelligence = benchmark("aa-intelligence-index-v4", [config(50, "max"), config(40, "low")]);
+		const cost = benchmark("aa-intelligence-index-cost-v4", [config(500, "max"), config(100, "low")]);
+		expect(buildArtificialAnalysisValue([intelligence, cost]).entries[0]).toMatchObject({ score: 2.5, intelligence_score: 40, evaluation_cost: 100, other_info: "Example low; Artificial Analysis ID source-low; Intelligence Index v4.3.2" });
+		expect(buildArtificialAnalysisValue([intelligence, benchmark(cost.benchmark_id, [config(0, "low")])]).entries[0].score).toBe(0);
+		expect(buildArtificialAnalysisValue([intelligence, benchmark(cost.benchmark_id, [config(1, "low", "old-snapshot")])]).entries).toEqual([]);
+		expect(buildArtificialAnalysisValue([intelligence]).entries).toEqual([]);
+	});
 	it("keeps the imported rankings visible when a manual result has a newer patch version", () => {
 		const results = [
 			{ id: "imported", model_id: "test/imported", score: 50, is_self_reported: false, other_info: "Model; Artificial Analysis ID source-test; Intelligence Index v4.3" },
