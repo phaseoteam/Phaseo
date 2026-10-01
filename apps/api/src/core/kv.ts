@@ -22,26 +22,23 @@ type KeyVersionL1Entry = {
 };
 const keyVersionL1Cache = new Map<string, KeyVersionL1Entry>();
 const keyVersionInflight = new Map<string, Promise<number>>();
-const keyVersionEpochs = new Map<string, number>();
+// One isolate epoch fences pending reads without retaining an unbounded map of
+// every key ever invalidated. Unrelated concurrent mutations may reject a read;
+// authorization fails closed instead of accepting an ambiguous version.
+let keyVersionEpoch = 0;
+const keyVersionWrites = new Map<string, { pending: boolean; promise: Promise<number> }>();
+const KEY_VERSION_MAX_PENDING = 128;
+let activeKeyVersionReads = 0;
 
 export function __resetKeyVersionL1ForTests(): void {
 	keyVersionL1Cache.clear();
 	keyVersionInflight.clear();
-	keyVersionEpochs.clear();
+	keyVersionWrites.clear();
+	keyVersionEpoch++;
 }
 
 function keyVersionKey(scope: "kid" | "id", value: string): string {
     return `${KEY_VERSION_PREFIX}:${scope}:${value}`;
-}
-
-function readKeyVersionEpoch(key: string): number {
-	return keyVersionEpochs.get(key) ?? 0;
-}
-
-function bumpKeyVersionEpoch(key: string): number {
-	const next = readKeyVersionEpoch(key) + 1;
-	keyVersionEpochs.set(key, next);
-	return next;
 }
 
 function readKeyVersionL1(scope: "kid" | "id", value: string): number | null {
@@ -136,6 +133,10 @@ export async function getKeyVersion(
     const key = keyVersionKey(scope, value);
     const useL1Cache = options?.useL1Cache ?? false;
     const l1TtlMs = options?.l1TtlMs ?? KEY_VERSION_L1_CACHE_TTL_MS;
+    // Pending and failed publications must never fall back to an old KV marker.
+    // Failed writes retain a bounded fail-closed fence until a successful retry.
+    const publication = keyVersionWrites.get(key);
+    if (publication) return publication.promise;
     if (useL1Cache) {
         const cached = readKeyVersionL1(scope, value);
         if (cached !== null) {
@@ -144,24 +145,30 @@ export async function getKeyVersion(
         const inflight = keyVersionInflight.get(key);
         if (inflight) return inflight;
     }
-    const epochAtStart = readKeyVersionEpoch(key);
-    const loader = (async () => {
+    if (activeKeyVersionReads >= KEY_VERSION_MAX_PENDING) throw new Error("Key version read capacity exceeded");
+    activeKeyVersionReads++;
+    const epochAtStart = keyVersionEpoch;
+    const loader = Promise.resolve().then(async () => {
         try {
             const raw = await getCache().get(key, "text");
             if (raw !== null && !/^(0|[1-9]\d*)$/.test(raw)) throw new Error("Invalid key version");
             const parsed = raw === null ? 0 : Number(raw);
             if (!Number.isSafeInteger(parsed) || parsed < 0) throw new Error("Invalid key version");
             const normalized = parsed;
-            if (useL1Cache && readKeyVersionEpoch(key) === epochAtStart) {
+            if (keyVersionEpoch !== epochAtStart) {
+                throw new Error("Key version changed during read");
+            }
+            if (useL1Cache) {
                 writeKeyVersionL1(scope, value, normalized, l1TtlMs);
             }
             return normalized;
         } finally {
+            activeKeyVersionReads--;
             if (useL1Cache && keyVersionInflight.get(key) === loader) {
                 keyVersionInflight.delete(key);
             }
         }
-    })();
+    });
     if (useL1Cache) {
         keyVersionInflight.set(key, loader);
     }
@@ -169,13 +176,24 @@ export async function getKeyVersion(
 }
 
 export async function setKeyVersion(scope: "kid" | "id", value: string, version: number): Promise<number> {
-    const next = Number.isFinite(version) ? Math.max(0, Math.floor(version)) : Date.now();
+    const next = Number.isSafeInteger(version) && version >= 0 ? version : Date.now();
     const key = keyVersionKey(scope, value);
-    bumpKeyVersionEpoch(key);
+    if (keyVersionWrites.get(key)?.pending) throw new Error("Key version publication already pending");
+    if (!keyVersionWrites.has(key) && keyVersionWrites.size >= KEY_VERSION_L1_CACHE_MAX_ENTRIES) {
+        throw new Error("Key version publication capacity exceeded");
+    }
+    keyVersionEpoch++;
+    keyVersionL1Cache.delete(key);
     keyVersionInflight.delete(key);
-    await getCache().put(key, String(next));
-    writeKeyVersionL1(scope, value, next, KEY_VERSION_L1_CACHE_TTL_MS);
-    return next;
+    const state = { pending: true, promise: Promise.resolve(0) };
+    state.promise = Promise.resolve().then(async () => {
+        await getCache().put(key, String(next));
+        writeKeyVersionL1(scope, value, next, KEY_VERSION_L1_CACHE_TTL_MS);
+        keyVersionWrites.delete(key);
+        return next;
+    }).finally(() => { state.pending = false; });
+    keyVersionWrites.set(key, state);
+    return state.promise;
 }
 
 export async function bumpKeyVersion(scope: "kid" | "id", value: string): Promise<number> {

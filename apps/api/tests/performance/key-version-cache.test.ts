@@ -99,10 +99,9 @@ describe("key version cache performance", () => {
 		const staleRead = getKeyVersion("kid", "KID-RACE", { useL1Cache: true });
 		await new Promise((resolve) => setTimeout(resolve, 5));
 		await setKeyVersion("kid", "KID-RACE", 9);
-		const staleValue = await staleRead;
+		await expect(staleRead).rejects.toThrow("Key version changed during read");
 		const freshValue = await getKeyVersion("kid", "KID-RACE", { useL1Cache: true });
 
-		expect(staleValue).toBe(2);
 		expect(freshValue).toBe(9);
 	});
 
