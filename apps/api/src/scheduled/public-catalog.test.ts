@@ -4,7 +4,7 @@ const state = vi.hoisted(() => ({ rpc: vi.fn(), get: vi.fn(), put: vi.fn() }));
 vi.mock("@/runtime/env", () => ({
     getSupabaseAdmin: () => ({ rpc: state.rpc }),
     getCache: () => ({ get: state.get, put: state.put }),
-    getBindingsIfConfigured: () => ({}),
+    getBindingsIfConfigured: () => ({ GATEWAY_PUBLIC_BASE_URL: "https://staging.example" }),
     dispatchBackground: vi.fn(),
 }));
 
@@ -20,11 +20,14 @@ function catalog(model = target.model) {
 beforeEach(() => {
     vi.resetModules(); vi.useFakeTimers(); vi.setSystemTime(new Date("2026-09-16T12:00:00Z"));
     state.get.mockReset(); state.put.mockReset().mockResolvedValue(undefined);
+    vi.stubGlobal("caches", { default: { match: state.get, put: async (key: string, response: Response) =>
+        state.put(key, await response.text(), { expirationTtl: Number(response.headers.get("cache-control")!.split("=")[1]) }),
+    } });
     state.rpc.mockReset().mockImplementation((_name, params) => ({ abortSignal: () =>
         Promise.resolve({ data: catalog(params.p_model), error: null }),
     }));
 });
-afterEach(() => vi.useRealTimers());
+afterEach(() => { vi.useRealTimers(); vi.unstubAllGlobals(); });
 
 describe("public catalog publisher", () => {
     it("deduplicates targets and publishes usable snapshots before any account request", async () => {
@@ -56,8 +59,8 @@ describe("public catalog publisher", () => {
         expect(state.put).not.toHaveBeenCalled();
     });
 
-    it("waits for persistence and reports KV failure without discarding other targets", async () => {
-        state.put.mockRejectedValueOnce(new Error("KV unavailable"));
+    it("waits for persistence and reports Cache API failure without discarding other targets", async () => {
+        state.put.mockRejectedValueOnce(new Error("Cache API unavailable"));
         const { publishConfiguredPublicCatalog } = await import("./public-catalog");
         expect(await publishConfiguredPublicCatalog(JSON.stringify([target, { ...target, model: "lab/other" }]))).toEqual({ targets: 2, published: 1, skipped: 0, failed: 1 });
     });
