@@ -12,7 +12,7 @@ export default function IntelligenceValueScatter({ entries }: { entries: PublicI
 				<ScatterChart margin={{ top: 10, right: 20, bottom: 25, left: 15 }}>
 					<CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
 					<XAxis type="number" dataKey="intelligence_score" name="Intelligence" domain={[0, "auto"]} tick={{ fontSize: 11 }} label={{ value: "Intelligence score", position: "bottom", offset: 5 }} />
-					<YAxis type="number" dataKey="evaluation_cost" name="Evaluation cost" domain={[0, "auto"]} tickFormatter={(value: number) => `$${value}`} tick={{ fontSize: 11 }} width={75} label={{ value: "Evaluation cost (USD)", angle: -90, position: "insideLeft", offset: -5 }} />
+					<YAxis type="number" dataKey="evaluation_cost" name="Evaluation cost" domain={[0, "auto"]} tickFormatter={(value: number) => `$${value}`} tick={{ fontSize: 11 }} width={75} label={{ value: "Evaluation cost (USD)", angle: -90, position: "insideLeft", offset: -5, style: { textAnchor: "middle" } }} />
 					<Tooltip cursor={{ strokeDasharray: "3 3" }} content={({ active, payload }) => {
 						const entry = payload?.[0]?.payload as PublicIntelligenceValueEntry | undefined;
 						return active && entry ? <div className="max-w-72 rounded-lg border bg-popover p-3 text-xs text-popover-foreground shadow-md">
