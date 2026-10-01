@@ -10,6 +10,7 @@ $worker = "phaseo-gateway"
 $globalSecretNames = @(
     "DOUBLEWORD_API_KEY",
     "TYPESAFE_API_KEY",
+    "LIQUID_AI_API_KEY",
     "SILICONFLOW_API_KEY",
     "OPENROUTER_API_KEY",
     "DISCORD_WEBHOOK_NEW_MODELS_PUBLIC",
@@ -18,6 +19,7 @@ $globalSecretNames = @(
     "CLOUDFLARE_ACCOUNT_ID"
 )
 $temporarySecretsFile = $null
+$optionalGlobalSecretNames = @("PERPLEXITY_API_KEY")
 $deployApiToken = [Environment]::GetEnvironmentVariable("CLOUDFLARE_DEPLOY_API_TOKEN")
 $deployAccountId = [Environment]::GetEnvironmentVariable("CLOUDFLARE_DEPLOY_ACCOUNT_ID")
 $previousApiToken = $env:CLOUDFLARE_API_TOKEN
@@ -39,7 +41,7 @@ if (-not $Deploy) {
 
 if ($SecretsFromEnvironment) {
     $secrets = @{}
-    foreach ($name in $globalSecretNames) {
+    foreach ($name in ($globalSecretNames + $optionalGlobalSecretNames)) {
         $value = [Environment]::GetEnvironmentVariable($name)
         if (-not [string]::IsNullOrWhiteSpace($value)) {
             $secrets[$name] = $value
