@@ -1,4 +1,4 @@
-import type { IRDecisionsRequest } from "@core/ir";
+import type { IRDecisionQuestion, IRDecisionsRequest } from "@core/ir";
 import { BodyLimitExceededError, readStreamTextWithLimit } from "@core/bounded-stream";
 import type { ExecutorExecuteArgs, ExecutorResult } from "@executors/types";
 import { fetchUpstream } from "@executors/_shared/timing/upstream";
@@ -8,6 +8,29 @@ import { decodeSystemOneResponse } from "@protocols/systemone/decode";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
 	return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
+function isProbability(value: unknown): value is number {
+	return typeof value === "number" && Number.isFinite(value) && value >= 0 && value <= 1;
+}
+
+function validAnswer(answer: unknown, question: IRDecisionQuestion): boolean {
+	if (!isRecord(answer) || answer.type !== question.type ||
+		(answer.confidence !== undefined && !isProbability(answer.confidence))) return false;
+	if (question.type === "noul") return isProbability(answer.noul);
+	const criteria = question.criteria;
+	if (!criteria) return false;
+	const keys = Object.keys(criteria);
+	const probabilities = answer.probabilities;
+	if (!isRecord(probabilities) || Object.keys(probabilities).length !== keys.length ||
+		keys.some(key => !Object.prototype.hasOwnProperty.call(probabilities, key) || !isProbability(probabilities[key]))) return false;
+	const sum = keys.reduce((total, key) => total + (probabilities[key] as number), 0);
+	if (Math.abs(sum - 1) > 0.01) return false;
+	if (question.type === "choice") {
+		return typeof answer.choice === "string" && keys.includes(answer.choice);
+	}
+	return typeof answer.score === "number" && Number.isFinite(answer.score) &&
+		answer.score >= 0 && answer.score <= keys.length - 1;
 }
 
 // Liquid and Perplexity use the same typed-question wire contract at different URLs.
@@ -65,7 +88,7 @@ export async function executeSystemOne(
 	const answers = payload.answers;
 	const questionIds = Object.keys(ir.questions);
 	if (Object.keys(answers).length !== questionIds.length || questionIds.some(id =>
-		!Object.prototype.hasOwnProperty.call(answers, id) || !isRecord(answers[id]) || Object.keys(answers[id]).length === 0,
+		!Object.prototype.hasOwnProperty.call(answers, id) || !validAnswer(answers[id], ir.questions[id]),
 	)) return malformed(payload);
 	const inputTokens = payload.usage.input_tokens;
 	const outputTokens = payload.usage.output_tokens;

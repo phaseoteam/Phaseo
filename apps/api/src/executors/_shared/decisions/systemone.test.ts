@@ -91,6 +91,17 @@ describe.each(providers)("$id decisions", provider => {
 		{ answers, usage: {} },
 		{ answers: { defect: answers.defect }, usage: { input_tokens: 120, output_tokens: 0 } },
 		{ answers: { ...answers, severity: {} }, usage: { input_tokens: 120, output_tokens: 0 } },
+		...[
+			{ ...answers, defect: { type: "noul", noul: 2 } },
+			{ ...answers, defect: { error: "failed" } },
+			{ ...answers, sentiment: { ...answers.sentiment, choice: "unknown" } },
+			{ ...answers, sentiment: { ...answers.sentiment, probabilities: { positive: -0.1, negative: 1.1 } } },
+			{ ...answers, sentiment: { ...answers.sentiment, probabilities: { positive: 0.1, unknown: 0.9 } } },
+			{ ...answers, sentiment: { ...answers.sentiment, probabilities: { positive: 0.1, negative: 0.1 } } },
+			{ ...answers, severity: { ...answers.severity, score: 2 } },
+			{ ...answers, severity: { ...answers.severity, type: "choice" } },
+			{ ...answers, sentiment: { ...answers.sentiment, confidence: 1.1 } },
+		].map(invalidAnswers => ({ answers: invalidAnswers, usage: { input_tokens: 120, output_tokens: 0 } })),
 	])("rejects malformed success payloads without charging", async payload => {
 		const mock = installFetchMock([{ match: url => url === provider.url, response: jsonResponse(payload) }]);
 		try {
@@ -111,6 +122,21 @@ describe.each(providers)("$id decisions", provider => {
 });
 
 describe("Perplexity limits", () => {
+	it.each([
+		"https://example.com/image.png", "http://example.com/image.png",
+		"data:image/gif;base64,dGVzdA==", "data:image/png;base64,", "data:image/png;base64,invalid!",
+		"data:image/png,plain-text", null,
+	])("rejects unsupported image URLs before fetching: %s", async url => {
+		const args = argsFor(providers[2]);
+		args.ir.state = ["Classify", { type: "image_url", image_url: { url } }];
+		const mock = installFetchMock([]);
+		try {
+			const result = await resolveProviderExecutor("perplexity", "decisions.make")!(args);
+			expect(result).toMatchObject({ terminal: true, localClientError: true });
+			expect(result.upstream.status).toBe(400);
+			expect(mock.calls).toHaveLength(0);
+		} finally { mock.restore(); }
+	});
 	it.each(["choice", "score"])("rejects excessive %s criteria before fetching", async type => {
 		const provider = providers[2];
 		const mock = installFetchMock([]);
@@ -125,9 +151,9 @@ describe("Perplexity limits", () => {
 			expect(mock.calls).toHaveLength(0);
 		} finally { mock.restore(); }
 	});
-	it("forwards image state and pinned provider model unchanged", async () => {
+	it.each(["png", "jpeg", "webp"])("forwards %s image state and pinned provider model unchanged", async format => {
 		const provider = providers[2];
-		const state = ["What color?", { type: "image_url", image_url: { url: "data:image/png;base64,dGVzdA==" } }];
+		const state = ["What color?", { type: "image_url", image_url: { url: `data:image/${format};base64,eA==` } }];
 		const mock = installFetchMock([{ match: url => url === provider.url,
 			response: jsonResponse({ answers, usage: { input_tokens: 123, output_tokens: 3 } }),
 		}]);
