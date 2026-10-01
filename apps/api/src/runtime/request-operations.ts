@@ -2,7 +2,7 @@ import { AsyncLocalStorage } from "node:async_hooks";
 
 export type Operation = "kvRead" | "kvWrite" | "kvDelete" | "kvList"
     | "supabaseRead" | "supabaseMutation" | "supabaseRpc"
-    | "healthRpc" | "quotaRpc" | "cacheRead" | "cacheWrite";
+    | "healthRpc" | "healthDropped" | "quotaRpc" | "cacheRead" | "cacheWrite";
 type Counts = Partial<Record<Operation, number>>;
 const scope = new AsyncLocalStorage<RequestOperations>();
 

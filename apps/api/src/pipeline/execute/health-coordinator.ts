@@ -2,17 +2,19 @@ import { dispatchBackground, getBindings } from "@/runtime/env";
 import { countOperation } from "@/runtime/request-operations";
 import type { Endpoint } from "@core/types";
 import type { ProviderHealth } from "./health";
+import { healthBatcher } from "./health-batcher";
 import {
     emptyHealth, reduceHealth, healthPoolName, HEALTH_SNAPSHOT_MAX_AGE_MS,
     type HealthEvidence, type HealthObservation, type HealthSnapshot,
 } from "./health-evidence";
 
 type LocalEvidence = { health: HealthEvidence; observedAt: number; acceptedVersion?: number; acceptedGeneration?: string };
-type CachedPool = { snapshot?: HealthSnapshot; refreshAfter: number; pending?: Promise<void>;
+type CachedPool = { snapshot?: HealthSnapshot; refreshAfter: number; reportAfter: number; pending?: Promise<void>;
     local: Map<string, LocalEvidence> };
 const pools = new Map<string, CachedPool>();
 const MAX_CACHED_POOLS = 128;
 const MAX_LOCAL_PROVIDERS = 64;
+const REPORT_FAILURE_COOLDOWN_MS = 5_000;
 let activeRefreshes = 0;
 export function coordinatedHealthEnabled(): boolean {
     try { return Boolean(getBindings().ROUTING_HEALTH); } catch { return false; }
@@ -22,7 +24,7 @@ function pool(endpoint: Endpoint, model: string): CachedPool {
     let value = pools.get(key);
     if (!value) {
         if (pools.size >= MAX_CACHED_POOLS) pools.delete(pools.keys().next().value!);
-        value = { refreshAfter: 0, local: new Map() };
+        value = { refreshAfter: 0, reportAfter: 0, local: new Map() };
         pools.set(key, value);
     }
     return value;
@@ -81,30 +83,43 @@ export function reportCoordinatedHealth(event: HealthObservation): void {
     const local: LocalEvidence = { health: reduceHealth(current, event), observedAt: event.observedAt };
     if (!cached.local.has(event.provider) && cached.local.size >= MAX_LOCAL_PROVIDERS) cached.local.delete(cached.local.keys().next().value!);
     cached.local.set(event.provider, local);
+    // Advisory coordination may be unavailable; local routing evidence must still
+    // advance. Do not pay for another failed report on every subsequent request.
+    if (cached.reportAfter > Date.now()) { countOperation("healthDropped"); return; }
     dispatchBackground((async () => {
-        // Reuse the event ID on ambiguous RPC failure. A new stub permits retry
-        // after a broken RPC connection. Delivery remains explicitly best effort.
-        for (let attempt = 0; attempt < 2; attempt++) {
-            try {
-                const stub = namespace.get(namespace.idFromName(healthPoolName(event.endpoint, event.model)));
-                countOperation("healthRpc");
-                const result = await stub.observe(event);
-                if (result && cached.local.get(event.provider) === local) {
-                    if (cached.snapshot && cached.snapshot.generation === result.generation && cached.snapshot.providers[event.provider] &&
-                        cached.snapshot.version >= result.version && Date.now() - cached.snapshot.publishedAt < HEALTH_SNAPSHOT_MAX_AGE_MS) {
-                        cached.local.delete(event.provider);
-                    } else {
-                        local.health = result.health;
-                        local.acceptedVersion = result.version;
-                        local.acceptedGeneration = result.generation;
+        try {
+            const result = await healthBatcher.enqueue(healthPoolName(event.endpoint, event.model), event, async events => {
+                // Recreate the stub in the flushing request's I/O context. Never
+                // retain a request-owned stub across coalesced requests.
+                // Retry the whole batch once, with the same observation IDs.
+                for (let attempt = 0; ; attempt++) {
+                    // Another in-flight batch may have opened the cooldown after
+                    // these entries were queued. Never retry or extend it here.
+                    if (cached.reportAfter > Date.now()) throw new Error("routing_health_report_cooling_down");
+                    try {
+                        countOperation("healthRpc");
+                        return await namespace.get(namespace.idFromName(healthPoolName(event.endpoint, event.model))).observeBatch(events);
+                    } catch (error) {
+                        if (attempt >= 1) {
+                            cached.reportAfter = Date.now() + REPORT_FAILURE_COOLDOWN_MS;
+                            throw error;
+                        }
                     }
                 }
-                if (!result) console.warn("routing_health_report_rejected", { endpoint: event.endpoint, model: event.model, provider: event.provider });
-                return;
-            } catch {
-                if (attempt === 1) console.warn("routing_health_report_failed", { endpoint: event.endpoint, model: event.model, provider: event.provider });
+            });
+            if (result === undefined) { countOperation("healthDropped"); return; }
+            if (result && cached.local.get(event.provider) === local) {
+                if (cached.snapshot && cached.snapshot.generation === result.generation && cached.snapshot.providers[event.provider] &&
+                    cached.snapshot.version >= result.version && Date.now() - cached.snapshot.publishedAt < HEALTH_SNAPSHOT_MAX_AGE_MS) {
+                    cached.local.delete(event.provider);
+                } else {
+                    local.health = result.health;
+                    local.acceptedVersion = result.version;
+                    local.acceptedGeneration = result.generation;
+                }
             }
-        }
+            if (!result) countOperation("healthDropped");
+        } catch { countOperation("healthDropped"); }
     })());
 }
 export function resetCoordinatedHealthForTests(): void { pools.clear(); }

@@ -6,6 +6,7 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { isRecoveryProbeRequest } from "../../src/pipeline/execute/health.config";
 import * as health from "../../src/pipeline/execute/health";
+import { healthBatcher } from "../../src/pipeline/execute/health-batcher";
 import { resetRuntime, flushBackground, setHealthCoordinator, setHealthSnapshot, cacheOperations } from "./runtime";
 
 const epoch = 1_800_000_000_000;
@@ -113,6 +114,8 @@ test("a newer wall clock cannot erase local failures missing from a published re
     });
     try {
         await health.onCallEnd("responses", { provider: "p", model: "m", observationId: "delayed", ok: false, latency_ms: 50 });
+        // Deliver the queued report but deliberately hold its acknowledgement.
+        void healthBatcher.flushQueued();
         vi.setSystemTime(epoch + 31_000);
         setHealthSnapshot(() => ({ version: 5, publishedAt: Date.now(), providers: { p: emptyHealth("responses", "m", "p") } }));
         expect((await health.readHealthMany("responses", "m", ["p"])).p.err_ewma_60s).toBe(1);
