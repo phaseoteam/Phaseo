@@ -45,7 +45,7 @@
 		"@flags-sdk/statsig": "^0.2.5",
 		"@hookform/resolvers": "^5.7.1",
 		"@next/third-parties": "16.3.8",
-		"@number-flow/react": "^0.6.0",
+		"@number-flow/react": "^0.6.2",
 		"@octokit/rest": "^22.0.1",
 		"@react-three/drei": "^10.7.8",
 		"@react-three/fiber": "^9.6.1",
