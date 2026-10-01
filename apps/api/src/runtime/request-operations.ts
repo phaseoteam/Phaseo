@@ -1,4 +1,5 @@
 import { AsyncLocalStorage } from "node:async_hooks";
+import type { StreamObservation } from "@/core/stream-observation";
 
 export type Operation = "kvRead" | "kvWrite" | "kvDelete" | "kvList"
     | "supabaseRead" | "supabaseMutation" | "supabaseRpc"
@@ -14,6 +15,16 @@ export class RequestOperations {
     dispatchMs: number | null = null;
     readonly pending = new Set<Promise<unknown>>();
     backgroundOverflow = false;
+	private stream: StreamObservation | undefined;
+	recordStream(value: StreamObservation) {
+		if (this.stream) return;
+		this.stream = Object.freeze({
+			state: value.state, committed: value.committed, deliveredFrames: value.deliveredFrames,
+			deliveredBytes: value.deliveredBytes, downstreamDisconnected: value.downstreamDisconnected,
+			sawFinalUsage: value.sawFinalUsage, finishReason: value.finishReason, errorOrigin: value.errorOrigin,
+			firstFrameMs: value.firstFrameMs, firstOutputObservedMs: value.firstOutputObservedMs, durationMs: value.durationMs,
+		});
+	}
     private finish!: () => void;
     readonly finished = new Promise<void>(resolve => { this.finish = resolve; });
 
@@ -39,7 +50,8 @@ export class RequestOperations {
     snapshot() {
         return { total: { ...this.total }, beforeDispatch: { ...this.beforeDispatch },
             beforeDispatchMs: this.dispatchMs, pendingBackground: this.pending.size,
-            complete: !this.backgroundOverflow && this.pending.size === 0 };
+            complete: !this.backgroundOverflow && this.pending.size === 0,
+            ...(this.stream ? { stream: { ...this.stream } } : {}) };
     }
 }
 
@@ -47,6 +59,7 @@ export function currentRequestOperations() { return scope.getStore(); }
 export function withRequestOperations<T>(metrics: RequestOperations, run: () => T): T { return scope.run(metrics, run); }
 export function countOperation(operation: Operation, count = 1) { scope.getStore()?.count(operation, count); }
 export function markProviderDispatch() { scope.getStore()?.dispatch(); }
+export function recordStreamObservation(observation: StreamObservation) { scope.getStore()?.recordStream(observation); }
 
 const kvWrappers = new WeakMap<KVNamespace, KVNamespace>();
 export function instrumentKv(namespace: KVNamespace): KVNamespace {

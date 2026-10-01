@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
-import { StreamSession } from "./stream-session";
+import { StreamSession, observeStreamOutcome } from "./stream-session";
 import { createPricedStreamSession } from "./streaming";
+import { RequestOperations, withRequestOperations } from "@/runtime/request-operations";
 
 const complete = { aborted: false, sawFinalUsage: true };
 const opts = (upstream: Response) => ({
@@ -11,6 +12,31 @@ const chunk = 'data: {"object":"chat.completion.chunk","choices":[{"delta":{"con
 const terminal = 'data: {"object":"chat.completion.chunk","choices":[],"usage":{"total_tokens":7}}\n\ndata: [DONE]\n\n';
 
 describe("StreamSession", () => {
+	it("separates observed output from successful client writes and freezes relative timings", () => {
+		let now = 100;
+		const session = new StreamSession(() => now);
+		now = 110; session.observeOutput(); session.observeStop("max_tokens");
+		now = 130; session.delivered(12); session.observeOutput();
+		now = 140; session.observeStop("end_turn");
+		const outcome = session.finish(null, complete);
+		expect(outcome).toMatchObject({ finishReason: "length", timing: { firstFrameMs: 30, firstOutputObservedMs: 10, durationMs: 40 } });
+		expect(Object.isFrozen(outcome.timing)).toBe(true);
+		now = 999; session.delivered(12); session.observeStop("error");
+		expect(session.finish(null, complete)).toBe(outcome);
+	});
+	it("does not turn absent delivery or output into zero-latency observations", () => {
+		const session = new StreamSession(() => 100);
+		session.disconnect();
+		expect(session.finish(null, complete).timing).toEqual({ firstFrameMs: null, firstOutputObservedMs: null, durationMs: 0 });
+	});
+	it("redacts unknown stop reasons and usage payloads from diagnostics", () => {
+		const session = new StreamSession();
+		session.observeStop("private-output-".repeat(100_000));
+		const summary = observeStreamOutcome(session.finish({ secret: "private-usage" }, complete));
+		expect(summary.finishReason).toBe("other");
+		expect(JSON.stringify(summary)).not.toContain("private");
+		expect(JSON.stringify(summary).length).toBeLessThan(1024);
+	});
 	it("shares exactly one terminal outcome, ignoring duplicate/late transitions", async () => {
 		const session = new StreamSession();
 		const consumers = [session.completion, session.completion];
@@ -49,6 +75,19 @@ describe("StreamSession", () => {
 });
 
 describe("priced stream session integration", () => {
+	it("records redacted stream outcomes in the existing sampled operation scope", async () => {
+		const metrics = new RequestOperations();
+		await withRequestOperations(metrics, async () => {
+			const { response, session } = await createPricedStreamSession(opts(new Response(chunk + terminal)));
+			await response.text(); await session.completion;
+		});
+		expect(metrics.snapshot()).toMatchObject({ total: {}, stream: {
+			state: "COMPLETED", committed: true, deliveredFrames: 3, sawFinalUsage: true,
+			firstFrameMs: expect.any(Number), firstOutputObservedMs: expect.any(Number), durationMs: expect.any(Number),
+		} });
+		expect(JSON.stringify(metrics.snapshot())).not.toContain("hello");
+		expect(JSON.stringify(metrics.snapshot())).not.toContain("total_tokens");
+	});
 	it("commits only after the downstream accepts a frame, not when headers return", async () => {
 		const { response, session } = await createPricedStreamSession(opts(new Response(chunk + terminal)));
 		expect(session.state).toBe("PRE_COMMIT"); expect(session.committed).toBe(false);

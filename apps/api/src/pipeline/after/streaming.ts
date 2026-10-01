@@ -17,7 +17,8 @@ import {
 import { dispatchBackground } from "@/runtime/env";
 import { getProviderStreamCancellationPolicy } from "./stream-cancellation";
 import { readSseEvents, SseProtocolError } from "@core/sse";
-import { StreamSession, type StreamFinalInfo, type StreamOutcome } from "./stream-session";
+import { StreamSession, observeStreamOutcome, type StreamFinalInfo, type StreamOutcome } from "./stream-session";
+import { recordStreamObservation } from "@/runtime/request-operations";
 import { classifyStreamException, classifyStreamProviderError, type GatewayStreamError } from "@core/stream-error";
 import { encodeStreamFailure } from "@protocols/stream/error";
 
@@ -203,7 +204,7 @@ export async function createPricedStreamSession(opts: PassthroughWithPricingOpts
     const streamPump = (async () => {
         if (!upstream.body) {
             recordCompletionTiming();
-            session.finish(null, { aborted: true, sawFinalUsage: false }, classifyStreamException(null, "provider"));
+            recordStreamObservation(observeStreamOutcome(session.finish(null, { aborted: true, sawFinalUsage: false }, classifyStreamException(null, "provider"))));
             try { await writer.close(); } catch { }
             return;
         }
@@ -258,6 +259,8 @@ export async function createPricedStreamSession(opts: PassthroughWithPricingOpts
                         )) ||
                         event.type === "delta_content_part"
                     );
+                    if (containsGeneratedOutput) session.observeOutput(frameReceivedAt);
+                    for (const event of events) if (event.type === "stop") session.observeStop(event.finishReason);
                     const detectedProtocol = detectStreamProtocol({
                         protocol: undefined,
                         eventName,
@@ -442,11 +445,12 @@ export async function createPricedStreamSession(opts: PassthroughWithPricingOpts
             }
         } finally {
             recordCompletionTiming();
-            session.finish(finalUsageCandidate ?? lastSeenUsage, {
+            const outcome = session.finish(finalUsageCandidate ?? lastSeenUsage, {
                     aborted: failed || !sawWireTerminal,
                     sawFinalUsage: !failed && sawWireTerminal && Boolean(finalUsageCandidate ?? lastSeenUsage),
                     ...(failed ? { failureOrigin } : {}),
                 }, streamError);
+            recordStreamObservation(observeStreamOutcome(outcome));
             if (!downstreamClosed) {
                 try {
                     if (failed && !emittedFailure) await writer.abort(failure);

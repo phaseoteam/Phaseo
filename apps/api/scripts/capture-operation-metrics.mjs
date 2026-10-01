@@ -2,12 +2,11 @@
 import { spawn } from "node:child_process";
 import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
+import { operationMetricsSummary } from "./operation-metrics-summary.mjs";
 const require = createRequire(import.meta.url);
 const wrangler = join(dirname(require.resolve("wrangler/package.json")), "bin/wrangler.js");
 const child = spawn(process.execPath, [wrangler, "tail", "phaseo-gateway-staging", "--format", "json", "--search", "gateway_operations"],
     { stdio: ["ignore", "pipe", "pipe"], windowsHide: true });
-const allowed = new Set(["kvRead", "kvWrite", "kvDelete", "kvList", "supabaseRead", "supabaseMutation", "supabaseRpc", "healthRpc", "healthDropped", "quotaRpc", "cacheRead", "cacheWrite"]);
-const counts = value => Object.fromEntries(Object.entries(value ?? {}).filter(([key, count]) => allowed.has(key) && Number.isSafeInteger(count) && count >= 0));
 let buffer = "", depth = 0, quoted = false, escaped = false, events = 0, envelopes = 0, stderrBytes = 0;
 function emit(raw) {
     let event;
@@ -18,11 +17,9 @@ function emit(raw) {
         if (!Array.isArray(message) || message[0] !== "gateway_operations") continue;
         let record = message[1];
         if (typeof record === "string") { try { record = JSON.parse(record); } catch { continue; } }
-        if (!record || !/^[A-Za-z0-9_-]{1,100}$/.test(record.requestId ?? "")) continue;
-        console.log(JSON.stringify({ event: "gateway_operations", requestId: record.requestId,
-            total: counts(record.total), beforeDispatch: counts(record.beforeDispatch),
-            beforeDispatchMs: Number.isFinite(record.beforeDispatchMs) ? record.beforeDispatchMs : null,
-            complete: record.complete === true, pendingBackground: record.pendingBackground }));
+        const summary = operationMetricsSummary(record);
+        if (!summary) continue;
+        console.log(JSON.stringify(summary));
         events++;
     }
 }
