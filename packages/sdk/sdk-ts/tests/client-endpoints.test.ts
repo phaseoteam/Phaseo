@@ -2,6 +2,18 @@ import { describe, expect, test, vi } from "vitest";
 import { Phaseo } from "../src/index.js";
 
 describe("Phaseo endpoints discovery helper", () => {
+  test("serializes Clef decision images through the generated operation", async () => {
+    const images = ["data:image/png;base64,AQID", { content_type: "image/webp" as const, base64: "AQID" }];
+    const fetchImpl: typeof fetch = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      expect(String(input)).toBe("https://example.test/decisions");
+      expect(JSON.parse(String(init?.body))).toMatchObject({ model: "cloudflare/clef-flash", images });
+      return jsonResponse({ model: "cloudflare/clef-flash", answers: { visible: { type: "noul", noul: 0.9 } } });
+    });
+    const client = new Phaseo({ apiKey: "sk_test_123", baseUrl: "https://example.test", fetchImpl, enableDeprecationWarnings: false });
+    const result = await client.decisions.make({ model: "cloudflare/clef-flash", state: "Photo", images,
+      questions: { visible: { type: "noul", instructions: "Visible?" } } });
+    expect(result.answers?.visible).toMatchObject({ type: "noul", noul: 0.9 });
+  });
   test("calls /endpoints through listEndpoints", async () => {
     const fetchImpl: typeof fetch = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       expect(String(input)).toBe("https://example.test/endpoints");

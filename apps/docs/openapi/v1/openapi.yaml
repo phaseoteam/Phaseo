@@ -11049,6 +11049,20 @@ components:
               - $ref: '#/components/schemas/DecisionNoulQuestion'
               - $ref: '#/components/schemas/DecisionChoiceQuestion'
               - $ref: '#/components/schemas/DecisionScoreQuestion'
+        images:
+          type: array
+          maxItems: 4
+          description: >-
+            Embedded images for vision-capable decision models. Clef accepts
+            PNG, JPEG, or WebP; remote URLs are unsupported. Maximum 4 MiB and
+            16 megapixels per image, 8 MiB decoded total, and 13 MiB per request
+            body.
+          items:
+            oneOf:
+              - type: string
+                pattern: >-
+                  ^[Dd][Aa][Tt][Aa]:image/(png|jpeg|webp);base64,[A-Za-z0-9+/]+={0,2}$
+              - $ref: '#/components/schemas/DecisionImage'
         meta:
           type: boolean
           default: false
@@ -11063,6 +11077,21 @@ components:
         metadata:
           type: object
           additionalProperties: true
+    DecisionImage:
+      type: object
+      required:
+        - content_type
+        - base64
+      properties:
+        content_type:
+          type: string
+          enum:
+            - image/png
+            - image/jpeg
+            - image/webp
+        base64:
+          type: string
+          pattern: ^[A-Za-z0-9+/]+={0,2}$
     DecisionNoulQuestion:
       type: object
       required:

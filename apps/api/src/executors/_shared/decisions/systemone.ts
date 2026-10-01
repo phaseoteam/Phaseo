@@ -53,6 +53,18 @@ export async function executeSystemOne(
 		},
 		body: JSON.stringify(body),
 	});
+	return completeSystemOne(args, upstream, keyInfo, mappedRequest);
+}
+
+// Validate the shared typed-answer contract independently of provider transport.
+export async function completeSystemOne(
+	args: ExecutorExecuteArgs,
+	upstream: Response,
+	keyInfo: { source: "gateway" | "byok"; byokId: string | null },
+	mappedRequest?: string,
+	unwrapPayload: (payload: unknown) => unknown = payload => payload,
+): Promise<ExecutorResult> {
+	const ir = args.ir as IRDecisionsRequest;
 	const headersMs = args.upstreamTiming?.timingFor(upstream)?.headersMs;
 	const common = {
 		kind: "completed" as const,
@@ -61,7 +73,7 @@ export async function executeSystemOne(
 		...(mappedRequest === undefined ? {} : { mappedRequest }),
 		...(headersMs === undefined ? {} : { timing: { latencyMs: headersMs, generationMs: headersMs } }),
 	};
-	const bill = { cost_cents: 0, currency: "USD" as const, upstream_id: upstream.headers.get("x-request-id") };
+	const bill = { cost_cents: 0, currency: "USD" as const, upstream_id: upstream.headers.get("x-request-id") ?? upstream.headers.get("cf-ray") };
 	if (!upstream.ok) return { ...common, upstream, bill };
 	const malformed = (rawResponse: unknown): ExecutorResult => ({
 		...common,
@@ -84,6 +96,7 @@ export async function executeSystemOne(
 	}
 	let payload: unknown;
 	try { payload = JSON.parse(rawBody); } catch { return malformed(rawBody || null); }
+	payload = unwrapPayload(payload);
 	if (!isRecord(payload) || !isRecord(payload.answers) || !isRecord(payload.usage)) return malformed(payload);
 	const answers = payload.answers;
 	const questionIds = Object.keys(ir.questions);
@@ -103,7 +116,7 @@ export async function executeSystemOne(
 		upstream: new Response(rawBody, { status: upstream.status, statusText: upstream.statusText, headers: upstream.headers }),
 		ir: responseIr,
 		bill: { ...bill, usage: {
-			requests: 1, input_tokens: inputTokens, input_text_tokens: inputTokens,
+			requests: 1, input_tokens: inputTokens, ...(ir.images?.length ? {} : { input_text_tokens: inputTokens }),
 			output_tokens: outputTokens, output_text_tokens: outputTokens, total_tokens: inputTokens + outputTokens,
 		} },
 		rawResponse: payload,

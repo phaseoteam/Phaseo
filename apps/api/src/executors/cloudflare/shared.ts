@@ -15,7 +15,7 @@ export async function runCloudflareModel(
 	body: BodyInit,
 	contentType: string,
 ): Promise<{ response: Response; keySource: "gateway" | "byok"; byokKeyId: string | null }> {
-	const key = resolveOpenAICompatKey(args as any);
+	const key = resolveOpenAICompatKey({ ...args, forceGatewayKey: args.meta.forceGatewayKey });
 	const gatewayId = getBindings().CLOUDFLARE_AI_GATEWAY_ID?.trim() || "default";
 	const response = await fetchUpstream(args, cloudflareRunUrl(args.providerModelSlug || args.ir.model), {
 		method: "POST",
