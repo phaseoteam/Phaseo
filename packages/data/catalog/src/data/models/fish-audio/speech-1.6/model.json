@@ -1,0 +1,8 @@
+{
+  "model_id": "fish-audio/speech-1.6", "organisation_id": "fish-audio", "name": "Speech 1.6", "status": "Retired", "previous_model_id": "fish-audio/speech-1.5",
+  "description": "A retired Fish Audio text-to-speech API model preserved for lifecycle history.",
+  "announced_date": null, "release_date": null, "deprecation_date": "2026-02-28T00:00:00", "retirement_date": "2026-02-28T00:00:00",
+  "license": "Proprietary", "input_types": "text", "output_types": "audio", "api_model_id": "fish-audio/speech-1.6", "links": [], "details": [], "benchmarks": [], "family_id": null, "page_notice": { "tone": "warning", "markdown": "Deprecated by Fish Audio on 28 February 2026." }, "model_type": "text-to-speech", "knowledge_cutoff": null,
+  "limits": { "context": null, "input": null, "output": null }, "modalities": { "input": ["text"], "output": ["audio"] }, "reasoning": { "supported": false, "options": [] }, "capabilities": { "attachment": false, "tool_call": false, "structured_output": false, "temperature": null, "streaming": true, "web_search": false }, "open_weights": false,
+  "sources": [{ "kind": "documentation", "url": "https://docs.fish.audio/developer-guide/models-pricing/deprecations", "accessed_at": "2026-08-24T00:00:00Z", "notes": null }], "verification": { "status": "verified", "checked_at": "2026-08-24T00:00:00Z", "notes": "Historical model retained from Fish Audio's lifecycle documentation." }, "last_updated": null, "removal_date": "2026-02-28T00:00:00", "replacement_model_id": "fish-audio/s1", "license_url": null
+}
