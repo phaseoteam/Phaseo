@@ -6,6 +6,7 @@
 	"scripts": {
 		"dev": "npx wrangler dev",
 		"build": "npx wrangler deploy --dry-run",
+		"build:jobs": "pnpm exec wrangler deploy --dry-run --config wrangler.jobs.toml",
 		"build:regional": "pnpm exec wrangler deploy --dry-run --config wrangler.eu.toml && pnpm exec wrangler deploy --dry-run --config wrangler.us.toml",
 		"deploy:eu": "pnpm exec wrangler deploy --config wrangler.eu.toml",
 		"deploy:us": "pnpm exec wrangler deploy --config wrangler.us.toml",

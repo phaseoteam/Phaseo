@@ -125,11 +125,14 @@ function normalizeContentForHash(content: unknown): unknown {
     if (asString) return asString;
 
     if (Array.isArray(content)) {
-        const parts = content
-            .map((part) => normalizeContentForHash(part))
-            .filter((part) => hasMeaningfulValue(part));
+        const parts: unknown[] = [];
+        for (const part of content) {
+            const normalized = normalizeContentForHash(part);
+            if (hasMeaningfulValue(normalized)) parts.push(normalized);
+            if (parts.length === 8) break;
+        }
         if (!parts.length) return null;
-        return parts.slice(0, 8);
+        return parts;
     }
 
     if (!isPlainObject(content)) return null;
@@ -175,8 +178,13 @@ function extractAnchorsFromMessages(messages: unknown): {
     let firstUserOrNonSystem: unknown = null;
 
     for (const message of messages) {
+        if (firstSystemOrDeveloper && firstUserOrNonSystem) break;
         if (!isPlainObject(message)) continue;
         const role = sanitizeString((message as any).role)?.toLowerCase();
+        if (!(
+            (!firstSystemOrDeveloper && (role === "system" || role === "developer")) ||
+            (!firstUserOrNonSystem && role === "user")
+        )) continue;
         const content = normalizeContentForHash((message as any).content);
 
         if (!firstSystemOrDeveloper && (role === "system" || role === "developer")) {
@@ -218,6 +226,7 @@ function extractResponsesAnchors(body: any): {
         firstUserOrNonSystem = sanitizeString(input);
     } else if (Array.isArray(input)) {
         for (const item of input) {
+            if (firstSystemOrDeveloper && firstUserOrNonSystem) break;
             if (!isPlainObject(item)) continue;
             const type = sanitizeString((item as any).type)?.toLowerCase();
             const role = sanitizeString((item as any).role)?.toLowerCase();
@@ -299,20 +308,20 @@ function extractCacheHints(body: any): Record<string, unknown> {
 }
 
 function buildContextInput(body: any, endpoint: Endpoint): Record<string, unknown> {
-    const fromMessages = extractAnchorsFromMessages(body?.messages);
-    const fromResponses = extractResponsesAnchors(body);
-
-    const explicitSystem = normalizeContentForHash(body?.system);
-
-    const opening = endpoint === "responses"
-        ? fromResponses
-        : {
+    let opening: ReturnType<typeof extractAnchorsFromMessages>;
+    if (endpoint === "responses") {
+        opening = extractResponsesAnchors(body);
+    } else {
+        const fromMessages = extractAnchorsFromMessages(body?.messages);
+        const explicitSystem = normalizeContentForHash(body?.system);
+        opening = {
             firstSystemOrDeveloper:
                 hasMeaningfulValue(explicitSystem)
                     ? explicitSystem
                     : fromMessages.firstSystemOrDeveloper,
             firstUserOrNonSystem: fromMessages.firstUserOrNonSystem,
         };
+    }
 
     return {
         opening,
