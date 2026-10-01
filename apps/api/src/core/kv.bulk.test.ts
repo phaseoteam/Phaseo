@@ -27,6 +27,45 @@ vi.mock("@/runtime/env", () => ({
 	getCache: () => runtime.cache as unknown as KVNamespace,
 }));
 
+describe("key version safety", () => {
+    beforeEach(async () => {
+        runtime.store.clear();
+        runtime.cache.get.mockClear();
+        const { __resetKeyVersionL1ForTests } = await import("./kv");
+        __resetKeyVersionL1ForTests();
+    });
+
+    it("does not turn a failed version read into version zero", async () => {
+        runtime.cache.get.mockRejectedValueOnce(new Error("KV unavailable"));
+        const { getKeyVersion } = await import("./kv");
+        await expect(getKeyVersion("kid", "key", { useL1Cache: true })).rejects.toThrow("KV unavailable");
+        runtime.store.set("gateway:keyver:kid:key", "123");
+        await expect(getKeyVersion("kid", "key", { useL1Cache: true })).resolves.toBe(123);
+    });
+
+    it.each(["", "garbage", "-1", "1.5", "Infinity", "9007199254740992"])("rejects malformed marker %j", async (marker) => {
+        runtime.store.set("gateway:keyver:kid:key", marker);
+        const { getKeyVersion } = await import("./kv");
+        await expect(getKeyVersion("kid", "key")).rejects.toThrow("Invalid key version");
+    });
+
+    it("uses version zero only for an absent marker", async () => {
+        const { getKeyVersion } = await import("./kv");
+        await expect(getKeyVersion("kid", "key")).resolves.toBe(0);
+    });
+
+    it("does not let a late old marker read overwrite a locally published version", async () => {
+        let release!: (value: string) => void;
+        runtime.cache.get.mockImplementationOnce(() => new Promise(resolve => { release = resolve; }));
+        const { getKeyVersion, setKeyVersion } = await import("./kv");
+        const pending = getKeyVersion("kid", "key", { useL1Cache: true });
+        await setKeyVersion("kid", "key", 123);
+        release("0");
+        await pending;
+        await expect(getKeyVersion("kid", "key", { useL1Cache: true })).resolves.toBe(123);
+    });
+});
+
 describe("getTextMany", () => {
 	beforeEach(() => {
 		runtime.store.clear();

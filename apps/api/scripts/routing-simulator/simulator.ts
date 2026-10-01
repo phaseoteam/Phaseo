@@ -128,7 +128,6 @@ export async function simulate(input: unknown) {
       record.attempts.push(log);
       if (admission === "probe") scenario.checks.forEach((c,i) => { if (now >= c.fromMs && now < c.untilMs && (!c.provider || c.provider === provider.id)) probeChecks[i]++; });
       if (admission === "blocked") { await attempt(record, ranked, index + 1); return; }
-      await health.onCallStart(endpoint, provider.id, baseModel);
       // Environment randomness is keyed by request and provider. Changing routing
       // policy does not shift every subsequent provider's random outcome.
       const rng = random(keyedSeed(`${scenario.seed}:${record.id}:${provider.id}`));

@@ -59,13 +59,17 @@ function createQueryResult(hasRoute: boolean, onExecute: () => void): {
 					},
 				],
 			};
-			if (!(table in dataByTable)) throw new Error(`Unexpected table: ${table}`);
+			// The loader now fetches the joined SKU/meter graph in one query.
+			if (table !== "v2_pricing_skus") throw new Error(`Unexpected table: ${table}`);
+			const data = hasRoute ? dataByTable.v2_pricing_skus.map(sku => ({
+				...sku, route: dataByTable.v2_model_provider_routes[0], meters: dataByTable.v2_pricing_sku_meters,
+			})) : [];
 			const state = {
 				then(resolve: (value: QueryResult) => unknown) {
 					onExecute();
 					return Promise.resolve(
 						resolve({
-							data: dataByTable[table] ?? [],
+							data,
 							error: null,
 						}),
 					);
@@ -131,7 +135,7 @@ describe("pricing loader performance", () => {
 		expect(a).not.toBeNull();
 		expect(b).not.toBeNull();
 		expect(c).not.toBeNull();
-		expect(executeCount).toBe(4);
+		expect(executeCount).toBe(1);
 		expect(getSupabaseAdminMock).toHaveBeenCalledTimes(1);
 	});
 
@@ -162,7 +166,7 @@ describe("pricing loader performance", () => {
 		expect(first).not.toBeNull();
 		expect(second).toBe(first);
 		expect(third).toBe(first);
-		expect(executeCount).toBe(4);
+		expect(executeCount).toBe(1);
 		expect(getSupabaseAdminMock).toHaveBeenCalledTimes(1);
 	});
 
@@ -193,7 +197,7 @@ describe("pricing loader performance", () => {
 		expect(first).toBeNull();
 		expect(second).toBeNull();
 		expect(third).toBeNull();
-		expect(executeCount).toBe(2);
+		expect(executeCount).toBe(1);
 		expect(getSupabaseAdminMock).toHaveBeenCalledTimes(1);
 	});
 

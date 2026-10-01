@@ -45,7 +45,6 @@ import {
 	admitThroughBreaker,
 	classifyProviderHealthImpact,
 	onCallEnd,
-	onCallStart,
 	maybeOpenOnRecentErrors,
 	reportProbeResult,
 } from "./health";
@@ -411,7 +410,7 @@ function recordProviderAttempt(
  * Similar to RequestResult but works with IR
  */
 export type IRRequestResult = {
-	healthContext?: { observationId: string; startedAt: number; probe: boolean; isProbe: boolean; provider: string; model: string };
+	healthContext?: { observationId: string; startedAt: number; probe: boolean; isProbe: boolean; provider: string; model: string; completed?: boolean };
 	kind: "completed" | "stream";
 	allowEmptySuccess?: boolean;
 	ir?:
@@ -791,10 +790,6 @@ async function attemptProviderWithIR(
 			timing.timer.between("internal_latency_ms", "request_start", "adapter_start");
 			timing.internal.adapterMarked = true;
 		}
-		// Health accounting is advisory and must not delay the upstream request.
-		dispatchProviderHealthBackground(() =>
-			onCallStart(ctx.endpoint, healthProvider, baseModel),
-		);
 		t0 = performance.now();
 
 		// Never let a failed provider attempt's timestamp leak into billing for
@@ -1281,6 +1276,7 @@ async function attemptProviderWithIR(
 		};
 		result.healthContext = {
 			...healthObservation,
+			completed: executorResult.kind === "completed",
 			provider: healthProvider,
 			model: baseModel,
 			isProbe,

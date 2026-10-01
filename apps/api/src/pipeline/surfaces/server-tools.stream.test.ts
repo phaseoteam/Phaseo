@@ -14,6 +14,26 @@ function buildSseStream(frames: string[]): ReadableStream<Uint8Array> {
 }
 
 describe("consumeTextProtocolStreamToIR", () => {
+	it("reports upstream read rejection as stream failure rather than a materialization bug", async () => {
+		const failure = new Error("connection reset");
+		const events: unknown[] = [];
+		const stream = new ReadableStream<Uint8Array>({ pull(controller) { controller.error(failure); } });
+		await expect(consumeTextProtocolStreamToIR({ protocol: "openai.chat.completions", stream,
+			requestId: "reset", model: "test", provider: "test", onEvent: event => { events.push(event); },
+		})).rejects.toBe(failure);
+		expect(events).toEqual([{ type: "error", message: "upstream_stream_transport_error" }]);
+		expect(stream.locked).toBe(false);
+	});
+
+	it("does not turn a gateway callback exception into provider transport evidence", async () => {
+		const failure = new Error("callback bug");
+		const events: unknown[] = [];
+		await expect(consumeTextProtocolStreamToIR({ protocol: "openai.chat.completions",
+			stream: buildSseStream(['data: {"object":"chat.completion.chunk","choices":[]}\n\n']),
+			requestId: "callback", model: "test", provider: "test", onEvent: event => { events.push(event); throw failure; },
+		})).rejects.toBe(failure);
+		expect(events).not.toContainEqual(expect.objectContaining({ type: "error" }));
+	});
 	it.each([
 		["stop", "length"],
 		["length", "stop"],

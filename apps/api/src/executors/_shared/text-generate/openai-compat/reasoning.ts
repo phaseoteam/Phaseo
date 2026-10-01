@@ -222,7 +222,7 @@ export function applyReasoningParams(args: {
 			return;
 		}
 		if (reasoning.enabled === true) args.request.enable_thinking = true;
-		if ("input" in args.request) {
+		if ("input" in args.request || "input_items" in args.request) {
 			if (effort !== undefined) args.request.reasoning = { effort };
 			return;
 		}

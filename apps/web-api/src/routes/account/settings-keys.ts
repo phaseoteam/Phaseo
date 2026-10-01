@@ -87,8 +87,17 @@ async function enforceKeyLimit(context: NonNullable<Awaited<ReturnType<typeof re
 }
 
 async function invalidateGatewayKey(env: Env, keyId: string) {
-	const key = env.PHASEO_MANAGEMENT_KEY ?? env.PHASEO_CONTROL_KEY; if (!key || !env.PHASEO_CONTROL_SECRET) return;
-	await fetch(`${(env.GATEWAY_API_ORIGIN ?? "http://localhost:8787").replace(/\/$/, "")}/v1/keys/${encodeURIComponent(keyId)}/invalidate`, { method: "POST", headers: { authorization: `Bearer ${key}`, "x-control-secret": env.PHASEO_CONTROL_SECRET } });
+	const key = env.PHASEO_MANAGEMENT_KEY ?? env.PHASEO_CONTROL_KEY;
+	if (!key || !env.PHASEO_CONTROL_SECRET || !env.GATEWAY_API_ORIGIN) return false;
+	try {
+		const response = await fetch(`${env.GATEWAY_API_ORIGIN.replace(/\/$/, "")}/v1/keys/${encodeURIComponent(keyId)}/invalidate`, {
+			method: "POST", signal: AbortSignal.timeout(5000),
+			headers: { authorization: `Bearer ${key}`, "x-control-secret": env.PHASEO_CONTROL_SECRET },
+		});
+		return response.ok;
+	} catch {
+		return false;
+	}
 }
 
 export const accountSettingsKeysRouter = new Hono<{ Bindings: Env }>();
@@ -180,11 +189,20 @@ accountSettingsKeysRouter.post("/keys/:keyId/rotate", async (c) => {
 });
 
 accountSettingsKeysRouter.delete("/keys/:keyId", async (c) => {
-	const loaded = await apiKeyContext(c); if (!loaded) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS); const confirm = c.req.query("confirmName"); if (confirm && confirm !== loaded.key.name) return c.json({ error: "confirmation_mismatch" }, 409, PRIVATE_NO_STORE_HEADERS); if (String(loaded.key.status).toLowerCase() === "deleted") return c.json({ success: true, alreadyDeleted: true }, 200, PRIVATE_NO_STORE_HEADERS);
-	await invalidateGatewayKey(c.env, loaded.key.id); let result = await loaded.context.client.from("keys").update({ status: "deleted", expires_at: new Date().toISOString(), soft_blocked: true, hash: `deleted:${loaded.key.id}` }).eq("id", loaded.key.id); if (result.error && missingExpiry(result.error)) result = await loaded.context.client.from("keys").update({ status: "deleted", soft_blocked: true, hash: `deleted:${loaded.key.id}` }).eq("id", loaded.key.id); if (result.error) return c.json({ error: "key_write_failed" }, 503, PRIVATE_NO_STORE_HEADERS);
+	const loaded = await apiKeyContext(c); if (!loaded) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
+	const confirm = c.req.query("confirmName"); if (confirm && confirm !== loaded.key.name) return c.json({ error: "confirmation_mismatch" }, 409, PRIVATE_NO_STORE_HEADERS);
+	const alreadyDeleted = String(loaded.key.status).toLowerCase() === "deleted";
+	if (!alreadyDeleted) {
+		let result = await loaded.context.client.from("keys").update({ status: "deleted", expires_at: new Date().toISOString(), soft_blocked: true, hash: `deleted:${loaded.key.id}` }).eq("id", loaded.key.id);
+		if (result.error && missingExpiry(result.error)) result = await loaded.context.client.from("keys").update({ status: "deleted", soft_blocked: true, hash: `deleted:${loaded.key.id}` }).eq("id", loaded.key.id);
+		if (result.error) return c.json({ error: "key_write_failed" }, 503, PRIVATE_NO_STORE_HEADERS);
+	}
+	// Retrying an already-deleted key must retry failed invalidation as well.
+	const invalidated = await invalidateGatewayKey(c.env, loaded.key.id);
+	if (!alreadyDeleted) await recordWorkspaceAuditEvent(loaded.context.client, { workspaceId: loaded.context.workspaceId, actorUserId: loaded.user.id, action: "api_key.deleted", targetType: "api_key", targetId: loaded.key.id, targetName: loaded.key.name, metadata: { prefix: loaded.key.prefix ?? null }, requestId: requestId(c) });
+	if (!invalidated) return c.json({ error: "key_invalidation_failed" }, 503, PRIVATE_NO_STORE_HEADERS);
 	for (const table of ["key_guardrails", "broadcast_destination_keys"] as const) { const links = await loaded.context.client.from(table).delete().eq("key_id", loaded.key.id); if (links.error) return c.json({ error: "key_write_failed" }, 503, PRIVATE_NO_STORE_HEADERS); }
-	await recordWorkspaceAuditEvent(loaded.context.client, { workspaceId: loaded.context.workspaceId, actorUserId: loaded.user.id, action: "api_key.deleted", targetType: "api_key", targetId: loaded.key.id, targetName: loaded.key.name, metadata: { prefix: loaded.key.prefix ?? null }, requestId: requestId(c) });
-	return c.json({ success: true }, 200, PRIVATE_NO_STORE_HEADERS);
+	return c.json({ success: true, ...(alreadyDeleted ? { alreadyDeleted: true } : {}) }, 200, PRIVATE_NO_STORE_HEADERS);
 });
 
 function templateScopes(template: string) { if (template === "read-only") return CONTROL_SCOPES.filter((scope) => scope.endsWith(":read")); if (template === "read-write") return CONTROL_SCOPES.filter((scope) => /:(read|write)$/.test(scope)); if (template === "full-control") return [...CONTROL_SCOPES]; return null; }

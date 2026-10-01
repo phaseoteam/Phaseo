@@ -7,7 +7,6 @@ const guardPricingFoundMock = vi.fn();
 const guardAllFailedMock = vi.fn();
 const rankProvidersMock = vi.fn();
 const admitThroughBreakerMock = vi.fn();
-const onCallStartMock = vi.fn();
 const onCallEndMock = vi.fn();
 const maybeOpenOnRecentErrorsMock = vi.fn();
 const reportProbeResultMock = vi.fn();
@@ -42,7 +41,6 @@ vi.mock("./health", () => ({
 		const status = Number(upstreamStatus ?? 0);
 		return status >= 200 && status < 300 ? "success" : "failure";
 	},
-	onCallStart: (...args: any[]) => onCallStartMock(...args),
 	onCallEnd: (...args: any[]) => onCallEndMock(...args),
 	maybeOpenOnRecentErrors: (...args: any[]) => maybeOpenOnRecentErrorsMock(...args),
 	reportProbeResult: (...args: any[]) => reportProbeResultMock(...args),
@@ -101,7 +99,6 @@ describe("doRequestWithIR pricing behavior in testing mode", () => {
 			response: new Response(JSON.stringify({ error: "all_failed" }), { status: 502 }),
 		});
 		admitThroughBreakerMock.mockResolvedValue("closed");
-		onCallStartMock.mockResolvedValue(undefined);
 		onCallEndMock.mockResolvedValue(undefined);
 		maybeOpenOnRecentErrorsMock.mockResolvedValue(undefined);
 		reportProbeResultMock.mockResolvedValue(undefined);
@@ -119,7 +116,6 @@ describe("doRequestWithIR pricing behavior in testing mode", () => {
 		resolveProviderExecutorMock.mockReturnValue(executor);
 		await doRequestWithIR(createCtx(), { model: "model", prompt: "test" } as any, createTiming());
 		expect(executor).not.toHaveBeenCalled();
-		expect(onCallStartMock).not.toHaveBeenCalled();
 		expect(guardAllFailedMock).toHaveBeenCalled();
 	});
 
@@ -183,7 +179,6 @@ describe("doRequestWithIR pricing behavior in testing mode", () => {
         const result = await doRequestWithIR(createCtx({ endpoint: "chat.completions", capability: "text.generate", workspaceId: "workspace-a", model: "acme/private", testingMode: true, stream: kind === "stream" }), { model: "acme/private", messages: [] } as any, createTiming());
         expect(result.ok).toBe(true);
         expect(admitThroughBreakerMock.mock.calls[0][1]).toBe(scopedProvider);
-        expect(onCallStartMock).toHaveBeenCalledWith("chat.completions", scopedProvider, "acme/private");
         if (kind === "completed") expect(onCallEndMock).toHaveBeenCalledWith("chat.completions", expect.objectContaining({ provider: scopedProvider, ok: true }));
         else expect((result as any).result.healthContext.provider).toBe(scopedProvider);
     });
@@ -238,8 +233,9 @@ describe("doRequestWithIR pricing behavior in testing mode", () => {
 				generation_ms: expect.any(Number),
 			}),
 		);
-		expect(ensureRuntimeForBackgroundMock).toHaveBeenCalledTimes(2);
-		expect(releaseBackgroundRuntimeMock).toHaveBeenCalledTimes(2);
+		// Only completion health reporting schedules background work.
+		expect(ensureRuntimeForBackgroundMock).toHaveBeenCalledTimes(1);
+		expect(releaseBackgroundRuntimeMock).toHaveBeenCalledTimes(1);
 		expect(ctx.meta.latency_ms).toBeUndefined();
 		expect(ctx.meta.generation_ms).toEqual(expect.any(Number));
 		expect(ctx.providerAttempts).toEqual([

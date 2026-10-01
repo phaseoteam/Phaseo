@@ -453,11 +453,11 @@ export async function beforeRequest(
 
     // 5) RPC + gating + providers (choose viable providers for this model/endpoint)
     const capability = normalizeCapability(resolveCapabilityFromEndpoint(endpoint));
-    // Streamed text has no wallet reservation before provider dispatch. Its
+    // Synchronous text has no wallet reservation before provider dispatch. Its
     // cache fill may overlap inference, but must finish before final charging
     // invalidates that cache. Media/async reservation paths remain ordered.
     const creditCacheWrites: Promise<void>[] = [];
-    const onCreditCacheWrite = stream && ["responses", "chat.completions", "messages"].includes(endpoint)
+    const onCreditCacheWrite = ["responses", "chat.completions", "messages"].includes(endpoint)
         ? (write: Promise<void>) => { creditCacheWrites.push(write); }
         : undefined;
     let autoRouterEvaluation: AutoRouterEvaluation | null = null;

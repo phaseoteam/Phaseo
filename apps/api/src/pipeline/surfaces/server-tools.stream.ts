@@ -872,7 +872,15 @@ export async function consumeTextProtocolStreamToIR(args: {
 	};
 
 	while (true) {
-		const { done, value } = await reader.read();
+		let chunk: ReadableStreamReadResult<Uint8Array>;
+		try { chunk = await reader.read(); }
+		catch (error) {
+			// Transport failure is provider evidence, unlike a parser/callback bug.
+			args.onEvent?.({ type: "error", message: "upstream_stream_transport_error" });
+			reader.releaseLock();
+			throw error;
+		}
+		const { done, value } = chunk;
 		if (done) break;
 		buffer += decoder.decode(value, { stream: true });
 		const frames = buffer.split(/\n\n/);
@@ -934,6 +942,7 @@ export async function consumeTextProtocolStreamToIR(args: {
 		}
 	}
 
+	reader.releaseLock();
 	const trailing = buffer.trim();
 	if (trailing.length > 0) {
 		const { eventName, data } = parseSseFrame(trailing);

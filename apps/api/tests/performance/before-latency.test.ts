@@ -1,6 +1,15 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { fetchGatewayContext } from "@/pipeline/before/context";
 import { setupRuntimeFromEnv, teardownTestRuntime } from "../helpers/runtime";
+
+vi.mock("@/pipeline/before/privateModelCache", () => ({ loadPrivateRouteRow: async () => null }));
+vi.mock("@/runtime/env", async (importOriginal) => ({
+    ...await importOriginal<typeof import("@/runtime/env")>(),
+    getSupabaseAdmin: () => ({
+        from: () => { throw new Error("Unexpected database read in warm-cache fixture"); },
+        rpc: () => { throw new Error("Unexpected RPC in warm-cache fixture"); },
+    }),
+}));
 
 type CountingKv = KVNamespace & {
 	getCount: (key: string) => number;
@@ -86,9 +95,10 @@ describe("before context warm-cache latency", () => {
 
 		const versionKey = `gateway:keyver:id:${apiKeyId}`;
 		const dynamicKey = `gateway:dynamic:default:${teamId}:${apiKeyId}:v${version}`;
-		const staticKey = `gateway:static:default:${teamId}:${endpoint}:${model}`;
+		const staticKey = `gateway:static:v5:default:${teamId}:v${version}:${endpoint}:${model}`;
 
 		await kv.put(versionKey, String(version));
+		await kv.put(`gateway:credit:${teamId}`, JSON.stringify({ workspaceId: teamId, credit: { ok: true } }));
 		await kv.put(
 			dynamicKey,
 			JSON.stringify({
@@ -146,9 +156,10 @@ describe("before context warm-cache latency", () => {
 
 		const versionKey = `gateway:keyver:id:${apiKeyId}`;
 		const dynamicKey = `gateway:dynamic:default:${teamId}:${apiKeyId}:v${version}`;
-		const staticKey = `gateway:static:default:${teamId}:${endpoint}:${model}`;
+		const staticKey = `gateway:static:v5:default:${teamId}:v${version}:${endpoint}:${model}`;
 
 		await kv.put(versionKey, String(version));
+		await kv.put(`gateway:credit:${teamId}`, JSON.stringify({ workspaceId: teamId, credit: { ok: true } }));
 		await kv.put(
 			dynamicKey,
 			JSON.stringify({
@@ -217,10 +228,11 @@ describe("before context warm-cache latency", () => {
 
 		const versionKey = `gateway:keyver:id:${apiKeyId}`;
 		const dynamicKey = `gateway:dynamic:default:${teamId}:${apiKeyId}:v${version}`;
-		const staticKeyA = `gateway:static:default:${teamId}:${endpoint}:${modelA}`;
-		const staticKeyB = `gateway:static:default:${teamId}:${endpoint}:${modelB}`;
+		const staticKeyA = `gateway:static:v5:default:${teamId}:v${version}:${endpoint}:${modelA}`;
+		const staticKeyB = `gateway:static:v5:default:${teamId}:v${version}:${endpoint}:${modelB}`;
 
 		await kv.put(versionKey, String(version));
+		await kv.put(`gateway:credit:${teamId}`, JSON.stringify({ workspaceId: teamId, credit: { ok: true } }));
 		await kv.put(
 			dynamicKey,
 			JSON.stringify({

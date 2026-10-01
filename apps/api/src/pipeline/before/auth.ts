@@ -312,12 +312,8 @@ async function findMatchingPepperCandidate(args: {
     return null;
 }
 
-async function getCachedKey(kid: string): Promise<CachedKeyLookup> {
+async function getCachedKey(kid: string, versionToken: string): Promise<CachedKeyLookup> {
     try {
-        const versionToken = await keyVersionToken("kid", kid, {
-            useL1Cache: true,
-            l1TtlMs: KEY_VERSION_L1_TTL_MS,
-        });
         const l1 = readKeyLookupL1(kid, versionToken);
         if (l1 !== null) return l1;
         const cached = await getCache().get(`${KEY_CACHE_PREFIX}:${kid}:${versionToken}`, "json");
@@ -338,13 +334,11 @@ async function getCachedKey(kid: string): Promise<CachedKeyLookup> {
     }
 }
 
-async function cacheKey(kid: string, row: KeyRow) {
-    let versionToken: string | null = null;
+async function cacheKey(kid: string, row: KeyRow, versionToken: string | null) {
+    // Pin fills to the marker observed BEFORE the database read. A delayed
+    // pre-deletion read must never publish an active row under a newer marker.
+    if (versionToken === null) return;
     try {
-        versionToken = await keyVersionToken("kid", kid, {
-            useL1Cache: true,
-            l1TtlMs: KEY_VERSION_L1_TTL_MS,
-        });
         writeKeyLookupL1(kid, versionToken, row);
         // This request already has the authoritative row. Keep the versioned
         // write alive without making authentication wait for KV persistence.
@@ -412,6 +406,7 @@ export async function authenticate(req: Request, options: AuthenticateOptions = 
     const supabase = getSupabaseAdmin();
     let keyRow: KeyRow | null = null;
     let keyRowSource: "cache" | "db" | null = null;
+    let lookupVersion: string | null = null;
 
     const fetchFreshKeyRow = async (): Promise<KeyRow | "db_error" | null> => {
         const { data, error } = await supabase
@@ -425,7 +420,16 @@ export async function authenticate(req: Request, options: AuthenticateOptions = 
     };
 
     if (useKvCache) {
-        const cachedLookup = await getCachedKey(parsed.kid);
+        try {
+            lookupVersion = await keyVersionToken("kid", parsed.kid, {
+                useL1Cache: true,
+                l1TtlMs: KEY_VERSION_L1_TTL_MS,
+            });
+        } catch {
+            // Unknown version: use the authoritative database without reading
+            // or filling any credential cache, especially an older v0 entry.
+        }
+        const cachedLookup = lookupVersion === null ? null : await getCachedKey(parsed.kid, lookupVersion);
         if (cachedLookup && cachedLookup !== "missing") {
             keyRow = cachedLookup;
             keyRowSource = "cache";
@@ -443,7 +447,7 @@ export async function authenticate(req: Request, options: AuthenticateOptions = 
         keyRow = freshKeyRow;
         keyRowSource = "db";
         if (useKvCache) {
-            await cacheKey(parsed.kid, keyRow);
+            await cacheKey(parsed.kid, keyRow, lookupVersion);
         }
     }
 
@@ -455,7 +459,7 @@ export async function authenticate(req: Request, options: AuthenticateOptions = 
         keyRow = freshKeyRow;
         keyRowSource = "db";
         if (useKvCache) {
-            await cacheKey(parsed.kid, keyRow);
+            await cacheKey(parsed.kid, keyRow, lookupVersion);
         }
     }
 
@@ -497,7 +501,7 @@ export async function authenticate(req: Request, options: AuthenticateOptions = 
         });
 
         if (useKvCache) {
-            await cacheKey(parsed.kid, keyRow);
+            await cacheKey(parsed.kid, keyRow, lookupVersion);
         }
     }
 
@@ -609,7 +613,7 @@ export async function authenticate(req: Request, options: AuthenticateOptions = 
                     await cacheKey(parsed.kid, {
                         ...keyRow,
                         hash: String(nextHash),
-                    });
+                    }, lookupVersion);
                 }
             } finally {
                 clearRuntime();
