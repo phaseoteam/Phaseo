@@ -277,7 +277,7 @@ function Explorer() {
             <span role="status">
               {busy
                 ? "Loading models…"
-                : `${models.length} results · up to 20 per search`}
+                : `${models.length} ${models.length === 1 ? "result" : "results"} · up to 20 per search`}
             </span>
             <span>Lowest paid USD / 1M tokens</span>
           </div>
