@@ -90,7 +90,7 @@
 		"google-play-scraper": "^10.0.1",
 		"i18n-iso-countries": "^7.14.0",
 		"input-otp": "^1.4.2",
-		"js-yaml": "^4.2.0",
+		"js-yaml": "^5.4.2",
 		"jspdf": "^4.2.1",
 		"jspdf-autotable": "^5.0.8",
 		"jszip": "^3.10.1",
