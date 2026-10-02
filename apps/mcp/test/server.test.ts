@@ -152,6 +152,12 @@ describe("Phaseo MCP server metadata", () => {
 		expect(tools.models_list?._meta?.ui).toMatchObject({
 			resourceUri: "ui://phaseo/model-explorer.html", visibility: ["model", "app"],
 		});
+		expect(tools.models_list?._meta?.["openai/ui"]).toEqual({ entrypoints: [{ type: "global" }, { type: "thread" }] });
+		const icon = tools.models_list?.icons?.[0];
+		expect(icon?.mimeType).toBe("image/svg+xml");
+		const svg = atob(icon!.src.split(",")[1]!);
+		expect(svg).toContain('viewBox="0 0 20 20"');
+		expect(svg).toContain('fill="currentColor"');
 		const resources = await client.listResources();
 		expect(resources.resources.map((resource) => resource.uri)).toContain("ui://phaseo/model-explorer.html");
 		const view = await client.readResource({ uri: "ui://phaseo/model-explorer.html" });

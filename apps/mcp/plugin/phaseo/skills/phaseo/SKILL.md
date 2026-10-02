@@ -13,6 +13,8 @@ Use models_list to open the interactive model explorer when the user wants to br
 
 Listed token prices are the lowest paid rates and may use different providers for input and output. Identify free offers separately. Workload estimates select a single provider offer; include the returned provider ID when presenting an estimate.
 
+In supported hosts, users can open the explorer from the sidebar or a thread tab. Use in chat attaches a catalogue snapshot for the next user message; it does not change the conversation's model or run inference. Refresh attached models with model_get for current prices. Model and comparison links restore up to three model IDs through the global explorer. Sorting and the Gateway filter narrow catalogue results without implying quality rankings.
+
 ## Compare models and costs
 
 Identify the user's modality, context needs, workload, and budget. Use models_list to find candidates, model_get for current capabilities and pricing, and providers_list for provider availability. Use cost_estimate for token workload estimates. State token assumptions, currency, and that an estimate is not a bill. Do not infer model quality rankings from pricing or availability alone.

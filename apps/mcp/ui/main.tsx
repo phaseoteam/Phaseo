@@ -5,6 +5,7 @@ import { contextSize, pricePerMillion, type Model } from "./model";
 import { ModelComparison } from "./ModelComparison";
 import { ModelDetails } from "./ModelDetails";
 import logoSvg from "../plugin/phaseo/assets/logo_light.svg";
+import { linkedModels, modelLink, modelContext } from "./integration";
 
 const bridge = new App(
   { name: "Phaseo model explorer", version: "0.1.0" },
@@ -42,6 +43,12 @@ function Explorer() {
   const [inputTokens, setInputTokens] = useState("1000");
   const [outputTokens, setOutputTokens] = useState("1000");
   const [estimating, setEstimating] = useState(false);
+  const [sortBy, setSortBy] = useState("relevance");
+  const [gatewayOnly, setGatewayOnly] = useState(false);
+  const [notice, setNotice] = useState("");
+  const [attaching, setAttaching] = useState(false);
+  const [link, setLink] = useState("");
+  const linkRequest = useRef(0);
   const request = useRef(0);
   const detailRequest = useRef(0);
 
@@ -58,6 +65,10 @@ function Explorer() {
     };
     bridge.onhostcontextchanged = (context) => {
       if (context.theme) document.documentElement.dataset.theme = context.theme;
+      const deepLink = context["openai/deepLink"] as
+        | { url?: string }
+        | undefined;
+      if (deepLink?.url) void restoreLink(deepLink.url);
     };
     void bridge
       .connect()
@@ -66,6 +77,10 @@ function Explorer() {
         const context = bridge.getHostContext();
         if (context?.theme)
           document.documentElement.dataset.theme = context.theme;
+        const deepLink = context?.["openai/deepLink"] as
+          | { url?: string }
+          | undefined;
+        if (deepLink?.url) void restoreLink(deepLink.url);
         if (
           context?.displayMode !== "fullscreen" &&
           context?.availableDisplayModes?.includes("fullscreen")
@@ -81,6 +96,63 @@ function Explorer() {
       });
   }, []);
 
+  async function restoreLink(path: string) {
+    const sequence = ++linkRequest.current;
+    ++detailRequest.current;
+    setDetail(null);
+    setCompare(false);
+    setEstimates({});
+    setError("");
+    setSelected([]);
+    setLink("");
+    setNotice("");
+    try {
+      const ids = linkedModels(path);
+      const restored = await Promise.all(
+        ids.map(async (modelId) => {
+          const data = readResult(
+            await bridge.callServerTool({
+              name: "model_get",
+              arguments: { modelId },
+            }),
+          );
+          if (!data.model || typeof data.model !== "object")
+            throw new Error("Incomplete linked model details.");
+          return data.model as Model;
+        }),
+      );
+      if (sequence !== linkRequest.current) return;
+      setSelected(restored);
+      if (restored.length === 1) setDetail(restored[0]);
+      setCompare(restored.length > 1);
+    } catch (reason) {
+      if (sequence === linkRequest.current)
+        setError(
+          reason instanceof Error
+            ? reason.message
+            : "Could not open model link.",
+        );
+    }
+  }
+
+  async function useInChat(items: Model[]) {
+    setAttaching(true);
+    setNotice("");
+    setError("");
+    try {
+      await bridge.updateModelContext(modelContext(items));
+      setNotice(
+        `${items.length === 1 ? items[0].name : "Shortlist"} added as context for your next message.`,
+      );
+    } catch {
+      setError(
+        "This host could not attach model context. Try again or use the model IDs in your message.",
+      );
+    } finally {
+      setAttaching(false);
+    }
+  }
+
   async function search(event?: FormEvent) {
     event?.preventDefault();
     const sequence = ++request.current;
@@ -95,6 +167,8 @@ function Explorer() {
             ...(modality ? { modality } : {}),
             ...(provider.trim() ? { provider: provider.trim() } : {}),
             limit: 20,
+            sortBy,
+            gatewayAvailableOnly: gatewayOnly,
           },
         }),
       );
@@ -234,6 +308,23 @@ function Explorer() {
           {error}
         </div>
       )}
+      {notice && (
+        <p role="status" className="note">
+          {notice}
+        </p>
+      )}
+      {link && (
+        <div className="share-link">
+          <label htmlFor="model-link">Model link</label>
+          <input
+            id="model-link"
+            readOnly
+            value={link}
+            onFocus={(event) => event.target.select()}
+          />
+          <button onClick={() => setLink("")}>Close link</button>
+        </div>
+      )}
       {!compare ? (
         <>
           <form className="filters" onSubmit={search}>
@@ -272,6 +363,27 @@ function Explorer() {
             <button className="primary" disabled={!connected || busy}>
               {busy ? "Searching…" : "Search"}
             </button>
+            <label>
+              Sort by
+              <select
+                value={sortBy}
+                onChange={(event) => setSortBy(event.target.value)}
+              >
+                <option value="relevance">Relevance</option>
+                <option value="input_price">Input price</option>
+                <option value="output_price">Output price</option>
+                <option value="context_length">Context length</option>
+                <option value="provider_count">Provider count</option>
+              </select>
+            </label>
+            <label className="gateway-filter">
+              <input
+                type="checkbox"
+                checked={gatewayOnly}
+                onChange={(event) => setGatewayOnly(event.target.checked)}
+              />
+              Available through Gateway
+            </label>
           </form>
           <div className="list-heading">
             <span role="status">
@@ -352,11 +464,40 @@ function Explorer() {
             >
               Compare models
             </button>
+            <button
+              disabled={!selected.length || attaching}
+              onClick={() => void useInChat(selected)}
+            >
+              Use in chat
+            </button>
+            <button
+              disabled={!selected.length}
+              onClick={() =>
+                setLink(modelLink(selected.map((model) => model.id)))
+              }
+            >
+              Get link
+            </button>
           </footer>
         </>
       ) : (
         <>
           <ModelComparison models={selected} />
+          <div className="integration-actions">
+            <button
+              disabled={attaching}
+              onClick={() => void useInChat(selected)}
+            >
+              Use in chat
+            </button>
+            <button
+              onClick={() =>
+                setLink(modelLink(selected.map((model) => model.id)))
+              }
+            >
+              Get comparison link
+            </button>
+          </div>
           <section className="calculator">
             <p className="eyebrow">WORKLOAD ESTIMATE</p>
             <h2>What would it cost?</h2>
@@ -424,6 +565,9 @@ function Explorer() {
           }
           onClose={closeDetail}
           onToggle={() => toggle(detail)}
+          onUse={() => void useInChat([detail])}
+          onLink={() => setLink(modelLink([detail.id]))}
+          attaching={attaching}
         />
       )}
     </main>

@@ -390,6 +390,34 @@ td {
 .brand-icon {
   display: flex;
 }
+.integration-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 16px 0;
+}
+.share-link {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 16px 0;
+  align-items: center;
+}
+.share-link input {
+  flex: 1;
+  min-width: 200px;
+}
+.shortlist {
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.filters .gateway-filter {
+  flex-direction: row;
+  align-items: center;
+}
+.gateway-filter input {
+  width: auto;
+}
 .brand-icon svg {
   width: 24px;
   height: 24px;

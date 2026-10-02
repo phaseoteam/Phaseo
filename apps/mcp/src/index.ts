@@ -2,6 +2,7 @@ import { createMcpHandler } from "agents/mcp/server";
 import { McpServer } from "@modelcontextprotocol/server";
 import * as z from "zod/v4";
 import { registerModelExplorer, modelExplorerToolMeta } from "./model-explorer";
+import { modelExplorerIcon } from "./generated/modelExplorerHtml";
 
 import {
 	authenticatePhaseoUser,
@@ -658,6 +659,7 @@ export function createServer(env: PhaseoEnv, authenticatedUser: AuthenticatedPha
 		"models_list",
 		{
 			title: "Model explorer",
+			icons: [{ src: modelExplorerIcon, mimeType: "image/svg+xml", sizes: ["20x20"] }],
 			description: "Use this when the user wants to find or compare current AI models, including the cheapest paid standard-tier price and provider-by-provider pricing. A free provider is reported explicitly and never presented as if every provider were free. Filters and sorts the live Phaseo catalogue; it does not measure model quality. Read-only.",
 			inputSchema: {
 				query: z.string().max(200).optional(),

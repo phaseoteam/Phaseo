@@ -134,6 +134,14 @@ bridge.oninitialized = async () => {
     structuredContent: { models },
   });
 };
+bridge.onupdatemodelcontext = async ({ structuredContent }) => {
+  document.querySelector("#context")!.textContent =
+    `Attached context: ${JSON.stringify(structuredContent)}`;
+  return {};
+};
+const previewPath = new URLSearchParams(location.search).get("path");
+if (previewPath)
+  bridge.setHostContext({ "openai/deepLink": { url: previewPath } });
 let dark = false;
 document.querySelector("#theme")!.addEventListener("click", () => {
   dark = !dark;

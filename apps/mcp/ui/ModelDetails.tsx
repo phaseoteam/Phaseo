@@ -7,12 +7,18 @@ export function ModelDetails({
   disabled,
   onClose,
   onToggle,
+  onUse,
+  onLink,
+  attaching,
 }: {
   model: Model;
   selected: boolean;
   disabled: boolean;
   onClose: () => void;
   onToggle: () => void;
+  onUse: () => void;
+  onLink: () => void;
+  attaching: boolean;
 }) {
   const closeButton = useRef<HTMLButtonElement>(null);
   useEffect(() => {
@@ -77,6 +83,12 @@ export function ModelDetails({
       <button disabled={disabled} onClick={onToggle}>
         {selected ? "Remove from comparison" : "Add to comparison"}
       </button>
+      <div className="integration-actions">
+        <button disabled={attaching} onClick={onUse}>
+          Use in chat
+        </button>
+        <button onClick={onLink}>Get model link</button>
+      </div>
     </section>
   );
 }

@@ -20,7 +20,7 @@ createServer(async (request, response) => {
   } else {
     response.setHeader("Content-Type", "text/html; charset=utf-8");
     response.end(
-      '<!doctype html><html lang="en"><title>Phaseo UI fixture preview</title><style>body{margin:0;font:13px system-ui}nav{padding:10px 20px;background:#e8eddf;display:flex;justify-content:space-between}iframe{border:0;width:100%;height:calc(100vh - 45px)}</style><nav>Development preview · fixture data<button id="theme">Toggle theme</button></nav><iframe title="Phaseo explorer"></iframe><script type="module" src="/preview.js"></script></html>',
+      '<!doctype html><html lang="en"><title>Phaseo UI fixture preview</title><style>body{margin:0;font:13px system-ui}nav{padding:10px 20px;background:#e8eddf;display:flex;justify-content:space-between}#context{max-height:60px;overflow:auto}iframe{border:0;width:100%;height:calc(100vh - 105px)}</style><nav>Development preview · fixture data<button id="theme">Toggle theme</button></nav><div id="context" role="status">No attached context</div><iframe title="Phaseo explorer"></iframe><script type="module" src="/preview.js"></script></html>',
     );
   }
 }).listen(4318, "127.0.0.1", () =>

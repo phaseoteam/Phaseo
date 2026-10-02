@@ -28,7 +28,14 @@ uses the MCP Apps host bridge and the existing OAuth-scoped tools. It makes no
 direct API requests and contains no credentials. Hosts without MCP Apps support
 continue to receive the same structured model results.
 
-The view advertises fullscreen mode (the Codex side panel) and a thread entrypoint.
+The view advertises fullscreen mode (the Codex side panel), a global sidebar entrypoint,
+and a thread entrypoint. Its tool icon uses the Phaseo logo in a monochrome 20px SVG.
+Use in chat attaches a small catalogue snapshot for the next message without sending
+a message or changing the conversation's model. The host must support model context.
+Get link exposes a selectable hosted plugin URL for a model or comparison; links
+restore live details via `model_get`. The plugin ID in `ui/integration.ts` belongs to
+the existing private Phaseo plugin; other installations must use their own ID.
+Price/context/provider sorting and the Gateway filter use existing server parameters.
 It renders the initial search result without repeating the opener call. Each search
 returns up to 20 matching models; refine the filters to find other models.
 
@@ -39,6 +46,10 @@ commands rebuild it automatically. Generated files are ignored by Git.
 To verify in a host, connect the local Worker, complete Phaseo OAuth, and invoke
 `models_list` or open the **Model explorer** thread entrypoint. Check search, empty
 and error states, model details, comparison, cost estimates, and light/dark themes.
+Also check global navigation, Use in chat, and initial/subsequent model deep links.
+The fixture host displays attached context and accepts `?path=` with an encoded
+`/models?ids=example/atlas,example/spark` route. Actual host navigation and link
+authorization require the deployed Worker and connected plugin.
 
 ## Run locally
 

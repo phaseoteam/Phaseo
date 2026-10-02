@@ -9,7 +9,7 @@ export const MODEL_EXPLORER_URI = "ui://phaseo/model-explorer.html";
 
 export const modelExplorerToolMeta = {
   ui: { resourceUri: MODEL_EXPLORER_URI, visibility: ["model", "app"] },
-  "openai/ui": { entrypoints: [{ type: "thread" }] },
+  "openai/ui": { entrypoints: [{ type: "global" }, { type: "thread" }] },
 };
 
 export function registerModelExplorer(server: McpServer) {
