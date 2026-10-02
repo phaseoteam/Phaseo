@@ -244,7 +244,8 @@ export async function quoteRun(
   const plans = await Promise.all(
     input.modelIds.map(async (id) => {
       const model = await getModel(env, id, { accessToken: user.accessToken });
-      if (!model) throw new Error(`Model ${id} is unavailable.`);
+      if (!model || model.id !== id)
+        throw new Error(`Model ${id} is unavailable.`);
       return planRun(model, input);
     }),
   );
@@ -290,6 +291,7 @@ export async function executeRun(
     throw new Error(
       "Inference is not configured. Reconnect Phaseo or contact the workspace administrator.",
     );
+  const resource = user.resource;
   const quote = await verifyQuote(
     quoteToken,
     env.PHASEO_MCP_RESOURCE_SERVER_SECRET,
@@ -306,7 +308,8 @@ export async function executeRun(
     const model = await getModel(env, plan.modelId, {
       accessToken: user.accessToken,
     });
-    if (!model) throw new Error("A selected model is no longer available.");
+    if (!model || model.id !== plan.modelId)
+      throw new Error("A selected model is no longer available.");
     const current = planRun(
       model,
       {
@@ -333,76 +336,77 @@ export async function executeRun(
     throw new Error(
       "This run has already been submitted. Check request history before starting another run.",
     );
-  const results = [];
-  for (const plan of quote.plans) {
-    try {
-      const started = Date.now();
-      const request = new Request(
-        new URL("/v1/chat/completions", env.PHASEO_API_BASE_URL),
-        {
-          method: "POST",
-          signal: AbortSignal.timeout(120_000),
-          headers: {
-            Authorization: `Bearer ${user.resourceToken}`,
-            "Content-Type": "application/json",
-            "x-phaseo-mcp-secret": env.PHASEO_MCP_RESOURCE_SERVER_SECRET,
-            "x-phaseo-mcp-resource": user.resource,
-          },
-          body: JSON.stringify({
-            model: plan.modelId,
-            messages: [{ role: "user", content: prompt }],
-            max_completion_tokens: quote.maxOutputTokens,
-            stream: false,
-            store: false,
-            provider: {
-              only: [plan.providerId],
-              allow_fallbacks: false,
-              require_parameters: true,
+  const results = await Promise.all(
+    quote.plans.map(async (plan) => {
+      try {
+        const started = Date.now();
+        const request = new Request(
+          new URL("/v1/chat/completions", env.PHASEO_API_BASE_URL),
+          {
+            method: "POST",
+            signal: AbortSignal.timeout(120_000),
+            headers: {
+              Authorization: `Bearer ${user.resourceToken}`,
+              "Content-Type": "application/json",
+              "x-phaseo-mcp-secret": env.PHASEO_MCP_RESOURCE_SERVER_SECRET,
+              "x-phaseo-mcp-resource": resource,
             },
-          }),
-        },
-      );
-      const response = env.PHASEO_API
-        ? await env.PHASEO_API.fetch(request)
-        : await fetch(request);
-      if (!response.ok)
-        throw new Error(`Gateway rejected the run (${response.status}).`);
-      const payload = await readGatewayOutput(response);
-      if (payload.provider && payload.provider !== plan.providerId)
-        throw new Error(
-          "Gateway returned a different provider. Check request history.",
+            body: JSON.stringify({
+              model: plan.modelId,
+              messages: [{ role: "user", content: prompt }],
+              max_completion_tokens: quote.maxOutputTokens,
+              stream: false,
+              store: false,
+              provider: {
+                only: [plan.providerId],
+                allow_fallbacks: false,
+                require_parameters: true,
+              },
+            }),
+          },
         );
-      const text = payload.choices?.[0]?.message?.content;
-      if (typeof text !== "string")
-        throw new Error(
-          "Gateway returned no text output. Check request history.",
-        );
-      results.push({
-        ...plan,
-        text: text.slice(0, 100_000),
-        requestId: payload.id ?? null,
-        latencyMs: Date.now() - started,
-        inputTokens: payload.usage?.prompt_tokens ?? null,
-        outputTokens: payload.usage?.completion_tokens ?? null,
-        finishReason: payload.choices?.[0]?.finish_reason ?? null,
-        error: null,
-      });
-    } catch (reason) {
-      results.push({
-        ...plan,
-        text: null,
-        requestId: null,
-        latencyMs: null,
-        inputTokens: null,
-        outputTokens: null,
-        finishReason: null,
-        error:
-          reason instanceof Error
-            ? reason.message
-            : "Run failed. Check request history before retrying.",
-      });
-    }
-  }
+        const response = env.PHASEO_API
+          ? await env.PHASEO_API.fetch(request)
+          : await fetch(request);
+        if (!response.ok)
+          throw new Error(`Gateway rejected the run (${response.status}).`);
+        const payload = await readGatewayOutput(response);
+        if (payload.provider && payload.provider !== plan.providerId)
+          throw new Error(
+            "Gateway returned a different provider. Check request history.",
+          );
+        const text = payload.choices?.[0]?.message?.content;
+        if (typeof text !== "string")
+          throw new Error(
+            "Gateway returned no text output. Check request history.",
+          );
+        return {
+          ...plan,
+          text: text.slice(0, 100_000),
+          requestId: payload.id ?? null,
+          latencyMs: Date.now() - started,
+          inputTokens: payload.usage?.prompt_tokens ?? null,
+          outputTokens: payload.usage?.completion_tokens ?? null,
+          finishReason: payload.choices?.[0]?.finish_reason ?? null,
+          error: null,
+        };
+      } catch (reason) {
+        return {
+          ...plan,
+          text: null,
+          requestId: null,
+          latencyMs: null,
+          inputTokens: null,
+          outputTokens: null,
+          finishReason: null,
+          error:
+            reason instanceof Error
+              ? reason.message
+              : "Run failed. Check request history before retrying.",
+        };
+      }
+    }),
+  );
   return { results };
 }
 

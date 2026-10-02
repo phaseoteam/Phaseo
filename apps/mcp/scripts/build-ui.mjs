@@ -12,7 +12,11 @@ const result = await build({
   loader: { ".svg": "text" },
   define: { "process.env.NODE_ENV": '"production"' },
 });
-const css = await readFile("ui/style.css", "utf8");
+const font = await readFile("ui/assets/montserrat-latin-wght-normal.woff2");
+const css = (await readFile("ui/style.css", "utf8")).replace(
+  "./assets/montserrat-latin-wght-normal.woff2",
+  `data:font/woff2;base64,${font.toString("base64")}`,
+);
 const icon = (await readFile("plugin/phaseo/assets/logo_light.svg", "utf8"))
   .replace(
     'width="64" height="64" viewBox="0 0 64 64"',

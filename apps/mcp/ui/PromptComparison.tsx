@@ -158,7 +158,7 @@ export function PromptComparison({
             }}
           />
         </label>
-        <button disabled={busy || !models.length}>
+        <button className="primary" disabled={busy || !models.length}>
           {busy ? "Working…" : "Review estimate"}
         </button>
       </form>

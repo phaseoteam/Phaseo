@@ -120,7 +120,6 @@ function Explorer() {
     setCompare(false);
     setEstimates({});
     setError("");
-    setSelected([]);
     setLink("");
     setNotice("");
     try {
@@ -156,7 +155,7 @@ function Explorer() {
     return readResult(
       await bridge.callServerTool(
         { name, arguments: args },
-        name === "inference_run" ? { timeout: 390_000 } : undefined,
+        name === "inference_run" ? { timeout: 150_000 } : undefined,
       ),
     );
   }

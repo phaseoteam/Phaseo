@@ -98,6 +98,11 @@ bridge.oncalltool = async ({ name, arguments: args = {} }) => {
   });
   if (
     ["credits_get", "analytics_get", "logs_list"].includes(name) &&
+    permissions === "malformed"
+  )
+    return ok({ credits: {}, analytics: null, logs: "invalid" });
+  if (
+    ["credits_get", "analytics_get", "logs_list"].includes(name) &&
     permissions === "limited"
   )
     return error("Fixture permission denied.");
@@ -261,7 +266,10 @@ bridge.onupdatemodelcontext = async ({ structuredContent }) => {
 };
 const previewPath = new URLSearchParams(location.search).get("path");
 if (previewPath)
-  bridge.setHostContext({ "openai/deepLink": { url: previewPath } });
+  bridge.setHostContext({
+    theme: "light",
+    "openai/deepLink": { url: previewPath },
+  });
 let dark = false;
 document.querySelector("#theme")!.addEventListener("click", () => {
   dark = !dark;

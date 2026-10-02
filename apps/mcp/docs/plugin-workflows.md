@@ -25,3 +25,27 @@ Rollout requires API auth changes, the MCP Durable Object migration/binding, Wor
 deployment, and the private plugin update. Existing registered clients that lack
 gateway:access must reconnect with a client permitted to request it and grant consent.
 No paid provider calls or production deployments are part of local validation.
+
+## Visual design and release checks
+
+The explorer follows Phaseo's default light/dark tokens in
+`apps/web/src/app/globals.css`: neutral surfaces, blue accents, Montserrat,
+6px controls and 10px panels. Montserrat's Latin variable WOFF2 is bundled inline
+from @fontsource-variable/montserrat 5.3.0, with its SIL OFL license in ui/assets.
+The actual Phaseo mark appears in the header and the monochrome host entrypoint;
+the plugin manifest retains light/dark listing and composer logos.
+
+Before release:
+- Review and merge PR 2680 after current checks and review threads are clear.
+- Deploy API first, then MCP with the inference receipt migration and bindings.
+- Verify default read-only OAuth and optional gateway:access consent in the real host.
+- Verify light/dark logos, sidebar/thread entrypoints, deep links and attached context.
+- With an explicitly approved spend limit, verify one paid text run and its billing.
+- Publish the prepared private plugin update and verify its installed version.
+
+Local fixtures verify visual and interaction behavior; they do not confirm these
+authenticated host or production steps.
+
+Existing read-only dynamic OAuth client registrations may not allow the optional
+inference scope. Their allowlists and the host's consent/reconnect behavior need
+review before release; do not broaden existing grants or default consent silently.

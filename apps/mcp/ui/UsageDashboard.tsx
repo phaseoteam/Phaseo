@@ -1,5 +1,31 @@
 import { useState } from "react";
 import type { CallTool } from "./workflows";
+import * as z from "zod/v4";
+
+const creditsSchema = z.object({
+  availableNanos: z.number().finite(),
+  reservedNanos: z.number().finite(),
+  thirtyDayUsageNanos: z.number().finite().nullable(),
+  thirtyDayRequests: z.number().finite(),
+});
+const analyticsSchema = z.array(
+  z.object({
+    model: z.string(),
+    requests: z.number().finite(),
+    costUsd: z.number().finite(),
+  }),
+);
+const logsSchema = z.array(
+  z.object({
+    requestId: z.string().nullable(),
+    model: z.string().nullable(),
+    provider: z.string().nullable(),
+    timestamp: z.string().nullable(),
+    success: z.boolean().nullable(),
+    costUsd: z.number().finite().nullable(),
+    latencyMs: z.number().finite().nullable(),
+  }),
+);
 
 type RequestRow = {
   requestId: string | null;
@@ -41,29 +67,39 @@ export function UsageDashboard({ callTool }: { callTool: CallTool }) {
     setCredits(null);
     setAnalytics([]);
     setLogs([]);
-    setAnalyticsAvailable(false); setLogsAvailable(false); setLoaded(false);
+    setAnalyticsAvailable(false);
+    setLogsAvailable(false);
+    setLoaded(false);
     const results = await Promise.allSettled([
       callTool("credits_get"),
       callTool("analytics_get", { date }),
       callTool("logs_list", { since: "24h", limit: 20 }),
     ]);
     const nextErrors: string[] = [];
-    setAnalyticsAvailable(results[1].status === "fulfilled");
-    setLogsAvailable(results[2].status === "fulfilled");
-    if (results[0].status === "fulfilled")
-      setCredits(results[0].value.credits as Credits);
+    const parsedCredits = creditsSchema.safeParse(
+      results[0].status === "fulfilled" ? results[0].value.credits : undefined,
+    );
+    const parsedAnalytics = analyticsSchema.safeParse(
+      results[1].status === "fulfilled"
+        ? results[1].value.analytics
+        : undefined,
+    );
+    const parsedLogs = logsSchema.safeParse(
+      results[2].status === "fulfilled" ? results[2].value.logs : undefined,
+    );
+    setAnalyticsAvailable(parsedAnalytics.success);
+    setLogsAvailable(parsedLogs.success);
+    if (parsedCredits.success) setCredits(parsedCredits.data);
     else
       nextErrors.push(
         "Credits unavailable. Check credits:read permission and retry.",
       );
-    if (results[1].status === "fulfilled")
-      setAnalytics(results[1].value.analytics as AnalyticsRow[]);
+    if (parsedAnalytics.success) setAnalytics(parsedAnalytics.data);
     else
       nextErrors.push(
         "Analytics unavailable. Check analytics:read permission and retry.",
       );
-    if (results[2].status === "fulfilled")
-      setLogs(results[2].value.logs as RequestRow[]);
+    if (parsedLogs.success) setLogs(parsedLogs.data);
     else
       nextErrors.push(
         "Request health unavailable. Check activity:read permission and retry.",
@@ -192,9 +228,11 @@ export function UsageDashboard({ callTool }: { callTool: CallTool }) {
               </table>
             </div>
           )}
-          {logsAvailable && <p className="note">
-            Showing up to 20 recent requests. Refresh to update.
-          </p>}
+          {logsAvailable && (
+            <p className="note">
+              Showing up to 20 recent requests. Refresh to update.
+            </p>
+          )}
         </>
       )}
     </section>

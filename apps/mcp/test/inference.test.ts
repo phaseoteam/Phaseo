@@ -75,7 +75,7 @@ function model(price = "0.001"): GatewayModel {
     ],
   };
 }
-function environment() {
+function environment(extraModels: GatewayModel[] = []) {
   let claimed = false;
   const claim = vi.fn(async () => {
     const previous = claimed;
@@ -87,7 +87,12 @@ function environment() {
   const fetchMock = vi.fn(async (request: Request) => {
     requests.push(request);
     if (new URL(request.url).pathname === "/v1/models")
-      return Response.json({ ok: true, models: [currentModel] });
+      return Response.json({
+        ok: true,
+        models: [currentModel, ...extraModels].filter(
+          (item) => item.id === new URL(request.url).searchParams.get("id"),
+        ),
+      });
     return Response.json({
       id: "request-1",
       choices: [{ message: { content: "Hello back" }, finish_reason: "stop" }],
@@ -116,6 +121,31 @@ function environment() {
 }
 afterEach(() => vi.useRealTimers());
 describe("reviewed inference", () => {
+  it("dispatches reviewed models together and preserves result order", async () => {
+    const secondModel = { ...model(), id: "lab/other" };
+    const { env, fetchMock, requests } = environment([secondModel]);
+    const quote = await quoteRun(env, user, {
+      ...input,
+      modelIds: ["lab/test", "lab/other"],
+    });
+    const normalFetch = fetchMock.getMockImplementation()!;
+    const releases: Array<() => void> = [];
+    fetchMock.mockImplementation(async (request: Request) => {
+      if (request.method !== "POST") return normalFetch(request);
+      requests.push(request);
+      await new Promise<void>((resolve) => releases.push(resolve));
+      return Response.json({
+        choices: [{ message: { content: "fixture output" } }],
+      });
+    });
+    const running = executeRun(env, user, quote.quoteToken, input.prompt);
+    await vi.waitFor(() => expect(releases).toHaveLength(2));
+    releases.reverse().forEach((release) => release());
+    expect((await running).results.map((result) => result.modelId)).toEqual([
+      "lab/test",
+      "lab/other",
+    ]);
+  });
   it("does not retry failed or oversized output submissions", async () => {
     for (const response of [
       new Response(null, { status: 503 }),
