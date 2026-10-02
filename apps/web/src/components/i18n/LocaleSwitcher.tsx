@@ -1,4 +1,6 @@
-import type { ComponentProps } from "react";
+"use client";
+
+import { useEffect, useRef, type ComponentProps } from "react";
 import Image from "next/image";
 import { Check, ChevronDown } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -58,10 +60,38 @@ export function LocaleSwitcher({
 	placement = "bottom",
 }: LocaleSwitcherProps) {
 	const currentDefinition = getLocaleDefinition(currentLocale);
+	const detailsRef = useRef<HTMLDetailsElement>(null);
+
+	useEffect(() => {
+		const details = detailsRef.current;
+		if (!details) return;
+
+		const dismissOutside = (event: PointerEvent | FocusEvent) => {
+			if (event.target instanceof Node && !details.contains(event.target)) {
+				details.open = false;
+			}
+		};
+		const dismissOnEscape = (event: KeyboardEvent) => {
+			if (event.key === "Escape" && details.open) {
+				event.preventDefault();
+				details.open = false;
+				details.querySelector("summary")?.focus();
+			}
+		};
+
+		document.addEventListener("pointerdown", dismissOutside, true);
+		document.addEventListener("focusin", dismissOutside);
+		document.addEventListener("keydown", dismissOnEscape);
+		return () => {
+			document.removeEventListener("pointerdown", dismissOutside, true);
+			document.removeEventListener("focusin", dismissOutside);
+			document.removeEventListener("keydown", dismissOnEscape);
+		};
+	}, []);
 
 	return (
 		<nav aria-label={label} className={cn("relative inline-block", className)}>
-			<details className="group relative">
+			<details ref={detailsRef} className="group relative">
 				<summary className="flex min-h-9 cursor-pointer list-none items-center gap-2 rounded-lg border bg-background px-3 py-2 text-sm font-medium shadow-xs transition-colors hover:bg-muted group-open:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring [&::-webkit-details-marker]:hidden">
 					<LocaleFlag locale={currentLocale} />
 					<span className="sr-only">{label}: </span>
