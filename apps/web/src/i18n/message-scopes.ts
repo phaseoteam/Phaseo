@@ -8,7 +8,7 @@ export const SHELL_MESSAGE_NAMESPACES = [
 	"Common.dropdown", "Common.timeRange", "Common.ui.accessibility",
 	"Common.ui.actionDockCopy.turnOnDock", "Common.ui.workspaceSwitcher", "Common.ui.theme",
 	"Common.ui.localisationGaps", "Common.ui.externalLinkDialog", "Common.ui.feedbackPrompt", "Site.brandMenu",
-	"Product.developerMenu", "SettingsUI.searchableSelectCopy",
+	"SettingsUI.searchableSelectCopy",
 	"Product.feedback",
 	"SettingsUI.settingsCopy.settingsSidebar",
 ] as const;

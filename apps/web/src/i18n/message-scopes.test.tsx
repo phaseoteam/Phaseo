@@ -44,6 +44,8 @@ describe("route message selection", () => {
 		expect(shell.Auth).toEqual({ shared: { changeLanguage: messages.Auth.shared.changeLanguage } });
 		expect((shell.Common as Record<string, unknown>).authFlows).toBeUndefined();
 		expect((shell.Common as Record<string, Record<string, unknown>>).ui.modelEditor).toBeUndefined();
+		expect((shell.Product as Record<string, unknown>).developerMenu).toBeUndefined();
+		expect(() => selectMessages(messages, lazyScopes.developerMenu)).not.toThrow();
 		const optional = selectMessages(messages, lazyScopes.actionDock);
 		const optionalTranslate = createTranslator({ locale, messages: combineMessages(shell, optional), onError } as never);
 		expect(optionalTranslate.has("SettingsUI.strings.Details" as never)).toBe(true);

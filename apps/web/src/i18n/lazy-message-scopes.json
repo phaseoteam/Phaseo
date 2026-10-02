@@ -10,5 +10,6 @@
     "SettingsUI.identity.catalogValidation",
     "SettingsUI.strings.Details", "SettingsUI.strings.phrasePleaseTryAgain",
     "SettingsUI.settingsCopy.settingsSidebar"
-  ]
+  ],
+  "developerMenu": ["Product.developerMenu"]
 }
