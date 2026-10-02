@@ -6,6 +6,8 @@
   "compatibility_date": "2026-07-26",
   "compatibility_flags": ["nodejs_compat"],
   "workers_dev": true,
+  "durable_objects": { "bindings": [{ "name": "INFERENCE_RUNS", "class_name": "InferenceRunReceipt" }] },
+  "migrations": [{ "tag": "inference-receipts-v1", "new_sqlite_classes": ["InferenceRunReceipt"] }],
   "secrets": {
     "required": ["PHASEO_MCP_RESOURCE_SERVER_SECRET"]
   },
@@ -22,6 +24,7 @@
     "production": {
       "name": "phaseo-mcp",
       "workers_dev": false,
+      "durable_objects": { "bindings": [{ "name": "INFERENCE_RUNS", "class_name": "InferenceRunReceipt" }] },
       "secrets": {
         "required": ["PHASEO_MCP_RESOURCE_SERVER_SECRET"]
       },

@@ -13,6 +13,8 @@ export type Model = {
   inputPriceProviderId?: string | null;
   outputPriceProviderId?: string | null;
   hasFreeProvider?: boolean;
+  gatewayAvailable?: boolean;
+  supportedEndpoints?: string[];
 };
 
 export function pricePerMillion(value: string | null): string {

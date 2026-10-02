@@ -55,6 +55,7 @@ export const OAUTH_CORS_HEADERS: Record<string, string> = {
 	"Access-Control-Max-Age": "86400",
 };
 const DYNAMIC_MCP_SCOPES = [
+	GATEWAY_ACCESS_SCOPE,
 	"openid",
 	"profile",
 	"email",
@@ -445,7 +446,7 @@ oauthRouter.post(
 			? requestedScopes.filter((scope) => RESOURCE_BOUND_MCP_SCOPE_SET.has(scope))
 			: requestedScopes;
 		if (grantedScopes.length === 0) {
-			return oauthError("invalid_scope", "Dynamically registered MCP clients are limited to read-only Phaseo scopes");
+			return oauthError("invalid_scope", "Dynamically registered MCP clients cannot request administrative access");
 		}
 		const clientId = crypto.randomUUID();
 		const safeRedirectUris = Array.from(new Set(redirectUris as string[]));
@@ -1036,6 +1037,8 @@ oauthRouter.post(
 		return json({
 			active: true,
 			resource,
+			user_id: auth.userId,
+			client_id: auth.oauthClientId,
 			workspace_id: auth.workspaceId,
 			scope: scopes.join(" "),
 			upstream_access_token: upstream.access_token,

@@ -654,6 +654,13 @@ describe("OAuth route security", () => {
 		expect(state.issuedManagedKeys).toEqual([]);
 	});
 
+	it("accepts an explicit inference scope without broadening default clients", async () => {
+		const { oauthRouter } = await import("./oauth");
+		const response = await oauthRouter.request("https://example.com/register", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ client_name: "Model comparison", redirect_uris: ["https://chatgpt.com/aip/callback"], scope: "models:read pricing:read gateway:access", token_endpoint_auth_method: "none" }) });
+		expect(response.status).toBe(201);
+		expect(state.registeredClients[0]?.allowed_scopes).toEqual(["models:read", "pricing:read", "gateway:access"]);
+	});
+
 	it("rejects privileged scopes for an unverified dynamically registered client", async () => {
 		const { oauthRouter } = await import("./oauth");
 		const response = await oauthRouter.request("https://example.com/register", {
@@ -670,7 +677,7 @@ describe("OAuth route security", () => {
 		expect(response.status).toBe(400);
 		expect(await response.json()).toMatchObject({
 			error: "invalid_scope",
-			error_description: "Dynamically registered MCP clients are limited to read-only Phaseo scopes",
+			error_description: "Dynamically registered MCP clients cannot request administrative access",
 		});
 		expect(state.registeredClients).toEqual([]);
 	});

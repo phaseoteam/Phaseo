@@ -6,6 +6,9 @@ import { ModelComparison } from "./ModelComparison";
 import { ModelDetails } from "./ModelDetails";
 import logoSvg from "../plugin/phaseo/assets/logo_light.svg";
 import { linkedModels, modelLink, modelContext } from "./integration";
+import { SavedShortlists } from "./SavedShortlists";
+import { UsageDashboard } from "./UsageDashboard";
+import { PromptComparison } from "./PromptComparison";
 
 const bridge = new App(
   { name: "Phaseo model explorer", version: "0.1.0" },
@@ -48,6 +51,13 @@ function Explorer() {
   const [notice, setNotice] = useState("");
   const [attaching, setAttaching] = useState(false);
   const [link, setLink] = useState("");
+  const [page, setPage] = useState("models");
+  const [workflowBusy, setWorkflowBusy] = useState(false);
+  const workflowBusyRef = useRef(false);
+  function setRunBusy(value: boolean) {
+    workflowBusyRef.current = value;
+    setWorkflowBusy(value);
+  }
   const linkRequest = useRef(0);
   const request = useRef(0);
   const detailRequest = useRef(0);
@@ -97,6 +107,13 @@ function Explorer() {
   }, []);
 
   async function restoreLink(path: string) {
+    if (workflowBusyRef.current) {
+      setNotice(
+        "Wait for the current run to finish before opening another model link.",
+      );
+      return;
+    }
+    setPage("models");
     const sequence = ++linkRequest.current;
     ++detailRequest.current;
     setDetail(null);
@@ -133,6 +150,15 @@ function Explorer() {
             : "Could not open model link.",
         );
     }
+  }
+
+  async function callTool(name: string, args: Record<string, unknown> = {}) {
+    return readResult(
+      await bridge.callServerTool(
+        { name, arguments: args },
+        name === "inference_run" ? { timeout: 390_000 } : undefined,
+      ),
+    );
   }
 
   async function useInChat(items: Model[]) {
@@ -294,13 +320,60 @@ function Explorer() {
         </span>
         <span className="live">Live catalogue</span>
       </header>
+      <nav className="explorer-tabs" aria-label="Phaseo views">
+        <button
+          disabled={workflowBusy}
+          aria-pressed={page === "models"}
+          onClick={() => setPage("models")}
+        >
+          Models
+        </button>
+        <button
+          disabled={workflowBusy}
+          aria-pressed={page === "saved"}
+          onClick={() => {
+            closeDetail();
+            setPage("saved");
+          }}
+        >
+          Saved shortlists
+        </button>
+        <button
+          disabled={workflowBusy}
+          aria-pressed={page === "usage"}
+          onClick={() => {
+            closeDetail();
+            setPage("usage");
+          }}
+        >
+          Usage
+        </button>
+      </nav>
       <div className="heading">
         <div>
           <p className="eyebrow">MODEL EXPLORER</p>
-          <h1>{compare ? "Compare your shortlist" : "Find your next model"}</h1>
+          <h1>
+            {page === "saved"
+              ? "Your shortlists"
+              : page === "usage"
+                ? "Your workspace usage"
+                : page === "try"
+                  ? "Test your shortlist"
+                  : compare
+                    ? "Compare your shortlist"
+                    : "Find your next model"}
+          </h1>
         </div>
-        {compare && (
-          <button onClick={() => setCompare(false)}>Back to models</button>
+        {((page === "models" && compare) || page === "try") && (
+          <button
+            disabled={workflowBusy}
+            onClick={() => {
+              setCompare(false);
+              setPage("models");
+            }}
+          >
+            Back to models
+          </button>
         )}
       </div>
       {error && (
@@ -325,7 +398,25 @@ function Explorer() {
           <button onClick={() => setLink("")}>Close link</button>
         </div>
       )}
-      {!compare ? (
+      {page === "saved" ? (
+        <SavedShortlists
+          models={selected}
+          onOpen={(ids) =>
+            void restoreLink(
+              `/models?${new URLSearchParams({ ids: ids.join(",") })}`,
+            )
+          }
+        />
+      ) : page === "usage" ? (
+        <UsageDashboard callTool={callTool} />
+      ) : page === "try" ? (
+        <PromptComparison
+          key={selected.map((model) => model.id).join(",")}
+          models={selected}
+          callTool={callTool}
+          onBusyChange={setRunBusy}
+        />
+      ) : !compare ? (
         <>
           <form className="filters" onSubmit={search}>
             <label>
@@ -468,7 +559,7 @@ function Explorer() {
               disabled={!selected.length || attaching}
               onClick={() => void useInChat(selected)}
             >
-              Use in chat
+              Add to chat context
             </button>
             <button
               disabled={!selected.length}
@@ -477,6 +568,15 @@ function Explorer() {
               }
             >
               Get link
+            </button>
+            <button
+              disabled={!selected.length}
+              onClick={() => {
+                closeDetail();
+                setPage("try");
+              }}
+            >
+              Try prompt
             </button>
           </footer>
         </>
@@ -488,7 +588,7 @@ function Explorer() {
               disabled={attaching}
               onClick={() => void useInChat(selected)}
             >
-              Use in chat
+              Add to chat context
             </button>
             <button
               onClick={() =>
@@ -552,6 +652,12 @@ function Explorer() {
               discounts and other charges; actual billing may differ.
             </p>
           </section>
+          <PromptComparison
+            key={selected.map((model) => model.id).join(",")}
+            models={selected}
+            callTool={callTool}
+            onBusyChange={setRunBusy}
+          />
         </>
       )}
       {detail && (

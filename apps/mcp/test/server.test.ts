@@ -72,6 +72,8 @@ describe("Phaseo MCP server metadata", () => {
 			"generation_get",
 			"logs_list",
 			"log_get",
+			"inference_quote",
+			"inference_run",
 		]);
 		expect(tools.models_list?.outputSchema).toMatchObject({
 			type: "object",
@@ -171,9 +173,11 @@ describe("Phaseo MCP server metadata", () => {
 			properties: { generation: { type: "object" } },
 			required: ["generation"],
 		});
-		expect(Object.values(tools).every((tool) => tool.annotations?.readOnlyHint === true)).toBe(true);
+		expect(Object.values(tools).filter((tool) => tool.name !== "inference_run").every((tool) => tool.annotations?.readOnlyHint === true)).toBe(true);
 		expect(Object.values(tools).every((tool) => tool.annotations?.destructiveHint === false)).toBe(true);
-		expect(Object.values(tools).every((tool) => tool.annotations?.openWorldHint === false)).toBe(true);
+		expect(Object.values(tools).filter((tool) => tool.name !== "inference_run").every((tool) => tool.annotations?.openWorldHint === false)).toBe(true);
+		expect(tools.inference_run?._meta?.ui).toEqual({ visibility: ["app"] });
+		expect(tools.inference_run?.annotations?.readOnlyHint).toBe(false);
 		expect(Object.keys(tools).some((name) => /(?:create|update|delete|remove)$/.test(name))).toBe(false);
 	});
 
@@ -588,6 +592,7 @@ describe("Phaseo MCP OAuth discovery", () => {
 			"activity:read",
 			"analytics:read",
 			"generations:read",
+			"gateway:access",
 		]);
 		expect(response.headers.get("x-content-type-options")).toBe("nosniff");
 		expect(response.headers.get("access-control-allow-origin")).toBe("*");

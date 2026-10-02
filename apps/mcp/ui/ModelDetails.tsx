@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { contextSize, pricePerMillion, type Model } from "./model";
+import { IntegrationExamples } from "./IntegrationExamples";
 
 export function ModelDetails({
   model,
@@ -85,10 +86,11 @@ export function ModelDetails({
       </button>
       <div className="integration-actions">
         <button disabled={attaching} onClick={onUse}>
-          Use in chat
+          Add to chat context
         </button>
         <button onClick={onLink}>Get model link</button>
       </div>
+      <IntegrationExamples model={model} />
     </section>
   );
 }

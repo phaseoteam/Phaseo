@@ -8,6 +8,8 @@ import type { Model } from "./model";
 const models: Model[] = [
   {
     id: "example/atlas",
+    gatewayAvailable: true,
+    supportedEndpoints: ["chat.completions"],
     name: "Atlas",
     provider: "Example Lab",
     description: "A fixture model for testing model details and comparisons.",
@@ -21,6 +23,8 @@ const models: Model[] = [
   },
   {
     id: "example/spark",
+    gatewayAvailable: true,
+    supportedEndpoints: ["chat.completions"],
     name: "Spark",
     provider: "Example Lab",
     description: "A smaller fixture model with lower listed token costs.",
@@ -65,12 +69,127 @@ const bridge = new AppBridge(
   { name: "Phaseo fixture preview", version: "1.0.0" },
   { serverTools: {}, logging: {} },
 );
+const fixtureQuotes = new Map<
+  string,
+  {
+    plans: Array<{
+      modelId: string;
+      modelName: string;
+      providerId: string | undefined;
+      estimatedCostUsd: number;
+    }>;
+    prompt: string;
+  }
+>();
 bridge.setHostContext({
   theme: "light",
   displayMode: "fullscreen",
   availableDisplayModes: ["fullscreen"],
 });
 bridge.oncalltool = async ({ name, arguments: args = {} }) => {
+  const permissions = new URLSearchParams(location.search).get("permissions");
+  const ok = (data: Record<string, unknown>) => ({
+    content: [{ type: "text" as const, text: "Development fixture result" }],
+    structuredContent: data,
+  });
+  const error = (text: string) => ({
+    isError: true,
+    content: [{ type: "text" as const, text }],
+  });
+  if (
+    ["credits_get", "analytics_get", "logs_list"].includes(name) &&
+    permissions === "limited"
+  )
+    return error("Fixture permission denied.");
+  if (name === "credits_get")
+    return ok({
+      credits: {
+        availableNanos: 12_500_000_000,
+        reservedNanos: 500_000_000,
+        thirtyDayUsageNanos: 3_750_000_000,
+        thirtyDayRequests: 42,
+      },
+    });
+  if (name === "analytics_get")
+    return ok({
+      analytics: [
+        { model: "Atlas", requests: 30, costUsd: 2.5 },
+        { model: "Spark", requests: 12, costUsd: 1.25 },
+      ],
+    });
+  if (name === "logs_list")
+    return ok({
+      logs: [
+        {
+          requestId: "fixture-success",
+          model: "Atlas",
+          provider: "Example Cloud",
+          timestamp: "Fixture timestamp",
+          success: true,
+          costUsd: 0.0125,
+          latencyMs: 800,
+        },
+        {
+          requestId: "fixture-failure",
+          model: "Spark",
+          provider: "Example Edge",
+          timestamp: "Fixture timestamp",
+          success: false,
+          costUsd: null,
+          latencyMs: 150,
+        },
+      ],
+    });
+  if (name === "inference_quote") {
+    const ids = args.modelIds as string[];
+    const selected = models.filter((model) => ids.includes(model.id));
+    if (!selected.length || selected.some((model) => !model.gatewayAvailable))
+      return error(
+        "No eligible text provider for the selected fixture models.",
+      );
+    const plans = selected.map((model) => ({
+      modelId: model.id,
+      modelName: model.name,
+      providerId: model.availableProviders[0],
+      estimatedCostUsd:
+        (new TextEncoder().encode(String(args.prompt)).length + 256) *
+          Number(model.inputPricePerToken) +
+        Number(args.maxOutputTokens) * Number(model.outputPricePerToken),
+    }));
+    const total = plans.reduce((sum, plan) => sum + plan.estimatedCostUsd, 0);
+    if (total > Number(args.maxEstimatedCostUsd))
+      return error("The estimated total exceeds your estimate budget.");
+    const quoteToken = crypto.randomUUID();
+    fixtureQuotes.set(quoteToken, { plans, prompt: String(args.prompt) });
+    return ok({
+      quoteToken,
+      plans,
+      estimatedCostUsd: total,
+      expiresAt: Date.now() + 300000,
+      maxOutputTokens: args.maxOutputTokens,
+      inferenceAllowed: permissions !== "read-only",
+    });
+  }
+  if (name === "inference_run") {
+    if (permissions === "read-only")
+      return error("Grant gateway:access through Phaseo OAuth before running.");
+    const quote = fixtureQuotes.get(String(args.quoteToken));
+    fixtureQuotes.delete(String(args.quoteToken));
+    if (!quote || quote.prompt !== args.prompt)
+      return error("Invalid or already-submitted fixture quote.");
+    return ok({
+      results: quote.plans.map((plan) => ({
+        ...plan,
+        text: `${plan.modelName} fixture output for: ${quote.prompt}`,
+        requestId: `fixture-${plan.modelId}`,
+        latencyMs: 450,
+        inputTokens: 20,
+        outputTokens: 40,
+        finishReason: "stop",
+        error: null,
+      })),
+    });
+  }
   if (args.query === "error")
     return {
       isError: true,
@@ -88,6 +207,7 @@ bridge.oncalltool = async ({ name, arguments: args = {} }) => {
             .includes(String(args.query ?? "").toLowerCase()) &&
           (!args.modality ||
             model.inputModalities.includes(String(args.modality))) &&
+          (!args.gatewayAvailableOnly || model.gatewayAvailable) &&
           (!args.provider ||
             `${model.provider} ${model.availableProviders.join(" ")}`
               .toLowerCase()

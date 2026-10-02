@@ -91,6 +91,7 @@ const runtime = vi.hoisted(() => {
         supabase,
         updatePayloads,
         bindings: {
+			PHASEO_MCP_RESOURCE_SERVER_SECRET: "s".repeat(64),
             SUPABASE_URL: "https://example.supabase.co",
             SUPABASE_SERVICE_ROLE_KEY: "test-service-role-key",
             GATEWAY_CACHE: cache as unknown as KVNamespace,
@@ -196,6 +197,22 @@ describe("authenticate hot-path caching", () => {
 			reason: "oauth_delegated_key_required",
 		});
 		expect(runtime.supabase.from).not.toHaveBeenCalled();
+	});
+
+	it("allows resource-bound inference only through the authenticated MCP server with explicit scope", async () => {
+		const kid = "KIDMCPINFER";
+		const secret = "test_mcp_inference_key";
+		const resource = "https://mcp.phaseo.app/mcp";
+		runtime.dbRow.value = { id: "key_mcp_inference", workspace_id: "team_oauth", status: "active", hash: hashSecret(secret), key_kind: "oauth_delegated", oauth_user_id: "user_oauth", oauth_client_id: "client_oauth", oauth_scopes: ["gateway:access", "models:read"], oauth_resource: resource };
+		const { authenticate } = await import("./auth");
+		const makeRequest = (path = "/v1/chat/completions", proof = "s".repeat(64), boundResource = resource) => new Request(`https://api.phaseo.app${path}`, { method: "POST", headers: { Authorization: `Bearer phaseo_v1_sk_${kid}_${secret}`, "x-phaseo-mcp-secret": proof, "x-phaseo-mcp-resource": boundResource } });
+		expect((await authenticate(makeRequest())).ok).toBe(true);
+		for (const request of [makeRequest("/v1/responses"), makeRequest("/v1/chat/completions", "wrong"), makeRequest("/v1/chat/completions", "s".repeat(64), "https://other.test/mcp"), new Request("https://api.phaseo.app/v1/chat/completions", { method: "POST", headers: { Authorization: `Bearer phaseo_v1_sk_${kid}_${secret}` } })]) {
+			expect(await authenticate(request)).toEqual({ ok: false, reason: "oauth_resource_token_not_valid_for_api" });
+		}
+		runtime.authorizationMaybeSingle.mockResolvedValueOnce({ data: { scopes: ["models:read"], revoked_at: null }, error: null });
+		expect(await authenticate(makeRequest())).toEqual({ ok: false, reason: "oauth_resource_token_not_valid_for_api" });
+		await flushBackground();
 	});
 
     it("reuses key-version and key-row L1 cache for back-to-back KV-backed auth checks", async () => {
