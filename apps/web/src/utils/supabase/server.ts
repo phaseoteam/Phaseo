@@ -9,6 +9,7 @@ type CookieToSet = {
 
 export async function createClient(options?: {
     onSetCookies?: (cookies: CookieToSet[]) => void
+    signal?: AbortSignal
 }) {
     const cookieStore = await cookies()
 
@@ -16,6 +17,16 @@ export async function createClient(options?: {
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
         {
+            ...(options?.signal ? {
+                global: {
+                    fetch: (input: RequestInfo | URL, init?: RequestInit) => fetch(input, {
+                        ...init,
+                        signal: init?.signal
+                            ? AbortSignal.any([init.signal, options.signal!])
+                            : options.signal,
+                    }),
+                },
+            } : {}),
             auth: { experimental: { passkey: true } },
             cookies: {
                 getAll() {

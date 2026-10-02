@@ -8,8 +8,12 @@ type ProviderCatalogPreviewResponse = {
 
 export async function fetchServerProviderCatalogPreviews(
 	providerSlug?: string,
+	options: { signal?: AbortSignal; accessToken?: string | null } = {},
 ): Promise<AuthenticatedProviderCatalogPreview[]> {
-	const { accessToken } = await getServerAccountContext();
+	const accessToken = options.accessToken !== undefined
+		? options.accessToken
+		: (await getServerAccountContext(options)).accessToken;
+	options.signal?.throwIfAborted();
 	if (!accessToken) return [];
 
 	const query = providerSlug
@@ -20,6 +24,7 @@ export async function fetchServerProviderCatalogPreviews(
 		const payload = await fetchAccountWebApi<ProviderCatalogPreviewResponse>(
 			`/api/account/settings/provider-onboarding/catalogue-previews${query}`,
 			accessToken,
+			{ signal: options.signal },
 		);
 		return Array.isArray(payload.models) ? payload.models : [];
 	} catch {

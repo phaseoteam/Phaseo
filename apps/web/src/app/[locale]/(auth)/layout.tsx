@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { setRequestLocale } from "next-intl/server";
 import { isPublicLocale } from "@/i18n/routing";
+import { ScopedMessages } from "@/components/i18n/ScopedMessages";
 
 export const metadata: Metadata = {
 	robots: {
@@ -21,5 +22,5 @@ export default async function LocalizedAuthLayout({
 	if (!isPublicLocale(locale)) notFound();
 	setRequestLocale(locale);
 
-	return children;
+	return <ScopedMessages params={params} namespaces={["SettingsUI.passwordStrength", "SettingsUI.oauthAppsPage.alphaLabel"]}>{children}</ScopedMessages>;
 }
