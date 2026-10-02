@@ -7,7 +7,7 @@ import { Check } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ENTERPRISE_MAX_QUOTED_MEMBERS, ENTERPRISE_MAX_SELF_SERVE_MEMBERS, ENTERPRISE_MEMBER_OVERAGE_USD, ENTERPRISE_MIN_SELF_SERVE_MEMBERS, enterpriseTierForMembers } from "@/lib/billing/enterprisePricing";
+import { ENTERPRISE_BASE_INCLUDED_MEMBERS, ENTERPRISE_MAX_QUOTED_MEMBERS, ENTERPRISE_MAX_SELF_SERVE_MEMBERS, ENTERPRISE_MEMBER_OVERAGE_USD, ENTERPRISE_MIN_SELF_SERVE_MEMBERS, enterpriseTierForMembers } from "@/lib/billing/enterprisePricing";
 import {
 	useDisplayFormatters,
 	useDisplayPreferences,
@@ -29,6 +29,7 @@ function memberRange(start: number, end: number, step: number) {
 
 const MEMBER_STEPS = [
 	ENTERPRISE_MIN_SELF_SERVE_MEMBERS,
+	...memberRange(10, ENTERPRISE_BASE_INCLUDED_MEMBERS, 10),
 	...memberRange(125, 1_000, 25),
 	...memberRange(1_050, 2_500, 50),
 	...memberRange(2_600, 5_000, 100),
@@ -68,7 +69,7 @@ export function EnterpriseSeatCalculator() {
 	const formatNumber = (value: number) => format.number(value, { notation: "standard" });
 	const formatUsd = (value: number) => format.number(value, { style: "currency", currency: "USD", maximumFractionDigits: 2, notation: "standard" });
 	const minimumCreditFee = format.number(1, { style: "currency", currency: "USD", maximumFractionDigits: 0 });
-	const [members, setMembers] = useState(100);
+	const [members, setMembers] = useState(ENTERPRISE_BASE_INCLUDED_MEMBERS);
 	const pricing = enterpriseTierForMembers(members);
 
 	function updateMembers(value: number) {
@@ -107,7 +108,7 @@ export function EnterpriseSeatCalculator() {
 						onValueChange={(value) => updateMembers(MEMBER_STEPS[value[0] ?? 0] ?? 1)}
 					/>
 					<div className="relative mt-1 h-4 text-[11px] tabular-nums text-muted-foreground">
-						<span className="absolute left-0">{formatNumber(100)}</span>
+						<span className="absolute left-0">{formatNumber(ENTERPRISE_MIN_SELF_SERVE_MEMBERS)}</span>
 						<span className="absolute -translate-x-1/2" style={{ left: tickPosition(1_000) }}>{formatNumber(1_000)}</span>
 						<span className="absolute -translate-x-1/2" style={{ left: tickPosition(2_500) }}>{formatNumber(2_500)}</span>
 						<span className="absolute -translate-x-1/2" style={{ left: tickPosition(10_000) }}>{formatNumber(10_000)}</span>
@@ -119,6 +120,7 @@ export function EnterpriseSeatCalculator() {
 				<div className="border-l border-border pl-6">
 					<p className="text-xs font-medium text-muted-foreground">{t("enterpriseSubscription")}</p>
 					<p className="mt-1 text-3xl font-semibold tracking-tight tabular-nums">$<NumberFlow value={estimatedMonthlyUsd} locales={formattingPreferences.locale} format={{ maximumFractionDigits: 2, notation: "standard" }} /><span className="text-sm font-normal text-muted-foreground">{t("monthEstimated")}</span></p>
+					<p className="mt-2 text-xs text-muted-foreground">{t("memberAllowance", { count: formatNumber(pricing.maxMembers) })}</p>
 					{overageMembers > 0 ? <p className="mt-2 text-xs text-muted-foreground">{t("memberOverageSummary", { base: formatUsd(1_999), count: formatNumber(overageMembers), rate: formatUsd(ENTERPRISE_MEMBER_OVERAGE_USD) })}</p> : null}
 				</div>
 			</div>

@@ -28,7 +28,7 @@ export async function POST(request: Request) {
 			.select("user_id", { count: "exact", head: true })
 			.eq("workspace_id", workspaceId);
 		if (memberError) throw memberError;
-		if ((currentMembers ?? 0) > questionnaire.memberCount) {
+		if ((currentMembers ?? 0) > Math.max(questionnaire.memberCount, quote.tier.maxMembers)) {
 			return NextResponse.json({ error: `This workspace already has ${currentMembers} members. Choose at least that many.` }, { status: 400 });
 		}
 		const option = quote.options[0];

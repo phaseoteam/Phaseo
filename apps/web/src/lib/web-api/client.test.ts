@@ -45,6 +45,7 @@ describe("Cloudflare web API client", () => {
 				headers: { Accept: "application/json" },
 				cache: "no-store",
 				credentials: "omit",
+				signal: expect.any(AbortSignal),
 			},
 		);
 	});

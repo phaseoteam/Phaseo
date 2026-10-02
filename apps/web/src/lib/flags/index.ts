@@ -153,9 +153,7 @@ export const enterpriseSelfServePreviewFlag = statsigAdapter
 		});
 
 export async function enterpriseSelfServePreviewEnabled(): Promise<boolean> {
-	const [isAdmin, gateEnabled] = await Promise.all([
-		isAdminViewer().catch(() => false),
-		enterpriseSelfServePreviewFlag().catch(() => false),
-	]);
-	return isAdmin && (gateEnabled || process.env.NODE_ENV === "development");
+	// Statsig controls rollout; mutation handlers still require workspace billing admins.
+	return process.env.NODE_ENV === "development"
+		|| await enterpriseSelfServePreviewFlag().catch(() => false);
 }

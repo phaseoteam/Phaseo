@@ -3,7 +3,7 @@
 import { settingsStringKey } from "@/i18n/settings-string-keys";
 
 import * as React from "react";
-import { ArrowRight, Check, Loader2, MessagesSquare, ShieldCheck, Users } from "lucide-react";
+import { ArrowRight, Check, Loader2, ShieldCheck, Users } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslations } from "next-intl";
 import { localizedSettingsError } from "@/i18n/error-messages";
@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ENTERPRISE_MAX_QUOTED_MEMBERS, ENTERPRISE_MIN_SELF_SERVE_MEMBERS, type EnterprisePlanVariant, type EnterpriseQuoteOption, type EnterpriseTier } from "@/lib/billing/enterprisePricing";
+import { ENTERPRISE_BASE_INCLUDED_MEMBERS, ENTERPRISE_MAX_QUOTED_MEMBERS, ENTERPRISE_MIN_SELF_SERVE_MEMBERS, type EnterprisePlanVariant, type EnterpriseQuoteOption, type EnterpriseTier } from "@/lib/billing/enterprisePricing";
 
 type QuoteResponse = {
 	quoteId: string;
@@ -38,10 +38,9 @@ export default function EnterprisePlanQuestionnaire({ canEdit, workspaceId }: Pr
 		[t],
 	);
 	const format = useDisplayFormatters();
-	const [memberCount, setMemberCount] = React.useState(String(ENTERPRISE_MIN_SELF_SERVE_MEMBERS));
+	const [memberCount, setMemberCount] = React.useState(String(ENTERPRISE_BASE_INCLUDED_MEMBERS));
 	const [needsSso, setNeedsSso] = React.useState(true);
 	const [needsScim, setNeedsScim] = React.useState(true);
-	const [wantsSlackConnect, setWantsSlackConnect] = React.useState(false);
 	const [quote, setQuote] = React.useState<QuoteResponse | null>(null);
 	const [working, setWorking] = React.useState(false);
 
@@ -59,7 +58,7 @@ export default function EnterprisePlanQuestionnaire({ canEdit, workspaceId }: Pr
 					paymentPreference: "card",
 					needsSso,
 					needsScim,
-					wantsSlackConnect,
+					wantsSlackConnect: false,
 				}),
 			}), s("Enterprise pricing is unavailable"));
 			setQuote(result);
@@ -90,7 +89,7 @@ export default function EnterprisePlanQuestionnaire({ canEdit, workspaceId }: Pr
 		return (
 			<div className="space-y-4">
 				<div className="flex flex-wrap items-end justify-between gap-3">
-					<div><h3 className="text-xl font-semibold tracking-tight">{quote.tier.label}</h3><p className="mt-1 text-sm text-muted-foreground">{s("Your monthly Enterprise subscription")}</p></div>
+					<div><h3 className="text-xl font-semibold tracking-tight">{s("{count} active members included", { count: format.number(quote.options[0].includedMembers) })}</h3><p className="mt-1 text-sm text-muted-foreground">{s("Your monthly Enterprise subscription")}</p></div>
 					<Button variant="ghost" size="sm" onClick={() => setQuote(null)} disabled={working}>{s("Change answers")}</Button>
 				</div>
 			<div>
@@ -127,7 +126,6 @@ export default function EnterprisePlanQuestionnaire({ canEdit, workspaceId }: Pr
 					{[
 						{ id: "needs-sso", label: s("Single sign-on"), icon: ShieldCheck, checked: needsSso, set: setNeedsSso },
 						{ id: "needs-scim", label: s("SCIM provisioning"), icon: Users, checked: needsScim, set: setNeedsScim },
-						{ id: "wants-slack", label: s("Slack Connect support"), icon: MessagesSquare, checked: wantsSlackConnect, set: setWantsSlackConnect },
 					].map(({ id, label, icon: Icon, checked, set }) => <label key={id} htmlFor={id} className="flex cursor-pointer items-center gap-3 border-b border-border/50 py-3 last:border-0"><Checkbox id={id} checked={checked} onCheckedChange={(value) => set(value === true)} /><Icon className="h-4 w-4 text-muted-foreground" /><span className="text-sm">{label}</span></label>)}
 					<p className="mt-4 text-xs leading-5 text-muted-foreground">{s("phraseAllEnterpriseFeaturesAreIncludedInOneSubscription")}</p>
 				</div>
