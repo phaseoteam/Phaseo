@@ -34,7 +34,8 @@ export async function fetchSettingsUsageLogsInitialData(
 
 	let workspaceId: string | undefined;
 	try {
-		workspaceId = await resolveAccessibleWorkspaceIdFromCookie({ throwOnFailure: true });
+		const requested = searchParams?.workspaceId;
+		workspaceId = (typeof requested === "string" ? requested.trim() : "") || await resolveAccessibleWorkspaceIdFromCookie({ throwOnFailure: true });
 	} catch {
 		return emptyResult(view, "failed", true);
 	}

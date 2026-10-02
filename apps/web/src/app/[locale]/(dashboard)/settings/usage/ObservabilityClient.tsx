@@ -1,6 +1,8 @@
 "use client";
 
 import { useLocale, useTranslations } from "next-intl";
+import { Link } from "@/i18n/navigation";
+import { UserUsageChip } from "@/components/(gateway)/settings/keys/UserUsageChip";
 import { memo } from "react";
 import { useSearchParams } from "next/navigation";
 import { PrivateUsageQuery, usePrivateUsageQuery } from "@/components/(gateway)/usage/PrivateUsageQuery";
@@ -537,8 +539,11 @@ function parseLegacyRangePreset(value?: string | null): UsageRangePreset {
 	return "last_30d";
 }
 
-export default function ObservabilityClient({ scope, initialTab }: { scope: AccountQueryScope; initialTab: ObservabilityTab }) {
+export default function ObservabilityClient({ scope: initialScope, initialTab }: { scope: AccountQueryScope; initialTab: ObservabilityTab }) {
 	const sp = useSearchParams();
+	const scope = { ...initialScope, workspaceId: sp.get("workspaceId")?.trim() || initialScope.workspaceId };
+	const creatorId = sp.get("user") || "";
+	const keyId = sp.get("key") || "";
 	const rangeKeys = getUsageRangeParamKeys();
 	const presetParam = sp.get(rangeKeys.preset);
 	const preset = presetParam
@@ -548,10 +553,12 @@ export default function ObservabilityClient({ scope, initialTab }: { scope: Acco
 	const customTo = parseUsageDateInput(sp.get(rangeKeys.to));
 	const labelKey = sp.get("label_key")?.trim() || "";
 	const labelValue = sp.get("label_value")?.trim() || "";
-	const query = usePrivateUsageQuery(scope, "observability", { preset, from: customFrom ?? "", to: customTo ?? "", labelKey, labelValue }, preset === "live", async (signal) => {
+	const query = usePrivateUsageQuery(scope, "observability", { preset, from: customFrom ?? "", to: customTo ?? "", labelKey, labelValue, creatorId, keyId }, preset === "live", async (signal) => {
 		const { from, to } = resolveUsageTimeRange({ preset, customFrom, customTo });
 		const previousFrom = new Date(2 * new Date(from).getTime() - new Date(to).getTime()).toISOString();
 		const params = new URLSearchParams({ workspaceId: scope.workspaceId!, from, to, previousFrom, previousTo: from });
+		if (creatorId) params.set("user", creatorId);
+		if (keyId) params.set("key", keyId);
 		if (labelKey) params.set("label_key", labelKey);
 		if (labelValue) params.set("label_value", labelValue);
 		const path = `/api/account/settings/usage/observability?${params}` as const;
@@ -572,6 +579,9 @@ const ObservabilityView = memo(function ObservabilityView({ snapshot: { initial,
 }) {
 	const t = useTranslations("SettingsUI");
 	const locale = useLocale();
+	const sp = useSearchParams();
+	const clearFilterParams = new URLSearchParams(sp.toString());
+	clearFilterParams.delete("user");
 	const range = rangeForTimeWindow(from, to);
 	const { keys, current: currentRequestResult, previous: previousRequestResult } = initial;
 	const rawRows = currentRequestResult.rows;
@@ -989,6 +999,8 @@ const ObservabilityView = memo(function ObservabilityView({ snapshot: { initial,
 		});
 
 	return (
+		<div className="space-y-4">
+		{initial.creatorFilter && <div className="flex flex-wrap items-center gap-3 rounded-xl border bg-card p-4 text-sm"><span className="text-muted-foreground">{t("keyDetail.keysCreatedBy")}</span><UserUsageChip userId={initial.creatorFilter.id} name={initial.creatorFilter.name} avatarUrl={initial.creatorFilter.avatarUrl} workspaceId={initial.workspaceId!} /><Link className="ml-auto text-muted-foreground underline hover:text-foreground" href={`/settings/usage/${initialTab}?${clearFilterParams}`}>{t("keyDetail.clearUserFilter")}</Link></div>}
 		<ObservabilityHub
 			data={data}
 			guardrailMetrics={guardrailMetrics}
@@ -999,5 +1011,6 @@ const ObservabilityView = memo(function ObservabilityView({ snapshot: { initial,
 			customFrom={customFrom}
 			customTo={customTo}
 		/>
+		</div>
 	);
 });

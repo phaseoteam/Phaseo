@@ -13,7 +13,7 @@ export type KeyLimitPayload = {
 export type RotateApiKeyInput = { id: string; newName?: string; previousKeyExpiresAt?: string | null };
 
 async function token() { const { accessToken } = await getServerAccountContext(); if (!accessToken) throw new Error("Unauthorized"); return accessToken; }
-function refreshKeyPaths() { revalidatePath("/settings/keys"); }
+function refreshKeyPaths() { revalidatePath("/settings/keys"); revalidatePath("/[locale]/settings/keys/[keyName]", "page"); }
 
 export async function createApiKeyAction(name: string, creatorUserId: string, workspaceId: string, scopes = "[]", limits?: KeyLimitPayload) {
 	if (!name || !creatorUserId || !workspaceId) throw new Error("Missing required key fields");
@@ -21,7 +21,7 @@ export async function createApiKeyAction(name: string, creatorUserId: string, wo
 	refreshKeyPaths(); return result;
 }
 
-export async function updateApiKeyAction(id: string, updates: { name?: string; paused?: boolean }) {
+export async function updateApiKeyAction(id: string, updates: { limits?: KeyLimitPayload; name?: string; paused?: boolean; ipAllowlist?: Array<{ label: string; address: string }> }) {
 	if (!id) throw new Error("Missing id");
 	const result = await fetchAccountWebApi<{ success: true }>(`/api/account/settings/keys/${encodeURIComponent(id)}`, await token(), { method: "PUT", body: JSON.stringify(updates) });
 	refreshKeyPaths(); return result;

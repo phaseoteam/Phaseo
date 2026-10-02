@@ -20,6 +20,7 @@ export type ObservabilityRequestRow = {
 export type ObservabilityRequestResult = { rows: ObservabilityRequestRow[]; isSampled: boolean; limit: number };
 
 export type SettingsObservabilityData = {
+	creatorFilter: { id: string; name: string | null; avatarUrl: string | null } | null;
 	appMetadataEntries: Array<[string, { id: string; title: string; appKey: string | null; imageUrl: string | null }]>;
 	appNameEntries: Array<[string, string]>;
 	current: ObservabilityRequestResult;
@@ -45,6 +46,9 @@ export async function fetchSettingsObservabilityData(args: {
 	previousTo: string;
 	labelKey?: string | null;
 	labelValue?: string | null;
+	workspaceId?: string | null;
+	creatorId?: string | null;
+	keyId?: string | null;
 }): Promise<FetchSettingsObservabilityDataResult> {
 	const context = await getServerAccountContext();
 	if (!context.accessToken) return { status: "unauthenticated" };
@@ -53,7 +57,7 @@ export async function fetchSettingsObservabilityData(args: {
 	// to that workspace, and forwarding it directly produces a 403.
 	let workspaceId: string | undefined;
 	try {
-		workspaceId = await resolveAccessibleWorkspaceIdFromCookie({ throwOnFailure: true });
+		workspaceId = args.workspaceId?.trim() || await resolveAccessibleWorkspaceIdFromCookie({ throwOnFailure: true });
 	} catch {
 		return { status: "load-failed" };
 	}
@@ -67,6 +71,8 @@ export async function fetchSettingsObservabilityData(args: {
 			previousFrom: args.previousFrom,
 			previousTo: args.previousTo,
 		});
+		if (args.creatorId) params.set("user", args.creatorId);
+		if (args.keyId) params.set("key", args.keyId);
 		if (args.labelKey) params.set("label_key", args.labelKey);
 		if (args.labelValue) params.set("label_value", args.labelValue);
 		const data = await fetchAccountWebApi<SettingsObservabilityData>(

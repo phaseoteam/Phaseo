@@ -62,6 +62,13 @@ describe("fetchSettingsObservabilityData", () => {
 		expect(mockFetchAccountWebApi).not.toHaveBeenCalled();
 	});
 
+	it("forwards the creator chip's workspace and user filter", async () => {
+		mockFetchAccountWebApi.mockResolvedValue({ workspaceId: "chip-workspace" });
+		await fetchSettingsObservabilityData({ ...request, workspaceId: "chip-workspace", creatorId: "creator-id" });
+		expect(mockResolveAccessibleWorkspaceIdFromCookie).not.toHaveBeenCalled();
+		expect(mockFetchAccountWebApi).toHaveBeenCalledWith(expect.stringMatching(/workspaceId=chip-workspace.*user=creator-id/), "token");
+	});
+
 	it("returns unauthenticated without resolving a workspace", async () => {
 		mockGetServerAccountContext.mockResolvedValue({
 			accessToken: null,

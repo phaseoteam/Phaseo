@@ -10,9 +10,11 @@ import {
 	type KeyPepperCandidate,
 } from "@/lib/security/keyPepper";
 import { GATEWAY_ACCESS_SCOPE, parseStoredScopeList } from "@/lib/authz/capabilities";
+import { isKeyIpAllowed } from "@/lib/security/keyIpAllowlist";
 
 const enc = new TextEncoder();
-const KEY_CACHE_PREFIX = "gateway:key";
+// Ignore cache entries created before IP policies were included in key rows.
+const KEY_CACHE_PREFIX = "gateway:key:ip-policy-v1";
 const KEY_CACHE_TTL_SECONDS = 60;
 // Key mutations advance the version token. These short isolate-local windows
 // remove repeated KV reads while bounding revocation propagation.
@@ -234,6 +236,7 @@ type AuthenticateOptions = {
 };
 
 type KeyRow = {
+    ip_allowlist?: unknown;
     id: string;
     workspace_id: string;
     status: string;
@@ -549,6 +552,9 @@ export async function authenticate(req: Request, options: AuthenticateOptions = 
     }
 
     const success = async (nextHash?: string): Promise<AuthSuccess | AuthFailure> => {
+        if (!isKeyIpAllowed(keyRow.ip_allowlist, req.headers.get("cf-connecting-ip"))) {
+            return { ok: false, reason: "key_ip_not_allowed" };
+        }
         let workspaceId = keyRow.workspace_id;
         const internal = isInternalRequestAuthorized(req, bindings);
         const hasHashMigration = Boolean(nextHash) && nextHash !== stored;

@@ -915,7 +915,7 @@ async function handleRotateKey(req: Request) {
 		const supabase = getSupabaseAdmin();
 		const lookupColumn = resolveKeyLookupColumn(keyId);
 		const { data: existing, error: fetchError } = await supabase.from("keys")
-			.select("id,workspace_id,kid,name,prefix,status,scopes,created_by,soft_blocked,expires_at,daily_limit_requests,weekly_limit_requests,monthly_limit_requests,daily_limit_cost_nanos,weekly_limit_cost_nanos,monthly_limit_cost_nanos")
+			.select("id,workspace_id,kid,name,prefix,status,scopes,created_by,soft_blocked,ip_allowlist,expires_at,daily_limit_requests,weekly_limit_requests,monthly_limit_requests,daily_limit_cost_nanos,weekly_limit_cost_nanos,monthly_limit_cost_nanos")
 			.eq("workspace_id", auth.value.workspaceId).neq("name", CHAT_MANAGED_KEY_NAME).eq(lookupColumn, keyId).maybeSingle();
 		if (fetchError) throw new Error(fetchError.message || "Failed to fetch API key");
 		if (!existing || String(existing.status ?? "").toLowerCase() === "deleted") return json({ error: "not_found", message: "API key not found" }, 404, { "Cache-Control": "no-store" });
@@ -930,6 +930,7 @@ async function handleRotateKey(req: Request) {
 			hash: await hmacSecret(generated.secret, pepper), prefix: generated.prefix,
 			status: "active", scopes: existing.scopes ?? "[]", created_by: creatorUserId,
 			soft_blocked: Boolean(existing.soft_blocked),
+			ip_allowlist: existing.ip_allowlist ?? [],
 			daily_limit_requests: existing.daily_limit_requests ?? 0,
 			weekly_limit_requests: existing.weekly_limit_requests ?? 0,
 			monthly_limit_requests: existing.monthly_limit_requests ?? 0,
