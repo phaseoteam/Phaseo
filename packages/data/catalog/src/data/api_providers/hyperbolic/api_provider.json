@@ -2,13 +2,13 @@
   "api_provider_id": "hyperbolic",
   "api_provider_name": "Hyperbolic",
   "description": null,
-  "link": "https://docs.hyperbolic.xyz/docs/supported-models",
+  "link": "https://www.hyperbolic.ai/docs/inference/text-apis",
   "residency_mode": "provider_managed",
   "default_execution_regions": null,
   "default_data_regions": null,
   "zero_data_retention": true,
   "data_retention_days": 0,
-  "residency_source_url": "https://www.hyperbolic.ai/inference",
+  "residency_source_url": "https://www.hyperbolic.ai/docs/inference/performance-limits",
   "residency_notes": "Hyperbolic says serverless inference uses real-time processing with no logging, storage, or sharing of requests and responses. The public materials do not identify a fixed execution or storage region; dedicated hosting has separate infrastructure characteristics.",
   "data_policy_tier": "private",
   "data_policy_confidence": "confirmed",
@@ -20,22 +20,39 @@
   "terms_of_service_url": "https://www.hyperbolic.ai/terms",
   "prompt_training_policy": "no_train",
   "prompt_training_notes": "Hyperbolic markets serverless inference as zero data retention and says request data is never stored or reused.",
-  "prompt_training_source_url": "https://www.hyperbolic.ai/docs/overview/overview",
+  "prompt_training_source_url": "https://www.hyperbolic.ai/docs/inference/performance-limits",
   "gateway_kind": null,
   "routable": null,
   "routing_enabled": null,
   "sdk_package": null,
   "api_base_url": "https://api.hyperbolic.xyz/v1",
-  "docs_url": "https://docs.hyperbolic.xyz/docs/rest-api",
+  "docs_url": "https://www.hyperbolic.ai/docs/inference/text-apis",
   "auth_env": "HYPERBOLIC_API_KEY",
   "api_formats": [
     "openai_chat"
   ],
-  "service_tiers": [],
-  "sources": [],
+  "service_tiers": [
+    "basic",
+    "pro",
+    "enterprise"
+  ],
+  "sources": [
+    {
+      "url": "https://www.hyperbolic.ai/docs/inference/text-apis",
+      "kind": "api_reference",
+      "accessed_at": "2026-08-24T00:00:00Z",
+      "notes": "Official Hyperbolic live model, context, tool-calling, and pricing table."
+    },
+    {
+      "url": "https://www.hyperbolic.ai/docs/inference/performance-limits",
+      "kind": "documentation",
+      "accessed_at": "2026-08-24T00:00:00Z",
+      "notes": "Official rate limits, zero-retention, encryption, and service-tier reference."
+    }
+  ],
   "verification": {
     "status": "verified",
-    "checked_at": "2026-08-12",
-    "notes": "Verified against Hyperbolic's current Text Generation REST API, OpenAI compatibility, streaming, and supported-model references."
+    "checked_at": "2026-08-24T00:00:00Z",
+    "notes": "Reconciled end-to-end against Hyperbolic's current text, image, VLM, audio, overview, and performance references."
   }
 }
