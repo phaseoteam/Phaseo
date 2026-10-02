@@ -6,6 +6,16 @@ icon: "gauge"
 
 Uma requisição pode ser limitada pelo provedor selecionado ou por uma política aplicável ao espaço de trabalho ou à chave. O roteamento e as alternativas podem reduzir falhas do provedor, mas uma requisição ainda pode retornar `429`.
 
+## Limites do gateway
+
+A cota padrão é de **25 requisições por minuto em uma janela móvel** para cada usuário em cada espaço de trabalho. As chaves de API criadas pelo mesmo usuário compartilham essa cota. Requisições OAuth usam o usuário autenticado. Chaves sem proprietário compartilham uma cota do espaço de trabalho.
+
+As rotas de modelos gratuitos também têm uma cota de **1500 requisições por dia UTC**, compartilhada entre todos os modelos gratuitos do mesmo usuário e espaço de trabalho. Requisições a modelos pagos não consomem essa cota diária. Uma requisição gratuita admitida conta mesmo se o provedor falhar depois; fallbacks dentro dessa requisição contam uma única vez.
+
+Esses limites valem para todas as regiões do gateway e podem ser aumentados para um usuário e espaço de trabalho específicos. Operações com arquivos e consultas de status de tarefas consomem a cota por minuto; endpoints de administração não.
+
+Quando uma cota do gateway se esgota, a resposta é `429` com `Retry-After` em segundos. O motivo do erro é `customer_requests_per_minute` ou `free_requests_per_day`. Aguarde esse intervalo antes de tentar novamente. Se a verificação de cotas estiver temporariamente indisponível, o gateway retorna `503` com orientação para uma nova tentativa.
+
 ## Limites do provedor
 
 Requisições BYOK usam os limites da sua conta no provedor. Requisições gerenciadas usam capacidade compartilhada do provedor; essa capacidade não é uma cota individual do espaço de trabalho.

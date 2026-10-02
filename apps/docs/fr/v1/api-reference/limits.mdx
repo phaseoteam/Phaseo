@@ -6,6 +6,16 @@ icon: "gauge"
 
 Une requête peut être limitée par le fournisseur sélectionné ou par une politique applicable à l’espace de travail ou à la clé. Le routage et les solutions de repli peuvent réduire les échecs des fournisseurs, mais une requête peut toujours renvoyer `429`.
 
+## Limites du gateway
+
+Le quota par défaut est de **25 requêtes par minute glissante** pour chaque utilisateur dans chaque espace de travail. Les clés API créées par le même utilisateur partagent ce quota. Les requêtes OAuth utilisent l'utilisateur authentifié. Les clés sans propriétaire partagent un quota au niveau de l'espace de travail.
+
+Les routes de modèles gratuits disposent également de **1500 requêtes par jour UTC**, partagées entre tous les modèles gratuits du même utilisateur et espace de travail. Les requêtes aux modèles payants ne consomment pas ce quota quotidien. Une requête gratuite admise compte même si le fournisseur échoue ensuite ; les fallbacks au sein de cette requête comptent une seule fois.
+
+Ces limites s'appliquent à toutes les régions du gateway et peuvent être augmentées pour un utilisateur et un espace de travail précis. Les opérations sur les fichiers et les consultations du statut des tâches consomment le quota par minute ; les endpoints d'administration ne le consomment pas.
+
+Un quota du gateway épuisé entraîne une réponse `429` avec `Retry-After` en secondes. Le motif de l'erreur est `customer_requests_per_minute` ou `free_requests_per_day`. Attendez ce délai avant de réessayer. Si la vérification des quotas est temporairement indisponible, le gateway renvoie `503` avec des indications pour réessayer.
+
 ## Limites des fournisseurs
 
 Les requêtes BYOK utilisent les limites de votre compte fournisseur. Les requêtes gérées utilisent une capacité fournisseur partagée ; cette capacité n’est pas un quota propre à chaque espace de travail.

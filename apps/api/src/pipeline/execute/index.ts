@@ -103,6 +103,7 @@ import { stripUsagePricing } from "../usage";
 import { getEffectiveRoutingHints } from "../requestRouting";
 import { sanitizeUrlForLogging } from "@/lib/security/sanitizeUrl";
 import { extractDownstreamRateLimitHeaders } from "../upstream-rate-limit-headers";
+import { guardFreeRouteQuota } from "@core/customer-rate-limits";
 import {
 	admitManagedProvider,
 	estimateProviderTokenReservation,
@@ -707,6 +708,32 @@ async function attemptProviderWithIR(
 			? candidate.apiModelId.trim()
 			: null;
 
+	const providerModelSlug = typeof candidate.providerModelSlug === "string"
+		? candidate.providerModelSlug.trim()
+		: candidate.providerModelSlug;
+	// Resolve pricing and enforce customer admission before acquiring a health probe.
+	let pricingCard = candidate.pricingCard ?? null;
+	if (!pricingCard) {
+		pricingCard = await timing.timer.span(`${attemptPrefix}_load_pricecard`, () =>
+			loadPriceCard(candidate.providerId, candidateApiModelId ?? baseModel, ctx.capability, providerModelSlug),
+		);
+		if (pricingCard) candidate.pricingCard = pricingCard;
+	}
+	if (pricingCard && (!pricingCard.currency || pricingCard.currency.toUpperCase() === "USD") &&
+		!pricingCard.rules.some((rule) => rule.currency && rule.currency.toUpperCase() !== "USD")) {
+		const freeQuotaResponse = await timing.timer.span(`${attemptPrefix}_free_customer_quota`, () =>
+			guardFreeRouteQuota({
+				workspaceId: ctx.workspaceId,
+				userId: ctx.quotaUserId,
+				requestId: ctx.requestId,
+				admissionId: ctx.billingRequestId,
+				pricingCard,
+				internal: ctx.internal,
+				testingMode: ctx.testingMode,
+			}),
+		);
+		if (freeQuotaResponse) return { ok: false, response: freeQuotaResponse };
+	}
 	const admission = await timing.timer.span(`${attemptPrefix}_breaker`, () =>
 		admitThroughBreaker(
 			ctx.endpoint,
@@ -742,25 +769,6 @@ async function attemptProviderWithIR(
 	}
 	const isProbe = admission === "probe";
 	const healthObservation = { observationId: crypto.randomUUID(), startedAt: attemptStartedAtEpochMs, probe: isProbe };
-	const providerModelSlug = typeof candidate.providerModelSlug === "string"
-		? candidate.providerModelSlug.trim()
-		: candidate.providerModelSlug;
-
-	// Get pricing card (testing mode candidates may not have context-preloaded pricing).
-	let pricingCard = candidate.pricingCard ?? null;
-	if (!pricingCard) {
-		pricingCard = await timing.timer.span(`${attemptPrefix}_load_pricecard`, () =>
-			loadPriceCard(
-				candidate.providerId,
-				candidateApiModelId ?? baseModel,
-				ctx.capability,
-				providerModelSlug,
-			),
-		);
-		if (pricingCard) {
-			candidate.pricingCard = pricingCard;
-		}
-	}
 	if (!pricingCard || (pricingCard.currency && pricingCard.currency.toUpperCase() !== "USD") ||
 		pricingCard.rules.some((rule) => rule.currency && rule.currency.toUpperCase() !== "USD")) {
 		attemptErrors.push({

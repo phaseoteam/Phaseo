@@ -8,6 +8,7 @@ import { configureRuntime, setWaitUntil, clearRuntime, getBindings, dispatchBack
 import { safeJsonStringify } from "@/lib/safe-json";
 import { sanitizeRequestHeaders } from "@pipeline/http/sanitize-headers";
 import { attachGatewayTrace, gatewayTraceFor } from "@pipeline/telemetry/gateway-trace";
+import { inheritPreparedAuthentication } from "@pipeline/before/auth";
 
 type Handler = (req: Request, context?: Context<{ Bindings: GatewayBindings }>) => Promise<Response>;
 type CacheOptions = {
@@ -108,6 +109,9 @@ export function withRuntime(handler: Handler) {
             clearRuntime();
         };
         const sanitized = sanitizeRequestHeaders(c.req.raw, { preserve: ["authorization"] });
+        if (c.env.CUSTOMER_RATE_LIMITS_ENABLED === "true") {
+            inheritPreparedAuthentication(c.req.raw, sanitized);
+        }
         const trace = gatewayTraceFor(c.req.raw);
         if (trace) attachGatewayTrace(sanitized, trace);
 

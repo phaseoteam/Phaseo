@@ -1389,6 +1389,7 @@ export async function beforeRequest(
     const requestPath = meta.requestPath ?? null;
 
     const ctx: PipelineContext = {
+		quotaUserId: userId ?? null,
         endpoint,
         capability,
         requestId,

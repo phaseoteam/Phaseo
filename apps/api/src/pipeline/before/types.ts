@@ -673,6 +673,8 @@ export type WebFetchObservability = {
  * Contains all information needed for request processing
  */
 export type PipelineContext = {
+	/** Authenticated key owner or OAuth user; never use caller attribution for quotas. */
+	quotaUserId?: string | null;
     /** Request-owned diagnostics; never cache or serialize. Not enabled by public headers. */
     gatewayTimingTrace?: import("../telemetry/gateway-trace").GatewayTimingTrace;
     /** Request-owned persistence barrier; never cache or serialize this field. */

@@ -13,6 +13,7 @@ const maybeOpenOnRecentErrorsMock = vi.fn();
 const reportProbeResultMock = vi.fn();
 const resolveProviderExecutorMock = vi.fn();
 const loadPriceCardMock = vi.fn();
+const freeQuotaMock = vi.fn();
 const releaseBackgroundRuntimeMock = vi.fn();
 const ensureRuntimeForBackgroundMock = vi.fn(() => releaseBackgroundRuntimeMock);
 
@@ -51,6 +52,10 @@ vi.mock("./health", () => ({
 vi.mock("../../executors", () => ({
 	resolveProviderExecutor: (...args: any[]) => resolveProviderExecutorMock(...args),
 	normalizeCapability: (capability: string) => capability,
+}));
+
+vi.mock("@core/customer-rate-limits", () => ({
+	guardFreeRouteQuota: (...args: any[]) => freeQuotaMock(...args),
 }));
 
 vi.mock("../pricing", () => ({
@@ -95,6 +100,7 @@ describe("doRequestWithIR pricing behavior in testing mode", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
 		guardPricingFoundMock.mockResolvedValue({ ok: true });
+		freeQuotaMock.mockResolvedValue(null);
 
 		guardAllFailedMock.mockResolvedValue({
 			ok: false,
@@ -105,6 +111,26 @@ describe("doRequestWithIR pricing behavior in testing mode", () => {
 		onCallEndMock.mockResolvedValue(undefined);
 		maybeOpenOnRecentErrorsMock.mockResolvedValue(undefined);
 		reportProbeResultMock.mockResolvedValue(undefined);
+	});
+
+	it("returns a customer free quota denial before dispatch or provider fallback", async () => {
+		const pricingCard = { currency: "USD", rules: [{ pricing_plan: "free", price_per_unit: "0", currency: "USD" }] };
+		const candidates = ["first", "second"].map(providerId => ({ providerId, pricingCard, byokMeta: [], providerModelSlug: "model", capabilityParams: {} }));
+		guardCandidatesMock.mockResolvedValue({ ok: true, value: candidates });
+		rankProvidersMock.mockResolvedValue(candidates.map(candidate => ({ candidate, health: {} })));
+		const executor = vi.fn();
+		resolveProviderExecutorMock.mockReturnValue(executor);
+		const denial = new Response("{}", { status: 429, headers: { "Retry-After": "60" } });
+		freeQuotaMock.mockResolvedValue(denial);
+		const ctx = createCtx({ quotaUserId: "authenticated-owner", billingRequestId: "server-billing-id" });
+		const result = await doRequestWithIR(ctx, { model: "model", prompt: "test" } as any, createTiming());
+		expect(result).toBe(denial);
+		expect(admitThroughBreakerMock).not.toHaveBeenCalled();
+		expect(onCallStartMock).not.toHaveBeenCalled();
+		expect(reportProbeResultMock).not.toHaveBeenCalled();
+		expect(executor).not.toHaveBeenCalled();
+		expect(freeQuotaMock).toHaveBeenCalledTimes(1);
+		expect(freeQuotaMock).toHaveBeenCalledWith(expect.objectContaining({ userId: "authenticated-owner", admissionId: "server-billing-id", pricingCard }));
 	});
 
 	it.each([
