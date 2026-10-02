@@ -190,6 +190,37 @@ describe("authenticate hot-path caching", () => {
         vi.useRealTimers();
     });
 
+    it("reuses admission authentication only within the same request and defers usage writes", async () => {
+        const secret = "admission_secret";
+        runtime.dbRow.value = { id: "key_admission", workspace_id: "workspace", created_by: "owner", status: "active", hash: hashSecret(secret) };
+        const { authenticate, prepareAuthentication, inheritPreparedAuthentication } = await import("./auth");
+        const request = buildRequest(`phaseo_v1_sk_ADMISSION_${secret}`);
+        expect(await prepareAuthentication(request)).toMatchObject({ ok: true, userId: "owner" });
+        await flushBackground();
+        expect(runtime.updatePayloads).toHaveLength(0);
+        const sanitized = new Request(request);
+        inheritPreparedAuthentication(request, sanitized);
+        expect((await authenticate(sanitized)).ok).toBe(true);
+        expect((await authenticate(sanitized)).ok).toBe(true);
+        await flushBackground();
+        expect(runtime.maybeSingle).toHaveBeenCalledTimes(1);
+        expect(runtime.updatePayloads).toHaveLength(1);
+        const invalid = buildRequest("phaseo_v1_sk_ADMISSION_wrong");
+        inheritPreparedAuthentication(request, invalid);
+        expect((await authenticate(invalid)).ok).toBe(false);
+    });
+
+    it("does not reuse prepared authentication when a handler explicitly requires fresh checks", async () => {
+        const secret = "fresh_admission_secret";
+        runtime.dbRow.value = { id: "key_admission", workspace_id: "workspace", status: "active", hash: hashSecret(secret) };
+        const { authenticate, prepareAuthentication } = await import("./auth");
+        const request = buildRequest(`phaseo_v1_sk_FRESHADMISSION_${secret}`);
+        expect((await prepareAuthentication(request)).ok).toBe(true);
+        runtime.dbRow.value = { ...runtime.dbRow.value, status: "revoked" };
+        expect(await authenticate(request, { useKvCache: false })).toEqual({ ok: false, reason: "key_not_found_or_revoked" });
+        expect(runtime.maybeSingle).toHaveBeenCalledTimes(2);
+    });
+
     it("enforces IP restrictions on every request, including a cached key", async () => {
         const kid = "KIDIPCHECK123";
         const secret = "secret_ip_check";

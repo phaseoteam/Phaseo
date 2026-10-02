@@ -235,6 +235,40 @@ type AuthenticateOptions = {
     allowOAuthJwt?: boolean;
 };
 
+type PreparedAuthentication = {
+    result?: AuthSuccess | AuthFailure;
+    usageTasks: Array<() => Promise<unknown>>;
+    preparing: boolean;
+    recorded: boolean;
+};
+const preparedAuthentications = new WeakMap<Request, PreparedAuthentication>();
+
+/** Authenticate for admission, deferring database usage writes to the admitted handler. */
+export async function prepareAuthentication(req: Request): Promise<AuthSuccess | AuthFailure> {
+    const prepared: PreparedAuthentication = { usageTasks: [], preparing: true, recorded: false };
+    preparedAuthentications.set(req, prepared);
+    try {
+        prepared.result = await authenticate(req);
+        return prepared.result;
+    } finally {
+        prepared.preparing = false;
+    }
+}
+
+/** Only copy within one HTTP request, after preserving its authorization header. */
+export function inheritPreparedAuthentication(source: Request, target: Request): void {
+    if (source.url !== target.url || source.method !== target.method ||
+        source.headers.get("authorization") !== target.headers.get("authorization")) return;
+    const prepared = preparedAuthentications.get(source);
+    if (prepared) preparedAuthentications.set(target, prepared);
+}
+
+function dispatchAuthenticationUsage(req: Request, task: () => Promise<unknown>): void {
+    const prepared = preparedAuthentications.get(req);
+    if (prepared?.preparing) prepared.usageTasks.push(task);
+    else dispatchBackground(task());
+}
+
 type KeyRow = {
     ip_allowlist?: unknown;
     id: string;
@@ -397,6 +431,20 @@ async function cacheKey(kid: string, row: KeyRow) {
  * @param authorizationHeader - Raw "Authorization" header string
  */
 export async function authenticate(req: Request, options: AuthenticateOptions = {}): Promise<AuthSuccess | AuthFailure> {
+    const prepared = preparedAuthentications.get(req);
+    // Explicit authentication options still get their original independent checks.
+    if (prepared?.result && !Object.values(options).some(value => value !== undefined)) {
+        if (prepared.result.ok && !prepared.recorded) {
+            prepared.recorded = true;
+            for (const task of prepared.usageTasks) dispatchBackground(task());
+            prepared.usageTasks = [];
+        }
+        return prepared.result;
+    }
+    if (prepared?.result) {
+        prepared.result = undefined;
+        prepared.usageTasks = [];
+    }
     // 1. Ensure proper "Bearer ..." format.
     const token = readBearerToken(req);
     if (!token) {
@@ -584,7 +632,7 @@ export async function authenticate(req: Request, options: AuthenticateOptions = 
 				return { ok: false, reason: "oauth_resource_token_not_valid_for_api" };
 			}
 
-			dispatchBackground((async () => {
+			dispatchAuthenticationUsage(req, async () => {
 				configureRuntime(bindings);
 				try {
 					const updatePayload: Record<string, unknown> = { last_used_at: new Date().toISOString() };
@@ -599,7 +647,7 @@ export async function authenticate(req: Request, options: AuthenticateOptions = 
 				} finally {
 					clearRuntime();
 				}
-			})());
+			});
 
 			return {
 				ok: true,
@@ -618,7 +666,7 @@ export async function authenticate(req: Request, options: AuthenticateOptions = 
 		}
 
         // Fire-and-forget update of last_used_at timestamp (+ hash migration when needed).
-        dispatchBackground((async () => {
+        dispatchAuthenticationUsage(req, async () => {
             configureRuntime(bindings);
             try {
                 const updatePayload: Record<string, unknown> = {
@@ -640,7 +688,7 @@ export async function authenticate(req: Request, options: AuthenticateOptions = 
             } finally {
                 clearRuntime();
             }
-        })());
+        });
 
         return {
             ok: true,
@@ -648,7 +696,7 @@ export async function authenticate(req: Request, options: AuthenticateOptions = 
             apiKeyRef: `kid_${parsed.kid}`,
             apiKeyKid: parsed.kid,
             workspaceId,
-            userId: null,
+            userId: keyRow.created_by ?? null,
             internal,
             authMethod: "api_key",
         } as AuthSuccess;
@@ -814,7 +862,7 @@ async function authenticateOAuth(req: Request, token: string, options: Authentic
 			const tokenScopes = typeof claims.scope === "string" ? claims.scope.split(/\s+/).filter(Boolean) : [];
 			const effectiveScopes = tokenScopes.filter((scope) => activeAuthorizationScopes.includes(scope));
 
-            dispatchBackground((async () => {
+            dispatchAuthenticationUsage(req, async () => {
                 configureRuntime(bindings);
                 try {
                     await supabase
@@ -826,7 +874,7 @@ async function authenticateOAuth(req: Request, token: string, options: Authentic
                 } finally {
                     clearRuntime();
                 }
-            })());
+            });
 
             return {
                 ok: true,
@@ -918,7 +966,7 @@ async function authenticateOAuth(req: Request, token: string, options: Authentic
 		const effectiveScopes = tokenScopes.filter((scope) => activeAuthorizationScopes.includes(scope));
 
         // Update last_used_at (fire and forget)
-        dispatchBackground((async () => {
+        dispatchAuthenticationUsage(req, async () => {
             configureRuntime(bindings);
             try {
                 await supabase
@@ -932,7 +980,7 @@ async function authenticateOAuth(req: Request, token: string, options: Authentic
             } finally {
                 clearRuntime();
             }
-        })());
+        });
 
         // Return success with OAuth-specific context
         return {

@@ -10,14 +10,23 @@ import { chatCompletionsRoutes } from "./chat-completions";
 import { messagesRoutes } from "./messages";
 import { responsesRoutes } from "./responses";
 import { lazyRouter } from "@/routes/lazy";
+import { customerQuotaMiddleware } from "./customer-quota";
 
 export const inferenceRouter = new Hono<Env>();
 
+function quota(path: string) {
+    inferenceRouter.use(path, customerQuotaMiddleware);
+    inferenceRouter.use(`${path}/*`, customerQuotaMiddleware);
+}
+quota("/chat/completions");
+quota("/messages");
+quota("/responses");
 inferenceRouter.route("/chat/completions", chatCompletionsRoutes);
 inferenceRouter.route("/messages", messagesRoutes);
 inferenceRouter.route("/responses", responsesRoutes);
 // Keep text route initialization small; initialize other surfaces on first use.
 function mount(path: string, load: () => Promise<Hono<Env>>) {
+    quota(path);
     const handler = lazyRouter(null, load);
     inferenceRouter.all(path, handler);
     inferenceRouter.all(`${path}/*`, handler);

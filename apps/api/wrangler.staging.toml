@@ -7,6 +7,7 @@ preview_urls = false
 routes = [{ pattern = "api-staging.phaseo.app", custom_domain = true }]
 
 [vars]
+CUSTOMER_RATE_LIMITS_ENABLED = "true"
 ENV = "staging"
 NODE_ENV = "production"
 SUPABASE_URL = "https://xansbgjaduxypzsmjwct.supabase.co"
@@ -90,6 +91,14 @@ class_name = "ProviderRateLimitDurableObject"
 [[migrations]]
 tag = "v1-provider-rate-limits"
 new_sqlite_classes = ["ProviderRateLimitDurableObject"]
+
+[[durable_objects.bindings]]
+name = "CUSTOMER_RATE_LIMITS"
+class_name = "CustomerRateLimitDurableObject"
+
+[[migrations]]
+tag = "v2-customer-rate-limits"
+new_sqlite_classes = ["CustomerRateLimitDurableObject"]
 
 [[ratelimits]]
 name = "REALTIME_RELAY_RATE_LIMITER"

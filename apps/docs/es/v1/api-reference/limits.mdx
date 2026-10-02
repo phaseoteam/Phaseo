@@ -6,6 +6,16 @@ icon: "gauge"
 
 El proveedor seleccionado o una política aplicable del espacio de trabajo o de la clave pueden limitar una solicitud. El enrutamiento y las alternativas pueden reducir los fallos del proveedor, pero una solicitud aún puede devolver `429`.
 
+## Límites del gateway
+
+La cuota predeterminada es de **25 solicitudes por minuto en una ventana móvil** para cada usuario en cada espacio de trabajo. Las claves API creadas por el mismo usuario comparten esa cuota. Las solicitudes OAuth usan el usuario autenticado. Las claves sin propietario comparten una cuota del espacio de trabajo.
+
+Las rutas de modelos gratuitos tienen además una cuota de **100 solicitudes por día UTC**, compartida entre todos los modelos gratuitos del mismo usuario y espacio de trabajo. Las solicitudes a modelos de pago no consumen esta cuota diaria. Una solicitud gratuita admitida cuenta aunque el proveedor falle después; los fallbacks dentro de esa solicitud cuentan una sola vez.
+
+Estos límites se aplican en todas las regiones del gateway y pueden aumentarse para un usuario y espacio de trabajo específicos. Las operaciones con archivos y las consultas de estado de trabajos consumen la cuota por minuto; los endpoints de administración no.
+
+Cuando se agota una cuota del gateway, se devuelve `429` con `Retry-After` en segundos. El motivo del error es `customer_requests_per_minute` o `free_requests_per_day`. Espere ese intervalo antes de reintentar. Si la comprobación de cuotas no está disponible temporalmente, el gateway devuelve `503` con indicaciones para reintentar.
+
 ## Límites del proveedor
 
 Las solicitudes BYOK usan los límites de tu cuenta del proveedor. Las solicitudes gestionadas usan capacidad compartida del proveedor; esa capacidad no es una cuota individual del espacio de trabajo.

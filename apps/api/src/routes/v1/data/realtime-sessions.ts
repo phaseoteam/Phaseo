@@ -8,6 +8,8 @@ import { getBindings } from "@/runtime/env";
 import type { Env } from "@/runtime/types";
 import { guardAuth, guardContext, guardJson } from "@pipeline/before/guards";
 import { parseW3cTraceContext } from "@observability/trace-context";
+import { guardFreeRouteQuota } from "@core/customer-rate-limits";
+import { generatePublicId } from "@pipeline/before/genId";
 import { err, json } from "@pipeline/before/http";
 import { applyWorkspacePolicy, fetchWorkspacePolicy } from "@pipeline/before/workspacePolicy";
 import { getRealtimeVoiceFeatureGateName, isRealtimeVoiceAccessEnabled } from "@core/feature-flags";
@@ -442,6 +444,17 @@ async function createSessionRequest(req: Request, live = false): Promise<Respons
 			request_id: auth.value.requestId,
 			workspace_id: auth.value.workspaceId,
 		});
+	}
+	if (!live) {
+		const quotaResponse = await guardFreeRouteQuota({
+			workspaceId: auth.value.workspaceId,
+			userId: auth.value.userId,
+			requestId: auth.value.requestId,
+			admissionId: generatePublicId(),
+			pricingCard: policyResult.providers.find(candidate => candidate.providerId === selectedProvider)?.pricingCard,
+			internal: auth.value.internal,
+		});
+		if (quotaResponse) return quotaResponse;
 	}
 	try {
 		const created = await createRealtimeSession({

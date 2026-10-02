@@ -103,6 +103,7 @@ import { stripUsagePricing } from "../usage";
 import { getEffectiveRoutingHints } from "../requestRouting";
 import { sanitizeUrlForLogging } from "@/lib/security/sanitizeUrl";
 import { extractDownstreamRateLimitHeaders } from "../upstream-rate-limit-headers";
+import { guardFreeRouteQuota } from "@core/customer-rate-limits";
 import {
 	admitManagedProvider,
 	estimateProviderTokenReservation,
@@ -864,6 +865,19 @@ async function attemptProviderWithIR(
 					? selectVideoProviderOptions(ir as IRVideoGenerationRequest, candidate.providerId)
 					: ir,
 		);
+		const freeQuotaResponse = await timing.timer.span(`${attemptPrefix}_free_customer_quota`, () =>
+			guardFreeRouteQuota({
+				workspaceId: ctx.workspaceId,
+				userId: ctx.quotaUserId,
+				requestId: ctx.requestId,
+				admissionId: ctx.billingRequestId,
+				pricingCard,
+				internal: ctx.internal,
+				testingMode: ctx.testingMode,
+			}),
+		);
+		if (freeQuotaResponse) return { ok: false, response: freeQuotaResponse };
+
 		if (credential.kind === "gateway" && !ctx.testingMode) {
 			const reservationTokens = estimateProviderTokenReservation({
 				capability: normalizedCapability,

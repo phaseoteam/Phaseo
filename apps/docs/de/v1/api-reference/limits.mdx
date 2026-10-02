@@ -6,6 +6,16 @@ icon: "gauge"
 
 Eine Anfrage kann durch den ausgewählten Anbieter oder eine geltende Arbeitsbereichs- oder Schlüsselrichtlinie gedrosselt werden. Routing und Fallbacks können Anbieterfehler reduzieren, eine Anfrage kann jedoch weiterhin `429` zurückgeben.
 
+## Gateway-Limits
+
+Standardmäßig gelten **25 Anfragen pro gleitender Minute** für jeden Benutzer in jedem Arbeitsbereich. API-Schlüssel desselben Benutzers teilen dieses Kontingent. OAuth-Anfragen verwenden den authentifizierten Benutzer. Schlüssel ohne Besitzer teilen ein Arbeitsbereichskontingent.
+
+Für kostenlose Modellrouten gelten zusätzlich **100 Anfragen pro UTC-Tag**, gemeinsam für alle kostenlosen Modelle desselben Benutzers und Arbeitsbereichs. Bezahlte Modellanfragen verbrauchen dieses Tageskontingent nicht. Eine zugelassene kostenlose Anfrage zählt auch bei einem anschließenden Anbieterfehler; Fallbacks innerhalb dieser Anfrage zählen einmal.
+
+Die Limits gelten über alle Gateway-Regionen hinweg und können für einen bestimmten Benutzer und Arbeitsbereich erhöht werden. Dateioperationen und Statusabfragen für Jobs verbrauchen das Minutenkontingent; Verwaltungsendpunkte nicht.
+
+Bei ausgeschöpftem Gateway-Kontingent wird `429` mit `Retry-After` in Sekunden zurückgegeben. Der Fehlergrund ist `customer_requests_per_minute` oder `free_requests_per_day`. Warten Sie diese Zeit vor einem erneuten Versuch. Ist die Kontingentprüfung vorübergehend nicht verfügbar, gibt das Gateway `503` mit Wiederholungshinweisen zurück.
+
 ## Anbieterlimits
 
 BYOK-Anfragen verwenden die Limits Ihres Anbieterkontos. Verwaltete Anfragen nutzen gemeinsame Anbieterkapazität; diese Kapazität ist kein individuelles Arbeitsbereichskontingent.
