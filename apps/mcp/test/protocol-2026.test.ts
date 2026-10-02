@@ -124,7 +124,7 @@ describe("MCP 2026-07-28 transport", () => {
 		expect(response.headers.get("mcp-session-id")).toBeNull();
 		expect(response.headers.get("cache-control")).toBe("no-store");
 		const payload = JSON.parse(body) as { result?: { tools?: Array<{ name: string }> } };
-		expect(payload.result?.tools?.map((tool) => tool.name)).toEqual(["models_list", "model_get", "benchmark_rankings", "cost_estimate"]);
+		expect(payload.result?.tools?.map((tool) => tool.name)).toEqual(["models_list", "model_get", "benchmark_rankings", "cost_estimate", "inference_quote", "inference_run"]);
 	});
 
 	it("rejects opaque and insecure non-loopback browser origins", async () => {

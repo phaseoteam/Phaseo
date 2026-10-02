@@ -11,6 +11,7 @@ import type { Endpoint, RequestBetaOptions, RequestMeta } from "@core/types";
 import type { PipelineContext } from "./types";
 import { guardAuth, guardJson, guardZod, guardModel, guardContext, makeMeta, normalizeReturnFlag } from "./guards";
 import { err } from "./http";
+import { reviewedMcpRunMatches } from "./mcp-inference";
 import { Timer } from "../telemetry/timer";
 import { resolveCapabilityFromEndpoint } from "@/lib/config/capabilityToEndpoints";
 import { validateCapabilities } from "./capabilityValidation";
@@ -878,6 +879,23 @@ export async function beforeRequest(
         if (dynamicRouteEvaluation.action.routingMode) {
             resolvedRoutingMode = dynamicRouteEvaluation.action.routingMode;
         }
+    }
+
+    if (
+        a.value.authMethod === "oauth" && a.value.oauthResource &&
+        req.headers.get("x-phaseo-mcp-resource") &&
+        (!reviewedMcpRunMatches(rawBody, mergedBody, dynamicRouteEvaluation?.action.modelFallbacks) ||
+            resolvedPlugins.some((plugin) => plugin.enabled !== false))
+    ) {
+        return {
+            ok: false,
+            response: err("validation_error", {
+                reason: "reviewed_mcp_run_changed_by_policy",
+                description: "Workspace policy changed the reviewed run or enabled plugins. Update the policy or review a different run.",
+                request_id: requestId,
+                workspace_id: workspaceId,
+            }),
+        };
     }
 
 	const regionalRequestViolation = validateRegionalTextRequest(

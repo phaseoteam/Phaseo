@@ -1,4 +1,5 @@
-export type PhaseoEnv = Cloudflare.Env & {
+export type PhaseoEnv = Omit<Cloudflare.Env, "INFERENCE_RUNS"> & {
+	INFERENCE_RUNS?: DurableObjectNamespace;
 	PHASEO_MCP_RESOURCE_SERVER_SECRET: string;
 	OPENAI_APPS_CHALLENGE_TOKEN?: string;
 	PHASEO_WEB_BASE_URL: string;
@@ -114,6 +115,10 @@ export type AuthenticatedPhaseoUser = {
 	accessToken: string;
 	workspaceId: string | null;
 	scopes: string[];
+	userId?: string;
+	clientId?: string;
+	resource?: string;
+	resourceToken?: string;
 };
 
 function resolveAccessToken(credentials: PhaseoCredentials = {}): string {
@@ -305,6 +310,8 @@ export async function authenticatePhaseoUser(request: Request, env: PhaseoEnv): 
 			workspace_id?: string | null;
 			scope?: string;
 			upstream_access_token?: string;
+			user_id?: string;
+			client_id?: string;
 		}>().catch(() => null);
 		if (
 			!response.ok ||
@@ -316,6 +323,10 @@ export async function authenticatePhaseoUser(request: Request, env: PhaseoEnv): 
 			accessToken: exchange.upstream_access_token,
 			workspaceId: exchange.workspace_id ?? null,
 			scopes: exchange.scope?.split(/\s+/).filter(Boolean) ?? [],
+			userId: exchange.user_id,
+			clientId: exchange.client_id,
+			resource,
+			resourceToken: accessToken,
 		};
 	} catch {
 		return null;
