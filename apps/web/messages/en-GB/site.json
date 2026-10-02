@@ -1680,7 +1680,7 @@
 	},
 	"pricing": {
 		"title": "Pricing",
-		"description": "Simple pay-as-you-go AI gateway pricing with optional self-serve Enterprise identity, governance, and included-payment plans.",
+		"description": "Simple pay-as-you-go AI gateway pricing with optional Enterprise identity, governance, and priority support.",
 		"everythingIncluded": "Everything included",
 		"everythingIncludedBody": "Explore the model catalog, rankings, SDKs, and free model chat before spending anything. Add credits when you need paid model usage without changing plans.",
 		"swipeCompare": "Swipe horizontally to compare providers.",
@@ -1816,7 +1816,7 @@
 				"invoices": "Yes. PDF invoices are available for completed credit purchases from Settings → Credits. If an invoice is missing for a successful payment, contact support with the payment ID and date.",
 				"enterprise-plan": "Enterprise starts at $29/month for up to 100 workspace members, including smaller teams. It includes SAML SSO, SCIM, departments, roles, audit and governance controls, and priority email support. Dedicated Slack support and contractual SLAs are available by arrangement.",
 				"enterprise-credit-fees": "No. Self Serve Enterprise is a subscription for identity, governance and support. Credit purchases remain separate and use the standard 5% top-up fee, with a {minimum} minimum, across supported payment methods.",
-				"enterprise-team-sizes": "Choose a workspace member allowance. The entry plan includes up to 100 members; larger allowances scale to 100,000. Members count towards the allowance while they belong to the workspace, whether or not they sign in. Below 100,000, adding members beyond your allowance requires an upgrade. Above 100,000, each additional unique member in the subscription billing period costs $0.02/month, including members removed during that period.",
+				"enterprise-team-sizes": "Choose a workspace member allowance. The entry plan includes up to 100 members; larger allowances scale to 100,000. Members count towards the allowance while they belong to the workspace, whether or not they sign in. Below 100,000, new memberships are blocked only when they would exceed your selected allowance. Self-service allowance changes are not currently available; choose capacity for expected growth before subscribing. Above 100,000, each additional unique member in the subscription billing period costs $0.02/month, including members removed during that period.",
 				"enterprise-usage-billing": "No. The Enterprise subscription pays for identity, governance and support. Managed model usage still draws from the workspace credit balance at catalog prices. There is no committed model spend: use as much or as little as you need and the same subscription price applies.",
 				"enterprise-bank-transfer": "Not currently. Supported USD bank transfers use the same 5% credit top-up fee as card funding. Any exceptional wire, refund or banking fee is shown separately when applicable.",
 				"how-does-byok-work": "Your provider bills model usage directly to your provider account. Phaseo does not charge a service fee for your first {freeRequests, number} BYOK requests each UTC calendar month. After that allowance, Phaseo charges {serviceFee, number}% of provider-equivalent cost.",

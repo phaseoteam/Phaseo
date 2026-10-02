@@ -1680,7 +1680,7 @@
 	},
 	"pricing": {
 		"title": "Preise",
-		"description": "Einfache nutzungsbasierte Preise für das KI-Gateway mit optionalen, selbst verwalteten Unternehmensangeboten für Identität, Governance und integrierte Zahlungen.",
+		"description": "Einfache nutzungsbasierte Preise für das KI-Gateway mit optionaler Enterprise-Identitätsverwaltung, Governance und priorisiertem Support.",
 		"everythingIncluded": "Alles enthalten",
 		"everythingIncludedBody": "Erkunden Sie Modellkatalog, Ranglisten, SDKs und kostenlosen Modell-Chat, bevor Kosten entstehen. Kaufen Sie Guthaben nur bei Bedarf, ohne den Tarif zu wechseln.",
 		"swipeCompare": "Wischen Sie horizontal, um Anbieter zu vergleichen.",
@@ -1816,7 +1816,7 @@
 				"invoices": "Ja. PDF-Rechnungen für abgeschlossene Credit-Käufe findest du unter Einstellungen → Credits. Fehlt die Rechnung zu einer erfolgreichen Zahlung, wende dich mit Zahlungs-ID und Datum an den Support.",
 				"enterprise-plan": "Enterprise beginnt bei 29 USD pro Monat für bis zu 100 Mitglieder, auch für kleine Teams. SAML SSO, SCIM, Abteilungen, Rollen, Audit, Governance und bevorzugter E-Mail-Support sind enthalten. Dedizierter Slack-Support und vertragliche SLAs können separat vereinbart werden.",
 				"enterprise-credit-fees": "Nein. Das selbst verwaltete Unternehmensabo deckt Identität, Governance und Support ab. Guthabenkäufe bleiben getrennt und unterliegen bei unterstützten Zahlungsmethoden weiterhin der üblichen Aufladegebühr von 5% mit einem Mindestbetrag von {minimum}.",
-				"enterprise-team-sizes": "Wählen Sie eine Mitgliederkapazität. Der Einstieg umfasst bis zu 100 Mitglieder, größere Kapazitäten reichen bis 100.000. Mitglieder zählen, solange sie zum Arbeitsbereich gehören, auch ohne Anmeldung. Unter 100.000 müssen Sie die Kapazität erhöhen, bevor Sie weitere Mitglieder hinzufügen. Über 100.000 kostet jedes zusätzliche eindeutige Mitglied im Abrechnungszeitraum 0,02 USD pro Monat, einschließlich während dieses Zeitraums entfernter Mitglieder.",
+				"enterprise-team-sizes": "Wählen Sie eine Mitgliederkapazität. Der Einstieg umfasst bis zu 100 Mitglieder, größere Kapazitäten reichen bis 100.000. Mitglieder zählen, solange sie zum Arbeitsbereich gehören, auch ohne Anmeldung. Unter 100.000 werden neue Mitgliedschaften nur blockiert, wenn sie die gewählte Kapazität überschreiten würden. Kapazitätsänderungen im Self-Service sind derzeit nicht verfügbar; wählen Sie vor dem Abonnieren genügend Kapazität für das erwartete Wachstum. Über 100.000 kostet jedes zusätzliche eindeutige Mitglied im Abrechnungszeitraum 0,02 USD pro Monat, einschließlich während dieses Zeitraums entfernter Mitglieder.",
 				"enterprise-usage-billing": "Nein. Das Unternehmensabo deckt Identität, Governance und Support ab. Verwaltete Modellnutzung wird weiterhin zu Katalogpreisen vom Guthaben des Arbeitsbereichs abgezogen. Es gibt keine Mindestabnahme für Modelle: Nutzen Sie, was Sie brauchen; der Abo-Preis bleibt gleich.",
 				"enterprise-bank-transfer": "Derzeit nicht. Unterstützte USD-Überweisungen haben dieselbe Credit-Aufladegebühr von 5% wie Kartenzahlungen. Eventuelle Sondergebühren für Überweisung, Erstattung oder Bank werden bei Bedarf separat ausgewiesen.",
 				"how-does-byok-work": "Dein Anbieter rechnet die Modellnutzung direkt über dein Anbieterkonto ab. Phaseo erhebt für die ersten {freeRequests, number} BYOK-Anfragen jedes UTC-Kalendermonats keine Servicegebühr. Danach berechnet Phaseo {serviceFee, number}% der gleichwertigen Anbieterkosten.",

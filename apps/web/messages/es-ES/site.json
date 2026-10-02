@@ -1680,7 +1680,7 @@
 	},
 	"pricing": {
 		"title": "Precios",
-		"description": "Precios sencillos de una pasarela de IA de pago por uso, con opciones empresariales autogestionadas para identidad, gobernanza y pagos incluidos.",
+		"description": "Precios sencillos de una pasarela de IA de pago por uso, con identidad Enterprise, gobernanza y soporte prioritario opcionales.",
 		"everythingIncluded": "Todo incluido",
 		"everythingIncludedBody": "Explora el catálogo de modelos, las clasificaciones, los SDK y el chat gratuito de modelos antes de gastar nada. Añade créditos cuando necesites usar modelos de pago sin cambiar de plan.",
 		"swipeCompare": "Desliza horizontalmente para comparar proveedores.",
@@ -1816,7 +1816,7 @@
 				"invoices": "Sí. Puedes descargar facturas PDF de las compras de créditos completadas desde Configuración → Créditos. Si falta la factura de un pago correcto, contacta con soporte e indica el ID y la fecha del pago.",
 				"enterprise-plan": "Enterprise empieza en 29 USD al mes para hasta 100 miembros, incluidos equipos pequeños. Incluye SAML SSO, SCIM, departamentos, roles, auditoría, gobernanza y soporte prioritario por correo electrónico. El soporte dedicado por Slack y los SLA contractuales se acuerdan por separado.",
 				"enterprise-credit-fees": "No. El plan empresarial autogestionado es una suscripción de identidad, gobernanza y soporte. Las compras de créditos son independientes y conservan la comisión estándar de recarga del 5%, con un mínimo de {minimum}, en los métodos compatibles.",
-				"enterprise-team-sizes": "Elige un cupo de miembros. El plan inicial incluye hasta 100; los cupos mayores llegan a 100.000. Los miembros cuentan mientras pertenezcan al espacio, aunque no inicien sesión. Con un cupo inferior a 100.000, amplíalo antes de añadir miembros que lo superen. Por encima de 100.000, cada miembro adicional único del periodo de facturación cuesta 0,02 USD al mes, incluidos los eliminados durante ese periodo.",
+				"enterprise-team-sizes": "Elige un cupo de miembros. El plan inicial incluye hasta 100; los cupos mayores llegan a 100.000. Los miembros cuentan mientras pertenezcan al espacio, aunque no inicien sesión. Con un cupo inferior a 100.000, se bloquean nuevas incorporaciones solo si superarían el cupo elegido. Actualmente no se puede cambiar el cupo de forma autogestionada; elige capacidad para el crecimiento previsto antes de suscribirte. Por encima de 100.000, cada miembro adicional único del periodo de facturación cuesta 0,02 USD al mes, incluidos los eliminados durante ese periodo.",
 				"enterprise-usage-billing": "No. La suscripción empresarial cubre identidad, gobernanza y soporte. El uso de modelos gestionado consume el saldo de créditos del espacio de trabajo a los precios del catálogo. No hay gasto de modelos comprometido: usa lo que necesites y se mantiene el mismo precio de suscripción.",
 				"enterprise-bank-transfer": "Actualmente, no. Las transferencias bancarias en USD compatibles tienen la misma comisión de recarga del 5% que los pagos con tarjeta. Si corresponde, cualquier comisión excepcional de transferencia, reembolso o banco se muestra por separado.",
 				"how-does-byok-work": "Tu proveedor factura el uso de modelos directamente a tu cuenta. Phaseo no cobra comisión de servicio por las primeras {freeRequests, number} solicitudes BYOK de cada mes natural UTC. Superado ese límite, Phaseo cobra el {serviceFee, number}% del coste equivalente del proveedor.",

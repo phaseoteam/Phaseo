@@ -1680,7 +1680,7 @@
 	},
 	"pricing": {
 		"title": "Preços",
-		"description": "Preços simples de uma plataforma de gateway de IA conforme o uso, com plano empresarial opcional e autogerenciado para identidade, governança e pagamentos incluídos.",
+		"description": "Preços simples de gateway de IA conforme o uso, com identidade Enterprise, governança e suporte prioritário opcionais.",
 		"everythingIncluded": "Tudo incluído",
 		"everythingIncludedBody": "Explore o catálogo de modelos, rankings, SDKs e o chat gratuito de modelos antes de gastar. Adicione créditos quando precisar usar modelos pagos, sem mudar de plano.",
 		"swipeCompare": "Deslize horizontalmente para comparar provedores.",
@@ -1816,7 +1816,7 @@
 				"invoices": "Sim. Notas fiscais em PDF de compras de créditos concluídas ficam disponíveis em Configurações → Créditos. Se faltar a nota fiscal de um pagamento aprovado, fale com o suporte e informe o ID e a data do pagamento.",
 				"enterprise-plan": "Enterprise começa em US$ 29/mês para até 100 membros, incluindo equipes pequenas. Inclui SAML SSO, SCIM, departamentos, funções, auditoria, governança e suporte prioritário por e-mail. Suporte dedicado no Slack e SLAs contratuais podem ser combinados separadamente.",
 				"enterprise-credit-fees": "Não. O plano empresarial autogerenciado é uma assinatura de identidade, governança e suporte. As compras de créditos são separadas e continuam sujeitas à taxa padrão de recarga de 5%, com mínimo de {minimum}, nos meios de pagamento compatíveis.",
-				"enterprise-team-sizes": "Escolha uma capacidade de membros. O plano inicial inclui até 100; capacidades maiores chegam a 100.000. Os membros contam enquanto pertencem ao espaço, mesmo sem fazer login. Abaixo de 100.000, aumente a capacidade antes de adicionar membros que a excedam. Acima de 100.000, cada membro adicional único do período de cobrança custa US$ 0,02/mês, incluindo os removidos durante esse período.",
+				"enterprise-team-sizes": "Escolha uma capacidade de membros. O plano inicial inclui até 100; capacidades maiores chegam a 100.000. Os membros contam enquanto pertencem ao espaço, mesmo sem fazer login. Abaixo de 100.000, novas adesões são bloqueadas apenas se excederem a capacidade escolhida. Alterações de capacidade por autoatendimento ainda não estão disponíveis; escolha capacidade para o crescimento previsto antes de assinar. Acima de 100.000, cada membro adicional único do período de cobrança custa US$ 0,02/mês, incluindo os removidos durante esse período.",
 				"enterprise-usage-billing": "Não. A assinatura empresarial cobre identidade, governança e suporte. O uso de modelos gerenciado continua sendo descontado do saldo de créditos do espaço pelos preços do catálogo. Não há compromisso de gastos com modelos: use o quanto precisar e o preço da assinatura permanece igual.",
 				"enterprise-bank-transfer": "Ainda não. Transferências bancárias em USD compatíveis têm a mesma taxa de recarga de 5% dos pagamentos por cartão. Quando aplicável, qualquer tarifa excepcional de transferência, reembolso ou banco é exibida separadamente.",
 				"how-does-byok-work": "Seu provedor fatura o uso de modelos diretamente na sua conta. A Phaseo não cobra taxa de serviço pelas primeiras {freeRequests, number} solicitações BYOK de cada mês-calendário UTC. Depois desse limite, cobra {serviceFee, number}% do custo equivalente do provedor.",
