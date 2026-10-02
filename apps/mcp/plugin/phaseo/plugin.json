@@ -1,0 +1,28 @@
+{
+  "version": "0.2.0",
+  "author": {
+    "name": "Phaseo"
+  },
+  "name": "phaseo",
+  "description": "Compare AI models and pricing, estimate costs, and investigate Phaseo usage and request health.",
+  "extensions": {
+    "com.openai": {
+      "interface": {
+        "developerName": "Phaseo",
+        "category": "Developer Tools",
+        "displayName": "Phaseo",
+        "shortDescription": "Models, pricing and usage",
+        "longDescription": "Explore live Phaseo models in an interactive view, inspect capabilities and pricing, compare up to three models, and estimate workload costs. Use authenticated tools to investigate usage and request health.",
+        "defaultPrompt": "Help me compare Phaseo models and estimate costs for my workload.",
+        "logo": "./assets/logo_light.svg",
+        "logoDark": "./assets/logo_dark.svg",
+        "composerIcon": "./assets/logo_light.svg",
+        "composerIconDark": "./assets/logo_dark.svg",
+        "capabilities": [
+          "Interactive"
+        ]
+      }
+    }
+  },
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json"
+}

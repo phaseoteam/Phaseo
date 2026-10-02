@@ -2,6 +2,7 @@
   "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "phaseo-mcp-preview",
   "main": "src/index.ts",
+  "build": { "command": "pnpm build:ui" },
   "compatibility_date": "2026-07-26",
   "compatibility_flags": ["nodejs_compat"],
   "workers_dev": true,

@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "phaseo": {
+      "type": "streamable-http",
+      "url": "https://mcp.phaseo.app/mcp",
+      "headers": {}
+    }
+  }
+}

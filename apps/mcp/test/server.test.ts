@@ -149,6 +149,17 @@ describe("Phaseo MCP server metadata", () => {
 		expect(tools.models_list?._meta?.securitySchemes).toEqual([
 			{ type: "oauth2", scopes: ["models:read", "pricing:read"] },
 		]);
+		expect(tools.models_list?._meta?.ui).toMatchObject({
+			resourceUri: "ui://phaseo/model-explorer.html", visibility: ["model", "app"],
+		});
+		const resources = await client.listResources();
+		expect(resources.resources.map((resource) => resource.uri)).toContain("ui://phaseo/model-explorer.html");
+		const view = await client.readResource({ uri: "ui://phaseo/model-explorer.html" });
+		expect(view.contents[0]).toMatchObject({
+			mimeType: "text/html;profile=mcp-app",
+			_meta: { "openai/ui": { availableDisplayModes: ["fullscreen"], preferredDisplayMode: "fullscreen" } },
+		});
+		expect((view.contents[0] as { text: string }).text).toContain("<!doctype html>");
 		expect(tools.generation_get?.outputSchema).toMatchObject({
 			type: "object",
 			properties: { generation: { type: "object" } },

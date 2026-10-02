@@ -5,18 +5,29 @@
   "type": "module",
   "scripts": {
     "dev": "wrangler dev",
+    "build:ui": "node scripts/build-ui.mjs",
+    "dev:ui": "pnpm build:ui && node scripts/preview-ui.mjs",
+    "build:plugin": "node scripts/package-plugin.mjs",
     "build": "wrangler deploy --dry-run --env=",
     "build:production": "wrangler deploy --dry-run --env production",
 		"cf-typegen": "wrangler types --include-runtime false --strict-vars false",
-    "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "typecheck": "pnpm build:ui && tsc --noEmit && tsc -p ui/tsconfig.json",
+    "test": "pnpm build:ui && vitest run"
   },
   "dependencies": {
+    "@modelcontextprotocol/client": "2.0.0",
+    "@modelcontextprotocol/core": "2.0.0",
+    "@modelcontextprotocol/ext-apps": "2.0.3",
     "@modelcontextprotocol/server": "2.0.0",
     "agents": "0.20.1",
-    "zod": "^4.0.0"
+    "zod": "^4.0.0",
+    "react": "19.2.8",
+    "react-dom": "19.2.8"
   },
   "devDependencies": {
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.3",
+    "esbuild": "0.25.12",
     "@cloudflare/workers-types": "^5.20260710.1",
     "@modelcontextprotocol/sdk": "1.30.0",
     "typescript": "^6.0.3",

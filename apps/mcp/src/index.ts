@@ -1,6 +1,7 @@
 import { createMcpHandler } from "agents/mcp/server";
 import { McpServer } from "@modelcontextprotocol/server";
 import * as z from "zod/v4";
+import { registerModelExplorer, modelExplorerToolMeta } from "./model-explorer";
 
 import {
 	authenticatePhaseoUser,
@@ -656,7 +657,7 @@ export function createServer(env: PhaseoEnv, authenticatedUser: AuthenticatedPha
 	) server.registerTool(
 		"models_list",
 		{
-			title: "Search Phaseo models",
+			title: "Model explorer",
 			description: "Use this when the user wants to find or compare current AI models, including the cheapest paid standard-tier price and provider-by-provider pricing. A free provider is reported explicitly and never presented as if every provider were free. Filters and sorts the live Phaseo catalogue; it does not measure model quality. Read-only.",
 			inputSchema: {
 				query: z.string().max(200).optional(),
@@ -671,7 +672,7 @@ export function createServer(env: PhaseoEnv, authenticatedUser: AuthenticatedPha
 			},
 			outputSchema: { models: z.array(z.object(modelSummarySchema)) },
 			annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
-			_meta: oauthToolMeta(["models:read", "pricing:read"]),
+			_meta: { ...oauthToolMeta(["models:read", "pricing:read"]), ...modelExplorerToolMeta },
 		},
 		async ({ query, provider, modality, minimumContextTokens, maximumInputPricePerMillion, gatewayAvailableOnly, sortBy, sortOrder, limit }) => {
 			try {
@@ -885,6 +886,9 @@ export function createServer(env: PhaseoEnv, authenticatedUser: AuthenticatedPha
 	);
 
 	registerControlPlaneReadTools(server, env, authenticatedUser);
+	if (authenticatedUser.scopes.includes("models:read") && authenticatedUser.scopes.includes("pricing:read")) {
+		registerModelExplorer(server);
+	}
 
 	return server;
 }
