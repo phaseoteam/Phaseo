@@ -90,7 +90,7 @@ describe("public pricing routes", () => {
 
 		expect(response.status).toBe(200);
 		expect(skuQueryCount).toBe(3);
-		expect(response.headers.get("cloudflare-cdn-cache-control")).toBe("public, max-age=900");
+		expect(response.headers.get("cloudflare-cdn-cache-control")).toBe("public, max-age=900, stale-while-revalidate=900, stale-if-error=3600");
 		expect(response.headers.get("cache-control")).toBe("public, max-age=0");
 		expect(payload.models).toHaveLength(1);
 	});

@@ -15,6 +15,7 @@ import {
 } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import CompareDashboard from "@/components/(data)/compare/CompareDashboard";
 import type { CompareGatewayUsageByModel } from "@/components/(data)/compare/types";
+import { WebApiError } from "@/lib/web-api/client";
 
 export async function generateMetadata(): Promise<Metadata> {
 	const locale = await getLocale();
@@ -141,6 +142,13 @@ async function ComparePageContent({ searchParams }: PageProps) {
 		? await Promise.all([
 				fetchFrontendComparisonModels(resolvedIds),
 				fetchFrontendCompareUsage(resolvedIds).catch((error) => {
+					// Only older API deployments need the compatibility endpoints.
+					// Retrying an overloaded backend increases load without helping.
+					if (!(error instanceof WebApiError) || ![404, 405, 501].includes(error.status)) {
+						// eslint-disable-next-line no-console
+						console.warn("[compare] Gateway usage unavailable", error);
+						return {} as CompareGatewayUsageByModel;
+					}
 					// eslint-disable-next-line no-console
 					console.warn("[compare] Batch usage unavailable; using compatibility requests", error);
 					return loadLegacyUsage(resolvedIds);
