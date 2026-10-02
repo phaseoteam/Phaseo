@@ -26,7 +26,7 @@ import {
 } from "@/components/(rankings)/chart-colors";
 import { formatModelDisplayName } from "@/lib/models/displayName";
 import { getModelDetailsHref } from "@/lib/models/modelHref";
-import { formatCompactAxisTick } from "@/lib/formatRoundedCount";
+import { formatCompactAxisTick, formatRoundedCount } from "@/lib/formatRoundedCount";
 
 type UsageStackedBarProps = {
 	data: TimeseriesData[];
@@ -201,10 +201,13 @@ export function UsageStackedBar({
 	const formatNumber = (value: number) => Number.isFinite(value)
 		? format.number(value, { maximumFractionDigits: 1 })
 		: "--";
-	const formatPaceGain = (value: number) => `+${format.number(
-		Number.isFinite(value) ? Math.max(0, value) : 0,
-		{ maximumFractionDigits: 2 },
-	)}`;
+	const formatTooltipNumber = showScaleToggle ? formatRoundedCount : formatNumber;
+	const formatPaceGain = (value: number) => {
+		const safeValue = Number.isFinite(value) ? Math.max(0, value) : 0;
+		return `+${showScaleToggle
+			? formatRoundedCount(safeValue)
+			: format.number(safeValue, { maximumFractionDigits: 2 })}`;
+	};
 	const [hoveredKey, setHoveredKey] = useState<string | null>(null);
 	const [nowMs] = useState(() => Date.now());
 	const [listExpanded, setListExpanded] = useState(false);
@@ -610,7 +613,7 @@ export function UsageStackedBar({
 														{cfg?.label ?? String(item?.name ?? "")}
 													</span>
 													<span className="pl-3 font-medium tabular-nums">
-														{formatNumber(val)}
+														{formatTooltipNumber(val)}
 													</span>
 												</div>
 											);
@@ -622,14 +625,14 @@ export function UsageStackedBar({
 												{isCurrentWeek ? "So far" : "Total"}
 											</span>
 											<span className="whitespace-nowrap tabular-nums">
-												{formatNumber(weeklyTotal)}
+												{formatTooltipNumber(weeklyTotal)}
 											</span>
 										</div>
 										{isCurrentWeek ? (
 											<div className="flex items-center justify-between gap-4">
 												<span className="text-muted-foreground">Weekly pace</span>
 												<span className="whitespace-nowrap tabular-nums">
-													{formatNumber(projectedTotal)} ({formatPaceGain(weeklyPaceGain)})
+													{formatTooltipNumber(projectedTotal)} ({formatPaceGain(weeklyPaceGain)})
 												</span>
 											</div>
 										) : null}
