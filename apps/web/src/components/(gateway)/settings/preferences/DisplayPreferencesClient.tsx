@@ -599,7 +599,7 @@ export default function DisplayPreferencesClient({
 				<PreferenceRow
 					title={t("preferencesCopy.landingPage")}
 					description={t("preferencesCopy.landingPageHelp")}
-					preview={{ home: "/", models: "/models", chat: "/chat", monitor: "/monitor" }[preferences.landingPage]}
+					preview={{ home: "/", models: "/models", chat: "/chat" }[preferences.landingPage]}
 				>
 					<PreferenceSelect
 						ariaLabel={t("preferencesCopy.defaultLandingPage")}
@@ -609,7 +609,6 @@ export default function DisplayPreferencesClient({
 							{ value: "home", label: t("preferencesCopy.home") },
 							{ value: "models", label: t("preferencesCopy.models") },
 							{ value: "chat", label: t("preferencesCopy.chat") },
-							{ value: "monitor", label: t("preferencesCopy.monitor") },
 						]}
 					/>
 				</PreferenceRow>

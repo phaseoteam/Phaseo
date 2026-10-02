@@ -70,7 +70,6 @@ const staticRoutes: Array<{
         { path: "/contact", changeFrequency: "monthly", priority: 0.55 },
         { path: "/works-with", changeFrequency: "weekly", priority: 0.6 },
         { path: "/performance", changeFrequency: "monthly", priority: 0.55 },
-        { path: "/monitor", changeFrequency: "weekly", priority: 0.55 },
         { path: "/tools", changeFrequency: "monthly", priority: 0.65 },
         { path: "/tools/json-formatter", changeFrequency: "monthly", priority: 0.55 },
         { path: "/tools/markdown-preview", changeFrequency: "monthly", priority: 0.55 },

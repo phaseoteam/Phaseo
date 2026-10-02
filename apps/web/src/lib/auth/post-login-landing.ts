@@ -2,7 +2,6 @@ const LANDING_PAGE_PATHS = {
 	home: "/",
 	models: "/models",
 	chat: "/chat",
-	monitor: "/monitor",
 } as const;
 
 export function resolvePostLoginDestination(opts: {
