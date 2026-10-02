@@ -7,7 +7,7 @@ import type { RequestRow } from "@/app/(dashboard)/gateway/usage/server-actions"
 jest.mock("./RoutingTracePanel", () => ({ RoutingTracePanel: () => null }));
 jest.mock("./DetailDialogPrimitives", () => ({ DetailTimingBar: () => null }));
 
-test.each(["en-GB", "es-ES", "fr-FR", "de-DE", "pt-BR", "ja", "zh-Hans", "hi", "ar-SA"])("renders retained tools and final gateway text without missing messages in %s", (locale) => {
+test.each(["en-GB", "es-ES", "fr-FR", "de-DE", "pt-BR", "ja", "zh-Hans", "hi", "ar-SA"] as const)("renders retained tools and final gateway text without missing messages in %s", (locale) => {
 	const messages = require(`../../../../messages/${locale}/settings-ui.json`);
 	const html = renderToStaticMarkup(<NextIntlClientProvider locale={locale} timeZone="UTC" onError={(error) => { throw error; }} messages={{ SettingsUI: messages }}><GenerationTraceView request={{ request_id: "test", success: true } as RequestRow} timelineItems={[]} ioLog={{
 		status: "stored", storage_provider: "cloudflare_r2", bytes: 100, retention_until: null, error: null,
