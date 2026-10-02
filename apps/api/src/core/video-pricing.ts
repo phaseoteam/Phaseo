@@ -374,11 +374,11 @@ export function computeVideoPricedUsage(args: {
 	const hasPrimaryLine = (result: Record<string, any>) =>
 		Array.isArray(result.pricing?.lines) &&
 		result.pricing.lines.some((line: any) => primaryMeters.includes(line.dimension));
-	if (getPricedTotalNanos(priced as Record<string, unknown>) > 0 && (!requiresPrimaryLine || hasPrimaryLine(priced))) {
+	if (getPricedTotalNanos(priced as Record<string, unknown>) > 0 && hasPrimaryLine(priced)) {
 		return priced as Record<string, unknown>;
 	}
 	if (!hasLegacyOutputVideoMeter(args.card)) {
-		if (getPricedTotalNanos(priced) > 0 && requiresPrimaryLine) {
+		if (getPricedTotalNanos(priced) > 0) {
 			throw new Error("video_pricing_primary_rule_missing");
 		}
 		return priced as Record<string, unknown>;
