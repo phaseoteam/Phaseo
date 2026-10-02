@@ -1,0 +1,82 @@
+{
+  "model_id": "mancer/weaver-alpha",
+  "organisation_id": "mancer",
+  "name": "Weaver Alpha",
+  "status": "Available",
+  "previous_model_id": null,
+  "description": "Weaver Alpha is a text-generation model available through Mancer.",
+  "announced_date": null,
+  "release_date": null,
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": "text",
+  "output_types": "text",
+  "api_model_id": "mancer/weaver-alpha",
+  "variants": [],
+  "links": [
+    {
+      "title": "Model source",
+      "kind": "weights",
+      "url": "https://mancer.tech/models/weaver-alpha"
+    }
+  ],
+  "details": [
+    {
+      "name": "input_context_length",
+      "value": 8000
+    },
+    {
+      "name": "output_context_length",
+      "value": 6000
+    }
+  ],
+  "benchmarks": [],
+  "family_id": null,
+  "page_notice": null,
+  "model_type": null,
+  "knowledge_cutoff": null,
+  "limits": {
+    "context": 8000,
+    "input": 8000,
+    "output": 6000
+  },
+  "modalities": {
+    "input": [
+      "text"
+    ],
+    "output": [
+      "text"
+    ]
+  },
+  "reasoning": {
+    "supported": null,
+    "options": []
+  },
+  "capabilities": {
+    "attachment": false,
+    "tool_call": null,
+    "structured_output": null,
+    "temperature": true,
+    "streaming": true,
+    "web_search": false
+  },
+  "open_weights": null,
+  "sources": [
+    {
+      "kind": "model_card",
+      "url": "https://mancer.tech/models/weaver-alpha",
+      "accessed_at": "2026-08-24T00:00:00Z",
+      "notes": "Primary source linked by Mancer's official catalogue."
+    }
+  ],
+  "verification": {
+    "status": "partial",
+    "checked_at": "2026-08-24T00:00:00Z",
+    "notes": "Canonical identity and Mancer-hosted limits verified."
+  },
+  "last_updated": "2026-08-24T00:00:00Z",
+  "removal_date": null,
+  "replacement_model_id": null,
+  "license_url": null
+}
