@@ -56,7 +56,7 @@ describe("public reference-data routes", () => {
 			expect(response.status).toBe(200);
 			expect(response.headers.get("cloudflare-cdn-cache-control")).toBe(
 				response === providerHeader || response === sources
-					? "public, max-age=900"
+					? "public, max-age=900, stale-while-revalidate=900, stale-if-error=3600"
 					: "public, max-age=86400, stale-while-revalidate=604800",
 			);
 		}
