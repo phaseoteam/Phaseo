@@ -914,20 +914,7 @@
     "Site.contact"
   ],
   "[\"Site.faq\"]": [
-    "Site.faq.items.0.question",
-    "Site.faq.items.1.answer",
-    "Site.faq.items.1.question",
-    "Site.faq.items.2.question",
-    "Site.faq.items.3.answer",
-    "Site.faq.items.3.question",
-    "Site.faq.items.4.answer",
-    "Site.faq.items.4.question",
-    "Site.faq.items.5.answer",
-    "Site.faq.items.5.question",
-    "Site.faq.items.6.question",
-    "Site.faq.items.7.question",
-    "Site.faq.items.8.question",
-    "Site.faq.title"
+    "Site.faq"
   ],
   "[\"Site.landingGaps\",\"Site.pricing\"]": [
     "Site.pricing"

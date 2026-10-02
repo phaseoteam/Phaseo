@@ -101,5 +101,6 @@ describe("route message selection", () => {
 		const [faq] = scopes.filter(scope => scope.includes("Site.faq"));
 		const selected = selectClientMessages(messages, faq);
 		expect((selected.Site as Record<string, Record<string, unknown>>).faq.items).toEqual(messages.Site.faq.items);
+		expect((selected.Site as Record<string, Record<string, unknown>>).faq.intro).toEqual(messages.Site.faq.intro);
 	});
 });

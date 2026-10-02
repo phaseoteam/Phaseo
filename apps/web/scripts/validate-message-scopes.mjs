@@ -99,7 +99,8 @@ function fileInfo(file, sourceOverride) {
                 if (ts.isIdentifier(n) && n.text === name
                     && !(ts.isVariableDeclaration(n.parent) && n.parent.name === n)
                     && !(ts.isCallExpression(n.parent) && n.parent.expression === n)
-                    && !(ts.isPropertyAccessExpression(n.parent) && n.parent.expression === n)) {
+                    && !(ts.isPropertyAccessExpression(n.parent) && n.parent.expression === n
+                        && ts.isCallExpression(n.parent.parent) && n.parent.parent.expression === n.parent)) {
                     info.keys.push(namespace ? namespace + '.*' : '*');
                 }
                 ts.forEachChild(n, calls);
@@ -122,6 +123,8 @@ if (process.argv.includes('--self-test')) {
     `);
     assert.deepEqual(fixture.namespaces, ['Feature.copyButton']);
     assert.deepEqual(fixture.keys.sort(), ['Feature.copyButton.copied', 'Feature.copyButton.copy', 'Feature.copyButton.status.*']);
+    const alias = fileInfo('scope-alias-fixture.tsx', `function Copy() { const t = useTranslations("Feature"); const rich = t.rich; return rich("intro", {}); }`);
+    assert(alias.keys.includes('Feature.*'), 'An aliased translation method must retain its containing namespace');
     console.log('Message scope audit self-test passed.');
     process.exit(0);
 }
