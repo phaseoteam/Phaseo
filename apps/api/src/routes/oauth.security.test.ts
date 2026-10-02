@@ -821,6 +821,27 @@ describe("OAuth route security", () => {
 		]);
 	});
 
+	it("lets existing dynamic Phaseo MCP clients explicitly step up to inference consent", async () => {
+		state.client = { id: "existing_mcp", name: "ChatGPT", client_type: "public", registration_source: "dynamic", allowed_scopes: ["models:read", "pricing:read"] };
+		const { oauthRouter, filterMcpAuthorizationScopes } = await import("./oauth");
+		const requested = ["models:read", "pricing:read", "gateway:access"];
+		const challenge = "a".repeat(43);
+		const params = new URLSearchParams({ client_id: "existing_mcp", redirect_uri: "https://chatgpt.com/aip/callback", response_type: "code", scope: requested.join(" "), code_challenge: challenge, code_challenge_method: "S256", resource: "https://mcp.phaseo.app/mcp" });
+		const response = await oauthRouter.request(`https://example.com/authorize?${params}`);
+		expect(response.status).toBe(302);
+		expect(new URLSearchParams(state.consentParams ?? "").get("scope")).toBe(requested.join(" "));
+		expect(state.client.allowed_scopes).toEqual(["models:read", "pricing:read"]);
+		const client = state.client as Parameters<typeof filterMcpAuthorizationScopes>[0];
+		for (const resource of ["https://other.example/mcp", "https://api.example.com/v1", ""]) {
+			expect(filterMcpAuthorizationScopes(client, requested, resource)).not.toContain("gateway:access");
+		}
+		for (const registration_source of ["developer", "cimd", "first_party"] as const) {
+			expect(filterMcpAuthorizationScopes({ ...client, registration_source }, requested, params.get("resource")!)).not.toContain("gateway:access");
+		}
+		expect(filterMcpAuthorizationScopes(client, [...requested, "keys:write"], params.get("resource")!)).not.toContain("gateway:access");
+		expect(filterMcpAuthorizationScopes(client, ["models:read"], params.get("resource")!)).toEqual(["models:read"]);
+	});
+
 	it("classifies legacy loopback registrations as native clients", async () => {
 		const { oauthRouter } = await import("./oauth");
 		const response = await oauthRouter.request("https://example.com/register", {

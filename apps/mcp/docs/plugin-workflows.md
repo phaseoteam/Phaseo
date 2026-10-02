@@ -23,7 +23,7 @@ Saved shortlists are local to the device/host, not synced to the Phaseo account.
 
 Rollout requires API auth changes, the MCP Durable Object migration/binding, Worker
 deployment, and the private plugin update. Existing registered clients that lack
-gateway:access must reconnect with a client permitted to request it and grant consent.
+gateway:access can explicitly request it for the Phaseo MCP resource and grant consent.
 No paid provider calls or production deployments are part of local validation.
 
 ## Visual design and release checks
@@ -31,7 +31,8 @@ No paid provider calls or production deployments are part of local validation.
 The explorer follows Phaseo's default light/dark tokens in
 `apps/web/src/app/globals.css`: neutral surfaces, blue accents, Montserrat,
 6px controls and 10px panels. Montserrat's Latin variable WOFF2 is bundled inline
-from @fontsource-variable/montserrat 5.3.0, with its SIL OFL license in ui/assets.
+from @fontsource-variable/montserrat 5.3.0, with its SIL OFL license in ui/assets
+and a readable Font license disclosure in the delivered HTML.
 The actual Phaseo mark appears in the header and the monochrome host entrypoint;
 the plugin manifest retains light/dark listing and composer logos.
 
@@ -46,6 +47,6 @@ Before release:
 Local fixtures verify visual and interaction behavior; they do not confirm these
 authenticated host or production steps.
 
-Existing read-only dynamic OAuth client registrations may not allow the optional
-inference scope. Their allowlists and the host's consent/reconnect behavior need
-review before release; do not broaden existing grants or default consent silently.
+Existing read-only dynamic OAuth clients can request optional inference consent
+for the canonical Phaseo MCP resource. This does not update their stored allowlists,
+existing grants, or default scopes. The host's consent flow still needs live verification.

@@ -609,7 +609,11 @@ td {
 }
 .select-item[data-highlighted] {
   background: var(--field);
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
 }
+.font-license { max-width: 1120px; margin: 0 auto; padding: 16px 32px; font-size: 11px; color: var(--muted); }
+.font-license pre { white-space: pre-wrap; overflow-wrap: anywhere; }
 .select-indicator {
   display: flex;
   margin-left: auto;

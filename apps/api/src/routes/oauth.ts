@@ -282,6 +282,22 @@ function requiresGatewayAccessScope(clientId: string, resource: string, scopes: 
 		&& !scopes.includes(GATEWAY_ACCESS_SCOPE);
 }
 
+// Permit explicit inference consent for an existing dynamic Phaseo MCP client.
+// This changes neither its stored allowlist nor any existing authorization grant.
+export function filterMcpAuthorizationScopes(
+	client: Parameters<typeof filterAllowedScopes>[0],
+	requested: string[],
+	resource: string,
+): string[] {
+	const explicitStepUp = client.registration_source === "dynamic"
+		&& resource === "https://mcp.phaseo.app/mcp"
+		&& requested.includes(GATEWAY_ACCESS_SCOPE)
+		&& requested.every((scope) => scope === GATEWAY_ACCESS_SCOPE || RESOURCE_BOUND_MCP_SCOPE_SET.has(scope));
+	return filterAllowedScopes(explicitStepUp
+		? { ...client, allowed_scopes: [...client.allowed_scopes, GATEWAY_ACCESS_SCOPE] }
+		: client, requested);
+}
+
 function canNarrowResourceBoundMcpScopes(
 	client: { registration_source?: string },
 	resource: string,
@@ -585,7 +601,7 @@ oauthRouter.get(
 				? ["openid", "profile", "email"]
 				: ["openid", "profile", "email", GATEWAY_ACCESS_SCOPE],
 		);
-		const scopes = filterAllowedScopes(client, requestedScopes);
+		const scopes = filterMcpAuthorizationScopes(client, requestedScopes, resource);
 		if (
 			scopes.length !== requestedScopes.length
 			&& !canNarrowResourceBoundMcpScopes(client, resource, scopes)
@@ -652,7 +668,7 @@ oauthRouter.post(
 				? ["openid", "profile", "email"]
 				: ["openid", "profile", "email", GATEWAY_ACCESS_SCOPE],
 		);
-		const scopes = filterAllowedScopes(client, requestedScopes);
+		const scopes = filterMcpAuthorizationScopes(client, requestedScopes, resource);
 		if (
 			scopes.length !== requestedScopes.length
 			&& !canNarrowResourceBoundMcpScopes(client, resource, scopes)

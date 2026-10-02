@@ -1,10 +1,16 @@
 {
+  "skills": "./skills",
+  "keywords": [],
+  "version": "0.3.0",
+  "description": "Compare AI models and pricing, estimate costs, and investigate Phaseo usage and request health.",
+  "mcpServers": "./.mcp.json",
+  "name": "phaseo",
   "interface": {
     "developerName": "Phaseo",
     "category": "Developer Tools",
     "displayName": "Phaseo",
     "shortDescription": "Models, pricing and usage",
-    "longDescription": "Explore live Phaseo models in an interactive view, inspect capabilities and pricing, compare up to three models, and estimate workload costs. Use authenticated tools to investigate usage and request health.",
+    "longDescription": "Explore Phaseo models, save shortlists, copy integration examples, and inspect usage and request health. Review estimated costs before explicitly running a prompt across up to three text models with inference permission.",
     "defaultPrompt": "Help me compare Phaseo models and estimate costs for my workload.",
     "logo": "./assets/logo_light.svg",
     "logoDark": "./assets/logo_dark.svg",
@@ -14,13 +20,7 @@
       "Interactive"
     ]
   },
-  "name": "phaseo",
-  "version": "0.2.0",
-  "description": "Compare AI models and pricing, estimate costs, and investigate Phaseo usage and request health.",
   "author": {
     "name": "Phaseo"
-  },
-  "keywords": [],
-  "skills": "./skills",
-  "mcpServers": "./.mcp.json"
+  }
 }
