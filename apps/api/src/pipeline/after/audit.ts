@@ -396,6 +396,7 @@ export async function handleFailureAudit(
             gatewayResponse: gatewayErrorPayload ?? gatewayFailurePayload,
             providerRequest: result.mappedRequest ?? null,
             providerResponse: errorDetails ?? result.rawResponse ?? null,
+            serverToolTrace: ctx.serverToolTrace,
             detailMetadata: {
                 stage: "execute",
                 response_timeline: buildResponseTimeline(ctx),
@@ -674,6 +675,7 @@ export async function handleSuccessAudit(
             gatewayResponse: gatewayResponse ?? null,
             providerRequest: result.mappedRequest ?? null,
             providerResponse: result.rawResponse ?? null,
+            serverToolTrace: ctx.serverToolTrace,
             detailMetadata: {
                 stage: "execute",
                 response_timeline: buildResponseTimeline(ctx),

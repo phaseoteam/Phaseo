@@ -3,6 +3,9 @@
 import { settingsStringKey } from "@/i18n/settings-string-keys";
 
 import React from "react";
+import dynamic from "next/dynamic";
+import { useFeatureGate } from "@statsig/react-bindings";
+import { GATEWAY_TRACE_VIEW_GATE } from "@/lib/statsig/shared";
 import { useLocale, useTranslations } from "next-intl";
 import { resolveProviderDisplayName } from "@/lib/providers/providerOffers";
 import Link from "next/link";
@@ -15,6 +18,7 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CopyButton } from "@/components/ui/copy-button";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -34,14 +38,6 @@ import {
 	HoverCardContent,
 	HoverCardTrigger,
 } from "@/components/ui/hover-card";
-import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from "@/components/ui/table";
 import { Logo } from "@/components/Logo";
 import {
 	RequestRow,
@@ -55,10 +51,8 @@ import {
 	formatUsageNumber,
 	type UsageMeter,
 } from "./usageMeters";
-import {
-	DetailKeyValueGrid,
-	DetailTimingBar,
-} from "./DetailDialogPrimitives";
+import { DetailKeyValueGrid, DetailTimingBar } from "./DetailDialogPrimitives";
+import { RoutingTracePanel } from "./RoutingTracePanel";
 import { getModelDisplayName, type ModelMetadataMap } from "./model-display";
 import {
 	PROVIDER_PROMPT_TRAINING_POLICY_LABELS,
@@ -66,12 +60,12 @@ import {
 } from "@/lib/providers/promptTrainingPolicy";
 import { formatRoomError, type RoomErrorTranslator } from "@/lib/chat/formatRoomError";
 import UsageEntityHoverCard from "./UsageEntityHoverCard";
-import { RoutingTracePanel } from "@/components/(gateway)/usage/RoutingTracePanel";
 import { providerAttemptTimelineDuration, responseTimelineTiming } from "./responseTimeline";
 import {
 	ProviderInspectorSheet,
 	ProviderInspectorSheetContent,
 } from "@/components/(data)/model/pricing/ProviderInspectorSheet";
+const GenerationTraceView = dynamic(() => import("./GenerationTraceView").then((module) => module.GenerationTraceView));
 
 interface RequestDetailDialogProps {
 	open: boolean;
@@ -600,19 +594,6 @@ function formatThroughput(value: number | string | null | undefined): string {
 	return `${Math.round(n * 100) / 100} tok/s`;
 }
 
-function formatDuration(ms: number | null | undefined): string {
-	const value = Number(ms ?? 0);
-	if (!Number.isFinite(value) || value <= 0) return "-";
-	if (value < 1000) return `${Math.round(value)} ms`;
-	if (value < 60_000) {
-		const seconds = value / 1000;
-		return `${seconds >= 10 ? seconds.toFixed(1) : seconds.toFixed(2)} s`;
-	}
-	const minutes = Math.floor(value / 60_000);
-	const seconds = Math.round((value % 60_000) / 1000);
-	return seconds > 0 ? `${minutes}m ${seconds}s` : `${minutes}m`;
-}
-
 function formatScoreValue(value: number | null | undefined): string {
 	const numeric = Number(value ?? NaN);
 	return Number.isFinite(numeric) ? numeric.toFixed(3) : "-";
@@ -840,6 +821,7 @@ export default function RequestDetailDialog({
 		t(settingsStringKey(key) as never, values as never);
 	const format = useDisplayFormatters();
 	const searchParams = useSearchParams();
+	const traceEnabled = useFeatureGate(GATEWAY_TRACE_VIEW_GATE).value;
 
 	if (!request) return null;
 	const providerName = resolveProviderDisplayName({ providerId: request.provider, providerName: suppliedProviderName ?? request.provider ?? "" });
@@ -866,7 +848,7 @@ export default function RequestDetailDialog({
 					onOpenChange={onOpenChange}
 					disablePointerDismissal={disablePointerDismissal}
 				>
-					<ProviderInspectorSheetContent className="!w-full max-w-none gap-0 overflow-hidden p-0 sm:max-w-none md:!w-[58vw] lg:!w-[54vw] xl:!w-[50vw] 2xl:!w-[46vw] data-[side=right]:sm:max-w-none">
+					<ProviderInspectorSheetContent className={traceEnabled ? "!w-full max-w-none gap-0 overflow-hidden p-0 sm:max-w-none md:!w-[72vw] lg:!w-[68vw] xl:!w-[64vw] 2xl:!w-[60vw] data-[side=right]:sm:max-w-none" : "!w-full max-w-none gap-0 overflow-hidden p-0 sm:max-w-none md:!w-[58vw] lg:!w-[54vw] xl:!w-[50vw] 2xl:!w-[46vw] data-[side=right]:sm:max-w-none"}>
 						{loadingContent}
 					</ProviderInspectorSheetContent>
 				</ProviderInspectorSheet>
@@ -1572,15 +1554,28 @@ export default function RequestDetailDialog({
 					</div>
 				) : null}
 
-				<ScrollArea
-					className={cn(
-						presentation === "sheet"
-							? "min-h-0 flex-1"
-							: "max-h-[calc(90vh-110px)]",
-					)}
-					viewportClassName="px-5 py-3 sm:px-6"
+				<Tabs
+					key={`${request.request_id}:${traceEnabled}`}
+					defaultValue="overview"
+					className="min-h-0 flex-1 gap-0"
 				>
-					<div>
+					{traceEnabled ? <TabsList
+						variant="line"
+						className="w-full shrink-0 justify-start rounded-none border-b border-border/70 px-5 sm:px-6"
+					>
+						<TabsTrigger value="overview">{t("strings.Overview" as never)}</TabsTrigger>
+						<TabsTrigger value="trace">{t("trace.trace" as never)}</TabsTrigger>
+					</TabsList> : null}
+					<TabsContent value="overview" className="flex min-h-0 flex-1 flex-col overflow-hidden">
+						<ScrollArea
+							className={cn(
+								presentation === "sheet"
+									? "min-h-0 flex-1"
+									: traceEnabled ? "max-h-[calc(90vh-150px)]" : "max-h-[calc(90vh-110px)]",
+							)}
+							viewportClassName="px-5 py-3 sm:px-6"
+						>
+						<div>
 						{!request.success && (request.error_code || request.error_message) ? (
 							<div className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm">
 								<div className="mb-2 flex items-center gap-2 font-medium text-rose-900">
@@ -2755,8 +2750,23 @@ export default function RequestDetailDialog({
 								</div>
 							</GenerationSection>
 						) : null}
-					</div>
-				</ScrollArea>
+						</div>
+						</ScrollArea>
+					</TabsContent>
+					{traceEnabled ? <TabsContent value="trace" className="flex min-h-0 flex-1 flex-col overflow-hidden">
+						<ScrollArea
+							className="h-full min-h-0"
+							viewportClassName="px-5 py-3 sm:px-6"
+						>
+							<GenerationTraceView
+								request={request}
+								ioLog={ioLog}
+								timelineItems={responseTimelineItems}
+								providerNames={providerNames}
+							/>
+						</ScrollArea>
+					</TabsContent> : null}
+				</Tabs>
 		</>
 	);
 
@@ -2768,7 +2778,7 @@ export default function RequestDetailDialog({
 				disablePointerDismissal={disablePointerDismissal}
 			>
 				<ProviderInspectorSheetContent
-					className="!w-full max-w-none gap-0 overflow-hidden p-0 sm:max-w-none md:!w-[58vw] lg:!w-[54vw] xl:!w-[50vw] 2xl:!w-[46vw] data-[side=right]:sm:max-w-none"
+					className={traceEnabled ? "!w-full max-w-none gap-0 overflow-hidden p-0 sm:max-w-none md:!w-[72vw] lg:!w-[68vw] xl:!w-[64vw] 2xl:!w-[60vw] data-[side=right]:sm:max-w-none" : "!w-full max-w-none gap-0 overflow-hidden p-0 sm:max-w-none md:!w-[58vw] lg:!w-[54vw] xl:!w-[50vw] 2xl:!w-[46vw] data-[side=right]:sm:max-w-none"}
 				>
 					{detailContent}
 				</ProviderInspectorSheetContent>
@@ -2778,7 +2788,7 @@ export default function RequestDetailDialog({
 
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
-			<DialogContent className="max-h-[90vh] max-w-6xl overflow-hidden p-0">
+			<DialogContent className="flex max-h-[90vh] max-w-6xl flex-col overflow-hidden p-0">
 				<DialogHeader className="sr-only">
 					<DialogTitle>{s("Request details")}</DialogTitle>
 				</DialogHeader>
