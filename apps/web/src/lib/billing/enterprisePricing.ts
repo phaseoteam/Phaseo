@@ -1,5 +1,6 @@
-export const ENTERPRISE_PRICING_VERSION = "2026-08-21-enterprise-entry";
-export const ENTERPRISE_MIN_SELF_SERVE_MEMBERS = 100;
+export const ENTERPRISE_PRICING_VERSION = "2026-10-02-enterprise-entry";
+export const ENTERPRISE_MIN_SELF_SERVE_MEMBERS = 1;
+export const ENTERPRISE_BASE_INCLUDED_MEMBERS = 100;
 export const ENTERPRISE_MAX_SELF_SERVE_MEMBERS = 100_000;
 export const ENTERPRISE_MAX_QUOTED_MEMBERS = 2_147_483_647;
 export const ENTERPRISE_MEMBER_OVERAGE_USD = 0.02;
@@ -40,8 +41,8 @@ export type EnterpriseQuoteOption = {
 };
 
 const ENTERPRISE_PRICE_ANCHORS = [
-	{ members: 100, monthlyUsd: 49 },
-	{ members: 1_000, monthlyUsd: 99 },
+	{ members: ENTERPRISE_BASE_INCLUDED_MEMBERS, monthlyUsd: 29 },
+	{ members: 1_000, monthlyUsd: 79 },
 	{ members: 10_000, monthlyUsd: 299 },
 	{ members: 25_000, monthlyUsd: 599 },
 	{ members: 50_000, monthlyUsd: 1_099 },
@@ -61,10 +62,10 @@ function enterpriseMonthlyUsd(memberCount: number): number {
 export function enterpriseTierForMembers(memberCount: number): EnterpriseTier {
 	if (!Number.isInteger(memberCount) || memberCount < ENTERPRISE_MIN_SELF_SERVE_MEMBERS || memberCount > ENTERPRISE_MAX_QUOTED_MEMBERS) throw new Error("member_count_out_of_range");
 	const coreMonthlyUsd = enterpriseMonthlyUsd(memberCount);
-	const includedMembers = Math.min(memberCount, ENTERPRISE_MAX_SELF_SERVE_MEMBERS);
+	const includedMembers = Math.min(Math.max(memberCount, ENTERPRISE_BASE_INCLUDED_MEMBERS), ENTERPRISE_MAX_SELF_SERVE_MEMBERS);
 	return {
-		key: `members_${memberCount}`,
-		label: `${memberCount.toLocaleString("en-US")} active ${memberCount === 1 ? "member" : "members"}`,
+		key: `members_${Math.max(memberCount, ENTERPRISE_BASE_INCLUDED_MEMBERS)}`,
+		label: `Up to ${includedMembers.toLocaleString("en-US")} workspace members`,
 		maxMembers: includedMembers,
 		coreMonthlyUsd,
 		includedPaymentsMonthlyUsd: coreMonthlyUsd,

@@ -152,7 +152,7 @@ export async function POST(request: Request) {
 					recurring: { interval: "month" },
 					product_data: {
 						name: "Phaseo Self Serve Enterprise",
-						description: `${option.includedMembers.toLocaleString("en-US")} active members`,
+						description: `Up to ${option.includedMembers.toLocaleString("en-US")} workspace members`,
 						metadata: { addon_key: IDENTITY_ADDON_KEY, pricing_version: ENTERPRISE_PRICING_VERSION },
 					},
 				},
