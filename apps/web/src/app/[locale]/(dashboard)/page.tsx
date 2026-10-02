@@ -337,7 +337,7 @@ function LandingPage({
 }
 
 export default function Page({ params }: ScopedLayoutProps) {
-	return <ScopedMessages params={params} namespaces={["Site.home", "Site.homeOpenSourceMarketing", "Site.homeQuickstart", "Site.landingGaps", "Site.about.open", "SettingsUI.landingGaps", "Catalogue.updates.models", "Catalogue.updates.eventTypes"]}><HomePageContent /></ScopedMessages>;
+	return <ScopedMessages params={params} namespaces={["Site.homeOpenSourceMarketing", "Site.homeQuickstart", "SettingsUI.landingGaps.copyApp", "SettingsUI.landingGaps.copyProviders", "Catalogue.updates.models.playLatestModelUpdates", "Catalogue.updates.models.pauseLatestModelUpdates", "Catalogue.updates.models.viewModel", "Catalogue.updates.models.today", "Catalogue.updates.eventTypes", "Site.about.open"]}><HomePageContent /></ScopedMessages>;
 }
 
 async function HomePageContent() {

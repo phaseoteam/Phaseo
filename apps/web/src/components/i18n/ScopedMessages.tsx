@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { getLocale } from "next-intl/server";
 import { FeatureMessagesProvider } from "./LocaleMessagesProvider";
 import { getPublicMessages } from "@/i18n/messages";
-import { selectMessages } from "@/i18n/message-scopes";
+import { selectClientMessages } from "@/i18n/client-message-selection";
 import { isPublicLocale } from "@/i18n/routing";
 
 export type ScopedLayoutProps = {
@@ -16,7 +16,7 @@ export async function ScopedMessages({ children, params, namespaces }: ScopedLay
 }) {
 	const { locale } = await params;
 	if (!isPublicLocale(locale)) notFound();
-	const messages = selectMessages(await getPublicMessages(locale), namespaces);
+	const messages = selectClientMessages(await getPublicMessages(locale), namespaces);
 	return <FeatureMessagesProvider messages={messages}>{children}</FeatureMessagesProvider>;
 }
 

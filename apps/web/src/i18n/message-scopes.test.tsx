@@ -7,6 +7,9 @@ import { FeatureMessagesProvider, LocaleMessagesProvider } from "@/components/i1
 import { getPublicMessages } from "./messages";
 import { publicLocales } from "./routing";
 import { combineMessages, selectMessages, SHELL_MESSAGE_NAMESPACES } from "./message-scopes";
+import lazyScopes from "./lazy-message-scopes.json";
+import { gzipSync } from "node:zlib";
+import { selectClientMessages } from "./client-message-selection";
 
 function routeNamespaces(directory: string): string[][] {
 	return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
@@ -25,7 +28,10 @@ describe("route message selection", () => {
 	it.each(publicLocales)("preserves every declared scope in %s", async (locale) => {
 		const messages = await getPublicMessages(locale);
 		const shell = selectMessages(messages, SHELL_MESSAGE_NAMESPACES);
-		for (const scope of scopes) expect(() => selectMessages(messages, scope)).not.toThrow();
+		for (const scope of scopes) {
+			expect(() => selectMessages(messages, scope)).not.toThrow();
+			expect(() => selectClientMessages(messages, scope)).not.toThrow();
+		}
 		expect(shell.Catalogue).toBeUndefined();
 		expect(shell.Content).toBeUndefined();
 		expect((shell.SettingsUI as Record<string, unknown>).credits).toBeUndefined();
@@ -34,9 +40,14 @@ describe("route message selection", () => {
 		const translate = createTranslator({ locale, messages: combined, onError } as never);
 		expect(translate("Common.nav.home" as never)).toBeTruthy();
 		expect(translate("Catalogue.models.title" as never)).toBeTruthy();
-		expect(translate.has("SettingsUI.strings.Details" as never)).toBe(true);
-		expect(translate.has("SettingsUI.identity.availability.ready" as never)).toBe(true);
-		expect(translate.has("SettingsUI.identity.reviewStatus.approved" as never)).toBe(true);
+		expect(shell.Auth).toEqual({ shared: { changeLanguage: messages.Auth.shared.changeLanguage } });
+		expect((shell.Common as Record<string, unknown>).authFlows).toBeUndefined();
+		expect((shell.Common as Record<string, Record<string, unknown>>).ui.modelEditor).toBeUndefined();
+		const optional = selectMessages(messages, lazyScopes.actionDock);
+		const optionalTranslate = createTranslator({ locale, messages: combineMessages(shell, optional), onError } as never);
+		expect(optionalTranslate.has("SettingsUI.strings.Details" as never)).toBe(true);
+		expect(optionalTranslate.has("SettingsUI.identity.availability.ready" as never)).toBe(true);
+		expect(optionalTranslate.has("SettingsUI.identity.reviewStatus.approved" as never)).toBe(true);
 		expect(onError).not.toHaveBeenCalled();
 		function TranslatedChild() {
 			const shared = useTranslations("Common.nav");
@@ -53,6 +64,16 @@ describe("route message selection", () => {
 		expect(JSON.stringify(shell).length).toBeLessThan(JSON.stringify(messages).length / 3);
 	});
 
+	it("keeps the English homepage client dictionary below 10 KB compressed", async () => {
+		const messages = await getPublicMessages("en-GB");
+		const [homepage] = routeNamespaces(join(process.cwd(), "src/app/[locale]/(dashboard)")).filter(scope => scope.includes("Site.homeQuickstart"));
+		expect(homepage).toBeDefined();
+		const selected = combineMessages(selectMessages(messages, SHELL_MESSAGE_NAMESPACES), selectClientMessages(messages, homepage));
+		expect(gzipSync(JSON.stringify(selected)).byteLength).toBeLessThan(10_000);
+		expect((selected.Site as Record<string, unknown>).home).toBeUndefined();
+		expect((selected.SettingsUI as Record<string, unknown>).providerCatalogCopy).toBeUndefined();
+	});
+
 	it("merges features without losing shared nested keys or mutating source catalogs", () => {
 		const source = { Site: { brandMenu: { title: "Brand" }, home: { title: "Home" } } };
 		const before = JSON.stringify(source);
@@ -65,5 +86,9 @@ describe("route message selection", () => {
 
 	it("fails explicitly when a declared namespace is missing", () => {
 		expect(() => selectMessages({}, ["Site.home"])).toThrow("Site.home");
+	});
+
+	it("rejects stale generated boundaries instead of sending an entire catalog", () => {
+		expect(() => selectClientMessages({}, ["Unregistered.feature"])).toThrow("Missing generated client message scope");
 	});
 });

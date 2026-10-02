@@ -22,5 +22,5 @@ export default async function LocalizedAuthLayout({
 	if (!isPublicLocale(locale)) notFound();
 	setRequestLocale(locale);
 
-	return <ScopedMessages params={params} namespaces={["SettingsUI.passwordStrength", "SettingsUI.oauthAppsPage.alphaLabel"]}>{children}</ScopedMessages>;
+	return <ScopedMessages params={params} namespaces={["Auth", "Common.authFlows", "SettingsUI.passwordStrength", "SettingsUI.oauthAppsPage.alphaLabel"]}>{children}</ScopedMessages>;
 }

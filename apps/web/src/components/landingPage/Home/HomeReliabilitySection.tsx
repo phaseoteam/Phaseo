@@ -1,5 +1,5 @@
 import { Activity, ArrowRightLeft, ShieldCheck, Workflow } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { getTranslations } from "next-intl/server";
 
 const CAPABILITIES = [
 	{
@@ -24,8 +24,8 @@ const CAPABILITIES = [
 	},
 ] as const;
 
-export default function HomeReliabilitySection() {
-	const t = useTranslations("Site.home.reliability");
+export default async function HomeReliabilitySection() {
+	const t = await getTranslations("Site.home.reliability");
 
 	return (
 		<section className="w-full border-b border-zinc-200/80 pb-20 dark:border-zinc-800/80">

@@ -1,0 +1,13 @@
+{
+  "actionDock": [
+    "Common.ui.actionDockCopy", "Common.ui.auditDataTable.modelId", "Common.ui.modelEditor",
+    "Common.ui.chatSettings.admin", "Common.ui.actions", "Common.ui.modelCreation",
+    "Common.ui.select", "Common.ui.datePicker", "Common.ui.formTypes",
+    "Common.ui.modelSettingsDialog.noModelsFound",
+    "Product.internalTools.dataEditor.searchModelsPlaceholder",
+    "SettingsUI.providerCatalogCopy", "SettingsUI.providerCatalog.title",
+    "SettingsUI.identity.availability", "SettingsUI.identity.reviewStatus",
+    "SettingsUI.strings.Details", "SettingsUI.strings.phrasePleaseTryAgain",
+    "SettingsUI.settingsCopy.settingsSidebar"
+  ]
+}
