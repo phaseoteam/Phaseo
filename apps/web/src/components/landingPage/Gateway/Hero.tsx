@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { formatRoundedCount } from "@/lib/formatRoundedCount";
 import {
 	BarChart3,
 	Boxes,
@@ -261,7 +262,7 @@ export function Hero({
 	};
 	const formatTokens = (value: number | null, fallback = "0+") => {
 		if (value == null) return fallback;
-		return <>{format.number(value, { maximumFractionDigits: 0 })}+</>;
+		return `${formatRoundedCount(value)}+`;
 	};
 	const formatWindow = (hours: number) => {
 		if (!Number.isFinite(hours) || hours <= 0) return "24h";

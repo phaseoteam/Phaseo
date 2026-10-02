@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
+import { formatRoundedCount } from "@/lib/formatRoundedCount";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -48,10 +48,6 @@ export function AppsUsageList({
 	maxCollapsed = 10,
 	maxExpanded = 20,
 }: AppsUsageListProps) {
-	const format = useDisplayFormatters();
-	const formatTokens = (value: number) => Number.isFinite(value)
-		? format.number(value, { maximumFractionDigits: 1 })
-		: "--";
 	const getInitial = (name: string) => name.trim().charAt(0).toUpperCase() || "A";
 
 	const resolvedDataByRange = useMemo<Partial<Record<AppRange, TopAppData[]>>>(
@@ -211,7 +207,7 @@ export function AppsUsageList({
 							</div>
 							<div className="text-right">
 								<div className="whitespace-nowrap text-sm tabular-nums text-muted-foreground">
-									{formatTokens(entry.tokens)} tokens
+									{formatRoundedCount(entry.tokens)} tokens
 								</div>
 							</div>
 								</div>

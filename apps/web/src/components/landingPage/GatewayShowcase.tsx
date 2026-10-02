@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { formatRoundedCount } from "@/lib/formatRoundedCount";
 import { Suspense } from "react";
 import {
 	ArrowRight,
@@ -125,7 +126,7 @@ async function GatewayShowcaseData() {
 	const stats = [
 		{
 			label: `Tokens routed (${formatGatewayMetricWindow(metrics.summary.windowHours)})`,
-			value: <><DisplayNumber value={metrics.summary.tokensInWindow} options={{ maximumFractionDigits: 1 }} />+</>,
+			value: `${formatRoundedCount(metrics.summary.tokensInWindow)}+`,
 			icon: Coins,
 		},
 		{
@@ -210,7 +211,7 @@ async function GatewayShowcaseData() {
 								</div>
 								<div className="text-right">
 									<div className="text-sm tabular-nums font-medium">
-										<DisplayNumber value={model.tokens} options={{ maximumFractionDigits: 1 }} />
+										{formatRoundedCount(model.tokens)}
 									</div>
 									<div className="text-[11px] text-muted-foreground">
 										tokens
@@ -272,7 +273,7 @@ async function GatewayShowcaseData() {
 									</div>
 									<div className="text-right">
 										<div className="text-sm tabular-nums font-medium">
-											<DisplayNumber value={app.tokens} options={{ maximumFractionDigits: 1 }} />
+											{formatRoundedCount(app.tokens)}
 										</div>
 										<div className="text-[11px] text-muted-foreground">
 											tokens

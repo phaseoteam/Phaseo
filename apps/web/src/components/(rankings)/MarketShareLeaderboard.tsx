@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
+import { formatRoundedCount } from "@/lib/formatRoundedCount";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/Logo";
@@ -35,10 +35,6 @@ export function MarketShareLeaderboard({
 	maxCollapsed = 10,
 	maxExpanded = 20,
 }: MarketShareLeaderboardProps) {
-	const format = useDisplayFormatters();
-	const formatTokens = (value: number) => Number.isFinite(value)
-		? format.number(value, { maximumFractionDigits: 1 })
-		: "--";
 	const [showAll, setShowAll] = useState(false);
 
 	if (!data.length) {
@@ -125,7 +121,7 @@ export function MarketShareLeaderboard({
 									{formatPercent(entry.share_pct)}
 								</div>
 								<div className="text-xs text-muted-foreground">
-									{formatTokens(entry.tokens)}
+									{formatRoundedCount(entry.tokens)}
 								</div>
 							</div>
 								</div>

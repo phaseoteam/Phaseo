@@ -4,6 +4,7 @@
 // How: Uses Recharts PieChart with custom colors
 
 "use client";
+import { formatRoundedCount } from "@/lib/formatRoundedCount";
 
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
@@ -73,11 +74,7 @@ export function MarketShareVisualizations({
                                             <p>Requests: {format.number(data.requests)}</p>
                                             <p>
                                                 Tokens:{" "}
-                                                {data.tokens >= 1e9
-                                                    ? `${(data.tokens / 1e9).toFixed(2)}B`
-                                                    : data.tokens >= 1e6
-                                                    ? `${(data.tokens / 1e6).toFixed(2)}M`
-                                                    : format.number(data.tokens)}
+                                                {formatRoundedCount(data.tokens)}
                                             </p>
                                         </div>
                                     </div>

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { formatRoundedCount } from "@/lib/formatRoundedCount";
 import { ArrowRight, Boxes, Coins, Route } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
@@ -54,7 +55,7 @@ export default async function ExperimentalGatewayShowcase() {
 	const stats = [
 		{
 			label: `Tokens routed (${formatGatewayMetricWindow(metrics.summary.windowHours)})`,
-			value: <><DisplayNumber value={metrics.summary.tokensInWindow} options={{ maximumFractionDigits: 1 }} />+</>,
+			value: `${formatRoundedCount(metrics.summary.tokensInWindow)}+`,
 			icon: Coins,
 		},
 		{
@@ -180,7 +181,7 @@ export default async function ExperimentalGatewayShowcase() {
 									</div>
 									<div className="text-right">
 										<p className="text-sm font-semibold text-zinc-950 dark:text-zinc-50">
-											<DisplayNumber value={model.tokens} options={{ maximumFractionDigits: 1 }} />
+											{formatRoundedCount(model.tokens)}
 										</p>
 										<p className="text-[11px] uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-400">
 											tokens
