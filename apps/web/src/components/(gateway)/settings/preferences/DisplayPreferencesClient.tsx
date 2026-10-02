@@ -600,7 +600,7 @@ export default function DisplayPreferencesClient({
 				<PreferenceRow
 					title="Landing page"
 					description="Used after sign-in when you did not follow a link to a specific page."
-					preview={{ home: "/", models: "/models", chat: "/chat", monitor: "/monitor" }[preferences.landingPage]}
+					preview={{ home: "/", models: "/models", chat: "/chat" }[preferences.landingPage]}
 				>
 					<PreferenceSelect
 						ariaLabel="Default landing page"
@@ -610,7 +610,6 @@ export default function DisplayPreferencesClient({
 							{ value: "home", label: "Home" },
 							{ value: "models", label: "Models" },
 							{ value: "chat", label: "Chat" },
-							{ value: "monitor", label: "Monitor" },
 						]}
 					/>
 				</PreferenceRow>

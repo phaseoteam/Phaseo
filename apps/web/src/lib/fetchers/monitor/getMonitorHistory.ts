@@ -1,4 +1,19 @@
-import type { CompactChangeHistory } from "@/components/monitor/MonitorHistoryClient";
+export type CompactChangeHistory = [
+	id: string,
+	timestamp: string,
+	provider: string,
+	model: string,
+	endpoint: string | null,
+	field: string,
+	oldValue: unknown,
+	newValue: unknown,
+	percentChange: number | null,
+	action: "added" | "changed" | "removed" | null,
+	commit: string | null,
+	entityId: string | null,
+	entityType: string | null,
+	orgId: string | null,
+];
 
 export const MONITOR_HISTORY_CACHE_TAG = "monitor-history";
 

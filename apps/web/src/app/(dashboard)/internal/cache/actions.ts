@@ -409,7 +409,6 @@ export async function revalidateModelsGlobalDataAction(): Promise<CacheOpResult>
 	return runAdminAction("Models (global data)", async () => {
 		revalidateModelDataOnlyTags();
 		revalidatePath("/models");
-		revalidatePath("/monitor");
 	});
 }
 

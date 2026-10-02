@@ -7,7 +7,7 @@ export const DISPLAY_LIGHT_PALETTES = ["phaseo", "paper", "warm"] as const;
 export const DISPLAY_DARK_PALETTES = ["phaseo", "slate", "midnight"] as const;
 export const DISPLAY_DENSITIES = ["comfortable", "compact"] as const;
 export const DISPLAY_CODE_LANGUAGES = ["typescript", "python", "curl"] as const;
-export const DISPLAY_LANDING_PAGES = ["home", "models", "chat", "monitor"] as const;
+export const DISPLAY_LANDING_PAGES = ["home", "models", "chat"] as const;
 
 export type DisplayLocale = (typeof DISPLAY_LOCALES)[number];
 export type DisplayDateStyle = (typeof DISPLAY_DATE_STYLES)[number];
