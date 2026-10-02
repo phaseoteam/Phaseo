@@ -966,7 +966,36 @@
 				"capabilityCount": "{count, plural, other {# 项功能}}",
 				"contextCount": "上下文：{count}"
 			},
-			"refreshAfterSave": "保存成功。继续修改前，请重新加载以刷新编辑器。"
+			"refreshAfterSave": "保存成功。继续修改前，请重新加载以刷新编辑器。",
+			"mainCopy": {
+				"canonicalIdentity": "规范标识",
+				"canonicalIdentityHelp": "规范 ID 无法直接修改。请为新的公开 ID 添加别名；破坏性重命名需要执行迁移。",
+				"aliases": "别名",
+				"aliasesHelp": "替代 ID 会解析到此规范模型。",
+				"aliasId": "别名 ID",
+				"aliasType": "别名类型",
+				"noAliases": "无别名",
+				"lineage": "模型谱系",
+				"previousModel": "前代模型",
+				"successors": "后继模型",
+				"recentChanges": "近期更改",
+				"noChanges": "无更改记录",
+				"tone": "提示级别",
+				"information": "信息",
+				"warning": "警告",
+				"critical": "严重",
+				"noticeMarkdown": "提示的 Markdown",
+				"noticePlaceholder": "留空可移除模型页面上的提示。",
+				"preview": "预览",
+				"noNotice": "不会显示提示。",
+				"aliasPublic": "公开",
+				"aliasLegacy": "旧版",
+				"aliasProvider": "提供商",
+				"benchmarkPending": "保存结果前，请创建或清除新的基准测试。",
+				"aliasesCacheFailed": "别名已保存。公开缓存刷新失败；请通过缓存控制重试。",
+				"noticeCacheFailed": "提示已保存。公开缓存刷新失败；请通过缓存控制重试。",
+				"sectionStillLoading": "{section}数据仍在加载。请稍等片刻后重试。"
+			}
 		},
 		"auditDataTable": {
 			"actions": "操作",

@@ -966,7 +966,36 @@
 				"capabilityCount": "{count, plural, one {# capacité} other {# capacités}}",
 				"contextCount": "{count} de contexte"
 			},
-			"refreshAfterSave": "Enregistrement réussi. Rechargez pour actualiser l’éditeur avant d’effectuer d’autres modifications."
+			"refreshAfterSave": "Enregistrement réussi. Rechargez pour actualiser l’éditeur avant d’effectuer d’autres modifications.",
+			"mainCopy": {
+				"canonicalIdentity": "Identité canonique",
+				"canonicalIdentityHelp": "L’identifiant canonique ne peut pas être modifié sur place. Ajoutez un alias pour un nouvel identifiant public ; les renommages destructifs nécessitent une migration.",
+				"aliases": "Alias",
+				"aliasesHelp": "Les identifiants alternatifs renvoient à ce modèle canonique.",
+				"aliasId": "Identifiant de l’alias",
+				"aliasType": "Type d’alias",
+				"noAliases": "Aucun alias",
+				"lineage": "Lignée",
+				"previousModel": "Modèle précédent",
+				"successors": "Successeurs",
+				"recentChanges": "Modifications récentes",
+				"noChanges": "Aucune modification enregistrée",
+				"tone": "Niveau de l’avis",
+				"information": "Information",
+				"warning": "Avertissement",
+				"critical": "Critique",
+				"noticeMarkdown": "Markdown de l’avis",
+				"noticePlaceholder": "Laissez vide pour supprimer l’avis de la page du modèle.",
+				"preview": "Aperçu",
+				"noNotice": "Aucun avis ne sera affiché.",
+				"aliasPublic": "Public",
+				"aliasLegacy": "Ancien",
+				"aliasProvider": "Fournisseur",
+				"benchmarkPending": "Créez ou effacez la nouvelle évaluation avant d’enregistrer les résultats.",
+				"aliasesCacheFailed": "Alias enregistrés. L’actualisation du cache public a échoué ; réessayez depuis les contrôles du cache.",
+				"noticeCacheFailed": "Avis enregistré. L’actualisation du cache public a échoué ; réessayez depuis les contrôles du cache.",
+				"sectionStillLoading": "{section} : les données sont encore en cours de chargement. Patientez un instant et réessayez."
+			}
 		},
 		"auditDataTable": {
 			"actions": "Actions",

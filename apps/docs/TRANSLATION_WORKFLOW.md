@@ -45,3 +45,14 @@ pnpm --filter @phaseo/docs translation:freshness:record --locale es --unit opena
 If the source revision is not checked out, add `--source-ref origin/main` after `--unit openapi`.
 
 The initial baseline captures the source versions associated with the existing translation files. It tracks source freshness; it does not certify the translation quality or completeness of previously translated content.
+
+## Refresh web documentation search
+
+After changing a documentation title, description, heading, or navigation entry, regenerate the web search indexes:
+
+```sh
+pnpm --filter @phaseo/web docs:search:index
+pnpm --filter @phaseo/web validate:i18n
+```
+
+The web app loads the index for the selected locale. Each index reads that locale's translated frontmatter and headings. The generator omits missing locale pages instead of substituting English copy; docs coverage and freshness checks still report these missing pages. Keep the generated indexes in the same commit as their source changes. Web localisation validation checks that the indexes match the documentation on disk.

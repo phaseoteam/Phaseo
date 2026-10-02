@@ -7,6 +7,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../.
 const docsRoot = path.join(root, "apps/docs");
 const navigation = JSON.parse(readFileSync(path.join(docsRoot, "docs.json"), "utf8")).navigation;
 const paths = new Set();
+const checkOnly = process.argv.includes("--check");
 
 function collect(value) {
 	if (typeof value === "string") {
@@ -48,6 +49,14 @@ function readPage(slug, directory) {
 for (const [locale, directory] of Object.entries(localeDirectories)) {
 	const pages = [...paths].map((slug) => readPage(slug, directory)).filter(Boolean);
 	const filename = locale === "en-GB" ? "Search.docs.generated.json" : `Search.docs.${locale}.generated.json`;
-	writeFileSync(path.join(root, "apps/web/src/components/header/Search", filename), `[\n${pages.map((page) => `  ${JSON.stringify(page)}`).join(",\n")}\n]\n`);
-	console.log(`${locale}: indexed ${pages.length} documentation pages`);
+	const outputPath = path.join(root, "apps/web/src/components/header/Search", filename);
+	const expected = `[\n${pages.map((page) => `  ${JSON.stringify(page)}`).join(",\n")}\n]\n`;
+	if (checkOnly) {
+		if (!existsSync(outputPath) || readFileSync(outputPath, "utf8").replace(/\r\n/g, "\n") !== expected) {
+			throw new Error(`${filename} is out of date. Run pnpm --filter @phaseo/web docs:search:index after translating documentation changes.`);
+		}
+	} else {
+		writeFileSync(outputPath, expected);
+	}
+	console.log(`${locale}: ${checkOnly ? "verified" : "indexed"} ${pages.length} documentation pages`);
 }

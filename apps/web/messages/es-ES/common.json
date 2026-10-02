@@ -966,7 +966,36 @@
 				"capabilityCount": "{count, plural, one {# capacidad} other {# capacidades}}",
 				"contextCount": "{count} de contexto"
 			},
-			"refreshAfterSave": "Guardado correctamente. Recarga para actualizar el editor antes de realizar más cambios."
+			"refreshAfterSave": "Guardado correctamente. Recarga para actualizar el editor antes de realizar más cambios.",
+			"mainCopy": {
+				"canonicalIdentity": "Identidad canónica",
+				"canonicalIdentityHelp": "El ID canónico no puede modificarse directamente. Añade un alias para un nuevo ID público; los cambios de nombre destructivos requieren una migración.",
+				"aliases": "Alias",
+				"aliasesHelp": "Los ID alternativos se resuelven en este modelo canónico.",
+				"aliasId": "ID del alias",
+				"aliasType": "Tipo de alias",
+				"noAliases": "Sin alias",
+				"lineage": "Linaje",
+				"previousModel": "Modelo anterior",
+				"successors": "Sucesores",
+				"recentChanges": "Cambios recientes",
+				"noChanges": "Sin cambios registrados",
+				"tone": "Nivel del aviso",
+				"information": "Información",
+				"warning": "Advertencia",
+				"critical": "Crítico",
+				"noticeMarkdown": "Markdown del aviso",
+				"noticePlaceholder": "Déjalo vacío para eliminar el aviso de la página del modelo.",
+				"preview": "Vista previa",
+				"noNotice": "No se mostrará ningún aviso.",
+				"aliasPublic": "Público",
+				"aliasLegacy": "Anterior",
+				"aliasProvider": "Proveedor",
+				"benchmarkPending": "Crea o descarta la nueva evaluación antes de guardar los resultados.",
+				"aliasesCacheFailed": "Alias guardados. No se pudo actualizar la caché pública; reintenta desde los controles de caché.",
+				"noticeCacheFailed": "Aviso guardado. No se pudo actualizar la caché pública; reintenta desde los controles de caché.",
+				"sectionStillLoading": "{section}: los datos aún se están cargando. Espera un momento y reintenta."
+			}
 		},
 		"auditDataTable": {
 			"actions": "Acciones",

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useCatalogDraft } from "@/components/(data)/useCatalogDraft";
 import { UnsavedChangesGuard } from "@/components/(data)/UnsavedChangesGuard";
 import { Loader2, Plus, Settings2, Fingerprint, List, Megaphone, Trophy, CreditCard, Network, CircleDollarSign, History } from "lucide-react";
@@ -150,6 +150,7 @@ export default function ModelLegacyEditor({
 }) {
 	const t = useTranslations("Common.ui.modelEditor");
 	const tActions = useTranslations("Common.ui.actions");
+	const locale = useLocale();
 	const activeSection = useMemo(
 		() => normalizeSection(initialTab),
 		[initialTab]
@@ -196,15 +197,15 @@ export default function ModelLegacyEditor({
 
 	useEffect(() => {
 		setLoading(true);
-		void fetchBasicData().catch((loadError) => {
-			setError(loadError instanceof Error ? loadError.message : "Failed to load model data.");
+		void fetchBasicData().catch(() => {
+			setError(t("loadingError"));
 		}).finally(() => setLoading(false));
-	}, [fetchBasicData]);
+	}, [fetchBasicData, t]);
 
 	const handleSaveCurrentSection = async () => {
 		if (!model) return;
 		if (activeSection === "benchmarks" && pendingBenchmark.dirty) {
-			setError("Create or clear the new benchmark before saving results.");
+			setError(t("mainCopy.benchmarkPending"));
 			return;
 		}
 		setSaving(true);
@@ -233,10 +234,10 @@ export default function ModelLegacyEditor({
 				});
 			} else if (activeSection === "identity") {
 				await saveAdminModelAliases(modelId, aliases.map(({ draftId: _draftId, saved: _saved, ...alias }) => ({ ...alias, alias_slug: alias.alias_slug.trim().toLowerCase() })).filter((alias) => alias.alias_slug));
-				await revalidateSingleModelDataAction(modelId).catch(() => toast.warning("Aliases saved. Public cache refresh failed; retry from Cache controls."));
+				await revalidateSingleModelDataAction(modelId).catch(() => toast.warning(t("mainCopy.aliasesCacheFailed")));
 			} else if (activeSection === "details") {
 				if (detailRows === null || linkRows === null) {
-					throw new Error("Details are still loading. Please wait a moment and retry.");
+					throw new Error(t("mainCopy.sectionStillLoading", { section: t("tabs.details") }));
 				}
 
 				await updateModel({
@@ -271,10 +272,10 @@ export default function ModelLegacyEditor({
 				});
 			} else if (activeSection === "notice") {
 				await saveAdminModelNotice(modelId, notice.markdown.trim() ? { ...notice, markdown: notice.markdown.trim() } : null);
-				await revalidateSingleModelDataAction(modelId).catch(() => toast.warning("Notice saved. Public cache refresh failed; retry from Cache controls."));
+				await revalidateSingleModelDataAction(modelId).catch(() => toast.warning(t("mainCopy.noticeCacheFailed")));
 			} else if (activeSection === "benchmarks") {
 				if (benchmarkRows === null) {
-					throw new Error("Benchmarks are still loading. Please wait a moment and retry.");
+					throw new Error(t("mainCopy.sectionStillLoading", { section: t("tabs.benchmarks") }));
 				}
 
 				await updateModel({
@@ -297,7 +298,7 @@ export default function ModelLegacyEditor({
 				});
 			} else if (activeSection === "providers") {
 				if (providerRows === null || providerCapabilityRows === null) {
-					throw new Error("Providers are still loading. Please wait a moment and retry.");
+					throw new Error(t("mainCopy.sectionStillLoading", { section: t("tabs.providers") }));
 				}
 
 				await updateModel({
@@ -344,7 +345,7 @@ export default function ModelLegacyEditor({
 				});
 			} else if (activeSection === "plans") {
 				if (subscriptionPlanRows === null) {
-					throw new Error("Subscription plans are still loading. Please wait a moment and retry.");
+					throw new Error(t("mainCopy.sectionStillLoading", { section: t("subscriptionPlansTitle") }));
 				}
 
 				await updateModel({
@@ -440,10 +441,10 @@ export default function ModelLegacyEditor({
 				) : null}
 				{activeSection === "identity" ? (
 					<div className="divide-y space-y-6 [&>section]:pb-5">
-						<section className="pt-5 first:pt-0"><div className="text-sm font-semibold">Canonical identity</div><div className="mt-3 font-mono text-sm">{modelId}</div><p className="mt-1 text-xs text-muted-foreground">The canonical ID is immutable in-place. Add an alias for a new public ID; destructive renames require a migration.</p></section>
-						<section className="pt-5 first:pt-0"><div className="flex items-center justify-between gap-3"><div><div className="text-sm font-semibold">Aliases</div><p className="text-xs text-muted-foreground">Alternative IDs resolve to this canonical model.</p></div><Button type="button" size="sm" variant="outline" onClick={() => setAliases((rows) => [...rows, { draftId: crypto.randomUUID(), alias_slug: "", alias_type: "public", enabled: true, effective_from: null, effective_to: null, metadata: {} }])}><Plus className="mr-1 h-4 w-4" />Add alias</Button></div><div className="mt-3 space-y-2">{aliases.map((alias, index) => <div key={alias.draftId} className="grid gap-2 py-3 sm:grid-cols-[minmax(0,1fr)_160px_auto_auto]"><Input disabled={alias.saved} aria-label="Alias ID" className="font-mono" value={alias.alias_slug} placeholder="openai/model-latest" onChange={(event) => setAliases((rows) => rows.map((row, rowIndex) => rowIndex === index ? { ...row, alias_slug: event.target.value } : row))} /><SearchableSelect label="Alias type" value={alias.alias_type} options={[...new Set(["public", "legacy", "provider", alias.alias_type])].map((value) => ({ value, label: value.charAt(0).toUpperCase() + value.slice(1) }))} onValueChange={(value) => setAliases((rows) => rows.map((row, rowIndex) => rowIndex === index ? { ...row, alias_type: value } : row))} /><label className="flex items-center gap-2 text-xs"><Checkbox checked={alias.enabled} onCheckedChange={(checked) => setAliases((rows) => rows.map((row, rowIndex) => rowIndex === index ? { ...row, enabled: checked } : row))} />Enabled</label><Button type="button" variant="ghost" disabled={Boolean(alias.effective_to)} onClick={() => setAliases((rows) => alias.saved ? rows.map((row, rowIndex) => rowIndex === index ? { ...row, effective_to: new Date().toISOString() } : row) : rows.filter((_, rowIndex) => rowIndex !== index))}>{alias.effective_to ? "Ended" : alias.saved ? "End today" : "Discard"}</Button></div>)}{!aliases.length ? <div className="py-3 text-sm text-muted-foreground">No aliases</div> : null}</div></section>
-						<section className="pt-5 first:pt-0"><div className="text-sm font-semibold">Lineage</div><div className="mt-3 grid gap-3 sm:grid-cols-2"><div><div className="text-xs text-muted-foreground">Previous model</div><div className="mt-1 font-mono text-sm">{model.previous_model_id || "None"}</div></div><div><div className="text-xs text-muted-foreground">Successors</div><div className="mt-1 space-y-1">{successors.map((successor) => <Link className="block font-mono text-sm text-primary hover:underline" key={successor.model_slug} href={`/internal/data/models/edit/${successor.model_slug}?tab=identity`}>{successor.model_slug}</Link>)}{!successors.length ? <span className="text-sm text-muted-foreground">None</span> : null}</div></div></div></section>
-						<section className="pt-5 first:pt-0"><div className="flex items-center gap-2 text-sm font-semibold"><History className="size-4 text-muted-foreground" aria-hidden />Recent changes</div><div className="mt-3 divide-y">{history.map((entry) => <details key={entry.change_id} className="p-3"><summary className="cursor-pointer text-sm"><span className="font-medium">{entry.action}</span> · {entry.resource_type} <span className="text-muted-foreground">{new Date(entry.created_at).toLocaleString()}</span></summary><pre className="mt-3 max-h-72 overflow-auto rounded bg-muted p-3 text-xs">{JSON.stringify({ before: entry.before_state, after: entry.after_state }, null, 2)}</pre></details>)}{!history.length ? <div className="py-3 text-sm text-muted-foreground">No recorded changes</div> : null}</div></section>
+						<section className="pt-5 first:pt-0"><div className="text-sm font-semibold">{t("mainCopy.canonicalIdentity")}</div><div className="mt-3 font-mono text-sm">{modelId}</div><p className="mt-1 text-xs text-muted-foreground">{t("mainCopy.canonicalIdentityHelp")}</p></section>
+						<section className="pt-5 first:pt-0"><div className="flex items-center justify-between gap-3"><div><div className="text-sm font-semibold">{t("mainCopy.aliases")}</div><p className="text-xs text-muted-foreground">{t("mainCopy.aliasesHelp")}</p></div><Button type="button" size="sm" variant="outline" onClick={() => setAliases((rows) => [...rows, { draftId: crypto.randomUUID(), alias_slug: "", alias_type: "public", enabled: true, effective_from: null, effective_to: null, metadata: {} }])}><Plus className="mr-1 h-4 w-4" />{t("advanced.addAlias")}</Button></div><div className="mt-3 space-y-2">{aliases.map((alias, index) => <div key={alias.draftId} className="grid gap-2 py-3 sm:grid-cols-[minmax(0,1fr)_160px_auto_auto]"><Input disabled={alias.saved} aria-label={t("mainCopy.aliasId")} className="font-mono" value={alias.alias_slug} placeholder="openai/model-latest" onChange={(event) => setAliases((rows) => rows.map((row, rowIndex) => rowIndex === index ? { ...row, alias_slug: event.target.value } : row))} /><SearchableSelect label={t("mainCopy.aliasType")} value={alias.alias_type} options={[...new Set(["public", "legacy", "provider", alias.alias_type])].map((value) => ({ value, label: value === "public" ? t("mainCopy.aliasPublic") : value === "legacy" ? t("mainCopy.aliasLegacy") : value === "provider" ? t("mainCopy.aliasProvider") : value }))} onValueChange={(value) => setAliases((rows) => rows.map((row, rowIndex) => rowIndex === index ? { ...row, alias_type: value } : row))} /><label className="flex items-center gap-2 text-xs"><Checkbox checked={alias.enabled} onCheckedChange={(checked) => setAliases((rows) => rows.map((row, rowIndex) => rowIndex === index ? { ...row, enabled: checked } : row))} />{t("advanced.enabled")}</label><Button type="button" variant="ghost" disabled={Boolean(alias.effective_to)} onClick={() => setAliases((rows) => alias.saved ? rows.map((row, rowIndex) => rowIndex === index ? { ...row, effective_to: new Date().toISOString() } : row) : rows.filter((_, rowIndex) => rowIndex !== index))}>{alias.effective_to ? t("endDated") : alias.saved ? t("endNow") : t("discardDraft")}</Button></div>)}{!aliases.length ? <div className="py-3 text-sm text-muted-foreground">{t("mainCopy.noAliases")}</div> : null}</div></section>
+						<section className="pt-5 first:pt-0"><div className="text-sm font-semibold">{t("mainCopy.lineage")}</div><div className="mt-3 grid gap-3 sm:grid-cols-2"><div><div className="text-xs text-muted-foreground">{t("mainCopy.previousModel")}</div><div className="mt-1 font-mono text-sm">{model.previous_model_id || t("none")}</div></div><div><div className="text-xs text-muted-foreground">{t("mainCopy.successors")}</div><div className="mt-1 space-y-1">{successors.map((successor) => <Link className="block font-mono text-sm text-primary hover:underline" key={successor.model_slug} href={`/internal/data/models/edit/${successor.model_slug}?tab=identity`}>{successor.model_slug}</Link>)}{!successors.length ? <span className="text-sm text-muted-foreground">{t("none")}</span> : null}</div></div></div></section>
+						<section className="pt-5 first:pt-0"><div className="flex items-center gap-2 text-sm font-semibold"><History className="size-4 text-muted-foreground" aria-hidden />{t("mainCopy.recentChanges")}</div><div className="mt-3 divide-y">{history.map((entry) => <details key={entry.change_id} className="p-3"><summary className="cursor-pointer text-sm"><span className="font-medium">{entry.action}</span> · {entry.resource_type} <span className="text-muted-foreground">{new Date(entry.created_at).toLocaleString(locale)}</span></summary><pre className="mt-3 max-h-72 overflow-auto rounded bg-muted p-3 text-xs">{JSON.stringify({ before: entry.before_state, after: entry.after_state }, null, 2)}</pre></details>)}{!history.length ? <div className="py-3 text-sm text-muted-foreground">{t("mainCopy.noChanges")}</div> : null}</div></section>
 					</div>
 				) : null}
 				{activeSection === "details" ? (
@@ -457,11 +458,10 @@ export default function ModelLegacyEditor({
 				) : null}
 				{activeSection === "notice" ? (
 					<div className="space-y-4">
-						<PricingChoice label="Tone" value={notice.tone} options={[{ value: "info", label: "Information" }, { value: "warning", label: "Warning" }, { value: "critical", label: "Critical" }]} onChange={(value) => setNotice((current) => ({ ...current, tone: value as ModelNotice["tone"] }))} />
-						<label className="block text-sm font-medium">Notice markdown
-							<Textarea className="mt-1 min-h-48 font-mono text-sm" value={notice.markdown} onChange={(event) => setNotice((current) => ({ ...current, markdown: event.target.value }))} placeholder="Leave empty to remove the model-page notice." />
+						<PricingChoice label={t("mainCopy.tone")} value={notice.tone} options={[{ value: "info", label: t("mainCopy.information") }, { value: "warning", label: t("mainCopy.warning") }, { value: "critical", label: t("mainCopy.critical") }]} onChange={(value) => setNotice((current) => ({ ...current, tone: value as ModelNotice["tone"] }))} />
+						<label className="block text-sm font-medium">{t("mainCopy.noticeMarkdown")}<Textarea className="mt-1 min-h-48 font-mono text-sm" value={notice.markdown} onChange={(event) => setNotice((current) => ({ ...current, markdown: event.target.value }))} placeholder={t("mainCopy.noticePlaceholder")} />
 						</label>
-						<div className="space-y-3"><div className="text-sm font-medium">Preview</div>{notice.markdown.trim() ? <ModelPageNotice notice={{ apiModelId: modelId, tone: notice.tone, markdown: notice.markdown.trim() }} /> : <p className="text-sm text-muted-foreground">No notice will be shown.</p>}</div>
+						<div className="space-y-3"><div className="text-sm font-medium">{t("mainCopy.preview")}</div>{notice.markdown.trim() ? <ModelPageNotice notice={{ apiModelId: modelId, tone: notice.tone, markdown: notice.markdown.trim() }} /> : <p className="text-sm text-muted-foreground">{t("mainCopy.noNotice")}</p>}</div>
 					</div>
 				) : null}
 				{activeSection === "benchmarks" ? (

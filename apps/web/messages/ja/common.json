@@ -966,7 +966,36 @@
 				"capabilityCount": "{count, plural, other {#件の機能}}",
 				"contextCount": "コンテキスト: {count}"
 			},
-			"refreshAfterSave": "保存しました。さらに変更する前に、再読み込みしてエディターを更新してください。"
+			"refreshAfterSave": "保存しました。さらに変更する前に、再読み込みしてエディターを更新してください。",
+			"mainCopy": {
+				"canonicalIdentity": "正規の識別情報",
+				"canonicalIdentityHelp": "正規 ID は直接変更できません。新しい公開 ID にはエイリアスを追加してください。破壊的な名前変更には移行が必要です。",
+				"aliases": "エイリアス",
+				"aliasesHelp": "代替 ID はこの正規モデルに解決されます。",
+				"aliasId": "エイリアス ID",
+				"aliasType": "エイリアスの種類",
+				"noAliases": "エイリアスなし",
+				"lineage": "系譜",
+				"previousModel": "前のモデル",
+				"successors": "後継モデル",
+				"recentChanges": "最近の変更",
+				"noChanges": "記録された変更なし",
+				"tone": "通知のレベル",
+				"information": "情報",
+				"warning": "警告",
+				"critical": "重大",
+				"noticeMarkdown": "通知の Markdown",
+				"noticePlaceholder": "モデルページの通知を削除するには、空欄にしてください。",
+				"preview": "プレビュー",
+				"noNotice": "通知は表示されません。",
+				"aliasPublic": "公開",
+				"aliasLegacy": "旧形式",
+				"aliasProvider": "プロバイダー",
+				"benchmarkPending": "結果を保存する前に、新しいベンチマークを作成するか入力を消去してください。",
+				"aliasesCacheFailed": "エイリアスを保存しました。公開キャッシュの更新に失敗しました。キャッシュ制御から再試行してください。",
+				"noticeCacheFailed": "通知を保存しました。公開キャッシュの更新に失敗しました。キャッシュ制御から再試行してください。",
+				"sectionStillLoading": "{section} のデータを読み込み中です。少し待ってから再試行してください。"
+			}
 		},
 		"auditDataTable": {
 			"actions": "操作",

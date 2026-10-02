@@ -966,7 +966,36 @@
 				"capabilityCount": "{count, plural, one {# Funktion} other {# Funktionen}}",
 				"contextCount": "{count} Kontext"
 			},
-			"refreshAfterSave": "Erfolgreich gespeichert. Lade die Seite neu, um den Editor vor weiteren Änderungen zu aktualisieren."
+			"refreshAfterSave": "Erfolgreich gespeichert. Lade die Seite neu, um den Editor vor weiteren Änderungen zu aktualisieren.",
+			"mainCopy": {
+				"canonicalIdentity": "Kanonische Identität",
+				"canonicalIdentityHelp": "Die kanonische ID kann nicht direkt geändert werden. Fügen Sie einen Alias für eine neue öffentliche ID hinzu; destruktive Umbenennungen erfordern eine Migration.",
+				"aliases": "Aliasse",
+				"aliasesHelp": "Alternative IDs verweisen auf dieses kanonische Modell.",
+				"aliasId": "Alias-ID",
+				"aliasType": "Aliastyp",
+				"noAliases": "Keine Aliasse",
+				"lineage": "Modellabstammung",
+				"previousModel": "Vorgängermodell",
+				"successors": "Nachfolger",
+				"recentChanges": "Letzte Änderungen",
+				"noChanges": "Keine Änderungen aufgezeichnet",
+				"tone": "Hinweisstufe",
+				"information": "Information",
+				"warning": "Warnung",
+				"critical": "Kritisch",
+				"noticeMarkdown": "Hinweis-Markdown",
+				"noticePlaceholder": "Leer lassen, um den Hinweis auf der Modellseite zu entfernen.",
+				"preview": "Vorschau",
+				"noNotice": "Es wird kein Hinweis angezeigt.",
+				"aliasPublic": "Öffentlich",
+				"aliasLegacy": "Veraltet",
+				"aliasProvider": "Anbieter",
+				"benchmarkPending": "Erstellen oder verwerfen Sie den neuen Benchmark, bevor Sie Ergebnisse speichern.",
+				"aliasesCacheFailed": "Aliasse gespeichert. Der öffentliche Cache konnte nicht aktualisiert werden; versuchen Sie es über die Cache-Steuerung erneut.",
+				"noticeCacheFailed": "Hinweis gespeichert. Der öffentliche Cache konnte nicht aktualisiert werden; versuchen Sie es über die Cache-Steuerung erneut.",
+				"sectionStillLoading": "{section}: Die Daten werden noch geladen. Warten Sie einen Moment und versuchen Sie es erneut."
+			}
 		},
 		"auditDataTable": {
 			"actions": "Aktionen",

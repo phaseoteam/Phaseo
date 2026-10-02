@@ -966,7 +966,36 @@
 				"capabilityCount": "{count, plural, one {# recurso} other {# recursos}}",
 				"contextCount": "{count} de contexto"
 			},
-			"refreshAfterSave": "Salvo com sucesso. Recarregue para atualizar o editor antes de fazer mais alterações."
+			"refreshAfterSave": "Salvo com sucesso. Recarregue para atualizar o editor antes de fazer mais alterações.",
+			"mainCopy": {
+				"canonicalIdentity": "Identidade canônica",
+				"canonicalIdentityHelp": "O ID canônico não pode ser alterado diretamente. Adicione um alias para um novo ID público; renomeações destrutivas exigem uma migração.",
+				"aliases": "Aliases",
+				"aliasesHelp": "IDs alternativos são resolvidos para este modelo canônico.",
+				"aliasId": "ID do alias",
+				"aliasType": "Tipo de alias",
+				"noAliases": "Nenhum alias",
+				"lineage": "Linhagem",
+				"previousModel": "Modelo anterior",
+				"successors": "Sucessores",
+				"recentChanges": "Alterações recentes",
+				"noChanges": "Nenhuma alteração registrada",
+				"tone": "Nível do aviso",
+				"information": "Informação",
+				"warning": "Aviso",
+				"critical": "Crítico",
+				"noticeMarkdown": "Markdown do aviso",
+				"noticePlaceholder": "Deixe vazio para remover o aviso da página do modelo.",
+				"preview": "Prévia",
+				"noNotice": "Nenhum aviso será exibido.",
+				"aliasPublic": "Público",
+				"aliasLegacy": "Legado",
+				"aliasProvider": "Provedor",
+				"benchmarkPending": "Crie ou descarte a nova avaliação antes de salvar os resultados.",
+				"aliasesCacheFailed": "Aliases salvos. A atualização do cache público falhou; tente novamente nos controles de cache.",
+				"noticeCacheFailed": "Aviso salvo. A atualização do cache público falhou; tente novamente nos controles de cache.",
+				"sectionStillLoading": "{section}: os dados ainda estão sendo carregados. Aguarde um momento e tente novamente."
+			}
 		},
 		"auditDataTable": {
 			"actions": "Ações",

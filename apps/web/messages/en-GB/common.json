@@ -966,7 +966,36 @@
 				"capabilityCount": "{count, plural, one {# capability} other {# capabilities}}",
 				"contextCount": "{count} context"
 			},
-			"refreshAfterSave": "Saved successfully. Reload to refresh the editor before making further changes."
+			"refreshAfterSave": "Saved successfully. Reload to refresh the editor before making further changes.",
+			"mainCopy": {
+				"canonicalIdentity": "Canonical identity",
+				"canonicalIdentityHelp": "The canonical ID is immutable in-place. Add an alias for a new public ID; destructive renames require a migration.",
+				"aliases": "Aliases",
+				"aliasesHelp": "Alternative IDs resolve to this canonical model.",
+				"aliasId": "Alias ID",
+				"aliasType": "Alias type",
+				"noAliases": "No aliases",
+				"lineage": "Lineage",
+				"previousModel": "Previous model",
+				"successors": "Successors",
+				"recentChanges": "Recent changes",
+				"noChanges": "No recorded changes",
+				"tone": "Tone",
+				"information": "Information",
+				"warning": "Warning",
+				"critical": "Critical",
+				"noticeMarkdown": "Notice markdown",
+				"noticePlaceholder": "Leave empty to remove the model-page notice.",
+				"preview": "Preview",
+				"noNotice": "No notice will be shown.",
+				"aliasPublic": "Public",
+				"aliasLegacy": "Legacy",
+				"aliasProvider": "Provider",
+				"benchmarkPending": "Create or clear the new benchmark before saving results.",
+				"aliasesCacheFailed": "Aliases saved. Public cache refresh failed; retry from Cache controls.",
+				"noticeCacheFailed": "Notice saved. Public cache refresh failed; retry from Cache controls.",
+				"sectionStillLoading": "{section} are still loading. Please wait a moment and retry."
+			}
 		},
 		"auditDataTable": {
 			"actions": "Actions",

@@ -34,7 +34,7 @@
 		"resend:incident:outreach": "tsx scripts/resend/send-incident-outreach.ts",
 		"test:live:playground-text": "tsx scripts/live-playground-text-smoke.ts",
 		"test": "jest --runInBand",
-		"validate:i18n": "tsx scripts/validate-localisation.ts",
+		"validate:i18n": "tsx scripts/validate-localisation.ts && node scripts/generate-docs-search.mjs --check",
 		"test:i18n": "pnpm run validate:i18n"
 	},
 	"dependencies": {
