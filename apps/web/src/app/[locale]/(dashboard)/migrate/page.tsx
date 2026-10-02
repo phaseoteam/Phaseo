@@ -15,10 +15,10 @@ export default async function MigratePage({ params }: { params: Promise<{ locale
 	const { locale } = await params;
 	const t = await getTranslations({ locale, namespace: "Content.migrate" });
 	return (
-		<div className="container mx-auto py-10 space-y-10">
-			<div className="flex flex-col gap-5 rounded-3xl border border-border/70 bg-background p-6 sm:flex-row sm:items-center sm:justify-between">
+		<div className="container mx-auto space-y-8 px-4 py-6 sm:space-y-10 sm:px-6 sm:py-10 lg:px-8">
+			<div className="flex flex-col gap-5 rounded-3xl border border-border/70 bg-background p-4 sm:flex-row sm:items-center sm:justify-between sm:p-6">
 				<div className="space-y-2">
-					<h1 className="text-3xl font-bold">{t("heading")}</h1>
+					<h1 className="text-2xl font-bold sm:text-3xl">{t("heading")}</h1>
 					<p className="max-w-2xl text-muted-foreground">
 						{t("intro")}
 					</p>
