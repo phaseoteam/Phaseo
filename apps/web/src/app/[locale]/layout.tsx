@@ -7,13 +7,16 @@ import { getPublicMessages } from "@/i18n/messages";
 import {
 	getLocaleDefinition,
 	isPublicLocale,
-	publicLocales,
+	routing,
 	type PublicLocale,
 } from "@/i18n/routing";
 import { buildLocalizedRootMetadata } from "@/lib/rootMetadata";
 
 export function generateStaticParams() {
-	return publicLocales.map((locale) => ({ locale }));
+	// Prerender a representative locale; the same validated route tree serves
+	// every other public locale on demand. Expanding all ten root params makes
+	// Vercel duplicate each dynamic/PPR matcher past its routing limit.
+	return [{ locale: routing.defaultLocale }];
 }
 
 async function getValidatedLocale(
@@ -38,7 +41,7 @@ export default async function LocaleRootLayout({
 	const definition = getLocaleDefinition(locale);
 	const messages = await getPublicMessages(locale);
 
-	// Enables static rendering for the locale samples returned above while the
+	// Enables static rendering for the locale sample returned above while the
 	// request configuration remains authoritative for next-intl server APIs.
 	setRequestLocale(locale);
 
