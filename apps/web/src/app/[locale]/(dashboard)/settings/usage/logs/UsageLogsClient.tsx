@@ -109,7 +109,7 @@ function buildSampleSourceRows(rows: RequestRow[]): RequestRow[] {
 }
 
 export default function UsageLogsClient({
-	scope,
+	scope: initialScope,
 	selectedRequestId = null,
 	selectedView,
 	forcedJobKind,
@@ -120,6 +120,7 @@ export default function UsageLogsClient({
 	forcedJobKind?: "video" | "batch";
 }) {
 	const searchParams = useSearchParams();
+	const scope = { ...initialScope, workspaceId: searchParams.get("workspaceId")?.trim() || initialScope.workspaceId };
 	const normalized = new URLSearchParams(searchParams);
 	if (selectedView) normalized.set("view", selectedView);
 	if (forcedJobKind) normalized.set("job_kind", forcedJobKind);

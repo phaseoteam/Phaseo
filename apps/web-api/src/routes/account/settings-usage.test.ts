@@ -7,6 +7,47 @@ const env = { ENV: "development" as const, SUPABASE_URL: "https://example.supaba
 afterEach(() => vi.unstubAllGlobals());
 
 describe("account usage settings routes", () => {
+	it("filters creator activity by workspace-scoped keys before pagination", async () => {
+		const requestUrls: URL[] = [];
+		let creatorKeysUrl: URL | undefined;
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+			const url = new URL(input instanceof Request ? input.url : String(input));
+			if (url.pathname === "/auth/v1/user") return new Response(JSON.stringify({ id: "viewer", created_at: "2025-01-01" }));
+			if (url.pathname.includes("/auth/v1/admin/users/")) return new Response(JSON.stringify({ id: "11111111-1111-4111-8111-111111111111", email: "private@example.com", user_metadata: { avatar_url: "https://example.com/avatar.jpg", secret: "hidden" } }));
+			if (url.pathname.endsWith("workspace_members")) return new Response(JSON.stringify([{ role: "member" }]));
+			if (url.pathname.endsWith("workspaces")) return new Response(JSON.stringify([{ owner_user_id: "owner" }]));
+			if (url.pathname.endsWith("keys") && url.searchParams.has("created_by")) { creatorKeysUrl = url; return new Response(JSON.stringify([{ id: "creator-key" }])); }
+			if (url.pathname.endsWith("users")) return new Response(JSON.stringify([{ display_name: "Alice" }]));
+			if (url.pathname.endsWith("v2_web_gateway_requests")) { requestUrls.push(url); return new Response("[]"); }
+			return new Response("[]");
+		}));
+		const response = await app.request("https://phaseo.app/api/account/settings/usage/observability?workspaceId=workspace-1&user=11111111-1111-4111-8111-111111111111&from=2026-10-01&to=2026-10-02&previousFrom=2026-09-30&previousTo=2026-10-01", { headers: { authorization: "Bearer token" } }, env);
+		expect(response.status).toBe(200);
+		expect(creatorKeysUrl?.searchParams.get("workspace_id")).toBe("eq.workspace-1");
+		expect(creatorKeysUrl?.searchParams.get("created_by")).toBe("eq.11111111-1111-4111-8111-111111111111");
+		expect(requestUrls).toHaveLength(2);
+		for (const url of requestUrls) { expect(url.searchParams.get("key_id")).toBe("in.(creator-key)"); expect(url.searchParams.get("workspace_id")).toBe("eq.workspace-1"); }
+		const payload = await response.json() as any;
+		expect(payload.creatorFilter).toEqual({ id: "11111111-1111-4111-8111-111111111111", name: "Alice", avatarUrl: "https://example.com/avatar.jpg" });
+		expect(JSON.stringify(payload)).not.toContain("private@example.com");
+		expect(JSON.stringify(payload)).not.toContain("hidden");
+	});
+	it("does not broaden creator filters when the creator has no keys", async () => {
+		const requestUrls: URL[] = [];
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+			const url = new URL(input instanceof Request ? input.url : String(input));
+			if (url.pathname === "/auth/v1/user") return new Response(JSON.stringify({ id: "viewer", created_at: "2025-01-01" }));
+			if (url.pathname.endsWith("workspace_members")) return new Response(JSON.stringify([{ role: "member" }]));
+			if (url.pathname.endsWith("workspaces")) return new Response(JSON.stringify([{ owner_user_id: "owner" }]));
+			if (url.pathname.endsWith("v2_web_gateway_requests")) requestUrls.push(url);
+			return new Response("[]");
+		}));
+		const response = await app.request("https://phaseo.app/api/account/settings/usage/observability?workspaceId=workspace-1&user=unrelated&from=2026-10-01&to=2026-10-02&previousFrom=2026-09-30&previousTo=2026-10-01", { headers: { authorization: "Bearer token" } }, env);
+		expect(response.status).toBe(200);
+		for (const url of requestUrls) expect(url.searchParams.get("key_id")).toBe("in.(00000000-0000-0000-0000-000000000000)");
+		expect(await response.json()).toMatchObject({ creatorFilter: { name: null }, current: { rows: [] } });
+	});
+
 	it("projects routing timing without full diagnostics on initial and paginated requests", async () => {
 		const requestQueries: URL[] = [];
 		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {

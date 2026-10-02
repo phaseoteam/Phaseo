@@ -2,6 +2,7 @@ import { createHmac } from "node:crypto";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 type KeyRow = {
+    ip_allowlist?: Array<{ label: string; address: string }>;
     id: string;
     workspace_id: string;
     status: string;
@@ -158,7 +159,7 @@ describe("authenticate hot-path caching", () => {
             const request = buildRequest(`phaseo_v1_sk_${kid}_${secret}`);
             const first = authenticate(request, { useKvCache: true });
             await expect(Promise.race([first, new Promise((resolve) => setTimeout(() => resolve("blocked"), 500))])).resolves.toMatchObject({ ok: true });
-            expect(runtime.cache.put).toHaveBeenCalledWith(`gateway:key:${kid}:v0`, expect.any(String), expect.any(Object));
+            expect(runtime.cache.put).toHaveBeenCalledWith(`gateway:key:ip-policy-v1:${kid}:v0`, expect.any(String), expect.any(Object));
             await expect(authenticate(request, { useKvCache: true })).resolves.toMatchObject({ ok: true });
             expect(runtime.maybeSingle).toHaveBeenCalledTimes(1);
         } finally {
@@ -187,6 +188,26 @@ describe("authenticate hot-path caching", () => {
 
     afterEach(() => {
         vi.useRealTimers();
+    });
+
+    it("enforces IP restrictions on every request, including a cached key", async () => {
+        const kid = "KIDIPCHECK123";
+        const secret = "secret_ip_check";
+        const token = `phaseo_v1_sk_${kid}_${secret}`;
+        runtime.dbRow.value = {
+            id: "key_ip", workspace_id: "team_1", status: "active", hash: hashSecret(secret),
+            ip_allowlist: [{ label: "Office", address: "203.0.113.0/24" }],
+        };
+        const { authenticate } = await import("./auth");
+        const allowed = buildRequest(token);
+        allowed.headers.set("cf-connecting-ip", "203.0.113.10");
+        expect((await authenticate(allowed, { useKvCache: true })).ok).toBe(true);
+        const denied = buildRequest(token);
+        denied.headers.set("cf-connecting-ip", "198.51.100.10");
+        denied.headers.set("x-forwarded-for", "203.0.113.10");
+        expect(await authenticate(denied, { useKvCache: true })).toEqual({ ok: false, reason: "key_ip_not_allowed" });
+        expect(await authenticate(buildRequest(token), { useKvCache: true })).toEqual({ ok: false, reason: "key_ip_not_allowed" });
+        expect(runtime.maybeSingle).toHaveBeenCalledTimes(1);
     });
 
 	it("requires the opaque delegated access token for inference instead of a session JWT", async () => {
@@ -228,7 +249,7 @@ describe("authenticate hot-path caching", () => {
         };
 
         await runtime.cache.put(`gateway:keyver:kid:${kid}`, "7");
-        await runtime.cache.put(`gateway:key:${kid}:v7`, JSON.stringify(row));
+        await runtime.cache.put(`gateway:key:ip-policy-v1:${kid}:v7`, JSON.stringify(row));
 
         const { authenticate } = await import("./auth");
         const first = await authenticate(buildRequest(token), { useKvCache: true });
@@ -308,7 +329,7 @@ describe("authenticate hot-path caching", () => {
 		};
 		runtime.dbRow.value = { ...cachedRow, status: "revoked" };
 		await runtime.cache.put(`gateway:keyver:kid:${kid}`, "1");
-		await runtime.cache.put(`gateway:key:${kid}:v1`, JSON.stringify(cachedRow));
+		await runtime.cache.put(`gateway:key:ip-policy-v1:${kid}:v1`, JSON.stringify(cachedRow));
 
 		const { authenticate } = await import("./auth");
 		const result = await authenticate(buildRequest(token), { useKvCache: true });

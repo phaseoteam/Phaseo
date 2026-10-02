@@ -25,11 +25,13 @@ export default function DeleteKeyItem({
 	trigger = true,
 	open: controlledOpen,
 	onOpenChange,
+	onDeleted,
 }: {
 	k: any;
 	trigger?: boolean;
 	open?: boolean;
 	onOpenChange?: (open: boolean) => void;
+	onDeleted?: () => void;
 }) {
 	const [internalOpen, setInternalOpen] = useState(false);
 	const invalidateSettings = useInvalidatePrivateSettings();
@@ -57,6 +59,7 @@ export default function DeleteKeyItem({
 			await promise;
 			void invalidateSettings();
 			setOpen(false);
+			onDeleted?.();
 		} catch {
 			// The toast reports the mutation error; keep the dialog open.
 		} finally {

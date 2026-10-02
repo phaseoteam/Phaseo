@@ -66,6 +66,14 @@ describe("fetchSettingsUsageLogsInitialData", () => {
 		});
 	});
 
+	it("keeps the key's workspace when navigating from a key detail page", async () => {
+		await fetchSettingsUsageLogsInitialData({ workspaceId: "key-workspace", key: "key-1" });
+		expect(resolveAccessibleWorkspaceIdMock).not.toHaveBeenCalled();
+		expect(fetchAccountWebApiMock).toHaveBeenCalledWith(
+			"/api/account/settings/usage/logs?workspaceId=key-workspace&key=key-1", "access-token",
+		);
+	});
+
 	it("distinguishes validation failures from an unavailable workspace", async () => {
 		resolveAccessibleWorkspaceIdMock.mockRejectedValueOnce(new Error("workspace lookup failed"));
 

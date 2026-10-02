@@ -71,9 +71,9 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
+import { Link, useRouter } from "@/i18n/navigation";
+import { keyDetailHref } from "./keyDetailHref";
 import UsageItem from "./UsageItem";
-import KeyDetailsItem from "./KeyDetailsItem";
-import EditKeyItem from "./EditKeyItem";
 import DeleteKeyItem from "./DeleteKeyItem";
 import RotateKeyItem from "./RotateKeyItem";
 import {
@@ -86,7 +86,7 @@ import { useTranslations } from "next-intl";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 
 import { getKeyState, organiseKeys, type KeyState } from "./keyOrdering";
-type KeyDialogType = "details" | "edit" | "rotate" | "delete";
+type KeyDialogType = "rotate" | "delete";
 type ActiveKeyDialog = { type: KeyDialogType; key: any } | null;
 
 const NANOS_PER_USD = 1_000_000_000;
@@ -504,7 +504,7 @@ const MobileKeyRow = memo(function MobileKeyRow({ k, selected, toggleKeySelectio
 		<div
 			key={k.id}
 			className={`cursor-pointer space-y-3 p-3 transition-colors hover:bg-muted/30 ${selected ? "bg-muted/40" : ""}`}
-			role="button"
+			role="link"
 			tabIndex={0}
 			onClick={(event) => openDetailsFromRow(event, k)}
 			onKeyDown={(event) => openDetailsFromKeyboard(event, k)}
@@ -525,7 +525,7 @@ const MobileKeyRow = memo(function MobileKeyRow({ k, selected, toggleKeySelectio
 							aria-label={meta.label}
 							className={`h-4 w-4 shrink-0 ${meta.className}`}
 						/>
-						<div className="font-medium truncate">{k.name}</div>
+						<Link href={keyDetailHref(k)} className="font-medium truncate hover:underline">{k.name}</Link>
 				</div>
 				<div className="mt-1 font-mono text-[11px] text-muted-foreground truncate">
 					{formatKeyReference(k.prefix)}
@@ -544,17 +544,9 @@ const MobileKeyRow = memo(function MobileKeyRow({ k, selected, toggleKeySelectio
 
 					</DropdownMenuTrigger>
 				<DropdownMenuContent side="bottom" align="end" className="w-40 rounded-2xl">
-						<KeyDialogMenuItem
-							label={t("labels.details")}
-							Icon={Info}
-							onOpen={() => openKeyDialog("details", k)}
-						/>
+						<DropdownMenuItem render={<Link href={keyDetailHref(k)} />}><Info className="mr-2 size-4" />{t("labels.details")}</DropdownMenuItem>
 						<UsageItem k={k} />
-						<KeyDialogMenuItem
-							label={t("labels.edit")}
-							Icon={Edit2}
-							onOpen={() => openKeyDialog("edit", k)}
-						/>
+						<DropdownMenuItem render={<Link href={`${keyDetailHref(k)}#settings`} />}><Edit2 className="mr-2 size-4" />{t("labels.edit")}</DropdownMenuItem>
 						<KeyDialogMenuItem
 							label={t("keys.rotate")}
 							Icon={RefreshCw}
@@ -630,9 +622,7 @@ const DesktopKeyRow = memo(function DesktopKeyRow({ k, selected, toggleKeySelect
 							</TooltipContent>
 						</Tooltip>
 						<div className="min-w-0">
-						<div className="font-medium truncate">
-							{k.name}
-						</div>
+						<Link href={keyDetailHref(k)} className="font-medium truncate hover:underline">{k.name}</Link>
 						<div className="font-mono text-xs text-muted-foreground truncate">
 							{formatKeyReference(k.prefix)}
 						</div>
@@ -682,17 +672,9 @@ const DesktopKeyRow = memo(function DesktopKeyRow({ k, selected, toggleKeySelect
 					align="end"
 					className="w-40 rounded-2xl"
 						>
-							<KeyDialogMenuItem
-								label={t("labels.details")}
-								Icon={Info}
-								onOpen={() => openKeyDialog("details", k)}
-							/>
+							<DropdownMenuItem render={<Link href={keyDetailHref(k)} />}><Info className="mr-2 size-4" />{t("labels.details")}</DropdownMenuItem>
 							<UsageItem k={k} />
-							<KeyDialogMenuItem
-								label={t("labels.edit")}
-								Icon={Edit2}
-								onOpen={() => openKeyDialog("edit", k)}
-							/>
+							<DropdownMenuItem render={<Link href={`${keyDetailHref(k)}#settings`} />}><Edit2 className="mr-2 size-4" />{t("labels.edit")}</DropdownMenuItem>
 							<KeyDialogMenuItem
 								label={t("keys.rotate")}
 								Icon={RefreshCw}
@@ -713,7 +695,7 @@ const DesktopKeyRow = memo(function DesktopKeyRow({ k, selected, toggleKeySelect
 			<TableRow
 				key={k.id}
 				className={`cursor-pointer transition-colors hover:bg-muted/30 ${selected ? "bg-muted/40" : ""}`}
-				role="button"
+				role="link"
 				tabIndex={0}
 				onClick={(event) => openDetailsFromRow(event, k)}
 				onKeyDown={(event) => openDetailsFromKeyboard(event, k)}
@@ -744,6 +726,7 @@ const getServerLayout = () => false;
 export default function KeysPanel({ teamsWithKeys }: any) {
 	const t = useTranslations("SettingsUI");
 	const write = useSettingsWrite();
+	const router = useRouter();
  const desktop = useSyncExternalStore(subscribeToLayout, getDesktopLayout, getServerLayout);
 	const [filter, setFilter] = useQueryState("keyStatus", parseAsStringLiteral(["enabled", "disabled", "expired", "enabled-disabled", "enabled-expired", "disabled-expired", "all", "none"] as const).withDefault("enabled-disabled"));
 	const [search, setSearch] = useState("");
@@ -802,14 +785,14 @@ export default function KeysPanel({ teamsWithKeys }: any) {
 	const openDetailsFromRow = useCallback((event: React.MouseEvent<HTMLElement>, key: any) => {
 		const target = event.target as HTMLElement;
 		if (target.closest("button, a, input, [role='checkbox'], [role='menuitem']")) return;
-		openKeyDialog("details", key);
-	}, [openKeyDialog]);
+		router.push(keyDetailHref(key));
+	}, [router]);
 	const openDetailsFromKeyboard = useCallback((event: React.KeyboardEvent<HTMLElement>, key: any) => {
 		if (event.target !== event.currentTarget) return;
 		if (event.key !== "Enter" && event.key !== " ") return;
 		event.preventDefault();
-		openKeyDialog("details", key);
-	}, [openKeyDialog]);
+		router.push(keyDetailHref(key));
+	}, [router]);
 	const closeKeyDialog = () => setActiveDialog(null);
 	const selectedKeys = allKeys.filter((key: any) => selectedIds.has(String(key.id)));
 	const selectableKeyIds = allKeys.map((key: any) => String(key.id));
@@ -1086,28 +1069,6 @@ export default function KeysPanel({ teamsWithKeys }: any) {
 		</div>
 		{activeDialog ? (
 			<>
-				{activeDialog.type === "details" ? (
-					<KeyDetailsItem
-						key={`details-${activeDialog.key?.id ?? "key"}`}
-						k={activeDialog.key}
-						trigger={false}
-						open
-						onOpenChange={(next) => {
-							if (!next) closeKeyDialog();
-						}}
-					/>
-				) : null}
-				{activeDialog.type === "edit" ? (
-					<EditKeyItem
-						key={`edit-${activeDialog.key?.id ?? "key"}`}
-						k={activeDialog.key}
-						trigger={false}
-						open
-						onOpenChange={(next) => {
-							if (!next) closeKeyDialog();
-						}}
-					/>
-				) : null}
 				{activeDialog.type === "rotate" ? (
 					<RotateKeyItem
 						key={`rotate-${activeDialog.key?.id ?? "key"}`}
