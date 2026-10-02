@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useTranslations } from "next-intl";
 import { AlertCircle, CheckCircle2, Clock3, Database, GitBranch, MessageSquareText, Route, Server, Wrench, type LucideIcon } from "lucide-react";
 import { CopyButton } from "@/components/ui/copy-button";
 import { cn } from "@/lib/utils";
@@ -412,17 +413,18 @@ function RoleBadge({ role }: { role: string }) {
 }
 
 function ToolCallBlock({ call, state }: { call: TraceToolCall; state: string }) {
+	const t = useTranslations("SettingsUI");
 	return (
 		<div className="min-w-0 border-l-2 border-border bg-muted/20 px-3 py-2.5">
 			<div className="flex flex-wrap items-center gap-2">
 				<Wrench className="size-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
 				<code className="break-all text-xs font-semibold">{call.name}</code>
 				{call.id ? <code className="break-all text-[10px] text-muted-foreground">{call.id}</code> : null}
-				<span className={cn("ml-auto rounded-sm border px-2 py-1 text-[10px] font-medium", state === "Failed" ? "border-rose-500/25 bg-rose-500/10 text-rose-700 dark:text-rose-300" : "border-border/70 bg-background/70 text-muted-foreground")}>{state}</span>
+				<span className={cn("ml-auto rounded-sm border px-2 py-1 text-[10px] font-medium", state === t("chatGaps.copyFailed" as never) ? "border-rose-500/25 bg-rose-500/10 text-rose-700 dark:text-rose-300" : "border-border/70 bg-background/70 text-muted-foreground")}>{state}</span>
 			</div>
 			<details className="group/tool mt-2 border-t border-border/60">
 				<summary className="flex cursor-pointer list-none items-center justify-between gap-2 py-2 text-[11px] font-medium text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-					<span>Arguments</span><span className="transition-transform group-open/tool:rotate-180">⌄</span>
+					<span>{t("trace.arguments" as never)}</span><span className="transition-transform group-open/tool:rotate-180">⌄</span>
 				</summary>
 				<pre className="max-h-64 overflow-auto border-t border-border/60 py-2.5 text-xs leading-5 whitespace-pre-wrap break-words">{stringify(call.arguments) || "{}"}</pre>
 			</details>
@@ -436,7 +438,7 @@ const lifecycleNavigation: Array<{ id: string; label: string; icon: LucideIcon }
 	{ id: "trace-providers", label: "Providers", icon: Server },
 	{ id: "trace-tools", label: "Tools", icon: Wrench },
 	{ id: "trace-response", label: "Response", icon: MessageSquareText },
-	{ id: "trace-capture", label: "R2 log", icon: Database },
+	{ id: "trace-capture", label: "Log capture", icon: Database },
 ];
 
 function LifecycleStep({ id, title, summary, icon: Icon, badge, children }: {
@@ -514,6 +516,7 @@ function extractToolUsage(usage: unknown): Array<{ label: string; count: number 
 }
 
 function InputMessages({ messages }: { messages: TraceMessage[] }) {
+	const t = useTranslations("SettingsUI");
 	return (
 		<div className="space-y-2">
 			{messages.map((message) => (
@@ -522,20 +525,21 @@ function InputMessages({ messages }: { messages: TraceMessage[] }) {
 						<RoleBadge role={message.role} />
 						{message.toolCallId ? <code className="truncate text-[10px] text-muted-foreground">{message.toolCallId}</code> : null}
 					</div>
-					{message.text ? <div className="whitespace-pre-wrap break-words text-sm leading-6">{message.text}</div> : message.toolCallId ? <div className="text-xs italic text-muted-foreground">Tool result has no text content.</div> : null}
-					{message.toolCalls?.length ? <div className="mt-2 space-y-2">{message.toolCalls.map((call) => <ToolCallBlock key={call.key} call={call} state="In request" />)}</div> : null}
+					{message.text ? <div className="whitespace-pre-wrap break-words text-sm leading-6">{message.text}</div> : message.toolCallId ? <div className="text-xs italic text-muted-foreground">{t("trace.toolResultHasNoTextContent" as never)}</div> : null}
+					{message.toolCalls?.length ? <div className="mt-2 space-y-2">{message.toolCalls.map((call) => <ToolCallBlock key={call.key} call={call} state={t("trace.inRequest" as never)} />)}</div> : null}
 				</div>
 			))}
 		</div>
 	);
 }
 
-function toolResultCard(result: TraceToolResult) {
+function ToolResultCard({ result }: { result: TraceToolResult }) {
+	const t = useTranslations("SettingsUI");
 	return (
 		<div key={result.key} className={cn("border-l-2 bg-muted/20 px-3 py-2.5", result.isError ? "border-rose-500/60" : "border-emerald-500/60")}>
 			<div className="flex items-center gap-2 text-xs font-medium">
-				<Wrench className="size-3.5 text-muted-foreground" aria-hidden="true" />{result.name ?? "Tool result"}
-				<StatusPill tone={result.isError ? "rose" : "emerald"}>{result.isError ? "Failed" : "Result"}</StatusPill>
+				<Wrench className="size-3.5 text-muted-foreground" aria-hidden="true" />{result.name ?? t("trace.toolResult" as never)}
+				<StatusPill tone={result.isError ? "rose" : "emerald"}>{result.isError ? t("chatGaps.copyFailed" as never) : t("credits.Result" as never)}</StatusPill>
 			</div>
 			<pre className="mt-2 max-h-64 overflow-auto whitespace-pre-wrap break-words text-xs leading-5">{stringify(result.output)}</pre>
 		</div>
@@ -544,6 +548,7 @@ function toolResultCard(result: TraceToolResult) {
 export function GenerationTraceView({ request, ioLog, timelineItems, providerNames }: {
 	request: RequestRow; ioLog?: GatewayIoLog | null; timelineItems: TraceTimingItem[]; providerNames?: Map<string, string>;
 }) {
+	const t = useTranslations("SettingsUI");
 	const traceRootRef = React.useRef<HTMLDivElement>(null);
 	const [activeStep, setActiveStep] = React.useState(lifecycleNavigation[0].id);
 	const payload = asRecord(ioLog?.payload);
@@ -574,11 +579,11 @@ export function GenerationTraceView({ request, ioLog, timelineItems, providerNam
 	const rankedDecisions = decisions.filter((decision) => decision.decision === "ranked");
 	const selectedDecision = rankedDecisions.find((decision) => decision.selected);
 	const routeProvider = selectedDecision?.provider_slug ?? request.provider;
-	const routeProviderName = routeProvider ? providerNames?.get(routeProvider) ?? routeProvider : "Provider unavailable";
+	const routeProviderName = routeProvider ? providerNames?.get(routeProvider) ?? routeProvider : t("trace.providerUnavailable" as never);
 	const routingMode = String(asRecord(request.routing_trace)?.routing_mode ?? "balanced");
 	const routingSummary = selectedDecision
-		? routeProviderName + " selected from " + rankedDecisions.length + " scored candidate" + (rankedDecisions.length === 1 ? "" : "s")
-		: routeProvider ? routeProviderName + " selected" : "No route selection was recorded";
+		? t("routingTrace.selectedFromCandidates" as never, { provider: routeProviderName, count: rankedDecisions.length } as never)
+		: routeProvider ? t("trace.selectedProvider" as never, { provider: routeProviderName } as never) : t("trace.noRouteSelection" as never);
 	const payloadTone: StatusTone = ioLog?.status === "stored" ? "emerald" : ioLog?.status ? "amber" : "slate";
 	const responseTone: StatusTone = request.success ? "emerald" : "amber";
 
@@ -610,25 +615,25 @@ export function GenerationTraceView({ request, ioLog, timelineItems, providerNam
 					<div className="flex min-w-0 items-start gap-3">
 						<div className="flex size-8 shrink-0 items-center justify-center rounded-md border border-border/70 bg-background/70 text-muted-foreground"><GitBranch className="size-4" aria-hidden="true" /></div>
 						<div className="min-w-0">
-							<div className="text-sm font-semibold">Request lifecycle</div>
+							<div className="text-sm font-semibold">{t("trace.requestLifecycle" as never)}</div>
 							<div className="mt-0.5 truncate font-mono text-[11px] text-muted-foreground">{request.model_id ?? routeProviderName}</div>
 						</div>
 					</div>
 					<div className="flex flex-wrap gap-1.5">
-						<StatusPill tone={responseTone}>{request.success ? <CheckCircle2 className="size-3" aria-hidden="true" /> : <AlertCircle className="size-3" aria-hidden="true" />}{request.success ? "Completed" : "Failed"}</StatusPill>
+						<StatusPill tone={responseTone}>{request.success ? <CheckCircle2 className="size-3" aria-hidden="true" /> : <AlertCircle className="size-3" aria-hidden="true" />}{request.success ? t("chatGaps.copyCompleted" as never) : t("chatGaps.copyFailed" as never)}</StatusPill>
 						<StatusPill>{routeProviderName}</StatusPill>
 						{ioLog ? <StatusPill tone={payloadTone}>R2 {ioLog.status}</StatusPill> : null}
 					</div>
 				</div>
 				<div className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 border-t border-border/60 pt-3 sm:grid-cols-4">
-					<div><div className="text-[10px] font-medium text-muted-foreground">Generation</div><div className="mt-0.5 font-mono text-xs font-semibold tabular-nums">{formatTraceDuration(request.generation_ms) ?? "Not recorded"}</div></div>
-					<div><div className="text-[10px] font-medium text-muted-foreground">Provider attempts</div><div className="mt-0.5 font-mono text-xs font-semibold tabular-nums">{attempts.length ? attempts.length.toLocaleString() : "Not recorded"}</div></div>
-					<div><div className="text-[10px] font-medium text-muted-foreground">Tool calls</div><div className="mt-0.5 font-mono text-xs font-semibold tabular-nums">{toolActivityCount.toLocaleString()}</div></div>
-					<div><div className="text-[10px] font-medium text-muted-foreground">Retained until</div><div className="mt-0.5 truncate text-xs font-semibold">{ioLog?.retention_until ? formatWordyDateTime(ioLog.retention_until) : "Not stored"}</div></div>
+					<div><div className="text-[10px] font-medium text-muted-foreground">{t("strings.upstreamOutcomeGeneration" as never)}</div><div className="mt-0.5 font-mono text-xs font-semibold tabular-nums">{formatTraceDuration(request.generation_ms) ?? t("usageGaps.copyNotRecorded" as never)}</div></div>
+					<div><div className="text-[10px] font-medium text-muted-foreground">{t("strings.Provider attempts" as never)}</div><div className="mt-0.5 font-mono text-xs font-semibold tabular-nums">{attempts.length ? attempts.length.toLocaleString() : t("usageGaps.copyNotRecorded" as never)}</div></div>
+					<div><div className="text-[10px] font-medium text-muted-foreground">{t("trace.toolCalls" as never)}</div><div className="mt-0.5 font-mono text-xs font-semibold tabular-nums">{toolActivityCount.toLocaleString()}</div></div>
+					<div><div className="text-[10px] font-medium text-muted-foreground">{t("trace.retainedUntil" as never)}</div><div className="mt-0.5 truncate text-xs font-semibold">{ioLog?.retention_until ? formatWordyDateTime(ioLog.retention_until) : t("trace.notStored" as never)}</div></div>
 				</div>
 			</div>
 
-			<nav aria-label="Request lifecycle" className="-mx-3 border-y border-border/70 bg-background px-2 py-2 sm:-mx-4 sm:px-3">
+			<nav aria-label={t("trace.requestLifecycle" as never)} className="-mx-3 border-y border-border/70 bg-background px-2 py-2 sm:-mx-4 sm:px-3">
 				<div className="grid grid-cols-5 gap-1">
 					{lifecycleNavigation.map((step) => {
 						const active = activeStep === step.id;
@@ -638,7 +643,7 @@ export function GenerationTraceView({ request, ioLog, timelineItems, providerNam
 								className={cn("flex min-w-0 flex-col items-center justify-center gap-1 rounded-md px-1 py-1.5 text-[10px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:flex-row sm:gap-1.5 sm:px-2 sm:text-[11px]",
 									active ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted/60 hover:text-foreground")}>
 								<StepIcon className="size-3.5 shrink-0" aria-hidden="true" />
-								<span className="truncate">{step.label}</span>
+								<span className="truncate">{step.id === "trace-tools" ? t("trace.toolActivity" as never) : step.id === "trace-capture" ? t("trace.logCapture" as never) : t(("strings." + step.label) as never)}</span>
 							</button>
 						);
 					})}
@@ -648,32 +653,32 @@ export function GenerationTraceView({ request, ioLog, timelineItems, providerNam
 			<div className="relative space-y-0">
 				<div className="pointer-events-none absolute bottom-8 left-[14px] top-3 w-px bg-border/80" aria-hidden="true" />
 
-				<LifecycleStep id="trace-routing" title="Routing" summary={routingSummary} icon={Route} badge={<StatusPill>{routingMode}</StatusPill>}>
+				<LifecycleStep id="trace-routing" title={t("privateModelsCopy.routing" as never)} summary={routingSummary} icon={Route} badge={<StatusPill>{routingMode}</StatusPill>}>
 					<div className="space-y-3">
 						<div className="flex flex-wrap items-center justify-between gap-3 border-l-2 border-border bg-muted/25 px-3 py-2.5">
 							<div className="min-w-0">
-								<div className="text-[11px] font-medium text-muted-foreground">Selected route</div>
+								<div className="text-[11px] font-medium text-muted-foreground">{t("trace.selectedRoute" as never)}</div>
 								<div className="mt-1 truncate text-sm font-semibold">{routeProviderName}</div>
 								{request.model_id ? <div className="mt-0.5 truncate font-mono text-[11px] text-muted-foreground">{request.model_id}</div> : null}
 							</div>
-							{routingTiming?.duration != null ? <StatusPill><Clock3 className="size-3" aria-hidden="true" />{formatTraceDuration(routingTiming.duration)}</StatusPill> : <StatusPill>Routing duration not recorded</StatusPill>}
+							{routingTiming?.duration != null ? <StatusPill><Clock3 className="size-3" aria-hidden="true" />{formatTraceDuration(routingTiming.duration)}</StatusPill> : <StatusPill>{t("trace.routingDurationNotRecorded" as never)}</StatusPill>}
 						</div>
 						<RoutingTracePanel trace={request.routing_trace ?? null} decisions={decisions} providerNames={providerNames} />
 						<details className="group/input border-y border-border/60">
 							<summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-3.5 py-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-								<span className="min-w-0"><span className="block text-xs font-medium">Request input</span><span className="mt-0.5 block text-[10px] text-muted-foreground">{inputMessages.length ? inputMessages.length + " messages" : "Inspect submitted payload"}</span></span>
+								<span className="min-w-0"><span className="block text-xs font-medium">{t("trace.requestInput" as never)}</span><span className="mt-0.5 block text-[10px] text-muted-foreground">{inputMessages.length ? inputMessages.length + " messages" : t("trace.inspectSubmittedPayload" as never)}</span></span>
 								<span className="text-xs text-muted-foreground transition-transform group-open/input:rotate-180">⌄</span>
 							</summary>
 							<div className="border-t border-border/60 p-3">
-								{inputMessages.length > 0 ? <InputMessages messages={inputMessages} /> : inputPayload != null ? <p className="text-xs text-muted-foreground">This request format has no readable message list. Inspect the retained request payload below.</p> : <p className="text-xs text-muted-foreground">{ioLog?.error ?? "No request payload was retained."}</p>}
+								{inputMessages.length > 0 ? <InputMessages messages={inputMessages} /> : inputPayload != null ? <p className="text-xs text-muted-foreground">{t("trace.thisRequestFormatHasNoReadableMessageListInspectTheRetainedRequestPayloadBelow" as never)}</p> : <p className="text-xs text-muted-foreground">{ioLog?.error ?? t("trace.noRequestPayloadWasRetained" as never)}</p>}
 							</div>
 						</details>
 					</div>
 				</LifecycleStep>
 
-				<LifecycleStep id="trace-providers" title="Provider attempts"
-					summary={attempts.length ? attempts.length + " upstream attempt" + (attempts.length === 1 ? "" : "s") + " recorded" : "The request's upstream timing and provider response."}
-					icon={Server} badge={<StatusPill>{attempts.length ? attempts.length + " attempt" + (attempts.length === 1 ? "" : "s") : "Provider timing"}</StatusPill>}>
+				<LifecycleStep id="trace-providers" title={t("strings.Provider attempts" as never)}
+					summary={attempts.length ? t("trace.attemptCount" as never, { count: attempts.length } as never) : t("trace.theRequestsUpstreamTimingAndProviderResponse" as never)}
+					icon={Server} badge={<StatusPill>{attempts.length ? t("trace.attemptCount" as never, { count: attempts.length } as never) : t("trace.providerTiming" as never)}</StatusPill>}>
 					<div className="space-y-4">
 						{attempts.length > 0 ? <div className="space-y-0">
 							{attempts.map((attempt, index) => {
@@ -695,33 +700,33 @@ export function GenerationTraceView({ request, ioLog, timelineItems, providerNam
 											</div>
 											<div className="flex items-center gap-2"><StatusPill tone={status.tone}>{status.label}</StatusPill>{formatTraceDuration(duration) ? <span className="font-mono text-[10px] text-muted-foreground">{formatTraceDuration(duration)}</span> : null}</div>
 										</div>
-										{attempt.fallback_attempted === true || attempt.retryable === true ? <div className="mt-2 pl-7 text-[10px] text-muted-foreground">Retry or fallback path recorded</div> : null}
+										{attempt.fallback_attempted === true || attempt.retryable === true ? <div className="mt-2 pl-7 text-[10px] text-muted-foreground">{t("trace.retryOrFallbackPathRecorded" as never)}</div> : null}
 									</div>
 								);
 							})}
 						</div> : null}
 						{providerTimingItems.length > 0 ? <div className="border-t border-border/60 pt-3">
-							<div className="mb-3 flex items-center gap-2 text-xs font-medium"><Clock3 className="size-3.5 text-muted-foreground" aria-hidden="true" />Recorded timing</div>
+							<div className="mb-3 flex items-center gap-2 text-xs font-medium"><Clock3 className="size-3.5 text-muted-foreground" aria-hidden="true" />{t("trace.recordedTiming" as never)}</div>
 							<DetailTimingBar items={providerTimingItems} />
-						</div> : attempts.length === 0 ? <div className="border-l-2 border-border bg-muted/20 px-3 py-2.5 text-xs text-muted-foreground">No provider attempt details were recorded for this request.</div> : null}
+						</div> : attempts.length === 0 ? <div className="border-l-2 border-border bg-muted/20 px-3 py-2.5 text-xs text-muted-foreground">{t("trace.noProviderAttemptDetailsWereRecordedForThisRequest" as never)}</div> : null}
 					</div>
 				</LifecycleStep>
-				<LifecycleStep id="trace-tools" title="Tool activity"
-					summary={toolActivityCount > 0 ? toolActivityCount + " tool request" + (toolActivityCount === 1 ? "" : "s") + " recorded" : "Gateway and provider tool calls, when present."}
-					icon={Wrench} badge={<StatusPill>{toolActivityCount > 0 ? toolActivityCount + " call" + (toolActivityCount === 1 ? "" : "s") : "No calls recorded"}</StatusPill>}>
+				<LifecycleStep id="trace-tools" title={t("trace.toolActivity" as never)}
+					summary={toolActivityCount > 0 ? t("trace.toolRequestCount" as never, { count: toolActivityCount } as never) : t("trace.gatewayAndProviderToolCallsWhenPresent" as never)}
+					icon={Wrench} badge={<StatusPill>{toolActivityCount > 0 ? t("trace.callCount" as never, { count: toolActivityCount } as never) : t("trace.noCallsRecorded" as never)}</StatusPill>}>
 					<div className="space-y-3">
-						{toolUsage.length > 0 ? <div className="flex flex-wrap gap-1.5">{toolUsage.map((entry) => <StatusPill key={entry.label}>{entry.count.toLocaleString()} {entry.label.toLowerCase()}</StatusPill>)}</div> : null}
+						{toolUsage.length > 0 ? <div className="flex flex-wrap gap-1.5">{toolUsage.map((entry) => <StatusPill key={entry.label}>{entry.count.toLocaleString()} {t(("trace.tool" + entry.label.replaceAll(" ", "")) as never)}</StatusPill>)}</div> : null}
 						{serverToolRounds.map((round) => (
 							<div key={round.key} className="border-l-2 border-border pl-3.5">
 								<div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-									<div className="flex items-center gap-2 text-xs font-semibold"><span className="inline-flex size-5 items-center justify-center rounded-sm border border-border/70 bg-background/70 font-mono text-[10px] text-muted-foreground">{round.round}</span>Gateway tool round</div>
+									<div className="flex items-center gap-2 text-xs font-semibold"><span className="inline-flex size-5 items-center justify-center rounded-sm border border-border/70 bg-background/70 font-mono text-[10px] text-muted-foreground">{round.round}</span>{t("trace.gatewayToolRound" as never)}</div>
 									{round.durationMs !== null ? <StatusPill><Clock3 className="size-3" aria-hidden="true" />{formatTraceDuration(round.durationMs)}</StatusPill> : null}
 								</div>
 								<div className="space-y-3">{round.calls.map((call) => (
 									<div key={call.key} className="space-y-2">
-										<ToolCallBlock call={call} state={call.isError ? "Failed" : "Executed"} />
+										<ToolCallBlock call={call} state={call.isError ? t("chatGaps.copyFailed" as never) : t("trace.executed" as never)} />
 										<div className={cn("border-l-2 px-3 py-2.5", call.isError ? "border-rose-500/60 bg-rose-500/[0.05]" : "border-emerald-500/60 bg-emerald-500/[0.05]")}>
-											<div className="mb-1.5 flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground"><CheckCircle2 className={cn("size-3.5", call.isError ? "text-rose-500" : "text-emerald-500")} aria-hidden="true" />{call.isError ? "Tool error" : "Tool result"}</div>
+											<div className="mb-1.5 flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground"><CheckCircle2 className={cn("size-3.5", call.isError ? "text-rose-500" : "text-emerald-500")} aria-hidden="true" />{call.isError ? t("trace.toolError" as never) : t("trace.toolResult" as never)}</div>
 											<pre className="max-h-64 overflow-auto whitespace-pre-wrap break-words text-xs leading-5">{stringify(call.output) || (call.output == null ? "No output captured." : "")}</pre>
 										</div>
 									</div>
@@ -731,62 +736,62 @@ export function GenerationTraceView({ request, ioLog, timelineItems, providerNam
 						{response.toolCalls.map((call) => {
 							const result = response.toolResults.find((candidate) => call.id !== null && candidate.id === call.id);
 							return <div key={call.key} className="space-y-2">
-								<ToolCallBlock call={call} state={result ? result.isError ? "Failed" : "Completed" : "Requested"} />
-								{result ? <div className={cn("border-l-2 px-3 py-2.5", result.isError ? "border-rose-500/60 bg-rose-500/[0.05]" : "border-emerald-500/60 bg-emerald-500/[0.05]")}><div className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Execution result</div><pre className="max-h-64 overflow-auto whitespace-pre-wrap break-words text-xs leading-5">{stringify(result.output)}</pre></div> : <p className="pl-1 text-[11px] text-muted-foreground">No execution result was captured with this response.</p>}
+								<ToolCallBlock call={call} state={result ? result.isError ? t("chatGaps.copyFailed" as never) : t("chatGaps.copyCompleted" as never) : t("strings.Requested" as never)} />
+								{result ? <div className={cn("border-l-2 px-3 py-2.5", result.isError ? "border-rose-500/60 bg-rose-500/[0.05]" : "border-emerald-500/60 bg-emerald-500/[0.05]")}><div className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{t("trace.executionResult" as never)}</div><pre className="max-h-64 overflow-auto whitespace-pre-wrap break-words text-xs leading-5">{stringify(result.output)}</pre></div> : <p className="pl-1 text-[11px] text-muted-foreground">{t("trace.noExecutionResultWasCapturedWithThisResponse" as never)}</p>}
 							</div>;
 						})}
-						{response.toolResults.filter((result) => !response.toolCalls.some((call) => call.id !== null && call.id === result.id)).map(toolResultCard)}
+						{response.toolResults.filter((result) => !response.toolCalls.some((call) => call.id !== null && call.id === result.id)).map((result) => <ToolResultCard key={result.key} result={result} />)}
 						{!hasToolDetails && toolActivityCount > 0 ? <div role="status" className="border-l-2 border-amber-500 bg-amber-500/[0.06] px-3 py-2.5">
-							<div className="flex items-center gap-2 text-xs font-semibold text-amber-800 dark:text-amber-200"><AlertCircle className="size-4" aria-hidden="true" />Usage recorded; call details are missing</div>
-							<p className="mt-1.5 text-xs leading-5 text-muted-foreground">The request usage includes tool activity, but this stored payload has no tool arguments or results to display.</p>
+							<div className="flex items-center gap-2 text-xs font-semibold text-amber-800 dark:text-amber-200"><AlertCircle className="size-4" aria-hidden="true" />{t("trace.usageRecordedCallDetailsAreMissing" as never)}</div>
+							<p className="mt-1.5 text-xs leading-5 text-muted-foreground">{t("trace.theRequestUsageIncludesToolActivityButThisStoredPayloadHasNoToolArgumentsOrResultsToDisplay" as never)}</p>
 						</div> : null}
-						{toolActivityCount === 0 ? <div className="border-l-2 border-border bg-muted/20 px-3 py-2.5 text-xs text-muted-foreground">No tool calls or server tool executions were recorded for this request.</div> : null}
+						{toolActivityCount === 0 ? <div className="border-l-2 border-border bg-muted/20 px-3 py-2.5 text-xs text-muted-foreground">{t("trace.noToolCallsOrServerToolExecutionsWereRecordedForThisRequest" as never)}</div> : null}
 					</div>
 				</LifecycleStep>
 
-				<LifecycleStep id="trace-response" title="Response"
-					summary={response.text ? "Final response returned by the gateway." : "No final text response was captured."}
+				<LifecycleStep id="trace-response" title={t("strings.Response" as never)}
+					summary={response.text ? t("trace.finalResponseReturnedByTheGateway" as never) : t("trace.noFinalTextResponseWasCaptured" as never)}
 					icon={MessageSquareText} badge={<StatusPill tone={responseTone}>{request.status_code ?? (request.success ? "Complete" : "Error")}</StatusPill>}>
 					<div className="border-l-2 border-border bg-muted/20 px-3.5 py-3">
 						<div className="flex flex-wrap items-center justify-between gap-2">
-							<div className="flex items-center gap-2 text-xs font-medium"><CheckCircle2 className="size-3.5 text-muted-foreground" aria-hidden="true" />{response.label}</div>
-							{outputCopy ? <CopyButton size="sm" variant="ghost" content={outputCopy} aria-label="Copy model output" /> : null}
+							<div className="flex items-center gap-2 text-xs font-medium"><CheckCircle2 className="size-3.5 text-muted-foreground" aria-hidden="true" />{response.label === "Response" ? t("strings.Response" as never) : t(("trace." + response.label.replaceAll(" ", "")) as never)}</div>
+							{outputCopy ? <CopyButton size="sm" variant="ghost" content={outputCopy} aria-label={t("trace.copyModelOutput" as never)} /> : null}
 						</div>
 						<div className="mt-2 whitespace-pre-wrap break-words text-sm leading-6">{response.text || (response.value == null ? ioLog?.error ?? "No response payload was retained for this request." : "This response did not include final text. Inspect the captured payload below.")}</div>
 					</div>
 				</LifecycleStep>
 
-				<LifecycleStep id="trace-capture" title="Log capture"
-					summary={ioLog?.status === "stored" ? "Request and response payload retained in Cloudflare R2." : "I/O payload storage status and retention details."}
-					icon={Database} badge={<StatusPill tone={payloadTone}>{ioLog?.status ?? "Unavailable"}</StatusPill>}>
+				<LifecycleStep id="trace-capture" title={t("trace.logCapture" as never)}
+					summary={ioLog?.status === "stored" ? t("trace.requestAndResponsePayloadRetainedInCloudflareR2" as never) : t("trace.iOPayloadStorageStatusAndRetentionDetails" as never)}
+					icon={Database} badge={<StatusPill tone={payloadTone}>{ioLog?.status ?? t("realtimeCopy.copyUnavailable" as never)}</StatusPill>}>
 					<div className="space-y-3">
 						<div className="grid grid-cols-2 gap-x-4 gap-y-3 border-y border-border/60 py-3 sm:grid-cols-3">
-							<div><div className="text-[10px] font-medium text-muted-foreground">Storage</div><div className="mt-1 text-xs font-semibold">{ioLog?.storage_provider === "cloudflare_r2" ? "Cloudflare R2" : ioLog?.storage_provider ?? "Not recorded"}</div></div>
-							<div><div className="text-[10px] font-medium text-muted-foreground">Payload size</div><div className="mt-1 font-mono text-xs font-semibold tabular-nums">{ioLog?.bytes ? ioLog.bytes.toLocaleString() + " bytes" : "Not recorded"}</div></div>
-							<div><div className="text-[10px] font-medium text-muted-foreground">Retention</div><div className="mt-1 text-xs font-semibold">{ioLog?.retention_until ? formatWordyDateTime(ioLog.retention_until) : "Not recorded"}</div></div>
+							<div><div className="text-[10px] font-medium text-muted-foreground">{t("trace.storage" as never)}</div><div className="mt-1 text-xs font-semibold">{ioLog?.storage_provider === "cloudflare_r2" ? t("trace.cloudflareR2" as never) : ioLog?.storage_provider ?? t("usageGaps.copyNotRecorded" as never)}</div></div>
+							<div><div className="text-[10px] font-medium text-muted-foreground">{t("trace.payloadSize" as never)}</div><div className="mt-1 font-mono text-xs font-semibold tabular-nums">{ioLog?.bytes ? ioLog.bytes.toLocaleString() + " bytes" : t("usageGaps.copyNotRecorded" as never)}</div></div>
+							<div><div className="text-[10px] font-medium text-muted-foreground">{t("strings.Retention" as never)}</div><div className="mt-1 text-xs font-semibold">{ioLog?.retention_until ? formatWordyDateTime(ioLog.retention_until) : t("usageGaps.copyNotRecorded" as never)}</div></div>
 						</div>
 						{ioLog?.error ? <p className="rounded-md border border-amber-500/25 bg-amber-500/[0.06] p-3 text-xs text-amber-800 dark:text-amber-200">{ioLog.error}</p> : null}
 						{payload ? <details className="group/raw rounded-md border border-border/60 bg-background/60">
-							<summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-3.5 py-3 text-xs font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"><span>Inspect retained payload</span><span className="text-muted-foreground transition-transform group-open/raw:rotate-180">⌄</span></summary>
+							<summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-3.5 py-3 text-xs font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"><span>{t("trace.inspectRetainedPayload" as never)}</span><span className="text-muted-foreground transition-transform group-open/raw:rotate-180">⌄</span></summary>
 							<div className="space-y-3 border-t border-border/60 p-3">
 								{[
-									["Request", rawInput || "No request payload"],
-									["Gateway response", rawGatewayResponse || "No gateway response"],
-									["Provider request", rawProviderRequest || "Provider payload not retained"],
-									["Provider response", rawProviderResponse || "Provider payload not retained"],
-									["Tool execution trace", rawServerToolTrace || "No server tool executions were captured"],
-									["Metadata", rawMetadata || "No metadata"],
+									[t("trace.Request" as never), rawInput || t("trace.Norequestpayload" as never)],
+									[t("trace.Gatewayresponse" as never), rawGatewayResponse || t("trace.Nogatewayresponse" as never)],
+									[t("trace.Providerrequest" as never), rawProviderRequest || t("trace.Providerpayloadnotretained" as never)],
+									[t("trace.Providerresponse" as never), rawProviderResponse || t("trace.Providerpayloadnotretained" as never)],
+									[t("trace.Toolexecutiontrace" as never), rawServerToolTrace || t("trace.Noservertoolexecutionswerecaptured" as never)],
+									[t("trace.Metadata" as never), rawMetadata || t("trace.Nometadata" as never)],
 								].map(([label, content]) => (
 									<div key={label} className="min-w-0">
 										<div className="mb-1.5 flex items-center justify-between gap-2">
 											<h3 className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{label}</h3>
-											{content && !content.startsWith("No ") && !content.startsWith("Provider payload") ? <CopyButton size="sm" variant="ghost" content={content} aria-label={"Copy " + label.toLowerCase()} /> : null}
+											{content ? <CopyButton size="sm" variant="ghost" content={content} aria-label={t("trace.copyPayload" as never, { label } as never)} /> : null}
 										</div>
 										<pre className="max-h-72 overflow-auto whitespace-pre-wrap break-words rounded-md border border-border/60 bg-muted/30 p-3 text-[11px] leading-5">{content}</pre>
 									</div>
 								))}
 							</div>
-						</details> : <div className="rounded-md border border-dashed border-border/70 p-4 text-xs text-muted-foreground">{ioLog?.error ?? "No retained I/O payload is available for this request."}</div>}
+						</details> : <div className="rounded-md border border-dashed border-border/70 p-4 text-xs text-muted-foreground">{ioLog?.error ?? t("trace.noRetainedIOPayloadIsAvailableForThisRequest" as never)}</div>}
 					</div>
 				</LifecycleStep>
 			</div>

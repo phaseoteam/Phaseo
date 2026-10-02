@@ -1563,8 +1563,8 @@ export default function RequestDetailDialog({
 						variant="line"
 						className="w-full shrink-0 justify-start rounded-none border-b border-border/70 px-5 sm:px-6"
 					>
-						<TabsTrigger value="overview">Overview</TabsTrigger>
-						<TabsTrigger value="trace">Trace</TabsTrigger>
+						<TabsTrigger value="overview">{t("strings.Overview" as never)}</TabsTrigger>
+						<TabsTrigger value="trace">{t("trace.trace" as never)}</TabsTrigger>
 					</TabsList> : null}
 					<TabsContent value="overview" className="flex min-h-0 flex-1 flex-col overflow-hidden">
 						<ScrollArea
