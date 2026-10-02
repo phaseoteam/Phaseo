@@ -1,0 +1,23 @@
+{
+  "organisation_id": "bruhzwater",
+  "name": "BruhzWater",
+  "country_code": null,
+  "description": null,
+  "colour": null,
+  "organisation_links": [],
+  "status": "active",
+  "routable": null,
+  "sources": [
+    {
+      "kind": "provider_docs",
+      "url": "https://docs.meganova.ai/inference-models/model-list.md",
+      "accessed_at": "2026-08-24T03:00:00Z",
+      "notes": "MegaNova identifies BruhzWater as the publisher namespace for listed model BruhzWater/Sapphira-L3.3-70b-0.1."
+    }
+  ],
+  "verification": {
+    "status": "partial",
+    "checked_at": "2026-08-24T03:00:00Z",
+    "notes": "Publisher namespace verified from MegaNova’s official model catalogue; jurisdiction was not independently published."
+  }
+}
