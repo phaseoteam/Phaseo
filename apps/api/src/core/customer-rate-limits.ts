@@ -3,7 +3,7 @@ import { err } from "@pipeline/before/http";
 import type { PriceCard } from "@pipeline/pricing/types";
 import { isFreePriceCard } from "@pipeline/pricing/free";
 
-export const DEFAULT_CUSTOMER_LIMITS = { requestsPerMinute: 25, freeRequestsPerDay: 100 };
+export const DEFAULT_CUSTOMER_LIMITS = { requestsPerMinute: 25, freeRequestsPerDay: 1500 };
 export type CustomerLimits = typeof DEFAULT_CUSTOMER_LIMITS;
 export type CustomerScope = { workspaceId: string; userId?: string | null };
 export type CustomerAdmission = {
@@ -55,7 +55,9 @@ export async function guardCustomerQuota(args: CustomerScope & {
 		const response = err("key_limit_exceeded", {
 			request_id: args.requestId,
 			reason: args.kind === "minute" ? "customer_requests_per_minute" : "free_requests_per_day",
-			description: args.kind === "minute" ? "Request limit reached. Retry after the minute window clears." : "Free-model daily request limit reached. Retry after midnight UTC.",
+			description: args.kind === "minute"
+				? `This user and workspace have reached their limit of ${admission.limit} requests per minute. Retry after ${admission.retryAfterSeconds} seconds.`
+				: `This user and workspace have reached their daily allowance of ${admission.limit} free-model requests, shared across all free models. The allowance resets at 00:00 UTC. Retry after ${admission.retryAfterSeconds} seconds, choose a paid model, or ask your workspace administrator to request a higher limit.`,
 		});
 		response.headers.set("Retry-After", String(admission.retryAfterSeconds));
 		return response;

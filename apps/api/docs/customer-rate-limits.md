@@ -1,6 +1,6 @@
 # Customer request limits
 
-The inference router admits 25 authenticated requests per rolling 60 seconds for each `(workspaceId, userId)` by default. Free route dispatches are additionally limited to 100 requests per UTC day. These are independent of existing key spending limits and provider credential quotas.
+The inference router admits 25 authenticated requests per rolling 60 seconds for each `(workspaceId, userId)` by default. Free route dispatches are additionally limited to 1500 requests per UTC day. These are independent of existing key spending limits and provider credential quotas.
 
 The owner comes from authenticated key `created_by` or the OAuth user, never request metadata or an end-user attribution header. Ownerless keys use one shared workspace scope. Keys and regions cannot multiply the allowance for the same scope.
 
@@ -19,7 +19,7 @@ For ownerless keys the final segment is `workspace`. Values are JSON objects wit
 ```json
 {
   "requestsPerMinute": 250,
-  "freeRequestsPerDay": 1000
+  "freeRequestsPerDay": 3000
 }
 ```
 
@@ -43,7 +43,7 @@ RPD admission uses the selected pricing card and the existing `isFreePriceCard` 
 
 Daily admission uses the server-owned billing ID to deduplicate fallback attempts within one pipeline request. It counts admitted attempts, not only successful completions. A daily quota rejection stops execution and does not silently switch to a paid route. Authenticated internal testing bypasses quotas. The counter's deduplication IDs never come from a public request header.
 
-Responses retain the existing 429 error shape and `Retry-After` header. Reasons distinguish `customer_requests_per_minute` from `free_requests_per_day`. No new request fields or SDK models are required.
+Responses retain the existing 429 error shape and `Retry-After` header. Reasons distinguish `customer_requests_per_minute` from `free_requests_per_day`. The description includes the effective limit and retry delay, including administrator overrides. Daily rejection explains that the allowance is shared across free models and resets at 00:00 UTC, and suggests choosing a paid model or asking the workspace administrator to request a higher limit. No new request fields or SDK models are required.
 
 ## Rollout and rollback
 

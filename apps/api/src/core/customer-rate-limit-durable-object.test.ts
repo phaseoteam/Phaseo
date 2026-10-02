@@ -60,11 +60,11 @@ describe("customer quota coordinator", () => {
 
 	it("counts one free admission through fallback and resets at midnight UTC", async () => {
 		const limiter = object();
-		for (let index = 0; index < 100; index++) await limiter.admit(key, "free-day", String(index));
+		for (let index = 0; index < 1500; index++) await limiter.admit(key, "free-day", String(index));
 		expect(await limiter.admit(key, "free-day", "0")).toMatchObject({ allowed: true, remaining: 0 });
-		expect(await limiter.admit(key, "free-day", "extra")).toMatchObject({ allowed: false, retryAfterSeconds: 30 });
+		expect(await limiter.admit(key, "free-day", "extra")).toMatchObject({ allowed: false, limit: 1500, retryAfterSeconds: 30 });
 		vi.advanceTimersByTime(30_000);
-		expect(await limiter.admit(key, "free-day", "extra")).toMatchObject({ allowed: true, remaining: 99 });
+		expect(await limiter.admit(key, "free-day", "extra")).toMatchObject({ allowed: true, remaining: 1499 });
 	});
 
 	it("retains counters across coordinator restarts", async () => {

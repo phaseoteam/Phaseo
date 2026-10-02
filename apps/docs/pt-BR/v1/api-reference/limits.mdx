@@ -10,7 +10,7 @@ Uma requisição pode ser limitada pelo provedor selecionado ou por uma polític
 
 A cota padrão é de **25 requisições por minuto em uma janela móvel** para cada usuário em cada espaço de trabalho. As chaves de API criadas pelo mesmo usuário compartilham essa cota. Requisições OAuth usam o usuário autenticado. Chaves sem proprietário compartilham uma cota do espaço de trabalho.
 
-As rotas de modelos gratuitos também têm uma cota de **100 requisições por dia UTC**, compartilhada entre todos os modelos gratuitos do mesmo usuário e espaço de trabalho. Requisições a modelos pagos não consomem essa cota diária. Uma requisição gratuita admitida conta mesmo se o provedor falhar depois; fallbacks dentro dessa requisição contam uma única vez.
+As rotas de modelos gratuitos também têm uma cota de **1500 requisições por dia UTC**, compartilhada entre todos os modelos gratuitos do mesmo usuário e espaço de trabalho. Requisições a modelos pagos não consomem essa cota diária. Uma requisição gratuita admitida conta mesmo se o provedor falhar depois; fallbacks dentro dessa requisição contam uma única vez.
 
 Esses limites valem para todas as regiões do gateway e podem ser aumentados para um usuário e espaço de trabalho específicos. Operações com arquivos e consultas de status de tarefas consomem a cota por minuto; endpoints de administração não.
 

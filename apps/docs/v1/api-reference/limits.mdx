@@ -10,7 +10,7 @@ A request can be throttled by the selected provider or by an applicable workspac
 
 The default allowance is **25 requests per rolling minute** for each user in each workspace. API keys created by the same user share that allowance. OAuth requests use the authenticated user. Keys without an owner share a workspace allowance.
 
-Free-model routes also have a default allowance of **100 requests per UTC day**, shared across free models for the same user and workspace. Paid-model requests do not consume this daily allowance. An admitted free request counts even if the provider subsequently fails; provider fallbacks within that request count once.
+Free-model routes also have a default allowance of **1500 requests per UTC day**, shared across free models for the same user and workspace. Paid-model requests do not consume this daily allowance. An admitted free request counts even if the provider subsequently fails; provider fallbacks within that request count once.
 
 These limits apply across gateway regions. They can be increased for a specific user and workspace. File operations and job-status polling use the minute allowance; management endpoints do not.
 

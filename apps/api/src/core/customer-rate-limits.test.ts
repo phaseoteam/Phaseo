@@ -52,6 +52,17 @@ describe("customer quota integration", () => {
 		expect((await guardCustomerQuota({ ...args, kind: "minute" }))?.status).toBe(503);
 	});
 
+	it.each([1500, 2500])("explains the effective %i free-model limit and recovery options", async (limit) => {
+		mocks.admit.mockResolvedValue({ allowed: false, limit, remaining: 0, retryAfterSeconds: 3600 });
+		const response = await guardFreeRouteQuota({ ...args, pricingCard: card("free", "0") });
+		expect(response?.status).toBe(429);
+		expect(response?.headers.get("Retry-After")).toBe("3600");
+		expect(await response?.json()).toMatchObject({
+			reason: "free_requests_per_day",
+			description: `This user and workspace have reached their daily allowance of ${limit} free-model requests, shared across all free models. The allowance resets at 00:00 UTC. Retry after 3600 seconds, choose a paid model, or ask your workspace administrator to request a higher limit.`,
+		});
+	});
+
 	it("preserves internal tests and supports an explicit rollout/rollback switch", async () => {
 		expect(await guardCustomerQuota({ ...args, kind: "minute", internal: true })).toBeNull();
 		mocks.bindings.CUSTOMER_RATE_LIMITS_ENABLED = "false";
@@ -60,7 +71,7 @@ describe("customer quota integration", () => {
 	});
 
 	it("accepts partial overrides and rejects invalid quota values", () => {
-		expect(parseCustomerLimits({ requestsPerMinute: 250 })).toEqual({ requestsPerMinute: 250, freeRequestsPerDay: 100 });
+		expect(parseCustomerLimits({ requestsPerMinute: 250 })).toEqual({ requestsPerMinute: 250, freeRequestsPerDay: 1500 });
 		for (const value of [0, -1, 1.5, "25", null, Number.MAX_SAFE_INTEGER + 1]) {
 			expect(() => parseCustomerLimits({ requestsPerMinute: value })).toThrow();
 		}
