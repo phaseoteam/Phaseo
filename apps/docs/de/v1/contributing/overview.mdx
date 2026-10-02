@@ -1,154 +1,35 @@
 ---
 title: "Zu Phaseo beitragen"
-description: "Erfahre, wie du Daten, Dokumentation oder Verbesserungen zum Phaseo-Projekt beitragen und damit die umfassendste KI-Datenbank der Welt mitgestalten kannst."
-sidebarTitle: "Mitwirken"
+description: "Den richtigen Ablauf für Katalogmeldungen, Dokumentationsänderungen oder Codebeiträge wählen."
+sidebarTitle: "Beiträge"
 icon: "handshake"
 ---
 
-Phaseo ist ein **offenes, von der Community getragenes Projekt**. Es soll möglichst viele Informationen zu KI-Modellen, Benchmarks und Anbietern für alle frei zugänglich machen.
+Öffnen Sie für Katalogkorrekturen und Ergänzungen ein Issue mit dem betroffenen Datensatz und belegenden Quellen. Reichen Sie für Code- oder Dokumentationsänderungen einen Pull Request im [Phaseo-Repository](https://github.com/phaseoteam/Phaseo) ein.
 
-Deine Beiträge helfen dabei, die Plattform korrekt, transparent und aktuell zu halten.  
-Ob du einen Tippfehler korrigierst, neue Benchmarkdaten ergänzt oder die Dokumentation verbesserst – jeder Beitrag zählt.
+## Ihren Beitrag auswählen
 
----
+| Änderung | Hier beginnen |
+| --- | --- |
+| Modellmetadaten, Funktionen, Verfügbarkeit oder Preise | [Modellaktualisierung melden](./editing-a-model.mdx) |
+| Details zu Unternehmen oder Forschungsorganisationen | [Organisationsaktualisierung melden](./editing-an-organisation.mdx) |
+| Benchmark-Ergebnisse | [Ergebnisse einreichen](../research/submitting-scores.mdx) |
+| Andere Katalogkorrekturen | [Falsche Informationen melden](https://github.com/phaseoteam/Phaseo/issues/new?template=incorrect-info.yml) |
+| Fehlende Anbieter oder andere Katalogdaten | [Neue Daten anfordern](https://github.com/phaseoteam/Phaseo/issues/new?template=data-request.yml) |
+| Dokumentation oder Code | [Beitragsablauf](./how-to-contribute.mdx) und [Repositorystruktur](./repo-structure.mdx) |
 
-## Warum mitwirken?
+## Veröffentlichung von Katalogmeldungen
 
-KI entwickelt sich immer schneller: Neue Modelle, Aktualisierungen und Preisänderungen gibt es täglich.  
-Mit deinem Beitrag hilfst du dabei:
+Die Verantwortlichen prüfen die Belege im Issue und wenden genehmigte Änderungen über den nur Administratoren zugänglichen [internen Editor](https://phaseo.app/internal/data) an. Preisaktualisierungen von Anbietern erfordern vor der Veröffentlichung eine ausdrückliche Prüfung.
 
--   Daten zu Modellen, Organisationen und Benchmarks aktuell und verlässlich halten
--   KI-Vergleiche zwischen Anbietern genauer machen
--   Forschungsergebnisse, Erkenntnisse der Community oder fehlende Metadaten teilen
--   Das offene Ökosystem für mehr Transparenz bei KI stärken
--   Sicherstellen, dass die Datenbank frei zugänglich bleibt und der Community gehört
+Die Datenbank ist die maßgebliche Katalogquelle. Tägliche öffentliche JSON-Snapshots bleiben verfügbar, aber weder Änderungen daran noch Pull Requests für archivierte JSON-Dateien aktualisieren den Livekatalog. Der alte JSON-Importer wurde eingestellt.
 
-Dein Name erscheint auch auf der [Seite der Mitwirkenden](https://phaseo.app/contribute), als Anerkennung für deine Beiträge.
+## Vor dem Einreichen
 
----
+- Geben Sie die betroffene Seite oder Datensatz-ID an und beschreiben Sie die vorgeschlagene Korrektur.
+- Zitieren Sie offizielle Quellen und unterscheiden Sie gemeldete Benchmark-Ergebnisse von unabhängigen Messungen.
+- Halten Sie jede Meldung und jeden Pull Request thematisch fokussiert.
+- Fügen Sie niemals Zugangsdaten oder private Kundendaten hinzu.
+- Befolgen Sie den [Verhaltenskodex](../community/code-of-conduct.mdx).
 
-## Wozu du beitragen kannst
-
-<Columns cols={2}>
-	<Card
-		title="Modelldaten"
-		icon="brain"
-		href="./editing-a-model.mdx"
-	>
-		Modellinformationen wie Fähigkeiten, Benchmarks oder Preise aktualisieren oder ergänzen.
-	</Card>
-	<Card
-		title="Organisationsdaten"
-		icon="building"
-		href="./editing-an-organisation.mdx"
-	>
-		Angaben zu Unternehmen oder Forschungsgruppen hinter den Modellen ergänzen oder korrigieren.
-	</Card>
-</Columns>
-
----
-
-## Überblick über den Beitragsablauf
-
-1. **Forke** das [Phaseo-GitHub-Repository](https://github.com/phaseoteam/Phaseo).
-2. **Erstelle einen Branch** für deine Änderungen (z. B. `fix-model-data` oder `add-new-benchmark`).
-3. **Bearbeite die JSON- oder Markdown-Dateien** entsprechend der Struktur in [Repositorystruktur](./repo-structure.mdx).
-4. **Teste deine Änderungen lokal**, falls sinnvoll (zum Beispiel im Next.js-Frontend).
-5. **Committe und pushe** deine Änderungen.
-6. **Eröffne einen Pull Request (PR)** und beschreibe, was du geändert hast und warum.
-
-Nach Prüfung und Freigabe wird dein Beitrag übernommen und in der Phaseo-Datenbank veröffentlicht.
-
----
-
-## Beitragsarten
-
-| Typ                   | Beispiel                                                 | Schwierigkeit |
-| ---------------------- | ------------------------------------------------------- | ---------- |
-| **Datenkorrektur**           | Modellnamen, Anbieter oder Benchmarkwerte korrigieren. | Einfach       |
-| **Neuer Eintrag**          | Ein neues Modell, einen Benchmark oder eine Organisation hinzufügen.         | Mittel   |
-| **Strukturänderung**  | Datenbank- oder Schemastruktur anpassen.                    | Fortgeschritten   |
-| **Funktionserweiterung**   | UI-Komponenten oder Next.js-Logik hinzufügen.                  | Fortgeschritten   |
-| **Dokumentationsänderung** | Markdown-Dateien oder Anleitungen verbessern.                     | Einfach       |
-
-Wir freuen uns über Beiträge jeder Größe und Komplexität, unabhängig davon, welche Änderung du vorschlägst.
-
----
-
-## Richtlinien und Standards
-
-Alle Beiträge müssen diese Standards erfüllen, damit Datenqualität und Konsistenz gewährleistet sind:
-
--   **Verlässliche Quellen:** Nimm nur verifizierte oder offiziell veröffentlichte Daten auf.
--   **Einheitliche Formatierung:** Achte auf korrekte Groß- und Kleinschreibung, Einrückung und Schema-Schlüssel.
--   **Versionierte Änderungen:** Formuliere Changelogs oder Commit-Nachrichten aussagekräftig.
--   **Quellenangaben:** Füge in der PR-Beschreibung Links zu den Datenquellen hinzu.
--   **Respektvolle Kommunikation:** Befolge unseren [Verhaltenskodex](../community/code-of-conduct.mdx).
-
----
-
-## Beispiel für einen Beitragsablauf
-
-```bash
-# 1. Fork and clone the repo
-git clone https://github.com/yourusername/Phaseo.git
-
-# 2. Create a new branch
-git checkout -b add-openai-new-model
-
-# 3. Make your edits
-# e.g. edit packages/data/catalog/src/data/models/openai/new-model/model.json
-
-# 4. Stage, commit, and push
-git add .
-git commit -m "Added new OpenAI model with updated benchmark data"
-git push origin add-openai-new-model
-
-# 5. Open a Pull Request on GitHub
-# Describe your changes and link any sources
-```
-
----
-
-## Brauchst du Hilfe?
-
-Wenn du dir beim Beitragen unsicher bist oder vor dem Einreichen Feedback möchtest, kannst du:
-
--   Stelle deine Frage im [Phaseo-Discord](https://discord.gg/aQyywCvgZ5).
--   Eröffne für Fragen oder Vorschläge eine **GitHub-Diskussion**.
--   Erwähne die Maintainer in deiner PR, wenn du Unterstützung bei der Prüfung möchtest.
-
-<Card
-	title="So kannst du mitwirken"
-	icon="handshake"
-	href="./how-to-contribute.mdx"
-	horizontal
->
-	Erfahre Schritt für Schritt, wie du deinen ersten Beitrag erstellst.
-</Card>
-
-Wir schätzen alle Beiträge, ob groß oder klein. Sie helfen dabei, diese wertvolle Ressource für die KI-Community aufzubauen und zu pflegen.
-
----
-
-## Nächste Schritte
-
-Im nächsten Schritt erfährst du, wie du in deinem Fachbereich konkret beitragen kannst:
-
-<Columns cols={2}>
-	<Card
-		title="So kannst du mitwirken"
-		icon="compass"
-		href="./how-to-contribute.mdx"
-	>
-		Lerne den genauen Ablauf zum Bearbeiten von Dateien und Erstellen von PRs kennen.
-	</Card>
-	<Card
-		title="Repositorystruktur"
-		icon="folder-tree"
-		href="./repo-structure.mdx"
-	>
-		Erfahre, wie das Phaseo-Repository aufgebaut ist.
-	</Card>
-</Columns>
-
+Besprechen Sie größere Schema- oder Funktionsänderungen vor der Umsetzung mit den Verantwortlichen. Fragen Sie in [Discord](https://discord.gg/aQyywCvgZ5) nach Hilfe, wenn unklar ist, wohin eine Änderung gehört.

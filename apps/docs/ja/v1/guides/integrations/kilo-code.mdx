@@ -1,18 +1,30 @@
 ---
 title: "Kilo Code"
+icon: "/icons/brands/kilo.svg"
 description: "OpenAI互換のカスタムプロバイダーを使ってKilo CodeをPhaseoに接続します。"
 ---
 
-Phaseo CLIがKilo Code専用キーを作成・管理します。拡張機能でカスタムプロバイダーとして追加します。
+分離されたセッションにはPhaseo CLIのランナーを使うか、CLIで専用キーを作成して既存のKilo Codeを手動で設定してください。
 
-## 認証情報を作成する
+## Phaseo CLIでKilo Codeを実行する
+
+Kilo Code CLIでは、1セッション用のプロバイダー設定をPhaseoに準備させます。
 
 ```bash
 phaseo login
-phaseo integrations setup kilo-code --model anthropic/claude-sonnet-4.6
+phaseo kilo --model openai/gpt-5.6-terra --
 ```
 
-## Kilo Codeを設定する
+`--catalog all`でPhaseoのすべての有効なテキスト/チャットモデルを公開し、`--dry-run --json`でインストールと起動計画を確認できます。明示的なコマンド形式は`phaseo run kilo ...`です。ランナーは一時的な`KILO_CONFIG`ファイルを使うため、既存のKilo CodeやVS Codeの設定を上書きしません。
+
+## Phaseo CLIで認証情報を作成する
+
+```bash
+phaseo login
+phaseo setup kilo-code --model anthropic/claude-sonnet-4.6
+```
+
+## Kilo Codeを手動で設定する
 
 1. VS CodeでKilo Codeを開きます。
 2. 設定アイコンを選び、**Providers**を開いてから**Add custom provider**を選択します。
@@ -62,5 +74,5 @@ Kiloでは`phaseo/<Phaseo model ID>`を選択しますが、モデルID欄には
 ## 関連項目
 
 - [Kilo Codeのカスタムモデル](https://kilo.ai/docs/code-with-ai/agents/custom-models)
-- [コーディングアシスタント](./coding-assistants.mdx)
+- [コーディングエージェント](./coding-assistants.mdx)
 - [モデル](../../api-reference/endpoint/models.mdx)

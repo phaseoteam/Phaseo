@@ -13,9 +13,12 @@ Auf dieser Seite finden Sie den passenden API-Pfad, bevor Sie eine Endpunktrefer
 | --- | --- |
 | Ihre erste Anfrage senden | [Schnellstart](../quickstart.mdx) |
 | Text generieren oder Tools verwenden | `POST /responses` |
+| Typisierte Entscheidungen treffen | [`POST /decisions`](./endpoint/decisions) |
 | Eine bestehende OpenAI-kompatible Integration beibehalten | `POST /chat/completions` |
 | Modelle und Anbieter durchsuchen | `GET /models` und `GET /providers` |
 | Musik erstellen oder Dateien verwalten | `POST /music/generations` und `POST /files` |
+| Video generieren (Beta) | [`POST /videos`](./endpoint/video-create) |
+| Batch einreichen oder Ergebnisse herunterladen (Beta) | [`POST /batches`](./endpoint/batches-create) und [`GET /batches/{batch_id}/results`](./endpoint/batches-results) |
 
 ## Basis-URL
 
@@ -34,14 +37,15 @@ Verwenden Sie die OpenAPI-Datei, um die API in Postman, Hoppscotch oder einen SD
 <Card
   title="Phaseo-Gateway-OpenAPI"
   icon="list-bullet"
-  href="https://github.com/phaseoteam/Phaseo/blob/main/apps/docs/openapi/v1/openapi.public.yaml"
+	href="https://github.com/phaseoteam/Phaseo/blob/main/apps/docs/openapi/v1/openapi.yaml"
 >
   Spezifikationsdatei anzeigen
 </Card>
 
+Dokumentation und SDKs nutzen dieselbe Spezifikation. Die Endpunkte Video, Batch und Decisions sind als **Beta** gekennzeichnet; möglicherweise ist ein Vorschauzugang für den Workspace erforderlich.
 ## Authentifizierung
 
-Die meisten Endpunkte benötigen einen regulären Gateway-API-Schlüssel. Für Management-Endpunkte benötigen Sie einen im Dashboard erstellten Management-API-Schlüssel.
+Nutze einen normalen Gateway-API-Schlüssel für Inferenz und einen Verwaltungs-API-Schlüssel mit passenden Berechtigungen für Administration. Siehe [Authentifizierung](../developers/authentication.mdx) und [Verwaltungs-API-Schlüssel](../developers/management-api-keys.mdx).
 
 ```http
 Authorization: Bearer phaseo_v1_sk_<kid>_<secret>
@@ -53,22 +57,15 @@ Bei fehlgeschlagener Authentifizierung gibt die API `401` zurück.
 
 | Ressource | Funktion |
 | --- | --- |
-| Responses API | Modellantworten mit Tools, strukturierter Ausgabe und multimodalen Eingaben erzeugen. |
-| Chat Completions | Eine bestehende OpenAI-kompatible Chat-Integration beibehalten. |
-| Anthropic Messages | Eine Anthropic-kompatible Messages-Integration beibehalten. |
-| Embeddings | Vektorrepräsentationen für Suche, Abruf und Klassifizierung erstellen. |
-| Images | Bilder erzeugen oder bearbeiten. |
-| Text-to-Speech | Gesprochene Audiodaten aus Text erzeugen. |
-| Speech-to-Text | Audiodaten transkribieren oder übersetzen. |
-| Music Generation | Musikaufträge erstellen und ihren Status abrufen. |
-| Files | Eingaben für unterstützte API-Workflows hochladen und abrufen. |
-| Modelle, Anbieter und Endpunkte | Verfügbare Ressourcen über das Gateway entdecken. |
-| Preise, Aktivitäten und Generierungen | Kosten schätzen und Anfrageergebnisse prüfen. |
-| API-Schlüssel und Workspaces | Programmatischen Zugriff und Workspace-Ressourcen verwalten. |
+| Inferenz | Generiere Text, Bilder, Audio und Embeddings; triff Entscheidungen, sortiere neu, moderiere oder parse Inhalte. Beginne mit [Responses](./endpoint/responses.mdx) oder [Decisions](./endpoint/decisions.mdx). |
+| Asynchrone Jobs und Dateien | Reiche [Video](./endpoint/video-create.mdx)- oder [Batch](./endpoint/batches-create.mdx)-Jobs ein, übertrage Dateien und konfiguriere Webhooks. |
+| Modelle und Preise | Entdecke [Modelle](./endpoint/models.mdx), Anbieterangebote und [Kostenschätzungen](./endpoint/pricing-calculate.mdx). |
+| Routing und Richtlinien | Konfiguriere Voreinstellungen, Anbieterzugangsdaten, private Modelle und [Schutzregeln](./endpoint/guardrails.mdx). |
+| Nutzung und Überwachung | Prüfe [Logs](./endpoint/logs-list.mdx), Aktivität, Analysen, Bewertungen und den Dienststatus. |
+| Workspace-Verwaltung | Verwalte [Workspaces](./endpoint/workspaces-list.mdx), Schlüssel, Budgets, Identitäten und Integrationen. |
 
 ## Abrechnung und Ratenbegrenzungen
 
-- Phaseo setzt keine eigenen Ratenbegrenzungen durch. Diese werden von den Upstream-Anbietern festgelegt.
+- Behandle Anbieter-Drosselung und geltende Zugriffsrichtlinien mit der [Anleitung zu Anfragelimits](./limits.mdx).
 - Für kostenpflichtige Anfragen ist ein ausreichendes Wallet-Guthaben erforderlich, damit die Vorabprüfung des Guthabens erfolgreich ist.
 - Kostenlose Modelle mit `:free` benötigen kein eingezahltes Guthaben.
-

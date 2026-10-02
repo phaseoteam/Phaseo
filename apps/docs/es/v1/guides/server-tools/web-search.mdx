@@ -9,7 +9,7 @@ Usa `phaseo:web_search` cuando el modelo necesite información actual o respalda
 Phaseo devuelve al modelo URL, títulos, fragmentos, destacados y, opcionalmente, el texto de las páginas para que redacte una respuesta fundamentada.
 
 <Note>
-La búsqueda web nativa de Google aún no está habilitada en las herramientas del servidor de Phaseo. Usa la búsqueda gestionada o la búsqueda nativa del proveedor en las rutas compatibles con OpenAI y Anthropic.
+TinyFish Search está disponible como motor administrado opcional. La búsqueda nativa del proveedor sigue disponible con `engine: "native"` en las rutas compatibles.
 </Note>
 
 ## Cómo funciona
@@ -58,7 +58,7 @@ curl https://api.phaseo.app/v1/chat/completions \
 
 | Parámetro | Tipo | Predeterminado | Descripción |
 | --- | --- | --- | --- |
-| `engine` | string | `exa` | Motor de búsqueda: `auto`, `native`, `exa`, `parallel`, `firecrawl` o `perplexity`. |
+| `engine` | string | `exa` | Motor de búsqueda: `auto`, `native`, `exa`, `parallel`, `firecrawl`, `perplexity` o `tinyfish`. |
 | `max_results` | integer | `5` | Número máximo de resultados devueltos por búsqueda. |
 | `max_total_results` | integer | `10` | Número máximo acumulado de resultados durante el ciclo de herramientas del servidor. |
 | `max_uses` | integer | `10` | Número máximo de búsquedas durante el ciclo de herramientas del servidor. |
@@ -69,6 +69,8 @@ curl https://api.phaseo.app/v1/chat/completions \
 | `include_highlights` | boolean | `true` | Incluye los destacados o fragmentos proporcionados por el motor cuando estén disponibles. |
 | `include_text` | boolean | `false` | Incluye más texto del resultado cuando el motor lo admita. |
 | `user_location` | object | none | Indicación opcional de ubicación para motores que permiten búsquedas localizadas. |
+| `language` | cadena | ninguno | Indicación de idioma para TinyFish, como `en`. |
+| `page` | entero | `0` | Página de resultados de TinyFish, de `0` a `10`. |
 
 ## Selección del motor
 
@@ -79,9 +81,30 @@ curl https://api.phaseo.app/v1/chat/completions \
 | `parallel` | Usa la búsqueda de Parallel cuando está configurada. |
 | `firecrawl` | Usa la búsqueda de Firecrawl cuando está configurada. |
 | `perplexity` | Usa la API de búsqueda oficial de Perplexity cuando está configurada. Admite resultados ordenados, `search_context_size`, búsqueda regional según `user_location.country` y dominios permitidos o excluidos. |
+| `tinyfish` | Usa TinyFish Search cuando está configurado `TINYFISH_API_KEY`. Ofrece resultados clasificados, localizados y paginados y convierte `allowed_domains` / `excluded_domains` en operadores de búsqueda. TinyFish Search no proporciona el texto completo de las páginas; usa `phaseo:web_fetch` si necesitas más contenido. |
 | `native` | Convierte la declaración en una herramienta de búsqueda web nativa del proveedor antes de llamar al modelo ascendente, si la interfaz de solicitud lo admite. |
 
 Usa `engine: "native"` únicamente en la declaración de la herramienta. Si un modelo intenta enviar `engine: "native"` dentro de una llamada de búsqueda del gateway ya emitida, Phaseo devuelve un error porque las herramientas nativas deben seleccionarse antes de enviar la solicitud al proveedor.
+
+## TinyFish Search
+
+Activa el motor configurando `TINYFISH_API_KEY` en los secretos del entorno de ejecución del gateway de Phaseo y selecciónalo en los parámetros de la herramienta:
+
+```json
+{
+  "type": "phaseo:web_search",
+  "parameters": {
+    "engine": "tinyfish",
+    "language": "en",
+    "page": 0,
+    "max_results": 5,
+    "allowed_domains": ["phaseo.app", "github.com"],
+    "excluded_domains": ["reddit.com"]
+  }
+}
+```
+
+`language` indica el idioma y `page` selecciona una página de resultados entre `0` y `10`. TinyFish admite ambas listas de filtros de dominios; Phaseo las convierte en operadores de búsqueda. Los resultados incluyen URL, títulos y fragmentos/texto destacado. Usa `phaseo:web_fetch` cuando el modelo necesite más texto de un resultado.
 
 ## Filtrado de dominios
 
@@ -98,7 +121,9 @@ Usa `allowed_domains` cuando la respuesta deba proceder de un conjunto controlad
 
 Usa `excluded_domains` cuando se permita una búsqueda web amplia, pero deban eliminarse ciertos dominios de los resultados.
 
-Perplexity y Firecrawl aceptan `allowed_domains` o `excluded_domains` en una misma búsqueda, pero no ambos. Perplexity admite hasta 20 filtros de dominio por solicitud y convierte los dominios excluidos a su formato de lista de bloqueo.
+Perplexity and Firecrawl accept either `allowed_domains` or `excluded_domains` in a single search call, not both. Perplexity accepts up to 20 domain filters per request and maps excluded domains to its denylist format. TinyFish convierte ambas matrices en operadores `site:` y `-site:` de la consulta.
+
+TinyFish Search es gratuito en sus planes publicados, por lo que Phaseo no añade un cargo por uso del proveedor con `engine: "tinyfish"`; siguen aplicándose los precios normales de solicitudes y tokens de Phaseo.
 
 ## API de Responses
 

@@ -1,15 +1,16 @@
 ---
 title: "Cursor"
+icon: "/icons/brands/cursor.svg"
 description: "OpenAI API key और Base URL override setting के ज़रिए Cursor को Phaseo से जोड़ें।"
 ---
 
-Cursor के समर्थित chat models को Phaseo से route करने के लिए यह गाइड उपयोग करें। Cursor API keys को secure storage में रखता है; इसलिए Phaseo CLI dedicated key बनाती और revoke करती है, जबकि credential entry Cursor में होती है।
+इस गाइड से समर्थित Cursor चैट मॉडल को Phaseo से रूट करें। Phaseo CLI से समर्पित कुंजी बनाएँ और निरस्त करें, फिर Cursor में सेटअप पूरा करें; या अपनी Phaseo कुंजी देकर वही मैन्युअल सेटिंग्स अपनाएँ।
 
-## Cursor क्रेडेंशियल बनाएँ
+## Phaseo CLI से सेटअप करें
 
 ```bash
 phaseo login
-phaseo integrations setup cursor --model openai/gpt-5.6-terra
+phaseo cursor --model openai/gpt-5.6-terra
 ```
 
 Setup बिना expiry वाली `Phaseo CLI: Cursor API Key` बनाकर नीचे की settings दिखाती है। यह Cursor के private credential store को नहीं बदलती।
@@ -82,5 +83,5 @@ Cursor द्वारा OpenAI-family custom model के रूप में 
 ## संबंधित विषय
 
 - [Cursor API key दस्तावेज़](https://docs.cursor.com/settings/api-keys)
-- [कोडिंग असिस्टेंट](./coding-assistants.mdx)
+- [कोडिंग एजेंट](./coding-assistants.mdx)
 - [मॉडल](../../api-reference/endpoint/models.mdx)

@@ -107,6 +107,45 @@ phaseo guardrails create --name "Production Safety" --body-json '{"enabled":true
 
 CLI का उद्देश्य Phaseo डैशबोर्ड और प्रबंधन API के उपयोगी हिस्सों को टर्मिनल से उपलब्ध कराना है。
 
+## समर्थित कोडिंग परिवेश चलाएँ
+
+स्थायी एकीकरण सीधे उत्पाद का नाम इस्तेमाल करते हैं:
+
+```bash
+phaseo codex
+phaseo claude-code
+phaseo deepseek-harness
+phaseo opencode
+phaseo pi
+phaseo prime-agent
+phaseo openclaw
+phaseo aider
+phaseo roo-code
+phaseo kilo-code
+phaseo continue
+phaseo cursor
+phaseo zed
+```
+
+ज़रूरत के अनुसार `--model`, `--catalog all|default` या `--dry-run` इस्तेमाल करें। पुराना `phaseo integrations setup <integration>` रूप अनुकूलता के लिए उपलब्ध है, लेकिन आवश्यक नहीं।
+
+CLI अस्थायी प्रदाता कॉन्फ़िगरेशन और समर्पित Phaseo कुंजी से Cline, Kilo Code, oh-my-pi, Muse Code और MiniMax Code चलाता है। हर परिवेश की सेटअप और समस्या समाधान गाइड है: [Cline](./cline), [Kilo Code](./kilo-code), [oh-my-pi](./oh-my-pi), [Muse Code](./muse-code) और [MiniMax Code](./minimax-code)।
+
+```bash
+phaseo cline --model openai/gpt-5.6-terra -- --tui
+phaseo kilo --model openai/gpt-5.6-terra --
+phaseo omp --model openai/gpt-5.6-terra --
+phaseo muse --model meta/muse-spark-1.3 --
+phaseo minimax --model openai/gpt-5.6-terra --
+```
+
+स्पष्ट रूप के लिए `phaseo run <cline|kilo|omp|muse|minimax>` इस्तेमाल करें। Phaseo विकल्प `--` से पहले और परिवेश विकल्प उसके बाद आते हैं। सभी सक्रिय Phaseo टेक्स्ट/चैट मॉडल सिंक करने के लिए `--catalog all`, या बिना क्रेडेंशियल बनाए पूर्वावलोकन के लिए यह इस्तेमाल करें:
+
+```bash
+phaseo cline --model openai/gpt-5.6-terra --dry-run --json
+```
+
+Cline, Kilo Code और oh-my-pi न हों तो इंस्टॉल का विकल्प संवादात्मक रूप से दिया जाता है। Muse Code और MiniMax Code कमांड गायब हो तो अपने आधिकारिक इंस्टॉलर इस्तेमाल करते हैं। Windows पर MiniMax Code आधिकारिक PowerShell इंस्टॉलर इस्तेमाल करता है; परिवेश अलग से सँभालते हों तो `--skip-install` दें। लॉन्चर मौजूदा Cline, Kilo, oh-my-pi, Muse Code या MiniMax Code कॉन्फ़िगरेशन नहीं बदलते।
 ## OAuth ऐप
 
 Phaseo आधिकारिक CLI, उपयोगकर्ता-निर्मित ऐप और डायनामिक रूप से पंजीकृत MCP क्लाइंट के लिए एक OAuth प्राधिकरण सर्वर इस्तेमाल करता है। CLI रोटेट होते refresh token के साथ ब्राउज़र या डिवाइस कोड से लॉगिन करता है। तृतीय-पक्ष क्लाइंट PKCE वाला authorization code, स्पष्ट scopes और workspace सहमति, रद्द किए जा सकने वाले delegated access token और वैकल्पिक protected-resource binding इस्तेमाल करते हैं।
@@ -162,3 +201,8 @@ bun add -g @phaseo/cli@latest
 - [प्रमाणीकरण](../../developers/authentication.mdx)
 - [Codex](./codex.mdx)
 - [Claude Code](./claude-code.mdx)
+- [Cline](./cline)
+- [Kilo Code](./kilo-code)
+- [oh-my-pi](./oh-my-pi)
+- [Muse Code](./muse-code)
+- [MiniMax Code](./minimax-code)

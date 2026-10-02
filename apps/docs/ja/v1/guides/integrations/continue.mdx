@@ -1,15 +1,16 @@
 ---
 title: "Continue"
+icon: "/icons/brands/continue.svg"
 description: "VS Code、JetBrains、Continue CLIのContinueにPhaseoを追加します。"
 ---
 
-Phaseo CLIでIDE拡張機能と`cn`コマンドラインの両方が使うContinueのローカル設定を作成できます。
+Phaseo CLIでIDE拡張機能と`cn`コマンドラインで共有するローカルContinue設定を作成するか、同じモデルとシークレットの値を既存のContinue設定に手動で追加してください。
 
-## Continueを設定する
+## Phaseo CLIで設定する
 
 ```bash
 phaseo login
-phaseo integrations setup continue --model anthropic/claude-sonnet-4.6
+phaseo continue --model anthropic/claude-sonnet-4.6
 ```
 
 `~/.continue/config.yaml`と`~/.continue/.env`が未使用の場合、セットアップ時に両方のファイルが作成されます。
@@ -68,5 +69,5 @@ Phaseoのモデル項目では`useResponsesApi: false`にします。
 
 - [ContinueのOpenAI互換設定](https://docs.continue.dev/customize/model-providers/top-level/openai)
 - [Continueのローカルシークレット](https://docs.continue.dev/faqs#managing-local-secrets-and-environment-variables)
-- [コーディングアシスタント](./coding-assistants.mdx)
+- [コーディングエージェント](./coding-assistants.mdx)
 - [モデル](../../api-reference/endpoint/models.mdx)

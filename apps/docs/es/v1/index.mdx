@@ -1,100 +1,40 @@
 ---
 title: "Empieza aquí"
-description: "Elige el mejor recorrido de Phaseo para tu primera solicitud, una migración, la configuración de un SDK o el paso a producción."
+description: "Realiza tu primera solicitud, conecta una aplicación o encuentra la referencia que necesitas."
 icon: "house"
 ---
 
-Usa esta página si sabes qué quieres crear, pero no qué página de la documentación de Phaseo deberías abrir primero.
-
-Phaseo ofrece una sola API para acceder a modelos, enrutar solicitudes a proveedores, consultar precios, hacer seguimiento del uso y ejecutar flujos de IA asíncronos.
-
-Si acabas de llegar a Phaseo, empieza con una solicitud que funcione. Si ya tienes una integración de IA, ve directamente a la guía de migración o del SDK que corresponda a tu aplicación.
-
-## Tu primera solicitud correcta
-
-Para una integración nueva, sigue estos pasos:
-
-1. Crea una clave de API en el panel de control.
-2. Envía una solicitud a un modelo de texto actual.
-3. Lee el texto generado en la respuesta.
-4. Continúa con la guía de SDK, enrutamiento o producción que necesites.
-
-## Primera solicitud
-
-<CodeGroup>
-```bash cURL
-curl https://api.phaseo.app/v1/responses \
-  -H "Authorization: Bearer YOUR_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "model": "openai/gpt-5.6-sol",
-    "input": "Reply with: docs ready",
-    "temperature": 0
-  }'
-```
-
-```typescript TypeScript SDK
-import Phaseo from "@phaseo/sdk";
-
-const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
-
-const response = await client.generateResponse({
-  model: "openai/gpt-5.6-sol",
-  input: "Reply with: docs ready",
-  temperature: 0,
-});
-
-console.log(response.output_text);
-```
-
-```python Python SDK
-from phaseo import Phaseo
-
-client = Phaseo(api_key="YOUR_API_KEY")
-
-response = client.generate_response(
-    {
-        "model": "openai/gpt-5.6-sol",
-        "input": "Reply with: docs ready",
-        "temperature": 0,
-    }
-)
-
-print(response.get("output_text"))
-```
-</CodeGroup>
-
-Si funciona, continúa con la [Guía de inicio rápido](./quickstart.mdx) para completar el recorrido de tu primera solicitud.
-
----
-
-## Elige tu recorrido
-
-Si ya tienes una integración o una herramienta, empieza por la opción más cercana a tu caso en lugar de leer la documentación desde el principio.
+Usa Phaseo para llamar a modelos de varios proveedores mediante una API, controlar el enrutamiento y seguir el uso y los costes.
 
 <Columns cols={2}>
-	<Card title="Vengo de OpenAI" icon="arrow-right-left" href="./migration-guides/from-openai.mdx">
-		Conserva el formato compatible con OpenAI, cambia la URL base y comprueba la compatibilidad de los modelos.
-	</Card>
-	<Card title="Vengo de OpenRouter" icon="arrow-right-left" href="./migration-guides/from-openrouter.mdx">
-		Migra la configuración de enrutamiento con comprobaciones de paridad y una implementación gradual.
-	</Card>
-	<Card title="Envío solicitudes HTTP directamente" icon="globe" href="./quickstart.mdx">
-		Empieza con cURL y la Responses API; consulta la referencia del endpoint cuando la necesites.
-	</Card>
-	<Card title="Uso el SDK de TypeScript" icon="file-code-2" href="./sdk-reference/typescript/overview.mdx">
-		Usa el cliente de TypeScript para Responses, chat, imágenes, audio y mucho más.
-	</Card>
-	<Card title="Uso el SDK de Python" icon="snake" href="./sdk-reference/python/overview.mdx">
-		Empieza con el cliente de Python si tu integración está en scripts, workers, servicios de backend o notebooks.
-	</Card>
-	<Card title="Uso AI SDK" icon="sparkles" href="./sdk-reference/sdk/ai-sdk.mdx">
-		Conecta aplicaciones de Vercel AI SDK con Phaseo sin rehacer tus instrucciones ni el flujo del modelo.
-	</Card>
-	<Card title="Uso Codex o Claude Code" icon="bot" href="./guides/integrations/index.mdx">
-		Configura el gateway, Docs MCP y las integraciones para asistentes de programación desde un solo lugar.
-	</Card>
-	<Card title="Solo necesito ejemplos" icon="code" href="./guides/examples.mdx">
-		Ve directamente a solicitudes listas para copiar y proyectos de ejemplo si ya conoces los conceptos básicos.
-	</Card>
+  <Card title="Realiza tu primera solicitud" icon="rocket" href="./quickstart.mdx">
+    Crea una clave, envía una solicitud y lee el resultado.
+  </Card>
+  <Card title="Migra una aplicación" icon="arrow-right-left" href="./migration-guides/index.mdx">
+    Actualiza una integración existente de proveedor o gateway.
+  </Card>
+  <Card title="Conecta un asistente de programación" icon="terminal" href="./guides/integrations/coding-assistants.mdx">
+    Configura Codex, Claude Code, Cursor u otro asistente.
+  </Card>
+  <Card title="Desarrolla con un SDK" icon="package" href="./sdk-reference/typescript/overview.mdx">
+    Elige tu lenguaje en el menú de SDK cliente.
+  </Card>
 </Columns>
+
+## Desarrolla y opera
+
+| Tarea | Documentación |
+| --- | --- |
+| Consultar un campo o endpoint de solicitud | [Referencia de la API](./api-reference/introduction.mdx) |
+| Ejecutar una aplicación inicial | [Ejemplos](./guides/examples.mdx) |
+| Implementar un flujo de trabajo específico | [Recetario](./cookbook/index.mdx) |
+| Elegir proveedores y alternativas | [Enrutamiento](./guides/routing-and-fallbacks.mdx) |
+| Procesar tareas de vídeo o lotes | [Tareas asíncronas y webhooks](./guides/async-video-and-batch.mdx) |
+| Crear un agente que use herramientas | [Agent SDK](./sdk-reference/agent-sdk/overview.mdx) |
+| Diagnosticar una solicitud fallida | [Errores y depuración](./api-reference/errors.mdx) |
+
+## Elige un modelo
+
+[Explora modelos](https://phaseo.app/models) o [compáralos](https://phaseo.app/compare). El catálogo puede incluir modelos sin rutas disponibles; comprueba la disponibilidad en el Gateway antes de integrarlos. Consulta [Cómo funciona Phaseo](./developers/introduction.mdx) para conocer modelos, proveedores y facturación.
+
+Para acceder a la documentación desde un asistente, conecta [Docs MCP](./guides/integrations/docs-mcp.mdx) o lee el [resumen de capacidades para agentes](https://phaseo.app/docs/skill.md).

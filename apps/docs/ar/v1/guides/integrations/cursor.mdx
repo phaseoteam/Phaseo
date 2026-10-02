@@ -1,15 +1,16 @@
 ---
 title: "Cursor"
+icon: "/icons/brands/cursor.svg"
 description: "اربط Cursor بـ Phaseo عبر مفتاح OpenAI API وإعداد تجاوز عنوان URL الأساسي."
 ---
 
-استخدم هذا الدليل لتوجيه نماذج الدردشة المدعومة في Cursor عبر Phaseo. يخزن Cursor مفاتيح API في مساحة آمنة، لذا تنشئ Phaseo CLI المفتاح المخصص وتلغيه بينما يتولى Cursor إدخال بيانات الاعتماد.
+استخدم هذا الدليل لتوجيه نماذج دردشة Cursor المدعومة عبر Phaseo. استخدم Phaseo CLI لإنشاء مفتاح مخصص وإلغائه ثم أكمل الإعداد في Cursor، أو استخدم مفتاح Phaseo الخاص بك واتبع الإعدادات اليدوية نفسها.
 
-## إنشاء بيانات اعتماد Cursor
+## الإعداد باستخدام Phaseo CLI
 
 ```bash
 phaseo login
-phaseo integrations setup cursor --model openai/gpt-5.6-terra
+phaseo cursor --model openai/gpt-5.6-terra
 ```
 
 ينشئ الإعداد مفتاحًا غير منتهي الصلاحية باسم `Phaseo CLI: Cursor API Key` ويعرض الإعدادات أدناه. ولا يعدّل مخزن بيانات الاعتماد الخاص في Cursor.
@@ -82,5 +83,5 @@ phaseo integrations remove cursor
 ## مواضيع ذات صلة
 
 - [توثيق مفتاح Cursor API](https://docs.cursor.com/settings/api-keys)
-- [مساعدو البرمجة](./coding-assistants.mdx)
+- [وكلاء البرمجة](./coding-assistants.mdx)
 - [النماذج](../../api-reference/endpoint/models.mdx)

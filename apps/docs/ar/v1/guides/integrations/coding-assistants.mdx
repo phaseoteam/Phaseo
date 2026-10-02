@@ -1,10 +1,18 @@
 ---
-title: "مساعدو البرمجة"
+title: "وكلاء البرمجة"
 icon: "compass"
-description: "أضف Phaseo كمزود للنماذج في Cursor وVS Code وCodex وClaude Code وأدوات البرمجة الأخرى."
+description: "صِل وكلاء البرمجة بـPhaseo باستخدام CLI أو إعدادات المزوّد اليدوية."
 ---
 
-استخدم هذا الدليل لإضافة Phaseo كمزود نماذج إلى مساعدي البرمجة الذين يدعمون نقاط نهاية مخصصة متوافقة مع OpenAI أو Anthropic.
+استخدم هذا الدليل لربط وكلاء البرمجة بـPhaseo. اختر Phaseo CLI لبيانات اعتماد وإعدادات مُدارة، أو قيم المزوّد اليدوية للإعداد داخل الوكيل.
+
+## اختيار الإعداد
+
+| تريد… | استخدم |
+| --- | --- |
+| تشغيل Cline أوKilo Code أوoh-my-pi أوMuse Code أوMiniMax Code بإعدادات مؤقتة معزولة | `phaseo cline`, `phaseo kilo`, `phaseo omp`, `phaseo muse`, أو `phaseo minimax` |
+| إعداد وكيل مثبت والاحتفاظ بإعداداته | `phaseo <integration>` |
+| إعداد وكيل دون Phaseo CLI | اتبع خطوات المزوّد اليدوية في الدليل المخصص |
 
 ## الإعداد باستخدام CLI الخاص بـPhaseo
 
@@ -17,13 +25,13 @@ phaseo codex
 
 يتحقق هذا الأمر من تثبيت البيئة. إذا لم تكن مثبتة في طرفية تفاعلية، يعرض Phaseo أمر التثبيت المدعوم ويطلب التأكيد قبل تشغيله. ثم ينشئ Phaseo مفتاحًا مخصصًا للبيئة ويكتب إعداداتها. تعرض عمليات التشغيل غير التفاعلية إرشادات تثبيت قابلة للتنفيذ دون إجراء تغييرات على النظام دون إشراف. ويحصل OpenCode وDeepSeek Harness وPi وPrime Agent وOpenClaw أيضًا على جميع نماذج النص النشطة المتوافقة مع Chat Completions. استخدم `--skip-install` أو `--catalog default` أو `--dry-run` لتضييق نطاق السلوك.
 
-استخدم الأمر منخفض المستوى للتكاملات الأخرى أو عندما تُدار عملية التثبيت بشكل منفصل:
+استخدم الأمر المسمّى باسم المنتج لأي تكامل دائم:
 
 ```bash
-phaseo integrations setup codex
+phaseo codex
 ```
 
-أسماء التكامل المدعومة هي `codex` و`claude-code` و`opencode` و`deepseek-harness` و`pi` و`openclaw` و`hermes` و`aider` و`cline` و`roo-code` و`kilo-code` و`continue` و`cursor` و`zed`.
+Supported integration names are `codex`, `claude-code`, `opencode`, `deepseek-harness`, `pi`, `openclaw`, `hermes`, `aider`, `cline`, `roo-code`, `kilo-code`, `continue`, `cursor`, and `zed`. مشغّلات CLI المعزولة هي `cline` و`kilo` و`omp` و`muse` و`minimax`.
 
 تنشئ CLI مفتاح API مستقلًا غير منتهي الصلاحية باسم كل مساعد. وتضبط Aider وContinue تلقائيًا في التثبيتات النظيفة، كما تكتب إعدادات مزود/نموذج Zed تلقائيًا. أما المساعدون الذين يحتفظون بالأسرار حصريًا في واجهة المحرر، فتعرض CLI الحقول المتبقية، وتربط بالدليل المخصص، وتتيح نسخ مفتاح ذلك المساعد فقط:
 
@@ -34,13 +42,13 @@ phaseo integrations credential codex
 عاين تغييرات الملفات قبل الإعداد، ثم افصل التكامل بسلاسة لاحقًا:
 
 ```bash
-phaseo integrations setup codex --dry-run
+phaseo codex --dry-run
 phaseo integrations remove codex
 ```
 
 يزيل الحذف الإعدادات التي يديرها Phaseo ويلغي مفتاح ذلك المساعد، دون حذف الإعدادات الأخرى.
 
-## إعدادات مزود الخدمة
+## إعدادات المزوّد اليدوية
 
 استخدم هذه القيم ما لم تطلب الأداة اسم حقل مختلفًا:
 
@@ -140,9 +148,12 @@ aider --model openai/openai/gpt-5-nano
 
 يعرض `phaseo hermes` تشغيل مثبت Nous Research الرسمي عند غياب Hermes، ثم يهيئ الوكيل المثبت. ويحفظ إعدادات نموذج Hermes السابقة، ويضبط Phaseo كنقطة نهاية مخصصة، ويستخدم الأمر الرسمي `hermes config set` لوضع المفتاح المخصص في `~/.hermes/.env` باسم `OPENAI_API_KEY`. يستخدم Hermes هذا الملف النصي عمدًا لبيانات اعتماد المزود؛ فاحمه كما تحمي أي ملف لمفاتيح API. وعند الإزالة، يستعيد إعدادات النموذج السابقة، ويحذف `OPENAI_API_KEY` وحالة استعادة Phaseo، ويلغي المفتاح.
 
+## MiniMax Code
+
+استخدم [دليل MiniMax Code](./minimax-code.mdx) لواجهة `mcode` CLI. ينشئ `phaseo minimax` مزوّد MiniMax مؤقتًا بنقطة نهاية Phaseo المتوافقة مع OpenAI، ويشغّل CLI ويحذف مجلد البيانات المؤقت عند انتهاء الجلسة. يدعم MiniMax Code أيضًا ACP عبر `mcode acp` إذا كان المحرر أو المضيف يستخدم ACP مباشرةً.
 ## Zed
 
-شغّل `phaseo integrations setup zed`، ثم اتبع الخطوات الظاهرة لإضافة مزود متوافق مع OpenAI في إعدادات Zed. استخدم المفتاح الذي تم إنشاؤه في حقل بيانات اعتماد Zed فقط.
+شغّل `phaseo zed`، ثم اتبع الخطوات الظاهرة لإضافة مزود متوافق مع OpenAI في إعدادات Zed. استخدم المفتاح الذي تم إنشاؤه في حقل بيانات اعتماد Zed فقط.
 
 ## Codex
 
@@ -183,7 +194,7 @@ claude
 
 ## Claude Desktop
 
-يدعم Claude Desktop خوادم MCP، لكنه لا يوفر إعداد مزود نماذج مخصصًا مثل مساعدي البرمجة كـCursor وCodex وClaude Code. استخدم [Docs MCP](./docs-mcp.mdx) لإضافة سياق وثائق Phaseo إلى Claude Desktop. استخدم Claude Code عندما تحتاج إلى Phaseo كبوابة للنماذج.
+يدعم Claude Desktop خوادم MCP، لكنه لا يوفر إعداد مزود نماذج مخصصًا مثل وكلاء البرمجة كـCursor وCodex وClaude Code. استخدم [Docs MCP](./docs-mcp.mdx) لإضافة سياق وثائق Phaseo إلى Claude Desktop. استخدم Claude Code عندما تحتاج إلى Phaseo كبوابة للنماذج.
 
 ## CLI الخاص بـDeep Agents وأدوات LangChain
 
@@ -198,7 +209,7 @@ export OPENAI_BASE_URL="https://api.phaseo.app/v1"
 
 ## ملاحظات
 
-- تختلف طريقة تعامل مساعدي البرمجة مع الشرطات المائلة في معرّفات النماذج. إذا رفضت الواجهة `openai/gpt-5-nano`، فأنشئ اسمًا مستعارًا محليًا إذا كانت الأداة تدعم ذلك.
+- تختلف طريقة تعامل وكلاء البرمجة مع الشرطات المائلة في معرّفات النماذج. إذا رفضت الواجهة `openai/gpt-5-nano`، فأنشئ اسمًا مستعارًا محليًا إذا كانت الأداة تدعم ذلك.
 - اختبر مسارات تحرير الملفات بعناية. لا يعمل `phaseo:apply_patch` إلا مع Responses.
 - أضف [Docs MCP](./docs-mcp.mdx) إذا أردت من المساعد قراءة وثائق Phaseo أثناء الجلسة.
 - فضّل Chat Completions في أدوات البرمجة الأقدم، إلا إذا كانت الأداة تدعم أحداث Responses وأدوات الخادم صراحةً.

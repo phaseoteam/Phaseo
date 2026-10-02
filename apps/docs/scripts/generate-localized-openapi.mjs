@@ -77,6 +77,8 @@ function applyStringCopy(locale, value, context) {
 	if (!value || typeof value !== "object") return;
 
 	for (const [key, child] of Object.entries(value)) {
+		// Examples and literal values are executable API content, not product copy.
+		if (["example", "examples", "enum", "const"].includes(key) || (key === "default" && !context.endsWith("/responses"))) continue;
 		const sourceText = typeof child === "string" ? child.replace(/\s+$/, "") : child;
 		if (
 			["summary", "description", "title"].includes(key) &&
@@ -91,6 +93,24 @@ function applyStringCopy(locale, value, context) {
 		} else {
 			applyStringCopy(locale, child, `${context}/${key}`);
 		}
+	}
+}
+
+function assertTranslatedCopy(locale, original, localized, context) {
+	if (!original || typeof original !== "object" || !localized || typeof localized !== "object") return;
+	for (const [key, child] of Object.entries(original)) {
+		if (["example", "examples", "enum", "const"].includes(key) || (key === "default" && !context.endsWith("/responses"))) continue;
+		const translated = localized[key];
+		if (
+			["summary", "description", "title"].includes(key) &&
+			typeof child === "string" &&
+			translated === child &&
+			/[A-Za-z]{3}/.test(child) &&
+			globalStringCopy[child.trimEnd()]?.[locale] !== translated
+		) {
+			throw new Error(`Untranslated ${locale} OpenAPI copy at ${context}/${key}: ${child}. Add a reviewed translation to openapi/localized-copy.json.`);
+		}
+		assertTranslatedCopy(locale, child, translated, `${context}/${key}`);
 	}
 }
 
@@ -120,6 +140,16 @@ function buildLocalizedSpec(locale) {
 				operationCopies.set(operationKey, {});
 			}
 		}
+	}
+
+	// A new documented endpoint must never disappear from a translated schema.
+	const missingDocumentedOperations = [...endpointPageCopy.keys()].filter(
+		(operationKey) => !operationCopies.has(operationKey),
+	);
+	if (missingDocumentedOperations.length > 0) {
+		throw new Error(
+			`Missing ${locale} OpenAPI copy for documented operations: ${missingDocumentedOperations.join(", ")}. Add complete summary and description translations to openapi/localized-copy.json.`,
+		);
 	}
 
 	function addComponentReference(reference) {
@@ -317,12 +347,15 @@ function buildLocalizedSpec(locale) {
 			title: source.info.title,
 			version: source.info.version,
 		},
-		servers: source.servers,
-		security: source.security,
+		servers: structuredClone(source.servers),
+		security: structuredClone(source.security),
 		paths,
 	};
 	if (Object.keys(components).length > 0) spec.components = components;
 	applyStringCopy(locale, spec, "OpenAPI specification");
+	assertTranslatedCopy(locale, source.paths, spec.paths, "paths");
+	assertTranslatedCopy(locale, source.components, spec.components, "components");
+	assertTranslatedCopy(locale, source.servers, spec.servers, "servers");
 
 	return yaml.dump(spec, {
 		lineWidth: -1,

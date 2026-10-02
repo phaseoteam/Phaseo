@@ -22,6 +22,11 @@ La taille totale d’une requête comprend généralement :
 - Des prompts trop longs peuvent réduire la pertinence lorsque le contexte est de mauvaise qualité.
 - Un budget de sortie trop faible peut tronquer la réponse et produire des sorties structurées non valides.
 
+Le raisonnement peut consommer le budget de sortie avant que le modèle ne produise une réponse. Ces
+réponses renvoient HTTP 200 avec le raisonnement produit, sans réponse
+fabriquée. Chat Completions conserve `reasoning_content` et `finish_reason: "length"`
+lorsque la limite de sortie est atteinte. Responses conserve l’élément de raisonnement et
+indique `status: "incomplete"`. Un arrêt normal du fournisseur reste `stop` ou `completed`.
 ## Stratégie de budgétisation
 
 1. Définissez une cible maximale de jetons d’entrée pour chaque route.

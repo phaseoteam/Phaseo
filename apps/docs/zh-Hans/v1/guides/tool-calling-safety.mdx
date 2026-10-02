@@ -43,5 +43,4 @@ function executeToolCall(name: string, rawArgs: string) {
 
 ## 流式传输说明
 
-目前工具调用请求请使用非流式模式（`stream: false`），以满足网关请求校验要求。
-
+流式工具调用取决于模型和提供商的支持。请先累积所有参数增量，再解析、验证或执行调用。参阅[流式传输](./streaming.mdx)。

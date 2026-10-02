@@ -1,18 +1,19 @@
 ---
 title: "Roo Code"
+icon: "/icons/brands/roo-code.svg"
 description: "OpenAI-संगत profile के ज़रिए Roo Code को Phaseo से जोड़ें।"
 ---
 
-Phaseo CLI, Roo Code की dedicated key बनाता और manage करता है। Roo Code credentials को VS Code secret storage में रखता है, इसलिए profile extension में पूरा करें।
+Phaseo CLI से समर्पित कुंजी बनाएँ और Roo Code का प्रदाता प्रोफ़ाइल हाथ से सेट करें। Roo Code क्रेडेंशियल VS Code के सीक्रेट स्टोरेज में रखता है, इसलिए अंतिम प्रविष्टि एक्सटेंशन के इंटरफ़ेस में होती है।
 
-## क्रेडेंशियल बनाएँ
+## Phaseo CLI से सेटअप करें
 
 ```bash
 phaseo login
-phaseo integrations setup roo-code --model anthropic/claude-sonnet-4.6
+phaseo roo-code --model anthropic/claude-sonnet-4.6
 ```
 
-## Roo Code कॉन्फ़िगर करें
+## Roo Code को हाथ से सेट करें
 
 1. VS Code में Roo Code खोलें।
 2. **Settings** खोलें, फिर **Providers** पर जाएँ।
@@ -60,5 +61,5 @@ Tool calling support वाले model पर switch करें।
 ## संबंधित विषय
 
 - [Roo Code के मॉडल प्रदाता](https://docs.roocode.com/providers/)
-- [Coding Assistants](./coding-assistants.mdx)
+- [कोडिंग एजेंट](./coding-assistants.mdx)
 - [मॉडल](../../api-reference/endpoint/models.mdx)

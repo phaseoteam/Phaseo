@@ -1,18 +1,30 @@
 ---
 title: "Cline"
+icon: "/icons/brands/cline.svg"
 description: "通过其 OpenAI 兼容供应商将 Cline 连接到 Phaseo。"
 ---
 
-Phaseo CLI 会创建并管理 Cline 专用密钥。Cline 将凭据存储在 VS Code 的安全密钥存储中，因此最后一步需要在扩展界面中完成。
+选择 Phaseo CLI 启动器来运行隔离会话，或使用 CLI 创建专用密钥并手动配置现有的 Cline 安装。Cline 将凭据保存在 VS Code 的安全密钥存储中，因此最后的输入需在扩展界面中完成。
 
-## 创建凭据
+## 通过 Phaseo CLI 运行 Cline
+
+对于 Cline CLI，让 Phaseo 为单个会话准备提供商配置：
 
 ```bash
 phaseo login
-phaseo integrations setup cline --model anthropic/claude-sonnet-4.6
+phaseo cline --model openai/gpt-5.6-terra -- --tui
 ```
 
-## 配置 Cline
+使用 `--catalog all` 提供所有活跃的 Phaseo 文本/聊天模型，或使用 `--dry-run --json` 预览安装和启动计划。显式命令形式为 `phaseo run cline ...`。启动器使用临时的 Cline 设置和数据目录，因此不会覆盖现有 Cline 或 VS Code 设置。
+
+## 使用 Phaseo CLI 创建凭据
+
+```bash
+phaseo login
+phaseo setup cline --model anthropic/claude-sonnet-4.6
+```
+
+## 手动配置 Cline
 
 1. 在 VS Code 中打开 Cline 面板。
 2. 选择设置图标，或选择聊天框下方的供应商。
@@ -59,5 +71,5 @@ Base URL 必须与显示内容完全一致，包括 `/v1`；请粘贴新获取�
 ## 相关内容
 
 - [Cline OpenAI 兼容配置](https://docs.cline.bot/enterprise-solutions/configuration/remote-configuration/openai-compatible/member-configuration)
-- [编程助手](./coding-assistants.mdx)
+- [编程智能体](./coding-assistants.mdx)
 - [模型](../../api-reference/endpoint/models.mdx)

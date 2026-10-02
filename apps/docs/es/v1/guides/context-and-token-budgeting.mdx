@@ -22,6 +22,11 @@ La carga total de una solicitud suele incluir:
 - Los prompts demasiado largos pueden reducir la relevancia cuando la calidad del contexto es baja.
 - Un presupuesto de salida demasiado pequeño puede truncar la respuesta y generar salidas estructuradas no válidas.
 
+El razonamiento puede consumir el presupuesto de salida antes de que el modelo genere una respuesta. Estas
+respuestas devuelven HTTP 200 con el razonamiento generado, sin inventar
+una respuesta. Chat Completions conserva `reasoning_content` y `finish_reason: "length"`
+al alcanzar el límite de salida. Responses conserva el elemento de salida de razonamiento e
+informa de `status: "incomplete"`. Una finalización normal del proveedor sigue siendo `stop` o `completed`.
 ## Estrategia de presupuestación
 
 1. Define un objetivo máximo de tokens de entrada para cada ruta.

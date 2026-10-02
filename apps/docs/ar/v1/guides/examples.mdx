@@ -1,214 +1,25 @@
 ---
 title: "أمثلة"
-description: "طلبات Phaseo قابلة للنسخ، ومشروعات نموذجية قابلة للتشغيل، وشروحات عملية خطوة بخطوة."
+description: "اختر مشروع بدء Phaseo قابلًا للتشغيل لتطبيق متصفح أو خادم خلفي أو CLI."
 icon: "code"
 ---
 
-استخدم هذه الصفحة بعد فهم الأساسيات للعثور على أمثلة عملية تنسخها إلى تطبيقك.
+اختر مشروعًا نموذجيًا لتشغيله محليًا وتعديله. لاستدعاء API واحد استخدم [البدء السريع](../quickstart.mdx)، ولميزة محددة راجع [دليل الوصفات](../cookbook/index.mdx).
 
-يمكنك استخدامها للاطلاع على:
+## مشاريع قابلة للتشغيل
 
-- أمثلة قصيرة للطلبات
-- مشروعات نموذجية قابلة للتشغيل
-- شروحات توضّح بنية المشروع
+| المشروع | الشرح | المصدر |
+| --- | --- | --- |
+| دردشة متصفح بمفتاح API على الخادم | [دردشة Next.js](../cookbook/build-a-nextjs-web-chat-app.mdx) | [web-chat-nextjs](https://github.com/phaseoteam/Phaseo/tree/main/examples/web-chat-nextjs) |
+| تفويض OAuth ووكيل خادم خلفي | [بيئة عمل OAuth](../cookbook/build-an-oauth-nextjs-workbench.mdx) | [oauth-client-nextjs](https://github.com/phaseoteam/Phaseo/tree/main/examples/oauth-client-nextjs) |
+| تكامل REST بسيط | [تطبيق اختبار Node](../cookbook/build-a-node-rest-smoke-app.mdx) | [gateway-node-quickstart](https://github.com/phaseoteam/Phaseo/tree/main/examples/gateway-node-quickstart) |
+| تطبيق Python لسطر الأوامر | [Python CLI](../cookbook/build-a-python-gateway-cli.mdx) | [gateway-python-quickstart](https://github.com/phaseoteam/Phaseo/tree/main/examples/gateway-python-quickstart) |
+| تطبيق يستخدم Vercel AI SDK | [تكامل AI SDK](./integrations/ai-sdk.mdx) | [ai-sdk-v7-quickstart](https://github.com/phaseoteam/Phaseo/tree/main/examples/ai-sdk-v7-quickstart) |
 
-<Note>
-لا تتطلب الأمثلة التي تحمل علامة `:free` إيداع رصيد.
-</Note>
+احتفظ ببيانات الاعتماد على الخادم، وراجع متغيرات بيئة المثال وتحقق من تسعير النموذج قبل تشغيله. لا تتطلب أمثلة نماذج `:free` رصيدًا مودعًا.
 
-## توليد النص مجاناً
+## طلبات بحسب اللغة
 
-استخدم هذا المثال لاختبار Responses API سريعاً دون إنفاق رصيد.
+يتضمن [مرجع SDK العميل](../sdk-reference/typescript/overview.mdx) أمثلة التثبيت والطلبات بحسب اللغة. استخدم [مرجع توليد الصور](../api-reference/endpoint/images-generations.mdx) لمعلمات الصور و[Chat Completions](../api-reference/endpoint/chat-completions.mdx) لطلبات الدردشة.
 
-<CodeGroup>
-```bash cURL
-curl https://api.phaseo.app/v1/responses \
-  -H "Authorization: Bearer YOUR_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "model": "google/gemma-3-27b:free",
-    "input": "Summarize this article in 3 bullet points."
-  }'
-```
-
-```typescript TypeScript SDK
-import Phaseo from "@phaseo/sdk";
-
-const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
-
-const response = await client.generateResponse({
-  model: "google/gemma-3-27b:free",
-  input: "Summarize this article in 3 bullet points.",
-});
-
-console.log(response.output_text);
-```
-
-```python Python SDK
-from phaseo import Phaseo
-
-client = Phaseo(api_key="YOUR_API_KEY")
-
-response = client.generate_response(
-    {
-        "model": "google/gemma-3-27b:free",
-        "input": "Summarize this article in 3 bullet points.",
-    }
-)
-
-print(response.get("output_text"))
-```
-
-```go Go SDK
-package main
-
-import (
-  "context"
-  "fmt"
-
-  phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v2"
-)
-
-func main() {
-  client := phaseo.New("YOUR_API_KEY", "https://api.phaseo.app/v1")
-  input := map[string]interface{}{
-    "role": "user",
-    "content": []map[string]interface{}{
-      {
-        "type": "input_text",
-        "text": "Summarize this article in 3 bullet points.",
-      },
-    },
-  }
-
-  response, err := client.GenerateResponse(context.Background(), phaseo.ResponsesRequest{
-    Model: "google/gemma-3-27b:free",
-    Input: &input,
-  })
-  if err != nil {
-    panic(err)
-  }
-
-  fmt.Println(response)
-}
-```
-
-```csharp C# SDK
-using PhaseoSdk;
-using System.Collections.Generic;
-
-var client = new Phaseo("YOUR_API_KEY");
-
-var response = await client.GenerateResponse(new Dictionary<string, object>
-{
-    ["model"] = "google/gemma-3-27b:free",
-    ["input"] = "Summarize this article in 3 bullet points."
-});
-
-Console.WriteLine(response);
-```
-
-```php PHP SDK
-<?php
-require 'vendor/autoload.php';
-
-use Phaseo\Sdk\Phaseo;
-
-$client = new Phaseo(getenv('PHASEO_API_KEY') ?: 'YOUR_API_KEY');
-
-$response = $client->generateResponse([
-    'model' => 'google/gemma-3-27b:free',
-    'input' => 'Summarize this article in 3 bullet points.',
-]);
-
-print_r($response);
-```
-
-```ruby Ruby SDK
-require 'phaseo_sdk'
-
-client = PhaseoSdk::Phaseo.new(api_key: ENV.fetch('PHASEO_API_KEY', 'YOUR_API_KEY'))
-
-response = client.generate_response(
-  model: 'google/gemma-3-27b:free',
-  input: 'Summarize this article in 3 bullet points.'
-)
-
-puts response
-```
-
-```rust Rust SDK
-use phaseo::Phaseo;
-use serde_json::json;
-
-fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let client = Phaseo::from_env()?;
-    let response = client.responses(&json!({
-        "model": "google/gemma-3-27b:free",
-        "input": "Summarize this article in 3 bullet points."
-    }))?;
-
-    println!("{}", response.body);
-    Ok(())
-}
-```
-
-</CodeGroup>
-
-## إكمال محادثة بنموذج مدفوع
-
-استخدم هذا المثال لإرسال طلب محادثة متوافق مع OpenAI إلى نموذج مدفوع.
-
-```bash
-curl https://api.phaseo.app/v1/chat/completions \
-  -H "Authorization: Bearer $PHASEO_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "model": "openai/gpt-5.4",
-    "messages": [{"role": "user", "content": "Write a short email."}]
-  }'
-```
-
-## توليد الصور
-
-استخدمه عندما يحتاج تطبيقك إلى إنشاء صورة انطلاقاً من مطالبة نصية.
-
-```bash
-curl https://api.phaseo.app/v1/images/generations \
-  -H "Authorization: Bearer $PHASEO_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "model": "gpt-image-1",
-    "prompt": "A minimal line drawing of a lighthouse."
-  }'
-```
-
-## مشروعات نموذجية قابلة للتشغيل
-
-يتوفر شرح عملي مطابق لكل مشروع نموذجي.
-
-### تطبيقات المتصفح
-
-- [تطبيق محادثة ويب باستخدام Next.js](../cookbook/build-a-nextjs-web-chat-app.mdx)
-  المستودع: [examples/web-chat-nextjs](https://github.com/phaseoteam/Phaseo/tree/main/examples/web-chat-nextjs)
-- [مساحة عمل Next.js مع OAuth](../cookbook/build-an-oauth-nextjs-workbench.mdx)
-  المستودع: [examples/oauth-client-nextjs](https://github.com/phaseoteam/Phaseo/tree/main/examples/oauth-client-nextjs)
-
-### قوالب للبرامج النصية والخدمات الخلفية
-
-- [دليل AI SDK 7](./integrations/ai-sdk.mdx)
-  المستودع: [examples/ai-sdk-v7-quickstart](https://github.com/phaseoteam/Phaseo/tree/main/examples/ai-sdk-v7-quickstart)
-- [تطبيق اختبار REST باستخدام Node.js](../cookbook/build-a-node-rest-smoke-app.mdx)
-  المستودع: [examples/gateway-node-quickstart](https://github.com/phaseoteam/Phaseo/tree/main/examples/gateway-node-quickstart)
-- [واجهة سطر الأوامر لـ Gateway باستخدام Python](../cookbook/build-a-python-gateway-cli.mdx)
-  المستودع: [examples/gateway-python-quickstart](https://github.com/phaseoteam/Phaseo/tree/main/examples/gateway-python-quickstart)
-
-## قوالب تبدأ من المطالبات
-
-إذا أردت من وكيل برمجي إنشاء الإصدار الأول نيابةً عنك، فابدأ من هنا:
-
-- [مطالبات لإنشاء تطبيقات صغيرة](../cookbook/mini-app-starter-prompts.mdx)
-
-## المزيد من أمثلة SDK
-
-استكشف [مرجع SDK](../sdk-reference/typescript/overview.mdx) أو [دليل SDK للغة Rust](../sdk-reference/rust/overview.mdx) للاطلاع على أمثلة خاصة بكل لغة.
+ليُنشئ وكيل برمجة هيكل مشروع، استخدم [موجّهات بدء التطبيقات المصغرة](../cookbook/mini-app-starter-prompts.mdx) وراجع الكود المولّد قبل استخدام بيانات اعتماد حقيقية.

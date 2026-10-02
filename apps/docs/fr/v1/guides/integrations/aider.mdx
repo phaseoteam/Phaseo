@@ -1,15 +1,16 @@
 ---
 title: "Aider"
+icon: "/icons/brands/aider.png"
 description: "Connectez Aider à Phaseo avec une configuration gérée automatiquement."
 ---
 
-Le CLI Phaseo peut créer une clé API dédiée et configurer Aider pour utiliser Phaseo à chaque nouvelle session.
+Utilisez la CLI Phaseo pour créer une clé dédiée et une configuration Aider gérée, ou copiez vous-même les mêmes valeurs de fournisseur dans une configuration Aider existante.
 
-## Configurer Aider
+## Configurer avec la CLI Phaseo
 
 ```bash
 phaseo login
-phaseo integrations setup aider --model anthropic/claude-sonnet-4.6
+phaseo aider --model anthropic/claude-sonnet-4.6
 ```
 
 Si `~/.aider.conf.yml` n’existe pas, la configuration crée un fichier géré par Phaseo contenant :
@@ -66,5 +67,5 @@ Conservez le préfixe `openai/` propre à Aider. Par exemple, le modèle Phaseo 
 
 - [Documentation Aider sur l’API compatible OpenAI](https://aider.chat/docs/llms/openai-compat.html)
 - [Configuration YAML d’Aider](https://aider.chat/docs/config/aider_conf.html)
-- [Assistants de programmation](./coding-assistants.mdx)
+- [Agents de programmation](./coding-assistants.mdx)
 - [Modèles](../../api-reference/endpoint/models.mdx)

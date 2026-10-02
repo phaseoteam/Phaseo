@@ -1,8 +1,9 @@
 ---
 title: "Codex"
-icon: "code-2"
+icon: "/icons/brands/codex.svg"
 description: "Verwende das Phaseo Gateway als benutzerdefinierten Anbieter für Codex CLI, Codex App und die Codex-IDE-Erweiterung."
 ---
+
 Codex unterstützt benutzerdefinierte Modellanbieter über `config.toml`. So kannst du Codex-Anfragen über Phaseo leiten und deinen gewohnten CLI-, App- oder IDE-Ablauf beibehalten.
 
 Wenn Codex während der Arbeit auch die aktuelle Phaseo-Dokumentation lesen soll, füge zusätzlich den Server [Docs MCP](./docs-mcp.mdx) hinzu.
@@ -42,6 +43,7 @@ Installiere Codex zuerst aus der offiziellen Version. Die Einrichtung erstellt e
 codex --profile phaseo
 ```
 
+Derselbe Phaseo-CLI-Ablauf startet auch [Cline](./cline), [Kilo Code](./kilo-code), [oh-my-pi](./oh-my-pi), [Muse Code](./muse-code) und [MiniMax Code](./minimax-code) mit isolierter temporärer Anbieterkonfiguration.
 ## Manuelle Konfiguration
 
 Erstelle oder aktualisiere deine Benutzerkonfiguration in `~/.codex/config.toml`. Für ein vertrauenswürdiges Projekt kannst du dieselben Einstellungen auch in `.codex/config.toml` im Repository ablegen.

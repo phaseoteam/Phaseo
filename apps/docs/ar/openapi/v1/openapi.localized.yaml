@@ -4,7 +4,7 @@ info:
   version: 1.0.0
 servers:
   - url: https://api.phaseo.app/v1
-    description: Enrutamiento global
+    description: التوجيه العالمي
 security:
   - BearerAuth: []
 paths:
@@ -276,6 +276,62 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '401':
           description: غير مصرّح به
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: uploadFile
+      summary: رفع ملف
+      description: اسم بديل للتوافق مع `/batches/files`. يرفع ملفاً للمعالجة الدفعية ويرجع بيانات الملف الوصفية لدى المزوّد الأعلى. مرر `model` كي يتمكن AI Stats من استنتاج المزوّد. يُستخدم OpenAI افتراضياً للعملاء القدامى الذين يغفلون كلاً من `model` و`provider`.
+      parameters:
+        - name: model
+          in: query
+          required: false
+          description: معرّف النموذج المستخدم لاستنتاج مزوّد ملف الدفعة الأعلى.
+          schema:
+            $ref: '#/components/schemas/ModelId'
+        - name: provider
+          in: query
+          required: false
+          description: تجاوز متقدم للمزوّد عند رفع الملف إلى المزوّد الأعلى.
+          schema:
+            type: string
+            enum:
+              - openai
+              - groq
+              - together
+              - mistral
+        - name: x-ai-stats-provider
+          in: header
+          required: false
+          description: بديل في الترويسة لمعلمة الاستعلام `provider`.
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/FileUploadRequest'
+      responses:
+        '200':
+          description: البيانات الوصفية للملف المرفوع
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FileResponse'
+        '401':
+          description: غير مصرّح به
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '502':
+          description: خطأ المزوّد الأعلى
           content:
             application/json:
               schema:
@@ -1615,7 +1671,7 @@ paths:
               $ref: '#/components/schemas/ChatCompletionsRequest'
             examples:
               datetimeServerTool:
-                summary: أداة الخادم المدمجة للتاريخ والوقت
+                summary: Built-in datetime server tool
                 value:
                   model: openai/gpt-5-nano
                   stream: false
@@ -1658,7 +1714,7 @@ paths:
               $ref: '#/components/schemas/ResponsesRequest'
             examples:
               datetimeServerTool:
-                summary: أداة الخادم المدمجة للتاريخ والوقت
+                summary: Built-in datetime server tool
                 value:
                   model: openai/gpt-5-nano
                   stream: false
@@ -1701,7 +1757,7 @@ paths:
               $ref: '#/components/schemas/AnthropicMessagesRequest'
             examples:
               datetimeServerTool:
-                summary: أداة الخادم المدمجة للتاريخ والوقت
+                summary: Built-in datetime server tool
                 value:
                   model: anthropic/claude-sonnet-4
                   max_tokens: 512
@@ -2472,6 +2528,237 @@ paths:
                   usage:
                     type: object
                     additionalProperties: true
+  /videos:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listVideos
+      summary: عرض قائمة الفيديوهات
+      description: يسرد مهام إنشاء الفيديو غير المتزامنة للفريق المصادق عليه.
+      parameters:
+        - name: limit
+          in: query
+          description: الحد الأقصى لمهام الفيديو المُرجعة. القيمة الافتراضية 50 والحد الأعلى 200.
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+        - name: status
+          in: query
+          description: مرشح حالة دورة حياة الفيديو. كرر المعلمة أو قدم قيماً مفصولة بفواصل.
+          style: form
+          explode: true
+          schema:
+            type: array
+            items:
+              type: string
+        - name: offset
+          in: query
+          description: عدد مهام الفيديو التي تُتجاوز قبل إرجاع الصفحة.
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 10000
+        - name: after
+          in: query
+          description: يرجع مهام الفيديو بعد معرّف الفيديو هذا بالترتيب المحدد.
+          schema:
+            type: string
+        - name: order
+          in: query
+          description: يرتب مهام الفيديو حسب وقت الإنشاء.
+          schema:
+            type: string
+            enum:
+              - asc
+              - desc
+      responses:
+        '200':
+          description: استجابة قائمة الفيديوهات
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VideoListResponse'
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: createVideo
+      summary: إنشاء فيديو
+      description: ينشئ مهمة إنشاء فيديو غير متزامنة. استعلم عن `polling_url` المُرجع كل 20 ثانية حتى تصل المهمة إلى حالة نهائية.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VideoGenerationRequest'
+      responses:
+        '202':
+          description: استجابة الفيديو
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VideoGenerationResponse'
+  /videos/models:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listVideoModels
+      summary: عرض قدرات نماذج الفيديو
+      description: يرجع بيانات وصفية مدعومة بقاعدة البيانات عن قدرات نماذج/مزوّدي الفيديو لبيئة تجربة الفيديو والتحقق في SDK.
+      parameters:
+        - name: params
+          in: query
+          required: false
+          description: مرشح اختياري للمعلمات المدعومة. كرر المعلمة أو مرر قائمة مفصولة بفواصل. تُقبل الأسماء الأساسية والأسماء البديلة، مثل `resolution` أو`size` أو`duration` أو`duration_seconds`.
+          schema:
+            type: array
+            items:
+              type: string
+          style: form
+          explode: false
+      responses:
+        '200':
+          description: قائمة قدرات نماذج الفيديو
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VideoModelsResponse'
+  /videos/{video_id}:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: getVideo
+      summary: الحصول على حالة الفيديو
+      description: يسترد حالة طلب إنشاء الفيديو. استعلم كل 20 ثانية ما لم تستخدم webhooks.
+      parameters:
+        - name: video_id
+          in: path
+          required: true
+          description: معرّف طلب إنشاء الفيديو.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: استجابة حالة الفيديو
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VideoGenerationResponse'
+    delete:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: deleteVideo
+      summary: حذف فيديو
+      description: يضع علامة حذف على سجل إنشاء فيديو وصل إلى حالة نهائية. لا يمكن حذف المهام الجارية.
+      parameters:
+        - name: video_id
+          in: path
+          required: true
+          description: معرّف طلب إنشاء الفيديو.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: استجابة حذف الفيديو
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VideoDeleteResponse'
+  /videos/{video_id}/cancel:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: cancelVideo
+      summary: إلغاء فيديو
+      description: إلغاء الفيديو معطّل حالياً لدى جميع المزوّدين.
+      parameters:
+        - name: video_id
+          in: path
+          required: true
+          description: معرّف مهمة الفيديو الداخلي في Phaseo (`G-...`).
+          schema:
+            type: string
+      responses:
+        '501':
+          description: إلغاء الفيديو معطّل
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /videos/{video_id}/content:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: getVideoContent
+      summary: الحصول على محتوى الفيديو
+      description: ينزّل محتوى الفيديو المُصيّر.
+      parameters:
+        - name: video_id
+          in: path
+          required: true
+          description: معرّف طلب إنشاء الفيديو.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: محتوى الفيديو
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+  /videos/{video_id}/download_url:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: createVideoDownloadUrl
+      summary: إنشاء عنوان URL موقّع لتنزيل الفيديو
+      description: يرجع عنوان URL موقّعاً من الطرف الأول لتنزيل فيديو مُصيّر.
+      parameters:
+        - name: video_id
+          in: path
+          required: true
+          description: معرّف طلب إنشاء الفيديو.
+          schema:
+            type: string
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                index:
+                  type: integer
+                  minimum: 0
+                ttl_seconds:
+                  type: integer
+                  minimum: 1
+                disposition:
+                  type: string
+                  enum:
+                    - attachment
+                    - inline
+      responses:
+        '200':
+          description: عنوان URL موقّع للتنزيل
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  download_url:
+                    type: string
+                  expires_at:
+                    type: integer
   /music/generate/{music_id}:
     get:
       x-beta: true
@@ -2559,6 +2846,602 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '404':
           description: الملف غير موجود
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /batches:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listBatches
+      summary: عرض قائمة الدفعات
+      description: يسرد مهام الدفعات غير المتزامنة المملوكة لمساحة العمل المصادق عليها من مخزن المهام غير المتزامنة الدائم للبوابة.
+      parameters:
+        - name: limit
+          in: query
+          description: الحد الأقصى لمهام الدفعات المُرجعة. القيمة الافتراضية 20 والحد الأعلى 100.
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+        - name: status
+          in: query
+          description: مرشح حالة دورة حياة الدفعة. كرر المعلمة أو استخدم قيماً للحالة مفصولة بفواصل أو استخدم statuses للمرشحات المفصولة بفواصل.
+          style: form
+          explode: true
+          schema:
+            type: array
+            items:
+              type: string
+        - name: statuses
+          in: query
+          description: مرشحات حالة دورة الحياة المفصولة بفواصل.
+          schema:
+            type: string
+        - name: offset
+          in: query
+          description: عدد مهام الدفعات التي تُتجاوز قبل إرجاع الصفحة.
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 10000
+      responses:
+        '200':
+          description: استجابة قائمة الدفعات
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchListResponse'
+        '401':
+          description: غير مصرّح به
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: createBatch
+      summary: إنشاء دفعة
+      description: ينشئ مهمة دفعة غير متزامنة ويرجع كائن الدفعة لدى المزوّد الأعلى. يدعم الإنشاء OpenAI وAnthropic وGoogle Gemini وMistral وxAI وGroq وTogether AI عبر `model` المطلوب. تستنتج البوابة المزوّد من النموذج وتقبل أيضاً `session_id` و`webhook` لقابلية الرصد والإشعارات غير المتزامنة. استخدم `provider` فقط كقيد توجيه متقدم.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BatchRequest'
+      responses:
+        '200':
+          description: استجابة حالة الدفعة
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchResponse'
+        '401':
+          description: غير مصرّح به
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /batches/models:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listBatchModels
+      summary: عرض قدرات نماذج الدفعات
+      description: يرجع بيانات وصفية مدعومة بقاعدة البيانات عن قدرات نماذج/مزوّدي الدفعات، بما في ذلك معلمات الدفعات المدعومة مثل نقاط نهاية الإدخال المسموحة ونوافذ الإكمال.
+      parameters:
+        - name: params
+          in: query
+          required: false
+          description: مرشح اختياري للمعلمات المدعومة. كرر المعلمة أو مرر قائمة مفصولة بفواصل. تُقبل الأسماء الأساسية والأسماء البديلة، مثل `endpoint` أو`request_endpoint` أو`completion_window` أو`window`.
+          schema:
+            type: array
+            items:
+              type: string
+          style: form
+          explode: false
+      responses:
+        '200':
+          description: قائمة قدرات نماذج الدفعات
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchModelsResponse'
+        '401':
+          description: غير مصرّح به
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /batches/capabilities:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listBatchCapabilities
+      summary: عرض قدرات مزوّدي الدفعات
+      description: يرجع دعم أوضاع إدخال الدفعات على مستوى المزوّد لرفع الملفات وإنشاء الدفعات من قائمة طلبات.
+      responses:
+        '200':
+          description: قائمة قدرات مزوّدي الدفعات
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  object:
+                    type: string
+                    example: list
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/BatchProviderCapability'
+  /batches/files:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listBatchFiles
+      summary: عرض ملفات الدفعات
+      description: يرجع خطأ لأن عرض ملفات مفاتيح البوابة المشتركة غير مدعوم. استرد بدلاً من ذلك الملفات المملوكة لمساحة العمل مباشرةً بالمعرّف.
+      responses:
+        '400':
+          description: عرض قائمة الملفات غير مدعوم
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: غير مصرّح به
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: uploadBatchFile
+      summary: رفع ملف دفعة
+      description: يرفع ملفاً لدى المزوّد للمعالجة الدفعية ويحفظ ملكيته في مساحة العمل المصادق عليها. مرر `model` كي يتمكن Phaseo من استنتاج المزوّد الأعلى. يُستخدم OpenAI افتراضياً عند إغفال كل من `model` و`provider`.
+      parameters:
+        - name: model
+          in: query
+          required: false
+          description: معرّف النموذج المستخدم لاستنتاج مزوّد ملف الدفعة الأعلى.
+          schema:
+            $ref: '#/components/schemas/ModelId'
+        - name: provider
+          in: query
+          required: false
+          description: تجاوز متقدم للمزوّد عند رفع الملف إلى المزوّد الأعلى.
+          schema:
+            type: string
+            enum:
+              - openai
+              - groq
+              - together
+              - mistral
+        - name: x-phaseo-provider
+          in: header
+          required: false
+          description: بديل في الترويسة لمعلمة الاستعلام `provider`.
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/FileUploadRequest'
+      responses:
+        '200':
+          description: البيانات الوصفية للملف المرفوع
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FileResponse'
+        '401':
+          description: غير مصرّح به
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '502':
+          description: خطأ المزوّد الأعلى
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /batches/files/{file_id}:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: retrieveBatchFile
+      summary: استرداد ملف دفعة
+      description: يسترد البيانات الوصفية لملف دفعة مملوك لمساحة العمل المصادق عليها.
+      parameters:
+        - name: file_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: البيانات الوصفية للملف
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FileResponse'
+        '401':
+          description: غير مصرّح به
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: الملف غير موجود أو لا يتبع مساحة العمل
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /batches/files/{file_id}/content:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: retrieveBatchFileContent
+      summary: استرداد محتوى ملف دفعة
+      description: يسترد محتوى ملف دفعة مملوك لمساحة العمل المصادق عليها.
+      parameters:
+        - name: file_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: محتوى الملف
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '401':
+          description: غير مصرّح به
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: الملف غير موجود
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /batches/{batch_id}:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: retrieveBatch
+      summary: استرداد دفعة
+      description: يسترد مهمة دفعة أُنشئت سابقاً.
+      parameters:
+        - name: batch_id
+          in: path
+          required: true
+          description: معرّف الدفعة المراد استردادها.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: استجابة حالة الدفعة
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchResponse'
+        '401':
+          description: غير مصرّح به
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: الدفعة غير موجودة
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '501':
+          description: تحديث حالة الدفعة غير مدعوم لدى هذا المزوّد
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /batches/{batch_id}/results:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: retrieveBatchResults
+      summary: تنزيل نتائج الدفعة
+      description: يبث صفوف النتائج الأصلية الكاملة لدى المزوّد بصيغة JSONL لدفعة نهائية مملوكة لمساحة العمل المصادق عليها. يدمج ملفات النجاح والأخطاء ويحوّل النواتج المضمنة ويتبع تقسيم نتائج المزوّد إلى صفحات. استخدم مفتاح API من Phaseo. لا ترسل التنزيلات استدلالاً ولا تضيف رسوم استخدام. تبقى نقاط نهاية الملفات الحالية متاحة. تُحد الصفوف المضمنة بـ8 MiB؛ يجب التخلص من التنزيلات المنقطعة وإعادة تنزيلها. الحد 10 محاولات تنزيل لكل مساحة عمل لكل دفعة ضمن نافذة متحركة من 30 دقيقة، مشتركة بين مفاتيح API والأسماء البديلة. تُحسب المحاولات الفاشلة أو الملغاة لدى المزوّد الأعلى. تتضمن استجابة 429 الترويسة Retry-After بالثواني.
+      parameters:
+        - name: batch_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: نتائج JSONL الأصلية للمزوّد
+          content:
+            application/x-ndjson:
+              schema:
+                type: string
+        '401':
+          description: غير مصرّح به
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: تم رفض الوصول إلى معاينة الدفعات
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: الدفعة غير موجودة
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: نتائج الدفعة غير جاهزة
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: تم تجاوز حد تنزيل الدفعة
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            Retry-After:
+              description: الثواني حتى السماح بتنزيل آخر
+              schema:
+                type: integer
+        '501':
+          description: تنزيل النتائج مباشرةً غير مدعوم لدى هذا المزوّد
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '502':
+          description: تعذر استرداد نتائج المزوّد
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '503':
+          description: قبول التنزيلات غير متاح مؤقتاً؛ أعد المحاولة بعد 30 ثانية
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+  /batches/{batch_id}/requests:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listBatchRequests
+      summary: عرض صفوف طلبات الدفعة
+      description: يسرد الصفوف المتتبعة لكل طلب في مهمة دفعة مملوكة.
+      parameters:
+        - name: batch_id
+          in: path
+          required: true
+          description: معرّف الدفعة.
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 100
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+        - name: status
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: قائمة صفوف طلبات الدفعة
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  object:
+                    type: string
+                    example: list
+                  batch_id:
+                    type: string
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/BatchRequestRow'
+        '401':
+          description: غير مصرّح به
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: الدفعة غير موجودة
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /batches/{batch_id}/cancel:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: cancelBatch
+      summary: إلغاء دفعة
+      description: يلغي طلب دفعة.
+      parameters:
+        - name: batch_id
+          in: path
+          required: true
+          description: معرّف الدفعة المراد إلغاؤها.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: استجابة حالة الدفعة
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchResponse'
+        '401':
+          description: غير مصرّح به
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: الدفعة غير موجودة
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '501':
+          description: إلغاء الدفعات غير مدعوم لدى هذا المزوّد
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /analytics:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: getActivityAlias
+      summary: الحصول على تحليلات مساحة العمل
+      description: يرجع مجاميع التكلفة والطلبات والرموز مجمعة حسب التاريخ والنموذج والمزوّد ونقطة النهاية لآخر 30 يوماً مكتملاً بتوقيت UTC.
+      parameters:
+        - name: date
+          in: query
+          description: التصفية حسب تاريخ UTC واحد ضمن آخر 30 يوماً مكتملاً (YYYY-MM-DD).
+          schema:
+            type: string
+            format: date
+        - name: label_key
+          in: query
+          description: مفتاح تسمية الطلب المراد تضمينه في شريحة الإنفاق. يجب توفيره مع label_value.
+          schema:
+            type: string
+            maxLength: 64
+            pattern: ^[A-Za-z0-9_.:-]{1,64}$
+        - name: label_value
+          in: query
+          description: قيمة تسمية الطلب المراد تضمينها في شريحة الإنفاق. يجب توفيرها مع label_key.
+          schema:
+            type: string
+            maxLength: 256
+        - name: key_id
+          in: query
+          description: التصفية حسب معرّف مفتاح API.
+          schema:
+            type: string
+        - name: end_user_id
+          in: query
+          description: التصفية حسب معرّف المستخدم النهائي المحدد من التطبيق.
+          schema:
+            type: string
+            maxLength: 256
+        - name: model
+          in: query
+          description: التصفية حسب المعرّف النصي الأساسي للنموذج المطلوب أو الموجّه.
+          schema:
+            $ref: '#/components/schemas/ModelId'
+        - name: provider
+          in: query
+          description: التصفية حسب المعرّف النصي للمزوّد.
+          schema:
+            type: string
+            maxLength: 128
+        - name: endpoint
+          in: query
+          description: التصفية حسب معرّف نقطة نهاية البوابة.
+          schema:
+            type: string
+            maxLength: 128
+        - name: byok
+          in: query
+          description: تصفية حركة المرور المُدارة أوBYOK.
+          schema:
+            type: boolean
+        - name: success
+          in: query
+          description: تصفية الطلبات الناجحة أو الفاشلة.
+          schema:
+            type: boolean
+        - $ref: '#/components/parameters/Offset'
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 1000
+            default: 1000
+      responses:
+        '200':
+          description: تم الاسترجاع
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnalyticsResponse'
+        '400':
+          description: خطأ في الطلب غير الصحيح
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: غير مصرّح به
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: خطأ الوصول المحظور
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: خطأ داخلي في الخادم
           content:
             application/json:
               schema:
@@ -2671,6 +3554,39 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '403':
           description: محظور
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: خطأ في الخادم
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /key:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: getCurrentApiKey
+      summary: الحصول على مفتاح API الحالي
+      description: يرجع البيانات الوصفية لمفتاح Gateway API القياسي المصادق عليه حالياً.
+      responses:
+        '200':
+          description: البيانات الوصفية لمفتاح API الحالي
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiKeyResponse'
+        '401':
+          description: غير مصرّح به
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: لم يتم العثور على مفتاح API
           content:
             application/json:
               schema:
@@ -3200,6 +4116,33 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+    patch:
+      x-beta: true
+      security: []
+      tags:
+        - Gateway
+      operationId: updateWorkspaceNotificationSettings
+      summary: تحديث إعدادات إشعارات مساحة العمل
+      description: يحدّث قسماً واحداً أو أكثر من سياسة الإشعارات الدائمة. يتطلب تفعيل التعبئة التلقائية معرّفاً موجوداً لطريقة دفع محفوظة ومصادقة ثنائية موثقة. يمكن تحديث إعداد قائم دون تكرار إقرار MFA. للتفعيل دون MFA يجب على العملاء تعيين `mfa_bypass_acknowledged` صراحةً إلى true وتوفير القيمة الدقيقة `I ACCEPT THE RISK` للحقل `mfa_bypass_phrase`؛ يظل جمع معلومات الدفع إجراءً تفاعلياً في الحساب.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WorkspaceNotificationSettingsUpdateRequest'
+      responses:
+        '200':
+          description: تم تحديث إعدادات الإشعارات
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkspaceNotificationSettingsResponse'
+        default:
+          description: فشل الطلب
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /apps/{id}:
     patch:
       x-beta: true
@@ -3583,6 +4526,127 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ProviderCredentialReorderResponse'
+        default:
+          description: فشل الطلب
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /private-models:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listPrivateModels
+      summary: عرض النماذج الخاصة
+      description: يسرد بيانات النماذج الخاصة الوصفية لمساحة العمل المصادق عليها. يتطلب `private_models:read` وهوية مالك أو مسؤول.
+      responses:
+        '200':
+          description: النماذج الخاصة
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrivateModelListResponse'
+        default:
+          description: فشل الطلب
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: createPrivateModel
+      summary: إنشاء نموذج خاص
+      description: ينشئ نقطة نهاية نموذج متوافق مع OpenAI خاصة بمساحة العمل فقط. يتطلب `private_models:write` وهوية مالك أو مسؤول.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PrivateModelCreateRequest'
+      responses:
+        '201':
+          description: تم إنشاء النموذج الخاص
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrivateModelResponse'
+        default:
+          description: فشل الطلب
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /private-models/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: getPrivateModel
+      summary: الحصول على نموذج خاص
+      description: يرجع بيانات نقطة النهاية الوصفية لنموذج خاص واحد في مساحة العمل المصادق عليها دون إرجاع بيانات اعتماده.
+      responses:
+        '200':
+          description: البيانات الوصفية للنموذج الخاص
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrivateModelResponse'
+        default:
+          description: فشل الطلب
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    patch:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: updatePrivateModel
+      summary: تحديث نموذج خاص
+      description: يحدّث بيانات النموذج الخاص الوصفية أو يستبدل بيانات اعتماده المشفرة المخصصة للكتابة فقط.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PrivateModelUpdateRequest'
+      responses:
+        '200':
+          description: تم تحديث النموذج الخاص
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrivateModelResponse'
+        default:
+          description: فشل الطلب
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: deletePrivateModel
+      summary: حذف نموذج خاص
+      description: يحذف نهائياً نموذجاً خاصاً مملوكاً لمساحة العمل المصادق عليها. تكرار الحذف آمن.
+      responses:
+        '200':
+          description: تم حذف النموذج الخاص أو كان غير موجود بالفعل
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrivateModelDeleteResponse'
         default:
           description: فشل الطلب
           content:
@@ -5312,6 +6376,135 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '404':
           description: لم يتم العثور على الوجهة
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /organisations:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listOrganisations
+      summary: عرض المؤسسات
+      description: يرجع قائمة بالمؤسسات المتاحة.
+      parameters:
+        - name: limit
+          in: query
+          description: تحديد عدد النتائج
+          schema:
+            type: integer
+            default: 50
+            minimum: 1
+            maximum: 250
+        - name: offset
+          in: query
+          description: الإزاحة لأغراض ترقيم الصفحات
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+      responses:
+        '200':
+          description: قائمة المؤسسات
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    example: true
+                  limit:
+                    type: integer
+                    example: 50
+                  offset:
+                    type: integer
+                    example: 0
+                  total:
+                    type: integer
+                    example: 10
+                  organisations:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        organisation_id:
+                          type: string
+                        name:
+                          type: string
+                          nullable: true
+                        country_code:
+                          type: string
+                          nullable: true
+                        description:
+                          type: string
+                          nullable: true
+                        colour:
+                          type: string
+                          nullable: true
+        '500':
+          description: خطأ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /pricing/calculate:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: calculatePricing
+      summary: حساب السعر
+      description: يحسب السعر لحمولة بيانات الاستخدام.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - provider
+                - model
+                - endpoint
+                - usage
+              properties:
+                provider:
+                  type: string
+                model:
+                  type: string
+                endpoint:
+                  type: string
+                usage:
+                  type: object
+                  additionalProperties: true
+      responses:
+        '200':
+          description: نتيجة حساب السعر
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  pricing:
+                    type: object
+                    additionalProperties: true
+        '400':
+          description: حقول مطلوبة مفقودة
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: السعر غير موجود
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: خطأ في الحساب
           content:
             application/json:
               schema:
@@ -10515,6 +11708,638 @@ components:
               nullable: true
         pricing:
           $ref: '#/components/schemas/GatewayPricing'
+    VideoListResponse:
+      type: object
+      properties:
+        object:
+          type: string
+          example: list
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/VideoGenerationResponse'
+        first_id:
+          type: string
+          nullable: true
+        last_id:
+          type: string
+          nullable: true
+        has_more:
+          type: boolean
+    VideoGenerationResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        polling_url:
+          type: string
+        websocket_url:
+          type: string
+          format: uri
+          description: عنوان WebSocket للاشتراك في تحديثات دورة الحياة الموحدة للمهام غير المتزامنة.
+        model:
+          type: string
+        request_id:
+          type: string
+        session_id:
+          type: string
+        status:
+          type: string
+          enum:
+            - queued
+            - processing
+            - completed
+            - failed
+            - cancelled
+            - expired
+        lifecycle_status:
+          type: string
+          enum:
+            - pending
+            - running
+            - completed
+            - failed
+            - cancelled
+            - expired
+          description: حالة دورة الحياة غير المتزامنة الموحدة لمستهلكي الاستطلاع وWebSocket وwebhook.
+        cancel_url:
+          type: string
+          format: uri
+          nullable: true
+          description: محجوز للتوافق؛ قيمته حالياً null دائماً.
+        output_access:
+          type: string
+          enum:
+            - bytes
+            - signed_url
+            - both
+        generation_id:
+          type: string
+          nullable: true
+        native_video_id:
+          type: string
+          nullable: true
+          description: معرّف الفيديو/المهمة الأصلي لدى المزوّد عندما يختلف عن معرّف البوابة.
+        created_at:
+          oneOf:
+            - type: integer
+            - type: string
+        started_at:
+          nullable: true
+          oneOf:
+            - type: integer
+            - type: string
+        completed_at:
+          nullable: true
+          oneOf:
+            - type: integer
+            - type: string
+        object:
+          type: string
+          example: video
+        poll_after_seconds:
+          type: integer
+          example: 20
+        provider:
+          type: string
+        seconds:
+          type: number
+        size:
+          type: string
+        audio:
+          type: boolean
+        content_url:
+          type: string
+          description: موجود عندما يتضمن output_access القيمة bytes (نقطة نهاية تتطلب المصادقة).
+        download_url:
+          type: string
+          nullable: true
+          description: عنوان URL موقّع من الطرف الأول للتنزيل المباشر عندما تكون الحالة completed.
+        expires_at:
+          type: integer
+          nullable: true
+          description: طابع Unix الزمني (بالثواني) لانتهاء صلاحية download_url الموقّع.
+        progress:
+          type: integer
+          nullable: true
+        progress_source:
+          type: string
+        asset:
+          type: object
+          nullable: true
+          properties:
+            id:
+              type: string
+            mime_type:
+              type: string
+            bytes:
+              type: integer
+            sha256:
+              type: string
+            width:
+              type: integer
+            height:
+              type: integer
+            duration_seconds:
+              type: number
+        outputs:
+          type: array
+          items:
+            $ref: '#/components/schemas/VideoOutput'
+        billing:
+          $ref: '#/components/schemas/VideoBillingSummary'
+        webhook:
+          $ref: '#/components/schemas/AsyncWebhookPublicState'
+        next_webhook_retry_at:
+          type: string
+          nullable: true
+          description: طابع ISO الزمني لإعادة محاولة webhook المستخدم المجدولة التالية، إن كانت في قائمة الانتظار.
+        last_webhook_progress:
+          type: number
+          nullable: true
+          description: أحدث فئة تقدم تقريبية أُرسلت إلى مستهلكي webhook.
+        last_webhook_progress_at:
+          type: string
+          nullable: true
+          description: طابع ISO الزمني عند إرسال أحدث فئة تقدم لـwebhook.
+        last_webhook_dispatched_at:
+          type: string
+          nullable: true
+          description: طابع ISO الزمني لأحدث محاولة إرسال webhook.
+        usage:
+          type: object
+          properties:
+            cost:
+              type: number
+            is_byok:
+              type: boolean
+          additionalProperties: true
+        error:
+          nullable: true
+    VideoOutput:
+      type: object
+      properties:
+        index:
+          type: integer
+        mime_type:
+          type: string
+        bytes_available:
+          type: boolean
+        content_url:
+          type: string
+          description: موجود عندما يتضمن output_access القيمة bytes.
+        download_url:
+          type: string
+          description: عنوان URL موقّع من الطرف الأول لهذا الناتج.
+        expires_at:
+          type: integer
+          description: طابع Unix الزمني (بالثواني) لانتهاء صلاحية عنوان URL لهذا الناتج.
+    VideoBillingSummary:
+      type: object
+      properties:
+        currency:
+          type: string
+        estimated_provider_cost:
+          type: string
+          nullable: true
+        estimated_user_cost:
+          type: string
+          nullable: true
+        settled_provider_cost:
+          type: string
+          nullable: true
+        settled_user_cost:
+          type: string
+          nullable: true
+        state:
+          type: string
+          enum:
+            - pending
+            - estimated
+            - settled
+            - void
+        billable:
+          type: boolean
+        total_nanos:
+          type: integer
+          nullable: true
+        estimated_nanos:
+          type: integer
+          nullable: true
+        reserved_nanos:
+          type: integer
+          nullable: true
+        reservation_id:
+          type: string
+          nullable: true
+        reservation_status:
+          type: string
+          nullable: true
+        charge_reason:
+          type: string
+          nullable: true
+        charged:
+          type: boolean
+          nullable: true
+        billed_at:
+          type: string
+      additionalProperties: true
+    AsyncWebhookPublicState:
+      type: object
+      description: إعداد webhook غير المتزامن بعد تنقيح البيانات الحساسة مع حالة التسليم. لا تُرجع الأسرار أبداً؛ يشير `has_secret` إلى تفعيل عمليات التسليم الموقّعة. تتضمن عمليات التسليم الموقّعة ترويسات x-phaseo-signature وx-phaseo-timestamp وx-phaseo-event-id وx-phaseo-event-type وx-phaseo-delivery-key وx-phaseo-attempt وx-phaseo-max-attempts.
+      properties:
+        url:
+          type: string
+          format: uri
+          nullable: true
+        events:
+          type: array
+          items:
+            type: string
+        has_secret:
+          type: boolean
+        delivery:
+          $ref: '#/components/schemas/AsyncWebhookDeliverySummary'
+        attempts:
+          type: array
+          items:
+            $ref: '#/components/schemas/AsyncWebhookDeliveryAttempt'
+    AsyncWebhookDeliverySummary:
+      type: object
+      description: ملخص تسليم عام لخطافات webhook غير المتزامنة التي تديرها البوابة. استخدمه للتمييز بين حالة تنفيذ المهمة وسلامة تسليم webhook.
+      properties:
+        total_attempts:
+          type: integer
+          description: إجمالي محاولات التسليم المسجلة لهذه المهمة.
+        delivered_events:
+          type: integer
+          description: عدد مفاتيح التسليم التي وصلت إلى حالة التسليم الناجح.
+        delivered_event_types:
+          type: array
+          description: مفاتيح التسليم التي سُلّمت مرة واحدة على الأقل.
+          items:
+            type: string
+          example:
+            - video.completed
+        pending_retries:
+          type: integer
+          description: عدد مفاتيح التسليم المجدولة حالياً لإعادة المحاولة.
+        next_retry_at:
+          type: string
+          nullable: true
+          description: طابع ISO الزمني لإعادة المحاولة المجدولة التالية، إن وجد.
+        last_attempt_at:
+          type: string
+          nullable: true
+          description: طابع ISO الزمني لأحدث محاولة تسليم.
+        last_attempt_status:
+          type: string
+          nullable: true
+          enum:
+            - delivered
+            - scheduled_retry
+            - failed_permanently
+          description: نتيجة أحدث محاولة تسليم.
+        last_response_status:
+          type: integer
+          nullable: true
+          description: حالة HTTP التي ترجعها وجهة webhook، إن توفرت.
+        last_delivered_at:
+          type: string
+          nullable: true
+          description: طابع ISO الزمني لأحدث تسليم ناجح.
+        last_failure_at:
+          type: string
+          nullable: true
+          description: طابع ISO الزمني لأحدث محاولة فاشلة أو قيد إعادة المحاولة.
+        last_error_message:
+          type: string
+          nullable: true
+          description: أحدث رسالة خطأ في التسليم، إن توفرت.
+    AsyncWebhookDeliveryAttempt:
+      type: object
+      description: محاولة تسليم حديثة لخطاف webhook غير متزامن تديره البوابة.
+      properties:
+        id:
+          type: string
+          description: معرّف ثابت للمحاولة لأغراض التدقيق وتصحيح الأخطاء.
+        delivery_key:
+          type: string
+          description: مفتاح عدم تكرار الأثر لتسليم هذا الحدث.
+          example: video.completed
+        event_type:
+          type: string
+          description: نوع الحدث الذي سُلّم إلى وجهة webhook.
+          example: video.completed
+        status:
+          type: string
+          enum:
+            - delivered
+            - scheduled_retry
+            - failed_permanently
+        attempt_number:
+          type: integer
+          description: رقم المحاولة لمفتاح التسليم هذا، بدءاً من واحد.
+        max_attempts:
+          type: integer
+          description: الحد الأقصى للمحاولات قبل وضع علامة فشل دائم على التسليم.
+        tried_at:
+          type: string
+          description: طابع ISO الزمني عند إجراء هذه المحاولة.
+        delivered_at:
+          type: string
+          nullable: true
+          description: طابع ISO الزمني عند نجاح تسليم هذه المحاولة.
+        next_retry_at:
+          type: string
+          nullable: true
+          description: طابع ISO الزمني لإعادة المحاولة التالية بعد هذه المحاولة، إن جُدولت.
+        response_status:
+          type: integer
+          nullable: true
+          description: حالة HTTP التي ترجعها وجهة webhook، إن توفرت.
+        error_message:
+          type: string
+          nullable: true
+          description: رسالة خطأ التسليم، إن توفرت.
+        response_body_preview:
+          type: string
+          nullable: true
+          description: معاينة منقحة من البيانات الحساسة لجسم استجابة وجهة webhook.
+    VideoGenerationRequest:
+      type: object
+      required:
+        - model
+        - prompt
+      properties:
+        model:
+          type: string
+        prompt:
+          type: string
+        duration:
+          type: integer
+          description: المدة المطلوبة بالثواني (تعتمد على المزوّد/النموذج).
+        input_video_duration:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 3600
+          exclusiveMinimum: true
+          description: مدة الفيديو المصدر بالثواني. مطلوبة عندما يفوتر المزوّد مدة الفيديو المصدر بشكل مستقل عن الناتج المُنشأ.
+        input_audio_duration:
+          type: number
+          format: double
+          minimum: 2
+          maximum: 20
+          description: مدة الصوت المصدر المعلنة بالثواني، المستخدمة للتحقق من نطاق المزوّد. قد يفوتر المزوّدون الذين لا يبلغون عن الاستخدام المعتمد وفق الحد الأعلى لمدة الإدخال المدعومة لديهم.
+        size:
+          type: string
+          description: أبعاد صريحة (مثل 1280x720). لا يمكن دمجها مع resolution أو aspect_ratio.
+        resolution:
+          type: string
+          description: 480p و720p و1080p و1K و2K و4K. يمكن دمجها مع aspect_ratio. لا يمكن دمجها مع size.
+        aspect_ratio:
+          type: string
+          description: نسبة أبعاد مثل 16:9 أو9:16 أو1:1. يمكن دمجها مع resolution. لا يمكن دمجها مع size.
+        seed:
+          type: integer
+        sample_count:
+          type: integer
+          minimum: 1
+          maximum: 4
+        negative_prompt:
+          type: string
+        generate_audio:
+          type: boolean
+        enhance_prompt:
+          type: boolean
+        compression_quality:
+          type: integer
+        person_generation:
+          type: string
+        resize_mode:
+          type: string
+        input_references:
+          type: array
+          description: مدخلات صور أو صوت أو فيديو عبر HTTPS لتوجيه الإنشاء. تعتمد الأنواع والأدوار والأعداد والتركيبات المدعومة على النموذج المحدد. تحقق من GET /videos/models قبل إرسال مهمة. يقبل الاسم البديل المفرد للتوافق input_reference، غير المدرج في هذا المخطط، صورة multipart أو كائناً يتضمن واحداً فقط من file_id أو image_url. يعتمد الدعم على المزوّد.
+          items:
+            $ref: '#/components/schemas/VideoInputReference'
+        frame_images:
+          type: array
+          minItems: 1
+          maxItems: 2
+          description: صور HTTPS للإطار الأول/الأخير. يمكن أن يظهر كل frame_type مرة واحدة. لا تقدم أيضاً input_reference أو أدوار الإطارات ضمن input_references.
+          items:
+            type: object
+            additionalProperties: false
+            required:
+              - type
+              - frame_type
+              - image_url
+            properties:
+              type:
+                type: string
+                enum:
+                  - image_url
+              frame_type:
+                type: string
+                enum:
+                  - first_frame
+                  - last_frame
+              image_url:
+                type: object
+                required:
+                  - url
+                properties:
+                  url:
+                    type: string
+                    format: uri
+        provider_params:
+          type: object
+          additionalProperties: true
+          description: امتدادات خاصة بالمزوّد فقط. يُرفض تمرير الطلب كاملاً وتكرار حقول التوجيه أو الموجه أو رد الاتصال أو الفوترة.
+        provider_options:
+          type: object
+          additionalProperties:
+            type: object
+            additionalProperties: true
+          description: امتدادات بمفاتيح معرّفات المزوّدين الأساسية (مثل atlascloud أو byteplus). تُمرر خيارات المزوّد المحدد فقط. لا يمكن دمجها مع provider_params. يجب أن تستخدم حقول التوجيه والموجه ورد الاتصال والمدة والدقة وعدد النواتج حقول المستوى الأعلى التي تم التحقق منها.
+        output:
+          $ref: '#/components/schemas/VideoOutputConfig'
+        webhook:
+          type: object
+          required:
+            - endpoint_id
+          additionalProperties: false
+          properties:
+            endpoint_id:
+              type: string
+              description: نقطة نهاية webhook نشطة تديرها مساحة العمل. لا يُخزن سر التوقيع المشفر والقابل للتدوير في بيانات مهمة الفيديو الوصفية أبداً.
+            events:
+              type: array
+              description: اشتراكات اختيارية في الأحداث. استخدم أحداث job.* العامة أو أحداث video.* المطابقة، مثل video.status_changed أوvideo.progress أوvideo.completed. عند الإغفال تُستخدم job.status_changed وأحداث job.* النهائية. أدرج job.progress أوvideo.progress صراحةً لردود اتصال التقدم. عند توفير القائمة يجب أن يكون حدث واحد على الأقل صالحاً لمهام الفيديو؛ تُرفض القوائم غير الصحيحة أو التي تحتوي فقط على أحداث من نوع آخر.
+              items:
+                type: string
+        provider:
+          $ref: '#/components/schemas/ProviderRoutingOptions'
+    VideoInputReference:
+      description: مدخل وسائط HTTPS محدد النوع. استخدم image_url للصور وmedia_url للصوت أو الفيديو. تصف الأدوار كيفية استخدام النموذج للمدخل؛ ويختلف الدعم حسب المزوّد والنموذج.
+      oneOf:
+        - type: object
+          required:
+            - type
+            - image_url
+          properties:
+            type:
+              type: string
+              enum:
+                - image_url
+            role:
+              type: string
+              description: الاستخدام المقصود لهذه الصورة من قِبل النموذج المحدد.
+              enum:
+                - first_frame
+                - last_frame
+                - reference
+                - source
+                - mask
+            reference_type:
+              type: string
+            image_url:
+              type: object
+              required:
+                - url
+              properties:
+                url:
+                  type: string
+                  format: uri
+                  description: عنوان HTTPS لصورة متاحة للعامة.
+        - type: object
+          required:
+            - type
+            - media_url
+          properties:
+            type:
+              type: string
+              enum:
+                - video_url
+                - audio_url
+            role:
+              type: string
+              description: الاستخدام المقصود لهذا الصوت أو الفيديو من قِبل النموذج المحدد.
+              enum:
+                - first_frame
+                - last_frame
+                - reference
+                - source
+                - mask
+            reference_type:
+              type: string
+            media_url:
+              type: object
+              required:
+                - url
+              properties:
+                url:
+                  type: string
+                  format: uri
+                  description: عنوان HTTPS لصوت أو فيديو متاح للعامة.
+    VideoOutputConfig:
+      type: object
+      properties:
+        access:
+          type: string
+          enum:
+            - bytes
+            - signed_url
+            - both
+          default: both
+          description: bytes=عنوان content_url الذي يتطلب المصادقة فقط، signed_url=روابط التنزيل الموقّعة فقط، both=تضمين الاثنين.
+    VideoModelsResponse:
+      type: object
+      properties:
+        object:
+          type: string
+          example: list
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/VideoModelCapability'
+    VideoModelCapability:
+      type: object
+      properties:
+        model:
+          type: string
+        name:
+          type: string
+        status:
+          type: string
+        input_types:
+          type: array
+          items:
+            type: string
+        output_types:
+          type: array
+          items:
+            type: string
+        supported_params:
+          type: array
+          items:
+            type: string
+        supported_parameters:
+          type: array
+          description: اسم بديل للتوافق مع supported_params.
+          items:
+            type: string
+        supported_params_detail:
+          $ref: '#/components/schemas/SupportedParameterDetails'
+        supported_parameters_detail:
+          $ref: '#/components/schemas/SupportedParameterDetails'
+        providers:
+          type: array
+          items:
+            $ref: '#/components/schemas/VideoModelProviderCapability'
+        pricing:
+          type: object
+          additionalProperties: true
+    VideoModelProviderCapability:
+      type: object
+      properties:
+        id:
+          type: string
+        supported_params:
+          type: array
+          items:
+            type: string
+        supported_parameters:
+          type: array
+          description: اسم بديل للتوافق مع supported_params.
+          items:
+            type: string
+        supported_params_detail:
+          $ref: '#/components/schemas/SupportedParameterDetails'
+        supported_parameters_detail:
+          $ref: '#/components/schemas/SupportedParameterDetails'
+    VideoDeleteResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        object:
+          type: string
+        deleted:
+          type: boolean
+    FileUploadRequest:
+      type: object
+      required:
+        - file
+        - purpose
+      properties:
+        file:
+          type: string
+          format: binary
+        purpose:
+          type: string
     FileResponse:
       type: object
       properties:
@@ -10534,6 +12359,581 @@ components:
           type: string
         status_details:
           type: object
+    BatchListResponse:
+      type: object
+      properties:
+        object:
+          type: string
+          example: list
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/BatchResponse'
+        first_id:
+          type: string
+          nullable: true
+        last_id:
+          type: string
+          nullable: true
+        has_more:
+          type: boolean
+    BatchResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        native_batch_id:
+          type: string
+          nullable: true
+          description: معرّف الدفعة الأصلي لدى المزوّد عندما يختلف عن معرّف البوابة.
+        object:
+          type: string
+        endpoint:
+          type: string
+        errors:
+          type: object
+        input_file_id:
+          type: string
+        completion_window:
+          type: string
+        status:
+          type: string
+        lifecycle_status:
+          type: string
+          enum:
+            - pending
+            - running
+            - completed
+            - failed
+            - cancelled
+            - expired
+          description: حالة دورة الحياة غير المتزامنة الموحدة لمستهلكي الاستطلاع وWebSocket وwebhook.
+        progress:
+          type: integer
+          minimum: 0
+          maximum: 100
+          description: نسبة إكمال تقريبية للدفعة مشتقة من أعداد طلبات المزوّد عند توفرها. تبلغ الدفعات المكتملة عن 100.
+        polling_url:
+          type: string
+          format: uri
+        websocket_url:
+          type: string
+          format: uri
+          description: عنوان WebSocket للاشتراك في تحديثات دورة الحياة الموحدة للمهام غير المتزامنة.
+        cancel_url:
+          type: string
+          format: uri
+          nullable: true
+          description: محجوز للتوافق؛ قيمته حالياً null دائماً.
+        results_url:
+          type: string
+          format: uri
+          nullable: true
+          description: عنوان تنزيل Phaseo JSONL يتطلب المصادقة للدفعات المدعومة في حالة نهائية. يكون null أثناء المعالجة. قد لا يكون للدفعة النهائية ناتج. استخدم مفتاح API من مساحة العمل المالكة؛ تنطبق حدود الاحتفاظ لدى المزوّد.
+        output_file_id:
+          type: string
+        error_file_id:
+          type: string
+        created_at:
+          type: integer
+        in_progress_at:
+          type: integer
+        expires_at:
+          type: integer
+        finalizing_at:
+          type: integer
+        completed_at:
+          type: integer
+        failed_at:
+          type: integer
+        expired_at:
+          type: integer
+        cancelling_at:
+          type: integer
+        cancelled_at:
+          type: integer
+        request_counts:
+          $ref: '#/components/schemas/BatchRequestCounts'
+        metadata:
+          type: object
+        request_id:
+          type: string
+        provider:
+          type: string
+        session_id:
+          type: string
+        webhook:
+          $ref: '#/components/schemas/AsyncWebhookPublicState'
+        next_webhook_retry_at:
+          type: string
+          nullable: true
+        last_webhook_progress:
+          type: number
+          nullable: true
+        last_webhook_progress_at:
+          type: string
+          nullable: true
+        last_webhook_dispatched_at:
+          type: string
+          nullable: true
+        finalized_at:
+          type: string
+          nullable: true
+        pricing_lines:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        usage:
+          type: object
+          description: الاستخدام والتكلفة الإجمالية الموحدة بعد الإنهاء.
+          properties:
+            requests:
+              type: integer
+              nullable: true
+            input_tokens:
+              type: integer
+              nullable: true
+            output_tokens:
+              type: integer
+              nullable: true
+            total_tokens:
+              type: integer
+              nullable: true
+            cost_nanos:
+              type: integer
+              nullable: true
+            cost_usd:
+              type: number
+              nullable: true
+            currency:
+              type: string
+        billing:
+          $ref: '#/components/schemas/BatchBillingSummary'
+    BatchRequestCounts:
+      type: object
+      properties:
+        total:
+          type: integer
+        completed:
+          type: integer
+        failed:
+          type: integer
+    BatchBillingSummary:
+      type: object
+      properties:
+        currency:
+          type: string
+        billed:
+          type: boolean
+        charged:
+          type: boolean
+        reason:
+          type: string
+        state:
+          type: string
+          enum:
+            - pending
+            - estimated
+            - settled
+            - void
+        reservation_id:
+          type: string
+          nullable: true
+        reservation_status:
+          type: string
+          nullable: true
+        estimated_provider_cost:
+          type: string
+          nullable: true
+        estimated_user_cost:
+          type: string
+          nullable: true
+        settled_provider_cost:
+          type: string
+          nullable: true
+        settled_user_cost:
+          type: string
+          nullable: true
+        estimated_nanos:
+          type: integer
+          nullable: true
+        reserved_nanos:
+          type: integer
+          nullable: true
+        estimation_truncated:
+          type: boolean
+          nullable: true
+          description: تكون True عندما يُوسّع تقدير الحجز من عينة محدودة لملف إدخال دفعة أكبر.
+        estimation_sample_size:
+          type: integer
+          nullable: true
+          description: عدد صفوف الإدخال التي سُعّرت مباشرةً لتقدير الحجز.
+        estimation_total_rows:
+          type: integer
+          nullable: true
+          description: إجمالي صفوف الإدخال التي يمثلها تقدير الحجز.
+        total_nanos:
+          type: integer
+          nullable: true
+        cost_nanos:
+          type: integer
+          nullable: true
+        cost_usd:
+          type: number
+          nullable: true
+        finalized_at:
+          type: string
+          nullable: true
+        pricing_breakdown:
+          type: object
+          additionalProperties: true
+    BatchRequest:
+      type: object
+      properties:
+        provider_options:
+          type: object
+          description: امتدادات محددة بمعرّف المزوّد الأساسي. يقبل OpenAI الحقل output_expires_after ويقبل Mistral الحقل metadata. تُطبق خيارات المزوّد المحدد فقط. لا تكرر خياراً في المستوى الأعلى. لا يمكن للخيارات تجاوز الصفوف المُسعّرة أو النماذج أو الملفات.
+          additionalProperties:
+            type: object
+            additionalProperties: true
+        model:
+          type: string
+          description: معرّف النموذج المستخدم لاستنتاج مزوّد الدفعة الأعلى. قد تتضمن صفوف الطلب أيضاً body.model؛ ويُفضّل النموذج في المستوى الأعلى.
+        prompts:
+          type: array
+          description: صيغة مختصرة لموجه بسيط. يحوّل Phaseo كل موجه إلى صف دفعة أصلي لدى المزوّد للنموذج المحدد.
+          items:
+            type: string
+        items:
+          type: array
+          description: صيغة مختصرة لموجه منظم. قد تتضمن العناصر `id` و`custom_id` و`prompt` و`messages` و`input` و`system` و`max_tokens` و`temperature` أو`body` متقدماً.
+          items:
+            type: object
+            additionalProperties: true
+        system:
+          type: string
+          description: تعليمة نظام اختيارية تُطبق على صفوف الموجهات المختصرة.
+        max_tokens:
+          type: integer
+          description: حد أقصى اختياري للرموز يُطبق على صفوف الموجهات المختصرة.
+        temperature:
+          type: number
+          description: درجة حرارة أخذ عينات اختيارية تُطبق على صفوف الموجهات المختصرة.
+        input_file_id:
+          type: string
+          description: معرّف ملف موجود لدى المزوّد لإنشاء دفعة عبر رفع ملف.
+        requests:
+          type: array
+          description: صفوف طلبات دفعات متقدمة. قدم واحداً فقط من `prompts` أو`items` أو`requests` أو`input_file_id`.
+          items:
+            $ref: '#/components/schemas/BatchRequestItem'
+        endpoint:
+          type: string
+          enum:
+            - /v1/chat/completions
+            - /v1/responses
+            - /v1/messages
+            - /v1/embeddings
+            - /v1/generateContent
+          description: صيغة الطلب الموجهة للمستدعي. يستخدم كل طلب في الدفعة نقطة النهاية هذه. عند الإغفال يختار Phaseo قيمة افتراضية أصلية لدى المزوّد بناءً على النموذج.
+        completion_window:
+          type: string
+        metadata:
+          type: object
+          additionalProperties: true
+        session_id:
+          type: string
+          maxLength: 256
+          description: معرّف فريد لتجميع الطلبات المرتبطة (مثل محادثة أو سير عمل وكيل) لأغراض قابلية المراقبة.
+        webhook:
+          type: object
+          required:
+            - endpoint_id
+          additionalProperties: false
+          properties:
+            endpoint_id:
+              type: string
+              description: معرّف نقطة نهاية webhook التي تديرها مساحة العمل.
+            events:
+              type: array
+              description: اشتراكات اختيارية في الأحداث. استخدم أحداث job.* العامة أو أحداث batch.* المطابقة، مثل batch.progress أوbatch.completed. عند الإغفال تُستخدم أحداث job.* النهائية. أدرج job.progress أوbatch.progress صراحةً لردود اتصال تقدم عدد الطلبات. عند توفير القائمة يجب أن يكون حدث واحد على الأقل صالحاً لمهام الدفعات؛ تُرفض القوائم غير الصحيحة أو التي تحتوي فقط على أحداث من نوع آخر.
+              items:
+                type: string
+        webhook_endpoint_id:
+          type: string
+          description: اسم بديل ملائم لـwebhook.endpoint_id.
+        debug:
+          $ref: '#/components/schemas/DebugOptions'
+        provider:
+          allOf:
+            - $ref: '#/components/schemas/ProviderRoutingOptions'
+          description: قيد توجيه متقدم. ينبغي لمعظم الطلبات الاعتماد على استنتاج المزوّد بناءً على النموذج.
+    BatchRequestItem:
+      type: object
+      required:
+        - body
+      properties:
+        custom_id:
+          type: string
+        method:
+          type: string
+          default: POST
+          enum:
+            - POST
+        url:
+          type: string
+          description: مسار نقطة النهاية لهذا الصف. عند توفيره يجب أن يطابق نقطة نهاية الدفعة الأصلية. القيمة الافتراضية هي نقطة نهاية الدفعة الأصلية.
+        body:
+          type: object
+          additionalProperties: true
+    BatchModelsResponse:
+      type: object
+      properties:
+        object:
+          type: string
+          example: list
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/BatchModelCapability'
+    BatchModelCapability:
+      type: object
+      properties:
+        model:
+          type: string
+        name:
+          type: string
+        status:
+          type: string
+        input_types:
+          type: array
+          items:
+            type: string
+        output_types:
+          type: array
+          items:
+            type: string
+        supported_params:
+          type: array
+          items:
+            type: string
+        supported_parameters:
+          type: array
+          description: اسم بديل للتوافق مع supported_params.
+          items:
+            type: string
+        supported_params_detail:
+          $ref: '#/components/schemas/SupportedParameterDetails'
+        supported_parameters_detail:
+          $ref: '#/components/schemas/SupportedParameterDetails'
+        providers:
+          type: array
+          items:
+            $ref: '#/components/schemas/BatchModelProviderCapability'
+        pricing:
+          type: object
+          additionalProperties: true
+    BatchModelProviderCapability:
+      type: object
+      properties:
+        id:
+          type: string
+        supported_params:
+          type: array
+          items:
+            type: string
+        supported_parameters:
+          type: array
+          description: اسم بديل للتوافق مع supported_params.
+          items:
+            type: string
+        supported_params_detail:
+          $ref: '#/components/schemas/SupportedParameterDetails'
+        supported_parameters_detail:
+          $ref: '#/components/schemas/SupportedParameterDetails'
+    BatchProviderCapability:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        status:
+          type: string
+          enum:
+            - active
+            - planned
+        gateway_input_modes:
+          type: array
+          items:
+            type: string
+            enum:
+              - file
+              - requests
+        native_input_modes:
+          type: array
+          items:
+            type: string
+            enum:
+              - file
+              - requests
+        documentation_url:
+          type: string
+          format: uri
+        notes:
+          type: string
+          nullable: true
+        endpoints:
+          type: array
+          description: نقاط نهاية الدفعات التي يدعمها هذا المزوّد.
+          items:
+            type: object
+            required:
+              - endpoint
+              - mode
+            properties:
+              endpoint:
+                type: string
+              mode:
+                type: string
+                enum:
+                  - native
+                  - translated
+    BatchRequestRow:
+      type: object
+      properties:
+        id:
+          type: string
+        custom_id:
+          type: string
+        request_index:
+          type: integer
+        provider:
+          type: string
+        native_batch_id:
+          type: string
+          nullable: true
+        method:
+          type: string
+          nullable: true
+        endpoint:
+          type: string
+          nullable: true
+        model:
+          type: string
+          nullable: true
+        status:
+          type: string
+        request_body_hash:
+          type: string
+          nullable: true
+        response_status:
+          type: integer
+          nullable: true
+        response_body:
+          type: object
+          nullable: true
+          additionalProperties: true
+        error_body:
+          type: object
+          nullable: true
+          additionalProperties: true
+        usage:
+          type: object
+          nullable: true
+          additionalProperties: true
+        cost_nanos:
+          type: integer
+          nullable: true
+        cost_usd:
+          type: number
+          nullable: true
+        meta:
+          type: object
+          additionalProperties: true
+        created_at:
+          type: string
+          nullable: true
+        updated_at:
+          type: string
+          nullable: true
+        completed_at:
+          type: string
+          nullable: true
+    AnalyticsResponse:
+      type: object
+      required:
+        - data
+        - total_count
+        - offset
+        - limit
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ActivityEntry'
+        total_count:
+          type: integer
+          minimum: 0
+        offset:
+          type: integer
+          minimum: 0
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 1000
+      additionalProperties: false
+    ActivityEntry:
+      type: object
+      required:
+        - date
+        - model
+        - model_permaslug
+        - endpoint_id
+        - provider_name
+        - usage
+        - byok_usage_inference
+        - requests
+        - prompt_tokens
+        - completion_tokens
+        - reasoning_tokens
+      properties:
+        date:
+          type: string
+          format: date
+          example: 2025-08-24
+        model:
+          type: string
+          example: openai/gpt-4.1
+        model_permaslug:
+          type: string
+          example: openai/gpt-4.1-2025-04-14
+        endpoint_id:
+          type: string
+          example: chat.completions
+        provider_name:
+          type: string
+          example: OpenAI
+        usage:
+          type: number
+          example: 0.015
+        byok_usage_inference:
+          type: number
+          example: 0.012
+        requests:
+          type: integer
+          example: 5
+        prompt_tokens:
+          type: integer
+          example: 50
+        completion_tokens:
+          type: integer
+          example: 125
+        reasoning_tokens:
+          type: integer
+          example: 25
+      additionalProperties: false
     CreditsResponse:
       type: object
       required:
@@ -10575,20 +12975,13 @@ components:
               example: 1250
           additionalProperties: false
       additionalProperties: false
-    ApiKeyListResponse:
+    ApiKeyResponse:
       type: object
       required:
         - data
-        - total_count
       properties:
         data:
-          type: array
-          items:
-            $ref: '#/components/schemas/ApiKey'
-        total_count:
-          type: integer
-          minimum: 0
-          example: 3
+          $ref: '#/components/schemas/ApiKey'
       additionalProperties: false
     ApiKey:
       type: object
@@ -10783,6 +13176,21 @@ components:
           minimum: 0
           description: الإنفاق بالدولار الأمريكي.
       additionalProperties: false
+    ApiKeyListResponse:
+      type: object
+      required:
+        - data
+        - total_count
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ApiKey'
+        total_count:
+          type: integer
+          minimum: 0
+          example: 3
+      additionalProperties: false
     ApiKeyCreateRequest:
       type: object
       required:
@@ -10869,14 +13277,6 @@ components:
               description: مفتاح API بنص صريح. يُعرض مرة واحدة عند إنشائه فقط.
               example: phaseo_v1_sk_abcd1234_supersecretvalue
           additionalProperties: false
-    ApiKeyResponse:
-      type: object
-      required:
-        - data
-      properties:
-        data:
-          $ref: '#/components/schemas/ApiKey'
-      additionalProperties: false
     ApiKeyUpdateRequest:
       type: object
       properties:
@@ -11494,6 +13894,61 @@ components:
         - auto_top_up_failure
         - payment_method_expiring
         - model_deprecation
+      properties:
+        auto_top_up_failure:
+          type: boolean
+        payment_method_expiring:
+          type: boolean
+        model_deprecation:
+          type: boolean
+      additionalProperties: false
+    WorkspaceNotificationSettingsUpdateRequest:
+      type: object
+      minProperties: 1
+      properties:
+        auto_top_up:
+          $ref: '#/components/schemas/WorkspaceAutoTopUpUpdate'
+        low_balance_email:
+          $ref: '#/components/schemas/WorkspaceLowBalanceEmailUpdate'
+        email_preferences:
+          $ref: '#/components/schemas/WorkspaceNotificationEmailPreferencesUpdate'
+      additionalProperties: false
+    WorkspaceAutoTopUpUpdate:
+      type: object
+      required:
+        - enabled
+      properties:
+        enabled:
+          type: boolean
+        balance_threshold_nanos:
+          type: integer
+          minimum: 0
+        amount_nanos:
+          type: integer
+          minimum: 0
+        payment_method_id:
+          type: string
+          nullable: true
+        mfa_bypass_acknowledged:
+          type: boolean
+        mfa_bypass_phrase:
+          type: string
+      additionalProperties: false
+    WorkspaceLowBalanceEmailUpdate:
+      type: object
+      required:
+        - enabled
+      properties:
+        enabled:
+          type: boolean
+        threshold_usd:
+          type: number
+          minimum: 0
+          multipleOf: 0.01
+      additionalProperties: false
+    WorkspaceNotificationEmailPreferencesUpdate:
+      type: object
+      minProperties: 1
       properties:
         auto_top_up_failure:
           type: boolean
@@ -12188,6 +14643,262 @@ components:
           items:
             type: string
             format: uuid
+      additionalProperties: false
+    PrivateModelListResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/PrivateModel'
+      additionalProperties: false
+    PrivateModel:
+      type: object
+      required:
+        - id
+        - workspace_id
+        - model_id
+        - name
+        - base_url
+        - upstream_model_id
+        - supports_responses
+        - enabled
+      properties:
+        id:
+          type: string
+          format: uuid
+        workspace_id:
+          type: string
+          format: uuid
+        model_id:
+          type: string
+          pattern: ^[a-z0-9][a-z0-9._-]{0,62}/[a-z0-9][a-z0-9._:-]{0,126}$
+          description: المعرّف النصي للمالك/النموذج المرئي في مساحة العمل والمستخدم في طلبات الاستدلال العادية.
+          readOnly: true
+        local_slug:
+          type: string
+          pattern: ^[a-z0-9][a-z0-9._:-]{0,126}$
+          description: معرّف نصي محلي لمساحة العمل يُستخدم لاشتقاق هوية النموذج.
+          readOnly: true
+        catalog_model_id:
+          type: string
+          nullable: true
+          pattern: ^[a-z0-9][a-z0-9._-]{0,62}/[a-z0-9][a-z0-9._:-]{0,126}$
+          description: نموذج الكتالوج المرتبط بنقطة النهاية هذه، إن وجد.
+          readOnly: true
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        description:
+          type: string
+          nullable: true
+          maxLength: 500
+        base_url:
+          type: string
+          format: uri
+          description: عنوان HTTPS الأساسي لنقطة النهاية، السري ضمن مساحة العمل.
+        upstream_model_id:
+          type: string
+          minLength: 1
+          maxLength: 255
+        supports_responses:
+          type: boolean
+        enabled:
+          type: boolean
+        input_modalities:
+          type: array
+          items:
+            type: string
+        output_modalities:
+          type: array
+          items:
+            type: string
+        context_length:
+          type: integer
+          nullable: true
+          minimum: 1
+        max_output_tokens:
+          type: integer
+          nullable: true
+          minimum: 1
+        host_provider_id:
+          type: string
+          nullable: true
+          description: مزوّد Phaseo قائم يشغّل النشر.
+        custom_provider_name:
+          type: string
+          nullable: true
+          minLength: 1
+          maxLength: 120
+        custom_provider_url:
+          type: string
+          nullable: true
+          format: uri
+        routing_policy:
+          type: string
+          enum:
+            - preferred
+            - balanced
+            - fallback
+        credential_prefix:
+          type: string
+          nullable: true
+        credential_suffix:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          nullable: true
+        updated_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_by:
+          type: string
+          format: uuid
+          nullable: true
+      additionalProperties: false
+    PrivateModelCreateRequest:
+      type: object
+      required:
+        - model_reference
+        - name
+        - base_url
+        - upstream_model_id
+        - credential
+      properties:
+        model_reference:
+          type: string
+          description: معرّف دقيق لنموذج كتالوج لربط نقطة النهاية كمزوّد، أو معرّف نصي قصير للمطابقة التلقائية/تسمية مساحة العمل.
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        description:
+          type: string
+          maxLength: 500
+        base_url:
+          type: string
+          format: uri
+        upstream_model_id:
+          type: string
+          minLength: 1
+          maxLength: 255
+        credential:
+          type: string
+          minLength: 8
+          writeOnly: true
+        supports_responses:
+          type: boolean
+          default: false
+        enabled:
+          type: boolean
+          default: true
+        context_length:
+          type: integer
+          minimum: 1
+          nullable: true
+        max_output_tokens:
+          type: integer
+          minimum: 1
+          nullable: true
+        host_provider_id:
+          type: string
+          nullable: true
+          description: مزوّد Phaseo قائم يشغّل النشر.
+        custom_provider_name:
+          type: string
+          minLength: 1
+          maxLength: 120
+          nullable: true
+        custom_provider_url:
+          type: string
+          format: uri
+          nullable: true
+        routing_policy:
+          type: string
+          enum:
+            - preferred
+            - balanced
+            - fallback
+          default: preferred
+      additionalProperties: false
+    PrivateModelResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/PrivateModel'
+      additionalProperties: false
+    PrivateModelUpdateRequest:
+      type: object
+      minProperties: 1
+      properties:
+        model_reference:
+          type: string
+          description: معرّف دقيق لنموذج كتالوج لربط نقطة النهاية كمزوّد، أو معرّف نصي قصير للمطابقة التلقائية/تسمية مساحة العمل.
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        description:
+          type: string
+          maxLength: 500
+          nullable: true
+        base_url:
+          type: string
+          format: uri
+        upstream_model_id:
+          type: string
+          minLength: 1
+          maxLength: 255
+        credential:
+          type: string
+          minLength: 8
+          writeOnly: true
+        supports_responses:
+          type: boolean
+        enabled:
+          type: boolean
+        context_length:
+          type: integer
+          minimum: 1
+          nullable: true
+        max_output_tokens:
+          type: integer
+          minimum: 1
+          nullable: true
+        host_provider_id:
+          type: string
+          nullable: true
+        custom_provider_name:
+          type: string
+          minLength: 1
+          maxLength: 120
+          nullable: true
+        custom_provider_url:
+          type: string
+          format: uri
+          nullable: true
+        routing_policy:
+          type: string
+          enum:
+            - preferred
+            - balanced
+            - fallback
+      additionalProperties: false
+    PrivateModelDeleteResponse:
+      type: object
+      required:
+        - deleted
+      properties:
+        deleted:
+          type: boolean
       additionalProperties: false
     WorkspaceBudgetListResponse:
       type: object

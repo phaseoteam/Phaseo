@@ -68,7 +68,27 @@ curl https://api.phaseo.app/v1/chat/completions \
 - `json_schema`ではスキーマオブジェクトを含めます（chat形式のペイロードでは`response_format.json_schema.schema`、Responses形式では`text.format.schema`）。
 - 後続処理に渡す前に、サーバー側でJSONを検証します。
 
-## 次のガイド
+## スキーマを設計する
 
-1. [構造化出力のスキーマ](./structured-outputs-schemas.mdx)
-2. [検証とフォールバックのパターン](./structured-outputs-validation.mdx)
+小さなオブジェクトから始め、必須フィールドを明示し、既知のカテゴリには列挙型を使います。余分なキーを拒否する場合は`additionalProperties: false`を設定してください。リクエストのスキーマとサーバー側のバリデーターを同期し、一緒にバージョン管理します。
+
+## 結果を検証する
+
+後続処理で使う前に、結果全体を解析・検証してください。このTypeScriptの例はZodを使い、上記の天気スキーマに対応しています。
+
+```typescript
+import { z } from "zod";
+
+const Weather = z.object({
+  city: z.string(),
+  weather: z.string(),
+}).strict();
+
+function parseWeather(content: string) {
+  return Weather.parse(JSON.parse(content));
+}
+```
+
+解析前に拒否、コンテンツの欠落、途中で切れた応答を処理してください。検証に失敗した場合は修正の再試行回数を制限し、その後は安全に失敗として返します。再生成には追加料金がかかる場合があります。有効なJSONでも、値の事実上の正確性や操作の許可は保証されません。
+
+検証失敗をモデルとスキーマのバージョン別に記録し、どちらかが変わったら評価ケースを再確認してください。不正なJSONの復旧については[応答修復](../cookbook/response-healing-for-structured-json.mdx)を参照してください。

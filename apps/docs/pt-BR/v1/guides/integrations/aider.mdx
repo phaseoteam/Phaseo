@@ -1,15 +1,16 @@
 ---
 title: "Aider"
+icon: "/icons/brands/aider.png"
 description: "Conecte o Aider ao Phaseo com uma configuração gerenciada automaticamente."
 ---
 
-A CLI do Phaseo pode criar uma chave de API dedicada e configurar o Aider para usar o Phaseo em cada nova sessão.
+Use a CLI Phaseo para criar uma chave dedicada e uma configuração gerenciada do Aider, ou copie os mesmos valores do provedor para uma configuração existente do Aider.
 
-## Configure o Aider
+## Configure com a CLI Phaseo
 
 ```bash
 phaseo login
-phaseo integrations setup aider --model anthropic/claude-sonnet-4.6
+phaseo aider --model anthropic/claude-sonnet-4.6
 ```
 
 Se `~/.aider.conf.yml` não existir, a configuração criará um arquivo gerenciado pelo Phaseo com:
@@ -66,5 +67,5 @@ Mantenha o prefixo `openai/` exclusivo do Aider. Por exemplo, o modelo `openai/g
 
 - [Documentação da API compatível com OpenAI do Aider](https://aider.chat/docs/llms/openai-compat.html)
 - [Configuração YAML do Aider](https://aider.chat/docs/config/aider_conf.html)
-- [Assistentes de programação](./coding-assistants.mdx)
+- [Agentes de programação](./coding-assistants.mdx)
 - [Modelos](../../api-reference/endpoint/models.mdx)

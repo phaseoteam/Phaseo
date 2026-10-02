@@ -1,8 +1,9 @@
 ---
 title: "Codex"
-icon: "code-2"
+icon: "/icons/brands/codex.svg"
 description: "将 Phaseo Gateway 用作 Codex CLI、Codex App 和 Codex IDE 扩展的自定义提供商。"
 ---
+
 Codex 通过 `config.toml` 支持自定义模型提供商。这样你可以将 Codex 请求路由到 Phaseo，同时继续使用原有的 CLI、应用或 IDE 工作流。
 
 如果还希望 Codex 在工作时读取最新的 Phaseo 文档，请同时添加 [Docs MCP](./docs-mcp.mdx) 服务器。
@@ -42,6 +43,7 @@ phaseo codex --model openai/gpt-5.6-terra
 codex --profile phaseo
 ```
 
+同一 Phaseo CLI 工作流也可启动 [Cline](./cline)、[Kilo Code](./kilo-code)、[oh-my-pi](./oh-my-pi)、[Muse Code](./muse-code) 和 [MiniMax Code](./minimax-code)，并使用隔离的临时提供商配置。
 ## 手动配置
 
 创建或更新用户配置文件 `~/.codex/config.toml`。对于可信项目，也可以将相同设置放在仓库中的 `.codex/config.toml`。

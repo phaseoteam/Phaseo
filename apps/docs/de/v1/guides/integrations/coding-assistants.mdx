@@ -1,10 +1,18 @@
 ---
-title: "Coding-Assistenten"
+title: "Programmieragenten"
 icon: "compass"
-description: "Füge Phaseo in Cursor, VS Code, Codex, Claude Code und anderen Coding-Tools als Modellanbieter hinzu."
+description: "Verbinde Programmieragenten über die CLI oder manuelle Anbietereinstellungen mit Phaseo."
 ---
 
-Mit diesem Leitfaden fügst du Phaseo in Coding-Assistenten als Modellanbieter hinzu, die benutzerdefinierte OpenAI- oder Anthropic-kompatible Endpoints unterstützen.
+Diese Anleitung verbindet Programmieragenten mit Phaseo. Wähle die Phaseo CLI für verwaltete Zugangsdaten und Konfiguration oder manuelle Anbieterwerte, um die Einrichtung im Agenten vorzunehmen.
+
+## Einrichtung wählen
+
+| Du möchtest… | Verwende |
+| --- | --- |
+| Cline, Kilo Code, oh-my-pi, Muse Code oder MiniMax Code mit isolierten temporären Einstellungen starten | `phaseo cline`, `phaseo kilo`, `phaseo omp`, `phaseo muse`, oder `phaseo minimax` |
+| Einen installierten Agenten konfigurieren und seine Einstellungen behalten | `phaseo <integration>` |
+| Einen Agenten ohne Phaseo CLI konfigurieren | Befolge die manuellen Anbieterschritte in der jeweiligen Anleitung |
 
 ## Mit der Phaseo-CLI einrichten
 
@@ -17,13 +25,13 @@ phaseo codex
 
 Dieser Befehl prüft, ob das Harness installiert ist. Fehlt es in einem interaktiven Terminal, zeigt Phaseo den unterstützten Installationsbefehl an und fragt vor der Ausführung nach. Anschließend erstellt Phaseo einen eigenen Schlüssel für das Harness und schreibt dessen Konfiguration. Nichtinteraktive Aufrufe geben konkrete Installationshinweise aus, ohne unbeaufsichtigt Änderungen am System vorzunehmen. OpenCode, DeepSeek Harness, Pi, Prime Agent und OpenClaw erhalten außerdem alle aktiven Textmodelle, die mit Chat Completions kompatibel sind. Verwende `--skip-install`, `--catalog default` oder `--dry-run`, um den Umfang einzuschränken.
 
-Nutze für andere Integrationen oder eine separat verwaltete Installation den Befehl auf niedrigerer Ebene:
+Verwende für dauerhafte Integrationen den Befehl mit dem Produktnamen:
 
 ```bash
-phaseo integrations setup codex
+phaseo codex
 ```
 
-Unterstützte Integrationsnamen sind `codex`, `claude-code`, `opencode`, `deepseek-harness`, `pi`, `openclaw`, `hermes`, `aider`, `cline`, `roo-code`, `kilo-code`, `continue`, `cursor` und `zed`.
+Supported integration names are `codex`, `claude-code`, `opencode`, `deepseek-harness`, `pi`, `openclaw`, `hermes`, `aider`, `cline`, `roo-code`, `kilo-code`, `continue`, `cursor`, and `zed`. Die isolierten CLI-Runner sind `cline`, `kilo`, `omp`, `muse` und `minimax`.
 
 Die CLI erstellt einen eigenen, nicht ablaufenden API-Schlüssel für den jeweiligen Assistenten. Bei Neuinstallationen konfiguriert sie Aider und Continue automatisch und schreibt auch Zeds Anbieter-/Modelleinstellungen. Bei Assistenten, die Geheimnisse ausschließlich in einer Editor-Oberfläche speichern, zeigt sie die noch fehlenden Felder an, verlinkt den passenden Leitfaden und ermöglicht das Kopieren nur dieses Assistentenschlüssels:
 
@@ -34,13 +42,13 @@ phaseo integrations credential codex
 Zeige Dateiänderungen vor der Einrichtung in der Vorschau an und trenne die Integration später sauber:
 
 ```bash
-phaseo integrations setup codex --dry-run
+phaseo codex --dry-run
 phaseo integrations remove codex
 ```
 
 Beim Entfernen werden Phaseo-eigene Einstellungen gelöscht und der Schlüssel des Assistenten widerrufen. Andere Einstellungen bleiben erhalten.
 
-## Anbietereinstellungen
+## Manuelle Anbietereinstellungen
 
 Verwende diese Werte, sofern das Tool keinen anderen Feldnamen verlangt:
 
@@ -140,9 +148,12 @@ Aider erwartet bei benutzerdefinierten OpenAI-kompatiblen Modellen häufig das P
 
 `phaseo hermes` bietet an, bei fehlendem Hermes den offiziellen Nous-Research-Installer auszuführen und konfiguriert anschließend den installierten Agenten. Es speichert die vorherigen Hermes-Modelleinstellungen, richtet Phaseo als benutzerdefinierten Endpoint ein und verwendet den offiziellen Befehl `hermes config set`, um den eigenen Schlüssel in `~/.hermes/.env` als `OPENAI_API_KEY` abzulegen. Hermes verwendet diese Klartextdatei bewusst für Anbieterzugangsdaten. Schütze sie wie jede andere API-Schlüsseldatei. Beim Entfernen werden die vorherigen Modelleinstellungen wiederhergestellt, `OPENAI_API_KEY` entfernt, der Phaseo-Wiederherstellungsstatus gelöscht und der Schlüssel widerrufen.
 
+## MiniMax Code
+
+Verwende die [MiniMax-Code-Anleitung](./minimax-code.mdx) für die `mcode` CLI. `phaseo minimax` erstellt einen temporären MiniMax-Anbieter mit Phaseos OpenAI-kompatiblem Endpunkt, startet die CLI und entfernt das temporäre Datenverzeichnis nach der Sitzung. MiniMax Code unterstützt auch ACP über `mcode acp`, wenn Editor oder Host direkt ACP verwenden.
 ## Zed
 
-Führe `phaseo integrations setup zed` aus und befolge die angezeigten Schritte, um in den Zed-Einstellungen einen OpenAI-kompatiblen Anbieter hinzuzufügen. Verwende den generierten Schlüssel nur im Zugangsdatenfeld von Zed.
+Führe `phaseo zed` aus und befolge die angezeigten Schritte, um in den Zed-Einstellungen einen OpenAI-kompatiblen Anbieter hinzuzufügen. Verwende den generierten Schlüssel nur im Zugangsdatenfeld von Zed.
 
 ## Codex
 

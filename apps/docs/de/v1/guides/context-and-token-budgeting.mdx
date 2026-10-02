@@ -22,6 +22,11 @@ Der Gesamtumfang einer Anfrage umfasst in der Regel:
 - Zu lange Prompts können die Relevanz beeinträchtigen, wenn der Kontext von geringer Qualität ist.
 - Ein zu kleines Ausgabebudget kann Antworten abschneiden und ungültige strukturierte Ausgaben verursachen.
 
+Reasoning kann das Ausgabebudget aufbrauchen, bevor ein Modell eine Antwort erzeugt. Diese
+Antworten liefern HTTP 200 mit dem erzeugten Reasoning und ohne erfundene
+Antwort. Chat Completions behält `reasoning_content` und `finish_reason: "length"`
+bei Erreichen des Ausgabelimits. Responses behält das Reasoning-Ausgabeelement und
+meldet `status: "incomplete"`. Ein normaler Anbieterabschluss bleibt `stop` oder `completed`.
 ## Strategie zur Budgetierung
 
 1. Lege für jede Route ein maximales Eingabetoken-Ziel fest.

@@ -1,184 +1,45 @@
 ---
 icon: "folder-open"
 title: "Structure du dépôt"
-description: "Découvrez l’organisation du dépôt Phaseo et où trouver les données, la documentation et les fichiers de configuration."
+description: "Trouvez le code des applications Phaseo, la documentation, les SDK et les exports du catalogue."
 ---
 
-Avant de contribuer à Phaseo, il est important de comprendre **l’organisation du dépôt**.
-Le projet sépare les données, la documentation et la logique des applications afin de faciliter la recherche et de permettre au dépôt d’évoluer.
+Phaseo est un monorepo pnpm et Turborepo. Utilisez cette référence pour trouver les fichiers d’un changement de code ou de documentation. Pour les enregistrements du catalogue, [ouvrez un ticket](./overview.mdx).
 
----
+## Applications et packages
 
-## Vue d’ensemble
+| Chemin | Rôle |
+| --- | --- |
+| `apps/web` | Site Next.js 16, tableau de bord et éditeur interne du catalogue. |
+| `apps/web-api` | Lectures publiques du catalogue et API authentifiées de comptes et d’administration. |
+| `apps/api` | Routage de la passerelle et exécution des fournisseurs sur Cloudflare Workers. |
+| `apps/docs` | Documentation Mintlify ; pages MDX dans `v1`, navigation dans `docs.json`. |
+| `packages/data/catalog` | Schémas du catalogue, jeux de compatibilité et instantanés publics générés. |
+| `packages/sdk` | SDK TypeScript, Python, Go, C#, PHP, Ruby, Java, Rust et C++. |
+| `supabase/migrations` | Migrations du schéma de base de données et des autorisations. |
+| `scripts` | Utilitaires de validation, génération des SDK et automatisation. |
+| `.github/workflows` | CI, déploiement, synchronisation du catalogue et planification des instantanés. |
+| `.changeset` | Métadonnées de publication des packages versionnés. |
 
-Voici à quoi ressemble le dossier racine du dépôt :
+## Données du catalogue
 
-```bash
-Phaseo/
-+-- apps/
-¦   +-- web/ # The main Phaseo Next.js website (contains data)
-¦   +-- api/ # The Phaseo Gateway API (Hono/Cloudflare Workers)
-¦   +-- docs/ # The Mintlify-powered documentation site
-¦
-+-- packages/ # SDKs and shared tooling
-¦   +-- sdk-ts/
-¦   +-- sdk-py/
-¦   +-- sdk-go/
-¦   +-- sdk-csharp/
-¦   +-- sdk-php/
-¦   +-- sdk-ruby/
-¦   +-- sdk-java/
-¦   +-- sdk-rust/
-¦   +-- sdk-cpp/
-¦   +-- ai-sdk-phaseo/
-¦
-+-- scripts/ # Automation scripts and utilities
-+-- .changeset/ # Release metadata
-+-- turbo.json # Turborepo configuration
-+-- package.json # Global scripts and dependencies
-+-- README.md # Root readme file
-```
+La base de données fait autorité pour les modèles, fournisseurs, organisations, prix, benchmarks et paramètres associés du catalogue. Les administrateurs gèrent les enregistrements via les [données internes](https://phaseo.app/internal/data). Les contributions publiques sont examinées via les tickets GitHub.
 
----
+- `packages/data/catalog/generated/database-v2` contient les instantanés publics quotidiens et l’index d’énumération des modèles généré utilisé par les outils OpenAPI et SDK.
+- `packages/data/catalog/src/data` contient des jeux de compatibilité archivés.
+- Modifier l’un ou l’autre répertoire ne met pas à jour les enregistrements du catalogue en ligne. L’ancien importateur JSON vers base de données a été retiré.
 
-## Dossiers de données
+Les changements de schéma et d’application utilisent toujours des migrations et des demandes de fusion. Les instantanés et artefacts SDK générés doivent être actualisés via leurs commandes de génération.
 
-Phaseo stocke ses données structurées dans des **fichiers JSON** du dossier `/packages/data/catalog/src/data`.
-Ces fichiers constituent la source de référence pour les modèles, les benchmarks et les tarifs.
+## Automatisation du catalogue
 
-### `/packages/data/catalog/src/data/models`
+La synchronisation des fournisseurs place les prix proposés en attente de revue dans les [mises à jour des fournisseurs](https://phaseo.app/internal/data/imports). Les tâches de benchmarks et de cycle de vie des modèles utilisent la base de données. Les exports publics quotidiens produisent des demandes de fusion d’instantanés à examiner.
 
-Contient un fichier JSON par modèle.
-Chaque fichier décrit les métadonnées, les tarifs, les benchmarks et les capacités du modèle.
+Les enregistrements de catalogue seuls n’activent pas automatiquement le routage de la passerelle. Les changements de routes et de prix nécessitent la revue administrative appropriée.
 
-Exemple :
-`/packages/data/catalog/src/data/models/openai/gpt-5-2025-08-07/model.json`
+## Où commencer
 
----
-
-### `/packages/data/catalog/src/data/organisations`
-
-Décrit les entreprises ou les équipes de recherche à l’origine des modèles.
-Chaque fichier JSON contient le nom, la description, la date de création, le site web et le pays.
-
-Exemple :
-`/packages/data/catalog/src/data/organisations/openai.json`
-
----
-
-### `/packages/data/catalog/src/data/benchmarks`
-
-Contient les métadonnées des benchmarks et les résultats agrégés des modèles.
-Chaque benchmark possède un identifiant, un nom, une description, une catégorie et des mesures.
-
-Exemple :
-`/packages/data/catalog/src/data/benchmarks/mmlu.json`
-
----
-
-### `/packages/data/catalog/src/data/api_providers`
-
-Répertorie tous les fournisseurs d’API pris en charge ainsi que leurs modèles.
-Ces données font référence aux modèles et aux organisations.
-
-Exemple :
-`/packages/data/catalog/src/data/api_providers/openai.json`
-
----
-
-### `/packages/data/catalog/src/data/pricing`
-
-Suit l’historique des tarifs au fil du temps pour analyser les tendances.
-Les fichiers comportent un horodatage et sont souvent regroupés par fournisseur.
-
----
-
-## Dossiers de documentation
-
-La documentation est rédigée en **MDX** et se trouve dans `/apps/docs/v1/`.
-Chaque dossier correspond directement à un groupe de la configuration Mintlify.
-
-| Dossier | Rôle |
-| ----------------------------- | ------------------------------------------------------- |
-| `/apps/docs/v1/exploring`     | Présente les notions liées aux données (modèles, benchmarks et fournisseurs). |
-| `/apps/docs/v1/contributing`  | Guides étape par étape destinés aux contributeurs.                   |
-| `/apps/docs/v1/developers`    | Guides d’intégration et d’utilisation de l’API.                       |
-| `/apps/docs/v1/api-reference` | Référence détaillée de chaque point de terminaison.                  |
-| `/apps/docs/v1/community`     | Pages d’assistance, FAQ et communauté.                      |
-
----
-
-## Dossiers des applications
-
-| Chemin | Description |
-| ------------ | ------------------------------------------------------------------------------------------------- |
-| `/apps/web`  | Site web principal de Phaseo, développé avec Next.js 15 et TailwindCSS. Il lit les données de référence dans `packages/data/catalog/src/data`. |
-| `/apps/api`  | La passerelle API : routage, mise en cache et logique de proxy des modèles.                                         |
-| `/apps/docs` | Le projet de documentation Mintlify que vous consultez.                                           |
-
-Chaque application fonctionne indépendamment, tout en partageant les types et la configuration via `/packages`.
-
----
-
-## Packages SDK
-
-Le dossier `/packages` contient des SDK permettant d’utiliser l’API Phaseo avec différents langages de programmation.
-
-| SDK | Description |
-| ------------ | ------------------------------------------------ |
-| `sdk-ts`     | SDK TypeScript pour Node.js et les applications web. |
-| `sdk-py`     | SDK Python.                                      |
-| `sdk-go`     | SDK Go.                                          |
-| `sdk-csharp` | SDK C#.                                          |
-| `sdk-php`    | SDK PHP.                                         |
-| `sdk-ruby`   | SDK Ruby.                                        |
-| `sdk-java`   | SDK Java.                                        |
-| `sdk-rust`   | SDK Rust.                                        |
-| `sdk-cpp`    | SDK C++.                                         |
-| `ai-sdk-phaseo` | Fournisseur du SDK AI de Vercel.                      |
-
----
-
-## Automatisation et scripts
-
-Phaseo utilise des automatisations pour maintenir les données à jour :
-
--   **Importateurs** : récupèrent de nouvelles données auprès de sources comme Hugging Face ou les API des fournisseurs.
--   **Surveillants** : s’exécutent selon un calendrier (avec GitHub Actions) pour détecter et enregistrer les mises à jour.
--   **Utilitaires** : gèrent la validation, la vérification des schémas et le formatage JSON.
-
-Vous trouverez ces éléments dans `/scripts/`.
-
----
-
-## Par où commencer
-
-Pour contribuer :
-
--   **Données :** consultez les fichiers JSON dans `/packages/data/catalog/src/data/`.
--   **Documentation :** consultez les fichiers MDX dans `/apps/docs/v1/`.
--   **Code :** explorez `/apps/web` ou `/apps/api`.
--   **Automatisation :** modifiez ou examinez `/scripts/`.
--   **SDK :** consultez les SDK propres à chaque langage dans `/packages/`.
-
----
-
-## Pages associées
-
-<Columns cols={2}>
-	<Card
-		title="Modifier un modèle"
-		icon="brain"
-		href="./editing-a-model.mdx"
-	>
-		Découvrez comment mettre à jour ou ajouter des données de modèle.
-	</Card>
-	<Card
-		title="Modifier une organisation"
-		icon="building"
-		href="./editing-an-organisation.mdx"
-	>
-		Découvrez comment modifier les données des organisations en toute sécurité.
-	</Card>
-</Columns>
-
+- [Signaler une mise à jour de modèle](./editing-a-model.mdx).
+- [Signaler une mise à jour d’organisation](./editing-an-organisation.mdx).
+- [Soumettre des scores de benchmarks](../research/submitting-scores.mdx).
+- [Contribuer au code ou à la documentation](./how-to-contribute.mdx).

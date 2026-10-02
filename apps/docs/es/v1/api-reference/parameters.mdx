@@ -44,8 +44,9 @@ La compatibilidad de los parámetros sigue variando según el endpoint, el model
 | [`reasoning_effort`](#reasoning_effort) | `string` | Reducir o aumentar el presupuesto de razonamiento. |
 | [`reasoning_tokens`](#reasoning_tokens) | `integer` | Límite de tokens o campo de contabilización específico del razonamiento. |
 | [`include_reasoning`](#include_reasoning) | `boolean` | Devolver el contenido o resúmenes del razonamiento cuando sea compatible. |
-| [`service_tier`](#service_tier) | `string` | Elegir un nivel de solicitud compatible, como `priority` o `flex`; OpenAI también acepta `fast` como alias. |
+| [`service_tier`](#service_tier) | `string` | Elegir un nivel de solicitud compatible como `fast`, `ultrafast` o `flex`. |
 | [`prompt_cache_key`](#prompt_cache_key) | `string` | Mantener fijo el enrutamiento con caché para solicitudes relacionadas. |
+| [`prompt_cache_options`](#prompt_cache_options) | `object` | Configurar el modo de caché de prompts y los controles de TTL de OpenAI. |
 | [`cache_control`](#cache_control) | `object` | Aplicar indicaciones o puntos de ruptura de caché de prompt independientes del proveedor. |
 | [`prompt_cache_retention`](#prompt_cache_retention) | `string` | Configurar la retención de caché de prompt compatible con OpenAI. |
 | [`provider`](#provider) | `object` | Influir en el enrutamiento y la selección del proveedor. |
@@ -61,13 +62,13 @@ La compatibilidad de los parámetros sigue variando según el endpoint, el model
 - [Chat Completions](./endpoint/chat-completions.mdx)
 - [Responses](./endpoint/responses.mdx)
 
-Usa `priority` o `flex` solo si la combinación seleccionada de modelo y proveedor los admite. Phaseo mantiene `priority` como nivel premium canónico; las rutas de OpenAI también aceptan `fast` como alias. `standard` es el valor predeterminado si se omite `service_tier`.
+Usa `ultrafast`, `fast` (o `priority` donde sea compatible) y `flex` solo si la combinación de modelo y proveedor seleccionada los admite. `Ultrafast` selecciona el nivel compatible más rápido; `fast` y `priority` usan el mismo enrutamiento y precio Fast. `standard` es el valor predeterminado si se omite `service_tier`.
 
 `Batch` no es un valor de `service_tier`. Las solicitudes por lotes usan la API Batch independiente.
 
 En las solicitudes Messages compatibles con Anthropic, los valores nativos de Anthropic son `auto` y `standard_only`. Phaseo puede normalizarlos o asignarlos entre proveedores y conservar el comportamiento compatible con Anthropic en `/v1/messages`.
 
-Si usas un SDK oficial de Anthropic con una URL base personalizada que apunta a Phaseo, usa preferentemente los valores nativos de Anthropic en `/v1/messages`. Para controles de nivel normalizados entre proveedores como `priority` y `flex`, o el alias `fast` de OpenAI, es preferible usar solicitudes HTTP directas o las API de texto nativas del gateway o de estilo OpenAI.
+Si usas un SDK oficial de Anthropic con una URL base personalizada que apunta a Phaseo, usa preferentemente los valores nativos de Anthropic en `/v1/messages`. Para controles de nivel normalizados entre proveedores como `ultrafast`, `priority` y `flex`, o el alias `fast` de OpenAI, es preferible usar solicitudes HTTP directas o las API de texto nativas del gateway o de estilo OpenAI.
 
 ## Referencia de parámetros
 
@@ -424,10 +425,10 @@ Selecciona un nivel de enrutamiento o precio compatible en las API de texto corr
 | Campo | Valor |
 | --- | --- |
 | Tipo | `string` |
-| Valores admitidos | `standard`, `fast`, `priority`, `flex` |
+| Valores admitidos | `standard`, `fast`, `ultrafast`, `priority`, `flex` |
 | Predeterminado | `standard` |
 
-Usa `priority` o `flex` solo si la combinación elegida de modelo y proveedor los admite. Phaseo mantiene `priority` como el nivel premium canónico; las rutas compatibles de OpenAI también aceptan `fast` como alias con el mismo enrutamiento y precio. Omite el campo para conservar el nivel estándar predeterminado.
+Usa `ultrafast`, `fast` (o `priority` donde sea compatible) y `flex` solo si la combinación de modelo y proveedor elegida los admite. `Ultrafast` selecciona el nivel compatible más rápido; `fast` y `priority` usan el mismo enrutamiento y precio Fast. Omite el campo para mantener el nivel estándar predeterminado.
 
 Phaseo convierte internamente los valores de nivel unificados de la pasarela en controles nativos del proveedor, de modo que los clientes pueden usar los mismos valores de `service_tier` en todas las interfaces de texto compatibles.
 
@@ -447,6 +448,19 @@ Proporciona una clave de afinidad de caché estable para un enrutamiento que tie
 | Uso | Enrutamiento persistente para prompts almacenados en caché que están relacionados |
 
 Úsalo cuando varias solicitudes compartan prefijos de prompt estables y convenga usar el mismo proveedor o región upstream. Phaseo también puede deducir la afinidad de caché del contexto de la solicitud, pero una clave explícita es mejor para conversaciones largas, sesiones de agente y flujos repetidos.
+
+<span id="prompt_cache_options"></span>
+<h3 id="parameter-prompt_cache_options"><code>prompt_cache_options</code></h3>
+
+Transmite los controles de caché de prompts de OpenAI en las rutas compatibles de OpenAI.
+
+| Campo | Valor |
+| --- | --- |
+| Tipo | `object` |
+| Campos habituales | `mode`, `ttl` |
+| Astra TTL | `30m` |
+
+Para GPT-6 Astra, usa `{"mode":"explicit","ttl":"30m"}` cuando quieras caché de prompts explícita. Phaseo conserva este objeto durante la normalización de la solicitud y lo envía a OpenAI sin cambios.
 
 <span id="cache_control"></span>
 <h3 id="parameter-cache_control"><code>cache_control</code></h3>
@@ -608,7 +622,7 @@ Si buscas una guía más detallada sobre cómo ajustar estos valores, en lugar d
 
 - [Parámetros de inferencia](../guides/inference-parameters.mdx)
 - [Muestreo y decodificación](../guides/sampling-and-decoding.mdx)
-- [Transmisión](./streaming.mdx)
+- [Transmisión](../guides/streaming.mdx)
 - [Límites](./limits.mdx)
 - [Errores y depuración](./errors.mdx)
 

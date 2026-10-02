@@ -1,6 +1,6 @@
 ---
 title: "مستويات الخدمة"
-description: "آلية عمل أوضاع التسعير Standard وFast وFlex وBatch في Phaseo Gateway."
+description: "كيفية عمل أنماط تسعير Standard وFast وUltrafast وFlex وBatch في Phaseo Gateway."
 icon: "gauge"
 ---
 
@@ -24,6 +24,7 @@ icon: "gauge"
 | --- | --- | --- |
 | `Standard` | السلوك الافتراضي. لا حاجة إلى حقل إضافي. | حركة الإنتاج العامة. |
 | `Fast` | اضبط `service_tier: "fast"` في الطلب. | توجيه أسرع أو مميّز عند الدعم. وتقبل OpenAI أيضًا `priority`. |
+| `Ultrafast` | عيّن `service_tier: "ultrafast"` في الطلب. | توجيه بأعلى سرعة حيث يتوفر الدعم. |
 | `Flex` | اضبط `service_tier: "flex"` في الطلب. | توجيه أقل تكلفة عند الدعم. |
 | `Batch` | استخدم Batch API بدلًا من `service_tier`. | أحمال عمل كبيرة مؤجلة لا تكون فيها زمن الاستجابة أولوية. |
 
@@ -36,7 +37,7 @@ icon: "gauge"
 - [مرجع Responses API](../api-reference/endpoint/responses.mdx)
 - [مرجع المعلمات المشتركة](../api-reference/parameters.mdx)
 
-القيم المقبولة لـ `service_tier` هي `standard` و`fast` و`priority` و`flex` و`batch`. ويكون `Standard` هو السلوك الافتراضي عند حذف `service_tier`. تستخدم Phaseo `Fast` اسمًا أساسيًا للمستوى المميّز. وفي مسارات OpenAI، يُقبل `priority` كاسم بديل متوافق مع المزوّد ويستخدم التوجيه والتسعير نفسيهما. أما `Batch` فتتولاه Batch API بدلًا من طلبات النص المتزامنة.
+القيم المقبولة لـ `service_tier` هي `standard` و`fast` و`ultrafast` و`priority` و`flex` و`batch`. ويكون `Standard` هو السلوك الافتراضي عند حذف `service_tier`. تستخدم Phaseo `Fast` اسمًا أساسيًا للمستوى المميّز. وفي مسارات OpenAI، يُقبل `priority` كاسم بديل متوافق مع المزوّد ويستخدم التوجيه والتسعير نفسيهما. أما `Batch` فتتولاه Batch API بدلًا من طلبات النص المتزامنة.
 
 <Note>
 تربط Phaseo داخليًا قيم البوابة الموحدة بعناصر التحكم الأصلية للمزوّد. فقد يتلقى مسار Anthropic حقول مستويات أصلية من Anthropic upstream، بينما يظل طلب العميل يستخدم قيم البوابة المذكورة هنا.
@@ -112,6 +113,17 @@ Mistral لا يدعم Batch على نقاط النهاية الإقليمية.
 ويجب استخدام Batch API العالمية من Mistral لـ Batch. وتظل أهلية Priority مرتبطة
 بحساب Mistral والنموذج.
 
+## Ultrafast
+
+استخدم `Ultrafast` لأعلى سرعة عندما يقدّمه النموذج والمزوّد. يوجّه Phaseo فقط إلى مسار مسعّر بـUltrafast أو مخصص له؛ ولا يرجع إلى Fast أو Standard عند عدم توفر هذا المستوى.
+
+```json
+{
+  "model": "<model-id-with-ultrafast-pricing>",
+  "input": "Summarise this incident report.",
+  "service_tier": "ultrafast"
+}
+```
 ## Flex
 
 استخدم `Flex` عندما يوفّر المزوّد مستوى خدمة أقل تكلفة وتقبل المفاضلات المرتبطة به.

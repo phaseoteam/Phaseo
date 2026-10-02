@@ -1,0 +1,207 @@
+---
+icon: "globe"
+title: "Rotear solicitações de texto por região"
+description: "Restrinja a geração de texto do Phaseo às rotas de provedores da UE ou dos EUA."
+---
+
+Use um endpoint regional do Phaseo para manter a execução do provedor e o tratamento de seus dados nas rotas da UE ou dos EUA documentadas pelo Phaseo. Você pode usar roteamento regional com Chat Completions, Responses e Messages sem alterar seus IDs de modelo ou chaves de API.
+
+<Warning>
+O roteamento regional atualmente não garante residência de dados de ponta a ponta. O Phaseo restringe a seleção de provedores e usa uma indicação de posicionamento do Cloudflare próxima à região selecionada, mas sistemas compartilhados de contas, faturamento, cache e operações podem processar dados fora dessa região.
+</Warning>
+
+## Escolher um endpoint
+
+| Região | URL base | Comportamento |
+| --- | --- | --- |
+| União Europeia | `https://eu.api.phaseo.app/v1` | Exige rotas de provedores com execução e região de dados na UE |
+| Estados Unidos | `https://us.api.phaseo.app/v1` | Exige rotas de provedores com execução e região de dados nos EUA |
+| Global | `https://api.phaseo.app/v1` | Usa a política padrão de roteamento global |
+
+O nome de host regional define o limite da política. Uma solicitação não pode substituí-lo com um valor conflitante de `required_execution_region` ou `required_data_region`.
+
+## Usar o SDK do Phaseo
+
+Defina `region` ao criar o cliente. Toda solicitação compatível feita por esse cliente usa a URL base regional correspondente.
+
+<CodeGroup>
+```ts TypeScript
+import { Phaseo } from "@phaseo/sdk";
+
+const phaseo = new Phaseo({
+  apiKey: process.env.PHASEO_API_KEY!,
+  region: "eu",
+});
+
+const response = await phaseo.responses.create({
+  model: "openai/gpt-5-mini",
+  input: "Summarize this note in one sentence.",
+});
+
+console.log(response.output_text);
+```
+
+```python Python
+import os
+from phaseo import Phaseo
+
+phaseo = Phaseo(
+    api_key=os.environ["PHASEO_API_KEY"],
+    region="eu",
+)
+
+response = phaseo.responses.create({
+    "model": "openai/gpt-5-mini",
+    "input": "Summarize this note in one sentence.",
+})
+
+print(response.get("output_text"))
+```
+</CodeGroup>
+
+Use `"us"` para roteamento nos EUA. Omita `region`, ou use `"global"`, para roteamento global. O SDK rejeita configurações que combinam `region` com um `baseUrl` ou `base_url` personalizado, porque as duas opções selecionariam hosts concorrentes.
+
+## Usar Chat Completions
+
+```bash
+curl https://eu.api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-5-mini",
+    "messages": [
+      {"role": "user", "content": "Write a two-line status update."}
+    ]
+  }'
+```
+
+## Usar Responses
+
+```bash
+curl https://eu.api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-5-mini",
+    "input": "Extract the three most important actions from this note."
+  }'
+```
+
+## Usar Messages
+
+O endpoint Messages aceita o formato de solicitação da Anthropic e mantém a mesma restrição regional de provedores.
+
+```bash
+curl https://us.api.phaseo.app/v1/messages \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -H "anthropic-version: 2023-06-01" \
+  -d '{
+    "model": "anthropic/claude-sonnet-4.6",
+    "max_tokens": 256,
+    "messages": [
+      {"role": "user", "content": "Summarize this incident report."}
+    ]
+  }'
+```
+
+## Recursos de solicitação compatíveis
+
+O roteamento regional atualmente permite:
+
+- Entrada e saída de texto
+- Respostas com e sem streaming
+- Instruções de sistema e desenvolvedor
+- Ferramentas de função definidas pelo cliente e ferramentas personalizadas
+- Resultados de ferramentas que contêm texto
+- Texto estruturado e saída JSON, quando compatíveis com o modelo
+- Predefinições, ordenação de provedores, alternativas e limites de preço que não conflitem com a política regional
+
+Os endpoints regionais rejeitam:
+
+- Imagens, áudio, vídeo, documentos, arquivos e anexos
+- Modalidades de saída não textuais
+- Ferramentas hospedadas pelo provedor, como busca na web, busca em arquivos, execução de código, uso de computador e geração de imagens
+- Endpoints de imagem, áudio, vídeo, embeddings, moderação, lotes, arquivos, webhooks e tempo real
+
+Ferramentas de função são permitidas porque executam em sua aplicação. Uma ferramenta hospedada pelo provedor é bloqueada porque seu local de execução pode não corresponder à política regional.
+
+## Descobrir modelos disponíveis em uma região
+
+Chame `/v1/models` pelo mesmo nome de host regional usado para geração:
+
+```bash
+curl https://eu.api.phaseo.app/v1/models \
+  -H "Authorization: Bearer $PHASEO_API_KEY"
+```
+
+A resposta contém apenas modelos com uma rota de provedor ativa cujas regiões declaradas de execução e dados incluem ambas a região selecionada. Ela anuncia somente Chat Completions, Responses e Messages, com entrada e saída de texto.
+
+Cada oferta inclui seus metadados regionais:
+
+```json
+{
+  "provider": { "id": "example-eu", "name": "Example EU" },
+  "residency": {
+    "execution_regions": ["eu"],
+    "data_regions": ["eu"]
+  }
+}
+```
+
+A disponibilidade de modelos pode variar entre os endpoints da UE, dos EUA e globais. Sempre descubra modelos pelo endpoint que sua aplicação chamará.
+
+## Verificar o gateway selecionado
+
+As respostas regionais incluem:
+
+```http
+X-Phaseo-Gateway-Region: eu
+```
+
+Use esse cabeçalho para confirmar que a solicitação chegou à implantação esperada do Phaseo. Os detalhes da solicitação registram a região de execução exigida, a região de dados exigida, o provedor selecionado e os metadados regionais declarados pelo provedor.
+
+<Note>
+O cabeçalho identifica a política regional do Phaseo que processou a solicitação. Ele não comprova residência garantida da execução do Cloudflare.
+</Note>
+
+## Comportamento em caso de falha
+
+O roteamento regional bloqueia a operação quando a política não pode ser cumprida. O Phaseo nunca repete silenciosamente a solicitação por um provedor fora da região do nome de host.
+
+| Erro | Significado | O que fazer |
+| --- | --- | --- |
+| `regional_endpoint_not_supported` | O caminho não está disponível nos Workers regionais | Use um dos três endpoints de texto compatíveis ou a API global |
+| `regional_non_text_content` | A solicitação contém mídia, um arquivo ou um anexo | Remova o conteúdo não textual ou use a API global |
+| `regional_non_text_output` | A solicitação pede uma resposta não textual | Solicite saída de texto ou use a API global |
+| `regional_hosted_tool_not_supported` | Uma ferramenta hospedada pelo provedor foi solicitada | Use uma ferramenta de função definida pelo cliente ou a API global |
+| `deployment_region_conflict` | A solicitação ou predefinição especifica outra região | Remova a configuração conflitante |
+| Nenhuma rota de provedor disponível | Nenhum provedor saudável atende ao modelo e à política regional | Escolha outro modelo retornado pelo endpoint regional `/v1/models` |
+
+## O que o roteamento regional cobre
+
+Para uma solicitação de geração aceita, o Phaseo exige que a rota do provedor selecionado declare as duas condições:
+
+1. Execução do modelo na região selecionada
+2. Tratamento de dados de prompts e respostas na região selecionada
+
+O Phaseo aplica esses requisitos após combinar predefinições e regras de roteamento dinâmico, portanto esses recursos não podem enfraquecer a política do nome de host. Se nenhum provedor corresponder, a solicitação para antes da execução do modelo no provedor.
+
+## Limitações atuais
+
+Esta versão inicial não garante que todo o ciclo de vida da solicitação permaneça na região selecionada:
+
+- As indicações de posicionamento do Cloudflare Workers escolhem um local próximo da região de nuvem configurada, mas não criam um limite de conformidade.
+- Contas, autenticação, faturamento e metadados de solicitações do Phaseo usam infraestrutura compartilhada do Supabase.
+- Cloudflare KV e logs de invocação de Workers não são vinculados a uma região.
+- Subsolicitações a provedores são restringidas pelo endpoint do provedor selecionado, não pela configuração de posicionamento do Cloudflare.
+- O acesso de suporte e operações não é restrito a pessoal da região selecionada.
+
+O Phaseo só descreverá o recurso como residência de dados de ponta a ponta quando gateway, armazenamento, logs, provedores e operações estiverem cobertos por controles regionais aplicáveis.
+
+## Guias relacionados
+
+- [Roteamento e alternativas](/pt-BR/v1/guides/routing-and-fallbacks)
+- [Modelos com provedor especificado](/pt-BR/v1/guides/provider-qualified-models)
+- [Predefinições](/pt-BR/v1/guides/presets)
+- [Chamadas de ferramentas](/pt-BR/v1/guides/tool-calling)

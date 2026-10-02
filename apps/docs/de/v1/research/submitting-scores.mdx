@@ -1,64 +1,29 @@
 ---
 icon: "upload"
-title: "Scores einreichen"
-description: "Teile neue Benchmark-Ergebnisse strukturiert und nachvollziehbar mit der Phaseo-Community."
+title: "Benchmark-Ergebnisse einreichen"
+description: "Melde neue oder korrigierte Benchmark-Ergebnisse mit den erforderlichen Belegen zur Prüfung."
 ---
 
-Wir freuen uns über Beiträge von Anbietern, Forschenden und erfahrenen Nutzern. Folge dem Ablauf unten, damit wir deinen Beitrag schnell bearbeiten können.
+Reiche Benchmark-Ergebnisse über ein GitHub-Issue ein. Die Verantwortlichen prüfen die Belege und veröffentlichen bestätigte Ergebnisse im Datenbankeditor.
 
----
+## Belege vorbereiten
 
-## 1. Daten vorbereiten
+Füge Folgendes hinzu:
 
-- Prüfe, ob der Benchmark unter `/data/benchmarks` vorhanden ist. Falls nicht, erstelle ein Issue mit dem Vorschlag.
-- Sammle die Rohdaten einschließlich Prompt-Format, Evaluierungssystem und Hardware-Details.
-- Füge, sofern vorhanden, einen öffentlichen Beleg hinzu (Blogbeitrag, Paper oder Dataset-Repository).
+- Modell-ID, Anbieter und die Phaseo-Seite, sofern vorhanden.
+- Benchmark-Name, Version, Datensatzaufteilung, Ergebnis und Einheiten.
+- Bewertungsdatum, Promptformat, Testumgebung und relevante Hardware- oder Sampling-Einstellungen.
+- Eine öffentliche Publikation, Ergebnisseite, ein Datensatz oder ein reproduzierbares Bewertungsprotokoll.
+- Ob das Ergebnis vom Anbieter stammt oder unabhängig gemessen wurde.
 
-> ✅ **Tipp**
-> Ein reproduzierbares Skript oder Notebook beschleunigt die Überprüfung erheblich.
+## Issue einreichen
 
----
+[Fordere neue Benchmark-Daten an](https://github.com/phaseoteam/Phaseo/issues/new?template=data-request.yml), um neue Ergebnisse oder Benchmarks einzureichen. [Melde falsche Informationen](https://github.com/phaseoteam/Phaseo/issues/new?template=incorrect-info.yml), um ein bestehendes Ergebnis mit aktuellem und vorgeschlagenem Wert zu korrigieren.
 
-## 2. Repository forken
+Veröffentliche keine Zugangsdaten, privaten Prompts oder Kundendaten in öffentlichen Berichten.
 
-1. Forke [github.com/phaseoteam/data](https://github.com/phaseoteam/data).
-2. Erstelle einen neuen Branch (zum Beispiel `add-claude-3.5-sonnet-mmlu`).
-3. Ergänze die JSON-Datei des betreffenden Benchmarks um deine Scores und Metadaten.
+## Veröffentlichung verfolgen
 
----
+Vor der Datenbankaktualisierung können die Verantwortlichen im Issue Rückfragen stellen. Tägliche JSON-Snapshots spiegeln veröffentlichte Daten wider; Änderungen an archiviertem Benchmark-JSON veröffentlichen kein Ergebnis.
 
-## 3. Validierung ausführen
-
-Prüfe mit den Repository-Tools, ob Struktur und Wertebereiche stimmen:
-
-```bash
-pnpm install
-pnpm run validate:benchmarks
-```
-
-Behebe alle gemeldeten Probleme, bevor du deinen Pull Request einreichst.
-
----
-
-## 4. Pull Request öffnen
-
-Nimm Folgendes in die Beschreibung deines PRs auf:
-
-- Benchmark-Name und Split (zum Beispiel `GSM8K test`).
-- Modell-ID und Anbieter.
-- Links zu Quellen oder Evaluierungsprotokollen.
-- Zusammenfassung, wie der Score ermittelt wurde.
-
-Maintainer prüfen den Beitrag, bitten bei Bedarf um Klarstellungen und mergen ihn nach der Freigabe.
-
----
-
-## 5. Veröffentlichung verfolgen
-
-Nach dem Merge erscheint der Score beim nächsten geplanten Datensync. Verfolge den Fortschritt im Discord-Kanal #data-updates oder im öffentlichen Changelog.
-
----
-
-## Brauchst du Hilfe?
-
-Melde dich im [Community-Discord](https://discord.gg/aQyywCvgZ5) oder per E-Mail beim [Support](mailto:daniel@phaseo.app). Bei umfangreichen Imports oder gemeinsamer Forschung helfen wir gern.
+Hilfe zur Vorbereitung erhältst du im [Community-Discord](https://discord.gg/aQyywCvgZ5).

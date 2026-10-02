@@ -139,7 +139,8 @@ Remarques :
 Remarques :
 
 - Le modèle fournit la requête de recherche lorsqu’il appelle l’outil.
-- `engine: "auto"` utilise la recherche Exa gérée. `engine: "exa"`, `engine: "parallel"` et `engine: "firecrawl"` lancent une recherche gérée par la passerelle lorsque la clé du fournisseur correspondant est configurée.
+- `engine: "auto"` utilise la recherche Exa gérée. `engine: "exa"`, `engine: "parallel"`, `engine: "firecrawl"` et `engine: "tinyfish"` exécutent la recherche gérée par la passerelle lorsque la clé du fournisseur correspondant est configurée.
+- TinyFish Search prend en charge des résultats classés, localisés et paginés, gratuitement dans ses offres publiées ; utilisez `language` et `page` dans les paramètres de l’outil si nécessaire.
 - `engine: "native"` sur `phaseo:web_search` est converti en outil de recherche Web natif du fournisseur pour la surface utilisée, comme `web_search_preview` chez OpenAI ou `web_search_20250305` chez Anthropic.
 - `max_results` limite chaque recherche ; `max_total_results` limite le total cumulé des résultats sur toute la boucle des outils serveur.
 - La recherche gérée prend en charge `allowed_domains` / `excluded_domains`, `search_context_size` et `max_characters` lorsque le moteur sélectionné propose les contrôles correspondants.

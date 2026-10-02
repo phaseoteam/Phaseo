@@ -1,100 +1,32 @@
 ---
 title: "Fonctionnement de Phaseo"
-description: "Comprenez Phaseo Gateway avant de choisir vos endpoints, SDK, règles de routage ou paramètres de production."
+description: "Comprenez les modèles, fournisseurs, routage et facturation avant d’intégrer Phaseo."
 icon: "terminal"
 ---
 
-Consultez cette présentation pour comprendre le fonctionnement général avant de créer une intégration avec Gateway.
+Phaseo achemine les requêtes de modèles de votre application vers les fournisseurs via une API. Votre application choisit le modèle et le point d’accès ; les réglages de l’espace de travail et les contrôles de requête déterminent les fournisseurs pouvant la traiter.
 
-Phaseo vous donne accès à une seule API pour les modèles, les fournisseurs, le routage, la tarification et les workflows d’IA asynchrones.
+## Modèles et fournisseurs
 
-Vous pouvez ainsi :
+Un modèle est le système qui génère la sortie. Un fournisseur l’héberge et détermine sa disponibilité, ses paramètres compatibles, ses tarifs et ses performances. Un même modèle peut avoir plusieurs offres fournisseurs.
 
--   appeler plusieurs fournisseurs avec une API cohérente
--   simplifier la gestion des requêtes et des réponses
--   suivre l’usage, la latence et le prix au même endroit
--   changer de modèle ou de stratégie de routage sans reconstruire votre application
+Le catalogue public comprend aussi des modèles actuellement indisponibles via le Gateway. Vérifiez la [disponibilité du modèle](../exploring/models.mdx) avant d’utiliser un identifiant dans une requête.
 
-<Note>
-Vous pouvez commencer avec des modèles `:free` sans crédit prépayé. Les modèles payants nécessitent un solde de portefeuille disponible.
-</Note>
+## Requêtes et routage
 
----
+Utilisez [Responses, Chat Completions ou Messages](../api-reference/introduction.mdx) selon le protocole de votre application. Les capacités varient selon le fournisseur ; un point d’accès commun ne signifie pas que chaque modèle accepte chaque paramètre.
 
-## Pourquoi utiliser une passerelle
+Les [contrôles de routage](../guides/routing-and-fallbacks.mdx) permettent de limiter les fournisseurs et de choisir leur classement. Les replis restent soumis à vos restrictions et à la capacité disponible ; ils ne garantissent pas le succès.
 
-Les intégrations d’IA deviennent plus complexes dès qu’il faut gérer plusieurs fournisseurs, modèles, familles d’endpoints ou environnements de déploiement.
+## Facturation et accès
 
-Phaseo fournit à votre application une couche d’intégration stable. Vous pouvez d’abord livrer votre parcours produit, puis ajuster les modèles, fournisseurs, règles de routage et tarifs sans réécrire chaque intégration.
+Les requêtes gérées utilisent le solde de votre espace de travail Phaseo. Les modèles `:free` fonctionnent sans crédits déposés. Avec des identifiants fournisseur (BYOK), sa facturation et ses limites de compte s’appliquent ; consultez les [tarifs et la facturation](../pricing/tiers.mdx) avant le déploiement.
 
----
+Les [tâches vidéo et par lots](../guides/async-video-and-batch.mdx) renvoient une tâche avant la fin du traitement. Leur accès de préversion est géré par espace de travail. Interrogez le statut ou recevez des mises à jour webhook, puis téléchargez le résultat.
 
-## Concepts clés
+## Créer votre intégration
 
-<Columns cols={2}>
-	<Card
-		title="Endpoints unifiés"
-		icon="terminal"
-		href="../api-reference/introduction.mdx"
-	>
-		Utilisez un même format d’API pour le texte, les images, la modération, l’audio, la vidéo et les routes compatibles avec les fournisseurs.
-	</Card>
-	<Card title="Contrôles de routage" icon="git-branch" href="../guides/routing-and-fallbacks.mdx">
-		Choisissez comment les requêtes sont réparties entre les fournisseurs selon leur disponibilité, le coût, la latence, la région et les règles applicables.
-	</Card>
-	<Card title="Suivi de l’usage et des coûts" icon="chart-column-increasing">
-		Suivez le volume de requêtes, l’usage des tokens, la latence et le prix pour comprendre le fonctionnement en production.
-	</Card>
-	<Card title="BYOK (utiliser votre propre clé)" icon="key">
-		Connectez les clés des fournisseurs pour profiter de leur facturation et de leurs limites tout en conservant la même interface Gateway.
-	</Card>
-</Columns>
-
----
-
-## Parcours recommandé
-
-1. **[Créez un compte](https://phaseo.app/fr-FR/sign-up)** Phaseo.
-2. **[Générez une clé API](https://phaseo.app/fr-FR/gateway/keys)** dans votre tableau de bord.
-3. **Envoyez votre première requête** à l’endpoint `/v1/responses`.
-4. **Préparez votre passage en production** avec les SDK, le routage, l’observabilité et le déploiement.
-
-<Card
-	title="Démarrage rapide"
-	icon="rocket"
-	href="../quickstart.mdx"
-	horizontal
->
-	Effectuez votre premier appel API avec succès à l’aide d’un modèle gratuit.
-</Card>
-
----
-
-## Pour aller plus loin
-
-<Columns cols={2}>
-	<Card
-		title="Authentification"
-		icon="lock"
-		href="./authentication.mdx"
-	>
-		Découvrez comment vous authentifier de manière sécurisée avec votre clé API personnelle ou d’équipe.
-	</Card>
-	<Card title="Référence de l’API" icon="code" href="../api-reference/introduction.mdx">
-		Consultez la documentation complète de l’API, avec les endpoints, paramètres et schémas de réponse.
-	</Card>
-	<Card
-		title="Bonnes pratiques"
-		icon="shield-check"
-		href="./best-practices.mdx"
-	>
-		Conseils pour tirer le meilleur parti de Phaseo Gateway.
-	</Card>
-	<Card title="Exemples" icon="terminal" href="../guides/examples.mdx">
-		Copiez des extraits prêts à l’emploi pour Next.js, le streaming avec Node.js, Python et curl.
-	</Card>
-</Columns>
-
----
-
-Vous cherchez un parcours axé sur la mise en œuvre ? Continuez avec [Intégrer Gateway](./integrating-with-the-gateway.mdx), puis découvrez les [intégrations](../guides/integrations/index.mdx) ou les [limites de débit](./rate-limits.mdx) à mesure que votre service évolue.
+- [Démarrage rapide](../quickstart.mdx) : envoyez votre première requête.
+- [Intégrer le Gateway](./integrating-with-the-gateway.mdx) : gardez les identifiants sur votre backend et configurez l’application.
+- [Fiabilité et statut](./reliability-and-status.mdx) : examinez la disponibilité et les requêtes échouées.
+- [Journaux et observabilité](../guides/integrations/observability.mdx) : examinez l’utilisation, la latence, le coût et les erreurs.

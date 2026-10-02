@@ -6,7 +6,73 @@ description: "عميل Python الرسمي لواجهة Phaseo Gateway API"
 
 ثبّت الحزمة المنشورة [~phaseo~](https://pypi.org/project/phaseo/) من PyPI.
 
-يوفّر Phaseo Python SDK حاليًا عميلًا متزامنًا لواجهة Phaseo Gateway API.
+يوفّر SDK Python من Phaseo العميل المتزامن `Phaseo` والعميل غير المتزامن الأصلي `AsyncPhaseo`.
+
+## طلبات غير متزامنة أصلية
+
+```python
+import asyncio
+from phaseo import AsyncPhaseo
+
+async def main():
+    async with AsyncPhaseo() as client:
+        response = await client.responses.create({"model": "openai/gpt-5-nano", "input": "Hello"})
+        print(response.output_text, response.request_id, response.trace_url)
+
+asyncio.run(main())
+```
+
+استخدم `async for event in client.responses.stream(request)` لأحداث النص المحلّلة.
+يوقف إلغاء asyncio الأصلي HTTP والاستطلاع. تغطي مساحات الموارد النص
+والصور والصوت والموسيقى والفيديو والدفعات والملفات والنماذج والتضمينات وOCR وإعادة الترتيب والتحليل
+ومراجعة المحتوى والقرارات؛ استخدم `await client.request(...)` لعمليات HTTP الأخرى.
+تبقى ملكية عملاء HTTPX المحقونين للجهة المستدعية.
+
+يدعم العميلان `with_options(timeout=30, max_retries=2)` دون تغيير
+العميل الأصلي. تحدّ مهلات HTTPX انعدام نشاط الشبكة بالثواني. إعادة المحاولة
+صفر افتراضيًا وتُطبق فقط على GET/HEAD قبل استهلاك الاستجابة، ولا تُطبق على الإرسال.
+يوفّر `PhaseoHTTPError` الجسم والرمز ومعرّف الطلب وعنوان التتبع ومهلة إعادة المحاولة.
+
+عند الترقية، استبدل التقاط `urllib.error.HTTPError` لطلبات JSON المتزامنة
+بـ`PhaseoHTTPError` (أو`httpx.HTTPStatusError`)، والتقاط أخطاء الاتصال
+بـ`httpx.TransportError`. يمثل `error.status` حالة HTTP و`error.code`
+رمز خطأ API.
+
+## ميزات إضافية
+
+توفّر موارد المهام مقابض `start` و`resume` تتضمن `result` و`events`
+و`to_dict`. انتظر الطرق غير المتزامنة وكرّر الأحداث عبر `async for`.
+يدعم الفيديو والدفعات فقط الإلغاء البعيد. ابث الوسائط عبر
+`videos.stream_content(id)` والدفعات عبر `batches.results(id)`. يكتب المساعد المتزامن
+`download_to(chunks, binary_file)` دون تخزين الملف كاملًا.
+يقبل رفع الملفات بايتات وكائنات `Path` وكائنات ملفات وصفوف ملفات HTTPX.
+
+يتحقق `responses.parse(request, PydanticModel)` من إخراج JSON المكتمل؛
+اضبط تنسيق استجابة الخادم صراحةً. يجمع `collect_stream`
+و`collect_async_stream` أحداث النص المحلّلة والاستخدام.
+يفحص `check_model_capabilities(id, input_types=..., output_types=..., endpoints=...,
+parameters=..., parameter_values=...)` القدرات المعلنة والقيود العددية
+معًا في عرض مزوّد متاح واحد. تفشل المعاينة المسبقة عند وجود حقائق مجهولة.
+
+لمحددات النماذج ومحررات المعلمات، استخدم البيانات الوصفية الحية لنقاط النهاية:
+
+```python
+support = client.models.check_parameters(
+    "openai/gpt-5",
+    {"temperature": 0.7, "top_p": 0.9},
+    endpoint="responses",
+)
+```
+
+تُعلّم كل معلمة بـ`supported` أو`partial` أو`unsupported` أو`unknown`،
+مع مسارات مزوّد مطابقة ومشكلات القيود للإبراز ضمن السطر.
+يعيد `client.models.capabilities(model_id)` استجابة قدرات نقطة النهاية
+كاملة. يوفّر `AsyncPhaseo` الطرق نفسها القابلة للانتظار.
+
+للاختبارات المحلية، احقن `phaseo.testing.MockTransport` باستخدام `httpx.Client` أو
+`httpx.AsyncClient`. تفشل الطلبات غير المتوقعة محليًا؛ استدعِ `assert_done()`
+للتحقق من استخدام كل بيانات الاختبار. لا تتحقق هذه البيانات من سلوك المزوّد الفعلي.
+تصدّر غرف Phaseo كودًا قابلًا للتشغيل للطلب عبر **الحصول على الكود**.
 
 ## الميزات
 
@@ -32,12 +98,32 @@ response = client.generate_response(
 print(response.get("id"))
 ```
 
+## انتظار الموسيقى أو الفيديو أو الدفعات
+
+```python
+import os
+
+music = client.music.generate_and_wait(
+    {"model": os.environ["PHASEO_MUSIC_MODEL"], "prompt": "Gentle instrumental piano"},
+    timeout=600,
+    on_poll=lambda job: print(job["id"], job["status"]),
+)
+```
+
+استخدم `videos.generate_and_wait(request, **options)` للفيديو و`batches.create_and_wait(request, **options)` للدفعات. ترسل المساعدات المتزامنة مرة واحدة وتعيد الاستجابة المكتملة كاملة، مع الاستطلاع عند الحاجة فقط. يحتفظ `JobFailedError.response` بتفاصيل المهام الفاشلة أو الملغاة أو المنتهية. قد تتضمن الدفعات المكتملة طلبات فردية فاشلة.
+
+يدعم كل مورد `wait(id, **options)` لاستئناف مهمة موجودة وإعادة أي استجابة نهائية. توفّر الموسيقى أيضًا الطريقتين المباشرتين `create(request)` و`retrieve(id)`.
+
+الخيارات هي `interval` (ثوانٍ؛ افتراضي 5 وأدنى 0.25) و`timeout` (ثوانٍ؛ افتراضي 1800) و`on_poll` و`cancel_event` (كائن `threading.Event`). تبدأ مهلة الانتظار بعد عودة الإرسال. يتحقق العميل المتزامن من الإلغاء والمواعيد بين الطلبات وردود النداء؛ ولا يمكنه مقاطعة استدعاء HTTP جارٍ بهذه الخيارات.
+
+يحتفظ `JobTimeoutError` و`JobCancelledError` بـ`job_id` و`last_response`. استأنف عبر `.wait(error.job_id)`. لا تُلغي المهلة أو الإلغاء المحلي المهمة البعيدة، ولا تُعاد الإرسالات تلقائيًا أبدًا. لا تضيف المساعدات تنفيذًا خلفيًا للبوابة.
 ## "ما الذي يتضمنه"
 
 -   عميل `Phaseo`
 -   `chat.completions.create(...)` and `responses.create(...)` مساعدات التوافق
 -   مساعدات الموارد مثل `client.batches`, `client.videos`, `client.files`, and `client.async_jobs`
 -   مساعدات لعناوين WebSocket لتدفّقات دورة حياة المهام غير المتزامنة والدفعات والفيديو
+-   `client.batches.stream_results(batch_id)` لقطع بايتات JSONL للدفعات
 -   مساعدات دورة حياة النموذج مثل `get_model_deprecation_info(...)` and `validate_model(...)`
 -   مكررات البث للنصوص والاستجابات والرسائل
 -   نماذج الطلب والاستجابة المُنشأة في ~phaseo.models~

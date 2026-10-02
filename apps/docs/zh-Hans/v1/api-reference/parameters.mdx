@@ -44,8 +44,9 @@ icon: "sliders-horizontal"
 | [`reasoning_effort`](#reasoning_effort) | `string` | 降低或提高推理预算。 |
 | [`reasoning_tokens`](#reasoning_tokens) | `integer` | 推理专用 token 限制或用量统计字段。 |
 | [`include_reasoning`](#include_reasoning) | `boolean` | 在支持时返回推理内容或摘要。 |
-| [`service_tier`](#service_tier) | `string` | 选择 `priority` 或 `flex` 等受支持的请求级别；OpenAI 也接受 `fast` 作为别名。 |
+| [`service_tier`](#service_tier) | `string` | 选择受支持的请求层级，如 `fast`、`ultrafast` 或 `flex`。 |
 | [`prompt_cache_key`](#prompt_cache_key) | `string` | 让相关请求保持缓存感知路由亲和性。 |
+| [`prompt_cache_options`](#prompt_cache_options) | `object` | 设置 OpenAI 提示缓存模式和 TTL 控制。 |
 | [`cache_control`](#cache_control) | `object` | 应用与提供商无关的 prompt 缓存提示或断点。 |
 | [`prompt_cache_retention`](#prompt_cache_retention) | `string` | 设置兼容 OpenAI 的 prompt 缓存保留策略。 |
 | [`provider`](#provider) | `object` | 影响路由和提供商选择。 |
@@ -61,13 +62,13 @@ icon: "sliders-horizontal"
 - [Chat Completions](./endpoint/chat-completions.mdx)
 - [Responses](./endpoint/responses.mdx)
 
-仅当所选模型和提供商组合支持时，才使用 `priority` 或 `flex`。Phaseo 将 `priority` 作为标准高级级别；OpenAI 路由也接受 `fast` 作为别名。省略 `service_tier` 时默认为 `standard`。
+仅在所选模型和提供商组合支持时使用 `ultrafast`、`fast`（支持时也可使用 `priority`）和 `flex`。`Ultrafast` 选择受支持的最高速层级；`fast` 和 `priority` 使用相同的 Fast 路由和定价。省略 `service_tier` 时，默认值为 `standard`。
 
 `Batch` 不是 `service_tier` 的取值。批处理请求使用独立的 Batch API。
 
 对于兼容 Anthropic 的 Messages 请求，Anthropic 原生上游取值为 `auto` 和 `standard_only`。Phaseo 可能会在不同提供商之间规范化或映射这些值，同时保留 `/v1/messages` 上与 Anthropic 兼容的行为。
 
-如果使用自定义基础 URL 指向 Phaseo 的 Anthropic 官方 SDK，请优先在 `/v1/messages` 上使用 Anthropic 原生值。对于 `priority`、`flex` 等跨提供商规范化的级别控制，或 OpenAI 的别名 `fast`，请优先使用原始 HTTP 请求或网关原生/OpenAI 风格的文本 API。
+如果使用自定义基础 URL 指向 Phaseo 的 Anthropic 官方 SDK，请优先在 `/v1/messages` 上使用 Anthropic 原生值。对于 `ultrafast`, `priority`、`flex` 等跨提供商规范化的级别控制，或 OpenAI 的别名 `fast`，请优先使用原始 HTTP 请求或网关原生/OpenAI 风格的文本 API。
 
 ## 参数参考
 
@@ -424,10 +425,10 @@ token 一旦出现过，就会降低其再次使用的倾向，从而帮助模�
 | 字段 | 值 |
 | --- | --- |
 | 类型 | `string` |
-| 支持的取值 | `standard`, `fast`, `priority`, `flex` |
+| 支持的取值 | `standard`, `fast`, `ultrafast`, `priority`, `flex` |
 | 默认值 | `standard` |
 
-仅当所选模型和提供商组合支持时才使用 `priority` 或 `flex`。Phaseo 将 `priority` 作为标准高级级别；受支持的 OpenAI 路由也接受 `fast` 作为路由和价格相同的别名。省略此字段即可使用默认 standard 级别。
+仅在所选模型和提供商组合支持时使用 `ultrafast`、`fast`（支持时也可使用 `priority`）和 `flex`。`Ultrafast` 选择受支持的最高速层级；`fast` 和 `priority` 使用相同的 Fast 路由和定价。省略该字段以保持默认标准层级。
 
 Phaseo 会在内部将网关规范化的级别值映射为提供商原生控制项，因此调用方可在受支持的文本接口上使用相同的 `service_tier` 值。
 
@@ -447,6 +448,19 @@ Phaseo 会在内部将网关规范化的级别值映射为提供商原生控制�
 | 用途 | 让相关的缓存 prompt 保持路由亲和性 |
 
 当一系列请求共享稳定的 prompt 前缀，并希望尽可能使用相同的上游提供商或区域时使用。Phaseo 也可以根据请求上下文推导缓存亲和性，但显式键更适合长对话、agent 会话和重复工作流。
+
+<span id="prompt_cache_options"></span>
+<h3 id="parameter-prompt_cache_options"><code>prompt_cache_options</code></h3>
+
+通过受支持的 OpenAI 路由传递 OpenAI 提示缓存控制。
+
+| 字段 | 值 |
+| --- | --- |
+| 类型 | `object` |
+| 常用字段 | `mode`, `ttl` |
+| Astra TTL | `30m` |
+
+对于 GPT-6 Astra，需要显式提示缓存时使用 `{"mode":"explicit","ttl":"30m"}`。Phaseo 在请求规范化过程中保留此对象，并原样发送给 OpenAI。
 
 <span id="cache_control"></span>
 <h3 id="parameter-cache_control"><code>cache_control</code></h3>
@@ -602,13 +616,13 @@ Phaseo 会在内部将网关规范化的级别值映射为提供商原生控制�
 如果需要更深入的调优指导，而非单纯的字段参考，请继续阅读：
 
 - [推理参数](../guides/inference-parameters.mdx)：temperature、top_p、top_k、token 限制、停止序列和调优流程的实用建议
-- [采样与解码](../guides/sampling-and-decoding.mdx)：随机性、penalty 和解码控制如何改变模型行为
+- [采样与解码](../guides/sampling-and-decoding.mdx) 了解随机性、惩罚和解码控制如何改变模型行为
 
 ## 相关页面
 
 - [推理参数](../guides/inference-parameters.mdx)
 - [采样与解码](../guides/sampling-and-decoding.mdx)
-- [流式传输](./streaming.mdx)
+- [流式传输](../guides/streaming.mdx)
 - [限制](./limits.mdx)
 - [错误与调试](./errors.mdx)
 

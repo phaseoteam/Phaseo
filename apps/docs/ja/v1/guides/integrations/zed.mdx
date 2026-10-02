@@ -1,11 +1,21 @@
 ---
 title: "Zed"
+icon: "/icons/brands/zed.svg"
 description: "ZedにOpenAI互換のモデルプロバイダーとしてPhaseoを追加します。"
 ---
 
-`phaseo integrations setup zed`を実行します。CLIはプロバイダーID `phaseo`、API URL `https://api.phaseo.app/v1`、選択したモデルを`settings.json`に追加し、他の設定は変更しません。
+Phaseo CLIでプロバイダーとモデルをZedに追加し、キーをZedのキーチェーンに保存してください。CLIを使わない場合は、同じプロバイダー値を手動で入力します。
 
-## ZedにAPIキーを保存する
+## Phaseo CLIで設定する
+
+```bash
+phaseo login
+phaseo zed --model openai/gpt-5.6-terra
+```
+
+CLIは、他の設定を変更せずに、プロバイダーID `phaseo`、API URL `https://api.phaseo.app/v1`、選択したモデルをZedの`settings.json`に追加します。
+
+## Zedで設定を完了する
 
 Zedはプロバイダーキーをシステムのキーチェーンに保存するため、残る操作はUI上のこの手順だけです。
 

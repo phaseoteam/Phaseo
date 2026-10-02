@@ -1,15 +1,16 @@
 ---
 title: "Cursor"
+icon: "/icons/brands/cursor.svg"
 description: "Conecta Cursor a Phaseo mediante la clave de API de OpenAI y la configuración de URL base personalizada."
 ---
 
-Usa esta guía para enrutar a Phaseo los modelos de chat compatibles de Cursor. Cursor guarda las claves de API en su almacenamiento seguro, por lo que Phaseo CLI crea y revoca la clave dedicada y Cursor se encarga de introducir las credenciales.
+Usa esta guía para enrutar modelos de chat compatibles de Cursor mediante Phaseo. Usa Phaseo CLI para crear y revocar una clave dedicada y termina la configuración en Cursor, o proporciona tu propia clave de Phaseo y sigue los mismos ajustes manuales.
 
-## Crear la credencial de Cursor
+## Configura con Phaseo CLI
 
 ```bash
 phaseo login
-phaseo integrations setup cursor --model openai/gpt-5.6-terra
+phaseo cursor --model openai/gpt-5.6-terra
 ```
 
 La configuración crea una clave `Phaseo CLI: Cursor API Key` sin vencimiento e imprime los valores siguientes. No modifica el almacén privado de credenciales de Cursor.
@@ -82,5 +83,5 @@ Vuelve a ejecutar `phaseo integrations credential cursor`, reemplaza el valor gu
 ## Relacionado
 
 - [Documentación de la clave de API de Cursor](https://docs.cursor.com/settings/api-keys)
-- [Asistentes de programación](./coding-assistants.mdx)
+- [Agentes de programación](./coding-assistants.mdx)
 - [Modelos](../../api-reference/endpoint/models.mdx)

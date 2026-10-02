@@ -139,7 +139,8 @@ Gatewayには現在、次のサーバーツールが組み込まれています�
 注意:
 
 - モデルはツールを呼び出す際に検索クエリを指定します。
-- `engine: "auto"`は管理型のExa検索に解決されます。`engine: "exa"`、`engine: "parallel"`、`engine: "firecrawl"`は、対応するプロバイダーキーが設定されている場合にGateway管理の検索を実行します。
+- `engine: "auto"`は管理されたExa検索を選択します。対応するプロバイダーキーが設定されていれば、`engine: "exa"`、`engine: "parallel"`、`engine: "firecrawl"`、`engine: "tinyfish"`で管理されたGateway検索を実行できます。
+- TinyFish Searchは多言語対応のページ分割されたランキング結果を提供し、公開プランでは無料です。必要に応じてツールのパラメーターで`language`と`page`を使ってください。
 - `phaseo:web_search`で`engine: "native"`を指定すると、リクエスト形式に応じたプロバイダーのネイティブWeb検索ツールに変換されます。たとえばOpenAIの`web_search_preview`やAnthropicの`web_search_20250305`です。
 - `max_results`は各検索呼び出しの結果数を制限し、`max_total_results`はサーバーツールループ全体の累積結果数を制限します。
 - 選択した検索エンジンが該当する設定に対応している場合、管理型検索では`allowed_domains` / `excluded_domains`、`search_context_size`、`max_characters`を使えます。

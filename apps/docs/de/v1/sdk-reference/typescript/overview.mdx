@@ -30,12 +30,82 @@ const response = await client.generateText({
 console.log(response.choices[0].message.content);
 ```
 
+## Auf Musik, Videos oder Batches warten
+
+```typescript
+const music = await client.music.generateAndWait(
+  { model: process.env.PHASEO_MUSIC_MODEL!, prompt: "Gentle instrumental piano" },
+  { timeoutMs: 600_000, onPoll: (job) => console.log(job.id, job.status) },
+);
+```
+
+Nutze `videos.generateAndWait(request, options)` für Videos und `batches.createAndWait(request, options)` für Batches. Die Helfer senden einmal, geben sofort vollständige Antworten ohne Polling zurück oder pollen denselben Job bis zum Abschluss. Sie liefern die vollständige Antwort und werfen `JobFailedError` mit `response` bei fehlgeschlagenen, abgebrochenen oder abgelaufenen Jobs. Abgeschlossene Batches können fehlgeschlagene Einzelanfragen enthalten.
+
+Jede Ressource besitzt `wait(id, options)` für jede abschließende Antwort, auch Fehler. Optionen sind `intervalMs` (Standard 5.000; Minimum 250), `timeoutMs` (Standard 1.800.000), `signal` und `onPoll`. Die Wartefrist beginnt nach Rückkehr der Einreichung; die erste HTTP-Anfrage behält ihre eigene Frist. Fortschrittscallbacks erhalten die Anfangsantwort und jeden Poll.
+
+`JobTimeoutError` und `JobCancelledError` behalten `jobId` und `lastResponse` für eine Fortsetzung mit `.wait(error.jobId)`. Das Stoppen einer Warteoperation bricht die laufende Poll-Anfrage ab, aber nicht die Remote-Arbeit. HTTP-Fehler werden ohne automatische Neueinreichung weitergegeben. Die SDK-Helfer fügen dem Gateway keine Hintergrundausführung hinzu.
+
+## Anfragesteuerung und Diagnose
+
+Nutze `client.withOptions({ timeoutMs: 30_000, signal, maxRetries: 2 })` für einen
+unveränderlichen Client mit Steuerung aller Ressourcen, Streams und Medien.
+Fristen schließen das Lesen des Antwortkörpers ein. Wiederholungen sind standardmäßig null und gelten
+nur für GET/HEAD unter Beachtung von `Retry-After`. Bezahlte Einreichungen werden nie wiederholt.
+
+`responseMetadata(result)` liefert die Gateway-Anfrage-ID und die Dashboard-Trace-URL.
+HTTP-Fehler liefern `code`, `requestId`, `traceUrl`, `retryAfterMs`, Körper und Header.
+
+## Workflow-Helfer
+
+`music.start`, `videos.start` und `batches.start` liefern Handles mit `result()`,
+`events()` und `toJSON()`. Speichere Art und ID und rekonstruiere mit `resume(id)`.
+`result()` lehnt abschließende Fehler ab. Nur Video und Batch unterstützen Remote-Abbruch.
+
+`videos.streamContent(id)` mit `downloadTo(stream, writable)` streamt große
+Ausgaben. `toFile(bytes, filename, contentType)` bereitet Uploads vor.
+`batchResults(await client.batches.streamResults(id))` parst JSONL schrittweise;
+`matchBatchResult(row, inputsByCustomId)` behält Einzelfehler und Eingabeidentität.
+
+`responses.parse(request, schema)` nimmt einen Zod-kompatiblen Parser an und liefert
+validierte Ausgaben. Setze auch das serverseitige strukturierte Ausgabeformat in der Anfrage.
+`collectStream(client.streamResponses(request))` sammelt Text und Nutzung.
+
+`checkModelCapabilities(id, { inputTypes, outputTypes, endpoints, parameters,
+parameterValues })` prüft angegebene Fähigkeiten und skalare Einschränkungen für ein
+aktives Anbieterangebot. Fehlende Metadaten gelten als unbekannt. Es ändert nie
+das Modell oder entfernt Parameter und garantiert keine Annahme durch einen Live-Anbieter.
+
+Nutze für Modellauswahl und Parametereditoren aktuelle Endpunktmetadaten:
+
+```typescript
+const support = await client.models.checkParameters(
+  "openai/gpt-5",
+  { temperature: 0.7, top_p: 0.9 },
+  { endpoint: "responses" },
+);
+```
+
+Jeder Parameter ist als `supported`, `partial`, `unsupported` oder `unknown` markiert,
+mit Anbieterrouten und Einschränkungsproblemen zur direkten Hervorhebung.
+`client.models.capabilities(modelId)` liefert die vollständige Endpunktfähigkeits-
+antwort. Diese expliziten Prüfungen ergänzen Generierungsaufrufe nicht um eine Suchanfrage.
+
+## Lokale Tests und Website-Exporte
+
+Importiere `createMockTransport` und `jobFixtures` aus `@phaseo/sdk/testing`, um
+strikte, geordnete Testdaten über `fetchImpl` einzusetzen. Prüfe mit `mock.assertDone()`, ob alle
+erwarteten Anfragen erfolgt sind. Unerwartete Aufrufe scheitern lokal ohne Netzwerk-Fallback.
+
+Nach einer Anfrage im Phaseo-Room exportiert **Code abrufen** Modell und
+Einstellungen als TypeScript oder Python. **Anfrage anzeigen** öffnet den Dashboard-Trace, wenn
+eine Anfrage-ID vorliegt. Führe exportierten Code auf dem Server mit `PHASEO_API_KEY` aus.
 ## Lieferumfang
 
 -   `Phaseo`-Clientklasse für sämtliche API-Interaktionen
 -   Ressourcenbasierte Hilfsfunktionen wie `client.models`, `client.batches`, `client.videos`, and `client.asyncJobs`
 -   Hilfsfunktionen zur Erkundung und Preisermittlung wie `client.getModels()`, `client.listProviders()`, `client.getCredits()`, `client.getActivity()`, `client.getAnalytics()`, `client.listEndpoints()`, `client.listOrganisations()`, `client.listPricingModels()`, `client.calculatePricing()`, `client.listApiKeys()`, `client.createApiKey()`, `client.getApiKey(id)`, `client.updateApiKey(id, ...)`, `client.deleteApiKey(id)`, `client.listWorkspaces()`, `client.getWorkspace(id)`, `client.createWorkspace(...)`, `client.updateWorkspace(id, ...)`, `client.deleteWorkspace(id)`, and `client.getCurrentApiKey()`
 -   WebSocket-URL-Hilfsfunktionen für Lebenszyklus-Streams asynchroner Batch- und Videojobs
+-   `client.batches.streamResults(batchId, { signal })` für das Streaming von Anthropic-JSONL-Downloads
 -   Generierte Typen für alle Anfrage- und Antwortobjekte
 -   Vollständige API-Abdeckung, einschließlich Chat Completions, Modellen, Guthaben und mehr
 -   TypeScript-Definitionen für eine bessere Entwicklungserfahrung

@@ -1,0 +1,138 @@
+---
+icon: "clapperboard"
+title: "Tâches vidéo et traitements par lots"
+badge: "Beta"
+description: "Suivez les tâches asynchrones, recevez des webhooks et transmettez des options vidéo propres au fournisseur."
+---
+
+<Note>
+Les API Video et Batch sont des versions bêta préliminaires accessibles uniquement sur invitation pour certains espaces de travail. Consultez **Paramètres → Aperçu des fonctionnalités** pour vérifier leur disponibilité. L’accès est géré par espace de travail ; activer une préférence web personnelle ne donne pas accès à l’API. Les frais habituels d’utilisation des modèles s’appliquent.
+</Note>
+
+La génération vidéo et le traitement par lots retournent une tâche avant la fin du travail. Conservez son `id` et utilisez la `polling_url` retournée pour retrouver son dernier état. Une réponse de création réussie ne signifie pas que la génération ou le traitement par lots est terminé.
+
+Pendant la bêta, commencez par de petites requêtes et une limite de dépenses sur la clé API. Les capacités varient selon le fournisseur et le modèle ; les entrées de référence, l’annulation et la conservation des sorties dépendent du fournisseur choisi. Gardez votre propre copie des sorties terminées avant leur expiration.
+
+## Recevoir des mises à jour
+
+Joignez un endpoint webhook appartenant à votre espace de travail lors de la création de l’un ou l’autre type de tâche :
+
+```json
+{
+  "webhook": {
+    "endpoint_id": "YOUR_ENDPOINT_ID",
+    "events": ["job.status_changed", "job.completed", "job.failed", "job.cancelled", "job.expired"]
+  }
+}
+```
+
+Phaseo rapproche l’état du fournisseur et envoie des notifications au client. Les fournisseurs nécessitant une interrogation périodique, notamment les lots de messages Anthropic, peuvent tout de même produire des webhooks clients. Un échec de livraison du webhook est distinct d’un échec de génération ou de traitement par lots.
+
+Les abonnements des endpoints peuvent cibler séparément les événements Batch et Video. Utilisez des types d’événements avec espace de noms, comme `batch.completed` ou `video.failed` ; les types génériques `job.*` restent pris en charge et abonnent à la phase correspondante pour les deux types de tâche.
+
+Vérifiez `x-phaseo-signature` avec le secret de l’endpoint : la signature est le HMAC-SHA256 hexadécimal de `x-phaseo-timestamp`, d’un point littéral et du **corps de requête non modifié**. Vérifiez la fraîcheur de l’horodatage, dédupliquez `x-phaseo-event-id` et accusez réception des livraisons acceptées avec une réponse HTTP réussie. Les livraisons peuvent être réessayées ou arriver dans le désordre ; récupérez la tâche avant d’appliquer un changement d’état contradictoire.
+
+Après avoir enregistré un endpoint, utilisez **Envoyer un événement de test** dans les paramètres pour livrer une charge signée `webhook.test`. Les livraisons de test ne font qu’une tentative et ne sont ni réessayées ni ajoutées à l’historique des livraisons de la tâche.
+
+Considérez les états de cycle de vie `completed`, `failed`, `cancelled` et `expired` comme terminaux. Gardez un mécanisme de récupération par interrogation périodique même avec des webhooks.
+
+Pour chaque événement, Phaseo effectue une première tentative de livraison. Une réponse 2xx réussie termine la livraison sans nouvelle tentative. Les livraisons échouées bénéficient de trois nouvelles tentatives au maximum, prévues après 1, 5 et 15 minutes. Les traitements périodiques en arrière-plan exécutent les tentatives admissibles ; la livraison réelle peut donc être plus tardive. Chaque tentative consigne son numéro, son heure, son statut HTTP, l’erreur et l’heure de la prochaine tentative. Après le quatrième échec, la livraison est marquée comme définitivement échouée. Les destinataires doivent toujours dédupliquer les événements : un accusé de réception perdu ou une interruption du worker peut rendre la livraison incertaine.
+
+## Consulter les journaux des tâches et des requêtes
+
+Dans **Paramètres → Utilisation → Journaux**, utilisez **Requêtes** pour les détails d’inférence, **Vidéo** pour les cycles de vie vidéo et **Lots** pour les tâches par lots et les résultats par ligne. Les vues détaillées vidéo et lots incluent l’état de facturation, les tentatives du fournisseur et les tentatives webhook. Une tâche peut réussir alors que la livraison de son webhook échoue.
+
+La soumission d’une vidéo réserve du crédit avant de contacter le fournisseur. Un délai dépassé sans identifiant de tâche conserve la réservation pour rapprochement ; il ne prouve pas un échec de génération. Si une réservation payante Video ou Batch est anormalement tarifée à zéro après un travail réussi, la facturation reste ouverte avec `unexpected_zero_cost` pour investigation. Une réponse de création à coût nul est, à elle seule, normale pour une génération asynchrone.
+
+## Entrées vidéo
+
+### Comprendre la tarification vidéo
+
+Les prix vidéo dépendent du fournisseur et du modèle. Un prix par seconde doit être multiplié par la durée facturable ; un prix par clip ne s’applique qu’à la durée et à la résolution indiquées. Plusieurs sorties et des entrées de référence facturables peuvent augmenter le total.
+
+La génération texte/image LTX facture les secondes de sortie, tandis que l’audio vers vidéo facture les secondes d’audio en entrée. BytePlus Seedance utilise des tokens vidéo, avec des tarifs différents en présence d’une vidéo de référence. MiniMax Hailuo V1 utilise des prix par clip à durée fixe ; H3 utilise les secondes et peut facturer les entrées de référence. Vérifiez les dimensions tarifaires du fournisseur choisi au lieu de considérer le prix affiché comme le coût de toute la requête.
+
+Les réservations sont des estimations retenues avant la soumission. La facturation finale utilise la consommation facturable de la tâche ; le crédit réservé inutilisé est libéré après rapprochement. Une résolution ou une option prise en charge par un fournisseur n’est pas nécessairement disponible dans la bêta.
+
+Utilisez `seconds` ou `duration` pour la durée de sortie. Si les deux sont présents, ils doivent correspondre. Utilisez `resolution` avec `aspect_ratio`, ou une `size` en pixels comme `1280x720`.
+
+Utilisez `frame_images` pour spécifier explicitement la première et la dernière image :
+
+```json
+{
+  "frame_images": [
+    {
+      "type": "image_url",
+      "frame_type": "first_frame",
+      "image_url": { "url": "https://example.com/start.png" }
+    }
+  ],
+  "input_references": [
+    {
+      "type": "image_url",
+      "role": "reference",
+      "image_url": { "url": "https://example.com/character.png" }
+    }
+  ]
+}
+```
+
+Les URL de référence doivent utiliser HTTPS. Indiquez explicitement `role: "reference"` pour les images servant uniquement de référence : les anciennes requêtes sans `frame_images` interprètent la première image non étiquetée comme une première image. Ne combinez pas `frame_images` avec des rôles de première/dernière image dans `input_references`, ni avec `input_reference`.
+
+Les références vidéo et audio utilisent `type: "video_url"` ou `"audio_url"` et `media_url: { "url": "https://..." }`. Les combinaisons prises en charge diffèrent selon les modèles et fournisseurs. Si la durée de référence influe sur le prix, fournissez `input_video_duration` et `input_audio_duration` en secondes.
+
+## Options du fournisseur
+
+Conservez le modèle, la durée, la résolution, la génération audio, les médias d’entrée et le nombre de sorties dans les champs canoniques. Transmettez les extensions propres au fournisseur sous son identifiant canonique :
+
+```json
+{
+  "provider_options": {
+    "atlascloud": { "watermark": false, "output_format": "mp4" },
+    "byteplus": { "camera_fixed": true }
+  }
+}
+```
+
+Seules les options du fournisseur sélectionné sont transmises. Les options ne sélectionnent pas un fournisseur ; utilisez la configuration de routage `provider`. Ne combinez pas `provider_options` avec l’ancien `provider_params`. Les options imbriquées ne peuvent pas remplacer les champs de facturation ou de rappel contrôlés par la passerelle.
+
+| Fournisseur | Exemples d’extensions natives | Référence |
+| --- | --- | --- |
+| AtlasCloud Seedance 2.5 | `watermark`, `output_format`, `return_last_frame`, `omni_reference_task_type` | [API du modèle](https://www.atlascloud.ai/models/bytedance/seedance-2.5/reference-to-video) |
+| Novita Seedance 1.5 | `watermark`, `camera_fixed`, `fps` (24), `service_tier` (`default`) | [API vidéo unifiée](https://docs.novita.ai/api-reference/reference-unified-video-generation) |
+| BytePlus Seedance | `camera_fixed` | Vérifiez le contrat du fournisseur pour le modèle choisi avant utilisation. |
+| MiniMax V1 | `fast_pretreatment` ; utilisez le champ canonique `enhance_prompt` pour optimiser les prompts | [API vidéo](https://platform.minimax.io/docs/api-reference/video-generation-t2v) |
+
+AtlasCloud Seedance utilise les champs natifs `resolution`, `ratio` et `last_image`. Sa variante référence vers vidéo reçoit des références d’image, de vidéo et d’audio ordonnées. Le montage à durée automatique (`duration: -1`) n’est pas pris en charge par le contrat de réservation à durée fixe de la passerelle. La disponibilité et la tarification des modèles du fournisseur doivent être configurées avant le routage d’un modèle ; une option fournisseur n’active pas un modèle indisponible.
+
+MiniMax H3 utilise V2 : 4–15 secondes entières en `768P` ou `2K`. H3 Max prend en charge 5–15 secondes entières en `480P` ou `768P`, avec texte ou images de trames. H3 accepte des références image, vidéo et audio ; elles ne peuvent pas être mélangées avec des premières/dernières images. Les deux modèles produisent une vidéo par requête et ne prennent pas en charge les options d’optimisation de prompt V1. Utilisez le champ canonique `aspect_ratio` ; les images de trames déterminent leur propre ratio. Les réservations de vidéo de référence couvrent la limite d’entrée de 15 secondes du fournisseur, la consommation réelle étant régularisée à la fin. Voir le [contrat MiniMax V2](https://platform.minimax.io/docs/api-reference/video-generation-v2-create).
+
+## Fournisseurs de traitement par lots
+
+Les requêtes par lots acceptent aussi `provider_options` : OpenAI prend en charge `output_expires_after`, et Mistral `metadata`. Utilisez les identifiants canoniques des fournisseurs sans dupliquer ces champs au niveau supérieur. Par exemple, `provider_options: { "openai": { "output_expires_after": { "anchor": "created_at", "seconds": 86400 } } }` définit la conservation des sorties OpenAI. Les entrées de lignes, modèles, endpoints et destinations webhook ne peuvent pas être remplacés par les options.
+
+Mistral possède déjà un adaptateur natif de traitement par lots. Les lots de messages Anthropic sont interrogés périodiquement ; d’autres fournisseurs peuvent combiner cette interrogation avec des notifications natives de fin. La disponibilité dépend des endpoints pris en charge par le fournisseur et de la liste d’autorisation des lots du déploiement. Vérifiez la réponse des capacités de traitement par lots avant de soumettre un fichier ou des requêtes en ligne.
+
+Un lot terminé peut contenir des lignes échouées. Inspectez chaque résultat avec son identifiant personnalisé au lieu de supposer que toutes les lignes ont réussi. Conservez l’entrée d’origine et l’identifiant de tâche jusqu’au rapprochement des résultats et de la facturation. Examinez une soumission incertaine avant de la répéter, car le fournisseur peut avoir accepté la requête d’origine.
+
+### Télécharger les résultats d’un lot
+
+Lorsqu’un lot pris en charge atteint un état terminal, sa `results_url` pointe vers un téléchargement Phaseo authentifié. Utilisez votre clé API Phaseo habituelle de l’espace de travail propriétaire du lot :
+
+```bash
+curl --fail "https://api.phaseo.app/v1/batches/$BATCH_ID/results" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  --output results.jsonl
+```
+
+La réponse diffuse du JSONL via le même endpoint pour tous les fournisseurs de lots pris en charge. Phaseo combine les fichiers de succès et d’erreurs séparés, convertit les tableaux de résultats en ligne en JSONL et suit la pagination. Le contenu généré et les erreurs par requête sont conservés. Les champs des lignes restent natifs au fournisseur : utilisez `custom_id` pour les lignes compatibles OpenAI et Anthropic, les métadonnées de requête pour Gemini et `batch_request_id` pour xAI. Les lignes Anthropic réussies contiennent le message généré dans `result.message`.
+
+Les téléchargements prennent en charge les adaptateurs OpenAI, Anthropic, Google AI Studio, Mistral, Together, Groq, Alibaba Cloud, Moonshot, Parasail, OVHcloud et xAI. La disponibilité dépend toujours de l’accès à l’aperçu et de la liste d’autorisation des soumissions ; le téléchargement n’active pas de routes supplémentaires. Les champs existants `output_file_id`, `error_file_id` et les endpoints de contenu des fichiers restent disponibles. L’endpoint des lignes de requêtes du lot contient des métadonnées de suivi et de facturation, pas les corps des messages générés.
+
+Télécharger les résultats ne soumet pas un autre lot et n’ajoute pas de frais d’inférence. Aucune identification auprès du fournisseur n’est nécessaire. Les webhooks signalent les mises à jour ; téléchargez les résultats séparément. Une tâche terminale peut avoir des résultats partiels ou aucune sortie : l’endpoint retourne `409` pendant le traitement et `404` lorsqu’aucune sortie n’est disponible. Enregistrez les résultats avant la fin de la conservation du fournisseur. Si le téléchargement est interrompu, supprimez le fichier partiel et recommencez le téléchargement, pas la soumission du lot. Les résultats JSON en ligne sont diffusés avec une limite de sécurité de 8 MiB par ligne ; les fichiers JSONL natifs sont diffusés sans cette limite par ligne.
+
+Pour les sorties volumineuses, `client.batches.streamResults(batchId, { signal })` en TypeScript retourne un `ReadableStream<Uint8Array>` sans mise en mémoire tampon. Redirigez-le vers votre destination et annulez le flux ou le signal pour arrêter tôt ; aucun délai global fixe de téléchargement n’est imposé. `client.batches.stream_results(batch_id)` en Python produit des blocs d’octets avec le délai HTTP configuré ; fermez l’itérateur lors d’un arrêt anticipé. Les opérations générées `retrieveBatchResults` retournent le texte JSONL complet et conviennent surtout aux petites sorties.
+
+### Limites de téléchargement des lots
+
+Le téléchargement des résultats autorise 10 tentatives par espace de travail et par lot sur une fenêtre glissante de 30 minutes, partagée entre les clés API et les alias `/batches` et `/batch`. Les tentatives admises au téléchargement comptent même si le téléchargement amont échoue ou est annulé. Les échecs de propriété ou de disponibilité ne comptent pas. Une réponse `429` inclut `Retry-After` en secondes. Si le limiteur est indisponible, les téléchargements retournent `503` avec `Retry-After: 30`.

@@ -1,15 +1,16 @@
 ---
 title: "Cursor"
+icon: "/icons/brands/cursor.svg"
 description: "通过 OpenAI API 密钥和 Base URL 覆盖设置将 Cursor 连接到 Phaseo。"
 ---
 
-本指南介绍如何通过 Phaseo 路由 Cursor 支持的聊天模型。Cursor 会将 API 密钥保存在安全存储中，因此 Phaseo CLI 负责创建和撤销专用密钥，最后由 Cursor 处理凭据输入。
+本指南介绍如何通过 Phaseo 路由受支持的 Cursor 聊天模型。使用 Phaseo CLI 创建和撤销专用密钥，然后在 Cursor 中完成设置；也可使用自己的 Phaseo 密钥并遵循相同的手动设置。
 
-## 创建 Cursor 凭据
+## 使用 Phaseo CLI 设置
 
 ```bash
 phaseo login
-phaseo integrations setup cursor --model openai/gpt-5.6-terra
+phaseo cursor --model openai/gpt-5.6-terra
 ```
 
 设置过程会创建一个永不过期的 `Phaseo CLI: Cursor API Key`，并显示以下设置。它不会编辑 Cursor 的私有凭据存储。
@@ -82,5 +83,5 @@ phaseo integrations remove cursor
 ## 相关内容
 
 - [Cursor API 密钥文档](https://docs.cursor.com/settings/api-keys)
-- [编程助手](./coding-assistants.mdx)
+- [编程智能体](./coding-assistants.mdx)
 - [模型](../../api-reference/endpoint/models.mdx)

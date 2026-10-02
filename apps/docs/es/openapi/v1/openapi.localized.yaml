@@ -280,6 +280,62 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: uploadFile
+      summary: Subir archivo
+      description: Alias de compatibilidad de `/batches/files`. Sube un archivo para procesamiento por lotes y devuelve los metadatos del archivo del proveedor. Pase `model` para que AI Stats pueda inferir el proveedor. El valor predeterminado es OpenAI para clientes antiguos que omitan tanto `model` como `provider`.
+      parameters:
+        - name: model
+          in: query
+          required: false
+          description: ID del modelo usado para inferir el proveedor del archivo por lotes.
+          schema:
+            $ref: '#/components/schemas/ModelId'
+        - name: provider
+          in: query
+          required: false
+          description: Selección avanzada del proveedor para la carga del archivo.
+          schema:
+            type: string
+            enum:
+              - openai
+              - groq
+              - together
+              - mistral
+        - name: x-ai-stats-provider
+          in: header
+          required: false
+          description: Alternativa en la cabecera al parámetro de consulta `provider`.
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/FileUploadRequest'
+      responses:
+        '200':
+          description: Metadatos del archivo subido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FileResponse'
+        '401':
+          description: No autorizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '502':
+          description: Error del proveedor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /pricing/models:
     get:
       x-beta: true
@@ -1615,7 +1671,7 @@ paths:
               $ref: '#/components/schemas/ChatCompletionsRequest'
             examples:
               datetimeServerTool:
-                summary: Herramienta de servidor de fecha y hora integrada
+                summary: Built-in datetime server tool
                 value:
                   model: openai/gpt-5-nano
                   stream: false
@@ -1658,7 +1714,7 @@ paths:
               $ref: '#/components/schemas/ResponsesRequest'
             examples:
               datetimeServerTool:
-                summary: Herramienta de servidor de fecha y hora integrada
+                summary: Built-in datetime server tool
                 value:
                   model: openai/gpt-5-nano
                   stream: false
@@ -1701,7 +1757,7 @@ paths:
               $ref: '#/components/schemas/AnthropicMessagesRequest'
             examples:
               datetimeServerTool:
-                summary: Herramienta de servidor de fecha y hora integrada
+                summary: Built-in datetime server tool
                 value:
                   model: anthropic/claude-sonnet-4
                   max_tokens: 512
@@ -2472,6 +2528,237 @@ paths:
                   usage:
                     type: object
                     additionalProperties: true
+  /videos:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listVideos
+      summary: Listar vídeos
+      description: Enumera los trabajos de generación de vídeo asíncrona del equipo autenticado.
+      parameters:
+        - name: limit
+          in: query
+          description: Número máximo de trabajos de vídeo que se devuelven. El valor predeterminado es 50 y el máximo es 200.
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+        - name: status
+          in: query
+          description: Filtro de estado del ciclo de vida del vídeo. Repita el parámetro o proporcione valores separados por comas.
+          style: form
+          explode: true
+          schema:
+            type: array
+            items:
+              type: string
+        - name: offset
+          in: query
+          description: Número de trabajos de vídeo que se omiten antes de devolver la página.
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 10000
+        - name: after
+          in: query
+          description: Devuelve los trabajos de vídeo posteriores a este ID de vídeo en el orden seleccionado.
+          schema:
+            type: string
+        - name: order
+          in: query
+          description: Ordena los trabajos de vídeo por fecha de creación.
+          schema:
+            type: string
+            enum:
+              - asc
+              - desc
+      responses:
+        '200':
+          description: Respuesta de la lista de vídeos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VideoListResponse'
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: createVideo
+      summary: Crear vídeo
+      description: Crea un trabajo de generación de vídeo asíncrona. Consulte la `polling_url` devuelta cada 20 segundos hasta que el trabajo alcance un estado final.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VideoGenerationRequest'
+      responses:
+        '202':
+          description: Respuesta de vídeo
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VideoGenerationResponse'
+  /videos/models:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listVideoModels
+      summary: Listar capacidades de modelos de vídeo
+      description: Devuelve metadatos respaldados por la base de datos sobre capacidades de modelos/proveedores de vídeo para el entorno de vídeo y la validación del SDK.
+      parameters:
+        - name: params
+          in: query
+          required: false
+          description: Filtro opcional de parámetros admitidos. Repita el parámetro o pase una lista separada por comas. Se aceptan nombres canónicos y alias, por ejemplo `resolution`, `size`, `duration` o `duration_seconds`.
+          schema:
+            type: array
+            items:
+              type: string
+          style: form
+          explode: false
+      responses:
+        '200':
+          description: Lista de capacidades de modelos de vídeo
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VideoModelsResponse'
+  /videos/{video_id}:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: getVideo
+      summary: Obtener estado del vídeo
+      description: Obtiene el estado de una solicitud de generación de vídeo. Consulte cada 20 segundos salvo que use webhooks.
+      parameters:
+        - name: video_id
+          in: path
+          required: true
+          description: ID de la solicitud de generación de vídeo.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Respuesta de estado del vídeo
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VideoGenerationResponse'
+    delete:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: deleteVideo
+      summary: Eliminar vídeo
+      description: Marca como eliminado un registro de generación de vídeo en estado final. No se pueden eliminar trabajos en curso.
+      parameters:
+        - name: video_id
+          in: path
+          required: true
+          description: ID de la solicitud de generación de vídeo.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Respuesta de eliminación de vídeo
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VideoDeleteResponse'
+  /videos/{video_id}/cancel:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: cancelVideo
+      summary: Cancelar vídeo
+      description: La cancelación de vídeos está deshabilitada actualmente en todos los proveedores.
+      parameters:
+        - name: video_id
+          in: path
+          required: true
+          description: ID interno del trabajo de vídeo de Phaseo (`G-...`).
+          schema:
+            type: string
+      responses:
+        '501':
+          description: La cancelación de vídeos está deshabilitada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /videos/{video_id}/content:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: getVideoContent
+      summary: Obtener contenido del vídeo
+      description: Descarga el contenido del vídeo generado.
+      parameters:
+        - name: video_id
+          in: path
+          required: true
+          description: ID de la solicitud de generación de vídeo.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Contenido del vídeo
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+  /videos/{video_id}/download_url:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: createVideoDownloadUrl
+      summary: Crear una URL firmada de descarga del vídeo
+      description: Devuelve una URL firmada de primera parte para descargar un vídeo generado.
+      parameters:
+        - name: video_id
+          in: path
+          required: true
+          description: ID de la solicitud de generación de vídeo.
+          schema:
+            type: string
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                index:
+                  type: integer
+                  minimum: 0
+                ttl_seconds:
+                  type: integer
+                  minimum: 1
+                disposition:
+                  type: string
+                  enum:
+                    - attachment
+                    - inline
+      responses:
+        '200':
+          description: URL firmada de descarga
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  download_url:
+                    type: string
+                  expires_at:
+                    type: integer
   /music/generate/{music_id}:
     get:
       x-beta: true
@@ -2559,6 +2846,602 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '404':
           description: Archivo no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /batches:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listBatches
+      summary: Listar lotes
+      description: Enumera los trabajos por lotes asíncronos del espacio de trabajo autenticado desde el almacenamiento persistente de trabajos asíncronos de la pasarela.
+      parameters:
+        - name: limit
+          in: query
+          description: Número máximo de trabajos por lotes que se devuelven. El valor predeterminado es 20 y el máximo es 100.
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+        - name: status
+          in: query
+          description: Filtro de estado del ciclo de vida del lote. Repita el parámetro, use un valor de estado separado por comas o use statuses para filtros separados por comas.
+          style: form
+          explode: true
+          schema:
+            type: array
+            items:
+              type: string
+        - name: statuses
+          in: query
+          description: Filtros de estado del ciclo de vida separados por comas.
+          schema:
+            type: string
+        - name: offset
+          in: query
+          description: Número de trabajos por lotes que se omiten antes de devolver la página.
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 10000
+      responses:
+        '200':
+          description: Respuesta de la lista de lotes
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchListResponse'
+        '401':
+          description: No autorizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: createBatch
+      summary: Crear lote
+      description: Crea un trabajo por lotes asíncrono y devuelve el objeto de lote del proveedor. La creación admite OpenAI, Anthropic, Google Gemini, Mistral, xAI, Groq y Together AI mediante el `model` solicitado. La pasarela infiere el proveedor a partir del modelo y también acepta `session_id` y `webhook` para observabilidad y notificaciones asíncronas. Use `provider` solo como restricción avanzada de enrutamiento.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BatchRequest'
+      responses:
+        '200':
+          description: Respuesta de estado del lote
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchResponse'
+        '401':
+          description: No autorizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /batches/models:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listBatchModels
+      summary: Listar capacidades de modelos por lotes
+      description: Devuelve metadatos respaldados por la base de datos sobre capacidades de modelos/proveedores por lotes, incluidos los parámetros admitidos, como endpoints de entrada permitidos y plazos de finalización.
+      parameters:
+        - name: params
+          in: query
+          required: false
+          description: Filtro opcional de parámetros admitidos. Repita el parámetro o pase una lista separada por comas. Se aceptan nombres canónicos y alias, por ejemplo `endpoint`, `request_endpoint`, `completion_window` o `window`.
+          schema:
+            type: array
+            items:
+              type: string
+          style: form
+          explode: false
+      responses:
+        '200':
+          description: Lista de capacidades de modelos por lotes
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchModelsResponse'
+        '401':
+          description: No autorizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /batches/capabilities:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listBatchCapabilities
+      summary: Listar capacidades de proveedores por lotes
+      description: Devuelve los modos de entrada por lotes admitidos por el proveedor para la carga de archivos y la creación de lotes mediante listas de solicitudes.
+      responses:
+        '200':
+          description: Lista de capacidades de proveedores por lotes
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  object:
+                    type: string
+                    example: list
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/BatchProviderCapability'
+  /batches/files:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listBatchFiles
+      summary: Listar archivos por lotes
+      description: Devuelve un error porque no se admite listar archivos de claves compartidas de la pasarela. Obtenga directamente por ID los archivos del espacio de trabajo.
+      responses:
+        '400':
+          description: No se admite listar archivos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: No autorizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: uploadBatchFile
+      summary: Subir archivo por lotes
+      description: Sube un archivo del proveedor para procesamiento por lotes y registra su propiedad en el espacio de trabajo autenticado. Pase `model` para que Phaseo pueda inferir el proveedor. Por defecto se usa OpenAI si se omiten tanto `model` como `provider`.
+      parameters:
+        - name: model
+          in: query
+          required: false
+          description: ID del modelo usado para inferir el proveedor del archivo por lotes.
+          schema:
+            $ref: '#/components/schemas/ModelId'
+        - name: provider
+          in: query
+          required: false
+          description: Selección avanzada del proveedor para la carga del archivo.
+          schema:
+            type: string
+            enum:
+              - openai
+              - groq
+              - together
+              - mistral
+        - name: x-phaseo-provider
+          in: header
+          required: false
+          description: Alternativa en la cabecera al parámetro de consulta `provider`.
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/FileUploadRequest'
+      responses:
+        '200':
+          description: Metadatos del archivo subido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FileResponse'
+        '401':
+          description: No autorizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '502':
+          description: Error del proveedor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /batches/files/{file_id}:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: retrieveBatchFile
+      summary: Obtener archivo por lotes
+      description: Obtiene los metadatos de un archivo por lotes del espacio de trabajo autenticado.
+      parameters:
+        - name: file_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Metadatos del archivo
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FileResponse'
+        '401':
+          description: No autorizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: El archivo no se encuentra o no pertenece al espacio de trabajo
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /batches/files/{file_id}/content:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: retrieveBatchFileContent
+      summary: Obtener contenido del archivo por lotes
+      description: Obtiene el contenido de un archivo por lotes del espacio de trabajo autenticado.
+      parameters:
+        - name: file_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Contenido del archivo
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '401':
+          description: No autorizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Archivo no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /batches/{batch_id}:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: retrieveBatch
+      summary: Obtener lote
+      description: Obtiene un trabajo por lotes creado anteriormente.
+      parameters:
+        - name: batch_id
+          in: path
+          required: true
+          description: ID del lote que se obtiene.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Respuesta de estado del lote
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchResponse'
+        '401':
+          description: No autorizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Lote no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '501':
+          description: Este proveedor no admite actualizar el estado del lote
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /batches/{batch_id}/results:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: retrieveBatchResults
+      summary: Descargar resultados del lote
+      description: Transmite filas completas de resultados nativos del proveedor como JSONL para un lote en estado final del espacio de trabajo autenticado. Combina archivos de resultados correctos y de errores, convierte salidas en línea y sigue la paginación de resultados del proveedor. Use una clave API de Phaseo. Las descargas no envían solicitudes de inferencia ni añaden cargos de uso. Los endpoints de archivos existentes siguen disponibles. Las filas en línea están limitadas a 8 MiB; las descargas interrumpidas deben descartarse y repetirse. Máximo de 10 intentos de descarga por espacio de trabajo y lote en una ventana móvil de 30 minutos, compartido entre claves API y alias. Cuentan los intentos fallidos o cancelados del proveedor. Una respuesta 429 incluye Retry-After en segundos.
+      parameters:
+        - name: batch_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Resultados JSONL originales del proveedor
+          content:
+            application/x-ndjson:
+              schema:
+                type: string
+        '401':
+          description: No autorizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Acceso a la vista previa de lotes denegado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Lote no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Los resultados del lote no están listos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Límite de descargas del lote superado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            Retry-After:
+              description: Segundos hasta que se permita otra descarga
+              schema:
+                type: integer
+        '501':
+          description: Este proveedor no admite descargas directas de resultados
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '502':
+          description: No se pudieron obtener los resultados del proveedor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '503':
+          description: La admisión de descargas no está disponible temporalmente; reintente tras 30 segundos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+  /batches/{batch_id}/requests:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listBatchRequests
+      summary: Listar filas de solicitudes del lote
+      description: Enumera las filas de cada solicitud registradas para un trabajo por lotes propio.
+      parameters:
+        - name: batch_id
+          in: path
+          required: true
+          description: ID del lote.
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 100
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+        - name: status
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Lista de filas de solicitudes del lote
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  object:
+                    type: string
+                    example: list
+                  batch_id:
+                    type: string
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/BatchRequestRow'
+        '401':
+          description: No autorizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Lote no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /batches/{batch_id}/cancel:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: cancelBatch
+      summary: Cancelar lote
+      description: Cancela una solicitud por lotes.
+      parameters:
+        - name: batch_id
+          in: path
+          required: true
+          description: ID del lote que se cancela.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Respuesta de estado del lote
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchResponse'
+        '401':
+          description: No autorizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Lote no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '501':
+          description: Este proveedor no admite cancelar lotes
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /analytics:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: getActivityAlias
+      summary: Obtener análisis del espacio de trabajo
+      description: Devuelve agregados de coste, solicitudes y tokens agrupados por fecha, modelo, proveedor y endpoint para los últimos 30 días UTC completos.
+      parameters:
+        - name: date
+          in: query
+          description: Filtra por una única fecha UTC de los últimos 30 días completos (YYYY-MM-DD).
+          schema:
+            type: string
+            format: date
+        - name: label_key
+          in: query
+          description: Clave de etiqueta de solicitud que se incluye en el segmento de gasto. Debe proporcionarse junto con label_value.
+          schema:
+            type: string
+            maxLength: 64
+            pattern: ^[A-Za-z0-9_.:-]{1,64}$
+        - name: label_value
+          in: query
+          description: Valor de etiqueta de solicitud que se incluye en el segmento de gasto. Debe proporcionarse junto con label_key.
+          schema:
+            type: string
+            maxLength: 256
+        - name: key_id
+          in: query
+          description: Filtra por identificador de clave API.
+          schema:
+            type: string
+        - name: end_user_id
+          in: query
+          description: Filtra por identificador de usuario final definido por la aplicación.
+          schema:
+            type: string
+            maxLength: 256
+        - name: model
+          in: query
+          description: Filtra por slug canónico del modelo solicitado o utilizado en el enrutamiento.
+          schema:
+            $ref: '#/components/schemas/ModelId'
+        - name: provider
+          in: query
+          description: Filtra por slug del proveedor.
+          schema:
+            type: string
+            maxLength: 128
+        - name: endpoint
+          in: query
+          description: Filtra por identificador del endpoint de la pasarela.
+          schema:
+            type: string
+            maxLength: 128
+        - name: byok
+          in: query
+          description: Filtra tráfico gestionado o BYOK.
+          schema:
+            type: boolean
+        - name: success
+          in: query
+          description: Filtra solicitudes correctas o fallidas.
+          schema:
+            type: boolean
+        - $ref: '#/components/parameters/Offset'
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 1000
+            default: 1000
+      responses:
+        '200':
+          description: Obtenido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnalyticsResponse'
+        '400':
+          description: Error de solicitud incorrecta
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: No autorizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Error de acceso denegado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Error interno del servidor
           content:
             application/json:
               schema:
@@ -2671,6 +3554,39 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '403':
           description: Prohibido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Error del servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /key:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: getCurrentApiKey
+      summary: Obtener clave API actual
+      description: Devuelve los metadatos de la clave API estándar de Gateway autenticada actualmente.
+      responses:
+        '200':
+          description: Metadatos de la clave API actual
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiKeyResponse'
+        '401':
+          description: No autorizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: No se encontró la clave de API
           content:
             application/json:
               schema:
@@ -3200,6 +4116,33 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+    patch:
+      x-beta: true
+      security: []
+      tags:
+        - Gateway
+      operationId: updateWorkspaceNotificationSettings
+      summary: Actualizar la configuración de notificaciones del espacio de trabajo
+      description: Actualiza una o más secciones persistentes de la política de notificaciones. Habilitar la recarga automática requiere un identificador existente de método de pago guardado y autenticación de dos factores verificada. Una configuración existente de recarga automática puede actualizarse sin repetir la aceptación MFA. Para habilitar la recarga automática sin MFA, los clientes deben establecer explícitamente `mfa_bypass_acknowledged` en true y proporcionar el valor exacto `I ACCEPT THE RISK` en `mfa_bypass_phrase`; la recopilación del pago sigue siendo un proceso interactivo de la cuenta.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WorkspaceNotificationSettingsUpdateRequest'
+      responses:
+        '200':
+          description: Configuración de notificaciones actualizada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkspaceNotificationSettingsResponse'
+        default:
+          description: La solicitud ha fallado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /apps/{id}:
     patch:
       x-beta: true
@@ -3583,6 +4526,127 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ProviderCredentialReorderResponse'
+        default:
+          description: La solicitud ha fallado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /private-models:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listPrivateModels
+      summary: Listar modelos privados
+      description: Enumera los metadatos de modelos privados del espacio de trabajo autenticado. Requiere `private_models:read` y una identidad de propietario o administrador.
+      responses:
+        '200':
+          description: Modelos privados
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrivateModelListResponse'
+        default:
+          description: La solicitud ha fallado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: createPrivateModel
+      summary: Crear modelo privado
+      description: Crea un endpoint de modelo compatible con OpenAI exclusivo del espacio de trabajo. Requiere `private_models:write` y una identidad de propietario o administrador.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PrivateModelCreateRequest'
+      responses:
+        '201':
+          description: Modelo privado creado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrivateModelResponse'
+        default:
+          description: La solicitud ha fallado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /private-models/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: getPrivateModel
+      summary: Obtener modelo privado
+      description: Devuelve los metadatos del endpoint de un modelo privado del espacio de trabajo autenticado sin devolver sus credenciales.
+      responses:
+        '200':
+          description: Metadatos del modelo privado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrivateModelResponse'
+        default:
+          description: La solicitud ha fallado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    patch:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: updatePrivateModel
+      summary: Actualizar modelo privado
+      description: Actualiza los metadatos del modelo privado o sustituye sus credenciales cifradas de solo escritura.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PrivateModelUpdateRequest'
+      responses:
+        '200':
+          description: Modelo privado actualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrivateModelResponse'
+        default:
+          description: La solicitud ha fallado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: deletePrivateModel
+      summary: Eliminar modelo privado
+      description: Elimina permanentemente un modelo privado del espacio de trabajo autenticado. Repetir la eliminación es seguro.
+      responses:
+        '200':
+          description: Modelo privado eliminado o ya inexistente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrivateModelDeleteResponse'
         default:
           description: La solicitud ha fallado
           content:
@@ -5312,6 +6376,135 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '404':
           description: No se encontró el destino
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /organisations:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listOrganisations
+      summary: Listar organizaciones
+      description: Devuelve una lista de organizaciones disponibles.
+      parameters:
+        - name: limit
+          in: query
+          description: Limitar el número de resultados
+          schema:
+            type: integer
+            default: 50
+            minimum: 1
+            maximum: 250
+        - name: offset
+          in: query
+          description: Desplazamiento para la paginación
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+      responses:
+        '200':
+          description: Lista de organizaciones
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    example: true
+                  limit:
+                    type: integer
+                    example: 50
+                  offset:
+                    type: integer
+                    example: 0
+                  total:
+                    type: integer
+                    example: 10
+                  organisations:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        organisation_id:
+                          type: string
+                        name:
+                          type: string
+                          nullable: true
+                        country_code:
+                          type: string
+                          nullable: true
+                        description:
+                          type: string
+                          nullable: true
+                        colour:
+                          type: string
+                          nullable: true
+        '500':
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /pricing/calculate:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: calculatePricing
+      summary: Calcular precio
+      description: Calcula el precio de un conjunto de datos de uso.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - provider
+                - model
+                - endpoint
+                - usage
+              properties:
+                provider:
+                  type: string
+                model:
+                  type: string
+                endpoint:
+                  type: string
+                usage:
+                  type: object
+                  additionalProperties: true
+      responses:
+        '200':
+          description: Resultado del cálculo de precio
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  pricing:
+                    type: object
+                    additionalProperties: true
+        '400':
+          description: Faltan campos obligatorios
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Precio no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Error de cálculo
           content:
             application/json:
               schema:
@@ -10515,6 +11708,638 @@ components:
               nullable: true
         pricing:
           $ref: '#/components/schemas/GatewayPricing'
+    VideoListResponse:
+      type: object
+      properties:
+        object:
+          type: string
+          example: list
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/VideoGenerationResponse'
+        first_id:
+          type: string
+          nullable: true
+        last_id:
+          type: string
+          nullable: true
+        has_more:
+          type: boolean
+    VideoGenerationResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        polling_url:
+          type: string
+        websocket_url:
+          type: string
+          format: uri
+          description: URL de WebSocket para suscribirse a actualizaciones normalizadas del ciclo de vida de trabajos asíncronos.
+        model:
+          type: string
+        request_id:
+          type: string
+        session_id:
+          type: string
+        status:
+          type: string
+          enum:
+            - queued
+            - processing
+            - completed
+            - failed
+            - cancelled
+            - expired
+        lifecycle_status:
+          type: string
+          enum:
+            - pending
+            - running
+            - completed
+            - failed
+            - cancelled
+            - expired
+          description: Estado normalizado del ciclo de vida asíncrono para consumidores de sondeo, WebSocket y webhooks.
+        cancel_url:
+          type: string
+          format: uri
+          nullable: true
+          description: Reservado por compatibilidad; actualmente siempre es null.
+        output_access:
+          type: string
+          enum:
+            - bytes
+            - signed_url
+            - both
+        generation_id:
+          type: string
+          nullable: true
+        native_video_id:
+          type: string
+          nullable: true
+          description: ID de vídeo/trabajo nativo del proveedor cuando difiere del ID propio de la pasarela.
+        created_at:
+          oneOf:
+            - type: integer
+            - type: string
+        started_at:
+          nullable: true
+          oneOf:
+            - type: integer
+            - type: string
+        completed_at:
+          nullable: true
+          oneOf:
+            - type: integer
+            - type: string
+        object:
+          type: string
+          example: video
+        poll_after_seconds:
+          type: integer
+          example: 20
+        provider:
+          type: string
+        seconds:
+          type: number
+        size:
+          type: string
+        audio:
+          type: boolean
+        content_url:
+          type: string
+          description: Presente cuando output_access incluye bytes (endpoint autenticado).
+        download_url:
+          type: string
+          nullable: true
+          description: URL firmada de primera parte para descarga directa cuando el estado es completed.
+        expires_at:
+          type: integer
+          nullable: true
+          description: Marca de tiempo Unix (segundos) de caducidad de la download_url firmada.
+        progress:
+          type: integer
+          nullable: true
+        progress_source:
+          type: string
+        asset:
+          type: object
+          nullable: true
+          properties:
+            id:
+              type: string
+            mime_type:
+              type: string
+            bytes:
+              type: integer
+            sha256:
+              type: string
+            width:
+              type: integer
+            height:
+              type: integer
+            duration_seconds:
+              type: number
+        outputs:
+          type: array
+          items:
+            $ref: '#/components/schemas/VideoOutput'
+        billing:
+          $ref: '#/components/schemas/VideoBillingSummary'
+        webhook:
+          $ref: '#/components/schemas/AsyncWebhookPublicState'
+        next_webhook_retry_at:
+          type: string
+          nullable: true
+          description: Marca de tiempo ISO del próximo reintento programado del webhook del usuario, si está en cola.
+        last_webhook_progress:
+          type: number
+          nullable: true
+          description: Último intervalo aproximado de progreso enviado a los consumidores de webhooks.
+        last_webhook_progress_at:
+          type: string
+          nullable: true
+          description: Marca de tiempo ISO del envío del intervalo de progreso más reciente del webhook.
+        last_webhook_dispatched_at:
+          type: string
+          nullable: true
+          description: Marca de tiempo ISO del intento de envío del webhook más reciente.
+        usage:
+          type: object
+          properties:
+            cost:
+              type: number
+            is_byok:
+              type: boolean
+          additionalProperties: true
+        error:
+          nullable: true
+    VideoOutput:
+      type: object
+      properties:
+        index:
+          type: integer
+        mime_type:
+          type: string
+        bytes_available:
+          type: boolean
+        content_url:
+          type: string
+          description: Presente cuando output_access incluye bytes.
+        download_url:
+          type: string
+          description: URL firmada de primera parte para esta salida.
+        expires_at:
+          type: integer
+          description: Marca de tiempo Unix (segundos) de caducidad de esta URL de salida.
+    VideoBillingSummary:
+      type: object
+      properties:
+        currency:
+          type: string
+        estimated_provider_cost:
+          type: string
+          nullable: true
+        estimated_user_cost:
+          type: string
+          nullable: true
+        settled_provider_cost:
+          type: string
+          nullable: true
+        settled_user_cost:
+          type: string
+          nullable: true
+        state:
+          type: string
+          enum:
+            - pending
+            - estimated
+            - settled
+            - void
+        billable:
+          type: boolean
+        total_nanos:
+          type: integer
+          nullable: true
+        estimated_nanos:
+          type: integer
+          nullable: true
+        reserved_nanos:
+          type: integer
+          nullable: true
+        reservation_id:
+          type: string
+          nullable: true
+        reservation_status:
+          type: string
+          nullable: true
+        charge_reason:
+          type: string
+          nullable: true
+        charged:
+          type: boolean
+          nullable: true
+        billed_at:
+          type: string
+      additionalProperties: true
+    AsyncWebhookPublicState:
+      type: object
+      description: Configuración depurada del webhook asíncrono y estado de entrega. Nunca se devuelven secretos; `has_secret` indica si las entregas firmadas están habilitadas. Las entregas firmadas incluyen las cabeceras x-phaseo-signature, x-phaseo-timestamp, x-phaseo-event-id, x-phaseo-event-type, x-phaseo-delivery-key, x-phaseo-attempt y x-phaseo-max-attempts.
+      properties:
+        url:
+          type: string
+          format: uri
+          nullable: true
+        events:
+          type: array
+          items:
+            type: string
+        has_secret:
+          type: boolean
+        delivery:
+          $ref: '#/components/schemas/AsyncWebhookDeliverySummary'
+        attempts:
+          type: array
+          items:
+            $ref: '#/components/schemas/AsyncWebhookDeliveryAttempt'
+    AsyncWebhookDeliverySummary:
+      type: object
+      description: Resumen público de entrega de webhooks asíncronos gestionados por la pasarela. Permite distinguir el estado de ejecución del trabajo del estado de entrega del webhook.
+      properties:
+        total_attempts:
+          type: integer
+          description: Total de intentos de entrega registrados para este trabajo.
+        delivered_events:
+          type: integer
+          description: Número de claves de entrega que han alcanzado el estado entregado.
+        delivered_event_types:
+          type: array
+          description: Claves de entrega entregadas al menos una vez.
+          items:
+            type: string
+          example:
+            - video.completed
+        pending_retries:
+          type: integer
+          description: Número de claves de entrega con un reintento programado actualmente.
+        next_retry_at:
+          type: string
+          nullable: true
+          description: Marca de tiempo ISO del próximo reintento programado, si existe.
+        last_attempt_at:
+          type: string
+          nullable: true
+          description: Marca de tiempo ISO del intento de entrega más reciente.
+        last_attempt_status:
+          type: string
+          nullable: true
+          enum:
+            - delivered
+            - scheduled_retry
+            - failed_permanently
+          description: Resultado del intento de entrega más reciente.
+        last_response_status:
+          type: integer
+          nullable: true
+          description: Estado HTTP devuelto por el destino del webhook, si está disponible.
+        last_delivered_at:
+          type: string
+          nullable: true
+          description: Marca de tiempo ISO de la entrega correcta más reciente.
+        last_failure_at:
+          type: string
+          nullable: true
+          description: Marca de tiempo ISO del intento fallido o en reintento más reciente.
+        last_error_message:
+          type: string
+          nullable: true
+          description: Mensaje de error de entrega más reciente, si está disponible.
+    AsyncWebhookDeliveryAttempt:
+      type: object
+      description: Intento reciente de entrega de un webhook asíncrono gestionado por la pasarela.
+      properties:
+        id:
+          type: string
+          description: Identificador estable del intento para auditoría y depuración.
+        delivery_key:
+          type: string
+          description: Clave de idempotencia para la entrega de este evento.
+          example: video.completed
+        event_type:
+          type: string
+          description: Tipo de evento entregado al destino del webhook.
+          example: video.completed
+        status:
+          type: string
+          enum:
+            - delivered
+            - scheduled_retry
+            - failed_permanently
+        attempt_number:
+          type: integer
+          description: Número de intento para esta clave de entrega, comenzando en uno.
+        max_attempts:
+          type: integer
+          description: Máximo de intentos antes de marcar la entrega como fallida permanentemente.
+        tried_at:
+          type: string
+          description: Marca de tiempo ISO de este intento.
+        delivered_at:
+          type: string
+          nullable: true
+          description: Marca de tiempo ISO de la entrega correcta de este intento.
+        next_retry_at:
+          type: string
+          nullable: true
+          description: Marca de tiempo ISO del próximo reintento tras este intento, si está programado.
+        response_status:
+          type: integer
+          nullable: true
+          description: Estado HTTP devuelto por el destino del webhook, si está disponible.
+        error_message:
+          type: string
+          nullable: true
+          description: Mensaje de error de entrega, si está disponible.
+        response_body_preview:
+          type: string
+          nullable: true
+          description: Vista previa del cuerpo de respuesta del destino del webhook con información sensible oculta.
+    VideoGenerationRequest:
+      type: object
+      required:
+        - model
+        - prompt
+      properties:
+        model:
+          type: string
+        prompt:
+          type: string
+        duration:
+          type: integer
+          description: Duración deseada en segundos (depende del proveedor/modelo).
+        input_video_duration:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 3600
+          exclusiveMinimum: true
+          description: Duración del vídeo de origen en segundos. Obligatoria cuando el proveedor factura la duración del vídeo de origen por separado de la salida generada.
+        input_audio_duration:
+          type: number
+          format: double
+          minimum: 2
+          maximum: 20
+          description: Duración declarada del audio de origen en segundos, usada para validar el intervalo admitido por el proveedor. Los proveedores que no informan del uso definitivo pueden facturar según el máximo de duración de entrada que admiten.
+        size:
+          type: string
+          description: Dimensiones explícitas (por ejemplo, 1280x720). No puede combinarse con resolution ni aspect_ratio.
+        resolution:
+          type: string
+          description: 480p, 720p, 1080p, 1K, 2K, 4K. Puede combinarse con aspect_ratio. No puede combinarse con size.
+        aspect_ratio:
+          type: string
+          description: Relación de aspecto como 16:9, 9:16 o 1:1. Puede combinarse con resolution. No puede combinarse con size.
+        seed:
+          type: integer
+        sample_count:
+          type: integer
+          minimum: 1
+          maximum: 4
+        negative_prompt:
+          type: string
+        generate_audio:
+          type: boolean
+        enhance_prompt:
+          type: boolean
+        compression_quality:
+          type: integer
+        person_generation:
+          type: string
+        resize_mode:
+          type: string
+        input_references:
+          type: array
+          description: Entradas HTTPS de imagen, audio o vídeo que condicionan la generación. Los tipos, roles, cantidades y combinaciones admitidos dependen del modelo seleccionado. Consulte GET /videos/models antes de enviar un trabajo. El alias de compatibilidad singular input_reference, omitido en este esquema, acepta una imagen multipart o un objeto con exactamente uno de file_id o image_url. La compatibilidad depende del proveedor.
+          items:
+            $ref: '#/components/schemas/VideoInputReference'
+        frame_images:
+          type: array
+          minItems: 1
+          maxItems: 2
+          description: Imágenes HTTPS del primer/último fotograma. Cada frame_type puede aparecer una vez. No proporcione además input_reference ni roles de fotograma en input_references.
+          items:
+            type: object
+            additionalProperties: false
+            required:
+              - type
+              - frame_type
+              - image_url
+            properties:
+              type:
+                type: string
+                enum:
+                  - image_url
+              frame_type:
+                type: string
+                enum:
+                  - first_frame
+                  - last_frame
+              image_url:
+                type: object
+                required:
+                  - url
+                properties:
+                  url:
+                    type: string
+                    format: uri
+        provider_params:
+          type: object
+          additionalProperties: true
+          description: Solo extensiones específicas del proveedor. Se rechazan el paso completo de la solicitud y los campos duplicados de enrutamiento, prompt, callback o facturación.
+        provider_options:
+          type: object
+          additionalProperties:
+            type: object
+            additionalProperties: true
+          description: Extensiones identificadas por el ID canónico del proveedor (por ejemplo, atlascloud o byteplus). Solo se reenvían las opciones del proveedor seleccionado. No puede combinarse con provider_params. Los campos de enrutamiento, prompt, callback, duración, resolución y cantidad de salidas deben usar campos validados de nivel superior.
+        output:
+          $ref: '#/components/schemas/VideoOutputConfig'
+        webhook:
+          type: object
+          required:
+            - endpoint_id
+          additionalProperties: false
+          properties:
+            endpoint_id:
+              type: string
+              description: Endpoint de webhook activo gestionado por el espacio de trabajo. Su secreto de firma cifrado y rotativo nunca se almacena en los metadatos del trabajo de vídeo.
+            events:
+              type: array
+              description: Suscripciones opcionales a eventos. Use eventos genéricos job.* o eventos video.* correspondientes, por ejemplo video.status_changed, video.progress o video.completed. Si se omiten, se usan job.status_changed y eventos finales job.*. Incluya job.progress o video.progress explícitamente para callbacks de progreso. Si se especifican, al menos un evento debe ser válido para trabajos de vídeo; se rechazan las listas mal formadas o compuestas solo de eventos de otro tipo.
+              items:
+                type: string
+        provider:
+          $ref: '#/components/schemas/ProviderRoutingOptions'
+    VideoInputReference:
+      description: Entrada multimedia HTTPS tipada. Use image_url para imágenes y media_url para audio o vídeo. Los roles describen cómo debe usar el modelo la entrada; la compatibilidad varía según el proveedor y el modelo.
+      oneOf:
+        - type: object
+          required:
+            - type
+            - image_url
+          properties:
+            type:
+              type: string
+              enum:
+                - image_url
+            role:
+              type: string
+              description: Uso previsto de esta imagen por el modelo seleccionado.
+              enum:
+                - first_frame
+                - last_frame
+                - reference
+                - source
+                - mask
+            reference_type:
+              type: string
+            image_url:
+              type: object
+              required:
+                - url
+              properties:
+                url:
+                  type: string
+                  format: uri
+                  description: URL HTTPS de imagen accesible públicamente.
+        - type: object
+          required:
+            - type
+            - media_url
+          properties:
+            type:
+              type: string
+              enum:
+                - video_url
+                - audio_url
+            role:
+              type: string
+              description: Uso previsto de este audio o vídeo por el modelo seleccionado.
+              enum:
+                - first_frame
+                - last_frame
+                - reference
+                - source
+                - mask
+            reference_type:
+              type: string
+            media_url:
+              type: object
+              required:
+                - url
+              properties:
+                url:
+                  type: string
+                  format: uri
+                  description: URL HTTPS de audio o vídeo accesible públicamente.
+    VideoOutputConfig:
+      type: object
+      properties:
+        access:
+          type: string
+          enum:
+            - bytes
+            - signed_url
+            - both
+          default: both
+          description: bytes=solo content_url autenticada, signed_url=solo enlaces de descarga firmados, both=incluir ambos.
+    VideoModelsResponse:
+      type: object
+      properties:
+        object:
+          type: string
+          example: list
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/VideoModelCapability'
+    VideoModelCapability:
+      type: object
+      properties:
+        model:
+          type: string
+        name:
+          type: string
+        status:
+          type: string
+        input_types:
+          type: array
+          items:
+            type: string
+        output_types:
+          type: array
+          items:
+            type: string
+        supported_params:
+          type: array
+          items:
+            type: string
+        supported_parameters:
+          type: array
+          description: Alias de compatibilidad de supported_params.
+          items:
+            type: string
+        supported_params_detail:
+          $ref: '#/components/schemas/SupportedParameterDetails'
+        supported_parameters_detail:
+          $ref: '#/components/schemas/SupportedParameterDetails'
+        providers:
+          type: array
+          items:
+            $ref: '#/components/schemas/VideoModelProviderCapability'
+        pricing:
+          type: object
+          additionalProperties: true
+    VideoModelProviderCapability:
+      type: object
+      properties:
+        id:
+          type: string
+        supported_params:
+          type: array
+          items:
+            type: string
+        supported_parameters:
+          type: array
+          description: Alias de compatibilidad de supported_params.
+          items:
+            type: string
+        supported_params_detail:
+          $ref: '#/components/schemas/SupportedParameterDetails'
+        supported_parameters_detail:
+          $ref: '#/components/schemas/SupportedParameterDetails'
+    VideoDeleteResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        object:
+          type: string
+        deleted:
+          type: boolean
+    FileUploadRequest:
+      type: object
+      required:
+        - file
+        - purpose
+      properties:
+        file:
+          type: string
+          format: binary
+        purpose:
+          type: string
     FileResponse:
       type: object
       properties:
@@ -10534,6 +12359,581 @@ components:
           type: string
         status_details:
           type: object
+    BatchListResponse:
+      type: object
+      properties:
+        object:
+          type: string
+          example: list
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/BatchResponse'
+        first_id:
+          type: string
+          nullable: true
+        last_id:
+          type: string
+          nullable: true
+        has_more:
+          type: boolean
+    BatchResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        native_batch_id:
+          type: string
+          nullable: true
+          description: ID de lote nativo del proveedor cuando difiere del ID propio de la pasarela.
+        object:
+          type: string
+        endpoint:
+          type: string
+        errors:
+          type: object
+        input_file_id:
+          type: string
+        completion_window:
+          type: string
+        status:
+          type: string
+        lifecycle_status:
+          type: string
+          enum:
+            - pending
+            - running
+            - completed
+            - failed
+            - cancelled
+            - expired
+          description: Estado normalizado del ciclo de vida asíncrono para consumidores de sondeo, WebSocket y webhooks.
+        progress:
+          type: integer
+          minimum: 0
+          maximum: 100
+          description: Porcentaje aproximado de finalización del lote derivado de los recuentos de solicitudes del proveedor, si están disponibles. Los lotes completados informan 100.
+        polling_url:
+          type: string
+          format: uri
+        websocket_url:
+          type: string
+          format: uri
+          description: URL de WebSocket para suscribirse a actualizaciones normalizadas del ciclo de vida de trabajos asíncronos.
+        cancel_url:
+          type: string
+          format: uri
+          nullable: true
+          description: Reservado por compatibilidad; actualmente siempre es null.
+        results_url:
+          type: string
+          format: uri
+          nullable: true
+          description: URL autenticada de descarga JSONL de Phaseo para lotes compatibles en estado final. Es null durante el procesamiento. Un lote en estado final puede no tener salida. Use una clave API del espacio de trabajo propietario; se aplican los límites de retención del proveedor.
+        output_file_id:
+          type: string
+        error_file_id:
+          type: string
+        created_at:
+          type: integer
+        in_progress_at:
+          type: integer
+        expires_at:
+          type: integer
+        finalizing_at:
+          type: integer
+        completed_at:
+          type: integer
+        failed_at:
+          type: integer
+        expired_at:
+          type: integer
+        cancelling_at:
+          type: integer
+        cancelled_at:
+          type: integer
+        request_counts:
+          $ref: '#/components/schemas/BatchRequestCounts'
+        metadata:
+          type: object
+        request_id:
+          type: string
+        provider:
+          type: string
+        session_id:
+          type: string
+        webhook:
+          $ref: '#/components/schemas/AsyncWebhookPublicState'
+        next_webhook_retry_at:
+          type: string
+          nullable: true
+        last_webhook_progress:
+          type: number
+          nullable: true
+        last_webhook_progress_at:
+          type: string
+          nullable: true
+        last_webhook_dispatched_at:
+          type: string
+          nullable: true
+        finalized_at:
+          type: string
+          nullable: true
+        pricing_lines:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        usage:
+          type: object
+          description: Uso y coste agregados normalizados tras la finalización.
+          properties:
+            requests:
+              type: integer
+              nullable: true
+            input_tokens:
+              type: integer
+              nullable: true
+            output_tokens:
+              type: integer
+              nullable: true
+            total_tokens:
+              type: integer
+              nullable: true
+            cost_nanos:
+              type: integer
+              nullable: true
+            cost_usd:
+              type: number
+              nullable: true
+            currency:
+              type: string
+        billing:
+          $ref: '#/components/schemas/BatchBillingSummary'
+    BatchRequestCounts:
+      type: object
+      properties:
+        total:
+          type: integer
+        completed:
+          type: integer
+        failed:
+          type: integer
+    BatchBillingSummary:
+      type: object
+      properties:
+        currency:
+          type: string
+        billed:
+          type: boolean
+        charged:
+          type: boolean
+        reason:
+          type: string
+        state:
+          type: string
+          enum:
+            - pending
+            - estimated
+            - settled
+            - void
+        reservation_id:
+          type: string
+          nullable: true
+        reservation_status:
+          type: string
+          nullable: true
+        estimated_provider_cost:
+          type: string
+          nullable: true
+        estimated_user_cost:
+          type: string
+          nullable: true
+        settled_provider_cost:
+          type: string
+          nullable: true
+        settled_user_cost:
+          type: string
+          nullable: true
+        estimated_nanos:
+          type: integer
+          nullable: true
+        reserved_nanos:
+          type: integer
+          nullable: true
+        estimation_truncated:
+          type: boolean
+          nullable: true
+          description: True si la estimación de reserva se escaló a partir de una muestra limitada de un archivo de entrada de lote mayor.
+        estimation_sample_size:
+          type: integer
+          nullable: true
+          description: Número de filas de entrada valoradas directamente para estimar la reserva.
+        estimation_total_rows:
+          type: integer
+          nullable: true
+          description: Total de filas de entrada representadas por la estimación de reserva.
+        total_nanos:
+          type: integer
+          nullable: true
+        cost_nanos:
+          type: integer
+          nullable: true
+        cost_usd:
+          type: number
+          nullable: true
+        finalized_at:
+          type: string
+          nullable: true
+        pricing_breakdown:
+          type: object
+          additionalProperties: true
+    BatchRequest:
+      type: object
+      properties:
+        provider_options:
+          type: object
+          description: Extensiones limitadas por ID canónico del proveedor. OpenAI acepta output_expires_after; Mistral acepta metadata. Solo se aplican las opciones del proveedor seleccionado. No duplique una opción en el nivel superior. Las opciones no pueden sustituir filas valoradas, modelos ni archivos.
+          additionalProperties:
+            type: object
+            additionalProperties: true
+        model:
+          type: string
+          description: ID del modelo usado para inferir el proveedor del lote. Las filas de solicitud también pueden incluir body.model; se prefiere el modelo de nivel superior.
+        prompts:
+          type: array
+          description: Formato abreviado de prompt simple. Phaseo convierte cada prompt en una fila de lote nativa del proveedor para el modelo seleccionado.
+          items:
+            type: string
+        items:
+          type: array
+          description: Formato abreviado de prompt estructurado. Los elementos pueden incluir `id`, `custom_id`, `prompt`, `messages`, `input`, `system`, `max_tokens`, `temperature` o un `body` avanzado.
+          items:
+            type: object
+            additionalProperties: true
+        system:
+          type: string
+          description: Instrucción de sistema opcional aplicada a las filas de prompts abreviados.
+        max_tokens:
+          type: integer
+          description: Límite máximo de tokens opcional aplicado a las filas de prompts abreviados.
+        temperature:
+          type: number
+          description: Temperatura de muestreo opcional aplicada a las filas de prompts abreviados.
+        input_file_id:
+          type: string
+          description: ID de archivo existente del proveedor para crear lotes mediante carga de archivos.
+        requests:
+          type: array
+          description: Filas avanzadas de solicitud por lotes. Proporcione exactamente uno de `prompts`, `items`, `requests` o `input_file_id`.
+          items:
+            $ref: '#/components/schemas/BatchRequestItem'
+        endpoint:
+          type: string
+          enum:
+            - /v1/chat/completions
+            - /v1/responses
+            - /v1/messages
+            - /v1/embeddings
+            - /v1/generateContent
+          description: Formato de solicitud para el cliente. Todas las solicitudes de un lote usan este endpoint. Si se omite, Phaseo elige un valor predeterminado nativo del proveedor a partir del modelo.
+        completion_window:
+          type: string
+        metadata:
+          type: object
+          additionalProperties: true
+        session_id:
+          type: string
+          maxLength: 256
+          description: Identificador único para agrupar solicitudes relacionadas (por ejemplo, una conversación o un flujo de trabajo de agente) y facilitar la observabilidad.
+        webhook:
+          type: object
+          required:
+            - endpoint_id
+          additionalProperties: false
+          properties:
+            endpoint_id:
+              type: string
+              description: ID del endpoint de webhook gestionado por el espacio de trabajo.
+            events:
+              type: array
+              description: Suscripciones opcionales a eventos. Use eventos genéricos job.* o eventos batch.* correspondientes, por ejemplo batch.progress o batch.completed. Si se omiten, se usan eventos finales job.*. Incluya job.progress o batch.progress explícitamente para callbacks de progreso del recuento de solicitudes. Si se especifican, al menos un evento debe ser válido para trabajos por lotes; se rechazan las listas mal formadas o compuestas solo de eventos de otro tipo.
+              items:
+                type: string
+        webhook_endpoint_id:
+          type: string
+          description: Alias práctico de webhook.endpoint_id.
+        debug:
+          $ref: '#/components/schemas/DebugOptions'
+        provider:
+          allOf:
+            - $ref: '#/components/schemas/ProviderRoutingOptions'
+          description: Restricción avanzada de enrutamiento. La mayoría de las solicitudes deberían inferir el proveedor a partir del modelo.
+    BatchRequestItem:
+      type: object
+      required:
+        - body
+      properties:
+        custom_id:
+          type: string
+        method:
+          type: string
+          default: POST
+          enum:
+            - POST
+        url:
+          type: string
+          description: Ruta del endpoint de esta fila. Si se especifica, debe coincidir con el endpoint del lote principal. Por defecto se usa el endpoint del lote principal.
+        body:
+          type: object
+          additionalProperties: true
+    BatchModelsResponse:
+      type: object
+      properties:
+        object:
+          type: string
+          example: list
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/BatchModelCapability'
+    BatchModelCapability:
+      type: object
+      properties:
+        model:
+          type: string
+        name:
+          type: string
+        status:
+          type: string
+        input_types:
+          type: array
+          items:
+            type: string
+        output_types:
+          type: array
+          items:
+            type: string
+        supported_params:
+          type: array
+          items:
+            type: string
+        supported_parameters:
+          type: array
+          description: Alias de compatibilidad de supported_params.
+          items:
+            type: string
+        supported_params_detail:
+          $ref: '#/components/schemas/SupportedParameterDetails'
+        supported_parameters_detail:
+          $ref: '#/components/schemas/SupportedParameterDetails'
+        providers:
+          type: array
+          items:
+            $ref: '#/components/schemas/BatchModelProviderCapability'
+        pricing:
+          type: object
+          additionalProperties: true
+    BatchModelProviderCapability:
+      type: object
+      properties:
+        id:
+          type: string
+        supported_params:
+          type: array
+          items:
+            type: string
+        supported_parameters:
+          type: array
+          description: Alias de compatibilidad de supported_params.
+          items:
+            type: string
+        supported_params_detail:
+          $ref: '#/components/schemas/SupportedParameterDetails'
+        supported_parameters_detail:
+          $ref: '#/components/schemas/SupportedParameterDetails'
+    BatchProviderCapability:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        status:
+          type: string
+          enum:
+            - active
+            - planned
+        gateway_input_modes:
+          type: array
+          items:
+            type: string
+            enum:
+              - file
+              - requests
+        native_input_modes:
+          type: array
+          items:
+            type: string
+            enum:
+              - file
+              - requests
+        documentation_url:
+          type: string
+          format: uri
+        notes:
+          type: string
+          nullable: true
+        endpoints:
+          type: array
+          description: Endpoints por lotes admitidos por este proveedor.
+          items:
+            type: object
+            required:
+              - endpoint
+              - mode
+            properties:
+              endpoint:
+                type: string
+              mode:
+                type: string
+                enum:
+                  - native
+                  - translated
+    BatchRequestRow:
+      type: object
+      properties:
+        id:
+          type: string
+        custom_id:
+          type: string
+        request_index:
+          type: integer
+        provider:
+          type: string
+        native_batch_id:
+          type: string
+          nullable: true
+        method:
+          type: string
+          nullable: true
+        endpoint:
+          type: string
+          nullable: true
+        model:
+          type: string
+          nullable: true
+        status:
+          type: string
+        request_body_hash:
+          type: string
+          nullable: true
+        response_status:
+          type: integer
+          nullable: true
+        response_body:
+          type: object
+          nullable: true
+          additionalProperties: true
+        error_body:
+          type: object
+          nullable: true
+          additionalProperties: true
+        usage:
+          type: object
+          nullable: true
+          additionalProperties: true
+        cost_nanos:
+          type: integer
+          nullable: true
+        cost_usd:
+          type: number
+          nullable: true
+        meta:
+          type: object
+          additionalProperties: true
+        created_at:
+          type: string
+          nullable: true
+        updated_at:
+          type: string
+          nullable: true
+        completed_at:
+          type: string
+          nullable: true
+    AnalyticsResponse:
+      type: object
+      required:
+        - data
+        - total_count
+        - offset
+        - limit
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ActivityEntry'
+        total_count:
+          type: integer
+          minimum: 0
+        offset:
+          type: integer
+          minimum: 0
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 1000
+      additionalProperties: false
+    ActivityEntry:
+      type: object
+      required:
+        - date
+        - model
+        - model_permaslug
+        - endpoint_id
+        - provider_name
+        - usage
+        - byok_usage_inference
+        - requests
+        - prompt_tokens
+        - completion_tokens
+        - reasoning_tokens
+      properties:
+        date:
+          type: string
+          format: date
+          example: 2025-08-24
+        model:
+          type: string
+          example: openai/gpt-4.1
+        model_permaslug:
+          type: string
+          example: openai/gpt-4.1-2025-04-14
+        endpoint_id:
+          type: string
+          example: chat.completions
+        provider_name:
+          type: string
+          example: OpenAI
+        usage:
+          type: number
+          example: 0.015
+        byok_usage_inference:
+          type: number
+          example: 0.012
+        requests:
+          type: integer
+          example: 5
+        prompt_tokens:
+          type: integer
+          example: 50
+        completion_tokens:
+          type: integer
+          example: 125
+        reasoning_tokens:
+          type: integer
+          example: 25
+      additionalProperties: false
     CreditsResponse:
       type: object
       required:
@@ -10575,20 +12975,13 @@ components:
               example: 1250
           additionalProperties: false
       additionalProperties: false
-    ApiKeyListResponse:
+    ApiKeyResponse:
       type: object
       required:
         - data
-        - total_count
       properties:
         data:
-          type: array
-          items:
-            $ref: '#/components/schemas/ApiKey'
-        total_count:
-          type: integer
-          minimum: 0
-          example: 3
+          $ref: '#/components/schemas/ApiKey'
       additionalProperties: false
     ApiKey:
       type: object
@@ -10783,6 +13176,21 @@ components:
           minimum: 0
           description: Gasto en USD.
       additionalProperties: false
+    ApiKeyListResponse:
+      type: object
+      required:
+        - data
+        - total_count
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ApiKey'
+        total_count:
+          type: integer
+          minimum: 0
+          example: 3
+      additionalProperties: false
     ApiKeyCreateRequest:
       type: object
       required:
@@ -10869,14 +13277,6 @@ components:
               description: Clave de API en texto sin formato. Solo se devuelve una vez al crearla.
               example: phaseo_v1_sk_abcd1234_supersecretvalue
           additionalProperties: false
-    ApiKeyResponse:
-      type: object
-      required:
-        - data
-      properties:
-        data:
-          $ref: '#/components/schemas/ApiKey'
-      additionalProperties: false
     ApiKeyUpdateRequest:
       type: object
       properties:
@@ -11494,6 +13894,61 @@ components:
         - auto_top_up_failure
         - payment_method_expiring
         - model_deprecation
+      properties:
+        auto_top_up_failure:
+          type: boolean
+        payment_method_expiring:
+          type: boolean
+        model_deprecation:
+          type: boolean
+      additionalProperties: false
+    WorkspaceNotificationSettingsUpdateRequest:
+      type: object
+      minProperties: 1
+      properties:
+        auto_top_up:
+          $ref: '#/components/schemas/WorkspaceAutoTopUpUpdate'
+        low_balance_email:
+          $ref: '#/components/schemas/WorkspaceLowBalanceEmailUpdate'
+        email_preferences:
+          $ref: '#/components/schemas/WorkspaceNotificationEmailPreferencesUpdate'
+      additionalProperties: false
+    WorkspaceAutoTopUpUpdate:
+      type: object
+      required:
+        - enabled
+      properties:
+        enabled:
+          type: boolean
+        balance_threshold_nanos:
+          type: integer
+          minimum: 0
+        amount_nanos:
+          type: integer
+          minimum: 0
+        payment_method_id:
+          type: string
+          nullable: true
+        mfa_bypass_acknowledged:
+          type: boolean
+        mfa_bypass_phrase:
+          type: string
+      additionalProperties: false
+    WorkspaceLowBalanceEmailUpdate:
+      type: object
+      required:
+        - enabled
+      properties:
+        enabled:
+          type: boolean
+        threshold_usd:
+          type: number
+          minimum: 0
+          multipleOf: 0.01
+      additionalProperties: false
+    WorkspaceNotificationEmailPreferencesUpdate:
+      type: object
+      minProperties: 1
       properties:
         auto_top_up_failure:
           type: boolean
@@ -12188,6 +14643,262 @@ components:
           items:
             type: string
             format: uuid
+      additionalProperties: false
+    PrivateModelListResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/PrivateModel'
+      additionalProperties: false
+    PrivateModel:
+      type: object
+      required:
+        - id
+        - workspace_id
+        - model_id
+        - name
+        - base_url
+        - upstream_model_id
+        - supports_responses
+        - enabled
+      properties:
+        id:
+          type: string
+          format: uuid
+        workspace_id:
+          type: string
+          format: uuid
+        model_id:
+          type: string
+          pattern: ^[a-z0-9][a-z0-9._-]{0,62}/[a-z0-9][a-z0-9._:-]{0,126}$
+          description: Slug propietario/modelo visible en el espacio de trabajo, usado en solicitudes normales de inferencia.
+          readOnly: true
+        local_slug:
+          type: string
+          pattern: ^[a-z0-9][a-z0-9._:-]{0,126}$
+          description: Slug local del espacio de trabajo usado para derivar la identidad del modelo.
+          readOnly: true
+        catalog_model_id:
+          type: string
+          nullable: true
+          pattern: ^[a-z0-9][a-z0-9._-]{0,62}/[a-z0-9][a-z0-9._:-]{0,126}$
+          description: Modelo del catálogo al que está asociado este endpoint, si existe.
+          readOnly: true
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        description:
+          type: string
+          nullable: true
+          maxLength: 500
+        base_url:
+          type: string
+          format: uri
+          description: URL base HTTPS del endpoint, confidencial para el espacio de trabajo.
+        upstream_model_id:
+          type: string
+          minLength: 1
+          maxLength: 255
+        supports_responses:
+          type: boolean
+        enabled:
+          type: boolean
+        input_modalities:
+          type: array
+          items:
+            type: string
+        output_modalities:
+          type: array
+          items:
+            type: string
+        context_length:
+          type: integer
+          nullable: true
+          minimum: 1
+        max_output_tokens:
+          type: integer
+          nullable: true
+          minimum: 1
+        host_provider_id:
+          type: string
+          nullable: true
+          description: Proveedor existente de Phaseo que opera el despliegue.
+        custom_provider_name:
+          type: string
+          nullable: true
+          minLength: 1
+          maxLength: 120
+        custom_provider_url:
+          type: string
+          nullable: true
+          format: uri
+        routing_policy:
+          type: string
+          enum:
+            - preferred
+            - balanced
+            - fallback
+        credential_prefix:
+          type: string
+          nullable: true
+        credential_suffix:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          nullable: true
+        updated_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_by:
+          type: string
+          format: uuid
+          nullable: true
+      additionalProperties: false
+    PrivateModelCreateRequest:
+      type: object
+      required:
+        - model_reference
+        - name
+        - base_url
+        - upstream_model_id
+        - credential
+      properties:
+        model_reference:
+          type: string
+          description: ID exacto de modelo del catálogo para asociar este endpoint como proveedor, o un slug corto para coincidencia automática/nombres dentro del espacio de trabajo.
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        description:
+          type: string
+          maxLength: 500
+        base_url:
+          type: string
+          format: uri
+        upstream_model_id:
+          type: string
+          minLength: 1
+          maxLength: 255
+        credential:
+          type: string
+          minLength: 8
+          writeOnly: true
+        supports_responses:
+          type: boolean
+          default: false
+        enabled:
+          type: boolean
+          default: true
+        context_length:
+          type: integer
+          minimum: 1
+          nullable: true
+        max_output_tokens:
+          type: integer
+          minimum: 1
+          nullable: true
+        host_provider_id:
+          type: string
+          nullable: true
+          description: Proveedor existente de Phaseo que opera el despliegue.
+        custom_provider_name:
+          type: string
+          minLength: 1
+          maxLength: 120
+          nullable: true
+        custom_provider_url:
+          type: string
+          format: uri
+          nullable: true
+        routing_policy:
+          type: string
+          enum:
+            - preferred
+            - balanced
+            - fallback
+          default: preferred
+      additionalProperties: false
+    PrivateModelResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/PrivateModel'
+      additionalProperties: false
+    PrivateModelUpdateRequest:
+      type: object
+      minProperties: 1
+      properties:
+        model_reference:
+          type: string
+          description: ID exacto de modelo del catálogo para asociar este endpoint como proveedor, o un slug corto para coincidencia automática/nombres dentro del espacio de trabajo.
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        description:
+          type: string
+          maxLength: 500
+          nullable: true
+        base_url:
+          type: string
+          format: uri
+        upstream_model_id:
+          type: string
+          minLength: 1
+          maxLength: 255
+        credential:
+          type: string
+          minLength: 8
+          writeOnly: true
+        supports_responses:
+          type: boolean
+        enabled:
+          type: boolean
+        context_length:
+          type: integer
+          minimum: 1
+          nullable: true
+        max_output_tokens:
+          type: integer
+          minimum: 1
+          nullable: true
+        host_provider_id:
+          type: string
+          nullable: true
+        custom_provider_name:
+          type: string
+          minLength: 1
+          maxLength: 120
+          nullable: true
+        custom_provider_url:
+          type: string
+          format: uri
+          nullable: true
+        routing_policy:
+          type: string
+          enum:
+            - preferred
+            - balanced
+            - fallback
+      additionalProperties: false
+    PrivateModelDeleteResponse:
+      type: object
+      required:
+        - deleted
+      properties:
+        deleted:
+          type: boolean
       additionalProperties: false
     WorkspaceBudgetListResponse:
       type: object

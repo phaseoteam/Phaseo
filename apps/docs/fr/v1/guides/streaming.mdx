@@ -1,50 +1,63 @@
 ---
 title: "Diffusion en continu"
-description: "Utilisez les événements envoyés par le serveur (SSE) pour diffuser les tokens avec une faible latence."
+description: "Recevez une sortie incrémentale, traitez les événements propres au point d’accès et gérez les flux interrompus."
 icon: "radio"
 ---
 
-Le streaming renvoie la réponse sous forme de fragments SSE successifs, afin que les utilisateurs la voient plus tôt.
+Définissez `stream: true` pour recevoir la sortie sous forme d’événements envoyés par le serveur (SSE). Gardez votre clé API Phaseo sur le serveur et transmettez la sortie à l’interface.
 
-## Points de terminaison pris en charge
-
-- `/v1/responses`
-- `/v1/chat/completions`
-- `/v1/messages`
-
-## Requête
+## Envoyer une requête en streaming
 
 ```bash
-curl https://api.phaseo.app/v1/responses \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+curl --no-buffer https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "model": "openai/gpt-5-nano",
-    "input": "Stream a short hello message.",
+    "input": "Say hello in one sentence.",
     "stream": true
   }'
 ```
 
-## Réponse
+Vérifiez le statut HTTP avant de lire le flux. Un échec avant le début du streaming renvoie la [réponse d’erreur JSON](../api-reference/errors.mdx) habituelle.
 
-```text
-data: {"id":"resp_...","object":"response","status":"in_progress",...}
-data: {"type":"response.output_text.delta","delta":"Hello"}
-data: {"type":"response.completed",...}
-data: [DONE]
-```
+## Lire les événements
 
-## Options du SDK
+Utilisez le format d’événements du point d’accès appelé :
 
-- SDK TypeScript : `client.streamResponses()`, `client.streamChat()` et `client.streamMessages()`
-- Python SDK : `client.stream_responses()`, `client.stream_chat()` et `client.stream_message()`
-- Vercel AI SDK : `streamText(...)` avec `@phaseo/ai-sdk-provider`
+| Point d’accès | Sortie incrémentale | Fin |
+| --- | --- | --- |
+| [Responses](../api-reference/endpoint/responses.mdx) | Événements tels que `response.output_text.delta` | Examinez l’événement final de réponse et son statut |
+| [Chat Completions](../api-reference/endpoint/chat-completions.mdx) | `choices[].delta` | Examinez `finish_reason` ; `[DONE]` termine le flux |
+| [Messages](../api-reference/endpoint/anthropic-messages.mdx) | `message_start`, `content_block_delta`, et les événements associés | `message_stop` |
 
-## Limitation importante
+Les événements SSE sont séparés par des lignes vides. Un fragment réseau peut contenir une partie d’événement ou plusieurs événements ; ne l’analysez pas comme un JSON autonome. Mettez en tampon les trames incomplètes ou utilisez un outil de streaming du SDK. Ne supposez pas que chaque point d’accès envoie `[DONE]`.
 
-Au niveau actuel de validation des requêtes de la passerelle, l’association d’outils avec `stream: true` est refusée (`400 invalid_request`). Utilisez le mode sans streaming pour les boucles d’appels d’outils.
+Les outils du SDK gèrent le transport du flux :
 
-## Guides suivants
+- TypeScript: `streamResponses()`, `streamChat()`, `streamMessages()`.
+- Python: `stream_responses()`, `stream_chat()`, `stream_message()`.
+- Vercel AI SDK: `streamText()` avec `@phaseo/ai-sdk-provider`.
 
-1. [Référence des événements SSE](./streaming-sse.mdx)
-2. [Streaming en production](./streaming-production.mdx)
+Consultez le [guide TypeScript](../sdk-reference/typescript/usage.mdx) ou le [guide Python](../sdk-reference/python/usage.mdx) pour configurer le client.
+
+## Diffuser les appels d’outils
+
+Le Gateway accepte le streaming avec des outils, mais sa prise en charge dépend du modèle et du fournisseur choisis. Accumulez les fragments d’arguments jusqu’à la fin de l’appel, puis analysez, validez et autorisez les arguments avant l’exécution. N’exécutez jamais des arguments partiels.
+
+Suivez les [schémas d’appels d’outils](./tool-calling-patterns.mdx) pour les requêtes de continuation et la [sécurité des outils](./tool-calling-safety.mdx) pour les contrôles de validation et d’approbation.
+
+## Annuler et récupérer
+
+Passez un `AbortSignal` au client HTTP serveur et annulez quand l’utilisateur arrête ou se déconnecte. Fixez une échéance adaptée. L’annulation ne garantit ni l’arrêt immédiat du fournisseur ni la gratuité de la sortie générée.
+
+Affichez progressivement le texte partiel, mais ne marquez la réponse terminée qu’après l’événement final réussi du point d’accès. Une connexion fermée ne prouve pas son achèvement.
+
+Si le flux échoue après le début de la sortie :
+
+1. Marquez la réponse partielle comme interrompue.
+2. Conservez l’identifiant de requête ou de génération, le point d’accès et le modèle dans vos journaux.
+3. Proposez une nouvelle tentative explicite. Une nouvelle requête peut générer une autre sortie et de nouveaux frais.
+4. Ne réexécutez pas les outils déjà exécutés et n’ajoutez pas automatiquement la nouvelle réponse à la sortie partielle.
+
+Pour les échecs avant la sortie, limitez les tentatives et respectez les [en-têtes de limitation](../api-reference/limits.mdx). Si l’application doit valider toute la sortie avant affichage, utilisez une requête sans streaming ou mettez le résultat en tampon sur le serveur.

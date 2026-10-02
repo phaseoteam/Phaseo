@@ -30,12 +30,82 @@ const response = await client.generateText({
 console.log(response.choices[0].message.content);
 ```
 
+## Attendre la musique, les vidéos ou les lots
+
+```typescript
+const music = await client.music.generateAndWait(
+  { model: process.env.PHASEO_MUSIC_MODEL!, prompt: "Gentle instrumental piano" },
+  { timeoutMs: 600_000, onPoll: (job) => console.log(job.id, job.status) },
+);
+```
+
+Utilisez `videos.generateAndWait(request, options)` pour les vidéos et `batches.createAndWait(request, options)` pour les lots. Ces outils soumettent une seule fois, renvoient une réponse immédiatement terminée sans interrogation ou interrogent la même tâche jusqu’à sa fin. Ils renvoient la réponse complète et lèvent `JobFailedError` avec `response` en cas d’échec, annulation ou expiration. Un lot terminé peut contenir des requêtes individuelles échouées.
+
+Chaque ressource propose aussi `wait(id, options)`, qui renvoie toute réponse finale, y compris les échecs. Les options sont `intervalMs` (défaut 5 000 ; minimum 250), `timeoutMs` (défaut 1 800 000), `signal` et `onPoll`. Le délai d’attente commence après le retour de la soumission ; la requête HTTP initiale conserve son délai. Les rappels de progression reçoivent la réponse initiale et chaque interrogation.
+
+`JobTimeoutError` et `JobCancelledError` conservent `jobId` et `lastResponse` pour reprendre via `.wait(error.jobId)`. Arrêter l’attente annule l’interrogation en cours, mais pas le travail distant. Les erreurs HTTP sont propagées sans nouvelle soumission automatique. Ces outils SDK n’ajoutent pas d’exécution en arrière-plan à la passerelle.
+
+## Contrôles des requêtes et diagnostic
+
+Utilisez `client.withOptions({ timeoutMs: 30_000, signal, maxRetries: 2 })` pour un
+client immuable avec des contrôles appliqués à toutes les ressources, tous les flux et tous les médias.
+Les délais incluent la lecture du corps de réponse. Les tentatives sont nulles par défaut et s’appliquent
+uniquement à GET/HEAD en respectant `Retry-After`. Les soumissions payantes ne sont jamais répétées.
+
+`responseMetadata(result)` expose l’identifiant de requête de la passerelle et l’URL de trace du tableau de bord.
+Les erreurs HTTP exposent `code`, `requestId`, `traceUrl`, `retryAfterMs`, le corps et les en-têtes.
+
+## Outils de processus
+
+`music.start`, `videos.start` et `batches.start` renvoient des références avec `result()`,
+`events()` et `toJSON()`. Conservez le type et l’identifiant et reconstruisez avec `resume(id)`.
+`result()` rejette les échecs finaux. Seuls vidéo et lots acceptent l’annulation distante.
+
+`videos.streamContent(id)` avec `downloadTo(stream, writable)` diffuse de grandes
+sorties. `toFile(bytes, filename, contentType)` prépare les téléversements.
+`batchResults(await client.batches.streamResults(id))` analyse JSONL progressivement ;
+`matchBatchResult(row, inputsByCustomId)` conserve les erreurs individuelles et l’identité des entrées.
+
+`responses.parse(request, schema)` accepte un analyseur compatible Zod et renvoie
+une sortie validée. Définissez aussi le format structuré côté serveur dans la requête.
+`collectStream(client.streamResponses(request))` accumule le texte et l’utilisation.
+
+`checkModelCapabilities(id, { inputTypes, outputTypes, endpoints, parameters,
+parameterValues })` vérifie les capacités annoncées et les contraintes scalaires sur une
+offre fournisseur active. Les métadonnées manquantes sont indiquées comme inconnues. Il ne modifie jamais
+le modèle ni ne supprime de paramètres, et ne garantit pas l’acceptation d’une requête réelle.
+
+Pour les sélecteurs de modèles et éditeurs de paramètres, utilisez les métadonnées actuelles des points d’accès :
+
+```typescript
+const support = await client.models.checkParameters(
+  "openai/gpt-5",
+  { temperature: 0.7, top_p: 0.9 },
+  { endpoint: "responses" },
+);
+```
+
+Chaque paramètre porte `supported`, `partial`, `unsupported` ou `unknown`,
+avec des routes fournisseurs et des problèmes de contraintes pour l’affichage en ligne.
+`client.models.capabilities(modelId)` renvoie la réponse complète des capacités
+du point d’accès. Ces vérifications explicites n’ajoutent pas de découverte aux appels de génération.
+
+## Tests locaux et exports du site
+
+Importez `createMockTransport` et `jobFixtures` depuis `@phaseo/sdk/testing` pour injecter
+des jeux de test stricts et ordonnés via `fetchImpl`. Appelez `mock.assertDone()` pour vérifier
+toutes les requêtes attendues. Les appels imprévus échouent localement sans recours au réseau.
+
+Après une requête dans un salon Phaseo, **Obtenir le code** exporte son modèle et ses
+réglages en TypeScript ou Python. **Voir la requête** ouvre la trace du tableau de bord si
+un identifiant est disponible. Exécutez le code sur votre serveur avec `PHASEO_API_KEY`.
 ## Contenu du package
 
 -   Classe cliente `Phaseo` pour toutes les interactions avec l’API
 -   Des méthodes d’assistance organisées par ressource, telles que `client.models`, `client.batches`, `client.videos`, and `client.asyncJobs`
 -   Des méthodes de découverte et de tarification, telles que `client.getModels()`, `client.listProviders()`, `client.getCredits()`, `client.getActivity()`, `client.getAnalytics()`, `client.listEndpoints()`, `client.listOrganisations()`, `client.listPricingModels()`, `client.calculatePricing()`, `client.listApiKeys()`, `client.createApiKey()`, `client.getApiKey(id)`, `client.updateApiKey(id, ...)`, `client.deleteApiKey(id)`, `client.listWorkspaces()`, `client.getWorkspace(id)`, `client.createWorkspace(...)`, `client.updateWorkspace(id, ...)`, `client.deleteWorkspace(id)`, and `client.getCurrentApiKey()`
 -   Des méthodes pour créer les URL WebSocket des flux de cycle de vie des tâches asynchrones, des lots et des vidéos
+-   `client.batches.streamResults(batchId, { signal })` pour les téléchargements JSONL Anthropic en streaming
 -   Types générés pour tous les objets de requête et de réponse
 -   Couverture complète de l’API, notamment les complétions de chat, les modèles, les crédits et bien plus
 -   Définitions TypeScript pour une meilleure expérience de développement

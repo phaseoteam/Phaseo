@@ -44,8 +44,9 @@ icon: "sliders-horizontal"
 | [`reasoning_effort`](#reasoning_effort) | `string` | 推論予算を減らしたり増やしたりします。 |
 | [`reasoning_tokens`](#reasoning_tokens) | `integer` | 推論用トークン制限または使用量集計フィールド。 |
 | [`include_reasoning`](#include_reasoning) | `boolean` | 対応時に推論内容または要約を返します。 |
-| [`service_tier`](#service_tier) | `string` | `priority`や`flex`などの対応するリクエストティアを選択します。OpenAIでは別名として`fast`も受け付けます。 |
+| [`service_tier`](#service_tier) | `string` | `fast`、`ultrafast`、`flex`などの対応するリクエスト階層を選択する。 |
 | [`prompt_cache_key`](#prompt_cache_key) | `string` | 関連リクエストでキャッシュを考慮したルーティングを固定します。 |
+| [`prompt_cache_options`](#prompt_cache_options) | `object` | OpenAIのプロンプトキャッシュモードとTTLを設定する。 |
 | [`cache_control`](#cache_control) | `object` | プロバイダーに依存しないプロンプトキャッシュのヒントや区切りを適用します。 |
 | [`prompt_cache_retention`](#prompt_cache_retention) | `string` | OpenAI互換のプロンプトキャッシュ保持期間を設定します。 |
 | [`provider`](#provider) | `object` | ルーティングとプロバイダー選択に影響します。 |
@@ -61,13 +62,13 @@ icon: "sliders-horizontal"
 - [Chat Completions](./endpoint/chat-completions.mdx)
 - [Responses](./endpoint/responses.mdx)
 
-選択したモデルとプロバイダーの組み合わせが対応している場合にのみ、`priority`または`flex`を使用してください。Phaseoでは`priority`を正式なプレミアムティアとし、OpenAIのルートでは別名として`fast`も受け付けます。`service_tier`を省略すると`standard`が適用されます。
+選択したモデルとプロバイダーの組み合わせが対応している場合にのみ、`ultrafast`、`fast`（対応していれば`priority`）、`flex`を使います。`Ultrafast`は対応する最高速階層を選び、`fast`と`priority`は同じFastのルーティングと料金を使います。`service_tier`を省略すると`standard`になります。
 
 `Batch`は`service_tier`の値ではありません。Batchリクエストには別のBatch APIを使用します。
 
 Anthropic互換のMessagesリクエストでは、Anthropicのネイティブな上流値は`auto`と`standard_only`です。Phaseoはこれらの値をプロバイダー間で正規化またはマッピングし、`/v1/messages`でAnthropic互換の動作を維持する場合があります。
 
-Phaseoを指すカスタムベースURLでAnthropic公式SDKを使用する場合は、`/v1/messages`でAnthropicネイティブの値を優先してください。`priority`や`flex`などのプロバイダー間で正規化されたティア制御や、OpenAIの別名`fast`には、生のHTTPリクエスト、またはゲートウェイネイティブ／OpenAI形式のテキストAPIを使用してください。
+Phaseoを指すカスタムベースURLでAnthropic公式SDKを使用する場合は、`/v1/messages`でAnthropicネイティブの値を優先してください。`ultrafast`, `priority`や`flex`などのプロバイダー間で正規化されたティア制御や、OpenAIの別名`fast`には、生のHTTPリクエスト、またはゲートウェイネイティブ／OpenAI形式のテキストAPIを使用してください。
 
 ## パラメーターリファレンス
 
@@ -424,10 +425,10 @@ temperatureを直接変えずに探索範囲を狭めたり広げたりするに
 | 項目 | 値 |
 | --- | --- |
 | 型 | `string` |
-| 対応値 | `standard`, `fast`, `priority`, `flex` |
+| 対応値 | `standard`, `fast`, `ultrafast`, `priority`, `flex` |
 | デフォルト | `standard` |
 
-選択したモデルとプロバイダーの組み合わせが対応している場合にのみ`priority`または`flex`を使用してください。Phaseoでは`priority`を正式なプレミアムティアとし、対応するOpenAIルートでは同じルーティングと料金の別名として`fast`も受け付けます。デフォルトのstandardティアを使う場合はこのフィールドを省略します。
+選択したモデルとプロバイダーの組み合わせが対応している場合にのみ、`ultrafast`、`fast`（対応していれば`priority`）、`flex`を使います。`Ultrafast`は対応する最高速階層を選び、`fast`と`priority`は同じFastのルーティングと料金を使います。標準階層を使う場合はフィールドを省略します。
 
 Phaseoは、ゲートウェイで正規化されたティア値を内部でプロバイダー固有の制御に変換するため、対応するテキストインターフェースで同じ`service_tier`値を使用できます。
 
@@ -447,6 +448,19 @@ Phaseoは、ゲートウェイで正規化されたティア値を内部でプ�
 | 用途 | 関連するキャッシュ済みプロンプトでルーティングを固定します。 |
 
 複数のリクエストで安定したプロンプトの接頭辞を共有し、可能なら同じ上流プロバイダーまたはリージョンを優先する場合に使用します。Phaseoはリクエストコンテキストからキャッシュ親和性を導出することもできますが、長時間の会話、エージェントセッション、反復ワークフローでは明示的なキーが適しています。
+
+<span id="prompt_cache_options"></span>
+<h3 id="parameter-prompt_cache_options"><code>prompt_cache_options</code></h3>
+
+対応するOpenAIルートにOpenAIのプロンプトキャッシュ設定を渡します。
+
+| フィールド | 値 |
+| --- | --- |
+| 型 | `object` |
+| 主なフィールド | `mode`, `ttl` |
+| Astra TTL | `30m` |
+
+GPT-6 Astraで明示的なプロンプトキャッシュを使う場合は、`{"mode":"explicit","ttl":"30m"}`を指定します。Phaseoはリクエストの正規化中もこのオブジェクトを保持し、そのままOpenAIに送信します。
 
 <span id="cache_control"></span>
 <h3 id="parameter-cache_control"><code>cache_control</code></h3>
@@ -602,13 +616,13 @@ Chat Completions、Responses、Anthropic Messagesでのプロバイダー別プ�
 フィールドリファレンスではなく、具体的な調整方法を知りたい場合は、次のページを参照してください。
 
 - [推論パラメーター](../guides/inference-parameters.mdx): temperature、top_p、top_k、トークン上限、停止シーケンス、調整手順に関する実践的な説明
-- [サンプリングとデコード](../guides/sampling-and-decoding.mdx): ランダム性、ペナルティ、デコード設定がモデルの挙動に与える影響
+- [サンプリングとデコード](../guides/sampling-and-decoding.mdx) ランダム性、ペナルティ、デコード設定がモデルの動作に与える影響について
 
 ## 関連ページ
 
 - [推論パラメーター](../guides/inference-parameters.mdx)
 - [サンプリングとデコード](../guides/sampling-and-decoding.mdx)
-- [ストリーミング](./streaming.mdx)
+- [ストリーミング](../guides/streaming.mdx)
 - [制限](./limits.mdx)
 - [エラーとデバッグ](./errors.mdx)
 

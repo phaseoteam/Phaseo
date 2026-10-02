@@ -107,6 +107,45 @@ phaseo guardrails create --name "Production Safety" --body-json '{"enabled":true
 
 A CLI permite acessar pelo terminal os recursos úteis do painel do Phaseo e das APIs de gerenciamento.
 
+## Inicie os ambientes de programação compatíveis
+
+Integrações persistentes usam diretamente o nome do produto:
+
+```bash
+phaseo codex
+phaseo claude-code
+phaseo deepseek-harness
+phaseo opencode
+phaseo pi
+phaseo prime-agent
+phaseo openclaw
+phaseo aider
+phaseo roo-code
+phaseo kilo-code
+phaseo continue
+phaseo cursor
+phaseo zed
+```
+
+Use `--model`, `--catalog all|default` ou `--dry-run` conforme necessário. A forma antiga `phaseo integrations setup <integration>` continua disponível por compatibilidade, mas não é necessária.
+
+A CLI pode iniciar Cline, Kilo Code, oh-my-pi, Muse Code e MiniMax Code com configuração temporária do provedor e uma chave Phaseo dedicada. Cada ambiente tem um guia com configuração e solução de problemas: [Cline](./cline), [Kilo Code](./kilo-code), [oh-my-pi](./oh-my-pi), [Muse Code](./muse-code) e [MiniMax Code](./minimax-code).
+
+```bash
+phaseo cline --model openai/gpt-5.6-terra -- --tui
+phaseo kilo --model openai/gpt-5.6-terra --
+phaseo omp --model openai/gpt-5.6-terra --
+phaseo muse --model meta/muse-spark-1.3 --
+phaseo minimax --model openai/gpt-5.6-terra --
+```
+
+Use `phaseo run <cline|kilo|omp|muse|minimax>` para a forma explícita. As opções do Phaseo vêm antes de `--`; as do ambiente vêm depois. Use `--catalog all` para sincronizar todos os modelos ativos de texto/chat do Phaseo, ou visualize sem criar uma credencial com:
+
+```bash
+phaseo cline --model openai/gpt-5.6-terra --dry-run --json
+```
+
+Instalações ausentes de Cline, Kilo Code e oh-my-pi são oferecidas interativamente. Muse Code e MiniMax Code usam seus instaladores oficiais quando o comando não existe. No Windows, MiniMax Code usa o instalador oficial do PowerShell; use `--skip-install` se gerencia os ambientes separadamente. Os executores não sobrescrevem configurações existentes de Cline, Kilo, oh-my-pi, Muse Code ou MiniMax Code.
 ## Aplicativos OAuth
 
 O Phaseo usa um único servidor de autorização OAuth para a CLI oficial, aplicativos criados por usuários e clientes MCP registrados dinamicamente. A CLI usa login pelo navegador ou por código do dispositivo, com tokens de atualização rotativos. Clientes de terceiros usam código de autorização com PKCE, escopos explícitos e consentimento do workspace, tokens de acesso delegados revogáveis e associação opcional a um recurso protegido.
@@ -162,3 +201,8 @@ bun add -g @phaseo/cli@latest
 - [Autenticação](../../developers/authentication.mdx)
 - [Codex](./codex.mdx)
 - [Claude Code](./claude-code.mdx)
+- [Cline](./cline)
+- [Kilo Code](./kilo-code)
+- [oh-my-pi](./oh-my-pi)
+- [Muse Code](./muse-code)
+- [MiniMax Code](./minimax-code)

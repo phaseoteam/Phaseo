@@ -68,7 +68,27 @@ curl https://api.phaseo.app/v1/chat/completions \
 - Füge bei `json_schema` ein Schemaobjekt ein (`response_format.json_schema.schema` bei Chat-ähnlichen Payloads oder `text.format.schema` bei Responses-ähnlichen Payloads).
 - Validiere das JSON auf deinem Server, bevor du es weiterverwendest.
 
-## Nächste Leitfäden
+## Schema entwerfen
 
-1. [Schemas für strukturierte Ausgaben](./structured-outputs-schemas.mdx)
-2. [Validierungs- und Fallback-Muster](./structured-outputs-validation.mdx)
+Beginne mit einem kleinen Objekt, kennzeichne Pflichtfelder ausdrücklich und nutze Aufzählungen für bekannte Kategorien. Setze `additionalProperties: false`, um zusätzliche Schlüssel abzulehnen. Halte das angeforderte Schema und die Servervalidierung synchron und versioniere sie gemeinsam.
+
+## Ergebnis validieren
+
+Parse und validiere das vollständige Ergebnis vor der weiteren Nutzung. Dieses TypeScript-Beispiel verwendet Zod und entspricht dem Wetterschema oben:
+
+```typescript
+import { z } from "zod";
+
+const Weather = z.object({
+  city: z.string(),
+  weather: z.string(),
+}).strict();
+
+function parseWeather(content: string) {
+  return Weather.parse(JSON.parse(content));
+}
+```
+
+Behandle Ablehnungen, fehlende Inhalte und abgeschnittene Antworten vor dem Parsen. Bei fehlgeschlagener Validierung sind nur begrenzte Korrekturversuche zulässig; gib danach einen sicheren Fehler zurück. Erneute Generierungen können zusätzliche Kosten verursachen. Gültiges JSON belegt weder sachliche Richtigkeit noch die Erlaubnis zu einer Aktion.
+
+Erfasse Validierungsfehler nach Modell und Schemaversion. Prüfe deine Bewertungsfälle erneut, wenn sich eines davon ändert. Zur Wiederherstellung fehlerhaften JSONs siehe [Antwortreparatur](../cookbook/response-healing-for-structured-json.mdx).

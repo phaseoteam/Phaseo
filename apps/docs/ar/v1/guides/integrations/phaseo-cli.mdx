@@ -107,6 +107,45 @@ phaseo guardrails create --name "Production Safety" --body-json '{"enabled":true
 
 تهدف CLI إلى إتاحة الوظائف المفيدة في لوحة Phaseo وواجهات الإدارة من الطرفية.
 
+## تشغيل بيئات البرمجة المدعومة
+
+تستخدم التكاملات الدائمة اسم المنتج مباشرةً:
+
+```bash
+phaseo codex
+phaseo claude-code
+phaseo deepseek-harness
+phaseo opencode
+phaseo pi
+phaseo prime-agent
+phaseo openclaw
+phaseo aider
+phaseo roo-code
+phaseo kilo-code
+phaseo continue
+phaseo cursor
+phaseo zed
+```
+
+استخدم `--model` أو `--catalog all|default` أو `--dry-run` حسب الحاجة. يبقى الشكل القديم `phaseo integrations setup <integration>` متاحًا للتوافق، لكنه غير مطلوب.
+
+تستطيع CLI تشغيل Cline وKilo Code وoh-my-pi وMuse Code وMiniMax Code بإعداد مزوّد مؤقت ومفتاح Phaseo مخصص. لكل بيئة دليل تكامل للإعداد وحل المشاكل: [Cline](./cline) و[Kilo Code](./kilo-code) و[oh-my-pi](./oh-my-pi) و[Muse Code](./muse-code) و[MiniMax Code](./minimax-code).
+
+```bash
+phaseo cline --model openai/gpt-5.6-terra -- --tui
+phaseo kilo --model openai/gpt-5.6-terra --
+phaseo omp --model openai/gpt-5.6-terra --
+phaseo muse --model meta/muse-spark-1.3 --
+phaseo minimax --model openai/gpt-5.6-terra --
+```
+
+استخدم `phaseo run <cline|kilo|omp|muse|minimax>` للصيغة الصريحة. تأتي خيارات Phaseo قبل `--` وخيارات البيئة بعدها. استخدم `--catalog all` لمزامنة كل نماذج النص والدردشة النشطة في Phaseo، أو عاين دون إنشاء بيانات اعتماد باستخدام:
+
+```bash
+phaseo cline --model openai/gpt-5.6-terra --dry-run --json
+```
+
+يُعرض تثبيت Cline وKilo Code وoh-my-pi تفاعليًا عند غيابها. يستخدم Muse Code وMiniMax Code مثبّتاتهما الرسمية عند غياب الأمر. على Windows يستخدم MiniMax Code مثبّت PowerShell الرسمي؛ استخدم `--skip-install` عند إدارة أي من البيئتين بشكل منفصل. لا تستبدل المشغّلات إعدادات Cline أوKilo أوoh-my-pi أوMuse Code أوMiniMax Code الموجودة.
 ## تطبيقات OAuth
 
 يستخدم Phaseo خادم تفويض OAuth واحدًا لواجهة CLI الرسمية والتطبيقات التي ينشئها المستخدمون وعملاء MCP المسجّلين ديناميكيًا. تستخدم CLI تسجيل الدخول عبر المتصفح أو رمز الجهاز مع تدوير رموز التحديث. وتستخدم العملاء الخارجية رمز التفويض مع PKCE ونطاقات صريحة وموافقة مساحة العمل ورموز وصول مفوّضة قابلة للإلغاء وربطًا اختياريًا بمورد محمي.
@@ -162,3 +201,8 @@ bun add -g @phaseo/cli@latest
 - [المصادقة](../../developers/authentication.mdx)
 - [Codex](./codex.mdx)
 - [Claude Code](./claude-code.mdx)
+- [Cline](./cline)
+- [Kilo Code](./kilo-code)
+- [oh-my-pi](./oh-my-pi)
+- [Muse Code](./muse-code)
+- [MiniMax Code](./minimax-code)

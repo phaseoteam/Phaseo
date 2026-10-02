@@ -13,9 +13,12 @@ icon: "map"
 | --- | --- |
 | 最初のリクエストを送信する | [クイックスタート](../quickstart.mdx) |
 | テキストを生成する、またはツールを使う | `POST /responses` |
+| 型付きの判断を行う | [`POST /decisions`](./endpoint/decisions) |
 | 既存の OpenAI 互換連携を維持する | `POST /chat/completions` |
 | モデルとプロバイダーを確認する | `GET /models` と `GET /providers` |
 | 音楽を作成する、またはファイルを管理する | `POST /music/generations` と `POST /files` |
+| 動画を生成（ベータ） | [`POST /videos`](./endpoint/video-create) |
+| バッチ送信または結果のダウンロード（ベータ） | [`POST /batches`](./endpoint/batches-create) と [`GET /batches/{batch_id}/results`](./endpoint/batches-results) |
 
 ## ベース URL
 
@@ -34,14 +37,15 @@ OpenAPI ファイルを使うと、Postman、Hoppscotch、SDK ジェネレータ
 <Card
   title="Phaseo Gateway OpenAPI"
   icon="list-bullet"
-  href="https://github.com/phaseoteam/Phaseo/blob/main/apps/docs/openapi/v1/openapi.public.yaml"
+	href="https://github.com/phaseoteam/Phaseo/blob/main/apps/docs/openapi/v1/openapi.yaml"
 >
   仕様ファイルを表示
 </Card>
 
+ドキュメントとSDKは同じ仕様を使います。Video、Batch、Decisionsのエンドポイントは**ベータ**で、ワークスペースのプレビューアクセスが必要な場合があります。
 ## 認証
 
-ほとんどのエンドポイントには標準の Gateway API キーが必要です。管理エンドポイントには、ダッシュボードで作成した管理 API キーが必要です。
+推論には標準のGateway APIキー、管理には適切な権限を持つ管理APIキーを使います。[認証](../developers/authentication.mdx)と[管理APIキー](../developers/management-api-keys.mdx)を参照してください。
 
 ```http
 Authorization: Bearer phaseo_v1_sk_<kid>_<secret>
@@ -53,22 +57,15 @@ Authorization: Bearer phaseo_v1_sk_<kid>_<secret>
 
 | リソース | 機能 |
 | --- | --- |
-| Responses API | ツール、構造化出力、マルチモーダル入力を使ってモデルの応答を生成します。 |
-| Chat Completions | 既存の OpenAI 互換チャット連携を維持します。 |
-| Anthropic Messages | Anthropic 互換の Messages 連携を維持します。 |
-| Embeddings | 検索、取得、分類用のベクトル表現を作成します。 |
-| Images | 画像を生成または編集します。 |
-| テキスト読み上げ | テキストから音声を生成します。 |
-| 音声認識 | 音声を文字起こし、または翻訳します。 |
-| 音楽生成 | 音楽生成ジョブを作成し、状態を確認します。 |
-| Files | 対応する API ワークフローの入力ファイルをアップロード、取得します。 |
-| モデル、プロバイダー、エンドポイント | Gateway で利用可能な項目を確認します。 |
-| 価格、アクティビティ、生成 | コストを見積もり、リクエスト結果を確認します。 |
-| API キーとワークスペース | プログラムからのアクセスとワークスペースリソースを管理します。 |
+| 推論 | テキスト、画像、音声、埋め込みを生成し、判断、再ランキング、モデレーション、解析を行います。[Responses](./endpoint/responses.mdx)または[Decisions](./endpoint/decisions.mdx)から始めてください。 |
+| 非同期ジョブとファイル | [動画](./endpoint/video-create.mdx)または[バッチ](./endpoint/batches-create.mdx)ジョブを送信し、ファイル転送とWebhook設定を行います。 |
+| モデルと料金 | [モデル](./endpoint/models.mdx)、プロバイダーの提供内容、[推定コスト](./endpoint/pricing-calculate.mdx)を確認します。 |
+| ルーティングとポリシー | プリセット、プロバイダー認証情報、プライベートモデル、[ガードレール](./endpoint/guardrails.mdx)を設定します。 |
+| 使用量と監視 | [ログ](./endpoint/logs-list.mdx)、アクティビティ、分析、評価、サービスの状態を確認します。 |
+| ワークスペース管理 | [ワークスペース](./endpoint/workspaces-list.mdx)、キー、予算、ID、連携を管理します。 |
 
 ## 課金とレート制限
 
-- Phaseo 独自のレート制限は適用しません。レート制限は上流プロバイダーが適用します。
+- [レート制限ガイド](./limits.mdx)でプロバイダーの制限と適用されるアクセスポリシーを確認してください。
 - 有料リクエストでは、事前のクレジット確認に通るだけのウォレット残高が必要です。
 - `:free` を含む無料モデルでは、入金済みクレジットは不要です。
-

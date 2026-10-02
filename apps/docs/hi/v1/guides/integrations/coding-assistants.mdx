@@ -1,10 +1,18 @@
 ---
-title: "कोडिंग असिस्टेंट"
+title: "कोडिंग एजेंट"
 icon: "compass"
-description: "Cursor, VS Code, Codex, Claude Code और अन्य कोडिंग टूल में Phaseo को मॉडल प्रदाता के रूप में जोड़ें।"
+description: "CLI या मैन्युअल प्रदाता सेटिंग से कोडिंग एजेंट को Phaseo से जोड़ें।"
 ---
 
-यह गाइड बताती है कि OpenAI-संगत या Anthropic-संगत कस्टम endpoint वाले कोडिंग असिस्टेंट में Phaseo को मॉडल प्रदाता के रूप में कैसे जोड़ें।
+इस गाइड से कोडिंग एजेंट को Phaseo से जोड़ें। प्रबंधित क्रेडेंशियल और कॉन्फ़िगरेशन के लिए Phaseo CLI चुनें, या एजेंट के अंदर सेटअप रखने के लिए मैन्युअल प्रदाता मान इस्तेमाल करें।
+
+## सेटअप चुनें
+
+| आप चाहते हैं… | इस्तेमाल करें |
+| --- | --- |
+| अलग अस्थायी सेटिंग के साथ Cline, Kilo Code, oh-my-pi, Muse Code या MiniMax Code चलाना | `phaseo cline`, `phaseo kilo`, `phaseo omp`, `phaseo muse`, या `phaseo minimax` |
+| इंस्टॉल एजेंट को सेट करना और उसकी सेटिंग रखना | `phaseo <integration>` |
+| Phaseo CLI के बिना एजेंट सेट करना | विशिष्ट गाइड में मैन्युअल प्रदाता चरण अपनाएँ |
 
 ## Phaseo CLI से सेटअप करें
 
@@ -17,13 +25,13 @@ phaseo codex
 
 यह कमांड जाँचता है कि हार्नेस इंस्टॉल है या नहीं। इंटरैक्टिव टर्मिनल में हार्नेस न होने पर Phaseo समर्थित इंस्टॉल कमांड दिखाता है और चलाने से पहले अनुमति माँगता है। इसके बाद Phaseo हार्नेस के लिए समर्पित कुंजी बनाकर उसका कॉन्फ़िगरेशन लिखता है। नॉन-इंटरैक्टिव रन बिना निगरानी सिस्टम में बदलाव किए उपयोगी इंस्टॉलेशन निर्देश दिखाते हैं। OpenCode, DeepSeek Harness, Pi, Prime Agent और OpenClaw को Chat Completions के अनुकूल सभी सक्रिय टेक्स्ट मॉडल भी मिलते हैं। दायरा सीमित करने के लिए `--skip-install`, `--catalog default` या `--dry-run` उपयोग करें।
 
-अन्य इंटीग्रेशन या अलग से प्रबंधित इंस्टॉलेशन के लिए निचले स्तर का कमांड उपयोग करें:
+हर स्थायी एकीकरण के लिए उत्पाद-नाम वाला कमांड इस्तेमाल करें:
 
 ```bash
-phaseo integrations setup codex
+phaseo codex
 ```
 
-समर्थित इंटीग्रेशन नाम हैं: `codex`, `claude-code`, `opencode`, `deepseek-harness`, `pi`, `openclaw`, `hermes`, `aider`, `cline`, `roo-code`, `kilo-code`, `continue`, `cursor` और `zed`।
+Supported integration names are `codex`, `claude-code`, `opencode`, `deepseek-harness`, `pi`, `openclaw`, `hermes`, `aider`, `cline`, `roo-code`, `kilo-code`, `continue`, `cursor`, and `zed`. अलग CLI रनर `cline`, `kilo`, `omp`, `muse` और `minimax` हैं।
 
 CLI हर असिस्टेंट के नाम वाली अलग, बिना समाप्ति की API key बनाती है। नई इंस्टॉलेशन पर यह Aider और Continue को अपने आप कॉन्फ़िगर करती है और Zed की provider/model सेटिंग भी लिखती है। जो असिस्टेंट सीक्रेट सिर्फ़ एडिटर UI में रखते हैं, उनके लिए यह बाकी फ़ील्ड दिखाती है, संबंधित गाइड लिंक करती है और केवल उसी असिस्टेंट की key कॉपी करने देती है:
 
@@ -34,13 +42,13 @@ phaseo integrations credential codex
 सेटअप से पहले फ़ाइल बदलावों का पूर्वावलोकन करें और बाद में साफ़ तरीके से डिस्कनेक्ट करें:
 
 ```bash
-phaseo integrations setup codex --dry-run
+phaseo codex --dry-run
 phaseo integrations remove codex
 ```
 
 हटाने पर Phaseo की कॉन्फ़िगरेशन मिटती है और उस असिस्टेंट की key रद्द होती है। असंबंधित सेटिंग नहीं हटतीं。
 
-## प्रदाता सेटिंग
+## मैन्युअल प्रदाता सेटिंग
 
 जब तक टूल किसी अन्य फ़ील्ड नाम की माँग न करे, इन मानों का उपयोग करें:
 
@@ -140,9 +148,12 @@ Aider में OpenAI-संगत कस्टम मॉडल के आग�
 
 Hermes इंस्टॉल न होने पर `phaseo hermes` आधिकारिक Nous Research इंस्टॉलर चलाने का विकल्प देता है, फिर इंस्टॉल किए गए एजेंट को कॉन्फ़िगर करता है। यह Hermes की पिछली मॉडल सेटिंग सहेजता है, Phaseo को कस्टम endpoint बनाता है और समर्पित key को `~/.hermes/.env` में `OPENAI_API_KEY` के रूप में रखने के लिए Hermes का आधिकारिक `hermes config set` कमांड उपयोग करता है। Hermes प्रदाता क्रेडेंशियल के लिए जानबूझकर इस plaintext फ़ाइल का उपयोग करता है; इसे किसी अन्य API-key फ़ाइल की तरह सुरक्षित रखें। हटाने पर पुरानी मॉडल सेटिंग बहाल होती है, `OPENAI_API_KEY` और Phaseo recovery state हटते हैं और key रद्द होती है।
 
+## MiniMax Code
+
+`mcode` CLI के लिए [MiniMax Code गाइड](./minimax-code.mdx) देखें। `phaseo minimax` Phaseo के OpenAI-संगत एंडपॉइंट से अस्थायी MiniMax प्रदाता बनाता है, CLI चलाता है और सत्र समाप्त होने पर अस्थायी डेटा निर्देशिका हटाता है। संपादक या होस्ट सीधे ACP इस्तेमाल करे तो MiniMax Code `mcode acp` से ACP भी स्वीकार करता है।
 ## Zed
 
-`phaseo integrations setup zed` चलाएँ, फिर Zed सेटिंग में OpenAI-संगत प्रदाता जोड़ने के लिए दिखाए गए चरणों का पालन करें। बनाई गई key केवल Zed के क्रेडेंशियल फ़ील्ड में उपयोग करें।
+`phaseo zed` चलाएँ, फिर Zed सेटिंग में OpenAI-संगत प्रदाता जोड़ने के लिए दिखाए गए चरणों का पालन करें। बनाई गई key केवल Zed के क्रेडेंशियल फ़ील्ड में उपयोग करें।
 
 ## Codex
 

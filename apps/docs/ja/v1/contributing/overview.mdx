@@ -1,154 +1,35 @@
 ---
-title: "Phaseoへの貢献"
-description: "Phaseoプロジェクトにデータ、ドキュメント、改善を提供し、世界で最も包括的なAIデータベースの構築に参加する方法を紹介します。"
+title: "Phaseoに貢献する"
+description: "カタログの報告、ドキュメント編集、コード貢献に適した手順を選びます。"
 sidebarTitle: "貢献"
 icon: "handshake"
 ---
 
-Phaseoは、AIモデル、ベンチマーク、プロバイダーに関する情報をできるだけ多くの人に無料で公開する、**オープンなコミュニティ主導のプロジェクト**です。
+カタログの訂正や追加は、対象レコードと根拠となる情報源を添えてIssueを開いてください。コードやドキュメントの変更は、[Phaseoリポジトリ](https://github.com/phaseoteam/Phaseo)にプルリクエストを提出してください。
 
-皆さんの貢献により、プラットフォームの正確性、透明性、新しさが保たれます。  
-誤字の修正、ベンチマークデータの追加、ドキュメントの改善など、どのような貢献も大切です。
+## 貢献の種類を選ぶ
 
----
+| 変更 | 開始場所 |
+| --- | --- |
+| モデルのメタデータ、機能、利用可否、料金 | [モデル更新を報告](./editing-a-model.mdx) |
+| 企業や研究組織の詳細 | [組織更新を報告](./editing-an-organisation.mdx) |
+| ベンチマーク結果 | [スコアを提出](../research/submitting-scores.mdx) |
+| その他のカタログ訂正 | [誤った情報を報告](https://github.com/phaseoteam/Phaseo/issues/new?template=incorrect-info.yml) |
+| 不足しているプロバイダーやその他のカタログデータ | [新しいデータを依頼](https://github.com/phaseoteam/Phaseo/issues/new?template=data-request.yml) |
+| ドキュメントまたはコード | [貢献手順](./how-to-contribute.mdx)と[リポジトリ構成](./repo-structure.mdx) |
 
-## 貢献する理由
+## カタログの報告が公開される流れ
 
-AIはますます速いペースで進化し、新しいモデルや更新、料金変更が毎日のように登場します。  
-貢献によって、次のことを支援できます。
+メンテナーはIssueの根拠を確認し、管理者専用の[内部エディター](https://phaseo.app/internal/data)で承認済みの変更を適用します。プロバイダー料金の更新には、公開前の明示的なレビューが必要です。
 
--   モデル、組織、ベンチマークのデータを最新かつ信頼できる状態に保つ
--   プロバイダー間のAI比較の精度を高める
--   研究の知見、コミュニティの発見、不足しているメタデータを共有する
--   AIの透明性を支えるオープンなエコシステムを強化する
--   データベースを無料で利用でき、コミュニティが所有する状態に保つ
+カタログの正本はデータベースです。毎日の公開JSONスナップショットは引き続き利用できますが、スナップショットの編集やアーカイブJSONのプルリクエストで本番カタログは更新されません。従来のJSONインポーターは廃止されました。
 
-あなたの名前は次のページにも掲載され、[コントリビューターページ](https://phaseo.app/contribute)として貢献が紹介されます。
+## 提出前に
 
----
+- 対象のページまたはレコードIDを添え、提案する訂正を説明してください。
+- 公式の情報源を引用し、公表されたベンチマーク結果と独立した測定を区別してください。
+- 各報告やプルリクエストは対象を絞ってください。
+- 認証情報や顧客の非公開データを含めないでください。
+- [行動規範](../community/code-of-conduct.mdx)に従ってください。
 
-## 貢献できる内容
-
-<Columns cols={2}>
-	<Card
-		title="モデルデータ"
-		icon="brain"
-		href="./editing-a-model.mdx"
-	>
-		機能、ベンチマーク、料金など、モデルの情報を更新または追加します。
-	</Card>
-	<Card
-		title="組織データ"
-		icon="building"
-		href="./editing-an-organisation.mdx"
-	>
-		モデルを開発する企業や研究グループの情報を追加または修正します。
-	</Card>
-</Columns>
-
----
-
-## 貢献の流れ
-
-1. [PhaseoのGitHubリポジトリ](https://github.com/phaseoteam/Phaseo)を**フォーク**します。
-2. **ブランチを作成**して変更を加えます（例: `fix-model-data` または `add-new-benchmark`）。
-3. [リポジトリ構成](./repo-structure.mdx)に沿って、**JSONまたはMarkdownファイルを編集**します。
-4. 必要に応じて、**変更をローカルでテスト**します（例: Next.jsフロントエンドで確認）。
-5. **変更をコミットしてプッシュ**します。
-6. **プルリクエスト（PR）を作成**し、変更内容とその理由を説明します。
-
-レビューと承認が完了すると、貢献内容がマージされ、Phaseoの公開データベースに反映されます。
-
----
-
-## 貢献の種類
-
-| 種類                   | 例                                                 | 難易度 |
-| ---------------------- | ------------------------------------------------------- | ---------- |
-| **データ修正**           | モデル名、プロバイダー名、ベンチマーク値を修正する。 | 簡単       |
-| **新規項目**          | モデル、ベンチマーク、組織を追加する。         | 中程度   |
-| **構造変更**  | データベースまたはスキーマの構成を調整する。                    | 高度   |
-| **機能追加**   | UIコンポーネントやNext.jsのロジックを追加する。                  | 高度   |
-| **ドキュメントの編集** | Markdownファイルやガイドを改善する。                     | 簡単       |
-
-どのような変更でも、規模や複雑さを問わず歓迎します。
-
----
-
-## ガイドラインと基準
-
-データの品質と一貫性を保つため、すべての貢献で次の基準に従ってください。
-
--   **正確な情報源:** 検証済みまたは公式に公開されたデータのみを含めてください。
--   **一貫した書式:** 大文字と小文字、インデント、スキーマキーを正しく記述してください。
--   **変更履歴の記録:** 変更履歴やコミットメッセージには、内容が分かる説明を記載してください。
--   **出典:** PRの説明にデータソースへのリンクを記載してください。
--   **敬意あるコミュニケーション:** 次の規範を守ってください: [行動規範](../community/code-of-conduct.mdx).
-
----
-
-## 貢献手順の例
-
-```bash
-# 1. Fork and clone the repo
-git clone https://github.com/yourusername/Phaseo.git
-
-# 2. Create a new branch
-git checkout -b add-openai-new-model
-
-# 3. Make your edits
-# e.g. edit packages/data/catalog/src/data/models/openai/new-model/model.json
-
-# 4. Stage, commit, and push
-git add .
-git commit -m "Added new OpenAI model with updated benchmark data"
-git push origin add-openai-new-model
-
-# 5. Open a Pull Request on GitHub
-# Describe your changes and link any sources
-```
-
----
-
-## サポートが必要ですか？
-
-貢献方法が分からない場合や、提出前にフィードバックがほしい場合は、次の方法を利用できます。
-
--   [Phaseo Discord](https://discord.gg/aQyywCvgZ5)で質問してください。
--   質問や提案は **GitHub Discussions** に投稿してください。
--   レビュー方法について相談したい場合は、PRでメンテナーにメンションしてください。
-
-<Card
-	title="貢献方法"
-	icon="handshake"
-	href="./how-to-contribute.mdx"
-	horizontal
->
-	初めての貢献を行う手順を順番に説明します。
-</Card>
-
-AIコミュニティにとって貴重なこのリソースの構築と維持に役立つ、大小すべての貢献に心から感謝します。
-
----
-
-## 次のステップ
-
-次に、関心のある分野に応じた貢献方法を確認してください。
-
-<Columns cols={2}>
-	<Card
-		title="貢献方法"
-		icon="compass"
-		href="./how-to-contribute.mdx"
-	>
-		ファイルの編集とPR作成の詳しい手順を確認できます。
-	</Card>
-	<Card
-		title="リポジトリ構成"
-		icon="folder-tree"
-		href="./repo-structure.mdx"
-	>
-		Phaseoリポジトリの構成を確認できます。
-	</Card>
-</Columns>
-
+大きなスキーマ変更や機能変更は、実装前にメンテナーと相談してください。変更先が不明な場合は[Discord](https://discord.gg/aQyywCvgZ5)で質問できます。

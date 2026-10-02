@@ -1,15 +1,16 @@
 ---
 title: "Continue"
+icon: "/icons/brands/continue.svg"
 description: "在 VS Code、JetBrains 或 Continue CLI 的 Continue 中添加 Phaseo。"
 ---
 
-Phaseo CLI 可创建本地 Continue 配置，供 IDE 扩展和 `cn` 命令行界面共用。
+使用 Phaseo CLI 创建由 IDE 扩展和 `cn` 命令行界面共享的本地 Continue 配置，或手动将相同的模型和密钥值添加到现有 Continue 配置。
 
-## 设置 Continue
+## 使用 Phaseo CLI 设置
 
 ```bash
 phaseo login
-phaseo integrations setup continue --model anthropic/claude-sonnet-4.6
+phaseo continue --model anthropic/claude-sonnet-4.6
 ```
 
 如果 `~/.continue/config.yaml` 和 `~/.continue/.env` 尚未使用，设置过程会创建这两个文件：
@@ -68,5 +69,5 @@ phaseo integrations remove continue
 
 - [Continue OpenAI 兼容配置](https://docs.continue.dev/customize/model-providers/top-level/openai)
 - [Continue 本地密钥](https://docs.continue.dev/faqs#managing-local-secrets-and-environment-variables)
-- [编程助手](./coding-assistants.mdx)
+- [编程智能体](./coding-assistants.mdx)
 - [模型](../../api-reference/endpoint/models.mdx)

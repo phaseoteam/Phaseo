@@ -1,100 +1,32 @@
 ---
 title: "Phaseo 的工作方式"
-description: "在选择端点、SDK、路由或生产环境设置之前，先了解 Phaseo Gateway。"
+description: "集成 Phaseo 前，了解模型、提供商、路由和计费。"
 icon: "terminal"
 ---
 
-在使用 Gateway 构建应用之前，可通过本说明了解整体工作方式。
+Phaseo 通过一个 API 将应用的模型请求路由到提供商。应用选择模型和端点；工作区设置和请求控制决定哪些提供商可以处理请求。
 
-Phaseo 为模型、提供商、路由、定价和异步 AI 工作流提供统一 API。
+## 模型与提供商
 
-因此，你可以：
+模型是生成输出的系统。提供商托管模型，并决定可用性、支持的参数、定价和性能。同一个模型可能有多个提供商报价。
 
--   通过统一的 API 调用多个提供商
--   简化请求和响应处理
--   在一个位置跟踪用量、延迟和价格
--   无需重构应用即可更换模型或路由策略
+公开目录也包含当前无法通过 Gateway 使用的模型。在请求中使用 ID 前，请检查[模型可用性](../exploring/models.mdx)。
 
-<Note>
-无需预存积分即可使用 `:free` 模型。付费模型需要钱包中有可用余额。
-</Note>
+## 请求与路由
 
----
+根据应用协议使用 [Responses、Chat Completions 或 Messages](../api-reference/introduction.mdx)。提供商能力仍有差异；共同端点并不意味着每个模型支持每个参数。
 
-## 为什么要使用 Gateway
+[路由控制](../guides/routing-and-fallbacks.mdx)允许限制提供商并选择排序方式。回退仍受限制和可用容量约束，不能保证成功。
 
-当你需要接入多个提供商、模型、端点系列或部署环境时，AI 集成就会变得复杂。
+## 计费与访问
 
-Phaseo 为应用提供稳定的集成层。你可以先发布产品流程，再调整模型、提供商、路由和定价策略，无需重写每个调用方。
+托管请求使用 Phaseo 工作区余额。`:free` 模型无需充值额度即可运行。使用提供商凭据（BYOK）时，适用提供商计费和账户限制；上线前请查看[定价和计费](../pricing/tiers.mdx)。
 
----
+[视频和批处理任务](../guides/async-video-and-batch.mdx)在处理完成之前返回任务。预览访问按工作区管理。轮询状态或接收 Webhook 更新，然后下载结果。
 
-## 核心概念
+## 构建集成
 
-<Columns cols={2}>
-	<Card
-		title="统一端点"
-		icon="terminal"
-		href="../api-reference/introduction.mdx"
-	>
-		通过统一的 API 格式调用文本、图像、内容审核、音频、视频和兼容提供商的路由。
-	</Card>
-	<Card title="路由控制" icon="git-branch" href="../guides/routing-and-fallbacks.mdx">
-		根据可用性、成本、延迟、区域和策略，选择请求在提供商之间的流转方式。
-	</Card>
-	<Card title="用量与成本跟踪" icon="chart-column-increasing">
-		跟踪请求量、令牌用量、延迟和价格，以便了解生产环境中的运行情况。
-	</Card>
-	<Card title="BYOK（使用自己的密钥）" icon="key">
-		如果希望采用提供商自己的计费方式和限制，同时保留相同的 Gateway 接口，可以连接提供商密钥。
-	</Card>
-</Columns>
-
----
-
-## 推荐步骤
-
-1. **[注册](https://phaseo.app/zh-Hans/sign-up)** Phaseo 账户。
-2. 在控制台中**[生成 API 密钥](https://phaseo.app/zh-Hans/gateway/keys)**。
-3. 向 `/v1/responses` 端点**发送第一个请求**。
-4. 为 SDK、路由、可观测性和发布流程**选择生产环境方案**。
-
-<Card
-	title="快速入门"
-	icon="rocket"
-	href="../quickstart.mdx"
-	horizontal
->
-	使用免费模型成功发起第一次 API 调用。
-</Card>
-
----
-
-## 后续步骤
-
-<Columns cols={2}>
-	<Card
-		title="身份验证"
-		icon="lock"
-		href="./authentication.mdx"
-	>
-		了解如何使用个人或团队 API 密钥安全地进行身份验证。
-	</Card>
-	<Card title="API 参考" icon="code" href="../api-reference/introduction.mdx">
-		浏览包含端点、参数和响应架构的完整 API 文档。
-	</Card>
-	<Card
-		title="最佳实践"
-		icon="shield-check"
-		href="./best-practices.mdx"
-	>
-		充分使用 Phaseo Gateway 的操作建议。
-	</Card>
-	<Card title="示例" icon="terminal" href="../guides/examples.mdx">
-		复制可直接运行的 Next.js、Node.js 流式处理、Python 和 curl 代码片段。
-	</Card>
-</Columns>
-
----
-
-如果你需要以构建应用为主的操作指南，请继续阅读 [Gateway 集成](./integrating-with-the-gateway.mdx)，并根据使用规模了解[集成方案](../guides/integrations/index.mdx)或[速率限制](./rate-limits.mdx)。
+- [快速入门](../quickstart.mdx)：发送第一个请求。
+- [集成 Gateway](./integrating-with-the-gateway.mdx)：将凭据保存在后端并配置应用。
+- [可靠性与状态](./reliability-and-status.mdx)：调查可用性和失败请求。
+- [请求日志与可观测性](../guides/integrations/observability.mdx)：查看使用量、延迟、费用和错误。

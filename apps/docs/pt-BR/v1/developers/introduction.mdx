@@ -1,100 +1,32 @@
 ---
 title: "Como o Phaseo funciona"
-description: "Conheça o Phaseo Gateway antes de escolher endpoints, SDKs, roteamento ou configurações de produção."
+description: "Entenda modelos, provedores, roteamento e cobrança antes de integrar o Phaseo."
 icon: "terminal"
 ---
 
-Use esta explicação para entender o funcionamento geral antes de criar sua integração com o Gateway.
+O Phaseo roteia solicitações de modelos do aplicativo aos provedores por uma API. O aplicativo escolhe modelo e endpoint; as configurações do espaço de trabalho e os controles da solicitação determinam quais provedores podem atendê-la.
 
-O Phaseo oferece uma única API para modelos, provedores, roteamento, preços e fluxos assíncronos de IA.
+## Modelos e provedores
 
-Com isso, você pode:
+O modelo é o sistema que gera a saída. O provedor hospeda o modelo e determina disponibilidade, parâmetros compatíveis, preços e desempenho. O mesmo modelo pode ter várias ofertas de provedores.
 
--   chamar vários provedores usando uma API consistente
--   simplificar o tratamento de solicitações e respostas
--   acompanhar uso, latência e preço em um só lugar
--   trocar de modelo ou estratégia de roteamento sem reconstruir seu app
+O catálogo público também inclui modelos indisponíveis atualmente no Gateway. Confira a [disponibilidade do modelo](../exploring/models.mdx) antes de usar um ID na solicitação.
 
-<Note>
-Você pode começar com modelos `:free` sem adicionar créditos. Modelos pagos exigem saldo disponível na carteira.
-</Note>
+## Solicitações e roteamento
 
----
+Use [Responses, Chat Completions ou Messages](../api-reference/introduction.mdx) conforme o protocolo do aplicativo. As capacidades variam por provedor; um endpoint comum não significa que todo modelo aceite todo parâmetro.
 
-## Por que usar um gateway
+Os [controles de roteamento](../guides/routing-and-fallbacks.mdx) permitem restringir provedores e escolher sua classificação. As alternativas continuam sujeitas às restrições e capacidade disponível; não garantem sucesso.
 
-As integrações de IA ficam mais complexas quando você precisa de mais de um provedor, modelo, família de endpoints ou ambiente de implantação.
+## Cobrança e acesso
 
-O Phaseo oferece ao seu app uma camada de integração estável. Primeiro, publique o fluxo do produto; depois, ajuste modelos, provedores, roteamento e preços sem reescrever cada integração.
+Solicitações gerenciadas usam o saldo do espaço de trabalho Phaseo. Modelos `:free` funcionam sem créditos depositados. Com credenciais do provedor (BYOK), valem a cobrança e os limites da conta do provedor; revise [preços e cobrança](../pricing/tiers.mdx) antes do lançamento.
 
----
+As [tarefas de vídeo e lotes](../guides/async-video-and-batch.mdx) retornam uma tarefa antes de concluir o processamento. O acesso de prévia é gerenciado por espaço de trabalho. Consulte o status ou receba atualizações por webhook e baixe o resultado.
 
-## Conceitos principais
+## Crie sua integração
 
-<Columns cols={2}>
-	<Card
-		title="Endpoints unificados"
-		icon="terminal"
-		href="../api-reference/introduction.mdx"
-	>
-		Use um único formato de API para texto, imagem, moderação, áudio, vídeo e rotas compatíveis com provedores.
-	</Card>
-	<Card title="Controles de roteamento" icon="git-branch" href="../guides/routing-and-fallbacks.mdx">
-		Escolha como as solicitações são distribuídas entre provedores conforme disponibilidade, custo, latência, região e políticas.
-	</Card>
-	<Card title="Acompanhamento de uso e custos" icon="chart-column-increasing">
-		Acompanhe o volume de solicitações, o uso de tokens, a latência e os preços para entender o comportamento em produção.
-	</Card>
-	<Card title="BYOK (traga sua própria chave)" icon="key">
-		Conecte chaves de provedores para usar o faturamento e os limites deles, mantendo a mesma interface do Gateway.
-	</Card>
-</Columns>
-
----
-
-## Caminho recomendado
-
-1. **[Crie uma conta](https://phaseo.app/pt-BR/sign-up)** na Phaseo.
-2. **[Gere uma chave de API](https://phaseo.app/pt-BR/gateway/keys)** no painel.
-3. **Faça sua primeira solicitação** pelo endpoint `/v1/responses`.
-4. **Escolha seu caminho para produção** com SDKs, roteamento, observabilidade e implantação.
-
-<Card
-	title="Início rápido"
-	icon="rocket"
-	href="../quickstart.mdx"
-	horizontal
->
-	Faça sua primeira chamada de API bem-sucedida usando um modelo gratuito.
-</Card>
-
----
-
-## Próximos passos
-
-<Columns cols={2}>
-	<Card
-		title="Autenticação"
-		icon="lock"
-		href="./authentication.mdx"
-	>
-		Saiba como se autenticar com segurança usando sua chave de API pessoal ou da equipe.
-	</Card>
-	<Card title="Referência da API" icon="code" href="../api-reference/introduction.mdx">
-		Consulte a documentação completa da API, com endpoints, parâmetros e esquemas de resposta.
-	</Card>
-	<Card
-		title="Boas práticas"
-		icon="shield-check"
-		href="./best-practices.mdx"
-	>
-		Orientações para aproveitar ao máximo o Phaseo Gateway.
-	</Card>
-	<Card title="Exemplos" icon="terminal" href="../guides/examples.mdx">
-		Copie trechos prontos para usar com Next.js, streaming em Node.js, Python e curl.
-	</Card>
-</Columns>
-
----
-
-Quer um passo a passo voltado à implementação? Continue com [Integração com o Gateway](./integrating-with-the-gateway.mdx) e explore [Integrações](../guides/integrations/index.mdx) ou [Limites de taxa](./rate-limits.mdx) à medida que seu uso crescer.
+- [Início rápido](../quickstart.mdx): faça sua primeira solicitação.
+- [Integre o Gateway](./integrating-with-the-gateway.mdx): mantenha credenciais no backend e configure o aplicativo.
+- [Confiabilidade e status](./reliability-and-status.mdx): investigue disponibilidade e solicitações com falha.
+- [Logs e observabilidade](../guides/integrations/observability.mdx): examine uso, latência, custo e erros.

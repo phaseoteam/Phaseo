@@ -9,7 +9,7 @@ description: "リクエスト中にモデルがWebを検索できるようにし
 PhaseoはURL、タイトル、スニペット、ハイライト、必要に応じてページ本文をモデルに返し、根拠のある回答を作成できるようにします。
 
 <Note>
-GoogleネイティブのWeb検索は、Phaseoサーバーツールではまだ有効になっていません。対応するOpenAIおよびAnthropicのルートでは、管理型検索またはプロバイダーのネイティブ検索を使ってください。
+TinyFish Searchはオプションの管理検索エンジンとして利用できます。対応ルートでは、`engine: "native"`でプロバイダーのネイティブ検索も引き続き使えます。
 </Note>
 
 ## 仕組み
@@ -58,7 +58,7 @@ curl https://api.phaseo.app/v1/chat/completions \
 
 | パラメーター | 型 | 既定値 | 説明 |
 | --- | --- | --- | --- |
-| `engine` | string | `exa` | 検索エンジン: `auto`、`native`、`exa`、`parallel`、`firecrawl`、`perplexity`のいずれか。 |
+| `engine` | string | `exa` | 検索エンジン：`auto`、`native`、`exa`、`parallel`、`firecrawl`、`perplexity`、`tinyfish`。 |
 | `max_results` | integer | `5` | 1回の検索呼び出しで返される結果の最大数。 |
 | `max_total_results` | integer | `10` | サーバーツールループ全体で返される結果の累積最大数。 |
 | `max_uses` | integer | `10` | サーバーツールループ全体での検索呼び出しの最大数。 |
@@ -69,6 +69,8 @@ curl https://api.phaseo.app/v1/chat/completions \
 | `include_highlights` | boolean | `true` | 検索エンジンが提供するハイライトやスニペットがあれば含めます。 |
 | `include_text` | boolean | `false` | 検索エンジンが対応している場合、結果のより詳細なテキストを含めます。 |
 | `user_location` | object | none | ローカライズ検索に対応する検索エンジン向けの任意の地域情報。 |
+| `language` | 文字列 | なし | `en`などのTinyFishの言語ヒント。 |
+| `page` | 整数 | `0` | `0`から`10`までのTinyFish結果ページ。 |
 
 ## 検索エンジンの選択
 
@@ -79,9 +81,30 @@ curl https://api.phaseo.app/v1/chat/completions \
 | `parallel` | 設定されている場合はParallel検索を使います。 |
 | `firecrawl` | 設定されている場合はFirecrawl検索を使います。 |
 | `perplexity` | 設定されている場合、Perplexity公式のSearch APIを使います。順位付きの結果、`search_context_size`、`user_location.country`に基づく地域検索、許可または除外ドメインに対応しています。 |
+| `tinyfish` | `TINYFISH_API_KEY`が設定されている場合にTinyFish Searchを使います。多言語対応のページ分割されたランキング結果を提供し、`allowed_domains` / `excluded_domains`を検索演算子に変換します。ページ全文は提供しないため、より詳しい内容には`phaseo:web_fetch`を使ってください。 |
 | `native` | リクエストの形式が対応している場合、上流モデルを呼び出す前に、宣言をプロバイダー固有のネイティブWeb検索ツールへ変換します。 |
 
 `engine: "native"`はツールの宣言内でのみ使用してください。モデルが出力済みのゲートウェイ検索呼び出し内で`engine: "native"`を指定すると、上流リクエストの送信前にネイティブツールを選択する必要があるため、Phaseoはツールエラーを返します。
+
+## TinyFish Search
+
+Phaseo Gatewayの実行環境のシークレットに`TINYFISH_API_KEY`を設定してエンジンを有効にし、ツールのパラメーターで選択します。
+
+```json
+{
+  "type": "phaseo:web_search",
+  "parameters": {
+    "engine": "tinyfish",
+    "language": "en",
+    "page": 0,
+    "max_results": 5,
+    "allowed_domains": ["phaseo.app", "github.com"],
+    "excluded_domains": ["reddit.com"]
+  }
+}
+```
+
+`language`は言語のヒントを指定し、`page`は`0`から`10`の結果ページを選択します。TinyFishは両方のドメインフィルターリストに対応し、Phaseoが検索演算子に変換します。結果にはURL、タイトル、抜粋・ハイライトが含まれます。モデルに詳しい本文が必要な場合は`phaseo:web_fetch`を使ってください。
 
 ## ドメインの絞り込み
 
@@ -98,7 +121,9 @@ curl https://api.phaseo.app/v1/chat/completions \
 
 幅広いWeb検索は許可しつつ、特定のドメインを結果から除外する場合は`excluded_domains`を使います。
 
-PerplexityとFirecrawlは、1回の検索で`allowed_domains`または`excluded_domains`のどちらか一方を受け付けます。Perplexityは1リクエストにつき最大20個のドメインフィルターを受け付け、除外ドメインを拒否リスト形式に変換します。
+Perplexity and Firecrawl accept either `allowed_domains` or `excluded_domains` in a single search call, not both. Perplexity accepts up to 20 domain filters per request and maps excluded domains to its denylist format. TinyFishは両方の配列をクエリの`site:`と`-site:`演算子に変換します。
+
+TinyFish Searchは公開プランで無料のため、Phaseoは`engine: "tinyfish"`にプロバイダー利用料を追加しません。通常のPhaseoリクエスト料金とトークン料金は引き続き適用されます。
 
 ## Responses API
 

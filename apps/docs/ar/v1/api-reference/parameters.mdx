@@ -44,8 +44,9 @@ icon: "sliders-horizontal"
 | [`reasoning_effort`](#reasoning_effort) | `string` | تقليل ميزانية الاستدلال أو زيادتها. |
 | [`reasoning_tokens`](#reasoning_tokens) | `integer` | حد رموز أو حقل محاسبة خاص بالاستدلال. |
 | [`include_reasoning`](#include_reasoning) | `boolean` | إرجاع محتوى الاستدلال أو ملخصاته عند توفر الدعم. |
-| [`service_tier`](#service_tier) | `string` | اختيار فئة طلب مدعومة مثل `priority` أو `flex`؛ كما تقبل OpenAI القيمة `fast` كاسم بديل. |
+| [`service_tier`](#service_tier) | `string` | اختيار مستوى طلب مدعوم مثل `fast` أو `ultrafast` أو `flex`. |
 | [`prompt_cache_key`](#prompt_cache_key) | `string` | الحفاظ على ثبات التوجيه المراعي لذاكرة التخزين المؤقت للطلبات المرتبطة. |
+| [`prompt_cache_options`](#prompt_cache_options) | `object` | ضبط وضع ذاكرة التخزين المؤقت للموجّهات وعناصر تحكم TTL في OpenAI. |
 | [`cache_control`](#cache_control) | `object` | تطبيق تلميحات أو نقاط فصل لذاكرة prompt المؤقتة دون ارتباط بمزوّد. |
 | [`prompt_cache_retention`](#prompt_cache_retention) | `string` | ضبط مدة الاحتفاظ بذاكرة prompt المؤقتة المتوافقة مع OpenAI. |
 | [`provider`](#provider) | `object` | التأثير في التوجيه واختيار المزوّد. |
@@ -61,13 +62,13 @@ icon: "sliders-horizontal"
 - [Chat Completions](./endpoint/chat-completions.mdx)
 - [Responses](./endpoint/responses.mdx)
 
-استخدم `priority` أو `flex` فقط إذا كان النموذج والمزوّد المحددان يدعمانهما. يعتمد Phaseo `priority` مستوىً مميزًا أساسيًا؛ كما تقبل مسارات OpenAI القيمة `fast` كاسم بديل. وتكون `standard` هي القيمة الافتراضية عند حذف `service_tier`.
+استخدم `ultrafast` و`fast` (أو `priority` حيث يُدعم) و`flex` فقط عندما يدعمها مزيج النموذج والمزوّد المحدد. يختار `Ultrafast` أعلى مستوى سرعة مدعوم؛ ويستخدم `fast` و`priority` توجيه Fast وتسعيره نفسيهما. يكون `standard` افتراضيًا عند حذف `service_tier`.
 
 ليست `Batch` قيمةً لـ `service_tier`. تستخدم طلبات الدُفعات واجهة Batch API منفصلة.
 
 في طلبات Messages المتوافقة مع Anthropic، تكون قيم Anthropic الأصلية لدى المزوّد upstream هي `auto` و`standard_only`. وقد يطبّع Phaseo هذه القيم أو يعيّنها بين المزوّدين مع الحفاظ على السلوك المتوافق مع Anthropic في `/v1/messages`.
 
-إذا كنت تستخدم SDK الرسمي لـ Anthropic مع عنوان base مخصص يشير إلى Phaseo، ففضّل قيم Anthropic الأصلية في `/v1/messages`. وبالنسبة لعناصر التحكم في الفئات الموحّدة بين المزوّدين مثل `priority` و`flex`، أو الاسم البديل `fast` لدى OpenAI، ففضّل طلبات HTTP الخام أو واجهات النص الأصلية للبوابة أو المتوافقة مع OpenAI.
+إذا كنت تستخدم SDK الرسمي لـ Anthropic مع عنوان base مخصص يشير إلى Phaseo، ففضّل قيم Anthropic الأصلية في `/v1/messages`. وبالنسبة لعناصر التحكم في الفئات الموحّدة بين المزوّدين مثل `ultrafast`, `priority` و`flex`، أو الاسم البديل `fast` لدى OpenAI، ففضّل طلبات HTTP الخام أو واجهات النص الأصلية للبوابة أو المتوافقة مع OpenAI.
 
 ## مرجع المعلمات
 
@@ -424,10 +425,10 @@ icon: "sliders-horizontal"
 | الحقل | القيمة |
 | --- | --- |
 | النوع | `string` |
-| القيم المدعومة | `standard`, `fast`, `priority`, `flex` |
+| القيم المدعومة | `standard`, `fast`, `ultrafast`, `priority`, `flex` |
 | الافتراضي | `standard` |
 
-استخدم `priority` أو `flex` فقط إذا كان النموذج والمزوّد المختاران يدعمانهما. يعتمد Phaseo `priority` فئةً مميزة أساسية؛ كما تقبل مسارات OpenAI المدعومة `fast` اسمًا بديلًا بالتوجيه والتسعير نفسيهما. احذف الحقل لاستخدام الفئة القياسية الافتراضية.
+استخدم `ultrafast` و`fast` (أو `priority` حيث يُدعم) و`flex` فقط عندما يدعمها مزيج النموذج والمزوّد المختار. يختار `Ultrafast` أعلى مستوى سرعة مدعوم؛ ويستخدم `fast` و`priority` توجيه Fast وتسعيره نفسيهما. احذف الحقل للبقاء على المستوى القياسي الافتراضي.
 
 يحوّل Phaseo داخليًا قيم الفئات الموحّدة في البوابة إلى عناصر تحكم أصلية لدى المزوّد، ما يتيح للمتصلين استخدام قيم `service_tier` نفسها عبر واجهات النص المدعومة.
 
@@ -447,6 +448,19 @@ icon: "sliders-horizontal"
 | الاستخدام | توجيه ثابت لمطالبات مخزنة مؤقتًا ومرتبطة ببعضها |
 
 استخدمه عندما تشترك مجموعة طلبات في بادئات prompt ثابتة ويُفضّل أن تستخدم المزوّد upstream أو المنطقة نفسها متى أمكن. ويمكن لـ Phaseo استنتاج ارتباط التخزين المؤقت من سياق الطلب أيضًا، لكن المفتاح الصريح أفضل للمحادثات الطويلة وجلسات agent ومسارات العمل المتكررة.
+
+<span id="prompt_cache_options"></span>
+<h3 id="parameter-prompt_cache_options"><code>prompt_cache_options</code></h3>
+
+يمرر عناصر تحكم ذاكرة التخزين المؤقت لموجّهات OpenAI عبر مسارات OpenAI المدعومة.
+
+| الحقل | القيمة |
+| --- | --- |
+| النوع | `object` |
+| الحقول الشائعة | `mode`, `ttl` |
+| Astra TTL | `30m` |
+
+في GPT-6 Astra، استخدم `{"mode":"explicit","ttl":"30m"}` للتخزين المؤقت الصريح للموجّهات. يحتفظ Phaseo بهذا الكائن أثناء تطبيع الطلب ويرسله إلى OpenAI دون تغيير.
 
 <span id="cache_control"></span>
 <h3 id="parameter-cache_control"><code>cache_control</code></h3>
@@ -602,13 +616,13 @@ icon: "sliders-horizontal"
 إذا أردت إرشادات أعمق حول الضبط بدلًا من مرجع الحقول فقط، فراجع الصفحات التالية:
 
 - [معلمات الاستدلال](../guides/inference-parameters.mdx) لنصائح عملية حول temperature وtop_p وtop_k وحدود الرموز وتسلسلات التوقف وسير الضبط
-- [أخذ العينات وفك الترميز](../guides/sampling-and-decoding.mdx) لفهم أثر العشوائية والعقوبات وعناصر التحكم في فك الترميز على سلوك النموذج
+- [أخذ العينات وفك الترميز](../guides/sampling-and-decoding.mdx) لفهم تأثير العشوائية والعقوبات وضوابط فك الترميز في سلوك النموذج
 
 ## صفحات ذات صلة
 
 - [معلمات الاستدلال](../guides/inference-parameters.mdx)
 - [أخذ العينات وفك الترميز](../guides/sampling-and-decoding.mdx)
-- [البث](./streaming.mdx)
+- [البث](../guides/streaming.mdx)
 - [الحدود](./limits.mdx)
 - [الأخطاء وتصحيحها](./errors.mdx)
 

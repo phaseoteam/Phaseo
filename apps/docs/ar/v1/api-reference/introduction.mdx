@@ -13,9 +13,12 @@ icon: "map"
 | --- | --- |
 | إرسال طلبك الأول | [البدء السريع](../quickstart.mdx) |
 | توليد النص أو استخدام الأدوات | `POST /responses` |
+| اتخاذ قرارات ذات أنواع محددة | [`POST /decisions`](./endpoint/decisions) |
 | الإبقاء على تكامل OpenAI متوافق موجود | `POST /chat/completions` |
 | تصفح النماذج والمزوّدين | `GET /models` و`GET /providers` |
 | إنشاء الموسيقى أو إدارة الملفات | `POST /music/generations` و`POST /files` |
+| توليد فيديو (تجريبي) | [`POST /videos`](./endpoint/video-create) |
+| إرسال دفعة أو تنزيل النتائج (تجريبي) | [`POST /batches`](./endpoint/batches-create) و[`GET /batches/{batch_id}/results`](./endpoint/batches-results) |
 
 ## عنوان URL الأساسي
 
@@ -34,14 +37,15 @@ https://api.phaseo.app/v1
 <Card
   title="OpenAPI الخاص بـ Phaseo Gateway"
   icon="list-bullet"
-  href="https://github.com/phaseoteam/Phaseo/blob/main/apps/docs/openapi/v1/openapi.public.yaml"
+	href="https://github.com/phaseoteam/Phaseo/blob/main/apps/docs/openapi/v1/openapi.yaml"
 >
   عرض ملف المواصفات
 </Card>
 
+يستخدم التوثيق وSDKs المواصفة نفسها. نقاط نهاية Video وBatch وDecisions موسومة بأنها **تجريبية**؛ وقد يلزم وصول معاينة لمساحة العمل.
 ## المصادقة
 
-تتطلب معظم نقاط النهاية مفتاح Gateway API عاديًا. وتتطلب نقاط الإدارة مفتاح إدارة API تم إنشاؤه في لوحة التحكم.
+استخدم مفتاح API قياسيًا للبوابة للاستدلال ومفتاح API للإدارة بالأذونات المناسبة للمهام الإدارية. راجع [المصادقة](../developers/authentication.mdx) و[مفاتيح API للإدارة](../developers/management-api-keys.mdx).
 
 ```http
 Authorization: Bearer phaseo_v1_sk_<kid>_<secret>
@@ -53,22 +57,15 @@ Authorization: Bearer phaseo_v1_sk_<kid>_<secret>
 
 | المورد | وظيفته |
 | --- | --- |
-| Responses API | إنشاء استجابات للنماذج مع الأدوات والإخراج المنظم والإدخال متعدد الوسائط. |
-| Chat Completions | الإبقاء على تكامل دردشة متوافق مع OpenAI موجود. |
-| Anthropic Messages | الإبقاء على تكامل Messages متوافق مع Anthropic موجود. |
-| Embeddings | إنشاء تمثيلات متجهة للبحث والاسترجاع والتصنيف. |
-| الصور | إنشاء الصور أو تعديلها. |
-| تحويل النص إلى كلام | إنشاء صوت منطوق من النص. |
-| تحويل الكلام إلى نص | تفريغ الصوت نصيًا أو ترجمته. |
-| توليد الموسيقى | إنشاء مهام الموسيقى والاطلاع على حالتها. |
-| الملفات | تحميل المدخلات واستعادتها لتدفقات عمل API المدعومة. |
-| النماذج والمزوّدون ونقاط النهاية | استكشاف ما هو متاح عبر Gateway. |
-| الأسعار والنشاط وعمليات التوليد | تقدير التكلفة وفحص نتائج الطلبات. |
-| مفاتيح API ومساحات العمل | إدارة الوصول البرمجي وموارد مساحة العمل. |
+| الاستدلال | ولّد نصوصًا وصورًا وصوتًا وتضمينات؛ واتخذ قرارات وأعد الترتيب وراجع المحتوى أو حلّله. ابدأ بـ[Responses](./endpoint/responses.mdx) أو[Decisions](./endpoint/decisions.mdx). |
+| المهام غير المتزامنة والملفات | أرسل مهام [فيديو](./endpoint/video-create.mdx) أو[دفعات](./endpoint/batches-create.mdx)، وانقل الملفات واضبط Webhooks. |
+| النماذج والتسعير | اكتشف [النماذج](./endpoint/models.mdx) وعروض المزوّدين و[التكاليف التقديرية](./endpoint/pricing-calculate.mdx). |
+| التوجيه والسياسات | اضبط الإعدادات المسبقة وبيانات اعتماد المزوّدين والنماذج الخاصة و[ضوابط الحماية](./endpoint/guardrails.mdx). |
+| الاستخدام والمراقبة | افحص [السجلات](./endpoint/logs-list.mdx) والنشاط والتحليلات والتقييمات وحالة الخدمة. |
+| إدارة مساحة العمل | أدِر [مساحات العمل](./endpoint/workspaces-list.mdx) والمفاتيح والميزانيات والهويات والتكاملات. |
 
 ## الفوترة وحدود المعدل
 
-- لا تفرض Phaseo حدود معدل خاصة بها؛ بل يفرضها المزوّدون الأساسيون.
+- تعامل مع تقييد المزوّد وسياسات الوصول المعمول بها باستخدام [دليل حدود الطلبات](./limits.mdx).
 - تتطلب الطلبات المدفوعة رصيدًا كافيًا في المحفظة لاجتياز فحص الرصيد المسبق.
 - لا تتطلب النماذج المجانية التي تحمل `:free` رصيدًا مودعًا.
-

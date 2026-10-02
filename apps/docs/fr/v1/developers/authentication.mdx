@@ -4,9 +4,7 @@ description: "Utilisez des clés API pour authentifier chaque requête envoyée 
 icon: "key-round"
 ---
 
-Consultez cette référence pour envoyer des requêtes authentifiées ou choisir comment stocker et renouveler vos clés.
-
-Phaseo Gateway utilise des jetons Bearer. Chaque requête API doit inclure une clé valide de votre espace de travail.
+Créez une clé dans le [tableau de bord](https://phaseo.app/gateway/keys), stockez-la sur votre serveur et envoyez-la comme jeton Bearer dans les requêtes Gateway.
 
 ---
 
@@ -14,7 +12,8 @@ Phaseo Gateway utilise des jetons Bearer. Chaque requête API doit inclure une c
 
 - **Clés API Gateway** : appellent les endpoints de modèles, de fournisseurs et de génération accessibles dans votre espace de travail.
 - **Clés API de gestion** : appellent les API d’administration. Consultez [Clés API de gestion](./management-api-keys.mdx).
-- **Clés renouvelées** : vous pouvez en créer à tout moment, puis remplacer l’ancienne dans votre application avant de la supprimer.
+
+Faites tourner une clé en mettant votre application à jour pour utiliser sa remplaçante avant d’invalider l’ancien identifiant. Consultez le [point d’accès de rotation des clés](../api-reference/endpoint/keys-rotate.mdx).
 
 Les clés suivent le format `phaseo_v1_sk_<kid>_<secret>`. Traitez-les comme des mots de passe et évitez de les stocker dans du code côté client ou des dépôts publics.
 
@@ -42,7 +41,7 @@ const response = await fetch("https://api.phaseo.app/v1/chat/completions", {
 		"Content-Type": "application/json",
 	},
 	body: JSON.stringify({
-		model: "gpt-5-nano-2025-08-07",
+		model: "openai/gpt-5-nano",
 		messages: [
 			{ role: "system", content: "You are a helpful assistant." },
 			{
@@ -71,5 +70,5 @@ const response = await fetch("https://api.phaseo.app/v1/chat/completions", {
 
 - **401 Non autorisé** : la clé est absente, invalide ou associée à un espace de travail désactivé.
 - **403 Interdit** : la clé existe, mais ne peut pas accéder au fournisseur ou au modèle demandé.
-- **429 Trop de requêtes** : la clé ou l’espace de travail a dépassé une limite. Consultez les [limites de débit](./rate-limits.mdx).
+- **429 Too Many Requests** : la clé ou l’espace de travail a dépassé une limite. Consultez les [Limites de requêtes](../api-reference/limits.mdx).
 - **Erreurs 5xx** : réessayez avec un délai exponentiel et contactez l’[assistance](https://phaseo.app/help) si le problème persiste.

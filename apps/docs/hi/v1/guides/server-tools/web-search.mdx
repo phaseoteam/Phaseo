@@ -9,7 +9,7 @@ description: "अनुरोध के दौरान मॉडल को व�
 Phaseo मॉडल को URLs, titles, snippets, highlights और वैकल्पिक page text देता है, ताकि वह स्रोत-आधारित उत्तर लिख सके।
 
 <Note>
-Phaseo के सर्वर टूल में Google की मूल वेब खोज अभी सक्षम नहीं है। समर्थित OpenAI और Anthropic रूट पर प्रबंधित खोज या प्रदाता की मूल खोज का उपयोग करें।
+TinyFish Search वैकल्पिक प्रबंधित इंजन के रूप में उपलब्ध है। समर्थित रूट पर `engine: "native"` से प्रदाता की मूल खोज भी उपलब्ध रहती है।
 </Note>
 
 ## यह कैसे काम करता है
@@ -58,7 +58,7 @@ curl https://api.phaseo.app/v1/chat/completions \
 
 | पैरामीटर | प्रकार | डिफ़ॉल्ट | विवरण |
 | --- | --- | --- | --- |
-| `engine` | string | `exa` | खोज इंजन: `auto`, `native`, `exa`, `parallel`, `firecrawl` या `perplexity`। |
+| `engine` | string | `exa` | खोज इंजन: `auto`, `native`, `exa`, `parallel`, `firecrawl`, `perplexity` या `tinyfish`। |
 | `max_results` | integer | `5` | हर खोज कॉल में लौटाए जाने वाले परिणामों की अधिकतम संख्या। |
 | `max_total_results` | integer | `10` | पूरे सर्वर-टूल लूप में परिणामों की कुल अधिकतम संख्या। |
 | `max_uses` | integer | `10` | पूरे सर्वर-टूल लूप में खोज कॉल की अधिकतम संख्या। |
@@ -69,6 +69,8 @@ curl https://api.phaseo.app/v1/chat/completions \
 | `include_highlights` | boolean | `true` | उपलब्ध होने पर engine द्वारा दिए गए highlights/snippets शामिल करें। |
 | `include_text` | boolean | `false` | Engine support करे तो result का अधिक विस्तृत text शामिल करें। |
 | `user_location` | object | none | Localized search support करने वाले engines के लिए वैकल्पिक location hint। |
+| `language` | स्ट्रिंग | कोई नहीं | TinyFish भाषा संकेत, जैसे `en`। |
+| `page` | पूर्णांक | `0` | TinyFish परिणाम पेज, `0` से `10` तक। |
 
 ## सर्च इंजन चुनें
 
@@ -79,9 +81,30 @@ curl https://api.phaseo.app/v1/chat/completions \
 | `parallel` | Configure होने पर Parallel search उपयोग करता है। |
 | `firecrawl` | Configure होने पर Firecrawl search उपयोग करता है। |
 | `perplexity` | Configure होने पर first-party Perplexity Search API उपयोग करता है। Ranked results, `search_context_size`, `user_location.country` से regional search और allowed या excluded domains समर्थित हैं। |
+| `tinyfish` | `TINYFISH_API_KEY` सेट होने पर TinyFish Search इस्तेमाल करता है। स्थानीयकृत, पृष्ठों में विभाजित और क्रमबद्ध नतीजे देता है तथा `allowed_domains` / `excluded_domains` को खोज ऑपरेटर में बदलता है। TinyFish Search पूरा पेज टेक्स्ट नहीं देता; अधिक सामग्री के लिए `phaseo:web_fetch` इस्तेमाल करें। |
 | `native` | Request surface support करने पर upstream model call से पहले declaration को provider-native web-search tool में बदलता है। |
 
 `engine: "native"` केवल tool declaration में उपयोग करें। पहले से जारी gateway search call में मॉडल `engine: "native"` भेजे, तो Phaseo tool error देता है, क्योंकि upstream request भेजने से पहले native tools चुनने होते हैं।
+
+## TinyFish Search
+
+Phaseo गेटवे रनटाइम सीक्रेट में `TINYFISH_API_KEY` सेट करके इंजन सक्षम करें, फिर टूल पैरामीटर में उसे चुनें:
+
+```json
+{
+  "type": "phaseo:web_search",
+  "parameters": {
+    "engine": "tinyfish",
+    "language": "en",
+    "page": 0,
+    "max_results": 5,
+    "allowed_domains": ["phaseo.app", "github.com"],
+    "excluded_domains": ["reddit.com"]
+  }
+}
+```
+
+`language` भाषा संकेत देता है और `page` `0` से `10` तक का परिणाम पेज चुनता है। TinyFish दोनों डोमेन फ़िल्टर सूचियाँ स्वीकार करता है; Phaseo उन्हें खोज ऑपरेटर में बदलता है। नतीजों में URL, शीर्षक और अंश/हाइलाइट होते हैं। मॉडल को अधिक पूरा टेक्स्ट चाहिए तो `phaseo:web_fetch` इस्तेमाल करें।
 
 ## डोमेन फ़िल्टरिंग
 
@@ -98,7 +121,9 @@ curl https://api.phaseo.app/v1/chat/completions \
 
 Broad web search allowed हो, लेकिन कुछ domains को results से हटाना हो, तो `excluded_domains` उपयोग करें।
 
-Perplexity और Firecrawl एक search call में `allowed_domains` या `excluded_domains` में से एक स्वीकार करते हैं, दोनों नहीं। Perplexity हर request में अधिकतम 20 domain filters स्वीकार करता है और excluded domains को denylist format में बदलता है।
+Perplexity and Firecrawl accept either `allowed_domains` or `excluded_domains` in a single search call, not both. Perplexity accepts up to 20 domain filters per request and maps excluded domains to its denylist format. TinyFish दोनों ऐरे को क्वेरी में `site:` और `-site:` ऑपरेटर में बदलता है।
+
+TinyFish Search प्रकाशित योजनाओं में मुफ़्त है, इसलिए Phaseo `engine: "tinyfish"` पर प्रदाता उपयोग शुल्क नहीं जोड़ता; सामान्य Phaseo अनुरोध और टोकन मूल्य लागू रहते हैं।
 
 ## Responses API
 

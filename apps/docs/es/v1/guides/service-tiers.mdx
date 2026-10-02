@@ -1,6 +1,6 @@
 ---
 title: "Niveles de servicio"
-description: "Cómo funcionan los modos de precio Standard, Fast, Flex y Batch en Phaseo Gateway."
+description: "Cómo funcionan los modos de precios Standard, Fast, Ultrafast, Flex y Batch en Phaseo Gateway."
 icon: "gauge"
 ---
 
@@ -24,6 +24,7 @@ Por ahora, los niveles de servicio solo están disponibles para modelos de texto
 | --- | --- | --- |
 | `Standard` | Comportamiento predeterminado. No hace falta ningún campo adicional. | Tráfico general de producción. |
 | `Fast` | Añade `service_tier: "fast"` a la solicitud. | Enrutamiento más rápido o premium cuando esté disponible. OpenAI también acepta `priority`. |
+| `Ultrafast` | Define `service_tier: "ultrafast"` en la solicitud. | Enrutamiento de máxima velocidad donde sea compatible. |
 | `Flex` | Añade `service_tier: "flex"` a la solicitud. | Enrutamiento de menor coste cuando esté disponible. |
 | `Batch` | Usa la API Batch en lugar de `service_tier`. | Cargas de trabajo grandes y diferidas en las que la latencia es menos importante. |
 
@@ -36,7 +37,7 @@ Usa el mismo campo `service_tier` al llamar a cualquiera de las API de texto sí
 - [Referencia de la API Responses](../api-reference/endpoint/responses.mdx)
 - [Referencia de parámetros compartidos](../api-reference/parameters.mdx)
 
-Los valores admitidos de `service_tier` son `standard`, `fast`, `priority`, `flex` y `batch`. `Standard` es el comportamiento predeterminado si se omite `service_tier`. Phaseo usa `Fast` como nombre canónico del nivel premium. En las rutas de OpenAI, `priority` se acepta como alias compatible y utiliza el mismo enrutamiento y precio. `Batch` se gestiona mediante la API Batch, no con solicitudes síncronas.
+Los valores admitidos de `service_tier` son `standard`, `fast`, `ultrafast`, `priority`, `flex` y `batch`. `Standard` es el comportamiento predeterminado si se omite `service_tier`. Phaseo usa `Fast` como nombre canónico del nivel premium. En las rutas de OpenAI, `priority` se acepta como alias compatible y utiliza el mismo enrutamiento y precio. `Batch` se gestiona mediante la API Batch, no con solicitudes síncronas.
 
 <Note>
 Phaseo convierte internamente los valores normalizados del gateway en controles nativos del proveedor. Por ejemplo, una ruta de Anthropic puede recibir campos de nivel nativos de Anthropic, pero la solicitud del cliente sigue usando los valores del gateway indicados aquí.
@@ -112,6 +113,17 @@ se pueda enrutar: Priority seguirá deshabilitado salvo que la ruta concreta de 
 que lo admite, y Batch debe usar la API Batch global de Mistral. La elegibilidad para Priority
 sigue dependiendo de la cuenta y el modelo de Mistral.
 
+## Ultrafast
+
+Usa `Ultrafast` para el nivel de servicio más rápido cuando el modelo y el proveedor lo ofrezcan. Phaseo solo enruta a una ruta con precio Ultrafast o específica de Ultrafast; no recurre a Fast ni Standard cuando ese nivel no está disponible.
+
+```json
+{
+  "model": "<model-id-with-ultrafast-pricing>",
+  "input": "Summarise this incident report.",
+  "service_tier": "ultrafast"
+}
+```
 ## Flex
 
 Usa `Flex` cuando el proveedor ofrezca un nivel de servicio más barato y aceptes las contrapartidas de ese modo de precio.

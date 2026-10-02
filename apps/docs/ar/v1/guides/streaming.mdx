@@ -1,50 +1,63 @@
 ---
 title: "البث"
-description: "استخدم الأحداث المرسلة من الخادم (SSE) لتسليم الرموز بزمن استجابة منخفض."
+description: "تلقَّ إخراجًا تدريجيًا وعالج أحداث نقاط النهاية واستعد من التدفقات المنقطعة."
 icon: "radio"
 ---
 
-يعيد البث المخرجات تدريجيًا عبر إطارات SSE ليتمكن المستخدمون من رؤية الرد مبكرًا.
+عيّن `stream: true` لتلقّي الإخراج كأحداث يرسلها الخادم (SSE). احتفظ بمفتاح API Phaseo على خادمك ومرّر الإخراج إلى الواجهة.
 
-## نقاط النهاية المدعومة
-
-- `/v1/responses`
-- `/v1/chat/completions`
-- `/v1/messages`
-
-## الطلب
+## إرسال طلب متدفق
 
 ```bash
-curl https://api.phaseo.app/v1/responses \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+curl --no-buffer https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "model": "openai/gpt-5-nano",
-    "input": "Stream a short hello message.",
+    "input": "Say hello in one sentence.",
     "stream": true
   }'
 ```
 
-## الرد
+تحقق من حالة HTTP قبل قراءة التدفق. يعيد الفشل قبل بدء التدفق [استجابة خطأ JSON](../api-reference/errors.mdx) المعتادة.
 
-```text
-data: {"id":"resp_...","object":"response","status":"in_progress",...}
-data: {"type":"response.output_text.delta","delta":"Hello"}
-data: {"type":"response.completed",...}
-data: [DONE]
-```
+## قراءة الأحداث
 
-## خيارات SDK
+استخدم تنسيق أحداث نقطة النهاية التي استدعيتها:
 
-- TypeScript SDK: `client.streamResponses()` و`client.streamChat()` و`client.streamMessages()`
-- Python SDK: `client.stream_responses()` و`client.stream_chat()` و`client.stream_message()`
-- Vercel AI SDK: `streamText(...)` مع `@phaseo/ai-sdk-provider`
+| نقطة النهاية | الإخراج التدريجي | الاكتمال |
+| --- | --- | --- |
+| [Responses](../api-reference/endpoint/responses.mdx) | أحداث مثل `response.output_text.delta` | افحص حدث الاستجابة النهائي وحالته |
+| [Chat Completions](../api-reference/endpoint/chat-completions.mdx) | `choices[].delta` | افحص `finish_reason`؛ ينهي `[DONE]` التدفق |
+| [Messages](../api-reference/endpoint/anthropic-messages.mdx) | `message_start`, `content_block_delta`, والأحداث ذات الصلة | `message_stop` |
 
-## قيد مهم
+تُفصل أحداث SSE بأسطر فارغة. قد تحتوي قطعة شبكة على جزء من حدث أو عدة أحداث؛ فلا تحلل كل قطعة باعتبارها JSON مستقلًا. خزّن الإطارات غير المكتملة أو استخدم مساعد تدفق SDK. لا تفترض أن كل نقطة نهاية ترسل `[DONE]`.
 
-في مستوى التحقق الحالي من طلبات البوابة، يُرفض الجمع بين الأدوات و`stream: true` (`400 invalid_request`). استخدم الوضع غير المتدفق لحلقات استدعاء الأدوات.
+تتولى مساعدات SDK نقل التدفق:
 
-## الأدلة التالية
+- TypeScript: `streamResponses()`, `streamChat()`, `streamMessages()`.
+- Python: `stream_responses()`, `stream_chat()`, `stream_message()`.
+- Vercel AI SDK: `streamText()` مع `@phaseo/ai-sdk-provider`.
 
-1. [مرجع أحداث SSE](./streaming-sse.mdx)
-2. [البث في بيئة الإنتاج](./streaming-production.mdx)
+راجع [دليل استخدام TypeScript](../sdk-reference/typescript/usage.mdx) أو[دليل استخدام Python](../sdk-reference/python/usage.mdx) لإعداد العميل.
+
+## تدفق استدعاءات الأدوات
+
+يقبل Gateway التدفق مع الأدوات، لكن الدعم يعتمد على النموذج والمزوّد المختارين. اجمع أجزاء معلمات الاستدعاء حتى يكتمل، ثم حلّل المعلمات وتحقق منها وامنحها الإذن قبل التنفيذ. لا تنفّذ معلمات جزئية أبدًا.
+
+اتبع [أنماط استدعاء الأدوات](./tool-calling-patterns.mdx) لطلبات المتابعة و[سلامة الأدوات](./tool-calling-safety.mdx) لضوابط التحقق والموافقة.
+
+## الإلغاء والاستعادة
+
+مرّر `AbortSignal` إلى عميل HTTP على الخادم وألغِ عند توقف المستخدم أو انقطاعه. حدد مهلة مناسبة للعمل. لا يضمن الإلغاء توقف المزوّد فورًا أو مجانية الإخراج المولّد.
+
+اعرض النص الجزئي تدريجيًا، لكن علّم الاستجابة مكتملة فقط بعد حدث النهاية الناجح. لا يثبت إغلاق الاتصال وحده الاكتمال.
+
+إذا فشل التدفق بعد بدء الإخراج:
+
+1. علّم الاستجابة الجزئية منقطعة.
+2. احتفظ بمعرّف الطلب أو التوليد ونقطة النهاية والنموذج في السجلات.
+3. اعرض إعادة محاولة صريحة. قد يولّد طلب جديد إخراجًا مختلفًا ورسومًا أخرى.
+4. لا تُعد تشغيل الأدوات المنفذة أو تلحق الاستجابة الجديدة بالإخراج الجزئي تلقائيًا.
+
+للفشل قبل بدء الإخراج، حدّ إعادة المحاولات واحترم [ترويسات حدود الطلبات](../api-reference/limits.mdx). إذا كان تطبيقك يحتاج إلى التحقق من كل الإخراج قبل عرضه، فاستخدم طلبًا غير متدفق أو خزّن النتيجة على خادمك.

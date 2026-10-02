@@ -1,15 +1,16 @@
 ---
 title: "Cursor"
+icon: "/icons/brands/cursor.svg"
 description: "Verbinde Cursor über den OpenAI-API-Schlüssel und die benutzerdefinierte Basis-URL mit Phaseo."
 ---
 
-Nutze diese Anleitung, um unterstützte Cursor-Chatmodelle über Phaseo zu leiten. Cursor speichert API-Schlüssel sicher; daher erstellt und widerruft die Phaseo-CLI den eigenen Schlüssel, während Cursor die Eingabe der Anmeldedaten übernimmt.
+Diese Anleitung zeigt, wie du unterstützte Cursor-Chatmodelle über Phaseo leitest. Erstelle und widerrufe mit der Phaseo CLI einen eigenen Schlüssel und schließe die Einrichtung in Cursor ab oder verwende deinen eigenen Phaseo-Schlüssel mit denselben manuellen Einstellungen.
 
-## Cursor-Anmeldedaten erstellen
+## Mit der Phaseo CLI einrichten
 
 ```bash
 phaseo login
-phaseo integrations setup cursor --model openai/gpt-5.6-terra
+phaseo cursor --model openai/gpt-5.6-terra
 ```
 
 Das Setup erstellt einen nicht ablaufenden Schlüssel `Phaseo CLI: Cursor API Key` und gibt die folgenden Einstellungen aus. Der private Anmeldedatenspeicher von Cursor wird nicht geändert.
@@ -82,5 +83,5 @@ Führe `phaseo integrations credential cursor` erneut aus, ersetze den in Cursor
 ## Weiterführende Themen
 
 - [Dokumentation zum Cursor-API-Schlüssel](https://docs.cursor.com/settings/api-keys)
-- [Coding-Assistenten](./coding-assistants.mdx)
+- [Programmieragenten](./coding-assistants.mdx)
 - [Modelle](../../api-reference/endpoint/models.mdx)

@@ -1,18 +1,19 @@
 ---
 title: "Roo Code"
+icon: "/icons/brands/roo-code.svg"
 description: "اربط Roo Code بـ Phaseo عبر ملف تعريف متوافق مع OpenAI."
 ---
 
-تنشئ CLI الخاصة بـ Phaseo المفتاح المخصص لـ Roo Code وتديره. ويحتفظ Roo Code ببيانات الاعتماد في التخزين الآمن لـ VS Code، لذا أكمل إعداد الملف التعريفي داخل الإضافة.
+استخدم Phaseo CLI لإنشاء مفتاح مخصص، ثم اضبط ملف تعريف مزوّد Roo Code يدويًا. يحتفظ Roo Code ببيانات الاعتماد في مخزن أسرار VS Code، لذا يكون الإدخال النهائي في واجهة الإضافة.
 
-## إنشاء بيانات الاعتماد
+## الإعداد باستخدام Phaseo CLI
 
 ```bash
 phaseo login
-phaseo integrations setup roo-code --model anthropic/claude-sonnet-4.6
+phaseo roo-code --model anthropic/claude-sonnet-4.6
 ```
 
-## إعداد Roo Code
+## إعداد Roo Code يدويًا
 
 1. افتح Roo Code في VS Code.
 2. افتح **Settings** ثم **Providers**.
@@ -60,5 +61,5 @@ phaseo integrations remove roo-code
 ## مواضيع ذات صلة
 
 - [موفّرو نماذج Roo Code](https://docs.roocode.com/providers/)
-- [مساعدو البرمجة](./coding-assistants.mdx)
+- [وكلاء البرمجة](./coding-assistants.mdx)
 - [النماذج](../../api-reference/endpoint/models.mdx)

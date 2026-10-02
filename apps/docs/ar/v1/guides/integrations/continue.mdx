@@ -1,15 +1,16 @@
 ---
 title: "Continue"
+icon: "/icons/brands/continue.svg"
 description: "أضف Phaseo إلى Continue في VS Code أو JetBrains أو Continue CLI."
 ---
 
-يمكن لـ Phaseo CLI إنشاء إعداد Continue محلي تشاركه إضافات IDE وواجهة سطر الأوامر `cn`.
+استخدم Phaseo CLI لإنشاء إعداد Continue محلي تشترك فيه إضافات IDE وواجهة سطر الأوامر `cn`، أو أضف قيم النموذج والسر نفسها يدويًا إلى إعداد Continue الموجود.
 
-## إعداد Continue
+## الإعداد باستخدام Phaseo CLI
 
 ```bash
 phaseo login
-phaseo integrations setup continue --model anthropic/claude-sonnet-4.6
+phaseo continue --model anthropic/claude-sonnet-4.6
 ```
 
 إذا لم يكن `~/.continue/config.yaml` و`~/.continue/.env` مستخدمين، فسينشئ الإعداد الملفين:
@@ -68,5 +69,5 @@ phaseo integrations remove continue
 
 - [إعداد Continue المتوافق مع OpenAI](https://docs.continue.dev/customize/model-providers/top-level/openai)
 - [الأسرار المحلية في Continue](https://docs.continue.dev/faqs#managing-local-secrets-and-environment-variables)
-- [مساعدو البرمجة](./coding-assistants.mdx)
+- [وكلاء البرمجة](./coding-assistants.mdx)
 - [النماذج](../../api-reference/endpoint/models.mdx)

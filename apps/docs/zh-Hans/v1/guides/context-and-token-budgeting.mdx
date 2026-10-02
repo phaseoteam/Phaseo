@@ -22,6 +22,11 @@ Token 预算管理是生产环境中的核心技能，会直接影响延迟、�
 - 上下文质量较低时，过长的提示词可能降低相关性。
 - 输出预算过小可能导致响应被截断或结构化输出无效。
 
+推理可能在模型生成答案之前耗尽输出预算。这些
+响应返回 HTTP 200 和已生成的推理，不会编造
+答案。达到输出上限时，Chat Completions 保留 `reasoning_content` 和 `finish_reason: "length"`。
+Responses 保留推理输出项并
+报告 `status: "incomplete"`。提供商正常停止时仍为 `stop` 或 `completed`。
 ## 预算策略
 
 1. 为每条路由设置最大输入 Token 目标。

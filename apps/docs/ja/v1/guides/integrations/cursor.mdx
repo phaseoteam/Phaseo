@@ -1,15 +1,16 @@
 ---
 title: "Cursor"
+icon: "/icons/brands/cursor.svg"
 description: "OpenAI APIキーとBase URLの上書き設定を使ってCursorをPhaseoに接続します。"
 ---
 
-このガイドでは、CursorがサポートするチャットモデルをPhaseo経由でルーティングします。CursorはAPIキーをセキュアストレージに保存するため、専用キーの作成と失効はPhaseo CLIが行い、認証情報の入力はCursorで行います。
+対応するCursorチャットモデルをPhaseo経由で使うためのガイドです。Phaseo CLIで専用キーを作成・失効し、Cursorで設定を完了するか、独自のPhaseoキーを使って同じ手動設定を行ってください。
 
-## Cursorの認証情報を作成する
+## Phaseo CLIで設定する
 
 ```bash
 phaseo login
-phaseo integrations setup cursor --model openai/gpt-5.6-terra
+phaseo cursor --model openai/gpt-5.6-terra
 ```
 
 セットアップで有効期限のない`Phaseo CLI: Cursor API Key`を作成し、以下の設定を表示します。Cursorの非公開認証情報ストレージは編集しません。
@@ -82,5 +83,5 @@ Cursorのバージョンによっては、個別のVerify操作なしでキー�
 ## 関連項目
 
 - [Cursor APIキーのドキュメント](https://docs.cursor.com/settings/api-keys)
-- [コーディングアシスタント](./coding-assistants.mdx)
+- [コーディングエージェント](./coding-assistants.mdx)
 - [モデル](../../api-reference/endpoint/models.mdx)

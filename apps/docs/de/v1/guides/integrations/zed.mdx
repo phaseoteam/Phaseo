@@ -1,11 +1,21 @@
 ---
 title: "Zed"
+icon: "/icons/brands/zed.svg"
 description: "Füge Phaseo in Zed als OpenAI-kompatiblen Modell-Provider hinzu."
 ---
 
-Führe `phaseo integrations setup zed` aus. Die CLI trägt die Provider-ID `phaseo`, die API-URL `https://api.phaseo.app/v1` und das ausgewählte Modell in `settings.json` ein, ohne andere Einstellungen zu ändern.
+Füge mit der Phaseo CLI Anbieter und Modell zu Zed hinzu und speichere den Schlüssel im Zed-Schlüsselbund. Ohne CLI kannst du dieselben Anbieterwerte manuell eingeben.
 
-## API-Schlüssel in Zed speichern
+## Mit der Phaseo CLI einrichten
+
+```bash
+phaseo login
+phaseo zed --model openai/gpt-5.6-terra
+```
+
+Die CLI fügt die Anbieter-ID `phaseo`, die API-URL `https://api.phaseo.app/v1` und das gewählte Modell zu Zeds `settings.json` hinzu, ohne andere Einstellungen zu ändern.
+
+## Einrichtung in Zed abschließen
 
 Zed speichert Provider-Schlüssel im System-Schlüsselbund; dies ist daher der einzige verbleibende Schritt in der Benutzeroberfläche.
 

@@ -1,8 +1,9 @@
 ---
 title: "Codex"
-icon: "code-2"
+icon: "/icons/brands/codex.svg"
 description: "استخدم Phaseo Gateway كمزوّد مخصّص لـ Codex CLI وCodex App وامتداد Codex لـ IDE."
 ---
+
 يدعم Codex المزوّدين المخصّصين للنماذج عبر `config.toml`. وبذلك يمكنك توجيه طلبات Codex عبر Phaseo مع الاحتفاظ بسير العمل نفسه في CLI أو التطبيق أو IDE.
 
 إذا أردت أن يطّلع Codex أيضًا على أحدث وثائق Phaseo أثناء العمل، فأضف خادم [Docs MCP](./docs-mcp.mdx) كذلك.
@@ -42,6 +43,7 @@ phaseo codex --model openai/gpt-5.6-terra
 codex --profile phaseo
 ```
 
+يشغّل سير عمل Phaseo CLI نفسه أيضًا [Cline](./cline) و[Kilo Code](./kilo-code) و[oh-my-pi](./oh-my-pi) و[Muse Code](./muse-code) و[MiniMax Code](./minimax-code) بإعداد مزوّد مؤقت ومعزول.
 ## الإعداد اليدوي
 
 أنشئ إعدادات المستخدم أو حدّثها في `~/.codex/config.toml`. وفي مشروع موثوق، يمكنك وضع الإعدادات نفسها في `.codex/config.toml` داخل المستودع.

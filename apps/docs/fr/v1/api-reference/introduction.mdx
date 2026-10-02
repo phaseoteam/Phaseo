@@ -13,9 +13,12 @@ Utilisez cette page pour trouver le chemin d’API adapté avant d’ouvrir la r
 | --- | --- |
 | Envoyer votre première requête | [Guide de démarrage rapide](../quickstart.mdx) |
 | Générer du texte ou utiliser des outils | `POST /responses` |
+| Prendre des décisions typées | [`POST /decisions`](./endpoint/decisions) |
 | Conserver une intégration OpenAI compatible existante | `POST /chat/completions` |
 | Parcourir les modèles et les fournisseurs | `GET /models` et `GET /providers` |
 | Créer de la musique ou gérer des fichiers | `POST /music/generations` et `POST /files` |
+| Générer une vidéo (Bêta) | [`POST /videos`](./endpoint/video-create) |
+| Soumettre un lot ou télécharger les résultats (Bêta) | [`POST /batches`](./endpoint/batches-create) et [`GET /batches/{batch_id}/results`](./endpoint/batches-results) |
 
 ## URL de base
 
@@ -34,14 +37,15 @@ Utilisez le fichier OpenAPI pour importer l’API dans Postman, Hoppscotch ou un
 <Card
   title="OpenAPI Phaseo Gateway"
   icon="list-bullet"
-  href="https://github.com/phaseoteam/Phaseo/blob/main/apps/docs/openapi/v1/openapi.public.yaml"
+	href="https://github.com/phaseoteam/Phaseo/blob/main/apps/docs/openapi/v1/openapi.yaml"
 >
   Afficher le fichier de spécification
 </Card>
 
+La documentation et les SDK utilisent cette même spécification. Les points d’accès Video, Batch et Decisions sont marqués **Bêta** ; un accès de préversion pour l’espace de travail peut être nécessaire.
 ## Authentification
 
-La plupart des points de terminaison nécessitent une clé d’API Gateway standard. Les points de terminaison de gestion nécessitent une clé d’API de gestion créée dans le tableau de bord.
+Utilisez une clé API Gateway standard pour l’inférence et une clé API de gestion disposant des autorisations appropriées pour l’administration. Consultez [Authentification](../developers/authentication.mdx) et [Clés API de gestion](../developers/management-api-keys.mdx).
 
 ```http
 Authorization: Bearer phaseo_v1_sk_<kid>_<secret>
@@ -53,22 +57,15 @@ En cas d’échec de l’authentification, l’API renvoie `401`.
 
 | Ressource | Fonction |
 | --- | --- |
-| API Responses | Générer des réponses de modèle avec des outils, une sortie structurée et des entrées multimodales. |
-| Chat Completions | Conserver une intégration de chat compatible OpenAI existante. |
-| Messages Anthropic | Conserver une intégration Messages compatible avec Anthropic. |
-| Embeddings | Créer des représentations vectorielles pour la recherche, la récupération et la classification. |
-| Images | Générer ou modifier des images. |
-| Synthèse vocale | Générer de l’audio parlé à partir de texte. |
-| Reconnaissance vocale | Transcrire ou traduire de l’audio. |
-| Génération de musique | Créer des tâches de génération musicale et consulter leur état. |
-| Fichiers | Téléverser et récupérer les entrées des flux de travail d’API pris en charge. |
-| Modèles, fournisseurs et points de terminaison | Découvrir les ressources disponibles via Gateway. |
-| Tarifs, activité et générations | Estimer les coûts et examiner les résultats des requêtes. |
-| Clés d’API et espaces de travail | Gérer les accès programmatiques et les ressources de l’espace de travail. |
+| Inférence | Générez du texte, des images, de l’audio et des embeddings ; prenez des décisions, reclassez, modérez ou analysez le contenu. Commencez par [Responses](./endpoint/responses.mdx) ou [Decisions](./endpoint/decisions.mdx). |
+| Tâches asynchrones et fichiers | Soumettez des tâches [vidéo](./endpoint/video-create.mdx) ou [par lots](./endpoint/batches-create.mdx), transférez des fichiers et configurez des webhooks. |
+| Modèles et tarifs | Découvrez les [modèles](./endpoint/models.mdx), les offres fournisseurs et les [coûts estimés](./endpoint/pricing-calculate.mdx). |
+| Routage et politiques | Configurez les préréglages, identifiants fournisseurs, modèles privés et [garde-fous](./endpoint/guardrails.mdx). |
+| Utilisation et surveillance | Examinez les [journaux](./endpoint/logs-list.mdx), l’activité, les analyses, les évaluations et l’état du service. |
+| Gestion des espaces de travail | Gérez les [espaces de travail](./endpoint/workspaces-list.mdx), clés, budgets, identités et intégrations. |
 
 ## Facturation et limites de débit
 
-- Phaseo n’applique pas ses propres limites de débit. Elles sont imposées par les fournisseurs en amont.
+- Gérez la limitation des requêtes fournisseur et les politiques d’accès applicables avec le [guide des limites](./limits.mdx).
 - Les requêtes payantes nécessitent un solde de portefeuille suffisant pour réussir la vérification préalable des crédits.
 - Les modèles gratuits avec `:free` ne nécessitent pas de crédits déposés.
-

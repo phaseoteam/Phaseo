@@ -68,7 +68,27 @@ curl https://api.phaseo.app/v1/chat/completions \
 - مع `json_schema`، أدرج كائن مخطط (`response_format.json_schema.schema` في حمولة على نمط chat أو `text.format.schema` في حمولة على نمط Responses).
 - تحقّق من JSON على خادمك قبل استخدامه في الأنظمة اللاحقة.
 
-## الأدلة التالية
+## تصميم المخطط
 
-1. [مخططات المخرجات المنظّمة](./structured-outputs-schemas.mdx)
-2. [أنماط التحقق والبدائل الاحتياطية](./structured-outputs-validation.mdx)
+ابدأ بكائن صغير وحدد الحقول المطلوبة صراحةً واستخدم التعدادات للفئات المعروفة. عيّن `additionalProperties: false` لرفض المفاتيح الإضافية. حافظ على تزامن المخطط المطلوب ومتحقق الخادم وأدِر إصداراتهما معًا.
+
+## التحقق من النتيجة
+
+حلّل النتيجة الكاملة وتحقق منها قبل استخدامها لاحقًا. يستخدم مثال TypeScript هذا Zod ويطابق مخطط الطقس أعلاه:
+
+```typescript
+import { z } from "zod";
+
+const Weather = z.object({
+  city: z.string(),
+  weather: z.string(),
+}).strict();
+
+function parseWeather(content: string) {
+  return Weather.parse(JSON.parse(content));
+}
+```
+
+عالج الرفض والمحتوى المفقود والاستجابات المبتورة قبل التحليل. إذا فشل التحقق، اسمح بعدد محدود فقط من المحاولات التصحيحية ثم أعد فشلًا آمنًا. قد تترتب رسوم إضافية على إعادة التوليد. لا يثبت JSON صالح صحة القيم واقعيًا ولا يمنح إذنًا لتنفيذ إجراء.
+
+تتبّع إخفاقات التحقق بحسب النموذج وإصدار المخطط. أعد فحص حالات التقييم عند تغير أي منهما. لاستعادة JSON غير سليم، راجع [إصلاح الاستجابة](../cookbook/response-healing-for-structured-json.mdx).

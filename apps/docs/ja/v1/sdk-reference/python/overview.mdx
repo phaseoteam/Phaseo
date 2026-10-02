@@ -6,7 +6,73 @@ description: "Phaseo Gateway API 用の公式 Python クライアント"
 
 公開済みの [~phaseo~](https://pypi.org/project/phaseo/) パッケージを PyPI からインストールします。
 
-Phaseo Python SDK は現在、Phaseo Gateway API 用の同期クライアントを提供しています。
+Phaseo Python SDKは同期クライアント`Phaseo`とネイティブ非同期クライアント`AsyncPhaseo`を提供します。
+
+## ネイティブ非同期リクエスト
+
+```python
+import asyncio
+from phaseo import AsyncPhaseo
+
+async def main():
+    async with AsyncPhaseo() as client:
+        response = await client.responses.create({"model": "openai/gpt-5-nano", "input": "Hello"})
+        print(response.output_text, response.request_id, response.trace_url)
+
+asyncio.run(main())
+```
+
+解析済みテキストイベントには`async for event in client.responses.stream(request)`を使います。
+asyncioのネイティブキャンセルでHTTPとポーリングが停止します。リソースはテキスト、
+画像、音声、音楽、動画、バッチ、ファイル、モデル、埋め込み、OCR、再ランキング、解析、
+モデレーション、判断をカバーします。その他のHTTP操作は`await client.request(...)`を使います。
+注入したHTTPXクライアントは呼び出し元が管理します。
+
+両クライアントは元のクライアントを変更せずに`with_options(timeout=30, max_retries=2)`を
+サポートします。HTTPXのタイムアウトはネットワークの無通信時間を秒で制限します。再試行は
+既定で0回で、応答を読む前のGET/HEADにのみ適用され、送信には適用されません。
+`PhaseoHTTPError`は本文、コード、リクエストID、トレースURL、再試行遅延を公開します。
+
+更新時は同期JSONリクエストでの`urllib.error.HTTPError`の捕捉を
+`PhaseoHTTPError`（または`httpx.HTTPStatusError`）に変更し、接続エラーの捕捉を
+`httpx.TransportError`に変更します。`error.status`はHTTPステータスで、`error.code`は
+APIエラーコードです。
+
+## 追加の便利な機能
+
+ジョブリソースは`result`、`events`、`to_dict`を持つ`start`と`resume`の
+ハンドルを提供します。非同期メソッドを待機し、`async for`で非同期イベントを反復します。
+リモートキャンセルは動画とバッチのみ対応します。メディアは
+`videos.stream_content(id)`、バッチは`batches.results(id)`でストリーミングします。同期の
+`download_to(chunks, binary_file)`はファイル全体をバッファリングせず書き込みます。
+アップロードはバイト列、`Path`オブジェクト、ファイルオブジェクト、HTTPXファイルタプルを受け付けます。
+
+`responses.parse(request, PydanticModel)`は完了したJSON出力を検証します。
+サーバーの応答形式を明示してください。`collect_stream`と
+`collect_async_stream`は解析済みテキストイベントと使用量を集めます。
+`check_model_capabilities(id, input_types=..., output_types=..., endpoints=...,
+parameters=..., parameter_values=...)`は1つの利用可能なプロバイダー提供に対する公開機能とスカラー
+制約をまとめて確認します。不明な情報があると事前確認は失敗します。
+
+モデル選択やパラメーター編集には、現在のエンドポイントメタデータを使います。
+
+```python
+support = client.models.check_parameters(
+    "openai/gpt-5",
+    {"temperature": 0.7, "top_p": 0.9},
+    endpoint="responses",
+)
+```
+
+各パラメーターは`supported`、`partial`、`unsupported`、`unknown`と示され、
+対応するプロバイダールートと表示に使える制約の問題が含まれます。
+`client.models.capabilities(model_id)`はエンドポイントの機能応答全体を
+返します。`AsyncPhaseo`は同じメソッドをawait可能な形で提供します。
+
+ローカルテストには`httpx.Client`または`httpx.AsyncClient`で
+`phaseo.testing.MockTransport`を注入します。想定外のリクエストはローカルで失敗し、`assert_done()`で
+全テストデータの使用を確認できます。実際のプロバイダー動作を検証するものではありません。
+Phaseoルームは**コードを取得**で送信したリクエストの実行可能コードをエクスポートします。
 
 ## 主な機能
 
@@ -32,12 +98,32 @@ response = client.generate_response(
 print(response.get("id"))
 ```
 
+## 音楽・動画・バッチの完了を待つ
+
+```python
+import os
+
+music = client.music.generate_and_wait(
+    {"model": os.environ["PHASEO_MUSIC_MODEL"], "prompt": "Gentle instrumental piano"},
+    timeout=600,
+    on_poll=lambda job: print(job["id"], job["status"]),
+)
+```
+
+動画には`videos.generate_and_wait(request, **options)`、バッチには`batches.create_and_wait(request, **options)`を使います。同期ヘルパーは1回だけ送信し、必要時のみポーリングして完了応答全体を返します。`JobFailedError.response`は失敗、キャンセル、期限切れの詳細を保持します。完了したバッチにも個別の失敗が含まれる場合があります。
+
+各リソースは`wait(id, **options)`で既存ジョブを再開し、すべての最終応答を返せます。音楽には直接呼べる`create(request)`と`retrieve(id)`もあります。
+
+オプションは`interval`（秒、既定5、最小0.25）、`timeout`（秒、既定1800）、`on_poll`、`cancel_event`（`threading.Event`）です。待機タイムアウトは送信から戻った後に開始します。同期クライアントはリクエストとコールバックの間にキャンセルと期限を確認しますが、これらのオプションで進行中のHTTP呼び出しは中断できません。
+
+`JobTimeoutError`と`JobCancelledError`は`job_id`と`last_response`を保持します。`.wait(error.job_id)`で再開してください。ローカルのタイムアウトやキャンセルはリモートジョブを停止せず、送信も自動再試行されません。ヘルパーはGatewayにバックグラウンド実行を追加しません。
 ## "含まれるもの"
 
 -   `Phaseo` クライアント
 -   `chat.completions.create(...)` and `responses.create(...)` 互換ヘルパー
 -   リソースヘルパー（例:） `client.batches`, `client.videos`, `client.files`, and `client.async_jobs`
 -   バッチと動画のライフサイクルストリーム用非同期ジョブ WebSocket URL ヘルパー
+-   `client.batches.stream_results(batch_id)` バッチJSONLのバイトチャンク用
 -   モデルのライフサイクル用ヘルパー（例:） `get_model_deprecation_info(...)` and `validate_model(...)`
 -   テキスト、Responses、Messages 用のストリーミングイテレーター
 -   ~phaseo.models~ にある生成済みリクエスト/レスポンスモデル

@@ -44,8 +44,9 @@ La prise en charge des paramètres varie toujours selon le point de terminaison,
 | [`reasoning_effort`](#reasoning_effort) | `string` | Réduire ou augmenter le budget de raisonnement. |
 | [`reasoning_tokens`](#reasoning_tokens) | `integer` | Limite de tokens ou champ de comptabilisation propre au raisonnement. |
 | [`include_reasoning`](#include_reasoning) | `boolean` | Renvoyer le contenu ou les résumés de raisonnement si cette option est prise en charge. |
-| [`service_tier`](#service_tier) | `string` | Choisir un niveau de requête pris en charge, tel que `priority` ou `flex` ; OpenAI accepte aussi `fast` comme alias. |
+| [`service_tier`](#service_tier) | `string` | Choisir un niveau de requête compatible tel que `fast`, `ultrafast` ou `flex`. |
 | [`prompt_cache_key`](#prompt_cache_key) | `string` | Conserver une affinité de routage tenant compte du cache pour les requêtes liées. |
+| [`prompt_cache_options`](#prompt_cache_options) | `object` | Définir le mode de cache des prompts et les contrôles TTL OpenAI. |
 | [`cache_control`](#cache_control) | `object` | Appliquer des indications de cache de prompt ou des points de séparation indépendants du fournisseur. |
 | [`prompt_cache_retention`](#prompt_cache_retention) | `string` | Définir la durée de conservation du cache de prompt compatible avec OpenAI. |
 | [`provider`](#provider) | `object` | Influencer le routage et le choix du fournisseur. |
@@ -61,13 +62,13 @@ La prise en charge des paramètres varie toujours selon le point de terminaison,
 - [Chat Completions](./endpoint/chat-completions.mdx)
 - [Responses](./endpoint/responses.mdx)
 
-Utilisez `priority` ou `flex` uniquement si la combinaison modèle-fournisseur sélectionnée les prend en charge. Phaseo conserve `priority` comme niveau premium canonique ; les routes OpenAI acceptent aussi `fast` comme alias. `standard` est la valeur par défaut si `service_tier` est omis.
+Utilisez `ultrafast`, `fast` (ou `priority` lorsqu’il est pris en charge) et `flex` uniquement si la combinaison modèle/fournisseur les accepte. `Ultrafast` sélectionne le niveau compatible le plus rapide ; `fast` et `priority` utilisent le même routage et tarif Fast. `standard` est la valeur par défaut si `service_tier` est omis.
 
 `Batch` n’est pas une valeur de `service_tier`. Les requêtes par lot utilisent l’API Batch distincte.
 
 Pour les requêtes Messages compatibles avec Anthropic, les valeurs natives en amont d’Anthropic sont `auto` et `standard_only`. Phaseo peut les normaliser ou les mapper entre fournisseurs tout en préservant le comportement compatible avec Anthropic sur `/v1/messages`.
 
-Si vous utilisez un SDK officiel Anthropic avec une URL de base personnalisée pointant vers Phaseo, privilégiez les valeurs natives Anthropic sur `/v1/messages`. Pour les contrôles de niveau normalisés entre fournisseurs comme `priority` et `flex`, ou l’alias `fast` d’OpenAI, préférez les requêtes HTTP brutes ou les API textuelles natives de la passerelle ou de style OpenAI.
+Si vous utilisez un SDK officiel Anthropic avec une URL de base personnalisée pointant vers Phaseo, privilégiez les valeurs natives Anthropic sur `/v1/messages`. Pour les contrôles de niveau normalisés entre fournisseurs comme `ultrafast`, `priority` et `flex`, ou l’alias `fast` d’OpenAI, préférez les requêtes HTTP brutes ou les API textuelles natives de la passerelle ou de style OpenAI.
 
 ## Référence des paramètres
 
@@ -424,10 +425,10 @@ Sélectionne un niveau de routage ou de tarification pris en charge sur les API 
 | Champ | Valeur |
 | --- | --- |
 | Type | `string` |
-| Valeurs prises en charge | `standard`, `fast`, `priority`, `flex` |
+| Valeurs prises en charge | `standard`, `fast`, `ultrafast`, `priority`, `flex` |
 | Valeur par défaut | `standard` |
 
-Utilisez `priority` ou `flex` uniquement si la combinaison modèle-fournisseur choisie les prend en charge. Phaseo conserve `priority` comme niveau premium canonique ; les routes OpenAI compatibles acceptent aussi `fast` comme alias offrant le même routage et le même tarif. Omettez le champ pour garder le niveau standard par défaut.
+Utilisez `ultrafast`, `fast` (ou `priority` lorsqu’il est pris en charge) et `flex` uniquement si la combinaison modèle/fournisseur les accepte. `Ultrafast` sélectionne le niveau compatible le plus rapide ; `fast` et `priority` utilisent le même routage et tarif Fast. Omettez le champ pour conserver le niveau standard par défaut.
 
 Phaseo mappe en interne ces valeurs de niveau normalisées par la passerelle vers les contrôles natifs des fournisseurs. Les appelants peuvent ainsi utiliser les mêmes valeurs `service_tier` sur les interfaces textuelles prises en charge.
 
@@ -447,6 +448,19 @@ Fournit une clé d’affinité de cache stable pour le routage tenant compte du 
 | Utilisation | Routage persistant pour les prompts en cache associés |
 
 Utilisez-le lorsque plusieurs requêtes partagent des préfixes de prompt stables et devraient privilégier le même fournisseur ou la même région en amont. Phaseo peut aussi déduire l’affinité de cache du contexte de la requête, mais une clé explicite convient mieux aux longues conversations, aux sessions d’agent et aux flux répétés.
+
+<span id="prompt_cache_options"></span>
+<h3 id="parameter-prompt_cache_options"><code>prompt_cache_options</code></h3>
+
+Transmet les contrôles du cache de prompts OpenAI sur les routes OpenAI compatibles.
+
+| Champ | Valeur |
+| --- | --- |
+| Type | `object` |
+| Champs courants | `mode`, `ttl` |
+| Astra TTL | `30m` |
+
+Pour GPT-6 Astra, utilisez `{"mode":"explicit","ttl":"30m"}` pour activer explicitement le cache des prompts. Phaseo conserve cet objet lors de la normalisation des requêtes et le transmet inchangé à OpenAI.
 
 <span id="cache_control"></span>
 <h3 id="parameter-cache_control"><code>cache_control</code></h3>
@@ -602,13 +616,13 @@ Les charges utiles de débogage peuvent contenir des éléments sensibles du con
 Pour obtenir des conseils plus approfondis sur le réglage plutôt qu’une simple référence des champs, consultez :
 
 - [Paramètres d’inférence](../guides/inference-parameters.mdx) pour des conseils pratiques sur temperature, top_p, top_k, les limites de tokens, les séquences d’arrêt et le réglage
-- [Échantillonnage et décodage](../guides/sampling-and-decoding.mdx) pour comprendre l’effet de l’aléatoire, des pénalités et des réglages de décodage sur le modèle
+- [Échantillonnage et décodage](../guides/sampling-and-decoding.mdx) pour comprendre comment l’aléatoire, les pénalités et les contrôles de décodage influencent le modèle
 
 ## Pages associées
 
 - [Paramètres d’inférence](../guides/inference-parameters.mdx)
 - [Échantillonnage et décodage](../guides/sampling-and-decoding.mdx)
-- [Diffusion en continu](./streaming.mdx)
+- [Diffusion en continu](../guides/streaming.mdx)
 - [Limites](./limits.mdx)
 - [Erreurs et débogage](./errors.mdx)
 

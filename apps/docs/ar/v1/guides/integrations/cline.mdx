@@ -1,18 +1,30 @@
 ---
 title: "Cline"
+icon: "/icons/brands/cline.svg"
 description: "اربط Cline بـ Phaseo عبر المزوّد المتوافق مع OpenAI الخاص به."
 ---
 
-تنشئ Phaseo CLI مفتاحًا مخصصًا لـ Cline وتديره. يخزن Cline بيانات الاعتماد في مخزن الأسرار الآمن في VS Code، لذا يتم الإدخال النهائي في واجهة الإضافة.
+اختر مشغّل Phaseo CLI لجلسة معزولة، أو أنشئ مفتاحًا مخصصًا باستخدام CLI واضبط تثبيت Cline الموجود يدويًا. يحتفظ Cline ببيانات الاعتماد في مخزن أسرار VS Code الآمن، لذا يكون الإدخال النهائي في واجهة الإضافة.
 
-## إنشاء بيانات الاعتماد
+## تشغيل Cline عبر Phaseo CLI
+
+لواجهة Cline CLI، دع Phaseo يجهّز إعداد المزوّد لجلسة واحدة:
 
 ```bash
 phaseo login
-phaseo integrations setup cline --model anthropic/claude-sonnet-4.6
+phaseo cline --model openai/gpt-5.6-terra -- --tui
 ```
 
-## تهيئة Cline
+استخدم `--catalog all` لإتاحة كل نماذج النص والدردشة النشطة في Phaseo، أو `--dry-run --json` لمعاينة خطة التثبيت والتشغيل. استخدم `phaseo run cline ...` لصيغة الأمر الصريحة. يستخدم المشغّل إعدادات Cline ومجلدات بيانات مؤقتة، فلا يستبدل إعداد Cline أو VS Code الموجود.
+
+## إنشاء بيانات الاعتماد باستخدام Phaseo CLI
+
+```bash
+phaseo login
+phaseo setup cline --model anthropic/claude-sonnet-4.6
+```
+
+## إعداد Cline يدويًا
 
 1. افتح لوحة Cline في VS Code.
 2. اختر رمز الإعدادات أو المزوّد أسفل مربع الدردشة.
@@ -59,5 +71,5 @@ phaseo integrations remove cline
 ## مواضيع ذات صلة
 
 - [تهيئة Cline المتوافقة مع OpenAI](https://docs.cline.bot/enterprise-solutions/configuration/remote-configuration/openai-compatible/member-configuration)
-- [مساعدو البرمجة](./coding-assistants.mdx)
+- [وكلاء البرمجة](./coding-assistants.mdx)
 - [النماذج](../../api-reference/endpoint/models.mdx)

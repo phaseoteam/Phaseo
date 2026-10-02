@@ -1,11 +1,21 @@
 ---
 title: "Zed"
+icon: "/icons/brands/zed.svg"
 description: "أضف Phaseo في Zed كمزوّد نماذج متوافق مع OpenAI."
 ---
 
-شغّل `phaseo integrations setup zed`. تضيف CLI معرّف المزوّد `phaseo` وعنوان API `https://api.phaseo.app/v1` والنموذج المحدد إلى `settings.json` دون تغيير الإعدادات الأخرى.
+استخدم Phaseo CLI لإضافة المزوّد والنموذج إلى Zed، ثم احفظ المفتاح في سلسلة مفاتيح Zed. لتجاوز CLI، أدخل قيم المزوّد نفسها يدويًا.
 
-## حفظ مفتاح API في Zed
+## الإعداد باستخدام Phaseo CLI
+
+```bash
+phaseo login
+phaseo zed --model openai/gpt-5.6-terra
+```
+
+تضيف CLI معرّف المزوّد `phaseo` وعنوان API `https://api.phaseo.app/v1` والنموذج المختار إلى `settings.json` في Zed دون تغيير الإعدادات الأخرى.
+
+## إكمال الإعداد في Zed
 
 يخزّن Zed مفاتيح المزوّدين في سلسلة مفاتيح النظام، لذا فهذه هي الخطوة الوحيدة المتبقية في الواجهة.
 

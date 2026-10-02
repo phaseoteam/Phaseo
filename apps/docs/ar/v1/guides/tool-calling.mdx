@@ -139,7 +139,8 @@ curl https://api.phaseo.app/v1/chat/completions \
 ملاحظات:
 
 - يوفّر النموذج استعلام البحث عند استدعاء الأداة.
-- يُحلّ `engine: "auto"` إلى بحث Exa المُدار. وتشغّل القيم `engine: "exa"` و`engine: "parallel"` و`engine: "firecrawl"` بحثًا تديره البوابة عند إعداد مفتاح المزوّد المطابق.
+- يستخدم `engine: "auto"` بحث Exa المُدار. تشغّل `engine: "exa"` و`engine: "parallel"` و`engine: "firecrawl"` و`engine: "tinyfish"` بحث البوابة المُدار عند إعداد مفتاح المزوّد المطابق.
+- يدعم TinyFish Search نتائج مرتبة ومترجمة ومقسمة إلى صفحات، وهو مجاني ضمن خططه المنشورة؛ استخدم `language` و`page` في معلمات الأداة عند الحاجة.
 - يتحوّل `engine: "native"` في `phaseo:web_search` إلى أداة بحث ويب أصلية للمزوّد وفق واجهة الطلب، مثل `web_search_preview` من OpenAI أو `web_search_20250305` من Anthropic.
 - يحدّ `max_results` نتائج كل استدعاء بحث، بينما يحدّ `max_total_results` إجمالي النتائج عبر دورة أدوات الخادم.
 - يدعم البحث المُدار `allowed_domains` و`excluded_domains` و`search_context_size` و`max_characters` عندما يوفّر المحرك المحدد عناصر التحكم المناسبة.

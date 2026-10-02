@@ -1,10 +1,18 @@
 ---
-title: "コーディングアシスタント"
+title: "コーディングエージェント"
 icon: "compass"
-description: "Cursor、VS Code、Codex、Claude Code などのコーディングツールに、Phaseo をモデルプロバイダーとして追加する方法を説明します。"
+description: "CLIまたは手動のプロバイダー設定でコーディングエージェントをPhaseoに接続します。"
 ---
 
-OpenAI または Anthropic 互換のカスタムエンドポイントをサポートするコーディングアシスタントに、Phaseo をモデルプロバイダーとして追加する方法を説明します。
+このガイドでコーディングエージェントをPhaseoに接続します。認証情報と設定を管理したい場合はPhaseo CLIを、エージェント内で設定したい場合は手動のプロバイダー値を使ってください。
+
+## 設定方法を選ぶ
+
+| 目的 | 使用する方法 |
+| --- | --- |
+| 分離された一時設定でCline、Kilo Code、oh-my-pi、Muse Code、MiniMax Codeを起動する | `phaseo cline`, `phaseo kilo`, `phaseo omp`, `phaseo muse`, または `phaseo minimax` |
+| インストール済みエージェントを設定し、設定を保持する | `phaseo <integration>` |
+| Phaseo CLIを使わずにエージェントを設定する | 専用ガイドの手動プロバイダー設定手順に従う |
 
 ## Phaseo CLI で設定する
 
@@ -17,13 +25,13 @@ phaseo codex
 
 このコマンドはハーネスのインストール状態を確認します。対話型ターミナルで未インストールの場合、Phaseo は対応するインストールコマンドを表示し、実行前に確認します。その後、ハーネス専用のキーを作成して設定を書き込みます。非対話型の実行では、無人でシステムを変更せず、具体的なインストール手順を表示します。OpenCode、DeepSeek Harness、Pi、Prime Agent、OpenClaw には、Chat Completions 対応の有効なテキストモデルもすべて追加されます。動作範囲を絞るには `--skip-install`、`--catalog default`、`--dry-run` を使います。
 
-他の統合やインストールを別途管理する場合は、低レベルのコマンドを使います。
+永続的な連携には製品名のコマンドを使います。
 
 ```bash
-phaseo integrations setup codex
+phaseo codex
 ```
 
-対応する統合名は `codex`、`claude-code`、`opencode`、`deepseek-harness`、`pi`、`openclaw`、`hermes`、`aider`、`cline`、`roo-code`、`kilo-code`、`continue`、`cursor`、`zed` です。
+Supported integration names are `codex`, `claude-code`, `opencode`, `deepseek-harness`, `pi`, `openclaw`, `hermes`, `aider`, `cline`, `roo-code`, `kilo-code`, `continue`, `cursor`, and `zed`. 分離されたCLIランナーは`cline`、`kilo`、`omp`、`muse`、`minimax`です。
 
 CLI はアシスタントごとに専用の有効期限なし API キーを作成します。クリーンインストールでは Aider と Continue を自動設定し、Zed のプロバイダー/モデル設定も自動で書き込みます。シークレットをエディター UI のみで管理するアシスタントでは、残りの入力項目を表示し、専用ガイドにリンクし、そのアシスタントのキーだけをコピーできます。
 
@@ -34,13 +42,13 @@ phaseo integrations credential codex
 設定前にファイル変更をプレビューし、後から安全に接続を解除できます。
 
 ```bash
-phaseo integrations setup codex --dry-run
+phaseo codex --dry-run
 phaseo integrations remove codex
 ```
 
 削除すると Phaseo が管理する設定を消去し、そのアシスタントのキーを失効させます。無関係な設定は削除しません。
 
-## プロバイダー設定
+## 手動のプロバイダー設定
 
 ツールから別のフィールド名を指定されない限り、次の値を使います。
 
@@ -140,9 +148,12 @@ Aider では、OpenAI 互換のカスタムモデルに `openai/` プレフィ�
 
 `phaseo hermes` は、Hermes が未インストールの場合に Nous Research の公式インストーラーを実行し、インストール後にエージェントを設定します。以前の Hermes モデル設定を保存し、Phaseo をカスタムエンドポイントとして設定します。また、Hermes 公式の `hermes config set` コマンドで専用キーを `~/.hermes/.env` の `OPENAI_API_KEY` に設定します。Hermes はプロバイダー認証情報にこの平文ファイルを意図的に使うため、他の API キーファイルと同様に保護してください。削除時には以前のモデル設定を復元し、`OPENAI_API_KEY` と Phaseo の復旧状態を削除して、キーを失効させます。
 
+## MiniMax Code
+
+`mcode` CLIには専用の[MiniMax Codeガイド](./minimax-code.mdx)を使ってください。`phaseo minimax`はPhaseoのOpenAI互換エンドポイントで一時的なMiniMaxプロバイダーを作成し、CLIを起動して、セッション終了時に一時データディレクトリを削除します。エディターやホストがACPを直接使う場合は、`mcode acp`によるACPにも対応しています。
 ## Zed
 
-`phaseo integrations setup zed` を実行し、表示された手順に従って Zed の設定に OpenAI 互換プロバイダーを追加します。生成されたキーは Zed の認証情報欄だけに入力してください。
+`phaseo zed` を実行し、表示された手順に従って Zed の設定に OpenAI 互換プロバイダーを追加します。生成されたキーは Zed の認証情報欄だけに入力してください。
 
 ## Codex
 
@@ -183,7 +194,7 @@ claude
 
 ## Claude Desktop
 
-Claude Desktop は MCP サーバーに対応していますが、Cursor、Codex、Claude Code などのコーディングアシスタントと同じカスタムモデルプロバイダー設定はありません。 [Docs MCP](./docs-mcp.mdx) を使うと、Claude Desktop に Phaseo ドキュメントのコンテキストを追加できます。Phaseo をモデルゲートウェイとして使う場合は Claude Code を利用してください。
+Claude Desktop は MCP サーバーに対応していますが、Cursor、Codex、Claude Code などのコーディングエージェントと同じカスタムモデルプロバイダー設定はありません。 [Docs MCP](./docs-mcp.mdx) を使うと、Claude Desktop に Phaseo ドキュメントのコンテキストを追加できます。Phaseo をモデルゲートウェイとして使う場合は Claude Code を利用してください。
 
 ## Deep Agents CLI と LangChain ツール
 
@@ -198,7 +209,7 @@ export OPENAI_BASE_URL="https://api.phaseo.app/v1"
 
 ## 注意事項
 
-- モデル ID 内のスラッシュの扱いはコーディングアシスタントごとに異なります。UI が `openai/gpt-5-nano` を拒否する場合、ツールが対応していればローカルエイリアスを作成してください。
+- モデル ID 内のスラッシュの扱いはコーディングエージェントごとに異なります。UI が `openai/gpt-5-nano` を拒否する場合、ツールが対応していればローカルエイリアスを作成してください。
 - ファイル編集のワークフローは慎重にテストしてください。`phaseo:apply_patch` は Responses 専用です。
 - セッション中にアシスタントが Phaseo ドキュメントを参照できるようにするには、[Docs MCP](./docs-mcp.mdx) を追加します。
 - 古いコーディングツールでは、Responses イベントとサーバーツールに明示的に対応している場合を除き、Chat Completions を優先してください。

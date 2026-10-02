@@ -1,18 +1,30 @@
 ---
 title: "Kilo Code"
+icon: "/icons/brands/kilo.svg"
 description: "使用自定义 OpenAI 兼容供应商将 Kilo Code 连接到 Phaseo。"
 ---
 
-Phaseo CLI 会创建并管理 Kilo Code 专用密钥。请在扩展中将其添加为自定义供应商。
+选择 Phaseo CLI 启动器来运行隔离会话，或使用 CLI 创建专用密钥并手动配置现有的 Kilo Code 安装。
 
-## 创建凭据
+## 通过 Phaseo CLI 运行 Kilo Code
+
+对于 Kilo Code CLI，让 Phaseo 为单个会话准备提供商配置：
 
 ```bash
 phaseo login
-phaseo integrations setup kilo-code --model anthropic/claude-sonnet-4.6
+phaseo kilo --model openai/gpt-5.6-terra --
 ```
 
-## 配置 Kilo Code
+使用 `--catalog all` 提供所有活跃的 Phaseo 文本/聊天模型，或使用 `--dry-run --json` 预览安装和启动计划。显式命令形式为 `phaseo run kilo ...`。启动器使用临时 `KILO_CONFIG` 文件，因此不会覆盖现有 Kilo Code 或 VS Code 设置。
+
+## 使用 Phaseo CLI 创建凭据
+
+```bash
+phaseo login
+phaseo setup kilo-code --model anthropic/claude-sonnet-4.6
+```
+
+## 手动配置 Kilo Code
 
 1. 在 VS Code 中打开 Kilo Code。
 2. 选择设置图标，打开 **Providers**，然后选择 **Add custom provider**。
@@ -62,5 +74,5 @@ CLI 无法清除扩展的私有存储，但移除操作会撤销密钥。
 ## 相关内容
 
 - [Kilo Code 自定义模型](https://kilo.ai/docs/code-with-ai/agents/custom-models)
-- [编程助手](./coding-assistants.mdx)
+- [编程智能体](./coding-assistants.mdx)
 - [模型](../../api-reference/endpoint/models.mdx)

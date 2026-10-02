@@ -1,18 +1,19 @@
 ---
 title: "Roo Code"
+icon: "/icons/brands/roo-code.svg"
 description: "通过 OpenAI 兼容配置将 Roo Code 连接到 Phaseo。"
 ---
 
-Phaseo CLI 会创建并管理 Roo Code 的专用密钥。Roo Code 将凭据保存在 VS Code 的安全存储中，因此需要在扩展中完成配置。
+使用 Phaseo CLI 创建专用密钥，然后手动配置 Roo Code 的提供商配置文件。Roo Code 将凭据保存在 VS Code 密钥存储中，因此最后的输入需在扩展界面中完成。
 
-## 创建凭据
+## 使用 Phaseo CLI 设置
 
 ```bash
 phaseo login
-phaseo integrations setup roo-code --model anthropic/claude-sonnet-4.6
+phaseo roo-code --model anthropic/claude-sonnet-4.6
 ```
 
-## 配置 Roo Code
+## 手动配置 Roo Code
 
 1. 在 VS Code 中打开 Roo Code。
 2. 打开 **Settings**，然后打开 **Providers**。
@@ -60,5 +61,5 @@ CLI 无法删除 VS Code 扩展私有存储中的值，但移除操作会撤销�
 ## 相关内容
 
 - [Roo Code 模型供应商](https://docs.roocode.com/providers/)
-- [编程助手](./coding-assistants.mdx)
+- [编程智能体](./coding-assistants.mdx)
 - [模型](../../api-reference/endpoint/models.mdx)

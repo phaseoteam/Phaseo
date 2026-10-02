@@ -1,8 +1,9 @@
 ---
 title: "Codex"
-icon: "code-2"
+icon: "/icons/brands/codex.svg"
 description: "Codex CLI, Codex App और Codex IDE extension के लिए Phaseo Gateway को custom provider के रूप में उपयोग करें।"
 ---
+
 Codex `config.toml` के ज़रिए custom model providers का समर्थन करता है। इससे आप CLI, app या IDE के मौजूदा workflow को बनाए रखते हुए अनुरोध Phaseo के माध्यम से route कर सकते हैं।
 
 यदि आप चाहते हैं कि Codex काम करते समय Phaseo के मौजूदा docs भी पढ़े, तो [Docs MCP](./docs-mcp.mdx) server भी जोड़ें।
@@ -42,6 +43,7 @@ phaseo codex --model openai/gpt-5.6-terra
 codex --profile phaseo
 ```
 
+वही Phaseo CLI प्रक्रिया अलग अस्थायी प्रदाता कॉन्फ़िगरेशन से [Cline](./cline), [Kilo Code](./kilo-code), [oh-my-pi](./oh-my-pi), [Muse Code](./muse-code) और [MiniMax Code](./minimax-code) भी लॉन्च करती है।
 ## मैन्युअल कॉन्फ़िगरेशन
 
 अपनी user config `~/.codex/config.toml` में बनाएँ या अपडेट करें। किसी भरोसेमंद project के लिए यही settings repo के `.codex/config.toml` में भी रख सकते हैं।

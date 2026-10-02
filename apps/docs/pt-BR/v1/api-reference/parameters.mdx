@@ -44,8 +44,9 @@ O suporte a parâmetros ainda varia conforme o endpoint, o modelo e o provedor. 
 | [`reasoning_effort`](#reasoning_effort) | `string` | Reduzir ou aumentar o orçamento de raciocínio. |
 | [`reasoning_tokens`](#reasoning_tokens) | `integer` | Limite de tokens ou campo de contabilização específico do raciocínio. |
 | [`include_reasoning`](#include_reasoning) | `boolean` | Retornar conteúdo ou resumos do raciocínio quando houver suporte. |
-| [`service_tier`](#service_tier) | `string` | Escolher um nível de solicitação aceito, como `priority` ou `flex`; a OpenAI também aceita `fast` como alias. |
+| [`service_tier`](#service_tier) | `string` | Escolher um nível de solicitação compatível, como `fast`, `ultrafast` ou `flex`. |
 | [`prompt_cache_key`](#prompt_cache_key) | `string` | Manter o roteamento com afinidade de cache para solicitações relacionadas. |
+| [`prompt_cache_options`](#prompt_cache_options) | `object` | Configurar o modo de cache de prompts e os controles de TTL da OpenAI. |
 | [`cache_control`](#cache_control) | `object` | Aplicar dicas de cache de prompt ou pontos de separação independentes do provedor. |
 | [`prompt_cache_retention`](#prompt_cache_retention) | `string` | Definir a retenção do cache de prompt compatível com OpenAI. |
 | [`provider`](#provider) | `object` | Influenciar o roteamento e a seleção do provedor. |
@@ -61,13 +62,13 @@ O suporte a parâmetros ainda varia conforme o endpoint, o modelo e o provedor. 
 - [Chat Completions](./endpoint/chat-completions.mdx)
 - [Responses](./endpoint/responses.mdx)
 
-Use `priority` ou `flex` somente quando a combinação escolhida de modelo e provedor oferecer suporte. O Phaseo mantém `priority` como o nível premium canônico; rotas da OpenAI também aceitam `fast` como alias. `standard` é o padrão quando `service_tier` é omitido.
+Use `ultrafast`, `fast` (ou `priority` onde houver suporte) e `flex` somente se a combinação de modelo e provedor os aceitar. `Ultrafast` seleciona o nível compatível mais rápido; `fast` e `priority` usam o mesmo roteamento e preço Fast. `standard` é o padrão quando `service_tier` é omitido.
 
 `Batch` não é um valor de `service_tier`. Solicitações em lote usam a API Batch separada.
 
 Em solicitações Messages compatíveis com Anthropic, os valores nativos upstream da Anthropic são `auto` e `standard_only`. O Phaseo pode normalizar ou mapear esses valores entre provedores, preservando o comportamento compatível com Anthropic em `/v1/messages`.
 
-Se você usa um SDK oficial da Anthropic com uma URL base personalizada apontada para o Phaseo, prefira os valores nativos da Anthropic em `/v1/messages`. Para controles de nível normalizados entre provedores, como `priority` e `flex`, ou o alias `fast` da OpenAI, prefira solicitações HTTP diretas ou as APIs de texto nativas do gateway ou no estilo OpenAI.
+Se você usa um SDK oficial da Anthropic com uma URL base personalizada apontada para o Phaseo, prefira os valores nativos da Anthropic em `/v1/messages`. Para controles de nível normalizados entre provedores, como `ultrafast`, `priority` e `flex`, ou o alias `fast` da OpenAI, prefira solicitações HTTP diretas ou as APIs de texto nativas do gateway ou no estilo OpenAI.
 
 ## Referência de parâmetros
 
@@ -424,10 +425,10 @@ Seleciona um nível de roteamento ou preço aceito em APIs de texto compatíveis
 | Campo | Valor |
 | --- | --- |
 | Tipo | `string` |
-| Valores aceitos | `standard`, `fast`, `priority`, `flex` |
+| Valores aceitos | `standard`, `fast`, `ultrafast`, `priority`, `flex` |
 | Padrão | `standard` |
 
-Use `priority` ou `flex` somente quando a combinação escolhida de modelo e provedor oferecer suporte. O Phaseo mantém `priority` como nível premium canônico; rotas compatíveis da OpenAI também aceitam `fast` como alias com roteamento e preço idênticos. Omita o campo para manter o nível padrão.
+Use `ultrafast`, `fast` (ou `priority` onde houver suporte) e `flex` somente se a combinação de modelo e provedor os aceitar. `Ultrafast` seleciona o nível compatível mais rápido; `fast` e `priority` usam o mesmo roteamento e preço Fast. Omita o campo para manter o nível padrão.
 
 O Phaseo mapeia internamente esses níveis normalizados do gateway para controles nativos dos provedores, permitindo que os clientes usem os mesmos valores de `service_tier` nas interfaces de texto compatíveis.
 
@@ -447,6 +448,19 @@ Fornece uma chave estável de afinidade de cache para roteamento que considera o
 | Uso | Roteamento persistente para prompts em cache relacionados |
 
 Use quando uma série de solicitações compartilhar prefixos de prompt estáveis e precisar priorizar o mesmo provedor ou região upstream. O Phaseo também pode derivar a afinidade de cache do contexto da solicitação, mas uma chave explícita é melhor para conversas longas, sessões de agente e fluxos repetidos.
+
+<span id="prompt_cache_options"></span>
+<h3 id="parameter-prompt_cache_options"><code>prompt_cache_options</code></h3>
+
+Transmite os controles de cache de prompts da OpenAI pelas rotas OpenAI compatíveis.
+
+| Campo | Valor |
+| --- | --- |
+| Tipo | `object` |
+| Campos comuns | `mode`, `ttl` |
+| Astra TTL | `30m` |
+
+Para GPT-6 Astra, use `{"mode":"explicit","ttl":"30m"}` para cache explícito de prompts. O Phaseo preserva o objeto durante a normalização da solicitação e o envia à OpenAI sem alterações.
 
 <span id="cache_control"></span>
 <h3 id="parameter-cache_control"><code>cache_control</code></h3>
@@ -602,13 +616,13 @@ Payloads de depuração podem conter contexto sensível da solicitação. Use-os
 Se quiser orientações mais aprofundadas sobre como ajustar os parâmetros, em vez de uma referência simples dos campos, consulte estas páginas:
 
 - [Parâmetros de inferência](../guides/inference-parameters.mdx) para orientações práticas sobre temperature, top_p, top_k, limites de tokens, sequências de parada e fluxo de ajuste
-- [Amostragem e decodificação](../guides/sampling-and-decoding.mdx) para entender como aleatoriedade, penalidades e controles de decodificação alteram o comportamento do modelo
+- [Amostragem e decodificação](../guides/sampling-and-decoding.mdx) para entender como aleatoriedade, penalidades e controles de decodificação mudam o comportamento do modelo
 
 ## Páginas relacionadas
 
 - [Parâmetros de inferência](../guides/inference-parameters.mdx)
 - [Amostragem e decodificação](../guides/sampling-and-decoding.mdx)
-- [Transmissão contínua](./streaming.mdx)
+- [Transmissão contínua](../guides/streaming.mdx)
 - [Limites](./limits.mdx)
 - [Erros e depuração](./errors.mdx)
 

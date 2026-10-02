@@ -1,6 +1,6 @@
 ---
 title: "服务等级"
-description: "Phaseo Gateway 中 Standard、Fast、Flex 和 Batch 计费模式的工作方式。"
+description: "Phaseo Gateway 中 Standard、Fast、Ultrafast、Flex 和 Batch 定价模式的工作方式。"
 icon: "gauge"
 ---
 
@@ -24,6 +24,7 @@ icon: "gauge"
 | --- | --- | --- |
 | `Standard` | 默认行为。无需添加字段。 | 常规生产流量。 |
 | `Fast` | 在请求中设置 `service_tier: "fast"`。 | 在支持的情况下使用更快或优先级更高的路由。OpenAI 也接受 `priority`。 |
+| `Ultrafast` | 在请求中设置 `service_tier: "ultrafast"`。 | 在支持时使用最高速路由。 |
 | `Flex` | 在请求中设置 `service_tier: "flex"。 | 在支持的情况下使用更低成本的路由。 |
 | `Batch` | 使用 Batch API，而不是 `service_tier`。 | 适用于对延迟要求不高的大批量延后任务。 |
 
@@ -36,7 +37,7 @@ icon: "gauge"
 - [Responses API 参考](../api-reference/endpoint/responses.mdx)
 - [共享参数参考](../api-reference/parameters.mdx)
 
-`service_tier` 的可接受值为 `standard`、`fast`、`priority`、`flex` 和 `batch`。省略 `service_tier` 时，默认行为为 `Standard`。Phaseo 将 `Fast` 作为高级等级的规范名称。在 OpenAI 路由中，`priority` 是受支持的供应商兼容别名，使用相同的路由和计费。`Batch` 由 Batch API 处理，不适用于同步文本请求。
+`service_tier` 的可接受值为 `standard`、`fast`、`ultrafast`、`priority`、`flex` 和 `batch`。省略 `service_tier` 时，默认行为为 `Standard`。Phaseo 将 `Fast` 作为高级等级的规范名称。在 OpenAI 路由中，`priority` 是受支持的供应商兼容别名，使用相同的路由和计费。`Batch` 由 Batch API 处理，不适用于同步文本请求。
 
 <Note>
 Phaseo 会在内部将标准化的 Gateway 值映射为供应商原生控制项。例如，Anthropic 路由在上游可能会收到 Anthropic 原生等级字段，但客户端请求仍使用此处列出的 Gateway 值。
@@ -112,6 +113,17 @@ Phaseo 会分别记录 Mistral 公布的 Batch 和 Priority 参考费率以及�
 Batch 必须使用 Mistral 全球 Batch API。Priority 资格仍取决于
 Mistral 账户和模型。
 
+## Ultrafast
+
+模型和提供商支持时，可使用 `Ultrafast` 获得最高速服务层级。Phaseo 只路由至 Ultrafast 定价或 Ultrafast 专用路由；该层级不可用时，不会回退至 Fast 或 Standard。
+
+```json
+{
+  "model": "<model-id-with-ultrafast-pricing>",
+  "input": "Summarise this incident report.",
+  "service_tier": "ultrafast"
+}
+```
 ## Flex
 
 当供应商提供成本更低的服务等级，且你愿意接受相应取舍时，请使用 `Flex`。

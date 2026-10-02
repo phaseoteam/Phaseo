@@ -9,7 +9,7 @@ description: "أتِح للنماذج البحث على الويب أثناء ا
 تعيد Phaseo إلى النموذج عناوين URL والعناوين والمقتطفات والنتائج البارزة ونص الصفحة اختياريًا، ليتمكن من كتابة رد يستند إلى المصادر.
 
 <Note>
-لم يُفعّل بحث Google الأصلي على الويب ضمن أدوات خادم Phaseo بعد. استخدم البحث المُدار أو البحث الأصلي للمزوّد عبر المسارات المدعومة من OpenAI وAnthropic.
+يتوفر TinyFish Search كمحرك مُدار اختياري. يبقى بحث المزوّد الأصلي متاحًا عبر `engine: "native"` على المسارات المدعومة.
 </Note>
 
 ## آلية العمل
@@ -58,7 +58,7 @@ curl https://api.phaseo.app/v1/chat/completions \
 
 | المعلمة | النوع | الافتراضي | الوصف |
 | --- | --- | --- | --- |
-| `engine` | string | `exa` | محرك البحث: `auto` أو `native` أو `exa` أو `parallel` أو `firecrawl` أو `perplexity`. |
+| `engine` | string | `exa` | محرك البحث: `auto` أو `native` أو `exa` أو `parallel` أو `firecrawl` أو `perplexity` أو `tinyfish`. |
 | `max_results` | integer | `5` | العدد الأقصى للنتائج المعادة في استدعاء البحث الواحد. |
 | `max_total_results` | integer | `10` | الحد الأقصى التراكمي للنتائج عبر دورة أدوات الخادم. |
 | `max_uses` | integer | `10` | الحد الأقصى لاستدعاءات البحث عبر دورة أدوات الخادم. |
@@ -69,6 +69,8 @@ curl https://api.phaseo.app/v1/chat/completions \
 | `include_highlights` | boolean | `true` | ضمّ المقاطع البارزة أو المقتطفات التي يوفرها المحرك عند توفرها. |
 | `include_text` | boolean | `false` | ضمّ نصًا أكثر اكتمالًا للنتيجة إذا كان المحرك يدعم ذلك. |
 | `user_location` | object | none | تلميح موقع اختياري للمحركات التي تدعم البحث المحلي. |
+| `language` | نص | لا شيء | تلميح لغة TinyFish مثل `en`. |
+| `page` | عدد صحيح | `0` | صفحة نتائج TinyFish من `0` إلى `10`. |
 
 ## اختيار المحرك
 
@@ -79,9 +81,30 @@ curl https://api.phaseo.app/v1/chat/completions \
 | `parallel` | يستخدم بحث Parallel عند إعداده. |
 | `firecrawl` | يستخدم بحث Firecrawl عند إعداده. |
 | `perplexity` | يستخدم واجهة Perplexity Search API الرسمية عند إعدادها. ويدعم النتائج المرتبة و`search_context_size` والبحث الإقليمي استنادًا إلى `user_location.country` والنطاقات المسموح بها أو المستبعدة. |
+| `tinyfish` | يستخدم TinyFish Search عند إعداد `TINYFISH_API_KEY`. يدعم نتائج مرتبة ومترجمة ومقسمة إلى صفحات ويحوّل `allowed_domains` / `excluded_domains` إلى عوامل بحث. لا يوفّر TinyFish Search نص الصفحة كاملًا؛ استخدم `phaseo:web_fetch` عند الحاجة إلى محتوى أشمل. |
 | `native` | يحوّل التعريف إلى أداة بحث ويب أصلية للمزوّد قبل استدعاء النموذج upstream إذا كانت واجهة الطلب تدعم ذلك. |
 
 استخدم `engine: "native"` في تعريف الأداة فقط. إذا حاول النموذج إرسال `engine: "native"` ضمن استدعاء بحث صادر بالفعل عبر البوابة، تعيد Phaseo خطأ أداة لأن اختيار الأدوات الأصلية يجب أن يتم قبل إرسال الطلب upstream.
+
+## TinyFish Search
+
+فعّل المحرك بإعداد `TINYFISH_API_KEY` في أسرار تشغيل بوابة Phaseo، ثم اختره في معلمات الأداة:
+
+```json
+{
+  "type": "phaseo:web_search",
+  "parameters": {
+    "engine": "tinyfish",
+    "language": "en",
+    "page": 0,
+    "max_results": 5,
+    "allowed_domains": ["phaseo.app", "github.com"],
+    "excluded_domains": ["reddit.com"]
+  }
+}
+```
+
+يوفّر `language` تلميحًا للغة ويختار `page` صفحة نتائج من `0` إلى `10`. يدعم TinyFish قائمتي تصفية النطاقات ويحوّلهما Phaseo إلى عوامل بحث. تشمل النتائج عناوين URL والعناوين والمقتطفات والمقاطع البارزة. استخدم `phaseo:web_fetch` عندما يحتاج النموذج إلى نص أشمل من النتيجة.
 
 ## تصفية النطاقات
 
@@ -98,7 +121,9 @@ curl https://api.phaseo.app/v1/chat/completions \
 
 استخدم `excluded_domains` عندما يُسمح بالبحث الواسع على الويب، مع استبعاد نطاقات محددة من النتائج.
 
-يقبل Perplexity وFirecrawl إما `allowed_domains` أو `excluded_domains` في استدعاء بحث واحد، وليس كليهما. يقبل Perplexity ما يصل إلى 20 مرشح نطاق لكل طلب، ويحوّل النطاقات المستبعدة إلى تنسيق قائمة الحظر لديه.
+Perplexity and Firecrawl accept either `allowed_domains` or `excluded_domains` in a single search call, not both. Perplexity accepts up to 20 domain filters per request and maps excluded domains to its denylist format. يحوّل TinyFish المصفوفتين إلى العاملين `site:` و`-site:` في الاستعلام.
+
+TinyFish Search مجاني ضمن خططه المنشورة، لذا لا يضيف Phaseo رسوم استخدام للمزوّد عند `engine: "tinyfish"`؛ وتبقى أسعار طلبات ورموز Phaseo العادية سارية.
 
 ## Responses API
 

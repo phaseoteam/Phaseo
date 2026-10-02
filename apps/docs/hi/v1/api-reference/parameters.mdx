@@ -44,8 +44,9 @@ icon: "sliders-horizontal"
 | [`reasoning_effort`](#reasoning_effort) | `string` | reasoning budget घटाना या बढ़ाना। |
 | [`reasoning_tokens`](#reasoning_tokens) | `integer` | reasoning-विशिष्ट token सीमा या लेखांकन फ़ील्ड। |
 | [`include_reasoning`](#include_reasoning) | `boolean` | समर्थन होने पर reasoning content या summaries लौटाना। |
-| [`service_tier`](#service_tier) | `string` | `priority` या `flex` जैसा समर्थित request tier चुनना; OpenAI `fast` को alias के रूप में भी स्वीकार करता है। |
+| [`service_tier`](#service_tier) | `string` | समर्थित अनुरोध स्तर चुनना, जैसे `fast`, `ultrafast` या `flex`। |
 | [`prompt_cache_key`](#prompt_cache_key) | `string` | संबंधित requests के लिए cache-aware routing को sticky रखना। |
+| [`prompt_cache_options`](#prompt_cache_options) | `object` | OpenAI प्रॉम्प्ट कैश मोड और TTL नियंत्रण सेट करना। |
 | [`cache_control`](#cache_control) | `object` | provider-neutral prompt cache संकेत या breakpoints लागू करना। |
 | [`prompt_cache_retention`](#prompt_cache_retention) | `string` | OpenAI-compatible prompt cache retention सेट करना। |
 | [`provider`](#provider) | `object` | रूटिंग और provider चयन को प्रभावित करना। |
@@ -61,13 +62,13 @@ icon: "sliders-horizontal"
 - [Chat Completions](./endpoint/chat-completions.mdx)
 - [Responses](./endpoint/responses.mdx)
 
-चुने गए model और provider के संयोजन द्वारा समर्थित होने पर ही `priority` या `flex` का उपयोग करें। Phaseo `priority` को मानक प्रीमियम टियर रखता है; OpenAI रूट `fast` को alias के रूप में भी स्वीकार करते हैं। `service_tier` छोड़ने पर `standard` डिफ़ॉल्ट होता है।
+`ultrafast`, `fast` (समर्थन हो तो `priority`) और `flex` तभी इस्तेमाल करें जब चुना मॉडल-प्रदाता संयोजन स्वीकार करे। `Ultrafast` सबसे तेज़ समर्थित स्तर चुनता है; `fast` और `priority` की Fast रूटिंग और कीमत समान हैं। `service_tier` न दें तो `standard` डिफ़ॉल्ट है।
 
 `Batch`, `service_tier` का मान नहीं है। Batch अनुरोध अलग Batch API का उपयोग करते हैं।
 
 Anthropic-संगत Messages अनुरोधों के लिए Anthropic के मूल upstream मान `auto` और `standard_only` हैं। Phaseo प्रदाताओं के बीच इन मानों को सामान्यीकृत या मैप कर सकता है, साथ ही `/v1/messages` पर Anthropic-संगत व्यवहार बनाए रखता है।
 
-यदि Phaseo पर इंगित कस्टम base URL के साथ आधिकारिक Anthropic SDK का उपयोग कर रहे हैं, तो `/v1/messages` पर Anthropic के मूल मान चुनें। `priority` और `flex` जैसे प्रदाता-पार सामान्यीकृत टियर नियंत्रण या OpenAI alias `fast` के लिए raw HTTP अनुरोध या gateway-native/OpenAI-style टेक्स्ट API चुनें।
+यदि Phaseo पर इंगित कस्टम base URL के साथ आधिकारिक Anthropic SDK का उपयोग कर रहे हैं, तो `/v1/messages` पर Anthropic के मूल मान चुनें। `ultrafast`, `priority` और `flex` जैसे प्रदाता-पार सामान्यीकृत टियर नियंत्रण या OpenAI alias `fast` के लिए raw HTTP अनुरोध या gateway-native/OpenAI-style टेक्स्ट API चुनें।
 
 ## पैरामीटर संदर्भ
 
@@ -424,10 +425,10 @@ compatible टेक्स्ट APIs पर समर्थित routing य�
 | फ़ील्ड | मान |
 | --- | --- |
 | प्रकार | `string` |
-| समर्थित मान | `standard`, `fast`, `priority`, `flex` |
+| समर्थित मान | `standard`, `fast`, `ultrafast`, `priority`, `flex` |
 | डिफ़ॉल्ट | `standard` |
 
-चुनी गई model-provider जोड़ी के समर्थन पर ही `priority` या `flex` उपयोग करें। Phaseo `priority` को मानक premium tier रखता है; समर्थित OpenAI routes समान routing और pricing वाले alias `fast` को भी स्वीकार करते हैं। डिफ़ॉल्ट standard tier रखने के लिए यह फ़ील्ड छोड़ दें।
+`ultrafast`, `fast` (समर्थन हो तो `priority`) और `flex` तभी इस्तेमाल करें जब चुना मॉडल-प्रदाता संयोजन स्वीकार करे। `Ultrafast` सबसे तेज़ समर्थित स्तर चुनता है; `fast` और `priority` की Fast रूटिंग और कीमत समान हैं। डिफ़ॉल्ट मानक स्तर के लिए फ़ील्ड छोड़ दें।
 
 Phaseo इन gateway-normalized tier मानों को आंतरिक रूप से provider-native controls में map करता है, ताकि callers सभी समर्थित टेक्स्ट surfaces पर समान `service_tier` मान उपयोग कर सकें।
 
@@ -447,6 +448,19 @@ prompt-cache-aware routing के लिए स्थिर cache affinity key �
 | उपयोग | संबंधित cached prompts के लिए sticky routing |
 
 जब कई requests स्थिर prompt prefixes साझा करते हों और संभव हो तो समान upstream provider या region को प्राथमिकता देनी हो, तब इसका उपयोग करें। Phaseo request context से cache affinity निकाल सकता है, लेकिन लंबी बातचीत, agent sessions और दोहराए जाने वाले workflows के लिए स्पष्ट key बेहतर है।
+
+<span id="prompt_cache_options"></span>
+<h3 id="parameter-prompt_cache_options"><code>prompt_cache_options</code></h3>
+
+समर्थित OpenAI रूट से OpenAI प्रॉम्प्ट कैश नियंत्रण भेजता है।
+
+| फ़ील्ड | मान |
+| --- | --- |
+| प्रकार | `object` |
+| सामान्य फ़ील्ड | `mode`, `ttl` |
+| Astra TTL | `30m` |
+
+GPT-6 Astra में स्पष्ट प्रॉम्प्ट कैश के लिए `{"mode":"explicit","ttl":"30m"}` इस्तेमाल करें। Phaseo अनुरोध सामान्यीकरण में इस ऑब्जेक्ट को सुरक्षित रखता है और बिना बदले OpenAI को भेजता है।
 
 <span id="cache_control"></span>
 <h3 id="parameter-cache_control"><code>cache_control</code></h3>
@@ -608,7 +622,7 @@ Debug payloads में संवेदनशील request context हो स�
 
 - [इन्फ़रेंस पैरामीटर](../guides/inference-parameters.mdx)
 - [Sampling and Decoding](../guides/sampling-and-decoding.mdx)
-- [स्ट्रीमिंग](./streaming.mdx)
+- [स्ट्रीमिंग](../guides/streaming.mdx)
 - [Limits](./limits.mdx)
 - [त्रुटियाँ और डिबगिंग](./errors.mdx)
 

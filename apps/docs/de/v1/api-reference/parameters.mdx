@@ -44,8 +44,9 @@ Die Parameterunterstützung variiert weiterhin je nach Endpunkt, Modell und Anbi
 | [`reasoning_effort`](#reasoning_effort) | `string` | Reasoning-Budget verringern oder erhöhen. |
 | [`reasoning_tokens`](#reasoning_tokens) | `integer` | Reasoning-spezifisches Token-Limit oder Abrechnungsfeld. |
 | [`include_reasoning`](#include_reasoning) | `boolean` | Reasoning-Inhalte oder Zusammenfassungen zurückgeben, sofern unterstützt. |
-| [`service_tier`](#service_tier) | `string` | Eine unterstützte Anfrage-Stufe wie `priority` oder `flex` auswählen; OpenAI akzeptiert außerdem `fast` als Alias. |
+| [`service_tier`](#service_tier) | `string` | Eine unterstützte Anfragestufe wie `fast`, `ultrafast` oder `flex` wählen. |
 | [`prompt_cache_key`](#prompt_cache_key) | `string` | Cache-bewusstes Routing für zusammengehörige Anfragen beibehalten. |
+| [`prompt_cache_options`](#prompt_cache_options) | `object` | OpenAI-Promptcache-Modus und TTL-Steuerung festlegen. |
 | [`cache_control`](#cache_control) | `object` | Anbieterneutrale Prompt-Cache-Hinweise oder Trennpunkte anwenden. |
 | [`prompt_cache_retention`](#prompt_cache_retention) | `string` | Die OpenAI-kompatible Aufbewahrungsdauer des Prompt-Caches festlegen. |
 | [`provider`](#provider) | `object` | Routing und Anbieterauswahl beeinflussen. |
@@ -61,13 +62,13 @@ Die Parameterunterstützung variiert weiterhin je nach Endpunkt, Modell und Anbi
 - [Chat Completions](./endpoint/chat-completions.mdx)
 - [Responses](./endpoint/responses.mdx)
 
-Verwende `priority` oder `flex` nur, wenn die ausgewählte Modell-Anbieter-Kombination sie unterstützt. Phaseo behält `priority` als kanonische Premiumstufe bei; OpenAI-Routen akzeptieren außerdem `fast` als Alias. Wird `service_tier` ausgelassen, gilt `standard`.
+Nutze `ultrafast`, `fast` (oder `priority`, sofern unterstützt) und `flex` nur bei Unterstützung durch die gewählte Modell-Anbieter-Kombination. `Ultrafast` wählt die schnellste unterstützte Stufe; `fast` und `priority` nutzen identisches Fast-Routing und dieselben Preise. Ohne `service_tier` gilt `standard`.
 
 `Batch` ist kein Wert für `service_tier`. Batch-Anfragen verwenden die separate Batch-API.
 
 Bei Anthropic-kompatiblen Messages-Anfragen lauten die nativen Upstream-Werte von Anthropic `auto` und `standard_only`. Phaseo kann diese Werte anbieterübergreifend normalisieren oder zuordnen und dabei das Anthropic-kompatible Verhalten unter `/v1/messages` beibehalten.
 
-Wenn du ein offizielles Anthropic-SDK mit einer benutzerdefinierten Basis-URL für Phaseo verwendest, solltest du unter `/v1/messages` die nativen Anthropic-Werte nutzen. Für normalisierte, anbieterübergreifende Stufen wie `priority` und `flex` oder OpenAIs Alias `fast` eignen sich rohe HTTP-Anfragen oder die gateway-eigenen bzw. OpenAI-artigen Text-APIs besser.
+Wenn du ein offizielles Anthropic-SDK mit einer benutzerdefinierten Basis-URL für Phaseo verwendest, solltest du unter `/v1/messages` die nativen Anthropic-Werte nutzen. Für normalisierte, anbieterübergreifende Stufen wie `ultrafast`, `priority` und `flex` oder OpenAIs Alias `fast` eignen sich rohe HTTP-Anfragen oder die gateway-eigenen bzw. OpenAI-artigen Text-APIs besser.
 
 ## Parameterreferenz
 
@@ -424,10 +425,10 @@ Wählt eine unterstützte Routing- oder Preisstufe auf kompatiblen Text-APIs aus
 | Feld | Wert |
 | --- | --- |
 | Typ | `string` |
-| Unterstützte Werte | `standard`, `fast`, `priority`, `flex` |
+| Unterstützte Werte | `standard`, `fast`, `ultrafast`, `priority`, `flex` |
 | Standard | `standard` |
 
-Verwende `priority` oder `flex` nur, wenn die gewählte Modell-Anbieter-Kombination sie unterstützt. Phaseo behält `priority` als kanonische Premiumstufe bei; unterstützte OpenAI-Routen akzeptieren außerdem `fast` als Alias mit identischem Routing und Preis. Lasse das Feld weg, um die Standardstufe zu verwenden.
+Nutze `ultrafast`, `fast` (oder `priority`, sofern unterstützt) und `flex` nur bei Unterstützung durch die gewählte Modell-Anbieter-Kombination. `Ultrafast` wählt die schnellste unterstützte Stufe; `fast` und `priority` nutzen identisches Fast-Routing und dieselben Preise. Lasse das Feld für die Standardstufe weg.
 
 Phaseo ordnet diese vom Gateway normalisierten Stufenwerte intern den anbietereigenen Einstellungen zu. Auf unterstützten Text-Schnittstellen können daher dieselben `service_tier`-Werte verwendet werden.
 
@@ -447,6 +448,19 @@ Stellt einen stabilen Cache-Affinitätsschlüssel für prompt-cache-bewusstes Ro
 | Zweck | Affinitätsrouting für zusammengehörige gecachte Prompts |
 
 Nutze den Parameter, wenn mehrere Anfragen stabile Prompt-Präfixe teilen und nach Möglichkeit denselben Upstream-Anbieter oder dieselbe Region verwenden sollen. Phaseo kann die Cache-Affinität auch aus dem Anfragekontext ableiten; ein expliziter Schlüssel eignet sich jedoch besser für lange Gespräche, Agent-Sitzungen und wiederholte Workflows.
+
+<span id="prompt_cache_options"></span>
+<h3 id="parameter-prompt_cache_options"><code>prompt_cache_options</code></h3>
+
+Leitet OpenAI-Promptcache-Steuerung über unterstützte OpenAI-Routen weiter.
+
+| Feld | Wert |
+| --- | --- |
+| Typ | `object` |
+| Häufige Felder | `mode`, `ttl` |
+| Astra TTL | `30m` |
+
+Für GPT-6 Astra nutzt du `{"mode":"explicit","ttl":"30m"}` für explizites Promptcaching. Phaseo behält das Objekt bei der Anfragenormalisierung bei und sendet es unverändert an OpenAI.
 
 <span id="cache_control"></span>
 <h3 id="parameter-cache_control"><code>cache_control</code></h3>
@@ -602,13 +616,13 @@ Debug-Payloads können vertraulichen Anfragekontext enthalten. Verwende sie nur 
 Wenn du ausführlichere Hinweise zur Abstimmung statt einer reinen Feldreferenz suchst, lies als Nächstes:
 
 - [Inferenzparameter](../guides/inference-parameters.mdx) mit praktischen Hinweisen zu temperature, top_p, top_k, Token-Limits, Stoppsequenzen und Abstimmung
-- [Sampling und Decoding](../guides/sampling-and-decoding.mdx) dazu, wie Zufälligkeit, Penalties und Decoding-Einstellungen das Modellverhalten verändern
+- [Sampling und Decoding](../guides/sampling-and-decoding.mdx) für den Einfluss von Zufälligkeit, Strafen und Decodierungssteuerung auf das Modellverhalten
 
 ## Verwandte Seiten
 
 - [Inferenzparameter](../guides/inference-parameters.mdx)
 - [Sampling und Decoding](../guides/sampling-and-decoding.mdx)
-- [Datenstrom](./streaming.mdx)
+- [Datenstrom](../guides/streaming.mdx)
 - [Limits](./limits.mdx)
 - [Fehler und Debugging](./errors.mdx)
 

@@ -4,7 +4,7 @@ info:
   version: 1.0.0
 servers:
   - url: https://api.phaseo.app/v1
-    description: Enrutamiento global
+    description: グローバルルーティング
 security:
   - BearerAuth: []
 paths:
@@ -276,6 +276,62 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '401':
           description: 認証されていません
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: uploadFile
+      summary: ファイルをアップロード
+      description: '`/batches/files`の互換エイリアス。バッチ処理用にファイルをアップロードし、上流のファイルメタデータを返します。AI Statsが上流プロバイダーを推定できるよう`model`を指定してください。`model`と`provider`を両方省略する旧クライアントではOpenAIが既定です。'
+      parameters:
+        - name: model
+          in: query
+          required: false
+          description: 上流のバッチファイルプロバイダーを推定するためのモデルID。
+          schema:
+            $ref: '#/components/schemas/ModelId'
+        - name: provider
+          in: query
+          required: false
+          description: 上流へのファイルアップロードで使用する高度なプロバイダー上書き指定。
+          schema:
+            type: string
+            enum:
+              - openai
+              - groq
+              - together
+              - mistral
+        - name: x-ai-stats-provider
+          in: header
+          required: false
+          description: クエリパラメーター`provider`の代わりに使用するヘッダー。
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/FileUploadRequest'
+      responses:
+        '200':
+          description: アップロードされたファイルのメタデータ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FileResponse'
+        '401':
+          description: 認証されていません
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '502':
+          description: 上流プロバイダーのエラー
           content:
             application/json:
               schema:
@@ -1615,7 +1671,7 @@ paths:
               $ref: '#/components/schemas/ChatCompletionsRequest'
             examples:
               datetimeServerTool:
-                summary: 組み込みの日付・時刻サーバーツール
+                summary: Built-in datetime server tool
                 value:
                   model: openai/gpt-5-nano
                   stream: false
@@ -1658,7 +1714,7 @@ paths:
               $ref: '#/components/schemas/ResponsesRequest'
             examples:
               datetimeServerTool:
-                summary: 組み込みの日付・時刻サーバーツール
+                summary: Built-in datetime server tool
                 value:
                   model: openai/gpt-5-nano
                   stream: false
@@ -1701,7 +1757,7 @@ paths:
               $ref: '#/components/schemas/AnthropicMessagesRequest'
             examples:
               datetimeServerTool:
-                summary: 組み込みの日付・時刻サーバーツール
+                summary: Built-in datetime server tool
                 value:
                   model: anthropic/claude-sonnet-4
                   max_tokens: 512
@@ -2472,6 +2528,237 @@ paths:
                   usage:
                     type: object
                     additionalProperties: true
+  /videos:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listVideos
+      summary: 動画を一覧表示
+      description: 認証されたチームの非同期動画生成ジョブを一覧表示します。
+      parameters:
+        - name: limit
+          in: query
+          description: 返す動画ジョブの最大数。既定値は50、上限は200です。
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+        - name: status
+          in: query
+          description: 動画のライフサイクル状態フィルター。パラメーターを繰り返すか、カンマ区切りの値を指定します。
+          style: form
+          explode: true
+          schema:
+            type: array
+            items:
+              type: string
+        - name: offset
+          in: query
+          description: ページを返す前にスキップする動画ジョブの数。
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 10000
+        - name: after
+          in: query
+          description: 選択した順序で、この動画IDより後の動画ジョブを返します。
+          schema:
+            type: string
+        - name: order
+          in: query
+          description: 動画ジョブを作成時刻で並べ替えます。
+          schema:
+            type: string
+            enum:
+              - asc
+              - desc
+      responses:
+        '200':
+          description: 動画一覧のレスポンス
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VideoListResponse'
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: createVideo
+      summary: 動画を作成
+      description: 非同期動画生成ジョブを作成します。ジョブが終端状態になるまで、返された`polling_url`を20秒ごとにポーリングしてください。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VideoGenerationRequest'
+      responses:
+        '202':
+          description: 動画のレスポンス
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VideoGenerationResponse'
+  /videos/models:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listVideoModels
+      summary: 動画モデルの機能を一覧表示
+      description: 動画プレイグラウンドとSDK検証用に、データベースに基づく動画モデル／プロバイダーの機能メタデータを返します。
+      parameters:
+        - name: params
+          in: query
+          required: false
+          description: 対応パラメーターの任意フィルター。パラメーターを繰り返すか、カンマ区切りのリストを指定します。`resolution`、`size`、`duration`、`duration_seconds`などの正規名とエイリアスを使用できます。
+          schema:
+            type: array
+            items:
+              type: string
+          style: form
+          explode: false
+      responses:
+        '200':
+          description: 動画モデルの機能一覧
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VideoModelsResponse'
+  /videos/{video_id}:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: getVideo
+      summary: 動画の状態を取得
+      description: 動画生成リクエストの状態を取得します。Webhookを使用していない場合は20秒ごとにポーリングしてください。
+      parameters:
+        - name: video_id
+          in: path
+          required: true
+          description: 動画生成リクエストのID。
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 動画状態のレスポンス
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VideoGenerationResponse'
+    delete:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: deleteVideo
+      summary: 動画を削除
+      description: 終端状態の動画生成レコードに削除マークを付けます。進行中のジョブは削除できません。
+      parameters:
+        - name: video_id
+          in: path
+          required: true
+          description: 動画生成リクエストのID。
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 動画削除のレスポンス
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VideoDeleteResponse'
+  /videos/{video_id}/cancel:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: cancelVideo
+      summary: 動画をキャンセル
+      description: 動画のキャンセルは現在すべてのプロバイダーで無効です。
+      parameters:
+        - name: video_id
+          in: path
+          required: true
+          description: Phaseo内部の動画ジョブID（`G-...`）。
+          schema:
+            type: string
+      responses:
+        '501':
+          description: 動画のキャンセルは無効です
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /videos/{video_id}/content:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: getVideoContent
+      summary: 動画コンテンツを取得
+      description: レンダリング済みの動画コンテンツをダウンロードします。
+      parameters:
+        - name: video_id
+          in: path
+          required: true
+          description: 動画生成リクエストのID。
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 動画コンテンツ
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+  /videos/{video_id}/download_url:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: createVideoDownloadUrl
+      summary: 署名付き動画ダウンロードURLを作成
+      description: レンダリング済み動画のファーストパーティ署名付きダウンロードURLを返します。
+      parameters:
+        - name: video_id
+          in: path
+          required: true
+          description: 動画生成リクエストのID。
+          schema:
+            type: string
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                index:
+                  type: integer
+                  minimum: 0
+                ttl_seconds:
+                  type: integer
+                  minimum: 1
+                disposition:
+                  type: string
+                  enum:
+                    - attachment
+                    - inline
+      responses:
+        '200':
+          description: 署名付きダウンロードURL
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  download_url:
+                    type: string
+                  expires_at:
+                    type: integer
   /music/generate/{music_id}:
     get:
       x-beta: true
@@ -2559,6 +2846,602 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '404':
           description: ファイルが見つかりません
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /batches:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listBatches
+      summary: バッチを一覧表示
+      description: ゲートウェイの永続非同期ジョブストアから、認証されたワークスペースが所有する非同期バッチジョブを一覧表示します。
+      parameters:
+        - name: limit
+          in: query
+          description: 返すバッチジョブの最大数。既定値は20、上限は100です。
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+        - name: status
+          in: query
+          description: バッチのライフサイクル状態フィルター。パラメーターの繰り返し、カンマ区切りの状態値、またはカンマ区切りフィルター用のstatusesを使用します。
+          style: form
+          explode: true
+          schema:
+            type: array
+            items:
+              type: string
+        - name: statuses
+          in: query
+          description: カンマ区切りのライフサイクル状態フィルター。
+          schema:
+            type: string
+        - name: offset
+          in: query
+          description: ページを返す前にスキップするバッチジョブの数。
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 10000
+      responses:
+        '200':
+          description: バッチ一覧のレスポンス
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchListResponse'
+        '401':
+          description: 認証されていません
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: createBatch
+      summary: バッチを作成
+      description: 非同期バッチジョブを作成し、上流のバッチオブジェクトを返します。指定した`model`を通じてOpenAI、Anthropic、Google Gemini、Mistral、xAI、Groq、Together AIに対応します。ゲートウェイはモデルから上流プロバイダーを推定し、可観測性と非同期通知用に`session_id`と`webhook`も受け付けます。`provider`は高度なルーティング制約としてのみ使用してください。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BatchRequest'
+      responses:
+        '200':
+          description: バッチ状態のレスポンス
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchResponse'
+        '401':
+          description: 認証されていません
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /batches/models:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listBatchModels
+      summary: バッチモデルの機能を一覧表示
+      description: 許可される入力エンドポイントや完了時間枠などの対応バッチパラメーターを含む、データベースに基づくバッチモデル／プロバイダーの機能メタデータを返します。
+      parameters:
+        - name: params
+          in: query
+          required: false
+          description: 対応パラメーターの任意フィルター。パラメーターを繰り返すか、カンマ区切りのリストを指定します。`endpoint`、`request_endpoint`、`completion_window`、`window`などの正規名とエイリアスを使用できます。
+          schema:
+            type: array
+            items:
+              type: string
+          style: form
+          explode: false
+      responses:
+        '200':
+          description: バッチモデルの機能一覧
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchModelsResponse'
+        '401':
+          description: 認証されていません
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /batches/capabilities:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listBatchCapabilities
+      summary: バッチプロバイダーの機能を一覧表示
+      description: ファイルアップロードとリクエストリストによるバッチ作成について、プロバイダーごとの入力モード対応を返します。
+      responses:
+        '200':
+          description: バッチプロバイダーの機能一覧
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  object:
+                    type: string
+                    example: list
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/BatchProviderCapability'
+  /batches/files:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listBatchFiles
+      summary: バッチファイルを一覧表示
+      description: 共有ゲートウェイキーのファイル一覧は対応していないため、エラーを返します。代わりにワークスペース所有のファイルをIDで直接取得してください。
+      responses:
+        '400':
+          description: ファイル一覧は非対応です
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: 認証されていません
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: uploadBatchFile
+      summary: バッチファイルをアップロード
+      description: バッチ処理用のプロバイダーファイルをアップロードし、認証されたワークスペースの所有として保存します。Phaseoが上流プロバイダーを推定できるよう`model`を指定してください。`model`と`provider`を両方省略した場合はOpenAIが既定です。
+      parameters:
+        - name: model
+          in: query
+          required: false
+          description: 上流のバッチファイルプロバイダーを推定するためのモデルID。
+          schema:
+            $ref: '#/components/schemas/ModelId'
+        - name: provider
+          in: query
+          required: false
+          description: 上流へのファイルアップロードで使用する高度なプロバイダー上書き指定。
+          schema:
+            type: string
+            enum:
+              - openai
+              - groq
+              - together
+              - mistral
+        - name: x-phaseo-provider
+          in: header
+          required: false
+          description: クエリパラメーター`provider`の代わりに使用するヘッダー。
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/FileUploadRequest'
+      responses:
+        '200':
+          description: アップロードされたファイルのメタデータ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FileResponse'
+        '401':
+          description: 認証されていません
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '502':
+          description: 上流プロバイダーのエラー
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /batches/files/{file_id}:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: retrieveBatchFile
+      summary: バッチファイルを取得
+      description: 認証されたワークスペースが所有するバッチファイルのメタデータを取得します。
+      parameters:
+        - name: file_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ファイルのメタデータ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FileResponse'
+        '401':
+          description: 認証されていません
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: ファイルが見つからないか、ワークスペースに属していません
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /batches/files/{file_id}/content:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: retrieveBatchFileContent
+      summary: バッチファイルの内容を取得
+      description: 認証されたワークスペースが所有するバッチファイルの内容を取得します。
+      parameters:
+        - name: file_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ファイルの内容
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '401':
+          description: 認証されていません
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: ファイルが見つかりません
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /batches/{batch_id}:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: retrieveBatch
+      summary: バッチを取得
+      description: 以前作成したバッチジョブを取得します。
+      parameters:
+        - name: batch_id
+          in: path
+          required: true
+          description: 取得するバッチのID。
+          schema:
+            type: string
+      responses:
+        '200':
+          description: バッチ状態のレスポンス
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchResponse'
+        '401':
+          description: 認証されていません
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: バッチが見つかりません
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '501':
+          description: このプロバイダーはバッチ状態の更新に対応していません
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /batches/{batch_id}/results:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: retrieveBatchResults
+      summary: バッチ結果をダウンロード
+      description: 認証されたワークスペースが所有する終端状態のバッチについて、プロバイダー固有の完全な結果行をJSONLでストリーミングします。成功・エラーファイルを結合し、インライン出力を変換し、プロバイダーの結果ページ分割に従います。Phaseo APIキーを使用してください。ダウンロードでは推論を送信せず、使用料金も追加されません。既存のファイルエンドポイントも利用できます。インライン行は8 MiBまでです。中断したダウンロードは破棄して再ダウンロードしてください。ワークスペースとバッチごとに、ローリング30分枠で10回の試行までです。この上限はAPIキーとエイリアス間で共有されます。上流で失敗・キャンセルされた試行も数えられます。429レスポンスには秒単位のRetry-Afterが含まれます。
+      parameters:
+        - name: batch_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: プロバイダーの元のJSONL結果
+          content:
+            application/x-ndjson:
+              schema:
+                type: string
+        '401':
+          description: 認証されていません
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: バッチプレビューへのアクセスが拒否されました
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: バッチが見つかりません
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: バッチ結果はまだ準備できていません
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: バッチのダウンロード上限を超えました
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            Retry-After:
+              description: 次のダウンロードが許可されるまでの秒数
+              schema:
+                type: integer
+        '501':
+          description: このプロバイダーは結果の直接ダウンロードに対応していません
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '502':
+          description: プロバイダーの結果を取得できませんでした
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '503':
+          description: ダウンロードの受付が一時的に利用できません。30秒後に再試行してください
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+  /batches/{batch_id}/requests:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listBatchRequests
+      summary: バッチリクエスト行を一覧表示
+      description: 所有するバッチジョブで追跡しているリクエストごとの行を一覧表示します。
+      parameters:
+        - name: batch_id
+          in: path
+          required: true
+          description: バッチのID。
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 100
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+        - name: status
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: バッチリクエスト行の一覧
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  object:
+                    type: string
+                    example: list
+                  batch_id:
+                    type: string
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/BatchRequestRow'
+        '401':
+          description: 認証されていません
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: バッチが見つかりません
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /batches/{batch_id}/cancel:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: cancelBatch
+      summary: バッチをキャンセル
+      description: バッチリクエストをキャンセルします。
+      parameters:
+        - name: batch_id
+          in: path
+          required: true
+          description: キャンセルするバッチのID。
+          schema:
+            type: string
+      responses:
+        '200':
+          description: バッチ状態のレスポンス
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchResponse'
+        '401':
+          description: 認証されていません
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: バッチが見つかりません
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '501':
+          description: このプロバイダーはバッチのキャンセルに対応していません
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /analytics:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: getActivityAlias
+      summary: ワークスペースの分析を取得
+      description: 直近30日間の完了したUTC日について、日付、モデル、プロバイダー、エンドポイント別のコスト、リクエスト、トークン集計を返します。
+      parameters:
+        - name: date
+          in: query
+          description: 直近30日間の完了した日のうち、単一のUTC日付で絞り込みます（YYYY-MM-DD）。
+          schema:
+            type: string
+            format: date
+        - name: label_key
+          in: query
+          description: 支出区分に含めるリクエストラベルのキー。label_valueと一緒に指定する必要があります。
+          schema:
+            type: string
+            maxLength: 64
+            pattern: ^[A-Za-z0-9_.:-]{1,64}$
+        - name: label_value
+          in: query
+          description: 支出区分に含めるリクエストラベルの値。label_keyと一緒に指定する必要があります。
+          schema:
+            type: string
+            maxLength: 256
+        - name: key_id
+          in: query
+          description: APIキー識別子で絞り込みます。
+          schema:
+            type: string
+        - name: end_user_id
+          in: query
+          description: アプリケーション定義のエンドユーザー識別子で絞り込みます。
+          schema:
+            type: string
+            maxLength: 256
+        - name: model
+          in: query
+          description: リクエストした、またはルーティングされたモデルの正規スラッグで絞り込みます。
+          schema:
+            $ref: '#/components/schemas/ModelId'
+        - name: provider
+          in: query
+          description: プロバイダーのスラッグで絞り込みます。
+          schema:
+            type: string
+            maxLength: 128
+        - name: endpoint
+          in: query
+          description: ゲートウェイのエンドポイント識別子で絞り込みます。
+          schema:
+            type: string
+            maxLength: 128
+        - name: byok
+          in: query
+          description: 管理型またはBYOKトラフィックで絞り込みます。
+          schema:
+            type: boolean
+        - name: success
+          in: query
+          description: 成功または失敗したリクエストで絞り込みます。
+          schema:
+            type: boolean
+        - $ref: '#/components/parameters/Offset'
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 1000
+            default: 1000
+      responses:
+        '200':
+          description: 取得しました
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnalyticsResponse'
+        '400':
+          description: 不正なリクエストエラー
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: 認証されていません
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: アクセス拒否エラー
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: 内部サーバーエラー
           content:
             application/json:
               schema:
@@ -2671,6 +3554,39 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '403':
           description: アクセス禁止
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: サーバーエラー
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /key:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: getCurrentApiKey
+      summary: 現在のAPIキーを取得
+      description: 現在認証されている標準Gateway APIキーのメタデータを返します。
+      responses:
+        '200':
+          description: 現在のAPIキーのメタデータ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiKeyResponse'
+        '401':
+          description: 認証されていません
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: API キーが見つかりません
           content:
             application/json:
               schema:
@@ -3200,6 +4116,33 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+    patch:
+      x-beta: true
+      security: []
+      tags:
+        - Gateway
+      operationId: updateWorkspaceNotificationSettings
+      summary: ワークスペースの通知設定を更新
+      description: 永続的な通知ポリシーの1つ以上のセクションを更新します。自動チャージの有効化には、保存済み支払い方法の既存識別子と検証済みの2要素認証が必要です。既存の自動チャージ設定はMFA確認を繰り返さず更新できます。MFAなしで有効化するには、クライアントが`mfa_bypass_acknowledged`を明示的にtrueに設定し、`mfa_bypass_phrase`に正確な値`I ACCEPT THE RISK`を指定する必要があります。支払い情報の収集は引き続き対話的なアカウント操作です。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WorkspaceNotificationSettingsUpdateRequest'
+      responses:
+        '200':
+          description: 通知設定を更新しました
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkspaceNotificationSettingsResponse'
+        default:
+          description: リクエストに失敗しました
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /apps/{id}:
     patch:
       x-beta: true
@@ -3583,6 +4526,127 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ProviderCredentialReorderResponse'
+        default:
+          description: リクエストに失敗しました
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /private-models:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listPrivateModels
+      summary: プライベートモデルを一覧表示
+      description: 認証されたワークスペースのプライベートモデルメタデータを一覧表示します。`private_models:read`と所有者または管理者のIDが必要です。
+      responses:
+        '200':
+          description: プライベートモデル
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrivateModelListResponse'
+        default:
+          description: リクエストに失敗しました
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: createPrivateModel
+      summary: プライベートモデルを作成
+      description: ワークスペース専用のOpenAI互換モデルエンドポイントを作成します。`private_models:write`と所有者または管理者のIDが必要です。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PrivateModelCreateRequest'
+      responses:
+        '201':
+          description: プライベートモデルを作成しました
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrivateModelResponse'
+        default:
+          description: リクエストに失敗しました
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /private-models/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: getPrivateModel
+      summary: プライベートモデルを取得
+      description: 認証されたワークスペース内の1つのプライベートモデルのエンドポイントメタデータを、認証情報を返さずに返します。
+      responses:
+        '200':
+          description: プライベートモデルのメタデータ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrivateModelResponse'
+        default:
+          description: リクエストに失敗しました
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    patch:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: updatePrivateModel
+      summary: プライベートモデルを更新
+      description: プライベートモデルのメタデータを更新するか、書き込み専用の暗号化認証情報を置き換えます。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PrivateModelUpdateRequest'
+      responses:
+        '200':
+          description: プライベートモデルを更新しました
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrivateModelResponse'
+        default:
+          description: リクエストに失敗しました
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: deletePrivateModel
+      summary: プライベートモデルを削除
+      description: 認証されたワークスペースが所有するプライベートモデルを完全に削除します。削除を繰り返しても安全です。
+      responses:
+        '200':
+          description: プライベートモデルは削除済み、または既に存在しません
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrivateModelDeleteResponse'
         default:
           description: リクエストに失敗しました
           content:
@@ -5312,6 +6376,135 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '404':
           description: 送信先が見つかりません
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /organisations:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listOrganisations
+      summary: 組織を一覧表示
+      description: 利用可能な組織の一覧を返します。
+      parameters:
+        - name: limit
+          in: query
+          description: 結果の件数を制限
+          schema:
+            type: integer
+            default: 50
+            minimum: 1
+            maximum: 250
+        - name: offset
+          in: query
+          description: ページネーションのオフセット
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+      responses:
+        '200':
+          description: 組織の一覧
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    example: true
+                  limit:
+                    type: integer
+                    example: 50
+                  offset:
+                    type: integer
+                    example: 0
+                  total:
+                    type: integer
+                    example: 10
+                  organisations:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        organisation_id:
+                          type: string
+                        name:
+                          type: string
+                          nullable: true
+                        country_code:
+                          type: string
+                          nullable: true
+                        description:
+                          type: string
+                          nullable: true
+                        colour:
+                          type: string
+                          nullable: true
+        '500':
+          description: エラー
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /pricing/calculate:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: calculatePricing
+      summary: 料金を計算
+      description: 使用量データの料金を計算します。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - provider
+                - model
+                - endpoint
+                - usage
+              properties:
+                provider:
+                  type: string
+                model:
+                  type: string
+                endpoint:
+                  type: string
+                usage:
+                  type: object
+                  additionalProperties: true
+      responses:
+        '200':
+          description: 料金計算の結果
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  pricing:
+                    type: object
+                    additionalProperties: true
+        '400':
+          description: 必須フィールドがありません
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: 料金が見つかりません
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: 計算エラー
           content:
             application/json:
               schema:
@@ -10515,6 +11708,638 @@ components:
               nullable: true
         pricing:
           $ref: '#/components/schemas/GatewayPricing'
+    VideoListResponse:
+      type: object
+      properties:
+        object:
+          type: string
+          example: list
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/VideoGenerationResponse'
+        first_id:
+          type: string
+          nullable: true
+        last_id:
+          type: string
+          nullable: true
+        has_more:
+          type: boolean
+    VideoGenerationResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        polling_url:
+          type: string
+        websocket_url:
+          type: string
+          format: uri
+          description: 非同期ジョブの正規化されたライフサイクル更新を購読するWebSocket URL。
+        model:
+          type: string
+        request_id:
+          type: string
+        session_id:
+          type: string
+        status:
+          type: string
+          enum:
+            - queued
+            - processing
+            - completed
+            - failed
+            - cancelled
+            - expired
+        lifecycle_status:
+          type: string
+          enum:
+            - pending
+            - running
+            - completed
+            - failed
+            - cancelled
+            - expired
+          description: ポーリング、WebSocket、Webhookの利用側向けに正規化された非同期ライフサイクル状態。
+        cancel_url:
+          type: string
+          format: uri
+          nullable: true
+          description: 互換性のために予約されています。現在は常にnullです。
+        output_access:
+          type: string
+          enum:
+            - bytes
+            - signed_url
+            - both
+        generation_id:
+          type: string
+          nullable: true
+        native_video_id:
+          type: string
+          nullable: true
+          description: ゲートウェイが所有するIDと異なる場合の、プロバイダー固有の動画／ジョブID。
+        created_at:
+          oneOf:
+            - type: integer
+            - type: string
+        started_at:
+          nullable: true
+          oneOf:
+            - type: integer
+            - type: string
+        completed_at:
+          nullable: true
+          oneOf:
+            - type: integer
+            - type: string
+        object:
+          type: string
+          example: video
+        poll_after_seconds:
+          type: integer
+          example: 20
+        provider:
+          type: string
+        seconds:
+          type: number
+        size:
+          type: string
+        audio:
+          type: boolean
+        content_url:
+          type: string
+          description: output_accessにbytesが含まれる場合に存在します（認証が必要なエンドポイント）。
+        download_url:
+          type: string
+          nullable: true
+          description: 状態がcompletedの場合の、直接ダウンロード用のファーストパーティ署名付きURL。
+        expires_at:
+          type: integer
+          nullable: true
+          description: 署名付きdownload_urlが失効するUnixタイムスタンプ（秒）。
+        progress:
+          type: integer
+          nullable: true
+        progress_source:
+          type: string
+        asset:
+          type: object
+          nullable: true
+          properties:
+            id:
+              type: string
+            mime_type:
+              type: string
+            bytes:
+              type: integer
+            sha256:
+              type: string
+            width:
+              type: integer
+            height:
+              type: integer
+            duration_seconds:
+              type: number
+        outputs:
+          type: array
+          items:
+            $ref: '#/components/schemas/VideoOutput'
+        billing:
+          $ref: '#/components/schemas/VideoBillingSummary'
+        webhook:
+          $ref: '#/components/schemas/AsyncWebhookPublicState'
+        next_webhook_retry_at:
+          type: string
+          nullable: true
+          description: ユーザーWebhookの次回再試行のISOタイムスタンプ（キューに登録されている場合）。
+        last_webhook_progress:
+          type: number
+          nullable: true
+          description: Webhookの利用側に最後に送信した大まかな進捗区分。
+        last_webhook_progress_at:
+          type: string
+          nullable: true
+          description: 直近のWebhook進捗区分が送信されたISOタイムスタンプ。
+        last_webhook_dispatched_at:
+          type: string
+          nullable: true
+          description: 直近のWebhook送信試行のISOタイムスタンプ。
+        usage:
+          type: object
+          properties:
+            cost:
+              type: number
+            is_byok:
+              type: boolean
+          additionalProperties: true
+        error:
+          nullable: true
+    VideoOutput:
+      type: object
+      properties:
+        index:
+          type: integer
+        mime_type:
+          type: string
+        bytes_available:
+          type: boolean
+        content_url:
+          type: string
+          description: output_accessにbytesが含まれる場合に存在します。
+        download_url:
+          type: string
+          description: この出力用のファーストパーティ署名付きURL。
+        expires_at:
+          type: integer
+          description: この出力URLが失効するUnixタイムスタンプ（秒）。
+    VideoBillingSummary:
+      type: object
+      properties:
+        currency:
+          type: string
+        estimated_provider_cost:
+          type: string
+          nullable: true
+        estimated_user_cost:
+          type: string
+          nullable: true
+        settled_provider_cost:
+          type: string
+          nullable: true
+        settled_user_cost:
+          type: string
+          nullable: true
+        state:
+          type: string
+          enum:
+            - pending
+            - estimated
+            - settled
+            - void
+        billable:
+          type: boolean
+        total_nanos:
+          type: integer
+          nullable: true
+        estimated_nanos:
+          type: integer
+          nullable: true
+        reserved_nanos:
+          type: integer
+          nullable: true
+        reservation_id:
+          type: string
+          nullable: true
+        reservation_status:
+          type: string
+          nullable: true
+        charge_reason:
+          type: string
+          nullable: true
+        charged:
+          type: boolean
+          nullable: true
+        billed_at:
+          type: string
+      additionalProperties: true
+    AsyncWebhookPublicState:
+      type: object
+      description: 機密情報を除去した非同期Webhook設定と配信状態。シークレットは返されません。`has_secret`は署名付き配信が有効かを示します。署名付き配信にはx-phaseo-signature、x-phaseo-timestamp、x-phaseo-event-id、x-phaseo-event-type、x-phaseo-delivery-key、x-phaseo-attempt、x-phaseo-max-attemptsヘッダーが含まれます。
+      properties:
+        url:
+          type: string
+          format: uri
+          nullable: true
+        events:
+          type: array
+          items:
+            type: string
+        has_secret:
+          type: boolean
+        delivery:
+          $ref: '#/components/schemas/AsyncWebhookDeliverySummary'
+        attempts:
+          type: array
+          items:
+            $ref: '#/components/schemas/AsyncWebhookDeliveryAttempt'
+    AsyncWebhookDeliverySummary:
+      type: object
+      description: ゲートウェイ管理の非同期Webhookの公開配信サマリー。ジョブの実行状態とWebhook配信の正常性を区別するために使用します。
+      properties:
+        total_attempts:
+          type: integer
+          description: このジョブで記録された配信試行の総数。
+        delivered_events:
+          type: integer
+          description: 配信済み状態に達した配信キーの数。
+        delivered_event_types:
+          type: array
+          description: 少なくとも1回配信された配信キー。
+          items:
+            type: string
+          example:
+            - video.completed
+        pending_retries:
+          type: integer
+          description: 現在再試行が予定されている配信キーの数。
+        next_retry_at:
+          type: string
+          nullable: true
+          description: 次の予定された再試行のISOタイムスタンプ（存在する場合）。
+        last_attempt_at:
+          type: string
+          nullable: true
+          description: 直近の配信試行のISOタイムスタンプ。
+        last_attempt_status:
+          type: string
+          nullable: true
+          enum:
+            - delivered
+            - scheduled_retry
+            - failed_permanently
+          description: 直近の配信試行の結果。
+        last_response_status:
+          type: integer
+          nullable: true
+          description: Webhookの送信先が返したHTTPステータス（取得できる場合）。
+        last_delivered_at:
+          type: string
+          nullable: true
+          description: 直近の成功した配信のISOタイムスタンプ。
+        last_failure_at:
+          type: string
+          nullable: true
+          description: 直近の失敗した、または再試行中の試行のISOタイムスタンプ。
+        last_error_message:
+          type: string
+          nullable: true
+          description: 直近の配信エラーメッセージ（取得できる場合）。
+    AsyncWebhookDeliveryAttempt:
+      type: object
+      description: ゲートウェイ管理の非同期Webhookの最近の配信試行。
+      properties:
+        id:
+          type: string
+          description: 監査とデバッグ用の安定した試行識別子。
+        delivery_key:
+          type: string
+          description: このイベント配信用の冪等性キー。
+          example: video.completed
+        event_type:
+          type: string
+          description: Webhookの送信先に配信されたイベントの種類。
+          example: video.completed
+        status:
+          type: string
+          enum:
+            - delivered
+            - scheduled_retry
+            - failed_permanently
+        attempt_number:
+          type: integer
+          description: この配信キーの1から始まる試行番号。
+        max_attempts:
+          type: integer
+          description: 配信を恒久的な失敗としてマークするまでの最大試行回数。
+        tried_at:
+          type: string
+          description: この試行を行ったISOタイムスタンプ。
+        delivered_at:
+          type: string
+          nullable: true
+          description: この試行が正常に配信されたISOタイムスタンプ。
+        next_retry_at:
+          type: string
+          nullable: true
+          description: この試行後の次回再試行のISOタイムスタンプ（予定されている場合）。
+        response_status:
+          type: integer
+          nullable: true
+          description: Webhookの送信先が返したHTTPステータス（取得できる場合）。
+        error_message:
+          type: string
+          nullable: true
+          description: 配信エラーメッセージ（取得できる場合）。
+        response_body_preview:
+          type: string
+          nullable: true
+          description: Webhookの送信先からのレスポンス本文の、機密情報を伏せたプレビュー。
+    VideoGenerationRequest:
+      type: object
+      required:
+        - model
+        - prompt
+      properties:
+        model:
+          type: string
+        prompt:
+          type: string
+        duration:
+          type: integer
+          description: 希望する長さ（秒）。プロバイダー／モデルにより異なります。
+        input_video_duration:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 3600
+          exclusiveMinimum: true
+          description: 入力元動画の長さ（秒）。プロバイダーが生成出力とは別に入力元動画の長さを課金する場合に必須です。
+        input_audio_duration:
+          type: number
+          format: double
+          minimum: 2
+          maximum: 20
+          description: プロバイダーの許容範囲検証に使う、申告された入力元音声の長さ（秒）。確定した使用量を報告しないプロバイダーは、対応する入力長の上限で課金する場合があります。
+        size:
+          type: string
+          description: 明示的な寸法（例：1280x720）。resolutionやaspect_ratioとは併用できません。
+        resolution:
+          type: string
+          description: 480p、720p、1080p、1K、2K、4K。aspect_ratioと併用できます。sizeとは併用できません。
+        aspect_ratio:
+          type: string
+          description: 16:9、9:16、1:1などのアスペクト比。resolutionと併用できます。sizeとは併用できません。
+        seed:
+          type: integer
+        sample_count:
+          type: integer
+          minimum: 1
+          maximum: 4
+        negative_prompt:
+          type: string
+        generate_audio:
+          type: boolean
+        enhance_prompt:
+          type: boolean
+        compression_quality:
+          type: integer
+        person_generation:
+          type: string
+        resize_mode:
+          type: string
+        input_references:
+          type: array
+          description: 生成の条件となるHTTPSの画像、音声、動画入力。対応する種類、役割、数、組み合わせは選択モデルに依存します。ジョブ送信前にGET /videos/modelsを確認してください。このスキーマに含まれない単数形の互換エイリアスinput_referenceは、multipart画像、またはfile_idとimage_urlのいずれか1つだけを含むオブジェクトを受け付けます。対応はプロバイダーに依存します。
+          items:
+            $ref: '#/components/schemas/VideoInputReference'
+        frame_images:
+          type: array
+          minItems: 1
+          maxItems: 2
+          description: 最初／最後のフレームのHTTPS画像。各frame_typeは1回だけ指定できます。input_referenceやinput_referencesのフレーム役割を追加で指定しないでください。
+          items:
+            type: object
+            additionalProperties: false
+            required:
+              - type
+              - frame_type
+              - image_url
+            properties:
+              type:
+                type: string
+                enum:
+                  - image_url
+              frame_type:
+                type: string
+                enum:
+                  - first_frame
+                  - last_frame
+              image_url:
+                type: object
+                required:
+                  - url
+                properties:
+                  url:
+                    type: string
+                    format: uri
+        provider_params:
+          type: object
+          additionalProperties: true
+          description: プロバイダー固有の拡張のみ。リクエスト全体のパススルーと、重複するルーティング、プロンプト、コールバック、課金フィールドは拒否されます。
+        provider_options:
+          type: object
+          additionalProperties:
+            type: object
+            additionalProperties: true
+          description: 正規プロバイダーID（例：atlascloud、byteplus）で指定する拡張。選択したプロバイダーのオプションのみ転送されます。provider_paramsとは併用できません。ルーティング、プロンプト、コールバック、長さ、解像度、出力数には検証済みの最上位フィールドを使用してください。
+        output:
+          $ref: '#/components/schemas/VideoOutputConfig'
+        webhook:
+          type: object
+          required:
+            - endpoint_id
+          additionalProperties: false
+          properties:
+            endpoint_id:
+              type: string
+              description: ワークスペース管理の有効なWebhookエンドポイント。暗号化され、ローテーション可能な署名シークレットは動画ジョブのメタデータに保存されません。
+            events:
+              type: array
+              description: 任意のイベント購読。汎用job.*イベント、または対応するvideo.*イベント（例：video.status_changed、video.progress、video.completed）を使用します。省略時はjob.status_changedと終端のjob.*イベントが使用されます。進捗コールバックにはjob.progressまたはvideo.progressを明示してください。指定する場合、少なくとも1つは動画ジョブに有効なイベントである必要があります。他種のイベントのみのリストや不正なリストは拒否されます。
+              items:
+                type: string
+        provider:
+          $ref: '#/components/schemas/ProviderRoutingOptions'
+    VideoInputReference:
+      description: 型を指定したHTTPSメディア入力。画像にはimage_url、音声や動画にはmedia_urlを使用します。役割はモデルによる入力の使用方法を表し、対応はプロバイダーとモデルで異なります。
+      oneOf:
+        - type: object
+          required:
+            - type
+            - image_url
+          properties:
+            type:
+              type: string
+              enum:
+                - image_url
+            role:
+              type: string
+              description: 選択モデルによるこの画像の想定用途。
+              enum:
+                - first_frame
+                - last_frame
+                - reference
+                - source
+                - mask
+            reference_type:
+              type: string
+            image_url:
+              type: object
+              required:
+                - url
+              properties:
+                url:
+                  type: string
+                  format: uri
+                  description: 公開アクセス可能なHTTPS画像URL。
+        - type: object
+          required:
+            - type
+            - media_url
+          properties:
+            type:
+              type: string
+              enum:
+                - video_url
+                - audio_url
+            role:
+              type: string
+              description: 選択モデルによるこの音声または動画の想定用途。
+              enum:
+                - first_frame
+                - last_frame
+                - reference
+                - source
+                - mask
+            reference_type:
+              type: string
+            media_url:
+              type: object
+              required:
+                - url
+              properties:
+                url:
+                  type: string
+                  format: uri
+                  description: 公開アクセス可能なHTTPS音声または動画URL。
+    VideoOutputConfig:
+      type: object
+      properties:
+        access:
+          type: string
+          enum:
+            - bytes
+            - signed_url
+            - both
+          default: both
+          description: bytes=認証付きcontent_urlのみ、signed_url=署名付きダウンロードリンクのみ、both=両方を含めます。
+    VideoModelsResponse:
+      type: object
+      properties:
+        object:
+          type: string
+          example: list
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/VideoModelCapability'
+    VideoModelCapability:
+      type: object
+      properties:
+        model:
+          type: string
+        name:
+          type: string
+        status:
+          type: string
+        input_types:
+          type: array
+          items:
+            type: string
+        output_types:
+          type: array
+          items:
+            type: string
+        supported_params:
+          type: array
+          items:
+            type: string
+        supported_parameters:
+          type: array
+          description: supported_paramsの互換エイリアス。
+          items:
+            type: string
+        supported_params_detail:
+          $ref: '#/components/schemas/SupportedParameterDetails'
+        supported_parameters_detail:
+          $ref: '#/components/schemas/SupportedParameterDetails'
+        providers:
+          type: array
+          items:
+            $ref: '#/components/schemas/VideoModelProviderCapability'
+        pricing:
+          type: object
+          additionalProperties: true
+    VideoModelProviderCapability:
+      type: object
+      properties:
+        id:
+          type: string
+        supported_params:
+          type: array
+          items:
+            type: string
+        supported_parameters:
+          type: array
+          description: supported_paramsの互換エイリアス。
+          items:
+            type: string
+        supported_params_detail:
+          $ref: '#/components/schemas/SupportedParameterDetails'
+        supported_parameters_detail:
+          $ref: '#/components/schemas/SupportedParameterDetails'
+    VideoDeleteResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        object:
+          type: string
+        deleted:
+          type: boolean
+    FileUploadRequest:
+      type: object
+      required:
+        - file
+        - purpose
+      properties:
+        file:
+          type: string
+          format: binary
+        purpose:
+          type: string
     FileResponse:
       type: object
       properties:
@@ -10534,6 +12359,581 @@ components:
           type: string
         status_details:
           type: object
+    BatchListResponse:
+      type: object
+      properties:
+        object:
+          type: string
+          example: list
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/BatchResponse'
+        first_id:
+          type: string
+          nullable: true
+        last_id:
+          type: string
+          nullable: true
+        has_more:
+          type: boolean
+    BatchResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        native_batch_id:
+          type: string
+          nullable: true
+          description: ゲートウェイが所有するIDと異なる場合の、プロバイダー固有のバッチID。
+        object:
+          type: string
+        endpoint:
+          type: string
+        errors:
+          type: object
+        input_file_id:
+          type: string
+        completion_window:
+          type: string
+        status:
+          type: string
+        lifecycle_status:
+          type: string
+          enum:
+            - pending
+            - running
+            - completed
+            - failed
+            - cancelled
+            - expired
+          description: ポーリング、WebSocket、Webhookの利用側向けに正規化された非同期ライフサイクル状態。
+        progress:
+          type: integer
+          minimum: 0
+          maximum: 100
+          description: プロバイダーのリクエスト数から算出するバッチのおおよその完了率（取得できる場合）。完了したバッチは100を報告します。
+        polling_url:
+          type: string
+          format: uri
+        websocket_url:
+          type: string
+          format: uri
+          description: 非同期ジョブの正規化されたライフサイクル更新を購読するWebSocket URL。
+        cancel_url:
+          type: string
+          format: uri
+          nullable: true
+          description: 互換性のために予約されています。現在は常にnullです。
+        results_url:
+          type: string
+          format: uri
+          nullable: true
+          description: 対応する終端状態バッチ用の認証付きPhaseo JSONLダウンロードURL。処理中はnullです。終端状態のバッチに出力がない場合もあります。所有ワークスペースのAPIキーを使用してください。プロバイダーの保持期限が適用されます。
+        output_file_id:
+          type: string
+        error_file_id:
+          type: string
+        created_at:
+          type: integer
+        in_progress_at:
+          type: integer
+        expires_at:
+          type: integer
+        finalizing_at:
+          type: integer
+        completed_at:
+          type: integer
+        failed_at:
+          type: integer
+        expired_at:
+          type: integer
+        cancelling_at:
+          type: integer
+        cancelled_at:
+          type: integer
+        request_counts:
+          $ref: '#/components/schemas/BatchRequestCounts'
+        metadata:
+          type: object
+        request_id:
+          type: string
+        provider:
+          type: string
+        session_id:
+          type: string
+        webhook:
+          $ref: '#/components/schemas/AsyncWebhookPublicState'
+        next_webhook_retry_at:
+          type: string
+          nullable: true
+        last_webhook_progress:
+          type: number
+          nullable: true
+        last_webhook_progress_at:
+          type: string
+          nullable: true
+        last_webhook_dispatched_at:
+          type: string
+          nullable: true
+        finalized_at:
+          type: string
+          nullable: true
+        pricing_lines:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        usage:
+          type: object
+          description: 確定後の正規化された集計使用量とコスト。
+          properties:
+            requests:
+              type: integer
+              nullable: true
+            input_tokens:
+              type: integer
+              nullable: true
+            output_tokens:
+              type: integer
+              nullable: true
+            total_tokens:
+              type: integer
+              nullable: true
+            cost_nanos:
+              type: integer
+              nullable: true
+            cost_usd:
+              type: number
+              nullable: true
+            currency:
+              type: string
+        billing:
+          $ref: '#/components/schemas/BatchBillingSummary'
+    BatchRequestCounts:
+      type: object
+      properties:
+        total:
+          type: integer
+        completed:
+          type: integer
+        failed:
+          type: integer
+    BatchBillingSummary:
+      type: object
+      properties:
+        currency:
+          type: string
+        billed:
+          type: boolean
+        charged:
+          type: boolean
+        reason:
+          type: string
+        state:
+          type: string
+          enum:
+            - pending
+            - estimated
+            - settled
+            - void
+        reservation_id:
+          type: string
+          nullable: true
+        reservation_status:
+          type: string
+          nullable: true
+        estimated_provider_cost:
+          type: string
+          nullable: true
+        estimated_user_cost:
+          type: string
+          nullable: true
+        settled_provider_cost:
+          type: string
+          nullable: true
+        settled_user_cost:
+          type: string
+          nullable: true
+        estimated_nanos:
+          type: integer
+          nullable: true
+        reserved_nanos:
+          type: integer
+          nullable: true
+        estimation_truncated:
+          type: boolean
+          nullable: true
+          description: より大きなバッチ入力ファイルの限定サンプルから予約額の推定を拡大算出した場合はTrue。
+        estimation_sample_size:
+          type: integer
+          nullable: true
+          description: 予約額の推定で直接価格計算した入力行数。
+        estimation_total_rows:
+          type: integer
+          nullable: true
+          description: 予約額の推定が対象とする入力行の総数。
+        total_nanos:
+          type: integer
+          nullable: true
+        cost_nanos:
+          type: integer
+          nullable: true
+        cost_usd:
+          type: number
+          nullable: true
+        finalized_at:
+          type: string
+          nullable: true
+        pricing_breakdown:
+          type: object
+          additionalProperties: true
+    BatchRequest:
+      type: object
+      properties:
+        provider_options:
+          type: object
+          description: 正規プロバイダーIDごとの拡張。OpenAIはoutput_expires_after、Mistralはmetadataを受け付けます。選択したプロバイダーのオプションのみ適用されます。最上位で同じオプションを重複指定しないでください。オプションで価格計算済みの行、モデル、ファイルを上書きすることはできません。
+          additionalProperties:
+            type: object
+            additionalProperties: true
+        model:
+          type: string
+          description: 上流バッチプロバイダーを推定するモデルID。リクエスト行にもbody.modelを指定できますが、最上位のモデルが優先されます。
+        prompts:
+          type: array
+          description: 単純なプロンプトの省略形式。Phaseoは各プロンプトを選択モデル用のプロバイダー固有バッチ行に変換します。
+          items:
+            type: string
+        items:
+          type: array
+          description: 構造化プロンプトの省略形式。項目に`id`、`custom_id`、`prompt`、`messages`、`input`、`system`、`max_tokens`、`temperature`、または高度な`body`を含められます。
+          items:
+            type: object
+            additionalProperties: true
+        system:
+          type: string
+          description: プロンプト省略形式の行に適用する任意のシステム指示。
+        max_tokens:
+          type: integer
+          description: プロンプト省略形式の行に適用する任意の最大トークン数。
+        temperature:
+          type: number
+          description: プロンプト省略形式の行に適用する任意のサンプリング温度。
+        input_file_id:
+          type: string
+          description: ファイルアップロードによるバッチ作成に使用する既存のプロバイダーファイルID。
+        requests:
+          type: array
+          description: 高度なバッチリクエスト行。`prompts`、`items`、`requests`、`input_file_id`のいずれか1つだけを指定してください。
+          items:
+            $ref: '#/components/schemas/BatchRequestItem'
+        endpoint:
+          type: string
+          enum:
+            - /v1/chat/completions
+            - /v1/responses
+            - /v1/messages
+            - /v1/embeddings
+            - /v1/generateContent
+          description: 呼び出し元向けのリクエスト形式。バッチ内の全リクエストはこのエンドポイントを使用します。省略時はPhaseoがモデルからプロバイダー固有の既定値を選択します。
+        completion_window:
+          type: string
+        metadata:
+          type: object
+          additionalProperties: true
+        session_id:
+          type: string
+          maxLength: 256
+          description: 関連するリクエスト（会話やエージェントのワークフローなど）を可観測性のためにまとめる一意の識別子です。
+        webhook:
+          type: object
+          required:
+            - endpoint_id
+          additionalProperties: false
+          properties:
+            endpoint_id:
+              type: string
+              description: ワークスペース管理のWebhookエンドポイントID。
+            events:
+              type: array
+              description: 任意のイベント購読。汎用job.*イベント、または対応するbatch.*イベント（例：batch.progress、batch.completed）を使用します。省略時は終端のjob.*イベントが使用されます。リクエスト数の進捗コールバックにはjob.progressまたはbatch.progressを明示してください。指定する場合、少なくとも1つはバッチジョブに有効なイベントである必要があります。他種のイベントのみのリストや不正なリストは拒否されます。
+              items:
+                type: string
+        webhook_endpoint_id:
+          type: string
+          description: webhook.endpoint_idの便利なエイリアス。
+        debug:
+          $ref: '#/components/schemas/DebugOptions'
+        provider:
+          allOf:
+            - $ref: '#/components/schemas/ProviderRoutingOptions'
+          description: 高度なルーティング制約。ほとんどのリクエストではモデルに基づくプロバイダー推定を使用してください。
+    BatchRequestItem:
+      type: object
+      required:
+        - body
+      properties:
+        custom_id:
+          type: string
+        method:
+          type: string
+          default: POST
+          enum:
+            - POST
+        url:
+          type: string
+          description: この行のエンドポイントパス。指定時は親バッチのエンドポイントと一致する必要があります。既定は親バッチのエンドポイントです。
+        body:
+          type: object
+          additionalProperties: true
+    BatchModelsResponse:
+      type: object
+      properties:
+        object:
+          type: string
+          example: list
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/BatchModelCapability'
+    BatchModelCapability:
+      type: object
+      properties:
+        model:
+          type: string
+        name:
+          type: string
+        status:
+          type: string
+        input_types:
+          type: array
+          items:
+            type: string
+        output_types:
+          type: array
+          items:
+            type: string
+        supported_params:
+          type: array
+          items:
+            type: string
+        supported_parameters:
+          type: array
+          description: supported_paramsの互換エイリアス。
+          items:
+            type: string
+        supported_params_detail:
+          $ref: '#/components/schemas/SupportedParameterDetails'
+        supported_parameters_detail:
+          $ref: '#/components/schemas/SupportedParameterDetails'
+        providers:
+          type: array
+          items:
+            $ref: '#/components/schemas/BatchModelProviderCapability'
+        pricing:
+          type: object
+          additionalProperties: true
+    BatchModelProviderCapability:
+      type: object
+      properties:
+        id:
+          type: string
+        supported_params:
+          type: array
+          items:
+            type: string
+        supported_parameters:
+          type: array
+          description: supported_paramsの互換エイリアス。
+          items:
+            type: string
+        supported_params_detail:
+          $ref: '#/components/schemas/SupportedParameterDetails'
+        supported_parameters_detail:
+          $ref: '#/components/schemas/SupportedParameterDetails'
+    BatchProviderCapability:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        status:
+          type: string
+          enum:
+            - active
+            - planned
+        gateway_input_modes:
+          type: array
+          items:
+            type: string
+            enum:
+              - file
+              - requests
+        native_input_modes:
+          type: array
+          items:
+            type: string
+            enum:
+              - file
+              - requests
+        documentation_url:
+          type: string
+          format: uri
+        notes:
+          type: string
+          nullable: true
+        endpoints:
+          type: array
+          description: このプロバイダーが対応するバッチエンドポイント。
+          items:
+            type: object
+            required:
+              - endpoint
+              - mode
+            properties:
+              endpoint:
+                type: string
+              mode:
+                type: string
+                enum:
+                  - native
+                  - translated
+    BatchRequestRow:
+      type: object
+      properties:
+        id:
+          type: string
+        custom_id:
+          type: string
+        request_index:
+          type: integer
+        provider:
+          type: string
+        native_batch_id:
+          type: string
+          nullable: true
+        method:
+          type: string
+          nullable: true
+        endpoint:
+          type: string
+          nullable: true
+        model:
+          type: string
+          nullable: true
+        status:
+          type: string
+        request_body_hash:
+          type: string
+          nullable: true
+        response_status:
+          type: integer
+          nullable: true
+        response_body:
+          type: object
+          nullable: true
+          additionalProperties: true
+        error_body:
+          type: object
+          nullable: true
+          additionalProperties: true
+        usage:
+          type: object
+          nullable: true
+          additionalProperties: true
+        cost_nanos:
+          type: integer
+          nullable: true
+        cost_usd:
+          type: number
+          nullable: true
+        meta:
+          type: object
+          additionalProperties: true
+        created_at:
+          type: string
+          nullable: true
+        updated_at:
+          type: string
+          nullable: true
+        completed_at:
+          type: string
+          nullable: true
+    AnalyticsResponse:
+      type: object
+      required:
+        - data
+        - total_count
+        - offset
+        - limit
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ActivityEntry'
+        total_count:
+          type: integer
+          minimum: 0
+        offset:
+          type: integer
+          minimum: 0
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 1000
+      additionalProperties: false
+    ActivityEntry:
+      type: object
+      required:
+        - date
+        - model
+        - model_permaslug
+        - endpoint_id
+        - provider_name
+        - usage
+        - byok_usage_inference
+        - requests
+        - prompt_tokens
+        - completion_tokens
+        - reasoning_tokens
+      properties:
+        date:
+          type: string
+          format: date
+          example: 2025-08-24
+        model:
+          type: string
+          example: openai/gpt-4.1
+        model_permaslug:
+          type: string
+          example: openai/gpt-4.1-2025-04-14
+        endpoint_id:
+          type: string
+          example: chat.completions
+        provider_name:
+          type: string
+          example: OpenAI
+        usage:
+          type: number
+          example: 0.015
+        byok_usage_inference:
+          type: number
+          example: 0.012
+        requests:
+          type: integer
+          example: 5
+        prompt_tokens:
+          type: integer
+          example: 50
+        completion_tokens:
+          type: integer
+          example: 125
+        reasoning_tokens:
+          type: integer
+          example: 25
+      additionalProperties: false
     CreditsResponse:
       type: object
       required:
@@ -10575,20 +12975,13 @@ components:
               example: 1250
           additionalProperties: false
       additionalProperties: false
-    ApiKeyListResponse:
+    ApiKeyResponse:
       type: object
       required:
         - data
-        - total_count
       properties:
         data:
-          type: array
-          items:
-            $ref: '#/components/schemas/ApiKey'
-        total_count:
-          type: integer
-          minimum: 0
-          example: 3
+          $ref: '#/components/schemas/ApiKey'
       additionalProperties: false
     ApiKey:
       type: object
@@ -10783,6 +13176,21 @@ components:
           minimum: 0
           description: 支出額（USD）です。
       additionalProperties: false
+    ApiKeyListResponse:
+      type: object
+      required:
+        - data
+        - total_count
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ApiKey'
+        total_count:
+          type: integer
+          minimum: 0
+          example: 3
+      additionalProperties: false
     ApiKeyCreateRequest:
       type: object
       required:
@@ -10869,14 +13277,6 @@ components:
               description: API キーの平文です。作成時に一度だけ返されます。
               example: phaseo_v1_sk_abcd1234_supersecretvalue
           additionalProperties: false
-    ApiKeyResponse:
-      type: object
-      required:
-        - data
-      properties:
-        data:
-          $ref: '#/components/schemas/ApiKey'
-      additionalProperties: false
     ApiKeyUpdateRequest:
       type: object
       properties:
@@ -11494,6 +13894,61 @@ components:
         - auto_top_up_failure
         - payment_method_expiring
         - model_deprecation
+      properties:
+        auto_top_up_failure:
+          type: boolean
+        payment_method_expiring:
+          type: boolean
+        model_deprecation:
+          type: boolean
+      additionalProperties: false
+    WorkspaceNotificationSettingsUpdateRequest:
+      type: object
+      minProperties: 1
+      properties:
+        auto_top_up:
+          $ref: '#/components/schemas/WorkspaceAutoTopUpUpdate'
+        low_balance_email:
+          $ref: '#/components/schemas/WorkspaceLowBalanceEmailUpdate'
+        email_preferences:
+          $ref: '#/components/schemas/WorkspaceNotificationEmailPreferencesUpdate'
+      additionalProperties: false
+    WorkspaceAutoTopUpUpdate:
+      type: object
+      required:
+        - enabled
+      properties:
+        enabled:
+          type: boolean
+        balance_threshold_nanos:
+          type: integer
+          minimum: 0
+        amount_nanos:
+          type: integer
+          minimum: 0
+        payment_method_id:
+          type: string
+          nullable: true
+        mfa_bypass_acknowledged:
+          type: boolean
+        mfa_bypass_phrase:
+          type: string
+      additionalProperties: false
+    WorkspaceLowBalanceEmailUpdate:
+      type: object
+      required:
+        - enabled
+      properties:
+        enabled:
+          type: boolean
+        threshold_usd:
+          type: number
+          minimum: 0
+          multipleOf: 0.01
+      additionalProperties: false
+    WorkspaceNotificationEmailPreferencesUpdate:
+      type: object
+      minProperties: 1
       properties:
         auto_top_up_failure:
           type: boolean
@@ -12188,6 +14643,262 @@ components:
           items:
             type: string
             format: uuid
+      additionalProperties: false
+    PrivateModelListResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/PrivateModel'
+      additionalProperties: false
+    PrivateModel:
+      type: object
+      required:
+        - id
+        - workspace_id
+        - model_id
+        - name
+        - base_url
+        - upstream_model_id
+        - supports_responses
+        - enabled
+      properties:
+        id:
+          type: string
+          format: uuid
+        workspace_id:
+          type: string
+          format: uuid
+        model_id:
+          type: string
+          pattern: ^[a-z0-9][a-z0-9._-]{0,62}/[a-z0-9][a-z0-9._:-]{0,126}$
+          description: 通常の推論リクエストで使用する、ワークスペース内で見える所有者／モデルのスラッグ。
+          readOnly: true
+        local_slug:
+          type: string
+          pattern: ^[a-z0-9][a-z0-9._:-]{0,126}$
+          description: モデルのIDを導出するためのワークスペース内スラッグ。
+          readOnly: true
+        catalog_model_id:
+          type: string
+          nullable: true
+          pattern: ^[a-z0-9][a-z0-9._-]{0,62}/[a-z0-9][a-z0-9._:-]{0,126}$
+          description: このエンドポイントが関連付けられているカタログモデル（存在する場合）。
+          readOnly: true
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        description:
+          type: string
+          nullable: true
+          maxLength: 500
+        base_url:
+          type: string
+          format: uri
+          description: ワークスペース内の機密HTTPSエンドポイントベースURL。
+        upstream_model_id:
+          type: string
+          minLength: 1
+          maxLength: 255
+        supports_responses:
+          type: boolean
+        enabled:
+          type: boolean
+        input_modalities:
+          type: array
+          items:
+            type: string
+        output_modalities:
+          type: array
+          items:
+            type: string
+        context_length:
+          type: integer
+          nullable: true
+          minimum: 1
+        max_output_tokens:
+          type: integer
+          nullable: true
+          minimum: 1
+        host_provider_id:
+          type: string
+          nullable: true
+          description: デプロイを運用する既存のPhaseoプロバイダー。
+        custom_provider_name:
+          type: string
+          nullable: true
+          minLength: 1
+          maxLength: 120
+        custom_provider_url:
+          type: string
+          nullable: true
+          format: uri
+        routing_policy:
+          type: string
+          enum:
+            - preferred
+            - balanced
+            - fallback
+        credential_prefix:
+          type: string
+          nullable: true
+        credential_suffix:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          nullable: true
+        updated_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_by:
+          type: string
+          format: uuid
+          nullable: true
+      additionalProperties: false
+    PrivateModelCreateRequest:
+      type: object
+      required:
+        - model_reference
+        - name
+        - base_url
+        - upstream_model_id
+        - credential
+      properties:
+        model_reference:
+          type: string
+          description: このエンドポイントをプロバイダーとして関連付ける正確なカタログモデルID、または自動照合／ワークスペース名前空間化用の短いスラッグ。
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        description:
+          type: string
+          maxLength: 500
+        base_url:
+          type: string
+          format: uri
+        upstream_model_id:
+          type: string
+          minLength: 1
+          maxLength: 255
+        credential:
+          type: string
+          minLength: 8
+          writeOnly: true
+        supports_responses:
+          type: boolean
+          default: false
+        enabled:
+          type: boolean
+          default: true
+        context_length:
+          type: integer
+          minimum: 1
+          nullable: true
+        max_output_tokens:
+          type: integer
+          minimum: 1
+          nullable: true
+        host_provider_id:
+          type: string
+          nullable: true
+          description: デプロイを運用する既存のPhaseoプロバイダー。
+        custom_provider_name:
+          type: string
+          minLength: 1
+          maxLength: 120
+          nullable: true
+        custom_provider_url:
+          type: string
+          format: uri
+          nullable: true
+        routing_policy:
+          type: string
+          enum:
+            - preferred
+            - balanced
+            - fallback
+          default: preferred
+      additionalProperties: false
+    PrivateModelResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/PrivateModel'
+      additionalProperties: false
+    PrivateModelUpdateRequest:
+      type: object
+      minProperties: 1
+      properties:
+        model_reference:
+          type: string
+          description: このエンドポイントをプロバイダーとして関連付ける正確なカタログモデルID、または自動照合／ワークスペース名前空間化用の短いスラッグ。
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        description:
+          type: string
+          maxLength: 500
+          nullable: true
+        base_url:
+          type: string
+          format: uri
+        upstream_model_id:
+          type: string
+          minLength: 1
+          maxLength: 255
+        credential:
+          type: string
+          minLength: 8
+          writeOnly: true
+        supports_responses:
+          type: boolean
+        enabled:
+          type: boolean
+        context_length:
+          type: integer
+          minimum: 1
+          nullable: true
+        max_output_tokens:
+          type: integer
+          minimum: 1
+          nullable: true
+        host_provider_id:
+          type: string
+          nullable: true
+        custom_provider_name:
+          type: string
+          minLength: 1
+          maxLength: 120
+          nullable: true
+        custom_provider_url:
+          type: string
+          format: uri
+          nullable: true
+        routing_policy:
+          type: string
+          enum:
+            - preferred
+            - balanced
+            - fallback
+      additionalProperties: false
+    PrivateModelDeleteResponse:
+      type: object
+      required:
+        - deleted
+      properties:
+        deleted:
+          type: boolean
       additionalProperties: false
     WorkspaceBudgetListResponse:
       type: object

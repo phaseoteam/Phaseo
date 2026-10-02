@@ -139,7 +139,8 @@ Gateway 目前提供以下内置服务器工具：
 注意：
 
 - 模型调用工具时会提供搜索查询。
-- `engine: "auto"` 会解析为托管式 Exa 搜索。配置了相应供应商密钥时，`engine: "exa"`、`engine: "parallel"` 和 `engine: "firecrawl"` 会运行 Gateway 托管搜索。
+- `engine: "auto"` 使用托管的 Exa 搜索。配置对应提供商密钥后，`engine: "exa"`、`engine: "parallel"`、`engine: "firecrawl"` 和 `engine: "tinyfish"` 会运行托管的网关搜索。
+- TinyFish Search 支持本地化、分页的排序结果，在其公开计划中免费；需要时请在工具参数中使用 `language` 和 `page`。
 - 在 `phaseo:web_search` 中设置 `engine: "native"`，会根据请求接口转换为供应商原生网页搜索工具，例如 OpenAI 的 `web_search_preview` 或 Anthropic 的 `web_search_20250305`。
 - `max_results` 限制每次搜索调用的结果数；`max_total_results` 限制服务器工具循环中的累计结果数。
 - 如果所选引擎提供相应控制项，托管搜索支持 `allowed_domains` / `excluded_domains`、`search_context_size` 和 `max_characters`。

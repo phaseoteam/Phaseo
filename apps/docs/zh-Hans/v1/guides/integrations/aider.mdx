@@ -1,15 +1,16 @@
 ---
 title: "Aider"
+icon: "/icons/brands/aider.png"
 description: "通过自动管理的配置将 Aider 连接到 Phaseo。"
 ---
 
-Phaseo CLI 可创建专用 API 密钥，并配置 Aider 在每次新会话中使用 Phaseo。
+使用 Phaseo CLI 创建专用密钥和托管的 Aider 配置，或自行将相同的提供商值复制到现有 Aider 配置。
 
-## 设置 Aider
+## 使用 Phaseo CLI 设置
 
 ```bash
 phaseo login
-phaseo integrations setup aider --model anthropic/claude-sonnet-4.6
+phaseo aider --model anthropic/claude-sonnet-4.6
 ```
 
 如果 `~/.aider.conf.yml` 不存在，设置过程会创建一个由 Phaseo 管理的文件，其中包含：
@@ -66,5 +67,5 @@ phaseo integrations remove aider
 
 - [Aider OpenAI 兼容 API 文档](https://aider.chat/docs/llms/openai-compat.html)
 - [Aider YAML 配置](https://aider.chat/docs/config/aider_conf.html)
-- [编程助手](./coding-assistants.mdx)
+- [编程智能体](./coding-assistants.mdx)
 - [模型](../../api-reference/endpoint/models.mdx)

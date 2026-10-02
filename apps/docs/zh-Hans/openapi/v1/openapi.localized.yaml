@@ -4,7 +4,7 @@ info:
   version: 1.0.0
 servers:
   - url: https://api.phaseo.app/v1
-    description: Enrutamiento global
+    description: 全球路由
 security:
   - BearerAuth: []
 paths:
@@ -276,6 +276,62 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '401':
           description: 未授权
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: uploadFile
+      summary: 上传文件
+      description: '`/batches/files`的兼容别名。上传文件以进行批处理，并返回上游文件元数据。传入`model`以便AI Stats推断上游提供商。对于同时省略`model`和`provider`的旧客户端，默认使用OpenAI。'
+      parameters:
+        - name: model
+          in: query
+          required: false
+          description: 用于推断上游批处理文件提供商的模型ID。
+          schema:
+            $ref: '#/components/schemas/ModelId'
+        - name: provider
+          in: query
+          required: false
+          description: 用于上游文件上传的高级提供商覆盖设置。
+          schema:
+            type: string
+            enum:
+              - openai
+              - groq
+              - together
+              - mistral
+        - name: x-ai-stats-provider
+          in: header
+          required: false
+          description: 查询参数`provider`的请求头替代方式。
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/FileUploadRequest'
+      responses:
+        '200':
+          description: 已上传文件元数据
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FileResponse'
+        '401':
+          description: 未授权
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '502':
+          description: 上游提供商错误
           content:
             application/json:
               schema:
@@ -1615,7 +1671,7 @@ paths:
               $ref: '#/components/schemas/ChatCompletionsRequest'
             examples:
               datetimeServerTool:
-                summary: 内置日期时间服务器工具
+                summary: Built-in datetime server tool
                 value:
                   model: openai/gpt-5-nano
                   stream: false
@@ -1658,7 +1714,7 @@ paths:
               $ref: '#/components/schemas/ResponsesRequest'
             examples:
               datetimeServerTool:
-                summary: 内置日期时间服务器工具
+                summary: Built-in datetime server tool
                 value:
                   model: openai/gpt-5-nano
                   stream: false
@@ -1701,7 +1757,7 @@ paths:
               $ref: '#/components/schemas/AnthropicMessagesRequest'
             examples:
               datetimeServerTool:
-                summary: 内置日期时间服务器工具
+                summary: Built-in datetime server tool
                 value:
                   model: anthropic/claude-sonnet-4
                   max_tokens: 512
@@ -2472,6 +2528,237 @@ paths:
                   usage:
                     type: object
                     additionalProperties: true
+  /videos:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listVideos
+      summary: 列出视频
+      description: 列出已认证团队的异步视频生成任务。
+      parameters:
+        - name: limit
+          in: query
+          description: 返回的视频任务最大数量。默认值为50，上限为200。
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+        - name: status
+          in: query
+          description: 视频生命周期状态筛选器。可重复该参数或提供逗号分隔的值。
+          style: form
+          explode: true
+          schema:
+            type: array
+            items:
+              type: string
+        - name: offset
+          in: query
+          description: 返回该页前要跳过的视频任务数量。
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 10000
+        - name: after
+          in: query
+          description: 按所选顺序返回此视频ID之后的视频任务。
+          schema:
+            type: string
+        - name: order
+          in: query
+          description: 按创建时间排序视频任务。
+          schema:
+            type: string
+            enum:
+              - asc
+              - desc
+      responses:
+        '200':
+          description: 视频列表响应
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VideoListResponse'
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: createVideo
+      summary: 创建视频
+      description: 创建异步视频生成任务。每20秒轮询返回的`polling_url`，直到任务达到终态。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VideoGenerationRequest'
+      responses:
+        '202':
+          description: 视频响应
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VideoGenerationResponse'
+  /videos/models:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listVideoModels
+      summary: 列出视频模型能力
+      description: 返回数据库支持的视频模型／提供商能力元数据，用于视频试验区和SDK验证。
+      parameters:
+        - name: params
+          in: query
+          required: false
+          description: 可选的支持参数筛选器。重复参数或传入逗号分隔的列表。接受规范名称和别名，如`resolution`、`size`、`duration`或`duration_seconds`。
+          schema:
+            type: array
+            items:
+              type: string
+          style: form
+          explode: false
+      responses:
+        '200':
+          description: 视频模型能力列表
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VideoModelsResponse'
+  /videos/{video_id}:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: getVideo
+      summary: 获取视频状态
+      description: 获取视频生成请求的状态。除非使用Webhook，否则每20秒轮询一次。
+      parameters:
+        - name: video_id
+          in: path
+          required: true
+          description: 视频生成请求的ID。
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 视频状态响应
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VideoGenerationResponse'
+    delete:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: deleteVideo
+      summary: 删除视频
+      description: 将终态视频生成记录标记为已删除。进行中的任务无法删除。
+      parameters:
+        - name: video_id
+          in: path
+          required: true
+          description: 视频生成请求的ID。
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 视频删除响应
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VideoDeleteResponse'
+  /videos/{video_id}/cancel:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: cancelVideo
+      summary: 取消视频
+      description: 目前所有提供商均禁用视频取消功能。
+      parameters:
+        - name: video_id
+          in: path
+          required: true
+          description: Phaseo内部视频任务ID（`G-...`）。
+          schema:
+            type: string
+      responses:
+        '501':
+          description: 视频取消功能已禁用
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /videos/{video_id}/content:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: getVideoContent
+      summary: 获取视频内容
+      description: 下载已渲染的视频内容。
+      parameters:
+        - name: video_id
+          in: path
+          required: true
+          description: 视频生成请求的ID。
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 视频内容
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+  /videos/{video_id}/download_url:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: createVideoDownloadUrl
+      summary: 创建签名视频下载URL
+      description: 返回已渲染视频的第一方签名下载URL。
+      parameters:
+        - name: video_id
+          in: path
+          required: true
+          description: 视频生成请求的ID。
+          schema:
+            type: string
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                index:
+                  type: integer
+                  minimum: 0
+                ttl_seconds:
+                  type: integer
+                  minimum: 1
+                disposition:
+                  type: string
+                  enum:
+                    - attachment
+                    - inline
+      responses:
+        '200':
+          description: 签名下载URL
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  download_url:
+                    type: string
+                  expires_at:
+                    type: integer
   /music/generate/{music_id}:
     get:
       x-beta: true
@@ -2559,6 +2846,602 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '404':
           description: 未找到文件
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /batches:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listBatches
+      summary: 列出批处理任务
+      description: 从网关持久化异步任务存储中列出已认证工作区拥有的异步批处理任务。
+      parameters:
+        - name: limit
+          in: query
+          description: 返回的批处理任务最大数量。默认值为20，上限为100。
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+        - name: status
+          in: query
+          description: 批处理生命周期状态筛选器。可重复参数、使用逗号分隔的状态值，或使用statuses指定逗号分隔的筛选值。
+          style: form
+          explode: true
+          schema:
+            type: array
+            items:
+              type: string
+        - name: statuses
+          in: query
+          description: 逗号分隔的生命周期状态筛选器。
+          schema:
+            type: string
+        - name: offset
+          in: query
+          description: 返回该页前要跳过的批处理任务数量。
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 10000
+      responses:
+        '200':
+          description: 批处理列表响应
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchListResponse'
+        '401':
+          description: 未授权
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: createBatch
+      summary: 创建批处理
+      description: 创建异步批处理任务并返回上游批处理对象。通过请求的`model`支持OpenAI、Anthropic、Google Gemini、Mistral、xAI、Groq和Together AI。网关从模型推断上游提供商，并接受用于可观测性和异步通知的`session_id`和`webhook`。`provider`仅应作为高级路由约束使用。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BatchRequest'
+      responses:
+        '200':
+          description: 批处理状态响应
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchResponse'
+        '401':
+          description: 未授权
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /batches/models:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listBatchModels
+      summary: 列出批处理模型能力
+      description: 返回数据库支持的批处理模型／提供商能力元数据，包括允许的输入端点和完成时间窗口等受支持批处理参数。
+      parameters:
+        - name: params
+          in: query
+          required: false
+          description: 可选的支持参数筛选器。重复参数或传入逗号分隔的列表。接受规范名称和别名，如`endpoint`、`request_endpoint`、`completion_window`或`window`。
+          schema:
+            type: array
+            items:
+              type: string
+          style: form
+          explode: false
+      responses:
+        '200':
+          description: 批处理模型能力列表
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchModelsResponse'
+        '401':
+          description: 未授权
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /batches/capabilities:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listBatchCapabilities
+      summary: 列出批处理提供商能力
+      description: 返回各提供商对文件上传和请求列表批处理创建的输入模式支持情况。
+      responses:
+        '200':
+          description: 批处理提供商能力列表
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  object:
+                    type: string
+                    example: list
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/BatchProviderCapability'
+  /batches/files:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listBatchFiles
+      summary: 列出批处理文件
+      description: 由于不支持列出共享网关密钥文件，因此返回错误。请改用ID直接获取工作区拥有的文件。
+      responses:
+        '400':
+          description: 不支持列出文件
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: 未授权
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: uploadBatchFile
+      summary: 上传批处理文件
+      description: 上传提供商文件以进行批处理，并在已认证工作区中记录所有权。传入`model`以便Phaseo推断上游提供商。同时省略`model`和`provider`时默认使用OpenAI。
+      parameters:
+        - name: model
+          in: query
+          required: false
+          description: 用于推断上游批处理文件提供商的模型ID。
+          schema:
+            $ref: '#/components/schemas/ModelId'
+        - name: provider
+          in: query
+          required: false
+          description: 用于上游文件上传的高级提供商覆盖设置。
+          schema:
+            type: string
+            enum:
+              - openai
+              - groq
+              - together
+              - mistral
+        - name: x-phaseo-provider
+          in: header
+          required: false
+          description: 查询参数`provider`的请求头替代方式。
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/FileUploadRequest'
+      responses:
+        '200':
+          description: 已上传文件元数据
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FileResponse'
+        '401':
+          description: 未授权
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '502':
+          description: 上游提供商错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /batches/files/{file_id}:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: retrieveBatchFile
+      summary: 获取批处理文件
+      description: 获取已认证工作区拥有的批处理文件的元数据。
+      parameters:
+        - name: file_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 文件元数据
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FileResponse'
+        '401':
+          description: 未授权
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: 未找到文件，或文件不属于该工作区
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /batches/files/{file_id}/content:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: retrieveBatchFileContent
+      summary: 获取批处理文件内容
+      description: 获取已认证工作区拥有的批处理文件的内容。
+      parameters:
+        - name: file_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 文件内容
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '401':
+          description: 未授权
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: 未找到文件
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /batches/{batch_id}:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: retrieveBatch
+      summary: 获取批处理
+      description: 获取先前创建的批处理任务。
+      parameters:
+        - name: batch_id
+          in: path
+          required: true
+          description: 要获取的批处理ID。
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 批处理状态响应
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchResponse'
+        '401':
+          description: 未授权
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: 未找到批处理
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '501':
+          description: 此提供商不支持刷新批处理状态
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /batches/{batch_id}/results:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: retrieveBatchResults
+      summary: 下载批处理结果
+      description: 为已认证工作区拥有的终态批处理，以JSONL流式返回完整的提供商原生结果行。合并成功和错误文件，转换内联输出，并遵循提供商结果分页。请使用Phaseo API密钥。下载不会提交推理或增加使用费用。现有文件端点仍可使用。内联行限制为8 MiB；中断的下载必须丢弃并重新下载。每个工作区每个批处理在滚动30分钟窗口内最多允许10次下载尝试，API密钥和别名共享此限制。失败或取消的上游尝试也计入次数。429响应包含以秒为单位的Retry-After。
+      parameters:
+        - name: batch_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 提供商原始JSONL结果
+          content:
+            application/x-ndjson:
+              schema:
+                type: string
+        '401':
+          description: 未授权
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: 批处理预览访问被拒绝
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: 未找到批处理
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: 批处理结果尚未就绪
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: 已超出批处理下载限制
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            Retry-After:
+              description: 允许再次下载前的秒数
+              schema:
+                type: integer
+        '501':
+          description: 此提供商不支持直接下载结果
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '502':
+          description: 无法获取提供商结果
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '503':
+          description: 下载准入暂时不可用；请在30秒后重试
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+  /batches/{batch_id}/requests:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listBatchRequests
+      summary: 列出批处理请求行
+      description: 列出自有批处理任务中跟踪的各请求行。
+      parameters:
+        - name: batch_id
+          in: path
+          required: true
+          description: 批处理ID。
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 100
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+        - name: status
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 批处理请求行列表
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  object:
+                    type: string
+                    example: list
+                  batch_id:
+                    type: string
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/BatchRequestRow'
+        '401':
+          description: 未授权
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: 未找到批处理
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /batches/{batch_id}/cancel:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: cancelBatch
+      summary: 取消批处理
+      description: 取消批处理请求。
+      parameters:
+        - name: batch_id
+          in: path
+          required: true
+          description: 要取消的批处理ID。
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 批处理状态响应
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchResponse'
+        '401':
+          description: 未授权
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: 未找到批处理
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '501':
+          description: 此提供商不支持取消批处理
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /analytics:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: getActivityAlias
+      summary: 获取工作区分析
+      description: 返回最近30个完整UTC日按日期、模型、提供商和端点分组的成本、请求和令牌汇总。
+      parameters:
+        - name: date
+          in: query
+          description: 按最近30个完整日中的单个UTC日期筛选（YYYY-MM-DD）。
+          schema:
+            type: string
+            format: date
+        - name: label_key
+          in: query
+          description: 支出切片中包含的请求标签键。必须与label_value一起提供。
+          schema:
+            type: string
+            maxLength: 64
+            pattern: ^[A-Za-z0-9_.:-]{1,64}$
+        - name: label_value
+          in: query
+          description: 支出切片中包含的请求标签值。必须与label_key一起提供。
+          schema:
+            type: string
+            maxLength: 256
+        - name: key_id
+          in: query
+          description: 按API密钥标识符筛选。
+          schema:
+            type: string
+        - name: end_user_id
+          in: query
+          description: 按应用定义的最终用户标识符筛选。
+          schema:
+            type: string
+            maxLength: 256
+        - name: model
+          in: query
+          description: 按请求或路由的规范模型标识筛选。
+          schema:
+            $ref: '#/components/schemas/ModelId'
+        - name: provider
+          in: query
+          description: 按提供商标识筛选。
+          schema:
+            type: string
+            maxLength: 128
+        - name: endpoint
+          in: query
+          description: 按网关端点标识符筛选。
+          schema:
+            type: string
+            maxLength: 128
+        - name: byok
+          in: query
+          description: 筛选托管或BYOK流量。
+          schema:
+            type: boolean
+        - name: success
+          in: query
+          description: 筛选成功或失败的请求。
+          schema:
+            type: boolean
+        - $ref: '#/components/parameters/Offset'
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 1000
+            default: 1000
+      responses:
+        '200':
+          description: 已获取
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnalyticsResponse'
+        '400':
+          description: 错误请求
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: 未授权
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: 禁止访问错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: 内部服务器错误
           content:
             application/json:
               schema:
@@ -2671,6 +3554,39 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '403':
           description: 禁止访问
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: 服务器错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /key:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: getCurrentApiKey
+      summary: 获取当前API密钥
+      description: 返回当前已认证的标准Gateway API密钥元数据。
+      responses:
+        '200':
+          description: 当前API密钥元数据
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiKeyResponse'
+        '401':
+          description: 未授权
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: 未找到 API 密钥
           content:
             application/json:
               schema:
@@ -3200,6 +4116,33 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+    patch:
+      x-beta: true
+      security: []
+      tags:
+        - Gateway
+      operationId: updateWorkspaceNotificationSettings
+      summary: 更新工作区通知设置
+      description: 更新一个或多个持久化通知策略区段。启用自动充值需要现有已保存付款方式标识符和已验证的双因素认证。更新现有自动充值配置无需重复MFA确认。要在没有MFA的情况下启用自动充值，客户端必须显式将`mfa_bypass_acknowledged`设为true，并为`mfa_bypass_phrase`提供精确值`I ACCEPT THE RISK`；付款信息收集仍是交互式账户流程。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WorkspaceNotificationSettingsUpdateRequest'
+      responses:
+        '200':
+          description: 通知设置已更新
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkspaceNotificationSettingsResponse'
+        default:
+          description: 请求失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /apps/{id}:
     patch:
       x-beta: true
@@ -3583,6 +4526,127 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ProviderCredentialReorderResponse'
+        default:
+          description: 请求失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /private-models:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listPrivateModels
+      summary: 列出私有模型
+      description: 列出已认证工作区的私有模型元数据。需要`private_models:read`以及所有者或管理员身份。
+      responses:
+        '200':
+          description: 私有模型
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrivateModelListResponse'
+        default:
+          description: 请求失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: createPrivateModel
+      summary: 创建私有模型
+      description: 创建仅供工作区使用的OpenAI兼容模型端点。需要`private_models:write`以及所有者或管理员身份。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PrivateModelCreateRequest'
+      responses:
+        '201':
+          description: 私有模型已创建
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrivateModelResponse'
+        default:
+          description: 请求失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /private-models/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: getPrivateModel
+      summary: 获取私有模型
+      description: 返回已认证工作区中一个私有模型的端点元数据，不返回其凭据。
+      responses:
+        '200':
+          description: 私有模型元数据
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrivateModelResponse'
+        default:
+          description: 请求失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    patch:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: updatePrivateModel
+      summary: 更新私有模型
+      description: 更新私有模型元数据，或替换其仅写入的加密凭据。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PrivateModelUpdateRequest'
+      responses:
+        '200':
+          description: 私有模型已更新
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrivateModelResponse'
+        default:
+          description: 请求失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: deletePrivateModel
+      summary: 删除私有模型
+      description: 永久删除已认证工作区拥有的私有模型。重复删除是安全的。
+      responses:
+        '200':
+          description: 私有模型已删除或已不存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrivateModelDeleteResponse'
         default:
           description: 请求失败
           content:
@@ -5312,6 +6376,135 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '404':
           description: 未找到目标
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /organisations:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listOrganisations
+      summary: 列出组织
+      description: 返回可用组织列表。
+      parameters:
+        - name: limit
+          in: query
+          description: 限制结果数量
+          schema:
+            type: integer
+            default: 50
+            minimum: 1
+            maximum: 250
+        - name: offset
+          in: query
+          description: 分页偏移量
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+      responses:
+        '200':
+          description: 组织列表
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    example: true
+                  limit:
+                    type: integer
+                    example: 50
+                  offset:
+                    type: integer
+                    example: 0
+                  total:
+                    type: integer
+                    example: 10
+                  organisations:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        organisation_id:
+                          type: string
+                        name:
+                          type: string
+                          nullable: true
+                        country_code:
+                          type: string
+                          nullable: true
+                        description:
+                          type: string
+                          nullable: true
+                        colour:
+                          type: string
+                          nullable: true
+        '500':
+          description: 错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /pricing/calculate:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: calculatePricing
+      summary: 计算价格
+      description: 计算使用量载荷的价格。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - provider
+                - model
+                - endpoint
+                - usage
+              properties:
+                provider:
+                  type: string
+                model:
+                  type: string
+                endpoint:
+                  type: string
+                usage:
+                  type: object
+                  additionalProperties: true
+      responses:
+        '200':
+          description: 价格计算结果
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  pricing:
+                    type: object
+                    additionalProperties: true
+        '400':
+          description: 缺少必填字段
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: 未找到价格
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: 计算错误
           content:
             application/json:
               schema:
@@ -10515,6 +11708,638 @@ components:
               nullable: true
         pricing:
           $ref: '#/components/schemas/GatewayPricing'
+    VideoListResponse:
+      type: object
+      properties:
+        object:
+          type: string
+          example: list
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/VideoGenerationResponse'
+        first_id:
+          type: string
+          nullable: true
+        last_id:
+          type: string
+          nullable: true
+        has_more:
+          type: boolean
+    VideoGenerationResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        polling_url:
+          type: string
+        websocket_url:
+          type: string
+          format: uri
+          description: 用于订阅标准化异步任务生命周期更新的WebSocket URL。
+        model:
+          type: string
+        request_id:
+          type: string
+        session_id:
+          type: string
+        status:
+          type: string
+          enum:
+            - queued
+            - processing
+            - completed
+            - failed
+            - cancelled
+            - expired
+        lifecycle_status:
+          type: string
+          enum:
+            - pending
+            - running
+            - completed
+            - failed
+            - cancelled
+            - expired
+          description: 供轮询、WebSocket和Webhook使用方使用的标准化异步生命周期状态。
+        cancel_url:
+          type: string
+          format: uri
+          nullable: true
+          description: 为兼容性保留；目前始终为null。
+        output_access:
+          type: string
+          enum:
+            - bytes
+            - signed_url
+            - both
+        generation_id:
+          type: string
+          nullable: true
+        native_video_id:
+          type: string
+          nullable: true
+          description: 与网关自有ID不同时的提供商原生视频／任务ID。
+        created_at:
+          oneOf:
+            - type: integer
+            - type: string
+        started_at:
+          nullable: true
+          oneOf:
+            - type: integer
+            - type: string
+        completed_at:
+          nullable: true
+          oneOf:
+            - type: integer
+            - type: string
+        object:
+          type: string
+          example: video
+        poll_after_seconds:
+          type: integer
+          example: 20
+        provider:
+          type: string
+        seconds:
+          type: number
+        size:
+          type: string
+        audio:
+          type: boolean
+        content_url:
+          type: string
+          description: 当output_access包含bytes时存在（需认证的端点）。
+        download_url:
+          type: string
+          nullable: true
+          description: 状态为completed时用于直接下载的第一方签名URL。
+        expires_at:
+          type: integer
+          nullable: true
+          description: 签名download_url过期的Unix时间戳（秒）。
+        progress:
+          type: integer
+          nullable: true
+        progress_source:
+          type: string
+        asset:
+          type: object
+          nullable: true
+          properties:
+            id:
+              type: string
+            mime_type:
+              type: string
+            bytes:
+              type: integer
+            sha256:
+              type: string
+            width:
+              type: integer
+            height:
+              type: integer
+            duration_seconds:
+              type: number
+        outputs:
+          type: array
+          items:
+            $ref: '#/components/schemas/VideoOutput'
+        billing:
+          $ref: '#/components/schemas/VideoBillingSummary'
+        webhook:
+          $ref: '#/components/schemas/AsyncWebhookPublicState'
+        next_webhook_retry_at:
+          type: string
+          nullable: true
+          description: 下一次计划用户Webhook重试的ISO时间戳（如已排队）。
+        last_webhook_progress:
+          type: number
+          nullable: true
+          description: 最近向Webhook使用方发送的粗略进度区间。
+        last_webhook_progress_at:
+          type: string
+          nullable: true
+          description: 最近一次Webhook进度区间发送的ISO时间戳。
+        last_webhook_dispatched_at:
+          type: string
+          nullable: true
+          description: 最近一次Webhook发送尝试的ISO时间戳。
+        usage:
+          type: object
+          properties:
+            cost:
+              type: number
+            is_byok:
+              type: boolean
+          additionalProperties: true
+        error:
+          nullable: true
+    VideoOutput:
+      type: object
+      properties:
+        index:
+          type: integer
+        mime_type:
+          type: string
+        bytes_available:
+          type: boolean
+        content_url:
+          type: string
+          description: 当output_access包含bytes时存在。
+        download_url:
+          type: string
+          description: 此输出的第一方签名URL。
+        expires_at:
+          type: integer
+          description: 此输出URL过期的Unix时间戳（秒）。
+    VideoBillingSummary:
+      type: object
+      properties:
+        currency:
+          type: string
+        estimated_provider_cost:
+          type: string
+          nullable: true
+        estimated_user_cost:
+          type: string
+          nullable: true
+        settled_provider_cost:
+          type: string
+          nullable: true
+        settled_user_cost:
+          type: string
+          nullable: true
+        state:
+          type: string
+          enum:
+            - pending
+            - estimated
+            - settled
+            - void
+        billable:
+          type: boolean
+        total_nanos:
+          type: integer
+          nullable: true
+        estimated_nanos:
+          type: integer
+          nullable: true
+        reserved_nanos:
+          type: integer
+          nullable: true
+        reservation_id:
+          type: string
+          nullable: true
+        reservation_status:
+          type: string
+          nullable: true
+        charge_reason:
+          type: string
+          nullable: true
+        charged:
+          type: boolean
+          nullable: true
+        billed_at:
+          type: string
+      additionalProperties: true
+    AsyncWebhookPublicState:
+      type: object
+      description: 已清理的异步Webhook配置及投递状态。绝不返回密钥；`has_secret`表示是否启用签名投递。签名投递包含x-phaseo-signature、x-phaseo-timestamp、x-phaseo-event-id、x-phaseo-event-type、x-phaseo-delivery-key、x-phaseo-attempt和x-phaseo-max-attempts请求头。
+      properties:
+        url:
+          type: string
+          format: uri
+          nullable: true
+        events:
+          type: array
+          items:
+            type: string
+        has_secret:
+          type: boolean
+        delivery:
+          $ref: '#/components/schemas/AsyncWebhookDeliverySummary'
+        attempts:
+          type: array
+          items:
+            $ref: '#/components/schemas/AsyncWebhookDeliveryAttempt'
+    AsyncWebhookDeliverySummary:
+      type: object
+      description: 网关管理的异步Webhook公开投递摘要。用于区分任务执行状态和Webhook投递健康状况。
+      properties:
+        total_attempts:
+          type: integer
+          description: 此任务记录的投递尝试总次数。
+        delivered_events:
+          type: integer
+          description: 达到已投递状态的投递键数量。
+        delivered_event_types:
+          type: array
+          description: 至少成功投递一次的投递键。
+          items:
+            type: string
+          example:
+            - video.completed
+        pending_retries:
+          type: integer
+          description: 当前安排重试的投递键数量。
+        next_retry_at:
+          type: string
+          nullable: true
+          description: 下一次计划重试的ISO时间戳（如有）。
+        last_attempt_at:
+          type: string
+          nullable: true
+          description: 最近一次投递尝试的ISO时间戳。
+        last_attempt_status:
+          type: string
+          nullable: true
+          enum:
+            - delivered
+            - scheduled_retry
+            - failed_permanently
+          description: 最近一次投递尝试的结果。
+        last_response_status:
+          type: integer
+          nullable: true
+          description: Webhook目标返回的HTTP状态（如可用）。
+        last_delivered_at:
+          type: string
+          nullable: true
+          description: 最近一次成功投递的ISO时间戳。
+        last_failure_at:
+          type: string
+          nullable: true
+          description: 最近一次失败或正在重试的尝试的ISO时间戳。
+        last_error_message:
+          type: string
+          nullable: true
+          description: 最近一次投递错误消息（如可用）。
+    AsyncWebhookDeliveryAttempt:
+      type: object
+      description: 最近一次网关管理的异步Webhook投递尝试。
+      properties:
+        id:
+          type: string
+          description: 用于审计和调试的稳定尝试标识符。
+        delivery_key:
+          type: string
+          description: 此事件投递的幂等键。
+          example: video.completed
+        event_type:
+          type: string
+          description: 投递到Webhook目标的事件类型。
+          example: video.completed
+        status:
+          type: string
+          enum:
+            - delivered
+            - scheduled_retry
+            - failed_permanently
+        attempt_number:
+          type: integer
+          description: 此投递键从1开始的尝试编号。
+        max_attempts:
+          type: integer
+          description: 将投递标记为永久失败之前的最大尝试次数。
+        tried_at:
+          type: string
+          description: 进行此次尝试的ISO时间戳。
+        delivered_at:
+          type: string
+          nullable: true
+          description: 此次尝试成功投递的ISO时间戳。
+        next_retry_at:
+          type: string
+          nullable: true
+          description: 此次尝试后下一次重试的ISO时间戳（如已安排）。
+        response_status:
+          type: integer
+          nullable: true
+          description: Webhook目标返回的HTTP状态（如可用）。
+        error_message:
+          type: string
+          nullable: true
+          description: 投递错误消息（如可用）。
+        response_body_preview:
+          type: string
+          nullable: true
+          description: Webhook目标响应正文的已脱敏预览。
+    VideoGenerationRequest:
+      type: object
+      required:
+        - model
+        - prompt
+      properties:
+        model:
+          type: string
+        prompt:
+          type: string
+        duration:
+          type: integer
+          description: 所需时长（秒），取决于提供商／模型。
+        input_video_duration:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 3600
+          exclusiveMinimum: true
+          description: 源视频时长（秒）。提供商对源视频时长与生成输出分别计费时必填。
+        input_audio_duration:
+          type: number
+          format: double
+          minimum: 2
+          maximum: 20
+          description: 声明的源音频时长（秒），用于验证提供商允许的范围。不报告权威使用量的提供商可能按其支持的输入时长上限计费。
+        size:
+          type: string
+          description: 明确尺寸（例如1280x720）。不能与resolution或aspect_ratio组合使用。
+        resolution:
+          type: string
+          description: 480p、720p、1080p、1K、2K、4K。可与aspect_ratio组合使用。不能与size组合使用。
+        aspect_ratio:
+          type: string
+          description: 宽高比，如16:9、9:16、1:1。可与resolution组合使用。不能与size组合使用。
+        seed:
+          type: integer
+        sample_count:
+          type: integer
+          minimum: 1
+          maximum: 4
+        negative_prompt:
+          type: string
+        generate_audio:
+          type: boolean
+        enhance_prompt:
+          type: boolean
+        compression_quality:
+          type: integer
+        person_generation:
+          type: string
+        resize_mode:
+          type: string
+        input_references:
+          type: array
+          description: 用于控制生成的HTTPS图像、音频或视频输入。支持的类型、角色、数量和组合取决于所选模型。提交任务前请检查GET /videos/models。此架构中省略的单数兼容别名input_reference接受multipart图像，或恰好包含file_id或image_url其中一个的对象。支持情况取决于提供商。
+          items:
+            $ref: '#/components/schemas/VideoInputReference'
+        frame_images:
+          type: array
+          minItems: 1
+          maxItems: 2
+          description: 首帧／尾帧的HTTPS图像。每个frame_type只能出现一次。不要同时提供input_reference或input_references中的帧角色。
+          items:
+            type: object
+            additionalProperties: false
+            required:
+              - type
+              - frame_type
+              - image_url
+            properties:
+              type:
+                type: string
+                enum:
+                  - image_url
+              frame_type:
+                type: string
+                enum:
+                  - first_frame
+                  - last_frame
+              image_url:
+                type: object
+                required:
+                  - url
+                properties:
+                  url:
+                    type: string
+                    format: uri
+        provider_params:
+          type: object
+          additionalProperties: true
+          description: 仅限提供商特定扩展。完整请求透传以及重复的路由、提示词、回调或计费字段会被拒绝。
+        provider_options:
+          type: object
+          additionalProperties:
+            type: object
+            additionalProperties: true
+          description: 以规范提供商ID（如atlascloud或byteplus）为键的扩展。仅转发所选提供商的选项。不能与provider_params组合使用。路由、提示词、回调、时长、分辨率和输出数量必须使用经过验证的顶层字段。
+        output:
+          $ref: '#/components/schemas/VideoOutputConfig'
+        webhook:
+          type: object
+          required:
+            - endpoint_id
+          additionalProperties: false
+          properties:
+            endpoint_id:
+              type: string
+              description: 工作区管理的活动Webhook端点。其加密且可轮换的签名密钥绝不会存储在视频任务元数据中。
+            events:
+              type: array
+              description: 可选事件订阅。使用通用job.*事件或匹配的video.*事件，如video.status_changed、video.progress或video.completed。省略时使用job.status_changed和终态job.*事件。进度回调需显式包含job.progress或video.progress。提供时，至少一个事件必须适用于视频任务；仅含其他任务类型事件或格式错误的列表会被拒绝。
+              items:
+                type: string
+        provider:
+          $ref: '#/components/schemas/ProviderRoutingOptions'
+    VideoInputReference:
+      description: 带类型的HTTPS媒体输入。图像使用image_url，音频或视频使用media_url。角色描述模型应如何使用输入；支持情况因提供商和模型而异。
+      oneOf:
+        - type: object
+          required:
+            - type
+            - image_url
+          properties:
+            type:
+              type: string
+              enum:
+                - image_url
+            role:
+              type: string
+              description: 所选模型对此图像的预期用途。
+              enum:
+                - first_frame
+                - last_frame
+                - reference
+                - source
+                - mask
+            reference_type:
+              type: string
+            image_url:
+              type: object
+              required:
+                - url
+              properties:
+                url:
+                  type: string
+                  format: uri
+                  description: 可公开访问的HTTPS图像URL。
+        - type: object
+          required:
+            - type
+            - media_url
+          properties:
+            type:
+              type: string
+              enum:
+                - video_url
+                - audio_url
+            role:
+              type: string
+              description: 所选模型对此音频或视频的预期用途。
+              enum:
+                - first_frame
+                - last_frame
+                - reference
+                - source
+                - mask
+            reference_type:
+              type: string
+            media_url:
+              type: object
+              required:
+                - url
+              properties:
+                url:
+                  type: string
+                  format: uri
+                  description: 可公开访问的HTTPS音频或视频URL。
+    VideoOutputConfig:
+      type: object
+      properties:
+        access:
+          type: string
+          enum:
+            - bytes
+            - signed_url
+            - both
+          default: both
+          description: bytes=仅认证content_url，signed_url=仅签名下载链接，both=包含两者。
+    VideoModelsResponse:
+      type: object
+      properties:
+        object:
+          type: string
+          example: list
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/VideoModelCapability'
+    VideoModelCapability:
+      type: object
+      properties:
+        model:
+          type: string
+        name:
+          type: string
+        status:
+          type: string
+        input_types:
+          type: array
+          items:
+            type: string
+        output_types:
+          type: array
+          items:
+            type: string
+        supported_params:
+          type: array
+          items:
+            type: string
+        supported_parameters:
+          type: array
+          description: supported_params的兼容别名。
+          items:
+            type: string
+        supported_params_detail:
+          $ref: '#/components/schemas/SupportedParameterDetails'
+        supported_parameters_detail:
+          $ref: '#/components/schemas/SupportedParameterDetails'
+        providers:
+          type: array
+          items:
+            $ref: '#/components/schemas/VideoModelProviderCapability'
+        pricing:
+          type: object
+          additionalProperties: true
+    VideoModelProviderCapability:
+      type: object
+      properties:
+        id:
+          type: string
+        supported_params:
+          type: array
+          items:
+            type: string
+        supported_parameters:
+          type: array
+          description: supported_params的兼容别名。
+          items:
+            type: string
+        supported_params_detail:
+          $ref: '#/components/schemas/SupportedParameterDetails'
+        supported_parameters_detail:
+          $ref: '#/components/schemas/SupportedParameterDetails'
+    VideoDeleteResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        object:
+          type: string
+        deleted:
+          type: boolean
+    FileUploadRequest:
+      type: object
+      required:
+        - file
+        - purpose
+      properties:
+        file:
+          type: string
+          format: binary
+        purpose:
+          type: string
     FileResponse:
       type: object
       properties:
@@ -10534,6 +12359,581 @@ components:
           type: string
         status_details:
           type: object
+    BatchListResponse:
+      type: object
+      properties:
+        object:
+          type: string
+          example: list
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/BatchResponse'
+        first_id:
+          type: string
+          nullable: true
+        last_id:
+          type: string
+          nullable: true
+        has_more:
+          type: boolean
+    BatchResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        native_batch_id:
+          type: string
+          nullable: true
+          description: 与网关自有ID不同时的提供商原生批处理ID。
+        object:
+          type: string
+        endpoint:
+          type: string
+        errors:
+          type: object
+        input_file_id:
+          type: string
+        completion_window:
+          type: string
+        status:
+          type: string
+        lifecycle_status:
+          type: string
+          enum:
+            - pending
+            - running
+            - completed
+            - failed
+            - cancelled
+            - expired
+          description: 供轮询、WebSocket和Webhook使用方使用的标准化异步生命周期状态。
+        progress:
+          type: integer
+          minimum: 0
+          maximum: 100
+          description: 基于提供商请求计数计算的粗略批处理完成百分比（如可用）。已完成批处理报告100。
+        polling_url:
+          type: string
+          format: uri
+        websocket_url:
+          type: string
+          format: uri
+          description: 用于订阅标准化异步任务生命周期更新的WebSocket URL。
+        cancel_url:
+          type: string
+          format: uri
+          nullable: true
+          description: 为兼容性保留；目前始终为null。
+        results_url:
+          type: string
+          format: uri
+          nullable: true
+          description: 受支持终态批处理的需认证Phaseo JSONL下载URL。处理中为null。终态批处理可能没有输出。请使用所属工作区的API密钥；提供商保留期限限制仍然适用。
+        output_file_id:
+          type: string
+        error_file_id:
+          type: string
+        created_at:
+          type: integer
+        in_progress_at:
+          type: integer
+        expires_at:
+          type: integer
+        finalizing_at:
+          type: integer
+        completed_at:
+          type: integer
+        failed_at:
+          type: integer
+        expired_at:
+          type: integer
+        cancelling_at:
+          type: integer
+        cancelled_at:
+          type: integer
+        request_counts:
+          $ref: '#/components/schemas/BatchRequestCounts'
+        metadata:
+          type: object
+        request_id:
+          type: string
+        provider:
+          type: string
+        session_id:
+          type: string
+        webhook:
+          $ref: '#/components/schemas/AsyncWebhookPublicState'
+        next_webhook_retry_at:
+          type: string
+          nullable: true
+        last_webhook_progress:
+          type: number
+          nullable: true
+        last_webhook_progress_at:
+          type: string
+          nullable: true
+        last_webhook_dispatched_at:
+          type: string
+          nullable: true
+        finalized_at:
+          type: string
+          nullable: true
+        pricing_lines:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        usage:
+          type: object
+          description: 完成后的标准化汇总使用量和成本。
+          properties:
+            requests:
+              type: integer
+              nullable: true
+            input_tokens:
+              type: integer
+              nullable: true
+            output_tokens:
+              type: integer
+              nullable: true
+            total_tokens:
+              type: integer
+              nullable: true
+            cost_nanos:
+              type: integer
+              nullable: true
+            cost_usd:
+              type: number
+              nullable: true
+            currency:
+              type: string
+        billing:
+          $ref: '#/components/schemas/BatchBillingSummary'
+    BatchRequestCounts:
+      type: object
+      properties:
+        total:
+          type: integer
+        completed:
+          type: integer
+        failed:
+          type: integer
+    BatchBillingSummary:
+      type: object
+      properties:
+        currency:
+          type: string
+        billed:
+          type: boolean
+        charged:
+          type: boolean
+        reason:
+          type: string
+        state:
+          type: string
+          enum:
+            - pending
+            - estimated
+            - settled
+            - void
+        reservation_id:
+          type: string
+          nullable: true
+        reservation_status:
+          type: string
+          nullable: true
+        estimated_provider_cost:
+          type: string
+          nullable: true
+        estimated_user_cost:
+          type: string
+          nullable: true
+        settled_provider_cost:
+          type: string
+          nullable: true
+        settled_user_cost:
+          type: string
+          nullable: true
+        estimated_nanos:
+          type: integer
+          nullable: true
+        reserved_nanos:
+          type: integer
+          nullable: true
+        estimation_truncated:
+          type: boolean
+          nullable: true
+          description: 当预留估算由较大批处理输入文件的有限样本按比例扩展时为True。
+        estimation_sample_size:
+          type: integer
+          nullable: true
+          description: 预留估算中直接定价的输入行数。
+        estimation_total_rows:
+          type: integer
+          nullable: true
+          description: 预留估算代表的输入行总数。
+        total_nanos:
+          type: integer
+          nullable: true
+        cost_nanos:
+          type: integer
+          nullable: true
+        cost_usd:
+          type: number
+          nullable: true
+        finalized_at:
+          type: string
+          nullable: true
+        pricing_breakdown:
+          type: object
+          additionalProperties: true
+    BatchRequest:
+      type: object
+      properties:
+        provider_options:
+          type: object
+          description: 按规范提供商ID限定的扩展。OpenAI接受output_expires_after；Mistral接受metadata。仅应用所选提供商的选项。不要在顶层重复同一选项。选项不能覆盖已定价的行、模型或文件。
+          additionalProperties:
+            type: object
+            additionalProperties: true
+        model:
+          type: string
+          description: 用于推断上游批处理提供商的模型ID。请求行也可包含body.model；优先使用顶层模型。
+        prompts:
+          type: array
+          description: 简单提示词简写。Phaseo将每个提示词编译成适用于所选模型的提供商原生批处理行。
+          items:
+            type: string
+        items:
+          type: array
+          description: 结构化提示词简写。条目可包含`id`、`custom_id`、`prompt`、`messages`、`input`、`system`、`max_tokens`、`temperature`或高级`body`。
+          items:
+            type: object
+            additionalProperties: true
+        system:
+          type: string
+          description: 应用于提示词简写行的可选系统指令。
+        max_tokens:
+          type: integer
+          description: 应用于提示词简写行的可选最大令牌限制。
+        temperature:
+          type: number
+          description: 应用于提示词简写行的可选采样温度。
+        input_file_id:
+          type: string
+          description: 通过文件上传创建批处理时使用的现有提供商文件ID。
+        requests:
+          type: array
+          description: 高级批处理请求行。必须恰好提供`prompts`、`items`、`requests`或`input_file_id`其中一个。
+          items:
+            $ref: '#/components/schemas/BatchRequestItem'
+        endpoint:
+          type: string
+          enum:
+            - /v1/chat/completions
+            - /v1/responses
+            - /v1/messages
+            - /v1/embeddings
+            - /v1/generateContent
+          description: 面向调用方的请求格式。批处理中每个请求均使用此端点。省略时，Phaseo根据模型选择提供商原生默认值。
+        completion_window:
+          type: string
+        metadata:
+          type: object
+          additionalProperties: true
+        session_id:
+          type: string
+          maxLength: 256
+          description: 用于可观测性统计的唯一标识符，可将相关请求（例如对话或代理工作流）归为一组。
+        webhook:
+          type: object
+          required:
+            - endpoint_id
+          additionalProperties: false
+          properties:
+            endpoint_id:
+              type: string
+              description: 工作区管理的Webhook端点ID。
+            events:
+              type: array
+              description: 可选事件订阅。使用通用job.*事件或匹配的batch.*事件，如batch.progress或batch.completed。省略时使用终态job.*事件。请求计数进度回调需显式包含job.progress或batch.progress。提供时，至少一个事件必须适用于批处理任务；仅含其他任务类型事件或格式错误的列表会被拒绝。
+              items:
+                type: string
+        webhook_endpoint_id:
+          type: string
+          description: webhook.endpoint_id的便捷别名。
+        debug:
+          $ref: '#/components/schemas/DebugOptions'
+        provider:
+          allOf:
+            - $ref: '#/components/schemas/ProviderRoutingOptions'
+          description: 高级路由约束。大多数请求应依赖基于模型的提供商推断。
+    BatchRequestItem:
+      type: object
+      required:
+        - body
+      properties:
+        custom_id:
+          type: string
+        method:
+          type: string
+          default: POST
+          enum:
+            - POST
+        url:
+          type: string
+          description: 此行的端点路径。提供时必须与父批处理端点匹配。默认使用父批处理端点。
+        body:
+          type: object
+          additionalProperties: true
+    BatchModelsResponse:
+      type: object
+      properties:
+        object:
+          type: string
+          example: list
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/BatchModelCapability'
+    BatchModelCapability:
+      type: object
+      properties:
+        model:
+          type: string
+        name:
+          type: string
+        status:
+          type: string
+        input_types:
+          type: array
+          items:
+            type: string
+        output_types:
+          type: array
+          items:
+            type: string
+        supported_params:
+          type: array
+          items:
+            type: string
+        supported_parameters:
+          type: array
+          description: supported_params的兼容别名。
+          items:
+            type: string
+        supported_params_detail:
+          $ref: '#/components/schemas/SupportedParameterDetails'
+        supported_parameters_detail:
+          $ref: '#/components/schemas/SupportedParameterDetails'
+        providers:
+          type: array
+          items:
+            $ref: '#/components/schemas/BatchModelProviderCapability'
+        pricing:
+          type: object
+          additionalProperties: true
+    BatchModelProviderCapability:
+      type: object
+      properties:
+        id:
+          type: string
+        supported_params:
+          type: array
+          items:
+            type: string
+        supported_parameters:
+          type: array
+          description: supported_params的兼容别名。
+          items:
+            type: string
+        supported_params_detail:
+          $ref: '#/components/schemas/SupportedParameterDetails'
+        supported_parameters_detail:
+          $ref: '#/components/schemas/SupportedParameterDetails'
+    BatchProviderCapability:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        status:
+          type: string
+          enum:
+            - active
+            - planned
+        gateway_input_modes:
+          type: array
+          items:
+            type: string
+            enum:
+              - file
+              - requests
+        native_input_modes:
+          type: array
+          items:
+            type: string
+            enum:
+              - file
+              - requests
+        documentation_url:
+          type: string
+          format: uri
+        notes:
+          type: string
+          nullable: true
+        endpoints:
+          type: array
+          description: 此提供商支持的批处理端点。
+          items:
+            type: object
+            required:
+              - endpoint
+              - mode
+            properties:
+              endpoint:
+                type: string
+              mode:
+                type: string
+                enum:
+                  - native
+                  - translated
+    BatchRequestRow:
+      type: object
+      properties:
+        id:
+          type: string
+        custom_id:
+          type: string
+        request_index:
+          type: integer
+        provider:
+          type: string
+        native_batch_id:
+          type: string
+          nullable: true
+        method:
+          type: string
+          nullable: true
+        endpoint:
+          type: string
+          nullable: true
+        model:
+          type: string
+          nullable: true
+        status:
+          type: string
+        request_body_hash:
+          type: string
+          nullable: true
+        response_status:
+          type: integer
+          nullable: true
+        response_body:
+          type: object
+          nullable: true
+          additionalProperties: true
+        error_body:
+          type: object
+          nullable: true
+          additionalProperties: true
+        usage:
+          type: object
+          nullable: true
+          additionalProperties: true
+        cost_nanos:
+          type: integer
+          nullable: true
+        cost_usd:
+          type: number
+          nullable: true
+        meta:
+          type: object
+          additionalProperties: true
+        created_at:
+          type: string
+          nullable: true
+        updated_at:
+          type: string
+          nullable: true
+        completed_at:
+          type: string
+          nullable: true
+    AnalyticsResponse:
+      type: object
+      required:
+        - data
+        - total_count
+        - offset
+        - limit
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ActivityEntry'
+        total_count:
+          type: integer
+          minimum: 0
+        offset:
+          type: integer
+          minimum: 0
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 1000
+      additionalProperties: false
+    ActivityEntry:
+      type: object
+      required:
+        - date
+        - model
+        - model_permaslug
+        - endpoint_id
+        - provider_name
+        - usage
+        - byok_usage_inference
+        - requests
+        - prompt_tokens
+        - completion_tokens
+        - reasoning_tokens
+      properties:
+        date:
+          type: string
+          format: date
+          example: 2025-08-24
+        model:
+          type: string
+          example: openai/gpt-4.1
+        model_permaslug:
+          type: string
+          example: openai/gpt-4.1-2025-04-14
+        endpoint_id:
+          type: string
+          example: chat.completions
+        provider_name:
+          type: string
+          example: OpenAI
+        usage:
+          type: number
+          example: 0.015
+        byok_usage_inference:
+          type: number
+          example: 0.012
+        requests:
+          type: integer
+          example: 5
+        prompt_tokens:
+          type: integer
+          example: 50
+        completion_tokens:
+          type: integer
+          example: 125
+        reasoning_tokens:
+          type: integer
+          example: 25
+      additionalProperties: false
     CreditsResponse:
       type: object
       required:
@@ -10575,20 +12975,13 @@ components:
               example: 1250
           additionalProperties: false
       additionalProperties: false
-    ApiKeyListResponse:
+    ApiKeyResponse:
       type: object
       required:
         - data
-        - total_count
       properties:
         data:
-          type: array
-          items:
-            $ref: '#/components/schemas/ApiKey'
-        total_count:
-          type: integer
-          minimum: 0
-          example: 3
+          $ref: '#/components/schemas/ApiKey'
       additionalProperties: false
     ApiKey:
       type: object
@@ -10783,6 +13176,21 @@ components:
           minimum: 0
           description: 支出金额（USD）。
       additionalProperties: false
+    ApiKeyListResponse:
+      type: object
+      required:
+        - data
+        - total_count
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ApiKey'
+        total_count:
+          type: integer
+          minimum: 0
+          example: 3
+      additionalProperties: false
     ApiKeyCreateRequest:
       type: object
       required:
@@ -10869,14 +13277,6 @@ components:
               description: API 密钥的明文。仅在创建时返回一次。
               example: phaseo_v1_sk_abcd1234_supersecretvalue
           additionalProperties: false
-    ApiKeyResponse:
-      type: object
-      required:
-        - data
-      properties:
-        data:
-          $ref: '#/components/schemas/ApiKey'
-      additionalProperties: false
     ApiKeyUpdateRequest:
       type: object
       properties:
@@ -11494,6 +13894,61 @@ components:
         - auto_top_up_failure
         - payment_method_expiring
         - model_deprecation
+      properties:
+        auto_top_up_failure:
+          type: boolean
+        payment_method_expiring:
+          type: boolean
+        model_deprecation:
+          type: boolean
+      additionalProperties: false
+    WorkspaceNotificationSettingsUpdateRequest:
+      type: object
+      minProperties: 1
+      properties:
+        auto_top_up:
+          $ref: '#/components/schemas/WorkspaceAutoTopUpUpdate'
+        low_balance_email:
+          $ref: '#/components/schemas/WorkspaceLowBalanceEmailUpdate'
+        email_preferences:
+          $ref: '#/components/schemas/WorkspaceNotificationEmailPreferencesUpdate'
+      additionalProperties: false
+    WorkspaceAutoTopUpUpdate:
+      type: object
+      required:
+        - enabled
+      properties:
+        enabled:
+          type: boolean
+        balance_threshold_nanos:
+          type: integer
+          minimum: 0
+        amount_nanos:
+          type: integer
+          minimum: 0
+        payment_method_id:
+          type: string
+          nullable: true
+        mfa_bypass_acknowledged:
+          type: boolean
+        mfa_bypass_phrase:
+          type: string
+      additionalProperties: false
+    WorkspaceLowBalanceEmailUpdate:
+      type: object
+      required:
+        - enabled
+      properties:
+        enabled:
+          type: boolean
+        threshold_usd:
+          type: number
+          minimum: 0
+          multipleOf: 0.01
+      additionalProperties: false
+    WorkspaceNotificationEmailPreferencesUpdate:
+      type: object
+      minProperties: 1
       properties:
         auto_top_up_failure:
           type: boolean
@@ -12188,6 +14643,262 @@ components:
           items:
             type: string
             format: uuid
+      additionalProperties: false
+    PrivateModelListResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/PrivateModel'
+      additionalProperties: false
+    PrivateModel:
+      type: object
+      required:
+        - id
+        - workspace_id
+        - model_id
+        - name
+        - base_url
+        - upstream_model_id
+        - supports_responses
+        - enabled
+      properties:
+        id:
+          type: string
+          format: uuid
+        workspace_id:
+          type: string
+          format: uuid
+        model_id:
+          type: string
+          pattern: ^[a-z0-9][a-z0-9._-]{0,62}/[a-z0-9][a-z0-9._:-]{0,126}$
+          description: 工作区可见、用于普通推理请求的所有者／模型标识。
+          readOnly: true
+        local_slug:
+          type: string
+          pattern: ^[a-z0-9][a-z0-9._:-]{0,126}$
+          description: 用于派生模型身份的工作区本地标识。
+          readOnly: true
+        catalog_model_id:
+          type: string
+          nullable: true
+          pattern: ^[a-z0-9][a-z0-9._-]{0,62}/[a-z0-9][a-z0-9._:-]{0,126}$
+          description: 此端点关联的目录模型（如有）。
+          readOnly: true
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        description:
+          type: string
+          nullable: true
+          maxLength: 500
+        base_url:
+          type: string
+          format: uri
+          description: 工作区机密HTTPS端点基础URL。
+        upstream_model_id:
+          type: string
+          minLength: 1
+          maxLength: 255
+        supports_responses:
+          type: boolean
+        enabled:
+          type: boolean
+        input_modalities:
+          type: array
+          items:
+            type: string
+        output_modalities:
+          type: array
+          items:
+            type: string
+        context_length:
+          type: integer
+          nullable: true
+          minimum: 1
+        max_output_tokens:
+          type: integer
+          nullable: true
+          minimum: 1
+        host_provider_id:
+          type: string
+          nullable: true
+          description: 运营此部署的现有Phaseo提供商。
+        custom_provider_name:
+          type: string
+          nullable: true
+          minLength: 1
+          maxLength: 120
+        custom_provider_url:
+          type: string
+          nullable: true
+          format: uri
+        routing_policy:
+          type: string
+          enum:
+            - preferred
+            - balanced
+            - fallback
+        credential_prefix:
+          type: string
+          nullable: true
+        credential_suffix:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          nullable: true
+        updated_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_by:
+          type: string
+          format: uuid
+          nullable: true
+      additionalProperties: false
+    PrivateModelCreateRequest:
+      type: object
+      required:
+        - model_reference
+        - name
+        - base_url
+        - upstream_model_id
+        - credential
+      properties:
+        model_reference:
+          type: string
+          description: 用于将此端点作为提供商关联的精确目录模型ID，或用于自动匹配／工作区命名空间的短标识。
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        description:
+          type: string
+          maxLength: 500
+        base_url:
+          type: string
+          format: uri
+        upstream_model_id:
+          type: string
+          minLength: 1
+          maxLength: 255
+        credential:
+          type: string
+          minLength: 8
+          writeOnly: true
+        supports_responses:
+          type: boolean
+          default: false
+        enabled:
+          type: boolean
+          default: true
+        context_length:
+          type: integer
+          minimum: 1
+          nullable: true
+        max_output_tokens:
+          type: integer
+          minimum: 1
+          nullable: true
+        host_provider_id:
+          type: string
+          nullable: true
+          description: 运营此部署的现有Phaseo提供商。
+        custom_provider_name:
+          type: string
+          minLength: 1
+          maxLength: 120
+          nullable: true
+        custom_provider_url:
+          type: string
+          format: uri
+          nullable: true
+        routing_policy:
+          type: string
+          enum:
+            - preferred
+            - balanced
+            - fallback
+          default: preferred
+      additionalProperties: false
+    PrivateModelResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/PrivateModel'
+      additionalProperties: false
+    PrivateModelUpdateRequest:
+      type: object
+      minProperties: 1
+      properties:
+        model_reference:
+          type: string
+          description: 用于将此端点作为提供商关联的精确目录模型ID，或用于自动匹配／工作区命名空间的短标识。
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        description:
+          type: string
+          maxLength: 500
+          nullable: true
+        base_url:
+          type: string
+          format: uri
+        upstream_model_id:
+          type: string
+          minLength: 1
+          maxLength: 255
+        credential:
+          type: string
+          minLength: 8
+          writeOnly: true
+        supports_responses:
+          type: boolean
+        enabled:
+          type: boolean
+        context_length:
+          type: integer
+          minimum: 1
+          nullable: true
+        max_output_tokens:
+          type: integer
+          minimum: 1
+          nullable: true
+        host_provider_id:
+          type: string
+          nullable: true
+        custom_provider_name:
+          type: string
+          minLength: 1
+          maxLength: 120
+          nullable: true
+        custom_provider_url:
+          type: string
+          format: uri
+          nullable: true
+        routing_policy:
+          type: string
+          enum:
+            - preferred
+            - balanced
+            - fallback
+      additionalProperties: false
+    PrivateModelDeleteResponse:
+      type: object
+      required:
+        - deleted
+      properties:
+        deleted:
+          type: boolean
       additionalProperties: false
     WorkspaceBudgetListResponse:
       type: object

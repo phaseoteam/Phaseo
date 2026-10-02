@@ -1,8 +1,9 @@
 ---
 title: "Codex"
-icon: "code-2"
+icon: "/icons/brands/codex.svg"
 description: "Codex CLI、Codex App、Codex IDE 拡張機能で Phaseo Gateway をカスタムプロバイダーとして使用します。"
 ---
+
 Codex は `config.toml` でカスタムモデルプロバイダーを設定できます。CLI、アプリ、IDE の使い方を変えずに、リクエストを Phaseo 経由でルーティングできます。
 
 作業中に Codex から最新の Phaseo ドキュメントも参照したい場合は、[Docs MCP](./docs-mcp.mdx) サーバーも追加してください。
@@ -42,6 +43,7 @@ phaseo codex --model openai/gpt-5.6-terra
 codex --profile phaseo
 ```
 
+同じPhaseo CLIの手順で、分離された一時的なプロバイダー設定を使って[Cline](./cline)、[Kilo Code](./kilo-code)、[oh-my-pi](./oh-my-pi)、[Muse Code](./muse-code)、[MiniMax Code](./minimax-code)も起動できます。
 ## 手動設定
 
 ユーザー設定ファイル `~/.codex/config.toml` を作成または更新します。信頼できるプロジェクトでは、同じ設定をリポジトリ内の `.codex/config.toml` に置くこともできます。

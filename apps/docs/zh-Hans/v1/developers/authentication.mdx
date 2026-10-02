@@ -4,9 +4,7 @@ description: "使用 API 密钥对发送到 Phaseo Gateway 的每个请求进行
 icon: "key-round"
 ---
 
-当你需要发送经过身份验证的请求，或决定如何存储和轮换密钥时，请查阅本参考。
-
-Phaseo Gateway 使用 Bearer 令牌。每个 API 请求都必须包含来自你工作区的有效密钥。
+在[控制台](https://phaseo.app/gateway/keys)创建密钥，将其存储在服务器上，并随 Gateway 请求作为 Bearer 令牌发送。
 
 ---
 
@@ -14,7 +12,8 @@ Phaseo Gateway 使用 Bearer 令牌。每个 API 请求都必须包含来自你�
 
 - **Gateway API 密钥**用于调用工作区可用的模型、提供商和生成端点。
 - **管理 API 密钥**用于调用管理 API。请参阅[管理 API 密钥](./management-api-keys.mdx)。
-- **轮换密钥**可以随时创建；从应用中切换到新密钥后，再删除旧密钥。
+
+轮换密钥时，应先更新应用以使用替代密钥，再使旧凭据失效。参阅[密钥轮换端点](../api-reference/endpoint/keys-rotate.mdx)。
 
 密钥格式为 `phaseo_v1_sk_<kid>_<secret>`。 请像保护密码一样保护密钥，不要将其存储在客户端代码或公开仓库中。
 
@@ -42,7 +41,7 @@ const response = await fetch("https://api.phaseo.app/v1/chat/completions", {
 		"Content-Type": "application/json",
 	},
 	body: JSON.stringify({
-		model: "gpt-5-nano-2025-08-07",
+		model: "openai/gpt-5-nano",
 		messages: [
 			{ role: "system", content: "You are a helpful assistant." },
 			{
@@ -71,5 +70,5 @@ const response = await fetch("https://api.phaseo.app/v1/chat/completions", {
 
 - **401 未授权**：密钥缺失、无效，或属于已停用的工作区。
 - **403 禁止访问**：密钥存在，但无权访问请求的提供商或模型。
-- **429 请求过多**：密钥或工作区超出了限制。请参阅[速率限制](./rate-limits.mdx)。
+- **429 Too Many Requests**：密钥或工作区超出限制。参阅[速率限制](../api-reference/limits.mdx)。
 - **5xx 错误**：使用指数退避后重试；如果问题仍然存在，请联系[支持团队](https://phaseo.app/help)。

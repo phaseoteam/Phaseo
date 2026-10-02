@@ -22,6 +22,11 @@ O tamanho total de uma solicitação geralmente inclui:
 - Prompts muito longos podem reduzir a relevância quando a qualidade do contexto é baixa.
 - Um orçamento de saída muito pequeno pode truncar a resposta e gerar saídas estruturadas inválidas.
 
+O raciocínio pode consumir o orçamento de saída antes de o modelo produzir uma resposta. Essas
+respostas retornam HTTP 200 com o raciocínio produzido, sem inventar
+uma resposta. Chat Completions preserva `reasoning_content` e `finish_reason: "length"`
+quando o limite de saída é atingido. Responses preserva o item de raciocínio e
+informa `status: "incomplete"`. Uma parada normal do provedor continua sendo `stop` ou `completed`.
 ## Estratégia de orçamento
 
 1. Defina um limite máximo de tokens de entrada para cada rota.

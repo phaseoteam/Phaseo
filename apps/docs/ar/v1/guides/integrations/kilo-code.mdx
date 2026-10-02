@@ -1,18 +1,30 @@
 ---
 title: "Kilo Code"
+icon: "/icons/brands/kilo.svg"
 description: "اربط Kilo Code بـ Phaseo باستخدام مزوّد مخصص متوافق مع OpenAI."
 ---
 
-تنشئ Phaseo CLI مفتاحًا مخصصًا لـ Kilo Code وتديره. أضفه كمزوّد مخصص في الإضافة.
+اختر مشغّل Phaseo CLI لجلسة معزولة، أو أنشئ مفتاحًا مخصصًا باستخدام CLI واضبط تثبيت Kilo Code الموجود يدويًا.
 
-## إنشاء بيانات الاعتماد
+## تشغيل Kilo Code عبر Phaseo CLI
+
+لواجهة Kilo Code CLI، دع Phaseo يجهّز إعداد المزوّد لجلسة واحدة:
 
 ```bash
 phaseo login
-phaseo integrations setup kilo-code --model anthropic/claude-sonnet-4.6
+phaseo kilo --model openai/gpt-5.6-terra --
 ```
 
-## تهيئة Kilo Code
+استخدم `--catalog all` لإتاحة كل نماذج النص والدردشة النشطة في Phaseo، أو `--dry-run --json` لمعاينة خطة التثبيت والتشغيل. استخدم `phaseo run kilo ...` لصيغة الأمر الصريحة. يستخدم المشغّل ملف `KILO_CONFIG` مؤقتًا، فلا يستبدل إعداد Kilo Code أو VS Code الموجود.
+
+## إنشاء بيانات الاعتماد باستخدام Phaseo CLI
+
+```bash
+phaseo login
+phaseo setup kilo-code --model anthropic/claude-sonnet-4.6
+```
+
+## إعداد Kilo Code يدويًا
 
 1. افتح Kilo Code في VS Code.
 2. اختر رمز الإعدادات، وافتح **Providers**، ثم اختر **Add custom provider**.
@@ -62,5 +74,5 @@ phaseo integrations remove kilo-code
 ## مواضيع ذات صلة
 
 - [النماذج المخصصة في Kilo Code](https://kilo.ai/docs/code-with-ai/agents/custom-models)
-- [مساعدو البرمجة](./coding-assistants.mdx)
+- [وكلاء البرمجة](./coding-assistants.mdx)
 - [النماذج](../../api-reference/endpoint/models.mdx)

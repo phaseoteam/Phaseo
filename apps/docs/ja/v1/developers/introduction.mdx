@@ -1,100 +1,32 @@
 ---
 title: "Phaseo の仕組み"
-description: "エンドポイント、SDK、ルーティング、本番環境の設定を選ぶ前に、Phaseo Gateway の仕組みを理解しましょう。"
+description: "Phaseoとの連携前に、モデル、プロバイダー、ルーティング、料金を理解します。"
 icon: "terminal"
 ---
 
-Gateway を使った開発を始める前に、全体像を把握するための説明です。
+Phaseoはアプリケーションのモデルリクエストを1つのAPIでプロバイダーに送ります。アプリがモデルとエンドポイントを選び、ワークスペース設定とリクエストの制御によって対応可能なプロバイダーが決まります。
 
-Phaseo は、モデル、プロバイダー、ルーティング、料金、非同期 AI ワークフローに対応する単一の API を提供します。
+## モデルとプロバイダー
 
-これにより、次のことができます。
+モデルは出力を生成するシステムです。プロバイダーはモデルをホストし、利用可否、対応パラメーター、料金、性能を決めます。同じモデルでも複数プロバイダーの提供内容があります。
 
--   一貫した API で複数のプロバイダーを呼び出す
--   リクエストとレスポンスの処理を簡素化する
--   使用量、レイテンシ、料金を一か所で追跡する
--   アプリを作り直さずにモデルやルーティング戦略を変更する
+公開カタログには現在Gatewayで利用できないモデルも含まれます。リクエストでIDを使う前に[モデルの利用可否](../exploring/models.mdx)を確認してください。
 
-<Note>
-クレジットを入金せずに `:free` モデルを利用できます。有料モデルにはウォレット残高が必要です。
-</Note>
+## リクエストとルーティング
 
----
+アプリのプロトコルに応じて[Responses、Chat Completions、Messages](../api-reference/introduction.mdx)を使います。プロバイダーごとに機能は異なり、共通エンドポイントでもすべてのモデルがすべてのパラメーターに対応するわけではありません。
 
-## Gateway を使う理由
+[ルーティング制御](../guides/routing-and-fallbacks.mdx)でプロバイダーを制限し、優先順位を選べます。フォールバックも設定した制限と利用可能な容量に従うため、成功を保証しません。
 
-複数のプロバイダー、モデル、エンドポイント群、デプロイ環境を扱う必要が出ると、AI 統合はすぐに複雑になります。
+## 料金とアクセス
 
-Phaseo はアプリに安定した統合レイヤーを提供します。まずプロダクトの機能を公開し、その後、呼び出し元を書き換えずにモデル、プロバイダー、ルーティング、料金戦略を調整できます。
+管理リクエストはPhaseoワークスペースの残高を使います。`:free`モデルは入金なしで実行できます。プロバイダー認証情報（BYOK）ではプロバイダーの料金とアカウント制限が適用されるため、展開前に[料金と請求](../pricing/tiers.mdx)を確認してください。
 
----
+[動画とバッチのジョブ](../guides/async-video-and-batch.mdx)は処理完了前にジョブを返します。プレビューアクセスはワークスペースごとに管理されます。状態をポーリングするかWebhook更新を受け取り、結果をダウンロードしてください。
 
-## 基本概念
+## 連携を開発する
 
-<Columns cols={2}>
-	<Card
-		title="統一されたエンドポイント"
-		icon="terminal"
-		href="../api-reference/introduction.mdx"
-	>
-		テキスト、画像、モデレーション、音声、動画、プロバイダー互換ルートで共通の API 形式を使用します。
-	</Card>
-	<Card title="ルーティング制御" icon="git-branch" href="../guides/routing-and-fallbacks.mdx">
-		可用性、コスト、レイテンシ、リージョン、ポリシーに応じたリクエストの振り分け方法を選択できます。
-	</Card>
-	<Card title="使用量とコストの追跡" icon="chart-column-increasing">
-		リクエスト数、トークン使用量、レイテンシ、料金を追跡し、本番環境の動作を把握できます。
-	</Card>
-	<Card title="BYOK（独自のキーを使用）" icon="key">
-		Gateway の同じインターフェースを保ちながら、プロバイダー独自の請求や制限を利用する場合は、その API キーを接続します。
-	</Card>
-</Columns>
-
----
-
-## おすすめの手順
-
-1. Phaseo アカウントに**[登録](https://phaseo.app/ja/sign-up)**します。
-2. ダッシュボードで**[API キーを作成](https://phaseo.app/ja/gateway/keys)**します。
-3. `/v1/responses` エンドポイントに**最初のリクエストを送信**します。
-4. SDK、ルーティング、可観測性、デプロイを含む**本番環境への移行方法を選択**します。
-
-<Card
-	title="クイックスタート"
-	icon="rocket"
-	href="../quickstart.mdx"
-	horizontal
->
-	無料モデルを使って、最初の API 呼び出しを成功させましょう。
-</Card>
-
----
-
-## 次のステップ
-
-<Columns cols={2}>
-	<Card
-		title="認証"
-		icon="lock"
-		href="./authentication.mdx"
-	>
-		個人用またはチーム用の API キーを使って安全に認証する方法を確認します。
-	</Card>
-	<Card title="API リファレンス" icon="code" href="../api-reference/introduction.mdx">
-		エンドポイント、パラメーター、レスポンススキーマを含む API ドキュメント全体を確認します。
-	</Card>
-	<Card
-		title="ベストプラクティス"
-		icon="shield-check"
-		href="./best-practices.mdx"
-	>
-		Phaseo Gateway を最大限に活用するためのガイドです。
-	</Card>
-	<Card title="サンプル" icon="terminal" href="../guides/examples.mdx">
-		Next.js、Node.js のストリーミング、Python、curl ですぐに使えるコードをコピーできます。
-	</Card>
-</Columns>
-
----
-
-実装を中心に進めたい場合は、[Gateway の統合](./integrating-with-the-gateway.mdx)を読み、利用規模に応じて[各種連携](../guides/integrations/index.mdx)や[レート制限](./rate-limits.mdx)も確認してください。
+- [クイックスタート](../quickstart.mdx)：最初のリクエストを送信します。
+- [Gateway連携](./integrating-with-the-gateway.mdx)：認証情報をバックエンドに保持し、アプリを設定します。
+- [信頼性と状態](./reliability-and-status.mdx)：利用可否とリクエスト失敗を調べます。
+- [リクエストログと可観測性](../guides/integrations/observability.mdx)：使用量、遅延、コスト、エラーを確認します。

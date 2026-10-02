@@ -139,7 +139,8 @@ Gateway अभी ये built-in server tools देता है:
 ध्यान दें:
 
 - Tool call करते समय मॉडल search query देता है।
-- `engine: "auto"` managed Exa search पर resolve होता है। संबंधित provider key configured हो, तो `engine: "exa"`, `engine: "parallel"` और `engine: "firecrawl"` managed gateway search चलाते हैं।
+- `engine: "auto"` प्रबंधित Exa खोज चुनता है। संबंधित प्रदाता कुंजी सेट होने पर `engine: "exa"`, `engine: "parallel"`, `engine: "firecrawl"` और `engine: "tinyfish"` प्रबंधित गेटवे खोज चलाते हैं।
+- TinyFish Search स्थानीयकृत, पृष्ठों में विभाजित और क्रमबद्ध नतीजे देता है और प्रकाशित योजनाओं में मुफ़्त है; आवश्यकता पर टूल पैरामीटर में `language` और `page` इस्तेमाल करें।
 - `phaseo:web_search` पर `engine: "native"` को request surface के लिए provider-native web-search tool में बदला जाता है, जैसे OpenAI का `web_search_preview` या Anthropic का `web_search_20250305`।
 - `max_results` हर search call के results सीमित करता है; `max_total_results` पूरे server-tool loop के cumulative results सीमित करता है।
 - चुना गया engine matching controls देता हो, तो managed search में `allowed_domains` / `excluded_domains`, `search_context_size` और `max_characters` supported हैं।

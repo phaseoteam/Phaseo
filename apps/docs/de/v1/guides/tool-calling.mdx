@@ -139,7 +139,8 @@ Hinweise:
 Hinweise:
 
 - Das Modell gibt die Suchanfrage beim Tool-Aufruf an.
-- `engine: "auto"` verwendet die verwaltete Exa-Suche. `engine: "exa"`, `engine: "parallel"` und `engine: "firecrawl"` verwenden die verwaltete Gateway-Suche, wenn der passende Provider-Schlüssel konfiguriert ist.
+- `engine: "auto"` nutzt verwaltete Exa-Suche. `engine: "exa"`, `engine: "parallel"`, `engine: "firecrawl"` und `engine: "tinyfish"` führen verwaltete Gateway-Suche aus, wenn der entsprechende Anbieterschlüssel konfiguriert ist.
+- TinyFish Search unterstützt lokalisierte, paginierte und sortierte Ergebnisse und ist in den veröffentlichten Tarifen kostenlos; verwende bei Bedarf `language` und `page` in den Tool-Parametern.
 - `engine: "native"` wird bei `phaseo:web_search` für die jeweilige Anfrageoberfläche in das native Websuch-Tool des Providers umgewandelt, etwa OpenAIs `web_search_preview` oder Anthropics `web_search_20250305`.
 - `max_results` begrenzt die Ergebnisse pro Suchaufruf; `max_total_results` begrenzt die Gesamtergebnisse im Server-Tool-Ablauf.
 - Die verwaltete Suche unterstützt `allowed_domains` / `excluded_domains`, `search_context_size` und `max_characters`, sofern die ausgewählte Suchmaschine entsprechende Einstellungen anbietet.

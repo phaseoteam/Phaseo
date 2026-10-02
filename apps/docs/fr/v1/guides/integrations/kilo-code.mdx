@@ -1,18 +1,30 @@
 ---
 title: "Kilo Code"
+icon: "/icons/brands/kilo.svg"
 description: "Connectez Kilo Code à Phaseo avec un fournisseur personnalisé compatible avec OpenAI."
 ---
 
-Le CLI Phaseo crée et gère une clé dédiée à Kilo Code. Ajoutez-la comme fournisseur personnalisé dans l’extension.
+Choisissez le lanceur de la CLI Phaseo pour une session isolée, ou créez une clé dédiée avec la CLI et configurez manuellement une installation existante de Kilo Code.
 
-## Créer l’identifiant
+## Exécuter Kilo Code avec la CLI Phaseo
+
+Pour la CLI Kilo Code, laissez Phaseo préparer la configuration fournisseur pour une session :
 
 ```bash
 phaseo login
-phaseo integrations setup kilo-code --model anthropic/claude-sonnet-4.6
+phaseo kilo --model openai/gpt-5.6-terra --
 ```
 
-## Configurer Kilo Code
+Utilisez `--catalog all` pour afficher tous les modèles texte/chat Phaseo actifs, ou `--dry-run --json` pour prévisualiser l’installation et le lancement. Utilisez `phaseo run kilo ...` pour la forme explicite de la commande. Le lanceur utilise un fichier `KILO_CONFIG` temporaire ; il n’écrase donc aucune configuration Kilo Code ou VS Code existante.
+
+## Créer l’identifiant avec la CLI Phaseo
+
+```bash
+phaseo login
+phaseo setup kilo-code --model anthropic/claude-sonnet-4.6
+```
+
+## Configurer Kilo Code manuellement
 
 1. Ouvrez Kilo Code dans VS Code.
 2. Sélectionnez l’icône des paramètres, ouvrez **Providers**, puis choisissez **Add custom provider**.
@@ -62,5 +74,5 @@ Sélectionnez `phaseo/<Phaseo model ID>` dans Kilo, mais n’ajoutez pas `phaseo
 ## À lire aussi
 
 - [Modèles personnalisés de Kilo Code](https://kilo.ai/docs/code-with-ai/agents/custom-models)
-- [Assistants de programmation](./coding-assistants.mdx)
+- [Agents de programmation](./coding-assistants.mdx)
 - [Modèles](../../api-reference/endpoint/models.mdx)

@@ -1,192 +1,65 @@
 ---
 icon: "users-round"
-title: "So kannst du mitwirken"
-description: "Schritt-für-Schritt-Anleitung für deinen ersten Beitrag zu Phaseo – von der Einrichtung deiner Umgebung bis zum Erstellen eines Pull Requests."
+title: "Code oder Dokumentation beitragen"
+description: "Phaseo lokal einrichten, eine gezielte Änderung prüfen und einen Pull Request öffnen."
 ---
 
-Zu **Phaseo** beizutragen ist einfach, transparent und für alle offen.
-Diese Anleitung führt dich durch den gesamten Ablauf – ob du einen Modelleinsatz bearbeitest, Benchmarkdaten aktualisierst, die Dokumentation verbesserst oder neue Ideen einbringst.
+Verwenden Sie diesen Ablauf für Code- und Dokumentationsänderungen. Für Modell-, Anbieter-, Preis-, Organisations- oder Benchmark-Datensätze [erstellen Sie stattdessen ein Katalog-Issue](./overview.mdx); eine lokale Einrichtung ist nicht erforderlich.
 
----
+## Ihren Fork einrichten
 
-## Vor dem Start
-
-Du benötigst einige grundlegende installierte Werkzeuge:
-
-| Werkzeug | Zweck | Installation |
-| ------------------ | ---------------------------------------------- | -------------------------------------------------- |
-| **Git**            | Versionsverwaltung zum Klonen und Übertragen von Änderungen.     | [Git installieren](https://git-scm.com/downloads)       |
-| **Node.js (v20+)** | Führt die Phaseo-Website lokal aus (Next.js).      | [Node.js herunterladen](https://nodejs.org/en/download) |
-| **pnpm**           | Paketmanager für dieses Projekt.          | `npm install -g pnpm`                              |
-| **GitHub-Konto** | Wird für Forks, Issues und Pull Requests benötigt. | [Hier registrieren](https://github.com/signup)          |
-
-Wenn du nur **Daten** oder die **Markdown-Dokumentation** bearbeiten möchtest, kannst du Änderungen direkt auf GitHub vornehmen, ohne eine lokale Umgebung einzurichten.
-
----
-
-## 1. Repository forken
-
-Öffne das [Phaseo-GitHub-Repository](https://github.com/phaseoteam/Phaseo) und klicke oben rechts auf **Fork**.
-Dadurch erhältst du eine eigene Kopie des Projekts, die du frei bearbeiten kannst.
-
----
-
-## 2. Fork klonen
+Installieren Sie Git, Node.js ab 22.12 und pnpm. Erstellen Sie einen Fork des [Phaseo-Repositorys](https://github.com/phaseoteam/Phaseo), klonen Sie ihn und erstellen Sie eine neue Branch:
 
 ```bash
 git clone https://github.com/yourusername/Phaseo.git
 cd Phaseo
-```
-
-Dadurch wird dein Fork auf deinen lokalen Rechner geladen.
-
----
-
-## 3. Neuen Branch erstellen
-
-Erstelle am besten für jede Änderung einen neuen Branch:
-
-```bash
-git checkout -b update-benchmark-data
-```
-
-Wähle einen aussagekräftigen Branch-Namen, der deine Änderung beschreibt und die Prüfung erleichtert.
-
-Beispiele:
-
--   `fix-{model-name}`
--   `add-new-organisation`
--   `improve-docs`
--   `update-pricing-for-{model-name}`
-
----
-
-## 4. Änderungen vornehmen
-
-Je nachdem, was du bearbeiten möchtest:
-
-| Bereich | Dateien | Beschreibung |
-| --------------------- | --------------------------------------------- | ----------------------------------------------------- |
-| **Modelldaten**        | `/packages/data/catalog/src/data/models/**/model.json`     | Modellmetadaten, Preise oder Benchmarks ergänzen oder aktualisieren. |
-| **Organisationsdaten** | `/packages/data/catalog/src/data/organisations/*.json`     | Angaben zu Unternehmen oder Forschungsgruppen aktualisieren.    |
-| **Benchmarkdaten**    | `/packages/data/catalog/src/data/benchmarks/**/*.json`     | Neue Bewertungsergebnisse oder Korrekturen einreichen.         |
-| **Dokumentation**     | `/apps/docs/v1/**/*.mdx`                      | Leitfäden, Referenzen und Dokumentationsseiten verbessern oder erweitern. |
-| **Gateway**           | `/apps/api/*`                                 | Änderungen am API-Gateway vornehmen.                      |
-
-Wenn du Daten bearbeitest, halte dich an die Schemas und Feldformate in der [Repositorystruktur](./repo-structure.mdx).
-
----
-
-## 5. Änderungen in der Vorschau ansehen (optional)
-
-Wenn du deine Änderungen lokal in der Vorschau ansehen möchtest:
-
-```bash
+git switch -c docs/improve-quickstart
 pnpm install
-pnpm dev
 ```
 
-Verwende [http://localhost:3100](http://localhost:3100) für Änderungen an der Website und [http://localhost:3101](http://localhost:3101) für Änderungen an der Dokumentation. Datenänderungen lassen sich erst nach dem Erstellen einer PR in der Web-App ansehen, da diese ihre Daten aus der Datenbank bezieht.
+## Die Änderung umsetzen und ansehen
 
----
-
-## 6. Änderungen committen
-
-Wenn du mit deinen Änderungen zufrieden bist, committe sie:
+Die [Repositorystruktur](./repo-structure.mdx) zeigt die passende Anwendung oder das Paket. Bei reinen Markdown-Änderungen können Sie auch den GitHub-Dateieditor verwenden und dort einen Pull Request öffnen.
 
 ```bash
-git add .
-git commit -m "Updated benchmark data for Claude 3.5 Sonnet"
+# Web app at http://localhost:3100
+pnpm --filter @phaseo/web dev
+
+# Documentation at http://localhost:3101
+pnpm --filter @phaseo/docs dev
 ```
 
-Achte auf eine aussagekräftige Commit-Nachricht, damit Reviewer deinen Beitrag nachvollziehen können.
+Befolgen Sie die zutreffenden `AGENTS.md`-Anweisungen. Bewahren Sie Geheimnisse in lokalen Umgebungsdateien auf und nehmen Sie sie nicht in Commits auf. Lokale App-Vorschauen können konfigurierte Backenddienste und eine normale Anmeldung erfordern.
 
----
+## Ihre Änderungen prüfen
 
-## 7. Branch pushen
+Führen Sie die für die geänderten Dateien passenden Prüfungen aus. Für Dokumentation:
 
 ```bash
-git push origin update-benchmark-data
+pnpm docs:links
+pnpm docs:build
 ```
 
----
-
-## 8. Pull Request (PR) erstellen
-
-1. Öffne deinen Fork auf GitHub.
-2. GitHub bietet dir an, eine PR zu erstellen. Klicke auf **Compare & Pull Request**.
-3. Fülle die PR-Vorlage mit den passenden Informationen zu deinen Änderungen aus.
-4. Reiche die PR ein.
-
-Nach Prüfung und Freigabe wird deine PR in das Phaseo-Hauptrepository übernommen.
-
----
-
-## 9. Feiern
-
-Dein Beitrag wird nach dem Merge veröffentlicht. Vielen Dank für deinen Einsatz und deine Unterstützung.
-
-<Card
-	title="Mitwirkende ansehen"
-	icon="users"
-	href="https://phaseo.app/contribute"
-	horizontal
->
-	Sieh dir alle an, die beim Aufbau von Phaseo geholfen haben.
-</Card>
-
----
-
-## Tipps für Beiträge
-
--   Halte PRs **klein und fokussiert** – eine zusammenhängende Änderung pro PR.
--   Verwende nach Möglichkeit [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) und **eindeutige Präfixe** wie `fix:`, `add:` oder `chore:`.
--   Wenn deine Änderung die Datenrichtigkeit betrifft, füge **Quellen oder Belege** hinzu.
--   Besprich größere oder noch unklare Ideen vor dem Programmieren in einer **GitHub-Diskussion** oder auf Discord.
--   Bleib stets respektvoll und halte dich an unseren [Verhaltenskodex](../community/code-of-conduct.mdx).
-
----
-
-## Beispielhafter Ablauf
+Für Webänderungen:
 
 ```bash
-# 1. Fork and clone
-
-git clone https://github.com/yourusername/Phaseo.git
-cd Phaseo
-
-# 2. Create branch
-git checkout -b add-openai-new-model
-
-# 3. Make changes
-# e.g., update packages/data/catalog/src/data/models/openai/new-model/model.json
-
-# 4. Commit and push
-git add .
-git commit -m "Add new OpenAI model entry"
-git push origin add-new-openai-model
-
-# 5. Create a Pull Request on GitHub
+pnpm --filter @phaseo/web lint
+pnpm --filter @phaseo/web typecheck
+pnpm --filter @phaseo/web test
 ```
 
----
+Führen Sie bei Rendering- oder Routingänderungen einen Produktionsbuild aus. API-, SDK- und Schemaänderungen erfordern die entsprechenden Tests und Generierungsschritte. Siehe den [Beitragsleitfaden](https://github.com/phaseoteam/Phaseo/blob/main/CONTRIBUTING.md) im Stammverzeichnis.
 
-## Nächste Schritte
+## Einen Pull Request öffnen
 
-<Columns cols={2}>
-	<Card
-		title="Repositorystruktur"
-		icon="folder-tree"
-		href="./repo-structure.mdx"
-	>
-		Erfahre mehr über die Ordnerstruktur und den Speicherort wichtiger Datendateien.
-	</Card>
-	<Card
-		title="Ein Modell bearbeiten"
-		icon="brain"
-		href="./editing-a-model.mdx"
-	>
-		Beginne mit einem praktischen Beispiel: einen Modelleinsatz aktualisieren oder hinzufügen.
-	</Card>
-</Columns>
+Stagen Sie nur die geänderten Dateien, verwenden Sie eine aussagekräftige Commitnachricht und pushen Sie Ihre Branch:
 
+```bash
+git add apps/docs/v1/quickstart.mdx
+git commit -m "docs: clarify the quickstart"
+git push -u origin docs/improve-quickstart
+```
+
+Öffnen Sie einen Pull Request aus Ihrem Fork. Beschreiben Sie das Problem, die Änderungen und bestandene Prüfungen. Verlinken Sie zugehörige Issues und fügen Sie bei sichtbaren UI-Änderungen Screenshots hinzu. Bearbeiten Sie Reviewfeedback vor dem Merge; Änderungen sind nach Abschluss der entsprechenden Bereitstellung verfügbar.
+
+Befolgen Sie den [Verhaltenskodex](../community/code-of-conduct.mdx). Besprechen Sie größere oder unklare Änderungen vor dem Schreiben von Code.

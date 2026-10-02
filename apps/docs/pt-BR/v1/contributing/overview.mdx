@@ -1,154 +1,35 @@
 ---
-title: "Contribuindo com o Phaseo"
-description: "Aprenda a contribuir com dados, documentação ou melhorias para o projeto Phaseo e ajude a criar o banco de dados de IA mais completo do mundo."
+title: "Contribuir com o Phaseo"
+description: "Escolha o fluxo certo para um relato do catálogo, edição de documentação ou contribuição de código."
 sidebarTitle: "Contribuições"
 icon: "handshake"
 ---
 
-O Phaseo é um **projeto aberto e conduzido pela comunidade**, criado para tornar o máximo possível de informações sobre modelos de IA, benchmarks e provedores acessível gratuitamente a todos.
+Para correções e adições ao catálogo, abra uma issue com o registro afetado e fontes de apoio. Para alterações de código ou documentação, envie uma solicitação de alteração ao [repositório do Phaseo](https://github.com/phaseoteam/Phaseo).
 
-Suas contribuições ajudam a manter a plataforma precisa, transparente e atualizada.  
-Seja corrigindo um erro de digitação, adicionando dados de benchmark ou melhorando a documentação, toda contribuição faz diferença.
+## Escolher sua contribuição
 
----
+| Alteração | Comece aqui |
+| --- | --- |
+| Metadados, capacidades, disponibilidade ou preços de modelos | [Relatar atualização de modelo](./editing-a-model.mdx) |
+| Detalhes de empresas ou organizações de pesquisa | [Relatar atualização de organização](./editing-an-organisation.mdx) |
+| Resultados de benchmarks | [Enviar pontuações](../research/submitting-scores.mdx) |
+| Outras correções do catálogo | [Relatar informações incorretas](https://github.com/phaseoteam/Phaseo/issues/new?template=incorrect-info.yml) |
+| Provedores ou outros dados do catálogo ausentes | [Solicitar novos dados](https://github.com/phaseoteam/Phaseo/issues/new?template=data-request.yml) |
+| Documentação ou código | [Fluxo de contribuição](./how-to-contribute.mdx) e [estrutura do repositório](./repo-structure.mdx) |
 
-## Por que contribuir?
+## Como relatos do catálogo são publicados
 
-A IA evolui cada vez mais rápido: novos modelos, atualizações e mudanças de preços surgem todos os dias.  
-Ao contribuir, você ajuda a:
+Os mantenedores revisam as evidências da issue e aplicam alterações aprovadas pelo [editor interno](https://phaseo.app/internal/data), exclusivo de administradores. Atualizações de preços dos provedores exigem revisão explícita antes da publicação.
 
--   Manter atualizados e confiáveis os dados de modelos, organizações e benchmarks
--   Melhorar a precisão das comparações de IA entre provedores
--   Compartilhar descobertas de pesquisas, contribuições da comunidade ou metadados ausentes
--   Fortalecer o ecossistema aberto de transparência em IA
--   Garantir que o banco de dados continue acessível gratuitamente e pertencente à comunidade
+O banco de dados é a fonte de verdade do catálogo. Snapshots JSON públicos diários continuam disponíveis, mas nem sua edição nem solicitações de alteração de JSON arquivado atualizam o catálogo ativo. O importador JSON antigo foi aposentado.
 
-Seu nome também aparecerá na [página de colaboradores](https://phaseo.app/contribute), em reconhecimento pelas suas contribuições.
+## Antes de enviar
 
----
+- Inclua a página ou ID do registro afetado e descreva a correção proposta.
+- Cite fontes oficiais e diferencie resultados de benchmarks publicados de medições independentes.
+- Mantenha cada relato ou solicitação de alteração focado.
+- Nunca inclua credenciais ou dados privados de clientes.
+- Siga o [Código de conduta](../community/code-of-conduct.mdx).
 
-## No que você pode contribuir
-
-<Columns cols={2}>
-	<Card
-		title="Dados de modelos"
-		icon="brain"
-		href="./editing-a-model.mdx"
-	>
-		Atualize ou adicione informações sobre modelos, como recursos, benchmarks ou preços.
-	</Card>
-	<Card
-		title="Dados de organizações"
-		icon="building"
-		href="./editing-an-organisation.mdx"
-	>
-		Adicione ou corrija detalhes sobre empresas ou grupos de pesquisa responsáveis pelos modelos.
-	</Card>
-</Columns>
-
----
-
-## Visão geral do fluxo de contribuição
-
-1. **Faça um fork** do [repositório do Phaseo no GitHub](https://github.com/phaseoteam/Phaseo).
-2. **Crie uma branch** para suas alterações (por exemplo, `fix-model-data` ou `add-new-benchmark`).
-3. **Edite os arquivos JSON ou Markdown** conforme a estrutura descrita em [Estrutura do repositório](./repo-structure.mdx).
-4. **Teste suas alterações localmente** se for pertinente (por exemplo, conferindo-as no frontend do Next.js).
-5. **Faça commit e envie** suas alterações.
-6. **Abra um pull request (PR)** e descreva o que foi alterado e por quê.
-
-Após a revisão e aprovação, sua contribuição será integrada e ficará visível no banco de dados ativo do Phaseo.
-
----
-
-## Tipos de contribuição
-
-| Tipo                   | Exemplo                                                 | Dificuldade |
-| ---------------------- | ------------------------------------------------------- | ---------- |
-| **Correção de dados**           | Corrigir nomes de modelos, provedores ou valores de benchmark. | Fácil       |
-| **Nova entrada**          | Adicionar um modelo, benchmark ou organização.         | Moderada   |
-| **Alteração estrutural**  | Ajustar a estrutura do banco de dados ou do esquema.                    | Avançada   |
-| **Adição de funcionalidade**   | Adicionar componentes de interface ou lógica do Next.js.                  | Avançada   |
-| **Edição da documentação** | Melhorar arquivos Markdown ou guias.                     | Fácil       |
-
-Seja qual for a alteração que você deseja fazer, aceitamos contribuições de todos os tamanhos e níveis de complexidade.
-
----
-
-## Diretrizes e padrões
-
-Todas as contribuições devem seguir estes padrões para garantir a qualidade e a consistência dos dados:
-
--   **Fontes confiáveis:** Inclua apenas dados verificados ou publicados oficialmente.
--   **Formatação consistente:** Use corretamente maiúsculas, indentação e chaves do esquema.
--   **Alterações versionadas:** Escreva descrições claras nos changelogs ou nas mensagens de commit.
--   **Referências:** Inclua links para as fontes dos dados nas descrições dos pull requests.
--   **Comunicação respeitosa:** Siga nosso [Código de Conduta](../community/code-of-conduct.mdx).
-
----
-
-## Exemplo de fluxo de contribuição
-
-```bash
-# 1. Fork and clone the repo
-git clone https://github.com/yourusername/Phaseo.git
-
-# 2. Create a new branch
-git checkout -b add-openai-new-model
-
-# 3. Make your edits
-# e.g. edit packages/data/catalog/src/data/models/openai/new-model/model.json
-
-# 4. Stage, commit, and push
-git add .
-git commit -m "Added new OpenAI model with updated benchmark data"
-git push origin add-openai-new-model
-
-# 5. Open a Pull Request on GitHub
-# Describe your changes and link any sources
-```
-
----
-
-## Precisa de ajuda?
-
-Se não souber como contribuir ou quiser receber comentários antes de enviar, você pode:
-
--   Pergunte no [Discord do Phaseo](https://discord.gg/aQyywCvgZ5).
--   Abra uma **discussão no GitHub** para perguntas ou sugestões.
--   Mencione os mantenedores no pull request para receber orientação durante a revisão.
-
-<Card
-	title="Como contribuir"
-	icon="handshake"
-	href="./how-to-contribute.mdx"
-	horizontal
->
-	Aprenda passo a passo como fazer sua primeira contribuição.
-</Card>
-
-Agradecemos muito todas as contribuições, grandes ou pequenas, pois ajudam a criar e manter este recurso valioso para a comunidade de IA.
-
----
-
-## Próximas etapas
-
-Veja a seguir o processo de contribuição específico da área de seu interesse:
-
-<Columns cols={2}>
-	<Card
-		title="Como contribuir"
-		icon="compass"
-		href="./how-to-contribute.mdx"
-	>
-		Entenda o fluxo detalhado para editar arquivos e criar pull requests.
-	</Card>
-	<Card
-		title="Estrutura do repositório"
-		icon="folder-tree"
-		href="./repo-structure.mdx"
-	>
-		Saiba como o repositório do Phaseo está organizado.
-	</Card>
-</Columns>
-
+Discuta alterações maiores de esquema ou recursos com os mantenedores antes de implementar. Peça ajuda no [Discord](https://discord.gg/aQyywCvgZ5) se não souber onde uma alteração se encaixa.

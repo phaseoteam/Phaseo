@@ -1,18 +1,30 @@
 ---
 title: "Cline"
+icon: "/icons/brands/cline.svg"
 description: "Connectez Cline à Phaseo via son fournisseur compatible avec OpenAI."
 ---
 
-Le CLI Phaseo crée et gère une clé dédiée à Cline. Cline stocke les identifiants dans le coffre sécurisé de VS Code ; la saisie finale se fait donc dans l’interface de l’extension.
+Choisissez le lanceur de la CLI Phaseo pour une session isolée, ou créez une clé dédiée avec la CLI et configurez manuellement une installation existante de Cline. Cline conserve les identifiants dans le stockage sécurisé des secrets de VS Code ; la saisie finale se fait dans l’interface de l’extension.
 
-## Créer l’identifiant
+## Exécuter Cline avec la CLI Phaseo
+
+Pour la CLI Cline, laissez Phaseo préparer la configuration fournisseur pour une session :
 
 ```bash
 phaseo login
-phaseo integrations setup cline --model anthropic/claude-sonnet-4.6
+phaseo cline --model openai/gpt-5.6-terra -- --tui
 ```
 
-## Configurer Cline
+Utilisez `--catalog all` pour afficher tous les modèles texte/chat Phaseo actifs, ou `--dry-run --json` pour prévisualiser l’installation et le lancement. Utilisez `phaseo run cline ...` pour la forme explicite de la commande. Le lanceur utilise des réglages et des répertoires de données Cline temporaires ; il n’écrase donc aucune configuration Cline ou VS Code existante.
+
+## Créer l’identifiant avec la CLI Phaseo
+
+```bash
+phaseo login
+phaseo setup cline --model anthropic/claude-sonnet-4.6
+```
+
+## Configurer Cline manuellement
 
 1. Ouvrez le panneau Cline dans VS Code.
 2. Sélectionnez l’icône des paramètres ou le fournisseur sous la zone de chat.
@@ -59,5 +71,5 @@ Choisissez un modèle Phaseo compatible avec les appels d’outils. La connectiv
 ## À lire aussi
 
 - [Configuration Cline compatible avec OpenAI](https://docs.cline.bot/enterprise-solutions/configuration/remote-configuration/openai-compatible/member-configuration)
-- [Assistants de programmation](./coding-assistants.mdx)
+- [Agents de programmation](./coding-assistants.mdx)
 - [Modèles](../../api-reference/endpoint/models.mdx)

@@ -107,6 +107,45 @@ phaseo guardrails create --name "Production Safety" --body-json '{"enabled":true
 
 CLI 可在终端中使用 Phaseo 控制台和管理 API 的常用功能。
 
+## 启动受支持的编程环境
+
+持久集成直接使用产品名称：
+
+```bash
+phaseo codex
+phaseo claude-code
+phaseo deepseek-harness
+phaseo opencode
+phaseo pi
+phaseo prime-agent
+phaseo openclaw
+phaseo aider
+phaseo roo-code
+phaseo kilo-code
+phaseo continue
+phaseo cursor
+phaseo zed
+```
+
+根据需要使用 `--model`、`--catalog all|default` 或 `--dry-run`。旧的 `phaseo integrations setup <integration>` 形式仍保留以兼容，但并非必需。
+
+CLI 可使用临时提供商配置和专用 Phaseo 密钥启动 Cline、Kilo Code、oh-my-pi、Muse Code 和 MiniMax Code。每个环境都有介绍设置和故障排除的集成指南：[Cline](./cline)、[Kilo Code](./kilo-code)、[oh-my-pi](./oh-my-pi)、[Muse Code](./muse-code) 和 [MiniMax Code](./minimax-code)。
+
+```bash
+phaseo cline --model openai/gpt-5.6-terra -- --tui
+phaseo kilo --model openai/gpt-5.6-terra --
+phaseo omp --model openai/gpt-5.6-terra --
+phaseo muse --model meta/muse-spark-1.3 --
+phaseo minimax --model openai/gpt-5.6-terra --
+```
+
+显式形式为 `phaseo run <cline|kilo|omp|muse|minimax>`。Phaseo 选项放在 `--` 之前，编程环境选项放在之后。使用 `--catalog all` 同步所有活跃的 Phaseo 文本/聊天模型；或通过以下命令预览而不创建凭据：
+
+```bash
+phaseo cline --model openai/gpt-5.6-terra --dry-run --json
+```
+
+缺少 Cline、Kilo Code 或 oh-my-pi 时，会交互式提供安装选项。Muse Code 和 MiniMax Code 在命令缺失时使用官方安装程序。Windows 上的 MiniMax Code 使用官方 PowerShell 安装程序；如单独管理这些环境，请使用 `--skip-install`。启动器不会覆盖现有 Cline、Kilo、oh-my-pi、Muse Code 或 MiniMax Code 配置。
 ## OAuth 应用
 
 Phaseo 为官方 CLI、用户创建的应用和动态注册的 MCP 客户端使用同一个 OAuth 授权服务器。CLI 使用浏览器或设备代码登录，并轮换刷新令牌。第三方客户端使用带 PKCE 的授权码流程、显式作用域和工作区同意、可撤销的委托访问令牌，并可选择绑定受保护资源。
@@ -162,3 +201,8 @@ bun add -g @phaseo/cli@latest
 - [身份验证](../../developers/authentication.mdx)
 - [Codex](./codex.mdx)
 - [Claude Code](./claude-code.mdx)
+- [Cline](./cline)
+- [Kilo Code](./kilo-code)
+- [oh-my-pi](./oh-my-pi)
+- [Muse Code](./muse-code)
+- [MiniMax Code](./minimax-code)

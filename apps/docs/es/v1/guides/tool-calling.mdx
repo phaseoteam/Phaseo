@@ -139,7 +139,8 @@ Notas:
 Notas:
 
 - El modelo proporciona la consulta de búsqueda al llamar a la herramienta.
-- `engine: "auto"` se resuelve en la búsqueda gestionada de Exa. `engine: "exa"`, `engine: "parallel"` y `engine: "firecrawl"` ejecutan la búsqueda gestionada del gateway cuando está configurada la clave del proveedor correspondiente.
+- `engine: "auto"` selecciona la búsqueda administrada de Exa. `engine: "exa"`, `engine: "parallel"`, `engine: "firecrawl"` y `engine: "tinyfish"` ejecutan la búsqueda administrada del gateway cuando está configurada la clave del proveedor correspondiente.
+- TinyFish Search ofrece resultados clasificados, localizados y paginados y es gratuito en sus planes publicados; usa `language` y `page` en los parámetros de la herramienta cuando sea necesario.
 - `engine: "native"` en `phaseo:web_search` se convierte en la herramienta de búsqueda web nativa del proveedor para esa interfaz de solicitud, como `web_search_preview` de OpenAI o `web_search_20250305` de Anthropic.
 - `max_results` limita cada búsqueda; `max_total_results` limita los resultados acumulados durante el ciclo de herramientas del servidor.
 - La búsqueda gestionada admite `allowed_domains`/`excluded_domains`, `search_context_size` y `max_characters` cuando el motor seleccionado ofrece esos controles.

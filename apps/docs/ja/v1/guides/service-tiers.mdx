@@ -1,6 +1,6 @@
 ---
 title: "サービス階層"
-description: "Phaseo GatewayにおけるStandard、Fast、Flex、Batchの料金モードの仕組み。"
+description: "Phaseo GatewayのStandard、Fast、Ultrafast、Flex、Batch料金モードの仕組み。"
 icon: "gauge"
 ---
 
@@ -24,6 +24,7 @@ icon: "gauge"
 | --- | --- | --- |
 | `Standard` | デフォルトの動作です。追加のフィールドは必要ありません。 | 通常の本番トラフィック。 |
 | `Fast` | リクエストに`service_tier: "fast"`を設定します。 | 対応している場合に高速またはプレミアムなルーティングを使います。OpenAIでは`priority`も指定できます。 |
+| `Ultrafast` | リクエストに`service_tier: "ultrafast"`を設定します。 | 対応している場合に最高速のルーティングを使います。 |
 | `Flex` | リクエストに`service_tier: "flex"`を設定します。 | 対応している場合に低コストのルーティングを使います。 |
 | `Batch` | `service_tier`ではなくBatch APIを使います。 | レイテンシがそれほど重要でない、大規模な遅延処理向けです。 |
 
@@ -36,7 +37,7 @@ icon: "gauge"
 - [Responses APIリファレンス](../api-reference/endpoint/responses.mdx)
 - [共通パラメーターリファレンス](../api-reference/parameters.mdx)
 
-`service_tier`で指定できる値は`standard`、`fast`、`priority`、`flex`、`batch`です。`service_tier`を省略した場合は`Standard`がデフォルトです。Phaseoではプレミアム階層の正式名称に`Fast`を使います。OpenAIルートでは、プロバイダー互換エイリアスの`priority`も受け付け、同じルーティングと料金が適用されます。`Batch`は同期テキストリクエストではなくBatch APIで処理します。
+`service_tier`で指定できる値は`standard`、`fast`、`ultrafast`、`priority`、`flex`、`batch`です。`service_tier`を省略した場合は`Standard`がデフォルトです。Phaseoではプレミアム階層の正式名称に`Fast`を使います。OpenAIルートでは、プロバイダー互換エイリアスの`priority`も受け付け、同じルーティングと料金が適用されます。`Batch`は同期テキストリクエストではなくBatch APIで処理します。
 
 <Note>
 Phaseoは正規化されたGatewayの値を、内部でプロバイダー固有の設定にマッピングします。たとえばAnthropicルートでは上流にAnthropic固有の階層フィールドを送る場合がありますが、クライアント側のリクエストではここに記載したGatewayの値を使います。
@@ -112,6 +113,17 @@ Phaseoは、Mistralが公開しているBatchとPriorityの基準料金を、実
 BatchにはグローバルMistral Batch APIを使う必要があります。Priorityを利用できるかどうかは、
 引き続きMistralアカウントとモデルによって決まります。
 
+## Ultrafast
+
+モデルとプロバイダーが対応している場合、最高速のサービス階層には`Ultrafast`を使います。PhaseoはUltrafast料金またはUltrafast専用のルートだけを使い、この階層が利用できなくてもFastやStandardにフォールバックしません。
+
+```json
+{
+  "model": "<model-id-with-ultrafast-pricing>",
+  "input": "Summarise this incident report.",
+  "service_tier": "ultrafast"
+}
+```
 ## Flex
 
 プロバイダーが低コストのサービス階層を提供しており、その料金モードに伴うトレードオフを許容できる場合は`Flex`を使います。

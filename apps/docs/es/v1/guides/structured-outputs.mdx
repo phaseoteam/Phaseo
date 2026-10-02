@@ -68,7 +68,27 @@ curl https://api.phaseo.app/v1/chat/completions \
 - Para `json_schema`, incluye un objeto de esquema (`response_format.json_schema.schema` en solicitudes tipo chat o `text.format.schema` en solicitudes tipo Responses).
 - Valida el JSON en tu servidor antes de usarlo en otros sistemas.
 
-## Guías siguientes
+## Diseña tu esquema
 
-1. [Esquemas de salida estructurada](./structured-outputs-schemas.mdx)
-2. [Patrones de validación y alternativas](./structured-outputs-validation.mdx)
+Empieza con un objeto pequeño, marca explícitamente los campos obligatorios y usa enumeraciones para las categorías conocidas. Define `additionalProperties: false` cuando deban rechazarse las claves adicionales. Mantén sincronizados el esquema solicitado y el validador del servidor; versiónalos juntos.
+
+## Valida el resultado
+
+Analiza y valida el resultado completo antes de usarlo posteriormente. Este ejemplo de TypeScript usa Zod y coincide con el esquema meteorológico anterior:
+
+```typescript
+import { z } from "zod";
+
+const Weather = z.object({
+  city: z.string(),
+  weather: z.string(),
+}).strict();
+
+function parseWeather(content: string) {
+  return Weather.parse(JSON.parse(content));
+}
+```
+
+Gestiona rechazos, contenido ausente y respuestas truncadas antes de analizar. Si falla la validación, permite como máximo un número limitado de reintentos correctivos y después devuelve un fallo seguro. Las generaciones reintentadas pueden generar cargos adicionales. Un JSON válido no demuestra que los valores sean correctos ni autoriza una acción.
+
+Registra los fallos de validación por modelo y versión del esquema. Vuelve a comprobar tus casos de evaluación cuando cambie cualquiera de los dos. Para recuperar JSON mal formado, consulta [reparación de respuestas](../cookbook/response-healing-for-structured-json.mdx).

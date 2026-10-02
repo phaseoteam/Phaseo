@@ -13,9 +13,12 @@ Use esta página para encontrar o caminho de API correto antes de abrir a refer�
 | --- | --- |
 | Enviar sua primeira solicitação | [Início rápido](../quickstart.mdx) |
 | Gerar texto ou usar ferramentas | `POST /responses` |
+| Tomar decisões tipadas | [`POST /decisions`](./endpoint/decisions) |
 | Manter uma integração OpenAI compatível existente | `POST /chat/completions` |
 | Consultar modelos e provedores | `GET /models` e `GET /providers` |
 | Criar música ou gerenciar arquivos | `POST /music/generations` e `POST /files` |
+| Gerar vídeo (Beta) | [`POST /videos`](./endpoint/video-create) |
+| Enviar um lote ou baixar resultados (Beta) | [`POST /batches`](./endpoint/batches-create) e [`GET /batches/{batch_id}/results`](./endpoint/batches-results) |
 
 ## URL base
 
@@ -34,14 +37,15 @@ Use o arquivo OpenAPI para importar a API no Postman, Hoppscotch ou em um gerado
 <Card
   title="OpenAPI do Phaseo Gateway"
   icon="list-bullet"
-  href="https://github.com/phaseoteam/Phaseo/blob/main/apps/docs/openapi/v1/openapi.public.yaml"
+	href="https://github.com/phaseoteam/Phaseo/blob/main/apps/docs/openapi/v1/openapi.yaml"
 >
   Ver o arquivo de especificação
 </Card>
 
+A documentação e os SDKs usam a mesma especificação. Os endpoints Video, Batch e Decisions são marcados como **Beta**; pode ser necessário acesso de prévia no espaço de trabalho.
 ## Autenticação
 
-A maioria dos endpoints exige uma chave de API padrão do Gateway. Endpoints de gerenciamento exigem uma chave de API de gerenciamento criada no painel.
+Use uma chave de API padrão do Gateway para inferência e uma chave de API de gerenciamento com permissões adequadas para administração. Veja [Autenticação](../developers/authentication.mdx) e [Chaves de API de gerenciamento](../developers/management-api-keys.mdx).
 
 ```http
 Authorization: Bearer phaseo_v1_sk_<kid>_<secret>
@@ -53,22 +57,15 @@ Se a autenticação falhar, a API retornará `401`.
 
 | Recurso | Função |
 | --- | --- |
-| API de Responses | Gerar respostas de modelos com ferramentas, saída estruturada e entrada multimodal. |
-| Chat Completions | Manter uma integração de chat OpenAI compatível existente. |
-| Anthropic Messages | Manter uma integração Messages compatível com Anthropic. |
-| Embeddings | Criar representações vetoriais para pesquisa, recuperação e classificação. |
-| Imagens | Gerar ou editar imagens. |
-| Texto para fala | Gerar áudio falado a partir de texto. |
-| Fala para texto | Transcrever ou traduzir áudio. |
-| Geração de música | Criar tarefas de geração de música e consultar o status delas. |
-| Arquivos | Enviar e recuperar entradas para fluxos de trabalho de API compatíveis. |
-| Modelos, provedores e endpoints | Descobrir o que está disponível no Gateway. |
-| Preços, atividade e gerações | Estimar custos e consultar os resultados das solicitações. |
-| Chaves de API e espaços de trabalho | Gerenciar o acesso programático e os recursos do espaço de trabalho. |
+| Inferência | Gere texto, imagens, áudio e embeddings; tome decisões, reordene, modere ou analise conteúdo. Comece com [Responses](./endpoint/responses.mdx) ou [Decisions](./endpoint/decisions.mdx). |
+| Tarefas assíncronas e arquivos | Envie tarefas de [vídeo](./endpoint/video-create.mdx) ou [lotes](./endpoint/batches-create.mdx), transfira arquivos e configure webhooks. |
+| Modelos e preços | Descubra [modelos](./endpoint/models.mdx), ofertas de provedores e [custos estimados](./endpoint/pricing-calculate.mdx). |
+| Roteamento e políticas | Configure predefinições, credenciais de provedores, modelos privados e [proteções](./endpoint/guardrails.mdx). |
+| Uso e monitoramento | Examine [logs](./endpoint/logs-list.mdx), atividade, análises, avaliações e saúde do serviço. |
+| Gerenciamento de espaços de trabalho | Gerencie [espaços de trabalho](./endpoint/workspaces-list.mdx), chaves, orçamentos, identidades e integrações. |
 
 ## Cobrança e limites de taxa
 
-- A Phaseo não aplica limites de taxa próprios. Os limites são definidos pelos provedores upstream.
+- Trate a limitação do provedor e as políticas de acesso aplicáveis com o [guia de limites](./limits.mdx).
 - Solicitações pagas exigem saldo suficiente na carteira para passar pela verificação prévia de créditos.
 - Modelos gratuitos com `:free` não exigem créditos depositados.
-

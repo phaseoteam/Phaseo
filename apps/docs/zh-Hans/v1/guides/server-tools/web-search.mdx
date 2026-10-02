@@ -9,7 +9,7 @@ description: "让模型在请求期间搜索网页。"
 Phaseo 会向模型返回 URL、标题、摘要片段、高亮内容以及可选的页面文本，帮助模型生成有依据的回复。
 
 <Note>
-Phaseo 服务器工具尚未启用 Google 原生网页搜索。请在受支持的 OpenAI 和 Anthropic 路由上使用托管搜索或供应商原生搜索。
+TinyFish Search 可作为可选的托管搜索引擎使用。受支持的路由仍可通过 `engine: "native"` 使用提供商原生搜索。
 </Note>
 
 ## 工作方式
@@ -58,7 +58,7 @@ curl https://api.phaseo.app/v1/chat/completions \
 
 | 参数 | 类型 | 默认值 | 说明 |
 | --- | --- | --- | --- |
-| `engine` | string | `exa` | 搜索引擎：`auto`、`native`、`exa`、`parallel`、`firecrawl` 或 `perplexity`。 |
+| `engine` | string | `exa` | 搜索引擎：`auto`、`native`、`exa`、`parallel`、`firecrawl`、`perplexity` 或 `tinyfish`。 |
 | `max_results` | integer | `5` | 每次搜索调用返回的最大结果数。 |
 | `max_total_results` | integer | `10` | 服务器工具循环中的累计结果数上限。 |
 | `max_uses` | integer | `10` | 服务器工具循环中的最大搜索调用次数。 |
@@ -69,6 +69,8 @@ curl https://api.phaseo.app/v1/chat/completions \
 | `include_highlights` | boolean | `true` | 如果搜索引擎提供高亮或摘要片段，则将其包含在内。 |
 | `include_text` | boolean | `false` | 如果搜索引擎支持，则包含更完整的结果文本。 |
 | `user_location` | object | none | 支持本地化搜索的引擎可使用的可选位置提示。 |
+| `language` | 字符串 | 无 | TinyFish 语言提示，例如 `en`。 |
+| `page` | 整数 | `0` | TinyFish 结果页，范围为 `0` 到 `10`。 |
 
 ## 搜索引擎选择
 
@@ -79,9 +81,30 @@ curl https://api.phaseo.app/v1/chat/completions \
 | `parallel` | 已配置时使用 Parallel 搜索。 |
 | `firecrawl` | 已配置时使用 Firecrawl 搜索。 |
 | `perplexity` | 已配置时使用 Perplexity 官方 Search API。支持排序结果、`search_context_size`、根据 `user_location.country` 进行区域搜索，以及允许或排除域名。 |
+| `tinyfish` | 配置 `TINYFISH_API_KEY` 时使用 TinyFish Search。支持本地化、分页的排序结果，并将 `allowed_domains` / `excluded_domains` 转换为搜索运算符。TinyFish Search 不提供页面全文；需要更完整内容时，请使用 `phaseo:web_fetch`。 |
 | `native` | 如果请求接口支持，会在调用上游模型之前将声明转换为供应商原生网页搜索工具。 |
 
 `engine: "native"` 只能用于工具声明。如果模型在已发出的网关搜索调用中传入 `engine: "native"`，Phaseo 会返回工具错误，因为必须在发送上游请求之前选择原生工具。
+
+## TinyFish Search
+
+在 Phaseo 网关运行时密钥中配置 `TINYFISH_API_KEY` 以启用引擎，然后在工具参数中选择它：
+
+```json
+{
+  "type": "phaseo:web_search",
+  "parameters": {
+    "engine": "tinyfish",
+    "language": "en",
+    "page": 0,
+    "max_results": 5,
+    "allowed_domains": ["phaseo.app", "github.com"],
+    "excluded_domains": ["reddit.com"]
+  }
+}
+```
+
+`language` 提供语言区域提示，`page` 选择 `0` 到 `10` 的结果页。TinyFish 支持两种域名筛选列表；Phaseo 将其转换为搜索运算符。结果包含 URL、标题和摘要/高亮片段。模型需要更完整的结果文本时，请使用 `phaseo:web_fetch`。
 
 ## 域名过滤
 
@@ -98,7 +121,9 @@ curl https://api.phaseo.app/v1/chat/completions \
 
 如果允许广泛搜索网页，但需要从结果中排除特定域名，请使用 `excluded_domains`。
 
-Perplexity 和 Firecrawl 在一次搜索调用中只能接受 `allowed_domains` 或 `excluded_domains` 之一，不能同时使用。Perplexity 每个请求最多接受 20 个域名过滤条件，并会将排除域名映射为其拒绝列表格式。
+Perplexity and Firecrawl accept either `allowed_domains` or `excluded_domains` in a single search call, not both. Perplexity accepts up to 20 domain filters per request and maps excluded domains to its denylist format. TinyFish 将两个数组转换为查询中的 `site:` 和 `-site:` 运算符。
+
+TinyFish Search 在其公开计划中免费，因此 Phaseo 不会对 `engine: "tinyfish"` 增加提供商使用费；正常的 Phaseo 请求和令牌定价仍然适用。
 
 ## Responses API
 

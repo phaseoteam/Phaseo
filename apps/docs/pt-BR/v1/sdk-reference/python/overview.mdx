@@ -6,7 +6,73 @@ description: "Cliente Python oficial da API do Phaseo Gateway"
 
 Instale pelo PyPI o pacote publicado [~phaseo~](https://pypi.org/project/phaseo/).
 
-Atualmente, o SDK Python do Phaseo oferece um cliente síncrono para a API do Phaseo Gateway.
+O SDK Python do Phaseo oferece os clientes síncrono `Phaseo` e assíncrono nativo `AsyncPhaseo`.
+
+## Solicitações assíncronas nativas
+
+```python
+import asyncio
+from phaseo import AsyncPhaseo
+
+async def main():
+    async with AsyncPhaseo() as client:
+        response = await client.responses.create({"model": "openai/gpt-5-nano", "input": "Hello"})
+        print(response.output_text, response.request_id, response.trace_url)
+
+asyncio.run(main())
+```
+
+Use `async for event in client.responses.stream(request)` para eventos de texto analisados.
+O cancelamento nativo do asyncio interrompe HTTP e consultas. Os espaços de recursos cobrem texto,
+imagens, áudio, música, vídeo, lotes, arquivos, modelos, embeddings, OCR, reordenação, análise,
+moderação e decisões; use `await client.request(...)` para outras operações HTTP.
+Clientes HTTPX injetados continuam sob responsabilidade do chamador.
+
+Ambos os clientes aceitam `with_options(timeout=30, max_retries=2)` sem alterar o
+cliente original. Os prazos HTTPX limitam a inatividade da rede em segundos. As tentativas são
+zero por padrão e valem só para GET/HEAD antes de consumir a resposta, nunca para envios.
+`PhaseoHTTPError` expõe corpo, código, ID da solicitação, URL de rastreamento e atraso de nova tentativa.
+
+Ao atualizar, substitua capturas de `urllib.error.HTTPError` em solicitações JSON síncronas
+por `PhaseoHTTPError` (ou `httpx.HTTPStatusError`), e erros de conexão
+por `httpx.TransportError`. `error.status` é o status HTTP; `error.code` é
+o código de erro da API.
+
+## Recursos adicionais
+
+Os recursos de tarefas expõem referências `start` e `resume` com `result`, `events` e
+`to_dict`. Aguarde métodos assíncronos e itere eventos com `async for`.
+Só vídeo e lotes permitem cancelamento remoto. Transmita mídia com
+`videos.stream_content(id)` e lotes com `batches.results(id)`. O auxiliar síncrono
+`download_to(chunks, binary_file)` grava sem armazenar o arquivo inteiro.
+Uploads aceitam bytes, objetos `Path`, objetos de arquivo e tuplas de arquivo HTTPX.
+
+`responses.parse(request, PydanticModel)` valida a saída JSON concluída;
+configure explicitamente o formato de resposta do servidor. `collect_stream` e
+`collect_async_stream` acumulam eventos de texto analisados e uso.
+`check_model_capabilities(id, input_types=..., output_types=..., endpoints=...,
+parameters=..., parameter_values=...)` verifica capacidades anunciadas e restrições
+escalares juntas em uma oferta disponível de provedor. Dados desconhecidos falham na verificação prévia.
+
+Para seletores de modelos e editores de parâmetros, use metadados atuais dos endpoints:
+
+```python
+support = client.models.check_parameters(
+    "openai/gpt-5",
+    {"temperature": 0.7, "top_p": 0.9},
+    endpoint="responses",
+)
+```
+
+Cada parâmetro recebe `supported`, `partial`, `unsupported` ou `unknown`,
+com rotas correspondentes e problemas de restrição para destaque em linha.
+`client.models.capabilities(model_id)` retorna a resposta completa de capacidades
+do endpoint. `AsyncPhaseo` oferece os mesmos métodos aguardáveis.
+
+Para testes locais, injete `phaseo.testing.MockTransport` com `httpx.Client` ou
+`httpx.AsyncClient`. Solicitações inesperadas falham localmente; chame `assert_done()` para
+verificar todas as fixtures. Elas não verificam o comportamento do provedor real.
+As salas Phaseo exportam código executável da solicitação por **Obter código**.
 
 ## Recursos
 
@@ -32,12 +98,32 @@ response = client.generate_response(
 print(response.get("id"))
 ```
 
+## Aguarde músicas, vídeos ou lotes
+
+```python
+import os
+
+music = client.music.generate_and_wait(
+    {"model": os.environ["PHASEO_MUSIC_MODEL"], "prompt": "Gentle instrumental piano"},
+    timeout=600,
+    on_poll=lambda job: print(job["id"], job["status"]),
+)
+```
+
+Use `videos.generate_and_wait(request, **options)` para vídeo e `batches.create_and_wait(request, **options)` para lotes. Os auxiliares síncronos enviam uma vez e retornam a resposta completa, consultando só quando necessário. `JobFailedError.response` preserva detalhes de tarefas com falha, canceladas ou expiradas. Lotes concluídos podem conter solicitações individuais com falha.
+
+Cada recurso aceita `wait(id, **options)` para retomar uma tarefa existente e retornar qualquer resposta final. Música também oferece os métodos diretos `create(request)` e `retrieve(id)`.
+
+Opções: `interval` (segundos; padrão 5, mínimo 0.25), `timeout` (segundos; padrão 1800), `on_poll` e `cancel_event` (um `threading.Event`). O prazo de espera começa após o retorno do envio. O cliente síncrono verifica cancelamento e prazos entre solicitações e callbacks; estas opções não interrompem uma chamada HTTP em andamento.
+
+`JobTimeoutError` e `JobCancelledError` preservam `job_id` e `last_response`. Retome com `.wait(error.job_id)`. Prazo ou cancelamento local não cancela a tarefa remota, e envios nunca são repetidos automaticamente. Os auxiliares não adicionam execução em segundo plano ao gateway.
 ## "O que está incluído"
 
 -   Cliente `Phaseo`
 -   `chat.completions.create(...)` and `responses.create(...)` helpers de compatibilidade
 -   Helpers de recursos, como `client.batches`, `client.videos`, `client.files`, and `client.async_jobs`
 -   Helpers de URL WebSocket para fluxos do ciclo de vida de trabalhos assíncronos, lotes e vídeos
+-   `client.batches.stream_results(batch_id)` para fragmentos de bytes JSONL de lotes
 -   Helpers de ciclo de vida de modelos, como `get_model_deprecation_info(...)` and `validate_model(...)`
 -   Iteradores de streaming para texto, respostas e mensagens
 -   Modelos de solicitação/resposta gerados em ~phaseo.models~

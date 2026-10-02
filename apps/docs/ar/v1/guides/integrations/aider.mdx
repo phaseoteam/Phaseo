@@ -1,15 +1,16 @@
 ---
 title: "Aider"
+icon: "/icons/brands/aider.png"
 description: "اربط Aider بـ Phaseo باستخدام إعداد تتم إدارته تلقائيًا."
 ---
 
-يمكن لـ Phaseo CLI إنشاء مفتاح API مخصص وتهيئة Aider لاستخدام Phaseo في كل جلسة جديدة.
+استخدم Phaseo CLI لإنشاء مفتاح مخصص وإعداد Aider مُدار، أو انسخ قيم المزوّد نفسها إلى إعداد Aider الموجود بنفسك.
 
-## إعداد Aider
+## الإعداد باستخدام Phaseo CLI
 
 ```bash
 phaseo login
-phaseo integrations setup aider --model anthropic/claude-sonnet-4.6
+phaseo aider --model anthropic/claude-sonnet-4.6
 ```
 
 إذا لم يكن الملف `~/.aider.conf.yml` موجودًا، فسينشئ الإعداد ملفًا تديره Phaseo ويتضمن:
@@ -66,5 +67,5 @@ phaseo integrations remove aider
 
 - [توثيق Aider لواجهة API المتوافقة مع OpenAI](https://aider.chat/docs/llms/openai-compat.html)
 - [إعداد Aider بصيغة YAML](https://aider.chat/docs/config/aider_conf.html)
-- [مساعدو البرمجة](./coding-assistants.mdx)
+- [وكلاء البرمجة](./coding-assistants.mdx)
 - [النماذج](../../api-reference/endpoint/models.mdx)

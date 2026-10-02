@@ -1,18 +1,19 @@
 ---
 title: "Roo Code"
+icon: "/icons/brands/roo-code.svg"
 description: "OpenAI互換プロファイルを使ってRoo CodeをPhaseoに接続します。"
 ---
 
-Phaseo CLIがRoo Code専用キーを作成・管理します。Roo Codeは資格情報をVS Codeのシークレットストレージに保存するため、プロファイルは拡張機能で設定します。
+Phaseo CLIで専用キーを作成し、Roo Codeのプロバイダープロファイルを手動で設定してください。認証情報はVS Codeのシークレットストレージに保存されるため、最後の入力は拡張機能の画面で行います。
 
-## 資格情報を作成する
+## Phaseo CLIで設定する
 
 ```bash
 phaseo login
-phaseo integrations setup roo-code --model anthropic/claude-sonnet-4.6
+phaseo roo-code --model anthropic/claude-sonnet-4.6
 ```
 
-## Roo Codeを設定する
+## Roo Codeを手動で設定する
 
 1. VS CodeでRoo Codeを開きます。
 2. **Settings**を開き、次に**Providers**を開きます。
@@ -60,5 +61,5 @@ CLIからVS Code拡張機能のプライベートストレージ内の値は削�
 ## 関連項目
 
 - [Roo Codeのモデルプロバイダー](https://docs.roocode.com/providers/)
-- [コーディングアシスタント](./coding-assistants.mdx)
+- [コーディングエージェント](./coding-assistants.mdx)
 - [モデル](../../api-reference/endpoint/models.mdx)

@@ -1,0 +1,138 @@
+---
+icon: "clapperboard"
+title: "Trabajos de vídeo y lotes"
+badge: "Beta"
+description: "Sigue trabajos asíncronos, recibe webhooks y proporciona opciones de vídeo específicas del proveedor."
+---
+
+<Note>
+La API de vídeo y la API de lotes son versiones beta preliminares, disponibles solo por invitación para espacios de trabajo seleccionados. Consulta **Configuración → Vista previa de funciones** para comprobar la disponibilidad. El acceso se gestiona por espacio de trabajo; activar una preferencia web personal no concede acceso a la API. Se aplican los cargos habituales por uso del modelo.
+</Note>
+
+La generación de vídeo y el procesamiento por lotes devuelven un trabajo antes de que termine la tarea. Guarda su `id` y usa la `polling_url` devuelta para recuperar su estado más reciente. Una respuesta de creación correcta no significa que la generación o el procesamiento por lotes haya terminado.
+
+Durante la beta, empieza con solicitudes pequeñas y un límite de gasto en la clave de API. Las capacidades varían según el proveedor y el modelo; las entradas de referencia, la cancelación y la conservación de resultados dependen del proveedor seleccionado. Guarda tu propia copia de los resultados completados antes de que caduquen.
+
+## Recibir actualizaciones
+
+Adjunta un endpoint de webhook perteneciente a tu espacio de trabajo al crear cualquiera de los dos tipos de trabajo:
+
+```json
+{
+  "webhook": {
+    "endpoint_id": "YOUR_ENDPOINT_ID",
+    "events": ["job.status_changed", "job.completed", "job.failed", "job.cancelled", "job.expired"]
+  }
+}
+```
+
+Phaseo reconcilia el estado del proveedor y envía notificaciones al cliente. Los proveedores que requieren consultas periódicas, incluidos los lotes de mensajes de Anthropic, también pueden generar webhooks para el cliente. Un fallo de entrega del webhook es independiente de un fallo de generación o de procesamiento por lotes.
+
+Las suscripciones de endpoints pueden dirigirse a eventos de lotes y vídeo por separado. Usa tipos de eventos con espacio de nombres como `batch.completed` o `video.failed`; los tipos genéricos `job.*` siguen siendo compatibles y suscriben a la fase correspondiente de ambos tipos de trabajo.
+
+Verifica `x-phaseo-signature` con el secreto del endpoint: la firma es el HMAC-SHA256 hexadecimal de `x-phaseo-timestamp`, un punto literal y el **cuerpo de la solicitud sin modificar**. Comprueba que la marca de tiempo sea reciente, elimina duplicados de `x-phaseo-event-id` y confirma las entregas aceptadas con una respuesta HTTP correcta. Las entregas pueden reintentarse o llegar desordenadas; recupera el trabajo antes de aplicar un cambio de estado contradictorio.
+
+Después de guardar un endpoint, usa **Enviar evento de prueba** en Configuración para entregar una carga firmada de `webhook.test`. Las entregas de prueba hacen un único intento, no se reintentan ni se añaden al historial de entregas del trabajo.
+
+Considera los estados del ciclo de vida `completed`, `failed`, `cancelled` y `expired` como terminales. Mantén una vía de recuperación mediante consultas periódicas incluso si utilizas webhooks.
+
+Para cada evento, Phaseo hace un intento inicial de entrega. Una respuesta 2xx correcta finaliza la entrega sin reintentos. Las entregas fallidas reciben hasta tres reintentos, programados a los 1, 5 y 15 minutos. Los procesos periódicos en segundo plano ejecutan los reintentos pendientes, por lo que la entrega real puede ser posterior a la hora programada. Cada intento registra su número, hora, estado HTTP, error y hora del siguiente reintento. Tras el cuarto intento fallido, la entrega se marca como fallida definitivamente. Los receptores deben seguir eliminando eventos duplicados: una confirmación perdida o una interrupción del worker puede dejar la entrega en un estado incierto.
+
+## Ver registros de trabajos y solicitudes
+
+En **Configuración → Uso → Registros**, usa **Solicitudes** para los detalles de inferencia, **Vídeo** para los ciclos de vida de vídeo y **Lotes** para trabajos por lotes y resultados por fila. Las vistas detalladas de vídeo y lotes incluyen el estado de facturación, los intentos del proveedor y los intentos de webhook. Un trabajo puede completarse correctamente aunque falle la entrega de su webhook.
+
+El envío de vídeo reserva crédito antes de contactar al proveedor. Un tiempo de espera agotado sin ID de tarea mantiene la reserva para reconciliación; no demuestra que la generación haya fallado. Si una reserva de vídeo o lotes de pago inesperadamente tiene un precio de cero tras un trabajo correcto, la facturación permanece abierta con `unexpected_zero_cost` para investigarlo. Una respuesta de creación con coste cero, por sí sola, es normal en la generación asíncrona.
+
+## Entradas de vídeo
+
+### Entender los precios de vídeo
+
+Los precios de vídeo dependen del proveedor y del modelo. El precio por segundo debe multiplicarse por la duración facturable; el precio por clip solo se aplica a su duración y resolución especificadas. Varias salidas y entradas de referencia facturables pueden aumentar el total.
+
+LTX factura segundos de salida para la generación de texto/imagen y segundos de audio de entrada para audio a vídeo. BytePlus Seedance usa tokens de vídeo, con tarifas distintas cuando hay un vídeo de referencia. MiniMax Hailuo V1 usa precios por clip de duración fija; H3 usa segundos y puede cobrar por entradas de referencia. Consulta las dimensiones de precio del proveedor seleccionado en vez de interpretar el precio destacado como el coste de toda la solicitud.
+
+Las reservas son estimaciones retenidas antes del envío. La facturación final usa el consumo facturable del trabajo; el crédito reservado no utilizado se libera tras la reconciliación. Que un proveedor admita una resolución u opción no garantiza su disponibilidad en la beta.
+
+Usa `seconds` o `duration` para la duración de salida. Si ambos están presentes, deben coincidir. Usa `resolution` con `aspect_ratio`, o un `size` en píxeles como `1280x720`.
+
+Usa `frame_images` para especificar explícitamente el primer y último fotograma:
+
+```json
+{
+  "frame_images": [
+    {
+      "type": "image_url",
+      "frame_type": "first_frame",
+      "image_url": { "url": "https://example.com/start.png" }
+    }
+  ],
+  "input_references": [
+    {
+      "type": "image_url",
+      "role": "reference",
+      "image_url": { "url": "https://example.com/character.png" }
+    }
+  ]
+}
+```
+
+Las URL de referencia deben usar HTTPS. Especifica explícitamente `role: "reference"` para imágenes que sean solo referencias: las solicitudes antiguas sin `frame_images` interpretan la primera imagen sin etiqueta como el primer fotograma. No combines `frame_images` con roles de primer/último fotograma en `input_references` ni con `input_reference`.
+
+Las referencias de vídeo y audio usan `type: "video_url"` o `"audio_url"` y `media_url: { "url": "https://..." }`. Los modelos y proveedores admiten combinaciones distintas. Cuando la duración de referencia afecte al precio, proporciona `input_video_duration` e `input_audio_duration` en segundos.
+
+## Opciones del proveedor
+
+Mantén el modelo, la duración, la resolución, la generación de audio, los medios de entrada y el número de salidas en los campos canónicos. Proporciona las extensiones específicas del proveedor bajo su ID canónico:
+
+```json
+{
+  "provider_options": {
+    "atlascloud": { "watermark": false, "output_format": "mp4" },
+    "byteplus": { "camera_fixed": true }
+  }
+}
+```
+
+Solo se envían las opciones del proveedor seleccionado. Las opciones no seleccionan un proveedor; usa la configuración de enrutamiento `provider` para ello. No combines `provider_options` con el antiguo `provider_params`. Las opciones anidadas no pueden anular los campos de facturación o devolución de llamada controlados por la pasarela.
+
+| Proveedor | Ejemplos de extensiones nativas | Referencia |
+| --- | --- | --- |
+| AtlasCloud Seedance 2.5 | `watermark`, `output_format`, `return_last_frame`, `omni_reference_task_type` | [API del modelo](https://www.atlascloud.ai/models/bytedance/seedance-2.5/reference-to-video) |
+| Novita Seedance 1.5 | `watermark`, `camera_fixed`, `fps` (24), `service_tier` (`default`) | [API unificada de vídeo](https://docs.novita.ai/api-reference/reference-unified-video-generation) |
+| BytePlus Seedance | `camera_fixed` | Consulta el contrato del proveedor para el modelo seleccionado antes de usarlo. |
+| MiniMax V1 | `fast_pretreatment`; usa el campo canónico `enhance_prompt` para optimizar instrucciones | [API de vídeo](https://platform.minimax.io/docs/api-reference/video-generation-t2v) |
+
+AtlasCloud Seedance usa los campos nativos `resolution`, `ratio` y `last_image`. Su variante de referencia a vídeo recibe referencias ordenadas de imagen, vídeo y audio. La edición con duración automática (`duration: -1`) no es compatible con el contrato de reserva de duración fija de la pasarela. La disponibilidad y los precios de los modelos del proveedor deben configurarse antes de poder enrutar un modelo; una opción de proveedor no habilita un modelo no disponible.
+
+MiniMax H3 usa V2: 4–15 segundos enteros a `768P` o `2K`. H3 Max admite 5–15 segundos enteros a `480P` o `768P`, con texto o imágenes de fotogramas. H3 admite referencias de imagen, vídeo y audio; no pueden mezclarse con primeros/últimos fotogramas. Ambos modelos producen un vídeo por solicitud y no admiten las opciones de optimización de instrucciones de V1. Usa el campo canónico `aspect_ratio`; las entradas de fotogramas determinan su propia proporción. Las reservas de vídeo de referencia cubren el límite de entrada del proveedor de 15 segundos, y el consumo real se liquida al completarse. Consulta el [contrato MiniMax V2](https://platform.minimax.io/docs/api-reference/video-generation-v2-create).
+
+## Proveedores de lotes
+
+Las solicitudes por lotes también aceptan `provider_options`: OpenAI admite `output_expires_after` y Mistral admite `metadata`. Usa ID canónicos de proveedor y no dupliques estos campos en el nivel superior. Por ejemplo, `provider_options: { "openai": { "output_expires_after": { "anchor": "created_at", "seconds": 86400 } } }` establece la conservación de resultados de OpenAI. Las entradas de las filas, modelos, endpoints y destinos de webhooks no pueden anularse mediante opciones.
+
+Mistral ya tiene un adaptador nativo de lotes. Los lotes de mensajes de Anthropic se consultan periódicamente; otros proveedores pueden combinar consultas periódicas con notificaciones nativas de finalización. La disponibilidad depende de los endpoints admitidos por el proveedor y de la lista de proveedores permitidos para lotes del despliegue. Comprueba la respuesta de capacidades de lotes antes de enviar un archivo o solicitudes en línea.
+
+Un lote completado puede contener filas fallidas. Inspecciona cada resultado con su ID personalizado en lugar de asumir que todas las filas funcionaron. Conserva la entrada original y el ID del trabajo hasta reconciliar los resultados y la facturación. Investiga un envío incierto antes de repetirlo, porque el proveedor puede haber aceptado la solicitud original.
+
+### Descargar resultados de lotes
+
+Cuando un lote compatible alcanza un estado terminal, su `results_url` apunta a una descarga autenticada de Phaseo. Usa tu clave habitual de API de Phaseo del espacio de trabajo propietario del lote:
+
+```bash
+curl --fail "https://api.phaseo.app/v1/batches/$BATCH_ID/results" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  --output results.jsonl
+```
+
+La respuesta transmite JSONL mediante el mismo endpoint para todos los proveedores de lotes compatibles. Phaseo combina archivos separados de resultados correctos y errores, convierte matrices de resultados en línea a JSONL y recorre la paginación. Se conservan el contenido generado y los errores por solicitud. Los campos de las filas mantienen el formato nativo del proveedor: usa `custom_id` para filas compatibles con OpenAI y Anthropic, los metadatos de solicitud para Gemini y `batch_request_id` para xAI. Las filas correctas de Anthropic contienen el mensaje generado en `result.message`.
+
+Las descargas admiten adaptadores de OpenAI, Anthropic, Google AI Studio, Mistral, Together, Groq, Alibaba Cloud, Moonshot, Parasail, OVHcloud y xAI. La disponibilidad del proveedor sigue dependiendo del acceso a la vista previa y la lista de envíos permitidos; admitir descargas no habilita rutas adicionales. Los campos existentes `output_file_id`, `error_file_id` y los endpoints de contenido de archivo siguen disponibles. El endpoint de filas de solicitudes del lote contiene metadatos de seguimiento y facturación, no cuerpos de mensajes generados.
+
+Descargar resultados no envía otro lote ni añade un cargo de inferencia. No necesitas credenciales del proveedor. Los webhooks indican actualizaciones del trabajo; descarga los resultados por separado. Un trabajo terminal puede tener resultados parciales o ninguno: el endpoint devuelve `409` mientras procesa y `404` cuando no hay resultados. Guarda los resultados antes de que termine el periodo de conservación del proveedor. Si se interrumpe una descarga, descarta el archivo parcial y repite la descarga, no el envío del lote. Los resultados JSON en línea se transmiten con un límite de seguridad de 8 MiB por fila; los archivos JSONL nativos se transmiten sin ese límite por fila.
+
+Para resultados grandes, `client.batches.streamResults(batchId, { signal })` de TypeScript devuelve un `ReadableStream<Uint8Array>` sin almacenar todo en memoria. Dirígelo a tu destino y cancela el flujo o interrumpe la señal para detenerlo antes; no hay un tiempo de espera total fijo para la descarga. `client.batches.stream_results(batch_id)` de Python produce bloques de bytes con el tiempo de espera HTTP configurado; cierra el iterador si te detienes antes. Las operaciones generadas `retrieveBatchResults` devuelven el texto JSONL completo y son más adecuadas para resultados pequeños.
+
+### Límites de descarga de lotes
+
+Las descargas de resultados permiten 10 intentos por espacio de trabajo y lote en una ventana móvil de 30 minutos, compartida entre claves de API y alias `/batches` y `/batch`. Los intentos que llegan a la admisión de descarga cuentan aunque la descarga del proveedor falle o se cancele. Los fallos de propiedad y de disponibilidad no cuentan. Una respuesta `429` incluye `Retry-After` en segundos. Si el limitador no está disponible, las descargas devuelven `503` con `Retry-After: 30`.
