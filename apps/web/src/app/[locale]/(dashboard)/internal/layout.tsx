@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { ScopedMessages, type ScopedLayoutProps } from "@/components/i18n/ScopedMessages";
 
 export const metadata: Metadata = {
 	title: "Internal",
@@ -10,8 +11,7 @@ export const metadata: Metadata = {
 
 export default function InternalLayout({
 	children,
-}: {
-	children: React.ReactNode;
-}) {
-	return <>{children}</>;
+	params,
+}: ScopedLayoutProps) {
+	return <ScopedMessages params={params} namespaces={["SettingsUI", "Product", "Catalogue"]}>{children}</ScopedMessages>;
 }

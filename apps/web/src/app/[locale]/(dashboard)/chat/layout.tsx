@@ -8,6 +8,7 @@ import { realtimeVoiceFlag, videoApiFlag } from "@/lib/flags";
 import { fetchInternalAuthHeaderData } from "@/lib/fetchers/internal/fetchInternalAuthHeaderData";
 import type { InternalAuthHeaderData } from "@/lib/fetchers/internal/authTypes";
 import { ChatAuthProvider } from "@/components/(chat)/ChatAuthProvider";
+import { ScopedMessages } from "@/components/i18n/ScopedMessages";
 
 export async function generateMetadata(): Promise<Metadata> {
 	const t = await getTranslations("Product.chat");
@@ -25,8 +26,10 @@ export const viewport: Viewport = {
 
 export default async function ChatLayout({
 	children,
+	params,
 }: {
 	children: React.ReactNode;
+	params: Promise<{ locale: string }>;
 }) {
 	await connection();
 	const emptyAuth: InternalAuthHeaderData = {
@@ -43,6 +46,7 @@ export default async function ChatLayout({
 	]);
 
 	return (
+		<ScopedMessages params={params} namespaces={["Product.chat", "Product.chatRooms", "Product.experimentsCouncil", "Product.tools.request", "Catalogue.common", "Catalogue.models", "Catalogue.modelDetail", "Catalogue.updatesCalendar.weekdayAnalysis.showMore", "SettingsUI.chatGaps", "SettingsUI.strings"]}>
 		<ChatAuthProvider initialAuth={initialAuth}>
 			<ChatFeatureFlagsProvider
 				realtimeEnabled={realtimeEnabled}
@@ -57,5 +61,6 @@ export default async function ChatLayout({
 				</div>
 			</ChatFeatureFlagsProvider>
 		</ChatAuthProvider>
+		</ScopedMessages>
 	);
 }

@@ -17,6 +17,7 @@ import { isPublicLocale, type PublicLocale } from "@/i18n/routing";
 import { localizeAuthPath } from "@/lib/auth/localized-paths";
 import { getServerAccountContext } from "@/lib/fetchers/internal/serverAccountContext";
 import { PrivateSettingsProvider } from "@/components/(gateway)/settings/PrivateSettingsQuery";
+import { ScopedMessages } from "@/components/i18n/ScopedMessages";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
 	const { locale } = await params;
@@ -57,7 +58,7 @@ export default async function SettingsLayout({
 	showWebhooks = webhooksEnabled;
 
 	return (
-		<>
+		<ScopedMessages params={params} namespaces={["SettingsUI", "Catalogue", "Product", "Site.profile", "Site.pricing", "Site.homeOpenSourceMarketing.models"]}>
 			<NoFooterStyle />
 
 			<SidebarProvider defaultOpen className="flex min-h-[calc(100dvh-var(--site-header-height,3.75rem)-var(--site-notice-height,0px)-1px)] overflow-visible">
@@ -79,6 +80,6 @@ export default async function SettingsLayout({
 					</div>
 				</SidebarInset>
 			</SidebarProvider>
-		</>
+		</ScopedMessages>
 	);
 }

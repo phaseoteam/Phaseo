@@ -3,7 +3,7 @@ import { io } from "next/cache";
 import { createClient } from "@/utils/supabase/server";
 import { OBFUSCATE_INFO_COOKIE, parseObfuscateInfo } from "@/lib/obfuscation";
 
-export async function getServerAccountContext(): Promise<{
+export async function getServerAccountContext(options: { signal?: AbortSignal } = {}): Promise<{
 	accessToken: string | null;
 	userId?: string | null;
 	obfuscateInfo: boolean | null;
@@ -13,8 +13,9 @@ export async function getServerAccountContext(): Promise<{
 	// shared auth boundary as request-time work so Cache Components never try
 	// to capture that session state in a prerendered shell.
 	await io();
-	const [cookieStore, supabase] = await Promise.all([cookies(), createClient()]);
+	const [cookieStore, supabase] = await Promise.all([cookies(), createClient(options)]);
 	const { data } = await supabase.auth.getSession();
+	options.signal?.throwIfAborted();
 	return {
 		accessToken: data.session?.access_token ?? null,
 		userId: data.session?.user.id ?? null,

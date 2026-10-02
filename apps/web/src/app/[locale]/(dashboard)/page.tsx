@@ -44,6 +44,7 @@ import {
 } from "@/lib/seo";
 import { getTranslations } from "next-intl/server";
 import type { PublicLocale } from "@/i18n/routing";
+import { ScopedMessages, type ScopedLayoutProps } from "@/components/i18n/ScopedMessages";
 
 export async function generateMetadata({
 	params,
@@ -335,7 +336,11 @@ function LandingPage({
 	);
 }
 
-export default async function Page() {
+export default function Page({ params }: ScopedLayoutProps) {
+	return <ScopedMessages params={params} namespaces={["Site.home", "Site.homeOpenSourceMarketing", "Site.homeQuickstart", "Site.landingGaps", "Site.about.open", "SettingsUI.landingGaps", "Catalogue.updates.models"]}><HomePageContent /></ScopedMessages>;
+}
+
+async function HomePageContent() {
 	const t = await getTranslations("Site.home");
 	const [heroVariant, modelPrices, showEnterprisePreview] = await Promise.all([
 		getGatewayHeroVariant(),

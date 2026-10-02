@@ -31,6 +31,7 @@ import type { FontProfile, LocaleDirection, RuntimeLocale } from "@/i18n/routing
 import { englishMessages, type SourceMessages } from "@/i18n/default-messages";
 import { GA_MEASUREMENT_ID } from "@/lib/analytics";
 import { cn } from "@/lib/utils";
+import { selectMessages, SHELL_MESSAGE_NAMESPACES } from "@/i18n/message-scopes";
 
 const APPEARANCE_INITIALIZATION_SCRIPT = `(()=>{try{const p=JSON.parse(localStorage.getItem("phaseo-display-preferences-v1")||"null");if(!p||typeof p!=="object")return;const r=document.documentElement;const lp=["phaseo","paper","warm"],dp=["phaseo","slate","midnight"],hex=/^#[0-9a-f]{6}$/i;const fg=v=>{const c=[1,3,5].map(i=>parseInt(v.slice(i,i+2),16)/255).map(x=>x<=.04045?x/12.92:Math.pow((x+.055)/1.055,2.4)),l=.2126*c[0]+.7152*c[1]+.0722*c[2];return 1.05/(l+.05)>=(l+.05)/.052?"#ffffff":"#0b0b0b"};if(lp.includes(p.lightPalette))r.dataset.lightPalette=p.lightPalette;if(dp.includes(p.darkPalette))r.dataset.darkPalette=p.darkPalette;if(["comfortable","compact"].includes(p.density))r.dataset.density=p.density;if(typeof p.maskSensitiveData==="boolean")r.dataset.obfuscatePii=p.maskSensitiveData?"true":"false";if(hex.test(p.lightAccent)){r.style.setProperty("--light-user-accent",p.lightAccent);r.style.setProperty("--light-user-accent-foreground",fg(p.lightAccent))}if(hex.test(p.darkAccent)){r.style.setProperty("--dark-user-accent",p.darkAccent);r.style.setProperty("--dark-user-accent-foreground",fg(p.darkAccent))}}catch{}})();`;
 
@@ -119,7 +120,7 @@ export function RootDocument({
 				/>
 			</head>
 			<body className="min-h-screen h-full bg-background antialiased">
-				<LocaleMessagesProvider locale={locale} messages={messages} timeZone="UTC">
+				<LocaleMessagesProvider locale={locale} messages={selectMessages(messages, SHELL_MESSAGE_NAMESPACES)} timeZone="UTC">
 				<DirectionProvider direction={direction}>
 				<CookieConsentManager
 					copy={cookieConsentCopy}

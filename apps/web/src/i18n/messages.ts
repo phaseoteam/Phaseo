@@ -1,4 +1,5 @@
 import "server-only";
+import { cache } from "react";
 
 import {
 	englishAuthMessages,
@@ -109,10 +110,10 @@ const publicMessageLoaders: Record<PublicLocale, PublicMessageLoader> = {
 	"ar-SA": async () => (await import("../../messages/ar-SA/auth.json")).default,
 };
 
-export async function getPublicMessages(locale: PublicLocale): Promise<SourceMessages> {
+export const getPublicMessages = cache(async (locale: PublicLocale): Promise<SourceMessages> => {
 	const [messages, common, site, catalogue, content, product, settingsUI] = await Promise.all([
 		publicMessageLoaders[locale](), commonMessageLoaders[locale](), siteMessageLoaders[locale](),
 		catalogueMessageLoaders[locale](), contentMessageLoaders[locale](), productMessageLoaders[locale](), settingsUiMessageLoaders[locale](),
 	]);
 	return { ...messages, Common: common, Site: site, Catalogue: catalogue, Content: content, Product: product, SettingsUI: nestDottedMessageKeys(settingsUI) } as SourceMessages;
-}
+});
