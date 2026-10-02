@@ -64,6 +64,7 @@ export function protectStealthAuditArgs<T extends Record<string, any>>(args: T):
         gatewayResponse: sanitizeStealthMetadata(args.gatewayResponse, publicModel),
         providerRequest: null,
         providerResponse: null,
+        serverToolTrace: null,
         extraJson: null,
     } as T;
 }

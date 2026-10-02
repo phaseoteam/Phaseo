@@ -18,6 +18,8 @@ describe("MCP OAuth resource binding", () => {
 			active: true,
 			resource: "https://mcp.phaseo.app/mcp",
 			workspace_id: "workspace_1",
+			user_id: "user_1",
+			client_id: "client_1",
 			scope: "openid models:read",
 			upstream_access_token: "upstream-token",
 		}));
@@ -29,6 +31,10 @@ describe("MCP OAuth resource binding", () => {
 			accessToken: "upstream-token",
 			workspaceId: "workspace_1",
 			scopes: ["openid", "models:read"],
+			userId: "user_1",
+			clientId: "client_1",
+			resource: "https://mcp.phaseo.app/mcp",
+			resourceToken: "delegated-token",
 		});
 		const exchangeRequest = fetchMock.mock.calls[0]?.[0] as Request;
 		expect(exchangeRequest.url).toBe("https://api.phaseo.app/oauth/mcp/token-exchange");
