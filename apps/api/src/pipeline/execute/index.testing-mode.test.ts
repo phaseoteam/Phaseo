@@ -125,6 +125,9 @@ describe("doRequestWithIR pricing behavior in testing mode", () => {
 		const ctx = createCtx({ quotaUserId: "authenticated-owner", billingRequestId: "server-billing-id" });
 		const result = await doRequestWithIR(ctx, { model: "model", prompt: "test" } as any, createTiming());
 		expect(result).toBe(denial);
+		expect(admitThroughBreakerMock).not.toHaveBeenCalled();
+		expect(onCallStartMock).not.toHaveBeenCalled();
+		expect(reportProbeResultMock).not.toHaveBeenCalled();
 		expect(executor).not.toHaveBeenCalled();
 		expect(freeQuotaMock).toHaveBeenCalledTimes(1);
 		expect(freeQuotaMock).toHaveBeenCalledWith(expect.objectContaining({ userId: "authenticated-owner", admissionId: "server-billing-id", pricingCard }));
