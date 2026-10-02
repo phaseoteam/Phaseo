@@ -1382,11 +1382,11 @@ export function MigrationGuide() {
 	const fullGuide = source ? FULL_GUIDE_LINK_BY_SOURCE[source] : null;
 
 	return (
-		<div className="space-y-10">
-			<div className="grid gap-10 lg:grid-cols-2">
+		<div className="min-w-0 space-y-8 sm:space-y-10">
+			<div className="grid gap-8 sm:gap-10 lg:grid-cols-2">
 				<section className="space-y-4">
 					<div className="space-y-2">
-						<p className="text-xs uppercase tracking-wide text-muted-foreground">
+						<p className="text-xs font-medium text-muted-foreground">
 							Step 1
 						</p>
 						<h2 className="text-2xl font-semibold">
@@ -1417,7 +1417,7 @@ export function MigrationGuide() {
 
 				<section className="space-y-4">
 					<div className="space-y-2">
-						<p className="text-xs uppercase tracking-wide text-muted-foreground">
+						<p className="text-xs font-medium text-muted-foreground">
 							Step 2
 						</p>
 						<h3 className="text-xl font-semibold">
@@ -1446,10 +1446,10 @@ export function MigrationGuide() {
 			</div>
 
 			{selectedOption ? (
-				<section className="space-y-6">
+				<section className="min-w-0 space-y-6">
 					<div className="flex flex-wrap items-center justify-between gap-3">
 						<div className="space-y-1">
-							<p className="text-xs uppercase tracking-wide text-muted-foreground">
+							<p className="text-xs font-medium text-muted-foreground">
 								Step 3
 							</p>
 							<h3 className="text-xl font-semibold">
@@ -1528,7 +1528,7 @@ export function MigrationGuide() {
 									</p>
 								</div>
 								<div className="grid gap-6 lg:grid-cols-2">
-									<div className="space-y-2">
+									<div className="min-w-0 space-y-2">
 										<p className="text-xs uppercase tracking-wide text-muted-foreground">
 											Before
 										</p>
@@ -1538,7 +1538,7 @@ export function MigrationGuide() {
 											lang={beforeSnippet?.lang}
 										/>
 									</div>
-									<div className="space-y-2">
+									<div className="min-w-0 space-y-2">
 										<p className="text-xs uppercase tracking-wide text-muted-foreground">
 											After
 										</p>
