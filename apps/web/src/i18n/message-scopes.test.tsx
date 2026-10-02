@@ -91,4 +91,11 @@ describe("route message selection", () => {
 	it("rejects stale generated boundaries instead of sending an entire catalog", () => {
 		expect(() => selectClientMessages({}, ["Unregistered.feature"])).toThrow("Missing generated client message scope");
 	});
+
+	it("preserves FAQ raw arrays when selecting numeric translation paths", async () => {
+		const messages = await getPublicMessages("en-GB");
+		const [faq] = scopes.filter(scope => scope.includes("Site.faq"));
+		const selected = selectClientMessages(messages, faq);
+		expect((selected.Site as Record<string, Record<string, unknown>>).faq.items).toEqual(messages.Site.faq.items);
+	});
 });

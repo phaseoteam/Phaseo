@@ -854,6 +854,10 @@
   "[\"Common.ui.actions.back\"]": [
     "Common.ui.actions.back"
   ],
+  "[\"Common.ui.auditCopy.chatHistoryFailed\",\"Common.ui.auditCopy.loadingChat\"]": [
+    "Common.ui.auditCopy.chatHistoryFailed",
+    "Common.ui.auditCopy.loadingChat"
+  ],
   "[\"Common.ui.auditCopy\",\"Product.games\",\"Product.gamesDetail\"]": [
     "Common.ui.auditCopy.priceLocked",
     "Common.ui.auditCopy.rightOnTheMoney",
