@@ -1,0 +1,49 @@
+{
+  "plan_id": "infermatic-free",
+  "name": "Infermatic Free",
+  "organisation_id": "infermatic",
+  "description": "Flat-rate Infermatic free subscription.",
+  "pricing_options": [
+    {
+      "frequency": "monthly",
+      "usd_price": 0,
+      "link": "https://infermatic.ai/pricing/",
+      "other_info": "Flat rate; no usage cost"
+    }
+  ],
+  "features": [
+    {
+      "feature_name": "API Access",
+      "feature_value": "No API access",
+      "feature_description": null,
+      "other_info": null
+    },
+    {
+      "feature_name": "API Parallel Requests",
+      "feature_value": "n/a",
+      "feature_description": null,
+      "other_info": null
+    },
+    {
+      "feature_name": "API Requests Per Minute",
+      "feature_value": "n/a",
+      "feature_description": "Published plan limit; per-model or account-specific constraints may also apply.",
+      "other_info": null
+    },
+    {
+      "feature_name": "Data Logging",
+      "feature_value": "No prompt or response logging",
+      "feature_description": null,
+      "other_info": null
+    }
+  ],
+  "models": [
+    {
+      "model_id": "thedrummer/rocinante-12b-v1.1",
+      "model_info": "Included in this plan according to Infermatic's current plan-grouped model catalog.",
+      "rate_limit": "UI access only",
+      "other_info": "Catalog access is cumulative across lower subscription tiers."
+    }
+  ]
+}
+

@@ -1,0 +1,28 @@
+{
+  "organisation_id": "sao10k",
+  "name": "Sao10K",
+  "country_code": null,
+  "description": "Publisher of open model weights hosted by Infermatic.",
+  "colour": null,
+  "organisation_links": [
+    {
+      "platform": "hugging_face",
+      "url": "https://huggingface.co/Sao10K"
+    }
+  ],
+  "status": "active",
+  "routable": null,
+  "sources": [
+    {
+      "kind": "repository",
+      "url": "https://huggingface.co/Sao10K",
+      "accessed_at": "2026-08-27T00:00:00Z",
+      "notes": "Official publisher profile and model namespace."
+    }
+  ],
+  "verification": {
+    "status": "partial",
+    "checked_at": "2026-08-27T00:00:00Z",
+    "notes": "Publisher identity verified from the official Hugging Face profile; catalog hosting is attributed to Infermatic by the model records."
+  }
+}
