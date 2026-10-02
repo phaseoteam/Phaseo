@@ -1,37 +1,25 @@
 ---
 icon: "brain-circuit"
-title: "Modifier un modèle"
-description: "Mettez à jour les métadonnées, les tarifs et les capacités du modèle dans le jeu de données Phaseo."
+title: "Signaler une mise à jour de modèle"
+description: "Demandez des corrections ou des ajouts aux métadonnées, capacités, disponibilités et tarifs des modèles."
 ---
 
-Les données des modèles se trouvent dans des fichiers JSON sous `packages/data/catalog/src/data/models`. Chaque modèle possède son propre dossier et un fichier `model.json`.
+Ouvrez une issue GitHub pour corriger un modèle ou demander une entrée manquante. Vous n’avez pas besoin de modifier le JSON ni de configurer le dépôt.
 
-## 1. Trouver le modèle
+## Signaler une correction
 
-Repérez le dossier du modèle à partir du fournisseur et du nom du modèle. Par exemple :
+1. Copiez l’URL de la page Phaseo du modèle ou son identifiant.
+2. [Signalez une information incorrecte](https://github.com/phaseoteam/Phaseo/issues/new?template=incorrect-info.yml), en décrivant la valeur actuelle et la correction proposée.
+3. Joignez une documentation officielle, une annonce de sortie ou une autre source vérifiable.
 
-`packages/data/catalog/src/data/models/openai/gpt-5-2025-08-07/model.json`
+Pour les tarifs, précisez le fournisseur, la devise, l’unité de facturation, le niveau concerné et la date d’entrée en vigueur. Pour les scores d’évaluation, suivez [Soumettre des scores](../research/submitting-scores.mdx).
 
-## 2. Effectuer les modifications
+## Demander un modèle manquant
 
-Les modifications courantes comprennent :
+[Ouvrez une demande de données](https://github.com/phaseoteam/Phaseo/issues/new?template=data-request.yml) avec le nom du modèle, l’organisation, le lien officiel, la date de sortie et les capacités connues. Un modèle peut figurer au catalogue avant de disposer d’une route Gateway prise en charge.
 
-- Descriptions et liens
-- Capacités et points de terminaison pris en charge
-- Tarifs ou informations sur la disponibilité
-- Références aux benchmarks
+## Après l’envoi
 
-Respectez le schéma utilisé dans les fichiers voisins.
+Les responsables examinent les preuves et mettent à jour la base de données via l’éditeur interne. Suivez les questions et la publication dans l’issue. Les instantanés JSON quotidiens exportent le catalogue ; les modifications des fichiers JSON archivés ne mettent pas à jour le site en production.
 
-## 3. Valider les données
-
-Exécutez le script de validation des données avant d’ouvrir une PR :
-
-```bash
-pnpm validate:data
-```
-
-## 4. Ouvrir une PR
-
-Ajoutez un court résumé des modifications et des sources utilisées.
-
+Les administrateurs peuvent modifier les enregistrements dans [Données internes](https://phaseo.app/internal/data) et examiner les tarifs proposés dans [Mises à jour des fournisseurs](https://phaseo.app/internal/data/imports). Ces pages nécessitent un accès administrateur.

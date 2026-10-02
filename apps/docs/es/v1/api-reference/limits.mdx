@@ -1,59 +1,29 @@
 ---
-title: "Límites"
-description: "Conoce los límites de solicitudes impuestos por los proveedores y crea una estrategia de reintentos resiliente."
+title: "Límites de solicitudes"
+description: "Gestiona las limitaciones, las cuotas de proveedores y los reintentos limitados."
 icon: "gauge"
 ---
 
-Actualmente, el Gateway no aplica un límite de solicitudes independiente a nivel de plataforma. La mayoría de las limitaciones provienen de los proveedores upstream.
+El proveedor seleccionado o una política aplicable del espacio de trabajo o de la clave pueden limitar una solicitud. El enrutamiento y las alternativas pueden reducir los fallos del proveedor, pero una solicitud aún puede devolver `429`.
 
-## Cómo funcionan los límites
+## Límites del proveedor
 
-- El proveedor seleccionado para el modelo puede limitar la frecuencia de las solicitudes.
-- El tráfico BYOK está sujeto a los límites de tu cuenta con el proveedor.
-- El enrutamiento y los fallbacks del Gateway pueden reducir los fallos, pero aun así pueden aparecer errores `429`.
+Las solicitudes BYOK usan los límites de tu cuenta del proveedor. Las solicitudes gestionadas usan capacidad compartida del proveedor; esa capacidad no es una cuota individual del espacio de trabajo.
 
-## Gestionar respuestas `429`
+Phaseo reenvía un valor validado de `Retry-After` cuando el proveedor al que se dirige la solicitud lo proporciona. Las respuestas BYOK también pueden incluir cabeceras `X-Phaseo-Upstream-RateLimit-*`. Estas cabeceras de cuota se omiten en las solicitudes gestionadas porque describen la capacidad compartida del proveedor. No se reenvían otras cabeceras del proveedor.
 
-- Respeta `Retry-After` cuando esté presente.
-- Aplica retroceso exponencial con variación aleatoria (jitter).
-- Establece un número máximo de reintentos y gestiona el fallo de forma controlada.
+## Gestionar una solicitud limitada
 
-Phaseo reenvía el valor validado de `Retry-After` cuando el proveedor seleccionado lo proporciona. En las solicitudes BYOK, también pueden devolverse detalles de cuota del proveedor mediante encabezados `X-Phaseo-Upstream-RateLimit-*`. Estos encabezados de cuota se omiten intencionalmente para solicitudes con proveedores administrados, ya que describen la capacidad compartida de Phaseo y no el límite de cada cliente. No se reenvían otros encabezados upstream.
+1. Revisa el [código de error](./errors.mdx) para distinguir una limitación temporal del proveedor de una restricción de política o presupuesto que requiera cambios de configuración.
+2. Respeta `Retry-After` cuando esté presente. Puede ser un retraso en segundos o una fecha HTTP; valida el valor antes de programar un reintento.
+3. De lo contrario, usa espera exponencial con variación aleatoria y un retraso máximo.
+4. Limita los reintentos tanto por número de intentos como por un plazo total. Cancela el trabajo abandonado y libera el cuerpo de cada respuesta fallida antes de reintentar.
+5. Reduce la concurrencia si persiste la limitación.
 
-```ts
-async function retryWithBackoff(run: () => Promise<Response>, maxRetries = 4) {
-  for (let attempt = 0; attempt <= maxRetries; attempt += 1) {
-    const response = await run();
-    if (response.status !== 429) return response;
+No reintentes automáticamente el envío de un trabajo con resultado incierto ni repitas acciones de herramientas ya completadas. Una solicitud puede haber llegado al proveedor aunque el cliente haya perdido la respuesta; los reintentos pueden duplicar el trabajo y los cargos. Para un trabajo de vídeo o por lotes aceptado, usa su endpoint de estado en lugar de enviarlo de nuevo.
 
-    const retryAfterHeader = response.headers.get("retry-after");
-    const retryAfterMs = retryAfterHeader
-      ? Number(retryAfterHeader) * 1000
-      : Math.min(1000 * 2 ** attempt, 8000);
+## Supervisar las limitaciones
 
-    await new Promise((resolve) => setTimeout(resolve, retryAfterMs));
-  }
+Supervisa la frecuencia de `429` por endpoint y modelo, y revisa la frecuencia de las alternativas en los registros de solicitudes. Compara los registros de tu aplicación con los [ajustes de enrutamiento](../guides/routing-and-fallbacks.mdx) y las cuotas de la cuenta del proveedor para el tráfico BYOK.
 
-  throw new Error("Rate limit retries exhausted");
-}
-```
-
-## Supervisión
-
-- Registra la tasa de errores `429` por endpoint y modelo.
-- Observa la frecuencia de los fallbacks para detectar presión en los proveedores.
-- Usa las métricas del panel junto con los registros de tu aplicación para investigar incidentes.
-
-## Páginas relacionadas
-
-- [Autenticación](./authentication.mdx)
-- [Parámetros](./parameters.mdx)
-- [Errores y depuración](./errors.mdx)
-
-<Visibility for="agents">
-Si implementas reintentos como agente:
-
-- Usa las habilidades del repositorio para crear bucles de reintento seguros y controlar los tiempos de espera.
-- Centraliza la configuración de reintentos (número de intentos, demora inicial y demora máxima).
-- No reintentes solicitudes no idempotentes sin aprobación explícita del producto.
-</Visibility>
+Consulta los [presupuestos](./endpoint/budgets-list.mdx) y las [salvaguardas](./endpoint/guardrails.mdx) para controlar el gasto y el acceso del espacio de trabajo.

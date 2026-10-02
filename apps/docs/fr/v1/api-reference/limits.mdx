@@ -1,59 +1,29 @@
 ---
-title: "Limites"
-description: "Comprenez les limites imposées par les fournisseurs et mettez en place des tentatives de nouvelle requête résilientes."
+title: "Limites de requêtes"
+description: "Gérez la limitation des requêtes, les quotas des fournisseurs et les tentatives limitées."
 icon: "gauge"
 ---
 
-Le Gateway n’applique actuellement pas de plafond de requêtes distinct au niveau de la plateforme. La plupart des limitations proviennent des fournisseurs en amont.
+Une requête peut être limitée par le fournisseur sélectionné ou par une politique applicable à l’espace de travail ou à la clé. Le routage et les solutions de repli peuvent réduire les échecs des fournisseurs, mais une requête peut toujours renvoyer `429`.
 
-## Fonctionnement des limites
+## Limites des fournisseurs
 
-- Le fournisseur sélectionné pour le modèle peut limiter la fréquence des requêtes.
-- Le trafic BYOK est soumis aux limites de votre compte fournisseur.
-- Le routage et les replis du Gateway peuvent réduire les échecs, mais des réponses `429` restent possibles.
+Les requêtes BYOK utilisent les limites de votre compte fournisseur. Les requêtes gérées utilisent une capacité fournisseur partagée ; cette capacité n’est pas un quota propre à chaque espace de travail.
 
-## Gérer les réponses `429`
+Phaseo transmet une valeur `Retry-After` validée lorsque le fournisseur vers lequel la requête est routée en fournit une. Les réponses BYOK peuvent aussi inclure des en-têtes `X-Phaseo-Upstream-RateLimit-*`. Ces en-têtes de quota sont omis pour les requêtes gérées, car ils décrivent une capacité fournisseur partagée. Les autres en-têtes en amont ne sont pas transmis.
 
-- Respectez `Retry-After` lorsqu’il est présent.
-- Appliquez un délai exponentiel avec une part d’aléatoire (jitter).
-- Fixez un nombre maximal de nouvelles tentatives et gérez l’échec proprement.
+## Gérer une requête limitée
 
-Phaseo transmet la valeur validée de `Retry-After` lorsque le fournisseur sélectionné en fournit une. Pour les requêtes BYOK, des informations de quota du fournisseur peuvent également être renvoyées dans les en-têtes `X-Phaseo-Upstream-RateLimit-*`. Ces en-têtes de quota sont volontairement omis pour les requêtes utilisant les fournisseurs gérés : ils décrivent la capacité partagée de Phaseo, et non le quota d’un client. Les autres en-têtes amont ne sont pas transmis.
+1. Examinez le [code d’erreur](./errors.mdx) pour distinguer une limitation temporaire du fournisseur d’une restriction de politique ou de budget nécessitant des modifications de configuration.
+2. Respectez `Retry-After` lorsqu’il est présent. Il peut s’agir d’un délai en secondes ou d’une date HTTP ; validez la valeur avant de programmer une nouvelle tentative.
+3. Sinon, utilisez un délai exponentiel avec une variation aléatoire et un délai maximal.
+4. Limitez les nouvelles tentatives à la fois par leur nombre et par une échéance globale. Annulez le travail abandonné et libérez le corps de chaque réponse en échec avant de réessayer.
+5. Réduisez la concurrence si la limitation persiste.
 
-```ts
-async function retryWithBackoff(run: () => Promise<Response>, maxRetries = 4) {
-  for (let attempt = 0; attempt <= maxRetries; attempt += 1) {
-    const response = await run();
-    if (response.status !== 429) return response;
+Ne réessayez pas automatiquement une soumission de tâche dont le résultat est incertain et ne répétez pas des actions d’outils déjà terminées. Une requête peut avoir atteint le fournisseur même si le client a perdu sa réponse ; les nouvelles tentatives peuvent dupliquer le travail et les frais. Pour une tâche vidéo ou par lots acceptée, utilisez son endpoint de statut au lieu de la soumettre à nouveau.
 
-    const retryAfterHeader = response.headers.get("retry-after");
-    const retryAfterMs = retryAfterHeader
-      ? Number(retryAfterHeader) * 1000
-      : Math.min(1000 * 2 ** attempt, 8000);
+## Surveiller la limitation des requêtes
 
-    await new Promise((resolve) => setTimeout(resolve, retryAfterMs));
-  }
+Suivez la fréquence des `429` par endpoint et modèle, et examinez la fréquence des replis dans les journaux de requêtes. Comparez les journaux de votre application avec les [paramètres de routage](../guides/routing-and-fallbacks.mdx) et les quotas du compte fournisseur pour le trafic BYOK.
 
-  throw new Error("Rate limit retries exhausted");
-}
-```
-
-## Surveillance
-
-- Suivez le taux de réponses `429` par endpoint et par modèle.
-- Surveillez la fréquence des replis pour repérer la pression exercée sur les fournisseurs.
-- Utilisez ensemble les métriques du tableau de bord et les journaux de votre application pour analyser les incidents.
-
-## Pages associées
-
-- [Authentification](./authentication.mdx)
-- [Paramètres](./parameters.mdx)
-- [Erreurs et débogage](./errors.mdx)
-
-<Visibility for="agents">
-Si vous implémentez des nouvelles tentatives en tant qu’agent :
-
-- Utilisez les compétences du dépôt pour créer des boucles de nouvelle tentative sûres et maîtriser les délais d’attente.
-- Centralisez la configuration des nouvelles tentatives (nombre d’essais, délai de base et délai maximal).
-- Ne réessayez pas des requêtes non idempotentes sans accord explicite du produit.
-</Visibility>
+Consultez les [budgets](./endpoint/budgets-list.mdx) et les [garde-fous](./endpoint/guardrails.mdx) pour les contrôles des dépenses et des accès de l’espace de travail.

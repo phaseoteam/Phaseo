@@ -1,37 +1,25 @@
 ---
 icon: "brain-circuit"
-title: "Ein Modell bearbeiten"
-description: "Aktualisiere Metadaten, Preise und Fähigkeiten eines Modells im Phaseo-Datensatz."
+title: "Modellaktualisierung melden"
+description: "Fordern Sie Korrekturen oder Ergänzungen zu Modellmetadaten, Funktionen, Verfügbarkeit und Preisen an."
 ---
 
-Modelldaten liegen in JSON-Dateien unter `packages/data/catalog/src/data/models`. Jedes Modell hat einen eigenen Ordner mit einer Datei `model.json`.
+Öffnen Sie ein GitHub-Issue, um ein Modell zu korrigieren oder einen fehlenden Eintrag anzufordern. Sie müssen weder JSON bearbeiten noch das Repository einrichten.
 
-## 1. Modell finden
+## Korrektur melden
 
-Suche das Modellverzeichnis anhand von Anbieter und Modellname. Beispiel:
+1. Kopieren Sie die URL der Phaseo-Seite des Modells oder die Modell-ID.
+2. [Melden Sie falsche Informationen](https://github.com/phaseoteam/Phaseo/issues/new?template=incorrect-info.yml) und beschreiben Sie den aktuellen Wert und die vorgeschlagene Korrektur.
+3. Fügen Sie offizielle Dokumentation, eine Veröffentlichungsankündigung oder eine andere überprüfbare Quelle hinzu.
 
-`packages/data/catalog/src/data/models/openai/gpt-5-2025-08-07/model.json`
+Geben Sie bei Preisen Anbieter, Währung, Abrechnungseinheit, betreffende Stufe und Gültigkeitsdatum an. Für Benchmark-Ergebnisse folgen Sie [Ergebnisse einreichen](../research/submitting-scores.mdx).
 
-## 2. Änderungen vornehmen
+## Fehlendes Modell anfordern
 
-Häufige Änderungen sind:
+[Öffnen Sie eine Datenanfrage](https://github.com/phaseoteam/Phaseo/issues/new?template=data-request.yml) mit Modellname, Organisation, offiziellem Link, Veröffentlichungsdatum und bekannten Funktionen. Ein Modell kann im Katalog erscheinen, bevor eine unterstützte Gateway-Route verfügbar ist.
 
-- Beschreibungen und Links
-- Fähigkeiten und unterstützte Endpunkte
-- Preis- oder Verfügbarkeitshinweise
-- Benchmark-Referenzen
+## Nach dem Einreichen
 
-Achte darauf, dass die Werte dem Schema in benachbarten Dateien entsprechen.
+Die Verantwortlichen prüfen die Belege und aktualisieren die Datenbank über den internen Editor. Verfolgen Sie Fragen und die Veröffentlichung im Issue. Tägliche JSON-Snapshots exportieren den Katalog; Änderungen an archivierten JSON-Dateien aktualisieren die Live-Website nicht.
 
-## 3. Daten prüfen
-
-Führe vor dem Erstellen einer PR das Datenvalidierungsskript aus:
-
-```bash
-pnpm validate:data
-```
-
-## 4. PR erstellen
-
-Fasse die Änderungen kurz zusammen und nenne die verwendeten Quellen.
-
+Administratoren können Datensätze unter [Interne Daten](https://phaseo.app/internal/data) bearbeiten und vorgeschlagene Preise unter [Anbieteraktualisierungen](https://phaseo.app/internal/data/imports) prüfen. Diese Seiten erfordern Administratorzugriff.

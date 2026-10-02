@@ -1,36 +1,25 @@
 ---
 icon: "building-2"
-title: "编辑组织"
-description: "在 Phaseo 数据集中更新组织记录。"
+title: "报告组织更新"
+description: "请求更正或补充目录中的公司和研究组织信息。"
 ---
 
-组织数据存放在 `packages/data/catalog/src/data/organisations` 下的 JSON 文件中。
+通过 GitHub 议题报告缺失或过时的组织信息。维护者会审核依据，并在数据库编辑器中应用获批的更改。
 
-## 1. 查找组织
+## 报告更正
 
-每个组织对应一个 JSON 文件，例如：
+1. 复制组织的 Phaseo 页面 URL 或 ID。
+2. [报告错误信息](https://github.com/phaseoteam/Phaseo/issues/new?template=incorrect-info.yml)，提供受影响的字段和建议值。
+3. 附上官方网站、公告或其他可验证来源的链接。
 
-`packages/data/catalog/src/data/organisations/openai.json`
+常见更正包括名称、描述、网站、所在地以及与模型或 API 提供商的关系。
 
-## 2. 进行修改
+## 请求添加缺失组织
 
-常见的更新内容包括：
+[创建数据请求](https://github.com/phaseoteam/Phaseo/issues/new?template=data-request.yml)，提供组织名称、官方网站以及相关模型或提供商链接。
 
-- 名称、描述和网站
-- 国家代码或元数据字段
-- 与模型或供应商的关联链接
+## 提交后
 
-请确保格式和字段顺序与相邻文件一致。
+请在议题中跟进审核和发布情况。更改目录记录无需编辑 JSON 或提交拉取请求。每日 JSON 文件只是导出文件，不会导入线上数据库。
 
-## 3. 验证数据
-
-创建 PR 前，请运行数据验证脚本：
-
-```bash
-pnpm validate:data
-```
-
-## 4. 创建 PR
-
-对事实内容的任何更改都请附上来源或参考资料。
-
+管理员通过[内部目录编辑器](https://phaseo.app/internal/data)管理组织，该编辑器需要管理员访问权限。

@@ -217,18 +217,11 @@ Use o modo de depuração somente em desenvolvimento ou em ambientes rigorosamen
 
 ## Estratégia de novas tentativas
 
-- **Erros da série 400:** corrija a solicitação antes de tentar novamente.
+- **Erros da série 400, exceto 429:** corrija a requisição, as credenciais ou a política de acesso antes de tentar novamente.
 - **429:** implemente espera exponencial e respeite o cabeçalho `Retry-After`.
-- **Erros da série 500:** tente novamente com segurança após uma breve espera.
+- **Erros da série 500:** use tentativas limitadas apenas quando for seguro repetir a operação. Um envio com resultado incerto pode já ter criado um trabalho ou gerado uma cobrança; consulte um trabalho aceito em vez de enviá-lo novamente.
 
-Exemplo:
-
-```js
-if (error.error === "rate_limit_error") {
-  await sleep(retryAfterMs);
-  return retryRequest();
-}
-```
+Defina um limite de tentativas e um prazo total e adicione variação aleatória aos intervalos de espera. Consulte os [limites de requisições](./limits.mdx) para os cabeçalhos de resposta e o tratamento de novas tentativas.
 
 ## Observações específicas sobre streaming
 
@@ -248,7 +241,7 @@ if (error.error === "rate_limit_error") {
 	<Card
 		title="Autenticação"
 		icon="key"
-		href="./authentication.mdx"
+		href="../developers/authentication.mdx"
 	>
 		Autentique-se com chaves de API Bearer.
 	</Card>
@@ -262,7 +255,7 @@ if (error.error === "rate_limit_error") {
 	<Card
 		title="Streaming"
 		icon="radio"
-		href="./streaming.mdx"
+		href="../guides/streaming.mdx"
 	>
 		Use SSE com segurança em fluxos de produção.
 	</Card>

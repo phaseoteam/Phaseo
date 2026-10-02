@@ -1,36 +1,25 @@
 ---
 icon: "building-2"
-title: "Eine Organisation bearbeiten"
-description: "Aktualisiere Organisationseinträge im Phaseo-Datensatz."
+title: "Organisationsaktualisierung melden"
+description: "Fordern Sie Korrekturen oder Ergänzungen zu Unternehmen und Forschungsorganisationen im Katalog an."
 ---
 
-Organisationsdaten liegen in JSON-Dateien unter `packages/data/catalog/src/data/organisations`.
+Melden Sie fehlende oder veraltete Organisationsangaben über ein GitHub-Issue. Die Verantwortlichen prüfen die Belege und übernehmen genehmigte Änderungen im Datenbankeditor.
 
-## 1. Organisation finden
+## Korrektur melden
 
-Jede Organisation ist in einer einzelnen JSON-Datei gespeichert, zum Beispiel:
+1. Kopieren Sie die URL der Phaseo-Seite der Organisation oder ihre ID.
+2. [Melden Sie falsche Informationen](https://github.com/phaseoteam/Phaseo/issues/new?template=incorrect-info.yml) mit dem betroffenen Feld und dem vorgeschlagenen Wert.
+3. Verlinken Sie eine offizielle Website, eine Ankündigung oder eine andere überprüfbare Quelle.
 
-`packages/data/catalog/src/data/organisations/openai.json`
+Häufige Korrekturen betreffen Name, Beschreibung, Website, Standort und Beziehungen zu Modellen oder API-Anbietern.
 
-## 2. Änderungen vornehmen
+## Fehlende Organisation anfordern
 
-Häufige Änderungen sind:
+[Öffnen Sie eine Datenanfrage](https://github.com/phaseoteam/Phaseo/issues/new?template=data-request.yml) mit dem Namen der Organisation, ihrer offiziellen Website und relevanten Modell- oder Anbieterlinks.
 
-- Name, Beschreibung und Website
-- Ländercode oder Metadatenfelder
-- Verknüpfungen zu Modellen oder Anbietern
+## Nach dem Einreichen
 
-Achte auf einheitliche Formatierung und Feldreihenfolge wie in benachbarten Dateien.
+Verfolgen Sie Prüfung und Veröffentlichung im Issue. Für die Änderung eines Katalogeintrags ist weder eine JSON-Bearbeitung noch ein Pull Request erforderlich. Tägliche JSON-Dateien sind Exporte; sie werden nicht in die Live-Datenbank importiert.
 
-## 3. Daten prüfen
-
-Führe vor dem Erstellen einer PR das Datenvalidierungsskript aus:
-
-```bash
-pnpm validate:data
-```
-
-## 4. PR erstellen
-
-Gib für alle sachlichen Änderungen Quellen oder Belege an.
-
+Administratoren verwalten Organisationen über den [internen Katalogeditor](https://phaseo.app/internal/data), der Administratorzugriff erfordert.

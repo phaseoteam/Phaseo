@@ -1,59 +1,29 @@
 ---
-title: "限额"
-description: "了解由提供商决定的速率限制，并构建可靠的重试策略。"
+title: "速率限制"
+description: "处理限流、提供商配额和有次数及时间限制的重试。"
 icon: "gauge"
 ---
 
-Gateway 目前不会额外施加平台级请求上限。大多数流量限制来自上游提供商。
+请求可能被所选提供商或适用的工作区或密钥策略限流。路由和回退可以减少提供商故障，但请求仍可能返回 `429`。
 
-## 限额如何运作
+## 提供商限制
 
-- 路由到所选模型的提供商可能会限制请求频率。
-- BYOK 流量遵循你在提供商账户上的限额。
-- Gateway 路由和回退机制可以减少失败，但仍可能收到 `429` 响应。
+BYOK 请求使用您的提供商账户限制。托管请求使用提供商的共享容量；该容量并非单个工作区的专属配额。
 
-## 处理 `429` 响应
+当路由到的提供商提供 `Retry-After` 值时，Phaseo 会验证并转发该值。BYOK 响应还可能包含 `X-Phaseo-Upstream-RateLimit-*` 标头。这些配额标头描述的是提供商的共享容量，因此托管请求会省略这些标头。其他上游标头不会被转发。
 
-- 如果响应包含 `Retry-After`，请遵循该值。
-- 使用带随机抖动的指数退避。
-- 设置最大重试次数，并在重试失败后妥善处理。
+## 处理被限流的请求
 
-如果路由到的提供商返回了 `Retry-After`，Phaseo 会转发经过验证的值。对于 BYOK 请求，提供商配额详情也可能通过 `X-Phaseo-Upstream-RateLimit-*` 标头返回。对于使用托管提供商的请求，系统会有意省略这些配额标头，因为它们描述的是 Phaseo 共享容量，而不是单个客户的额度。其他上游标头不会转发。
+1. 检查[错误代码](./errors.mdx)，区分提供商的临时限流与需要更改配置的策略或预算限制。
+2. 如果存在 `Retry-After`，请遵循其要求。该值可能是以秒为单位的延迟，也可能是 HTTP 日期；在安排重试前验证该值。
+3. 否则，使用带随机抖动和最大延迟的指数退避。
+4. 同时限制重试次数和总体截止时间。取消已放弃的任务，并在重试前释放每个失败响应的响应体。
+5. 如果限流持续，请降低并发量。
 
-```ts
-async function retryWithBackoff(run: () => Promise<Response>, maxRetries = 4) {
-  for (let attempt = 0; attempt <= maxRetries; attempt += 1) {
-    const response = await run();
-    if (response.status !== 429) return response;
+不要自动重试结果不明确的任务提交，也不要重复执行已完成的工具操作。即使客户端未收到响应，请求也可能已到达提供商；重试可能导致重复处理和重复收费。对于已受理的视频或批处理任务，请使用其状态端点，而不要重新提交。
 
-    const retryAfterHeader = response.headers.get("retry-after");
-    const retryAfterMs = retryAfterHeader
-      ? Number(retryAfterHeader) * 1000
-      : Math.min(1000 * 2 ** attempt, 8000);
+## 监控限流
 
-    await new Promise((resolve) => setTimeout(resolve, retryAfterMs));
-  }
+按端点和模型跟踪 `429` 的发生率，并在请求日志中检查回退频率。将应用日志与[路由设置](../guides/routing-and-fallbacks.mdx)以及 BYOK 流量的提供商账户配额进行对比。
 
-  throw new Error("Rate limit retries exhausted");
-}
-```
-
-## 监控
-
-- 按端点和模型跟踪 `429` 的发生率。
-- 关注回退频率，以发现提供商压力。
-- 排查事件时结合使用控制台指标和应用日志。
-
-## 相关页面
-
-- [身份验证](./authentication.mdx)
-- [参数](./parameters.mdx)
-- [错误与调试](./errors.mdx)
-
-<Visibility for="agents">
-如果你以智能体的身份实现重试：
-
-- 使用仓库技能实现安全的重试循环和超时控制。
-- 集中管理重试策略（次数、基础延迟和最大延迟）。
-- 未经产品明确批准，不要重试非幂等请求。
-</Visibility>
+有关工作区的支出和访问控制，请参阅[预算](./endpoint/budgets-list.mdx)和[防护规则](./endpoint/guardrails.mdx)。

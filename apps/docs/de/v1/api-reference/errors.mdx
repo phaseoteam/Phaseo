@@ -217,18 +217,11 @@ Verwenden Sie den Debug-Modus nur in der Entwicklung oder in streng kontrolliert
 
 ## Wiederholungsstrategie
 
-- **Fehler der 400er-Reihe:** Korrigieren Sie die Anfrage vor dem erneuten Versuch.
+- **400er-Fehler außer 429:** Korrigieren Sie die Anfrage, Zugangsdaten oder Zugriffsrichtlinie vor einem erneuten Versuch.
 - **429:** Verwenden Sie exponentielles Backoff und beachten Sie den `Retry-After`-Header.
-- **Fehler der 500er-Reihe:** Versuchen Sie es nach kurzer Wartezeit sicher erneut.
+- **500er-Fehler:** Verwenden Sie begrenzte Wiederholungsversuche nur, wenn die Wiederholung sicher ist. Eine Übermittlung mit unklarem Ergebnis kann bereits einen Job erstellt oder Kosten verursacht haben; rufen Sie einen angenommenen Job ab, statt ihn erneut zu übermitteln.
 
-Beispiel:
-
-```js
-if (error.error === "rate_limit_error") {
-  await sleep(retryAfterMs);
-  return retryRequest();
-}
-```
+Legen Sie eine maximale Anzahl von Versuchen und eine Gesamtfrist fest und ergänzen Sie die Backoff-Wartezeiten um zufällige Streuung. Informationen zu Antwort-Headern und Wiederholungsversuchen finden Sie unter [Anfragelimits](./limits.mdx).
 
 ## Hinweise speziell für Streaming
 
@@ -248,7 +241,7 @@ if (error.error === "rate_limit_error") {
 	<Card
 		title="Authentifizierung"
 		icon="key"
-		href="./authentication.mdx"
+		href="../developers/authentication.mdx"
 	>
 		Authentifizieren Sie sich mit Bearer-API-Schlüsseln.
 	</Card>
@@ -262,7 +255,7 @@ if (error.error === "rate_limit_error") {
 	<Card
 		title="Streaming"
 		icon="radio"
-		href="./streaming.mdx"
+		href="../guides/streaming.mdx"
 	>
 		Verwenden Sie SSE sicher in Produktionsabläufen.
 	</Card>

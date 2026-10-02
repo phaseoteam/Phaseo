@@ -1,37 +1,25 @@
 ---
 icon: "brain-circuit"
-title: "Editar un modelo"
-description: "Actualiza los metadatos, los precios y las capacidades del modelo en el conjunto de datos de Phaseo."
+title: "Comunicar una actualización de modelo"
+description: "Solicita correcciones o incorporaciones a los metadatos, capacidades, disponibilidad y precios de los modelos."
 ---
 
-Los datos de los modelos están en archivos JSON dentro de `packages/data/catalog/src/data/models`. Cada modelo tiene su propia carpeta y un archivo `model.json`.
+Abre una incidencia en GitHub para corregir un modelo o solicitar una entrada que falte. No necesitas editar JSON ni configurar el repositorio.
 
-## 1. Busca el modelo
+## Comunicar una corrección
 
-Busca el directorio del modelo por proveedor y nombre. Por ejemplo:
+1. Copia la URL de la página del modelo en Phaseo o su ID.
+2. [Comunica información incorrecta](https://github.com/phaseoteam/Phaseo/issues/new?template=incorrect-info.yml), describiendo el valor actual y la corrección propuesta.
+3. Incluye documentación oficial, un anuncio de lanzamiento u otra fuente verificable.
 
-`packages/data/catalog/src/data/models/openai/gpt-5-2025-08-07/model.json`
+Para los precios, incluye el proveedor, la moneda, la unidad de facturación, el nivel aplicable y la fecha de entrada en vigor. Para las puntuaciones de evaluaciones, sigue [Enviar puntuaciones](../research/submitting-scores.mdx).
 
-## 2. Realiza los cambios
+## Solicitar un modelo que falte
 
-Entre los cambios habituales se incluyen:
+[Abre una solicitud de datos](https://github.com/phaseoteam/Phaseo/issues/new?template=data-request.yml) con el nombre del modelo, la organización, el enlace oficial, la fecha de lanzamiento y las capacidades conocidas. Un modelo puede aparecer en el catálogo antes de disponer de una ruta compatible en Gateway.
 
-- Descripciones y enlaces
-- Capacidades y endpoints compatibles
-- Precios o notas sobre disponibilidad
-- Referencias a benchmarks
+## Después del envío
 
-Mantén los valores coherentes con el esquema existente en los archivos cercanos.
+Los responsables revisan las pruebas y actualizan la base de datos mediante el editor interno. Sigue las preguntas y la publicación en la incidencia. Las instantáneas JSON diarias exportan el catálogo; los cambios en archivos JSON archivados no actualizan el sitio en producción.
 
-## 3. Valida los datos
-
-Ejecuta el script de validación de datos antes de abrir una PR:
-
-```bash
-pnpm validate:data
-```
-
-## 4. Abre una PR
-
-Incluye un breve resumen de los cambios y las fuentes utilizadas.
-
+Los administradores pueden editar registros en [Datos internos](https://phaseo.app/internal/data) y revisar precios propuestos en [Actualizaciones de proveedores](https://phaseo.app/internal/data/imports). Estas páginas requieren acceso de administrador.

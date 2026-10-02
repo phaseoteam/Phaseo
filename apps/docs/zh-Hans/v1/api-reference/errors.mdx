@@ -217,18 +217,11 @@ icon: "bug"
 
 ## 重试策略
 
-- **400 系列错误：**重试前修正请求。
+- **429 以外的 400 系列错误：**重试前请修正请求、凭据或访问策略。
 - **429：**实施指数退避并遵循 `Retry-After` 标头。
-- **500 系列错误：**短暂等待后安全重试。
+- **500 系列错误：**仅在重复操作安全时进行有限重试。结果不明确的提交可能已经创建了任务或产生了费用；请获取已受理的任务，而不要重新提交。
 
-示例：
-
-```js
-if (error.error === "rate_limit_error") {
-  await sleep(retryAfterMs);
-  return retryRequest();
-}
-```
+设置重试次数上限和总体截止时间，并在退避延迟中加入随机抖动。有关响应标头和重试处理，请参阅[速率限制](./limits.mdx)。
 
 ## 流式传输注意事项
 
@@ -248,7 +241,7 @@ if (error.error === "rate_limit_error") {
 	<Card
 		title="身份验证"
 		icon="key"
-		href="./authentication.mdx"
+		href="../developers/authentication.mdx"
 	>
 		使用 Bearer API 密钥进行身份验证。
 	</Card>
@@ -262,7 +255,7 @@ if (error.error === "rate_limit_error") {
 	<Card
 		title="流式传输"
 		icon="radio"
-		href="./streaming.mdx"
+		href="../guides/streaming.mdx"
 	>
 		在生产流程中安全使用 SSE。
 	</Card>

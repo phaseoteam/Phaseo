@@ -217,18 +217,11 @@ Usa el modo de depuración solo en desarrollo o en entornos estrictamente contro
 
 ## Estrategia de reintentos
 
-- **Errores de la serie 400:** corrige la solicitud antes de reintentar.
+- **Errores de la serie 400 salvo 429:** corrige la solicitud, las credenciales o la política de acceso antes de reintentar.
 - **429:** usa espera progresiva exponencial y respeta el encabezado `Retry-After`.
-- **Errores de la serie 500:** reintenta de forma segura tras una breve espera.
+- **Errores de la serie 500:** usa reintentos limitados solo cuando sea seguro repetir la operación. Un envío con resultado incierto puede haber creado ya un trabajo o generado un cargo; recupera un trabajo aceptado en lugar de enviarlo de nuevo.
 
-Ejemplo:
-
-```js
-if (error.error === "rate_limit_error") {
-  await sleep(retryAfterMs);
-  return retryRequest();
-}
-```
+Establece un límite de intentos y un plazo total, y añade variación aleatoria a los tiempos de espera. Consulta los [límites de solicitudes](./limits.mdx) para las cabeceras de respuesta y la gestión de reintentos.
 
 ## Notas específicas de streaming
 
@@ -248,7 +241,7 @@ if (error.error === "rate_limit_error") {
 	<Card
 		title="Autenticación"
 		icon="key"
-		href="./authentication.mdx"
+		href="../developers/authentication.mdx"
 	>
 		Autentícate con claves de API Bearer.
 	</Card>
@@ -262,7 +255,7 @@ if (error.error === "rate_limit_error") {
 	<Card
 		title="Streaming"
 		icon="radio"
-		href="./streaming.mdx"
+		href="../guides/streaming.mdx"
 	>
 		Usa SSE de forma segura en flujos de producción.
 	</Card>

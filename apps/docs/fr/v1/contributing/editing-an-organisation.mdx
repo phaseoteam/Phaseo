@@ -1,36 +1,25 @@
 ---
 icon: "building-2"
-title: "Modifier une organisation"
-description: "Mettez à jour les fiches des organisations dans le jeu de données Phaseo."
+title: "Signaler une mise à jour d’organisation"
+description: "Demandez des corrections ou des ajouts aux entreprises et aux organismes de recherche du catalogue."
 ---
 
-Les données des organisations se trouvent dans des fichiers JSON sous `packages/data/catalog/src/data/organisations`.
+Signalez les informations d’organisation manquantes ou obsolètes dans une issue GitHub. Les responsables examinent les preuves et appliquent les modifications approuvées dans l’éditeur de base de données.
 
-## 1. Trouver l’organisation
+## Signaler une correction
 
-Chaque organisation est définie dans un seul fichier JSON. Par exemple :
+1. Copiez l’URL de la page Phaseo de l’organisation ou son identifiant.
+2. [Signalez une information incorrecte](https://github.com/phaseoteam/Phaseo/issues/new?template=incorrect-info.yml) en indiquant le champ concerné et la valeur proposée.
+3. Ajoutez un lien vers un site officiel, une annonce ou une autre source vérifiable.
 
-`packages/data/catalog/src/data/organisations/openai.json`
+Les corrections courantes portent sur le nom, la description, le site web, la localisation et les relations avec les modèles ou les fournisseurs d’API.
 
-## 2. Effectuer les modifications
+## Demander une organisation manquante
 
-Les modifications courantes comprennent :
+[Ouvrez une demande de données](https://github.com/phaseoteam/Phaseo/issues/new?template=data-request.yml) avec le nom de l’organisation, son site officiel et les liens pertinents vers les modèles ou fournisseurs.
 
-- Nom, description et site web
-- Code pays ou champs de métadonnées
-- Liens vers les modèles ou les fournisseurs associés
+## Après l’envoi
 
-Respectez le format et l’ordre des champs des fichiers voisins.
+Suivez la revue et la publication dans l’issue. Une modification d’enregistrement du catalogue ne nécessite ni modification JSON ni pull request. Les fichiers JSON quotidiens sont des exports ; ils ne sont pas importés dans la base de données en production.
 
-## 3. Valider les données
-
-Exécutez le script de validation des données avant d’ouvrir une PR :
-
-```bash
-pnpm validate:data
-```
-
-## 4. Ouvrir une PR
-
-Citez vos sources pour toute modification factuelle.
-
+Les administrateurs gèrent les organisations via l’[éditeur interne du catalogue](https://phaseo.app/internal/data), qui nécessite un accès administrateur.

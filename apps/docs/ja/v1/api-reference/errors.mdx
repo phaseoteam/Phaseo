@@ -217,18 +217,11 @@ Phaseo がプロバイダーに到達したものの、リクエストが失敗�
 
 ## 再試行の方針
 
-- **400 番台のエラー:** 再試行する前にリクエストを修正します。
+- **429 以外の 400 番台のエラー：**再試行する前に、リクエスト、認証情報、またはアクセスポリシーを修正してください。
 - **429:** 指数バックオフを実装し、`Retry-After` ヘッダーに従います。
-- **500 番台のエラー:** 少し待ってから安全に再試行します。
+- **500 番台のエラー：**操作を安全に繰り返せる場合に限り、上限を設けて再試行してください。結果が不明な送信でも、すでにジョブが作成されたり料金が発生したりしている可能性があります。受け付け済みのジョブは、再送信せずに取得してください。
 
-例：
-
-```js
-if (error.error === "rate_limit_error") {
-  await sleep(retryAfterMs);
-  return retryRequest();
-}
-```
+試行回数の上限と全体の期限を設定し、バックオフの待機時間にランダムな揺らぎを加えてください。レスポンスヘッダーと再試行の処理については、[レート制限](./limits.mdx)を参照してください。
 
 ## ストリーミング固有の注意点
 
@@ -248,7 +241,7 @@ if (error.error === "rate_limit_error") {
 	<Card
 		title="認証"
 		icon="key"
-		href="./authentication.mdx"
+		href="../developers/authentication.mdx"
 	>
 		Bearer API キーで認証します。
 	</Card>
@@ -262,7 +255,7 @@ if (error.error === "rate_limit_error") {
 	<Card
 		title="ストリーミング"
 		icon="radio"
-		href="./streaming.mdx"
+		href="../guides/streaming.mdx"
 	>
 		本番ワークフローで SSE を安全に使用します。
 	</Card>

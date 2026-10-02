@@ -1,36 +1,25 @@
 ---
 icon: "building-2"
-title: "Editar uma organização"
-description: "Atualize os registros de organizações no conjunto de dados do Phaseo."
+title: "Informar uma atualização de organização"
+description: "Solicite correções ou acréscimos às empresas e organizações de pesquisa do catálogo."
 ---
 
-Os dados das organizações ficam em arquivos JSON em `packages/data/catalog/src/data/organisations`.
+Informe detalhes ausentes ou desatualizados de organizações por uma issue no GitHub. Os mantenedores analisam as evidências e aplicam as alterações aprovadas no editor do banco de dados.
 
-## 1. Localize a organização
+## Informar uma correção
 
-Cada organização corresponde a um único arquivo JSON. Por exemplo:
+1. Copie a URL da página da organização no Phaseo ou seu ID.
+2. [Informe dados incorretos](https://github.com/phaseoteam/Phaseo/issues/new?template=incorrect-info.yml) com o campo afetado e o valor proposto.
+3. Inclua um link para um site oficial, um anúncio ou outra fonte verificável.
 
-`packages/data/catalog/src/data/organisations/openai.json`
+Correções comuns incluem nome, descrição, site, localização e relações com modelos ou provedores de API.
 
-## 2. Faça as alterações
+## Solicitar uma organização ausente
 
-As alterações mais comuns incluem:
+[Abra uma solicitação de dados](https://github.com/phaseoteam/Phaseo/issues/new?template=data-request.yml) com o nome da organização, o site oficial e links relevantes de modelos ou provedores.
 
-- Nome, descrição e site
-- Código do país ou campos de metadados
-- Links de relacionamento com modelos ou provedores
+## Após o envio
 
-Mantenha a formatação e a ordem dos campos de acordo com os arquivos próximos.
+Acompanhe a revisão e a publicação na issue. Uma alteração de registro do catálogo não exige edição de JSON nem pull request. Os arquivos JSON diários são exportações; eles não são importados para o banco de dados em produção.
 
-## 3. Valide os dados
-
-Execute o script de validação de dados antes de abrir um PR:
-
-```bash
-pnpm validate:data
-```
-
-## 4. Abra um PR
-
-Inclua fontes ou referências para toda alteração factual.
-
+Administradores gerenciam organizações pelo [editor interno do catálogo](https://phaseo.app/internal/data), que exige acesso de administrador.

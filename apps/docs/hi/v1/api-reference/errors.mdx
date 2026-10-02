@@ -217,18 +217,11 @@ Debug mode केवल development या कड़ाई से नियं�
 
 ## पुनः प्रयास की रणनीति
 
-- **400-series errors:** Retry से पहले request ठीक करें।
+- **429 को छोड़कर 400-श्रेणी की त्रुटियाँ:** पुनः प्रयास से पहले अनुरोध, क्रेडेंशियल या पहुँच नीति ठीक करें।
 - **429:** Exponential backoff लागू करें और `Retry-After` header का पालन करें।
-- **500-series errors:** थोड़ी देर बाद सुरक्षित रूप से retry करें।
+- **500-श्रेणी की त्रुटियाँ:** सीमित पुनः प्रयास केवल तभी करें जब ऑपरेशन दोहराना सुरक्षित हो। अनिश्चित परिणाम वाले सबमिशन से जॉब बन चुका हो सकता है या शुल्क लग चुका हो सकता है; स्वीकार किए गए जॉब को दोबारा भेजने के बजाय उसकी जानकारी प्राप्त करें।
 
-उदाहरण:
-
-```js
-if (error.error === "rate_limit_error") {
-  await sleep(retryAfterMs);
-  return retryRequest();
-}
-```
+प्रयासों की सीमा और कुल समय सीमा तय करें तथा बैकऑफ़ विलंब में यादृच्छिक बदलाव जोड़ें। प्रतिक्रिया हेडर और पुनः प्रयास संभालने के लिए [अनुरोध सीमाएँ](./limits.mdx) देखें।
 
 ## स्ट्रीमिंग के लिए खास बातें
 
@@ -248,7 +241,7 @@ if (error.error === "rate_limit_error") {
 	<Card
 		title="प्रमाणीकरण"
 		icon="key"
-		href="./authentication.mdx"
+		href="../developers/authentication.mdx"
 	>
 		Bearer API keys से authenticate करें।
 	</Card>
@@ -262,7 +255,7 @@ if (error.error === "rate_limit_error") {
 	<Card
 		title="स्ट्रीमिंग"
 		icon="radio"
-		href="./streaming.mdx"
+		href="../guides/streaming.mdx"
 	>
 		Production flows में SSE को सुरक्षित रूप से उपयोग करें।
 	</Card>

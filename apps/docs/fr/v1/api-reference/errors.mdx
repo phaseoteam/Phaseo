@@ -217,18 +217,11 @@ Utilisez le mode de débogage uniquement en développement ou dans des environne
 
 ## Stratégie de nouvelle tentative
 
-- **Erreurs de la série 400 :** corrigez la requête avant de réessayer.
+- **Erreurs de la série 400 autres que 429 :** corrigez la requête, les identifiants ou la politique d’accès avant de réessayer.
 - **429 :** appliquez un délai exponentiel et respectez l’en-tête `Retry-After`.
-- **Erreurs de la série 500 :** réessayez de manière sûre après une courte pause.
+- **Erreurs de la série 500 :** utilisez des tentatives limitées uniquement lorsque répéter l’opération est sûr. Une soumission dont le résultat est incertain peut déjà avoir créé une tâche ou entraîné des frais ; récupérez une tâche acceptée au lieu de la soumettre à nouveau.
 
-Exemple :
-
-```js
-if (error.error === "rate_limit_error") {
-  await sleep(retryAfterMs);
-  return retryRequest();
-}
-```
+Définissez une limite de tentatives et une échéance globale, et ajoutez une variation aléatoire aux délais d’attente. Consultez les [limites de requêtes](./limits.mdx) pour les en-têtes de réponse et la gestion des nouvelles tentatives.
 
 ## Particularités du streaming
 
@@ -248,7 +241,7 @@ if (error.error === "rate_limit_error") {
 	<Card
 		title="Authentification"
 		icon="key"
-		href="./authentication.mdx"
+		href="../developers/authentication.mdx"
 	>
 		Authentifiez-vous avec des clés d’API Bearer.
 	</Card>
@@ -262,7 +255,7 @@ if (error.error === "rate_limit_error") {
 	<Card
 		title="Streaming"
 		icon="radio"
-		href="./streaming.mdx"
+		href="../guides/streaming.mdx"
 	>
 		Utilisez SSE en toute sécurité dans les flux de production.
 	</Card>

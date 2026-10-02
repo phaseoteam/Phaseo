@@ -1,59 +1,29 @@
 ---
-title: "Limites"
-description: "Entenda os limites de requisição definidos pelos provedores e crie uma estratégia de repetição resiliente."
+title: "Limites de requisições"
+description: "Gerencie restrições de taxa, cotas de provedores e tentativas limitadas."
 icon: "gauge"
 ---
 
-Atualmente, o Gateway não impõe um limite separado de requisições em nível de plataforma. A maior parte do controle de tráfego vem dos provedores upstream.
+Uma requisição pode ser limitada pelo provedor selecionado ou por uma política aplicável ao espaço de trabalho ou à chave. O roteamento e as alternativas podem reduzir falhas do provedor, mas uma requisição ainda pode retornar `429`.
 
-## Como os limites funcionam
+## Limites do provedor
 
-- O provedor selecionado para o modelo pode limitar a frequência das requisições.
-- O tráfego BYOK segue os limites da sua conta no provedor.
-- O roteamento e os fallbacks do Gateway podem reduzir falhas, mas respostas `429` ainda podem ocorrer.
+Requisições BYOK usam os limites da sua conta no provedor. Requisições gerenciadas usam capacidade compartilhada do provedor; essa capacidade não é uma cota individual do espaço de trabalho.
 
-## Como lidar com respostas `429`
+O Phaseo encaminha um valor validado de `Retry-After` quando o provedor para o qual a requisição foi roteada o fornece. Respostas BYOK também podem incluir cabeçalhos `X-Phaseo-Upstream-RateLimit-*`. Esses cabeçalhos de cota são omitidos em requisições gerenciadas porque descrevem capacidade compartilhada do provedor. Outros cabeçalhos de origem não são encaminhados.
 
-- Respeite `Retry-After` quando estiver presente.
-- Use backoff exponencial com jitter.
-- Defina um número máximo de tentativas e trate a falha de forma adequada.
+## Gerenciar uma requisição limitada
 
-A Phaseo encaminha um valor validado de `Retry-After` quando o provedor selecionado o envia. Em solicitações BYOK, detalhes de cota do provedor também podem ser retornados nos cabeçalhos `X-Phaseo-Upstream-RateLimit-*`. Esses cabeçalhos de cota são omitidos intencionalmente em solicitações feitas a provedores gerenciados, pois descrevem a capacidade compartilhada da Phaseo, não o limite de um cliente específico. Outros cabeçalhos upstream não são encaminhados.
+1. Inspecione o [código de erro](./errors.mdx) para distinguir uma restrição temporária do provedor de uma restrição de política ou orçamento que exija alterações de configuração.
+2. Respeite `Retry-After` quando estiver presente. Pode ser um intervalo em segundos ou uma data HTTP; valide o valor antes de agendar uma nova tentativa.
+3. Caso contrário, use espera exponencial com variação aleatória e um intervalo máximo.
+4. Limite as novas tentativas tanto pela quantidade quanto por um prazo total. Cancele o trabalho abandonado e libere o corpo de cada resposta com falha antes de tentar novamente.
+5. Reduza a concorrência se a restrição persistir.
 
-```ts
-async function retryWithBackoff(run: () => Promise<Response>, maxRetries = 4) {
-  for (let attempt = 0; attempt <= maxRetries; attempt += 1) {
-    const response = await run();
-    if (response.status !== 429) return response;
+Não repita automaticamente o envio de um trabalho com resultado incerto nem ações de ferramentas já concluídas. Uma requisição pode ter chegado ao provedor mesmo que o cliente tenha perdido a resposta; novas tentativas podem duplicar trabalho e cobranças. Para um trabalho de vídeo ou em lote aceito, use seu endpoint de status em vez de enviá-lo novamente.
 
-    const retryAfterHeader = response.headers.get("retry-after");
-    const retryAfterMs = retryAfterHeader
-      ? Number(retryAfterHeader) * 1000
-      : Math.min(1000 * 2 ** attempt, 8000);
+## Monitorar restrições de taxa
 
-    await new Promise((resolve) => setTimeout(resolve, retryAfterMs));
-  }
+Acompanhe a frequência de `429` por endpoint e modelo e inspecione a frequência das alternativas nos logs de requisições. Compare os logs da sua aplicação com as [configurações de roteamento](../guides/routing-and-fallbacks.mdx) e as cotas da conta no provedor para tráfego BYOK.
 
-  throw new Error("Rate limit retries exhausted");
-}
-```
-
-## Monitoramento
-
-- Acompanhe a taxa de respostas `429` por endpoint e modelo.
-- Observe a frequência de fallbacks para identificar pressão sobre os provedores.
-- Analise as métricas do painel junto com os logs do aplicativo durante a investigação de incidentes.
-
-## Páginas relacionadas
-
-- [Autenticação](./authentication.mdx)
-- [Parâmetros](./parameters.mdx)
-- [Erros e depuração](./errors.mdx)
-
-<Visibility for="agents">
-Se você estiver implementando novas tentativas como agente:
-
-- Use as skills do repositório para criar loops seguros e controlar timeouts.
-- Centralize as configurações de repetição (número de tentativas, espera inicial e espera máxima).
-- Nunca repita solicitações não idempotentes sem aprovação explícita do produto.
-</Visibility>
+Consulte os [orçamentos](./endpoint/budgets-list.mdx) e as [proteções](./endpoint/guardrails.mdx) para os controles de gastos e acesso do espaço de trabalho.
