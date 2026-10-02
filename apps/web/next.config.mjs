@@ -95,7 +95,7 @@ const nextConfig = {
         ],
       },
       {
-        source: "/oauth/consent",
+        source: "/:locale(en-GB|en-US|es-ES|fr-FR|de-DE|pt-BR|ja|zh-Hans|hi|ar-SA)?/oauth/consent",
         headers: [
           {
             key: "Content-Security-Policy",

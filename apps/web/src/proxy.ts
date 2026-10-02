@@ -14,6 +14,7 @@ const SESSION_MIDDLEWARE_PAGE_ROOTS = [
 	"/onboarding",
 	"/internal",
 	"/chat",
+	"/oauth/consent",
 ];
 // Ignore common static assets without excluding dotted model identifiers such as gpt-4.1.
 const STATIC_ASSET_PATH_SUFFIX =
@@ -182,8 +183,27 @@ export async function proxy(request: NextRequest) {
 		if (sessionResponse.status >= 300 && sessionResponse.status < 400) {
 			return sessionResponse;
 		}
+		const overriddenHeaders = new Set(
+			(i18nResponse.headers.get("x-middleware-override-headers") ?? "")
+				.split(",").filter(Boolean),
+		);
+		for (const name of (sessionResponse.headers.get("x-middleware-override-headers") ?? "").split(",").filter(Boolean)) {
+			// next-intl owns the negotiated locale; session middleware owns
+			// refreshed authentication and workspace request headers.
+			if (name === "x-next-intl-locale" && overriddenHeaders.has(name)) continue;
+			const value = sessionResponse.headers.get(`x-middleware-request-${name}`);
+			if (value !== null) i18nResponse.headers.set(`x-middleware-request-${name}`, value);
+			overriddenHeaders.add(name);
+		}
+		if (overriddenHeaders.size) {
+			i18nResponse.headers.set("x-middleware-override-headers", [...overriddenHeaders].join(","));
+		}
 		for (const cookie of sessionResponse.cookies.getAll()) {
 			i18nResponse.cookies.set(cookie);
+		}
+		for (const name of ["cache-control", "expires", "pragma"]) {
+			const value = sessionResponse.headers.get(name);
+			if (value !== null) i18nResponse.headers.set(name, value);
 		}
 		return i18nResponse;
 	}

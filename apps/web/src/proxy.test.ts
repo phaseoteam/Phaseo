@@ -44,7 +44,14 @@ function configureSupabase({
 	};
 
 	mockCreateServerClient.mockReturnValue(
-		{ auth } as unknown as ReturnType<typeof createServerClient>,
+		{
+			auth,
+			from: jest.fn(() => ({
+				select: jest.fn(() => ({
+					eq: jest.fn(() => ({ maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null }) })),
+				})),
+			})),
+		} as unknown as ReturnType<typeof createServerClient>,
 	);
 	return auth;
 }
@@ -142,7 +149,7 @@ describe("public localisation proxy", () => {
 		);
 	});
 
-	it.each(["/de-DE/apps", "/fr-FR/gateway/usage", "/ja/chat"])(
+	it.each(["/de-DE/apps", "/fr-FR/gateway/usage", "/ja/chat", "/oauth/consent", ...publicLocales.map((locale) => `/${locale}/oauth/consent`)])(
 		"preserves MFA redirects on %s",
 		async (pathname) => {
 			configureSupabase({
@@ -160,6 +167,27 @@ describe("public localisation proxy", () => {
 			expect(location.searchParams.get("returnUrl")).toBe(pathname);
 		},
 	);
+
+	it("forwards refreshed session and workspace cookies without losing the locale rewrite", async () => {
+		const auth = configureSupabase({ user: { id: "user-1" }, session: { access_token: "refreshed-token" } });
+		mockCreateServerClient.mockImplementationOnce((_url, _key, options) => {
+			options.cookies.setAll?.([
+				{ name: "sb-session", value: "refreshed", options: {} },
+				{ name: "activeWorkspaceId", value: "workspace-new", options: {} },
+			], { "Cache-Control": "private, no-store", "Pragma": "no-cache" });
+			return { auth } as unknown as ReturnType<typeof createServerClient>;
+		});
+		const response = await proxy(new NextRequest(`${origin}/settings`, {
+			headers: { cookie: "sb-session=expired; activeWorkspaceId=workspace-old" },
+		}));
+		expect(new URL(response.headers.get("x-middleware-rewrite")!).pathname).toBe("/en-GB/settings");
+		expect(response.headers.get("x-middleware-request-cookie")).toContain("sb-session=refreshed");
+		expect(response.headers.get("x-middleware-request-cookie")).toContain("activeWorkspaceId=workspace-new");
+		expect(response.headers.get("x-middleware-request-x-next-intl-locale")).toBe("en-GB");
+		expect(response.cookies.get("sb-session")?.value).toBe("refreshed");
+		expect(response.headers.get("cache-control")).toBe("private, no-store");
+		expect(response.headers.get("pragma")).toBe("no-cache");
+	});
 
 	it("blocks retired blog posts under a locale prefix", async () => {
 		const response = await proxy(

@@ -87,6 +87,15 @@ export async function approveAuthorizationAction(
 			return { error: "Unauthorized" };
 		}
 
+		// Server actions are callable directly, so the proxy gate alone is
+		// insufficient for granting an application access to an account.
+		const { data: assurance, error: assuranceError } =
+			await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+		if (assuranceError || !assurance ||
+			(assurance.nextLevel === "aal2" && assurance.currentLevel !== "aal2")) {
+			return { error: "Unauthorized" };
+		}
+
 		let resolvedClientId = input.client_id?.trim() || null;
 		let scopes = (input.scopes ?? []).filter(
 			(scope): scope is string => typeof scope === "string" && scope.trim().length > 0

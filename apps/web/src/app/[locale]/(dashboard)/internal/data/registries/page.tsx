@@ -1,1 +1,2 @@
-export { default } from "../../../../../(dashboard)/internal/data/registries/page";
+import { RegistryEditor } from "@/app/(dashboard)/internal/data/registries/RegistryEditor";
+export default function RegistriesPage() { return <RegistryEditor />; }

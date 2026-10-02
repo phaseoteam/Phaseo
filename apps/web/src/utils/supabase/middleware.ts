@@ -14,6 +14,7 @@ const ACTIVE_WORKSPACE_COOKIE_MAX_AGE = 60 * 60 * 24 * 30
 
 export async function updateSession(request: NextRequest) {
     const forwardedHeaders = new Headers(request.headers)
+    const responseHeaders = new Headers()
     const responseCookies = new Map<string, {
         name: string
         value: string
@@ -29,6 +30,7 @@ export async function updateSession(request: NextRequest) {
         responseCookies.forEach(({ name, value, options }) => {
             nextResponse.cookies.set(name, value, options)
         })
+        responseHeaders.forEach((value, name) => nextResponse.headers.set(name, value))
         return nextResponse
     }
 
@@ -38,7 +40,8 @@ export async function updateSession(request: NextRequest) {
         {
             cookies: {
                 getAll: () => request.cookies.getAll(),
-                setAll: (cookiesToSet: Array<{ name: string; value: string; options?: CookieOptions }>) => {
+                setAll: (cookiesToSet: Array<{ name: string; value: string; options?: CookieOptions }>, headers: Record<string, string> = {}) => {
+                    Object.entries(headers).forEach(([name, value]) => responseHeaders.set(name, value))
                     cookiesToSet.forEach((cookie) => {
                         request.cookies.set(cookie.name, cookie.value)
                         responseCookies.set(cookie.name, cookie)

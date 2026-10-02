@@ -23,6 +23,19 @@ function walk(directory) {
   }
 }
 walk(path.join(webRoot, 'src/app/[locale]'));
+// A second page tree bypasses locale providers and can fail prerendering even
+// when the same page is re-exported by a localized wrapper.
+function assertLocalePages(directory) {
+  for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+    const file = path.join(directory, entry.name);
+    if (entry.isDirectory()) {
+      if (relative(file) !== 'src/app/[locale]') assertLocalePages(file);
+    } else if (/^page\.[cm]?[jt]sx?$/.test(entry.name)) {
+      throw new Error(`Page outside the locale tree: ${relative(file)}. Move its implementation under src/app/[locale].`);
+    }
+  }
+}
+assertLocalePages(path.join(webRoot, 'src/app'));
 for (const name of ['layout.tsx', 'global-error.tsx', 'global-not-found.tsx', 'error.tsx', 'not-found.tsx']) {
   const file = path.join(webRoot, 'src/app', name);
   if (fs.existsSync(file)) seeds.push(file);
