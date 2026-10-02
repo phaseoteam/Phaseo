@@ -9,6 +9,7 @@ import { linkedModels, modelLink, modelContext } from "./integration";
 import { SavedShortlists } from "./SavedShortlists";
 import { UsageDashboard } from "./UsageDashboard";
 import { PromptComparison } from "./PromptComparison";
+import { SelectField } from "./Select";
 
 const bridge = new App(
   { name: "Phaseo model explorer", version: "0.1.0" },
@@ -76,8 +77,7 @@ function Explorer() {
     bridge.onhostcontextchanged = (context) => {
       if (context.theme) document.documentElement.dataset.theme = context.theme;
       const deepLink = context["openai/deepLink"] as
-        | { url?: string }
-        | undefined;
+        { url?: string } | undefined;
       if (deepLink?.url) void restoreLink(deepLink.url);
     };
     void bridge
@@ -88,8 +88,7 @@ function Explorer() {
         if (context?.theme)
           document.documentElement.dataset.theme = context.theme;
         const deepLink = context?.["openai/deepLink"] as
-          | { url?: string }
-          | undefined;
+          { url?: string } | undefined;
         if (deepLink?.url) void restoreLink(deepLink.url);
         if (
           context?.displayMode !== "fullscreen" &&
@@ -438,33 +437,36 @@ function Explorer() {
             </label>
             <label>
               Modality
-              <select
+              <SelectField
+                label="Modality"
                 value={modality}
-                onChange={(event) => setModality(event.target.value)}
-              >
-                <option value="">Any input</option>
-                {["text", "image", "audio", "video"].map((value) => (
-                  <option key={value} value={value}>
-                    {value}
-                  </option>
-                ))}
-              </select>
+                onValueChange={setModality}
+                options={[
+                  { value: "", label: "Any input" },
+                  ...["text", "image", "audio", "video"].map((value) => ({
+                    value,
+                    label: value,
+                  })),
+                ]}
+              />
             </label>
             <button className="primary" disabled={!connected || busy}>
               {busy ? "Searching…" : "Search"}
             </button>
             <label>
               Sort by
-              <select
+              <SelectField
+                label="Sort by"
                 value={sortBy}
-                onChange={(event) => setSortBy(event.target.value)}
-              >
-                <option value="relevance">Relevance</option>
-                <option value="input_price">Input price</option>
-                <option value="output_price">Output price</option>
-                <option value="context_length">Context length</option>
-                <option value="provider_count">Provider count</option>
-              </select>
+                onValueChange={setSortBy}
+                options={[
+                  { value: "relevance", label: "Relevance" },
+                  { value: "input_price", label: "Input price" },
+                  { value: "output_price", label: "Output price" },
+                  { value: "context_length", label: "Context length" },
+                  { value: "provider_count", label: "Provider count" },
+                ]}
+              />
             </label>
             <label className="gateway-filter">
               <input

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { Model } from "./model";
 import { integrationExample } from "./workflows";
+import { SelectField } from "./Select";
 
 export function IntegrationExamples({ model }: { model: Model }) {
   const [language, setLanguage] = useState("TypeScript");
@@ -22,14 +23,15 @@ export function IntegrationExamples({ model }: { model: Model }) {
       <h3>Integrate this model</h3>
       <label>
         Language
-        <select
+        <SelectField
+          label="Language"
           value={language}
-          onChange={(event) => setLanguage(event.target.value)}
-        >
-          {["TypeScript", "Python", "curl"].map((value) => (
-            <option key={value}>{value}</option>
-          ))}
-        </select>
+          onValueChange={setLanguage}
+          options={["TypeScript", "Python", "curl"].map((value) => ({
+            value,
+            label: value,
+          }))}
+        />
       </label>
       <p className="note">
         Set PHASEO_API_KEY in your environment.{" "}
