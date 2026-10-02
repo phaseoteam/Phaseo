@@ -310,7 +310,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 		fetchFrontendSubscriptionPlans(),
 		fetchFrontendCountrySummaries(),
 		fetchFrontendMarketplacePresets(),
-		fetchFrontendModels({ includeGatewayData: false }),
+		// Indexability needs provider/pricing signals from the enriched cards.
+		fetchFrontendModels(),
 		getHelpCategoryParams(),
 		getHelpArticleParams(),
 		getAnnouncementPosts(),
