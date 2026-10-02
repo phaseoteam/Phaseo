@@ -2237,7 +2237,10 @@
 			"evaluationCostShort": "Eval cost",
 			"usdPerPointColumn": "USD / point",
 			"slow": "Slow",
-			"speed": "Speed"
+			"speed": "Speed",
+			"metricTitle": "Cost per intelligence point",
+			"matchedConfigurations": "{count} matched configurations",
+			"valueExplanation": "Evaluation cost ÷ intelligence score · Lower is better"
 		}
 	},
 	"compare": {

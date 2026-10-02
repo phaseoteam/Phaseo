@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
+import { formatRoundedCount } from "@/lib/formatRoundedCount";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/Logo";
@@ -38,10 +38,7 @@ export function MarketShareLeaderboard({
 }: MarketShareLeaderboardProps) {
 	const t = useTranslations("Catalogue.rankings");
 	const locale = useLocale();
-	const format = useDisplayFormatters();
-	const formatTokens = (value: number, _locale?: string) => Number.isFinite(value)
-		? format.number(value, { maximumFractionDigits: 1 })
-		: "--";
+	const formatTokens = (value: number) => formatRoundedCount(value, locale);
 	const [showAll, setShowAll] = useState(false);
 
 	if (!data.length) {
@@ -128,7 +125,7 @@ export function MarketShareLeaderboard({
 									{formatPercent(entry.share_pct, locale, t("lessThanOnePercent"))}
 								</div>
 								<div className="text-xs text-muted-foreground">
-									{formatTokens(entry.tokens, locale)}
+									{formatTokens(entry.tokens)}
 								</div>
 							</div>
 								</div>

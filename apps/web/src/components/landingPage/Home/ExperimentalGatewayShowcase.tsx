@@ -1,5 +1,6 @@
 import { getLocale, getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
+import { formatRoundedCount } from "@/lib/formatRoundedCount";
 import { ArrowRight, Boxes, Coins, Route } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
@@ -57,7 +58,7 @@ export default async function ExperimentalGatewayShowcase() {
 	const stats = [
 		{
 			label: t("landingGaps.tokensWindow", { window: localizedGatewayMetricWindow(metrics.summary.windowHours, locale, t("landingGaps.selectedWindow")) }),
-			value: <><DisplayNumber value={metrics.summary.tokensInWindow} options={{ maximumFractionDigits: 1 }} />+</>,
+			value: `${formatRoundedCount(metrics.summary.tokensInWindow, locale)}+`,
 			icon: Coins,
 		},
 		{
@@ -175,7 +176,7 @@ export default async function ExperimentalGatewayShowcase() {
 									</div>
 									<div className="text-right">
 										<p className="text-sm font-semibold text-zinc-950 dark:text-zinc-50">
-											<DisplayNumber value={model.tokens} options={{ maximumFractionDigits: 1 }} />
+											{formatRoundedCount(model.tokens, locale)}
 										</p>
 										<p className="text-[11px] uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-400">
 											{t("landingGaps.copyTokens")}</p>

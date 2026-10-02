@@ -485,6 +485,7 @@ export type IRDecisionsRequest = {
 	model: string;
 	state: string | Record<string, any> | any[];
 	questions: Record<string, IRDecisionQuestion>;
+	images?: Array<string | { content_type: "image/png" | "image/jpeg" | "image/webp"; base64: string }>;
 	rawRequest?: any;
 };
 

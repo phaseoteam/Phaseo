@@ -2237,7 +2237,10 @@
 			"evaluationCostShort": "تكلفة التقييم",
 			"usdPerPointColumn": "USD / نقطة",
 			"slow": "بطيء",
-			"speed": "السرعة"
+			"speed": "السرعة",
+			"metricTitle": "التكلفة لكل نقطة ذكاء",
+			"matchedConfigurations": "{count} إعدادات مطابقة",
+			"valueExplanation": "تكلفة التقييم ÷ درجة الذكاء · الأقل أفضل"
 		}
 	},
 	"compare": {

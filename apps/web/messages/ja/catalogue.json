@@ -2237,7 +2237,10 @@
 			"evaluationCostShort": "評価コスト",
 			"usdPerPointColumn": "USD / 点",
 			"slow": "低速",
-			"speed": "速度"
+			"speed": "速度",
+			"metricTitle": "知能スコア1点あたりのコスト",
+			"matchedConfigurations": "一致する構成{count}件",
+			"valueExplanation": "評価コスト ÷ 知能スコア · 低いほど良い"
 		}
 	},
 	"compare": {

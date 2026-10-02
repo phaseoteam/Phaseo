@@ -105,6 +105,18 @@ describe("provider rate-limit configuration", () => {
 		})).toBe(10_000);
 	});
 
+	it.each(["data:image/png;base64,AQID", { content_type: "image/png", base64: "AQID" }])("reserves the provider input bound for decision images (%j)", image => {
+		const args = {
+			capability: "decisions.make", providerMaxInputTokens: 65_536, providerMaxOutputTokens: 100,
+			body: { state: "Inspect this", images: [image], questions: {
+				first: { type: "noul", instructions: "Is it damaged?" },
+				second: { type: "noul", instructions: "Is it red?" },
+			} },
+		};
+		expect(estimateProviderTokenReservation(args)).toBe(2 * (65_536 + 192 + 100));
+		expect(estimateProviderTokenReservation({ ...args, providerMaxInputTokens: null })).toBeNull();
+	});
+
 	it("fails closed for token-consuming capabilities without a safe bound", () => {
 		expect(estimateProviderTokenReservation({
 			capability: "text.generate",

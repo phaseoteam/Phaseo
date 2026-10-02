@@ -7,5 +7,5 @@ export async function BenchmarkRankingsSectionServer() {
 	const t = await getTranslations("Catalogue.rankings");
 	const result = await fetchFrontendRankingBenchmarks().catch(() => null);
 	if (!result) return <RankingUnavailable id="benchmarks" title={t("intelligenceBenchmarks")} />;
-	return <BenchmarkRankingsSection benchmarks={result.benchmarks} />;
+	return <BenchmarkRankingsSection benchmarks={result.benchmarks} intelligenceValue={result.intelligence_value} />;
 }

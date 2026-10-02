@@ -1381,6 +1381,11 @@ type DecisionChoiceQuestion struct {
 	Type string `json:"type"`
 }
 
+type DecisionImage struct {
+	Base64 string `json:"base64"`
+	ContentType string `json:"content_type"`
+}
+
 type DecisionInstructions = interface{}
 
 type DecisionNoulQuestion struct {
@@ -1398,6 +1403,7 @@ type DecisionScoreQuestion struct {
 type DecisionsRequest struct {
 	Debug *map[string]interface{} `json:"debug,omitempty"`
 	EchoUpstreamRequest *bool `json:"echo_upstream_request,omitempty"`
+	Images *[]interface{} `json:"images,omitempty"`
 	Meta *bool `json:"meta,omitempty"`
 	Metadata *map[string]interface{} `json:"metadata,omitempty"`
 	Model string `json:"model"`

@@ -1047,6 +1047,11 @@ module Phaseo
     # @!attribute [rw] type
     #   @return [String]
     DecisionChoiceQuestion = Struct.new(:criteria, :instructions, :type, keyword_init: true)
+    # @!attribute [rw] base64
+    #   @return [String]
+    # @!attribute [rw] content_type
+    #   @return [String]
+    DecisionImage = Struct.new(:base64, :content_type, keyword_init: true)
     DecisionInstructions = Object
     # @!attribute [rw] criteria
     #   @return [Hash{String => Object}, nil]
@@ -1066,6 +1071,8 @@ module Phaseo
     #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] echo_upstream_request
     #   @return [Boolean, nil]
+    # @!attribute [rw] images
+    #   @return [Array<String, Hash{String => Object}>, nil]
     # @!attribute [rw] meta
     #   @return [Boolean, nil]
     # @!attribute [rw] metadata
@@ -1080,7 +1087,7 @@ module Phaseo
     #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] state
     #   @return [String, Hash{String => Object}, Array<Object>]
-    DecisionsRequest = Struct.new(:debug, :echo_upstream_request, :meta, :metadata, :model, :provider, :questions, :routing, :state, keyword_init: true)
+    DecisionsRequest = Struct.new(:debug, :echo_upstream_request, :images, :meta, :metadata, :model, :provider, :questions, :routing, :state, keyword_init: true)
     # @!attribute [rw] answers
     #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] meta

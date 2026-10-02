@@ -3,11 +3,18 @@ type Translator = { (key: never): string };
 export const BENCHMARK_CONFIGURATION_KEYS: Record<string, string> = {
 	default: "Common.ui.chatComposer.default",
 	none: "Catalogue.benchmarks.nonReasoning",
+	minimal: "Common.ui.requestBuilder.minimal",
 	low: "Common.ui.requestBuilder.low",
 	medium: "Common.ui.requestBuilder.medium",
 	high: "Common.ui.requestBuilder.high",
 	xhigh: "Common.ui.requestBuilder.extraHigh",
 	max: "Common.ui.requestBuilder.max",
+	reasoning: "Common.ui.chatComposer.reasoning",
+	thinking: "Common.ui.chatComposer.reasoning",
+	fast: "Catalogue.models.detail.quickstart.tierFast",
+	standard: "Common.ui.chatComposer.standard",
+	slow: "Catalogue.rankings.intelligenceValue.slow",
+	speed: "Catalogue.rankings.intelligenceValue.speed",
 };
 
 export const ARTIFICIAL_ANALYSIS_METRIC_KEYS = ["intelligence", "coding", "agentic", "cost"] as const;

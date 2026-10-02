@@ -27,7 +27,7 @@ import {
 } from "@/components/(rankings)/chart-colors";
 import { formatModelDisplayName } from "@/lib/models/displayName";
 import { getModelDetailsHref } from "@/lib/models/modelHref";
-import { formatCompactAxisTick } from "@/lib/formatRoundedCount";
+import { formatCompactAxisTick, formatRoundedCount } from "@/lib/formatRoundedCount";
 
 type UsageStackedBarProps = {
 	data: TimeseriesData[];
@@ -213,7 +213,12 @@ export function UsageStackedBar({
 	const format = useDisplayFormatters();
 	const formatBucketLabel = (value: string, _locale?: string) => format.calendarDate(value, value);
 	const formatNumber = (value: number, _locale?: string) => Number.isFinite(value) ? format.number(value, { maximumFractionDigits: 1 }) : "--";
-	const formatPaceGain = (value: number, _locale?: string) => `+${format.number(Number.isFinite(value) ? Math.max(0, value) : 0, { maximumFractionDigits: 2 })}`;
+	const compactTokenCounts = metric === "tokens" && (!valueUnit || valueUnit === "tokens" || valueUnit === t("usageTokensUnit"));
+	const formatTooltipNumber = (value: number) => compactTokenCounts ? formatRoundedCount(value, locale) : formatNumber(value);
+	const formatPaceGain = (value: number) => {
+		const safeValue = Number.isFinite(value) ? Math.max(0, value) : 0;
+		return `+${compactTokenCounts ? formatRoundedCount(safeValue, locale) : format.number(safeValue, { maximumFractionDigits: 2 })}`;
+	};
 	const [hoveredKey, setHoveredKey] = useState<string | null>(null);
 	const [nowMs] = useState(() => Date.now());
 	const [listExpanded, setListExpanded] = useState(false);
@@ -527,7 +532,7 @@ export function UsageStackedBar({
 						axisLine={false}
 					/>
 					<YAxis
-						tickFormatter={(value) => formatCompactAxisTick(Number(value))}
+						tickFormatter={(value) => formatCompactAxisTick(Number(value), locale)}
 						width={60}
 						tickLine={false}
 						axisLine={false}
@@ -613,7 +618,7 @@ export function UsageStackedBar({
 														{cfg?.label ?? String(item?.name ?? "")}
 													</span>
 													<span className="pl-3 font-medium tabular-nums">
-												{formatNumber(val, locale)}
+														{formatTooltipNumber(val)}
 													</span>
 												</div>
 											);
@@ -625,14 +630,14 @@ export function UsageStackedBar({
 													{isCurrentWeek ? t("usageSoFar") : t("usageTotal")}
 											</span>
 											<span className="whitespace-nowrap tabular-nums">
-												{formatNumber(weeklyTotal, locale)}
+												{formatTooltipNumber(weeklyTotal)}
 											</span>
 										</div>
 										{isCurrentWeek ? (
 											<div className="flex items-center justify-between gap-4">
 												<span className="text-muted-foreground">{t("usageWeeklyPace")}</span>
 												<span className="whitespace-nowrap tabular-nums">
-													{formatNumber(projectedTotal, locale)} ({formatPaceGain(weeklyPaceGain, locale)})
+													{formatTooltipNumber(projectedTotal)} ({formatPaceGain(weeklyPaceGain)})
 												</span>
 											</div>
 										) : null}
@@ -842,7 +847,7 @@ export function UsageStackedBar({
 										)}
 										<div className="text-right">
 											<div className="whitespace-nowrap text-xs tabular-nums text-muted-foreground lg:text-sm">
-													{formatNumber(entry.current, locale)} {leaderboardUnit}
+													{formatTooltipNumber(entry.current)} {leaderboardUnit}
 											</div>
 											<div className={changeClassName(entry.changePct)}>
 												{changeLabel}

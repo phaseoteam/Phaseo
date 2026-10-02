@@ -7,6 +7,7 @@
 
 import { useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
+import { formatRoundedCount } from "@/lib/formatRoundedCount";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { TrendingUp, TrendingDown, Minus, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -84,6 +85,7 @@ export function TopModelsRankings({
     const formatValue = (value: number, metricType: Metric) => {
         const safeValue = Number(value);
         if (!Number.isFinite(safeValue)) return "--";
+        if (metricType === "tokens") return formatRoundedCount(safeValue, locale);
         if (metricType === "cost") {
 			return format.number(safeValue, {
 				style: "currency",

@@ -1,7 +1,7 @@
 "use client";
 
 import { chatLocalStorage } from "@/lib/chat/userStorage";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import {
 	Sidebar,
@@ -74,6 +74,7 @@ import {
 	resolveChatApiBaseUrl,
 	buildServerToolDefinitions,
 	buildDefaultSystemPrompt,
+	createInitialChatThread,
 	buildPersonalizationPrompt,
 	buildTitle,
 	ensureModelOverridesForIds,
@@ -576,7 +577,9 @@ function ChatPlaygroundContent({
 		getPrimaryCapabilityForModel,
 	} = useChatModelCatalog({ models, modelParam });
 	const queryPrompt = promptParam ?? "";
-	const appliedQueryModelIdRef = useRef<string | null>(null);
+	const initialModelId = modelParam?.trim()
+		? (queryModelIsValid ? resolvedQueryModelId : "")
+		: null;
 	const [personalization, setPersonalization] =
 		useState<PersonalizationSettings>({
 			name: "",
@@ -690,26 +693,12 @@ function ChatPlaygroundContent({
 
 	const ensureInitialThread = useCallback(
 		async (existing: ChatThread[]) => {
-			if (existing.length > 0) return existing;
-			const id = generateId();
-			const createdAt = nowIso();
-			const newThread: ChatThread = {
-				id,
-				title: tChat("defaultTitle"),
-				titleLocked: false,
-				modelId: "",
-				createdAt,
-				updatedAt: createdAt,
-				messages: [],
-				settings: {
-					...DEFAULT_SETTINGS,
-					systemPrompt: buildDefaultSystemPrompt(""),
-				},
-			};
+			const newThread = createInitialChatThread(existing, initialModelId, tChat("defaultTitle"));
+			if (!newThread) return existing;
 			await upsertChat(newThread, "text");
-			return [newThread];
+			return [newThread, ...existing];
 		},
-		[tChat],
+		[initialModelId, tChat],
 	);
 
 	useEffect(() => {
@@ -764,6 +753,7 @@ function ChatPlaygroundContent({
 				getAllChats("text"),
 				getAllChatTags(),
 			]);
+			if (!mounted) return;
 			const normalized = await ensureInitialThread(chats);
 			if (!mounted) return;
 			setThreads((current) => {
@@ -776,16 +766,24 @@ function ChatPlaygroundContent({
 			setChatTags(storedTags.sort(compareChatTags));
 
 			const initialId =
-				storedActive && normalized.some((t) => t.id === storedActive)
+				initialModelId === null &&
+				storedActive &&
+				normalized.some((t) => t.id === storedActive)
 					? storedActive
 					: (normalized[0]?.id ?? null);
-			setActiveId((current) => current ?? initialId);
+			setActiveId((current) =>
+				initialModelId !== null ? initialId : current ?? initialId,
+			);
+			if (initialId) {
+				chatLocalStorage.setItem(STORAGE_KEYS.activeChatId, initialId);
+			}
 		})();
 		return () => {
 			mounted = false;
 		};
 	}, [
 		ensureInitialThread,
+		initialModelId,
 	]);
 
 	useEffect(() => {
@@ -3840,27 +3838,6 @@ function ChatPlaygroundContent({
 		[activeThread?.modelId],
 	);
 
-	useEffect(() => {
-		if (!queryModelIsValid || !resolvedQueryModelId || !activeThread) return;
-		if (appliedQueryModelIdRef.current === resolvedQueryModelId) return;
-		appliedQueryModelIdRef.current = resolvedQueryModelId;
-		if (activeThread.modelId !== resolvedQueryModelId) {
-			let cancelled = false;
-			queueMicrotask(() => {
-				if (!cancelled) {
-					updateActiveModel(resolvedQueryModelId);
-				}
-			});
-			return () => {
-				cancelled = true;
-			};
-		}
-	}, [
-		activeThread,
-		queryModelIsValid,
-		resolvedQueryModelId,
-		updateActiveModel,
-	]);
 	useEffect(() => {
 		if (!activeThread?.modelId) return;
 		let cancelled = false;

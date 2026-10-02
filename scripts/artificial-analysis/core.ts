@@ -8,6 +8,11 @@ export const METRICS = [
 ] as const;
 
 const supportedMajorVersions = new Set([4, 5]);
+export function methodologyVersionFromHtml(html: string, apiVersion: number) {
+	const version = html.match(/Current version:\s*v(\d+\.\d+(?:\.\d+)?)/)?.[1];
+	if (!version || Number(version.split(".").slice(0, 2).join(".")) !== apiVersion) throw new Error("Artificial Analysis methodology version is missing or does not match the API version; no data was written.");
+	return version;
+}
 export const benchmarkId = (metric: typeof METRICS[number], version: number) => `${metric.id}-v${Math.floor(version)}`;
 export type SourceModel = {
 	id: string; name: string; slug: string;
@@ -181,7 +186,7 @@ export function matchModels(models: CatalogModel[], sources: SourceModel[], conf
 	});
 }
 
-export function resultsFor(source: SourceModel, version: number, allSources: SourceModel[], updated_at = new Date().toISOString()) {
+export function resultsFor(source: SourceModel, version: number, allSources: SourceModel[], updated_at = new Date().toISOString(), methodologyVersion = String(version)) {
 	return METRICS.flatMap((metric) => {
 		const score = metricValue(source, metric);
 		if (score === null) return [];
@@ -189,12 +194,12 @@ export function resultsFor(source: SourceModel, version: number, allSources: Sou
 		const rank = 1 + scores.filter((other) => metric.higherBetter ? other > score : other < score).length;
 		const perTask = source.artificial_analysis_intelligence_index_cost?.cost_per_task?.total_cost;
 		return [{ benchmark_id: benchmarkId(metric, version), score, is_self_reported: false, updated_at, variant: reasoningVariant(source),
-			other_info: `${source.name}; Artificial Analysis ID ${source.id}; Intelligence Index v${version}${metric.field === "total_cost" && finite(perTask) ? `; USD ${perTask} per task` : ""}`,
+			other_info: `${source.name}; Artificial Analysis ID ${source.id}; Intelligence Index v${methodologyVersion}${metric.field === "total_cost" && finite(perTask) ? `; USD ${perTask} per task` : ""}; API Intelligence Index version ${version}`,
 			source_link: `https://artificialanalysis.ai/models/${source.slug}`, rank }];
 	});
 }
-export function resultsForConfigurations(sources: SourceModel[], version: number, allSources: SourceModel[], updated_at = new Date().toISOString()) {
-	return sources.flatMap((source) => resultsFor(source, version, allSources, updated_at));
+export function resultsForConfigurations(sources: SourceModel[], version: number, allSources: SourceModel[], updated_at = new Date().toISOString(), methodologyVersion = String(version)) {
+	return sources.flatMap((source) => resultsFor(source, version, allSources, updated_at, methodologyVersion));
 }
 export function mergeResults(model: CatalogModel, results: Array<Record<string, unknown>>, version: number) {
 	const managed = new Set(METRICS.map((metric) => benchmarkId(metric, version)));

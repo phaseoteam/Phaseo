@@ -1,7 +1,9 @@
 "use client";
 
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
+import { formatRoundedCount } from "@/lib/formatRoundedCount";
+import { localizedGatewayMetricWindow } from "@/components/landingPage/gatewayMetricWindow";
 import {
 	BarChart3,
 	Boxes,
@@ -37,6 +39,8 @@ type HeroStatItem = {
 
 function HeroActions({ ctaVariant }: { ctaVariant: "classic" | "experimental" }) {
 	const t = useTranslations("Site.gatewayHero");
+	const tLanding = useTranslations("SettingsUI.landingGaps");
+	const locale = useLocale();
 	return (
 		<div className="mt-10 flex flex-wrap items-center gap-4">
 			<Button
@@ -249,18 +253,12 @@ export function Hero({
 	};
 	const formatTokens = (value: number | null, fallback = "0+") => {
 		if (value == null) return fallback;
-		return <>{format.number(value, { maximumFractionDigits: 0 })}+</>;
-	};
-	const formatWindow = (hours: number) => {
-		if (!Number.isFinite(hours) || hours <= 0) return "24h";
-		if (hours % (24 * 30) === 0) return `${Math.round(hours / (24 * 30))}mo`;
-		if (hours % 24 === 0) return `${Math.round(hours / 24)}d`;
-		return `${Math.round(hours)}h`;
+		return `${formatRoundedCount(value, locale)}+`;
 	};
 	const tokensWindowLabel =
 		tokensWindowHours >= 24 * 28
-			? "Monthly tokens"
-			: `${formatWindow(tokensWindowHours)} tokens`;
+			? t("monthlyTokens")
+			: tLanding("tokensWindow", { window: localizedGatewayMetricWindow(tokensWindowHours, locale, tLanding("selectedWindow")) });
 
 	const heroStats = [
 		{

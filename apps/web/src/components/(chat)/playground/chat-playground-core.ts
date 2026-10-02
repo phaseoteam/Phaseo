@@ -341,6 +341,28 @@ export function nowIso() {
 	return new Date().toISOString();
 }
 
+export function createInitialChatThread(
+	existing: ChatThread[],
+	modelId: string | null,
+	title = "New chat",
+): ChatThread | null {
+	if (existing.length > 0 && modelId === null) return null;
+	const createdAt = nowIso();
+	return {
+		id: generateId(),
+		title,
+		titleLocked: false,
+		modelId: modelId ?? "",
+		createdAt,
+		updatedAt: createdAt,
+		messages: [],
+		settings: {
+			...DEFAULT_SETTINGS,
+			systemPrompt: buildDefaultSystemPrompt(modelId ?? ""),
+		},
+	};
+}
+
 export function buildTitle(messages: ChatMessage[], emptyTitle: string) {
 	const first = messages.find((msg) => msg.role === "user");
 	if (!first) return emptyTitle;

@@ -10933,6 +10933,15 @@ components:
               - $ref: '#/components/schemas/DecisionNoulQuestion'
               - $ref: '#/components/schemas/DecisionChoiceQuestion'
               - $ref: '#/components/schemas/DecisionScoreQuestion'
+        images:
+          type: array
+          maxItems: 4
+          description: विज़न समर्थित निर्णय मॉडलों के लिए एम्बेड किए गए चित्र। Clef PNG, JPEG या WebP स्वीकार करता है; रिमोट URL समर्थित नहीं हैं। हर चित्र की सीमा 4 MiB और 16 मेगापिक्सल, कुल डिकोड डेटा की सीमा 8 MiB और हर अनुरोध बॉडी की सीमा 13 MiB है।
+          items:
+            oneOf:
+              - type: string
+                pattern: ^[Dd][Aa][Tt][Aa]:image/(png|jpeg|webp);base64,[A-Za-z0-9+/]+={0,2}$
+              - $ref: '#/components/schemas/DecisionImage'
         meta:
           type: boolean
           default: false
@@ -11011,6 +11020,21 @@ components:
           minItems: 2
           items:
             type: string
+    DecisionImage:
+      type: object
+      required:
+        - content_type
+        - base64
+      properties:
+        content_type:
+          type: string
+          enum:
+            - image/png
+            - image/jpeg
+            - image/webp
+        base64:
+          type: string
+          pattern: ^[A-Za-z0-9+/]+={0,2}$
     DecisionsResponse:
       type: object
       properties:

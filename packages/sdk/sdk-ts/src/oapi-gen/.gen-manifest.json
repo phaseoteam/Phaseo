@@ -76,6 +76,7 @@
     "models/DataModelOrganisation.ts",
     "models/DebugOptions.ts",
     "models/DecisionChoiceQuestion.ts",
+    "models/DecisionImage.ts",
     "models/DecisionInstructions.ts",
     "models/DecisionNoulQuestion.ts",
     "models/DecisionScoreQuestion.ts",

@@ -1,5 +1,6 @@
 import { getLocale, getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
+import { formatRoundedCount } from "@/lib/formatRoundedCount";
 import { Suspense } from "react";
 import {
 	ArrowRight,
@@ -128,7 +129,7 @@ async function GatewayShowcaseData() {
 	const stats = [
 		{
 			label: t("landingGaps.tokensWindow", { window: localizedGatewayMetricWindow(metrics.summary.windowHours, locale, t("landingGaps.selectedWindow")) }),
-			value: <><DisplayNumber value={metrics.summary.tokensInWindow} options={{ maximumFractionDigits: 1 }} />+</>,
+			value: `${formatRoundedCount(metrics.summary.tokensInWindow, locale)}+`,
 			icon: Coins,
 		},
 		{
@@ -213,7 +214,7 @@ async function GatewayShowcaseData() {
 								</div>
 								<div className="text-right">
 									<div className="text-sm tabular-nums font-medium">
-										<DisplayNumber value={model.tokens} options={{ maximumFractionDigits: 1 }} />
+										{formatRoundedCount(model.tokens, locale)}
 									</div>
 									<div className="text-[11px] text-muted-foreground">
 										{t("landingGaps.copyTokens")}</div>
@@ -273,7 +274,7 @@ async function GatewayShowcaseData() {
 									</div>
 									<div className="text-right">
 										<div className="text-sm tabular-nums font-medium">
-											<DisplayNumber value={app.tokens} options={{ maximumFractionDigits: 1 }} />
+											{formatRoundedCount(app.tokens, locale)}
 										</div>
 										<div className="text-[11px] text-muted-foreground">
 											{t("landingGaps.copyTokens")}</div>

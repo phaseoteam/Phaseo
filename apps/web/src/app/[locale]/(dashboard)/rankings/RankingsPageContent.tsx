@@ -4,6 +4,7 @@
 // How: Server component that fetches data and renders visualizations
 
 import { Suspense } from "react";
+import { formatRoundedCount } from "@/lib/formatRoundedCount";
 import { Metadata } from "next";
 import { getLocale, getTranslations } from "next-intl/server";
 import { buildLocalizedPageMetadata } from "@/lib/auth/localized-metadata";
@@ -253,8 +254,8 @@ function metadataFor(
 	};
 }
 
-function formatCount(value: number, unit: string, locale: string) {
-	const formatted = new Intl.NumberFormat(locale, { notation: "compact", maximumFractionDigits: 1 }).format(value);
+function formatCount(value: number, unit: string, locale: string, tokenCount = false) {
+	const formatted = tokenCount ? formatRoundedCount(value, locale) : new Intl.NumberFormat(locale, { notation: "compact", maximumFractionDigits: 1 }).format(value);
 	return `${formatted} ${unit}`;
 }
 
@@ -345,7 +346,7 @@ export async function ModalityLeaderboardsServer({ modality }: { modality: Ranki
 		}
 		return [...totals].sort((a, b) => b[1] - a[1]).slice(0, 20).map(([id, value], index) => ({
 			key: id, model_id: id, ...metadataFor(id, metaMap), value,
-			value_label: formatCount(value, unitLabel(unit), locale), rank: index + 1,
+			value_label: formatCount(value, unitLabel(unit), locale, unit === "tokens"), rank: index + 1,
 			secondary: t("usagePeriodMonth"),
 		}));
 	};

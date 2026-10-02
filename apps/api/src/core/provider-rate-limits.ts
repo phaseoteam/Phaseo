@@ -86,6 +86,7 @@ const REQUEST_TOKEN_OVERHEAD = 16;
 const UNBOUNDED_TOKEN_INPUT_KEYS = new Set([
 	"audio",
 	"image",
+	"images",
 	"image_url",
 	"input_audio",
 	"input_image",
@@ -152,7 +153,7 @@ function decisionsTokenReservation(args: {
 				}))
 			: criteria;
 		const userContent = { state: body.state, question: question.instructions, options };
-		const inputUpperBound = containsUnboundedTokenInput(userContent)
+		const inputUpperBound = containsUnboundedTokenInput(userContent) || (Array.isArray(body.images) && body.images.length > 0)
 			? positiveSafeInteger(args.providerMaxInputTokens)
 			: serializedInputTokenUpperBound(userContent);
 		// Tev adds a fixed system prompt and one chat message per choice request.

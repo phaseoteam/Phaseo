@@ -2237,7 +2237,10 @@
 			"evaluationCostShort": "मूल्यांकन लागत",
 			"usdPerPointColumn": "USD / अंक",
 			"slow": "धीमा",
-			"speed": "गति"
+			"speed": "गति",
+			"metricTitle": "प्रति बुद्धिमत्ता अंक लागत",
+			"matchedConfigurations": "{count} मेल खाने वाले कॉन्फ़िगरेशन",
+			"valueExplanation": "मूल्यांकन लागत ÷ बुद्धिमत्ता स्कोर · कम बेहतर है"
 		}
 	},
 	"compare": {

@@ -7,6 +7,13 @@ export interface DecisionsRequest {
     trace_level?: "summary" | "full";
   };
   echo_upstream_request?: boolean;
+  images?: (
+    | string
+    | {
+        base64: string;
+        content_type: "image/png" | "image/jpeg" | "image/webp";
+      }
+  )[];
   meta?: boolean;
   metadata?: {
     [key: string]: unknown;

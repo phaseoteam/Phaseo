@@ -2237,7 +2237,10 @@
 			"evaluationCostShort": "评估成本",
 			"usdPerPointColumn": "USD / 分值",
 			"slow": "慢速",
-			"speed": "速度"
+			"speed": "速度",
+			"metricTitle": "每智能分值成本",
+			"matchedConfigurations": "{count}个匹配配置",
+			"valueExplanation": "评估成本 ÷ 智能分数 · 越低越好"
 		}
 	},
 	"compare": {

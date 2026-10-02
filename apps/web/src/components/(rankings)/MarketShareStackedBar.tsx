@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
+import { formatCompactAxisTick, formatRoundedCount } from "@/lib/formatRoundedCount";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
 import type { MarketShareTimeseriesData } from "@/lib/fetchers/rankings/getRankingsData";
@@ -54,7 +55,7 @@ export function MarketShareStackedBar({
 	const locale = useLocale();
 	const format = useDisplayFormatters();
 	const formatBucketLabel = (value: string, _locale?: string) => format.calendarDate(value, value);
-	const formatNumber = (value: number, _locale?: string) => Number.isFinite(value)
+	const formatNumber = (value: number, _locale?: string) => metric === "tokens" ? formatRoundedCount(value, locale) : Number.isFinite(value)
 		? format.number(value, { maximumFractionDigits: 1 })
 		: "--";
 	const [hoveredKey, setHoveredKey] = useState<string | null>(null);
@@ -227,7 +228,7 @@ export function MarketShareStackedBar({
 					tickFormatter={(value) =>
 						normalizeToPercent
 							? formatPercent(Number(value), locale, t("lessThanOnePercent"))
-							: formatNumber(Number(value), locale)
+							: metric === "tokens" ? formatCompactAxisTick(Number(value), locale) : formatNumber(Number(value), locale)
 					}
 					width={60}
 					tickLine={false}

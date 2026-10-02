@@ -1,6 +1,6 @@
 import { strict as assert } from "node:assert";
 import { test } from "node:test";
-import { databaseModelMappings, fetchModels, matchModel, matchModels, mergeResults, reasoningVariant, reassignedArtificialAnalysisResultIds, resultsFor, resultsForConfigurations, type SourceModel } from "./core";
+import { databaseModelMappings, fetchModels, matchModel, matchModels, mergeResults, methodologyVersionFromHtml, reasoningVariant, reassignedArtificialAnalysisResultIds, resultsFor, resultsForConfigurations, type SourceModel } from "./core";
 import { writeBenchmarks } from "./catalog";
 
 const source = (overrides: Partial<SourceModel> = {}): SourceModel => ({
@@ -10,6 +10,13 @@ const source = (overrides: Partial<SourceModel> = {}): SourceModel => ({
 });
 const model = { model_id: "openai/example-1", organisation_id: "openai", name: "Example 1" };
 const config = { models: {}, creators: {} };
+test("reads the full methodology version and preserves the API version separately", () => {
+	assert.equal(methodologyVersionFromHtml('<strong>Current version: v4.3.2.</strong>', 4.3), "4.3.2");
+	assert.throws(() => methodologyVersionFromHtml('Current version: v4.4.1.', 4.3), /does not match/);
+	assert.throws(() => methodologyVersionFromHtml('No version available', 4.3), /missing/);
+	const results = resultsFor(source(), 4.3, [source()], "2026-10-01", "4.3.2");
+	assert.match(results[0].other_info, /Intelligence Index v4\.3\.2; API Intelligence Index version 4\.3$/);
+});
 test("remapping an AA family retires former owners while preserving current and unclaimed sources", () => {
 	const result = (result_id: string, model_slug: string, source: string) => ({ result_id, model_slug, other_info: `Example; Artificial Analysis ID ${source}; Intelligence Index v4.3` });
 	const rows = [result("old-high", "lab/old", "high-id"), result("old-low", "lab/old", "low-id"), result("current", "lab/new", "high-id"), result("unclaimed", "lab/unmatched", "unclaimed-id")];

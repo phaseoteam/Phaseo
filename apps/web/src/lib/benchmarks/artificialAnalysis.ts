@@ -1,12 +1,12 @@
 import type { BenchmarkPage, BenchmarkResult } from "@/lib/fetchers/benchmarks/types";
-import type { PublicBenchmarkRanking, PublicBenchmarkRankingEntry } from "@/lib/fetchers/frontend/fetchPublicCatalog";
+import type { PublicBenchmarkRanking, PublicBenchmarkRankingEntry, PublicIntelligenceValue, PublicIntelligenceValueEntry } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import { parseBenchmarkScore } from "@/lib/benchmarks/scoreFormat";
 
 export const artificialAnalysisMetrics = [
   { id: "aa-intelligence-index-v4", key: "intelligence", label: "Intelligence", description: "Overall model capability" },
   { id: "aa-coding-index-v4", key: "coding", label: "Coding", description: "Software engineering capability" },
   { id: "aa-agentic-index-v4", key: "agentic", label: "Agentic", description: "Multi-step task performance" },
-  { id: "aa-intelligence-index-cost-v4", key: "cost", label: "Evaluation cost", description: "Full Intelligence Index evaluation · USD" },
+  { id: "aa-intelligence-index-cost-v4", key: "cost", label: "Evaluation Cost", description: "Full Intelligence Index evaluation · USD" },
 ] as const;
 
 export function artificialAnalysisMetricsForBenchmark(benchmarkId: string) {
@@ -51,8 +51,53 @@ export function formatArtificialAnalysisScore(id: string, score: number, locale 
     ? { style: "currency", currency: "USD", maximumFractionDigits: 2 }
     : { maximumFractionDigits: 2 }).format(score);
 }
+export function formatArtificialAnalysisValue(value: number, locale = "en-US") {
+	return new Intl.NumberFormat(locale, { style: "currency", currency: "USD", maximumSignificantDigits: 3 }).format(value);
+}
+export function artificialAnalysisValueKey(entry: PublicIntelligenceValueEntry) {
+	return entry.configuration_id ?? JSON.stringify([entry.model_id, entry.variant, entry.other_info, entry.updated_at]);
+}
+export function artificialAnalysisValueLabel(entry: PublicIntelligenceValueEntry, resolveLabel?: (variant: string) => string) {
+	if (resolveLabel) return resolveLabel(entry.variant ?? "default");
+	const variant = entry.variant?.replace(/[-_]/g, " ") ?? "default";
+	return variant.replace(/\b\w/g, (character) => character.toUpperCase());
+}
 export function artificialAnalysisVersion(info?: string | null) {
 	return info?.match(/Intelligence Index v(\d+(?:\.\d+)*)(?=$|[\s;]|[.!?](?=$|\s))/)?.[1] ?? null;
+}
+
+/** Derive value on the server even when the deployed API predates its value field. */
+export function buildArtificialAnalysisValue(benchmarks: PublicBenchmarkRanking[]): PublicIntelligenceValue {
+	const intelligence = benchmarks.find((benchmark) => artificialAnalysisMetricKey(benchmark.benchmark_id) === "intelligence");
+	const cost = benchmarks.find((benchmark) => artificialAnalysisMetricKey(benchmark.benchmark_id) === "cost");
+	const key = (model: string, configuration: NonNullable<PublicBenchmarkRankingEntry["configurations"]>[number]) => {
+		const source = configuration.other_info?.match(/Artificial Analysis ID ([\w-]+)(?:;|$)/)?.[1];
+		const version = artificialAnalysisVersion(configuration.other_info);
+		return source && version && configuration.updated_at ? JSON.stringify([model, source, version, configuration.variant, configuration.updated_at]) : null;
+	};
+	const costs = new Map<string, number>();
+	const conflictingCosts = new Set<string>();
+	for (const entry of cost?.entries ?? []) for (const configuration of entry.configurations ?? []) {
+		const identity = key(entry.model_id, configuration);
+		if (identity) {
+			if (costs.has(identity) && costs.get(identity) !== configuration.score) conflictingCosts.add(identity);
+			else costs.set(identity, configuration.score);
+		}
+	}
+	const entries: PublicIntelligenceValueEntry[] = [];
+	for (const entry of intelligence?.entries ?? []) {
+		for (const configuration of entry.configurations ?? []) {
+			const identity = key(entry.model_id, configuration);
+			const evaluationCost = identity && !conflictingCosts.has(identity) ? costs.get(identity) : undefined;
+			if (evaluationCost == null || !Number.isFinite(evaluationCost) || evaluationCost <= 0 || !Number.isFinite(configuration.score) || configuration.score <= 0) continue;
+			const ratio = evaluationCost / configuration.score;
+			if (!Number.isFinite(ratio)) continue;
+			entries.push({ ...entry, configurations: undefined, configuration_id: identity!, variant: configuration.variant, score: ratio, intelligence_score: configuration.score, evaluation_cost: evaluationCost, other_info: configuration.other_info, source_link: configuration.source_link, updated_at: configuration.updated_at });
+		}
+	}
+	entries.sort((a, b) => a.score - b.score || b.intelligence_score - a.intelligence_score);
+	entries.forEach((entry) => { entry.rank = entries.findIndex((other) => other.score === entry.score) + 1; });
+	return { benchmark_id: intelligence?.benchmark_id ?? "aa-intelligence-index-v4", entries };
 }
 
 /** Rank the evaluated configurations, including ties, rather than one best score per model. */
@@ -78,7 +123,8 @@ export function applyArtificialAnalysisOrganisationColours(
 }
 
 function latestArtificialAnalysisVersion(results: BenchmarkResult[]) {
-  const versions = [...new Set(results.map((result) => artificialAnalysisVersion(typeof result.other_info === "string" ? result.other_info : null)))].filter((version): version is string => Boolean(version));
+  const imported = results.filter((result) => typeof result.other_info === "string" && /Artificial Analysis ID [\w-]+(?:;|$)/.test(result.other_info));
+  const versions = [...new Set((imported.length ? imported : results).map((result) => artificialAnalysisVersion(typeof result.other_info === "string" ? result.other_info : null)))].filter((version): version is string => Boolean(version));
   return versions.sort((left, right) => right.localeCompare(left, "en", { numeric: true }))[0] ?? null;
 }
 

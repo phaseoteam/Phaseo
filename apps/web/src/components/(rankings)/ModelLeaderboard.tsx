@@ -1,8 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useTranslations } from "next-intl";
-import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
+import { useLocale, useTranslations } from "next-intl";
+import { formatRoundedCount } from "@/lib/formatRoundedCount";
 import Link from "next/link";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
@@ -109,10 +109,7 @@ export function ModelLeaderboard({
 	maxExpanded = 20,
 }: ModelLeaderboardProps) {
 	const tUi = useTranslations("Common.ui");
-	const format = useDisplayFormatters();
-	const formatTokens = (value: number) => Number.isFinite(value)
-		? format.number(value, { maximumFractionDigits: 1 })
-		: "--";
+	const locale = useLocale();
 	const availableRanges = useMemo(
 		() =>
 			RANGE_OPTIONS.filter(
@@ -280,7 +277,7 @@ export function ModelLeaderboard({
 							</div>
 							<div className="shrink-0 text-right">
 								<div className="tabular-nums text-sm">
-									{formatTokens(entry.tokens)}
+									{formatRoundedCount(entry.tokens, locale)}
 								</div>
 								<div className={cn("text-xs", change.className)}>
 									{change.text}
@@ -397,7 +394,7 @@ export function ModelLeaderboard({
 									</div>
 									<div className="shrink-0 text-right">
 										<div className="tabular-nums text-sm">
-											{formatTokens(entry.tokens)}
+											{formatRoundedCount(entry.tokens, locale)}
 										</div>
 										<div
 											className={cn(

@@ -2237,7 +2237,10 @@
 			"evaluationCostShort": "Custo de aval.",
 			"usdPerPointColumn": "USD / ponto",
 			"slow": "Lento",
-			"speed": "Velocidade"
+			"speed": "Velocidade",
+			"metricTitle": "Custo por ponto de inteligência",
+			"matchedConfigurations": "{count} configurações correspondentes",
+			"valueExplanation": "Custo de avaliação ÷ pontuação de inteligência · Menor é melhor"
 		}
 	},
 	"compare": {

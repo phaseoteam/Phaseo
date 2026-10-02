@@ -2237,7 +2237,10 @@
 			"evaluationCostShort": "Bewertungskosten",
 			"usdPerPointColumn": "USD / Punkt",
 			"slow": "Langsam",
-			"speed": "Geschwindigkeit"
+			"speed": "Geschwindigkeit",
+			"metricTitle": "Kosten pro Intelligenzpunkt",
+			"matchedConfigurations": "{count} übereinstimmende Konfigurationen",
+			"valueExplanation": "Bewertungskosten ÷ Intelligenzpunktzahl · Niedriger ist besser"
 		}
 	},
 	"compare": {

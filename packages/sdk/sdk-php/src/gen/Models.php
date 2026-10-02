@@ -1263,6 +1263,14 @@ class DecisionChoiceQuestion
 	public $type;
 }
 
+class DecisionImage
+{
+	/** @var string */
+	public $base64;
+	/** @var string */
+	public $content_type;
+}
+
 class DecisionInstructions { }
 
 class DecisionNoulQuestion
@@ -1291,6 +1299,8 @@ class DecisionsRequest
 	public $debug;
 	/** @var bool|null */
 	public $echo_upstream_request;
+	/** @var array|null */
+	public $images;
 	/** @var bool|null */
 	public $meta;
 	/** @var array<string, mixed>|null */

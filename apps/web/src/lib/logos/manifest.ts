@@ -1,4 +1,8 @@
 export const logoManifest = {
+	apodex: {
+		light: "/logos/apodex_light.svg",
+		dark: "/logos/apodex_dark.svg",
+	},
 	ai21: {
 		light: "/logos/ai21_light.svg",
 		dark: "/logos/ai21_dark.svg",

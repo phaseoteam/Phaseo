@@ -407,7 +407,7 @@ describe("video-finalization", () => {
 			rules: [],
 		});
 		computeBillMock.mockReturnValue({
-			pricing: { total_nanos: 200_000_000 },
+			pricing: { total_nanos: 200_000_000, lines: [{ dimension: "output_video_seconds" }] },
 		});
 		applyByokServiceFeeMock.mockResolvedValue({
 			totalNanos: 200_000_000,
@@ -484,7 +484,7 @@ describe("video-finalization", () => {
 			rules: [],
 		});
 		computeBillMock.mockReturnValue({
-			pricing: { total_nanos: 200_000_000 },
+			pricing: { total_nanos: 200_000_000, lines: [{ dimension: "output_video_seconds" }] },
 		});
 		applyByokServiceFeeMock.mockResolvedValue({
 			totalNanos: 200_000_000,
@@ -542,7 +542,7 @@ describe("video-finalization", () => {
 			rules: [],
 		});
 		computeBillMock.mockReturnValue({
-			pricing: { total_nanos: 200_000_000 },
+			pricing: { total_nanos: 200_000_000, lines: [{ dimension: "output_video_seconds" }] },
 		});
 		applyByokServiceFeeMock.mockResolvedValue({
 			totalNanos: 200_000_000,
@@ -626,7 +626,7 @@ describe("video-finalization", () => {
 			rules: [],
 		});
 		computeBillMock.mockReturnValue({
-			pricing: { total_nanos: 1234 },
+			pricing: { total_nanos: 1234, lines: [{ dimension: "output_video_seconds" }] },
 		});
 		applyByokServiceFeeMock.mockResolvedValue({
 			totalNanos: 1234,
@@ -704,7 +704,7 @@ describe("video-finalization", () => {
 			rules: [],
 		});
 		computeBillMock.mockReturnValue({
-			pricing: { total_nanos: 9999 },
+			pricing: { total_nanos: 9999, lines: [{ dimension: "output_video_seconds" }] },
 		});
 		applyByokServiceFeeMock.mockResolvedValue({
 			totalNanos: 9999,

@@ -1,7 +1,8 @@
 "use client";
 
 import { Link } from "@/i18n/navigation";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
+import { formatRoundedCount } from "@/lib/formatRoundedCount";
 import { Logo } from "@/components/Logo";
 import type { ModalityLeaderboardEntry } from "@/components/(rankings)/ModalityLeaderboards";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
@@ -22,6 +23,7 @@ export function RankingMetricLeaderboard({
 }: RankingMetricLeaderboardProps) {
 	const t = useTranslations("Catalogue.rankings");
 	const tUnits = useTranslations("Catalogue.modelDetail.pricing.units");
+	const locale = useLocale();
 	const format = useDisplayFormatters();
 	const visibleEntries = entries.slice(0, 5);
 	const formatValue = (entry: ModalityLeaderboardEntry) => {
@@ -38,7 +40,7 @@ export function RankingMetricLeaderboard({
 			return `${format.number(entry.value, { maximumFractionDigits: 0 })} ms`;
 		}
 		const unit = metricId.includes("image") ? tUnits("image") : tUnits("token");
-		return `${format.number(entry.value, { maximumFractionDigits: 1 })} ${unit}`;
+		return `${metricId.includes("image") ? format.number(entry.value, { maximumFractionDigits: 1 }) : formatRoundedCount(entry.value, locale)} ${unit}`;
 	};
 
 	if (!visibleEntries.length) return (

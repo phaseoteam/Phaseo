@@ -7,6 +7,7 @@ import { fetchFrontendModelRankings } from "@/lib/fetchers/frontend/fetchPublicC
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Activity, Zap, Server, Clock, CheckCircle2, Hash } from "lucide-react";
 import { DisplayNumber } from "@/components/display/DisplayValue";
+import { formatRoundedCount } from "@/lib/formatRoundedCount";
 
 export async function SummaryStats() {
     const data = await fetchFrontendModelRankings();
@@ -25,7 +26,7 @@ export async function SummaryStats() {
         },
         {
             title: "Tokens (24h)",
-            value: formatTokens(summary.total_tokens_24h),
+            value: formatRoundedCount(summary.total_tokens_24h),
             icon: Hash,
             description: "Total tokens processed",
         },
@@ -74,11 +75,4 @@ export async function SummaryStats() {
             })}
         </div>
     );
-}
-
-function formatTokens(tokens: number): string {
-    if (tokens >= 1e9) return `${(tokens / 1e9).toFixed(2)}B`;
-    if (tokens >= 1e6) return `${(tokens / 1e6).toFixed(2)}M`;
-    if (tokens >= 1e3) return `${(tokens / 1e3).toFixed(2)}K`;
-    return tokens.toString();
 }

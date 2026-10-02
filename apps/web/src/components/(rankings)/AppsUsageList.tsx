@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
+import { formatRoundedCount } from "@/lib/formatRoundedCount";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -53,8 +53,7 @@ export function AppsUsageList({
 	const locale = useLocale();
 	const rangeOptions = RANGE_OPTIONS.map(({ key, label }) => ({ key, label: t(label as never) }));
 	const rangeLabel = (value: AppRange) => rangeOptions.find((option) => option.key === value)?.label ?? value;
-	const format = useDisplayFormatters();
-	const formatTokens = (value: number, _locale?: string) => Number.isFinite(value) ? format.number(value, { maximumFractionDigits: 1 }) : "--";
+	const formatTokens = (value: number) => formatRoundedCount(value, locale);
 	const getInitial = (name: string) => name.trim().charAt(0).toUpperCase() || "A";
 
 	const resolvedDataByRange = useMemo<Partial<Record<AppRange, TopAppData[]>>>(
@@ -214,7 +213,7 @@ export function AppsUsageList({
 							</div>
 							<div className="text-right">
 								<div className="whitespace-nowrap text-sm tabular-nums text-muted-foreground">
-										{t("usageCountLabel", { count: formatTokens(entry.tokens, locale), unit: t("usageTokensUnit") })}
+										{t("usageCountLabel", { count: formatTokens(entry.tokens), unit: t("usageTokensUnit") })}
 								</div>
 							</div>
 								</div>
