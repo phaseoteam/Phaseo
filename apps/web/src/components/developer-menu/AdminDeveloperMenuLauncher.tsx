@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useState } from "react";
+import { LazyMessages } from "@/components/i18n/LazyMessages";
 
 const AdminDeveloperMenu = dynamic(() => import("./AdminDeveloperMenu"), {
 	ssr: false,
@@ -23,5 +24,5 @@ export default function AdminDeveloperMenuLauncher() {
 		return () => window.removeEventListener("keydown", onKeyDown);
 	}, []);
 
-	return requested ? <AdminDeveloperMenu onDismiss={dismiss} /> : null;
+	return requested ? <LazyMessages feature="developerMenu"><AdminDeveloperMenu onDismiss={dismiss} /></LazyMessages> : null;
 }

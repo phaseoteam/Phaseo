@@ -3,6 +3,7 @@
 
 import { Link, usePathname, useRouter } from "@/i18n/navigation";
 import { useLocale, useTranslations } from "next-intl";
+import { LazyMessages } from "@/components/i18n/LazyMessages";
 import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -577,12 +578,14 @@ export default function HeaderClient({
 						initialActiveTeamId={currentTeamId}
 					/>
 					{user?.id && canUseActionDock ? (
-						<PhaseoActionDock
-							key={user.id}
-							userId={user.id}
-							userRole={userRole}
-							providerMode={providerMode}
-						/>
+						<LazyMessages feature="actionDock">
+							<PhaseoActionDock
+								key={user.id}
+								userId={user.id}
+								userRole={userRole}
+								providerMode={providerMode}
+							/>
+						</LazyMessages>
 					) : null}
 				</>
 			) : (

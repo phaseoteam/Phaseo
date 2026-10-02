@@ -58,7 +58,7 @@ export default async function SettingsLayout({
 	showWebhooks = webhooksEnabled;
 
 	return (
-		<ScopedMessages params={params} namespaces={["SettingsUI", "Catalogue", "Product", "Site.profile", "Site.pricing", "Site.homeOpenSourceMarketing.models"]}>
+		<ScopedMessages params={params} namespaces={["SettingsUI", "Catalogue", "Product", "Site.profile", "Site.pricing", "Site.homeOpenSourceMarketing.models", "Common.ui.modelEditor", "Common.ui.apps", "Common.ui.select", "Common.authFlows", "Common.ui.actions", "Common.ui.privacyEligibility", "Common.ui.modelCreation", "Common.ui.datePicker", "Common.ui.privacy", "Common.ui.auditCopy", "Common.ui.time", "Common.ui.status", "Common.ui.identifiers", "Common.ui.requestsTable", "Common.ui.metrics"]}>
 			<NoFooterStyle />
 
 			<SidebarProvider defaultOpen className="flex min-h-[calc(100dvh-var(--site-header-height,3.75rem)-var(--site-notice-height,0px)-1px)] overflow-visible">

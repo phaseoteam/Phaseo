@@ -8,7 +8,7 @@
 	"packageManager": "pnpm@10.33.0",
 	"scripts": {
 		"predev": "node scripts/generate-docs-search.mjs",
-		"prebuild": "node scripts/generate-docs-search.mjs",
+		"prebuild": "node scripts/generate-docs-search.mjs && node scripts/validate-message-scopes.mjs --write-client-scopes",
 		"docs:search:index": "node scripts/generate-docs-search.mjs",
 		"dev": "node --max-http-header-size=32768 ./node_modules/next/dist/bin/next dev --turbopack --port 3100",
 		"build": "next build",
@@ -36,7 +36,7 @@
 		"test": "jest --runInBand",
 		"audit:i18n:ui": "node scripts/audit-localised-ui.mjs",
 		"test:i18n:ui-audit": "node scripts/audit-localised-ui.mjs --self-test",
-		"validate:i18n": "tsx scripts/validate-localisation.ts && node scripts/validate-message-scopes.mjs --self-test && node scripts/validate-message-scopes.mjs && node scripts/generate-docs-search.mjs --check",
+		"validate:i18n": "tsx scripts/validate-localisation.ts && node scripts/validate-message-scopes.mjs --self-test && node scripts/validate-message-scopes.mjs --check-client-scopes && node scripts/generate-docs-search.mjs --check",
 		"test:i18n": "pnpm run validate:i18n"
 	},
 	"dependencies": {

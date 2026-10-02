@@ -145,10 +145,10 @@ export function RootDocument({
 							<WebQueryProvider>
 							<NuqsAdapter>
 								{children}
+								<AdminDeveloperMenuLauncher />
 							</NuqsAdapter>
 							</WebQueryProvider>
 						</Suspense>
-						<AdminDeveloperMenuLauncher />
 						<TailwindIndicator />
 						<Toaster richColors />
 					</TooltipProvider>
