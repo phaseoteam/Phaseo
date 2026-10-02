@@ -18,15 +18,16 @@ describe("account usage settings routes", () => {
 			if (url.pathname.endsWith("workspaces")) return new Response(JSON.stringify([{ owner_user_id: "owner" }]));
 			if (url.pathname.endsWith("keys") && url.searchParams.has("created_by")) { creatorKeysUrl = url; return new Response(JSON.stringify([{ id: "creator-key" }])); }
 			if (url.pathname.endsWith("users")) return new Response(JSON.stringify([{ display_name: "Alice" }]));
-			if (url.pathname.endsWith("v2_web_gateway_requests")) { requestUrls.push(url); return new Response("[]"); }
+			if (url.pathname.endsWith("v2_web_gateway_requests_by_creator")) { requestUrls.push(url); return new Response("[]"); }
 			return new Response("[]");
 		}));
 		const response = await app.request("https://phaseo.app/api/account/settings/usage/observability?workspaceId=workspace-1&user=11111111-1111-4111-8111-111111111111&from=2026-10-01&to=2026-10-02&previousFrom=2026-09-30&previousTo=2026-10-01", { headers: { authorization: "Bearer token" } }, env);
 		expect(response.status).toBe(200);
 		expect(creatorKeysUrl?.searchParams.get("workspace_id")).toBe("eq.workspace-1");
 		expect(creatorKeysUrl?.searchParams.get("created_by")).toBe("eq.11111111-1111-4111-8111-111111111111");
+		expect(creatorKeysUrl?.searchParams.get("limit")).toBe("1");
 		expect(requestUrls).toHaveLength(2);
-		for (const url of requestUrls) { expect(url.searchParams.get("key_id")).toBe("in.(creator-key)"); expect(url.searchParams.get("workspace_id")).toBe("eq.workspace-1"); }
+		for (const url of requestUrls) { expect(url.searchParams.get("key_created_by")).toBe("eq.11111111-1111-4111-8111-111111111111"); expect(url.searchParams.get("workspace_id")).toBe("eq.workspace-1"); }
 		const payload = await response.json() as any;
 		expect(payload.creatorFilter).toEqual({ id: "11111111-1111-4111-8111-111111111111", name: "Alice", avatarUrl: "https://example.com/avatar.jpg" });
 		expect(JSON.stringify(payload)).not.toContain("private@example.com");
@@ -39,12 +40,12 @@ describe("account usage settings routes", () => {
 			if (url.pathname === "/auth/v1/user") return new Response(JSON.stringify({ id: "viewer", created_at: "2025-01-01" }));
 			if (url.pathname.endsWith("workspace_members")) return new Response(JSON.stringify([{ role: "member" }]));
 			if (url.pathname.endsWith("workspaces")) return new Response(JSON.stringify([{ owner_user_id: "owner" }]));
-			if (url.pathname.endsWith("v2_web_gateway_requests")) requestUrls.push(url);
+			if (url.pathname.endsWith("v2_web_gateway_requests_by_creator")) requestUrls.push(url);
 			return new Response("[]");
 		}));
 		const response = await app.request("https://phaseo.app/api/account/settings/usage/observability?workspaceId=workspace-1&user=unrelated&from=2026-10-01&to=2026-10-02&previousFrom=2026-09-30&previousTo=2026-10-01", { headers: { authorization: "Bearer token" } }, env);
 		expect(response.status).toBe(200);
-		for (const url of requestUrls) expect(url.searchParams.get("key_id")).toBe("in.(00000000-0000-0000-0000-000000000000)");
+		for (const url of requestUrls) expect(url.searchParams.get("key_created_by")).toBe("eq.unrelated");
 		expect(await response.json()).toMatchObject({ creatorFilter: { name: null }, current: { rows: [] } });
 	});
 

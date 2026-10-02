@@ -228,12 +228,12 @@ accountSettingsUsageRouter.get("/usage/observability", async (c) => {
 	const limit = 5000;
 	let scope;
 	try { scope = await usageKeyScope(context, url); } catch { return c.json({ error: "usage_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS); }
-	const creator = scope.creatorId && scope.creatorKeyIds?.length ? await workspaceUserProfile(context, scope.creatorId) : null;
+	const creator = scope.creatorId && scope.hasCreatorKeys ? await workspaceUserProfile(context, scope.creatorId) : null;
 	const loadWindow = async (start: string, end: string) => {
 		const pageSize = 1000;
 		const rows: any[] = [];
 		for (let offset = 0; rows.length <= limit; offset += pageSize) {
-			let query = context.client.from("v2_web_gateway_requests").select(OBSERVABILITY_SELECT)
+			let query = context.client.from(scope.requestsTable).select(OBSERVABILITY_SELECT)
 				.eq("workspace_id", workspaceId).gte("created_at", start).lte("created_at", end)
 				.not("endpoint", "in", OBSERVABILITY_EXCLUDED_ENDPOINTS);
 			query = scope.apply(query);
@@ -247,9 +247,9 @@ accountSettingsUsageRouter.get("/usage/observability", async (c) => {
 		return { rows: rows.slice(0, limit), isSampled: rows.length > limit, limit };
 	};
 	try {
-		const labelFacetFactsQuery = scope.apply(context.client.from("v2_request_facts").select("safe_metadata", { count: "exact" }).eq("workspace_id", workspaceId).gte("occurred_at", from!).lte("occurred_at", to!)).limit(5000);
+		const labelFacetFactsQuery = scope.apply(context.client.from(scope.factsTable).select("safe_metadata", { count: "exact" }).eq("workspace_id", workspaceId).gte("occurred_at", from!).lte("occurred_at", to!)).limit(5000);
 		const labelSummaryFactsQuery = labelFilter
-			? scope.apply(context.client.from("v2_request_facts").select("cost_nanos", { count: "exact" }).eq("workspace_id", workspaceId).gte("occurred_at", from!).lte("occurred_at", to!)).contains("safe_metadata", { labels: [{ key: labelFilter.key, value: labelFilter.value }] }).limit(5000)
+			? scope.apply(context.client.from(scope.factsTable).select("cost_nanos", { count: "exact" }).eq("workspace_id", workspaceId).gte("occurred_at", from!).lte("occurred_at", to!)).contains("safe_metadata", { labels: [{ key: labelFilter.key, value: labelFilter.value }] }).limit(5000)
 			: null;
 		const [keysResult, current, previous, labelFacetFactsResult, labelSummaryFactsResult] = await Promise.all([
 			context.client.from("keys").select("id,name,prefix").eq("workspace_id", workspaceId)

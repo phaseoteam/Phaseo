@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import React, { useMemo, useState } from "react";
 import { useRouter } from "@/i18n/navigation";
 import { useInvalidatePrivateSettings } from "../PrivateSettingsQuery";
@@ -81,7 +82,6 @@ function buildLimitPayload(form: LimitsForm): KeyLimitPayload | null {
 	};
 	const invalid = Object.values(values).some((value) => value === undefined);
 	if (invalid) {
-		toast.error("Limits must be zero or a positive number.");
 		return null;
 	}
 	return values as KeyLimitPayload;
@@ -106,6 +106,7 @@ function LimitInput({
 	onChange: (value: string) => void;
 	kind: "requests" | "spend";
 }) {
+	const t = useTranslations("SettingsUI");
 	return (
 		<div className="min-w-0 space-y-2">
 			<Label htmlFor={id}>{label}</Label>
@@ -118,13 +119,13 @@ function LimitInput({
 					type="number"
 					min="0"
 					step={kind === "spend" ? "0.01" : "1"}
-					placeholder="Unlimited"
+					placeholder={t("strings.Unlimited")}
 					value={value}
 					onChange={(event) => onChange(event.target.value)}
 				/>
 				{kind === "requests" ? (
 					<InputGroupAddon align="inline-end">
-						<InputGroupText>req</InputGroupText>
+						<InputGroupText>{t("oauthDetail.requests")}</InputGroupText>
 					</InputGroupAddon>
 				) : null}
 			</InputGroup>
@@ -133,6 +134,7 @@ function LimitInput({
 }
 
 export default function KeySettingsForm({ k }: { k: any }) {
+	const t = useTranslations("SettingsUI");
 	const router = useRouter();
 	const invalidateSettings = useInvalidatePrivateSettings();
 	const [enabled, setEnabled] = useState(() => isKeyEnabled(k));
@@ -154,15 +156,15 @@ export default function KeySettingsForm({ k }: { k: any }) {
 	async function onSave(event: React.FormEvent) {
 		event.preventDefault();
 		const limitPayload = buildLimitPayload(limits);
-		if (!limitPayload) return;
+		if (!limitPayload) { toast.error(t("keyDetail.limitInvalid")); return; }
 
 		setSaving(true);
 		try {
-			const promise = updateApiKeyAction(k.id, { paused: !enabled, ipAllowlist, limits: limitPayload });
+			const promise = updateApiKeyAction(k.id, { ...(enabled !== isKeyEnabled(k) ? { paused: !enabled } : {}), ...(JSON.stringify(ipAllowlist) !== JSON.stringify(k.ip_allowlist ?? []) ? { ipAllowlist } : {}), limits: limitPayload });
 			toast.promise(promise, {
-					loading: "Saving key...",
-					success: "Key updated",
-					error: (error) => error instanceof Error ? error.message : "Failed to update key",
+					loading: t("strings.phraseSavingKey"),
+					success: t("strings.Key updated"),
+					error: (error) => error instanceof Error ? error.message : t("strings.Failed to update key"),
 				},
 			);
 			await promise;
@@ -179,13 +181,13 @@ export default function KeySettingsForm({ k }: { k: any }) {
 		<form id="settings" onSubmit={onSave} className="space-y-6 rounded-xl border bg-card p-6">
 			<fieldset disabled={saving} className="space-y-6">
 			<section className="space-y-4">
-				<div className="text-sm font-medium">General</div>
+				<div className="text-sm font-medium">{t("strings.General")}</div>
 				<div className="flex items-center justify-between gap-4">
 					<div>
-						<div className="text-sm font-medium">Enabled</div>
-						<div className="text-xs text-muted-foreground">Disabled keys cannot make gateway requests.</div>
+						<div className="text-sm font-medium">{t("labels.enabled")}</div>
+						<div className="text-xs text-muted-foreground">{t("strings.phraseDisabledKeysCannotMakeGatewayRequests")}</div>
 					</div>
-					<Switch checked={enabled} onCheckedChange={setEnabled} aria-label="Key enabled" />
+					<Switch checked={enabled} onCheckedChange={setEnabled} aria-label={t("labels.enabled")} />
 				</div>
 			</section>
 
@@ -193,18 +195,18 @@ export default function KeySettingsForm({ k }: { k: any }) {
 
 			<section className="space-y-4">
 				<div>
-					<div className="text-sm font-medium">Limits</div>
-					<div className="text-xs text-muted-foreground">Leave a field blank for unlimited.</div>
+					<div className="text-sm font-medium">{t("strings.Limits")}</div>
+					<div className="text-xs text-muted-foreground">{t("strings.phraseLeaveAFieldBlankForUnlimited")}</div>
 				</div>
 				<div className="grid gap-4 md:grid-cols-3">
-					<LimitInput id="edit-key-daily-requests" label="Daily Requests" value={limits.dailyRequests} onChange={(value) => updateLimit("dailyRequests", value)} kind="requests" />
-					<LimitInput id="edit-key-weekly-requests" label="Weekly Requests" value={limits.weeklyRequests} onChange={(value) => updateLimit("weeklyRequests", value)} kind="requests" />
-					<LimitInput id="edit-key-monthly-requests" label="Monthly Requests" value={limits.monthlyRequests} onChange={(value) => updateLimit("monthlyRequests", value)} kind="requests" />
+					<LimitInput id="edit-key-daily-requests" label={t("keys.dailyRequests")} value={limits.dailyRequests} onChange={(value) => updateLimit("dailyRequests", value)} kind="requests" />
+					<LimitInput id="edit-key-weekly-requests" label={t("keys.weeklyRequests")} value={limits.weeklyRequests} onChange={(value) => updateLimit("weeklyRequests", value)} kind="requests" />
+					<LimitInput id="edit-key-monthly-requests" label={t("keys.monthlyRequests")} value={limits.monthlyRequests} onChange={(value) => updateLimit("monthlyRequests", value)} kind="requests" />
 				</div>
 				<div className="grid gap-4 md:grid-cols-3">
-					<LimitInput id="edit-key-daily-spend" label="Daily Spend" value={limits.dailyCostUsd} onChange={(value) => updateLimit("dailyCostUsd", value)} kind="spend" />
-					<LimitInput id="edit-key-weekly-spend" label="Weekly Spend" value={limits.weeklyCostUsd} onChange={(value) => updateLimit("weeklyCostUsd", value)} kind="spend" />
-					<LimitInput id="edit-key-monthly-spend" label="Monthly Spend" value={limits.monthlyCostUsd} onChange={(value) => updateLimit("monthlyCostUsd", value)} kind="spend" />
+					<LimitInput id="edit-key-daily-spend" label={t("keys.dailySpend")} value={limits.dailyCostUsd} onChange={(value) => updateLimit("dailyCostUsd", value)} kind="spend" />
+					<LimitInput id="edit-key-weekly-spend" label={t("keys.weeklySpend")} value={limits.weeklyCostUsd} onChange={(value) => updateLimit("weeklyCostUsd", value)} kind="spend" />
+					<LimitInput id="edit-key-monthly-spend" label={t("keys.monthlySpend")} value={limits.monthlyCostUsd} onChange={(value) => updateLimit("monthlyCostUsd", value)} kind="spend" />
 				</div>
 			</section>
 
@@ -212,7 +214,7 @@ export default function KeySettingsForm({ k }: { k: any }) {
 			<KeyIpAllowlistEditor entries={ipAllowlist} onChange={setIpAllowlist} disabled={saving} />
 
 			<div className="flex justify-end">
-				<Button type="submit" disabled={saving || !dirty}>{saving ? "Saving..." : "Save Changes"}</Button>
+				<Button type="submit" disabled={saving || !dirty}>{saving ? t("strings.phraseSaving") : t("strings.Save Changes")}</Button>
 			</div>
 			</fieldset>
 		</form>

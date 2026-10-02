@@ -21,13 +21,25 @@ async function save(ipAllowlist: unknown, env: Partial<Env> = {}) {
     const background: Promise<unknown>[] = [];
     const response = await app.request("https://example.com/keys/key-1", {
         method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify({ ipAllowlist }),
-    }, env as Env, { waitUntil: (promise: Promise<unknown>) => background.push(promise), passThroughOnException: () => undefined } as ExecutionContext);
+    }, { PHASEO_CONTROL_KEY: "control-key", PHASEO_CONTROL_SECRET: "control-secret", ...env } as Env, { waitUntil: (promise: Promise<unknown>) => background.push(promise), passThroughOnException: () => undefined } as ExecutionContext);
     await Promise.all(background);
     return response;
 }
 
 describe("per-key IP settings", () => {
-    beforeEach(() => { vi.clearAllMocks(); mocks.role = "admin"; });
+    it.each(["missing", "http", "network"])("reports %s gateway invalidation failures after recording the saved policy", async (kind) => {
+        const log = vi.spyOn(console, "error").mockImplementation(() => undefined);
+        if (kind === "http") vi.stubGlobal("fetch", vi.fn(async () => new Response("", { status: 503 })));
+        if (kind === "network") vi.stubGlobal("fetch", vi.fn(async () => { throw new Error("network failure"); }));
+        const response = await save([], kind === "missing" ? { PHASEO_CONTROL_KEY: "", PHASEO_CONTROL_SECRET: "" } : {});
+        expect(response.status).toBe(503);
+        expect(await response.json()).toMatchObject({ error: "key_gateway_sync_failed" });
+        expect(mocks.update).toHaveBeenCalledWith({ ip_allowlist: [] });
+        expect(mocks.audit).toHaveBeenCalled();
+        expect(log).toHaveBeenCalled();
+        log.mockRestore();
+    });
+    beforeEach(() => { vi.clearAllMocks(); mocks.role = "admin"; vi.stubGlobal("fetch", vi.fn(async () => new Response("{}"))); });
     afterEach(() => vi.unstubAllGlobals());
     it("invalidates gateway authorization after saving the policy", async () => {
         const fetchMock = vi.fn(async () => new Response("{}"));
@@ -54,13 +66,18 @@ describe("per-key IP settings", () => {
         expect((await save([])).status).toBe(403);
         expect(mocks.update).not.toHaveBeenCalled();
     });
+    it.each([{ dailyRequests: 25 }, { monthlyCostNanos: null }])("preserves omitted limits in partial updates: %j", async (limits) => {
+        const response = await app.request("https://example.com/keys/key-1", { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify({ limits }) }, {} as Env, { waitUntil: () => undefined, passThroughOnException: () => undefined } as ExecutionContext);
+        expect(response.status).toBe(200);
+        expect(mocks.update).toHaveBeenCalledWith("dailyRequests" in limits ? { daily_limit_requests: 25 } : { monthly_limit_cost_nanos: 0 });
+    });
     it("saves settings and limits together in one update", async () => {
         const response = await app.request("https://example.com/keys/key-1", {
             method: "PUT", headers: { "content-type": "application/json" },
             body: JSON.stringify({ name: "Renamed", ipAllowlist: [], limits: { dailyRequests: 25, monthlyCostNanos: 1000000000 } }),
-        }, {} as Env, { waitUntil: () => undefined, passThroughOnException: () => undefined } as ExecutionContext);
+        }, { PHASEO_CONTROL_KEY: "control-key", PHASEO_CONTROL_SECRET: "control-secret" } as Env, { waitUntil: () => undefined, passThroughOnException: () => undefined } as ExecutionContext);
         expect(response.status).toBe(200);
         expect(mocks.update).toHaveBeenCalledTimes(1);
-        expect(mocks.update).toHaveBeenCalledWith(expect.objectContaining({ name: "Renamed", ip_allowlist: [], daily_limit_requests: 25, monthly_limit_cost_nanos: 1000000000 }));
+        expect(mocks.update).toHaveBeenCalledWith({ name: "Renamed", ip_allowlist: [], daily_limit_requests: 25, monthly_limit_cost_nanos: 1000000000 });
     });
 });

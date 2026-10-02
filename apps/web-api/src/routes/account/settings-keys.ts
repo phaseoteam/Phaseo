@@ -90,8 +90,16 @@ async function enforceKeyLimit(context: NonNullable<Awaited<ReturnType<typeof re
 }
 
 async function invalidateGatewayKey(env: Env, keyId: string) {
-	const key = env.PHASEO_MANAGEMENT_KEY ?? env.PHASEO_CONTROL_KEY; if (!key || !env.PHASEO_CONTROL_SECRET) return;
-	await fetch(`${(env.GATEWAY_API_ORIGIN ?? "http://localhost:8787").replace(/\/$/, "")}/v1/keys/${encodeURIComponent(keyId)}/invalidate`, { method: "POST", headers: { authorization: `Bearer ${key}`, "x-control-secret": env.PHASEO_CONTROL_SECRET } });
+	const key = env.PHASEO_MANAGEMENT_KEY ?? env.PHASEO_CONTROL_KEY;
+	try {
+		if (!key || !env.PHASEO_CONTROL_SECRET) throw new Error("missing_control_configuration");
+		const response = await fetch(`${(env.GATEWAY_API_ORIGIN ?? "http://localhost:8787").replace(/\/$/, "")}/v1/keys/${encodeURIComponent(keyId)}/invalidate`, { method: "POST", signal: AbortSignal.timeout(10_000), headers: { authorization: `Bearer ${key}`, "x-control-secret": env.PHASEO_CONTROL_SECRET } });
+		if (!response.ok) throw new Error(`control_status_${response.status}`);
+		return true;
+	} catch {
+		console.error("[key-policy] gateway invalidation failed", { keyId });
+		return false;
+	}
 }
 
 export const accountSettingsKeysRouter = new Hono<{ Bindings: Env }>();
@@ -188,6 +196,7 @@ accountSettingsKeysRouter.put("/keys/:keyId", async (c) => {
 		const values = body.limits as Record<string, unknown>;
 		const fields = { dailyRequests: "daily_limit_requests", weeklyRequests: "weekly_limit_requests", monthlyRequests: "monthly_limit_requests", dailyCostNanos: "daily_limit_cost_nanos", weeklyCostNanos: "weekly_limit_cost_nanos", monthlyCostNanos: "monthly_limit_cost_nanos" };
 		for (const [input, column] of Object.entries(fields)) {
+			if (!Object.hasOwn(values, input)) continue;
 			const value = values[input];
 			if (value !== null && value !== undefined && (typeof value !== "number" || !Number.isSafeInteger(value) || value < 0)) return c.json({ error: "invalid_limits" }, 400, PRIVATE_NO_STORE_HEADERS);
 			update[column] = value ?? 0;
@@ -198,9 +207,12 @@ accountSettingsKeysRouter.put("/keys/:keyId", async (c) => {
         if (!parsed.success) return c.json({ error: "invalid_ip_allowlist", message: "Each entry needs a label and a valid IPv4, IPv6, or CIDR address (maximum 100 entries)." }, 400, PRIVATE_NO_STORE_HEADERS);
         update.ip_allowlist = parsed.data;
     }
-	const result = await loaded.context.client.from("keys").update(update).eq("id", loaded.key.id).eq("workspace_id", loaded.context.workspaceId); if (result.error) return c.json({ error: "key_write_failed" }, 503, PRIVATE_NO_STORE_HEADERS); if ("status" in update || "ip_allowlist" in update || body.limits !== undefined) c.executionCtx.waitUntil(invalidateGatewayKey(c.env, loaded.key.id));
+	const result = await loaded.context.client.from("keys").update(update).eq("id", loaded.key.id).eq("workspace_id", loaded.context.workspaceId); if (result.error) return c.json({ error: "key_write_failed" }, 503, PRIVATE_NO_STORE_HEADERS);
 	const action = typeof body.paused === "boolean" ? (body.paused ? "api_key.paused" : "api_key.resumed") : "api_key.updated";
 	await recordWorkspaceAuditEvent(loaded.context.client, { workspaceId: loaded.context.workspaceId, actorUserId: loaded.user.id, action, targetType: "api_key", targetId: loaded.key.id, targetName: String(update.name ?? loaded.key.name ?? ""), metadata: { changedFields: Object.keys(update), ...(update.status ? { status: update.status } : {}) }, requestId: requestId(c) });
+	if ("ip_allowlist" in update) {
+		if (!await invalidateGatewayKey(c.env, loaded.key.id)) return c.json({ error: "key_gateway_sync_failed", message: "Settings saved, but gateway policy refresh failed. Retry saving to synchronize access restrictions." }, 503, PRIVATE_NO_STORE_HEADERS);
+	} else if ("status" in update || body.limits !== undefined) c.executionCtx.waitUntil(invalidateGatewayKey(c.env, loaded.key.id));
 	return c.json({ success: true }, 200, PRIVATE_NO_STORE_HEADERS);
 });
 
