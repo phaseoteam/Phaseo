@@ -34,6 +34,10 @@ export async function generateMetadata(): Promise<Metadata> {
 
 async function ModelsPageContent({ title }: { title: string }) {
 	await connection();
+	return loadModelsPageContent(title);
+}
+
+async function loadModelsPageContent(title: string) {
 	const queryClient = createWebQueryClient();
 	let accountContext: Awaited<ReturnType<typeof getServerAccountContext>> | undefined;
 	let catalogueVersion: "v1" | "v2" = "v2";

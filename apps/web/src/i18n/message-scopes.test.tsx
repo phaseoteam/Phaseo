@@ -2,7 +2,6 @@ import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { createTranslator } from "next-intl";
 import { useTranslations } from "next-intl";
-import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { FeatureMessagesProvider, LocaleMessagesProvider } from "@/components/i18n/LocaleMessagesProvider";
 import { getPublicMessages } from "./messages";
@@ -39,15 +38,15 @@ describe("route message selection", () => {
 		function TranslatedChild() {
 			const shared = useTranslations("Common.nav");
 			const feature = useTranslations("Catalogue.models");
-			return createElement("p", null, `${shared("home")} ${feature("title")}`);
+			return <p>{shared("home")} {feature("title")}</p>;
 		}
-		expect(() => renderToStaticMarkup(createElement(LocaleMessagesProvider, {
-			locale, messages: shell, timeZone: "UTC",
-			children: createElement(FeatureMessagesProvider, {
-				messages: selectMessages(messages, ["Catalogue.models"]),
-				children: createElement(TranslatedChild),
-			}),
-		}))).not.toThrow();
+		expect(() => renderToStaticMarkup(
+			<LocaleMessagesProvider locale={locale} messages={shell} timeZone="UTC">
+				<FeatureMessagesProvider messages={selectMessages(messages, ["Catalogue.models"])}>
+					<TranslatedChild />
+				</FeatureMessagesProvider>
+			</LocaleMessagesProvider>,
+		)).not.toThrow();
 		expect(JSON.stringify(shell).length).toBeLessThan(JSON.stringify(messages).length / 3);
 	});
 

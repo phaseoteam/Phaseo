@@ -24,8 +24,10 @@ The server request configuration retains complete locale catalogs. `RootDocument
 
 When adding a translated client component, include its namespace in the nearest route boundary. Use `createScopedMessagesLayout` for a layout and `createScopedMessagesTemplate` for a template; Next templates do not receive route params. Shared controls belong in the shell scope only when they are available throughout the site. Keep dictionary imports on the server.
 
-`pnpm --filter @phaseo/web validate:i18n` checks route import graphs for uncovered static translation calls. `message-scopes.test.ts` checks all declared namespaces across every locale and nested provider inheritance. Review computed translation keys and newly shared components as well, since static checks cannot determine every runtime key. Run a production build after changing boundaries so partial prerendering is checked too.
+`pnpm --filter @phaseo/web validate:i18n` checks route import graphs for uncovered static translation calls. `message-scopes.test.tsx` checks all declared namespaces across every locale and nested provider inheritance. Review computed translation keys and newly shared components as well, since static checks cannot determine every runtime key. Run a production build after changing boundaries so partial prerendering is checked too.
 
 ## Server catalogue loading
 
 The models page has one 15-second server budget covering session resolution, provider previews, catalogue pages, pricing and private data. Its signal reaches each request, including Auth requests, and server prefetch retries are disabled. Browser query policies remain independent. If the account scope is already known when the deadline expires, the browser can recover the catalogue request; an unresolved session is never silently treated as anonymous.
+
+The shared authentication header loader also has one 15-second budget, forwards cancellation to Auth and the account API, and makes one attempt. Its callers retain their existing error fallbacks.
