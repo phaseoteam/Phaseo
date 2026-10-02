@@ -182,6 +182,16 @@
 		}
 	},
 	"_strings": {
+		"A gateway API for accessing various AI models with OpenAI-compatible endpoints.": {
+			"es": "Una API de pasarela para acceder a diversos modelos de IA mediante endpoints compatibles con OpenAI.",
+			"fr": "Une API de passerelle pour accéder à divers modèles d’IA via des points de terminaison compatibles avec OpenAI.",
+			"de": "Eine Gateway-API für den Zugriff auf verschiedene KI-Modelle über OpenAI-kompatible Endpunkte.",
+			"pt-BR": "Uma API de gateway para acessar diversos modelos de IA por meio de endpoints compatíveis com OpenAI.",
+			"hi": "OpenAI-संगत एंडपॉइंट के माध्यम से विभिन्न AI मॉडल तक पहुँचने के लिए एक गेटवे API।",
+			"ja": "OpenAI互換のエンドポイントを通じて、さまざまなAIモデルにアクセスするためのゲートウェイAPI。",
+			"zh-Hans": "通过兼容 OpenAI 的端点访问各种 AI 模型的网关 API。",
+			"ar": "واجهة API للبوابة تتيح الوصول إلى نماذج ذكاء اصطناعي متنوعة عبر نقاط نهاية متوافقة مع OpenAI."
+		},
 		"Built-in datetime server tool": {
 			"es": "Herramienta de servidor de fecha y hora integrada",
 			"fr": "Outil serveur de date et d’heure intégré",

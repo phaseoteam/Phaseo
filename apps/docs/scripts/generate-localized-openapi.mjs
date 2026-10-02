@@ -2,6 +2,7 @@ import { readFile, readdir, mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import yaml from "js-yaml";
+import { isDeepStrictEqual } from "node:util";
 
 const docsRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const sourcePath = path.join(docsRoot, "openapi/v1/openapi.yaml");
@@ -112,6 +113,19 @@ function assertTranslatedCopy(locale, original, localized, context) {
 		}
 		assertTranslatedCopy(locale, child, translated, `${context}/${key}`);
 	}
+}
+
+// Documentation prose may change; all executable contract data must survive.
+function contractData(value, context = "") {
+	if (Array.isArray(value)) return value.map((child, index) => contractData(child, `${context}/${index}`));
+	if (!value || typeof value !== "object") return value;
+	return Object.fromEntries(Object.entries(value).flatMap(([key, child]) => {
+		if (["summary", "description", "title"].includes(key) && typeof child === "string") return [];
+		if (["example", "examples", "enum", "const"].includes(key) || (key === "default" && !context.endsWith("/responses"))) {
+			return [[key, child]];
+		}
+		return [[key, contractData(child, `${context}/${key}`)]];
+	}));
 }
 
 function buildLocalizedSpec(locale) {
@@ -341,21 +355,34 @@ function buildLocalizedSpec(locale) {
 	applyComponentCopy(globalComponentCopy, "Global OpenAPI copy");
 	applyStringCopy(locale, components, "OpenAPI components");
 
-	const spec = {
-		openapi: source.openapi,
-		info: {
-			title: source.info.title,
-			version: source.info.version,
-		},
-		servers: structuredClone(source.servers),
-		security: structuredClone(source.security),
-		paths,
-	};
-	if (Object.keys(components).length > 0) spec.components = components;
+	// Keep the complete canonical contract, including internal exclusion flags,
+	// path metadata, unreferenced components and contact information. Locale
+	// files are generated prose overlays, never a filtered public specification.
+	const spec = structuredClone(source);
+	for (const [route, pathItem] of Object.entries(paths)) {
+		Object.assign(spec.paths[route], pathItem);
+	}
+	for (const [section, namedComponents] of Object.entries(components)) {
+		Object.assign(spec.components[section], namedComponents);
+	}
 	applyStringCopy(locale, spec, "OpenAPI specification");
-	assertTranslatedCopy(locale, source.paths, spec.paths, "paths");
-	assertTranslatedCopy(locale, source.components, spec.components, "components");
+	// Require translations for the surfaces referenced by locale endpoint pages.
+	// Undocumented operations retain canonical prose until they are documented.
+	for (const [route, pathItem] of Object.entries(paths)) {
+		for (const method of Object.keys(pathItem)) {
+			assertTranslatedCopy(locale, source.paths[route][method], spec.paths[route][method], `paths/${route}/${method}`);
+		}
+	}
+	for (const [section, namedComponents] of Object.entries(components)) {
+		for (const name of Object.keys(namedComponents)) {
+			assertTranslatedCopy(locale, source.components[section][name], spec.components[section][name], `components/${section}/${name}`);
+		}
+	}
 	assertTranslatedCopy(locale, source.servers, spec.servers, "servers");
+	assertTranslatedCopy(locale, { description: source.info.description }, { description: spec.info.description }, "info");
+	if (!isDeepStrictEqual(contractData(source), contractData(spec))) {
+		throw new Error(`Localized ${locale} OpenAPI overlay changed the canonical API contract.`);
+	}
 
 	return yaml.dump(spec, {
 		lineWidth: -1,

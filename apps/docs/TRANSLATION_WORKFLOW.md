@@ -38,6 +38,8 @@ Record each locale separately after its translation has been reviewed. Pages rem
 
 When OpenAPI summaries, descriptions, or parameter text change, update the localized OpenAPI copy and record that locale's source version:
 
+`openapi/v1/openapi.yaml` remains the single API contract. The locale generator preserves every operation, component, exclusion flag, and executable value, then overlays reviewed prose for documented endpoints. Its contract comparison fails if a translation changes protocol data. Undocumented operations retain canonical prose until they receive locale documentation; generated locale files are never used for SDK generation.
+
 ```sh
 pnpm --filter @phaseo/docs translation:freshness:record --locale es --unit openapi
 ```
