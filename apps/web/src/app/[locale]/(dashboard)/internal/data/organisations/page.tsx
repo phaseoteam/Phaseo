@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { getTranslations } from "next-intl/server";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -52,7 +52,7 @@ export default async function InternalOrganisationsPage({
 				</Button>
 			</form>
 			<div className="divide-y border-y">
-				{rows.length === 0 ? <p className="py-10 text-center text-sm text-muted-foreground">No records found.</p> : null}
+				{rows.length === 0 ? <p className="py-10 text-center text-sm text-muted-foreground">{t("noRecords")}</p> : null}
 				{rows.map((row: any) => (
 					<Link
 						key={row.organisation_id}

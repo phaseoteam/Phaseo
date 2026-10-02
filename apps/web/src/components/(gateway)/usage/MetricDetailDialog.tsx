@@ -149,12 +149,12 @@ export default function MetricDetailDialog({
 		const config: Record<string, { label: string; color: string }> = {};
 		seriesKeys.forEach((key) => {
 			config[key] = {
-				label: key === OTHER_SERIES_KEY ? "Other" : getModelDisplayName(key, modelMetadata),
+				label: key === OTHER_SERIES_KEY ? t("usageGaps.copyOther") : getModelDisplayName(key, modelMetadata),
 				color: getColor(key, colorMap, modelMetadata),
 			};
 		});
 		return config;
-	}, [seriesKeys, colorMap, modelMetadata]);
+	}, [seriesKeys, colorMap, modelMetadata, t]);
 
 	const topModels = React.useMemo(() => {
 		if (!chartData.length) return [] as TopModelRow[];
@@ -270,7 +270,7 @@ export default function MetricDetailDialog({
 												}
 												getLabel={(key) =>
 													key === OTHER_SERIES_KEY
-														? "Other"
+														? t("usageGaps.copyOther")
 														: getModelDisplayName(key, modelMetadata)
 												}
 												topN={10}
@@ -282,7 +282,7 @@ export default function MetricDetailDialog({
 										<Bar
 											key={key}
 											dataKey={key}
-											name={key === OTHER_SERIES_KEY ? "Other" : getModelDisplayName(key, modelMetadata)}
+											name={key === OTHER_SERIES_KEY ? t("usageGaps.copyOther") : getModelDisplayName(key, modelMetadata)}
 											stackId="a"
 											fill={getColor(key, colorMap, modelMetadata)}
 											radius={[0, 0, 0, 0]}

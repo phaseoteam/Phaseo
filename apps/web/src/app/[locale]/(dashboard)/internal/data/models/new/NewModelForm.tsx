@@ -1,10 +1,9 @@
 "use client";
 
-import Link from "next/link";
+import { Link, useRouter } from "@/i18n/navigation";
 import { type FormEvent, useMemo, useRef, useState } from "react";
 import { UnsavedChangesGuard } from "@/components/(data)/UnsavedChangesGuard";
 import { useCatalogFormChanges } from "@/components/(data)/useCatalogFormChanges";
-import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { Plus, Trash2 } from "lucide-react";
 import { Logo } from "@/components/Logo";
@@ -829,16 +828,16 @@ export default function NewModelForm({
 						</select>
 					</label>
 					<label htmlFor="new-model-replacement-model" className="text-sm">
-						<div className="mb-1 text-muted-foreground">Recommended successor</div>
+						<div className="mb-1 text-muted-foreground">{t("modelEditor.recommendedSuccessor")}</div>
 						<select id="new-model-replacement-model" name="replacement_model_id" className="w-full rounded-md border px-3 py-2 text-sm">
-							<option value="">None</option>
+							<option value="">{t("modelEditor.none")}</option>
 							{previousModels.map((successor) => (
 								<option key={successor.model_id} value={successor.model_id}>
 									{successor.name ?? successor.model_id}
 								</option>
 							))}
 						</select>
-						<p className="mt-1 text-xs text-muted-foreground">Shown in deprecation notices; independent of lineage.</p>
+						<p className="mt-1 text-xs text-muted-foreground">{t("modelEditor.recommendedSuccessorDescription")}</p>
 					</label>
 					<label className="text-sm flex items-center gap-2 self-end">
 						<input type="checkbox" name="hidden" />

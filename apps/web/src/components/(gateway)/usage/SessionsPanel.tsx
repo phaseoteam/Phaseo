@@ -272,7 +272,7 @@ function TimeHover({
 					<div className="grid grid-cols-[120px_1fr] gap-2">
 						<div className="text-muted-foreground">{tTime("relative")}</div>
 						<div className="font-mono">
-							{relativeNowMs ? formatRelativeToNow(date, relativeNowMs) : "-"}
+							{relativeNowMs ? formatRelativeToNow(date, relativeNowMs, locale) : "-"}
 						</div>
 					</div>
 					<div className="grid grid-cols-[120px_1fr] gap-2">
@@ -331,7 +331,7 @@ function PeriodHover({
 						<div className="grid grid-cols-[120px_1fr] gap-2">
 							<div className="text-muted-foreground">{tTime("relative")}</div>
 							<div className="font-mono">
-								{relativeNowMs ? formatRelativeToNow(new Date(start), relativeNowMs) : "-"}
+								{relativeNowMs ? formatRelativeToNow(new Date(start), relativeNowMs, locale) : "-"}
 							</div>
 						</div>
 					</div>
@@ -348,7 +348,7 @@ function PeriodHover({
 						<div className="grid grid-cols-[120px_1fr] gap-2">
 							<div className="text-muted-foreground">{tTime("relative")}</div>
 							<div className="font-mono">
-								{relativeNowMs ? formatRelativeToNow(new Date(end), relativeNowMs) : "-"}
+								{relativeNowMs ? formatRelativeToNow(new Date(end), relativeNowMs, locale) : "-"}
 							</div>
 						</div>
 					</div>
@@ -889,7 +889,7 @@ export default function SessionsPanel({
 	initialProviderNames,
 	initialProviderMetadata,
 	timeRange,
-	emptyMessage = "No sessions found in this workspace yet.",
+	emptyMessage,
 	refreshLimit = 100,
 	showRefreshButton = true,
 	appFilter = null,
@@ -1142,7 +1142,7 @@ export default function SessionsPanel({
 			rowKey={(session) => session.session_id}
 			onRowClick={openDetail}
 			settingsTargetId={settingsTargetId}
-			emptyMessage={emptyMessage}
+			emptyMessage={emptyMessage ?? t("usageGaps.noSessions")}
 			renderCell={(session, column) => {
 				const { primary, provider, other } = getSessionPrimary(session);
 				switch (column) {
@@ -1174,8 +1174,8 @@ export default function SessionsPanel({
 											stopRowClick(event);
 											copySessionId(session.session_id);
 										}}
-										title="Copy session ID"
-										aria-label="Copy session ID"
+										title={t("usageGaps.copyCopySessionID")}
+										aria-label={t("usageGaps.copyCopySessionID")}
 									>
 										{copiedSessionId === session.session_id ? (
 											<Check className="h-3.5 w-3.5" />

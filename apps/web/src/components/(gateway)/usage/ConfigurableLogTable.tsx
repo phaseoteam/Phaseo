@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import TableSettings from "./TableSettings";
+import { useLocalizedLogColumns } from "./localizedLogColumns";
 import {
 	normalizeTableColumns,
 	type TableColumnDefinition,
@@ -27,7 +28,7 @@ import {
 export default function ConfigurableLogTable<Row, Id extends string>({
 	tableId,
 	label,
-	definitions,
+	definitions: sourceDefinitions,
 	rows,
 	rowKey,
 	renderCell,
@@ -45,6 +46,7 @@ export default function ConfigurableLogTable<Row, Id extends string>({
 	emptyMessage: string;
 	settingsTargetId?: string;
 }) {
+	const definitions = useLocalizedLogColumns(sourceDefinitions);
 	const columnsKey = `phaseo.${tableId}.columns.v1`;
 	const densityKey = `phaseo.${tableId}.density.v1`;
 	const [columns, setColumns] = React.useState(() =>

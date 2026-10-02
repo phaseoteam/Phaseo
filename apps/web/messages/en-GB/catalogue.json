@@ -448,7 +448,8 @@
 				"openDecisionsPlayground": "Open Decisions playground",
 				"free": "Free",
 				"variant": "Variant",
-				"current": "Current"
+				"current": "Current",
+				"tryJev": "Try Jev in Decisions"
 			},
 			"sections": {
 				"providersDescription": "API providers, route pricing, availability, and recent reliability signals.",
@@ -875,7 +876,12 @@
 				"tierUltrafast": "Ultrafast",
 				"planDescriptionFlexOnly": "Used only when service_tier is flex.",
 				"planDescriptionFastRouting": "Fast routing when available.",
-				"planDescriptionUltrafast": "Highest-speed routing when available."
+				"planDescriptionUltrafast": "Highest-speed routing when available.",
+				"addProviderKey": "Add a provider key",
+				"providerKeyRequired": "Provider key required",
+				"byokCredential": "Add your own {providers} credential before sending this request.",
+				"addNamedProviderKey": "Add {provider} key",
+				"byokRequired": "This provider requires a BYOK key."
 			},
 			"seoTitles": {
 				"titleDefault": "{model} Pricing, Benchmarks & Providers",
@@ -902,7 +908,8 @@
 				"openSource": "Open source for {benchmark}",
 				"hideDetailsFor": "Hide details for {benchmark}",
 				"showDetailsFor": "Show details for {benchmark}",
-				"showAll": "Show all {count} benchmarks"
+				"showAll": "Show all {count} benchmarks",
+				"otherBenchmarks": "Other benchmarks"
 			},
 			"faqContent": {
 				"title": "Frequently asked questions",
@@ -1691,6 +1698,10 @@
 			"configureRegional": "Configure regional routing",
 			"tiers": "For Fast or Flex, specify the tier in your request or select a route dedicated to that tier. Batch requests go through the Batch API.",
 			"chooseTier": "Choose a service tier"
+		},
+		"overview": {
+			"providerSubmissions": "Provider submissions",
+			"providerSubmissionsDescription": "Complete provider-supplied details for authorized internal review."
 		}
 	},
 	"providers": {
@@ -1830,7 +1841,8 @@
 		"missingDescription": "If we're missing an API provider, please contribute on GitHub.",
 		"contribute": "Contribute on GitHub",
 		"internalPreview": "Internal provider preview",
-		"internalPreviewDescription": "This provider has authorized catalogue submissions but no public gateway analytics yet. Model submissions below are visible only to the provider workspace and Phaseo administrators."
+		"internalPreviewDescription": "This provider has authorized catalogue submissions but no public gateway analytics yet. Model submissions below are visible only to the provider workspace and Phaseo administrators.",
+		"loadingModels": "Loading models…"
 	},
 	"benchmarks": {
 		"title": "Benchmarks",
@@ -2189,7 +2201,9 @@
 			"cost": "Evaluation cost"
 		},
 		"audioTranscribed": "Audio transcribed",
-		"recentRequests": "{count} recent requests"
+		"recentRequests": "{count} recent requests",
+		"intelligenceBenchmarks": "Intelligence benchmarks",
+		"noMeasuredUsage": "No measured usage in the last 30 days."
 	},
 	"compare": {
 		"title": "Compare models",
@@ -2899,7 +2913,8 @@
 		"requestsUnit": "requests",
 		"usageOverTime": "Usage over time",
 		"noUsageDataForPeriod": "No usage data available for this period.",
-		"rangePeriod": "Usage for the {range} period"
+		"rangePeriod": "Usage for the {range} period",
+		"averageTokensPerRequest": "Average tokens per request"
 	},
 	"apiModelCard": {
 		"gatewayActive": "Gateway: Active",

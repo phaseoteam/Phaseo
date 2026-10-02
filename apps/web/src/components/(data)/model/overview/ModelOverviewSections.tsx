@@ -1374,6 +1374,7 @@ export default async function ModelOverviewSections({
 	showPreviewDetails = Boolean(model),
 }: ModelOverviewSectionsProps) {
 	const t = await getTranslations("Catalogue.models.detail");
+	const tOverview = await getTranslations("Catalogue.modelDetail.overview");
 	const hasInternalModelData = Boolean(model);
 	const isRetired = status === "Retired";
 	const showVerification = supportsProvenanceVerification(model?.output_types);
@@ -1413,8 +1414,8 @@ export default async function ModelOverviewSections({
 						{showPreviewDetails && previewOffers.length > 0 ? (
 							<Section id="provider-submissions">
 								<SectionHeader
-									title="Provider submissions"
-									description="Complete provider-supplied details for authorized internal review."
+									title={tOverview("providerSubmissions")}
+									description={tOverview("providerSubmissionsDescription")}
 								/>
 								<ProviderCatalogPreviewDetailsSection previews={previewOffers} />
 							</Section>
@@ -1490,8 +1491,8 @@ export default async function ModelOverviewSections({
 						{showPreviewDetails && previewOffers.length > 0 ? (
 							<Section id="provider-submissions">
 								<SectionHeader
-									title="Provider submissions"
-									description="Complete provider-supplied details for authorized internal review."
+									title={tOverview("providerSubmissions")}
+									description={tOverview("providerSubmissionsDescription")}
 								/>
 								<ProviderCatalogPreviewDetailsSection previews={previewOffers} />
 							</Section>
@@ -1627,8 +1628,8 @@ export default async function ModelOverviewSections({
 					{showPreviewDetails && previewOffers.length > 0 ? (
 						<Section id="provider-submissions">
 							<SectionHeader
-								title="Provider submissions"
-								description="Complete provider-supplied details for authorized internal review."
+								title={tOverview("providerSubmissions")}
+								description={tOverview("providerSubmissionsDescription")}
 							/>
 							<ProviderCatalogPreviewDetailsSection previews={previewOffers} />
 						</Section>

@@ -13,8 +13,9 @@ export async function generateMetadata(): Promise<Metadata> {
 	return buildMetadata({ title: t("video"), description: t("videoDescription"), path: "/chat/video", keywords: ["AI video generation", "video studio", "Phaseo chat"] });
 }
 
-export default function ChatVideoPage() {
-	return <RoomScaffold><Suspense fallback={<p role="status" className="p-6 text-sm text-muted-foreground">Loading video models…</p>}><VideoContent /></Suspense></RoomScaffold>;
+export default async function ChatVideoPage() {
+	const t = await getTranslations("Product.chat");
+	return <RoomScaffold><Suspense fallback={<p role="status" className="p-6 text-sm text-muted-foreground">{t("loadingVideoModels")}</p>}><VideoContent /></Suspense></RoomScaffold>;
 }
 
 async function VideoContent() {

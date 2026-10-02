@@ -2611,5 +2611,8 @@
 		"copyFailure": "تعذر نسخ {asset} بصيغة {format}",
 		"downloadSuccess": "تم تنزيل {asset} بصيغة {format}",
 		"downloadFailure": "تعذر تنزيل {asset} بصيغة {format}"
+	},
+	"supportPage": {
+		"description": "تواصل مع دعم Phaseo لأسئلة الحساب والفوترة والمنتج، مع ردود مباشرة من المؤسس ووثائق وموارد المجتمع ومواعيد توافر الدعم الحالية."
 	}
 }

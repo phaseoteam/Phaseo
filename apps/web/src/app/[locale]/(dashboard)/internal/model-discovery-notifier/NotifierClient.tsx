@@ -123,7 +123,7 @@ export default function NotifierClient() {
 							checked={includeDefaultRoleMention}
 							onChange={(event) => setIncludeDefaultRoleMention(event.target.checked)}
 						/>
-						<span>Ping the Model Updates role</span>
+						<span>{t("pingModelUpdates")}</span>
 					</label>
 					<div className="space-y-2">
 						<div className="text-sm font-medium">{t("webhookOverrideOptional")}</div>

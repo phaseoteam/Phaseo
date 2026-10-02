@@ -1,5 +1,5 @@
 import { ReactNode, Suspense } from "react";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import {
 	fetchFrontendModelHeader,
 	fetchFrontendModelGatewayMetadata,
@@ -264,7 +264,7 @@ export default async function ModelDetailShell({
 						</Button> : null}
 						{canChat ? isDecisionsModel ? (
 							<Button asChild variant="default" size="sm" className="flex-1 justify-center rounded-lg xl:flex-none">
-								<Link href={`/chat/decisions?model=${encodeURIComponent(chatModelId ?? modelId)}`}>Try Jev in Decisions</Link>
+								<Link href={`/chat/decisions?model=${encodeURIComponent(chatModelId ?? modelId)}`}>{t("detail.actions.tryJev")}</Link>
 							</Button>
 						) : <Suspense fallback={<Skeleton className="h-9 w-full rounded-lg sm:w-28" />}><ModelQuickstartAction modelId={modelId} chatModelId={chatModelId} modelName={header.name} gatewayMetadataPromise={gatewayMetadataPromise} /></Suspense> : null}
 					</div>

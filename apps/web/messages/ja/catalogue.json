@@ -448,7 +448,8 @@
 				"openDecisionsPlayground": "判断のプレイグラウンドを開く",
 				"free": "無料",
 				"variant": "バリアント",
-				"current": "現在"
+				"current": "現在",
+				"tryJev": "判定でJevを試す"
 			},
 			"sections": {
 				"providersDescription": "APIプロバイダー、ルート料金、利用可能状況、最近の信頼性シグナル。",
@@ -875,7 +876,12 @@
 				"tierUltrafast": "超高速",
 				"planDescriptionFlexOnly": "service_tier が flex の場合にのみ使用します。",
 				"planDescriptionFastRouting": "利用可能な場合は高速ルーティング。",
-				"planDescriptionUltrafast": "利用可能な場合は最高速ルーティング。"
+				"planDescriptionUltrafast": "利用可能な場合は最高速ルーティング。",
+				"addProviderKey": "プロバイダーキーを追加",
+				"providerKeyRequired": "プロバイダーキーが必要",
+				"byokCredential": "このリクエストを送信する前に、自分の{providers}の認証情報を追加してください。",
+				"addNamedProviderKey": "{provider}のキーを追加",
+				"byokRequired": "このプロバイダーにはBYOKキーが必要です。"
 			},
 			"seoTitles": {
 				"titleDefault": "{model}の価格・ベンチマーク・プロバイダー",
@@ -902,7 +908,8 @@
 				"openSource": "{benchmark} の出典を開く",
 				"hideDetailsFor": "{benchmark} の詳細を非表示",
 				"showDetailsFor": "{benchmark} の詳細を表示",
-				"showAll": "すべてのベンチマーク（{count} 件）を表示"
+				"showAll": "すべてのベンチマーク（{count} 件）を表示",
+				"otherBenchmarks": "その他のベンチマーク"
 			},
 			"faqContent": {
 				"title": "よくある質問",
@@ -1691,6 +1698,10 @@
 			"configureRegional": "地域別ルーティングを設定",
 			"tiers": "FastまたはFlexでは、リクエストで階層を指定するか、その階層専用のルートを選択してください。BatchリクエストはBatch APIを使用します。",
 			"chooseTier": "サービス階層を選択"
+		},
+		"overview": {
+			"providerSubmissions": "プロバイダーからの提出情報",
+			"providerSubmissionsDescription": "権限のある内部レビュー向けに、プロバイダーが提供した詳細情報をすべて表示します。"
 		}
 	},
 	"providers": {
@@ -1830,7 +1841,8 @@
 		"missingDescription": "APIプロバイダーが見つからない場合は、GitHubでコントリビュートしてください。",
 		"contribute": "GitHubでコントリビュート",
 		"internalPreview": "プロバイダーの内部プレビュー",
-		"internalPreviewDescription": "このプロバイダーには承認されたカタログ提出がありますが、公開ゲートウェイ分析はまだありません。以下のモデル提出は、プロバイダーのワークスペースと Phaseo 管理者にのみ表示されます。"
+		"internalPreviewDescription": "このプロバイダーには承認されたカタログ提出がありますが、公開ゲートウェイ分析はまだありません。以下のモデル提出は、プロバイダーのワークスペースと Phaseo 管理者にのみ表示されます。",
+		"loadingModels": "モデルを読み込み中…"
 	},
 	"benchmarks": {
 		"title": "ベンチマーク",
@@ -2189,7 +2201,9 @@
 			"cost": "評価コスト"
 		},
 		"audioTranscribed": "文字起こしされた音声",
-		"recentRequests": "最近のリクエスト{count}件"
+		"recentRequests": "最近のリクエスト{count}件",
+		"intelligenceBenchmarks": "知能ベンチマーク",
+		"noMeasuredUsage": "過去30日間の利用記録はありません。"
 	},
 	"compare": {
 		"title": "モデルを比較",
@@ -2899,7 +2913,8 @@
 		"requestsUnit": "リクエスト",
 		"usageOverTime": "利用状況の推移",
 		"noUsageDataForPeriod": "この期間の利用データはありません。",
-		"rangePeriod": "{range}期間の利用状況"
+		"rangePeriod": "{range}期間の利用状況",
+		"averageTokensPerRequest": "リクエストあたりの平均トークン数"
 	},
 	"apiModelCard": {
 		"gatewayActive": "Gateway：有効",

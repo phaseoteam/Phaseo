@@ -747,7 +747,7 @@ export default function ProvidersTab({
                           onClick={() => removeCapability(capability.id)}
                           aria-label={tControls("endCapability")}
                         >
-                          End now
+                          {tEditor("endNow")}
                         </Button>
                       </div>
 

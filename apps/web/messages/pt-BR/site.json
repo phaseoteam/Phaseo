@@ -2611,5 +2611,8 @@
 		"copyFailure": "Não foi possível copiar {asset} em {format}",
 		"downloadSuccess": "{asset} em {format} baixado",
 		"downloadFailure": "Não foi possível baixar {asset} em {format}"
+	},
+	"supportPage": {
+		"description": "Entre em contato com o suporte da Phaseo para dúvidas sobre conta, cobrança e produto, com respostas diretas do fundador, documentação, recursos da comunidade e disponibilidade atual do suporte."
 	}
 }

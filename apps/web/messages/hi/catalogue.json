@@ -448,7 +448,8 @@
 				"openDecisionsPlayground": "निर्णय परीक्षण क्षेत्र खोलें",
 				"free": "निःशुल्क",
 				"variant": "वैरिएंट",
-				"current": "वर्तमान"
+				"current": "वर्तमान",
+				"tryJev": "निर्णयों में Jev आज़माएँ"
 			},
 			"sections": {
 				"providersDescription": "API प्रदाता, रूट की कीमतें, उपलब्धता और हाल के विश्वसनीयता संकेत।",
@@ -875,7 +876,12 @@
 				"tierUltrafast": "अति तेज़",
 				"planDescriptionFlexOnly": "केवल तब उपयोग होता है जब service_tier flex हो।",
 				"planDescriptionFastRouting": "उपलब्ध होने पर तेज़ रूटिंग।",
-				"planDescriptionUltrafast": "उपलब्ध होने पर अधिकतम गति वाली रूटिंग।"
+				"planDescriptionUltrafast": "उपलब्ध होने पर अधिकतम गति वाली रूटिंग।",
+				"addProviderKey": "प्रदाता कुंजी जोड़ें",
+				"providerKeyRequired": "प्रदाता कुंजी आवश्यक है",
+				"byokCredential": "यह अनुरोध भेजने से पहले अपना {providers} क्रेडेंशियल जोड़ें।",
+				"addNamedProviderKey": "{provider} कुंजी जोड़ें",
+				"byokRequired": "इस प्रदाता के लिए BYOK कुंजी आवश्यक है।"
 			},
 			"seoTitles": {
 				"titleDefault": "{model}: मूल्य, बेंचमार्क और प्रदाता",
@@ -902,7 +908,8 @@
 				"openSource": "{benchmark} का स्रोत खोलें",
 				"hideDetailsFor": "{benchmark} का विवरण छिपाएँ",
 				"showDetailsFor": "{benchmark} का विवरण दिखाएँ",
-				"showAll": "सभी {count} बेंचमार्क दिखाएँ"
+				"showAll": "सभी {count} बेंचमार्क दिखाएँ",
+				"otherBenchmarks": "अन्य बेंचमार्क"
 			},
 			"faqContent": {
 				"title": "अक्सर पूछे जाने वाले प्रश्न",
@@ -1691,6 +1698,10 @@
 			"configureRegional": "क्षेत्रीय रूटिंग कॉन्फ़िगर करें",
 			"tiers": "Fast या Flex के लिए अनुरोध में स्तर निर्दिष्ट करें या उस स्तर के लिए समर्पित रूट चुनें। Batch अनुरोध Batch API से भेजे जाते हैं।",
 			"chooseTier": "सेवा स्तर चुनें"
+		},
+		"overview": {
+			"providerSubmissions": "प्रदाता सबमिशन",
+			"providerSubmissionsDescription": "अधिकृत आंतरिक समीक्षा के लिए प्रदाता द्वारा दिए गए पूर्ण विवरण।"
 		}
 	},
 	"providers": {
@@ -1830,7 +1841,8 @@
 		"missingDescription": "अगर कोई API प्रदाता छूट गया है, तो कृपया GitHub पर योगदान दें।",
 		"contribute": "GitHub पर योगदान दें",
 		"internalPreview": "प्रदाता का आंतरिक पूर्वावलोकन",
-		"internalPreviewDescription": "इस प्रदाता के कैटलॉग सबमिशन अधिकृत हैं, लेकिन अभी सार्वजनिक गेटवे विश्लेषण उपलब्ध नहीं है। नीचे दिए गए मॉडल सबमिशन केवल प्रदाता के कार्यस्थान और Phaseo व्यवस्थापकों को दिखाई देते हैं।"
+		"internalPreviewDescription": "इस प्रदाता के कैटलॉग सबमिशन अधिकृत हैं, लेकिन अभी सार्वजनिक गेटवे विश्लेषण उपलब्ध नहीं है। नीचे दिए गए मॉडल सबमिशन केवल प्रदाता के कार्यस्थान और Phaseo व्यवस्थापकों को दिखाई देते हैं।",
+		"loadingModels": "मॉडल लोड हो रहे हैं…"
 	},
 	"benchmarks": {
 		"title": "बेंचमार्क",
@@ -2189,7 +2201,9 @@
 			"cost": "मूल्यांकन लागत"
 		},
 		"audioTranscribed": "लिप्यंतरित ऑडियो",
-		"recentRequests": "{count} हाल के अनुरोध"
+		"recentRequests": "{count} हाल के अनुरोध",
+		"intelligenceBenchmarks": "बुद्धिमत्ता बेंचमार्क",
+		"noMeasuredUsage": "पिछले 30 दिनों में कोई मापा गया उपयोग नहीं है।"
 	},
 	"compare": {
 		"title": "मॉडलों की तुलना करें",
@@ -2899,7 +2913,8 @@
 		"requestsUnit": "अनुरोध",
 		"usageOverTime": "समय के साथ उपयोग",
 		"noUsageDataForPeriod": "इस अवधि के लिए उपयोग का डेटा उपलब्ध नहीं है।",
-		"rangePeriod": "{range} अवधि का उपयोग"
+		"rangePeriod": "{range} अवधि का उपयोग",
+		"averageTokensPerRequest": "प्रति अनुरोध औसत टोकन"
 	},
 	"apiModelCard": {
 		"gatewayActive": "Gateway: सक्रिय",

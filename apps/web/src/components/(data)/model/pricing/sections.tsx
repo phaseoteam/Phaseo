@@ -1,4 +1,5 @@
 "use client";
+import { localizedPricingDisplayLabel } from "@/i18n/pricing-display";
 
 import React from "react";
 import { useLocale, useTranslations } from "next-intl";
@@ -255,6 +256,9 @@ export function TierTiles({
 	unitLabel?: string;
 	comparisonAccent?: PricingComparisonAccent;
 }) {
+	const tx = useTranslations();
+	const locale = useLocale();
+	const l = (value: string | null | undefined) => localizedPricingDisplayLabel(value, locale, tx);
 	if (!tiers?.length) {
 		return <div className="text-sm text-muted-foreground">--</div>;
 	}
@@ -284,9 +288,9 @@ export function TierTiles({
 					return (
 						<span
 							className="text-xs text-muted-foreground"
-							title={hasTooltip ? condition.tooltipLabel : undefined}
+							title={hasTooltip ? l(condition.tooltipLabel) : undefined}
 						>
-							({condition.shortLabel})
+							({l(condition.shortLabel)})
 						</span>
 					);
 				})()}
@@ -299,14 +303,14 @@ export function TierTiles({
 			<div className="space-y-0.5">
 				{renderTierRow(primaryTier, "primary")}
 				{!hasAdditionalTiers && unitLabel ? (
-					<div className="text-[11px] text-muted-foreground">{unitLabel}</div>
+					<div className="text-[11px] text-muted-foreground">{l(unitLabel)}</div>
 				) : null}
 			</div>
 			{additionalTiers.map((tier, index) =>
 				renderTierRow(tier, `additional-${index}`),
 			)}
 			{hasAdditionalTiers && unitLabel ? (
-				<div className="text-[11px] text-muted-foreground">{unitLabel}</div>
+				<div className="text-[11px] text-muted-foreground">{l(unitLabel)}</div>
 			) : null}
 		</div>
 	);
@@ -333,6 +337,9 @@ export function TokenTripleSection({
 	vertical?: boolean;
 	comparisonAccent?: PricingComparisonAccent;
 }) {
+	const tx = useTranslations();
+	const locale = useLocale();
+	const l = (value: string | null | undefined) => localizedPricingDisplayLabel(value, locale, tx);
 	const t = useTranslations("Catalogue.modelDetail.sections");
 	const tPricing = useTranslations("Catalogue.modelDetail.pricing");
 	if (!triple) return null;
@@ -388,7 +395,7 @@ export function TokenTripleSection({
 		<div className={wrapperClass}>
 			{!hideHeader ? (
 				<div className="flex items-center justify-between">
-					<h4 className="text-xs font-semibold tracking-wide text-foreground">{title}</h4>
+					<h4 className="text-xs font-semibold tracking-wide text-foreground">{l(title)}</h4>
 					<span className="text-xs text-muted-foreground">{headerRight ?? tPricing("perMillionTokens")}</span>
 				</div>
 			) : null}
@@ -397,7 +404,7 @@ export function TokenTripleSection({
 								{columns.map((column) => (
 									<div key={column.key} className={columnClass}>
 										{column.title ? (
-											<div className={titleClass}>{column.title}</div>
+											<div className={titleClass}>{l(column.title)}</div>
 										) : null}
 									<div className={contentClass}>{column.content}</div>
 								</div>
@@ -415,6 +422,9 @@ export function ImageGenSection({
 	rows?: QualityRow[];
 	comparisonAccent?: PricingComparisonAccent;
 }) {
+	const tx = useTranslations();
+	const locale = useLocale();
+	const l = (value: string | null | undefined) => localizedPricingDisplayLabel(value, locale, tx);
 	const t = useTranslations("Catalogue.modelDetail.sections");
 	if (!rows || !rows.length) return null;
 
@@ -461,13 +471,13 @@ export function ImageGenSection({
 							key={row.quality}
 							className="border-l border-zinc-200/70 px-2 py-1.5 text-[10px] text-muted-foreground dark:border-zinc-800"
 						>
-							{row.quality}
+							{l(row.quality)}
 						</div>
 					))}
 					{labels.map((label) => (
 						<React.Fragment key={label}>
 							<div className="border-t border-zinc-200/70 px-2 py-1.5 text-[10px] text-muted-foreground dark:border-zinc-800">
-								{label}
+								{l(label)}
 							</div>
 							{qualityRows.map((row) => {
 								const item = itemsByQualityAndLabel.get(row.quality)?.get(label);
@@ -518,6 +528,9 @@ export function VideoGenSection({
 	vertical?: boolean;
 	comparisonAccent?: PricingComparisonAccent;
 }) {
+	const tx = useTranslations();
+	const locale = useLocale();
+	const l = (value: string | null | undefined) => localizedPricingDisplayLabel(value, locale, tx);
 	const t = useTranslations("Catalogue.modelDetail.sections");
 	if (!rows || !rows.length) return null;
 
@@ -675,7 +688,7 @@ export function VideoGenSection({
 															item.comparisonDirection,
 															comparisonAccent,
 														)}
-														<span className="text-xs text-muted-foreground">{item.resolution}</span>
+														<span className="text-xs text-muted-foreground">{l(item.resolution)}</span>
 													</div>
 												</div>
 											))}
@@ -713,7 +726,7 @@ export function VideoGenSection({
 										const unitSummary = unitSummaryForItems(sortedColumnItems);
 										return (
 									<div key={column.key} className={audioColumnClass}>
-									<div className="mb-0.5 text-xs text-muted-foreground">{column.title}</div>
+									<div className="mb-0.5 text-xs text-muted-foreground">{l(column.title)}</div>
 									{sortedColumnItems.length ? (
 										<>
 										<div className={itemStackClass}>
@@ -728,7 +741,7 @@ export function VideoGenSection({
 														item.comparisonDirection,
 														comparisonAccent,
 													)}
-													<span className="text-xs text-muted-foreground">{item.resolution}</span>
+													<span className="text-xs text-muted-foreground">{l(item.resolution)}</span>
 												</div>
 											</div>
 										))}
@@ -764,7 +777,7 @@ export function VideoGenSection({
 									className="contents"
 								>
 									<span className="border-t border-zinc-200/70 py-1.5 text-[11px] text-muted-foreground dark:border-zinc-800">
-										{item.resolution}
+										{l(item.resolution)}
 									</span>
 									<div className="flex items-baseline justify-end gap-1.5 border-t border-zinc-200/70 py-1.5 dark:border-zinc-800">
 										{renderComparisonPrices(
@@ -795,6 +808,9 @@ export function InputsSection({
 	compact?: boolean;
 	comparisonAccent?: PricingComparisonAccent;
 }) {
+	const tx = useTranslations();
+	const locale = useLocale();
+	const l = (value: string | null | undefined) => localizedPricingDisplayLabel(value, locale, tx);
 	const t = useTranslations("Catalogue.modelDetail.sections");
 	if (!rows?.length) return null;
 
@@ -826,7 +842,7 @@ export function InputsSection({
 	return (
 		<div className={wrapperClass}>
 			<div className="flex items-center justify-between">
-				<h4 className="text-xs font-semibold tracking-wide text-foreground">{title}</h4>
+				<h4 className="text-xs font-semibold tracking-wide text-foreground">{l(title)}</h4>
 				{hasSingleUnit ? <span className="text-xs text-muted-foreground">{unitEntries[0][0]}</span> : null}
 			</div>
 			<div className={listClass}>
@@ -843,7 +859,7 @@ export function InputsSection({
 									item.comparisonDirection,
 									comparisonAccent,
 								)}
-								<span className="text-xs text-muted-foreground">{label}</span>
+								<span className="text-xs text-muted-foreground">{l(label)}</span>
 								{hasSingleUnit ? null : <span className="text-xs text-muted-foreground/80">({item.unit})</span>}
 							</div>
 						</div>
@@ -861,6 +877,9 @@ export function CacheWriteSection({
 	rows?: TokenTier[];
 	comparisonAccent?: PricingComparisonAccent;
 }) {
+	const tx = useTranslations();
+	const locale = useLocale();
+	const l = (value: string | null | undefined) => localizedPricingDisplayLabel(value, locale, tx);
 	const t = useTranslations("Catalogue.modelDetail.pricing");
 	const tSections = useTranslations("Catalogue.modelDetail.sections");
 	if (!rows?.length) return null;
@@ -887,7 +906,7 @@ export function CacheWriteSection({
 								t.comparisonDirection,
 								comparisonAccent,
 							)}
-							<span className="text-xs text-muted-foreground">{t.label || tSections("allUsage")}</span>
+							<span className="text-xs text-muted-foreground">{l(t.label) || tSections("allUsage")}</span>
 						</div>
 					</div>
 				))}
@@ -907,6 +926,9 @@ export function RequestsSection({
 	compact?: boolean;
 	comparisonAccent?: PricingComparisonAccent;
 }) {
+	const tx = useTranslations();
+	const locale = useLocale();
+	const l = (value: string | null | undefined) => localizedPricingDisplayLabel(value, locale, tx);
 	const t = useTranslations("Catalogue.modelDetail.sections");
 	if (!rows?.length) return null;
 	const unitLabels = Array.from(
@@ -941,10 +963,10 @@ export function RequestsSection({
 								comparisonAccent,
 							)}
 							{t.label && t.label !== "All usage" ? (
-								<span className="text-xs text-muted-foreground">{t.label}</span>
+								<span className="text-xs text-muted-foreground">{l(t.label)}</span>
 							) : null}
 							{!sharedUnitLabel && t.unitLabel ? (
-								<span className="text-xs text-muted-foreground">{t.unitLabel}</span>
+								<span className="text-xs text-muted-foreground">{l(t.unitLabel)}</span>
 							) : null}
 						</div>
 					</div>
@@ -965,6 +987,9 @@ export function UpcomingPricingSection({
 	compact?: boolean;
 	vertical?: boolean;
 }) {
+	const tx = useTranslations();
+	const locale = useLocale();
+	const l = (value: string | null | undefined) => localizedPricingDisplayLabel(value, locale, tx);
 	const t = useTranslations("Catalogue.modelDetail.sections");
 	const format = useDisplayFormatters();
 	if (!rows?.length) return null;
@@ -1000,7 +1025,7 @@ export function UpcomingPricingSection({
 					<h4 className="text-xs font-semibold text-foreground">{title ?? t("upcoming")}</h4>
 				</div>
 				<span className="text-xs text-muted-foreground">
-					{sharedTitle ? `${sharedTitle} · ${t("scheduled")}` : t("scheduled")}
+					{sharedTitle ? `${l(sharedTitle)} · ${t("scheduled")}` : t("scheduled")}
 				</span>
 			</div>
 			<div className={`grid gap-2 ${gridClass}`}>
@@ -1042,7 +1067,7 @@ export function UpcomingPricingSection({
 										<span className="text-[10px] font-medium text-muted-foreground">{deltaPct}</span>
 									) : null}
 								</span>
-								<span className="truncate text-xs text-muted-foreground">{label}</span>
+								<span className="truncate text-xs text-muted-foreground">{l(label)}</span>
 							</div>
 							<div className="text-xs text-muted-foreground/90">
 								<span>{effectiveDate ?? "--"}</span>
@@ -1068,18 +1093,17 @@ export function MeterRateRows({
 }: {
 	rows: ProviderSections["otherRules"];
 }) {
+	const tx = useTranslations();
+	const locale = useLocale();
+	const l = (value: string | null | undefined) => localizedPricingDisplayLabel(value, locale, tx);
 	const t = useTranslations("Catalogue.modelDetail.sections");
 	const tMeters = useTranslations("Catalogue.modelDetail.pricing.meters");
 	if (!rows.length) return null;
 	const formatMeterName = (meter: string) => {
 		const key = meter.trim();
 		if (tMeters.has(key as never)) return tMeters(key as never);
-		return key.replace(/[_-]+/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
+		return key;
 	};
-	const formatCompactUnit = (unit: string) =>
-		unit
-			.replace(/^Per\s+/i, "/ ")
-			.replace(/1,000/g, "1K");
 	const formatConditions = (conditions: ProviderSections["otherRules"][number]["conditions"]) => {
 		if (!conditions?.length) return null;
 		return conditions
@@ -1087,7 +1111,7 @@ export function MeterRateRows({
 				const value = Array.isArray(condition.value)
 					? condition.value.join(", ")
 					: String(condition.value);
-				return `${condition.path.replace(/^.*\./, "").replace(/_/g, " ")}: ${value}`;
+				return `${l(condition.path)}: ${l(value)}`;
 			})
 			.join(" · ");
 	};
@@ -1120,7 +1144,7 @@ export function MeterRateRows({
 								row.comparisonDirection,
 							)}
 							<span className="text-[10px] text-muted-foreground">
-								{formatCompactUnit(row.unitLabel)}
+								{l(row.unitLabel)}
 							</span>
 						</div>
 					</div>

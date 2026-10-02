@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -15,24 +16,26 @@ import {
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/Logo";
 
+export function Integrations() {
+	const t = useTranslations("SettingsUI");
 const INTEGRATIONS = [
 	{
 		label: "Vercel AI SDK",
 		variant: "sdk" as const,
 		logoId: "vercel",
-		description: "Provider + model routing through AI SDK adapters.",
+		description: t("landingGaps.adapterRouting"),
 	},
 	{
 		label: "OpenAI SDK",
 		variant: "sdk" as const,
 		logoId: "openai",
-		description: "Drop-in base URL swap with existing OpenAI code.",
+		description: t("landingGaps.openaiSwap"),
 	},
 	{
 		label: "Anthropic SDK",
 		variant: "sdk" as const,
 		logoId: "anthropic",
-		description: "Native Anthropic SDK support with compatibility shims.",
+		description: t("landingGaps.anthropicShims"),
 	},
 	{ label: "Claude Code", variant: "tool" as const },
 	{ label: "Codex", variant: "tool" as const },
@@ -46,7 +49,7 @@ const CODE_SNIPPETS = [
 		label: "OpenAI SDK",
 		language: "typescript",
 		description:
-			"Drop-in replacement: change base URL and keep existing request shapes.",
+			t("landingGaps.requestShapes"),
 		code: `import OpenAI from "openai";
 
 const client = new OpenAI({
@@ -66,7 +69,7 @@ const response = await client.chat.completions.create({
 		label: "cURL",
 		language: "bash",
 		description:
-			"Call the Gateway directly over HTTP with your API key and model ID.",
+			t("landingGaps.directGateway"),
 		code: `curl https://api.phaseo.app/v1/chat/completions \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer $PHASEO_API_KEY" \\
@@ -85,7 +88,7 @@ const response = await client.chat.completions.create({
 		label: "Anthropic SDK",
 		language: "typescript",
 		description:
-			"Native Anthropic SDK support with automatic request translation.",
+			t("landingGaps.anthropicTranslation"),
 		code: `import Anthropic from "@anthropic-ai/sdk";
 
 const client = new Anthropic({
@@ -106,7 +109,7 @@ const message = await client.messages.create({
 		label: "Phaseo SDK",
 		language: "typescript",
 		description:
-			"Full-featured SDK with typed routing controls and built-in telemetry.",
+			t("landingGaps.typedSdk"),
 		code: `import { GatewayClient } from "@phaseo/sdk";
 
 const client = new GatewayClient({
@@ -123,17 +126,14 @@ const result = await client.chat.completions.create({
 	},
 ];
 
-export function Integrations() {
+
 	const [activeId, setActiveId] = useState(CODE_SNIPPETS[0].id);
 	const [copied, setCopied] = useState(false);
 
 	const sdkIntegrations = INTEGRATIONS.filter((item) => item.variant === "sdk");
 	const toolIntegrations = INTEGRATIONS.filter((item) => item.variant !== "sdk");
 
-	const activeSnippet = useMemo(
-		() => CODE_SNIPPETS.find((item) => item.id === activeId),
-		[activeId],
-	);
+	const activeSnippet = CODE_SNIPPETS.find((item) => item.id === activeId);
 
 	const handleCopy = async () => {
 		if (!activeSnippet) return;
@@ -150,15 +150,11 @@ export function Integrations() {
 						variant="secondary"
 						className="mb-4 border border-zinc-200 bg-white/80 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-zinc-600 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
 					>
-						Integrations
-					</Badge>
+						{t("landingGaps.copyIntegrations")}</Badge>
 					<h2 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 sm:text-4xl">
-						Drop Gateway into the stack you already ship
-					</h2>
+						{t("landingGaps.integrationTitle")}</h2>
 					<p className="mt-4 text-lg leading-relaxed text-zinc-600 dark:text-zinc-300">
-						Keep your existing SDK ergonomics, or adopt Phaseo SDKs
-						for typed routing and first-class observability.
-					</p>
+						{t("landingGaps.integrationHelp")}</p>
 				</div>
 
 				<div className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
@@ -170,12 +166,9 @@ export function Integrations() {
 								</div>
 								<div>
 									<h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
-										Compatibility layer
-									</h3>
+										{t("landingGaps.compatibility")}</h3>
 									<p className="mt-1 text-sm text-zinc-600 dark:text-zinc-300">
-										Keep your SDK, move traffic to Gateway, and
-										standardize routing and policies.
-									</p>
+										{t("landingGaps.compatibilityHelp")}</p>
 								</div>
 							</div>
 
@@ -210,8 +203,7 @@ export function Integrations() {
 
 							<div className="space-y-3">
 								<p className="text-xs font-semibold uppercase tracking-[0.14em] text-zinc-500 dark:text-zinc-400">
-									Works with
-								</p>
+									{t("landingGaps.worksWith")}</p>
 								<div className="flex flex-wrap gap-2">
 									{toolIntegrations.map((item) => (
 										<div
@@ -233,9 +225,7 @@ export function Integrations() {
 								<p className="flex items-start gap-2 text-sm text-emerald-900 dark:text-emerald-100">
 									<ShieldCheck className="mt-0.5 h-4 w-4 shrink-0" />
 									<span>
-										Base URL + API key migration path, with typed routing
-										controls available when you need deeper policy logic.
-									</span>
+										{t("landingGaps.migrationHelp")}</span>
 								</p>
 							</div>
 						</CardContent>
@@ -250,12 +240,9 @@ export function Integrations() {
 									</div>
 									<div>
 										<h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
-											Drop-in snippets
-										</h3>
+											{t("landingGaps.snippets")}</h3>
 										<p className="mt-1 text-sm text-zinc-600 dark:text-zinc-300">
-											Keep native SDK calls, route through Phaseo
-											Gateway.
-										</p>
+											{t("landingGaps.nativeCalls")}</p>
 									</div>
 								</div>
 								<Badge
@@ -317,13 +304,11 @@ export function Integrations() {
 										{copied ? (
 											<>
 												<Check className="h-3 w-3" />
-												Copied
-											</>
+												{t("landingGaps.copyCopied")}</>
 										) : (
 											<>
 												<Copy className="h-3 w-3" />
-												Copy
-											</>
+												{t("landingGaps.copyCopy")}</>
 										)}
 									</Button>
 								</div>
@@ -335,9 +320,7 @@ export function Integrations() {
 							</div>
 
 							<p className="mt-4 text-xs text-zinc-500 dark:text-zinc-400">
-								Requests keep native SDK semantics while Gateway applies
-								routing policy, telemetry, and fallback logic.
-							</p>
+								{t("landingGaps.requestSemantics")}</p>
 						</CardContent>
 					</Card>
 				</div>

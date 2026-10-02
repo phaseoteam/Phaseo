@@ -2611,5 +2611,8 @@
 		"copyFailure": "{asset} konnte nicht als {format} kopiert werden",
 		"downloadSuccess": "{asset} {format} heruntergeladen",
 		"downloadFailure": "{asset} konnte nicht als {format} heruntergeladen werden"
+	},
+	"supportPage": {
+		"description": "Kontaktieren Sie den Phaseo-Support bei Fragen zu Konto, Abrechnung und Produkt, mit direkten Antworten des Gründers sowie Dokumentation, Community-Ressourcen und aktueller Supportverfügbarkeit."
 	}
 }

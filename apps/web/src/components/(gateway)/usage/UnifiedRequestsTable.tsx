@@ -210,9 +210,9 @@ function isInteractiveRowTarget(target: EventTarget | null): boolean {
 	);
 }
 
-function formatCost(nanos: number | null | undefined): string {
+function formatCost(nanos: number | null | undefined, locale: string): string {
 	const dollars = Number(nanos ?? 0) / 1e9;
-	return `$${dollars.toFixed(5)}`;
+	return new Intl.NumberFormat(locale, { style: "currency", currency: "USD", minimumFractionDigits: 5, maximumFractionDigits: 5 }).format(dollars);
 }
 
 function getModelDetailsHref(modelId: string | null): string | null {
@@ -265,7 +265,7 @@ function stopRowClick(event: React.MouseEvent<HTMLElement>) {
 	event.stopPropagation();
 }
 
-function getClientSource(row: RequestRow) {
+function getClientSource(row: RequestRow, directHttp: string) {
 	if (row.client_source_id) {
 		return {
 			id: row.client_source_id,
@@ -283,7 +283,7 @@ function getClientSource(row: RequestRow) {
 	if (!source || typeof source !== "object" || Array.isArray(source)) {
 		return {
 			id: "api",
-			name: "Direct HTTP",
+			name: directHttp,
 			version: null,
 			detection: "unknown",
 			kind: "api",
@@ -293,7 +293,7 @@ function getClientSource(row: RequestRow) {
 	if (!id) {
 		return {
 			id: "api",
-			name: "Direct HTTP",
+			name: directHttp,
 			version: null,
 			detection: "unknown",
 			kind: "api",
@@ -328,6 +328,7 @@ export default function UnifiedRequestsTable({
 	onExportRef,
 }: UnifiedRequestsTableProps) {
 	const tUi = useTranslations("Common.ui");
+	const t = useTranslations("SettingsUI");
 	const locale = useLocale();
 	const queryClient = useQueryClient();
 	const privateQuery = usePrivateUsageRefresh();
@@ -901,11 +902,11 @@ export default function UnifiedRequestsTable({
 					row.app_id ? appNames.get(row.app_id) : null,
 				);
 				const appLabel = appTitle ?? mappedAppName ?? "-";
-				const source = getClientSource(row);
+				const source = getClientSource(row, t("usageGaps.directHttp"));
 				const requestedModelId = getRequestedModelId(row);
 				const routedModelId = getRoutedModelId(row);
 				return {
-					[tUi("time.timestamp")]: new Date(row.created_at).toLocaleString(),
+					[tUi("time.timestamp")]: new Date(row.created_at).toLocaleString(locale),
 					[tUi("requestsTable.requestedModel")]: getModelDisplayName(
 						requestedModelId,
 						resolvedModelMetadata,
@@ -926,7 +927,7 @@ export default function UnifiedRequestsTable({
 					[tUi("metrics.usage")]: usageSummary,
 					[tUi("requestsTable.inputTokens")]: formatUsageNumber(inputTokens),
 					[tUi("requestsTable.outputTokens")]: formatUsageNumber(outputTokens),
-					[tUi("metrics.cost")]: formatCost(row.cost_nanos),
+					[tUi("metrics.cost")]: formatCost(row.cost_nanos, locale),
 					[tUi("requestsTable.generationMs")]: row.generation_ms || row.latency_ms || "-",
 					[tUi("requestsTable.finishReason")]: row.finish_reason || "-",
 					[tUi("select.status")]: row.success ? tUi("status.success") : tUi("status.error"),
@@ -942,7 +943,7 @@ export default function UnifiedRequestsTable({
 				exportToPDF(exportData, filename, tUi("requestsTable.exportTitle"));
 			}
 		},
-		[data, appNames, providerNames, resolvedModelMetadata, tUi],
+		[data, appNames, providerNames, resolvedModelMetadata, resolvedProviderMetadata, tUi, t, locale],
 	);
 
 	// Expose export handler via ref
@@ -1039,8 +1040,7 @@ export default function UnifiedRequestsTable({
 										colSpan={visibleColumns.length}
 										className="py-10 text-center text-muted-foreground"
 									>
-										No requests found
-									</TableCell>
+										{t("usageGaps.copyNoRequestsFound")}</TableCell>
 								</TableRow>
 							) : (
 								<>
@@ -1073,7 +1073,7 @@ export default function UnifiedRequestsTable({
 											row.app_id ? appNames.get(row.app_id) : null,
 										);
 										const appLabel = row.app_id
-											? (appTitle ?? mappedAppName ?? "Unknown app")
+											? (appTitle ?? mappedAppName ?? t("usageGaps.unknownApp"))
 											: null;
 										const appHref = row.app_id
 											? `/apps/${encodeURIComponent(row.app_id)}`
@@ -1108,8 +1108,8 @@ export default function UnifiedRequestsTable({
 														className="mr-2 inline-flex align-middle"
 														title={
 															row.success
-																? "Success"
-																: `Error ${row.status_code ?? ""}`
+																? t("usageGaps.copySuccess")
+																: t("usageGaps.errorStatus", { status: row.status_code ?? "" })
 														}
 													>
 														{row.success ? (
@@ -1165,15 +1165,14 @@ export default function UnifiedRequestsTable({
 																		{relativeNowMs
 																			? formatRelativeToNow(
 																					new Date(row.created_at),
-																					relativeNowMs,
+																					relativeNowMs, locale,
 																				)
 																			: "-"}
 																	</div>
 																</div>
 																<div className="grid grid-cols-[120px_1fr] gap-2">
 																	<div className="text-muted-foreground">
-																		Timestamp
-																	</div>
+																		{t("usageGaps.copyTimestamp")}</div>
 																	<div className="font-mono">
 																		{Math.floor(
 																			new Date(row.created_at).getTime() / 1000,
@@ -1218,7 +1217,7 @@ export default function UnifiedRequestsTable({
 																	}
 																	rows={[
 																		{
-																			label: "Model ID",
+																			label: t("usageGaps.copyModelID"),
 																			value: (
 																				<code className="font-mono text-[11px]">
 																					{routedModelId}
@@ -1228,7 +1227,7 @@ export default function UnifiedRequestsTable({
 																		...(routedModelMeta?.organisationName
 																			? [
 																					{
-																						label: "Organisation",
+																						label: t("usageGaps.copyOrganisation"),
 																						value:
 																							routedModelMeta.organisationName,
 																					},
@@ -1261,7 +1260,7 @@ export default function UnifiedRequestsTable({
 																	}
 																	rows={[
 																		{
-																			label: "Model ID",
+																			label: t("usageGaps.copyModelID"),
 																			value: (
 																				<code className="font-mono text-[11px]">
 																					{routedModelId}
@@ -1271,7 +1270,7 @@ export default function UnifiedRequestsTable({
 																		...(routedModelMeta?.organisationName
 																			? [
 																					{
-																						label: "Organisation",
+																						label: t("usageGaps.copyOrganisation"),
 																						value:
 																							routedModelMeta.organisationName,
 																					},
@@ -1313,7 +1312,7 @@ export default function UnifiedRequestsTable({
 																}
 																rows={[
 																	{
-																		label: "Provider ID",
+																		label: t("usageGaps.copyProviderID"),
 																		value: (
 																			<code className="font-mono text-[11px]">
 																				{row.provider}
@@ -1323,7 +1322,7 @@ export default function UnifiedRequestsTable({
 																	...(providerPolicyLabel
 																		? [
 																				{
-																					label: "Data policy",
+																					label: t("usageGaps.copyDataPolicy"),
 																					value: providerPolicyLabel,
 																				},
 																			]
@@ -1361,7 +1360,7 @@ export default function UnifiedRequestsTable({
 													<div className="flex min-h-5 items-center">
 														{row.app_id ? (
 															<UsageEntityHoverCard
-																title={appLabel ?? "Unknown app"}
+																title={appLabel ?? t("usageGaps.unknownApp")}
 																href={appHref}
 																visual={
 																	isPhaseoChatApp(row) ? (
@@ -1371,7 +1370,7 @@ export default function UnifiedRequestsTable({
 																			{row.app_image_url ? (
 																				<AvatarImage
 																					src={row.app_image_url}
-																					alt={appLabel ?? "App"}
+																					alt={appLabel ?? t("usageGaps.copyApp")}
 																					className="object-cover"
 																				/>
 																			) : null}
@@ -1383,7 +1382,7 @@ export default function UnifiedRequestsTable({
 																}
 																rows={[
 																	{
-																		label: "App ID",
+																		label: t("usageGaps.copyAppID"),
 																		value: (
 																			<code className="font-mono text-[11px]">
 																				{row.app_id}
@@ -1391,10 +1390,10 @@ export default function UnifiedRequestsTable({
 																		),
 																	},
 																	{
-																		label: "Type",
+																		label: t("usageGaps.copyType"),
 																		value: isPhaseoChatApp(row)
 																			? "Phaseo Chat"
-																			: "Workspace app",
+																			: t("usageGaps.workspaceApp"),
 																	},
 																]}
 															>
@@ -1415,7 +1414,7 @@ export default function UnifiedRequestsTable({
 																			{row.app_image_url ? (
 																				<AvatarImage
 																					src={row.app_image_url}
-																					alt={appLabel ?? "App"}
+																					alt={appLabel ?? t("usageGaps.copyApp")}
 																					className="object-cover"
 																				/>
 																			) : null}
@@ -1470,7 +1469,7 @@ export default function UnifiedRequestsTable({
 													key="cost"
 													className="py-2 text-right font-mono text-xs"
 												>
-													{formatCost(row.cost_nanos)}
+													{formatCost(row.cost_nanos, locale)}
 												</TableCell>
 											),
 											speed: (
@@ -1519,7 +1518,7 @@ export default function UnifiedRequestsTable({
 														{apiKeys.find((key) => key.id === row.key_id)
 															?.name ||
 															(row.key_id
-																? "Key …" + row.key_id.slice(-8)
+																? t("usageGaps.keySuffix", { suffix: row.key_id.slice(-8) })
 																: "—")}
 													</span>
 												</TableCell>

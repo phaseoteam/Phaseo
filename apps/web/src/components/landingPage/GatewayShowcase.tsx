@@ -1,4 +1,5 @@
-import Link from "next/link";
+import { getLocale, getTranslations } from "next-intl/server";
+import { Link } from "@/i18n/navigation";
 import { Suspense } from "react";
 import {
 	ArrowRight,
@@ -11,7 +12,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { fetchFrontendGatewayShowcase } from "@/lib/fetchers/frontend/fetchPublicCatalog";
-import { formatGatewayMetricWindow } from "@/lib/fetchers/gateway/getMarketingMetrics";
+import { localizedGatewayMetricWindow } from "@/components/landingPage/gatewayMetricWindow";
 import { getModelDetailsHref } from "@/lib/models/modelHref";
 import { DisplayNumber } from "@/components/display/DisplayValue";
 
@@ -81,6 +82,8 @@ function EmptyTelemetry({ text }: { text: string }) {
 }
 
 async function GatewayShowcaseData() {
+	const t = await getTranslations("SettingsUI");
+	const locale = await getLocale();
 	const { appImageUrls, metrics, topApps: topAppsRes, topModels: topModelsRes } =
 		await fetchFrontendGatewayShowcase({
 			topAppsLimit: 25,
@@ -103,7 +106,7 @@ async function GatewayShowcaseData() {
 					? modelId.split("/")[0]
 					: null;
 			const organisationName =
-				row.organisation_name ?? prefixOrganisation ?? "Unknown organisation";
+				row.organisation_name ?? prefixOrganisation ?? t("landingGaps.unknownOrganisation");
 
 			return {
 				key: modelId,
@@ -124,17 +127,17 @@ async function GatewayShowcaseData() {
 
 	const stats = [
 		{
-			label: `Tokens routed (${formatGatewayMetricWindow(metrics.summary.windowHours)})`,
+			label: t("landingGaps.tokensWindow", { window: localizedGatewayMetricWindow(metrics.summary.windowHours, locale, t("landingGaps.selectedWindow")) }),
 			value: <><DisplayNumber value={metrics.summary.tokensInWindow} options={{ maximumFractionDigits: 1 }} />+</>,
 			icon: Coins,
 		},
 		{
-			label: "Active models",
+			label: t("landingGaps.activeModels"),
 			value: <><DisplayNumber value={metrics.summary.supportedModels ?? 0} />+</>,
 			icon: Boxes,
 		},
 		{
-			label: "Supported providers",
+			label: t("landingGaps.copySupportedProviders"),
 			value: <><DisplayNumber value={metrics.summary.supportedProviders ?? 0} />+</>,
 			icon: Route,
 		},
@@ -168,8 +171,8 @@ async function GatewayShowcaseData() {
 
 			<div className="space-y-4">
 				<SectionHeader
-					title="Most used models"
-					description="Top models by weekly token usage across the gateway."
+					title={t("landingGaps.mostModels")}
+					description={t("landingGaps.weeklyModels")}
 				/>
 				<div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
 					{topModels.length > 0 ? (
@@ -213,13 +216,12 @@ async function GatewayShowcaseData() {
 										<DisplayNumber value={model.tokens} options={{ maximumFractionDigits: 1 }} />
 									</div>
 									<div className="text-[11px] text-muted-foreground">
-										tokens
-									</div>
+										{t("landingGaps.copyTokens")}</div>
 								</div>
 							</div>
 						))
 					) : (
-						<EmptyTelemetry text="Model usage data will appear once enough gateway token telemetry is available." />
+						<EmptyTelemetry text={t("landingGaps.modelTelemetryEmpty")} />
 					)}
 				</div>
 			</div>
@@ -230,8 +232,8 @@ async function GatewayShowcaseData() {
 
 					<div className="space-y-4">
 						<SectionHeader
-							title="Top apps"
-							description="Most active apps by weekly token usage."
+							title={t("landingGaps.copyTopApps")}
+							description={t("landingGaps.weeklyApps")}
 						/>
 						<div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
 							{topApps.map((app, index) => (
@@ -267,16 +269,14 @@ async function GatewayShowcaseData() {
 											{app.name}
 										</Link>
 										<p className="truncate text-xs text-muted-foreground">
-											Phaseo app profile
-										</p>
+											{t("landingGaps.copyPhaseoAppProfile")}</p>
 									</div>
 									<div className="text-right">
 										<div className="text-sm tabular-nums font-medium">
 											<DisplayNumber value={app.tokens} options={{ maximumFractionDigits: 1 }} />
 										</div>
 										<div className="text-[11px] text-muted-foreground">
-											tokens
-										</div>
+											{t("landingGaps.copyTokens")}</div>
 									</div>
 								</div>
 							))}
@@ -288,7 +288,8 @@ async function GatewayShowcaseData() {
 	);
 }
 
-export default function GatewayShowcase() {
+export default async function GatewayShowcase() {
+	const t = await getTranslations("SettingsUI");
 	return (
 		<section className="space-y-8 py-2">
 			<div className="space-y-4">
@@ -301,25 +302,18 @@ export default function GatewayShowcase() {
 				<div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
 					<div className="max-w-3xl space-y-3">
 						<h2 className="text-3xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100 sm:text-4xl">
-							A model database built for discovery.
-							<br className="hidden sm:block" /> A gateway built
-							for production.
-						</h2>
+							{t("landingGaps.discoveryTitle")}<br className="hidden sm:block" /> {t("landingGaps.productionTitle")}</h2>
 						<p className="text-sm leading-relaxed text-zinc-600 dark:text-zinc-300 sm:text-base">
-							Explore the model database, then ship through one
-							unified API with routing, observability, and
-							governance built in.
-						</p>
+							{t("landingGaps.showcaseHelp")}</p>
 					</div>
 					<div className="flex flex-wrap items-center gap-2 lg:shrink-0 lg:justify-end lg:pt-1">
 						<Button asChild className="h-10">
 							<Link href="/">
-								Explore platform
-								<ArrowRight className="ml-1 h-4 w-4" />
+								{t("landingGaps.explorePlatform")}<ArrowRight className="ml-1 h-4 w-4" />
 							</Link>
 						</Button>
 						<Button asChild variant="outline" className="h-10">
-							<Link href="/rankings">View live rankings</Link>
+							<Link href="/rankings">{t("landingGaps.liveRankings")}</Link>
 						</Button>
 					</div>
 				</div>

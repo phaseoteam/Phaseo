@@ -654,6 +654,7 @@ function getRoutedModelId(request: RequestRow): string | null {
 
 function getAttemptStatusTone(
 	attempt: ProviderAttemptRow,
+	okLabel: string,
 ): {
 	badgeClass: string;
 	barClass: string;
@@ -700,7 +701,7 @@ function getAttemptStatusTone(
 			badgeClass:
 				"border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-950/30 dark:text-emerald-300",
 			barClass: "bg-emerald-500",
-					label: "OK",
+					label: okLabel,
 		};
 	}
 	return {
@@ -935,8 +936,8 @@ export default function RequestDetailDialog({
 					const attemptProviderName =
 						(attemptProviderId && providerNames?.get(attemptProviderId)) ||
 						attemptProviderId ||
-						`Attempt ${index + 1}`;
-					const statusTone = getAttemptStatusTone(attempt);
+						t("usageGaps.attemptNumber", { number: index + 1 });
+					const statusTone = getAttemptStatusTone(attempt, t("usageGaps.copyOK"));
 					const statusDescription = getAttemptStatusDescription(attempt);
 					const durationMs = providerAttemptTimelineDuration(attempt, request.detail_metadata?.response_timeline);
 					const attemptFinishReason =
@@ -1102,9 +1103,9 @@ export default function RequestDetailDialog({
 		{
 			key: "phaseo-routing",
 			label: (
-				<div className="flex min-w-0 items-center gap-2" title="Authentication, validation, routing and request preparation before the first upstream request.">
+				<div className="flex min-w-0 items-center gap-2" title={t("usageGaps.requestPreparation")}>
 					<Logo id="phaseo" alt="" width={14} height={14} className="shrink-0" />
-					<span>Phaseo routing</span>
+					<span>{t("usageGaps.copyPhaseoRouting")}</span>
 				</div>
 			),
 			duration: timelineTiming.routingMs,
@@ -2295,7 +2296,7 @@ export default function RequestDetailDialog({
 												<div className="font-medium">
 													{detector.detectorId
 														? formatDiagnosticLabel(detector.detectorId)
-														: `Detector ${index + 1}`}
+														: t("usageGaps.detectorNumber", { number: index + 1 })}
 												</div>
 												<div className="mt-1 text-amber-950/80">
 													{[detector.category, detector.variant]
@@ -2372,8 +2373,8 @@ export default function RequestDetailDialog({
 													<div>
 														<span className="font-medium">
 															{execution.status === "failed"
-																? "Execution reason:"
-																: "Skip reason:"}
+																? t("usageGaps.executionReason")
+																: t("usageGaps.skipReason")}
 														</span>{" "}
 														{formatDiagnosticLabel(execution.reason)}
 													</div>

@@ -3096,13 +3096,13 @@ export default function ModelPlayground({
 							variant="outline"
 							size="icon"
 							onClick={() => setIsCodeDialogOpen(true)}
-							aria-label="Get code"
+							aria-label={t("actions.getCode")}
 							className="h-9 w-9 shrink-0 border-black/30 bg-white text-black hover:bg-zinc-100 dark:border-white/30 dark:bg-black dark:text-white dark:hover:bg-zinc-900"
 						>
 							<Code2 className="h-4 w-4" />
 						</Button>
 					</TooltipTrigger>
-					<TooltipContent side="top">Get code</TooltipContent>
+					<TooltipContent side="top">{t("actions.getCode")}</TooltipContent>
 				</Tooltip>
 			</div>
 

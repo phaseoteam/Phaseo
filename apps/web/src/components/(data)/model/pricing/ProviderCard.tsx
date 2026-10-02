@@ -1,10 +1,12 @@
 "use client";
+import { localizedWorkspacePolicyReason } from "@/i18n/workspace-policy-messages";
+import { localizedPricingDisplayLabel } from "@/i18n/pricing-display";
 
 import { ProviderRouteName } from "./ProviderRouteName";
 import { ProviderRoutingHelp } from "./ProviderRoutingHelp";
 import React, { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { resolveEnforcedZdr } from "@/components/(data)/model/pricing/zdr";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { getLocalizedDocsHref } from "@/lib/docs";
 import { motion, useReducedMotion } from "motion/react";
@@ -60,7 +62,6 @@ import {
 import {
 	buildProviderSections,
 	buildProviderTablePriceSummaryForColumn,
-	fmtCompact,
 	fmtUSD,
 	ruleMatchCovers,
 	ruleComparisonMatchSignature,
@@ -183,21 +184,21 @@ function hasUptimeObservation(
 	return runtimeStats.uptimeDaily3d.some((entry) => entry.requests > 0);
 }
 
-function formatLatencySeconds(value: number | null | undefined): string {
+function formatLatencySeconds(value: number | null | undefined, locale: string): string {
 	if (!hasObservedValue(value)) return "--";
 	const seconds = value / 1000;
 	const decimals = seconds >= 10 ? 1 : 2;
-	return `${seconds.toFixed(decimals)}s`;
+	return `${seconds.toLocaleString(locale, { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}s`;
 }
 
-function formatThroughputValue(value: number | null | undefined): string | null {
+function formatThroughputValue(value: number | null | undefined, locale: string): string | null {
 	if (!hasObservedValue(value)) return null;
-	return value >= 100 ? value.toFixed(0) : value.toFixed(1);
+	return value.toLocaleString(locale, { minimumFractionDigits: value >= 100 ? 0 : 1, maximumFractionDigits: value >= 100 ? 0 : 1 });
 }
 
-function formatPercent(value: number | null | undefined): string {
+function formatPercent(value: number | null | undefined, locale: string): string {
 	if (value == null || !Number.isFinite(value)) return "--";
-	return `${value.toFixed(1)}%`;
+	return new Intl.NumberFormat(locale, { style: "percent", minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(value / 100);
 }
 
 function getPricingPlanTranslationKey(plan: string): string | null {
@@ -269,7 +270,7 @@ function UptimeHoverContent({
 			<div className="flex items-center justify-between gap-4">
 				<p className="text-sm font-medium text-foreground">{t("threeDayUptime")}</p>
 				<span className={cn("font-medium tabular-nums", uptimeValueClass(uptimePct))}>
-					{formatPercent(uptimePct)}
+					{formatPercent(uptimePct, locale)}
 				</span>
 			</div>
 			<div className="flex items-end gap-2">
@@ -367,7 +368,7 @@ function UptimeSparkline({
 					<Tooltip key={`${index}-${value ?? "null"}`}>
 						<TooltipTrigger asChild>
 							<g
-								aria-label={`${day}: ${formatPercent(value)}`}
+								aria-label={`${day}: ${formatPercent(value, locale)}`}
 								className="cursor-help"
 								tabIndex={0}
 							>
@@ -394,7 +395,7 @@ function UptimeSparkline({
 								/>
 							</g>
 						</TooltipTrigger>
-						<TooltipContent side="top">{day}: {formatPercent(value)}</TooltipContent>
+						<TooltipContent side="top">{day}: {formatPercent(value, locale)}</TooltipContent>
 					</Tooltip>
 				);
 			})}
@@ -411,12 +412,12 @@ function UptimeSparkline({
 }
 
 const ERROR_CATEGORY_LABELS: Record<string, string> = {
-	authentication: "Authentication",
-	payment: "Payment",
-	model_unavailable: "Model unavailable",
-	server: "Server",
-	stream: "Stream",
-	other_provider: "Other provider",
+	authentication: "Catalogue.models.detail.quickstart.authentication",
+	payment: "Common.ui.providerCardCopy.payment",
+	model_unavailable: "Common.ui.providerCardCopy.modelUnavailable",
+	server: "Common.ui.providerCardCopy.server",
+	stream: "Product.tools.request.stream",
+	other_provider: "Common.ui.providerCardCopy.otherProvider",
 };
 
 type ProviderUptimeHours = 24 | 48 | 60 | 72;
@@ -450,18 +451,20 @@ function hasPerformanceMetricValue(
 	);
 }
 
-function getPerformanceMetricLabel(metric: ProviderPerformanceMetricKey): string {
+type ProviderCopyTranslator = { (key: never, values?: never): string; has(key: never): boolean };
+
+function getPerformanceMetricLabel(metric: ProviderPerformanceMetricKey, tx: ProviderCopyTranslator): string {
 	switch (metric) {
 		case "latency":
-			return "Hourly latency";
+			return tx("Common.ui.providerCardCopy.hourlyLatency" as never);
 		case "throughput":
-			return "Hourly throughput";
+			return tx("Common.ui.providerCardCopy.hourlyThroughput" as never);
 		case "uptime":
-			return "Hourly uptime";
+			return tx("Common.ui.providerCardCopy.hourlyUptime" as never);
 	}
 }
 
-function formatPerformancePeriod(points: ProviderPerformancePoint[]): string | null {
+function formatPerformancePeriod(points: ProviderPerformancePoint[], locale: string): string | null {
 	const firstPoint = points[0];
 	const lastPoint = points.at(-1);
 	if (!firstPoint || !lastPoint) return null;
@@ -470,13 +473,13 @@ function formatPerformancePeriod(points: ProviderPerformancePoint[]): string | n
 	const end = new Date(Date.parse(lastPoint.start) + 60 * 60 * 1000);
 	if (!Number.isFinite(start.getTime()) || !Number.isFinite(end.getTime())) return null;
 
-	return formatPerformancePeriodRange(start, end);
+	return formatPerformancePeriodRange(start, end, locale);
 }
 
-function formatPerformancePeriodRange(start: Date, end: Date): string | null {
+function formatPerformancePeriodRange(start: Date, end: Date, locale: string): string | null {
 	if (!Number.isFinite(start.getTime()) || !Number.isFinite(end.getTime())) return null;
 
-	const formatter = new Intl.DateTimeFormat("en-GB", {
+	const formatter = new Intl.DateTimeFormat(locale, {
 		day: "numeric",
 		month: "short",
 		hour: "2-digit",
@@ -487,35 +490,37 @@ function formatPerformancePeriodRange(start: Date, end: Date): string | null {
 	return `${formatter.format(start)} – ${formatter.format(end)} UTC`;
 }
 
-function formatPerformancePointPeriod(point: ProviderPerformancePoint): string | null {
+function formatPerformancePointPeriod(point: ProviderPerformancePoint, locale: string): string | null {
 	const start = new Date(point.start);
 	const end = new Date(Date.parse(point.start) + 60 * 60 * 1000);
-	return formatPerformancePeriodRange(start, end);
+	return formatPerformancePeriodRange(start, end, locale);
 }
 
-function getPerformanceMetricTooltipLabel(metric: ProviderPerformanceMetricKey): string {
+function getPerformanceMetricTooltipLabel(metric: ProviderPerformanceMetricKey, tx: ProviderCopyTranslator): string {
 	switch (metric) {
 		case "latency":
-			return "latency";
+			return tx("Catalogue.modelDetail.providerTable.latency" as never);
 		case "throughput":
-			return "throughput";
+			return tx("Catalogue.modelDetail.providerTable.throughput" as never);
 		case "uptime":
-			return "uptime";
+			return tx("Catalogue.modelDetail.providerTable.uptime" as never);
 	}
 }
 
 function formatPerformanceMetricValue(
 	metric: ProviderPerformanceMetricKey,
 	value: number | null,
+	locale: string,
+	tx: ProviderCopyTranslator,
 ): string {
-	if (!hasPerformanceMetricValue(metric, value)) return "No data";
+	if (!hasPerformanceMetricValue(metric, value)) return tx("Catalogue.modelDetail.performance.noData" as never);
 	switch (metric) {
 		case "latency":
-			return formatLatencySeconds(value);
+			return formatLatencySeconds(value, locale);
 		case "throughput":
-			return `${formatThroughputValue(value) ?? "--"} tps`;
+			return `${formatThroughputValue(value, locale) ?? "--"} tps`;
 		case "uptime":
-			return formatPercent(value);
+			return formatPercent(value, locale);
 	}
 }
 
@@ -560,12 +565,13 @@ function ProviderPerformanceMetricValue({
 	metric: ProviderPerformanceMetricKey;
 	value: number | null;
 }) {
+	const locale = useLocale();
 	const valueClassName = "inline-flex min-h-5 min-w-[4rem] items-baseline";
 	if (!hasPerformanceMetricValue(metric, value)) return <span className={valueClassName}>--</span>;
 	const numberFlowProps = getPerformanceMetricNumberFlowProps(metric, value);
 	return (
 		<span className={valueClassName}>
-			<NumberFlow value={numberFlowProps.value} format={numberFlowProps.format} />
+			<NumberFlow locales={locale} value={numberFlowProps.value} format={numberFlowProps.format} />
 			<span>{numberFlowProps.suffix}</span>
 		</span>
 	);
@@ -586,17 +592,19 @@ function ProviderHourlyPerformance({
 	onPointHover: (point: ProviderPerformancePoint) => void;
 	onPointLeave: () => void;
 }) {
+	const tx = useTranslations();
+	const locale = useLocale();
 	const points = (runtimeStats?.performanceHourly3d ?? []).slice(-hours);
 	const categories = Object.entries(runtimeStats?.errorCategoryCounts3d ?? {})
 		.filter(([, count]) => count > 0)
 		.sort((a, b) => b[1] - a[1]);
 	const totalFailures = categories.reduce((sum, [, count]) => sum + count, 0);
 	const rateLimited = runtimeStats?.rateLimited3d ?? 0;
-	const metricLabel = getPerformanceMetricLabel(activeMetric);
-	const metricTooltipLabel = getPerformanceMetricTooltipLabel(activeMetric);
+	const metricLabel = getPerformanceMetricLabel(activeMetric, tx);
+	const metricTooltipLabel = getPerformanceMetricTooltipLabel(activeMetric, tx);
 	const performancePeriod = hoveredPoint
-		? formatPerformancePointPeriod(hoveredPoint)
-		: formatPerformancePeriod(points);
+		? formatPerformancePointPeriod(hoveredPoint, locale)
+		: formatPerformancePeriod(points, locale);
 	const metricValues = points
 		.map((point) => getPerformanceMetricValue(activeMetric, point))
 		.filter((value): value is number => hasPerformanceMetricValue(activeMetric, value));
@@ -618,7 +626,7 @@ function ProviderHourlyPerformance({
 					<div
 						className="grid h-8 grid-flow-col auto-cols-fr items-end gap-0.5"
 						role="img"
-						aria-label={`${metricLabel} over the last ${hours} hours`}
+						aria-label={tx("Common.ui.providerCardCopy.metricOverTheLastHoursHours", { metric: metricLabel, hours })}
 						onPointerLeave={onPointLeave}
 					>
 						{points.map((point, index) => {
@@ -626,8 +634,8 @@ function ProviderHourlyPerformance({
 							const hasData = hasPerformanceMetricValue(activeMetric, metricValue);
 							const numericMetricValue = metricValue ?? 0;
 							const pointLabel = hasData
-								? formatPerformanceMetricValue(activeMetric, metricValue)
-								: "No data";
+								? formatPerformanceMetricValue(activeMetric, metricValue, locale, tx)
+								: tx("Catalogue.modelDetail.performance.noData" as never);
 							const barClassName = !hasData
 								? "bg-muted-foreground/30"
 								: activeMetric === "uptime" && numericMetricValue > 99
@@ -656,7 +664,7 @@ function ProviderHourlyPerformance({
 									)}
 									style={{ height: barHeight }}
 									tabIndex={0}
-									aria-label={`${new Date(point.start).toLocaleString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: "UTC" })} UTC: ${metricTooltipLabel}: ${pointLabel}`}
+									aria-label={`${new Date(point.start).toLocaleString(locale, { hour: "2-digit", minute: "2-digit", timeZone: "UTC" })} UTC: ${metricTooltipLabel}: ${pointLabel}`}
 									onPointerEnter={() => onPointHover(point)}
 									onFocus={() => onPointHover(point)}
 									onBlur={onPointLeave}
@@ -668,12 +676,12 @@ function ProviderHourlyPerformance({
 			) : null}
 			{categories.length > 0 || rateLimited > 0 ? (
 				<div>
-					<p className="text-[11px] text-muted-foreground">Error breakdown · 3 days</p>
+					<p className="text-[11px] text-muted-foreground">{tx("Common.ui.providerCardCopy.errorBreakdown3Days" as never)}</p>
 					<div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 text-xs">
 						{categories.map(([category, count]) => (
-							<span key={category} className="tabular-nums"><span className="text-muted-foreground">{ERROR_CATEGORY_LABELS[category] ?? category}</span> {totalFailures > 0 ? `${((count / totalFailures) * 100).toFixed(1)}%` : "—"}</span>
+							<span key={category} className="tabular-nums"><span className="text-muted-foreground">{ERROR_CATEGORY_LABELS[category] ? tx(ERROR_CATEGORY_LABELS[category] as never) : category}</span> {totalFailures > 0 ? formatPercent((count / totalFailures) * 100, locale) : "—"}</span>
 						))}
-						{rateLimited > 0 ? <span className="tabular-nums"><span className="text-muted-foreground">Rate limited</span> {rateLimited.toLocaleString()} <span className="text-muted-foreground">excluded</span></span> : null}
+						{rateLimited > 0 ? <span className="tabular-nums">{tx("Common.ui.providerCardCopy.rateLimitedCountExcluded", { count: rateLimited.toLocaleString(locale) })}</span> : null}
 					</div>
 				</div>
 			) : null}
@@ -712,8 +720,10 @@ function getTokenTierConditions(tiers: TokenTier[]): Array<string | null> {
 }
 
 function renderCompactTierSummary(
-	tiers?: TokenTier[] | null,
-	valueClassName?: string,
+	tiers: TokenTier[] | null | undefined,
+	valueClassName: string | undefined,
+	freeLabel: string,
+	l: (value: string | null | undefined) => string,
 ) {
 	const orderedTiers = [...(tiers ?? [])].sort((a, b) => {
 		if (a.isCurrent !== b.isCurrent) return a.isCurrent ? -1 : 1;
@@ -760,10 +770,10 @@ function renderCompactTierSummary(
 								valueClassName,
 							)}
 						>
-							{tier.per1M === 0 ? "Free" : fmtUSD(tier.per1M)}
+							{tier.per1M === 0 ? freeLabel : fmtUSD(tier.per1M)}
 						</span>
 						<span className="whitespace-nowrap text-left text-[10px] text-muted-foreground">
-							{conditions[index]}
+							{l(conditions[index])}
 						</span>
 					</React.Fragment>
 				);
@@ -774,9 +784,11 @@ function renderCompactTierSummary(
 
 function renderSecondaryTierSummary(
 	label: string,
-	tiers?: TokenTier[] | null,
-	unitLabel?: string,
-	valueClassName?: string,
+	tiers: TokenTier[] | null | undefined,
+	unitLabel: string | undefined,
+	valueClassName: string | undefined,
+	freeLabel: string,
+	l: (value: string | undefined) => string,
 ) {
 	const orderedTiers = [...(tiers ?? [])].sort((a, b) => {
 		if (a.isCurrent !== b.isCurrent) return a.isCurrent ? -1 : 1;
@@ -822,10 +834,10 @@ function renderSecondaryTierSummary(
 								valueClassName,
 							)}
 						>
-							{tier.per1M === 0 ? "Free" : fmtUSD(tier.per1M)}
+							{tier.per1M === 0 ? freeLabel : fmtUSD(tier.per1M)}
 						</span>
 						<span className="whitespace-nowrap text-left text-[10px] text-muted-foreground">
-							{conditions[index]}
+							{l(conditions[index])}
 						</span>
 					</React.Fragment>
 				);
@@ -836,7 +848,7 @@ function renderSecondaryTierSummary(
 					hasAnyComparison ? "col-span-3 col-start-2" : "col-span-2 col-start-2",
 				)}
 			>
-				{unitLabel}
+				{l(unitLabel)}
 			</div>
 		</div>
 	);
@@ -867,33 +879,27 @@ function getRoutingHealthSummary(
 	return null;
 }
 
-function formatTokenLimit(value: number | null | undefined): string {
+function formatTokenLimit(value: number | null | undefined, locale: string): string {
 	if (value == null || !Number.isFinite(value) || value <= 0) return "--";
-	if (value >= 1_000_000_000) return `${(value / 1_000_000_000).toFixed(1)}B`;
-	if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`;
-	if (value >= 1_000) return `${(value / 1_000).toFixed(0)}K`;
-	return `${Math.round(value)}`;
+	return value.toLocaleString(locale, { notation: "compact", maximumFractionDigits: value >= 1_000_000 ? 1 : 0 });
 }
 
-function formatTokenLimit1dp(value: number | null | undefined): string {
+function formatTokenLimit1dp(value: number | null | undefined, locale: string): string {
 	if (value == null || !Number.isFinite(value) || value <= 0) return "--";
-	if (value >= 1_000_000_000) return `${(value / 1_000_000_000).toFixed(0)}B`;
-	if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(0)}M`;
-	if (value >= 1_000) return `${(value / 1_000).toFixed(1)}K`;
-	return `${value.toFixed(1)}`;
+	return value.toLocaleString(locale, { notation: "compact", maximumFractionDigits: value >= 1_000_000 ? 0 : 1 });
 }
 
 
 function formatPolicyValue(
 	value: string | boolean | null | undefined,
 	labels: { yes: string; no: string; unknown: string },
+	tx: ProviderCopyTranslator,
 ): string {
 	if (typeof value === "boolean") return value ? labels.yes : labels.no;
 	const normalized = String(value ?? "").trim();
 	if (!normalized || normalized.toLowerCase() === "unknown") return labels.unknown;
-	return normalized
-		.replace(/[_-]+/g, " ")
-		.replace(/\b\w/g, (char) => char.toUpperCase());
+	const keys: Record<string, string> = { private: "Catalogue.modelDetail.providerInfo.policyTiers.private", logs: "Catalogue.modelDetail.providerInfo.policyTiers.logs", trains: "Catalogue.modelDetail.providerInfo.policyTiers.trains", provider_managed: "Catalogue.modelDetail.providerInfo.residencyModes.providerManaged", customer_selectable: "Catalogue.modelDetail.providerInfo.residencyModes.customerSelectable", account_selected: "Catalogue.modelDetail.providerInfo.residencyModes.accountSelected" };
+	return keys[normalized.toLowerCase()] ? tx(keys[normalized.toLowerCase()] as never) : normalized;
 }
 
 const DATA_POLICY_FIELDS = [
@@ -965,9 +971,7 @@ function getPlanTheme(plan: string) {
 }
 
 function formatMeterLabel(meter: string): string {
-	return String(meter ?? "")
-		.replace(/[_-]+/g, " ")
-		.replace(/\b\w/g, (char) => char.toUpperCase());
+	return String(meter ?? "");
 }
 
 function getBillingTimestampBasisMessageKey(value: string | null | undefined):
@@ -986,39 +990,29 @@ function getBillingTimestampBasisMessageKey(value: string | null | undefined):
 	}
 }
 
-function formatRuleUnitLabel(rule: ProviderPricing["pricing_rules"][number]): string {
-	const unit = String(rule.unit ?? "").trim().toLowerCase();
-	const unitSize = Number(rule.unit_size ?? 1);
-	if (unit === "token" && unitSize === 1_000_000) return "/ 1M tokens";
-	if (unit === "token") return unitSize > 1 ? `/ ${fmtCompact(unitSize)} tokens` : "/ token";
-	if (unit === "image") return "/ image";
-	if (unit === "video") return "/ video";
-	if (unit === "second") return "/ sec";
-	if (unit === "minute") return "/ min";
-	if (unit === "call" || unit === "request") return "/ request";
-	return unitSize > 1 ? `/ ${fmtCompact(unitSize)} ${unit || "units"}` : `/ ${unit || "unit"}`;
+function formatRuleUnitLabel(rule: ProviderPricing["pricing_rules"][number], locale: string, tx: ProviderCopyTranslator): string {
+ const rawUnit = String(rule.unit ?? "").trim().toLowerCase();
+ const unit = rawUnit === "call" ? "request" : rawUnit || "unit";
+ const quantity = Number(rule.unit_size ?? 1);
+ const key = "Catalogue.modelDetail.pricing." + (quantity === 1 ? "unitsSingular." : "units.") + unit;
+ const unitLabel = tx.has(key as never) ? tx(key as never) : unit === "unit" ? tx("Catalogue.organisations.unitGeneric" as never) : unit;
+ return tx("Common.ui.providerCardCopy.perQuantityUnit" as never, ({ quantity: quantity.toLocaleString(locale, { notation: "compact", maximumFractionDigits: 1 }), unit: unitLabel }) as never);
 }
 
-function formatRequestMeterTitle(meter: string | null | undefined): string {
-	const words = (meter ?? "")
-		.split(/[_\s-]+/)
-		.filter(Boolean)
-		.filter((word) => !/^requests?$/i.test(word));
-	if (words.length === 0) return "Requests";
-	return words
-		.map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-		.join(" ");
+function formatRequestMeterTitle(meter: string | null | undefined, requests: string): string {
+	return meter || requests;
 }
 
 function formatRequestMeterUnit(
 	unitLabel: string | null | undefined,
 	requestLabels: { singular: string; plural: string },
+	locale: string,
 ): string {
 	if (!unitLabel) return `/ ${requestLabels.singular}`;
 	if (/^per request$/i.test(unitLabel)) return `/ ${requestLabels.singular}`;
 	const match = unitLabel.match(/^per\s+([\d,]+)\s+requests?$/i);
 	if (!match) return unitLabel.replace(/^per\s+/i, "/ ");
-	return `/ ${fmtCompact(Number(match[1].replace(/,/g, "")))} ${requestLabels.plural}`;
+	return `/ ${Number(match[1].replace(/,/g, "")).toLocaleString(locale, { notation: "compact", maximumFractionDigits: 1 })} ${requestLabels.plural}`;
 }
 
 function parseUtcClockMinutes(value: string | null | undefined): number | null {
@@ -1887,6 +1881,8 @@ export default function ProviderCard({
 	onToggleServiceTiers?: () => void;
 	isSummaryActive?: boolean;
 }) {
+	const tx = useTranslations();
+	const tPolicy = useTranslations("Common.ui.localisationGaps");
 	const tProvider = useTranslations("Catalogue.modelDetail.providerTable");
 	const tQuickstart = useTranslations("Catalogue.models.detail.quickstart");
 	const tModelActions = useTranslations("Catalogue.models.detail.actions");
@@ -1894,6 +1890,7 @@ export default function ProviderCard({
 	const tPerformance = useTranslations("Catalogue.modelDetail.performance");
 	const tPricing = useTranslations("Catalogue.modelDetail.pricing");
 	const locale = useLocale();
+	const localizePricingLabel = (value: string | null | undefined) => localizedPricingDisplayLabel(value, locale, tx);
 	const localizePricingMeter = (meter: string | null | undefined, fallback: string) => {
 		const key = `meters.${String(meter ?? "").trim()}`;
 		return tPricing.has(key as never) ? tPricing(key as never) : fallback;
@@ -2249,14 +2246,14 @@ export default function ProviderCard({
 				? {
 						key: "totalContext",
 						label: tSections("totalContext"),
-						value: formatTokenLimit1dp(maxContextTokens),
+						value: formatTokenLimit1dp(maxContextTokens, locale),
 				}
 				: null,
 			maxOutputTokens !== null
 				? {
 						key: "maxOutput",
 						label: tSections("maxOutput"),
-						value: formatTokenLimit(maxOutputTokens),
+						value: formatTokenLimit(maxOutputTokens, locale),
 				}
 				: null,
 		].filter(
@@ -2328,7 +2325,7 @@ export default function ProviderCard({
 
 		return directions.flatMap((direction) =>
 			direction.tiers.map((tier, index) => {
-				const source = tier.label && tier.label !== "All usage" ? tier.label : tSections("embedding");
+				const source = tier.label && tier.label !== "All usage" ? localizePricingLabel(tier.label) : tSections("embedding");
 				return {
 					key: `embeddings-${direction.key}-${source}-${index}`,
 					title: `${source}${direction.suffix}`,
@@ -2349,7 +2346,7 @@ export default function ProviderCard({
 	];
 	const allTokenMetricGroups = Array.from(
 		tokenMetricTiles.reduce((groups, tile) => {
-			const label = tile.groupTitle ?? "Tokens";
+			const label = tile.groupTitle ?? tx("Common.ui.metrics.tokens" as never);
 			const entries = groups.get(label) ?? [];
 			entries.push(tile);
 			groups.set(label, entries);
@@ -2406,7 +2403,7 @@ export default function ProviderCard({
 		);
 		const resolutions = resolutionCondition
 			? parseRuleConditionValues(resolutionCondition.value)
-			: ["Any resolution"];
+			: [tx("Catalogue.modelDetail.sections.anyResolution" as never)];
 		const price = Number(rule.price_per_unit ?? Number.NaN);
 		if (!Number.isFinite(price)) return [];
 		return resolutions.map((resolution) => ({
@@ -2511,7 +2508,7 @@ export default function ProviderCard({
 			: fallback ?? null;
 	const tableUptimePct = getDisplayedUptimePct(runtimeStats);
 	const tableUptimeTrendPoints = getUptimeTrendPoints(runtimeStats);
-	const tableThroughputValue = formatThroughputValue(runtimeStats?.throughput30m);
+	const tableThroughputValue = formatThroughputValue(runtimeStats?.throughput30m, locale);
 	const activeDiscountEntries = collectDiscountEntriesFromSections(sec);
 	// A promotion can have an open-ended published duration. Show its discount
 	// without fabricating a deadline; the countdown remains conditional below.
@@ -2580,7 +2577,7 @@ export default function ProviderCard({
 			value:
 				tablePlan === "batch" || runtimeStats?.latencyMs30m == null
 					? "--"
-					: formatLatencySeconds(runtimeStats.latencyMs30m),
+					: formatLatencySeconds(runtimeStats.latencyMs30m, locale),
 			valueClassName: tablePlanTheme.accent,
 		},
 		{
@@ -2591,7 +2588,7 @@ export default function ProviderCard({
 			valueClassName: tablePlanTheme.accent,
 		},
 		{
-			value: formatPercent(tableUptimePct),
+			value: formatPercent(tableUptimePct, locale),
 			valueClassName: tablePlanTheme.accent,
 		},
 	] as const;
@@ -2944,8 +2941,8 @@ export default function ProviderCard({
 	);
 	const pricingPrimaryContent = isCustomerManagedPricing ? (
 		<div className="rounded-xl border border-zinc-200/80 bg-zinc-50/60 px-3 py-3 text-sm dark:border-zinc-800 dark:bg-zinc-900/30">
-			<div className="font-semibold text-foreground">Customer managed</div>
-			<p className="mt-1 text-xs leading-5 text-muted-foreground">Upstream inference costs are billed directly by your deployment provider.</p>
+			<div className="font-semibold text-foreground">{tx("Common.ui.providerCardCopy.customerManaged" as never)}</div>
+			<p className="mt-1 text-xs leading-5 text-muted-foreground">{tx("Common.ui.providerCardCopy.upstreamInferenceCostsAreBilledDirectlyByYourDeploymentProvider" as never)}</p>
 		</div>
 	) : !hasPlanPricing ? (
 		isInternalTestingProvider ? (
@@ -3017,9 +3014,9 @@ export default function ProviderCard({
 								</div>
 								{tile.tiers ? (
 									<>
-										{renderCompactTierSummary(tile.tiers, selectedPlanPriceClass)}
+										{renderCompactTierSummary(tile.tiers, selectedPlanPriceClass, tx("Common.ui.chatSettings.free" as never), localizePricingLabel)}
 										<div className="mt-0.5 text-[10px] text-muted-foreground">
-											{tile.unitLabel}
+											{localizePricingLabel(tile.unitLabel)}
 										</div>
 									</>
 								) : null}
@@ -3120,6 +3117,8 @@ export default function ProviderCard({
 									tile.tiers,
 									tile.unitLabel,
 									selectedPlanPriceClass,
+									tx("Common.ui.chatSettings.free" as never),
+									localizePricingLabel,
 								)}
 							</React.Fragment>
 						))}
@@ -3138,7 +3137,7 @@ export default function ProviderCard({
 										className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-4"
 									>
 										<div className="text-[11px] text-muted-foreground">
-															{localizePricingMeter(tier.meter, formatRequestMeterTitle(tier.meter))}
+															{localizePricingMeter(tier.meter, formatRequestMeterTitle(tier.meter, tx("Common.ui.metrics.requests" as never)))}
 										</div>
 										<div className="flex items-baseline justify-end gap-2 text-right">
 											{hasComparison ? (
@@ -3158,7 +3157,7 @@ export default function ProviderCard({
 												{formatRequestMeterUnit(tier.unitLabel, {
 													singular: tPricing("unitsSingular.request"),
 													plural: tPricing("units.request"),
-												})}
+												}, locale)}
 											</span>
 										</div>
 									</div>
@@ -3208,7 +3207,7 @@ export default function ProviderCard({
 		isUtcTimeWindowActiveNow(window, now),
 	);
 	const weekdayOnlyPricing = representativePricingWindows[0]?.days_of_week?.join(",") === "mon,tue,wed,thu,fri";
-	const localTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone || "Local time";
+	const localTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone || tx("Common.ui.providerCardCopy.localTime" as never);
 	const sheetSectionPrefix = `provider-${sec.providerId.replace(/[^a-z0-9_-]/gi, "-")}-${selectedPlan}`;
 	const pricingSectionId = `${sheetSectionPrefix}-pricing`;
 	const performanceSectionId = `${sheetSectionPrefix}-performance`;
@@ -3251,15 +3250,15 @@ export default function ProviderCard({
 	const dataPolicySummary = [
 		{
 			label: tProvider("dataPolicy"),
-			value: formatPolicyValue(selectedDataPolicyTier, policyValueLabels),
+			value: formatPolicyValue(selectedDataPolicyTier, policyValueLabels, tx),
 		},
 		{
 			label: "ZDR",
-			value: formatPolicyValue(selectedZdr, policyValueLabels),
+			value: formatPolicyValue(selectedZdr, policyValueLabels, tx),
 		},
 		{
 			label: tSections("processing"),
-			value: provider.provider.default_execution_regions?.join(", ") || formatPolicyValue(provider.provider.residency_mode, policyValueLabels),
+			value: provider.provider.default_execution_regions?.join(", ") || formatPolicyValue(provider.provider.residency_mode, policyValueLabels, tx),
 		},
 		{
 			label: tSections("dataCenters"),
@@ -3340,15 +3339,15 @@ export default function ProviderCard({
 										<HoverCardTrigger asChild>
 											<button
 												type="button"
-												aria-label="BYOK only: requires your provider key"
+												aria-label={tx("Common.ui.providerCardCopy.bYOKOnlyRequiresYourProviderKey" as never)}
 												className="inline-flex h-6 w-6 items-center justify-center rounded-md text-amber-700 transition-colors hover:bg-muted/60 hover:text-amber-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 dark:text-amber-300 dark:hover:text-amber-200"
 											>
 												<KeyRound className="h-3.5 w-3.5" />
 											</button>
 										</HoverCardTrigger>
 										<HoverCardContent align="start" className="w-auto p-2 text-xs">
-											<p className="font-semibold">BYOK only</p>
-											<p className="mt-1 text-muted-foreground">Requires your provider key.</p>
+											<p className="font-semibold">{tx("Common.ui.providerCardCopy.bYOKOnly" as never)}</p>
+											<p className="mt-1 text-muted-foreground">{tx("Common.ui.providerCardCopy.requiresYourProviderKey" as never)}</p>
 										</HoverCardContent>
 									</HoverCard>
 								) : null}
@@ -3407,8 +3406,8 @@ export default function ProviderCard({
 											<div className="mt-2 space-y-1 border-t border-zinc-200/70 pt-2 dark:border-zinc-800">
 												{workspacePolicyBlockedReasons?.map((reason) => (
 													<div key={`${reason.source}:${reason.settingsHref}`} className="space-y-1">
-														<p className="text-muted-foreground">{reason.label}</p>
-														<Link href={reason.settingsHref} className="inline-flex text-[11px] font-medium text-primary hover:underline">Review policy</Link>
+														<p className="text-muted-foreground">{localizedWorkspacePolicyReason(tPolicy, reason)}</p>
+														<Link href={reason.settingsHref} className="inline-flex text-[11px] font-medium text-primary hover:underline">{tx("Common.ui.providerCardCopy.reviewPolicy" as never)}</Link>
 													</div>
 												))}
 												{privacyReasonMeta.map(({ reason, meta }) => (
@@ -3781,7 +3780,7 @@ export default function ProviderCard({
 											<div key={rule.id} className="py-2.5">
 												<div className="flex items-baseline justify-between gap-3">
 									<div className="min-w-0 text-xs font-medium text-foreground">{localizePricingMeter(rule.meter, formatMeterLabel(rule.meter))}</div>
-													<div className="shrink-0 text-[10px] text-muted-foreground">{formatRuleUnitLabel(rule).replace(/^\//, "per")}</div>
+													<div className="shrink-0 text-[10px] text-muted-foreground">{formatRuleUnitLabel(rule, locale, tx)}</div>
 												</div>
 												<div className="mt-1.5 grid grid-cols-2 gap-2">
 													<div>

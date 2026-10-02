@@ -2611,5 +2611,8 @@
 		"copyFailure": "无法将{asset}复制为 {format}",
 		"downloadSuccess": "已下载{asset}（{format}）",
 		"downloadFailure": "无法将{asset}下载为 {format}"
+	},
+	"supportPage": {
+		"description": "就账户、账单和产品问题联系 Phaseo 支持，获得创始人的直接回复，并查看文档、社区资源和当前支持服务时间。"
 	}
 }

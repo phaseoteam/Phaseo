@@ -188,7 +188,7 @@ export default async function Page({
 								{t("browseModels", { name: header.api_provider_name })}
 							</p>
 						</div>
-						<Suspense fallback={<div className="rounded-xl border p-8 text-sm text-muted-foreground">Loading models…</div>}>
+						<Suspense fallback={<div className="rounded-xl border p-8 text-sm text-muted-foreground">{t("loadingModels")}</div>}>
 							<ProviderModelsWithPreview
 								apiProvider={apiProvider}
 								providerLabel={header.api_provider_name}

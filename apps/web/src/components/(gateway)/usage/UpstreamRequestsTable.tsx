@@ -56,7 +56,7 @@ function maskedKeyPrefix(prefix: string | null | undefined, hiddenLabel: string)
 
 function formatMilliseconds(value: number | null, locale: string): string {
 	return typeof value === "number" && Number.isFinite(value)
-		? new Intl.NumberFormat(locale).format(Math.round(value)) + " ms"
+		? new Intl.NumberFormat(locale, { style: "unit", unit: "millisecond", unitDisplay: "short", maximumFractionDigits: 0 }).format(value)
 		: "—";
 }
 
@@ -425,20 +425,20 @@ export default function UpstreamRequestsTable({
 									</div>
 								) : null}
 								<section className="my-5 space-y-2">
-									<h3 className="text-sm font-semibold">Attempts</h3>
+									<h3 className="text-sm font-semibold">{t("usageGaps.copyAttempts")}</h3>
 									<Table>
 										<TableHeader>
 											<TableRow>
-												<TableHead>Attempt</TableHead>
-												<TableHead>Provider</TableHead>
-												<TableHead>Status</TableHead>
-												<TableHead>Latency</TableHead>
+												<TableHead>{t("usageGaps.copyAttempt")}</TableHead>
+												<TableHead>{t("usageGaps.copyProvider")}</TableHead>
+												<TableHead>{t("usageGaps.copyStatus")}</TableHead>
+												<TableHead>{t("usageGaps.copyLatency")}</TableHead>
 											</TableRow>
 										</TableHeader>
 										<TableBody>
 											{[...selected.attempts].reverse().map((attempt) => (
 												<TableRow key={attempt.id}>
-													<TableCell><button type="button" className="cursor-pointer underline underline-offset-4" aria-label={`Inspect attempt ${attempt.sequence}`} aria-pressed={inspected.id === attempt.id} onClick={() => setInspectedAttemptId(attempt.id)}>{attempt.sequence}</button></TableCell>
+													<TableCell><button type="button" className="cursor-pointer underline underline-offset-4" aria-label={t("usageGaps.inspectAttempt", { number: attempt.sequence })} aria-pressed={inspected.id === attempt.id} onClick={() => setInspectedAttemptId(attempt.id)}>{attempt.sequence}</button></TableCell>
 													<TableCell>
 														{attempt.provider
 															? (providerNames.get(attempt.provider) ??

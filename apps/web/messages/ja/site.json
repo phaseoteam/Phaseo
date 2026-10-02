@@ -2611,5 +2611,8 @@
 		"copyFailure": "{asset}（{format}）をコピーできませんでした",
 		"downloadSuccess": "{asset}（{format}）をダウンロードしました",
 		"downloadFailure": "{asset}（{format}）をダウンロードできませんでした"
+	},
+	"supportPage": {
+		"description": "アカウント、請求、製品に関する質問はPhaseoサポートへ。創業者からの直接の回答、ドキュメント、コミュニティ資料、現在のサポート対応状況をご案内します。"
 	}
 }

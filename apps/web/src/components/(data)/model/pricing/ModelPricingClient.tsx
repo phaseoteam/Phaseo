@@ -608,6 +608,7 @@ function ProviderServiceTierInfoIcons({
 	provider: ProviderPricing;
 	plan: string;
 }) {
+	const tx = useTranslations();
 	const tProvider = useTranslations("Catalogue.modelDetail.providerTable");
 	const providerModels = getProviderModelScopeForPlan(provider, plan);
 	const statusKey = chooseGatewayStatus(
@@ -680,15 +681,15 @@ function ProviderServiceTierInfoIcons({
 					<HoverCardTrigger asChild>
 						<button
 							type="button"
-							aria-label="BYOK only: requires your provider key"
+							aria-label={tx("Common.ui.providerCardCopy.bYOKOnlyRequiresYourProviderKey" as never)}
 							className="inline-flex h-6 w-6 items-center justify-center rounded-md text-amber-700 transition-colors hover:bg-muted/60 hover:text-amber-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 dark:text-amber-300 dark:hover:text-amber-200"
 						>
 							<KeyRound className="h-3.5 w-3.5" />
 						</button>
 					</HoverCardTrigger>
 					<HoverCardContent align="start" className="w-auto p-2 text-xs">
-						<p className="font-semibold">BYOK only</p>
-						<p className="mt-1 text-muted-foreground">Requires your provider key.</p>
+						<p className="font-semibold">{tx("Common.ui.providerCardCopy.bYOKOnly" as never)}</p>
+						<p className="mt-1 text-muted-foreground">{tx("Common.ui.providerCardCopy.requiresYourProviderKey" as never)}</p>
 					</HoverCardContent>
 				</HoverCard>
 			) : null}

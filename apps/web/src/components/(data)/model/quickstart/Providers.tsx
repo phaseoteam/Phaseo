@@ -88,9 +88,10 @@ function getStatusUi(statusKey: ProviderStateKey): {
 }
 
 export default async function Providers({ metadata }: { metadata: ModelGatewayMetadata }) {
-	const [tAvailability, tState] = await Promise.all([
+	const [tAvailability, tState, t] = await Promise.all([
 		getTranslations("Catalogue.models.detail.quickstart.providerAvailability"),
 		getTranslations("Catalogue.models.detail.quickstart.providerStates"),
+		getTranslations("Catalogue.models.detail.quickstart"),
 	]);
 	const providers = groupProviders(metadata);
 
@@ -173,7 +174,7 @@ export default async function Providers({ metadata }: { metadata: ModelGatewayMe
 														<KeyRound className="h-4 w-4" />
 													</Link>
 												</TooltipTrigger>
-												<TooltipContent>This provider requires a BYOK key.</TooltipContent>
+												<TooltipContent>{t("byokRequired")}</TooltipContent>
 											</Tooltip>
 										) : null}
 									</div>

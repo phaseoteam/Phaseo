@@ -448,7 +448,8 @@
 				"openDecisionsPlayground": "Testumgebung für Entscheidungen öffnen",
 				"free": "Kostenlos",
 				"variant": "Variante",
-				"current": "Aktuell"
+				"current": "Aktuell",
+				"tryJev": "Jev in Entscheidungen ausprobieren"
 			},
 			"sections": {
 				"providersDescription": "API-Anbieter, Preise der Routen, Verfügbarkeit und aktuelle Zuverlässigkeitssignale.",
@@ -875,7 +876,12 @@
 				"tierUltrafast": "Ultraschnell",
 				"planDescriptionFlexOnly": "Wird nur verwendet, wenn service_tier flex ist.",
 				"planDescriptionFastRouting": "Schnelles Routing, sofern verfügbar.",
-				"planDescriptionUltrafast": "Routing mit höchster Geschwindigkeit, sofern verfügbar."
+				"planDescriptionUltrafast": "Routing mit höchster Geschwindigkeit, sofern verfügbar.",
+				"addProviderKey": "Anbieterschlüssel hinzufügen",
+				"providerKeyRequired": "Anbieterschlüssel erforderlich",
+				"byokCredential": "Fügen Sie Ihre eigenen Zugangsdaten für {providers} hinzu, bevor Sie diese Anfrage senden.",
+				"addNamedProviderKey": "{provider}-Schlüssel hinzufügen",
+				"byokRequired": "Dieser Anbieter erfordert einen BYOK-Schlüssel."
 			},
 			"seoTitles": {
 				"titleDefault": "{model}: Preise, Benchmarks & Anbieter",
@@ -902,7 +908,8 @@
 				"openSource": "Quelle für {benchmark} öffnen",
 				"hideDetailsFor": "Details für {benchmark} ausblenden",
 				"showDetailsFor": "Details für {benchmark} anzeigen",
-				"showAll": "Alle {count} Benchmarks anzeigen"
+				"showAll": "Alle {count} Benchmarks anzeigen",
+				"otherBenchmarks": "Weitere Benchmarks"
 			},
 			"faqContent": {
 				"title": "Häufig gestellte Fragen",
@@ -1691,6 +1698,10 @@
 			"configureRegional": "Regionales Routing konfigurieren",
 			"tiers": "Für Fast oder Flex geben Sie die Stufe in Ihrer Anfrage an oder wählen eine dafür vorgesehene Route. Batch-Anfragen werden über die Batch-API gesendet.",
 			"chooseTier": "Servicestufe auswählen"
+		},
+		"overview": {
+			"providerSubmissions": "Anbietereinreichungen",
+			"providerSubmissionsDescription": "Vollständige Angaben des Anbieters für die autorisierte interne Prüfung."
 		}
 	},
 	"providers": {
@@ -1830,7 +1841,8 @@
 		"missingDescription": "Fehlt ein API-Anbieter, können Sie auf GitHub beitragen.",
 		"contribute": "Auf GitHub beitragen",
 		"internalPreview": "Interne Anbietervorschau",
-		"internalPreviewDescription": "Dieser Anbieter hat autorisierte Katalogeinreichungen, aber noch keine öffentlichen Gateway-Analysen. Die unten eingereichten Modelle sind nur für den Anbieterarbeitsbereich und Phaseo-Administratoren sichtbar."
+		"internalPreviewDescription": "Dieser Anbieter hat autorisierte Katalogeinreichungen, aber noch keine öffentlichen Gateway-Analysen. Die unten eingereichten Modelle sind nur für den Anbieterarbeitsbereich und Phaseo-Administratoren sichtbar.",
+		"loadingModels": "Modelle werden geladen…"
 	},
 	"benchmarks": {
 		"title": "Vergleichstests",
@@ -2189,7 +2201,9 @@
 			"cost": "Bewertungskosten"
 		},
 		"audioTranscribed": "Transkribiertes Audio",
-		"recentRequests": "{count} aktuelle Anfragen"
+		"recentRequests": "{count} aktuelle Anfragen",
+		"intelligenceBenchmarks": "Intelligenz-Benchmarks",
+		"noMeasuredUsage": "Keine gemessene Nutzung in den letzten 30 Tagen."
 	},
 	"compare": {
 		"title": "Modelle vergleichen",
@@ -2899,7 +2913,8 @@
 		"requestsUnit": "Anfragen",
 		"usageOverTime": "Nutzung im Zeitverlauf",
 		"noUsageDataForPeriod": "Für diesen Zeitraum sind keine Nutzungsdaten verfügbar.",
-		"rangePeriod": "Nutzung im Zeitraum {range}"
+		"rangePeriod": "Nutzung im Zeitraum {range}",
+		"averageTokensPerRequest": "Durchschnittliche Tokens pro Anfrage"
 	},
 	"apiModelCard": {
 		"gatewayActive": "Gateway: aktiv",

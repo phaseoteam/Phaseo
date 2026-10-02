@@ -268,7 +268,7 @@ export default function TeamSwitcher({
 							}}
 						>
 							<Sparkles className="h-4 w-4" />
-							<span>Turn on Phaseo action dock</span>
+							<span>{tUi("actionDockCopy.turnOnDock")}</span>
 						</DropdownMenuItem>
 					) : null}
 

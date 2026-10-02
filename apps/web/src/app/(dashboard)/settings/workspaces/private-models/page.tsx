@@ -4,16 +4,21 @@ import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSec
 import { ProductFeedbackButton } from "@/components/feedback/ProductFeedbackButton";
 import { Badge } from "@/components/ui/badge";
 import PrivateModelsSection from "./PrivateModelsContent";
+import { getTranslations } from "next-intl/server";
 
-export const metadata = { title: "Private Models - Settings" };
+export async function generateMetadata() {
+	const t = await getTranslations("SettingsUI");
+	return { title: `${t("privateModelsCopy.privateModels")} - ${t("headers.settings")}` };
+}
 
 export default async function PrivateModelsPage() {
+	const t = await getTranslations("SettingsUI");
 	return <div className="mx-auto space-y-6">
 		<SettingsPageHeader
-			title="Private Models"
-			description="Connect workspace-only model endpoints to the Phaseo gateway."
-			meta={<Badge variant="outline">Beta</Badge>}
-			actions={<ProductFeedbackButton surface="settings_private_models" prompt="Tell us what would make Private Models more useful for your workspace." />}
+			title={t("privateModelsCopy.privateModels")}
+			description={t("privateModelsCopy.privateModelsHelp")}
+			meta={<Badge variant="outline">{t("settingsPageCopy.beta")}</Badge>}
+			actions={<ProductFeedbackButton surface="settings_private_models" prompt={t("privateModelsCopy.feedbackPrompt")} />}
 		/>
 		<Suspense fallback={<SettingsSectionFallback />}><PrivateModelsSection /></Suspense>
 	</div>;

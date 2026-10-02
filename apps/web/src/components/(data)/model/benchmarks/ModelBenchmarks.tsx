@@ -44,7 +44,7 @@ export default async function ModelBenchmarks({
 		<ModelBenchmarksGrid highlights={otherHighlights} />
 	) : (
 		<Card className="border border-dashed bg-muted/30 p-6 text-center text-sm text-muted-foreground">
-			No benchmark highlights available yet.
+			{t("noHighlights")}
 		</Card>
 	);
 
@@ -54,10 +54,10 @@ export default async function ModelBenchmarks({
 			<EpochCapabilitiesIndex highlights={highlightCards} ranking={benchmarkRankings.find((item) => isEpochCapabilitiesIndex(item.benchmark_id))} modelId={modelId} />
 			{otherHighlights.length > 0 || !hasKeyBenchmark ? (
 				hasKeyBenchmark ? (
-					<section aria-label="Other Benchmarks">
+					<section aria-label={t("otherBenchmarks")}>
 						<Accordion className="border-t" type="single">
 							<AccordionItem value="other-benchmarks" className="border-0">
-								<AccordionTrigger className="py-4 text-lg font-semibold hover:no-underline">Other Benchmarks</AccordionTrigger>
+								<AccordionTrigger className="py-4 text-lg font-semibold hover:no-underline">{t("otherBenchmarks")}</AccordionTrigger>
 								<AccordionContent className="pt-1">{otherBenchmarks}</AccordionContent>
 							</AccordionItem>
 						</Accordion>

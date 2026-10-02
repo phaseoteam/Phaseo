@@ -1,6 +1,7 @@
 import { CatalogNavigation } from "@/app/(dashboard)/internal/data/CatalogNavigation";
 import { requireInternalAdmin } from "@/lib/auth/requireInternalAdmin";
 import { connection } from "next/server";
+import { getTranslations } from "next-intl/server";
 import { Suspense } from "react";
 
 async function AuthenticatedCatalog({ children }: { children: React.ReactNode }) {
@@ -12,8 +13,9 @@ async function AuthenticatedCatalog({ children }: { children: React.ReactNode })
 	</div>;
 }
 
-export default function CatalogLayout({ children }: { children: React.ReactNode }) {
-	return <Suspense fallback={<p role="status" className="p-6 text-sm text-muted-foreground">Loading catalog…</p>}>
+export default async function CatalogLayout({ children }: { children: React.ReactNode }) {
+	const t = await getTranslations("Product.internalTools.dataEditor");
+	return <Suspense fallback={<p role="status" className="p-6 text-sm text-muted-foreground">{t("loadingCatalog")}</p>}>
 		<AuthenticatedCatalog>{children}</AuthenticatedCatalog>
 	</Suspense>;
 }

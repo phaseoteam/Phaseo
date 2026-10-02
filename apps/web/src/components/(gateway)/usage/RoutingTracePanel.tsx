@@ -1,7 +1,7 @@
 "use client";
 
 import { Check, ChevronDown, CircleHelp, CircleSlash2 } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { Logo } from "@/components/Logo";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
@@ -38,11 +38,11 @@ function number(value: unknown): number | null {
 	return Number.isFinite(parsed) ? parsed : null;
 }
 
-function formatNumber(value: unknown, digits = 4): string {
+function formatNumber(value: unknown, digits = 4, locale?: string): string {
 	const parsed = number(value);
 	if (parsed === null) return "—";
-	if (Math.abs(parsed) >= 1000) return parsed.toLocaleString(undefined, { maximumFractionDigits: 1 });
-	return parsed.toLocaleString(undefined, { maximumFractionDigits: digits });
+	if (Math.abs(parsed) >= 1000) return parsed.toLocaleString(locale, { maximumFractionDigits: 1 });
+	return parsed.toLocaleString(locale, { maximumFractionDigits: digits });
 }
 
 function label(value: string): string {
@@ -89,7 +89,7 @@ function MetricInfo({ metric }: { metric: string }) {
 	const metricKey = routingMetricKey(metric);
 	const metricLabel = isKnownRoutingMetric(metric)
 		? t(`routingTrace.metricLabels.${metricKey}` as never)
-		: label(metric);
+		: metric;
 	const description = isKnownRoutingMetric(metric)
 		? t(`routingTrace.metricDescriptions.${metricKey}` as never)
 		: t("routingTrace.unknownMetricDescription" as never);
@@ -107,6 +107,7 @@ function MetricInfo({ metric }: { metric: string }) {
 
 function MetricGrid({ values }: { values: Record<string, unknown> }) {
 	const t = useTranslations("SettingsUI");
+	const locale = useLocale();
 	return (
 		<div className="grid gap-x-6 gap-y-2 sm:grid-cols-2 xl:grid-cols-3">
 			{Object.entries(values).map(([key, value]) => (
@@ -115,12 +116,12 @@ function MetricGrid({ values }: { values: Record<string, unknown> }) {
 						<span className="truncate">
 							{isKnownRoutingMetric(key)
 								? t(`routingTrace.metricLabels.${routingMetricKey(key)}` as never)
-								: label(key)}
+								: key}
 						</span>
 						<MetricInfo metric={key} />
 					</span>
 					<code title={String(value ?? "")} className="min-w-0 break-words text-right text-xs font-medium tabular-nums text-foreground">
-						{typeof value === "number" ? formatNumber(value, 3) : String(value ?? "—")}
+						{typeof value === "number" ? formatNumber(value, 3, locale) : String(value ?? "—")}
 					</code>
 				</div>
 			))}
@@ -140,6 +141,7 @@ function CandidateCard({
 	routingMode: string;
 }) {
 	const t = useTranslations("SettingsUI");
+	const locale = useLocale();
 	const providerId = decision.provider_slug ?? "unknown";
 	const parsedScore = number(decision.score);
 	const score = parsedScore ?? 0;
@@ -218,7 +220,7 @@ function CandidateCard({
 						</div>
 					</div>
 					<div className="text-right">
-						<div title={parsedScore === null ? undefined : String(parsedScore)} className="font-mono text-sm font-semibold tabular-nums">{parsedScore === null ? "—" : formatNumber(score, 3)}</div>
+						<div title={parsedScore === null ? undefined : String(parsedScore)} className="font-mono text-sm font-semibold tabular-nums">{parsedScore === null ? "—" : formatNumber(score, 3, locale)}</div>
 						<div className="text-[10px] text-muted-foreground">{t("strings.Score" as never)}</div>
 					</div>
 					<ChevronDown className="size-4 shrink-0 text-muted-foreground transition-transform group-open/candidate:rotate-180" />
@@ -227,25 +229,25 @@ function CandidateCard({
 			<div className="space-y-4 pb-3 pl-10 pt-1">
 				{isExcluded ? (
 					<TraceGroup
-						title="Exclusion Reason"
+						title={t("strings.Exclusion Reason")}
 						values={{
-							stage: label(decision.exclusion_stage ?? "routing gate"),
-							reason: label(decision.exclusion_reason ?? "excluded"),
+							stage: decision.exclusion_stage ?? "routing_gate",
+							reason: decision.exclusion_reason ?? "excluded",
 						}}
 					/>
 				) : null}
-				{Object.keys(routingStatuses).length > 0 ? <TraceGroup title="Routing Status" values={routingStatuses} /> : null}
-				{Object.keys(normalizedFactors.active).length > 0 ? <TraceGroup title="Score breakdown" values={normalizedFactors.active} /> : null}
-				{Object.keys(trace).length === 0 && Object.keys(legacyFactors.active).length > 0 ? <TraceGroup title="Score breakdown" values={legacyFactors.active} /> : null}
+				{Object.keys(routingStatuses).length > 0 ? <TraceGroup title={t("strings.Routing Status")} values={routingStatuses} /> : null}
+				{Object.keys(normalizedFactors.active).length > 0 ? <TraceGroup title={t("usageGaps.scoreBreakdown")} values={normalizedFactors.active} /> : null}
+				{Object.keys(trace).length === 0 && Object.keys(legacyFactors.active).length > 0 ? <TraceGroup title={t("usageGaps.scoreBreakdown")} values={legacyFactors.active} /> : null}
 				{Object.keys(calculation).length + Object.keys(inputs).length + Object.keys(weights).length + Object.keys(recordedContext).length + Object.keys(contributions).length > 0 ? (
 					<details className="rounded-lg border border-border/60 bg-muted/20 px-3 py-2">
-						<summary className="cursor-pointer text-xs text-muted-foreground">Technical details</summary>
+						<summary className="cursor-pointer text-xs text-muted-foreground">{t("usageGaps.copyTechnicalDetails")}</summary>
 						<div className="mt-3 space-y-4">
-							{Object.keys(calculation).length > 0 ? <TraceGroup title="Calculation" values={calculation} /> : null}
-							{Object.keys(contributions).length > 0 ? <TraceGroup title="Contributions" values={contributions} /> : null}
-							{Object.keys(inputs).length > 0 ? <TraceGroup title="Recorded inputs" values={inputs} /> : null}
-							{Object.keys(weights).length > 0 ? <TraceGroup title="Weights" values={weights} /> : null}
-							{Object.keys(recordedContext).length > 0 ? <TraceGroup title="Recorded context" values={recordedContext} /> : null}
+							{Object.keys(calculation).length > 0 ? <TraceGroup title={t("strings.Calculation")} values={calculation} /> : null}
+							{Object.keys(contributions).length > 0 ? <TraceGroup title={t("usageGaps.contributions")} values={contributions} /> : null}
+							{Object.keys(inputs).length > 0 ? <TraceGroup title={t("usageGaps.recordedInputs")} values={inputs} /> : null}
+							{Object.keys(weights).length > 0 ? <TraceGroup title={t("strings.Weights")} values={weights} /> : null}
+							{Object.keys(recordedContext).length > 0 ? <TraceGroup title={t("usageGaps.recordedContext")} values={recordedContext} /> : null}
 						</div>
 					</details>
 				) : null}
@@ -255,10 +257,9 @@ function CandidateCard({
 }
 
 function TraceGroup({ title, values }: { title: string; values: Record<string, unknown> }) {
-	const t = useTranslations("SettingsUI");
 	return (
 		<div>
-			<div className="mb-1.5 text-[10px] font-semibold text-muted-foreground">{t(`strings.${title}` as never)}</div>
+			<div className="mb-1.5 text-[10px] font-semibold text-muted-foreground">{title}</div>
 			<MetricGrid values={values} />
 		</div>
 	);
@@ -274,6 +275,7 @@ export function RoutingTracePanel({
 	providerNames?: Map<string, string>;
 }) {
 	const t = useTranslations("SettingsUI");
+	const locale = useLocale();
 	const translateWithValues = t as unknown as (
 		key: string,
 		values: Record<string, string | number>,
@@ -301,21 +303,21 @@ export function RoutingTracePanel({
 						</div>
 					</div>
 					<div className="flex shrink-0 items-center gap-2 text-[11px] text-muted-foreground">
-						<span className="rounded-md bg-muted px-2 py-1">{label(mode)}</span>
+						<span className="rounded-md bg-muted px-2 py-1">{({ balanced: t("usageGaps.copyBalanced"), price: t("usageGaps.copyPrice"), latency: t("usageGaps.copyLatency"), throughput: t("usageGaps.copyThroughput") } as Record<string, string>)[mode] ?? mode}</span>
 						<ChevronDown className="size-3.5 transition-transform group-open/routing:rotate-180" />
 					</div>
 				</div>
 			</summary>
 
 			<details className="border-t border-border/60 py-2 text-xs text-muted-foreground">
-				<summary className="cursor-pointer">Decision metadata</summary>
+				<summary className="cursor-pointer">{t("usageGaps.metadata")}</summary>
 				<div className="my-3 flex items-center gap-1">{algorithm}{!trace?.algorithm_version ? <MetricInfo metric="partialTrace" /> : null}</div>
 				{trace ? (
-					<MetricGrid values={{ seed: formatNumber(trace.random_seed, 0), priority: String(trace.priority ?? "default"), candidatePool: formatNumber(trace.final_candidate_count, 0) }} />
+					<MetricGrid values={{ seed: formatNumber(trace.random_seed, 0, locale), priority: String(trace.priority ?? "default"), candidatePool: formatNumber(trace.final_candidate_count, 0, locale) }} />
 				) : null}
 				{trace?.selection_method ? (
 					<div className="mt-2 text-[11px] text-muted-foreground">
-						{t("strings.Selection method" as never)} <code className="text-foreground">{label(String(trace.selection_method))}</code>
+						{t("strings.Selection method" as never)} <code className="text-foreground">{String(trace.selection_method)}</code>
 					</div>
 				) : null}
 			</details>

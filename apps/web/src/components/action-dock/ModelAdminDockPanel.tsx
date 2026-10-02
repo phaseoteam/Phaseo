@@ -1,4 +1,5 @@
 "use client";
+import { useTranslations } from "next-intl";
 
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -15,6 +16,7 @@ export function ModelAdminDockPanel({
 	userId: string;
 	onSelect: (modelId: string) => void;
 }) {
+	const tx = useTranslations();
 	const [search, setSearch] = useState("");
 	const normalizedSearch = search.trim();
 	const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -40,27 +42,27 @@ export function ModelAdminDockPanel({
 					autoFocus
 					value={search}
 					onChange={(event) => setSearch(event.target.value)}
-					placeholder="Search models by name or ID"
-					aria-label="Search models by name or ID"
+					placeholder={tx("Product.internalTools.dataEditor.searchModelsPlaceholder" as never)}
+					aria-label={tx("Product.internalTools.dataEditor.searchModelsPlaceholder" as never)}
 					className="h-9 rounded-lg bg-muted/30 pl-8 text-sm"
 				/>
 			</div>
 
 			{normalizedSearch.length < 2 ? (
-				<p className="px-1 py-5 text-center text-sm text-muted-foreground">Type at least 2 characters to search.</p>
+				<p className="px-1 py-5 text-center text-sm text-muted-foreground">{tx("Common.ui.actionDockCopy.typeAtLeast2CharactersToSearch" as never)}</p>
 			) : isDebouncing || models.isPending ? (
 				<div className="flex items-center justify-center gap-2 py-8 text-sm text-muted-foreground">
-					<LoaderCircle className="size-4 animate-spin" />Searching models…
+					<LoaderCircle className="size-4 animate-spin" />{tx("Common.ui.actionDockCopy.searchingModels" as never)}
 				</div>
 			) : models.isError ? (
 				<div className="space-y-3 px-2 py-7 text-center">
-					<p role="alert" className="text-sm text-destructive">Models could not be searched.</p>
+					<p role="alert" className="text-sm text-destructive">{tx("Common.ui.actionDockCopy.modelsCouldNotBeSearched" as never)}</p>
 					<Button type="button" variant="outline" size="sm" onClick={() => void models.refetch()} disabled={models.isFetching}>
-						<RefreshCw className={models.isFetching ? "size-3.5 animate-spin" : "size-3.5"} />Try again
+						<RefreshCw className={models.isFetching ? "size-3.5 animate-spin" : "size-3.5"} />{tx("Common.ui.workspaceSwitcher.tryAgain" as never)}
 					</Button>
 				</div>
 			) : !models.data?.length ? (
-				<p className="px-2 py-7 text-center text-sm text-muted-foreground">No models found.</p>
+				<p className="px-2 py-7 text-center text-sm text-muted-foreground">{tx("Common.ui.modelSettingsDialog.noModelsFound" as never)}</p>
 			) : (
 				<ScrollArea className="max-h-72 rounded-lg border" viewportClassName="max-h-72">
 					<div className="space-y-0.5 p-1">

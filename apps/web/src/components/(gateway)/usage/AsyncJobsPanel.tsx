@@ -221,35 +221,36 @@ function buildUsageLogsFilterHref(args: {
 	return next.size ? `${path}?${next.toString()}` : path;
 }
 
-function formatMoneyFromNanos(value: number | null | undefined): string {
+function formatMoneyFromNanos(value: number | null | undefined, locale: string): string {
 	if (value == null || !Number.isFinite(value)) return "-";
-	return formatMoneyFromUsd(value / 1e9);
+	return formatMoneyFromUsd(value / 1e9, locale);
 }
 
-function formatMoneyFromUsd(value: number | null | undefined): string {
+function formatMoneyFromUsd(value: number | null | undefined, locale: string): string {
 	if (value == null || !Number.isFinite(value)) return "-";
-	return `$${value.toFixed(value !== 0 && Math.abs(value) < 0.00001 ? 9 : 5)}`;
+	const digits = value !== 0 && Math.abs(value) < 0.00001 ? 9 : 5;
+	return new Intl.NumberFormat(locale, { style: "currency", currency: "USD", minimumFractionDigits: digits, maximumFractionDigits: digits }).format(value);
 }
 
-function formatMilliseconds(value: number | null | undefined): string {
+function formatMilliseconds(value: number | null | undefined, locale: string): string {
 	if (value == null || !Number.isFinite(value)) return "-";
-	if (value < 1000) return `${Math.round(value)} ms`;
-	return `${(value / 1000).toFixed(2)} s`;
+	if (value < 1000) return new Intl.NumberFormat(locale, { style: "unit", unit: "millisecond", unitDisplay: "short", maximumFractionDigits: 0 }).format(value);
+	return new Intl.NumberFormat(locale, { style: "unit", unit: "second", unitDisplay: "short", minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value / 1000);
 }
 
-function formatSettledCost(job: AsyncJobRow | AsyncJobDetailRow): string {
-	if (job.settled_cost_nanos != null) return formatMoneyFromNanos(job.settled_cost_nanos);
-	if (job.settled_cost_usd != null) return formatMoneyFromUsd(job.settled_cost_usd);
+function formatSettledCost(job: AsyncJobRow | AsyncJobDetailRow, locale: string): string {
+	if (job.settled_cost_nanos != null) return formatMoneyFromNanos(job.settled_cost_nanos, locale);
+	if (job.settled_cost_usd != null) return formatMoneyFromUsd(job.settled_cost_usd, locale);
 	return "-";
 }
 
-function formatRequestCountSummary(job: AsyncJobDetailRow): string {
+function formatRequestCountSummary(job: AsyncJobDetailRow, translate: (key: "usageGaps.requestCounts", values: Record<string, number>) => string): string {
 	const counts = job.request_counts;
 	if (!counts) return "-";
 	const total = counts.total ?? 0;
 	const completed = counts.completed ?? 0;
 	const failed = counts.failed ?? 0;
-	return `${completed}/${total} completed, ${failed} failed`;
+	return translate("usageGaps.requestCounts", { completed, total, failed });
 }
 
 function formatRequestPricingLine(line: AsyncJobRequestPricingLine): string {
@@ -388,9 +389,11 @@ function kindIcon(kind: string) {
 }
 
 function AttemptStatusBadge({ status }: { status: string | null | undefined }) {
+	const t = useTranslations("SettingsUI");
+	const labels: Record<string, string> = { completed: t("realtimeCopy.copyCompleted"), delivered: t("usageGaps.delivered"), scheduled_retry: t("usageGaps.scheduledRetry"), pending: t("usageGaps.copyPending"), in_progress: t("realtimeCopy.copyInProgress"), failed: t("realtimeCopy.copyFailed"), failed_permanently: t("usageGaps.failedPermanently"), cancelled: t("realtimeCopy.copyCancelled") };
 	return (
 		<Badge variant="outline" className={webhookStatusBadgeClass(status)}>
-			{status ?? "unknown"}
+			{status ? labels[status] ?? status : t("realtimeCopy.copyUnknown")}
 		</Badge>
 	);
 }
@@ -545,14 +548,14 @@ function AsyncJobDetailSheet({
 								<DetailMetricTile
 									icon={Clock3}
 									label={s("Request cost")}
-									value={<span className="font-mono">{formatMoneyFromNanos(job.request_cost_nanos)}</span>}
+									value={<span className="font-mono">{formatMoneyFromNanos(job.request_cost_nanos, locale)}</span>}
 									tone="amber"
 									compact
 								/>
 								<DetailMetricTile
 									icon={Layers3}
 									label={s("Settled cost")}
-									value={<span className="font-mono">{formatSettledCost(job)}</span>}
+									value={<span className="font-mono">{formatSettledCost(job, locale)}</span>}
 									tone={job.charged ? "emerald" : "slate"}
 									compact
 								/>
@@ -601,7 +604,7 @@ function AsyncJobDetailSheet({
 									<DetailMetricTile
 										icon={Clock3}
 										label={s("Total duration")}
-										value={formatMilliseconds(job.total_duration_ms)}
+										value={formatMilliseconds(job.total_duration_ms, locale)}
 										tone="slate"
 										compact
 									/>
@@ -610,7 +613,7 @@ function AsyncJobDetailSheet({
 									<DetailMetricTile
 										icon={Clock3}
 										label={s("Latency")}
-										value={formatMilliseconds(job.latency_ms)}
+										value={formatMilliseconds(job.latency_ms, locale)}
 										tone="amber"
 										compact
 									/>
@@ -619,7 +622,7 @@ function AsyncJobDetailSheet({
 									<DetailMetricTile
 										icon={Clock3}
 										label={s("Generation")}
-										value={formatMilliseconds(job.generation_ms)}
+										value={formatMilliseconds(job.generation_ms, locale)}
 										tone="violet"
 										compact
 									/>
@@ -655,7 +658,7 @@ function AsyncJobDetailSheet({
 									<DetailMetricTile
 										icon={Send}
 										label={s("Request counts")}
-										value={formatRequestCountSummary(job)}
+										value={formatRequestCountSummary(job, t)}
 										tone="slate"
 										compact
 									/>
@@ -859,21 +862,21 @@ function AsyncJobDetailSheet({
 											label: s("Total duration"),
 											value:
 												job.kind === "video"
-													? formatMilliseconds(job.total_duration_ms)
+													? formatMilliseconds(job.total_duration_ms, locale)
 													: "-",
 										},
 										{
 											label: s("Latency"),
 											value:
 												job.kind === "video"
-													? formatMilliseconds(job.latency_ms)
+													? formatMilliseconds(job.latency_ms, locale)
 													: "-",
 										},
 										{
 											label: s("Generation"),
 											value:
 												job.kind === "video"
-													? formatMilliseconds(job.generation_ms)
+													? formatMilliseconds(job.generation_ms, locale)
 													: "-",
 										},
 										{
@@ -972,7 +975,7 @@ function AsyncJobDetailSheet({
 										},
 										{
 											label: s("Settled cost"),
-											value: <span className="font-mono">{formatSettledCost(job)}</span>,
+											value: <span className="font-mono">{formatSettledCost(job, locale)}</span>,
 										},
 										{
 											label: s("Request created"),
@@ -980,7 +983,7 @@ function AsyncJobDetailSheet({
 										},
 										{
 											label: s("Batch request counts"),
-											value: job.kind === "batch" ? formatRequestCountSummary(job) : "-",
+											value: job.kind === "batch" ? formatRequestCountSummary(job, t) : "-",
 										},
 									]}
 								/>
@@ -993,7 +996,7 @@ function AsyncJobDetailSheet({
 										items={[
 											{
 													label: s("Settled cost"),
-												value: <span className="font-mono">{formatSettledCost(job)}</span>,
+												value: <span className="font-mono">{formatSettledCost(job, locale)}</span>,
 											},
 											{
 													label: s("Pricing total nanos"),
@@ -1127,11 +1130,11 @@ function AsyncJobDetailSheet({
 											},
 											{
 													label: s("Request latency"),
-												value: formatMilliseconds(job.request_latency_ms),
+												value: formatMilliseconds(job.request_latency_ms, locale),
 											},
 											{
 													label: s("Request generation"),
-												value: formatMilliseconds(job.request_generation_ms),
+												value: formatMilliseconds(job.request_generation_ms, locale),
 											},
 											{
 													label: s("Provider attempts"),
@@ -1296,7 +1299,7 @@ function AsyncJobDetailSheet({
 																	: "-"}
 															</TableCell>
 															<TableCell>{attempt.outcome ?? "-"}</TableCell>
-															<TableCell>{formatMilliseconds(attempt.duration_ms)}</TableCell>
+															<TableCell>{formatMilliseconds(attempt.duration_ms, locale)}</TableCell>
 															<TableCell>
 																<div className="space-y-1">
 																	<div>{attempt.upstream_error_code ?? "-"}</div>
@@ -2011,18 +2014,16 @@ export default function AsyncJobsPanel({
 															</div>
 															<div className="grid grid-cols-[120px_1fr] gap-2">
 																<div className="text-muted-foreground">
-																	Relative
-																</div>
+																	{t("usageGaps.copyRelative")}</div>
 																<div className="font-mono">
 																	{relativeNowMs
-																		? formatRelativeToNow(date, relativeNowMs)
+																		? formatRelativeToNow(date, relativeNowMs, locale)
 																		: "-"}
 																</div>
 															</div>
 															<div className="grid grid-cols-[120px_1fr] gap-2">
 																<div className="text-muted-foreground">
-																	Timestamp
-																</div>
+																	{t("usageGaps.copyTimestamp")}</div>
 																<div className="font-mono">{unixSeconds}</div>
 															</div>
 														</div>
@@ -2108,8 +2109,8 @@ export default function AsyncJobsPanel({
 								<>
 									{job.settled_cost_nanos != null ||
 									job.settled_cost_usd != null
-										? formatSettledCost(job)
-										: formatMoneyFromNanos(job.request_cost_nanos)}
+										? formatSettledCost(job, locale)
+										: formatMoneyFromNanos(job.request_cost_nanos, locale)}
 								</>
 							);
 					}
@@ -2192,13 +2193,13 @@ export default function AsyncJobsPanel({
 										</TableCell>
 										<TableCell>
 											<div className="space-y-1 text-xs">
-												<div>{job.webhook.delivered_events} delivered</div>
+												<div>{t("usageGaps.deliveredCount", { count: job.webhook.delivered_events })}</div>
 												<div className="text-muted-foreground">
 													{job.webhook.pending_retries > 0
-														? `${job.webhook.pending_retries} pending retry`
+														? t("usageGaps.pendingRetries", { count: job.webhook.pending_retries })
 														: job.webhook.configured
-															? "No pending retries"
-															: "No webhook configured"}
+															? t("usageGaps.noPendingRetries")
+															: t("usageGaps.noWebhook")}
 												</div>
 											</div>
 										</TableCell>

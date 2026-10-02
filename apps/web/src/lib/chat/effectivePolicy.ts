@@ -12,6 +12,7 @@ export type WorkspacePolicyBlockedReason = {
 	source: "workspace" | "guardrail";
 	label: string;
 	settingsHref: string;
+	guardrailName?: string;
 };
 
 function blocked(rule: ChatRestriction | null | undefined, candidates: string[]) {
@@ -34,7 +35,7 @@ export function getWorkspacePolicyBlockedReasons(
 	}
 	for (const guardrail of policy.guardrails) {
 		if (blocked(guardrail.provider, providerIds) || blocked(guardrail.model, modelIds)) {
-			reasons.push({ source: "guardrail", label: `Blocked by ${guardrail.name}`, settingsHref: `/settings/guardrails/${guardrail.id}` });
+			reasons.push({ source: "guardrail", guardrailName: guardrail.name, label: `Blocked by ${guardrail.name}`, settingsHref: `/settings/guardrails/${guardrail.id}` });
 		}
 	}
 	return reasons;

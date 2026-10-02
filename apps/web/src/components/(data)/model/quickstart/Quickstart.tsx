@@ -1,6 +1,6 @@
 // src/components/gateway/Quickstart.tsx
 "use client";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import {
 	Check,
 	Copy,
@@ -1947,7 +1947,7 @@ console.log(response);`
 							>
 								2
 							</Badge>
-							<h3 className="text-base font-semibold">Add a provider key</h3>
+							<h3 className="text-base font-semibold">{t("addProviderKey")}</h3>
 						</div>
 						<div className="flex flex-col gap-3 rounded-lg border border-border/70 bg-muted/20 p-3 sm:flex-row sm:items-center sm:justify-between">
 							<div className="flex min-w-0 items-start gap-3">
@@ -1955,9 +1955,9 @@ console.log(response);`
 									<KeyRound className="h-4 w-4" />
 								</div>
 								<div>
-									<p className="text-sm font-medium">Provider key required</p>
+									<p className="text-sm font-medium">{t("providerKeyRequired")}</p>
 									<p className="mt-0.5 text-sm text-muted-foreground">
-										Add your own {byokOnlyProviders.map((provider) => provider.providerName).join(" or ")} credential before sending this request.
+										{t("byokCredential", {providers: new Intl.ListFormat(locale, {style: "long", type: "disjunction"}).format(byokOnlyProviders.map((provider) => provider.providerName))})}
 									</p>
 								</div>
 							</div>
@@ -1965,7 +1965,7 @@ console.log(response);`
 								{byokOnlyProviders.map((provider) => (
 									<Button key={provider.providerId} asChild size="sm" variant="outline" className="bg-background">
 										<Link href={`/settings/byok/${provider.providerId}`}>
-											Add {provider.providerName} key
+											{t("addNamedProviderKey", {provider: provider.providerName})}
 										</Link>
 									</Button>
 								))}

@@ -361,6 +361,7 @@ function RequestPulse({
 }
 
 function UptimeVisual({ variant = "default" }: { variant?: QuickstartVariant }) {
+	const landingT = useTranslations("SettingsUI.landingGaps");
 	const t = useTranslations("Site.homeQuickstart");
 	if (variant === "beta") {
 		return (
@@ -429,7 +430,7 @@ function UptimeVisual({ variant = "default" }: { variant?: QuickstartVariant }) 
 					<div className="rounded-2xl border border-zinc-200/80 bg-white/96 px-3 py-3 dark:border-zinc-800 dark:bg-zinc-950/96">
 						<div className="grid grid-cols-[1fr_auto_1fr_auto_1fr] items-center gap-2">
 							<div className="rounded-xl border border-zinc-200/80 bg-zinc-50/70 px-2 py-2 text-center dark:border-zinc-800 dark:bg-zinc-900/70">
-								<p className="text-[10px] font-semibold text-zinc-800 dark:text-zinc-100">App</p>
+								<p className="text-[10px] font-semibold text-zinc-800 dark:text-zinc-100">{landingT("copyApp")}</p>
 							</div>
 							<span className="text-[11px] font-semibold text-zinc-500 dark:text-zinc-400">↔</span>
 							<div className="rounded-xl border border-zinc-200/80 bg-zinc-50/70 px-2 py-2 text-center dark:border-zinc-800 dark:bg-zinc-900/70">
@@ -437,7 +438,7 @@ function UptimeVisual({ variant = "default" }: { variant?: QuickstartVariant }) 
 							</div>
 							<span className="text-[11px] font-semibold text-zinc-500 dark:text-zinc-400">↔</span>
 							<div className="rounded-xl border border-zinc-200/80 bg-zinc-50/70 px-2 py-2 text-center dark:border-zinc-800 dark:bg-zinc-900/70">
-								<p className="text-[10px] font-semibold text-zinc-800 dark:text-zinc-100">Providers</p>
+								<p className="text-[10px] font-semibold text-zinc-800 dark:text-zinc-100">{landingT("copyProviders")}</p>
 							</div>
 						</div>
 						<div className="mt-2.5 flex items-center justify-center gap-1.5">

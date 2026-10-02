@@ -1,5 +1,5 @@
-import Link from "next/link";
-import { getTranslations } from "next-intl/server";
+import { Link } from "@/i18n/navigation";
+import { getLocale, getTranslations } from "next-intl/server";
 import { fetchAdminCatalogList } from "@/lib/fetchers/internal/fetchAdminCatalog";
 
 const PAGE_SIZE = 100;
@@ -10,6 +10,7 @@ export default async function InternalModelsPage({
 	searchParams: Promise<{ q?: string; page?: string; attention?: string }>;
 }) {
 	const t = await getTranslations("Product.internalTools.dataEditor");
+	const locale = await getLocale();
 	const params = await searchParams;
 	const queryText = (params.q ?? "").trim().replace(/[(),]/g, " ");
 	const currentPage = Math.max(1, Number.parseInt(params.page ?? "1", 10) || 1);
@@ -34,17 +35,17 @@ export default async function InternalModelsPage({
 			<div className="flex flex-col items-stretch justify-between gap-3 lg:flex-row lg:items-start">
 				<div>
 					<h1 className="text-2xl font-semibold">{t("modelsTitle")}</h1>
-					<p className="text-sm text-muted-foreground">{totalRows.toLocaleString()} {t("records")}{attention === "hidden" ? " · " + t("hiddenModels") : attention === "missing-organisation" ? " · " + t("missingOrganisation") : ""}</p>
+					<p className="text-sm text-muted-foreground">{totalRows.toLocaleString(locale)} {t("records")}{attention === "hidden" ? " · " + t("hiddenModels") : attention === "missing-organisation" ? " · " + t("missingOrganisation") : ""}</p>
 				</div>
 				<Link href="/internal/data/models/new" className="w-full rounded-md border px-3 py-1.5 text-center text-sm hover:bg-muted/40 lg:w-auto">
 					{t("newModel")}
 				</Link>
 			</div>
-			<form className="flex flex-col gap-3 sm:flex-row" action="/internal/data/models" method="get">
+			<form className="flex flex-col gap-3 sm:flex-row" action={`/${locale}/internal/data/models`} method="get">
 				{attention ? <input type="hidden" name="attention" value={attention} /> : null}
 				<input
 					name="q"
-					aria-label="Search models by name or ID"
+					aria-label={t("searchModelsPlaceholder")}
 					defaultValue={queryText}
 					placeholder={t("searchModelsPlaceholder")}
 					className="w-full rounded-md border px-3 py-2 text-sm sm:max-w-md"
@@ -53,15 +54,15 @@ export default async function InternalModelsPage({
 					{t("search")}
 				</button>
 			</form>
-			<nav aria-label="Model filters" className="flex flex-wrap gap-2 text-sm">
-				{[{ value: "", label: "All models" }, { value: "hidden", label: "Hidden" }, { value: "missing-organisation", label: "Missing organisation" }].map((filter) => {
+			<nav aria-label={t("modelFilters")} className="flex flex-wrap gap-2 text-sm">
+				{[{ value: "", label: t("allModels") }, { value: "hidden", label: t("hidden") }, { value: "missing-organisation", label: t("missingOrganisation") }].map((filter) => {
 					const query = new URLSearchParams();
 					if (queryText) query.set("q", queryText);
 					if (filter.value) query.set("attention", filter.value);
 					return <Link key={filter.value} href={`?${query}`} aria-current={(attention ?? "") === filter.value ? "page" : undefined} className={`inline-flex min-h-11 items-center rounded-md border px-3 ${(attention ?? "") === filter.value ? "bg-muted font-medium" : "hover:bg-muted/40"}`}>{filter.label}</Link>;
 				})}
 			</nav>
-			{!rows.length ? <div className="rounded-lg border border-dashed px-4 py-12 text-center"><p className="font-medium">No models found</p><p className="mt-1 text-sm text-muted-foreground">Try a different name or clear your filters.</p><Link href="/internal/data/models" className="mt-4 inline-flex min-h-11 items-center text-sm underline">Clear search and filters</Link></div> : null}
+			{!rows.length ? <div className="rounded-lg border border-dashed px-4 py-12 text-center"><p className="font-medium">{t("noModels")}</p><p className="mt-1 text-sm text-muted-foreground">{t("tryDifferentSearch")}</p><Link href="/internal/data/models" className="mt-4 inline-flex min-h-11 items-center text-sm underline">{t("clearSearchFilters")}</Link></div> : null}
 			<div className="grid gap-2 2xl:grid-cols-2">
 				{rows.map((row: any) => (
 					<Link

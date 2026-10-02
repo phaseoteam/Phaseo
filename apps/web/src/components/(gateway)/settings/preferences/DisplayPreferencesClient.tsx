@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useLocale, useTranslations } from "next-intl";
 import { Check, Loader2, Monitor, Moon, RotateCcw, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
 import { toast } from "sonner";
@@ -42,14 +43,6 @@ import {
 	type DisplayLightPalette,
 } from "@/lib/displayPreferences";
 
-const PALETTE_LABELS = {
-	phaseo: "Phaseo",
-	paper: "Paper",
-	warm: "Warm",
-	slate: "Slate",
-	midnight: "Midnight",
-} as const;
-
 const PALETTE_SWATCHES = {
 	light: {
 		phaseo: ["#ffffff", "#f5f5f5", "#171717"],
@@ -65,7 +58,7 @@ const PALETTE_SWATCHES = {
 
 type ThemePreset = {
 	id: string;
-	name: string;
+	nameKey: "phaseo" | "carbon" | "midnight" | "forest" | "ember" | "orchid";
 	lightPalette: DisplayLightPalette;
 	darkPalette: DisplayDarkPalette;
 	lightAccent: string;
@@ -75,7 +68,7 @@ type ThemePreset = {
 const THEME_PRESETS: readonly ThemePreset[] = [
 	{
 		id: "phaseo",
-		name: "Phaseo",
+		nameKey: "phaseo",
 		lightPalette: "phaseo",
 		darkPalette: "phaseo",
 		lightAccent: "#0069a8",
@@ -83,7 +76,7 @@ const THEME_PRESETS: readonly ThemePreset[] = [
 	},
 	{
 		id: "carbon",
-		name: "Carbon",
+		nameKey: "carbon",
 		lightPalette: "paper",
 		darkPalette: "slate",
 		lightAccent: "#334155",
@@ -91,7 +84,7 @@ const THEME_PRESETS: readonly ThemePreset[] = [
 	},
 	{
 		id: "midnight",
-		name: "Midnight",
+		nameKey: "midnight",
 		lightPalette: "paper",
 		darkPalette: "midnight",
 		lightAccent: "#4f46e5",
@@ -99,7 +92,7 @@ const THEME_PRESETS: readonly ThemePreset[] = [
 	},
 	{
 		id: "forest",
-		name: "Forest",
+		nameKey: "forest",
 		lightPalette: "warm",
 		darkPalette: "slate",
 		lightAccent: "#15803d",
@@ -107,7 +100,7 @@ const THEME_PRESETS: readonly ThemePreset[] = [
 	},
 	{
 		id: "ember",
-		name: "Ember",
+		nameKey: "ember",
 		lightPalette: "warm",
 		darkPalette: "midnight",
 		lightAccent: "#c2410c",
@@ -115,7 +108,7 @@ const THEME_PRESETS: readonly ThemePreset[] = [
 	},
 	{
 		id: "orchid",
-		name: "Orchid",
+		nameKey: "orchid",
 		lightPalette: "paper",
 		darkPalette: "midnight",
 		lightAccent: "#7c3aed",
@@ -125,9 +118,9 @@ const THEME_PRESETS: readonly ThemePreset[] = [
 
 const PREVIEW_DATE = new Date("2026-09-19T16:35:00.000Z");
 const APPEARANCE_MODES = [
-	{ value: "system", label: "System Default", icon: Monitor },
-	{ value: "light", label: "Light", icon: Sun },
-	{ value: "dark", label: "Dark", icon: Moon },
+	{ value: "system", labelKey: "system", icon: Monitor },
+	{ value: "light", labelKey: "light", icon: Sun },
+	{ value: "dark", labelKey: "dark", icon: Moon },
 ] as const;
 const FALLBACK_TIME_ZONES = [
 	"UTC",
@@ -193,6 +186,7 @@ function PreferenceRow({
 	preview?: React.ReactNode;
 	children: React.ReactNode;
 }) {
+	const t = useTranslations("SettingsUI");
 	return (
 		<div data-slot="preference-row" className="grid gap-3 border-t border-border/60 py-3.5 first:border-t-0 md:grid-cols-[minmax(0,1fr)_minmax(18rem,26rem)] md:items-start">
 			<div className="max-w-xl md:pt-1">
@@ -203,7 +197,7 @@ function PreferenceRow({
 				{children}
 				{preview ? (
 					<div className="flex items-baseline justify-between gap-4 px-1 text-xs">
-						<span className="font-medium text-muted-foreground/70">Preview</span>
+						<span className="font-medium text-muted-foreground/70">{t("preferencesCopy.preview")}</span>
 						<span className="truncate text-right font-medium tabular-nums text-foreground/80">{preview}</span>
 					</div>
 				) : null}
@@ -272,6 +266,7 @@ function PalettePicker<T extends string>({
 	options: readonly T[];
 	palette: "light" | "dark";
 }) {
+	const t = useTranslations("SettingsUI");
 	return (
 		<div role="radiogroup" aria-label={ariaLabel} className="grid grid-cols-3 gap-2 sm:w-80">
 			{options.map((option) => {
@@ -294,7 +289,7 @@ function PalettePicker<T extends string>({
 							<span className="w-2" style={{ backgroundColor: swatches[2] }} />
 						</span>
 						<span className="block truncate text-xs font-medium">
-							{PALETTE_LABELS[option as keyof typeof PALETTE_LABELS]}
+							{option === "phaseo" ? "Phaseo" : t(`preferencesCopy.${option as "paper" | "warm" | "slate" | "midnight"}`)}
 						</span>
 						{active ? <Check className="absolute right-1.5 top-1.5 size-3.5 rounded-full bg-primary p-0.5 text-primary-foreground" /> : null}
 					</button>
@@ -305,11 +300,12 @@ function PalettePicker<T extends string>({
 }
 
 function AppearanceModePicker() {
+	const t = useTranslations("SettingsUI");
 	const { theme, setTheme } = useTheme();
 	const selected = APPEARANCE_MODES.find((mode) => mode.value === theme)?.value ?? "system";
 
 	return (
-		<div role="radiogroup" aria-label="Appearance mode" className="grid grid-cols-3 gap-2">
+		<div role="radiogroup" aria-label={t("preferencesCopy.appearanceMode")} className="grid grid-cols-3 gap-2">
 			{APPEARANCE_MODES.map((mode) => {
 				const Icon = mode.icon;
 				const active = selected === mode.value;
@@ -323,7 +319,7 @@ function AppearanceModePicker() {
 						className={`flex h-10 items-center justify-center gap-1.5 rounded-md border px-2 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${active ? "border-primary/70 bg-primary/10 text-primary" : "border-border bg-background text-muted-foreground hover:border-muted-foreground/50 hover:text-foreground"}`}
 					>
 						<Icon className="size-3.5 shrink-0" aria-hidden="true" />
-						<span className="truncate">{mode.label}</span>
+						<span className="truncate">{t(`preferencesCopy.${mode.labelKey}`)}</span>
 					</button>
 				);
 			})}
@@ -340,6 +336,7 @@ function AccentPicker({
 	value: string;
 	onChange: (value: string) => void;
 }) {
+	const t = useTranslations("SettingsUI");
 	return (
 		<Popover>
 			<PopoverTrigger asChild>
@@ -357,15 +354,14 @@ function AccentPicker({
 						/>
 						<span className="font-mono text-xs uppercase text-foreground">{value}</span>
 					</span>
-					<span className="text-xs text-muted-foreground">Edit</span>
+					<span className="text-xs text-muted-foreground">{t("preferencesCopy.edit")}</span>
 				</Button>
 			</PopoverTrigger>
 			<PopoverContent align="end" className="w-72 gap-3 p-3">
 				<PopoverHeader>
-					<PopoverTitle className="text-sm">Accent colour</PopoverTitle>
+					<PopoverTitle className="text-sm">{t("preferencesCopy.accentColour")}</PopoverTitle>
 					<PopoverDescription className="text-xs">
-						Drag across the field or enter an exact value.
-					</PopoverDescription>
+						{t("preferencesCopy.colourHelp")}</PopoverDescription>
 				</PopoverHeader>
 				<ColorPicker value={value} onChange={(next) => onChange(next.toLowerCase())} />
 			</PopoverContent>
@@ -405,22 +401,22 @@ function ThemePresetPicker({
 	preferences: DisplayPreferences;
 	onChange: (preset: ThemePreset) => void;
 }) {
+	const t = useTranslations("SettingsUI");
 	const activePreset = THEME_PRESETS.find((preset) => presetMatches(preferences, preset));
 
 	return (
 		<div className="border-t border-border/60 py-4">
 			<div className="flex items-start justify-between gap-4">
 				<div>
-					<p className="text-sm font-medium">Preset</p>
+					<p className="text-sm font-medium">{t("preferencesCopy.preset")}</p>
 					<p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-						Apply a coordinated light and dark theme in one click.
-					</p>
+						{t("preferencesCopy.presetHelp")}</p>
 				</div>
 				<span className="rounded-full border border-border/70 bg-muted/30 px-2.5 py-1 text-xs font-medium text-muted-foreground">
-					{activePreset?.name ?? "Custom"}
+					{activePreset ? activePreset.nameKey === "phaseo" ? "Phaseo" : t(`preferencesCopy.${activePreset.nameKey}`) : t("preferencesCopy.custom")}
 				</span>
 			</div>
-			<div role="radiogroup" aria-label="Theme preset" className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
+			<div role="radiogroup" aria-label={t("preferencesCopy.themePreset")} className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
 				{THEME_PRESETS.map((preset) => {
 					const active = activePreset?.id === preset.id;
 					const light = PALETTE_SWATCHES.light[preset.lightPalette];
@@ -443,7 +439,7 @@ function ThemePresetPicker({
 									<span className="absolute bottom-1 right-1 size-2 rounded-full ring-1 ring-white/20" style={{ backgroundColor: preset.darkAccent }} />
 								</span>
 							</span>
-							<span className="mt-2 block truncate text-xs font-medium">{preset.name}</span>
+							<span className="mt-2 block truncate text-xs font-medium">{preset.nameKey === "phaseo" ? "Phaseo" : t(`preferencesCopy.${preset.nameKey}`)}</span>
 							{active ? <Check className="absolute right-1.5 top-1.5 size-3.5 rounded-full bg-primary p-0.5 text-primary-foreground" /> : null}
 						</button>
 					);
@@ -458,6 +454,8 @@ export default function DisplayPreferencesClient({
 }: {
 	initialPreferences: DisplayPreferences;
 }) {
+	const t = useTranslations("SettingsUI");
+	const locale = useLocale();
 	const {
 		isHydrated: displayPreferencesHydrated,
 		setPreferences: applyPreferences,
@@ -497,13 +495,14 @@ export default function DisplayPreferencesClient({
 			return [
 				{
 					value: "system",
-					label: `System Default (${systemTimeZone.replaceAll("_", " ")}, ${systemOffset})`,
+					label: t("preferencesCopy.systemTimeZone", { timeZone: systemTimeZone.replaceAll("_", " "), offset: systemOffset }),
 				},
 				...options,
 			];
 		},
-		[systemTimeZone, timeZoneOffsetDate, timeZones],
+		[systemTimeZone, timeZoneOffsetDate, timeZones, t],
 	);
+	const previewPreferences = { ...preferences, locale: preferences.locale === "system" ? locale : preferences.locale };
 	const dirty = JSON.stringify(preferences) !== JSON.stringify(savedPreferences);
 
 	React.useEffect(() => {
@@ -537,9 +536,9 @@ export default function DisplayPreferencesClient({
 				setPreferences(result.preferences);
 				setSavedPreferences(result.preferences);
 				applyPreferences(result.preferences);
-				toast.success("Display preferences saved");
-			} catch (error) {
-				toast.error(error instanceof Error ? error.message : "Could not save display preferences");
+				toast.success(t("preferencesCopy.saved"));
+			} catch {
+				toast.error(t("preferencesCopy.saveFailed"));
 			}
 		});
 	}
@@ -548,18 +547,18 @@ export default function DisplayPreferencesClient({
 		<div className="space-y-9 pb-2">
 			<SettingsSection
 				id="experience-heading"
-				title="Experience"
-				description="Choose how the interface is arranged and where you start."
+				title={t("preferencesCopy.experience")}
+				description={t("preferencesCopy.experienceHelp")}
 			>
 				<PreferenceRow
-					title="Interface density"
-					description="Adjust spacing in tables, menus, controls, and settings."
-					preview={preferences.density === "compact" ? "Compact spacing" : "Comfortable spacing"}
+					title={t("preferencesCopy.density")}
+					description={t("preferencesCopy.densityHelp")}
+					preview={preferences.density === "compact" ? t("preferencesCopy.compactSpacing") : t("preferencesCopy.comfortableSpacing")}
 				>
-					<div role="radiogroup" aria-label="Interface density" className="grid grid-cols-2 gap-2">
+					<div role="radiogroup" aria-label={t("preferencesCopy.density")} className="grid grid-cols-2 gap-2">
 						{([
-							{ value: "comfortable", label: "Comfortable" },
-							{ value: "compact", label: "Compact" },
+							{ value: "comfortable", label: t("preferencesCopy.comfortable") },
+							{ value: "compact", label: t("preferencesCopy.compact") },
 						] as const).map((option) => {
 							const active = preferences.density === option.value;
 							return (
@@ -578,8 +577,8 @@ export default function DisplayPreferencesClient({
 					</div>
 				</PreferenceRow>
 				<PreferenceRow
-					title="Code language"
-					description="Sets the initial language shown in code examples."
+					title={t("preferencesCopy.codeLanguage")}
+					description={t("preferencesCopy.codeLanguageHelp")}
 					preview={{
 						typescript: "const response = await phaseo.generateText(…)",
 						python: "response = phaseo.generate_text(…)",
@@ -587,7 +586,7 @@ export default function DisplayPreferencesClient({
 					}[preferences.codeLanguage]}
 				>
 					<PreferenceSelect
-						ariaLabel="Default code language"
+						ariaLabel={t("preferencesCopy.defaultCodeLanguage")}
 						value={preferences.codeLanguage}
 						onChange={(value) => update("codeLanguage", value)}
 						options={[
@@ -598,19 +597,19 @@ export default function DisplayPreferencesClient({
 					/>
 				</PreferenceRow>
 				<PreferenceRow
-					title="Landing page"
-					description="Used after sign-in when you did not follow a link to a specific page."
+					title={t("preferencesCopy.landingPage")}
+					description={t("preferencesCopy.landingPageHelp")}
 					preview={{ home: "/", models: "/models", chat: "/chat", monitor: "/monitor" }[preferences.landingPage]}
 				>
 					<PreferenceSelect
-						ariaLabel="Default landing page"
+						ariaLabel={t("preferencesCopy.defaultLandingPage")}
 						value={preferences.landingPage}
 						onChange={(value) => update("landingPage", value)}
 						options={[
-							{ value: "home", label: "Home" },
-							{ value: "models", label: "Models" },
-							{ value: "chat", label: "Chat" },
-							{ value: "monitor", label: "Monitor" },
+							{ value: "home", label: t("preferencesCopy.home") },
+							{ value: "models", label: t("preferencesCopy.models") },
+							{ value: "chat", label: t("preferencesCopy.chat") },
+							{ value: "monitor", label: t("preferencesCopy.monitor") },
 						]}
 					/>
 				</PreferenceRow>
@@ -618,86 +617,86 @@ export default function DisplayPreferencesClient({
 
 			<SettingsSection
 				id="date-time-heading"
-				title="Date and time"
-				description="Control how dates and times are presented throughout the product. UTC-only diagnostics stay unchanged."
+				title={t("preferencesCopy.dateTime")}
+				description={t("preferencesCopy.dateTimeHelp")}
 			>
 				<PreferenceRow
-					title="Locale"
-					description="Controls month names, ordering, punctuation, and digit grouping."
-					preview={`${formatDisplayDate(PREVIEW_DATE, preferences)} · ${formatDisplayNumber(1_234_567.89, preferences, { maximumFractionDigits: 2 })}`}
+					title={t("preferencesCopy.locale")}
+					description={t("preferencesCopy.localeHelp")}
+					preview={`${formatDisplayDate(PREVIEW_DATE, previewPreferences)} · ${formatDisplayNumber(1_234_567.89, previewPreferences, { maximumFractionDigits: 2 })}`}
 				>
 					<PreferenceSelect
-						ariaLabel="Display locale"
+						ariaLabel={t("preferencesCopy.displayLocale")}
 						value={preferences.locale}
 						onChange={(value) => update("locale", value)}
 						options={[
-							{ value: "system", label: "System Default" },
-							{ value: "en-GB", label: "English (United Kingdom)" },
-							{ value: "en-US", label: "English (United States)" },
+							{ value: "system", label: t("preferencesCopy.system") },
+							{ value: "en-GB", label: t("preferencesCopy.englishUK") },
+							{ value: "en-US", label: t("preferencesCopy.englishUS") },
 						]}
 					/>
 				</PreferenceRow>
 				<PreferenceRow
-					title="Date format"
-					description="Use a familiar regional style or an unambiguous ISO date."
-					preview={formatDisplayDate(PREVIEW_DATE, preferences)}
+					title={t("preferencesCopy.dateFormat")}
+					description={t("preferencesCopy.dateFormatHelp")}
+					preview={formatDisplayDate(PREVIEW_DATE, previewPreferences)}
 				>
 					<PreferenceSelect
-						ariaLabel="Date format"
+						ariaLabel={t("preferencesCopy.dateFormat")}
 						value={preferences.dateStyle}
 						onChange={(value) => update("dateStyle", value)}
 						options={[
-							{ value: "short", label: "Short" },
-							{ value: "medium", label: "Medium" },
-							{ value: "long", label: "Long" },
+							{ value: "short", label: t("preferencesCopy.short") },
+							{ value: "medium", label: t("preferencesCopy.medium") },
+							{ value: "long", label: t("preferencesCopy.long") },
 							{ value: "iso", label: "ISO (YYYY-MM-DD)" },
 						]}
 					/>
 				</PreferenceRow>
 				<PreferenceRow
-					title="Time zone"
-					description={`System Default currently uses ${systemTimeZone.replaceAll("_", " ")}. Search by city or region.`}
-					preview={formatDisplayDateTime(PREVIEW_DATE, preferences)}
+					title={t("preferencesCopy.timeZone")}
+					description={t("preferencesCopy.timeZoneHelp", { timeZone: systemTimeZone.replaceAll("_", " ") })}
+					preview={formatDisplayDateTime(PREVIEW_DATE, previewPreferences)}
 				>
 					<SearchableSelect
-						label="Time zone"
+						label={t("preferencesCopy.timeZone")}
 						value={preferences.timeZone}
 						onValueChange={(value) => update("timeZone", value)}
 						options={timeZoneOptions}
-						placeholder="Choose a time zone"
+						placeholder={t("preferencesCopy.chooseTimeZone")}
 						showScrollbar
 						triggerClassName="h-10 min-h-10"
 					/>
 				</PreferenceRow>
 				<PreferenceRow
-					title="Clock"
-					description="Choose a 12-hour or 24-hour clock."
-					preview={formatDisplayTime(PREVIEW_DATE, preferences)}
+					title={t("preferencesCopy.clock")}
+					description={t("preferencesCopy.clockHelp")}
+					preview={formatDisplayTime(PREVIEW_DATE, previewPreferences)}
 				>
 					<PreferenceSelect
-						ariaLabel="Clock format"
+						ariaLabel={t("preferencesCopy.clockFormat")}
 						value={preferences.hourCycle}
 						onChange={(value) => update("hourCycle", value)}
 						options={[
-							{ value: "system", label: "System Default" },
-							{ value: "12h", label: "12-Hour" },
-							{ value: "24h", label: "24-Hour" },
+							{ value: "system", label: t("preferencesCopy.system") },
+							{ value: "12h", label: t("preferencesCopy.12h") },
+							{ value: "24h", label: t("preferencesCopy.24h") },
 						]}
 					/>
 				</PreferenceRow>
 				<PreferenceRow
-					title="Recent times"
-					description="Contextual uses relative labels for events within the last day."
-					preview={formatDisplayTimestamp("2026-09-19T15:35:00.000Z", preferences, PREVIEW_DATE)}
+					title={t("preferencesCopy.recentTimes")}
+					description={t("preferencesCopy.recentTimesHelp")}
+					preview={formatDisplayTimestamp("2026-09-19T15:35:00.000Z", previewPreferences, PREVIEW_DATE)}
 				>
 					<PreferenceSelect
-						ariaLabel="Recent timestamp style"
+						ariaLabel={t("preferencesCopy.recentTimestampStyle")}
 						value={preferences.relativeTime}
 						onChange={(value) => update("relativeTime", value)}
 						options={[
-							{ value: "contextual", label: "Contextual" },
-							{ value: "relative", label: "Always Relative" },
-							{ value: "absolute", label: "Always Absolute" },
+							{ value: "contextual", label: t("preferencesCopy.contextual") },
+							{ value: "relative", label: t("preferencesCopy.relative") },
+							{ value: "absolute", label: t("preferencesCopy.absolute") },
 						]}
 					/>
 				</PreferenceRow>
@@ -705,22 +704,22 @@ export default function DisplayPreferencesClient({
 
 			<SettingsSection
 				id="privacy-heading"
-				title="Privacy"
-				description="Control how personal information is shown on this account."
+				title={t("preferencesCopy.privacy")}
+				description={t("preferencesCopy.privacyHelp")}
 			>
 				<PreferenceRow
-					title="Mask sensitive data"
-					description="Blur email addresses, payment details, and other personal values by default. You can reveal individual values when needed."
+					title={t("preferencesCopy.maskSensitiveData")}
+					description={t("preferencesCopy.maskSensitiveDataHelp")}
 					preview={preferences.maskSensitiveData ? "dan•••@example.com" : "daniel@example.com"}
 				>
 					<div className="flex h-10 items-center justify-between rounded-md border border-border px-3">
 						<span className="text-sm text-muted-foreground">
-							{preferences.maskSensitiveData ? "Masked by default" : "Shown by default"}
+							{preferences.maskSensitiveData ? t("preferencesCopy.masked") : t("preferencesCopy.shown")}
 						</span>
 						<Switch
 							checked={preferences.maskSensitiveData}
 							onCheckedChange={(checked) => update("maskSensitiveData", Boolean(checked))}
-							aria-label="Mask sensitive data"
+							aria-label={t("preferencesCopy.maskSensitiveData")}
 						/>
 					</div>
 				</PreferenceRow>
@@ -728,21 +727,21 @@ export default function DisplayPreferencesClient({
 
 			<SettingsSection
 				id="numbers-heading"
-				title="Numbers"
-				description="Choose how large values are presented in dashboards and summaries."
+				title={t("preferencesCopy.numbers")}
+				description={t("preferencesCopy.numbersHelp")}
 			>
 				<PreferenceRow
-					title="Number format"
-					description="Compact notation shortens large dashboard values, for example 1.2M."
-					preview={formatDisplayNumber(1_234_567.89, preferences, { maximumFractionDigits: 2 })}
+					title={t("preferencesCopy.numberFormat")}
+					description={t("preferencesCopy.numberFormatHelp")}
+					preview={formatDisplayNumber(1_234_567.89, previewPreferences, { maximumFractionDigits: 2 })}
 				>
 					<PreferenceSelect
-						ariaLabel="Number format"
+						ariaLabel={t("preferencesCopy.numberFormat")}
 						value={preferences.numberNotation}
 						onChange={(value) => update("numberNotation", value)}
 						options={[
-							{ value: "standard", label: "Standard" },
-							{ value: "compact", label: "Compact" },
+							{ value: "standard", label: t("preferencesCopy.standard") },
+							{ value: "compact", label: t("preferencesCopy.compact") },
 						]}
 					/>
 				</PreferenceRow>
@@ -750,41 +749,41 @@ export default function DisplayPreferencesClient({
 
 			<SettingsSection
 				id="appearance-heading"
-				title="Appearance"
-				description="Build a coordinated light and dark theme. Changes update this page immediately."
+				title={t("preferencesCopy.appearance")}
+				description={t("preferencesCopy.appearanceHelp")}
 			>
-				<PreferenceRow title="Mode" description="This browser keeps its own System Default, Light, or Dark selection.">
+				<PreferenceRow title={t("preferencesCopy.mode")} description={t("preferencesCopy.modeHelp")}>
 					<AppearanceModePicker />
 				</PreferenceRow>
 				<ThemePresetPicker preferences={preferences} onChange={applyThemePreset} />
-				<PreferenceRow title="Light theme" description="Used whenever Phaseo is in light mode.">
+				<PreferenceRow title={t("preferencesCopy.lightTheme")} description={t("preferencesCopy.lightThemeHelp")}>
 					<PalettePicker
-						ariaLabel="Light theme palette"
+						ariaLabel={t("preferencesCopy.lightPalette")}
 						value={preferences.lightPalette}
 						onChange={(value) => update("lightPalette", value)}
 						options={DISPLAY_LIGHT_PALETTES}
 						palette="light"
 					/>
 				</PreferenceRow>
-				<PreferenceRow title="Light accent" description="Sets primary buttons, active controls, focus rings, sidebar highlights, and chart series in light mode.">
+				<PreferenceRow title={t("preferencesCopy.lightAccent")} description={t("preferencesCopy.lightAccentHelp")}>
 					<AccentPicker
-						ariaLabel="Light mode accent colour"
+						ariaLabel={t("preferencesCopy.lightAccentColour")}
 						value={preferences.lightAccent}
 						onChange={(value) => update("lightAccent", value)}
 					/>
 				</PreferenceRow>
-				<PreferenceRow title="Dark theme" description="Used whenever Phaseo is in dark mode.">
+				<PreferenceRow title={t("preferencesCopy.darkTheme")} description={t("preferencesCopy.darkThemeHelp")}>
 					<PalettePicker
-						ariaLabel="Dark theme palette"
+						ariaLabel={t("preferencesCopy.darkPalette")}
 						value={preferences.darkPalette}
 						onChange={(value) => update("darkPalette", value)}
 						options={DISPLAY_DARK_PALETTES}
 						palette="dark"
 					/>
 				</PreferenceRow>
-				<PreferenceRow title="Dark accent" description="Sets primary buttons, active controls, focus rings, sidebar highlights, and chart series in dark mode.">
+				<PreferenceRow title={t("preferencesCopy.darkAccent")} description={t("preferencesCopy.darkAccentHelp")}>
 					<AccentPicker
-						ariaLabel="Dark mode accent colour"
+						ariaLabel={t("preferencesCopy.darkAccentColour")}
 						value={preferences.darkAccent}
 						onChange={(value) => update("darkAccent", value)}
 					/>
@@ -798,12 +797,10 @@ export default function DisplayPreferencesClient({
 					onClick={() => setPreferences(DEFAULT_DISPLAY_PREFERENCES)}
 					disabled={isSaving || JSON.stringify(preferences) === JSON.stringify(DEFAULT_DISPLAY_PREFERENCES)}
 				>
-					<RotateCcw /> Reset defaults
-				</Button>
+					<RotateCcw /> {t("preferencesCopy.resetDefaults")}</Button>
 				<Button type="button" onClick={save} disabled={!dirty || isSaving}>
 					{isSaving ? <Loader2 className="animate-spin" /> : <Check />}
-					Save preferences
-				</Button>
+					{t("preferencesCopy.savePreferences")}</Button>
 			</div>
 		</div>
 	);

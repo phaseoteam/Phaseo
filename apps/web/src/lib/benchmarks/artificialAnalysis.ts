@@ -46,8 +46,8 @@ export function artificialAnalysisChartColour(
 	return value && /^#[\da-f]{6}$/i.test(value) ? value : fallback;
 }
 
-export function formatArtificialAnalysisScore(id: string, score: number) {
-  return new Intl.NumberFormat("en-US", isArtificialAnalysisCostBenchmark(id)
+export function formatArtificialAnalysisScore(id: string, score: number, locale = "en-US") {
+  return new Intl.NumberFormat(locale, isArtificialAnalysisCostBenchmark(id)
     ? { style: "currency", currency: "USD", maximumFractionDigits: 2 }
     : { maximumFractionDigits: 2 }).format(score);
 }

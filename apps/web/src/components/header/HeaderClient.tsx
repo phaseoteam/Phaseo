@@ -92,6 +92,7 @@ export default function HeaderClient({
 	const t = useTranslations("Common.nav");
 	const tSearch = useTranslations("Common.search");
 	const tTheme = useTranslations("Common.theme");
+	const tDock = useTranslations("Common.ui.actionDockCopy");
 	const isPublicDataPage = isPublicDataPathname(pathname);
 	const { theme, setTheme } = useTheme();
 	const { isHydrated: displayPreferencesHydrated, setPreferences } = useDisplayPreferences();
@@ -374,7 +375,7 @@ export default function HeaderClient({
 									}}
 								>
 									<Sparkles className="h-4 w-4" />
-									<span>Turn on Phaseo action dock</span>
+									<span>{tDock("turnOnDock")}</span>
 								</DropdownMenuItem>
 							) : null}
 

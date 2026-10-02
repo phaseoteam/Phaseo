@@ -448,7 +448,8 @@
 				"openDecisionsPlayground": "Ouvrir l’espace de test Décisions",
 				"free": "Gratuit",
 				"variant": "Variante",
-				"current": "Actuel"
+				"current": "Actuel",
+				"tryJev": "Essayer Jev dans Décisions"
 			},
 			"sections": {
 				"providersDescription": "Fournisseurs d’API, tarifs des routes, disponibilité et récents indicateurs de fiabilité.",
@@ -875,7 +876,12 @@
 				"tierUltrafast": "Ultrarapide",
 				"planDescriptionFlexOnly": "Utilisé uniquement lorsque service_tier vaut flex.",
 				"planDescriptionFastRouting": "Routage rapide lorsque disponible.",
-				"planDescriptionUltrafast": "Routage à vitesse maximale lorsque disponible."
+				"planDescriptionUltrafast": "Routage à vitesse maximale lorsque disponible.",
+				"addProviderKey": "Ajouter une clé de fournisseur",
+				"providerKeyRequired": "Clé de fournisseur requise",
+				"byokCredential": "Ajoutez votre propre identifiant d’accès {providers} avant d’envoyer cette requête.",
+				"addNamedProviderKey": "Ajouter une clé {provider}",
+				"byokRequired": "Ce fournisseur nécessite une clé BYOK."
 			},
 			"seoTitles": {
 				"titleDefault": "{model} : tarifs, évaluations et fournisseurs",
@@ -902,7 +908,8 @@
 				"openSource": "Ouvrir la source de {benchmark}",
 				"hideDetailsFor": "Masquer les détails de {benchmark}",
 				"showDetailsFor": "Afficher les détails de {benchmark}",
-				"showAll": "Afficher les {count} benchmarks"
+				"showAll": "Afficher les {count} benchmarks",
+				"otherBenchmarks": "Autres benchmarks"
 			},
 			"faqContent": {
 				"title": "Questions fréquentes",
@@ -1691,6 +1698,10 @@
 			"configureRegional": "Configurer le routage régional",
 			"tiers": "Pour Fast ou Flex, indiquez le niveau dans votre requête ou choisissez une route dédiée à ce niveau. Les requêtes Batch passent par l’API Batch.",
 			"chooseTier": "Choisir un niveau de service"
+		},
+		"overview": {
+			"providerSubmissions": "Soumissions des fournisseurs",
+			"providerSubmissionsDescription": "Informations complètes fournies par le fournisseur pour un examen interne autorisé."
 		}
 	},
 	"providers": {
@@ -1830,7 +1841,8 @@
 		"missingDescription": "Un fournisseur d'API manque à l'appel ? Contribuez sur GitHub.",
 		"contribute": "Contribuer sur GitHub",
 		"internalPreview": "Aperçu interne du fournisseur",
-		"internalPreviewDescription": "Ce fournisseur a des soumissions de catalogue autorisées, mais pas encore d’analyses publiques de la passerelle. Les modèles soumis ci-dessous sont uniquement visibles par l’espace de travail du fournisseur et les administrateurs de Phaseo."
+		"internalPreviewDescription": "Ce fournisseur a des soumissions de catalogue autorisées, mais pas encore d’analyses publiques de la passerelle. Les modèles soumis ci-dessous sont uniquement visibles par l’espace de travail du fournisseur et les administrateurs de Phaseo.",
+		"loadingModels": "Chargement des modèles…"
 	},
 	"benchmarks": {
 		"title": "Évaluations comparatives",
@@ -2189,7 +2201,9 @@
 			"cost": "Coût de l’évaluation"
 		},
 		"audioTranscribed": "Audio transcrit",
-		"recentRequests": "{count} requêtes récentes"
+		"recentRequests": "{count} requêtes récentes",
+		"intelligenceBenchmarks": "Benchmarks d’intelligence",
+		"noMeasuredUsage": "Aucune utilisation mesurée au cours des 30 derniers jours."
 	},
 	"compare": {
 		"title": "Comparer les modèles",
@@ -2899,7 +2913,8 @@
 		"requestsUnit": "requêtes",
 		"usageOverTime": "Utilisation au fil du temps",
 		"noUsageDataForPeriod": "Aucune donnée d’utilisation pour cette période.",
-		"rangePeriod": "Utilisation sur la période de {range}"
+		"rangePeriod": "Utilisation sur la période de {range}",
+		"averageTokensPerRequest": "Tokens moyens par requête"
 	},
 	"apiModelCard": {
 		"gatewayActive": "Gateway : actif",

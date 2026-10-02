@@ -448,7 +448,8 @@
 				"openDecisionsPlayground": "فتح بيئة اختبار القرارات",
 				"free": "مجاني",
 				"variant": "النسخة",
-				"current": "الحالي"
+				"current": "الحالي",
+				"tryJev": "تجربة Jev في القرارات"
 			},
 			"sections": {
 				"providersDescription": "مزوّدو API، وأسعار المسارات، والتوافر، ومؤشرات الموثوقية الحديثة.",
@@ -875,7 +876,12 @@
 				"tierUltrafast": "فائق السرعة",
 				"planDescriptionFlexOnly": "يُستخدم فقط عندما تكون service_tier هي flex.",
 				"planDescriptionFastRouting": "توجيه سريع عند توفره.",
-				"planDescriptionUltrafast": "توجيه بأعلى سرعة عند توفره."
+				"planDescriptionUltrafast": "توجيه بأعلى سرعة عند توفره.",
+				"addProviderKey": "إضافة مفتاح مزوّد",
+				"providerKeyRequired": "مفتاح المزوّد مطلوب",
+				"byokCredential": "أضف بيانات اعتمادك الخاصة لدى {providers} قبل إرسال هذا الطلب.",
+				"addNamedProviderKey": "إضافة مفتاح {provider}",
+				"byokRequired": "يتطلب هذا المزوّد مفتاح BYOK."
 			},
 			"seoTitles": {
 				"titleDefault": "{model}: الأسعار والمعايير والمزوّدون",
@@ -902,7 +908,8 @@
 				"openSource": "فتح مصدر {benchmark}",
 				"hideDetailsFor": "إخفاء تفاصيل {benchmark}",
 				"showDetailsFor": "عرض تفاصيل {benchmark}",
-				"showAll": "عرض جميع الاختبارات المعيارية البالغ عددها {count}"
+				"showAll": "عرض جميع الاختبارات المعيارية البالغ عددها {count}",
+				"otherBenchmarks": "معايير تقييم أخرى"
 			},
 			"faqContent": {
 				"title": "الأسئلة الشائعة",
@@ -1691,6 +1698,10 @@
 			"configureRegional": "إعداد التوجيه الإقليمي",
 			"tiers": "لاستخدام Fast أو Flex، حدّد الفئة في طلبك أو اختر مسارًا مخصصًا لها. تمر طلبات Batch عبر Batch API.",
 			"chooseTier": "اختيار فئة الخدمة"
+		},
+		"overview": {
+			"providerSubmissions": "محتوى مقدّم من المزوّدين",
+			"providerSubmissionsDescription": "تفاصيل كاملة مقدّمة من المزوّد للمراجعة الداخلية المصرّح بها."
 		}
 	},
 	"providers": {
@@ -1830,7 +1841,8 @@
 		"missingDescription": "إذا كان مزوّد واجهة API مفقودًا، فنرجو المساهمة عبر GitHub.",
 		"contribute": "ساهم عبر GitHub",
 		"internalPreview": "معاينة داخلية للمزوّد",
-		"internalPreviewDescription": "لدى هذا المزوّد عمليات إرسال معتمدة إلى الكتالوج، ولكن لا تتوفر تحليلات عامة للبوابة بعد. النماذج المرسلة أدناه مرئية فقط لمساحة عمل المزوّد ومسؤولي Phaseo."
+		"internalPreviewDescription": "لدى هذا المزوّد عمليات إرسال معتمدة إلى الكتالوج، ولكن لا تتوفر تحليلات عامة للبوابة بعد. النماذج المرسلة أدناه مرئية فقط لمساحة عمل المزوّد ومسؤولي Phaseo.",
+		"loadingModels": "جارٍ تحميل النماذج…"
 	},
 	"benchmarks": {
 		"title": "المعايير",
@@ -2189,7 +2201,9 @@
 			"cost": "تكلفة التقييم"
 		},
 		"audioTranscribed": "الصوت المفرّغ نصيًا",
-		"recentRequests": "{count} طلبات حديثة"
+		"recentRequests": "{count} طلبات حديثة",
+		"intelligenceBenchmarks": "معايير تقييم الذكاء",
+		"noMeasuredUsage": "لا يوجد استخدام مقاس خلال آخر 30 يومًا."
 	},
 	"compare": {
 		"title": "مقارنة النماذج",
@@ -2899,7 +2913,8 @@
 		"requestsUnit": "طلب",
 		"usageOverTime": "الاستخدام بمرور الوقت",
 		"noUsageDataForPeriod": "لا تتوفر بيانات استخدام لهذه الفترة.",
-		"rangePeriod": "الاستخدام خلال فترة {range}"
+		"rangePeriod": "الاستخدام خلال فترة {range}",
+		"averageTokensPerRequest": "متوسط الرموز لكل طلب"
 	},
 	"apiModelCard": {
 		"gatewayActive": "Gateway: نشط",

@@ -1,4 +1,5 @@
 "use client";
+import { useTranslations } from "next-intl";
 import { SettingsResourceQuery } from "../PrivateSettingsQuery";
 import SettingsPageHeader from "../SettingsPageHeader";
 import PrivateModelEditor from "./PrivateModelEditor";
@@ -10,12 +11,13 @@ export default function CachedPrivateModelEditor({ privateModelId, catalogModels
 	catalogModels: { id: string; name: string }[];
 	providers: { id: string; name: string }[];
 }) {
+	const t = useTranslations("SettingsUI");
 	return <SettingsResourceQuery resource="private-models">{(data) => {
-		if (!data.workspaceNamespace) return <p>This workspace does not have a model namespace.</p>;
-		if (!data.canManage) return <p>Only workspace owners and admins can change private models.</p>;
+		if (!data.workspaceNamespace) return <p>{t("privateModelsCopy.noNamespace")}</p>;
+		if (!data.canManage) return <p>{t("privateModelsCopy.permissionRequired")}</p>;
 		const model = data.models.find((item) => item.id === privateModelId);
-		if (privateModelId && !model) return <p>Private model not found.</p>;
+		if (privateModelId && !model) return <p>{t("privateModelsCopy.notFound")}</p>;
 		const mode = privateModelId ? "edit" : "create";
-		return <div className="space-y-6"><SettingsPageHeader title={model?.name ?? "New Private Model"} description={model ? "Update this workspace model endpoint." : "Connect an OpenAI-compatible endpoint to this workspace."} meta={<Badge variant="outline">Beta</Badge>} actions={<ProductFeedbackButton surface="settings_private_model_editor" prompt="Tell us what is missing or confusing about managing a private model." context={{ mode }} />} /><PrivateModelEditor mode={mode} initialModel={model} workspaceNamespace={data.workspaceNamespace} catalogModels={catalogModels} providers={providers} /></div>;
+		return <div className="space-y-6"><SettingsPageHeader title={model?.name ?? t("privateModelsCopy.newModel")} description={model ? t("privateModelsCopy.updateEndpoint") : t("privateModelsCopy.connectEndpoint")} meta={<Badge variant="outline">{t("settingsPageCopy.beta")}</Badge>} actions={<ProductFeedbackButton surface="settings_private_model_editor" prompt={t("privateModelsCopy.editorFeedback")} context={{ mode }} />} /><PrivateModelEditor mode={mode} initialModel={model} workspaceNamespace={data.workspaceNamespace} catalogModels={catalogModels} providers={providers} /></div>;
 	}}</SettingsResourceQuery>;
 }
