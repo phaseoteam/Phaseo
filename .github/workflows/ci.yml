@@ -305,11 +305,33 @@ jobs:
               shell: bash
               run: |
                   set -euo pipefail
-                  npx --yes supabase@2.111.0 db push \
-                    --linked \
-                    --include-all \
-                    --dry-run \
-                    --password "${SUPABASE_DB_PASSWORD}"
+                  preview_log=$(mktemp)
+                  trap 'rm -f "$preview_log"' EXIT
+                  for attempt in 1 2 3; do
+                    if npx --yes supabase@2.111.0 db push \
+                      --linked \
+                      --include-all \
+                      --dry-run \
+                      --password "${SUPABASE_DB_PASSWORD}" >"$preview_log" 2>&1; then
+                      cat "$preview_log"
+                      exit 0
+                    else
+                      preview_status=$?
+                    fi
+                    cat "$preview_log"
+                    # Only retry a failed connection in this read-only preview.
+                    # SQL, authentication, and migration errors must stop immediately.
+                    if ! grep -qi 'failed to connect' "$preview_log" || \
+                      ! grep -Eqi 'Connection timed out|i/o timeout|connection reset by peer|temporary failure in name resolution' "$preview_log"; then
+                      exit "$preview_status"
+                    fi
+                    if [ "$attempt" -eq 3 ]; then
+                      echo "::error::Production database connection failed after three attempts. Check Supabase pooler availability and network access from the GitHub runner before retrying. No migrations were applied."
+                      exit "$preview_status"
+                    fi
+                    echo "::warning::Database connection failed during migration preview (attempt $attempt/3); retrying."
+                    sleep "$((attempt * 10))"
+                  done
 
             - name: Apply pending production migrations
               shell: bash

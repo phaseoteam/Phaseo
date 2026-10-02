@@ -310,7 +310,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 		fetchFrontendSubscriptionPlans(),
 		fetchFrontendCountrySummaries(),
 		fetchFrontendMarketplacePresets(),
-		fetchFrontendModels(),
+		fetchFrontendModels({ includeGatewayData: false }),
 		getHelpCategoryParams(),
 		getHelpArticleParams(),
 		getAnnouncementPosts(),

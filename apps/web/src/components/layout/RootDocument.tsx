@@ -1,4 +1,5 @@
 import { Suspense, type ReactNode } from "react";
+import { DirectionProvider } from "@base-ui/react/direction-provider";
 import {
 	Montserrat,
 	Noto_Sans_Arabic,
@@ -119,6 +120,7 @@ export function RootDocument({
 			</head>
 			<body className="min-h-screen h-full bg-background antialiased">
 				<LocaleMessagesProvider locale={locale} messages={messages} timeZone="UTC">
+				<DirectionProvider direction={direction}>
 				<CookieConsentManager
 					copy={cookieConsentCopy}
 					gaMeasurementId={GA_MEASUREMENT_ID}
@@ -153,6 +155,7 @@ export function RootDocument({
 				</ThemeProvider>
 				</CatalogNavigationGuardProvider>
 				<DeferredVercelAnalytics />
+				</DirectionProvider>
 				</LocaleMessagesProvider>
 			</body>
 		</html>
