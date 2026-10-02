@@ -3,7 +3,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { loadEnvFile } from "node:process";
 import { createAdminClient } from "../apps/web/src/utils/supabase/admin";
-import { METRICS, benchmarkId, databaseModelMappings, fetchModels, matchModels, mergeResults, metricValue, reassignedArtificialAnalysisResultIds, resultsForConfigurations, type CatalogModel, type MappingConfig } from "./artificial-analysis/core";
+import { METRICS, benchmarkId, databaseModelMappings, fetchModels, matchModels, mergeResults, metricValue, methodologyVersionFromHtml, reassignedArtificialAnalysisResultIds, resultsForConfigurations, type CatalogModel, type MappingConfig } from "./artificial-analysis/core";
 
 for (const file of ["apps/web/.env.local", ".env.local", ".env"]) {
 	if (existsSync(resolve(file))) loadEnvFile(resolve(file));
@@ -43,17 +43,20 @@ async function main() {
 	}
 	const config: MappingConfig = { models: databaseModelMappings(entries.map((entry) => entry.model)), creators };
 	const source = await fetchModels(apiKey);
+	const versionResponse = await fetch("https://artificialanalysis.ai/data-api/docs", { signal: AbortSignal.timeout(30_000) });
+	if (!versionResponse.ok) throw new Error(`Artificial Analysis version documentation returned ${versionResponse.status}; no data was written.`);
+	const methodologyVersion = methodologyVersionFromHtml(await versionResponse.text(), source.version);
 	const updated_at = new Date().toISOString();
 	const matches = matchModels(entries.map((entry) => entry.model), source.models, config);
 	const plan = entries.map((entry, index) => ({ ...entry, match: matches[index] }));
-	const report = { version: source.version, sourceModels: source.models.length,
+	const report = { version: source.version, methodologyVersion, sourceModels: source.models.length,
 		matched: plan.filter((entry) => entry.match.status === "matched").length,
 		models: plan.map((entry) => ({ model_id: entry.model.model_id, status: entry.match.status, source_id: entry.match.source?.id, source_name: entry.match.source?.name, sources: (entry.match.sources ?? []).map(({ id, name, slug }) => ({ id, name, slug })), candidates: entry.match.candidates.map(({ id, name, slug }) => ({ id, name, slug })) })),
 		unmappedSources: source.models.filter((model) => !plan.some((entry) => entry.match.sources?.some((match) => match.id === model.id))).map(({ id, name, slug }) => ({ id, name, slug })),
 	};
 	const reportArg = process.argv.find((arg) => arg.startsWith("--report="));
 	if (reportArg) writeJson(resolve(reportArg.slice("--report=".length)), report);
-	console.log(`Artificial Analysis v${source.version}: ${report.matched}/${entries.length} Phaseo models matched; ${source.models.length} source models.`);
+	console.log(`Artificial Analysis v${methodologyVersion} (API v${source.version}): ${report.matched}/${entries.length} Phaseo models matched; ${source.models.length} source models.`);
 	for (const status of ["ambiguous", "unmatched", "excluded"]) console.log(`${status}: ${plan.filter((entry) => entry.match.status === status).length}`);
 	if (!report.matched) throw new Error("No models matched; no benchmark data was written.");
 	if (!write) { console.log("Dry run complete. Use --write to update the database catalog."); return; }
@@ -64,7 +67,7 @@ async function main() {
 	for (const entry of plan) {
 		// Retain unmatched models' previous results and provenance until explicitly mapped.
 		if (!entry.match.source) continue;
-		entry.model.benchmarks = mergeResults(entry.model, resultsForConfigurations(entry.match.sources ?? [entry.match.source], source.version, source.models, updated_at), source.version);
+		entry.model.benchmarks = mergeResults(entry.model, resultsForConfigurations(entry.match.sources ?? [entry.match.source], source.version, source.models, updated_at, methodologyVersion), source.version);
 
 	}
 	if (!db) return;

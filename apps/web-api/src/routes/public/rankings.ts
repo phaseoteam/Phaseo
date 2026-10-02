@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { getDataClient } from "@/data/supabase";
 import type { Env } from "@/env";
 import { withPublicCache } from "@/http/cache";
+import { indexVersion, latestIndexVersion, intelligenceValueResults } from "./artificialAnalysis";
 
 const LIVE_CACHE = { edgeTtlSeconds: 5 * 60, staleWhileRevalidateSeconds: 5 * 60, cacheTags: ["web-api-rankings"] } as const;
 const META_CACHE = { edgeTtlSeconds: 60 * 60, staleWhileRevalidateSeconds: 24 * 60 * 60, cacheTags: ["web-api-ranking-metadata"] } as const;
@@ -211,14 +212,15 @@ publicRankingsRouter.get("/rankings/benchmarks", async (c) => {
 		}
 		const activeIds = activeRankingBenchmarkIds(scores.filter((row) => models.has(row.model_slug)));
 		const order = new Map(activeIds.map((id, index) => [id, index]));
+		const visibleScores = scores.filter((row) => models.has(row.model_slug));
 		const benchmarks = (benchmarkResult.data ?? [])
 			.filter((benchmark) => activeIds.includes(benchmark.benchmark_id))
 			.sort((left, right) => (order.get(left.benchmark_id) ?? 99) - (order.get(right.benchmark_id) ?? 99))
 			.map((benchmark) => {
 				const lowerIsBetter = benchmark.ascending_order === false;
-				const versionOf = (info: string | null) => info?.match(/Intelligence Index v(\d+(?:\.\d+)*)(?=$|[\s;]|[.!?](?=$|\s))/)?.[1] ?? null;
+				const versionOf = indexVersion;
 				const benchmarkScores = scores.filter((row) => row.benchmark_id === benchmark.benchmark_id && models.has(row.model_slug));
-				const latestVersion = benchmarkScores.map((row) => versionOf(row.other_info)).filter((version): version is string => Boolean(version)).sort((a, b) => b.localeCompare(a, "en", { numeric: true }))[0];
+				const latestVersion = latestIndexVersion(benchmarkScores);
 				const bestByModel = new Map<string, { score: number; other_info: string | null; source_link: string | null; updated_at: string | null }>();
 				const configurationsByModel = new Map<string, Array<{ variant: string | null; result_key: string | null; score: number; other_info: string | null; source_link: string | null; updated_at: string | null }>>();
 				for (const row of benchmarkScores) {
@@ -245,11 +247,23 @@ publicRankingsRouter.get("/rankings/benchmarks", async (c) => {
 					category: benchmark.category,
 					benchmark_type: benchmark.benchmark_type,
 					lower_is_better: lowerIsBetter,
-					total_models: benchmark.total_models,
+					total_models: entries.length,
 					entries,
 				};
 			});
-		return withPublicCache(c.json({ benchmarks }), META_CACHE);
+		const values = intelligenceValueResults(visibleScores, activeIds[0], activeIds[3]);
+		const bestValueByModel = new Map<string, (typeof values)[number]>();
+		for (const value of values) {
+			const previous = bestValueByModel.get(value.model_slug);
+			if (!previous || value.score_numeric < previous.score_numeric || (value.score_numeric === previous.score_numeric && value.intelligence_score > previous.intelligence_score)) bestValueByModel.set(value.model_slug, value);
+		}
+		const valueEntries = [...bestValueByModel.values()].sort((a, b) => a.score_numeric - b.score_numeric || b.intelligence_score - a.intelligence_score).map((row, _index, sorted) => ({
+			model_id: row.model_slug, ...models.get(row.model_slug), score: row.score_numeric,
+			intelligence_score: row.intelligence_score, evaluation_cost: row.evaluation_cost,
+			other_info: row.other_info, source_link: row.source_link, updated_at: row.updated_at,
+			rank: sorted.findIndex((other) => other.score_numeric === row.score_numeric) + 1,
+		}));
+		return withPublicCache(c.json({ benchmarks, intelligence_value: { benchmark_id: activeIds[0], entries: valueEntries } }), { ...LIVE_CACHE, cacheTags: ["web-api-ranking-metadata"] });
 	} catch (error) {
 		console.error("[web-api/rankings] benchmarks failed", error);
 		return c.json({ error: "ranking_benchmarks_unavailable" }, 503);
