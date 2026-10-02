@@ -4,9 +4,9 @@ import { PUBLIC_MODEL_CATALOGUE_CACHE } from "./catalogue";
 import { publicCacheHeaders, PRIVATE_NO_STORE_HEADERS } from "@/http/cache";
 
 describe("fifteen-minute public data policy", () => {
-	it.each([PUBLIC_LIVE_DATA_CACHE, PUBLIC_MODEL_CATALOGUE_CACHE])("expires without an extra stale-serving or browser-cache window", (policy) => {
+	it.each([PUBLIC_LIVE_DATA_CACHE, PUBLIC_MODEL_CATALOGUE_CACHE])("allows bounded stale serving without a browser-cache window", (policy) => {
 		const headers = publicCacheHeaders(policy);
-		expect(headers["Cloudflare-CDN-Cache-Control"]).toBe("public, max-age=900");
+		expect(headers["Cloudflare-CDN-Cache-Control"]).toBe("public, max-age=900, stale-while-revalidate=900, stale-if-error=3600");
 		expect(headers["Cache-Control"]).toBe("public, max-age=0");
 	});
 
