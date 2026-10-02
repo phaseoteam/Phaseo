@@ -63,6 +63,6 @@ export async function reconcileProviderCatalogClaims(client: any, args: { provid
 	const reviewStatus = pending ? (approved ? "in_progress" : "pending") : "approved";
 	await client.from("provider_catalog_sync_runs").update({ review_status: reviewStatus, review_summary: { approved, pending } }).eq("id", args.runId);
 	const workspaces = (linkResult.data ?? []).map((row: any) => row.workspace_id).filter(Boolean);
-	if (workspaces.length) await client.from("provider_catalog_events").insert(workspaces.map((workspaceId: string) => ({ provider_slug: args.providerSlug, run_id: args.runId, workspace_id: workspaceId, event_type: pending ? "catalog_applied" : "model_auto_approved", title: pending ? "Catalog synced" : "Catalog approved", message: pending ? `${approved} model claims were approved automatically; ${pending} new models need review.` : `All ${approved} model claims matched the canonical catalog and were staged for probes.` })));
+	if (workspaces.length) await client.from("provider_catalog_events").insert(workspaces.map((workspaceId: string) => ({ provider_slug: args.providerSlug, run_id: args.runId, workspace_id: workspaceId, event_type: pending ? "catalog_applied" : "model_auto_approved", payload: { approved, pending }, title: pending ? "Catalog synced" : "Catalog approved", message: pending ? `${approved} model claims were approved automatically; ${pending} new models need review.` : `All ${approved} model claims matched the canonical catalog and were staged for probes.` })));
 	return { approved, pending, reviewStatus };
 }

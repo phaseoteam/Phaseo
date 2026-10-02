@@ -246,7 +246,9 @@
 			"endpointTranscription": "التفريغ الصوتي",
 			"endpointTranslation": "الترجمة",
 			"endpointRealtime": "الوقت الفعلي",
-			"endpointVideoGeneration": "إنشاء الفيديو"
+			"endpointVideoGeneration": "إنشاء الفيديو",
+			"endpointImageVariations": "تنويعات الصور",
+			"endpointMusicGeneration": "توليد الموسيقى"
 		},
 		"freeRouter": {
 			"title": "مجموعة النماذج المجانية",
@@ -443,7 +445,10 @@
 				"viewOrganisation": "عرض {organisation}",
 				"decisions": "القرارات",
 				"openDecisions": "فتح القرارات",
-				"openDecisionsPlayground": "فتح بيئة اختبار القرارات"
+				"openDecisionsPlayground": "فتح بيئة اختبار القرارات",
+				"free": "مجاني",
+				"variant": "النسخة",
+				"current": "الحالي"
 			},
 			"sections": {
 				"providersDescription": "مزوّدو API، وأسعار المسارات، والتوافر، ومؤشرات الموثوقية الحديثة.",
@@ -1674,6 +1679,18 @@
 			},
 			"observationsShown": "{description} يتم عرض {series}.",
 			"requestSuccess": "نجاح الطلبات"
+		},
+		"routeHelp": {
+			"external": "مزوّدون خارجيون",
+			"additional": "خيارات توجيه إضافية",
+			"aboutExternal": "حول المزوّدين الخارجيين",
+			"selectRoutes": "كيفية اختيار هذه المسارات",
+			"externalOverride": "تأتي هذه الإدراجات من كتالوجات خارجية. لا توجّه Phaseo إليها تلقائيًا؛ يتطلب التوجيه تجاوزًا صريحًا على مستوى المزوّد.",
+			"filterOnly": "يؤدي تفعيل هذا المرشح إلى عرض إدراجاتهم فقط. ولا يفعّل التوجيه إليهم.",
+			"regional": "اختر مسارًا إقليميًا للمزوّد مباشرةً أو أرسل طلبك عبر نقطة نهاية API إقليمية. عند توفر مسار عالمي مكافئ، تتطلب المسارات الإقليمية هذا الاختيار الصريح.",
+			"configureRegional": "إعداد التوجيه الإقليمي",
+			"tiers": "لاستخدام Fast أو Flex، حدّد الفئة في طلبك أو اختر مسارًا مخصصًا لها. تمر طلبات Batch عبر Batch API.",
+			"chooseTier": "اختيار فئة الخدمة"
 		}
 	},
 	"providers": {
@@ -1914,7 +1931,33 @@
 		"paretoFrontier": "جبهة باريتو",
 		"all": "الكل",
 		"nonReasoning": "بلا استدلال",
-		"confidenceInterval": "فاصل الثقة 95%: {low}–{high}"
+		"confidenceInterval": "فاصل الثقة 95%: {low}–{high}",
+		"current": {
+			"confidence": "فاصل الثقة بنسبة 95٪",
+			"rank": "الترتيب {rank}",
+			"rankTotal": "الترتيب {rank} من {total}",
+			"eciLeaderboard": "لوحة ترتيب ECI",
+			"intervalsHelp": "القيمة الأعلى أفضل · تعرض الأشرطة فاصل الثقة المنشور بنسبة 95٪",
+			"noLeaderboard": "بيانات الترتيب غير متاحة بعد.",
+			"source": "المصدر: {brand}",
+			"fullLeaderboard": "عرض الترتيب الكامل",
+			"epochDescription": "مقياس مستقل لقدرات الذكاء الاصطناعي المتقدم، يعرض أحدث النتائج المنشورة من Epoch AI.",
+			"higherBetter": "القيمة الأعلى أفضل",
+			"modelsResults": "نماذج لها نتائج",
+			"highestScore": "أعلى درجة",
+			"leadingModel": "النموذج المتصدر",
+			"lastSynced": "آخر مزامنة",
+			"epochResultsNote": "تعكس الدرجات وفواصل الثقة أحدث نتائج ECI المنشورة.",
+			"progress": "التطور",
+			"epochProgress": "اطّلع على تغير Capabilities Index مع إصدار نماذج جديدة.",
+			"versionUnspecified": "الإصدار غير محدد",
+			"indexVersion": "المؤشر v{version}",
+			"aaDescription": "عرض موحّد لتقييمات Artificial Analysis المستقلة، يعرض كل مؤشر للمجموعة نفسها من النماذج الحالية.",
+			"lowestCost": "أقل تكلفة تقييم",
+			"lowestCostModel": "النموذج الأقل تكلفة",
+			"aaResultsNote": "تعكس الدرجات أحدث نتيجة مفهرسة متاحة لكل نموذج.",
+			"aaProgress": "اطّلع على تغير المؤشر المحدد مع إصدار نماذج جديدة."
+		}
 	},
 	"rankings": {
 		"title": "ترتيب نماذج AI",
@@ -2796,7 +2839,8 @@
 			"video": "الفيديو",
 			"rerank": "إعادة الترتيب",
 			"embeddings": "التضمينات"
-		}
+		},
+		"scheduledRelease": "غير قابل للتوجيه بعد. مقرر لإصدار مستقبلي."
 	},
 	"countryDetail": {
 		"metadataUnknownTitle": "نظرة على الذكاء الاصطناعي في {country}",

@@ -246,7 +246,9 @@
 			"endpointTranscription": "Transcripción",
 			"endpointTranslation": "Traducción",
 			"endpointRealtime": "Tiempo real",
-			"endpointVideoGeneration": "Generación de video"
+			"endpointVideoGeneration": "Generación de video",
+			"endpointImageVariations": "Variaciones de imágenes",
+			"endpointMusicGeneration": "Generación de música"
 		},
 		"freeRouter": {
 			"title": "Grupo de modelos gratuitos",
@@ -443,7 +445,10 @@
 				"viewOrganisation": "Ver {organisation}",
 				"decisions": "Decisiones",
 				"openDecisions": "Abrir Decisiones",
-				"openDecisionsPlayground": "Abrir el entorno de pruebas de Decisiones"
+				"openDecisionsPlayground": "Abrir el entorno de pruebas de Decisiones",
+				"free": "Gratis",
+				"variant": "Variante",
+				"current": "Actual"
 			},
 			"sections": {
 				"providersDescription": "Proveedores de API, precios de las rutas, disponibilidad y señales recientes de fiabilidad.",
@@ -1674,6 +1679,18 @@
 			},
 			"observationsShown": "{description} Se muestran {series}.",
 			"requestSuccess": "Éxito de las solicitudes"
+		},
+		"routeHelp": {
+			"external": "Proveedores externos",
+			"additional": "Opciones de enrutamiento adicionales",
+			"aboutExternal": "Acerca de los proveedores externos",
+			"selectRoutes": "Cómo seleccionar estas rutas",
+			"externalOverride": "Estas entradas proceden de catálogos externos. Phaseo no enruta a ellas automáticamente; el enrutamiento requiere una selección explícita del proveedor.",
+			"filterOnly": "Activar este filtro solo muestra sus entradas. No habilita el enrutamiento hacia ellas.",
+			"regional": "Elige directamente una ruta regional del proveedor o envía la solicitud a través de un endpoint regional de la API. Si existe un equivalente global, las rutas regionales requieren esta selección explícita.",
+			"configureRegional": "Configurar enrutamiento regional",
+			"tiers": "Para Fast o Flex, especifica el nivel en la solicitud o selecciona una ruta dedicada a ese nivel. Las solicitudes Batch pasan por la API Batch.",
+			"chooseTier": "Elegir un nivel de servicio"
 		}
 	},
 	"providers": {
@@ -1914,7 +1931,33 @@
 		"paretoFrontier": "Frontera de Pareto",
 		"all": "Todos",
 		"nonReasoning": "Sin razonamiento",
-		"confidenceInterval": "Intervalo de confianza del 95%: {low}–{high}"
+		"confidenceInterval": "Intervalo de confianza del 95%: {low}–{high}",
+		"current": {
+			"confidence": "Intervalo de confianza del 95 %",
+			"rank": "Puesto n.º {rank}",
+			"rankTotal": "Puesto n.º {rank} de {total}",
+			"eciLeaderboard": "Clasificación de ECI",
+			"intervalsHelp": "Cuanto más alto, mejor · las barras muestran el intervalo de confianza publicado del 95 %",
+			"noLeaderboard": "Los datos de la clasificación aún no están disponibles.",
+			"source": "Fuente: {brand}",
+			"fullLeaderboard": "Ver clasificación completa",
+			"epochDescription": "Una medida independiente de las capacidades de la IA de vanguardia, con los últimos resultados publicados por Epoch AI.",
+			"higherBetter": "Cuanto más alto, mejor",
+			"modelsResults": "Modelos con resultados",
+			"highestScore": "Puntuación más alta",
+			"leadingModel": "Modelo líder",
+			"lastSynced": "Última sincronización",
+			"epochResultsNote": "Las puntuaciones y los intervalos de confianza reflejan los últimos resultados publicados de ECI.",
+			"progress": "Evolución",
+			"epochProgress": "Consulta cómo ha evolucionado Capabilities Index con el lanzamiento de nuevos modelos.",
+			"versionUnspecified": "Versión sin especificar",
+			"indexVersion": "Índice v{version}",
+			"aaDescription": "Una vista conjunta de las evaluaciones independientes de Artificial Analysis, con cada índice comparado con el mismo conjunto de modelos actuales.",
+			"lowestCost": "Coste de evaluación más bajo",
+			"lowestCostModel": "Modelo de menor coste",
+			"aaResultsNote": "Las puntuaciones reflejan el último resultado indexado disponible para cada modelo.",
+			"aaProgress": "Consulta cómo ha evolucionado el índice seleccionado con el lanzamiento de nuevos modelos."
+		}
 	},
 	"rankings": {
 		"title": "Clasificaciones de modelos de IA",
@@ -2796,7 +2839,8 @@
 			"video": "Vídeo",
 			"rerank": "Reordenación",
 			"embeddings": "Representaciones vectoriales"
-		}
+		},
+		"scheduledRelease": "Aún no se puede enrutar. Programado para una publicación futura."
 	},
 	"countryDetail": {
 		"metadataUnknownTitle": "Panorama de IA: {country}",

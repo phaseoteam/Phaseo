@@ -246,7 +246,9 @@
 			"endpointTranscription": "Transkription",
 			"endpointTranslation": "Übersetzung",
 			"endpointRealtime": "Echtzeit",
-			"endpointVideoGeneration": "Videogenerierung"
+			"endpointVideoGeneration": "Videogenerierung",
+			"endpointImageVariations": "Bildvariationen",
+			"endpointMusicGeneration": "Musikgenerierung"
 		},
 		"freeRouter": {
 			"title": "Kostenloser Modellpool",
@@ -443,7 +445,10 @@
 				"viewOrganisation": "{organisation} ansehen",
 				"decisions": "Entscheidungen",
 				"openDecisions": "Entscheidungen öffnen",
-				"openDecisionsPlayground": "Testumgebung für Entscheidungen öffnen"
+				"openDecisionsPlayground": "Testumgebung für Entscheidungen öffnen",
+				"free": "Kostenlos",
+				"variant": "Variante",
+				"current": "Aktuell"
 			},
 			"sections": {
 				"providersDescription": "API-Anbieter, Preise der Routen, Verfügbarkeit und aktuelle Zuverlässigkeitssignale.",
@@ -1674,6 +1679,18 @@
 			},
 			"observationsShown": "{description} Angezeigt werden {series}.",
 			"requestSuccess": "Erfolgreiche Anfragen"
+		},
+		"routeHelp": {
+			"external": "Externe Anbieter",
+			"additional": "Weitere Routingoptionen",
+			"aboutExternal": "Über externe Anbieter",
+			"selectRoutes": "So wählen Sie diese Routen aus",
+			"externalOverride": "Diese Einträge stammen aus externen Katalogen. Phaseo leitet Anfragen nicht automatisch dorthin; dazu ist eine explizite Vorgabe auf Anbieterebene erforderlich.",
+			"filterOnly": "Dieser Filter zeigt nur deren Einträge an. Er aktiviert kein Routing zu ihnen.",
+			"regional": "Wählen Sie eine regionale Anbieterroute direkt aus oder senden Sie Ihre Anfrage über einen regionalen API-Endpunkt. Wenn eine globale Entsprechung verfügbar ist, erfordern regionale Routen diese explizite Auswahl.",
+			"configureRegional": "Regionales Routing konfigurieren",
+			"tiers": "Für Fast oder Flex geben Sie die Stufe in Ihrer Anfrage an oder wählen eine dafür vorgesehene Route. Batch-Anfragen werden über die Batch-API gesendet.",
+			"chooseTier": "Servicestufe auswählen"
 		}
 	},
 	"providers": {
@@ -1914,7 +1931,33 @@
 		"paretoFrontier": "Pareto-Grenze",
 		"all": "Alle",
 		"nonReasoning": "Ohne Schlussfolgern",
-		"confidenceInterval": "95%-Konfidenzintervall: {low}–{high}"
+		"confidenceInterval": "95%-Konfidenzintervall: {low}–{high}",
+		"current": {
+			"confidence": "95-%-Konfidenzintervall",
+			"rank": "Rang {rank}",
+			"rankTotal": "Rang {rank} von {total}",
+			"eciLeaderboard": "ECI-Rangliste",
+			"intervalsHelp": "Höher ist besser · die Balken zeigen das veröffentlichte 95-%-Konfidenzintervall",
+			"noLeaderboard": "Ranglistendaten sind noch nicht verfügbar.",
+			"source": "Quelle: {brand}",
+			"fullLeaderboard": "Vollständige Rangliste anzeigen",
+			"epochDescription": "Eine unabhängige Messung der Fähigkeiten führender KI mit den neuesten veröffentlichten Ergebnissen von Epoch AI.",
+			"higherBetter": "Höher ist besser",
+			"modelsResults": "Modelle mit Ergebnissen",
+			"highestScore": "Höchste Punktzahl",
+			"leadingModel": "Führendes Modell",
+			"lastSynced": "Zuletzt synchronisiert",
+			"epochResultsNote": "Punktzahlen und Konfidenzintervalle entsprechen den neuesten veröffentlichten ECI-Ergebnissen.",
+			"progress": "Entwicklung",
+			"epochProgress": "Sehen Sie, wie sich der Capabilities Index mit der Veröffentlichung neuer Modelle entwickelt hat.",
+			"versionUnspecified": "Version nicht angegeben",
+			"indexVersion": "Index v{version}",
+			"aaDescription": "Eine gemeinsame Ansicht der unabhängigen Bewertungen von Artificial Analysis, in der jeder Index dieselbe aktuelle Modellgruppe abbildet.",
+			"lowestCost": "Niedrigste Bewertungskosten",
+			"lowestCostModel": "Modell mit den niedrigsten Kosten",
+			"aaResultsNote": "Die Punktzahlen entsprechen dem neuesten verfügbaren indexierten Ergebnis jedes Modells.",
+			"aaProgress": "Sehen Sie, wie sich der ausgewählte Index mit der Veröffentlichung neuer Modelle entwickelt hat."
+		}
 	},
 	"rankings": {
 		"title": "KI-Modellranglisten",
@@ -2796,7 +2839,8 @@
 			"video": "Video",
 			"rerank": "Neusortierung",
 			"embeddings": "Vektoreinbettungen"
-		}
+		},
+		"scheduledRelease": "Noch nicht routbar. Für eine spätere Veröffentlichung geplant."
 	},
 	"countryDetail": {
 		"metadataUnknownTitle": "KI-Übersicht für {country}",

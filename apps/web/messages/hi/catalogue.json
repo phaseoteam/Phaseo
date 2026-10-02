@@ -246,7 +246,9 @@
 			"endpointTranscription": "ट्रांसक्रिप्शन",
 			"endpointTranslation": "अनुवाद",
 			"endpointRealtime": "रीयल-टाइम",
-			"endpointVideoGeneration": "वीडियो जनरेशन"
+			"endpointVideoGeneration": "वीडियो जनरेशन",
+			"endpointImageVariations": "छवि विविधताएँ",
+			"endpointMusicGeneration": "संगीत जनरेशन"
 		},
 		"freeRouter": {
 			"title": "मुफ़्त मॉडल पूल",
@@ -443,7 +445,10 @@
 				"viewOrganisation": "{organisation} देखें",
 				"decisions": "निर्णय",
 				"openDecisions": "निर्णय खोलें",
-				"openDecisionsPlayground": "निर्णय परीक्षण क्षेत्र खोलें"
+				"openDecisionsPlayground": "निर्णय परीक्षण क्षेत्र खोलें",
+				"free": "निःशुल्क",
+				"variant": "वैरिएंट",
+				"current": "वर्तमान"
 			},
 			"sections": {
 				"providersDescription": "API प्रदाता, रूट की कीमतें, उपलब्धता और हाल के विश्वसनीयता संकेत।",
@@ -1674,6 +1679,18 @@
 			},
 			"observationsShown": "{description} {series} दिखाए जा रहे हैं।",
 			"requestSuccess": "सफल अनुरोध"
+		},
+		"routeHelp": {
+			"external": "बाहरी प्रदाता",
+			"additional": "अतिरिक्त रूटिंग विकल्प",
+			"aboutExternal": "बाहरी प्रदाताओं के बारे में",
+			"selectRoutes": "इन रूट को कैसे चुनें",
+			"externalOverride": "ये प्रविष्टियाँ बाहरी कैटलॉग से आती हैं। Phaseo इन्हें अपने आप रूट नहीं करता; रूटिंग के लिए प्रदाता स्तर पर स्पष्ट ओवरराइड आवश्यक है।",
+			"filterOnly": "यह फ़िल्टर चालू करने से केवल उनकी प्रविष्टियाँ दिखती हैं। इससे उन तक रूटिंग चालू नहीं होती।",
+			"regional": "सीधे क्षेत्रीय प्रदाता रूट चुनें या क्षेत्रीय API एंडपॉइंट से अनुरोध भेजें। जब वैश्विक समकक्ष उपलब्ध हो, तो क्षेत्रीय रूट के लिए यह स्पष्ट चयन आवश्यक है।",
+			"configureRegional": "क्षेत्रीय रूटिंग कॉन्फ़िगर करें",
+			"tiers": "Fast या Flex के लिए अनुरोध में स्तर निर्दिष्ट करें या उस स्तर के लिए समर्पित रूट चुनें। Batch अनुरोध Batch API से भेजे जाते हैं।",
+			"chooseTier": "सेवा स्तर चुनें"
 		}
 	},
 	"providers": {
@@ -1914,7 +1931,33 @@
 		"paretoFrontier": "पारेटो सीमा",
 		"all": "सभी",
 		"nonReasoning": "तर्क-विचार के बिना",
-		"confidenceInterval": "95% विश्वास अंतराल: {low}–{high}"
+		"confidenceInterval": "95% विश्वास अंतराल: {low}–{high}",
+		"current": {
+			"confidence": "95% विश्वास अंतराल",
+			"rank": "रैंक #{rank}",
+			"rankTotal": "{total} में रैंक #{rank}",
+			"eciLeaderboard": "ECI लीडरबोर्ड",
+			"intervalsHelp": "अधिक बेहतर है · बार प्रकाशित 95% विश्वास अंतराल दिखाते हैं",
+			"noLeaderboard": "लीडरबोर्ड डेटा अभी उपलब्ध नहीं है।",
+			"source": "स्रोत: {brand}",
+			"fullLeaderboard": "पूरा लीडरबोर्ड देखें",
+			"epochDescription": "अग्रणी AI क्षमताओं का एक स्वतंत्र माप, Epoch AI के नवीनतम प्रकाशित परिणामों के साथ।",
+			"higherBetter": "अधिक बेहतर है",
+			"modelsResults": "परिणाम वाले मॉडल",
+			"highestScore": "सर्वोच्च स्कोर",
+			"leadingModel": "अग्रणी मॉडल",
+			"lastSynced": "अंतिम सिंक",
+			"epochResultsNote": "स्कोर और विश्वास अंतराल नवीनतम प्रकाशित ECI परिणामों को दर्शाते हैं।",
+			"progress": "प्रगति",
+			"epochProgress": "देखें कि नए मॉडल जारी होने पर Capabilities Index कैसे बदला है।",
+			"versionUnspecified": "संस्करण निर्दिष्ट नहीं है",
+			"indexVersion": "सूचकांक v{version}",
+			"aaDescription": "Artificial Analysis के स्वतंत्र मूल्यांकनों का एक संयुक्त दृश्य, जिसमें हर सूचकांक एक ही वर्तमान मॉडल समूह के लिए दिखाया जाता है।",
+			"lowestCost": "सबसे कम मूल्यांकन लागत",
+			"lowestCostModel": "सबसे कम लागत वाला मॉडल",
+			"aaResultsNote": "स्कोर हर मॉडल के लिए उपलब्ध नवीनतम अनुक्रमित परिणाम को दर्शाते हैं।",
+			"aaProgress": "देखें कि नए मॉडल जारी होने पर चयनित सूचकांक कैसे बदला है।"
+		}
 	},
 	"rankings": {
 		"title": "AI मॉडल रैंकिंग",
@@ -2796,7 +2839,8 @@
 			"video": "वीडियो",
 			"rerank": "पुनः क्रम निर्धारण",
 			"embeddings": "वेक्टर एम्बेडिंग"
-		}
+		},
+		"scheduledRelease": "अभी रूट नहीं किया जा सकता। भविष्य में रिलीज़ निर्धारित है।"
 	},
 	"countryDetail": {
 		"metadataUnknownTitle": "{country}: AI देश अवलोकन",

@@ -246,7 +246,9 @@
 			"endpointTranscription": "转录",
 			"endpointTranslation": "翻译",
 			"endpointRealtime": "实时",
-			"endpointVideoGeneration": "视频生成"
+			"endpointVideoGeneration": "视频生成",
+			"endpointImageVariations": "图像变体",
+			"endpointMusicGeneration": "音乐生成"
 		},
 		"freeRouter": {
 			"title": "免费模型池",
@@ -443,7 +445,10 @@
 				"viewOrganisation": "查看 {organisation}",
 				"decisions": "决策",
 				"openDecisions": "打开决策",
-				"openDecisionsPlayground": "打开决策测试平台"
+				"openDecisionsPlayground": "打开决策测试平台",
+				"free": "免费",
+				"variant": "变体",
+				"current": "当前"
 			},
 			"sections": {
 				"providersDescription": "API 提供商、路由价格、可用性和近期可靠性信号。",
@@ -1674,6 +1679,18 @@
 			},
 			"observationsShown": "{description} 显示{series}。",
 			"requestSuccess": "请求成功率"
+		},
+		"routeHelp": {
+			"external": "外部提供商",
+			"additional": "其他路由选项",
+			"aboutExternal": "关于外部提供商",
+			"selectRoutes": "如何选择这些路由",
+			"externalOverride": "这些条目来自外部目录。Phaseo 不会自动路由至这些提供商；路由需要显式设置提供商级覆盖。",
+			"filterOnly": "启用此筛选仅显示这些条目，不会启用路由。",
+			"regional": "直接选择提供商的区域路由，或通过区域 API 端点发送请求。如果存在对应的全局路由，区域路由需要这样显式选择。",
+			"configureRegional": "配置区域路由",
+			"tiers": "使用 Fast 或 Flex 时，在请求中指定层级，或选择该层级的专用路由。Batch 请求通过 Batch API 发送。",
+			"chooseTier": "选择服务层级"
 		}
 	},
 	"providers": {
@@ -1914,7 +1931,33 @@
 		"paretoFrontier": "帕累托前沿",
 		"all": "全部",
 		"nonReasoning": "无推理",
-		"confidenceInterval": "95% 置信区间：{low}–{high}"
+		"confidenceInterval": "95% 置信区间：{low}–{high}",
+		"current": {
+			"confidence": "95% 置信区间",
+			"rank": "排名第 {rank}",
+			"rankTotal": "共 {total} 个，排名第 {rank}",
+			"eciLeaderboard": "ECI 排行榜",
+			"intervalsHelp": "数值越高越好 · 条形显示已公布的 95% 置信区间",
+			"noLeaderboard": "排行榜数据尚不可用。",
+			"source": "来源：{brand}",
+			"fullLeaderboard": "查看完整排行榜",
+			"epochDescription": "独立衡量前沿 AI 能力，展示 Epoch AI 公布的最新结果。",
+			"higherBetter": "数值越高越好",
+			"modelsResults": "有结果的模型",
+			"highestScore": "最高分数",
+			"leadingModel": "领先模型",
+			"lastSynced": "上次同步",
+			"epochResultsNote": "分数和置信区间反映已公布的最新 ECI 结果。",
+			"progress": "变化趋势",
+			"epochProgress": "查看 Capabilities Index 随新模型发布的变化。",
+			"versionUnspecified": "未指定版本",
+			"indexVersion": "指数 v{version}",
+			"aaDescription": "汇总展示 Artificial Analysis 的独立评估，每个指数均基于同一组当前模型。",
+			"lowestCost": "最低评估成本",
+			"lowestCostModel": "成本最低的模型",
+			"aaResultsNote": "分数反映每个模型可用的最新收录结果。",
+			"aaProgress": "查看所选指数随新模型发布的变化。"
+		}
 	},
 	"rankings": {
 		"title": "AI 模型排名",
@@ -2796,7 +2839,8 @@
 			"video": "视频",
 			"rerank": "重排序",
 			"embeddings": "嵌入"
-		}
+		},
+		"scheduledRelease": "尚无法路由。计划于未来发布。"
 	},
 	"countryDetail": {
 		"metadataUnknownTitle": "{country} AI 概览",

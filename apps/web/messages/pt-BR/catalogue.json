@@ -246,7 +246,9 @@
 			"endpointTranscription": "Transcrição",
 			"endpointTranslation": "Tradução",
 			"endpointRealtime": "Tempo real",
-			"endpointVideoGeneration": "Geração de vídeo"
+			"endpointVideoGeneration": "Geração de vídeo",
+			"endpointImageVariations": "Variações de imagens",
+			"endpointMusicGeneration": "Geração de música"
 		},
 		"freeRouter": {
 			"title": "Conjunto de modelos gratuitos",
@@ -443,7 +445,10 @@
 				"viewOrganisation": "Ver {organisation}",
 				"decisions": "Decisões",
 				"openDecisions": "Abrir Decisões",
-				"openDecisionsPlayground": "Abrir o ambiente de testes de Decisões"
+				"openDecisionsPlayground": "Abrir o ambiente de testes de Decisões",
+				"free": "Grátis",
+				"variant": "Variante",
+				"current": "Atual"
 			},
 			"sections": {
 				"providersDescription": "Provedores de API, preços das rotas, disponibilidade e sinais recentes de confiabilidade.",
@@ -1674,6 +1679,18 @@
 			},
 			"observationsShown": "{description} Exibindo {series}.",
 			"requestSuccess": "Sucesso das solicitações"
+		},
+		"routeHelp": {
+			"external": "Provedores externos",
+			"additional": "Opções adicionais de roteamento",
+			"aboutExternal": "Sobre provedores externos",
+			"selectRoutes": "Como selecionar essas rotas",
+			"externalOverride": "Essas entradas vêm de catálogos externos. A Phaseo não roteia para elas automaticamente; o roteamento exige uma substituição explícita no nível do provedor.",
+			"filterOnly": "Ativar esse filtro apenas exibe suas entradas. Isso não habilita o roteamento para elas.",
+			"regional": "Escolha diretamente uma rota regional do provedor ou envie a solicitação por um endpoint regional da API. Quando houver uma opção global equivalente, as rotas regionais exigem essa seleção explícita.",
+			"configureRegional": "Configurar roteamento regional",
+			"tiers": "Para Fast ou Flex, especifique o nível na solicitação ou selecione uma rota dedicada a ele. As solicitações Batch passam pela API Batch.",
+			"chooseTier": "Escolher um nível de serviço"
 		}
 	},
 	"providers": {
@@ -1914,7 +1931,33 @@
 		"paretoFrontier": "Fronteira de Pareto",
 		"all": "Todos",
 		"nonReasoning": "Sem raciocínio",
-		"confidenceInterval": "Intervalo de confiança de 95%: {low}–{high}"
+		"confidenceInterval": "Intervalo de confiança de 95%: {low}–{high}",
+		"current": {
+			"confidence": "Intervalo de confiança de 95%",
+			"rank": "Posição nº {rank}",
+			"rankTotal": "Posição nº {rank} de {total}",
+			"eciLeaderboard": "Classificação ECI",
+			"intervalsHelp": "Quanto maior, melhor · as barras mostram o intervalo de confiança publicado de 95%",
+			"noLeaderboard": "Os dados da classificação ainda não estão disponíveis.",
+			"source": "Fonte: {brand}",
+			"fullLeaderboard": "Ver classificação completa",
+			"epochDescription": "Uma medida independente das capacidades da IA de ponta, com os resultados mais recentes publicados pela Epoch AI.",
+			"higherBetter": "Quanto maior, melhor",
+			"modelsResults": "Modelos com resultados",
+			"highestScore": "Maior pontuação",
+			"leadingModel": "Modelo líder",
+			"lastSynced": "Última sincronização",
+			"epochResultsNote": "As pontuações e os intervalos de confiança refletem os resultados ECI mais recentes publicados.",
+			"progress": "Evolução",
+			"epochProgress": "Veja como o Capabilities Index evoluiu com o lançamento de novos modelos.",
+			"versionUnspecified": "Versão não especificada",
+			"indexVersion": "Índice v{version}",
+			"aaDescription": "Uma visão unificada das avaliações independentes da Artificial Analysis, com cada índice exibido para o mesmo conjunto de modelos atuais.",
+			"lowestCost": "Menor custo de avaliação",
+			"lowestCostModel": "Modelo de menor custo",
+			"aaResultsNote": "As pontuações refletem o resultado indexado mais recente disponível para cada modelo.",
+			"aaProgress": "Veja como o índice selecionado evoluiu com o lançamento de novos modelos."
+		}
 	},
 	"rankings": {
 		"title": "Classificações de modelos de IA",
@@ -2796,7 +2839,8 @@
 			"video": "Vídeo",
 			"rerank": "Reclassificação",
 			"embeddings": "Vetores de incorporação"
-		}
+		},
+		"scheduledRelease": "Ainda não pode ser roteado. Programado para um lançamento futuro."
 	},
 	"countryDetail": {
 		"metadataUnknownTitle": "Panorama de IA: {country}",

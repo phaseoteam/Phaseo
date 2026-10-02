@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
+import { useLocale, useTranslations } from "next-intl";
 import { ArrowUpRight, ChevronDown } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
@@ -18,6 +19,9 @@ export function EpochCapabilitiesIndex({ highlights, ranking, modelId, initialEx
 	modelId?: string;
 	initialExpanded?: boolean;
 }) {
+	const t = useTranslations("Catalogue.benchmarks.current");
+	const locale = useLocale();
+	const number = (value: number) => value.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 	const [expanded, setExpanded] = useState(initialExpanded);
 	const result = highlights.find((item) => isEpochCapabilitiesIndex(item.benchmarkId) && item.score !== null);
 	if (!result || result.score === null) return null;
@@ -47,31 +51,31 @@ export function EpochCapabilitiesIndex({ highlights, ranking, modelId, initialEx
 			<div>
 				<p className="text-sm font-medium">Epoch Capabilities Index</p>
 				<div className="mt-2 flex flex-wrap items-baseline gap-x-4 gap-y-2">
-					<p className="text-xl font-semibold tracking-tight tabular-nums sm:text-2xl">{result.score.toLocaleString(undefined, { maximumFractionDigits: 2 })}</p>
-					{interval ? <span className="inline-flex items-baseline gap-2 border-l pl-4 tabular-nums"><span className="text-xs text-muted-foreground">95% CI</span><span className="text-sm font-medium">{interval.low.toFixed(2)}–{interval.high.toFixed(2)}</span></span> : null}
+					<p className="text-xl font-semibold tracking-tight tabular-nums sm:text-2xl">{result.score.toLocaleString(locale, { maximumFractionDigits: 2 })}</p>
+					{interval ? <span className="inline-flex items-baseline gap-2 border-l pl-4 tabular-nums"><span className="text-xs text-muted-foreground">{t("confidence")}</span><span className="text-sm font-medium">{number(interval.low)}–{number(interval.high)}</span></span> : null}
 				</div>
-				{result.rank ? <p className="mt-1 text-xs font-medium text-muted-foreground">Ranked #{result.rank}{result.totalModels ? ` of ${result.totalModels}` : ""}</p> : null}
+				{result.rank ? <p className="mt-1 text-xs font-medium text-muted-foreground">{result.totalModels ? t("rankTotal", {rank: result.rank, total: result.totalModels}) : t("rank", {rank: result.rank})}</p> : null}
 			</div>
 			<ChevronDown className={cn("size-5 shrink-0 text-muted-foreground transition-transform group-hover:text-foreground", expanded && "rotate-180")} />
 		</button>
 		{expanded ? <div className="border-b py-5" aria-live="polite">
-			<div className="mb-4"><h3 className="text-sm font-medium">ECI leaderboard</h3><p className="text-xs text-muted-foreground">Higher is better · bars show the published 95% confidence interval</p></div>
+			<div className="mb-4"><h3 className="text-sm font-medium">{t("eciLeaderboard")}</h3><p className="text-xs text-muted-foreground">{t("intervalsHelp")}</p></div>
 			{visibleEntries.length ? <ScrollArea className="w-full" scrollBarOrientation="horizontal" keepScrollbarMounted viewportClassName="pb-3"><div className="min-w-[640px] space-y-2.5">{visibleEntries.map((entry) => {
 				const ci = parseEpochConfidenceInterval(entry.other_info);
 				const selected = entry.model_id === modelId;
 				return <div key={entry.model_id} className="grid grid-cols-[2rem_minmax(8rem,13rem)_1fr_auto] items-center gap-2 text-xs">
-					<span className="text-right tabular-nums text-muted-foreground">#{entry.rank}</span>
+					<span className="text-right tabular-nums text-muted-foreground">#{entry.rank.toLocaleString(locale)}</span>
 					<Link href={`/models/${entry.model_id}`} className={cn("flex min-w-0 items-center gap-2 truncate font-medium hover:underline", selected && "text-foreground")}><span className="relative size-5 shrink-0 overflow-hidden rounded bg-muted"><Logo id={entry.organisation_id ?? entry.model_id} alt="" fill className="object-contain p-0.5" /></span><span className="truncate">{entry.model_name}</span></Link>
 					<div className="relative h-5 rounded-sm bg-muted/60">
 						{ci ? <span className={cn("absolute top-1/2 h-px -translate-y-1/2 bg-foreground/55", selected && "bg-foreground")} style={{ left: position(ci.low), width: `calc(${position(ci.high)} - ${position(ci.low)})` }}><span className="absolute -left-px -top-1 h-2 w-px bg-current" /><span className="absolute -right-px -top-1 h-2 w-px bg-current" /></span> : null}
 						<span className={cn("absolute top-1/2 size-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-muted-foreground", selected && "size-3 bg-foreground ring-2 ring-background")} style={{ left: position(entry.score) }} />
 					</div>
-					<span className="w-28 text-right font-medium tabular-nums">{entry.score.toFixed(2)}{ci ? <span className="block text-[10px] font-normal text-muted-foreground">{ci.low.toFixed(2)}–{ci.high.toFixed(2)}</span> : null}</span>
+					<span className="w-28 text-right font-medium tabular-nums">{number(entry.score)}{ci ? <span className="block text-[10px] font-normal text-muted-foreground">{number(ci.low)}–{number(ci.high)}</span> : null}</span>
 				</div>;
-			})}</div></ScrollArea> : <p className="py-4 text-sm text-muted-foreground">Leaderboard data is not available yet.</p>}
+			})}</div></ScrollArea> : <p className="py-4 text-sm text-muted-foreground">{t("noLeaderboard")}</p>}
 			<div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t pt-4 text-xs text-muted-foreground">
-				<a href={result.sourceLink ?? "https://epoch.ai/eci"} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 hover:text-foreground">Source: Epoch AI <ArrowUpRight className="size-3.5" /></a>
-				<Button asChild size="sm" variant="outline"><Link href={`/benchmarks/${epochCapabilitiesIndexId}`}>View Full Leaderboard <ArrowUpRight /></Link></Button>
+				<a href={result.sourceLink ?? "https://epoch.ai/eci"} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 hover:text-foreground">{t("source", {brand: "Epoch AI"})} <ArrowUpRight className="size-3.5" /></a>
+				<Button asChild size="sm" variant="outline"><Link href={`/benchmarks/${epochCapabilitiesIndexId}`}>{t("fullLeaderboard")} <ArrowUpRight /></Link></Button>
 			</div>
 		</div> : null}
 	</section>;

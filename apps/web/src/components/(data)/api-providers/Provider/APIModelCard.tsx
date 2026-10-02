@@ -132,82 +132,82 @@ const ENDPOINT_META: Record<
 	{ label: string; icon: React.ElementType; className: string }
 > = {
 	"/chat/completions": {
-		label: "Chat Completions",
+		label: "endpointChatCompletions",
 		icon: MessageSquareText,
 		className: "bg-sky-50 text-sky-700 ring-1 ring-inset ring-sky-200",
 	},
 	"/responses": {
-		label: "Responses",
+		label: "endpointResponses",
 		icon: MessageSquareText,
 		className: "bg-sky-50 text-sky-700 ring-1 ring-inset ring-sky-200",
 	},
 	"/messages": {
-		label: "Messages",
+		label: "endpointMessages",
 		icon: MessageSquareText,
 		className: "bg-sky-50 text-sky-700 ring-1 ring-inset ring-sky-200",
 	},
 	"/images/generations": {
-		label: "Image Generations",
+		label: "endpointImageGeneration",
 		icon: ImageIcon,
 		className: "bg-violet-50 text-violet-700 ring-1 ring-inset ring-violet-200",
 	},
 	"/images/edits": {
-		label: "Image Edits",
+		label: "endpointImageEditing",
 		icon: ImageIcon,
 		className: "bg-violet-50 text-violet-700 ring-1 ring-inset ring-violet-200",
 	},
 	"/images/variations": {
-		label: "Image Variations",
+		label: "endpointImageVariations",
 		icon: ImageIcon,
 		className: "bg-violet-50 text-violet-700 ring-1 ring-inset ring-violet-200",
 	},
 	"/embeddings": {
-		label: "Embeddings",
+		label: "endpointEmbeddings",
 		icon: Braces,
 		className: "bg-slate-50 text-slate-700 ring-1 ring-inset ring-slate-200",
 	},
 	"/audio/transcriptions": {
-		label: "Audio Transcriptions",
+		label: "endpointTranscription",
 		icon: Captions,
 		className: "bg-rose-50 text-rose-700 ring-1 ring-inset ring-rose-200",
 	},
 	"/audio/translations": {
-		label: "Audio Translations",
+		label: "endpointTranslation",
 		icon: Captions,
 		className: "bg-rose-50 text-rose-700 ring-1 ring-inset ring-rose-200",
 	},
 	"/audio/speech": {
-		label: "Audio Speech",
+		label: "endpointTextToSpeech",
 		icon: Speech,
 		className: "bg-orange-50 text-orange-700 ring-1 ring-inset ring-orange-200",
 	},
 	"/audio/realtime": {
-		label: "Audio Realtime",
+		label: "endpointRealtime",
 		icon: Headphones,
 		className: "bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-200",
 	},
 	"/video/generations": {
-		label: "Video Generations",
+		label: "endpointVideoGeneration",
 		icon: Video,
 		className: "bg-fuchsia-50 text-fuchsia-700 ring-1 ring-inset ring-fuchsia-200",
 	},
 	"/moderations": {
-		label: "Moderations",
+		label: "endpointModerations",
 		icon: Eye,
 		className: "bg-pink-50 text-pink-700 ring-1 ring-inset ring-pink-200",
 	},
 	"/batches": {
-		label: "Batch",
+		label: "tierBatch",
 		icon: Workflow,
 		className: "bg-slate-50 text-slate-700 ring-1 ring-inset ring-slate-200",
 	},
 	"/music/generations": {
-		label: "Music Generations",
+		label: "endpointMusicGeneration",
 		icon: Music4,
 		className: "bg-pink-50 text-pink-700 ring-1 ring-inset ring-pink-200",
 	},
 	"/decisions": {
-		label: "Decisions",
+		label: "decisions",
 		icon: Scale,
 		className: "bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-200",
 	},
@@ -235,7 +235,10 @@ function getEndpointMeta(endpoint?: string | null, fallbackLabel = "Endpoint"): 
 }
 
 function EndpointPill({ endpoint, fallbackLabel }: { endpoint?: string | null; fallbackLabel: string }) {
+	const t = useTranslations("Catalogue.models.filtersUi");
+	const tMetadata = useTranslations("Catalogue.modelDetail.metadata");
 	const meta = getEndpointMeta(endpoint, fallbackLabel);
+	const label = meta.label === "decisions" ? tMetadata("modalityDecisions") : endpoint && ENDPOINT_META[endpoint] ? t(meta.label as never) : meta.label;
 	const Icon = meta.icon;
 	return (
 		<span
@@ -245,7 +248,7 @@ function EndpointPill({ endpoint, fallbackLabel }: { endpoint?: string | null; f
 			)}
 		>
 			<Icon className="h-3.5 w-3.5" />
-			{meta.label}
+			{label}
 		</span>
 	);
 }
@@ -268,6 +271,8 @@ export default function APIModelCard({ model }: { model: APIProviderModels }) {
 		if (value === "embeddings") return tProviderModelList("capabilities.embeddings");
 		if (value === "rerank") return tProviderModelList("capabilities.rerank");
 		if (value === "moderation") return tModelMetadata("modalityModeration");
+		if (value === "decisions") return tModelMetadata("modalityDecisions");
+		if (value === "structured") return tModelMetadata("modalityStructured");
 		if (value === "tool") return t("modalityTool");
 		return value
 			.replace(/[_-]+/g, " ")

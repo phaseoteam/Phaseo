@@ -246,7 +246,9 @@
 			"endpointTranscription": "Transcription",
 			"endpointTranslation": "Translation",
 			"endpointRealtime": "Real-time",
-			"endpointVideoGeneration": "Video generation"
+			"endpointVideoGeneration": "Video generation",
+			"endpointImageVariations": "Image variations",
+			"endpointMusicGeneration": "Music generation"
 		},
 		"freeRouter": {
 			"title": "Free model pool",
@@ -443,7 +445,10 @@
 				"viewOrganisation": "View {organisation}",
 				"decisions": "Decisions",
 				"openDecisions": "Open Decisions",
-				"openDecisionsPlayground": "Open Decisions playground"
+				"openDecisionsPlayground": "Open Decisions playground",
+				"free": "Free",
+				"variant": "Variant",
+				"current": "Current"
 			},
 			"sections": {
 				"providersDescription": "API providers, route pricing, availability, and recent reliability signals.",
@@ -1674,6 +1679,18 @@
 			},
 			"observationsShown": "{description} Showing {series}.",
 			"requestSuccess": "Request success"
+		},
+		"routeHelp": {
+			"external": "External providers",
+			"additional": "Additional routing options",
+			"aboutExternal": "About external providers",
+			"selectRoutes": "How to select these routes",
+			"externalOverride": "These listings come from external catalogues. Phaseo does not route to them automatically; routing requires an explicit provider-level override.",
+			"filterOnly": "Enabling this filter only shows their listings. It does not enable routing to them.",
+			"regional": "Choose a regional provider route directly or send your request through a regional API endpoint. When a global equivalent is available, regional routes require this explicit selection.",
+			"configureRegional": "Configure regional routing",
+			"tiers": "For Fast or Flex, specify the tier in your request or select a route dedicated to that tier. Batch requests go through the Batch API.",
+			"chooseTier": "Choose a service tier"
 		}
 	},
 	"providers": {
@@ -1914,7 +1931,33 @@
 		"paretoFrontier": "Pareto frontier",
 		"all": "All",
 		"nonReasoning": "Non-reasoning",
-		"confidenceInterval": "95% confidence interval: {low}–{high}"
+		"confidenceInterval": "95% confidence interval: {low}–{high}",
+		"current": {
+			"confidence": "95% confidence interval",
+			"rank": "Ranked #{rank}",
+			"rankTotal": "Ranked #{rank} of {total}",
+			"eciLeaderboard": "ECI leaderboard",
+			"intervalsHelp": "Higher is better · bars show the published 95% confidence interval",
+			"noLeaderboard": "Leaderboard data is not available yet.",
+			"source": "Source: {brand}",
+			"fullLeaderboard": "View full leaderboard",
+			"epochDescription": "An independent measure of frontier AI capabilities, presented with the latest published results from Epoch AI.",
+			"higherBetter": "Higher is better",
+			"modelsResults": "Models with results",
+			"highestScore": "Highest score",
+			"leadingModel": "Leading model",
+			"lastSynced": "Last synced",
+			"epochResultsNote": "Scores and confidence intervals reflect the latest published ECI results.",
+			"progress": "Progress",
+			"epochProgress": "See how the Capabilities Index has moved as new models have been released.",
+			"versionUnspecified": "Version unspecified",
+			"indexVersion": "Index v{version}",
+			"aaDescription": "A single view of Artificial Analysis’ independent evaluations, with each index shown against the same current model set.",
+			"lowestCost": "Lowest evaluation cost",
+			"lowestCostModel": "Lowest-cost model",
+			"aaResultsNote": "Scores reflect the latest indexed result available for each model.",
+			"aaProgress": "See how the selected index has moved as new models have been released."
+		}
 	},
 	"rankings": {
 		"title": "AI model rankings",
@@ -2796,7 +2839,8 @@
 			"video": "Video",
 			"rerank": "Rerank",
 			"embeddings": "Embeddings"
-		}
+		},
+		"scheduledRelease": "Not routable yet. Scheduled for a future release."
 	},
 	"countryDetail": {
 		"metadataUnknownTitle": "AI country view: {country}",

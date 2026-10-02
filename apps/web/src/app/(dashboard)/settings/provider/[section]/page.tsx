@@ -1,6 +1,10 @@
 import ProviderSettingsContent from "./ProviderSettingsContent";
 import { notFound } from "next/navigation";
-export const metadata = { title: "Provider settings - Phaseo", robots: { index: false, follow: false } };
+import { getTranslations } from "next-intl/server";
+export async function generateMetadata() {
+	const t = await getTranslations("SettingsUI");
+	return { title: `${t("internalMainCopy.providerSettings")} - Phaseo`, robots: { index: false, follow: false } };
+}
 export default async function Page({ params }: { params: Promise<{ section: string }> }) {
 	const { section } = await params;
 	if (!["models", "review", "integrations"].includes(section)) notFound();

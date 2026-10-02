@@ -246,7 +246,9 @@
 			"endpointTranscription": "文字起こし",
 			"endpointTranslation": "翻訳",
 			"endpointRealtime": "リアルタイム",
-			"endpointVideoGeneration": "動画生成"
+			"endpointVideoGeneration": "動画生成",
+			"endpointImageVariations": "画像バリエーション",
+			"endpointMusicGeneration": "音楽生成"
 		},
 		"freeRouter": {
 			"title": "無料モデルプール",
@@ -443,7 +445,10 @@
 				"viewOrganisation": "{organisation}を見る",
 				"decisions": "判断",
 				"openDecisions": "判断を開く",
-				"openDecisionsPlayground": "判断のプレイグラウンドを開く"
+				"openDecisionsPlayground": "判断のプレイグラウンドを開く",
+				"free": "無料",
+				"variant": "バリアント",
+				"current": "現在"
 			},
 			"sections": {
 				"providersDescription": "APIプロバイダー、ルート料金、利用可能状況、最近の信頼性シグナル。",
@@ -1674,6 +1679,18 @@
 			},
 			"observationsShown": "{description} {series}を表示しています。",
 			"requestSuccess": "リクエスト成功率"
+		},
+		"routeHelp": {
+			"external": "外部プロバイダー",
+			"additional": "追加のルーティングオプション",
+			"aboutExternal": "外部プロバイダーについて",
+			"selectRoutes": "これらのルートを選ぶ方法",
+			"externalOverride": "これらの項目は外部カタログに基づきます。Phaseoは自動的にルーティングしません。利用にはプロバイダーレベルでの明示的な指定が必要です。",
+			"filterOnly": "このフィルターは項目を表示するだけです。ルーティングは有効になりません。",
+			"regional": "地域別のプロバイダールートを直接選択するか、地域別のAPIエンドポイントにリクエストを送信してください。対応するグローバルルートがある場合、地域別ルートには明示的な選択が必要です。",
+			"configureRegional": "地域別ルーティングを設定",
+			"tiers": "FastまたはFlexでは、リクエストで階層を指定するか、その階層専用のルートを選択してください。BatchリクエストはBatch APIを使用します。",
+			"chooseTier": "サービス階層を選択"
 		}
 	},
 	"providers": {
@@ -1914,7 +1931,33 @@
 		"paretoFrontier": "パレートフロンティア",
 		"all": "すべて",
 		"nonReasoning": "推論なし",
-		"confidenceInterval": "95%信頼区間: {low}–{high}"
+		"confidenceInterval": "95%信頼区間: {low}–{high}",
+		"current": {
+			"confidence": "95%信頼区間",
+			"rank": "順位：{rank}位",
+			"rankTotal": "{total}件中{rank}位",
+			"eciLeaderboard": "ECIランキング",
+			"intervalsHelp": "高いほど良好 · バーは公表された95%信頼区間を示します",
+			"noLeaderboard": "ランキングデータはまだありません。",
+			"source": "出典：{brand}",
+			"fullLeaderboard": "ランキング全体を見る",
+			"epochDescription": "最先端AIの能力を独立して測定し、Epoch AIが公表した最新の結果を表示します。",
+			"higherBetter": "高いほど良好",
+			"modelsResults": "結果のあるモデル",
+			"highestScore": "最高スコア",
+			"leadingModel": "首位モデル",
+			"lastSynced": "最終同期",
+			"epochResultsNote": "スコアと信頼区間は、公表された最新のECI結果を反映しています。",
+			"progress": "推移",
+			"epochProgress": "新しいモデルの公開に伴うCapabilities Indexの推移を確認できます。",
+			"versionUnspecified": "バージョン未指定",
+			"indexVersion": "インデックス v{version}",
+			"aaDescription": "Artificial Analysisによる独立評価をまとめ、各インデックスを同じ現行モデル群で比較します。",
+			"lowestCost": "最小評価コスト",
+			"lowestCostModel": "最小コストのモデル",
+			"aaResultsNote": "スコアは、各モデルで利用できる最新の登録結果を反映しています。",
+			"aaProgress": "新しいモデルの公開に伴う、選択したインデックスの推移を確認できます。"
+		}
 	},
 	"rankings": {
 		"title": "AIモデルランキング",
@@ -2796,7 +2839,8 @@
 			"video": "動画",
 			"rerank": "再ランキング",
 			"embeddings": "埋め込み"
-		}
+		},
+		"scheduledRelease": "まだルーティングできません。今後のリリースが予定されています。"
 	},
 	"countryDetail": {
 		"metadataUnknownTitle": "{country}のAI概要",

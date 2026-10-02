@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Check, ChevronDown, Copy } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import {
 	DropdownMenu,
@@ -12,16 +12,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { getModelDetailsHref } from "@/lib/models/modelHref";
 import { toast } from "sonner";
-
-function formatVariantKindLabel(kind?: string | null): string {
-	const normalized = String(kind ?? "").trim().toLowerCase();
-	if (normalized === "standard") return "Base";
-	if (normalized === "free") return "Free";
-	if (!normalized) return "Variant";
-	return normalized
-		.replace(/[_-]+/g, " ")
-		.replace(/\b\w/g, (character) => character.toUpperCase());
-}
 
 interface ModelIdentifierControlProps {
 	defaultIdentifier: string;
@@ -60,6 +50,13 @@ export default function ModelIdentifierControl({
 	variants = [],
 }: ModelIdentifierControlProps) {
 	const t = useTranslations("Catalogue.models.detail.actions");
+	const formatVariantKindLabel = (kind?: string | null) => {
+		const normalized = String(kind ?? "").trim().toLowerCase();
+		if (normalized === "standard") return t("base");
+		if (normalized === "free") return t("free");
+		if (normalized === "current") return t("current");
+		return t("variant");
+	};
 	const router = useRouter();
 	const copyResetTimerRef = useRef<number | null>(null);
 	const { options, displayedIdentifier } = useMemo(
@@ -150,8 +147,8 @@ export default function ModelIdentifierControl({
 		<button
 			type="button"
 			className="group inline-flex max-w-full items-center gap-1 px-0 py-0 text-left text-xs font-medium text-zinc-700 transition-colors hover:text-zinc-950 focus-visible:outline-none focus-visible:ring-0 dark:text-zinc-300 dark:hover:text-zinc-50"
-			aria-label={`Copy model identifier ${displayedIdentifier}`}
-			title={copied ? "Copied" : "Copy model identifier"}
+			aria-label={t("copyIdentifierWithValue", { identifier: displayedIdentifier })}
+			title={copied ? t("copied") : t("copyIdentifier")}
 			onClick={() => void copyIdentifier(displayedIdentifier)}
 		>
 			<span className="min-w-0 select-none truncate font-mono">{displayedIdentifier}</span>
@@ -223,7 +220,7 @@ export default function ModelIdentifierControl({
 					</DropdownMenuTrigger>
 					<DropdownMenuContent align="start" className="w-auto min-w-0 max-w-[calc(100vw-2rem)] rounded-lg">
 						<div className="px-2 py-1.5 text-[11px] font-medium text-muted-foreground">
-							Identifiers
+							{t("identifiers")}
 						</div>
 						{options.map((option) => (
 							<DropdownMenuItem
@@ -239,7 +236,7 @@ export default function ModelIdentifierControl({
 									<span className="truncate">{option}</span>
 								</span>
 								<span className="shrink-0 text-[11px] text-zinc-500 dark:text-zinc-400">
-									{option === defaultIdentifier ? "Default" : "Alias"}
+									{option === defaultIdentifier ? t("defaultIdentifier") : t("aliasIdentifier")}
 								</span>
 							</DropdownMenuItem>
 						))}

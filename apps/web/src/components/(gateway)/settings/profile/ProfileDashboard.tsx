@@ -194,7 +194,7 @@ function ProviderMark({ provider, label }: { provider: string; label: string }) 
 		<div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-border bg-background p-1">
 			<Logo
 				id={provider}
-				alt={`${label} logo`}
+				alt={label}
 				width={18}
 				height={18}
 				className="h-4.5 w-4.5 object-contain"
@@ -509,7 +509,8 @@ export default function ProfileDashboard({
 			toast.success(labels.photoUpdated)
 			router.refresh()
 		} catch (error) {
-			toast.error(error instanceof Error ? error.message : labels.updatePhotoFailed)
+			const knownMessages = [labels.photoTooLarge, labels.invalidPhoto, labels.updatePhotoFailed]
+			toast.error(error instanceof Error && knownMessages.includes(error.message) ? error.message : labels.updatePhotoFailed)
 		} finally {
 			setAvatarUploading(false)
 			event.target.value = ""

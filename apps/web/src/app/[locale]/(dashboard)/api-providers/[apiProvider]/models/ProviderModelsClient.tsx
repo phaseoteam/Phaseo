@@ -14,9 +14,9 @@ import {
 	Check,
 	X,
 } from "lucide-react";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { debounce, useQueryState } from "nuqs";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CopyButton } from "@/components/ui/copy-button";
@@ -74,16 +74,9 @@ function listify(value?: string[] | string | null): string[] {
 		.filter(Boolean);
 }
 
-function formatUsd(value: number | null | undefined): string {
-	if (value == null || !Number.isFinite(value)) return "-";
-	if (value >= 100) return `$${value.toFixed(0)}`;
-	if (value >= 10) return `$${value.toFixed(2)}`;
-	return `$${value.toFixed(4).replace(/\.?0+$/, "")}`;
-}
-
 function formatMeterDisplay(
 	meter: APIProviderModelPricingMeter,
-	labels: { millionPixels: string; millionTokens: string; unit: string },
+	labels: { millionPixels: string; millionTokens: string; unit: string; knownUnit: (meter: APIProviderModelPricingMeter) => string | null },
 ): { amount: number | null; unitLabel: string } {
 	const isPixelMeter = meter.unit === "pixel" || meter.meter.includes("pixel");
 	const isTokenMeter = meter.unit === "token" || meter.meter.includes("token");
@@ -98,7 +91,7 @@ function formatMeterDisplay(
 
 	return {
 		amount: meter.price_per_unit_usd,
-		unitLabel: meter.display_unit_label || meter.unit || labels.unit,
+		unitLabel: labels.knownUnit(meter) || meter.display_unit_label || meter.unit || labels.unit,
 	};
 }
 
@@ -109,37 +102,9 @@ function normalizeCapabilityKey(value: string): string {
 		.replace(/^_+|_+$/g, "");
 }
 
+// Unknown capabilities remain machine identifiers rather than invented English labels.
 function formatCapabilityLabel(value: string): string {
-	const normalizedValue = value.trim().toLowerCase();
-	if (
-		normalizedValue === "decisions.make" ||
-		normalizedValue === "decision.make" ||
-		normalizedValue === "systemone" ||
-		normalizedValue === "system.one" ||
-		normalizedValue === "typed.decisions"
-	) {
-		return "Decisions";
-	}
-
-	const acronymMap: Record<string, string> = {
-		api: "API",
-		id: "ID",
-		url: "URL",
-		json: "JSON",
-		xml: "XML",
-		cpu: "CPU",
-		gpu: "GPU",
-	};
-
-	return normalizeCapabilityKey(value)
-		.split(/[_\-\s]+/)
-		.filter(Boolean)
-		.map((part) => {
-			if (acronymMap[part]) return acronymMap[part];
-			if (part.length === 1) return part.toUpperCase();
-			return part[0].toUpperCase() + part.slice(1);
-		})
-		.join(" ");
+	return value;
 }
 
 const MODALITY_ICONS: Record<string, IconMeta> = {
@@ -156,7 +121,7 @@ function resolveModalityIcons(modalities: string[]): IconMeta[] {
 		.map(
 			(value) =>
 				MODALITY_ICONS[value] ?? {
-					id: `modality-${value}`,
+					id: value,
 					label: formatCapabilityLabel(value),
 					icon: Settings2,
 				},
@@ -250,6 +215,12 @@ export default function ProviderModelsClient({
 	accountQueryScope = ANONYMOUS_ACCOUNT_QUERY_SCOPE,
 }: ProviderModelsClientProps) {
 	const t = useTranslations("Catalogue.providerModelList");
+	const tStatus = useTranslations("Catalogue.modelDetail.providerTable");
+	const tPricing = useTranslations("Catalogue.modelDetail.pricing");
+	const tMetadata = useTranslations("Catalogue.modelDetail.metadata");
+	const locale = useLocale();
+	const formatUsd = (value: number | null | undefined) => value == null || !Number.isFinite(value)
+		? "—" : new Intl.NumberFormat(locale, { style: "currency", currency: "USD", maximumFractionDigits: 4 }).format(value);
 	const modalityLabels: Record<string, string> = {
 		text: t("capabilities.text"),
 		image: t("capabilities.image"),
@@ -257,6 +228,9 @@ export default function ProviderModelsClient({
 		video: t("capabilities.video"),
 		rerank: t("capabilities.rerank"),
 		embeddings: t("capabilities.embeddings"),
+		decisions: tMetadata("modalityDecisions"),
+		structured: tMetadata("modalityStructured"),
+		moderation: tMetadata("modalityModeration"),
 	};
 	const scope = accountQueryScope ?? ANONYMOUS_ACCOUNT_QUERY_SCOPE;
 	const { data: providerPreviews = [] } = useQuery<AuthenticatedProviderCatalogPreview[]>({
@@ -370,14 +344,14 @@ export default function ProviderModelsClient({
 					<EmptyMedia variant="icon">
 						<FilePlus />
 					</EmptyMedia>
-					<EmptyTitle>No models available</EmptyTitle>
+					<EmptyTitle>{t("noModelsTitle")}</EmptyTitle>
 					<EmptyDescription>
-						{providerLabel} does not have any public models yet.
+						{t("noModelsForProvider")}
 					</EmptyDescription>
 				</EmptyHeader>
 				<EmptyContent>
 					<Button asChild>
-						<Link href="/contribute">Contribute</Link>
+						<Link href="/contribute">{t("contribute")}</Link>
 					</Button>
 				</EmptyContent>
 			</Empty>
@@ -480,7 +454,7 @@ export default function ProviderModelsClient({
 						<EmptyContent>
 							<div className="flex gap-2">
 								<Button asChild>
-									<a href="/contribute">{t("contribute")}</a>
+									<Link href="/contribute">{t("contribute")}</Link>
 								</Button>
 								<Button variant="outline" asChild>
 									<a href="https://phaseo.app">{t("learnMore")}</a>
@@ -540,21 +514,21 @@ export default function ProviderModelsClient({
 								<UnreleasedBadge compact />
 							) : model.availability_status === "coming_soon" ? (
 								<Badge variant="secondary" className="border-blue-200 bg-blue-50 text-xs font-medium text-blue-700">
-									Coming soon
+									{tStatus("statuses.comingSoon")}
 								</Badge>
 							) : model.availability_status === "not_active" ? (
 								<Badge variant="secondary" className="border-neutral-200 bg-neutral-50 text-xs font-medium text-neutral-700">
-									Not active
+									{tStatus("statuses.inactive")}
 								</Badge>
 							) : null}
 						</div>
 						{model.availability_status === "coming_soon" ? (
 							<p className="text-xs font-normal text-muted-foreground">
-								Not routable yet{model.availability_reason === "scheduled" ? ". Scheduled for a future release." : "."}
+								{model.availability_reason === "scheduled" ? t("scheduledRelease") : tStatus("statusDescriptions.comingSoon")}
 							</p>
 						) : model.availability_status === "not_active" ? (
 							<p className="text-xs font-normal text-muted-foreground">
-								Not routable{model.availability_reason ? ` · ${model.availability_reason.replaceAll("_", " ")}.` : "."}
+								{model.availability_reason === "internal_testing" ? tStatus("statusDescriptions.internalTesting") : tStatus("statusDescriptions.inactive")}
 							</p>
 						) : null}
 
@@ -662,12 +636,17 @@ export default function ProviderModelsClient({
 														millionPixels: t("oneMillionPixels"),
 														millionTokens: t("oneMillionTokens"),
 														unit: t("unit"),
+														knownUnit: (price) => {
+															const quantity = price.unit_size ?? 1;
+															const key = `${quantity === 1 ? "unitsSingular" : "units"}.${price.unit}`;
+															return tPricing.has(key as never) ? `${quantity === 1 ? "" : `${quantity.toLocaleString(locale)} `}${tPricing(key as never)}` : null;
+														},
 													});
 													return (
 														<div key={`${model.model_id}-meter-${meter.meter}`}>
 															<div className="text-sm">
 																<span className="text-muted-foreground">
-																	{meter.label}:
+																	{tPricing.has(`meters.${meter.meter}` as never) ? tPricing(`meters.${meter.meter}` as never) : meter.label}:
 																</span>{" "}
 																<span className="font-semibold">
 																	{formatUsd(display.amount)}
