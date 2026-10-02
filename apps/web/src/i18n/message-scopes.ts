@@ -7,7 +7,7 @@ export const SHELL_MESSAGE_NAMESPACES = [
 	"Product.developerMenu", "SettingsUI.searchableSelectCopy",
 	"Product.feedback", "Product.internalTools.dataEditor.searchModelsPlaceholder",
 	"SettingsUI.providerCatalogCopy", "SettingsUI.providerCatalog.title",
-	"SettingsUI.identity.availability.other", "SettingsUI.identity.reviewStatus.other",
+	"SettingsUI.identity.availability", "SettingsUI.identity.reviewStatus",
 	"SettingsUI.settingsCopy.settingsSidebar", "SettingsUI.strings.phrasePleaseTryAgain",
 	"SettingsUI.strings.Details",
 ] as const;

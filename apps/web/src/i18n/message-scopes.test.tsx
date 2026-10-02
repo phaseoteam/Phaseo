@@ -34,6 +34,9 @@ describe("route message selection", () => {
 		const translate = createTranslator({ locale, messages: combined, onError } as never);
 		expect(translate("Common.nav.home" as never)).toBeTruthy();
 		expect(translate("Catalogue.models.title" as never)).toBeTruthy();
+		expect(translate.has("SettingsUI.strings.Details" as never)).toBe(true);
+		expect(translate.has("SettingsUI.identity.availability.ready" as never)).toBe(true);
+		expect(translate.has("SettingsUI.identity.reviewStatus.approved" as never)).toBe(true);
 		expect(onError).not.toHaveBeenCalled();
 		function TranslatedChild() {
 			const shared = useTranslations("Common.nav");

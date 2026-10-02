@@ -72,6 +72,9 @@ function fileInfo(file, sourceOverride) {
                             info.keys.push([namespace, key.text].filter(Boolean).join('.'));
                         } else if (ts.isTemplateExpression(key)) {
                             info.keys.push([namespace, key.head.text.replace(/\.$/, '')].filter(Boolean).join('.') + '.*');
+                        } else if (ts.isBinaryExpression(key) && key.operatorToken.kind === ts.SyntaxKind.PlusToken
+                            && ts.isStringLiteral(key.left) && key.left.text.endsWith('.')) {
+                            info.keys.push([namespace, key.left.text.replace(/\.$/, '')].filter(Boolean).join('.') + '.*');
                         }
                     }
                     addKey(n.arguments[0]);
@@ -90,11 +93,12 @@ if (process.argv.includes('--self-test')) {
     const fixture = fileInfo('scope-audit-fixture.tsx', `
         function CopyButton() {
             const t = useTranslations("Feature.copyButton");
-            return t(copied ? "copied" : "copy");
+            t(copied ? "copied" : "copy");
+            return t.has(("status." + value) as never);
         }
     `);
     assert.deepEqual(fixture.namespaces, ['Feature.copyButton']);
-    assert.deepEqual(fixture.keys.sort(), ['Feature.copyButton.copied', 'Feature.copyButton.copy']);
+    assert.deepEqual(fixture.keys.sort(), ['Feature.copyButton.copied', 'Feature.copyButton.copy', 'Feature.copyButton.status.*']);
     console.log('Message scope audit self-test passed.');
     process.exit(0);
 }
